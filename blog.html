@@ -50,7 +50,7 @@
     </script>
 
     <!--below is the Blog itself-->
-    <h2 id="blogh2">Links to three blogs to which I like to attend as much as possible. Hover over them for more information</h2>
+    <h2 id="blogh2">Three Blogs that I try to keep updated as much as possible <br>Note: you may need to double-tap on iOS devices</h2>
     
     <ul class="blog-link-list">
         <li>
@@ -76,14 +76,14 @@
       <div id="politics-blog">
         <h2 style="display:inline-block">POLITICS</h2>
         <img src="politics/politicsimage.png" id="politicsImage">
-        <h3>My opinions, predictions, and data on all things politics</h3>
+        <h3>This is where I write about politics</h3>
         <div class="pbox">
             <p class="ptextwidth">6/18/23
             <br>
             2024 Presidential Election Predictions
 <br>
 <br>
-It's quickly becoming less presumptuous to make predictions as we enter the 2024 U.S. election season. So, why not take a look at who's got the best odds of becoming President? Of course, my ideas are my own and I wouldn't be surprised to be proven wrong in time. As such, I plan to continue updating my thoughts on this post as we properly enter the season, with election news, polling, and personal research informing all changes. Before we look at the predictions, there are a few key considerations to take into account regarding my predictions:
+It is perhaps hasty to make predictions this early on in the election season, so my ideas here are likely to be proven wrong in time. As such, I plan to continue updating my thoughts on this post as we properly enter the season, with election news, polling, and personal research informing all changes. Before we look at the predictions, there are a few key considerations to take into account regarding my predictions:
 <br>
 <br>
 1. The colors and shades of colors on the maps below represent either a Democrat majority (Blue) or a Republican majority (Red) and a darker color represents a more firm partisanship for each respective party.
@@ -194,6 +194,7 @@ const buttons = document.querySelectorAll('.blog-link-list span');
 const languagesImage = document.getElementById('languages-blog');
 const politicsImage = document.getElementById('politics-blog');
 const unrealpoliticsImage = document.getElementById('unrealpolitics-blog');
+var anyblogclicked = '0';
 
 buttons.forEach(button => {
   const subtext = button.nextElementSibling;
@@ -211,27 +212,64 @@ buttons.forEach(button => {
     politicsImage.style.opacity = '0';
     unrealpoliticsImage.style.opacity = '0';
     languagesImage.style.opacity = '0';
-
     // Display the corresponding image
     if (button.id === 'politics') {
       politicsImage.style.opacity = '1';
       politics.style.color = '#ffffff';
       unrealpolitics.style.color = '#e3e3b0';
       languages.style.color = '#e3e3b0';
+      anyblogclicked = '1';
     }
     if (button.id === 'unrealpolitics') {
       unrealpoliticsImage.style.opacity = '1';
       unrealpolitics.style.color = '#ffffff';
       politics.style.color = '#e3e3b0';
       languages.style.color = '#e3e3b0';
+      anyblogclicked = '1';
     }
     if (button.id === 'languages') {
       languagesImage.style.opacity = '1';
       languages.style.color = '#ffffff';
       politics.style.color = '#e3e3b0';
       unrealpolitics.style.color = '#e3e3b0';
+      anyblogclicked = '1';
     }
+    function disableScrolling() {
+    document.body.style.overflow = "hidden";
+  }
+
+  function enableScrolling() {
+    document.body.style.overflow = "auto";
+  }
+  //calls test if scrolling when no blog is present
+    checkScrolling();
   });
+
+  //prevent scrolling when no blog is present
+  function disableScrolling() {
+    document.body.style.overflow = "hidden";
+    var paragraphs = document.getElementsByTagName('p');
+  for (var i = 0; i < paragraphs.length; i++) {
+    paragraphs[i].style.cursor = "default";
+  }
+  }
+
+  function enableScrolling() {
+    document.body.style.overflow = "auto";
+    var paragraphs = document.getElementsByTagName('p');
+  for (var i = 0; i < paragraphs.length; i++) {
+    paragraphs[i].style.cursor = "auto";
+  }
+  }
+
+  function checkScrolling() {
+    if (anyblogclicked === '0') {
+        disableScrolling();
+    } else {
+        enableScrolling();
+    }
+}
+    checkScrolling();
 });
 
 </script>
