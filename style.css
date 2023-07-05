@@ -259,6 +259,18 @@ hr {
     font-size: small;
     font-style: italic;
     padding-right: 12px;
+    visibility: visible;
+}
+
+#blogh2notice {
+    color: #e3e3b0;
+    position: absolute;
+    margin-top: 85px;
+    margin-left: 3%;
+    display: block;
+    font-size: small;
+    font-style: italic;
+    padding-right: 12px;
     visibility: hidden;
 }
 
@@ -642,6 +654,18 @@ hr {
     /* blog */
 
     #blogh2 {
+        color: #e3e3b0;
+        position: absolute;
+        margin-top: 85px;
+        margin-left: 3%;
+        display: block;
+        font-size: x-small;
+        font-style: italic;
+        padding-right: 12px;
+        visibility: visible;
+    }
+
+     #blognotice {
         color: #e3e3b0;
         position: absolute;
         margin-top: 85px;
