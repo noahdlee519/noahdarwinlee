@@ -256,9 +256,10 @@ hr {
     margin-top: 85px;
     margin-left: 3%;
     display: block;
-    font-size: large;
+    font-size: small;
     font-style: italic;
     padding-right: 12px;
+    visibility: hidden;
 }
 
 .blog-link-list {
@@ -649,6 +650,7 @@ hr {
         font-size: x-small;
         font-style: italic;
         padding-right: 12px;
+        visibility: visible;
     }
 
     #allblogs h2 {
