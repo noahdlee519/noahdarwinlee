@@ -413,14 +413,14 @@ hr {
     display: inline;
 }
 
-#instagram, #facebook, #linkedin, #email {
+#instagram, #facebook, #linkedin, #email, #spotify {
     list-style: none;
     color:#e3e3b0;
     text-decoration: none;
     font-size: x-large;
 }
 
-#instagram:hover, #facebook:hover, #linkedin:hover, #email:hover {
+#instagram:hover, #facebook:hover, #linkedin:hover, #email:hover, #spotify:hover {
     list-style: none;
     color: #f2f3f4;
 }
@@ -431,6 +431,10 @@ hr {
 
 #emailadjust {
     margin-lefT: 2px;
+}
+
+#spotify {
+    padding-bottom: 50px;
 }
   
                                 /* Below is the About section */
