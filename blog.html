@@ -223,14 +223,14 @@ buttons.forEach(button => {
       unrealpolitics.style.color = '#ffffff';
       politics.style.color = '#e3e3b0';
       languages.style.color = '#e3e3b0';
-      anyblogclicked = '1';
+      anyblogclicked = '0';
     }
     if (button.id === 'languages') {
       languagesImage.style.opacity = '1';
       languages.style.color = '#ffffff';
       politics.style.color = '#e3e3b0';
       unrealpolitics.style.color = '#e3e3b0';
-      anyblogclicked = '1';
+      anyblogclicked = '0';
     }
     function disableScrolling() {
     document.body.style.overflow = "hidden";
@@ -296,7 +296,7 @@ function fadeIn(element) {
         if (opacity >= 1) {
             clearInterval(interval);
         }
-    }, 1);
+    }, 100);
 }
 
 function fadeOut(element) {
@@ -308,7 +308,7 @@ function fadeOut(element) {
             clearInterval(interval);
             element.style.display = "none";
         }
-    }, 1);
+    }, 100);
 }
 
 document.getElementById("backToTopButton").addEventListener("click", function() {
