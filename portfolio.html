@@ -69,7 +69,7 @@ function fadeIn(element) {
         if (opacity >= 1) {
             clearInterval(interval);
         }
-    }, 1);
+    }, 100);
 }
 
 function fadeOut(element) {
@@ -81,7 +81,7 @@ function fadeOut(element) {
             clearInterval(interval);
             element.style.display = "none";
         }
-    }, 1);
+    }, 100);
 }
 
 document.getElementById("backToTopButton").addEventListener("click", function() {
