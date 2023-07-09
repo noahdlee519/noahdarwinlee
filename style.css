@@ -360,6 +360,8 @@ hr {
     width: 100%;
     height: 100%;
     max-width: 68em;
+    margin-left: .15em;
+    margin-right: .15em;
 }
 
 .pbox p {   
@@ -693,9 +695,8 @@ hr {
         padding: 0.5em !important;
     }
 
-    .pbox img {
-        min-width: 17em !important;
-        width: 20vw !important;
+      .pbox img {
+        width: 100%;
     }
 
     #politicsImage {
