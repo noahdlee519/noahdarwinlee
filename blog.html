@@ -79,7 +79,7 @@
         <h2 style="display:inline-block">POLITICS</h2>
         <img src="politics/politicsimage.png" id="politicsImage">
         <h3>This is where I write about politics</h3>
-        <div class="pbox">
+        <div class="pbox"> <!--below is the actual content of this blog-->
             <p class="ptextwidth">6/18/23
             <br>
             2024 Presidential Election Predictions
@@ -165,15 +165,19 @@ Factors contributing to a general tendency toward Trump over Biden nationally in
       <div id="languages-blog">
         <h2 style="display:inline-block">LANGUAGES</h2>
         <img src="languages/languagesimage.png" id="languagesImage">
-        <h3>This is where I write about my journey learning Dutch</h3>
-        <div class="pbox">
-            <p class="ptextwidth">6/19/23
+        <h3>Join me as I share my journeys learning languages!</h3>
+        <h2>Chapter 1: Big Plans in the Lowlands</h2>
+        <h3>August 2023 — The month I get fluent in Dutch</h3>
+        <div id="netherlandsmappbox"> <!-- below is the actual blog content -->
+            <p class="ptextwidth" style="font-size:regular">
+              Click on a the name of a city to find out more
+            <img src="languages\netherlandsblog.png" id="netherlandsmap">
+          </p>
+          <p class="ptextwidth" style="font-size: regular" id="dutchblogadjust">
+            <strong>Idee - Idea</strong>
             <br>
-            Deep Dive into Dutch
-<br>
-<br>
-[writing in progress]
-            </p>
+This summer I will be traveling to Amsterdam to study Dutch at the University of Amsterdam’s summer intensive Dutch program for nearly all of August. 
+        </p>
         </div>
     </div>
     </div>
@@ -230,7 +234,7 @@ buttons.forEach(button => {
       languages.style.color = '#ffffff';
       politics.style.color = '#e3e3b0';
       unrealpolitics.style.color = '#e3e3b0';
-      anyblogclicked = '0';
+      anyblogclicked = '1';
     }
     function disableScrolling() {
     document.body.style.overflow = "hidden";
@@ -270,57 +274,6 @@ buttons.forEach(button => {
     checkScrolling();
 });
 
-</script>
-
-    <!--below is the back to top button-->
-
-<a href="#" class="back-to-top" id="backToTopButton">&#8593;</a>
-<script>
-window.addEventListener("scroll", function() {
-    var backToTopButton = document.getElementById("backToTopButton");
-    
-    if (window.pageYOffset > 500) {
-        backToTopButton.style.display = "block";
-        fadeIn(backToTopButton);
-    } else {
-        fadeOut(backToTopButton);
-    }
-});
-
-function fadeIn(element) {
-    element.style.opacity = "0";
-    var opacity = 0;
-    var interval = setInterval(function() {
-        opacity += 0.1;
-        element.style.opacity = opacity.toString();
-        if (opacity >= 1) {
-            clearInterval(interval);
-        }
-    }, 100);
-}
-
-function fadeOut(element) {
-    var opacity = 1;
-    var interval = setInterval(function() {
-        opacity -= 0.1;
-        element.style.opacity = opacity.toString();
-        if (opacity <= 0.1) {
-            clearInterval(interval);
-            element.style.display = "none";
-        }
-    }, 100);
-}
-
-document.getElementById("backToTopButton").addEventListener("click", function() {
-    scrollToTop();
-});
-
-function scrollToTop() {
-    if (window.scrollY !== 0) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        setTimeout(scrollToTop, 5000);
-    }
-}
 </script>
 
     <!--below is the footer-->
