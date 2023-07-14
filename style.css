@@ -349,6 +349,16 @@ hr {
     width: 100%;
   }
 
+/* below are the dutch city styles */
+  .nclickable {
+    cursor: pointer;
+    color: #e3e3b0; /* Initial color of the text */
+  }
+  .nclicked {
+    color: white; /* Color of the text after clicking */
+    text-decoration: underline;
+  }
+
   #blogsline {
     position: relative;
     margin-top: 19.25em;

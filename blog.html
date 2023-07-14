@@ -179,9 +179,46 @@ Factors contributing to a general tendency toward Trump over Biden nationally in
 This summer I will be traveling to Amsterdam to study Dutch at the University of Amsterdam’s summer intensive Dutch program for nearly all of August. 
         </p>
         </div>
+        <div class="listofcities" style="position:relative; display:block">
+          <div class="nclickable" id="nAlkmaar"><h3 style="top:50em; left: 20em" onclick="changeImageAlkmaar()">Alkmaar</h3></div>
+          <div class="nclickable" id="nAmersfoort"><h3 style="top:20em; left: 30em">Amersfoort</h3></div>
+          <div class="nclickable" id="nAmsterdam"><h3 style="top:10em; left: 0em">Amsterdam</h3></div>
+          <div class="nclickable" id="nAntwerp"><h3 style="top:10em; left: 20em">Antwerp</h3></div>
+          <div class="nclickable" id="nBaarle"><h3 style="top:20em; left: 30em">Baarle</h3></div>
+          <div class="nclickable" id="nBrugge"><h3 style="top:20em; left: 20em">Brugge</h3></div>
+          <div class="nclickable" id="nDelft"><h3 style="top:30em; left: 10em">Delft</h3></div>
+          <div class="nclickable" id="nDen Haag"><h3 style="top:20em; left: 0em">Den Haag</h3></div>
+          <div class="nclickable" id="nEindhoven"><h3 style="top:0em; left: 20em">Eindhoven</h3></div>
+          <div class="nclickable" id="nOtterlo"><h3 style="top:20em; left: 10em">Otterlo</h3></div>
+          <div class="nclickable" id="nRotterdam"><h3 style="top:20em; left: 40em">Rotterdam</h3></div>
+          <div class="nclickable" id="nUtrecht"><h3 style="top:40em; left: 30em">Utrecht</h3></div>
+        </div>
     </div>
     </div>
 
+    <!-- this is the script for the dutch city clicked -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+  var clickableElements = document.querySelectorAll('.nclickable');
+  var lastClickedElement = null; // Keep track of the last clicked element
+
+  clickableElements.forEach(function(element) {
+    element.addEventListener('click', function() {
+      if (lastClickedElement !== null) {
+        lastClickedElement.classList.remove('nclicked'); // Remove the "clicked" class from the last clicked element
+      }
+
+      this.classList.add('nclicked');
+      lastClickedElement = this; // Update the last clicked element
+    });
+  });
+});
+/* alkmaar image below */
+function changeImageAlkmaar() {
+  var image = document.getElementById('netherlandsmap');
+  image.src = 'languages/alkmaarblog.png'; // Replace 'new-image.jpg' with the path to your new local image
+}
+    </script>
 
 <!--end of texts-->
       <!--blogs line-->
