@@ -50,7 +50,8 @@
     </script>
 
     <!--below is the Blog itself-->
-    <h2 id="blogh2">Three Blogs that I try to keep updated as much as possible</h2>
+    <h2 id="blogh2">Click any blog below</h2>
+    <br>
     <br>
     <h2 id="blognotice">Note: you may need to double-tap on iOS devices</h2>
     
@@ -70,7 +71,6 @@
           <span class="subtext">Join me as I get fluent in Dutch</span>
         </li>
       </ul>
-      <br>
 
  <!--text of each blog-->
     <!--politics-->
@@ -168,31 +168,27 @@ Factors contributing to a general tendency toward Trump over Biden nationally in
         <h3>Join me as I share my journeys learning languages!</h3>
         <h2>Chapter 1: Big Plans in the Lowlands</h2>
         <h3>August 2023 — The month I get fluent in Dutch</h3>
-        <div id="netherlandsmappbox"> <!-- below is the actual blog content -->
-            <p class="ptextwidth" style="font-size:regular">
-              Click on a the name of a city to find out more
-            <img src="languages\netherlandsblog.png" id="netherlandsmap">
+        <div class="map-and-cities-container">
+          <div id="netherlandsmappbox">
+            <p class="ptextwidth">Click on a the name of a city to find out more
+            <img src="languages\netherlandsblog.png" id="netherlandsmap" onlick="changeImageRegular()">
           </p>
-          <p class="ptextwidth" style="font-size: regular" id="dutchblogadjust">
-            <strong>Idee - Idea</strong>
-            <br>
-This summer I will be traveling to Amsterdam to study Dutch at the University of Amsterdam’s summer intensive Dutch program for nearly all of August. 
-        </p>
-        </div>
-        <div class="listofcities" style="position:relative; display:block">
-          <div class="nclickable" id="nAlkmaar"><h3 style="top:50em; left: 20em" onclick="changeImageAlkmaar()">Alkmaar</h3></div>
-          <div class="nclickable" id="nAmersfoort"><h3 style="top:20em; left: 30em">Amersfoort</h3></div>
-          <div class="nclickable" id="nAmsterdam"><h3 style="top:10em; left: 0em">Amsterdam</h3></div>
-          <div class="nclickable" id="nAntwerp"><h3 style="top:10em; left: 20em">Antwerp</h3></div>
-          <div class="nclickable" id="nBaarle"><h3 style="top:20em; left: 30em">Baarle</h3></div>
-          <div class="nclickable" id="nBrugge"><h3 style="top:20em; left: 20em">Brugge</h3></div>
-          <div class="nclickable" id="nDelft"><h3 style="top:30em; left: 10em">Delft</h3></div>
-          <div class="nclickable" id="nDen Haag"><h3 style="top:20em; left: 0em">Den Haag</h3></div>
-          <div class="nclickable" id="nEindhoven"><h3 style="top:0em; left: 20em">Eindhoven</h3></div>
-          <div class="nclickable" id="nOtterlo"><h3 style="top:20em; left: 10em">Otterlo</h3></div>
-          <div class="nclickable" id="nRotterdam"><h3 style="top:20em; left: 40em">Rotterdam</h3></div>
-          <div class="nclickable" id="nUtrecht"><h3 style="top:40em; left: 30em">Utrecht</h3></div>
-        </div>
+          </div>
+          <div class="listofcities">
+            <div class="nclickable" id="nAlkmaar"><h3 onclick="changeImageAlkmaar()">Alkmaar</h3></div>
+            <div class="nclickable" id="nAmersfoort"><h3 onclick="changeImageAmersfoort()">Amersfoort</h3></div>
+            <div class="nclickable" id="nAmsterdam"><h3 onclick="changeImageAmsterdam()">Amsterdam</h3></div>
+            <div class="nclickable" id="nAntwerp"><h3 onclick="changeImageAntwerp()">Antwerp</h3></div>
+            <div class="nclickable" id="nBaarle"><h3 onclick="changeImageBaarle()">Baarle</h3></div>
+            <div class="nclickable" id="nBrugge"><h3 onclick="changeImageBrugge()">Brugge</h3></div>
+            <div class="nclickable" id="nDelft"><h3 onclick="changeImageDelft()">Delft</h3></div>
+            <div class="nclickable" id="nDen_Haag"><h3 onclick="changeImageDenHaag()">Den Haag</h3></div>
+            <div class="nclickable" id="nEindhoven"><h3 onclick="changeImageEindhoven()">Eindhoven</h3></div>
+            <div class="nclickable" id="nOtterlo"><h3 onclick="changeImageOtterlo()">Otterlo</h3></div>
+            <div class="nclickable" id="nRotterdam"><h3 onclick="changeImageRotterdam()">Rotterdam</h3></div>
+            <div class="nclickable" id="nUtrecht"><h3 onclick="changeImageUtrecht()">Utrecht</h3></div>
+          </div>
+      </div>
     </div>
     </div>
 
@@ -213,10 +209,110 @@ This summer I will be traveling to Amsterdam to study Dutch at the University of
     });
   });
 });
+
+/* default netherlands map below */
+function changeImageRegular() {
+    var regularimage = 
+    document.getElementById('alkmaarimage') ||
+    document.getElementById('amersfoortimage') ||
+    document.getElementById('amsterdamimage') ||
+    document.getElementById('antwerpimage') ||
+    document.getElementById('baarleimage') ||
+    document.getElementById('bruggeimage') ||
+    document.getElementById('delftimage') ||
+    document.getElementById('denhaagimage') ||
+    document.getElementById('eindhovenimage') ||
+    document.getElementById('otterloimage') ||
+    document.getElementById('rotterdamtimage') ||
+    document.getElementById('utrechtimage');
+    regularimage.src = 'languages/netherlandsblog.png';
+    regularimage.id = "netherlandsmap";
+}
+
+
 /* alkmaar image below */
 function changeImageAlkmaar() {
-  var image = document.getElementById('netherlandsmap');
-  image.src = 'languages/alkmaarblog.png'; // Replace 'new-image.jpg' with the path to your new local image
+    var alkmaarimage = document.getElementById('netherlandsmap');
+    alkmaarimage.src = 'languages/alkmaarblog.png';
+    image.id = "alkmaarimage";
+}
+
+
+/* amersfoort image below */
+function changeImageAmersfoort() {
+    var amersfoortimage = document.getElementById('netherlandsmap');
+    amersfoortimage.src = 'languages/amersfoortblog.png';
+    image.id = "amersfoortimage";
+}
+
+/* amsterdam image below */
+function changeImageAmsterdam() {
+    var amsterdamimage = document.getElementById('netherlandsmap');
+    amsterdamimage.src = 'languages/amsterdamblog.png';
+    image.id = "amsterdamimage";
+}
+
+/* antwerp image below */
+function changeImageAntwerp() {
+    var antwerpimage = document.getElementById('netherlandsmap');
+    antwerpimage.src = 'languages/antwerpblog.png';
+    image.id = "antwerpimage";
+}
+
+/* baarle image below */
+function changeImageBaarle() {
+    var baarleimage = document.getElementById('netherlandsmap');
+    baarleimage.src = 'languages/baarleblog.png';
+    image.id = "baarleimage";
+}
+
+/* brugge image below */
+function changeImageBrugge() {
+    var bruggeimage = document.getElementById('netherlandsmap');
+    bruggeimage.src = 'languages/bruggeblog.png';
+    image.id = "bruggeimage";
+}
+
+/* delft image below */
+function changeImageDelft() {
+    var delftimage = document.getElementById('netherlandsmap');
+    delftimage.src = 'languages/delftblog.png';
+    image.id = "delftimage";
+}
+
+/* den haag image below */
+function changeImageDenHaag() {
+    var denhaagimage = document.getElementById('netherlandsmap');
+    denhaagimage.src = 'languages/denhaagblog.png';
+    image.id = "denhaagimage";
+}
+
+/* eindhoven image below */
+function changeImageEindhoven() {
+    var eindhovenimage = document.getElementById('netherlandsmap');
+    eindhovenimage.src = 'languages/eindhovenblog.png';
+    image.id = "eindhovenimage";
+}
+
+/* otterlo image below */
+function changeImageOtterlo() {
+    var otterloimage = document.getElementById('netherlandsmap');
+    otterloimage.src = 'languages/otterloblog.png';
+    image.id = "otterloimage";
+}
+
+/* rotterdam image below */
+function changeImageRotterdam() {
+    var rotterdamimage = document.getElementById('netherlandsmap');
+    rotterdamimage.src = 'languages/rotterdamblog.png';
+    image.id = "rotterdamimage";
+}
+
+/* utrecht image below */
+function changeImageUtrecht() {
+    var utrechtimage = document.getElementById('netherlandsmap');
+    utrechtimage.src = 'languages/utrechtblog.png';
+    image.id = "utrechtimage";
 }
     </script>
 

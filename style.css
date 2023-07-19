@@ -277,7 +277,7 @@ hr {
 .blog-link-list {
     position: absolute;
     list-style: none;
-    margin-top: 145px;
+    margin-top: 125px;
     padding-left: 0px;
     margin-left: 3%;
     font-size: x-large;
@@ -353,11 +353,109 @@ hr {
   .nclickable {
     cursor: pointer;
     color: #e3e3b0; /* Initial color of the text */
+    text-decoration: none;
+    position: relative;
+    display: inline;
+    margin-bottom: 2em;
+    height: 0.8em;
+
   }
   .nclicked {
     color: white; /* Color of the text after clicking */
     text-decoration: underline;
   }
+
+  #nAlkmaar {
+    position: absolute;
+    top: 619px; /* y value */
+    left: 375px; /* x value */
+    border-left: -1em;
+  }
+
+  #nAmersfoort {
+    position: absolute;
+    top: 717px; /* y value */
+    left: 466px; /* x value */
+  }
+
+  #nAmsterdam {
+    position: absolute;
+    top: 669px; /* y value */
+    left: 406px; /* x value */
+  }
+
+  #nAntwerp {
+    position: absolute;
+    top: 953px; /* y value */
+    left: 273px; /* x value */
+  }
+
+  #nBaarle {
+    position: absolute;
+    top: 900px; /* y value */
+    left: 356px; /* x value */
+  }
+
+  #nBrugge {
+    position: absolute;
+    top: 940px; /* y value */
+    left: 122px; /* x value */
+  }
+
+  #nDelft {
+    position: absolute;
+    top: 749px; /* y value */
+    left: 330px; /* x value */
+    z-index: 2;
+  }
+
+  #nDen_Haag {
+    position: absolute;
+    top: 712px; /* y value */
+    left: 258px; /* x value */
+    z-index: 1;
+  }
+
+  #nEindhoven {
+    position: absolute;
+    top: 872px; /* y value */
+    left: 474px; /* x value */
+  }
+
+  #nOtterlo {
+    position: absolute;
+    top: 754px; /* y value */
+    left: 440px; /* x value */
+  }
+
+  #nRotterdam {
+    position: absolute;
+    top: 806px; /* y value */
+    left: 288px; /* x value */
+  }
+
+  #nUtrecht {
+    position: absolute;
+    top: 770px; /* y value */
+    left: 376px; /* x value */
+  }
+
+  .listofcities {
+    border-top: 2em;
+    border-bottom: 2.2em;
+  }
+
+  #dutchblogadjust {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 36.6em;
+    min-width: 34em;
+    margin-left: .15em;
+    margin-right: .15em;
+  }
+
+  /* end of dutch stuff */
 
   #blogsline {
     position: relative;
@@ -379,6 +477,7 @@ hr {
 }
 
 #netherlandsmappbox {
+    position: relative;
     width: 100%;
     height: 100%;
     max-width: 50em;
@@ -404,6 +503,7 @@ hr {
     width: 91.5%;
     word-wrap: break-word;
     margin-bottom: 7em;
+    font-size: small;
 }
 
 #allblogs h3 { 
@@ -543,6 +643,15 @@ hr {
 }
 
                                         /* mobile only */
+
+@media only screen and (max-width: 840px) {
+    /* dutch stuff */
+    #nAlkmaar, #nAmersfoort, #nAmsterdam, #nAntwerp, #nBaarle, #nBrugge, #nDelft, #nDen_Haag, #nEindhoven, #nOtterlo, #nRotterdam, #nUtrecht{
+        position: relative;
+        top: -5em;
+        left: 0px;
+    }
+}
 
 @media only screen and (max-width: 550px) {
 
@@ -700,7 +809,7 @@ hr {
         margin-top: 85px;
         margin-left: 3%;
         display: block;
-        font-size: x-small;
+        font-size: small;
         font-style: italic;
         padding-right: 12px;
         visibility: visible;
@@ -757,6 +866,10 @@ hr {
     .pbox img {
         min-width: 22em;
         width: 80vw;
+    }
+
+    .ptextwidth {
+        font-size: 1em !important;
     }
 
     /* contact */
