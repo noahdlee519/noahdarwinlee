@@ -447,12 +447,12 @@ hr {
 
   #dutchblogadjust {
     position: relative;
-    width: 100%;
+    width: 36.54em;
+    min-width: 10em;
     height: 100%;
-    max-width: 36.6em;
-    min-width: 34em;
     margin-left: .15em;
     margin-right: .15em;
+    margin-top: -3em;
   }
 
   /* end of dutch stuff */
@@ -650,6 +650,10 @@ hr {
         position: relative;
         top: -5em;
         left: 0px;
+    }
+
+    #dutchblogadjust {
+        width: 91.6%;
     }
 }
 
