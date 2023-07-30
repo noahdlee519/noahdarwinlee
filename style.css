@@ -232,10 +232,19 @@ hr {
     border-radius: 1em;
 }
 
+a {
+    text-decoration: none;
+}
+
 .project {
     margin-top: 11px;
     font-size: x-large;
     margin-left: -.2%;
+    color: #e3e3b0;
+}
+
+.project:hover {
+    color: #f2f3f4;
 }
 
 .project1 {
