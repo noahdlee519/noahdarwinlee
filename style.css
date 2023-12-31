@@ -898,8 +898,9 @@ a {
         text-align: center;
         position: relative;
         margin-top: 4em;
-        height: 12em; 
-        width: 12.1em;
+        height: 13em; 
+        width: 12em;
+        border: 6px solid #e3e3b0;
     }
     
     .abouttext {
