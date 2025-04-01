@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sora">
+    <link href='style.css' rel='stylesheet'>
+    <link rel="shortcut icon" href="ndlicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noah Darwin Lee</title>
+</head>
+<body>
+    <div class="header">
+        <br class="topbit">
+        <div class="header-nav">
+            <li>
+                <a href="portfolio.html" class="header-nav-button">
+                    <span>Portfolio</span>
+                </a>
+            </li>
+            <li>
+                <a href="projects.html" class="header-nav-button">
+                    <span>Projects</span>
+                </a>
+            </li>
+            <li>
+                <a href="blog.html" class="header-nav-button" style="color:#ffffff">
+                    <span>[Blog]</span>
+                </a>
+            </li>
+            <li>
+                <a href="contact.html" class="header-nav-button">
+                    <span>Contact</span>
+                </a>
+            </li>
+            <li>
+                <a href="about.html" class="header-nav-button">
+                    <span>About</span>
+                </a>
+            </li>
+            <div class="header-icon">
+            <img src="ndlicon.png" class="header-icon" onclick="mainMenu()">
+        </div>
+        </div>
+        <hr class="hr1"/>
+    </div>
+    <script>
+        function mainMenu() {
+            window.location.href = "index.html";
+    }
+
+    </script>
+
+    <!--below is the Blog itself-->
+    <h2 id="blogh2">Click any blog below</h2>
+    <br>
+    <h2 id="blognotice">Note: you may need to double-tap on iOS</h2>
+    
+    <ul class="blog-link-list">
+        <li>
+          <span id="politics">Politics</span>
+          <span class="subtext">TBD</span>
+        </li>
+        <br>
+        <li>
+          <span id="unrealpolitics">TBD</span>
+          <span class="subtext">TBD</span>
+        </li>
+        <br>
+        <li>
+          <span id="languages">Languages</span>
+          <span class="subtext">Join me as I get fluent in Dutch</span>
+        </li>
+      </ul>
+
+ <!--text of each blog-->
+ 
+
+    <div id="allblogs">
+      <div id="politics-blog">
+        <h2 style="display:inline-block">POLITICS</h2>
+        <img src="politics/politicsimage.png" id="politicsImage">
+        <h3>TBD</h3>
+        <div class="pbox"> 
+        </div>
+    </div>
+
+      <div id="unrealpolitics-blog">
+        <h2 style="display:inline-block">TBD</h2>
+        <img src="unrealpolitics/unrealpoliticsimage.png" id="unrealpoliticsImage">
+        <h3>TBD</h3>
+        <div class="pbox">
+        </div>
+    </div>
+      <!--languages-->
+      <div id="languages-blog">
+        <h2 style="display:inline-block">LANGUAGES</h2>
+        <img src="languages/languagesimage.png" id="languagesImage">
+        <h3>Join me as I share my experience learning different languages!</h3>
+        <h2>Dutch</h2>
+        <h3>August 2023 — The month I get fluent in Dutch</h3>
+        <div class="map-and-cities-container">
+          <div id="netherlandsmappbox">
+            <p class="ptextwidth">Click on the name of a city to learn more
+            <img src="languages\netherlandsblog.png" id="netherlandsmap" onlick="changeImageRegular()">
+          </p>
+          </div>
+          <div class="listofcities">
+            <div class="nclickable" id="nAlkmaar"><h3 onclick="changeImageAlkmaar()">Alkmaar</h3></div>
+            <div class="nclickable" id="nAmersfoort"><h3 onclick="changeImageAmersfoort()">Amersfoort</h3></div>
+            <div class="nclickable" id="nAmsterdam"><h3 onclick="changeImageAmsterdam()">Amsterdam</h3></div>
+            <div class="nclickable" id="nAntwerp"><h3 onclick="changeImageAntwerp()">Antwerp</h3></div>
+            <div class="nclickable" id="nBaarle"><h3 onclick="changeImageBaarle()">Baarle</h3></div>
+            <div class="nclickable" id="nBrugge"><h3 onclick="changeImageBrugge()">Brugge</h3></div>
+            <div class="nclickable" id="nDelft"><h3 onclick="changeImageDelft()">Delft</h3></div>
+            <div class="nclickable" id="nDen_Haag"><h3 onclick="changeImageDenHaag()">Den Haag</h3></div>
+            <div class="nclickable" id="nEindhoven"><h3 onclick="changeImageEindhoven()">Eindhoven</h3></div>
+            <div class="nclickable" id="nOtterlo"><h3 onclick="changeImageOtterlo()">Otterlo</h3></div>
+            <div class="nclickable" id="nRotterdam"><h3 onclick="changeImageRotterdam()">Rotterdam</h3></div>
+            <div class="nclickable" id="nUtrecht"><h3 onclick="changeImageUtrecht()">Utrecht</h3></div>
+          </div>
+          <p id="dutchblogadjust">For nearly all of August I will be in the Low Countries studying Dutch at the University of Amsterdam. Besides taking classes, I'm sure that my Dutch language skills will improve naturally by exploring the country and talking with the people I meet. Use this interactive tool to see where I plan to visit and what I plan to do!</p>
+      </div>
+      <br>
+      <br>
+    </div>
+    </div>
+
+
+    <!-- this is the script for the dutch city clicked -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+  var clickableElements = document.querySelectorAll('.nclickable');
+  var lastClickedElement = null; // Keep track of the last clicked element
+
+  clickableElements.forEach(function(element) {
+    element.addEventListener('click', function() {
+      if (lastClickedElement !== null) {
+        lastClickedElement.classList.remove('nclicked'); // Remove the "clicked" class from the last clicked element
+      }
+
+      this.classList.add('nclicked');
+      lastClickedElement = this; // Update the last clicked element
+    });
+  });
+});
+
+/* default netherlands map below */
+function changeImageRegular() {
+    var regularimage = 
+    document.getElementById('alkmaarimage') ||
+    document.getElementById('amersfoortimage') ||
+    document.getElementById('amsterdamimage') ||
+    document.getElementById('antwerpimage') ||
+    document.getElementById('baarleimage') ||
+    document.getElementById('bruggeimage') ||
+    document.getElementById('delftimage') ||
+    document.getElementById('denhaagimage') ||
+    document.getElementById('eindhovenimage') ||
+    document.getElementById('otterloimage') ||
+    document.getElementById('rotterdamtimage') ||
+    document.getElementById('utrechtimage');
+    regularimage.src = 'languages/netherlandsblog.png';
+    regularimage.id = "netherlandsmap";
+}
+
+
+/* alkmaar image below */
+function changeImageAlkmaar() {
+    var alkmaarimage = document.getElementById('netherlandsmap');
+    alkmaarimage.src = 'languages/alkmaarblog.png';
+    image.id = "alkmaarimage";
+}
+
+
+/* amersfoort image below */
+function changeImageAmersfoort() {
+    var amersfoortimage = document.getElementById('netherlandsmap');
+    amersfoortimage.src = 'languages/amersfoortblog.png';
+    image.id = "amersfoortimage";
+}
+
+/* amsterdam image below */
+function changeImageAmsterdam() {
+    var amsterdamimage = document.getElementById('netherlandsmap');
+    amsterdamimage.src = 'languages/amsterdamblog.png';
+    image.id = "amsterdamimage";
+}
+
+/* antwerp image below */
+function changeImageAntwerp() {
+    var antwerpimage = document.getElementById('netherlandsmap');
+    antwerpimage.src = 'languages/antwerpblog.png';
+    image.id = "antwerpimage";
+}
+
+/* baarle image below */
+function changeImageBaarle() {
+    var baarleimage = document.getElementById('netherlandsmap');
+    baarleimage.src = 'languages/baarleblog.png';
+    image.id = "baarleimage";
+}
+
+/* brugge image below */
+function changeImageBrugge() {
+    var bruggeimage = document.getElementById('netherlandsmap');
+    bruggeimage.src = 'languages/bruggeblog.png';
+    image.id = "bruggeimage";
+}
+
+/* delft image below */
+function changeImageDelft() {
+    var delftimage = document.getElementById('netherlandsmap');
+    delftimage.src = 'languages/delftblog.png';
+    image.id = "delftimage";
+}
+
+/* den haag image below */
+function changeImageDenHaag() {
+    var denhaagimage = document.getElementById('netherlandsmap');
+    denhaagimage.src = 'languages/denhaagblog.png';
+    image.id = "denhaagimage";
+}
+
+/* eindhoven image below */
+function changeImageEindhoven() {
+    var eindhovenimage = document.getElementById('netherlandsmap');
+    eindhovenimage.src = 'languages/eindhovenblog.png';
+    image.id = "eindhovenimage";
+}
+
+/* otterlo image below */
+function changeImageOtterlo() {
+    var otterloimage = document.getElementById('netherlandsmap');
+    otterloimage.src = 'languages/otterloblog.png';
+    image.id = "otterloimage";
+}
+
+/* rotterdam image below */
+function changeImageRotterdam() {
+    var rotterdamimage = document.getElementById('netherlandsmap');
+    rotterdamimage.src = 'languages/rotterdamblog.png';
+    image.id = "rotterdamimage";
+}
+
+/* utrecht image below */
+function changeImageUtrecht() {
+    var utrechtimage = document.getElementById('netherlandsmap');
+    utrechtimage.src = 'languages/utrechtblog.png';
+    image.id = "utrechtimage";
+}
+    </script>
+
+<!--end of texts-->
+      <!--blogs line-->
+      <div id="blogsline">
+      </div>
+
+      <!-- footers -->
+      <div class="endspacesmall"></div>
+    
+<script>
+const buttons = document.querySelectorAll('.blog-link-list span');
+const languagesImage = document.getElementById('languages-blog');
+const politicsImage = document.getElementById('politics-blog');
+const unrealpoliticsImage = document.getElementById('unrealpolitics-blog');
+var anyblogclicked = '0';
+
+buttons.forEach(button => {
+  const subtext = button.nextElementSibling;
+  
+  button.addEventListener('mouseover', () => {
+    subtext.classList.add('active', 'fade-in');
+  });
+
+  button.addEventListener('mouseout', () => {
+    subtext.classList.remove('active', 'fade-in');
+  });
+  button.addEventListener('click', () => {
+    
+    // Hide all images
+    politicsImage.style.opacity = '0';
+    unrealpoliticsImage.style.opacity = '0';
+    languagesImage.style.opacity = '0';
+    // Display the corresponding image
+    if (button.id === 'politics') {
+      politicsImage.style.opacity = '1';
+      politics.style.color = '#ffffff';
+      unrealpolitics.style.color = '#e3e3b0';
+      languages.style.color = '#e3e3b0';
+      anyblogclicked = '0';
+    }
+    if (button.id === 'unrealpolitics') {
+      unrealpoliticsImage.style.opacity = '1';
+      unrealpolitics.style.color = '#ffffff';
+      politics.style.color = '#e3e3b0';
+      languages.style.color = '#e3e3b0';
+      anyblogclicked = '0';
+    }
+    if (button.id === 'languages') {
+      languagesImage.style.opacity = '1';
+      languages.style.color = '#ffffff';
+      politics.style.color = '#e3e3b0';
+      unrealpolitics.style.color = '#e3e3b0';
+      anyblogclicked = '1';
+    }
+    function disableScrolling() {
+    document.body.style.overflow = "hidden";
+  }
+
+  function enableScrolling() {
+    document.body.style.overflow = "auto";
+  }
+  //calls test if scrolling when no blog is present
+    checkScrolling();
+  });
+
+  //prevent scrolling when no blog is present
+  function disableScrolling() {
+    document.body.style.overflow = "hidden";
+    var paragraphs = document.getElementsByTagName('p');
+  for (var i = 0; i < paragraphs.length; i++) {
+    paragraphs[i].style.cursor = "default";
+  }
+  }
+
+  function enableScrolling() {
+    document.body.style.overflow = "auto";
+    var paragraphs = document.getElementsByTagName('p');
+  for (var i = 0; i < paragraphs.length; i++) {
+    paragraphs[i].style.cursor = "auto";
+  }
+  }
+
+  function checkScrolling() {
+    if (anyblogclicked === '0') {
+        disableScrolling();
+    } else {
+        enableScrolling();
+    }
+}
+    checkScrolling();
+});
+
+</script>
+
+    <!--below is the footer-->
+
+<div class="footer"><span id="year"> </span><span> Noah Darwin Lee &nbsp;|&nbsp; 2024</span></div>
+    </body>
+    </html>
