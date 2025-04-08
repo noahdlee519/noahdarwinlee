@@ -120,9 +120,22 @@ hr {
 /* Below is the Portfolio section */
 
 #allworks {
-    display: inline-block;
-    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem; /* adjust spacing between items */
+    justify-content: center; /* center items horizontally */
+    align-items: flex-start; /* align items at the top */
+    padding: 2rem;
 }
+
+#allworks > div {
+    flex: 0 1 300px; /* grow/shrink, base width */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
 
 .portfolioli {
     list-style: none;
@@ -578,9 +591,9 @@ a {
 }
 
 #headshot {
-    margin-top: 4.3em;
+    margin-top: 6.3em;
     height: 350px; 
-    width: 295px;
+    width: 275px;
     border: 4.7px solid #e3e3b0;
     
 }
@@ -589,8 +602,8 @@ a {
     margin-top: 5px;
     position: relative;
     font-size: normal;
-    padding-left: calc(13% + (100vw - 700px) * (1 - 30) / (700 -  1000));
-    padding-right: calc(13% + (100vw - 700px) * (1 - 30) / (700 -  1000));
+    padding-left: calc(16% + (100vw - 700px) * (1 - 30) / (700 -  1000));
+    padding-right: calc(16% + (100vw - 700px) * (1 - 30) / (700 -  1000));
     text-align: center;
     align-items: center;
 }
@@ -902,7 +915,7 @@ a {
         position: relative;
         margin-top: 4em;
         height: 14em; 
-        width: 12em;
+        width: 14em;
         border: 6px solid #e3e3b0;
     }
     
@@ -941,4 +954,5 @@ a {
         background: linear-gradient(transparent, #e68019, #e68019, #e68019);
         z-index: 9;
     }
+}
 }
