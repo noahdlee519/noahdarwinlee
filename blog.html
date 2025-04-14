@@ -8,6 +8,7 @@
     <title>Noah Darwin Lee</title>
 </head>
 <body>
+  <div class="page-wrapper">
     <div class="header">
         <br class="topbit">
         <div class="header-nav">
@@ -52,11 +53,11 @@
     <!--below is the Blog itself-->
     <h2 id="blogh2">Click any blog below</h2>
     <br>
-    <h2 id="blognotice">Note: you may need to double-tap on iOS</h2>
+    <h2 id="blognotice">Note: you may need to double-tap on mobile</h2>
     
     <ul class="blog-link-list">
         <li>
-          <span id="politics">Politics</span>
+          <span id="politics">TBD</span>
           <span class="subtext">TBD</span>
         </li>
         <br>
@@ -67,7 +68,7 @@
         <br>
         <li>
           <span id="languages">Languages</span>
-          <span class="subtext">Join me as I get fluent in Dutch</span>
+          <span class="subtext"></span>
         </li>
       </ul>
 
@@ -76,7 +77,7 @@
 
     <div id="allblogs">
       <div id="politics-blog">
-        <h2 style="display:inline-block">POLITICS</h2>
+        <h2 style="display:inline-block">TBD</h2>
         <img src="politics/politicsimage.png" id="politicsImage">
         <h3>TBD</h3>
         <div class="pbox"> 
@@ -100,7 +101,7 @@
         <div class="map-and-cities-container">
           <div id="netherlandsmappbox">
             <p class="ptextwidth">Click on the name of a city to learn more
-            <img src="languages\netherlandsblog.png" id="netherlandsmap" onlick="changeImageRegular()">
+            <img src="languages\netherlandsblog.png" id="netherlandsmap" onclick="changeImageRegular()">
           </p>
           </div>
           <div class="listofcities">
@@ -265,85 +266,44 @@ const unrealpoliticsImage = document.getElementById('unrealpolitics-blog');
 var anyblogclicked = '0';
 
 buttons.forEach(button => {
-  const subtext = button.nextElementSibling;
-  
-  button.addEventListener('mouseover', () => {
-    subtext.classList.add('active', 'fade-in');
-  });
-
-  button.addEventListener('mouseout', () => {
-    subtext.classList.remove('active', 'fade-in');
-  });
   button.addEventListener('click', () => {
-    
-    // Hide all images
-    politicsImage.style.opacity = '0';
-    unrealpoliticsImage.style.opacity = '0';
-    languagesImage.style.opacity = '0';
-    // Display the corresponding image
-    if (button.id === 'politics') {
-      politicsImage.style.opacity = '1';
-      politics.style.color = '#ffffff';
-      unrealpolitics.style.color = '#e3e3b0';
-      languages.style.color = '#e3e3b0';
-      anyblogclicked = '0';
-    }
-    if (button.id === 'unrealpolitics') {
-      unrealpoliticsImage.style.opacity = '1';
-      unrealpolitics.style.color = '#ffffff';
-      politics.style.color = '#e3e3b0';
-      languages.style.color = '#e3e3b0';
-      anyblogclicked = '0';
-    }
-    if (button.id === 'languages') {
-      languagesImage.style.opacity = '1';
-      languages.style.color = '#ffffff';
-      politics.style.color = '#e3e3b0';
-      unrealpolitics.style.color = '#e3e3b0';
-      anyblogclicked = '1';
-    }
-    function disableScrolling() {
-    document.body.style.overflow = "hidden";
-  }
+    // Hide all blog sections
+    [politicsImage, unrealpoliticsImage, languagesImage].forEach(section => {
+  section.classList.remove('visible');
+});
 
-  function enableScrolling() {
-    document.body.style.overflow = "auto";
-  }
-  //calls test if scrolling when no blog is present
+if (button.id === 'politics') {
+  politicsImage.classList.add('visible');
+}
+if (button.id === 'unrealpolitics') {
+  unrealpoliticsImage.classList.add('visible');
+}
+if (button.id === 'languages') {
+  languagesImage.classList.add('visible');
+}
+
+    // Update button colors
+    document.getElementById('politics').style.color = (button.id === 'politics') ? '#ffffff' : '#e3e3b0';
+    document.getElementById('unrealpolitics').style.color = (button.id === 'unrealpolitics') ? '#ffffff' : '#e3e3b0';
+    document.getElementById('languages').style.color = (button.id === 'languages') ? '#ffffff' : '#e3e3b0';
+
+    anyblogclicked = (button.id === 'languages') ? '1' : '0';
     checkScrolling();
   });
-
-  //prevent scrolling when no blog is present
-  function disableScrolling() {
-    document.body.style.overflow = "hidden";
-    var paragraphs = document.getElementsByTagName('p');
-  for (var i = 0; i < paragraphs.length; i++) {
-    paragraphs[i].style.cursor = "default";
-  }
-  }
-
-  function enableScrolling() {
-    document.body.style.overflow = "auto";
-    var paragraphs = document.getElementsByTagName('p');
-  for (var i = 0; i < paragraphs.length; i++) {
-    paragraphs[i].style.cursor = "auto";
-  }
-  }
-
-  function checkScrolling() {
-    if (anyblogclicked === '0') {
-        disableScrolling();
-    } else {
-        enableScrolling();
-    }
-}
-    checkScrolling();
 });
+
 
 </script>
 
-    <!--below is the footer-->
+<!--below is the footer-->
+<div style="margin-bottom: 50px;"></div>
 
-<div class="footer"><span id="year"> </span><span> Noah Darwin Lee &nbsp;|&nbsp; 2024</span></div>
-    </body>
+<div class="footer">
+  <div class="footer-content">
+    <span id="year"></span> Noah Darwin Lee &nbsp;|&nbsp; 2025
+  </div>
+</div>
+</div>
+
+</body>
     </html>
