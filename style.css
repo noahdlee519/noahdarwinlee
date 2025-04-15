@@ -149,6 +149,13 @@ hr {
     cursor: default;
 }
 
+.lightbox-caption {
+    margin-top: 1em;
+    color: #e3e3b0;
+    font-size: 1.2em;
+    text-align: center;
+    max-width: 100%;
+  }
 
 .lightbox-close {
     position: absolute;
@@ -164,6 +171,31 @@ hr {
 .lightbox-close:hover {
     color: white;
 }
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 3em;
+    background: none;
+    color: #e3e3b0;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+  }
+  
+  #prevBtn {
+    left: 5%;
+    padding: 40px;
+  }
+  #nextBtn {
+    right: 5%;
+    padding: 40px;
+  }
+  
+  .lightbox-nav:hover {
+    color: white;
+  }  
 
 .hidden {
     display: none;
