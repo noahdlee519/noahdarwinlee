@@ -108,8 +108,38 @@ function scrollToTop() {
     <button class="filter-btn" data-filter="diagrams">Diagrams</button>
     <button class="filter-btn" data-filter="paintings">Paintings</button>
 </div>
+
+
 <!--below are the actual works-->
+
 <div id="allworks">
+    <div id="3/20/25" data-category="paintings">
+        <img src="portfolioimages/Asking for a Favor.jpg" id="AskingforaFavor" class="portfolioimage clickable-img" data-full="portfolioimages/Asking for a Favor.jpg">
+        <p class="portfoliodescriptions1new">"Asking for a Friend"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">6x8"</p>
+        <p class="portfoliodescriptions4">March 20, 2025</p>
+    </div>
+    <div id="2/20/25" data-category="diagrams">
+        <img src="portfolioimages/Printers.jpeg" id="Printers" class="portfolioimage clickable-img" data-full="portfolioimages/Printers.jpeg">
+        <p class="portfoliodescriptions1new">"Printers on Campus"</p>
+        <p class="portfoliodescriptions2">Adobe Illustrator</p>
+        <p class="portfoliodescriptions3">and UChicago data</p>
+        <p class="portfoliodescriptions4">February 20, 2025</p>
+    </div>
+    <div id="1/28/25" data-category="paintings">
+        <img src="portfolioimages/Triptych.png" 
+        id="Triptych" 
+        class="portfolioimage clickable-img" 
+        data-index="0" 
+        data-images="portfolioimages/The Reception of a Guest.jpg, portfolioimages/Superfluous Man.jpg, portfolioimages/A Second Troy.jpg"
+        data-titles="1/3 - The Reception of a Guest, 2/3 - Superfluous Man, 3/3 - A Second Troy"
+        data-full="portfolioimages/Triptych.png" />    
+        <p class="portfoliodescriptions1new">"Triptych"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">8x11"</p>
+        <p class="portfoliodescriptions4">January 28, 2025</p>
+    </div>
     <div id="11/8/24" data-category="paintings buildings">
         <img src="portfolioimages/BabyContest.png" id="BabyContest" class="portfolioimage clickable-img" data-full="portfolioimages/BabyContest.png">
         <p class="portfoliodescriptions1new">"Baby Contest"</p>
@@ -139,7 +169,7 @@ function scrollToTop() {
         <p class="portfoliodescriptions4">June 19, 2023</p>
     </div>
     <div id="6/4/23" data-category="buildings">
-            <img src="portfolioimages/Delancey and Chrystie.png" id="DelanceyandChrystie" class="portfolioimage clickable-img" data-full="portfolioimages/Delancey and Chrystie.png">
+            <img src="portfolioimages/Delancey and Chrystie.jpeg" id="DelanceyandChrystie" class="portfolioimage clickable-img" data-full="portfolioimages/Delancey and Chrystie.jpeg">
         <p class="portfoliodescriptions1">"Delancey and Chrystie"</p>
         <p class="portfoliodescriptions2">Pen on paper</p>
         <p class="portfoliodescriptions3">Micron 0.5mm</p>
@@ -169,7 +199,7 @@ function scrollToTop() {
             <img src="portfolioimages/Sixth Street.jpg" id="SixthStreet" class="portfolioimage clickable-img" data-full="portfolioimages/Sixth Street.jpg">
         <p class="portfoliodescriptions1">"Proposed Metro + MetroLink Network in Los Angeles"</p>
         <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
-        <p class="portfoliodescriptions2">And various GIS applications</p>
+        <p class="portfoliodescriptions2">and R</p>
         <p class="portfoliodescriptions4">March 26, 2023</p>
     </div>
     <div id="2/23/23" data-category="diagrams">
@@ -182,7 +212,7 @@ function scrollToTop() {
             <img src="portfolioimages/Consulates.jpg" id="Consulates" class="portfolioimage clickable-img" data-full="portfolioimages/Consulates.jpg">
         <p class="portfoliodescriptions1">"Chinese, Indian, and Philippine Consulates in the United States"</p>
         <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
-        <p class="portfoliodescriptions2">And QGIS</p>
+        <p class="portfoliodescriptions2">and QGIS</p>
         <p class="portfoliodescriptions4">December 11, 2022</p>
     </div>
     <div id="5/29/21" data-category="paintings">
@@ -270,53 +300,106 @@ function scrollToTop() {
 <div id="lightbox" class="lightbox hidden">
     <span class="lightbox-close">&times;</span>
     <div class="lightbox-inner">
-      <img id="lightbox-img" src="" alt="">
+      <button id="prevBtn" class="lightbox-nav left">&#10094;</button>
+      
+      <div class="lightbox-content">
+        <img id="lightbox-img" src="" alt="">
+        <div id="lightbox-caption" class="lightbox-caption"></div>
+      </div>
+  
+      <button id="nextBtn" class="lightbox-nav right">&#10095;</button>
     </div>
-  </div>  
+  </div>
+  
+  
 
 <!-- lightbox code -->
 
 
+
 <script>
-    function closeLightbox() {
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-        lightbox.classList.add('hidden');
-        lightboxImg.src = '';
-        document.body.classList.remove('disable-scroll');
+    let currentImageIndex = 0;
+    let currentImageSet = [];
+    
+    function openLightbox(images, startIndex = 0, titles = []) {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+      const caption = document.getElementById('lightbox-caption');
+    
+      currentImageSet = images.map((src, idx) => ({
+        src: src.trim(),
+        title: titles[idx] ? titles[idx].trim() : ''
+      }));
+    
+      currentImageIndex = startIndex;
+    
+      lightboxImg.src = currentImageSet[currentImageIndex].src;
+      caption.textContent = currentImageSet[currentImageIndex].title || '';
+      lightbox.classList.remove('hidden');
+      document.body.classList.add('disable-scroll');
     }
     
-    // Open lightbox on image click
+    function updateLightbox() {
+      const lightboxImg = document.getElementById('lightbox-img');
+      const caption = document.getElementById('lightbox-caption');
+      const current = currentImageSet[currentImageIndex];
+      lightboxImg.src = current.src;
+      caption.textContent = current.title || '';
+    }
+    
+    function showNextImage() {
+      if (currentImageSet.length > 0) {
+        currentImageIndex = (currentImageIndex + 1) % currentImageSet.length;
+        updateLightbox();
+      }
+    }
+    
+    function showPrevImage() {
+      if (currentImageSet.length > 0) {
+        currentImageIndex = (currentImageIndex - 1 + currentImageSet.length) % currentImageSet.length;
+        updateLightbox();
+      }
+    }
+    
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.add('hidden');
+      document.getElementById('lightbox-img').src = '';
+      document.getElementById('lightbox-caption').textContent = '';
+      document.body.classList.remove('disable-scroll');
+    }
+    
     document.querySelectorAll('.clickable-img').forEach(img => {
-        img.addEventListener('click', function () {
-            const fullImgSrc = this.getAttribute('data-full') || this.src;
-            const lightbox = document.getElementById('lightbox');
-            const lightboxImg = document.getElementById('lightbox-img');
-            lightboxImg.src = fullImgSrc;
-            lightbox.classList.remove('hidden');
-            document.body.classList.add('disable-scroll');
-        });
+      img.addEventListener('click', function () {
+        const groupImgs = this.getAttribute('data-images');
+        const titles = this.getAttribute('data-titles');
+        const index = parseInt(this.getAttribute('data-index')) || 0;
+        const fullImg = this.getAttribute('data-full');
+    
+        if (groupImgs) {
+          const imageArray = groupImgs.split(',');
+          const titleArray = titles ? titles.split(',') : [];
+          openLightbox(imageArray, index, titleArray);
+        } else {
+          openLightbox([fullImg], 0, [this.alt || '']);
+        }
+      });
     });
     
-    // Close button (X)
+    document.getElementById('nextBtn').addEventListener('click', showNextImage);
+    document.getElementById('prevBtn').addEventListener('click', showPrevImage);
     document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
     
-    // Click outside image
     document.getElementById('lightbox').addEventListener('click', function (e) {
-    const image = document.getElementById('lightbox-img');
-    const closeBtn = document.querySelector('.lightbox-close');
-
-    if (e.target !== image && e.target !== closeBtn) {
+      const lightboxInner = document.querySelector('.lightbox-inner');
+      if (!lightboxInner.contains(e.target)) {
         closeLightbox();
-    }
+      }
     });
-
     
-    // Escape key
-    document.addEventListener('keydown', function (escape) {
-        if (escape.key === 'Escape') {
-            closeLightbox();
-        }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') showNextImage();
+      if (e.key === 'ArrowLeft') showPrevImage();
     });
     </script>
     
