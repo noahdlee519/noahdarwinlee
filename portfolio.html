@@ -111,8 +111,20 @@ function scrollToTop() {
 
 
 <!--below are the actual works-->
-
 <div id="allworks">
+    <div id="5/13/25" data-category="buildings">
+        <img src="portfolioimages/Pickleball.jpg" id="Pickleball" class="portfolioimage clickable-img" data-full="portfolioimages/Pickleball.jpg">
+        <p class="portfoliodescriptions1new">"Pickleball"</p>
+        <p class="portfoliodescriptions2">Adobe Illustrator</p>
+        <p class="portfoliodescriptions4">May 13, 2025</p>
+    </div>
+    <div id="5/12/25" data-category="paintings buildings">
+        <img src="portfolioimages/Chesterfield Mall.jpg" id="ChesterfieldMall" class="portfolioimage clickable-img" data-full="portfolioimages/Chesterfield Mall.jpg">
+        <p class="portfoliodescriptions1new">"Chesterfield Mall"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">12x16"</p>
+        <p class="portfoliodescriptions4">May 12, 2025</p>
+    </div>
     <div id="3/20/25" data-category="paintings">
         <img src="portfolioimages/Asking for a Favor.jpg" id="AskingforaFavor" class="portfolioimage clickable-img" data-full="portfolioimages/Asking for a Favor.jpg">
         <p class="portfoliodescriptions1new">"Asking for a Friend"</p>
@@ -123,7 +135,7 @@ function scrollToTop() {
     <div id="2/20/25" data-category="diagrams">
         <img src="portfolioimages/Printers.jpeg" id="Printers" class="portfolioimage clickable-img" data-full="portfolioimages/Printers.jpeg">
         <p class="portfoliodescriptions1new">"Printers on Campus"</p>
-        <p class="portfoliodescriptions2">Adobe Illustrator</p>
+        <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
         <p class="portfoliodescriptions3">and UChicago data</p>
         <p class="portfoliodescriptions4">February 20, 2025</p>
     </div>
@@ -133,10 +145,10 @@ function scrollToTop() {
         class="portfolioimage clickable-img" 
         data-index="0" 
         data-images="portfolioimages/The Reception of a Guest.jpg, portfolioimages/Superfluous Man.jpg, portfolioimages/A Second Troy.jpg"
-        data-titles="1/3 - The Reception of a Guest, 2/3 - Superfluous Man, 3/3 - A Second Troy"
+        data-titles="1/3 - &quot;The Reception of a Guest&quot;, 2/3 - &quot;Superfluous Man&quot;, 3/3 - &quot;A Second Troy&quot;"
         data-full="portfolioimages/Triptych.png" />    
         <p class="portfoliodescriptions1new">"Triptych"</p>
-        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions2">Acrylic on panel</p>
         <p class="portfoliodescriptions3">8x11"</p>
         <p class="portfoliodescriptions4">January 28, 2025</p>
     </div>
@@ -191,7 +203,7 @@ function scrollToTop() {
     </div>
     <div id="4/17/23" data-category="buildings">
             <img src="portfolioimages/Kunefeci.png" id="Kunefeci" class="portfolioimage clickable-img" data-full="portfolioimages/Kunefeci.png">
-        <p class="portfoliodescriptions1">"Kunefeci" (antakya, before)</p>
+        <p class="portfoliodescriptions1">"Kunefeci" (Antakya, Before)</p>
         <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
         <p class="portfoliodescriptions4">April 17, 2023</p>
     </div>
@@ -217,17 +229,10 @@ function scrollToTop() {
     </div>
     <div id="5/29/21" data-category="paintings">
             <img src="portfolioimages/Beach House.jpeg" id="Beach House" class="portfolioimage clickable-img" data-full="portfolioimages/Beach House.jpeg">
-        <p class="portfoliodescriptions1">"underground artist"</p>
+        <p class="portfoliodescriptions1">"Underground Artist"</p>
         <p class="portfoliodescriptions2">Acrylic on canvas</p>
         <p class="portfoliodescriptions2">18x24"</p>
         <p class="portfoliodescriptions4">May 28, 2021</p>
-    </div>
-    <div id="5/23/21" data-category="paintings buildings">
-            <img src="portfolioimages/Library.jpg" id="Library" class="portfolioimage clickable-img" data-full="portfolioimages/Library.jpg">
-        <p class="portfoliodescriptions1">"The Phillips Exeter Library"</p>
-        <p class="portfoliodescriptions2">Acrylic on canvas</p>
-        <p class="portfoliodescriptions2">18x24"</p>
-        <p class="portfoliodescriptions4">May 23, 2021</p>
     </div>
     <div id="3/10/21" data-category="buildings">
             <img src="portfolioimages/Asian Museum.jpeg" id="Asian Museum" class="portfolioimage clickable-img" data-full="portfolioimages/Asian Museum.jpeg">
@@ -322,22 +327,29 @@ function scrollToTop() {
     let currentImageSet = [];
     
     function openLightbox(images, startIndex = 0, titles = []) {
-      const lightbox = document.getElementById('lightbox');
-      const lightboxImg = document.getElementById('lightbox-img');
-      const caption = document.getElementById('lightbox-caption');
-    
-      currentImageSet = images.map((src, idx) => ({
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const caption = document.getElementById('lightbox-caption');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    currentImageSet = images.map((src, idx) => ({
         src: src.trim(),
         title: titles[idx] ? titles[idx].trim() : ''
-      }));
-    
-      currentImageIndex = startIndex;
-    
-      lightboxImg.src = currentImageSet[currentImageIndex].src;
-      caption.textContent = currentImageSet[currentImageIndex].title || '';
-      lightbox.classList.remove('hidden');
-      document.body.classList.add('disable-scroll');
-    }
+    }));
+
+    currentImageIndex = startIndex;
+
+    lightboxImg.src = currentImageSet[currentImageIndex].src;
+    caption.textContent = currentImageSet[currentImageIndex].title || '';
+    lightbox.classList.remove('hidden');
+    document.body.classList.add('disable-scroll');
+
+    // Show arrows only if there's more than one image
+    const showNav = currentImageSet.length > 1;
+    prevBtn.style.display = showNav ? 'block' : 'none';
+    nextBtn.style.display = showNav ? 'block' : 'none';
+}
     
     function updateLightbox() {
       const lightboxImg = document.getElementById('lightbox-img');
