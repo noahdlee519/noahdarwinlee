@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sora">
     <link href='style.css' rel='stylesheet'>
     <link rel="shortcut icon" href="ndlicon.png">
@@ -12,13 +13,13 @@
         <br class="topbit">
         <div class="header-nav">
             <li>
-                <a href="portfolio.html" class="header-nav-button">
-                    <span>Portfolio</span>
+                <a href="art.html" class="header-nav-button">
+                    <span>Art</span>
                 </a>
             </li>
             <li>
                 <a href="projects.html" class="header-nav-button">
-                    <span>Projects</span>
+                    <span style="color:#ffffff">[Projects]</span>
                 </a>
             </li>
             <li>
@@ -45,13 +46,41 @@
         function backToProjects() {
             window.location.href="projects.html";
         }
+        
+        let slideIndex = 1;
+        
+        function changeSlide(n) {
+            showSlide(slideIndex += n);
+        }
+        
+        function currentSlide(n) {
+            showSlide(slideIndex = n);
+        }
+        
+        function showSlide(n) {
+            let slides = document.querySelectorAll('.carousel-slide');
+            let dots = document.querySelectorAll('.dot');
+            
+            if (n > slides.length) { slideIndex = 1; }
+            if (n < 1) { slideIndex = slides.length; }
+            
+            slides.forEach(slide => slide.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+            
+            slides[slideIndex - 1].classList.add('active');
+            dots[slideIndex - 1].classList.add('active');
+        }
     </script>
 
     <div class="dutch-page">
         <div class="back-button-container">
             <button onclick="backToProjects()" class="back-button">
-                <img src="projectimages/dutch-tulip.png" alt="Dutch Tulip" class="tulip-icon"> Back to Projects
+                ← Back to Projects
             </button>
+        </div>
+        
+        <div class="university-header">
+            <h1 class="university-title">UNIVERSITY OF CHICAGO</h1>
         </div>
         
         <div class="dutch-header">
@@ -59,30 +88,28 @@
                 <div class="dutch-box">DUTCH</div>
             </div>
             <h1 class="dutch-title">LANGUAGE CIRCLE</h1>
-            <p class="dutch-subtitle">ALL LEVELS WELCOME</p>
         </div>
 
         <div class="dutch-content">
             <div class="meeting-info">
                 <h2>Meeting Information</h2>
                 <div class="meeting-details">
-                    <p><strong>When:</strong> Wednesdays 7:30PM</p>
-                    <p><strong>Where:</strong> Crerar 010B</p>
-                    <p><strong>Who:</strong> All levels welcome!</p>
+                    <p><i>When:</i> &nbsp; Wednesdays 7:30PM</p>
+                    <p><i>Where:</i> &nbsp; Crerar Library 010B</p>
+                    <p><i>Who:</i> &nbsp; All levels welcome!</p>
                 </div>
             </div>
 
             <div class="dutch-description">
                 <h2>About the Circle</h2>
-                <p>Learn beginner Dutch with other students! Our weekly language circle is designed for all skill levels, from complete beginners to those looking to practice their Dutch. We create a welcoming environment where you can learn at your own pace.</p>
-                <p class="stroopwafel-note">🧇 <em>We sometimes have stroopwafels!</em></p>
+                <p>Learn beginner Dutch with other students! Our weekly language circle is designed for all skill levels, from complete beginners to those looking to hone their Dutch skills. We create a welcoming learning environment to learn at your own pace with tailored instruction.</p>
             </div>
 
             <div class="schedule">
-                <h2>Winter Quarter Schedule</h2>
+                <h2>Autumn 2025 Schedule</h2>
                 <div class="schedule-grid">
                     <div class="schedule-item">
-                        <h3>WED JAN 15</h3>
+                        <h3>OCTOBER 1</h3>
                         <ul>
                             <li>Introductions and snacks</li>
                             <li>Greetings</li>
@@ -90,14 +117,14 @@
                         </ul>
                     </div>
                     <div class="schedule-item">
-                        <h3>WED JAN 22</h3>
+                        <h3>OCTOBER 8</h3>
                         <ul>
                             <li>Geography and the Dutch world</li>
                             <li>Syntax and sentence structure</li>
                         </ul>
                     </div>
                     <div class="schedule-item">
-                        <h3>WED JAN 29</h3>
+                        <h3>OCTOBER 15</h3>
                         <ul>
                             <li>Useful phrases</li>
                             <li>Tourism Dutch</li>
@@ -107,10 +134,44 @@
                 </div>
             </div>
 
+            <div class="poster-gallery">
+                <h2>Media</h2>
+                <div class="carousel-container">
+                    <div class="carousel">
+                        <div class="carousel-slide active">
+                            <img src="projectimages/newdutchposter.png" alt="Dutch Language Circle Schedule Poster" class="poster-image">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="projectimages/logosimpledutch.png" alt="Dutch Language Circle Miffy Poster" class="poster-image">
+                        </div>
+                        <div class="carousel-slide">
+                            <img src="projectimages/instadutchlanguagecircle.png" alt="Dutch Language Circle Simple Design" class="poster-image">
+                        </div>
+                    </div>
+                    <button class="carousel-btn prev-btn" onclick="changeSlide(-1)">❮</button>
+                    <button class="carousel-btn next-btn" onclick="changeSlide(1)">❯</button>
+                    <div class="carousel-dots">
+                        <span class="dot active" onclick="currentSlide(1)"></span>
+                        <span class="dot" onclick="currentSlide(2)"></span>
+                        <span class="dot" onclick="currentSlide(3)"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="contact-info">
                 <h2>Contact</h2>
-                <p><strong>noah lee '26</strong></p>
-                <p><a href="mailto:noah@uchicago.edu">noah@uchicago.edu</a></p>
+                <div class="contact-content">
+                    <div class="contact-text">
+                        <p><strong>Noah Lee '26</strong></p>
+                        <p><a href="mailto:noahl@uchicago.edu">noahl@uchicago.edu</a></p>
+                        <p><a href="https://www.instagram.com/uchicagodutch" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i>&nbsp;&nbsp;@uchicagodutch</a></p>
+                    </div>
+                    <div class="contact-logo">
+                        <a href="https://www.uchicago.edu" target="_blank" rel="noopener noreferrer">
+                            <img src="projectimages/uchicagologo.png" alt="University of Chicago" class="uchicago-logo">
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -118,14 +179,28 @@
     <div class="endspacesmall"></div>
     
     <div class="footer">
-        <div class="footer-content">
-            <span id="year"></span> Noah Darwin Lee &nbsp;|&nbsp; 2025
-        </div>
-    </div>  
+        <a class="header-nav-button" style="position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding-bottom: 22px;
+        padding-top: 25px;
+        padding-left: 3.4%;
+        margin-left: -.4%;
+        color: #e3e3b0;
+        font-size: x-small;
+        display: flex;
+        justify-content: left;
+        align-items: center;
+        background: linear-gradient(transparent, #e68019, #e68019, #e68019);
+        z-index: 9;">
+        <span id="year"> </span><span> Noah Darwin Lee &nbsp;|&nbsp; 2025</span>
+    </a>
+    </div>
 
     <style>
         body {
-            background-color: #ff6b35;
+            background-color: #e68019;
         }
 
         .dutch-page {
@@ -137,36 +212,44 @@
 
         .back-button-container {
             margin-bottom: 30px;
+            padding-left: 5px;
         }
 
         .back-button {
-            background-color: #f5f5dc;
-            color: #ff6b35;
-            border: 2px solid #f5f5dc;
+            background-color: #e68019;
+            color: #e3e3b0;
             padding: 10px 20px;
-            border-radius: 5px;
+            border: 2px solid #e3e3b0;
+            border-radius: 0px;
             cursor: pointer;
             font-family: 'Sora', sans-serif;
             font-size: 14px;
-            transition: all 0.3s;
+            transition: all 0.0s;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .back-button:hover {
-            background-color: white;
-            color: #ff6b35;
+            background-color: #e68019;
+            filter: brightness(1.05) drop-shadow(0px 0px 3px #e3e3b0);
         }
 
-        .tulip-icon {
-            width: 20px;
-            height: 20px;
+        .university-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .university-title {
+            font-size: 40px;
+            color: #ffffff;
+            margin: 10px 0 10px 0;
+            font-weight: bold;
         }
 
         .dutch-header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
 
         .dutch-logo {
@@ -175,26 +258,25 @@
 
         .dutch-box {
             display: inline-block;
-            background-color: #ffeb3b;
-            color: #ff5722;
-            padding: 15px 30px;
-            border: 3px solid #ff5722;
+            background-color: #fffb00;
+            color: #e68019;
+            padding: 10px 20px;
+            border: 3px solid #2246bd;
             font-weight: bold;
-            font-size: 24px;
-            transform: perspective(500px) rotateX(15deg);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            font-size: 36px;
+            box-shadow: 0 10px 20px #e68019;
         }
 
         .dutch-title {
-            font-size: 48px;
-            color: white;
-            margin: 20px 0 10px 0;
+            font-size: 40px;
+            color: #ffffff;
+            margin: 10px 0 10px 0;
             font-weight: bold;
         }
 
         .dutch-subtitle {
             font-size: 18px;
-            color: white;
+            color: #ffffff;
             margin-bottom: 20px;
         }
 
@@ -204,15 +286,15 @@
         }
 
         .meeting-info, .dutch-description, .schedule, .contact-info {
-            background-color: #f5f5dc;
+            background-color: #e3e3b0;
             padding: 25px;
             border-radius: 10px;
-            border-left: 5px solid #ff6b35;
-            color: #333;
+            border-left: 5px solid #e68019;
+            color: #e68019;
         }
 
         .meeting-info h2, .dutch-description h2, .schedule h2, .contact-info h2 {
-            color: #ff6b35;
+            color: #e68019;
             margin-top: 0;
             margin-bottom: 15px;
         }
@@ -220,14 +302,7 @@
         .meeting-details p {
             margin: 8px 0;
             font-size: 16px;
-            color: #333;
-        }
-
-        .stroopwafel-note {
-            font-style: italic;
-            color: #ff6b35;
-            text-align: center;
-            margin-top: 15px;
+            color: #e68019;
         }
 
         .schedule-grid {
@@ -238,15 +313,15 @@
         }
 
         .schedule-item {
-            background-color: #f5f5dc;
+            background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
-            border: 2px solid #ff6b35;
-            color: #333;
+            border: 2px solid #e68019;
+            color: #e68019;
         }
 
         .schedule-item h3 {
-            color: #ff6b35;
+            color: #e68019;
             margin-top: 0;
             margin-bottom: 15px;
             text-align: center;
@@ -265,18 +340,166 @@
 
         .schedule-item li:before {
             content: "▸";
-            color: #ff6b35;
+            color: #e68019;
             position: absolute;
             left: 0;
         }
 
         .contact-info a {
-            color: #ff6b35;
+            color: #e68019;
             text-decoration: none;
         }
 
         .contact-info a:hover {
             text-decoration: underline;
+        }
+
+        .contact-info {
+            position: relative;
+        }
+
+        .contact-content {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .contact-text {
+            flex: 1;
+        }
+
+        .contact-logo {
+            position: absolute;
+            top: 42px;
+            right: 15px;
+            z-index: 2;
+        }
+
+        .uchicago-logo {
+            width: 130px;
+            height: auto;
+            opacity: 0.9;
+            cursor: pointer;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .uchicago-logo:hover {
+            opacity: 1;
+            filter: drop-shadow(0 0 8px #aaaaaa) drop-shadow(0 0 16px rgba(255, 255, 255, 0.6));
+        }
+
+        .poster-gallery {
+            background-color: #e3e3b0;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #e68019;
+            color: #333;
+        }
+
+        .poster-gallery h2 {
+            color: #e68019;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .carousel-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0 60px;
+        }
+
+        .carousel {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .carousel-slide {
+            display: none;
+            text-align: center;
+            background-color: #ffffff;
+            padding: 20px;
+        }
+
+        .carousel-slide.active {
+            display: block;
+        }
+
+        .poster-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .poster-caption {
+            color: #e68019;
+            font-style: italic;
+            margin: 10px 0 0 0;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #e68019;
+            color: #ffffff;
+            border: none;
+            padding: 15px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 50%;
+            transition: all 0.3s;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-btn:hover {
+            background-color: #e68019;
+        }
+
+        .prev-btn {
+            left: 0px;
+        }
+
+        .next-btn {
+            right: 0px;
+        }
+
+        .prev-btn:hover {
+            filter: drop-shadow(0 0 8px #aaaaaa);
+        }
+
+        .next-btn:hover {
+            filter: drop-shadow(0 0 8px #aaaaaa);
+        }
+
+        .carousel-dots {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .dot {
+            height: 15px;
+            width: 15px;
+            margin: 0 5px;
+            background-color: #aaa;
+            border-radius: 50%;
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .dot.active, .dot:hover {
+            background-color: #e68019;
         }
 
         @media (max-width: 600px) {
@@ -286,6 +509,22 @@
             
             .schedule-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .carousel-container {
+                max-width: 100%;
+                padding: 0 50px;
+            }
+            
+            .carousel-btn {
+                padding: 10px 8px;
+                font-size: 16px;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .poster-image {
+                max-width: 100%;
             }
         }
     </style>

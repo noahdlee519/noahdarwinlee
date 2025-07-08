@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sora">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href='style.css' rel='stylesheet'>
+    <link rel="shortcut icon" href="ndlicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noah Darwin Lee</title>
+</head>
+<body>
+    <div class="header">
+        <br class="topbit">
+        <div class="header-nav">
+            <li>
+                <a href="art.html" class="header-nav-button" style="color:#ffffff">
+                    <span>[Art]</span>
+                </a>
+            </li>
+            <li>
+                <a href="projects.html" class="header-nav-button">
+                    <span>Projects</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="contact.html" class="header-nav-button">
+                    <span>Contact</span>
+                </a>
+            </li>
+            <li>
+                <a href="about.html" class="header-nav-button">
+                    <span>About</span>
+                </a>
+            </li>
+            <div class="header-icon">
+            <img src="ndlicon.png" class="header-icon" onclick="mainMenu()">
+        </div>
+        </div>
+        <hr class="hr1"/>
+    </div>
+
+<script>
+    function mainMenu() {
+        window.location.href = "index.html";
+}
+
+window.addEventListener("scroll", function() {
+    var backToTopButton = document.getElementById("backToTopButton");
+    
+    if (window.pageYOffset > 500) {
+        backToTopButton.style.display = "block";
+        fadeIn(backToTopButton);
+    } else {
+        fadeOut(backToTopButton);
+    }
+});
+
+function fadeIn(element) {
+    element.style.opacity = "0";
+    var opacity = 0;
+    var interval = setInterval(function() {
+        opacity += 0.1;
+        element.style.opacity = opacity.toString();
+        if (opacity >= 1) {
+            clearInterval(interval);
+        }
+    }, 100);
+}
+
+function fadeOut(element) {
+    var opacity = 1;
+    var interval = setInterval(function() {
+        opacity -= 0.1;
+        element.style.opacity = opacity.toString();
+        if (opacity <= 0.1) {
+            clearInterval(interval);
+            element.style.display = "none";
+        }
+    }, 100);
+}
+
+document.getElementById("backToTopButton").addEventListener("click", function() {
+    scrollToTop();
+});
+
+function scrollToTop() {
+    if (window.scrollY !== 0) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setTimeout(scrollToTop, 5000);
+    }
+}
+
+</script>
+
+<!--below is the Portfolio-->
+
+<br id="topbreak">
+
+<!---below is the filter for the works-->
+<div style="text-align: center; margin-top: 2.5rem; margin-bottom: 0.5rem; font-family: 'Sora';">
+</div>
+<div id="portfolio-filters" style="text-align: center; margin-top: 0.5rem; font-family: 'Sora'">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="buildings">Buildings</button>
+    <button class="filter-btn" data-filter="diagrams">Diagrams</button>
+    <button class="filter-btn" data-filter="paintings">Paintings</button>
+</div>
+<div style="text-align: center; margin-top: 0.5rem; margin-bottom: 0.0rem; font-family: 'Sora';">
+<span style="color: #e3e3b0; font-size: 14px; opacity: 0.8;">sort by category</span></div>
+
+<!--below are the actual works-->
+<div id="allworks">
+    <div id="5/13/25" data-category="buildings">
+        <img src="portfolioimages/Pickleball.jpg" id="Pickleball" class="portfolioimage clickable-img" data-full="portfolioimages/Pickleball.jpg">
+        <p class="portfoliodescriptions1new">"Pickleball"</p>
+        <p class="portfoliodescriptions2">Adobe Illustrator</p>
+        <p class="portfoliodescriptions4">May 13, 2025</p>
+    </div>
+    <div id="5/12/25" data-category="paintings buildings">
+        <img src="portfolioimages/Chesterfield Mall.jpg" id="ChesterfieldMall" class="portfolioimage clickable-img" data-full="portfolioimages/Chesterfield Mall.jpg">
+        <p class="portfoliodescriptions1new">"Chesterfield Mall"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">12x16"</p>
+        <p class="portfoliodescriptions4">May 12, 2025</p>
+    </div>
+    <div id="3/20/25" data-category="paintings">
+        <img src="portfolioimages/Asking for a Favor.jpg" id="AskingforaFavor" class="portfolioimage clickable-img" data-full="portfolioimages/Asking for a Favor.jpg">
+        <p class="portfoliodescriptions1new">"Asking for a Friend"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">6x8"</p>
+        <p class="portfoliodescriptions4">March 20, 2025</p>
+    </div>
+    <div id="2/20/25" data-category="diagrams">
+        <img src="portfolioimages/Printers.jpeg" id="Printers" class="portfolioimage clickable-img" data-full="portfolioimages/Printers.jpeg">
+        <p class="portfoliodescriptions1new">"Printers on Campus"</p>
+        <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
+        <p class="portfoliodescriptions3">and UChicago data</p>
+        <p class="portfoliodescriptions4">February 20, 2025</p>
+    </div>
+    <div id="1/28/25" data-category="paintings">
+        <img src="portfolioimages/Triptych.png" 
+        id="Triptych" 
+        class="portfolioimage clickable-img" 
+        data-index="0" 
+        data-images="portfolioimages/The Reception of a Guest.jpg, portfolioimages/Superfluous Man.jpg, portfolioimages/A Second Troy.jpg"
+        data-titles="1/3 - &quot;The Reception of a Guest&quot;, 2/3 - &quot;Superfluous Man&quot;, 3/3 - &quot;A Second Troy&quot;"
+        data-full="portfolioimages/Triptych.png" />    
+        <p class="portfoliodescriptions1new">"Triptych"</p>
+        <p class="portfoliodescriptions2">Acrylic on panel</p>
+        <p class="portfoliodescriptions3">8x11"</p>
+        <p class="portfoliodescriptions4">January 28, 2025</p>
+    </div>
+    <div id="11/8/24" data-category="paintings buildings">
+        <img src="portfolioimages/BabyContest.png" id="BabyContest" class="portfolioimage clickable-img" data-full="portfolioimages/BabyContest.png">
+        <p class="portfoliodescriptions1new">"Baby Contest"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">11x14"</p>
+        <p class="portfoliodescriptions4">November 8, 2024</p>
+    </div>
+    <div id="7/30/23" data-category="paintings">
+            <img src="portfolioimages/TheSpectators.jpeg" id="TheSpectators" class="portfolioimage clickable-img" data-full="portfolioimages/TheSpectators.jpeg">
+        <p class="portfoliodescriptions1">"The Spectators"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">12x16"</p>
+        <p class="portfoliodescriptions4">July 30, 2023</p>
+    </div>
+    <div id="6/30/23" data-category="paintings buildings">
+            <img src="portfolioimages/AdaStreet.png" id="AdaStreet" class="portfolioimage clickable-img" data-full="portfolioimages/AdaStreet.png">
+        <p class="portfoliodescriptions1">"An Alternate Ada Street"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">12x16"</p>
+        <p class="portfoliodescriptions4">June 30, 2023</p>
+    </div>
+    <div id="6/19/23" data-category="paintings buildings">
+            <img src="portfolioimages/Edge of Pilsen.jpg" id="EdgeofPilsen" class="portfolioimage clickable-img" data-full="portfolioimages/Edge of Pilsen.jpg">
+        <p class="portfoliodescriptions1">"Edge of Pilsen"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions3">6x6"</p>
+        <p class="portfoliodescriptions4">June 19, 2023</p>
+    </div>
+    <div id="6/4/23" data-category="buildings">
+            <img src="portfolioimages/Delancey and Chrystie.jpeg" id="DelanceyandChrystie" class="portfolioimage clickable-img" data-full="portfolioimages/Delancey and Chrystie.jpeg">
+        <p class="portfoliodescriptions1">"Delancey and Chrystie"</p>
+        <p class="portfoliodescriptions2">Pen on paper</p>
+        <p class="portfoliodescriptions3">Micron 0.5mm</p>
+        <p class="portfoliodescriptions4">June 4, 2023</p>
+    </div>
+    <div id="5/27/23" data-category="diagrams">
+            <img src="portfolioimages/Mexican Embassies and Consulates in the USA.png" id="MexicanEmbassies" class="portfolioimage clickable-img" data-full="portfolioimages/Mexican Embassies and Consulates in the USA.png">
+        <p class="portfoliodescriptions1">"Mexican Embassies and Consulates in the USA"</p>
+        <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
+        <p class="portfoliodescriptions3">And various GIS applications</p>
+        <p class="portfoliodescriptions4">May 27, 2023</p>
+    </div>
+    <div id="5/1/23" data-category="buildings">
+            <img src="portfolioimages/Ideas.png" id="Ideas" class="portfolioimage clickable-img" data-full="portfolioimages/Ideas.png">
+        <p class="portfoliodescriptions1">"Ideas!"</p>
+        <p class="portfoliodescriptions2">Pen on paper</p>
+        <p class="portfoliodescriptions3">Muji 0.5mm</p>
+        <p class="portfoliodescriptions4">May 1, 2023</p>
+    </div>
+    <div id="4/17/23" data-category="buildings">
+            <img src="portfolioimages/Kunefeci.png" id="Kunefeci" class="portfolioimage clickable-img" data-full="portfolioimages/Kunefeci.png">
+        <p class="portfoliodescriptions1">"Kunefeci" (Antakya, Before)</p>
+        <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
+        <p class="portfoliodescriptions4">April 17, 2023</p>
+    </div>
+    <div id="3/26/23" data-category="diagrams">
+            <img src="portfolioimages/Sixth Street.jpg" id="SixthStreet" class="portfolioimage clickable-img" data-full="portfolioimages/Sixth Street.jpg">
+        <p class="portfoliodescriptions1">"Proposed Metro + MetroLink Network in Los Angeles"</p>
+        <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
+        <p class="portfoliodescriptions2">and R</p>
+        <p class="portfoliodescriptions4">March 26, 2023</p>
+    </div>
+    <div id="2/23/23" data-category="diagrams">
+            <img src="portfolioimages/Saint Petersburg.jpeg" id="SaintPetersburg" class="portfolioimage clickable-img" data-full="portfolioimages/Saint Petersburg.jpeg">
+        <p class="portfoliodescriptions1">"Imagined Aereal View of Saint Petersburg with a Spanish-Inspired Road Network"</p>
+        <p class="portfoliodescriptions2">Pencil on paper</p>
+        <p class="portfoliodescriptions4">February 23, 2023</p>
+    </div>
+    <div id="12/11/22" data-category="diagrams">
+            <img src="portfolioimages/Consulates.jpg" id="Consulates" class="portfolioimage clickable-img" data-full="portfolioimages/Consulates.jpg">
+        <p class="portfoliodescriptions1">"Chinese, Indian, and Philippine Consulates in the United States"</p>
+        <p class="portfoliodescriptions2">Made with Adobe Illustrator</p>
+        <p class="portfoliodescriptions2">and QGIS</p>
+        <p class="portfoliodescriptions4">December 11, 2022</p>
+    </div>
+    <div id="5/29/21" data-category="paintings">
+            <img src="portfolioimages/Beach House.jpeg" id="Beach House" class="portfolioimage clickable-img" data-full="portfolioimages/Beach House.jpeg">
+        <p class="portfoliodescriptions1">"Underground Artist"</p>
+        <p class="portfoliodescriptions2">Acrylic on canvas</p>
+        <p class="portfoliodescriptions2">18x24"</p>
+        <p class="portfoliodescriptions4">May 28, 2021</p>
+    </div>
+    <div id="3/10/21" data-category="buildings">
+            <img src="portfolioimages/Asian Museum.jpeg" id="Asian Museum" class="portfolioimage clickable-img" data-full="portfolioimages/Asian Museum.jpeg">
+        <p class="portfoliodescriptions1">"Proposal for a Museum and Institute of Asian American Heritage"</p>
+        <p class="portfoliodescriptions2">Pen on paper</p>
+        <p class="portfoliodescriptions4">March 10, 2021</p>
+    </div>
+    <div id="10/2/20" data-category="buildings">
+            <img src="portfolioimages/Neo Gothic Modern.jpeg" id="Neo Gothic Modern" class="portfolioimage clickable-img" data-full="portfolioimages/Neo Gothic Modern.jpeg">
+        <p class="portfoliodescriptions1">"untitled"</p>
+        <p class="portfoliodescriptions2">Pencil on paper</p>
+        <p class="portfoliodescriptions4">October 2, 2020</p>
+    </div>
+    <div id="9/2/20" data-category="buildings">
+            <img src="portfolioimages/Grand Central Pagoda.jpg" id="Grand Central Pagoda" class="portfolioimage clickable-img" data-full="portfolioimages/Grand Central Pagoda.jpg">
+        <p class="portfoliodescriptions1">"Grand Central Pagoda"</p>
+        <p class="portfoliodescriptions2">Made with SketchUp</p>
+        <p class="portfoliodescriptions4">September 2, 2020</p>
+    </div>
+    <div id="8/5/20" data-category="buildings">
+            <img src="portfolioimages/3 Park Avenue.png" id="3 Park Avenue" class="portfolioimage clickable-img" data-full="portfolioimages/3 Park Avenue.png">
+        <p class="portfoliodescriptions1">"3 Park Avenue"</p>
+        <p class="portfoliodescriptions2">Made with SketchUp</p>
+        <p class="portfoliodescriptions4">August 5, 2020</p>
+    </div>
+    <div id="7/18/20" data-category="buildings">
+            <img src="portfolioimages/Crown Building.jpg" id="Crown Building" class="portfolioimage clickable-img" data-full="portfolioimages/Crown Building.jpg">
+        <p class="portfoliodescriptions1">"Crown Building"</p>
+        <p class="portfoliodescriptions2">Made with SketchUp</p>
+        <p class="portfoliodescriptions4">July 18, 2020</p>
+    </div>
+
+</div>
+    
+<!--below is the Instagram and the portfolio link-->
+
+    <li class="portfolioli">
+        <br>
+        <a>
+            See more:
+        </a>
+        <br>
+        <br>
+        <a href="https://drive.google.com/file/d/10uiB5IHU5jZREzrKhWwJU1VSxLrj8uHv/view?usp=drive_link" id="instagram">
+            <span style="text-decoration: underline;">Architecture Portfolio (WIP)</span>
+        </a>
+        <br>
+        <br>    
+        <a href="https://www.instagram.com/noahmakestheart/" id="instagram">
+                <span style="text-decoration: underline;">Instagram</span>
+        </a>
+    </li>
+
+<!--below is the back to top arrow-->
+
+<!--<a href="#" class="back-to-top" id="backToTopButton">&#8593;</a>-->
+
+<!--below is the extra endspace and footer-->
+<div class="endspacesmall">
+</div>
+    
+<div class="footer">
+    <a class="header-nav-button" style="position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-bottom: 22px;
+    padding-top: 25px;
+    padding-left: 3.4%;
+    margin-left: -.4%;
+    color: #e3e3b0;
+    font-size: x-small;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    background: linear-gradient(transparent, #e68019, #e68019, #e68019);
+    z-index: 9;">
+    <span id="year"> </span><span> Noah Darwin Lee &nbsp;|&nbsp; 2025</span>
+</a>
+</div>
+
+<!-- lightbox -->
+
+<div id="lightbox" class="lightbox hidden">
+    <span class="lightbox-close">&times;</span>
+    <div class="lightbox-inner">
+      <button id="prevBtn" class="lightbox-nav left">&#10094;</button>
+      
+      <div class="lightbox-content">
+        <img id="lightbox-img" src="" alt="">
+        <div id="lightbox-caption" class="lightbox-caption"></div>
+      </div>
+  
+      <button id="nextBtn" class="lightbox-nav right">&#10095;</button>
+    </div>
+  </div>
+  
+  
+
+<!-- lightbox code -->
+
+
+
+<script>
+    let currentImageIndex = 0;
+    let currentImageSet = [];
+    
+    function openLightbox(images, startIndex = 0, titles = []) {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const caption = document.getElementById('lightbox-caption');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    currentImageSet = images.map((src, idx) => ({
+        src: src.trim(),
+        title: titles[idx] ? titles[idx].trim() : ''
+    }));
+
+    currentImageIndex = startIndex;
+
+    lightboxImg.src = currentImageSet[currentImageIndex].src;
+    caption.textContent = currentImageSet[currentImageIndex].title || '';
+    lightbox.classList.remove('hidden');
+    document.body.classList.add('disable-scroll');
+
+    // Show arrows only if there's more than one image
+    const showNav = currentImageSet.length > 1;
+    prevBtn.style.display = showNav ? 'block' : 'none';
+    nextBtn.style.display = showNav ? 'block' : 'none';
+}
+    
+    function updateLightbox() {
+      const lightboxImg = document.getElementById('lightbox-img');
+      const caption = document.getElementById('lightbox-caption');
+      const current = currentImageSet[currentImageIndex];
+      lightboxImg.src = current.src;
+      caption.textContent = current.title || '';
+    }
+    
+    function showNextImage() {
+      if (currentImageSet.length > 0) {
+        currentImageIndex = (currentImageIndex + 1) % currentImageSet.length;
+        updateLightbox();
+      }
+    }
+    
+    function showPrevImage() {
+      if (currentImageSet.length > 0) {
+        currentImageIndex = (currentImageIndex - 1 + currentImageSet.length) % currentImageSet.length;
+        updateLightbox();
+      }
+    }
+    
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.add('hidden');
+      document.getElementById('lightbox-img').src = '';
+      document.getElementById('lightbox-caption').textContent = '';
+      document.body.classList.remove('disable-scroll');
+    }
+    
+    document.querySelectorAll('.clickable-img').forEach(img => {
+      img.addEventListener('click', function () {
+        const groupImgs = this.getAttribute('data-images');
+        const titles = this.getAttribute('data-titles');
+        const index = parseInt(this.getAttribute('data-index')) || 0;
+        const fullImg = this.getAttribute('data-full');
+    
+        if (groupImgs) {
+          const imageArray = groupImgs.split(',');
+          const titleArray = titles ? titles.split(',') : [];
+          openLightbox(imageArray, index, titleArray);
+        } else {
+          openLightbox([fullImg], 0, [this.alt || '']);
+        }
+      });
+    });
+    
+    document.getElementById('nextBtn').addEventListener('click', showNextImage);
+    document.getElementById('prevBtn').addEventListener('click', showPrevImage);
+    document.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+    
+    document.getElementById('lightbox').addEventListener('click', function (e) {
+      const lightboxInner = document.querySelector('.lightbox-inner');
+      if (!lightboxInner.contains(e.target)) {
+        closeLightbox();
+      }
+    });
+    
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') showNextImage();
+      if (e.key === 'ArrowLeft') showPrevImage();
+    });
+    </script>
+    
+    
+    
+
+    <!-- filter -->
+
+
+    <script>
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const portfolioItems = document.querySelectorAll('#allworks > div');
+        
+        // Show all items on page load
+        portfolioItems.forEach(item => {
+            item.style.display = 'flex';
+        });
+        
+        // Add [brackets] to initially active button ("All")
+        filterButtons.forEach(btn => {
+            if (btn.classList.contains('active')) {
+                btn.textContent = `[${btn.textContent}]`;
+            }
+        });
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Reset all button states
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.textContent = btn.textContent.replace(/\[|\]/g, ''); // remove brackets
+                });
+        
+                // Set active state and add brackets
+                button.classList.add('active');
+                button.textContent = `[${button.textContent}]`;
+        
+                const filter = button.getAttribute('data-filter');
+        
+                portfolioItems.forEach(item => {
+                    const category = item.getAttribute('data-category');
+                    if (filter === 'all' || category.includes(filter)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+        </script>
+        
+</body>
+</html>

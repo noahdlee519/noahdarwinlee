@@ -47,7 +47,7 @@ body {
 }
 
 .header a:hover {
-    color: #f2f3f4;
+    color: #ffffff;
 }
 
 hr {
@@ -119,15 +119,149 @@ hr {
 
 /* Below is the Portfolio section */
 
-#allworks {
-    display: inline-block;
-    position: relative;
+/* when you click an image this is the background box for it */
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
 }
+
+.lightbox img {
+    max-width: 85vw;
+    max-height: 85vh;
+    min-width: 70vw;
+    min-height: 40vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 0px solid #e3e3b0;
+    box-shadow: 0 0 0px #e3e3b0;
+    transition: transform 0.3s ease;
+    cursor: default;
+}
+
+.lightbox-caption {
+    margin-top: 1em;
+    color: #e3e3b0;
+    font-size: 1.2em;
+    text-align: center;
+    max-width: 100%;
+  }
+
+.lightbox-close {
+    position: absolute;
+    top: 2%;
+    right: 3%;
+    color: #e3e3b0;
+    font-size: 3em;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    transition: color 0s ease;
+}
+
+.lightbox-close:hover {
+    color: white;
+}
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 3em;
+    background: none;
+    color: #e3e3b0;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+  }
+  
+  #prevBtn {
+    left: 5%;
+    padding: 40px;
+  }
+  #nextBtn {
+    right: 5%;
+    padding: 40px;
+  }
+  
+  .lightbox-nav:hover {
+    color: white;
+  }  
+
+.hidden {
+    display: none;
+}
+
+/*portfolio filters */
+
+#portfolio-filters {
+    cursor: default; /* prevents text selection between buttons */
+    user-select: none; /* optional: prevent accidental text selection */
+    padding-top: 11px;
+  }
+
+#portfolio-filters .filter-btn {
+    font-family: 'Sora', sans-serif;
+    margin: 0.4em;
+    padding: 0.4em 1em;
+    font-size: 1em;
+    background-color: #e3e3b0;
+    color: #e68019;
+    border: none;
+    border-radius: 0.4em;
+    cursor: pointer;
+    min-width: 6.5em; 
+    text-align: center;
+    font-weight: 500;
+}
+
+
+#portfolio-filters .filter-btn:hover {
+    background-color: #ffffff;
+    color: #e68019;
+}
+
+#portfolio-filters .filter-btn.active {
+    background-color: white;
+    color: #e68019;
+    font-weight: bold;
+    border: 0px solid #e68019;
+    font-weight: 750;
+}
+
+#allworks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem; /* adjust spacing between items */
+    justify-content: center; /* center items horizontally */
+    align-items: flex-start; /* align items at the top */
+    padding: 2rem;
+}
+
+#allworks > div {
+    flex: 0 1 300px; /* grow/shrink, base width */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
 
 .portfolioli {
     list-style: none;
-    margin-left: 3%;
+    margin-left: 0%;
     font-size: larger;
+    align-items: center;
+    text-align: center;
 }
 
 .portfoliodescriptions p {
@@ -136,8 +270,16 @@ hr {
 
 .portfoliodescriptions1 {
     margin-top: 0.5%;
-    margin-top: 3px;
-    margin-left: 3.2%;
+    margin-top: 5px;
+    margin-left: 0%;
+    width: clamp(280px,30%,1300px); 
+    font-size: larger;
+}
+
+.portfoliodescriptions1new {
+    margin-top: 0.5%;
+    margin-top: 10px;
+    margin-left: 0%;
     width: clamp(280px,30%,1300px); 
     font-size: larger;
 }
@@ -148,21 +290,7 @@ hr {
     font-size: x-small;
 }
 
-/* the first image in the portfolio's top margin needed to be adjusted */
-
-.portfolioimage1 {
-    margin-top: 72px;
-    width: clamp(280px,30%,1300px); 
-    height: 30%;
-    min-height: 60px;
-    margin-left: 1.6%;
-}
-
-.portfolioimage1:hover {
-    filter: brightness(1.05) drop-shadow(0px 0px 3px #e3e3b0);
-}
-
-/* the rest of the portfolio is below */
+/* the images of the portfolio are below */
 
 .portfolioimage {
     margin-top: 32px;
@@ -170,6 +298,7 @@ hr {
     height: 30%;
     min-height: 60px;
     margin-left: calc(1.6%);
+    cursor: pointer;
 }
 
 .portfolioimage:hover {
@@ -220,7 +349,7 @@ hr {
     filter: brightness(1.08) drop-shadow(0px 0px 3px #e3e3b0);
 }
 
-.projects1, .projects2, .projects3, .projects4, .projects5, .projects6, .projects7 {
+.projects1, .projects2, .projects3, .projects4, .projects5blog, .projects5, .projects6, .projects7 {
     margin-left: 3.15%;
     max-width: 590px;
     padding-right: 5%;
@@ -228,7 +357,7 @@ hr {
 }
 
 #projectimagestop {
-    margin-top: 95px;
+    margin-top: 86px;
     border-radius: 1em;
 }
 
@@ -244,297 +373,52 @@ a {
 }
 
 .project:hover {
-    color: #f2f3f4;
+    color: #ffffff;
+}
+
+/* Shared hover effects - hovering anywhere in a project triggers both image and text effects */
+.projects1:hover .projectimages,
+.projects2:hover .projectimages,
+.projects3:hover .projectimages,
+.projects4:hover .projectimages,
+.projects5blog:hover .projectimages,
+.projects5:hover .projectimages,
+.projects6:hover .projectimages,
+.projects7:hover .projectimages {
+    filter: brightness(1.08) drop-shadow(0px 0px 3px #e3e3b0);
+}
+
+.projects1:hover .project,
+.projects2:hover .project,
+.projects3:hover .project,
+.projects4:hover .project,
+.projects5blog:hover .project,
+.projects5:hover .project,
+.projects6:hover .project,
+.projects7:hover .project {
+    color: #ffffff;
 }
 
 .project1 {
     margin-top: -15px;
     font-size: smaller;
     margin-left: -.05%;
+    cursor: pointer;
 }
+
+h4 {
+    color: #e3e3b0;
+}
+
+
+
+
 
 .publications {
     margin-left: 3.4%;
     text-decoration: underline;
 }
-                               /* Below is the Blog section */
 
-#blogh2 {
-    color: #e3e3b0;
-    position: absolute;
-    margin-top: 85px;
-    margin-left: 3%;
-    display: block;
-    font-size: small;
-    font-style: italic;
-    padding-right: 12px;
-    visibility: visible;
-}
-
-#blognotice {
-    color: #e3e3b0;
-    position: absolute;
-    margin-top: 85px;
-    margin-left: 3%;
-    display: block;
-    font-size: small;
-    font-style: italic;
-    padding-right: 12px;
-    visibility: hidden;
-}
-
-.blog-link-list {
-    position: absolute;
-    list-style: none;
-    margin-top: 125px;
-    padding-left: 0px;
-    margin-left: 3%;
-    font-size: x-large;
-  }
-  
-  .blog-link-list span:hover {
-    color: #f2f3f4;
-    cursor: pointer;
-  }
-  
-  .blog-link-list .subtext {
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    font-size: small;
-    font-style: italic;
-    margin-left: 12px;
-    white-space: nowrap;
-  }
-  
-  .blog-link-list .subtext:hover {
-    cursor: default !important;
-  }
-  
-  .blog-link-list .subtext.active {
-    opacity: 1;
-    color: #e3e3b0;
-  }
-  
-  /* blog icons and line */
-
-  #politics-blog, #unrealpolitics-blog, #languages-blog {
-    position: absolute;
-    margin-left: 3.0%;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-  
-  #politics-blog {
-    margin-top: 19em;
-    width: clamp(30em 100% 50em);
-  }
-
-  #politicsImage {
-    margin-left: 1em;
-    height: 2.6em;
-  }
-  
-  #unrealpolitics-blog {
-    margin-top: 19em;
-    width: clamp(30em 100% 50em);
-  }
-
-  #unrealpoliticsImage {
-    margin-left: 1em;
-    height: 2.6em;
-  }
-
-  #languages-blog {
-    margin-top: 19em;
-    width: clamp(30em 100% 50em);
-  }
-
-  #languagesImage {
-    margin-left: 1em;
-    height: 2.6em;
-  }
-
-  #netherlandsmap {
-    width: 100%;
-  }
-
-/* below are the dutch city styles */
-  .nclickable {
-    cursor: pointer;
-    color: #e3e3b0; /* Initial color of the text */
-    text-decoration: none;
-    position: relative;
-    display: inline;
-    margin-bottom: 2em;
-    height: 0.8em;
-
-  }
-  .nclicked {
-    color: white; /* Color of the text after clicking */
-    text-decoration: underline;
-  }
-
-  #nAlkmaar {
-    position: absolute;
-    top: 619px; /* y value */
-    left: 375px; /* x value */
-    border-left: -1em;
-  }
-
-  #nAmersfoort {
-    position: absolute;
-    top: 717px; /* y value */
-    left: 466px; /* x value */
-  }
-
-  #nAmsterdam {
-    position: absolute;
-    top: 669px; /* y value */
-    left: 406px; /* x value */
-  }
-
-  #nAntwerp {
-    position: absolute;
-    top: 953px; /* y value */
-    left: 273px; /* x value */
-  }
-
-  #nBaarle {
-    position: absolute;
-    top: 900px; /* y value */
-    left: 356px; /* x value */
-  }
-
-  #nBrugge {
-    position: absolute;
-    top: 940px; /* y value */
-    left: 122px; /* x value */
-  }
-
-  #nDelft {
-    position: absolute;
-    top: 749px; /* y value */
-    left: 330px; /* x value */
-    z-index: 2;
-  }
-
-  #nDen_Haag {
-    position: absolute;
-    top: 712px; /* y value */
-    left: 258px; /* x value */
-    z-index: 1;
-  }
-
-  #nEindhoven {
-    position: absolute;
-    top: 872px; /* y value */
-    left: 474px; /* x value */
-  }
-
-  #nOtterlo {
-    position: absolute;
-    top: 754px; /* y value */
-    left: 440px; /* x value */
-  }
-
-  #nRotterdam {
-    position: absolute;
-    top: 806px; /* y value */
-    left: 288px; /* x value */
-  }
-
-  #nUtrecht {
-    position: absolute;
-    top: 770px; /* y value */
-    left: 376px; /* x value */
-  }
-
-  .listofcities {
-    border-top: 2em;
-    border-bottom: 2.2em;
-  }
-
-  #dutchblogadjust {
-    position: relative;
-    width: 36.54em;
-    min-width: 10em;
-    height: 100%;
-    margin-left: .15em;
-    margin-right: .15em;
-    margin-top: -3em;
-  }
-
-  /* end of dutch stuff */
-
-  #blogsline {
-    position: relative;
-    margin-top: 19.25em;
-    display: block;
-    height: 0px;
-    border: 0;
-    border-top: 2px solid #e3e3b0;
-}
-
-    /* blog text */
-
-.pbox {
-    width: 100%;
-    height: 100%;
-    max-width: 60em;
-    margin-left: .15em;
-    margin-right: .15em;
-}
-
-#netherlandsmappbox {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    max-width: 50em;
-    min-width: 34em;
-    margin-left: .15em;
-    margin-right: .15em;
-}
-
-.pbox p {   
-    width: clamp(20em, 101vw 26em);
-    text-align: justify;
-    z-index: 2;
-}
-
-.pbox img {
-    min-width: 22em;
-    width: 88.5vw;
-    max-width: 99.65%;
-}
-
-.ptextwidth {
-    position: relative;
-    width: 91.5%;
-    word-wrap: break-word;
-    margin-bottom: 7em;
-    font-size: small;
-}
-
-#allblogs h3 { 
-    margin-top: -1em;
-}
-
- #allblogs p {   
-    position: relative;
-    display: inline-block;  
-    background-color: #e68019;       
-    border: 2px solid #e3e3b0;      
-    padding: 0.5em;    
-    font-size: 20px;    
-}
-
-#allblogs h2 {
-    font-size: 2.6em;
-}
-
-.disable-scroll {
-    overflow: hidden !important;
-  }
 
                                 /* Below is the Contact section */
 
@@ -556,7 +440,7 @@ a {
 
 #instagram:hover, #facebook:hover, #linkedin:hover, #email:hover, #spotify:hover {
     list-style: none;
-    color: #f2f3f4;
+    color: #ffffff;
 }
 
 #fbadjust {
@@ -570,6 +454,12 @@ a {
 #spotify {
     padding-bottom: 50px;
 }
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
   
                                 /* Below is the About section */
 
@@ -580,7 +470,7 @@ a {
 #headshot {
     margin-top: 6.3em;
     height: 350px; 
-    width: 275px;
+    width: 305px;
     border: 4.7px solid #e3e3b0;
     
 }
@@ -589,8 +479,8 @@ a {
     margin-top: 5px;
     position: relative;
     font-size: normal;
-    padding-left: calc(16% + (100vw - 700px) * (1 - 30) / (700 -  1000));
-    padding-right: calc(16% + (100vw - 700px) * (1 - 30) / (700 -  1000));
+    padding-left: calc(22% + (100vw - 700px) * (1 - 30) / (700 -  1000));
+    padding-right: calc(22% + (100vw - 700px) * (1 - 30) / (700 -  1000));
     text-align: center;
     align-items: center;
 }
@@ -602,28 +492,27 @@ a {
 }
 
 #resumebutton:hover {
-    color: #f2f3f4 !important;
+    color: #ffffff !important;
 }
 
-                                /* footer */
+/* footer */
 
 .footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding-bottom: 22px;
-    padding-top: 25px;
-    padding-left: 3.4%;
-    margin-left: -.4%;
-    color: #e3e3b0;
-    font-size: x-small;
+    margin-top: auto;
     display: flex;
-    justify-content: left;
+    justify-content: center;
     align-items: center;
     background: linear-gradient(transparent, #e68019, #e68019, #e68019);
-    z-index: 9;
+    color: #e3e3b0;
+    font-size: x-small;
+    padding: 22px 0;
+    text-align: center;
   }
+
+.footer-content {
+    display: inline-block;
+    text-align: center;
+}
 
                                 /* fade ins */
 
@@ -658,288 +547,241 @@ a {
 
                                         /* mobile only */
 
-@media only screen and (max-width: 840px) {
-    /* dutch stuff */
-    #nAlkmaar, #nAmersfoort, #nAmsterdam, #nAntwerp, #nBaarle, #nBrugge, #nDelft, #nDen_Haag, #nEindhoven, #nOtterlo, #nRotterdam, #nUtrecht{
-        position: relative;
-        top: -5em;
-        left: 0px;
-    }
+        @media only screen and (max-width: 840px) {
 
-    #dutchblogadjust {
-        width: 91.6%;
-    }
-}
+        }
 
-@media only screen and (max-width: 550px) {
+        @media only screen and (max-width: 550px) {
 
-    /* header */
+            /* header */
 
-    .header-nav {
-     margin-left: 1.6%;
-    }
+            .header-nav {
+            margin-left: 1.6%;
+            }
 
-    .header {
-        position: fixed;
-        width: 100%;
-        height: 3.7em;
-        margin-top: -10px;
-        background-color:#e68019;
-        z-index: 88;
-        background: linear-gradient(#e68019, #e68019, #e68019, #e68019, #e68019, transparent);
-    }
+            .header {
+                position: fixed;
+                width: 100%;
+                height: 3.7em;
+                margin-top: -10px;
+                background-color:#e68019;
+                z-index: 88;
+                background: linear-gradient(#e68019, #e68019, #e68019, #e68019, #e68019, transparent);
+            }
 
-    .header li {
-        position: relative;
-        list-style: none;
-        color:#e3e3b0;
-        background-color:#e68019;
-        margin-left: 1.8%;
-        display: inline;
-        font-size: 0.9em !important;
-        z-index: 87;
-    }
+            .header li {
+                position: relative;
+                list-style: none;
+                color:#e3e3b0;
+                background-color:#e68019;
+                margin-left: 1.8%;
+                display: inline;
+                font-size: 0.9em !important;
+                z-index: 87;
+            }
 
-    .header a {
-        color:#e3e3b0;
-        text-decoration: none;
-        padding-bottom: 7px;
-        padding-top: 7px;
-        z-index: 89;
-    }
+            .header a {
+                color:#e3e3b0;
+                text-decoration: none;
+                padding-bottom: 7px;
+                padding-top: 7px;
+                z-index: 89;
+            }
 
-    .header a:hover {
-        color: #f2f3f4;
-    }
+            .header a:hover {
+                color: #ffffff;
+            }
 
-    hr {
-        margin-top: 1em !important;
-        display: block;
-        height: 0px;
-        border: 0;
-        border-top: 6px solid #e3e3b0 !important;
-    }
+            hr {
+                margin-top: 1em !important;
+                display: block;
+                height: 0px;
+                border: 0;
+                border-top: 6px solid #e3e3b0 !important;
+            }
 
-    /* index */
+            /* index */
 
-    #bigndliconitself {
-        margin-top: 25%;
-        width: 55%;
-        height: 55%;
-    }
-    
-    #bigndliconitself1 {
-        margin-top: 25%;
-        width: 55%;
-        height: 55%;
-    }
+            #bigndliconitself {
+                margin-top: 25%;
+                width: 55%;
+                height: 55%;
+            }
+            
+            #bigndliconitself1 {
+                margin-top: 25%;
+                width: 55%;
+                height: 55%;
+            }
 
-    /* portfolio */
+            /* portfolio */
 
-    #allworks {
-        margin-right: 1em;
-    }
+            #allworks {
+                margin-right: 1em;
+            }
 
-    .portfolioimage1 {
-        margin-top: 72px;
-        width: 30%; 
-        min-width: 280px;
-        height: 30%;
-        min-height: 60px;
-        max-width: 1300px;
-        margin-left: 1.77%;
-    }
+            .portfolioimage1 {
+                margin-top: 72px;
+                width: 30%; 
+                min-width: 280px;
+                height: 30%;
+                min-height: 60px;
+                max-width: 1300px;
+                margin-left: 1.77%;
+            }
 
-    .portfolioimage1:hover {
-        filter: brightness(1.05) drop-shadow(0px 0px 3px #e3e3b0);
-    }
+            .portfolioimage1:hover {
+                filter: brightness(1.05) drop-shadow(0px 0px 3px #ffffff);
+            }
 
-    .portfolioimage {
-        margin-top: 32px;
-        width: 30%; 
-        min-width: 280px;
-        height: 30%;
-        min-height: 60px;
-        max-width: 1300px;
-        margin-left: calc(1.77%);
-    }
+            .portfolioimage {
+                margin-top: 32px;
+                width: 30%; 
+                min-width: 280px;
+                height: 30%;
+                min-height: 60px;
+                max-width: 1300px;
+                margin-left: calc(1.77%);
+            }
 
-    .portfolioimage:hover {
-        filter: brightness(1.05) drop-shadow(0px 0px 3px #e3e3b0);
-    }
+            .portfolioimage:hover {
+                filter: brightness(1.05) drop-shadow(0px 0px 3px #ffffff);
+            }
 
-     .back-to-top {
-    display: none !important;
+            .portfolioli {
+                list-style: none;
+                font-size: larger;
+                margin-left: 0%;
+            }
 
-    /* projects */
+            /* projects */
 
-    .allprojects {
-        position: relative;
-    }
+            .allprojects {
+                position: relative;
+            }
 
-    .projectimages:hover {
-        filter: brightness(1.08) drop-shadow(0px 0px 3px #e3e3b0);
-    }
+            .projectimages:hover {
+                filter: brightness(1.08) drop-shadow(0px 0px 3px #e3e3b0);
+            }
 
-    .projects1, .projects2, .projects3, .projects4, .projects5, .projects6, .projects7 {
-        margin-left: 3.5%;
-        max-width: 600px;
-        padding-right: 5%;
-        z-index: 1;
-    }
+            .back-button-container {
+                padding-left: 7px !important;
+            }
 
-    #projectimagestop {
-        margin-top: 95px;
-        border-radius: 1em;
-    }
+            /* Mobile shared hover effects */
+            .projects1:hover .projectimages,
+            .projects2:hover .projectimages,
+            .projects3:hover .projectimages,
+            .projects4:hover .projectimages,
+            .projects5blog:hover .projectimages,
+            .projects5:hover .projectimages,
+            .projects6:hover .projectimages,
+            .projects7:hover .projectimages {
+                filter: brightness(1.08) drop-shadow(0px 0px 3px #e3e3b0);
+            }
 
-    .project {
-        margin-top: 11px;
-        font-size: x-large;
-        margin-left: -.2%;
-    }
+            .projects1:hover .project,
+            .projects2:hover .project,
+            .projects3:hover .project,
+            .projects4:hover .project,
+            .projects5blog:hover .project,
+            .projects5:hover .project,
+            .projects6:hover .project,
+            .projects7:hover .project {
+                color: #ffffff;
+            }
 
-    .project1 {
-        margin-top: -15px;
-        font-size: smaller;
-        margin-left: -.05%;
-    }
+            
 
-    .publications {
-        margin-left: 3.4%;
-        text-decoration: underline;
-    }
+            .projects1, .projects2, .projects3, .projects4, .projects5blog, .projects5, .projects6, .projects7 {
+                margin-left: 3.5%;
+                max-width: 600px;
+                padding-right: 5%;
+                z-index: 1;
+            }
 
-    /* blog */
+            #projectimagestop {
+                margin-top: 86px;
+                border-radius: 1em;
+            }
 
-    #blogh2 {
-        color: #e3e3b0;
-        position: absolute;
-        margin-top: 85px;
-        margin-left: 3%;
-        display: block;
-        font-size: small;
-        font-style: italic;
-        padding-right: 12px;
-        visibility: visible;
-    }
+            .project {
+                margin-top: 11px;
+                font-size: x-large;
+                margin-left: -.2%;
+            }
 
-     #blognotice {
-        color: #e3e3b0;
-        position: absolute;
-        margin-top: 85px;
-        margin-left: 3%;
-        display: block;
-        font-size: small;
-        font-style: italic;
-        padding-right: 12px;
-        visibility: visible;
-    }
+            .project1 {
+                margin-top: -15px;
+                font-size: smaller;
+                margin-left: -.05%;
+                cursor: pointer;
+            }
 
-    #allblogs h2 {
-        margin-top: 1.15em !important;
-        font-size: 2em;
-    }
+            h4 {
+                color: #e3e3b0;
+            }
 
-    .pbox p{   
-        width: 89.5vw !important;
-        min-width: 10em !important;
-        text-align: justify;
-        padding: 0.5em !important;
-    }
 
-      .pbox img {
-        width: 100%;
-    }
 
-    #politicsImage {
-        margin-left: 1em;
-        height: 2em;
-    }
+            .publications {
+                margin-left: 3.4%;
+                text-decoration: underline;
+            }
 
-    #unrealpoliticsImage {
-        margin-left: 1em;
-        height: 2em;
-    }
 
-    #languagesImage {
-        margin-left: 1em;
-        height: 2em;
-    }
 
-    #netherlandsmap {
-        width: 100%;
-      }
+            /* contact */
 
-    #netherlandsmappbox {
-        min-width: 20em;
-    }
+            /* about */
+            
+            #headshot {
+                text-align: center;
+                position: relative;
+                margin-top: 4em;
+                height: 17.8em; 
+                width: 15.5em;
+                border: 6px solid #e3e3b0;
+            }
+            
+            .abouttext {
+                margin-top: 5px;
+                position: relative;
+                font-size: larger;
+                padding-left: calc(13% + (100vw - 700px) * (1 - 30) / (700 -  1000));
+                padding-right: calc(13% + (100vw - 700px) * (1 - 30) / (700 -  1000));
+                text-align: center;
+                align-items: center;
+            }
+            
+            .endspacesmall {
+                position: relative;
+                margin-top: 0px;
+                padding: 30px;
+            }
 
-    #unrealpolitics-blog h2 {
-        font-size: 1.6em;
-    }
+            /* footer */
 
-    .pbox p {   
-        font-size: medium !important;
-        text-align: left;
-    }
+            .footer {
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin-bottom: 21px;
+                padding-top: 0px;
+                padding-left: 3.4%;
+                margin-left: 0%;
+                color: #e3e3b0;
+                font-size: x-small;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: linear-gradient(transparent, #e68019, #e68019, #e68019);
+                z-index: 9;
+            }
 
-    .pbox img {
-        min-width: 22em;
-        width: 80vw;
-    }
-
-    .ptextwidth {
-        font-size: 1em !important;
-    }
-
-    /* contact */
-
-    /* about */
-    
-    #headshot {
-        text-align: center;
-        position: relative;
-        margin-top: 4em;
-        height: 14em; 
-        width: 14em;
-        border: 6px solid #e3e3b0;
-    }
-    
-    .abouttext {
-        margin-top: 5px;
-        position: relative;
-        font-size: larger;
-        padding-left: calc(13% + (100vw - 700px) * (1 - 30) / (700 -  1000));
-        padding-right: calc(13% + (100vw - 700px) * (1 - 30) / (700 -  1000));
-        text-align: center;
-        align-items: center;
-    }
-    
-    .endspacesmall {
-        position: relative;
-        margin-top: 0px;
-        padding: 50px;
-    }
-
-    /* footer */
-
-    .footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding-bottom: 21px;
-        padding-top: 25px;
-        padding-left: 3.4%;
-        margin-left: 0%;
-        color: #e3e3b0;
-        font-size: x-small;
-        display: flex;
-        justify-content: left;
-        align-items: center;
-        background: linear-gradient(transparent, #e68019, #e68019, #e68019);
-        z-index: 9;
-    }
-}
-}
+            .footer-content {
+                display: inline-block;
+                text-align: center;
+                margin-left: -3%;
+            }
+        }
