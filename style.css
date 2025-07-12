@@ -55,7 +55,7 @@ hr {
     display: block;
     height: 0px;
     border: 0;
-    border-top: 2px solid #e68109;
+    border-top: 2px solid #e68019;
 }
 
 .header-icon {
@@ -75,15 +75,16 @@ hr {
 /* Below is the Index section */
 
 .bigndlicon {
-    text-align: center;
+    position: fixed;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
 }
 
 #bigndliconitself {
-    margin-top: 5%;
-    padding-bottom: 100px;
-    padding-top: 50px;
-    width: 35%;
-    height: 35%;
+    width: 250px;
+    height: 250px;
     filter: drop-shadow(2px 1px 8px #e3e3b0)
     drop-shadow(-1px -1px 8px #e3e3b0);
     filter: drop-shadow(2px 1px 8px #e3e3b0)
@@ -398,11 +399,26 @@ a {
     color: #ffffff;
 }
 
+.projects1:hover .project1,
+.projects2:hover .project1,
+.projects3:hover .project1,
+.projects4:hover .project1,
+.projects5blog:hover .project1,
+.projects5:hover .project1,
+.projects6:hover .project1,
+.projects7:hover .project1 {
+    color: #ffffff;
+}
+
 .project1 {
     margin-top: -15px;
     font-size: smaller;
     margin-left: -.05%;
     cursor: pointer;
+}
+
+.project1:hover {
+    color: #ffffff;
 }
 
 h4 {
@@ -618,11 +634,7 @@ h4 {
 
             /* index */
 
-            #bigndliconitself {
-                margin-top: 25%;
-                width: 55%;
-                height: 55%;
-            }
+
             
             #bigndliconitself1 {
                 margin-top: 25%;
@@ -707,6 +719,17 @@ h4 {
                 color: #ffffff;
             }
 
+            .projects1:hover .project1,
+            .projects2:hover .project1,
+            .projects3:hover .project1,
+            .projects4:hover .project1,
+            .projects5blog:hover .project1,
+            .projects5:hover .project1,
+            .projects6:hover .project1,
+            .projects7:hover .project1 {
+                color: #ffffff;
+            }
+
             
 
             .projects1, .projects2, .projects3, .projects4, .projects5blog, .projects5, .projects6, .projects7 {
@@ -732,6 +755,10 @@ h4 {
                 font-size: smaller;
                 margin-left: -.05%;
                 cursor: pointer;
+            }
+
+            .project1:hover {
+                color: #ffffff;
             }
 
             h4 {

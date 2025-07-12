@@ -265,6 +265,12 @@
             background-color: #e68019;
         }
 
+        /* Dutch page specific header styling */
+        .header {
+            background-color: #e68019 !important;
+            background: linear-gradient(#e68019, #e68019, #e68019, #e68019, #e68019, transparent) !important;
+        }
+
         .header-fixed {
             position: fixed !important;
             top: 0 !important;
@@ -634,6 +640,18 @@
 
         .dot.active, .dot:hover {
             background-color: #e68019;
+        }
+
+        @media (max-width: 768px) {
+            .location-map {
+                position: static;
+                margin-top: 20px;
+                text-align: center;
+            }
+            
+            .map-image {
+                width: 200px;
+            }
         }
 
         @media (max-width: 600px) {

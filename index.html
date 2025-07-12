@@ -8,97 +8,238 @@
     <title>Noah Darwin Lee</title>
 </head>
 <body style="background-image: linear-gradient(to bottom #e3e3b0, #ffffff)">
-    <div class="header">
-        <br class="topbit">
-        <div class="header-nav">
-            <li>
-                <a href="art.html" class="header-nav-button">
-                    <span>Art</span>
-                </a>
-            </li>
-            <li>
-                <a href="projects.html" class="header-nav-button">
-                    <span>Projects</span>
-                </a>
-            </li>
-            <li>
-                <a href="contact.html" class="header-nav-button">
-                    <span>Contact</span>
-                </a>
-            </li>
-            <li>
-                <a href="about.html" class="header-nav-button">
-                    <span>About</span>
-                </a>
-            </li>
-            <div class="header-icon">
-            <img src="ndlicon.png" class="header-icon" onclick="mainMenu()">
-        </div>
-        </div>
-        <hr class="hr1"/>
-    </div>
+
     <script>
         function mainMenu() {
             window.location.href = "index.html";
-    }
+        }
+        
+        function toggleCompass() {
+            const compass = document.getElementById('compassNav');
+            const icon = document.getElementById('bigndliconitself');
+            const cursorGlow = document.getElementById('cursorGlow');
+            
+            compass.classList.toggle('compass-visible');
+            icon.classList.toggle('compass-active');
+            cursorGlow.classList.toggle('active');
+        }
+
+        // Cursor tracking
+        let mouseX = 0;
+        let mouseY = 0;
+
+        document.addEventListener('mousemove', function(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Update glow position
+            const cursorGlow = document.getElementById('cursorGlow');
+            cursorGlow.style.left = (mouseX - 20) + 'px'; // Center the 40px glow
+            cursorGlow.style.top = (mouseY - 20) + 'px';
+            
+            // Update custom cursor position
+            const customCursor = document.getElementById('customCursor');
+            customCursor.style.left = (mouseX - 3) + 'px'; // Center the 6px dot
+            customCursor.style.top = (mouseY - 3) + 'px';
+        });
     </script>
 
     <!--below is the Index-->
 
 <div class="bigndlicon">
-    <img src="ndlicon.png" id="bigndliconitself" onclick= "change()">
+    <img src="ndlicon.png" id="bigndliconitself" onclick="toggleCompass()">
 </div>
 
-<script>
-function change(){
-    img = document.getElementById("bigndliconitself")
-    img.src = "ndlicon1.png"
-    
-    // Start fading out header and footer earlier
-    setTimeout(function() {
-        document.querySelector(".header").classList.add("fade-out");
-        document.querySelector(".footer").classList.add("fade-out");
-    }, 1200);
-    
-    // Wait 1.5 seconds then start the grow animation
-    setTimeout(function() {
-        img.classList.add("grow-animation");
-        
-        // Navigate to art page after the grow animation completes
-        setTimeout(function() {
-            window.location.href = "art.html";
-        }, 800); // Animation duration
-    }, 1300);
-}
-</script>
+<!-- Compass Navigation -->
+<div class="compass-nav" id="compassNav">
+    <a href="art.html" class="compass-btn compass-north">
+        <span>Art</span>
+    </a>
+    <a href="projects.html" class="compass-btn compass-east">
+        <span>Projects</span>
+    </a>
+    <a href="contact.html" class="compass-btn compass-south">
+        <span>Contact</span>
+    </a>
+    <a href="about.html" class="compass-btn compass-west">
+        <span>About</span>
+    </a>
+</div>
+
+<!-- Cursor Glow Effect -->
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- Custom Cursor -->
+<div class="custom-cursor" id="customCursor"></div>
 
 <style>
-.grow-animation {
-    animation: growAndFade 0.8s ease-in-out forwards !important;
-    transform-origin: center center;
+/* Hide default cursor */
+* {
+    cursor: none !important;
 }
 
-.fade-out {
-    animation: fadeOut 0.4s ease-in-out forwards;
+/* Custom cursor dot */
+.custom-cursor {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 1;
+    transition: opacity 0.1s ease;
 }
 
-@keyframes growAndFade {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(15);
-        opacity: 0.3;
-    }
+.bigndlicon {
+    padding: 1px 0px;
+    display: inline-block;
 }
 
-@keyframes fadeOut {
-    0% {
-        opacity: 1;
+#bigndliconitself:hover {
+    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
+    transition: filter 0.3s ease-in-out;
+}
+
+/* Keep glow effect active when compass is open */
+.compass-nav.compass-visible ~ * .bigndlicon #bigndliconitself,
+.bigndlicon #bigndliconitself.compass-active {
+    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
+}
+
+#bigndliconitself {
+    transition: filter 0.3s ease-in-out;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: auto;
+}
+
+/* Cursor Glow Effect */
+.cursor-glow {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(227, 227, 176, 0.1);
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
+}
+
+.cursor-glow.active {
+    opacity: 1;
+}
+
+/* Compass Navigation */
+.compass-nav {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.compass-nav.compass-visible {
+    opacity: 1;
+}
+
+.compass-btn {
+    position: absolute;
+    background-color: #e68019;
+    color: #e3e3b0;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 0px;
+    text-decoration: none;
+    font-family: 'Sora', sans-serif;
+    font-size: larger;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    opacity: 0.9;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.compass-nav.compass-visible .compass-btn {
+    pointer-events: auto;
+}
+
+.compass-btn span:before {
+    content: "[";
+    opacity: 0;
+}
+
+.compass-btn span:after {
+    content: "]";
+    opacity: 0;
+}
+
+.compass-btn:hover {
+    color: #ffffff;
+    opacity: 1;
+}
+
+.compass-btn:hover span:before,
+.compass-btn:hover span:after {
+    opacity: 1;
+}
+
+.compass-north {
+    top: -280px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.compass-east {
+    right: -285px;
+    top: -30px;
+    transform: translateY(-50%);
+}
+
+.compass-south {
+    bottom: -210px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.compass-west {
+    left: -270px;
+    top: -30px;
+    transform: translateY(-50%);
+}
+
+@media only screen and (max-width: 550px) {
+    .bigndlicon {
+        padding: -20px 0px;
     }
-    100% {
-        opacity: 0;
+    
+    .compass-north {
+        top: -250px;
+    }
+    
+    .compass-east {
+        right: -210px;
+    }
+    
+    .compass-south {
+        bottom: -170px;
+    }
+    
+    .compass-west {
+        left: -210px;
+    }
+    
+    .compass-btn {
+        padding: 8px 12px;
+        font-size: medium;
     }
 }
 </style>
