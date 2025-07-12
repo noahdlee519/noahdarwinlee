@@ -654,6 +654,7 @@ h4 {
 
             #allworks {
                 margin-right: 1em;
+                margin-left: 0.5em;
             }
 
             .portfolioimage1 {
@@ -663,7 +664,7 @@ h4 {
                 height: 30%;
                 min-height: 60px;
                 max-width: 1300px;
-                margin-left: 3%;
+                margin-left: 1.77%;
             }
 
             .portfolioimage1:hover {
@@ -677,7 +678,7 @@ h4 {
                 height: 30%;
                 min-height: 60px;
                 max-width: 1300px;
-                margin-left: calc(3%);
+                margin-left: calc(1.77%);
             }
 
             .portfolioimage:hover {
