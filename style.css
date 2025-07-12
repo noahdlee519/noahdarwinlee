@@ -173,25 +173,30 @@ hr {
     color: white;
 }
 
-.lightbox-nav {
-    position: fixed;
-    bottom: 15%;
-    transform: translateY(0);
+.lightbox-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1em;
+    padding: 0 2em;
+  }
+
+  .lightbox-nav {
+    position: static;
     font-size: 2.5em;
     background: none;
     color: #e3e3b0;
     border: none;
     cursor: pointer;
+    padding: 10px 20px;
     z-index: 1001;
   }
   
   #prevBtn {
-    left: 15%;
-    padding: 20px;
+    margin-right: auto;
   }
   #nextBtn {
-    right: 15%;
-    padding: 20px;
+    margin-left: auto;
   }
   
   .lightbox-nav:hover {
