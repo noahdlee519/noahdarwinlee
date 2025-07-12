@@ -177,8 +177,9 @@ hr {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 0.5em;
+    margin-top: -2.7em;
     padding: 0 2em;
+    min-width: 300px;
   }
 
   .lightbox-nav {
