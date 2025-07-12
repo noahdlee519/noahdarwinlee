@@ -175,9 +175,9 @@ hr {
 
 .lightbox-nav {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 3em;
+    bottom: 2em;
+    transform: translateY(0);
+    font-size: 2.5em;
     background: none;
     color: #e3e3b0;
     border: none;
@@ -186,12 +186,12 @@ hr {
   }
   
   #prevBtn {
-    left: 5%;
-    padding: 40px;
+    left: 20%;
+    padding: 20px;
   }
   #nextBtn {
-    right: 5%;
-    padding: 40px;
+    right: 20%;
+    padding: 20px;
   }
   
   .lightbox-nav:hover {
