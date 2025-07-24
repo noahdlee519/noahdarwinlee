@@ -14,19 +14,39 @@
             window.location.href = "/";
         }
         
+        let logoClickCount = 0;
+
         function toggleCompass() {
             const compass = document.getElementById('compassNav');
             const icon = document.getElementById('bigndliconitself');
             const cursorGlow = document.getElementById('cursorGlow');
+            const customCursor = document.getElementById('customCursor');
             
             compass.classList.toggle('compass-visible');
             icon.classList.toggle('compass-active');
             cursorGlow.classList.toggle('active');
+            
+            // Increment click counter
+            logoClickCount++;
+            
+            // If clicked an even number of times and more than once, hide cursor
+            if (logoClickCount > 1 && logoClickCount % 2 === 0) {
+                cursorGlow.classList.remove('visible');
+                customCursor.classList.remove('visible');
+                hasMovedMouse = false; // Reset flag so cursor can reappear on movement
+            }
+            // If clicked an odd number of times, show cursor immediately
+            else if (logoClickCount % 2 === 1) {
+                cursorGlow.classList.add('visible');
+                customCursor.classList.add('visible');
+                hasMovedMouse = true; // Set flag so cursor won't duplicate animation on next movement
+            }
         }
 
         // Cursor tracking
         let mouseX = 0;
         let mouseY = 0;
+        let hasMovedMouse = false;
 
         document.addEventListener('mousemove', function(e) {
             mouseX = e.clientX;
@@ -41,6 +61,13 @@
             const customCursor = document.getElementById('customCursor');
             customCursor.style.left = (mouseX - 3) + 'px'; // Center the 6px dot
             customCursor.style.top = (mouseY - 3) + 'px';
+            
+            // Show cursor and glow on first mouse movement
+            if (!hasMovedMouse) {
+                hasMovedMouse = true;
+                cursorGlow.classList.add('visible');
+                customCursor.classList.add('visible');
+            }
         });
     </script>
 
@@ -87,8 +114,14 @@
     background-color: #ffffff;
     pointer-events: none;
     z-index: 10;
+    opacity: 0;
+    transform: scaleY(0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.custom-cursor.visible {
     opacity: 1;
-    transition: opacity 0.1s ease;
+    transform: scaleY(1);
 }
 
 .bigndlicon {
@@ -126,9 +159,15 @@
     background-color: rgba(227, 227, 176, 0.1);
     pointer-events: none;
     z-index: 5;
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
+    opacity: 0;
+    transform: scaleY(0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
     filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
+}
+
+.cursor-glow.visible {
+    opacity: 0.7;
+    transform: scaleY(1);
 }
 
 .cursor-glow.active {
@@ -222,24 +261,35 @@
     }
     
     .compass-north {
-        top: -250px;
+        top: -225px;
     }
     
     .compass-east {
-        right: -210px;
+        right: -185px;
     }
     
     .compass-south {
-        bottom: -170px;
+        bottom: -145px;
     }
     
     .compass-west {
-        left: -210px;
+        left: -185px;
     }
     
     .compass-btn {
         padding: 8px 12px;
         font-size: medium;
+    }
+    
+    /* Hide custom cursor and glow on mobile */
+    .custom-cursor,
+    .cursor-glow {
+        display: none !important;
+    }
+    
+    /* Restore default cursor on mobile */
+    * {
+        cursor: auto !important;
     }
 }
 </style>
