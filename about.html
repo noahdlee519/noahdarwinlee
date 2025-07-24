@@ -85,5 +85,178 @@ My name is Noah and I’m a senior at the University of Chicago studying History
     <span id="year"> </span><span> Noah Darwin Lee &nbsp;|&nbsp; 2025</span>
 </div>
 
+<!-- Cursor Glow Effect -->
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- Custom Cursor -->
+<div class="custom-cursor" id="customCursor"></div>
+
+<style>
+/* Hide default cursor */
+* {
+    cursor: none !important;
+}
+
+/* Custom cursor dot */
+.custom-cursor {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    pointer-events: none;
+    z-index: 99999;
+    opacity: 0;
+    transform: scaleY(0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
+}
+
+.custom-cursor.visible {
+    opacity: 1;
+    transform: scaleY(1);
+}
+
+.custom-cursor.orange {
+    background-color: #e68019;
+}
+
+/* Cursor Glow Effect */
+.cursor-glow {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e3e3b0;
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 99998;
+    transform: scaleY(0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
+    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
+}
+
+.cursor-glow.visible {
+    opacity: 0.6;
+    transform: scaleY(1);
+}
+
+.cursor-glow.transparent {
+    opacity: 0 !important;
+}
+
+@media only screen and (max-width: 550px) {
+    /* Hide custom cursor and glow on mobile */
+    .custom-cursor,
+    .cursor-glow {
+        display: none !important;
+    }
+    
+    /* Restore default cursor on mobile */
+    * {
+        cursor: auto !important;
+    }
+}
+</style>
+
+<script>
+    let logoClickCount = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+    let hasMovedMouse = false;
+
+    function toggleCompass() {
+        const cursorGlow = document.getElementById('cursorGlow');
+        const customCursor = document.getElementById('customCursor');
+        
+        // Increment click counter
+        logoClickCount++;
+        
+        // If clicked an even number of times and more than once, hide cursor
+        if (logoClickCount > 1 && logoClickCount % 2 === 0) {
+            cursorGlow.classList.remove('visible');
+            customCursor.classList.remove('visible');
+            hasMovedMouse = false; // Reset flag so cursor can reappear on movement
+        }
+        // If clicked an odd number of times, show cursor immediately
+        else if (logoClickCount % 2 === 1) {
+            cursorGlow.classList.add('visible');
+            customCursor.classList.add('visible');
+            hasMovedMouse = true; // Set flag so cursor won't duplicate animation on next movement
+        }
+    }
+
+    document.addEventListener('mousemove', function(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        // Update glow position
+        const cursorGlow = document.getElementById('cursorGlow');
+        cursorGlow.style.left = (mouseX - 20) + 'px'; // Center the 40px glow
+        cursorGlow.style.top = (mouseY - 20) + 'px';
+        
+        // Update custom cursor position
+        const customCursor = document.getElementById('customCursor');
+        customCursor.style.left = (mouseX - 3) + 'px'; // Center the 6px dot
+        customCursor.style.top = (mouseY - 3) + 'px';
+        
+        // Show cursor and glow on first mouse movement
+        if (!hasMovedMouse) {
+            hasMovedMouse = true;
+            cursorGlow.classList.add('visible');
+            customCursor.classList.add('visible');
+        }
+        
+        // Check if hovering over clickable element
+        const elementUnderCursor = document.elementFromPoint(mouseX, mouseY);
+        const isClickable = elementUnderCursor && (
+            elementUnderCursor.tagName === 'A' ||
+            elementUnderCursor.tagName === 'BUTTON' ||
+            elementUnderCursor.onclick ||
+            elementUnderCursor.style.cursor === 'pointer' ||
+            elementUnderCursor.classList.contains('clickable') ||
+            elementUnderCursor.classList.contains('reach-out-link') ||
+            elementUnderCursor.closest('a') ||
+            elementUnderCursor.closest('button') ||
+            elementUnderCursor.closest('.clickable') ||
+            elementUnderCursor.closest('.reach-out-link')
+        );
+        
+                 // Toggle transparent class based on clickable state
+         if (isClickable) {
+             cursorGlow.classList.remove('transparent');
+         } else {
+             cursorGlow.classList.add('transparent');
+         }
+         
+         // Check if hovering over white elements and change cursor color
+         const computedStyle = elementUnderCursor ? getComputedStyle(elementUnderCursor) : null;
+         const isWhiteElement = computedStyle && (
+             computedStyle.backgroundColor === 'rgb(255, 255, 255)' ||
+             computedStyle.backgroundColor === '#ffffff' ||
+             computedStyle.backgroundColor === 'white' ||
+             computedStyle.color === 'rgb(255, 255, 255)' ||
+             computedStyle.color === '#ffffff' ||
+             computedStyle.color === 'white'
+         );
+         
+         // Toggle orange class based on white element detection
+         if (isWhiteElement) {
+             customCursor.classList.add('orange');
+         } else {
+             customCursor.classList.remove('orange');
+         }
+    });
+
+    // Update mainMenu function to include cursor toggle functionality
+    const headerIcon = document.querySelector('.header-icon img');
+    if (headerIcon) {
+        headerIcon.onclick = function() {
+            toggleCompass();
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 100);
+        };
+    }
+</script>
     </body>
     </html>
