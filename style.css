@@ -290,7 +290,7 @@ hr {
 
 .portfoliodescriptions1 {
     margin-top: 0.5%;
-    margin-top: 5px;
+    margin-top: 8px;
     margin-left: 0%;
     width: clamp(280px,30%,1300px); 
     font-size: larger;
@@ -298,7 +298,7 @@ hr {
 
 .portfoliodescriptions1new {
     margin-top: 0.5%;
-    margin-top: 10px;
+    margin-top: 8px;
     margin-left: 0%;
     width: clamp(280px,30%,1300px); 
     font-size: larger;
