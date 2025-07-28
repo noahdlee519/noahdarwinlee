@@ -93,7 +93,27 @@ My name is Noah and I’m a senior at the University of Chicago studying History
 
 <style>
 /* Hide default cursor */
-* {
+*, *::before, *::after {
+    cursor: none !important;
+}
+
+/* Specifically target clickable elements */
+a, button, .header-nav-button, .projectimages, .project, .header-icon, .reach-out-link {
+    cursor: none !important;
+}
+
+/* Ensure cursor stays hidden during transitions */
+html, body {
+    cursor: none !important;
+}
+
+/* Force cursor to stay hidden during page transitions */
+html:not(.loaded), body:not(.loaded) {
+    cursor: none !important;
+}
+
+/* Prevent cursor flash during navigation */
+:root {
     cursor: none !important;
 }
 
@@ -144,6 +164,12 @@ My name is Noah and I’m a senior at the University of Chicago studying History
     opacity: 0 !important;
 }
 
+.cursor-glow.hidden,
+.custom-cursor.hidden {
+    opacity: 0;
+    transform: scaleY(0);
+}
+
 @media only screen and (max-width: 550px) {
     /* Hide custom cursor and glow on mobile */
     .custom-cursor,
@@ -174,12 +200,16 @@ My name is Noah and I’m a senior at the University of Chicago studying History
         // If clicked an even number of times and more than once, hide cursor
         if (logoClickCount > 1 && logoClickCount % 2 === 0) {
             cursorGlow.classList.remove('visible');
+            cursorGlow.classList.add('hidden');
             customCursor.classList.remove('visible');
+            customCursor.classList.add('hidden');
             hasMovedMouse = false; // Reset flag so cursor can reappear on movement
         }
         // If clicked an odd number of times, show cursor immediately
         else if (logoClickCount % 2 === 1) {
+            cursorGlow.classList.remove('hidden');
             cursorGlow.classList.add('visible');
+            customCursor.classList.remove('hidden');
             customCursor.classList.add('visible');
             hasMovedMouse = true; // Set flag so cursor won't duplicate animation on next movement
         }
@@ -257,6 +287,25 @@ My name is Noah and I’m a senior at the University of Chicago studying History
             }, 100);
         };
     }
+
+    // Add smooth navigation handling for all links
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add cursor protection to all navigation links
+        const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button, .reach-out-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Keep cursor hidden during navigation
+                document.body.style.cursor = 'none';
+                document.documentElement.style.cursor = 'none';
+            });
+        });
+
+        // Ensure cursor stays hidden during page unload
+        window.addEventListener('beforeunload', function() {
+            document.body.style.cursor = 'none';
+            document.documentElement.style.cursor = 'none';
+        });
+    });
 </script>
     </body>
     </html>

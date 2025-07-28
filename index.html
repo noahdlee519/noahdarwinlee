@@ -111,6 +111,25 @@
                 customCursor.classList.remove('orange');
             }
         });
+
+        // Add smooth navigation handling for all links
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add cursor protection to all navigation links
+            const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button, .compass-btn');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Keep cursor hidden during navigation
+                    document.body.style.cursor = 'none';
+                    document.documentElement.style.cursor = 'none';
+                });
+            });
+
+            // Ensure cursor stays hidden during page unload
+            window.addEventListener('beforeunload', function() {
+                document.body.style.cursor = 'none';
+                document.documentElement.style.cursor = 'none';
+            });
+        });
     </script>
 
     <!--below is the Index-->
@@ -143,7 +162,27 @@
 
 <style>
 /* Hide default cursor */
-* {
+*, *::before, *::after {
+    cursor: none !important;
+}
+
+/* Specifically target clickable elements */
+a, button, .header-nav-button, .compass-btn {
+    cursor: none !important;
+}
+
+/* Ensure cursor stays hidden during transitions */
+html, body {
+    cursor: none !important;
+}
+
+/* Force cursor to stay hidden during page transitions */
+html:not(.loaded), body:not(.loaded) {
+    cursor: none !important;
+}
+
+/* Prevent cursor flash during navigation */
+:root {
     cursor: none !important;
 }
 
