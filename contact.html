@@ -53,8 +53,26 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Add cursor protection to all navigation links
             const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button');
+
+            // Helper: normalize a path like "contact" or "contact.html" to "/contact"
+            function normalizePath(href) {
+                if (!href) return '';
+                let p = href.trim();
+                p = p.replace(/^\/*/, '');
+                p = p.replace(/\.html$/i, '');
+                return '/' + p;
+            }
+
+            const currentPath = normalizePath(window.location.pathname.replace(/\.html$/i, ''));
+
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
+                    // Prevent needless reload if clicking the current page's nav link
+                    const targetPath = normalizePath(this.getAttribute('href'));
+                    if (targetPath && targetPath === currentPath) {
+                        e.preventDefault();
+                        return;
+                    }
                     // Keep cursor hidden during navigation
                     document.body.style.cursor = 'none';
                     document.documentElement.style.cursor = 'none';
