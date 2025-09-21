@@ -124,6 +124,14 @@
             const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button, .compass-btn');
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
+                    // Inject a temporary global cursor guard to prevent any flash
+                    let guard = document.getElementById('cursor-guard');
+                    if (!guard) {
+                        guard = document.createElement('style');
+                        guard.id = 'cursor-guard';
+                        guard.textContent = '*, *::before, *::after { cursor: none !important; } html, body { cursor: none !important; }';
+                        document.head.appendChild(guard);
+                    }
                     // Keep cursor hidden during navigation
                     document.body.style.cursor = 'none';
                     document.documentElement.style.cursor = 'none';
