@@ -100,6 +100,57 @@ function scrollToTop() {
 </script>
 
 <!--below is the Portfolio-->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Native lazy hints for all portfolio grid images
+        var portfolioImages = document.querySelectorAll('img.portfolioimage');
+        portfolioImages.forEach(function(img) {
+            if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy');
+            img.setAttribute('decoding', 'async');
+            img.setAttribute('fetchpriority', 'low');
+        });
+
+        // True lazy loading using IntersectionObserver (prevents parser-initiated fetches)
+        var transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+        var ioSupported = 'IntersectionObserver' in window;
+        if (ioSupported) {
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var el = entry.target;
+                        var original = el.getAttribute('data-src');
+                        if (original) {
+                            el.src = original;
+                            el.removeAttribute('data-src');
+                        }
+                        observer.unobserve(el);
+                    }
+                });
+            }, { root: null, rootMargin: '300px 0px', threshold: 0.01 });
+
+            portfolioImages.forEach(function(img) {
+                // Skip if already converted
+                if (!img.getAttribute('data-src')) {
+                    img.setAttribute('data-src', img.getAttribute('src'));
+                    img.setAttribute('src', transparentPixel);
+                }
+                observer.observe(img);
+            });
+        }
+
+        // Keep header icon eager for fast UI paint
+        var headerIcon = document.querySelector('img.header-icon');
+        if (headerIcon) {
+            headerIcon.setAttribute('loading', 'eager');
+            headerIcon.setAttribute('decoding', 'async');
+            headerIcon.setAttribute('fetchpriority', 'high');
+        }
+    } catch (e) {
+        // no-op
+    }
+});
+</script>
 
 <br id="topbreak">
 
