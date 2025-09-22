@@ -136,6 +136,28 @@
                     document.body.style.cursor = 'none';
                     document.documentElement.style.cursor = 'none';
                 });
+
+        // Touch support for custom cursor on mobile
+        var cursorGlow = document.getElementById('cursorGlow');
+        var customCursor = document.getElementById('customCursor');
+        function showCursorAt(x, y) {
+            cursorGlow.style.left = (x - 20) + 'px';
+            cursorGlow.style.top = (y - 20) + 'px';
+            customCursor.style.left = (x - 3) + 'px';
+            customCursor.style.top = (y - 3) + 'px';
+            cursorGlow.classList.add('visible');
+            customCursor.classList.add('visible');
+        }
+        document.addEventListener('touchstart', function(e) {
+            var t = e.touches[0];
+            if (!t) return;
+            showCursorAt(t.clientX, t.clientY);
+        }, { passive: true });
+        document.addEventListener('touchmove', function(e) {
+            var t = e.touches[0];
+            if (!t) return;
+            showCursorAt(t.clientX, t.clientY);
+        }, { passive: true });
             });
 
             // Ensure cursor stays hidden during page unload
@@ -384,16 +406,6 @@ html:not(.loaded), body:not(.loaded) {
         font-size: medium;
     }
     
-    /* Hide custom cursor and glow on mobile */
-    .custom-cursor,
-    .cursor-glow {
-        display: none !important;
-    }
-    
-    /* Restore default cursor on mobile */
-    * {
-        cursor: auto !important;
-    }
 }
 </style>
 

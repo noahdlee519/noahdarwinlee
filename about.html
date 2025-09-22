@@ -177,16 +177,6 @@ html:not(.loaded), body:not(.loaded) {
 }
 
 @media only screen and (max-width: 550px) {
-    /* Hide custom cursor and glow on mobile */
-    .custom-cursor,
-    .cursor-glow {
-        display: none !important;
-    }
-    
-    /* Restore default cursor on mobile */
-    * {
-        cursor: auto !important;
-    }
 }
 </style>
 
@@ -282,6 +272,30 @@ html:not(.loaded), body:not(.loaded) {
              customCursor.classList.remove('orange');
          }
     });
+
+    // Touch support for custom cursor on mobile
+    (function(){
+        var cursorGlow = document.getElementById('cursorGlow');
+        var customCursor = document.getElementById('customCursor');
+        function showCursorAt(x, y) {
+            cursorGlow.style.left = (x - 20) + 'px';
+            cursorGlow.style.top = (y - 20) + 'px';
+            customCursor.style.left = (x - 3) + 'px';
+            customCursor.style.top = (y - 3) + 'px';
+            cursorGlow.classList.add('visible');
+            customCursor.classList.add('visible');
+        }
+        document.addEventListener('touchstart', function(e) {
+            var t = e.touches && e.touches[0];
+            if (!t) return;
+            showCursorAt(t.clientX, t.clientY);
+        }, { passive: true });
+        document.addEventListener('touchmove', function(e) {
+            var t = e.touches && e.touches[0];
+            if (!t) return;
+            showCursorAt(t.clientX, t.clientY);
+        }, { passive: true });
+    })();
 
     // Update mainMenu function to include cursor toggle functionality
     const headerIcon = document.querySelector('.header-icon img');
