@@ -220,25 +220,8 @@
 
             <div class="poster-gallery">
                 <h2>Media</h2>
-                <div class="carousel-container">
-                    <div class="carousel">
-                        <div class="carousel-slide active">
-                            <img src="projectimages/newdutchposter.png" alt="Dutch Language Circle Schedule Poster" class="poster-image">
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="projectimages/logosimpledutch.png" alt="Dutch Language Circle Miffy Poster" class="poster-image">
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="projectimages/instadutchlanguagecircle.png" alt="Dutch Language Circle Simple Design" class="poster-image">
-                        </div>
-                    </div>
-                    <button class="carousel-btn prev-btn" onclick="changeSlide(-1)">❮</button>
-                    <button class="carousel-btn next-btn" onclick="changeSlide(1)">❯</button>
-                    <div class="carousel-dots">
-                        <span class="dot active" onclick="currentSlide(1)"></span>
-                        <span class="dot" onclick="currentSlide(2)"></span>
-                        <span class="dot" onclick="currentSlide(3)"></span>
-                    </div>
+                <div class="single-media">
+                    <img src="projectimages/logosimpledutch.png" alt="Dutch Language Circle" class="poster-image">
                 </div>
             </div>
 
@@ -547,6 +530,10 @@
             color: #e68019;
             margin-top: 0;
             margin-bottom: 20px;
+        }
+
+        .single-media {
+            text-align: center;
         }
 
         .carousel-container {
