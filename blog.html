@@ -410,6 +410,11 @@ html:not(.loaded), body:not(.loaded) {
 
 @media only screen and (max-width: 550px) {
 }
+
+@media (pointer: coarse), (hover: none) {
+    #cursorGlow, #customCursor { display: none !important; }
+    html, body, *, *::before, *::after { cursor: auto !important; }
+}
 </style>
 
 <script>
@@ -417,6 +422,7 @@ html:not(.loaded), body:not(.loaded) {
     let mouseX = 0;
     let mouseY = 0;
     let hasMovedMouse = false;
+    const isFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
 
     function toggleCompass() {
         const cursorGlow = document.getElementById('cursorGlow');
@@ -443,6 +449,7 @@ html:not(.loaded), body:not(.loaded) {
         }
     }
 
+    if (isFinePointer) {
     document.addEventListener('mousemove', function(e) {
         mouseX = e.clientX;
         mouseY = e.clientY;
@@ -502,9 +509,10 @@ html:not(.loaded), body:not(.loaded) {
              customCursor.classList.remove('orange');
          }
     });
+    }
 
     // Touch support for custom cursor on mobile
-    (function(){
+    if (isFinePointer) (function(){
         var cursorGlow = document.getElementById('cursorGlow');
         var customCursor = document.getElementById('customCursor');
         function showCursorAt(x, y) {
@@ -540,6 +548,7 @@ html:not(.loaded), body:not(.loaded) {
 
     // Add smooth navigation handling for all links
     document.addEventListener('DOMContentLoaded', function() {
+        if (!isFinePointer) return;
         // Add cursor protection to all navigation links
         const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button');
         navLinks.forEach(link => {

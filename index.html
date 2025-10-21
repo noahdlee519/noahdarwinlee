@@ -37,14 +37,18 @@
             
             // If clicked an even number of times and more than once, hide cursor
             if (logoClickCount > 1 && logoClickCount % 2 === 0) {
-                cursorGlow.classList.remove('visible');
-                customCursor.classList.remove('visible');
+                if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+                    cursorGlow.classList.remove('visible');
+                    customCursor.classList.remove('visible');
+                }
                 hasMovedMouse = false; // Reset flag so cursor can reappear on movement
             }
             // If clicked an odd number of times, show cursor immediately
             else if (logoClickCount % 2 === 1) {
-                cursorGlow.classList.add('visible');
-                customCursor.classList.add('visible');
+                if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+                    cursorGlow.classList.add('visible');
+                    customCursor.classList.add('visible');
+                }
                 hasMovedMouse = true; // Set flag so cursor won't duplicate animation on next movement
             }
         }
@@ -54,6 +58,8 @@
         let mouseY = 0;
         let hasMovedMouse = false;
 
+        const isFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+        if (isFinePointer) {
         document.addEventListener('mousemove', function(e) {
             mouseX = e.clientX;
             mouseY = e.clientY;
@@ -117,9 +123,11 @@
                 customCursor.classList.remove('orange');
             }
         });
+        }
 
         // Add smooth navigation handling for all links
         document.addEventListener('DOMContentLoaded', function() {
+            if (!isFinePointer) return;
             // Add cursor protection to all navigation links
             const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button, .compass-btn');
             navLinks.forEach(link => {
@@ -406,6 +414,11 @@ html:not(.loaded), body:not(.loaded) {
         font-size: medium;
     }
     
+}
+
+@media (pointer: coarse), (hover: none) {
+    #cursorGlow, #customCursor { display: none !important; }
+    html, body, *, *::before, *::after { cursor: auto !important; }
 }
 </style>
 
