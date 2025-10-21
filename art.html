@@ -393,6 +393,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- lightbox code -->
 
+<style>
+/* Lightbox fade transitions */
+.lightbox {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.lightbox.visible {
+  opacity: 1;
+}
+</style>
+
 
 
 <script>
@@ -416,6 +427,8 @@ document.addEventListener('DOMContentLoaded', function() {
     lightboxImg.src = currentImageSet[currentImageIndex].src;
     caption.textContent = currentImageSet[currentImageIndex].title || '';
     lightbox.classList.remove('hidden');
+    // trigger fade-in on next frame
+    requestAnimationFrame(() => lightbox.classList.add('visible'));
     document.body.classList.add('disable-scroll');
 
     // Show arrows only if there's more than one image
@@ -447,10 +460,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function closeLightbox() {
-      document.getElementById('lightbox').classList.add('hidden');
-      document.getElementById('lightbox-img').src = '';
-      document.getElementById('lightbox-caption').textContent = '';
-      document.body.classList.remove('disable-scroll');
+      const lightbox = document.getElementById('lightbox');
+      const img = document.getElementById('lightbox-img');
+      const caption = document.getElementById('lightbox-caption');
+      // start fade-out
+      lightbox.classList.remove('visible');
+      // hide after transition completes
+      setTimeout(() => {
+        lightbox.classList.add('hidden');
+        img.src = '';
+        caption.textContent = '';
+        document.body.classList.remove('disable-scroll');
+      }, 200);
     }
     
     document.querySelectorAll('.clickable-img').forEach(img => {
