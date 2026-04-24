@@ -141,7 +141,7 @@ a[href*="cegu.uchicago.edu/expositions"]:active,
 a[href*="instagram.com"]:active,
 a[href*="linkedin.com"]:active,
 a[href="mailto:noahlee519@gmail.com"]:active,
-a[href="cv.html"]:active {
+a[href="/cv/"]:active {
   color: #ffffff;
 }
 
