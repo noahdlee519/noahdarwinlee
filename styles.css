@@ -406,6 +406,11 @@ a[href="/cv/"]:active {
     padding-top: 16px;
   }
 
+  /* Match index page: is-active adds extra bottom margin on desktop only */
+  .me-page .about-link.is-active {
+    margin-bottom: 8px;
+  }
+
   .me-contact-links {
     position: static;
     top: auto;
