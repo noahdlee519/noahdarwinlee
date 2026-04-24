@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="About Noah Lee." />
+    <title>Me | Noah Lee</title>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="me-page">
+    <a class="name" href="index.html"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="about-link is-active" href="me.html">> me</a>
+    <div class="top-right-links">
+      <div class="top-right-primary">
+        <a href="https://llso.uchicago.edu/llso-review-home" target="_blank" rel="noopener noreferrer"
+          >llso.uchicago.edu</a
+        >
+        <a href="https://dialectdict.com" target="_blank" rel="noopener noreferrer"
+          >dialectdict.com</a
+        >
+      </div>
+      <div class="top-right-secondary">
+        <a href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo.org</a>
+        <a href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer"
+          >expositions.mag</a
+        >
+      </div>
+    </div>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="favicon.png" alt="" />
+    </button>
+    <div class="me-contact-links">
+      <div class="me-contact-divider" aria-hidden="true"></div>
+      <a href="#" aria-label="Bio" id="bio-toggle">bio</a>
+      <a href="cv.html" aria-label="CV">cv</a>
+      <a href="https://www.instagram.com/noahdarwinlee/#" target="_blank" rel="noopener noreferrer"
+        >instagram</a
+      >
+      <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer">linkedin</a>
+      <a href="mailto:noahlee519@gmail.com">email</a>
+    </div>
+    <img class="profile-photo" src="me.jpeg" alt="Photo of Noah Lee" />
+    <p class="bio-text" id="bio-text">Noah is a senior at the University of Chicago studying history, law, and geography. He is interested in consulates, languages, and institutional memory. On this website you can find different projects ranging from digital dialect dictionaries to paintings of the World's Fair to travel recommendations for different American cities.</p>
+    <script>
+      const bioToggle = document.getElementById("bio-toggle");
+      const bioText = document.getElementById("bio-text");
+      const profilePhoto = document.querySelector(".profile-photo");
+      const nameLink = document.querySelector(".name");
+      const aboutLink = document.querySelector(".about-link");
+      const topRightLinks = document.querySelector(".top-right-links");
+      const toTopBtn = document.getElementById("to-top-btn");
+      const fadeDistance = 90;
+      const toTopShowDistance = 170;
+
+      function updateHeaderFade() {
+        if (window.innerWidth <= 900) {
+          nameLink.style.opacity = "";
+          aboutLink.style.opacity = "";
+          topRightLinks.style.opacity = "";
+          nameLink.style.pointerEvents = "";
+          aboutLink.style.pointerEvents = "";
+          topRightLinks.style.pointerEvents = "";
+          toTopBtn.classList.remove("is-visible");
+          return;
+        }
+
+        const progress = Math.min(window.scrollY / fadeDistance, 1);
+        const opacity = 1 - progress;
+        const pointerEvents = opacity <= 0.05 ? "none" : "";
+
+        nameLink.style.opacity = opacity;
+        aboutLink.style.opacity = opacity;
+        topRightLinks.style.opacity = opacity;
+
+        nameLink.style.pointerEvents = pointerEvents;
+        aboutLink.style.pointerEvents = pointerEvents;
+        topRightLinks.style.pointerEvents = pointerEvents;
+        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
+      }
+
+      bioToggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        const isVisible = bioText.classList.toggle("is-visible");
+        bioToggle.classList.toggle("is-active", isVisible);
+        document.body.classList.toggle("bio-open", isVisible);
+        if (isVisible) {
+          const imageHeight = profilePhoto.getBoundingClientRect().height;
+          window.scrollBy({ top: imageHeight, behavior: "smooth" });
+        }
+      });
+
+      window.addEventListener("scroll", updateHeaderFade, { passive: true });
+      window.addEventListener("resize", updateHeaderFade);
+      toTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      });
+      updateHeaderFade();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="CV for Noah Lee." />
+    <title>CV | Noah Lee</title>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="cv-page">
+    <a class="name" href="index.html"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="about-link is-active" href="cv.html">> cv</a>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="favicon.png" alt="" />
+    </button>
+    <main>
+      <section>
+        <h2>Education</h2>
+        <p>University of Chicago, A.B. in History, CEGU, and LLSO <span class="cv-meta">(2026)</span></p>
+      </section>
+
+      <section>
+        <h2>Publications and Contributions</h2>
+        <p>
+          <a class="cv-publication-link" href="https://drive.google.com/file/d/1fqe_ud-iwyhOkHNB-6nVWowJog_PcFVD/view?usp=drive_link"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Thesis: <em>Proč UChicago: Chicago, the University, and the Making of Czechoslovakia</em>
+            <span class="cv-meta">(2026)</span></a
+          >
+        </p>
+        <p>
+          <a class="cv-publication-link" href="https://harperreview.com/a-monumental-people/" target="_blank" rel="noopener noreferrer"
+            ><em>A Monumental People</em> in The Harper Review <span class="cv-meta">(2026)</span></a
+          >
+        </p>
+        <p>
+          <a class="cv-publication-link" href="https://euphonyjournal.org/2025/10/18/prose-weltpolitik-by-noah-lee/" target="_blank" rel="noopener noreferrer"
+            ><em>Weltpolitik</em> in Euphony Journal, runner up for 2025 Prose Contest <span class="cv-meta">(2025)</span></a
+          >
+        </p>
+        <p>Selection of contributons in <a class="cv-publication-link" href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer">Expositions Magazine</a>:</p>
+        <p style="margin-left:2.5em"><em>Says Quentin</em> in Expositions no. 13 <span class="cv-meta">(poetry and artwork, 2026)</span></p>
+        <p style="margin-left:2.5em"><em>Shooing the Ghosts of Chesterfield Mall</em> in Expositions no. 10 <span class="cv-meta">(artwork, 2025)</span></p>
+        <p style="margin-left:2.5em"><em>Jimmy's Endures</em> in Expositions no. 5 <span class="cv-meta">(artwork, 2023)</span></p>
+        <p style="margin-left:2.5em"><em>Antakya, Before</em> in Expositions no. 4 <span class="cv-meta">(artwork, 2023)</span></p>
+      </section>
+
+      <section>
+        <h2>Awards</h2>
+        <p>Global Honors <span class="cv-meta">(University of Chicago, 2026)</span></p>
+        <p>Čapek Family Thesis Grant <span class="cv-meta">(University of Chicago, 2026)</span></p>
+        <p>Chicago Studies Certificate <span class="cv-meta">(University of Chicago, 2026)</span></p>
+        <p>Gray Research Fellowship <span class="cv-meta">(University of Chicago, 2025)</span></p>
+        <p>Mansueto Institute Award <span class="cv-meta">(University of Chicago, 2024 & 2025)</span></p>
+        <p>Metcalf Award <span class="cv-meta">(University of Chicago, 2024)</span></p>
+        <p>Dean’s List <span class="cv-meta">(University of Chicago, 2023 & 2025)</span></p>
+      </section>
+
+      <section>
+        <h2>Other Professional Engagements</h2>
+        <p>Inaugural lecturer at the Slavic Department's Masaryk Club<span class="cv-meta"> (University of Chicago, 2026)</span></p>
+        <p>
+          Undergraduate Research Symposium <a class="cv-publication-link" href="https://www.instagram.com/p/DXaEshgkrtZ/?img_index=3" target="_blank" rel="noopener noreferrer">featured project</a> <span class="cv-meta">(University of Chicago, 2026)</span>
+        </p>
+        <p>Teaching Assistant for GISC28702: Introduction to GIS and Spatial Analysis <span class="cv-meta">(University of Chicago, 2025 & 2026)</span></p>
+        <p>Co-Host of Philosophy Department's Night of Ideas <span class="cv-meta">(University of Chicago, 2025-)</span></p>
+      </section>
+    </main>
+    <script>
+      const nameLink = document.querySelector(".name");
+      const aboutLink = document.querySelector(".about-link");
+      const toTopBtn = document.getElementById("to-top-btn");
+      const fadeDistance = 90;
+      const toTopShowDistance = 170;
+
+      function updateCvHeaderFade() {
+        if (window.innerWidth <= 900) {
+          nameLink.style.opacity = "";
+          aboutLink.style.opacity = "";
+          nameLink.style.pointerEvents = "";
+          aboutLink.style.pointerEvents = "";
+          toTopBtn.classList.remove("is-visible");
+          return;
+        }
+
+        const progress = Math.min(window.scrollY / fadeDistance, 1);
+        const opacity = 1 - progress;
+        const pointerEvents = opacity <= 0.05 ? "none" : "";
+
+        nameLink.style.opacity = opacity;
+        aboutLink.style.opacity = opacity;
+        nameLink.style.pointerEvents = pointerEvents;
+        aboutLink.style.pointerEvents = pointerEvents;
+        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
+      }
+
+      window.addEventListener("scroll", updateCvHeaderFade, { passive: true });
+      window.addEventListener("resize", updateCvHeaderFade);
+      toTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      });
+      updateCvHeaderFade();
+    </script>
+  </body>
+</html>

@@ -1,432 +1,310 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Sora">
-    <link href='style.css' rel='stylesheet'>
-    <link rel="shortcut icon" href="websiteiconndl.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Personal website for Noah Lee." />
     <title>Noah Darwin Lee</title>
-    <style>
-        /* Early cursor hide to prevent flash on navigation (desktop only) */
-        @media (pointer: fine) {
-            html, body, * { cursor: none !important; }
-        }
-    </style>
-</head>
-<body style="background-image: linear-gradient(to bottom #e3e3b0, #ffffff)">
-
-    <script>
-        function mainMenu() {
-            window.location.href = "/";
-        }
-        
-        let logoClickCount = 0;
-
-        function toggleCompass() {
-            const compass = document.getElementById('compassNav');
-            const icon = document.getElementById('bigndliconitself');
-            const cursorGlow = document.getElementById('cursorGlow');
-            const customCursor = document.getElementById('customCursor');
-            
-            compass.classList.toggle('compass-visible');
-            icon.classList.toggle('compass-active');
-            cursorGlow.classList.toggle('active');
-            
-            // Increment click counter
-            logoClickCount++;
-            
-            // If clicked an even number of times and more than once, hide cursor
-            if (logoClickCount > 1 && logoClickCount % 2 === 0) {
-                if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
-                    cursorGlow.classList.remove('visible');
-                    customCursor.classList.remove('visible');
-                }
-                hasMovedMouse = false; // Reset flag so cursor can reappear on movement
-            }
-            // If clicked an odd number of times, show cursor immediately
-            else if (logoClickCount % 2 === 1) {
-                if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
-                    cursorGlow.classList.add('visible');
-                    customCursor.classList.add('visible');
-                }
-                hasMovedMouse = true; // Set flag so cursor won't duplicate animation on next movement
-            }
-        }
-
-        // Cursor tracking
-        let mouseX = 0;
-        let mouseY = 0;
-        let hasMovedMouse = false;
-
-        const isFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
-        if (isFinePointer) {
-        document.addEventListener('mousemove', function(e) {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            
-            // Update glow position
-            const cursorGlow = document.getElementById('cursorGlow');
-            cursorGlow.style.left = (mouseX - 20) + 'px'; // Center the 40px glow
-            cursorGlow.style.top = (mouseY - 20) + 'px';
-            
-            // Update custom cursor position
-            const customCursor = document.getElementById('customCursor');
-            customCursor.style.left = (mouseX - 3) + 'px'; // Center the 6px dot
-            customCursor.style.top = (mouseY - 3) + 'px';
-            
-            // Show cursor and glow on first mouse movement
-            if (!hasMovedMouse) {
-                hasMovedMouse = true;
-                cursorGlow.classList.add('visible');
-                customCursor.classList.add('visible');
-            }
-            
-            // Check if hovering over clickable element
-            const elementUnderCursor = document.elementFromPoint(mouseX, mouseY);
-            const isClickable = elementUnderCursor && (
-                elementUnderCursor.tagName === 'A' ||
-                elementUnderCursor.tagName === 'BUTTON' ||
-                elementUnderCursor.onclick ||
-                elementUnderCursor.style.cursor === 'pointer' ||
-                elementUnderCursor.classList.contains('clickable') ||
-                elementUnderCursor.classList.contains('clickable-img') ||
-                elementUnderCursor.classList.contains('compass-btn') ||
-                elementUnderCursor.closest('a') ||
-                elementUnderCursor.closest('button') ||
-                elementUnderCursor.closest('.clickable') ||
-                elementUnderCursor.closest('.clickable-img') ||
-                elementUnderCursor.closest('.compass-btn')
-            );
-            
-            // Toggle transparent class based on clickable state
-            if (isClickable) {
-                cursorGlow.classList.remove('transparent');
-            } else {
-                cursorGlow.classList.add('transparent');
-            }
-            
-            // Check if hovering over white elements and change cursor color
-            const computedStyle = elementUnderCursor ? getComputedStyle(elementUnderCursor) : null;
-            const isWhiteElement = computedStyle && (
-                computedStyle.backgroundColor === 'rgb(255, 255, 255)' ||
-                computedStyle.backgroundColor === '#ffffff' ||
-                computedStyle.backgroundColor === 'white' ||
-                computedStyle.color === 'rgb(255, 255, 255)' ||
-                computedStyle.color === '#ffffff' ||
-                computedStyle.color === 'white'
-            );
-            
-            // Toggle orange class based on white element detection
-            if (isWhiteElement) {
-                customCursor.classList.add('orange');
-            } else {
-                customCursor.classList.remove('orange');
-            }
-        });
-        }
-
-        // Add smooth navigation handling for all links
-        document.addEventListener('DOMContentLoaded', function() {
-            if (!isFinePointer) return;
-            // Add cursor protection to all navigation links
-            const navLinks = document.querySelectorAll('a[href^="/"], a[href$=".html"], .header-nav-button, .compass-btn');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    // Inject a temporary global cursor guard to prevent any flash
-                    let guard = document.getElementById('cursor-guard');
-                    if (!guard) {
-                        guard = document.createElement('style');
-                        guard.id = 'cursor-guard';
-                        guard.textContent = '*, *::before, *::after { cursor: none !important; } html, body { cursor: none !important; }';
-                        document.head.appendChild(guard);
-                    }
-                    // Keep cursor hidden during navigation
-                    document.body.style.cursor = 'none';
-                    document.documentElement.style.cursor = 'none';
-                });
-
-        // Touch support for custom cursor on mobile
-        var cursorGlow = document.getElementById('cursorGlow');
-        var customCursor = document.getElementById('customCursor');
-        function showCursorAt(x, y) {
-            cursorGlow.style.left = (x - 20) + 'px';
-            cursorGlow.style.top = (y - 20) + 'px';
-            customCursor.style.left = (x - 3) + 'px';
-            customCursor.style.top = (y - 3) + 'px';
-            cursorGlow.classList.add('visible');
-            customCursor.classList.add('visible');
-        }
-        document.addEventListener('touchstart', function(e) {
-            var t = e.touches[0];
-            if (!t) return;
-            showCursorAt(t.clientX, t.clientY);
-        }, { passive: true });
-        document.addEventListener('touchmove', function(e) {
-            var t = e.touches[0];
-            if (!t) return;
-            showCursorAt(t.clientX, t.clientY);
-        }, { passive: true });
-            });
-
-            // Ensure cursor stays hidden during page unload
-            window.addEventListener('beforeunload', function() {
-                document.body.style.cursor = 'none';
-                document.documentElement.style.cursor = 'none';
-            });
-        });
-    </script>
-
-    <!--below is the Index-->
-
-<div class="bigndlicon">
-    <img src="ndlicon.png" id="bigndliconitself" onclick="toggleCompass()">
-</div>
-
-<!-- Compass Navigation -->
-<div class="compass-nav" id="compassNav">
-            <a href="art" class="compass-btn compass-north">
-            <span>Art</span>
-        </a>
-        <a href="projects" class="compass-btn compass-east">
-            <span>Projects</span>
-        </a>
-        <a href="contact" class="compass-btn compass-south">
-            <span>Contact</span>
-        </a>
-        <a href="about" class="compass-btn compass-west">
-            <span>About</span>
-        </a>
-</div>
-
-<!-- Cursor Glow Effect -->
-<div class="cursor-glow" id="cursorGlow"></div>
-
-<!-- Custom Cursor -->
-<div class="custom-cursor" id="customCursor"></div>
-
-<style>
-/* Hide default cursor */
-*, *::before, *::after {
-    cursor: none !important;
-}
-
-/* Specifically target clickable elements */
-a, button, .header-nav-button, .compass-btn {
-    cursor: none !important;
-}
-
-/* Ensure cursor stays hidden during transitions */
-html, body {
-    cursor: none !important;
-}
-
-/* Force cursor to stay hidden during page transitions */
-html:not(.loaded), body:not(.loaded) {
-    cursor: none !important;
-}
-
-/* Prevent cursor flash during navigation */
-:root {
-    cursor: none !important;
-}
-
-/* Custom cursor dot */
-.custom-cursor {
-    position: fixed;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: #ffffff;
-    pointer-events: none;
-    z-index: 99999;
-    opacity: 0;
-    transform: scaleY(0);
-    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
-}
-
-.custom-cursor.visible {
-    opacity: 1;
-    transform: scaleY(1);
-}
-
-.custom-cursor.orange {
-    background-color: #e68019;
-}
-
-.bigndlicon {
-    padding: 1px 0px;
-    display: inline-block;
-}
-
-#bigndliconitself:hover {
-    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
-    transition: filter 0.3s ease-in-out;
-}
-
-/* Keep glow effect active when compass is open */
-.compass-nav.compass-visible ~ * .bigndlicon #bigndliconitself,
-.bigndlicon #bigndliconitself.compass-active {
-    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
-}
-
-#bigndliconitself {
-    transition: filter 0.3s ease-in-out;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    pointer-events: auto;
-}
-
-/* Cursor Glow Effect */
-.cursor-glow {
-    position: fixed;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #e3e3b0;
-    opacity: 0.5;
-    pointer-events: none;
-    z-index: 99998;
-    transform: scaleY(0);
-    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
-    filter: drop-shadow(0 0 15px #e3e3b0) drop-shadow(0 0 30px rgba(227, 227, 176, 0.6));
-}
-
-.cursor-glow.visible {
-    opacity: 0.5;
-    transform: scaleY(1);
-}
-
-.cursor-glow.active {
-    opacity: 0.5;
-}
-
-.cursor-glow.transparent {
-    opacity: 0 !important;
-}
-
-/* Compass Navigation */
-.compass-nav {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.compass-nav.compass-visible {
-    opacity: 1;
-}
-
-.compass-btn {
-    position: absolute;
-    background-color: #e68019;
-    color: #e3e3b0;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 0px;
-    text-decoration: none;
-    font-family: 'Sora', sans-serif;
-    font-size: larger;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    opacity: 0.9;
-    pointer-events: none;
-    white-space: nowrap;
-}
-
-.compass-nav.compass-visible .compass-btn {
-    pointer-events: auto;
-}
-
-.compass-btn span:before {
-    content: "[";
-    opacity: 0;
-}
-
-.compass-btn span:after {
-    content: "]";
-    opacity: 0;
-}
-
-.compass-btn:hover {
-    color: #ffffff;
-    opacity: 1;
-}
-
-.compass-btn:hover span:before,
-.compass-btn:hover span:after {
-    opacity: 1;
-}
-
-.compass-north {
-    top: -280px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.compass-east {
-    right: -285px;
-    top: -30px;
-    transform: translateY(-50%);
-}
-
-.compass-south {
-    bottom: -210px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.compass-west {
-    left: -270px;
-    top: -30px;
-    transform: translateY(-50%);
-}
-
-@media only screen and (max-width: 550px) {
-    .bigndlicon {
-        padding: -20px 0px;
-    }
-    
-    .compass-north {
-        top: -225px;
-    }
-    
-    .compass-east {
-        right: -185px;
-    }
-    
-    .compass-south {
-        bottom: -145px;
-    }
-    
-    .compass-west {
-        left: -185px;
-    }
-    
-    .compass-btn {
-        padding: 8px 12px;
-        font-size: medium;
-    }
-    
-}
-
-@media (pointer: coarse), (hover: none) {
-    #cursorGlow, #customCursor { display: none !important; }
-    html, body, *, *::before, *::after { cursor: auto !important; }
-}
-</style>
-
-    <!--below is the footer-->
-
-    <div class="footer about-footer">
-        <span id="year"> </span><span> Noah Darwin Lee &nbsp;|&nbsp; 2026</span>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="index-page">
+    <a class="name" href="index.html"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="about-link" href="me.html">> me</a>
+    <div class="top-right-links">
+      <div class="top-right-primary">
+        <a href="https://llso.uchicago.edu/llso-review-home/" target="_blank" rel="noopener noreferrer"
+          >llso.uchicago.edu</a
+        >
+        <a href="https://dialectdict.com" target="_blank" rel="noopener noreferrer"
+          >dialectdict.com</a
+        >
+      </div>
+      <div class="top-right-secondary">
+        <a href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo.org</a>
+        <a href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer"
+          >expositions.mag</a
+        >
+      </div>
     </div>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="favicon.png" alt="" />
+    </button>
+    <main class="art-main">
+      <div id="art-gallery" class="art-gallery"></div>
+    </main>
+    <script>
+      const nameLink = document.querySelector(".name");
+      const aboutLink = document.querySelector(".about-link");
+      const topRightLinks = document.querySelector(".top-right-links");
+      const toTopBtn = document.getElementById("to-top-btn");
+      const fadeDistance = 90;
+      const toTopShowDistance = 170;
 
-    </body>
-    </html>
+      function updateHeaderFade() {
+        if (window.innerWidth <= 900) {
+          nameLink.style.opacity = "";
+          aboutLink.style.opacity = "";
+          topRightLinks.style.opacity = "";
+          nameLink.style.pointerEvents = "";
+          aboutLink.style.pointerEvents = "";
+          topRightLinks.style.pointerEvents = "";
+          toTopBtn.classList.remove("is-visible");
+          return;
+        }
+
+        const progress = Math.min(window.scrollY / fadeDistance, 1);
+        const opacity = 1 - progress;
+        const pointerEvents = opacity <= 0.05 ? "none" : "";
+
+        nameLink.style.opacity = opacity;
+        aboutLink.style.opacity = opacity;
+        topRightLinks.style.opacity = opacity;
+        nameLink.style.pointerEvents = pointerEvents;
+        aboutLink.style.pointerEvents = pointerEvents;
+        topRightLinks.style.pointerEvents = pointerEvents;
+        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
+      }
+
+      const artItems = [
+        { type: "single", title: "Delancey and Chrystie", src: "art/Delancey and Chrystie.png" },
+        { type: "single", title: "The Spectators", src: "art/TheSpectators.jpeg" },
+        {
+          type: "project",
+          title: "ISACream",
+          cover: "art/ISACream/647C9A5F-5C42-4B5C-BFA3-14E32D3AE835_1_105_c.jpeg",
+          images: [
+            "art/ISACream/2BA33685-FD5E-447D-802B-8B149A864A95_1_105_c.jpeg",
+            "art/ISACream/ViewCapture20260406_155208.png",
+            "art/ISACream/ViewCapture20260406_155543.png",
+            "art/ISACream/Screenshot 2026-04-06 at 1.59.03 PM.png",
+            "art/ISACream/22C99CB4-2523-4F8B-92FD-13F89A95C5C9_1_105_c.jpeg",
+            "art/ISACream/7CFA3E3E-3936-4471-8FF1-AEBDC95F5C14_1_105_c.jpeg",
+            "art/ISACream/170F802E-54A2-40D4-AFF3-FB7DF706EFAD_1_105_c.jpeg",
+            "art/ISACream/647C9A5F-5C42-4B5C-BFA3-14E32D3AE835_1_105_c.jpeg",
+            "art/ISACream/C1AA7C7A-E897-4C2D-97A5-E45B308C21F8_1_105_c.jpeg",
+          ],
+        },
+        { type: "single", title: "Asking for a Favor", src: "art/Asking for a Favor.jpg" },
+        { type: "single", title: "Baby Contest", src: "art/BabyContest.png" },
+        { type: "single", title: "Chesterfield Mall", src: "art/Chesterfield Mall.jpg" },
+        { type: "single", title: "Edge of Pilsen", src: "art/Edge of Pilsen.jpg" },
+        { type: "single", title: "Pickleball Court", src: "art/pickleballcourttransparent.png" },
+        { type: "single", title: "Says Quentin", src: "art/saysquentin.JPG" },
+        {
+          type: "project",
+          title: "3 Park Avenue",
+          cover: "art/3parkavenue/3 Park Avenue.png",
+          images: [
+            "art/3parkavenue/3parkavenue2.jpg",
+            "art/3parkavenue/3parkavenue3.jpg",
+            "art/3parkavenue/3parkavenue4.png",
+          ],
+        },
+        {
+          type: "project",
+          title: "Grand Central",
+          cover: "art/grandcentral/Grand Central Pagoda.jpg",
+          images: [
+            "art/grandcentral/grandcentral2.png",
+            "art/grandcentral/grandcentral3.jpg",
+            "art/grandcentral/grandcentral4.jpg",
+          ],
+        },
+        {
+          type: "project",
+          title: "Triptych - The Reception of a Guest (1)",
+          cover: "art/triptych/The Reception of a Guest.jpg",
+          images: [
+           "art/triptych/Superfluous Man.jpg",
+           "art/triptych/A Second Troy.jpg",   
+          ],
+          imageTitles: ["Superfluous Man (2)", "A Second Troy (3)"],
+        },
+      ];
+
+      const gallery = document.getElementById("art-gallery");
+
+      function toLowResPath(src) {
+        return src.replace("art/", "art/lowres/");
+      }
+
+      function makeImage(src, alt, className = "art-image") {
+        const img = document.createElement("img");
+        img.className = className;
+        img.src = encodeURI(toLowResPath(src));
+        img.alt = alt;
+        img.loading = "lazy";
+        img.decoding = "async";
+        return img;
+      }
+
+      function clearSelections(options = {}) {
+        const { keepCard = null, keepCover = null, keepChild = null, keepChildWrap = null } = options;
+
+        document.querySelectorAll(".art-image.is-selected").forEach((img) => {
+          if (img !== keepCover && img !== keepChild) {
+            img.classList.remove("is-selected");
+          }
+        });
+
+        document.querySelectorAll(".art-cover.is-open").forEach((cover) => {
+          if (cover !== keepCover) {
+            cover.classList.remove("is-open");
+          }
+        });
+
+        document.querySelectorAll(".art-card.is-title-visible").forEach((cardEl) => {
+          if (cardEl !== keepCard) {
+            cardEl.classList.remove("is-title-visible");
+          }
+        });
+
+        document.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
+          if (wrap !== keepChildWrap) {
+            wrap.classList.remove("is-title-visible");
+          }
+        });
+
+        document.querySelectorAll(".art-card.is-expanded").forEach((cardEl) => {
+          if (cardEl !== keepCard) {
+            cardEl.classList.remove("is-expanded");
+          }
+        });
+      }
+
+      artItems.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = `art-card art-card-${item.type}`;
+
+        const title = document.createElement("h3");
+        title.className = "art-title";
+        title.textContent = item.title;
+        card.appendChild(title);
+
+        if (item.type === "single") {
+          const img = makeImage(item.src, item.title);
+          img.addEventListener("click", () => {
+            const selected = !img.classList.contains("is-selected");
+            if (selected) {
+              clearSelections();
+              img.classList.add("is-selected");
+              card.classList.add("is-title-visible");
+              const targetY = window.scrollY + img.getBoundingClientRect().top - 42;
+              window.scrollTo({ top: targetY, behavior: "smooth" });
+            } else {
+              img.classList.remove("is-selected");
+              card.classList.remove("is-title-visible");
+            }
+          });
+          card.appendChild(img);
+        } else {
+          const cover = makeImage(item.cover, `${item.title} cover`);
+          cover.classList.add("art-cover");
+          const hasAdditionalImages = Array.isArray(item.images) && item.images.length > 0;
+
+          if (hasAdditionalImages) {
+            cover.classList.add("is-clickable");
+            title.classList.add("is-clickable-title");
+            const more = document.createElement("div");
+            more.className = "project-more";
+
+            item.images.forEach((src, idx) => {
+              const itemWrap = document.createElement("div");
+              itemWrap.className = "project-image-item";
+
+              const hasImageTitle = Array.isArray(item.imageTitles) && !!item.imageTitles[idx];
+
+              const projectImg = makeImage(src, `${item.title} image ${idx + 2}`);
+              projectImg.addEventListener("click", () => {
+                const selected = !projectImg.classList.contains("is-selected");
+                if (selected) {
+                  clearSelections({
+                    keepCard: card,
+                    keepCover: cover,
+                    keepChild: projectImg,
+                    keepChildWrap: null,
+                  });
+                  cover.classList.add("is-selected");
+                  cover.classList.add("is-open");
+                  title.classList.add("is-open");
+                  card.classList.add("is-title-visible");
+                  card.classList.add("is-expanded");
+                  projectImg.classList.add("is-selected");
+                  if (hasImageTitle) {
+                    title.textContent = item.imageTitles[idx];
+                  }
+                  const targetY = window.scrollY + projectImg.getBoundingClientRect().top - 42;
+                  window.scrollTo({ top: targetY, behavior: "smooth" });
+                } else {
+                  projectImg.classList.remove("is-selected");
+                }
+              });
+              itemWrap.appendChild(projectImg);
+              more.appendChild(itemWrap);
+            });
+
+            const toggleProject = () => {
+              const selected = !cover.classList.contains("is-selected");
+              if (selected) {
+                clearSelections();
+                cover.classList.add("is-selected");
+                title.textContent = item.title;
+                card.classList.add("is-title-visible");
+                card.classList.add("is-expanded");
+                cover.classList.add("is-open");
+                title.classList.add("is-open");
+                const targetY = window.scrollY + cover.getBoundingClientRect().top - 42;
+                window.scrollTo({ top: targetY, behavior: "smooth" });
+              } else {
+                cover.classList.remove("is-selected");
+                cover.classList.remove("is-open");
+                title.classList.remove("is-open");
+                card.classList.remove("is-title-visible");
+                card.classList.remove("is-expanded");
+                card.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
+                  wrap.classList.remove("is-title-visible");
+                });
+                card.querySelectorAll(".project-more .art-image.is-selected").forEach((img) => {
+                  img.classList.remove("is-selected");
+                });
+              }
+            };
+
+            cover.addEventListener("click", toggleProject);
+            title.addEventListener("click", toggleProject);
+
+            card.appendChild(cover);
+            card.appendChild(more);
+          } else {
+            cover.addEventListener("click", () => {
+              const selected = !cover.classList.contains("is-selected");
+              if (selected) {
+                clearSelections();
+                cover.classList.add("is-selected");
+                card.classList.add("is-title-visible");
+              } else {
+                cover.classList.remove("is-selected");
+                card.classList.remove("is-title-visible");
+              }
+            });
+            card.appendChild(cover);
+          }
+        }
+
+        gallery.appendChild(card);
+      });
+
+      window.addEventListener("scroll", updateHeaderFade, { passive: true });
+      window.addEventListener("resize", updateHeaderFade);
+      toTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      });
+      updateHeaderFade();
+    </script>
+  </body>
+</html>
