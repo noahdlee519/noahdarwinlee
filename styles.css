@@ -144,7 +144,7 @@ body {
   text-underline-offset: 4.5px;
 }
 
-a[href*="dialectdict.com"]:active,
+a[href="/dialectdict/"]:active,
 a[href*="ucgeo.org"]:active,
 a[href*="llso.uchicago.edu"]:active,
 a[href*="cegu.uchicago.edu/expositions"]:active,
@@ -307,6 +307,29 @@ a[href="/cv/"]:active {
   margin-right: 0;
   font-size: 20px;
   font-weight: 200;
+}
+
+.bio-materials-link,
+.bio-materials-link:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+.bio-materials-link::after {
+  content: "\2197";
+  margin-left: 0.22em;
+  display: inline-block;
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: text-top;
+  text-decoration: none;
+}
+
+.bio-materials-link:hover {
+  text-decoration: underline;
+  text-decoration-color: #e3e3b0;
+  text-decoration-thickness: 1.8px;
+  text-underline-offset: 3px;
 }
 
 

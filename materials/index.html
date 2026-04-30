@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Materials page for Noah Lee." />
+    <title>Materials | Noah Lee</title>
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .materials-item {
+        margin: 0 0 28px 0;
+      }
+
+      .materials-item p {
+        margin: 0 0 10px 0;
+        margin-left: 0;
+      }
+
+      .materials-preview {
+        width: min(920px, calc(100vw - 90px));
+        height: 430px;
+        border: 1px solid rgba(227, 227, 176, 0.8);
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      .materials-preview.is-tall {
+        height: 770px;
+      }
+
+      @media (max-width: 900px) {
+        .materials-item {
+          margin-left: 0;
+        }
+
+        .materials-preview {
+          width: 100%;
+          height: 52vh;
+        }
+
+        .materials-preview.is-tall {
+          height: 68vh;
+        }
+      }
+    </style>
+  </head>
+  <body class="cv-page">
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="about-link" href="/me/">> me</a>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="../favicon.png" alt="" />
+    </button>
+    <main>
+      <section>
+        <h2>Materials</h2>
+        <div class="materials-item">
+          <p>
+            <a class="cv-publication-link" href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
+              >100 Architects of the Modern Era you Should Know</a
+            >
+          </p>
+          <iframe
+            class="materials-preview"
+            src="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/preview"
+            title="Preview: 100 Architects of the Modern Era you Should Know"
+            loading="lazy"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <div class="materials-item">
+          <p>
+            <a class="cv-publication-link" href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
+              >NYC Guide</a
+            >
+          </p>
+          <iframe
+            class="materials-preview is-tall"
+            src="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/preview"
+            title="Preview: NYC Guide"
+            loading="lazy"
+          ></iframe>
+        </div>
+      </section>
+    </main>
+    <script>
+      const nameLink = document.querySelector(".name");
+      const aboutLink = document.querySelector(".about-link");
+      const toTopBtn = document.getElementById("to-top-btn");
+      const fadeDistance = 90;
+      const toTopShowDistance = 170;
+
+      function updateMaterialsHeaderFade() {
+        if (window.innerWidth <= 900) {
+          nameLink.style.opacity = "";
+          aboutLink.style.opacity = "";
+          nameLink.style.pointerEvents = "";
+          aboutLink.style.pointerEvents = "";
+          toTopBtn.classList.remove("is-visible");
+          return;
+        }
+
+        const progress = Math.min(window.scrollY / fadeDistance, 1);
+        const opacity = 1 - progress;
+        const pointerEvents = opacity <= 0.05 ? "none" : "";
+
+        nameLink.style.opacity = opacity;
+        aboutLink.style.opacity = opacity;
+        nameLink.style.pointerEvents = pointerEvents;
+        aboutLink.style.pointerEvents = pointerEvents;
+        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
+      }
+
+      window.addEventListener("scroll", updateMaterialsHeaderFade, { passive: true });
+      window.addEventListener("resize", updateMaterialsHeaderFade);
+      toTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      });
+      updateMaterialsHeaderFade();
+    </script>
+  </body>
+</html>
