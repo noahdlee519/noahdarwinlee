@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="Dialectdict temporary status page." />
+    <title>dialectdict.com | Temporary Notice</title>
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <style>
+      :root {
+        --accent: #e68019;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        background: #ffffff;
+        color: var(--accent);
+        font-family: "Akkurat", Helvetica, Arial, sans-serif;
+        overflow: hidden;
+      }
+
+      .notice {
+        width: 100vw;
+      }
+
+      .back-link {
+        position: fixed;
+        top: calc(clamp(16px, 3vh, 100px) + 9px);
+        right: clamp(10px, 3vw, 24px);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: 300;
+        z-index: 10;
+        transition: color 140ms ease 100ms;
+      }
+
+      .back-link:hover,
+      .back-link:focus-visible {
+        color: #e3e3b0;
+      }
+
+      .back-link::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(12vw, 170px);
+        aspect-ratio: 1 / 1;
+        border-bottom-left-radius: 100%;
+        background: color-mix(in srgb, var(--accent) 100%, transparent);
+        transform: scale(0);
+        transform-origin: top right;
+        opacity: 0;
+        transition: transform 220ms ease 100ms, opacity 220ms ease 100ms;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .back-link:hover::before,
+      .back-link:focus-visible::before {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      .back-link img {
+        width: 28px;
+        height: 28px;
+        z-index: 10;
+        display: block;
+      }
+
+      .back-link span {
+        position: relative;
+        z-index: 12;
+      }
+
+      .line {
+        border-top: 1px solid var(--accent);
+        width: 100%;
+      }
+
+      .marquee-wrap {
+        margin: 22px 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .marquee-track {
+        display: inline-flex;
+        gap: 1rem;
+        min-width: max-content;
+        animation: slide-right 26s linear infinite;
+        font-size: clamp(22px, 4vw, 44px);
+        font-weight: 300;
+        letter-spacing: 0.01em;
+      }
+
+      @keyframes slide-right {
+        from {
+          transform: translateX(-50%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back-link" href="/" aria-label="Back to homepage">
+      <span aria-hidden="true">back &rarr;</span>
+      <img src="../favicon.png" alt="" />
+    </a>
+    <main class="notice" aria-live="polite">
+      <div class="line" aria-hidden="true"></div>
+      <div class="marquee-wrap">
+        <div class="marquee-track">
+          <span>dialectdict.com is temporarily down for renovations |</span>
+          <span>dialectdict.com is temporarily down for renovations |</span>
+          <span>dialectdict.com is temporarily down for renovations |</span>
+          <span>dialectdict.com is temporarily down for renovations |</span>
+        </div>
+      </div>
+      <div class="line" aria-hidden="true"></div>
+    </main>
+  </body>
+</html>
