@@ -27,7 +27,8 @@ body {
   font-weight: 300;
 }
 
-.top-right-links a[target="_blank"]::after {
+.top-right-links a[target="_blank"]::after,
+.top-right-links a.show-external-icon::after {
   content: "\2197";
   margin-left: 0.22em;
   display: inline-block;
