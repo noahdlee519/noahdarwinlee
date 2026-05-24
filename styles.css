@@ -159,7 +159,7 @@ a[href="/cv/"]:active {
 .profile-photo {
   display: block;
   margin-top: 0px;
-  width: clamp(120px, 45vw, 500px);
+  width: clamp(90px, 28vw, 320px);
   max-width: 90vw;
   height: auto;
 }
@@ -462,7 +462,7 @@ a[href="/cv/"]:active {
   }
 
   .profile-photo {
-    width: min(100%, 420px);
+    width: min(100%, 270px);
     max-width: 100%;
     margin-top: 16px;
     margin-left: auto;
