@@ -16,17 +16,43 @@
     >
     <a class="about-link is-active" href="/me/">> me</a>
     <div class="top-right-links">
-      <div class="top-right-primary">
-        <a href="https://llso.uchicago.edu/llso-review-home" target="_blank" rel="noopener noreferrer"
-          >llso.uchicago.edu</a
-        >
-        <a class="show-external-icon" href="/dialectdict/" target="_self">dialectdict.com</a>
+      <div class="top-right-set is-visible">
+        <div class="top-right-primary">
+          <a href="https://llso.uchicago.edu/llso-review-home" target="_blank" rel="noopener noreferrer"
+            >llso.uchicago.edu</a
+          >
+          <a class="show-external-icon" href="/dialectdict/" target="_self">dialectdict.com</a>
+        </div>
+        <div class="top-right-secondary">
+          <a href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo.org</a>
+          <a href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer"
+            >expositions.mag</a
+          >
+        </div>
       </div>
-      <div class="top-right-secondary">
-        <a href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo.org</a>
-        <a href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer"
-          >expositions.mag</a
-        >
+      <div class="top-right-set" aria-hidden="true">
+        <div class="top-right-primary">
+          <a href="https://buoyo.substack.com/publish/posts/published" target="_blank" rel="noopener noreferrer"
+            >buoyo.substack</a
+          >
+          <a href="https://noahdlee519.github.io/fauxnixai/" target="_blank" rel="noopener noreferrer"
+            >fauxnixai</a
+          >
+        </div>
+        <div class="top-right-secondary">
+          <a
+            href="https://www.thedragonflyagency.com/portfolios/noah-lee"
+            target="_blank"
+            rel="noopener noreferrer"
+            >dragonflyagency</a
+          >
+          <a
+            href="https://www.therockagency.com/divisions/next-gen/portfolios/noah-lee"
+            target="_blank"
+            rel="noopener noreferrer"
+            >therockagency</a
+          >
+        </div>
       </div>
     </div>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
@@ -44,6 +70,7 @@
     </div>
     <img class="profile-photo" src="../me.jpeg" alt="Photo of Noah Lee" />
     <p class="bio-text" id="bio-text">Noah is a senior at the University of Chicago studying history, law, and geography. He is interested in consulates, languages, and institutional memory. On this website you can find different projects ranging from digital dialect dictionaries to paintings of the World's Fair to travel recommendations for different American cities.<br /><br /><a class="bio-materials-link" href="/materials/">materials</a></p>
+    <script src="../top-right-links.js"></script>
     <script>
       const bioToggle = document.getElementById("bio-toggle");
       const bioText = document.getElementById("bio-text");

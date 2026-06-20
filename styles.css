@@ -14,10 +14,32 @@ body {
   position: fixed;
   top: var(--page-top);
   right: calc(var(--page-left) + clamp(0px, 0vw, 10px));
+}
+
+.top-right-set {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: clamp(4px, 2vw, 160px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms ease;
+}
+
+.top-right-set.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (min-width: 901px) {
+  .top-right-links {
+    display: grid;
+    grid-template: 1fr / 1fr;
+  }
+
+  .top-right-set {
+    grid-area: 1 / 1;
+  }
 }
 
 .top-right-links a {
@@ -149,6 +171,10 @@ a[href="/dialectdict/"]:active,
 a[href*="ucgeo.org"]:active,
 a[href*="llso.uchicago.edu"]:active,
 a[href*="cegu.uchicago.edu/expositions"]:active,
+a[href*="buoyo.substack"]:active,
+a[href*="fauxnixai"]:active,
+a[href*="thedragonflyagency.com"]:active,
+a[href*="therockagency.com"]:active,
 a[href*="instagram.com"]:active,
 a[href*="linkedin.com"]:active,
 a[href="mailto:noahlee519@gmail.com"]:active,
@@ -423,11 +449,21 @@ a[href="/cv/"]:active {
   }
 
   .top-right-links {
-    position: static;
+    position: relative;
     top: auto;
     right: auto;
     margin-top: 14px;
+  }
+
+  .top-right-set {
+    position: absolute;
+    top: 0;
+    left: 0;
     gap: 22px;
+  }
+
+  .top-right-set.is-visible {
+    position: relative;
   }
 
   .top-right-primary,
