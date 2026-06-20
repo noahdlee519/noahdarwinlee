@@ -382,6 +382,7 @@ a[href="/cv/"]:active {
 
 .me-page {
   padding-top: calc(var(--page-top) + 106px);
+  min-height: auto;
 }
 
 .me-contact-links {
