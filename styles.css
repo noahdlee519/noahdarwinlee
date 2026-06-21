@@ -410,7 +410,7 @@ a[href="/cv/"]:active {
 .me-contact-links {
   position: absolute;
   top: calc(var(--page-top) + 107px);
-  right: calc(var(--page-left) + clamp(0px, 0vw, 10px) - 148px);
+  right: calc(var(--page-left) + clamp(0px, 0vw, 10px) - 166px);
   margin-top: 0;
   display: flex;
   flex-direction: column;
@@ -421,7 +421,7 @@ a[href="/cv/"]:active {
   transform: translateX(clamp(-530px, calc(-530px + (1600px - 100vw) * 0.02), -524px));
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 580px) {
   .me-contact-links {
     transform: translateX(clamp(-524px, calc(-524px + (1280px - 100vw) * 0.37), 12px));
   }
