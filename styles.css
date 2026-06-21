@@ -105,6 +105,22 @@ body {
   margin-bottom: 20px;
 }
 
+.cv-page .about-link {
+  color: #ffffff;
+}
+
+.cv-page .about-link + .about-link {
+  top: calc(var(--page-top) + 66px);
+}
+
+.cv-page .about-link.is-active {
+  margin-bottom: 32px;
+}
+
+.cv-page.cv-nav-unfixed .about-link + .about-link {
+  top: calc(var(--page-top) + 326px);
+}
+
 .cv-page.cv-nav-unfixed .name {
   position: absolute;
   top: calc(var(--page-top) + 260px);
@@ -129,6 +145,12 @@ body {
 
 .cv-page {
   padding-bottom: 25px;
+}
+
+@media (min-width: 901px) {
+  .cv-page {
+    padding-top: calc(var(--page-top) + 104px);
+  }
 }
 
 .cv-page .name {

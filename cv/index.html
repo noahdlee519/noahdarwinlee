@@ -14,15 +14,17 @@
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
     >
+    <a class="about-link" href="/me/">> about</a>
     <a class="about-link is-active" href="/cv/">> cv</a>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
       <img src="../favicon.png" alt="" />
     </button>
     <main>
       <section>
+        <br>
         <h2>Education</h2>
         <p>University of Chicago, A.B. in History; Environment, Geography, and Urbanization; and Law, Letters, and Society <span class="cv-meta">(2022-6)</span></p>
-        <p style="margin-left:2.5em">Masaryk University, Czech Republic<span class="cv-meta"> (slavonic studies program, summer 2026)</span></p>
+        <p style="margin-left:2.5em">Masaryk University, Czech Republic<span class="cv-meta"> (slavonic studies scholarship, summer 2026)</span></p>
         <p style="margin-left:2.5em">University of Amsterdam, Netherlands<span class="cv-meta"> (dutch langauge program, summer 2023)</span></p>
       </section>
 
@@ -94,7 +96,7 @@
     </main>
     <script>
       const nameLink = document.querySelector(".name");
-      const aboutLink = document.querySelector(".about-link");
+      const navLinks = document.querySelectorAll(".about-link");
       const toTopBtn = document.getElementById("to-top-btn");
       const fadeDistance = 90;
       const toTopShowDistance = 170;
@@ -102,9 +104,11 @@
       function updateCvHeaderFade() {
         if (window.innerWidth <= 900) {
           nameLink.style.opacity = "";
-          aboutLink.style.opacity = "";
+          navLinks.forEach((link) => {
+            link.style.opacity = "";
+            link.style.pointerEvents = "";
+          });
           nameLink.style.pointerEvents = "";
-          aboutLink.style.pointerEvents = "";
           toTopBtn.classList.remove("is-visible");
           return;
         }
@@ -114,9 +118,11 @@
         const pointerEvents = opacity <= 0.05 ? "none" : "";
 
         nameLink.style.opacity = opacity;
-        aboutLink.style.opacity = opacity;
+        navLinks.forEach((link) => {
+          link.style.opacity = opacity;
+          link.style.pointerEvents = pointerEvents;
+        });
         nameLink.style.pointerEvents = pointerEvents;
-        aboutLink.style.pointerEvents = pointerEvents;
         toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
       }
 
