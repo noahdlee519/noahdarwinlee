@@ -81,30 +81,31 @@
       const toTopBtn = document.getElementById("to-top-btn");
       const fadeDistance = 90;
       const toTopShowDistance = 170;
+      const headerElements = [nameLink, aboutLink, topRightLinks];
 
       function updateHeaderFade() {
         if (window.innerWidth <= 900) {
-          nameLink.style.opacity = "";
-          aboutLink.style.opacity = "";
-          topRightLinks.style.opacity = "";
-          nameLink.style.pointerEvents = "";
-          aboutLink.style.pointerEvents = "";
-          topRightLinks.style.pointerEvents = "";
+          headerElements.forEach((element) => {
+            element.style.opacity = "";
+            element.style.pointerEvents = "";
+          });
           toTopBtn.classList.remove("is-visible");
           return;
         }
 
-        const progress = Math.min(window.scrollY / fadeDistance, 1);
+        const maxScroll = Math.max(
+          document.documentElement.scrollHeight - window.innerHeight,
+          0
+        );
+        const effectiveFadeDistance = Math.min(fadeDistance, Math.max(maxScroll, 1));
+        const progress = Math.min(window.scrollY / effectiveFadeDistance, 1);
         const opacity = 1 - progress;
         const pointerEvents = opacity <= 0.05 ? "none" : "";
 
-        nameLink.style.opacity = opacity;
-        aboutLink.style.opacity = opacity;
-        topRightLinks.style.opacity = opacity;
-
-        nameLink.style.pointerEvents = pointerEvents;
-        aboutLink.style.pointerEvents = pointerEvents;
-        topRightLinks.style.pointerEvents = pointerEvents;
+        headerElements.forEach((element) => {
+          element.style.opacity = opacity;
+          element.style.pointerEvents = pointerEvents;
+        });
         toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
       }
 
@@ -117,6 +118,7 @@
           const imageHeight = profilePhoto.getBoundingClientRect().height;
           window.scrollBy({ top: imageHeight, behavior: "smooth" });
         }
+        requestAnimationFrame(updateHeaderFade);
       });
 
       window.addEventListener("scroll", updateHeaderFade, { passive: true });
