@@ -60,6 +60,13 @@
     </button>
     <main class="art-main">
       <div id="art-gallery" class="art-gallery"></div>
+      <a
+        class="index-instagram-link"
+        href="https://instagram.com/noahmakestheart"
+        target="_blank"
+        rel="noopener noreferrer"
+        >instagram.com/noahmakestheart</a
+      >
     </main>
     <script src="top-right-links.js"></script>
     <script>
@@ -155,13 +162,14 @@
         },
         {
           type: "project",
+          mode: "carousel",
           title: "Triptych - The Reception of a Guest (1)",
           cover: "art/triptych/The Reception of a Guest.jpg",
           images: [
            "art/triptych/Superfluous Man.jpg",
            "art/triptych/A Second Troy.jpg",   
           ],
-          imageTitles: ["Superfluous Man (2)", "A Second Troy (3)"],
+          imageTitles: ["Triptych - Superfluous Man (2)", "Triptych - A Second Troy (3)"],
         },
       ];
 
@@ -181,8 +189,84 @@
         return img;
       }
 
+      function hasOpenSelection() {
+        return Boolean(
+          document.querySelector(".art-card.is-expanded, .art-image.is-selected")
+        );
+      }
+
+      const SCROLL_OFFSET = 42;
+      const SCROLL_OFFSET_COLLAPSE = 42;
+      let scrollGeneration = 0;
+
+      function scrollToArtwork(element, { offset = SCROLL_OFFSET, onComplete } = {}) {
+        scrollGeneration += 1;
+        const generation = scrollGeneration;
+
+        const finish = () => {
+          if (generation !== scrollGeneration) return;
+          onComplete?.();
+        };
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (generation !== scrollGeneration) return;
+
+            const nextY = Math.max(
+              0,
+              window.scrollY + element.getBoundingClientRect().top - offset
+            );
+
+            if (Math.abs(nextY - window.scrollY) < 1) {
+              finish();
+              return;
+            }
+
+            window.scrollTo({ top: window.scrollY, behavior: "auto" });
+
+            requestAnimationFrame(() => {
+              if (generation !== scrollGeneration) return;
+
+              window.scrollTo({ top: nextY, behavior: "smooth" });
+
+              let done = false;
+              const complete = () => {
+                if (done || generation !== scrollGeneration) return;
+                done = true;
+                finish();
+              };
+
+              window.addEventListener("scrollend", complete, { once: true });
+              setTimeout(complete, 500);
+            });
+          });
+        });
+      }
+
+      function activateSelection({ keepCard, keepCover, keepChild, keepChildWrap, apply, scrollTarget }) {
+        const switching = hasOpenSelection();
+
+        if (switching) {
+          clearSelections({ keepCard, keepCover, keepChild, keepChildWrap });
+          apply();
+        } else {
+          apply();
+          clearSelections({ keepCard, keepCover, keepChild, keepChildWrap });
+        }
+
+        if (scrollTarget) {
+          scrollToArtwork(scrollTarget);
+        }
+      }
+
       function clearSelections(options = {}) {
         const { keepCard = null, keepCover = null, keepChild = null, keepChildWrap = null } = options;
+
+        document.querySelectorAll(".art-cover").forEach((cover) => {
+          if (cover !== keepCover && cover._resetCarousel && cover.classList.contains("is-selected")) {
+            cover._resetCarousel();
+          }
+        });
 
         document.querySelectorAll(".art-image.is-selected").forEach((img) => {
           if (img !== keepCover && img !== keepChild) {
@@ -229,14 +313,18 @@
           img.addEventListener("click", () => {
             const selected = !img.classList.contains("is-selected");
             if (selected) {
-              clearSelections();
-              img.classList.add("is-selected");
-              card.classList.add("is-title-visible");
-              const targetY = window.scrollY + img.getBoundingClientRect().top - 42;
-              window.scrollTo({ top: targetY, behavior: "smooth" });
+              activateSelection({
+                keepCard: card,
+                keepCover: img,
+                apply: () => {
+                  img.classList.add("is-selected");
+                  card.classList.add("is-title-visible");
+                },
+                scrollTarget: img,
+              });
             } else {
               img.classList.remove("is-selected");
-              card.classList.remove("is-title-visible");
+              scrollToArtwork(img, { offset: SCROLL_OFFSET_COLLAPSE });
             }
           });
           card.appendChild(img);
@@ -245,7 +333,127 @@
           cover.classList.add("art-cover");
           const hasAdditionalImages = Array.isArray(item.images) && item.images.length > 0;
 
-          if (hasAdditionalImages) {
+          if (hasAdditionalImages && item.mode === "carousel") {
+            card.classList.add("art-card-carousel");
+            cover.classList.add("is-clickable");
+            title.classList.add("is-clickable-title");
+
+            const allSources = [item.cover, ...item.images];
+            const allTitles = [
+              item.title,
+              ...(item.imageTitles ||
+                item.images.map((_, idx) => `${item.title} image ${idx + 2}`)),
+            ];
+            let carouselIndex = 0;
+            const aspectRatios = new Array(allSources.length).fill(null);
+            const frame = document.createElement("div");
+            frame.className = "carousel-frame";
+
+            function updateFrameMinHeight() {
+              const ratios = aspectRatios.filter((ratio) => ratio);
+              if (!ratios.length) return;
+
+              const width = cover.getBoundingClientRect().width;
+              if (!width) return;
+
+              const maxHeight = Math.max(...ratios.map((ratio) => width * ratio));
+              frame.style.minHeight = `${Math.ceil(maxHeight)}px`;
+            }
+
+            allSources.forEach((src, idx) => {
+              const preload = new Image();
+              preload.onload = () => {
+                aspectRatios[idx] = preload.naturalHeight / preload.naturalWidth;
+                updateFrameMinHeight();
+              };
+              preload.src = encodeURI(toLowResPath(src));
+            });
+
+            function updateCarouselDisplay(options = {}) {
+              const { scrollAfter = false } = options;
+              const currentHeight = cover.offsetHeight;
+              if (currentHeight > 0) {
+                const lockedHeight = Math.max(
+                  currentHeight,
+                  parseFloat(frame.style.minHeight) || 0
+                );
+                frame.style.minHeight = `${Math.ceil(lockedHeight)}px`;
+              }
+
+              cover.src = encodeURI(toLowResPath(allSources[carouselIndex]));
+              cover.alt = allTitles[carouselIndex];
+              title.textContent = allTitles[carouselIndex];
+
+              const finalizeLayout = () => {
+                updateFrameMinHeight();
+                if (scrollAfter) {
+                  scrollToArtwork(cover);
+                }
+              };
+
+              if (cover.complete) {
+                requestAnimationFrame(finalizeLayout);
+              } else {
+                cover.addEventListener("load", finalizeLayout, { once: true });
+              }
+            }
+
+            function resetCarousel() {
+              carouselIndex = 0;
+              updateCarouselDisplay();
+            }
+
+            cover._resetCarousel = resetCarousel;
+
+            function openCarousel() {
+              const switching = hasOpenSelection();
+              carouselIndex = 0;
+              if (switching) {
+                clearSelections({ keepCard: card, keepCover: cover });
+              }
+              cover.classList.add("is-selected", "is-open");
+              title.classList.add("is-open");
+              card.classList.add("is-title-visible");
+              if (!switching) {
+                clearSelections({ keepCard: card, keepCover: cover });
+              }
+              updateCarouselDisplay({ scrollAfter: true });
+            }
+
+            function closeCarousel() {
+              cover.classList.remove("is-selected", "is-open");
+              title.classList.remove("is-open");
+              scrollToArtwork(cover, {
+                offset: SCROLL_OFFSET_COLLAPSE,
+                onComplete: () => {
+                  resetCarousel();
+                },
+              });
+            }
+
+            cover.addEventListener("click", () => {
+              if (!cover.classList.contains("is-selected")) {
+                openCarousel();
+                return;
+              }
+
+              carouselIndex = (carouselIndex + 1) % allSources.length;
+              updateCarouselDisplay({ scrollAfter: true });
+            });
+
+            title.addEventListener("click", () => {
+              if (cover.classList.contains("is-selected")) {
+                closeCarousel();
+              } else {
+                openCarousel();
+              }
+            });
+
+            card.appendChild(frame);
+            frame.appendChild(cover);
+            updateFrameMinHeight();
+            window.addEventListener("resize", updateFrameMinHeight);
+          } else if (hasAdditionalImages) {
             cover.classList.add("is-clickable");
             title.classList.add("is-clickable-title");
             const more = document.createElement("div");
@@ -261,23 +469,21 @@
               projectImg.addEventListener("click", () => {
                 const selected = !projectImg.classList.contains("is-selected");
                 if (selected) {
-                  clearSelections({
+                  activateSelection({
                     keepCard: card,
                     keepCover: cover,
                     keepChild: projectImg,
-                    keepChildWrap: null,
+                    apply: () => {
+                      cover.classList.add("is-selected", "is-open");
+                      title.classList.add("is-open");
+                      card.classList.add("is-title-visible", "is-expanded");
+                      projectImg.classList.add("is-selected");
+                      if (hasImageTitle) {
+                        title.textContent = item.imageTitles[idx];
+                      }
+                    },
+                    scrollTarget: projectImg,
                   });
-                  cover.classList.add("is-selected");
-                  cover.classList.add("is-open");
-                  title.classList.add("is-open");
-                  card.classList.add("is-title-visible");
-                  card.classList.add("is-expanded");
-                  projectImg.classList.add("is-selected");
-                  if (hasImageTitle) {
-                    title.textContent = item.imageTitles[idx];
-                  }
-                  const targetY = window.scrollY + projectImg.getBoundingClientRect().top - 42;
-                  window.scrollTo({ top: targetY, behavior: "smooth" });
                 } else {
                   projectImg.classList.remove("is-selected");
                 }
@@ -287,28 +493,35 @@
             });
 
             const toggleProject = () => {
-              const selected = !cover.classList.contains("is-selected");
-              if (selected) {
-                clearSelections();
-                cover.classList.add("is-selected");
-                title.textContent = item.title;
-                card.classList.add("is-title-visible");
-                card.classList.add("is-expanded");
-                cover.classList.add("is-open");
-                title.classList.add("is-open");
-                const targetY = window.scrollY + cover.getBoundingClientRect().top - 42;
-                window.scrollTo({ top: targetY, behavior: "smooth" });
+              const isOpen =
+                cover.classList.contains("is-selected") || card.classList.contains("is-expanded");
+              if (!isOpen) {
+                activateSelection({
+                  keepCard: card,
+                  keepCover: cover,
+                  apply: () => {
+                    cover.classList.add("is-selected", "is-open");
+                    title.classList.add("is-open");
+                    title.textContent = item.title;
+                    card.classList.add("is-title-visible", "is-expanded");
+                  },
+                  scrollTarget: cover,
+                });
               } else {
-                cover.classList.remove("is-selected");
-                cover.classList.remove("is-open");
+                cover.classList.remove("is-selected", "is-open");
                 title.classList.remove("is-open");
-                card.classList.remove("is-title-visible");
                 card.classList.remove("is-expanded");
                 card.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
                   wrap.classList.remove("is-title-visible");
                 });
                 card.querySelectorAll(".project-more .art-image.is-selected").forEach((img) => {
                   img.classList.remove("is-selected");
+                });
+                scrollToArtwork(cover, {
+                  offset: SCROLL_OFFSET_COLLAPSE,
+                  onComplete: () => {
+                    title.textContent = item.title;
+                  },
                 });
               }
             };
@@ -322,12 +535,18 @@
             cover.addEventListener("click", () => {
               const selected = !cover.classList.contains("is-selected");
               if (selected) {
-                clearSelections();
-                cover.classList.add("is-selected");
-                card.classList.add("is-title-visible");
+                activateSelection({
+                  keepCard: card,
+                  keepCover: cover,
+                  apply: () => {
+                    cover.classList.add("is-selected");
+                    card.classList.add("is-title-visible");
+                  },
+                  scrollTarget: cover,
+                });
               } else {
                 cover.classList.remove("is-selected");
-                card.classList.remove("is-title-visible");
+                scrollToArtwork(cover, { offset: SCROLL_OFFSET_COLLAPSE });
               }
             });
             card.appendChild(cover);

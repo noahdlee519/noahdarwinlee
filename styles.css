@@ -226,30 +226,66 @@ a[href="/cv/"]:active {
   padding-top: 0;
 }
 
+.index-instagram-link {
+  display: block;
+  margin-top: 28px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 22px;
+  font-weight: 300;
+}
+
+.index-instagram-link:hover {
+  color: #ffffff;
+}
+
 .art-gallery {
   margin: 0;
   max-width: 980px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 0px;
+  overflow-anchor: none;
 }
 
 .art-card {
   margin: 0;
-  padding-top: 28px;
+  --art-card-top: 48px;
+  --art-main-image-margin-top: 12px;
+  padding-top: var(--art-card-top);
+  overflow-anchor: none;
+  position: relative;
 }
 
 .art-title {
-  margin: 0 0 10px 0;
+  position: absolute;
+  top: calc(
+    var(--art-card-top) + var(--art-main-image-margin-top) - 1.2em - 10px
+  );
+  left: 0;
+  margin: 0;
   font-size: 18px;
   font-weight: 300;
   color: #ffffff;
   display: block;
   visibility: hidden;
+  pointer-events: none;
 }
 
 .art-card.is-title-visible .art-title {
   visibility: visible;
+  pointer-events: auto;
+}
+
+.art-image,
+.art-card-carousel .carousel-frame {
+  overflow-anchor: auto;
+}
+
+.art-card > .art-image,
+.art-card > .art-cover,
+.art-card > .carousel-frame {
+  margin-top: var(--art-main-image-margin-top);
 }
 
 .project-image-item {
@@ -286,13 +322,28 @@ a[href="/cv/"]:active {
 }
 
 .art-title.is-clickable-title {
-  position: relative;
+  position: absolute;
   display: inline-block;
   cursor: s-resize;
 }
 
 .art-title.is-clickable-title.is-open {
   cursor: n-resize;
+}
+
+.art-card-carousel .art-cover.is-clickable,
+.art-card-carousel .art-title.is-clickable-title,
+.art-card-carousel .art-cover.is-clickable.is-open,
+.art-card-carousel .art-title.is-clickable-title.is-open {
+  cursor: e-resize;
+}
+
+.art-card-carousel {
+  overflow-anchor: none;
+}
+
+.art-card-carousel .carousel-frame {
+  overflow-anchor: none;
 }
 
 .art-title.is-clickable-title::after {
@@ -315,6 +366,7 @@ a[href="/cv/"]:active {
 .project-more {
   display: none;
   margin-top: 7px;
+  overflow-anchor: none;
 }
 
 .art-card.is-expanded .project-more {
@@ -552,6 +604,9 @@ a[href="/cv/"]:active {
 
   .art-title {
     font-size: 16px;
+    left: 0;
+    right: 0;
+    text-align: center;
   }
 
   .art-card {
