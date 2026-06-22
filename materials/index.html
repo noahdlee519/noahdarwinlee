@@ -18,6 +18,16 @@
         margin-left: 0;
       }
 
+      .materials-item .cv-publication-link::after {
+        content: "\2197";
+        margin-left: 0.22em;
+        display: inline-block;
+        font-size: 0.72em;
+        line-height: 1;
+        vertical-align: text-top;
+        text-decoration: none;
+      }
+
       .materials-preview {
         width: min(920px, calc(100vw - 90px));
         height: 430px;
@@ -74,13 +84,26 @@
         <div class="materials-item">
           <p>
             <a class="cv-publication-link" href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
-              >NYC Guide</a
+              >List of Things to Do in New York City</a
             >
           </p>
           <iframe
             class="materials-preview is-tall"
             src="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/preview"
             title="Preview: NYC Guide"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <div class="materials-item">
+          <p>
+            <a class="cv-publication-link" href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
+              >List of Things to Do in Chicago</a
+            >
+          </p>
+          <iframe
+            class="materials-preview is-tall"
+            src="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/preview"
+            title="Preview: List of Things to Do in Chicago"
             loading="lazy"
           ></iframe>
         </div>
