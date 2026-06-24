@@ -602,6 +602,13 @@ a[href="/cv/"]:active {
     padding-top: 44px;
   }
 
+  .index-instagram-link {
+    font-size: 16px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .art-title {
     font-size: 16px;
     left: 0;
