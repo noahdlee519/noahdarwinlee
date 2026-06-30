@@ -71,6 +71,7 @@
     <img class="profile-photo" src="../me.jpeg" alt="Photo of Noah Lee" />
     <p class="bio-text" id="bio-text">Noah is a recent graduate from the University of Chicago where he studied history, law letters, and geography. He is interested in consulates, languages, and legacies. On this website you can find different projects ranging from digital dialect dictionaries to paintings of the World's Fair to modern architecture guides.<br /><br /><a class="bio-materials-link" href="/materials/">materials</a></p>
     <script src="../top-right-links.js"></script>
+    <script src="../to-top-btn.js"></script>
     <script>
       const bioToggle = document.getElementById("bio-toggle");
       const bioText = document.getElementById("bio-text");
@@ -123,9 +124,6 @@
 
       window.addEventListener("scroll", updateHeaderFade, { passive: true });
       window.addEventListener("resize", updateHeaderFade);
-      toTopBtn.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "auto" });
-      });
       updateHeaderFade();
     </script>
   </body>

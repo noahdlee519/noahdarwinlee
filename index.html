@@ -69,6 +69,7 @@
       >
     </main>
     <script src="top-right-links.js"></script>
+    <script src="to-top-btn.js"></script>
     <script>
       const nameLink = document.querySelector(".name");
       const aboutLink = document.querySelector(".about-link");
@@ -383,6 +384,7 @@
               cover.src = encodeURI(toLowResPath(allSources[carouselIndex]));
               cover.alt = allTitles[carouselIndex];
               title.textContent = allTitles[carouselIndex];
+              updateCarouselCursor();
 
               const finalizeLayout = () => {
                 updateFrameMinHeight();
@@ -396,6 +398,37 @@
               } else {
                 cover.addEventListener("load", finalizeLayout, { once: true });
               }
+            }
+
+            function updateCarouselCursor(event) {
+              cover.classList.remove("is-carousel-prev", "is-carousel-next");
+
+              if (!cover.classList.contains("is-selected")) {
+                return;
+              }
+
+              if (!event) {
+                cover.classList.add("is-carousel-next");
+                return;
+              }
+
+              const rect = cover.getBoundingClientRect();
+              const isLeftHalf = event.clientX - rect.left < rect.width / 2;
+
+              if (isLeftHalf && carouselIndex > 0) {
+                cover.classList.add("is-carousel-prev");
+              } else {
+                cover.classList.add("is-carousel-next");
+              }
+            }
+
+            function advanceCarousel(direction) {
+              if (direction === "prev" && carouselIndex > 0) {
+                carouselIndex -= 1;
+              } else {
+                carouselIndex = (carouselIndex + 1) % allSources.length;
+              }
+              updateCarouselDisplay({ scrollAfter: true });
             }
 
             function resetCarousel() {
@@ -431,14 +464,25 @@
               });
             }
 
-            cover.addEventListener("click", () => {
+            cover.addEventListener("click", (event) => {
               if (!cover.classList.contains("is-selected")) {
                 openCarousel();
                 return;
               }
 
-              carouselIndex = (carouselIndex + 1) % allSources.length;
-              updateCarouselDisplay({ scrollAfter: true });
+              const rect = cover.getBoundingClientRect();
+              const isLeftHalf = event.clientX - rect.left < rect.width / 2;
+
+              if (isLeftHalf && carouselIndex > 0) {
+                advanceCarousel("prev");
+              } else {
+                advanceCarousel("next");
+              }
+            });
+
+            cover.addEventListener("mousemove", updateCarouselCursor);
+            cover.addEventListener("mouseleave", () => {
+              updateCarouselCursor();
             });
 
             title.addEventListener("click", () => {
@@ -558,9 +602,6 @@
 
       window.addEventListener("scroll", updateHeaderFade, { passive: true });
       window.addEventListener("resize", updateHeaderFade);
-      toTopBtn.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "auto" });
-      });
       updateHeaderFade();
     </script>
   </body>

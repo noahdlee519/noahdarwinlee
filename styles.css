@@ -14,6 +14,7 @@ body {
   position: fixed;
   top: var(--page-top);
   right: calc(var(--page-left) + clamp(0px, 0vw, 10px));
+  transition: opacity 140ms ease;
 }
 
 .top-right-set {
@@ -85,6 +86,8 @@ body {
   margin: 0;
   font-size: 22px;
   font-weight: 300;
+  z-index: 10;
+  transition: opacity 140ms ease;
 }
 
 .about-link {
@@ -98,11 +101,24 @@ body {
   margin-bottom: 5px;
   font-size: 22px;
   font-weight: 300;
+  z-index: 10;
+  transition: opacity 140ms ease;
 }
 
 .about-link.is-active {
   color: #ffffff;
   margin-bottom: 20px;
+}
+
+@media (min-width: 901px) {
+  .about-link {
+    display: inline-block;
+    padding-bottom: 13px;
+  }
+
+  .cv-page .about-link:first-of-type {
+    padding-bottom: 5px;
+  }
 }
 
 .cv-page .about-link {
@@ -115,6 +131,7 @@ body {
 
 .cv-page .about-link.is-active {
   margin-bottom: 32px;
+  left: calc(var(--page-left) + 10px);
 }
 
 .cv-page.cv-nav-unfixed .about-link + .about-link {
@@ -149,7 +166,7 @@ body {
 
 @media (min-width: 901px) {
   .cv-page {
-    padding-top: calc(var(--page-top) + 104px);
+    padding-top: calc(var(--page-top) + 106px);
   }
 }
 
@@ -165,7 +182,7 @@ body {
 
 .cv-publication-link:hover {
   text-decoration: underline;
-  text-decoration-color: #e3e3b0;
+  text-decoration-color: currentColor;
   text-decoration-thickness: 1.75px;
   text-underline-offset: 3px;
 }
@@ -179,7 +196,7 @@ body {
 .top-right-links a:hover,
 .me-contact-links a:hover {
   text-decoration: underline;
-  text-decoration-color: #e3e3b0;
+  text-decoration-color: currentColor;
   text-decoration-thickness: 2.25px;
   text-underline-offset: 3px;
 }
@@ -331,11 +348,24 @@ a[href="/cv/"]:active {
   cursor: n-resize;
 }
 
-.art-card-carousel .art-cover.is-clickable,
-.art-card-carousel .art-title.is-clickable-title,
-.art-card-carousel .art-cover.is-clickable.is-open,
-.art-card-carousel .art-title.is-clickable-title.is-open {
+.art-card-carousel .art-cover.is-clickable:not(.is-open) {
   cursor: e-resize;
+}
+
+.art-card-carousel .art-title.is-clickable-title:not(.is-open) {
+  cursor: e-resize;
+}
+
+.art-card-carousel .art-cover.is-clickable.is-open.is-carousel-prev {
+  cursor: w-resize;
+}
+
+.art-card-carousel .art-cover.is-clickable.is-open.is-carousel-next {
+  cursor: e-resize;
+}
+
+.art-card-carousel .art-title.is-clickable-title.is-open {
+  cursor: n-resize;
 }
 
 .art-card-carousel {
@@ -394,6 +424,11 @@ a[href="/cv/"]:active {
   width: 100%;
   height: 100%;
   display: block;
+  transition: transform 220ms ease;
+}
+
+.to-top-btn:hover img {
+  transform: rotate(90deg);
 }
 
 .to-top-btn.is-visible {
@@ -428,7 +463,7 @@ a[href="/cv/"]:active {
 
 .bio-materials-link:hover {
   text-decoration: underline;
-  text-decoration-color: #e3e3b0;
+  text-decoration-color: currentColor;
   text-decoration-thickness: 1.8px;
   text-underline-offset: 3px;
 }
@@ -521,6 +556,8 @@ a[href="/cv/"]:active {
     left: auto;
     margin: 0 0 8px 0;
     line-height: 1.15;
+    padding-bottom: 0;
+    z-index: auto;
   }
 
   .top-right-links {
@@ -554,6 +591,11 @@ a[href="/cv/"]:active {
   /* Match index page: is-active adds extra bottom margin on desktop only */
   .me-page .about-link.is-active {
     margin-bottom: 8px;
+  }
+
+  .cv-page .about-link.is-active {
+    left: auto;
+    padding-left: 10px;
   }
 
   .me-contact-links {
