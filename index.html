@@ -60,6 +60,7 @@
     </button>
     <main class="art-main">
       <div id="art-gallery" class="art-gallery"></div>
+      <br>
       <a
         class="index-instagram-link"
         href="https://instagram.com/noahmakestheart"
@@ -75,7 +76,7 @@
       const aboutLink = document.querySelector(".about-link");
       const topRightLinks = document.querySelector(".top-right-links");
       const toTopBtn = document.getElementById("to-top-btn");
-      const fadeDistance = 90;
+      const fadeDistance = 45;
       const toTopShowDistance = 170;
 
       function updateHeaderFade() {
@@ -86,13 +87,15 @@
           nameLink.style.pointerEvents = "";
           aboutLink.style.pointerEvents = "";
           topRightLinks.style.pointerEvents = "";
+          topRightLinks.classList.remove("is-faded");
           toTopBtn.classList.remove("is-visible");
           return;
         }
 
         const progress = Math.min(window.scrollY / fadeDistance, 1);
         const opacity = 1 - progress;
-        const pointerEvents = opacity <= 0.05 ? "none" : "";
+        const faded = opacity <= 0.05;
+        const pointerEvents = faded ? "none" : "";
 
         nameLink.style.opacity = opacity;
         aboutLink.style.opacity = opacity;
@@ -100,13 +103,17 @@
         nameLink.style.pointerEvents = pointerEvents;
         aboutLink.style.pointerEvents = pointerEvents;
         topRightLinks.style.pointerEvents = pointerEvents;
+        topRightLinks.classList.toggle("is-faded", faded);
         toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
       }
 
       const artItems = [
         {
           type: "project",
+          mode: "carousel",
+          highres: true,
           title: "Masaryk Cultural Center",
+          caption: "Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation & terrain, and encourage play & curiosity.<br><br><em>5/24/26</em>",
           cover: "art/masaryk/ma1.JPG",
           images: [
             "art/masaryk/ma2.JPG",
@@ -118,11 +125,23 @@
             "art/masaryk/ma8.JPG",
           ],
         },
-        { type: "single", title: "Delancey and Chrystie", src: "art/Delancey and Chrystie.png" },
-        { type: "single", title: "The Spectators", src: "art/TheSpectators.jpeg" },
+        {
+          type: "single",
+          title: "Delancey and Chrystie",
+          caption: "<em>pen on paper</em><br><em>micron 0.5mm</em><br><em>6/5/23</em>",
+          src: "art/Delancey and Chrystie.png",
+        },
+        {
+          type: "single",
+          title: "The Spectators",
+          caption: "<em>acrylic on canvas</em><br><em>12x16&quot;</em><br><em>7/30/23</em>",
+          src: "art/TheSpectators.jpeg",
+        },
         {
           type: "project",
-          title: "ISACream",
+          mode: "carousel",
+          title: "ISACream Stand",
+          caption: "An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em>",
           cover: "art/ISACream/647C9A5F-5C42-4B5C-BFA3-14E32D3AE835_1_105_c.jpeg",
           images: [
             "art/ISACream/2BA33685-FD5E-447D-802B-8B149A864A95_1_105_c.jpeg",
@@ -135,15 +154,57 @@
             "art/ISACream/C1AA7C7A-E897-4C2D-97A5-E45B308C21F8_1_105_c.jpeg"
           ],
         },
-        { type: "single", title: "Asking for a Favor", src: "art/Asking for a Favor.jpg" },
-        { type: "single", title: "Baby Contest", src: "art/BabyContest.png" },
-        { type: "single", title: "Chesterfield Mall", src: "art/Chesterfield Mall.jpg" },
-        { type: "single", title: "Edge of Pilsen", src: "art/Edge of Pilsen.jpg" },
-        { type: "single", title: "Pickleball Court", src: "art/pickleballcourttransparent.png" },
-        { type: "single", title: "Says Quentin", src: "art/saysquentin.JPG" },
+        {
+          type: "single",
+          title: "Asking for a Favor",
+          caption: "<em>acrylic on canvas</em><br><em>6x8&quot;</em><br><em>3/21/25</em>",
+          src: "art/Asking for a Favor.jpg",
+        },
+        {
+          type: "single",
+          title: "Baby Contest",
+          caption: "<em>acrylic on canvas</em><br><em>11x14&quot;</em><br><em>11/8/24</em>",
+          src: "art/BabyContest.png",
+        },
+        {
+          type: "single",
+          title: "Künefeci",
+          caption: "In <em>Expositions Magazine vol. 4</em><br><br><em>adobe illustrator</em><br><em>4/14/23</em>",
+          src: "art/kunefeci.jpg",
+        },
+        {
+          type: "single",
+          title: "Chesterfield Mall",
+          caption: "<em>acrylic on canvas, adobe illustrator</em><br><em>11x14&quot;</em><br><em>11/8/24</em>",
+          src: "art/Chesterfield Mall.jpg",
+        },
+        {
+          type: "single",
+          title: "Edge of Pilsen",
+          caption: "<em>acrylic on canvas</em><br><em>6x6&quot;</em><br><em>6/20/23</em>",
+          src: "art/Edge of Pilsen.jpg",
+        },
+        {
+          type: "single",
+          title: "Pickleball Court",
+          caption: "<em>adobe illustrator</em>",
+          src: "art/pickleballcourttransparent.png",
+        },
         {
           type: "project",
+          mode: "carousel",
+          title: "Says Quentin",
+          caption: "<em>acrylic on canvas, text</em><br><em>24x16&quot;</em><br><em>5/13/26</em>",
+          cover: "art/saysquentin/saysquentin.JPG",
+          images: [
+            "art/saysquentin/Says Quentin Full.jpg",
+          ],
+        },
+        {
+          type: "project",
+          mode: "carousel",
           title: "3 Park Avenue",
+          caption: "<em>sketchup</em><br><em>8/5/20</em>",
           cover: "art/3parkavenue/3 Park Avenue.png",
           images: [
             "art/3parkavenue/3parkavenue2.jpg",
@@ -152,8 +213,16 @@
           ],
         },
         {
+          type: "single",
+          title: "Still Life for Ben",
+          caption: "<em>acrylic on canvas</em><br><em>8x6&quot;</em><br><em>2/23/25</em>",
+          src: "art/stilllifeforben.jpeg",
+        },
+        {
           type: "project",
+          mode: "carousel",
           title: "Grand Central",
+          caption: "<em>sketchup</em><br><em>9/2/20</em>",
           cover: "art/grandcentral/Grand Central Pagoda.jpg",
           images: [
             "art/grandcentral/grandcentral2.png",
@@ -165,6 +234,12 @@
           type: "project",
           mode: "carousel",
           title: "Triptych - The Reception of a Guest (1)",
+          caption: "Sample text for Triptych - The Reception of a Guest.",
+          captions: [
+            "<em>acrylic on panel</em><br><em>11x8&quot;</em><br><em>1/28/25</em>",
+            "<em>acrylic on panel</em><br><em>11x8&quot;</em><br><em>1/28/25</em>",
+            "<em>acrylic on panel</em><br><em>11x8&quot;</em><br><em>1/28/25</em>",
+          ],
           cover: "art/triptych/The Reception of a Guest.jpg",
           images: [
            "art/triptych/Superfluous Man.jpg",
@@ -176,18 +251,63 @@
 
       const gallery = document.getElementById("art-gallery");
 
-      function toLowResPath(src) {
-        return src.replace("art/", "art/lowres/");
+      function toDisplayPath(src, useHighRes = false) {
+        return src.replace("art/", useHighRes ? "art/highres/" : "art/lowres/");
       }
 
-      function makeImage(src, alt, className = "art-image") {
+      function makeImage(src, alt, className = "art-image", useHighRes = false) {
         const img = document.createElement("img");
         img.className = className;
-        img.src = encodeURI(toLowResPath(src));
+        img.src = encodeURI(toDisplayPath(src, useHighRes));
         img.alt = alt;
         img.loading = "lazy";
         img.decoding = "async";
         return img;
+      }
+
+      function makeCaption(text) {
+        const caption = document.createElement("p");
+        caption.className = "art-caption";
+        caption.innerHTML = text || "Sample text.";
+        return caption;
+      }
+
+      function makeStage(mediaEl, captionText) {
+        const stage = document.createElement("div");
+        stage.className = "art-stage";
+        stage.appendChild(mediaEl);
+
+        const panel = document.createElement("div");
+        panel.className = "art-caption-panel";
+        const caption = makeCaption(captionText);
+        panel.appendChild(caption);
+        stage.appendChild(panel);
+
+        return { stage, caption, panel };
+      }
+
+      function layoutCaptionPanel(stage) {
+        if (!stage || window.innerWidth <= 900) return;
+
+        const panel = stage.querySelector(".art-caption-panel");
+        const media = stage.querySelector(":scope > .carousel-frame, :scope > .art-image");
+        if (!panel || !media) return;
+
+        const stageRect = stage.getBoundingClientRect();
+        const mediaRect = media.getBoundingClientRect();
+        const width = 292;
+
+        // Left edge comes from --art-media-width so every caption shares the same x.
+        panel.style.left = "";
+        panel.style.top = `${mediaRect.top - stageRect.top}px`;
+        panel.style.height = `${mediaRect.height}px`;
+        panel.style.setProperty("--caption-panel-width", `${width}px`);
+      }
+
+      function layoutActiveCaptionPanel() {
+        const selected = document.querySelector(".art-image.is-selected");
+        const stage = selected?.closest(".art-stage");
+        if (stage) layoutCaptionPanel(stage);
       }
 
       function hasOpenSelection() {
@@ -196,8 +316,7 @@
         );
       }
 
-      const SCROLL_OFFSET = 42;
-      const SCROLL_OFFSET_COLLAPSE = 42;
+      const SCROLL_OFFSET = 55;
       let scrollGeneration = 0;
 
       function scrollToArtwork(element, { offset = SCROLL_OFFSET, onComplete } = {}) {
@@ -255,6 +374,13 @@
           clearSelections({ keepCard, keepCover, keepChild, keepChildWrap });
         }
 
+        const stage = keepCover?.closest(".art-stage") || keepCard?.querySelector(".art-stage");
+        if (stage) {
+          // Measure before the panel expands so width can animate from 0.
+          layoutCaptionPanel(stage);
+          requestAnimationFrame(() => layoutCaptionPanel(stage));
+        }
+
         if (scrollTarget) {
           scrollToArtwork(scrollTarget);
         }
@@ -300,6 +426,33 @@
         });
       }
 
+      function closeActiveArtwork() {
+        const selected = document.querySelector(".art-image.is-selected");
+        if (!selected) return;
+
+        if (typeof selected._closeSelection === "function") {
+          selected._closeSelection();
+          return;
+        }
+
+        const card = selected.closest(".art-card");
+        selected.classList.remove("is-selected", "is-open");
+        card?.classList.remove("is-title-visible", "is-expanded");
+      }
+
+      document.addEventListener("click", (event) => {
+        const selected = document.querySelector(".art-image.is-selected");
+        if (!selected) return;
+
+        const stage = selected.closest(".art-stage");
+        if (stage && stage.contains(event.target)) return;
+
+        // Let other artworks handle switching selection themselves.
+        if (event.target.closest(".art-image")) return;
+
+        closeActiveArtwork();
+      });
+
       artItems.forEach((item) => {
         const card = document.createElement("article");
         card.className = `art-card art-card-${item.type}`;
@@ -310,27 +463,29 @@
         card.appendChild(title);
 
         if (item.type === "single") {
-          const img = makeImage(item.src, item.title);
+          const img = makeImage(item.src, item.title, "art-image", !!item.highres);
+          const { stage } = makeStage(img, item.caption);
+
+          img._closeSelection = () => {
+            img.classList.remove("is-selected");
+            card.classList.remove("is-title-visible");
+          };
+
           img.addEventListener("click", () => {
-            const selected = !img.classList.contains("is-selected");
-            if (selected) {
-              activateSelection({
-                keepCard: card,
-                keepCover: img,
-                apply: () => {
-                  img.classList.add("is-selected");
-                  card.classList.add("is-title-visible");
-                },
-                scrollTarget: img,
-              });
-            } else {
-              img.classList.remove("is-selected");
-              scrollToArtwork(img, { offset: SCROLL_OFFSET_COLLAPSE });
-            }
+            if (img.classList.contains("is-selected")) return;
+            activateSelection({
+              keepCard: card,
+              keepCover: img,
+              apply: () => {
+                img.classList.add("is-selected");
+                card.classList.add("is-title-visible");
+              },
+              scrollTarget: img,
+            });
           });
-          card.appendChild(img);
+          card.appendChild(stage);
         } else {
-          const cover = makeImage(item.cover, `${item.title} cover`);
+          const cover = makeImage(item.cover, `${item.title} cover`, "art-image", !!item.highres);
           cover.classList.add("art-cover");
           const hasAdditionalImages = Array.isArray(item.images) && item.images.length > 0;
 
@@ -342,58 +497,80 @@
             const allSources = [item.cover, ...item.images];
             const allTitles = [
               item.title,
-              ...(item.imageTitles ||
-                item.images.map((_, idx) => `${item.title} image ${idx + 2}`)),
+              ...(item.imageTitles || item.images.map(() => item.title)),
             ];
+            const allCaptions = Array.isArray(item.captions)
+              ? item.captions
+              : allSources.map(() => item.caption || "Sample text.");
             let carouselIndex = 0;
-            const aspectRatios = new Array(allSources.length).fill(null);
             const frame = document.createElement("div");
             frame.className = "carousel-frame";
+            const { stage, caption } = makeStage(frame, allCaptions[0]);
 
             function updateFrameMinHeight() {
-              const ratios = aspectRatios.filter((ratio) => ratio);
-              if (!ratios.length) return;
+              if (!cover.classList.contains("is-selected")) {
+                frame.style.minHeight = "";
+                return;
+              }
 
               const width = cover.getBoundingClientRect().width;
-              if (!width) return;
+              if (cover.naturalWidth > 0 && width > 0) {
+                const height = width * (cover.naturalHeight / cover.naturalWidth);
+                frame.style.minHeight = `${Math.ceil(height)}px`;
+                return;
+              }
 
-              const maxHeight = Math.max(...ratios.map((ratio) => width * ratio));
-              frame.style.minHeight = `${Math.ceil(maxHeight)}px`;
+              if (cover.offsetHeight > 0) {
+                frame.style.minHeight = `${Math.ceil(cover.offsetHeight)}px`;
+              }
             }
 
-            allSources.forEach((src, idx) => {
+            // Warm the cache so cycling stays snappy.
+            allSources.forEach((src) => {
               const preload = new Image();
-              preload.onload = () => {
-                aspectRatios[idx] = preload.naturalHeight / preload.naturalWidth;
-                updateFrameMinHeight();
-              };
-              preload.src = encodeURI(toLowResPath(src));
+              preload.src = encodeURI(toDisplayPath(src, !!item.highres));
             });
 
             function updateCarouselDisplay(options = {}) {
-              const { scrollAfter = false } = options;
-              const currentHeight = cover.offsetHeight;
-              if (currentHeight > 0) {
-                const lockedHeight = Math.max(
-                  currentHeight,
-                  parseFloat(frame.style.minHeight) || 0
-                );
-                frame.style.minHeight = `${Math.ceil(lockedHeight)}px`;
+              const { scrollAfter = false, pinTop = false } = options;
+              const isOpen = cover.classList.contains("is-selected");
+              const topBefore = pinTop ? cover.getBoundingClientRect().top : null;
+
+              if (isOpen) {
+                // Hold current height through the swap so layout doesn't collapse mid-load.
+                const currentHeight = cover.offsetHeight;
+                if (currentHeight > 0) {
+                  frame.style.minHeight = `${Math.ceil(currentHeight)}px`;
+                }
+              } else {
+                frame.style.minHeight = "";
               }
 
-              cover.src = encodeURI(toLowResPath(allSources[carouselIndex]));
+              cover.src = encodeURI(toDisplayPath(allSources[carouselIndex], !!item.highres));
               cover.alt = allTitles[carouselIndex];
               title.textContent = allTitles[carouselIndex];
+              caption.innerHTML = allCaptions[carouselIndex] || item.caption || "Sample text.";
               updateCarouselCursor();
 
               const finalizeLayout = () => {
+                // Settle to this slide's height so shorter images don't keep leftover space.
                 updateFrameMinHeight();
-                if (scrollAfter) {
+                if (cover.classList.contains("is-selected")) {
+                  layoutCaptionPanel(stage);
+                }
+
+                if (pinTop && topBefore != null) {
+                  // Keep the image top fixed while cycling — avoid smooth-scroll jitter.
+                  const delta = cover.getBoundingClientRect().top - topBefore;
+                  if (Math.abs(delta) > 0.5) {
+                    window.scrollBy({ top: delta, behavior: "auto" });
+                  }
+                } else if (scrollAfter) {
                   scrollToArtwork(cover);
                 }
               };
 
-              if (cover.complete) {
+              if (cover.complete && cover.naturalWidth > 0) {
                 requestAnimationFrame(finalizeLayout);
               } else {
                 cover.addEventListener("load", finalizeLayout, { once: true });
@@ -428,11 +605,12 @@
               } else {
                 carouselIndex = (carouselIndex + 1) % allSources.length;
               }
-              updateCarouselDisplay({ scrollAfter: true });
+              updateCarouselDisplay({ pinTop: true });
             }
 
             function resetCarousel() {
               carouselIndex = 0;
+              frame.style.minHeight = "";
               updateCarouselDisplay();
             }
 
@@ -450,19 +628,19 @@
               if (!switching) {
                 clearSelections({ keepCard: card, keepCover: cover });
               }
+              layoutCaptionPanel(stage);
+              requestAnimationFrame(() => layoutCaptionPanel(stage));
               updateCarouselDisplay({ scrollAfter: true });
             }
 
             function closeCarousel() {
               cover.classList.remove("is-selected", "is-open");
               title.classList.remove("is-open");
-              scrollToArtwork(cover, {
-                offset: SCROLL_OFFSET_COLLAPSE,
-                onComplete: () => {
-                  resetCarousel();
-                },
-              });
+              card.classList.remove("is-title-visible");
+              resetCarousel();
             }
+
+            cover._closeSelection = closeCarousel;
 
             cover.addEventListener("click", (event) => {
               if (!cover.classList.contains("is-selected")) {
@@ -485,15 +663,14 @@
               updateCarouselCursor();
             });
 
-            title.addEventListener("click", () => {
-              if (cover.classList.contains("is-selected")) {
-                closeCarousel();
-              } else {
+            title.addEventListener("click", (event) => {
+              if (!cover.classList.contains("is-selected")) {
+                event.stopPropagation();
                 openCarousel();
               }
             });
 
-            card.appendChild(frame);
+            card.appendChild(stage);
             frame.appendChild(cover);
             updateFrameMinHeight();
             window.addEventListener("resize", updateFrameMinHeight);
@@ -502,6 +679,22 @@
             title.classList.add("is-clickable-title");
             const more = document.createElement("div");
             more.className = "project-more";
+            const { stage } = makeStage(cover, item.caption);
+
+            function closeProject() {
+              cover.classList.remove("is-selected", "is-open");
+              title.classList.remove("is-open");
+              card.classList.remove("is-title-visible", "is-expanded");
+              card.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
+                wrap.classList.remove("is-title-visible");
+              });
+              card.querySelectorAll(".project-more .art-image.is-selected").forEach((img) => {
+                img.classList.remove("is-selected");
+              });
+              title.textContent = item.title;
+            }
+
+            cover._closeSelection = closeProject;
 
             item.images.forEach((src, idx) => {
               const itemWrap = document.createElement("div");
@@ -509,91 +702,81 @@
 
               const hasImageTitle = Array.isArray(item.imageTitles) && !!item.imageTitles[idx];
 
-              const projectImg = makeImage(src, `${item.title} image ${idx + 2}`);
+              const projectImg = makeImage(src, `${item.title} image ${idx + 2}`, "art-image", !!item.highres);
               projectImg.addEventListener("click", () => {
-                const selected = !projectImg.classList.contains("is-selected");
-                if (selected) {
-                  activateSelection({
-                    keepCard: card,
-                    keepCover: cover,
-                    keepChild: projectImg,
-                    apply: () => {
-                      cover.classList.add("is-selected", "is-open");
-                      title.classList.add("is-open");
-                      card.classList.add("is-title-visible", "is-expanded");
-                      projectImg.classList.add("is-selected");
-                      if (hasImageTitle) {
-                        title.textContent = item.imageTitles[idx];
-                      }
-                    },
-                    scrollTarget: projectImg,
-                  });
-                } else {
-                  projectImg.classList.remove("is-selected");
-                }
+                if (projectImg.classList.contains("is-selected")) return;
+                activateSelection({
+                  keepCard: card,
+                  keepCover: cover,
+                  keepChild: projectImg,
+                  apply: () => {
+                    cover.classList.add("is-selected", "is-open");
+                    title.classList.add("is-open");
+                    card.classList.add("is-title-visible", "is-expanded");
+                    projectImg.classList.add("is-selected");
+                    if (hasImageTitle) {
+                      title.textContent = item.imageTitles[idx];
+                    }
+                  },
+                  scrollTarget: projectImg,
+                });
               });
               itemWrap.appendChild(projectImg);
               more.appendChild(itemWrap);
             });
 
-            const toggleProject = () => {
-              const isOpen =
-                cover.classList.contains("is-selected") || card.classList.contains("is-expanded");
-              if (!isOpen) {
-                activateSelection({
-                  keepCard: card,
-                  keepCover: cover,
-                  apply: () => {
-                    cover.classList.add("is-selected", "is-open");
-                    title.classList.add("is-open");
-                    title.textContent = item.title;
-                    card.classList.add("is-title-visible", "is-expanded");
-                  },
-                  scrollTarget: cover,
-                });
-              } else {
-                cover.classList.remove("is-selected", "is-open");
-                title.classList.remove("is-open");
-                card.classList.remove("is-expanded");
-                card.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
-                  wrap.classList.remove("is-title-visible");
-                });
-                card.querySelectorAll(".project-more .art-image.is-selected").forEach((img) => {
-                  img.classList.remove("is-selected");
-                });
-                scrollToArtwork(cover, {
-                  offset: SCROLL_OFFSET_COLLAPSE,
-                  onComplete: () => {
-                    title.textContent = item.title;
-                  },
-                });
+            const openProject = () => {
+              if (cover.classList.contains("is-selected") || card.classList.contains("is-expanded")) {
+                return;
               }
+              activateSelection({
+                keepCard: card,
+                keepCover: cover,
+                apply: () => {
+                  cover.classList.add("is-selected", "is-open");
+                  title.classList.add("is-open");
+                  title.textContent = item.title;
+                  card.classList.add("is-title-visible", "is-expanded");
+                },
+                scrollTarget: cover,
+              });
             };
 
-            cover.addEventListener("click", toggleProject);
-            title.addEventListener("click", toggleProject);
+            cover.addEventListener("click", openProject);
+            title.addEventListener("click", (event) => {
+              if (
+                cover.classList.contains("is-selected") ||
+                card.classList.contains("is-expanded")
+              ) {
+                return;
+              }
+              event.stopPropagation();
+              openProject();
+            });
 
-            card.appendChild(cover);
+            card.appendChild(stage);
             card.appendChild(more);
           } else {
+            const { stage } = makeStage(cover, item.caption);
+
+            cover._closeSelection = () => {
+              cover.classList.remove("is-selected");
+              card.classList.remove("is-title-visible");
+            };
+
             cover.addEventListener("click", () => {
-              const selected = !cover.classList.contains("is-selected");
-              if (selected) {
-                activateSelection({
-                  keepCard: card,
-                  keepCover: cover,
-                  apply: () => {
-                    cover.classList.add("is-selected");
-                    card.classList.add("is-title-visible");
-                  },
-                  scrollTarget: cover,
-                });
-              } else {
-                cover.classList.remove("is-selected");
-                scrollToArtwork(cover, { offset: SCROLL_OFFSET_COLLAPSE });
-              }
+              if (cover.classList.contains("is-selected")) return;
+              activateSelection({
+                keepCard: card,
+                keepCover: cover,
+                apply: () => {
+                  cover.classList.add("is-selected");
+                  card.classList.add("is-title-visible");
+                },
+                scrollTarget: cover,
+              });
             });
-            card.appendChild(cover);
+            card.appendChild(stage);
           }
         }
 
@@ -601,7 +784,10 @@
       });
 
       window.addEventListener("scroll", updateHeaderFade, { passive: true });
-      window.addEventListener("resize", updateHeaderFade);
+      window.addEventListener("resize", () => {
+        updateHeaderFade();
+        layoutActiveCaptionPanel();
+      });
       updateHeaderFade();
     </script>
   </body>

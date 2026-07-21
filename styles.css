@@ -32,6 +32,14 @@ body {
   pointer-events: auto;
 }
 
+/* Visible sets use pointer-events:auto, which would pierce a faded parent otherwise. */
+.top-right-links.is-faded,
+.top-right-links.is-faded .top-right-set,
+.top-right-links.is-faded .top-right-set.is-visible,
+.top-right-links.is-faded a {
+  pointer-events: none;
+}
+
 @media (min-width: 901px) {
   .top-right-links {
     display: grid;
@@ -299,10 +307,93 @@ a[href="/cv/"]:active {
   overflow-anchor: auto;
 }
 
-.art-card > .art-image,
-.art-card > .art-cover,
-.art-card > .carousel-frame {
+.art-card > .art-stage {
   margin-top: var(--art-main-image-margin-top);
+}
+
+.art-stage {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(18px, 2.5vw, 36px);
+  width: 100%;
+  position: relative;
+}
+
+.art-stage {
+  --art-media-width: 75%;
+}
+
+.art-stage > .art-image,
+.art-stage > .carousel-frame {
+  flex: 0 0 auto;
+  width: var(--art-media-width);
+}
+
+.art-stage > .carousel-frame .art-image {
+  width: 100%;
+}
+
+.art-caption {
+  display: none;
+  flex: 1 1 auto;
+  margin: 0;
+  padding-top: 2px;
+  max-width: 280px;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.45;
+  color: #e3e3b0;
+}
+
+.art-card:has(.art-image.is-selected) .art-caption {
+  display: block;
+}
+
+@media (min-width: 901px) {
+  .art-main,
+  .art-gallery,
+  .art-card,
+  .art-stage {
+    overflow: visible;
+  }
+
+  .art-stage {
+    gap: 0;
+  }
+
+  .art-caption-panel {
+    position: absolute;
+    left: var(--art-media-width);
+    top: 0;
+    width: 0;
+    height: 0;
+    background: #e3e3b0;
+    overflow: hidden;
+    z-index: 2;
+    transition: width 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+
+  .art-card:has(.art-image.is-selected) .art-caption-panel {
+    width: var(--caption-panel-width, 0px);
+    pointer-events: auto;
+  }
+
+  .art-caption-panel .art-caption {
+    display: block;
+    color: #e68019;
+    max-width: none;
+    width: var(--caption-panel-width, 292px);
+    min-width: 160px;
+    padding: 14px 18px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 900px) {
+  .art-caption-panel {
+    display: contents;
+  }
 }
 
 .project-image-item {
@@ -322,11 +413,19 @@ a[href="/cv/"]:active {
   .art-image {
     width: 60%;
   }
+
+  .art-stage {
+    --art-media-width: 60%;
+  }
 }
 
 @media (min-width: 901px) and (max-width: 1199px) {
   .art-image {
     width: 66%;
+  }
+
+  .art-stage {
+    --art-media-width: 66%;
   }
 }
 
@@ -349,11 +448,11 @@ a[href="/cv/"]:active {
 }
 
 .art-card-carousel .art-cover.is-clickable:not(.is-open) {
-  cursor: e-resize;
+  cursor: pointer;
 }
 
 .art-card-carousel .art-title.is-clickable-title:not(.is-open) {
-  cursor: e-resize;
+  cursor: pointer;
 }
 
 .art-card-carousel .art-cover.is-clickable.is-open.is-carousel-prev {
@@ -389,9 +488,6 @@ a[href="/cv/"]:active {
   outline-color: #e3e3b0;
 }
 
-.art-image.is-selected {
-  outline-color: #ffffff;
-}
 
 .project-more {
   display: none;
@@ -428,7 +524,7 @@ a[href="/cv/"]:active {
 }
 
 .to-top-btn:hover img {
-  transform: rotate(90deg);
+  transform: rotate(45deg);
 }
 
 .to-top-btn.is-visible {
@@ -641,7 +737,7 @@ a[href="/cv/"]:active {
   }
 
   .index-page .art-main {
-    padding-top: 44px;
+    padding-top: 20px;
   }
 
   .index-instagram-link {
@@ -662,6 +758,29 @@ a[href="/cv/"]:active {
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  .art-card:first-child {
+    --art-card-top: 28px;
+  }
+
+  .art-stage {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .art-stage > .art-image,
+  .art-stage > .carousel-frame {
+    width: min(100%, 420px);
+  }
+
+  .art-caption {
+    width: min(100%, 420px);
+    max-width: min(100%, 420px);
+    margin-top: 0px;
+    text-align: left;
+    font-size: 15px;
+    box-sizing: border-box;
   }
 
   .art-title,

@@ -90,6 +90,7 @@
             element.style.opacity = "";
             element.style.pointerEvents = "";
           });
+          topRightLinks.classList.remove("is-faded");
           toTopBtn.classList.remove("is-visible");
           return;
         }
@@ -101,12 +102,14 @@
         const effectiveFadeDistance = Math.min(fadeDistance, Math.max(maxScroll, 1));
         const progress = Math.min(window.scrollY / effectiveFadeDistance, 1);
         const opacity = 1 - progress;
-        const pointerEvents = opacity <= 0.05 ? "none" : "";
+        const faded = opacity <= 0.05;
+        const pointerEvents = faded ? "none" : "";
 
         headerElements.forEach((element) => {
           element.style.opacity = opacity;
           element.style.pointerEvents = pointerEvents;
         });
+        topRightLinks.classList.toggle("is-faded", faded);
         toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
       }
 
