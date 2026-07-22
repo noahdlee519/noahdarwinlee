@@ -14,6 +14,7 @@ body {
   position: fixed;
   top: var(--page-top);
   right: calc(var(--page-left) + clamp(0px, 0vw, 10px));
+  z-index: 10;
   transition: opacity 140ms ease;
 }
 
