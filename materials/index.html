@@ -13,6 +13,11 @@
         margin: 0 0 28px 0;
       }
 
+      /* padding avoids margin-collapse with the page top */
+      .cv-page main {
+        padding-top: 36px;
+      }
+
       .cv-page main .materials-item p {
         margin: 0 0 10px 0;
         margin-left: 1.6em;
@@ -28,54 +33,9 @@
         text-decoration: none;
       }
 
-      .materials-item .cv-publication-link.is-internal::after {
-        content: none;
-      }
-
-      .materials-preview {
-        width: min(920px, calc(100vw - 90px));
-        height: 430px;
-        border: 0;
-        background: transparent;
-      }
-
-      .materials-preview.is-tall {
-        height: 770px;
-      }
-
-      .materials-preview-wrap {
-        position: relative;
-        width: fit-content;
-        max-width: 100%;
-      }
-
-      .materials-preview-wrap .materials-preview {
-        display: block;
-        pointer-events: none;
-      }
-
-      .materials-preview-link {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-      }
-
       @media (max-width: 900px) {
         .materials-item {
           margin-left: 0;
-        }
-
-        .materials-preview-wrap {
-          width: 100%;
-        }
-
-        .materials-preview {
-          width: 100%;
-          height: 52vh;
-        }
-
-        .materials-preview.is-tall {
-          height: 68vh;
         }
       }
     </style>
@@ -94,89 +54,41 @@
       <section>
         <div class="materials-item">
           <p>
-            <a class="cv-publication-link is-internal" href="/flashcard/"
-              >Flash Card Tool</a
-            >
+            <a class="cv-publication-link" href="/flashcard/">Flash Card Tool</a>
           </p>
-          <div class="materials-preview-wrap">
-            <iframe
-              class="materials-preview is-tall"
-              src="/flashcard/"
-              title="Preview: Flash Card Tool"
-              loading="lazy"
-              tabindex="-1"
-            ></iframe>
-            <a class="materials-preview-link" href="/flashcard/" aria-label="Open Flash Card Tool"></a>
-          </div>
         </div>
         <div class="materials-item">
           <p>
-            <a class="cv-publication-link" href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
-              >100 Architects of the Modern Era you Should Know</a
-            >
-          </p>
-          <div class="materials-preview-wrap">
-            <iframe
-              class="materials-preview"
-              src="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/preview"
-              title="Preview: 100 Architects of the Modern Era you Should Know"
-              loading="lazy"
-              tabindex="-1"
-            ></iframe>
             <a
-              class="materials-preview-link"
+              class="cv-publication-link"
               href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open 100 Architects of the Modern Era you Should Know"
-            ></a>
-          </div>
+              >100 Architects of the Modern Era you Should Know</a
+            >
+          </p>
         </div>
         <div class="materials-item">
           <p>
-            <a class="cv-publication-link" href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
-              >List of Things to Do in New York City</a
-            >
-          </p>
-          <div class="materials-preview-wrap">
-            <iframe
-              class="materials-preview is-tall"
-              src="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/preview"
-              title="Preview: NYC Guide"
-              loading="lazy"
-              tabindex="-1"
-            ></iframe>
             <a
-              class="materials-preview-link"
+              class="cv-publication-link"
               href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open List of Things to Do in New York City"
-            ></a>
-          </div>
+              >List of Things to Do in New York City</a
+            >
+          </p>
         </div>
         <div class="materials-item">
           <p>
-            <a class="cv-publication-link" href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
-              >List of Things to Do in Chicago</a
-            >
-          </p>
-          <div class="materials-preview-wrap">
-            <iframe
-              class="materials-preview is-tall"
-              src="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/preview"
-              title="Preview: List of Things to Do in Chicago"
-              loading="lazy"
-              tabindex="-1"
-            ></iframe>
             <a
-              class="materials-preview-link"
+              class="cv-publication-link"
               href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open List of Things to Do in Chicago"
-            ></a>
-          </div>
+              >List of Things to Do in Chicago</a
+            >
+          </p>
         </div>
       </section>
     </main>
