@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Simple front–back flashcards for one study session." />
+    <title>Flash Card Tool | Noah Lee</title>
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      /* tool-specific layout on top of the shared site stylesheet */
+      :root {
+        --bg: #e68019;
+        --text: #e3e3b0;
+        --bright: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body.flashcards-page {
+        padding-right: clamp(14px, 3vw, 36px);
+        padding-bottom: 48px;
+      }
+
+      /* when previewed inside the materials iframe, skip the site chrome */
+      body.flashcards-page.is-embedded .name,
+      body.flashcards-page.is-embedded .about-link {
+        display: none;
+      }
+
+      body.flashcards-page.is-embedded {
+        padding-top: calc(var(--page-top) + 8px);
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .page-title {
+        margin: 0 0 1.75rem;
+        font-size: 22px;
+        font-weight: 300;
+        color: var(--bright);
+      }
+
+      .lede {
+        margin: 0 0 1.5rem;
+        max-width: 34ch;
+        font-size: 18px;
+        line-height: 1.45;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.55rem;
+        font-size: 18px;
+      }
+
+      textarea,
+      input[type="text"] {
+        display: block;
+        width: min(520px, 100%);
+        margin: 0;
+        padding: 0.85rem 0.95rem;
+        border: 1px solid var(--text);
+        border-radius: 0;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
+        line-height: 1.5;
+        outline: none;
+      }
+
+      textarea {
+        min-height: 240px;
+        resize: vertical;
+      }
+
+      input[type="text"] {
+        width: min(280px, 100%);
+      }
+
+      textarea::placeholder,
+      input[type="text"]::placeholder {
+        color: color-mix(in srgb, var(--text) 55%, transparent);
+      }
+
+      textarea:focus,
+      input[type="text"]:focus {
+        border-color: var(--bright);
+        color: var(--bright);
+      }
+
+      .hint {
+        margin: 0.7rem 0 0;
+        max-width: 40ch;
+        font-size: 15px;
+        line-height: 1.4;
+        opacity: 0.85;
+      }
+
+      .error {
+        margin: 0.7rem 0 0;
+        color: var(--bright);
+        font-size: 15px;
+      }
+
+      .status {
+        margin: 0.55rem 0 0;
+        font-size: 15px;
+        opacity: 0.85;
+      }
+
+      /* custom checkbox — flat square, no browser chrome */
+      .randomize-row {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: center;
+        font-size: 16px;
+      }
+
+      .randomize-row label {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 300;
+        cursor: pointer;
+      }
+
+      .randomize-row input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        padding: 0;
+        border: 1px solid var(--text);
+        border-radius: 0;
+        background: transparent;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .randomize-row input[type="checkbox"]:checked {
+        background: var(--text);
+        box-shadow: inset 0 0 0 2px var(--bg);
+      }
+
+      .randomize-row input[type="checkbox"]:focus-visible {
+        outline: 1px solid var(--bright);
+        outline-offset: 2px;
+      }
+
+      .setup-divider {
+        width: min(520px, 100%);
+        height: 0;
+        margin: 2rem 0;
+        border: 0;
+        border-top: 1px solid var(--text);
+      }
+
+      .save-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.85rem 1.25rem;
+        margin-top: 1.1rem;
+      }
+
+      .saved-lists {
+        margin-top: 2rem;
+        width: min(520px, 100%);
+      }
+
+      .saved-lists h2 {
+        margin: 0 0 0.85rem;
+        font-size: 18px;
+        font-weight: 300;
+      }
+
+      .saved-empty {
+        margin: 0;
+        font-size: 15px;
+        opacity: 0.75;
+      }
+
+      .saved-item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.65rem 1.25rem;
+        margin-bottom: 0.65rem;
+      }
+
+      .saved-item .text-action {
+        font-size: 18px;
+      }
+
+      .saved-item .delete-btn {
+        font-size: 15px;
+        opacity: 0.8;
+      }
+
+      /* text links standing in for buttons */
+      .text-action {
+        appearance: none;
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        font-size: 22px;
+        font-weight: 300;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .text-action:hover,
+      .text-action:focus-visible {
+        color: var(--bright);
+        text-decoration: underline;
+        text-decoration-thickness: 2.25px;
+        text-underline-offset: 3px;
+        outline: none;
+      }
+
+      .text-action.is-active,
+      .text-action.is-on {
+        color: var(--bright);
+      }
+
+      .text-action:disabled {
+        opacity: 0.45;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 1.35rem;
+      }
+
+      .study {
+        width: min(980px, 100%);
+      }
+
+      .study-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 1rem 2rem;
+        margin-bottom: 2.5rem;
+        font-size: 18px;
+      }
+
+      .progress {
+        color: var(--bright);
+      }
+
+      #dir-toggle {
+        font-size: 18px;
+      }
+
+      /* study layout: card column + side controls */
+      .study-stage {
+        display: flex;
+        align-items: flex-start;
+        gap: clamp(18px, 2.5vw, 36px);
+        width: 100%;
+      }
+
+      .card-column {
+        flex: 0 0 auto;
+        width: min(75%, 640px);
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+      }
+
+      .card-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.85rem 1.35rem;
+        font-size: 14px;
+      }
+
+      .card-footer .known-count {
+        font-size: inherit;
+      }
+
+      .card-footer .text-action {
+        font-size: inherit;
+      }
+
+      .card {
+        appearance: none;
+        position: relative;
+        display: block;
+        width: 100%;
+        min-height: clamp(220px, 38vh, 340px);
+        margin: 0;
+        padding: 1.15rem 1.25rem;
+        border: 1px solid var(--text);
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .card:focus,
+      .card:focus-visible {
+        outline: none;
+      }
+
+      /* little white dot when you mark a card known */
+      .card-known-mark {
+        position: absolute;
+        top: 0.85rem;
+        right: 0.85rem;
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 50%;
+        background: var(--bright);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 120ms ease;
+      }
+
+      .card.is-known .card-known-mark {
+        opacity: 1;
+      }
+
+      .card-label {
+        display: block;
+        margin-bottom: 0.65rem;
+        font-size: 16px;
+        opacity: 0.85;
+      }
+
+      .card-word {
+        display: block;
+        max-width: 14ch;
+        font-size: clamp(2.4rem, 7vw, 4.2rem);
+        font-weight: 300;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        word-wrap: break-word;
+        color: var(--bright);
+        transition: opacity 60ms ease;
+      }
+
+      .card-word.is-swapping {
+        opacity: 0;
+      }
+
+      .card-hint {
+        display: block;
+        margin-top: 1.25rem;
+        font-size: 15px;
+        opacity: 0.7;
+      }
+
+      .side-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding-top: 0;
+        min-width: 7rem;
+      }
+
+      .side-controls .text-action {
+        font-size: 18px;
+      }
+
+      .side-controls .text-action#edit-btn {
+        margin-top: 1.35rem;
+      }
+
+      .side-controls .text-action#home-btn {
+        margin-top: 1.35rem;
+      }
+
+      @media (max-width: 700px) {
+        .study-stage {
+          flex-direction: column;
+          gap: 1.75rem;
+        }
+
+        .card-column {
+          width: 100%;
+        }
+
+        .card {
+          width: 100%;
+          min-height: 200px;
+        }
+
+        .side-controls {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 1rem 1.5rem;
+          padding-top: 0;
+        }
+
+        .side-controls .text-action#edit-btn,
+        .side-controls .text-action#home-btn {
+          margin-top: 0;
+        }
+      }
+    </style>
+  </head>
+  <body class="cv-page flashcards-page">
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="about-link" href="/me/">> about</a>
+    <a class="about-link" href="/materials/">> materials</a>
+
+    <h1 class="page-title">Flash Card Tool</h1>
+
+    <section id="setup" aria-labelledby="setup-title">
+      <p class="lede">paste flash card pairs in this format:
+        front side text = back side text</p>
+      <label id="setup-title" for="entry-list">word list</label>
+      <textarea
+        id="entry-list"
+        spellcheck="false"
+        placeholder="ahoj = hello&#10;děkuji = thank you&#10;prosím = please"
+      ></textarea>
+      <div class="randomize-row">
+        <input type="checkbox" id="randomize-order" unchecked />
+        <label for="randomize-order">randomize order</label>
+      </div>
+      <p id="setup-error" class="error hidden" role="alert"></p>
+
+      <div class="save-row">
+        <label class="hidden" for="list-name">list name</label>
+        <input type="text" id="list-name" placeholder="list name" autocomplete="off" />
+        <button type="button" class="text-action" id="save-btn">save list</button>
+      </div>
+      <p id="save-status" class="status hidden" aria-live="polite"></p>
+
+      <div class="actions">
+        <button type="button" class="text-action" id="start-btn">start</button>
+      </div>
+
+      <hr class="setup-divider" />
+
+      <div class="saved-lists" aria-labelledby="saved-title">
+        <h2 id="saved-title">saved lists</h2>
+        <p id="saved-empty" class="saved-empty">no saved lists yet.</p>
+        <div id="saved-items"></div>
+      </div>
+    </section>
+
+    <section id="study" class="study hidden" aria-live="polite">
+      <div class="study-meta">
+        <div class="progress" id="progress">card 1 / 1</div>
+        <button
+          type="button"
+          class="text-action"
+          id="dir-toggle"
+          aria-label="Study direction"
+          aria-pressed="false"
+        >
+          front → back
+        </button>
+      </div>
+
+      <div class="study-stage">
+        <div class="card-column">
+          <button type="button" class="card" id="card" aria-label="Flip flashcard">
+            <span class="card-known-mark" aria-hidden="true"></span>
+            <span class="card-label" id="side-label">front</span>
+            <span class="card-word" id="card-word"></span>
+            <span class="card-hint" id="card-hint">click to flip [space]</span>
+          </button>
+          <div class="card-footer">
+            <div class="known-count" id="known-count">known 0</div>
+            <button type="button" class="text-action" id="hide-known-btn" aria-pressed="false">
+              hide known
+            </button>
+          </div>
+        </div>
+
+        <div class="side-controls">
+          <button type="button" class="text-action" id="back-btn">back [b]</button>
+          <button type="button" class="text-action" id="next-btn">next [n]</button>
+          <button type="button" class="text-action" id="known-btn" aria-pressed="false">know [k]</button>
+          <button type="button" class="text-action" id="edit-btn">edit list</button>
+          <button type="button" class="text-action" id="shuffle-btn">shuffle</button>
+          <button type="button" class="text-action" id="home-btn">home</button>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      // keys in localStorage so lists / draft survive a refresh (this browser only)
+      const STORAGE_LISTS = "front-flashcards-lists";
+      const STORAGE_DRAFT = "front-flashcards-draft";
+      const STORAGE_NAME = "front-flashcards-name";
+
+      // grab everything once so we're not hunting the DOM later
+      const setupEl = document.getElementById("setup");
+      const studyEl = document.getElementById("study");
+      const entryList = document.getElementById("entry-list");
+      const listNameInput = document.getElementById("list-name");
+      const setupError = document.getElementById("setup-error");
+      const saveStatus = document.getElementById("save-status");
+      const startBtn = document.getElementById("start-btn");
+      const saveBtn = document.getElementById("save-btn");
+      const savedEmpty = document.getElementById("saved-empty");
+      const savedItems = document.getElementById("saved-items");
+      const cardEl = document.getElementById("card");
+      const sideLabel = document.getElementById("side-label");
+      const cardWord = document.getElementById("card-word");
+      const cardHint = document.getElementById("card-hint");
+      const progressEl = document.getElementById("progress");
+      const knownCountEl = document.getElementById("known-count");
+      const backBtn = document.getElementById("back-btn");
+      const nextBtn = document.getElementById("next-btn");
+      const knownBtn = document.getElementById("known-btn");
+      const hideKnownBtn = document.getElementById("hide-known-btn");
+      const shuffleBtn = document.getElementById("shuffle-btn");
+      const randomizeOrderCheckbox = document.getElementById("randomize-order");
+      const editBtn = document.getElementById("edit-btn");
+      const homeBtn = document.getElementById("home-btn");
+      const dirToggle = document.getElementById("dir-toggle");
+
+      // session brain — nothing here is saved across visits except via localStorage helpers above
+      const state = {
+        deck: [], // full shuffled/ordered list for this session
+        index: 0, // where you are in the *active* deck (see activeCards)
+        flipped: false, // false = prompt side, true = answer side
+        frontFirst: true, // true = front→back, false = front←back
+        known: new Set(), // ids of cards you marked known (aesthetic + hide filter)
+        hideKnown: false, // when true, known cards drop out of the active deck
+      };
+
+      // --- saving / loading lists ---
+
+      function readLists() {
+        // pull the saved-lists object out of localStorage; empty object if anything's weird
+        try {
+          const raw = localStorage.getItem(STORAGE_LISTS);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function writeLists(lists) {
+        localStorage.setItem(STORAGE_LISTS, JSON.stringify(lists));
+      }
+
+      function persistDraft() {
+        // keep whatever you're typing so refreshing doesn't wipe the textarea
+        localStorage.setItem(STORAGE_DRAFT, entryList.value);
+        localStorage.setItem(STORAGE_NAME, listNameInput.value.trim());
+      }
+
+      function showSaveStatus(message) {
+        saveStatus.textContent = message;
+        saveStatus.classList.remove("hidden");
+      }
+
+      function renderSavedLists() {
+        // rebuild the saved-lists UI from whatever's in storage
+        const lists = readLists();
+        const names = Object.keys(lists).sort((a, b) => a.localeCompare(b));
+        savedItems.innerHTML = "";
+
+        if (!names.length) {
+          savedEmpty.classList.remove("hidden");
+          return;
+        }
+
+        savedEmpty.classList.add("hidden");
+
+        names.forEach((name) => {
+          const row = document.createElement("div");
+          row.className = "saved-item";
+
+          const loadBtn = document.createElement("button");
+          loadBtn.type = "button";
+          loadBtn.className = "text-action";
+          loadBtn.textContent = name;
+          loadBtn.addEventListener("click", () => loadList(name));
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "text-action delete-btn";
+          deleteBtn.textContent = "delete";
+          deleteBtn.addEventListener("click", () => deleteList(name));
+
+          row.append(loadBtn, deleteBtn);
+          savedItems.appendChild(row);
+        });
+      }
+
+      function saveList() {
+        // name + valid pairs required; same name overwrites
+        const name = listNameInput.value.trim();
+        const text = entryList.value.trim();
+        const parsed = parseEntries(entryList.value);
+
+        setupError.classList.add("hidden");
+
+        if (!name) {
+          setupError.textContent = "give the list a name before saving.";
+          setupError.classList.remove("hidden");
+          return;
+        }
+
+        if (!parsed.ok) {
+          setupError.textContent = parsed.error;
+          setupError.classList.remove("hidden");
+          return;
+        }
+
+        const lists = readLists();
+        const existed = Object.prototype.hasOwnProperty.call(lists, name);
+        lists[name] = text;
+        writeLists(lists);
+        persistDraft();
+        renderSavedLists();
+        showSaveStatus(existed ? `updated “${name}”.` : `saved “${name}”.`);
+      }
+
+      function loadList(name) {
+        // dump a saved list back into the textarea and name field
+        const lists = readLists();
+        if (!Object.prototype.hasOwnProperty.call(lists, name)) return;
+        entryList.value = lists[name];
+        listNameInput.value = name;
+        persistDraft();
+        setupError.classList.add("hidden");
+        showSaveStatus(`loaded “${name}”.`);
+        entryList.focus();
+      }
+
+      function deleteList(name) {
+        const lists = readLists();
+        if (!Object.prototype.hasOwnProperty.call(lists, name)) return;
+        delete lists[name];
+        writeLists(lists);
+        renderSavedLists();
+        showSaveStatus(`deleted “${name}”.`);
+      }
+
+      // --- parsing + deck helpers ---
+
+      function parseEntries(text) {
+        // one pair per line: front = back. blank lines ignored.
+        const cards = [];
+        const lines = text.split(/\r?\n/);
+
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line) continue;
+
+          const match = line.match(/^(.+?)\s*=\s*(.+)$/);
+          if (!match) {
+            return {
+              ok: false,
+              error: `could not parse: "${line}". use front = back`,
+            };
+          }
+
+          const front = match[1].trim();
+          const back = match[2].trim();
+          if (!front || !back) {
+            return { ok: false, error: `empty side in: "${line}"` };
+          }
+
+          // id is just a stable string key for the known-set
+          cards.push({ id: `${front}::${back}`, front, back });
+        }
+
+        if (!cards.length) {
+          return { ok: false, error: "add at least one front = back line." };
+        }
+
+        return { ok: true, cards };
+      }
+
+      function shuffle(items) {
+        // fisher–yates — returns a new array, leaves the original alone
+        const arr = items.slice();
+        for (let i = arr.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function activeCards() {
+        // what you're actually flipping through right now
+        if (!state.hideKnown) return state.deck;
+        return state.deck.filter((card) => !state.known.has(card.id));
+      }
+
+      function currentCard() {
+        return activeCards()[state.index];
+      }
+
+      function clampIndex() {
+        // keep index in range after the active deck shrinks (e.g. you hid a known card)
+        const cards = activeCards();
+        if (!cards.length) {
+          state.index = 0;
+          return;
+        }
+        state.index = ((state.index % cards.length) + cards.length) % cards.length;
+      }
+
+      function shownText(card) {
+        // pick label + word based on direction toggle and whether the card is flipped
+        if (state.frontFirst) {
+          return state.flipped
+            ? { label: "back", word: card.back }
+            : { label: "front", word: card.front };
+        }
+        return state.flipped
+          ? { label: "front", word: card.front }
+          : { label: "back", word: card.back };
+      }
+
+      // --- drawing the study screen ---
+
+      function renderCard(animate) {
+        const cards = activeCards();
+        const card = cards[state.index];
+        const remaining = state.deck.length - state.known.size;
+
+        knownCountEl.textContent = `known ${state.known.size}`;
+        hideKnownBtn.classList.toggle("is-on", state.hideKnown);
+        hideKnownBtn.setAttribute("aria-pressed", String(state.hideKnown));
+        hideKnownBtn.textContent = state.hideKnown ? "show known" : "hide known";
+
+        // nothing left to show (usually: hide known is on and you've marked everything)
+        if (!card) {
+          sideLabel.textContent = "";
+          cardWord.textContent = state.deck.length
+            ? "all cards known"
+            : "no cards";
+          cardHint.textContent = state.hideKnown
+            ? "turn off hide known to see them again"
+            : "";
+          cardEl.classList.remove("is-known");
+          progressEl.textContent = state.hideKnown ? `card 0 / ${remaining}` : `card 0 / 0`;
+          knownBtn.classList.remove("is-on");
+          knownBtn.setAttribute("aria-pressed", "false");
+          knownBtn.textContent = "know [k]";
+          knownBtn.disabled = true;
+          backBtn.disabled = true;
+          nextBtn.disabled = true;
+          shuffleBtn.disabled = true;
+          return;
+        }
+
+        knownBtn.disabled = false;
+        backBtn.disabled = false;
+        nextBtn.disabled = false;
+        shuffleBtn.disabled = false;
+
+        const shown = shownText(card);
+        const apply = () => {
+          sideLabel.textContent = shown.label;
+          cardWord.textContent = shown.word;
+          cardHint.textContent = state.flipped ? "click to flip back [space]" : "click to flip [space]";
+          cardWord.classList.remove("is-swapping");
+        };
+
+        // tiny fade when swapping words; skip it for instant updates
+        if (animate) {
+          cardWord.classList.add("is-swapping");
+          window.setTimeout(apply, 55);
+        } else {
+          apply();
+        }
+
+        // when known are hidden, the counter total is only what's left to study
+        const total = state.hideKnown ? remaining : state.deck.length;
+        progressEl.textContent = `card ${state.index + 1} / ${total}`;
+
+        const isKnown = state.known.has(card.id);
+        cardEl.classList.toggle("is-known", isKnown);
+        knownBtn.classList.toggle("is-on", isKnown);
+        knownBtn.setAttribute("aria-pressed", String(isKnown));
+        knownBtn.textContent = isKnown ? "known [k]" : "know [k]";
+      }
+
+      function updateDirectionLabel() {
+        dirToggle.textContent = state.frontFirst ? "front → back" : "front ← back";
+        dirToggle.setAttribute("aria-pressed", String(!state.frontFirst));
+      }
+
+      function toggleDirection() {
+        // flip which side shows first; reset to the prompt side
+        state.frontFirst = !state.frontFirst;
+        state.flipped = false;
+        updateDirectionLabel();
+        renderCard(false);
+      }
+
+      function flipCard() {
+        if (!currentCard()) return;
+        state.flipped = !state.flipped;
+        renderCard(true);
+      }
+
+      // --- session lifecycle ---
+
+      function startSession() {
+        const parsed = parseEntries(entryList.value);
+        if (!parsed.ok) {
+          setupError.textContent = parsed.error;
+          setupError.classList.remove("hidden");
+          return;
+        }
+
+        setupError.classList.add("hidden");
+        // checkbox on setup screen decides shuffle vs pasted order
+        state.deck = randomizeOrderCheckbox && randomizeOrderCheckbox.checked ? shuffle(parsed.cards) : parsed.cards;
+        state.index = 0;
+        state.flipped = false;
+        state.known = new Set();
+        state.hideKnown = false;
+
+        setupEl.classList.add("hidden");
+        studyEl.classList.remove("hidden");
+        renderCard(false);
+      }
+
+      function shuffleDeck() {
+        // reshuffle mid-session; try to stay on the same card if it's still visible
+        if (!state.deck.length) return;
+
+        const currentId = currentCard() ? currentCard().id : null;
+
+        if (!state.hideKnown) {
+          state.deck = shuffle(state.deck);
+        } else {
+          // only shuffle the unknowns; known cards keep their spots in the full deck
+          const unknownCards = state.deck.filter((card) => !state.known.has(card.id));
+          const shuffledUnknown = shuffle(unknownCards);
+          let i = 0;
+          state.deck = state.deck.map((card) => {
+            if (state.known.has(card.id)) return card;
+            return shuffledUnknown[i++];
+          });
+        }
+
+        state.flipped = false;
+
+        const cards = activeCards();
+        if (!cards.length) {
+          state.index = 0;
+        } else if (currentId) {
+          const idx = cards.findIndex((card) => card.id === currentId);
+          state.index = idx >= 0 ? idx : 0;
+        } else {
+          state.index = 0;
+        }
+
+        renderCard(false);
+      }
+
+      function nextCard() {
+        const cards = activeCards();
+        if (!cards.length) return;
+        state.index = (state.index + 1) % cards.length; // wraps around
+        state.flipped = false;
+        renderCard(true);
+      }
+
+      function prevCard() {
+        const cards = activeCards();
+        if (!cards.length) return;
+        state.index = (state.index - 1 + cards.length) % cards.length; // wraps around
+        state.flipped = false;
+        renderCard(true);
+      }
+
+      function toggleKnown() {
+        const card = currentCard();
+        if (!card) return;
+        if (state.known.has(card.id)) state.known.delete(card.id);
+        else state.known.add(card.id);
+
+        // if hide-known is on and you just marked this one, it leaves the active deck
+        if (state.hideKnown) {
+          const cards = activeCards();
+          if (!cards.length) {
+            state.index = 0;
+            state.flipped = false;
+          } else if (state.known.has(card.id)) {
+            // stay at the same index so the next unknown slides into place
+            clampIndex();
+            state.flipped = false;
+          }
+        }
+
+        renderCard(false);
+      }
+
+      function toggleHideKnown() {
+        // remember which card you were on, then re-find it (or land nearby) after filtering
+        const current = currentCard();
+        const currentId = current ? current.id : null;
+        state.hideKnown = !state.hideKnown;
+
+        const cards = activeCards();
+        if (!cards.length) {
+          state.index = 0;
+        } else if (currentId) {
+          const nextIndex = cards.findIndex((card) => card.id === currentId);
+          state.index = nextIndex >= 0 ? nextIndex : Math.min(state.index, cards.length - 1);
+        } else {
+          state.index = 0;
+        }
+
+        state.flipped = false;
+        renderCard(false);
+      }
+
+      function editList() {
+        // jump back to setup without wiping the session deck from memory…
+        // (starting again will rebuild from the textarea)
+        studyEl.classList.add("hidden");
+        setupEl.classList.remove("hidden");
+        entryList.focus();
+      }
+
+      function goHome() {
+        // full reset back to the setup screen
+        state.deck = [];
+        state.index = 0;
+        state.flipped = false;
+        state.known = new Set();
+        state.hideKnown = false;
+        studyEl.classList.add("hidden");
+        setupEl.classList.remove("hidden");
+        window.scrollTo(0, 0);
+      }
+
+      // --- wire up clicks + keys ---
+
+      startBtn.addEventListener("click", startSession);
+      saveBtn.addEventListener("click", saveList);
+      backBtn.addEventListener("click", prevCard);
+      nextBtn.addEventListener("click", nextCard);
+      shuffleBtn.addEventListener("click", shuffleDeck);
+      knownBtn.addEventListener("click", toggleKnown);
+      hideKnownBtn.addEventListener("click", toggleHideKnown);
+      editBtn.addEventListener("click", editList);
+      homeBtn.addEventListener("click", goHome);
+      cardEl.addEventListener("click", flipCard);
+      dirToggle.addEventListener("click", toggleDirection);
+      entryList.addEventListener("input", persistDraft);
+      listNameInput.addEventListener("input", persistDraft);
+      listNameInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          saveList();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        // shortcuts only while studying, and not while typing in a field
+        if (studyEl.classList.contains("hidden")) return;
+        const tag = event.target && event.target.tagName;
+        if (tag === "TEXTAREA" || tag === "INPUT") return;
+
+        if (event.key === " " || event.key === "Enter") {
+          event.preventDefault();
+          flipCard();
+        } else if (event.key === "ArrowRight" || event.key === "n") {
+          event.preventDefault();
+          nextCard();
+        } else if (event.key === "ArrowLeft" || event.key === "b") {
+          event.preventDefault();
+          prevCard();
+        } else if (event.key === "k") {
+          event.preventDefault();
+          toggleKnown();
+        }
+      });
+
+      // restore last draft + paint saved lists on load
+      entryList.value = localStorage.getItem(STORAGE_DRAFT) || "";
+      listNameInput.value = localStorage.getItem(STORAGE_NAME) || "";
+      renderSavedLists();
+
+      // materials page embeds this in an iframe — hide the site nav there
+      if (window.self !== window.top) {
+        document.body.classList.add("is-embedded");
+      }
+    </script>
+  </body>
+</html>

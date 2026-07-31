@@ -216,6 +216,8 @@ body {
 }
 
 a[href="/dialectdict/"]:active,
+a[href="/flashcard/"]:active,
+a[href="/materials/"]:active,
 a[href*="ucgeo.org"]:active,
 a[href*="llso.uchicago.edu"]:active,
 a[href*="cegu.uchicago.edu/expositions"]:active,

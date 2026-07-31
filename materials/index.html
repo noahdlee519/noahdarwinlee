@@ -28,6 +28,10 @@
         text-decoration: none;
       }
 
+      .materials-item .cv-publication-link.is-internal::after {
+        content: none;
+      }
+
       .materials-preview {
         width: min(920px, calc(100vw - 90px));
         height: 430px;
@@ -67,6 +71,19 @@
     </button>
     <main>
       <section>
+        <div class="materials-item">
+          <p>
+            <a class="cv-publication-link is-internal" href="/flashcard/"
+              >Flash Card Tool</a
+            >
+          </p>
+          <iframe
+            class="materials-preview is-tall"
+            src="/flashcard/"
+            title="Preview: Flash Card Tool"
+            loading="lazy"
+          ></iframe>
+        </div>
         <div class="materials-item">
           <p>
             <a class="cv-publication-link" href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing" target="_blank" rel="noopener noreferrer"
