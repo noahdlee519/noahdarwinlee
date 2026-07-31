@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="description" content="About Noah Lee." />
+    <title>About | Noah Lee</title>
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="about-page">
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="about-link is-active" href="/about/">> about</a>
+    <div class="top-right-links">
+      <div class="top-right-set is-visible">
+        <div class="top-right-primary">
+          <a href="https://llso.uchicago.edu/llso-review-home" target="_blank" rel="noopener noreferrer"
+            >llsoreview</a
+          >
+          <a class="show-external-icon" href="/dialectdict/" target="_self">dialectdict</a>
+        </div>
+        <div class="top-right-secondary">
+          <a href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo</a>
+          <a href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer"
+            >expositionsmagazine</a
+          >
+        </div>
+      </div>
+      <div class="top-right-set" aria-hidden="true">
+        <div class="top-right-primary">
+          <a href="https://buoyo.substack.com/publish/posts/published" target="_blank" rel="noopener noreferrer"
+            >buoyo.substack</a
+          >
+          <a href="https://noahdlee519.github.io/fauxnixai/" target="_blank" rel="noopener noreferrer"
+            >fauxnixai</a
+          >
+        </div>
+        <div class="top-right-secondary">
+          <a
+            href="https://www.thedragonflyagency.com/portfolios/noah-lee"
+            target="_blank"
+            rel="noopener noreferrer"
+            >dragonflyagency</a
+          >
+          <a
+            href="https://www.therockagency.com/divisions/next-gen/portfolios/noah-lee"
+            target="_blank"
+            rel="noopener noreferrer"
+            >therockagency</a
+          >
+        </div>
+      </div>
+    </div>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="../favicon.png" alt="" />
+    </button>
+    <div class="me-contact-links">
+      <div class="me-contact-divider" aria-hidden="true"></div>
+      <a href="#" aria-label="Bio" id="bio-toggle">bio</a>
+      <a href="/cv/" aria-label="CV">cv</a>
+      <a href="https://www.instagram.com/noahdarwinlee/#" target="_blank" rel="noopener noreferrer"
+        >instagram</a
+      >
+      <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer">linkedin</a>
+      <a href="mailto:noahlee519@gmail.com">email</a>
+    </div>
+    <div class="profile-photo-frame">
+      <img
+        class="profile-photo"
+        src="../me.jpeg"
+        alt="Photo of Noah Lee"
+        width="950"
+        height="1656"
+        decoding="async"
+      />
+    </div>
+    <p class="bio-text" id="bio-text">Noah is a recent graduate from the University of Chicago, where he received his bachelor's in History, Law Letters and Society, and Geography. He is interested in consulates, languages, and legacies. On this website you can find different projects ranging from digital dialect dictionaries to paintings of the World's Fair to modern architecture guides.<br /><br /><a class="bio-materials-link" href="/materials/">materials</a></p>
+    <script src="../top-right-links.js"></script>
+    <script src="../to-top-btn.js"></script>
+    <script>
+      const bioToggle = document.getElementById("bio-toggle");
+      const bioText = document.getElementById("bio-text");
+      const profilePhotoFrame = document.querySelector(".profile-photo-frame");
+      const nameLink = document.querySelector(".name");
+      const aboutLink = document.querySelector(".about-link");
+      const topRightLinks = document.querySelector(".top-right-links");
+      const toTopBtn = document.getElementById("to-top-btn");
+      const fadeDistance = 90;
+      const toTopShowDistance = 170;
+      const headerElements = [nameLink, aboutLink, topRightLinks];
+
+      function updateHeaderFade() {
+        if (window.innerWidth <= 900) {
+          headerElements.forEach((element) => {
+            element.style.opacity = "";
+            element.style.pointerEvents = "";
+          });
+          topRightLinks.classList.remove("is-faded");
+          toTopBtn.classList.remove("is-visible");
+          return;
+        }
+
+        const maxScroll = Math.max(
+          document.documentElement.scrollHeight - window.innerHeight,
+          0
+        );
+        const effectiveFadeDistance = Math.min(fadeDistance, Math.max(maxScroll, 1));
+        const progress = Math.min(window.scrollY / effectiveFadeDistance, 1);
+        const opacity = 1 - progress;
+        const faded = opacity <= 0.05;
+        const pointerEvents = faded ? "none" : "";
+
+        headerElements.forEach((element) => {
+          element.style.opacity = opacity;
+          element.style.pointerEvents = pointerEvents;
+        });
+        topRightLinks.classList.toggle("is-faded", faded);
+        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
+      }
+
+      bioToggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        const isVisible = bioText.classList.toggle("is-visible");
+        bioToggle.classList.toggle("is-active", isVisible);
+        document.body.classList.toggle("bio-open", isVisible);
+        if (isVisible) {
+          // use the reserved frame height, not the image's loaded height
+          const imageHeight = profilePhotoFrame.getBoundingClientRect().height;
+          window.scrollBy({ top: imageHeight, behavior: "smooth" });
+        }
+        requestAnimationFrame(updateHeaderFade);
+      });
+
+      window.addEventListener("scroll", updateHeaderFade, { passive: true });
+      window.addEventListener("resize", updateHeaderFade);
+      updateHeaderFade();
+    </script>
+  </body>
+</html>
