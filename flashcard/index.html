@@ -20,18 +20,45 @@
       }
 
       body.flashcards-page {
+        padding-top: calc(var(--page-top) + 52px);
         padding-right: clamp(14px, 3vw, 36px);
         padding-bottom: 48px;
       }
 
-      /* when previewed inside the materials iframe, skip the site chrome */
-      body.flashcards-page.is-embedded .name,
-      body.flashcards-page.is-embedded .about-link {
+      /* materials iframe preview — hide chrome; interaction is blocked by the parent page */
+      body.flashcards-page.is-embedded {
+        padding-top: calc(var(--page-top) + 8px);
+      }
+
+      body.flashcards-page.is-embedded .materials-back {
         display: none;
       }
 
-      body.flashcards-page.is-embedded {
-        padding-top: calc(var(--page-top) + 8px);
+      .materials-back {
+        position: fixed;
+        top: calc(var(--page-top) + 9px);
+        right: var(--page-left);
+        width: 30px;
+        height: 30px;
+        z-index: 20;
+        display: block;
+      }
+
+      .materials-back img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        transition: transform 220ms ease;
+      }
+
+      .materials-back:hover img,
+      .materials-back:focus-visible img {
+        transform: rotate(45deg);
+      }
+
+      .materials-back:focus-visible {
+        outline: 1px solid var(--bright);
+        outline-offset: 3px;
       }
 
       .hidden {
@@ -373,6 +400,10 @@
         opacity: 0.7;
       }
 
+      .kbd-hint {
+        font: inherit;
+      }
+
       .side-controls {
         display: flex;
         flex-direction: column;
@@ -390,11 +421,19 @@
         margin-top: 1.35rem;
       }
 
+      .side-controls-footer {
+        display: contents;
+      }
+
       .side-controls .text-action#home-btn {
         margin-top: 1.35rem;
       }
 
       @media (max-width: 700px) {
+        .kbd-hint {
+          display: none;
+        }
+
         .study-stage {
           flex-direction: column;
           gap: 1.75rem;
@@ -407,6 +446,7 @@
         .card {
           width: 100%;
           min-height: 200px;
+          touch-action: pan-y;
         }
 
         .side-controls {
@@ -420,16 +460,22 @@
         .side-controls .text-action#home-btn {
           margin-top: 0;
         }
+
+        .side-controls-footer {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 1rem 1.5rem;
+          flex-basis: 100%;
+          margin-top: 1.75rem;
+        }
       }
     </style>
   </head>
-  <body class="cv-page flashcards-page">
-    <a class="name" href="/"
-      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
-      <span class="name-word-lee">Lee</span></a
-    >
-    <a class="about-link" href="/me/">> about</a>
-    <a class="about-link" href="/materials/">> materials</a>
+  <body class="flashcards-page">
+    <a class="materials-back" href="/materials/" aria-label="Back to materials">
+      <img src="../favicon.png" alt="" />
+    </a>
 
     <h1 class="page-title">Flash Card Tool</h1>
 
@@ -488,7 +534,7 @@
             <span class="card-known-mark" aria-hidden="true"></span>
             <span class="card-label" id="side-label">front</span>
             <span class="card-word" id="card-word"></span>
-            <span class="card-hint" id="card-hint">click to flip [space]</span>
+            <span class="card-hint" id="card-hint">click to flip <span class="kbd-hint">[space]</span></span>
           </button>
           <div class="card-footer">
             <div class="known-count" id="known-count">known 0</div>
@@ -499,12 +545,14 @@
         </div>
 
         <div class="side-controls">
-          <button type="button" class="text-action" id="back-btn">back [b]</button>
-          <button type="button" class="text-action" id="next-btn">next [n]</button>
-          <button type="button" class="text-action" id="known-btn" aria-pressed="false">know [k]</button>
+          <button type="button" class="text-action" id="back-btn">back<span class="kbd-hint"> [b]</span></button>
+          <button type="button" class="text-action" id="next-btn">next<span class="kbd-hint"> [n]</span></button>
+          <button type="button" class="text-action" id="known-btn" aria-pressed="false">know<span class="kbd-hint"> [k]</span></button>
           <button type="button" class="text-action" id="edit-btn">edit list</button>
-          <button type="button" class="text-action" id="shuffle-btn">shuffle</button>
-          <button type="button" class="text-action" id="home-btn">home</button>
+          <div class="side-controls-footer">
+            <button type="button" class="text-action" id="shuffle-btn">shuffle</button>
+            <button type="button" class="text-action" id="home-btn">home</button>
+          </div>
         </div>
       </div>
     </section>
@@ -768,7 +816,7 @@
           progressEl.textContent = state.hideKnown ? `card 0 / ${remaining}` : `card 0 / 0`;
           knownBtn.classList.remove("is-on");
           knownBtn.setAttribute("aria-pressed", "false");
-          knownBtn.textContent = "know [k]";
+          knownBtn.innerHTML = 'know<span class="kbd-hint"> [k]</span>';
           knownBtn.disabled = true;
           backBtn.disabled = true;
           nextBtn.disabled = true;
@@ -785,7 +833,9 @@
         const apply = () => {
           sideLabel.textContent = shown.label;
           cardWord.textContent = shown.word;
-          cardHint.textContent = state.flipped ? "click to flip back [space]" : "click to flip [space]";
+          cardHint.innerHTML = state.flipped
+            ? 'click to flip back<span class="kbd-hint"> [space]</span>'
+            : 'click to flip<span class="kbd-hint"> [space]</span>';
           cardWord.classList.remove("is-swapping");
         };
 
@@ -805,7 +855,9 @@
         cardEl.classList.toggle("is-known", isKnown);
         knownBtn.classList.toggle("is-on", isKnown);
         knownBtn.setAttribute("aria-pressed", String(isKnown));
-        knownBtn.textContent = isKnown ? "known [k]" : "know [k]";
+        knownBtn.innerHTML = isKnown
+          ? 'known<span class="kbd-hint"> [k]</span>'
+          : 'know<span class="kbd-hint"> [k]</span>';
       }
 
       function updateDirectionLabel() {
@@ -973,7 +1025,6 @@
       hideKnownBtn.addEventListener("click", toggleHideKnown);
       editBtn.addEventListener("click", editList);
       homeBtn.addEventListener("click", goHome);
-      cardEl.addEventListener("click", flipCard);
       dirToggle.addEventListener("click", toggleDirection);
       entryList.addEventListener("input", persistDraft);
       listNameInput.addEventListener("input", persistDraft);
@@ -983,6 +1034,52 @@
           saveList();
         }
       });
+
+      // tap/click flips; a swipe should change cards without also flipping
+      let suppressCardClick = false;
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const SWIPE_THRESHOLD = 48;
+
+      cardEl.addEventListener("click", () => {
+        if (suppressCardClick) {
+          suppressCardClick = false;
+          return;
+        }
+        flipCard();
+      });
+
+      cardEl.addEventListener(
+        "touchstart",
+        (event) => {
+          if (event.touches.length !== 1) return;
+          touchStartX = event.touches[0].clientX;
+          touchStartY = event.touches[0].clientY;
+        },
+        { passive: true }
+      );
+
+      cardEl.addEventListener(
+        "touchend",
+        (event) => {
+          if (studyEl.classList.contains("hidden")) return;
+          if (!event.changedTouches.length) return;
+
+          const dx = event.changedTouches[0].clientX - touchStartX;
+          const dy = event.changedTouches[0].clientY - touchStartY;
+
+          // ignore mostly-vertical scrolls and small moves
+          if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+
+          suppressCardClick = true;
+          if (dx > 0) {
+            nextCard(); // swipe right → next
+          } else {
+            prevCard(); // swipe left → back
+          }
+        },
+        { passive: true }
+      );
 
       document.addEventListener("keydown", (event) => {
         // shortcuts only while studying, and not while typing in a field
