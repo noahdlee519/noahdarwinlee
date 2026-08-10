@@ -6,13 +6,19 @@
     <meta name="description" content="free flashcard tool" />
     <title>Flash Card Tool | Noah Lee</title>
     <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="../styles.css" />
     <style>
-      /* tool-specific layout on top of the shared site stylesheet */
+      /* Source Sans 3 covers Czech / Latin Extended diacritics that Akkurat misses */
       :root {
-        --bg: #e68019;
-        --text: #e3e3b0;
-        --bright: #ffffff;
+        --bg: #ffffff;
+        --text: #000000;
+        --bright: #466eff;
       }
 
       * {
@@ -20,12 +26,15 @@
       }
 
       body.flashcards-page {
-        padding-top: calc(var(--page-top) + 52px);
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Source Sans 3", "Noto Sans", Helvetica, Arial, sans-serif;
+        font-weight: 300;
+        padding-top: calc(var(--page-top) + 40px);
         padding-right: clamp(14px, 3vw, 36px);
         padding-bottom: 48px;
       }
 
-      /* materials iframe preview — hide chrome; interaction is blocked by the parent page */
       body.flashcards-page.is-embedded {
         padding-top: calc(var(--page-top) + 8px);
       }
@@ -61,12 +70,18 @@
         outline-offset: 3px;
       }
 
+      @media (max-width: 700px) {
+        .materials-back {
+          display: none;
+        }
+      }
+
       .hidden {
         display: none !important;
       }
 
       .page-title {
-        margin: 0 0 1.75rem;
+        margin: 0 0 1.35rem;
         font-size: 22px;
         font-weight: 300;
         color: var(--bright);
@@ -75,7 +90,7 @@
       .lede {
         margin: 0 0 1.5rem;
         max-width: 34ch;
-        font-size: 18px;
+        font-size: 16px;
         line-height: 1.45;
       }
 
@@ -83,6 +98,10 @@
         display: block;
         margin-bottom: 0.55rem;
         font-size: 18px;
+      }
+
+      label[for="entry-list"] {
+        cursor: text;
       }
 
       textarea,
@@ -121,14 +140,6 @@
         color: var(--bright);
       }
 
-      .hint {
-        margin: 0.7rem 0 0;
-        max-width: 40ch;
-        font-size: 15px;
-        line-height: 1.4;
-        opacity: 0.85;
-      }
-
       .error {
         margin: 0.7rem 0 0;
         color: var(--bright);
@@ -141,13 +152,13 @@
         opacity: 0.85;
       }
 
-      /* custom checkbox — flat square, no browser chrome */
       .randomize-row {
         margin-top: 1rem;
         display: flex;
         flex-wrap: wrap;
-        gap: 0.65rem;
+        gap: 0.65rem 1.35rem;
         align-items: center;
+        width: min(520px, 100%);
         font-size: 16px;
       }
 
@@ -182,6 +193,15 @@
         outline-offset: 2px;
       }
 
+      .randomize-row .cosmetic-toggle {
+        margin-left: auto;
+        font-size: 15px;
+      }
+
+      .randomize-row .cosmetic-toggle.is-on {
+        color: var(--bright);
+      }
+
       .setup-divider {
         width: min(520px, 100%);
         height: 0;
@@ -198,6 +218,98 @@
         margin-top: 1.1rem;
       }
 
+      .color-customizer {
+        margin-top: 1rem;
+        width: min(520px, 100%);
+      }
+
+      .color-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .color-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        font-size: 16px;
+      }
+
+      .color-row label {
+        margin: 0;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .color-row input[type="color"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 42px;
+        height: 28px;
+        padding: 0;
+        border: 1px solid var(--text);
+        border-radius: 0;
+        background: transparent;
+        cursor: pointer !important;
+      }
+
+      .color-row input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 2px;
+        cursor: pointer;
+      }
+
+      .color-row input[type="color"]::-webkit-color-swatch {
+        border: 0;
+        border-radius: 0;
+        cursor: pointer;
+      }
+
+      .color-row input[type="color"]::-moz-color-swatch {
+        border: 0;
+        border-radius: 0;
+        cursor: pointer;
+      }
+
+      .color-actions {
+        margin-top: 1rem;
+      }
+
+      .color-warning {
+        margin: 0.7rem 0 0;
+        font-size: 14px;
+        color: var(--bright);
+        opacity: 0.9;
+      }
+
+      .color-presets {
+        margin-top: 1.35rem;
+        padding-top: 1.1rem;
+        border-top: 1px solid var(--text);
+      }
+
+      .color-presets-title {
+        margin: 0 0 0.75rem;
+        font-size: 16px;
+        font-weight: 300;
+        color: var(--bright);
+      }
+
+      .color-preset-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem 1.1rem;
+      }
+
+      .color-preset-list .text-action {
+        font-size: 15px;
+      }
+
+      .color-preset-list .text-action.is-on {
+        color: var(--bright);
+      }
+
       .saved-lists {
         margin-top: 2rem;
         width: min(520px, 100%);
@@ -207,6 +319,7 @@
         margin: 0 0 0.85rem;
         font-size: 18px;
         font-weight: 300;
+        color: var(--bright);
       }
 
       .saved-empty {
@@ -219,20 +332,22 @@
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        gap: 0.65rem 1.25rem;
+        gap: 0.55rem 1.1rem;
         margin-bottom: 0.65rem;
       }
 
-      .saved-item .text-action {
+      .saved-item-name {
+        flex: 1 1 10rem;
+        min-width: 0;
         font-size: 18px;
+        word-break: break-word;
       }
 
-      .saved-item .delete-btn {
+      .saved-item .text-action {
         font-size: 15px;
-        opacity: 0.8;
+        opacity: 0.85;
       }
 
-      /* text links standing in for buttons */
       .text-action {
         appearance: none;
         display: inline-block;
@@ -266,6 +381,11 @@
         opacity: 0.45;
         cursor: default;
         pointer-events: none;
+        text-decoration: none;
+      }
+
+      .text-action.is-small {
+        font-size: 14px;
       }
 
       .actions {
@@ -274,6 +394,11 @@
         align-items: flex-start;
         gap: 10px;
         margin-top: 1.35rem;
+      }
+
+      #start-btn {
+        letter-spacing: 0.04em;
+        color: var(--bright);
       }
 
       .study {
@@ -289,15 +414,14 @@
         font-size: 18px;
       }
 
-      .progress {
-        color: var(--bright);
+      .study-meta .progress {
+        color: var(--text);
       }
 
       #dir-toggle {
         font-size: 18px;
       }
 
-      /* study layout: card column + side controls */
       .study-stage {
         display: flex;
         align-items: flex-start;
@@ -345,6 +469,11 @@
         cursor: pointer;
         outline: none;
         -webkit-tap-highlight-color: transparent;
+        transition: opacity 140ms ease;
+      }
+
+      .card.is-fading {
+        opacity: 0;
       }
 
       .card:focus,
@@ -352,7 +481,6 @@
         outline: none;
       }
 
-      /* little white dot when you mark a card known */
       .card-known-mark {
         position: absolute;
         top: 0.85rem;
@@ -379,11 +507,11 @@
 
       .card-word {
         display: block;
-        max-width: 14ch;
-        font-size: clamp(2.4rem, 7vw, 4.2rem);
+        max-width: 18ch;
+        font-size: clamp(2.2rem, 6.5vw, 4rem);
         font-weight: 300;
-        line-height: 1.1;
-        letter-spacing: -0.02em;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
         word-wrap: break-word;
         color: var(--bright);
         transition: opacity 60ms ease;
@@ -398,6 +526,26 @@
         margin-top: 1.25rem;
         font-size: 15px;
         opacity: 0.7;
+      }
+
+      .card-hint .hint-action {
+        appearance: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 3px;
+      }
+
+      .card-hint .hint-action:hover,
+      .card-hint .hint-action:focus-visible {
+        color: var(--bright);
+        outline: none;
       }
 
       .kbd-hint {
@@ -427,6 +575,82 @@
 
       .side-controls .text-action#home-btn {
         margin-top: 1.35rem;
+      }
+
+      .know-group {
+        position: relative;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.85rem;
+        max-width: 100%;
+      }
+
+      .know-group-extras {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.75rem 0.9rem;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-4px);
+        transition: opacity 140ms ease, transform 140ms ease;
+      }
+
+      .know-group:hover .know-group-extras,
+      .know-group:focus-within .know-group-extras {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0);
+      }
+
+      .know-group-extras .text-action {
+        font-size: 14px;
+        white-space: nowrap;
+      }
+
+      .edit-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px var(--page-left);
+        background: color-mix(in srgb, var(--bg) 82%, transparent);
+      }
+
+      .edit-dialog {
+        width: min(520px, 100%);
+        padding: 1.25rem 1.25rem 1.1rem;
+        border: 1px solid var(--text);
+        background: var(--bg);
+      }
+
+      .edit-dialog h2 {
+        margin: 0 0 0.85rem;
+        font-size: 18px;
+        font-weight: 300;
+        color: var(--bright);
+      }
+
+      .edit-dialog textarea {
+        width: 100%;
+        min-height: 220px;
+      }
+
+      .edit-dialog-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem 1.35rem;
+        margin-top: 1rem;
+      }
+
+      .edit-dialog-actions .text-action {
+        font-size: 18px;
+      }
+
+      #apply-edit-btn {
+        color: var(--bright);
       }
 
       @media (max-width: 700px) {
@@ -461,6 +685,10 @@
           margin-top: 0;
         }
 
+        .know-group {
+          flex-basis: 100%;
+        }
+
         .side-controls-footer {
           display: flex;
           flex-wrap: wrap;
@@ -489,27 +717,62 @@
         placeholder="ahoj = hello&#10;děkuji = thank you&#10;prosím = please"
       ></textarea>
       <div class="randomize-row">
-        <input type="checkbox" id="randomize-order" unchecked />
+        <input type="checkbox" id="randomize-order" />
         <label for="randomize-order">randomize order</label>
+        <button
+          type="button"
+          class="text-action cosmetic-toggle"
+          id="cosmetic-toggle"
+          aria-expanded="false"
+          aria-controls="color-customizer"
+        >
+          cosmetic settings
+        </button>
+      </div>
+      <div id="color-customizer" class="color-customizer hidden">
+        <div class="color-rows">
+          <div class="color-row">
+            <label for="color-bg">background</label>
+            <input type="color" id="color-bg" value="#ffffff" />
+          </div>
+          <div class="color-row">
+            <label for="color-bright">primary text</label>
+            <input type="color" id="color-bright" value="#466eff" />
+          </div>
+          <div class="color-row">
+            <label for="color-text">secondary text</label>
+            <input type="color" id="color-text" value="#000000" />
+          </div>
+        </div>
+        <div class="color-actions">
+          <button type="button" class="text-action is-small" id="reset-colors-btn">
+            reset to default colors
+          </button>
+        </div>
+        <div class="color-presets" aria-labelledby="color-presets-title">
+          <h3 id="color-presets-title" class="color-presets-title">Presets</h3>
+          <div id="color-preset-list" class="color-preset-list"></div>
+        </div>
+        <p id="color-warning" class="color-warning hidden" role="status"></p>
       </div>
       <p id="setup-error" class="error hidden" role="alert"></p>
 
       <div class="save-row">
         <label class="hidden" for="list-name">list name</label>
         <input type="text" id="list-name" placeholder="list name" autocomplete="off" />
-        <button type="button" class="text-action" id="save-btn">save list</button>
+        <button type="button" class="text-action" id="save-btn">save list (optional)</button>
       </div>
       <p id="save-status" class="status hidden" aria-live="polite"></p>
 
       <div class="actions">
-        <button type="button" class="text-action" id="start-btn">start</button>
+        <button type="button" class="text-action" id="start-btn">START</button>
       </div>
 
       <hr class="setup-divider" />
 
       <div class="saved-lists" aria-labelledby="saved-title">
-        <h2 id="saved-title">saved lists</h2>
-        <p id="saved-empty" class="saved-empty">no saved lists yet.</p>
+        <h2 id="saved-title">Saved Lists</h2>
+        <p id="saved-empty" class="saved-empty">no saved lists yet</p>
         <div id="saved-items"></div>
       </div>
     </section>
@@ -537,7 +800,7 @@
             <span class="card-hint" id="card-hint">click to flip <span class="kbd-hint">[space]</span></span>
           </button>
           <div class="card-footer">
-            <div class="known-count" id="known-count">known 0</div>
+            <div class="known-count" id="known-count">known 0/0</div>
             <button type="button" class="text-action" id="hide-known-btn" aria-pressed="false">
               hide known
             </button>
@@ -547,23 +810,83 @@
         <div class="side-controls">
           <button type="button" class="text-action" id="back-btn">back<span class="kbd-hint"> [b]</span></button>
           <button type="button" class="text-action" id="next-btn">next<span class="kbd-hint"> [n]</span></button>
-          <button type="button" class="text-action" id="known-btn" aria-pressed="false">know<span class="kbd-hint"> [k]</span></button>
+          <div class="know-group">
+            <button type="button" class="text-action" id="known-btn" aria-pressed="false">know<span class="kbd-hint"> [k]</span></button>
+            <div class="know-group-extras" aria-label="Bulk know actions">
+              <button type="button" class="text-action" id="know-all-btn">know all</button>
+              <button type="button" class="text-action" id="unknow-all-btn">unknow all</button>
+            </div>
+          </div>
+          <button type="button" class="text-action" id="undo-btn" disabled>undo<span class="kbd-hint"> [u]</span></button>
           <button type="button" class="text-action" id="edit-btn">edit list</button>
           <div class="side-controls-footer">
             <button type="button" class="text-action" id="shuffle-btn">shuffle</button>
-            <button type="button" class="text-action" id="home-btn">home</button>
+            <button type="button" class="text-action" id="home-btn">menu</button>
           </div>
         </div>
       </div>
     </section>
 
+    <div id="edit-overlay" class="edit-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <div class="edit-dialog">
+        <h2 id="edit-title">edit list</h2>
+        <label class="hidden" for="edit-entry-list">word list</label>
+        <textarea
+          id="edit-entry-list"
+          spellcheck="false"
+          placeholder="ahoj = hello&#10;děkuji = thank you&#10;prosím = please"
+        ></textarea>
+        <p id="edit-error" class="error hidden" role="alert"></p>
+        <div class="edit-dialog-actions">
+          <button type="button" class="text-action" id="apply-edit-btn">apply</button>
+          <button type="button" class="text-action" id="cancel-edit-btn">cancel</button>
+        </div>
+      </div>
+    </div>
+
     <script>
-      // keys in localStorage so lists / draft survive a refresh (this browser only)
       const STORAGE_LISTS = "front-flashcards-lists";
       const STORAGE_DRAFT = "front-flashcards-draft";
       const STORAGE_NAME = "front-flashcards-name";
+      const STORAGE_COLORS = "front-flashcards-colors-v2";
+      const DEFAULT_COLORS = {
+        bg: "#ffffff",
+        text: "#000000",
+        bright: "#466eff",
+      };
+      // Add presets here. bg = background, bright = primary text, text = secondary text.
+      const COLOR_PRESETS = [
+        {
+          name: "Default",
+          bg: "#ffffff",
+          bright: "#466eff",
+          text: "#000000",
+        },
+        {
+          name: "Orange",
+          bg: "#e68019",
+          bright: "#ffffff",
+          text: "#e3e3b0",
+        },
+        {
+          name: "Night",
+          bg: "#000000",
+          bright: "#918fff",
+          text: "#ffffff",
+        },
+        {
+          name: "Beige",
+          bg: "#fff2eb",
+          bright: "#ff1467",
+          text: "#000000",
+        },
+        
+        
+      ];
+      // text colors vs background — keep enough separation to stay readable
+      const MIN_BG_TEXT_CONTRAST = 3;
+      const MAX_UNDO = 50;
 
-      // grab everything once so we're not hunting the DOM later
       const setupEl = document.getElementById("setup");
       const studyEl = document.getElementById("study");
       const entryList = document.getElementById("entry-list");
@@ -583,27 +906,289 @@
       const backBtn = document.getElementById("back-btn");
       const nextBtn = document.getElementById("next-btn");
       const knownBtn = document.getElementById("known-btn");
+      const undoBtn = document.getElementById("undo-btn");
       const hideKnownBtn = document.getElementById("hide-known-btn");
       const shuffleBtn = document.getElementById("shuffle-btn");
+      const knowAllBtn = document.getElementById("know-all-btn");
+      const unknowAllBtn = document.getElementById("unknow-all-btn");
       const randomizeOrderCheckbox = document.getElementById("randomize-order");
       const editBtn = document.getElementById("edit-btn");
       const homeBtn = document.getElementById("home-btn");
+      const editOverlay = document.getElementById("edit-overlay");
+      const editEntryList = document.getElementById("edit-entry-list");
+      const editError = document.getElementById("edit-error");
+      const applyEditBtn = document.getElementById("apply-edit-btn");
+      const cancelEditBtn = document.getElementById("cancel-edit-btn");
       const dirToggle = document.getElementById("dir-toggle");
+      const colorBg = document.getElementById("color-bg");
+      const colorText = document.getElementById("color-text");
+      const colorBright = document.getElementById("color-bright");
+      const resetColorsBtn = document.getElementById("reset-colors-btn");
+      const cosmeticToggle = document.getElementById("cosmetic-toggle");
+      const colorCustomizer = document.getElementById("color-customizer");
+      const colorWarning = document.getElementById("color-warning");
+      const colorPresetList = document.getElementById("color-preset-list");
 
-      // session brain — nothing here is saved across visits except via localStorage helpers above
       const state = {
-        deck: [], // full shuffled/ordered list for this session
-        index: 0, // where you are in the *active* deck (see activeCards)
-        flipped: false, // false = prompt side, true = answer side
-        frontFirst: true, // true = front→back, false = front←back
-        known: new Set(), // ids of cards you marked known (aesthetic + hide filter)
-        hideKnown: false, // when true, known cards drop out of the active deck
+        deck: [],
+        index: 0,
+        flipped: false,
+        frontFirst: true,
+        known: new Set(),
+        hideKnown: false,
       };
+
+      // known set kept across edit → start so marked words survive list tweaks
+      let resumeKnown = null;
+      const undoStack = [];
+      let shuffleTimer = null;
+
+      // --- colors ---
+
+      let lastValidColors = { ...DEFAULT_COLORS };
+      let colorWarningTimer = null;
+
+      function normalizeHex(value, fallback) {
+        const raw = String(value || "").trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+        if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+          return (
+            "#" +
+            raw
+              .slice(1)
+              .split("")
+              .map((ch) => ch + ch)
+              .join("")
+              .toLowerCase()
+          );
+        }
+        return fallback;
+      }
+
+      function hexToRgb(hex) {
+        const n = parseInt(hex.slice(1), 16);
+        return {
+          r: (n >> 16) & 255,
+          g: (n >> 8) & 255,
+          b: n & 255,
+        };
+      }
+
+      function relativeLuminance(hex) {
+        const toLinear = (channel) => {
+          const value = channel / 255;
+          return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+        };
+        const { r, g, b } = hexToRgb(hex);
+        return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+      }
+
+      function contrastRatio(hexA, hexB) {
+        const lighter = Math.max(relativeLuminance(hexA), relativeLuminance(hexB));
+        const darker = Math.min(relativeLuminance(hexA), relativeLuminance(hexB));
+        return (lighter + 0.05) / (darker + 0.05);
+      }
+
+      function secondaryReadableAgainstBg(bgHex) {
+        // dark ink on light grounds; light ink on dark grounds
+        return relativeLuminance(bgHex) > 0.55 ? "#000000" : "#f5f5f5";
+      }
+
+      function primaryReadableAgainstBg(bgHex) {
+        // keep a vivid primary on light grounds; white primary on dark grounds
+        return relativeLuminance(bgHex) > 0.55 ? DEFAULT_COLORS.bright : "#ffffff";
+      }
+
+      function forceReadableAgainstBg(bgHex, preferLight) {
+        if (preferLight) {
+          return relativeLuminance(bgHex) > 0.55 ? "#111111" : "#f7f7f7";
+        }
+        return relativeLuminance(bgHex) > 0.55 ? DEFAULT_COLORS.bright : "#ffffff";
+      }
+
+      function showColorWarning(message) {
+        colorWarning.textContent = message;
+        colorWarning.classList.remove("hidden");
+        window.clearTimeout(colorWarningTimer);
+        colorWarningTimer = window.setTimeout(() => {
+          colorWarning.classList.add("hidden");
+        }, 2600);
+      }
+
+      function sanitizeColors(colors, changed) {
+        const next = {
+          bg: normalizeHex(colors.bg, DEFAULT_COLORS.bg),
+          text: normalizeHex(colors.text, DEFAULT_COLORS.text),
+          bright: normalizeHex(colors.bright, DEFAULT_COLORS.bright),
+        };
+        const issues = [];
+
+        const fixSecondary = () => {
+          if (contrastRatio(next.bg, next.text) >= MIN_BG_TEXT_CONTRAST) return;
+          if (changed === "text") {
+            next.text = lastValidColors.text;
+            issues.push("secondary-reverted");
+            return;
+          }
+          next.text = secondaryReadableAgainstBg(next.bg);
+          if (contrastRatio(next.bg, next.text) < MIN_BG_TEXT_CONTRAST) {
+            next.text = forceReadableAgainstBg(next.bg, true);
+          }
+          issues.push("secondary-adjusted");
+        };
+
+        const fixPrimary = () => {
+          if (contrastRatio(next.bg, next.bright) >= MIN_BG_TEXT_CONTRAST) return;
+          if (changed === "bright") {
+            next.bright = lastValidColors.bright;
+            issues.push("primary-reverted");
+            return;
+          }
+          next.bright = primaryReadableAgainstBg(next.bg);
+          if (contrastRatio(next.bg, next.bright) < MIN_BG_TEXT_CONTRAST) {
+            next.bright = forceReadableAgainstBg(next.bg, false);
+            if (contrastRatio(next.bg, next.bright) < MIN_BG_TEXT_CONTRAST) {
+              next.bright = relativeLuminance(next.bg) > 0.55 ? "#111111" : "#ffffff";
+            }
+          }
+          issues.push("primary-adjusted");
+        };
+
+        // Keep the field the user just changed when possible; nudge the other side(s).
+        if (changed === "text") {
+          fixSecondary();
+        } else if (changed === "bright") {
+          fixPrimary();
+        } else {
+          fixSecondary();
+          fixPrimary();
+        }
+
+        return { colors: next, adjusted: issues.length > 0, issues };
+      }
+
+      function readColors() {
+        try {
+          const raw = localStorage.getItem(STORAGE_COLORS);
+          if (!raw) return { ...DEFAULT_COLORS };
+          const parsed = JSON.parse(raw);
+          const { colors } = sanitizeColors(
+            {
+              bg: parsed.bg,
+              text: parsed.text,
+              bright: parsed.bright,
+            },
+            null
+          );
+          return colors;
+        } catch (error) {
+          return { ...DEFAULT_COLORS };
+        }
+      }
+
+      function applyColors(colors) {
+        document.documentElement.style.setProperty("--bg", colors.bg);
+        document.documentElement.style.setProperty("--text", colors.text);
+        document.documentElement.style.setProperty("--bright", colors.bright);
+        colorBg.value = colors.bg;
+        colorText.value = colors.text;
+        colorBright.value = colors.bright;
+        lastValidColors = { ...colors };
+        return colors;
+      }
+
+      function saveColors(colors) {
+        localStorage.setItem(STORAGE_COLORS, JSON.stringify(colors));
+      }
+
+      function updateColorsFromInputs(event) {
+        const changed =
+          event && event.target === colorBg
+            ? "bg"
+            : event && event.target === colorText
+              ? "text"
+              : event && event.target === colorBright
+                ? "bright"
+                : null;
+
+        const { colors, adjusted, issues } = sanitizeColors(
+          {
+            bg: colorBg.value,
+            text: colorText.value,
+            bright: colorBright.value,
+          },
+          changed
+        );
+
+        if (adjusted) {
+          if (issues.includes("secondary-reverted")) {
+            showColorWarning("secondary text is too close to the background — pick a higher-contrast color.");
+          } else if (issues.includes("primary-reverted")) {
+            showColorWarning("primary text is too close to the background — pick a higher-contrast color.");
+          } else if (changed === "bg") {
+            showColorWarning("background was too close to text colors — text colors were adjusted.");
+          }
+        }
+
+        applyColors(colors);
+        saveColors(colors);
+        renderColorPresets();
+      }
+
+      function resetColors() {
+        colorWarning.classList.add("hidden");
+        const next = applyColors({ ...DEFAULT_COLORS });
+        saveColors(next);
+        renderColorPresets();
+      }
+
+      function colorsMatch(a, b) {
+        return a.bg === b.bg && a.text === b.text && a.bright === b.bright;
+      }
+
+      function applyPreset(preset) {
+        // Presets are authored intentionally — apply them as-is.
+        const colors = {
+          bg: normalizeHex(preset.bg, DEFAULT_COLORS.bg),
+          text: normalizeHex(preset.text, DEFAULT_COLORS.text),
+          bright: normalizeHex(preset.bright, DEFAULT_COLORS.bright),
+        };
+        colorWarning.classList.add("hidden");
+        applyColors(colors);
+        saveColors(colors);
+        renderColorPresets();
+      }
+
+      function renderColorPresets() {
+        colorPresetList.innerHTML = "";
+        COLOR_PRESETS.forEach((preset) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "text-action";
+          btn.textContent = preset.name;
+          if (
+            colorsMatch(lastValidColors, {
+              bg: normalizeHex(preset.bg, DEFAULT_COLORS.bg),
+              text: normalizeHex(preset.text, DEFAULT_COLORS.text),
+              bright: normalizeHex(preset.bright, DEFAULT_COLORS.bright),
+            })
+          ) {
+            btn.classList.add("is-on");
+          }
+          btn.addEventListener("click", () => applyPreset(preset));
+          colorPresetList.appendChild(btn);
+        });
+      }
+
+      function toggleCosmeticSettings() {
+        const open = colorCustomizer.classList.toggle("hidden") === false;
+        cosmeticToggle.setAttribute("aria-expanded", String(open));
+        cosmeticToggle.classList.toggle("is-on", open);
+      }
 
       // --- saving / loading lists ---
 
       function readLists() {
-        // pull the saved-lists object out of localStorage; empty object if anything's weird
         try {
           const raw = localStorage.getItem(STORAGE_LISTS);
           if (!raw) return {};
@@ -619,7 +1204,6 @@
       }
 
       function persistDraft() {
-        // keep whatever you're typing so refreshing doesn't wipe the textarea
         localStorage.setItem(STORAGE_DRAFT, entryList.value);
         localStorage.setItem(STORAGE_NAME, listNameInput.value.trim());
       }
@@ -630,9 +1214,10 @@
       }
 
       function renderSavedLists() {
-        // rebuild the saved-lists UI from whatever's in storage
         const lists = readLists();
-        const names = Object.keys(lists).sort((a, b) => a.localeCompare(b));
+        const names = Object.keys(lists).sort((a, b) =>
+          a.localeCompare(b, undefined, { sensitivity: "base", numeric: true })
+        );
         savedItems.innerHTML = "";
 
         if (!names.length) {
@@ -646,10 +1231,14 @@
           const row = document.createElement("div");
           row.className = "saved-item";
 
+          const label = document.createElement("span");
+          label.className = "saved-item-name";
+          label.textContent = name;
+
           const loadBtn = document.createElement("button");
           loadBtn.type = "button";
           loadBtn.className = "text-action";
-          loadBtn.textContent = name;
+          loadBtn.textContent = "load";
           loadBtn.addEventListener("click", () => loadList(name));
 
           const deleteBtn = document.createElement("button");
@@ -658,15 +1247,13 @@
           deleteBtn.textContent = "delete";
           deleteBtn.addEventListener("click", () => deleteList(name));
 
-          row.append(loadBtn, deleteBtn);
+          row.append(label, loadBtn, deleteBtn);
           savedItems.appendChild(row);
         });
       }
 
       function saveList() {
-        // name + valid pairs required; same name overwrites
         const name = listNameInput.value.trim();
-        const text = entryList.value.trim();
         const parsed = parseEntries(entryList.value);
 
         setupError.classList.add("hidden");
@@ -685,22 +1272,21 @@
 
         const lists = readLists();
         const existed = Object.prototype.hasOwnProperty.call(lists, name);
-        lists[name] = text;
+        lists[name] = entryList.value.trim();
         writeLists(lists);
         persistDraft();
         renderSavedLists();
-        showSaveStatus(existed ? `updated “${name}”.` : `saved “${name}”.`);
+        showSaveStatus(existed ? `updated “${name}”` : `saved “${name}”`);
       }
 
       function loadList(name) {
-        // dump a saved list back into the textarea and name field
         const lists = readLists();
         if (!Object.prototype.hasOwnProperty.call(lists, name)) return;
         entryList.value = lists[name];
         listNameInput.value = name;
         persistDraft();
         setupError.classList.add("hidden");
-        showSaveStatus(`loaded “${name}”.`);
+        showSaveStatus(`loaded “${name}”`);
         entryList.focus();
       }
 
@@ -710,13 +1296,12 @@
         delete lists[name];
         writeLists(lists);
         renderSavedLists();
-        showSaveStatus(`deleted “${name}”.`);
+        showSaveStatus(`deleted “${name}”`);
       }
 
       // --- parsing + deck helpers ---
 
       function parseEntries(text) {
-        // one pair per line: front = back. blank lines ignored.
         const cards = [];
         const lines = text.split(/\r?\n/);
 
@@ -738,7 +1323,6 @@
             return { ok: false, error: `empty side in: "${line}"` };
           }
 
-          // id is just a stable string key for the known-set
           cards.push({ id: `${front}::${back}`, front, back });
         }
 
@@ -750,7 +1334,6 @@
       }
 
       function shuffle(items) {
-        // fisher–yates — returns a new array, leaves the original alone
         const arr = items.slice();
         for (let i = arr.length - 1; i > 0; i -= 1) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -760,9 +1343,16 @@
       }
 
       function activeCards() {
-        // what you're actually flipping through right now
         if (!state.hideKnown) return state.deck;
         return state.deck.filter((card) => !state.known.has(card.id));
+      }
+
+      function knownInDeckCount() {
+        return state.deck.filter((card) => state.known.has(card.id)).length;
+      }
+
+      function unknownInDeckCount() {
+        return state.deck.filter((card) => !state.known.has(card.id)).length;
       }
 
       function currentCard() {
@@ -770,17 +1360,17 @@
       }
 
       function clampIndex() {
-        // keep index in range after the active deck shrinks (e.g. you hid a known card)
         const cards = activeCards();
         if (!cards.length) {
           state.index = 0;
           return;
         }
-        state.index = ((state.index % cards.length) + cards.length) % cards.length;
+        if (state.index < 0 || state.index >= cards.length) {
+          state.index = ((state.index % cards.length) + cards.length) % cards.length;
+        }
       }
 
       function shownText(card) {
-        // pick label + word based on direction toggle and whether the card is flipped
         if (state.frontFirst) {
           return state.flipped
             ? { label: "back", word: card.back }
@@ -791,36 +1381,110 @@
           : { label: "back", word: card.back };
       }
 
+      // --- undo ---
+
+      function snapshotSession() {
+        return {
+          known: Array.from(state.known),
+          index: state.index,
+          flipped: state.flipped,
+          hideKnown: state.hideKnown,
+          deckIds: state.deck.map((card) => card.id),
+        };
+      }
+
+      function pushUndo() {
+        undoStack.push(snapshotSession());
+        if (undoStack.length > MAX_UNDO) undoStack.shift();
+        updateUndoBtn();
+      }
+
+      function clearUndo() {
+        undoStack.length = 0;
+        updateUndoBtn();
+      }
+
+      function updateUndoBtn() {
+        undoBtn.disabled = undoStack.length === 0;
+      }
+
+      function restoreDeckOrder(deckIds) {
+        if (!Array.isArray(deckIds) || deckIds.length !== state.deck.length) return;
+        const byId = new Map();
+        state.deck.forEach((card) => {
+          if (!byId.has(card.id)) byId.set(card.id, []);
+          byId.get(card.id).push(card);
+        });
+        const restored = [];
+        for (const id of deckIds) {
+          const bucket = byId.get(id);
+          if (!bucket || !bucket.length) return;
+          restored.push(bucket.shift());
+        }
+        state.deck = restored;
+      }
+
+      function undoLast() {
+        const snap = undoStack.pop();
+        if (!snap) return;
+        state.known = new Set(snap.known);
+        state.index = snap.index;
+        state.flipped = snap.flipped;
+        state.hideKnown = snap.hideKnown;
+        restoreDeckOrder(snap.deckIds);
+        clampIndex();
+        updateUndoBtn();
+        renderCard(false);
+      }
+
       // --- drawing the study screen ---
 
       function renderCard(animate) {
+        clampIndex();
         const cards = activeCards();
         const card = cards[state.index];
-        const remaining = state.deck.length - state.known.size;
+        const knownCount = knownInDeckCount();
+        const unknownCount = unknownInDeckCount();
 
-        knownCountEl.textContent = `known ${state.known.size}`;
+        knownCountEl.textContent = `known ${knownCount}/${state.deck.length}`;
         hideKnownBtn.classList.toggle("is-on", state.hideKnown);
         hideKnownBtn.setAttribute("aria-pressed", String(state.hideKnown));
         hideKnownBtn.textContent = state.hideKnown ? "show known" : "hide known";
 
-        // nothing left to show (usually: hide known is on and you've marked everything)
         if (!card) {
           sideLabel.textContent = "";
           cardWord.textContent = state.deck.length
-            ? "all cards known"
+            ? unknownCount === 0
+              ? "all cards known"
+              : "no cards to show"
             : "no cards";
-          cardHint.textContent = state.hideKnown
-            ? "turn off hide known to see them again"
-            : "";
+
+          if (state.hideKnown && state.deck.length) {
+            cardHint.innerHTML =
+              'turn on <button type="button" class="hint-action" id="empty-show-known">show known</button>';
+            const showKnownHint = document.getElementById("empty-show-known");
+            if (showKnownHint) {
+              showKnownHint.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (!state.hideKnown) return;
+                pushUndo();
+                toggleHideKnown({ skipUndo: true });
+              });
+            }
+          } else {
+            cardHint.textContent = "";
+          }
+
           cardEl.classList.remove("is-known");
-          progressEl.textContent = state.hideKnown ? `card 0 / ${remaining}` : `card 0 / 0`;
+          progressEl.textContent = `card 0 / ${cards.length}`;
           knownBtn.classList.remove("is-on");
           knownBtn.setAttribute("aria-pressed", "false");
           knownBtn.innerHTML = 'know<span class="kbd-hint"> [k]</span>';
           knownBtn.disabled = true;
           backBtn.disabled = true;
           nextBtn.disabled = true;
-          shuffleBtn.disabled = true;
+          shuffleBtn.disabled = !state.deck.length;
           return;
         }
 
@@ -834,12 +1498,11 @@
           sideLabel.textContent = shown.label;
           cardWord.textContent = shown.word;
           cardHint.innerHTML = state.flipped
-            ? 'click to flip back<span class="kbd-hint"> [space]</span>'
+            ? 'click to flip<span class="kbd-hint"> [space]</span>'
             : 'click to flip<span class="kbd-hint"> [space]</span>';
           cardWord.classList.remove("is-swapping");
         };
 
-        // tiny fade when swapping words; skip it for instant updates
         if (animate) {
           cardWord.classList.add("is-swapping");
           window.setTimeout(apply, 55);
@@ -847,9 +1510,7 @@
           apply();
         }
 
-        // when known are hidden, the counter total is only what's left to study
-        const total = state.hideKnown ? remaining : state.deck.length;
-        progressEl.textContent = `card ${state.index + 1} / ${total}`;
+        progressEl.textContent = `card ${state.index + 1}/${cards.length}`;
 
         const isKnown = state.known.has(card.id);
         cardEl.classList.toggle("is-known", isKnown);
@@ -866,7 +1527,6 @@
       }
 
       function toggleDirection() {
-        // flip which side shows first; reset to the prompt side
         state.frontFirst = !state.frontFirst;
         state.flipped = false;
         updateDirectionLabel();
@@ -890,20 +1550,29 @@
         }
 
         setupError.classList.add("hidden");
-        // checkbox on setup screen decides shuffle vs pasted order
-        state.deck = randomizeOrderCheckbox && randomizeOrderCheckbox.checked ? shuffle(parsed.cards) : parsed.cards;
+        state.deck =
+          randomizeOrderCheckbox && randomizeOrderCheckbox.checked
+            ? shuffle(parsed.cards)
+            : parsed.cards;
         state.index = 0;
         state.flipped = false;
-        state.known = new Set();
         state.hideKnown = false;
 
+        if (resumeKnown) {
+          const ids = new Set(parsed.cards.map((card) => card.id));
+          state.known = new Set([...resumeKnown].filter((id) => ids.has(id)));
+          resumeKnown = null;
+        } else {
+          state.known = new Set();
+        }
+
+        clearUndo();
         setupEl.classList.add("hidden");
         studyEl.classList.remove("hidden");
         renderCard(false);
       }
 
-      function shuffleDeck() {
-        // reshuffle mid-session; try to stay on the same card if it's still visible
+      function runShuffle() {
         if (!state.deck.length) return;
 
         const currentId = currentCard() ? currentCard().id : null;
@@ -911,7 +1580,6 @@
         if (!state.hideKnown) {
           state.deck = shuffle(state.deck);
         } else {
-          // only shuffle the unknowns; known cards keep their spots in the full deck
           const unknownCards = state.deck.filter((card) => !state.known.has(card.id));
           const shuffledUnknown = shuffle(unknownCards);
           let i = 0;
@@ -936,10 +1604,24 @@
         renderCard(false);
       }
 
+      function shuffleDeck() {
+        if (!state.deck.length || shuffleTimer !== null) return;
+
+        pushUndo();
+        cardEl.classList.add("is-fading");
+        shuffleTimer = window.setTimeout(() => {
+          runShuffle();
+          requestAnimationFrame(() => {
+            cardEl.classList.remove("is-fading");
+            shuffleTimer = null;
+          });
+        }, 140);
+      }
+
       function nextCard() {
         const cards = activeCards();
         if (!cards.length) return;
-        state.index = (state.index + 1) % cards.length; // wraps around
+        state.index = (state.index + 1) % cards.length;
         state.flipped = false;
         renderCard(true);
       }
@@ -947,7 +1629,7 @@
       function prevCard() {
         const cards = activeCards();
         if (!cards.length) return;
-        state.index = (state.index - 1 + cards.length) % cards.length; // wraps around
+        state.index = (state.index - 1 + cards.length) % cards.length;
         state.flipped = false;
         renderCard(true);
       }
@@ -955,17 +1637,17 @@
       function toggleKnown() {
         const card = currentCard();
         if (!card) return;
+
+        pushUndo();
         if (state.known.has(card.id)) state.known.delete(card.id);
         else state.known.add(card.id);
 
-        // if hide-known is on and you just marked this one, it leaves the active deck
         if (state.hideKnown) {
           const cards = activeCards();
           if (!cards.length) {
             state.index = 0;
             state.flipped = false;
           } else if (state.known.has(card.id)) {
-            // stay at the same index so the next unknown slides into place
             clampIndex();
             state.flipped = false;
           }
@@ -974,10 +1656,40 @@
         renderCard(false);
       }
 
-      function toggleHideKnown() {
-        // remember which card you were on, then re-find it (or land nearby) after filtering
+      function markAllKnown() {
+        if (!state.deck.length) return;
+        pushUndo();
+        state.deck.forEach((card) => state.known.add(card.id));
+        if (state.hideKnown) {
+          state.index = 0;
+          state.flipped = false;
+        }
+        renderCard(false);
+      }
+
+      function markAllUnknown() {
+        if (!state.deck.length) return;
+        pushUndo();
         const current = currentCard();
         const currentId = current ? current.id : null;
+        state.known = new Set();
+        const cards = activeCards();
+        if (!cards.length) {
+          state.index = 0;
+        } else if (currentId) {
+          const idx = cards.findIndex((card) => card.id === currentId);
+          state.index = idx >= 0 ? idx : 0;
+        } else {
+          state.index = 0;
+        }
+        state.flipped = false;
+        renderCard(false);
+      }
+
+      function toggleHideKnown(options = {}) {
+        const current = currentCard();
+        const currentId = current ? current.id : null;
+        if (!options.skipUndo) pushUndo();
         state.hideKnown = !state.hideKnown;
 
         const cards = activeCards();
@@ -995,20 +1707,59 @@
       }
 
       function editList() {
-        // jump back to setup without wiping the session deck from memory…
-        // (starting again will rebuild from the textarea)
-        studyEl.classList.add("hidden");
-        setupEl.classList.remove("hidden");
-        entryList.focus();
+        editEntryList.value = entryList.value;
+        editError.classList.add("hidden");
+        editOverlay.classList.remove("hidden");
+        editEntryList.focus();
+      }
+
+      function closeEditList() {
+        editOverlay.classList.add("hidden");
+        editError.classList.add("hidden");
+      }
+
+      function applyEditList() {
+        const parsed = parseEntries(editEntryList.value);
+        if (!parsed.ok) {
+          editError.textContent = parsed.error;
+          editError.classList.remove("hidden");
+          return;
+        }
+
+        pushUndo();
+        const previousKnown = new Set(state.known);
+        const currentId = currentCard() ? currentCard().id : null;
+
+        state.deck = parsed.cards;
+        const ids = new Set(parsed.cards.map((card) => card.id));
+        state.known = new Set([...previousKnown].filter((id) => ids.has(id)));
+        state.flipped = false;
+
+        const cards = activeCards();
+        if (!cards.length) {
+          state.index = 0;
+        } else if (currentId) {
+          const idx = cards.findIndex((card) => card.id === currentId);
+          state.index = idx >= 0 ? idx : 0;
+        } else {
+          state.index = Math.min(state.index, cards.length - 1);
+        }
+
+        entryList.value = editEntryList.value;
+        persistDraft();
+        closeEditList();
+        renderCard(false);
       }
 
       function goHome() {
-        // full reset back to the setup screen
+        resumeKnown = null;
         state.deck = [];
         state.index = 0;
         state.flipped = false;
         state.known = new Set();
         state.hideKnown = false;
+        clearUndo();
+        closeEditList();
         studyEl.classList.add("hidden");
         setupEl.classList.remove("hidden");
         window.scrollTo(0, 0);
@@ -1022,10 +1773,23 @@
       nextBtn.addEventListener("click", nextCard);
       shuffleBtn.addEventListener("click", shuffleDeck);
       knownBtn.addEventListener("click", toggleKnown);
-      hideKnownBtn.addEventListener("click", toggleHideKnown);
+      undoBtn.addEventListener("click", undoLast);
+      knowAllBtn.addEventListener("click", markAllKnown);
+      unknowAllBtn.addEventListener("click", markAllUnknown);
+      hideKnownBtn.addEventListener("click", () => toggleHideKnown());
       editBtn.addEventListener("click", editList);
+      applyEditBtn.addEventListener("click", applyEditList);
+      cancelEditBtn.addEventListener("click", closeEditList);
+      editOverlay.addEventListener("click", (event) => {
+        if (event.target === editOverlay) closeEditList();
+      });
       homeBtn.addEventListener("click", goHome);
       dirToggle.addEventListener("click", toggleDirection);
+      colorBg.addEventListener("input", updateColorsFromInputs);
+      colorText.addEventListener("input", updateColorsFromInputs);
+      colorBright.addEventListener("input", updateColorsFromInputs);
+      resetColorsBtn.addEventListener("click", resetColors);
+      cosmeticToggle.addEventListener("click", toggleCosmeticSettings);
       entryList.addEventListener("input", persistDraft);
       listNameInput.addEventListener("input", persistDraft);
       listNameInput.addEventListener("keydown", (event) => {
@@ -1035,7 +1799,6 @@
         }
       });
 
-      // tap/click flips; a swipe should change cards without also flipping
       let suppressCardClick = false;
       let touchStartX = 0;
       let touchStartY = 0;
@@ -1068,21 +1831,24 @@
           const dx = event.changedTouches[0].clientX - touchStartX;
           const dy = event.changedTouches[0].clientY - touchStartY;
 
-          // ignore mostly-vertical scrolls and small moves
           if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
 
           suppressCardClick = true;
-          if (dx > 0) {
-            nextCard(); // swipe right → next
-          } else {
-            prevCard(); // swipe left → back
-          }
+          if (dx > 0) nextCard();
+          else prevCard();
         },
         { passive: true }
       );
 
       document.addEventListener("keydown", (event) => {
-        // shortcuts only while studying, and not while typing in a field
+        if (!editOverlay.classList.contains("hidden")) {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeEditList();
+          }
+          return;
+        }
+
         if (studyEl.classList.contains("hidden")) return;
         const tag = event.target && event.target.tagName;
         if (tag === "TEXTAREA" || tag === "INPUT") return;
@@ -1099,15 +1865,19 @@
         } else if (event.key === "k") {
           event.preventDefault();
           toggleKnown();
+        } else if (event.key === "u") {
+          event.preventDefault();
+          undoLast();
         }
       });
 
-      // restore last draft + paint saved lists on load
+      applyColors(readColors());
+      renderColorPresets();
       entryList.value = localStorage.getItem(STORAGE_DRAFT) || "";
       listNameInput.value = localStorage.getItem(STORAGE_NAME) || "";
       renderSavedLists();
+      updateUndoBtn();
 
-      // materials page embeds this in an iframe — hide the site nav there
       if (window.self !== window.top) {
         document.body.classList.add("is-embedded");
       }
