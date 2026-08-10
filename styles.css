@@ -4,7 +4,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: #e68019;
-  color: #e3e3b0;
+  color: #ffffff;
   font-family: "Akkurat", Helvetica, Arial, sans-serif;
   padding-top: calc(var(--page-top) + 72px);
   padding-left: var(--page-left);
@@ -220,7 +220,7 @@ a[href="/materials/"]:active,
 a[href*="ucgeo.org"]:active,
 a[href*="llso.uchicago.edu"]:active,
 a[href*="cegu.uchicago.edu/expositions"]:active,
-a[href*="buoyo.substack"]:active,
+a[href*="substack.com"]:active,
 a[href*="fauxnixai"]:active,
 a[href*="thedragonflyagency.com"]:active,
 a[href*="therockagency.com"]:active,
