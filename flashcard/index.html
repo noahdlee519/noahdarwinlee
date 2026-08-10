@@ -563,6 +563,7 @@
 
       .side-controls .text-action {
         font-size: 18px;
+        white-space: nowrap;
       }
 
       .side-controls .text-action#edit-btn {
@@ -580,9 +581,15 @@
       .know-group {
         position: relative;
         display: inline-flex;
+        flex-wrap: nowrap;
         align-items: baseline;
         gap: 0.85rem;
         max-width: 100%;
+      }
+
+      #known-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
 
       .know-group-extras {
@@ -683,10 +690,6 @@
         .side-controls .text-action#edit-btn,
         .side-controls .text-action#home-btn {
           margin-top: 0;
-        }
-
-        .know-group {
-          flex-basis: 100%;
         }
 
         .side-controls-footer {
@@ -814,7 +817,7 @@
             <button type="button" class="text-action" id="known-btn" aria-pressed="false">know<span class="kbd-hint"> [k]</span></button>
             <div class="know-group-extras" aria-label="Bulk know actions">
               <button type="button" class="text-action" id="know-all-btn">know all</button>
-              <button type="button" class="text-action" id="unknow-all-btn">unknow all</button>
+              <button type="button" class="text-action" id="unknow-all-btn">forget all</button>
             </div>
           </div>
           <button type="button" class="text-action" id="undo-btn" disabled>undo<span class="kbd-hint"> [u]</span></button>
