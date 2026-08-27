@@ -214,7 +214,7 @@ body {
   text-underline-offset: 4.5px;
 }
 
-a[href="/dialectdict/"]:active,
+a[href*="fuzhounese.org"]:active,
 a[href="/flashcard/"]:active,
 a[href="/materials/"]:active,
 a[href*="ucgeo.org"]:active,
