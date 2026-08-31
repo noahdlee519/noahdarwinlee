@@ -1,0 +1,9 @@
+.DS_Store
+sheet1.jpg
+sheet2.jpg
+
+# Apache rewrite rules are inert on GitHub Pages; kept locally only in case
+# the site ever moves to a host that reads them.
+.htaccess
+
+_to_delete/

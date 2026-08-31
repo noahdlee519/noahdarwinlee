@@ -3,28 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="description" content="CV for Noah Lee." />
-    <title>CV | Noah Lee</title>
+    <title>CV — Noah Darwin Lee</title>
+    <meta
+      name="description"
+      content="Curriculum vitae of Noah Darwin Lee: University of Chicago, publications in Expositions Magazine, The Harper Review and Euphony Journal, speaking engagements and awards."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/cv/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
+
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="CV — Noah Darwin Lee" />
+    <meta property="og:description" content="Education, publications, speaking engagements and awards." />
+    <meta property="og:url" content="https://noahdarwinlee.com/cv/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
     <link rel="stylesheet" href="../styles.css" />
   </head>
-  <body class="cv-page">
+  <body class="cv-page" data-fade-distance="90">
+    <h1 class="sr-only">Curriculum vitae of Noah Darwin Lee</h1>
     <a class="name" href="/"
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
     >
-    <a class="about-link" href="/about/">> about</a>
-    <a class="about-link is-active" href="/cv/">> cv</a>
+    <a class="about-link" href="/about/">about</a>
+    <a class="about-link is-active" href="/cv/" aria-current="page">cv</a>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="../favicon.png" alt="" />
+      <img src="../favicon.png" alt="" width="30" height="30" />
     </button>
     <main>
       <section>
         <h2>Education</h2>
         <p>University of Chicago, A.B. in History; Environment, Geography, and Urbanization; and Law, Letters, and Society <span class="cv-meta">(2022-6)</span></p>
         <p style="margin-left:2.5em">Masaryk University, Czech Republic<span class="cv-meta"> (slavonic studies scholarship, summer 2026)</span></p>
-        <p style="margin-left:2.5em">University of Amsterdam, Netherlands<span class="cv-meta"> (dutch langauge program, summer 2023)</span></p>
+        <p style="margin-left:2.5em">University of Amsterdam, Netherlands<span class="cv-meta"> (dutch language program, summer 2023)</span></p>
       </section>
 
       <section>
@@ -55,7 +71,7 @@
             ><em>Weltpolitik</em> in Euphony Journal, runner up for 2025 Prose Contest <span class="cv-meta">(2025)</span></a
           >
         </p>
-        <p>Selection of contributons in <a class="cv-publication-link" href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer">Expositions Magazine</a>:</p>
+        <p>Selection of contributions in <a class="cv-publication-link" href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer">Expositions Magazine</a>:</p>
         <p style="margin-left:2.5em"><em>Says Quentin</em> in Expositions vol. 13 <span class="cv-meta">(poetry and artwork, 2026)</span></p>
         <p style="margin-left:2.5em"><em>Shooing the Ghosts of Chesterfield Mall</em> in Expositions vol. 10 <span class="cv-meta">(artwork, 2025)</span></p>
         <p style="margin-left:2.5em"><em>Jimmy's Endures</em> in Expositions vol. 5 <span class="cv-meta">(artwork, 2023)</span></p>
@@ -93,42 +109,7 @@
       </section>
 
     </main>
-    <script src="../to-top-btn.js"></script>
-    <script>
-      const nameLink = document.querySelector(".name");
-      const navLinks = document.querySelectorAll(".about-link");
-      const toTopBtn = document.getElementById("to-top-btn");
-      const fadeDistance = 90;
-      const toTopShowDistance = 170;
-
-      function updateCvHeaderFade() {
-        if (window.innerWidth <= 900) {
-          nameLink.style.opacity = "";
-          navLinks.forEach((link) => {
-            link.style.opacity = "";
-            link.style.pointerEvents = "";
-          });
-          nameLink.style.pointerEvents = "";
-          toTopBtn.classList.remove("is-visible");
-          return;
-        }
-
-        const progress = Math.min(window.scrollY / fadeDistance, 1);
-        const opacity = 1 - progress;
-        const pointerEvents = opacity <= 0.05 ? "none" : "";
-
-        nameLink.style.opacity = opacity;
-        navLinks.forEach((link) => {
-          link.style.opacity = opacity;
-          link.style.pointerEvents = pointerEvents;
-        });
-        nameLink.style.pointerEvents = pointerEvents;
-        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
-      }
-
-      window.addEventListener("scroll", updateCvHeaderFade, { passive: true });
-      window.addEventListener("resize", updateCvHeaderFade);
-      updateCvHeaderFade();
-    </script>
+    <script src="../to-top-btn.js" defer></script>
+    <script src="../header.js" defer></script>
   </body>
 </html>

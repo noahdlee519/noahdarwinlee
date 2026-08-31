@@ -3,22 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="description" content="About Noah Lee." />
-    <title>About | Noah Lee</title>
+    <title>About — Noah Darwin Lee</title>
+    <meta
+      name="description"
+      content="Noah Darwin Lee is a University of Chicago graduate in History, Law Letters and Society, and Geography, interested in consulates, languages, and legacies."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/about/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
+
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="About — Noah Darwin Lee" />
+    <meta
+      property="og:description"
+      content="University of Chicago graduate in History, Law Letters and Society, and Geography, interested in consulates, languages, and legacies."
+    />
+    <meta property="og:url" content="https://noahdarwinlee.com/about/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
     <link rel="stylesheet" href="../styles.css" />
   </head>
-  <body class="about-page">
+  <body class="about-page" data-fade-distance="90">
+    <h1 class="sr-only">About Noah Darwin Lee</h1>
     <a class="name" href="/"
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
     >
-    <a class="about-link is-active" href="/about/">> about</a>
+    <a class="about-link is-active" href="/about/" aria-current="page">about</a>
     <div class="top-right-links">
       <div class="top-right-set is-visible">
         <div class="top-right-primary">
-          <a href="https://llso.uchicago.edu/llso-review-home" target="_blank" rel="noopener noreferrer"
+          <a href="https://llso.uchicago.edu/llso-review-home/" target="_blank" rel="noopener noreferrer"
             >llsoreview</a
           >
           <a href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">dictionary</a>
@@ -30,9 +49,12 @@
           >
         </div>
       </div>
-      <div class="top-right-set" aria-hidden="true">
+      <div class="top-right-set" aria-hidden="true" inert>
         <div class="top-right-primary">
-          <a href="https://substack.com/@noahdarwinlee?r=ish50&utm_campaign=profile&utm_medium=profile-page" target="_blank" rel="noopener noreferrer"
+          <a
+            href="https://substack.com/@noahdarwinlee?r=ish50&amp;utm_campaign=profile&amp;utm_medium=profile-page"
+            target="_blank"
+            rel="noopener noreferrer"
             >substack</a
           >
           <a href="https://noahdlee519.github.io/fauxnixai/" target="_blank" rel="noopener noreferrer"
@@ -56,11 +78,11 @@
       </div>
     </div>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="../favicon.png" alt="" />
+      <img src="../favicon.png" alt="" width="30" height="30" />
     </button>
     <div class="me-contact-links">
       <div class="me-contact-divider" aria-hidden="true"></div>
-      <a href="#" aria-label="Bio" id="bio-toggle">bio</a>
+      <a href="#" aria-label="Bio" id="bio-toggle" aria-expanded="false" aria-controls="bio-text">bio</a>
       <a href="/cv/" aria-label="CV">cv</a>
       <a href="https://www.instagram.com/noahdarwinlee/#" target="_blank" rel="noopener noreferrer"
         >instagram</a
@@ -69,75 +91,49 @@
       <a href="mailto:noahlee519@gmail.com">email</a>
     </div>
     <div class="profile-photo-frame">
-      <img
-        class="profile-photo"
-        src="../me.jpeg"
-        alt="Photo of Noah Lee"
-        width="950"
-        height="1656"
-        decoding="async"
-      />
+      <picture>
+        <source type="image/webp" srcset="../art/web/me-640.webp" />
+        <img
+          class="profile-photo"
+          src="../art/web/me-640.jpg"
+          alt="Noah Darwin Lee"
+          width="950"
+          height="1656"
+          decoding="async"
+        />
+      </picture>
     </div>
-    <p class="bio-text" id="bio-text">Noah is a recent graduate from the University of Chicago, where he received his bachelor's in History, Law Letters and Society, and Geography. He is interested in consulates, languages, and legacies. On this website you can find different projects ranging from digital dialect dictionaries to paintings of the World's Fair to modern architecture guides.<br /><br /><a class="bio-materials-link" href="/materials/">materials</a></p>
-    <script src="../top-right-links.js"></script>
-    <script src="../to-top-btn.js"></script>
+    <p class="bio-text" id="bio-text">
+      Noah is a recent graduate from the University of Chicago, where he received his bachelor's in
+      History, Law Letters and Society, and Geography. He is interested in consulates, languages, and
+      legacies. On this website you can find different projects ranging from digital dialect
+      dictionaries to paintings of the World's Fair to modern architecture guides.<br /><br /><a
+        class="bio-materials-link"
+        href="/materials/"
+        >materials</a
+      >
+    </p>
+    <script src="../top-right-links.js" defer></script>
+    <script src="../to-top-btn.js" defer></script>
+    <script src="../header.js" defer></script>
     <script>
-      const bioToggle = document.getElementById("bio-toggle");
-      const bioText = document.getElementById("bio-text");
-      const profilePhotoFrame = document.querySelector(".profile-photo-frame");
-      const nameLink = document.querySelector(".name");
-      const aboutLink = document.querySelector(".about-link");
-      const topRightLinks = document.querySelector(".top-right-links");
-      const toTopBtn = document.getElementById("to-top-btn");
-      const fadeDistance = 90;
-      const toTopShowDistance = 170;
-      const headerElements = [nameLink, aboutLink, topRightLinks];
-
-      function updateHeaderFade() {
-        if (window.innerWidth <= 900) {
-          headerElements.forEach((element) => {
-            element.style.opacity = "";
-            element.style.pointerEvents = "";
-          });
-          topRightLinks.classList.remove("is-faded");
-          toTopBtn.classList.remove("is-visible");
-          return;
-        }
-
-        const maxScroll = Math.max(
-          document.documentElement.scrollHeight - window.innerHeight,
-          0
-        );
-        const effectiveFadeDistance = Math.min(fadeDistance, Math.max(maxScroll, 1));
-        const progress = Math.min(window.scrollY / effectiveFadeDistance, 1);
-        const opacity = 1 - progress;
-        const faded = opacity <= 0.05;
-        const pointerEvents = faded ? "none" : "";
-
-        headerElements.forEach((element) => {
-          element.style.opacity = opacity;
-          element.style.pointerEvents = pointerEvents;
+      (function () {
+        const bioToggle = document.getElementById("bio-toggle");
+        const bioText = document.getElementById("bio-text");
+        const frame = document.querySelector(".profile-photo-frame");
+        bioToggle.addEventListener("click", function (event) {
+          event.preventDefault();
+          const isVisible = bioText.classList.toggle("is-visible");
+          bioToggle.classList.toggle("is-active", isVisible);
+          bioToggle.setAttribute("aria-expanded", String(isVisible));
+          document.body.classList.toggle("bio-open", isVisible);
+          if (isVisible) {
+            // use the reserved frame height, not the image's loaded height
+            window.scrollBy({ top: frame.getBoundingClientRect().height, behavior: "smooth" });
+          }
+          document.dispatchEvent(new Event("bio:toggle"));
         });
-        topRightLinks.classList.toggle("is-faded", faded);
-        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
-      }
-
-      bioToggle.addEventListener("click", function (event) {
-        event.preventDefault();
-        const isVisible = bioText.classList.toggle("is-visible");
-        bioToggle.classList.toggle("is-active", isVisible);
-        document.body.classList.toggle("bio-open", isVisible);
-        if (isVisible) {
-          // use the reserved frame height, not the image's loaded height
-          const imageHeight = profilePhotoFrame.getBoundingClientRect().height;
-          window.scrollBy({ top: imageHeight, behavior: "smooth" });
-        }
-        requestAnimationFrame(updateHeaderFade);
-      });
-
-      window.addEventListener("scroll", updateHeaderFade, { passive: true });
-      window.addEventListener("resize", updateHeaderFade);
-      updateHeaderFade();
+      })();
     </script>
   </body>
 </html>

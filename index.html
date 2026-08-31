@@ -3,17 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="description" content="Personal website for Noah Lee." />
-    <title>Noah Darwin Lee</title>
+    <title>Noah Darwin Lee — paintings, drawings, and architecture</title>
+    <meta
+      name="description"
+      content="Paintings, drawings and architectural projects by Noah Darwin Lee — Chicago streets, the Midway Plaisance, Pilsen, the World's Fair, and a Czech cultural center."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/" />
     <link rel="icon" href="favicon.png" type="image/png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="Noah Darwin Lee — paintings, drawings, and architecture" />
+    <meta
+      property="og:description"
+      content="Paintings, drawings and architectural projects by Noah Darwin Lee."
+    />
+    <meta property="og:url" content="https://noahdarwinlee.com/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Architectural model of the Masaryk Cultural Center lit from within at night"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Noah Darwin Lee — paintings, drawings, and architecture" />
+    <meta
+      name="twitter:description"
+      content="Paintings, drawings and architectural projects by Noah Darwin Lee."
+    />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
     <link rel="stylesheet" href="styles.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Noah Darwin Lee",
+        "url": "https://noahdarwinlee.com/",
+        "image": "https://noahdarwinlee.com/og.jpg",
+        "email": "mailto:noahlee519@gmail.com",
+        "jobTitle": "Artist and researcher",
+        "alumniOf": {
+          "@type": "CollegeOrUniversity",
+          "name": "University of Chicago"
+        },
+        "sameAs": [
+          "https://www.instagram.com/noahmakestheart",
+          "https://www.instagram.com/noahdarwinlee/",
+          "https://www.linkedin.com/in/noahdlee/",
+          "https://substack.com/@noahdarwinlee"
+        ]
+      }
+    </script>
   </head>
-  <body class="index-page">
-    <a class="name" href="/"
-      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
-      <span class="name-word-lee">Lee</span></a
-    >
+  <body class="index-page" data-fade-distance="45">
+    <h1 class="name-heading">
+      <a class="name" href="/"
+        ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+        <span class="name-word-lee">Lee</span></a
+      >
+    </h1>
     <a class="about-link" href="/about/">about</a>
     <div class="top-right-links">
       <div class="top-right-set is-visible">
@@ -30,9 +81,12 @@
           >
         </div>
       </div>
-      <div class="top-right-set" aria-hidden="true">
+      <div class="top-right-set" aria-hidden="true" inert>
         <div class="top-right-primary">
-          <a href="https://substack.com/@noahdarwinlee?r=ish50&utm_campaign=profile&utm_medium=profile-page" target="_blank" rel="noopener noreferrer"
+          <a
+            href="https://substack.com/@noahdarwinlee?r=ish50&amp;utm_campaign=profile&amp;utm_medium=profile-page"
+            target="_blank"
+            rel="noopener noreferrer"
             >substack</a
           >
           <a href="https://noahdlee519.github.io/fauxnixai/" target="_blank" rel="noopener noreferrer"
@@ -56,11 +110,398 @@
       </div>
     </div>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="favicon.png" alt="" />
+      <img src="favicon.png" alt="" width="30" height="30" />
     </button>
     <main class="art-main">
-      <div id="art-gallery" class="art-gallery"></div>
-      <br>
+      <div id="art-gallery" class="art-gallery">
+      <article class="art-card art-card-carousel" id="masaryk">
+        <h3 class="art-title" id="masaryk-title">Masaryk Cultural Center</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="masaryk-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/masaryk/ma1-640.webp 640w, art/web/masaryk/ma1-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/masaryk/ma1-640.jpg" width="1280" height="853"
+                     alt="Architectural model of the proposed cultural center at night, its glowing interior set into stepped green terraces around the Masaryk statue" loading="lazy" decoding="async">
+              </picture>
+            </button>
+            <img class="art-slide-data" hidden alt="The existing bronze equestrian statue of T. G. Masaryk on its tall stone plinth against a clear blue sky"
+                 data-src="art/web/masaryk/ma2-640.jpg" data-srcset="art/web/masaryk/ma2-640.webp 640w, art/web/masaryk/ma2-1280.webp 1280w"
+                 data-w="1280" data-h="1001" data-title="Masaryk Cultural Center">
+            <img class="art-slide-data" hidden alt="Colour site plan of the Midway Plaisance showing paths, tree planting and the rectangular footprint of the proposed building"
+                 data-src="art/web/masaryk/ma3-640.jpg" data-srcset="art/web/masaryk/ma3-640.webp 640w, art/web/masaryk/ma3-1280.webp 1280w"
+                 data-w="1280" data-h="1085" data-title="Masaryk Cultural Center">
+            <img class="art-slide-data" hidden alt="Sheet of hand-drawn sections and elevations through the terraced site"
+                 data-src="art/web/masaryk/ma4-640.jpg" data-srcset="art/web/masaryk/ma4-640.webp 640w, art/web/masaryk/ma4-1280.webp 1280w"
+                 data-w="1280" data-h="1650" data-title="Masaryk Cultural Center">
+            <img class="art-slide-data" hidden alt="Laser-cut chipboard model pieces laid out on a workbench with cutting tools"
+                 data-src="art/web/masaryk/ma5-640.jpg" data-srcset="art/web/masaryk/ma5-640.webp 640w, art/web/masaryk/ma5-1280.webp 1280w"
+                 data-w="1280" data-h="960" data-title="Masaryk Cultural Center">
+            <img class="art-slide-data" hidden alt="Overhead view of the finished model showing the sunken courtyard, statue plinth and angular green terraces"
+                 data-src="art/web/masaryk/ma6-640.jpg" data-srcset="art/web/masaryk/ma6-640.webp 640w, art/web/masaryk/ma6-1280.webp 1280w"
+                 data-w="1280" data-h="960" data-title="Masaryk Cultural Center">
+            <img class="art-slide-data" hidden alt="The model lit from within at dusk, seen from ground level across the terraces"
+                 data-src="art/web/masaryk/ma7-640.jpg" data-srcset="art/web/masaryk/ma7-640.webp 640w, art/web/masaryk/ma7-1280.webp 1280w"
+                 data-w="1280" data-h="853" data-title="Masaryk Cultural Center">
+            <img class="art-slide-data" hidden alt="Close view of the model&#x27;s illuminated glazed base beneath the dark landscape above"
+                 data-src="art/web/masaryk/ma8-640.jpg" data-srcset="art/web/masaryk/ma8-640.webp 640w, art/web/masaryk/ma8-1280.webp 1280w"
+                 data-w="1280" data-h="853" data-title="Masaryk Cultural Center">
+          </div>
+          <div class="art-caption-panel" id="masaryk-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0">Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="1" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="2" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="3" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="4" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="5" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="6" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="art-caption" data-index="7" hidden>Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation &amp; terrain, and encourage play &amp; curiosity.<br><br><em>5/24/26</em></p>
+              <p class="carousel-status" aria-live="polite">1 of 8</p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="delancey-and-chrystie">
+        <h3 class="art-title" id="delancey-and-chrystie-title">Delancey and Chrystie</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="delancey-and-chrystie-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/delancey-and-chrystie-640.webp 640w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/delancey-and-chrystie-640.jpg" width="640" height="855"
+                     alt="Dense pen drawing in a spiral sketchbook of Lower East Side buildings, fire escapes, street trees and parked cars" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="delancey-and-chrystie-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>pen on paper</em><br><em>micron 0.5mm</em><br><em>6/5/23</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="the-spectators">
+        <h3 class="art-title" id="the-spectators-title">The Spectators</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="the-spectators-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/the-spectators-640.webp 640w, art/web/the-spectators-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/the-spectators-640.jpg" width="1280" height="1008"
+                     alt="Painting of a crowd of onlookers beneath a glass observation box against a deep pink interior" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="the-spectators-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas</em><br><em>12x16 in</em><br><em>7/30/23</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card art-card-carousel" id="isacream">
+        <h3 class="art-title" id="isacream-title">ISACream Stand</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="isacream-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/isacream/1-exterior-640.webp 640w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/isacream/1-exterior-640.jpg" width="640" height="480"
+                     alt="Model of the ice cream stand with a domed glass lantern, red and green model trees on a white base" loading="lazy" decoding="async">
+              </picture>
+            </button>
+            <img class="art-slide-data" hidden alt="Pencil plan and section drawings on graph paper held down at the corners"
+                 data-src="art/web/isacream/2-model-640.jpg" data-srcset="art/web/isacream/2-model-640.webp 640w"
+                 data-w="640" data-h="480" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="Digital model showing the brick pavilion with its stepped entrance tucked against a large blank wall"
+                 data-src="art/web/isacream/3-view-a-640.jpg" data-srcset="art/web/isacream/3-view-a-640.webp 640w, art/web/isacream/3-view-a-1280.webp 1280w"
+                 data-w="1280" data-h="1337" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="Digital model from the opposite corner showing the canopy and stair"
+                 data-src="art/web/isacream/4-view-b-640.jpg" data-srcset="art/web/isacream/4-view-b-640.webp 640w, art/web/isacream/4-view-b-1280.webp 1280w"
+                 data-w="1280" data-h="1337" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="Coloured elevation of the pavilion with tall red-framed windows under a projecting roof"
+                 data-src="art/web/isacream/5-plan-640.jpg" data-srcset="art/web/isacream/5-plan-640.webp 640w, art/web/isacream/5-plan-1280.webp 1280w"
+                 data-w="1280" data-h="712" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="Hand holding the model&#x27;s thin white dome ring above a cutting mat"
+                 data-src="art/web/isacream/6-detail-a-640.jpg" data-srcset="art/web/isacream/6-detail-a-640.webp 640w"
+                 data-w="640" data-h="853" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="Hands assembling the curved white model walls and the perforated dome"
+                 data-src="art/web/isacream/7-detail-b-640.jpg" data-srcset="art/web/isacream/7-detail-b-640.webp 640w"
+                 data-w="640" data-h="853" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="The completed white model with dome and model trees, photographed on a classroom table"
+                 data-src="art/web/isacream/8-detail-c-640.jpg" data-srcset="art/web/isacream/8-detail-c-640.webp 640w"
+                 data-w="640" data-h="480" data-title="ISACream Stand">
+            <img class="art-slide-data" hidden alt="The model glowing from within, its lit dome surrounded by red and green trees"
+                 data-src="art/web/isacream/9-detail-d-640.jpg" data-srcset="art/web/isacream/9-detail-d-640.webp 640w"
+                 data-w="640" data-h="480" data-title="ISACream Stand">
+          </div>
+          <div class="art-caption-panel" id="isacream-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0">An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="1" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="2" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="3" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="4" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="5" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="6" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="7" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="art-caption" data-index="8" hidden>An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em></p>
+              <p class="carousel-status" aria-live="polite">1 of 9</p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="asking-for-a-favor">
+        <h3 class="art-title" id="asking-for-a-favor-title">Asking for a Favor</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="asking-for-a-favor-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/asking-for-a-favor-640.webp 640w, art/web/asking-for-a-favor-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/asking-for-a-favor-640.jpg" width="1280" height="1718"
+                     alt="Painting of a figure in profile against a turquoise ground, one hand raised toward a small framed window" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="asking-for-a-favor-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas</em><br><em>6x8 in</em><br><em>3/21/25</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="baby-contest">
+        <h3 class="art-title" id="baby-contest-title">Baby Contest</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="baby-contest-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/baby-contest-640.webp 640w, art/web/baby-contest-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/baby-contest-640.jpg" width="1280" height="1628"
+                     alt="Painting of a street corner at dusk under a canopy of pink blossom, with a lit awning reading BABY CONTEST" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="baby-contest-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas</em><br><em>11x14 in</em><br><em>11/8/24</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="kunefeci">
+        <h3 class="art-title" id="kunefeci-title">Künefeci</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="kunefeci-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/kunefeci-640.webp 640w, art/web/kunefeci-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/kunefeci-640.jpg" width="1280" height="770"
+                     alt="Flat vector illustration of a sunlit pedestrian street with a minaret in the distance and an awning over a shopfront" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="kunefeci-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>adobe illustrator</em><br><em>4/14/23</em><br><br>in <em>Expositions Magazine vol. 4</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="chesterfield-mall">
+        <h3 class="art-title" id="chesterfield-mall-title">Chesterfield Mall</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="chesterfield-mall-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/chesterfield-mall-640.webp 640w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/chesterfield-mall-640.jpg" width="640" height="505"
+                     alt="Painting of the Chesterfield Mall entrance mid-demolition, an excavator tearing into the arched facade" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="chesterfield-mall-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas, adobe illustrator</em><br><em>11x14 in</em><br><em>11/8/24</em><br><br>in <em>Expositions Magazine vol. 10</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="edge-of-pilsen">
+        <h3 class="art-title" id="edge-of-pilsen-title">Edge of Pilsen</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="edge-of-pilsen-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/edge-of-pilsen-640.webp 640w, art/web/edge-of-pilsen-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/edge-of-pilsen-640.jpg" width="1280" height="1257"
+                     alt="Painting of a black clapboard two-flat between brick neighbours on a Pilsen street under a bright sky" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="edge-of-pilsen-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas</em><br><em>6x6 in</em><br><em>6/20/23</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="pickleball-court">
+        <h3 class="art-title" id="pickleball-court-title">Pickleball Court</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="pickleball-court-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/pickleball-court-640.webp 640w, art/web/pickleball-court-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/pickleball-court-640.png" width="1280" height="852"
+                     alt="Vector illustration looking down onto green pickleball courts inside an orange-walled sports hall" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="pickleball-court-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>adobe illustrator</em><br><br>in <em>Expositions Magazine vol. 10</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card art-card-carousel" id="says-quentin">
+        <h3 class="art-title" id="says-quentin-title">Says Quentin</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="says-quentin-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/says-quentin/1-detail-640.webp 640w, art/web/says-quentin/1-detail-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/says-quentin/1-detail-640.jpg" width="1280" height="1699"
+                     alt="Painting of a pale draped form beneath a large convex mirror, surrounded by red and ochre architectural fragments" loading="lazy" decoding="async">
+              </picture>
+            </button>
+            <img class="art-slide-data" hidden alt="The full spread with the poem ‘Says Quentin’ set in a column beside the painting"
+                 data-src="art/web/says-quentin/2-full-640.jpg" data-srcset="art/web/says-quentin/2-full-640.webp 640w"
+                 data-w="640" data-h="858" data-title="Says Quentin">
+          </div>
+          <div class="art-caption-panel" id="says-quentin-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas, text</em><br><em>24x16 in</em><br><em>5/13/26</em><br><br>in <em>Expositions Magazine vol. 13</em></p>
+              <p class="art-caption" data-index="1" hidden><em>acrylic on canvas, text</em><br><em>24x16 in</em><br><em>5/13/26</em><br><br>in <em>Expositions Magazine vol. 13</em></p>
+              <p class="carousel-status" aria-live="polite">1 of 2</p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card art-card-carousel" id="3-park-avenue">
+        <h3 class="art-title" id="3-park-avenue-title">3 Park Avenue</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="3-park-avenue-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/3-park-avenue/1-640.webp 640w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/3-park-avenue/1-640.jpg" width="640" height="364"
+                     alt="Photograph of the real 3 Park Avenue tower, its angled brick crown rising above street trees" loading="lazy" decoding="async">
+              </picture>
+            </button>
+            <img class="art-slide-data" hidden alt="SketchUp model of the tower&#x27;s brick base and setbacks seen from street level"
+                 data-src="art/web/3-park-avenue/2-640.jpg" data-srcset="art/web/3-park-avenue/2-640.webp 640w"
+                 data-w="640" data-h="584" data-title="3 Park Avenue">
+            <img class="art-slide-data" hidden alt="SketchUp model of the full tower and its lower annexe on a green ground plane"
+                 data-src="art/web/3-park-avenue/3-640.jpg" data-srcset="art/web/3-park-avenue/3-640.webp 640w"
+                 data-w="640" data-h="586" data-title="3 Park Avenue">
+            <img class="art-slide-data" hidden alt="Plan view of the tower&#x27;s chamfered octagonal floorplate"
+                 data-src="art/web/3-park-avenue/4-640.jpg" data-srcset="art/web/3-park-avenue/4-640.webp 640w"
+                 data-w="640" data-h="568" data-title="3 Park Avenue">
+          </div>
+          <div class="art-caption-panel" id="3-park-avenue-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>sketchup</em><br><em>8/5/20</em></p>
+              <p class="art-caption" data-index="1" hidden><em>sketchup</em><br><em>8/5/20</em></p>
+              <p class="art-caption" data-index="2" hidden><em>sketchup</em><br><em>8/5/20</em></p>
+              <p class="art-caption" data-index="3" hidden><em>sketchup</em><br><em>8/5/20</em></p>
+              <p class="carousel-status" aria-live="polite">1 of 4</p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card" id="frog-holding-sweet-potato">
+        <h3 class="art-title" id="frog-holding-sweet-potato-title">Frog Holding Sweet Potato</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="frog-holding-sweet-potato-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/frog-holding-sweet-potato-640.webp 640w, art/web/frog-holding-sweet-potato-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/frog-holding-sweet-potato-640.jpg" width="1280" height="1612"
+                     alt="Still life of a sweet potato balanced on a small metal stand beside an orange vase and a dish of lemons" loading="lazy" decoding="async">
+              </picture>
+            </button>
+          </div>
+          <div class="art-caption-panel" id="frog-holding-sweet-potato-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>acrylic on canvas</em><br><em>8x6 in</em><br><em>2/23/25</em></p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card art-card-carousel" id="grand-central">
+        <h3 class="art-title" id="grand-central-title">Grand Central</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="grand-central-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/grand-central/1-pagoda-640.webp 640w, art/web/grand-central/1-pagoda-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/grand-central/1-pagoda-640.jpg" width="1280" height="1280"
+                     alt="SketchUp model of a glass tower rising behind a red masonry base with pointed arches" loading="lazy" decoding="async">
+              </picture>
+            </button>
+            <img class="art-slide-data" hidden alt="Detail of the model&#x27;s red gabled crown meeting the glass curtain wall"
+                 data-src="art/web/grand-central/2-640.jpg" data-srcset="art/web/grand-central/2-640.webp 640w, art/web/grand-central/2-1280.webp 1280w"
+                 data-w="1280" data-h="716" data-title="Grand Central">
+            <img class="art-slide-data" hidden alt="Three-quarter view of the tower showing the arcaded red base and stepped glass shaft"
+                 data-src="art/web/grand-central/3-640.jpg" data-srcset="art/web/grand-central/3-640.webp 640w"
+                 data-w="640" data-h="640" data-title="Grand Central">
+            <img class="art-slide-data" hidden alt="Long elevation of the arcaded base with the glass tower set back behind it"
+                 data-src="art/web/grand-central/4-640.jpg" data-srcset="art/web/grand-central/4-640.webp 640w"
+                 data-w="640" data-h="640" data-title="Grand Central">
+          </div>
+          <div class="art-caption-panel" id="grand-central-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>sketchup</em><br><em>9/2/20</em></p>
+              <p class="art-caption" data-index="1" hidden><em>sketchup</em><br><em>9/2/20</em></p>
+              <p class="art-caption" data-index="2" hidden><em>sketchup</em><br><em>9/2/20</em></p>
+              <p class="art-caption" data-index="3" hidden><em>sketchup</em><br><em>9/2/20</em></p>
+              <p class="carousel-status" aria-live="polite">1 of 4</p>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="art-card art-card-carousel" id="triptych">
+        <h3 class="art-title" id="triptych-title">Elemental Triptych — The Reception of a Guest</h3>
+        <div class="art-stage">
+          <div class="carousel-frame">
+            <button type="button" class="art-trigger" aria-expanded="false" aria-controls="triptych-panel">
+              <picture>
+                <source type="image/webp" srcset="art/web/triptych/1-reception-of-a-guest-640.webp 640w, art/web/triptych/1-reception-of-a-guest-1280.webp 1280w" sizes="(min-width: 1200px) 588px, (min-width: 901px) 647px, (min-width: 460px) 420px, 92vw">
+                <img class="art-image" src="art/web/triptych/1-reception-of-a-guest-640.jpg" width="1280" height="1593"
+                     alt="Painting of a deep red field above a pale pink ground with two small white forms" loading="lazy" decoding="async">
+              </picture>
+            </button>
+            <img class="art-slide-data" hidden alt="Painting of a small figure standing in an ochre room before an arched window with a white curtain"
+                 data-src="art/web/triptych/2-superfluous-man-640.jpg" data-srcset="art/web/triptych/2-superfluous-man-640.webp 640w, art/web/triptych/2-superfluous-man-1280.webp 1280w"
+                 data-w="1280" data-h="1610" data-title="Elemental Triptych — Superfluous Man">
+            <img class="art-slide-data" hidden alt="Painting of a dark red sky over a low wall, with faint spires on the horizon"
+                 data-src="art/web/triptych/3-a-second-troy-640.jpg" data-srcset="art/web/triptych/3-a-second-troy-640.webp 640w, art/web/triptych/3-a-second-troy-1280.webp 1280w"
+                 data-w="1280" data-h="1513" data-title="Elemental Triptych — A Second Troy">
+          </div>
+          <div class="art-caption-panel" id="triptych-panel">
+            <div class="art-caption-inner">
+              <p class="art-caption is-active" data-index="0"><em>The Reception of a Guest (left)</em><br><br><em>acrylic on panel</em><br><em>11x8 in</em><br><em>1/26/25</em></p>
+              <p class="art-caption" data-index="1" hidden><em>Superfluous Man (center)</em><br><br><em>acrylic on panel</em><br><em>11x8 in</em><br><em>1/27/25</em></p>
+              <p class="art-caption" data-index="2" hidden><em>A Second Troy (right)</em><br><br><em>acrylic on panel</em><br><em>11x8 in</em><br><em>1/28/25</em></p>
+              <p class="carousel-status" aria-live="polite">1 of 3</p>
+            </div>
+          </div>
+        </div>
+      </article>      </div>
+      <br />
       <a
         class="index-instagram-link"
         href="https://instagram.com/noahmakestheart"
@@ -69,726 +510,9 @@
         >instagram.com/noahmakestheart</a
       >
     </main>
-    <script src="top-right-links.js"></script>
-    <script src="to-top-btn.js"></script>
-    <script>
-      const nameLink = document.querySelector(".name");
-      const aboutLink = document.querySelector(".about-link");
-      const topRightLinks = document.querySelector(".top-right-links");
-      const toTopBtn = document.getElementById("to-top-btn");
-      const fadeDistance = 45;
-      const toTopShowDistance = 170;
-
-      function updateHeaderFade() {
-        if (window.innerWidth <= 900) {
-          nameLink.style.opacity = "";
-          aboutLink.style.opacity = "";
-          topRightLinks.style.opacity = "";
-          nameLink.style.pointerEvents = "";
-          aboutLink.style.pointerEvents = "";
-          topRightLinks.style.pointerEvents = "";
-          topRightLinks.classList.remove("is-faded");
-          toTopBtn.classList.remove("is-visible");
-          return;
-        }
-
-        const progress = Math.min(window.scrollY / fadeDistance, 1);
-        const opacity = 1 - progress;
-        const faded = opacity <= 0.05;
-        const pointerEvents = faded ? "none" : "";
-
-        nameLink.style.opacity = opacity;
-        aboutLink.style.opacity = opacity;
-        topRightLinks.style.opacity = opacity;
-        nameLink.style.pointerEvents = pointerEvents;
-        aboutLink.style.pointerEvents = pointerEvents;
-        topRightLinks.style.pointerEvents = pointerEvents;
-        topRightLinks.classList.toggle("is-faded", faded);
-        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
-      }
-
-      const artItems = [
-        {
-          type: "project",
-          mode: "carousel",
-          highres: true,
-          title: "Masaryk Cultural Center",
-          caption: "Reimagining the statue of T. G. Masaryk on Chicago's Midway Plaisance as an active site embodying the Czechoslovak leader’s vision of democracy and the city of Chicago’s Czech diasporic history. Specific project goals were to maintain large-scale site geometry, create symbolic vegetation & terrain, and encourage play & curiosity.<br><br><em>5/24/26</em><br><br>(click image to cycle)",
-          cover: "art/masaryk/ma1.JPG",
-          images: [
-            "art/masaryk/ma2.JPG",
-            "art/masaryk/ma3.png",
-            "art/masaryk/ma4.JPG",
-            "art/masaryk/ma5.JPG",
-            "art/masaryk/ma6.JPG",
-            "art/masaryk/ma7.JPG",
-            "art/masaryk/ma8.JPG",
-          ],
-        },
-        {
-          type: "single",
-          title: "Delancey and Chrystie",
-          caption: "<em>pen on paper</em><br><em>micron 0.5mm</em><br><em>6/5/23</em>",
-          src: "art/Delancey and Chrystie.png",
-        },
-        {
-          type: "single",
-          title: "The Spectators",
-          caption: "<em>acrylic on canvas</em><br><em>12x16 in</em><br><em>7/30/23</em>",
-          src: "art/TheSpectators.jpeg",
-        },
-        {
-          type: "project",
-          mode: "carousel",
-          title: "ISACream Stand",
-          caption: "An idea for a building dedicated to vending ice cream adjoining the Institute for the Study of Ancient Cultures (ISAC).<br><br><em>4/17/26</em><br><br>(click image to cycle)",
-          cover: "art/ISACream/647C9A5F-5C42-4B5C-BFA3-14E32D3AE835_1_105_c.jpeg",
-          images: [
-            "art/ISACream/2BA33685-FD5E-447D-802B-8B149A864A95_1_105_c.jpeg",
-            "art/ISACream/ViewCapture20260406_155208.png",
-            "art/ISACream/ViewCapture20260406_155543.png",
-            "art/ISACream/Screenshot 2026-04-06 at 1.59.03 PM.png",
-            "art/ISACream/22C99CB4-2523-4F8B-92FD-13F89A95C5C9_1_105_c.jpeg",
-            "art/ISACream/7CFA3E3E-3936-4471-8FF1-AEBDC95F5C14_1_105_c.jpeg",
-            "art/ISACream/170F802E-54A2-40D4-AFF3-FB7DF706EFAD_1_105_c.jpeg",
-            "art/ISACream/C1AA7C7A-E897-4C2D-97A5-E45B308C21F8_1_105_c.jpeg"
-          ],
-        },
-        {
-          type: "single",
-          title: "Asking for a Favor",
-          caption: "<em>acrylic on canvas</em><br><em>6x8 in</em><br><em>3/21/25</em>",
-          src: "art/Asking for a Favor.jpg",
-        },
-        {
-          type: "single",
-          title: "Baby Contest",
-          caption: "<em>acrylic on canvas</em><br><em>11x14 in</em><br><em>11/8/24</em>",
-          src: "art/BabyContest.jpeg",
-        },
-        {
-          type: "single",
-          title: "Künefeci",
-          caption: "<em>adobe illustrator</em><br><em>4/14/23</em><br><br>in <em>Expositions Magazine vol. 4</em>",
-          src: "art/kunefeci.jpg",
-        },
-        {
-          type: "single",
-          title: "Chesterfield Mall",
-          caption: "<em>acrylic on canvas, adobe illustrator</em><br><em>11x14 in</em><br><em>11/8/24</em><br><br>in <em>Expositions Magazine vol. 10</em>",
-          src: "art/Chesterfield Mall.jpg",
-        },
-        {
-          type: "single",
-          title: "Edge of Pilsen",
-          caption: "<em>acrylic on canvas</em><br><em>6x6 in</em><br><em>6/20/23</em>",
-          src: "art/Edge of Pilsen.jpg",
-        },
-        {
-          type: "single",
-          title: "Pickleball Court",
-          caption: "<em>adobe illustrator</em><br><br>in <em>Expositions Magazine vol. 10</em>",
-          src: "art/pickleballcourttransparent.png",
-        },
-        {
-          type: "project",
-          mode: "carousel",
-          title: "Says Quentin",
-          caption: "<em>acrylic on canvas, text</em><br><em>24x16 in</em><br><em>5/13/26</em><br><br>in <em>Expositions Magazine vol. 4</em><br><br>(click image to cycle)",
-          cover: "art/saysquentin/saysquentin.jpg",
-          images: [
-            "art/saysquentin/Says Quentin Full.jpg",
-          ],
-        },
-        {
-          type: "project",
-          mode: "carousel",
-          title: "3 Park Avenue",
-          caption: "<em>sketchup</em><br><em>8/5/20</em><br><br>(click image to cycle)",
-          cover: "art/3parkavenue/3 Park Avenue.png",
-          images: [
-            "art/3parkavenue/3parkavenue2.jpg",
-            "art/3parkavenue/3parkavenue3.jpg",
-            "art/3parkavenue/3parkavenue4.png",
-          ],
-        },
-        {
-          type: "single",
-          title: "Frog Holding Sweet Potato",
-          caption: "<em>acrylic on canvas</em><br><em>8x6 in</em><br><em>2/23/25</em>",
-          src: "art/frogholdingsweetpotato.jpeg",
-        },
-        {
-          type: "project",
-          mode: "carousel",
-          title: "Grand Central",
-          caption: "<em>sketchup</em><br><em>9/2/20</em><br><br>(click image to cycle)",
-          cover: "art/grandcentral/Grand Central Pagoda.jpg",
-          images: [
-            "art/grandcentral/grandcentral2.png",
-            "art/grandcentral/grandcentral3.jpg",
-            "art/grandcentral/grandcentral4.jpg",
-          ],
-        },
-        {
-          type: "project",
-          mode: "carousel",
-          title: "Elemental Triptych",
-          caption: "",
-          captions: [
-            "<em>The Reception of a Guest (left)</em><br><br><em>acrylic on panel</em><br><em>11x8 in</em><br><em>1/26/25</em><br><br>(click image to cycle)",
-            "<em>Superfluous Man (center)</em><br><br><em>acrylic on panel</em><br><em>11x8 in</em><br><em>1/27/25</em><br><br>(click image to cycle)",
-            "<em>A Second Troy (right)</em><br><br><em>acrylic on panel</em><br><em>11x8 in</em><br><em>1/28/25</em><br><br>(click image to cycle)",
-          ],
-          cover: "art/triptych/The Reception of a Guest.jpg",
-          images: [
-           "art/triptych/Superfluous Man.jpg",
-           "art/triptych/A Second Troy.jpg",   
-          ],
-          imageTitles: ["Elemental Triptych", "Elemental Triptych"],
-        },
-      ];
-
-      const gallery = document.getElementById("art-gallery");
-
-      function toDisplayPath(src, useHighRes = false) {
-        return src.replace("art/", useHighRes ? "art/highres/" : "art/lowres/");
-      }
-
-      function makeImage(src, alt, className = "art-image", useHighRes = false) {
-        const img = document.createElement("img");
-        img.className = className;
-        img.src = encodeURI(toDisplayPath(src, useHighRes));
-        img.alt = alt;
-        img.loading = "lazy";
-        img.decoding = "async";
-        return img;
-      }
-
-      function makeCaption(text) {
-        const caption = document.createElement("p");
-        caption.className = "art-caption";
-        caption.innerHTML = text || "Sample text.";
-        return caption;
-      }
-
-      function makeStage(mediaEl, captionText) {
-        const stage = document.createElement("div");
-        stage.className = "art-stage";
-        stage.appendChild(mediaEl);
-
-        const panel = document.createElement("div");
-        panel.className = "art-caption-panel";
-        const caption = makeCaption(captionText);
-        panel.appendChild(caption);
-        stage.appendChild(panel);
-
-        return { stage, caption, panel };
-      }
-
-      function layoutCaptionPanel(stage) {
-        if (!stage || window.innerWidth <= 900) return;
-
-        const panel = stage.querySelector(".art-caption-panel");
-        const media = stage.querySelector(":scope > .carousel-frame, :scope > .art-image");
-        if (!panel || !media) return;
-
-        const stageRect = stage.getBoundingClientRect();
-        const mediaRect = media.getBoundingClientRect();
-        const width = 292;
-
-        // Left edge comes from --art-media-width so every caption shares the same x.
-        panel.style.left = "";
-        panel.style.top = `${mediaRect.top - stageRect.top}px`;
-        panel.style.height = `${mediaRect.height}px`;
-        panel.style.setProperty("--caption-panel-width", `${width}px`);
-      }
-
-      function layoutActiveCaptionPanel() {
-        const selected = document.querySelector(".art-image.is-selected");
-        const stage = selected?.closest(".art-stage");
-        if (stage) layoutCaptionPanel(stage);
-      }
-
-      function hasOpenSelection() {
-        return Boolean(
-          document.querySelector(".art-card.is-expanded, .art-image.is-selected")
-        );
-      }
-
-      const SCROLL_OFFSET = 55;
-      let scrollGeneration = 0;
-
-      function scrollToArtwork(element, { offset = SCROLL_OFFSET, onComplete } = {}) {
-        scrollGeneration += 1;
-        const generation = scrollGeneration;
-
-        const finish = () => {
-          if (generation !== scrollGeneration) return;
-          onComplete?.();
-        };
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (generation !== scrollGeneration) return;
-
-            const nextY = Math.max(
-              0,
-              window.scrollY + element.getBoundingClientRect().top - offset
-            );
-
-            if (Math.abs(nextY - window.scrollY) < 1) {
-              finish();
-              return;
-            }
-
-            window.scrollTo({ top: window.scrollY, behavior: "auto" });
-
-            requestAnimationFrame(() => {
-              if (generation !== scrollGeneration) return;
-
-              window.scrollTo({ top: nextY, behavior: "smooth" });
-
-              let done = false;
-              const complete = () => {
-                if (done || generation !== scrollGeneration) return;
-                done = true;
-                finish();
-              };
-
-              window.addEventListener("scrollend", complete, { once: true });
-              setTimeout(complete, 500);
-            });
-          });
-        });
-      }
-
-      function activateSelection({ keepCard, keepCover, keepChild, keepChildWrap, apply, scrollTarget }) {
-        const switching = hasOpenSelection();
-
-        if (switching) {
-          clearSelections({ keepCard, keepCover, keepChild, keepChildWrap });
-          apply();
-        } else {
-          apply();
-          clearSelections({ keepCard, keepCover, keepChild, keepChildWrap });
-        }
-
-        const stage = keepCover?.closest(".art-stage") || keepCard?.querySelector(".art-stage");
-        if (stage) {
-          // Measure before the panel expands so width can animate from 0.
-          layoutCaptionPanel(stage);
-          requestAnimationFrame(() => layoutCaptionPanel(stage));
-        }
-
-        if (scrollTarget) {
-          scrollToArtwork(scrollTarget);
-        }
-      }
-
-      function clearSelections(options = {}) {
-        const { keepCard = null, keepCover = null, keepChild = null, keepChildWrap = null } = options;
-
-        document.querySelectorAll(".art-cover").forEach((cover) => {
-          if (cover !== keepCover && cover._resetCarousel && cover.classList.contains("is-selected")) {
-            cover._resetCarousel();
-          }
-        });
-
-        document.querySelectorAll(".art-image.is-selected").forEach((img) => {
-          if (img !== keepCover && img !== keepChild) {
-            img.classList.remove("is-selected");
-          }
-        });
-
-        document.querySelectorAll(".art-cover.is-open").forEach((cover) => {
-          if (cover !== keepCover) {
-            cover.classList.remove("is-open");
-          }
-        });
-
-        document.querySelectorAll(".art-card.is-title-visible").forEach((cardEl) => {
-          if (cardEl !== keepCard) {
-            cardEl.classList.remove("is-title-visible");
-          }
-        });
-
-        document.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
-          if (wrap !== keepChildWrap) {
-            wrap.classList.remove("is-title-visible");
-          }
-        });
-
-        document.querySelectorAll(".art-card.is-expanded").forEach((cardEl) => {
-          if (cardEl !== keepCard) {
-            cardEl.classList.remove("is-expanded");
-          }
-        });
-      }
-
-      function closeActiveArtwork() {
-        const selected = document.querySelector(".art-image.is-selected");
-        if (!selected) return;
-
-        if (typeof selected._closeSelection === "function") {
-          selected._closeSelection();
-          return;
-        }
-
-        const card = selected.closest(".art-card");
-        selected.classList.remove("is-selected", "is-open");
-        card?.classList.remove("is-title-visible", "is-expanded");
-      }
-
-      document.addEventListener("click", (event) => {
-        const selected = document.querySelector(".art-image.is-selected");
-        if (!selected) return;
-
-        const stage = selected.closest(".art-stage");
-        if (stage && stage.contains(event.target)) return;
-
-        // Let other artworks handle switching selection themselves.
-        if (event.target.closest(".art-image")) return;
-
-        closeActiveArtwork();
-      });
-
-      artItems.forEach((item) => {
-        const card = document.createElement("article");
-        card.className = `art-card art-card-${item.type}`;
-
-        const title = document.createElement("h3");
-        title.className = "art-title";
-        title.textContent = item.title;
-        card.appendChild(title);
-
-        if (item.type === "single") {
-          const img = makeImage(item.src, item.title, "art-image", !!item.highres);
-          const { stage } = makeStage(img, item.caption);
-
-          img._closeSelection = () => {
-            img.classList.remove("is-selected");
-            card.classList.remove("is-title-visible");
-          };
-
-          img.addEventListener("click", () => {
-            if (img.classList.contains("is-selected")) return;
-            activateSelection({
-              keepCard: card,
-              keepCover: img,
-              apply: () => {
-                img.classList.add("is-selected");
-                card.classList.add("is-title-visible");
-              },
-              scrollTarget: img,
-            });
-          });
-          card.appendChild(stage);
-        } else {
-          const cover = makeImage(item.cover, `${item.title} cover`, "art-image", !!item.highres);
-          cover.classList.add("art-cover");
-          const hasAdditionalImages = Array.isArray(item.images) && item.images.length > 0;
-
-          if (hasAdditionalImages && item.mode === "carousel") {
-            card.classList.add("art-card-carousel");
-            cover.classList.add("is-clickable");
-            title.classList.add("is-clickable-title");
-
-            const allSources = [item.cover, ...item.images];
-            const allTitles = [
-              item.title,
-              ...(item.imageTitles || item.images.map(() => item.title)),
-            ];
-            const allCaptions = Array.isArray(item.captions)
-              ? item.captions
-              : allSources.map(() => item.caption || "Sample text.");
-            let carouselIndex = 0;
-            const frame = document.createElement("div");
-            frame.className = "carousel-frame";
-            const { stage, caption } = makeStage(frame, allCaptions[0]);
-
-            function updateFrameMinHeight() {
-              if (!cover.classList.contains("is-selected")) {
-                frame.style.minHeight = "";
-                return;
-              }
-
-              const width = cover.getBoundingClientRect().width;
-              if (cover.naturalWidth > 0 && width > 0) {
-                const height = width * (cover.naturalHeight / cover.naturalWidth);
-                frame.style.minHeight = `${Math.ceil(height)}px`;
-                return;
-              }
-
-              if (cover.offsetHeight > 0) {
-                frame.style.minHeight = `${Math.ceil(cover.offsetHeight)}px`;
-              }
-            }
-
-            // Warm the cache so cycling stays snappy.
-            allSources.forEach((src) => {
-              const preload = new Image();
-              preload.src = encodeURI(toDisplayPath(src, !!item.highres));
-            });
-
-            function updateCarouselDisplay(options = {}) {
-              const { scrollAfter = false, pinTop = false } = options;
-              const isOpen = cover.classList.contains("is-selected");
-              const topBefore = pinTop ? cover.getBoundingClientRect().top : null;
-
-              if (isOpen) {
-                // Hold current height through the swap so layout doesn't collapse mid-load.
-                const currentHeight = cover.offsetHeight;
-                if (currentHeight > 0) {
-                  frame.style.minHeight = `${Math.ceil(currentHeight)}px`;
-                }
-              } else {
-                frame.style.minHeight = "";
-              }
-
-              cover.src = encodeURI(toDisplayPath(allSources[carouselIndex], !!item.highres));
-              cover.alt = allTitles[carouselIndex];
-              title.textContent = allTitles[carouselIndex];
-              caption.innerHTML = allCaptions[carouselIndex] || item.caption || "Sample text.";
-              updateCarouselCursor();
-
-              const finalizeLayout = () => {
-                // Settle to this slide's height so shorter images don't keep leftover space.
-                updateFrameMinHeight();
-                if (cover.classList.contains("is-selected")) {
-                  layoutCaptionPanel(stage);
-                }
-
-                if (pinTop && topBefore != null) {
-                  // Keep the image top fixed while cycling — avoid smooth-scroll jitter.
-                  const delta = cover.getBoundingClientRect().top - topBefore;
-                  if (Math.abs(delta) > 0.5) {
-                    window.scrollBy({ top: delta, behavior: "auto" });
-                  }
-                } else if (scrollAfter) {
-                  scrollToArtwork(cover);
-                }
-              };
-
-              if (cover.complete && cover.naturalWidth > 0) {
-                requestAnimationFrame(finalizeLayout);
-              } else {
-                cover.addEventListener("load", finalizeLayout, { once: true });
-              }
-            }
-
-            function updateCarouselCursor(event) {
-              cover.classList.remove("is-carousel-prev", "is-carousel-next");
-
-              if (!cover.classList.contains("is-selected")) {
-                return;
-              }
-
-              if (!event) {
-                cover.classList.add("is-carousel-next");
-                return;
-              }
-
-              const rect = cover.getBoundingClientRect();
-              const isLeftHalf = event.clientX - rect.left < rect.width / 2;
-
-              if (isLeftHalf && carouselIndex > 0) {
-                cover.classList.add("is-carousel-prev");
-              } else {
-                cover.classList.add("is-carousel-next");
-              }
-            }
-
-            function advanceCarousel(direction) {
-              if (direction === "prev" && carouselIndex > 0) {
-                carouselIndex -= 1;
-              } else {
-                carouselIndex = (carouselIndex + 1) % allSources.length;
-              }
-              updateCarouselDisplay({ pinTop: true });
-            }
-
-            function resetCarousel() {
-              carouselIndex = 0;
-              frame.style.minHeight = "";
-              updateCarouselDisplay();
-            }
-
-            cover._resetCarousel = resetCarousel;
-
-            function openCarousel() {
-              const switching = hasOpenSelection();
-              carouselIndex = 0;
-              if (switching) {
-                clearSelections({ keepCard: card, keepCover: cover });
-              }
-              cover.classList.add("is-selected", "is-open");
-              title.classList.add("is-open");
-              card.classList.add("is-title-visible");
-              if (!switching) {
-                clearSelections({ keepCard: card, keepCover: cover });
-              }
-              layoutCaptionPanel(stage);
-              requestAnimationFrame(() => layoutCaptionPanel(stage));
-              updateCarouselDisplay({ scrollAfter: true });
-            }
-
-            function closeCarousel() {
-              cover.classList.remove("is-selected", "is-open");
-              title.classList.remove("is-open");
-              card.classList.remove("is-title-visible");
-              resetCarousel();
-            }
-
-            cover._closeSelection = closeCarousel;
-
-            cover.addEventListener("click", (event) => {
-              if (!cover.classList.contains("is-selected")) {
-                openCarousel();
-                return;
-              }
-
-              const rect = cover.getBoundingClientRect();
-              const isLeftHalf = event.clientX - rect.left < rect.width / 2;
-
-              if (isLeftHalf && carouselIndex > 0) {
-                advanceCarousel("prev");
-              } else {
-                advanceCarousel("next");
-              }
-            });
-
-            cover.addEventListener("mousemove", updateCarouselCursor);
-            cover.addEventListener("mouseleave", () => {
-              updateCarouselCursor();
-            });
-
-            title.addEventListener("click", (event) => {
-              if (!cover.classList.contains("is-selected")) {
-                event.stopPropagation();
-                openCarousel();
-              }
-            });
-
-            card.appendChild(stage);
-            frame.appendChild(cover);
-            updateFrameMinHeight();
-            window.addEventListener("resize", updateFrameMinHeight);
-          } else if (hasAdditionalImages) {
-            cover.classList.add("is-clickable");
-            title.classList.add("is-clickable-title");
-            const more = document.createElement("div");
-            more.className = "project-more";
-            const { stage } = makeStage(cover, item.caption);
-
-            function closeProject() {
-              cover.classList.remove("is-selected", "is-open");
-              title.classList.remove("is-open");
-              card.classList.remove("is-title-visible", "is-expanded");
-              card.querySelectorAll(".project-image-item.is-title-visible").forEach((wrap) => {
-                wrap.classList.remove("is-title-visible");
-              });
-              card.querySelectorAll(".project-more .art-image.is-selected").forEach((img) => {
-                img.classList.remove("is-selected");
-              });
-              title.textContent = item.title;
-            }
-
-            cover._closeSelection = closeProject;
-
-            item.images.forEach((src, idx) => {
-              const itemWrap = document.createElement("div");
-              itemWrap.className = "project-image-item";
-
-              const hasImageTitle = Array.isArray(item.imageTitles) && !!item.imageTitles[idx];
-
-              const projectImg = makeImage(src, `${item.title} image ${idx + 2}`, "art-image", !!item.highres);
-              projectImg.addEventListener("click", () => {
-                if (projectImg.classList.contains("is-selected")) return;
-                activateSelection({
-                  keepCard: card,
-                  keepCover: cover,
-                  keepChild: projectImg,
-                  apply: () => {
-                    cover.classList.add("is-selected", "is-open");
-                    title.classList.add("is-open");
-                    card.classList.add("is-title-visible", "is-expanded");
-                    projectImg.classList.add("is-selected");
-                    if (hasImageTitle) {
-                      title.textContent = item.imageTitles[idx];
-                    }
-                  },
-                  scrollTarget: projectImg,
-                });
-              });
-              itemWrap.appendChild(projectImg);
-              more.appendChild(itemWrap);
-            });
-
-            const openProject = () => {
-              if (cover.classList.contains("is-selected") || card.classList.contains("is-expanded")) {
-                return;
-              }
-              activateSelection({
-                keepCard: card,
-                keepCover: cover,
-                apply: () => {
-                  cover.classList.add("is-selected", "is-open");
-                  title.classList.add("is-open");
-                  title.textContent = item.title;
-                  card.classList.add("is-title-visible", "is-expanded");
-                },
-                scrollTarget: cover,
-              });
-            };
-
-            cover.addEventListener("click", openProject);
-            title.addEventListener("click", (event) => {
-              if (
-                cover.classList.contains("is-selected") ||
-                card.classList.contains("is-expanded")
-              ) {
-                return;
-              }
-              event.stopPropagation();
-              openProject();
-            });
-
-            card.appendChild(stage);
-            card.appendChild(more);
-          } else {
-            const { stage } = makeStage(cover, item.caption);
-
-            cover._closeSelection = () => {
-              cover.classList.remove("is-selected");
-              card.classList.remove("is-title-visible");
-            };
-
-            cover.addEventListener("click", () => {
-              if (cover.classList.contains("is-selected")) return;
-              activateSelection({
-                keepCard: card,
-                keepCover: cover,
-                apply: () => {
-                  cover.classList.add("is-selected");
-                  card.classList.add("is-title-visible");
-                },
-                scrollTarget: cover,
-              });
-            });
-            card.appendChild(stage);
-          }
-        }
-
-        gallery.appendChild(card);
-      });
-
-      window.addEventListener("scroll", updateHeaderFade, { passive: true });
-      window.addEventListener("resize", () => {
-        updateHeaderFade();
-        layoutActiveCaptionPanel();
-      });
-      updateHeaderFade();
-    </script>
+    <script src="top-right-links.js" defer></script>
+    <script src="to-top-btn.js" defer></script>
+    <script src="header.js" defer></script>
+    <script src="gallery.js" defer></script>
   </body>
 </html>

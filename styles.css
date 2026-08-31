@@ -1,6 +1,14 @@
+/* Structural only: the hidden attribute must beat any author display rule. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   --page-top: clamp(16px, 3vh, 100px);
   --page-left: clamp(10px, 3vw, 24px);
+  /* Width of the right-hand rail: the top-right links and the about-page
+     contact list both sit in it, so they share a left edge and move together. */
+  --rail-width: 504px;
   margin: 0;
   min-height: 100vh;
   background: #e68019;
@@ -8,6 +16,31 @@ body {
   font-family: "Akkurat", Helvetica, Arial, sans-serif;
   padding-top: calc(var(--page-top) + 72px);
   padding-left: var(--page-left);
+}
+
+/* Off-screen text for screen readers (page headings, carousel announcements). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Only shown to keyboard users; invisible to everyone else. */
+:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.name-heading {
+  margin: 0;
+  font: inherit;
 }
 
 .top-right-links {
@@ -24,13 +57,17 @@ body {
   align-items: flex-start;
   gap: clamp(4px, 2vw, 160px);
   opacity: 0;
+  /* visibility (not just opacity) keeps the inactive set out of the tab order */
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 700ms ease;
+  transition: opacity 700ms ease, visibility 0s linear 700ms;
 }
 
 .top-right-set.is-visible {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
+  transition: opacity 700ms ease, visibility 0s;
 }
 
 /* Visible sets use pointer-events:auto, which would pierce a faded parent otherwise. */
@@ -45,6 +82,9 @@ body {
   .top-right-links {
     display: grid;
     grid-template: 1fr / 1fr;
+    /* One fixed rail width. Without it the column width came from the content
+       plus a 2vw gap, so the left edge crept as the window resized. */
+    width: var(--rail-width);
   }
 
   .top-right-set {
@@ -76,7 +116,6 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  transform: translateX(clamp(-140px, calc(-18vw + 90px), 12px));
 }
 
 .top-right-secondary {
@@ -112,6 +151,11 @@ body {
   font-weight: 300;
   z-index: 10;
   transition: opacity 140ms ease;
+}
+
+/* The "> " marker is decoration, so it lives here and is not read aloud. */
+.about-link[aria-current="page"]::before {
+  content: "> ";
 }
 
 .about-link.is-active {
@@ -236,7 +280,7 @@ a[href="/cv/"]:active {
   display: block;
   width: clamp(90px, 28vw, 320px);
   max-width: 90vw;
-  /* hold the photo's footprint even while me.jpeg is still downloading */
+  /* hold the photo's footprint even while the image is still downloading */
   aspect-ratio: 950 / 1656;
 }
 
@@ -308,13 +352,13 @@ a[href="/cv/"]:active {
   pointer-events: none;
 }
 
-.art-card.is-title-visible .art-title {
+.art-card.is-open .art-title {
   visibility: visible;
   pointer-events: auto;
 }
 
 .art-image,
-.art-card-carousel .carousel-frame {
+.carousel-frame {
   overflow-anchor: auto;
 }
 
@@ -328,24 +372,43 @@ a[href="/cv/"]:active {
   gap: clamp(18px, 2.5vw, 36px);
   width: 100%;
   position: relative;
-}
-
-.art-stage {
   --art-media-width: 75%;
 }
 
-.art-stage > .art-image,
 .art-stage > .carousel-frame {
   flex: 0 0 auto;
   width: var(--art-media-width);
+  position: relative;
 }
 
-.art-stage > .carousel-frame .art-image {
+/* The image is wrapped in a <button> so it is operable by keyboard; the reset
+   keeps it looking exactly like a bare <img>. */
+.art-trigger {
+  display: block;
   width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.art-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+  outline: 1.5px solid transparent;
+  transition: outline-color 120ms ease;
+}
+
+.art-trigger:hover .art-image {
+  outline-color: #e3e3b0;
 }
 
 .art-caption {
-  display: none;
   flex: 1 1 auto;
   margin: 0;
   padding-top: 2px;
@@ -356,8 +419,52 @@ a[href="/cv/"]:active {
   color: #e3e3b0;
 }
 
-.art-card:has(.art-image.is-selected) .art-caption {
-  display: block;
+/* Announced to screen readers on slide change; never shown. */
+.carousel-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 1200px) {
+  .art-stage {
+    --art-media-width: 60%;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1199px) {
+  .art-stage {
+    --art-media-width: 66%;
+  }
+}
+
+.art-card-carousel .art-trigger {
+  cursor: s-resize;
+}
+
+.art-card-carousel.is-open .art-trigger {
+  cursor: n-resize;
+}
+
+.art-card-carousel .art-trigger:not(.is-open) {
+  cursor: pointer;
+}
+
+.art-card-carousel.is-open .art-trigger.is-prev {
+  cursor: w-resize;
+}
+
+.art-card-carousel.is-open .art-trigger.is-next {
+  cursor: e-resize;
+}
+
+.art-card-carousel,
+.art-card-carousel .carousel-frame {
+  overflow-anchor: none;
 }
 
 @media (min-width: 901px) {
@@ -385,130 +492,32 @@ a[href="/cv/"]:active {
     pointer-events: none;
   }
 
-  .art-card:has(.art-image.is-selected) .art-caption-panel {
-    width: var(--caption-panel-width, 0px);
+  .art-card.is-open .art-caption-panel {
+    width: var(--caption-panel-width, 292px);
     pointer-events: auto;
   }
 
-  .art-caption-panel .art-caption {
-    display: block;
-    color: #e68019;
-    max-width: none;
+  .art-caption-inner {
     width: var(--caption-panel-width, 292px);
     min-width: 160px;
     padding: 14px 18px;
     box-sizing: border-box;
   }
+
+  .art-caption-panel .art-caption {
+    color: #e68019;
+    max-width: none;
+  }
 }
 
 @media (max-width: 900px) {
   .art-caption-panel {
-    display: contents;
-  }
-}
-
-.project-image-item {
-  padding-top: 0;
-}
-
-.art-image {
-  display: block;
-  width: 75%;
-  height: auto;
-  cursor: pointer;
-  outline: 1.5px solid transparent;
-  transition: outline-color 120ms ease;
-}
-
-@media (min-width: 1200px) {
-  .art-image {
-    width: 60%;
+    display: none;
   }
 
-  .art-stage {
-    --art-media-width: 60%;
+  .art-card.is-open .art-caption-panel {
+    display: block;
   }
-}
-
-@media (min-width: 901px) and (max-width: 1199px) {
-  .art-image {
-    width: 66%;
-  }
-
-  .art-stage {
-    --art-media-width: 66%;
-  }
-}
-
-.art-cover.is-clickable {
-  cursor: s-resize;
-}
-
-.art-cover.is-clickable.is-open {
-  cursor: n-resize;
-}
-
-.art-title.is-clickable-title {
-  position: absolute;
-  display: inline-block;
-  cursor: s-resize;
-}
-
-.art-title.is-clickable-title.is-open {
-  cursor: n-resize;
-}
-
-.art-card-carousel .art-cover.is-clickable:not(.is-open) {
-  cursor: pointer;
-}
-
-.art-card-carousel .art-title.is-clickable-title:not(.is-open) {
-  cursor: pointer;
-}
-
-.art-card-carousel .art-cover.is-clickable.is-open.is-carousel-prev {
-  cursor: w-resize;
-}
-
-.art-card-carousel .art-cover.is-clickable.is-open.is-carousel-next {
-  cursor: e-resize;
-}
-
-.art-card-carousel .art-title.is-clickable-title.is-open {
-  cursor: n-resize;
-}
-
-.art-card-carousel {
-  overflow-anchor: none;
-}
-
-.art-card-carousel .carousel-frame {
-  overflow-anchor: none;
-}
-
-.art-title.is-clickable-title::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -10px;
-  height: 10px;
-}
-
-.art-image:hover {
-  outline-color: #e3e3b0;
-}
-
-
-.project-more {
-  display: none;
-  margin-top: 7px;
-  overflow-anchor: none;
-}
-
-.art-card.is-expanded .project-more {
-  display: grid;
-  gap: 7px;
 }
 
 .to-top-btn {
@@ -575,8 +584,6 @@ a[href="/cv/"]:active {
   text-underline-offset: 3px;
 }
 
-
-
 .bio-text.is-visible {
   display: block;
   margin-bottom: 16px;
@@ -604,7 +611,8 @@ a[href="/cv/"]:active {
 .me-contact-links {
   position: absolute;
   top: calc(var(--page-top) + 107px);
-  right: calc(var(--page-left) + clamp(0px, 0vw, 10px) - 166px);
+  right: var(--page-left);
+  width: var(--rail-width);
   margin-top: 0;
   display: flex;
   flex-direction: column;
@@ -612,13 +620,6 @@ a[href="/cv/"]:active {
   gap: 18px;
   font-size: 22px;
   font-weight: 200;
-  transform: translateX(clamp(-530px, calc(-530px + (1600px - 100vw) * 0.02), -524px));
-}
-
-@media (max-width: 580px) {
-  .me-contact-links {
-    transform: translateX(clamp(-524px, calc(-524px + (1280px - 100vw) * 0.37), 12px));
-  }
 }
 
 .me-contact-links a {
@@ -671,6 +672,7 @@ a[href="/cv/"]:active {
     position: relative;
     top: auto;
     right: auto;
+    width: auto;
     margin-top: 14px;
   }
 
@@ -709,7 +711,7 @@ a[href="/cv/"]:active {
     position: static;
     top: auto;
     right: auto;
-    transform: none;
+    width: auto;
     margin-top: 18px;
     margin-bottom: 8px;
     align-items: center;
@@ -788,7 +790,6 @@ a[href="/cv/"]:active {
     align-items: center;
   }
 
-  .art-stage > .art-image,
   .art-stage > .carousel-frame {
     width: min(100%, 420px);
   }
@@ -802,9 +803,8 @@ a[href="/cv/"]:active {
     box-sizing: border-box;
   }
 
-  .art-title,
-  .art-subtitle {
-    text-align: center;
+  .art-caption-inner {
+    width: min(100%, 420px);
   }
 
   .art-image {
@@ -858,5 +858,16 @@ a[href="/cv/"]:active {
   .bio-text {
     font-size: 16px;
     text-align: justify;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

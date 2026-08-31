@@ -3,27 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="description" content="Materials page for Noah Lee." />
-    <title>Materials | Noah Lee</title>
+    <title>Materials — Noah Darwin Lee</title>
+    <meta
+      name="description"
+      content="Things Noah Darwin Lee has made and collected: a free flash card tool, 100 architects of the modern era, and lists of things to do in New York and Chicago."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/materials/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="Materials — Noah Darwin Lee" />
+    <meta property="og:description" content="A free flash card tool, 100 architects of the modern era, and lists of things to do in New York and Chicago." />
+    <meta property="og:url" content="https://noahdarwinlee.com/materials/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
     <link rel="stylesheet" href="../styles.css" />
     <style>
-      .materials-item {
-        margin: 0 0 28px 0;
-      }
-
+      .materials-item { margin: 0 0 28px 0; }
       /* padding avoids margin-collapse with the page top */
-      .cv-page main {
-        padding-top: 36px;
-      }
-
-      .cv-page main .materials-item p {
-        margin: 0 0 10px 0;
-        margin-left: 1.6em;
-      }
-
-      .materials-item .cv-publication-link::after {
+      .cv-page main { padding-top: 36px; }
+      .cv-page main .materials-item p { margin: 0 0 10px 0; margin-left: 1.6em; }
+      .materials-item .cv-publication-link[target="_blank"]::after {
         content: "\2197";
         margin-left: 0.22em;
         display: inline-block;
@@ -32,23 +37,19 @@
         vertical-align: text-top;
         text-decoration: none;
       }
-
-      @media (max-width: 900px) {
-        .materials-item {
-          margin-left: 0;
-        }
-      }
+      @media (max-width: 900px) { .materials-item { margin-left: 0; } }
     </style>
   </head>
-  <body class="cv-page">
+  <body class="cv-page" data-fade-distance="90">
+    <h1 class="sr-only">Materials</h1>
     <a class="name" href="/"
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
     >
-    <a class="about-link" href="/about/">> about</a>
-    <a class="about-link is-active" href="/materials/">> materials</a>
+    <a class="about-link" href="/about/">about</a>
+    <a class="about-link is-active" href="/materials/" aria-current="page">materials</a>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="../favicon.png" alt="" />
+      <img src="../favicon.png" alt="" width="30" height="30" />
     </button>
     <main>
       <section>
@@ -92,42 +93,7 @@
         </div>
       </section>
     </main>
-    <script src="../to-top-btn.js"></script>
-    <script>
-      const nameLink = document.querySelector(".name");
-      const navLinks = document.querySelectorAll(".about-link");
-      const toTopBtn = document.getElementById("to-top-btn");
-      const fadeDistance = 90;
-      const toTopShowDistance = 170;
-
-      function updateMaterialsHeaderFade() {
-        if (window.innerWidth <= 900) {
-          nameLink.style.opacity = "";
-          navLinks.forEach((link) => {
-            link.style.opacity = "";
-            link.style.pointerEvents = "";
-          });
-          nameLink.style.pointerEvents = "";
-          toTopBtn.classList.remove("is-visible");
-          return;
-        }
-
-        const progress = Math.min(window.scrollY / fadeDistance, 1);
-        const opacity = 1 - progress;
-        const pointerEvents = opacity <= 0.05 ? "none" : "";
-
-        nameLink.style.opacity = opacity;
-        navLinks.forEach((link) => {
-          link.style.opacity = opacity;
-          link.style.pointerEvents = pointerEvents;
-        });
-        nameLink.style.pointerEvents = pointerEvents;
-        toTopBtn.classList.toggle("is-visible", window.scrollY >= toTopShowDistance);
-      }
-
-      window.addEventListener("scroll", updateMaterialsHeaderFade, { passive: true });
-      window.addEventListener("resize", updateMaterialsHeaderFade);
-      updateMaterialsHeaderFade();
-    </script>
+    <script src="../to-top-btn.js" defer></script>
+    <script src="../header.js" defer></script>
   </body>
 </html>
