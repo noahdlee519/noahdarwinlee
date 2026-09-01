@@ -1084,17 +1084,29 @@ a[href="/cv/"]:active {
   flex: 0 0 auto;
 }
 
-/* The site's own mark, drawn rather than loaded, so it takes currentColor and
-   flips along with the row instead of disappearing into the cream. */
+/* The site's mark — a circle inscribed in a square, as in the favicon — drawn
+   rather than loaded, so it takes currentColor and flips along with the row
+   instead of disappearing into the cream. */
 .marquee-mark {
+  position: relative;
   flex: 0 0 auto;
-  width: 0.4em;
-  height: 0.4em;
-  border-radius: 50%;
-  background: currentColor;
+  width: 0.52em;
+  height: 0.52em;
+  box-sizing: border-box;
+  border: 0.055em solid currentColor;
   /* generous, so a repetition reads as a separate thing rather than as more
      of the same sentence — the word gap inside a run is only 0.3em */
   margin: 0 0.7em;
+}
+
+/* Inscribed: the circle is tangent to all four sides, leaving the four corners
+   of the square open exactly as the icon does. */
+.marquee-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .marquee-word {
