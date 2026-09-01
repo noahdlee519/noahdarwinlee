@@ -65,7 +65,14 @@
         <span class="name-word-lee">Lee</span></a
       >
     </h1>
-    <a class="about-link" href="/about/">about</a>
+    <a
+      class="about-link about-toggle"
+      id="about-toggle"
+      href="/about/"
+      aria-expanded="false"
+      aria-controls="about-panel"
+      >about</a
+    >
     <div class="top-right-links">
       <div class="top-right-set is-visible">
         <div class="top-right-primary">
@@ -113,6 +120,44 @@
       <img src="favicon.png" alt="" width="30" height="30" />
     </button>
     <main class="art-main">
+      <div class="about-panel" id="about-panel">
+        <div class="about-panel-inner">
+          <div class="profile-photo-frame">
+            <picture>
+              <source type="image/webp" srcset="art/web/me-640.webp" />
+              <img
+                class="profile-photo"
+                src="art/web/me-640.jpg"
+                alt="Noah Darwin Lee"
+                width="950"
+                height="1656"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+          </div>
+          <div class="about-panel-text">
+            <p class="about-panel-bio">
+              Noah is a recent graduate from the University of Chicago, where he received his
+              bachelor's in History, Law Letters and Society, and Geography. He is interested in
+              consulates, languages, and legacies. On this website you can find different projects
+              ranging from digital dialect dictionaries to paintings of the World's Fair to modern
+              architecture guides.
+            </p>
+            <div class="about-panel-links">
+              <a href="/cv/">cv</a>
+              <a href="/materials/">materials</a>
+              <a href="https://www.instagram.com/noahdarwinlee/" target="_blank" rel="noopener noreferrer"
+                >instagram</a
+              >
+              <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer"
+                >linkedin</a
+              >
+              <a href="mailto:noahlee519@gmail.com">email</a>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="art-gallery" class="art-gallery">
       <article class="art-card art-card-carousel" id="masaryk">
         <h3 class="art-title" id="masaryk-title">Masaryk Cultural Center</h3>
@@ -514,5 +559,6 @@
     <script src="to-top-btn.js" defer></script>
     <script src="header.js" defer></script>
     <script src="gallery.js" defer></script>
+    <script src="about-toggle.js" defer></script>
   </body>
 </html>

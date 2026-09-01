@@ -3,7 +3,7 @@
 // on <body>, defaulting to 90.
 (function () {
   const name = document.querySelector(".name");
-  const navLinks = document.querySelectorAll(".about-link");
+  const navLinks = document.querySelectorAll(".about-link, .back-link");
   const topRight = document.querySelector(".top-right-links");
   const toTop = document.getElementById("to-top-btn");
   if (!name) return;

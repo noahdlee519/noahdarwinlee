@@ -25,23 +25,21 @@
     });
   }
 
-  // The caption panel wipes open from the image's right edge and matches the
-  // image's height. Left edge comes from --art-media-width so every caption
-  // shares the same x.
+  // The caption panel wipes open from the image's right edge. Its top aligns
+  // with the top of the image; its height is whatever the caption needs. Left
+  // edge comes from --art-media-width so every caption shares the same x.
   function layoutPanel(card) {
     const panel = card.querySelector(".art-caption-panel");
     const frame = card.querySelector(".carousel-frame");
     if (!panel || !frame) return;
     if (!isDesktop()) {
-      panel.style.top = panel.style.height = "";
+      panel.style.top = "";
       return;
     }
     const stageTop = card.querySelector(".art-stage").getBoundingClientRect().top;
     const frameRect = frame.getBoundingClientRect();
     panel.style.left = "";
     panel.style.top = `${frameRect.top - stageTop}px`;
-    panel.style.height = `${frameRect.height}px`;
-    panel.style.setProperty("--caption-panel-width", "292px");
   }
 
   function closeCard(card, { focus = false } = {}) {

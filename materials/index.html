@@ -23,24 +23,8 @@
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
 
     <link rel="stylesheet" href="../styles.css" />
-    <style>
-      .materials-item { margin: 0 0 28px 0; }
-      /* padding avoids margin-collapse with the page top */
-      .cv-page main { padding-top: 36px; }
-      .cv-page main .materials-item p { margin: 0 0 10px 0; margin-left: 1.6em; }
-      .materials-item .cv-publication-link[target="_blank"]::after {
-        content: "\2197";
-        margin-left: 0.22em;
-        display: inline-block;
-        font-size: 0.72em;
-        line-height: 1;
-        vertical-align: text-top;
-        text-decoration: none;
-      }
-      @media (max-width: 900px) { .materials-item { margin-left: 0; } }
-    </style>
   </head>
-  <body class="cv-page" data-fade-distance="90">
+  <body class="cv-page materials-page" data-fade-distance="90">
     <h1 class="sr-only">Materials</h1>
     <a class="name" href="/"
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
@@ -51,49 +35,66 @@
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
       <img src="../favicon.png" alt="" width="30" height="30" />
     </button>
-    <main>
-      <section>
-        <div class="materials-item">
-          <p>
-            <a class="cv-publication-link" href="/flashcard/">Flash Card Tool</a>
-          </p>
-        </div>
-        <div class="materials-item">
-          <p>
-            <a
-              class="cv-publication-link"
-              href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              >100 Architects of the Modern Era you Should Know</a
-            >
-          </p>
-        </div>
-        <div class="materials-item">
-          <p>
-            <a
-              class="cv-publication-link"
-              href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              >List of Things to Do in New York City</a
-            >
-          </p>
-        </div>
-        <div class="materials-item">
-          <p>
-            <a
-              class="cv-publication-link"
-              href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              >List of Things to Do in Chicago</a
-            >
-          </p>
-        </div>
-      </section>
+
+    <main class="marquee-list">
+      <a
+        class="marquee-row"
+        href="/flashcard/"
+        aria-label="Flash Card Tool"
+        data-title="Flash Card Tool"
+        data-img="../art/web/materials/flashcard-480"
+        data-ratio="1.390"
+        data-offset="-14"
+      ></a>
+
+      <a
+        class="marquee-row"
+        href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="100 Architects of the Modern Era you Should Know"
+        data-title="100 Architects of the Modern Era you Should Know"
+        data-img="../art/web/materials/architects-480"
+        data-ratio="1.721"
+        data-offset="-41"
+      ></a>
+
+      <a
+        class="marquee-row"
+        href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="List of Things to Do in New York City"
+        data-title="List of Things to Do in New York City"
+        data-img="../art/web/materials/newyork-480"
+        data-ratio="0.685"
+        data-offset="-27"
+      ></a>
+
+      <a
+        class="marquee-row"
+        href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="List of Things to Do in Chicago"
+        data-title="List of Things to Do in Chicago"
+        data-img="../art/web/materials/chicago-480"
+        data-ratio="1.019"
+        data-offset="-6"
+      ></a>
     </main>
+
+    <noscript>
+      <ul class="marquee-fallback">
+        <li><a href="/flashcard/">Flash Card Tool</a></li>
+        <li><a href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing">100 Architects of the Modern Era you Should Know</a></li>
+        <li><a href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing">List of Things to Do in New York City</a></li>
+        <li><a href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing">List of Things to Do in Chicago</a></li>
+      </ul>
+    </noscript>
+
     <script src="../to-top-btn.js" defer></script>
     <script src="../header.js" defer></script>
+    <script src="../marquee.js" defer></script>
   </body>
 </html>
