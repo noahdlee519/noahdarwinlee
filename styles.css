@@ -1092,7 +1092,9 @@ a[href="/cv/"]:active {
   height: 0.4em;
   border-radius: 50%;
   background: currentColor;
-  margin: 0 0.42em;
+  /* generous, so a repetition reads as a separate thing rather than as more
+     of the same sentence — the word gap inside a run is only 0.3em */
+  margin: 0 0.7em;
 }
 
 .marquee-word {
