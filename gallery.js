@@ -9,7 +9,18 @@
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const SCROLL_OFFSET = 55;
   const cards = [...gallery.querySelectorAll(".art-card")];
+  const baseTitle = document.title;
   let openCard = null;
+
+  // The tab, browser history and any pasted link carry the open piece's name.
+  function setDocTitle(card) {
+    if (!card) {
+      document.title = baseTitle;
+      return;
+    }
+    const name = card.querySelector(".art-title").textContent.trim();
+    document.title = `${name} — Noah Darwin Lee`;
+  }
 
   const isDesktop = () => window.innerWidth > 900;
   const behavior = () => (reduce.matches ? "auto" : "smooth");
@@ -48,7 +59,10 @@
     card.classList.remove("is-open");
     trigger.setAttribute("aria-expanded", "false");
     if (card._reset) card._reset();
-    if (openCard === card) openCard = null;
+    if (openCard === card) {
+      openCard = null;
+      setDocTitle(null);
+    }
     if (focus) trigger.focus();
     if (location.hash === "#" + card.id) {
       history.replaceState(null, "", location.pathname + location.search);
@@ -61,6 +75,7 @@
     card.classList.add("is-open");
     card.querySelector(".art-trigger").setAttribute("aria-expanded", "true");
     openCard = card;
+    setDocTitle(card);
     layoutPanel(card);
     requestAnimationFrame(() => layoutPanel(card));
     if (updateHash && card.id) history.replaceState(null, "", "#" + card.id);
@@ -129,6 +144,7 @@
         c.classList.toggle("is-active", i === index);
       });
       if (status) status.textContent = `${index + 1} of ${total}`;
+      if (card === openCard) setDocTitle(card);
 
       const settle = () => {
         frame.style.minHeight = "";
@@ -194,8 +210,21 @@
   });
 
   // One close behaviour for everything: Escape, or a click outside.
+  // With a piece open, up/down step between pieces the way left/right step
+  // between the slides of a carousel.
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && openCard) closeCard(openCard, { focus: true });
+    if (event.key === "Escape" && openCard) {
+      closeCard(openCard, { focus: true });
+      return;
+    }
+    if (!openCard) return;
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const i = cards.indexOf(openCard);
+    const next = cards[i + (event.key === "ArrowDown" ? 1 : -1)];
+    if (!next) return; // stop at the ends rather than wrapping
+    event.preventDefault();
+    openCardEl(next);
+    next.querySelector(".art-trigger").focus({ preventScroll: true });
   });
 
   document.addEventListener("click", (event) => {

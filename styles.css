@@ -222,6 +222,26 @@ body {
   margin-left: 1.25em;
 }
 
+/* Out-specifies `.cv-page main p { margin-left: 1.25em }` so the address sits
+   flush with the section headings rather than indented like an entry. */
+.cv-page main p.cv-contact {
+  margin: 0 0 26px 0;
+  font-size: 20px;
+  font-weight: 300;
+}
+
+.cv-contact a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cv-contact a:hover {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 /* Without this the first h2's top margin collapses through <main> and drops
    the whole page ~20px below where the other pages begin. */
 .cv-page main > section:first-child > h2:first-child {
@@ -378,7 +398,7 @@ a[href="/cv/"]:active {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 32px;
   min-width: 0;
 }
 
@@ -1019,6 +1039,14 @@ a[href="/cv/"]:active {
   color: inherit;
   text-decoration: none;
   padding: 18px 0;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.marquee-row:hover,
+.marquee-row:focus-visible {
+  background: #e3e3b0;
+  color: #e68019;
+  border-bottom-color: #e68019;
 }
 
 .marquee-track {
@@ -1046,16 +1074,25 @@ a[href="/cv/"]:active {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
+  font-size: clamp(38px, 7vw, 92px);
 }
 
 .marquee-run {
   display: flex;
   align-items: center;
-  /* The display size lives here so the em gaps below scale with the type. */
-  font-size: clamp(38px, 7vw, 92px);
   gap: 0.3em;
-  padding-right: 0.3em;
   flex: 0 0 auto;
+}
+
+/* The site's own mark, drawn rather than loaded, so it takes currentColor and
+   flips along with the row instead of disappearing into the cream. */
+.marquee-mark {
+  flex: 0 0 auto;
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: currentColor;
+  margin: 0 0.42em;
 }
 
 .marquee-word {
@@ -1127,5 +1164,119 @@ a[href="/cv/"]:active {
 @media (prefers-reduced-motion: reduce) {
   .marquee-track {
     animation: none !important;
+  }
+}
+
+
+/* ---------------- print ----------------
+   Browsers drop background colours when printing, so the orange ground
+   disappeared and left white text on white paper. Everything below rebuilds
+   the pages as ink on paper; the CV is the one that matters, since it is the
+   page people actually print or save as PDF. */
+
+@media print {
+  @page {
+    margin: 15mm 16mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    min-height: 0;
+    font-size: 10.25pt;
+    line-height: 1.34;
+  }
+
+  /* Screen furniture that means nothing on paper. */
+  .to-top-btn,
+  .back-link,
+  .about-link,
+  .top-right-links,
+  .about-panel,
+  .marquee-list,
+  .marquee-fallback,
+  .index-instagram-link,
+  .gallery-hint {
+    display: none !important;
+  }
+
+  /* The name stops being a fixed overlay and becomes the masthead. The
+     selector has to out-specify `.cv-page .name { color: #fff !important }`. */
+  .cv-page .name,
+  .index-page .name,
+  .name,
+  .name-heading {
+    position: static !important;
+    display: block;
+    color: #000000 !important;
+    opacity: 1 !important;
+    padding: 0 !important;
+    margin: 0 0 1.5mm 0;
+    font-size: 16pt;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .cv-page,
+  .cv-page main {
+    padding: 0 !important;
+  }
+
+  .cv-contact {
+    margin: 0 0 4.5mm 0 !important;
+    font-size: 10pt;
+  }
+
+  .cv-page h2 {
+    font-weight: 700 !important;
+    font-size: 11.5pt;
+    margin: 4.5mm 0 1.5mm;
+    padding-bottom: 0.8mm;
+    border-bottom: 0.5pt solid #000000;
+    /* never leave a heading stranded at the foot of a page */
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .cv-page main section:first-child > h2:first-child {
+    margin-top: 0;
+  }
+
+  /* Top-level entries sit flush; the inline margin-left on sub-entries still
+     wins on specificity, so the hierarchy survives. */
+  .cv-page main p {
+    margin: 0 0 1.2mm 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    orphans: 2;
+    widows: 2;
+  }
+
+  .cv-meta {
+    font-size: 8.5pt;
+    color: #3a3a3a;
+  }
+
+  /* Underlined so a reader on paper can see what was a link. */
+  .cv-publication-link,
+  .cv-publication-link:visited,
+  a {
+    color: #000000 !important;
+    text-decoration: underline;
+    text-decoration-thickness: 0.4pt;
+    text-underline-offset: 2pt;
+  }
+
+  .art-image,
+  .profile-photo {
+    outline: none !important;
+  }
+
+  .art-caption-panel {
+    background: transparent !important;
+    color: #000000 !important;
+    position: static !important;
+    width: auto !important;
   }
 }

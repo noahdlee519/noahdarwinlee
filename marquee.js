@@ -63,6 +63,9 @@
     let guard = 0;
     do {
       seq.appendChild(makeRun(title, img, ratio));
+      const mark = document.createElement("span");
+      mark.className = "marquee-mark";
+      seq.appendChild(mark);
       guard += 1;
     } while (seq.scrollWidth < window.innerWidth * 3 && guard < 60);
 
