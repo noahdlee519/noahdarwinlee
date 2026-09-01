@@ -53,7 +53,7 @@
 
   function resumeSoon() {
     clearResume();
-    // slight delay so moving between neighbouring links doesn't flicker the timer
+    // slight delay so moving between neighboring links doesn't flicker the timer
     resumeTimer = setTimeout(() => {
       resumeTimer = null;
       const stillHeld =

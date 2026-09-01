@@ -1,6 +1,6 @@
-// Expands the about panel inline above the artwork instead of navigating.
-// The link still points at /about/, so it works without JS, opens in a new tab
-// on cmd/ctrl-click, and is a real destination for search engines.
+// Expands the about panel inline above the artwork. The link points at /#about,
+// so cmd/ctrl-click opens the homepage with the panel already expanded, and with
+// no script at all a <noscript> rule in index.html just shows the content.
 (function () {
   const toggle = document.getElementById("about-toggle");
   const panel = document.getElementById("about-panel");
@@ -20,7 +20,7 @@
   }
 
   toggle.addEventListener("click", (event) => {
-    // Let modified clicks and middle-clicks reach /about/ as a normal link.
+    // Let modified clicks and middle-clicks follow /#about as a normal link.
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
       return;
     }

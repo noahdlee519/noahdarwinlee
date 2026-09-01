@@ -410,12 +410,16 @@ a[href="/cv/"]:active {
 }
 
 /* The marker turns down when the panel is open. */
+/* U+25B8 / U+25BE — the small solid triangles. Deliberately not U+25B6/25BC:
+   those have emoji presentations and render as coloured glyphs on some systems. */
 .about-toggle::before {
-  content: ">\00a0";
+  content: "\25B8\00a0";
+  font-size: 0.82em;
 }
 
 .about-toggle[aria-expanded="true"]::before {
-  content: "\2228\00a0";
+  content: "\25BE\00a0";
+  font-size: 0.82em;
 }
 
 .art-gallery {
