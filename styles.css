@@ -374,7 +374,7 @@ a[href="/cv/"]:active {
   /* Clear the fixed name/about nav, which sits over the top-left of the page,
      and leave a clear gap between the marker and the panel content. */
   .about-panel {
-    padding-top: 72px;
+    padding-top: 69px;
   }
 }
 

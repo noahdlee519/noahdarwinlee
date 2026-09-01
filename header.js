@@ -45,7 +45,11 @@
       else el.removeAttribute("inert");
     });
     topRight?.classList.toggle("is-faded", faded);
-    toTop?.classList.toggle("is-visible", window.scrollY >= TO_TOP_AT);
+    // Normally the button appears once you have scrolled TO_TOP_AT. A page too
+    // short to ever reach that (the materials marquee) would never show it, so
+    // there it is simply always present.
+    const reachable = maxScroll >= TO_TOP_AT;
+    toTop?.classList.toggle("is-visible", reachable ? window.scrollY >= TO_TOP_AT : true);
   }
 
   window.addEventListener("scroll", update, { passive: true });

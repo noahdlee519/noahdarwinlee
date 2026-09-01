@@ -6,7 +6,7 @@
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const coarse = window.matchMedia("(hover: none)");
-  const SPEED = 26; // seconds per 1000px — slow
+  const SPEED = 20; // seconds per 1000px (50 px/s)
 
   function pick(max) {
     return Math.floor(Math.random() * max);
@@ -57,13 +57,14 @@
     track.appendChild(seq);
     row.appendChild(track);
 
-    // Fill one sequence until it is wider than the viewport, so the loop never
-    // shows a gap, then clone it for a seamless wrap.
+    // Fill one sequence to several screens wide, so the loop never shows a gap
+    // and you travel a long way before the same arrangement of words and images
+    // comes round again. Cloning it gives a seamless wrap.
     let guard = 0;
     do {
       seq.appendChild(makeRun(title, img, ratio));
       guard += 1;
-    } while (seq.scrollWidth < window.innerWidth * 1.5 && guard < 40);
+    } while (seq.scrollWidth < window.innerWidth * 3 && guard < 60);
 
     const clone = seq.cloneNode(true);
     clone.classList.add("is-clone");
