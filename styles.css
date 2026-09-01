@@ -511,11 +511,19 @@ a[href="/cv/"]:active {
 }
 
 @media (max-width: 900px) {
-  .art-caption-panel {
+  /* The wrapper boxes collapse so .art-caption is a direct flex child of
+     .art-stage and shares the image's column; otherwise a short caption
+     shrink-wraps and the centred box reads as centred text. */
+  .art-caption-panel,
+  .art-caption-inner {
+    display: contents;
+  }
+
+  .art-caption {
     display: none;
   }
 
-  .art-card.is-open .art-caption-panel {
+  .art-card.is-open .art-caption:not([hidden]) {
     display: block;
   }
 }
@@ -801,10 +809,6 @@ a[href="/cv/"]:active {
     text-align: left;
     font-size: 15px;
     box-sizing: border-box;
-  }
-
-  .art-caption-inner {
-    width: min(100%, 420px);
   }
 
   .art-image {
