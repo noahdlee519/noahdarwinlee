@@ -17,9 +17,16 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
     <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="../styles.css" />
     <style>
-      /* Helvetica Neue / Arial both cover the Czech Latin-Extended diacritics. */
+      /* Space Grotesk covers Latin Extended; anything it misses falls through
+         to Helvetica Neue / Arial per glyph. */
       :root {
         --bg: #ffffff;
         --text: #000000;
@@ -33,7 +40,7 @@
       body.flashcards-page {
         background: var(--bg);
         color: var(--text);
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-family: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
         font-weight: 300;
         padding-top: calc(var(--page-top) + 40px);
         padding-right: clamp(14px, 3vw, 36px);
