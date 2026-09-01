@@ -174,14 +174,6 @@ body {
   }
 }
 
-.cv-page .about-link {
-  color: #ffffff;
-}
-
-.cv-page .about-link + .about-link {
-  top: calc(var(--page-top) + 66px);
-}
-
 .back-link {
   position: fixed;
   top: calc(var(--page-top) + 33px);
@@ -222,31 +214,18 @@ body {
   .back-link { font-size: 17px; }
 }
 
-.cv-page .about-link.is-active {
-  margin-bottom: 32px;
-  left: calc(var(--page-left) + 10px);
-}
-
-.cv-page.cv-nav-unfixed .about-link + .about-link {
-  top: calc(var(--page-top) + 326px);
-}
-
-.cv-page.cv-nav-unfixed .name {
-  position: absolute;
-  top: calc(var(--page-top) + 260px);
-}
-
-.cv-page.cv-nav-unfixed .about-link {
-  position: absolute;
-  top: calc(var(--page-top) + 293px);
-}
-
 .cv-page h2 {
   font-weight: 200 !important;
 }
 
 .cv-page main p {
   margin-left: 1.25em;
+}
+
+/* Without this the first h2's top margin collapses through <main> and drops
+   the whole page ~20px below where the other pages begin. */
+.cv-page main > section:first-child > h2:first-child {
+  margin-top: 0;
 }
 
 .cv-meta {
@@ -832,11 +811,6 @@ a[href="/cv/"]:active {
     margin-bottom: 8px;
   }
 
-  .cv-page .about-link.is-active {
-    left: auto;
-    padding-left: 10px;
-  }
-
   .me-contact-links {
     position: static;
     top: auto;
@@ -875,12 +849,6 @@ a[href="/cv/"]:active {
     margin-left: auto;
     margin-right: auto;
     max-width: 92%;
-  }
-
-  .cv-page.cv-nav-unfixed .name,
-  .cv-page.cv-nav-unfixed .about-link {
-    position: static;
-    top: auto;
   }
 
   .about-panel-inner {
@@ -1035,7 +1003,7 @@ a[href="/cv/"]:active {
 }
 
 .marquee-list {
-  margin-top: 26px;
+  margin-top: 0;
   border-top: 2px solid #ffffff;
 }
 
