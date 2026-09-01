@@ -1187,7 +1187,7 @@ a[href="/cv/"]:active {
     padding: 0 !important;
     min-height: 0;
     font-size: 10.25pt;
-    line-height: 1.34;
+    line-height: 1.28;
   }
 
   /* Screen furniture that means nothing on paper. */
@@ -1233,8 +1233,8 @@ a[href="/cv/"]:active {
   .cv-page h2 {
     font-weight: 700 !important;
     font-size: 11.5pt;
-    margin: 4.5mm 0 1.5mm;
-    padding-bottom: 0.8mm;
+    margin: 3.6mm 0 1.3mm;
+    padding-bottom: 0.7mm;
     border-bottom: 0.5pt solid #000000;
     /* never leave a heading stranded at the foot of a page */
     break-after: avoid;
@@ -1248,7 +1248,7 @@ a[href="/cv/"]:active {
   /* Top-level entries sit flush; the inline margin-left on sub-entries still
      wins on specificity, so the hierarchy survives. */
   .cv-page main p {
-    margin: 0 0 1.2mm 0;
+    margin: 0 0 0.9mm 0;
     break-inside: avoid;
     page-break-inside: avoid;
     orphans: 2;
