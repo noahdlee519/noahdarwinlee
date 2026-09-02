@@ -28,7 +28,8 @@
     setupStart: document.getElementById("setup-start"),
     empty: document.getElementById("game-empty"),
     board: document.getElementById("game-board"),
-    progress: document.getElementById("game-progress"),
+    progressWhere: document.getElementById("game-progress-where"),
+    progressCount: document.getElementById("game-progress-count"),
     score: document.getElementById("game-score"),
     frame: document.getElementById("game-frame"),
     form: document.getElementById("game-form"),
@@ -632,14 +633,13 @@
     loupe = buildLoupe(stage, img, round.url);
     warm(state.rounds, state.index + 1, 2);
 
+    /* Split so a narrow screen can drop the filter description and keep the
+       bar to one line — the count is the part you actually need mid-game. */
     var where = describe(state.cfg);
-    var count = state.cfg.length === Infinity
+    el.progressWhere.textContent = where ? where + " · " : "";
+    el.progressCount.textContent = state.cfg.length === Infinity
       ? "round " + (state.index + 1)
       : (state.index + 1) + " / " + state.total;
-    el.progress.textContent = where ? where + " · " + count : count;
-    if (el.quit) {
-      el.quit.textContent = state.cfg.length === Infinity ? "stop" : "change level";
-    }
     el.score.textContent = score();
     show(el.reveal, false);
     show(el.form, true);
@@ -662,14 +662,14 @@
     state.revealed = true;
     el.reveal.classList.toggle("is-right", entry.right);
     el.reveal.classList.toggle("is-wrong", !entry.right);
-    el.verdict.textContent = entry.right ? "Yes." : "No.";
+    el.verdict.textContent = entry.right ? "Correct" : "Incorrect";
     el.answer.textContent = answerLine(entry.city);
 
     show(el.form, false);
     show(el.reveal, true);
     el.score.textContent = score();
     el.status.textContent =
-      (entry.right ? "Correct. " : "Wrong. ") + "The answer is " + answerLine(entry.city) + ".";
+      (entry.right ? "Correct. " : "Incorrect. ") + "The answer is " + answerLine(entry.city) + ".";
     el.next.textContent =
       state.cfg.length !== Infinity && state.index + 1 >= state.total ? "see result" : "next";
     el.next.focus({ preventScroll: true });

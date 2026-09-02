@@ -1120,8 +1120,24 @@ a[href="/cv/"]:active {
   display: block;
   height: clamp(52px, 9vw, 116px);
   width: auto;
-  margin: 0 0.3em;
+  margin: 0;
   flex: 0 0 auto;
+}
+
+/* A picture gets more air than the 0.3em between words — but only from words.
+   At the end of a repetition the mark's own 0.7em is the whole separation, and
+   adding to it left a visible hole before the title started again. */
+.marquee-run > picture {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.marquee-run > picture:not(:first-child) {
+  margin-left: 0.3em;
+}
+
+.marquee-run > picture:not(:last-child) {
+  margin-right: 0.3em;
 }
 
 @keyframes marquee-left {
@@ -1461,10 +1477,37 @@ a[href="/cv/"]:active {
   font-weight: 300;
 }
 
+/* Three parts: where you are, the wordmark, the tally. The outer two are given
+   equal flex space so the title lands in the middle of the bar rather than in
+   the middle of whatever is left over. */
+.game-progress {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-meta-title {
+  flex: 0 0 auto;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .game-meta-right {
+  flex: 1 1 0;
   display: flex;
   align-items: baseline;
+  justify-content: flex-end;
   gap: clamp(12px, 1.6vw, 22px);
+  min-width: 0;
+}
+
+/* The tally and the menu keep their line; the progress on the left is the one
+   allowed to truncate, since it is the least load-bearing of the three. */
+.game-score,
+.game-quit {
+  white-space: nowrap;
 }
 
 /* A quiet way out of a game in progress, in the same voice as the site's links. */
@@ -1692,6 +1735,31 @@ a[href="/cv/"]:active {
 }
 
 @media (max-width: 700px) {
+  /* On a phone the bar has three things to hold, so the filter description
+     goes and the round count stays. You just chose the filters anyway. */
+  .game-progress-where {
+    display: none;
+  }
+
+  /* And the two sides take only the room they need rather than an equal half
+     each, or the tally runs into the wordmark. The title still sits between
+     them; it just centres in what is left rather than in the whole bar. */
+  .game-progress {
+    flex: 0 1 auto;
+  }
+
+  .game-meta-right {
+    flex: 0 0 auto;
+  }
+
+  .game-meta-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+  }
+
   .game-image {
     max-height: 46vh;
   }
