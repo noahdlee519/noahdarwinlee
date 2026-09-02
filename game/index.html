@@ -6,7 +6,7 @@
     <title>Layout Guesser — Noah Darwin Lee</title>
     <meta
       name="description"
-      content="A guessing game by Noah Darwin Lee: name the city from its grid layout, seen from orbit. One guess per image, three levels, ten rounds each."
+      content="A guessing game by Noah Darwin Lee: name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each."
     />
     <link rel="canonical" href="https://noahdarwinlee.com/game/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
@@ -20,7 +20,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Noah Darwin Lee" />
     <meta property="og:title" content="Layout Guesser — Noah Darwin Lee" />
-    <meta property="og:description" content="Name the city from its grid layout, seen from orbit. One guess per image, three levels, ten rounds each." />
+    <meta property="og:description" content="Name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each." />
     <meta property="og:url" content="https://noahdarwinlee.com/game/" />
     <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
     <meta property="og:image:width" content="1200" />
@@ -49,8 +49,7 @@
         </p>
         <div class="game-tiers" id="game-tiers"></div>
         <p class="game-empty" id="game-empty" hidden>
-          No images have been added yet. Drop them into <code>art/game/</code> and list them
-          in <code>game/cities.json</code>.
+          No images for this level yet.
         </p>
       </section>
 
@@ -90,7 +89,6 @@
 
       <section class="game-result" id="game-result" hidden aria-label="Result">
         <h2 class="game-heading" id="game-result-score"></h2>
-        <p class="game-result-line" id="game-result-line"></p>
         <ol class="game-recap" id="game-recap"></ol>
         <div class="game-again">
           <button class="game-btn" type="button" id="game-replay">play again</button>

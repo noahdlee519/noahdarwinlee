@@ -1,4 +1,4 @@
-/* Layout Guesser — name the city from its grid, seen from orbit.
+/* Layout Guesser — name the city from its layout, seen from above.
    One guess per image, no retries: a wrong answer reveals the city and moves on.
 
    Data lives in game/cities.json. Images live in art/game/ and are matched to a
@@ -35,7 +35,6 @@
     status: document.getElementById("game-status"),
     result: document.getElementById("game-result"),
     resultScore: document.getElementById("game-result-score"),
-    resultLine: document.getElementById("game-result-line"),
     recap: document.getElementById("game-recap"),
     replay: document.getElementById("game-replay"),
     change: document.getElementById("game-change"),
@@ -57,32 +56,48 @@
       .trim();
   }
 
-  /* Levenshtein, one row at a time. Guesses are short, so this is free. */
+  /* Damerau-Levenshtein (optimal string alignment): like Levenshtein but a
+     swapped pair of letters costs one, not two, so "tornoto" and "chigaco"
+     are one step from the answer the way a typist expects. */
   function lev(a, b) {
     if (a === b) return 0;
     if (!a.length) return b.length;
     if (!b.length) return a.length;
+    var two = [];
     var prev = [];
-    var i, j;
+    var cur = [];
+    var i, j, t;
     for (j = 0; j <= b.length; j++) prev[j] = j;
     for (i = 1; i <= a.length; i++) {
-      var cur = [i];
+      cur = [i];
       for (j = 1; j <= b.length; j++) {
-        cur[j] = Math.min(
-          prev[j] + 1,
-          cur[j - 1] + 1,
-          prev[j - 1] + (a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1)
-        );
+        var cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        if (
+          i > 1 &&
+          j > 1 &&
+          a.charCodeAt(i - 1) === b.charCodeAt(j - 2) &&
+          a.charCodeAt(i - 2) === b.charCodeAt(j - 1)
+        ) {
+          cur[j] = Math.min(cur[j], two[j - 2] + 1);
+        }
       }
+      two = prev;
       prev = cur;
     }
     return prev[b.length];
   }
 
+  /* How far off a guess may be, by the length of what it is measured against.
+     Abbreviations have to be exact — otherwise "sf" passes for Singapore and
+     "dc" for Mexico City's "df" — and everything else gets one slip, which is
+     what a typo actually is. Only long names get two, because there is more of
+     them to get wrong. Loosening any of these starts accepting Houston for
+     Boston and Dublin for Berlin, which is worse than rejecting a near miss. */
   function tolerance(len) {
-    if (len <= 5) return 1;
-    if (len <= 9) return 2;
-    return 3;
+    if (len <= 3) return 0;
+    if (len <= 12) return 1;
+    return 2;
   }
 
   function isMatch(guess, city) {
@@ -218,9 +233,10 @@
      Doubles as a preload: by the time round one is up, the rest are cached. */
   function buildRounds(tier, want) {
     var dir = data.imageDir || "../art/game/";
+    /* "random" is not a level of its own — it draws from all of them at once. */
     var pool = shuffle(
       data.cities.filter(function (c) {
-        return c.tier === tier;
+        return tier === "random" || c.tier === tier;
       })
     );
     var out = [];
@@ -263,9 +279,7 @@
       b.type = "button";
       b.className = "game-tier";
       b.dataset.tier = t.id;
-      b.innerHTML = '<span class="game-tier-name"></span><span class="game-tier-note"></span>';
-      b.querySelector(".game-tier-name").textContent = t.label;
-      b.querySelector(".game-tier-note").textContent = t.note || "";
+      b.textContent = t.label;
       b.addEventListener("click", function () {
         start(t.id);
       });
@@ -289,7 +303,7 @@
     var img = document.createElement("img");
     img.className = "game-image";
     img.src = round.url;
-    img.alt = "Satellite view of a city, round " + (state.index + 1);
+    img.alt = "Satellite image of a city, round " + (state.index + 1);
     img.decoding = "async";
     img.addEventListener("error", dropRound);
     el.frame.appendChild(img);
@@ -341,22 +355,12 @@
     else renderRound();
   }
 
-  function verdictLine(score, total) {
-    var pct = total ? score / total : 0;
-    if (pct === 1) return "Perfect. You have either travelled or memorised an atlas.";
-    if (pct >= 0.8) return "Strong. You are reading street patterns, not just coastlines.";
-    if (pct >= 0.5) return "Respectable. The coastlines are carrying you.";
-    if (pct >= 0.2) return "The world is bigger from above than it looks on a map.";
-    return "Everywhere looks the same from 786 kilometres up. That is rather the point.";
-  }
-
   function finish() {
     forget();
     show(el.board, false);
     show(el.result, true);
     el.resultScore.textContent =
       tierLabel(state.tier) + " · " + state.correct + " of " + state.log.length;
-    el.resultLine.textContent = verdictLine(state.correct, state.log.length);
     el.recap.innerHTML = "";
     state.log.forEach(function (entry) {
       var li = document.createElement("li");
