@@ -16,10 +16,18 @@
   var STORE_KEY = "ndl-layout-guesser-v1";
   var LENGTHS = [10, 20, 30, 50, Infinity];
   var SETUP_KEY = "ndl-layout-guesser-setup-v1";
+  var DAILY_KEY = "ndl-clg-daily-v1";
+  var DAILY_EPOCH = Date.UTC(2026, 8, 2); // no. 1 was 2 September 2026
+  var DAILY_ROUNDS = 10;
 
   var el = {
     intro: document.getElementById("game-intro"),
     setup: document.getElementById("game-setup"),
+    daily: document.getElementById("game-daily"),
+    dailyStart: document.getElementById("daily-start"),
+    dailyNote: document.getElementById("daily-note"),
+    share: document.getElementById("game-share"),
+    shareNote: document.getElementById("game-share-note"),
     setupLevels: document.getElementById("setup-levels"),
     setupContinents: document.getElementById("setup-continents"),
     setupLength: document.getElementById("setup-length"),
@@ -46,7 +54,16 @@
     recap: document.getElementById("game-recap"),
     replay: document.getElementById("game-replay"),
     change: document.getElementById("game-change"),
-    credit: document.getElementById("game-credit")
+    credit: document.getElementById("game-credit"),
+    cosmetic: document.getElementById("game-cosmetic"),
+    cosmeticToggle: document.getElementById("cosmetic-toggle"),
+    colors: document.getElementById("game-colors"),
+    colorBg: document.getElementById("color-bg"),
+    colorInk: document.getElementById("color-ink"),
+    colorAccent: document.getElementById("color-accent"),
+    presetList: document.getElementById("game-preset-list"),
+    resetColors: document.getElementById("reset-colors"),
+    colorWarning: document.getElementById("color-warning")
   };
 
   var data = null;
@@ -156,7 +173,8 @@
           cfg: {
             levels: state.cfg.levels,
             continents: state.cfg.continents,
-            length: state.cfg.length === Infinity ? "endless" : state.cfg.length
+            length: state.cfg.length === Infinity ? "endless" : state.cfg.length,
+            daily: state.cfg.daily || null
           },
           total: state.total,
           index: state.index,
@@ -213,6 +231,13 @@
     var cfg = saved.cfg;
     if (!cfg || !cfg.levels || !cfg.continents) return false;
     cfg.length = cfg.length === "endless" ? Infinity : cfg.length;
+    if (!cfg.daily) delete cfg.daily;
+    /* Yesterday's unfinished daily is not today's; drop it rather than let it
+       be finished under today's number. */
+    if (cfg.daily && cfg.daily !== dayKey()) {
+      forget();
+      return false;
+    }
 
     state = {
       cfg: cfg,
@@ -289,6 +314,430 @@
     return true;
   }
 
+  /* ---------- the daily ----------
+
+     The site is a folder of static files, so there is nowhere to keep "today's
+     ten". Instead the day itself is the seed: everyone who opens the same link
+     on the same day shuffles the same list in the same order and gets the same
+     ten cities. No server, no coordination, and the link never changes.
+
+     The day is counted in UTC so that everyone, everywhere, is on the same
+     puzzle at the same moment — which is the whole point of comparing scores. */
+
+  function dayKey(d) {
+    return (d || new Date()).toISOString().slice(0, 10);
+  }
+
+  function dayNumber(key) {
+    var parts = key.split("-");
+    var t = Date.UTC(+parts[0], +parts[1] - 1, +parts[2]);
+    /* Clamped, so a browser whose clock is behind still sees a sane number. */
+    return Math.max(1, Math.floor((t - DAILY_EPOCH) / 86400000) + 1);
+  }
+
+  function prettyDay(key) {
+    var months = ["January","February","March","April","May","June","July",
+                  "August","September","October","November","December"];
+    var parts = key.split("-");
+    return +parts[2] + " " + months[+parts[1] - 1] + " " + parts[0];
+  }
+
+  /* FNV-1a, then mulberry32: a small deterministic generator so the shuffle is
+     identical in every browser rather than merely random. */
+  function seedFrom(str) {
+    var h = 2166136261 >>> 0;
+    for (var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function rng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function seededShuffle(list, seed) {
+    var a = list.slice();
+    var next = rng(seed);
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(next() * (i + 1));
+      var t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
+  function dailyConfig(key) {
+    return {
+      levels: levels().map(function (t) { return t.id; }),
+      continents: continents().map(function (t) { return t.id; }),
+      length: DAILY_ROUNDS,
+      daily: key
+    };
+  }
+
+  /* Sorted first, so the order depends only on which cities exist and not on
+     the order they happen to sit in the file. */
+  function dailyRounds(key) {
+    var dir = data.imageDir || "../art/game/";
+    var ext = (manifest && manifest.ext) || "webp";
+    var pool = playable(dailyConfig(key))
+      .slice()
+      .sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+    return seededShuffle(pool, seedFrom("citylayoutguessr-" + key))
+      .slice(0, DAILY_ROUNDS)
+      .map(function (c) {
+        return { city: c, url: dir + c.id + "." + ext };
+      });
+  }
+
+  function readDaily() {
+    try {
+      return JSON.parse(localStorage.getItem(DAILY_KEY) || "null");
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function writeDaily(record) {
+    try {
+      localStorage.setItem(DAILY_KEY, JSON.stringify(record));
+    } catch (err) {}
+  }
+
+  function shareText(record) {
+    var marks = record.log.map(function (e) { return e.right ? "\u25cf" : "\u25cb"; }).join("");
+    return "citylayoutguessr no. " + dayNumber(record.day) + "\n" +
+           record.correct + " / " + record.log.length + "\n" +
+           marks + "\n" +
+           "https://noahdarwinlee.com/citylayoutguessr/#daily";
+  }
+
+  function renderDaily() {
+    var key = dayKey();
+    var done = readDaily();
+    show(el.daily, true);
+    if (done && done.day === key) {
+      el.dailyStart.textContent = "see today\u2019s result";
+      el.dailyNote.textContent =
+        "no. " + dayNumber(key) + " \u00b7 played \u00b7 " + done.correct + " of " + done.log.length;
+    } else {
+      el.dailyStart.textContent = "today\u2019s challenge";
+      el.dailyNote.textContent = "no. " + dayNumber(key) + " \u00b7 " + prettyDay(key);
+    }
+  }
+
+  /* Already played today: show what you got rather than letting you go again,
+     or the number stops meaning anything. */
+  function showDailyResult(record) {
+    state = {
+      cfg: dailyConfig(record.day),
+      rounds: [],
+      total: record.log.length,
+      index: record.log.length,
+      correct: record.correct,
+      wrong: record.wrong,
+      revealed: false,
+      log: record.log.map(function (e) {
+        return { city: byId[e.id], right: e.right, guess: e.guess };
+      }).filter(function (e) { return e.city; })
+    };
+    forget();
+    show(el.intro, false);
+    show(el.board, false);
+    show(el.empty, false);
+    show(el.result, true);
+    paintResult();
+  }
+
+  function startDaily() {
+    var key = dayKey();
+    var done = readDaily();
+    if (done && done.day === key) {
+      showDailyResult(done);
+      return;
+    }
+    var rounds = dailyRounds(key);
+    if (!rounds.length) {
+      show(el.empty, true);
+      return;
+    }
+    forget();
+    show(el.intro, false);
+    show(el.empty, false);
+    show(el.result, false);
+    show(el.board, true);
+    state = {
+      cfg: dailyConfig(key),
+      rounds: rounds,
+      total: rounds.length,
+      index: 0,
+      correct: 0,
+      wrong: 0,
+      revealed: false,
+      log: []
+    };
+    warm(rounds, 0, 3);
+    renderRound();
+  }
+
+
+  /* ---------------- cosmetic settings ----------------
+
+     Lifted from the flash card tool. Three colours drive the whole page through
+     CSS variables; the guard below is the part that matters, because a colour
+     picker will happily let you make white text on a white ground. Anything
+     under a 3:1 contrast ratio gets pushed back rather than accepted. */
+
+  var COLOR_KEY = "ndl-clg-colors-v1";
+  var MIN_CONTRAST = 3;        // enough to see a fill or a big word
+  var MIN_INK_CONTRAST = 4.5;  // what body text actually needs to read well
+  var DEFAULT_COLORS = { bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" };
+  var COLOR_PRESETS = [
+    { name: "orange", bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" },
+    { name: "night", bg: "#101014", ink: "#f2f2f2", accent: "#918fff" },
+    { name: "paper", bg: "#fff2eb", ink: "#1a1a1a", accent: "#ff1467" },
+    { name: "sea", bg: "#0b3c49", ink: "#f2f2f2", accent: "#7fd1b9" },
+    { name: "slate", bg: "#2b2d42", ink: "#edf2f4", accent: "#ef233c" }
+  ];
+  var lastGoodColors = { bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent };
+  var warningTimer = null;
+
+  function normalizeHex(value, fallback) {
+    var raw = String(value || "").trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+    if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+      return "#" + raw.slice(1).split("").map(function (c) { return c + c; }).join("").toLowerCase();
+    }
+    return fallback;
+  }
+
+  function luminance(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    var channels = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function (c) {
+      var v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  }
+
+  function contrast(a, b) {
+    var hi = Math.max(luminance(a), luminance(b));
+    var lo = Math.min(luminance(a), luminance(b));
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  function toHsl(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, bl = (n & 255) / 255;
+    var max = Math.max(r, g, bl), min = Math.min(r, g, bl);
+    var l = (max + min) / 2;
+    var h = 0, sat = 0;
+    if (max !== min) {
+      var d = max - min;
+      sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - bl) / d + (g < bl ? 6 : 0));
+      else if (max === g) h = (bl - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return { h: h, s: sat, l: l };
+  }
+
+  function toHex(hsl) {
+    var h = hsl.h, sat = hsl.s, l = hsl.l;
+    function channel(p, q, t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
+    var r, g, b;
+    if (sat === 0) {
+      r = g = b = l;
+    } else {
+      var q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat;
+      var p = 2 * l - q;
+      r = channel(p, q, h + 1 / 3);
+      g = channel(p, q, h);
+      b = channel(p, q, h - 1 / 3);
+    }
+    return "#" + [r, g, b].map(function (v) {
+      var x = Math.round(v * 255).toString(16);
+      return x.length === 1 ? "0" + x : x;
+    }).join("");
+  }
+
+  /* Rather than snapping an unreadable colour to grey — which would make the
+     accent and the text identical and flatten the whole design — keep its hue
+     and move only its lightness until it clears the ground. */
+  function readableOn(bg, want, target) {
+    var need = target || MIN_CONTRAST;
+    var light = luminance(bg) <= 0.5;
+    var hsl = want ? toHsl(want) : null;
+    /* A near-grey has no hue worth preserving, so snap it to clean ink rather
+       than walking it down to a washed-out mid grey. */
+    if (hsl && hsl.s >= 0.12) {
+      for (var i = 0; i < 24; i++) {
+        hsl.l = light ? Math.min(0.97, hsl.l + 0.04) : Math.max(0.03, hsl.l - 0.04);
+        var candidate = toHex(hsl);
+        if (contrast(bg, candidate) >= need) return candidate;
+      }
+    }
+    return light ? "#f5f5f5" : "#111111";
+  }
+
+  function warn(message) {
+    el.colorWarning.textContent = message;
+    show(el.colorWarning, true);
+    clearTimeout(warningTimer);
+    warningTimer = setTimeout(function () {
+      show(el.colorWarning, false);
+    }, 3200);
+  }
+
+  /* Keeps whichever field was just touched and moves the others out of its way,
+     so changing the background never silently reverts the background. */
+  function sanitizeColors(input, changed) {
+    var next = {
+      bg: normalizeHex(input.bg, DEFAULT_COLORS.bg),
+      ink: normalizeHex(input.ink, DEFAULT_COLORS.ink),
+      accent: normalizeHex(input.accent, DEFAULT_COLORS.accent)
+    };
+    var notes = [];
+
+    ["ink", "accent"].forEach(function (role) {
+      var need = role === "ink" ? MIN_INK_CONTRAST : MIN_CONTRAST;
+      if (contrast(next.bg, next[role]) >= need) return;
+      if (changed === role) {
+        next[role] = lastGoodColors[role];
+        notes.push(role + "-reverted");
+      } else {
+        next[role] = readableOn(next.bg, next[role], need);
+        notes.push(role + "-adjusted");
+      }
+    });
+
+    /* If both had to move they can land on the same value; the accent exists to
+       be distinguishable, so push it further rather than leave a duplicate. */
+    if (next.ink === next.accent) {
+      var hsl = toHsl(next.accent);
+      hsl.l = luminance(next.bg) > 0.5 ? Math.max(0.28, hsl.l + 0.22) : Math.min(0.78, hsl.l - 0.18);
+      var parted = toHex(hsl);
+      if (contrast(next.bg, parted) >= MIN_CONTRAST) next.accent = parted;
+    }
+
+    return { colors: next, notes: notes };
+  }
+
+  function applyColors(colors) {
+    document.body.style.setProperty("--bg", colors.bg);
+    document.body.style.setProperty("--ink", colors.ink);
+    document.body.style.setProperty("--accent", colors.accent);
+    el.colorBg.value = colors.bg;
+    el.colorInk.value = colors.ink;
+    el.colorAccent.value = colors.accent;
+    lastGoodColors = { bg: colors.bg, ink: colors.ink, accent: colors.accent };
+    renderPresets();
+    return colors;
+  }
+
+  function saveColors(colors) {
+    try {
+      localStorage.setItem(COLOR_KEY, JSON.stringify(colors));
+    } catch (err) {}
+  }
+
+  function loadColors() {
+    try {
+      var raw = localStorage.getItem(COLOR_KEY);
+      if (!raw) return { bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent };
+      var parsed = JSON.parse(raw);
+      return sanitizeColors({ bg: parsed.bg, ink: parsed.ink, accent: parsed.accent }, null).colors;
+    } catch (err) {
+      return { bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent };
+    }
+  }
+
+  function sameColors(a, b) {
+    return a.bg === b.bg && a.ink === b.ink && a.accent === b.accent;
+  }
+
+  function renderPresets() {
+    if (!el.presetList) return;
+    el.presetList.innerHTML = "";
+    COLOR_PRESETS.forEach(function (preset) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "game-preset";
+      var chip = document.createElement("span");
+      chip.className = "game-preset-chip";
+      chip.setAttribute("aria-hidden", "true");
+      chip.style.setProperty("--chip-bg", preset.bg);
+      chip.style.setProperty("--chip-ink", preset.ink);
+      chip.style.setProperty("--chip-accent", preset.accent);
+      var name = document.createElement("span");
+      name.textContent = preset.name;
+      b.appendChild(chip);
+      b.appendChild(name);
+      if (sameColors(lastGoodColors, { bg: preset.bg, ink: preset.ink, accent: preset.accent })) {
+        b.classList.add("is-on");
+      }
+      b.addEventListener("click", function () {
+        show(el.colorWarning, false);
+        saveColors(applyColors({ bg: preset.bg, ink: preset.ink, accent: preset.accent }));
+      });
+      el.presetList.appendChild(b);
+    });
+  }
+
+  function colorsFromInputs(e) {
+    var changed = e && e.target === el.colorBg ? "bg"
+                : e && e.target === el.colorInk ? "ink"
+                : e && e.target === el.colorAccent ? "accent"
+                : null;
+    var result = sanitizeColors(
+      { bg: el.colorBg.value, ink: el.colorInk.value, accent: el.colorAccent.value },
+      changed
+    );
+    if (result.notes.indexOf("ink-reverted") !== -1) {
+      warn("that text colour is too close to the background to read — kept the last one.");
+    } else if (result.notes.indexOf("accent-reverted") !== -1) {
+      warn("that accent is too close to the background to see — kept the last one.");
+    } else if (result.notes.length && changed === "bg") {
+      warn("the text was too close to that background, so it was adjusted to stay readable.");
+    }
+    saveColors(applyColors(result.colors));
+  }
+
+  function setupCosmetics() {
+    show(el.cosmetic, true);
+    applyColors(loadColors());
+    el.cosmeticToggle.addEventListener("click", function () {
+      var open = el.colors.hidden;
+      show(el.colors, open);
+      el.cosmeticToggle.setAttribute("aria-expanded", String(open));
+    });
+    [el.colorBg, el.colorInk, el.colorAccent].forEach(function (input) {
+      input.addEventListener("input", colorsFromInputs);
+      input.addEventListener("change", colorsFromInputs);
+    });
+    el.resetColors.addEventListener("click", function () {
+      show(el.colorWarning, false);
+      saveColors(applyColors({ bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent }));
+    });
+  }
+
   /* ---------- rendering ---------- */
 
   function show(node, on) {
@@ -322,6 +771,7 @@
   /* A short name for what is being played, for the progress bar and the
      result. Anything unfiltered is left unsaid rather than spelled out. */
   function describe(cfg) {
+    if (cfg.daily) return "daily no. " + dayNumber(cfg.daily);
     var bits = [];
     if (cfg.levels.length < levels().length) {
       bits.push(cfg.levels.join(" + "));
@@ -501,6 +951,7 @@
     boxes(el.setupLevels)[0].checked = boxes(el.setupLevels).slice(1).every(function (b) { return b.checked; });
     boxes(el.setupContinents)[0].checked = boxes(el.setupContinents).slice(1).every(function (b) { return b.checked; });
 
+    renderDaily();
     wireAll(el.setupLevels);
     wireAll(el.setupContinents);
     el.setupLength.addEventListener("input", refreshSetup);
@@ -695,10 +1146,7 @@
     }
   }
 
-  function finish() {
-    forget();
-    show(el.board, false);
-    show(el.result, true);
+  function paintResult() {
     var where = describe(state.cfg);
     var tally = state.correct + " of " + state.log.length;
     el.resultScore.textContent = where ? where + " · " + tally : tally;
@@ -722,7 +1170,31 @@
       }
       el.recap.appendChild(li);
     });
-    el.replay.focus({ preventScroll: true });
+
+    /* One go a day, so there is no "play again" on a daily — the share button
+       takes its place. */
+    var isDaily = Boolean(state.cfg.daily);
+    show(el.replay, !isDaily);
+    show(el.share, isDaily);
+    show(el.shareNote, false);
+    (isDaily ? el.share : el.replay).focus({ preventScroll: true });
+  }
+
+  function finish() {
+    forget();
+    show(el.board, false);
+    show(el.result, true);
+    if (state.cfg.daily) {
+      writeDaily({
+        day: state.cfg.daily,
+        correct: state.correct,
+        wrong: state.wrong,
+        log: state.log.map(function (e) {
+          return { id: e.city.id, right: e.right, guess: e.guess };
+        })
+      });
+    }
+    paintResult();
   }
 
   function start(cfg) {
@@ -757,6 +1229,7 @@
     show(el.result, false);
     show(el.intro, true);
     show(el.empty, false);
+    renderDaily();
     refreshSetup();
     if (history.replaceState) history.replaceState(null, "", location.pathname);
   }
@@ -775,6 +1248,24 @@
     e.preventDefault();
     var cfg = readSetup();
     if (cfg.levels.length && cfg.continents.length) start(cfg);
+  });
+
+  el.dailyStart.addEventListener("click", startDaily);
+
+  el.share.addEventListener("click", function () {
+    var record = readDaily();
+    if (!record) return;
+    var text = shareText(record);
+    function done(ok) {
+      el.shareNote.textContent = ok ? "copied" : text;
+      show(el.shareNote, true);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); },
+                                              function () { done(false); });
+    } else {
+      done(false);
+    }
   });
 
   el.next.addEventListener("click", advance);
@@ -829,6 +1320,7 @@
       });
       buildTermIndex();
       el.credit.textContent = data.credit || "";
+      setupCosmetics();
       renderSetup();
       if (restore()) return;
 
@@ -836,7 +1328,9 @@
       var hash = (location.hash || "").replace("#", "");
       var allLevels = levels().map(function (t) { return t.id; });
       var allConts = continents().map(function (t) { return t.id; });
-      if (hash === "mixed") {
+      if (hash === "daily") {
+        startDaily();
+      } else if (hash === "mixed") {
         start({ levels: allLevels, continents: allConts, length: 10 });
       } else if (allLevels.indexOf(hash) !== -1) {
         start({ levels: [hash], continents: allConts, length: 10 });
@@ -846,8 +1340,17 @@
         })[0];
         if (cont) start({ levels: allLevels, continents: [cont.id], length: 10 });
       }
+
+      /* Pasting #daily into a tab that is already open changes the hash without
+         reloading, so listen for that too. */
+      window.addEventListener("hashchange", function () {
+        if ((location.hash || "").replace("#", "") === "daily") startDaily();
+      });
     })
-    .catch(function () {
+    .catch(function (err) {
+      /* Anything thrown while starting up used to vanish into this handler and
+         surface only as "could not be loaded". Say it out loud. */
+      if (window.console && console.error) console.error("citylayoutguessr:", err);
       show(el.setup, false);
       show(el.empty, true);
       el.empty.textContent = "The list of cities could not be loaded.";

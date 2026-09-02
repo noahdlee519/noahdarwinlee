@@ -48,6 +48,13 @@
           Guess the city from the satellite image of its grid layout. Type the
           city and press enter.
         </p>
+        <div class="game-daily" id="game-daily" hidden>
+          <button class="game-btn game-daily-btn" type="button" id="daily-start">
+            today&rsquo;s challenge
+          </button>
+          <span class="game-daily-note" id="daily-note"></span>
+        </div>
+
         <form class="game-setup" id="game-setup">
           <fieldset class="game-set">
             <legend class="game-set-label">difficulty</legend>
@@ -87,10 +94,10 @@
 
       <section class="game-board" id="game-board" hidden aria-label="Current round">
         <div class="game-meta">
-          <span class="game-progress">
-            <span class="game-progress-where" id="game-progress-where"></span>
-            <span class="game-progress-count" id="game-progress-count"></span>
-          </span>
+          <span class="game-progress"
+            ><span class="game-progress-where" id="game-progress-where"></span
+            ><span class="game-progress-count" id="game-progress-count"></span
+          ></span>
           <span class="game-meta-title">citylayoutguessr</span>
           <span class="game-meta-right">
             <span class="game-score" id="game-score"></span>
@@ -131,9 +138,49 @@
         <ol class="game-recap" id="game-recap"></ol>
         <div class="game-again">
           <button class="game-btn" type="button" id="game-replay">play again</button>
+          <button class="game-btn" type="button" id="game-share" hidden>copy result</button>
           <button class="game-btn" type="button" id="game-change">menu</button>
         </div>
+        <p class="game-share-note" id="game-share-note" hidden aria-live="polite"></p>
       </section>
+
+      <div class="game-cosmetic" id="game-cosmetic" hidden>
+        <button
+          type="button"
+          class="game-cosmetic-toggle"
+          id="cosmetic-toggle"
+          aria-expanded="false"
+          aria-controls="game-colors"
+        >
+          cosmetic settings
+        </button>
+
+        <div class="game-colors" id="game-colors" hidden>
+          <div class="game-color-row">
+            <label for="color-bg">background</label>
+            <input type="color" id="color-bg" value="#e68019" />
+          </div>
+          <div class="game-color-row">
+            <label for="color-ink">text</label>
+            <input type="color" id="color-ink" value="#ffffff" />
+          </div>
+          <div class="game-color-row">
+            <label for="color-accent">accent</label>
+            <input type="color" id="color-accent" value="#e3e3b0" />
+          </div>
+
+          <div class="game-presets">
+            <h3 class="game-presets-title" id="game-presets-title">presets</h3>
+            <div class="game-preset-list" id="game-preset-list"></div>
+          </div>
+
+          <button type="button" class="game-cosmetic-reset" id="reset-colors">
+            reset to the default colours
+          </button>
+
+          <p class="game-color-warning" id="color-warning" hidden role="status"></p>
+        </div>
+      </div>
 
       <p class="game-credit" id="game-credit"></p>
     </main>

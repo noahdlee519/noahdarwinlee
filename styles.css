@@ -1206,7 +1206,7 @@ a[href="/cv/"]:active {
 
 .game {
   padding-right: var(--page-left);
-  max-width: 1180px;
+  max-width: 1240px;
 }
 
 /* .cv-page main p indents every paragraph like a CV entry; the game's do not. */
@@ -1216,14 +1216,14 @@ a[href="/cv/"]:active {
 
 .game-heading {
   font-weight: 300;
-  font-size: clamp(30px, 4.6vw, 54px);
+  font-size: clamp(30px, 4.6vw, 66px);
   line-height: 1.05;
   margin: 0 0 18px 0;
 }
 
 .game-lede {
   max-width: 60ch;
-  font-size: clamp(16px, 1.6vw, 20px);
+  font-size: clamp(16px, 1.6vw, 23px);
   font-weight: 300;
   line-height: 1.42;
   margin: 0 0 38px 0;
@@ -1239,13 +1239,84 @@ a[href="/cv/"]:active {
   border-bottom: 1px solid currentColor;
 }
 
+/* ---------------- the game's palette ----------------
+   Everything in the game is drawn from three variables so the cosmetic panel
+   can repaint the page. They are declared on the body, which is also where the
+   panel writes its inline overrides, so a saved palette wins over these. */
+
+.game-page {
+  --bg: #e68019;
+  --ink: #ffffff;
+  --accent: #e3e3b0;
+}
+
+body.game-page {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.game-page .name,
+.game-page .back-link {
+  color: var(--ink) !important;
+}
+
+.game-page :focus-visible {
+  outline-color: var(--ink);
+}
+
+/* The day's puzzle sits above the panel and is the one filled button on the
+   page, because it is the thing most people came for. */
+.game-daily {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: clamp(12px, 2vw, 26px);
+  width: min(940px, 100%);
+  /* No rule of its own — the difficulty fieldset's top border is the line
+     between this and the panel, and two of them read as a mistake. */
+  margin: 0 0 30px 0;
+}
+
+/* Two class names so this beats `.game-btn`'s transparent background, which is
+   defined later in the file. */
+.game-btn.game-daily-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+  font-size: clamp(17px, 1.9vw, 25px);
+  padding: 12px 32px;
+}
+
+.game-btn.game-daily-btn:hover,
+.game-btn.game-daily-btn:focus-visible {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
+.game-daily-note {
+  font-size: clamp(13px, 1.4vw, 17px);
+  font-weight: 300;
+  opacity: 0.75;
+}
+
+.game-share-note {
+  max-width: 60ch;
+  margin: 16px 0 0 0;
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 300;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  opacity: 0.85;
+}
+
 /* ---- the setup panel ----
    Replaces the old row of preset buttons. Checkboxes use the site's
    circle-in-a-square mark, filled when on; the slider thumb is the same square
    again, so the whole panel is built from one shape. */
 
 .game-setup {
-  width: min(760px, 100%);
+  width: min(940px, 100%);
   margin: 0 0 8px 0;
 }
 
@@ -1253,7 +1324,7 @@ a[href="/cv/"]:active {
   margin: 0 0 26px 0;
   padding: 0;
   border: 0;
-  border-top: 2px solid #ffffff;
+  border-top: 2px solid var(--ink);
 }
 
 .game-set-label {
@@ -1282,7 +1353,7 @@ a[href="/cv/"]:active {
   display: inline-flex;
   align-items: center;
   gap: 0.55em;
-  font-size: clamp(17px, 2vw, 25px);
+  font-size: clamp(17px, 2vw, 29px);
   font-weight: 300;
   line-height: 1.2;
   cursor: pointer;
@@ -1316,12 +1387,12 @@ a[href="/cv/"]:active {
 }
 
 .game-check input:focus-visible ~ .game-check-mark {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
 
 .game-check:hover .game-check-mark {
-  background: rgba(255, 255, 255, 0.22);
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
 }
 
 .game-check-count {
@@ -1353,12 +1424,12 @@ a[href="/cv/"]:active {
 
 .game-range::-webkit-slider-runnable-track {
   height: 2px;
-  background: #ffffff;
+  background: var(--ink);
 }
 
 .game-range::-moz-range-track {
   height: 2px;
-  background: #ffffff;
+  background: var(--ink);
 }
 
 .game-range::-webkit-slider-thumb {
@@ -1367,18 +1438,18 @@ a[href="/cv/"]:active {
   width: 20px;
   height: 20px;
   margin-top: -9px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--ink);
   border-radius: 0;
-  background: #e3e3b0;
+  background: var(--accent);
   cursor: pointer;
 }
 
 .game-range::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--ink);
   border-radius: 0;
-  background: #e3e3b0;
+  background: var(--accent);
   cursor: pointer;
 }
 
@@ -1387,7 +1458,7 @@ a[href="/cv/"]:active {
 }
 
 .game-range:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--ink);
   outline-offset: 3px;
 }
 
@@ -1416,7 +1487,7 @@ a[href="/cv/"]:active {
 }
 
 .game-tick.is-on {
-  color: #e3e3b0;
+  color: var(--accent);
 }
 
 /* Lengths the current selection cannot fill. */
@@ -1443,7 +1514,7 @@ a[href="/cv/"]:active {
 
 .game-start[disabled]:hover {
   background: none;
-  border-color: #ffffff;
+  border-color: var(--ink);
   color: inherit;
 }
 
@@ -1471,8 +1542,8 @@ a[href="/cv/"]:active {
   justify-content: space-between;
   gap: 16px;
   padding: 9px 0;
-  border-top: 2px solid #ffffff;
-  border-bottom: 2px solid #ffffff;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
   font-size: clamp(14px, 1.4vw, 18px);
   font-weight: 300;
 }
@@ -1551,7 +1622,7 @@ a[href="/cv/"]:active {
   /* border-box so the 2px rule sits inside the column, flush with the meta bar */
   box-sizing: border-box;
   max-height: 52vh;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--ink);
   cursor: zoom-in;
 }
 
@@ -1564,9 +1635,9 @@ a[href="/cv/"]:active {
 .game-loupe {
   position: absolute;
   box-sizing: border-box;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--ink);
   background-repeat: no-repeat;
-  background-color: #e68019;
+  background-color: var(--bg);
   pointer-events: none;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
@@ -1591,17 +1662,17 @@ a[href="/cv/"]:active {
   min-width: 0;
   background: transparent;
   border: 0;
-  border-bottom: 2px solid #ffffff;
+  border-bottom: 2px solid var(--ink);
   border-radius: 0;
-  color: #ffffff;
+  color: var(--ink);
   font: inherit;
-  font-size: clamp(22px, 3vw, 38px);
+  font-size: clamp(22px, 3vw, 46px);
   font-weight: 300;
-  padding: 4px 2px 8px 2px;
+  padding: 4px 2px 10px 2px;
 }
 
 .game-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .game-input:focus {
@@ -1611,37 +1682,37 @@ a[href="/cv/"]:active {
 .game-btn {
   flex: 0 0 auto;
   background: transparent;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--ink);
   border-radius: 0;
-  color: #ffffff;
+  color: var(--ink);
   font: inherit;
-  font-size: clamp(15px, 1.5vw, 19px);
+  font-size: clamp(15px, 1.5vw, 23px);
   font-weight: 300;
-  padding: 10px 22px;
+  padding: 11px 26px;
   cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
 .game-btn:hover,
 .game-btn:focus-visible {
-  background: #e3e3b0;
-  border-color: #e3e3b0;
-  color: #e68019;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
 }
 
 .game-verdict {
-  font-size: clamp(28px, 4vw, 46px);
+  font-size: clamp(28px, 4vw, 56px);
   font-weight: 300;
   line-height: 1.05;
   margin: 0 0 4px 0;
 }
 
 .game-reveal.is-right .game-verdict {
-  color: #e3e3b0;
+  color: var(--accent);
 }
 
 .game-answer {
-  font-size: clamp(21px, 2.5vw, 31px);
+  font-size: clamp(21px, 2.5vw, 38px);
   font-weight: 300;
   margin: 0 0 22px 0;
 }
@@ -1655,7 +1726,7 @@ a[href="/cv/"]:active {
   max-width: 760px;
   margin: 26px 0 30px 0;
   padding: 0;
-  border-top: 2px solid #ffffff;
+  border-top: 2px solid var(--ink);
 }
 
 .game-recap-item {
@@ -1663,8 +1734,8 @@ a[href="/cv/"]:active {
   align-items: baseline;
   gap: 14px;
   padding: 9px 0;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.4);
-  font-size: clamp(16px, 1.7vw, 21px);
+  border-bottom: 2px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  font-size: clamp(16px, 1.7vw, 24px);
   font-weight: 300;
 }
 
@@ -1716,12 +1787,29 @@ a[href="/cv/"]:active {
    and the two edges stay aligned. */
 @media (min-width: 701px) {
   .game-board {
-    --board: min(760px, 100%, 74vh);
+    /* The vh term is what actually binds on a laptop, so raising the px cap
+       alone changed nothing — this is the number that grows the picture.
+
+       It is written as available height rather than a flat fraction of the
+       window, because everything around the picture is a fixed 340px or so
+       (page top, the bar, the margins, and the verdict and answer under it) and
+       a fraction gives that fixed part too little room on a short screen. The
+       1.42 converts the height a map may take into the width it will then be;
+       it assumes the 1000 x 700 frame the maps are all shot in. */
+    --board: min(1040px, 100%, calc((100vh - 340px) * 1.42));
   }
 
   .game-image {
     width: var(--board);
     max-height: none;
+  }
+
+  /* The bar's type stays exactly as it was; it just stops running 400px past
+     the picture, so the rule, the image and the guess button share one right
+     edge instead of leaving a bite out of the composition. */
+  .game-meta {
+    width: var(--board);
+    max-width: 100%;
   }
 
   .game-form {
@@ -1778,6 +1866,182 @@ a[href="/cv/"]:active {
    disappeared and left white text on white paper. Everything below rebuilds
    the pages as ink on paper; the CV is the one that matters, since it is the
    page people actually print or save as PDF. */
+
+/* ---------------- cosmetic settings ----------------
+   Lifted from the flash card tool, in this page's own language: the same three
+   swatches, the same contrast guard, the same named presets. */
+
+.game-cosmetic {
+  width: min(940px, 100%);
+  margin: 34px 0 0 0;
+  padding-top: 22px;
+  border-top: 2px solid var(--ink);
+}
+
+.game-cosmetic-toggle {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.game-cosmetic-toggle::before {
+  content: "\25b8\00a0";
+  font-size: 0.82em;
+}
+
+.game-cosmetic-toggle[aria-expanded="true"]::before {
+  content: "\25be\00a0";
+}
+
+.game-cosmetic-toggle:hover,
+.game-cosmetic-toggle:focus-visible {
+  opacity: 1;
+}
+
+.game-colors {
+  margin-top: 22px;
+  max-width: 460px;
+}
+
+.game-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 12px;
+  font-size: clamp(15px, 1.6vw, 19px);
+  font-weight: 300;
+}
+
+.game-color-row label {
+  cursor: pointer;
+}
+
+.game-color-row input[type="color"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 54px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.game-color-row input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 3px;
+}
+
+.game-color-row input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: 0;
+}
+
+.game-color-row input[type="color"]::-moz-color-swatch {
+  border: 0;
+  border-radius: 0;
+}
+
+.game-presets {
+  margin-top: 22px;
+}
+
+.game-presets-title {
+  margin: 0 0 12px 0;
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.game-preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.game-preset {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 8px 16px;
+  background: none;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 300;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.game-preset:hover,
+.game-preset:focus-visible {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.game-preset.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+
+/* A little three-band chip so you can see a preset before you pick it. */
+.game-preset-chip {
+  flex: 0 0 auto;
+  width: 1.5em;
+  height: 0.75em;
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  background: linear-gradient(
+    to right,
+    var(--chip-bg) 0 50%,
+    var(--chip-ink) 50% 75%,
+    var(--chip-accent) 75% 100%
+  );
+}
+
+.game-cosmetic-reset {
+  margin-top: 22px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: clamp(14px, 1.4vw, 17px);
+  font-weight: 300;
+  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.game-cosmetic-reset:hover,
+.game-cosmetic-reset:focus-visible {
+  opacity: 1;
+}
+
+.game-color-warning {
+  max-width: 52ch;
+  margin: 16px 0 0 0;
+  font-size: clamp(14px, 1.4vw, 17px);
+  font-weight: 300;
+  line-height: 1.35;
+  color: var(--accent);
+}
 
 @media print {
   @page {

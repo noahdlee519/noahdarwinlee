@@ -36,6 +36,41 @@ It also writes `art/game/images.json`, the list of cities that have a picture.
 The page reads it so it knows what exists without asking the server. If you add
 an image without running the build, the game won't see it.
 
+## The daily challenge
+
+One link, the same puzzle for everyone, a new one each day:
+
+```
+https://noahdarwinlee.com/citylayoutguessr/#daily
+```
+
+There is no server behind it. The date is the seed: the page sorts every city
+that has a picture, shuffles that list with a generator seeded from the day,
+and takes the first ten. Two people opening the link on the same day shuffle
+the same list the same way and get the same ten in the same order — which is
+what makes the scores worth comparing.
+
+The day is counted in **UTC**, so everyone everywhere is on the same puzzle at
+the same moment rather than a friend abroad being a day ahead. It rolls over at
+midnight UTC, which is early evening in Chicago.
+
+You get one go. Once you finish, the menu offers today's result instead of a
+replay, and a **copy result** button puts a shareable summary on the clipboard:
+
+```
+citylayoutguessr no. 1
+7 / 10
+●●○●●●○●●●
+https://noahdarwinlee.com/citylayoutguessr/#daily
+```
+
+**One thing to watch:** the puzzle is drawn from whatever pictures exist when
+the page loads, so adding maps partway through a day changes that day's ten for
+anyone who loads it afterwards. If people are playing, push new maps the next
+morning rather than mid-evening.
+
+---
+
 ## Setting up a game
 
 The start screen is one panel:
@@ -61,6 +96,25 @@ Canada down through Panama, plus the Caribbean.
 While a game is running, **change level** in the bar above the picture (or the
 Escape key) takes you back to the panel. Clicking the picture opens a
 magnifier that follows the pointer; click again to put it away.
+
+## Cosmetic settings
+
+At the bottom of the menu, the same colour customiser the flash card tool has.
+Three colours — background, text, accent — drive the whole page through CSS
+variables, so changing one repaints everything including the image borders and
+the magnifier. Five presets: orange, night, paper, sea, slate. Your choice is
+remembered on your own machine and is nobody else's business; it does not
+travel with a shared link.
+
+There is a guard. A colour picker will happily give you white text on a white
+ground, so anything that falls below **4.5:1** contrast for text (or **3:1**
+for the accent) gets pushed back. If you change the background, the text moves
+out of the way; if you change the text into something unreadable, it snaps back
+to the last value that worked and says why. Adjustments keep the colour's hue
+where there is one to keep, so a green accent stays green rather than turning
+grey.
+
+To add a preset, add a line to `COLOR_PRESETS` near the bottom of `game.js`.
 
 ---
 
