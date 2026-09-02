@@ -24,23 +24,35 @@ for f in sorted(os.listdir("art/game")):
     stem, ext = os.path.splitext(f)
     if ext.lower() not in exts:
         continue
+    if "@2x" in stem:
+        continue
     if stem in by_id:
         have.setdefault(stem, f)
     else:
         strays.append(f)
 
 need = data.get("rounds", 10)
-levels = [t["id"] for t in data["tiers"] if t["id"] != "mixed"]
+levels = [t["id"] for t in data["tiers"] if t.get("group", "level") == "level"]
 print("cities.json: %d cities, %d aliases, valid\n"
       % (len(cities), sum(len(c.get("aliases") or []) for c in cities)))
-for tier in levels:
-    ids = [c["id"] for c in cities if c["tier"] == tier]
+
+def report(label, ids):
     done = [i for i in ids if i in have]
     flag = "playable" if len(done) >= need else "needs %d more for a full game" % (need - len(done))
-    print("%-7s %3d of %3d pictures   (%s)" % (tier, len(done), len(ids), flag))
-print("%-7s %3d of %3d pictures   (%s)"
-      % ("mixed", len(have), len(cities),
-         "playable" if len(have) >= need else "needs %d more" % (need - len(have))))
+    print("%-14s %3d of %3d pictures   (%s)" % (label, len(done), len(ids), flag))
+
+for t in data["tiers"]:
+    if t.get("continent"):
+        report(t["label"], [c["id"] for c in cities if c.get("continent") == t["continent"]])
+    elif t["id"] == "mixed":
+        report(t["label"], [c["id"] for c in cities])
+    else:
+        report(t["label"], [c["id"] for c in cities if c["tier"] == t["id"]])
+
+blank = [c["id"] for c in cities if not c.get("continent") or not c.get("country")]
+if blank:
+    print("\nEntries still missing a country or continent (%d):" % len(blank))
+    print("  " + " ".join(blank))
 
 missing = [c["id"] for c in cities if c["id"] not in have]
 if missing:
@@ -83,12 +95,22 @@ def lev(a, b):
 def tol(n):
     return 0 if n <= 3 else (1 if n <= 12 else 2)
 
+EVERY_TERM = {}
+for _c in cities:
+    for _t in [_c["city"]] + (_c.get("aliases") or []):
+        _k = norm(_t)
+        if _k and _k not in EVERY_TERM:
+            EVERY_TERM[_k] = _c["id"]
+
 def matches(guess, city):
     g = norm(guess)
     if not g: return False
-    for t in [norm(city["city"])] + [norm(a) for a in city.get("aliases") or []]:
+    terms = [norm(city["city"])] + [norm(a) for a in city.get("aliases") or []]
+    if g in terms: return True
+    # exactly some other city's name means they meant that city, not a typo here
+    if EVERY_TERM.get(g) not in (None, city["id"]): return False
+    for t in terms:
         if not t: continue
-        if g == t: return True
         if abs(len(g) - len(t)) > tol(len(t)): continue
         if lev(g, t) <= tol(len(t)): return True
     return False

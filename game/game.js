@@ -103,13 +103,35 @@
     return 2;
   }
 
+  /* Every name and alias in the file, so a guess that is exactly some other
+     city's name is never taken as a near miss for this one. */
+  var everyTerm = null;
+
+  function buildTermIndex() {
+    everyTerm = {};
+    data.cities.forEach(function (c) {
+      [c.city].concat(c.aliases || []).forEach(function (t) {
+        var k = norm(t);
+        if (k && !everyTerm[k]) everyTerm[k] = c.id;
+      });
+    });
+  }
+
   function isMatch(guess, city) {
     var g = norm(guess);
     if (!g) return false;
     var targets = [city.city].concat(city.aliases || []).map(norm);
+
+    /* Exact wins outright. */
+    if (targets.indexOf(g) !== -1) return true;
+
+    /* If what they typed is exactly the name of a different place, they meant
+       that place. Without this, "panama" counts as a one-letter typo for
+       Manama, and "houston" for Boston. */
+    if (everyTerm && everyTerm[g] && everyTerm[g] !== city.id) return false;
+
     return targets.some(function (t) {
       if (!t) return false;
-      if (g === t) return true;
       if (Math.abs(g.length - t.length) > tolerance(t.length)) return false;
       return lev(g, t) <= tolerance(t.length);
     });
@@ -249,10 +271,14 @@
      fallback for a checkout where the manifest hasn't been built. */
   function buildRounds(tier, want) {
     var dir = data.imageDir || "../art/game/";
-    /* "mixed" is not a level of its own — it draws from all of them at once. */
+    var mode = modeOf(tier);
+    /* Three kinds of button: a level (easy/medium/hard), a continent, and
+       "mixed", which is everything. */
     var pool = shuffle(
       data.cities.filter(function (c) {
-        return tier === "mixed" || c.tier === tier;
+        if (!mode || mode.id === "mixed") return mode ? true : c.tier === tier;
+        if (mode.continent) return c.continent === mode.continent;
+        return c.tier === mode.id;
       })
     );
 
@@ -292,16 +318,28 @@
     if (node) node.hidden = !on;
   }
 
-  function tierLabel(id) {
-    var t = (data.tiers || []).filter(function (x) {
+  function modeOf(id) {
+    return (data.tiers || []).filter(function (x) {
       return x.id === id;
     })[0];
+  }
+
+  function tierLabel(id) {
+    var t = modeOf(id);
     return t ? t.label : id;
   }
 
   function renderTiers() {
     el.tiers.innerHTML = "";
+    var rows = {};
+    var order = [];
     (data.tiers || []).forEach(function (t) {
+      var key = t.group || "level";
+      if (!rows[key]) {
+        rows[key] = document.createElement("div");
+        rows[key].className = "game-tier-row";
+        order.push(key);
+      }
       var b = document.createElement("button");
       b.type = "button";
       b.className = "game-tier";
@@ -310,7 +348,10 @@
       b.addEventListener("click", function () {
         start(t.id);
       });
-      el.tiers.appendChild(b);
+      rows[key].appendChild(b);
+    });
+    order.forEach(function (key) {
+      el.tiers.appendChild(rows[key]);
     });
   }
 
@@ -358,9 +399,10 @@
       var dpr = window.devicePixelRatio || 1;
       var natural = sourceWidth || img.naturalWidth || r.width;
       size = Math.round(Math.min(230, r.width * 0.5, r.height * 0.62));
-      /* Magnify as far as the file can go without going soft, within reason.
-         The ceiling is the screenshot itself: a bigger original zooms further. */
-      zoom = Math.max(1.5, Math.min(3.2, natural / ((r.width || 1) * dpr)));
+      /* Magnify as far as the file can go without going soft, within reason,
+         and then 10% past that. The ceiling is the screenshot itself: a bigger
+         original zooms further. */
+      zoom = Math.max(1.5, Math.min(3.2, natural / ((r.width || 1) * dpr))) * 1.1;
       lens.style.width = size + "px";
       lens.style.height = size + "px";
       lens.style.backgroundImage = 'url("' + source + '")';
@@ -596,6 +638,7 @@
       data.cities.forEach(function (c) {
         byId[c.id] = c;
       });
+      buildTermIndex();
       el.credit.textContent = data.credit || "";
       renderTiers();
       if (restore()) return;

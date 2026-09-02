@@ -12,6 +12,7 @@ _to_delete/
 # Full-size screenshots for the game. These are the originals you work from;
 # game/build-images.sh turns them into the small art/game/*.webp files the
 # site actually serves, and only those get committed.
+game/maps/
 game/easy maps/
 game/medium maps/
 game/hard maps/
