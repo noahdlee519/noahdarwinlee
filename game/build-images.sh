@@ -18,8 +18,10 @@ try:
 except ImportError:
     sys.exit("Pillow isn't installed. Run:  python3 -m pip install --user pillow")
 
-LONG_EDGE = 1400          # px on the long side
+LONG_EDGE = 1400          # px on the long side, for the round itself
 TARGET_KB = 360           # aim under this; quality steps down until it fits
+ZOOM_EDGE = 2600          # the "@2x" file the magnifier loads, capped at the
+ZOOM_KB = 620             # original's own size — never upscaled
 QUALITIES = [82, 74, 66]  # a dense city may land above the target at 66; that
                           # is better than crushing the detail the game is about
 FORCE = os.environ.get("FORCE") == "1"
@@ -31,7 +33,7 @@ os.makedirs("art/game", exist_ok=True)
 built = skipped = 0
 problems = []
 
-for tier in [t["id"] for t in data["tiers"] if t["id"] != "random"]:
+for tier in [t["id"] for t in data["tiers"] if t["id"] != "mixed"]:
     folder = "game/%s maps" % tier
     if not os.path.isdir(folder):
         continue
@@ -53,20 +55,34 @@ for tier in [t["id"] for t in data["tiers"] if t["id"] != "random"]:
             skipped += 1
             continue
 
-        im = Image.open(src)
-        if im.mode not in ("RGB", "L"):
-            im = im.convert("RGB")
-        w, h = im.size
-        if max(w, h) > LONG_EDGE:
-            scale = LONG_EDGE / float(max(w, h))
-            im = im.resize((int(round(w * scale)), int(round(h * scale))), Image.LANCZOS)
-        for q in QUALITIES:
-            im.save(dst, "WEBP", quality=q, method=6)
-            if os.path.getsize(dst) <= TARGET_KB * 1024:
-                break
+        full = Image.open(src)
+        if full.mode not in ("RGB", "L"):
+            full = full.convert("RGB")
+        w, h = full.size
+
+        def fit(edge):
+            if max(w, h) <= edge:
+                return full
+            scale = edge / float(max(w, h))
+            return full.resize((int(round(w * scale)), int(round(h * scale))), Image.LANCZOS)
+
+        def write(path, img, cap):
+            for q in QUALITIES:
+                img.save(path, "WEBP", quality=q, method=6)
+                if os.path.getsize(path) <= cap * 1024:
+                    break
+            return q, os.path.getsize(path) // 1024
+
+        small = fit(LONG_EDGE)
+        q1, kb1 = write(dst, small, TARGET_KB)
+
+        big = fit(ZOOM_EDGE)
+        zoom_dst = "art/game/%s@2x.webp" % cid
+        q2, kb2 = write(zoom_dst, big, ZOOM_KB)
+
         built += 1
-        print("  %-18s %sx%s -> %s  %d KB  q%d"
-              % (cid, w, h, im.size[0], os.path.getsize(dst) // 1024, q))
+        print("  %-18s %sx%s -> %s (%d KB q%d) + @2x %s (%d KB q%d)"
+              % (cid, w, h, small.size[0], kb1, q1, big.size[0], kb2, q2))
 
 print("\n%d built, %d already up to date" % (built, skipped))
 if problems:
@@ -74,9 +90,22 @@ if problems:
     for p in problems:
         print("  " + p)
 
-total = sum(os.path.getsize(f) for f in glob.glob("art/game/*.webp"))
-n = len(glob.glob("art/game/*.webp"))
+files = sorted(f for f in glob.glob("art/game/*.webp") if "@2x" not in f)
+zoom_files = sorted(glob.glob("art/game/*@2x.webp"))
+total = sum(os.path.getsize(f) for f in files)
+n = len(files)
+zoom_total = sum(os.path.getsize(f) for f in zoom_files)
 if n:
     print("\nart/game: %d images, %.1f MB total, %d KB average"
           % (n, total / 1048576.0, total // n // 1024))
+    print("          + %d @2x files for the magnifier, %.1f MB "
+          "(only fetched when someone zooms)" % (len(zoom_files), zoom_total / 1048576.0))
+
+# The page reads this instead of guessing at filenames. Without it, "mixed"
+# has to ask the server about all 100 cities to find the ten that exist.
+manifest = sorted(os.path.splitext(os.path.basename(f))[0] for f in files)
+io.open("art/game/images.json", "w", encoding="utf-8").write(
+    json.dumps({"ext": "webp", "zoomExt": "@2x.webp", "ids": manifest},
+               indent=0, ensure_ascii=False) + "\n")
+print("art/game/images.json: %d ids" % len(manifest))
 PY

@@ -32,6 +32,7 @@
     verdict: document.getElementById("game-verdict"),
     answer: document.getElementById("game-answer"),
     next: document.getElementById("game-next"),
+    quit: document.getElementById("game-quit"),
     status: document.getElementById("game-status"),
     result: document.getElementById("game-result"),
     resultScore: document.getElementById("game-result-score"),
@@ -44,6 +45,8 @@
   var data = null;
   var state = null;
   var byId = {};
+  var manifest = null;   // ids that have a picture, written by build-images.sh
+  var loupe = null;
 
   /* ---------- text matching ---------- */
 
@@ -228,19 +231,44 @@
     return a;
   }
 
-  /* Walks a freshly shuffled pool in small batches and keeps the first `want`
-     cities whose image actually loads, so every game is a different ten.
-     Doubles as a preload: by the time round one is up, the rest are cached. */
+  /* Warms the next few images so the player never waits between rounds. */
+  function warm(rounds, from, count) {
+    for (var i = from; i < from + count && i < rounds.length; i++) {
+      var img = new Image();
+      img.src = rounds[i].url;
+    }
+  }
+
+  /* With the manifest (art/game/images.json, written by build-images.sh) this
+     is instant: shuffle the cities that have a picture and take ten.
+
+     Without it we have to ask the server about every candidate in turn, and
+     that is what made "mixed" look broken — it draws from all 100 cities, so
+     with 31 pictures it was firing a few hundred 404s and downloading ten
+     images before showing round one. The probing path is kept only as a
+     fallback for a checkout where the manifest hasn't been built. */
   function buildRounds(tier, want) {
     var dir = data.imageDir || "../art/game/";
-    /* "random" is not a level of its own — it draws from all of them at once. */
+    /* "mixed" is not a level of its own — it draws from all of them at once. */
     var pool = shuffle(
       data.cities.filter(function (c) {
-        return tier === "random" || c.tier === tier;
+        return tier === "mixed" || c.tier === tier;
       })
     );
-    var out = [];
 
+    if (manifest && manifest.ids) {
+      var ext = manifest.ext || "webp";
+      var rounds = [];
+      for (var i = 0; i < pool.length && rounds.length < want; i++) {
+        if (manifest.ids.indexOf(pool[i].id) !== -1) {
+          rounds.push({ city: pool[i], url: dir + pool[i].id + "." + ext });
+        }
+      }
+      warm(rounds, 0, 3);
+      return Promise.resolve(rounds);
+    }
+
+    var out = [];
     function step(i) {
       if (out.length >= want || i >= pool.length) return Promise.resolve(out);
       var slice = pool.slice(i, i + BATCH);
@@ -255,7 +283,6 @@
         return step(i + BATCH);
       });
     }
-
     return step(0);
   }
 
@@ -295,18 +322,117 @@
     else renderRound();
   }
 
+  /* A loupe: click the image and a small window follows the pointer showing the
+     picture at its own resolution, which is roughly twice what fits on screen.
+     Click again to put it away. Dragging works on a touchscreen. */
+  function buildLoupe(stage, img, url) {
+    var lens = document.createElement("div");
+    lens.className = "game-loupe";
+    lens.hidden = true;
+    stage.appendChild(lens);
+
+    var on = false;
+    var size = 0;
+    var zoom = 1;
+    /* The round loads a 1400px file, which has nothing left to magnify on a
+       dense screen. The @2x file is the full 2000px original; it is fetched the
+       first time someone zooms, so people who never zoom never pay for it. */
+    var source = url;
+    var sourceWidth = 0;
+    var wanted = false;
+
+    function betterSource() {
+      if (wanted || !manifest || !manifest.zoomExt) return;
+      wanted = true;
+      var big = new Image();
+      big.onload = function () {
+        source = big.src;
+        sourceWidth = big.naturalWidth;
+        if (on) measure();
+      };
+      big.src = url.replace(/\.[a-z0-9]+$/i, "") + manifest.zoomExt;
+    }
+
+    function measure() {
+      var r = img.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      var natural = sourceWidth || img.naturalWidth || r.width;
+      size = Math.round(Math.min(230, r.width * 0.5, r.height * 0.62));
+      /* Magnify as far as the file can go without going soft, within reason.
+         The ceiling is the screenshot itself: a bigger original zooms further. */
+      zoom = Math.max(1.5, Math.min(3.2, natural / ((r.width || 1) * dpr)));
+      lens.style.width = size + "px";
+      lens.style.height = size + "px";
+      lens.style.backgroundImage = 'url("' + source + '")';
+      lens.style.backgroundSize = r.width * zoom + "px " + r.height * zoom + "px";
+      return r;
+    }
+
+    function place(clientX, clientY) {
+      var r = measure();
+      var px = Math.max(0, Math.min(r.width, clientX - r.left));
+      var py = Math.max(0, Math.min(r.height, clientY - r.top));
+      var left = Math.max(0, Math.min(r.width - size, px - size / 2));
+      var top = Math.max(0, Math.min(r.height - size, py - size / 2));
+      lens.style.left = left + "px";
+      lens.style.top = top + "px";
+      lens.style.backgroundPosition =
+        (px - left - px * zoom) + "px " + (py - top - py * zoom) + "px";
+    }
+
+    function show(x, y) {
+      on = true;
+      betterSource();
+      stage.classList.add("is-zoomed");
+      lens.hidden = false;
+      place(x, y);
+    }
+
+    function hide() {
+      on = false;
+      stage.classList.remove("is-zoomed");
+      lens.hidden = true;
+    }
+
+    img.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (on) hide();
+      else show(e.clientX, e.clientY);
+      /* keep typing working — the click would otherwise take focus off the box */
+      if (!el.form.hidden) el.input.focus({ preventScroll: true });
+    });
+    stage.addEventListener("pointermove", function (e) {
+      if (on) place(e.clientX, e.clientY);
+    });
+    stage.addEventListener("pointerdown", function (e) {
+      if (on && e.pointerType !== "mouse") place(e.clientX, e.clientY);
+    });
+    window.addEventListener("resize", function () {
+      if (on) hide();
+    });
+
+    return { hide: hide };
+  }
+
   function renderRound() {
     var round = state.rounds[state.index];
     state.revealed = false;
 
+    if (loupe) loupe.hide();
     el.frame.innerHTML = "";
+    var stage = document.createElement("div");
+    stage.className = "game-stage";
     var img = document.createElement("img");
     img.className = "game-image";
     img.src = round.url;
     img.alt = "Satellite image of a city, round " + (state.index + 1);
     img.decoding = "async";
+    img.title = "Click to magnify";
     img.addEventListener("error", dropRound);
-    el.frame.appendChild(img);
+    stage.appendChild(img);
+    el.frame.appendChild(stage);
+    loupe = buildLoupe(stage, img, round.url);
+    warm(state.rounds, state.index + 1, 2);
 
     el.progress.textContent =
       tierLabel(state.tier) + " · " + (state.index + 1) + " / " + state.rounds.length;
@@ -409,6 +535,7 @@
 
   function toIntro() {
     forget();
+    if (loupe) loupe.hide();
     state = null;
     show(el.board, false);
     show(el.result, false);
@@ -431,11 +558,18 @@
     start(state ? state.tier : "easy");
   });
   el.change.addEventListener("click", toIntro);
+  if (el.quit) el.quit.addEventListener("click", toIntro);
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Enter" && el.reveal && !el.reveal.hidden) {
       e.preventDefault();
       advance();
+      return;
+    }
+    /* Escape leaves the game and goes back to the level buttons. */
+    if (e.key === "Escape" && state && !el.board.hidden) {
+      e.preventDefault();
+      toIntro();
     }
   });
 
@@ -446,6 +580,19 @@
     })
     .then(function (json) {
       data = json;
+      return fetch((json.imageDir || "../art/game/") + "images.json", { cache: "no-cache" })
+        .then(function (r) {
+          return r.ok ? r.json() : null;
+        })
+        .catch(function () {
+          return null;
+        })
+        .then(function (list) {
+          manifest = list;
+          return json;
+        });
+    })
+    .then(function (json) {
       data.cities.forEach(function (c) {
         byId[c.id] = c;
       });

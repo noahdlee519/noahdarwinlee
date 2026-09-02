@@ -1267,12 +1267,43 @@ a[href="/cv/"]:active {
   font-weight: 300;
 }
 
+.game-meta-right {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(12px, 1.6vw, 22px);
+}
+
+/* A quiet way out of a game in progress, in the same voice as the site's links. */
+.game-quit {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.game-quit:hover,
+.game-quit:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 .game-frame {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   min-height: 34vh;
   margin: 24px 0 26px 0;
+}
+
+
+.game-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
 }
 
 .game-image {
@@ -1284,6 +1315,23 @@ a[href="/cv/"]:active {
   box-sizing: border-box;
   max-height: 52vh;
   border: 2px solid #ffffff;
+  cursor: zoom-in;
+}
+
+.game-stage.is-zoomed .game-image {
+  cursor: zoom-out;
+}
+
+/* The magnified window. Sized and positioned in game.js; it shows the picture
+   at its own resolution, which is about twice what fits on the page. */
+.game-loupe {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #ffffff;
+  background-repeat: no-repeat;
+  background-color: #e68019;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
 
 .game-loading {
@@ -1423,6 +1471,31 @@ a[href="/cv/"]:active {
   font-size: 13px;
   font-weight: 300;
   opacity: 0.7;
+}
+
+/* --board is the width of the board's working column. The picture is set to it
+   and so is the form, so the right edge of the image and the right edge of the
+   guess button are always the same line. The vh term keeps a wide picture from
+   running off the bottom on a short window; when it bites, both shrink together
+   and the two edges stay aligned. */
+@media (min-width: 701px) {
+  .game-board {
+    --board: min(760px, 100%, 74vh);
+  }
+
+  .game-image {
+    width: var(--board);
+    max-height: none;
+  }
+
+  .game-form {
+    width: var(--board);
+    max-width: 100%;
+  }
+
+  .game-input {
+    max-width: none;
+  }
 }
 
 @media (max-width: 700px) {

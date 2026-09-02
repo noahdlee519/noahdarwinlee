@@ -30,7 +30,7 @@ for f in sorted(os.listdir("art/game")):
         strays.append(f)
 
 need = data.get("rounds", 10)
-levels = [t["id"] for t in data["tiers"] if t["id"] != "random"]
+levels = [t["id"] for t in data["tiers"] if t["id"] != "mixed"]
 print("cities.json: %d cities, %d aliases, valid\n"
       % (len(cities), sum(len(c.get("aliases") or []) for c in cities)))
 for tier in levels:
@@ -39,7 +39,7 @@ for tier in levels:
     flag = "playable" if len(done) >= need else "needs %d more for a full game" % (need - len(done))
     print("%-7s %3d of %3d pictures   (%s)" % (tier, len(done), len(ids), flag))
 print("%-7s %3d of %3d pictures   (%s)"
-      % ("random", len(have), len(cities),
+      % ("mixed", len(have), len(cities),
          "playable" if len(have) >= need else "needs %d more" % (need - len(have))))
 
 missing = [c["id"] for c in cities if c["id"] not in have]
@@ -93,7 +93,7 @@ def matches(guess, city):
         if lev(g, t) <= tol(len(t)): return True
     return False
 
-# Checked across all 100 cities, not level by level, because random mode puts
+# Checked across all 100 cities, not level by level, because mixed mode puts
 # every level into the same game.
 trouble = []
 for a, b in itertools.permutations(cities, 2):

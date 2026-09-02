@@ -19,19 +19,30 @@ cd ~/Desktop/noahdarwinlee
 bash game/build-images.sh
 ```
 
-That resizes every new screenshot to 1400px, converts it to WebP at about
-300 KB, and writes it to `art/game/`. It only touches what has changed, so
-running it again is cheap (`FORCE=1 bash game/build-images.sh` rebuilds
+That writes two files per screenshot into `art/game/`: a 1400px one at about
+300 KB, which is the one the round loads, and a full-size `@2x` one, which is
+only fetched if a player uses the magnifier. It only touches what has changed,
+so running it again is cheap (`FORCE=1 bash game/build-images.sh` rebuilds
 everything). Your originals are never modified, and they are gitignored — the
-repo only ever carries the small copies. Your 31 easy screenshots were 166 MB;
-the versions the site serves are 9.3 MB.
+repo only ever carries the built copies. Your 32 easy screenshots were 171 MB;
+what the site serves is 9.6 MB, plus 16 MB of magnifier files nobody downloads
+unless they zoom.
+
+It also writes `art/game/images.json`, the list of cities that have a picture.
+The page reads it so it knows what exists without asking the server. Don't edit
+it by hand — and if you ever add an image without running the build, the game
+won't see it.
 
 **A city with no picture never appears in the game.** So the game is never
 broken and never half-finished — it only ever shows rounds it can draw. Add
 one picture and one city is in play. Add forty and forty are.
 
-The **random** button draws its ten from all three levels at once, so it works
+The **mixed** button draws its ten from all three levels at once, so it works
 as soon as any ten pictures exist anywhere.
+
+While a game is running, **change level** in the bar above the picture (or the
+Escape key) takes you back to the four buttons. Clicking the picture opens a
+magnifier that follows the pointer; click again to put it away.
 
 ---
 
@@ -105,8 +116,11 @@ change is the `"credit"` line.
   texture, not as streets. Roughly a 10–30 km frame.
 - **Crop:** square-ish. The page gives the image a tall column, so a square
   or slightly landscape crop sits best.
-- **Size:** don't worry about it. Screenshot as large as you like;
-  `build-images.sh` handles the resizing and compression.
+- **Size:** screenshot as large as you can. `build-images.sh` handles the
+  resizing, and the bigger your original, the further the in-game magnifier
+  can zoom before it goes soft. Your 2000px screenshots give a 3x magnifier on
+  an ordinary screen and 1.5x on a Retina one; 3000px or more would double
+  that. It never upscales, so a small screenshot just means a weaker loupe.
 - **Nothing that gives it away:** no labels, no place names, no search box,
   no scale bar with a country on it, no pin. On openstreetmap.org the
   In Google Earth, turn off Borders and Labels and Places under Layers.

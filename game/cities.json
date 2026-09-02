@@ -6,7 +6,7 @@
     { "id": "easy", "label": "easy" },
     { "id": "medium", "label": "medium" },
     { "id": "hard", "label": "hard" },
-    { "id": "random", "label": "random" }
+    { "id": "mixed", "label": "mixed" }
   ],
   "cities": [
     {
