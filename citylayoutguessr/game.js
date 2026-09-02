@@ -1,7 +1,7 @@
-/* Layout Guesser — name the city from its layout, seen from above.
+/* citylayoutguessr — name the city from its layout, seen from above.
    One guess per image, no retries: a wrong answer reveals the city and moves on.
 
-   Data lives in game/cities.json. Images live in art/game/ and are matched to a
+   Data lives in citylayoutguessr/cities.json. Images live in art/game/ and are matched to a
    city by its id: art/game/<id>.webp (or .jpg / .jpeg / .png — whichever is
    there). A city with no image on disk is skipped silently, so the game works
    with three images or three hundred and never has to be kept in sync by hand.
@@ -13,13 +13,19 @@
   "use strict";
 
   var DATA_URL = "cities.json";
-  var EXTENSIONS = ["webp", "jpg", "jpeg", "png"];
-  var BATCH = 4;
   var STORE_KEY = "ndl-layout-guesser-v1";
+  var LENGTHS = [10, 20, 30, 50, Infinity];
+  var SETUP_KEY = "ndl-layout-guesser-setup-v1";
 
   var el = {
     intro: document.getElementById("game-intro"),
-    tiers: document.getElementById("game-tiers"),
+    setup: document.getElementById("game-setup"),
+    setupLevels: document.getElementById("setup-levels"),
+    setupContinents: document.getElementById("setup-continents"),
+    setupLength: document.getElementById("setup-length"),
+    setupTicks: document.getElementById("setup-ticks"),
+    setupPool: document.getElementById("setup-pool"),
+    setupStart: document.getElementById("setup-start"),
     empty: document.getElementById("game-empty"),
     board: document.getElementById("game-board"),
     progress: document.getElementById("game-progress"),
@@ -47,6 +53,7 @@
   var byId = {};
   var manifest = null;   // ids that have a picture, written by build-images.sh
   var loupe = null;
+  var choice = null;     // {levels:[], continents:[], length:number|Infinity}
 
   /* ---------- text matching ---------- */
 
@@ -145,9 +152,15 @@
       localStorage.setItem(
         STORE_KEY,
         JSON.stringify({
-          tier: state.tier,
+          cfg: {
+            levels: state.cfg.levels,
+            continents: state.cfg.continents,
+            length: state.cfg.length === Infinity ? "endless" : state.cfg.length
+          },
+          total: state.total,
           index: state.index,
           correct: state.correct,
+          wrong: state.wrong,
           revealed: state.revealed,
           rounds: state.rounds.map(function (r) {
             return { id: r.city.id, url: r.url };
@@ -196,11 +209,17 @@
         return e.city;
       });
 
+    var cfg = saved.cfg;
+    if (!cfg || !cfg.levels || !cfg.continents) return false;
+    cfg.length = cfg.length === "endless" ? Infinity : cfg.length;
+
     state = {
-      tier: saved.tier,
+      cfg: cfg,
       rounds: rounds,
+      total: saved.total || rounds.length,
       index: saved.index,
       correct: saved.correct || 0,
+      wrong: saved.wrong || 0,
       revealed: false,
       log: log
     };
@@ -216,31 +235,6 @@
   }
 
   /* ---------- images ---------- */
-
-  function imageOk(url) {
-    return new Promise(function (resolve) {
-      var img = new Image();
-      img.onload = function () {
-        resolve(img.naturalWidth > 1);
-      };
-      img.onerror = function () {
-        resolve(false);
-      };
-      img.src = url;
-    });
-  }
-
-  function resolveImage(dir, id) {
-    var i = 0;
-    function tryNext() {
-      if (i >= EXTENSIONS.length) return Promise.resolve(null);
-      var url = dir + id + "." + EXTENSIONS[i++];
-      return imageOk(url).then(function (ok) {
-        return ok ? url : tryNext();
-      });
-    }
-    return tryNext();
-  }
 
   function shuffle(list) {
     var a = list.slice();
@@ -269,47 +263,29 @@
      with 31 pictures it was firing a few hundred 404s and downloading ten
      images before showing round one. The probing path is kept only as a
      fallback for a checkout where the manifest hasn't been built. */
-  function buildRounds(tier, want) {
+  function buildRounds(cfg) {
     var dir = data.imageDir || "../art/game/";
-    var mode = modeOf(tier);
-    /* Three kinds of button: a level (easy/medium/hard), a continent, and
-       "mixed", which is everything. */
-    var pool = shuffle(
-      data.cities.filter(function (c) {
-        if (!mode || mode.id === "mixed") return mode ? true : c.tier === tier;
-        if (mode.continent) return c.continent === mode.continent;
-        return c.tier === mode.id;
-      })
-    );
+    var pool = shuffle(playable(cfg));
+    var ext = (manifest && manifest.ext) || "webp";
+    var want = cfg.length === Infinity ? pool.length : Math.min(cfg.length, pool.length);
+    var rounds = pool.slice(0, want).map(function (c) {
+      return { city: c, url: dir + c.id + "." + ext };
+    });
+    warm(rounds, 0, 3);
+    return rounds;
+  }
 
-    if (manifest && manifest.ids) {
-      var ext = manifest.ext || "webp";
-      var rounds = [];
-      for (var i = 0; i < pool.length && rounds.length < want; i++) {
-        if (manifest.ids.indexOf(pool[i].id) !== -1) {
-          rounds.push({ city: pool[i], url: dir + pool[i].id + "." + ext });
-        }
-      }
-      warm(rounds, 0, 3);
-      return Promise.resolve(rounds);
-    }
-
-    var out = [];
-    function step(i) {
-      if (out.length >= want || i >= pool.length) return Promise.resolve(out);
-      var slice = pool.slice(i, i + BATCH);
-      return Promise.all(
-        slice.map(function (c) {
-          return resolveImage(dir, c.id);
-        })
-      ).then(function (urls) {
-        slice.forEach(function (c, k) {
-          if (urls[k] && out.length < want) out.push({ city: c, url: urls[k] });
-        });
-        return step(i + BATCH);
-      });
-    }
-    return step(0);
+  /* Endless: when the last of the shuffled set is used up, shuffle again and
+     keep going. You stop it, it doesn't stop you. */
+  function extend() {
+    var dir = data.imageDir || "../art/game/";
+    var ext = (manifest && manifest.ext) || "webp";
+    var more = shuffle(playable(state.cfg)).map(function (c) {
+      return { city: c, url: dir + c.id + "." + ext };
+    });
+    if (!more.length) return false;
+    state.rounds = state.rounds.concat(more);
+    return true;
   }
 
   /* ---------- rendering ---------- */
@@ -318,49 +294,229 @@
     if (node) node.hidden = !on;
   }
 
-  function modeOf(id) {
-    return (data.tiers || []).filter(function (x) {
-      return x.id === id;
-    })[0];
+  function levels() {
+    return data.tiers || [];
   }
 
-  function tierLabel(id) {
-    var t = modeOf(id);
-    return t ? t.label : id;
+  function continents() {
+    return data.continents || [];
   }
 
-  function renderTiers() {
-    el.tiers.innerHTML = "";
-    var rows = {};
-    var order = [];
-    (data.tiers || []).forEach(function (t) {
-      var key = t.group || "level";
-      if (!rows[key]) {
-        rows[key] = document.createElement("div");
-        rows[key].className = "game-tier-row";
-        order.push(key);
-      }
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "game-tier";
-      b.dataset.tier = t.id;
-      b.textContent = t.label;
-      b.addEventListener("click", function () {
-        start(t.id);
+  /* Every city the current selection allows, whether or not it has a picture. */
+  function selected(cfg) {
+    return data.cities.filter(function (c) {
+      return cfg.levels.indexOf(c.tier) !== -1 &&
+             cfg.continents.indexOf(c.continent) !== -1;
+    });
+  }
+
+  /* ...and the subset that can actually be drawn. */
+  function playable(cfg) {
+    if (!manifest || !manifest.ids) return selected(cfg);
+    return selected(cfg).filter(function (c) {
+      return manifest.ids.indexOf(c.id) !== -1;
+    });
+  }
+
+  /* A short name for what is being played, for the progress bar and the
+     result. Anything unfiltered is left unsaid rather than spelled out. */
+  function describe(cfg) {
+    var bits = [];
+    if (cfg.levels.length < levels().length) {
+      bits.push(cfg.levels.join(" + "));
+    }
+    if (cfg.continents.length < continents().length) {
+      bits.push(cfg.continents.map(function (id) {
+        var c = continents().filter(function (x) { return x.id === id; })[0];
+        return c ? c.label : id;
+      }).join(" + "));
+    }
+    if (cfg.length === Infinity) bits.push("endless");
+    return bits.join(" · ");
+  }
+
+  function check(container, id, label, count) {
+    var l = document.createElement("label");
+    l.className = "game-check";
+    var input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = id;
+    input.checked = true;
+    var mark = document.createElement("span");
+    mark.className = "game-check-mark";
+    var text = document.createElement("span");
+    text.className = "game-check-text";
+    text.textContent = label;
+    l.appendChild(input);
+    l.appendChild(mark);
+    l.appendChild(text);
+    if (count !== null) {
+      var n = document.createElement("span");
+      n.className = "game-check-count";
+      n.textContent = count;
+      l.appendChild(n);
+      if (!count) l.classList.add("is-empty");
+    }
+    container.appendChild(l);
+    return input;
+  }
+
+  function boxes(container) {
+    return [].slice.call(container.querySelectorAll('input[type="checkbox"]'));
+  }
+
+  function withPicture(test) {
+    return data.cities.filter(function (c) {
+      return test(c) && (!manifest || !manifest.ids || manifest.ids.indexOf(c.id) !== -1);
+    }).length;
+  }
+
+  /* The "all" box drives the rest and follows them back. */
+  function wireAll(container) {
+    var all = boxes(container)[0];
+    var rest = boxes(container).slice(1);
+    all.addEventListener("change", function () {
+      rest.forEach(function (b) {
+        if (!b.closest(".game-check").classList.contains("is-empty") || !all.checked) {
+          b.checked = all.checked;
+        }
       });
-      rows[key].appendChild(b);
+      refreshSetup();
     });
-    order.forEach(function (key) {
-      el.tiers.appendChild(rows[key]);
+    rest.forEach(function (b) {
+      b.addEventListener("change", function () {
+        all.checked = rest.every(function (x) { return x.checked; });
+        refreshSetup();
+      });
     });
+  }
+
+  function chosen(container) {
+    return boxes(container).slice(1).filter(function (b) { return b.checked; })
+      .map(function (b) { return b.value; });
+  }
+
+  function readSetup() {
+    var i = parseInt(el.setupLength.value, 10) || 0;
+    return {
+      levels: chosen(el.setupLevels),
+      continents: chosen(el.setupContinents),
+      length: LENGTHS[i]
+    };
+  }
+
+  function lengthLabel(n) {
+    return n === Infinity ? "endless" : String(n);
+  }
+
+  /* Grey out the lengths this selection cannot fill, and pull the slider back
+     if it is sitting on one of them. Endless always stands, because it repeats. */
+  function refreshSetup() {
+    var cfg = readSetup();
+    var n = cfg.levels.length && cfg.continents.length ? playable(cfg).length : 0;
+    var highest = 0;
+
+    el.setupTicks.innerHTML = "";
+    LENGTHS.forEach(function (len, i) {
+      var ok = n > 0 && (len === Infinity || len <= n);
+      if (ok) highest = i;
+      var t = document.createElement("span");
+      t.className = "game-tick " + (ok ? "" : "is-off");
+      /* A range thumb's centre travels from half a thumb in to half a thumb
+         short of the end, so the ticks have to be inset by the same amount or
+         they sit beside the stops instead of under them. */
+      var pct = (i / (LENGTHS.length - 1)) * 100;
+      t.style.left = "calc(" + pct + "% + " + (10 - pct * 0.2).toFixed(2) + "px)";
+      t.textContent = lengthLabel(len);
+      el.setupTicks.appendChild(t);
+    });
+
+    var i = parseInt(el.setupLength.value, 10) || 0;
+    if (n > 0 && LENGTHS[i] !== Infinity && LENGTHS[i] > n) {
+      i = highest;
+      el.setupLength.value = i;
+    }
+    el.setupLength.max = String(LENGTHS.length - 1);
+    var ticks = el.setupTicks.children;
+    if (ticks[i]) ticks[i].classList.add("is-on");
+
+    cfg = readSetup();
+    el.setupPool.textContent = n
+      ? n + (n === 1 ? " map" : " maps") + " to draw from"
+      : (cfg.levels.length && cfg.continents.length
+          ? "no maps for that combination yet"
+          : "pick at least one of each");
+    el.setupStart.disabled = !n;
+    saveSetup(cfg);
+  }
+
+  function saveSetup(cfg) {
+    try {
+      localStorage.setItem(SETUP_KEY, JSON.stringify({
+        levels: cfg.levels, continents: cfg.continents,
+        length: cfg.length === Infinity ? "endless" : cfg.length
+      }));
+    } catch (err) {}
+  }
+
+  function loadSetup() {
+    try {
+      var v = JSON.parse(localStorage.getItem(SETUP_KEY) || "null");
+      if (!v) return null;
+      v.length = v.length === "endless" ? Infinity : v.length;
+      return v;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function renderSetup() {
+    var saved = loadSetup();
+
+    el.setupLevels.innerHTML = "";
+    check(el.setupLevels, "__all", "all", null);
+    levels().forEach(function (t) {
+      check(el.setupLevels, t.id, t.label,
+            withPicture(function (c) { return c.tier === t.id; }));
+    });
+
+    el.setupContinents.innerHTML = "";
+    check(el.setupContinents, "__all", "all", null);
+    continents().forEach(function (t) {
+      check(el.setupContinents, t.id, t.label,
+            withPicture(function (c) { return c.continent === t.id; }));
+    });
+
+    if (saved) {
+      boxes(el.setupLevels).slice(1).forEach(function (b) {
+        b.checked = saved.levels.indexOf(b.value) !== -1;
+      });
+      boxes(el.setupContinents).slice(1).forEach(function (b) {
+        b.checked = saved.continents.indexOf(b.value) !== -1;
+      });
+      var i = LENGTHS.indexOf(saved.length);
+      if (i !== -1) el.setupLength.value = i;
+    }
+    boxes(el.setupLevels)[0].checked = boxes(el.setupLevels).slice(1).every(function (b) { return b.checked; });
+    boxes(el.setupContinents)[0].checked = boxes(el.setupContinents).slice(1).every(function (b) { return b.checked; });
+
+    wireAll(el.setupLevels);
+    wireAll(el.setupContinents);
+    el.setupLength.addEventListener("input", refreshSetup);
+    refreshSetup();
   }
 
   /* If a file has been renamed or removed since the game was saved, drop that
      round rather than showing a broken image. */
   function dropRound() {
     state.rounds.splice(state.index, 1);
-    if (state.index >= state.rounds.length) finish();
-    else renderRound();
+    state.total = Math.min(state.total, state.rounds.length);
+    if (state.index >= state.rounds.length) {
+      if (state.cfg.length === Infinity && extend()) renderRound();
+      else finish();
+    } else {
+      renderRound();
+    }
   }
 
   /* A loupe: click the image and a small window follows the pointer showing the
@@ -476,9 +632,15 @@
     loupe = buildLoupe(stage, img, round.url);
     warm(state.rounds, state.index + 1, 2);
 
-    el.progress.textContent =
-      tierLabel(state.tier) + " · " + (state.index + 1) + " / " + state.rounds.length;
-    el.score.textContent = state.correct + " correct";
+    var where = describe(state.cfg);
+    var count = state.cfg.length === Infinity
+      ? "round " + (state.index + 1)
+      : (state.index + 1) + " / " + state.total;
+    el.progress.textContent = where ? where + " · " + count : count;
+    if (el.quit) {
+      el.quit.textContent = state.cfg.length === Infinity ? "stop" : "change level";
+    }
+    el.score.textContent = score();
     show(el.reveal, false);
     show(el.form, true);
     el.input.value = "";
@@ -486,6 +648,10 @@
     el.submit.disabled = false;
     el.input.focus({ preventScroll: true });
     save();
+  }
+
+  function score() {
+    return state.correct + " right · " + state.wrong + " wrong";
   }
 
   function answerLine(city) {
@@ -501,10 +667,11 @@
 
     show(el.form, false);
     show(el.reveal, true);
-    el.score.textContent = state.correct + " correct";
+    el.score.textContent = score();
     el.status.textContent =
       (entry.right ? "Correct. " : "Wrong. ") + "The answer is " + answerLine(entry.city) + ".";
-    el.next.textContent = state.index + 1 >= state.rounds.length ? "see result" : "next";
+    el.next.textContent =
+      state.cfg.length !== Infinity && state.index + 1 >= state.total ? "see result" : "next";
     el.next.focus({ preventScroll: true });
   }
 
@@ -512,6 +679,7 @@
     var round = state.rounds[state.index];
     var entry = { city: round.city, right: isMatch(guess, round.city), guess: guess.trim() };
     if (entry.right) state.correct += 1;
+    else state.wrong += 1;
     state.log.push(entry);
     reveal(entry);
     save();
@@ -519,16 +687,21 @@
 
   function advance() {
     state.index += 1;
-    if (state.index >= state.rounds.length) finish();
-    else renderRound();
+    if (state.index >= state.rounds.length) {
+      if (state.cfg.length === Infinity && extend()) renderRound();
+      else finish();
+    } else {
+      renderRound();
+    }
   }
 
   function finish() {
     forget();
     show(el.board, false);
     show(el.result, true);
-    el.resultScore.textContent =
-      tierLabel(state.tier) + " · " + state.correct + " of " + state.log.length;
+    var where = describe(state.cfg);
+    var tally = state.correct + " of " + state.log.length;
+    el.resultScore.textContent = where ? where + " · " + tally : tally;
     el.recap.innerHTML = "";
     state.log.forEach(function (entry) {
       var li = document.createElement("li");
@@ -552,27 +725,28 @@
     el.replay.focus({ preventScroll: true });
   }
 
-  function start(tier) {
+  function start(cfg) {
     forget();
+    var rounds = buildRounds(cfg);
+    if (!rounds.length) {
+      show(el.empty, true);
+      return;
+    }
     show(el.intro, false);
+    show(el.empty, false);
     show(el.result, false);
     show(el.board, true);
-    el.frame.innerHTML = '<p class="game-loading">loading…</p>';
-    el.progress.textContent = tierLabel(tier);
-    el.score.textContent = "";
-    show(el.form, false);
-    show(el.reveal, false);
-
-    buildRounds(tier, data.rounds || 10).then(function (rounds) {
-      if (!rounds.length) {
-        show(el.board, false);
-        show(el.intro, true);
-        show(el.empty, true);
-        return;
-      }
-      state = { tier: tier, rounds: rounds, index: 0, correct: 0, revealed: false, log: [] };
-      renderRound();
-    });
+    state = {
+      cfg: cfg,
+      rounds: rounds,
+      total: rounds.length,
+      index: 0,
+      correct: 0,
+      wrong: 0,
+      revealed: false,
+      log: []
+    };
+    renderRound();
   }
 
   function toIntro() {
@@ -582,6 +756,8 @@
     show(el.board, false);
     show(el.result, false);
     show(el.intro, true);
+    show(el.empty, false);
+    refreshSetup();
     if (history.replaceState) history.replaceState(null, "", location.pathname);
   }
 
@@ -595,12 +771,25 @@
     judge(el.input.value);
   });
 
+  el.setup.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var cfg = readSetup();
+    if (cfg.levels.length && cfg.continents.length) start(cfg);
+  });
+
   el.next.addEventListener("click", advance);
   el.replay.addEventListener("click", function () {
-    start(state ? state.tier : "easy");
+    start(state ? state.cfg : readSetup());
   });
   el.change.addEventListener("click", toIntro);
-  if (el.quit) el.quit.addEventListener("click", toIntro);
+
+  /* In an endless game, stopping is how it ends — so show the recap rather
+     than throwing the run away. A fixed-length game you quit is abandoned. */
+  function leave() {
+    if (state && state.cfg.length === Infinity && state.log.length) finish();
+    else toIntro();
+  }
+  if (el.quit) el.quit.addEventListener("click", leave);
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Enter" && el.reveal && !el.reveal.hidden) {
@@ -611,18 +800,18 @@
     /* Escape leaves the game and goes back to the level buttons. */
     if (e.key === "Escape" && state && !el.board.hidden) {
       e.preventDefault();
-      toIntro();
+      leave();
     }
   });
 
-  fetch(DATA_URL, { cache: "no-cache" })
+  fetch(DATA_URL, { cache: "reload" })
     .then(function (r) {
       if (!r.ok) throw new Error("cities.json " + r.status);
       return r.json();
     })
     .then(function (json) {
       data = json;
-      return fetch((json.imageDir || "../art/game/") + "images.json", { cache: "no-cache" })
+      return fetch((json.imageDir || "../art/game/") + "images.json", { cache: "reload" })
         .then(function (r) {
           return r.ok ? r.json() : null;
         })
@@ -640,13 +829,26 @@
       });
       buildTermIndex();
       el.credit.textContent = data.credit || "";
-      renderTiers();
+      renderSetup();
       if (restore()) return;
+
+      /* Old links like /game/#hard still work: they preselect and start. */
       var hash = (location.hash || "").replace("#", "");
-      if (hash && data.tiers.some(function (t) { return t.id === hash; })) start(hash);
+      var allLevels = levels().map(function (t) { return t.id; });
+      var allConts = continents().map(function (t) { return t.id; });
+      if (hash === "mixed") {
+        start({ levels: allLevels, continents: allConts, length: 10 });
+      } else if (allLevels.indexOf(hash) !== -1) {
+        start({ levels: [hash], continents: allConts, length: 10 });
+      } else if (hash) {
+        var cont = continents().filter(function (c) {
+          return c.id.toLowerCase().replace(/\s+/g, "-") === hash;
+        })[0];
+        if (cont) start({ levels: allLevels, continents: [cont.id], length: 10 });
+      }
     })
     .catch(function () {
-      el.tiers.innerHTML = "";
+      show(el.setup, false);
       show(el.empty, true);
       el.empty.textContent = "The list of cities could not be loaded.";
     });

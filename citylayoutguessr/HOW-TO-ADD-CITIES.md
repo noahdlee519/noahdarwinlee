@@ -1,21 +1,21 @@
-# Layout Guesser — how to add pictures and answers
+# citylayoutguessr — how to add pictures and answers
 
 aspect ratios for all maps are 1000 pixels by 700 pixels
 
 | Where | What's in it |
 |---|---|
-| `game/maps/` | Your full-size screenshots. This is where you work, and it decides what's in the game. |
-| `game/cities.json` | The answers, one entry per picture. |
+| `citylayoutguessr/maps/` | Your full-size screenshots. This is where you work, and it decides what's in the game. |
+| `citylayoutguessr/cities.json` | The answers, one entry per picture. |
 | `art/game/` | The built copies the website loads. Don't edit by hand. |
 
-**The folder is in charge.** Drop `helsinki.png` into `game/maps/`, run the
+**The folder is in charge.** Drop `helsinki.png` into `citylayoutguessr/maps/`, run the
 build, and Helsinki is in the game — if `cities.json` doesn't know that name,
 an entry is written for it and the build tells you so you can fill in its level,
 country, continent and aliases. You never have to make a filename match a list.
 
 ```
 cd ~/Desktop/noahdarwinlee
-bash game/build-images.sh
+bash citylayoutguessr/build-images.sh
 ```
 
 That writes two files per screenshot into `art/game/`:
@@ -27,7 +27,7 @@ That writes two files per screenshot into `art/game/`:
   picture; a browser too old for AVIF just keeps the WebP and gets a slightly
   softer magnifier rather than a hole.
 
-It only touches what has changed (`FORCE=1 bash game/build-images.sh` rebuilds
+It only touches what has changed (`FORCE=1 bash citylayoutguessr/build-images.sh` rebuilds
 everything). Your originals are never modified and are gitignored — the repo
 carries only the built copies. Sizes are tuned at the top of the script if you
 ever want to trade weight for quality.
@@ -36,23 +36,30 @@ It also writes `art/game/images.json`, the list of cities that have a picture.
 The page reads it so it knows what exists without asking the server. If you add
 an image without running the build, the game won't see it.
 
-## The six buttons
+## Setting up a game
 
-| Button | Draws from |
-|---|---|
-| easy / medium / hard | that `tier` in `cities.json` |
-| europe | every city whose `continent` is `Europe` |
-| north america | every city whose `continent` is `North America` |
-| mixed | everything |
+The start screen is one panel:
 
-Each takes ten at random from its set. To add another region, copy the europe
-line in the `tiers` block at the top of `cities.json` and change the label and
-continent; the button appears by itself. Continents in use are Europe, North
-America, South America, Asia, Africa and Oceania. North America is the
-geographic one — Canada down through Panama, plus the Caribbean.
+- **difficulty** — `all`, `easy`, `medium`, `hard`. The number beside each is
+  how many maps that level actually has.
+- **where** — one box per continent, same idea.
+- **rounds** — a slider at 10, 20, 30, 50 or endless. Lengths the current
+  selection can't fill are greyed out and the slider won't stop on them.
+  Endless never greys out: it reshuffles when it runs out of maps and keeps
+  going until you press **stop**, which ends the run and shows the recap.
+
+Whatever you pick is remembered, so the next visit opens on the same setup.
+Old links still work: `/citylayoutguessr/#hard`, `/citylayoutguessr/#europe` and `/citylayoutguessr/#mixed` start
+a ten-round game with that preselected.
+
+To add another region, add a line to the `continents` block at the top of
+`cities.json` and set `continent` on the cities that belong to it — the
+checkbox appears by itself. Continents in use are Europe, North America,
+South America, Asia, Africa and Oceania. North America is the geographic one:
+Canada down through Panama, plus the Caribbean.
 
 While a game is running, **change level** in the bar above the picture (or the
-Escape key) takes you back to the buttons. Clicking the picture opens a
+Escape key) takes you back to the panel. Clicking the picture opens a
 magnifier that follows the pointer; click again to put it away.
 
 ---
@@ -60,11 +67,11 @@ magnifier that follows the pointer; click again to put it away.
 ## The normal case: a city that's already in the list
 
 1. Take your screenshot.
-2. Save it in `game/maps/` named after the city — lowercase, hyphens, no
+2. Save it in `citylayoutguessr/maps/` named after the city — lowercase, hyphens, no
    spaces: `chicago.png`, `new-orleans.png`, `quebec-city.png`. `.jpg`,
    `.webp` and `.tif` work too.
-3. Run `bash game/build-images.sh`.
-4. Reload `/game/`. If the name was already in `cities.json` you're done. If it
+3. Run `bash citylayoutguessr/build-images.sh`.
+4. Reload `/citylayoutguessr/`. If the name was already in `cities.json` you're done. If it
    wasn't, the build says so and drops a new entry at the bottom of the `hard`
    list with the country, continent and aliases left blank — fill those in.
 
@@ -74,7 +81,7 @@ and read the `"id"` values. They're all lowercase with hyphens:
 
 ## The other case: a city that isn't in the list
 
-Open `game/cities.json` and copy any line in `"cities"`, then edit it:
+Open `citylayoutguessr/cities.json` and copy any line in `"cities"`, then edit it:
 
 ```json
 { "id": "st-louis", "tier": "medium", "city": "St. Louis", "country": "United States", "aliases": ["saint louis", "st louis"] },
@@ -147,13 +154,13 @@ change is the `"credit"` line.
   guessing about the city rather than about your screenshot habits.
 
 If you change where the pictures come from, change the credit too — it's
-the `"credit"` line at the top of `game/cities.json`.
+the `"credit"` line at the top of `citylayoutguessr/cities.json`.
 
 ## Check your work
 
 ```
 cd ~/Desktop/noahdarwinlee
-bash game/check.sh
+bash citylayoutguessr/check.sh
 ```
 
 It tells you how many pictures each level has, which files don't match any

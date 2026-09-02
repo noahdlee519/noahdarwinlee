@@ -1,11 +1,11 @@
 #!/bin/bash
-# Layout Guesser — turns the screenshots in game/maps/ into the web files the
+# citylayoutguessr — turns the screenshots in citylayoutguessr/maps/ into the web files the
 # page actually loads, in art/game/.
 #
-#   bash game/build-images.sh            only what has changed
-#   FORCE=1 bash game/build-images.sh    rebuild everything
+#   bash citylayoutguessr/build-images.sh            only what has changed
+#   FORCE=1 bash citylayoutguessr/build-images.sh    rebuild everything
 #
-# Drop a screenshot into game/maps (named after the city, e.g. chicago.png),
+# Drop a screenshot into citylayoutguessr/maps (named after the city, e.g. chicago.png),
 # run this, and it appears in the game. If the name is one cities.json doesn't
 # know, an entry is written for it. Originals are left alone and are never
 # committed; only the built copies go into the repo.
@@ -37,7 +37,7 @@ ZOOM_QUALITIES = [58, 52, 46]
 
 FORCE = os.environ.get("FORCE") == "1"
 
-data = json.load(io.open("game/cities.json", encoding="utf-8"))
+data = json.load(io.open("citylayoutguessr/cities.json", encoding="utf-8"))
 by_id = {c["id"]: c for c in data["cities"]}
 os.makedirs("art/game", exist_ok=True)
 
@@ -45,8 +45,7 @@ built = skipped = 0
 problems = []
 added = []
 
-SOURCES = ["game/maps"] + ["game/%s maps" % t["id"]
-                           for t in data["tiers"] if t.get("group") == "level"]
+SOURCES = ["citylayoutguessr/maps"] + ["citylayoutguessr/%s maps" % t["id"] for t in data.get("tiers", [])]
 
 for folder in SOURCES:
     if not os.path.isdir(folder):
@@ -111,10 +110,12 @@ if added:
     L = ["{", '  "credit": %s,' % esc(data["credit"]), '  "rounds": %d,' % data["rounds"],
          '  "imageDir": %s,' % esc(data["imageDir"]), '  "tiers": [']
     for i, t in enumerate(data["tiers"]):
-        bits = '"id": %s, "label": %s, "group": %s' % (esc(t["id"]), esc(t["label"]), esc(t.get("group", "level")))
-        if t.get("continent"):
-            bits += ', "continent": %s' % esc(t["continent"])
-        L.append('    { %s }%s' % (bits, "" if i == len(data["tiers"]) - 1 else ","))
+        L.append('    { "id": %s, "label": %s }%s'
+                 % (esc(t["id"]), esc(t["label"]), "" if i == len(data["tiers"]) - 1 else ","))
+    L += ["  ],", '  "continents": [']
+    for i, t in enumerate(data.get("continents", [])):
+        L.append('    { "id": %s, "label": %s }%s'
+                 % (esc(t["id"]), esc(t["label"]), "" if i == len(data["continents"]) - 1 else ","))
     L += ["  ],", '  "cities": [']
     groups = [[c for c in data["cities"] if c["tier"] == t] for t in ["easy", "medium", "hard"]]
     for gi, g in enumerate(groups):
@@ -132,7 +133,7 @@ if added:
     L += ["  ]", "}"]
     out = "\n".join(L) + "\n"
     json.loads(out)
-    io.open("game/cities.json", "w", encoding="utf-8").write(out)
+    io.open("citylayoutguessr/cities.json", "w", encoding="utf-8").write(out)
     print("\nAdded %d new %s to cities.json — each one needs a level, a country,"
           % (len(added), "entry" if len(added) == 1 else "entries"))
     print("a continent and some aliases filled in by hand:")

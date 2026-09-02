@@ -1223,45 +1223,230 @@ a[href="/cv/"]:active {
   border-bottom: 1px solid currentColor;
 }
 
-/* Two rows of three: the levels, then the sets. Equal cells in both rows, so
-   the six read as one grid of boxes rather than six labels. */
-.game-tiers {
-  display: flex;
-  flex-direction: column;
+/* ---- the setup panel ----
+   Replaces the old row of preset buttons. Checkboxes use the site's
+   circle-in-a-square mark, filled when on; the slider thumb is the same square
+   again, so the whole panel is built from one shape. */
+
+.game-setup {
   width: min(760px, 100%);
-  gap: clamp(10px, 1.2vw, 16px);
+  margin: 0 0 8px 0;
 }
 
-.game-tier-row {
-  display: flex;
-  gap: clamp(10px, 1.2vw, 16px);
+.game-set {
+  margin: 0 0 26px 0;
+  padding: 0;
+  border: 0;
+  border-top: 2px solid #ffffff;
 }
 
-.game-tier {
-  flex: 1 1 0;
-  min-width: 0;
+.game-set-label {
+  padding: 0;
   margin: 0;
-  padding: 14px 6px;
+  float: left;
+  width: 100%;
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  line-height: 1;
+  padding-top: 9px;
+}
+
+.game-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px clamp(16px, 2.4vw, 34px);
+  clear: both;
+  padding-top: 30px;
+}
+
+.game-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font-size: clamp(17px, 2vw, 25px);
+  font-weight: 300;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.game-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.game-check-mark {
+  position: relative;
+  flex: 0 0 auto;
+  width: 0.72em;
+  height: 0.72em;
+  box-sizing: border-box;
+  border: 0.055em solid currentColor;
+  transition: background-color 140ms ease;
+}
+
+.game-check input:checked ~ .game-check-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.game-check input:focus-visible ~ .game-check-mark {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.game-check:hover .game-check-mark {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.game-check-count {
+  font-size: 0.62em;
+  opacity: 0.6;
+}
+
+.game-check.is-empty {
+  opacity: 0.4;
+}
+
+/* ---- length slider ---- */
+
+.game-slider {
+  padding-top: 34px;
+  max-width: 560px;
+}
+
+.game-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 22px;
+  margin: 0;
   background: none;
+  cursor: pointer;
+}
+
+.game-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: #ffffff;
+}
+
+.game-range::-moz-range-track {
+  height: 2px;
+  background: #ffffff;
+}
+
+.game-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -9px;
   border: 2px solid #ffffff;
   border-radius: 0;
-  color: inherit;
-  font: inherit;
-  /* sized so the longest label, "north america", fits a third of the row */
-  font-size: clamp(15px, 2.6vw, 31px);
-  font-weight: 300;
-  line-height: 1.1;
-  text-align: center;
-  white-space: nowrap;
+  background: #e3e3b0;
   cursor: pointer;
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
 }
 
-.game-tier:hover,
-.game-tier:focus-visible {
+.game-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 0;
   background: #e3e3b0;
-  border-color: #e3e3b0;
-  color: #e68019;
+  cursor: pointer;
+}
+
+.game-range:focus-visible {
+  outline: none;
+}
+
+.game-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.game-ticks {
+  position: relative;
+  height: 30px;
+  margin-top: 4px;
+}
+
+.game-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: clamp(13px, 1.4vw, 17px);
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+.game-tick::before {
+  content: "";
+  display: block;
+  width: 2px;
+  height: 7px;
+  margin: -11px auto 4px auto;
+  background: currentColor;
+}
+
+.game-tick.is-on {
+  color: #e3e3b0;
+}
+
+/* Lengths the current selection cannot fill. */
+.game-tick.is-off {
+  opacity: 0.32;
+}
+
+.game-pool {
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 300;
+  opacity: 0.8;
+  margin: 0 0 20px 0;
+}
+
+.game-start {
+  font-size: clamp(18px, 2vw, 26px);
+  padding: 12px 40px;
+}
+
+.game-start[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.game-start[disabled]:hover {
+  background: none;
+  border-color: #ffffff;
+  color: inherit;
+}
+
+@media (max-width: 700px) {
+  .game-checks {
+    gap: 8px 18px;
+  }
+
+  .game-check {
+    font-size: 17px;
+  }
+
+  .game-slider {
+    padding-top: 30px;
+  }
+
+  .game-tick {
+    font-size: 13px;
+  }
 }
 
 .game-meta {
@@ -1378,7 +1563,6 @@ a[href="/cv/"]:active {
 
 .game-input:focus {
   outline: none;
-  border-bottom-color: #e3e3b0;
 }
 
 .game-btn {
@@ -1508,12 +1692,6 @@ a[href="/cv/"]:active {
 }
 
 @media (max-width: 700px) {
-  /* narrow screens: three to a row, shrunk to fit "north america" */
-  .game-tier {
-    padding: 12px 3px;
-    font-size: clamp(11px, 3.4vw, 15px);
-  }
-
   .game-image {
     max-height: 46vh;
   }

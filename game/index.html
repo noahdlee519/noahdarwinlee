@@ -3,114 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Layout Guesser — Noah Darwin Lee</title>
-    <meta
-      name="description"
-      content="A guessing game by Noah Darwin Lee: name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each."
-    />
-    <link rel="canonical" href="https://noahdarwinlee.com/game/" />
-    <link rel="icon" href="../favicon.png" type="image/png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
-      rel="stylesheet"
-    />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Noah Darwin Lee" />
-    <meta property="og:title" content="Layout Guesser — Noah Darwin Lee" />
-    <meta property="og:description" content="Name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each." />
-    <meta property="og:url" content="https://noahdarwinlee.com/game/" />
-    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
-
-    <link rel="stylesheet" href="../styles.css" />
+    <title>Moved — citylayoutguessr</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://noahdarwinlee.com/citylayoutguessr/" />
+    <meta http-equiv="refresh" content="0; url=/citylayoutguessr/" />
+    <script>
+      // The game used to live at /game/. Keep old links and bookmarks working,
+      // carrying any #hash (e.g. /game/#europe) across.
+      location.replace("/citylayoutguessr/" + (location.hash || ""));
+    </script>
   </head>
-  <body class="cv-page game-page" data-fade-distance="90">
-    <h1 class="sr-only">Layout Guesser</h1>
-    <a class="name" href="/"
-      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
-      <span class="name-word-lee">Lee</span></a
-    >
-    <a class="back-link" href="/materials/">back</a>
-    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="../favicon.png" alt="" width="30" height="30" />
-    </button>
-
-    <main class="game">
-      <section class="game-intro" id="game-intro">
-        <h2 class="game-heading">Layout Guesser</h2>
-        <p class="game-lede">
-          Guess the city from its grid layout. Type the city and press enter.
-        </p>
-        <div class="game-tiers" id="game-tiers"></div>
-        <p class="game-empty" id="game-empty" hidden>
-          No images for this level yet.
-        </p>
-      </section>
-
-      <section class="game-board" id="game-board" hidden aria-label="Current round">
-        <div class="game-meta">
-          <span class="game-progress" id="game-progress"></span>
-          <span class="game-meta-right">
-            <span class="game-score" id="game-score"></span>
-            <button class="game-quit" type="button" id="game-quit">change level</button>
-          </span>
-        </div>
-
-        <div class="game-frame" id="game-frame"></div>
-
-        <form class="game-form" id="game-form" autocomplete="off">
-          <label class="sr-only" for="game-input">Name the city</label>
-          <input
-            class="game-input"
-            id="game-input"
-            type="text"
-            name="city"
-            autocomplete="off"
-            autocapitalize="off"
-            autocorrect="off"
-            spellcheck="false"
-            enterkeyhint="go"
-            placeholder="type a city"
-          />
-          <button class="game-btn" type="submit" id="game-submit">guess</button>
-        </form>
-
-        <div class="game-reveal" id="game-reveal" hidden>
-          <p class="game-verdict" id="game-verdict"></p>
-          <p class="game-answer" id="game-answer"></p>
-          <button class="game-btn game-btn-next" type="button" id="game-next">next</button>
-        </div>
-
-        <p class="sr-only" role="status" aria-live="polite" id="game-status"></p>
-      </section>
-
-      <section class="game-result" id="game-result" hidden aria-label="Result">
-        <h2 class="game-heading" id="game-result-score"></h2>
-        <ol class="game-recap" id="game-recap"></ol>
-        <div class="game-again">
-          <button class="game-btn" type="button" id="game-replay">play again</button>
-          <button class="game-btn" type="button" id="game-change">change level</button>
-        </div>
-      </section>
-
-      <p class="game-credit" id="game-credit"></p>
-    </main>
-
-    <noscript>
-      <p class="game-lede">
-        This one needs JavaScript. Everything else on the site works without it &mdash;
-        <a href="/materials/">back to materials</a>.
-      </p>
-    </noscript>
-
-    <script src="../to-top-btn.js" defer></script>
-    <script src="../header.js" defer></script>
-    <script src="../game/game.js" defer></script>
+  <body>
+    <p><a href="/citylayoutguessr/">The game has moved to /citylayoutguessr/</a></p>
   </body>
 </html>

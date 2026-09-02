@@ -1,13 +1,13 @@
 #!/bin/bash
-# Layout Guesser — checks your pictures and your answers.
-# Run from the repo root:  bash game/check.sh
+# citylayoutguessr — checks your pictures and your answers.
+# Run from the repo root:  bash citylayoutguessr/check.sh
 cd "$(dirname "$0")/.." || exit 1
 python3 - <<'PY'
 # -*- coding: utf-8 -*-
 import json, os, sys, re, collections, itertools, unicodedata
 
 try:
-    data = json.load(open("game/cities.json", encoding="utf-8"))
+    data = json.load(open("citylayoutguessr/cities.json", encoding="utf-8"))
 except Exception as e:
     print("cities.json is not valid JSON:\n  %s" % e)
     print("\nUsually a missing or extra comma. Fix that and run this again.")
@@ -32,22 +32,23 @@ for f in sorted(os.listdir("art/game")):
         strays.append(f)
 
 need = data.get("rounds", 10)
-levels = [t["id"] for t in data["tiers"] if t.get("group", "level") == "level"]
+levels = [t["id"] for t in data.get("tiers", [])]
+conts = [c["id"] for c in data.get("continents", [])]
 print("cities.json: %d cities, %d aliases, valid\n"
       % (len(cities), sum(len(c.get("aliases") or []) for c in cities)))
 
 def report(label, ids):
     done = [i for i in ids if i in have]
     flag = "playable" if len(done) >= need else "needs %d more for a full game" % (need - len(done))
-    print("%-14s %3d of %3d pictures   (%s)" % (label, len(done), len(ids), flag))
+    print("%-16s %3d of %3d pictures   (%s)" % (label, len(done), len(ids), flag))
 
-for t in data["tiers"]:
-    if t.get("continent"):
-        report(t["label"], [c["id"] for c in cities if c.get("continent") == t["continent"]])
-    elif t["id"] == "mixed":
-        report(t["label"], [c["id"] for c in cities])
-    else:
-        report(t["label"], [c["id"] for c in cities if c["tier"] == t["id"]])
+for t in levels:
+    report(t, [c["id"] for c in cities if c["tier"] == t])
+print()
+for t in conts:
+    report(t.lower(), [c["id"] for c in cities if c.get("continent") == t])
+print()
+report("everything", [c["id"] for c in cities])
 
 blank = [c["id"] for c in cities if not c.get("continent") or not c.get("country")]
 if blank:

@@ -3,12 +3,17 @@
   "rounds": 10,
   "imageDir": "../art/game/",
   "tiers": [
-    { "id": "easy", "label": "easy", "group": "level" },
-    { "id": "medium", "label": "medium", "group": "level" },
-    { "id": "hard", "label": "hard", "group": "level" },
-    { "id": "europe", "label": "europe", "group": "set", "continent": "Europe" },
-    { "id": "north-america", "label": "north america", "group": "set", "continent": "North America" },
-    { "id": "mixed", "label": "mixed", "group": "set" }
+    { "id": "easy", "label": "easy" },
+    { "id": "medium", "label": "medium" },
+    { "id": "hard", "label": "hard" }
+  ],
+  "continents": [
+    { "id": "Europe", "label": "europe" },
+    { "id": "North America", "label": "north america" },
+    { "id": "South America", "label": "south america" },
+    { "id": "Asia", "label": "asia" },
+    { "id": "Africa", "label": "africa" },
+    { "id": "Oceania", "label": "oceania" }
   ],
   "cities": [
     {
@@ -241,6 +246,10 @@
       "aliases": ["firenze", "florenz", "florencia", "the cradle of the renaissance", "fiorenza"]
     },
     {
+      "id": "frankfurt", "tier": "medium", "city": "Frankfurt", "country": "Germany", "continent": "Europe",
+      "aliases": ["frankfurt am main", "mainhattan", "ffm", "bankfurt"]
+    },
+    {
       "id": "geneva", "tier": "medium", "city": "Geneva", "country": "Switzerland", "continent": "Europe",
       "aliases": ["geneve", "genf", "ginevra", "ginebra", "the peace capital"]
     },
@@ -259,6 +268,10 @@
     {
       "id": "ho-chi-minh-city", "tier": "medium", "city": "Ho Chi Minh City", "country": "Vietnam", "continent": "Asia",
       "aliases": ["saigon", "sai gon", "hcmc", "ho chi minh", "thanh pho ho chi minh"]
+    },
+    {
+      "id": "honolulu", "tier": "medium", "city": "Honolulu", "country": "United States", "continent": "North America",
+      "aliases": ["waikiki", "oahu", "honolulu hawaii", "the sheltered harbour"]
     },
     {
       "id": "houston", "tier": "medium", "city": "Houston", "country": "United States", "continent": "North America",
@@ -299,6 +312,10 @@
     {
       "id": "madrid", "tier": "medium", "city": "Madrid", "country": "Spain", "continent": "Europe",
       "aliases": ["madriz", "villa y corte", "los madriles", "magerit", "madrit"]
+    },
+    {
+      "id": "manchester", "tier": "medium", "city": "Manchester", "country": "United Kingdom", "continent": "Europe",
+      "aliases": ["manc", "cottonopolis", "madchester", "manchester uk"]
     },
     {
       "id": "manila", "tier": "medium", "city": "Manila", "country": "Philippines", "continent": "Asia",
@@ -375,6 +392,10 @@
     {
       "id": "pyongyang", "tier": "medium", "city": "Pyongyang", "country": "North Korea", "continent": "Asia",
       "aliases": ["phyongyang", "pyeongyang", "ryugyong", "the capital of willows"]
+    },
+    {
+      "id": "rotterdam", "tier": "medium", "city": "Rotterdam", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["roffa", "rotjeknor", "the gateway to europe", "manhattan on the maas"]
     },
     {
       "id": "saint-petersburg", "tier": "medium", "city": "Saint Petersburg", "country": "Russia", "continent": "Europe",
@@ -458,6 +479,10 @@
       "aliases": ["alma ata", "alma-ata", "almati", "verny", "verniy", "almaty kazakhstan"]
     },
     {
+      "id": "anchorage", "tier": "hard", "city": "Anchorage", "country": "United States", "continent": "North America",
+      "aliases": ["anchorage alaska", "los anchorage", "anc", "the city of lights and flowers"]
+    },
+    {
       "id": "ashgabat", "tier": "hard", "city": "Ashgabat", "country": "Turkmenistan", "continent": "Asia",
       "aliases": ["ashkhabad", "ashkabad", "asgabat", "aşgabat", "poltoratsk", "the city of love", "city of white marble"]
     },
@@ -496,6 +521,10 @@
     {
       "id": "bristol", "tier": "hard", "city": "Bristol", "country": "United Kingdom", "continent": "Europe",
       "aliases": ["brizzle", "bristol uk", "bristol england"]
+    },
+    {
+      "id": "brno", "tier": "hard", "city": "Brno", "country": "Czechia", "continent": "Europe",
+      "aliases": ["brunn", "brünn", "brno czechia", "stovezata"]
     },
     {
       "id": "calgary", "tier": "hard", "city": "Calgary", "country": "Canada", "continent": "North America",
@@ -594,6 +623,10 @@
       "aliases": ["mty", "la sultana del norte", "the sultan of the north", "monterrey mexico"]
     },
     {
+      "id": "nantes", "tier": "hard", "city": "Nantes", "country": "France", "continent": "Europe",
+      "aliases": ["naoned", "nantes france", "the venice of the west"]
+    },
+    {
       "id": "naypyidaw", "tier": "hard", "city": "Naypyidaw", "country": "Myanmar", "continent": "Asia",
       "aliases": ["nay pyi taw", "naypyitaw", "nay pyi daw", "pyinmana", "naypyidaw myanmar"]
     },
@@ -632,6 +665,18 @@
     {
       "id": "rabat", "tier": "hard", "city": "Rabat", "country": "Morocco", "continent": "Africa",
       "aliases": ["ribat al fath", "rabat morocco", "rabat sale", "the city of light morocco"]
+    },
+    {
+      "id": "riga", "tier": "hard", "city": "Riga", "country": "Latvia", "continent": "Europe",
+      "aliases": ["riga latvia", "the paris of the north", "rigas"]
+    },
+    {
+      "id": "san-antonio", "tier": "hard", "city": "San Antonio", "country": "United States", "continent": "North America",
+      "aliases": ["satx", "alamo city", "the alamo city", "san antonio texas", "military city usa"]
+    },
+    {
+      "id": "san-sebastian", "tier": "hard", "city": "San Sebastián", "country": "Spain", "continent": "Europe",
+      "aliases": ["donostia", "san sebastian", "donostia san sebastian", "la bella easo"]
     },
     {
       "id": "sanaa", "tier": "hard", "city": "Sana'a", "country": "Yemen", "continent": "Asia",
