@@ -1093,7 +1093,7 @@ a[href="/cv/"]:active {
   width: 0.52em;
   height: 0.52em;
   box-sizing: border-box;
-  border: 0.055em solid currentColor;
+  border: 0.036em solid currentColor;
   /* generous, so a repetition reads as a separate thing rather than as more
      of the same sentence — the word gap inside a run is only 0.3em */
   margin: 0 0.7em;
@@ -1181,6 +1181,290 @@ a[href="/cv/"]:active {
   }
 }
 
+
+
+/* ---------------- game ("Where Is This?") ----------------
+   Borrows the materials page's language: full-bleed rules, big light type,
+   cream-on-orange inversion for anything you can press. The recap uses the same
+   circle-in-a-square mark as the site icon — filled for right, empty for wrong. */
+
+.game {
+  padding-right: var(--page-left);
+  max-width: 1180px;
+}
+
+/* .cv-page main p indents every paragraph like a CV entry; the game's do not. */
+.game-page main p {
+  margin-left: 0;
+}
+
+.game-heading {
+  font-weight: 300;
+  font-size: clamp(30px, 4.6vw, 54px);
+  line-height: 1.05;
+  margin: 0 0 18px 0;
+}
+
+.game-lede {
+  max-width: 60ch;
+  font-size: clamp(16px, 1.6vw, 20px);
+  font-weight: 300;
+  line-height: 1.42;
+  margin: 0 0 38px 0;
+}
+
+.game-empty {
+  font-weight: 300;
+  margin-top: 22px;
+}
+
+.game-empty code {
+  font-family: inherit;
+  border-bottom: 1px solid currentColor;
+}
+
+.game-tiers {
+  border-top: 2px solid #ffffff;
+}
+
+.game-tier {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  margin: 0;
+  padding: 16px 0;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.game-tier:hover,
+.game-tier:focus-visible {
+  background: #e3e3b0;
+  color: #e68019;
+  border-bottom-color: #e68019;
+}
+
+.game-tier-name {
+  font-size: clamp(34px, 6vw, 72px);
+  font-weight: 300;
+  line-height: 1;
+}
+
+.game-tier-note {
+  font-size: clamp(13px, 1.3vw, 17px);
+  font-weight: 300;
+  opacity: 0.85;
+  text-align: right;
+}
+
+.game-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-top: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  font-size: clamp(14px, 1.4vw, 18px);
+  font-weight: 300;
+}
+
+.game-frame {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 34vh;
+  margin: 24px 0 26px 0;
+}
+
+.game-image {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  /* border-box so the 2px rule sits inside the column, flush with the meta bar */
+  box-sizing: border-box;
+  max-height: 52vh;
+  border: 2px solid #ffffff;
+}
+
+.game-loading {
+  margin: 0;
+  font-weight: 300;
+  opacity: 0.8;
+}
+
+.game-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 10px 0;
+}
+
+.game-input {
+  flex: 1 1 300px;
+  max-width: 520px;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid #ffffff;
+  border-radius: 0;
+  color: #ffffff;
+  font: inherit;
+  font-size: clamp(22px, 3vw, 38px);
+  font-weight: 300;
+  padding: 4px 2px 8px 2px;
+}
+
+.game-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.game-input:focus {
+  outline: none;
+  border-bottom-color: #e3e3b0;
+}
+
+.game-btn {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 2px solid #ffffff;
+  border-radius: 0;
+  color: #ffffff;
+  font: inherit;
+  font-size: clamp(15px, 1.5vw, 19px);
+  font-weight: 300;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.game-btn:hover,
+.game-btn:focus-visible {
+  background: #e3e3b0;
+  border-color: #e3e3b0;
+  color: #e68019;
+}
+
+.game-verdict {
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: 300;
+  line-height: 1.05;
+  margin: 0 0 4px 0;
+}
+
+.game-reveal.is-right .game-verdict {
+  color: #e3e3b0;
+}
+
+.game-answer {
+  font-size: clamp(21px, 2.5vw, 31px);
+  font-weight: 300;
+  margin: 0 0 22px 0;
+}
+
+.game-btn-next {
+  margin-bottom: 4px;
+}
+
+.game-result-line {
+  max-width: 56ch;
+  font-size: clamp(16px, 1.6vw, 20px);
+  font-weight: 300;
+  margin: 0;
+}
+
+.game-recap {
+  list-style: none;
+  max-width: 760px;
+  margin: 26px 0 30px 0;
+  padding: 0;
+  border-top: 2px solid #ffffff;
+}
+
+.game-recap-item {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+  font-size: clamp(16px, 1.7vw, 21px);
+  font-weight: 300;
+}
+
+/* Same mark as the site icon and the marquee separators. */
+.game-recap-mark {
+  position: relative;
+  flex: 0 0 auto;
+  align-self: center;
+  width: 0.62em;
+  height: 0.62em;
+  box-sizing: border-box;
+  border: 0.045em solid currentColor;
+}
+
+.game-recap-item.is-right .game-recap-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.game-recap-guess {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 0.8em;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.game-again {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.game-credit {
+  max-width: 60ch;
+  margin: 46px 0 0 0;
+  font-size: 13px;
+  font-weight: 300;
+  opacity: 0.7;
+}
+
+@media (max-width: 700px) {
+  .game-tier {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .game-tier-note {
+    text-align: left;
+  }
+
+  .game-image {
+    max-height: 46vh;
+  }
+
+  .game-input {
+    font-size: 24px;
+  }
+
+  .game-recap-guess {
+    display: none;
+  }
+}
 
 /* ---------------- print ----------------
    Browsers drop background colours when printing, so the orange ground
@@ -1292,5 +1576,11 @@ a[href="/cv/"]:active {
     color: #000000 !important;
     position: static !important;
     width: auto !important;
+  }
+}
+
+@media print {
+  .game {
+    display: none !important;
   }
 }

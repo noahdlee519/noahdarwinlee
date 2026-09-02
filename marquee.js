@@ -23,7 +23,7 @@
       w.className = "marquee-word";
       w.textContent = word;
       run.appendChild(w);
-      if (i === at) {
+      if (img && i === at) {
         const picture = document.createElement("picture");
         const source = document.createElement("source");
         source.type = "image/webp";
