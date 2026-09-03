@@ -650,15 +650,23 @@ a[href="/cv/"]:active {
   cursor: n-resize;
 }
 
-.art-card-carousel .art-trigger:not(.is-open) {
+/* is-open lives on the card (.art-card-carousel), not on the trigger itself,
+   so scoping :not(.is-open) to the trigger never matched anything and this
+   rule was permanently winning the tie above, pinning every carousel cursor
+   to a plain pointer. Scoped to the card instead, it only applies while
+   closed. */
+.art-card-carousel:not(.is-open) .art-trigger {
   cursor: pointer;
 }
 
-.art-card-carousel.is-open .art-trigger.is-prev {
+/* Left/right half previews which way a click will cycle. Tracked on hover
+   in both the closed and open states — closed, it hints which direction
+   the rest of the piece lives in; open, it's the actual prev/next zone. */
+.art-card-carousel .art-trigger.is-prev {
   cursor: w-resize;
 }
 
-.art-card-carousel.is-open .art-trigger.is-next {
+.art-card-carousel .art-trigger.is-next {
   cursor: e-resize;
 }
 
@@ -1906,10 +1914,20 @@ body.game-page {
 }
 
 /* Matches .game-pool's size/weight/opacity so the hint copy reads as a
-   caption, not another option label. */
+   caption, not another option label. Unlike the short pill labels this
+   sentence sits next to, it needs the whole row's width and has to be able
+   to wrap there instead of running past the panel's right edge. */
+.game-check:has(.game-hint-text) {
+  width: 100%;
+  white-space: normal;
+}
+
 .game-hint-text {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 300;
+  white-space: normal;
   opacity: 0.8;
 }
 

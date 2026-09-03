@@ -191,8 +191,10 @@
     });
 
     if (total > 1) {
+      // Tracked whether the card is open or not: closed, it's just a cursor
+      // hint that there's more to the piece in that direction; open, the
+      // same halves are the actual prev/next click zones.
       trigger.addEventListener("mousemove", (event) => {
-        if (!card.classList.contains("is-open")) return;
         const rect = img.getBoundingClientRect();
         const left = event.clientX - rect.left < rect.width / 2;
         trigger.classList.toggle("is-prev", left);
