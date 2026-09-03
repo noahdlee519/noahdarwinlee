@@ -16,8 +16,26 @@
  * Left empty, the page never contacts Supabase: no sign-in, no board, no
  * counters, and the game plays exactly as it always has. See
  * SUPABASE-SETUP.md for the whole setup.
+ *
+ * googleClientId is the third value, and it is what stops the sign-in window
+ * saying "kigvciyyjlgjcgnwgrwf.supabase.co". It is the OAuth client ID from
+ * Google Cloud Console -> APIs & Services -> Credentials — the same client
+ * Supabase is already configured with, the long one ending
+ * .apps.googleusercontent.com. Public by design, like the two above.
+ *
+ * With it set, Google draws its own button on this page and the sign-in never
+ * leaves the site, so the window says noahdarwinlee.com. That only works if
+ * this site's origin is listed on that client under Authorized JavaScript
+ * origins:
+ *
+ *     https://noahdarwinlee.com
+ *     http://localhost:8000        (whatever you serve the site on locally)
+ *
+ * Left empty, the page falls back to the old redirect, which still works and
+ * still shows the project ref. Nothing else changes.
  */
 window.CLG_SUPABASE = {
   url: "https://kigvciyyjlgjcgnwgrwf.supabase.co",
-  anonKey: "sb_publishable_Ki-kbO5xBeMdVt3Ltv3i7A_dzQz2ivy"
+  anonKey: "sb_publishable_Ki-kbO5xBeMdVt3Ltv3i7A_dzQz2ivy",
+  googleClientId: ""
 };

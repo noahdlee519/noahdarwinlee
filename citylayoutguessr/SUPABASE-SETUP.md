@@ -47,7 +47,13 @@ ID and secret.
 
    ```
    https://noahdarwinlee.com
+   http://localhost:8000
    ```
+
+   These matter more than they look. Google draws its own sign-in button on the
+   page, and it will only do that for an origin listed here — that is what keeps
+   the sign-in on this site instead of sending the browser away. Miss one and
+   the button quietly refuses to appear on that origin.
 
 5. Under **Authorised redirect URIs** add the callback from your Supabase
    project — it is shown in Supabase under **Authentication -> Providers ->
@@ -71,25 +77,62 @@ ID and secret.
 
 ## 5. Tell the site where to look
 
-Open `citylayoutguessr/supabase-config.js` and fill in the two values from
-**Settings -> API Keys** (the **Connect** button at the top of the dashboard
-shows the same pair). Take the **publishable** key — `sb_publishable_...` on a
-new project, or the legacy `anon` key beginning `eyJ` on an older one; either
-works. Never the secret one:
+Open `citylayoutguessr/supabase-config.js` and fill in three values. The first
+two are from **Settings -> API Keys** (the **Connect** button at the top of the
+dashboard shows the same pair). Take the **publishable** key —
+`sb_publishable_...` on a new project, or the legacy `anon` key beginning `eyJ`
+on an older one; either works. Never the secret one. The third is the **Client
+ID** from step 3:
 
 ```js
 window.CLG_SUPABASE = {
   url: "https://xxxxxxxxxxxx.supabase.co",
-  anonKey: "eyJhbGciOi..."
+  anonKey: "eyJhbGciOi...",
+  googleClientId: "1234567890-abcdefg.apps.googleusercontent.com"
 };
 ```
 
-Both are meant to be public — the anon key is designed to sit in a web page,
-and the row-level security policies from step 2 are what actually protect the
-data. Do **not** put the `service_role` key here; that one bypasses every
-policy and belongs only in the dashboard.
+All three are meant to be public — the anon key is designed to sit in a web
+page, the client ID is shown to every visitor by Google anyway, and the
+row-level security policies from step 2 are what actually protect the data. Do
+**not** put the `service_role` key or the Google **client secret** here; those
+belong only in the dashboard.
 
 Commit, push, and the account row appears on the game page.
+
+## 6. Why the third value is there
+
+Without `googleClientId`, signing in hands the whole browser to Supabase, which
+hands it to Google, which hands it back. It works, and the window Google shows
+while it happens reads:
+
+> Sign in to **kigvciyyjlgjcgnwgrwf.supabase.co**
+
+That is not a misconfiguration to be fixed in the Google console. Google will
+not print an app's name on that screen until the app has passed **brand
+verification**, and until then it prints the registrable domain of the redirect
+URI instead — which is Supabase's hostname, not ours. Nor can it be verified
+away: verification wants the domain proved in Google Search Console, and
+`supabase.co` is not ours to prove. The only ways out are to move the callback
+onto our own domain (Supabase's Custom Domains add-on, which needs a paid plan)
+or to stop redirecting at all.
+
+With `googleClientId` set, the page does the second. Google draws its own button
+here and signs the person in without the browser ever leaving the site, so the
+window reads:
+
+> Sign in to **noahdarwinlee.com**
+
+What comes back is an ID token rather than a session, and Supabase verifies it
+itself. A nonce is generated for each attempt: Google is given its SHA-256 hash
+and puts it inside the token it signs, Supabase is given the nonce itself and
+hashes it to compare, so a token minted for some other page does not fit this
+one.
+
+If any of that cannot happen — no client ID, the script blocked, this origin
+missing from **Authorised JavaScript origins**, an old browser — the page puts
+the old redirect button back, and sign-in still works. It just says the ugly
+thing again.
 
 ---
 

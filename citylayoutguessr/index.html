@@ -62,11 +62,12 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' https://cdn.jsdelivr.net;
-        style-src 'self' https://fonts.googleapis.com;
+        script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com/gsi/client;
+        style-src 'self' https://fonts.googleapis.com https://accounts.google.com/gsi/style;
         font-src https://fonts.gstatic.com;
         img-src 'self' data: https://*.googleusercontent.com;
-        connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;
+        connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://accounts.google.com/gsi/ https://accounts.google.com/.well-known/;
+        frame-src https://accounts.google.com/gsi/;
         object-src 'none';
         base-uri 'self';
         form-action 'self';
@@ -122,9 +123,16 @@
         <!-- Sign-in and the board only appear once supabase-config.js has been
              filled in; until then cloud.js leaves them hidden. -->
         <div class="game-account" id="game-account" hidden>
-          <button class="game-btn game-signin" type="button" id="game-signin">
-            sign in with Google
-          </button>
+          <!-- Two ways in, one at a time. Google draws its own button into the
+               first if it can, and cloud.js hides the second; if it cannot —
+               no client ID, the script blocked, an old browser — the second is
+               what stays, and it still works. -->
+          <span class="game-signin-slot" id="game-signin-slot">
+            <span class="game-google-btn" id="game-google-btn" hidden></span>
+            <button class="game-btn game-signin" type="button" id="game-signin">
+              sign in with Google
+            </button>
+          </span>
           <span class="game-daily-note game-account-note" id="game-account-note"
             >sign in to compete with others</span
           >

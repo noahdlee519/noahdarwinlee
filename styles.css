@@ -1425,6 +1425,22 @@ body.is-refreshing {
   padding: 12px 32px;
 }
 
+/* Holds whichever of the two sign-in buttons is in use. Baseline is what the
+   row aligns on, but Google's button is a block of its own drawing with no
+   text baseline to find, so this aligns on its bottom edge instead and the
+   note beside it sits where it always did. */
+.game-signin-slot {
+  display: inline-flex;
+  align-items: flex-end;
+}
+
+.game-google-btn {
+  display: inline-block;
+  /* Google's button is a little shorter than ours. This keeps the row from
+     changing height depending on which one is showing. */
+  min-height: 44px;
+}
+
 /* The three big controls on the menu are one size, whatever their labels. */
 .game-btn.game-daily-btn,
 .game-btn.game-signin,

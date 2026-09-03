@@ -62,6 +62,15 @@ async function connect() {
 
 /* ---------------- accounts ---------------- */
 
+/* The fallback way in: hand the whole browser to Supabase, which hands it to
+   Google, which hands it back. It works everywhere, and its one flaw is what
+   the person reads while it happens. Google will not print an app's name on
+   the consent screen until the app is brand-verified, and until then it prints
+   the registrable domain of the redirect URI instead — which here is Supabase's
+   own hostname, a project ref that looks like a mistake. Verifying it away is
+   not possible either: verification wants the domain proved in Search Console,
+   and supabase.co is not ours to prove.
+   So this is kept only for when the path below cannot run. */
 async function signIn() {
   const db = await connect();
   if (!db) return;
@@ -73,6 +82,149 @@ async function signIn() {
     provider: "google",
     options: { redirectTo: back }
   });
+}
+
+/* ---------------- signing in without leaving the page ---------------- */
+
+/* The way in that reads properly. Google Identity Services draws its own
+   button here, on this page, and the sign-in happens in a window Google owns —
+   nothing redirects, and the header says this site's name, because the origin
+   Google is looking at is this one rather than a callback URL it was given.
+   What comes back is an ID token, which Supabase verifies itself.
+
+   This needs googleClientId in supabase-config.js and this site's origin listed
+   under Authorized JavaScript origins on that client. Without either, nothing
+   here runs and the button above is what you get. */
+
+const GSI_SRC = "https://accounts.google.com/gsi/client";
+let gsiScript = null;
+
+function loadGsi() {
+  if (gsiScript) return gsiScript;
+  gsiScript = new Promise(function (resolve, reject) {
+    const tag = document.createElement("script");
+    tag.src = GSI_SRC;
+    tag.async = true;
+    tag.onload = function () {
+      const api =
+        window.google && window.google.accounts && window.google.accounts.id;
+      if (api) resolve(api);
+      else reject(new Error("gsi loaded without an id api"));
+    };
+    tag.onerror = function () {
+      reject(new Error("gsi did not load"));
+    };
+    document.head.appendChild(tag);
+  });
+  return gsiScript;
+}
+
+/* Google is told the hash of a nonce and puts it in the token it signs;
+   Supabase is told the nonce itself and hashes it to compare. A token minted
+   for somebody else's page therefore does not fit this one. */
+function makeNonce() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let raw = "";
+  for (let i = 0; i < bytes.length; i++) raw += String.fromCharCode(bytes[i]);
+  return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text)
+  );
+  return Array.from(new Uint8Array(digest))
+    .map(function (b) {
+      return b.toString(16).padStart(2, "0");
+    })
+    .join("");
+}
+
+/* A nonce is good for one token. If a sign-in fails the button is drawn again
+   with a fresh one — but only once, so a client that refuses every token does
+   not turn into a loop. */
+let googleMount = null;
+let googleTriesLeft = 2;
+
+async function acceptGoogleToken(credential, nonce) {
+  const db = await connect();
+  if (!db) return;
+  const { error } = await db.auth.signInWithIdToken({
+    provider: "google",
+    token: credential,
+    nonce: nonce
+  });
+  if (!error) return; /* onAuthStateChange announces it from here */
+  if (window.console && console.warn) {
+    console.warn("citylayoutguessr: google sign-in was refused —", error.message);
+  }
+  if (googleTriesLeft > 0 && googleMount) {
+    mountGoogleButton(googleMount);
+    return;
+  }
+  /* Out of nonces to offer, and a button that cannot sign anyone in is worse
+     than an ugly one. Say so, and the page puts the old way back. */
+  document.dispatchEvent(new CustomEvent("clg-google-unavailable"));
+}
+
+/* Returns true if Google's own button is now on the page, false if this way in
+   is unavailable and the caller should show its own. */
+async function mountGoogleButton(mount) {
+  if (!ON || !mount) return false;
+  if (!CFG.googleClientId) return false;
+  /* crypto.subtle exists only in a secure context, which is also the only
+     place Google will render. */
+  if (!window.crypto || !crypto.subtle || !window.TextEncoder) return false;
+  if (googleTriesLeft <= 0) return false;
+  googleTriesLeft -= 1;
+  googleMount = mount;
+
+  let gsi;
+  try {
+    gsi = await loadGsi();
+  } catch (err) {
+    if (window.console && console.warn) {
+      console.warn("citylayoutguessr: google sign-in is unavailable —", err.message);
+    }
+    return false;
+  }
+
+  const nonce = makeNonce();
+  const hashed = await sha256Hex(nonce);
+
+  try {
+    gsi.initialize({
+      client_id: CFG.googleClientId,
+      nonce: hashed,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      use_fedcm_for_prompt: true,
+      callback: function (res) {
+        if (res && res.credential) acceptGoogleToken(res.credential, nonce);
+      }
+    });
+    mount.textContent = "";
+    gsi.renderButton(mount, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      shape: "pill",
+      text: "signin_with",
+      logo_alignment: "left",
+      /* Google sizes its button in whole pixels and will not take a clamp, so
+         this is picked to sit near the width the other three menu buttons
+         settle at. Google's button is theirs to draw — restyling it past what
+         these options allow is against the terms it is offered under. */
+      width: 288
+    });
+  } catch (err) {
+    if (window.console && console.warn) {
+      console.warn("citylayoutguessr: google sign-in did not start —", err.message);
+    }
+    return false;
+  }
+  return true;
 }
 
 async function signOut() {
@@ -303,6 +455,7 @@ window.clgCloud = {
   enabled: ON,
   today: todayKey,
   signIn: signIn,
+  mountGoogleButton: mountGoogleButton,
   signOut: signOut,
   user: whoami,
   setName: setName,

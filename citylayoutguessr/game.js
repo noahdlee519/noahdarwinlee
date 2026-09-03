@@ -90,6 +90,8 @@
     colorWarning: document.getElementById("color-warning"),
     account: document.getElementById("game-account"),
     signIn: document.getElementById("game-signin"),
+    signInSlot: document.getElementById("game-signin-slot"),
+    googleBtn: document.getElementById("game-google-btn"),
     who: document.getElementById("game-who"),
     avatar: document.getElementById("game-avatar"),
     whoName: document.getElementById("game-who-name"),
@@ -1611,6 +1613,29 @@
     if (cloudOn() && cloud.track) cloud.track(kind, detail || null);
   }
 
+  /* Google's own button, drawn on this page rather than on a page we are sent
+     to, so the sign-in window says this site's name instead of the Supabase
+     project ref. Asked for once; if it cannot be had, our own button is
+     already there and stays. */
+  var googleAsked = false;
+  function askForGoogleButton() {
+    if (googleAsked || !el.googleBtn || !cloudOn()) return;
+    if (!cloud.mountGoogleButton) return;
+    googleAsked = true;
+    cloud.mountGoogleButton(el.googleBtn).then(function (mounted) {
+      show(el.googleBtn, mounted);
+      show(el.signIn, !mounted);
+    });
+  }
+
+  /* If Google's button turns out not to be able to sign anyone in — the client
+     ID does not match, this origin is not on it — the redirect is put back, so
+     there is always a way in even when it is the plainer one. */
+  document.addEventListener("clg-google-unavailable", function () {
+    show(el.googleBtn, false);
+    show(el.signIn, true);
+  });
+
   function renderAccount() {
     if (!el.account) return;
     if (!cloudOn()) {
@@ -1620,7 +1645,8 @@
     var me = cloud.user();
     var renaming = el.renameForm && !el.renameForm.hidden;
     show(el.account, true);
-    show(el.signIn, !me);
+    if (!me) askForGoogleButton();
+    show(el.signInSlot || el.signIn, !me);
     show(el.accountNote, !me);
     show(el.who, Boolean(me) && !renaming);
     if (!me) {
