@@ -541,7 +541,8 @@
     { name: "night", bg: "#101014", ink: "#f2f2f2", accent: "#918fff" },
     { name: "paper", bg: "#fff2eb", ink: "#1a1a1a", accent: "#ff1467" },
     { name: "sea", bg: "#0b3c49", ink: "#f2f2f2", accent: "#7fd1b9" },
-    { name: "slate", bg: "#2b2d42", ink: "#edf2f4", accent: "#ef233c" }
+    { name: "slate", bg: "#2b2d42", ink: "#edf2f4", accent: "#ef233c" },
+    { name: "mono", bg: "#ffffff", ink: "#000000", accent: "#4a4a4a" }
   ];
   var lastGoodColors = { bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent };
   var warningTimer = null;
@@ -1607,6 +1608,11 @@
 
     function adjust() {
       if (document.activeElement !== el.input) return;
+      /* Only when a keyboard is actually up. Without this the same arithmetic
+         runs on a desktop, where the visible viewport is the whole window, and
+         nudges the page down a few pixels the moment a round starts — enough
+         to slide the banner under the fixed name and back link. */
+      if (window.innerHeight - vv.height < 120) return;
       var box = el.input.getBoundingClientRect();
       var floor = vv.height + vv.offsetTop;
       var overlap = box.bottom - floor + 12;

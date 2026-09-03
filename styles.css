@@ -270,7 +270,7 @@ body {
      back link are fixed to the top of the window, and the banner would run
      under them. This clears the back link by a dozen pixels and no more. */
   .game-page.is-playing {
-    padding-top: calc(var(--page-top) + 72px);
+    padding-top: calc(var(--page-top) + 84px);
   }
 }
 
@@ -1235,6 +1235,13 @@ a[href="/cv/"]:active {
   margin: 0 0 clamp(18px, 2.4vw, 34px) 0;
 }
 
+/* Off the board the banner belongs to the menu, so it takes the menu's width —
+   the same 940px column the daily row, the panel and the board sit in — rather
+   than standing out past everything under it. In play it follows the map. */
+.game-page:not(.is-playing) .game-logo {
+  max-width: min(940px, 100%);
+}
+
 .game-heading {
   font-weight: 300;
   font-size: clamp(30px, 4.6vw, 66px);
@@ -1418,9 +1425,23 @@ body.game-page {
   flex-wrap: wrap;
   gap: clamp(12px, 2vw, 26px);
   width: min(940px, 100%);
-  /* No rule of its own — the difficulty fieldset's top border is the line
-     between this and the panel, and two of them read as a mistake. */
   margin: 0 0 30px 0;
+}
+
+/* Everything below this line is the game you build yourself; everything above
+   it is the one puzzle everybody gets. The heading carries the rule so the two
+   halves of the menu read as two halves. */
+.game-custom {
+  width: min(940px, 100%);
+  margin: 0 0 24px 0;
+  padding-top: 9px;
+  border-top: 2px solid var(--ink);
+  font-size: clamp(13px, 1.3vw, 16px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  opacity: 0.75;
 }
 
 /* Two class names so this beats `.game-btn`'s transparent background, which is
@@ -1623,12 +1644,15 @@ body.game-page {
   white-space: nowrap;
 }
 
+/* The mark rises to meet the slider's own line — it read as floating below it
+   with a gap. The extra bottom margin is the same five pixels back, so only the
+   mark moves and the numbers stay where they were. */
 .game-tick::before {
   content: "";
   display: block;
   width: 2px;
   height: 7px;
-  margin: -11px auto 4px auto;
+  margin: -16px auto 9px auto;
   background: currentColor;
 }
 
@@ -1651,6 +1675,8 @@ body.game-page {
 .game-start {
   font-size: clamp(18px, 2vw, 26px);
   padding: 12px 40px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .game-start[disabled] {
@@ -1736,6 +1762,7 @@ body.game-page {
    buttons at a size that still fits the bar. */
 .game-quit {
   padding: 3px 13px;
+  font-weight: 500;
   background: none;
   border: 2px solid var(--ink);
   border-radius: 0;
@@ -1870,6 +1897,11 @@ body.game-page {
 /* The field and the button are one object: a bordered box whose right-hand end
    is the button. No gap, and the shared edge is a single 2px line rather than
    two sitting side by side. */
+/* Field padding (2 x 10) + its rule (2 x 2) + the line the type sits on. */
+.game-page {
+  --field-h: calc(24px + 1.15 * clamp(22px, 3vw, 46px));
+}
+
 .game-form {
   display: flex;
   align-items: stretch;
@@ -1892,6 +1924,7 @@ body.game-page {
 }
 
 .game-form .game-btn {
+  min-width: clamp(104px, 11vw, 176px);
   flex: 0 0 auto;
   margin-left: -2px;
   padding: 10px clamp(20px, 2.4vw, 40px);
@@ -1958,8 +1991,16 @@ body.game-page {
   margin: 0 0 22px 0;
 }
 
+/* The same box as the guess button, in the same place: after a reveal your
+   hand is already there, and a smaller target a few pixels off is a stumble.
+   The guess button is stretched to the height of the field beside it, so this
+   one is given that same height rather than its own smaller natural one. */
 .game-btn-next {
   margin-bottom: 4px;
+  min-width: clamp(104px, 11vw, 176px);
+  min-height: var(--field-h);
+  padding: 10px clamp(20px, 2.4vw, 40px);
+  font-size: clamp(17px, 1.8vw, 26px);
 }
 
 .game-recap {
@@ -2044,12 +2085,15 @@ body.game-page {
      (the menu and the result) only the banner is in play, so the wider figure
      stands. */
   .game-page {
-    --board: min(1240px, 100%, calc((100vh - 340px) * 1.42));
+    --board: max(360px, min(1240px, 100%, calc((100vh - 340px) * 1.42)));
   }
 
   /* Mid-game the reclaimed top padding goes to the map. */
   .game-page.is-playing {
-    --board: min(1240px, 100%, calc((100vh - 322px) * 1.26));
+    /* The floor is for a phone held sideways, where the height term alone would
+       leave a map a few centimetres across. Below it the page scrolls, which is
+       the better of the two bad options. */
+    --board: max(360px, min(1240px, 100%, calc((100vh - 350px) * 1.26)));
   }
 
   .game-logo {
@@ -2117,10 +2161,43 @@ body.game-page {
 }
 
 @media (max-width: 700px) {
-  /* On a phone the bar has three things to hold, so the filter description
-     goes and the round count stays. You just chose the filters anyway. */
+  /* What you are playing — the daily's name, or "hard · europe · endless" —
+     takes the line above the counters rather than being dropped. It is the one
+     thing in the bar that can be long, and on a phone there is no room for it
+     beside three other things; there is room for it above them. display:
+     contents dissolves the wrapper so the two halves can land on separate
+     rows. */
+  .game-meta {
+    flex-wrap: wrap;
+  }
+
+  .game-progress {
+    display: contents;
+  }
+
   .game-progress-where {
+    flex: 1 0 100%;
+    min-width: 0;
+    margin-right: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+  }
+
+  /* Nothing to say: no empty row. */
+  .game-progress-where:empty {
     display: none;
+  }
+
+  .game-progress-count {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   /* Four things share this bar and "map 1 / 10" is longer than "1 / 10" was,
@@ -2145,8 +2222,16 @@ body.game-page {
     flex: 0 0 auto;
   }
 
+  /* A max-height on a picture with a set width shrinks its width too, which is
+     what left the map narrower than the bar and the guess row above and below
+     it on a tall, narrow window. There is height to spare there, so the cap
+     comes off; it comes back only when the window really is short. */
   .game-image {
-    max-height: 46vh;
+    max-height: none;
+  }
+
+  .game-page {
+    --field-h: calc(24px + 1.15 * 24px);
   }
 
   .game-input {
@@ -2155,6 +2240,15 @@ body.game-page {
 
   .game-recap-guess {
     display: none;
+  }
+}
+
+/* Short windows — a phone turned sideways, a small laptop window — are the one
+   place the picture still has to be held back, or the guess row falls off the
+   bottom of the screen. */
+@media (max-width: 700px) and (max-height: 620px) {
+  .game-image {
+    max-height: 54vh;
   }
 }
 
