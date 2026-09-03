@@ -94,6 +94,9 @@
     leadersNote: document.getElementById("game-leaders-note"),
     leadersSlot: document.getElementById("game-leaders-slot"),
     leadersSlotResult: document.getElementById("game-leaders-slot-result"),
+    logoHome: document.getElementById("game-logo-home"),
+    customFold: document.getElementById("game-custom-fold"),
+    customBody: document.getElementById("game-custom-body"),
     leadersFold: document.getElementById("game-leaders-fold"),
     leadersBody: document.getElementById("game-leaders-body"),
     accountNote: document.getElementById("game-account-note"),
@@ -1707,6 +1710,25 @@
     el.leadersList.classList.remove("is-fresh");
     void el.leadersList.offsetWidth;
     el.leadersList.classList.add("is-fresh");
+  }
+
+  /* The banner is the way home. Mid-game it does what the menu button does —
+     puts the game down rather than throwing it away — and on the result screen
+     it goes back to the menu. On the menu itself it has nothing to do. */
+  if (el.logoHome) {
+    el.logoHome.addEventListener("click", function () {
+      if (state && el.board && !el.board.hidden) leave();
+      else if (el.result && !el.result.hidden) toIntro();
+    });
+  }
+
+  if (el.customFold) {
+    el.customFold.addEventListener("click", function () {
+      var open = el.customBody.hidden;
+      show(el.customBody, open);
+      el.customFold.setAttribute("aria-expanded", String(open));
+      el.customFold.classList.toggle("is-folded", !open);
+    });
   }
 
   function foldBoard(open) {

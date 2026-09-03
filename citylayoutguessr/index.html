@@ -73,9 +73,11 @@
     </button>
 
     <main class="game">
-      <!-- The wordmark, as wide as the game window itself. The page already
-           carries a screen-reader h1 with the name, so the banner is marked
+      <!-- The wordmark, as wide as the game window itself, and the way back to
+           the menu from a game in progress. The page already carries a
+           screen-reader h1 with the name, so the picture itself is marked
            decorative rather than read out a second time. -->
+      <button class="game-logo-btn" type="button" id="game-logo-home">
       <img
         class="game-logo"
         src="../art/web/citylayoutguessr/logo-1240.webp"
@@ -91,6 +93,7 @@
         alt=""
         fetchpriority="high"
       />
+      </button>
 
       <section class="game-intro" id="game-intro">
         <p class="game-lede">
@@ -142,8 +145,19 @@
 
         <span class="game-leaders-slot" id="game-leaders-slot" hidden></span>
 
-        <h2 class="game-custom">custom game</h2>
+        <h2 class="game-custom">
+          <button
+            class="game-fold"
+            type="button"
+            id="game-custom-fold"
+            aria-expanded="true"
+            aria-controls="game-custom-body"
+          >
+            custom game
+          </button>
+        </h2>
 
+        <div class="game-custom-body" id="game-custom-body">
         <form class="game-setup" id="game-setup">
           <fieldset class="game-set">
             <legend class="game-set-label">difficulty</legend>
@@ -181,6 +195,8 @@
             </button>
           </div>
         </form>
+
+        </div>
 
         <p class="game-empty" id="game-empty" hidden>
           No maps match that combination.

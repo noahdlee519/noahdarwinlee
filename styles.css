@@ -1254,6 +1254,34 @@ a[href="/cv/"]:active {
    The logo runs the full width of the game window, so it is sized by the same
    --board variable the map is. It keeps its own black ground, which is why it
    is not affected by the cosmetic colours. */
+/* The banner is a button — the way back to the menu — but it should look like
+   the picture it is, so it carries none of the usual button furniture. */
+.game-logo-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  line-height: 0;
+}
+
+.game-logo-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* On a phone the back link sits directly above the banner with only eight
+   pixels between them, which reads as a collision rather than a stack. The
+   space goes on the column as padding: a margin on the banner collapses
+   through main and moves the whole page instead of opening a gap. */
+@media (max-width: 900px) {
+  .game-page .game {
+    padding-top: 12px;
+  }
+}
+
 .game-logo {
   display: block;
   width: 100%;
@@ -1420,7 +1448,8 @@ a[href="/cv/"]:active {
   font-size: 0.7em;
 }
 
-.game-leaders.is-folded .game-fold::before {
+.game-leaders.is-folded .game-fold::before,
+.game-fold.is-folded::before {
   content: "\25b8\00a0";
 }
 
@@ -1628,7 +1657,7 @@ body.game-page {
    had been rendering light despite asking for 500. The game's two headings say
    it as loudly as the rule they are arguing with. */
 .game-page .game-custom,
-.game-page .game-leaders-title .game-fold {
+.game-page .game-fold {
   font-weight: 500 !important;
 }
 
@@ -1704,7 +1733,9 @@ body.game-page {
   flex-wrap: wrap;
   gap: 6px clamp(16px, 2.4vw, 34px);
   clear: both;
-  padding-top: 30px;
+  /* The legend floats above this row, so its height is part of this padding.
+     22 puts the boxes a few pixels under their label rather than adrift. */
+  padding-top: 22px;
 }
 
 .game-check {
@@ -2286,6 +2317,12 @@ body.game-page {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
+}
+
+/* On the result screen the board follows the buttons, and the two were sharing
+   a line's worth of air between them. */
+.game-result .game-leaders {
+  margin-top: clamp(30px, 3.4vw, 52px);
 }
 
 .game-credit {
