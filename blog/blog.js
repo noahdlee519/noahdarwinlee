@@ -138,13 +138,48 @@
     return counts;
   }
 
+  /* Plain line icons for the rail, drawn here so the page carries no icon
+     font and borrows nobody's set. */
+  const ICONS = {
+    inbox:
+      '<path d="M3 13h5l1.5 2.5h5L16 13h5" />' +
+      '<path d="M3 13l2.2-7A1.5 1.5 0 0 1 6.6 5h10.8a1.5 1.5 0 0 1 1.4 1L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />',
+    starred:
+      '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" />',
+    unread:
+      '<rect x="3" y="5" width="18" height="14" rx="2" />' +
+      '<path d="M3 7l9 6 9-6" />'
+  };
+
+  /* The default picture a mail account shows before it has one: a grey disc
+     and the outline of nobody in particular. */
+  function anonAvatar(extraClass) {
+    const span = document.createElement("span");
+    span.className = "mail-avatar" + (extraClass ? " " + extraClass : "");
+    span.setAttribute("aria-hidden", "true");
+    span.innerHTML =
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4" />' +
+      '<path d="M4 21c0-4.2 3.6-6.5 8-6.5s8 2.3 8 6.5z" /></svg>';
+    return span;
+  }
+
+  function icon(name) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", "mail-folder-icon");
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = ICONS[name] || "";
+    return svg;
+  }
+
   function renderFolders() {
+    paintMarkAll();
     if (!el.folders) return;
     const unread = posts.filter(function (p) { return !read.has(p.id); }).length;
     const rows = [
       { key: "inbox", name: "Inbox", badge: unread || "" },
-      { key: "unread", name: "Unread", badge: unread || "" },
-      { key: "starred", name: "Starred", badge: starred.size || "" }
+      { key: "starred", name: "Starred", badge: starred.size || "" },
+      { key: "unread", name: "Unread", badge: unread || "" }
     ];
     const counts = labelCounts();
     [...counts.keys()].sort().forEach(function (name) {
@@ -152,7 +187,15 @@
     });
 
     el.folders.textContent = "";
+    let titled = false;
     rows.forEach(function (row) {
+      if (row.isLabel && !titled) {
+        titled = true;
+        const t = document.createElement("li");
+        t.className = "mail-rail-title";
+        t.textContent = "Labels";
+        el.folders.appendChild(t);
+      }
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
@@ -165,6 +208,8 @@
         dot.className = "mail-labeldot";
         dot.style.background = labelColor(row.name);
         btn.appendChild(dot);
+      } else {
+        btn.appendChild(icon(row.key));
       }
       const text = document.createElement("span");
       text.className = "mail-folder-name";
@@ -217,7 +262,7 @@
     }
     if (el.count) {
       el.count.textContent = shown.length
-        ? shown.length + (shown.length === 1 ? " letter" : " letters")
+        ? "1\u2013" + shown.length + " of " + shown.length
         : "";
     }
   }
@@ -327,6 +372,16 @@
     return true;
   }
 
+  /* Marking a letter unread puts it back the way it was before it was opened,
+     which means closing it: a bold row in the list, and nothing in the pane. */
+  function markUnread(id) {
+    read.delete(id);
+    save(READ_KEY, read);
+    if (openId === id) closePost();
+    renderFolders();
+    renderList();
+  }
+
   function closePost() {
     openId = null;
     el.read.textContent = "";
@@ -346,7 +401,10 @@
     const back = document.createElement("button");
     back.type = "button";
     back.className = "mail-back";
-    back.textContent = "\u2190 all letters";
+    back.innerHTML =
+      '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
+      '<path d="M20 12H5M11 6l-6 6 6 6" /></svg>';
+    back.appendChild(document.createTextNode("Back"));
     back.addEventListener("click", closePost);
     wrap.appendChild(back);
 
@@ -372,11 +430,7 @@
     const head = document.createElement("div");
     head.className = "mail-letter-head";
 
-    const avatar = document.createElement("span");
-    avatar.className = "mail-avatar";
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = (post.fromName || "N").trim().charAt(0).toUpperCase();
-    head.appendChild(avatar);
+    head.appendChild(anonAvatar());
 
     const who = document.createElement("div");
     who.className = "mail-letter-who";
@@ -402,6 +456,43 @@
     when.textContent = longDate(post.date);
     head.appendChild(when);
 
+    const tools = document.createElement("div");
+    tools.className = "mail-letter-tools";
+
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = "mail-tool";
+    const paintStar = function () {
+      const on = starred.has(post.id);
+      star.setAttribute("aria-pressed", on ? "true" : "false");
+      star.setAttribute("aria-label", on ? "Unstar" : "Star");
+      star.title = on ? "Starred" : "Not starred";
+    };
+    star.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS.starred + "</svg>";
+    paintStar();
+    star.addEventListener("click", function () {
+      if (starred.has(post.id)) starred.delete(post.id);
+      else starred.add(post.id);
+      save(STAR_KEY, starred);
+      paintStar();
+      renderFolders();
+      renderList();
+    });
+    tools.appendChild(star);
+
+    const unread = document.createElement("button");
+    unread.type = "button";
+    unread.className = "mail-tool";
+    unread.title = "Mark as unread";
+    unread.setAttribute("aria-label", "Mark as unread");
+    unread.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS.unread + "</svg>";
+    unread.addEventListener("click", function () {
+      markUnread(post.id);
+    });
+    tools.appendChild(unread);
+
+    head.appendChild(tools);
+
     wrap.appendChild(head);
 
     const body = document.createElement("div");
@@ -418,10 +509,37 @@
     });
     wrap.appendChild(body);
 
-    const foot = document.createElement("p");
-    foot.className = "mail-letter-foot";
-    foot.textContent = "Sent " + (longDate(post.date) || "some time ago") + ".";
-    wrap.appendChild(foot);
+    /* Reply writes to the sender; Forward opens a blank mail with a link to
+       this letter in it, which is the most a page can do without a mail
+       server of its own. */
+    const actions = document.createElement("div");
+    actions.className = "mail-letter-actions";
+    const subject = post.subject || "(no subject)";
+    const here = location.origin + location.pathname + "#" + post.id;
+
+    const reply = document.createElement("a");
+    reply.className = "mail-action";
+    reply.href =
+      "mailto:" + (post.fromAddress || "noahlee519@gmail.com") +
+      "?subject=" + encodeURIComponent("Re: " + subject);
+    reply.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path d="M10 8L4 13l6 5v-3.5c5 0 8 1.5 10 5-.5-5.5-4-9-10-9.5z" /></svg>';
+    reply.appendChild(document.createTextNode("Reply"));
+    actions.appendChild(reply);
+
+    const fwd = document.createElement("a");
+    fwd.className = "mail-action";
+    fwd.href =
+      "mailto:?subject=" + encodeURIComponent("Fwd: " + subject) +
+      "&body=" + encodeURIComponent(here);
+    fwd.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path d="M14 8l6 5-6 5v-3.5c-5 0-8 1.5-10 5 .5-5.5 4-9 10-9.5z" /></svg>';
+    fwd.appendChild(document.createTextNode("Forward"));
+    actions.appendChild(fwd);
+
+    wrap.appendChild(actions);
 
     return wrap;
   }
@@ -468,6 +586,11 @@
     }
     if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
 
+    if (event.key === "U" && event.shiftKey && openId) {
+      event.preventDefault();
+      markUnread(openId);
+      return;
+    }
     if (event.key === "j") { event.preventDefault(); step(1); }
     else if (event.key === "k") { event.preventDefault(); step(-1); }
     else if (event.key === "Enter" && !openId && shown.length) {
@@ -483,9 +606,23 @@
     });
   }
 
+  /* One button, reading whichever way there is left to go: once everything
+     is read it offers to put it all back. */
+  function paintMarkAll() {
+    if (!el.markAll) return;
+    const allRead = posts.length > 0 && posts.every(function (p) { return read.has(p.id); });
+    el.markAll.textContent = allRead ? "mark all unread" : "mark all read";
+    el.markAll.dataset.mode = allRead ? "unread" : "read";
+  }
+
   if (el.markAll) {
     el.markAll.addEventListener("click", function () {
-      posts.forEach(function (p) { read.add(p.id); });
+      if (el.markAll.dataset.mode === "unread") {
+        read.clear();
+        if (openId) closePost();
+      } else {
+        posts.forEach(function (p) { read.add(p.id); });
+      }
       save(READ_KEY, read);
       renderFolders();
       renderList();

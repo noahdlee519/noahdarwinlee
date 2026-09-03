@@ -4,6 +4,12 @@
 //
 //     node blog/import-gmail.mjs "blog/part 1" "blog/part 2"
 //     node blog/import-gmail.mjs blog/letters --dry
+//     node blog/import-gmail.mjs "blog/part 1" --fresh
+//
+// A picture already in blog/images/ that is newer than its source is left
+// alone, so re-running for one new letter does not re-encode the other
+// ninety. --fresh re-encodes everything, which is what you want after
+// changing the size or quality below.
 //
 // Name one folder or several, and each is walked one level deep. Every .rtf,
 // .eml, .html and .txt found is read as mail: the subject, the date, the sender
@@ -57,6 +63,7 @@ const IMAGE_DIR = path.join(ROOT, "images");
 
 const args = process.argv.slice(2);
 const dry = args.includes("--dry");
+const fresh = args.includes("--fresh");
 /* More than one folder may be named, because the letters are not all finished
    at once: naming the ones that are keeps the half-done ones out of the blog
    until their photographs are with them. */
@@ -739,14 +746,21 @@ function haveMagick() {
 }
 
 function shrink(from, to) {
+  if (!fresh && fs.existsSync(to)) {
+    const done = fs.statSync(to);
+    if (done.size > 0 && done.mtimeMs >= fs.statSync(from).mtimeMs) return true;
+  }
   const cmd = haveMagick();
   if (!cmd) {
     fs.copyFileSync(from, to.replace(/\.webp$/, path.extname(from)));
     return false;
   }
+  /* 1200 on the long side is twice the width the reading pane ever gives a
+     picture, which is what a retina screen wants and no more; -strip drops
+     the camera's metadata, including where the photograph was taken. */
   const run = spawnSync(
     cmd,
-    [from, "-auto-orient", "-resize", "1400x1400>", "-quality", "78",
+    [from, "-auto-orient", "-strip", "-resize", "1200x1200>", "-quality", "74",
      "-define", "webp:method=6", to],
     { stdio: "ignore" }
   );

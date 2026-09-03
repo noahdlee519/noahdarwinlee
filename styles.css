@@ -3121,22 +3121,29 @@ body.game-page {
 
 /* ------------------------------------------------------------------ blog --
  *
- * The blog is a mailbox, because that is what these letters were. What follows
- * builds the arrangement a mail client uses — a rail of folders, a list of
- * rows, a reading pane — and stops there. There is no wordmark, no borrowed
- * icon set and none of anyone's product colours: the layout is what makes a
- * mailbox legible as one, and the layout is not anybody's to own.
+ * The blog is a mailbox, because that is what these letters were, and the
+ * mailbox is drawn the way the one they were read in draws itself: the pale
+ * blue-grey backdrop, a search box that is a pill, a rail with a rounded
+ * selection and a filled Compose button, and one white card with rounded
+ * corners holding the list and the letter side by side. The arrangement and
+ * the palette are what make it read as that program; there is no wordmark
+ * and no logo, because those are the parts that are somebody's.
  *
- * The window is deliberately not in the site's typeface. Everything around it
- * stays Space Grotesk on orange; inside, it is the system UI face on white,
- * the way an application looks when it is sitting on a desktop. The seam is the
- * point — it should read as another program open on the page rather than as a
- * section of the site wearing a costume.
+ * The window is centred and narrower than the page, so on a wide screen it
+ * sits on the orange like a program open on a desk rather than filling it.
+ * Inside it the site's typeface stops: Roboto for the chrome, Arial for the
+ * letters themselves, which is what a mail composer's "Sans Serif" is.
  */
 
 .blog-page {
   padding-right: var(--page-left);
   padding-bottom: 60px;
+}
+
+/* The lede and the window share this column, so they share a left edge. */
+.mail {
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .mail-lede {
@@ -3147,106 +3154,171 @@ body.game-page {
   line-height: 1.45;
 }
 
-/* .cv-page indents body paragraphs; the lede sits with the window instead. */
-.blog-page main p.mail-lede {
+/* .cv-page indents body paragraphs like CV entries; nothing in here is one. */
+.blog-page main p.mail-lede,
+.blog-page .mail-window p {
   margin-left: 0;
 }
 
 .mail-window {
-  --mail-ink: #202124;
-  --mail-soft: #5f6368;
-  --mail-line: #e3e3e0;
-  --mail-ground: #f6f5f2;
-  --mail-hover: #f0efec;
-  --mail-select: #e8effa;
-  --mail-accent: #2c5fa8;
+  --mail-ink: #1f1f1f;
+  --mail-soft: #444746;
+  --mail-faint: #5e5e5e;
+  --mail-line: #e0e3e7;
+  --mail-hairline: #eceff1;
+  --mail-backdrop: #f6f8fc;
+  --mail-field: #e9eef6;
+  --mail-hover: rgba(68, 71, 70, 0.08);
+  --mail-select: #d3e3fd;
+  --mail-select-ink: #001d35;
+  --mail-read-row: #f2f6fc;
+  --mail-open-row: #c2dbff;
+  --mail-accent: #0b57d0;
+  --mail-compose: #c2e7ff;
+  --mail-star: #f4b400;
+  --mail-star-off: #c4c7c5;
 
-  max-width: 1180px;
-  height: min(76vh, 820px);
-  min-height: 460px;
+  /* Tall enough to read in, but it stops short of the fold: the name and the
+     lede above it take about 250px, and the window fits under them. */
+  height: clamp(480px, calc(100vh - 250px), 840px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 14px;
-  background: #ffffff;
+  border-radius: 12px;
+  background: var(--mail-backdrop);
   color: var(--mail-ink);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu,
-    Cantarell, "Helvetica Neue", Arial, sans-serif;
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial,
+    sans-serif;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.4;
+}
+
+.mail-window :focus-visible {
+  outline: 2px solid var(--mail-accent);
+  outline-offset: 2px;
+}
+
+.mail-window svg {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* -------- the bar across the top -------- */
 
 .mail-bar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--mail-line);
-  background: var(--mail-ground);
+  gap: 8px;
+  height: 64px;
+  padding: 0 16px 0 8px;
 }
 
-.mail-bar-dots {
+.mail-menu {
   display: inline-flex;
-  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
   flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--mail-soft);
+  cursor: default;
 }
 
-.mail-bar-dots i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #d8d7d3;
+.mail-menu svg {
+  width: 24px;
+  height: 24px;
 }
 
 .mail-search {
   flex: 1 1 auto;
   display: flex;
   min-width: 0;
+  margin-left: 8px;
+}
+
+.mail-search-field {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+}
+
+.mail-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  color: var(--mail-soft);
+  pointer-events: none;
 }
 
 .mail-search-input {
   width: 100%;
-  max-width: 560px;
-  padding: 9px 14px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: #eceae6;
-  color: inherit;
+  height: 48px;
+  padding: 0 16px 0 52px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--mail-field);
+  color: var(--mail-ink);
   font: inherit;
+  font-size: 16px;
   outline-offset: 2px;
+}
+
+.mail-search-input::placeholder {
+  color: var(--mail-soft);
+  opacity: 1;
 }
 
 .mail-search-input:focus {
   background: #ffffff;
-  border-color: var(--mail-line);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.14);
 }
 
+.mail-account {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* The picture an account shows before it has one: grey, and nobody in
+   particular. */
 .mail-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #e68019;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  background: #8e918f;
+  overflow: hidden;
+}
+
+.mail-avatar svg {
+  width: 100%;
+  height: 100%;
+  padding: 3px 0 0;
+  box-sizing: border-box;
+  fill: #ffffff;
+  stroke: none;
 }
 
 .mail-avatar-me {
-  width: 30px;
-  height: 30px;
-  font-size: 14px;
+  width: 32px;
+  height: 32px;
 }
 
-/* -------- rail, list and pane -------- */
+/* -------- rail, card, list and letter -------- */
 
 .mail-body {
   flex: 1 1 auto;
@@ -3255,11 +3327,38 @@ body.game-page {
 }
 
 .mail-rail {
-  flex: 0 0 188px;
-  padding: 12px 8px;
-  border-right: 1px solid var(--mail-line);
+  flex: 0 0 240px;
+  padding: 0 12px 16px 8px;
   overflow-y: auto;
-  background: var(--mail-ground);
+}
+
+/* Writing to the mailbox's owner is the one thing a visitor can actually
+   compose here, so the button does that. */
+.mail-compose {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  margin: 0 0 16px 0;
+  padding: 0 24px 0 16px;
+  border-radius: 16px;
+  background: var(--mail-compose);
+  color: var(--mail-select-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  transition: box-shadow 120ms ease;
+}
+
+.mail-compose:hover {
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+.mail-compose svg {
+  width: 24px;
+  height: 24px;
 }
 
 .mail-folders {
@@ -3271,14 +3370,16 @@ body.game-page {
 .mail-folder {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 16px;
   width: 100%;
-  padding: 7px 12px;
+  height: 32px;
+  padding: 0 16px 0 20px;
   border: 0;
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 16px 16px 0;
   background: transparent;
-  color: var(--mail-soft);
+  color: var(--mail-ink);
   font: inherit;
+  font-size: 14px;
   text-align: left;
   cursor: pointer;
 }
@@ -3289,8 +3390,14 @@ body.game-page {
 
 .mail-folder.is-on {
   background: var(--mail-select);
-  color: var(--mail-accent);
-  font-weight: 600;
+  color: var(--mail-select-ink);
+  font-weight: 700;
+}
+
+.mail-folder-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
 }
 
 .mail-folder-name {
@@ -3303,24 +3410,38 @@ body.game-page {
 .mail-folder-badge {
   flex: 0 0 auto;
   font-size: 12px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.mail-labeldot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 auto;
-  border-radius: 2px;
+.mail-rail-title {
+  margin: 20px 0 4px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mail-soft);
 }
 
+.mail-labeldot {
+  width: 12px;
+  height: 12px;
+  margin: 0 4px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+}
+
+/* The white card. Everything to the right of the rail lives in it. */
 .mail-panes {
   flex: 1 1 auto;
   display: flex;
   min-width: 0;
+  margin: 0 16px 16px 0;
+  border-radius: 16px;
+  background: #ffffff;
+  overflow: hidden;
 }
 
 .mail-listpane {
-  flex: 0 0 clamp(320px, 44%, 520px);
+  flex: 0 0 clamp(300px, 40%, 440px);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -3328,27 +3449,36 @@ body.game-page {
 }
 
 .mail-listhead {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 14px;
+  height: 48px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--mail-line);
   color: var(--mail-soft);
   font-size: 12px;
 }
 
+.mail-count {
+  font-variant-numeric: tabular-nums;
+}
+
 .mail-quiet {
   border: 0;
   background: none;
-  padding: 2px 4px;
-  color: var(--mail-accent);
+  padding: 4px 8px;
+  margin-left: -8px;
+  border-radius: 4px;
+  color: var(--mail-soft);
   font: inherit;
+  font-size: 12px;
   cursor: pointer;
 }
 
 .mail-quiet:hover {
-  text-decoration: underline;
+  background: var(--mail-hover);
 }
 
 .mail-list {
@@ -3360,51 +3490,69 @@ body.game-page {
   min-height: 0;
 }
 
+/* A read row sits back on the pale blue; an unread one is white and bold.
+   That inversion — unread is the lit one — is the whole convention. */
 .mail-row {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 2px;
-  border-bottom: 1px solid var(--mail-line);
+  align-items: flex-start;
+  background: var(--mail-read-row);
+  border-bottom: 1px solid var(--mail-hairline);
 }
 
 .mail-row:hover {
-  background: var(--mail-hover);
+  z-index: 1;
+  box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0,
+    0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
 }
 
-.mail-row.is-open {
-  background: var(--mail-select);
+.mail-row.is-unread {
+  background: #ffffff;
+}
+
+.mail-row.is-open,
+.mail-row.is-open.is-unread {
+  background: var(--mail-open-row);
 }
 
 .mail-star {
   flex: 0 0 auto;
-  padding: 10px 4px 10px 12px;
+  width: 40px;
+  height: 40px;
+  margin: 2px 0 0 8px;
+  padding: 0;
   border: 0;
+  border-radius: 50%;
   background: none;
-  color: #bdbcb8;
-  font-size: 16px;
+  color: var(--mail-star-off);
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
 
-.mail-star[aria-pressed="true"] {
-  color: #e0a400;
+.mail-star:hover {
+  background: var(--mail-hover);
+  color: var(--mail-faint);
 }
 
-/* The row is one link, laid out in three lines: who and when, then the
-   subject, then the opening words. A single line is the denser convention and
-   it is the wrong one here — these letters are a series, so nine subjects
-   share their first forty characters and differ at the very end, which is
-   exactly where a truncated line stops. Given its own line the subject is
-   read whole and the letters tell themselves apart.
+.mail-star[aria-pressed="true"] {
+  color: var(--mail-star);
+}
+
+/* The row is one link laid out in three lines: who and when, the subject, the
+   opening words. In a split view the list is too narrow for the one-line
+   arrangement, and these letters are a series whose subjects differ only at
+   the end — the very place a truncated line stops — so the subject gets a
+   line of its own and is read whole.
    A link rather than a button so the URL is real: middle-click and cmd-click
    open the letter in a new tab. */
 .mail-rowlink {
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 2px 10px;
+  gap: 2px 12px;
   min-width: 0;
-  padding: 10px 14px 11px 4px;
+  padding: 10px 16px 10px 4px;
   color: inherit;
   text-decoration: none;
 }
@@ -3415,21 +3563,21 @@ body.game-page {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  font-size: 14px;
 }
 
 .mail-middle {
   grid-column: 1 / -1;
   min-width: 0;
+  font-size: 13px;
 }
 
 .mail-subject {
-  display: block;
-  /* Two lines is enough for any of these and stops one runaway subject from
-     making its row twice the height of the others. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  color: var(--mail-ink);
 }
 
 .mail-snippet {
@@ -3437,50 +3585,48 @@ body.game-page {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  color: var(--mail-soft);
+  color: var(--mail-faint);
 }
 
 .mail-when {
   grid-column: 2;
   grid-row: 1;
-  color: var(--mail-soft);
+  color: var(--mail-faint);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-/* Unread is weight, which is the whole convention: an unread row is the same
-   row, darker and heavier, not a different thing. */
 .mail-row.is-unread .mail-from,
 .mail-row.is-unread .mail-subject {
   font-weight: 700;
-  color: #14161a;
+  color: var(--mail-ink);
 }
 
 .mail-row.is-unread .mail-when {
-  font-weight: 600;
-  color: #14161a;
+  font-weight: 700;
+  color: var(--mail-ink);
 }
 
 .mail-chips {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   grid-column: 2;
 }
 
 .mail-chip {
-  padding: 1px 7px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
+  padding: 1px 8px;
+  border-radius: 4px;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 16px;
   white-space: nowrap;
+  background: color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .mail-empty {
   margin: 0;
-  padding: 22px 16px;
+  padding: 24px 16px;
   color: var(--mail-soft);
 }
 
@@ -3490,27 +3636,32 @@ body.game-page {
   flex: 1 1 auto;
   min-width: 0;
   overflow-y: auto;
-  padding: 26px 34px 60px;
+  padding: 20px 24px 40px 28px;
+  background: #ffffff;
 }
 
 .mail-read-blank {
+  padding-top: 72px;
   color: var(--mail-soft);
-  padding-top: 40px;
+  text-align: center;
+}
+
+.mail-read-blank p {
+  margin: 0 0 8px 0;
 }
 
 .mail-keys {
-  margin-top: 10px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .mail-keys kbd {
   display: inline-block;
   min-width: 1.1em;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border: 1px solid var(--mail-line);
   border-bottom-width: 2px;
   border-radius: 4px;
-  background: var(--mail-ground);
+  background: var(--mail-backdrop);
   font: inherit;
   font-size: 12px;
   text-align: center;
@@ -3522,10 +3673,11 @@ body.game-page {
 }
 
 .mail-letter-subject {
-  margin: 0 0 10px 0;
-  font-size: 21px;
+  margin: 0 0 14px 0;
+  font-size: 22px;
   font-weight: 400;
-  line-height: 1.3;
+  line-height: 28px;
+  color: var(--mail-ink);
 }
 
 /* The .cv-page heading rule would otherwise lighten it to 300. */
@@ -3534,15 +3686,14 @@ body.game-page {
 }
 
 .mail-letter-chips {
-  margin: 0 0 14px 0;
+  margin: -6px 0 14px 0;
 }
 
 .mail-letter-head {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--mail-line);
+  padding-bottom: 8px;
 }
 
 .mail-letter-who {
@@ -3550,31 +3701,93 @@ body.game-page {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  padding-top: 2px;
 }
 
 .mail-letter-from {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .mail-letter-address,
 .mail-letter-to {
-  color: var(--mail-soft);
+  color: var(--mail-faint);
   font-weight: 400;
-  font-size: 13px;
+  font-size: 12px;
+}
+
+.mail-letter-to {
+  line-height: 16px;
+}
+
+/* The little caret that would open the details. */
+.mail-letter-to::after {
+  content: " \25BE";
+  font-size: 10px;
 }
 
 .mail-letter-when {
   flex: 0 0 auto;
-  color: var(--mail-soft);
+  order: 2;
+  padding-top: 2px;
+  color: var(--mail-faint);
   font-size: 12px;
+  line-height: 20px;
   white-space: nowrap;
 }
 
+/* Star and mark-as-unread, at the end of the header line. */
+.mail-letter-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  order: 3;
+  margin: -6px -8px 0 0;
+}
+
+.mail-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--mail-soft);
+  cursor: pointer;
+}
+
+.mail-tool:hover {
+  background: var(--mail-hover);
+}
+
+.mail-tool svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mail-tool[aria-pressed="true"] {
+  color: var(--mail-star);
+}
+
+.mail-tool[aria-pressed="true"] svg {
+  fill: var(--mail-star);
+}
+
+/* The letter itself, in the face a mail composer calls Sans Serif. It flows
+   to the width of the pane, the way mail does, with a stop so that a very
+   wide window does not stretch a line of it past comfortable reading. */
 .mail-letter-body {
-  max-width: 68ch;
-  padding-top: 18px;
-  font-size: 15px;
-  line-height: 1.62;
+  max-width: 720px;
+  padding: 16px 0 0 52px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #222222;
+  overflow-wrap: anywhere;
 }
 
 /* The letters arrive as email, which means their markup is whatever a mail
@@ -3592,7 +3805,8 @@ body.game-page {
 .mail-letter-body img {
   max-width: 100%;
   height: auto;
-  border-radius: 6px;
+  margin-top: 4px;
+  vertical-align: bottom;
 }
 
 .mail-letter-body a {
@@ -3600,16 +3814,16 @@ body.game-page {
 }
 
 .mail-letter-body blockquote {
-  margin: 1.2em 0;
-  padding-left: 14px;
-  border-left: 2px solid var(--mail-line);
-  color: var(--mail-soft);
+  margin: 1em 0 1em 0.8ex;
+  padding-left: 1ex;
+  border-left: 1px solid #cccccc;
+  color: #500050;
 }
 
 .mail-letter-body pre {
   padding: 10px 12px;
   border-radius: 6px;
-  background: var(--mail-ground);
+  background: var(--mail-backdrop);
   overflow-x: auto;
   font-size: 13px;
 }
@@ -3619,16 +3833,38 @@ body.game-page {
   border-collapse: collapse;
 }
 
-.mail-letter-foot {
-  margin: 34px 0 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--mail-line);
-  color: var(--mail-soft);
-  font-size: 12px;
+/* Reply and Forward, which really do write a mail — to the sender, or to
+   whoever the reader picks, with a link to the letter already in it. */
+.mail-letter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 28px 0 0 52px;
 }
 
-.blog-page main p.mail-letter-foot {
-  margin-left: 0;
+.mail-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 24px 0 16px;
+  border: 1px solid #747775;
+  border-radius: 18px;
+  color: var(--mail-soft);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.mail-action:hover {
+  background: rgba(11, 87, 208, 0.08);
+}
+
+.mail-action svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* -------- narrow -------- */
@@ -3640,8 +3876,16 @@ body.game-page {
     display: none;
   }
 
+  .mail-panes {
+    margin-left: 16px;
+  }
+
   .mail-window {
     height: min(80vh, 760px);
+  }
+
+  .mail-listpane {
+    flex-basis: clamp(260px, 42%, 400px);
   }
 }
 
@@ -3655,8 +3899,19 @@ body.game-page {
     border-radius: 10px;
   }
 
+  .mail-bar {
+    height: 56px;
+    padding: 0 12px 0 4px;
+  }
+
+  .mail-search-input {
+    height: 44px;
+  }
+
   .mail-panes {
     display: block;
+    margin: 0 8px 8px 8px;
+    border-radius: 12px;
   }
 
   .mail-listpane {
@@ -3669,7 +3924,7 @@ body.game-page {
 
   .mail-read {
     display: none;
-    padding: 18px 16px 40px;
+    padding: 16px 16px 32px;
   }
 
   .mail-panes.is-reading .mail-listpane {
@@ -3681,18 +3936,21 @@ body.game-page {
   }
 
   .mail-back {
-    display: inline-block;
-    margin: 0 0 14px 0;
-    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px -8px;
+    padding: 6px 12px 6px 8px;
     border: 0;
+    border-radius: 18px;
     background: none;
     color: var(--mail-accent);
     font: inherit;
     cursor: pointer;
   }
 
-  .mail-rowlink {
-    padding-right: 12px;
+  .mail-back:hover {
+    background: rgba(11, 87, 208, 0.08);
   }
 
   /* More room to read on a phone than beside a reading pane, so nothing is
@@ -3709,20 +3967,38 @@ body.game-page {
 
   .mail-letter-when {
     flex-basis: 100%;
-    padding-left: 46px;
+    order: 4;
+    padding: 0 0 0 52px;
+    line-height: 16px;
+  }
+
+  .mail-letter-tools {
+    margin-left: auto;
+  }
+
+  .mail-letter-body,
+  .mail-letter-actions {
+    padding-left: 0;
+    margin-left: 0;
   }
 }
 
 @media print {
   .mail-window {
     height: auto;
+    background: #ffffff;
     box-shadow: none;
   }
 
   .mail-bar,
   .mail-rail,
   .mail-listpane,
-  .mail-back {
+  .mail-back,
+  .mail-letter-actions {
     display: none !important;
+  }
+
+  .mail-panes {
+    margin: 0;
   }
 }

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Roboto:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
 
@@ -50,32 +50,51 @@
         Japan, Korea, and Czechia. Take a look!
       </p>
 
-      <!-- The window. Not anyone's product: no wordmark, no borrowed icon set —
-           just the arrangement a mail client uses, because that arrangement is
-           what these were read in. -->
+      <!-- The window. Drawn the way the mail client these were read in draws
+           itself — the backdrop, the pill of a search box, the rail, the white
+           card — but with no wordmark and no logo: the arrangement is enough. -->
       <div class="mail-window">
         <div class="mail-bar">
-          <span class="mail-bar-dots" aria-hidden="true"
-            ><i></i><i></i><i></i
-          ></span>
+          <span class="mail-menu" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </span>
           <form class="mail-search" role="search" onsubmit="return false">
             <label class="sr-only" for="mail-q">Search these letters</label>
-            <input
-              id="mail-q"
-              class="mail-search-input"
-              type="search"
-              placeholder="Search mail"
-              autocomplete="off"
-              spellcheck="false"
-            />
+            <span class="mail-search-field">
+              <svg class="mail-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="M15.5 15.5 20 20" />
+              </svg>
+              <input
+                id="mail-q"
+                class="mail-search-input"
+                type="search"
+                placeholder="Search mail"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </span>
           </form>
           <span class="mail-account" title="noahlee519@gmail.com">
-            <span class="mail-avatar mail-avatar-me" aria-hidden="true">N</span>
+            <span class="mail-avatar mail-avatar-me" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="8.5" r="4" />
+                <path d="M4 21c0-4.2 3.6-6.5 8-6.5s8 2.3 8 6.5z" />
+              </svg>
+            </span>
           </span>
         </div>
 
         <div class="mail-body">
           <nav class="mail-rail" aria-label="Folders and labels">
+            <!-- The one thing a visitor can compose here is a mail to me. -->
+            <a class="mail-compose" href="mailto:noahlee519@gmail.com">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" />
+                <path d="M13.5 8.5l2 2" />
+              </svg>
+              Compose
+            </a>
             <ul class="mail-folders" id="mail-folders"></ul>
           </nav>
 
@@ -96,7 +115,8 @@
                 <p>Pick a letter.</p>
                 <p class="mail-keys">
                   <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>enter</kbd> to open,
-                  <kbd>esc</kbd> to come back, <kbd>/</kbd> to search.
+                  <kbd>esc</kbd> to come back, <kbd>shift</kbd> <kbd>u</kbd> to mark unread,
+                  <kbd>/</kbd> to search.
                 </p>
               </div>
             </article>
