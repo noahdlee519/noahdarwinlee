@@ -1287,12 +1287,27 @@ a[href="/cv/"]:active {
   opacity: 0.72;
 }
 
-.game-logo-btn:disabled {
-  cursor: default;
+/* A press repaints the page: the same fade a fresh load would give you, which
+   is what the banner promises when there is nowhere else for it to go. The
+   background belongs to the canvas rather than to the body's own box, so
+   fading the body takes the content with it and leaves the colour behind. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.game-logo-btn:disabled .game-logo {
-  opacity: 1;
+body.is-refreshing {
+  animation: page-in 320ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-refreshing {
+    animation: none;
+  }
 }
 
 /* On a phone the back link sits directly above the banner with only eight
@@ -1476,9 +1491,17 @@ a[href="/cv/"]:active {
   content: "\25b8\00a0";
 }
 
+/* Both section headings take the accent, so the two read as the pair they are.
+   Hover goes the other way — to the ink — since the accent is now the resting
+   state and needs something to change to. */
+.game-page .game-custom,
+.game-page .game-fold {
+  color: var(--accent);
+}
+
 .game-fold:hover,
 .game-fold:focus-visible {
-  color: var(--accent);
+  color: var(--ink);
   outline: none;
 }
 

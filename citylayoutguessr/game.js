@@ -881,17 +881,8 @@
 
   /* ---------- rendering ---------- */
 
-  /* The banner is only a way home when there is somewhere to go; on the menu it
-     is disabled, so it neither answers to a press nor pretends to. */
-  function syncLogoHome() {
-    if (!el.logoHome) return;
-    var live = (el.board && !el.board.hidden) || (el.result && !el.result.hidden);
-    el.logoHome.disabled = !live;
-  }
-
   function show(node, on) {
     if (node) node.hidden = !on;
-    if (node === el.board || node === el.result || node === el.intro) syncLogoHome();
     if (node === el.board) {
       document.body.classList.toggle("is-playing", Boolean(on));
     }
@@ -1731,11 +1722,19 @@
 
   /* The banner is the way home. Mid-game it does what the menu button does —
      puts the game down rather than throwing it away — and on the result screen
-     it goes back to the menu. On the menu itself it has nothing to do. */
+     it goes back to the menu. On the menu itself there is nowhere to go, so it
+     just repaints: the page fades in as though it had been loaded again. */
+  function repaint() {
+    document.body.classList.remove("is-refreshing");
+    void document.body.offsetWidth;
+    document.body.classList.add("is-refreshing");
+  }
+
   if (el.logoHome) {
     el.logoHome.addEventListener("click", function () {
       if (state && el.board && !el.board.hidden) leave();
       else if (el.result && !el.result.hidden) toIntro();
+      repaint();
     });
   }
 
@@ -2035,9 +2034,6 @@
       if (restore(STORE_KEY_DAILY)) return;
       if (restore(STORE_KEY)) return;
       refreshContinue();
-      /* Nothing called show() for the menu — it is what the markup already
-         shows — so the banner is told once here that it has nowhere to go. */
-      syncLogoHome();
 
       /* Old links like /game/#hard still work: they preselect and start. */
       var hash = (location.hash || "").replace("#", "");

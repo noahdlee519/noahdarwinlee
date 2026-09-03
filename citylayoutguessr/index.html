@@ -32,11 +32,23 @@
     <meta property="og:title" content="citylayoutguessr — Noah Darwin Lee" />
     <meta property="og:description" content="Name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each." />
     <meta property="og:url" content="https://noahdarwinlee.com/citylayoutguessr/" />
-    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <!-- The game's own share card, not the site's: a round of it, with the
+         wordmark under the map. Every other page keeps /og.jpg. -->
+    <meta
+      property="og:image"
+      content="https://noahdarwinlee.com/art/web/citylayoutguessr/og.jpg"
+    />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="A satellite view of a coastal city above the citylayoutguessr wordmark"
+    />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta
+      name="twitter:image"
+      content="https://noahdarwinlee.com/art/web/citylayoutguessr/og.jpg"
+    />
 
     <link rel="stylesheet" href="../styles.css" />
 
@@ -98,7 +110,7 @@
       <section class="game-intro" id="game-intro">
         <p class="game-lede">
           To play, guess the city from the satellite image of its urban layout.
-          Then, type the city and press enter.
+          Then, type the city and press enter
         </p>
         <div class="game-daily" id="game-daily" hidden>
           <button class="game-btn game-daily-btn" type="button" id="daily-start">
