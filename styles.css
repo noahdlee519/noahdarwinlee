@@ -1564,13 +1564,6 @@ body.game-page {
   text-transform: uppercase;
 }
 
-/* The heading's own rule is the divider; the difficulty fieldset's would be a
-   second line a few pixels under it. */
-.game-custom + .game-setup .game-set:first-of-type {
-  border-top: 0;
-  padding-top: 0;
-}
-
 /* Two class names so this beats `.game-btn`'s transparent background, which is
    defined later in the file. */
 .game-btn.game-daily-btn {
@@ -1615,11 +1608,13 @@ body.game-page {
   margin: 0 0 8px 0;
 }
 
+/* No rule of their own: the one under CUSTOM GAME divides the menu, and three
+   more lines below it turned the panel into a stack of boxes. The labels do
+   the work of separating them. */
 .game-set {
   margin: 0 0 26px 0;
   padding: 0;
   border: 0;
-  border-top: 2px solid var(--ink);
 }
 
 .game-set-label {

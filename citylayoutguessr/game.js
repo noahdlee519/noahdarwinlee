@@ -1781,12 +1781,15 @@
       show(el.nameNote, true);
       cloud.setName(wanted).then(function (res) {
         if (!res.ok) {
-          /* The reason comes from the database, and it is the only clue there
-             is when a policy or a connection is at fault — so it is shown
-             rather than swallowed. */
-          el.nameNote.textContent =
-            "could not save that name" +
-            (res.reason && res.reason !== "failed" ? " — " + res.reason : "") + ".";
+          /* Two kinds of no. The database refusing a name on the word list is
+             an ordinary answer and is put plainly; anything else is a fault,
+             and its reason is the only clue there is, so it is shown rather
+             than swallowed. */
+          var why = res.reason || "";
+          el.nameNote.textContent = /not allowed/i.test(why)
+            ? "that name is not allowed — try another."
+            : "could not save that name" +
+              (why && why !== "failed" ? " — " + why : "") + ".";
           show(el.nameNote, true);
           if (window.console && console.warn) {
             console.warn("citylayoutguessr: rename failed —", res.reason);
