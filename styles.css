@@ -264,6 +264,13 @@ body {
     padding-top: calc(var(--page-top) + 106px);
   }
 
+  /* The body only pads its left side at these widths, which would leave the
+     centred column with a wider gap on the right than on the left. Below 901
+     the body already pads all four sides equally, so this is not wanted there. */
+  .game-page {
+    padding-right: var(--page-left);
+  }
+
   /* While a round is on screen the page gives back part of the top padding it
      uses to line its heading up with the rest of the site — nothing up there
      needs aligning mid-game. It cannot give back all of it: the name and the
@@ -1214,34 +1221,27 @@ a[href="/cv/"]:active {
    cream-on-orange inversion for anything you can press. The recap uses the same
    circle-in-a-square mark as the site icon — filled for right, empty for wrong. */
 
-/* One column for everything on the page. Nothing — not the cosmetic panel, not
-   the credit line, not the rules under the fieldsets — is allowed to run past
-   the banner's right edge, so the column is set once here and every child
-   inherits the limit. Off the board it is the menu's 940; in play it is
-   whatever width the map has taken. */
+/* One column for everything on the page — the banner, the menu, the board, the
+   cosmetic panel, the credit line. Nothing is allowed to run past the banner's
+   right edge, so the column is set once here and every child inherits it.
+
+   It is the same width on the menu as it is mid-game, so nothing changes size
+   when a game starts, and it is centred: the empty space either side is equal.
+   The name and the back link are fixed to the top left and take no part in it.
+
+   The gutter lives on the page rather than on the column, so the 100% the
+   column is measured against already has both margins taken out of it. */
 .game-page {
   --board: 100%;
-  /* Off the board there is no picture to fit, so the column is bounded by the
-     window and by taste alone; 1240 is where a line of the menu stops being
-     comfortable to read across. */
-  --col: min(1400px, 100%);
-}
-
-.game-page.is-playing {
   --col: var(--board);
-}
-
-/* The gutter lives on the page rather than on the column, so that the 100% the
-   column is measured against already has both margins taken out of it and the
-   banner, the map and the rules all land on the same right edge. */
-.game-page {
-  padding-right: var(--page-left);
 }
 
 .game {
   box-sizing: border-box;
   width: var(--col);
   max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   padding-right: 0;
 }
 
@@ -1929,6 +1929,7 @@ body.game-page {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
+  outline: none;
 }
 
 /* The gaps above and below the picture are deliberately tight: on a wide
@@ -2114,15 +2115,22 @@ body.game-page {
   transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
+/* The browser's own focus ring is dropped only where focus already shows as a
+   colour change — the button fills, the toggle goes accent — so tabbing is
+   still perfectly visible without a black box over the top of it. */
 .game-btn:hover,
 .game-btn:focus-visible {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
+  outline: none;
 }
 
+/* Pulled up into the space under the picture: the line appears and disappears
+   between rounds, and it should not shove the guess box down the page when it
+   does. */
 .game-ask {
-  margin: 0 0 12px 0;
+  margin: -14px 0 6px 0;
   font-size: clamp(15px, 1.5vw, 19px);
   font-weight: 300;
   color: var(--accent);
@@ -2143,6 +2151,12 @@ body.game-page {
   font-size: clamp(21px, 2.5vw, 38px);
   font-weight: 300;
   margin: 0 0 22px 0;
+}
+
+/* Half the size of the city, which is the thing you were actually asked for. */
+.game-answer-country {
+  font-size: 0.5em;
+  opacity: 0.8;
 }
 
 /* The same box as the guess button, in the same place: after a reveal your
@@ -2239,19 +2253,22 @@ body.game-page {
      The multiplier converts the height the picture may take into the width it
      will then be. A map is the 1000 x 700 frame they are all shot in, so on its
      own that is 1.42; the banner above it is another 1/8.39 of the same width,
-     so the pair together come to 1 / (1/1.42 + 1/8.39) = 1.21. Off the board
-     (the menu and the result) only the banner is in play, so the wider figure
-     stands. */
-  .game-page {
-    --board: max(360px, min(1400px, 100%, calc((100vh - 340px) * 1.42)));
-  }
+     so the pair together come to 1 / (1/1.42 + 1/8.39) = 1.26.
 
-  /* Mid-game the reclaimed top padding goes to the map. */
-  .game-page.is-playing {
-    /* The floor is for a phone held sideways, where the height term alone would
-       leave a map a few centimetres across. Below it the page scrolls, which is
-       the better of the two bad options. */
-    --board: max(360px, min(1400px, 100%, calc((100vh - var(--page-top) - 300px) * 1.26)));
+     One figure, used on the menu as well as mid-game. The menu has no picture
+     to fit and could be wider, but then the banner and the rules under it would
+     jump narrower the moment a game started; holding both to the width the map
+     can actually take is worth more than the extra inches on the menu.
+
+     The floor is for a phone held sideways, where the height term alone would
+     leave a map a few centimetres across. Below it the page scrolls, which is
+     the better of the two bad options. */
+  .game-page {
+    /* The ceiling is the map's own size: the round images are built 1200px
+       wide, plus the 2px rule either side. Past that the picture would be
+       upscaled, and — because it stops growing while the banner above it does
+       not — the two would stop lining up. */
+    --board: max(360px, min(1204px, 100%, calc((100vh - var(--page-top) - 300px) * 1.26)));
   }
 
   /* Mid-game the banner sits closer to the bar; every pixel it gives back goes
@@ -2488,6 +2505,8 @@ body.game-page {
 .game-cosmetic-toggle:hover,
 .game-cosmetic-toggle:focus-visible {
   opacity: 1;
+  color: var(--accent);
+  outline: none;
 }
 
 .game-colors {

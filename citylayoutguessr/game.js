@@ -16,12 +16,27 @@
   var STORE_KEY = "ndl-layout-guesser-v1";
   /* The daily keeps its own slot: starting a custom game should not throw away
      a daily you are half way through, and the other way round. */
-  var STORE_KEY_DAILY = "ndl-clg-daily-progress-v1";
+  var STORE_KEY_DAILY = "ndl-clg-daily-progress-v1-e2";
   var LENGTHS = [10, 20, 30, 50, Infinity];
   var SETUP_KEY = "ndl-layout-guesser-setup-v1";
-  var DAILY_KEY = "ndl-clg-daily-v1";
+  var DAILY_KEY = "ndl-clg-daily-v1-e2";
   var DAILY_EPOCH = Date.UTC(2026, 8, 2); // no. 1 was 2 September 2026
   var DAILY_ROUNDS = 10;
+
+  /* The shape of a daily: four you should get, three that make you think, three
+     that probably beat you. The numbers must add up to DAILY_ROUNDS. If a level
+     is short of pictures the shortfall is made up from the others, so the day
+     is always ten maps long. */
+  var DAILY_MIX = [
+    { tier: "easy", count: 4 },
+    { tier: "medium", count: 3 },
+    { tier: "hard", count: 3 }
+  ];
+
+  /* Part of the seed, and of the keys the browser remembers a day by. Changing
+     it deals every day again from scratch and drops any record of the old one —
+     which is what "reset the daily" means. */
+  var DAILY_EDITION = "2";
 
   var el = {
     intro: document.getElementById("game-intro"),
@@ -461,13 +476,45 @@
 
   /* Sorted first, so the order depends only on which cities exist and not on
      the order they happen to sit in the file. */
+  /* Sorted by id first so the pool is in the same order everywhere before the
+     seeded shuffle touches it; two browsers must deal the same ten maps. */
+  function dailyPool(key) {
+    return playable(dailyConfig(key))
+      .slice()
+      .sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+  }
+
   function dailyRounds(key) {
     var dir = data.imageDir || "../art/game/";
     var ext = (manifest && manifest.ext) || "webp";
-    var pool = playable(dailyConfig(key))
-      .slice()
-      .sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
-    return seededShuffle(pool, seedFrom("citylayoutguessr-" + key))
+    var seed = "citylayoutguessr-" + DAILY_EDITION + "-" + key;
+    var pool = dailyPool(key);
+    var taken = {};
+    var picked = [];
+
+    /* Each level is shuffled with its own seed, so a level gaining or losing a
+       picture reshuffles that level alone rather than the whole day. */
+    DAILY_MIX.forEach(function (part) {
+      var ofTier = pool.filter(function (c) { return c.tier === part.tier; });
+      seededShuffle(ofTier, seedFrom(seed + "-" + part.tier))
+        .slice(0, part.count)
+        .forEach(function (c) {
+          taken[c.id] = true;
+          picked.push(c);
+        });
+    });
+
+    /* A level short of pictures leaves a gap; the rest of the pool fills it so
+       the day is always ten long. */
+    if (picked.length < DAILY_ROUNDS) {
+      var rest = pool.filter(function (c) { return !taken[c.id]; });
+      seededShuffle(rest, seedFrom(seed + "-fill"))
+        .slice(0, DAILY_ROUNDS - picked.length)
+        .forEach(function (c) { picked.push(c); });
+    }
+
+    /* Shuffled once more so the day does not run easy-then-hard in order. */
+    return seededShuffle(picked, seedFrom(seed + "-order"))
       .slice(0, DAILY_ROUNDS)
       .map(function (c) {
         return { city: c, url: dir + c.id + "." + ext };
@@ -1281,8 +1328,22 @@
       scorePart(state.wrong, "wrong", "✗");
   }
 
+  /* Plain text, for the screen-reader line and anywhere a string is wanted. */
   function answerLine(city) {
-    return city.country ? city.city + ", " + city.country : city.city;
+    return city.country ? city.city + " [" + city.country + "]" : city.city;
+  }
+
+  /* The same thing as nodes, so the country can be set smaller than the city
+     it belongs to. Built rather than written as HTML: these are names out of
+     cities.json and they go in as text, never as markup. */
+  function fillAnswer(node, city) {
+    node.textContent = city.city;
+    if (!city.country) return;
+    var where = document.createElement("span");
+    where.className = "game-answer-country";
+    where.textContent = "[" + city.country + "]";
+    node.appendChild(document.createTextNode(" "));
+    node.appendChild(where);
   }
 
   function flashResult(right) {
@@ -1303,7 +1364,7 @@
     el.reveal.classList.toggle("is-right", entry.right);
     el.reveal.classList.toggle("is-wrong", !entry.right);
     el.verdict.textContent = entry.right ? "Correct" : "Incorrect";
-    el.answer.textContent = answerLine(entry.city);
+    fillAnswer(el.answer, entry.city);
 
     show(el.form, false);
     show(el.reveal, true);
@@ -1323,7 +1384,7 @@
   function askedToSkip() {
     if (emptyAsked) return true;
     emptyAsked = true;
-    el.ask.textContent = "type a city — or press enter again to give up on this one";
+    el.ask.textContent = "type a city or press enter once more to give up";
     show(el.ask, true);
     el.input.focus({ preventScroll: true });
     return false;
@@ -1365,7 +1426,7 @@
       mark.setAttribute("aria-hidden", "true");
       var name = document.createElement("span");
       name.className = "game-recap-name";
-      name.textContent = answerLine(entry.city);
+      fillAnswer(name, entry.city);
       li.appendChild(mark);
       li.appendChild(name);
       if (!entry.right && entry.guess) {
@@ -1720,8 +1781,16 @@
       show(el.nameNote, true);
       cloud.setName(wanted).then(function (res) {
         if (!res.ok) {
-          el.nameNote.textContent = "that name could not be saved.";
+          /* The reason comes from the database, and it is the only clue there
+             is when a policy or a connection is at fault — so it is shown
+             rather than swallowed. */
+          el.nameNote.textContent =
+            "could not save that name" +
+            (res.reason && res.reason !== "failed" ? " — " + res.reason : "") + ".";
           show(el.nameNote, true);
+          if (window.console && console.warn) {
+            console.warn("citylayoutguessr: rename failed —", res.reason);
+          }
           return;
         }
         closeRename();

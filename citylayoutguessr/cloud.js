@@ -117,10 +117,25 @@ async function setName(name) {
   if (!db || !session) return { ok: false, reason: "signed-out" };
   const clean = String(name || "").trim().slice(0, 24);
   if (!clean) return { ok: false, reason: "empty" };
-  const { error } = await db
+  /* Update first, and only insert if there was no row to update. An upsert
+     would do both in one call, but it needs the insert policy to pass even when
+     the row already exists, and the failure it produces then says nothing
+     useful. This way each half reports its own error. */
+  const { data, error } = await db
     .from("profiles")
-    .upsert({ id: session.user.id, display_name: clean }, { onConflict: "id" });
-  if (error) return { ok: false, reason: error.message || "failed" };
+    .update({ display_name: clean })
+    .eq("id", session.user.id)
+    .select("id");
+  if (error) return { ok: false, reason: error.message || "update failed" };
+
+  if (!data || !data.length) {
+    const { error: insertError } = await db
+      .from("profiles")
+      .insert({ id: session.user.id, display_name: clean });
+    if (insertError) {
+      return { ok: false, reason: insertError.message || "insert failed" };
+    }
+  }
   profile = Object.assign({}, profile, { display_name: clean });
   announce();
   return { ok: true, name: clean };
