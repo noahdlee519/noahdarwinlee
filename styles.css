@@ -1823,6 +1823,29 @@ body.game-page {
   background: currentColor;
 }
 
+/* Difficulty and region are the two pill rows worth confirming at a glance,
+   so their filled circles get a tick in the page background color rather
+   than relying on fill alone. */
+#setup-levels .game-check-mark::after,
+#setup-continents .game-check-mark::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 0.3em;
+  height: 0.15em;
+  border-left: 0.09em solid var(--bg);
+  border-bottom: 0.09em solid var(--bg);
+  transform: translate(-50%, -50%) rotate(-45deg);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+#setup-levels .game-check input:checked ~ .game-check-mark::after,
+#setup-continents .game-check input:checked ~ .game-check-mark::after {
+  opacity: 1;
+}
+
 .game-check input:focus-visible ~ .game-check-mark {
   outline: 2px solid var(--ink);
   outline-offset: 3px;

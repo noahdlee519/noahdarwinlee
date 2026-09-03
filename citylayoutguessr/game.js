@@ -23,6 +23,11 @@
   var DAILY_EPOCH = Date.UTC(2026, 8, 2); // no. 1 was 2 September 2026
   var DAILY_ROUNDS = 10;
 
+  /* With hints on, a miss is not the end of the round: the first buys the
+     continent, the second the country, and the third is the answer. Off, it is
+     one guess as it always was. */
+  var HINT_TRIES = 3;
+
   /* The shape of a daily: four you should get, three that make you think, three
      that probably beat you. The numbers must add up to DAILY_ROUNDS. If a level
      is short of pictures the shortfall is made up from the others, so the day
@@ -107,7 +112,8 @@
     nameInput: document.getElementById("game-name-input"),
     nameCancel: document.getElementById("game-name-cancel"),
     nameNote: document.getElementById("game-name-note"),
-    setupContinue: document.getElementById("setup-continue")
+    setupContinue: document.getElementById("setup-continue"),
+    setupHints: document.getElementById("setup-hints")
   };
 
   var data = null;
@@ -225,8 +231,10 @@
             levels: state.cfg.levels,
             continents: state.cfg.continents,
             length: state.cfg.length === Infinity ? "endless" : state.cfg.length,
+            hints: Boolean(state.cfg.hints),
             daily: state.cfg.daily || null
           },
+          tries: state.tries || 0,
           paused: Boolean(paused),
           total: state.total,
           index: state.index,
@@ -321,6 +329,7 @@
       index: saved.index,
       correct: saved.correct || 0,
       wrong: saved.wrong || 0,
+      tries: saved.tries || 0,
       revealed: false,
       log: log
     };
@@ -474,6 +483,9 @@
       levels: levels().map(function (t) { return t.id; }),
       continents: continents().map(function (t) { return t.id; }),
       length: DAILY_ROUNDS,
+      /* Off, and not a choice: the ranked game has to be the same one for
+         everybody who plays it. */
+      hints: false,
       daily: key
     };
   }
@@ -927,6 +939,7 @@
       }).join(" + "));
     }
     if (cfg.length === Infinity) bits.push("endless");
+    if (cfg.hints) bits.push("hints");
     return bits.join(" · ");
   }
 
@@ -996,7 +1009,8 @@
     return {
       levels: chosen(el.setupLevels),
       continents: chosen(el.setupContinents),
-      length: LENGTHS[i]
+      length: LENGTHS[i],
+      hints: Boolean(el.setupHints && el.setupHints.checked)
     };
   }
 
@@ -1065,7 +1079,8 @@
     try {
       localStorage.setItem(SETUP_KEY, JSON.stringify({
         levels: cfg.levels, continents: cfg.continents,
-        length: cfg.length === Infinity ? "endless" : cfg.length
+        length: cfg.length === Infinity ? "endless" : cfg.length,
+        hints: Boolean(cfg.hints)
       }));
     } catch (err) {}
   }
@@ -1107,6 +1122,9 @@
       });
       var i = LENGTHS.indexOf(saved.length);
       if (i !== -1) el.setupLength.value = i;
+      /* !== false rather than Boolean(): a setup saved before hints existed has
+         no opinion about them, and should get the default rather than off. */
+      if (el.setupHints) el.setupHints.checked = saved.hints !== false;
     }
     boxes(el.setupLevels)[0].checked = boxes(el.setupLevels).slice(1).every(function (b) { return b.checked; });
     boxes(el.setupContinents)[0].checked = boxes(el.setupContinents).slice(1).every(function (b) { return b.checked; });
@@ -1115,6 +1133,7 @@
     wireAll(el.setupLevels);
     wireAll(el.setupContinents);
     el.setupLength.addEventListener("input", refreshSetup);
+    if (el.setupHints) el.setupHints.addEventListener("change", refreshSetup);
     refreshSetup();
   }
 
@@ -1394,7 +1413,11 @@
   /* An empty box is almost always a slipped key rather than a decision, and it
      used to score as a miss. Now the first press asks, the second gives up. */
   function askedToSkip() {
-    if (emptyAsked) return true;
+    if (emptyAsked) {
+      /* Giving up is giving up: no more clues, straight to the answer. */
+      if (state) state.tries = HINT_TRIES;
+      return true;
+    }
     emptyAsked = true;
     el.ask.textContent = "type a city or press enter once more to give up";
     show(el.ask, true);
@@ -1402,14 +1425,49 @@
     return false;
   }
 
+  /* What a miss is worth telling you, in order. The continent first because it
+     is the smaller give-away; the country second because it usually ends it. */
+  function hintFor(city, tries) {
+    var where = tries === 1
+      ? city.continent || city.country
+      : city.country || city.continent;
+    return where ? "hint: it\u2019s in " + where : null;
+  }
+
   function judge(guess) {
     var round = state.rounds[state.index];
-    var entry = { city: round.city, right: isMatch(guess, round.city), guess: guess.trim() };
+    var right = isMatch(guess, round.city);
+
+    /* A miss with hints on and tries left buys a clue rather than the answer.
+       Nothing goes into the log yet: the round is still being played. */
+    if (!right && state.cfg.hints) {
+      state.tries = (state.tries || 0) + 1;
+      var clue = state.tries < HINT_TRIES ? hintFor(round.city, state.tries) : null;
+      if (clue) {
+        /* One line, replaced rather than added to: the country supersedes the
+           continent, and two clues stacked up would push the field down the
+           page mid-round. */
+        flashResult(false);
+        el.ask.textContent = clue;
+        show(el.ask, true);
+        el.status.textContent = clue.charAt(0).toUpperCase() + clue.slice(1) + ".";
+        el.input.value = "";
+        el.input.disabled = false;
+        el.submit.disabled = false;
+        el.input.focus({ preventScroll: true });
+        emptyAsked = false;
+        save();
+        return;
+      }
+    }
+
+    var entry = { city: round.city, right: right, guess: guess.trim() };
     if (entry.right) state.correct += 1;
     else state.wrong += 1;
     state.log.push(entry);
     show(el.ask, false);
     emptyAsked = false;
+    state.tries = 0;
     flashResult(entry.right);
     reveal(entry);
     save();
@@ -1417,6 +1475,7 @@
 
   function advance() {
     state.index += 1;
+    state.tries = 0;
     if (state.index >= state.rounds.length) {
       if (state.cfg.length === Infinity && extend()) renderRound();
       else finish();
@@ -1580,10 +1639,15 @@
   /* The board lives in one place in the markup and is moved to whichever
      screen is on: the menu, or the result page right after a daily run, which
      is when anyone actually wants to see it. */
+  /* The account row travels with the board. It sits directly above it on the
+     menu already, so nothing moves there — but it means that finishing a game
+     signed out puts the sign-in button on the same screen as the line asking
+     you to use it, rather than back on a menu you have to go looking for. */
   function placeBoard(where) {
     if (!el.leaders) return;
     var slot = where === "result" ? el.leadersSlotResult : el.leadersSlot;
     if (!slot || !slot.parentNode) return;
+    if (el.account) slot.parentNode.insertBefore(el.account, slot);
     slot.parentNode.insertBefore(el.leaders, slot);
   }
 
@@ -1693,8 +1757,16 @@
       (allTime ? cloud.myLifetime() : cloud.myPlace(day)).then(function (row) {
         if (boardDay !== stamp) return;
         if (!row) {
+          /* Played on this device but not on the board: the score is waiting on
+             something — a sign-in that has only just happened, or a post that
+             did not go through — and saying "you haven't played" would be a
+             plain untruth. */
+          var mine = readDaily();
+          var playedToday = Boolean(mine && mine.day === dayKey());
           el.leadersNote.textContent = allTime
             ? "you haven’t finished a daily yet."
+            : playedToday
+            ? "you played today — that score has not reached the board yet"
             : "you haven’t played today yet.";
         } else if (allTime) {
           el.leadersNote.textContent =
@@ -1786,9 +1858,29 @@
       return;
     }
     cloud.postDaily(record.correct, record.log.length).then(function (res) {
-      if (!res.ok && res.reason !== "already") {
+      if (res.ok || res.reason === "already") {
+        record.posted = true;
+        writeDaily(record);
+      } else {
         el.leadersNote.textContent = "that score could not be posted.";
         show(el.leadersNote, true);
+      }
+      loadBoard();
+    });
+  }
+
+  /* You can play the daily and sign in afterwards — most people will, since
+     there is nothing to sign in for until you have a score. The row is written
+     when the account appears, not only at the moment the game ends, or that
+     score would never reach the board. */
+  function postSavedDaily() {
+    if (!cloudOn() || !cloud.user()) return;
+    var record = readDaily();
+    if (!record || record.day !== dayKey() || record.posted) return;
+    cloud.postDaily(record.correct, record.log.length).then(function (res) {
+      if (res.ok || res.reason === "already") {
+        record.posted = true;
+        writeDaily(record);
       }
       loadBoard();
     });
@@ -1798,6 +1890,7 @@
     cloud = window.clgCloud || null;
     renderAccount();
     if (!cloudOn()) return;
+    postSavedDaily();
     /* On the first load nothing has moved the board yet, so put it on whichever
        screen is actually showing — the result page if you have already played
        today, the menu otherwise. */
