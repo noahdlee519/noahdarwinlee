@@ -1214,9 +1214,32 @@ a[href="/cv/"]:active {
    cream-on-orange inversion for anything you can press. The recap uses the same
    circle-in-a-square mark as the site icon — filled for right, empty for wrong. */
 
-.game {
+/* One column for everything on the page. Nothing — not the cosmetic panel, not
+   the credit line, not the rules under the fieldsets — is allowed to run past
+   the banner's right edge, so the column is set once here and every child
+   inherits the limit. Off the board it is the menu's 940; in play it is
+   whatever width the map has taken. */
+.game-page {
+  --board: 100%;
+  --col: min(var(--board), 940px);
+}
+
+.game-page.is-playing {
+  --col: var(--board);
+}
+
+/* The gutter lives on the page rather than on the column, so that the 100% the
+   column is measured against already has both margins taken out of it and the
+   banner, the map and the rules all land on the same right edge. */
+.game-page {
   padding-right: var(--page-left);
-  max-width: 1420px;
+}
+
+.game {
+  box-sizing: border-box;
+  width: var(--col);
+  max-width: 100%;
+  padding-right: 0;
 }
 
 /* .cv-page main p indents every paragraph like a CV entry; the game's do not. */
@@ -1235,12 +1258,8 @@ a[href="/cv/"]:active {
   margin: 0 0 clamp(18px, 2.4vw, 34px) 0;
 }
 
-/* Off the board the banner belongs to the menu, so it takes the menu's width —
-   the same 940px column the daily row, the panel and the board sit in — rather
-   than standing out past everything under it. In play it follows the map. */
-.game-page:not(.is-playing) .game-logo {
-  max-width: min(940px, 100%);
-}
+/* The column above already holds the banner to the menu's width off the board
+   and to the map's width in play, so the picture simply fills it. */
 
 .game-heading {
   font-weight: 300;
@@ -1432,16 +1451,21 @@ body.game-page {
    it is the one puzzle everybody gets. The heading carries the rule so the two
    halves of the menu read as two halves. */
 .game-custom {
-  width: min(940px, 100%);
-  margin: 0 0 24px 0;
-  padding-top: 9px;
+  margin: 0 0 22px 0;
+  padding-top: 14px;
   border-top: 2px solid var(--ink);
-  font-size: clamp(13px, 1.3vw, 16px);
-  font-weight: 300;
-  letter-spacing: 0.08em;
+  font-size: clamp(17px, 1.9vw, 26px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
   line-height: 1;
   text-transform: uppercase;
-  opacity: 0.75;
+}
+
+/* The heading's own rule is the divider; the difficulty fieldset's would be a
+   second line a few pixels under it. */
+.game-custom + .game-setup .game-set:first-of-type {
+  border-top: 0;
+  padding-top: 0;
 }
 
 /* Two class names so this beats `.game-btn`'s transparent background, which is
@@ -1642,6 +1666,28 @@ body.game-page {
   font-size: clamp(13px, 1.4vw, 17px);
   font-weight: 300;
   white-space: nowrap;
+}
+
+/* The two end labels are centred on marks that sit at the very ends of the
+   scale, so half of each would hang outside the column. They line up with their
+   own edge instead; the marks stay where they are. */
+.game-tick:first-child {
+  transform: none;
+}
+
+.game-tick:first-child::before {
+  margin-left: 0;
+}
+
+.game-tick:last-child {
+  left: auto;
+  right: 0;
+  transform: none;
+  text-align: right;
+}
+
+.game-tick:last-child::before {
+  margin-right: 0;
 }
 
 /* The mark rises to meet the slider's own line — it read as floating below it

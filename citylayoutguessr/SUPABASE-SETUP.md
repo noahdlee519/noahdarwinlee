@@ -72,7 +72,10 @@ ID and secret.
 ## 5. Tell the site where to look
 
 Open `citylayoutguessr/supabase-config.js` and fill in the two values from
-**Project Settings -> API**:
+**Settings -> API Keys** (the **Connect** button at the top of the dashboard
+shows the same pair). Take the **publishable** key — `sb_publishable_...` on a
+new project, or the legacy `anon` key beginning `eyJ` on an older one; either
+works. Never the secret one:
 
 ```js
 window.CLG_SUPABASE = {
