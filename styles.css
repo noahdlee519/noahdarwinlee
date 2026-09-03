@@ -1219,6 +1219,17 @@ a[href="/cv/"]:active {
   margin-left: 0;
 }
 
+/* ---------------- the wordmark banner ----------------
+   The logo runs the full width of the game window, so it is sized by the same
+   --board variable the map is. It keeps its own black ground, which is why it
+   is not affected by the cosmetic colours. */
+.game-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 clamp(18px, 2.4vw, 34px) 0;
+}
+
 .game-heading {
   font-weight: 300;
   font-size: clamp(30px, 4.6vw, 66px);
@@ -1553,11 +1564,10 @@ body.game-page {
   font-weight: 300;
 }
 
-/* Three parts: where you are, the wordmark, the tally. The outer two are given
-   equal flex space so the title lands in the middle of the bar rather than in
-   the middle of whatever is left over. */
+/* Two parts now that the wordmark is a banner above the board: where you are on
+   the left, the tally and the way out on the right. */
 .game-progress {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1569,14 +1579,8 @@ body.game-page {
   margin-right: clamp(14px, 2vw, 30px);
 }
 
-.game-meta-title {
-  flex: 0 0 auto;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-
 .game-meta-right {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
@@ -1901,16 +1905,25 @@ body.game-page {
      It is written as available height rather than a flat fraction of the
      window, because everything around the picture is a fixed amount (page top,
      the bar, the margins, and the verdict and answer under it) and a fraction
-     gives that fixed part too little room on a short screen. The 1.42 converts
-     the height a map may take into the width it will then be; it assumes the
-     1000 x 700 frame the maps are all shot in. */
+     gives that fixed part too little room on a short screen.
+
+     The multiplier converts the height the picture may take into the width it
+     will then be. A map is the 1000 x 700 frame they are all shot in, so on its
+     own that is 1.42; the banner above it is another 1/8.39 of the same width,
+     so the pair together come to 1 / (1/1.42 + 1/8.39) = 1.21. Off the board
+     (the menu and the result) only the banner is in play, so the wider figure
+     stands. */
   .game-page {
     --board: min(1240px, 100%, calc((100vh - 340px) * 1.42));
   }
 
   /* Mid-game the reclaimed top padding goes to the map. */
   .game-page.is-playing {
-    --board: min(1240px, 100%, calc((100vh - 290px) * 1.42));
+    --board: min(1240px, 100%, calc((100vh - 290px) * 1.21));
+  }
+
+  .game-logo {
+    width: var(--board);
   }
 
   .game-image {
@@ -1933,6 +1946,37 @@ body.game-page {
 
   .game-input {
     max-width: none;
+  }
+
+  /* The reveal takes the row the guess field just vacated rather than stacking
+     three things under the map: verdict, answer, and the way on, on one line
+     across the same width. Stacked it cost about 185px of height, which with a
+     banner overhead is the difference between the answer landing on screen and
+     landing under the fold. */
+  .game-reveal {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(16px, 2vw, 32px);
+    width: var(--board);
+    max-width: 100%;
+  }
+
+  .game-verdict {
+    flex: 0 0 auto;
+    font-size: clamp(24px, 2.8vw, 46px);
+    margin: 0;
+  }
+
+  .game-answer {
+    flex: 0 1 auto;
+    margin: 0 auto 0 0;
+    font-size: clamp(19px, 2.2vw, 34px);
+  }
+
+  .game-btn-next {
+    flex: 0 0 auto;
+    align-self: center;
+    margin: 0;
   }
 }
 
@@ -1963,14 +2007,6 @@ body.game-page {
 
   .game-meta-right {
     flex: 0 0 auto;
-  }
-
-  .game-meta-title {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-align: center;
-    text-overflow: ellipsis;
   }
 
   .game-image {

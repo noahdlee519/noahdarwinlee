@@ -42,8 +42,26 @@
     </button>
 
     <main class="game">
+      <!-- The wordmark, as wide as the game window itself. The page already
+           carries a screen-reader h1 with the name, so the banner is marked
+           decorative rather than read out a second time. -->
+      <img
+        class="game-logo"
+        src="../art/web/citylayoutguessr/logo-1240.webp"
+        srcset="
+          ../art/web/citylayoutguessr/logo-760.webp   760w,
+          ../art/web/citylayoutguessr/logo-1240.webp 1240w,
+          ../art/web/citylayoutguessr/logo-1860.webp 1860w,
+          ../art/web/citylayoutguessr/logo-2480.webp 2480w
+        "
+        sizes="(min-width: 701px) min(1240px, 92vw), 100vw"
+        width="7074"
+        height="843"
+        alt=""
+        fetchpriority="high"
+      />
+
       <section class="game-intro" id="game-intro">
-        <h2 class="game-heading">citylayoutguessr</h2>
         <p class="game-lede">
           Guess the city from the satellite image of its grid layout. Type the
           city and press enter.
@@ -98,7 +116,6 @@
             ><span class="game-progress-where" id="game-progress-where"></span
             ><span class="game-progress-count" id="game-progress-count"></span
           ></span>
-          <span class="game-meta-title">citylayoutguessr</span>
           <span class="game-meta-right">
             <span class="game-score" id="game-score"></span>
             <button class="game-quit" type="button" id="game-quit">menu</button>
