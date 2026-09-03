@@ -1049,7 +1049,7 @@
 
     cfg = readSetup();
     el.setupPool.textContent = n
-      ? n + (n === 1 ? " map" : " maps") + " to draw from"
+      ? "your game will draw from " + n + (n === 1 ? " map" : " maps")
       : (cfg.levels.length && cfg.continents.length
           ? "no maps for that combination yet"
           : "pick at least one of each");
@@ -1432,7 +1432,7 @@
       if (!entry.right && entry.guess) {
         var said = document.createElement("span");
         said.className = "game-recap-guess";
-        said.textContent = "you said " + entry.guess;
+        said.textContent = "you said \u2018" + entry.guess + "\u2019";
         li.appendChild(said);
       }
       el.recap.appendChild(li);

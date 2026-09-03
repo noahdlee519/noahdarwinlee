@@ -30,7 +30,7 @@ try {
   dayFormat = null;
 }
 
-function today() {
+function todayKey() {
   const now = new Date();
   return dayFormat ? dayFormat.format(now) : now.toISOString().slice(0, 10);
 }
@@ -42,8 +42,13 @@ let profile = null;
 async function connect() {
   if (!ON) return null;
   if (client) return client;
+  /* Pinned to an exact version on purpose. "@2" would let the CDN hand this
+     page whatever the newest 2.x happens to be that day — a script with full
+     access to the signed-in session, changing under us without a commit. Bump
+     it deliberately, or vendor the file into the repo and import it from
+     there. */
   const mod = await import(
-    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/+esm"
   );
   client = mod.createClient(CFG.url, CFG.anonKey, {
     auth: {
@@ -151,7 +156,7 @@ async function postDaily(correct, total, durationMs) {
   if (!db || !session) return { ok: false, reason: "signed-out" };
   const row = {
     user_id: session.user.id,
-    day: today(),
+    day: todayKey(),
     correct: correct,
     total: total
   };
@@ -170,7 +175,7 @@ async function board(day, limit) {
   const { data, error } = await db
     .from("daily_board")
     .select("place, display_name, avatar_url, correct, user_id")
-    .eq("day", day || today())
+    .eq("day", day || todayKey())
     .order("place", { ascending: true })
     .limit(limit || 25);
   if (error) return null;
@@ -209,7 +214,7 @@ async function myPlace(day) {
   const { data, error } = await db
     .from("daily_board")
     .select("place, correct")
-    .eq("day", day || today())
+    .eq("day", day || todayKey())
     .eq("user_id", session.user.id)
     .maybeSingle();
   if (error) return null;
@@ -217,6 +222,21 @@ async function myPlace(day) {
 }
 
 /* ---------------- counting ---------------- */
+
+/* A visit is counted once per browser per day. Reloading the page all afternoon
+   should not read as an afternoon of visitors, and it keeps the table from
+   growing a row every time you glance at the game. */
+const SEEN_KEY = "ndl-clg-visit-v1";
+function firstVisitToday() {
+  try {
+    const today = todayKey();
+    if (localStorage.getItem(SEEN_KEY) === today) return false;
+    localStorage.setItem(SEEN_KEY, today);
+    return true;
+  } catch (err) {
+    return true;
+  }
+}
 
 /* Insert-only from out here: the table has no select policy, so nothing that
    reaches a browser can read it back. Failures are swallowed on purpose — a
@@ -229,7 +249,7 @@ async function track(kind, detail) {
     await db.from("events").insert({
       kind: kind,
       user_id: session ? session.user.id : null,
-      day: today(),
+      day: todayKey(),
       path: location.pathname.slice(0, 299),
       referrer: (document.referrer || "").slice(0, 299),
       detail: detail || null
@@ -243,7 +263,7 @@ async function track(kind, detail) {
 
 window.clgCloud = {
   enabled: ON,
-  today: today,
+  today: todayKey,
   signIn: signIn,
   signOut: signOut,
   user: whoami,
@@ -264,7 +284,7 @@ if (ON) {
       session = data ? data.session : null;
       if (session) await loadProfile();
       announce();
-      await track("visit");
+      if (firstVisitToday()) await track("visit");
 
       db.auth.onAuthStateChange(async function (event, next) {
         const wasSignedIn = Boolean(session);

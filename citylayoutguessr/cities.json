@@ -341,6 +341,11 @@
       "aliases": ["joburg", "jo burg", "jozi", "egoli", "the city of gold", "city of gold", "jhb"]
     },
     {
+      "id": "kuala-lumpur", "tier": "medium",
+      "city": "Kuala Lumpur", "country": "Malaysia", "continent": "Asia",
+      "aliases": ["kl", "kualalumpur"]
+    },
+    {
       "id": "kyiv", "tier": "medium",
       "city": "Kyiv", "country": "Ukraine", "continent": "Europe",
       "aliases": ["kiev", "kyyiv", "the mother of rus cities"]
@@ -414,6 +419,11 @@
       "id": "munich", "tier": "medium",
       "city": "Munich", "country": "Germany", "continent": "Europe",
       "aliases": ["munchen", "münchen", "muenchen", "monaco di baviera", "minga", "the northernmost city of italy"]
+    },
+    {
+      "id": "nairobi", "tier": "medium",
+      "city": "Nairobi", "country": "Kenya", "continent": "Africa",
+      "aliases": ["nrb", "the green city in the sun", "green city in the sun"]
     },
     {
       "id": "naples", "tier": "medium",
@@ -541,6 +551,11 @@
       "aliases": ["den haag", "la haye", "s gravenhage", "the hague netherlands"]
     },
     {
+      "id": "tunis", "tier": "medium",
+      "city": "Tunis", "country": "Tunisia", "continent": "Africa",
+      "aliases": ["tounes"]
+    },
+    {
       "id": "turin", "tier": "medium",
       "city": "Turin", "country": "Italy", "continent": "Europe",
       "aliases": ["torino", "turin italy", "the automobile capital of italy"]
@@ -594,6 +609,11 @@
       "id": "anchorage", "tier": "hard",
       "city": "Anchorage", "country": "United States", "continent": "North America",
       "aliases": ["anchorage alaska", "los anchorage", "anc", "the city of lights and flowers"]
+    },
+    {
+      "id": "ankara", "tier": "medium",
+      "city": "Ankara", "country": "Turkey", "continent": "Asia",
+      "aliases": ["angora"]
     },
     {
       "id": "ashgabat", "tier": "hard",
@@ -651,6 +671,11 @@
       "aliases": ["brunn", "brünn", "brno czechia", "stovezata"]
     },
     {
+      "id": "busan", "tier": "medium",
+      "city": "Busan", "country": "South Korea", "continent": "Asia",
+      "aliases": ["pusan"]
+    },
+    {
       "id": "calgary", "tier": "hard",
       "city": "Calgary", "country": "Canada", "continent": "North America",
       "aliases": ["cowtown", "yyc", "stampede city", "the stampede city"]
@@ -696,6 +721,11 @@
       "aliases": ["arbil", "hewler", "irbil", "hawler", "arbela", "erbil iraq", "hawler city"]
     },
     {
+      "id": "fuzhou", "tier": "hard",
+      "city": "Fuzhou", "country": "China", "continent": "Asia",
+      "aliases": ["foochow"]
+    },
+    {
       "id": "guadalajara", "tier": "hard",
       "city": "Guadalajara", "country": "Mexico", "continent": "North America",
       "aliases": ["gdl", "the pearl of the west", "guadalajara mexico"]
@@ -709,6 +739,11 @@
       "id": "indianapolis", "tier": "hard",
       "city": "Indianapolis", "country": "United States", "continent": "North America",
       "aliases": ["indy", "naptown", "the circle city", "circle city"]
+    },
+    {
+      "id": "islamabad", "tier": "medium",
+      "city": "Islamabad", "country": "Pakistan", "continent": "Asia",
+      "aliases": ["isb"]
     },
     {
       "id": "jacksonville", "tier": "hard",
@@ -746,11 +781,6 @@
       "aliases": ["leopoldville", "leopoldstad", "kin", "kin la belle", "kinshasa drc", "kinshasa congo"]
     },
     {
-      "id": "kuala-lumpur", "tier": "medium",
-      "city": "Kuala Lumpur", "country": "Malaysia", "continent": "Asia",
-      "aliases": ["kl", "kualalumpur"]
-    },
-    {
       "id": "la-plata", "tier": "hard",
       "city": "La Plata", "country": "Argentina", "continent": "South America",
       "aliases": ["laplata", "the city of diagonals", "city of diagonals", "the square city", "eva peron city"]
@@ -784,11 +814,6 @@
       "id": "monterrey", "tier": "hard",
       "city": "Monterrey", "country": "Mexico", "continent": "North America",
       "aliases": ["mty", "la sultana del norte", "the sultan of the north", "monterrey mexico"]
-    },
-    {
-      "id": "nairobi", "tier": "medium",
-      "city": "Nairobi", "country": "Kenya", "continent": "Africa",
-      "aliases": ["nrb", "the green city in the sun", "green city in the sun"]
     },
     {
       "id": "nantes", "tier": "hard",
@@ -886,11 +911,6 @@
       "aliases": ["tiflis", "tblisi", "tpilisi", "tbilisi georgia"]
     },
     {
-      "id": "tunis", "tier": "medium",
-      "city": "Tunis", "country": "Tunisia", "continent": "Africa",
-      "aliases": ["tounes"]
-    },
-    {
       "id": "twin-cities", "tier": "hard",
       "city": "The Twin Cities", "country": "United States", "continent": "North America",
       "aliases": ["minneapolis", "saint paul", "st paul", "minneapolis saint paul", "msp", "twin cities", "the mini apple"]
@@ -899,6 +919,11 @@
       "id": "ulaanbaatar", "tier": "hard",
       "city": "Ulaanbaatar", "country": "Mongolia", "continent": "Asia",
       "aliases": ["ulan bator", "ulaan baatar", "ulanbator", "ulan bataar", "urga", "ub", "niislel khuree", "khuree"]
+    },
+    {
+      "id": "urumqi", "tier": "hard",
+      "city": "Urumqi", "country": "China", "continent": "Asia",
+      "aliases": ["wulumuqi", "urumchi"]
     },
     {
       "id": "valletta", "tier": "hard",

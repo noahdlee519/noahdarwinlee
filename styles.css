@@ -1776,7 +1776,10 @@ body.game-page {
    would hang outside the column; it hangs off its own right edge instead, and
    the mark stays where it was. The first label is narrow enough to stay
    centred. */
+/* Flush with the right end of the scale rather than centred on the last stop,
+   which is inset by half a slider thumb. */
 .game-tick:last-child {
+  margin-left: 10px;
   transform: translateX(-100%);
   text-align: right;
 }
@@ -2316,14 +2319,16 @@ body.game-page {
      full-screen window. It only has two words to say. */
   .game-verdict {
     flex: 0 0 auto;
-    font-size: clamp(22px, 1.7vw, 32px);
+    font-size: clamp(33px, 2.55vw, 48px);
     margin: 0;
   }
 
+  /* The country keeps its half-size relationship to the city, so it grows with
+     it and stays the quieter half of the line. */
   .game-answer {
     flex: 0 1 auto;
     margin: 0 auto 0 0;
-    font-size: clamp(17px, 1.35vw, 25px);
+    font-size: clamp(25px, 2.03vw, 37px);
   }
 
   .game-btn-next {

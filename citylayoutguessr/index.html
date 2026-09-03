@@ -39,6 +39,27 @@
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
 
     <link rel="stylesheet" href="../styles.css" />
+
+    <!-- What this page is allowed to load and talk to. A signed-in session is
+         kept in this browser, so the thing to prevent is any script that is not
+         ours running here: script-src names the only two places code may come
+         from, and object/base/form are shut. Everything else on the list is
+         what the page genuinely needs — the webfont, the map images, Google's
+         profile pictures, and this project's own Supabase. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' https://cdn.jsdelivr.net;
+        style-src 'self' https://fonts.googleapis.com;
+        font-src https://fonts.gstatic.com;
+        img-src 'self' data: https://*.googleusercontent.com;
+        connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
   </head>
   <body class="cv-page game-page" data-fade-distance="45">
     <h1 class="sr-only">citylayoutguessr</h1>
@@ -73,7 +94,7 @@
 
       <section class="game-intro" id="game-intro">
         <p class="game-lede">
-          Guess the city from the satellite image of its grid layout. Type the
+          Guess the city from the satellite image of its urban layout. Type the
           city and press enter.
         </p>
         <div class="game-daily" id="game-daily" hidden>

@@ -18,6 +18,23 @@
 -- can post a score to yesterday.
 
 
+-- ------------------------------------------------------------------ grants --
+--
+-- Row-level security decides which ROWS a request may touch. This decides
+-- whether the roles a browser arrives as may touch the TABLE at all, and it is
+-- a separate thing: without it every request comes back "permission denied for
+-- table ...", policies or no policies. Supabase grants these automatically for
+-- tables made through the dashboard; one made by running SQL may not have them.
+--
+-- anon          nobody is signed in
+-- authenticated somebody is
+--
+-- Safe to run again, and safe to run before the tables exist further down —
+-- so these are repeated at the end of the file, where they will take.
+
+grant usage on schema public to anon, authenticated;
+
+
 -- ---------------------------------------------------------------- profiles --
 
 create table if not exists public.profiles (
@@ -208,3 +225,61 @@ create or replace view public.stats_summary as
     (select count(*) from public.events where kind = 'visit')  as visits_all_time,
     (select count(*) from public.events
        where kind = 'visit' and day = public.game_day())       as visits_today;
+
+
+-- ------------------------------------------------------------------ grants --
+-- The table-level half of the permissions, now that the tables and views all
+-- exist. What each role may attempt; the policies above decide the rest.
+
+grant select                 on public.profiles      to anon, authenticated;
+grant insert                 on public.profiles      to authenticated;
+
+-- Column-level: a signed-in person may change the name on their own row and
+-- nothing else. Without this they could also rewrite avatar_url, which every
+-- other player's browser then loads as an image — an arbitrary URL pointed at
+-- everyone who opens the board.
+revoke update on public.profiles from authenticated;
+grant update (display_name)  on public.profiles      to authenticated;
+
+grant select                 on public.daily_scores  to anon, authenticated;
+grant insert                 on public.daily_scores  to authenticated;
+
+grant insert                 on public.events        to anon, authenticated;
+
+grant select                 on public.daily_board   to anon, authenticated;
+grant select                 on public.lifetime_board to anon, authenticated;
+
+-- Deliberately not granted: any delete or update on daily_scores (a posted
+-- score stands), and any select on events (nothing that reaches a browser can
+-- read the counters back).
+
+
+-- ------------------------------------------------------------ tightening --
+
+-- A name is shown on a public board, so it is kept to a sane length and free
+-- of control characters — which can reorder or hide the text around them.
+-- 60 rather than 24: the name Google supplies on sign-up has to fit too, or
+-- the trigger above would fail and nobody could sign in. The rename box in the
+-- page asks for 24.
+alter table public.profiles drop constraint if exists profiles_name_sane;
+alter table public.profiles
+  add constraint profiles_name_sane
+  check (
+    display_name is null
+    or (char_length(display_name) between 1 and 60
+        and display_name !~ '[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]')
+  )
+  not valid;
+
+-- The stats views are yours alone. They are read with the owner's rights, and
+-- stats_summary counts rows in auth.users, so nothing that reaches a browser
+-- should be able to select from them. Supabase grants new objects to anon and
+-- authenticated by default in some projects; this takes that back.
+revoke all on public.stats_by_day  from anon, authenticated;
+revoke all on public.stats_summary from anon, authenticated;
+
+-- The sign-up trigger's function runs with the owner's rights, so nothing that
+-- reaches a browser should be able to call it directly. game_day() is left
+-- callable on purpose: the insert policies above evaluate it as the caller, and
+-- revoking it would stop anyone posting a score.
+revoke all on function public.handle_new_user() from anon, authenticated;
