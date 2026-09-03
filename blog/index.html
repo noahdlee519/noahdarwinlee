@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Blog — Noah Darwin Lee</title>
+    <meta
+      name="description"
+      content="Travel letters written for friends and family, kept in the shape they were sent in."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/blog/" />
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="Blog — Noah Darwin Lee" />
+    <meta
+      property="og:description"
+      content="Travel letters written for friends and family, kept in the shape they were sent in."
+    />
+    <meta property="og:url" content="https://noahdarwinlee.com/blog/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="cv-page blog-page" data-fade-distance="90">
+    <h1 class="sr-only">Blog</h1>
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="back-link" href="/#about">back</a>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="../favicon.png" alt="" width="30" height="30" />
+    </button>
+
+    <main class="mail">
+      <p class="mail-lede">
+        These went out as emails, to about forty people who had asked to hear where I
+        was. They are kept here the way they were sent rather than tidied into posts,
+        because the shape is half of what they were.
+      </p>
+
+      <!-- The window. Not anyone's product: no wordmark, no borrowed icon set —
+           just the arrangement a mail client uses, because that arrangement is
+           what these were read in. -->
+      <div class="mail-window">
+        <div class="mail-bar">
+          <span class="mail-bar-dots" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
+          <form class="mail-search" role="search" onsubmit="return false">
+            <label class="sr-only" for="mail-q">Search these letters</label>
+            <input
+              id="mail-q"
+              class="mail-search-input"
+              type="search"
+              placeholder="Search mail"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </form>
+          <span class="mail-account" title="noahlee519@gmail.com">
+            <span class="mail-avatar mail-avatar-me" aria-hidden="true">N</span>
+          </span>
+        </div>
+
+        <div class="mail-body">
+          <nav class="mail-rail" aria-label="Folders and labels">
+            <ul class="mail-folders" id="mail-folders"></ul>
+          </nav>
+
+          <div class="mail-panes" id="mail-panes">
+            <section class="mail-listpane" aria-label="Letters">
+              <div class="mail-listhead">
+                <span class="mail-count" id="mail-count"></span>
+                <button class="mail-quiet" type="button" id="mail-markall">
+                  mark all read
+                </button>
+              </div>
+              <ol class="mail-list" id="mail-list" tabindex="-1"></ol>
+              <p class="mail-empty" id="mail-empty" hidden></p>
+            </section>
+
+            <article class="mail-read" id="mail-read" aria-live="polite">
+              <div class="mail-read-blank" id="mail-read-blank">
+                <p>Pick a letter.</p>
+                <p class="mail-keys">
+                  <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>enter</kbd> to open,
+                  <kbd>esc</kbd> to come back, <kbd>/</kbd> to search.
+                </p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="posts.js"></script>
+    <script src="blog.js" defer></script>
+    <script src="../to-top-btn.js" defer></script>
+    <script src="../header.js" defer></script>
+  </body>
+</html>
