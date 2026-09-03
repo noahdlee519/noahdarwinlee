@@ -110,6 +110,22 @@ function announce() {
   );
 }
 
+/* The name that appears on the board. Row-level security lets you write your
+   own profile row and nobody else's. */
+async function setName(name) {
+  const db = await connect();
+  if (!db || !session) return { ok: false, reason: "signed-out" };
+  const clean = String(name || "").trim().slice(0, 24);
+  if (!clean) return { ok: false, reason: "empty" };
+  const { error } = await db
+    .from("profiles")
+    .upsert({ id: session.user.id, display_name: clean }, { onConflict: "id" });
+  if (error) return { ok: false, reason: error.message || "failed" };
+  profile = Object.assign({}, profile, { display_name: clean });
+  announce();
+  return { ok: true, name: clean };
+}
+
 /* ---------------- the daily board ---------------- */
 
 /* One row per person per day, and the database will not let a second one in.
@@ -216,6 +232,7 @@ window.clgCloud = {
   signIn: signIn,
   signOut: signOut,
   user: whoami,
+  setName: setName,
   postDaily: postDaily,
   board: board,
   myPlace: myPlace,

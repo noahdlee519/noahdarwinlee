@@ -83,6 +83,11 @@
     accountNote: document.getElementById("game-account-note"),
     tabToday: document.getElementById("tab-today"),
     tabAllTime: document.getElementById("tab-alltime"),
+    rename: document.getElementById("game-rename"),
+    renameForm: document.getElementById("game-rename-form"),
+    nameInput: document.getElementById("game-name-input"),
+    nameCancel: document.getElementById("game-name-cancel"),
+    nameNote: document.getElementById("game-name-note"),
     setupContinue: document.getElementById("setup-continue")
   };
 
@@ -1481,11 +1486,15 @@
       return;
     }
     var me = cloud.user();
+    var renaming = el.renameForm && !el.renameForm.hidden;
     show(el.account, true);
     show(el.signIn, !me);
     show(el.accountNote, !me);
-    show(el.who, Boolean(me));
-    if (!me) return;
+    show(el.who, Boolean(me) && !renaming);
+    if (!me) {
+      if (el.renameForm) show(el.renameForm, false);
+      return;
+    }
     el.whoName.textContent = me.name;
     if (me.avatar) {
       el.avatar.src = me.avatar;
@@ -1673,6 +1682,61 @@
     placeBoard(el.result && !el.result.hidden ? "result" : "menu");
     loadBoard();
   });
+
+  /* ---------- the name on the board ---------- */
+
+  function openRename() {
+    if (!cloudOn() || !el.renameForm) return;
+    var me = cloud.user();
+    if (!me) return;
+    el.nameInput.value = me.name || "";
+    show(el.who, false);
+    show(el.nameNote, false);
+    show(el.renameForm, true);
+    el.nameInput.focus();
+    el.nameInput.select();
+  }
+
+  function closeRename() {
+    if (!el.renameForm) return;
+    show(el.renameForm, false);
+    show(el.nameNote, false);
+    renderAccount();
+  }
+
+  if (el.rename) el.rename.addEventListener("click", openRename);
+  if (el.nameCancel) el.nameCancel.addEventListener("click", closeRename);
+
+  if (el.renameForm) {
+    el.renameForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var wanted = el.nameInput.value.trim();
+      if (!wanted) {
+        el.nameNote.textContent = "a name, please.";
+        show(el.nameNote, true);
+        return;
+      }
+      el.nameNote.textContent = "saving…";
+      show(el.nameNote, true);
+      cloud.setName(wanted).then(function (res) {
+        if (!res.ok) {
+          el.nameNote.textContent = "that name could not be saved.";
+          show(el.nameNote, true);
+          return;
+        }
+        closeRename();
+        /* Your name is on every row you own, so the board is redrawn. */
+        loadBoard();
+      });
+    });
+
+    el.nameInput.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeRename();
+      }
+    });
+  }
 
   if (el.signIn) {
     el.signIn.addEventListener("click", function () {

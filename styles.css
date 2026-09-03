@@ -1221,7 +1221,10 @@ a[href="/cv/"]:active {
    whatever width the map has taken. */
 .game-page {
   --board: 100%;
-  --col: min(var(--board), 940px);
+  /* Off the board there is no picture to fit, so the column is bounded by the
+     window and by taste alone; 1240 is where a line of the menu stops being
+     comfortable to read across. */
+  --col: min(1400px, 100%);
 }
 
 .game-page.is-playing {
@@ -1290,15 +1293,17 @@ a[href="/cv/"]:active {
   padding: 12px 32px;
 }
 
+/* The three big controls on the menu are one size, whatever their labels. */
 .game-btn.game-daily-btn,
-.game-btn.game-signin {
+.game-btn.game-signin,
+.game-btn.game-start {
   min-width: clamp(232px, 24vw, 336px);
 }
 
+/* Carries .game-daily-note in the markup as well, so the two lines are the
+   same size, weight and colour by construction rather than by coincidence. */
 .game-account-note {
-  font-size: clamp(13px, 1.4vw, 17px);
   font-weight: 300;
-  opacity: 0.75;
 }
 
 .game-who {
@@ -1316,8 +1321,9 @@ a[href="/cv/"]:active {
   object-fit: cover;
 }
 
-/* A quieter control than the outlined buttons: leaving is not the point of
-   the page. */
+/* A quieter control than the outlined buttons: neither leaving nor renaming is
+   the point of the page. */
+.game-quiet,
 .game-signout {
   background: none;
   border: 0;
@@ -1331,10 +1337,43 @@ a[href="/cv/"]:active {
   cursor: pointer;
 }
 
+.game-quiet:hover,
+.game-quiet:focus-visible,
 .game-signout:hover,
 .game-signout:focus-visible {
   opacity: 1;
   color: var(--accent);
+}
+
+.game-rename-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.game-name-input {
+  background: transparent;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: clamp(16px, 1.6vw, 21px);
+  font-weight: 300;
+  padding: 7px 12px;
+  min-width: 0;
+  width: min(320px, 60vw);
+}
+
+.game-btn.game-name-save {
+  font-size: clamp(15px, 1.5vw, 19px);
+  padding: 8px 20px;
+}
+
+.game-name-note {
+  font-size: clamp(13px, 1.4vw, 17px);
+  font-weight: 300;
+  opacity: 0.75;
 }
 
 /* Full column, like every other rule on the page. */
@@ -1508,7 +1547,6 @@ body.game-page {
   align-items: baseline;
   flex-wrap: wrap;
   gap: clamp(12px, 2vw, 26px);
-  width: min(940px, 100%);
   margin: 0 0 30px 0;
 }
 
@@ -1571,8 +1609,9 @@ body.game-page {
    circle-in-a-square mark, filled when on; the slider thumb is the same square
    again, so the whole panel is built from one shape. */
 
+/* No width of its own: the page's column decides how far right the panel and
+   its rules run, the same as the banner above them. */
 .game-setup {
-  width: min(940px, 100%);
   margin: 0 0 8px 0;
 }
 
@@ -1733,17 +1772,10 @@ body.game-page {
   white-space: nowrap;
 }
 
-/* The two end labels are centred on marks that sit at the very ends of the
-   scale, so half of each would hang outside the column. They line up with their
-   own edge instead; the marks stay where they are. */
-.game-tick:first-child {
-  transform: none;
-}
-
-.game-tick:first-child::before {
-  margin-left: 0;
-}
-
+/* "endless" is centred on a mark at the very end of the scale, so half of it
+   would hang outside the column; it hangs off its own right edge instead, and
+   the mark stays where it was. The first label is narrow enough to stay
+   centred. */
 .game-tick:last-child {
   transform: translateX(-100%);
   text-align: right;
@@ -1788,9 +1820,12 @@ body.game-page {
   gap: clamp(10px, 1.4vw, 18px);
 }
 
-.game-start {
-  font-size: clamp(18px, 2vw, 26px);
-  padding: 12px 40px;
+/* Two class names again: .game-btn is further down the file and would win on
+   source order otherwise — which is exactly what had happened here, leaving
+   start noticeably smaller than the button it sits under. */
+.game-btn.game-start {
+  font-size: clamp(17px, 1.9vw, 25px);
+  padding: 12px 32px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1896,12 +1931,15 @@ body.game-page {
   color: var(--bg);
 }
 
+/* The gaps above and below the picture are deliberately tight: on a wide
+   screen the map's width is decided by the height left over, so anything spent
+   here comes straight off the map. */
 .game-frame {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   min-height: 34vh;
-  margin: 24px 0 26px 0;
+  margin: 16px 0 18px 0;
 }
 
 
@@ -2015,7 +2053,7 @@ body.game-page {
    two sitting side by side. */
 /* Field padding (2 x 10) + its rule (2 x 2) + the line the type sits on. */
 .game-page {
-  --field-h: calc(24px + 1.15 * clamp(22px, 3vw, 46px));
+  --field-h: calc(24px + 1.15 * clamp(22px, 2.4vw, 38px));
 }
 
 .game-form {
@@ -2033,7 +2071,7 @@ body.game-page {
   border-radius: 0;
   color: var(--ink);
   font: inherit;
-  font-size: clamp(22px, 3vw, 46px);
+  font-size: clamp(22px, 2.4vw, 38px);
   font-weight: 300;
   line-height: 1.15;
   padding: 10px 14px;
@@ -2194,6 +2232,10 @@ body.game-page {
      the bar, the margins, and the verdict and answer under it) and a fraction
      gives that fixed part too little room on a short screen.
 
+     The page's own top inset is subtracted by name rather than folded into the
+     constant, because it grows with the height of the window: a fixed number
+     that leaves room to spare at 1080 leaves none at 1440.
+
      The multiplier converts the height the picture may take into the width it
      will then be. A map is the 1000 x 700 frame they are all shot in, so on its
      own that is 1.42; the banner above it is another 1/8.39 of the same width,
@@ -2201,7 +2243,7 @@ body.game-page {
      (the menu and the result) only the banner is in play, so the wider figure
      stands. */
   .game-page {
-    --board: max(360px, min(1240px, 100%, calc((100vh - 340px) * 1.42)));
+    --board: max(360px, min(1400px, 100%, calc((100vh - 340px) * 1.42)));
   }
 
   /* Mid-game the reclaimed top padding goes to the map. */
@@ -2209,17 +2251,13 @@ body.game-page {
     /* The floor is for a phone held sideways, where the height term alone would
        leave a map a few centimetres across. Below it the page scrolls, which is
        the better of the two bad options. */
-    --board: max(360px, min(1240px, 100%, calc((100vh - 350px) * 1.26)));
-  }
-
-  .game-logo {
-    width: var(--board);
+    --board: max(360px, min(1400px, 100%, calc((100vh - var(--page-top) - 300px) * 1.26)));
   }
 
   /* Mid-game the banner sits closer to the bar; every pixel it gives back goes
      into the map. */
   .is-playing .game-logo {
-    margin-bottom: clamp(12px, 1.4vw, 20px);
+    margin-bottom: clamp(10px, 1vw, 14px);
   }
 
   .game-image {
@@ -2257,16 +2295,18 @@ body.game-page {
     max-width: 100%;
   }
 
+  /* Held back deliberately: at 2.8vw the verdict was a headline across a
+     full-screen window. It only has two words to say. */
   .game-verdict {
     flex: 0 0 auto;
-    font-size: clamp(24px, 2.8vw, 46px);
+    font-size: clamp(22px, 1.7vw, 32px);
     margin: 0;
   }
 
   .game-answer {
     flex: 0 1 auto;
     margin: 0 auto 0 0;
-    font-size: clamp(19px, 2.2vw, 34px);
+    font-size: clamp(17px, 1.35vw, 25px);
   }
 
   .game-btn-next {
@@ -2415,9 +2455,9 @@ body.game-page {
    swatches, the same contrast guard, the same named presets. */
 
 .game-cosmetic {
-  width: min(940px, 100%);
   /* Same rhythm as the difficulty / region / rounds rules above: the line sits
-     right on top of its label rather than floating well clear of it. */
+     right on top of its label rather than floating well clear of it, and it
+     runs as far right as they do. */
   margin: 30px 0 0 0;
   border-top: 2px solid var(--ink);
 }

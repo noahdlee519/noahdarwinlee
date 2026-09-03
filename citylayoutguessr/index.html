@@ -89,14 +89,34 @@
           <button class="game-btn game-signin" type="button" id="game-signin">
             sign in with Google
           </button>
-          <span class="game-account-note" id="game-account-note"
+          <span class="game-daily-note game-account-note" id="game-account-note"
             >see how you rank on the challenge leaderboards</span
           >
           <span class="game-who" id="game-who" hidden>
             <img class="game-avatar" id="game-avatar" alt="" width="30" height="30" hidden />
             <span class="game-who-name" id="game-who-name"></span>
-            <button class="game-signout" type="button" id="game-signout">sign out</button>
+            <button class="game-quiet" type="button" id="game-rename">change name</button>
+            <button class="game-quiet" type="button" id="game-signout">sign out</button>
           </span>
+
+          <!-- The name on the board is whatever Google gave us until you say
+               otherwise. -->
+          <form class="game-rename-form" id="game-rename-form" hidden>
+            <label class="sr-only" for="game-name-input">The name shown on the board</label>
+            <input
+              class="game-name-input"
+              id="game-name-input"
+              type="text"
+              maxlength="24"
+              autocomplete="off"
+              autocapitalize="words"
+              spellcheck="false"
+              placeholder="name on the board"
+            />
+            <button class="game-btn game-name-save" type="submit">save</button>
+            <button class="game-quiet" type="button" id="game-name-cancel">cancel</button>
+            <span class="game-name-note" id="game-name-note" hidden aria-live="polite"></span>
+          </form>
         </div>
 
         <span class="game-leaders-slot" id="game-leaders-slot" hidden></span>
