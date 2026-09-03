@@ -255,6 +255,64 @@ body {
   font-size: 0.78em;
 }
 
+/* ---- the privacy page ---------------------------------------------------
+   Built on .cv-page for the header and the fade, but its paragraphs are prose
+   rather than CV entries: no hanging indent, a measure that stays readable,
+   and room between them. */
+.privacy-page main {
+  max-width: 68ch;
+}
+
+.privacy-page main p {
+  margin-left: 0;
+  margin-bottom: 0.85em;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* The lede stands in for the CV's first heading, so it takes that rule's job
+   of not letting a top margin collapse through <main> and push the page down. */
+.privacy-page main p.privacy-lede {
+  font-size: 20px;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+}
+
+.privacy-page main p.privacy-meta {
+  font-size: 14px;
+  opacity: 0.65;
+  margin-bottom: 26px;
+}
+
+.privacy-page main a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.privacy-page main a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* The one link out of the game, under the imagery credit. */
+.game-legal {
+  margin: 10px 0 0 0;
+  font-size: 13px;
+  font-weight: 300;
+  opacity: 0.55;
+}
+
+.game-legal a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.game-legal a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .cv-page {
   padding-bottom: 25px;
 }
@@ -1823,11 +1881,11 @@ body.game-page {
   background: currentColor;
 }
 
-/* Difficulty and region are the two pill rows worth confirming at a glance,
-   so their filled circles get a tick in the page background color rather
-   than relying on fill alone. */
+/* Difficulty, region, and the hints toggle all get a tick in the page
+   background color when checked, rather than relying on fill alone. */
 #setup-levels .game-check-mark::after,
-#setup-continents .game-check-mark::after {
+#setup-continents .game-check-mark::after,
+#setup-hints ~ .game-check-mark::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -1842,8 +1900,17 @@ body.game-page {
 }
 
 #setup-levels .game-check input:checked ~ .game-check-mark::after,
-#setup-continents .game-check input:checked ~ .game-check-mark::after {
+#setup-continents .game-check input:checked ~ .game-check-mark::after,
+#setup-hints:checked ~ .game-check-mark::after {
   opacity: 1;
+}
+
+/* Matches .game-pool's size/weight/opacity so the hint copy reads as a
+   caption, not another option label. */
+.game-hint-text {
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 300;
+  opacity: 0.8;
 }
 
 .game-check input:focus-visible ~ .game-check-mark {
