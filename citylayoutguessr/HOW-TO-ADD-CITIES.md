@@ -226,6 +226,29 @@ warns you if two cities would accept the same guess — so if you add an alias
 that's too loose, you find out here rather than from a player being told they
 were wrong when they weren't.
 
+## The banner
+
+The wordmark above the game is built from `citylayoutguessr/citylayoutguessr.png`,
+which stays on your machine (it is 10 MB and gitignored). What the page loads
+are four widths in `art/web/citylayoutguessr/`, and the browser picks whichever
+one fits the screen. If you ever change the artwork, rebuild them with a few
+lines of Pillow, resizing the original to 760, 1240, 1860 and 2480 pixels wide
+and saving each as `logo-<width>.webp` at quality 74.
+
+The banner is always exactly as wide as the map below it, and the map's size is
+worked out from the banner's shape, so a logo with a different width-to-height
+ratio needs one number changed in `styles.css` — search for `--board` and the
+comment there explains it.
+
+## Accounts, the scoreboard, and analytics
+
+Sign-in and the daily leaderboard are off until you fill in
+`citylayoutguessr/supabase-config.js`. `SUPABASE-SETUP.md`, next to this file,
+walks through the whole thing: making the Supabase project, running
+`supabase/schema.sql`, and creating the Google sign-in client. Nothing in the
+game depends on it — with the config empty, the page never contacts Supabase
+and plays exactly as it does now.
+
 ## Then publish
 
 ```

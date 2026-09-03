@@ -1,0 +1,29 @@
+{
+  "name": "citylayoutguessr",
+  "short_name": "citylayoutguessr",
+  "description": "Name the city from a satellite image of its layout.",
+  "start_url": "/citylayoutguessr/",
+  "scope": "/citylayoutguessr/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#e68019",
+  "theme_color": "#e68019",
+  "icons": [
+    {
+      "src": "/art/web/citylayoutguessr/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/art/web/citylayoutguessr/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/art/web/citylayoutguessr/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

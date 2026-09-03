@@ -16,3 +16,7 @@ citylayoutguessr/maps/
 citylayoutguessr/easy maps/
 citylayoutguessr/medium maps/
 citylayoutguessr/hard maps/
+
+# The full-size logo artwork. art/web/citylayoutguessr/logo-*.webp are built
+# from it and are what the page loads; the 10 MB original stays local.
+citylayoutguessr/citylayoutguessr.png

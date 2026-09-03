@@ -4,7 +4,10 @@
 }
 
 body {
-  --page-top: clamp(16px, 3vh, 100px);
+  /* env(safe-area-inset-top) is 0 in a browser tab; on a phone that has added
+     the game to its home screen it is the height of the status bar, which the
+     page would otherwise run under. */
+  --page-top: calc(clamp(16px, 3vh, 100px) + env(safe-area-inset-top, 0px));
   --page-left: clamp(10px, 3vw, 24px);
   /* Width of the right-hand rail: the top-right links and the about-page
      contact list both sit in it, so they share a left edge and move together. */
@@ -261,11 +264,13 @@ body {
     padding-top: calc(var(--page-top) + 106px);
   }
 
-  /* While a round is on screen the page gives back the 66px of top padding it
+  /* While a round is on screen the page gives back part of the top padding it
      uses to line its heading up with the rest of the site — nothing up there
-     needs aligning mid-game. The menu keeps the shared alignment. */
+     needs aligning mid-game. It cannot give back all of it: the name and the
+     back link are fixed to the top of the window, and the banner would run
+     under them. This clears the back link by a dozen pixels and no more. */
   .game-page.is-playing {
-    padding-top: calc(var(--page-top) + 40px);
+    padding-top: calc(var(--page-top) + 72px);
   }
 }
 
@@ -1237,6 +1242,131 @@ a[href="/cv/"]:active {
   margin: 0 0 18px 0;
 }
 
+/* ---------------- accounts and the daily board ----------------
+   Both are optional: with supabase-config.js empty, cloud.js never unhides
+   them and the page looks exactly as it did before any of this existed. */
+.game-account {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 18px);
+  margin: 0 0 26px 0;
+}
+
+.game-signin {
+  font-size: clamp(15px, 1.5vw, 19px);
+  padding: 7px 18px;
+}
+
+.game-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: clamp(15px, 1.5vw, 19px);
+  font-weight: 300;
+}
+
+.game-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* A quieter control than the outlined buttons: leaving is not the point of
+   the page. */
+.game-signout {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  padding: 0 0 1px 0;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85em;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.game-signout:hover,
+.game-signout:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.game-leaders {
+  max-width: 560px;
+  margin: 0 0 34px 0;
+}
+
+.game-leaders-title {
+  font-size: clamp(13px, 1.3vw, 15px);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 10px 0;
+  opacity: 0.75;
+}
+
+.game-leaders-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--ink);
+}
+
+.game-leader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 2px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  font-size: clamp(15px, 1.6vw, 20px);
+  font-weight: 300;
+}
+
+/* Your own line, so you can find yourself in a long list. Weight as well as
+   colour: the accent is lighter than the ink here, so on its own it would read
+   as the row being played down rather than picked out. */
+.game-leader.is-you {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.game-leader-place {
+  flex: 0 0 auto;
+  min-width: 1.6em;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-leader-avatar {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.game-leader-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.game-leader-score {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-leaders-note {
+  margin: 10px 0 0 0;
+  font-size: clamp(14px, 1.4vw, 17px);
+  font-weight: 300;
+  opacity: 0.8;
+}
+
 .game-lede {
   max-width: 60ch;
   font-size: clamp(16px, 1.6vw, 23px);
@@ -1919,11 +2049,17 @@ body.game-page {
 
   /* Mid-game the reclaimed top padding goes to the map. */
   .game-page.is-playing {
-    --board: min(1240px, 100%, calc((100vh - 290px) * 1.21));
+    --board: min(1240px, 100%, calc((100vh - 322px) * 1.26));
   }
 
   .game-logo {
     width: var(--board);
+  }
+
+  /* Mid-game the banner sits closer to the bar; every pixel it gives back goes
+     into the map. */
+  .is-playing .game-logo {
+    margin-bottom: clamp(12px, 1.4vw, 20px);
   }
 
   .game-image {

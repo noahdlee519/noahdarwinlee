@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>citylayoutguessr — Noah Darwin Lee</title>
     <meta
       name="description"
@@ -10,6 +10,16 @@
     />
     <link rel="canonical" href="https://noahdarwinlee.com/citylayoutguessr/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
+
+    <!-- Added to the home screen the game opens on its own, with no address
+         bar and no domain pill above the keyboard. -->
+    <link rel="manifest" href="app.webmanifest" />
+    <link rel="apple-touch-icon" href="../art/web/citylayoutguessr/icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="citylayoutguessr" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#e68019" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -72,6 +82,21 @@
           </button>
           <span class="game-daily-note" id="daily-note"></span>
         </div>
+
+        <!-- Sign-in and the board only appear once supabase-config.js has been
+             filled in; until then cloud.js leaves them hidden. -->
+        <div class="game-account" id="game-account" hidden>
+          <button class="game-btn game-signin" type="button" id="game-signin">
+            sign in with Google
+          </button>
+          <span class="game-who" id="game-who" hidden>
+            <img class="game-avatar" id="game-avatar" alt="" width="30" height="30" hidden />
+            <span class="game-who-name" id="game-who-name"></span>
+            <button class="game-signout" type="button" id="game-signout">sign out</button>
+          </span>
+        </div>
+
+        <span class="game-leaders-slot" id="game-leaders-slot" hidden></span>
 
         <form class="game-setup" id="game-setup">
           <fieldset class="game-set">
@@ -165,6 +190,15 @@
           <button class="game-btn" type="button" id="game-change">menu</button>
         </div>
         <p class="game-share-note" id="game-share-note" hidden aria-live="polite"></p>
+        <span class="game-leaders-slot" id="game-leaders-slot-result" hidden></span>
+      </section>
+
+      <!-- One board, moved between the menu and the result rather than built
+           twice. -->
+      <section class="game-leaders" id="game-leaders" hidden aria-label="Today's board">
+        <h3 class="game-leaders-title" id="game-leaders-title">today&rsquo;s board</h3>
+        <ol class="game-leaders-list" id="game-leaders-list"></ol>
+        <p class="game-leaders-note" id="game-leaders-note" hidden aria-live="polite"></p>
       </section>
 
       <div class="game-cosmetic" id="game-cosmetic" hidden>
@@ -217,6 +251,8 @@
 
     <script src="../to-top-btn.js" defer></script>
     <script src="../header.js" defer></script>
+    <script src="supabase-config.js"></script>
+    <script src="cloud.js" type="module"></script>
     <script src="game.js" defer></script>
   </body>
 </html>

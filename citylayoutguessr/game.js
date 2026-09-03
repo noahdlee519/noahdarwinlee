@@ -64,7 +64,18 @@
     colorAccent: document.getElementById("color-accent"),
     presetList: document.getElementById("game-preset-list"),
     resetColors: document.getElementById("reset-colors"),
-    colorWarning: document.getElementById("color-warning")
+    colorWarning: document.getElementById("color-warning"),
+    account: document.getElementById("game-account"),
+    signIn: document.getElementById("game-signin"),
+    who: document.getElementById("game-who"),
+    avatar: document.getElementById("game-avatar"),
+    whoName: document.getElementById("game-who-name"),
+    signOut: document.getElementById("game-signout"),
+    leaders: document.getElementById("game-leaders"),
+    leadersList: document.getElementById("game-leaders-list"),
+    leadersNote: document.getElementById("game-leaders-note"),
+    leadersSlot: document.getElementById("game-leaders-slot"),
+    leadersSlotResult: document.getElementById("game-leaders-slot-result")
   };
 
   var data = null;
@@ -476,6 +487,8 @@
     show(el.board, false);
     show(el.empty, false);
     show(el.result, true);
+    placeBoard("result");
+    loadBoard();
     paintResult();
   }
 
@@ -507,6 +520,7 @@
       log: []
     };
     warm(rounds, 0, 3);
+    tell("game_start", { daily: true });
     renderRound();
   }
 
@@ -1306,15 +1320,25 @@
     show(el.board, false);
     show(el.result, true);
     if (state.cfg.daily) {
-      writeDaily({
+      var record = {
         day: state.cfg.daily,
         correct: state.correct,
         wrong: state.wrong,
         log: state.log.map(function (e) {
           return { id: e.city.id, right: e.right, guess: e.guess };
         })
-      });
+      };
+      writeDaily(record);
+      /* The board belongs on this screen now: you have just played, and the
+         only question left is where that put you. */
+      placeBoard("result");
+      postDaily(record);
     }
+    tell("game_finish", {
+      daily: Boolean(state.cfg.daily),
+      correct: state.correct,
+      rounds: state.log.length
+    });
     paintResult();
   }
 
@@ -1339,6 +1363,7 @@
       revealed: false,
       log: []
     };
+    tell("game_start", { daily: false, rounds: cfg.length });
     renderRound();
   }
 
@@ -1350,9 +1375,186 @@
     show(el.result, false);
     show(el.intro, true);
     show(el.empty, false);
+    placeBoard("menu");
+    loadBoard();
     renderDaily();
     refreshSetup();
     if (history.replaceState) history.replaceState(null, "", location.pathname);
+  }
+
+  /* ---------------- accounts and the daily board ----------------
+
+     Everything here is optional. cloud.js publishes window.clgCloud whether or
+     not Supabase is configured, and fires clg-cloud-ready once it knows
+     whether anyone is signed in; if it is switched off, cloud.enabled is false
+     and every panel below stays hidden. Nothing in this section is allowed to
+     stop a game from starting. */
+
+  var cloud = null;
+  var boardDay = null;
+
+  function cloudOn() {
+    return Boolean(cloud && cloud.enabled);
+  }
+
+  function tell(kind, detail) {
+    if (cloudOn() && cloud.track) cloud.track(kind, detail || null);
+  }
+
+  function renderAccount() {
+    if (!el.account) return;
+    if (!cloudOn()) {
+      show(el.account, false);
+      return;
+    }
+    var me = cloud.user();
+    show(el.account, true);
+    show(el.signIn, !me);
+    show(el.who, Boolean(me));
+    if (!me) return;
+    el.whoName.textContent = me.name;
+    if (me.avatar) {
+      el.avatar.src = me.avatar;
+      show(el.avatar, true);
+    } else {
+      show(el.avatar, false);
+    }
+  }
+
+  /* The board lives in one place in the markup and is moved to whichever
+     screen is on: the menu, or the result page right after a daily run, which
+     is when anyone actually wants to see it. */
+  function placeBoard(where) {
+    if (!el.leaders) return;
+    var slot = where === "result" ? el.leadersSlotResult : el.leadersSlot;
+    if (!slot || !slot.parentNode) return;
+    slot.parentNode.insertBefore(el.leaders, slot);
+  }
+
+  function ordinal(n) {
+    if (n === 1) return "1st";
+    if (n === 2) return "2nd";
+    if (n === 3) return "3rd";
+    return n + "th";
+  }
+
+  function boardLine(row, me) {
+    var li = document.createElement("li");
+    li.className = "game-leader" + (me && row.user_id === me.id ? " is-you" : "");
+
+    var place = document.createElement("span");
+    place.className = "game-leader-place";
+    place.textContent = row.place;
+
+    var name = document.createElement("span");
+    name.className = "game-leader-name";
+    name.textContent = row.display_name || "player";
+
+    var score = document.createElement("span");
+    score.className = "game-leader-score";
+    score.textContent = row.correct + " / " + DAILY_ROUNDS;
+
+    li.appendChild(place);
+    if (row.avatar_url) {
+      var pic = document.createElement("img");
+      pic.className = "game-leader-avatar";
+      pic.src = row.avatar_url;
+      pic.alt = "";
+      pic.width = 26;
+      pic.height = 26;
+      pic.loading = "lazy";
+      li.appendChild(pic);
+    }
+    li.appendChild(name);
+    li.appendChild(score);
+    return li;
+  }
+
+  function loadBoard() {
+    if (!cloudOn() || !el.leaders) return;
+    var day = dayKey();
+    boardDay = day;
+    cloud.board(day, 25).then(function (rows) {
+      if (boardDay !== day) return;
+      if (!rows) {
+        show(el.leaders, false);
+        return;
+      }
+      var me = cloud.user();
+      el.leadersList.textContent = "";
+      rows.forEach(function (row) {
+        el.leadersList.appendChild(boardLine(row, me));
+      });
+      show(el.leaders, true);
+
+      if (!rows.length) {
+        el.leadersNote.textContent = me
+          ? "nobody has posted a score today — be first."
+          : "nobody has posted a score today.";
+        show(el.leadersNote, true);
+        return;
+      }
+      if (!me) {
+        el.leadersNote.textContent = "sign in to put your score on the board.";
+        show(el.leadersNote, true);
+        return;
+      }
+      var mine = rows.some(function (row) { return row.user_id === me.id; });
+      if (mine) {
+        show(el.leadersNote, false);
+        return;
+      }
+      cloud.myPlace(day).then(function (row) {
+        if (boardDay !== day) return;
+        el.leadersNote.textContent = row
+          ? "you: " + row.correct + " / " + DAILY_ROUNDS + " · " + ordinal(row.place)
+          : "you haven’t played today yet.";
+        show(el.leadersNote, true);
+      });
+    });
+  }
+
+  /* Posting is one insert, and the database refuses a second one for the same
+     day — which is the ordinary case, not a failure, so it is reported as
+     already being on the board rather than as something going wrong. */
+  function postDaily(record) {
+    if (!cloudOn()) return;
+    if (!cloud.user()) {
+      el.leadersNote.textContent = "sign in to put this score on the board.";
+      show(el.leadersNote, true);
+      show(el.leaders, true);
+      return;
+    }
+    cloud.postDaily(record.correct, record.log.length).then(function (res) {
+      if (!res.ok && res.reason !== "already") {
+        el.leadersNote.textContent = "that score could not be posted.";
+        show(el.leadersNote, true);
+      }
+      loadBoard();
+    });
+  }
+
+  document.addEventListener("clg-cloud-ready", function () {
+    cloud = window.clgCloud || null;
+    renderAccount();
+    if (!cloudOn()) return;
+    /* On the first load nothing has moved the board yet, so put it on whichever
+       screen is actually showing — the result page if you have already played
+       today, the menu otherwise. */
+    placeBoard(el.result && !el.result.hidden ? "result" : "menu");
+    loadBoard();
+  });
+
+  if (el.signIn) {
+    el.signIn.addEventListener("click", function () {
+      if (cloudOn()) cloud.signIn();
+    });
+  }
+
+  if (el.signOut) {
+    el.signOut.addEventListener("click", function () {
+      if (cloudOn()) cloud.signOut();
+    });
   }
 
   /* ---------- wiring ---------- */
@@ -1389,6 +1591,36 @@
       done(false);
     }
   });
+
+  /* ---------- the keyboard on a phone ----------
+     iOS puts its own strip above the keyboard (the arrows and Done) and, when
+     the address bar is collapsed, a pill with the domain. Neither belongs to
+     this page and neither can be removed by it — the way to be rid of them is
+     to add the game to the home screen, which the manifest on this page makes
+     possible. What the page can do is make sure the keyboard never lands on
+     top of the guess field: visualViewport reports the part of the window the
+     keyboard has not taken, so when the field falls below that line the page
+     scrolls by exactly the overlap and no further, leaving the map above it. */
+  (function keepFieldAboveKeyboard() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+
+    function adjust() {
+      if (document.activeElement !== el.input) return;
+      var box = el.input.getBoundingClientRect();
+      var floor = vv.height + vv.offsetTop;
+      var overlap = box.bottom - floor + 12;
+      if (overlap > 1) window.scrollBy(0, overlap);
+    }
+
+    vv.addEventListener("resize", adjust);
+    vv.addEventListener("scroll", adjust);
+    /* The keyboard animates in, so the first measurement has to wait for it. */
+    el.input.addEventListener("focus", function () {
+      setTimeout(adjust, 120);
+      setTimeout(adjust, 400);
+    });
+  })();
 
   el.input.addEventListener("input", function () {
     if (el.input.value.trim()) {
