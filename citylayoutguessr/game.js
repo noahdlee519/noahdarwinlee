@@ -881,8 +881,17 @@
 
   /* ---------- rendering ---------- */
 
+  /* The banner is only a way home when there is somewhere to go; on the menu it
+     is disabled, so it neither answers to a press nor pretends to. */
+  function syncLogoHome() {
+    if (!el.logoHome) return;
+    var live = (el.board && !el.board.hidden) || (el.result && !el.result.hidden);
+    el.logoHome.disabled = !live;
+  }
+
   function show(node, on) {
     if (node) node.hidden = !on;
+    if (node === el.board || node === el.result || node === el.intro) syncLogoHome();
     if (node === el.board) {
       document.body.classList.toggle("is-playing", Boolean(on));
     }
@@ -1236,6 +1245,14 @@
       img.style.transform = "";
       img.style.transformOrigin = "";
     }
+
+    /* Tapping the map must not take the keyboard away with it: a tap on
+       anything that is not the field blurs it, and iOS closes the keyboard when
+       it does. Preventing the default on the press stops the focus moving at
+       all — the click still arrives, so the zoom below still runs. */
+    stage.addEventListener("mousedown", function (e) {
+      if (document.activeElement === el.input) e.preventDefault();
+    });
 
     /* The listener goes on the stage, not the image: a transform moves the
        element's hit area with it, so once zoomed, parts of the frame would no
@@ -1672,7 +1689,7 @@
         return;
       }
       if (!me) {
-        el.leadersNote.textContent = "sign in to put your score on the board.";
+        el.leadersNote.textContent = "sign in to put your score on the board";
         show(el.leadersNote, true);
         return;
       }
@@ -1764,7 +1781,7 @@
   function postDaily(record) {
     if (!cloudOn()) return;
     if (!cloud.user()) {
-      el.leadersNote.textContent = "sign in to put this score on the board.";
+      el.leadersNote.textContent = "sign in to put this score on the board";
       show(el.leadersNote, true);
       show(el.leaders, true);
       return;
@@ -2018,6 +2035,9 @@
       if (restore(STORE_KEY_DAILY)) return;
       if (restore(STORE_KEY)) return;
       refreshContinue();
+      /* Nothing called show() for the menu — it is what the markup already
+         shows — so the banner is told once here that it has nowhere to go. */
+      syncLogoHome();
 
       /* Old links like /game/#hard still work: they preselect and start. */
       var hash = (location.hash || "").replace("#", "");
