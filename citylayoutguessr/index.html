@@ -247,9 +247,19 @@
 
       <!-- One board, moved between the menu and the result rather than built
            twice. -->
-      <section class="game-leaders" id="game-leaders" hidden aria-label="Leaderboards">
+      <section class="game-leaders" id="game-leaders" hidden aria-label="Scoreboard">
         <div class="game-leaders-head">
-          <h3 class="game-leaders-title" id="game-leaders-title">leaderboard</h3>
+          <h2 class="game-leaders-title">
+            <button
+              class="game-fold"
+              type="button"
+              id="game-leaders-fold"
+              aria-expanded="true"
+              aria-controls="game-leaders-body"
+            >
+              scoreboard
+            </button>
+          </h2>
           <div class="game-tabs" role="tablist" aria-label="Which board">
             <button class="game-tab is-on" type="button" role="tab" id="tab-today" aria-selected="true">
               today
@@ -259,8 +269,10 @@
             </button>
           </div>
         </div>
-        <ol class="game-leaders-list" id="game-leaders-list"></ol>
-        <p class="game-leaders-note" id="game-leaders-note" hidden aria-live="polite"></p>
+        <div class="game-leaders-body" id="game-leaders-body">
+          <ol class="game-leaders-list" id="game-leaders-list"></ol>
+          <p class="game-leaders-note" id="game-leaders-note" hidden aria-live="polite"></p>
+        </div>
       </section>
 
       <div class="game-cosmetic" id="game-cosmetic" hidden>

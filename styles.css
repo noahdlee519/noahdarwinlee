@@ -1381,12 +1381,81 @@ a[href="/cv/"]:active {
   margin: 0 0 34px 0;
 }
 
+/* The scoreboard's own header, built like CUSTOM GAME: its rule above it, the
+   name at the same size and weight, and the two tabs at the far end of the
+   same line. */
 .game-leaders-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  margin: 0 0 10px 0;
+  margin: 0 0 16px 0;
+  padding-top: 14px;
+  border-top: 2px solid var(--ink);
+}
+
+.game-leaders-title {
+  margin: 0;
+  font: inherit;
+}
+
+/* The name is a button so the section can be folded away; it is styled as the
+   heading it also is. The caret is the same pair the cosmetic settings use. */
+.game-fold {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: clamp(17px, 1.9vw, 26px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.game-fold::before {
+  content: "\25be\00a0";
+  font-size: 0.7em;
+}
+
+.game-leaders.is-folded .game-fold::before {
+  content: "\25b8\00a0";
+}
+
+.game-fold:hover,
+.game-fold:focus-visible {
+  color: var(--accent);
+  outline: none;
+}
+
+/* Folded away, the tabs would be switching something nobody can see. */
+.game-leaders.is-folded .game-tabs {
+  display: none;
+}
+
+/* A short fade whenever the list is repainted, so switching tabs reads as the
+   board fetching itself again rather than the numbers simply changing. */
+@keyframes game-board-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.game-leaders-list.is-fresh {
+  animation: game-board-in 260ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-leaders-list.is-fresh {
+    animation: none;
+  }
 }
 
 .game-tabs {
@@ -1419,15 +1488,6 @@ a[href="/cv/"]:active {
 .game-tab.is-on {
   border-color: var(--ink);
   opacity: 1;
-}
-
-.game-leaders-title {
-  font-size: clamp(13px, 1.3vw, 15px);
-  font-weight: 400;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin: 0;
-  opacity: 0.75;
 }
 
 .game-leaders-list {
@@ -1558,10 +1618,18 @@ body.game-page {
   padding-top: 14px;
   border-top: 2px solid var(--ink);
   font-size: clamp(17px, 1.9vw, 26px);
-  font-weight: 500;
   letter-spacing: 0.06em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+/* .cv-page h2 sets font-weight: 300 !important for the CV's own section
+   headings, and the game page carries that class too — which is why this one
+   had been rendering light despite asking for 500. The game's two headings say
+   it as loudly as the rule they are arguing with. */
+.game-page .game-custom,
+.game-page .game-leaders-title .game-fold {
+  font-weight: 500 !important;
 }
 
 /* Two class names so this beats `.game-btn`'s transparent background, which is

@@ -94,7 +94,8 @@
     leadersNote: document.getElementById("game-leaders-note"),
     leadersSlot: document.getElementById("game-leaders-slot"),
     leadersSlotResult: document.getElementById("game-leaders-slot-result"),
-    leadersTitle: document.getElementById("game-leaders-title"),
+    leadersFold: document.getElementById("game-leaders-fold"),
+    leadersBody: document.getElementById("game-leaders-body"),
     accountNote: document.getElementById("game-account-note"),
     tabToday: document.getElementById("tab-today"),
     tabAllTime: document.getElementById("tab-alltime"),
@@ -1632,9 +1633,6 @@
     el.tabAllTime.classList.toggle("is-on", !today);
     el.tabToday.setAttribute("aria-selected", today ? "true" : "false");
     el.tabAllTime.setAttribute("aria-selected", today ? "false" : "true");
-    if (el.leadersTitle) {
-      el.leadersTitle.textContent = today ? "today’s board" : "all-time board";
-    }
   }
 
   function loadBoard() {
@@ -1659,6 +1657,7 @@
         el.leadersList.appendChild(boardLine(row, me, allTime));
       });
       show(el.leaders, true);
+      freshen();
 
       if (!rows.length) {
         el.leadersNote.textContent = allTime
@@ -1696,6 +1695,30 @@
         }
         show(el.leadersNote, true);
       });
+    });
+  }
+
+  /* A short fade whenever the list is repainted. The class is taken off and put
+     back with a forced reflow between, or the animation would only ever play
+     the first time. Anyone who has asked for less motion gets none: the CSS
+     turns the animation off, and this is only a class either way. */
+  function freshen() {
+    if (!el.leadersList) return;
+    el.leadersList.classList.remove("is-fresh");
+    void el.leadersList.offsetWidth;
+    el.leadersList.classList.add("is-fresh");
+  }
+
+  function foldBoard(open) {
+    if (!el.leadersFold) return;
+    show(el.leadersBody, open);
+    el.leadersFold.setAttribute("aria-expanded", String(open));
+    el.leaders.classList.toggle("is-folded", !open);
+  }
+
+  if (el.leadersFold) {
+    el.leadersFold.addEventListener("click", function () {
+      foldBoard(el.leadersBody.hidden);
     });
   }
 
