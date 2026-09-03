@@ -20,3 +20,9 @@ citylayoutguessr/hard maps/
 # The full-size logo artwork. art/web/citylayoutguessr/logo-*.webp are built
 # from it and are what the page loads; the 10 MB original stays local.
 citylayoutguessr/citylayoutguessr.png
+
+# The letters as they came out of Gmail — the RTFs and the downloaded photos.
+# blog/import-gmail.mjs reads these and writes blog/posts.js and blog/images/,
+# which are the versions the site serves; the originals are kept on disk but
+# are not the website, and they are large.
+blog/part */

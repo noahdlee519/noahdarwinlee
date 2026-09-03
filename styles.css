@@ -3390,34 +3390,59 @@ body.game-page {
   color: #e0a400;
 }
 
-/* The row is one link, laid out in columns. A link rather than a button so the
-   URL is real: middle-click and cmd-click open the letter in a new tab. */
+/* The row is one link, laid out in three lines: who and when, then the
+   subject, then the opening words. A single line is the denser convention and
+   it is the wrong one here — these letters are a series, so nine subjects
+   share their first forty characters and differ at the very end, which is
+   exactly where a truncated line stops. Given its own line the subject is
+   read whole and the letters tell themselves apart.
+   A link rather than a button so the URL is real: middle-click and cmd-click
+   open the letter in a new tab. */
 .mail-rowlink {
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: minmax(64px, 104px) 1fr auto;
-  align-items: baseline;
-  gap: 10px;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
   min-width: 0;
-  padding: 10px 14px 10px 4px;
+  padding: 10px 14px 11px 4px;
   color: inherit;
   text-decoration: none;
 }
 
-.mail-from,
-.mail-middle {
+.mail-from {
+  grid-column: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
 }
 
+.mail-middle {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.mail-subject {
+  display: block;
+  /* Two lines is enough for any of these and stops one runaway subject from
+     making its row twice the height of the others. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .mail-snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   color: var(--mail-soft);
 }
 
 .mail-when {
-  flex: 0 0 auto;
+  grid-column: 2;
+  grid-row: 1;
   color: var(--mail-soft);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -3667,27 +3692,15 @@ body.game-page {
   }
 
   .mail-rowlink {
-    grid-template-columns: 1fr auto;
-    row-gap: 3px;
     padding-right: 12px;
   }
 
-  .mail-from {
-    grid-column: 1;
-  }
-
-  .mail-when {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .mail-middle {
-    grid-column: 1 / -1;
-    white-space: normal;
-  }
-
-  .mail-chips {
-    grid-column: 1 / -1;
+  /* More room to read on a phone than beside a reading pane, so nothing is
+     clamped here. */
+  .mail-subject,
+  .mail-snippet {
+    -webkit-line-clamp: none;
+    display: block;
   }
 
   .mail-letter-head {

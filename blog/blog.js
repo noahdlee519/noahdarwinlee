@@ -267,7 +267,9 @@
     middle.appendChild(subject);
     const snippet = document.createElement("span");
     snippet.className = "mail-snippet";
-    snippet.textContent = post.preview ? " — " + post.preview : "";
+    /* No dash in front of it: the subject has its own line above, so the two
+       do not run together and nothing is needed to separate them. */
+    snippet.textContent = post.preview || "";
     middle.appendChild(snippet);
     open.appendChild(middle);
 

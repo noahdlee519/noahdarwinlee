@@ -2,15 +2,32 @@
 //
 // Turns exported Gmail messages into blog/posts.js.
 //
-//     node blog/import-gmail.mjs ~/path/to/the/exports
-//     node blog/import-gmail.mjs ~/path/to/the/exports --dry
+//     node blog/import-gmail.mjs "blog/part 1" "blog/part 2"
+//     node blog/import-gmail.mjs blog/letters --dry
 //
-// Reads every .html, .htm, .eml and .txt in that folder, pulls the subject, the
-// date, the sender and the body out of each, saves any attached images into
-// blog/images/, and writes blog/posts.js. Nothing is installed to run it: it
-// uses only what Node already has, because this site has no build step and one
-// script that quietly needs `npm install` first is a script that stops working
-// in a year.
+// Name one folder or several, and each is walked one level deep. Every .rtf,
+// .eml, .html and .txt found is read as mail: the subject, the date, the sender
+// and the body come out, the pictures go into blog/images/, and posts.js is
+// written. Naming folders one at a time is how a half-finished letter is kept
+// out of the blog until its photographs are with it.
+//
+// The .rtf case is the useful one here. A message copied out of Gmail's "Show
+// original" and saved from TextEdit is the message source wearing a document's
+// clothes: the formatting comes off and what is underneath is mail. Two things
+// about it are broken and are repaired on the way past — TextEdit leaves blank
+// lines inside the headers, which read strictly would end them early; and the
+// copy carries every attachment's headers but none of its data.
+//
+// That second one is why photographs are looked for beside the letter. Each
+// image part in the message takes the next downloaded file of its own type,
+// which is the order a Gmail download names them in ("unnamed.png",
+// "unnamed-1.png", and each type counted separately). A photograph saved as
+// PNG is several times the size it needs to be, so ImageMagick re-encodes it
+// if it is installed; without it the file is copied across and the run says so.
+//
+// Nothing is installed to run this: it uses only what Node already has,
+// because this site has no build step and one script that quietly needs
+// `npm install` first is a script that stops working in a year.
 //
 // What it throws away, and why:
 //
@@ -30,6 +47,7 @@
 // script leaves any you have already added alone when you run it again.
 
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 
@@ -39,15 +57,22 @@ const IMAGE_DIR = path.join(ROOT, "images");
 
 const args = process.argv.slice(2);
 const dry = args.includes("--dry");
-const source = args.find((a) => !a.startsWith("--"));
+/* More than one folder may be named, because the letters are not all finished
+   at once: naming the ones that are keeps the half-done ones out of the blog
+   until their photographs are with them. */
+const sources = args.filter((a) => !a.startsWith("--"));
 
-if (!source) {
-  console.error("usage: node blog/import-gmail.mjs <folder of exported mail> [--dry]");
+if (!sources.length) {
+  console.error(
+    "usage: node blog/import-gmail.mjs <folder> [more folders...] [--dry]"
+  );
   process.exit(1);
 }
-if (!fs.existsSync(source) || !fs.statSync(source).isDirectory()) {
-  console.error("not a folder: " + source);
-  process.exit(1);
+for (const dir of sources) {
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    console.error("not a folder: " + dir);
+    process.exit(1);
+  }
 }
 
 /* ------------------------------------------------------------ decoding -- */
@@ -66,7 +91,10 @@ function decodeQuotedPrintable(text) {
 /* An encoded-word: =?UTF-8?Q?...?= or =?UTF-8?B?...?=, which is how a subject
    line carries anything outside ASCII. */
 function decodeEncodedWords(text) {
-  return text.replace(
+  /* Two encoded words in a row are separated by whitespace that is part of the
+     encoding, not part of the subject — "(Part =?..?= =?..?=1)" is one word
+     split in two, and left in place the space shows up in the title. */
+  return text.replace(/\?=\s+=\?/g, "?==?").replace(
     /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g,
     (whole, charset, kind, payload) => {
       try {
@@ -104,10 +132,45 @@ function decodeEntities(text) {
 
 /* ------------------------------------------------------- reading a file -- */
 
+/* A message copied out of Gmail's "Show original" and saved from TextEdit has
+   blank lines dropped into the middle of its headers — between Date and
+   Subject, most often. Read strictly, the first of those ends the headers, and
+   everything real about the message (its Subject, its Content-Type, and so the
+   boundary that divides it) is then read as body text and lost.
+   So the top of the file is walked line by line instead: a blank line only
+   ends the headers once something that is not a header has followed it. */
+function repairHeaders(raw) {
+  const lines = raw.split(/\r?\n/);
+  const isHeader = (line) => /^[A-Za-z][A-Za-z0-9-]*:/.test(line);
+  const isFolded = (line) => /^[ \t]/.test(line);
+  const out = [];
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+    if (isHeader(line) || isFolded(line)) {
+      out.push(line);
+      continue;
+    }
+    if (line.trim() === "") {
+      /* Look past the gap: another header means the gap was noise. */
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === "") j++;
+      if (j < lines.length && isHeader(lines[j])) {
+        i = j - 1;
+        continue;
+      }
+      break; // a real end of headers
+    }
+    break; // a line that is neither blank nor a header: headers are over
+  }
+  return out.join("\n") + "\n\n" + lines.slice(i).join("\n");
+}
+
 /* A .eml is headers, a blank line, then the body — possibly in several parts,
    each with its own headers. This walks it far enough to find the HTML part
    (or the plain-text one if that is all there is) and any image attachments. */
-function readEml(raw) {
+function readEml(rawIn) {
+  const raw = repairHeaders(rawIn);
   const headers = {};
   const split = raw.search(/\r?\n\r?\n/);
   const headerBlock = split === -1 ? raw : raw.slice(0, split);
@@ -160,9 +223,20 @@ function readEml(raw) {
     else if (ctype.includes("text/plain")) text = text || asText;
   }
 
-  if (boundary) {
-    const marker = "--" + boundary[1];
-    bodyBlock.split(marker).forEach((chunk) => {
+  /* A message from Gmail with both text and pictures is multipart/related
+     wrapping a multipart/alternative wrapping the plain and HTML versions —
+     so the parts nest, and walking only the outer level finds a part whose
+     type is "multipart/alternative" and nothing it can use. Hence the
+     recursion: a part that is itself multipart is split in turn. */
+  function walkPart(partHeaders, partBody, depth) {
+    const ctype = partHeaders["content-type"] || "";
+    const inner = /boundary="?([^";]+)"?/i.exec(ctype);
+    if (!/^multipart\//i.test(ctype.trim()) || !inner || depth > 6) {
+      takePart(partHeaders, partBody);
+      return;
+    }
+    const marker = "--" + inner[1];
+    partBody.split(marker).forEach((chunk) => {
       const trimmed = chunk.replace(/^\r?\n/, "");
       if (!trimmed || trimmed.startsWith("--")) return;
       const at = trimmed.search(/\r?\n\r?\n/);
@@ -175,11 +249,12 @@ function readEml(raw) {
           if (c === -1) return;
           ph[line.slice(0, c).trim().toLowerCase()] = line.slice(c + 1).trim();
         });
-      takePart(ph, at === -1 ? "" : trimmed.slice(at).replace(/^\r?\n\r?\n/, ""));
+      walkPart(ph, at === -1 ? "" : trimmed.slice(at).replace(/^\r?\n\r?\n/, ""), depth + 1);
     });
-  } else {
-    takePart(headers, bodyBlock);
   }
+
+  if (boundary) walkPart(headers, bodyBlock, 0);
+  else takePart(headers, bodyBlock);
 
   return {
     subject: decodeEncodedWords(headers.subject || ""),
@@ -403,6 +478,62 @@ function safeUrl(value) {
   return !/^[a-z][a-z0-9+.-]*:/i.test(url); // a bare relative path is fine
 }
 
+/* An .rtf here is not a document — it is a message copied out of Gmail's
+   "Show original" and saved from TextEdit, so underneath the formatting it is
+   the message source. This takes the formatting off and hands back the text,
+   which readEml then reads as the mail it is.
+   Only what TextEdit actually produces is handled: the font and colour tables,
+   the \'xx and \uN escapes, and a backslash at end of line, which is how the
+   message's own line breaks were written. */
+/* The tables at the top of an RTF nest, and a regex cannot count braces, so
+   these are cut out by matching them: find the group's opening brace, walk
+   forward until the depth returns to zero, and drop the lot. Left in, their
+   debris ("Courier;", ";;;") is the first thing the reader below sees, and it
+   stops looking for headers before it has found any. */
+function dropGroups(s, names) {
+  const opener = new RegExp("\\{\\\\\\*?\\\\(?:" + names.join("|") + ")\\b");
+  for (let guard = 0; guard < 40; guard++) {
+    const at = s.search(opener);
+    if (at === -1) break;
+    let depth = 0;
+    let end = at;
+    for (; end < s.length; end++) {
+      const c = s[end];
+      if (c === "\\") { end++; continue; }
+      if (c === "{") depth++;
+      else if (c === "}" && --depth === 0) { end++; break; }
+    }
+    s = s.slice(0, at) + s.slice(end);
+  }
+  return s;
+}
+
+function rtfToText(raw) {
+  let s = raw;
+  s = dropGroups(s, [
+    "fonttbl", "colortbl", "expandedcolortbl", "stylesheet", "info",
+    "generator", "listtable", "listoverridetable", "pgdsctbl"
+  ]);
+  s = s.replace(/\\'([0-9a-fA-F]{2})/g, (_, hex) =>
+    Buffer.from([parseInt(hex, 16)]).toString("latin1")
+  );
+  s = s.replace(/\\u(-?\d+)\s?\??/g, (_, dec) => {
+    const n = Number(dec);
+    return String.fromCharCode(n < 0 ? n + 65536 : n);
+  });
+  s = s.replace(/\\\n/g, "\n");
+  s = s.replace(/\\(?:par|line)\b ?/g, "\n");
+  s = s.replace(/\\[a-zA-Z]+-?\d* ?/g, "");
+  s = s.replace(/\\([{}\\])/g, "$1");
+  s = s.replace(/[{}]/g, "");
+
+  /* Whatever survives before the message's own first header is document, not
+     mail. The message begins at the first line that reads like a header. */
+  const lines = s.split(/\r?\n/);
+  const first = lines.findIndex((line) => /^[A-Za-z][A-Za-z0-9-]*:\s/.test(line));
+  return (first === -1 ? lines : lines.slice(first)).join("\n").trim();
+}
+
 /* A plain-text file has no headers, so the convention is the one a letter uses
    anyway: the first line is the subject if a blank line follows it. Otherwise
    there is no subject here and the file name has to supply it. */
@@ -523,13 +654,109 @@ function existingLabels() {
 
 /* ---------------------------------------------------------------- run -- */
 
-const files = fs
-  .readdirSync(source)
-  .filter((name) => /\.(html?|eml|txt)$/i.test(name))
-  .sort();
+/* The letters may sit loose in one folder, or a folder each with their photos
+   beside them — "part 3/part 3.rtf" and "part 3/photos/*.png". So the source
+   is walked two deep, and the blog's own files are stepped over rather than
+   read as mail. */
+const OWN = new Set(["index.html", "posts.js", "blog.js", "import-gmail.mjs"]);
+const MESSAGE = /\.(html?|eml|txt|rtf)$/i;
+const PICTURE = /\.(png|jpe?g|gif|webp|heic|tiff?)$/i;
+
+function walk(dir, depth, out) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (err) {
+    return out;
+  }
+  for (const entry of entries) {
+    if (entry.name.startsWith(".")) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (path.resolve(full) === path.resolve(IMAGE_DIR)) continue;
+      if (depth > 0) walk(full, depth - 1, out);
+    } else if (MESSAGE.test(entry.name) && !OWN.has(entry.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+/* Every picture sitting with a letter, in the order a download names them:
+   Gmail calls the first one "unnamed.png" and counts from there, and it counts
+   each file type on its own. */
+function picturesBeside(messagePath) {
+  const dir = path.dirname(messagePath);
+  const found = [];
+  const seek = (d, depth) => {
+    let entries;
+    try {
+      entries = fs.readdirSync(d, { withFileTypes: true });
+    } catch (err) {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory()) {
+        if (depth > 0) seek(full, depth - 1);
+      } else if (PICTURE.test(entry.name)) {
+        found.push(full);
+      }
+    }
+  };
+  seek(dir, 1);
+
+  const order = (file) => {
+    const m = /-(\d+)\.[^.]+$/.exec(path.basename(file));
+    return m ? Number(m[1]) : 0;
+  };
+  const pools = new Map();
+  for (const file of found.sort((a, b) => order(a) - order(b))) {
+    const ext = path.extname(file).toLowerCase();
+    const kind = ext === ".jpeg" ? ".jpg" : ext;
+    if (!pools.has(kind)) pools.set(kind, []);
+    pools.get(kind).push(file);
+  }
+  return pools;
+}
+
+const EXT_FOR = { png: ".png", jpeg: ".jpg", jpg: ".jpg", gif: ".gif", webp: ".webp" };
+
+/* Photographs saved as PNG — which is what Gmail hands back for an inline
+   image — are several times the size they need to be, because PNG keeps every
+   pixel exactly and a photograph does not benefit. ImageMagick, if it is here,
+   re-encodes them; if it is not, the file is copied across unchanged and the
+   run says so. */
+let magick = null;
+function haveMagick() {
+  if (magick !== null) return magick;
+  for (const cmd of ["magick", "convert"]) {
+    const probe = spawnSync(cmd, ["-version"], { stdio: "ignore" });
+    if (!probe.error && probe.status === 0) return (magick = cmd);
+  }
+  return (magick = "");
+}
+
+function shrink(from, to) {
+  const cmd = haveMagick();
+  if (!cmd) {
+    fs.copyFileSync(from, to.replace(/\.webp$/, path.extname(from)));
+    return false;
+  }
+  const run = spawnSync(
+    cmd,
+    [from, "-auto-orient", "-resize", "1400x1400>", "-quality", "78",
+     "-define", "webp:method=6", to],
+    { stdio: "ignore" }
+  );
+  return !run.error && run.status === 0;
+}
+
+const files = [...new Set(sources.flatMap((dir) => walk(dir, 1, [])))].sort();
 
 if (!files.length) {
-  console.error("no .html, .eml or .txt files in " + source);
+  console.error("no .rtf, .eml, .html or .txt files in " + sources.join(", "));
   process.exit(1);
 }
 
@@ -537,18 +764,21 @@ const keptLabels = existingLabels();
 const taken = new Set();
 const posts = [];
 const remoteImages = [];
+const missingPictures = [];
 let imagesWritten = 0;
 
 if (!dry && !fs.existsSync(IMAGE_DIR)) fs.mkdirSync(IMAGE_DIR, { recursive: true });
 
-for (const name of files) {
-  const full = path.join(source, name);
+for (const full of files) {
+  const name = path.basename(full);
   const raw = fs.readFileSync(full, "binary");
+  const isRtf = /\.rtf$/i.test(name);
   const isEml = /\.eml$/i.test(name);
   const isTxt = /\.txt$/i.test(name);
 
   let parsed;
-  if (isEml) parsed = readEml(raw);
+  if (isRtf) parsed = readEml(rtfToText(Buffer.from(raw, "binary").toString("utf8")));
+  else if (isEml) parsed = readEml(raw);
   else if (isTxt) parsed = readTxt(Buffer.from(raw, "binary").toString("utf8"));
   else parsed = readHtml(Buffer.from(raw, "binary").toString("utf8"));
 
@@ -556,21 +786,54 @@ for (const name of files) {
     ? sanitize(parsed.html)
     : textToHtml(parsed.text || "");
 
-  // attached images: written out once each, and the cid: references rewritten
-  for (const image of parsed.images) {
-    const ext = (image.mime.split("/")[1] || "jpg").replace(/[^a-z0-9]/gi, "");
-    const fileName =
-      slug(path.parse(image.name).name || "image", new Set()) +
-      "-" +
-      image.data.length.toString(36) +
-      "." +
-      ext;
-    if (!dry) fs.writeFileSync(path.join(IMAGE_DIR, fileName), image.data);
+  /* Copying a message out of "Show original" copies its shape but not its
+     attachments — every image part arrives with its headers and no data. The
+     photographs were downloaded separately, so they are matched back on: each
+     part in turn takes the next downloaded file of its own type, which is the
+     order a download names them in. The rewriting happens here, on the decoded
+     body, because a cid: in the raw source can be split across a line break
+     and would not be found there. */
+  const stem = slug(path.parse(name).name, new Set());
+  const pools = parsed.images.some((i) => !i.data.length)
+    ? picturesBeside(full)
+    : new Map();
+  const used = new Map();
+
+  parsed.images.forEach((image, index) => {
+    const kind = EXT_FOR[(image.mime.split("/")[1] || "").toLowerCase()] || ".jpg";
+    let source_ = null;
+    let data = image.data;
+
+    if (!data.length) {
+      const pool = pools.get(kind) || [];
+      const at = used.get(kind) || 0;
+      if (at >= pool.length) {
+        missingPictures.push({ file: name, mime: image.mime });
+        return;
+      }
+      used.set(kind, at + 1);
+      source_ = pool[at];
+    }
+
+    const outName = stem + "-" + String(index + 1).padStart(2, "0") + ".webp";
+    const outPath = path.join(IMAGE_DIR, outName);
+    let written = outName;
+
+    if (!dry) {
+      if (source_) {
+        if (!shrink(source_, outPath)) written = outName.replace(/\.webp$/, path.extname(source_));
+      } else {
+        const tmp = path.join(IMAGE_DIR, stem + "-" + (index + 1) + kind);
+        fs.writeFileSync(tmp, data);
+        if (shrink(tmp, outPath)) fs.unlinkSync(tmp);
+        else written = path.basename(tmp);
+      }
+    }
     imagesWritten++;
     if (image.cid) {
-      bodyHtml = bodyHtml.split("cid:" + image.cid).join("images/" + fileName);
+      bodyHtml = bodyHtml.split("cid:" + image.cid).join("images/" + written);
     }
-  }
+  });
   // anything still pointing at a cid: never arrived — drop the tag rather than
   // leave a broken image in the letter
   bodyHtml = bodyHtml.replace(/<img[^>]*src="cid:[^"]*"[^>]*\/?>/gi, "");
@@ -655,6 +918,18 @@ if (dry) {
         "will survive the next run."
     );
   }
+}
+
+if (missingPictures.length) {
+  console.log(
+    "\n" + missingPictures.length + " image" +
+      (missingPictures.length === 1 ? " was" : "s were") +
+      " referenced by a letter but had no file to match:\n" +
+      "the message carried the attachment's headers and not its data, and there\n" +
+      "were no more downloaded pictures of that type beside it. Put them in a\n" +
+      "folder next to the letter and run this again.\n"
+  );
+  missingPictures.forEach((m) => console.log("  " + m.file + "  " + m.mime));
 }
 
 if (remoteImages.length) {
