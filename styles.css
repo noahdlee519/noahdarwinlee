@@ -260,6 +260,13 @@ body {
   .cv-page {
     padding-top: calc(var(--page-top) + 106px);
   }
+
+  /* While a round is on screen the page gives back the 66px of top padding it
+     uses to line its heading up with the rest of the site — nothing up there
+     needs aligning mid-game. The menu keeps the shared alignment. */
+  .game-page.is-playing {
+    padding-top: calc(var(--page-top) + 40px);
+  }
 }
 
 .cv-page .name {
@@ -1022,7 +1029,8 @@ a[href="/cv/"]:active {
 }
 
 .materials-page .name,
-.materials-page .about-link {
+.materials-page .about-link,
+.materials-page .back-link {
   left: var(--page-left);
 }
 
@@ -1035,11 +1043,22 @@ a[href="/cv/"]:active {
   display: block;
   position: relative;
   overflow: hidden;
+  /* Horizontal drags belong to the row; vertical ones are still the page's,
+     so the list scrolls normally on a phone. */
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
   border-bottom: 2px solid #ffffff;
   color: inherit;
   text-decoration: none;
   padding: 18px 0;
   transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.marquee-row.is-dragging {
+  cursor: grabbing;
 }
 
 .marquee-row:hover,
@@ -1053,21 +1072,9 @@ a[href="/cv/"]:active {
   display: flex;
   width: max-content;
   will-change: transform;
-  /* Frozen until the row is hovered. The negative delay set in marquee.js
-     parks each row at a different point in its loop. */
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-play-state: paused;
-}
-
-.marquee-row:hover .marquee-track,
-.marquee-row:focus-visible .marquee-track,
-.marquee-auto .marquee-track {
-  animation-play-state: running;
-}
-
-.marquee-still .marquee-track {
-  animation: none !important;
+  /* Position comes from marquee.js, a frame at a time. A CSS animation cannot
+     be dragged, and its duration had to be computed from a width that is not
+     final until the font and the pictures have loaded. */
 }
 
 .marquee-seq {
@@ -1118,6 +1125,8 @@ a[href="/cv/"]:active {
 
 .marquee-img {
   display: block;
+  -webkit-user-drag: none;
+  pointer-events: none;
   height: clamp(52px, 9vw, 116px);
   width: auto;
   margin: 0;
@@ -1140,15 +1149,7 @@ a[href="/cv/"]:active {
   margin-right: 0.3em;
 }
 
-@keyframes marquee-left {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
 
-@keyframes marquee-right {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
-}
 
 .marquee-row:focus-visible {
   outline: 2px solid #e3e3b0;
@@ -1177,8 +1178,12 @@ a[href="/cv/"]:active {
     padding-right: 0;
   }
 
+  /* This page zeroes the body padding so the rows can run edge to edge, so
+     everything that should line up with the rows' text has to put it back —
+     the back arrow was the one that got missed. */
   .materials-page .name,
-  .materials-page .about-link {
+  .materials-page .about-link,
+  .materials-page .back-link {
     padding-left: 16px;
   }
 
@@ -1206,7 +1211,7 @@ a[href="/cv/"]:active {
 
 .game {
   padding-right: var(--page-left);
-  max-width: 1240px;
+  max-width: 1420px;
 }
 
 /* .cv-page main p indents every paragraph like a CV entry; the game's do not. */
@@ -1559,6 +1564,11 @@ body.game-page {
   text-overflow: ellipsis;
 }
 
+/* Set apart by space rather than punctuation. */
+.game-progress-where:not(:empty) {
+  margin-right: clamp(14px, 2vw, 30px);
+}
+
 .game-meta-title {
   flex: 0 0 auto;
   letter-spacing: 0.01em;
@@ -1581,21 +1591,32 @@ body.game-page {
   white-space: nowrap;
 }
 
-/* A quiet way out of a game in progress, in the same voice as the site's links. */
+/* The tally carries both spellings — "0 right · 0 wrong" and "0 ✓ · 0 ✗" — and
+   shows the words wherever there is room for them. */
+.game-score-mark {
+  display: none;
+}
+
+/* The way out of a game in progress. It was a bare word and read as label
+   rather than control, so it now carries the same outline as the page's other
+   buttons at a size that still fits the bar. */
 .game-quit {
-  padding: 0;
+  padding: 3px 13px;
   background: none;
-  border: 0;
+  border: 2px solid var(--ink);
+  border-radius: 0;
   color: inherit;
   font: inherit;
+  line-height: 1.15;
   cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
 .game-quit:hover,
 .game-quit:focus-visible {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
 }
 
 .game-frame {
@@ -1612,6 +1633,29 @@ body.game-page {
   display: inline-block;
   max-width: 100%;
   line-height: 0;
+}
+
+/* Touch devices zoom the picture in place instead of opening a loupe, so the
+   stage has to crop what runs past the edges. */
+@media (hover: none) {
+  .game-stage {
+    overflow: hidden;
+  }
+
+  .game-image {
+    cursor: default;
+    transition: transform 240ms ease;
+  }
+
+  .game-stage.is-zoomed .game-image {
+    cursor: default;
+  }
+}
+
+@media (hover: none) and (prefers-reduced-motion: reduce) {
+  .game-image {
+    transition: none;
+  }
 }
 
 .game-image {
@@ -1632,6 +1676,47 @@ body.game-page {
 
 /* The magnified window. Sized and positioned in game.js; it shows the picture
    at its own resolution, which is about twice what fits on the page. */
+/* A quick wash of colour over the picture when the answer lands. Sits above the
+   image but below the loupe, and never eats the click. */
+.game-flash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* Width and height are set from the image in game.js. The stage it sits in
+     does not shrink-wrap to the picture, so `inset: 0` spilled the colour
+     across the empty half of the row. */
+  pointer-events: none;
+  opacity: 0;
+  background: transparent;
+}
+
+.game-flash.is-right {
+  animation: game-flash-right 900ms ease-out 1;
+}
+
+.game-flash.is-wrong {
+  animation: game-flash-wrong 900ms ease-out 1;
+}
+
+@keyframes game-flash-right {
+  0% { opacity: 0; background: rgba(46, 176, 90, 0.62); }
+  18% { opacity: 1; background: rgba(46, 176, 90, 0.62); }
+  100% { opacity: 0; background: rgba(46, 176, 90, 0.62); }
+}
+
+@keyframes game-flash-wrong {
+  0% { opacity: 0; background: rgba(206, 44, 44, 0.62); }
+  18% { opacity: 1; background: rgba(206, 44, 44, 0.62); }
+  100% { opacity: 0; background: rgba(206, 44, 44, 0.62); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-flash.is-right,
+  .game-flash.is-wrong {
+    animation-duration: 1ms;
+  }
+}
+
 .game-loupe {
   position: absolute;
   box-sizing: border-box;
@@ -1648,27 +1733,35 @@ body.game-page {
   opacity: 0.8;
 }
 
+/* The field and the button are one object: a bordered box whose right-hand end
+   is the button. No gap, and the shared edge is a single 2px line rather than
+   two sitting side by side. */
 .game-form {
   display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
   margin: 0 0 10px 0;
 }
 
 .game-input {
-  flex: 1 1 300px;
-  max-width: 520px;
+  flex: 1 1 auto;
   min-width: 0;
   background: transparent;
-  border: 0;
-  border-bottom: 2px solid var(--ink);
+  border: 2px solid var(--ink);
   border-radius: 0;
   color: var(--ink);
   font: inherit;
   font-size: clamp(22px, 3vw, 46px);
   font-weight: 300;
-  padding: 4px 2px 10px 2px;
+  line-height: 1.15;
+  padding: 10px 14px;
+}
+
+.game-form .game-btn {
+  flex: 0 0 auto;
+  margin-left: -2px;
+  padding: 10px clamp(20px, 2.4vw, 40px);
+  font-size: clamp(17px, 1.8vw, 26px);
 }
 
 .game-input::placeholder {
@@ -1677,6 +1770,13 @@ body.game-page {
 
 .game-input:focus {
   outline: none;
+}
+
+/* The button sits on top so its border wins along the shared edge. */
+.game-form .game-btn:hover,
+.game-form .game-btn:focus-visible {
+  position: relative;
+  z-index: 1;
 }
 
 .game-btn {
@@ -1698,6 +1798,13 @@ body.game-page {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
+}
+
+.game-ask {
+  margin: 0 0 12px 0;
+  font-size: clamp(15px, 1.5vw, 19px);
+  font-weight: 300;
+  color: var(--accent);
 }
 
 .game-verdict {
@@ -1786,17 +1893,24 @@ body.game-page {
    running off the bottom on a short window; when it bites, both shrink together
    and the two edges stay aligned. */
 @media (min-width: 701px) {
-  .game-board {
-    /* The vh term is what actually binds on a laptop, so raising the px cap
-       alone changed nothing — this is the number that grows the picture.
+  /* Set on the body rather than on .game-board: a custom property is inherited
+     from the nearest ancestor that declares it, so a copy on .game-board would
+     shadow anything set higher up and the playing override below would never
+     reach the picture.
 
-       It is written as available height rather than a flat fraction of the
-       window, because everything around the picture is a fixed 340px or so
-       (page top, the bar, the margins, and the verdict and answer under it) and
-       a fraction gives that fixed part too little room on a short screen. The
-       1.42 converts the height a map may take into the width it will then be;
-       it assumes the 1000 x 700 frame the maps are all shot in. */
-    --board: min(1040px, 100%, calc((100vh - 340px) * 1.42));
+     It is written as available height rather than a flat fraction of the
+     window, because everything around the picture is a fixed amount (page top,
+     the bar, the margins, and the verdict and answer under it) and a fraction
+     gives that fixed part too little room on a short screen. The 1.42 converts
+     the height a map may take into the width it will then be; it assumes the
+     1000 x 700 frame the maps are all shot in. */
+  .game-page {
+    --board: min(1240px, 100%, calc((100vh - 340px) * 1.42));
+  }
+
+  /* Mid-game the reclaimed top padding goes to the map. */
+  .game-page.is-playing {
+    --board: min(1240px, 100%, calc((100vh - 290px) * 1.42));
   }
 
   .game-image {
@@ -1827,6 +1941,17 @@ body.game-page {
      goes and the round count stays. You just chose the filters anyway. */
   .game-progress-where {
     display: none;
+  }
+
+  /* Four things share this bar and "map 1 / 10" is longer than "1 / 10" was,
+     so the type comes down a step rather than letting any of them ellipsis. */
+  .game-meta {
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  .game-quit {
+    padding: 2px 7px;
   }
 
   /* And the two sides take only the room they need rather than an equal half
@@ -1861,6 +1986,42 @@ body.game-page {
   }
 }
 
+/* Four things share this bar and the wordmark is the one that gives way first,
+   so narrow phones buy room back a little at a time: tighter gaps, then a
+   smaller type step, and only on the narrowest phones does the tally trade its
+   words for marks. Measured at 320 / 360 / 390 / 430: nothing truncates. */
+@media (max-width: 420px) {
+  .game-meta {
+    gap: 8px;
+  }
+
+  .game-meta-right {
+    gap: 11px;
+  }
+
+  .game-quit {
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 365px) {
+  .game-meta {
+    font-size: 12px;
+  }
+}
+
+/* Only the very narrowest phones still cannot hold the words, and there an
+   ellipsised wordmark would be the alternative. */
+@media (max-width: 340px) {
+  .game-score-word {
+    display: none;
+  }
+
+  .game-score-mark {
+    display: inline;
+  }
+}
+
 /* ---------------- print ----------------
    Browsers drop background colours when printing, so the orange ground
    disappeared and left white text on white paper. Everything below rebuilds
@@ -1873,13 +2034,14 @@ body.game-page {
 
 .game-cosmetic {
   width: min(940px, 100%);
-  margin: 34px 0 0 0;
-  padding-top: 22px;
+  /* Same rhythm as the difficulty / region / rounds rules above: the line sits
+     right on top of its label rather than floating well clear of it. */
+  margin: 30px 0 0 0;
   border-top: 2px solid var(--ink);
 }
 
 .game-cosmetic-toggle {
-  padding: 0;
+  padding: 9px 0 0 0;
   background: none;
   border: 0;
   color: inherit;

@@ -107,18 +107,24 @@
 
         <div class="game-frame" id="game-frame"></div>
 
+        <p class="game-ask" id="game-ask" hidden role="status"></p>
+
         <form class="game-form" id="game-form" autocomplete="off">
-          <label class="sr-only" for="game-input">Name the city</label>
+          <label class="sr-only" for="game-input">Your guess</label>
           <input
             class="game-input"
             id="game-input"
             type="text"
-            name="city"
+            name="guess"
             autocomplete="off"
             autocapitalize="off"
             autocorrect="off"
             spellcheck="false"
             enterkeyhint="go"
+            inputmode="text"
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
             placeholder="type a city"
           />
           <button class="game-btn" type="submit" id="game-submit">guess</button>

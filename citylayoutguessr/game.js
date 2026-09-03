@@ -43,6 +43,7 @@
     form: document.getElementById("game-form"),
     input: document.getElementById("game-input"),
     submit: document.getElementById("game-submit"),
+    ask: document.getElementById("game-ask"),
     reveal: document.getElementById("game-reveal"),
     verdict: document.getElementById("game-verdict"),
     answer: document.getElementById("game-answer"),
@@ -324,8 +325,24 @@
      The day is counted in UTC so that everyone, everywhere, is on the same
      puzzle at the same moment — which is the whole point of comparing scores. */
 
+  /* The day is counted in US Eastern rather than UTC. UTC rolls over at 8pm
+     Eastern, so an evening game showed tomorrow's date on your own clock. A
+     fixed reference zone keeps one puzzle worldwide *and* prints the date you
+     expect; Intl handles daylight saving so this needs no maintenance. */
+  var DAY_ZONE = "America/New_York";
+  var dayFormat = null;
+  try {
+    dayFormat = new Intl.DateTimeFormat("en-CA", {
+      timeZone: DAY_ZONE, year: "numeric", month: "2-digit", day: "2-digit"
+    });
+  } catch (err) {
+    dayFormat = null;
+  }
+
   function dayKey(d) {
-    return (d || new Date()).toISOString().slice(0, 10);
+    var when = d || new Date();
+    if (dayFormat) return dayFormat.format(when); // en-CA gives YYYY-MM-DD
+    return when.toISOString().slice(0, 10);
   }
 
   function dayNumber(key) {
@@ -336,10 +353,13 @@
   }
 
   function prettyDay(key) {
-    var months = ["January","February","March","April","May","June","July",
-                  "August","September","October","November","December"];
     var parts = key.split("-");
-    return +parts[2] + " " + months[+parts[1] - 1] + " " + parts[0];
+    return +parts[1] + "/" + +parts[2] + "/" + parts[0].slice(2);
+  }
+
+  /* "daily game 1: 9/2/26" — used on the menu and in the bar alike. */
+  function dailyName(key) {
+    return "daily game " + dayNumber(key) + ": " + prettyDay(key);
   }
 
   /* FNV-1a, then mulberry32: a small deterministic generator so the shuffle is
@@ -415,7 +435,8 @@
 
   function shareText(record) {
     var marks = record.log.map(function (e) { return e.right ? "\u25cf" : "\u25cb"; }).join("");
-    return "citylayoutguessr no. " + dayNumber(record.day) + "\n" +
+    return "citylayoutguessr \u2014 daily game " + dayNumber(record.day) +
+           ": " + prettyDay(record.day) + "\n" +
            record.correct + " / " + record.log.length + "\n" +
            marks + "\n" +
            "https://noahdarwinlee.com/citylayoutguessr/#daily";
@@ -428,10 +449,10 @@
     if (done && done.day === key) {
       el.dailyStart.textContent = "see today\u2019s result";
       el.dailyNote.textContent =
-        "no. " + dayNumber(key) + " \u00b7 played \u00b7 " + done.correct + " of " + done.log.length;
+        dailyName(key) + " \u00b7 played \u00b7 " + done.correct + " of " + done.log.length;
     } else {
       el.dailyStart.textContent = "today\u2019s challenge";
-      el.dailyNote.textContent = "no. " + dayNumber(key) + " \u00b7 " + prettyDay(key);
+      el.dailyNote.textContent = dailyName(key);
     }
   }
 
@@ -742,6 +763,9 @@
 
   function show(node, on) {
     if (node) node.hidden = !on;
+    if (node === el.board) {
+      document.body.classList.toggle("is-playing", Boolean(on));
+    }
   }
 
   function levels() {
@@ -771,7 +795,7 @@
   /* A short name for what is being played, for the progress bar and the
      result. Anything unfiltered is left unsaid rather than spelled out. */
   function describe(cfg) {
-    if (cfg.daily) return "daily no. " + dayNumber(cfg.daily);
+    if (cfg.daily) return dailyName(cfg.daily);
     var bits = [];
     if (cfg.levels.length < levels().length) {
       bits.push(cfg.levels.join(" + "));
@@ -1064,6 +1088,45 @@
     return { hide: hide };
   }
 
+  /* On a phone a loupe is the wrong instrument — your finger covers it, and the
+     window is small to begin with. Tap to zoom into the point you touched, tap
+     again to come back out. */
+  function buildTapZoom(stage, img) {
+    var on = false;
+
+    function reset() {
+      on = false;
+      stage.classList.remove("is-zoomed");
+      img.style.transform = "";
+      img.style.transformOrigin = "";
+    }
+
+    /* The listener goes on the stage, not the image: a transform moves the
+       element's hit area with it, so once zoomed, parts of the frame would no
+       longer be over the picture and the tap to zoom back out could miss. The
+       stage's own box never moves. */
+    stage.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (on) {
+        reset();
+        return;
+      }
+      var r = stage.getBoundingClientRect();
+      var x = Math.max(0, Math.min(1, (e.clientX - r.left) / (r.width || 1)));
+      var y = Math.max(0, Math.min(1, (e.clientY - r.top) / (r.height || 1)));
+      on = true;
+      stage.classList.add("is-zoomed");
+      img.style.transformOrigin = (x * 100).toFixed(1) + "% " + (y * 100).toFixed(1) + "%";
+      img.style.transform = "scale(2.6)";
+    });
+
+    window.addEventListener("resize", function () {
+      if (on) reset();
+    });
+
+    return { hide: reset };
+  }
+
   function renderRound() {
     var round = state.rounds[state.index];
     state.revealed = false;
@@ -1072,41 +1135,82 @@
     el.frame.innerHTML = "";
     var stage = document.createElement("div");
     stage.className = "game-stage";
+    var flash = document.createElement("div");
+    flash.className = "game-flash";
+    flash.id = "game-flash";
     var img = document.createElement("img");
     img.className = "game-image";
     img.src = round.url;
     img.alt = "Satellite image of a city, round " + (state.index + 1);
     img.decoding = "async";
-    img.title = "Click to magnify";
+    if (!(window.matchMedia && window.matchMedia("(hover: none)").matches)) {
+      img.title = "Click to magnify";
+    }
     img.addEventListener("error", dropRound);
     stage.appendChild(img);
+    stage.appendChild(flash);
     el.frame.appendChild(stage);
-    loupe = buildLoupe(stage, img, round.url);
+    /* Pointer, not width: a small laptop still gets the loupe, a large tablet
+       still gets the tap. */
+    var touch = window.matchMedia && window.matchMedia("(hover: none)").matches;
+    loupe = touch ? buildTapZoom(stage, img) : buildLoupe(stage, img, round.url);
     warm(state.rounds, state.index + 1, 2);
 
     /* Split so a narrow screen can drop the filter description and keep the
        bar to one line — the count is the part you actually need mid-game. */
     var where = describe(state.cfg);
-    el.progressWhere.textContent = where ? where + " · " : "";
+    el.progressWhere.textContent = where || "";
     el.progressCount.textContent = state.cfg.length === Infinity
-      ? "round " + (state.index + 1)
-      : (state.index + 1) + " / " + state.total;
-    el.score.textContent = score();
+      ? "map " + (state.index + 1)
+      : "map " + (state.index + 1) + "/" + state.total;
+    setScore();
     show(el.reveal, false);
     show(el.form, true);
     el.input.value = "";
+    emptyAsked = false;
+    show(el.ask, false);
     el.input.disabled = false;
     el.submit.disabled = false;
     el.input.focus({ preventScroll: true });
     save();
   }
 
-  function score() {
-    return state.correct + " right · " + state.wrong + " wrong";
+  /* The tally is written as markup rather than a plain string so that a narrow
+     phone can drop the words and show the marks instead: four things share
+     that bar, and "0 right · 0 wrong" is the one that can say the same
+     thing in a third of the room. Both spellings are always in the DOM and CSS
+     picks; the marks are hidden from screen readers, which get the words. */
+  function scorePart(n, word, mark) {
+    return (
+      '<span class="game-score-part">' + n +
+      '<span class="game-score-word"> ' + word + '</span>' +
+      '<span class="game-score-mark" aria-hidden="true"> ' + mark + '</span>' +
+      "</span>"
+    );
+  }
+
+  function setScore() {
+    el.score.innerHTML =
+      scorePart(state.correct, "right", "✓") +
+      '<span class="game-score-sep"> · </span>' +
+      scorePart(state.wrong, "wrong", "✗");
   }
 
   function answerLine(city) {
     return city.country ? city.city + ", " + city.country : city.city;
+  }
+
+  function flashResult(right) {
+    var flash = document.getElementById("game-flash");
+    var img = document.querySelector(".game-image");
+    if (!flash || !img) return;
+    flash.style.width = img.offsetWidth + "px";
+    flash.style.height = img.offsetHeight + "px";
+    flash.classList.remove("is-right", "is-wrong");
+    /* Force a reflow so the class can be re-added and replay the animation
+       even when two rounds in a row end the same way. */
+    void flash.offsetWidth;
+    flash.classList.add(right ? "is-right" : "is-wrong");
   }
 
   function reveal(entry) {
@@ -1118,12 +1222,26 @@
 
     show(el.form, false);
     show(el.reveal, true);
-    el.score.textContent = score();
+    setScore();
     el.status.textContent =
       (entry.right ? "Correct. " : "Incorrect. ") + "The answer is " + answerLine(entry.city) + ".";
     el.next.textContent =
       state.cfg.length !== Infinity && state.index + 1 >= state.total ? "see result" : "next";
+    show(el.ask, false);
     el.next.focus({ preventScroll: true });
+  }
+
+  var emptyAsked = false;
+
+  /* An empty box is almost always a slipped key rather than a decision, and it
+     used to score as a miss. Now the first press asks, the second gives up. */
+  function askedToSkip() {
+    if (emptyAsked) return true;
+    emptyAsked = true;
+    el.ask.textContent = "type a city — or press enter again to give up on this one";
+    show(el.ask, true);
+    el.input.focus({ preventScroll: true });
+    return false;
   }
 
   function judge(guess) {
@@ -1132,6 +1250,9 @@
     if (entry.right) state.correct += 1;
     else state.wrong += 1;
     state.log.push(entry);
+    show(el.ask, false);
+    emptyAsked = false;
+    flashResult(entry.right);
     reveal(entry);
     save();
   }
@@ -1149,7 +1270,7 @@
   function paintResult() {
     var where = describe(state.cfg);
     var tally = state.correct + " of " + state.log.length;
-    el.resultScore.textContent = where ? where + " · " + tally : tally;
+    el.resultScore.textContent = where ? where + " \u00b7 " + tally : tally;
     el.recap.innerHTML = "";
     state.log.forEach(function (entry) {
       var li = document.createElement("li");
@@ -1239,6 +1360,7 @@
   el.form.addEventListener("submit", function (e) {
     e.preventDefault();
     if (!state || el.input.disabled) return;
+    if (!el.input.value.trim() && !askedToSkip()) return;
     el.input.disabled = true;
     el.submit.disabled = true;
     judge(el.input.value);
@@ -1265,6 +1387,13 @@
                                               function () { done(false); });
     } else {
       done(false);
+    }
+  });
+
+  el.input.addEventListener("input", function () {
+    if (el.input.value.trim()) {
+      emptyAsked = false;
+      show(el.ask, false);
     }
   });
 
