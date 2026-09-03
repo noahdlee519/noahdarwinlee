@@ -1935,13 +1935,15 @@
       show(el.nameNote, true);
       cloud.setName(wanted).then(function (res) {
         if (!res.ok) {
-          /* Two kinds of no. The database refusing a name on the word list is
-             an ordinary answer and is put plainly; anything else is a fault,
-             and its reason is the only clue there is, so it is shown rather
-             than swallowed. */
+          /* Two kinds of no. A name refused for what it says is an ordinary
+             answer, and the refusal already reads as a sentence — whether it
+             came from the page or from the trigger in the database — so it is
+             shown as it is, with whatever it says about why. Anything else is
+             a fault, and its reason is the only clue there is, so that is
+             shown rather than swallowed. */
           var why = res.reason || "";
           el.nameNote.textContent = /not allowed/i.test(why)
-            ? "that name is not allowed — try another."
+            ? why + " — try another."
             : "could not save that name" +
               (why && why !== "failed" ? " — " + why : "") + ".";
           show(el.nameNote, true);

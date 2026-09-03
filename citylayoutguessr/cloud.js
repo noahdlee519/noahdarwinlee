@@ -115,13 +115,51 @@ function announce() {
   );
 }
 
+/* Characters that take up no space on screen. A name is allowed to be silly;
+   it is not allowed to be partly invisible, because that is how a word gets
+   cut in half to slip past the list, and how one row on the board reaches
+   across another. The same set is dropped in the database's normaliser and
+   refused by the constraint on the column — this copy only exists so the page
+   can say no without a round trip. */
+const INVISIBLE = /[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u206A-\u206F\u3164\uFEFF\uFFA0]/g;
+/* Marks that stack on top of the letter before them. A few are ordinary
+   accents; a wall of them is a name drawn over its neighbours. */
+const STACKING = /[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20F0]{5}/;
+
+/* Everything the page can decide for itself. The word list is deliberately not
+   here: it lives in the database, where it cannot be read out of a public file
+   and used as a list of things to try. */
+function tidyName(name) {
+  const clean = String(name == null ? "" : name)
+    .replace(INVISIBLE, "")
+    /* any run of whitespace of any kind — tabs, newlines, the line and
+       paragraph separators — becomes one ordinary space */
+    .replace(/\s+/g, " ")
+    /* whatever control characters are left have no business in a name */
+    .replace(/[\u0001-\u001F\u007F-\u009F\uFFF9-\uFFFB]/g, "")
+    .trim()
+    .slice(0, 24)
+    .trim();
+
+  if (!clean) return { ok: false, reason: "empty" };
+  if (!/[\p{L}\p{N}]/u.test(clean)) {
+    return { ok: false, reason: "that name is not allowed — it needs a letter or a number in it" };
+  }
+  if (STACKING.test(clean)) {
+    return { ok: false, reason: "that name is not allowed — too many accents" };
+  }
+  return { ok: true, name: clean };
+}
+
 /* The name that appears on the board. Row-level security lets you write your
-   own profile row and nobody else's. */
+   own profile row and nobody else's, and a trigger there has the last word on
+   what the name may say — this only saves an obviously hopeless name the trip. */
 async function setName(name) {
   const db = await connect();
   if (!db || !session) return { ok: false, reason: "signed-out" };
-  const clean = String(name || "").trim().slice(0, 24);
-  if (!clean) return { ok: false, reason: "empty" };
+  const tidy = tidyName(name);
+  if (!tidy.ok) return tidy;
+  const clean = tidy.name;
   /* Update first, and only insert if there was no row to update. An upsert
      would do both in one call, but it needs the insert policy to pass even when
      the row already exists, and the failure it produces then says nothing
