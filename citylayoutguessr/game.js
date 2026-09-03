@@ -14,6 +14,9 @@
 
   var DATA_URL = "cities.json";
   var STORE_KEY = "ndl-layout-guesser-v1";
+  /* The daily keeps its own slot: starting a custom game should not throw away
+     a daily you are half way through, and the other way round. */
+  var STORE_KEY_DAILY = "ndl-clg-daily-progress-v1";
   var LENGTHS = [10, 20, 30, 50, Infinity];
   var SETUP_KEY = "ndl-layout-guesser-setup-v1";
   var DAILY_KEY = "ndl-clg-daily-v1";
@@ -75,7 +78,12 @@
     leadersList: document.getElementById("game-leaders-list"),
     leadersNote: document.getElementById("game-leaders-note"),
     leadersSlot: document.getElementById("game-leaders-slot"),
-    leadersSlotResult: document.getElementById("game-leaders-slot-result")
+    leadersSlotResult: document.getElementById("game-leaders-slot-result"),
+    leadersTitle: document.getElementById("game-leaders-title"),
+    accountNote: document.getElementById("game-account-note"),
+    tabToday: document.getElementById("tab-today"),
+    tabAllTime: document.getElementById("tab-alltime"),
+    setupContinue: document.getElementById("setup-continue")
   };
 
   var data = null;
@@ -176,11 +184,18 @@
 
   /* ---------- saved game ---------- */
 
-  function save() {
+  function slot(cfg) {
+    return cfg && cfg.daily ? STORE_KEY_DAILY : STORE_KEY;
+  }
+
+  /* paused: you pressed menu and left the game standing, rather than simply
+     reloading the page. A paused game is not resumed automatically on the next
+     visit; the menu offers it instead. */
+  function save(paused) {
     if (!state) return;
     try {
       localStorage.setItem(
-        STORE_KEY,
+        slot(state.cfg),
         JSON.stringify({
           cfg: {
             levels: state.cfg.levels,
@@ -188,6 +203,7 @@
             length: state.cfg.length === Infinity ? "endless" : state.cfg.length,
             daily: state.cfg.daily || null
           },
+          paused: Boolean(paused),
           total: state.total,
           index: state.index,
           correct: state.correct,
@@ -206,20 +222,43 @@
     }
   }
 
-  function forget() {
+  function forget(which) {
     try {
-      localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(which || (state ? slot(state.cfg) : STORE_KEY));
     } catch (err) {}
   }
 
-  function restore() {
+  /* Reads a saved game without entering it, so the menu can say what is
+     waiting. Returns null for anything unusable — an empty slot, a finished
+     one, or yesterday's daily. */
+  function peek(which) {
     var saved;
     try {
-      saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      saved = JSON.parse(localStorage.getItem(which) || "null");
+    } catch (err) {
+      return null;
+    }
+    if (!saved || !saved.rounds || !saved.rounds.length) return null;
+    if (!(saved.index >= 0) || saved.index >= saved.rounds.length) return null;
+    if (saved.cfg && saved.cfg.daily && saved.cfg.daily !== dayKey()) {
+      forget(which);
+      return null;
+    }
+    return saved;
+  }
+
+  function restore(which, evenIfPaused) {
+    which = which || STORE_KEY;
+    var saved;
+    try {
+      saved = JSON.parse(localStorage.getItem(which) || "null");
     } catch (err) {
       return false;
     }
     if (!saved || !saved.rounds || !saved.rounds.length) return false;
+    /* Left standing on purpose: the menu offers it, the page does not force
+       you back into it. */
+    if (saved.paused && !evenIfPaused) return false;
 
     var rounds = [];
     for (var i = 0; i < saved.rounds.length; i++) {
@@ -228,7 +267,7 @@
       rounds.push({ city: city, url: saved.rounds[i].url });
     }
     if (!(saved.index >= 0) || saved.index >= rounds.length) {
-      forget();
+      forget(which);
       return false;
     }
 
@@ -247,7 +286,7 @@
     /* Yesterday's unfinished daily is not today's; drop it rather than let it
        be finished under today's number. */
     if (cfg.daily && cfg.daily !== dayKey()) {
-      forget();
+      forget(which);
       return false;
     }
 
@@ -456,11 +495,19 @@
   function renderDaily() {
     var key = dayKey();
     var done = readDaily();
+    var midway = peek(STORE_KEY_DAILY);
     show(el.daily, true);
     if (done && done.day === key) {
       el.dailyStart.textContent = "see today\u2019s result";
       el.dailyNote.textContent =
         dailyName(key) + " \u00b7 played \u00b7 " + done.correct + " of " + done.log.length;
+    } else if (midway) {
+      /* You left part of the way through. There is no starting again — the
+         same ten maps are waiting where you put them down. */
+      el.dailyStart.textContent = "resume today\u2019s challenge";
+      el.dailyNote.textContent =
+        dailyName(key) + " \u00b7 paused at map " + (midway.index + 1) +
+        " of " + (midway.total || midway.rounds.length);
     } else {
       el.dailyStart.textContent = "today\u2019s challenge";
       el.dailyNote.textContent = dailyName(key);
@@ -482,7 +529,7 @@
         return { city: byId[e.id], right: e.right, guess: e.guess };
       }).filter(function (e) { return e.city; })
     };
-    forget();
+    forget(STORE_KEY_DAILY);
     show(el.intro, false);
     show(el.board, false);
     show(el.empty, false);
@@ -499,12 +546,14 @@
       showDailyResult(done);
       return;
     }
+    /* Half-finished from earlier today: pick it up rather than deal again. */
+    if (restore(STORE_KEY_DAILY, true)) return;
     var rounds = dailyRounds(key);
     if (!rounds.length) {
       show(el.empty, true);
       return;
     }
-    forget();
+    forget(STORE_KEY_DAILY);
     show(el.intro, false);
     show(el.empty, false);
     show(el.result, false);
@@ -901,6 +950,22 @@
 
   /* Grey out the lengths this selection cannot fill, and pull the slider back
      if it is sitting on one of them. Endless always stands, because it repeats. */
+  /* A custom game left part-way through is offered back beside start. */
+  function refreshContinue() {
+    if (!el.setupContinue) return;
+    var midway = peek(STORE_KEY);
+    if (!midway) {
+      show(el.setupContinue, false);
+      return;
+    }
+    var total = midway.total || midway.rounds.length;
+    el.setupContinue.textContent =
+      "continue " + (midway.index + 1) + (midway.cfg && midway.cfg.length === "endless"
+        ? ""
+        : "/" + total);
+    show(el.setupContinue, true);
+  }
+
   function refreshSetup() {
     var cfg = readSetup();
     var n = cfg.levels.length && cfg.continents.length ? playable(cfg).length : 0;
@@ -1317,7 +1382,7 @@
   }
 
   function finish() {
-    forget();
+    forget(slot(state.cfg));
     show(el.board, false);
     show(el.result, true);
     if (state.cfg.daily) {
@@ -1344,7 +1409,7 @@
   }
 
   function start(cfg) {
-    forget();
+    forget(STORE_KEY);
     var rounds = buildRounds(cfg);
     if (!rounds.length) {
       show(el.empty, true);
@@ -1369,7 +1434,8 @@
   }
 
   function toIntro() {
-    forget();
+    /* Nothing is dropped here. A finished game has already cleared its own
+       slot in finish(); an unfinished one was just saved by leave(). */
     if (loupe) loupe.hide();
     state = null;
     show(el.board, false);
@@ -1380,6 +1446,7 @@
     loadBoard();
     renderDaily();
     refreshSetup();
+    refreshContinue();
     if (history.replaceState) history.replaceState(null, "", location.pathname);
   }
 
@@ -1393,6 +1460,11 @@
 
   var cloud = null;
   var boardDay = null;
+  var boardTab = "today";
+  var TAB_KEY = "ndl-clg-board-tab-v1";
+  try {
+    boardTab = localStorage.getItem(TAB_KEY) === "alltime" ? "alltime" : "today";
+  } catch (err) {}
 
   function cloudOn() {
     return Boolean(cloud && cloud.enabled);
@@ -1411,6 +1483,7 @@
     var me = cloud.user();
     show(el.account, true);
     show(el.signIn, !me);
+    show(el.accountNote, !me);
     show(el.who, Boolean(me));
     if (!me) return;
     el.whoName.textContent = me.name;
@@ -1439,7 +1512,10 @@
     return n + "th";
   }
 
-  function boardLine(row, me) {
+  /* One row shape for both boards: place, face, name, score. All-time adds the
+     number of days behind the total, because 84 from twelve days and 84 from
+     forty are not the same 84. */
+  function boardLine(row, me, allTime) {
     var li = document.createElement("li");
     li.className = "game-leader" + (me && row.user_id === me.id ? " is-you" : "");
 
@@ -1453,7 +1529,15 @@
 
     var score = document.createElement("span");
     score.className = "game-leader-score";
-    score.textContent = row.correct + " / " + DAILY_ROUNDS;
+    if (allTime) {
+      score.textContent = row.total;
+      var days = document.createElement("span");
+      days.className = "game-leader-days";
+      days.textContent = row.days === 1 ? "1 day" : row.days + " days";
+      score.appendChild(days);
+    } else {
+      score.textContent = row.correct + " / " + DAILY_ROUNDS;
+    }
 
     li.appendChild(place);
     if (row.avatar_url) {
@@ -1471,25 +1555,45 @@
     return li;
   }
 
+  function paintTabs() {
+    if (!el.tabToday) return;
+    var today = boardTab === "today";
+    el.tabToday.classList.toggle("is-on", today);
+    el.tabAllTime.classList.toggle("is-on", !today);
+    el.tabToday.setAttribute("aria-selected", today ? "true" : "false");
+    el.tabAllTime.setAttribute("aria-selected", today ? "false" : "true");
+    if (el.leadersTitle) {
+      el.leadersTitle.textContent = today ? "today’s board" : "all-time board";
+    }
+  }
+
   function loadBoard() {
     if (!cloudOn() || !el.leaders) return;
+    paintTabs();
     var day = dayKey();
-    boardDay = day;
-    cloud.board(day, 25).then(function (rows) {
-      if (boardDay !== day) return;
+    var want = boardTab;
+    boardDay = day + ":" + want;
+    var stamp = boardDay;
+    var ask = want === "alltime" ? cloud.lifetime(25) : cloud.board(day, 25);
+
+    ask.then(function (rows) {
+      if (boardDay !== stamp) return;
       if (!rows) {
         show(el.leaders, false);
         return;
       }
       var me = cloud.user();
+      var allTime = want === "alltime";
       el.leadersList.textContent = "";
       rows.forEach(function (row) {
-        el.leadersList.appendChild(boardLine(row, me));
+        el.leadersList.appendChild(boardLine(row, me, allTime));
       });
       show(el.leaders, true);
 
       if (!rows.length) {
-        el.leadersNote.textContent = me
+        el.leadersNote.textContent = allTime
+          ? "no scores yet."
+          : me
           ? "nobody has posted a score today — be first."
           : "nobody has posted a score today.";
         show(el.leadersNote, true);
@@ -1505,14 +1609,38 @@
         show(el.leadersNote, false);
         return;
       }
-      cloud.myPlace(day).then(function (row) {
-        if (boardDay !== day) return;
-        el.leadersNote.textContent = row
-          ? "you: " + row.correct + " / " + DAILY_ROUNDS + " · " + ordinal(row.place)
-          : "you haven’t played today yet.";
+      /* You are on the board but below the part of it we drew. */
+      (allTime ? cloud.myLifetime() : cloud.myPlace(day)).then(function (row) {
+        if (boardDay !== stamp) return;
+        if (!row) {
+          el.leadersNote.textContent = allTime
+            ? "you haven’t finished a daily yet."
+            : "you haven’t played today yet.";
+        } else if (allTime) {
+          el.leadersNote.textContent =
+            "you: " + row.total + " over " + row.days +
+            (row.days === 1 ? " day" : " days") + " · " + ordinal(row.place);
+        } else {
+          el.leadersNote.textContent =
+            "you: " + row.correct + " / " + DAILY_ROUNDS + " · " + ordinal(row.place);
+        }
         show(el.leadersNote, true);
       });
     });
+  }
+
+  function pickTab(which) {
+    if (boardTab === which) return;
+    boardTab = which;
+    try {
+      localStorage.setItem(TAB_KEY, which);
+    } catch (err) {}
+    loadBoard();
+  }
+
+  if (el.tabToday) {
+    el.tabToday.addEventListener("click", function () { pickTab("today"); });
+    el.tabAllTime.addEventListener("click", function () { pickTab("alltime"); });
   }
 
   /* Posting is one insert, and the database refuses a second one for the same
@@ -1576,6 +1704,16 @@
   });
 
   el.dailyStart.addEventListener("click", startDaily);
+
+  if (el.setupContinue) {
+    el.setupContinue.addEventListener("click", function () {
+      if (!restore(STORE_KEY, true)) {
+        /* The slot went stale between the menu being drawn and this click. */
+        forget(STORE_KEY);
+        refreshContinue();
+      }
+    });
+  }
 
   el.share.addEventListener("click", function () {
     var record = readDaily();
@@ -1644,8 +1782,15 @@
   /* In an endless game, stopping is how it ends — so show the recap rather
      than throwing the run away. A fixed-length game you quit is abandoned. */
   function leave() {
-    if (state && state.cfg.length === Infinity && state.log.length) finish();
-    else toIntro();
+    if (state && state.cfg.length === Infinity && state.log.length) {
+      finish();
+      return;
+    }
+    /* Anything still running is put down rather than thrown away: the daily so
+       that leaving is not a way to start it over, a custom game so that you can
+       come back to it from the menu. */
+    if (state && state.index < state.total) save(true);
+    toIntro();
   }
   if (el.quit) el.quit.addEventListener("click", leave);
 
@@ -1689,7 +1834,9 @@
       el.credit.textContent = data.credit || "";
       setupCosmetics();
       renderSetup();
-      if (restore()) return;
+      if (restore(STORE_KEY_DAILY)) return;
+      if (restore(STORE_KEY)) return;
+      refreshContinue();
 
       /* Old links like /game/#hard still work: they preselect and start. */
       var hash = (location.hash || "").replace("#", "");

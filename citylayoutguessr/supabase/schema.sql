@@ -138,6 +138,26 @@ as
   left join public.profiles p on p.id = s.user_id;
 
 
+-- Every day added up. Ranked on the total, and where two people have the same
+-- total the one who needed fewer days to get there is ahead; the earliest score
+-- breaks a remaining tie.
+create or replace view public.lifetime_board
+with (security_invoker = true)
+as
+  select
+    s.user_id,
+    coalesce(p.display_name, 'player') as display_name,
+    p.avatar_url,
+    sum(s.correct)::int as total,
+    count(*)::int      as days,
+    rank() over (
+      order by sum(s.correct) desc, count(*) asc, min(s.created_at) asc
+    ) as place
+  from public.daily_scores s
+  left join public.profiles p on p.id = s.user_id
+  group by s.user_id, p.display_name, p.avatar_url;
+
+
 -- ------------------------------------------------------------------ events --
 
 create table if not exists public.events (

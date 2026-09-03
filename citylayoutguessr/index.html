@@ -89,6 +89,9 @@
           <button class="game-btn game-signin" type="button" id="game-signin">
             sign in with Google
           </button>
+          <span class="game-account-note" id="game-account-note"
+            >see how you rank on the challenge leaderboards</span
+          >
           <span class="game-who" id="game-who" hidden>
             <img class="game-avatar" id="game-avatar" alt="" width="30" height="30" hidden />
             <span class="game-who-name" id="game-who-name"></span>
@@ -129,7 +132,13 @@
           </fieldset>
 
           <p class="game-pool" id="setup-pool"></p>
-          <button class="game-btn game-start" type="submit" id="setup-start">start</button>
+          <div class="game-start-row">
+            <button class="game-btn game-start" type="submit" id="setup-start">start</button>
+            <!-- Only there when a custom game was left part-way through. -->
+            <button class="game-btn game-start game-continue" type="button" id="setup-continue" hidden>
+              continue
+            </button>
+          </div>
         </form>
 
         <p class="game-empty" id="game-empty" hidden>
@@ -197,8 +206,18 @@
 
       <!-- One board, moved between the menu and the result rather than built
            twice. -->
-      <section class="game-leaders" id="game-leaders" hidden aria-label="Today's board">
-        <h3 class="game-leaders-title" id="game-leaders-title">today&rsquo;s board</h3>
+      <section class="game-leaders" id="game-leaders" hidden aria-label="Leaderboards">
+        <div class="game-leaders-head">
+          <h3 class="game-leaders-title" id="game-leaders-title">leaderboard</h3>
+          <div class="game-tabs" role="tablist" aria-label="Which board">
+            <button class="game-tab is-on" type="button" role="tab" id="tab-today" aria-selected="true">
+              today
+            </button>
+            <button class="game-tab" type="button" role="tab" id="tab-alltime" aria-selected="false">
+              all time
+            </button>
+          </div>
+        </div>
         <ol class="game-leaders-list" id="game-leaders-list"></ol>
         <p class="game-leaders-note" id="game-leaders-note" hidden aria-live="polite"></p>
       </section>

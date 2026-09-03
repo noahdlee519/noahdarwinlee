@@ -146,6 +146,31 @@ async function board(day, limit) {
   return data || [];
 }
 
+/* The same board, every day added up. */
+async function lifetime(limit) {
+  const db = await connect();
+  if (!db) return null;
+  const { data, error } = await db
+    .from("lifetime_board")
+    .select("place, display_name, avatar_url, total, days, user_id")
+    .order("place", { ascending: true })
+    .limit(limit || 25);
+  if (error) return null;
+  return data || [];
+}
+
+async function myLifetime() {
+  const db = await connect();
+  if (!db || !session) return null;
+  const { data, error } = await db
+    .from("lifetime_board")
+    .select("place, total, days")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+  if (error) return null;
+  return data || null;
+}
+
 /* Your own line, which may be far below the top of the board. */
 async function myPlace(day) {
   const db = await connect();
@@ -194,6 +219,8 @@ window.clgCloud = {
   postDaily: postDaily,
   board: board,
   myPlace: myPlace,
+  lifetime: lifetime,
+  myLifetime: myLifetime,
   track: track
 };
 
