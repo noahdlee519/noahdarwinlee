@@ -496,7 +496,7 @@
     who.appendChild(line1);
     const line2 = document.createElement("span");
     line2.className = "mail-letter-to";
-    line2.textContent = "to " + (post.to || "friends and family");
+    line2.textContent = "to " + (post.to || "me");
     who.appendChild(line2);
     head.appendChild(who);
 

@@ -919,12 +919,12 @@ for (const full of files) {
     date: pickDate(parsed.date, parsed.dateSource || parsed.html || parsed.text, full),
     fromName: who.name || "Noah Darwin Lee",
     fromAddress: who.address || "noahlee519@gmail.com",
-    /* A letter addressed to the mailbox's owner says "to me", the way the
-       client does; the newsletters went out blind-copied, so their To is
-       empty and they say who they were for. */
-    to: parsed.to
-      ? (/noah(d)?lee519@gmail\.com/i.test(parsed.to) ? "me" : nameAndAddress(parsed.to).name)
-      : "friends and family",
+    /* "to me", the way the client says it — whoever is reading is the one it
+       was sent to. The newsletters went out blind-copied, so their To header
+       is empty and they say the same. */
+    to: parsed.to && !/noah(d)?lee519@gmail\.com/i.test(parsed.to)
+      ? nameAndAddress(parsed.to).name
+      : "me",
     folder,
     labels: keptLabels.get(id) || [],
     preview: firstWords(bodyHtml, 110),
