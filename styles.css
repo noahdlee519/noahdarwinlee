@@ -2362,6 +2362,14 @@ body.game-page {
   font-size: clamp(17px, 1.8vw, 26px);
 }
 
+/* Pass is the smaller of the two buttons: it is the one you reach for less,
+   and on a phone the field needs the width more than it does. */
+.game-form .game-pass {
+  min-width: 0;
+  padding-left: clamp(14px, 1.8vw, 30px);
+  padding-right: clamp(14px, 1.8vw, 30px);
+}
+
 .game-input::placeholder {
   color: color-mix(in srgb, var(--ink) 50%, transparent);
 }

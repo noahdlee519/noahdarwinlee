@@ -23,10 +23,10 @@
   var DAILY_EPOCH = Date.UTC(2026, 8, 2); // no. 1 was 2 September 2026
   var DAILY_ROUNDS = 10;
 
-  /* With hints on, a miss is not the end of the round: the first buys the
-     continent, the second the country, and the third is the answer. Off, it is
-     one guess as it always was. */
-  var HINT_TRIES = 3;
+  /* With hints on, a miss is not the end of the round: the first is just a
+     second go, the second buys the continent, the third the country, and the
+     fourth is the answer. Off, it is one guess as it always was. */
+  var HINT_TRIES = 4;
 
   /* The shape of a daily: four you should get, three that make you think, three
      that probably beat you. The numbers must add up to DAILY_ROUNDS. If a level
@@ -66,6 +66,7 @@
     form: document.getElementById("game-form"),
     input: document.getElementById("game-input"),
     submit: document.getElementById("game-submit"),
+    pass: document.getElementById("game-pass"),
     ask: document.getElementById("game-ask"),
     reveal: document.getElementById("game-reveal"),
     verdict: document.getElementById("game-verdict"),
@@ -1367,6 +1368,11 @@
     setScore();
     show(el.reveal, false);
     show(el.form, true);
+    /* Passing is for a game you set yourself; the daily is played to the end. */
+    if (el.pass) {
+      show(el.pass, !state.cfg.daily);
+      el.pass.disabled = false;
+    }
     el.input.value = "";
     emptyAsked = false;
     show(el.ask, false);
@@ -1463,10 +1469,12 @@
     return false;
   }
 
-  /* What a miss is worth telling you, in order. The continent first because it
-     is the smaller give-away; the country second because it usually ends it. */
+  /* What a miss is worth telling you, in order. The first tells you nothing
+     but that it was wrong; the continent next because it is the smaller
+     give-away; the country last because it usually ends it. */
   function hintFor(city, tries) {
-    var where = tries === 1
+    if (tries === 1) return "not it \u2014 try again";
+    var where = tries === 2
       ? city.continent || city.country
       : city.country || city.continent;
     return where ? "hint: it\u2019s in " + where : null;
@@ -1492,6 +1500,7 @@
         el.input.value = "";
         el.input.disabled = false;
         el.submit.disabled = false;
+        if (el.pass) el.pass.disabled = false;
         el.input.focus({ preventScroll: true });
         emptyAsked = false;
         save();
@@ -2048,8 +2057,22 @@
     if (!el.input.value.trim() && !askedToSkip()) return;
     el.input.disabled = true;
     el.submit.disabled = true;
+    if (el.pass) el.pass.disabled = true;
     judge(el.input.value);
   });
+
+  /* Pass: the round is given up on the spot — no clue, straight to the answer,
+     scored as a miss — without the empty-enter-twice dance. */
+  if (el.pass) {
+    el.pass.addEventListener("click", function () {
+      if (!state || el.input.disabled || state.cfg.daily) return;
+      state.tries = HINT_TRIES;
+      el.input.disabled = true;
+      el.submit.disabled = true;
+      el.pass.disabled = true;
+      judge("");
+    });
+  }
 
   el.setup.addEventListener("submit", function (e) {
     e.preventDefault();
