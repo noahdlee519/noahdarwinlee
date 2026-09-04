@@ -2506,6 +2506,15 @@ body.game-page {
   flex-wrap: wrap;
 }
 
+/* Finishing a daily moves the account row onto the result screen, where it
+   lands straight under these buttons with nothing to hold it off them — and
+   the avatar, centred on a line the row aligns by its baseline, rides up over
+   their bottom border. On the menu it has the daily block above it and needs
+   none of this, so the space is given here rather than on the row itself. */
+.game-result .game-account {
+  margin-top: 30px;
+}
+
 /* On the result screen the board follows the buttons, and the two were sharing
    a line's worth of air between them. */
 .game-result .game-leaders {

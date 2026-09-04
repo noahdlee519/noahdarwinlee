@@ -1594,6 +1594,11 @@
         day: state.cfg.daily,
         correct: state.correct,
         wrong: state.wrong,
+        /* Whether anybody was signed in when the last round landed. A score
+           played signed out is posted later, when the account appears — and
+           when that does not take, this is what lets the board say why rather
+           than leaving the player to guess. */
+        noAccount: !(cloudOn() && cloud.user()),
         log: state.log.map(function (e) {
           return { id: e.city.id, right: e.right, guess: e.guess };
         })
@@ -1851,13 +1856,19 @@
           /* Played on this device but not on the board: the score is waiting on
              something — a sign-in that has only just happened, or a post that
              did not go through — and saying "you haven't played" would be a
-             plain untruth. */
+             plain untruth.
+
+             Played signed out is the ordinary version of that and deserves its
+             own line: the account is only being recognised now, today's score
+             was made before it existed, and tomorrow's will count. */
           var mine = readDaily();
           var playedToday = Boolean(mine && mine.day === dayKey());
           el.leadersNote.textContent = allTime
             ? "you haven’t finished a daily yet."
             : playedToday
-            ? "you played today—that score has not reached the board yet"
+            ? (mine.noAccount
+                ? "verifying account — play tomorrow to add to the leaderboard"
+                : "you played today—that score has not reached the board yet")
             : "you haven’t played today yet.";
         } else if (allTime) {
           el.leadersNote.textContent =
