@@ -116,7 +116,8 @@
     nameCancel: document.getElementById("game-name-cancel"),
     nameNote: document.getElementById("game-name-note"),
     setupContinue: document.getElementById("setup-continue"),
-    setupHints: document.getElementById("setup-hints")
+    setupHints: document.getElementById("setup-hints"),
+    setupHintText: document.getElementById("setup-hint-text")
   };
 
   var data = null;
@@ -1110,6 +1111,14 @@
       : (cfg.levels.length && cfg.continents.length
           ? "no maps for that combination yet"
           : "pick at least one of each");
+    /* The caption says what the hints will actually do for the game as it is
+       set up, which is not the same sentence once a single region is picked. */
+    if (el.setupHintText) {
+      el.setupHintText.textContent = continentIsGiven(cfg)
+        ? "two misses reveals the country"
+        : "two misses reveals the continent & 3 misses reveals the country";
+    }
+
     el.setupStart.disabled = !n;
     saveSetup(cfg);
   }
@@ -1469,12 +1478,21 @@
     return false;
   }
 
+  /* Naming the continent to somebody who picked that one continent is not a
+     hint, it is an echo. When the selection is a single region the rung is
+     skipped and the country arrives a miss earlier; the tries are not spent. */
+  function continentIsGiven(cfg) {
+    return Boolean(cfg && cfg.continents && cfg.continents.length === 1);
+  }
+
   /* What a miss is worth telling you, in order. The first tells you nothing
      but that it was wrong; the continent next because it is the smaller
      give-away; the country last because it usually ends it. */
-  function hintFor(city, tries) {
-    if (tries === 1) return "not it \u2014 try again";
-    var where = tries === 2
+  function hintFor(city, tries, skipContinent) {
+    if (tries === 1) return "try again";
+    var where = skipContinent
+      ? city.country || city.continent
+      : tries === 2
       ? city.continent || city.country
       : city.country || city.continent;
     return where ? "hint: it\u2019s in " + where : null;
@@ -1488,7 +1506,9 @@
        Nothing goes into the log yet: the round is still being played. */
     if (!right && state.cfg.hints) {
       state.tries = (state.tries || 0) + 1;
-      var clue = state.tries < HINT_TRIES ? hintFor(round.city, state.tries) : null;
+      var clue = state.tries < HINT_TRIES
+        ? hintFor(round.city, state.tries, continentIsGiven(state.cfg))
+        : null;
       if (clue) {
         /* One line, replaced rather than added to: the country supersedes the
            continent, and two clues stacked up would push the field down the

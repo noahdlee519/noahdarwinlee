@@ -212,7 +212,9 @@
               <label class="game-check">
                 <input type="checkbox" id="setup-hints" checked />
                 <span class="game-check-mark" aria-hidden="true"></span>
-                <span class="game-check-text game-hint-text"
+                <!-- Rewritten by refreshSetup: with one region picked, naming
+                     that region is no hint, so the ladder loses a rung. -->
+                <span class="game-check-text game-hint-text" id="setup-hint-text"
                   >two misses reveals the continent &amp; 3 misses reveals the country</span
                 >
               </label>
