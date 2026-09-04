@@ -1828,7 +1828,7 @@
           el.leadersNote.textContent = allTime
             ? "you haven’t finished a daily yet."
             : playedToday
-            ? "you played today — that score has not reached the board yet"
+            ? "you played today—that score has not reached the board yet"
             : "you haven’t played today yet.";
         } else if (allTime) {
           el.leadersNote.textContent =

@@ -181,6 +181,26 @@
     return span;
   }
 
+  /* My own letters carry my initial, and the one sender in spam carries its
+     own; anyone else stays the grey nobody. The reader's bubble in the top
+     bar is anonymous either way, because the reader is whoever they are. */
+  function senderAvatar(post) {
+    const from = post.fromAddress || "";
+    const span = document.createElement("span");
+    span.setAttribute("aria-hidden", "true");
+    if (/noah(d)?lee519@gmail\.com/i.test(from)) {
+      span.className = "mail-avatar mail-avatar-noah";
+      span.textContent = "N";
+      return span;
+    }
+    if (/@quora\.com$/i.test(from)) {
+      span.className = "mail-avatar mail-avatar-quora";
+      span.textContent = "Q";
+      return span;
+    }
+    return anonAvatar();
+  }
+
   function icon(name) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
@@ -480,7 +500,7 @@
     const head = document.createElement("div");
     head.className = "mail-letter-head";
 
-    head.appendChild(anonAvatar());
+    head.appendChild(senderAvatar(post));
 
     const who = document.createElement("div");
     who.className = "mail-letter-who";

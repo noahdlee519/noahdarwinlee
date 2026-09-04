@@ -3317,6 +3317,24 @@ body.game-page {
   height: 32px;
 }
 
+/* Mine: a white N on periwinkle. */
+.mail-avatar-noah {
+  background: #7b8cde;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* The digest in spam: a serif Q on light crimson. */
+.mail-avatar-quora {
+  background: #e05a6b;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+
 /* -------- rail, card, list and letter -------- */
 
 .mail-body {
