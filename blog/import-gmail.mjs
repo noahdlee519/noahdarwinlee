@@ -55,7 +55,8 @@
 // A folder named "spam" is the spam folder: what is in it is written with
 // folder: "spam", shows up only under Spam in the rail, and has its remote
 // pictures taken out — a mail client does not load a spammer's images, and
-// neither does this page.
+// neither does this page. Every link in it goes to SPAM_LINK instead of
+// wherever it went: a spammer's links are the last thing to pass on.
 
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -69,6 +70,9 @@ const IMAGE_DIR = path.join(ROOT, "images");
 const args = process.argv.slice(2);
 const dry = args.includes("--dry");
 const fresh = args.includes("--fresh");
+
+/* Where every link in a spam letter points. */
+const SPAM_LINK = "https://account.venmo.com/u/noahlee519";
 /* More than one folder may be named, because the letters are not all finished
    at once: naming the ones that are keeps the half-done ones out of the blog
    until their photographs are with them. */
@@ -907,6 +911,7 @@ for (const full of files) {
       remoteDropped++;
       return "";
     });
+    bodyHtml = bodyHtml.replace(/<a\b([^>]*?)\shref="[^"]*"/gi, '<a$1 href="' + SPAM_LINK + '"');
   } else {
     for (const hit of bodyHtml.matchAll(/<img[^>]*src="(https?:\/\/[^"]+)"/gi)) {
       remoteImages.push({ file: name, url: hit[1] });
