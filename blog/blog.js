@@ -120,11 +120,21 @@
     return post._hay;
   }
 
+  /* Spam is its own place: what is filed there shows up under Spam and
+     nowhere else — not in the inbox, not in Starred or Unread, not in a
+     label, and not in a search run from any of those. */
+  const isSpam = (post) => post.folder === "spam";
+
   function matches(post) {
-    if (label === "starred" && !starred.has(post.id)) return false;
-    if (label === "unread" && read.has(post.id)) return false;
-    if (label !== "inbox" && label !== "starred" && label !== "unread") {
-      if (!(post.labels || []).includes(label)) return false;
+    if (label === "spam") {
+      if (!isSpam(post)) return false;
+    } else {
+      if (isSpam(post)) return false;
+      if (label === "starred" && !starred.has(post.id)) return false;
+      if (label === "unread" && read.has(post.id)) return false;
+      if (label !== "inbox" && label !== "starred" && label !== "unread") {
+        if (!(post.labels || []).includes(label)) return false;
+      }
     }
     if (!query) return true;
     return haystack(post).indexOf(query) !== -1;
@@ -135,6 +145,7 @@
   function labelCounts() {
     const counts = new Map();
     posts.forEach(function (post) {
+      if (isSpam(post)) return;
       (post.labels || []).forEach(function (name) {
         counts.set(name, (counts.get(name) || 0) + 1);
       });
@@ -152,7 +163,10 @@
       '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z" />',
     unread:
       '<rect x="3" y="5" width="18" height="14" rx="2" />' +
-      '<path d="M3 7l9 6 9-6" />'
+      '<path d="M3 7l9 6 9-6" />',
+    spam:
+      '<path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z" />' +
+      '<path d="M12 8v5" /><path d="M12 16.5v.01" />'
   };
 
   /* The default picture a mail account shows before it has one: a grey disc
@@ -178,12 +192,14 @@
 
   function renderFolders() {
     if (!el.folders) return;
-    const unread = posts.filter(function (p) { return !read.has(p.id); }).length;
+    const unread = posts.filter(function (p) { return !isSpam(p) && !read.has(p.id); }).length;
+    const spamUnread = posts.filter(function (p) { return isSpam(p) && !read.has(p.id); }).length;
     const rows = [
       { key: "inbox", name: "Inbox", badge: unread || "" },
       { key: "starred", name: "Starred", badge: starred.size || "" },
       { key: "unread", name: "Unread", badge: unread || "" }
     ];
+    if (posts.some(isSpam)) rows.push({ key: "spam", name: "Spam", badge: spamUnread || "" });
     const counts = labelCounts();
     [...counts.keys()].sort().forEach(function (name) {
       rows.push({ key: name, name: name, badge: counts.get(name), isLabel: true });
@@ -447,6 +463,18 @@
         chips.appendChild(chip);
       });
       wrap.appendChild(chips);
+    }
+
+    if (isSpam(post)) {
+      const warn = document.createElement("div");
+      warn.className = "mail-spam-banner";
+      warn.innerHTML =
+        '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICONS.spam + "</svg>" +
+        "<div><b>Why is this message in spam?</b> It is similar to messages that " +
+        "were identified as spam in the past." +
+        (post.imagesWithheld ? " Images are not displayed." : "") +
+        "</div>";
+      wrap.appendChild(warn);
     }
 
     const head = document.createElement("div");

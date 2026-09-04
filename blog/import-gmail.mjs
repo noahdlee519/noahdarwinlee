@@ -51,6 +51,11 @@
 //
 // What it cannot guess is labels. Add them by hand in posts.js afterwards; the
 // script leaves any you have already added alone when you run it again.
+//
+// A folder named "spam" is the spam folder: what is in it is written with
+// folder: "spam", shows up only under Spam in the rail, and has its remote
+// pictures taken out — a mail client does not load a spammer's images, and
+// neither does this page.
 
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -889,11 +894,23 @@ for (const full of files) {
   const who = nameAndAddress(parsed.from);
   const id = slug(subject, taken);
 
+  /* The folder the letter came out of decides where it is filed. */
+  const folder = /^spam$/i.test(path.basename(path.dirname(full))) ? "spam" : "inbox";
+
   /* Images still pointing at Gmail's servers are somebody else's to keep. They
      work today and stop working whenever that URL expires, so they are counted
-     and named at the end rather than quietly left to rot. */
-  for (const hit of bodyHtml.matchAll(/<img[^>]*src="(https?:\/\/[^"]+)"/gi)) {
-    remoteImages.push({ file: name, url: hit[1] });
+     and named at the end rather than quietly left to rot. In spam they are
+     simply not loaded, which is what a mail client does with them too. */
+  let remoteDropped = 0;
+  if (folder === "spam") {
+    bodyHtml = bodyHtml.replace(/<img[^>]*src="https?:\/\/[^"]*"[^>]*\/?>/gi, () => {
+      remoteDropped++;
+      return "";
+    });
+  } else {
+    for (const hit of bodyHtml.matchAll(/<img[^>]*src="(https?:\/\/[^"]+)"/gi)) {
+      remoteImages.push({ file: name, url: hit[1] });
+    }
   }
 
   posts.push({
@@ -902,10 +919,17 @@ for (const full of files) {
     date: pickDate(parsed.date, parsed.dateSource || parsed.html || parsed.text, full),
     fromName: who.name || "Noah Darwin Lee",
     fromAddress: who.address || "noahlee519@gmail.com",
-    to: parsed.to ? nameAndAddress(parsed.to).name : "friends and family",
+    /* A letter addressed to the mailbox's owner says "to me", the way the
+       client does; the newsletters went out blind-copied, so their To is
+       empty and they say who they were for. */
+    to: parsed.to
+      ? (/noah(d)?lee519@gmail\.com/i.test(parsed.to) ? "me" : nameAndAddress(parsed.to).name)
+      : "friends and family",
+    folder,
     labels: keptLabels.get(id) || [],
     preview: firstWords(bodyHtml, 110),
     body: bodyHtml,
+    imagesWithheld: remoteDropped,
     _file: name
   });
 }
@@ -935,6 +959,7 @@ if (dry) {
     console.log("  " + p.date.slice(0, 10) + "  " + p.id);
     console.log("      subject : " + p.subject);
     console.log("      from    : " + p.fromName + " <" + p.fromAddress + ">");
+    console.log("      folder  : " + p.folder + (p.imagesWithheld ? " (" + p.imagesWithheld + " remote images withheld)" : ""));
     console.log("      labels  : " + (p.labels.length ? p.labels.join(", ") : "(none yet)"));
     console.log("      preview : " + p.preview.slice(0, 80));
     console.log("      body    : " + p.body.length + " characters, from " + p._file);

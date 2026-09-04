@@ -3178,9 +3178,10 @@ body.game-page {
   --mail-star: #f4b400;
   --mail-star-off: #c4c7c5;
 
-  /* As tall as the screen allows under the name and the lede, which take
-     about 200px between them. */
-  height: clamp(560px, calc(100vh - 200px), 1100px);
+  /* As tall as the screen allows under the name and the lede — a little more
+     than fits, so the page scrolls a few lines to its foot rather than the
+     window stopping short. */
+  height: clamp(620px, calc(100vh - 160px), 1300px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -3741,6 +3742,31 @@ body.is-resizing-mail {
 
 .mail-letter-chips {
   margin: -6px 0 14px 0;
+}
+
+/* The warning a mail client puts above anything it has filed as spam. */
+.mail-spam-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 16px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fef7e0;
+  color: #3c4043;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.mail-spam-banner svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: #b06000;
+}
+
+.mail-spam-banner b {
+  font-weight: 700;
 }
 
 .mail-letter-head {
