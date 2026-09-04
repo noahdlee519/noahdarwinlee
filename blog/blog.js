@@ -30,8 +30,12 @@
     count: document.getElementById("mail-count"),
     empty: document.getElementById("mail-empty"),
     search: document.getElementById("mail-q"),
-    markAll: document.getElementById("mail-markall"),
-    panes: document.getElementById("mail-panes")
+    panes: document.getElementById("mail-panes"),
+    window: document.querySelector(".mail-window"),
+    rail: document.querySelector(".mail-rail"),
+    listpane: document.querySelector(".mail-listpane"),
+    dividerRail: document.getElementById("mail-divider-rail"),
+    dividerList: document.getElementById("mail-divider-list")
   };
   if (!el.list) return;
 
@@ -158,8 +162,8 @@
     span.className = "mail-avatar" + (extraClass ? " " + extraClass : "");
     span.setAttribute("aria-hidden", "true");
     span.innerHTML =
-      '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4" />' +
-      '<path d="M4 21c0-4.2 3.6-6.5 8-6.5s8 2.3 8 6.5z" /></svg>';
+      '<svg viewBox="2.5 2 19 19"><circle cx="12" cy="8.5" r="4.4" />' +
+      '<path d="M2.5 22c0-4.6 4.2-7.2 9.5-7.2s9.5 2.6 9.5 7.2z" /></svg>';
     return span;
   }
 
@@ -173,7 +177,6 @@
   }
 
   function renderFolders() {
-    paintMarkAll();
     if (!el.folders) return;
     const unread = posts.filter(function (p) { return !read.has(p.id); }).length;
     const rows = [
@@ -339,6 +342,25 @@
     open.appendChild(when);
 
     li.appendChild(open);
+
+    /* Shown on hover, only on a row that has been read: the one thing this
+       mailbox lets you undo. Opening a letter is how it gets read. */
+    if (read.has(post.id)) {
+      const tools = document.createElement("span");
+      tools.className = "mail-row-tools";
+      const unread = document.createElement("button");
+      unread.type = "button";
+      unread.className = "mail-tool mail-row-unread";
+      unread.title = "Mark as unread";
+      unread.setAttribute("aria-label", "Mark as unread: " + (post.subject || "this letter"));
+      unread.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS.unread + "</svg>";
+      unread.addEventListener("click", function (event) {
+        event.stopPropagation();
+        markUnread(post.id);
+      });
+      tools.appendChild(unread);
+      li.appendChild(tools);
+    }
     return li;
   }
 
@@ -606,28 +628,106 @@
     });
   }
 
-  /* One button, reading whichever way there is left to go: once everything
-     is read it offers to put it all back. */
-  function paintMarkAll() {
-    if (!el.markAll) return;
-    const allRead = posts.length > 0 && posts.every(function (p) { return read.has(p.id); });
-    el.markAll.textContent = allRead ? "mark all unread" : "mark all read";
-    el.markAll.dataset.mode = allRead ? "unread" : "read";
+  /* ---------------- the dividers ---------------- */
+
+  /* The rail and the list can be dragged wider or narrower, and the window
+     remembers where they were left. Each divider sets one custom property on
+     the window; the stylesheet does the rest. Double-click puts one back. */
+  const SIZE_KEY = "ndl-blog-panes-v1";
+  const PANES = {
+    rail: { prop: "--mail-rail-w", min: 150, max: 380, fallback: 240, el: el.rail },
+    list: { prop: "--mail-list-w", min: 240, max: 720, fallback: 0, el: el.listpane }
+  };
+
+  function loadSizes() {
+    try {
+      const raw = localStorage.getItem(SIZE_KEY);
+      const obj = raw ? JSON.parse(raw) : {};
+      return obj && typeof obj === "object" ? obj : {};
+    } catch (err) {
+      return {};
+    }
   }
 
-  if (el.markAll) {
-    el.markAll.addEventListener("click", function () {
-      if (el.markAll.dataset.mode === "unread") {
-        read.clear();
-        if (openId) closePost();
-      } else {
-        posts.forEach(function (p) { read.add(p.id); });
-      }
-      save(READ_KEY, read);
-      renderFolders();
-      renderList();
+  const sizes = loadSizes();
+
+  function applySizes() {
+    if (!el.window) return;
+    Object.keys(PANES).forEach(function (key) {
+      const pane = PANES[key];
+      const px = Number(sizes[key]);
+      if (px > 0) el.window.style.setProperty(pane.prop, px + "px");
+      else el.window.style.removeProperty(pane.prop);
     });
   }
+
+  function setSize(key, px) {
+    const pane = PANES[key];
+    /* The list may not eat the letter: whatever it takes, the letter keeps
+       at least 320px. */
+    let ceiling = pane.max;
+    if (key === "list" && el.panes) {
+      ceiling = Math.min(ceiling, el.panes.getBoundingClientRect().width - 320);
+    }
+    const clamped = Math.max(pane.min, Math.min(ceiling, Math.round(px)));
+    sizes[key] = clamped;
+    applySizes();
+    try {
+      localStorage.setItem(SIZE_KEY, JSON.stringify(sizes));
+    } catch (err) {
+      /* nothing to do; the drag still works for this visit */
+    }
+  }
+
+  function resetSize(key) {
+    delete sizes[key];
+    applySizes();
+    try {
+      localStorage.setItem(SIZE_KEY, JSON.stringify(sizes));
+    } catch (err) {}
+  }
+
+  function wireDivider(divider, key) {
+    if (!divider) return;
+    const pane = PANES[key];
+
+    divider.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0 || !pane.el) return;
+      event.preventDefault();
+      const startX = event.clientX;
+      const startW = pane.el.getBoundingClientRect().width;
+      divider.setPointerCapture(event.pointerId);
+      divider.classList.add("is-dragging");
+      document.body.classList.add("is-resizing-mail");
+
+      const move = function (e) { setSize(key, startW + (e.clientX - startX)); };
+      const stop = function (e) {
+        divider.removeEventListener("pointermove", move);
+        divider.removeEventListener("pointerup", stop);
+        divider.removeEventListener("pointercancel", stop);
+        divider.classList.remove("is-dragging");
+        document.body.classList.remove("is-resizing-mail");
+        try { divider.releasePointerCapture(e.pointerId); } catch (err) {}
+      };
+      divider.addEventListener("pointermove", move);
+      divider.addEventListener("pointerup", stop);
+      divider.addEventListener("pointercancel", stop);
+    });
+
+    divider.addEventListener("dblclick", function () { resetSize(key); });
+
+    divider.addEventListener("keydown", function (event) {
+      if (!pane.el) return;
+      const w = pane.el.getBoundingClientRect().width;
+      if (event.key === "ArrowLeft") { event.preventDefault(); setSize(key, w - 16); }
+      else if (event.key === "ArrowRight") { event.preventDefault(); setSize(key, w + 16); }
+      else if (event.key === "Home" || event.key === "Enter") { event.preventDefault(); resetSize(key); }
+    });
+  }
+
+  applySizes();
+  wireDivider(el.dividerRail, "rail");
+  wireDivider(el.dividerList, "list");
 
   /* The list is one click target per row; the anchor inside carries the href so
      that middle-click and cmd-click still open a real URL. */

@@ -378,9 +378,13 @@ function sanitize(html) {
   out = out.replace(/<!--[\s\S]*?-->/g, "");
 
   // Gmail's quoted history: everything from the "On <date>, <name> wrote:"
-  // marker down, and anything it left in a gmail_quote container.
-  out = out.replace(/<div[^>]*class="[^"]*gmail_quote[\s\S]*$/i, "");
-  out = out.replace(/<blockquote[^>]*class="[^"]*gmail_quote[\s\S]*$/i, "");
+  // marker down. Gmail also puts gmail_quote on a block the writer indented
+  // on purpose — a poem, say — so a gmail_quote container is only cut when
+  // the attribution line is with it; on its own it is kept as a blockquote.
+  out = out.replace(
+    /<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>(?=[\s\S]{0,600}?(?:gmail_attr|wrote:))[\s\S]*$/i,
+    ""
+  );
   out = out.replace(
     /(<[^>]*>\s*)?On\s+\w{3},?\s+\w{3}\s+\d{1,2},?\s+\d{4}[\s\S]{0,120}?wrote:[\s\S]*$/i,
     ""
@@ -806,14 +810,31 @@ for (const full of files) {
      part in turn takes the next downloaded file of its own type, which is the
      order a download names them in. The rewriting happens here, on the decoded
      body, because a cid: in the raw source can be split across a line break
-     and would not be found there. */
+     and would not be found there.
+
+     "In turn" means the order the pictures appear in the letter, not the order
+     the attachments sit in the message — those differ, because Gmail files an
+     attachment when it is added and a picture pasted in last may have been
+     added first. So the parts are put into the order of their first cid:
+     reference in the body before any file is handed out; a part the body
+     never refers to goes last, and takes nothing. */
   const stem = slug(path.parse(name).name, new Set());
   const pools = parsed.images.some((i) => !i.data.length)
     ? picturesBeside(full)
     : new Map();
   const used = new Map();
 
-  parsed.images.forEach((image, index) => {
+  const seenAt = (image) => {
+    if (!image.cid) return Infinity;
+    const at = bodyHtml.indexOf("cid:" + image.cid);
+    return at === -1 ? Infinity : at;
+  };
+  const ordered = parsed.images
+    .map((image, index) => ({ image, index, at: seenAt(image) }))
+    .sort((a, b) => a.at - b.at || a.index - b.index);
+
+  ordered.forEach(({ image, at }, index) => {
+    if (at === Infinity && !image.data.length) return;
     const kind = EXT_FOR[(image.mime.split("/")[1] || "").toLowerCase()] || ".jpg";
     let source_ = null;
     let data = image.data;

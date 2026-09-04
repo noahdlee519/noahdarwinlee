@@ -77,9 +77,9 @@
           </form>
           <span class="mail-account" title="noahlee519@gmail.com">
             <span class="mail-avatar mail-avatar-me" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="8.5" r="4" />
-                <path d="M4 21c0-4.2 3.6-6.5 8-6.5s8 2.3 8 6.5z" />
+              <svg viewBox="2.5 2 19 19">
+                <circle cx="12" cy="8.5" r="4.4" />
+                <path d="M2.5 22c0-4.6 4.2-7.2 9.5-7.2s9.5 2.6 9.5 7.2z" />
               </svg>
             </span>
           </span>
@@ -97,18 +97,34 @@
             </a>
             <ul class="mail-folders" id="mail-folders"></ul>
           </nav>
+          <!-- Drag to give the folders more or less room; double-click to put
+               it back. -->
+          <div
+            class="mail-divider"
+            id="mail-divider-rail"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the folders"
+            tabindex="0"
+          ></div>
 
           <div class="mail-panes" id="mail-panes">
             <section class="mail-listpane" aria-label="Letters">
               <div class="mail-listhead">
                 <span class="mail-count" id="mail-count"></span>
-                <button class="mail-quiet" type="button" id="mail-markall">
-                  mark all read
-                </button>
               </div>
               <ol class="mail-list" id="mail-list" tabindex="-1"></ol>
               <p class="mail-empty" id="mail-empty" hidden></p>
             </section>
+
+            <div
+              class="mail-divider"
+              id="mail-divider-list"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize the list"
+              tabindex="0"
+            ></div>
 
             <article class="mail-read" id="mail-read" aria-live="polite">
               <div class="mail-read-blank" id="mail-read-blank">

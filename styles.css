@@ -3178,9 +3178,9 @@ body.game-page {
   --mail-star: #f4b400;
   --mail-star-off: #c4c7c5;
 
-  /* Tall enough to read in, but it stops short of the fold: the name and the
-     lede above it take about 250px, and the window fits under them. */
-  height: clamp(480px, calc(100vh - 250px), 840px);
+  /* As tall as the screen allows under the name and the lede, which take
+     about 200px between them. */
+  height: clamp(560px, calc(100vh - 200px), 1100px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -3307,8 +3307,6 @@ body.game-page {
 .mail-avatar svg {
   width: 100%;
   height: 100%;
-  padding: 3px 0 0;
-  box-sizing: border-box;
   fill: #ffffff;
   stroke: none;
 }
@@ -3326,10 +3324,63 @@ body.game-page {
   min-height: 0;
 }
 
+/* The rail and the list are as wide as the reader last dragged them; the
+   window carries the two widths as custom properties (see blog.js). */
 .mail-rail {
-  flex: 0 0 240px;
-  padding: 0 12px 16px 8px;
+  flex: 0 0 var(--mail-rail-w, 240px);
+  padding: 0 0 16px 8px;
   overflow-y: auto;
+  min-width: 0;
+}
+
+/* A handle between panes: a strip you can grab, with a line down the middle
+   that only shows itself when you do. The one beside the rail sits in the
+   backdrop's own gutter; the one beside the list draws the card's divider. */
+.mail-divider {
+  flex: 0 0 12px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.mail-divider::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: transparent;
+  transition: background-color 120ms ease, width 120ms ease, margin-left 120ms ease;
+}
+
+.mail-divider:hover::after,
+.mail-divider:focus-visible::after,
+.mail-divider.is-dragging::after {
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--mail-accent);
+}
+
+.mail-divider:focus-visible {
+  outline: none;
+}
+
+#mail-divider-list {
+  flex-basis: 9px;
+  margin: 0 -4px;
+  z-index: 2;
+}
+
+#mail-divider-list::after {
+  background: var(--mail-line);
+}
+
+body.is-resizing-mail {
+  cursor: col-resize;
+  user-select: none;
 }
 
 /* Writing to the mailbox's owner is the one thing a visitor can actually
@@ -3441,18 +3492,18 @@ body.game-page {
 }
 
 .mail-listpane {
-  flex: 0 0 clamp(300px, 40%, 440px);
+  flex: 0 0 var(--mail-list-w, clamp(300px, 40%, 440px));
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid var(--mail-line);
+  min-width: 0;
 }
 
 .mail-listhead {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   height: 48px;
   padding: 0 16px;
@@ -3463,22 +3514,6 @@ body.game-page {
 
 .mail-count {
   font-variant-numeric: tabular-nums;
-}
-
-.mail-quiet {
-  border: 0;
-  background: none;
-  padding: 4px 8px;
-  margin-left: -8px;
-  border-radius: 4px;
-  color: var(--mail-soft);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.mail-quiet:hover {
-  background: var(--mail-hover);
 }
 
 .mail-list {
@@ -3513,6 +3548,25 @@ body.game-page {
 .mail-row.is-open,
 .mail-row.is-open.is-unread {
   background: var(--mail-open-row);
+}
+
+/* Hovering a read row swaps its date for the envelope that makes it unread
+   again, the way the client this is drawn after does. */
+.mail-row-tools {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: none;
+}
+
+.mail-row:hover .mail-row-tools,
+.mail-row:focus-within .mail-row-tools {
+  display: flex;
+}
+
+.mail-row:has(.mail-row-tools):hover .mail-when,
+.mail-row:has(.mail-row-tools):focus-within .mail-when {
+  visibility: hidden;
 }
 
 .mail-star {
@@ -3872,7 +3926,8 @@ body.game-page {
 /* The rail is the first thing to go: on a laptop it is orientation, on a phone
    it is three quarters of the width. The labels stay reachable through search. */
 @media (max-width: 900px) {
-  .mail-rail {
+  .mail-rail,
+  #mail-divider-rail {
     display: none;
   }
 
@@ -3885,7 +3940,7 @@ body.game-page {
   }
 
   .mail-listpane {
-    flex-basis: clamp(260px, 42%, 400px);
+    flex-basis: var(--mail-list-w, clamp(260px, 42%, 400px));
   }
 }
 
@@ -3914,8 +3969,8 @@ body.game-page {
     border-radius: 12px;
   }
 
-  .mail-listpane {
-    border-right: 0;
+  #mail-divider-list {
+    display: none;
   }
 
   .mail-list {
@@ -3992,6 +4047,7 @@ body.game-page {
 
   .mail-bar,
   .mail-rail,
+  .mail-divider,
   .mail-listpane,
   .mail-back,
   .mail-letter-actions {
