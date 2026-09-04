@@ -194,6 +194,37 @@
     });
   }
 
+  /* Ways of naming a country that are not the name in the file. Only the ones
+     people actually type: it is a shortcut for the check below, not a
+     gazetteer. */
+  var COUNTRY_ALSO = {
+    "united states": ["usa", "us", "united states of america", "america"],
+    "united kingdom": ["uk", "great britain", "britain", "england"],
+    "united arab emirates": ["uae"],
+    "south korea": ["korea", "republic of korea"],
+    "netherlands": ["holland", "the netherlands"],
+    "czechia": ["czech republic"],
+    "russia": ["russian federation"],
+    "turkey": ["turkiye"]
+  };
+
+  /* "Amsterdam Netherlands" is Amsterdam. Saying the country out loud after
+     the city is a normal way to answer, and answering it with "no" is the
+     game being pedantic rather than strict.
+     Only this city's own country comes off, and only with a name in front of
+     it — so "Georgia" on its own is still a country and not Tbilisi, and
+     naming the wrong country still gets you nothing. */
+  function withoutCountry(g, city) {
+    var names = [norm(city.country)].concat(COUNTRY_ALSO[norm(city.country)] || []);
+    for (var i = 0; i < names.length; i++) {
+      var tail = " " + names[i];
+      if (names[i] && g.length > tail.length && g.slice(-tail.length) === tail) {
+        return g.slice(0, -tail.length).trim();
+      }
+    }
+    return "";
+  }
+
   function isMatch(guess, city) {
     var g = norm(guess);
     if (!g) return false;
@@ -201,6 +232,11 @@
 
     /* Exact wins outright. */
     if (targets.indexOf(g) !== -1) return true;
+
+    /* Then the same guess with the country taken off the end. Once, so this
+       cannot go round again. */
+    var shorter = withoutCountry(g, city);
+    if (shorter && isMatch(shorter, city)) return true;
 
     /* If what they typed is exactly the name of a different place, they meant
        that place. Without this, "panama" counts as a one-letter typo for

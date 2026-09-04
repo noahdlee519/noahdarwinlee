@@ -983,7 +983,15 @@
     {
       "id": "twin-cities", "tier": "hard",
       "city": "The Twin Cities", "country": "United States", "continent": "North America",
-      "aliases": ["minneapolis", "saint paul", "st paul", "minneapolis saint paul", "msp", "twin cities", "the mini apple"]
+      "aliases": ["minneapolis", "saint paul", "st paul", "msp", "mpls", "twin cities", "twin city",
+        "the mini apple", "minneapolis saint paul", "minneapolis st paul",
+        "saint paul minneapolis", "st paul minneapolis",
+        "minneapolis and saint paul", "minneapolis and st paul",
+        "saint paul and minneapolis", "st paul and minneapolis",
+        "minneapolis minnesota", "minneapolis mn", "saint paul minnesota", "saint paul mn",
+        "st paul minnesota", "st paul mn", "twin cities minnesota",
+        "minneapolis saint paul minnesota", "minneapolis st paul minnesota",
+        "minneapolis saint paul mn", "minneapolis st paul mn"]
     },
     {
       "id": "ulaanbaatar", "tier": "hard",
