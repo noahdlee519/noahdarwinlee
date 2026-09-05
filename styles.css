@@ -1448,6 +1448,25 @@ body.is-refreshing {
   min-width: clamp(232px, 24vw, 336px);
 }
 
+/* Quieter than start, and the same height as it: this is the thing you press
+   before playing, not instead of it. */
+.game-btn.game-copy-link {
+  min-width: 0;
+  font-size: clamp(15px, 1.6vw, 21px);
+  padding: 12px clamp(18px, 2vw, 28px);
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.game-btn.game-copy-link:hover,
+.game-btn.game-copy-link:focus-visible {
+  opacity: 1;
+}
+
+#setup-share-note {
+  margin: 14px 0 0 0;
+}
+
 /* Carries .game-daily-note in the markup as well, so the two lines are the
    same size, weight and colour by construction rather than by coincidence. */
 .game-account-note {

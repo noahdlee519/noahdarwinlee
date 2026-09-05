@@ -117,7 +117,9 @@
     nameNote: document.getElementById("game-name-note"),
     setupContinue: document.getElementById("setup-continue"),
     setupHints: document.getElementById("setup-hints"),
-    setupHintText: document.getElementById("setup-hint-text")
+    setupHintText: document.getElementById("setup-hint-text"),
+    setupShare: document.getElementById("setup-share"),
+    setupShareNote: document.getElementById("setup-share-note")
   };
 
   var data = null;
@@ -272,6 +274,7 @@
             continents: state.cfg.continents,
             length: state.cfg.length === Infinity ? "endless" : state.cfg.length,
             hints: Boolean(state.cfg.hints),
+            seed: state.cfg.seed || null,
             daily: state.cfg.daily || null
           },
           tries: state.tries || 0,
@@ -413,9 +416,21 @@
      with 31 pictures it was firing a few hundred 404s and downloading ten
      images before showing round one. The probing path is kept only as a
      fallback for a checkout where the manifest hasn't been built. */
+  /* Sorted before it is shuffled, so the order a seed produces depends on the
+     seed and the selection alone — not on the order the cities happen to sit
+     in cities.json, which is what a shared link would otherwise be hostage
+     to. */
+  function poolFor(cfg) {
+    return playable(cfg).slice().sort(function (a, b) {
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+  }
+
   function buildRounds(cfg) {
     var dir = data.imageDir || "../art/game/";
-    var pool = shuffle(playable(cfg));
+    var pool = cfg.seed
+      ? seededShuffle(poolFor(cfg), cfg.seed)
+      : shuffle(playable(cfg));
     var ext = (manifest && manifest.ext) || "webp";
     var want = cfg.length === Infinity ? pool.length : Math.min(cfg.length, pool.length);
     var rounds = pool.slice(0, want).map(function (c) {
@@ -430,7 +445,14 @@
   function extend() {
     var dir = data.imageDir || "../art/game/";
     var ext = (manifest && manifest.ext) || "webp";
-    var more = shuffle(playable(state.cfg)).map(function (c) {
+    /* Endless reshuffles, and a seeded game reshuffles the same way twice: the
+       pass number moves the seed on so the second lap is not the first one
+       again, and two people on the same link still see the same second lap. */
+    state.pass = (state.pass || 0) + 1;
+    var pool = poolFor(state.cfg);
+    var more = (state.cfg.seed
+      ? seededShuffle(pool, (state.cfg.seed + state.pass * 0x9e3779b1) >>> 0)
+      : shuffle(pool)).map(function (c) {
       return { city: c, url: dir + c.id + "." + ext };
     });
     if (!more.length) return false;
@@ -506,6 +528,10 @@
     };
   }
 
+  function randomSeed() {
+    return Math.floor(Math.random() * 4294967296) >>> 0;
+  }
+
   function seededShuffle(list, seed) {
     var a = list.slice();
     var next = rng(seed);
@@ -516,6 +542,80 @@
       a[j] = t;
     }
     return a;
+  }
+
+  /* ---------- a custom game as a link ----------
+
+     Everything that decides what you are about to play, short enough to send
+     in a message:
+
+         #g=<levels>_<continents>_<length>_<hints>_<seed>
+         #g=all_europe.asia_20_h_4f2a1b
+
+     Names rather than positions, because the order of the lists in cities.json
+     is not a promise and a link should outlive it; "all" rather than every
+     name, because that is the common case and it keeps the link short. The
+     seed is what makes it the same game and not merely the same settings —
+     buildRounds shuffles the sorted pool with it, so two browsers holding the
+     same city list deal the same maps in the same order. Add cities and old
+     links deal a different game; nothing else moves them. */
+  function contSlug(id) {
+    return String(id).toLowerCase().replace(/\s+/g, "-");
+  }
+
+  function encodeCfg(cfg) {
+    var all = continents().map(function (c) { return c.id; });
+    var allLevels = levels().map(function (t) { return t.id; });
+    var parts = [
+      cfg.levels.length === allLevels.length ? "all" : cfg.levels.slice().sort().join("."),
+      cfg.continents.length === all.length
+        ? "all"
+        : cfg.continents.map(contSlug).sort().join("."),
+      cfg.length === Infinity ? "endless" : String(cfg.length),
+      cfg.hints ? "h" : "n",
+      (cfg.seed >>> 0).toString(36)
+    ];
+    return "g=" + parts.join("_");
+  }
+
+  /* Forgiving on the way in: a name this build does not know is dropped, and
+     a field that is missing or nonsense falls back to everything. A link from
+     a future version of the game should still start a game. */
+  function decodeCfg(hash) {
+    if (!hash || hash.slice(0, 2) !== "g=") return null;
+    var parts = hash.slice(2).split("_");
+    if (parts.length < 5) return null;
+
+    var allLevels = levels().map(function (t) { return t.id; });
+    var allConts = continents().map(function (c) { return c.id; });
+
+    var lv = parts[0] === "all"
+      ? allLevels
+      : parts[0].split(".").filter(function (x) { return allLevels.indexOf(x) !== -1; });
+    var co = parts[1] === "all"
+      ? allConts
+      : parts[1].split(".").map(function (slug) {
+          return allConts.filter(function (id) { return contSlug(id) === slug; })[0];
+        }).filter(Boolean);
+    if (!lv.length) lv = allLevels;
+    if (!co.length) co = allConts;
+
+    var len = parts[2] === "endless" ? Infinity : parseInt(parts[2], 10);
+    if (!(len > 0) && len !== Infinity) len = 10;
+    var seed = parseInt(parts[4], 36);
+    if (!isFinite(seed)) return null;
+
+    return {
+      levels: lv,
+      continents: co,
+      length: len,
+      hints: parts[3] === "h",
+      seed: seed >>> 0
+    };
+  }
+
+  function shareUrl(cfg) {
+    return location.origin + location.pathname + "#" + encodeCfg(cfg);
   }
 
   function dailyConfig(key) {
@@ -1044,13 +1144,19 @@
       .map(function (b) { return b.value; });
   }
 
+  /* The order the next custom game will be dealt in, settled before it starts
+     so that the link you copy and the game you then press start on are the
+     same game. Moves on once a game has begun, so the one after it is new. */
+  var setupSeed = randomSeed();
+
   function readSetup() {
     var i = parseInt(el.setupLength.value, 10) || 0;
     return {
       levels: chosen(el.setupLevels),
       continents: chosen(el.setupContinents),
       length: LENGTHS[i],
-      hints: Boolean(el.setupHints && el.setupHints.checked)
+      hints: Boolean(el.setupHints && el.setupHints.checked),
+      seed: setupSeed
     };
   }
 
@@ -1638,6 +1744,8 @@
       revealed: false,
       log: []
     };
+    /* Spent: the next game the panel offers is a different one. */
+    if (cfg.seed === setupSeed) setupSeed = randomSeed();
     tell("game_start", { daily: false, rounds: cfg.length });
     renderRound();
   }
@@ -2111,6 +2219,28 @@
     if (cfg.levels.length && cfg.continents.length) start(cfg);
   });
 
+  /* Copying is the whole feature: the link is written for the game the start
+     button beside it would begin, so sending it and then playing gives you
+     both the same maps in the same order. Where the clipboard is refused the
+     link is shown instead, which is still something you can select. */
+  if (el.setupShare) {
+    el.setupShare.addEventListener("click", function () {
+      var cfg = readSetup();
+      if (!cfg.levels.length || !cfg.continents.length) return;
+      var url = shareUrl(cfg);
+      function done(ok) {
+        el.setupShareNote.textContent = ok ? "link copied — it plays this exact game" : url;
+        show(el.setupShareNote, true);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { done(true); },
+                                                function () { done(false); });
+      } else {
+        done(false);
+      }
+    });
+  }
+
   el.dailyStart.addEventListener("click", startDaily);
 
   if (el.setupContinue) {
@@ -2242,12 +2372,24 @@
       el.credit.textContent = data.credit || "";
       setupCosmetics();
       renderSetup();
+      var hash = (location.hash || "").replace("#", "");
+
+      /* A link somebody sent you is a decision, so it is answered before any
+         game this browser had going. The hash is then dropped, or reloading
+         the page would deal the game again from the top rather than resuming
+         where you had got to. */
+      var shared = decodeCfg(hash);
+      if (shared) {
+        start(shared);
+        if (history.replaceState) history.replaceState(null, "", location.pathname);
+        return;
+      }
+
       if (restore(STORE_KEY_DAILY)) return;
       if (restore(STORE_KEY)) return;
       refreshContinue();
 
       /* Old links like /game/#hard still work: they preselect and start. */
-      var hash = (location.hash || "").replace("#", "");
       var allLevels = levels().map(function (t) { return t.id; });
       var allConts = continents().map(function (t) { return t.id; });
       if (hash === "daily") {
@@ -2266,7 +2408,13 @@
       /* Pasting #daily into a tab that is already open changes the hash without
          reloading, so listen for that too. */
       window.addEventListener("hashchange", function () {
-        if ((location.hash || "").replace("#", "") === "daily") startDaily();
+        var now = (location.hash || "").replace("#", "");
+        if (now === "daily") return startDaily();
+        var pasted = decodeCfg(now);
+        if (pasted) {
+          start(pasted);
+          if (history.replaceState) history.replaceState(null, "", location.pathname);
+        }
       });
     })
     .catch(function (err) {

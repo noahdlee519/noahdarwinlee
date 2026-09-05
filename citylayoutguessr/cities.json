@@ -8,12 +8,12 @@
     { "id": "hard", "label": "hard" }
   ],
   "continents": [
+    { "id": "Africa", "label": "africa" },
+    { "id": "Asia", "label": "asia" },
     { "id": "Europe", "label": "europe" },
     { "id": "North America", "label": "north america" },
-    { "id": "South America", "label": "south america" },
-    { "id": "Asia", "label": "asia" },
-    { "id": "Africa", "label": "africa" },
-    { "id": "Oceania", "label": "oceania" }
+    { "id": "Oceania", "label": "oceania" },
+    { "id": "South America", "label": "south america" }
   ],
   "cities": [
     {
