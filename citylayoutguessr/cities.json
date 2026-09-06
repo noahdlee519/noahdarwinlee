@@ -22,15 +22,15 @@
     },
     {
       "id": "athens", "tier": "easy", "city": "Athens", "country": "Greece", "continent": "Europe",
-      "aliases": ["athina", "athinai", "athenes", "atenas", "athen", "the cradle of democracy"]
+      "aliases": ["athina", "athinai", "athenes", "atenas", "athen", "the cradle of democracy", "cradle of democracy"]
     },
     {
       "id": "bangkok", "tier": "easy", "city": "Bangkok", "country": "Thailand", "continent": "Asia",
-      "aliases": ["krung thep", "krungthep", "bkk", "krung thep maha nakhon", "the venice of the east"]
+      "aliases": ["krung thep", "krungthep", "bkk", "krung thep maha nakhon", "the venice of the east", "venice of the east"]
     },
     {
       "id": "barcelona", "tier": "easy", "city": "Barcelona", "country": "Spain", "continent": "Europe",
-      "aliases": ["barna", "bcn", "ciutat comtal", "the comtal city", "barcelonia"]
+      "aliases": ["barna", "bcn", "ciutat comtal", "the comtal city", "barcelonia", "comtal city"]
     },
     {
       "id": "beijing", "tier": "easy", "city": "Beijing", "country": "China", "continent": "Asia",
@@ -54,7 +54,7 @@
     },
     {
       "id": "dubai", "tier": "easy", "city": "Dubai", "country": "United Arab Emirates", "continent": "Asia",
-      "aliases": ["dubayy", "dubaï", "dubai uae", "the city of gold uae", "al wasl"]
+      "aliases": ["dubayy", "dubaï", "dubai uae", "the city of gold uae", "al wasl", "city of gold uae"]
     },
     {
       "id": "hong-kong", "tier": "easy", "city": "Hong Kong", "country": "China", "continent": "Asia",
@@ -66,11 +66,11 @@
     },
     {
       "id": "las-vegas", "tier": "easy", "city": "Las Vegas", "country": "United States", "continent": "North America",
-      "aliases": ["vegas", "sin city", "the entertainment capital of the world", "glitter gulch"]
+      "aliases": ["vegas", "sin city", "the entertainment capital of the world", "glitter gulch", "entertainment capital of the world"]
     },
     {
       "id": "london", "tier": "easy", "city": "London", "country": "United Kingdom", "continent": "Europe",
-      "aliases": ["londres", "londra", "the big smoke", "big smoke", "londinium", "the smoke", "londen"]
+      "aliases": ["londres", "londra", "the big smoke", "big smoke", "londinium", "the smoke", "londen", "smoke"]
     },
     {
       "id": "los-angeles", "tier": "easy", "city": "Los Angeles", "country": "United States", "continent": "North America",
@@ -122,7 +122,7 @@
     },
     {
       "id": "singapore", "tier": "easy", "city": "Singapore", "country": "Singapore", "continent": "Asia",
-      "aliases": ["singapura", "sg", "the lion city", "lion city", "singapore city", "the red dot"]
+      "aliases": ["singapura", "sg", "the lion city", "lion city", "singapore city", "the red dot", "red dot"]
     },
     {
       "id": "sydney", "tier": "easy", "city": "Sydney", "country": "Australia", "continent": "Oceania",
@@ -146,12 +146,12 @@
     },
     {
       "id": "washington", "tier": "easy", "city": "Washington", "country": "United States", "continent": "North America",
-      "aliases": ["washington dc", "dc", "district of columbia", "washington d c", "the district"]
+      "aliases": ["washington dc", "dc", "district of columbia", "washington d c", "the district", "district"]
     },
 
     {
       "id": "alexandria", "tier": "medium", "city": "Alexandria", "country": "Egypt", "continent": "Africa",
-      "aliases": ["al iskandariyah", "iskandariya", "alex", "the pearl of the mediterranean", "alexandria egypt"]
+      "aliases": ["al iskandariyah", "iskandariya", "alex", "the pearl of the mediterranean", "alexandria egypt", "pearl of the mediterranean"]
     },
     {
       "id": "algiers", "tier": "medium", "city": "Algiers", "country": "Algeria", "continent": "Africa",
@@ -163,11 +163,11 @@
     },
     {
       "id": "antwerp", "tier": "medium", "city": "Antwerp", "country": "Belgium", "continent": "Europe",
-      "aliases": ["antwerpen", "anvers", "the diamond city", "sinjoorenstad"]
+      "aliases": ["antwerpen", "anvers", "the diamond city", "sinjoorenstad", "diamond city"]
     },
     {
       "id": "atlanta", "tier": "medium", "city": "Atlanta", "country": "United States", "continent": "North America",
-      "aliases": ["the atl", "atl", "hotlanta", "the city in a forest", "terminus"]
+      "aliases": ["the atl", "atl", "hotlanta", "the city in a forest", "terminus", "city in a forest"]
     },
     {
       "id": "auckland", "tier": "medium", "city": "Auckland", "country": "New Zealand", "continent": "Oceania",
@@ -175,7 +175,7 @@
     },
     {
       "id": "baghdad", "tier": "medium", "city": "Baghdad", "country": "Iraq", "continent": "Asia",
-      "aliases": ["bagdad", "madinat as salam", "the city of peace", "baghdad iraq"]
+      "aliases": ["bagdad", "madinat as salam", "the city of peace", "baghdad iraq", "city of peace"]
     },
     {
       "id": "baltimore", "tier": "medium", "city": "Baltimore", "country": "United States", "continent": "North America",
@@ -183,7 +183,7 @@
     },
     {
       "id": "beirut", "tier": "medium", "city": "Beirut", "country": "Lebanon", "continent": "Asia",
-      "aliases": ["bayrut", "beyrouth", "the paris of the middle east", "beirut lebanon"]
+      "aliases": ["bayrut", "beyrouth", "the paris of the middle east", "beirut lebanon", "paris of the middle east"]
     },
     {
       "id": "bern", "tier": "medium", "city": "Bern", "country": "Switzerland", "continent": "Europe",
@@ -191,11 +191,11 @@
     },
     {
       "id": "bogota", "tier": "medium", "city": "Bogotá", "country": "Colombia", "continent": "South America",
-      "aliases": ["santa fe de bogota", "santafe de bogota", "la nevera", "bacata", "the athens of south america"]
+      "aliases": ["santa fe de bogota", "santafe de bogota", "la nevera", "bacata", "the athens of south america", "athens of south america"]
     },
     {
       "id": "boston", "tier": "medium", "city": "Boston", "country": "United States", "continent": "North America",
-      "aliases": ["beantown", "bean town", "the hub", "the cradle of liberty", "cradle of liberty", "the athens of america"]
+      "aliases": ["beantown", "bean town", "the hub", "the cradle of liberty", "cradle of liberty", "the athens of america", "athens of america"]
     },
     {
       "id": "brisbane", "tier": "medium", "city": "Brisbane", "country": "Australia", "continent": "Oceania",
@@ -227,7 +227,7 @@
     },
     {
       "id": "chennai", "tier": "medium", "city": "Chennai", "country": "India", "continent": "Asia",
-      "aliases": ["madras", "the detroit of india", "chennai india"]
+      "aliases": ["madras", "the detroit of india", "chennai india", "detroit of india"]
     },
     {
       "id": "copenhagen", "tier": "medium", "city": "Copenhagen", "country": "Denmark", "continent": "Europe",
@@ -235,7 +235,7 @@
     },
     {
       "id": "dallas", "tier": "medium", "city": "Dallas", "country": "United States", "continent": "North America",
-      "aliases": ["dfw", "dallas fort worth", "big d texas", "dallas texas", "the triple d"]
+      "aliases": ["dfw", "dallas fort worth", "big d texas", "dallas texas", "the triple d", "triple d"]
     },
     {
       "id": "damascus", "tier": "medium", "city": "Damascus", "country": "Syria", "continent": "Asia",
@@ -243,7 +243,7 @@
     },
     {
       "id": "denver", "tier": "medium", "city": "Denver", "country": "United States", "continent": "North America",
-      "aliases": ["the mile high city", "mile high city", "the queen city of the plains", "denver colorado"]
+      "aliases": ["the mile high city", "mile high city", "the queen city of the plains", "denver colorado", "queen city of the plains"]
     },
     {
       "id": "detroit", "tier": "medium", "city": "Detroit", "country": "United States", "continent": "North America",
@@ -251,7 +251,7 @@
     },
     {
       "id": "dhaka", "tier": "medium", "city": "Dhaka", "country": "Bangladesh", "continent": "Asia",
-      "aliases": ["dacca", "the city of mosques", "dhaka bangladesh"]
+      "aliases": ["dacca", "the city of mosques", "dhaka bangladesh", "city of mosques"]
     },
     {
       "id": "doha", "tier": "medium", "city": "Doha", "country": "Qatar", "continent": "Asia",
@@ -271,7 +271,7 @@
     },
     {
       "id": "florence", "tier": "medium", "city": "Florence", "country": "Italy", "continent": "Europe",
-      "aliases": ["firenze", "florenz", "florencia", "the cradle of the renaissance", "fiorenza"]
+      "aliases": ["firenze", "florenz", "florencia", "the cradle of the renaissance", "fiorenza", "cradle of the renaissance"]
     },
     {
       "id": "frankfurt", "tier": "medium", "city": "Frankfurt", "country": "Germany", "continent": "Europe",
@@ -279,7 +279,7 @@
     },
     {
       "id": "geneva", "tier": "medium", "city": "Geneva", "country": "Switzerland", "continent": "Europe",
-      "aliases": ["geneve", "genf", "ginevra", "ginebra", "the peace capital"]
+      "aliases": ["geneve", "genf", "ginevra", "ginebra", "the peace capital", "peace capital"]
     },
     {
       "id": "hamburg", "tier": "medium", "city": "Hamburg", "country": "Germany", "continent": "Europe",
@@ -291,7 +291,7 @@
     },
     {
       "id": "helsinki", "tier": "medium", "city": "Helsinki", "country": "Finland", "continent": "Europe",
-      "aliases": ["helsingfors", "stadi", "hesa", "the daughter of the baltic"]
+      "aliases": ["helsingfors", "stadi", "hesa", "the daughter of the baltic", "daughter of the baltic"]
     },
     {
       "id": "ho-chi-minh-city", "tier": "medium", "city": "Ho Chi Minh City", "country": "Vietnam", "continent": "Asia",
@@ -299,7 +299,7 @@
     },
     {
       "id": "honolulu", "tier": "medium", "city": "Honolulu", "country": "United States", "continent": "North America",
-      "aliases": ["waikiki", "oahu", "honolulu hawaii", "the sheltered harbour"]
+      "aliases": ["waikiki", "oahu", "honolulu hawaii", "the sheltered harbour", "sheltered harbour"]
     },
     {
       "id": "houston", "tier": "medium", "city": "Houston", "country": "United States", "continent": "North America",
@@ -311,7 +311,7 @@
     },
     {
       "id": "jakarta", "tier": "medium", "city": "Jakarta", "country": "Indonesia", "continent": "Asia",
-      "aliases": ["batavia", "djakarta", "the big durian", "sunda kelapa"]
+      "aliases": ["batavia", "djakarta", "the big durian", "sunda kelapa", "big durian"]
     },
     {
       "id": "johannesburg", "tier": "medium", "city": "Johannesburg", "country": "South Africa", "continent": "Africa",
@@ -323,7 +323,7 @@
     },
     {
       "id": "kyiv", "tier": "medium", "city": "Kyiv", "country": "Ukraine", "continent": "Europe",
-      "aliases": ["kiev", "kyyiv", "the mother of rus cities"]
+      "aliases": ["kiev", "kyyiv", "the mother of rus cities", "mother of rus cities"]
     },
     {
       "id": "lagos", "tier": "medium", "city": "Lagos", "country": "Nigeria", "continent": "Africa",
@@ -335,11 +335,11 @@
     },
     {
       "id": "lisbon", "tier": "medium", "city": "Lisbon", "country": "Portugal", "continent": "Europe",
-      "aliases": ["lisboa", "lisbonne", "lissabon", "the city of seven hills", "olisipo"]
+      "aliases": ["lisboa", "lisbonne", "lissabon", "the city of seven hills", "olisipo", "city of seven hills"]
     },
     {
       "id": "liverpool", "tier": "medium", "city": "Liverpool", "country": "United Kingdom", "continent": "Europe",
-      "aliases": ["the pool", "merseyside", "scouseland", "liverpool uk"]
+      "aliases": ["the pool", "merseyside", "scouseland", "liverpool uk", "pool"]
     },
     {
       "id": "lyon", "tier": "medium", "city": "Lyon", "country": "France", "continent": "Europe",
@@ -363,11 +363,11 @@
     },
     {
       "id": "manila", "tier": "medium", "city": "Manila", "country": "Philippines", "continent": "Asia",
-      "aliases": ["maynila", "metro manila", "the pearl of the orient", "ncr"]
+      "aliases": ["maynila", "metro manila", "the pearl of the orient", "ncr", "pearl of the orient"]
     },
     {
       "id": "marseille", "tier": "medium", "city": "Marseille", "country": "France", "continent": "Europe",
-      "aliases": ["marseilles", "marsella", "massalia", "la cite phoceenne", "the phocaean city"]
+      "aliases": ["marseilles", "marsella", "massalia", "la cite phoceenne", "the phocaean city", "phocaean city"]
     },
     {
       "id": "mecca", "tier": "medium", "city": "Mecca", "country": "Saudi Arabia", "continent": "Asia",
@@ -375,7 +375,7 @@
     },
     {
       "id": "melbourne", "tier": "medium", "city": "Melbourne", "country": "Australia", "continent": "Oceania",
-      "aliases": ["melbs", "naarm", "the cultural capital of australia"]
+      "aliases": ["melbs", "naarm", "the cultural capital of australia", "cultural capital of australia"]
     },
     {
       "id": "milan", "tier": "medium", "city": "Milan", "country": "Italy", "continent": "Europe",
@@ -391,7 +391,7 @@
     },
     {
       "id": "munich", "tier": "medium", "city": "Munich", "country": "Germany", "continent": "Europe",
-      "aliases": ["munchen", "münchen", "muenchen", "monaco di baviera", "minga", "the northernmost city of italy"]
+      "aliases": ["munchen", "münchen", "muenchen", "monaco di baviera", "minga", "the northernmost city of italy", "northernmost city of italy"]
     },
     {
       "id": "nagoya", "tier": "medium", "city": "Nagoya", "country": "Japan", "continent": "Asia",
@@ -411,15 +411,15 @@
     },
     {
       "id": "new-orleans", "tier": "medium", "city": "New Orleans", "country": "United States", "continent": "North America",
-      "aliases": ["nola", "the big easy", "big easy", "nawlins", "la nouvelle orleans", "the crescent city", "crescent city", "the city that care forgot"]
+      "aliases": ["nola", "the big easy", "big easy", "nawlins", "la nouvelle orleans", "the crescent city", "crescent city", "the city that care forgot", "city that care forgot", "orleans"]
     },
     {
       "id": "orlando", "tier": "medium", "city": "Orlando", "country": "United States", "continent": "North America",
-      "aliases": ["o town", "otown", "the theme park capital of the world", "theme park capital", "orlando florida"]
+      "aliases": ["o town", "otown", "the theme park capital of the world", "theme park capital", "orlando florida", "theme park capital of the world"]
     },
     {
       "id": "osaka", "tier": "medium", "city": "Osaka", "country": "Japan", "continent": "Asia",
-      "aliases": ["naniwa", "the nations kitchen", "osaka japan", "oosaka"]
+      "aliases": ["naniwa", "the nations kitchen", "osaka japan", "oosaka", "nations kitchen"]
     },
     {
       "id": "oslo", "tier": "medium", "city": "Oslo", "country": "Norway", "continent": "Europe",
@@ -435,19 +435,19 @@
     },
     {
       "id": "philadelphia", "tier": "medium", "city": "Philadelphia", "country": "United States", "continent": "North America",
-      "aliases": ["philly", "the city of brotherly love", "city of brotherly love", "philladelphia", "filadelfia", "illadelph", "the birthplace of america"]
+      "aliases": ["philly", "the city of brotherly love", "city of brotherly love", "philladelphia", "filadelfia", "illadelph", "the birthplace of america", "birthplace of america"]
     },
     {
       "id": "phoenix", "tier": "medium", "city": "Phoenix", "country": "United States", "continent": "North America",
-      "aliases": ["phx", "the valley of the sun", "valley of the sun", "the valley"]
+      "aliases": ["phx", "the valley of the sun", "valley of the sun", "the valley", "valley"]
     },
     {
       "id": "pittsburgh", "tier": "medium", "city": "Pittsburgh", "country": "United States", "continent": "North America",
-      "aliases": ["the steel city", "steel city", "the city of bridges", "city of bridges", "pittsburg", "the burgh", "yinzer city"]
+      "aliases": ["the steel city", "steel city", "the city of bridges", "city of bridges", "pittsburg", "the burgh", "yinzer city", "burgh"]
     },
     {
       "id": "porto", "tier": "medium", "city": "Porto", "country": "Portugal", "continent": "Europe",
-      "aliases": ["oporto", "cidade invicta", "the invicta", "porto portugal"]
+      "aliases": ["oporto", "cidade invicta", "the invicta", "porto portugal", "invicta"]
     },
     {
       "id": "prague", "tier": "medium", "city": "Prague", "country": "Czechia", "continent": "Europe",
@@ -455,7 +455,7 @@
     },
     {
       "id": "pyongyang", "tier": "medium", "city": "Pyongyang", "country": "North Korea", "continent": "Asia",
-      "aliases": ["phyongyang", "pyeongyang", "ryugyong", "the capital of willows"]
+      "aliases": ["phyongyang", "pyeongyang", "ryugyong", "the capital of willows", "capital of willows"]
     },
     {
       "id": "reykjavik", "tier": "medium", "city": "Reykjavik", "country": "Iceland", "continent": "Europe",
@@ -463,11 +463,11 @@
     },
     {
       "id": "rotterdam", "tier": "medium", "city": "Rotterdam", "country": "Netherlands", "continent": "Europe",
-      "aliases": ["roffa", "rotjeknor", "the gateway to europe", "manhattan on the maas"]
+      "aliases": ["roffa", "rotjeknor", "the gateway to europe", "manhattan on the maas", "gateway to europe"]
     },
     {
       "id": "saint-petersburg", "tier": "medium", "city": "Saint Petersburg", "country": "Russia", "continent": "Europe",
-      "aliases": ["st petersburg", "sankt peterburg", "leningrad", "petrograd", "piter", "the venice of the north russia"]
+      "aliases": ["st petersburg", "sankt peterburg", "leningrad", "petrograd", "piter", "the venice of the north russia", "venice of the north russia", "petersburg", "sankt petersburg", "saint petersburg russia"]
     },
     {
       "id": "salt-lake-city", "tier": "medium", "city": "Salt Lake City", "country": "United States", "continent": "North America",
@@ -475,7 +475,7 @@
     },
     {
       "id": "san-diego", "tier": "medium", "city": "San Diego", "country": "United States", "continent": "North America",
-      "aliases": ["sd", "americas finest city", "the finest city", "san diego ca"]
+      "aliases": ["sd", "americas finest city", "the finest city", "san diego ca", "finest city"]
     },
     {
       "id": "santiago", "tier": "medium", "city": "Santiago", "country": "Chile", "continent": "South America",
@@ -487,7 +487,7 @@
     },
     {
       "id": "savannah", "tier": "medium", "city": "Savannah", "country": "United States", "continent": "North America",
-      "aliases": ["the hostess city", "hostess city", "the hostess city of the south", "savannah georgia", "savannah ga"]
+      "aliases": ["the hostess city", "hostess city", "the hostess city of the south", "savannah georgia", "savannah ga", "hostess city of the south"]
     },
     {
       "id": "seattle", "tier": "medium", "city": "Seattle", "country": "United States", "continent": "North America",
@@ -503,7 +503,7 @@
     },
     {
       "id": "stockholm", "tier": "medium", "city": "Stockholm", "country": "Sweden", "continent": "Europe",
-      "aliases": ["eken", "stockholm sweden", "the beauty on the water"]
+      "aliases": ["eken", "stockholm sweden", "the beauty on the water", "beauty on the water"]
     },
     {
       "id": "taipei", "tier": "medium", "city": "Taipei", "country": "Taiwan", "continent": "Asia",
@@ -511,11 +511,11 @@
     },
     {
       "id": "tehran", "tier": "medium", "city": "Tehran", "country": "Iran", "continent": "Asia",
-      "aliases": ["teheran", "tehran iran", "tihran", "the city of seventy two nations"]
+      "aliases": ["teheran", "tehran iran", "tihran", "the city of seventy two nations", "city of seventy two nations"]
     },
     {
       "id": "the-hague", "tier": "medium", "city": "The Hague", "country": "Netherlands", "continent": "Europe",
-      "aliases": ["den haag", "la haye", "s gravenhage", "the hague netherlands"]
+      "aliases": ["den haag", "la haye", "s gravenhage", "the hague netherlands", "hague netherlands", "hague"]
     },
     {
       "id": "tunis", "tier": "medium", "city": "Tunis", "country": "Tunisia", "continent": "Africa",
@@ -523,11 +523,11 @@
     },
     {
       "id": "turin", "tier": "medium", "city": "Turin", "country": "Italy", "continent": "Europe",
-      "aliases": ["torino", "turin italy", "the automobile capital of italy"]
+      "aliases": ["torino", "turin italy", "the automobile capital of italy", "automobile capital of italy"]
     },
     {
       "id": "valencia", "tier": "medium", "city": "Valencia", "country": "Spain", "continent": "Europe",
-      "aliases": ["valence", "valencia spain", "the city of arts and sciences"]
+      "aliases": ["valence", "valencia spain", "the city of arts and sciences", "city of arts and sciences"]
     },
     {
       "id": "vienna", "tier": "medium", "city": "Vienna", "country": "Austria", "continent": "Europe",
@@ -535,7 +535,7 @@
     },
     {
       "id": "warsaw", "tier": "medium", "city": "Warsaw", "country": "Poland", "continent": "Europe",
-      "aliases": ["warszawa", "warschau", "varsovie", "varsovia", "the phoenix city"]
+      "aliases": ["warszawa", "warschau", "varsovie", "varsovia", "the phoenix city", "phoenix city"]
     },
 
     {
@@ -548,7 +548,7 @@
     },
     {
       "id": "addis-ababa", "tier": "hard", "city": "Addis Ababa", "country": "Ethiopia", "continent": "Africa",
-      "aliases": ["addis abeba", "addis", "finfinne", "the political capital of africa", "new flower"]
+      "aliases": ["addis abeba", "addis", "finfinne", "the political capital of africa", "new flower", "political capital of africa"]
     },
     {
       "id": "adelaide", "tier": "hard", "city": "Adelaide", "country": "Australia", "continent": "Oceania",
@@ -564,11 +564,11 @@
     },
     {
       "id": "anchorage", "tier": "hard", "city": "Anchorage", "country": "United States", "continent": "North America",
-      "aliases": ["anchorage alaska", "los anchorage", "anc", "the city of lights and flowers"]
+      "aliases": ["anchorage alaska", "los anchorage", "anc", "the city of lights and flowers", "city of lights and flowers"]
     },
     {
       "id": "ashgabat", "tier": "hard", "city": "Ashgabat", "country": "Turkmenistan", "continent": "Asia",
-      "aliases": ["ashkhabad", "ashkabad", "asgabat", "aşgabat", "poltoratsk", "the city of love", "city of white marble"]
+      "aliases": ["ashkhabad", "ashkabad", "asgabat", "aşgabat", "poltoratsk", "the city of love", "city of white marble", "city of love"]
     },
     {
       "id": "astana", "tier": "hard", "city": "Astana", "country": "Kazakhstan", "continent": "Asia",
@@ -580,7 +580,7 @@
     },
     {
       "id": "belo-horizonte", "tier": "hard", "city": "Belo Horizonte", "country": "Brazil", "continent": "South America",
-      "aliases": ["bh", "beaga", "curral del rei", "the garden city brazil", "bhz"]
+      "aliases": ["bh", "beaga", "curral del rei", "the garden city brazil", "bhz", "garden city brazil"]
     },
     {
       "id": "bilbao", "tier": "hard", "city": "Bilbao", "country": "Spain", "continent": "Europe",
@@ -596,7 +596,7 @@
     },
     {
       "id": "bordeaux", "tier": "hard", "city": "Bordeaux", "country": "France", "continent": "Europe",
-      "aliases": ["burdeos", "la belle endormie", "the sleeping beauty", "bordeaux france"]
+      "aliases": ["burdeos", "la belle endormie", "the sleeping beauty", "bordeaux france", "sleeping beauty"]
     },
     {
       "id": "brasilia", "tier": "hard", "city": "Brasília", "country": "Brazil", "continent": "South America",
@@ -624,7 +624,7 @@
     },
     {
       "id": "canberra", "tier": "hard", "city": "Canberra", "country": "Australia", "continent": "Oceania",
-      "aliases": ["the bush capital", "bush capital", "canbera", "kambera", "the capital of australia"]
+      "aliases": ["the bush capital", "bush capital", "canbera", "kambera", "the capital of australia", "capital of australia"]
     },
     {
       "id": "chandigarh", "tier": "hard", "city": "Chandigarh", "country": "India", "continent": "Asia",
@@ -632,7 +632,7 @@
     },
     {
       "id": "charlotte", "tier": "hard", "city": "Charlotte", "country": "United States", "continent": "North America",
-      "aliases": ["the queen city nc", "clt", "the hornet's nest"]
+      "aliases": ["the queen city nc", "clt", "the hornet's nest", "queen city nc", "hornet's nest"]
     },
     {
       "id": "ciudad-juarez", "tier": "hard", "city": "Ciudad Juarez", "country": "Mexico", "continent": "North America",
@@ -640,11 +640,11 @@
     },
     {
       "id": "cleveland", "tier": "hard", "city": "Cleveland", "country": "United States", "continent": "North America",
-      "aliases": ["the cle", "cle", "the mistake on the lake"]
+      "aliases": ["the cle", "cle", "the mistake on the lake", "mistake on the lake"]
     },
     {
       "id": "dakar", "tier": "hard", "city": "Dakar", "country": "Senegal", "continent": "Africa",
-      "aliases": ["ndakaaru", "dakar senegal", "the westernmost city in africa"]
+      "aliases": ["ndakaaru", "dakar senegal", "the westernmost city in africa", "westernmost city in africa"]
     },
     {
       "id": "darwin", "tier": "hard", "city": "Darwin", "country": "Australia", "continent": "Oceania",
@@ -652,7 +652,7 @@
     },
     {
       "id": "dodoma", "tier": "hard", "city": "Dodoma", "country": "Tanzania", "continent": "Africa",
-      "aliases": ["idodomya", "dodoma tanzania", "the capital of tanzania"]
+      "aliases": ["idodomya", "dodoma tanzania", "the capital of tanzania", "capital of tanzania"]
     },
     {
       "id": "durban", "tier": "hard", "city": "Durban", "country": "South Africa", "continent": "Africa",
@@ -676,7 +676,7 @@
     },
     {
       "id": "guadalajara", "tier": "hard", "city": "Guadalajara", "country": "Mexico", "continent": "North America",
-      "aliases": ["gdl", "the pearl of the west", "guadalajara mexico"]
+      "aliases": ["gdl", "the pearl of the west", "guadalajara mexico", "pearl of the west"]
     },
     {
       "id": "guatemala-city", "tier": "hard", "city": "Guatemala City", "country": "Guatemala", "continent": "North America",
@@ -692,7 +692,7 @@
     },
     {
       "id": "jacksonville", "tier": "hard", "city": "Jacksonville", "country": "United States", "continent": "North America",
-      "aliases": ["jax", "the bold new city of the south", "duval"]
+      "aliases": ["jax", "the bold new city of the south", "duval", "bold new city of the south"]
     },
     {
       "id": "jaipur", "tier": "hard", "city": "Jaipur", "country": "India", "continent": "Asia",
@@ -704,7 +704,7 @@
     },
     {
       "id": "kansas-city", "tier": "hard", "city": "Kansas City", "country": "United States", "continent": "North America",
-      "aliases": ["kc", "kcmo", "the city of fountains", "city of fountains", "the paris of the plains"]
+      "aliases": ["kc", "kcmo", "the city of fountains", "city of fountains", "the paris of the plains", "paris of the plains", "kansas", "kansas city missouri", "kansas city mo"]
     },
     {
       "id": "karlsruhe", "tier": "hard", "city": "Karlsruhe", "country": "Germany", "continent": "Europe",
@@ -712,7 +712,7 @@
     },
     {
       "id": "khartoum", "tier": "hard", "city": "Khartoum", "country": "Sudan", "continent": "Africa",
-      "aliases": ["al khartum", "khartum", "kartoum", "al khurtum", "the elephant trunk"]
+      "aliases": ["al khartum", "khartum", "kartoum", "al khurtum", "the elephant trunk", "elephant trunk"]
     },
     {
       "id": "kinshasa", "tier": "hard", "city": "Kinshasa", "country": "DR Congo", "continent": "Africa",
@@ -720,11 +720,11 @@
     },
     {
       "id": "la-plata", "tier": "hard", "city": "La Plata", "country": "Argentina", "continent": "South America",
-      "aliases": ["laplata", "the city of diagonals", "city of diagonals", "the square city", "eva peron city"]
+      "aliases": ["laplata", "the city of diagonals", "city of diagonals", "the square city", "eva peron city", "square city"]
     },
     {
       "id": "lilongwe", "tier": "hard", "city": "Lilongwe", "country": "Malawi", "continent": "Africa",
-      "aliases": ["lilongwe malawi", "the capital of malawi", "lilongwe city", "the warm heart capital"]
+      "aliases": ["lilongwe malawi", "the capital of malawi", "lilongwe city", "the warm heart capital", "capital of malawi", "warm heart capital"]
     },
     {
       "id": "luanda", "tier": "hard", "city": "Luanda", "country": "Angola", "continent": "Africa",
@@ -736,11 +736,11 @@
     },
     {
       "id": "manama", "tier": "hard", "city": "Manama", "country": "Bahrain", "continent": "Asia",
-      "aliases": ["al manamah", "manama bahrain", "manamah", "the two seas city"]
+      "aliases": ["al manamah", "manama bahrain", "manamah", "the two seas city", "two seas city"]
     },
     {
       "id": "milton-keynes", "tier": "hard", "city": "Milton Keynes", "country": "United Kingdom", "continent": "Europe",
-      "aliases": ["milton keynes", "mk", "the city of roundabouts", "city of roundabouts", "the new city"]
+      "aliases": ["milton keynes", "mk", "the city of roundabouts", "city of roundabouts", "the new city", "new city"]
     },
     {
       "id": "milwaukee", "tier": "hard", "city": "Milwaukee", "country": "United States", "continent": "North America",
@@ -760,11 +760,11 @@
     },
     {
       "id": "monterrey", "tier": "hard", "city": "Monterrey", "country": "Mexico", "continent": "North America",
-      "aliases": ["mty", "la sultana del norte", "the sultan of the north", "monterrey mexico"]
+      "aliases": ["mty", "la sultana del norte", "the sultan of the north", "monterrey mexico", "sultan of the north"]
     },
     {
       "id": "nantes", "tier": "hard", "city": "Nantes", "country": "France", "continent": "Europe",
-      "aliases": ["naoned", "nantes france", "the venice of the west"]
+      "aliases": ["naoned", "nantes france", "the venice of the west", "venice of the west"]
     },
     {
       "id": "naypyidaw", "tier": "hard", "city": "Naypyidaw", "country": "Myanmar", "continent": "Asia",
@@ -772,7 +772,7 @@
     },
     {
       "id": "nicosia", "tier": "hard", "city": "Nicosia", "country": "Cyprus", "continent": "Europe",
-      "aliases": ["lefkosia", "lefkosa", "lefkoşa", "nikosia", "ledra", "the last divided capital"]
+      "aliases": ["lefkosia", "lefkosa", "lefkoşa", "nikosia", "ledra", "the last divided capital", "last divided capital"]
     },
     {
       "id": "nouakchott", "tier": "hard", "city": "Nouakchott", "country": "Mauritania", "continent": "Africa",
@@ -780,15 +780,15 @@
     },
     {
       "id": "omaha", "tier": "hard", "city": "Omaha", "country": "United States", "continent": "North America",
-      "aliases": ["the gateway to the west", "omaha nebraska", "big red country"]
+      "aliases": ["the gateway to the west", "omaha nebraska", "big red country", "gateway to the west"]
     },
     {
       "id": "ottawa", "tier": "hard", "city": "Ottawa", "country": "Canada", "continent": "North America",
-      "aliases": ["bytown", "yow", "the capital of canada"]
+      "aliases": ["bytown", "yow", "the capital of canada", "capital of canada"]
     },
     {
       "id": "palmanova", "tier": "hard", "city": "Palmanova", "country": "Italy", "continent": "Europe",
-      "aliases": ["palma nova", "palmanova italy", "the nine pointed star", "palmanova friuli"]
+      "aliases": ["palma nova", "palmanova italy", "the nine pointed star", "palmanova friuli", "nine pointed star"]
     },
     {
       "id": "perth", "tier": "hard", "city": "Perth", "country": "Australia", "continent": "Oceania",
@@ -808,11 +808,11 @@
     },
     {
       "id": "rabat", "tier": "hard", "city": "Rabat", "country": "Morocco", "continent": "Africa",
-      "aliases": ["ribat al fath", "rabat morocco", "rabat sale", "the city of light morocco"]
+      "aliases": ["ribat al fath", "rabat morocco", "rabat sale", "the city of light morocco", "city of light morocco"]
     },
     {
       "id": "riga", "tier": "hard", "city": "Riga", "country": "Latvia", "continent": "Europe",
-      "aliases": ["riga latvia", "the paris of the north", "rigas"]
+      "aliases": ["riga latvia", "the paris of the north", "rigas", "paris of the north"]
     },
     {
       "id": "san-antonio", "tier": "hard", "city": "San Antonio", "country": "United States", "continent": "North America",
@@ -828,7 +828,7 @@
     },
     {
       "id": "sanaa", "tier": "hard", "city": "Sana'a", "country": "Yemen", "continent": "Asia",
-      "aliases": ["sanaa", "sana", "sana a", "san a", "the old city of sanaa", "sanaa yemen"]
+      "aliases": ["sanaa", "sana", "sana a", "san a", "the old city of sanaa", "sanaa yemen", "old city of sanaa"]
     },
     {
       "id": "santo-domingo", "tier": "hard", "city": "Santo Domingo", "country": "Dominican Republic", "continent": "North America",
@@ -836,7 +836,7 @@
     },
     {
       "id": "sapporo", "tier": "hard", "city": "Sapporo", "country": "Japan", "continent": "Asia",
-      "aliases": ["sapporo japan", "satporo", "sapporo hokkaido", "the city of the north star"]
+      "aliases": ["sapporo japan", "satporo", "sapporo hokkaido", "the city of the north star", "city of the north star"]
     },
     {
       "id": "suez", "tier": "hard", "city": "Suez", "country": "Egypt", "continent": "Africa",
@@ -860,7 +860,7 @@
     },
     {
       "id": "twin-cities", "tier": "hard", "city": "The Twin Cities", "country": "United States", "continent": "North America",
-      "aliases": ["minneapolis", "saint paul", "st paul", "msp", "mpls", "twin cities", "twin city", "the mini apple", "minneapolis saint paul", "minneapolis st paul", "saint paul minneapolis", "st paul minneapolis", "minneapolis and saint paul", "minneapolis and st paul", "saint paul and minneapolis", "st paul and minneapolis", "minneapolis minnesota", "minneapolis mn", "saint paul minnesota", "saint paul mn", "st paul minnesota", "st paul mn", "twin cities minnesota", "minneapolis saint paul minnesota", "minneapolis st paul minnesota", "minneapolis saint paul mn", "minneapolis st paul mn"]
+      "aliases": ["minneapolis", "saint paul", "st paul", "msp", "mpls", "twin cities", "twin city", "the mini apple", "minneapolis saint paul", "minneapolis st paul", "saint paul minneapolis", "st paul minneapolis", "minneapolis and saint paul", "minneapolis and st paul", "saint paul and minneapolis", "st paul and minneapolis", "minneapolis minnesota", "minneapolis mn", "saint paul minnesota", "saint paul mn", "st paul minnesota", "st paul mn", "twin cities minnesota", "minneapolis saint paul minnesota", "minneapolis st paul minnesota", "minneapolis saint paul mn", "minneapolis st paul mn", "mini apple"]
     },
     {
       "id": "ulaanbaatar", "tier": "hard", "city": "Ulaanbaatar", "country": "Mongolia", "continent": "Asia",
@@ -876,7 +876,7 @@
     },
     {
       "id": "versailles", "tier": "hard", "city": "Versailles", "country": "France", "continent": "Europe",
-      "aliases": ["versaille", "chateau de versailles", "the sun king's city"]
+      "aliases": ["versaille", "chateau de versailles", "the sun king's city", "sun king's city"]
     },
     {
       "id": "wellington", "tier": "hard", "city": "Wellington", "country": "New Zealand", "continent": "Oceania",
@@ -892,7 +892,7 @@
     },
     {
       "id": "zagreb", "tier": "hard", "city": "Zagreb", "country": "Croatia", "continent": "Europe",
-      "aliases": ["agram", "zagreb croatia", "zagabria", "the city with a million hearts"]
+      "aliases": ["agram", "zagreb croatia", "zagabria", "the city with a million hearts", "city with a million hearts"]
     }
   ]
 }
