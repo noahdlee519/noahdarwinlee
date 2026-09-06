@@ -614,59 +614,18 @@
     return wrap;
   }
 
-  /* ---------------- moving around ---------------- */
-
-  function indexOfOpen() {
-    return shown.findIndex(function (p) { return p.id === openId; });
-  }
-
-  function step(by) {
-    if (!shown.length) return;
-    let next = indexOfOpen() + by;
-    if (next < 0) next = 0;
-    if (next > shown.length - 1) next = shown.length - 1;
-    openPost(shown[next].id);
-    const row = el.list.querySelector('[data-id="' + cssEscape(shown[next].id) + '"]');
-    if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
-  }
-
-  /* CSS.escape is not everywhere, and an id out of a subject line can carry
-     anything, so this is the small part of it that matters here. */
-  function cssEscape(value) {
-    return String(value).replace(/["\\]/g, "\\$&");
-  }
-
+  /* Escape is the only key this page claims. It is the one every reader
+     already expects to close what is open, so it needs no telling. */
   document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
     const typing =
       document.activeElement &&
       /^(input|textarea|select)$/i.test(document.activeElement.tagName);
-
-    if (event.key === "/" && !typing) {
-      event.preventDefault();
-      if (el.search) el.search.focus();
+    if (typing && el.search && document.activeElement === el.search) {
+      el.search.blur();
       return;
     }
-    if (event.key === "Escape") {
-      if (typing && el.search && document.activeElement === el.search) {
-        el.search.blur();
-        return;
-      }
-      if (openId) closePost();
-      return;
-    }
-    if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
-
-    if (event.key === "U" && event.shiftKey && openId) {
-      event.preventDefault();
-      markUnread(openId);
-      return;
-    }
-    if (event.key === "j") { event.preventDefault(); step(1); }
-    else if (event.key === "k") { event.preventDefault(); step(-1); }
-    else if (event.key === "Enter" && !openId && shown.length) {
-      event.preventDefault();
-      openPost(shown[0].id);
-    }
+    if (openId) closePost();
   });
 
   if (el.search) {
