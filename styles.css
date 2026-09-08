@@ -16,7 +16,7 @@ body {
   min-height: 100vh;
   background: #e68019;
   color: #ffffff;
-  font-family: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   padding-top: calc(var(--page-top) + 72px);
   padding-left: var(--page-left);
 }
@@ -2381,14 +2381,6 @@ body.game-page {
   font-size: clamp(17px, 1.8vw, 26px);
 }
 
-/* Pass is the smaller of the two buttons: it is the one you reach for less,
-   and on a phone the field needs the width more than it does. */
-.game-form .game-pass {
-  min-width: 0;
-  padding-left: clamp(14px, 1.8vw, 30px);
-  padding-right: clamp(14px, 1.8vw, 30px);
-}
-
 .game-input::placeholder {
   color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
@@ -3217,7 +3209,7 @@ body.game-page {
   /* As tall as the screen allows under the name and the lede — a little more
      than fits, so the page scrolls a few lines to its foot rather than the
      window stopping short. */
-  height: clamp(620px, calc(100vh - 160px), 1300px);
+  height: clamp(660px, calc(100vh - 120px), 1360px);
   display: flex;
   flex-direction: column;
   overflow: hidden;

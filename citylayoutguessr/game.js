@@ -66,7 +66,6 @@
     form: document.getElementById("game-form"),
     input: document.getElementById("game-input"),
     submit: document.getElementById("game-submit"),
-    pass: document.getElementById("game-pass"),
     ask: document.getElementById("game-ask"),
     reveal: document.getElementById("game-reveal"),
     verdict: document.getElementById("game-verdict"),
@@ -1221,8 +1220,8 @@
        set up, which is not the same sentence once a single region is picked. */
     if (el.setupHintText) {
       el.setupHintText.textContent = continentIsGiven(cfg)
-        ? "two misses reveals the country"
-        : "two misses reveals the continent & 3 misses reveals the country";
+        ? "2 misses reveals the country"
+        : "2 misses reveals the continent & 3 misses reveals the country";
     }
 
     el.setupStart.disabled = !n;
@@ -1473,21 +1472,18 @@
     loupe = touch ? buildTapZoom(stage, img) : buildLoupe(stage, img, round.url);
     warm(state.rounds, state.index + 1, 2);
 
-    /* Split so a narrow screen can drop the filter description and keep the
-       bar to one line — the count is the part you actually need mid-game. */
-    var where = describe(state.cfg);
-    el.progressWhere.textContent = where || "";
+    /* The count is the only thing the bar says mid-game. What you picked is
+       on the menu you picked it from and on the result at the end; repeating
+       it over the map — "hard · asia + europe · hints" — was a caption on
+       something nobody had asked about. The element stays, empty, because the
+       layout is already written for it having nothing to say. */
+    el.progressWhere.textContent = "";
     el.progressCount.textContent = state.cfg.length === Infinity
       ? "map " + (state.index + 1)
       : "map " + (state.index + 1) + "/" + state.total;
     setScore();
     show(el.reveal, false);
     show(el.form, true);
-    /* Passing is for a game you set yourself; the daily is played to the end. */
-    if (el.pass) {
-      show(el.pass, !state.cfg.daily);
-      el.pass.disabled = false;
-    }
     el.input.value = "";
     emptyAsked = false;
     show(el.ask, false);
@@ -1626,7 +1622,6 @@
         el.input.value = "";
         el.input.disabled = false;
         el.submit.disabled = false;
-        if (el.pass) el.pass.disabled = false;
         el.input.focus({ preventScroll: true });
         emptyAsked = false;
         save();
@@ -2196,22 +2191,8 @@
     if (!el.input.value.trim() && !askedToSkip()) return;
     el.input.disabled = true;
     el.submit.disabled = true;
-    if (el.pass) el.pass.disabled = true;
     judge(el.input.value);
   });
-
-  /* Pass: the round is given up on the spot — no clue, straight to the answer,
-     scored as a miss — without the empty-enter-twice dance. */
-  if (el.pass) {
-    el.pass.addEventListener("click", function () {
-      if (!state || el.input.disabled || state.cfg.daily) return;
-      state.tries = HINT_TRIES;
-      el.input.disabled = true;
-      el.submit.disabled = true;
-      el.pass.disabled = true;
-      judge("");
-    });
-  }
 
   el.setup.addEventListener("submit", function (e) {
     e.preventDefault();
