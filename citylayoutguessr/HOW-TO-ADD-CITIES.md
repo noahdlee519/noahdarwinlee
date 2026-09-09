@@ -173,6 +173,92 @@ and you edit it afterwards.
 
 ---
 
+## Special packs
+
+The **special** entry in the region row opens a short menu of packs — USA,
+Japan, Italy, Benelux, landmarks. Each can be ticked into a custom game
+alongside the continents and alongside other packs, or played on its own with
+the **play** button beside it, which starts every level, ten rounds, no hints.
+
+A pack gets its cities two ways, and you can use either or both.
+
+**By country.** Every pack is defined at the top of `cities.json`:
+
+```json
+"packs": [
+  { "id": "japan", "label": "Japan", "countries": ["Japan"] },
+  { "id": "benelux", "label": "Benelux",
+    "countries": ["Netherlands", "Belgium", "Luxembourg"] },
+  { "id": "landmarks", "label": "landmarks", "countries": [] }
+],
+```
+
+Anything already in the file whose `country` matches is in that pack without
+being told. Add Kyoto as an ordinary city and it joins the Japan pack by
+itself. A pack with no countries — landmarks — collects nothing this way, so
+everything in it has to be named directly.
+
+**By name.** Any city can join a pack by saying so:
+
+```json
+{ "id": "colosseum", "tier": "easy", "city": "Colosseum", "country": "Italy",
+  "continent": "Europe", "packs": ["landmarks"], "packOnly": true },
+```
+
+### The two flags
+
+| Field | What it does |
+|---|---|
+| `packs` | Extra packs this city belongs to, on top of any country rule. Leave it out if the country rule is enough. |
+| `packOnly` | `true` means it appears **only** inside its pack. |
+
+`packOnly` is the one that matters. Without it, a city is in the ordinary game
+like any other — the daily, plain custom games, its continent. With it, the
+city is invisible everywhere until one of its packs is asked for. That is what
+lets you add thirty Japanese towns for the Japan pack without them taking over
+the daily.
+
+A pack city that is *not* `packOnly` is in both: the pack and the ordinary
+game. That is right for Tokyo and wrong for a Kanazawa suburb; the flag is how
+you say which.
+
+You never have to worry about a city appearing twice for being in two chosen
+things at once. The game filters the city list once and asks each city whether
+anything you ticked wants it, so Tokyo with both Asia and Japan selected is one
+entry, not two.
+
+### Tiers inside a pack
+
+Tier a pack city **against the others in its pack**, not against the world. In
+the Japan pack, Tokyo is `easy` and Kanazawa is `hard` — even though a
+worldwide `hard` is a different thing entirely. A pack is played on its own
+most of the time, so the levels have to mean something within it.
+
+The consequence: a `medium` in a small country pack is harder than a `medium`
+in the ordinary game. That is intended.
+
+### Adding a new pack
+
+Add a line to `"packs"` with an `id` (lowercase, no spaces), a `label` (what
+you want shown), and `countries` (`[]` if it is a themed pack rather than a
+place). It appears in the special menu on the next reload. Nothing else needs
+changing.
+
+A pack with nothing in it yet is listed but greyed out, with its play button
+switched off — landmarks looks like that now, on purpose, so the empty shelf
+is visible rather than hidden.
+
+### What packs do not touch
+
+The daily challenge never draws from a pack. It uses the whole ordinary world
+and nothing else, so `packOnly` cities can never appear in it and the ranked
+game stays the same for everyone.
+
+Shared links carry packs: the copied link for a pack game has them on the end,
+and a link made before packs existed still works exactly as it did.
+
+---
+
 ## The guess box
 
 The field under the map is a list, not a blank. Three letters open it, and the

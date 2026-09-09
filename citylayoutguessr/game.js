@@ -55,6 +55,11 @@
     shareNote: document.getElementById("game-share-note"),
     setupLevels: document.getElementById("setup-levels"),
     setupContinents: document.getElementById("setup-continents"),
+    setupPacks: document.getElementById("setup-packs"),
+    setupSpecial: document.getElementById("setup-special"),
+    setupSpecialOpen: document.getElementById("setup-special-open"),
+    setupSpecialCount: document.getElementById("setup-special-count"),
+    setupSpecialDone: document.getElementById("setup-special-done"),
     setupLength: document.getElementById("setup-length"),
     setupTicks: document.getElementById("setup-ticks"),
     setupPool: document.getElementById("setup-pool"),
@@ -755,8 +760,9 @@
      Everything that decides what you are about to play, short enough to send
      in a message:
 
-         #g=<levels>_<continents>_<length>_<hints>_<seed>
+         #g=<levels>_<continents>_<length>_<hints>_<seed>[_<packs>]
          #g=all_europe.asia_20_h_4f2a1b
+         #g=all_none_10_n_4f2a1b_japan.italy
 
      Names rather than positions, because the order of the lists in cities.json
      is not a promise and a link should outlive it; "all" rather than every
@@ -776,11 +782,18 @@
       cfg.levels.length === allLevels.length ? "all" : cfg.levels.slice().sort().join("."),
       cfg.continents.length === all.length
         ? "all"
-        : cfg.continents.map(contSlug).sort().join("."),
+        : cfg.continents.length
+        ? cfg.continents.map(contSlug).sort().join(".")
+        : "none",
       cfg.length === Infinity ? "endless" : String(cfg.length),
       cfg.hints ? "h" : "n",
       (cfg.seed >>> 0).toString(36)
     ];
+    /* Packs came later, so they hang off the end and only when there are any:
+       a link to a game without them is the same string it always was, and a
+       build that predates packs reads the first five fields and ignores this
+       one rather than choking on it. */
+    if (cfgPacks(cfg).length) parts.push(cfgPacks(cfg).slice().sort().join("."));
     return "g=" + parts.join("_");
   }
 
@@ -800,11 +813,22 @@
       : parts[0].split(".").filter(function (x) { return allLevels.indexOf(x) !== -1; });
     var co = parts[1] === "all"
       ? allConts
+      : parts[1] === "none"
+      ? []
       : parts[1].split(".").map(function (slug) {
           return allConts.filter(function (id) { return contSlug(id) === slug; })[0];
         }).filter(Boolean);
+
+    var allPacks = packs().map(function (p) { return p.id; });
+    var pk = (parts[5] || "").split(".").filter(function (id) {
+      return allPacks.indexOf(id) !== -1;
+    });
+
     if (!lv.length) lv = allLevels;
-    if (!co.length) co = allConts;
+    /* An empty continent list is only meant when a pack is carrying the game.
+       Otherwise it is a link this build could not read, and the whole world is
+       a better answer than no game at all. */
+    if (!co.length && !pk.length) co = allConts;
 
     var len = parts[2] === "endless" ? Infinity : parseInt(parts[2], 10);
     if (!(len > 0) && len !== Infinity) len = 10;
@@ -814,6 +838,7 @@
     return {
       levels: lv,
       continents: co,
+      packs: pk,
       length: len,
       hints: parts[3] === "h",
       seed: seed >>> 0
@@ -828,6 +853,10 @@
     return {
       levels: levels().map(function (t) { return t.id; }),
       continents: continents().map(function (t) { return t.id; }),
+      /* No packs, ever. The ranked game is the ordinary world; a pack is
+         something you go and ask for. Anything packOnly is invisible here
+         because nothing has asked for its pack. */
+      packs: [],
       length: DAILY_ROUNDS,
       /* Off, and not a choice: the ranked game has to be the same one for
          everybody who plays it. */
@@ -1302,11 +1331,57 @@
     return data.continents || [];
   }
 
-  /* Every city the current selection allows, whether or not it has a picture. */
+  /* ---------- packs ----------
+
+     A pack is a named set of cities that sits beside the continents rather
+     than inside them: USA, Japan, Italy, Benelux, landmarks. Two things can
+     put a city in one — the pack's own list of countries, so every Japanese
+     city already in the file belongs to Japan without being told, and a
+     "packs" field on the city itself, for the ones no country rule would
+     catch. A landmark belongs to no country in particular; it says so.
+
+     A city marked packOnly is invisible everywhere else. It is not in the
+     daily, not in a plain custom game, not in its continent — only in its
+     pack, and only when that pack is asked for. That is what keeps a set of
+     twelve Tokyo neighbourhoods from swamping the ordinary game. */
+  function packs() {
+    return data.packs || [];
+  }
+
+  function packById(id) {
+    return packs().filter(function (p) { return p.id === id; })[0] || null;
+  }
+
+  function inPack(city, packId) {
+    var pack = packById(packId);
+    if (!pack) return false;
+    if ((city.packs || []).indexOf(packId) !== -1) return true;
+    return (pack.countries || []).indexOf(city.country) !== -1;
+  }
+
+  function cfgPacks(cfg) {
+    return (cfg && cfg.packs) || [];
+  }
+
+  /* A game needs somewhere to draw from, and either kind of region will do. */
+  function hasRegion(cfg) {
+    return Boolean(cfg && (cfg.continents.length || cfgPacks(cfg).length));
+  }
+
+  /* Every city the current selection allows, whether or not it has a picture.
+
+     Continents and packs are one selection, not two lists stuck together:
+     this filters the file once and asks each city whether anything chosen
+     wants it. So a city that is both Japanese and in Asia comes back once
+     however many boxes are ticked — there is no concatenation for a duplicate
+     to appear in. */
   function selected(cfg) {
+    var chosenPacks = cfgPacks(cfg);
     return data.cities.filter(function (c) {
-      return cfg.levels.indexOf(c.tier) !== -1 &&
-             cfg.continents.indexOf(c.continent) !== -1;
+      if (cfg.levels.indexOf(c.tier) === -1) return false;
+      var byPack = chosenPacks.some(function (id) { return inPack(c, id); });
+      if (c.packOnly) return byPack;
+      return byPack || cfg.continents.indexOf(c.continent) !== -1;
     });
   }
 
@@ -1326,10 +1401,18 @@
     if (cfg.levels.length < levels().length) {
       bits.push(cfg.levels.join(" + "));
     }
-    if (cfg.continents.length < continents().length) {
+    /* Some continents but not all is worth saying; none of them is not an
+       empty answer but a pack game, and the pack is about to say so. */
+    if (cfg.continents.length && cfg.continents.length < continents().length) {
       bits.push(cfg.continents.map(function (id) {
         var c = continents().filter(function (x) { return x.id === id; })[0];
         return c ? c.label : id;
+      }).join(" + "));
+    }
+    if (cfgPacks(cfg).length) {
+      bits.push(cfgPacks(cfg).map(function (id) {
+        var p = packById(id);
+        return p ? p.label : id;
       }).join(" + "));
     }
     if (cfg.length === Infinity) bits.push("endless");
@@ -1367,6 +1450,104 @@
     return [].slice.call(container.querySelectorAll('input[type="checkbox"]'));
   }
 
+  /* ---------- the special menu ----------
+
+     The packs live behind one entry in the region row rather than beside the
+     continents, because there will be more of them than there are continents
+     and they are not the ordinary way to play. Each gets two things: a tick,
+     which adds it to whatever else is selected, and a play button, which
+     starts that pack on its own — every level, ten rounds, no hints — so the
+     common case is one click rather than six.
+
+     Packs begin unticked. Continents are a filter on the world and default to
+     all of it; a pack is a thing you go and ask for. */
+  function packCount(id) {
+    return withPicture(function (c) { return inPack(c, id); });
+  }
+
+  function buildPacks() {
+    if (!el.setupPacks) return;
+    el.setupPacks.innerHTML = "";
+    packs().forEach(function (pack) {
+      var n = packCount(pack.id);
+      var row = document.createElement("div");
+      row.className = "game-pack" + (n ? "" : " is-empty");
+
+      var input = check(el.setupPacks, pack.id, pack.label, n);
+      input.checked = false;
+      /* check() appends to the container; move the label it made into the row
+         so the play button can sit beside it. */
+      row.appendChild(el.setupPacks.lastChild);
+
+      var play = document.createElement("button");
+      play.type = "button";
+      play.className = "game-pack-play";
+      play.textContent = "play";
+      play.disabled = !n;
+      play.setAttribute("aria-label", "Play the " + pack.label + " pack");
+      play.addEventListener("click", function () {
+        startPack(pack.id);
+      });
+      row.appendChild(play);
+
+      el.setupPacks.appendChild(row);
+    });
+  }
+
+  /* A pack on its own: no continents, so nothing but the pack is in play. */
+  function packConfig(id) {
+    return {
+      levels: levels().map(function (t) { return t.id; }),
+      continents: [],
+      packs: [id],
+      length: data.rounds || 10,
+      hints: false,
+      seed: randomSeed()
+    };
+  }
+
+  function startPack(id) {
+    var cfg = packConfig(id);
+    if (playable(cfg).length) start(cfg);
+  }
+
+  function specialIsOpen() {
+    return Boolean(el.setupSpecial && !el.setupSpecial.hidden);
+  }
+
+  function refreshSpecial() {
+    if (!el.setupSpecialCount) return;
+    var n = chosenEvery(el.setupPacks).length;
+    el.setupSpecialCount.textContent = n ? String(n) : "";
+    if (el.setupSpecialOpen) {
+      el.setupSpecialOpen.classList.toggle("is-on", n > 0);
+      el.setupSpecialOpen.setAttribute("aria-expanded", specialIsOpen() ? "true" : "false");
+    }
+  }
+
+  function wireSpecial() {
+    if (!el.setupPacks) return;
+    boxes(el.setupPacks).forEach(function (b) {
+      b.addEventListener("change", function () {
+        refreshSpecial();
+        refreshSetup();
+      });
+    });
+    if (el.setupSpecialOpen) {
+      el.setupSpecialOpen.addEventListener("click", function () {
+        show(el.setupSpecial, !specialIsOpen());
+        refreshSpecial();
+      });
+    }
+    if (el.setupSpecialDone) {
+      el.setupSpecialDone.addEventListener("click", function () {
+        show(el.setupSpecial, false);
+        refreshSpecial();
+      });
+    }
+    refreshSpecial();
+  }
+
   function withPicture(test) {
     return data.cities.filter(function (c) {
       return test(c) && (!manifest || !manifest.ids || manifest.ids.indexOf(c.id) !== -1);
@@ -1398,6 +1579,13 @@
       .map(function (b) { return b.value; });
   }
 
+  /* The packs have no "all" box in front of them, so every box counts. */
+  function chosenEvery(container) {
+    if (!container) return [];
+    return boxes(container).filter(function (b) { return b.checked; })
+      .map(function (b) { return b.value; });
+  }
+
   /* The order the next custom game will be dealt in, settled before it starts
      so that the link you copy and the game you then press start on are the
      same game. Moves on once a game has begun, so the one after it is new. */
@@ -1408,6 +1596,7 @@
     return {
       levels: chosen(el.setupLevels),
       continents: chosen(el.setupContinents),
+      packs: chosenEvery(el.setupPacks),
       length: LENGTHS[i],
       hints: Boolean(el.setupHints && el.setupHints.checked),
       seed: setupSeed
@@ -1438,7 +1627,7 @@
 
   function refreshSetup() {
     var cfg = readSetup();
-    var n = cfg.levels.length && cfg.continents.length ? playable(cfg).length : 0;
+    var n = cfg.levels.length && hasRegion(cfg) ? playable(cfg).length : 0;
     var highest = 0;
 
     el.setupTicks.innerHTML = "";
@@ -1468,7 +1657,7 @@
     cfg = readSetup();
     el.setupPool.textContent = n
       ? "your game will draw from " + n + (n === 1 ? " map" : " maps")
-      : (cfg.levels.length && cfg.continents.length
+      : (cfg.levels.length && hasRegion(cfg)
           ? "no maps for that combination yet"
           : "pick at least one of each");
     /* The caption says what the hints will actually do for the game as it is
@@ -1486,7 +1675,7 @@
   function saveSetup(cfg) {
     try {
       localStorage.setItem(SETUP_KEY, JSON.stringify({
-        levels: cfg.levels, continents: cfg.continents,
+        levels: cfg.levels, continents: cfg.continents, packs: cfgPacks(cfg),
         length: cfg.length === Infinity ? "endless" : cfg.length,
         hints: Boolean(cfg.hints)
       }));
@@ -1518,8 +1707,13 @@
     check(el.setupContinents, "__all", "all", null);
     continents().forEach(function (t) {
       check(el.setupContinents, t.id, t.label,
-            withPicture(function (c) { return c.continent === t.id; }));
+            /* A packOnly city is not part of its continent for counting
+               either — it is not reachable that way, so saying it is there
+               would be a lie the pool count then contradicts. */
+            withPicture(function (c) { return !c.packOnly && c.continent === t.id; }));
     });
+
+    buildPacks();
 
     if (saved) {
       boxes(el.setupLevels).slice(1).forEach(function (b) {
@@ -1528,6 +1722,11 @@
       boxes(el.setupContinents).slice(1).forEach(function (b) {
         b.checked = saved.continents.indexOf(b.value) !== -1;
       });
+      if (el.setupPacks) {
+        boxes(el.setupPacks).forEach(function (b) {
+          b.checked = (saved.packs || []).indexOf(b.value) !== -1;
+        });
+      }
       var i = LENGTHS.indexOf(saved.length);
       if (i !== -1) el.setupLength.value = i;
       /* !== false rather than Boolean(): a setup saved before hints existed has
@@ -1540,6 +1739,7 @@
     renderDaily();
     wireAll(el.setupLevels);
     wireAll(el.setupContinents);
+    wireSpecial();
     el.setupLength.addEventListener("input", refreshSetup);
     if (el.setupHints) el.setupHints.addEventListener("change", refreshSetup);
     refreshSetup();
@@ -1838,8 +2038,17 @@
   /* Naming the continent to somebody who picked that one continent is not a
      hint, it is an echo. When the selection is a single region the rung is
      skipped and the country arrives a miss earlier; the tries are not spent. */
+  /* True when the selection has already said where in the world this is, so
+     the first hint would be telling you what you chose. One continent does it;
+     so does a single pack tied to one country, which is most of them. */
   function continentIsGiven(cfg) {
-    return Boolean(cfg && cfg.continents && cfg.continents.length === 1);
+    if (!cfg || !cfg.continents) return false;
+    var chosenPacks = cfgPacks(cfg);
+    if (!chosenPacks.length) return cfg.continents.length === 1;
+    if (cfg.continents.length) return false;
+    if (chosenPacks.length !== 1) return false;
+    var pack = packById(chosenPacks[0]);
+    return Boolean(pack && (pack.countries || []).length === 1);
   }
 
   /* What a miss is worth telling you, in order. The first tells you nothing
@@ -2477,7 +2686,7 @@
   el.setup.addEventListener("submit", function (e) {
     e.preventDefault();
     var cfg = readSetup();
-    if (cfg.levels.length && cfg.continents.length) start(cfg);
+    if (cfg.levels.length && hasRegion(cfg)) start(cfg);
   });
 
   /* Copying is the whole feature: the link is written for the game the start
@@ -2487,7 +2696,7 @@
   if (el.setupShare) {
     el.setupShare.addEventListener("click", function () {
       var cfg = readSetup();
-      if (!cfg.levels.length || !cfg.continents.length) return;
+      if (!cfg.levels.length || !hasRegion(cfg)) return;
       var url = shareUrl(cfg);
       function done(ok) {
         el.setupShareNote.textContent = ok ? "link copied — it plays this exact game" : url;

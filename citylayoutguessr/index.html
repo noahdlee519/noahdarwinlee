@@ -207,6 +207,27 @@
           <fieldset class="game-set">
             <legend class="game-set-label">region</legend>
             <div class="game-checks" id="setup-continents"></div>
+
+            <!-- The packs sit behind this rather than in the row above: there
+                 will be more of them than there are continents, and they are
+                 not the ordinary way to play. Each one inside can be ticked
+                 into the mix, or played on its own with one press. -->
+            <button
+              class="game-special-open"
+              type="button"
+              id="setup-special-open"
+              aria-expanded="false"
+              aria-controls="setup-special"
+            >
+              special<span class="game-special-count" id="setup-special-count"></span>
+            </button>
+
+            <div class="game-special" id="setup-special" hidden>
+              <div class="game-packs" id="setup-packs"></div>
+              <button class="game-quiet game-special-done" type="button" id="setup-special-done">
+                done
+              </button>
+            </div>
           </fieldset>
 
           <fieldset class="game-set">

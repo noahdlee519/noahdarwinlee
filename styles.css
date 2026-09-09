@@ -2225,6 +2225,119 @@ body.game-page {
   opacity: 0.4;
 }
 
+/* ---- the special menu ----
+ *
+ * One entry in the region row that opens onto the packs. It is drawn as a
+ * chip so it reads as one more thing in that row, but it is a button rather
+ * than a checkbox because it opens something instead of selecting anything.
+ * The count beside it says how many packs are in the mix while it is shut,
+ * which is the only thing you would want to know without opening it. */
+
+.game-special-open {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+  margin-top: 10px;
+  padding: 0 0 1px 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: clamp(17px, 2vw, 29px);
+  font-weight: 300;
+  line-height: 1.2;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.game-special-open::after {
+  content: "\2026";
+  opacity: 0.7;
+}
+
+.game-special-open[aria-expanded="true"]::after {
+  content: "\00d7";
+}
+
+.game-special-open:hover,
+.game-special-open:focus-visible,
+.game-special-open.is-on {
+  opacity: 1;
+}
+
+.game-special-count {
+  font-size: 0.62em;
+  opacity: 0.6;
+}
+
+.game-special-count:empty {
+  display: none;
+}
+
+.game-special {
+  margin-top: 14px;
+  padding: 14px 0 4px;
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+}
+
+/* One pack per line rather than a wrapped row: each carries a play button, and
+   a row of tick-plus-button pairs is harder to read across than down. */
+.game-packs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-pack {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(12px, 2vw, 22px);
+}
+
+/* The tick takes the room it needs and the play button follows the longest
+   label, so the buttons line up down the list. */
+.game-pack .game-check {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.game-pack-play {
+  flex: 0 0 auto;
+  padding: 0 0 1px 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8em;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.game-pack-play:hover,
+.game-pack-play:focus-visible {
+  opacity: 1;
+}
+
+/* A pack with no maps in it yet: still listed, because the list is also how
+   you see what is coming, but there is nothing to press. */
+.game-pack.is-empty {
+  opacity: 0.4;
+}
+
+.game-pack-play[disabled] {
+  cursor: default;
+  border-bottom-style: dotted;
+}
+
+.game-special-done {
+  margin-top: 14px;
+}
+
 /* ---- length slider ---- */
 
 .game-slider {

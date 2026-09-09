@@ -7,6 +7,14 @@
     { "id": "medium", "label": "medium" },
     { "id": "hard", "label": "hard" }
   ],
+  "packs": [
+    { "id": "usa", "label": "USA", "countries": ["United States"] },
+    { "id": "japan", "label": "Japan", "countries": ["Japan"] },
+    { "id": "italy", "label": "Italy", "countries": ["Italy"] },
+    { "id": "benelux", "label": "Benelux",
+      "countries": ["Netherlands", "Belgium", "Luxembourg"] },
+    { "id": "landmarks", "label": "landmarks", "countries": [] }
+  ],
   "continents": [
     { "id": "Africa", "label": "africa" },
     { "id": "Asia", "label": "asia" },
