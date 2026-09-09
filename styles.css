@@ -936,6 +936,95 @@ body.is-zoomed {
    beside the picture and you take both in at once; on a page you scroll, a
    label under a tall picture arrives long after you have decided what you are
    looking at. */
+/* ---- one picture running down the side of several ----
+   A drawing of the whole building does not belong in a row of details at the
+   same size as the details. This puts it in a column of its own beside them,
+   from the foot of the lead down to whatever comes after the band.
+
+   It travels rather than stretches. The band is about two thousand pixels tall
+   and the sheet is a portrait one: to be that tall it would have to be a
+   thousand pixels wide, which leaves no room for anything to stand beside, and
+   cropping it to fit is not on -- the sheet entire is the point of it. So it
+   sticks instead. It arrives under the lead, stays level with the top of the
+   window while the pictures and the writing go past it, and leaves when the
+   band does, which is the top of the model shots at the foot. It is beside
+   everything in between, which is what it is for. */
+.art-split {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.art-split-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Inside the column a row of one is the column's width: the caps that stop a
+   leftover picture spanning a whole page do not apply to a page this narrow. */
+.art-split-main .art-row .art-plate {
+  max-width: none;
+}
+
+.art-aside {
+  flex: 0 1 auto;
+  /* Wide enough to be read as a drawing, never so wide that the pictures it
+     stands beside become stamps. */
+  max-width: 38%;
+  /* flex-start, not stretch: it keeps its own proportions and its own height,
+     and sticky has nothing to hold on to inside an item stretched to the full
+     height of its line. */
+  align-self: flex-start;
+  position: sticky;
+  top: 22px;
+}
+
+.art-aside .art-zoom,
+.art-aside picture {
+  display: block;
+}
+
+.art-aside .art-image {
+  width: 100%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Somebody who has asked for less movement should not have a picture
+     following them down the page. */
+  .art-aside {
+    position: static;
+  }
+}
+
+@media (max-width: 900px) {
+  /* No room for a column beside a column. It unwinds, and the drawing takes
+     its turn in the order like every other picture. */
+  .art-split {
+    display: block;
+  }
+
+  .art-split-main {
+    display: block;
+  }
+
+  .art-split-main > * + * {
+    margin-top: 10px;
+  }
+
+  .art-aside {
+    max-width: none;
+    margin-top: 10px;
+  }
+
+  .art-aside {
+    position: static;
+  }
+}
+
 .art-label {
   margin-bottom: 14px;
 }
