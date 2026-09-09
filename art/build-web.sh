@@ -24,7 +24,7 @@ python3 - "$@" <<'PY'
 import io, json, os, sys
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageOps
 except ImportError:
     sys.exit("This needs Pillow:  pip3 install --user Pillow")
 
@@ -61,7 +61,10 @@ for here, _dirs, files in os.walk(SRC):
         os.makedirs(target_dir, exist_ok=True)
         base = os.path.join(target_dir, stem)
 
-        im = Image.open(origin)
+        # A photograph off a phone carries its orientation in its EXIF rather
+        # than in its pixels, and every size built from it would come out on
+        # its side without this.
+        im = ImageOps.exif_transpose(Image.open(origin))
         native = im.size[0]
 
         # Never invent detail: a 900px original gets a 640 and nothing above it.

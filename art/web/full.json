@@ -1,12 +1,15 @@
 {
   "note": [
-    "Pictures that have a full-size file for the lightbox, listed by the stem",
-    "their other sizes share. lightbox.js reads this once, and only when the",
-    "first picture is opened: <stem>-2400.webp is fetched at that moment and",
-    "swapped in behind the gallery's copy, which is already on screen.",
-    "art/build-web.sh writes this file. An empty list is a working site with",
-    "no upgrades in it."
+    "Pictures that have a full-size file for the lightbox, listed by the",
+    "stem their other sizes share. lightbox.js reads this once, and only",
+    "when the first picture is opened: <stem>-2400.webp is fetched at that",
+    "moment and swapped in behind the gallery's copy, which is already on",
+    "screen. art/build-web.sh writes this file."
   ],
   "suffix": "-2400.webp",
-  "stems": []
+  "stems": [
+    "art/web/pittsburgh/2-site",
+    "art/web/pittsburgh/3-sketchbook",
+    "art/web/pittsburgh/5-section"
+  ]
 }
