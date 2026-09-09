@@ -56,34 +56,6 @@
 
   var anchor = null;
 
-  /* The switch sits just to the right of "about" (or of "back", on the pages
-     that have one), and how far right that is depends on how wide the word
-     comes out — which is not known until the typeface has loaded. So it is
-     measured rather than guessed, and measured again whenever the window
-     changes size. Below 901px the header is an ordinary stack instead of a set
-     of fixed corners: the stylesheet puts the switch in that stack, and the
-     measurements are taken back off so they cannot fight it. */
-  function place() {
-    if (!btn || !anchor) return;
-    if (window.innerWidth <= 900) {
-      btn.style.left = "";
-      btn.style.top = "";
-      return;
-    }
-    /* Measured across the letters rather than across the element's box: a line
-       box is taller than its type, so centring on the box puts the circle a
-       few pixels below the middle of the word, which is exactly the sort of
-       thing you cannot unsee. */
-    var range = document.createRange();
-    range.selectNodeContents(anchor);
-    var ink = range.getBoundingClientRect();
-    range.detach && range.detach();
-    var a = ink.width ? ink : anchor.getBoundingClientRect();
-    if (!a.width) return;
-    btn.style.left = Math.round(a.left + a.width + 13) + "px";
-    btn.style.top = Math.round(a.top + a.height / 2 - btn.offsetHeight / 2) + "px";
-  }
-
   function build() {
     btn = document.createElement("button");
     btn.type = "button";
@@ -100,21 +72,21 @@
          has to be told there is one more thing to fade. */
       if (window.__updateHeaderFade) window.__updateHeaderFade();
     });
-    /* Next to the line it belongs with, rather than at the end of the body.
-       On a wide window everything up there is fixed and the DOM order makes no
-       difference; on a narrow one the header is an ordinary stack, and a
-       switch tacked onto the end of the document would float over the pictures
-       instead of sitting in that stack. */
+    /* Into the same line as the word it sits beside, in a wrapper the
+       stylesheet lays out as a row. The switch used to position itself by
+       measuring the word, which meant re-measuring every time the type loaded
+       or the window moved, and being a few pixels out whenever that had not
+       happened yet. Sharing a line box is the version that cannot drift. */
     anchor = document.querySelector(".about-link, .back-link");
     if (anchor && anchor.parentNode) {
-      anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+      var line = document.createElement("span");
+      line.className = "header-line";
+      anchor.parentNode.insertBefore(line, anchor);
+      line.appendChild(anchor);
+      line.appendChild(btn);
     } else {
       document.body.appendChild(btn);
     }
-    place();
-    window.addEventListener("resize", place);
-    /* The word is a different width once the real typeface arrives. */
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
     if (window.__updateHeaderFade) window.__updateHeaderFade();
   }
 

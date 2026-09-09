@@ -89,10 +89,41 @@ body {
    Filled in daylight, hollow after dark. Showing a state is the one job an
    icon is actually good at; naming it is not, and a press to find out costs
    nothing. */
-.theme-btn {
+/* The switch and the word share a line box, so the circle cannot drift up or
+   down as the type loads or the page changes: it is centred by the same rule
+   that centres anything against text, rather than by arithmetic that has to be
+   redone every time something moves. theme.js builds the wrapper. */
+.header-line {
   position: fixed;
-  top: calc(var(--page-top) + 44px);
-  left: calc(var(--page-left) + 90px);
+  top: calc(var(--page-top) + 33px);
+  left: var(--page-left);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  line-height: 1;
+}
+
+/* The about link carries 13px of padding under it, from when it had a panel to
+   stand off from. Inside the row that padding is the difference between
+   centring the circle on the word and centring it on the word plus a gap, so
+   it comes off here — the link is fixed-positioned, so nothing was resting on
+   it. The :first-of-type selector further down is more specific than a class
+   pair, hence the doubled class. */
+.header-line .about-link.about-link,
+.header-line .back-link.back-link {
+  position: static;
+  top: auto;
+  left: auto;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.theme-btn {
+  /* relative rather than static: it stays in the line, and the enlarged hit
+     area below has something of its own to be measured against. */
+  position: relative;
+  flex: 0 0 auto;
   z-index: 11;
   width: 11px;
   height: 11px;
@@ -703,6 +734,110 @@ a[href="/cv/"]:active {
   height: auto;
 }
 
+/* Every picture outside the one carousel is a button that opens it full
+   screen. The reset keeps it looking like a bare image; the cursor is the only
+   thing that says otherwise until you press it. */
+.art-zoom {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: zoom-in;
+}
+
+.art-zoom .art-image {
+  outline: 1.5px solid transparent;
+  transition: outline-color 120ms ease;
+}
+
+.art-zoom:hover .art-image,
+.art-zoom:focus-visible .art-image {
+  outline-color: var(--accent);
+}
+
+/* ---- the picture, full screen ----
+   Its own ground rather than the page's: a painting reads against something
+   near-black whichever theme you are in, and the page behind it should stop
+   competing. Everything else about it is the picture and the way out. */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 56px);
+  background: rgba(8, 7, 6, 0.94);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.lightbox.is-open {
+  opacity: 1;
+}
+
+/* The wrapper carries nothing of its own: the picture is the flex child, so
+   its own limits are measured against the window rather than against a box in
+   between. */
+.lightbox-frame {
+  display: contents;
+}
+
+.lightbox picture {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.lightbox img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  cursor: zoom-out;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: clamp(10px, 2vw, 22px);
+  right: clamp(10px, 2vw, 22px);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #ffffff;
+  font: inherit;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 140ms ease;
+}
+
+.lightbox-close:hover,
+.lightbox-close:focus-visible {
+  opacity: 1;
+}
+
+/* The page must not scroll behind an open picture. */
+body.is-zoomed {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox {
+    transition: none;
+  }
+}
+
 /* The lead takes the column, but by height rather than by width: a portrait
    painting run to 1180px would stand two screens tall and be the only thing
    anyone ever saw. Capping the height instead lets a landscape lead fill the
@@ -792,8 +927,12 @@ a[href="/cv/"]:active {
   opacity: 0.6;
 }
 
+/* The label goes above the work rather than under it. On a wall the card is
+   beside the picture and you take both in at once; on a page you scroll, a
+   label under a tall picture arrives long after you have decided what you are
+   looking at. */
 .art-label {
-  margin-top: 20px;
+  margin-bottom: 14px;
 }
 
 .art-title {
@@ -825,6 +964,19 @@ a[href="/cv/"]:active {
    as a list rather than as emphasis. */
 .art-caption em {
   font-style: normal;
+}
+
+/* A line of argument set between the drawings, for the projects that have one.
+   Narrower than the pictures and quieter than the label: it is a caption to
+   the sheet above it, not a heading for the sheet below. */
+.art-note {
+  margin: 22px 0 26px 0;
+  max-width: 58ch;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--ink);
+  opacity: 0.72;
 }
 
 .to-top-btn {
@@ -1095,11 +1247,11 @@ a[href="/cv/"]:active {
   }
 
   /* The header is an ordinary stack at this width rather than a set of fixed
-     corners, so the switch joins it instead of floating over the pictures. */
-  .theme-btn {
+     corners, so the line joins that stack instead of floating over the
+     pictures. The switch keeps its place beside the word either way. */
+  .header-line {
     position: static;
-    display: block;
-    margin: 13px 0 0 1px;
+    margin-bottom: 5px;
   }
 
   .art-title {
@@ -1198,7 +1350,7 @@ a[href="/cv/"]:active {
 .materials-page .name,
 .materials-page .about-link,
 .materials-page .back-link,
-.materials-page .theme-btn {
+.materials-page .header-line {
   left: var(--page-left);
 }
 
@@ -1352,7 +1504,7 @@ a[href="/cv/"]:active {
   .materials-page .name,
   .materials-page .about-link,
   .materials-page .back-link,
-  .materials-page .theme-btn {
+  .materials-page .header-line {
     padding-left: 16px;
   }
 
