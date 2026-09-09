@@ -33,3 +33,7 @@ blog/part */
 Claude outputs/
 _compare.png
 *.stale-*
+
+# The pictures you work from. art/build-web.sh turns these into the sizes the
+# site serves in art/web, and only those are committed.
+art/originals/

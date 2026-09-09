@@ -121,8 +121,13 @@ body {
 
 .theme-btn {
   /* relative rather than static: it stays in the line, and the enlarged hit
-     area below has something of its own to be measured against. */
+     area below has something of its own to be measured against — and it is
+     what lets the circle be nudged off the exact centre of the line box.
+     "about" is all ascenders and no descenders, so its visual mass sits above
+     the middle of its line and a circle centred by arithmetic reads high. Two
+     pixels down is where the eye puts it. */
   position: relative;
+  top: 2px;
   flex: 0 0 auto;
   z-index: 11;
   width: 11px;
@@ -964,6 +969,17 @@ body.is-zoomed {
    as a list rather than as emphasis. */
 .art-caption em {
   font-style: normal;
+}
+
+/* Who else made it. Quieter than the writing above it and set apart from it,
+   because it is a fact about the work rather than part of the description. */
+.art-credit {
+  margin: 7px 0 0 0;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--ink);
+  opacity: 0.58;
 }
 
 /* A line of argument set between the drawings, for the projects that have one.
