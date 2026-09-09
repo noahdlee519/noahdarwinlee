@@ -8,12 +8,12 @@
    thing that is neither. Everything below is written in those terms, so a
    theme is three values rather than a second stylesheet.
 
-   Light is the site as it has always been, white on orange. Dark does not
-   dim that -- it turns the orange from the field into the figure. The orange
-   stops being the wall and becomes the thing that is picked out against it:
-   the rules, the hover fills, the caption panel. The ground it sits on is
-   warm rather than neutral, so the page still reads as this site at night
-   instead of as a different one.
+   Light is the site as it has always been, white on orange. Dark keeps none
+   of the orange: it is black, white, and one periwinkle, and the periwinkle
+   takes the job the orange has by day -- the rules, the hover fills, the
+   panel a caption sits in. Orange on black went muddy behind the pictures and
+   made the page look like the daylight one with the lights turned off. This
+   is a different room rather than the same room after dark.
 
    theme.js resolves the theme before the first paint and writes it here, so
    there is never a flash of the wrong colour on the way in. The media query
@@ -31,18 +31,18 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #16120e;
-  --ink: #f0eae2;
-  --accent: #e68019;
+  --bg: #000000;
+  --ink: #ffffff;
+  --accent: #918fff;
   --mail-surface: #292a2d;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --bg: #16120e;
-    --ink: #f0eae2;
-    --accent: #e68019;
+    --bg: #000000;
+    --ink: #ffffff;
+    --accent: #918fff;
     --mail-surface: #292a2d;
   }
 }
@@ -79,56 +79,60 @@ body {
   border: 0;
 }
 
-/* The day/night switch. It sits in the second line under the name, in the
-   same slot and the same voice as "about" and "back" -- it is a word you can
-   press, not an icon of a moon. The label says the state you are in rather
-   than the one you would move to, which is the reading people get right. */
+/* The day/night switch: a circle and nothing else, in the third line under the
+   name. It is centred on the same axis as the triangle beside "about", so the
+   corner reads as a stack of marks rather than as a word with a dot in front
+   of it. Its name lives in aria-label and in the tooltip, which is the only
+   place a control this small should keep one.
+
+   Filled in daylight, hollow after dark. Showing a state is the one job an
+   icon is actually good at; naming it is not, and a press to find out costs
+   nothing. */
 .theme-btn {
   position: fixed;
-  /* The third line: the name, then about or back, then this. */
   top: calc(var(--page-top) + 66px);
-  left: var(--page-left);
+  /* The triangle's ink starts a little inside the line the text sits on, so
+     the circle is nudged across to share its centre rather than its edge. */
+  left: calc(var(--page-left) - 1px);
   z-index: 11;
+  width: 11px;
+  height: 11px;
   padding: 0;
   border: 0;
-  background: none;
-  font: inherit;
-  font-size: 18px;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--ink);
-  cursor: pointer;
-  transition: opacity 140ms ease;
-}
-
-.theme-btn::before {
-  content: "";
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 7px;
   border-radius: 50%;
-  vertical-align: baseline;
   background: var(--ink);
+  font: inherit;
+  line-height: 0;
+  cursor: pointer;
+  transition: opacity 140ms ease, background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-/* Filled in daylight, hollow after dark: the same mark the site uses for a
-   bullet, doing the one job an icon is actually good at. */
-:root[data-theme="dark"] .theme-btn::before {
+:root[data-theme="dark"] .theme-btn {
   background: none;
-  box-shadow: inset 0 0 0 2px var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .theme-btn::before {
+  :root:not([data-theme]) .theme-btn {
     background: none;
-    box-shadow: inset 0 0 0 2px var(--ink);
+    box-shadow: inset 0 0 0 1.5px var(--ink);
   }
 }
 
 .theme-btn:hover {
-  opacity: 0.7;
+  opacity: 0.62;
 }
+
+/* A circle is a small target: this gives the pointer, and the ring the
+   keyboard draws, the room the mark itself does not need. */
+.theme-btn::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+}
+
 
 /* The flash card tool is black on white and draws none of its colour from the
    three variables, so the switch would sit there in the site's ink, invisible
@@ -626,231 +630,108 @@ a[href="/cv/"]:active {
   font-size: 0.82em;
 }
 
+/* ---------------- the gallery ----------------
+   Fifteen projects, forty pictures, all of them on the page. There used to be
+   one picture per project and a carousel behind it, which meant thirty-nine of
+   them were in the markup but not on the wall, and the only way to see a
+   project was to click it and step through.
+
+   A project is a lead and a row now. The lead runs the width of the column and
+   says what the thing is; the rest sit under it in a flush row; the writing
+   goes underneath, where a label goes. Nothing opens, nothing closes, and
+   nothing needs a script — every picture is in the HTML as a picture. */
+
 .art-gallery {
   margin: 0;
-  max-width: 980px;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0px;
-  overflow-anchor: none;
+  max-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(58px, 6vw, 116px);
 }
 
 .art-card {
   margin: 0;
-  --art-card-top: 48px;
-  --art-main-image-margin-top: 12px;
-  padding-top: var(--art-card-top);
-  overflow-anchor: none;
-  position: relative;
+  scroll-margin-top: 90px;
 }
 
-/* The title used to be hidden until the card was opened, which left a visitor
-   scrolling nine thousand pixels of unlabelled pictures with no way of telling
-   an architecture proposal from an oil painting without clicking each one. It
-   is a caption on a wall now: always there, small, above the work. What is
-   still behind the click is the writing about it, which is the part worth
-   crossing the room for. */
-.art-title {
-  position: absolute;
-  top: calc(
-    var(--art-card-top) + var(--art-main-image-margin-top) - 1.2em - 10px
-  );
-  left: 0;
-  margin: 0;
-  font-size: 18px;
-  font-weight: 300;
-  color: var(--ink);
-  display: block;
-  pointer-events: none;
-}
-
-/* The date is copied up out of the caption by gallery.js rather than written
-   twice in the markup. It sits back from the title: on a gallery label the
-   year is the smaller half of the line. */
-.art-date {
-  margin-left: 12px;
-  opacity: 0.62;
-}
-
-.art-image,
-.carousel-frame {
-  overflow-anchor: auto;
-}
-
-.art-card > .art-stage {
-  margin-top: var(--art-main-image-margin-top);
-}
-
-.art-stage {
+.art-plates {
   display: flex;
-  align-items: flex-start;
-  gap: clamp(18px, 2.5vw, 36px);
-  width: 100%;
-  position: relative;
-  --art-media-width: 75%;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.art-stage > .carousel-frame {
-  flex: 0 0 auto;
-  width: var(--art-media-width);
-  position: relative;
-}
-
-/* The image is wrapped in a <button> so it is operable by keyboard; the reset
-   keeps it looking exactly like a bare <img>. */
-.art-trigger {
-  display: block;
-  width: 100%;
-  padding: 0;
+.art-plate {
   margin: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
+  min-width: 0;
 }
 
 .art-image {
   display: block;
   width: 100%;
   height: auto;
-  cursor: pointer;
-  outline: 1.5px solid transparent;
-  transition: outline-color 120ms ease;
 }
 
-.art-trigger:hover .art-image {
-  outline-color: var(--accent);
+/* The lead takes the column, but by height rather than by width: a portrait
+   painting run to 1180px would stand two screens tall and be the only thing
+   anyone ever saw. Capping the height instead lets a landscape lead fill the
+   column and a portrait one come out narrower, which is the same picture in
+   both cases — about as tall as a person looking at it. */
+.art-lead {
+  max-width: calc(var(--ar, 1) * 760px);
+}
+
+/* Widths within a row are set from the aspect ratios, so every picture in a
+   row comes out the same height and the row is flush at both ends. flex-grow
+   and flex-basis both scale with the ratio, which is what keeps the heights
+   equal rather than merely the widths tidy. */
+.art-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.art-row .art-plate {
+  flex: var(--ar, 1) 1 calc(var(--ar, 1) * 300px);
+  /* Two caps, whichever bites first. Half the column stops a leftover picture
+     spanning the whole width; the second is a ceiling on height, because a
+     portrait detail held only to half the width still comes out taller than
+     the lead above it and stops being a detail. */
+  max-width: min(calc(50% - 5px), calc(var(--ar, 1) * 440px));
+}
+
+.art-label {
+  margin-top: 20px;
+}
+
+.art-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+/* The date sits back from the name: on a label the year is the smaller half of
+   the line. */
+.art-date {
+  margin-left: 14px;
+  opacity: 0.6;
 }
 
 .art-caption {
-  flex: 1 1 auto;
-  margin: 0;
-  padding-top: 2px;
-  max-width: 280px;
+  margin: 5px 0 0 0;
+  max-width: 62ch;
   font-size: 16px;
   font-weight: 300;
   line-height: 1.45;
-  color: var(--accent);
+  color: var(--ink);
+  opacity: 0.72;
 }
 
-/* Announced to screen readers on slide change; never shown. */
-.carousel-status {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-@media (min-width: 1200px) {
-  .art-stage {
-    --art-media-width: 60%;
-  }
-}
-
-@media (min-width: 901px) and (max-width: 1199px) {
-  .art-stage {
-    --art-media-width: 66%;
-  }
-}
-
-.art-card-carousel .art-trigger {
-  cursor: s-resize;
-}
-
-.art-card-carousel.is-open .art-trigger {
-  cursor: n-resize;
-}
-
-/* is-open lives on the card (.art-card-carousel), not on the trigger itself,
-   so scoping :not(.is-open) to the trigger never matched anything and this
-   rule was permanently winning the tie above, pinning every carousel cursor
-   to a plain pointer. Scoped to the card instead, it only applies while
-   closed. */
-.art-card-carousel:not(.is-open) .art-trigger {
-  cursor: pointer;
-}
-
-/* Left/right half previews which way a click will cycle. Tracked on hover
-   in both the closed and open states — closed, it hints which direction
-   the rest of the piece lives in; open, it's the actual prev/next zone. */
-.art-card-carousel .art-trigger.is-prev {
-  cursor: w-resize;
-}
-
-.art-card-carousel .art-trigger.is-next {
-  cursor: e-resize;
-}
-
-.art-card-carousel,
-.art-card-carousel .carousel-frame {
-  overflow-anchor: none;
-}
-
-@media (min-width: 901px) {
-  .art-main,
-  .art-gallery,
-  .art-card,
-  .art-stage {
-    overflow: visible;
-  }
-
-  .art-stage {
-    gap: 0;
-  }
-
-  .art-caption-panel {
-    position: absolute;
-    left: var(--art-media-width);
-    top: 0;
-    width: 0;
-    /* Height follows the text, not the image. JS aligns the top edge with the
-       image; the block simply ends where the caption ends. */
-    height: auto;
-    background: var(--accent);
-    overflow: hidden;
-    z-index: 2;
-    transition: width 520ms cubic-bezier(0.22, 1, 0.36, 1);
-    pointer-events: none;
-  }
-
-  .art-card.is-open .art-caption-panel {
-    width: var(--caption-panel-width, 292px);
-    pointer-events: auto;
-  }
-
-  .art-caption-inner {
-    width: var(--caption-panel-width, 292px);
-    min-width: 160px;
-    padding: 14px 18px;
-    box-sizing: border-box;
-  }
-
-  .art-caption-panel .art-caption {
-    color: var(--bg);
-    max-width: none;
-  }
-}
-
-@media (max-width: 900px) {
-  /* The wrapper boxes collapse so .art-caption is a direct flex child of
-     .art-stage and shares the image's column; otherwise a short caption
-     shrink-wraps and the centred box reads as centred text. */
-  .art-caption-panel,
-  .art-caption-inner {
-    display: contents;
-  }
-
-  .art-caption {
-    display: none;
-  }
-
-  .art-card.is-open .art-caption:not([hidden]) {
-    display: block;
-  }
+/* The captions use <em> for the medium and the dimensions, which wants to read
+   as a list rather than as emphasis. */
+.art-caption em {
+  font-style: normal;
 }
 
 .to-top-btn {
@@ -869,14 +750,34 @@ a[href="/cv/"]:active {
   z-index: 20;
 }
 
+/* The mark is drawn rather than loaded, so it follows the palette. The file
+   version is two fixed colours -- an orange square with a cream circle in it --
+   which on a black page was the one piece of orange left after dark. Square in
+   the ground colour, circle in the accent: on either theme that reads as the
+   circle alone, which is what the picture has always looked like against the
+   page it sits on. The <img> stays in the markup as the version that works
+   with no stylesheet at all. */
 .to-top-btn img {
-  width: 100%;
-  height: 100%;
-  display: block;
+  display: none;
+}
+
+.to-top-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
   transition: transform 220ms ease;
 }
 
-.to-top-btn:hover img {
+.to-top-btn::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.to-top-btn:hover::before {
   transform: rotate(45deg);
 }
 
@@ -1111,44 +1012,31 @@ a[href="/cv/"]:active {
     margin-right: auto;
   }
 
+  /* The header is an ordinary stack at this width rather than a set of fixed
+     corners, so the switch joins it instead of floating over the pictures. */
+  .theme-btn {
+    position: static;
+    display: block;
+    margin: 13px 0 0 1px;
+  }
+
   .art-title {
     font-size: 16px;
-    left: 0;
-    right: 0;
-    text-align: center;
-  }
-
-  .art-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .art-card:first-child {
-    --art-card-top: 28px;
-  }
-
-  .art-stage {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .art-stage > .carousel-frame {
-    width: min(100%, 420px);
   }
 
   .art-caption {
-    width: min(100%, 420px);
-    max-width: min(100%, 420px);
-    margin-top: 0px;
-    text-align: left;
     font-size: 15px;
-    box-sizing: border-box;
   }
 
-  .art-image {
-    margin-left: auto;
-    margin-right: auto;
+  /* On a phone the column is narrow enough that a row of four details is four
+     stamps. Two across is the floor, and a picture wide enough to be worth
+     looking at is worth more than a row that stays flush. */
+  .art-row .art-plate {
+    flex-basis: calc(var(--ar, 1) * 110px);
+  }
+
+  .art-gallery {
+    gap: 48px;
   }
 }
 
@@ -3325,11 +3213,10 @@ body.game-page {
     outline: none !important;
   }
 
-  .art-caption-panel {
-    background: transparent !important;
+  .art-caption,
+  .art-title {
     color: #000000 !important;
-    position: static !important;
-    width: auto !important;
+    opacity: 1 !important;
   }
 }
 

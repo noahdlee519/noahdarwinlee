@@ -36,16 +36,17 @@
     return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
   }
 
-  /* The word is the state you are in, not the one you would move to. Asked
-     which way round it should read, people answer with what they can see. */
+  /* The switch carries no writing — it is a filled circle by day and a hollow
+     one by night — so its whole name is the label, which is what a screen
+     reader reads and what a tooltip shows. */
   function label(theme) {
     if (!btn) return;
-    btn.textContent = theme === "dark" ? "night" : "day";
     btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
     btn.setAttribute(
       "aria-label",
       theme === "dark" ? "Night. Switch to day." : "Day. Switch to night."
     );
+    btn.title = theme === "dark" ? "Switch to day" : "Switch to night";
   }
 
   function apply(theme) {
@@ -69,7 +70,17 @@
          has to be told there is one more thing to fade. */
       if (window.__updateHeaderFade) window.__updateHeaderFade();
     });
-    document.body.appendChild(btn);
+    /* Next to the line it belongs with, rather than at the end of the body.
+       On a wide window everything up there is fixed and the DOM order makes no
+       difference; on a narrow one the header is an ordinary stack, and a
+       switch tacked onto the end of the document would float over the pictures
+       instead of sitting in that stack. */
+    var anchor = document.querySelector(".about-link, .back-link");
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+    } else {
+      document.body.appendChild(btn);
+    }
     if (window.__updateHeaderFade) window.__updateHeaderFade();
   }
 
