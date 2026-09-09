@@ -79,21 +79,20 @@ body {
   border: 0;
 }
 
-/* The day/night switch: a circle and nothing else, in the third line under the
-   name. It is centred on the same axis as the triangle beside "about", so the
-   corner reads as a stack of marks rather than as a word with a dot in front
-   of it. Its name lives in aria-label and in the tooltip, which is the only
-   place a control this small should keep one.
+/* The day/night switch: a circle and nothing else, on the same line as "about"
+   and just to its right. Where exactly that is depends on how wide the word
+   renders, so theme.js measures the link and writes left and top; the values
+   below are only what it looks like before the first measurement. Its name
+   lives in aria-label and in the tooltip, which is the only place a control
+   this small should keep one.
 
    Filled in daylight, hollow after dark. Showing a state is the one job an
    icon is actually good at; naming it is not, and a press to find out costs
    nothing. */
 .theme-btn {
   position: fixed;
-  top: calc(var(--page-top) + 66px);
-  /* The triangle's ink starts a little inside the line the text sits on, so
-     the circle is nudged across to share its centre rather than its edge. */
-  left: calc(var(--page-left) - 1px);
+  top: calc(var(--page-top) + 44px);
+  left: calc(var(--page-left) + 90px);
   z-index: 11;
   width: 11px;
   height: 11px;
@@ -160,6 +159,39 @@ body {
   right: calc(var(--page-left) + clamp(0px, 0vw, 10px));
   z-index: 10;
   transition: opacity 140ms ease;
+}
+
+/* The four links change on their own; this is how you change them yourself.
+   It sits under the block on the right-hand edge, and it is the same small
+   triangle the about link uses — the site already has a mark for "there is
+   more this way". Pressing it also holds the rotation for a while: somebody
+   working through the list by hand should not have it move underneath them. */
+.top-right-next {
+  display: block;
+  /* Centred under the block rather than hung off one end: it belongs to all
+     four links, not to the last of them. */
+  margin: 9px auto 0;
+  padding: 4px 6px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink);
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 140ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.top-right-next:hover,
+.top-right-next:focus-visible {
+  opacity: 1;
+}
+
+/* Half a turn on each press, so two presses come back round to where they
+   started — which, with two sets of links, is exactly what the list does. */
+.top-right-next.is-turned {
+  transform: rotate(180deg);
 }
 
 .top-right-set {
@@ -680,6 +712,56 @@ a[href="/cv/"]:active {
   max-width: calc(var(--ar, 1) * 760px);
 }
 
+/* ---- the one card that still cycles ----
+   Two views of the same piece in the same frame, one at a time. The picture is
+   wrapped in a button so it can be reached from the keyboard; the reset keeps
+   it looking like a bare image. Which half you are over decides which way a
+   click goes, and the cursor says so before you commit to it. */
+.art-carousel {
+  position: relative;
+}
+
+.art-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.art-trigger.is-prev {
+  cursor: w-resize;
+}
+
+.art-trigger.is-next {
+  cursor: e-resize;
+}
+
+.art-trigger .art-image {
+  outline: 1.5px solid transparent;
+  transition: outline-color 120ms ease;
+}
+
+.art-trigger:hover .art-image,
+.art-trigger:focus-visible .art-image {
+  outline-color: var(--accent);
+}
+
+/* Announced on a change of view; never shown. */
+.carousel-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Widths within a row are set from the aspect ratios, so every picture in a
    row comes out the same height and the row is flush at both ends. flex-grow
    and flex-basis both scale with the ratio, which is what keeps the heights
@@ -697,6 +779,17 @@ a[href="/cv/"]:active {
      portrait detail held only to half the width still comes out taller than
      the lead above it and stops being a detail. */
   max-width: min(calc(50% - 5px), calc(var(--ar, 1) * 440px));
+}
+
+/* A work in panels names its panels: the label under the whole piece says what
+   the piece is, and these say which part of it you are looking at. */
+.art-plate figcaption {
+  margin-top: 7px;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.3;
+  color: var(--ink);
+  opacity: 0.6;
 }
 
 .art-label {
@@ -750,34 +843,23 @@ a[href="/cv/"]:active {
   z-index: 20;
 }
 
-/* The mark is drawn rather than loaded, so it follows the palette. The file
-   version is two fixed colours -- an orange square with a cream circle in it --
-   which on a black page was the one piece of orange left after dark. Square in
-   the ground colour, circle in the accent: on either theme that reads as the
-   circle alone, which is what the picture has always looked like against the
-   page it sits on. The <img> stays in the markup as the version that works
-   with no stylesheet at all. */
 .to-top-btn img {
-  display: none;
-}
-
-.to-top-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--bg);
+  width: 100%;
+  height: 100%;
+  display: block;
   transition: transform 220ms ease;
 }
 
-.to-top-btn::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: 50%;
-  background: var(--accent);
+/* The same mark painted in the night palette: the cream becomes the periwinkle
+   and the orange becomes black, so the composition is identical and nothing
+   orange is left standing on a black page. Swapping the source here rather
+   than in the markup keeps the daylight file as the one the page loads with no
+   stylesheet, and as the icon in the browser tab. */
+:root[data-theme="dark"] .to-top-btn img {
+  content: url("/favicon-night.png");
 }
 
-.to-top-btn:hover::before {
+.to-top-btn:hover img {
   transform: rotate(45deg);
 }
 

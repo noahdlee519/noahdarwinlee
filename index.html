@@ -207,11 +207,14 @@
           </div>
         </article>
 
-        <article class="art-card" id="says-quentin">
+        <article class="art-card art-card-carousel" id="says-quentin">
           <div class="art-plates">
-            <figure class="art-plate art-lead" style="--ar: 0.7534"><picture><source sizes="(min-width: 1240px) 1180px, (min-width: 901px) 92vw, 92vw" srcset="art/web/says-quentin/1-detail-640.webp 640w, art/web/says-quentin/1-detail-1280.webp 1280w" type="image/webp"/><img alt="Painting of a pale draped form beneath a large convex mirror, surrounded by red and ochre architectural fragments" class="art-image" decoding="async" height="1699" loading="lazy" src="art/web/says-quentin/1-detail-640.jpg" width="1280"/></picture></figure>
-            <div class="art-row">
-              <figure class="art-plate" style="--ar: 0.7459"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/says-quentin/2-full-640.webp 640w" type="image/webp"/><img alt="The full spread with the poem ‘Says Quentin’ set in a column beside the painting" class="art-image" decoding="async" height="858" loading="lazy" src="art/web/says-quentin/2-full-640.jpg" width="640"/></picture></figure>
+            <!-- One frame, two views: the painting, and the spread it was
+                 printed in. Side by side they read as two works. -->
+            <div class="art-carousel">
+              <figure class="art-plate art-lead" style="--ar: 0.7534"><button class="art-trigger" type="button"><picture><source sizes="(min-width: 1240px) 1180px, (min-width: 901px) 92vw, 92vw" srcset="art/web/says-quentin/1-detail-640.webp 640w, art/web/says-quentin/1-detail-1280.webp 1280w" type="image/webp"/><img alt="Painting of a pale draped form beneath a large convex mirror, surrounded by red and ochre architectural fragments" class="art-image" decoding="async" height="1699" loading="lazy" src="art/web/says-quentin/1-detail-640.jpg" width="1280"/></picture></button></figure>
+              <figure class="art-plate art-lead" style="--ar: 0.7459" hidden><button class="art-trigger" type="button"><picture><source sizes="(min-width: 1240px) 1180px, (min-width: 901px) 92vw, 92vw" srcset="art/web/says-quentin/2-full-640.webp 640w" type="image/webp"/><img alt="The full spread with the poem ‘Says Quentin’ set in a column beside the painting" class="art-image" decoding="async" height="858" loading="lazy" src="art/web/says-quentin/2-full-640.jpg" width="640"/></picture></button></figure>
+              <p class="carousel-status" aria-live="polite">1 of 2</p>
             </div>
           </div>
           <div class="art-label">
@@ -273,20 +276,20 @@
         <article class="art-card" id="triptych">
           <div class="art-plates">
             <div class="art-row">
-              <figure class="art-plate" style="--ar: 0.8035"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/triptych/1-reception-of-a-guest-640.webp 640w, art/web/triptych/1-reception-of-a-guest-1280.webp 1280w" type="image/webp"/><img alt="Painting of a deep red field above a pale pink ground with two small white forms" class="art-image" decoding="async" height="1593" loading="lazy" src="art/web/triptych/1-reception-of-a-guest-640.jpg" width="1280"/></picture></figure>
-              <figure class="art-plate" style="--ar: 0.795"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/triptych/2-superfluous-man-640.webp 640w, art/web/triptych/2-superfluous-man-1280.webp 1280w" type="image/webp"/><img alt="Painting of a small figure standing in an ochre room before an arched window with a white curtain" class="art-image" decoding="async" height="1610" loading="lazy" src="art/web/triptych/2-superfluous-man-640.jpg" width="1280"/></picture></figure>
-              <figure class="art-plate" style="--ar: 0.846"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/triptych/3-a-second-troy-640.webp 640w, art/web/triptych/3-a-second-troy-1280.webp 1280w" type="image/webp"/><img alt="Painting of a dark red sky over a low wall, with faint spires on the horizon" class="art-image" decoding="async" height="1513" loading="lazy" src="art/web/triptych/3-a-second-troy-640.jpg" width="1280"/></picture></figure>
+              <figure class="art-plate" style="--ar: 0.8035"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/triptych/1-reception-of-a-guest-640.webp 640w, art/web/triptych/1-reception-of-a-guest-1280.webp 1280w" type="image/webp"/><img alt="Painting of a deep red field above a pale pink ground with two small white forms" class="art-image" decoding="async" height="1593" loading="lazy" src="art/web/triptych/1-reception-of-a-guest-640.jpg" width="1280"/></picture><figcaption>The Reception of a Guest</figcaption></figure>
+              <figure class="art-plate" style="--ar: 0.795"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/triptych/2-superfluous-man-640.webp 640w, art/web/triptych/2-superfluous-man-1280.webp 1280w" type="image/webp"/><img alt="Painting of a small figure standing in an ochre room before an arched window with a white curtain" class="art-image" decoding="async" height="1610" loading="lazy" src="art/web/triptych/2-superfluous-man-640.jpg" width="1280"/></picture><figcaption>Superfluous Man</figcaption></figure>
+              <figure class="art-plate" style="--ar: 0.846"><picture><source sizes="(min-width: 1240px) 380px, (min-width: 901px) 30vw, 46vw" srcset="art/web/triptych/3-a-second-troy-640.webp 640w, art/web/triptych/3-a-second-troy-1280.webp 1280w" type="image/webp"/><img alt="Painting of a dark red sky over a low wall, with faint spires on the horizon" class="art-image" decoding="async" height="1513" loading="lazy" src="art/web/triptych/3-a-second-troy-640.jpg" width="1280"/></picture><figcaption>A Second Troy</figcaption></figure>
             </div>
           </div>
           <div class="art-label">
-            <h3 class="art-title" id="triptych-title">Elemental Triptych — The Reception of a Guest<span class="art-date">1/26/25</span></h3>
-            <p class="art-caption"><em>The Reception of a Guest (left)</em><br/><br/><em>acrylic on panel</em><br/><em>11x8 in</em></p>
+            <h3 class="art-title" id="triptych-title">Triptych<span class="art-date">1/26/25</span></h3>
+            <p class="art-caption"><em>acrylic on panel</em><br/><em>11x8 in each</em></p>
           </div>
         </article>
 
         <article class="art-card" id="baby-contest">
           <div class="art-plates">
-            <figure class="art-plate art-lead" style="--ar: 0.7862"><picture><source sizes="(min-width: 1240px) 1180px, (min-width: 901px) 92vw, 92vw" srcset="art/web/baby-contest-640.webp 640w, art/web/baby-contest-1280.webp 1280w" type="image/webp"/><img alt="Painting of a street corner at dusk under a canopy of pink blossom, with a lit awning reading BABY CONTEST" class="art-image" decoding="async" height="1628" loading="lazy" src="art/web/baby-contest-640.jpg" width="1280"/></picture></figure>
+            <figure class="art-plate art-lead" style="--ar: 0.7883"><picture><source sizes="(min-width: 1240px) 1180px, (min-width: 901px) 92vw, 92vw" srcset="art/web/baby-contest-640.webp 640w, art/web/baby-contest-1280.webp 1280w" type="image/webp"/><img alt="Painting of a street corner at dusk under a canopy of pink blossom, with a lit awning reading BABY CONTEST" class="art-image" decoding="async" height="1620" loading="lazy" src="art/web/baby-contest-640.jpg" width="1277"/></picture></figure>
           </div>
           <div class="art-label">
             <h3 class="art-title" id="baby-contest-title">Baby Contest<span class="art-date">11/8/24</span></h3>
@@ -386,6 +389,7 @@
     <script src="top-right-links.js" defer></script>
     <script src="to-top-btn.js" defer></script>
     <script src="header.js" defer></script>
+    <script src="carousel.js" defer></script>
     <script src="about-toggle.js" defer></script>
     <script src="theme.js" defer></script>
   </body>

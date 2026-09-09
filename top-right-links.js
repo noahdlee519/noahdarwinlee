@@ -9,11 +9,14 @@
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const DISPLAY_MS = 5000;
 
+  const HELD_AFTER_PRESS_MS = 20000;
+
   let activeIndex = 0;
   let intervalId = null;
   let held = false; // hover or keyboard focus
   let stopped = reduce.matches; // user (or OS) asked for no motion
   let resumeTimer = null;
+  let pressTimer = null;
 
   function showSet(index) {
     sets.forEach((set, i) => {
@@ -98,6 +101,35 @@
   window.addEventListener("blur", forceResume);
   document.addEventListener("visibilitychange", () => { if (document.hidden) forceResume(); });
   reduce.addEventListener?.("change", (e) => setStopped(e.matches));
+
+  /* The set changes on its own every five seconds, which is fine to watch and
+     no use at all if you are looking for something: the list you want may have
+     just gone. This is the way to turn it yourself. It is built here rather
+     than written into the markup because it is no use without this file. */
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "top-right-next";
+  next.textContent = "\u25BE";
+  next.setAttribute("aria-label", "Show the other links");
+  next.setAttribute("aria-controls", container.id || "");
+  container.appendChild(next);
+
+  next.addEventListener("click", () => {
+    advance();
+    next.classList.toggle("is-turned");
+    /* Somebody working through the list by hand should not have it move
+       underneath them, so a press holds the rotation for a good while. The
+       hold is refreshed by each press rather than stacked. */
+    held = true;
+    clearResume();
+    pause();
+    if (pressTimer !== null) clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      held = false;
+      start();
+    }, HELD_AFTER_PRESS_MS);
+  });
 
   showSet(0);
   setStopped(stopped);

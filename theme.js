@@ -54,6 +54,36 @@
     label(theme);
   }
 
+  var anchor = null;
+
+  /* The switch sits just to the right of "about" (or of "back", on the pages
+     that have one), and how far right that is depends on how wide the word
+     comes out — which is not known until the typeface has loaded. So it is
+     measured rather than guessed, and measured again whenever the window
+     changes size. Below 901px the header is an ordinary stack instead of a set
+     of fixed corners: the stylesheet puts the switch in that stack, and the
+     measurements are taken back off so they cannot fight it. */
+  function place() {
+    if (!btn || !anchor) return;
+    if (window.innerWidth <= 900) {
+      btn.style.left = "";
+      btn.style.top = "";
+      return;
+    }
+    /* Measured across the letters rather than across the element's box: a line
+       box is taller than its type, so centring on the box puts the circle a
+       few pixels below the middle of the word, which is exactly the sort of
+       thing you cannot unsee. */
+    var range = document.createRange();
+    range.selectNodeContents(anchor);
+    var ink = range.getBoundingClientRect();
+    range.detach && range.detach();
+    var a = ink.width ? ink : anchor.getBoundingClientRect();
+    if (!a.width) return;
+    btn.style.left = Math.round(a.left + a.width + 13) + "px";
+    btn.style.top = Math.round(a.top + a.height / 2 - btn.offsetHeight / 2) + "px";
+  }
+
   function build() {
     btn = document.createElement("button");
     btn.type = "button";
@@ -75,12 +105,16 @@
        difference; on a narrow one the header is an ordinary stack, and a
        switch tacked onto the end of the document would float over the pictures
        instead of sitting in that stack. */
-    var anchor = document.querySelector(".about-link, .back-link");
+    anchor = document.querySelector(".about-link, .back-link");
     if (anchor && anchor.parentNode) {
       anchor.parentNode.insertBefore(btn, anchor.nextSibling);
     } else {
       document.body.appendChild(btn);
     }
+    place();
+    window.addEventListener("resize", place);
+    /* The word is a different width once the real typeface arrives. */
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
     if (window.__updateHeaderFade) window.__updateHeaderFade();
   }
 
