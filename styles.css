@@ -1135,7 +1135,11 @@ a[href="/cv/"]:active {
 .materials-page {
   padding-left: 0;
   padding-right: 0;
-  padding-bottom: 0;
+  /* The rows run edge to edge, but the last one must not end flush against the
+     bottom of the window: on a screen short enough for the list to scroll, a
+     rule sitting on the very last pixel reads as a row that has been cut off
+     with more below it. This leaves a band of background under the last rule. */
+  padding-bottom: 40px;
   overflow-x: hidden;
 }
 
