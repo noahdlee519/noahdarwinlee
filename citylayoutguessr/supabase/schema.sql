@@ -128,6 +128,21 @@ create policy "scores are readable by everyone"
   on public.daily_scores for select
   using (true);
 
+-- How long ten maps took. A game cannot be played in under five seconds, and
+-- one that ran for half a day was a tab left open rather than a game. This
+-- stops nothing determined -- see the note at the foot of this file about what
+-- a client-side game can and cannot promise -- but it does mean a score has to
+-- have taken some time to arrive, which is one more thing to fake than none.
+-- not valid so that rows already posted are left alone.
+alter table public.daily_scores drop constraint if exists daily_scores_duration_sane;
+alter table public.daily_scores
+  add constraint daily_scores_duration_sane
+  check (
+    duration_ms is null
+    or (duration_ms >= 5000 and duration_ms <= 43200000)
+  )
+  not valid;
+
 -- You may post your own score, for today, once. There is deliberately no
 -- update and no delete policy: a row, once written, stands.
 drop policy if exists "you may post your own score for today" on public.daily_scores;
@@ -283,3 +298,25 @@ revoke all on public.stats_summary from anon, authenticated;
 -- callable on purpose: the insert policies above evaluate it as the caller, and
 -- revoking it would stop anyone posting a score.
 revoke all on function public.handle_new_user() from anon, authenticated;
+
+
+-- ------------------------------------------------- what this cannot promise --
+--
+-- The game is played in the browser and graded in the browser, so the board is
+-- as honest as the people on it. Everything above stops a stranger reading
+-- what is not theirs, writing as somebody else, or editing a score once it is
+-- posted. None of it can tell a ten out of ten that was played from a ten out
+-- of ten that was typed into a fetch call: the check constraints only say that
+-- a score is shaped like a score, and the policy only says it is yours and it
+-- is today's.
+--
+-- Faking one costs a real Google account and gets you one row a day, and the
+-- hidden flag on profiles takes anybody off both boards the moment you notice.
+-- The only real fix is to grade the round on the server -- an edge function
+-- that takes the guesses, deals the day's cities from the same seed, and
+-- writes the score itself -- at which point the insert policy above comes off
+-- and nothing but that function may write to this table.
+--
+-- Run this file whole. The views are recreated near the top and the grants
+-- that keep anon out of them are at the bottom; Supabase grants new objects to
+-- anon by default, so a view recreated on its own is a view anyone can read.
