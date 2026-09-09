@@ -4,12 +4,19 @@
 cd "$(dirname "$0")/.." || exit 1
 python3 - <<'PY'
 # -*- coding: utf-8 -*-
-import json, os, sys, re, collections, itertools, unicodedata
+import json, os, sys, re, collections, unicodedata
 
 try:
     data = json.load(open("citylayoutguessr/cities.json", encoding="utf-8"))
 except Exception as e:
     print("cities.json is not valid JSON:\n  %s" % e)
+    print("\nUsually a missing or extra comma. Fix that and run this again.")
+    sys.exit(1)
+
+try:
+    extra = json.load(open("citylayoutguessr/catalog.json", encoding="utf-8"))["cities"]
+except Exception as e:
+    print("catalog.json is not valid JSON:\n  %s" % e)
     print("\nUsually a missing or extra comma. Fix that and run this again.")
     sys.exit(1)
 
@@ -69,72 +76,57 @@ dupes = [i for i, n in collections.Counter(c["id"] for c in cities).items() if n
 if dupes:
     print("\nDuplicate ids in cities.json: " + ", ".join(dupes))
 
-# ---------- answers ----------
-# Mirrors the matcher in game.js. If you change one, change the other.
+# ---------- the names the guess box offers ----------
+# The box only sends names it offered, so a guess is right when the name taken
+# off the list is this round's city and wrong otherwise -- nothing is measured
+# and nothing is forgiven. What can still go wrong is two cities laying claim
+# to the same name: whichever was read first would swallow it, and the other
+# could never be typed at all. That is what this looks for.
 
 def norm(s):
     s = unicodedata.normalize("NFD", s)
     s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
     return re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
 
-def lev(a, b):
-    if a == b: return 0
-    if not a: return len(b)
-    if not b: return len(a)
-    two, prev = [], list(range(len(b) + 1))
-    for i in range(1, len(a) + 1):
-        cur = [i]
-        for j in range(1, len(b) + 1):
-            cost = 0 if a[i - 1] == b[j - 1] else 1
-            v = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
-            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
-                v = min(v, two[j - 2] + 1)
-            cur.append(v)
-        two, prev = prev, cur
-    return prev[len(b)]
+# cities.json first, the same order game.js reads them in.
+entries = [(c["city"], c.get("country"), [c["city"]] + (c.get("aliases") or []), "cities.json")
+           for c in cities]
+entries += [(c["city"], c.get("country"), [c["city"]], "catalog.json") for c in extra]
 
-def tol(n):
-    return 0 if n <= 3 else (1 if n <= 12 else 2)
+owner = {}
+taken = []
+for name, country, terms, where in entries:
+    for term in terms:
+        k = norm(term)
+        if not k:
+            continue
+        if k in owner:
+            first, first_where = owner[k]
+            if first != name:
+                taken.append("  %r belongs to %s (%s) and is taken again by %s (%s)"
+                             % (term, first, first_where, name, where))
+        else:
+            owner[k] = (name, where)
 
-EVERY_TERM = {}
-for _c in cities:
-    for _t in [_c["city"]] + (_c.get("aliases") or []):
-        _k = norm(_t)
-        if _k and _k not in EVERY_TERM:
-            EVERY_TERM[_k] = _c["id"]
-
-def matches(guess, city):
-    g = norm(guess)
-    if not g: return False
-    terms = [norm(city["city"])] + [norm(a) for a in city.get("aliases") or []]
-    if g in terms: return True
-    # exactly some other city's name means they meant that city, not a typo here
-    if EVERY_TERM.get(g) not in (None, city["id"]): return False
-    for t in terms:
-        if not t: continue
-        if abs(len(g) - len(t)) > tol(len(t)): continue
-        if lev(g, t) <= tol(len(t)): return True
-    return False
-
-# Checked across all 100 cities, not level by level, because mixed mode puts
-# every level into the same game.
-trouble = []
-for a, b in itertools.permutations(cities, 2):
-    for term in [a["city"]] + (a.get("aliases") or []):
-        if matches(term, b):
-            trouble.append("  typing %r for %s (%s) also counts as %s (%s)"
-                           % (term, a["city"], a["tier"], b["city"], b["tier"]))
-
-for c in cities:
-    for term in [c["city"]] + (c.get("aliases") or []):
-        if not matches(term, c):
-            trouble.append("  %s does not accept its own %r" % (c["id"], term))
+nowhere = ["  %s (%s)" % (n, w) for n, c, t, w in entries if not c]
+unsorted = [c["city"] for a, c in zip(extra, extra[1:]) if norm(c["city"]) < norm(a["city"])]
 
 print()
-if trouble:
-    print("Answer clashes (%d) — two cities accept the same guess:" % len(trouble))
-    print("\n".join(trouble[:40]))
-    print("\nFix by making the alias more specific, or dropping it.")
+print("The guess box offers %d names for %d cities (%d in play, %d only on the list)."
+      % (len(owner), len(entries), len(cities), len(extra)))
+
+if taken:
+    print("\nNames claimed twice (%d) -- the second one can never be typed:" % len(taken))
+    print("\n".join(taken[:40]))
+    print("\nFix by dropping it from catalog.json, or making the alias more specific.")
 else:
-    print("Answers: no clashes. Every alias points at exactly one city.")
+    print("Every name on it points at exactly one city.")
+
+if nowhere:
+    print("\nEntries with no country to show beside the name (%d):" % len(nowhere))
+    print("\n".join(nowhere[:20]))
+
+if unsorted:
+    print("\ncatalog.json is meant to stay alphabetical. Out of order after: "
+          + ", ".join(unsorted[:10]))
 PY

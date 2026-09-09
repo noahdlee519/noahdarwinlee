@@ -266,22 +266,40 @@
 
         <form class="game-form" id="game-form" autocomplete="off">
           <label class="sr-only" for="game-input">Your guess</label>
-          <input
-            class="game-input"
-            id="game-input"
-            type="text"
-            name="guess"
-            autocomplete="off"
-            autocapitalize="off"
-            autocorrect="off"
-            spellcheck="false"
-            enterkeyhint="go"
-            inputmode="text"
-            data-1p-ignore
-            data-lpignore="true"
-            data-form-type="other"
-            placeholder="type a city"
-          />
+          <!-- Three letters open the list below the field and the guess is
+               whichever name is taken off it, so a city is never turned down
+               over how it was spelled or what was said after it. game.js
+               fills the list; with scripting off there is no game either. -->
+          <div class="game-combo">
+            <input
+              class="game-input"
+              id="game-input"
+              type="text"
+              name="guess"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="game-suggest"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              enterkeyhint="go"
+              inputmode="text"
+              data-1p-ignore
+              data-lpignore="true"
+              data-form-type="other"
+              placeholder="type a city and pick it"
+            />
+            <ul
+              class="game-suggest"
+              id="game-suggest"
+              role="listbox"
+              aria-label="Cities"
+              hidden
+            ></ul>
+          </div>
           <button class="game-btn" type="submit" id="game-submit">guess</button>
         </form>
 

@@ -157,12 +157,11 @@ alternative transliterations (`ulan bator`, `ashkhabad`, `nur sultan`). Add
 to them freely; the checker below will tell you if one you add becomes
 ambiguous.
 
-You do **not** need to list misspellings. Guesses are matched loosely already:
-case, accents and punctuation are ignored, and one wrong, missing, extra or
-swapped letter is forgiven (two on names longer than twelve characters).
-`praha`, `Praha`, `praugue` and `prahue` all pass for Prague. Abbreviations of
-three letters or fewer have to be exact, so `sf` never accidentally passes for
-Singapore.
+You do **not** need to list misspellings, and you do not need to list every way
+of saying where a city is. Nothing about a guess is measured any more — see
+**The guess box** below — so an alias is only worth adding when it is a name
+somebody would reach for and would not otherwise find by typing the first few
+letters of the real one.
 
 Every entry needs a comma after it **except the last one in the list**. If
 the game says the list couldn't be loaded, that's almost always a missing or
@@ -171,6 +170,42 @@ extra comma. The checker below will tell you.
 You only need to do this by hand if you want to set the level and aliases
 before you take the screenshot; otherwise the build writes the entry for you
 and you edit it afterwards.
+
+---
+
+## The guess box
+
+The field under the map is a list, not a blank. Three letters open it, and the
+guess is whichever name is taken off it — with the arrow keys and enter, or by
+clicking. Typing a name out in full and pressing enter counts as taking it;
+anything else is answered with "pick a city from the list", which costs nothing
+and leaves the round running.
+
+This is why a guess can no longer be nearly right. The game used to measure
+what you typed against the answer and forgive a letter or two, which meant it
+also had to turn down "Madison, Wisconsin" and then say the answer was Madison.
+Now a name the game handed you cannot be wrong in that way. Searching is still
+forgiving — `tornoto` finds Toronto, `mokum` finds Amsterdam, and anything said
+after the city (`madison, wisconsin`, `paris france`) is dropped a word at a
+time until something is found — but that forgiveness picks a row rather than
+scoring a guess.
+
+**`catalog.json`** is the other half of the list: cities the box offers and the
+game never asks for. Without them the list would be a table of contents —
+typing `mad` in a list of nothing but answers tells you Madison is in the game.
+With them it tells you nothing. There are about 400, and adding more is a
+kindness: a real city missing from the list is a player who cannot say the name
+they had in mind.
+
+```json
+{ "city": "Kyoto", "country": "Japan" },
+```
+
+Two rules, both checked by `check.sh`: keep the file alphabetical, and never
+put a name here that already belongs to a city in `cities.json` under any of
+its names. Monte Carlo is Monaco and Minneapolis is the Twin Cities, so neither
+goes here. When a city on this list becomes a real answer, move it into
+`cities.json` and take it out of here.
 
 ---
 
@@ -221,10 +256,11 @@ It tells you how many pictures each level has, which files don't match any
 city (a typo in a filename), and whether `cities.json` is valid. A level
 needs **at least 10 pictures** to fill a full game.
 
-It also checks every answer against every other answer in the same level and
-warns you if two cities would accept the same guess — so if you add an alias
-that's too loose, you find out here rather than from a player being told they
-were wrong when they weren't.
+It also reads `catalog.json` alongside `cities.json` and checks the names the
+guess box offers: that no name is claimed by two cities — the second would be
+swallowed by the first and could never be typed at all — that everything on the
+list has a country to show beside it, and that `catalog.json` is still in
+alphabetical order.
 
 ## The banner
 

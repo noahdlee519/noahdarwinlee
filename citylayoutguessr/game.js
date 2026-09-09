@@ -13,6 +13,8 @@
   "use strict";
 
   var DATA_URL = "cities.json";
+  /* The names the guess box will offer that are never the answer. */
+  var CATALOG_URL = "catalog.json";
   var STORE_KEY = "ndl-layout-guesser-v1";
   /* The daily keeps its own slot: starting a custom game should not throw away
      a daily you are half way through, and the other way round. */
@@ -65,6 +67,7 @@
     frame: document.getElementById("game-frame"),
     form: document.getElementById("game-form"),
     input: document.getElementById("game-input"),
+    suggest: document.getElementById("game-suggest"),
     submit: document.getElementById("game-submit"),
     ask: document.getElementById("game-ask"),
     reveal: document.getElementById("game-reveal"),
@@ -183,74 +186,278 @@
     return 2;
   }
 
-  /* Every name and alias in the file, so a guess that is exactly some other
-     city's name is never taken as a near miss for this one. */
-  var everyTerm = null;
+  /* ---------- the names the box will take ----------
+     One list of every name the guess field offers: the cities in play, with
+     their nicknames, and the ones in catalog.json, which are in the list and
+     never in a game so that what the list offers cannot be read as a table of
+     contents. An entry carries a city id when it is a city in play and nothing
+     when it is only a name, and that is the whole of the judging — a guess is
+     right when the entry you took off the list is this round's city.
 
-  function buildTermIndex() {
-    everyTerm = {};
+     Nothing is measured against anything any more. The game used to compare
+     what you had typed against the answer and forgive a letter or two, which
+     meant it also had to tell somebody that "Madison, Wisconsin" was wrong and
+     that the answer was Madison. A name the game itself handed you cannot be
+     wrong in that way.
+
+     The list is built here rather than left to a native <datalist>, which
+     cannot be styled, behaves differently in every browser, and has nowhere to
+     put a nickname pointing at the name it belongs to. */
+
+  var catalog = [];      // [{ name, country, id, key, terms }]
+  var termIndex = {};    // a normalised name or nickname -> what it stands for
+
+  function addToCatalog(name, country, id, aliases) {
+    var key = norm(name);
+    if (!key || termIndex[key]) return;
+    var entry = { name: name, country: country || "", id: id || null, key: key, terms: [] };
+    entry.terms.push({ k: key, alias: null });
+    termIndex[key] = { entry: entry, alias: null };
+    (aliases || []).forEach(function (a) {
+      var k = norm(a);
+      if (!k || termIndex[k]) return;
+      entry.terms.push({ k: k, alias: a });
+      termIndex[k] = { entry: entry, alias: a };
+    });
+    catalog.push(entry);
+  }
+
+  /* The cities in play go in first, so that a name shared with the catalog —
+     which check.sh will not let you ship, but the code should not lean on that
+     — belongs to the city that can actually be an answer. */
+  function buildCatalog(extra) {
+    catalog = [];
+    termIndex = {};
     data.cities.forEach(function (c) {
-      [c.city].concat(c.aliases || []).forEach(function (t) {
-        var k = norm(t);
-        if (k && !everyTerm[k]) everyTerm[k] = c.id;
-      });
+      addToCatalog(c.city, c.country, c.id, c.aliases);
+    });
+    (extra || []).forEach(function (c) {
+      addToCatalog(c.city, c.country, null, c.aliases);
     });
   }
 
-  /* Ways of naming a country that are not the name in the file. Only the ones
-     people actually type: it is a shortcut for the check below, not a
-     gazetteer. */
-  var COUNTRY_ALSO = {
-    "united states": ["usa", "us", "united states of america", "america"],
-    "united kingdom": ["uk", "great britain", "britain", "england"],
-    "united arab emirates": ["uae"],
-    "south korea": ["korea", "republic of korea"],
-    "netherlands": ["holland", "the netherlands"],
-    "czechia": ["czech republic"],
-    "russia": ["russian federation"],
-    "turkey": ["turkiye"]
-  };
+  var SUGGEST_MIN = 3;   // letters typed before the list appears
+  var SUGGEST_MAX = 8;   // rows on it
 
-  /* "Amsterdam Netherlands" is Amsterdam. Saying the country out loud after
-     the city is a normal way to answer, and answering it with "no" is the
-     game being pedantic rather than strict.
-     Only this city's own country comes off, and only with a name in front of
-     it — so "Georgia" on its own is still a country and not Tbilisi, and
-     naming the wrong country still gets you nothing. */
-  function withoutCountry(g, city) {
-    var names = [norm(city.country)].concat(COUNTRY_ALSO[norm(city.country)] || []);
-    for (var i = 0; i < names.length; i++) {
-      var tail = " " + names[i];
-      if (names[i] && g.length > tail.length && g.slice(-tail.length) === tail) {
-        return g.slice(0, -tail.length).trim();
+  /* "Madison, Wisconsin" is Madison. Naming the state, region or country after
+     the city is how people talk, and there are far too many of those to keep a
+     list of, so when the whole of what was typed finds nothing the search drops
+     the last word and asks again, down to the first word alone. The longest
+     form that finds anything wins, so "new york" is never answered with
+     everything that begins "new". */
+  function queryForms(raw) {
+    var g = norm(raw);
+    if (!g) return [];
+    var words = g.split(" ");
+    var forms = [];
+    for (var n = words.length; n >= 1; n--) forms.push(words.slice(0, n).join(" "));
+    return forms;
+  }
+
+  /* Where the letters landed, best first: the whole name, its start, the start
+     of a later word ("york" for New York), anywhere in it at all. */
+  function placeScore(term, q) {
+    if (term === q) return 0;
+    if (term.lastIndexOf(q, 0) === 0) return 1;
+    if ((" " + term).indexOf(" " + q) !== -1) return 2;
+    if (term.indexOf(q) !== -1) return 3;
+    return -1;
+  }
+
+  function rank(rows) {
+    rows.sort(function (a, b) {
+      /* Every city found under its own name comes before every city found
+         under a nickname. Otherwise "paris" answers with Paris and then seven
+         cities that are the Paris of somewhere, which is a list of places
+         nobody was looking for. A nickname still finds its city when nothing
+         is called that. */
+      var an = a.alias ? 1 : 0;
+      var bn = b.alias ? 1 : 0;
+      if (an !== bn) return an - bn;
+      if (a.score !== b.score) return a.score - b.score;
+      /* Then the shortest, because the letters are a larger part of it. */
+      if (a.entry.name.length !== b.entry.name.length) {
+        return a.entry.name.length - b.entry.name.length;
+      }
+      return a.entry.name < b.entry.name ? -1 : 1;
+    });
+    return rows.slice(0, SUGGEST_MAX);
+  }
+
+  /* One row per city, under whichever of its names the letters fit best. */
+  function collect(pick) {
+    var rows = [];
+    catalog.forEach(function (entry) {
+      var best = -1;
+      var alias = null;
+      entry.terms.forEach(function (t) {
+        var s = pick(t);
+        if (s < 0) return;
+        if (best === -1 || s < best || (s === best && alias && !t.alias)) {
+          best = s;
+          alias = t.alias;
+        }
+      });
+      if (best !== -1) rows.push({ entry: entry, score: best, alias: alias });
+    });
+    return rows;
+  }
+
+  function searchPlain(q) {
+    return collect(function (t) { return placeScore(t.k, q); });
+  }
+
+  /* Only once the plain search has come back empty: a typo should still find
+     the city, but it must never outrank a name that actually contains what was
+     typed. Three letters are one letter away from too many names to be worth
+     offering, so the typo pass starts at four. */
+  function searchTypo(q) {
+    if (q.length < 4) return [];
+    return collect(function (t) {
+      var room = tolerance(t.k.length);
+      if (Math.abs(t.k.length - q.length) > room) return -1;
+      var d = lev(q, t.k);
+      return d <= room ? d : -1;
+    });
+  }
+
+  function suggest(raw) {
+    var forms = queryForms(raw);
+    var i, rows;
+    for (i = 0; i < forms.length; i++) {
+      rows = searchPlain(forms[i]);
+      if (rows.length) return rank(rows);
+    }
+    for (i = 0; i < forms.length; i++) {
+      rows = searchTypo(forms[i]);
+      if (rows.length) return rank(rows);
+    }
+    return [];
+  }
+
+  /* ---------- the guess box ----------
+     A combobox rather than a plain field: type three letters, take a name off
+     the list, send that. The arrow keys walk the list and enter takes the row
+     they are on; nothing is ever on it to begin with, so enter straight after
+     typing sends what is in the box rather than quietly answering for you. */
+
+  var picked = null;   // the entry the box is standing for, if any
+  var shown = [];      // the rows on the list as it stands
+  var active = -1;     // the row the arrow keys are on, -1 for none
+
+  function closeSuggest() {
+    if (el.suggest.hidden) return;
+    el.suggest.hidden = true;
+    el.suggest.textContent = "";
+    el.suggest.classList.remove("is-above");
+    el.input.setAttribute("aria-expanded", "false");
+    el.input.removeAttribute("aria-activedescendant");
+    shown = [];
+    active = -1;
+  }
+
+  /* Under the field, unless there is no room down there — on a phone the
+     keyboard takes the bottom half of the window and the field is sitting just
+     above it, so the list goes up over the map instead. */
+  function placeSuggest() {
+    var vv = window.visualViewport;
+    var floor = vv ? vv.height + vv.offsetTop : window.innerHeight;
+    var box = el.input.getBoundingClientRect();
+    var below = floor - box.bottom;
+    el.suggest.classList.toggle("is-above", below < 170 && box.top > below);
+  }
+
+  function drawSuggest(rows) {
+    el.suggest.textContent = "";
+    rows.forEach(function (row, i) {
+      var li = document.createElement("li");
+      li.id = "game-suggest-" + i;
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", "false");
+      /* Names go in as text, never as markup: they come out of a data file. */
+      if (row.alias) {
+        var from = document.createElement("span");
+        from.className = "game-suggest-from";
+        from.textContent = row.alias + " → ";
+        li.appendChild(from);
+      }
+      li.appendChild(document.createTextNode(row.entry.name));
+      if (row.entry.country) {
+        var where = document.createElement("span");
+        where.className = "game-suggest-where";
+        where.textContent = " — " + row.entry.country;
+        li.appendChild(where);
+      }
+      el.suggest.appendChild(li);
+    });
+    el.suggest.hidden = false;
+    el.input.setAttribute("aria-expanded", "true");
+    placeSuggest();
+  }
+
+  function openSuggest() {
+    if (!state || el.input.disabled || el.form.hidden) return closeSuggest();
+    var raw = el.input.value.trim();
+    if (raw.length < SUGGEST_MIN) return closeSuggest();
+    var rows = suggest(raw);
+    if (!rows.length) return closeSuggest();
+    shown = rows;
+    active = -1;
+    drawSuggest(rows);
+  }
+
+  function markActive() {
+    var items = el.suggest.children;
+    for (var i = 0; i < items.length; i++) {
+      var on = i === active;
+      items[i].classList.toggle("is-active", on);
+      items[i].setAttribute("aria-selected", on ? "true" : "false");
+      if (on) {
+        if (items[i].scrollIntoView) items[i].scrollIntoView({ block: "nearest" });
+        el.input.setAttribute("aria-activedescendant", items[i].id);
       }
     }
-    return "";
+    if (active === -1) el.input.removeAttribute("aria-activedescendant");
   }
 
-  function isMatch(guess, city) {
-    var g = norm(guess);
-    if (!g) return false;
-    var targets = [city.city].concat(city.aliases || []).map(norm);
+  function moveActive(step) {
+    if (el.suggest.hidden) {
+      openSuggest();
+      return;
+    }
+    if (!shown.length) return;
+    active =
+      active === -1
+        ? step > 0
+          ? 0
+          : shown.length - 1
+        : (active + step + shown.length) % shown.length;
+    markActive();
+  }
 
-    /* Exact wins outright. */
-    if (targets.indexOf(g) !== -1) return true;
+  function take(row) {
+    if (!row) return;
+    picked = row.entry;
+    el.input.value = row.entry.name;
+    closeSuggest();
+    show(el.ask, false);
+    el.input.focus({ preventScroll: true });
+  }
 
-    /* Then the same guess with the country taken off the end. Once, so this
-       cannot go round again. */
-    var shorter = withoutCountry(g, city);
-    if (shorter && isMatch(shorter, city)) return true;
+  /* What the box stands for: the row taken off the list, or — if what is in it
+     is exactly a name the list would have offered — that name. Typing a city
+     out in full and pressing enter is picking it; anything else is not a
+     guess yet. */
+  function standing() {
+    if (picked) return picked;
+    var hit = termIndex[norm(el.input.value)];
+    return hit ? hit.entry : null;
+  }
 
-    /* If what they typed is exactly the name of a different place, they meant
-       that place. Without this, "panama" counts as a one-letter typo for
-       Manama, and "houston" for Boston. */
-    if (everyTerm && everyTerm[g] && everyTerm[g] !== city.id) return false;
-
-    return targets.some(function (t) {
-      if (!t) return false;
-      if (Math.abs(g.length - t.length) > tolerance(t.length)) return false;
-      return lev(g, t) <= tolerance(t.length);
-    });
+  function resetGuessBox() {
+    picked = null;
+    closeSuggest();
+    el.input.value = "";
   }
 
   /* ---------- saved game ---------- */
@@ -1484,7 +1691,7 @@
     setScore();
     show(el.reveal, false);
     show(el.form, true);
-    el.input.value = "";
+    resetGuessBox();
     emptyAsked = false;
     show(el.ask, false);
     el.input.disabled = false;
@@ -1600,9 +1807,11 @@
     return where ? "hint: it\u2019s in " + where : null;
   }
 
-  function judge(guess) {
+  /* entry is the name that was taken off the list, or nothing if the round was
+     given up on. label is what goes in the recap as what you said. */
+  function judge(entry, label) {
     var round = state.rounds[state.index];
-    var right = isMatch(guess, round.city);
+    var right = Boolean(entry && entry.id && entry.id === round.city.id);
 
     /* A miss with hints on and tries left buys a clue rather than the answer.
        Nothing goes into the log yet: the round is still being played. */
@@ -1619,7 +1828,7 @@
         el.ask.textContent = clue;
         show(el.ask, true);
         el.status.textContent = clue.charAt(0).toUpperCase() + clue.slice(1) + ".";
-        el.input.value = "";
+        resetGuessBox();
         el.input.disabled = false;
         el.submit.disabled = false;
         el.input.focus({ preventScroll: true });
@@ -1629,15 +1838,15 @@
       }
     }
 
-    var entry = { city: round.city, right: right, guess: guess.trim() };
-    if (entry.right) state.correct += 1;
+    var logged = { city: round.city, right: right, guess: (label || "").trim() };
+    if (logged.right) state.correct += 1;
     else state.wrong += 1;
-    state.log.push(entry);
+    state.log.push(logged);
     show(el.ask, false);
     emptyAsked = false;
     state.tries = 0;
-    flashResult(entry.right);
-    reveal(entry);
+    flashResult(logged.right);
+    reveal(logged);
     save();
   }
 
@@ -2185,13 +2394,36 @@
 
   /* ---------- wiring ---------- */
 
+  function send(entry, label) {
+    el.input.disabled = true;
+    el.submit.disabled = true;
+    closeSuggest();
+    judge(entry, label);
+  }
+
   el.form.addEventListener("submit", function (e) {
     e.preventDefault();
     if (!state || el.input.disabled) return;
-    if (!el.input.value.trim() && !askedToSkip()) return;
-    el.input.disabled = true;
-    el.submit.disabled = true;
-    judge(el.input.value);
+
+    if (!el.input.value.trim()) {
+      if (!askedToSkip()) return;
+      send(null, "");
+      return;
+    }
+
+    var entry = standing();
+    if (!entry) {
+      /* The box only sends names it offered. Saying so and putting the list
+         back up is the whole of the refusal: it costs nothing, the round is
+         still on, and the name they want is almost always on the screen. */
+      el.ask.textContent = "pick a city from the list";
+      show(el.ask, true);
+      openSuggest();
+      el.input.focus({ preventScroll: true });
+      return;
+    }
+
+    send(entry, entry.name);
   });
 
   el.setup.addEventListener("submit", function (e) {
@@ -2290,7 +2522,72 @@
       emptyAsked = false;
       show(el.ask, false);
     }
+    /* Editing the text lets go of whatever was picked: the box is standing for
+       what it says, and it no longer says that. */
+    picked = null;
+    openSuggest();
   });
+
+  el.input.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      moveActive(1);
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      moveActive(-1);
+      return;
+    }
+    if (e.key === "Enter" && !el.suggest.hidden && active !== -1) {
+      /* Enter takes the row the arrows are on. With nothing on it the form
+         submits as usual, so enter never answers on your behalf. */
+      e.preventDefault();
+      take(shown[active]);
+      return;
+    }
+    if (e.key === "Escape" && !el.suggest.hidden) {
+      /* Shut the list, and do not let this reach the handler that leaves the
+         game — one escape, one thing closed. */
+      e.preventDefault();
+      e.stopPropagation();
+      closeSuggest();
+      return;
+    }
+    if (e.key === "Tab") closeSuggest();
+  });
+
+  /* Pressing a row must not take the keyboard away before the click lands,
+     which on a phone would close the list out from under the finger. */
+  el.suggest.addEventListener("mousedown", function (e) {
+    e.preventDefault();
+  });
+
+  el.suggest.addEventListener("click", function (e) {
+    var li = e.target;
+    while (li && li.parentNode !== el.suggest) li = li.parentNode;
+    if (!li) return;
+    var i = Array.prototype.indexOf.call(el.suggest.children, li);
+    if (i !== -1) take(shown[i]);
+  });
+
+  document.addEventListener("pointerdown", function (e) {
+    if (el.suggest.hidden) return;
+    if (e.target === el.input || el.suggest.contains(e.target)) return;
+    closeSuggest();
+  });
+
+  window.addEventListener("resize", function () {
+    if (!el.suggest.hidden) placeSuggest();
+  });
+
+  if (window.visualViewport) {
+    /* The keyboard coming up is what decides which side of the field the list
+       goes on, and it arrives as a viewport resize. */
+    window.visualViewport.addEventListener("resize", function () {
+      if (!el.suggest.hidden) placeSuggest();
+    });
+  }
 
   el.next.addEventListener("click", advance);
   el.replay.addEventListener("click", function () {
@@ -2342,14 +2639,27 @@
         })
         .then(function (list) {
           manifest = list;
-          return json;
+          /* The catalog is the guess box's manners, not the game itself: if it
+             will not load, the box still offers every city in play and the
+             game is playable. */
+          return fetch(CATALOG_URL, { cache: "reload" })
+            .then(function (r) {
+              return r.ok ? r.json() : null;
+            })
+            .catch(function () {
+              return null;
+            })
+            .then(function (extra) {
+              json.catalog = (extra && extra.cities) || [];
+              return json;
+            });
         });
     })
     .then(function (json) {
       data.cities.forEach(function (c) {
         byId[c.id] = c;
       });
-      buildTermIndex();
+      buildCatalog(data.catalog);
       el.credit.textContent = data.credit || "";
       setupCosmetics();
       renderSetup();
