@@ -3,6 +3,8 @@
 // on <body>, defaulting to 90.
 (function () {
   const name = document.querySelector(".name");
+  // .theme-btn is appended by theme.js after this runs, so it is collected
+  // when the fade next updates rather than here. See refreshTargets().
   const navLinks = document.querySelectorAll(".about-link, .back-link");
   const topRight = document.querySelector(".top-right-links");
   const toTop = document.getElementById("to-top-btn");
@@ -12,8 +14,15 @@
   const TO_TOP_AT = 100;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  const targets = [name, ...navLinks];
+  let targets = [name, ...navLinks];
   if (topRight) targets.push(topRight);
+
+  /* The day/night switch is built after this file runs, so the list of things
+     to fade is rebuilt on the first update that finds it. */
+  function refreshTargets() {
+    const theme = document.getElementById("theme-btn");
+    if (theme && targets.indexOf(theme) === -1) targets = [...targets, theme];
+  }
 
   function reset() {
     targets.forEach((el) => {
@@ -26,6 +35,7 @@
   }
 
   function update() {
+    refreshTargets();
     if (window.innerWidth <= 900) return reset();
 
     // Never let the header fade out on a page too short to scroll back up.

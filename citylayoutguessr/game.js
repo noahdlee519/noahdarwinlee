@@ -1157,14 +1157,45 @@
     } catch (err) {}
   }
 
+  function forgetColors() {
+    try {
+      localStorage.removeItem(COLOR_KEY);
+    } catch (err) {}
+  }
+
+  /* No saved palette means the page is following the site's day/night switch,
+     which lives in the stylesheet. Taking the inline overrides off hands it
+     back rather than painting the daylight colours over the top of a dark
+     page — which is what this used to do, and why the game was the one page
+     that could never be dark. The pickers are then filled from what the page
+     actually ended up being, so they show the theme rather than a default. */
+  function followTheme() {
+    document.body.style.removeProperty("--bg");
+    document.body.style.removeProperty("--ink");
+    document.body.style.removeProperty("--accent");
+    var now = getComputedStyle(document.body);
+    var here = {
+      bg: normalizeHex(now.getPropertyValue("--bg").trim(), DEFAULT_COLORS.bg),
+      ink: normalizeHex(now.getPropertyValue("--ink").trim(), DEFAULT_COLORS.ink),
+      accent: normalizeHex(now.getPropertyValue("--accent").trim(), DEFAULT_COLORS.accent)
+    };
+    el.colorBg.value = here.bg;
+    el.colorInk.value = here.ink;
+    el.colorAccent.value = here.accent;
+    lastGoodColors = here;
+    renderPresets();
+  }
+
+  /* null means nothing was chosen here, which is not the same as choosing the
+     daylight colours: one follows the switch and the other overrules it. */
   function loadColors() {
     try {
       var raw = localStorage.getItem(COLOR_KEY);
-      if (!raw) return { bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent };
+      if (!raw) return null;
       var parsed = JSON.parse(raw);
       return sanitizeColors({ bg: parsed.bg, ink: parsed.ink, accent: parsed.accent }, null).colors;
     } catch (err) {
-      return { bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent };
+      return null;
     }
   }
 
@@ -1221,7 +1252,20 @@
 
   function setupCosmetics() {
     show(el.cosmetic, true);
-    applyColors(loadColors());
+    var saved = loadColors();
+    if (saved) applyColors(saved);
+    else followTheme();
+
+    /* Pressing the day/night switch repaints the page underneath, so the
+       pickers have to be refilled — but only while they are showing the theme
+       rather than a palette somebody chose. */
+    var themeWatch = new MutationObserver(function () {
+      if (!loadColors()) followTheme();
+    });
+    themeWatch.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"]
+    });
     el.cosmeticToggle.addEventListener("click", function () {
       var open = el.colors.hidden;
       show(el.colors, open);
@@ -1233,7 +1277,11 @@
     });
     el.resetColors.addEventListener("click", function () {
       show(el.colorWarning, false);
-      saveColors(applyColors({ bg: DEFAULT_COLORS.bg, ink: DEFAULT_COLORS.ink, accent: DEFAULT_COLORS.accent }));
+      /* Reset goes back to following the site, not to the daylight palette —
+         on a dark page those are two different pictures, and the one somebody
+         pressing "reset" wants is the page as it comes. */
+      forgetColors();
+      followTheme();
     });
   }
 

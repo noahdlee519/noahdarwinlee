@@ -26,3 +26,10 @@ citylayoutguessr/citylayoutguessr.png
 # which are the versions the site serves; the originals are kept on disk but
 # are not the website, and they are large.
 blog/part */
+
+# Screenshots and scratch renders made while working on the site. They are
+# working files, not the website, and GitHub Pages serves everything in the
+# repo — so anything left here is published.
+Claude outputs/
+_compare.png
+*.stale-*

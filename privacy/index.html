@@ -29,6 +29,26 @@
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
 
     <link rel="stylesheet" href="../styles.css" />
+    <!-- Before the first paint: a remembered choice, otherwise the system's.
+         The attribute is always written, so the stylesheet never has to guess
+         and the page never flashes the other theme on the way in. The rest of
+         the switch is in theme.js; this part cannot wait for a fetch. -->
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body class="cv-page privacy-page" data-fade-distance="90">
     <h1 class="sr-only">Privacy policy</h1>
@@ -213,5 +233,6 @@
 
     <script src="../to-top-btn.js" defer></script>
     <script src="../header.js" defer></script>
+      <script src="../theme.js" defer></script>
   </body>
 </html>

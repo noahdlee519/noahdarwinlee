@@ -18,9 +18,36 @@
       document.title = baseTitle;
       return;
     }
-    const name = card.querySelector(".art-title").textContent.trim();
+    // firstChild, not textContent: the title carries the date beside it now.
+    const name = card.querySelector(".art-title").firstChild.textContent.trim();
     document.title = `${name} — Noah Darwin Lee`;
   }
+
+  /* The date is written once, in the caption, and shown twice — beside the
+     title on the wall and again in the panel when the card is opened. Copying
+     it up here rather than repeating it in the markup keeps one place to
+     change it, and keeps the two from drifting apart.
+
+     A caption's <em>s are not all dates: most cards lead with the medium
+     ("acrylic on canvas") and some end with where the piece was published, so
+     the date is found by looking like one rather than by its position. A card
+     whose caption has no date simply does not get one. */
+  const DATE = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
+
+  cards.forEach((card) => {
+    const title = card.querySelector(".art-title");
+    if (!title || title.querySelector(".art-date")) return;
+    const caption = card.querySelector(".art-caption");
+    if (!caption) return;
+    const stamp = [...caption.querySelectorAll("em")].find((em) =>
+      DATE.test(em.textContent.trim())
+    );
+    if (!stamp) return;
+    const shown = document.createElement("span");
+    shown.className = "art-date";
+    shown.textContent = stamp.textContent.trim();
+    title.appendChild(shown);
+  });
 
   const isDesktop = () => window.innerWidth > 900;
   const behavior = () => (reduce.matches ? "auto" : "smooth");

@@ -24,6 +24,26 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="../styles.css" />
+    <!-- Before the first paint: a remembered choice, otherwise the system's.
+         The attribute is always written, so the stylesheet never has to guess
+         and the page never flashes the other theme on the way in. The rest of
+         the switch is in theme.js; this part cannot wait for a fetch. -->
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
     <style>
       /* Familjen Grotesk covers Latin Extended; anything it misses falls
          through to Helvetica Neue / Arial per glyph. */
@@ -1897,5 +1917,6 @@
         document.body.classList.add("is-embedded");
       }
     </script>
+      <script src="../theme.js" defer></script>
   </body>
 </html>
