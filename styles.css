@@ -295,6 +295,39 @@ body {
   text-decoration-thickness: 2px;
 }
 
+/* ---- the favorite sites page -------------------------------------------
+   Built on .cv-page for the header and the fade. A category is a section and
+   its sites are a plain list, one to a line, indented to sit under the
+   heading the way a CV entry does. */
+.links-page main {
+  max-width: 68ch;
+}
+
+.links-page main ul {
+  list-style: none;
+  margin: 0 0 26px 0;
+  padding: 0;
+}
+
+.links-page main li {
+  margin-left: 1.25em;
+  margin-bottom: 6px;
+  font-weight: 300;
+  line-height: 1.4;
+}
+
+.links-page main li a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.links-page main li a:hover,
+.links-page main li a:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 /* The one link out of the game, under the imagery credit. */
 .game-legal {
   margin: 10px 0 0 0;
