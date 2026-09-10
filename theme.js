@@ -72,12 +72,17 @@
          has to be told there is one more thing to fade. */
       if (window.__updateHeaderFade) window.__updateHeaderFade();
     });
-    /* Into the same line as the word it sits beside, in a wrapper the
-       stylesheet lays out as a row. The switch used to position itself by
-       measuring the word, which meant re-measuring every time the type loaded
-       or the window moved, and being a few pixels out whenever that had not
-       happened yet. Sharing a line box is the version that cannot drift. */
-    anchor = document.querySelector(".about-link, .back-link");
+    /* Into the same line as the name, in a wrapper the stylesheet lays out as
+       a row. The switch used to position itself by measuring the word, which
+       meant re-measuring every time the type loaded or the window moved, and
+       being a few pixels out whenever that had not happened yet. Sharing a
+       line box is the version that cannot drift.
+
+       The name rather than the link under it: it is the first line of every
+       page on the site, the link under it is not, and a control that belongs
+       to the whole site should sit on the line that is always there. */
+    anchor = document.querySelector(".name") ||
+      document.querySelector(".about-link, .back-link");
     if (anchor && anchor.parentNode) {
       var line = document.createElement("span");
       line.className = "header-line";

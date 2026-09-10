@@ -95,7 +95,7 @@ body {
    redone every time something moves. theme.js builds the wrapper. */
 .header-line {
   position: fixed;
-  top: calc(var(--page-top) + 33px);
+  top: var(--page-top);
   left: var(--page-left);
   z-index: 10;
   display: flex;
@@ -104,26 +104,24 @@ body {
   line-height: 1;
 }
 
-/* The about link carries 13px of padding under it, from when it had a panel to
-   stand off from. Inside the row that padding is the difference between
-   centring the circle on the word and centring it on the word plus a gap, so
-   it comes off here — the link is fixed-positioned, so nothing was resting on
-   it. The :first-of-type selector further down is more specific than a class
-   pair, hence the doubled class. */
-.header-line .about-link.about-link,
-.header-line .back-link.back-link {
+/* The name is fixed to the corner by itself on every page; inside the row it
+   is the row that is fixed and the name that sits in it. The doubled class is
+   to out-specify `.cv-page .name` and `.materials-page .name`, which set the
+   same properties. */
+.header-line .name.name {
   position: static;
   top: auto;
   left: auto;
-  margin-bottom: 0;
-  padding-bottom: 0;
+  /* The materials page zeroes the body padding and puts the inset back on the
+     name by hand. Inside the row the row carries it, and both would be twice. */
+  padding-left: 0;
 }
 
 .theme-btn {
   /* relative rather than static: it stays in the line, and the enlarged hit
      area below has something of its own to be measured against — and it is
      what lets the circle be nudged off the exact centre of the line box.
-     "about" is all ascenders and no descenders, so its visual mass sits above
+     the name is all ascenders and no descenders, so its visual mass sits above
      the middle of its line and a circle centred by arithmetic reads high. Two
      pixels down is where the eye puts it. */
   position: relative;
@@ -131,6 +129,8 @@ body {
   flex: 0 0 auto;
   z-index: 11;
   width: 11px;
+  /* the name is a link and its line box is not; the circle is not underlined */
+  text-decoration: none;
   height: 11px;
   padding: 0;
   border: 0;
@@ -568,6 +568,7 @@ body {
 .name:hover,
 .about-link:hover,
 .top-right-links a:hover,
+.index-instagram-link:hover,
 .me-contact-links a:hover {
   text-decoration: underline;
   text-decoration-color: currentColor;
@@ -798,13 +799,26 @@ a[href="/cv/"]:active {
    near-black whichever theme you are in, and the page behind it should stop
    competing. Everything else about it is the picture and the way out. */
 .lightbox {
+  --lb-pad: clamp(16px, 4vw, 56px);
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
-  align-items: center;
+  /* Centred by auto margins on the picture rather than by align-items: a
+     centred flex item that is taller than its box has its top pushed out of
+     the scrollable area and cannot be reached at all, which is the difference
+     between a picture with more of it below and a picture with its head cut
+     off. Auto margins go to zero when there is no room to spare. */
+  align-items: flex-start;
   justify-content: center;
-  padding: clamp(16px, 4vw, 56px);
+  padding: var(--lb-pad);
+  /* Anything that will not fit can be scrolled to. Horizontally nothing ever
+     should, and a sideways scrollbar under a picture is only ever a mistake
+     showing. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: rgba(8, 7, 6, 0.94);
   opacity: 0;
   transition: opacity 180ms ease;
@@ -823,21 +837,45 @@ a[href="/cv/"]:active {
 
 .lightbox picture {
   display: block;
+  margin: auto;
   max-width: 100%;
-  max-height: 100%;
 }
 
+/* The limits are the window's, written out in the window's own units. They
+   used to be percentages, and a percentage of a box whose height comes from
+   the picture inside it means nothing at all -- so the height cap quietly did
+   not exist, and every portrait picture ran off the bottom of the screen. */
 .lightbox img {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
   width: auto;
   height: auto;
+  max-width: min(100%, calc(100vw - 2 * var(--lb-pad)));
+  /* vh first for anything that has not heard of dvh; dvh second because on a
+     phone the window is the part not under the browser's own furniture. */
+  max-height: calc(100vh - 2 * var(--lb-pad));
+  max-height: calc(100dvh - 2 * var(--lb-pad));
   cursor: zoom-out;
 }
 
+/* On a phone a picture made to fit the height is a picture in the middle of a
+   lot of nothing. It takes the width instead, and a tall one is read the way
+   anything tall is read on a phone: by scrolling it. */
+@media (max-width: 900px) {
+  .lightbox {
+    --lb-pad: 10px;
+  }
+
+  .lightbox img {
+    min-width: min(100%, calc(100vw - 2 * var(--lb-pad)));
+    max-height: none;
+  }
+}
+
 .lightbox-close {
-  position: absolute;
+  /* fixed rather than absolute: the overlay is a scroller now, and a way out
+     that scrolls off the top with the picture is no way out. */
+  position: fixed;
+  z-index: 1;
   top: clamp(10px, 2vw, 22px);
   right: clamp(10px, 2vw, 22px);
   width: 40px;
@@ -1473,10 +1511,21 @@ body.is-zoomed {
 
   /* The header is an ordinary stack at this width rather than a set of fixed
      corners, so the line joins that stack instead of floating over the
-     pictures. The switch keeps its place beside the word either way. */
+     pictures. The name carries its own margin; the row adds none. */
   .header-line {
     position: static;
-    margin-bottom: 5px;
+    margin-bottom: 0;
+  }
+
+  /* And the switch leaves the row for the top corner, where there is a great
+     deal of nothing and it is out of the way of the reading. Absolute rather
+     than fixed: at this width the header is part of the page and scrolls with
+     it, and a circle left hanging over the pictures would be the one thing on
+     the screen that had not moved. */
+  .theme-btn {
+    position: absolute;
+    top: 21px;
+    right: 16px;
   }
 
   .art-title {
