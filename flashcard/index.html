@@ -42,6 +42,27 @@
               : "light";
         }
         document.documentElement.setAttribute("data-theme", t);
+
+        /* The card's own three colours, for the same reason and at the same
+           moment. They are set further down once the page's script runs, but
+           that is late enough to paint a white card first and then darken it,
+           which is exactly the flash the line above exists to prevent.
+           Only when nothing has been chosen here — a saved set is applied by
+           the script and does not need guessing at. The key and the two sets
+           are repeated from the script below on purpose: this has to run
+           before the stylesheet paints, and nothing fetched can promise
+           that. */
+        try {
+          if (!localStorage.getItem("front-flashcards-colors-v2")) {
+            var c =
+              t === "dark"
+                ? { bg: "#000000", text: "#ffffff", bright: "#918fff" }
+                : { bg: "#ffffff", text: "#000000", bright: "#466eff" };
+            document.documentElement.style.setProperty("--bg", c.bg);
+            document.documentElement.style.setProperty("--text", c.text);
+            document.documentElement.style.setProperty("--bright", c.bright);
+          }
+        } catch (e) {}
       })();
     </script>
     <style>
@@ -884,11 +905,46 @@
       const STORAGE_DRAFT = "front-flashcards-draft";
       const STORAGE_NAME = "front-flashcards-name";
       const STORAGE_COLORS = "front-flashcards-colors-v2";
+      /* The fixed reference the sanitiser falls back to when a colour cannot
+         be read at all. It does not follow the theme: a fallback that moved
+         would make a malformed hex mean two different things. */
       const DEFAULT_COLORS = {
         bg: "#ffffff",
         text: "#000000",
         bright: "#466eff",
       };
+
+      /* What a first visit gets, which is not the same question. The rest of
+         the site has a day/night switch and remembers where it was left; a
+         reader who has the whole of noahdarwinlee.com in the dark should not
+         be handed a white card here. So the starting set follows that switch,
+         and the two sets are the Default and Night presets so the list below
+         shows the one you are looking at.
+
+         Only while nothing has been chosen here. The moment a colour is picked
+         or a preset pressed, that is saved, and a choice made on this page is
+         more specific than a switch thrown on another one. */
+      const NIGHT_COLORS = {
+        bg: "#000000",
+        text: "#ffffff",
+        bright: "#918fff",
+      };
+
+      function siteIsDark() {
+        return document.documentElement.getAttribute("data-theme") === "dark";
+      }
+
+      function hasChosenColors() {
+        try {
+          return Boolean(localStorage.getItem(STORAGE_COLORS));
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function startingColors() {
+        return { ...(siteIsDark() ? NIGHT_COLORS : DEFAULT_COLORS) };
+      }
       // Add presets here. bg = background, bright = primary text, text = secondary text.
       const COLOR_PRESETS = [
         {
@@ -980,7 +1036,7 @@
 
       // --- colors ---
 
-      let lastValidColors = { ...DEFAULT_COLORS };
+      let lastValidColors = startingColors();
       let colorWarningTimer = null;
 
       function normalizeHex(value, fallback) {
@@ -1105,7 +1161,7 @@
       function readColors() {
         try {
           const raw = localStorage.getItem(STORAGE_COLORS);
-          if (!raw) return { ...DEFAULT_COLORS };
+          if (!raw) return startingColors();
           const parsed = JSON.parse(raw);
           const { colors } = sanitizeColors(
             {
@@ -1117,7 +1173,7 @@
           );
           return colors;
         } catch (error) {
-          return { ...DEFAULT_COLORS };
+          return startingColors();
         }
       }
 
@@ -1170,10 +1226,15 @@
         renderColorPresets();
       }
 
+      /* Back to the start, which means back to following the switch — so
+         the saved choice is cleared rather than overwritten with today's
+         answer, and the page goes on following it afterwards. */
       function resetColors() {
         colorWarning.classList.add("hidden");
-        const next = applyColors({ ...DEFAULT_COLORS });
-        saveColors(next);
+        try {
+          localStorage.removeItem(STORAGE_COLORS);
+        } catch (error) {}
+        applyColors(startingColors());
         renderColorPresets();
       }
 
@@ -1908,6 +1969,21 @@
 
       applyColors(readColors());
       renderColorPresets();
+
+      /* theme.js writes data-theme on the root when the switch is pressed. If
+         nothing has been chosen on this page, the card follows it there and
+         then, so pressing the switch darkens the whole page rather than only
+         the frame around it. */
+      if (window.MutationObserver) {
+        new MutationObserver(function () {
+          if (hasChosenColors()) return;
+          applyColors(startingColors());
+          renderColorPresets();
+        }).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["data-theme"],
+        });
+      }
       entryList.value = localStorage.getItem(STORAGE_DRAFT) || "";
       listNameInput.value = localStorage.getItem(STORAGE_NAME) || "";
       renderSavedLists();
