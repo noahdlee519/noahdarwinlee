@@ -56,6 +56,10 @@ body {
   /* Width of the right-hand rail: the top-right links and the about-page
      contact list both sit in it, so they share a left edge and move together. */
   --rail-width: 504px;
+  /* Width of the slot the caret stands in, on whichever side of the links it
+     is on. Here rather than on the rail because the day/night switch sits
+     beyond that slot and has to know how wide it is. */
+  --caret-slot: 24px;
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
@@ -193,7 +197,6 @@ body {
   /* Room for the caret on whichever side it is on. The box is shifted right by
      one slot so the links themselves stay exactly where they were and the caret
      hangs in the margin beside them. */
-  --caret-slot: 24px;
   position: fixed;
   top: var(--page-top);
   right: calc(var(--page-left) - var(--caret-slot));
@@ -229,12 +232,14 @@ body {
   opacity: 1;
 }
 
-/* Half a turn, which turns the triangle round as well as moving it: the same
-   press that sends the list on also makes the mark point back the way it came.
-   The class is on the container rather than the button because the side the
-   button sits on changes with it. */
+/* Turned over rather than turned round: the mark ends up pointing back the way
+   it came either way, but a triangle spun about its own centre reads as a
+   clock hand going round, and this one is not measuring anything. Mirrored, it
+   reads as what it is -- the same arrow, facing the other way. The class is on
+   the container rather than the button because the side the button sits on
+   changes with it. */
 .top-right-links.is-flipped .top-right-next {
-  transform: rotate(180deg);
+  transform: scaleX(-1);
 }
 
 .top-right-set {
@@ -271,15 +276,19 @@ body {
      every few seconds and links that moved with it would be unusable. */
   .top-right-links {
     display: grid;
-    /* One fixed rail width. Without it the column width came from the content
+    /* The switch, a caret slot, the rail, a caret slot. Only the switch's
+       column is sized by its contents; the three on the right are fixed, and
+       the box is anchored by its right edge, so the rail stays put and the
+       column for the switch grows away from it to the left.
+       One fixed rail width: without it the column width came from the content
        plus a 2vw gap, so the left edge crept as the window resized. */
-    grid-template-columns: var(--caret-slot) var(--rail-width) var(--caret-slot);
+    grid-template-columns: auto var(--caret-slot) var(--rail-width) var(--caret-slot);
     align-items: center;
   }
 
   .top-right-stack {
     grid-row: 1;
-    grid-column: 2;
+    grid-column: 3;
     display: grid;
     grid-template: 1fr / 1fr;
   }
@@ -291,13 +300,27 @@ body {
 
   .top-right-next {
     grid-row: 1;
-    grid-column: 3;
+    grid-column: 4;
     justify-self: start;
   }
 
   .top-right-links.is-flipped .top-right-next {
-    grid-column: 1;
+    grid-column: 2;
     justify-self: end;
+  }
+
+  /* The switch stands at the head of the rail, level with the first link
+     rather than with the middle of the block: the links are what it is beside,
+     and the first of them is where the block begins. The nudge is in ems of
+     the links' own size, so it follows them if that ever changes. */
+  .top-right-links .theme-btn {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: start;
+    justify-self: end;
+    font-size: 22px;
+    margin-top: 0.35em;
+    margin-right: 14px;
   }
 }
 
@@ -1372,7 +1395,11 @@ body.is-zoomed {
      right; pressing it takes the group to the right-hand edge and leaves the
      caret on the left, pointing back. */
   .top-right-links {
-    position: relative;
+    /* static, not relative: the switch is absolutely positioned to the corner
+       of the page at this width, and a positioned rail would make it the
+       corner of the rail instead. The sets inside measure themselves against
+       .top-right-stack, which is positioned in their place. */
+    position: static;
     top: auto;
     right: auto;
     width: auto;

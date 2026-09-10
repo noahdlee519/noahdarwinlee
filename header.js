@@ -21,7 +21,11 @@
      to fade is rebuilt on the first update that finds it. */
   function refreshTargets() {
     const theme = document.getElementById("theme-btn");
-    if (theme && targets.indexOf(theme) === -1) targets = [...targets, theme];
+    /* Unless it is inside the rail, which is already on the list: two opacities
+       multiplied is not the same fade as one, and the switch would go before
+       the links it stands beside. */
+    if (!theme || topRight?.contains(theme)) return;
+    if (targets.indexOf(theme) === -1) targets = [...targets, theme];
   }
 
   function reset() {
