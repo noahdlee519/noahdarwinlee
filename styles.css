@@ -180,14 +180,6 @@ body {
 }
 
 
-/* The flash card tool is black on white and draws none of its colour from the
-   three variables, so the switch would sit there in the site's ink, invisible
-   on white, and change nothing when pressed. A control that appears to do
-   nothing is worse than no control, so that page does not get one until it has
-   a night of its own. */
-.flashcards-page .theme-btn {
-  display: none;
-}
 
 /* Only shown to keyboard users; invisible to everyone else. */
 :focus-visible {

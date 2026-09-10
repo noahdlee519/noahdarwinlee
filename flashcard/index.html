@@ -74,6 +74,19 @@
         --bright: #466eff;
       }
 
+      /* The site's header furniture -- the name, the way back, the switch and
+         the ring the keyboard draws -- is painted in --ink, which is white
+         everywhere else because everywhere else is orange or black. This page
+         is white by day and whatever the reader has chosen after that, so --ink
+         is handed the card's own text colour and the header comes out in it.
+         The [data-theme] selector is here to out-specify the same declaration
+         in the site stylesheet, which would otherwise win after dark. */
+      :root,
+      :root[data-theme="light"],
+      :root[data-theme="dark"] {
+        --ink: var(--text);
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -83,16 +96,31 @@
         color: var(--text);
         font-family: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
         font-weight: 300;
-        padding-top: calc(var(--page-top) + 40px);
+        /* Clears the name and the way back, both of which are fixed to the top
+           left of the window at this width. */
+        padding-top: calc(var(--page-top) + 78px);
         padding-right: clamp(14px, 3vw, 36px);
         padding-bottom: 48px;
       }
 
+      /* Below the breakpoint the header is not fixed any more -- it is the
+         first two lines of the page and takes its own room. */
+      @media (max-width: 900px) {
+        body.flashcards-page {
+          padding-top: 16px;
+        }
+      }
+
+      /* In the frame on the materials page there is a header already, a few
+         inches above this one. */
       body.flashcards-page.is-embedded {
         padding-top: calc(var(--page-top) + 8px);
       }
 
-      body.flashcards-page.is-embedded .materials-back {
+      body.flashcards-page.is-embedded .materials-back,
+      body.flashcards-page.is-embedded .name,
+      body.flashcards-page.is-embedded .header-line,
+      body.flashcards-page.is-embedded .back-link {
         display: none;
       }
 
@@ -757,6 +785,15 @@
     </style>
   </head>
   <body class="flashcards-page">
+    <!-- The same header the rest of the site carries: the name, the way back,
+         and the day/night switch that theme.js hangs beside the name. No menu
+         on this one -- it is a tool, and the eight links belong on the front
+         page rather than over somebody's word list. -->
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="back-link" href="/materials/">back</a>
     <a class="materials-back" href="/materials/" aria-label="Back to materials">
       <img src="../favicon.png" alt="" />
     </a>
@@ -932,6 +969,37 @@
 
       function siteIsDark() {
         return document.documentElement.getAttribute("data-theme") === "dark";
+      }
+
+      /* Where a chosen set goes when the day/night switch takes the page back.
+         Kept rather than dropped: three colours picked by hand should not be
+         lost to a button in the corner. */
+      const STORAGE_SET_ASIDE = "front-flashcards-colors-set-aside-v1";
+
+      function setAsideColors(colors) {
+        try {
+          localStorage.setItem(STORAGE_SET_ASIDE, JSON.stringify(colors));
+        } catch (error) {}
+      }
+
+      function loadSetAsideColors() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(STORAGE_SET_ASIDE) || "null");
+          if (!raw) return null;
+          return {
+            bg: normalizeHex(raw.bg, DEFAULT_COLORS.bg),
+            text: normalizeHex(raw.text, DEFAULT_COLORS.text),
+            bright: normalizeHex(raw.bright, DEFAULT_COLORS.bright),
+          };
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function clearSetAsideColors() {
+        try {
+          localStorage.removeItem(STORAGE_SET_ASIDE);
+        } catch (error) {}
       }
 
       function hasChosenColors() {
@@ -1234,6 +1302,7 @@
         try {
           localStorage.removeItem(STORAGE_COLORS);
         } catch (error) {}
+        clearSetAsideColors();
         applyColors(startingColors());
         renderColorPresets();
       }
@@ -1250,6 +1319,7 @@
           bright: normalizeHex(preset.bright, DEFAULT_COLORS.bright),
         };
         colorWarning.classList.add("hidden");
+        clearSetAsideColors();
         applyColors(colors);
         saveColors(colors);
         renderColorPresets();
@@ -1274,6 +1344,23 @@
           btn.addEventListener("click", () => applyPreset(preset));
           colorPresetList.appendChild(btn);
         });
+
+        const yours = loadSetAsideColors();
+        if (!yours) return;
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "text-action";
+        back.textContent = "yours";
+        back.title = "the colours you picked, before the day and night switch took the page back";
+        if (colorsMatch(lastValidColors, yours)) back.classList.add("is-on");
+        back.addEventListener("click", () => {
+          clearSetAsideColors();
+          colorWarning.classList.add("hidden");
+          applyColors(yours);
+          saveColors(yours);
+          renderColorPresets();
+        });
+        colorPresetList.appendChild(back);
       }
 
       function toggleCosmeticSettings() {
@@ -1970,15 +2057,29 @@
       applyColors(readColors());
       renderColorPresets();
 
-      /* theme.js writes data-theme on the root when the switch is pressed. If
-         nothing has been chosen on this page, the card follows it there and
-         then, so pressing the switch darkens the whole page rather than only
-         the frame around it. */
+      /* theme.js writes data-theme on the root when the switch is pressed, and
+         the card follows it there and then, so pressing the switch darkens the
+         whole page rather than only the frame around it.
+
+         Including when a set has been chosen here. A chosen set is three inline
+         values on the root and it overrules everything, so leaving it in place
+         would mean the switch sat on this page doing nothing visible -- which
+         is worse than no switch at all. It wins, and the set is put aside
+         rather than lost: it comes back at the end of the presets, under
+         "yours". */
       if (window.MutationObserver) {
         new MutationObserver(function () {
-          if (hasChosenColors()) return;
+          if (hasChosenColors()) setAsideColors(readColors());
+          try {
+            localStorage.removeItem(STORAGE_COLORS);
+          } catch (error) {}
           applyColors(startingColors());
           renderColorPresets();
+          if (loadSetAsideColors()) {
+            colorWarning.textContent =
+              "your colours are set aside while this follows the day and night switch — they are at the end of the presets, under “yours”.";
+            colorWarning.classList.remove("hidden");
+          }
         }).observe(document.documentElement, {
           attributes: true,
           attributeFilter: ["data-theme"],
@@ -1993,6 +2094,7 @@
         document.body.classList.add("is-embedded");
       }
     </script>
+      <script src="../header.js" defer></script>
       <script src="../theme.js" defer></script>
   </body>
 </html>
