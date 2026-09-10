@@ -1497,7 +1497,7 @@
       var play = document.createElement("button");
       play.type = "button";
       play.className = "game-pack-play";
-      play.textContent = "play";
+      play.textContent = "play entire pack now";
       play.disabled = !n;
       play.setAttribute("aria-label", "Play the " + pack.label + " pack");
       play.addEventListener("click", function () {

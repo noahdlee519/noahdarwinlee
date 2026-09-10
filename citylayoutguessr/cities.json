@@ -7,13 +7,6 @@
     { "id": "medium", "label": "medium" },
     { "id": "hard", "label": "hard" }
   ],
-  "packs": [
-    { "id": "usa", "label": "USA", "countries": ["United States"] },
-    { "id": "japan", "label": "Japan", "countries": ["Japan"] },
-    { "id": "italy", "label": "Italy", "countries": ["Italy"] },
-    { "id": "benelux", "label": "Benelux",
-      "countries": ["Netherlands", "Belgium", "Luxembourg"] }
-  ],
   "continents": [
     { "id": "Africa", "label": "africa" },
     { "id": "Asia", "label": "asia" },
@@ -21,6 +14,12 @@
     { "id": "North America", "label": "north america" },
     { "id": "Oceania", "label": "oceania" },
     { "id": "South America", "label": "south america" }
+  ],
+  "packs": [
+    { "id": "usa", "label": "USA", "countries": ["United States"] },
+    { "id": "japan", "label": "Japan", "countries": ["Japan"] },
+    { "id": "italy", "label": "Italy", "countries": ["Italy"] },
+    { "id": "benelux", "label": "Benelux", "countries": ["Netherlands", "Belgium", "Luxembourg"] }
   ],
   "cities": [
     {
@@ -64,12 +63,22 @@
       "aliases": ["dubayy", "dubaï", "dubai uae", "the city of gold uae", "al wasl", "city of gold uae"]
     },
     {
+      "id": "hiroshima", "tier": "easy", "city": "Hiroshima", "country": "Japan", "continent": "Asia",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "hong-kong", "tier": "easy", "city": "Hong Kong", "country": "China", "continent": "Asia",
       "aliases": ["hongkong", "hk", "xianggang", "heung gong", "hong kong sar"]
     },
     {
       "id": "istanbul", "tier": "easy", "city": "Istanbul", "country": "Turkey", "continent": "Europe",
       "aliases": ["constantinople", "byzantium", "stamboul", "konstantinopolis", "tsargrad", "costantinopoli"]
+    },
+    {
+      "id": "kyoto", "tier": "easy", "city": "Kyoto", "country": "Japan", "continent": "Asia",
+      "aliases": ["kioto", "heian kyo", "heiankyo", "miyako"],
+      "packOnly": true
     },
     {
       "id": "las-vegas", "tier": "easy", "city": "Las Vegas", "country": "United States", "continent": "North America",
@@ -285,6 +294,11 @@
       "aliases": ["frankfurt am main", "mainhattan", "ffm", "bankfurt"]
     },
     {
+      "id": "fukuoka", "tier": "medium", "city": "Fukuoka", "country": "Japan", "continent": "Asia",
+      "aliases": ["hakata"],
+      "packOnly": true
+    },
+    {
       "id": "geneva", "tier": "medium", "city": "Geneva", "country": "Switzerland", "continent": "Europe",
       "aliases": ["geneve", "genf", "ginevra", "ginebra", "the peace capital", "peace capital"]
     },
@@ -323,6 +337,11 @@
     {
       "id": "johannesburg", "tier": "medium", "city": "Johannesburg", "country": "South Africa", "continent": "Africa",
       "aliases": ["joburg", "jo burg", "jozi", "egoli", "the city of gold", "city of gold", "jhb"]
+    },
+    {
+      "id": "kobe", "tier": "medium", "city": "Kobe", "country": "Japan", "continent": "Asia",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "kuala-lumpur", "tier": "medium", "city": "Kuala Lumpur", "country": "Malaysia", "continent": "Asia",
@@ -399,6 +418,11 @@
     {
       "id": "munich", "tier": "medium", "city": "Munich", "country": "Germany", "continent": "Europe",
       "aliases": ["munchen", "münchen", "muenchen", "monaco di baviera", "minga", "the northernmost city of italy", "northernmost city of italy"]
+    },
+    {
+      "id": "nagasaki", "tier": "medium", "city": "Nagasaki", "country": "Japan", "continent": "Asia",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "nagoya", "tier": "medium", "city": "Nagoya", "country": "Japan", "continent": "Asia",
@@ -694,6 +718,11 @@
       "aliases": ["gye"]
     },
     {
+      "id": "himeji", "tier": "hard", "city": "Himeji", "country": "Japan", "continent": "Asia",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "indianapolis", "tier": "hard", "city": "Indianapolis", "country": "United States", "continent": "North America",
       "aliases": ["indy", "naptown", "the circle city", "circle city"]
     },
@@ -786,6 +815,11 @@
       "aliases": ["nouackchott", "nuakchot", "nawakshut", "nouakchott mauritania"]
     },
     {
+      "id": "okayama", "tier": "hard", "city": "Okayama", "country": "Japan", "continent": "Asia",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "omaha", "tier": "hard", "city": "Omaha", "country": "United States", "continent": "North America",
       "aliases": ["the gateway to the west", "omaha nebraska", "big red country", "gateway to the west"]
     },
@@ -844,6 +878,11 @@
     {
       "id": "sapporo", "tier": "hard", "city": "Sapporo", "country": "Japan", "continent": "Asia",
       "aliases": ["sapporo japan", "satporo", "sapporo hokkaido", "the city of the north star", "city of the north star"]
+    },
+    {
+      "id": "sendai", "tier": "hard", "city": "Sendai", "country": "Japan", "continent": "Asia",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "suez", "tier": "hard", "city": "Suez", "country": "Egypt", "continent": "Africa",

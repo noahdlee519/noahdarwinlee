@@ -17,6 +17,14 @@ citylayoutguessr/easy maps/
 citylayoutguessr/medium maps/
 citylayoutguessr/hard maps/
 
+# One folder per special pack, named after the pack's id. Same idea as the
+# folders above: the originals live here, build-images.sh writes the small
+# copies into art/game/, and only those are committed.
+citylayoutguessr/usa/
+citylayoutguessr/japan/
+citylayoutguessr/italy/
+citylayoutguessr/benelux/
+
 # The full-size logo artwork. art/web/citylayoutguessr/logo-*.webp are built
 # from it and are what the page loads; the 10 MB original stays local.
 citylayoutguessr/citylayoutguessr.png

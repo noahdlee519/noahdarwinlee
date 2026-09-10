@@ -176,9 +176,10 @@ and you edit it afterwards.
 ## Special packs
 
 The **special** entry in the region row opens a short menu of packs — USA,
-Japan, Italy, Benelux, landmarks. Each can be ticked into a custom game
-alongside the continents and alongside other packs, or played on its own with
-the **play** button beside it, which starts every level, ten rounds, no hints.
+Japan, Italy and Benelux. Each can be ticked into a custom game alongside the
+continents and alongside other packs, or played on its own with the **play
+entire pack now** button beside it, which starts every level, ten rounds, no
+hints.
 
 A pack gets its cities two ways, and you can use either or both.
 
@@ -188,21 +189,20 @@ A pack gets its cities two ways, and you can use either or both.
 "packs": [
   { "id": "japan", "label": "Japan", "countries": ["Japan"] },
   { "id": "benelux", "label": "Benelux",
-    "countries": ["Netherlands", "Belgium", "Luxembourg"] },
-  { "id": "landmarks", "label": "landmarks", "countries": [] }
+    "countries": ["Netherlands", "Belgium", "Luxembourg"] }
 ],
 ```
 
 Anything already in the file whose `country` matches is in that pack without
 being told. Add Kyoto as an ordinary city and it joins the Japan pack by
-itself. A pack with no countries — landmarks — collects nothing this way, so
-everything in it has to be named directly.
+itself. A pack with no countries — a themed one, say `coastal` or `capitals` —
+collects nothing this way, so everything in it has to be named directly.
 
 **By name.** Any city can join a pack by saying so:
 
 ```json
-{ "id": "colosseum", "tier": "easy", "city": "Colosseum", "country": "Italy",
-  "continent": "Europe", "packs": ["landmarks"], "packOnly": true },
+{ "id": "kanazawa", "tier": "hard", "city": "Kanazawa", "country": "Japan",
+  "continent": "Asia", "packs": ["japan"], "packOnly": true },
 ```
 
 ### The two flags
@@ -244,9 +244,39 @@ you want shown), and `countries` (`[]` if it is a themed pack rather than a
 place). It appears in the special menu on the next reload. Nothing else needs
 changing.
 
-A pack with nothing in it yet is listed but greyed out, with its play button
-switched off — landmarks looks like that now, on purpose, so the empty shelf
-is visible rather than hidden.
+A pack with nothing in it yet is listed but greyed out and its play button is
+switched off, so an empty shelf is visible rather than hidden. That is the
+state a new pack is in until you put pictures in it.
+
+### Putting pictures in a pack
+
+**Give the pack a folder named after its id.** `citylayoutguessr/japan/`,
+`citylayoutguessr/usa/`, `citylayoutguessr/benelux/`. It sits next to
+`citylayoutguessr/maps/` and works the same way: drop the screenshots in, run
+
+```
+bash citylayoutguessr/build-images.sh
+```
+
+and everything in it is built into `art/game/` alongside the rest. A picture
+in a pack folder is 1000 × 700 like any other; nothing about the screenshot
+changes.
+
+The difference is what the build writes for a name it hasn't seen. A new file
+in `citylayoutguessr/maps/` gets a plain entry. A new file in a pack folder
+gets that entry **plus** `"packs": ["japan"]` and `"packOnly": true` — so a
+city you drop into the Japan folder is in the Japan pack and nowhere else,
+without you touching `cities.json` at all. The build prints the names it added
+so you can go and fill in the level, country, continent and aliases.
+
+If a name is already in `cities.json`, the folder does not change it. The
+build only ever writes flags for entries it is creating, so a city you have
+already tuned by hand keeps whatever you set. Moving an existing city into a
+pack is an edit to `cities.json`, not a file move.
+
+The pack folders are gitignored, exactly like `citylayoutguessr/maps/` — the
+originals stay on your machine and only the built copies in `art/game/` are
+committed. When you add a new pack, add its folder to `.gitignore` too.
 
 ### What packs do not touch
 

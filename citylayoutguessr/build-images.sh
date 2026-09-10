@@ -45,9 +45,16 @@ built = skipped = 0
 problems = []
 added = []
 
-SOURCES = ["citylayoutguessr/maps"] + ["citylayoutguessr/%s maps" % t["id"] for t in data.get("tiers", [])]
+# Where pictures are looked for. The plain folder and the per-level ones hold
+# the ordinary game; a folder named after a pack holds that pack, and anything
+# found there is marked packOnly so it stays out of the daily and out of a
+# custom game that has not asked for the pack by name.
+PACK_IDS = [p["id"] for p in data.get("packs", [])]
+SOURCES = ([("citylayoutguessr/maps", None)]
+           + [("citylayoutguessr/%s maps" % t["id"], None) for t in data.get("tiers", [])]
+           + [("citylayoutguessr/%s" % pid, pid) for pid in PACK_IDS])
 
-for folder in SOURCES:
+for folder, pack in SOURCES:
     if not os.path.isdir(folder):
         continue
     for src in sorted(glob.glob(folder + "/*")):
@@ -63,6 +70,12 @@ for folder in SOURCES:
             entry = {"id": cid, "tier": "hard",
                      "city": cid.replace("-", " ").title(),
                      "country": "", "continent": "", "aliases": []}
+            if pack:
+                # Belonging to the pack by name rather than by country, because
+                # the country field is still blank at this point and has to be
+                # filled in by hand anyway.
+                entry["packs"] = [pack]
+                entry["packOnly"] = True
             data["cities"].append(entry)
             by_id[cid] = entry
             added.append(cid)
@@ -116,7 +129,19 @@ if added:
     for i, t in enumerate(data.get("continents", [])):
         L.append('    { "id": %s, "label": %s }%s'
                  % (esc(t["id"]), esc(t["label"]), "" if i == len(data["continents"]) - 1 else ","))
-    L += ["  ],", '  "cities": [']
+    L += ["  ],"]
+    # The packs, written back as they were found. This block used to be absent,
+    # which meant that adding one picture to the folder quietly deleted every
+    # pack in the file — the rewriter only writes what it knows about.
+    if data.get("packs"):
+        L.append('  "packs": [')
+        for i, pk in enumerate(data["packs"]):
+            L.append('    { "id": %s, "label": %s, "countries": [%s] }%s'
+                     % (esc(pk["id"]), esc(pk["label"]),
+                        ", ".join(esc(c) for c in pk.get("countries") or []),
+                        "" if i == len(data["packs"]) - 1 else ","))
+        L += ["  ],"]
+    L += ['  "cities": [']
     groups = [[c for c in data["cities"] if c["tier"] == t] for t in ["easy", "medium", "hard"]]
     for gi, g in enumerate(groups):
         g.sort(key=lambda c: c["id"])
@@ -126,7 +151,17 @@ if added:
             L.append('      "id": %s, "tier": %s, "city": %s, "country": %s, "continent": %s,'
                      % (esc(c["id"]), esc(c["tier"]), esc(c["city"]),
                         esc(c.get("country", "")), esc(c.get("continent", ""))))
-            L.append('      "aliases": [%s]' % ", ".join(esc(a) for a in c.get("aliases") or []))
+            L.append('      "aliases": [%s]%s'
+                     % (", ".join(esc(a) for a in c.get("aliases") or []),
+                        "," if (c.get("packs") or c.get("packOnly")) else ""))
+            # Same reason as the packs above: what is not written here is lost.
+            extra = []
+            if c.get("packs"):
+                extra.append('"packs": [%s]' % ", ".join(esc(x) for x in c["packs"]))
+            if c.get("packOnly"):
+                extra.append('"packOnly": true')
+            if extra:
+                L.append("      " + ", ".join(extra))
             L.append("    }%s" % ("" if last else ","))
         if gi != len(groups) - 1:
             L.append("")

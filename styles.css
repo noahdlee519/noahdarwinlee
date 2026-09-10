@@ -2727,21 +2727,25 @@ body.game-page {
 .game-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
   margin-top: -9px;
-  border: 2px solid var(--ink);
+  border: 0;
   border-radius: 0;
   background: var(--accent);
+  box-shadow: 0 0 0 2px var(--ink);
   cursor: pointer;
 }
 
 .game-range::-moz-range-thumb {
+  box-sizing: border-box;
   width: 16px;
   height: 16px;
-  border: 2px solid var(--ink);
+  border: 0;
   border-radius: 0;
   background: var(--accent);
+  box-shadow: 0 0 0 2px var(--ink);
   cursor: pointer;
 }
 
