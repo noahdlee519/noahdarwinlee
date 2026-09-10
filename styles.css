@@ -24,6 +24,10 @@
   --bg: #e68019;
   --ink: #ffffff;
   --accent: #e3e3b0;
+  /* A line drawn to separate rather than to say anything: the cream of the
+     accent by day, a plain grey after dark, both quiet enough to read as a
+     gap rather than as a mark. */
+  --rule: #e3e3b0;
   /* The letter and the list in the blog's mail window, which is white paper
      in daylight and Gmail's own dark grey after dark. */
   --mail-surface: #ffffff;
@@ -34,6 +38,7 @@
   --bg: #000000;
   --ink: #ffffff;
   --accent: #918fff;
+  --rule: #5a5a5f;
   --mail-surface: #292a2d;
 }
 
@@ -43,6 +48,7 @@
     --bg: #000000;
     --ink: #ffffff;
     --accent: #918fff;
+    --rule: #5a5a5f;
     --mail-surface: #292a2d;
   }
 }
@@ -691,6 +697,19 @@ a[href="/cv/"]:active {
 @media (max-width: 900px) {
   .about-panel {
     padding-top: 2px;
+  }
+
+  /* Where the panel ends and the pictures begin. On a wide screen the panel is
+     a band across the top with the gallery well below it and the two are never
+     confused; on a phone everything is one column, and the links at the foot
+     of the panel run straight into the first title with nothing to say the
+     subject has changed. A line, and room on both sides of it. */
+  .about-panel.is-open::after {
+    content: "";
+    display: block;
+    height: 1px;
+    margin-top: 26px;
+    background: var(--rule);
   }
 }
 
@@ -1557,11 +1576,21 @@ body.is-zoomed {
   /* On the page that has a menu the two of them go to that corner together,
      the switch first and the nine squares outside it, and the switch gives up
      its own corner to the pair. */
+  /* The mark comes down to the size of the circle beside it. On a phone the
+     corner is a quarter of an inch of glass and two controls have to share it;
+     a thirty-pixel grid there is a button in the way of the page rather than a
+     mark on it. Same drawing, read small, with a little more air between the
+     two of them so they stay two things. */
   .site-menu {
     position: absolute;
     top: 21px;
     right: 16px;
-    gap: 13px;
+    gap: 18px;
+  }
+
+  .site-menu-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .site-menu .theme-btn {
