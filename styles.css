@@ -977,9 +977,19 @@ body.is-zoomed {
 
 .art-aside {
   /* The larger half, and a fixed one: the drawing decides the split, and what
-     stands beside it fits into the rest. */
+     stands beside it fits into the rest. A column rather than one picture, so
+     the finished model can sit under the sections it was built from and the
+     two sides of the band come out about the same height. */
   flex: 0 0 60%;
   align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.art-aside .art-plate {
+  margin: 0;
+  max-width: none;
 }
 
 .art-aside .art-zoom,
@@ -1010,6 +1020,14 @@ body.is-zoomed {
   .art-aside {
     margin-top: 10px;
   }
+}
+
+/* A note that stands on its own across the page rather than inside the narrow
+   column can take a longer line: it has the width of the band under it and a
+   58ch block looks marooned in the middle of it. Still short of the pictures,
+   because a line the width of the page is not a line anybody wants to read. */
+.art-plates > .art-note {
+  max-width: 72ch;
 }
 
 .art-label {
@@ -1063,6 +1081,10 @@ body.is-zoomed {
    the sheet above it, not a heading for the sheet below. */
 .art-note {
   margin: 22px 0 26px 0;
+  /* In the narrow column this never bites -- the column is narrower than the
+     measure -- so it is only doing anything for a note standing across the
+     whole page, where a line has to be stopped somewhere short of the width of
+     the pictures. */
   max-width: 58ch;
   font-size: 16px;
   font-weight: 300;
