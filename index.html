@@ -106,46 +106,30 @@
       aria-controls="about-panel"
       >about</a
     >
-    <div class="top-right-links">
-      <!-- Both sets live in one box so the caret can sit beside them and
-           change sides without the links moving. -->
-      <div class="top-right-stack" id="top-right-stack">
-        <div class="top-right-set is-visible">
-          <div class="top-right-primary">
-            <a href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">fuzhounese.org</a>
-            <a href="https://llso.uchicago.edu/llso-review-home/" target="_blank" rel="noopener noreferrer">llsoreview</a>
-          </div>
-          <div class="top-right-secondary">
-            <a href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo</a>
-            <a href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer">expositionsmagazine</a>
-          </div>
-        </div>
-        <div class="top-right-set" aria-hidden="true" inert>
-          <div class="top-right-primary">
-            <a
-              href="https://substack.com/@noahdarwinlee?r=ish50&amp;utm_campaign=profile&amp;utm_medium=profile-page"
-              target="_blank"
-              rel="noopener noreferrer"
-              >substack</a
-            >
-            <a href="https://noahdlee519.github.io/fauxnixai/" target="_blank" rel="noopener noreferrer"
-              >fauxnixai</a
-            >
-          </div>
-          <div class="top-right-secondary">
-            <a
-              href="https://www.thedragonflyagency.com/portfolios/noah-lee"
-              target="_blank"
-              rel="noopener noreferrer"
-              >dragonflyagency</a
-            >
-            <!-- Not an external link, so it gets the arrow by hand. The others in
-                 this rail earn theirs from target="_blank"; this one is asked for
-                 because a rail where one item alone has no arrow reads as an
-                 oversight rather than as a distinction. -->
-            <a class="show-external-icon" href="/materials/">materials</a>
-          </div>
-        </div>
+    <!-- Eight links behind one mark. Everything about how it opens is in
+         menu.js and the stylesheet; this is the list itself, in the markup,
+         so it is there for anything that does not run either. -->
+    <div class="site-menu" id="site-menu">
+      <button
+        class="site-menu-btn"
+        id="site-menu-btn"
+        type="button"
+        aria-expanded="false"
+        aria-controls="site-menu-panel"
+        aria-label="Links"
+        title="Links"
+      >
+        <svg class="site-menu-icon" viewBox="0 0 17 17" width="17" height="17" aria-hidden="true" focusable="false"><rect x="0" y="0" width="3" height="3" /><rect x="7" y="0" width="3" height="3" /><rect x="14" y="0" width="3" height="3" /><rect x="0" y="7" width="3" height="3" /><rect x="7" y="7" width="3" height="3" /><rect x="14" y="7" width="3" height="3" /><rect x="0" y="14" width="3" height="3" /><rect x="7" y="14" width="3" height="3" /><rect x="14" y="14" width="3" height="3" /></svg>
+      </button>
+      <div class="site-menu-panel" id="site-menu-panel">
+        <a style="--i: 0" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">fuzhounese.org</a>
+        <a style="--i: 1" href="https://llso.uchicago.edu/llso-review-home/" target="_blank" rel="noopener noreferrer">llsoreview</a>
+        <a style="--i: 2" href="https://ucgeo.org" target="_blank" rel="noopener noreferrer">ucgeo</a>
+        <a style="--i: 3" href="https://cegu.uchicago.edu/expositions/" target="_blank" rel="noopener noreferrer">expositionsmagazine</a>
+        <a style="--i: 4" href="https://substack.com/@noahdarwinlee?r=ish50&amp;utm_campaign=profile&amp;utm_medium=profile-page" target="_blank" rel="noopener noreferrer">substack</a>
+        <a style="--i: 5" href="https://noahdlee519.github.io/fauxnixai/" target="_blank" rel="noopener noreferrer">fauxnixai</a>
+        <a style="--i: 6" href="https://www.thedragonflyagency.com/portfolios/noah-lee" target="_blank" rel="noopener noreferrer">dragonflyagency</a>
+        <a style="--i: 7" href="/materials/" class="show-external-icon">materials</a>
       </div>
     </div>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
@@ -437,7 +421,7 @@
         >instagram.com/noahmakestheart</a
       >
     </main>
-    <script src="top-right-links.js" defer></script>
+    <script src="menu.js" defer></script>
     <script src="to-top-btn.js" defer></script>
     <script src="header.js" defer></script>
     <script src="carousel.js" defer></script>

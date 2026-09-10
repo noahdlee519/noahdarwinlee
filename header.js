@@ -6,7 +6,7 @@
   // .theme-btn is appended by theme.js after this runs, so it is collected
   // when the fade next updates rather than here. See refreshTargets().
   const navLinks = document.querySelectorAll(".about-link, .back-link");
-  const topRight = document.querySelector(".top-right-links");
+  const topRight = document.querySelector(".site-menu");
   const toTop = document.getElementById("to-top-btn");
   if (!name) return;
 

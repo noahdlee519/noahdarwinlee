@@ -72,21 +72,20 @@
          has to be told there is one more thing to fade. */
       if (window.__updateHeaderFade) window.__updateHeaderFade();
     });
-    /* Where the front page keeps its rail of links, the switch goes into it,
-       at the head of the four: it is one more thing in the corner the corner
-       is already for, and the stylesheet gives it a column of the grid rather
-       than a position of its own, so it lines up with the first link by
-       layout and cannot drift out of true.
+    /* Where the front page keeps its menu, the switch goes in beside it: two
+       small controls in the same corner, one for the light and one for the way
+       out of the page, laid out as a row by the stylesheet rather than each
+       finding its own way to the same spot.
 
-       Everywhere else there is no rail, and it goes on the line of the name
+       Everywhere else there is no menu, and it goes on the line of the name
        instead -- the first line of every page on the site -- in a wrapper the
        stylesheet lays out as a row. The switch used to position itself by
        measuring the word, which meant re-measuring every time the type loaded
        or the window moved, and being a few pixels out whenever that had not
        happened yet. Sharing a line box is the version that cannot drift. */
-    var rail = document.querySelector(".top-right-links");
-    if (rail) {
-      rail.insertBefore(btn, rail.firstChild);
+    var corner = document.querySelector(".site-menu");
+    if (corner) {
+      corner.insertBefore(btn, corner.firstChild);
       if (window.__updateHeaderFade) window.__updateHeaderFade();
       return;
     }

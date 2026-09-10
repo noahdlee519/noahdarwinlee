@@ -1040,6 +1040,10 @@
      under a 3:1 contrast ratio gets pushed back rather than accepted. */
 
   var COLOR_KEY = "ndl-clg-colors-v1";
+  /* Where a palette goes when the day/night switch takes the page back. Kept
+     rather than dropped: somebody who has picked three colours by hand should
+     not lose them to a button on another part of the page. */
+  var SET_ASIDE_KEY = "ndl-clg-colors-set-aside-v1";
   var MIN_CONTRAST = 3;        // enough to see a fill or a big word
   var MIN_INK_CONTRAST = 4.5;  // what body text actually needs to read well
   var DEFAULT_COLORS = { bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" };
@@ -1207,6 +1211,32 @@
     } catch (err) {}
   }
 
+  function setAside(colors) {
+    try {
+      localStorage.setItem(SET_ASIDE_KEY, JSON.stringify(colors));
+    } catch (err) {}
+  }
+
+  function loadSetAside() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(SET_ASIDE_KEY) || "null");
+      if (!raw) return null;
+      return {
+        bg: normalizeHex(raw.bg, DEFAULT_COLORS.bg),
+        ink: normalizeHex(raw.ink, DEFAULT_COLORS.ink),
+        accent: normalizeHex(raw.accent, DEFAULT_COLORS.accent)
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function clearSetAside() {
+    try {
+      localStorage.removeItem(SET_ASIDE_KEY);
+    } catch (err) {}
+  }
+
   /* No saved palette means the page is following the site's day/night switch,
      which lives in the stylesheet. Taking the inline overrides off hands it
      back rather than painting the daylight colours over the top of a dark
@@ -1269,10 +1299,34 @@
       }
       b.addEventListener("click", function () {
         show(el.colorWarning, false);
+        clearSetAside();
         saveColors(applyColors({ bg: preset.bg, ink: preset.ink, accent: preset.accent }));
       });
       el.presetList.appendChild(b);
     });
+
+    var yours = loadSetAside();
+    if (!yours) return;
+    var back = document.createElement("button");
+    back.type = "button";
+    back.className = "game-preset";
+    var chip = document.createElement("span");
+    chip.className = "game-preset-chip";
+    chip.setAttribute("aria-hidden", "true");
+    chip.style.setProperty("--chip-bg", yours.bg);
+    chip.style.setProperty("--chip-ink", yours.ink);
+    chip.style.setProperty("--chip-accent", yours.accent);
+    var label = document.createElement("span");
+    label.textContent = "yours";
+    back.appendChild(chip);
+    back.appendChild(label);
+    back.title = "the colours you picked, before the day and night switch took the page back";
+    back.addEventListener("click", function () {
+      show(el.colorWarning, false);
+      clearSetAside();
+      saveColors(applyColors(yours));
+    });
+    el.presetList.appendChild(back);
   }
 
   function colorsFromInputs(e) {
@@ -1301,10 +1355,19 @@
     else followTheme();
 
     /* Pressing the day/night switch repaints the page underneath, so the
-       pickers have to be refilled — but only while they are showing the theme
-       rather than a palette somebody chose. */
+       pickers have to be refilled. A palette chosen here is three inline
+       values on the body and it overrules the stylesheet, which meant that
+       once anybody had touched the pickers the switch appeared to do nothing
+       at all on this page. The switch is the site's, and pressing it means
+       day or night, so it wins — and the palette is set aside rather than
+       thrown out: it comes back at the end of the presets, under "yours". */
     var themeWatch = new MutationObserver(function () {
-      if (!loadColors()) followTheme();
+      var chosen = loadColors();
+      if (!chosen) return followTheme();
+      setAside(chosen);
+      forgetColors();
+      followTheme();
+      warn("your colours are set aside while this follows the switch — they are in the presets, under “yours”.");
     });
     themeWatch.observe(document.documentElement, {
       attributes: true,
@@ -1325,6 +1388,7 @@
          on a dark page those are two different pictures, and the one somebody
          pressing "reset" wants is the page as it comes. */
       forgetColors();
+      clearSetAside();
       followTheme();
     });
   }

@@ -53,16 +53,11 @@ body {
      page would otherwise run under. */
   --page-top: calc(clamp(16px, 3vh, 100px) + env(safe-area-inset-top, 0px));
   --page-left: clamp(10px, 3vw, 24px);
-  /* Width of the right-hand rail: the top-right links and the about-page
-     contact list both sit in it, so they share a left edge and move together. */
+  /* Width of the right-hand rail the about-page contact list sits in. */
   --rail-width: 504px;
   /* Ceiling on a row of details: no picture standing in a row is taller than
      this, whatever the window does. The lead has its own, higher one. */
   --plate-h: 440px;
-  /* Width of the slot the caret stands in, on whichever side of the links it
-     is on. Here rather than on the rail because the day/night switch sits
-     beyond that slot and has to know how wide it is. */
-  --caret-slot: 24px;
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
@@ -196,156 +191,138 @@ body {
   font: inherit;
 }
 
-.top-right-links {
-  /* Room for the caret on whichever side it is on. The box is shifted right by
-     one slot so the links themselves stay exactly where they were and the caret
-     hangs in the margin beside them. */
+
+
+
+
+@media (min-width: 901px) {
+  
+  }
+/* ---- the menu ----
+   Eight links behind one mark. There were four of them on show at a time up
+   here, changing themselves every few seconds with a caret to turn them by
+   hand -- and a list that moves while you are reading it is a list you cannot
+   use. Nine squares is the oldest sign in software for "everything there is",
+   and everything there is comes out from under it.
+
+   The mark and the day/night switch travel together: two small controls in
+   the corner, one for the light and one for the way out of the page. */
+.site-menu {
   position: fixed;
   top: var(--page-top);
-  right: calc(var(--page-left) - var(--caret-slot));
+  right: var(--page-left);
   z-index: 10;
   display: flex;
   align-items: center;
+  gap: 15px;
   transition: opacity 140ms ease;
 }
 
-/* The four links change on their own; this is how you change them yourself.
-   It stands beside the block, pointing the way the list is about to move: to
-   the right of the first four, and then, once they have been turned, to the
-   left of the second four, pointing back. Pressing it also holds the rotation
-   for a while: somebody working through the list by hand should not have it
-   move underneath them. */
-.top-right-next {
+/* The header fades as the page scrolls and takes this with it; a faded
+   control must not still be pressable. */
+.site-menu.is-faded,
+.site-menu.is-faded * {
+  pointer-events: none;
+}
+
+.site-menu-btn {
   display: block;
-  margin: 0;
-  padding: 4px 3px;
+  /* padding for the finger, negative margin so it costs no room */
+  padding: 6px;
+  margin: -6px;
   border: 0;
   background: none;
-  font: inherit;
-  /* Big enough and bright enough to be found. It was set as quietly as a piece
-     of punctuation, in the last inch of the window, and a control nobody can
-     see is not a quiet control -- it is a missing one. */
-  font-size: 19px;
-  line-height: 1;
   color: var(--ink);
-  opacity: 0.8;
+  line-height: 0;
   cursor: pointer;
-  transition: opacity 140ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* And plainer still with a pointer anywhere in the rail: by then somebody is
-   looking at the links, which is when the way to the other four is worth
-   offering. */
-.top-right-links:hover .top-right-next {
-  opacity: 1;
+.site-menu-icon {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
 }
 
-.top-right-next:hover,
-.top-right-next:focus-visible {
-  opacity: 1;
+.site-menu-btn:hover .site-menu-icon {
+  opacity: 0.6;
 }
 
-/* Turned over rather than turned round: the mark ends up pointing back the way
-   it came either way, but a triangle spun about its own centre reads as a
-   clock hand going round, and this one is not measuring anything. Mirrored, it
-   reads as what it is -- the same arrow, facing the other way. The class is on
-   the container rather than the button because the side the button sits on
-   changes with it. */
-.top-right-links.is-flipped .top-right-next {
-  transform: scaleX(-1);
+/* Open, the grid turns a corner up and the nine squares draw in on their own
+   centres: the same nine marks, gathered, which is what the panel below has
+   just done with the links. */
+.site-menu[data-open="true"] .site-menu-icon {
+  transform: rotate(45deg);
 }
 
-.top-right-set {
+.site-menu-icon rect {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site-menu[data-open="true"] .site-menu-icon rect {
+  transform: scale(0.72);
+}
+
+.site-menu-panel {
+  position: absolute;
+  top: calc(100% + 17px);
+  right: 0;
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: clamp(4px, 2vw, 160px);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 15px 19px 17px;
+  max-width: calc(100vw - 2 * var(--page-left));
+  background: var(--bg);
+  /* A hairline of the page's own ink rather than a border colour of its own,
+     and a shadow only deep enough to lift it off what it covers. */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 20%, transparent),
+    0 22px 46px -20px rgba(0, 0, 0, 0.5);
   opacity: 0;
-  /* visibility (not just opacity) keeps the inactive set out of the tab order */
   visibility: hidden;
-  pointer-events: none;
-  transition: opacity 700ms ease, visibility 0s linear 700ms;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: 100% 0;
+  transition: opacity 200ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 280ms;
 }
 
-.top-right-set.is-visible {
+.site-menu[data-open="true"] .site-menu-panel {
   opacity: 1;
   visibility: visible;
-  pointer-events: auto;
-  transition: opacity 700ms ease, visibility 0s;
+  transform: none;
+  transition: opacity 200ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
 }
 
-/* Visible sets use pointer-events:auto, which would pierce a faded parent otherwise. */
-.top-right-links.is-faded,
-.top-right-links.is-faded .top-right-set,
-.top-right-links.is-faded .top-right-set.is-visible,
-.top-right-links.is-faded a {
-  pointer-events: none;
-}
-
-@media (min-width: 901px) {
-  /* A caret slot, the rail, a caret slot. The rail is the middle column in
-     both states, so the links hold their place while the caret crosses from
-     one side to the other — which matters here, where the set changes itself
-     every few seconds and links that moved with it would be unusable. */
-  .top-right-links {
-    display: grid;
-    /* The switch, a caret slot, the rail, a caret slot. Only the switch's
-       column is sized by its contents; the three on the right are fixed, and
-       the box is anchored by its right edge, so the rail stays put and the
-       column for the switch grows away from it to the left.
-       One fixed rail width: without it the column width came from the content
-       plus a 2vw gap, so the left edge crept as the window resized. */
-    grid-template-columns: auto var(--caret-slot) var(--rail-width) var(--caret-slot);
-    align-items: center;
-  }
-
-  .top-right-stack {
-    grid-row: 1;
-    grid-column: 3;
-    display: grid;
-    grid-template: 1fr / 1fr;
-  }
-
-  .top-right-set {
-    grid-area: 1 / 1;
-    justify-content: space-between;
-  }
-
-  .top-right-next {
-    grid-row: 1;
-    grid-column: 4;
-    justify-self: start;
-  }
-
-  .top-right-links.is-flipped .top-right-next {
-    grid-column: 2;
-    justify-self: end;
-  }
-
-  /* The switch stands at the head of the rail, level with the first link
-     rather than with the middle of the block: the links are what it is beside,
-     and the first of them is where the block begins. The nudge is in ems of
-     the links' own size, so it follows them if that ever changes. */
-  .top-right-links .theme-btn {
-    grid-row: 1;
-    grid-column: 1;
-    align-self: start;
-    justify-self: end;
-    font-size: 22px;
-    margin-top: 0.35em;
-    margin-right: 14px;
-  }
-}
-
-.top-right-links a {
-  color: inherit;
+.site-menu-panel a {
+  display: block;
+  padding: 3px 0;
+  color: var(--ink);
   text-decoration: none;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 300;
+  line-height: 1.35;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 240ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.top-right-links a[target="_blank"]::after,
-.top-right-links a.show-external-icon::after {
+/* One after another on the way in, so the list arrives rather than appears;
+   all together on the way out, because nobody wants to watch a menu leave. */
+.site-menu[data-open="true"] .site-menu-panel a {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 26ms);
+}
+
+.site-menu-panel a[target="_blank"]::after,
+.site-menu-panel a.show-external-icon::after {
   content: "\2197";
   margin-left: 0.22em;
   display: inline-block;
@@ -355,18 +332,14 @@ body {
   text-decoration: none;
 }
 
-.top-right-primary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.top-right-secondary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-icon,
+  .site-menu-icon rect,
+  .site-menu-panel,
+  .site-menu-panel a {
+    transition-duration: 1ms;
+    transition-delay: 0s;
+  }
 }
 
 .name {
@@ -603,7 +576,7 @@ body {
 
 .name:hover,
 .about-link:hover,
-.top-right-links a:hover,
+.site-menu-panel a:hover,
 .index-instagram-link:hover,
 .me-contact-links a:hover {
   text-decoration: underline;
@@ -1459,68 +1432,8 @@ body.is-zoomed {
     z-index: auto;
   }
 
-  /* Nothing turns by itself at this width -- see top-right-links.js -- so the
-     caret is the only way through the list, and it is worth making plain which
-     way through it goes. The first four sit at the left with the caret to their
-     right; pressing it takes the group to the right-hand edge and leaves the
-     caret on the left, pointing back. */
-  .top-right-links {
-    /* static, not relative: the switch is absolutely positioned to the corner
-       of the page at this width, and a positioned rail would make it the
-       corner of the rail instead. The sets inside measure themselves against
-       .top-right-stack, which is positioned in their place. */
-    position: static;
-    top: auto;
-    right: auto;
-    width: auto;
-    /* The body only pads its left side, so the right edge has to be made here
-       or a right-aligned set would run into the edge of the screen. */
-    padding-right: var(--page-left);
-    margin-top: 14px;
-    gap: 2px;
-  }
-
-  .top-right-links.is-flipped {
-    justify-content: flex-end;
-  }
-
-  .top-right-links.is-flipped .top-right-next {
-    order: -1;
-  }
-
-  .top-right-stack {
-    position: relative;
-    /* The set that is not on show is taken out of the flow and pinned to the
-       left of the box. Against the right-hand edge that put it off the side of
-       the screen and gave the page something to scroll sideways to, for the
-       sake of four invisible links. */
-    overflow: clip;
-  }
-
-  .top-right-set {
-    position: absolute;
-    top: 0;
-    left: 0;
-    gap: 22px;
-  }
-
-  .top-right-set.is-visible {
-    position: relative;
-  }
-
-  .top-right-primary,
-  .top-right-secondary {
-    transform: none;
-    align-items: flex-start;
-  }
-
-  /* Against the right-hand edge the links are read back from it, so they are
-     set to it. */
-  .top-right-links.is-flipped .top-right-primary,
-  .top-right-links.is-flipped .top-right-secondary {
-    align-items: flex-end;
-  }
-
+  
+  
   .about-page {
     padding-top: 16px;
   }
@@ -1625,6 +1538,30 @@ body.is-zoomed {
     right: 16px;
   }
 
+  /* On the page that has a menu the two of them go to that corner together,
+     the switch first and the nine squares outside it, and the switch gives up
+     its own corner to the pair. */
+  .site-menu {
+    position: absolute;
+    top: 21px;
+    right: 16px;
+    gap: 13px;
+  }
+
+  .site-menu .theme-btn {
+    position: relative;
+    top: 0;
+    right: auto;
+  }
+
+  .site-menu-panel {
+    max-width: calc(100vw - 32px);
+  }
+
+  .site-menu-panel a {
+    font-size: 18px;
+  }
+
   .art-title {
     font-size: 16px;
   }
@@ -1670,10 +1607,6 @@ body.is-zoomed {
     padding-top: 16px;
   }
 
-  .top-right-links a {
-    font-size: 18px;
-  }
-
   .me-contact-links a {
     font-size: 24px;
   }
@@ -1687,10 +1620,6 @@ body.is-zoomed {
   .name,
   .about-link {
     font-size: 17px;
-  }
-
-  .top-right-links a {
-    font-size: 16px;
   }
 
   .me-contact-links a {
@@ -3895,7 +3824,7 @@ body.game-page {
   .to-top-btn,
   .back-link,
   .about-link,
-  .top-right-links,
+  .site-menu,
   .about-panel,
   .marquee-list,
   .marquee-fallback,
