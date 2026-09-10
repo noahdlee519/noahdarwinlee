@@ -209,7 +209,11 @@ body {
    the corner, one for the light and one for the way out of the page. */
 .site-menu {
   position: fixed;
-  top: var(--page-top);
+  /* The same footprint as the back-to-top mark, which lives in this corner
+     too and is never on screen at the same time: the header fades on the way
+     down the page and that mark arrives as this one goes. One place in the
+     corner, one mark in it, whichever of the two the page needs. */
+  top: calc(var(--page-top) + 9px);
   right: var(--page-left);
   z-index: 10;
   display: flex;
@@ -239,8 +243,8 @@ body {
 
 .site-menu-icon {
   display: block;
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   fill: currentColor;
   transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
 }
