@@ -25,12 +25,12 @@
   var showing = null;    // the <img> on screen, the thing that gets magnified
   var magnified = false;
 
-  /* Two is the least magnification worth the press. Beyond that it is decided
+  /* Two and a half is the least magnification worth the press. Beyond that it is decided
      by the file: where a full-size copy has been fetched there is real detail
      to go and look at, so the picture is taken up to its own pixels and no
      further, since past that there is nothing there. */
-  var ZOOM_MIN = 2;
-  var ZOOM_MAX = 4;
+  var ZOOM_MIN = 2.6;
+  var ZOOM_MAX = 5;
 
   /* Panning follows the pointer, which is no use to a finger: a touch that is
      not held moves nothing, and one that is held is a drag, where the picture

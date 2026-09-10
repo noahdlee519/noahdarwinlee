@@ -215,16 +215,26 @@ body {
 .top-right-next {
   display: block;
   margin: 0;
-  padding: 4px 6px;
+  padding: 4px 3px;
   border: 0;
   background: none;
   font: inherit;
-  font-size: 15px;
+  /* Big enough and bright enough to be found. It was set as quietly as a piece
+     of punctuation, in the last inch of the window, and a control nobody can
+     see is not a quiet control -- it is a missing one. */
+  font-size: 19px;
   line-height: 1;
   color: var(--ink);
-  opacity: 0.6;
+  opacity: 0.8;
   cursor: pointer;
   transition: opacity 140ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* And plainer still with a pointer anywhere in the rail: by then somebody is
+   looking at the links, which is when the way to the other four is worth
+   offering. */
+.top-right-links:hover .top-right-next {
+  opacity: 1;
 }
 
 .top-right-next:hover,
@@ -1045,6 +1055,18 @@ body.is-zoomed {
   max-width: min(calc(50% - 5px), calc(var(--ar, 1) * 440px));
 }
 
+/* Except in a row of three, where there is no leftover picture to guard
+   against and the cap does real damage: it holds the widest one short of the
+   width its ratio asks for, and since the pictures in a row are sized to come
+   out level, a picture that cannot have its width cannot have its height
+   either. It sat about a dozen pixels shallower than the two beside it while
+   the figure around it stretched to the row, which is the worst of both -- a
+   short picture in a tall box. Without the cap the wide one takes its ten
+   pixels back and the other two give up five each. */
+.art-row:has(> .art-plate:nth-child(3)) .art-plate {
+  max-width: calc(var(--ar, 1) * 440px);
+}
+
 /* A work in panels names its panels: the label under the whole piece says what
    the piece is, and these say which part of it you are looking at. */
 .art-plate figcaption {
@@ -1178,13 +1200,11 @@ body.is-zoomed {
     display: block;
   }
 
-  .art-split-main {
-    display: block;
-  }
-
-  .art-split-main > * + * {
-    margin-top: 10px;
-  }
+  /* The column inside it stays a flex column, though, with the same 10px gap
+     the plates outside the band are stacked with. As a block its children's
+     margins would collapse against that gap instead of adding to it, and the
+     writing in this project alone would sit half as far from the pictures as
+     the writing in all the others. */
 
   .art-aside {
     margin-top: 10px;
@@ -1240,6 +1260,13 @@ body.is-zoomed {
 
 /* Who else made it. Quieter than the writing above it and set apart from it,
    because it is a fact about the work rather than part of the description. */
+/* The course is a title, so it is set as one. Explicit because .art-caption em
+   turns italics off a few lines up -- there the tag is used for a date, not a
+   name -- and a reader coming to this line should not have to guess which. */
+.art-credit em {
+  font-style: italic;
+}
+
 .art-credit {
   margin: 7px 0 0 0;
   font-size: 15px;
@@ -1595,6 +1622,16 @@ body.is-zoomed {
 
   .art-caption {
     font-size: 15px;
+  }
+
+  /* The narrow column that the writing is set tight against in the band is not
+     there at this width: the band has come apart into a single column like
+     every other project, so the writing that sat in it takes the same room as
+     the writing in all of them. */
+  .art-note,
+  .art-split-main .art-note,
+  .art-plates > .art-note {
+    margin: 10px 0 12px 0;
   }
 
   /* On a phone the column is narrow enough that a row of four details is four
