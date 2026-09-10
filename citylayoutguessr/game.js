@@ -935,6 +935,21 @@
            "https://noahdarwinlee.com/citylayoutguessr/#daily";
   }
 
+  /* Which day it is, and then what you did with it, on a line of its own.
+     Three things separated by middle dots was a lot to read across for what
+     is mostly a date and a score, and the state reads better as an aside than
+     as a third item in a list. */
+  function dailyNote(name, state) {
+    el.dailyNote.textContent = "";
+    el.dailyNote.appendChild(document.createTextNode(name));
+    if (!state) return;
+    el.dailyNote.appendChild(document.createElement("br"));
+    var line = document.createElement("span");
+    line.className = "game-daily-state";
+    line.textContent = state;
+    el.dailyNote.appendChild(line);
+  }
+
   function renderDaily() {
     var key = dayKey();
     var done = readDaily();
@@ -942,18 +957,18 @@
     show(el.daily, true);
     if (done && done.day === key) {
       el.dailyStart.textContent = "see today\u2019s result";
-      el.dailyNote.textContent =
-        dailyName(key) + " \u00b7 played \u00b7 " + done.correct + " of " + done.log.length;
+      dailyNote(dailyName(key),
+                done.correct + " of " + done.log.length + " (played)");
     } else if (midway) {
       /* You left part of the way through. There is no starting again — the
          same ten maps are waiting where you put them down. */
       el.dailyStart.textContent = "resume today\u2019s challenge";
-      el.dailyNote.textContent =
-        dailyName(key) + " \u00b7 paused at map " + (midway.index + 1) +
-        " of " + (midway.total || midway.rounds.length);
+      dailyNote(dailyName(key),
+                "map " + (midway.index + 1) +
+                " of " + (midway.total || midway.rounds.length) + " (paused)");
     } else {
       el.dailyStart.textContent = "today\u2019s challenge";
-      el.dailyNote.textContent = dailyName(key);
+      dailyNote(dailyName(key), "");
     }
   }
 
@@ -1030,7 +1045,7 @@
   var DEFAULT_COLORS = { bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" };
   var COLOR_PRESETS = [
     { name: "orange", bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" },
-    { name: "night", bg: "#101014", ink: "#f2f2f2", accent: "#918fff" },
+    { name: "night", bg: "#000000", ink: "#f2f2f2", accent: "#918fff" },
     { name: "paper", bg: "#fff2eb", ink: "#1a1a1a", accent: "#ff1467" },
     { name: "sea", bg: "#0b3c49", ink: "#f2f2f2", accent: "#7fd1b9" },
     { name: "slate", bg: "#2b2d42", ink: "#edf2f4", accent: "#ef233c" },
@@ -1655,11 +1670,21 @@
     if (ticks[i]) ticks[i].classList.add("is-on");
 
     cfg = readSetup();
+    /* Naming the one that is missing rather than "one of each", which leaves
+       you to work out which of the two rows it meant. The difficulty first
+       because it is the first row on the page, so somebody reading downward
+       meets that message where the problem is. */
+    var missing = !cfg.levels.length
+      ? "select at least one difficulty level first"
+      : !hasRegion(cfg)
+      ? "select at least one region first"
+      : "";
     el.setupPool.textContent = n
       ? "your game will draw from " + n + (n === 1 ? " map" : " maps")
-      : (cfg.levels.length && hasRegion(cfg)
-          ? "no maps for that combination yet"
-          : "pick at least one of each");
+      : (missing || "no maps for that combination yet");
+    /* Coloured only while it is telling you something is wrong; a count of
+       maps is not a warning and should not read as one. */
+    el.setupPool.classList.toggle("is-warning", Boolean(missing) || !n);
     /* The caption says what the hints will actually do for the game as it is
        set up, which is not the same sentence once a single region is picked. */
     if (el.setupHintText) {
