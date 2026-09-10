@@ -1262,10 +1262,18 @@ body.is-zoomed {
 
 .art-caption {
   margin: 5px 0 0 0;
-  max-width: 62ch;
+  /* The same measure the notes between the pictures are set to, so the writing
+     in a project stops at one place rather than at two. */
+  max-width: 58ch;
   font-size: 16px;
   font-weight: 300;
   line-height: 1.45;
+  /* And no last line left holding one word. At three or four widths -- 320,
+     375 and 414 among them, which is to say most of the phones people have --
+     this paragraph came out with "curiosity." alone on the bottom line. This
+     asks the browser to pull a word down from the line above rather than leave
+     one hanging; where it is not understood, nothing changes. */
+  text-wrap: pretty;
   color: var(--ink);
   opacity: 0.72;
 }
@@ -1287,6 +1295,7 @@ body.is-zoomed {
 
 .art-credit {
   margin: 7px 0 0 0;
+  text-wrap: pretty;
   font-size: 15px;
   font-weight: 300;
   line-height: 1.4;
@@ -1299,6 +1308,7 @@ body.is-zoomed {
    the sheet above it, not a heading for the sheet below. */
 .art-note {
   margin: 22px 0 26px 0;
+  text-wrap: pretty;
   /* In the narrow column this never bites -- the column is narrower than the
      measure -- so it is only doing anything for a note standing across the
      whole page, where a line has to be stopped somewhere short of the width of
@@ -1480,6 +1490,13 @@ body.is-zoomed {
     z-index: auto;
   }
 
+  /* And the name a hair above the word under it. Two per cent is not a size
+     you would notice as a size; it is the difference between two lines that
+     are the same and two lines where one of them is the title. */
+  .name {
+    font-size: 27.5px;
+  }
+
   
   
   .about-page {
@@ -1656,7 +1673,7 @@ body.is-zoomed {
 @media (max-width: 610px) {
   .name {
     line-height: 1.05;
-    font-size: 24px;
+    font-size: 24.5px;
   }
 
   .about-link {
@@ -1681,6 +1698,10 @@ body.is-zoomed {
   .name,
   .about-link {
     font-size: 21px;
+  }
+
+  .name {
+    font-size: 21.4px;
   }
 
   .me-contact-links a {
