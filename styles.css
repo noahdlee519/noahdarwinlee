@@ -56,6 +56,9 @@ body {
   /* Width of the right-hand rail: the top-right links and the about-page
      contact list both sit in it, so they share a left edge and move together. */
   --rail-width: 504px;
+  /* Ceiling on a row of details: no picture standing in a row is taller than
+     this, whatever the window does. The lead has its own, higher one. */
+  --plate-h: 440px;
   /* Width of the slot the caret stands in, on whichever side of the links it
      is on. Here rather than on the rail because the day/night switch sits
      beyond that slot and has to know how wide it is. */
@@ -983,7 +986,19 @@ body.is-zoomed {
    column and a portrait one come out narrower, which is the same picture in
    both cases — about as tall as a person looking at it. */
 .art-lead {
-  max-width: calc(var(--ar, 1) * 760px);
+  max-width: var(--lead-w, calc(var(--ar, 1) * 760px));
+}
+
+/* Two ceilings, one for the lead and one for a row of details, and no reason
+   for the widths they work out to to have anything to do with each other. Most
+   of the time they do not and nobody minds: the lead is plainly a different
+   size from the row under it. Now and again they land within a few pixels,
+   which does not read as a difference -- it reads as a mistake. A card in that
+   position is given a width of its own, in --lead-w, and the row directly
+   under the lead is held to it too, so the two share an edge at every window
+   size rather than only at the ones where both are at their ceilings. */
+.art-plates > .art-lead + .art-row {
+  max-width: var(--lead-w, none);
 }
 
 /* ---- the one card that still cycles ----
@@ -1048,23 +1063,17 @@ body.is-zoomed {
 
 .art-row .art-plate {
   flex: var(--ar, 1) 1 calc(var(--ar, 1) * 300px);
-  /* Two caps, whichever bites first. Half the column stops a leftover picture
-     spanning the whole width; the second is a ceiling on height, because a
-     portrait detail held only to half the width still comes out taller than
-     the lead above it and stops being a detail. */
-  max-width: min(calc(50% - 5px), calc(var(--ar, 1) * 440px));
-}
-
-/* Except in a row of three, where there is no leftover picture to guard
-   against and the cap does real damage: it holds the widest one short of the
-   width its ratio asks for, and since the pictures in a row are sized to come
-   out level, a picture that cannot have its width cannot have its height
-   either. It sat about a dozen pixels shallower than the two beside it while
-   the figure around it stretched to the row, which is the worst of both -- a
-   short picture in a tall box. Without the cap the wide one takes its ten
-   pixels back and the other two give up five each. */
-.art-row:has(> .art-plate:nth-child(3)) .art-plate {
-  max-width: calc(var(--ar, 1) * 440px);
+  /* A ceiling on height and nothing else. There used to be a second cap at
+     half the column, meant to stop a picture left over at the end of a row
+     spanning the whole width -- but the ceiling already stops that, and in
+     any row whose pictures are not all the same shape the half-column cap
+     bit first and held the widest one short of the width its ratio asked
+     for. Pictures in a row are sized to come out level, so one that cannot
+     have its width cannot have its height either: it sat a few pixels
+     shallower than the ones beside it while the figure around it stretched
+     to the row, which is the worst of both -- a short picture in a tall
+     box. */
+  max-width: calc(var(--ar, 1) * var(--plate-h));
 }
 
 /* A work in panels names its panels: the label under the whole piece says what
