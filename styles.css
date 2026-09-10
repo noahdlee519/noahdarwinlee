@@ -851,16 +851,28 @@ a[href="/cv/"]:active {
   opacity: 1;
 }
 
-/* The wrapper carries nothing of its own: the picture is the flex child, so
-   its own limits are measured against the window rather than against a box in
-   between. */
+/* The frame is a real box now, and the thing you press: it takes the size of
+   the picture that fits in it and then holds that size while the picture
+   inside grows, so pressing it magnifies what is in the frame rather than
+   making the frame any bigger. Everything outside the frame is the way out. */
 .lightbox-frame {
-  display: contents;
+  display: block;
+  margin: auto;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.lightbox-frame.is-magnified {
+  cursor: zoom-out;
 }
 
 .lightbox picture {
   display: block;
-  margin: auto;
   max-width: 100%;
 }
 
@@ -872,12 +884,25 @@ a[href="/cv/"]:active {
   display: block;
   width: auto;
   height: auto;
-  max-width: min(100%, calc(100vw - 2 * var(--lb-pad)));
+  max-width: calc(100vw - 2 * var(--lb-pad));
   /* vh first for anything that has not heard of dvh; dvh second because on a
      phone the window is the part not under the browser's own furniture. */
   max-height: calc(100vh - 2 * var(--lb-pad));
   max-height: calc(100dvh - 2 * var(--lb-pad));
-  cursor: zoom-out;
+  /* The magnification is a transform, so it changes nothing about the size of
+     the box the frame was built around -- which is the whole trick. The origin
+     is set from the point pressed, and moves with the pointer after that, so
+     what you are looking at is what you asked to look at. Origin is left out
+     of the transition on purpose: the scale should ease, the aim should not
+     lag behind the hand. */
+  transform-origin: 50% 50%;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox img {
+    transition: none;
+  }
 }
 
 /* On a phone a picture made to fit the height is a picture in the middle of a
@@ -889,37 +914,46 @@ a[href="/cv/"]:active {
   }
 
   .lightbox img {
-    min-width: min(100%, calc(100vw - 2 * var(--lb-pad)));
+    min-width: calc(100vw - 2 * var(--lb-pad));
     max-height: none;
   }
 }
 
+/* The way out is the word for the key that does it. A cross is a button that
+   has to be found and understood; this is the instruction itself, and it also
+   happens to be pressable. fixed rather than absolute: the overlay is a
+   scroller, and a way out that scrolls off the top with the picture is no way
+   out. */
 .lightbox-close {
-  /* fixed rather than absolute: the overlay is a scroller now, and a way out
-     that scrolls off the top with the picture is no way out. */
   position: fixed;
   z-index: 1;
-  top: clamp(10px, 2vw, 22px);
-  right: clamp(10px, 2vw, 22px);
-  width: 40px;
-  height: 40px;
-  padding: 0;
+  top: clamp(12px, 2vw, 24px);
+  right: clamp(12px, 2vw, 26px);
+  padding: 6px 8px;
   border: 0;
-  border-radius: 50%;
   background: none;
   color: #ffffff;
   font: inherit;
-  font-size: 26px;
+  font-size: 15px;
   font-weight: 300;
   line-height: 1;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  opacity: 0.75;
+  opacity: 0.7;
   transition: opacity 140ms ease;
 }
 
 .lightbox-close:hover,
 .lightbox-close:focus-visible {
   opacity: 1;
+}
+
+/* The overlay has a ground of its own and takes no notice of the theme, so
+   neither can the ring the keyboard draws: the site's ink is black by day, and
+   a black ring on this is no ring at all. */
+.lightbox-frame:focus-visible,
+.lightbox-close:focus-visible {
+  outline-color: #ffffff;
 }
 
 /* The page must not scroll behind an open picture. */

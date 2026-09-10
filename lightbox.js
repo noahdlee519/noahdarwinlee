@@ -5,9 +5,15 @@
 // puts it on its own ground at whatever size the window allows.
 //
 // The overlay is built once, on the first press, and reused: it is markup
-// nobody needs until they ask for it. Escape closes it, so does the button, so
-// does clicking anywhere — and focus goes back to the picture you came from,
-// which is where the eye already is.
+// nobody needs until they ask for it. Escape closes it, so does the word in
+// the corner, so does clicking the ground around the picture — and focus goes
+// back to the picture you came from, which is where the eye already is.
+//
+// Pressing the picture itself does the other thing you might want at that
+// size: it magnifies. The frame keeps the size it was given and the picture
+// grows inside it, from the point pressed, so the frame becomes a window onto
+// part of the drawing rather than a bigger drawing. On a pointer that hovers,
+// moving it after that moves what is in the window.
 (function () {
   var zooms = document.querySelectorAll(".art-zoom");
   if (!zooms.length) return;
@@ -16,6 +22,23 @@
   var frame = null;
   var closer = null;
   var cameFrom = null;
+  var showing = null;    // the <img> on screen, the thing that gets magnified
+  var magnified = false;
+
+  /* Two is the least magnification worth the press. Beyond that it is decided
+     by the file: where a full-size copy has been fetched there is real detail
+     to go and look at, so the picture is taken up to its own pixels and no
+     further, since past that there is nothing there. */
+  var ZOOM_MIN = 2;
+  var ZOOM_MAX = 4;
+
+  /* Panning follows the pointer, which is no use to a finger: a touch that is
+     not held moves nothing, and one that is held is a drag, where the picture
+     is expected to come with it rather than the view. A tap magnifies where it
+     lands, which is the part of it a finger can ask for. */
+  var hovers = window.matchMedia
+    ? window.matchMedia("(hover: hover) and (pointer: fine)")
+    : { matches: false };
 
   /* ---- the full-size copies ----
      The gallery loads pictures at the size the gallery shows them, which is
@@ -99,15 +122,19 @@
     box.setAttribute("role", "dialog");
     box.setAttribute("aria-modal", "true");
 
-    frame = document.createElement("div");
+    /* A button, so the magnification is reachable from the keyboard as well as
+       the pointer -- and so the browser treats the picture as the control it
+       has become rather than as an image to be dragged off the page. */
+    frame = document.createElement("button");
+    frame.type = "button";
     frame.className = "lightbox-frame";
 
     closer = document.createElement("button");
     closer.type = "button";
     closer.className = "lightbox-close";
-    closer.setAttribute("aria-label", "Close");
+    closer.setAttribute("aria-label", "Close (esc)");
     closer.title = "Close";
-    closer.textContent = "×";
+    closer.textContent = "esc";
 
     box.appendChild(frame);
     box.appendChild(closer);
@@ -115,11 +142,65 @@
 
     closer.addEventListener("click", close);
     box.addEventListener("click", function (event) {
-      /* Anywhere, including the picture: at this size the picture is the
-         subject, not a control, and wanting it gone is the only thing left to
-         want. */
-      if (event.target !== closer) close();
+      /* The ground around the picture, and nothing else: the picture and the
+         word in the corner both have something of their own to do. */
+      if (event.target === box) close();
     });
+
+    frame.addEventListener("click", function (event) {
+      if (magnified) demagnify();
+      else magnify(event);
+    });
+
+    frame.addEventListener("pointermove", function (event) {
+      if (!magnified || !hovers.matches) return;
+      showing.style.transformOrigin = originFrom(event);
+    });
+  }
+
+  /* Where in the picture the press landed, as a pair of percentages -- which
+     is what transform-origin wants, and what keeps the point pressed under the
+     pointer as everything around it grows away from it. */
+  function originFrom(event) {
+    var r = frame.getBoundingClientRect();
+    if (!r.width || !r.height) return "50% 50%";
+    var x = ((event.clientX - r.left) / r.width) * 100;
+    var y = ((event.clientY - r.top) / r.height) * 100;
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+    return x.toFixed(2) + "% " + y.toFixed(2) + "%";
+  }
+
+  function factor() {
+    if (!showing) return ZOOM_MIN;
+    var wide = showing.getBoundingClientRect().width;
+    var real = showing.naturalWidth || 0;
+    if (!wide || !real) return ZOOM_MIN;
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, real / wide));
+  }
+
+  function magnify(event) {
+    if (!showing) return;
+    /* detail is 0 for Enter and space on the button, where there is no point
+       on the picture to work from and the middle is the only fair answer. */
+    showing.style.transformOrigin =
+      event && event.detail ? originFrom(event) : "50% 50%";
+    showing.style.transform = "scale(" + factor().toFixed(3) + ")";
+    magnified = true;
+    frame.classList.add("is-magnified");
+    frame.setAttribute("aria-label", "Zoom out");
+  }
+
+  function demagnify() {
+    if (showing) {
+      showing.style.transform = "";
+      showing.style.transformOrigin = "";
+    }
+    magnified = false;
+    if (frame) {
+      frame.classList.remove("is-magnified");
+      frame.setAttribute("aria-label", "Zoom in");
+    }
   }
 
   function open(zoom) {
@@ -145,6 +226,8 @@
 
     frame.textContent = "";
     frame.appendChild(copy);
+    showing = img;
+    demagnify();
     box.setAttribute("aria-label", (img && img.alt) || "Picture");
     /* After the manifest, whenever that is: the first picture opened on a
        visit is usually asking before the answer has arrived. */
@@ -167,6 +250,8 @@
     if (!box || box.hidden) return;
     box.classList.remove("is-open");
     box.hidden = true;
+    demagnify();
+    showing = null;
     frame.textContent = "";
     document.body.classList.remove("is-zoomed");
     if (cameFrom) cameFrom.focus({ preventScroll: true });
@@ -187,14 +272,16 @@
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape" || !box || box.hidden) return;
     event.preventDefault();
-    /* Nothing else on this page listens for escape, but say so anyway: the
-       game and the blog both do, and this file may not always be alone. */
     event.stopPropagation();
+    /* One step at a time: out of the magnification first, out of the picture
+       second. Nobody who has just gone in to look at something wants the whole
+       thing shut on the first press. */
+    if (magnified) return demagnify();
     close();
   });
 
   /* Tab must not walk out of the overlay into the page behind it. With two
-     stops — the picture is not one — the trap is this short. */
+     stops — the picture, and the way out — the trap is this short. */
   document.addEventListener("focusin", function (event) {
     if (!box || box.hidden) return;
     if (!box.contains(event.target)) closer.focus({ preventScroll: true });
