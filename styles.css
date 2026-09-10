@@ -190,23 +190,28 @@ body {
 }
 
 .top-right-links {
+  /* Room for the caret on whichever side it is on. The box is shifted right by
+     one slot so the links themselves stay exactly where they were and the caret
+     hangs in the margin beside them. */
+  --caret-slot: 24px;
   position: fixed;
   top: var(--page-top);
-  right: calc(var(--page-left) + clamp(0px, 0vw, 10px));
+  right: calc(var(--page-left) - var(--caret-slot));
   z-index: 10;
+  display: flex;
+  align-items: center;
   transition: opacity 140ms ease;
 }
 
 /* The four links change on their own; this is how you change them yourself.
-   It sits under the block on the right-hand edge, and it is the same small
-   triangle the about link uses — the site already has a mark for "there is
-   more this way". Pressing it also holds the rotation for a while: somebody
-   working through the list by hand should not have it move underneath them. */
+   It stands beside the block, pointing the way the list is about to move: to
+   the right of the first four, and then, once they have been turned, to the
+   left of the second four, pointing back. Pressing it also holds the rotation
+   for a while: somebody working through the list by hand should not have it
+   move underneath them. */
 .top-right-next {
   display: block;
-  /* Centred under the block rather than hung off one end: it belongs to all
-     four links, not to the last of them. */
-  margin: 9px auto 0;
+  margin: 0;
   padding: 4px 6px;
   border: 0;
   background: none;
@@ -224,9 +229,11 @@ body {
   opacity: 1;
 }
 
-/* Half a turn on each press, so two presses come back round to where they
-   started — which, with two sets of links, is exactly what the list does. */
-.top-right-next.is-turned {
+/* Half a turn, which turns the triangle round as well as moving it: the same
+   press that sends the list on also makes the mark point back the way it came.
+   The class is on the container rather than the button because the side the
+   button sits on changes with it. */
+.top-right-links.is-flipped .top-right-next {
   transform: rotate(180deg);
 }
 
@@ -258,17 +265,39 @@ body {
 }
 
 @media (min-width: 901px) {
+  /* A caret slot, the rail, a caret slot. The rail is the middle column in
+     both states, so the links hold their place while the caret crosses from
+     one side to the other — which matters here, where the set changes itself
+     every few seconds and links that moved with it would be unusable. */
   .top-right-links {
     display: grid;
-    grid-template: 1fr / 1fr;
     /* One fixed rail width. Without it the column width came from the content
        plus a 2vw gap, so the left edge crept as the window resized. */
-    width: var(--rail-width);
+    grid-template-columns: var(--caret-slot) var(--rail-width) var(--caret-slot);
+    align-items: center;
+  }
+
+  .top-right-stack {
+    grid-row: 1;
+    grid-column: 2;
+    display: grid;
+    grid-template: 1fr / 1fr;
   }
 
   .top-right-set {
     grid-area: 1 / 1;
     justify-content: space-between;
+  }
+
+  .top-right-next {
+    grid-row: 1;
+    grid-column: 3;
+    justify-self: start;
+  }
+
+  .top-right-links.is-flipped .top-right-next {
+    grid-column: 1;
+    justify-self: end;
   }
 }
 
@@ -1051,6 +1080,10 @@ body.is-zoomed {
    because a line the width of the page is not a line anybody wants to read. */
 .art-plates > .art-note {
   max-width: 72ch;
+  /* And closer to them. A note between two rows is read as belonging to the
+     pictures on either side of it; with the row gap on top of its own margins
+     it was reading as a gap between two projects instead. */
+  margin: 10px 0 12px 0;
 }
 
 .art-label {
@@ -1273,12 +1306,38 @@ body.is-zoomed {
     z-index: auto;
   }
 
+  /* Nothing turns by itself at this width -- see top-right-links.js -- so the
+     caret is the only way through the list, and it is worth making plain which
+     way through it goes. The first four sit at the left with the caret to their
+     right; pressing it takes the group to the right-hand edge and leaves the
+     caret on the left, pointing back. */
   .top-right-links {
     position: relative;
     top: auto;
     right: auto;
     width: auto;
+    /* The body only pads its left side, so the right edge has to be made here
+       or a right-aligned set would run into the edge of the screen. */
+    padding-right: var(--page-left);
     margin-top: 14px;
+    gap: 2px;
+  }
+
+  .top-right-links.is-flipped {
+    justify-content: flex-end;
+  }
+
+  .top-right-links.is-flipped .top-right-next {
+    order: -1;
+  }
+
+  .top-right-stack {
+    position: relative;
+    /* The set that is not on show is taken out of the flow and pinned to the
+       left of the box. Against the right-hand edge that put it off the side of
+       the screen and gave the page something to scroll sideways to, for the
+       sake of four invisible links. */
+    overflow: clip;
   }
 
   .top-right-set {
@@ -1296,6 +1355,13 @@ body.is-zoomed {
   .top-right-secondary {
     transform: none;
     align-items: flex-start;
+  }
+
+  /* Against the right-hand edge the links are read back from it, so they are
+     set to it. */
+  .top-right-links.is-flipped .top-right-primary,
+  .top-right-links.is-flipped .top-right-secondary {
+    align-items: flex-end;
   }
 
   .about-page {
