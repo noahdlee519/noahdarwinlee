@@ -33,11 +33,17 @@ KEEP = (".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp")
 FORCE = os.environ.get("FORCE") == "1"
 
 # width, format, quality. The jpg is the fallback for a browser with no webp.
+#
+# The qualities came down in September 2026. At 82-84 webp was spending a
+# great deal on the grain of a photograph -- the paper, the canvas, the noise
+# a phone camera leaves in a flat wall -- none of which is the work. The
+# numbers below are where a photograph of a drawing stops losing anything you
+# would notice and starts losing only that.
 SIZES = [
-    (640, "jpg", 86),
-    (640, "webp", 82),
-    (1280, "webp", 84),
-    (2400, "webp", 80),
+    (640, "jpg", 84),
+    (640, "webp", 78),
+    (1280, "webp", 78),
+    (2400, "webp", 74),
 ]
 
 if not os.path.isdir(SRC):
@@ -67,20 +73,27 @@ for here, _dirs, files in os.walk(SRC):
         im = ImageOps.exif_transpose(Image.open(origin))
         native = im.size[0]
 
-        # Never invent detail: a 900px original gets a 640 and nothing above it.
-        # Working that out before the freshness check matters, or a small
-        # original looks stale for ever, its missing large sizes counted as
+        # Never invent detail: a 900px original gets a 640 and nothing above
+        # it. But do not throw away detail that is there either -- an original
+        # 1162px wide has most of a 1280 in it, and a screen with two pixels to
+        # the point will use every one of them. Where a tier is wider than the
+        # original, the file is built at the original's own width instead and
+        # named for it, so long as that is meaningfully more than the tier
+        # below. Working this out before the freshness check matters, or a
+        # small original looks stale for ever, its missing sizes counted as
         # work still to do.
-        wanted = [
-            ("%s-%d.%s" % (base, w, fmt), w, fmt, q)
-            for w, fmt, q in SIZES
-            if w <= native or w == SIZES[0][0]
-        ]
+        wanted, widths = [], []
+        for w, fmt, q in SIZES:
+            actual = min(w, native)
+            if actual < w and any(actual <= prev * 1.2 for prev in widths):
+                continue  # near enough to a size already built to be the same file
+            wanted.append(("%s-%d.%s" % (base, actual, fmt), actual, fmt, q))
+            widths.append(actual)
+        keep = set(path for path, _, _, _ in wanted)
         for w, fmt, _q in SIZES:
-            if w > native and w != SIZES[0][0]:
-                stale = "%s-%d.%s" % (base, w, fmt)
-                if os.path.exists(stale):
-                    os.remove(stale)
+            stale = "%s-%d.%s" % (base, w, fmt)
+            if stale not in keep and os.path.exists(stale):
+                os.remove(stale)
 
         fresh = os.path.getmtime(origin)
         if not FORCE and all(
