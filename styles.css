@@ -988,6 +988,13 @@ body.is-zoomed {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  /* The two sides of the band are the same height whether their contents are
+     or not, and the last thing in each should come out level at the foot. When
+     the sheet beside it is the taller of the two -- which happens as soon as
+     the window narrows enough to stop the writing wrapping the way it does at
+     full width -- the difference is paid out into the gaps in this column,
+     three or four pixels each, rather than left at the bottom as a step. */
+  justify-content: space-between;
 }
 
 /* The lead is capped by height everywhere else, which on a landscape picture
@@ -1033,6 +1040,10 @@ body.is-zoomed {
      the finished model can sit under the sections it was built from and the
      two sides of the band come out about the same height. */
   flex: 0 0 60%;
+  /* Held at the top, not stretched: below the full width this column is the
+     shorter one by a good margin, and a column of two pictures asked to fill
+     that height would put all of the difference into the one gap between them.
+     A short foot is a margin; an eighty-pixel hole is a mistake. */
   align-self: flex-start;
   display: flex;
   flex-direction: column;
@@ -1042,6 +1053,17 @@ body.is-zoomed {
 .art-aside .art-plate {
   margin: 0;
   max-width: none;
+}
+
+/* At the full 1180 the two sides are within a pixel or two of each other, so
+   the last of the slack can be paid out of this column as well and the two
+   feet come out exactly level. Only here: further down the difference is far
+   too big to hide in one gap. */
+@media (min-width: 1240px) {
+  .art-aside {
+    align-self: stretch;
+    justify-content: space-between;
+  }
 }
 
 .art-aside .art-zoom,
