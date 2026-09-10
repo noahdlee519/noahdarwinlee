@@ -672,17 +672,21 @@ a[href="/cv/"]:active {
   display: block;
 }
 
+/* The room above the photograph. It has to be the same room at every width --
+   the panel is one thing opening under one word, and it should open the same
+   way on a phone as on a desk. The two numbers differ because what is above
+   the panel does not: on a wide screen the name and the word are fixed over
+   the top of the page and the panel starts below them on its own, and on a
+   phone they are in the stack and have already spent some of the distance. */
 @media (min-width: 901px) {
-  /* Clear the fixed name/about nav, which sits over the top-left of the page,
-     and leave a clear gap between the marker and the panel content. */
   .about-panel {
-    padding-top: 69px;
+    padding-top: 14px;
   }
 }
 
 @media (max-width: 900px) {
   .about-panel {
-    padding-top: 14px;
+    padding-top: 2px;
   }
 }
 
