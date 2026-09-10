@@ -975,6 +975,29 @@ body.is-zoomed {
   max-width: none;
 }
 
+/* A note standing on its own wants room around it. A note between two pictures
+   in a column that has to come out level with the column beside it wants as
+   little as it can read with -- and the two together were carrying about
+   seventy pixels more than the other side had to spend. */
+.art-split-main .art-note {
+  margin: 6px 0 8px 0;
+}
+
+/* Above 1240 the column is at its full 1180 and the two sides come out level
+   to within a pixel or two. Below it the pictures shrink with the column and
+   the writing does not -- it wraps onto more lines instead -- so the side with
+   the writing on it runs longer. There is no fixing that with spacing alone,
+   the text is simply taller; this gives back what spacing there is to give. */
+@media (min-width: 901px) and (max-width: 1239px) {
+  .art-split-main {
+    gap: 6px;
+  }
+
+  .art-split-main .art-note {
+    margin: 2px 0 4px 0;
+  }
+}
+
 .art-aside {
   /* The larger half, and a fixed one: the drawing decides the split, and what
      stands beside it fits into the rest. A column rather than one picture, so
