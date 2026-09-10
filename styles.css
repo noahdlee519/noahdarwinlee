@@ -344,7 +344,13 @@ body {
 
 .site-menu-panel a[target="_blank"]::after,
 .site-menu-panel a.show-external-icon::after {
-  content: "\2197";
+  /* The arrow, with U+FE0E after it. On a phone this character has an emoji
+     face as well as a letter's, and the phone reaches for the emoji: a little
+     blue-and-white tile where the page wants a hairline arrow in the colour of
+     the text. FE0E is the request for the letter. font-variant-emoji says the
+     same thing to browsers new enough to have it. */
+  content: "\2197\FE0E";
+  font-variant-emoji: text;
   margin-left: 0.22em;
   display: inline-block;
   font-size: 0.72em;
@@ -1370,7 +1376,13 @@ body.is-zoomed {
 }
 
 .bio-materials-link::after {
-  content: "\2197";
+  /* The arrow, with U+FE0E after it. On a phone this character has an emoji
+     face as well as a letter's, and the phone reaches for the emoji: a little
+     blue-and-white tile where the page wants a hairline arrow in the colour of
+     the text. FE0E is the request for the letter. font-variant-emoji says the
+     same thing to browsers new enough to have it. */
+  content: "\2197\FE0E";
+  font-variant-emoji: text;
   margin-left: 0.22em;
   display: inline-block;
   font-size: 0.72em;
