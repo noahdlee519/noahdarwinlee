@@ -58,16 +58,72 @@ You get one go. Once you finish, the menu offers today's result instead of a
 replay, and a **copy result** button puts a shareable summary on the clipboard:
 
 ```
-citylayoutguessr no. 1
-7 / 10
-●●○●●●○●●●
+citylayoutguessr — daily game 1: 9/11/26
+7.5 / 10
+●◕◑◔○●◔◑◕●
 https://noahdarwinlee.com/citylayoutguessr/#daily
 ```
+
+The circles are how full each round came out — see the next section.
 
 **One thing to watch:** the puzzle is drawn from whatever pictures exist when
 the page loads, so adding maps partway through a day changes that day's ten for
 anyone who loads it afterwards. If people are playing, push new maps the next
 morning rather than mid-evening.
+
+---
+
+## How a round is scored
+
+In the daily, and in a custom game with **every** continent ticked, a round is
+worth up to a point and a guess is paid a quarter for each thing it got right:
+
+| A quarter for | Example, when the answer is Nagoya |
+|---|---|
+| the continent | anywhere in Asia |
+| the region | anywhere in Eastern Asia — Seoul, Taipei, Ulaanbaatar |
+| the country | anywhere in Japan |
+| the city | Nagoya |
+
+So naming the city is a full point, a different city in the same country is
+0.75, a neighbouring country in the same region is 0.5, the right continent
+and nothing more is 0.25, and a guess with none of it earns nothing. Giving up
+earns nothing either — there is no place to have been half right about.
+
+Every other game is right or wrong as before. That is deliberate: in a game
+narrowed to one continent, or to a single pack, naming the continent is naming
+what you chose, and paying for it would be paying you to read your own
+settings back.
+
+**The regions are the twenty-two of the UN's M49 scheme** — Western Europe,
+Eastern Asia, the Caribbean, Melanesia and so on — and they live in a
+`regions` block near the top of `cities.json`, each with the countries in it
+and the continent the game files it under:
+
+```json
+{ "id": "western-europe", "label": "Western Europe", "continent": "Europe",
+  "countries": [
+    "Austria", "Belgium", "France", "Germany", "Liechtenstein",
+    "Luxembourg", "Monaco", "Netherlands", "Switzerland"
+  ] },
+```
+
+A country has to be in exactly one of them or a guess from there can never be
+half right. `check.sh` tells you if one is missing. There are a few countries
+in the table with no city in the game yet — that is on purpose, so adding the
+city is the only step.
+
+**Two of them disagree with the continent boxes, and that is intended.** M49
+puts Turkey and Cyprus in Western Asia; this game files Istanbul and Nicosia
+under *europe*, because that is the box you would tick to look for them. The
+continent is read off the city and the region off the country, so the two can
+come apart. Guess Moscow when the answer is Vladivostok and you have the right
+country and the right region and the wrong continent: half a point.
+
+The score is written with as few decimals as it has — `7`, `7.5`, `7.25` — and
+the round's mark in the recap is a circle filled as far as it was earned. On
+the scoreboard the daily score is a number with quarters too, which needs
+`supabase/quarter-points.sql` run once; `SUPABASE-SETUP.md` says where.
 
 ---
 

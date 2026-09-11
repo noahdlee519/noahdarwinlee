@@ -2233,8 +2233,10 @@
     if (near) {
       el.earned.textContent =
         "+" + points(entry.credit.points) + " \u2014 the right " +
-        (entry.credit.country ? "country" : entry.credit.region ? "region" : "continent") +
-        (entry.credit.where ? ", " + entry.credit.where : "");
+        (entry.credit.country
+          ? "country"
+          : (entry.credit.region ? "region" : "continent") +
+            (entry.credit.where ? ", " + entry.credit.where : ""));
     } else {
       el.earned.textContent = "";
     }

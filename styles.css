@@ -3675,6 +3675,26 @@ body.game-page {
     width: 100%;
   }
 
+  /* Only a round that earned something is allowed a second line. Letting the
+     row wrap the rest of the time pushes the button down on every round,
+     which costs the height the single row was for. */
+  .game-reveal:has(.game-earned:not([hidden])) {
+    flex-wrap: wrap;
+  }
+
+  /* Four across a phone is one too many, so what the near miss was worth drops
+     below the answer and takes the button with it, rather than squeezing the
+     city's name into three lines. */
+  .game-earned {
+    order: 1;
+    flex: 1 1 auto;
+    margin: 0;
+  }
+
+  .game-btn-next {
+    order: 2;
+  }
+
   .game-verdict {
     flex: 0 0 auto;
     margin: 0;

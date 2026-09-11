@@ -87,6 +87,35 @@ if strays:
     for f in strays:
         print("  " + f)
 
+# ---------- the regions ----------
+# A guess is paid a quarter for landing in the answer's region, which only
+# works if every country anybody can name has exactly one. A country missing
+# here can never be half right, and one listed twice makes the answer depend
+# on which line was read first.
+regions = data.get("regions", [])
+if regions:
+    where, twice = {}, []
+    for r in regions:
+        for co in r.get("countries", []):
+            if co in where:
+                twice.append(co)
+            where[co] = r
+    named = set(c.get("country") for c in cities if c.get("country"))
+    try:
+        named |= set(c.get("country") for c in
+                     json.load(open("citylayoutguessr/catalog.json", encoding="utf-8"))["cities"])
+    except Exception:
+        pass
+    lost = sorted(n for n in named if n and n not in where)
+    print("\nRegions: %d, covering %d countries." % (len(regions), len(where)))
+    if twice:
+        print("  In more than one region: " + ", ".join(sorted(set(twice))))
+    if lost:
+        print("  In no region, so a guess from there can never be half right:")
+        print("    " + "\n    ".join(lost))
+    if not twice and not lost:
+        print("  Every country in play and on the list has exactly one.")
+
 dupes = [i for i, n in collections.Counter(c["id"] for c in cities).items() if n > 1]
 if dupes:
     print("\nDuplicate ids in cities.json: " + ", ".join(dupes))

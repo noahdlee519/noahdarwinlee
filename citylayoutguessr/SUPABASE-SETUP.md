@@ -29,6 +29,14 @@ project, and a Google OAuth client for it to talk to. Neither takes long.
    decide who may read and write what. It is safe to run again if you change
    something later.
 
+**If your project was set up before quarter points**, the score column there is
+a whole number and the board will refuse anything with a quarter in it. Paste
+`citylayoutguessr/supabase/quarter-points.sql` into the same SQL editor and run
+it once. It widens the column, rebuilds the two boards so their totals keep
+their quarters, and leaves the scores already posted exactly as they are — a
+whole number of cities is a whole number of points. A project created from
+today's `schema.sql` already has all of that and does not need it.
+
 ## 3. Make the Google sign-in client
 
 Google needs to know which site is asking, and Supabase needs Google's client
@@ -145,8 +153,9 @@ thing again.
 | `events` | visit or login | **nobody** through the site | anyone, insert only |
 
 `profiles` holds the name and picture Google gives us, because a leaderboard
-needs something to put next to a score. `daily_scores` holds the count you got
-right out of ten. `events` holds a row saying "someone loaded this page" or
+needs something to put next to a score. `daily_scores` holds your score out of
+ten, in quarters — a quarter each for the continent, the region, the country
+and the city. `events` holds a row saying "someone loaded this page" or
 "someone signed in" — a path, a referrer, a date, and the user id if there was
 one. No addresses, no fingerprinting, nothing bought or sold.
 
