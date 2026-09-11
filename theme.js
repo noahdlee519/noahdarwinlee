@@ -72,23 +72,17 @@
          has to be told there is one more thing to fade. */
       if (window.__updateHeaderFade) window.__updateHeaderFade();
     });
-    /* Where the front page keeps its menu, the switch goes in beside it: two
-       small controls in the same corner, one for the light and one for the way
-       out of the page, laid out as a row by the stylesheet rather than each
-       finding its own way to the same spot.
+    /* On the line of the name, on every page -- the first line of the site --
+       in a wrapper the stylesheet lays out as a row. The switch used to
+       position itself by measuring the word, which meant re-measuring every
+       time the type loaded or the window moved, and being a few pixels out
+       whenever that had not happened yet. Sharing a line box is the version
+       that cannot drift, and it is why the circle sits at exactly the same
+       height on every page rather than nearly the same height.
 
-       Everywhere else there is no menu, and it goes on the line of the name
-       instead -- the first line of every page on the site -- in a wrapper the
-       stylesheet lays out as a row. The switch used to position itself by
-       measuring the word, which meant re-measuring every time the type loaded
-       or the window moved, and being a few pixels out whenever that had not
-       happened yet. Sharing a line box is the version that cannot drift. */
-    var corner = document.querySelector(".site-menu");
-    if (corner) {
-      corner.insertBefore(btn, corner.firstChild);
-      if (window.__updateHeaderFade) window.__updateHeaderFade();
-      return;
-    }
+       It used to go into the front page's menu instead, which put it in the
+       corner there and beside the name everywhere else -- two arrangements,
+       and the front page's name a line box shorter than everybody else's. */
     anchor = document.querySelector(".name") ||
       document.querySelector(".about-link, .back-link");
     if (anchor && anchor.parentNode) {

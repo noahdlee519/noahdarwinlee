@@ -61,6 +61,11 @@ body {
   --page-left: clamp(10px, 3vw, 24px);
   /* Width of the right-hand rail the about-page contact list sits in. */
   --rail-width: 504px;
+  /* The two marks that share the top right corner on a phone: how big the
+     menu's nine squares are, and how far the day/night circle stands off
+     them. Here because neither is inside the other any more. */
+  --corner-mark: 18px;
+  --corner-gap: 22px;
   /* Ceiling on a row of details: no picture standing in a row is taller than
      this, whatever the window does. The lead has its own, higher one. */
   --plate-h: 440px;
@@ -250,14 +255,6 @@ body {
   transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
 }
 
-/* The switch carries two pixels of downward nudge everywhere else, where it is
-   set against a line of type whose mass sits above the middle of its line box.
-   Here it is set against a mark, and a mark has its weight in the middle, so
-   the nudge comes off and the two are centred on each other. */
-.site-menu .theme-btn {
-  top: 0;
-}
-
 .site-menu-btn:hover .site-menu-icon {
   opacity: 0.6;
 }
@@ -442,12 +439,26 @@ body {
   }
 }
 
+/* The same size as the about link, step for step. It had been left on the
+   sizes that link used before the header came up a quarter on a phone, which
+   made the way back visibly smaller than the way in -- two words that do the
+   same kind of work on two different pages. */
+@media (max-width: 900px) {
+  .back-link {
+    font-size: 27px;
+  }
+}
+
 @media (max-width: 610px) {
-  .back-link { font-size: 19px; }
+  .back-link {
+    font-size: 24px;
+  }
 }
 
 @media (max-width: 460px) {
-  .back-link { font-size: 17px; }
+  .back-link {
+    font-size: 21px;
+  }
 }
 
 .cv-page h2 {
@@ -1612,18 +1623,24 @@ body.is-zoomed {
   /* The mark comes down to the size of the circle beside it. On a phone the
      corner is a quarter of an inch of glass and two controls have to share it;
      a thirty-pixel grid there is a button in the way of the page rather than a
-     mark on it. Same drawing, read small, with a little more air between the
-     two of them so they stay two things. */
+     mark on it. Same drawing, read small. */
   .site-menu {
     position: absolute;
     top: 21px;
     right: 16px;
-    gap: 22px;
   }
 
   .site-menu-icon {
-    width: 18px;
-    height: 18px;
+    width: var(--corner-mark);
+    height: var(--corner-mark);
+  }
+
+  /* The switch belongs to the name's line and goes to this corner at this
+     width, which on the front page is the mark's corner too. It stands inboard
+     of the mark, measured off the mark rather than guessed at, so the two keep
+     their distance if either ever changes size. */
+  body:has(.site-menu) .theme-btn {
+    right: calc(16px + var(--corner-mark) + var(--corner-gap));
   }
 
   .site-menu .theme-btn {
@@ -3350,6 +3367,26 @@ body.game-page {
   inset: 0;
   border-radius: 50%;
   background: currentColor;
+}
+
+/* A round that found the right part of the world and the wrong city. The
+   circle is filled as far as it was earned — a quarter, a half, three
+   quarters — so the recap column reads as a picture of the run. The share of
+   the sweep comes in on --fill from game.js. */
+.game-recap-item.is-part .game-recap-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(currentColor var(--fill, 50%), transparent 0);
+}
+
+/* The same note under the answer, on the round itself. */
+.game-earned {
+  margin: 0.2em 0 0;
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
 }
 
 .game-recap-guess {
