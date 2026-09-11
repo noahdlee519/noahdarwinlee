@@ -118,55 +118,37 @@ for folder, pack in SOURCES:
 print("\n%d built, %d already up to date" % (built, skipped))
 
 if added:
+    # New entries are appended to the text of the file rather than the file
+    # being written out again from the parsed data. Rewriting it meant every
+    # part of cities.json had to be known here, and anything this script had
+    # not been taught about — the packs block once, the regions block after
+    # that — was silently dropped the next time a picture was added. Adding
+    # text to the end of the list cannot lose what it never touches.
     def esc(x):
         return json.dumps(x, ensure_ascii=False)
-    L = ["{", '  "credit": %s,' % esc(data["credit"]), '  "rounds": %d,' % data["rounds"],
-         '  "imageDir": %s,' % esc(data["imageDir"]), '  "tiers": [']
-    for i, t in enumerate(data["tiers"]):
-        L.append('    { "id": %s, "label": %s }%s'
-                 % (esc(t["id"]), esc(t["label"]), "" if i == len(data["tiers"]) - 1 else ","))
-    L += ["  ],", '  "continents": [']
-    for i, t in enumerate(data.get("continents", [])):
-        L.append('    { "id": %s, "label": %s }%s'
-                 % (esc(t["id"]), esc(t["label"]), "" if i == len(data["continents"]) - 1 else ","))
-    L += ["  ],"]
-    # The packs, written back as they were found. This block used to be absent,
-    # which meant that adding one picture to the folder quietly deleted every
-    # pack in the file — the rewriter only writes what it knows about.
-    if data.get("packs"):
-        L.append('  "packs": [')
-        for i, pk in enumerate(data["packs"]):
-            L.append('    { "id": %s, "label": %s, "countries": [%s] }%s'
-                     % (esc(pk["id"]), esc(pk["label"]),
-                        ", ".join(esc(c) for c in pk.get("countries") or []),
-                        "" if i == len(data["packs"]) - 1 else ","))
-        L += ["  ],"]
-    L += ['  "cities": [']
-    groups = [[c for c in data["cities"] if c["tier"] == t] for t in ["easy", "medium", "hard"]]
-    for gi, g in enumerate(groups):
-        g.sort(key=lambda c: c["id"])
-        for ci, c in enumerate(g):
-            last = gi == len(groups) - 1 and ci == len(g) - 1
-            L.append("    {")
-            L.append('      "id": %s, "tier": %s, "city": %s, "country": %s, "continent": %s,'
-                     % (esc(c["id"]), esc(c["tier"]), esc(c["city"]),
-                        esc(c.get("country", "")), esc(c.get("continent", ""))))
-            L.append('      "aliases": [%s]%s'
-                     % (", ".join(esc(a) for a in c.get("aliases") or []),
-                        "," if (c.get("packs") or c.get("packOnly")) else ""))
-            # Same reason as the packs above: what is not written here is lost.
-            extra = []
-            if c.get("packs"):
-                extra.append('"packs": [%s]' % ", ".join(esc(x) for x in c["packs"]))
-            if c.get("packOnly"):
-                extra.append('"packOnly": true')
-            if extra:
-                L.append("      " + ", ".join(extra))
-            L.append("    }%s" % ("" if last else ","))
-        if gi != len(groups) - 1:
-            L.append("")
-    L += ["  ]", "}"]
-    out = "\n".join(L) + "\n"
+
+    def block(c):
+        lines = ["    {",
+                 '      "id": %s, "tier": %s, "city": %s, "country": "", "continent": "",'
+                 % (esc(c["id"]), esc(c["tier"]), esc(c["city"])),
+                 '      "aliases": []%s' % ("," if c.get("packs") or c.get("packOnly") else "")]
+        extra = []
+        if c.get("packs"):
+            extra.append('"packs": [%s]' % ", ".join(esc(x) for x in c["packs"]))
+        if c.get("packOnly"):
+            extra.append('"packOnly": true')
+        if extra:
+            lines.append("      " + ", ".join(extra))
+        lines.append("    }")
+        return "\n".join(lines)
+
+    src_text = io.open("citylayoutguessr/cities.json", encoding="utf-8").read()
+    # The end of the "cities" list: the last closing brace of an entry, which
+    # is the one before the bracket that closes the list. New entries are all
+    # hard, and hard is the last group, so the end of the list is where they go.
+    cut = src_text.rindex("    }") + len("    }")
+    fresh = ",\n" + ",\n".join(block(by_id[cid]) for cid in added)
+    out = src_text[:cut] + fresh + src_text[cut:]
     json.loads(out)
     io.open("citylayoutguessr/cities.json", "w", encoding="utf-8").write(out)
     print("\nAdded %d new %s to cities.json — each one needs a level, a country,"

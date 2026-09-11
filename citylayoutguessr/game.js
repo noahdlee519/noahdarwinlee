@@ -78,6 +78,7 @@
     reveal: document.getElementById("game-reveal"),
     verdict: document.getElementById("game-verdict"),
     answer: document.getElementById("game-answer"),
+    earned: document.getElementById("game-earned"),
     next: document.getElementById("game-next"),
     quit: document.getElementById("game-quit"),
     status: document.getElementById("game-status"),
@@ -494,12 +495,14 @@
           index: state.index,
           correct: state.correct,
           wrong: state.wrong,
+          points: state.points || 0,
           revealed: state.revealed,
           rounds: state.rounds.map(function (r) {
             return { id: r.city.id, url: r.url };
           }),
           log: state.log.map(function (e) {
-            return { id: e.city.id, right: e.right, guess: e.guess };
+            return { id: e.city.id, right: e.right, guess: e.guess,
+                     points: e.points, credit: e.credit };
           })
         })
       );
@@ -559,7 +562,8 @@
 
     var log = (saved.log || [])
       .map(function (e) {
-        return { city: byId[e.id], right: e.right, guess: e.guess };
+        return { city: byId[e.id], right: e.right, guess: e.guess,
+                 points: e.points, credit: e.credit };
       })
       .filter(function (e) {
         return e.city;
@@ -583,6 +587,11 @@
       index: saved.index,
       correct: saved.correct || 0,
       wrong: saved.wrong || 0,
+      /* A game saved before quarters existed has no running total; its own
+         log is what it was, so add up whatever the rounds say they were
+         worth rather than inventing one. */
+      points: saved.points !== undefined ? saved.points
+              : log.reduce(function (n, e) { return n + fillOf(e); }, 0),
       tries: saved.tries || 0,
       revealed: false,
       log: log
@@ -926,11 +935,25 @@
     } catch (err) {}
   }
 
+  /* A record's score. Records written before quarters existed only counted
+     cities, and a whole number of cities is a whole number of points. */
+  function scoreOf(record) {
+    if (!record) return 0;
+    return record.points !== undefined ? record.points : record.correct || 0;
+  }
+
+  /* Five circles for the five scores a round can have. A run reads as a row of
+     them, the way it always did — a half-filled one is a round that found the
+     right part of the world and the wrong city. */
+  var MARKS = ["\u25cb", "\u25d4", "\u25d1", "\u25d5", "\u25cf"];
+
   function shareText(record) {
-    var marks = record.log.map(function (e) { return e.right ? "\u25cf" : "\u25cb"; }).join("");
+    var marks = record.log.map(function (e) {
+      return MARKS[Math.round(fillOf(e) * 4)] || MARKS[0];
+    }).join("");
     return "citylayoutguessr \u2014 daily game " + dayNumber(record.day) +
            ": " + prettyDay(record.day) + "\n" +
-           record.correct + " / " + record.log.length + "\n" +
+           points(scoreOf(record)) + " / " + record.log.length + "\n" +
            marks + "\n" +
            "https://noahdarwinlee.com/citylayoutguessr/#daily";
   }
@@ -958,7 +981,7 @@
     if (done && done.day === key) {
       el.dailyStart.textContent = "see today\u2019s result";
       dailyNote(dailyName(key),
-                done.correct + " of " + done.log.length + " (played)");
+                points(scoreOf(done)) + " of " + done.log.length + " (played)");
     } else if (midway) {
       /* You left part of the way through. There is no starting again — the
          same ten maps are waiting where you put them down. */
@@ -982,9 +1005,11 @@
       index: record.log.length,
       correct: record.correct,
       wrong: record.wrong,
+      points: scoreOf(record),
       revealed: false,
       log: record.log.map(function (e) {
-        return { city: byId[e.id], right: e.right, guess: e.guess };
+        return { city: byId[e.id], right: e.right, guess: e.guess,
+                 points: e.points, credit: e.credit };
       }).filter(function (e) { return e.city; })
     };
     forget(STORE_KEY_DAILY);
@@ -1023,6 +1048,7 @@
       index: 0,
       correct: 0,
       wrong: 0,
+      points: 0,
       revealed: false,
       log: []
     };
@@ -1445,6 +1471,100 @@
   /* A game needs somewhere to draw from, and either kind of region will do. */
   function hasRegion(cfg) {
     return Boolean(cfg && (cfg.continents.length || cfgPacks(cfg).length));
+  }
+
+  /* ---------- where a city is, and how near a guess came ----------
+
+     A guess is worth a quarter for each rung it gets right: the continent, the
+     region, the country, the city. The regions are the twenty-two of the UN's
+     M49 scheme and they sit at the top of cities.json keyed by country, so a
+     name off the guess list that is in no game at all still has somewhere to
+     be measured against.
+
+     The continent comes off the city itself when we have the city, because
+     that is the box it is filed under here: Istanbul is in europe on this page
+     and in Western Asia in M49, and somebody who ticked europe to find it
+     should not then be told it is in Asia. So the two can disagree, and that
+     is the intended reading rather than a hole in it — guessing Moscow when
+     the answer is Vladivostok is the right country and the right region and
+     the wrong continent, and is worth half a point. */
+  var regionByCountry = null;
+
+  function regionOf(country) {
+    if (!regionByCountry) {
+      regionByCountry = {};
+      (data.regions || []).forEach(function (r) {
+        (r.countries || []).forEach(function (c) {
+          regionByCountry[c] = r;
+        });
+      });
+    }
+    return (country && regionByCountry[country]) || null;
+  }
+
+  /* Takes either a city out of cities.json or an entry off the guess list,
+     which carries a name and a country and nothing else. An entry that names a
+     city in play is swapped for that city first, so the same place is read the
+     same way whichever side of the comparison it turns up on. */
+  function placeOf(city) {
+    if (city && city.id && byId[city.id]) city = byId[city.id];
+    var country = (city && city.country) || "";
+    var region = regionOf(country);
+    return {
+      country: country,
+      region: region ? region.id : "",
+      regionLabel: region ? region.label : "",
+      continent: (city && city.continent) || (region && region.continent) || ""
+    };
+  }
+
+  var QUARTER = 0.25;
+
+  /* Quarters are for a game that could be anywhere. Narrowed to one continent,
+     or to a single pack, naming the continent is naming what you chose — so
+     the daily and an everywhere custom game are the only two that score this
+     way, and everything else stays right or wrong. */
+  function inQuarters(cfg) {
+    if (!cfg) return false;
+    if (cfg.daily) return true;
+    return cfg.continents.length === continents().length;
+  }
+
+  /* What a guess earned, rung by rung. Nothing typed earns nothing: there is
+     no place to have been half right about. */
+  function creditFor(guess, answer) {
+    var got = { continent: false, region: false, country: false, city: false,
+                points: 0, where: "" };
+    if (!guess || !answer) return got;
+    var g = placeOf(guess);
+    var a = placeOf(answer);
+    got.city = Boolean(guess.id && guess.id === answer.id);
+    got.country = Boolean(g.country && g.country === a.country);
+    got.region = Boolean(g.region && g.region === a.region);
+    got.continent = Boolean(g.continent && g.continent === a.continent);
+    got.points = (got.continent ? QUARTER : 0) + (got.region ? QUARTER : 0) +
+                 (got.country ? QUARTER : 0) + (got.city ? QUARTER : 0);
+    /* The most particular rung it reached, which is the one worth naming. */
+    got.where = got.country ? a.country
+              : got.region ? a.regionLabel
+              : got.continent ? a.continent
+              : "";
+    return got;
+  }
+
+  /* A score with no more decimals than it has: 7 rather than 7.00, 7.25 rather
+     than 7.3. */
+  function points(n) {
+    var r = Math.round((Number(n) || 0) * 100) / 100;
+    return r === Math.round(r) ? String(Math.round(r)) : String(r);
+  }
+
+  /* How full the round's mark is drawn, as a share of the circle. */
+  function fillOf(entry) {
+    if (entry.points === undefined || entry.points === null) {
+      return entry.right ? 1 : 0;
+    }
+    return entry.points;
   }
 
   /* Every city the current selection allows, whether or not it has a picture.
@@ -2052,6 +2172,15 @@
   }
 
   function setScore() {
+    /* Quarters make "right" and "wrong" two words for the same rounds, so the
+       bar carries the score and the count of cities actually named instead. */
+    if (state && inQuarters(state.cfg)) {
+      el.score.innerHTML =
+        scorePart(points(state.points), "points", "◑") +
+        '<span class="game-score-sep"> · </span>' +
+        scorePart(state.correct, "exact", "✓");
+      return;
+    }
     el.score.innerHTML =
       scorePart(state.correct, "right", "✓") +
       '<span class="game-score-sep"> · </span>' +
@@ -2096,11 +2225,27 @@
     el.verdict.textContent = entry.right ? "Correct" : "Incorrect";
     fillAnswer(el.answer, entry.city);
 
+    /* A wrong city that was in the right part of the world is worth saying
+       out loud, or the quarter arrives on the score with nothing to explain
+       it. Nothing is said when the guess was exact — the verdict has it — or
+       when it earned nothing at all. */
+    var near = !entry.right && entry.credit && entry.credit.points > 0;
+    if (near) {
+      el.earned.textContent =
+        "+" + points(entry.credit.points) + " \u2014 the right " +
+        (entry.credit.country ? "country" : entry.credit.region ? "region" : "continent") +
+        (entry.credit.where ? ", " + entry.credit.where : "");
+    } else {
+      el.earned.textContent = "";
+    }
+    show(el.earned, near);
+
     show(el.form, false);
     show(el.reveal, true);
     setScore();
     el.status.textContent =
-      (entry.right ? "Correct. " : "Incorrect. ") + "The answer is " + answerLine(entry.city) + ".";
+      (entry.right ? "Correct. " : "Incorrect. ") + "The answer is " + answerLine(entry.city) + "." +
+      (near ? " " + el.earned.textContent + "." : "");
     el.next.textContent =
       state.cfg.length !== Infinity && state.index + 1 >= state.total ? "see result" : "next";
     show(el.ask, false);
@@ -2184,9 +2329,17 @@
       }
     }
 
-    var logged = { city: round.city, right: right, guess: (label || "").trim() };
+    var credit = inQuarters(state.cfg) ? creditFor(entry, round.city) : null;
+    var logged = {
+      city: round.city,
+      right: right,
+      guess: (label || "").trim(),
+      credit: credit,
+      points: credit ? credit.points : right ? 1 : 0
+    };
     if (logged.right) state.correct += 1;
     else state.wrong += 1;
+    state.points = (state.points || 0) + logged.points;
     state.log.push(logged);
     show(el.ask, false);
     emptyAsked = false;
@@ -2209,15 +2362,22 @@
 
   function paintResult() {
     var where = describe(state.cfg);
-    var tally = state.correct + " of " + state.log.length;
+    var quarters = inQuarters(state.cfg);
+    var tally = (quarters ? points(state.points) : state.correct) +
+                " of " + state.log.length;
     el.resultScore.textContent = where ? where + " \u00b7 " + tally : tally;
     el.recap.innerHTML = "";
     state.log.forEach(function (entry) {
+      var got = fillOf(entry);
       var li = document.createElement("li");
-      li.className = "game-recap-item " + (entry.right ? "is-right" : "is-wrong");
+      li.className = "game-recap-item " +
+        (entry.right ? "is-right" : got > 0 ? "is-part" : "is-wrong");
       var mark = document.createElement("span");
       mark.className = "game-recap-mark";
       mark.setAttribute("aria-hidden", "true");
+      /* The mark is filled as far as the round was earned, so the column reads
+         as a picture of the run before any of the words are. */
+      if (got > 0 && got < 1) mark.style.setProperty("--fill", got * 100 + "%");
       var name = document.createElement("span");
       name.className = "game-recap-name";
       fillAnswer(name, entry.city);
@@ -2226,7 +2386,8 @@
       if (!entry.right && entry.guess) {
         var said = document.createElement("span");
         said.className = "game-recap-guess";
-        said.textContent = "you said \u2018" + entry.guess + "\u2019";
+        said.textContent = "you said \u2018" + entry.guess + "\u2019" +
+          (quarters && got > 0 ? " \u00b7 +" + points(got) : "");
         li.appendChild(said);
       }
       el.recap.appendChild(li);
@@ -2250,13 +2411,17 @@
         day: state.cfg.daily,
         correct: state.correct,
         wrong: state.wrong,
+        /* The score. correct is kept beside it as the count of cities named
+           outright, which is what the recap and the older records mean. */
+        points: state.points || 0,
         /* Whether anybody was signed in when the last round landed. A score
            played signed out is posted later, when the account appears — and
            when that does not take, this is what lets the board say why rather
            than leaving the player to guess. */
         noAccount: !(cloudOn() && cloud.user()),
         log: state.log.map(function (e) {
-          return { id: e.city.id, right: e.right, guess: e.guess };
+          return { id: e.city.id, right: e.right, guess: e.guess,
+                   points: e.points, credit: e.credit };
         })
       };
       writeDaily(record);
@@ -2268,6 +2433,7 @@
     tell("game_finish", {
       daily: Boolean(state.cfg.daily),
       correct: state.correct,
+      points: state.points || 0,
       rounds: state.log.length
     });
     paintResult();
@@ -2291,6 +2457,7 @@
       index: 0,
       correct: 0,
       wrong: 0,
+      points: 0,
       revealed: false,
       log: []
     };
@@ -2430,13 +2597,13 @@
     var score = document.createElement("span");
     score.className = "game-leader-score";
     if (allTime) {
-      score.textContent = row.total;
+      score.textContent = points(row.total);
       var days = document.createElement("span");
       days.className = "game-leader-days";
       days.textContent = row.days === 1 ? "1 day" : row.days + " days";
       score.appendChild(days);
     } else {
-      score.textContent = row.correct + " / " + DAILY_ROUNDS;
+      score.textContent = points(row.correct) + " / " + DAILY_ROUNDS;
     }
 
     li.appendChild(place);
@@ -2534,7 +2701,7 @@
             (row.days === 1 ? " day" : " days") + " · " + ordinal(row.place);
         } else {
           el.leadersNote.textContent =
-            "you: " + row.correct + " / " + DAILY_ROUNDS + " · " + ordinal(row.place);
+            "you: " + points(row.correct) + " / " + DAILY_ROUNDS + " · " + ordinal(row.place);
         }
         show(el.leadersNote, true);
       });
@@ -2617,7 +2784,7 @@
       show(el.leaders, true);
       return;
     }
-    cloud.postDaily(record.correct, record.log.length).then(function (res) {
+    cloud.postDaily(scoreOf(record), record.log.length).then(function (res) {
       if (res.ok || res.reason === "already") {
         record.posted = true;
         writeDaily(record);
@@ -2637,7 +2804,7 @@
     if (!cloudOn() || !cloud.user()) return;
     var record = readDaily();
     if (!record || record.day !== dayKey() || record.posted) return;
-    cloud.postDaily(record.correct, record.log.length).then(function (res) {
+    cloud.postDaily(scoreOf(record), record.log.length).then(function (res) {
       if (res.ok || res.reason === "already") {
         record.posted = true;
         writeDaily(record);

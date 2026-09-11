@@ -21,6 +21,117 @@
     { "id": "italy", "label": "Italy", "countries": ["Italy"] },
     { "id": "benelux", "label": "Benelux", "countries": ["Netherlands", "Belgium", "Luxembourg"] }
   ],
+  "regions": [
+    { "id": "northern-africa", "label": "Northern Africa", "continent": "Africa",
+      "countries": [
+        "Algeria", "Egypt", "Libya", "Morocco", "Sudan", "Tunisia"
+      ] },
+    { "id": "eastern-africa", "label": "Eastern Africa", "continent": "Africa",
+      "countries": [
+        "Burundi", "Comoros", "Djibouti", "Eritrea", "Ethiopia", "Kenya",
+        "Madagascar", "Malawi", "Mauritius", "Mozambique", "Rwanda",
+        "Seychelles", "Somalia", "South Sudan", "Tanzania", "Uganda",
+        "Zambia", "Zimbabwe"
+      ] },
+    { "id": "middle-africa", "label": "Middle Africa", "continent": "Africa",
+      "countries": [
+        "Angola", "Cameroon", "Central African Republic", "Chad", "DR Congo",
+        "Equatorial Guinea", "Gabon", "Republic of the Congo",
+        "São Tomé and Príncipe"
+      ] },
+    { "id": "southern-africa", "label": "Southern Africa", "continent": "Africa",
+      "countries": [
+        "Botswana", "Eswatini", "Lesotho", "Namibia", "South Africa"
+      ] },
+    { "id": "western-africa", "label": "Western Africa", "continent": "Africa",
+      "countries": [
+        "Benin", "Burkina Faso", "Cape Verde", "Côte d'Ivoire", "Gambia",
+        "Ghana", "Guinea", "Guinea-Bissau", "Liberia", "Mali", "Mauritania",
+        "Niger", "Nigeria", "Senegal", "Sierra Leone", "Togo"
+      ] },
+    { "id": "northern-america", "label": "Northern America", "continent": "North America",
+      "countries": [
+        "Bermuda", "Canada", "Greenland", "United States"
+      ] },
+    { "id": "central-america", "label": "Central America", "continent": "North America",
+      "countries": [
+        "Belize", "Costa Rica", "El Salvador", "Guatemala", "Honduras",
+        "Mexico", "Nicaragua", "Panama"
+      ] },
+    { "id": "caribbean", "label": "the Caribbean", "continent": "North America",
+      "countries": [
+        "Bahamas", "Barbados", "Cuba", "Dominican Republic", "Grenada",
+        "Haiti", "Jamaica", "Puerto Rico", "Trinidad and Tobago"
+      ] },
+    { "id": "south-america", "label": "South America", "continent": "South America",
+      "countries": [
+        "Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Ecuador",
+        "French Guiana", "Guyana", "Paraguay", "Peru", "Suriname", "Uruguay",
+        "Venezuela"
+      ] },
+    { "id": "central-asia", "label": "Central Asia", "continent": "Asia",
+      "countries": [
+        "Kazakhstan", "Kyrgyzstan", "Tajikistan", "Turkmenistan", "Uzbekistan"
+      ] },
+    { "id": "eastern-asia", "label": "Eastern Asia", "continent": "Asia",
+      "countries": [
+        "China", "Japan", "Mongolia", "North Korea", "South Korea", "Taiwan"
+      ] },
+    { "id": "south-eastern-asia", "label": "South-eastern Asia", "continent": "Asia",
+      "countries": [
+        "Brunei", "Cambodia", "Indonesia", "Laos", "Malaysia", "Myanmar",
+        "Philippines", "Singapore", "Thailand", "Timor-Leste", "Vietnam"
+      ] },
+    { "id": "southern-asia", "label": "Southern Asia", "continent": "Asia",
+      "countries": [
+        "Afghanistan", "Bangladesh", "Bhutan", "India", "Iran", "Maldives",
+        "Nepal", "Pakistan", "Sri Lanka"
+      ] },
+    { "id": "western-asia", "label": "Western Asia", "continent": "Asia",
+      "countries": [
+        "Armenia", "Azerbaijan", "Bahrain", "Cyprus", "Georgia", "Iraq",
+        "Israel", "Jordan", "Kuwait", "Lebanon", "Oman", "Palestine", "Qatar",
+        "Saudi Arabia", "Syria", "Turkey", "United Arab Emirates", "Yemen"
+      ] },
+    { "id": "eastern-europe", "label": "Eastern Europe", "continent": "Europe",
+      "countries": [
+        "Belarus", "Bulgaria", "Czechia", "Hungary", "Moldova", "Poland",
+        "Romania", "Russia", "Slovakia", "Ukraine"
+      ] },
+    { "id": "northern-europe", "label": "Northern Europe", "continent": "Europe",
+      "countries": [
+        "Denmark", "Estonia", "Finland", "Iceland", "Ireland", "Latvia",
+        "Lithuania", "Norway", "Sweden", "United Kingdom"
+      ] },
+    { "id": "southern-europe", "label": "Southern Europe", "continent": "Europe",
+      "countries": [
+        "Albania", "Andorra", "Bosnia and Herzegovina", "Croatia", "Greece",
+        "Italy", "Kosovo", "Malta", "Montenegro", "North Macedonia",
+        "Portugal", "San Marino", "Serbia", "Slovenia", "Spain"
+      ] },
+    { "id": "western-europe", "label": "Western Europe", "continent": "Europe",
+      "countries": [
+        "Austria", "Belgium", "France", "Germany", "Liechtenstein",
+        "Luxembourg", "Monaco", "Netherlands", "Switzerland"
+      ] },
+    { "id": "australia-new-zealand", "label": "Australia and New Zealand", "continent": "Oceania",
+      "countries": [
+        "Australia", "New Zealand"
+      ] },
+    { "id": "melanesia", "label": "Melanesia", "continent": "Oceania",
+      "countries": [
+        "Fiji", "New Caledonia", "Papua New Guinea", "Solomon Islands",
+        "Vanuatu"
+      ] },
+    { "id": "micronesia", "label": "Micronesia", "continent": "Oceania",
+      "countries": [
+        "Kiribati", "Marshall Islands", "Micronesia", "Nauru", "Palau"
+      ] },
+    { "id": "polynesia", "label": "Polynesia", "continent": "Oceania",
+      "countries": [
+        "Cook Islands", "French Polynesia", "Samoa", "Tonga", "Tuvalu"
+      ] }
+  ],
   "cities": [
     {
       "id": "amsterdam", "tier": "easy", "city": "Amsterdam", "country": "Netherlands", "continent": "Europe",
@@ -47,6 +158,11 @@
       "aliases": ["berlino", "berlijn", "berlin germany"]
     },
     {
+      "id": "brugge", "tier": "easy", "city": "Bruges", "country": "Belgium", "continent": "Europe",
+      "aliases": ["brugge", "brugge belgium", "brugse", "brügge", "brugge nederland", "brujas"],
+      "packOnly": true
+    },
+    {
       "id": "cairo", "tier": "easy", "city": "Cairo", "country": "Egypt", "continent": "Africa",
       "aliases": ["al qahirah", "alqahira", "qahira", "kairo", "el cairo", "masr", "umm al dunya"]
     },
@@ -61,6 +177,11 @@
     {
       "id": "dubai", "tier": "easy", "city": "Dubai", "country": "United Arab Emirates", "continent": "Asia",
       "aliases": ["dubayy", "dubaï", "dubai uae", "the city of gold uae", "al wasl", "city of gold uae"]
+    },
+    {
+      "id": "ghent", "tier": "easy", "city": "Ghent", "country": "Belgium", "continent": "Europe",
+      "aliases": ["gent", "gand", "gent belgium", "gante", "ghent belgium"],
+      "packOnly": true
     },
     {
       "id": "hiroshima", "tier": "easy", "city": "Hiroshima", "country": "Japan", "continent": "Asia",
@@ -91,6 +212,11 @@
     {
       "id": "los-angeles", "tier": "easy", "city": "Los Angeles", "country": "United States", "continent": "North America",
       "aliases": ["la", "l a", "the city of angels", "city of angels", "la la land", "lala land", "angeltown"]
+    },
+    {
+      "id": "luxembourg-city", "tier": "easy", "city": "Luxembourg City", "country": "Luxembourg", "continent": "Europe",
+      "aliases": ["luxembourg", "luxemburg", "letzebuerg", "ville de luxembourg", "stad luxemburg", "luxembourg ville"],
+      "packOnly": true
     },
     {
       "id": "mexico-city", "tier": "easy", "city": "Mexico City", "country": "Mexico", "continent": "North America",
@@ -174,12 +300,22 @@
       "aliases": ["alger", "al jazair", "el djazair", "alger la blanche", "algiers algeria"]
     },
     {
+      "id": "almere", "tier": "medium", "city": "Almere", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["almere stad", "almere netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "ankara", "tier": "medium", "city": "Ankara", "country": "Turkey", "continent": "Asia",
       "aliases": ["angora"]
     },
     {
       "id": "antwerp", "tier": "medium", "city": "Antwerp", "country": "Belgium", "continent": "Europe",
       "aliases": ["antwerpen", "anvers", "the diamond city", "sinjoorenstad", "diamond city"]
+    },
+    {
+      "id": "arnhem", "tier": "medium", "city": "Arnhem", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["arnheim", "arnhem netherlands", "a bridge too far", "bridge too far"],
+      "packOnly": true
     },
     {
       "id": "atlanta", "tier": "medium", "city": "Atlanta", "country": "United States", "continent": "North America",
@@ -258,6 +394,11 @@
       "aliases": ["dimashq", "ash sham"]
     },
     {
+      "id": "delft", "tier": "medium", "city": "Delft", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["prinsenstad", "delft netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "denver", "tier": "medium", "city": "Denver", "country": "United States", "continent": "North America",
       "aliases": ["the mile high city", "mile high city", "the queen city of the plains", "denver colorado", "queen city of the plains"]
     },
@@ -286,6 +427,11 @@
       "aliases": ["edinbrough", "edinborough", "embra", "auld reekie", "the athens of the north", "athens of the north", "dun eideann"]
     },
     {
+      "id": "eindhoven", "tier": "medium", "city": "Eindhoven", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["lichtstad", "eindhoven netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "florence", "tier": "medium", "city": "Florence", "country": "Italy", "continent": "Europe",
       "aliases": ["firenze", "florenz", "florencia", "the cradle of the renaissance", "fiorenza", "cradle of the renaissance"]
     },
@@ -301,6 +447,16 @@
     {
       "id": "geneva", "tier": "medium", "city": "Geneva", "country": "Switzerland", "continent": "Europe",
       "aliases": ["geneve", "genf", "ginevra", "ginebra", "the peace capital", "peace capital"]
+    },
+    {
+      "id": "groningen", "tier": "medium", "city": "Groningen", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["grunn", "grunnen", "martinistad", "groningen netherlands"],
+      "packOnly": true
+    },
+    {
+      "id": "haarlem", "tier": "medium", "city": "Haarlem", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["bloemenstad", "spaarnestad", "harlem", "haarlem netherlands"],
+      "packOnly": true
     },
     {
       "id": "hamburg", "tier": "medium", "city": "Hamburg", "country": "Germany", "continent": "Europe",
@@ -356,6 +512,16 @@
       "aliases": ["eko", "lasgidi", "lagos nigeria"]
     },
     {
+      "id": "leiden", "tier": "medium", "city": "Leiden", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["leyden", "sleutelstad", "leiden netherlands", "lugdunum batavorum"],
+      "packOnly": true
+    },
+    {
+      "id": "liege", "tier": "medium", "city": "Liège", "country": "Belgium", "continent": "Europe",
+      "aliases": ["liege", "luik", "lüttich", "luttich", "liegi", "liege belgium"],
+      "packOnly": true
+    },
+    {
       "id": "lima", "tier": "medium", "city": "Lima", "country": "Peru", "continent": "South America",
       "aliases": ["ciudad de los reyes", "la ciudad de los reyes", "lima peru"]
     },
@@ -370,6 +536,11 @@
     {
       "id": "lyon", "tier": "medium", "city": "Lyon", "country": "France", "continent": "Europe",
       "aliases": ["lyons", "lugdunum", "lyon france"]
+    },
+    {
+      "id": "maastricht", "tier": "medium", "city": "Maastricht", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["maestricht", "mestreech", "maastricht netherlands", "trajectum ad mosam"],
+      "packOnly": true
     },
     {
       "id": "macao", "tier": "medium", "city": "Macau", "country": "China", "continent": "Asia",
@@ -445,6 +616,11 @@
       "aliases": ["nola", "the big easy", "big easy", "nawlins", "la nouvelle orleans", "the crescent city", "crescent city", "the city that care forgot", "city that care forgot", "orleans"]
     },
     {
+      "id": "nijmegen", "tier": "medium", "city": "Nijmegen", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["nimwegen", "nimègue", "nimegue", "noviomagus", "nijmegen netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "orlando", "tier": "medium", "city": "Orlando", "country": "United States", "continent": "North America",
       "aliases": ["o town", "otown", "the theme park capital of the world", "theme park capital", "orlando florida", "theme park capital of the world"]
     },
@@ -455,6 +631,11 @@
     {
       "id": "oslo", "tier": "medium", "city": "Oslo", "country": "Norway", "continent": "Europe",
       "aliases": ["christiania", "kristiania", "oslo norway", "tigerstaden"]
+    },
+    {
+      "id": "ostend", "tier": "medium", "city": "Ostend", "country": "Belgium", "continent": "Europe",
+      "aliases": ["oostende", "ostende", "ostend belgium", "oostende belgie"],
+      "packOnly": true
     },
     {
       "id": "palermo", "tier": "medium", "city": "Palermo", "country": "Italy", "continent": "Europe",
@@ -594,6 +775,11 @@
       "aliases": ["alma ata", "alma-ata", "almati", "verny", "verniy", "almaty kazakhstan"]
     },
     {
+      "id": "amersfoort", "tier": "hard", "city": "Amersfoort", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["keistad", "amersfoort netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "anchorage", "tier": "hard", "city": "Anchorage", "country": "United States", "continent": "North America",
       "aliases": ["anchorage alaska", "los anchorage", "anc", "the city of lights and flowers", "city of lights and flowers"]
     },
@@ -634,6 +820,11 @@
       "aliases": ["brasillia", "brazilia", "bsb", "the plano piloto", "plano piloto"]
     },
     {
+      "id": "breda", "tier": "hard", "city": "Breda", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["nassaustad", "breda netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "bremen", "tier": "hard", "city": "Bremen", "country": "Germany", "continent": "Europe",
       "aliases": ["brema", "breme", "hansestadt bremen", "freie hansestadt bremen", "bremen germany"]
     },
@@ -662,6 +853,11 @@
       "aliases": ["chandigar", "the city beautiful", "city beautiful", "chandigarh india"]
     },
     {
+      "id": "charleroi", "tier": "hard", "city": "Charleroi", "country": "Belgium", "continent": "Europe",
+      "aliases": ["charleroy", "karolo", "charleroi belgium"],
+      "packOnly": true
+    },
+    {
       "id": "charlotte", "tier": "hard", "city": "Charlotte", "country": "United States", "continent": "North America",
       "aliases": ["the queen city nc", "clt", "the hornet's nest", "queen city nc", "hornet's nest"]
     },
@@ -682,6 +878,16 @@
       "aliases": []
     },
     {
+      "id": "den-bosch", "tier": "hard", "city": "Den Bosch", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["s hertogenbosch", "hertogenbosch", "bois le duc", "den bosch"],
+      "packOnly": true
+    },
+    {
+      "id": "den-helder", "tier": "hard", "city": "Den Helder", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["helder", "nieuwediep", "den helder netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "dodoma", "tier": "hard", "city": "Dodoma", "country": "Tanzania", "continent": "Africa",
       "aliases": ["idodomya", "dodoma tanzania", "the capital of tanzania", "capital of tanzania"]
     },
@@ -692,6 +898,11 @@
     {
       "id": "dushanbe", "tier": "hard", "city": "Dushanbe", "country": "Tajikistan", "continent": "Asia",
       "aliases": ["stalinabad", "duschanbe", "dyushambe", "dushanbe tajikistan"]
+    },
+    {
+      "id": "enschede", "tier": "hard", "city": "Enschede", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["eanske", "enschede netherlands"],
+      "packOnly": true
     },
     {
       "id": "erbil", "tier": "hard", "city": "Erbil", "country": "Iraq", "continent": "Asia",
@@ -755,8 +966,18 @@
       "aliases": ["leopoldville", "leopoldstad", "kin", "kin la belle", "kinshasa drc", "kinshasa congo"]
     },
     {
+      "id": "kortrijk", "tier": "hard", "city": "Kortrijk", "country": "Belgium", "continent": "Europe",
+      "aliases": ["courtrai", "kortryk", "cortoriacum", "kortrijk belgium"],
+      "packOnly": true
+    },
+    {
       "id": "la-plata", "tier": "hard", "city": "La Plata", "country": "Argentina", "continent": "South America",
       "aliases": ["laplata", "the city of diagonals", "city of diagonals", "the square city", "eva peron city", "square city"]
+    },
+    {
+      "id": "leeuwarden", "tier": "hard", "city": "Leeuwarden", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["ljouwert", "liwwadden", "leeuwarden netherlands"],
+      "packOnly": true
     },
     {
       "id": "lilongwe", "tier": "hard", "city": "Lilongwe", "country": "Malawi", "continent": "Africa",
@@ -905,6 +1126,11 @@
       "aliases": ["tiflis", "tblisi", "tpilisi", "tbilisi georgia"]
     },
     {
+      "id": "tilburg", "tier": "hard", "city": "Tilburg", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["kruikenstad", "tilburg netherlands"],
+      "packOnly": true
+    },
+    {
       "id": "twin-cities", "tier": "hard", "city": "The Twin Cities", "country": "United States", "continent": "North America",
       "aliases": ["minneapolis", "saint paul", "st paul", "msp", "mpls", "twin cities", "twin city", "the mini apple", "minneapolis saint paul", "minneapolis st paul", "saint paul minneapolis", "st paul minneapolis", "minneapolis and saint paul", "minneapolis and st paul", "saint paul and minneapolis", "st paul and minneapolis", "minneapolis minnesota", "minneapolis mn", "saint paul minnesota", "saint paul mn", "st paul minnesota", "st paul mn", "twin cities minnesota", "minneapolis saint paul minnesota", "minneapolis st paul minnesota", "minneapolis saint paul mn", "minneapolis st paul mn", "mini apple"]
     },
@@ -939,6 +1165,11 @@
     {
       "id": "zagreb", "tier": "hard", "city": "Zagreb", "country": "Croatia", "continent": "Europe",
       "aliases": ["agram", "zagreb croatia", "zagabria", "the city with a million hearts", "city with a million hearts"]
+    },
+    {
+      "id": "zwolle", "tier": "hard", "city": "Zwolle", "country": "Netherlands", "continent": "Europe",
+      "aliases": ["blauwvingerstad", "blauwvingers", "zwolle netherlands"],
+      "packOnly": true
     }
   ]
 }

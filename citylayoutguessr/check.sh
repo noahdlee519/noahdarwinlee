@@ -41,6 +41,17 @@ for f in sorted(os.listdir("art/game")):
 need = data.get("rounds", 10)
 levels = [t["id"] for t in data.get("tiers", [])]
 conts = [c["id"] for c in data.get("continents", [])]
+packs = data.get("packs", [])
+
+# A pack-only city is in its pack and nowhere else, so counting it towards a
+# level or a continent would promise a game that is smaller than it looks.
+# The levels and continents below are the ordinary game; the packs report
+# themselves, and they are the only place a pack-only city is counted.
+ordinary = [c for c in cities if not c.get("packOnly")]
+
+def in_pack(c, pack):
+    return (c.get("country") in (pack.get("countries") or [])
+            or pack["id"] in (c.get("packs") or []))
 print("cities.json: %d cities, %d aliases, valid\n"
       % (len(cities), sum(len(c.get("aliases") or []) for c in cities)))
 
@@ -50,12 +61,16 @@ def report(label, ids):
     print("%-16s %3d of %3d pictures   (%s)" % (label, len(done), len(ids), flag))
 
 for t in levels:
-    report(t, [c["id"] for c in cities if c["tier"] == t])
+    report(t, [c["id"] for c in ordinary if c["tier"] == t])
 print()
 for t in conts:
-    report(t.lower(), [c["id"] for c in cities if c.get("continent") == t])
+    report(t.lower(), [c["id"] for c in ordinary if c.get("continent") == t])
 print()
-report("everything", [c["id"] for c in cities])
+report("everything", [c["id"] for c in ordinary])
+if packs:
+    print()
+    for pk in packs:
+        report(pk["label"].lower(), [c["id"] for c in cities if in_pack(c, pk)])
 
 blank = [c["id"] for c in cities if not c.get("continent") or not c.get("country")]
 if blank:

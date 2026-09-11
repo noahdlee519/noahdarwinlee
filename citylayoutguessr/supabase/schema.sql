@@ -108,13 +108,19 @@ create table if not exists public.daily_scores (
   id          bigint generated always as identity primary key,
   user_id     uuid not null references auth.users on delete cascade,
   day         date not null,
-  correct     smallint not null,
+  -- The score, in quarters: a quarter each for the continent, the region,
+  -- the country and the city. Whole numbers here are runs where every point
+  -- came from naming the city outright, which is all a score was before.
+  correct     numeric(4,2) not null,
   total       smallint not null,
   duration_ms integer,
   created_at  timestamptz not null default now(),
   constraint daily_scores_one_per_day unique (user_id, day),
   constraint daily_scores_sane check (
-    total = 10 and correct >= 0 and correct <= total
+    total = 10
+    and correct >= 0
+    and correct <= total
+    and correct * 4 = round(correct * 4)
   )
 );
 
@@ -180,8 +186,8 @@ as
     s.user_id,
     coalesce(p.display_name, 'player') as display_name,
     p.avatar_url,
-    sum(s.correct)::int as total,
-    count(*)::int      as days,
+    sum(s.correct)::numeric(6,2) as total,
+    count(*)::int                as days,
     rank() over (
       order by sum(s.correct) desc, count(*) asc, min(s.created_at) asc
     ) as place

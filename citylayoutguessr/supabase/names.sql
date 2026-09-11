@@ -560,8 +560,8 @@ as
     case when coalesce(p.hidden, false) then 'player'
          else coalesce(p.display_name, 'player') end as display_name,
     case when coalesce(p.hidden, false) then null else p.avatar_url end as avatar_url,
-    sum(s.correct)::int as total,
-    count(*)::int      as days,
+    sum(s.correct)::numeric(6,2) as total,
+    count(*)::int                as days,
     rank() over (
       order by sum(s.correct) desc, count(*) asc, min(s.created_at) asc
     ) as place
