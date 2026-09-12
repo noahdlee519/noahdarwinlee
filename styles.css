@@ -764,6 +764,72 @@ a[href="/cv/"]:active {
   text-decoration: none;
 }
 
+/* ---- the ring round a word ----
+   Hover one of these and a dotted circle draws itself round the word,
+   clockwise from the top, over a second, and then stays while you are still
+   there. It is the accent colour, which is already the cream by day and the
+   periwinkle by night -- the two this wanted -- so it is named rather than
+   repeated.
+
+   No script and no measuring. The ring is a pseudo-element of the link, and a
+   percentage width on it is a percentage of the link's own width, so
+   `width: 80%` is a circle whose radius is 40% of the length of the word
+   whatever the word is. `aspect-ratio: 1` makes the square that makes it
+   round, and the 10% inset centres it.
+
+   The drawing is a mask: a cone of solid black that opens from twelve
+   o'clock, with the angle it has reached registered as a real angle so that
+   it can be transitioned rather than snapped. Where @property is not
+   understood the angle cannot animate, so the ring simply appears whole --
+   which is the right thing to fall back to. */
+@property --ring-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.about-panel-links a {
+  position: relative;
+  /* A stacking context of its own, so the ring can sit behind the letters
+     without falling behind the page. */
+  z-index: 0;
+}
+
+.about-panel-links a::before {
+  content: "";
+  position: absolute;
+  left: 10%;
+  top: 50%;
+  width: 80%;
+  aspect-ratio: 1;
+  transform: translateY(-50%);
+  border: 3px dotted var(--accent);
+  border-radius: 50%;
+  background: none;
+  z-index: -1;
+  pointer-events: none;
+  --ring-sweep: 0deg;
+  -webkit-mask-image: conic-gradient(
+    from -90deg,
+    #000 var(--ring-sweep),
+    transparent 0
+  );
+  mask-image: conic-gradient(from -90deg, #000 var(--ring-sweep), transparent 0);
+}
+
+.about-panel-links a:hover::before,
+.about-panel-links a:focus-visible::before {
+  --ring-sweep: 360deg;
+  transition: --ring-sweep 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-panel-links a:hover::before,
+  .about-panel-links a:focus-visible::before {
+    transition: none;
+  }
+}
+
 /* The emoji at the end of the row is a picture, and a picture does not want
    the letter-spacing, the underline or the inherited colour the words beside it
    want. It wants to be a little bigger than they are and to lift a hair when
