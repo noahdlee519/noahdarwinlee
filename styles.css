@@ -812,7 +812,11 @@ a[href="/cv/"]:active {
      three pixels to the right of the word's. */
   box-sizing: border-box;
   transform: translateY(-50%);
-  border: 3px dotted var(--accent);
+  /* Dashed rather than dotted: a dot is as long as it is thick, and these
+     wanted to be longer than that. Four pixels rather than three for the
+     weight. Both are inside the eighty per cent, so the circle is the same
+     size it was. */
+  border: 4px dashed var(--accent);
   border-radius: 50%;
   background: none;
   z-index: -1;
@@ -852,7 +856,6 @@ a[href="/cv/"]:active {
 .about-panel-web {
   font-size: 1.14em;
   line-height: 1;
-  text-decoration: none !important;
   transition: transform 140ms ease;
 }
 
@@ -861,12 +864,6 @@ a[href="/cv/"]:active {
   transform: translateY(-2px);
 }
 
-.about-panel-links a:hover {
-  text-decoration: underline;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 2.25px;
-  text-underline-offset: 3px;
-}
 
 /* The marker turns down when the panel is open. */
 /* U+25B8 / U+25BE — the small solid triangles. Deliberately not U+25B6/25BC:
