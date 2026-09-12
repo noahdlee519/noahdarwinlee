@@ -2668,8 +2668,8 @@ body.game-page {
 .game-special-open {
   display: inline-flex;
   align-items: baseline;
+  align-self: center;
   gap: 0.4em;
-  margin-top: 10px;
   padding: 0 0 1px 0;
   border: 0;
   border-bottom: 1px solid currentColor;
@@ -2715,55 +2715,14 @@ body.game-page {
   border-bottom: 1px solid currentColor;
 }
 
-/* One pack per line rather than a wrapped row: each carries a play button, and
-   a row of tick-plus-button pairs is harder to read across than down. */
+/* The same wrapped row the continents are in. They were one per line when
+   each carried a play button; a list of ticks reads across as well as the
+   continents do, and a pack with nothing in it greys itself through
+   .game-check.is-empty, the way an empty level does. */
 .game-packs {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.game-pack {
-  display: flex;
-  align-items: baseline;
-  gap: clamp(12px, 2vw, 22px);
-}
-
-/* The tick takes the room it needs and the play button follows the longest
-   label, so the buttons line up down the list. */
-.game-pack .game-check {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.game-pack-play {
-  flex: 0 0 auto;
-  padding: 0 0 1px 0;
-  border: 0;
-  border-bottom: 1px solid currentColor;
-  border-radius: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-size: 0.8em;
-  opacity: 0.75;
-  cursor: pointer;
-}
-
-.game-pack-play:hover,
-.game-pack-play:focus-visible {
-  opacity: 1;
-}
-
-/* A pack with no maps in it yet: still listed, because the list is also how
-   you see what is coming, but there is nothing to press. */
-.game-pack.is-empty {
-  opacity: 0.4;
-}
-
-.game-pack-play[disabled] {
-  cursor: default;
-  border-bottom-style: dotted;
+  flex-wrap: wrap;
+  gap: 6px clamp(16px, 2.4vw, 34px);
 }
 
 .game-special-done {
@@ -3283,10 +3242,6 @@ body.game-page {
 /* The country, and the nickname that led you here, are context rather than the
    answer, so they sit back from the name itself. */
 .game-suggest-where,
-.game-suggest-from {
-  opacity: 0.6;
-}
-
 /* Pulled up into the space under the picture: the line appears and disappears
    between rounds, and it should not shove the guess box down the page when it
    does. */

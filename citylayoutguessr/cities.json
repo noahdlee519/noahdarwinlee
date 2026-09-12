@@ -158,6 +158,11 @@
       "aliases": ["berlino", "berlijn", "berlin germany"]
     },
     {
+      "id": "bologna", "tier": "easy", "city": "Bologna", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "brugge", "tier": "easy", "city": "Bruges", "country": "Belgium", "continent": "Europe",
       "aliases": ["brugge", "brugge belgium", "brugse", "brügge", "brugge nederland", "brujas"],
       "packOnly": true
@@ -177,6 +182,11 @@
     {
       "id": "dubai", "tier": "easy", "city": "Dubai", "country": "United Arab Emirates", "continent": "Asia",
       "aliases": ["dubayy", "dubaï", "dubai uae", "the city of gold uae", "al wasl", "city of gold uae"]
+    },
+    {
+      "id": "genoa", "tier": "easy", "city": "Genoa", "country": "Italy", "continent": "Europe",
+      "aliases": ["genova", "gênes", "genes", "zena"],
+      "packOnly": true
     },
     {
       "id": "ghent", "tier": "easy", "city": "Ghent", "country": "Belgium", "continent": "Europe",
@@ -334,6 +344,11 @@
       "aliases": ["charm city", "the charm city", "bmore", "b more"]
     },
     {
+      "id": "bari", "tier": "medium", "city": "Bari", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "beirut", "tier": "medium", "city": "Beirut", "country": "Lebanon", "continent": "Asia",
       "aliases": ["bayrut", "beyrouth", "the paris of the middle east", "beirut lebanon", "paris of the middle east"]
     },
@@ -374,8 +389,18 @@
       "aliases": ["pusan"]
     },
     {
+      "id": "cagliari", "tier": "medium", "city": "Cagliari", "country": "Italy", "continent": "Europe",
+      "aliases": ["casteddu"],
+      "packOnly": true
+    },
+    {
       "id": "casablanca", "tier": "medium", "city": "Casablanca", "country": "Morocco", "continent": "Africa",
       "aliases": ["casa", "dar el beida", "dar al bayda", "ad dar al bayda", "al dar al bayda", "casablanca morocco"]
+    },
+    {
+      "id": "catania", "tier": "medium", "city": "Catania", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "chennai", "tier": "medium", "city": "Chennai", "country": "India", "continent": "Asia",
@@ -575,6 +600,11 @@
       "aliases": ["melbs", "naarm", "the cultural capital of australia", "cultural capital of australia"]
     },
     {
+      "id": "messina", "tier": "medium", "city": "Messina", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "milan", "tier": "medium", "city": "Milan", "country": "Italy", "continent": "Europe",
       "aliases": ["milano", "mailand", "milaan", "milano italia", "la madonnina"]
     },
@@ -670,6 +700,11 @@
       "aliases": ["phyongyang", "pyeongyang", "ryugyong", "the capital of willows", "capital of willows"]
     },
     {
+      "id": "reggio-calabria", "tier": "medium", "city": "Reggio Calabria", "country": "Italy", "continent": "Europe",
+      "aliases": ["reggio di calabria"],
+      "packOnly": true
+    },
+    {
       "id": "reykjavik", "tier": "medium", "city": "Reykjavik", "country": "Iceland", "continent": "Europe",
       "aliases": ["rvk"]
     },
@@ -718,6 +753,11 @@
       "aliases": ["eken", "stockholm sweden", "the beauty on the water", "beauty on the water"]
     },
     {
+      "id": "syracuse", "tier": "medium", "city": "Syracuse", "country": "Italy", "continent": "Europe",
+      "aliases": ["siracusa", "saragusa", "ortigia"],
+      "packOnly": true
+    },
+    {
       "id": "taipei", "tier": "medium", "city": "Taipei", "country": "Taiwan", "continent": "Asia",
       "aliases": ["taipeh", "taibei", "taipei city", "tai pei"]
     },
@@ -730,6 +770,11 @@
       "aliases": ["den haag", "la haye", "s gravenhage", "the hague netherlands", "hague netherlands", "hague"]
     },
     {
+      "id": "trento", "tier": "medium", "city": "Trento", "country": "Italy", "continent": "Europe",
+      "aliases": ["trent", "trient"],
+      "packOnly": true
+    },
+    {
       "id": "tunis", "tier": "medium", "city": "Tunis", "country": "Tunisia", "continent": "Africa",
       "aliases": ["tounes"]
     },
@@ -740,6 +785,11 @@
     {
       "id": "valencia", "tier": "medium", "city": "Valencia", "country": "Spain", "continent": "Europe",
       "aliases": ["valence", "valencia spain", "the city of arts and sciences", "city of arts and sciences"]
+    },
+    {
+      "id": "verona", "tier": "medium", "city": "Verona", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "vienna", "tier": "medium", "city": "Vienna", "country": "Austria", "continent": "Europe",
@@ -782,6 +832,11 @@
     {
       "id": "anchorage", "tier": "hard", "city": "Anchorage", "country": "United States", "continent": "North America",
       "aliases": ["anchorage alaska", "los anchorage", "anc", "the city of lights and flowers", "city of lights and flowers"]
+    },
+    {
+      "id": "ancona", "tier": "hard", "city": "Ancona", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "ashgabat", "tier": "hard", "city": "Ashgabat", "country": "Turkmenistan", "continent": "Asia",
@@ -1049,8 +1104,18 @@
       "aliases": ["bytown", "yow", "the capital of canada", "capital of canada"]
     },
     {
+      "id": "padua", "tier": "hard", "city": "Padua", "country": "Italy", "continent": "Europe",
+      "aliases": ["padova"],
+      "packOnly": true
+    },
+    {
       "id": "palmanova", "tier": "hard", "city": "Palmanova", "country": "Italy", "continent": "Europe",
       "aliases": ["palma nova", "palmanova italy", "the nine pointed star", "palmanova friuli", "nine pointed star"]
+    },
+    {
+      "id": "parma", "tier": "hard", "city": "Parma", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "perth", "tier": "hard", "city": "Perth", "country": "Australia", "continent": "Oceania",
@@ -1073,8 +1138,18 @@
       "aliases": ["ribat al fath", "rabat morocco", "rabat sale", "the city of light morocco", "city of light morocco"]
     },
     {
+      "id": "ravenna", "tier": "hard", "city": "Ravenna", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
+    },
+    {
       "id": "riga", "tier": "hard", "city": "Riga", "country": "Latvia", "continent": "Europe",
       "aliases": ["riga latvia", "the paris of the north", "rigas", "paris of the north"]
+    },
+    {
+      "id": "rimini", "tier": "hard", "city": "Rimini", "country": "Italy", "continent": "Europe",
+      "aliases": [],
+      "packOnly": true
     },
     {
       "id": "san-antonio", "tier": "hard", "city": "San Antonio", "country": "United States", "continent": "North America",
@@ -1101,6 +1176,11 @@
       "aliases": ["sapporo japan", "satporo", "sapporo hokkaido", "the city of the north star", "city of the north star"]
     },
     {
+      "id": "sassari", "tier": "hard", "city": "Sassari", "country": "Italy", "continent": "Europe",
+      "aliases": ["tàthari", "tathari"],
+      "packOnly": true
+    },
+    {
       "id": "sendai", "tier": "hard", "city": "Sendai", "country": "Japan", "continent": "Asia",
       "aliases": [],
       "packOnly": true
@@ -1116,6 +1196,11 @@
     {
       "id": "szczecin", "tier": "hard", "city": "Szczecin", "country": "Poland", "continent": "Europe",
       "aliases": ["stettin", "szczecin poland", "shchetsin"]
+    },
+    {
+      "id": "taranto", "tier": "hard", "city": "Taranto", "country": "Italy", "continent": "Europe",
+      "aliases": ["tarentum", "taras"],
+      "packOnly": true
     },
     {
       "id": "tashkent", "tier": "hard", "city": "Tashkent", "country": "Uzbekistan", "continent": "Asia",

@@ -231,11 +231,11 @@ and you edit it afterwards.
 
 ## Special packs
 
-The **special** entry in the region row opens a short menu of packs — USA,
-Japan, Italy and Benelux. Each can be ticked into a custom game alongside the
-continents and alongside other packs, or played on its own with the **play
-entire pack now** button beside it, which starts every level, ten rounds, no
-hints.
+**special** sits at the end of the region row, beside the continents, and
+opens a short menu of packs — USA, Japan, Italy and Benelux. Each is a tick
+like any other: it goes into a custom game alongside the continents and
+alongside other packs. A pack on its own is that pack ticked and every
+continent left off.
 
 A pack gets its cities two ways, and you can use either or both.
 
@@ -300,9 +300,9 @@ you want shown), and `countries` (`[]` if it is a themed pack rather than a
 place). It appears in the special menu on the next reload. Nothing else needs
 changing.
 
-A pack with nothing in it yet is listed but greyed out and its play button is
-switched off, so an empty shelf is visible rather than hidden. That is the
-state a new pack is in until you put pictures in it.
+A pack with nothing in it yet is listed but greyed out, so an empty shelf is
+visible rather than hidden. That is the state a new pack is in until you put
+pictures in it.
 
 ### Putting pictures in a pack
 

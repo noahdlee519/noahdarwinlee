@@ -380,13 +380,13 @@
       li.id = "game-suggest-" + i;
       li.setAttribute("role", "option");
       li.setAttribute("aria-selected", "false");
-      /* Names go in as text, never as markup: they come out of a data file. */
-      if (row.alias) {
-        var from = document.createElement("span");
-        from.className = "game-suggest-from";
-        from.textContent = row.alias + " → ";
-        li.appendChild(from);
-      }
+      /* Names go in as text, never as markup: they come out of a data file.
+
+         Only the city's own name is offered, never the nickname that found
+         it. Typing "the big easy" still gets you New Orleans, but the row
+         says New Orleans — printing the nickname back handed the answer over
+         in the very words that made it a joke, and made the easy ones
+         easier. */
       li.appendChild(document.createTextNode(row.entry.name));
       if (row.entry.country) {
         var where = document.createElement("span");
@@ -1653,10 +1653,9 @@
 
      The packs live behind one entry in the region row rather than beside the
      continents, because there will be more of them than there are continents
-     and they are not the ordinary way to play. Each gets two things: a tick,
-     which adds it to whatever else is selected, and a play button, which
-     starts that pack on its own — every level, ten rounds, no hints — so the
-     common case is one click rather than six.
+     and they are not the ordinary way to play. Each is a tick and nothing
+     else: it goes into the mix with whatever else is selected, and a pack on
+     its own is that pack ticked and the continents left alone.
 
      Packs begin unticked. Continents are a filter on the world and default to
      all of it; a pack is a thing you go and ask for. */
@@ -1668,46 +1667,10 @@
     if (!el.setupPacks) return;
     el.setupPacks.innerHTML = "";
     packs().forEach(function (pack) {
-      var n = packCount(pack.id);
-      var row = document.createElement("div");
-      row.className = "game-pack" + (n ? "" : " is-empty");
-
-      var input = check(el.setupPacks, pack.id, pack.label, n);
-      input.checked = false;
-      /* check() appends to the container; move the label it made into the row
-         so the play button can sit beside it. */
-      row.appendChild(el.setupPacks.lastChild);
-
-      var play = document.createElement("button");
-      play.type = "button";
-      play.className = "game-pack-play";
-      play.textContent = "play entire pack now";
-      play.disabled = !n;
-      play.setAttribute("aria-label", "Play the " + pack.label + " pack");
-      play.addEventListener("click", function () {
-        startPack(pack.id);
-      });
-      row.appendChild(play);
-
-      el.setupPacks.appendChild(row);
+      /* check() greys the label by itself when the count is nothing, which is
+         a pack with no pictures in it yet. */
+      check(el.setupPacks, pack.id, pack.label, packCount(pack.id)).checked = false;
     });
-  }
-
-  /* A pack on its own: no continents, so nothing but the pack is in play. */
-  function packConfig(id) {
-    return {
-      levels: levels().map(function (t) { return t.id; }),
-      continents: [],
-      packs: [id],
-      length: data.rounds || 10,
-      hints: false,
-      seed: randomSeed()
-    };
-  }
-
-  function startPack(id) {
-    var cfg = packConfig(id);
-    if (playable(cfg).length) start(cfg);
   }
 
   function specialIsOpen() {
@@ -1909,7 +1872,11 @@
     check(el.setupLevels, "__all", "all", null);
     levels().forEach(function (t) {
       check(el.setupLevels, t.id, t.label,
-            withPicture(function (c) { return c.tier === t.id; }));
+            /* Pack-only cities are left out here for the same reason they are
+               left out of the continent counts below: they are not reachable
+               without asking for their pack, so counting them would promise a
+               level bigger than the one the pool line then reports. */
+            withPicture(function (c) { return !c.packOnly && c.tier === t.id; }));
     });
 
     el.setupContinents.innerHTML = "";
@@ -1943,6 +1910,10 @@
       if (el.setupHints) el.setupHints.checked = saved.hints !== false;
     }
     boxes(el.setupLevels)[0].checked = boxes(el.setupLevels).slice(1).every(function (b) { return b.checked; });
+    /* The special menu opens from the region row itself, so its button is put
+       back into the row each time the row is rebuilt. It is not a checkbox,
+       so nothing that reads the row picks it up. */
+    if (el.setupSpecialOpen) el.setupContinents.appendChild(el.setupSpecialOpen);
     boxes(el.setupContinents)[0].checked = boxes(el.setupContinents).slice(1).every(function (b) { return b.checked; });
 
     renderDaily();
@@ -2385,10 +2356,13 @@
       fillAnswer(name, entry.city);
       li.appendChild(mark);
       li.appendChild(name);
-      if (!entry.right && entry.guess) {
+      if (!entry.right) {
         var said = document.createElement("span");
         said.className = "game-recap-guess";
-        said.textContent = "you said \u2018" + entry.guess + "\u2019" +
+        /* A round with nothing in it was given up on rather than got wrong,
+           and a blank space beside the answer does not say that. */
+        said.textContent =
+          (entry.guess ? "you said \u2018" + entry.guess + "\u2019" : "pass") +
           (quarters && got > 0 ? " \u00b7 +" + points(got) : "");
         li.appendChild(said);
       }
@@ -2574,6 +2548,12 @@
     slot.parentNode.insertBefore(el.leaders, slot);
   }
 
+  /* How many rows a board shows. Ten is the whole of what a leaderboard is
+     for — past that it stops being a top and starts being a list of everyone
+     who played, which is a different and duller thing. Below the ten, anyone
+     signed in still gets their own place on the line underneath. */
+  var BOARD_ROWS = 10;
+
   function ordinal(n) {
     if (n === 1) return "1st";
     if (n === 2) return "2nd";
@@ -2633,6 +2613,27 @@
     el.tabAllTime.setAttribute("aria-selected", today ? "false" : "true");
   }
 
+  var boardTick = null;
+
+  /* loading. loading.. loading... — a second of nothing needs to look like
+     waiting rather than like nothing. Every call clears the one before, so
+     switching tabs twice quickly leaves one timer, not two. */
+  function boardLoading(on) {
+    if (boardTick) {
+      clearInterval(boardTick);
+      boardTick = null;
+    }
+    if (!on || !el.leadersNote) return;
+    var dots = 0;
+    function write() {
+      dots = (dots % 3) + 1;
+      el.leadersNote.textContent = "loading" + new Array(dots + 1).join(".");
+    }
+    write();
+    show(el.leadersNote, true);
+    boardTick = setInterval(write, 380);
+  }
+
   function loadBoard() {
     if (!cloudOn() || !el.leaders) return;
     paintTabs();
@@ -2640,10 +2641,21 @@
     var want = boardTab;
     boardDay = day + ":" + want;
     var stamp = boardDay;
-    var ask = want === "alltime" ? cloud.lifetime(25) : cloud.board(day, 25);
+    var ask = want === "alltime"
+      ? cloud.lifetime(BOARD_ROWS)
+      : cloud.board(day, BOARD_ROWS);
+
+    /* Empty it now rather than when the rows land. Leaving the last board up
+       while the next one is fetched reads as though the tab did nothing, and
+       the counting dots say the wait is the network rather than a dead
+       button. */
+    el.leadersList.textContent = "";
+    show(el.leaders, true);
+    boardLoading(true);
 
     ask.then(function (rows) {
       if (boardDay !== stamp) return;
+      boardLoading(false);
       if (!rows) {
         show(el.leaders, false);
         return;
@@ -2699,7 +2711,7 @@
             : "you haven’t played today yet.";
         } else if (allTime) {
           el.leadersNote.textContent =
-            "you: " + row.total + " over " + row.days +
+            "you: " + points(row.total) + " over " + row.days +
             (row.days === 1 ? " day" : " days") + " · " + ordinal(row.place);
         } else {
           el.leadersNote.textContent =
@@ -2707,6 +2719,11 @@
         }
         show(el.leadersNote, true);
       });
+    })["catch"](function () {
+      if (boardDay !== stamp) return;
+      boardLoading(false);
+      el.leadersNote.textContent = "the board could not be reached.";
+      show(el.leadersNote, true);
     });
   }
 
