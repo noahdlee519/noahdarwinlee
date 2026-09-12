@@ -439,27 +439,6 @@ body {
   }
 }
 
-/* The same size as the about link, step for step. It had been left on the
-   sizes that link used before the header came up a quarter on a phone, which
-   made the way back visibly smaller than the way in -- two words that do the
-   same kind of work on two different pages. */
-@media (max-width: 900px) {
-  .back-link {
-    font-size: 27px;
-  }
-}
-
-@media (max-width: 610px) {
-  .back-link {
-    font-size: 24px;
-  }
-}
-
-@media (max-width: 460px) {
-  .back-link {
-    font-size: 21px;
-  }
-}
 
 .cv-page h2 {
   font-weight: 300 !important;
@@ -719,8 +698,10 @@ a[href="/cv/"]:active {
   .about-panel.is-open::after {
     content: "";
     display: block;
+    /* Far enough below the links for the ring that draws itself round a
+       hovered word to have room under it, the same way it has room over it. */
+    margin-top: 50px;
     height: 1px;
-    margin-top: 26px;
     background: var(--rule);
   }
 }
@@ -1577,11 +1558,12 @@ body.is-zoomed {
     padding-top: 16px;
   }
 
-  /* A quarter bigger than the desktop header, all of it together: the two
-     words, the circle and the mark. A phone is held a foot from the face and
-     the header is the one part of the page that is furniture rather than work,
-     so it can afford the room -- and at the old size the two controls in the
-     corner were smaller than the text they sit beside. */
+  /* Below the breakpoint the header stops being a set of fixed corners and
+     becomes the first two lines of the page. That is a change of arrangement,
+     not of size: the type stays where it is at 900 and only goes up on a
+     phone, further down. A 900-pixel window is a small desktop, and a header
+     a quarter larger than the desktop's read as an enlargement rather than as
+     a header. */
   .name,
   .about-link {
     position: static;
@@ -1589,17 +1571,9 @@ body.is-zoomed {
     top: auto;
     left: auto;
     margin: 0 0 8px 0;
-    font-size: 27px;
     line-height: 1.15;
     padding-bottom: 0;
     z-index: auto;
-  }
-
-  /* And the name a hair above the word under it. Two per cent is not a size
-     you would notice as a size; it is the difference between two lines that
-     are the same and two lines where one of them is the title. */
-  .name {
-    font-size: 27.5px;
   }
 
   
@@ -1729,6 +1703,7 @@ body.is-zoomed {
     height: var(--corner-mark);
   }
 
+
   /* The switch belongs to the name's line and goes to this corner at this
      width, which on the front page is the mark's corner too. It stands inboard
      of the mark, measured off the mark rather than guessed at, so the two keep
@@ -1782,15 +1757,27 @@ body.is-zoomed {
 }
 
 @media (max-width: 610px) {
+  /* One size for the header at every width above the smallest phones, which is
+     what a hierarchy that means anything looks like here: the type does not
+     grow as the screen shrinks. It used to -- twenty-seven under 901 and
+     twenty-four under 611, both above the desktop's twenty-two -- and a window
+     at 700 came out with a header a quarter larger than the same header on a
+     desk, for no reason anybody could see. The name keeps the two per cent
+     over the word under it that it has on a phone. */
   .name {
     line-height: 1.05;
-    font-size: 24.5px;
+    font-size: 22.4px;
   }
 
   .about-link {
     top: calc(var(--page-top) + 77px);
-    font-size: 24px;
+    font-size: 22px;
   }
+
+  .back-link {
+    font-size: 22px;
+  }
+
 
   .about-page {
     padding-top: 16px;
@@ -1807,7 +1794,8 @@ body.is-zoomed {
   }
 
   .name,
-  .about-link {
+  .about-link,
+  .back-link {
     font-size: 21px;
   }
 
