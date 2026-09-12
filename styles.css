@@ -259,21 +259,10 @@ body {
   opacity: 0.6;
 }
 
-/* Open, the grid turns a corner up and the nine squares draw in on their own
-   centres: the same nine marks, gathered, which is what the panel below has
-   just done with the links. */
+/* Open, the whole grid turns a corner up. Nothing else moves: the nine squares
+   stay the nine squares, just on the diagonal. */
 .site-menu[data-open="true"] .site-menu-icon {
   transform: rotate(45deg);
-}
-
-.site-menu-icon rect {
-  transform-box: fill-box;
-  transform-origin: 50% 50%;
-  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.site-menu[data-open="true"] .site-menu-icon rect {
-  transform: scale(0.72);
 }
 
 .site-menu-panel {
@@ -350,7 +339,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .site-menu-icon,
-  .site-menu-icon rect,
   .site-menu-panel,
   .site-menu-panel a {
     transition-duration: 1ms;
@@ -774,7 +762,6 @@ a[href="/cv/"]:active {
   border: 0 solid var(--accent);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 130ms ease;
 }
 
 /* Over the word, pointing down at it. */
@@ -786,7 +773,7 @@ a[href="/cv/"]:active {
 
 /* Under it, pointing up. */
 .about-panel-links a::after {
-  top: calc(100% + 9px);
+  top: calc(100% + 11px);
   border-width: 2px 0 0 2px;
   transform: translateX(-50%) rotate(45deg);
 }

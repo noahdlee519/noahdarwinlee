@@ -905,6 +905,11 @@
       const STORAGE_DRAFT = "front-flashcards-draft";
       const STORAGE_NAME = "front-flashcards-name";
       const STORAGE_COLORS = "front-flashcards-colors-v2";
+      /* Which side of the day/night switch a chosen set was chosen under. It is
+         what lets a later visit tell "these are the colours I picked here, in
+         this mode" from "these are colours from before the switch moved", which
+         are the same three hex values and want opposite treatment. */
+      const STORAGE_COLORS_THEME = "front-flashcards-colors-theme-v1";
       /* The fixed reference the sanitiser falls back to when a colour cannot
          be read at all. It does not follow the theme: a fallback that moved
          would make a malformed hex mean two different things. */
@@ -1221,6 +1226,9 @@
 
       function saveColors(colors) {
         localStorage.setItem(STORAGE_COLORS, JSON.stringify(colors));
+        try {
+          localStorage.setItem(STORAGE_COLORS_THEME, siteIsDark() ? "dark" : "light");
+        } catch (error) {}
       }
 
       function updateColorsFromInputs(event) {
@@ -1264,6 +1272,7 @@
         colorWarning.classList.add("hidden");
         try {
           localStorage.removeItem(STORAGE_COLORS);
+          localStorage.removeItem(STORAGE_COLORS_THEME);
         } catch (error) {}
         clearSetAsideColors();
         applyColors(startingColors());
@@ -2017,8 +2026,39 @@
         }
       });
 
+      /* On the way in, not only when the switch is pressed. A reader who set the
+         site to dark three pages ago and lands here should land in the dark,
+         even though the switch was never touched on this page -- so a set that
+         was chosen under the other mode is put aside on load, exactly as a
+         press would put it aside, and the page opens following the switch.
+
+         A set chosen under the mode that is still in force stands: that is a
+         deliberate choice made on this page, in these conditions, and it should
+         survive a reload. Which is what the recorded mode is for. A set from
+         before that key existed has no recorded mode and is treated as stale
+         -- once. */
+      function followSiteThemeOnLoad() {
+        if (!hasChosenColors()) return;
+        let chosenUnder = null;
+        try {
+          chosenUnder = localStorage.getItem(STORAGE_COLORS_THEME);
+        } catch (error) {}
+        if (chosenUnder === (siteIsDark() ? "dark" : "light")) return;
+        setAsideColors(readColors());
+        try {
+          localStorage.removeItem(STORAGE_COLORS);
+          localStorage.removeItem(STORAGE_COLORS_THEME);
+        } catch (error) {}
+      }
+
+      followSiteThemeOnLoad();
       applyColors(readColors());
       renderColorPresets();
+      if (loadSetAsideColors() && !hasChosenColors()) {
+        colorWarning.textContent =
+          "your colours are set aside while this follows the day and night switch — they are at the end of the presets, under “yours”.";
+        colorWarning.classList.remove("hidden");
+      }
 
       /* theme.js writes data-theme on the root when the switch is pressed, and
          the card follows it there and then, so pressing the switch darkens the
@@ -2035,6 +2075,7 @@
           if (hasChosenColors()) setAsideColors(readColors());
           try {
             localStorage.removeItem(STORAGE_COLORS);
+            localStorage.removeItem(STORAGE_COLORS_THEME);
           } catch (error) {}
           applyColors(startingColors());
           renderColorPresets();
