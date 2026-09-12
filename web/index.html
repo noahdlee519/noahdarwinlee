@@ -6,7 +6,7 @@
     <title>Webs I Like | Noah Darwin Lee</title>
     <meta
       name="description"
-      content="A hand-kept list of websites worth going to on purpose — small, strange, made by people."
+      content="A hand-kept list of websites Noah Darwin Lee likes."
     />
     <link rel="canonical" href="https://noahdarwinlee.com/web/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
@@ -20,7 +20,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Noah Darwin Lee" />
     <meta property="og:title" content="Webs I Like" />
-    <meta property="og:description" content="A hand-kept list of websites worth going to on purpose." />
+    <meta property="og:description" content="A hand-kept list of websites Noah Darwin Lee likes." />
     <meta property="og:url" content="https://noahdarwinlee.com/web/" />
     <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
     <meta property="og:image:width" content="1200" />
@@ -51,51 +51,35 @@
     </script>
     <style>
       /* ---------------------------------------------------------------------
-         A page from a web that mostly isn't there any more: tiled ground,
-         bevelled edges, a counter, Courier. None of it is a picture -- the
-         tiles are gradients and the bevels are borders, so the whole page is
-         one file and weighs nothing, which is the part of 1997 worth keeping.
+         Sixteen links on one colour. The old web this list comes from is in
+         the typewriter face and the blue underline and nothing else: no tiles,
+         no bevels, no counter, no badges. A page of links should look like a
+         page of links.
 
-         The header is the site's own: the name, the way back and the day/night
-         circle, in the places they hold on every other page. Only the paint is
-         different. What follows sets that paint and then gets out of the way.
+         The header is the site's own, in the places it holds everywhere else.
+         Only the paint is different.
          ------------------------------------------------------------------ */
       :root {
-        --paper: #d8d2c0;
-        --tile: #c8c1ab;
-        --ink-1: #1b1a17;
-        --ink-2: #4a4740;
+        --paper: #e9e5d9;
+        --ink-1: #17160f;
+        --ink-2: #6a675c;
         --link: #0000cc;
         --visited: #62168a;
-        --hot: #cc0022;
-        --chrome: #bdb6a2;
-        --bevel-light: #f4f0e4;
-        --bevel-dark: #7d7767;
-        --counter-bg: #101010;
-        --counter-ink: #43ff6f;
       }
 
       :root[data-theme="dark"],
       :root:not([data-theme]) {
-        --paper: #0a0a10;
-        --tile: #14141f;
-        --ink-1: #dedede;
-        --ink-2: #8f8fa6;
-        --link: #4df2ff;
-        --visited: #ff7bf0;
-        --hot: #ffe14d;
-        --chrome: #1c1c2a;
-        --bevel-light: #3a3a52;
-        --bevel-dark: #050508;
-        --counter-bg: #000000;
-        --counter-ink: #43ff6f;
+        --paper: #0d0d12;
+        --ink-1: #e4e4e4;
+        --ink-2: #85859a;
+        --link: #6fe9ff;
+        --visited: #f29bff;
       }
 
       /* The site's header furniture is painted in --ink, which is white
          everywhere else because everywhere else is orange or black. Here it
-         takes the page's own ink, so the name and the circle read on the
-         tiles. The [data-theme] selectors are to out-specify the same
-         declarations in the site stylesheet. */
+         takes the page's own ink. The [data-theme] selectors are to
+         out-specify the same declarations in the site stylesheet. */
       :root,
       :root[data-theme="light"],
       :root[data-theme="dark"] {
@@ -103,27 +87,13 @@
       }
 
       body.web-page {
-        /* A tile, drawn rather than fetched: two diagonals and a grid, the way
-           a 1997 background was a 40-pixel GIF repeating for ever. */
-        background-color: var(--paper);
-        background-image: repeating-linear-gradient(
-            45deg,
-            transparent 0 11px,
-            var(--tile) 11px 12px
-          ),
-          repeating-linear-gradient(-45deg, transparent 0 11px, var(--tile) 11px 12px);
+        background: var(--paper);
         color: var(--ink-1);
         font-family: "Courier New", Courier, monospace;
         font-weight: 400;
         padding-top: calc(var(--page-top) + 78px);
         padding-right: clamp(14px, 3vw, 36px);
         padding-bottom: 64px;
-      }
-
-      @media (max-width: 900px) {
-        body.web-page {
-          padding-top: 16px;
-        }
       }
 
       /* The name and the way back, in the page's own hand. */
@@ -135,217 +105,59 @@
       }
 
       .web-sheet {
-        max-width: 760px;
-        margin: 0;
-      }
-
-      /* ---- the marquee board ---- */
-      .web-board {
-        border: 3px ridge var(--bevel-light);
-        background: var(--chrome);
-        padding: 18px 16px 14px;
-        text-align: center;
+        max-width: 640px;
       }
 
       .web-title {
-        margin: 0;
-        font-family: "Times New Roman", Times, Georgia, serif;
-        font-size: clamp(30px, 9vw, 54px);
+        margin: 0 0 28px;
+        font-size: clamp(22px, 5vw, 28px);
         font-weight: 700;
-        line-height: 1;
         letter-spacing: 0.02em;
-        color: var(--hot);
-        /* The hard offset shadow every heading had, before anybody had heard
-           of a blur radius. */
-        text-shadow: 3px 3px 0 var(--bevel-dark);
-      }
-
-      .web-sub {
-        margin: 10px 0 0;
-        font-size: 13px;
-        color: var(--ink-2);
-      }
-
-      .web-rule {
-        height: 6px;
-        margin: 14px 0;
-        border: 0;
-        /* The candy-stripe divider, which was a GIF and is now four stops. */
-        background: repeating-linear-gradient(
-          90deg,
-          var(--hot) 0 10px,
-          var(--link) 10px 20px,
-          var(--counter-ink) 20px 30px,
-          var(--visited) 30px 40px
-        );
-      }
-
-      /* ---- the counter and the badges ---- */
-      .web-strip {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-        gap: 10px 14px;
-        margin-top: 12px;
-        font-size: 12px;
-        color: var(--ink-2);
-      }
-
-      .web-counter {
-        display: inline-flex;
-        gap: 2px;
-        padding: 3px 5px;
-        border: 2px inset var(--bevel-dark);
-        background: var(--counter-bg);
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        color: var(--counter-ink);
-      }
-
-      .web-badge {
-        padding: 3px 7px;
-        border: 2px outset var(--bevel-light);
-        background: var(--chrome);
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
         color: var(--ink-1);
       }
 
-      /* One blinking thing. There was always exactly one. */
-      .web-blink {
-        color: var(--hot);
-        font-weight: 700;
-        animation: web-blink 1.1s steps(1, end) infinite;
-      }
-
-      @keyframes web-blink {
-        50% {
-          opacity: 0;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .web-blink {
-          animation: none;
-        }
-      }
-
-      /* ---- the list ---- */
       .web-list {
         margin: 0;
         padding: 0;
         list-style: none;
-        border: 3px ridge var(--bevel-light);
-        background: var(--chrome);
       }
 
-      .web-item {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-        padding: 11px 14px;
-        border-bottom: 1px solid var(--bevel-dark);
+      .web-list li + li {
+        margin-top: 14px;
       }
 
-      .web-item:last-child {
-        border-bottom: 0;
-      }
-
-      /* Zebra striping, for the same reason a table had it. */
-      .web-item:nth-child(even) {
-        background: color-mix(in srgb, var(--bevel-light) 26%, transparent);
-      }
-
-      .web-num {
-        flex: 0 0 auto;
-        min-width: 2.2em;
-        padding: 1px 4px;
-        border: 2px inset var(--bevel-dark);
-        background: var(--paper);
-        font-size: 12px;
-        font-weight: 700;
-        text-align: center;
-        color: var(--ink-2);
-      }
-
-      .web-where {
-        min-width: 0;
-      }
-
-      .web-item a {
+      .web-list a {
         color: var(--link);
-        font-size: clamp(16px, 4.4vw, 20px);
-        font-weight: 700;
+        font-size: clamp(16px, 4.2vw, 19px);
         text-decoration: underline;
-        text-underline-offset: 2px;
+        text-underline-offset: 3px;
         overflow-wrap: anywhere;
       }
 
-      .web-item a:visited {
+      .web-list a:visited {
         color: var(--visited);
       }
 
-      .web-item a:hover,
-      .web-item a:focus-visible {
-        background: var(--hot);
-        color: var(--paper);
-        text-decoration: none;
-      }
-
-      .web-path {
-        margin: 3px 0 0;
-        font-size: 12px;
-        color: var(--ink-2);
-        overflow-wrap: anywhere;
-      }
-
-      /* ---- the dial ---- */
-      .web-dial-row {
-        margin: 16px 0 0;
-        text-align: center;
-      }
-
-      .web-dial {
-        padding: 9px 18px;
-        border: 3px outset var(--bevel-light);
-        background: var(--chrome);
-        font-family: inherit;
-        font-size: 15px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--ink-1);
-        cursor: pointer;
-      }
-
-      .web-dial:active {
-        border-style: inset;
-      }
-
-      .web-dial-note {
-        margin: 8px 0 0;
-        font-size: 12px;
-        color: var(--ink-2);
-      }
-
-      /* ---- the foot ---- */
-      .web-foot {
-        margin: 18px 0 0;
-        font-size: 12px;
-        line-height: 1.7;
-        color: var(--ink-2);
-      }
-
-      .web-foot a {
-        color: var(--link);
+      .web-list a:hover,
+      .web-list a:focus-visible {
+        text-decoration-thickness: 2px;
       }
 
       .web-page :focus-visible {
-        outline: 2px solid var(--hot);
-        outline-offset: 2px;
+        outline: 2px solid var(--ink-1);
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 900px) {
+        body.web-page {
+          padding-top: 16px;
+        }
+
+        /* The header is in the stack at this width rather than fixed above it,
+           so the heading needs a line of its own between them. */
+        .web-title {
+          margin-top: 20px;
+        }
       }
     </style>
   </head>
@@ -357,223 +169,68 @@
     <a class="back-link" href="/">back</a>
 
     <main class="web-sheet">
-      <div class="web-board">
-        <h1 class="web-title">Webs I Like</h1>
-        <p class="web-sub">
-          websites worth going to on purpose &middot; kept by hand &middot; no
-          algorithm was consulted
-        </p>
-        <hr class="web-rule" />
-        <div class="web-strip">
-          <span class="web-badge">est. 2026</span>
-          <span class="web-counter" id="web-counter" aria-live="off">00000</span>
-          <span id="web-counter-note">visits from this browser</span>
-          <span class="web-blink">new!</span>
-        </div>
-      </div>
-
-      <hr class="web-rule" />
-
-      <ol class="web-list">
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">01</span>
-          <span class="web-where">
-            <a href="https://anita.garden/" target="_blank" rel="noopener noreferrer">anita.garden</a>
-            <p class="web-path">https://anita.garden/</p>
-          </span>
+      <h1 class="web-title">Webs I Like</h1>
+      <ul class="web-list">
+        <li><a href="https://anita.garden/" target="_blank" rel="noopener noreferrer">anita.garden</a></li>
+        <li>
+          <a href="https://quartzmother.neocities.org/" target="_blank" rel="noopener noreferrer"
+            >quartzmother.neocities.org</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">02</span>
-          <span class="web-where">
-            <a href="https://quartzmother.neocities.org/" target="_blank" rel="noopener noreferrer"
-              >quartzmother.neocities.org</a
-            >
-            <p class="web-path">https://quartzmother.neocities.org/</p>
-          </span>
+        <li><a href="https://iafisher.com/" target="_blank" rel="noopener noreferrer">iafisher.com</a></li>
+        <li><a href="https://ribo.zone/" target="_blank" rel="noopener noreferrer">ribo.zone</a></li>
+        <li>
+          <a
+            href="https://angelofthemorning.neocities.org/homepage"
+            target="_blank"
+            rel="noopener noreferrer"
+            >angelofthemorning.neocities.org</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">03</span>
-          <span class="web-where">
-            <a href="https://iafisher.com/" target="_blank" rel="noopener noreferrer">iafisher.com</a>
-            <p class="web-path">https://iafisher.com/</p>
-          </span>
+        <li>
+          <a href="https://urlpoetry.club/" target="_blank" rel="noopener noreferrer">urlpoetry.club</a>
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">04</span>
-          <span class="web-where">
-            <a href="https://ribo.zone/" target="_blank" rel="noopener noreferrer">ribo.zone</a>
-            <p class="web-path">https://ribo.zone/</p>
-          </span>
+        <li>
+          <a href="https://theforest.link/" target="_blank" rel="noopener noreferrer">theforest.link</a>
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">05</span>
-          <span class="web-where">
-            <a
-              href="https://angelofthemorning.neocities.org/homepage"
-              target="_blank"
-              rel="noopener noreferrer"
-              >angelofthemorning.neocities.org</a
-            >
-            <p class="web-path">https://angelofthemorning.neocities.org/homepage</p>
-          </span>
+        <li>
+          <a href="https://a-website-is-a-room.net/" target="_blank" rel="noopener noreferrer"
+            >a-website-is-a-room.net</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">06</span>
-          <span class="web-where">
-            <a href="https://urlpoetry.club/" target="_blank" rel="noopener noreferrer">urlpoetry.club</a>
-            <p class="web-path">https://urlpoetry.club/</p>
-          </span>
+        <li>
+          <a href="https://playdaily.org/village/play" target="_blank" rel="noopener noreferrer"
+            >playdaily.org</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">07</span>
-          <span class="web-where">
-            <a href="https://theforest.link/" target="_blank" rel="noopener noreferrer">theforest.link</a>
-            <p class="web-path">https://theforest.link/</p>
-          </span>
+        <li>
+          <a href="https://tinyawards.net/vote/" target="_blank" rel="noopener noreferrer"
+            >tinyawards.net</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">08</span>
-          <span class="web-where">
-            <a href="https://a-website-is-a-room.net/" target="_blank" rel="noopener noreferrer"
-              >a-website-is-a-room.net</a
-            >
-            <p class="web-path">https://a-website-is-a-room.net/</p>
-          </span>
+        <li><a href="https://www.jean.land/" target="_blank" rel="noopener noreferrer">jean.land</a></li>
+        <li>
+          <a href="https://cloudlord.management/" target="_blank" rel="noopener noreferrer"
+            >cloudlord.management</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">09</span>
-          <span class="web-where">
-            <a href="https://playdaily.org/village/play" target="_blank" rel="noopener noreferrer"
-              >playdaily.org</a
-            >
-            <p class="web-path">https://playdaily.org/village/play</p>
-          </span>
+        <li><a href="https://near.rest/" target="_blank" rel="noopener noreferrer">near.rest</a></li>
+        <li>
+          <a href="https://everythingi.love/" target="_blank" rel="noopener noreferrer"
+            >everythingi.love</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">10</span>
-          <span class="web-where">
-            <a href="https://tinyawards.net/vote/" target="_blank" rel="noopener noreferrer"
-              >tinyawards.net</a
-            >
-            <p class="web-path">https://tinyawards.net/vote/</p>
-          </span>
+        <li>
+          <a href="https://ambient.garden/" target="_blank" rel="noopener noreferrer">ambient.garden</a>
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">11</span>
-          <span class="web-where">
-            <a href="https://www.jean.land/" target="_blank" rel="noopener noreferrer">jean.land</a>
-            <p class="web-path">https://www.jean.land/</p>
-          </span>
+        <li>
+          <a href="https://internetphonebook.net/#dial-a-site" target="_blank" rel="noopener noreferrer"
+            >internetphonebook.net</a
+          >
         </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">12</span>
-          <span class="web-where">
-            <a href="https://cloudlord.management/" target="_blank" rel="noopener noreferrer"
-              >cloudlord.management</a
-            >
-            <p class="web-path">https://cloudlord.management/</p>
-          </span>
-        </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">13</span>
-          <span class="web-where">
-            <a href="https://near.rest/" target="_blank" rel="noopener noreferrer">near.rest</a>
-            <p class="web-path">https://near.rest/</p>
-          </span>
-        </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">14</span>
-          <span class="web-where">
-            <a href="https://everythingi.love/" target="_blank" rel="noopener noreferrer"
-              >everythingi.love</a
-            >
-            <p class="web-path">https://everythingi.love/</p>
-          </span>
-        </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">15</span>
-          <span class="web-where">
-            <a href="https://ambient.garden/" target="_blank" rel="noopener noreferrer">ambient.garden</a>
-            <p class="web-path">https://ambient.garden/</p>
-          </span>
-        </li>
-        <li class="web-item">
-          <span class="web-num" aria-hidden="true">16</span>
-          <span class="web-where">
-            <a
-              href="https://internetphonebook.net/#dial-a-site"
-              target="_blank"
-              rel="noopener noreferrer"
-              >internetphonebook.net</a
-            >
-            <p class="web-path">https://internetphonebook.net/#dial-a-site</p>
-          </span>
-        </li>
-      </ol>
-
-      <!-- The one button. It picks one of the sixteen above and opens it, which
-           is what the old web had instead of a search box. -->
-      <div class="web-dial-row">
-        <button class="web-dial" type="button" id="web-dial">take me somewhere</button>
-        <p class="web-dial-note" id="web-dial-note">opens one of the sixteen at random</p>
-      </div>
-
-      <hr class="web-rule" />
-
-      <p class="web-foot">
-        Best viewed in a window you have made too small.<br />
-        Hand-typed. No cookies, no trackers, nothing counted anywhere but here.<br />
-        Know one that belongs on this list?
-        <a href="mailto:noahlee519@gmail.com">write to me</a>.
-      </p>
+      </ul>
     </main>
 
-    <script>
-      /* Two small things, both of which work without anything on the network.
-
-         The counter is the honest version of the thing every page had: it
-         counts this browser's own visits, in this browser, and says so. There
-         is no server to ask how many other people came, and a number made up
-         to look like there is would be the one dishonest thing on the page. */
-      (function () {
-        var KEY = "ndl-web-visits";
-        var el = document.getElementById("web-counter");
-        var note = document.getElementById("web-counter-note");
-        if (!el) return;
-        var n = 0;
-        try {
-          n = parseInt(localStorage.getItem(KEY) || "0", 10) || 0;
-          n += 1;
-          localStorage.setItem(KEY, String(n));
-        } catch (e) {
-          /* A browser with the drawer locked gets the first visit, for ever. */
-          n = 1;
-        }
-        el.textContent = String(Math.min(n, 99999)).padStart(5, "0");
-        if (note) {
-          note.textContent =
-            n === 1 ? "your first visit from this browser" : "visits from this browser";
-        }
-      })();
-
-      /* And the dial. It reads the links off the page rather than keeping a
-         second copy of them, so the list can only ever be in one place. */
-      (function () {
-        var button = document.getElementById("web-dial");
-        var note = document.getElementById("web-dial-note");
-        if (!button) return;
-        var links = Array.prototype.slice.call(
-          document.querySelectorAll(".web-item a[href]")
-        );
-        if (!links.length) return;
-        note.textContent =
-          "opens one of the " + links.length + " at random, in a new tab";
-        button.addEventListener("click", function () {
-          var pick = links[Math.floor(Math.random() * links.length)];
-          window.open(pick.href, "_blank", "noopener,noreferrer");
-        });
-      })();
-    </script>
     <script src="../header.js" defer></script>
     <script src="../theme.js" defer></script>
   </body>
