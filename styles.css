@@ -802,6 +802,11 @@ a[href="/cv/"]:active {
   top: 50%;
   width: 80%;
   aspect-ratio: 1;
+  /* The eighty per cent has to include the dots. Without this the border is
+     added outside the width, which makes the ring six pixels wider than it
+     should be and -- since only the left edge is pinned -- moves its centre
+     three pixels to the right of the word's. */
+  box-sizing: border-box;
   transform: translateY(-50%);
   border: 3px dotted var(--accent);
   border-radius: 50%;
@@ -809,6 +814,12 @@ a[href="/cv/"]:active {
   z-index: -1;
   pointer-events: none;
   --ring-sweep: 0deg;
+  /* Nothing is kept when the pointer goes: the next hover starts at twelve
+     o'clock with none of it drawn, rather than picking up where the last one
+     stopped. Spelled out rather than left to the default, because the rule
+     that does the drawing carries its own transition and this is the one that
+     undoes it. */
+  transition: --ring-sweep 0s;
   -webkit-mask-image: conic-gradient(
     from -90deg,
     #000 var(--ring-sweep),
