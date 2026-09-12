@@ -749,85 +749,53 @@ a[href="/cv/"]:active {
   text-decoration: none;
 }
 
-/* ---- the ring round a word ----
-   Hover one of these and a dotted circle draws itself round the word,
-   clockwise from the top, over a second, and then stays while you are still
-   there. It is the accent colour, which is already the cream by day and the
-   periwinkle by night -- the two this wanted -- so it is named rather than
-   repeated.
+/* ---- the marks either side of a word ----
+   Point at one of these and a chevron appears over it and another under it,
+   both centred on the word and both pointing at it. The accent colour, which
+   is already the cream by day and the periwinkle by night.
 
-   No script and no measuring. The ring is a pseudo-element of the link, and a
-   percentage width on it is a percentage of the link's own width, so
-   `width: 80%` is a circle whose radius is 40% of the length of the word
-   whatever the word is. `aspect-ratio: 1` makes the square that makes it
-   round, and the 10% inset centres it.
-
-   The drawing is a mask: a cone of solid black that opens from twelve
-   o'clock, with the angle it has reached registered as a real angle so that
-   it can be transitioned rather than snapped. Where @property is not
-   understood the angle cannot animate, so the ring simply appears whole --
-   which is the right thing to fall back to. */
-@property --ring-sweep {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
+   Drawn rather than typed: a square with two of its four borders, turned
+   forty-five degrees, which is a chevron of exactly the weight you ask for at
+   exactly the size you ask for -- where a glyph would be whatever the font
+   happened to have. Centred by the same fifty per cent and half-width shift
+   in both cases, and the rotation is about the box's own centre, so turning
+   it does not move it. */
 .about-panel-links a {
   position: relative;
-  /* A stacking context of its own, so the ring can sit behind the letters
-     without falling behind the page. */
-  z-index: 0;
 }
 
-.about-panel-links a::before {
+.about-panel-links a::before,
+.about-panel-links a::after {
   content: "";
   position: absolute;
-  left: 10%;
-  top: 50%;
-  width: 80%;
-  aspect-ratio: 1;
-  /* The eighty per cent has to include the dots. Without this the border is
-     added outside the width, which makes the ring six pixels wider than it
-     should be and -- since only the left edge is pinned -- moves its centre
-     three pixels to the right of the word's. */
-  box-sizing: border-box;
-  transform: translateY(-50%);
-  /* Dashed rather than dotted: a dot is as long as it is thick, and these
-     wanted to be longer than that. Four pixels rather than three for the
-     weight. Both are inside the eighty per cent, so the circle is the same
-     size it was. */
-  border: 4px dashed var(--accent);
-  border-radius: 50%;
-  background: none;
-  z-index: -1;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 0 solid var(--accent);
+  opacity: 0;
   pointer-events: none;
-  --ring-sweep: 0deg;
-  /* Nothing is kept when the pointer goes: the next hover starts at twelve
-     o'clock with none of it drawn, rather than picking up where the last one
-     stopped. Spelled out rather than left to the default, because the rule
-     that does the drawing carries its own transition and this is the one that
-     undoes it. */
-  transition: --ring-sweep 0s;
-  -webkit-mask-image: conic-gradient(
-    from -90deg,
-    #000 var(--ring-sweep),
-    transparent 0
-  );
-  mask-image: conic-gradient(from -90deg, #000 var(--ring-sweep), transparent 0);
+  transition: opacity 130ms ease;
+}
+
+/* Over the word, pointing down at it. */
+.about-panel-links a::before {
+  bottom: calc(100% + 9px);
+  border-width: 0 2px 2px 0;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* Under it, pointing up. */
+.about-panel-links a::after {
+  top: calc(100% + 9px);
+  border-width: 2px 0 0 2px;
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .about-panel-links a:hover::before,
-.about-panel-links a:focus-visible::before {
-  --ring-sweep: 360deg;
-  transition: --ring-sweep 1s linear;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .about-panel-links a:hover::before,
-  .about-panel-links a:focus-visible::before {
-    transition: none;
-  }
+.about-panel-links a:hover::after,
+.about-panel-links a:focus-visible::before,
+.about-panel-links a:focus-visible::after {
+  opacity: 1;
 }
 
 /* The emoji at the end of the row is a picture, and a picture does not want
