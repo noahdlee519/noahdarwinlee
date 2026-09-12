@@ -740,7 +740,11 @@ a[href="/cv/"]:active {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  /* The row of links stands well clear of the writing above it. It used to be
+     thirty-two, which was room enough for the words; the ring that draws
+     itself round a hovered word reaches about two dozen pixels above the line,
+     and it should have air over it rather than the last line of the bio. */
+  gap: 54px;
   min-width: 0;
 }
 
