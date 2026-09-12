@@ -764,6 +764,22 @@ a[href="/cv/"]:active {
   text-decoration: none;
 }
 
+/* The emoji at the end of the row is a picture, and a picture does not want
+   the letter-spacing, the underline or the inherited colour the words beside it
+   want. It wants to be a little bigger than they are and to lift a hair when
+   pressed, which is all an icon in a row of words can do. */
+.about-panel-web {
+  font-size: 1.14em;
+  line-height: 1;
+  text-decoration: none !important;
+  transition: transform 140ms ease;
+}
+
+.about-panel-web:hover,
+.about-panel-web:focus-visible {
+  transform: translateY(-2px);
+}
+
 .about-panel-links a:hover {
   text-decoration: underline;
   text-decoration-color: currentColor;

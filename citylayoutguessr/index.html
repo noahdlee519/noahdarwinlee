@@ -248,7 +248,11 @@
             </div>
           </fieldset>
 
-          <fieldset class="game-set">
+          <!-- Hidden by refreshSetup when the selection has already given away
+               both rungs of the hint ladder: with one country in the pool,
+               "it's in Japan" is not a hint, and a switch that cannot change
+               anything should not be on the page. -->
+          <fieldset class="game-set" id="setup-hints-set">
             <legend class="game-set-label">hints</legend>
             <div class="game-checks">
               <label class="game-check">

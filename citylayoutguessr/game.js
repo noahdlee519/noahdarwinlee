@@ -125,6 +125,7 @@
     nameNote: document.getElementById("game-name-note"),
     setupContinue: document.getElementById("setup-continue"),
     setupHints: document.getElementById("setup-hints"),
+    setupHintsSet: document.getElementById("setup-hints-set"),
     setupHintText: document.getElementById("setup-hint-text"),
     setupShare: document.getElementById("setup-share"),
     setupShareNote: document.getElementById("setup-share-note")
@@ -1760,7 +1761,12 @@
       continents: chosen(el.setupContinents),
       packs: chosenEvery(el.setupPacks),
       length: LENGTHS[i],
-      hints: Boolean(el.setupHints && el.setupHints.checked),
+      /* A hidden switch is not a setting: with one country in the pool the
+         hints can only name it, so the game is played without them however
+         the box was last left -- and the box keeps its state for when the
+         selection widens again. */
+      hints: Boolean(el.setupHints && el.setupHints.checked)
+        && !(el.setupHintsSet && el.setupHintsSet.hidden),
       seed: setupSeed
     };
   }
@@ -1833,9 +1839,13 @@
        maps is not a warning and should not read as one. */
     el.setupPool.classList.toggle("is-warning", Boolean(missing) || !n);
     /* The caption says what the hints will actually do for the game as it is
-       set up, which is not the same sentence once a single region is picked. */
+       set up, which is not the same sentence once a single region is picked --
+       and there is no sentence at all when everything in the pool shares a
+       country, where the whole fieldset goes. */
+    var given = givenBy(cfg);
+    if (el.setupHintsSet) show(el.setupHintsSet, !given.country);
     if (el.setupHintText) {
-      el.setupHintText.textContent = continentIsGiven(cfg)
+      el.setupHintText.textContent = given.continent
         ? "2 misses reveals the country"
         : "2 misses reveals the continent & 3 misses reveals the country";
     }
@@ -2242,20 +2252,38 @@
     return false;
   }
 
-  /* Naming the continent to somebody who picked that one continent is not a
-     hint, it is an echo. When the selection is a single region the rung is
-     skipped and the country arrives a miss earlier; the tries are not spent. */
-  /* True when the selection has already said where in the world this is, so
-     the first hint would be telling you what you chose. One continent does it;
-     so does a single pack tied to one country, which is most of them. */
+  /* What the selection has already told you, read off the pool itself rather
+     than inferred from the shape of the selection. Naming a place somebody has
+     just chosen is not a hint, it is an echo: if every map in the pool is on
+     one continent the first rung says nothing, and if they are all in one
+     country there is nothing left for the ladder to say at all.
+
+     Off the pool because the old version asked the selection instead, and the
+     selection does not always know: a pack of three countries that happen to
+     be neighbours -- Benelux -- would spend a miss announcing "Europe". */
+  function givenBy(cfg) {
+    var pool = cfg ? playable(cfg) : [];
+    if (!pool.length) return { continent: false, country: false };
+    var continents = {}, countries = {};
+    for (var i = 0; i < pool.length; i++) {
+      continents[pool[i].continent || ""] = 1;
+      countries[pool[i].country || ""] = 1;
+    }
+    return {
+      continent: Object.keys(continents).length === 1,
+      country: Object.keys(countries).length === 1
+    };
+  }
+
+  /* When the continent rung is an echo it is skipped and the country arrives a
+     miss earlier; the tries are not spent. */
   function continentIsGiven(cfg) {
-    if (!cfg || !cfg.continents) return false;
-    var chosenPacks = cfgPacks(cfg);
-    if (!chosenPacks.length) return cfg.continents.length === 1;
-    if (cfg.continents.length) return false;
-    if (chosenPacks.length !== 1) return false;
-    var pack = packById(chosenPacks[0]);
-    return Boolean(pack && (pack.countries || []).length === 1);
+    return givenBy(cfg).continent;
+  }
+
+  /* And when the country is given too, the whole ladder is echoes. */
+  function hintsSayNothing(cfg) {
+    return givenBy(cfg).country;
   }
 
   /* What a miss is worth telling you, in order. The first tells you nothing
@@ -2278,8 +2306,14 @@
     var right = Boolean(entry && entry.id && entry.id === round.city.id);
 
     /* A miss with hints on and tries left buys a clue rather than the answer.
-       Nothing goes into the log yet: the round is still being played. */
-    if (!right && state.cfg.hints) {
+       Nothing goes into the log yet: the round is still being played.
+
+       The second test is for the games that never went through the setup form
+       and so never had the switch taken off them: a shared link or a saved
+       setup can still be carrying hints: true for a pool that is all one
+       country, where the ladder has nothing to say. Rather than spend somebody
+       three guesses telling them the country they picked, there are no hints. */
+    if (!right && state.cfg.hints && !hintsSayNothing(state.cfg)) {
       state.tries = (state.tries || 0) + 1;
       var clue = state.tries < HINT_TRIES
         ? hintFor(round.city, state.tries, continentIsGiven(state.cfg))
