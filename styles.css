@@ -4126,6 +4126,14 @@ body.game-page {
   --mail-compose: #c2e7ff;
   --mail-star: #f4b400;
   --mail-star-off: #c4c7c5;
+  /* The letter, which is not the window. Gmail sets the list and the chrome in
+     its own greys and then hands the message body to whatever the composer
+     wrote -- near-black on white paper, and quoted text in the old mail
+     purple. Tokens because the two of them are the only things in here that
+     have to be legible as writing rather than as furniture. */
+  --mail-letter-ink: #222222;
+  --mail-quote-ink: #500050;
+  --mail-quote-line: #cccccc;
 
   /* As tall as the screen allows under the name and the lede — a little more
      than fits, so the page scrolls a few lines to its foot rather than the
@@ -4180,6 +4188,14 @@ body.game-page {
   --mail-compose: #004a77;
   --mail-star: #f4b400;
   --mail-star-off: #5f6368;
+  /* White, and not the #e8eaed the chrome around it uses: the letter is the
+     one thing on this page a reader is actually reading, and on charcoal
+     paper it should be the brightest thing in the window rather than a shade
+     of the furniture. It had been left on the daylight near-black, which on
+     #292a2d was a little over one to one -- there, but not readable. */
+  --mail-letter-ink: #ffffff;
+  --mail-quote-ink: #9aa0a6;
+  --mail-quote-line: #3c4043;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
 }
 
@@ -4865,7 +4881,7 @@ body.is-resizing-mail {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  color: #222222;
+  color: var(--mail-letter-ink);
   overflow-wrap: anywhere;
 }
 
@@ -4895,8 +4911,8 @@ body.is-resizing-mail {
 .mail-letter-body blockquote {
   margin: 1em 0 1em 0.8ex;
   padding-left: 1ex;
-  border-left: 1px solid #cccccc;
-  color: #500050;
+  border-left: 1px solid var(--mail-quote-line);
+  color: var(--mail-quote-ink);
 }
 
 .mail-letter-body pre {
