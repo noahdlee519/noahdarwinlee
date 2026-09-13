@@ -1362,6 +1362,25 @@ body.is-zoomed {
   opacity: 0.72;
 }
 
+/* The places named in a project's writing, linked out to whoever can say more
+   about them. The accent colour, which is the cream by day and the periwinkle
+   by night, is enough to mark them as links while the sentence is being read;
+   the rule arrives only when you point at one. */
+.art-caption a,
+.art-note a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.art-caption a:hover,
+.art-caption a:focus-visible,
+.art-note a:hover,
+.art-note a:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 .to-top-btn {
   position: fixed;
   top: calc(var(--page-top) + 9px);
