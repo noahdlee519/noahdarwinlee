@@ -1556,20 +1556,42 @@ function init() {
   });
 
   // Coordinate input handlers
+  function flashInvalid(el) {
+    el.style.outline = '2px solid #e55'; el.style.outlineOffset = '-1px';
+    setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 800);
+  }
+  function parseCoord(latEl, lonEl) {
+    const latStr = latEl.value.trim(), lonStr = lonEl.value.trim();
+    if (!latStr || !lonStr) return null;
+    const lat = parseFloat(latStr), lon = parseFloat(lonStr);
+    if (isNaN(lat) || lat < -90 || lat > 90) { flashInvalid(latEl); return null; }
+    if (isNaN(lon) || lon < -180 || lon > 180) { flashInvalid(lonEl); return null; }
+    return [lon, lat];
+  }
   function parseAndSetOrigin() {
-    const lat = parseFloat(document.getElementById('origin-lat').value);
-    const lon = parseFloat(document.getElementById('origin-lon').value);
-    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
-    origin = [lon, lat];
+    const pt = parseCoord(document.getElementById('origin-lat'), document.getElementById('origin-lon'));
+    if (!pt) return;
+    origin = pt;
     clickMode = 'destination';
-    projection.rotate([-lon, -lat, 0]);
+    projection.rotate([-pt[0], -pt[1], 0]);
     updateUI(); render();
+    // If destination coords were already filled in, set those too
+    const destPt = parseCoord(document.getElementById('dest-lat'), document.getElementById('dest-lon'));
+    if (destPt) {
+      destination = destPt;
+      clickMode = 'origin';
+      updateUI(); render();
+      computeRoutesAsync();
+    } else {
+      // Focus the destination lat input
+      const destLat = document.getElementById('dest-lat');
+      if (destLat && !destLat.hidden) setTimeout(() => destLat.focus(), 50);
+    }
   }
   function parseAndSetDest() {
-    const lat = parseFloat(document.getElementById('dest-lat').value);
-    const lon = parseFloat(document.getElementById('dest-lon').value);
-    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
-    destination = [lon, lat];
+    const pt = parseCoord(document.getElementById('dest-lat'), document.getElementById('dest-lon'));
+    if (!pt) return;
+    destination = pt;
     clickMode = 'origin';
     updateUI(); render();
     computeRoutesAsync();
