@@ -10,6 +10,10 @@
 // container. This file only decides when that attribute changes -- and what
 // the keyboard, the rest of the page, and the scroll should be able to do
 // about it.
+//
+// On devices that support hover (desktop mice), the menu opens when the
+// pointer enters the container and closes when it leaves. Touch and keyboard
+// still toggle on click/enter, because a finger has no hover state.
 (function () {
   var menu = document.getElementById("site-menu");
   if (!menu) return;
@@ -20,6 +24,10 @@
   var links = Array.prototype.slice.call(panel.querySelectorAll("a"));
   var open = false;
   var openedAt = 0;
+
+  // a short grace period so the panel does not snap shut when the pointer
+  // crosses a gap between the button and the panel.
+  var leaveTimer = null;
 
   /* Closed, the links are not in the tab order: a panel nobody can see is not
      a place the keyboard should be able to arrive at. */
@@ -43,10 +51,37 @@
     if (returnFocus) button.focus({ preventScroll: true });
   }
 
+  function cancelLeave() {
+    if (leaveTimer) {
+      clearTimeout(leaveTimer);
+      leaveTimer = null;
+    }
+  }
+
   setOpen(false);
   panel.setAttribute("inert", "");
   menu.setAttribute("data-open", "false");
 
+  /* ---- pointer hover (desktop) ---- */
+  // matchMedia is checked once: if the device can hover, wire up the
+  // enter/leave pair. Touch-only devices skip this entirely.
+  if (window.matchMedia("(hover: hover)").matches) {
+    menu.addEventListener("mouseenter", function () {
+      cancelLeave();
+      setOpen(true, false);
+    });
+
+    menu.addEventListener("mouseleave", function () {
+      cancelLeave();
+      // 120 ms grace: enough for a wobbly path between button and panel,
+      // short enough to feel instant.
+      leaveTimer = setTimeout(function () {
+        close(false);
+      }, 120);
+    });
+  }
+
+  /* ---- click (touch / keyboard fallback) ---- */
   button.addEventListener("click", function (event) {
     event.stopPropagation();
     setOpen(!open, false);
