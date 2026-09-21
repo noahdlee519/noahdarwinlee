@@ -844,6 +844,18 @@ a[href="/cv/"]:active {
   opacity: 1;
 }
 
+/* On touch devices the chevrons are invisible because there is no true hover.
+   A tap highlights the word with the accent colour instead. */
+@media (hover: none) {
+  .about-panel-links a::before,
+  .about-panel-links a::after {
+    display: none;
+  }
+  .about-panel-links a:active {
+    color: var(--accent);
+  }
+}
+
 /* The emoji at the end of the row is a picture, and a picture does not want
    the letter-spacing, the underline or the inherited colour the words beside it
    want. It wants to be a little bigger than they are and to lift a hair when
