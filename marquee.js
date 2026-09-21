@@ -142,6 +142,12 @@
     return 0;
   }
 
+  // Pause the loop when every row has scrolled out of view. An
+  // IntersectionObserver flips this flag; the loop only re-requests a frame
+  // while at least one row is visible (or close to it, thanks to the margin).
+  let visible = true;
+  let looping = false;
+
   let last = 0;
   function frame(now) {
     const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
@@ -156,9 +162,34 @@
       }
       lane.track.style.transform = "translateX(" + lane.offset.toFixed(2) + "px)";
     });
+    if (visible) {
+      requestAnimationFrame(frame);
+    } else {
+      looping = false;
+    }
+  }
+
+  function startLoop() {
+    if (looping) return;
+    looping = true;
+    last = 0;
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  startLoop();
+
+  // Watch all rows; the section is visible whenever any one of them is.
+  if (typeof IntersectionObserver !== "undefined") {
+    let count = 0;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => { count += e.isIntersecting ? 1 : -1; });
+        visible = count > 0;
+        if (visible) startLoop();
+      },
+      { rootMargin: "200px" }
+    );
+    rows.forEach((r) => io.observe(r));
+  }
 
   lanes.forEach((lane) => {
     const row = lane.row;
