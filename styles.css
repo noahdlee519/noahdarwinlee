@@ -651,6 +651,57 @@ a[href="/cv/"]:active {
   color: var(--ink);
 }
 
+/* Site sections, visible at the foot of the gallery so nobody has to discover
+   the menu or the about panel to find the blog, the game, or the CV.  The
+   same accent-colour chevron hover as the about-panel links, kept simple:
+   five words in a row, the same size as the instagram link above them. */
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 26px;
+  margin-top: 18px;
+  padding-bottom: 48px;
+  font-size: 22px;
+  font-weight: 300;
+}
+
+.site-nav a {
+  color: inherit;
+  text-decoration: none;
+  position: relative;
+}
+
+.site-nav a::before,
+.site-nav a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 0 solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.site-nav a::before {
+  bottom: calc(100% + 9px);
+  border-width: 0 2px 2px 0;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.site-nav a::after {
+  top: calc(100% + 11px);
+  border-width: 2px 0 0 2px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.site-nav a:hover::before,
+.site-nav a:hover::after,
+.site-nav a:focus-visible::before,
+.site-nav a:focus-visible::after {
+  opacity: 1;
+}
+
 /* Inline about panel, expanded from the homepage nav. */
 .about-panel {
   display: none;
