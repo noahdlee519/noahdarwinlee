@@ -1398,7 +1398,6 @@ body.is-zoomed {
      one hanging; where it is not understood, nothing changes. */
   text-wrap: pretty;
   color: var(--ink);
-  opacity: 0.6;
 }
 
 /* The captions use <em> for the medium and the dimensions, which wants to read
@@ -1423,6 +1422,12 @@ body.is-zoomed {
   font-weight: 300;
   line-height: 1.4;
   color: var(--ink);
+  opacity: 0.6;
+}
+
+/* the publication line inside a caption — same quiet treatment as the credit,
+   because it is attribution rather than description. */
+.art-pub {
   opacity: 0.6;
 }
 
