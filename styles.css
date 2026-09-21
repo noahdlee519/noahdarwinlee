@@ -683,21 +683,21 @@ a[href="/cv/"]:active {
   content: "";
   position: absolute;
   left: 50%;
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border: 0 solid var(--accent);
   opacity: 0;
   pointer-events: none;
 }
 
 .site-nav a::before {
-  bottom: calc(100% + 9px);
+  bottom: calc(100% + 4px);
   border-width: 0 2px 2px 0;
   transform: translateX(-50%) rotate(45deg);
 }
 
 .site-nav a::after {
-  top: calc(100% + 11px);
+  top: calc(100% + 7px);
   border-width: 2px 0 0 2px;
   transform: translateX(-50%) rotate(45deg);
 }
@@ -816,8 +816,8 @@ a[href="/cv/"]:active {
   content: "";
   position: absolute;
   left: 50%;
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border: 0 solid var(--accent);
   opacity: 0;
   pointer-events: none;
@@ -825,14 +825,14 @@ a[href="/cv/"]:active {
 
 /* Over the word, pointing down at it. */
 .about-panel-links a::before {
-  bottom: calc(100% + 9px);
+  bottom: calc(100% + 4px);
   border-width: 0 2px 2px 0;
   transform: translateX(-50%) rotate(45deg);
 }
 
 /* Under it, pointing up. */
 .about-panel-links a::after {
-  top: calc(100% + 11px);
+  top: calc(100% + 7px);
   border-width: 2px 0 0 2px;
   transform: translateX(-50%) rotate(45deg);
 }
