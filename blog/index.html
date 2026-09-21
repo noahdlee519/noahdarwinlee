@@ -70,6 +70,50 @@
         Japan, Korea, and Czechia. Take a look!
       </p>
 
+      <!-- When JavaScript is off the mail window is inert — no post list,
+           no letter pane, nothing. Show the catalogue as a plain list so
+           the page still has something to offer. -->
+      <noscript>
+        <div class="mail-noscript">
+          <p>These letters need JavaScript to read (the mail client is interactive).</p>
+          <ol class="mail-noscript-list">
+            <li>Part 11 <span class="mail-noscript-date">16 Sep 2026</span></li>
+            <li>Part 10 <span class="mail-noscript-date">6 Sep 2026</span></li>
+            <li>Part 9 <span class="mail-noscript-date">27 Aug 2026</span></li>
+            <li>Part 8 <span class="mail-noscript-date">3 Aug 2026</span></li>
+            <li>Part 7 <span class="mail-noscript-date">28 Jul 2026</span></li>
+            <li>Part 6 <span class="mail-noscript-date">22 Jul 2026</span></li>
+            <li>Part 5 <span class="mail-noscript-date">15 Jul 2026</span></li>
+            <li>Part 4 <span class="mail-noscript-date">11 Jul 2026</span></li>
+            <li>Part 3 <span class="mail-noscript-date">7 Jul 2026</span></li>
+            <li>Part 2 <span class="mail-noscript-date">4 Jul 2026</span></li>
+            <li>Part 1 <span class="mail-noscript-date">2 Jul 2026</span></li>
+          </ol>
+        </div>
+        <style>
+          .mail-noscript {
+            margin: 0 0 32px;
+            font-weight: 300;
+          }
+          .mail-noscript p {
+            font-size: clamp(16px, 1.8vw, 20px);
+            margin: 0 0 14px;
+          }
+          .mail-noscript-list {
+            list-style: decimal;
+            padding-left: 2em;
+            margin: 0;
+            font-size: clamp(15px, 1.6vw, 18px);
+            line-height: 1.8;
+          }
+          .mail-noscript-date {
+            opacity: 0.65;
+            margin-left: 0.4em;
+          }
+          .mail-noscript-date::before { content: "— "; }
+        </style>
+      </noscript>
+
       <!-- The window. Drawn the way the mail client these were read in draws
            itself — the backdrop, the pill of a search box, the rail, the white
            card — but with no wordmark and no logo: the arrangement is enough. -->
