@@ -713,7 +713,7 @@ a[href="/cv/"]:active {
 .about-panel {
   display: none;
   max-width: 980px;
-  margin: 0 0 34px;
+  margin: 0 0 60px;
 }
 
 .about-panel.is-open {
