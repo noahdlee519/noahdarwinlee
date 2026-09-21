@@ -73,11 +73,11 @@
 
     menu.addEventListener("mouseleave", function () {
       cancelLeave();
-      // 120 ms grace: enough for a wobbly path between button and panel,
-      // short enough to feel instant.
+      // 300 ms grace: enough to cross the gap between button and panel
+      // at a leisurely pace, short enough to feel responsive.
       leaveTimer = setTimeout(function () {
         close(false);
-      }, 120);
+      }, 300);
     });
   }
 

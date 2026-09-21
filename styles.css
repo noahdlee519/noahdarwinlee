@@ -266,6 +266,17 @@ body {
   transform: rotate(45deg);
 }
 
+/* invisible bridge between the button and the panel so hover does not
+   break when the pointer crosses the 17px gap between them. */
+.site-menu[data-open="true"]::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: -10px;
+  width: calc(100% + 20px);
+  height: 20px;
+}
+
 .site-menu-panel {
   position: absolute;
   top: calc(100% + 17px);
@@ -1387,9 +1398,7 @@ body.is-zoomed {
      one hanging; where it is not understood, nothing changes. */
   text-wrap: pretty;
   color: var(--ink);
-  /* opacity was 0.72; removed because white at 0.72 on the day-mode orange
-     falls below WCAG AA.  The smaller size and lighter weight already read
-     as quieter than a heading. */
+  opacity: 0.6;
 }
 
 /* The captions use <em> for the medium and the dimensions, which wants to read
@@ -1414,8 +1423,7 @@ body.is-zoomed {
   font-weight: 300;
   line-height: 1.4;
   color: var(--ink);
-  /* opacity was 0.58; same removal — 15 px text at 300 weight is not large
-     text, so it needs the full 4.5 : 1 ratio to pass AA. */
+  opacity: 0.6;
 }
 
 /* A line of argument set between the drawings, for the projects that have one.
