@@ -167,13 +167,14 @@
             <div class="about-panel-links">
               <a href="/projects/">projects</a>
               <a href="/blog/">blog</a>
-              <a href="https://www.instagram.com/noahdarwinlee/" target="_blank" rel="noopener noreferrer"
-                >instagram</a
-              >
-              <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer"
-                >linkedin</a
-              >
-              <a href="mailto:noahlee519@gmail.com">email</a>
+              <div class="contact-menu" id="contact-menu" data-open="false">
+                <button class="contact-menu-btn" type="button" aria-expanded="false">contact</button>
+                <div class="contact-menu-panel">
+                  <a href="https://www.instagram.com/noahdarwinlee/" target="_blank" rel="noopener noreferrer" style="--i: 0">instagram</a>
+                  <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer" style="--i: 1">linkedin</a>
+                  <a href="mailto:noahlee519@gmail.com" style="--i: 2">email</a>
+                </div>
+              </div>
               <a href="/cv/">cv</a>
             </div>
           </div>
@@ -430,7 +431,6 @@
       <nav class="site-nav" aria-label="Site sections">
         <a href="/projects/">projects</a>
         <a href="/blog/">blog</a>
-        <a href="https://www.instagram.com/noahdarwinlee/" target="_blank" rel="noopener noreferrer">instagram</a>
         <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer">linkedin</a>
         <a href="mailto:noahlee519@gmail.com">email</a>
         <a href="/cv/">cv</a>
@@ -442,6 +442,7 @@
     <script src="carousel.js" defer></script>
     <script src="lightbox.js" defer></script>
     <script src="about-toggle.js" defer></script>
+    <script src="contact-menu.js" defer></script>
     <script src="theme.js" defer></script>
   </body>
 </html>
