@@ -608,7 +608,7 @@ body {
 
 a[href*="fuzhounese.org"]:active,
 a[href="/flashcard/"]:active,
-a[href="/materials/"]:active,
+a[href="/projects/"]:active,
 a[href*="ucgeo.org"]:active,
 a[href*="llso.uchicago.edu"]:active,
 a[href*="cegu.uchicago.edu/expositions"]:active,
@@ -718,6 +718,10 @@ a[href="/cv/"]:active {
 .site-nav a:focus-visible::before,
 .site-nav a:focus-visible::after {
   opacity: 1;
+}
+
+.site-nav a:focus-visible {
+  outline: none;
 }
 
 /* Inline about panel, expanded from the homepage nav. */
@@ -853,6 +857,13 @@ a[href="/cv/"]:active {
 .about-panel-links a:focus-visible::before,
 .about-panel-links a:focus-visible::after {
   opacity: 1;
+}
+
+/* The chevrons are the focus indicator here; the default outline
+   would double up as a white box around the word. */
+.about-panel-links a:focus-visible,
+.contact-menu-btn:focus-visible {
+  outline: none;
 }
 
 /* On touch devices the chevrons are invisible because there is no true hover.
