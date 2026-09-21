@@ -1073,9 +1073,9 @@
   var SET_ASIDE_KEY = "ndl-clg-colors-set-aside-v1";
   var MIN_CONTRAST = 3;        // enough to see a fill or a big word
   var MIN_INK_CONTRAST = 4.5;  // what body text actually needs to read well
-  var DEFAULT_COLORS = { bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" };
+  var DEFAULT_COLORS = { bg: "#b35900", ink: "#ffffff", accent: "#e3e3b0" };
   var COLOR_PRESETS = [
-    { name: "orange", bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" },
+    { name: "orange", bg: "#b35900", ink: "#ffffff", accent: "#e3e3b0" },
     { name: "night", bg: "#000000", ink: "#f2f2f2", accent: "#918fff" },
     { name: "paper", bg: "#fff2eb", ink: "#1a1a1a", accent: "#ff1467" },
     { name: "sea", bg: "#0b3c49", ink: "#f2f2f2", accent: "#7fd1b9" },
