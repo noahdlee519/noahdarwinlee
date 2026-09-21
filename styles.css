@@ -9,7 +9,7 @@
    theme is three values rather than a second stylesheet.
 
    Light is the site as it has always been, white on orange -- darkened from
-   #e68019 to #b35900 so the white passes WCAG AA (4.83 : 1). Dark keeps none
+   #e68019 to #e68019, the original. It does not pass WCAG AA on white (2.81 : 1). Dark keeps none
    of the orange: it is black, white, and one periwinkle, and the periwinkle
    takes the job the orange has by day -- the rules, the hover fills, the
    panel a caption sits in. Orange on black went muddy behind the pictures and
@@ -22,7 +22,7 @@
    always set and the query never gets a say. */
 :root {
   color-scheme: light;
-  --bg: #b35900;
+  --bg: #e68019;
   --ink: #ffffff;
   --accent: #e3e3b0;
   /* A line drawn to separate rather than to say anything: the cream of the
