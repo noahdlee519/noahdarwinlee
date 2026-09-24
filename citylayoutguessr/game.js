@@ -2707,7 +2707,7 @@
         el.leadersNote.textContent = allTime
           ? "no scores yet."
           : me
-          ? "nobody has posted a score today — be first."
+          ? "be the first to post a score today by playing today’s challenge."
           : "nobody has posted a score today.";
         show(el.leadersNote, true);
         return;
