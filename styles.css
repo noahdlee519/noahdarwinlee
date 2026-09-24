@@ -1000,8 +1000,11 @@ a[href="/cv/"]:active {
   pointer-events: none;
 }
 
-/* left chevron, pointing right */
+/* left chevron, pointing right. left and bottom are reset because
+   .about-panel-links a::before sets them, and left would beat right. */
 .contact-menu-panel a::before {
+  left: auto;
+  bottom: auto;
   right: calc(100% + 6px);
   border-width: 0 2px 2px 0;
   transform: translateY(-50%) rotate(-45deg);
@@ -1009,6 +1012,8 @@ a[href="/cv/"]:active {
 
 /* right chevron, pointing left */
 .contact-menu-panel a::after {
+  right: auto;
+  bottom: auto;
   left: calc(100% + 6px);
   border-width: 0 2px 2px 0;
   transform: translateY(-50%) rotate(135deg);
