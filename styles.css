@@ -978,19 +978,47 @@ a[href="/cv/"]:active {
   font-weight: 300;
   line-height: 1.35;
   white-space: nowrap;
-  /* override the chevron pseudo-elements inherited from
-     .about-panel-links a */
-  position: static;
+  position: relative;
   opacity: 0;
   transform: translateY(-6px);
   transition: opacity 240ms ease,
     transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* hide the chevrons inherited from .about-panel-links a */
+/* chevrons left and right of each link, pointing inward at the
+   word — the same accent-colour squares as the about-panel links,
+   turned sideways. */
 .contact-menu-panel a::before,
 .contact-menu-panel a::after {
-  display: none;
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border: 0 solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* left chevron, pointing right */
+.contact-menu-panel a::before {
+  right: calc(100% + 6px);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+/* right chevron, pointing left */
+.contact-menu-panel a::after {
+  left: calc(100% + 6px);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-50%) rotate(135deg);
+}
+
+.contact-menu-panel a:hover::before,
+.contact-menu-panel a:hover::after,
+.contact-menu-panel a:focus-visible::before,
+.contact-menu-panel a:focus-visible::after {
+  opacity: 1;
 }
 
 .contact-menu[data-open="true"] .contact-menu-panel a {
@@ -1005,6 +1033,13 @@ a[href="/cv/"]:active {
     display: none;
   }
   .contact-menu-btn:active {
+    color: var(--accent);
+  }
+  .contact-menu-panel a::before,
+  .contact-menu-panel a::after {
+    display: none;
+  }
+  .contact-menu-panel a:active {
     color: var(--accent);
   }
 }
