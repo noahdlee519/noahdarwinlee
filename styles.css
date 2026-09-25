@@ -693,6 +693,37 @@ a[href="/cv/"]:active {
   margin-bottom: 48px;
 }
 
+/* How far the foot sits off the bottom of the window: the same distance the
+   name sits off the top of it, so the page is held top and bottom by one
+   margin. It used to be 88px -- the column's 40 plus the row's own 48 -- which
+   on a folded page left the foot floating well clear of the edge. Below 901
+   the body already pads every side by the same 16 it puts over the name, so
+   the row adds nothing there. */
+.index-page .art-main {
+  padding-bottom: 0;
+}
+
+.index-page .site-nav {
+  padding-bottom: var(--page-top);
+}
+
+@media (max-width: 900px) {
+  .index-page .site-nav {
+    padding-bottom: 0;
+  }
+}
+
+/* The chevron under a hovered word hangs 18px below it, and while it waits
+   at opacity 0 it still counts as part of the page -- on a phone, with only
+   16px under the row, that was a folded page two pixels taller than the
+   window, and so a page that scrolled. Out of the layout until it is wanted
+   instead: it comes on instantly either way, so nothing about it looks
+   different. */
+.index-page .site-nav a:not(:hover):not(:focus-visible)::before,
+.index-page .site-nav a:not(:hover):not(:focus-visible)::after {
+  display: none;
+}
+
 .index-instagram-link {
   display: block;
   margin-top: 28px;
