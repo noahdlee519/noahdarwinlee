@@ -645,15 +645,52 @@ a[href="/cv/"]:active {
   padding-bottom: 40px;
 }
 
-/* The header is three lines deep now — name, about, and the day/night switch —
-   and the first card's title sits about 27px into the card rather than staying
-   hidden until it is opened, so the page starts lower than it used to. */
+/* The header is three lines deep now — name, about, and art, with the
+   day/night switch beside the name — and the first card's title sits about
+   27px into the card rather than staying hidden until it is opened, so the
+   page starts lower than it used to. 137 is the old 104 plus art's 33. */
 .index-page {
-  padding-top: calc(var(--page-top) + 104px);
+  padding-top: calc(var(--page-top) + 137px);
 }
 
 .index-page .art-main {
   padding-top: 0;
+}
+
+/* The foot of the page -- instagram and the row of sections -- belongs at the
+   foot of the window whenever there is too little above it to push it there,
+   which is what folding the gallery away leaves. The body is at least one
+   window tall, padding included, the column inside it stretches, and the
+   spare room goes above the instagram line. That also means no scrolling on
+   a folded page: exactly one window, no more. With the gallery open the
+   pictures are far taller than the window and none of this does anything. */
+.index-page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.index-page .art-main {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.index-page .index-instagram-link {
+  margin-top: auto;
+}
+
+/* ...so the room between the last picture and the instagram line comes from
+   the gallery now: the 48px a <br> and the link's own 28px margin used to
+   add up to. The <br> goes -- in a flex column it is not a line any more. */
+.index-page .art-main > br {
+  display: none;
+}
+
+.index-page .art-gallery {
+  margin-bottom: 48px;
 }
 
 .index-instagram-link {
@@ -1082,27 +1119,25 @@ a[href="/cv/"]:active {
   content: "...";
 }
 
-/* The "art" header over the gallery. It is the about word's twin -- same size,
-   same weight, same triangle -- because it does the same job: one word that
-   opens and shuts the thing under it. It is a button, not a link, since there
-   is nowhere for it to go. The difference is that it starts open, so the
-   triangle starts pointing down and the "..." is there from the first paint. */
-.art-heading {
-  margin: 0 0 22px;
-  font-size: 22px;
-  font-weight: 300;
-  line-height: 1.3;
-}
-
+/* The "art" word, third line of the header. It wears .about-link as well, so
+   it is pinned, sized, faded and underlined exactly as about is, and what is
+   here is only what a button needs taken off it and where it sits. It starts
+   open, so the triangle starts pointing down and the "..." is there from the
+   first paint. */
 .art-toggle {
-  /* Strip the button back to plain type. */
+  /* Strip the button back to plain type -- longhands only. `font: inherit`
+     or `padding: 0` here would undo the size and the 13px under the word
+     that .about-link gives it, because this rule comes later in the file. */
   appearance: none;
   background: none;
   border: 0;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  color: var(--ink);
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin-right: 0;
+  font-family: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
   cursor: pointer;
   text-align: left;
 }
@@ -1121,25 +1156,19 @@ a[href="/cv/"]:active {
   content: "...";
 }
 
-/* Same underline as about on hover -- the triangle is a pseudo-element and
-   gets it too, which is also true of about. */
-.art-toggle:hover {
-  text-decoration: underline;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 2.25px;
+/* One line under about: the same 33px about sits under the name. Below 901
+   the header is an ordinary stack and it simply takes its turn in it. */
+@media (min-width: 901px) {
+  .art-toggle {
+    top: calc(var(--page-top) + 66px);
+  }
 }
 
-/* Folded: the gallery goes, the header stays. */
+/* Folded: the gallery goes, the word stays. */
 .art-gallery.is-collapsed {
   display: none;
 }
 
-/* The about word drops to 21 on the smallest phones, so this does too. */
-@media (max-width: 460px) {
-  .art-heading {
-    font-size: 21px;
-  }
-}
 
 /* ---------------- the gallery ----------------
    Fifteen projects, forty pictures, all of them on the page. There used to be
