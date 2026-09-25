@@ -689,13 +689,13 @@ a[href="/cv/"]:active {
   padding-top: 0;
 }
 
-/* The foot of the page -- instagram and the row of sections -- belongs at the
-   foot of the window whenever there is too little above it to push it there,
-   which is what folding the gallery away leaves. The body is at least one
-   window tall, padding included, the column inside it stretches, and the
-   spare room goes above the instagram line. That also means no scrolling on
-   a folded page: exactly one window, no more. With the gallery open the
-   pictures are far taller than the window and none of this does anything. */
+/* The small line at the foot of the page belongs at the foot of the window
+   whenever there is too little above it to push it there, which is what
+   folding the gallery away leaves. The body is at least one window tall,
+   padding included, the column inside it stretches, and the spare room goes
+   above that line. That also means no scrolling on a folded page: exactly
+   one window, no more. With the gallery open the pictures are far taller
+   than the window and none of this does anything. */
 .index-page {
   display: flex;
   flex-direction: column;
@@ -710,13 +710,13 @@ a[href="/cv/"]:active {
   flex-direction: column;
 }
 
+/* The room between the last picture and the instagram line comes from the
+   gallery: the 48px a <br> and the link's own 28px margin used to add up to.
+   The <br> goes -- in a flex column it is not a line any more. */
 .index-page .index-instagram-link {
-  margin-top: auto;
+  margin-top: 0;
 }
 
-/* ...so the room between the last picture and the instagram line comes from
-   the gallery now: the 48px a <br> and the link's own 28px margin used to
-   add up to. The <br> goes -- in a flex column it is not a line any more. */
 .index-page .art-main > br {
   display: none;
 }
@@ -725,22 +725,49 @@ a[href="/cv/"]:active {
   margin-bottom: 48px;
 }
 
-/* How far the foot sits off the bottom of the window: the same distance the
-   name sits off the top of it, so the page is held top and bottom by one
-   margin. It used to be 88px -- the column's 40 plus the row's own 48 -- which
-   on a folded page left the foot floating well clear of the edge. Below 901
-   the body already pads every side by the same 16 it puts over the name, so
-   the row adds nothing there. */
+/* Instagram and the row of sections are the end of the art, not the end of
+   the page: they come after the last picture, and they go when it does. */
+.art-gallery.is-collapsed ~ .index-instagram-link,
+.art-gallery.is-collapsed ~ .site-nav {
+  display: none;
+}
+
 .index-page .art-main {
   padding-bottom: 0;
 }
 
 .index-page .site-nav {
+  padding-bottom: 0;
+}
+
+/* The last line of the page: the year, the name, and the two legal pages, in
+   the same small light type as the legal line under the game. margin-top auto
+   is what holds it to the foot of the window on a folded page; the padding is
+   the least room it keeps from whatever is above, so it never runs up into
+   the row of sections. It sits as far off the bottom of the window as the
+   name sits off the top -- below 901 the body's own 16 already does that. */
+.site-foot {
+  margin-top: auto;
+  padding-top: 56px;
   padding-bottom: var(--page-top);
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.4;
+  opacity: 0.55;
+}
+
+.site-foot a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-foot a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 @media (max-width: 900px) {
-  .index-page .site-nav {
+  .site-foot {
     padding-bottom: 0;
   }
 }
