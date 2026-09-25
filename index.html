@@ -69,6 +69,7 @@
         /* No script means no toggle, so the about content is simply shown. */
         .about-panel { display: block !important; }
         .about-toggle::before { content: none !important; }
+        .art-toggle::before { content: none !important; }
       </style>
     </noscript>
 
@@ -180,6 +181,18 @@
           </div>
         </div>
       </div>
+      <!-- The word over the pictures, and the way to put them away. Open on
+           arrival: the front page is a gallery, and the header only offers to
+           fold it. -->
+      <h2 class="art-heading">
+        <button
+          class="art-toggle"
+          id="art-toggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="art-gallery"
+        >art</button>
+      </h2>
       <div id="art-gallery" class="art-gallery">
         <article class="art-card art-card-split" id="masaryk">
           <div class="art-label">
@@ -442,6 +455,7 @@
     <script src="carousel.js" defer></script>
     <script src="lightbox.js" defer></script>
     <script src="about-toggle.js" defer></script>
+    <script src="art-toggle.js" defer></script>
     <script src="contact-menu.js" defer></script>
     <script src="theme.js" defer></script>
   </body>
