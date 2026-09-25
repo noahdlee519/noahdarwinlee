@@ -1086,8 +1086,7 @@ a[href="/cv/"]:active {
    same weight, same triangle -- because it does the same job: one word that
    opens and shuts the thing under it. It is a button, not a link, since there
    is nowhere for it to go. The difference is that it starts open, so the
-   triangle starts pointing down, and it carries no "..." -- on about that
-   says "there is more above", and here the more is already on the page. */
+   triangle starts pointing down and the "..." is there from the first paint. */
 .art-heading {
   margin: 0 0 22px;
   font-size: 22px;
@@ -1115,6 +1114,11 @@ a[href="/cv/"]:active {
 
 .art-toggle[aria-expanded="true"]::before {
   content: "\25BE\00a0";
+}
+
+/* Open, it trails off the way about does. */
+.art-toggle[aria-expanded="true"]::after {
+  content: "...";
 }
 
 /* Same underline as about on hover -- the triangle is a pseudo-element and
