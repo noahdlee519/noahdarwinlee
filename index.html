@@ -110,17 +110,6 @@
       aria-controls="about-panel"
       >about</a
     >
-    <!-- The third line of the header, under about and wearing its class, so it
-         is pinned and faded exactly as about is. It folds the gallery away
-         rather than opening a panel. Open on arrival: the front page is a
-         gallery, and this only offers to put it away. -->
-    <button
-      class="about-link art-toggle"
-      id="art-toggle"
-      type="button"
-      aria-expanded="true"
-      aria-controls="art-gallery"
-    >art</button>
     <!-- Eight links behind one mark. Everything about how it opens is in
          menu.js and the stylesheet; this is the list itself, in the markup,
          so it is there for anything that does not run either. -->
@@ -192,6 +181,19 @@
           </div>
         </div>
       </div>
+      <!-- The third line under the name. It wears about's class, so it looks
+           and fades exactly as about does, but it lives here in the column,
+           between the about panel and the pictures: about opens directly
+           under about and pushes art down ahead of it. It folds the gallery
+           away rather than opening a panel. Open on arrival: the front page
+           is a gallery, and this only offers to put it away. -->
+      <button
+        class="about-link art-toggle"
+        id="art-toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="art-gallery"
+      >art</button>
       <div id="art-gallery" class="art-gallery">
         <article class="art-card art-card-split" id="masaryk">
           <div class="art-label">

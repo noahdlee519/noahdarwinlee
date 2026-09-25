@@ -645,12 +645,44 @@ a[href="/cv/"]:active {
   padding-bottom: 40px;
 }
 
-/* The header is three lines deep now — name, about, and art, with the
-   day/night switch beside the name — and the first card's title sits about
-   27px into the card rather than staying hidden until it is opened, so the
-   page starts lower than it used to. 137 is the old 104 plus art's 33. */
+/* Three lines at the top — name, about, and art, with the day/night switch
+   beside the name. Art is the first thing in the column rather than a fixed
+   line, so the column starts where art sits: 66px down, one 33px step under
+   about. The first card's title then sits at 137, where it was when art was
+   pinned (the old 104 plus art's 33): art's 41px box plus 30 under it. The
+   about panel, which opens above art, keeps the 104 it has always had by
+   taking the difference as its own margin. */
 .index-page {
-  padding-top: calc(var(--page-top) + 137px);
+  padding-top: calc(var(--page-top) + 66px);
+}
+
+@media (min-width: 901px) {
+  .index-page .art-toggle {
+    margin-bottom: 30px;
+  }
+
+  .index-page .about-panel {
+    margin-top: 38px;
+  }
+}
+
+/* Below 901 the top is an ordinary stack, and art has to sit 8px under about
+   like every other line in it -- so the column's 20px moves off the top of
+   the column (body.index-page, to outrank the 20 set further down) and onto
+   the two things that can come first in it: the panel above, and the room
+   under art before the pictures. */
+@media (max-width: 900px) {
+  body.index-page .art-main {
+    padding-top: 0;
+  }
+
+  .index-page .about-panel {
+    margin-top: 20px;
+  }
+
+  .index-page .art-toggle {
+    margin-bottom: 28px;
+  }
 }
 
 .index-page .art-main {
@@ -1150,9 +1182,9 @@ a[href="/cv/"]:active {
   content: "...";
 }
 
-/* The "art" word, third line of the header. It wears .about-link as well, so
-   it is pinned, sized, faded and underlined exactly as about is, and what is
-   here is only what a button needs taken off it and where it sits. It starts
+/* The "art" word, third line under the name. It wears .about-link as well,
+   so it is sized, faded and underlined exactly as about is, and what is here
+   is only what a button needs taken off it and where it sits. It starts
    open, so the triangle starts pointing down and the "..." is there from the
    first paint. */
 .art-toggle {
@@ -1187,12 +1219,16 @@ a[href="/cv/"]:active {
   content: "...";
 }
 
-/* One line under about: the same 33px about sits under the name. Below 901
-   the header is an ordinary stack and it simply takes its turn in it. */
-@media (min-width: 901px) {
-  .art-toggle {
-    top: calc(var(--page-top) + 66px);
-  }
+/* Not pinned, though. It was, as a third fixed line under about, and then
+   the about panel opened below art instead of below about. So it lives in
+   the column now, after the panel and before the pictures, and the page is
+   spaced so that with the panel shut it lands exactly where the pinned one
+   did -- 33px under about, as about is under the name. See .index-page.
+   align-self keeps a flex column from stretching the button into a row-wide
+   hit area. */
+.art-toggle {
+  position: static;
+  align-self: flex-start;
 }
 
 /* Folded: the gallery goes, the word stays. */
