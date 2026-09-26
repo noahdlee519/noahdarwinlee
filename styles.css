@@ -1258,6 +1258,18 @@ a[href="/cv/"]:active {
   align-self: flex-start;
 }
 
+/* About scrolls with the page too. It keeps its place at the top -- the same
+   top and left, now measured from the top of the page rather than the top of
+   the window -- so nothing moves until you scroll, and then it goes up with
+   everything else instead of hanging over the pictures. Below 901 it is
+   already part of the stack, and the media query keeps this from outranking
+   that. */
+@media (min-width: 901px) {
+  .index-page .about-toggle {
+    position: absolute;
+  }
+}
+
 /* Folded: the gallery goes, the word stays. */
 .art-gallery.is-collapsed {
   display: none;
