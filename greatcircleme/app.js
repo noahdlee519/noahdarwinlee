@@ -418,12 +418,13 @@
 
   canvas.addEventListener("pointerdown", function (e) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
-    canvas.setPointerCapture(e.pointerId);
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* a pointer that is already gone */ }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     stopInertia();
     stopFly();
     if (pointers.size === 2) {
       drag = null;
+      canvas.classList.remove("is-dragging");
       var pts = Array.from(pointers.values());
       pinch = { d: dist(pts[0], pts[1]), zoom: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
       return;
@@ -444,6 +445,7 @@
       var s = degPerPx();
       view.lon -= (mx - pinch.mx) * s; view.lat += (my - pinch.my) * s;
       pinch.mx = mx; pinch.my = my;
+      applyView(); // before the zoom reads what is under the fingers
       zoomAt(pinch.zoom * nd / pinch.d, mx, my, true);
       moving();
       return;
@@ -556,7 +558,7 @@
     state.avoidMode = !state.avoidMode;
     $("avoid-mode").setAttribute("aria-pressed", String(state.avoidMode));
     canvas.classList.toggle("is-avoid-mode", state.avoidMode);
-    $("avoid-hint").textContent = state.avoidMode ? "Click or tap a country to add it; again to take it off." : (canHover ? "Or shift-click a country on the globe." : "Or press avoid, then tap countries.");
+    $("avoid-hint").textContent = state.avoidMode ? (canHover ? "Click" : "Tap") + " a country to add it; again to take it off." : (canHover ? "Or shift-click a country on the globe." : "Or press avoid, then tap countries.");
   });
 
   canvas.addEventListener("keydown", function (e) {
@@ -758,10 +760,10 @@
   }
 
   function updateHint() {
-    var h = $("hint");
-    if (!state.a && !state.b) h.textContent = "Or click the globe: once for A, once for B.";
-    else if (!state.b) h.textContent = "Now B: click the globe, or type a place.";
-    else h.textContent = "Drag A or B to move them. Clicking again moves B.";
+    var h = $("hint"), tap = canHover ? "click" : "tap";
+    if (!state.a && !state.b) h.textContent = "Or " + tap + " the globe: once for A, once for B.";
+    else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place.";
+    else h.textContent = "Drag A or B to move them. " + (canHover ? "Clicking" : "Tapping") + " again moves B.";
   }
 
   $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
@@ -1316,6 +1318,7 @@
     var fromUrl = readUrl();
     renderChips();
     updateHint();
+    if (!canHover) $("avoid-hint").textContent = "Or press avoid, then tap countries.";
     startWorker();
     $("load").classList.add("is-gone");
     setTimeout(function () { $("load").remove(); }, 400);

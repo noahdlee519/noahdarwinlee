@@ -368,10 +368,11 @@ body.gc-page {
   letter-spacing: -0.01em;
 }
 .gc-big small {
-  font-size: 15px;
+  display: block;
+  margin: 3px 0 0;
+  font-size: 14px;
   font-weight: 400;
   color: var(--gc-muted);
-  margin-left: 6px;
 }
 .gc-summary .gc-line {
   display: block;
