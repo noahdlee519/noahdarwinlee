@@ -70,8 +70,11 @@
          from each letter to the same letter below. Clicking the name brings
          the next one. Letters are spaced wide so the lines have room to land
          on a letter rather than between two. */
+      /* The whole figure is the button: the name, the lines and the phrase. */
       .anagram {
         position: relative;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
         margin-top: clamp(64px, 12vh, 120px);
         width: fit-content;
         max-width: 100%;
@@ -115,7 +118,7 @@
       }
 
       @media (hover: hover) and (pointer: fine) {
-        .ana-name:hover .ch {
+        .anagram:hover .ana-name .ch {
           color: var(--accent);
         }
       }
@@ -178,7 +181,7 @@
         <p class="ana-row ana-phrase" id="ana-phrase" aria-live="polite"></p>
         <svg class="ana-lines" id="ana-lines" aria-hidden="true"></svg>
       </div>
-      <p class="ana-hint">Click the name for another.</p>
+      <p class="ana-hint">Click for another.</p>
     </main>
     <script>
       (function () {
@@ -296,7 +299,8 @@
         };
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(start);
         setTimeout(start, 700);
-        nameEl.addEventListener("click", function () {
+        // A click anywhere on the figure, the name's included, brings the next.
+        box.addEventListener("click", function () {
           at = (at + 1) % PHRASES.length;
           show(true);
         });
