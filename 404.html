@@ -51,18 +51,16 @@
         letter-spacing: -0.045em;
       }
 
-      .notfound .home {
-        display: inline-block;
-        font-size: 22px;
-        font-weight: 300;
+      /* The number is the way home. */
+      .notfound h1 a {
         color: inherit;
         text-decoration: none;
       }
 
-      .notfound .home:hover {
-        text-decoration: underline;
-        text-decoration-thickness: 2.25px;
-        text-underline-offset: 3px;
+      @media (hover: hover) and (pointer: fine) {
+        .notfound h1 a:hover {
+          color: var(--accent);
+        }
       }
 
       /* ---- the anagrams ----
@@ -70,8 +68,11 @@
          from each letter to the same letter below. Clicking the name brings
          the next one. Letters are spaced wide so the lines have room to land
          on a letter rather than between two. */
+      /* The whole figure is the button: the name, the lines and the phrase. */
       .anagram {
         position: relative;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
         margin-top: clamp(64px, 12vh, 120px);
         width: fit-content;
         max-width: 100%;
@@ -115,7 +116,7 @@
       }
 
       @media (hover: hover) and (pointer: fine) {
-        .ana-name:hover .ch {
+        .anagram:hover .ana-name .ch {
           color: var(--accent);
         }
       }
@@ -169,8 +170,7 @@
       <span class="name-word-lee">Lee</span></a
     >
     <main class="notfound">
-      <h1>404</h1>
-      <a class="home" href="/">home</a>
+      <h1><a href="/" aria-label="404. Back to the home page">404</a></h1>
 
       <div class="anagram" id="anagram">
         <button class="ana-row ana-name" id="ana-name" type="button" aria-label="Noah Darwin Lee. Show another anagram"></button>
@@ -178,7 +178,7 @@
         <p class="ana-row ana-phrase" id="ana-phrase" aria-live="polite"></p>
         <svg class="ana-lines" id="ana-lines" aria-hidden="true"></svg>
       </div>
-      <p class="ana-hint">Click the name for another.</p>
+      <p class="ana-hint">Click for another.</p>
     </main>
     <script>
       (function () {
@@ -296,7 +296,8 @@
         };
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(start);
         setTimeout(start, 700);
-        nameEl.addEventListener("click", function () {
+        // A click anywhere on the figure, the name's included, brings the next.
+        box.addEventListener("click", function () {
           at = (at + 1) % PHRASES.length;
           show(true);
         });
