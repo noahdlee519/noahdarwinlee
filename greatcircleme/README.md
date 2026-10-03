@@ -17,10 +17,14 @@ the countries you would rather not cross. Served at `/greatcircleme/`.
   drawn borders: no grid, no buffer. Also point-in-country, which countries an
   arc crosses, and distances on the sphere and (Vincenty) on the WGS84 ellipsoid.
 - **worker.js** — runs the search off the main thread in 40 ms slices; a newer
-  request supersedes an older one.
+  request supersedes an older one. Loaded as a plain script instead when the
+  browser will not start a worker, answering through the same messages.
 - **app.js** — the globe (canvas; a direct orthographic projector for land and
-  borders, d3-geo for the route arcs and the exact pointer test), the inputs with
-  suggestions, the avoid list, the results, and the URL hash that holds the state.
+  borders at three levels of detail chosen by how big the globe is on screen,
+  d3-geo for the route arcs and the exact pointer test, a colour-coded second
+  canvas to find the country under the pointer), the inputs with suggestions,
+  the avoid list (type, pick from the list, or shift-click the globe), the
+  results, and the URL hash that holds the state, so a route can be shared.
 - **data/countries-50m.json** — Natural Earth 1:50m countries (world-atlas),
   with unique ids and display names; **data/places.json** — cities, capitals,
   airports and countries for the search boxes. Both come from
@@ -31,9 +35,14 @@ the countries you would rather not cross. Served at `/greatcircleme/`.
 
     cd greatcircleme && node --test test/engine.test.mjs
 
-The engine against d3-geo (12,000 random points in and out of countries), and
-real routes checked for staying outside the avoided countries, being no longer
-than they must be, and coming out the same length in either direction.
+The engine against d3-geo (12,000 random points in and out of countries),
+synthetic shapes for the arc test's edge cases (touching, running along, and
+going through corners and straight runs), antipodes, and real routes checked
+for staying outside the avoided countries, being no longer than they must be,
+and coming out the same length in either direction. The page itself was
+driven with Playwright during development (typing, clicking, shift-clicking,
+dragging, zooming, pinching, the phone sheet, both themes); those scripts are
+not in the repo.
 
 ## Literature
 
