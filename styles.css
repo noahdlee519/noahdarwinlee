@@ -521,6 +521,13 @@ body {
   text-underline-offset: 3px;
 }
 
+/* Run-in labels at the head of a clause ("What is public.", "Names."):
+   the page is set at 300, so a plain <b> only reaches 400 and barely
+   shows. 600 makes the label readable as a label. */
+.privacy-page main b {
+  font-weight: 600;
+}
+
 .privacy-page main a:hover {
   text-decoration-thickness: 2px;
 }
