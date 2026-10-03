@@ -1,0 +1,650 @@
+/* greatcircleme: a globe that fills the window, a panel over one side of it.
+
+   The site's three colours do the whole page. The globe's own palette is
+   named here in those terms so the night theme is the same drawing lit
+   differently: the sea is the page, the land is the accent, and the one route
+   is the ink. */
+:root {
+  --gc-ocean: #e68019;
+  --gc-land: #e3e3b0;
+  --gc-land-hover: #f0f0cc;
+  --gc-border: rgba(230, 128, 25, 0.75);
+  --gc-limb: rgba(255, 255, 255, 0.55);
+  --gc-glow: rgba(255, 255, 255, 0.28);
+  --gc-grat: rgba(255, 255, 255, 0.1);
+  --gc-hatch: rgba(255, 255, 255, 0.85);
+  --gc-route: #ffffff;
+  --gc-route-halo: rgba(230, 128, 25, 0.6);
+  --gc-direct: rgba(255, 255, 255, 0.55);
+  --gc-marker: #ffffff;
+  --gc-marker-ink: #e68019;
+  --gc-muted: rgba(255, 255, 255, 0.72);
+  --gc-field: rgba(255, 255, 255, 0.1);
+  --gc-hover: rgba(255, 255, 255, 0.16);
+}
+
+:root[data-theme="dark"] {
+  --gc-ocean: #000000;
+  --gc-land: #34346a;
+  --gc-land-hover: #45458a;
+  --gc-border: rgba(0, 0, 0, 0.7);
+  --gc-limb: rgba(145, 143, 255, 0.55);
+  --gc-glow: rgba(145, 143, 255, 0.3);
+  --gc-grat: rgba(255, 255, 255, 0.07);
+  --gc-hatch: rgba(145, 143, 255, 0.95);
+  --gc-route: #ffffff;
+  --gc-route-halo: rgba(0, 0, 0, 0.6);
+  --gc-direct: rgba(255, 255, 255, 0.5);
+  --gc-marker: #ffffff;
+  --gc-marker-ink: #000000;
+  --gc-muted: rgba(255, 255, 255, 0.62);
+  --gc-field: rgba(255, 255, 255, 0.08);
+  --gc-hover: rgba(145, 143, 255, 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --gc-ocean: #000000;
+    --gc-land: #34346a;
+    --gc-land-hover: #45458a;
+    --gc-border: rgba(0, 0, 0, 0.7);
+    --gc-limb: rgba(145, 143, 255, 0.55);
+    --gc-glow: rgba(145, 143, 255, 0.3);
+    --gc-grat: rgba(255, 255, 255, 0.07);
+    --gc-hatch: rgba(145, 143, 255, 0.95);
+    --gc-route: #ffffff;
+    --gc-route-halo: rgba(0, 0, 0, 0.6);
+    --gc-direct: rgba(255, 255, 255, 0.5);
+    --gc-marker: #ffffff;
+    --gc-marker-ink: #000000;
+    --gc-muted: rgba(255, 255, 255, 0.62);
+    --gc-field: rgba(255, 255, 255, 0.08);
+    --gc-hover: rgba(145, 143, 255, 0.28);
+  }
+}
+
+/* ---- the page ---- */
+body.gc-page {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* The header stays in its corners at every width: there is no page under it
+   to scroll with, only the globe. */
+.gc-page .name,
+.gc-page .back-link,
+.gc-page .header-line {
+  position: fixed !important;
+  z-index: 30;
+  margin: 0;
+}
+.gc-page .name,
+.gc-page .header-line {
+  top: var(--page-top);
+  left: var(--page-left);
+}
+.gc-page .back-link {
+  top: calc(var(--page-top) + 33px);
+  left: var(--page-left);
+  display: inline;
+}
+/* theme.js puts the name inside the line box with the switch; in there the
+   name has to flow, or the switch lands on its first letter. */
+.gc-page .header-line .name.name {
+  position: static !important;
+  top: auto;
+  left: auto;
+}
+.gc-page .theme-btn {
+  z-index: 31;
+}
+
+.gc-globe {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  outline: none;
+}
+.gc-globe:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+}
+.gc-globe.is-dragging {
+  cursor: grabbing;
+}
+.gc-globe.is-over-country {
+  cursor: pointer;
+}
+.gc-globe.is-over-marker {
+  cursor: grab;
+}
+.gc-globe.is-avoid-mode {
+  cursor: crosshair;
+}
+
+.gc-tip {
+  position: fixed;
+  z-index: 25;
+  pointer-events: none;
+  padding: 5px 9px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  transform: translate(14px, -50%);
+}
+.gc-tip small {
+  display: block;
+  font-size: 12px;
+  color: var(--gc-muted);
+}
+
+/* ---- the controls, bottom right like a map's ---- */
+.gc-controls {
+  position: fixed;
+  right: calc(var(--page-left) + env(safe-area-inset-right, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 24;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gc-ctl {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gc-ctl:hover {
+  background: var(--gc-hover);
+}
+.gc-ctl-text {
+  font-size: 14px;
+}
+.gc-ctl[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* ---- the panel ---- */
+.gc-panel {
+  position: fixed;
+  z-index: 20;
+  top: calc(var(--page-top) + 78px);
+  left: var(--page-left);
+  width: 352px;
+  max-height: calc(100vh - var(--page-top) - 100px);
+  max-height: calc(100dvh - var(--page-top) - 100px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: 16px 20px 14px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  font-size: 15px;
+  line-height: 1.35;
+  scrollbar-width: thin;
+}
+.gc-sheet-handle {
+  display: none;
+}
+.gc-head {
+  margin: 0 0 12px;
+}
+.gc-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+.gc-sub {
+  margin: 4px 0 0;
+  color: var(--gc-muted);
+  font-size: 14px;
+}
+
+.gc-points {
+  position: relative;
+}
+.gc-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.gc-field + .gc-field {
+  margin-top: 6px;
+}
+.gc-badge {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: center;
+}
+.gc-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* at least 16 so a phone does not zoom in on focus */
+}
+.gc-field input::placeholder {
+  color: var(--gc-muted);
+  opacity: 1;
+}
+.gc-field input:focus {
+  outline: none;
+}
+.gc-field:focus-within {
+  border-bottom-color: var(--ink);
+}
+.gc-clear {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gc-muted);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gc-clear:hover {
+  color: var(--ink);
+}
+.gc-swap {
+  position: absolute;
+  right: -6px;
+  top: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gc-muted);
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 2;
+}
+.gc-swap:hover {
+  color: var(--ink);
+}
+.gc-hint {
+  margin: 6px 0 0;
+  color: var(--gc-muted);
+  font-size: 13px;
+}
+
+/* The suggestions, dropping out of a field. */
+.gc-suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 5;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  max-height: 290px;
+  overflow-y: auto;
+}
+.gc-suggest li {
+  padding: 7px 10px;
+  cursor: pointer;
+  line-height: 1.25;
+}
+.gc-suggest li[aria-selected="true"],
+.gc-suggest li:hover {
+  background: var(--gc-hover);
+}
+.gc-suggest .gc-sug-main {
+  display: block;
+}
+.gc-suggest .gc-sug-sub {
+  display: block;
+  color: var(--gc-muted);
+  font-size: 13px;
+}
+.gc-suggest .gc-sug-kind {
+  float: right;
+  margin-left: 8px;
+  color: var(--gc-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.gc-suggest li.gc-sug-note {
+  color: var(--gc-muted);
+  font-size: 13px;
+  cursor: default;
+}
+
+/* The one line that says what was found, under the two places. */
+.gc-summary {
+  margin: 14px 0 2px;
+  min-height: 1.2em;
+}
+.gc-summary:empty {
+  display: none;
+}
+.gc-big {
+  display: block;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.gc-big small {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--gc-muted);
+  margin-left: 6px;
+}
+.gc-summary .gc-line {
+  display: block;
+  margin-top: 4px;
+  color: var(--gc-muted);
+  font-size: 14px;
+}
+.gc-summary .gc-line b {
+  color: var(--ink);
+  font-weight: 400;
+}
+.gc-summary.is-busy .gc-line {
+  color: var(--ink);
+}
+.gc-warn {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+}
+.gc-warn button,
+.gc-linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---- avoid ---- */
+.gc-avoid {
+  margin-top: 16px;
+}
+.gc-label {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gc-muted);
+}
+.gc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gc-chips:empty {
+  display: none;
+}
+.gc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid var(--ink);
+  font-size: 14px;
+  line-height: 1.2;
+}
+.gc-chip button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.gc-chip button:hover {
+  opacity: 1;
+}
+.gc-chip.gc-chip-add {
+  border-color: var(--rule);
+  padding: 3px 10px;
+  cursor: pointer;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+}
+.gc-chip.gc-chip-add:hover {
+  border-color: var(--ink);
+}
+.gc-chip.gc-chip-add::before {
+  content: "+ ";
+  color: var(--gc-muted);
+}
+
+/* ---- results ---- */
+.gc-results {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.gc-units {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.gc-units button {
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--gc-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.gc-units button[aria-pressed="true"] {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.gc-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+}
+.gc-row dt {
+  color: var(--gc-muted);
+  font-size: 14px;
+}
+.gc-row dd {
+  margin: 0;
+  text-align: right;
+}
+.gc-row dd small {
+  color: var(--gc-muted);
+}
+dl.gc-rows {
+  margin: 0;
+}
+.gc-crosses {
+  margin: 10px 0 0;
+}
+.gc-crosses .gc-label {
+  margin-bottom: 4px;
+}
+
+/* ---- the small print ---- */
+.gc-foot {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  color: var(--gc-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.gc-foot p {
+  margin: 0 0 6px;
+}
+.gc-foot a {
+  color: inherit;
+}
+
+.gc-load {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  color: var(--ink);
+  font-size: 15px;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+.gc-load.is-gone {
+  opacity: 0;
+}
+
+/* ---- phones: the panel becomes a sheet at the bottom ---- */
+@media (max-width: 640px) {
+  .gc-page .name,
+  .gc-page .header-line {
+    top: 16px;
+    left: 16px;
+  }
+  /* The switch goes to the far corner, as it does on every page at this
+     width; here the line it leaves is fixed, so the corner has to be the
+     window's, not the line's. */
+  .gc-page .theme-btn {
+    position: fixed;
+    top: 21px;
+    right: 16px;
+  }
+  .gc-page .back-link {
+    top: 44px;
+    left: 16px;
+  }
+  .gc-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 174px;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    overflow: hidden;
+    transition: max-height 260ms ease;
+  }
+  .gc-panel.is-open {
+    max-height: 76vh;
+    max-height: 76dvh;
+    overflow-y: auto;
+  }
+  .gc-sheet-handle {
+    display: block;
+    width: 100%;
+    height: 18px;
+    margin: -6px 0 2px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .gc-sheet-handle span {
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 2px;
+    background: var(--rule);
+  }
+  .gc-head {
+    display: none;
+  }
+  .gc-panel.is-open .gc-head {
+    display: block;
+  }
+  .gc-field input {
+    padding: 7px 0;
+  }
+  .gc-hint {
+    display: none;
+  }
+  .gc-panel.is-open .gc-hint {
+    display: block;
+  }
+  .gc-summary {
+    margin-top: 8px;
+  }
+  .gc-big {
+    font-size: 24px;
+  }
+  .gc-controls {
+    bottom: calc(190px + env(safe-area-inset-bottom, 0px));
+    right: 12px;
+  }
+  .gc-panel.is-open ~ .gc-controls,
+  .gc-controls.is-lifted {
+    bottom: auto;
+    top: 16px;
+    right: 56px;
+    flex-direction: row;
+  }
+  .gc-suggest {
+    max-height: 200px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-panel,
+  .gc-load {
+    transition: none;
+  }
+}

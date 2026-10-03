@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>greatcircleme</title>
+    <meta
+      name="description"
+      content="The shortest way between two places on the Earth, and the shortest way around the countries you would rather not cross. Click two points on a globe or type two places, then pick the countries to avoid."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/greatcircleme/" />
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+    <link rel="manifest" href="../manifest.json" />
+    <meta name="theme-color" content="#e68019" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="greatcircleme | Noah Darwin Lee" />
+    <meta property="og:description" content="The shortest way between two places on the Earth, and the shortest way around the countries you would rather not cross." />
+    <meta property="og:url" content="https://noahdarwinlee.com/greatcircleme/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="app.css" />
+    <!-- Before the first paint: a remembered choice, otherwise the system's.
+         The attribute is always written, so the stylesheet never has to guess
+         and the page never flashes the other theme on the way in. The rest of
+         the switch is in theme.js; this part cannot wait for a fetch. -->
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+
+    <!-- Everything the page runs is its own, so script-src is this origin
+         and the one inline script above, by its hash. The only other place it
+         talks to is Photon, for place names the built-in list does not have. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'sha256-HoSwDg8nnQk1NXcMOzkswPlauRhTcyy/D3Ksw58Qnag=';
+        worker-src 'self';
+        style-src 'self' https://fonts.googleapis.com;
+        font-src https://fonts.gstatic.com;
+        img-src 'self' data:;
+        connect-src 'self' https://photon.komoot.io;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
+  </head>
+  <body class="gc-page">
+    <h1 class="sr-only">greatcircleme</h1>
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="back-link" href="/projects/">back</a>
+
+    <!-- The globe. Everything drawn on it is drawn by app.js; the attributes
+         here are what a screen reader and the keyboard get instead. -->
+    <canvas
+      id="globe"
+      class="gc-globe"
+      tabindex="0"
+      aria-label="A globe. Drag to turn it, scroll or pinch to zoom, click to place a point, shift-click a country to avoid it. Arrow keys turn it; plus and minus zoom."
+    ></canvas>
+    <div class="gc-tip" id="tip" hidden></div>
+
+    <div class="gc-controls" aria-label="Globe controls">
+      <button type="button" class="gc-ctl" id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
+      <button type="button" class="gc-ctl" id="zoom-out" aria-label="Zoom out" title="Zoom out">&minus;</button>
+      <button type="button" class="gc-ctl gc-ctl-text" id="fit" title="Show the route">fit</button>
+      <button
+        type="button"
+        class="gc-ctl gc-ctl-text"
+        id="avoid-mode"
+        aria-pressed="false"
+        title="Click countries to avoid them"
+      >
+        avoid
+      </button>
+    </div>
+
+    <aside class="gc-panel" id="panel" aria-label="Route">
+      <button type="button" class="gc-sheet-handle" id="sheet-handle" aria-label="Show more" aria-expanded="false">
+        <span></span>
+      </button>
+      <header class="gc-head">
+        <h2 class="gc-title">greatcircleme</h2>
+        <p class="gc-sub">The shortest way between two places, around the countries you choose.</p>
+      </header>
+
+      <div class="gc-points">
+        <div class="gc-field" data-slot="a">
+          <span class="gc-badge" aria-hidden="true">A</span>
+          <input
+            id="in-a"
+            type="text"
+            placeholder="From: a city, an airport, or lat, lon"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="From"
+            aria-autocomplete="list"
+            aria-controls="sug-a"
+          />
+          <button type="button" class="gc-clear" id="clear-a" aria-label="Clear A" hidden>&times;</button>
+          <ul class="gc-suggest" id="sug-a" role="listbox" hidden></ul>
+        </div>
+        <button type="button" class="gc-swap" id="swap" aria-label="Swap A and B" title="Swap">&#8645;</button>
+        <div class="gc-field" data-slot="b">
+          <span class="gc-badge" aria-hidden="true">B</span>
+          <input
+            id="in-b"
+            type="text"
+            placeholder="To"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="To"
+            aria-autocomplete="list"
+            aria-controls="sug-b"
+          />
+          <button type="button" class="gc-clear" id="clear-b" aria-label="Clear B" hidden>&times;</button>
+          <ul class="gc-suggest" id="sug-b" role="listbox" hidden></ul>
+        </div>
+        <p class="gc-hint" id="hint">Or click the globe: once for A, once for B.</p>
+      </div>
+
+      <div class="gc-summary" id="summary" aria-live="polite"></div>
+
+      <section class="gc-avoid">
+        <label class="gc-label" for="in-avoid">Avoid</label>
+        <div class="gc-field gc-field-avoid">
+          <input
+            id="in-avoid"
+            type="text"
+            placeholder="A country to go around"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-autocomplete="list"
+            aria-controls="sug-avoid"
+          />
+          <ul class="gc-suggest" id="sug-avoid" role="listbox" hidden></ul>
+        </div>
+        <ul class="gc-chips" id="chips" aria-label="Countries being avoided"></ul>
+        <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe.</p>
+      </section>
+
+      <section class="gc-results" id="results" hidden>
+        <div class="gc-units" role="group" aria-label="Units">
+          <button type="button" data-unit="km" aria-pressed="true">km</button>
+          <button type="button" data-unit="mi" aria-pressed="false">mi</button>
+          <button type="button" data-unit="nmi" aria-pressed="false">nmi</button>
+        </div>
+        <div id="out"></div>
+      </section>
+
+      <footer class="gc-foot">
+        <p>
+          Shortest paths around the chosen countries are exact for the drawn borders: a route of
+          great-circle arcs that bends only at their convex corners, found by A* over the tangent
+          visibility graph. Distances are on a sphere of radius 6,371.0088 km; the direct
+          distance is also given on the WGS84 ellipsoid.
+        </p>
+        <p>
+          Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, 1:50m.
+          Places: <a href="https://www.geonames.org/">GeoNames</a> (CC BY),
+          <a href="https://ourairports.com/">OurAirports</a>,
+          <a href="https://github.com/mledoze/countries">world-countries</a>; what they lack is
+          looked up at <a href="https://photon.komoot.io/">Photon</a> as you type.
+        </p>
+      </footer>
+    </aside>
+
+    <div class="gc-load" id="load" role="status">loading the globe&hellip;</div>
+
+    <script src="vendor/d3-array.min.js"></script>
+    <script src="vendor/d3-geo.min.js"></script>
+    <script src="vendor/topojson-client.min.js"></script>
+    <script src="vendor/topojson-simplify.min.js"></script>
+    <script src="engine.js"></script>
+    <script src="../theme.js" defer></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
