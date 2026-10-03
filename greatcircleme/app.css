@@ -81,6 +81,9 @@ body.gc-page {
   position: fixed !important;
   z-index: 30;
   margin: 0;
+  /* The globe can turn land under the header; a halo in the page's own
+     colour keeps the white readable over the cream. */
+  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 12px var(--bg);
 }
 .gc-page .name,
 .gc-page .header-line {
@@ -251,6 +254,10 @@ body.gc-page {
   flex: 1 1 auto;
   min-width: 0;
   padding: 9px 0;
+}
+/* Room at the end of the two place fields for the swap button between them. */
+.gc-points .gc-field input {
+  padding-right: 34px;
   border: 0;
   background: transparent;
   color: var(--ink);
@@ -285,7 +292,7 @@ body.gc-page {
 }
 .gc-swap {
   position: absolute;
-  right: -6px;
+  right: 28px; /* inboard of the clear buttons, which take the edge */
   top: 30px;
   width: 30px;
   height: 30px;
