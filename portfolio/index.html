@@ -3285,55 +3285,85 @@
         /* ======================= the name, in tiles =======================
            "Noah / Darwin / Lee" set in the site's mark, the square with a circle
            in it. A black tile (black square, white circle) is ink; its negative
-           is paper. The pointer splits tiles into four, down to six generations;
-           left alone, they merge back four at a time until the name is whole. */
+           is paper. The pointer splits tiles into four, down to four generations,
+           and each split reads the name more finely; left alone for a few
+           seconds, they merge back four at a time until the name is coarse again. */
         (function () {
           var canvas = $("#tiles");
           if (!canvas) return;
           var ctx = canvas.getContext("2d");
 
-          var GLYPHS = {
-            N: ["X...X", "XX..X", "X.X.X", "X..XX", "X...X"],
-            O: [".XX.", "X..X", "X..X", "X..X", ".XX."],
-            A: [".XX.", "X..X", "XXXX", "X..X", "X..X"],
-            H: ["X..X", "X..X", "XXXX", "X..X", "X..X"],
-            D: ["XXX.", "X..X", "X..X", "X..X", "XXX."],
-            R: ["XXX.", "X..X", "XXX.", "X.X.", "X..X"],
-            W: ["X...X", "X...X", "X.X.X", "XX.XX", "X...X"],
-            I: ["XXX", ".X.", ".X.", ".X.", "XXX"],
-            L: ["X...", "X...", "X...", "X...", "XXXX"],
-            E: ["XXXX", "X...", "XXX.", "X...", "XXXX"],
-          };
+          // The name is set in the site's own typeface, drawn once into a mask
+          // the tiles read from. Each tile is ink if the letters cover at least
+          // half of it, so the coarse grid is a blocky, barely legible name, and
+          // every split reads the mask again at a finer grain: a few passes of
+          // the pointer and that patch is Familjen Grotesk.
           var WORDS = ["NOAH", "DARWIN", "LEE"];
-          var MARGIN = 1, GAP = 1, LINE = 1;
+          var MARGIN = 1, LINE = 1, CAP = 5; // in tiles: border, gap between lines, cap height
+          var FONT_W = 700; // heavy enough that a stroke still fills a coarse tile
+          var COLS = 32, ROWS = WORDS.length * CAP + (WORDS.length - 1) * LINE + MARGIN * 2;
+          var maskData = null, maskW = 0, maskH = 0, K = 2; // mask pixels per CSS pixel
+          var fontSizeCells = 8, wordLeft = [];
 
-          // Lay the letters onto a grid of booleans: true is ink.
-          var rowsOfText = WORDS.map(function (w) {
-            var lines = ["", "", "", "", ""];
-            w.split("").forEach(function (ch, i) {
-              var g = GLYPHS[ch];
-              for (var r = 0; r < 5; r++) lines[r] += (i ? ".".repeat(GAP) : "") + g[r];
-            });
-            return lines;
-          });
-          var COLS = Math.max.apply(null, rowsOfText.map(function (l) { return l[0].length; })) + MARGIN * 2;
-          var ROWS = WORDS.length * 5 + (WORDS.length - 1) * LINE + MARGIN * 2;
-          var grid = [];
-          for (var r = 0; r < ROWS; r++) {
-            grid.push([]);
-            for (var c = 0; c < COLS; c++) grid[r].push(false);
+          function fontAt(px) {
+            return FONT_W + " " + px + 'px "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif';
           }
-          rowsOfText.forEach(function (lines, wi) {
-            var r0 = MARGIN + wi * (5 + LINE);
-            lines.forEach(function (line, r) {
-              for (var c = 0; c < line.length; c++) if (line[c] === "X") grid[r0 + r][MARGIN + c] = true;
-            });
-          });
 
-          var MAX_GEN = 6;
+          // Size the grid to the words: their cap height is CAP tiles.
+          function measure() {
+            var m = document.createElement("canvas").getContext("2d");
+            m.font = fontAt(100);
+            if ("letterSpacing" in m) m.letterSpacing = "4px";
+            var capH = m.measureText("H").actualBoundingBoxAscent || 70;
+            fontSizeCells = (CAP * 100) / capH;
+            var widest = 0;
+            wordLeft = WORDS.map(function (w) {
+              var t = m.measureText(w);
+              var ink = (t.actualBoundingBoxRight || t.width) + (t.actualBoundingBoxLeft || 0);
+              widest = Math.max(widest, ink);
+              return t.actualBoundingBoxLeft || 0;
+            });
+            COLS = Math.ceil((widest / 100) * fontSizeCells) + MARGIN * 2;
+          }
+
+          function buildMask() {
+            maskW = Math.round(cssW * K);
+            maskH = Math.round(cssH * K);
+            var mc = document.createElement("canvas");
+            mc.width = maskW;
+            mc.height = maskH;
+            var m = mc.getContext("2d");
+            var px = fontSizeCells * base * K;
+            m.font = fontAt(px);
+            if ("letterSpacing" in m) m.letterSpacing = (4 * px) / 100 + "px";
+            m.fillStyle = "#000";
+            WORDS.forEach(function (w, i) {
+              var x = MARGIN * base * K + (wordLeft[i] * px) / 100;
+              var y = (MARGIN + i * (CAP + LINE) + CAP) * base * K;
+              m.fillText(w, x, y);
+            });
+            maskData = m.getImageData(0, 0, maskW, maskH).data;
+          }
+
+          // How much of a tile the letters cover, sampled on a 4 x 4 grid.
+          function inkAt(x, y, s) {
+            var hit = 0;
+            for (var a = 0; a < 4; a++) {
+              for (var b = 0; b < 4; b++) {
+                var mx = Math.min(maskW - 1, Math.floor((x + ((a + 0.5) * s) / 4) * K));
+                var my = Math.min(maskH - 1, Math.floor((y + ((b + 0.5) * s) / 4) * K));
+                if (maskData[(my * maskW + mx) * 4 + 3] > 127) hit++;
+              }
+            }
+            return hit >= 8;
+          }
+
+          var MAX_GEN = 4; // a tile splits at most four times: 1/16 of its width
           var SPLIT_MS = 240; // how long a split takes to open out
           var MERGE_MS = 380; // and a merge to close up
-          var REST_MS = 1500; // untouched this long, a group of four merges
+          var REST_MS = 1500; // untouched this long, a group of four merges...
+          var IDLE_MS = 4500; // ...once the pointer has left the name alone this long
+          var lastTouch = 0;
           var FLASH_MS = 900;
           var COLORS = ["#e68019", "#2a44d6"];
           var MAX_LEAVES = 60000;
@@ -3356,12 +3386,13 @@
             canvas.width = Math.round(cssW * dpr);
             canvas.height = Math.round(cssH * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            buildMask();
             var now = performance.now();
             roots = [];
             leafCount = 0;
             for (var r = 0; r < ROWS; r++) {
               for (var c = 0; c < COLS; c++) {
-                roots.push(node(c * base, r * base, base, grid[r][c], 0, now));
+                roots.push(node(c * base, r * base, base, inkAt(c * base, r * base, base), 0, now));
                 leafCount++;
               }
             }
@@ -3370,11 +3401,12 @@
           function split(n, now, colorful) {
             if (n.kids || n.g >= MAX_GEN || leafCount > MAX_LEAVES) return false;
             var h = n.s / 2;
+            // Each quarter reads the mask for itself, so the letters sharpen.
             n.kids = [
-              node(n.x, n.y, h, n.ink, n.g + 1, now),
-              node(n.x + h, n.y, h, n.ink, n.g + 1, now),
-              node(n.x, n.y + h, h, n.ink, n.g + 1, now),
-              node(n.x + h, n.y + h, h, n.ink, n.g + 1, now),
+              node(n.x, n.y, h, inkAt(n.x, n.y, h), n.g + 1, now),
+              node(n.x + h, n.y, h, inkAt(n.x + h, n.y, h), n.g + 1, now),
+              node(n.x, n.y + h, h, inkAt(n.x, n.y + h, h), n.g + 1, now),
+              node(n.x + h, n.y + h, h, inkAt(n.x + h, n.y + h, h), n.g + 1, now),
             ];
             var hue = Math.random() < 0.5 ? 0 : 1;
             n.kids.forEach(function (k) {
@@ -3437,6 +3469,7 @@
               }
               return;
             }
+            if (now - lastTouch < IDLE_MS) return;
             var newest = 0;
             for (var j = 0; j < 4; j++) newest = Math.max(newest, n.kids[j].born);
             if (now - newest > REST_MS) n.merge0 = now;
@@ -3466,11 +3499,11 @@
 
           function drawShape(ink, x, y, s, col, dev) {
             if (dev < 2.2) {
-              // Too small to draw a circle: its average tone instead.
-              ctx.globalAlpha = ink ? 0.215 : 0.785;
-              ctx.fillStyle = col;
+              // Too small to draw a circle: draw what the eye would see from
+              // here, the circle's colour, so the finest tiles read as clean
+              // letterforms rather than a grey wash.
+              ctx.fillStyle = ink ? "#ffffff" : col;
               ctx.fillRect(x, y, s, s);
-              ctx.globalAlpha = 1;
               return;
             }
             ctx.fillStyle = col;
@@ -3552,6 +3585,7 @@
             var px = (e.clientX - rect.left) * (cssW / rect.width);
             var py = (e.clientY - rect.top) * (cssH / rect.height);
             var now = performance.now();
+            lastTouch = now;
             if (last) {
               var dx = px - last[0], dy = py - last[1];
               var steps = Math.min(40, Math.ceil(Math.hypot(dx, dy) / 4));
@@ -3586,14 +3620,27 @@
             });
           }
 
-          layout();
-          intro();
-          kick();
+          // Wait for the typeface, so the mask is cut from Familjen Grotesk and
+          // not the fallback; give up waiting after a second and a half.
+          var started = false;
+          function start() {
+            if (started) return;
+            started = true;
+            measure();
+            layout();
+            intro();
+            kick();
+          }
+          if (document.fonts && document.fonts.load) {
+            document.fonts.load(fontAt(100)).then(start, start);
+          }
+          setTimeout(start, 1500);
 
           var rw;
           addEventListener("resize", function () {
             clearTimeout(rw);
             rw = setTimeout(function () {
+              if (!started) return;
               var before = cssW;
               layout();
               if (before !== cssW) kick();
