@@ -835,9 +835,10 @@
     return { lon: lon, lat: lat };
   }
 
+  var placesFailed = false;
   function loadPlaces() {
     if (placesPromise) return placesPromise;
-    placesPromise = fetch("data/places.json").then(function (r) { return r.json(); }).then(function (data) {
+    placesPromise = fetch("data/places.json").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (data) {
       var rows = data.rows.map(function (r) {
         var kind = r[0], name = r[1], cc = r[2];
         var o = { kind: kind, name: name, cc: cc, lon: r[3], lat: r[4], pop: r[5] || 0, extra: r[6] || "", extra2: r[7] || "",
@@ -847,6 +848,11 @@
         return o;
       });
       places = { rows: rows, countries: data.countries };
+      return places;
+    }).catch(function (err) {
+      console.warn("places list", err);
+      placesFailed = true;
+      places = { rows: [], countries: {} };
       return places;
     });
     return placesPromise;
@@ -1000,9 +1006,9 @@
         loadPlaces().then(function () {
           var rows = searchPlaces(q);
           if (rows.length) { cb(rows); return; }
-          if (fold(q).length < 3) { cb([]); return; }
-          cb([], "looking further afield…");
-          photon(q, function (more) { cb(more, more.length ? null : "nothing found"); });
+          if (fold(q).length < 3) { cb([], placesFailed ? "The place list did not load; lat, lon still works." : null); return; }
+          cb([], placesFailed ? "The place list did not load; looking it up…" : "looking further afield…");
+          photon(q, function (more) { cb(more, more.length ? null : (placesFailed ? "The place list did not load and the lookup found nothing; lat, lon still works." : "nothing found")); });
         });
       },
       main: function (r) { return r.kind === 3 ? r.label : r.kind === 4 ? r.label : placeLabel(r); },
@@ -1051,23 +1057,46 @@
   var worker = null, routeTimer = 0, seq = 0, queued = false, busyTimer = 0;
 
   function startWorker() {
-    worker = new Worker("worker.js");
-    worker.onmessage = function (e) {
-      var m = e.data;
-      if (m.type === "ready") { state.ready = true; window.__greatcircleme.readyMs = m.ms; if (queued) { queued = false; requestRoute(); } return; }
-      if (m.id !== state.pendingId) return; // an older request, superseded
-      if (m.type === "progress") { showBusy(m); return; }
-      if (m.type === "result") {
-        state.pendingId = 0;
-        clearTimeout(busyTimer);
-        state.result = m;
-        showResult();
-        scheduleRender("full");
-        if (m.status === "done") fitRoute(false);
-      }
-    };
-    worker.onerror = function (e) { console.error("worker", e.message); showError("Something went wrong working out the route."); };
+    try {
+      if (location.search.indexOf("noworker") >= 0) throw new Error("no worker, by request");
+      worker = new Worker("worker.js");
+    } catch (err) {
+      startShim();
+      return;
+    }
+    var failedEarly = function () { if (!state.ready) { console.warn("worker failed to start; routing on the main thread"); startShim(); } };
+    worker.onerror = function (e) { console.error("worker", e.message); failedEarly(); };
+    worker.onmessage = onWorkerMessage;
     worker.postMessage({ type: "init", topology: topology });
+  }
+
+  /* The same code, as a script on this thread: worker.js knows which way
+     it was loaded and answers through the same messages. */
+  function startShim() {
+    var sc = document.createElement("script");
+    sc.src = "worker.js";
+    sc.onload = function () {
+      worker = self.GreatCircleRouter;
+      worker.onmessage = onWorkerMessage;
+      worker.postMessage({ type: "init", topology: topology });
+    };
+    sc.onerror = function () { showError("The route finder could not start."); };
+    document.head.appendChild(sc);
+  }
+
+  function onWorkerMessage(e) {
+    var m = e.data;
+    if (m.type === "ready") { state.ready = true; window.__greatcircleme.readyMs = m.ms; if (queued) { queued = false; requestRoute(); } return; }
+    if (m.id !== state.pendingId) return; // an older request, superseded
+    if (m.type === "progress") { showBusy(m); return; }
+    if (m.type === "result") {
+      state.pendingId = 0;
+      clearTimeout(busyTimer);
+      state.result = m;
+      showResult();
+      scheduleRender("full");
+      if (m.status === "done") fitRoute(false);
+    }
   }
 
   /* Ask for the route again, soon; several changes in a row ask once. */

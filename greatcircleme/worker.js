@@ -1,27 +1,41 @@
 // The route is worked out off the main thread, so the globe keeps turning
 // while it runs. One message in, one result out; a newer request supersedes
 // an older one still running.
-importScripts("vendor/topojson-client.min.js", "engine.js");
+// Loaded as a worker normally; loaded as a plain script when the page could
+// not start a worker, in which case it answers through the same messages on
+// the main thread (the search still runs in slices, so the page stays
+// responsive, just less so).
+var IN_WORKER = typeof importScripts === "function";
+if (IN_WORKER) importScripts("vendor/topojson-client.min.js", "engine.js");
 
 var G = GreatCircle;
+var shim = null;
+if (!IN_WORKER) {
+  shim = { onmessage: null, postMessage: function (m) { setTimeout(function () { handle(m); }, 0); } };
+  self.GreatCircleRouter = shim;
+}
+function send(m) {
+  if (IN_WORKER) postMessage(m);
+  else if (shim.onmessage) shim.onmessage({ data: m });
+}
 var world = null;      // every country, as GeoJSON features
 var byId = new Map();  // feature id -> feature
 var everything = null; // obstacles built from every country, for "crosses"
 var cache = [];        // recent obstacle sets, by the sorted list of ids
 var latest = 0;        // id of the most recent route request
 
-self.onmessage = function (e) {
-  var m = e.data;
+function handle(m) {
   if (m.type === "init") init(m);
   else if (m.type === "route") { latest = m.id; route(m); }
-};
+}
+if (IN_WORKER) self.onmessage = function (e) { handle(e.data); };
 
 function init(m) {
   var t0 = performance.now();
   world = topojson.feature(m.topology, m.topology.objects.countries).features;
   world.forEach(function (f) { byId.set(String(f.id), f); });
   everything = G.buildObstacles(world);
-  postMessage({ type: "ready", ms: Math.round(performance.now() - t0), corners: everything.corners.count });
+  send({ type: "ready", ms: Math.round(performance.now() - t0), corners: everything.corners.count });
 }
 
 function obstaclesFor(ids) {
@@ -68,7 +82,7 @@ function route(m) {
     result.lengthKm = result.directKm;
     result.bends = 0;
     result.ms = Math.round(performance.now() - t0);
-    postMessage(result);
+    send(result);
     return;
   }
   var obs = obstaclesFor(m.avoid);
@@ -78,7 +92,7 @@ function route(m) {
     if (s.status === "running") {
       G.stepSearch(s, 40);
       if (s.status === "running") {
-        postMessage({ type: "progress", id: id, expanded: s.expanded, active: s.active.length, stage: s.stage });
+        send({ type: "progress", id: id, expanded: s.expanded, active: s.active.length, stage: s.stage });
         setTimeout(tick, 0);
         return;
       }
@@ -101,7 +115,7 @@ function route(m) {
       result.antipodal = !!s.antipodal;
       result.routeCrosses = countriesAlong(s.waypoints);
     }
-    postMessage(result);
+    send(result);
   };
   tick();
 }
