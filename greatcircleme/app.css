@@ -211,7 +211,86 @@ body.gc-page {
   display: none;
 }
 .gc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   margin: 0 0 12px;
+}
+.gc-head-text {
+  min-width: 0;
+}
+
+/* The i in a circle, and what it shows. The note is a child of the same box
+   as the button, so moving the pointer from one to the other keeps it open;
+   focus inside it (a link) keeps it open for the keyboard; a tap toggles it
+   where there is no hover. */
+.gc-about {
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.gc-about-btn {
+  display: block;
+  width: 26px;
+  height: 26px;
+  padding: 3px;
+  border: 0;
+  background: none;
+  color: var(--gc-muted);
+  cursor: pointer;
+}
+.gc-about-btn svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+.gc-about-btn:hover,
+.gc-about:focus-within .gc-about-btn,
+.gc-about.is-open .gc-about-btn {
+  color: var(--ink);
+}
+.gc-about-tip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: -4px;
+  z-index: 7;
+  width: min(312px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: 11px 13px 7px;
+  background: var(--bg);
+  color: var(--gc-muted);
+  border: 1px solid var(--rule);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+.gc-about-tip::before {
+  /* Bridges the gap to the button, so the pointer can cross it. */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  height: 6px;
+}
+.gc-about-tip p {
+  margin: 0 0 7px;
+}
+.gc-about-tip a {
+  color: var(--ink);
+}
+.gc-about:hover .gc-about-tip,
+.gc-about:focus-within .gc-about-tip,
+.gc-about.is-open .gc-about-tip {
+  display: block;
+}
+@media (hover: none) {
+  /* A finger cannot hover; only the tap opens it. */
+  .gc-about:hover:not(.is-open):not(:focus-within) .gc-about-tip {
+    display: none;
+  }
 }
 .gc-title {
   margin: 0;
@@ -526,22 +605,6 @@ dl.gc-rows {
   margin-bottom: 4px;
 }
 
-/* ---- the small print ---- */
-.gc-foot {
-  margin-top: 16px;
-  padding-top: 10px;
-  border-top: 1px solid var(--rule);
-  color: var(--gc-muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-.gc-foot p {
-  margin: 0 0 6px;
-}
-.gc-foot a {
-  color: inherit;
-}
-
 .gc-load {
   position: fixed;
   left: 50%;
@@ -618,7 +681,25 @@ dl.gc-rows {
     display: none;
   }
   .gc-panel.is-open .gc-head {
-    display: block;
+    display: flex;
+  }
+  /* The note is a card over the bottom of the screen rather than a
+     dropdown, which the sheet's own scrolling would cut off. */
+  .gc-about-tip {
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 70vh;
+    max-height: 70dvh;
+    overflow-y: auto;
+    z-index: 40;
+    font-size: 13px;
+  }
+  .gc-about-tip::before {
+    display: none;
   }
   .gc-field input {
     padding: 7px 0;

@@ -1359,6 +1359,28 @@
     return any;
   }
 
+  // ------------------------------------------------------------- the about note
+  (function () {
+    var box = $("about"), btn = $("about-btn");
+    if (!box || !btn) return;
+    function setOpen(open) {
+      box.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", String(open));
+    }
+    btn.addEventListener("click", function () { setOpen(!box.classList.contains("is-open")); });
+    // Hover and focus show it through the stylesheet; the attribute follows.
+    box.addEventListener("mouseenter", function () { if (canHover) btn.setAttribute("aria-expanded", "true"); });
+    box.addEventListener("mouseleave", function () { if (!box.classList.contains("is-open") && !box.contains(document.activeElement)) btn.setAttribute("aria-expanded", "false"); });
+    box.addEventListener("focusin", function () { btn.setAttribute("aria-expanded", "true"); });
+    box.addEventListener("focusout", function (e) { if (!box.contains(e.relatedTarget) && !box.classList.contains("is-open")) btn.setAttribute("aria-expanded", "false"); });
+    document.addEventListener("pointerdown", function (e) { if (box.classList.contains("is-open") && !box.contains(e.target)) setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || !(box.classList.contains("is-open") || box.contains(document.activeElement))) return;
+      setOpen(false);
+      if (box.contains(document.activeElement)) document.activeElement.blur();
+    });
+  })();
+
   // ------------------------------------------------------------- the sheet
   function setSheet(open) {
     panel.classList.toggle("is-open", open);
