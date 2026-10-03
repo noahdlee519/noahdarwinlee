@@ -124,22 +124,9 @@
         height: clamp(90px, 16vh, 150px);
       }
 
-      .ana-phrase .ch,
-      .ana-phrase .pn {
-        animation: ana-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
-        animation-delay: calc(var(--i) * 14ms);
-      }
-
       .ana-phrase .pn {
         display: inline-block;
         width: 0.4em;
-      }
-
-      @keyframes ana-in {
-        from {
-          opacity: 0;
-          transform: translateY(8px);
-        }
       }
 
       .ana-lines {
@@ -156,14 +143,6 @@
         stroke: var(--accent);
         stroke-width: 1.5;
         stroke-linecap: round;
-        animation: ana-draw 380ms cubic-bezier(0.23, 1, 0.32, 1) both;
-        animation-delay: calc(var(--i) * 22ms);
-      }
-
-      @keyframes ana-draw {
-        from {
-          stroke-dashoffset: var(--len);
-        }
       }
 
       /* The page borrows .cv-page for its header, and with it the CV's 1.25em
@@ -182,13 +161,6 @@
         opacity: 0.75;
       }
 
-      @media (prefers-reduced-motion: reduce) {
-        .ana-phrase .ch,
-        .ana-phrase .pn,
-        .ana-lines line {
-          animation: none;
-        }
-      }
     </style>
   </head>
   <body class="cv-page" data-fade-distance="90">
@@ -228,54 +200,92 @@
         var box = document.getElementById("anagram");
         var at = 0;
 
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
         // One span per letter, so each can be found and measured.
-        function spell(el, text, animate) {
-          var i = 0;
+        function spell(el, text) {
           el.innerHTML = text
             .split("")
             .map(function (c) {
               if (c === " ") return '<span class="sp"></span>';
-              if (!/[A-Z]/.test(c)) return '<span class="pn" style="--i:' + i++ + '">' + c + "</span>";
-              return '<span class="ch" data-c="' + c + '"' + (animate ? ' style="--i:' + i++ + '"' : "") + ">" + c + "</span>";
+              if (!/[A-Z]/.test(c)) return '<span class="pn">' + c + "</span>";
+              return '<span class="ch" data-c="' + c + '">' + c + "</span>";
             })
             .join("");
         }
 
+        // How the letters arrive: each is a copy that lifts off its letter in
+        // the name and drops into place below, in the name's order, N first.
+        // About a second for the lot.
+        var STEP = 45; // between one letter leaving and the next
+        var FALL = 420; // how long one letter takes to land
+        var EASE = "cubic-bezier(0.6, 0, 0.3, 1)"; // gathers speed, then settles
+
         // Pair each letter of the name with the same letter below, first with
         // first, second with second. A letter with no partner gets no line.
-        function draw() {
+        function draw(animate) {
           var top = Array.prototype.slice.call(nameEl.querySelectorAll(".ch"));
           var bottom = Array.prototype.slice.call(phraseEl.querySelectorAll(".ch"));
           var used = [];
-          var out = [];
+          var pairs = [];
           top.forEach(function (t) {
             var c = t.getAttribute("data-c");
             for (var j = 0; j < bottom.length; j++) {
               if (!used[j] && bottom[j].getAttribute("data-c") === c) {
                 used[j] = true;
-                // Layout positions, not painted ones, so a letter still
-                // rising into place does not bend its line.
-                var a = t, z = bottom[j];
-                var x1 = a.offsetLeft + a.offsetWidth / 2, y1 = a.offsetTop + a.offsetHeight + 6;
-                var x2 = z.offsetLeft + z.offsetWidth / 2, y2 = z.offsetTop - 6;
-                var len = Math.hypot(x2 - x1, y2 - y1);
-                out.push(
-                  '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
-                    '" style="--i:' + out.length + ";--len:" + len.toFixed(1) + ";stroke-dasharray:" + len.toFixed(1) + '"/>'
-                );
+                pairs.push([t, bottom[j]]);
                 return;
               }
             }
           });
-          svg.innerHTML = out.join("");
+
+          svg.innerHTML = "";
+          var NS = "http://www.w3.org/2000/svg";
+          var moving = animate && !reduce;
+          pairs.forEach(function (pr, k) {
+            // Layout positions, not painted ones, so a letter still in the air
+            // does not bend its line.
+            var a = pr[0], z = pr[1];
+            var x1 = a.offsetLeft + a.offsetWidth / 2, y1 = a.offsetTop + a.offsetHeight + 6;
+            var x2 = z.offsetLeft + z.offsetWidth / 2, y2 = z.offsetTop - 6;
+            var len = Math.hypot(x2 - x1, y2 - y1);
+            var line = document.createElementNS(NS, "line");
+            line.setAttribute("x1", x1.toFixed(1));
+            line.setAttribute("y1", y1.toFixed(1));
+            line.setAttribute("x2", x2.toFixed(1));
+            line.setAttribute("y2", y2.toFixed(1));
+            line.style.strokeDasharray = len.toFixed(1);
+            svg.appendChild(line);
+            if (!moving) return;
+
+            var timing = { duration: FALL, delay: k * STEP, easing: EASE, fill: "backwards" };
+            var dx = a.offsetLeft - z.offsetLeft, dy = a.offsetTop - z.offsetTop;
+            z.animate(
+              [{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "translate(0px, 0px)" }],
+              timing
+            );
+            // The line pays out behind the letter, its end riding with it.
+            line.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], timing);
+          });
+
+          // Letters the name has no partner for, and the comma, appear once
+          // the rest have landed.
+          if (moving) {
+            var after = Math.max(0, pairs.length * STEP + FALL - 160);
+            Array.prototype.forEach.call(phraseEl.querySelectorAll(".ch, .pn"), function (el) {
+              var j = bottom.indexOf(el);
+              if (j >= 0 && used[j]) return;
+              el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: after, easing: "ease-out", fill: "backwards" });
+            });
+          }
         }
 
         function show(animate) {
-          spell(phraseEl, PHRASES[at], animate);
-          draw();
+          spell(phraseEl, PHRASES[at]);
+          draw(animate);
         }
 
-        spell(nameEl, NAME, false);
+        spell(nameEl, NAME);
         // Wait for the typeface before the first drawing, so the lines land
         // on the letters they will stay on.
         var started = false;
@@ -293,10 +303,7 @@
 
         // Redraw without animating when the window changes size.
         var settle = function () {
-          draw();
-          Array.prototype.forEach.call(svg.querySelectorAll("line"), function (l) {
-            l.style.animation = "none";
-          });
+          draw(false);
         };
         var t;
         window.addEventListener("resize", function () {
