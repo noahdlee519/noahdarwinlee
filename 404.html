@@ -51,18 +51,16 @@
         letter-spacing: -0.045em;
       }
 
-      .notfound .home {
-        display: inline-block;
-        font-size: 22px;
-        font-weight: 300;
+      /* The number is the way home. */
+      .notfound h1 a {
         color: inherit;
         text-decoration: none;
       }
 
-      .notfound .home:hover {
-        text-decoration: underline;
-        text-decoration-thickness: 2.25px;
-        text-underline-offset: 3px;
+      @media (hover: hover) and (pointer: fine) {
+        .notfound h1 a:hover {
+          color: var(--accent);
+        }
       }
 
       /* ---- the anagrams ----
@@ -172,8 +170,7 @@
       <span class="name-word-lee">Lee</span></a
     >
     <main class="notfound">
-      <h1>404</h1>
-      <a class="home" href="/">home</a>
+      <h1><a href="/" aria-label="404. Back to the home page">404</a></h1>
 
       <div class="anagram" id="anagram">
         <button class="ana-row ana-name" id="ana-name" type="button" aria-label="Noah Darwin Lee. Show another anagram"></button>
