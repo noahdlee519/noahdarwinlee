@@ -47,7 +47,8 @@
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     // The globe sits in the part of the window the panel leaves free.
     var phone = W <= 640;
-    var panelW = phone ? 0 : 352 + 2 * 24, sheetH = phone ? 204 : 0;
+    var panelW = phone ? 0 : 352 + 2 * 24;
+    var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 204) : 0;
     var freeW = W - panelW, freeH = H - sheetH - (phone ? 70 : 40);
     cx = phone ? W / 2 : panelW + freeW / 2;
     cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
@@ -441,7 +442,7 @@
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, marker: marker,
       lastT: performance.now(), lastX: e.clientX, lastY: e.clientY, vx: 0, vy: 0, shift: e.shiftKey };
     canvas.classList.add("is-dragging");
-    canvas.focus({ preventScroll: true });
+    if (e.pointerType === "mouse") canvas.focus({ preventScroll: true });
   });
 
   canvas.addEventListener("pointermove", function (e) {
@@ -552,7 +553,17 @@
     if (!noSettle) moving();
   }
 
+  var EMBED = /[?&]embed=1(&|$)/.test(location.search);
+  if (EMBED) document.body.classList.add("is-embed");
+  var zoomHintTimer = 0;
   canvas.addEventListener("wheel", function (e) {
+    if (EMBED && !e.ctrlKey && !e.metaKey) {
+      // Inside another page, a plain scroll should scroll that page past
+      // the globe, as a map embed does; say how to zoom instead.
+      var hint = $("zoom-hint");
+      if (hint) { hint.classList.add("is-shown"); clearTimeout(zoomHintTimer); zoomHintTimer = setTimeout(function () { hint.classList.remove("is-shown"); }, 1100); }
+      return;
+    }
     e.preventDefault();
     stopInertia(); stopFly();
     var f = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016));
@@ -1382,17 +1393,81 @@
   })();
 
   // ------------------------------------------------------------- the sheet
-  function setSheet(open) {
+  // On a phone the panel is a sheet at the bottom with three heights: open,
+  // closed (the two fields and the answer), and swiped down out of the way
+  // (the handle alone). The handle's tap moves it a step; a swipe moves it
+  // the way it was swiped.
+  var SHEET_HIDDEN = 0, SHEET_PEEK = 1, SHEET_OPEN = 2;
+  var sheetGestureAt = 0;
+  function sheetState() {
+    return panel.classList.contains("is-open") ? SHEET_OPEN : panel.classList.contains("is-hidden") ? SHEET_HIDDEN : SHEET_PEEK;
+  }
+  function setSheetState(st) {
+    st = Math.max(SHEET_HIDDEN, Math.min(SHEET_OPEN, st));
+    var open = st === SHEET_OPEN;
     panel.classList.toggle("is-open", open);
-    document.querySelector(".gc-controls").classList.toggle("is-lifted", open);
+    panel.classList.toggle("is-hidden", st === SHEET_HIDDEN);
+    var controls = document.querySelector(".gc-controls");
+    controls.classList.toggle("is-lifted", open);
+    controls.classList.toggle("is-low", st === SHEET_HIDDEN);
     $("sheet-handle").setAttribute("aria-expanded", String(open));
     $("sheet-handle").setAttribute("aria-label", open ? "Show less" : "Show more");
+    if (!open) panel.scrollTop = 0;
+    // The globe takes the room the sheet leaves, once it has moved.
+    setTimeout(function () { layout(); scheduleRender("full"); }, 300);
   }
-  $("sheet-handle").addEventListener("click", function () { setSheet(!panel.classList.contains("is-open")); });
+  function setSheet(open) { setSheetState(open ? SHEET_OPEN : SHEET_PEEK); }
+  $("sheet-handle").addEventListener("click", function () {
+    if (performance.now() - sheetGestureAt < 500) return; // the end of a swipe, not a tap
+    var st = sheetState();
+    setSheetState(st === SHEET_OPEN ? SHEET_PEEK : st + 1);
+  });
   // Typing in a field on a phone opens the sheet so the suggestions have room.
   [inputs.a, inputs.b, $("in-avoid")].forEach(function (inp) {
-    inp.addEventListener("focus", function () { if (W <= 640 && !panel.classList.contains("is-open")) setSheet(true); });
+    inp.addEventListener("focus", function () {
+      if (W <= 640 && !panel.classList.contains("is-open") && performance.now() - sheetGestureAt > 500) setSheet(true);
+    });
   });
+
+  var sheetDrag = null;
+  panel.addEventListener("pointerdown", function (e) {
+    if (W > 640 || e.pointerType === "mouse") return;
+    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), engaged: false,
+      onHandle: !!(e.target.closest && e.target.closest(".gc-sheet-handle, .gc-head")) };
+  });
+  panel.addEventListener("pointermove", function (e) {
+    var d = sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    var dy = e.clientY - d.y0, dx = e.clientX - d.x0;
+    if (!d.engaged) {
+      if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+      // In the open sheet the body scrolls; a swipe counts from the handle
+      // or the title, or downward from the top of the scroll.
+      if (sheetState() === SHEET_OPEN && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
+      d.engaged = true;
+      try { panel.setPointerCapture(e.pointerId); } catch (err) {}
+      panel.classList.add("is-dragging");
+      if (document.activeElement && panel.contains(document.activeElement)) document.activeElement.blur();
+    }
+    // Follows the finger downward; upward it snaps on release.
+    var y = Math.max(0, dy);
+    panel.style.transform = y ? "translateY(" + y + "px)" : "";
+  });
+  function endSheetDrag(e) {
+    var d = sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    sheetDrag = null;
+    if (!d.engaged) return;
+    sheetGestureAt = performance.now();
+    var dy = e.clientY - d.y0, v = dy / Math.max(1, performance.now() - d.t0);
+    panel.classList.remove("is-dragging");
+    panel.style.transform = "";
+    var st = sheetState();
+    if (dy > 40 || v > 0.4) setSheetState(st - 1);
+    else if (dy < -40 || v < -0.4) setSheetState(st + 1);
+  }
+  panel.addEventListener("pointerup", endSheetDrag);
+  panel.addEventListener("pointercancel", endSheetDrag);
 
   // ------------------------------------------------------------- start
   function init(topo) {

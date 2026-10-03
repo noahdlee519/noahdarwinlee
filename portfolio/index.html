@@ -1363,6 +1363,14 @@
          buildings drawn in outline, the selected one in its blue, and the
          record panel beside the map. Colours are the site's own. */
 
+      /* greatercircle's stage is the page itself, in a frame. */
+      .gc-embed {
+        display: block;
+        width: 100%;
+        height: clamp(440px, 64vh, 640px);
+        border: 0;
+        background: #e68019;
+      }
       .lt {
         --lt-paper: #ebece9;
         --lt-surface: #f7f7f5;
@@ -2123,7 +2131,7 @@
       <section class="hero" aria-labelledby="lede">
         <div class="hero-top">
           <h1 class="lede" id="lede" data-split>
-            I design and build products with AI. Here are three you can try right on this page.
+            I design and build products with AI. Here are four you can try right on this page.
           </h1>
           <div class="tiles-wrap">
             <canvas id="tiles" class="tiles" role="img" aria-label="Noah Darwin Lee, spelled in tiles of the site's square-and-circle mark"></canvas>
@@ -2181,6 +2189,24 @@
                 </div>
                 <div class="reel">
                   <img class="reel-logo" src="../art/web/materials/loretour-480.webp" alt="" width="44" height="44" />
+                  <div class="reel-slot"></div>
+                </div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="row" href="#greatercircle" data-row="3" data-reel="greatercircle" style="--brand: #d9741a">
+              <div class="row-face">
+                <span class="row-name" data-chars>greatercircle</span>
+                <span class="row-meta"><b>Globe</b>Flight paths around the countries you'd avoid</span>
+              </div>
+              <div class="row-ink" aria-hidden="true">
+                <div class="row-face">
+                  <span class="row-name">greatercircle</span>
+                  <span class="row-meta"><b>Globe</b>Flight paths around the countries you'd avoid</span>
+                </div>
+                <div class="reel">
+                  <img class="reel-logo" src="../art/web/materials/greatercircle-480.webp" alt="" width="44" height="44" />
                   <div class="reel-slot"></div>
                 </div>
               </div>
@@ -2459,6 +2485,76 @@
         </div>
       </section>
 
+      <!-- ======================= greatercircle ======================= -->
+      <section class="project" id="greatercircle" aria-labelledby="gc-h" style="--brand: #d9741a">
+        <div class="p-head">
+          <h2 class="p-name" id="gc-h"><span class="mask"><span>greatercircle</span></span></h2>
+          <a class="p-go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer" aria-label="Open greatercircle">
+            Open
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+          </a>
+        </div>
+        <div class="p-sub">
+          <p class="p-line">Where would your flight go, if it could not go there?</p>
+          <p class="p-body">
+            A globe for anyone curious about their flight path. Click two points, or type two
+            places, for the great-circle distance; then name the countries to stay out of, and it
+            finds the exact shortest route around them. For enthusiasts, and for passengers whose
+            seat-back map is out of date, or drawing a line across a war zone the plane will never
+            cross.
+          </p>
+        </div>
+
+        <div class="stage">
+          <div class="stage-bar">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="addr">noahdarwinlee.com/greatercircle</span>
+            <span class="note">Live · the page itself</span>
+          </div>
+          <iframe
+            class="gc-embed"
+            src="/greatercircle/?embed=1#a=51.5074,-0.1278,London&amp;b=35.6895,139.6917,Tokyo&amp;avoid=643"
+            title="greatercircle: a globe that finds the shortest way around chosen countries"
+            loading="lazy"
+          ></iframe>
+        </div>
+
+        <div class="notes">
+          <div class="note-col">
+            <h3>Under the hood</h3>
+            <p>
+              The route is the classical shortest path among polygonal obstacles, carried onto the
+              sphere: a chain of great-circle arcs that bends only at the avoided countries’ convex
+              corners, found by A* over their tangent visibility graph, in three-dimensional unit
+              vectors. No grid, no buffer: exact for the drawn 1:50m borders, and settled in a few
+              hundred milliseconds in a Web Worker.
+            </p>
+            <p>
+              Borders from Natural Earth; places from GeoNames and OurAirports, with Photon for the
+              long tail. The globe is a canvas with its own projector, a few milliseconds a frame at
+              any zoom.
+            </p>
+            <ul class="chips">
+              <li>Exact shortest paths</li>
+              <li>241 countries</li>
+              <li>14,500 places</li>
+              <li>Web Worker</li>
+            </ul>
+          </div>
+          <div class="note-col">
+            <h3>How I built it</h3>
+            <p>
+              Designed and built with Claude Code in a day: the geometry engine and its tests, the
+              globe, the search, and two rounds of review by a second agent that found the bugs the
+              first missed.
+            </p>
+            <ul class="chips">
+              <li>Claude Code</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <!-- ======================= close ======================= -->
       <section class="close" id="contact" aria-labelledby="contact-h">
         <h2 class="close-q" id="contact-h">Want to build something together?</h2>
@@ -2534,6 +2630,13 @@
             "Sohmer Piano <i>1898</i>",
             "Scribner Building <i>1894</i>",
             "45,000 buildings <i>Manhattan</i>",
+          ],
+          greatercircle: [
+            "London → Tokyo <i>9,559 km</i>",
+            "avoiding Russia <i>11,439 km</i>",
+            "12 bends <i>exact</i>",
+            "New York → Dubai <i>11,008 km</i>",
+            "avoiding Iran and Iraq <i>+155 km</i>",
           ],
         };
 
