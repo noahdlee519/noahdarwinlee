@@ -1,0 +1,2853 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Unlisted on purpose: nothing on the site links here, it is left out of
+         sitemap.xml, and this keeps search engines from listing it. Do not add
+         it to robots.txt -- a Disallow line there would publish the address. -->
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>Noah Darwin Lee — Work</title>
+    <meta name="description" content="Products I designed and built with AI." />
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* One page, black on white, nothing borrowed from the day/night switch:
+         this is a room of its own on the site, reached only by its address. */
+      :root {
+        --paper: #ffffff;
+        --ink: #0b0b0b;
+        --ink-2: #4a4a4a; /* 9.0:1 on white */
+        --ink-3: #6b6b6b; /* 5.3:1 on white, the floor for small text */
+        --rule: #0b0b0b;
+        --hair: #e4e4e4;
+        --wash: #f4f4f2;
+        --gutter: clamp(16px, 4vw, 56px);
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+        --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+        color-scheme: light;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+        scroll-behavior: smooth;
+        scroll-padding-top: 24px;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 18px;
+        line-height: 1.45;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        overflow-x: clip;
+      }
+
+      ::selection {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 4px;
+        border-radius: 2px;
+      }
+
+      html {
+        scrollbar-color: var(--ink) var(--paper);
+        scrollbar-width: thin;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      /* ---------------- top line ---------------- */
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 16px;
+        padding: 22px var(--gutter) 0;
+        font-size: 16px;
+      }
+
+      .top a {
+        text-decoration: none;
+      }
+
+      .top a:hover {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        text-decoration-thickness: 1.5px;
+      }
+
+      .top nav {
+        display: flex;
+        gap: 22px;
+      }
+
+      /* ---------------- hero: the index ---------------- */
+
+      .hero {
+        padding: clamp(64px, 12vh, 140px) var(--gutter) 0;
+      }
+
+      .lede {
+        margin: 0 0 clamp(40px, 7vh, 72px);
+        max-width: 22ch;
+        font-size: clamp(28px, 3.4vw, 46px);
+        line-height: 1.08;
+        font-weight: 500;
+        letter-spacing: -0.025em;
+        text-wrap: balance;
+      }
+
+      .lede .w {
+        display: inline-block;
+        overflow: clip;
+        overflow-clip-margin: 0.12em;
+        vertical-align: top;
+        padding-bottom: 0.06em;
+      }
+
+      .lede .w > span {
+        display: inline-block;
+        transform: translateY(105%);
+        transition: transform 900ms var(--ease-out);
+        transition-delay: calc(var(--i) * 45ms + 120ms);
+      }
+
+      .is-ready .lede .w > span {
+        transform: none;
+      }
+
+      .index {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border-top: 1px solid var(--rule);
+      }
+
+      .index li {
+        border-bottom: 1px solid var(--rule);
+      }
+
+      /* Each row is drawn twice: ink on paper underneath, paper on ink on top,
+         and the top copy is clipped away. Hovering opens the clip from the left,
+         so the colour change travels across the row as one edge instead of the
+         letters each fading on their own. */
+      .row {
+        position: relative;
+        display: block;
+        text-decoration: none;
+        color: var(--ink);
+        overflow: hidden;
+        isolation: isolate;
+      }
+
+      .row-face {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: end;
+        gap: 24px;
+        /* Room under the baseline for the descenders of Leggio's g's, which
+           otherwise sit on the rule. */
+        padding: clamp(10px, 1.6vw, 22px) 0 clamp(16px, 2.2vw, 30px);
+        min-height: clamp(84px, 12vw, 176px);
+      }
+
+      .row-name {
+        font-size: clamp(46px, 9.4vw, 152px);
+        line-height: 0.86;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+      }
+
+      .row-name .ch {
+        display: inline-block;
+        transform: translateY(0.9em);
+        opacity: 0;
+        transition: transform 1000ms var(--ease-out), opacity 600ms var(--ease-out);
+        transition-delay: calc(var(--row) * 110ms + var(--c) * 22ms + 260ms);
+      }
+
+      .is-ready .row-name .ch {
+        transform: none;
+        opacity: 1;
+      }
+
+      .row-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        padding-bottom: 0.5em;
+        font-size: 15px;
+        line-height: 1.3;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .row-meta b {
+        font-weight: 500;
+      }
+
+      .row-ink {
+        position: absolute;
+        inset: 0;
+        background: var(--ink);
+        color: var(--paper);
+        clip-path: inset(0 100% 0 0);
+        transition: clip-path 380ms var(--ease-out);
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      /* The inverted name slides in a step behind the wipe. Moved with a
+         transform, not padding, so the row never re-lays-out. */
+      .row-ink .row-face {
+        transform: translateX(var(--pad-in, 0px));
+        transition: transform 460ms var(--ease-out);
+      }
+
+      .row-ink .row-name .ch {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+
+      /* The live strip: a few seconds of the product, looping, inside the row. */
+      .reel {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 64px;
+        padding: 0 4px 0 0;
+        font-size: 17px;
+        opacity: 0;
+        filter: blur(4px);
+        transition: opacity 260ms var(--ease-out), filter 260ms var(--ease-out);
+      }
+
+      .row.is-on .row-ink {
+        clip-path: inset(0 0 0 0);
+      }
+
+      .row.is-on .row-ink .row-face {
+        --pad-in: clamp(12px, 1.6vw, 24px);
+      }
+
+      .row.is-on .reel {
+        opacity: 1;
+        filter: none;
+        transition-delay: 120ms;
+      }
+
+      .row.is-on .row-ink .row-meta {
+        opacity: 0;
+      }
+
+      .reel-logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        object-fit: cover;
+        flex: none;
+        outline: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .reel-slot {
+        position: relative;
+        min-width: 15ch;
+        height: 1.4em;
+        overflow: hidden;
+      }
+
+      .reel-slot span {
+        position: absolute;
+        inset: 0;
+        white-space: nowrap;
+        transition: transform 520ms var(--ease-out), opacity 520ms var(--ease-out),
+          filter 520ms var(--ease-out);
+      }
+
+      .reel-slot span[data-state="in"] {
+        transform: none;
+        opacity: 1;
+      }
+
+      .reel-slot span[data-state="below"] {
+        transform: translateY(110%);
+        opacity: 0;
+        filter: blur(3px);
+      }
+
+      .reel-slot span[data-state="above"] {
+        transform: translateY(-110%);
+        opacity: 0;
+        filter: blur(3px);
+      }
+
+      .reel-slot i {
+        font-style: normal;
+        opacity: 0.62;
+      }
+
+      .hero-foot {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 18px 0 0;
+        font-size: 15px;
+        color: var(--ink-3);
+      }
+
+      /* The label that rides with the pointer over the index. */
+      .tag {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 50;
+        pointer-events: none;
+        padding: 9px 14px 10px;
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--ink);
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22);
+        opacity: 0;
+        scale: 0.86;
+        transition: opacity 180ms var(--ease-out), scale 220ms var(--ease-out);
+        will-change: transform;
+      }
+
+      .tag.is-on {
+        opacity: 1;
+        scale: 1;
+      }
+
+      /* ---------------- project sections ---------------- */
+
+      .project {
+        padding: clamp(96px, 16vh, 180px) var(--gutter) 0;
+      }
+
+      .p-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 12px 32px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .p-name {
+        margin: 0;
+        font-size: clamp(54px, 10vw, 160px);
+        line-height: 0.84;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+      }
+
+      .p-name .mask {
+        display: block;
+        overflow: clip;
+        overflow-clip-margin: 0.1em;
+        padding-bottom: 0.04em;
+      }
+
+      .p-name .mask > span {
+        display: block;
+        transform: translateY(102%);
+        transition: transform 1100ms var(--ease-out);
+      }
+
+      .project.is-in .p-name .mask > span {
+        transform: none;
+      }
+
+      .p-go {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 48px;
+        padding: 0 20px 0 22px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: var(--paper);
+        text-decoration: none;
+        font-size: 16px;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: transform 160ms var(--ease-out);
+      }
+
+      .p-go svg {
+        transition: transform 260ms var(--ease-out);
+      }
+
+      .p-go:active {
+        transform: scale(0.97);
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .p-go:hover svg {
+          transform: translate(3px, -3px);
+        }
+      }
+
+      .p-go.is-quiet {
+        background: transparent;
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1px var(--ink);
+      }
+
+      .p-sub {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 24px clamp(24px, 5vw, 80px);
+        padding: 26px 0 clamp(32px, 5vh, 52px);
+      }
+
+      .p-line {
+        margin: 0;
+        max-width: 24ch;
+        font-size: clamp(24px, 2.6vw, 36px);
+        line-height: 1.12;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        text-wrap: balance;
+      }
+
+      .p-body {
+        margin: 0;
+        max-width: 46ch;
+        color: var(--ink-2);
+        text-wrap: pretty;
+      }
+
+      /* The demo stage: a bordered sheet the size of a real window. */
+      .stage {
+        position: relative;
+        border: 1px solid var(--rule);
+        border-radius: 18px;
+        background: var(--paper);
+        overflow: clip;
+        opacity: 0;
+        transform: translateY(40px) scale(0.985);
+        transition: opacity 900ms var(--ease-out), transform 1100ms var(--ease-out);
+      }
+
+      .project.is-in .stage {
+        opacity: 1;
+        transform: none;
+        transition-delay: 140ms;
+      }
+
+      .stage-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 46px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--hair);
+        font-size: 14px;
+        color: var(--ink-3);
+      }
+
+      .dots {
+        display: flex;
+        gap: 6px;
+      }
+
+      .dots i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1px solid #bdbdbd;
+      }
+
+      .stage-bar .addr {
+        flex: 1;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .stage-bar .note {
+        white-space: nowrap;
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 clamp(24px, 5vw, 80px);
+        margin-top: clamp(36px, 6vh, 64px);
+      }
+
+      .note-col {
+        border-top: 1px solid var(--rule);
+        padding-top: 16px;
+      }
+
+      .note-col h3 {
+        margin: 0 0 10px;
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+      }
+
+      .note-col p {
+        margin: 0 0 12px;
+        max-width: 48ch;
+        color: var(--ink-2);
+        text-wrap: pretty;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 4px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .chips li {
+        padding: 5px 11px 6px;
+        border-radius: 999px;
+        box-shadow: inset 0 0 0 1px #cfcfcf;
+        font-size: 14px;
+        line-height: 1.2;
+        color: var(--ink);
+      }
+
+      /* ---------------- Leggio demo ---------------- */
+
+      .leggio {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        min-height: 460px;
+      }
+
+      .book {
+        position: relative;
+        padding: clamp(28px, 4vw, 56px) clamp(22px, 5vw, 72px) 64px;
+      }
+
+      .book-title {
+        margin: 0 0 4px;
+        font-size: 15px;
+        color: var(--ink-3);
+      }
+
+      .book-chap {
+        margin: 0 0 22px;
+        font-size: 15px;
+        font-style: italic;
+        color: var(--ink-3);
+      }
+
+      .book-text {
+        margin: 0;
+        max-width: 40ch;
+        font-size: clamp(21px, 2vw, 27px);
+        line-height: 1.62;
+        letter-spacing: -0.005em;
+        text-wrap: pretty;
+      }
+
+      .wd {
+        position: relative;
+        cursor: pointer;
+        border-radius: 3px;
+        transition: background-color 140ms ease, color 140ms ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .wd::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0.14em;
+        height: 1.5px;
+        background: currentColor;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 240ms var(--ease-out);
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .wd:hover::after {
+          transform: scaleX(1);
+        }
+      }
+
+      .wd.is-sel {
+        background: var(--ink);
+        color: var(--paper);
+        box-shadow: 0 0 0 3px var(--ink);
+      }
+
+      .wd.is-sel::after {
+        transform: scaleX(0);
+      }
+
+      .wd.is-saved {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 0.2em;
+        text-decoration-thickness: 2px;
+      }
+
+      .pop {
+        position: absolute;
+        z-index: 5;
+        left: 0;
+        top: 0;
+        width: max-content;
+        max-width: 280px;
+        padding: 14px 16px 12px;
+        border-radius: 14px;
+        background: var(--ink);
+        color: var(--paper);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.18);
+        transform-origin: var(--origin, 0 0);
+        opacity: 0;
+        scale: 0.94;
+        filter: blur(3px);
+        pointer-events: none;
+        transition: opacity 200ms var(--ease-out), scale 240ms var(--ease-out),
+          filter 200ms var(--ease-out), translate 300ms var(--ease-out);
+      }
+
+      .pop.is-on {
+        opacity: 1;
+        scale: 1;
+        filter: none;
+        pointer-events: auto;
+      }
+
+      .pop-word {
+        font-size: 14px;
+        opacity: 0.66;
+      }
+
+      .pop-gloss {
+        margin: 2px 0 6px;
+        font-size: 22px;
+        line-height: 1.15;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+
+      .pop-ctx {
+        margin: 0 0 12px;
+        font-size: 14px;
+        line-height: 1.35;
+        opacity: 0.74;
+      }
+
+      .pop-ctx:empty {
+        display: none;
+      }
+
+      .pop-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 34px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 160ms var(--ease-out), opacity 160ms ease;
+      }
+
+      .pop-save:active {
+        transform: scale(0.96);
+      }
+
+      .pop-save[disabled] {
+        opacity: 0.55;
+        cursor: default;
+      }
+
+      .book-hint {
+        position: absolute;
+        left: clamp(22px, 5vw, 72px);
+        bottom: 22px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: var(--ink-3);
+      }
+
+      kbd {
+        display: inline-grid;
+        place-items: center;
+        min-width: 26px;
+        height: 26px;
+        padding: 0 7px;
+        border-radius: 7px;
+        box-shadow: inset 0 0 0 1px #c9c9c9, inset 0 -2px 0 #c9c9c9;
+        font: inherit;
+        font-size: 13px;
+        color: var(--ink);
+        transition: transform 120ms var(--ease-out), background-color 120ms ease;
+      }
+
+      kbd.is-down {
+        transform: translateY(1px);
+        background: var(--ink);
+        color: var(--paper);
+        box-shadow: none;
+      }
+
+      .shelf {
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid var(--hair);
+        background: var(--wash);
+        padding: 22px 20px;
+      }
+
+      .shelf h3 {
+        display: flex;
+        justify-content: space-between;
+        margin: 0 0 14px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .shelf h3 span {
+        font-weight: 400;
+        color: var(--ink-3);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .saved {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .saved li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--paper);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.06);
+        font-size: 15px;
+        transition: opacity 320ms var(--ease-out), transform 420ms var(--ease-out);
+      }
+
+      .saved li.is-new {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.97);
+      }
+
+      .saved li b {
+        font-weight: 600;
+      }
+
+      .saved li span {
+        color: var(--ink-3);
+        text-align: right;
+      }
+
+      .shelf-empty {
+        margin: 0;
+        font-size: 14px;
+        color: var(--ink-3);
+      }
+
+      .flyer {
+        position: fixed;
+        z-index: 60;
+        left: 0;
+        top: 0;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 20px;
+        pointer-events: none;
+      }
+
+      /* ---------------- Fuzhounese demo ---------------- */
+
+      .fz {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        min-height: 520px;
+      }
+
+      .fz-search,
+      .fz-ask {
+        padding: clamp(22px, 3vw, 40px);
+      }
+
+      .fz-ask {
+        border-left: 1px solid var(--hair);
+        background: var(--wash);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .fz h3 {
+        margin: 0 0 14px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .fz-field {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 56px;
+        border-radius: 14px;
+        box-shadow: inset 0 0 0 1.5px var(--ink);
+        padding: 0 16px;
+        gap: 10px;
+        background: var(--paper);
+      }
+
+      .fz-field input {
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        font: inherit;
+        font-size: 20px;
+        color: var(--ink);
+        caret-color: var(--ink);
+      }
+
+      .fz-field input::placeholder {
+        color: var(--ink-3);
+      }
+
+      .fz-field:focus-within {
+        box-shadow: inset 0 0 0 2.5px var(--ink);
+      }
+
+      .fz-try {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0 18px;
+      }
+
+      .chip-btn {
+        height: 32px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        box-shadow: inset 0 0 0 1px #c9c9c9;
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), background-color 160ms ease,
+          color 160ms ease, box-shadow 160ms ease;
+      }
+
+      .chip-btn:active {
+        transform: scale(0.96);
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .chip-btn:hover {
+          box-shadow: inset 0 0 0 1px var(--ink);
+        }
+      }
+
+      .fz-count {
+        margin: 0 0 8px;
+        font-size: 14px;
+        color: var(--ink-3);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .fz-results {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 330px;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+      }
+
+      .fz-results li {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: baseline;
+        gap: 4px 14px;
+        padding: 12px 2px;
+        border-bottom: 1px solid var(--hair);
+        animation: rise 420ms var(--ease-out) both;
+        animation-delay: calc(var(--k) * 38ms);
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+
+      .fz-han {
+        font-size: 26px;
+        line-height: 1;
+        font-family: "Familjen Grotesk", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei",
+          sans-serif;
+      }
+
+      .fz-rom {
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .fz-gloss {
+        grid-column: 2 / 3;
+        color: var(--ink-2);
+        font-size: 15px;
+      }
+
+      .fz-gloss mark,
+      .fz-rom mark {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 0 2px;
+        border-radius: 2px;
+      }
+
+      .fz-rec {
+        grid-row: 1 / 3;
+        grid-column: 3;
+        align-self: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--ink-3);
+      }
+
+      .fz-rec svg {
+        color: var(--ink);
+      }
+
+      .fz-empty {
+        padding: 18px 2px;
+        color: var(--ink-3);
+      }
+
+      .chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 250px;
+        margin-bottom: 14px;
+      }
+
+      .msg {
+        max-width: 92%;
+        padding: 12px 15px 13px;
+        border-radius: 16px;
+        font-size: 16px;
+        line-height: 1.45;
+        animation: pop-in 320ms var(--ease-out) both;
+      }
+
+      @keyframes pop-in {
+        from {
+          opacity: 0;
+          transform: translateY(6px) scale(0.98);
+        }
+      }
+
+      .msg.me {
+        align-self: flex-end;
+        background: var(--ink);
+        color: var(--paper);
+        border-bottom-right-radius: 5px;
+        transform-origin: 100% 100%;
+      }
+
+      .msg.ai {
+        align-self: flex-start;
+        background: var(--paper);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05);
+        border-bottom-left-radius: 5px;
+        transform-origin: 0 100%;
+      }
+
+      .msg.ai .han {
+        font-size: 1.25em;
+      }
+
+      .caret {
+        display: inline-block;
+        width: 0.5em;
+        height: 1em;
+        margin-left: 2px;
+        vertical-align: -0.12em;
+        background: var(--ink);
+        animation: blink 900ms steps(1) infinite;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .chat-hello {
+        margin: 0;
+        color: var(--ink-3);
+        font-size: 15px;
+      }
+
+      .asks {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .asks .chip-btn {
+        height: auto;
+        min-height: 38px;
+        padding: 8px 14px;
+        text-align: left;
+        background: var(--paper);
+      }
+
+      .asks .chip-btn[disabled] {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      /* ---------------- LoreTour demo ---------------- */
+
+      /* The street on the left, the building's record on the right: the same
+         split as the product, a map and the panel it opens. */
+      .lt {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+        min-height: 600px;
+      }
+
+      .lt-map {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .lt-ask {
+        padding: clamp(22px, 3vw, 36px) clamp(22px, 4vw, 44px) 0;
+        font-size: clamp(26px, 2.8vw, 38px);
+        line-height: 1.05;
+        font-weight: 500;
+        letter-spacing: -0.025em;
+        text-wrap: balance;
+      }
+
+      .lt-ask span {
+        color: var(--ink-3);
+      }
+
+      .street {
+        flex: 1;
+        display: flex;
+        align-items: flex-end;
+        padding: 28px clamp(12px, 3vw, 36px) 0;
+      }
+
+      .street svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: 440px;
+        overflow: visible;
+      }
+
+      .bldg {
+        cursor: pointer;
+        transition: transform 360ms var(--ease-out);
+        transform-box: fill-box;
+        transform-origin: 50% 100%;
+      }
+
+      .bldg .shell {
+        fill: var(--paper);
+        stroke: var(--ink);
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+        transition: fill 260ms ease;
+      }
+
+      .bldg .win {
+        fill: var(--paper);
+        stroke: var(--ink);
+        stroke-width: 1;
+        transition: fill 160ms ease;
+        transition-delay: calc(var(--d) * 9ms);
+      }
+
+      .lab .label {
+        font-size: 14px;
+        fill: var(--ink-3);
+        transition: fill 180ms ease;
+      }
+
+      .lab .label-y {
+        font-size: 12px;
+        fill: var(--ink-3);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .bldg:focus {
+        outline: none;
+      }
+
+      .bldg:focus-visible .shell {
+        stroke-width: 3;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .bldg:hover {
+          transform: translateY(-8px);
+        }
+
+        .bldg:hover .win {
+          fill: var(--ink);
+        }
+      }
+
+      .bldg.is-on {
+        transform: translateY(-14px);
+      }
+
+      .bldg.is-on .shell {
+        fill: var(--ink);
+      }
+
+      .bldg.is-on .win {
+        fill: var(--paper);
+        stroke: var(--paper);
+      }
+
+      .lab.is-on .label {
+        fill: var(--ink);
+        font-weight: 600;
+      }
+
+      .ground {
+        stroke: var(--ink);
+        stroke-width: 1.5;
+      }
+
+      .lt-hint {
+        padding: 14px clamp(22px, 4vw, 44px) 20px;
+        font-size: 14px;
+        color: var(--ink-3);
+      }
+
+      .lt-panel {
+        position: relative;
+        border-left: 1px solid var(--hair);
+        background: var(--wash);
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .lt-empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 32px;
+        text-align: center;
+        color: var(--ink-3);
+        font-size: 15px;
+        transition: opacity 200ms ease;
+      }
+
+      .lt-panel.is-on .lt-empty {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .rec {
+        height: 100%;
+        max-height: 600px;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        padding: 24px 24px 28px;
+        opacity: 0;
+        transform: translateX(14px);
+        filter: blur(3px);
+        transition: opacity 260ms var(--ease-out), transform 420ms var(--ease-out),
+          filter 260ms var(--ease-out);
+      }
+
+      .lt-panel.is-on .rec {
+        opacity: 1;
+        transform: none;
+        filter: none;
+      }
+
+      .rec h3 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.02;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+
+      .rec-addr {
+        margin: 6px 0 18px;
+        color: var(--ink-2);
+        font-size: 15px;
+      }
+
+      .facts {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin: 0 0 22px;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--hair);
+      }
+
+      .facts div {
+        padding: 8px 0 10px;
+      }
+
+      .facts div + div {
+        padding-left: 12px;
+        border-left: 1px solid var(--hair);
+      }
+
+      .facts dt {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+
+      .facts dd {
+        margin: 2px 0 0;
+        font-size: 19px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .lore-h {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin: 0 0 4px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .lore-h span {
+        font-weight: 400;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--ink-3);
+      }
+
+      .lore-sub {
+        margin: 0 0 14px;
+        font-size: 14px;
+        color: var(--ink-3);
+      }
+
+      .lore {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .lore li {
+        position: relative;
+        padding: 0 0 14px 66px;
+        animation: rise 420ms var(--ease-out) both;
+        animation-delay: calc(var(--k) * 70ms + 120ms);
+      }
+
+      /* The timeline's spine. */
+      .lore li::before {
+        content: "";
+        position: absolute;
+        left: 50px;
+        top: 7px;
+        bottom: -7px;
+        width: 1px;
+        background: #cfcfcf;
+      }
+
+      .lore li:last-child::before {
+        display: none;
+      }
+
+      .lore li::after {
+        content: "";
+        position: absolute;
+        left: 46px;
+        top: 5px;
+        width: 9px;
+        height: 9px;
+        background: var(--ink);
+      }
+
+      .lore-y {
+        position: absolute;
+        left: 0;
+        top: -1px;
+        font-size: 18px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .lore-btn {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .lore-tag {
+        display: inline-block;
+        margin-bottom: 4px;
+        padding: 1px 6px 2px;
+        box-shadow: inset 0 0 0 1px var(--ink);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .lore-t {
+        display: block;
+        font-size: 17px;
+        line-height: 1.25;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        text-wrap: pretty;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .lore-btn:hover .lore-t {
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          text-decoration-thickness: 1.5px;
+        }
+      }
+
+      .lore-body {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 360ms var(--ease-out);
+      }
+
+      .lore li.is-open .lore-body {
+        grid-template-rows: 1fr;
+      }
+
+      .lore-body > div {
+        overflow: hidden;
+      }
+
+      .lore-p {
+        margin: 6px 0 6px;
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--ink-2);
+        text-wrap: pretty;
+      }
+
+      .lore-src {
+        margin: 0;
+        font-size: 13px;
+        color: var(--ink-3);
+        word-break: break-all;
+      }
+
+      /* ---------------- close ---------------- */
+
+      .close {
+        padding: clamp(120px, 20vh, 220px) var(--gutter) 28px;
+      }
+
+      .close-q {
+        margin: 0 0 28px;
+        font-size: clamp(22px, 2.2vw, 30px);
+        font-weight: 500;
+        letter-spacing: -0.015em;
+      }
+
+      .mail {
+        position: relative;
+        display: inline-block;
+        font-size: clamp(40px, 8.4vw, 136px);
+        line-height: 0.95;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        text-decoration: none;
+        word-break: break-all;
+      }
+
+      .mail::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -0.04em;
+        height: max(3px, 0.06em);
+        background: currentColor;
+        transform: scaleX(0.18);
+        transform-origin: left;
+        transition: transform 600ms var(--ease-out);
+      }
+
+      .mail:hover::after,
+      .mail:focus-visible::after {
+        transform: scaleX(1);
+      }
+
+      .copy {
+        margin-top: 22px;
+        height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 999px;
+        box-shadow: inset 0 0 0 1px var(--ink);
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-size: 15px;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+      }
+
+      .copy:active {
+        transform: scale(0.97);
+      }
+
+      .copy.is-done {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .foot {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: clamp(80px, 14vh, 160px);
+        padding-top: 16px;
+        border-top: 1px solid var(--rule);
+        font-size: 14px;
+        color: var(--ink-3);
+      }
+
+      .foot a {
+        text-decoration: none;
+      }
+
+      .foot a:hover {
+        color: var(--ink);
+      }
+
+      /* The scroll line: how far through the three you are. */
+      .progress {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 40;
+        height: 3px;
+        width: 100%;
+        background: var(--ink);
+        transform-origin: 0 50%;
+        transform: scaleX(0);
+      }
+
+      /* ---------------- narrow ---------------- */
+
+      @media (max-width: 900px) {
+        .leggio,
+        .fz {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .chat {
+          min-height: 120px;
+        }
+
+        .shelf,
+        .fz-ask,
+        .lt-panel {
+          border-left: 0;
+          border-top: 1px solid var(--hair);
+        }
+
+        .lt {
+          grid-template-columns: minmax(0, 1fr);
+          min-height: 0;
+        }
+
+        .lt-panel {
+          min-height: 180px;
+        }
+
+        .rec {
+          max-height: none;
+        }
+
+        .shelf {
+          min-height: 170px;
+        }
+
+        .notes,
+        .p-sub {
+          grid-template-columns: 1fr;
+        }
+
+        .notes {
+          gap: 28px;
+        }
+
+        .reel {
+          display: none;
+        }
+
+        .row-meta {
+          display: none;
+        }
+
+        .row-face {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        body {
+          font-size: 17px;
+        }
+
+        .top nav a:first-child {
+          display: none;
+        }
+
+        .p-head {
+          grid-template-columns: 1fr;
+        }
+
+        .p-go {
+          justify-self: start;
+        }
+
+        .stage-bar .note {
+          display: none;
+        }
+
+        .book {
+          padding-bottom: 72px;
+        }
+
+        .book-hint {
+          right: 16px;
+        }
+
+        /* The drawing shrinks to the phone's width; the names stay readable. */
+        .lab .label {
+          font-size: 26px;
+        }
+
+        .lab .label-y {
+          font-size: 19px;
+          transform: translateY(12px);
+        }
+
+        .hero-foot {
+          flex-direction: column;
+          gap: 4px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        .lede .w > span,
+        .row-name .ch,
+        .p-name .mask > span,
+        .stage {
+          transform: none !important;
+          opacity: 1 !important;
+          transition: opacity 200ms ease !important;
+        }
+
+        .row-ink,
+        .reel-slot span,
+        .bldg,
+        .rec,
+        .lore li,
+        .fz-results li,
+        .msg {
+          transition-duration: 1ms !important;
+          animation: none !important;
+        }
+
+        .tag,
+        .progress {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress" aria-hidden="true"></div>
+    <div class="tag" aria-hidden="true">Try it</div>
+
+    <header class="top">
+      <a href="/">Noah Darwin Lee</a>
+      <nav aria-label="On this page">
+        <a href="#leggio">Work</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="lede">
+        <h1 class="lede" id="lede" data-split>
+          I design and build products with AI. Here are three you can try right on this page.
+        </h1>
+
+        <ol class="index" aria-label="Projects">
+          <li>
+            <a class="row" href="#leggio" data-row="0" data-reel="leggio">
+              <div class="row-face">
+                <span class="row-name" data-chars>Leggio</span>
+                <span class="row-meta"><b>Chrome extension</b>Translation with on-device AI</span>
+              </div>
+              <div class="row-ink" aria-hidden="true">
+                <div class="row-face">
+                  <span class="row-name">Leggio</span>
+                  <span class="row-meta"><b>Chrome extension</b>Translation with on-device AI</span>
+                </div>
+                <div class="reel">
+                  <img class="reel-logo" src="../art/web/materials/leggio-480.webp" alt="" width="44" height="44" />
+                  <div class="reel-slot"></div>
+                </div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="row" href="#fuzhounese" data-row="1" data-reel="fuzhounese">
+              <div class="row-face">
+                <span class="row-name" data-chars>Fuzhounese</span>
+                <span class="row-meta"><b>Dictionary</b>3,790 words and a Claude assistant</span>
+              </div>
+              <div class="row-ink" aria-hidden="true">
+                <div class="row-face">
+                  <span class="row-name">Fuzhounese</span>
+                  <span class="row-meta"><b>Dictionary</b>3,790 words and a Claude assistant</span>
+                </div>
+                <div class="reel">
+                  <div class="reel-slot"></div>
+                </div>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="row" href="#loretour" data-row="2" data-reel="loretour">
+              <div class="row-face">
+                <span class="row-name" data-chars>LoreTour</span>
+                <span class="row-meta"><b>Map</b>Every building in Manhattan</span>
+              </div>
+              <div class="row-ink" aria-hidden="true">
+                <div class="row-face">
+                  <span class="row-name">LoreTour</span>
+                  <span class="row-meta"><b>Map</b>Every building in Manhattan</span>
+                </div>
+                <div class="reel">
+                  <img class="reel-logo" src="../art/web/materials/loretour-480.webp" alt="" width="44" height="44" />
+                  <div class="reel-slot"></div>
+                </div>
+              </div>
+            </a>
+          </li>
+        </ol>
+        <div class="hero-foot">
+          <span>Every demo below runs in your browser.</span>
+          <span>Built with Claude Code, Claude and Cursor</span>
+        </div>
+      </section>
+
+      <!-- ======================= Leggio ======================= -->
+      <section class="project" id="leggio" aria-labelledby="leggio-h">
+        <div class="p-head">
+          <h2 class="p-name" id="leggio-h"><span class="mask"><span>Leggio</span></span></h2>
+          <a class="p-go" href="https://getleggio.com" target="_blank" rel="noopener noreferrer">
+            getleggio.com
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+          </a>
+        </div>
+        <div class="p-sub">
+          <p class="p-line">Read in the language you’re learning, without switching to a translation.</p>
+          <p class="p-body">
+            A free Chrome extension. Select a word you don’t know and its meaning appears right beside
+            it. Leggio reads the whole sentence, so a word with several meanings gets the one it has
+            there. It works on web pages and PDFs in 34+ languages.
+          </p>
+        </div>
+
+        <div class="stage">
+          <div class="stage-bar">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="addr">Le avventure di Pinocchio — Capitolo primo</span>
+            <span class="note">Demo · fixed glossary</span>
+          </div>
+          <div class="leggio">
+            <div class="book" id="book">
+              <p class="book-title">Carlo Collodi, 1883</p>
+              <p class="book-chap">Capitolo primo</p>
+              <p class="book-text" id="book-text" lang="it"></p>
+              <div class="pop" id="pop" role="dialog" aria-live="polite" aria-label="Translation">
+                <div class="pop-word" id="pop-word"></div>
+                <div class="pop-gloss" id="pop-gloss"></div>
+                <p class="pop-ctx" id="pop-ctx"></p>
+                <button class="pop-save" id="pop-save" type="button">
+                  <svg width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1h10v12L6 9.5 1 13z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
+                  <span>Save word</span>
+                </button>
+              </div>
+              <div class="book-hint" id="book-hint">
+                <span>Tap a word, or select one and press</span><kbd id="kbd">T</kbd>
+              </div>
+            </div>
+            <aside class="shelf" aria-label="Saved words">
+              <h3>Your words <span id="saved-n">0</span></h3>
+              <ul class="saved" id="saved"></ul>
+              <p class="shelf-empty" id="shelf-empty">Words you save land here, kept in your browser.</p>
+            </aside>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div class="note-col">
+            <h3>The AI inside</h3>
+            <p>
+              Leggio translates with the AI models built into Chrome, so the words you select are
+              translated on your own computer, for free. You can plug in your own API key if you’d rather use a
+              different model.
+            </p>
+            <p>
+              Nothing goes to a server: no account, no analytics, no ads. Saved words stay in your
+              browser.
+            </p>
+            <ul class="chips">
+              <li>Chrome built-in AI</li>
+              <li>On-device</li>
+              <li>Context-aware</li>
+              <li>Web pages + PDFs</li>
+            </ul>
+          </div>
+          <div class="note-col">
+            <h3>How I built it</h3>
+            <p>
+              I designed and built Leggio myself, working with Claude Code, Claude and Cursor. They
+              took it from first sketch to a working extension and its website.
+            </p>
+            <ul class="chips">
+              <li>Claude Code</li>
+              <li>Claude</li>
+              <li>Cursor</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================= Fuzhounese ======================= -->
+      <section class="project" id="fuzhounese" aria-labelledby="fz-h">
+        <div class="p-head">
+          <h2 class="p-name" id="fz-h"><span class="mask"><span>Fuzhounese</span></span></h2>
+          <a class="p-go" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">
+            fuzhounese.org
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+          </a>
+        </div>
+        <div class="p-sub">
+          <p class="p-line">A living dictionary for a dialect with few written records.</p>
+          <p class="p-body">
+            A free, collaborative Fuzhounese–English dictionary: 3,790 entries with English and
+            Mandarin, 403 recordings from native speakers in 5 places, and 12 contributors so far.
+            Anyone who speaks it can record a word from their phone.
+          </p>
+        </div>
+
+        <div class="stage">
+          <div class="stage-bar">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="addr">fuzhounese.org</span>
+            <span class="note">Demo · real entries, sample answers</span>
+          </div>
+          <div class="fz">
+            <div class="fz-search">
+              <h3>Search the dictionary</h3>
+              <label class="fz-field">
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="7.5" cy="7.5" r="5.75" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="m12 12 4.5 4.5" stroke="currentColor" stroke-width="1.6" /></svg>
+                <span class="sr-only">Search in English, romanization, or characters</span>
+                <input id="fz-q" type="search" autocomplete="off" spellcheck="false" placeholder="Try “tea”, “siăh” or 魚" />
+              </label>
+              <div class="fz-try" id="fz-try"></div>
+              <p class="fz-count" id="fz-count" aria-live="polite"></p>
+              <ul class="fz-results" id="fz-results"></ul>
+            </div>
+            <div class="fz-ask">
+              <h3>Ask the assistant</h3>
+              <div class="chat" id="chat" aria-live="polite">
+                <p class="chat-hello">Ask how to say something, what a word means, or how the language works.</p>
+              </div>
+              <div class="asks" id="asks"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div class="note-col">
+            <h3>The AI inside</h3>
+            <p>
+              The dictionary has an assistant, powered by Claude, that answers questions in plain
+              language: how to say “have you eaten?”, what a word means, or what tone sandhi is. It
+              sits beside search, so a learner who doesn’t know the spelling can still find the
+              word.
+            </p>
+            <ul class="chips">
+              <li>Claude</li>
+              <li>Search across 3 scripts</li>
+              <li>Native-speaker audio</li>
+            </ul>
+          </div>
+          <div class="note-col">
+            <h3>How I built it</h3>
+            <p>
+              I built the site with Claude Code, Claude and Cursor: search, the assistant, the
+              recording flow, and pages for learning the basics. I’m also one of its contributors,
+              with 79 recordings of my own.
+            </p>
+            <ul class="chips">
+              <li>Claude Code</li>
+              <li>Claude</li>
+              <li>Cursor</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================= LoreTour ======================= -->
+      <section class="project" id="loretour" aria-labelledby="lt-h">
+        <div class="p-head">
+          <h2 class="p-name" id="lt-h"><span class="mask"><span>LoreTour</span></span></h2>
+          <a class="p-go is-quiet" href="https://loretour.com" target="_blank" rel="noopener noreferrer">
+            loretour.com · private preview
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+          </a>
+        </div>
+        <div class="p-sub">
+          <p class="p-line">What happened in this building?</p>
+          <p class="p-body">
+            A map of all 45,000 or so buildings in Manhattan. Pick one and you get its lore: dated
+            entries on what happened there, each citing its source, plus notes from visitors, archive
+            photos and a 3D view. It’s invite-only for now.
+          </p>
+        </div>
+
+        <div class="stage">
+          <div class="stage-bar">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="addr">loretour.com · Flatiron</span>
+            <span class="note">Demo · real entries, shortened</span>
+          </div>
+          <div class="lt">
+            <div class="lt-map">
+              <div class="lt-ask">Four buildings around Madison Square. <span>Pick one.</span></div>
+              <div class="street">
+                <svg id="street" viewBox="0 0 1000 400" role="group" aria-label="Four buildings, drawn to their real heights"></svg>
+              </div>
+              <div class="lt-hint">Drawn to their real heights. Entries are from LoreTour, cut short for this page.</div>
+            </div>
+            <div class="lt-panel" id="lt-panel" aria-live="polite">
+              <div class="lt-empty">Pick a building to open its record.</div>
+              <div class="rec" id="rec"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div class="note-col">
+            <h3>Under the hood</h3>
+            <p>
+              Footprints, roof heights and years come from NYC Open Data. Satellite and 3D views come
+              from Google’s Photorealistic 3D Tiles, and archive photos open on Urban Archive.
+            </p>
+            <p>
+              The record started with researched entries for buildings in every Manhattan
+              neighborhood, drawn from Wikipedia and the city’s building historians. Anyone signed in
+              can add to it.
+            </p>
+            <ul class="chips">
+              <li>45,000 buildings</li>
+              <li>NYC Open Data</li>
+              <li>3D Tiles</li>
+              <li>Cited sources</li>
+            </ul>
+          </div>
+          <div class="note-col">
+            <h3>How I built it</h3>
+            <p>
+              Designed and built with Claude Code, Claude and Cursor: the map, the building record,
+              the 3D view and the system for adding to the record.
+            </p>
+            <ul class="chips">
+              <li>Claude Code</li>
+              <li>Claude</li>
+              <li>Cursor</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================= close ======================= -->
+      <section class="close" id="contact" aria-labelledby="contact-h">
+        <h2 class="close-q" id="contact-h">Want to build something together?</h2>
+        <a class="mail" href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>
+        <div>
+          <button class="copy" id="copy" type="button">Copy address</button>
+        </div>
+        <footer class="foot">
+          <span>2026 · Noah Darwin Lee</span>
+          <a href="/">noahdarwinlee.com</a>
+        </footer>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+        var $ = function (s, r) { return (r || document).querySelector(s); };
+        var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+        var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+
+        /* ---------- split the lede into words and the names into letters ---------- */
+        $$("[data-split]").forEach(function (el) {
+          var words = el.textContent.trim().split(/\s+/);
+          el.setAttribute("aria-label", el.textContent.trim());
+          el.innerHTML = words
+            .map(function (w, i) {
+              return '<span class="w" aria-hidden="true"><span style="--i:' + i + '">' + w + "</span></span>";
+            })
+            .join(" ");
+        });
+
+        $$("[data-chars]").forEach(function (el) {
+          var row = el.closest(".row").getAttribute("data-row");
+          var t = el.textContent;
+          el.setAttribute("aria-label", t);
+          el.innerHTML = t
+            .split("")
+            .map(function (c, i) {
+              return '<span class="ch" aria-hidden="true" style="--row:' + row + ";--c:" + i + '">' + c + "</span>";
+            })
+            .join("");
+        });
+
+        // Two frames so the starting state paints before the entrance runs.
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            document.body.classList.add("is-ready");
+          });
+        });
+
+        /* ---------- the index: wipe, reel, and the label that follows the pointer ---------- */
+        var reels = {
+          leggio: [
+            "legno <i>→</i> wood",
+            "ragazzi <i>→</i> kids",
+            "fuoco <i>→</i> fire",
+            "stanze <i>→</i> rooms",
+          ],
+          fuzhounese: [
+            "茶 dà̤ <i>tea</i>",
+            "魚 ngṳ̀ <i>fish</i>",
+            "汝好 nṳ̄ hō̤ <i>hello</i>",
+            "雨 ṳ̄ <i>rain</i>",
+          ],
+          loretour: [
+            "Flatiron Building <i>1903</i>",
+            "Sohmer Piano <i>1898</i>",
+            "Scribner Building <i>1894</i>",
+            "45,000 buildings <i>Manhattan</i>",
+          ],
+        };
+
+        var rows = $$(".row");
+        var activeTimer = null;
+
+        function startReel(row) {
+          var slot = $(".reel-slot", row);
+          var list = reels[row.getAttribute("data-reel")];
+          if (!slot || !list) return;
+          slot.innerHTML = "";
+          var spans = list.map(function (html) {
+            var s = document.createElement("span");
+            s.innerHTML = html;
+            s.setAttribute("data-state", "below");
+            slot.appendChild(s);
+            return s;
+          });
+          var i = 0;
+          spans[0].setAttribute("data-state", "in");
+          clearInterval(activeTimer);
+          activeTimer = setInterval(function () {
+            spans[i].setAttribute("data-state", "above");
+            var prev = spans[i];
+            i = (i + 1) % spans.length;
+            spans[i].setAttribute("data-state", "in");
+            setTimeout(function () {
+              if (prev.getAttribute("data-state") === "above") prev.setAttribute("data-state", "below");
+            }, 560);
+          }, 1300);
+        }
+
+        function setOn(row) {
+          rows.forEach(function (r) {
+            r.classList.toggle("is-on", r === row);
+          });
+          if (row) startReel(row);
+          else clearInterval(activeTimer);
+        }
+
+        rows.forEach(function (row) {
+          row.addEventListener("pointerenter", function (e) {
+            if (e.pointerType === "mouse") setOn(row);
+          });
+          row.addEventListener("focus", function () { setOn(row); });
+          row.addEventListener("blur", function () { setOn(null); });
+        });
+        $(".index").addEventListener("pointerleave", function () { setOn(null); });
+
+        // No hover on a phone, so the index plays itself: each row takes its
+        // turn while the index is on screen, and stops when it scrolls away.
+        if (!fine && !reduce) {
+          var turn = 0, cycle = null;
+          new IntersectionObserver(function (en) {
+            if (en[0].isIntersecting) {
+              if (cycle) return;
+              setOn(rows[turn]);
+              cycle = setInterval(function () {
+                turn = (turn + 1) % rows.length;
+                setOn(rows[turn]);
+              }, 2200);
+            } else {
+              clearInterval(cycle);
+              cycle = null;
+              setOn(null);
+            }
+          }, { threshold: 0.6 }).observe($(".index"));
+        }
+
+        // The pointer label, eased toward the pointer rather than glued to it.
+        var tag = $(".tag");
+        if (fine && !reduce) {
+          var tx = 0, ty = 0, cx = 0, cy = 0, running = false, inside = false;
+          var loop = function () {
+            cx += (tx - cx) * 0.18;
+            cy += (ty - cy) * 0.18;
+            tag.style.transform = "translate(" + (cx + 18).toFixed(1) + "px," + (cy + 18).toFixed(1) + "px)";
+            if (inside || Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) requestAnimationFrame(loop);
+            else running = false;
+          };
+          $(".index").addEventListener("pointermove", function (e) {
+            tx = e.clientX;
+            ty = e.clientY;
+            if (!inside) {
+              cx = tx;
+              cy = ty;
+            }
+            inside = true;
+            tag.classList.add("is-on");
+            if (!running) {
+              running = true;
+              requestAnimationFrame(loop);
+            }
+          });
+          $(".index").addEventListener("pointerleave", function () {
+            inside = false;
+            tag.classList.remove("is-on");
+          });
+        }
+
+        /* ---------- sections arrive once, as they come into view ---------- */
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (en) {
+              if (en.isIntersecting) {
+                en.target.classList.add("is-in");
+                en.target.dispatchEvent(new CustomEvent("arrive"));
+                io.unobserve(en.target);
+              }
+            });
+          },
+          { rootMargin: "0px 0px -18% 0px" }
+        );
+        $$(".project").forEach(function (s) { io.observe(s); });
+
+        /* ---------- progress line ---------- */
+        var bar = $(".progress");
+        var onScroll = function () {
+          var h = document.documentElement.scrollHeight - innerHeight;
+          bar.style.transform = "scaleX(" + (h > 0 ? scrollY / h : 0).toFixed(4) + ")";
+        };
+        addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        /* ======================= Leggio ======================= */
+        var TEXT =
+          "C'era una volta… — Un re! — diranno subito i miei piccoli lettori. No, ragazzi, avete sbagliato. " +
+          "C'era una volta un pezzo di legno. Non era un legno di lusso, ma un semplice pezzo da catasta, " +
+          "di quelli che d'inverno si mettono nelle stufe e nei caminetti per accendere il fuoco e per riscaldare le stanze.";
+
+        // Glosses written for this sentence, the way Leggio reads a word in context.
+        var GLOSS = {
+          "c'era": ["there was", ""],
+          volta: ["once", "With “una”, as in “c’era una volta”: once upon a time. On its own, volta means time, or turn."],
+          re: ["king", ""],
+          diranno: ["they’ll say", "Future of dire, to say."],
+          subito: ["right away", ""],
+          miei: ["my", ""],
+          piccoli: ["young", "Literally little. Here: my young readers."],
+          lettori: ["readers", ""],
+          ragazzi: ["kids", "Ragazzi can mean boys, guys or kids. Here the narrator is talking to children."],
+          sbagliato: ["got it wrong", "“Avete sbagliato”: you’ve got it wrong."],
+          pezzo: ["piece", ""],
+          legno: ["wood", "A piece of wood, the block Pinocchio will be carved from."],
+          lusso: ["luxury", "“Di lusso”: fancy, expensive."],
+          semplice: ["plain", "Literally simple. Here: ordinary."],
+          catasta: ["woodpile", "“Un pezzo da catasta”: a piece of firewood."],
+          inverno: ["winter", "“D’inverno”: in winter."],
+          mettono: ["they put", ""],
+          stufe: ["stoves", ""],
+          caminetti: ["fireplaces", ""],
+          accendere: ["to light", "To light a fire, or switch something on."],
+          fuoco: ["fire", ""],
+          riscaldare: ["to warm", ""],
+          stanze: ["rooms", ""],
+        };
+
+        var bookText = $("#book-text");
+        var book = $("#book");
+        var pop = $("#pop");
+        var popWord = $("#pop-word");
+        var popGloss = $("#pop-gloss");
+        var popCtx = $("#pop-ctx");
+        var popSave = $("#pop-save");
+        var savedList = $("#saved");
+        var savedN = $("#saved-n");
+        var shelfEmpty = $("#shelf-empty");
+        var kbd = $("#kbd");
+        var saved = {};
+        var current = null;
+        var userTouchedLeggio = false;
+
+        bookText.innerHTML = TEXT.replace(/[A-Za-zÀ-ÿ']+/g, function (w) {
+          var key = w.toLowerCase().replace(/^d'/, "").replace(/^c'era$/, "c'era");
+          if (!GLOSS[key]) return w;
+          return '<span class="wd" tabindex="0" role="button" data-k="' + key + '">' + w + "</span>";
+        });
+
+        function closePop() {
+          pop.classList.remove("is-on");
+          $$(".wd.is-sel", bookText).forEach(function (w) { w.classList.remove("is-sel"); });
+          current = null;
+        }
+
+        function openPop(el) {
+          var k = el.getAttribute("data-k");
+          var g = GLOSS[k];
+          if (!g) return;
+          $$(".wd.is-sel", bookText).forEach(function (w) { w.classList.remove("is-sel"); });
+          el.classList.add("is-sel");
+          current = el;
+          popWord.textContent = el.textContent;
+          popGloss.textContent = g[0];
+          popCtx.textContent = g[1];
+          popSave.disabled = !!saved[k];
+          popSave.querySelector("span").textContent = saved[k] ? "Saved" : "Save word";
+
+          // Place it beside the word, flipping above or left when it would leave the sheet.
+          var b = book.getBoundingClientRect();
+          var r = el.getBoundingClientRect();
+          pop.style.visibility = "hidden";
+          pop.classList.add("is-on");
+          var pw = pop.offsetWidth, ph = pop.offsetHeight;
+          pop.classList.remove("is-on");
+          pop.style.visibility = "";
+          var x = r.left - b.left;
+          var y = r.bottom - b.top + 10;
+          var ox = "0%", oy = "0%";
+          if (x + pw > b.width - 12) {
+            x = r.right - b.left - pw;
+            ox = "100%";
+          }
+          x = Math.max(12, x);
+          if (y + ph > b.height - 8) {
+            y = r.top - b.top - ph - 10;
+            oy = "100%";
+          }
+          pop.style.left = x + "px";
+          pop.style.top = y + "px";
+          pop.style.setProperty("--origin", ox + " " + oy);
+          void pop.offsetWidth;
+          pop.classList.add("is-on");
+        }
+
+        function press() {
+          kbd.classList.add("is-down");
+          setTimeout(function () { kbd.classList.remove("is-down"); }, 160);
+        }
+
+        function save() {
+          if (!current) return;
+          var k = current.getAttribute("data-k");
+          if (saved[k]) return;
+          saved[k] = true;
+          var word = current.textContent;
+          current.classList.add("is-saved");
+          popSave.disabled = true;
+          popSave.querySelector("span").textContent = "Saved";
+
+          var li = document.createElement("li");
+          li.className = "is-new";
+          li.innerHTML = "<b></b><span></span>";
+          li.firstChild.textContent = word;
+          li.lastChild.textContent = GLOSS[k][0];
+          savedList.insertBefore(li, savedList.firstChild);
+          shelfEmpty.hidden = true;
+          savedN.textContent = Object.keys(saved).length;
+
+          // The word flies from the page to its place on the list.
+          var from = current.getBoundingClientRect();
+          if (!reduce) {
+            var to = li.getBoundingClientRect();
+            var f = document.createElement("div");
+            f.className = "flyer";
+            f.textContent = word;
+            document.body.appendChild(f);
+            var anim = f.animate(
+              [
+                { transform: "translate(" + from.left + "px," + (from.top - 2) + "px)", opacity: 1 },
+                {
+                  transform:
+                    "translate(" + (from.left + to.left) / 2 + "px," + (Math.min(from.top, to.top) - 60) + "px) scale(0.9)",
+                  opacity: 1,
+                  offset: 0.55,
+                },
+                { transform: "translate(" + (to.left + 12) + "px," + (to.top + 6) + "px) scale(0.75)", opacity: 0 },
+              ],
+              { duration: 620, easing: "cubic-bezier(0.65, 0, 0.35, 1)" }
+            );
+            anim.onfinish = function () { f.remove(); };
+            setTimeout(function () { li.classList.remove("is-new"); }, 380);
+          } else {
+            li.classList.remove("is-new");
+          }
+        }
+
+        bookText.addEventListener("click", function (e) {
+          var w = e.target.closest(".wd");
+          if (!w) return;
+          userTouchedLeggio = true;
+          if (w === current) closePop();
+          else openPop(w);
+        });
+
+        bookText.addEventListener("keydown", function (e) {
+          var w = e.target.closest(".wd");
+          if (w && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            userTouchedLeggio = true;
+            openPop(w);
+          }
+        });
+
+        // Select a word with the mouse, then press T: the extension's own gesture.
+        document.addEventListener("keydown", function (e) {
+          if (e.key !== "t" && e.key !== "T") return;
+          if (e.target.closest && e.target.closest("input, textarea")) return;
+          var sel = window.getSelection();
+          if (!sel || sel.isCollapsed) return;
+          var node = sel.anchorNode && (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement);
+          var w = node && node.closest(".wd");
+          if (!w || !bookText.contains(w)) return;
+          e.preventDefault();
+          userTouchedLeggio = true;
+          press();
+          sel.removeAllRanges();
+          openPop(w);
+        });
+
+        popSave.addEventListener("click", save);
+        document.addEventListener("pointerdown", function (e) {
+          if (!pop.contains(e.target) && !e.target.closest(".wd")) closePop();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") {
+            closePop();
+            closeStory();
+          }
+        });
+
+        // When the section arrives and nobody has touched it, it plays itself once.
+        $("#leggio").addEventListener("arrive", async function () {
+          if (reduce) return;
+          await wait(1100);
+          var seq = ["volta", "legno"];
+          for (var i = 0; i < seq.length; i++) {
+            if (userTouchedLeggio) return;
+            var w = bookText.querySelector('[data-k="' + seq[i] + '"]');
+            press();
+            openPop(w);
+            await wait(1700);
+            if (userTouchedLeggio) return;
+            if (seq[i] === "legno") {
+              save();
+              await wait(1200);
+            }
+          }
+          if (!userTouchedLeggio) closePop();
+        });
+
+        /* ======================= Fuzhounese ======================= */
+        // Entries copied from fuzhounese.org. r = recordings on the site.
+        var DICT = [
+          ["汝好", "nṳ̄ hō̤", "hello", 1],
+          ["食", "siăh", "to eat; to drink", 1],
+          ["食飯未", "siăh buáng mà̤", "Have you eaten? (a greeting)", 1],
+          ["食物", "sĭk-ŭk", "food", 0],
+          ["飲食", "īng-sĭk", "diet; eating", 0],
+          ["白食", "băh-siăh", "to eat for free", 0],
+          ["食醋", "sĭk-chó", "table vinegar", 0],
+          ["魚", "ngṳ̀", "fish", 1],
+          ["釣魚", "diéu-ngṳ̀", "to fish; to angle", 2],
+          ["蝦油", "hà-iù", "fish sauce", 0],
+          ["魚鱗", "ngṳ̀-lìng", "(fish) scale", 0],
+          ["雨", "ṳ̄", "rain", 0],
+          ["盪雨", "dâung-ṳ̄", "to rain", 2],
+          ["雨水", "ṳ̄-cūi", "rainwater", 0],
+          ["雨期", "ṳ̄-gĭ", "rainy season", 0],
+          ["米", "mī", "uncooked rice", 0],
+          ["米粉", "mī-hūng", "rice vermicelli", 1],
+          ["凊飯", "chéng-buông", "cold cooked rice", 1],
+          ["米酒", "mī-ciū", "mijiu; rice wine", 0],
+          ["飯瓢", "buông-pièu", "rice scoop; rice spoon", 0],
+          ["茶", "dà̤", "tea", 2],
+          ["紅茶", "è̤ng-dà", "black tea", 0],
+          ["烏龍茶", "ŭ-lṳ̀ng-dà", "oolong tea", 0],
+          ["泡茶", "páu-dà", "to make (infuse) tea", 0],
+          ["涼茶", "liòng-dà", "Chinese herb tea", 1],
+          ["謝謝", "siâ-siâ", "thanks; thank you", 1],
+          ["多謝", "dŏ-siâ", "thank you very much", 0],
+          ["因為", "ĭng-ôi", "because; since; as", 0],
+        ];
+
+        var fzQ = $("#fz-q");
+        var fzResults = $("#fz-results");
+        var fzCount = $("#fz-count");
+        var fold = function (s) {
+          return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+        };
+        var esc = function (s) {
+          return s.replace(/[&<>"]/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+          });
+        };
+        // Highlight the match on the folded string, then map it back onto the original letters.
+        function mark(text, q) {
+          if (!q) return esc(text);
+          var chars = Array.from(text);
+          var folded = chars.map(function (c) { return fold(c); });
+          var joined = folded.join("");
+          var at = joined.indexOf(q);
+          if (at < 0) return esc(text);
+          var pos = 0, start = -1, end = -1;
+          for (var i = 0; i < folded.length; i++) {
+            if (start < 0 && pos >= at) start = i;
+            pos += folded[i].length;
+            if (pos >= at + q.length) { end = i + 1; break; }
+          }
+          if (start < 0) return esc(text);
+          // Carry trailing combining marks with the last letter.
+          while (end < chars.length && /[̀-ͯ]/.test(chars[end])) end++;
+          return esc(chars.slice(0, start).join("")) + "<mark>" + esc(chars.slice(start, end).join("")) + "</mark>" + esc(chars.slice(end).join(""));
+        }
+
+        var mic = '<svg width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><rect x="3.5" y="1" width="5" height="8" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 6.5a4.5 4.5 0 0 0 9 0M6 11v2.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>';
+
+        function search() {
+          var raw = fzQ.value.trim();
+          var q = fold(raw);
+          var hits = !q
+            ? DICT.slice(0, 7)
+            : DICT.filter(function (d) {
+                return d[0].indexOf(raw) >= 0 || fold(d[1]).indexOf(q) >= 0 || fold(d[2]).indexOf(q) >= 0;
+              });
+          fzCount.textContent = q
+            ? hits.length + (hits.length === 1 ? " result" : " results") + " in this sample"
+            : "A sample of " + DICT.length + " of 3,790 entries";
+          if (!hits.length) {
+            fzResults.innerHTML = '<li class="fz-empty">Nothing in this sample. The full dictionary has 3,790 entries.</li>';
+            return;
+          }
+          fzResults.innerHTML = hits
+            .map(function (d, k) {
+              return (
+                '<li style="--k:' + k + '"><span class="fz-han" lang="cdo">' + (raw && d[0].indexOf(raw) >= 0 ? "<mark>" + esc(d[0]) + "</mark>" : esc(d[0])) +
+                '</span><span class="fz-rom" lang="cdo-Latn">' + mark(d[1], q) +
+                '</span><span class="fz-rec">' + (d[3] ? mic + d[3] : "") +
+                '</span><span class="fz-gloss">' + mark(d[2], q) + "</span></li>"
+              );
+            })
+            .join("");
+        }
+        fzQ.addEventListener("input", search);
+        search();
+
+        var tryWords = ["tea", "siăh", "魚", "rain", "thank"];
+        $("#fz-try").innerHTML = tryWords
+          .map(function (w) { return '<button class="chip-btn" type="button">' + w + "</button>"; })
+          .join("");
+
+        async function typeInto(input, text) {
+          input.value = "";
+          search();
+          for (var i = 0; i < text.length; i++) {
+            input.value += text[i];
+            search();
+            await wait(reduce ? 0 : 70);
+          }
+        }
+
+        $$("#fz-try .chip-btn").forEach(function (b) {
+          b.addEventListener("click", function () {
+            typeInto(fzQ, b.textContent).then(function () { fzQ.focus(); });
+          });
+        });
+
+        // Sample answers, composed only from entries above.
+        var ASK = [
+          {
+            q: "How do I say “have you eaten?”",
+            a: [
+              "You’d say ",
+              { han: "食飯未" },
+              " siăh buáng mà̤. It’s a greeting as much as a question, closer to “how are you?” than to an invitation.",
+            ],
+          },
+          {
+            q: "What’s the word for tea?",
+            a: [
+              { han: "茶" },
+              " dà̤. Black tea is ",
+              { han: "紅茶" },
+              " è̤ng-dà, oolong is ",
+              { han: "烏龍茶" },
+              " ŭ-lṳ̀ng-dà, and to make tea is ",
+              { han: "泡茶" },
+              " páu-dà.",
+            ],
+          },
+          {
+            q: "How do I thank someone?",
+            a: [
+              { han: "謝謝" },
+              " siâ-siâ is the everyday thanks. For “thank you very much”, use ",
+              { han: "多謝" },
+              " dŏ-siâ.",
+            ],
+          },
+        ];
+
+        var chat = $("#chat");
+        var asks = $("#asks");
+        var busy = false;
+        asks.innerHTML = ASK.map(function (x, i) {
+          return '<button class="chip-btn" type="button" data-i="' + i + '">' + x.q + "</button>";
+        }).join("");
+
+        async function stream(el, parts, caretColorEl) {
+          var caret = document.createElement("span");
+          caret.className = "caret";
+          el.appendChild(caret);
+          for (var p = 0; p < parts.length; p++) {
+            var part = parts[p];
+            if (typeof part === "string") {
+              var tokens = part.match(/\S+\s*|\s+/g) || [];
+              for (var t = 0; t < tokens.length; t++) {
+                caret.before(document.createTextNode(tokens[t]));
+                await wait(reduce ? 0 : 38 + Math.random() * 46);
+              }
+            } else {
+              var s = document.createElement("span");
+              s.className = "han";
+              s.lang = "cdo";
+              s.textContent = part.han;
+              caret.before(s);
+              await wait(reduce ? 0 : 120);
+            }
+          }
+          caret.remove();
+        }
+
+        asks.addEventListener("click", async function (e) {
+          var b = e.target.closest("button");
+          if (!b || busy) return;
+          busy = true;
+          $$("button", asks).forEach(function (x) { x.disabled = true; });
+          var item = ASK[+b.getAttribute("data-i")];
+          var hello = $(".chat-hello", chat);
+          if (hello) hello.remove();
+          while (chat.children.length > 2) chat.firstChild.remove();
+          var me = document.createElement("div");
+          me.className = "msg me";
+          me.textContent = item.q;
+          chat.appendChild(me);
+          await wait(reduce ? 0 : 420);
+          var ai = document.createElement("div");
+          ai.className = "msg ai";
+          chat.appendChild(ai);
+          await stream(ai, item.a);
+          busy = false;
+          $$("button", asks).forEach(function (x) { x.disabled = false; });
+        });
+
+        $("#fuzhounese").addEventListener("arrive", async function () {
+          if (reduce) return;
+          await wait(900);
+          if (fzQ.value) return;
+          await typeInto(fzQ, "tea");
+        });
+
+        /* ======================= LoreTour ======================= */
+        // Four real records from loretour.com, the entries cut short. Heights in feet.
+        var PLACES = [
+          {
+            name: "Theodore Roosevelt Birthplace",
+            short: "Roosevelt",
+            addr: "28 East 20th Street",
+            built: "1923", floors: 5, ft: 63, cols: 3, kind: "row",
+            lore: [
+              ["1848", "Architecture", "Six matching brownstones rise on East 20th Street, including No. 28",
+                "Builders put up six identical Gothic Revival rowhouses in 1848. Theodore Roosevelt Sr. buys No. 28; his brother Robert buys No. 26 next door.",
+                "daytoninmanhattan.blogspot.com"],
+              ["1858", "People", "Theodore Roosevelt is born in a brownstone on this site",
+                "The future president was born here on October 27, 1858. The family lived in the house until 1872, when the neighborhood was turning commercial.",
+                "en.wikipedia.org"],
+              ["1923", "History", "The birthplace is rebuilt as a memorial",
+                "The original house was torn down in 1916. After Roosevelt died, the Women’s Roosevelt Memorial Association rebuilt it, modeled on its surviving twin at No. 26, and rededicated it in 1923.",
+                "en.wikipedia.org"],
+            ],
+          },
+          {
+            name: "Scribner Building",
+            short: "Scribner",
+            addr: "155 5th Avenue",
+            built: "1894", floors: 7, ft: 103, cols: 4,
+            lore: [
+              ["1894", "History", "Charles Scribner’s Sons moves into its new publishing headquarters",
+                "The firm moved into Ernest Flagg’s new limestone building on May 25, 1894. It was built for a publishing house, with a bookstore at street level and offices above.",
+                "daytoninmanhattan.blogspot.com"],
+              ["1913", "History", "Scribner’s leaves 155 Fifth Avenue for a new headquarters uptown",
+                "After two decades here, the firm moved to a new Flagg building farther up Fifth Avenue. The family kept this one and leased it out until 1951.",
+                "daytoninmanhattan.blogspot.com"],
+              ["1973", "History", "The United Synagogue of America renames it Rapaport House",
+                "The organization bought the former publishing headquarters in 1973 and stayed more than three decades.",
+                "en.wikipedia.org"],
+            ],
+          },
+          {
+            name: "Flatiron Building",
+            short: "Flatiron",
+            addr: "175 5th Avenue",
+            built: "1903", floors: 21, ft: 300, cols: 3, kind: "wedge",
+            lore: [
+              ["1902", "Architecture", "The Fuller Building, soon called the Flatiron, opens at 23rd Street",
+                "Designed by Daniel Burnham with Frederick P. Dinkelberg, the triangular tower opened on October 1, 1902. Skeptics doubted the thin wedge would stand up to the wind and called it Burnham’s Folly.",
+                "en.wikipedia.org"],
+              ["1903", "Culture", "A film crew captures the wind whipping skirts outside the building",
+                "A 1903 film shows pedestrians battling the gusts the building’s shape funnels onto the sidewalk, already notorious on the Ladies’ Mile.",
+                "boweryboyshistory.com"],
+              ["1952", "Culture", "Diver Henri LaMothe starts an annual birthday leap beside the Flatiron",
+                "Every year for two decades he dove from a platform into a shallow pool here, landing in just a foot of water by 1974.",
+                "ephemeralnewyork.wordpress.com"],
+              ["1959", "Culture", "St. Martin’s Press moves in, beginning decades of publishing here",
+                "Its parent Macmillan gradually took over more of the building. Macmillan had moved out by June 2019.",
+                "en.wikipedia.org"],
+            ],
+          },
+          {
+            name: "Sohmer Piano Building",
+            short: "Sohmer Piano",
+            addr: "170 5th Avenue",
+            built: "1898", floors: 13, ft: 178, cols: 4, kind: "dome",
+            lore: [
+              ["1898", "Architecture", "Sohmer Piano Co. opens in Henry Corn’s new domed building",
+                "Robert Maynicke designed it with twin eight-sided drums under an octagonal dome. Sohmer took the ground floor for its showroom.",
+                "daytoninmanhattan.blogspot.com"],
+              ["1909", "History", "Sohmer Piano moves out after a decade at 170 Fifth Avenue",
+                "The company, favored by Irving Berlin and Victor Herbert, left in July 1909 for 315 Fifth Avenue.",
+                "daytoninmanhattan.blogspot.com"],
+              ["1995", "Architecture", "The dome is regilded and the building turns residential",
+                "Workers laid about 2,700 sheets of 23.5-karat gold leaf on the dome in 1995; the lofts became condominiums in 1999.",
+                "en.wikipedia.org"],
+            ],
+          },
+        ];
+
+        var svg = $("#street");
+        var NS = "http://www.w3.org/2000/svg";
+        var GROUND = 360, SCALE = 1.08;
+        var mk = function (tag, attrs, parent) {
+          var el = document.createElementNS(NS, tag);
+          for (var k in attrs) el.setAttribute(k, attrs[k]);
+          if (parent) parent.appendChild(el);
+          return el;
+        };
+
+        var slots = [
+          { x: 40, w: 150 },
+          { x: 222, w: 190 },
+          { x: 446, w: 220 },
+          { x: 700, w: 250 },
+        ];
+
+        PLACES.forEach(function (p, i) {
+          var s = slots[i];
+          var g = mk("g", { class: "bldg", tabindex: "0", role: "button", "aria-label": p.name + ", built " + p.built + ", " + p.floors + " floors" }, svg);
+          var h = Math.round(p.ft * SCALE);
+          var top = GROUND - h;
+          var x = s.x, w = s.w;
+          if (p.kind === "wedge") {
+            // The Flatiron seen from its prow: narrow, with the rounded tip.
+            x = s.x + 30;
+            w = s.w - 60;
+          }
+          mk("rect", { class: "shell", x: x, y: top, width: w, height: h }, g);
+          if (p.kind === "dome") {
+            var cx = x + w / 2;
+            mk("rect", { class: "shell", x: cx - 34, y: top - 22, width: 68, height: 22 }, g);
+            mk("path", { class: "shell", d: "M" + (cx - 34) + " " + (top - 22) + " Q" + cx + " " + (top - 82) + " " + (cx + 34) + " " + (top - 22) + "Z" }, g);
+            mk("line", { class: "shell", x1: cx, x2: cx, y1: top - 52, y2: top - 66 }, g);
+          }
+          if (p.kind === "row") {
+            mk("path", { class: "shell", d: "M" + (x - 6) + " " + top + " h" + (w + 12) + " v-8 h-" + (w + 12) + "Z" }, g);
+          }
+          var padX = 14, padTop = 12, padBot = 32, gap = 6;
+          var rows = p.floors - 1;
+          var cw = (w - padX * 2 - gap * (p.cols - 1)) / p.cols;
+          var rh = (h - padTop - padBot - gap * (rows - 1)) / rows;
+          for (var r = 0; r < rows; r++) {
+            for (var c = 0; c < p.cols; c++) {
+              var win = mk("rect", {
+                class: "win",
+                x: (x + padX + c * (cw + gap)).toFixed(1),
+                y: (top + padTop + r * (rh + gap)).toFixed(1),
+                width: cw.toFixed(1),
+                height: Math.max(rh, 2).toFixed(1),
+              }, g);
+              win.style.setProperty("--d", (rows - r) * p.cols + c);
+            }
+          }
+          mk("rect", { class: "shell", x: x + w / 2 - 12, y: GROUND - 24, width: 24, height: 24 }, g);
+          // Labels sit on the street, outside the building's group, so they stay
+          // put when the building lifts.
+          var lab = mk("g", { class: "lab", "data-i": i }, svg);
+          var label = mk("text", { class: "label", x: s.x, y: GROUND + 22 }, lab);
+          label.textContent = p.short;
+          var ly = mk("text", { class: "label-y", x: s.x, y: GROUND + 38 }, lab);
+          ly.textContent = p.built + " · " + p.ft + " ft";
+          g.addEventListener("click", function () { openPlace(i); });
+          g.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openPlace(i);
+            }
+          });
+        });
+        mk("line", { class: "ground", x1: 0, x2: 1000, y1: GROUND, y2: GROUND }, svg);
+
+        var panel = $("#lt-panel");
+        var rec = $("#rec");
+        var storyToken = 0;
+        var userTouchedLore = false;
+
+        async function streamLore(li, token) {
+          var para = $(".lore-p", li);
+          if (para.getAttribute("data-done")) return;
+          var text = para.getAttribute("data-text");
+          para.textContent = "";
+          var caret = document.createElement("span");
+          caret.className = "caret";
+          para.appendChild(caret);
+          var tokens = text.match(/\S+\s*/g);
+          for (var t = 0; t < tokens.length; t++) {
+            if (token !== storyToken) return;
+            caret.before(document.createTextNode(tokens[t]));
+            await wait(reduce ? 0 : 22 + Math.random() * 30);
+          }
+          caret.remove();
+          para.setAttribute("data-done", "1");
+        }
+
+        function openEntry(li) {
+          $$(".lore li", rec).forEach(function (x) {
+            var on = x === li;
+            x.classList.toggle("is-open", on);
+            $(".lore-btn", x).setAttribute("aria-expanded", String(on));
+          });
+          streamLore(li, storyToken);
+        }
+
+        function openPlace(i, auto) {
+          if (!auto) userTouchedLore = true;
+          var p = PLACES[i];
+          storyToken++;
+          $$(".bldg", svg).forEach(function (b, k) { b.classList.toggle("is-on", k === i); });
+          $$(".lab", svg).forEach(function (b, k) { b.classList.toggle("is-on", k === i); });
+          panel.classList.remove("is-on");
+          void panel.offsetWidth;
+          rec.innerHTML =
+            "<h3>" + esc(p.name) + '</h3><p class="rec-addr">' + esc(p.addr) + "</p>" +
+            '<dl class="facts"><div><dt>Built</dt><dd>' + p.built + "</dd></div><div><dt>Floors</dt><dd>" + p.floors +
+            "</dd></div><div><dt>Height</dt><dd>" + p.ft + " ft</dd></div></dl>" +
+            '<p class="lore-h">Lore <span>' + p.lore.length + " entries</span></p>" +
+            '<p class="lore-sub">What happened here, when, and who was involved.</p><ul class="lore">' +
+            p.lore.map(function (e, k) {
+              return (
+                '<li style="--k:' + k + '"><span class="lore-y">' + e[0] + '</span><button class="lore-btn" type="button" aria-expanded="false">' +
+                '<span class="lore-tag">' + esc(e[1]) + '</span><span class="lore-t">' + esc(e[2]) + "</span></button>" +
+                '<div class="lore-body"><div><p class="lore-p" data-text="' + esc(e[3]) + '"></p><p class="lore-src">Source: ' + esc(e[4]) + "</p></div></div></li>"
+              );
+            }).join("") +
+            "</ul>";
+          rec.scrollTop = 0;
+          panel.classList.add("is-on");
+          $$(".lore-btn", rec).forEach(function (b) {
+            b.addEventListener("click", function () {
+              userTouchedLore = true;
+              openEntry(b.closest("li"));
+            });
+          });
+          var first = $(".lore li", rec);
+          setTimeout(function () { openEntry(first); }, reduce ? 0 : 420);
+          if (!auto && innerWidth <= 900) {
+            panel.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+          }
+        }
+
+        function closeStory() {
+          storyToken++;
+          panel.classList.remove("is-on");
+          $$(".bldg, .lab", svg).forEach(function (b) { b.classList.remove("is-on"); });
+        }
+
+        $("#loretour").addEventListener("arrive", async function () {
+          if (reduce) return;
+          await wait(1200);
+          if (!userTouchedLore) openPlace(2, true);
+        });
+
+        /* ======================= contact ======================= */
+        var copyBtn = $("#copy");
+        copyBtn.addEventListener("click", function () {
+          var done = function () {
+            copyBtn.textContent = "Copied";
+            copyBtn.classList.add("is-done");
+            setTimeout(function () {
+              copyBtn.textContent = "Copy address";
+              copyBtn.classList.remove("is-done");
+            }, 1600);
+          };
+          if (navigator.clipboard) navigator.clipboard.writeText("noahlee519@gmail.com").then(done, done);
+          else done();
+        });
+      })();
+    </script>
+  </body>
+</html>
