@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>greatcircleme</title>
+    <title>greatercircle</title>
     <meta
       name="description"
       content="The shortest way between two places on the Earth, and the shortest way around the countries you would rather not cross. Click two points on a globe or type two places, then pick the countries to avoid."
     />
-    <link rel="canonical" href="https://noahdarwinlee.com/greatcircleme/" />
+    <link rel="canonical" href="https://noahdarwinlee.com/greatercircle/" />
     <link rel="icon" href="../favicon.png" type="image/png" />
     <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
@@ -23,9 +23,9 @@
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Noah Darwin Lee" />
-    <meta property="og:title" content="greatcircleme | Noah Darwin Lee" />
+    <meta property="og:title" content="greatercircle | Noah Darwin Lee" />
     <meta property="og:description" content="The shortest way between two places on the Earth, and the shortest way around the countries you would rather not cross." />
-    <meta property="og:url" content="https://noahdarwinlee.com/greatcircleme/" />
+    <meta property="og:url" content="https://noahdarwinlee.com/greatercircle/" />
     <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -75,7 +75,7 @@
     />
   </head>
   <body class="gc-page">
-    <h1 class="sr-only">greatcircleme</h1>
+    <h1 class="sr-only">greatercircle</h1>
     <a class="name" href="/"
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
@@ -98,12 +98,17 @@
       <button type="button" class="gc-ctl gc-ctl-text" id="fit" title="Show the whole route" aria-label="Show the whole route">fit</button>
       <button
         type="button"
-        class="gc-ctl gc-ctl-text"
+        class="gc-ctl"
         id="avoid-mode"
         aria-pressed="false"
+        aria-label="Avoid countries: click them to add"
         title="Click countries to avoid them"
       >
-        avoid
+        <!-- A way bending round an x. -->
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 17 A 9.5 9.5 0 0 1 21.5 17" />
+          <path d="M9.6 13.1 L 14.4 17.9 M14.4 13.1 L 9.6 17.9" />
+        </svg>
       </button>
     </div>
 
@@ -113,7 +118,7 @@
       </button>
       <header class="gc-head">
         <div class="gc-head-text">
-          <h2 class="gc-title">greatcircleme</h2>
+          <h2 class="gc-title">greatercircle</h2>
           <p class="gc-sub">The shortest way between two places, around the countries you choose.</p>
         </div>
         <!-- How the numbers are made and where the data is from, behind a
@@ -159,44 +164,48 @@
       <div class="gc-points">
         <div class="gc-field" data-slot="a">
           <span class="gc-badge" aria-hidden="true">A</span>
-          <input
-            id="in-a"
-            type="text"
-            placeholder="From: a city, an airport, or lat, lon"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            aria-label="From"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-controls="sug-a"
-          />
-          <button type="button" class="gc-clear" id="clear-a" aria-label="Clear A" hidden>&times;</button>
-          <ul class="gc-suggest" id="sug-a" role="listbox" hidden></ul>
+          <div class="gc-line">
+            <input
+              id="in-a"
+              type="text"
+              placeholder="From: a city, an airport, or lat, lon"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-label="From"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="sug-a"
+            />
+            <button type="button" class="gc-clear" id="clear-a" aria-label="Clear A" hidden>&times;</button>
+            <ul class="gc-suggest" id="sug-a" role="listbox" hidden></ul>
+          </div>
         </div>
         <button type="button" class="gc-swap" id="swap" aria-label="Swap A and B" title="Swap">&#8645;</button>
         <div class="gc-field" data-slot="b">
           <span class="gc-badge" aria-hidden="true">B</span>
-          <input
-            id="in-b"
-            type="text"
-            placeholder="To"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            aria-label="To"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-controls="sug-b"
-          />
-          <button type="button" class="gc-clear" id="clear-b" aria-label="Clear B" hidden>&times;</button>
-          <ul class="gc-suggest" id="sug-b" role="listbox" hidden></ul>
+          <div class="gc-line">
+            <input
+              id="in-b"
+              type="text"
+              placeholder="To"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-label="To"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="sug-b"
+            />
+            <button type="button" class="gc-clear" id="clear-b" aria-label="Clear B" hidden>&times;</button>
+            <ul class="gc-suggest" id="sug-b" role="listbox" hidden></ul>
+          </div>
         </div>
-        <p class="gc-hint" id="hint">Or click the globe: once for A, once for B.</p>
+        <p class="gc-hint" id="hint">Or click two points on the globe.</p>
       </div>
 
       <div class="gc-summary" id="summary" aria-live="polite"></div>
@@ -204,6 +213,7 @@
       <section class="gc-avoid">
         <label class="gc-label" for="in-avoid">Avoid</label>
         <div class="gc-field gc-field-avoid">
+          <div class="gc-line">
           <input
             id="in-avoid"
             type="text"
@@ -218,6 +228,7 @@
             aria-controls="sug-avoid"
           />
           <ul class="gc-suggest" id="sug-avoid" role="listbox" hidden></ul>
+          </div>
         </div>
         <ul class="gc-chips" id="chips" aria-label="Countries being avoided"></ul>
         <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe.</p>

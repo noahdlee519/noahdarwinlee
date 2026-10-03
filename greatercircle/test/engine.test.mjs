@@ -1,4 +1,4 @@
-// node --test test/   (from greatcircleme/)
+// node --test test/   (from greatercircle/)
 //
 // The engine against d3-geo, and against what a route must satisfy: never
 // inside an avoided country, no longer than it has to be, the same length in

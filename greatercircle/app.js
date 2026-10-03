@@ -1,4 +1,4 @@
-// greatcircleme: the globe, the two places, the countries to go round.
+// greatercircle: the globe, the two places, the countries to go round.
 //
 // The drawing is a canvas and d3-geo's orthographic projection, which shows
 // the near half of the sphere and clips the far half. The maths of the route
@@ -772,7 +772,7 @@
 
   function updateHint() {
     var h = $("hint"), tap = canHover ? "click" : "tap";
-    if (!state.a && !state.b) h.textContent = "Or " + tap + " the globe: once for A, once for B.";
+    if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe.";
     else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place.";
     else h.textContent = "Drag A or B to move them. " + (canHover ? "Clicking" : "Tapping") + " again moves B.";
   }
@@ -1125,7 +1125,7 @@
   function onWorkerMessage(e) {
     var m = e.data;
     if (m.type === "ready") {
-      state.ready = true; window.__greatcircleme.readyMs = m.ms;
+      state.ready = true; window.__greatercircle.readyMs = m.ms;
       if (queued) { queued = false; requestRoute(); }
       // The globe is up and the route finder ready: fetch the place list
       // in the quiet, so the first keystroke has it.
@@ -1448,7 +1448,7 @@
   });
 
   // A handle for the tests: where a place lands on the screen, and timings.
-  window.__greatcircleme = {
+  window.__greatercircle = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
     state: state, view: view,
     timeRender: function (detail) { var t0 = performance.now(); render(detail || "full"); return performance.now() - t0; },
