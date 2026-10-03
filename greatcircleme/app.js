@@ -442,7 +442,7 @@
       var nd = dist(pts[0], pts[1]);
       var mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
       var s = degPerPx();
-      view.lon += (mx - pinch.mx) * s; view.lat -= (my - pinch.my) * s;
+      view.lon -= (mx - pinch.mx) * s; view.lat += (my - pinch.my) * s;
       pinch.mx = mx; pinch.my = my;
       zoomAt(pinch.zoom * nd / pinch.d, mx, my, true);
       moving();
@@ -460,9 +460,11 @@
         moving();
         return;
       }
+      // The surface follows the pointer: a drag to the right carries the
+      // globe right, so what is at the centre moves west, and down, north.
       var sc = degPerPx();
-      view.lon = drag.lon + dx * sc;
-      view.lat = drag.lat - dy * sc;
+      view.lon = drag.lon - dx * sc;
+      view.lat = drag.lat + dy * sc;
       var now = performance.now(), dt = now - drag.lastT;
       if (dt > 0) {
         drag.vx = 0.6 * drag.vx + 0.4 * ((e.clientX - drag.lastX) * sc / dt);
@@ -509,7 +511,7 @@
   function inertiaStep() {
     if (!inertia) return;
     var now = performance.now(), dt = Math.min(40, now - inertia.t); inertia.t = now;
-    view.lon += inertia.vx * dt; view.lat -= inertia.vy * dt;
+    view.lon -= inertia.vx * dt; view.lat += inertia.vy * dt;
     var decay = Math.pow(0.0025, dt / 1000); // most of it gone within a second
     inertia.vx *= decay; inertia.vy *= decay;
     applyView();
@@ -532,8 +534,8 @@
         var after = projection([before[0], before[1]]);
         if (!after) break;
         var s = degPerPx();
-        view.lon += (x - after[0]) * s;
-        view.lat -= (y - after[1]) * s;
+        view.lon -= (x - after[0]) * s;
+        view.lat += (y - after[1]) * s;
         applyView();
       }
     }
@@ -739,8 +741,8 @@
   function setPoint(slot, pt, opts) {
     opts = opts || {};
     state[slot] = pt;
-    var input = inputs[slot];
-    input.value = pt ? (pt.label || (pt.country ? fmtLonLat(pt) + " · " + pt.country : fmtLonLat(pt))) : "";
+    var text = pt ? (pt.label || (pt.country ? fmtLonLat(pt) + " · " + pt.country : fmtLonLat(pt))) : "";
+    if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text;
     $("clear-" + slot).hidden = !pt;
     if (!opts.quiet) { commitPoint(slot); }
     else scheduleRender("coarse");
@@ -748,7 +750,7 @@
 
   function commitPoint(slot) {
     var pt = state[slot];
-    if (pt && !pt.label) { pt.label = null; inputs[slot].value = fmtLonLat(pt) + (pt.country ? " · " + pt.country : ""); }
+    if (pt && !pt.label) { var text = fmtLonLat(pt) + (pt.country ? " · " + pt.country : ""); if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text; }
     updateHint();
     requestRoute();
     writeUrl();
@@ -812,7 +814,7 @@
 
   /* "51.5, -0.12", "51.5N 0.12W", "51°30'N 0°7'W" and the like. */
   function parseLatLon(q) {
-    var s = q.trim().toUpperCase();
+    var s = q.split("·")[0].trim().toUpperCase();
     var m = s.match(/^\s*([-+]?\d+(?:\.\d+)?)\s*°?\s*([NS])?\s*[, ]\s*([-+]?\d+(?:\.\d+)?)\s*°?\s*([EW])?\s*$/);
     if (!m) {
       var dms = s.match(/^\s*(\d+)[°\s]+(\d+(?:\.\d+)?)['′\s]*([NS])\s*[, ]?\s*(\d+)[°\s]+(\d+(?:\.\d+)?)['′\s]*([EW])\s*$/);
@@ -954,11 +956,19 @@
     function update() {
       var q = input.value;
       lastQuery = q;
-      if (!q.trim()) { close(); return; }
+      if (!q.trim()) {
+        if (opts.all) show(opts.all(), null); else close();
+        return;
+      }
       opts.search(q, function (rows, note) { if (input.value !== q) return; show(rows, note); });
     }
     input.addEventListener("input", function () { opts.changed && opts.changed(); update(); });
-    input.addEventListener("focus", function () { clearTimeout(closeTimer); if (opts.load) opts.load(); if (input.value.trim() && input.value !== lastQuery) update(); });
+    input.addEventListener("focus", function () {
+      clearTimeout(closeTimer);
+      if (opts.load) opts.load();
+      if (opts.all && !input.value.trim()) update();
+      else if (input.value.trim() && input.value !== lastQuery) update();
+    });
     input.addEventListener("blur", function () { closeTimer = setTimeout(close, 120); });
     input.addEventListener("keydown", function (e) {
       if (e.key === "ArrowDown") { if (!open) update(); else highlight(Math.min(items.length - 1, selected + 1)); e.preventDefault(); }
@@ -970,12 +980,16 @@
       }
       else if (e.key === "Escape") { close(); }
     });
-    return { close: close, refresh: update };
+    /* A value written by the page rather than typed: focusing the field
+       again must not go searching for it. */
+    function setValue(v) { input.value = v; lastQuery = v; }
+    return { close: close, refresh: update, setValue: setValue };
   }
 
+  var suggesters = {};
   function pointSuggester(slot) {
     var input = inputs[slot];
-    suggester(input, $("sug-" + slot), {
+    suggesters[slot] = suggester(input, $("sug-" + slot), {
       load: loadPlaces,
       changed: function () { /* typing over a chosen place: it stays until a new one is chosen */ },
       search: function (q, cb) {
@@ -1011,6 +1025,9 @@
 
   function countrySuggester() {
     suggester($("in-avoid"), $("sug-avoid"), {
+      // Every country, on focus, before anything is typed: a list to pick
+      // from as much as a box to search in.
+      all: function () { return countries; },
       search: function (q, cb) {
         var fq = fold(q);
         var rows = countries.filter(function (c) { return c.key.indexOf(fq) === 0 || c.key.indexOf(" " + fq) >= 0 || c.aliases.some(function (a) { return a.indexOf(fq) === 0; }); });
@@ -1018,11 +1035,11 @@
         cb(rows.slice(0, 8));
       },
       main: function (c) { return c.name; },
-      sub: function (c) { return state.avoid.has(c.id) ? "already avoided" : ""; },
-      kind: function () { return ""; },
+      sub: function () { return ""; },
+      kind: function (c) { return state.avoid.has(c.id) ? "avoided" : ""; },
       pick: function (c) {
         $("in-avoid").value = "";
-        if (!state.avoid.has(c.id)) { state.avoid.set(c.id, c.name); avoidChanged(); }
+        toggleAvoid(c.id, c.name);
         $("in-avoid").focus();
       }
     });
@@ -1035,7 +1052,7 @@
     worker = new Worker("worker.js");
     worker.onmessage = function (e) {
       var m = e.data;
-      if (m.type === "ready") { state.ready = true; if (queued) { queued = false; requestRoute(); } return; }
+      if (m.type === "ready") { state.ready = true; window.__greatcircleme.readyMs = m.ms; if (queued) { queued = false; requestRoute(); } return; }
       if (m.id !== state.pendingId) return; // an older request, superseded
       if (m.type === "progress") { showBusy(m); return; }
       if (m.type === "result") {
@@ -1234,7 +1251,7 @@
         if (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
           var label = bits[2] ? decodeURIComponent(bits.slice(2).join(",")) : null;
           state[k] = { lon: lon, lat: lat, label: label };
-          inputs[k].value = label || fmtLonLat(state[k]);
+          if (suggesters[k]) suggesters[k].setValue(label || fmtLonLat(state[k])); else inputs[k].value = label || fmtLonLat(state[k]);
           $("clear-" + k).hidden = false;
           any = true;
         }
