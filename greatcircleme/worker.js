@@ -25,8 +25,12 @@ var cache = [];        // recent obstacle sets, by the sorted list of ids
 var latest = 0;        // id of the most recent route request
 
 function handle(m) {
-  if (m.type === "init") init(m);
-  else if (m.type === "route") { latest = m.id; route(m); }
+  try {
+    if (m.type === "init") init(m);
+    else if (m.type === "route") { latest = m.id; route(m); }
+  } catch (err) {
+    send({ type: "result", id: m.id || 0, status: "error", message: String(err && err.message || err) });
+  }
 }
 if (IN_WORKER) self.onmessage = function (e) { handle(e.data); };
 
@@ -81,6 +85,12 @@ function route(m) {
     result.waypoints = [m.a, m.b];
     result.lengthKm = result.directKm;
     result.bends = 0;
+    if (Math.PI - direct < 1e-9) {
+      // Antipodes: let the engine pick a semicircle, so the line is drawn.
+      var free = G.findRoute(obstaclesFor([]), a, b);
+      result.waypoints = free.waypoints.map(function (v) { return G.toLonLat(v); });
+      result.antipodal = true;
+    }
     result.ms = Math.round(performance.now() - t0);
     send(result);
     return;
@@ -89,6 +99,13 @@ function route(m) {
   var s = G.startSearch(obs, a, b);
   var tick = function () {
     if (latest !== id) return; // superseded while waiting
+    try {
+      step();
+    } catch (err) {
+      send({ type: "result", id: id, status: "error", message: String(err && err.message || err) });
+    }
+  };
+  var step = function () {
     if (s.status === "running") {
       G.stepSearch(s, 40);
       if (s.status === "running") {

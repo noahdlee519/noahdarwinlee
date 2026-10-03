@@ -12,6 +12,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var canvas = $("globe");
   var ctx = canvas.getContext("2d");
+  var panel = $("panel");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canHover = window.matchMedia("(hover: hover)").matches;
 
@@ -311,17 +312,18 @@
     var res = state.result;
     if (!state.a || !state.b) return;
     var direct = { type: "LineString", coordinates: [[state.a.lon, state.a.lat], [state.b.lon, state.b.lat]] };
-    if (drag && drag.marker) {
-      // While a marker is being dragged the old route no longer starts at
-      // it; show the direct arc from where it is now, and the rest when the
-      // worker has caught up.
+    if (res && res.antipodal && res.waypoints) direct = { type: "LineString", coordinates: res.waypoints.slice(0, 2).concat(res.waypoints.length > 2 ? [res.waypoints[res.waypoints.length - 1]] : []) };
+    if ((drag && drag.marker) || state.stale) {
+      // While a marker is being dragged, or until the worker has answered
+      // for a moved point, the old route no longer starts at it: show the
+      // direct arc from where it is now, and the rest when it comes.
       ctx.lineJoin = "round"; ctx.lineCap = "round";
       ctx.beginPath(); path(direct);
       ctx.strokeStyle = pal.route; ctx.lineWidth = 1.5; ctx.stroke();
       return;
     }
     if (!res || res.status !== "done") return;
-    var detour = res.waypoints && res.waypoints.length > 2;
+    var detour = res.waypoints && res.lengthKm > res.directKm + 0.5;
     if (detour) {
       // The direct arc, faint and dashed, so the detour is seen against it.
       ctx.beginPath(); path(direct);
@@ -435,7 +437,7 @@
       pinch = { d: dist(pts[0], pts[1]), zoom: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
       return;
     }
-    var marker = markerAt(e.clientX, e.clientY);
+    var marker = markerAt(e.clientX, e.clientY, e.pointerType !== "mouse");
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, marker: marker,
       lastT: performance.now(), lastX: e.clientX, lastY: e.clientY, vx: 0, vy: 0, shift: e.shiftKey };
     canvas.classList.add("is-dragging");
@@ -580,8 +582,8 @@
     applyView(); moving();
   });
 
-  function markerAt(x, y) {
-    var best = null, bestD = 14;
+  function markerAt(x, y, touch) {
+    var best = null, bestD = touch ? 26 : 14;
     [["a", state.a], ["b", state.b]].forEach(function (m) {
       var p = markerPos(m[1]);
       if (!p) return;
@@ -602,7 +604,7 @@
     var slot = !state.a ? "a" : !state.b ? "b" : "b";
     var idx2 = countryAt(x, y);
     var label = null;
-    setPoint(slot, { lon: ll[0], lat: ll[1], label: label, country: idx2 >= 0 ? features[idx2].properties.name : null });
+    setPoint(slot, { lon: ll[0], lat: ll[1], label: label, country: idx2 >= 0 ? features[idx2].properties.name : null }, { quiet: true });
     commitPoint(slot);
   }
 
@@ -760,6 +762,7 @@
   function commitPoint(slot) {
     var pt = state[slot];
     fitPending = true;
+    state.stale = true; // the route drawn no longer starts here
     if (pt && !pt.label) { var text = fmtLonLat(pt) + (pt.country ? " · " + pt.country : ""); if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text; }
     updateHint();
     requestRoute();
@@ -855,10 +858,9 @@
         if (kind === 2) o.iata = r[6];
         return o;
       });
-      places = { rows: rows, countries: data.countries };
-      // The countries' other names come with the list.
-      var byId = new Map(countries.map(function (c) { return [c.id, c]; }));
-      rows.forEach(function (r) { if (r.kind === 0) { var c = byId.get(String(r.extra)); if (c) c.aliases = r.aliases || []; } });
+      places = { rows: rows, countries: data.countries, aliases: new Map() };
+      rows.forEach(function (r) { if (r.kind === 0) places.aliases.set(String(r.extra), r.aliases || []); });
+      applyAliases();
       return places;
     }).catch(function (err) {
       console.warn("places list", err);
@@ -867,6 +869,13 @@
       return places;
     });
     return placesPromise;
+  }
+
+  /* The countries' other names come with the place list; the country list
+     is built when the map arrives. Whichever is second applies them. */
+  function applyAliases() {
+    if (!places || !places.aliases || !countries.length) return;
+    countries.forEach(function (c) { var a = places.aliases.get(c.id); if (a) c.aliases = a; });
   }
 
   /* Score every place against the query; the best few come back. */
@@ -961,6 +970,12 @@
       open = rows.length > 0 || !!note;
       list.hidden = !open;
       input.setAttribute("aria-expanded", String(open));
+      if (open) {
+        // No taller than the panel has room for below the field, so the
+        // list scrolls itself rather than the panel.
+        var room = panel.getBoundingClientRect().bottom - list.getBoundingClientRect().top - 12;
+        list.style.maxHeight = Math.max(120, Math.min(290, room)) + "px";
+      }
     }
     function choose(i) {
       if (i < 0 || i >= items.length) return;
@@ -974,15 +989,17 @@
       selected = i;
       if (i >= 0 && lis[i]) { input.setAttribute("aria-activedescendant", lis[i].id); lis[i].scrollIntoView({ block: "nearest" }); }
     }
-    var lastQuery = "";
+    var lastQuery = "", searching = false;
     function update() {
       var q = input.value;
       lastQuery = q;
       if (!q.trim()) {
+        searching = false;
         if (opts.all) show(opts.all(), null); else close();
         return;
       }
-      opts.search(q, function (rows, note) { if (input.value !== q) return; show(rows, note); });
+      searching = true;
+      opts.search(q, function (rows, note) { if (input.value !== q) return; searching = !!note && !rows.length; show(rows, note); });
     }
     input.addEventListener("input", function () { enterPending = false; opts.changed && opts.changed(); update(); });
     input.addEventListener("focus", function () {
@@ -998,7 +1015,7 @@
       else if (e.key === "Enter") {
         if (open && selected >= 0) { choose(selected); e.preventDefault(); }
         else if (open && items.length) { choose(0); e.preventDefault(); }
-        else if (open) { enterPending = true; e.preventDefault(); } // an answer is still on its way
+        else if (open || searching) { enterPending = true; e.preventDefault(); } // an answer is still on its way
         else if (opts.enter) { opts.enter(input.value); e.preventDefault(); }
       }
       else if (e.key === "Escape") { close(); }
@@ -1079,15 +1096,21 @@
       startShim();
       return;
     }
-    var failedEarly = function () { if (!state.ready) { console.warn("worker failed to start; routing on the main thread"); startShim(); } };
-    worker.onerror = function (e) { console.error("worker", e.message); failedEarly(); };
+    worker.onerror = function (e) {
+      console.error("worker", e.message);
+      if (!state.ready) { console.warn("worker failed to start; routing on the main thread"); startShim(); return; }
+      if (state.pendingId) { state.pendingId = 0; clearTimeout(busyTimer); showError("Something went wrong working out the route."); }
+    };
     worker.onmessage = onWorkerMessage;
     worker.postMessage({ type: "init", topology: topology });
   }
 
   /* The same code, as a script on this thread: worker.js knows which way
      it was loaded and answers through the same messages. */
+  var shimStarted = false;
   function startShim() {
+    if (shimStarted) return;
+    shimStarted = true;
     var sc = document.createElement("script");
     sc.src = "worker.js";
     sc.onload = function () {
@@ -1115,10 +1138,13 @@
     if (m.type === "result") {
       state.pendingId = 0;
       clearTimeout(busyTimer);
+      state.stale = false;
+      if (m.status === "error") { state.result = null; showError("Something went wrong working out the route: " + (m.message || "unknown error")); scheduleRender("full"); fitPending = false; return; }
       state.result = m;
       showResult();
       scheduleRender("full");
-      if (m.status === "done" && fitPending && !drag && !pinch && !inertia) { fitPending = false; fitRoute(false); }
+      if (m.status === "done" && fitPending && !drag && !pinch && !inertia) fitRoute(false);
+      fitPending = false;
     }
   }
 
@@ -1161,7 +1187,8 @@
     }
     el.classList.add("is-busy");
     el.setAttribute("aria-busy", "true");
-    var what = state.avoid.size ? "Finding the way round " + joinNames(Array.from(state.avoid.values())) + "…" : "Measuring…";
+    panel.classList.add("has-result");
+    var what = !state.ready ? "Starting the route finder…" : state.avoid.size ? "Finding the way round " + joinNames(Array.from(state.avoid.values())) + "…" : "Measuring…";
     el.innerHTML = "";
     var line = document.createElement("span"); line.className = "gc-line";
     line.textContent = what + " ";
@@ -1179,6 +1206,7 @@
     var sum = $("summary"), out = $("out"), res = state.result;
     sum.classList.remove("is-busy");
     sum.setAttribute("aria-busy", "false");
+    panel.classList.toggle("has-result", !!res);
     sum.innerHTML = ""; out.innerHTML = "";
     $("results").hidden = true;
     $("fit").hidden = !(state.a && state.b);
@@ -1210,7 +1238,7 @@
       w2.textContent = "There is no way from A to B that stays out of " + joinNames(Array.from(state.avoid.values())) + ".";
       sum.appendChild(w2);
     } else {
-      var detour = res.waypoints.length > 2 || (state.avoid.size && res.lengthKm > res.directKm + 0.5);
+      var detour = res.lengthKm > res.directKm + 0.5;
       if (state.avoid.size && !detour) {
         big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
         sum.appendChild(big);
@@ -1236,7 +1264,8 @@
     var dl = document.createElement("dl"); dl.className = "gc-rows";
     row(dl, "Direct, on the sphere", fmt(res.directKm));
     if (res.directEllipsoidKm != null) row(dl, "Direct, on the WGS84 ellipsoid", fmt(res.directEllipsoidKm));
-    if (res.status === "done" && res.waypoints.length > 2) {
+    var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
+    if (detoured) {
       row(dl, "Avoiding " + joinNames(Array.from(state.avoid.values())), fmt(res.lengthKm));
       row(dl, "Bends", String(res.bends));
     }
@@ -1245,7 +1274,7 @@
 
     var ends = (res.startIn || []).concat(res.endIn || []).map(String);
     crossesList(out, "The direct way crosses", res.directCrosses, ends);
-    if (res.status === "done" && res.waypoints.length > 2) crossesList(out, "The way round crosses", res.routeCrosses, ends);
+    if (detoured) crossesList(out, "The way round crosses", res.routeCrosses, ends);
   }
 
   function small(text) { var s = document.createElement("small"); s.textContent = text; return s; }
@@ -1301,9 +1330,8 @@
     pt("a", state.a); pt("b", state.b);
     if (state.avoid.size) p.push("avoid=" + Array.from(state.avoid.keys()).join(","));
     var h = p.length ? "#" + p.join("&") : "";
-    if (h !== location.hash) { writingUrl = true; history.replaceState(null, "", h || location.pathname + location.search); setTimeout(function () { writingUrl = false; }, 0); }
+    if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
-  var writingUrl = false;
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
     state.a = null; state.b = null; state.avoid.clear();
@@ -1317,7 +1345,8 @@
         var bits = v.split(",");
         var lat = +bits[0], lon = +bits[1];
         if (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
-          var label = bits[2] ? decodeURIComponent(bits.slice(2).join(",")) : null;
+          var label = null;
+          if (bits[2]) { try { label = decodeURIComponent(bits.slice(2).join(",")); } catch (err) { label = bits.slice(2).join(","); } }
           state[k] = { lon: lon, lat: lat, label: label };
           if (suggesters[k]) suggesters[k].setValue(label || fmtLonLat(state[k])); else inputs[k].value = label || fmtLonLat(state[k]);
           $("clear-" + k).hidden = false;
@@ -1331,7 +1360,6 @@
   }
 
   // ------------------------------------------------------------- the sheet
-  var panel = $("panel");
   function setSheet(open) {
     panel.classList.toggle("is-open", open);
     document.querySelector(".gc-controls").classList.toggle("is-lifted", open);
@@ -1371,6 +1399,7 @@
       return { id: f.id, name: f.properties.name, key: fold(f.properties.name), aliases: [] };
     }).sort(function (x, y) { return x.name.localeCompare(y.name); });
     countrySuggester();
+    applyAliases();
 
     try { var u = localStorage.getItem("gc-units"); if (UNITS[u]) { state.units = u; document.querySelectorAll(".gc-units button").forEach(function (x) { x.setAttribute("aria-pressed", String(x.dataset.unit === u)); }); } } catch (e) {}
 
@@ -1393,8 +1422,7 @@
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { scheduleRender("full"); });
   window.addEventListener("hashchange", function () {
-    if (writingUrl) return; // our own change
-    readUrl(); renderChips(); updateHint(); fitPending = true; requestRoute(); scheduleRender("full");
+    readUrl(); renderChips(); updateHint(); fitPending = true; state.stale = true; requestRoute(); scheduleRender("full");
   });
 
   // A handle for the tests: where a place lands on the screen, and timings.

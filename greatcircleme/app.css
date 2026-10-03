@@ -254,15 +254,15 @@ body.gc-page {
   flex: 1 1 auto;
   min-width: 0;
   padding: 9px 0;
-}
-/* Room at the end of the two place fields for the swap button between them. */
-.gc-points .gc-field input {
-  padding-right: 34px;
   border: 0;
   background: transparent;
   color: var(--ink);
   font: inherit;
   font-size: 16px; /* at least 16 so a phone does not zoom in on focus */
+}
+/* Room at the end of the two place fields for the swap button between them. */
+.gc-points .gc-field input {
+  padding-right: 34px;
 }
 .gc-field input::placeholder {
   color: var(--gc-muted);
@@ -623,10 +623,13 @@ dl.gc-rows {
   .gc-field input {
     padding: 7px 0;
   }
+  /* The hint under the fields shows in the closed sheet until there is an
+     answer to show in its place. */
   .gc-hint {
     display: none;
   }
-  .gc-panel.is-open .gc-hint {
+  .gc-panel.is-open .gc-hint,
+  .gc-panel:not(.has-result) #hint {
     display: block;
   }
   .gc-summary {
@@ -642,8 +645,8 @@ dl.gc-rows {
   .gc-panel.is-open ~ .gc-controls,
   .gc-controls.is-lifted {
     bottom: auto;
-    top: 16px;
-    right: 56px;
+    top: 78px; /* under the name and the back link, clear of them on any phone */
+    right: 12px;
     flex-direction: row;
   }
   .gc-suggest {

@@ -545,13 +545,18 @@
     if (cOn) return 0;
     if (dOn) {
       var r = obs.rings[obs.ringOf[d]];
-      var w = d, sw = sd, steps = 0, limit = r.end - r.start;
+      var w = d, sw = sd, steps = 0, limit = r.end - r.start, last = d;
       while (sw > -ON_CIRCLE && sw < ON_CIRCLE && steps < limit) {
+        last = w;
         w = nextIndex(obs, w);
         sw = X[w] * nnx + Y[w] * nny + Z[w] * nnz;
         steps++;
       }
       if (steps >= limit) return 0;
+      // p on the run itself (between its first and last vertex) is on the
+      // boundary, whichever way the ring goes on from there.
+      if (withinArc(X[d], Y[d], Z[d], X[last], Y[last], Z[last], nnx, nny, nnz, px, py, pz) &&
+          angleXYZ(X[d], Y[d], Z[d], X[last], Y[last], Z[last]) < Math.PI - 1e-9) return -1;
       if (!withinArc(px, py, pz, qx, qy, qz, nnx, nny, nnz, X[d], Y[d], Z[d])) return 0;
       if (angleXYZ(px, py, pz, X[d], Y[d], Z[d]) < SAME_POINT) return -1;
       return (sc > 0) !== (sw > 0) ? 1 : 0;
