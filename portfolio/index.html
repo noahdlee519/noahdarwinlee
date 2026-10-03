@@ -186,6 +186,12 @@
         image-rendering: auto;
       }
 
+      .tiles-hint {
+        margin: 10px 0 0;
+        font-size: 14px;
+        opacity: 0.6;
+      }
+
       .trail {
         position: fixed;
         inset: 0;
@@ -457,33 +463,40 @@
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: end;
         gap: 12px 32px;
-        padding-bottom: 22px;
+        padding-bottom: 14px;
         border-bottom: 1px solid var(--rule);
       }
 
       .p-name {
         margin: 0;
-        font-size: clamp(54px, 10vw, 160px);
+        /* The longest domain, fuzhounese.org, is about 6.3 em: never wider
+           than a phone's column. */
+        font-size: min(clamp(54px, 10vw, 160px), calc((100vw - 32px) / 6.4));
         line-height: 0.84;
         font-weight: 600;
         letter-spacing: -0.04em;
       }
 
+      /* The mask leaves room below the baseline, so the g's and p's of a
+         domain are not cut off where overflow-clip-margin is unsupported. */
       .p-name .mask {
         display: block;
         overflow: clip;
-        overflow-clip-margin: 0.1em;
-        padding-bottom: 0.04em;
+        padding: 0.04em 0 0.16em;
       }
 
       .p-name .mask > span {
         display: block;
-        transform: translateY(102%);
+        transform: translateY(130%);
         transition: transform 1100ms var(--ease-out);
       }
 
       .project.is-in .p-name .mask > span {
         transform: none;
+      }
+
+      .p-name .tld {
+        color: var(--brand, var(--ink));
       }
 
       .p-go {
@@ -1823,12 +1836,14 @@
       .mail {
         position: relative;
         display: inline-block;
-        font-size: clamp(40px, 8.4vw, 136px);
+        /* The address is about ten of its own em wide; sized to the page so it
+           always sits on one line. */
+        font-size: min(136px, calc((100vw - 120px) / 10));
         line-height: 0.95;
         font-weight: 600;
         letter-spacing: -0.04em;
         text-decoration: none;
-        word-break: break-all;
+        white-space: nowrap;
       }
 
       .mail::after {
@@ -1983,6 +1998,10 @@
         }
 
         .reel {
+          right: 14px;
+        }
+
+        .reel-slot {
           display: none;
         }
 
@@ -2050,6 +2069,10 @@
           flex-direction: column;
           gap: 4px;
         }
+
+        .mail {
+          font-size: calc((100vw - 36px) / 10);
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -2104,6 +2127,7 @@
           </h1>
           <div class="tiles-wrap">
             <canvas id="tiles" class="tiles" role="img" aria-label="Noah Darwin Lee, spelled in tiles of the site's square-and-circle mark"></canvas>
+            <p class="tiles-hint" id="tiles-hint" hidden>Shake your phone to sharpen the name.</p>
           </div>
         </div>
 
@@ -2138,6 +2162,7 @@
                   <span class="row-meta"><b>Dictionary</b>3,790 words and a Claude assistant</span>
                 </div>
                 <div class="reel">
+                  <img class="reel-logo" src="../art/web/materials/fuzhounese-icon-176.webp" alt="" width="44" height="44" />
                   <div class="reel-slot"></div>
                 </div>
               </div>
@@ -2170,9 +2195,9 @@
       <!-- ======================= Leggio ======================= -->
       <section class="project" id="leggio" aria-labelledby="leggio-h" style="--brand: #1f4e3d">
         <div class="p-head">
-          <h2 class="p-name" id="leggio-h"><span class="mask"><span>Leggio</span></span></h2>
-          <a class="p-go" href="https://getleggio.com" target="_blank" rel="noopener noreferrer">
-            getleggio.com
+          <h2 class="p-name" id="leggio-h"><span class="mask"><span>getleggio<span class="tld">.com</span></span></span></h2>
+          <a class="p-go" href="https://getleggio.com" target="_blank" rel="noopener noreferrer" aria-label="Visit getleggio.com">
+            Visit
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
           </a>
         </div>
@@ -2276,9 +2301,9 @@
       <!-- ======================= Fuzhounese ======================= -->
       <section class="project" id="fuzhounese" aria-labelledby="fz-h" style="--brand: #c5311d">
         <div class="p-head">
-          <h2 class="p-name" id="fz-h"><span class="mask"><span>Fuzhounese</span></span></h2>
-          <a class="p-go" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">
-            fuzhounese.org
+          <h2 class="p-name" id="fz-h"><span class="mask"><span>fuzhounese<span class="tld">.org</span></span></span></h2>
+          <a class="p-go" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer" aria-label="Visit fuzhounese.org">
+            Visit
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
           </a>
         </div>
@@ -2350,14 +2375,12 @@
           <div class="note-col">
             <h3>How I built it</h3>
             <p>
-              I built the site with Claude Code, Claude and Cursor: search, the assistant, the
-              recording flow, and pages for learning the basics. I’m also one of its contributors,
+              I built the site with Claude: search, the assistant, the recording flow, and pages
+              for learning the basics. I’m also one of its contributors,
               with 79 recordings of my own.
             </p>
             <ul class="chips">
-              <li>Claude Code</li>
               <li>Claude</li>
-              <li>Cursor</li>
             </ul>
           </div>
         </div>
@@ -2366,9 +2389,9 @@
       <!-- ======================= LoreTour ======================= -->
       <section class="project" id="loretour" aria-labelledby="lt-h" style="--brand: #2a44d6">
         <div class="p-head">
-          <h2 class="p-name" id="lt-h"><span class="mask"><span>LoreTour</span></span></h2>
-          <a class="p-go" href="https://loretour.com" target="_blank" rel="noopener noreferrer">
-            loretour.com
+          <h2 class="p-name" id="lt-h"><span class="mask"><span>loretour<span class="tld">.com</span></span></span></h2>
+          <a class="p-go" href="https://loretour.com" target="_blank" rel="noopener noreferrer" aria-label="Visit loretour.com">
+            Visit
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
           </a>
         </div>
@@ -2426,13 +2449,11 @@
           <div class="note-col">
             <h3>How I built it</h3>
             <p>
-              Designed and built with Claude Code, Claude and Cursor: the map, the building record,
-              the 3D view and the system for adding to the record.
+              Designed and built with Claude Code: the map, the building record, the 3D view and
+              the system for adding to the record.
             </p>
             <ul class="chips">
               <li>Claude Code</li>
-              <li>Claude</li>
-              <li>Cursor</li>
             </ul>
           </div>
         </div>
@@ -3614,7 +3635,7 @@
 
           function inkColor(n, now) {
             if (!n.flash) return "#0b0b0b";
-            var t = (now - n.flash) / FLASH_MS;
+            var t = Math.max(0, (now - n.flash) / FLASH_MS);
             if (t >= 1) {
               n.flash = 0;
               return "#0b0b0b";
@@ -3786,6 +3807,95 @@
             visible = en[0].isIntersecting;
             if (visible) kick();
           }).observe(canvas);
+
+          // On a phone there is no pointer to brush the name with, so shaking
+          // does it. Each shake splits the tiles a letter's edge runs through,
+          // one generation a shake, rippling in from the left; tiles wholly in
+          // or out of a letter stay as they are, since splitting them would
+          // add texture and no detail. Left alone, it heals as before.
+          function inkCount(x, y, s) {
+            var hit = 0;
+            for (var a = 0; a < 4; a++) {
+              for (var b = 0; b < 4; b++) {
+                var mx = Math.min(maskW - 1, Math.floor((x + ((a + 0.5) * s) / 4) * K));
+                var my = Math.min(maskH - 1, Math.floor((y + ((b + 0.5) * s) / 4) * K));
+                if (maskData[(my * maskW + mx) * 4 + 3] > 127) hit++;
+              }
+            }
+            return hit;
+          }
+
+          var lastShake = 0;
+          function shake(now) {
+            if (!started || !visible || now - lastShake < 600) return;
+            lastShake = now;
+            lastTouch = now;
+            var any = false;
+            var walk = function (n) {
+              if (n.kids) {
+                if (n.merge0) {
+                  n.merge0 = 0;
+                  n.kids.forEach(function (k) { k.born = now; });
+                }
+                n.kids.forEach(walk);
+                return;
+              }
+              if (n.g >= MAX_GEN) return;
+              var c = inkCount(n.x, n.y, n.s);
+              if (c === 0 || c === 16) return;
+              var d = reduce ? 0 : (n.x / cssW) * 260 + Math.random() * 80;
+              if (split(n, now, true)) {
+                any = true;
+                n.kids.forEach(function (k) {
+                  if (!reduce) {
+                    k.t0 = now + d;
+                    k.flash = now + d;
+                  }
+                  k.born = now + d;
+                });
+              }
+            };
+            roots.forEach(walk);
+            if (any) kick();
+          }
+
+          var hint = $("#tiles-hint");
+          if (!fine && window.DeviceMotionEvent) {
+            var prevG = null;
+            var onMotion = function (e) {
+              var a = e.acceleration, g = e.accelerationIncludingGravity, m;
+              if (a && a.x != null) {
+                m = Math.hypot(a.x, a.y, a.z);
+              } else if (g && g.x != null) {
+                m = prevG ? Math.hypot(g.x - prevG[0], g.y - prevG[1], g.z - prevG[2]) : 0;
+                prevG = [g.x, g.y, g.z];
+              } else {
+                return;
+              }
+              // The first real reading says the phone has a motion sensor.
+              if (hint.hidden) hint.hidden = false;
+              if (m > 13) shake(performance.now());
+            };
+            // iOS asks first, and only from a tap.
+            if (typeof DeviceMotionEvent.requestPermission === "function") {
+              hint.textContent = "Tap the name, then shake your phone.";
+              hint.hidden = false;
+              var ask = function () {
+                canvas.removeEventListener("click", ask);
+                DeviceMotionEvent.requestPermission().then(function (r) {
+                  if (r === "granted") {
+                    hint.textContent = "Shake your phone to sharpen the name.";
+                    addEventListener("devicemotion", onMotion);
+                  } else {
+                    hint.hidden = true;
+                  }
+                }, function () { hint.hidden = true; });
+              };
+              canvas.addEventListener("click", ask);
+            } else {
+              addEventListener("devicemotion", onMotion);
+            }
+          }
         })();
 
         /* ======================= the trail =======================
