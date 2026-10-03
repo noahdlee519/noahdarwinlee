@@ -575,7 +575,8 @@ dl.gc-rows {
     right: 0;
     bottom: 0;
     width: auto;
-    max-height: 174px;
+    /* Handle, the two fields, and the one-line answer, over the home bar. */
+    max-height: calc(204px + env(safe-area-inset-bottom, 0px));
     padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     border-left: 0;
     border-right: 0;
@@ -628,7 +629,7 @@ dl.gc-rows {
     font-size: 24px;
   }
   .gc-controls {
-    bottom: calc(190px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(216px + env(safe-area-inset-bottom, 0px));
     right: 12px;
   }
   .gc-panel.is-open ~ .gc-controls,

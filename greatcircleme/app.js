@@ -46,7 +46,7 @@
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     // The globe sits in the part of the window the panel leaves free.
     var phone = W <= 640;
-    var panelW = phone ? 0 : 352 + 2 * 24, sheetH = phone ? 174 : 0;
+    var panelW = phone ? 0 : 352 + 2 * 24, sheetH = phone ? 204 : 0;
     var freeW = W - panelW, freeH = H - sheetH - (phone ? 70 : 40);
     cx = phone ? W / 2 : panelW + freeW / 2;
     cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
@@ -90,23 +90,19 @@
   // which cuts a polygon straddling the horizon along the limb to within a
   // pixel. d3 still draws the routes, where its resampling is what makes an
   // arc an arc, and does the exact point-in-country test for the pointer.
-  var renderQueued = false, renderDetail = "full", interacting = 0, settleTimer = null;
-  var lastFullMs = 0; // how long the last full frame took: decides whether moving frames go coarse
+  var renderQueued = false, interacting = 0, settleTimer = null;
 
-  /* Draw on the next frame. detail is "coarse" while the globe is moving
-     and "full" once it has settled; a request only ever raises it. */
+  /* Draw on the next frame: rough while the globe is moving, full once it
+     has settled. (The argument is kept for the callers' sake; which it is
+     depends only on whether an interaction is under way.) */
   function scheduleRender(detail) {
-    if (detail === "full") renderDetail = "full";
+    void detail;
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
   }
 
   function frame() {
     renderQueued = false;
-    var detail = interacting > 0 ? "coarse" : "full";
-    var t0 = performance.now();
-    render(detail);
-    if (detail === "full") lastFullMs = performance.now() - t0;
-    renderDetail = "full";
+    render(interacting > 0 ? "coarse" : "full");
   }
 
   /* Interactions call this on every move; the full drawing follows a short
@@ -313,8 +309,18 @@
 
   function drawRoutes() {
     var res = state.result;
-    if (!res || !state.a || !state.b || res.status !== "done") return;
+    if (!state.a || !state.b) return;
     var direct = { type: "LineString", coordinates: [[state.a.lon, state.a.lat], [state.b.lon, state.b.lat]] };
+    if (drag && drag.marker) {
+      // While a marker is being dragged the old route no longer starts at
+      // it; show the direct arc from where it is now, and the rest when the
+      // worker has caught up.
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      ctx.beginPath(); path(direct);
+      ctx.strokeStyle = pal.route; ctx.lineWidth = 1.5; ctx.stroke();
+      return;
+    }
+    if (!res || res.status !== "done") return;
     var detour = res.waypoints && res.waypoints.length > 2;
     if (detour) {
       // The direct arc, faint and dashed, so the detour is seen against it.
@@ -373,7 +379,7 @@
 
   function renderPick() {
     basis();
-    var feats = featuresFor(interacting ? "coarse" : "full");
+    var feats = lod.full; // at full detail whatever is drawn: small countries stay pickable
     pctx.setTransform(1, 0, 0, 1, 0, 0);
     pctx.clearRect(0, 0, W, H);
     for (var i = 0; i < feats.length; i++) {
@@ -750,8 +756,10 @@
     else scheduleRender("coarse");
   }
 
+  var fitPending = false; // A or B moved: show the new route when it comes
   function commitPoint(slot) {
     var pt = state[slot];
+    fitPending = true;
     if (pt && !pt.label) { var text = fmtLonLat(pt) + (pt.country ? " · " + pt.country : ""); if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text; }
     updateHint();
     requestRoute();
@@ -848,6 +856,9 @@
         return o;
       });
       places = { rows: rows, countries: data.countries };
+      // The countries' other names come with the list.
+      var byId = new Map(countries.map(function (c) { return [c.id, c]; }));
+      rows.forEach(function (r) { if (r.kind === 0) { var c = byId.get(String(r.extra)); if (c) c.aliases = r.aliases || []; } });
       return places;
     }).catch(function (err) {
       console.warn("places list", err);
@@ -927,9 +938,11 @@
 
   /* A text field with a list of suggestions under it. */
   function suggester(input, list, opts) {
-    var items = [], selected = -1, open = false, closeTimer = 0;
-    function close() { open = false; list.hidden = true; list.innerHTML = ""; items = []; selected = -1; input.removeAttribute("aria-activedescendant"); }
+    var items = [], selected = -1, open = false, closeTimer = 0, enterPending = false;
+    function close() { open = false; enterPending = false; list.hidden = true; list.innerHTML = ""; items = []; selected = -1; input.removeAttribute("aria-activedescendant"); input.setAttribute("aria-expanded", "false"); }
     function show(rows, note) {
+      if (enterPending && rows.length) { enterPending = false; close(); opts.pick(rows[0]); return; }
+      if (enterPending && !note) enterPending = false;
       items = rows; selected = -1;
       list.innerHTML = "";
       rows.forEach(function (row, i) {
@@ -947,6 +960,7 @@
       if (note) { var n = document.createElement("li"); n.className = "gc-sug-note"; n.textContent = note; list.appendChild(n); }
       open = rows.length > 0 || !!note;
       list.hidden = !open;
+      input.setAttribute("aria-expanded", String(open));
     }
     function choose(i) {
       if (i < 0 || i >= items.length) return;
@@ -970,7 +984,7 @@
       }
       opts.search(q, function (rows, note) { if (input.value !== q) return; show(rows, note); });
     }
-    input.addEventListener("input", function () { opts.changed && opts.changed(); update(); });
+    input.addEventListener("input", function () { enterPending = false; opts.changed && opts.changed(); update(); });
     input.addEventListener("focus", function () {
       clearTimeout(closeTimer);
       if (opts.load) opts.load();
@@ -984,6 +998,7 @@
       else if (e.key === "Enter") {
         if (open && selected >= 0) { choose(selected); e.preventDefault(); }
         else if (open && items.length) { choose(0); e.preventDefault(); }
+        else if (open) { enterPending = true; e.preventDefault(); } // an answer is still on its way
         else if (opts.enter) { opts.enter(input.value); e.preventDefault(); }
       }
       else if (e.key === "Escape") { close(); }
@@ -1086,7 +1101,15 @@
 
   function onWorkerMessage(e) {
     var m = e.data;
-    if (m.type === "ready") { state.ready = true; window.__greatcircleme.readyMs = m.ms; if (queued) { queued = false; requestRoute(); } return; }
+    if (m.type === "ready") {
+      state.ready = true; window.__greatcircleme.readyMs = m.ms;
+      if (queued) { queued = false; requestRoute(); }
+      // The globe is up and the route finder ready: fetch the place list
+      // in the quiet, so the first keystroke has it.
+      var prefetch = function () { setTimeout(loadPlaces, 800); };
+      if (window.requestIdleCallback) requestIdleCallback(prefetch); else prefetch();
+      return;
+    }
     if (m.id !== state.pendingId) return; // an older request, superseded
     if (m.type === "progress") { showBusy(m); return; }
     if (m.type === "result") {
@@ -1095,7 +1118,7 @@
       state.result = m;
       showResult();
       scheduleRender("full");
-      if (m.status === "done") fitRoute(false);
+      if (m.status === "done" && fitPending && !drag && !pinch && !inertia) { fitPending = false; fitRoute(false); }
     }
   }
 
@@ -1129,22 +1152,33 @@
 
   function showBusy(m) {
     var el = $("summary");
+    if (m && el.classList.contains("is-busy")) {
+      // Progress: only the counter changes, and it is kept out of what a
+      // screen reader is told, which would otherwise hear every slice.
+      var ctr = $("progress");
+      if (ctr) ctr.textContent = m.expanded ? m.expanded.toLocaleString() + " corners so far" : "";
+      return;
+    }
     el.classList.add("is-busy");
+    el.setAttribute("aria-busy", "true");
     var what = state.avoid.size ? "Finding the way round " + joinNames(Array.from(state.avoid.values())) + "…" : "Measuring…";
     el.innerHTML = "";
     var line = document.createElement("span"); line.className = "gc-line";
-    line.textContent = what + (m && m.expanded ? " " + m.expanded.toLocaleString() + " corners so far" : "");
+    line.textContent = what + " ";
+    var counter = document.createElement("span"); counter.id = "progress"; counter.setAttribute("aria-hidden", "true");
+    line.appendChild(counter);
     el.appendChild(line);
   }
 
   function showError(text) {
-    var el = $("summary"); el.classList.remove("is-busy"); el.innerHTML = "";
+    var el = $("summary"); el.classList.remove("is-busy"); el.setAttribute("aria-busy", "false"); el.innerHTML = "";
     var w = document.createElement("span"); w.className = "gc-warn"; w.textContent = text; el.appendChild(w);
   }
 
   function showResult() {
     var sum = $("summary"), out = $("out"), res = state.result;
     sum.classList.remove("is-busy");
+    sum.setAttribute("aria-busy", "false");
     sum.innerHTML = ""; out.innerHTML = "";
     $("results").hidden = true;
     $("fit").hidden = !(state.a && state.b);
@@ -1267,10 +1301,13 @@
     pt("a", state.a); pt("b", state.b);
     if (state.avoid.size) p.push("avoid=" + Array.from(state.avoid.keys()).join(","));
     var h = p.length ? "#" + p.join("&") : "";
-    if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
+    if (h !== location.hash) { writingUrl = true; history.replaceState(null, "", h || location.pathname + location.search); setTimeout(function () { writingUrl = false; }, 0); }
   }
+  var writingUrl = false;
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
+    state.a = null; state.b = null; state.avoid.clear();
+    ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
     h.split("&").forEach(function (kv) {
@@ -1287,7 +1324,7 @@
           any = true;
         }
       } else if (k === "avoid") {
-        v.split(",").forEach(function (id) { var f = featureById.get(id); if (f && id !== ANTARCTICA) state.avoid.set(id, f.properties.name); });
+        v.split(",").forEach(function (id) { var f = featureById.get(id); if (f && id !== ANTARCTICA) { state.avoid.set(id, f.properties.name); any = true; } });
       }
     });
     return any;
@@ -1334,11 +1371,6 @@
       return { id: f.id, name: f.properties.name, key: fold(f.properties.name), aliases: [] };
     }).sort(function (x, y) { return x.name.localeCompare(y.name); });
     countrySuggester();
-    // The aliases come with the places list, when it arrives.
-    loadPlaces().then(function (pl) {
-      var byId = new Map(countries.map(function (c) { return [c.id, c]; }));
-      pl.rows.forEach(function (r) { if (r.kind === 0) { var c = byId.get(String(r.extra)); if (c) c.aliases = r.aliases || []; } });
-    });
 
     try { var u = localStorage.getItem("gc-units"); if (UNITS[u]) { state.units = u; document.querySelectorAll(".gc-units button").forEach(function (x) { x.setAttribute("aria-pressed", String(x.dataset.unit === u)); }); } } catch (e) {}
 
@@ -1360,14 +1392,16 @@
   new MutationObserver(function () { refreshPalette(); scheduleRender("full"); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { scheduleRender("full"); });
-  window.addEventListener("hashchange", function () { if (readUrl()) { renderChips(); updateHint(); requestRoute(); scheduleRender("full"); } });
+  window.addEventListener("hashchange", function () {
+    if (writingUrl) return; // our own change
+    readUrl(); renderChips(); updateHint(); fitPending = true; requestRoute(); scheduleRender("full");
+  });
 
   // A handle for the tests: where a place lands on the screen, and timings.
   window.__greatcircleme = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
     state: state, view: view,
     timeRender: function (detail) { var t0 = performance.now(); render(detail || "full"); return performance.now() - t0; },
-    lastFullMs: function () { return lastFullMs; },
     counts: function () { var c = function (l) { var n = 0; l.forEach(function (f) { f.rings.forEach(function (r) { n += r.n; }); }); return n; }; return { full: c(lod.full), mid: c(lod.mid), coarse: c(lod.coarse) }; },
     profile: function (detail) {
       marks = []; render(detail || "full");

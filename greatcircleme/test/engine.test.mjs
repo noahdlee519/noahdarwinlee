@@ -97,6 +97,67 @@ test("arcs against a square: crossing, touching, running along, through a corner
   assert.deepEqual(G.featuresContaining(obs, V(5, 10.02)), [0], "inside the northward bulge of the top edge (its crown is at 10.038°)");
 });
 
+test("arcs along the square's edges in either direction, and endpoints on edges", () => {
+  const obs = G.buildObstacles([square]);
+  const V = (lon, lat) => G.toVec(lon, lat);
+  const cornerAt = (lon, lat) => { const v = V(lon, lat); for (let i = 0; i < 4; i++) if (G.angleBetween(v, [obs.corners.X[i], obs.corners.Y[i], obs.corners.Z[i]]) < 1e-12) return i; return -1; };
+  assert.ok(G.arcIsFree(obs, V(10, 0), V(0, 0), cornerAt(10, 0), cornerAt(0, 0)), "along the bottom edge, backwards");
+  assert.ok(G.arcIsFree(obs, V(0, 0), V(0, 10), cornerAt(0, 0), cornerAt(0, 10)), "up the west edge");
+  assert.ok(G.arcIsFree(obs, V(0, 10), V(0, 0), cornerAt(0, 10), cornerAt(0, 0)), "down the west edge");
+  assert.ok(G.arcIsFree(obs, V(0, 0), V(0, -5), cornerAt(0, 0), -1), "away from the corner, down the meridian");
+  assert.ok(G.arcIsFree(obs, V(0, 20), V(0, 15), -1, -1), "on the meridian beyond the square");
+  assert.ok(!G.arcIsFree(obs, V(0, 5), V(5, 5), -1, -1), "from the west edge straight in");
+  assert.ok(G.arcIsFree(obs, V(0, 5), V(-5, 5), -1, -1), "from the west edge straight out");
+  assert.ok(!G.arcIsFree(obs, V(0, 5), V(10, 5), -1, -1), "edge to edge through the middle");
+});
+
+// An S: two bars, the equator the bottom of the upper one from 0 to 5 and the
+// top of the lower one from 15 to 20, and inside the obstacle between. The
+// arc from corner (0,0) to corner (20,0) runs along the boundary, then through
+// the obstacle, then along the boundary again.
+const sShape = { type: "Feature", id: "s", properties: { name: "S" },
+  geometry: { type: "Polygon", coordinates: [[[0, 0], [5, 0], [5, -5], [20, -5], [20, 0], [15, 0], [15, 5], [0, 5], [0, 0]]] } };
+
+test("an arc that runs along a straight border and then into the obstacle is blocked", () => {
+  const obs = G.buildObstacles([sShape]);
+  const V = (lon, lat) => G.toVec(lon, lat);
+  const cornerAt = (lon, lat) => { const v = V(lon, lat); for (let i = 0; i < obs.corners.count; i++) if (G.angleBetween(v, [obs.corners.X[i], obs.corners.Y[i], obs.corners.Z[i]]) < 1e-12) return i; return -1; };
+  assert.ok(cornerAt(0, 0) >= 0 && cornerAt(20, 0) >= 0, "the ends of the runs are corners");
+  assert.ok(!G.arcIsFree(obs, V(0, 0), V(20, 0), cornerAt(0, 0), cornerAt(20, 0)), "corner to corner along the equator goes through");
+  assert.ok(!G.arcIsFree(obs, V(20, 0), V(0, 0), cornerAt(20, 0), cornerAt(0, 0)), "and the other way");
+  assert.ok(!G.arcIsFree(obs, V(-2, 0), V(22, 0), -1, -1), "from beyond either end too");
+  assert.ok(G.arcIsFree(obs, V(0, 0), V(5, 0), cornerAt(0, 0), -1), "but along the first run alone is fine");
+  const route = G.findRoute(obs, V(-2, 0), V(22, 0));
+  assert.equal(route.status, "done");
+  // Over the top: (-2,0)→(0,5)→(15,5)→(22,0), 5.39° + 14.94° + 8.60°.
+  const deg = route.length * 180 / Math.PI;
+  assert.ok(deg > 28.9 && deg < 28.95, `goes round: ${deg}°`);
+  assert.equal(route.waypoints.length, 4);
+  for (let i = 0; i + 1 < route.waypoints.length; i++) {
+    for (const p of G.sampleArc(route.waypoints[i], route.waypoints[i + 1], 0.001, false)) {
+      assert.deepEqual(G.featuresContaining(obs, p), [], "route point inside the S at " + G.toLonLat(p));
+    }
+  }
+});
+
+test("antipodes: a free semicircle is found, and obstacles are not ignored", () => {
+  const obs = G.buildObstacles(["Ghana", "United Kingdom", "Algeria"].map(feat));
+  const a = G.toVec(0, 0), b = G.toVec(180, 0);
+  const r = G.findRoute(obs, a, b);
+  assert.equal(r.status, "done");
+  assert.ok(r.antipodal);
+  assert.ok(Math.abs(r.length - Math.PI) < 1e-9);
+  assertOutside(r, obs, ["Ghana", "United Kingdom", "Algeria"]);
+  // No semicircle free: ring the start with obstacles? Hard to build; at least
+  // the nudged search must still answer when every meridian is blocked near
+  // the start by a band.
+  const band = { type: "Feature", id: "band", properties: { name: "band" }, geometry: { type: "Polygon", coordinates: [[[-179, 20], [-179, 30], [179, 30], [179, 20], [-179, 20]]] } };
+  const obs2 = G.buildObstacles([band]);
+  const r2 = G.findRoute(obs2, G.toVec(0, 0), G.toVec(180, 0));
+  assert.equal(r2.status, "done");
+  assertOutside(r2, obs2, ["band"]);
+});
+
 test("a route around the square bends at its corners and is the shortest", () => {
   const obs = G.buildObstacles([square]);
   const a = G.toVec(-5, 5), b = G.toVec(15, 5);

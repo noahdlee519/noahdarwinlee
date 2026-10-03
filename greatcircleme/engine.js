@@ -309,8 +309,10 @@
         if (d2 < minDot) minDot = d2;
       }
       cx[id] = sx; cy[id] = sy; cz[id] = sz;
-      // Tiny slack so an arc touching the cap's rim is not missed.
-      cosR[id] = Math.max(-1, minDot - 1e-9);
+      // Tiny slack so an arc touching the cap's rim is not missed. An edge
+      // only stays inside a cap narrower than a hemisphere; a wider one is
+      // made the whole sphere.
+      cosR[id] = minDot <= 0 ? -1 : Math.max(-1, minDot - 1e-9);
       if (b - a <= LEAF) {
         left[id] = -1; right[id] = -1; lo[id] = a; hi[id] = b;
         return id;
@@ -355,6 +357,8 @@
      has to be convex there, or the union of them is not, and a taut string
      would never rest on it. Each corner keeps its wedges (the previous and next
      vertex of every ring through it) for the tangent test in the search. */
+  function keyPart(x) { return (x > -5e-13 && x < 5e-13 ? 0 : x).toFixed(12); }
+
   function buildCorners(obs) {
     var n = obs.n, X = obs.X, Y = obs.Y, Z = obs.Z;
     var turn = new Float64Array(n);
@@ -380,7 +384,7 @@
     // Group vertices by location; a corner is a location.
     var byKey = new Map();
     for (i = 0; i < n; i++) {
-      var key = X[i].toFixed(12) + "," + Y[i].toFixed(12) + "," + Z[i].toFixed(12);
+      var key = keyPart(X[i]) + "," + keyPart(Y[i]) + "," + keyPart(Z[i]);
       var list = byKey.get(key);
       if (list) list.push(i); else byKey.set(key, [i]);
     }
@@ -420,13 +424,19 @@
     var X = obs.X, Y = obs.Y, Z = obs.Z;
     var vx = X[v], vy = Y[v], vz = Z[v];
     var p = prevIndex(obs, v), q = nextIndex(obs, v);
-    // Tangent directions toward next and prev (any positive multiple will do
-    // for angles, so no need to normalise).
-    var nx = X[q] - vx, ny = Y[q] - vy, nz = Z[q] - vz;
-    var px = X[p] - vx, py = Y[p] - vy, pz = Z[p] - vz;
+    // The directions toward next and prev, projected onto the tangent plane
+    // at v: that is exactly the direction each great-circle edge leaves in.
+    // (A chord kept its part along v, which leaks into the dot product and
+    // puts the wedge a tenth of a degree out for edges a few degrees long.)
+    var qd = X[q] * vx + Y[q] * vy + Z[q] * vz, pd = X[p] * vx + Y[p] * vy + Z[p] * vz;
+    var nx = X[q] - qd * vx, ny = Y[q] - qd * vy, nz = Z[q] - qd * vz;
+    var px = X[p] - pd * vx, py = Y[p] - pd * vy, pz = Z[p] - pd * vz;
     var wedge = ccwAngle(vx, vy, vz, nx, ny, nz, px, py, pz);
     var at = ccwAngle(vx, vy, vz, nx, ny, nz, tx, ty, tz);
-    return at > 1e-9 && at < wedge - 1e-9;
+    // A direction within a tenth of a microradian of the wedge's edge is on
+    // it: a vertex admitted as on the circle may be that far off, over the
+    // length of its edges.
+    return at > 1e-7 && at < wedge - 1e-7;
   }
 
   /* Anticlockwise angle from direction a to direction b in the tangent plane
@@ -462,39 +472,31 @@
     var cOn = sc > -ON_CIRCLE && sc < ON_CIRCLE;
     var dOn = sd > -ON_CIRCLE && sd < ON_CIRCLE;
 
-    if (cOn) return 0; // dealt with as the far end of the previous edge
     if (dOn) {
-      // Walk past any run of vertices lying on the circle to the first that
-      // does not, and see whether the ring comes out on the other side.
-      var r = obs.rings[obs.ringOf[d]];
-      var w = d, sw = sd, steps = 0, limit = r.end - r.start;
-      while (sw > -ON_CIRCLE && sw < ON_CIRCLE && steps < limit) {
-        w = nextIndex(obs, w);
-        sw = X[w] * nnx + Y[w] * nny + Z[w] * nnz;
-        var cw = cornerOf[w];
-        if (cw >= 0 && (cw === cornerA || cw === cornerB)) sw = 0;
-        steps++;
-      }
-      if (steps >= limit) return 0; // the whole ring lies on the circle
-      var transversal = (sc > 0) !== (sw > 0);
-      // Is d within the arc? (Between a and b along the circle.)
+      // The vertex lies on the arc's circle. Within the arc at all?
       var dx = X[d], dy = Y[d], dz = Z[d];
       if (!withinArc(ax, ay, az, bx, by, bz, nnx, nny, nnz, dx, dy, dz)) return 0;
       var atA = angleXYZ(ax, ay, az, dx, dy, dz) < SAME_POINT;
       var atB = angleXYZ(bx, by, bz, dx, dy, dz) < SAME_POINT;
       if (atA || atB) {
-        // The arc starts or ends on this vertex: it is blocked only if it
-        // heads into the obstacle from there. Each vertex in the run gets
-        // the question, since they all sit on the arc's end.
+        // The arc starts or ends on this vertex: blocked only if it heads
+        // into the obstacle from there.
         var ox = atA ? bx : ax, oy = atA ? by : ay, oz = atA ? bz : az;
-        var vx = dx, vy = dy, vz = dz;
-        var tx = ox - (ox * vx + oy * vy + oz * vz) * vx;
-        var ty = oy - (ox * vx + oy * vy + oz * vz) * vy;
-        var tz = oz - (ox * vx + oy * vy + oz * vz) * vz;
-        return enters(obs, d, tx, ty, tz) ? 2 : 0;
+        var od = ox * dx + oy * dy + oz * dz;
+        return enters(obs, d, ox - od * dx, oy - od * dy, oz - od * dz) ? 2 : 0;
       }
-      return transversal ? 1 : 0;
+      // The arc passes through the vertex. It is blocked if the obstacle
+      // lies across the circle there: if either direction along the circle
+      // leads inside. That covers a ring crossing straight through, a ring
+      // that turns away after running along the arc for a while (the far
+      // end of such a run is where it goes inside), and a reflex corner the
+      // arc grazes from within. A run's interior vertices, where the wedge
+      // is exactly the half-plane, and a convex corner touched from outside
+      // are let through.
+      var tx = nny * dz - nnz * dy, ty = nnz * dx - nnx * dz, tz = nnx * dy - nny * dx;
+      return (enters(obs, d, tx, ty, tz) || enters(obs, d, -tx, -ty, -tz)) ? 1 : 0;
     }
+    if (cOn) return 0; // the near end was dealt with as the far end of the previous edge
     if ((sc > 0) === (sd > 0)) return 0; // both ends on one side
 
     // The edge straddles the arc's circle. Does the arc straddle the edge's?
@@ -522,6 +524,52 @@
     // meet; a crossing only if both arcs contain the same one.
     var ix = nny * ez - nnz * ey, iy = nnz * ex - nnx * ez, iz = nnx * ey - nny * ex;
     var onArc = (ax + bx) * ix + (ay + by) * iy + (az + bz) * iz;
+    var onEdge = (X[e] + X[d]) * ix + (Y[e] + Y[d]) * iy + (Z[e] + Z[d]) * iz;
+    return (onArc > 0) === (onEdge > 0) ? 1 : 0;
+  }
+
+  /* For the crossing count in pointInRing: does the ring cross the line of
+     the arc p→q at this edge? Unlike edgeRelation, which asks whether the arc
+     has points inside the obstacle, this counts boundary crossings, so a
+     vertex the arc only touches, and a run of vertices along the arc that
+     comes back out on the side it went in, count for nothing, and a run that
+     comes out on the other side counts once, at its first vertex. Returns 1
+     for a crossing, -1 when p itself is on the edge or a vertex, else 0. */
+  function edgeCrossesLine(obs, px, py, pz, qx, qy, qz, nnx, nny, nnz, e) {
+    var X = obs.X, Y = obs.Y, Z = obs.Z;
+    var d = nextIndex(obs, e);
+    var sc = X[e] * nnx + Y[e] * nny + Z[e] * nnz;
+    var sd = X[d] * nnx + Y[d] * nny + Z[d] * nnz;
+    var cOn = sc > -ON_CIRCLE && sc < ON_CIRCLE;
+    var dOn = sd > -ON_CIRCLE && sd < ON_CIRCLE;
+    if (cOn) return 0;
+    if (dOn) {
+      var r = obs.rings[obs.ringOf[d]];
+      var w = d, sw = sd, steps = 0, limit = r.end - r.start;
+      while (sw > -ON_CIRCLE && sw < ON_CIRCLE && steps < limit) {
+        w = nextIndex(obs, w);
+        sw = X[w] * nnx + Y[w] * nny + Z[w] * nnz;
+        steps++;
+      }
+      if (steps >= limit) return 0;
+      if (!withinArc(px, py, pz, qx, qy, qz, nnx, nny, nnz, X[d], Y[d], Z[d])) return 0;
+      if (angleXYZ(px, py, pz, X[d], Y[d], Z[d]) < SAME_POINT) return -1;
+      return (sc > 0) !== (sw > 0) ? 1 : 0;
+    }
+    if ((sc > 0) === (sd > 0)) return 0;
+    var ex = Y[e] * Z[d] - Z[e] * Y[d], ey = Z[e] * X[d] - X[e] * Z[d], ez = X[e] * Y[d] - Y[e] * X[d];
+    var el = Math.hypot(ex, ey, ez);
+    if (el < 1e-15) return 0;
+    ex /= el; ey /= el; ez /= el;
+    var sp = px * ex + py * ey + pz * ez;
+    var sq = qx * ex + qy * ey + qz * ez;
+    if (sp > -ON_CIRCLE && sp < ON_CIRCLE) {
+      return withinArc(X[e], Y[e], Z[e], X[d], Y[d], Z[d], ex, ey, ez, px, py, pz) ? -1 : 0;
+    }
+    if (sq > -ON_CIRCLE && sq < ON_CIRCLE) return 0; // q is outside the ring by construction
+    if ((sp > 0) === (sq > 0)) return 0;
+    var ix = nny * ez - nnz * ey, iy = nnz * ex - nnx * ez, iz = nnx * ey - nny * ex;
+    var onArc = (px + qx) * ix + (py + qy) * iy + (pz + qz) * iz;
     var onEdge = (X[e] + X[d]) * ix + (Y[e] + Y[d]) * iy + (Z[e] + Z[d]) * iz;
     return (onArc > 0) === (onEdge > 0) ? 1 : 0;
   }
@@ -638,8 +686,8 @@
   // ---------------------------------------------------------- point in ring
 
   /* Crossing parity along the arc from p to a point known to be outside the
-     ring: the antipode of its cap's centre. Returns 1 inside, 0 outside, and
-     -1 on the boundary. */
+     ring: the antipode of its cap's centre. Returns 1 inside and 0 outside;
+     a point on the boundary comes back as -1 or 0, never as inside. */
   function pointInRing(obs, r, px, py, pz) {
     if (px * r.cx + py * r.cy + pz * r.cz < r.cosRadius) return 0;
     var qx = -r.cx, qy = -r.cy, qz = -r.cz;
@@ -659,13 +707,11 @@
     var crossings = 0;
     var X = obs.X, Y = obs.Y, Z = obs.Z;
     for (var e = r.start; e < r.end; e++) {
-      var d = nextIndex(obs, e);
       // On the boundary? On a vertex, or on the edge itself.
       if (angleXYZ(px, py, pz, X[e], Y[e], Z[e]) < SAME_POINT) return -1;
-      var rel = edgeRelation(obs, px, py, pz, qx, qy, qz, nx, ny, nz, e, -1, -1);
-      if (rel === 2) return -1;
+      var rel = edgeCrossesLine(obs, px, py, pz, qx, qy, qz, nx, ny, nz, e);
+      if (rel === -1) return -1;
       if (rel === 1) crossings++;
-      void d;
     }
     return crossings & 1;
   }
@@ -701,12 +747,25 @@
     var direct = angleBetween(a, b);
     if (direct < SAME_POINT) return { status: "done", waypoints: [a, b], corners: [], length: 0, direct: direct, expanded: 0 };
     if (Math.PI - direct < 1e-9) {
-      // Antipodes: every great circle through both is equally short. Take
-      // the one over the nearer pole, through a point a quarter turn from a.
+      // Antipodes: every great semicircle between them is equally short, so
+      // the first of a fan of them that gets through is the answer. If none
+      // does, b is nudged a hair and the search runs as usual.
       var up = Math.abs(a[2]) < 0.999 ? [0, 0, 1] : [1, 0, 0];
-      var side = normalize([a[1] * up[2] - a[2] * up[1], a[2] * up[0] - a[0] * up[2], a[0] * up[1] - a[1] * up[0]]);
-      var mid = normalize([side[1] * a[2] - side[2] * a[1], side[2] * a[0] - side[0] * a[2], side[0] * a[1] - side[1] * a[0]]);
-      return { status: "done", waypoints: [a, mid, b], corners: [], length: Math.PI, direct: direct, expanded: 0, antipodal: true };
+      var e1 = normalize([a[1] * up[2] - a[2] * up[1], a[2] * up[0] - a[0] * up[2], a[0] * up[1] - a[1] * up[0]]);
+      var e2 = normalize([e1[1] * a[2] - e1[2] * a[1], e1[2] * a[0] - e1[0] * a[2], e1[0] * a[1] - e1[1] * a[0]]);
+      for (var k = 0; k < 72; k++) {
+        var ang = k * Math.PI / 36;
+        var mid = [Math.cos(ang) * e2[0] + Math.sin(ang) * e1[0], Math.cos(ang) * e2[1] + Math.sin(ang) * e1[1], Math.cos(ang) * e2[2] + Math.sin(ang) * e1[2]];
+        if (arcIsFree(obs, a, mid, -1, -1) && arcIsFree(obs, mid, b, -1, -1)) {
+          return { status: "done", waypoints: [a, mid, b], corners: [], length: Math.PI, direct: direct, expanded: 0, antipodal: true };
+        }
+      }
+      var b2 = normalize([b[0] + 1e-7 * e1[0], b[1] + 1e-7 * e1[1], b[2] + 1e-7 * e1[2]]);
+      var nudged = startSearch(obs, a, b2);
+      nudged.antipodal = true;
+      nudged.trueB = b;
+      if (nudged.status === "done") nudged.waypoints[nudged.waypoints.length - 1] = b;
+      return nudged;
     }
     if (arcIsFree(obs, a, b, -1, -1)) {
       return { status: "done", waypoints: [a, b], corners: [], length: direct, direct: direct, expanded: 0 };
@@ -938,6 +997,7 @@
   function finish(s) {
     var chain = s.best.chain;
     s.waypoints = chain.map(function (k) { return nodeVec(s, k); });
+    if (s.trueB) s.waypoints[s.waypoints.length - 1] = s.trueB;
     s.corners = chain.slice(1, -1).map(function (k) { return k - 2; });
     s.length = s.best.length;
     s.status = "done";

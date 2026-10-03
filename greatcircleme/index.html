@@ -95,7 +95,7 @@
     <div class="gc-controls" aria-label="Globe controls">
       <button type="button" class="gc-ctl" id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
       <button type="button" class="gc-ctl" id="zoom-out" aria-label="Zoom out" title="Zoom out">&minus;</button>
-      <button type="button" class="gc-ctl gc-ctl-text" id="fit" title="Show the route">fit</button>
+      <button type="button" class="gc-ctl gc-ctl-text" id="fit" title="Show the whole route" aria-label="Show the whole route">fit</button>
       <button
         type="button"
         class="gc-ctl gc-ctl-text"
@@ -127,7 +127,10 @@
             autocapitalize="off"
             spellcheck="false"
             aria-label="From"
+            role="combobox"
             aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-expanded="false"
             aria-controls="sug-a"
           />
           <button type="button" class="gc-clear" id="clear-a" aria-label="Clear A" hidden>&times;</button>
@@ -144,7 +147,10 @@
             autocapitalize="off"
             spellcheck="false"
             aria-label="To"
+            role="combobox"
             aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-expanded="false"
             aria-controls="sug-b"
           />
           <button type="button" class="gc-clear" id="clear-b" aria-label="Clear B" hidden>&times;</button>
@@ -165,7 +171,10 @@
             autocomplete="off"
             autocapitalize="off"
             spellcheck="false"
+            role="combobox"
             aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-expanded="false"
             aria-controls="sug-avoid"
           />
           <ul class="gc-suggest" id="sug-avoid" role="listbox" hidden></ul>
@@ -191,11 +200,16 @@
           distance is also given on the WGS84 ellipsoid.
         </p>
         <p>
-          Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, 1:50m.
-          Places: <a href="https://www.geonames.org/">GeoNames</a> (CC BY),
-          <a href="https://ourairports.com/">OurAirports</a>,
-          <a href="https://github.com/mledoze/countries">world-countries</a>; what they lack is
-          looked up at <a href="https://photon.komoot.io/">Photon</a> as you type.
+          Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, 1:50m (public
+          domain). Places: <a href="https://www.geonames.org/">GeoNames</a>
+          (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>),
+          <a href="https://ourairports.com/">OurAirports</a> (public domain), and
+          <a href="https://github.com/mledoze/countries">world-countries</a>
+          (<a href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL</a>); the place list here
+          is derived from them under the same terms. What they lack is looked up as you type at
+          <a href="https://photon.komoot.io/">Photon</a> by komoot, whose answers are
+          &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>
+          (ODbL).
         </p>
       </footer>
     </aside>
