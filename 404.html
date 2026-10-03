@@ -38,37 +38,156 @@
     </script>
     <style>
       .notfound {
-        max-width: 46ch;
         margin-top: 8px;
       }
+
+      /* The number is the page's one big thing; everything else on it is the
+         site's ordinary 22px. */
       .notfound h1 {
+        margin: 0 0 6px;
+        font-size: clamp(120px, 24vw, 280px);
+        line-height: 0.82;
+        font-weight: 600;
+        letter-spacing: -0.045em;
+      }
+
+      .notfound .home {
+        display: inline-block;
         font-size: 22px;
         font-weight: 300;
-        margin: 0 0 14px;
-      }
-      .notfound p {
-        font-size: 20px;
-        font-weight: 300;
-        margin: 0 0 22px;
-      }
-      .notfound ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        font-size: 22px;
-      }
-      .notfound a {
         color: inherit;
         text-decoration: none;
-        width: fit-content;
       }
-      .notfound a:hover {
+
+      .notfound .home:hover {
         text-decoration: underline;
         text-decoration-thickness: 2.25px;
         text-underline-offset: 3px;
+      }
+
+      /* ---- the anagrams ----
+         The name on top, one rearrangement of it underneath, and a thin line
+         from each letter to the same letter below. Clicking the name brings
+         the next one. Letters are spaced wide so the lines have room to land
+         on a letter rather than between two. */
+      .anagram {
+        position: relative;
+        margin-top: clamp(64px, 12vh, 120px);
+        width: fit-content;
+        max-width: 100%;
+      }
+
+      .ana-row {
+        display: block;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        font-size: clamp(20px, 4.4vw, 42px);
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0;
+        white-space: nowrap;
+        text-align: left;
+      }
+
+      .ana-row .ch {
+        display: inline-block;
+        width: 1.12em;
+        text-align: center;
+      }
+
+      .ana-row .sp {
+        display: inline-block;
+        width: 0.56em;
+      }
+
+      .ana-name {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      .ana-name:active {
+        transform: scale(0.985);
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .ana-name:hover .ch {
+          color: var(--accent);
+        }
+      }
+
+      .ana-gap {
+        height: clamp(90px, 16vh, 150px);
+      }
+
+      .ana-phrase .ch,
+      .ana-phrase .pn {
+        animation: ana-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+        animation-delay: calc(var(--i) * 14ms);
+      }
+
+      .ana-phrase .pn {
+        display: inline-block;
+        width: 0.4em;
+      }
+
+      @keyframes ana-in {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+
+      .ana-lines {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .ana-lines line {
+        stroke: var(--accent);
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        animation: ana-draw 380ms cubic-bezier(0.23, 1, 0.32, 1) both;
+        animation-delay: calc(var(--i) * 22ms);
+      }
+
+      @keyframes ana-draw {
+        from {
+          stroke-dashoffset: var(--len);
+        }
+      }
+
+      /* The page borrows .cv-page for its header, and with it the CV's 1.25em
+         indent on every paragraph in main. Neither of these is a CV entry. */
+      .cv-page main p.ana-phrase {
+        margin: 0;
+      }
+
+      .cv-page main p.ana-hint {
+        margin: 26px 0 0;
+      }
+
+      .ana-hint {
+        font-size: 15px;
+        font-weight: 300;
+        opacity: 0.75;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ana-phrase .ch,
+        .ana-phrase .pn,
+        .ana-lines line {
+          animation: none;
+        }
       }
     </style>
   </head>
@@ -78,18 +197,114 @@
       <span class="name-word-lee">Lee</span></a
     >
     <main class="notfound">
-      <h1>That page isn't here.</h1>
-      <p>It may have moved, or the link may have a typo in it.</p>
-      <ul>
-        <li><a href="/">the art</a></li>
-        <li><a href="/#about">about</a></li>
-        <li><a href="/blog/">blog</a></li>
-        <li><a href="/citylayoutguessr/">citylayoutguessr</a></li>
-        <li><a href="/flashcard/">flash cards</a></li>
-        <li><a href="/cv/">cv</a></li>
-        <li><a href="/projects/">projects</a></li>
-      </ul>
+      <h1>404</h1>
+      <a class="home" href="/">home</a>
+
+      <div class="anagram" id="anagram">
+        <button class="ana-row ana-name" id="ana-name" type="button" aria-label="Noah Darwin Lee. Show another anagram"></button>
+        <div class="ana-gap" aria-hidden="true"></div>
+        <p class="ana-row ana-phrase" id="ana-phrase" aria-live="polite"></p>
+        <svg class="ana-lines" id="ana-lines" aria-hidden="true"></svg>
+      </div>
+      <p class="ana-hint">Click the name for another.</p>
     </main>
-      <script src="/theme.js" defer></script>
+    <script>
+      (function () {
+        var NAME = "NOAH DARWIN LEE";
+        var PHRASES = [
+          "LEAN WIDER, NOAH",
+          "RELOAD IN AWE",
+          "LAND NOWHERE",
+          "NO DRAWL HERE",
+          "OR HEAL A LINE",
+          "HIDE ARENA NOW",
+          "I REDO AN AIL",
+          "AW I ELIDE NOAH",
+          "WHO READ A LINE",
+        ];
+        var nameEl = document.getElementById("ana-name");
+        var phraseEl = document.getElementById("ana-phrase");
+        var svg = document.getElementById("ana-lines");
+        var box = document.getElementById("anagram");
+        var at = 0;
+
+        // One span per letter, so each can be found and measured.
+        function spell(el, text, animate) {
+          var i = 0;
+          el.innerHTML = text
+            .split("")
+            .map(function (c) {
+              if (c === " ") return '<span class="sp"></span>';
+              if (!/[A-Z]/.test(c)) return '<span class="pn" style="--i:' + i++ + '">' + c + "</span>";
+              return '<span class="ch" data-c="' + c + '"' + (animate ? ' style="--i:' + i++ + '"' : "") + ">" + c + "</span>";
+            })
+            .join("");
+        }
+
+        // Pair each letter of the name with the same letter below, first with
+        // first, second with second. A letter with no partner gets no line.
+        function draw() {
+          var top = Array.prototype.slice.call(nameEl.querySelectorAll(".ch"));
+          var bottom = Array.prototype.slice.call(phraseEl.querySelectorAll(".ch"));
+          var used = [];
+          var out = [];
+          top.forEach(function (t) {
+            var c = t.getAttribute("data-c");
+            for (var j = 0; j < bottom.length; j++) {
+              if (!used[j] && bottom[j].getAttribute("data-c") === c) {
+                used[j] = true;
+                // Layout positions, not painted ones, so a letter still
+                // rising into place does not bend its line.
+                var a = t, z = bottom[j];
+                var x1 = a.offsetLeft + a.offsetWidth / 2, y1 = a.offsetTop + a.offsetHeight + 6;
+                var x2 = z.offsetLeft + z.offsetWidth / 2, y2 = z.offsetTop - 6;
+                var len = Math.hypot(x2 - x1, y2 - y1);
+                out.push(
+                  '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+                    '" style="--i:' + out.length + ";--len:" + len.toFixed(1) + ";stroke-dasharray:" + len.toFixed(1) + '"/>'
+                );
+                return;
+              }
+            }
+          });
+          svg.innerHTML = out.join("");
+        }
+
+        function show(animate) {
+          spell(phraseEl, PHRASES[at], animate);
+          draw();
+        }
+
+        spell(nameEl, NAME, false);
+        // Wait for the typeface before the first drawing, so the lines land
+        // on the letters they will stay on.
+        var started = false;
+        var start = function () {
+          if (started) return;
+          started = true;
+          show(true);
+        };
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(start);
+        setTimeout(start, 700);
+        nameEl.addEventListener("click", function () {
+          at = (at + 1) % PHRASES.length;
+          show(true);
+        });
+
+        // Redraw without animating when the window changes size.
+        var settle = function () {
+          draw();
+          Array.prototype.forEach.call(svg.querySelectorAll("line"), function (l) {
+            l.style.animation = "none";
+          });
+        };
+        var t;
+        window.addEventListener("resize", function () {
+          clearTimeout(t);
+          t = setTimeout(settle, 80);
+        });
+      })();
+    </script>
+    <script src="/theme.js" defer></script>
   </body>
 </html>
