@@ -32,6 +32,7 @@
   // The data, once loaded.
   var topology = null, features = [], featureById = new Map(), lod = null, borders = null, graticule = null;
   var cities = []; // { name, cc, lon, lat, tier, x, y, z }
+  var admin1 = null, admin1Asked = false; // the borders inside countries, fetched when the globe is close
   var countries = [];          // [{ id, name, key }] sorted, for the avoid search
   var places = null, placesPromise = null;
 
@@ -73,7 +74,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "region-fill"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "region-fill", "border-sub"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     // Diagonal lines for the countries being avoided.
     var c = document.createElement("canvas");
@@ -296,6 +297,18 @@
       ctx.fillStyle = hatch; ctx.fill();
     });
 
+    // The borders inside countries, dotted, once the globe is close enough
+    // that they mean something; they fade in over the first stretch.
+    var sub = subdivisionAlpha(r);
+    if (sub > 0) {
+      if (!admin1) loadAdmin1();
+      else {
+        ctx.beginPath(); traceLines(ctx, admin1);
+        ctx.globalAlpha = sub; ctx.setLineDash([1.5, 3]); ctx.lineCap = "round";
+        ctx.strokeStyle = pal["border-sub"]; ctx.lineWidth = 0.9; ctx.stroke();
+        ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
+      }
+    }
     // Borders between countries; the coast is the land's own edge.
     ctx.beginPath(); traceLines(ctx, mesh);
     ctx.strokeStyle = pal.border; ctx.lineWidth = 0.7; ctx.stroke();
@@ -356,8 +369,22 @@
   /* The world cities: a dot each, and names as the globe comes closer, the
      most important first. Names are placed in order of rank and skipped
      where they would sit on one already placed. */
+  /* How visible the subdivisions are at this globe radius: none below 1400
+     px, whole from 2200. */
+  var ADMIN1_FROM = 1400, ADMIN1_FULL = 2200;
+  function subdivisionAlpha(r) { return Math.max(0, Math.min(1, (r - ADMIN1_FROM) / (ADMIN1_FULL - ADMIN1_FROM))); }
+  function loadAdmin1() {
+    if (admin1Asked) return;
+    admin1Asked = true;
+    fetch("data/admin1.json").then(function (r) { return r.json(); }).then(function (topo) {
+      admin1 = prepareLines(topojson.mesh(topo, topo.objects.admin1));
+      scheduleRender("full");
+    }).catch(function (err) { console.warn("admin1", err); admin1Asked = false; });
+  }
   function cityDotRadius() { var r = B.r; return r < 900 ? 1.4 : r < 2600 ? 1.9 : 2.4; }
-  function labelTierFor(r) { return r >= 5200 ? 4 : r >= 3000 ? 3 : r >= 1500 ? 2 : r >= 640 ? 1 : 0; }
+  // Each tier joins in as the globe grows; crowding is settled on screen,
+  // a city whose name would overlap a greater one's waiting for more room.
+  function labelTierFor(r) { return r >= 2200 ? 4 : r >= 1300 ? 3 : r >= 850 ? 2 : r >= 560 ? 1 : 0; }
   var cityScreen = []; // where each city landed this frame, for the pointer
   function drawCities() {
     cityScreen = [];
@@ -365,34 +392,38 @@
     var r = B.r, show = labelTierFor(r), dot = cityDotRadius();
     if (!show) return; // a city appears, dot and name together, when the globe is close enough
     var ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
-    ctx.fillStyle = pal.city;
-    ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2;
+    ctx.font = "400 11px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    // Names first, greater cities first (the list is sorted by tier): a name
+    // that would sit on another is left out, and so is its dot, so a crowded
+    // coast shows its chief cities and an empty quarter shows them all.
+    var placed = [], pad = 3;
     for (var i = 0; i < cities.length; i++) {
       var c = cities[i];
-      if (c.tier > show) continue;
+      if (c.tier > show) break;
       var sz = c.x * vx + c.y * vy + c.z * vz;
       if (sz <= 0.02) continue;
       var px = cx + r * (c.x * ex + c.y * ey + c.z * ez), py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
-      cityScreen.push({ c: c, x: px, y: py });
-      ctx.beginPath(); ctx.arc(px, py, dot, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
-    }
-    ctx.font = "400 11px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
-    ctx.textBaseline = "middle"; ctx.textAlign = "left";
-    ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
-    var placed = [], pad = 3;
-    for (i = 0; i < cityScreen.length; i++) {
-      var s = cityScreen[i];
-      if (s.c.tier > show) continue;
-      var w = ctx.measureText(s.c.name).width;
-      var lx = s.x + dot + 4, ly = s.y - 7, lw = w + pad * 2, lh = 14;
+      if (!c.w) c.w = ctx.measureText(c.name).width;
+      var lx = px + dot + 4, ly = py - 7, lw = c.w + pad * 2, lh = 14;
       var clash = false;
-      for (var k = 0; k < placed.length; k++) { var q = placed[k]; if (lx < q.x + q.w && lx + lw > q.x && ly < q.y + q.h && ly + lh > q.y) { clash = true; break; } }
+      for (var k = 0; k < placed.length; k++) { var q = placed[k]; if (lx < q.x + q.w + 4 && lx + lw + 4 > q.x && ly < q.y + q.h + 1 && ly + lh + 1 > q.y) { clash = true; break; } }
       if (clash) continue;
       placed.push({ x: lx, y: ly, w: lw, h: lh });
+      cityScreen.push({ c: c, x: px, y: py });
+    }
+    ctx.fillStyle = pal.city;
+    ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2;
+    for (i = 0; i < cityScreen.length; i++) {
+      var s = cityScreen[i];
+      ctx.beginPath(); ctx.arc(s.x, s.y, dot, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
+    ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
+    for (i = 0; i < cityScreen.length; i++) {
+      s = cityScreen[i];
       ctx.strokeText(s.c.name, s.x + dot + 4, s.y);
       ctx.fillStyle = pal.label; ctx.fillText(s.c.name, s.x + dot + 4, s.y);
-      ctx.fillStyle = pal.city;
     }
   }
   function cityAt(x, y) {
@@ -1952,6 +1983,8 @@
   window.__greatercircle = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
     state: state, view: view, drawing: function () { return drawing; },
+    setView: function (lon, lat, zoom) { view.lon = lon; view.lat = lat; view.zoom = zoom; applyView(); render("full"); },
+    scale: function () { return projection.scale(); }, admin1: function () { return !!admin1; },
     timeRender: function (detail) { var t0 = performance.now(); render(detail || "full"); return performance.now() - t0; },
     counts: function () { var c = function (l) { var n = 0; l.forEach(function (f) { f.rings.forEach(function (r) { n += r.n; }); }); return n; }; return { full: c(lod.full), mid: c(lod.mid), coarse: c(lod.coarse) }; },
     profile: function (detail) {

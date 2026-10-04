@@ -33,6 +33,13 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   with unique ids and display names; **data/places.json** — cities, capitals,
   airports and countries for the search boxes. Both come from
   `tools/build-data.mjs` (see its header for the inputs).
+  **data/cities.json** — the five hundred cities drawn on the globe: the
+  GaWC world cities in three tiers, every sovereign capital (in the second
+  tier where the country has no greater city), and the rest by population;
+  from `tools/build-cities.mjs`. **data/admin1.json** — the borders between
+  first-level subdivisions (states, provinces, regions), Natural Earth 1:10m
+  reduced to the lines inside countries and simplified; fetched when the
+  globe is close enough to draw them dotted; from `tools/build-admin1.mjs`.
 - **vendor/** — d3-array, d3-geo, topojson-client, topojson-simplify, unmodified.
 
 ## Tests

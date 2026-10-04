@@ -49,7 +49,7 @@ Jinan CN, Kunming CN, Hefei CN, Fuzhou CN, Nanchang CN, Nanning CN, Shijiazhuang
 Guiyang CN, Ürümqi CN, Lanzhou CN, Hohhot CN, Wuxi CN, Dongguan CN, Foshan CN, Zhuhai CN, Haikou CN, Sanya CN`;
 
 const places = JSON.parse(readFileSync(resolve(here, "../data/places.json"), "utf8"));
-const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’‘']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const cities = places.rows.filter((r) => r[0] === 1);
 const ALIAS = { "frankfurt am main": ["frankfurt am main", "frankfurt"], "delhi": ["new delhi", "delhi"], "washington": ["washington d c", "washington"],
   "ho chi minh city": ["ho chi minh city", "thanh pho ho chi minh"], "kyiv": ["kyiv", "kiev"], "st petersburg": ["saint petersburg", "st petersburg"],
@@ -86,18 +86,60 @@ for (const [tier, list] of [[1, T1], [2, T2], [3, T3]]) {
     out.push([name, cc, hit[3], hit[4], tier]);
   }
 }
-// Two hundred and fifty: the first two tiers whole, the third cut to fit.
-const LIMIT = 250;
-const kept = out.filter((c) => c[4] < 3).concat(out.filter((c) => c[4] === 3)).slice(0, LIMIT);
+// The three tiers whole, then capitals, then the rest by population to
+// five hundred in all.
+const LIMIT = 500;
+const kept = out.filter((c) => c[4] < 3).concat(out.filter((c) => c[4] === 3));
 
-// Then a fourth tier: a hundred and fifty more by population, no more than
-// four to a country so they spread, and none on top of one already there.
-const EXTRA = 150, PER_COUNTRY = 4;
 const near = (a, b) => { const dx = (a[0] - b[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), dy = a[1] - b[1]; return Math.hypot(dx, dy) < 0.4; };
+
+// Then every capital of a sovereign state that is not there yet, in the
+// third tier: a capital is the city people look for, and in Africa, Central
+// Asia and the Pacific it is often the only one on the map.
+const DEPENDENT = new Set("AI AQ AS AW AX BL BM BQ BV CC CK CW CX EH FK FO GF GG GI GL GP GS GU HK HM IM IO JE KY MF MO MP MQ MS NC NF NU PF PM PN PR PS RE SH SJ SX TC TF TK TW UM VG VI WF XK YT".split(" "));
+const CAPITAL_ALIAS = { "washington d c": "washington", "new delhi": "delhi", "city of san marino": "san marino", "sana a": "sanaa",
+  "lobamba": "mbabane", "south tarawa": "tarawa", "naypyidaw": "nay pyi taw" };
+const CAPITAL_NAME = { "lobamba": "Mbabane", "male": "Malé", "nukualofa": "Nuku'alofa", "palikir": "Palikir", "sana a": "Sana'a" };
+let nCapitals = 0;
+for (const row of places.rows) {
+  if (row[0] !== 0 || !row[7] || DEPENDENT.has(row[2])) continue;
+  const cc = row[2], cap = row[7];
+  if (kept.some((k) => k[1] === cc && near([k[2], k[3]], [row[3], row[4]]))) continue; // the capital is there under some name
+  const k = fold(cap);
+  const hit = find(CAPITAL_ALIAS[k] || cap, cc) || cities.filter((c) => c[2] === cc && near([c[3], c[4]], [row[3], row[4]])).sort((a, b) => b[5] - a[5])[0];
+  if (!hit) { missing.push(cap + " " + cc + " (capital)"); continue; }
+  if (kept.some((x) => near([x[2], x[3]], [hit[3], hit[4]]))) continue;
+  // The gazetteer's spelling when it is the same name (it keeps the accents),
+  // else the capital's own (Astana, not Nur-Sultan; Palikir, not its office).
+  kept.push([CAPITAL_NAME[k] || (fold(hit[1]) === fold(cap) ? hit[1] : cap), cc, hit[3], hit[4], 3]);
+  nCapitals++;
+}
+console.log(nCapitals, "capitals added");
+// A country with no city in the first two tiers has its capital in the
+// second, so that the map of Africa, Central Asia or the Pacific is not
+// blank until the globe is close.
+const CAPITAL_OF = new Map();
+for (const row of places.rows) if (row[0] === 0 && row[7] && !DEPENDENT.has(row[2])) CAPITAL_OF.set(row[2], fold(CAPITAL_ALIAS[fold(row[7])] || row[7]));
+// Where the seat of government or the chief city is the better-known one.
+const INSTEAD = { BO: "la paz", CI: "abidjan", TZ: "dar es salaam", BJ: "cotonou" };
+const hasBig = new Set(kept.filter((c) => c[4] <= 2).map((c) => c[1]));
+let promoted = 0;
+for (const c of kept) {
+  if (c[4] !== 3 || hasBig.has(c[1])) continue;
+  const capKey = INSTEAD[c[1]] || CAPITAL_OF.get(c[1]);
+  if (!capKey || (fold(c[0]) !== capKey && !(ALIAS[fold(c[0])] || []).includes(capKey) && !(ALIAS[capKey] || []).includes(fold(c[0])))) continue;
+  c[4] = 2; hasBig.add(c[1]); promoted++;
+}
+console.log(promoted, "capitals promoted to the second tier");
+kept.sort((a, b) => a[4] - b[4]);
+
+// Then a fourth tier by population, no more than four to a country so they
+// spread, and none on top of one already there.
+const PER_COUNTRY = 4;
 const perCountry = {};
 const bigFirst = cities.slice().sort((a, b) => (b[5] || 0) - (a[5] || 0));
 for (const c of bigFirst) {
-  if (kept.length >= LIMIT + EXTRA) break;
+  if (kept.length >= LIMIT) break;
   const cc = c[2];
   if ((perCountry[cc] || 0) >= PER_COUNTRY) continue;
   if (kept.some((k) => k[1] === cc && near([k[2], k[3]], [c[3], c[4]]))) continue;
