@@ -585,8 +585,14 @@
       ctx.fillStyle = pal.marker; ctx.fill();
       ctx.fillStyle = pal["marker-ink"];
       ctx.font = "500 10px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText(m[0], p[0], p[1] + 0.5);
+      // Centred on the letter's own ink, not on the font's idea of its
+      // middle, which sits lower or higher from one font (and phone) to
+      // the next.
+      ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+      var tm = ctx.measureText(m[0]);
+      var inkL = tm.actualBoundingBoxLeft || 0, inkR = tm.actualBoundingBoxRight || tm.width;
+      var inkA = tm.actualBoundingBoxAscent || 7, inkD = tm.actualBoundingBoxDescent || 0;
+      ctx.fillText(m[0], p[0] + (inkL - inkR) / 2, p[1] + (inkA - inkD) / 2);
     });
   }
 
@@ -843,7 +849,7 @@
     state.avoidMode = !state.avoidMode;
     $("avoid-mode").setAttribute("aria-pressed", String(state.avoidMode));
     canvas.classList.toggle("is-avoid-mode", state.avoidMode);
-    $("avoid-hint").textContent = state.avoidMode ? (canHover ? "Click" : "Tap") + " a country to add it, again to take it off" : (canHover ? "Or shift-click a country on the globe" : "Or press avoid, then tap countries");
+    setAvoidHint();
   });
 
   canvas.addEventListener("keydown", function (e) {
@@ -1068,6 +1074,15 @@
     scheduleRender("full");
   }
 
+  /* The line under the avoid field. Where it says to press the avoid
+     button, it shows the button's own icon, the way bending round an x. */
+  var AVOID_ICON = '<svg class="gc-inline-icon" viewBox="0 0 24 24" role="img" aria-label="avoid" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17 A 9.5 9.5 0 0 1 21.5 17" /><path d="M9.6 13.1 L 14.4 17.9 M14.4 13.1 L 9.6 17.9" /></svg>';
+  function setAvoidHint() {
+    var h = $("avoid-hint");
+    if (state.avoidMode) h.textContent = (canHover ? "Click" : "Tap") + " a country to add it, again to take it off";
+    else if (canHover) h.innerHTML = 'Or shift-click a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span>';
+    else h.innerHTML = "Or press " + AVOID_ICON + ", then tap countries";
+  }
   function updateHint() {
     var h = $("hint"), tap = canHover ? "click" : "tap";
     if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe";
@@ -2126,7 +2141,7 @@
     var fromUrl = readUrl();
     renderChips();
     updateHint();
-    if (!canHover) $("avoid-hint").textContent = "Or press avoid, then tap countries";
+    setAvoidHint();
     startWorker();
     loadCities();
     loadLakes();
