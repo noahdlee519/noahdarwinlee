@@ -20,6 +20,7 @@
   var state = {
     a: null, b: null,          // { lon, lat, label }
     avoid: new Map(),          // feature id -> name
+    regions: [],               // drawn regions to avoid: { id, name, kind, points | center+radiusKm }
     units: "km",
     result: null,              // the last answer from the worker
     pendingId: 0,              // the request we are waiting on, or 0
@@ -72,7 +73,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "region-fill"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     // Diagonal lines for the countries being avoided.
     var c = document.createElement("canvas");
@@ -304,9 +305,11 @@
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI);
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
 
+    drawRegions();
     drawCities();
     drawRoutes();
     drawMarkers();
+    drawDrawing();
     ctx.restore();
     mark("end");
   }
@@ -495,6 +498,15 @@
       pinch = { d: dist(pts[0], pts[1]), zoom: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
       return;
     }
+    // A handle of the selected region, or a drawing gesture, before the globe.
+    var handle = handleAt(e.clientX, e.clientY);
+    if (handle) { handleDrag = { region: selected, handle: handle }; return; }
+    if (drawing && drawing.tool === "circle") {
+      var c0 = projection.invert([e.clientX, e.clientY]);
+      if (c0 && isFinite(c0[0]) && visible(c0)) { drawing.center = [c0[0], c0[1]]; drawing.radiusKm = 0; drawing.active = true; }
+      return;
+    }
+    if (drawing && drawing.tool === "lasso") { drawing.screen = [[e.clientX, e.clientY]]; drawing.active = true; return; }
     var marker = markerAt(e.clientX, e.clientY, e.pointerType !== "mouse");
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, marker: marker,
       lastT: performance.now(), lastX: e.clientX, lastY: e.clientY, vx: 0, vy: 0, shift: e.shiftKey };
@@ -504,6 +516,37 @@
 
   canvas.addEventListener("pointermove", function (e) {
     if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (handleDrag) {
+      var hl = projection.invert([e.clientX, e.clientY]);
+      if (hl && isFinite(hl[0]) && visible(hl)) {
+        var r = handleDrag.region, h = handleDrag.handle;
+        if (h.what === "center") r.center = [hl[0], hl[1]];
+        else if (h.what === "edge") r.radiusKm = Math.max(5, Math.round(G.sphereDistanceKm(r.center[0], r.center[1], hl[0], hl[1])));
+        else r.points[h.what] = [hl[0], hl[1]];
+        scheduleRender("coarse");
+      }
+      return;
+    }
+    if (drawing && drawing.active && drawing.tool === "circle") {
+      var cl = projection.invert([e.clientX, e.clientY]);
+      if (cl && isFinite(cl[0]) && visible(cl)) {
+        drawing.radiusKm = G.sphereDistanceKm(drawing.center[0], drawing.center[1], cl[0], cl[1]);
+        setStatus("Radius " + Math.round(drawing.radiusKm).toLocaleString() + " km");
+        scheduleRender("coarse");
+      }
+      return;
+    }
+    if (drawing && drawing.active && drawing.tool === "lasso") {
+      var last = drawing.screen[drawing.screen.length - 1];
+      if (Math.hypot(e.clientX - last[0], e.clientY - last[1]) > 2) { drawing.screen.push([e.clientX, e.clientY]); scheduleRender("coarse"); }
+      return;
+    }
+    if (drawing && drawing.tool === "polygon" && !drag) {
+      var pl = projection.invert([e.clientX, e.clientY]);
+      drawing.pointer = pl && isFinite(pl[0]) && visible(pl) ? [pl[0], pl[1]] : null;
+      if (drawing.points.length) scheduleRender("coarse");
+    }
+    canvas.classList.toggle("is-over-handle", !!handleAt(e.clientX, e.clientY));
     if (pinch && pointers.size === 2) {
       var pts = Array.from(pointers.values());
       var nd = dist(pts[0], pts[1]);
@@ -549,6 +592,9 @@
 
   function endPointer(e) {
     pointers.delete(e.pointerId);
+    if (handleDrag) { handleDrag = null; if (e.type !== "pointercancel") regionsChanged(); return; }
+    if (drawing && drawing.active && drawing.tool === "circle") { drawing.active = false; finishCircle(); return; }
+    if (drawing && drawing.active && drawing.tool === "lasso") { drawing.active = false; finishLasso(drawing.screen); return; }
     if (pinch) { if (pointers.size < 2) pinch = null; if (pointers.size === 0) { interacting = 0; scheduleRender("full"); } return; }
     if (!drag) return;
     var d = drag; drag = null;
@@ -664,6 +710,15 @@
   function click(x, y, shift) {
     var ll = projection.invert([x, y]);
     if (!ll || !isFinite(ll[0]) || !visible(ll)) return;
+    if (drawing && drawing.tool === "polygon") {
+      var first = drawing.points.length ? projection(drawing.points[0]) : null;
+      if (first && drawing.points.length >= 3 && Math.hypot(first[0] - x, first[1] - y) < 10) { finishPolygon(); return; }
+      drawing.points.push([ll[0], ll[1]]);
+      setStatus(drawing.points.length < 3 ? "Click to add corners, click the first one again to close, Esc to cancel" : drawing.points.length + " corners, click the first one or press Enter to close");
+      scheduleRender("full");
+      return;
+    }
+    if (selected && !shift && !state.avoidMode) selectRegion(null);
     if (shift || state.avoidMode) {
       var idx = countryAt(x, y);
       if (idx >= 0) toggleAvoid(features[idx].id, features[idx].properties.name);
@@ -891,11 +946,33 @@
       li.appendChild(x);
       ul.appendChild(li);
     });
-    if (state.avoid.size > 1) {
+    state.regions.forEach(function (r) {
+      var li = document.createElement("li");
+      li.className = "gc-chip gc-chip-region" + (r === selected ? " is-selected" : "");
+      li.dataset.region = r.id;
+      li.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l3.5-.8L19 7.7a2 2 0 0 0-2.8-2.8L4.8 16.4z"/></svg>';
+      var name = document.createElement("span");
+      name.className = "gc-chip-name"; name.textContent = r.name; name.title = "Click to show its corners, double-click to rename";
+      name.addEventListener("click", function () { selectRegion(selected === r ? null : r); });
+      name.addEventListener("dblclick", function () {
+        var inp = document.createElement("input"); inp.type = "text"; inp.value = r.name; inp.setAttribute("aria-label", "Name of the region");
+        var done = function () { var v = inp.value.trim(); if (v) r.name = v; renderChips(); writeUrl(); };
+        inp.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); inp.blur(); } if (ev.key === "Escape") { inp.value = r.name; inp.blur(); } });
+        inp.addEventListener("blur", done);
+        li.replaceChild(inp, name); inp.focus(); inp.select();
+      });
+      li.appendChild(name);
+      var x = document.createElement("button");
+      x.type = "button"; x.setAttribute("aria-label", "Remove " + r.name); x.textContent = "×";
+      x.addEventListener("click", function () { removeRegion(r); });
+      li.appendChild(x);
+      ul.appendChild(li);
+    });
+    if (state.avoid.size + state.regions.length > 1) {
       var li2 = document.createElement("li");
       var b = document.createElement("button");
       b.type = "button"; b.className = "gc-linkbtn"; b.textContent = "clear all"; b.style.fontSize = "13px";
-      b.addEventListener("click", function () { state.avoid.clear(); avoidChanged(); });
+      b.addEventListener("click", function () { state.avoid.clear(); state.regions = []; selected = null; avoidChanged(); });
       li2.appendChild(b); ul.appendChild(li2);
     }
   }
@@ -1165,6 +1242,261 @@
     });
   }
 
+  // ------------------------------------------------------------- regions
+  // Shapes drawn on the globe to be avoided like a country: a polygon of
+  // clicked corners, a circle dragged out from its centre, or a freehand
+  // outline. Each becomes a ring of [lon, lat] for the worker; the circle is
+  // a 72-gon of points a fixed distance from its centre. The edges are
+  // great-circle arcs, as the engine and the drawing both treat them.
+  var regionSeq = 0;
+  var drawing = null;   // { tool, points, pointer, center, radiusKm, active }
+  var selected = null;  // a region whose handles are shown
+  var handleDrag = null;
+  var drawStatus = $("draw-status");
+
+  function destination(lon, lat, bearingDeg, km) {
+    var d = km / G.EARTH_RADIUS_KM, b = bearingDeg * Math.PI / 180;
+    var p1 = lat * Math.PI / 180, l1 = lon * Math.PI / 180;
+    var p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
+    var l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+    return [((l2 * 180 / Math.PI + 540) % 360) - 180, p2 * 180 / Math.PI];
+  }
+  function regionRing(r) {
+    if (r.kind === "circle") {
+      var pts = [];
+      for (var i = 0; i < 72; i++) pts.push(destination(r.center[0], r.center[1], i * 5, r.radiusKm));
+      return pts;
+    }
+    return r.points;
+  }
+  function regionPolygon(r) {
+    var ring = regionRing(r).slice();
+    ring.push(ring[0]);
+    return { type: "Polygon", coordinates: [ring] };
+  }
+
+  /* Is a ring usable: at least three corners, no edge crossing another, and
+     no bigger than a quarter of the globe? Returns a reason, or null. */
+  function ringProblem(ring) {
+    if (ring.length < 3) return "A region needs at least three corners";
+    var V = ring.map(function (p) { return G.toVec(p[0], p[1]); });
+    var n = V.length;
+    for (var i = 0; i < n; i++) {
+      for (var j = i + 2; j < n; j++) {
+        if (i === 0 && j === n - 1) continue; // neighbours round the end
+        if (arcsCross(V[i], V[(i + 1) % n], V[j], V[(j + 1) % n])) return "The outline crosses itself";
+      }
+    }
+    var area = Math.abs(G.sphericalSignedArea(V));
+    if (area > Math.PI) return "That is more than a quarter of the globe";
+    if (area < 1e-9) return "The region is too small to matter";
+    return null;
+  }
+  function arcsCross(a, b, c, d) {
+    var n1 = cross3(a, b), n2 = cross3(c, d);
+    var sc = dot3(c, n1), sd = dot3(d, n1), sa = dot3(a, n2), sb = dot3(b, n2);
+    if ((sc > 0) === (sd > 0) || (sa > 0) === (sb > 0)) return false;
+    var p = cross3(n1, n2);
+    var onArc = (a[0] + b[0]) * p[0] + (a[1] + b[1]) * p[1] + (a[2] + b[2]) * p[2];
+    var onEdge = (c[0] + d[0]) * p[0] + (c[1] + d[1]) * p[1] + (c[2] + d[2]) * p[2];
+    return (onArc > 0) === (onEdge > 0);
+  }
+  function cross3(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function dot3(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+
+  function addRegion(r) {
+    r.id = "r" + (++regionSeq);
+    if (!r.name) r.name = "Region " + regionSeq;
+    state.regions.push(r);
+    regionsChanged();
+  }
+  function removeRegion(r) {
+    state.regions = state.regions.filter(function (x) { return x !== r; });
+    if (selected === r) selected = null;
+    regionsChanged();
+  }
+  function regionsChanged() {
+    renderChips();
+    requestRoute();
+    writeUrl();
+    scheduleRender("full");
+  }
+  /* Select a region (or none) and mark its chip, without rebuilding the
+     chips: a double-click to rename lands on the same element. */
+  function selectRegion(r) {
+    selected = r;
+    document.querySelectorAll(".gc-chip-region").forEach(function (li) { li.classList.toggle("is-selected", !!r && li.dataset.region === r.id); });
+    scheduleRender("full");
+  }
+  function regionById(id) { for (var i = 0; i < state.regions.length; i++) if (state.regions[i].id === id) return state.regions[i]; return null; }
+
+  // ---- drawing
+  function setTool(tool) {
+    if (drawing && drawing.tool === tool) tool = null;
+    cancelDrawing();
+    if (!tool) { setStatus(null); return; }
+    drawing = { tool: tool, points: [], pointer: null, center: null, radiusKm: 0, active: false };
+    selectRegion(null);
+    canvas.classList.add("is-drawing");
+    document.querySelectorAll(".gc-tool").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tool === tool)); });
+    setStatus(tool === "polygon" ? "Click to add corners, click the first one again to close, Esc to cancel"
+      : tool === "circle" ? "Press at the centre and drag out the radius, Esc to cancel"
+      : "Draw round the area with the mouse held down, Esc to cancel");
+    scheduleRender("full");
+  }
+  function cancelDrawing() {
+    drawing = null;
+    canvas.classList.remove("is-drawing");
+    document.querySelectorAll(".gc-tool").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+    setStatus(null);
+    scheduleRender("full");
+  }
+  var statusTimer = 0;
+  function setStatus(text, brief) {
+    clearTimeout(statusTimer);
+    if (!text) { drawStatus.hidden = true; return; }
+    drawStatus.textContent = text;
+    drawStatus.hidden = false;
+    if (brief) statusTimer = setTimeout(function () { drawStatus.hidden = true; }, 2200);
+  }
+  function finishPolygon() {
+    var pts = drawing.points.slice();
+    var why = ringProblem(pts);
+    if (why) { setStatus(why, true); return false; }
+    addRegion({ kind: "polygon", points: pts });
+    cancelDrawing();
+    return true;
+  }
+  function finishLasso(screenPts) {
+    var kept = simplify(screenPts, 2.5);
+    // The loop's end meets its start; one corner there is enough.
+    if (kept.length > 1 && Math.hypot(kept[0][0] - kept[kept.length - 1][0], kept[0][1] - kept[kept.length - 1][1]) < 6) kept.pop();
+    var pts = [];
+    kept.forEach(function (q) { var ll = projection.invert(q); if (ll && isFinite(ll[0]) && visible(ll)) pts.push([ll[0], ll[1]]); });
+    var why = ringProblem(pts);
+    if (why) { setStatus(why, true); cancelDrawing(); return; }
+    addRegion({ kind: "polygon", points: pts });
+    cancelDrawing();
+  }
+  function finishCircle() {
+    var d = drawing;
+    if (!d.center || d.radiusKm < 5) { setStatus("Drag further out for a circle", true); d.active = false; d.center = null; scheduleRender("full"); return; }
+    if (d.radiusKm > 9000) { setStatus("That is more than a quarter of the globe", true); d.active = false; d.center = null; scheduleRender("full"); return; }
+    addRegion({ kind: "circle", center: d.center, radiusKm: Math.round(d.radiusKm) });
+    cancelDrawing();
+  }
+  /* Douglas–Peucker on screen points. */
+  function simplify(pts, tol) {
+    if (pts.length < 3) return pts;
+    var keep = new Uint8Array(pts.length); keep[0] = 1; keep[pts.length - 1] = 1;
+    // Split first at the point farthest from the start: a closed loop's ends
+    // coincide, and a chord of no length can measure nothing.
+    var far = 0, farD = -1;
+    for (var k = 1; k < pts.length; k++) { var dk = Math.hypot(pts[k][0] - pts[0][0], pts[k][1] - pts[0][1]); if (dk > farD) { farD = dk; far = k; } }
+    keep[far] = 1;
+    var stack = far < pts.length - 1 ? [[0, far], [far, pts.length - 1]] : [[0, far]];
+    while (stack.length) {
+      var seg = stack.pop(), a = seg[0], b = seg[1], best = -1, bestD = tol;
+      var ax = pts[a][0], ay = pts[a][1], bx = pts[b][0], by = pts[b][1], L = Math.hypot(bx - ax, by - ay) || 1;
+      for (var i = a + 1; i < b; i++) {
+        var d = Math.abs((bx - ax) * (ay - pts[i][1]) - (ax - pts[i][0]) * (by - ay)) / L;
+        if (d > bestD) { bestD = d; best = i; }
+      }
+      if (best >= 0) { keep[best] = 1; stack.push([a, best]); stack.push([best, b]); }
+    }
+    var out = [];
+    for (i = 0; i < pts.length; i++) if (keep[i]) out.push(pts[i]);
+    return out;
+  }
+
+  function drawRegions() {
+    if (!state.regions.length) return;
+    ctx.lineJoin = "round";
+    state.regions.forEach(function (r) {
+      var poly = regionPolygon(r);
+      ctx.beginPath(); path(poly);
+      ctx.fillStyle = pal["region-fill"]; ctx.fill();
+      ctx.fillStyle = hatch; ctx.fill();
+      ctx.strokeStyle = pal.route; ctx.lineWidth = r === selected ? 2 : 1.2; ctx.stroke();
+    });
+    if (selected) {
+      handlesOf(selected).forEach(function (h) {
+        ctx.beginPath(); ctx.arc(h.x, h.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = pal.marker; ctx.fill(); ctx.strokeStyle = pal["marker-ink"]; ctx.lineWidth = 1.2; ctx.stroke();
+      });
+    }
+  }
+  /* The draggable points of a region, on screen. */
+  function handlesOf(r) {
+    var out = [];
+    if (r.kind === "circle") {
+      var c = projection(r.center); if (c && visible(r.center)) out.push({ x: c[0], y: c[1], what: "center" });
+      var e = destination(r.center[0], r.center[1], 90, r.radiusKm);
+      var ep = projection(e); if (ep && visible(e)) out.push({ x: ep[0], y: ep[1], what: "edge" });
+    } else {
+      r.points.forEach(function (p, i) { var q = projection(p); if (q && visible(p)) out.push({ x: q[0], y: q[1], what: i }); });
+    }
+    return out;
+  }
+  function handleAt(x, y) {
+    if (!selected) return null;
+    var hs = handlesOf(selected);
+    for (var i = 0; i < hs.length; i++) if (Math.hypot(hs[i].x - x, hs[i].y - y) < 9) return hs[i];
+    return null;
+  }
+  function drawDrawing() {
+    var d = drawing;
+    if (!d) return;
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = pal.route; ctx.lineWidth = 1.5; ctx.lineJoin = "round";
+    if (d.tool === "polygon" && d.points.length) {
+      var line = d.points.slice();
+      if (d.pointer) line.push(d.pointer);
+      ctx.beginPath(); path({ type: "LineString", coordinates: line }); ctx.stroke();
+      if (d.points.length > 2) { ctx.globalAlpha = 0.5; ctx.beginPath(); path({ type: "LineString", coordinates: [line[line.length - 1], d.points[0]] }); ctx.stroke(); ctx.globalAlpha = 1; }
+      ctx.setLineDash([]);
+      d.points.forEach(function (p, i) {
+        var q = projection(p); if (!q || !visible(p)) return;
+        ctx.beginPath(); ctx.arc(q[0], q[1], i === 0 ? 6 : 4, 0, 2 * Math.PI);
+        ctx.fillStyle = pal.marker; ctx.fill();
+        if (i === 0) { ctx.strokeStyle = pal["marker-ink"]; ctx.lineWidth = 1.5; ctx.stroke(); }
+      });
+    } else if (d.tool === "circle" && d.center && d.radiusKm > 0) {
+      ctx.beginPath(); path(regionPolygon({ kind: "circle", center: d.center, radiusKm: d.radiusKm })); ctx.stroke();
+      ctx.setLineDash([]);
+      var c = projection(d.center);
+      if (c) { ctx.beginPath(); ctx.arc(c[0], c[1], 3, 0, 2 * Math.PI); ctx.fillStyle = pal.marker; ctx.fill(); }
+    } else if (d.tool === "lasso" && d.screen && d.screen.length > 1) {
+      ctx.beginPath(); ctx.moveTo(d.screen[0][0], d.screen[0][1]);
+      for (var i = 1; i < d.screen.length; i++) ctx.lineTo(d.screen[i][0], d.screen[i][1]);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  // ---- the tools' buttons
+  $("draw-btn").addEventListener("click", function () {
+    var tools = $("draw-tools");
+    var open = tools.hidden;
+    tools.hidden = !open;
+    $("draw-btn").setAttribute("aria-expanded", String(open));
+    $("draw-btn").classList.toggle("is-on", open);
+    if (!open) { cancelDrawing(); selectRegion(null); }
+  });
+  document.querySelectorAll(".gc-tool").forEach(function (b) {
+    b.addEventListener("click", function () { setTool(b.dataset.tool); });
+  });
+  canvas.addEventListener("dblclick", function (e) {
+    if (drawing && drawing.tool === "polygon" && drawing.points.length >= 3) { e.preventDefault(); finishPolygon(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === "Escape") {
+      if (drawing) { cancelDrawing(); e.preventDefault(); }
+      else if (selected) selectRegion(null);
+    } else if (e.key === "Enter" && drawing && drawing.tool === "polygon") { finishPolygon(); e.preventDefault(); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && selected && !drawing) { removeRegion(selected); e.preventDefault(); }
+  });
+
   // ------------------------------------------------------------- the worker
   var worker = null, routeTimer = 0, seq = 0, queued = false, busyTimer = 0;
 
@@ -1232,11 +1564,13 @@
   function requestRoute() {
     clearTimeout(routeTimer);
     if (!state.a || !state.b) { state.result = null; state.pendingId = 0; showResult(); return; }
+    void 0;
     if (!state.ready) { queued = true; showBusy(null); return; }
     routeTimer = setTimeout(function () {
       var id = ++seq;
       state.pendingId = id;
-      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()) });
+      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()),
+        regions: state.regions.map(function (r) { return { id: r.id, name: r.name, ring: regionRing(r) }; }) });
       clearTimeout(busyTimer);
       busyTimer = setTimeout(function () { if (state.pendingId === id) showBusy(null); }, 180);
     }, 40);
@@ -1249,7 +1583,11 @@
     return Math.round(km * u.f).toLocaleString() + " " + u.label;
   }
   function names(ids) {
-    return ids.map(function (id) { var f = featureById.get(String(id)); return f ? f.properties.name : id; });
+    return ids.map(function (id) { var f = featureById.get(String(id)); if (f) return f.properties.name; var r = regionById(String(id)); return r ? r.name : id; });
+  }
+  /* What is being avoided, countries then regions, for the sentences. */
+  function avoidedNames() {
+    return Array.from(state.avoid.values()).concat(state.regions.map(function (r) { return r.name; }));
   }
   function joinNames(list) {
     if (list.length <= 1) return list.join("");
@@ -1268,7 +1606,7 @@
     el.classList.add("is-busy");
     el.setAttribute("aria-busy", "true");
     panel.classList.add("has-result");
-    var what = !state.ready ? "Starting the route finder…" : state.avoid.size ? "Finding the way round " + joinNames(Array.from(state.avoid.values())) + "…" : "Measuring…";
+    var what = !state.ready ? "Starting the route finder…" : (state.avoid.size || state.regions.length) ? "Finding the way round " + joinNames(avoidedNames()) + "…" : "Measuring…";
     el.innerHTML = "";
     var line = document.createElement("span"); line.className = "gc-line";
     line.textContent = what + " ";
@@ -1307,7 +1645,7 @@
       res.insideA.concat(res.insideB).forEach(function (id) {
         var b = document.createElement("button"); b.type = "button";
         b.textContent = "Allow " + names([id])[0];
-        b.addEventListener("click", function () { state.avoid.delete(String(id)); avoidChanged(); });
+        b.addEventListener("click", function () { var r = regionById(String(id)); if (r) removeRegion(r); else { state.avoid.delete(String(id)); avoidChanged(); } });
         warn.appendChild(b); warn.appendChild(document.createTextNode(" "));
       });
       sum.appendChild(warn);
@@ -1315,18 +1653,18 @@
       big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
       sum.appendChild(big);
       var w2 = document.createElement("span"); w2.className = "gc-warn";
-      w2.textContent = "There is no way from A to B that stays out of " + joinNames(Array.from(state.avoid.values()));
+      w2.textContent = "There is no way from A to B that stays out of " + joinNames(avoidedNames());
       sum.appendChild(w2);
     } else {
       var detour = res.lengthKm > res.directKm + 0.5;
-      if (state.avoid.size && !detour) {
+      if ((state.avoid.size || state.regions.length) && !detour) {
         big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
         sum.appendChild(big);
         line.innerHTML = "";
-        line.appendChild(document.createTextNode("The direct way already keeps out of " + joinNames(Array.from(state.avoid.values()))));
+        line.appendChild(document.createTextNode("The direct way already keeps out of " + joinNames(avoidedNames())));
         sum.appendChild(line);
       } else if (detour) {
-        big.textContent = fmt(res.lengthKm); big.appendChild(small("avoiding " + joinNames(Array.from(state.avoid.values()))));
+        big.textContent = fmt(res.lengthKm); big.appendChild(small("avoiding " + joinNames(avoidedNames())));
         sum.appendChild(big);
         var extra = res.lengthKm - res.directKm;
         var b1 = document.createElement("b"); b1.textContent = "+" + fmt(extra) + " (" + (100 * extra / res.directKm).toFixed(1) + "%)";
@@ -1346,7 +1684,7 @@
     if (res.directEllipsoidKm != null) row(dl, "Direct, on the WGS84 ellipsoid", fmt(res.directEllipsoidKm));
     var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
     if (detoured) {
-      row(dl, "Avoiding " + joinNames(Array.from(state.avoid.values())), fmt(res.lengthKm));
+      row(dl, "Avoiding " + joinNames(avoidedNames()), fmt(res.lengthKm));
       row(dl, "Bends", String(res.bends));
     }
     if (res.ms != null && res.expanded) row(dl, "Worked out in", (res.ms / 1000).toFixed(res.ms < 100 ? 2 : 1) + " s · " + res.expanded.toLocaleString() + " corners searched");
@@ -1409,12 +1747,17 @@
     var pt = function (k, v) { if (v) p.push(k + "=" + v.lat.toFixed(4) + "," + v.lon.toFixed(4) + (v.label ? "," + encodeURIComponent(v.label) : "")); };
     pt("a", state.a); pt("b", state.b);
     if (state.avoid.size) p.push("avoid=" + Array.from(state.avoid.keys()).join(","));
+    state.regions.forEach(function (r) {
+      var body = r.kind === "circle" ? "c~" + r.center[1].toFixed(3) + "," + r.center[0].toFixed(3) + "," + r.radiusKm
+        : "p~" + r.points.map(function (q) { return q[1].toFixed(3) + "," + q[0].toFixed(3); }).join(";");
+      p.push("r=" + encodeURIComponent(r.name) + "~" + body);
+    });
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear();
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -1434,6 +1777,19 @@
         }
       } else if (k === "avoid") {
         v.split(",").forEach(function (id) { var f = featureById.get(id); if (f && id !== ANTARCTICA) { state.avoid.set(id, f.properties.name); any = true; } });
+      } else if (k === "r") {
+        var parts = v.split("~");
+        if (parts.length !== 3) return;
+        var name; try { name = decodeURIComponent(parts[0]); } catch (err) { name = parts[0]; }
+        var r = null;
+        if (parts[1] === "c") {
+          var cc = parts[2].split(",").map(Number);
+          if (cc.length === 3 && cc.every(isFinite) && Math.abs(cc[0]) <= 90) r = { kind: "circle", center: [cc[1], cc[0]], radiusKm: Math.max(5, Math.min(9000, cc[2])) };
+        } else if (parts[1] === "p") {
+          var pts = parts[2].split(";").map(function (q) { var c = q.split(",").map(Number); return c.length === 2 && c.every(isFinite) ? [c[1], c[0]] : null; }).filter(Boolean);
+          if (pts.length >= 3 && !ringProblem(pts)) r = { kind: "polygon", points: pts };
+        }
+        if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; state.regions.push(r); any = true; }
       }
     });
     return any;
@@ -1595,7 +1951,7 @@
   // A handle for the tests: where a place lands on the screen, and timings.
   window.__greatercircle = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
-    state: state, view: view,
+    state: state, view: view, drawing: function () { return drawing; },
     timeRender: function (detail) { var t0 = performance.now(); render(detail || "full"); return performance.now() - t0; },
     counts: function () { var c = function (l) { var n = 0; l.forEach(function (f) { f.rings.forEach(function (r) { n += r.n; }); }); return n; }; return { full: c(lod.full), mid: c(lod.mid), coarse: c(lod.coarse) }; },
     profile: function (detail) {
