@@ -173,6 +173,13 @@
         margin: 0;
       }
 
+      .hello {
+        margin: 0 0 clamp(14px, 2vh, 22px);
+        font-size: clamp(18px, 1.6vw, 22px);
+        font-weight: 500;
+        color: var(--ink-2);
+      }
+
       .tiles-wrap {
         width: 100%;
         max-width: 640px;
@@ -216,9 +223,14 @@
          and the top copy is clipped away. Hovering opens the clip from the left,
          so the colour change travels across the row as one edge instead of the
          letters each fading on their own. */
+      /* The row reaches past the page's right margin to the edge of the
+         window, and pads the same distance back in, so the words stay where
+         they were and only the colour runs to the edge. */
       .row {
         position: relative;
         display: block;
+        margin-right: calc(-1 * var(--gutter));
+        padding-right: var(--gutter);
         text-decoration: none;
         color: var(--ink);
         overflow: hidden;
@@ -278,6 +290,7 @@
       .row-ink {
         position: absolute;
         inset: 0;
+        padding-right: var(--gutter);
         background: var(--brand, var(--ink));
         color: var(--paper);
         clip-path: inset(0 100% 0 0);
@@ -302,7 +315,7 @@
       /* The live strip: a few seconds of the product, looping, inside the row. */
       .reel {
         position: absolute;
-        right: 0;
+        right: var(--gutter);
         top: 50%;
         transform: translateY(-50%);
         display: flex;
@@ -1902,6 +1915,26 @@
         transform: scale(0.97);
       }
 
+      /* The résumé sits beside the copy button and wears its shape. */
+      .close-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .resume {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .copy:hover {
+          background: var(--ink);
+          color: var(--paper);
+        }
+      }
+
       .copy.is-done {
         background: var(--ink);
         color: var(--paper);
@@ -1950,12 +1983,12 @@
         display: grid;
         grid-template-columns: repeat(var(--n, 40), var(--t));
         grid-auto-rows: var(--t);
-        justify-content: space-between;
         height: calc(var(--t) * 2);
         overflow: hidden;
-        /* In the page's own margins; the first project's padding is the room
-           under it, so above and below come out about even. */
-        margin: clamp(96px, 16vh, 180px) var(--gutter) 0;
+        /* Edge to edge of the window, outside the page's margins; the first
+           project's padding is the room under it, so above and below come out
+           about even. */
+        margin: clamp(96px, 16vh, 180px) 0 0;
       }
 
       .bridge i {
@@ -2089,7 +2122,7 @@
         }
 
         .reel {
-          right: 14px;
+          right: var(--gutter);
         }
 
         .reel-slot {
@@ -2213,12 +2246,15 @@
     <main>
       <section class="hero" aria-labelledby="lede">
         <div class="hero-top">
-          <h1 class="lede" id="lede" data-split>
-            I design and build products with AI. Here are four you can try right on this page.
-          </h1>
+          <div class="hero-intro">
+            <p class="hello">Hi, my name is Noah.</p>
+            <h1 class="lede" id="lede" data-split>
+              I design and build products with AI. Here are four you can try right on this page.
+            </h1>
+          </div>
           <div class="tiles-wrap">
             <canvas id="tiles" class="tiles" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
-            <p class="tiles-hint" id="tiles-hint" hidden>Shake your phone to sharpen the picture.</p>
+            <p class="tiles-hint" id="tiles-hint" hidden>Tap the picture, a square at a time, to see it in full.</p>
           </div>
         </div>
 
@@ -2602,8 +2638,9 @@
       <section class="close" id="contact" aria-labelledby="contact-h">
         <h2 class="close-q" id="contact-h">Want to build something together?</h2>
         <a class="mail" href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>
-        <div>
+        <div class="close-actions">
           <button class="copy" id="copy" type="button">Copy address</button>
+          <a class="copy resume" href="Lee_Noah_Resume.pdf" target="_blank" rel="noopener nofollow">Résumé (PDF)</a>
         </div>
         <footer class="foot">
           <span>2026 · Noah Darwin Lee</span>
@@ -3589,9 +3626,13 @@
           var el = $("#bridge");
           if (!el) return;
           var STEP = 5400 / 6;
+          // Tiles about 28px (20 on a phone), sized so a whole number of them
+          // fills the window exactly, with nothing left over at either edge.
           function fill() {
-            var t = parseFloat(getComputedStyle(el).getPropertyValue("--t")) || 28;
-            var n = Math.max(4, Math.floor(el.clientWidth / (t + 2)));
+            var want = innerWidth <= 640 ? 20 : 28;
+            var w = el.clientWidth;
+            var n = Math.max(4, Math.round(w / want));
+            el.style.setProperty("--t", (w / n).toFixed(3) + "px");
             if (el.childElementCount === n * 2) return;
             el.style.setProperty("--n", n);
             var html = "";
@@ -3621,13 +3662,16 @@
            comes closest to the patch of photograph under it. The pointer splits
            tiles into four, down to four generations, and every split reads the
            photograph again at a finer grain; left alone for a few seconds, they
-           merge back four at a time until the picture is coarse again. */
+           merge back four at a time until the picture is coarse again.
+           On a phone there is no pointer to brush with: the picture is cut into
+           a four-by-four grid, and a tap on a square takes all of it to full
+           detail at once, to stay until the page is left. */
         (function () {
           var canvas = $("#tiles");
           if (!canvas) return;
           var ctx = canvas.getContext("2d");
           var SRC = "../art/web/me-tiles-320.webp";
-          var COLS = 16, ROWS = 28; // the photograph is cut to this shape
+          var COLS = 16, ROWS = 25; // the photograph is cut to this shape
 
           var INKS = [[11, 11, 11], [42, 68, 214], [230, 128, 25], [255, 255, 255]];
           var INK_CSS = INKS.map(function (c) { return "rgb(" + c.join(",") + ")"; });
@@ -3707,6 +3751,9 @@
           }
 
           var MAX_GEN = 4; // a tile splits at most four times: 1/16 of its width
+          var GRID = 4; // on a phone, the picture is cut into GRID x GRID squares to tap
+          var revealed = []; // which of them have been tapped
+          var animUntil = 0; // on a phone, the frame loop runs only while something moves
           var SPLIT_MS = 240; // how long a split takes to open out
           var MERGE_MS = 380; // and a merge to close up
           var REST_MS = 1500; // untouched this long, a group of four merges...
@@ -3714,7 +3761,7 @@
           var lastTouch = 0;
           var FLASH_MS = 900;
           var COLORS = ["#e68019", "#2a44d6"];
-          var MAX_LEAVES = 60000;
+          var MAX_LEAVES = 120000; // enough for all sixteen squares at full detail
 
           var dpr = 1, base = 16, roots = [], leafCount = 0, running = false, visible = true;
           var cssW = 0, cssH = 0;
@@ -3737,6 +3784,13 @@
             canvas.width = Math.round(cssW * dpr);
             canvas.height = Math.round(cssH * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            // On a phone, the finest tiles are about two pixels across: any
+            // finer is more than a phone can draw quickly or the eye can see.
+            if (!fine) {
+              MAX_GEN = 0;
+              while (MAX_GEN < 4 && base / Math.pow(2, MAX_GEN + 1) >= 2) MAX_GEN++;
+            }
+            revealed = [];
             var now = performance.now();
             roots = [];
             leafCount = 0;
@@ -3769,6 +3823,7 @@
             });
             n.merge0 = 0;
             leafCount += 3;
+            animUntil = Math.max(animUntil, now + FLASH_MS);
             return true;
           }
 
@@ -3802,7 +3857,7 @@
           // Groups of four leaves that have rested long enough start merging;
           // a finished merge folds them back into their parent.
           function heal(n, now) {
-            if (!n.kids) return;
+            if (!fine || !n.kids) return;
             var allLeaves = true;
             for (var i = 0; i < 4; i++) {
               heal(n.kids[i], now);
@@ -3909,7 +3964,10 @@
             for (var i = 0; i < roots.length; i++) heal(roots[i], now);
             ctx.clearRect(0, 0, cssW, cssH);
             for (var j = 0; j < roots.length; j++) drawNode(roots[j], now, null);
-            if (busy() || flashing) {
+            // With a mouse the loop runs while anything is split, since what is
+            // split will heal; on a phone nothing heals, so it stops once the
+            // last tap has finished moving.
+            if ((fine ? busy() : now < animUntil) || flashing) {
               requestAnimationFrame(frame);
             } else {
               running = false;
@@ -3944,14 +4002,17 @@
             last = [px, py];
             kick();
           }
-          canvas.addEventListener("pointermove", onMove);
-          canvas.addEventListener("pointerdown", onMove);
-          canvas.addEventListener("pointerleave", function () { last = null; });
+          if (fine) {
+            canvas.addEventListener("pointermove", onMove);
+            canvas.addEventListener("pointerdown", onMove);
+            canvas.addEventListener("pointerleave", function () { last = null; });
+          }
 
-          // On arrival the picture assembles: every tile starts split two
-          // generations deep and heals in, top to bottom.
+          // Not used: the page opens on the coarse picture, the same one the
+          // tiles heal back to. Kept in case the assembling entrance returns.
           function intro() {
-            if (reduce) return;
+            // On a phone the picture starts coarse and stays so until tapped.
+            if (reduce || !fine) return;
             var now = performance.now();
             roots.forEach(function (n, i) {
               var row = Math.floor(i / COLS);
@@ -3975,7 +4036,6 @@
             prep(img);
             started = true;
             layout();
-            intro();
             kick();
           };
           img.src = SRC;
@@ -3996,80 +4056,51 @@
             if (visible) kick();
           }).observe(canvas);
 
-          // On a phone there is no pointer to brush the picture with, so
-          // shaking does it. Each shake splits the tiles where the photograph
-          // has detail under them, one generation a shake, rippling down from
-          // the top; flat patches stay as they are, since splitting them would
-          // add texture and no likeness. Left alone, it heals as before.
-          var lastShake = 0;
-          function shake(now) {
-            if (!started || !visible || now - lastShake < 600) return;
-            lastShake = now;
-            lastTouch = now;
-            var any = false;
-            var walk = function (n) {
-              if (n.kids) {
-                if (n.merge0) {
-                  n.merge0 = 0;
-                  n.kids.forEach(function (k) { k.born = now; });
-                }
-                n.kids.forEach(walk);
-                return;
-              }
+          // A tap takes its square of the grid to full detail in one go: every
+          // tile in it splits down to the finest, a generation at a time, in a
+          // ripple out from the finger.
+          function reveal(gx, gy, tx, ty) {
+            var key = gy * GRID + gx;
+            if (revealed[key]) return;
+            revealed[key] = true;
+            var now = performance.now();
+            var c0 = Math.floor((gx * COLS) / GRID), c1 = Math.floor(((gx + 1) * COLS) / GRID);
+            var r0 = Math.floor((gy * ROWS) / GRID), r1 = Math.floor(((gy + 1) * ROWS) / GRID);
+            var deep = function (n) {
               if (n.g >= MAX_GEN) return;
-              if (patch(n.x, n.y, n.s).sd < 14) return;
-              var d = reduce ? 0 : (n.y / cssH) * 300 + Math.random() * 80;
-              if (split(n, now, true)) {
-                any = true;
-                n.kids.forEach(function (k) {
-                  if (!reduce) {
-                    k.t0 = now + d;
-                    k.flash = now + d;
-                  }
-                  k.born = now + d;
-                });
-              }
+              var d = reduce ? 0 : Math.hypot(n.x + n.s / 2 - tx, n.y + n.s / 2 - ty) * 2.2 + n.g * 170;
+              if (!n.kids) split(n, now, n.g === MAX_GEN - 1);
+              if (!n.kids) return;
+              n.kids.forEach(function (k) {
+                if (!reduce) {
+                  k.t0 = now + d;
+                  if (k.flash) k.flash = now + d;
+                }
+                k.born = now + d;
+                animUntil = Math.max(animUntil, now + d + FLASH_MS);
+                deep(k);
+              });
             };
-            roots.forEach(walk);
-            if (any) kick();
+            for (var r = r0; r < r1; r++) {
+              for (var c = c0; c < c1; c++) deep(roots[r * COLS + c]);
+            }
+            kick();
           }
 
           var hint = $("#tiles-hint");
-          if (!fine && window.DeviceMotionEvent) {
-            var prevG = null;
-            var onMotion = function (e) {
-              var a = e.acceleration, g = e.accelerationIncludingGravity, m;
-              if (a && a.x != null) {
-                m = Math.hypot(a.x, a.y, a.z);
-              } else if (g && g.x != null) {
-                m = prevG ? Math.hypot(g.x - prevG[0], g.y - prevG[1], g.z - prevG[2]) : 0;
-                prevG = [g.x, g.y, g.z];
-              } else {
-                return;
-              }
-              // The first real reading says the phone has a motion sensor.
-              if (hint.hidden) hint.hidden = false;
-              if (m > 13) shake(performance.now());
-            };
-            // iOS asks first, and only from a tap.
-            if (typeof DeviceMotionEvent.requestPermission === "function") {
-              hint.textContent = "Tap the picture, then shake your phone.";
-              hint.hidden = false;
-              var ask = function () {
-                canvas.removeEventListener("click", ask);
-                DeviceMotionEvent.requestPermission().then(function (r) {
-                  if (r === "granted") {
-                    hint.textContent = "Shake your phone to sharpen the picture.";
-                    addEventListener("devicemotion", onMotion);
-                  } else {
-                    hint.hidden = true;
-                  }
-                }, function () { hint.hidden = true; });
-              };
-              canvas.addEventListener("click", ask);
-            } else {
-              addEventListener("devicemotion", onMotion);
-            }
+          if (!fine) {
+            hint.hidden = false;
+            canvas.addEventListener("click", function (e) {
+              if (!started) return;
+              var rect = canvas.getBoundingClientRect();
+              var px = (e.clientX - rect.left) * (cssW / rect.width);
+              var py = (e.clientY - rect.top) * (cssH / rect.height);
+              var gx = Math.min(GRID - 1, Math.max(0, Math.floor((px / cssW) * GRID)));
+              var gy = Math.min(GRID - 1, Math.max(0, Math.floor((py / cssH) * GRID)));
+              reveal(gx, gy, px, py);
+              var left = GRID * GRID - revealed.filter(Boolean).length;
+              hint.textContent = left ? left + " to go." : "That’s all sixteen.";
+            });
           }
         })();
 
@@ -4077,7 +4108,8 @@
            Orange and blue marks dropped behind the pointer, anywhere on the
            page, each shrinking away in under a second: half of them squares
            and half circles, half filled and half drawn in outline, the two
-           halves of the site's mark come apart. */
+           halves of the site's mark come apart. The squares land turned, at
+           some multiple of fifteen degrees. */
         (function () {
           if (reduce || !fine) return;
           var cv = $(".trail");
@@ -4104,8 +4136,8 @@
               return;
             }
             var dist = Math.hypot(x - lx, y - ly);
-            if (dist < 16) return;
-            var n = Math.min(6, Math.floor(dist / 16));
+            if (dist < 32) return;
+            var n = Math.min(3, Math.floor(dist / 32));
             for (var i = 1; i <= n; i++) {
               flip++;
               dots.push({
@@ -4114,6 +4146,9 @@
                 r: 3 + Math.random() * 3.5,
                 c: COLS2[flip % 2],
                 sq: Math.random() < 0.5,
+                // A square turns to one of 0, 15, 30, 45, 60 or 75 degrees; past
+                // 90 a square looks the same again.
+                a: (Math.floor(Math.random() * 6) * 15 * Math.PI) / 180,
                 hollow: Math.random() < 0.5,
                 t: performance.now(),
               });
@@ -4135,8 +4170,14 @@
               c2.globalAlpha = e;
               var r = p.r * (0.35 + 0.65 * e);
               c2.beginPath();
-              if (p.sq) c2.rect(p.x - r, p.y - r, r * 2, r * 2);
-              else c2.arc(p.x, p.y, r, 0, Math.PI * 2);
+              if (p.sq) {
+                var ca = Math.cos(p.a) * r, sa = Math.sin(p.a) * r;
+                c2.moveTo(p.x - ca + sa, p.y - sa - ca);
+                c2.lineTo(p.x + ca + sa, p.y + sa - ca);
+                c2.lineTo(p.x + ca - sa, p.y + sa + ca);
+                c2.lineTo(p.x - ca - sa, p.y - sa + ca);
+                c2.closePath();
+              } else c2.arc(p.x, p.y, r, 0, Math.PI * 2);
               if (p.hollow) {
                 c2.strokeStyle = p.c;
                 c2.lineWidth = 1.5;
