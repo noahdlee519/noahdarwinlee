@@ -173,6 +173,13 @@
         margin: 0;
       }
 
+      .hello {
+        margin: 0 0 clamp(14px, 2vh, 22px);
+        font-size: clamp(18px, 1.6vw, 22px);
+        font-weight: 500;
+        color: var(--ink-2);
+      }
+
       .tiles-wrap {
         width: 100%;
         max-width: 640px;
@@ -1950,12 +1957,12 @@
         display: grid;
         grid-template-columns: repeat(var(--n, 40), var(--t));
         grid-auto-rows: var(--t);
-        justify-content: space-between;
         height: calc(var(--t) * 2);
         overflow: hidden;
-        /* In the page's own margins; the first project's padding is the room
-           under it, so above and below come out about even. */
-        margin: clamp(96px, 16vh, 180px) var(--gutter) 0;
+        /* Edge to edge of the window, outside the page's margins; the first
+           project's padding is the room under it, so above and below come out
+           about even. */
+        margin: clamp(96px, 16vh, 180px) 0 0;
       }
 
       .bridge i {
@@ -2213,9 +2220,12 @@
     <main>
       <section class="hero" aria-labelledby="lede">
         <div class="hero-top">
-          <h1 class="lede" id="lede" data-split>
-            I design and build products with AI. Here are four you can try right on this page.
-          </h1>
+          <div class="hero-intro">
+            <p class="hello">Hi, my name is Noah.</p>
+            <h1 class="lede" id="lede" data-split>
+              I design and build products with AI. Here are four you can try right on this page.
+            </h1>
+          </div>
           <div class="tiles-wrap">
             <canvas id="tiles" class="tiles" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
             <p class="tiles-hint" id="tiles-hint" hidden>Tap the picture, a square at a time, to see it in full.</p>
@@ -3589,9 +3599,13 @@
           var el = $("#bridge");
           if (!el) return;
           var STEP = 5400 / 6;
+          // Tiles about 28px (20 on a phone), sized so a whole number of them
+          // fills the window exactly, with nothing left over at either edge.
           function fill() {
-            var t = parseFloat(getComputedStyle(el).getPropertyValue("--t")) || 28;
-            var n = Math.max(4, Math.floor(el.clientWidth / (t + 2)));
+            var want = innerWidth <= 640 ? 20 : 28;
+            var w = el.clientWidth;
+            var n = Math.max(4, Math.round(w / want));
+            el.style.setProperty("--t", (w / n).toFixed(3) + "px");
             if (el.childElementCount === n * 2) return;
             el.style.setProperty("--n", n);
             var html = "";
@@ -3967,8 +3981,8 @@
             canvas.addEventListener("pointerleave", function () { last = null; });
           }
 
-          // On arrival the picture assembles: every tile starts split two
-          // generations deep and heals in, top to bottom.
+          // Not used: the page opens on the coarse picture, the same one the
+          // tiles heal back to. Kept in case the assembling entrance returns.
           function intro() {
             // On a phone the picture starts coarse and stays so until tapped.
             if (reduce || !fine) return;
@@ -3995,7 +4009,6 @@
             prep(img);
             started = true;
             layout();
-            intro();
             kick();
           };
           img.src = SRC;
