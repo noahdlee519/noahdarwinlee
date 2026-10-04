@@ -167,7 +167,7 @@
       /* The greeting takes the top of the left column and the blurb the bottom,
          so the two ends of the column meet the two ends of the portrait. "Noah"
          is set as large as the project names below, and its full stop is the
-         site's mark, cycling through the four inks with the band further down. */
+         site's mark, cycling through the four inks. */
       .hero-intro {
         display: flex;
         flex-direction: column;
@@ -868,41 +868,9 @@
       }
 
 
-      /* ---------------- the bridge ----------------
-         Two rows of the site's mark between the introduction and the work.
-         Each tile steps through six square-and-circle pairs of the four inks;
-         its place in the row sets where in the cycle it starts, so the pairs
-         travel across in a diagonal wave. */
-      .bridge {
-        --t: 28px;
-        display: grid;
-        grid-template-columns: repeat(var(--n, 40), var(--t));
-        grid-auto-rows: var(--t);
-        height: calc(var(--t) * 2);
-        overflow: hidden;
-        /* Edge to edge of the window, outside the page's margins; the work's
-           padding is the room under it, so above and below come out about
-           even. */
-        margin: clamp(96px, 16vh, 180px) 0 0;
-      }
-
-      .bridge i {
-        position: relative;
-        background: #0b0b0b;
-        animation: bridge-sq 5.4s step-end infinite;
-        animation-delay: var(--d);
-      }
-
-      .bridge i::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        background: #fff;
-        animation: bridge-ci 5.4s step-end infinite;
-        animation-delay: var(--d);
-      }
-
+      /* ---------------- the mark's cycle ----------------
+         The site's mark steps through six square-and-circle pairs of the four
+         inks: the full stop after "Noah" and the coming-soon cards. */
       @keyframes bridge-sq {
         0% { background: #0b0b0b; }
         16.666% { background: #2a44d6; }
@@ -921,15 +889,7 @@
         83.333% { background: #e68019; }
       }
 
-      @media (max-width: 640px) {
-        .bridge {
-          --t: 20px;
-        }
-      }
-
       @media (prefers-reduced-motion: reduce) {
-        .bridge i,
-        .bridge i::after,
         .hello-mark,
         .hello-mark::after {
           animation-play-state: paused;
@@ -1072,10 +1032,6 @@
         </div>
 
       </section>
-
-      <!-- Between the introduction and the work: two rows of the mark,
-           cycling through the four inks in a wave that runs across them. -->
-      <div class="bridge" id="bridge" aria-hidden="true"></div>
 
       <!-- ======================= the work ======================= -->
       <section class="work" id="work" aria-labelledby="work-h">
@@ -1380,40 +1336,6 @@
         };
         addEventListener("scroll", onScroll, { passive: true });
         onScroll();
-
-        /* ---------- the bridge: as many tiles as fit two rows ---------- */
-        (function () {
-          var el = $("#bridge");
-          if (!el) return;
-          var STEP = 5400 / 6;
-          // Tiles about 28px (20 on a phone), sized so a whole number of them
-          // fills the window exactly, with nothing left over at either edge.
-          function fill() {
-            var want = innerWidth <= 640 ? 20 : 28;
-            var w = el.clientWidth;
-            var n = Math.max(4, Math.round(w / want));
-            el.style.setProperty("--t", (w / n).toFixed(3) + "px");
-            if (el.childElementCount === n * 2) return;
-            el.style.setProperty("--n", n);
-            var html = "";
-            for (var r = 0; r < 2; r++) {
-              for (var c = 0; c < n; c++) {
-                // A negative delay starts each tile partway through the cycle:
-                // a step further along for each column, and the second row half
-                // a step behind the first.
-                var d = -((c * 0.34 + r * 0.5) % 6) * STEP;
-                html += '<i style="--d:' + Math.round(d) + 'ms"></i>';
-              }
-            }
-            el.innerHTML = html;
-          }
-          fill();
-          var rb;
-          addEventListener("resize", function () {
-            clearTimeout(rb);
-            rb = setTimeout(fill, 150);
-          });
-        })();
 
         /* ======================= the trail =======================
            Orange and blue marks dropped behind the pointer, anywhere on the
