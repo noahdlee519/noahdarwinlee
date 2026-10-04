@@ -42,10 +42,18 @@ function init(m) {
   send({ type: "ready", ms: Math.round(performance.now() - t0), corners: everything.corners.count });
 }
 
-function obstaclesFor(ids) {
-  var key = ids.slice().sort().join(",");
+/* The obstacles for a request: the chosen countries, and any regions drawn
+   on the globe, which arrive as rings of [lon, lat] with an id and a name. */
+function obstaclesFor(ids, regions) {
+  regions = regions || [];
+  var key = ids.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + r.ring.length + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|");
   for (var i = 0; i < cache.length; i++) if (cache[i].key === key) return cache[i].obs;
   var feats = ids.map(function (id) { return byId.get(String(id)); }).filter(Boolean);
+  regions.forEach(function (r) {
+    var ring = r.ring.slice();
+    if (ring.length && (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])) ring.push(ring[0]);
+    feats.push({ type: "Feature", id: r.id, properties: { name: r.name }, geometry: { type: "Polygon", coordinates: [ring] } });
+  });
   var obs = G.buildObstacles(feats);
   cache.push({ key: key, obs: obs });
   if (cache.length > 6) cache.shift();
@@ -81,7 +89,8 @@ function route(m) {
     endIn: G.featuresContaining(everything, b).map(function (i) { return everything.features[i].id; }),
     avoid: m.avoid
   };
-  if (!m.avoid.length) {
+  var regions = m.regions || [];
+  if (!m.avoid.length && !regions.length) {
     result.waypoints = [m.a, m.b];
     result.lengthKm = result.directKm;
     result.bends = 0;
@@ -95,7 +104,7 @@ function route(m) {
     send(result);
     return;
   }
-  var obs = obstaclesFor(m.avoid);
+  var obs = obstaclesFor(m.avoid, regions);
   var s = G.startSearch(obs, a, b);
   var tick = function () {
     if (latest !== id) return; // superseded while waiting

@@ -24,6 +24,7 @@
   --gc-city: rgba(255, 255, 255, 0.92);
   --gc-city-ring: #e68019;
   --gc-label: #ffffff;
+  --gc-region-fill: rgba(255, 255, 255, 0.18);
 }
 
 :root[data-theme="dark"] {
@@ -46,6 +47,7 @@
   --gc-city: rgba(255, 255, 255, 0.72);
   --gc-city-ring: rgba(0, 0, 0, 0);
   --gc-label: #ffffff;
+  --gc-region-fill: rgba(145, 143, 255, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -69,6 +71,7 @@
     --gc-city: rgba(255, 255, 255, 0.72);
     --gc-city-ring: rgba(0, 0, 0, 0);
     --gc-label: #ffffff;
+    --gc-region-fill: rgba(145, 143, 255, 0.22);
   }
 }
 
@@ -242,9 +245,75 @@ body.gc-page {
   display: block;
   margin: 0 auto;
 }
-.gc-ctl[aria-pressed="true"] {
+.gc-ctl[aria-pressed="true"],
+.gc-ctl.is-on {
   background: var(--ink);
   color: var(--bg);
+}
+
+/* The drawing tools: a pen, and a strip of three to its left when open. */
+.gc-draw {
+  position: relative;
+}
+.gc-draw-tools {
+  position: absolute;
+  right: 44px;
+  top: 0;
+  display: flex;
+  gap: 6px;
+}
+.gc-globe.is-drawing {
+  cursor: crosshair;
+}
+.gc-globe.is-over-handle {
+  cursor: move;
+}
+.gc-draw-status {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--page-top) + 8px);
+  transform: translateX(-50%);
+  z-index: 26;
+  padding: 7px 14px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gc-draw-status b {
+  font-weight: 500;
+}
+/* Only with a mouse: the drawing is a desktop thing. */
+@media (hover: none), (max-width: 640px) {
+  .gc-draw,
+  .gc-draw-hint {
+    display: none;
+  }
+}
+.gc-chip-region {
+  gap: 6px;
+}
+.gc-chip-region svg {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+}
+.gc-chip-region .gc-chip-name {
+  cursor: text;
+}
+.gc-chip-region input {
+  width: 9ch;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+}
+.gc-chip.is-selected {
+  background: var(--gc-hover);
 }
 
 /* ---- the panel ---- */

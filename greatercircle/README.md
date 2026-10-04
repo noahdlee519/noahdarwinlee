@@ -23,8 +23,12 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   borders at three levels of detail chosen by how big the globe is on screen,
   d3-geo for the route arcs and the exact pointer test, a colour-coded second
   canvas to find the country under the pointer), the inputs with suggestions,
-  the avoid list (type, pick from the list, or shift-click the globe), the
-  results, and the URL hash that holds the state, so a route can be shared.
+  the avoid list (type, pick from the list, or shift-click the globe), regions
+  of your own to avoid (with a mouse: a polygon corner by corner, a circle
+  dragged out from its centre, or a freehand outline; each becomes a ring of
+  great-circle edges the engine treats like a country, with handles to adjust
+  it afterwards), the results, and the URL hash that holds the state, so a
+  route can be shared.
 - **data/countries-50m.json** — Natural Earth 1:50m countries (world-atlas),
   with unique ids and display names; **data/places.json** — cities, capitals,
   airports and countries for the search boxes. Both come from
