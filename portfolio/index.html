@@ -223,9 +223,14 @@
          and the top copy is clipped away. Hovering opens the clip from the left,
          so the colour change travels across the row as one edge instead of the
          letters each fading on their own. */
+      /* The row reaches past the page's right margin to the edge of the
+         window, and pads the same distance back in, so the words stay where
+         they were and only the colour runs to the edge. */
       .row {
         position: relative;
         display: block;
+        margin-right: calc(-1 * var(--gutter));
+        padding-right: var(--gutter);
         text-decoration: none;
         color: var(--ink);
         overflow: hidden;
@@ -285,6 +290,7 @@
       .row-ink {
         position: absolute;
         inset: 0;
+        padding-right: var(--gutter);
         background: var(--brand, var(--ink));
         color: var(--paper);
         clip-path: inset(0 100% 0 0);
@@ -309,7 +315,7 @@
       /* The live strip: a few seconds of the product, looping, inside the row. */
       .reel {
         position: absolute;
-        right: 0;
+        right: var(--gutter);
         top: 50%;
         transform: translateY(-50%);
         display: flex;
@@ -2096,7 +2102,7 @@
         }
 
         .reel {
-          right: 14px;
+          right: var(--gutter);
         }
 
         .reel-slot {
@@ -4081,7 +4087,8 @@
            Orange and blue marks dropped behind the pointer, anywhere on the
            page, each shrinking away in under a second: half of them squares
            and half circles, half filled and half drawn in outline, the two
-           halves of the site's mark come apart. */
+           halves of the site's mark come apart. The squares land turned, at
+           some multiple of fifteen degrees. */
         (function () {
           if (reduce || !fine) return;
           var cv = $(".trail");
@@ -4118,6 +4125,9 @@
                 r: 3 + Math.random() * 3.5,
                 c: COLS2[flip % 2],
                 sq: Math.random() < 0.5,
+                // A square turns to one of 0, 15, 30, 45, 60 or 75 degrees; past
+                // 90 a square looks the same again.
+                a: (Math.floor(Math.random() * 6) * 15 * Math.PI) / 180,
                 hollow: Math.random() < 0.5,
                 t: performance.now(),
               });
@@ -4139,8 +4149,14 @@
               c2.globalAlpha = e;
               var r = p.r * (0.35 + 0.65 * e);
               c2.beginPath();
-              if (p.sq) c2.rect(p.x - r, p.y - r, r * 2, r * 2);
-              else c2.arc(p.x, p.y, r, 0, Math.PI * 2);
+              if (p.sq) {
+                var ca = Math.cos(p.a) * r, sa = Math.sin(p.a) * r;
+                c2.moveTo(p.x - ca + sa, p.y - sa - ca);
+                c2.lineTo(p.x + ca + sa, p.y + sa - ca);
+                c2.lineTo(p.x + ca - sa, p.y + sa + ca);
+                c2.lineTo(p.x - ca - sa, p.y - sa + ca);
+                c2.closePath();
+              } else c2.arc(p.x, p.y, r, 0, Math.PI * 2);
               if (p.hollow) {
                 c2.strokeStyle = p.c;
                 c2.lineWidth = 1.5;
