@@ -1915,6 +1915,26 @@
         transform: scale(0.97);
       }
 
+      /* The résumé sits beside the copy button and wears its shape. */
+      .close-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .resume {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .copy:hover {
+          background: var(--ink);
+          color: var(--paper);
+        }
+      }
+
       .copy.is-done {
         background: var(--ink);
         color: var(--paper);
@@ -2618,8 +2638,9 @@
       <section class="close" id="contact" aria-labelledby="contact-h">
         <h2 class="close-q" id="contact-h">Want to build something together?</h2>
         <a class="mail" href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>
-        <div>
+        <div class="close-actions">
           <button class="copy" id="copy" type="button">Copy address</button>
+          <a class="copy resume" href="Lee_Noah_Resume.pdf" target="_blank" rel="noopener nofollow">Résumé (PDF)</a>
         </div>
         <footer class="foot">
           <span>2026 · Noah Darwin Lee</span>
@@ -3650,7 +3671,7 @@
           if (!canvas) return;
           var ctx = canvas.getContext("2d");
           var SRC = "../art/web/me-tiles-320.webp";
-          var COLS = 16, ROWS = 28; // the photograph is cut to this shape
+          var COLS = 16, ROWS = 25; // the photograph is cut to this shape
 
           var INKS = [[11, 11, 11], [42, 68, 214], [230, 128, 25], [255, 255, 255]];
           var INK_CSS = INKS.map(function (c) { return "rgb(" + c.join(",") + ")"; });
