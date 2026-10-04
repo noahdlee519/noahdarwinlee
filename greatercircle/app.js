@@ -33,6 +33,7 @@
   var topology = null, features = [], featureById = new Map(), lod = null, borders = null, graticule = null;
   var cities = []; // { name, cc, lon, lat, tier, x, y, z }
   var admin1 = null, admin1Asked = false; // the borders inside countries, fetched when the globe is close
+  var airports = null; // { name, cc, lon, lat, iata, big, x, y, z }, from the place list, drawn when the globe is very close
   var countries = [];          // [{ id, name, key }] sorted, for the avoid search
   var places = null, placesPromise = null;
 
@@ -41,7 +42,7 @@
   var path = d3.geoPath(projection, ctx);
   var view = { lon: -25, lat: 28, zoom: 1 };
   var dpr = 1, W = 0, H = 0, base = 0, cx = 0, cy = 0;
-  var MIN_ZOOM = 0.6, MAX_ZOOM = 24;
+  var MIN_ZOOM = 0.6, MAX_ZOOM = 80;
 
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -412,20 +413,62 @@
       placed.push({ x: lx, y: ly, w: lw, h: lh });
       cityScreen.push({ c: c, x: px, y: py });
     }
+    var nCities = cityScreen.length;
+    // Airports, very close in: large ones first, after the cities' names.
+    var air = airportAlpha(r);
+    if (air > 0) {
+      if (!airports) loadPlaces();
+      else for (i = 0; i < airports.length; i++) {
+        c = airports[i];
+        sz = c.x * vx + c.y * vy + c.z * vz;
+        if (sz <= 0.02) continue;
+        px = cx + r * (c.x * ex + c.y * ey + c.z * ez); py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
+        if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
+        if (!c.label) c.label = c.iata + "  " + c.name.replace(/\s+airport$/i, "");
+        if (!c.w) c.w = ctx.measureText(c.label).width;
+        lx = px + dot + 5; ly = py - 7; lw = c.w + pad * 2; lh = 14;
+        clash = false;
+        for (k = 0; k < placed.length; k++) { q = placed[k]; if (lx < q.x + q.w + 4 && lx + lw + 4 > q.x && ly < q.y + q.h + 1 && ly + lh + 1 > q.y) { clash = true; break; } }
+        if (clash) continue;
+        placed.push({ x: lx, y: ly, w: lw, h: lh });
+        cityScreen.push({ c: c, x: px, y: py });
+      }
+    }
     ctx.fillStyle = pal.city;
     ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2;
-    for (i = 0; i < cityScreen.length; i++) {
+    for (i = 0; i < nCities; i++) {
       var s = cityScreen[i];
       ctx.beginPath(); ctx.arc(s.x, s.y, dot, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
     }
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
     ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
-    for (i = 0; i < cityScreen.length; i++) {
+    for (i = 0; i < nCities; i++) {
       s = cityScreen[i];
       ctx.strokeText(s.c.name, s.x + dot + 4, s.y);
       ctx.fillStyle = pal.label; ctx.fillText(s.c.name, s.x + dot + 4, s.y);
     }
+    if (cityScreen.length > nCities) {
+      // An airport is a small square set on its corner, and its code and name.
+      ctx.globalAlpha = air;
+      var d = dot + 1.2;
+      for (i = nCities; i < cityScreen.length; i++) {
+        s = cityScreen[i];
+        ctx.beginPath(); ctx.moveTo(s.x, s.y - d); ctx.lineTo(s.x + d, s.y); ctx.lineTo(s.x, s.y + d); ctx.lineTo(s.x - d, s.y); ctx.closePath();
+        ctx.fillStyle = pal.city; ctx.fill(); ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2; ctx.stroke();
+      }
+      ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
+      for (i = nCities; i < cityScreen.length; i++) {
+        s = cityScreen[i];
+        ctx.strokeText(s.c.label, s.x + dot + 5, s.y);
+        ctx.fillStyle = pal.label; ctx.fillText(s.c.label, s.x + dot + 5, s.y);
+      }
+      ctx.globalAlpha = 1;
+    }
   }
+  /* How visible the airports are at this globe radius: none below 5500 px,
+     whole from 7500. */
+  var AIRPORTS_FROM = 5500, AIRPORTS_FULL = 7500;
+  function airportAlpha(r) { return Math.max(0, Math.min(1, (r - AIRPORTS_FROM) / (AIRPORTS_FULL - AIRPORTS_FROM))); }
   function cityAt(x, y) {
     var best = null, bestD = 9;
     for (var i = 0; i < cityScreen.length; i++) { var d = Math.hypot(cityScreen[i].x - x, cityScreen[i].y - y); if (d < bestD) { bestD = d; best = cityScreen[i].c; } }
@@ -758,7 +801,7 @@
     var slot = !state.a ? "a" : !state.b ? "b" : "b";
     var city = cityAt(x, y);
     if (city) {
-      setPoint(slot, { lon: city.lon, lat: city.lat, label: city.name + ", " + ((places && places.countries[city.cc]) || city.cc) }, { quiet: true });
+      setPoint(slot, { lon: city.lon, lat: city.lat, label: (city.airport ? city.name + " (" + city.iata + ")" : city.name) + ", " + ((places && places.countries[city.cc]) || city.cc) }, { quiet: true });
       commitPoint(slot);
       return;
     }
@@ -785,7 +828,7 @@
       canvas.classList.toggle("is-over-city", !!city && !(shift || state.avoidMode));
       if (city && !(shift || state.avoidMode)) {
         setHover(-1);
-        showTip(x, y, city.name, places && places.countries[city.cc] || city.cc, "click to set a point here");
+        showTip(x, y, city.airport ? city.name + " (" + city.iata + ")" : city.name, places && places.countries[city.cc] || city.cc, "click to set a point here");
         return;
       }
       var idx = countryAt(x, y);
@@ -1049,6 +1092,12 @@
       places = { rows: rows, countries: data.countries, aliases: new Map() };
       rows.forEach(function (r) { if (r.kind === 0) places.aliases.set(String(r.extra), r.aliases || []); });
       applyAliases();
+      airports = rows.filter(function (r) { return r.kind === 2 && r.iata; }).map(function (r) {
+        var v = G.toVec(r.lon, r.lat);
+        return { name: r.name, cc: r.cc, lon: r.lon, lat: r.lat, iata: r.iata, big: r.pop === 2, airport: true, x: v[0], y: v[1], z: v[2] };
+      });
+      airports.sort(function (a, b) { return (b.big ? 1 : 0) - (a.big ? 1 : 0); });
+      scheduleRender("full");
       return places;
     }).catch(function (err) {
       console.warn("places list", err);

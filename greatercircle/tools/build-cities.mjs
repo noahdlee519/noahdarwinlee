@@ -88,7 +88,7 @@ for (const [tier, list] of [[1, T1], [2, T2], [3, T3]]) {
 }
 // The three tiers whole, then capitals, then the rest by population to
 // five hundred in all.
-const LIMIT = 500;
+const LIMIT = 550;
 const kept = out.filter((c) => c[4] < 3).concat(out.filter((c) => c[4] === 3));
 
 const near = (a, b) => { const dx = (a[0] - b[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), dy = a[1] - b[1]; return Math.hypot(dx, dy) < 0.4; };
@@ -131,16 +131,23 @@ for (const c of kept) {
   c[4] = 2; hasBig.add(c[1]); promoted++;
 }
 console.log(promoted, "capitals promoted to the second tier");
+for (const c of kept) if (c[0] === "Brno") c[4] = 2;
 kept.sort((a, b) => a[4] - b[4]);
 
 // Then a fourth tier by population, no more than four to a country so they
 // spread, and none on top of one already there.
-const PER_COUNTRY = 4;
+const PER_COUNTRY = 5;
 const perCountry = {};
+// The gazetteer's slips: a village with a city's count, a district under
+// its own name, a name longer than the city's.
+const SKIP = new Set(["budta|PH", "takeo|KH", "al mawsil al jadidah|IQ", "malingao|PH"]);
+const RENAME = { "leon de los aldama|MX": "León", "nizhniy novgorod|RU": "Nizhny Novgorod", "rostov na donu|RU": "Rostov-on-Don", "al hudaydah|YE": "Hodeidah", "taizz|YE": "Taiz", "surat|IN": "Surat", "tai an|CN": "Tai'an", "rajshahi|BD": "Rajshahi", "fes|MA": "Fez", "hamhung|KP": "Hamhung", "as sulaymaniyah|IQ": "Sulaymaniyah" };
 const bigFirst = cities.slice().sort((a, b) => (b[5] || 0) - (a[5] || 0));
 for (const c of bigFirst) {
   if (kept.length >= LIMIT) break;
   const cc = c[2];
+  if (SKIP.has(fold(c[1]) + "|" + cc)) continue;
+  c[1] = RENAME[fold(c[1]) + "|" + cc] || c[1];
   if ((perCountry[cc] || 0) >= PER_COUNTRY) continue;
   if (kept.some((k) => k[1] === cc && near([k[2], k[3]], [c[3], c[4]]))) continue;
   if (kept.some((k) => near([k[2], k[3]], [c[3], c[4]]))) continue;
