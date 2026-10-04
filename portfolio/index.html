@@ -160,7 +160,7 @@
         transform: none;
       }
 
-      /* The intro on the left, the name in tiles on the right. */
+      /* The intro on the left, the portrait in tiles on the right. */
       .hero-top {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
@@ -611,15 +611,26 @@
       }
 
       .notes {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0 clamp(24px, 5vw, 80px);
         margin-top: clamp(36px, 6vh, 64px);
       }
 
+      /* One note per project now: the heading in the left third, the
+         writing beside it, as a label sits beside its text. */
       .note-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        column-gap: clamp(24px, 5vw, 80px);
         border-top: 1px solid var(--rule);
         padding-top: 16px;
+      }
+
+      .note-col > * {
+        grid-column: 2;
+      }
+
+      .note-col > h3 {
+        grid-column: 1;
+        grid-row: 1 / span 9;
       }
 
       .note-col h3 {
@@ -1862,7 +1873,7 @@
         bottom: -0.04em;
         height: max(3px, 0.06em);
         background: currentColor;
-        transform: scaleX(0.18);
+        transform: scaleX(0);
         transform-origin: left;
         transition: transform 600ms var(--ease-out);
       }
@@ -1926,6 +1937,73 @@
         background: linear-gradient(90deg, #e68019, #2a44d6);
         transform-origin: 0 50%;
         transform: scaleX(0);
+      }
+
+
+      /* ---------------- the bridge ----------------
+         Two rows of the site's mark between the index and the first project.
+         Each tile steps through six square-and-circle pairs of the four inks;
+         its place in the row sets where in the cycle it starts, so the pairs
+         travel across in a diagonal wave. */
+      .bridge {
+        --t: 28px;
+        display: grid;
+        grid-template-columns: repeat(var(--n, 40), var(--t));
+        grid-auto-rows: var(--t);
+        justify-content: space-between;
+        height: calc(var(--t) * 2);
+        overflow: hidden;
+        /* In the page's own margins; the first project's padding is the room
+           under it, so above and below come out about even. */
+        margin: clamp(96px, 16vh, 180px) var(--gutter) 0;
+      }
+
+      .bridge i {
+        position: relative;
+        background: #0b0b0b;
+        animation: bridge-sq 5.4s step-end infinite;
+        animation-delay: var(--d);
+      }
+
+      .bridge i::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: #fff;
+        animation: bridge-ci 5.4s step-end infinite;
+        animation-delay: var(--d);
+      }
+
+      @keyframes bridge-sq {
+        0% { background: #0b0b0b; }
+        16.666% { background: #2a44d6; }
+        33.333% { background: #fff; }
+        50% { background: #e68019; }
+        66.666% { background: #0b0b0b; }
+        83.333% { background: #fff; }
+      }
+
+      @keyframes bridge-ci {
+        0% { background: #fff; }
+        16.666% { background: #fff; }
+        33.333% { background: #2a44d6; }
+        50% { background: #0b0b0b; }
+        66.666% { background: #e68019; }
+        83.333% { background: #e68019; }
+      }
+
+      @media (max-width: 640px) {
+        .bridge {
+          --t: 20px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .bridge i,
+        .bridge i::after {
+          animation-play-state: paused;
+        }
       }
 
       /* ---------------- narrow ---------------- */
@@ -1996,13 +2074,18 @@
           max-height: none;
         }
 
-        .notes,
         .p-sub {
           grid-template-columns: 1fr;
         }
 
-        .notes {
-          gap: 28px;
+        .note-col {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .note-col > *,
+        .note-col > h3 {
+          grid-column: 1;
+          grid-row: auto;
         }
 
         .reel {
@@ -2134,8 +2217,8 @@
             I design and build products with AI. Here are four you can try right on this page.
           </h1>
           <div class="tiles-wrap">
-            <canvas id="tiles" class="tiles" role="img" aria-label="Noah Darwin Lee, spelled in tiles of the site's square-and-circle mark"></canvas>
-            <p class="tiles-hint" id="tiles-hint" hidden>Shake your phone to sharpen the name.</p>
+            <canvas id="tiles" class="tiles" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
+            <p class="tiles-hint" id="tiles-hint" hidden>Shake your phone to sharpen the picture.</p>
           </div>
         </div>
 
@@ -2206,7 +2289,7 @@
                   <span class="row-meta"><b>Globe</b>Flight paths around the countries you'd avoid</span>
                 </div>
                 <div class="reel">
-                  <img class="reel-logo" src="../art/web/materials/greatercircle-480.webp" alt="" width="44" height="44" />
+                  <img class="reel-logo" src="../art/web/materials/greatercircle-icon-176.webp" alt="" width="44" height="44" />
                   <div class="reel-slot"></div>
                 </div>
               </div>
@@ -2217,6 +2300,10 @@
           <span>Built with Claude Code, Claude and Cursor</span>
         </div>
       </section>
+
+      <!-- Between the index and the first project: two rows of the mark,
+           cycling through the four inks in a wave that runs across them. -->
+      <div class="bridge" id="bridge" aria-hidden="true"></div>
 
       <!-- ======================= Leggio ======================= -->
       <section class="project" id="leggio" aria-labelledby="leggio-h" style="--brand: #1f4e3d">
@@ -2292,7 +2379,7 @@
 
         <div class="notes">
           <div class="note-col">
-            <h3>The AI inside</h3>
+            <h3>Technical details</h3>
             <p>
               Leggio translates with the AI models built into Chrome, so the words you select are
               translated on your own computer, for free. You can plug in your own API key if you’d rather use a
@@ -2307,18 +2394,6 @@
               <li>On-device</li>
               <li>Context-aware</li>
               <li>Web pages + PDFs</li>
-            </ul>
-          </div>
-          <div class="note-col">
-            <h3>How I built it</h3>
-            <p>
-              I designed and built Leggio myself, working with Claude Code, Claude and Cursor. They
-              took it from first sketch to a working extension and its website.
-            </p>
-            <ul class="chips">
-              <li>Claude Code</li>
-              <li>Claude</li>
-              <li>Cursor</li>
             </ul>
           </div>
         </div>
@@ -2385,7 +2460,7 @@
 
         <div class="notes">
           <div class="note-col">
-            <h3>The AI inside</h3>
+            <h3>Technical details</h3>
             <p>
               The dictionary has an assistant, powered by Claude, that answers questions in plain
               language: how to say “have you eaten?”, what a word means, or what tone sandhi is. It
@@ -2396,17 +2471,6 @@
               <li>Claude</li>
               <li>Search across 3 scripts</li>
               <li>Native-speaker audio</li>
-            </ul>
-          </div>
-          <div class="note-col">
-            <h3>How I built it</h3>
-            <p>
-              I built the site with Claude: search, the assistant, the recording flow, and pages
-              for learning the basics. I’m also one of its contributors,
-              with 79 recordings of my own.
-            </p>
-            <ul class="chips">
-              <li>Claude</li>
             </ul>
           </div>
         </div>
@@ -2455,7 +2519,7 @@
 
         <div class="notes">
           <div class="note-col">
-            <h3>Under the hood</h3>
+            <h3>Technical details</h3>
             <p>
               Footprints, roof heights and years come from NYC Open Data. Satellite and 3D views come
               from Google’s Photorealistic 3D Tiles, and archive photos open on Urban Archive.
@@ -2470,16 +2534,6 @@
               <li>NYC Open Data</li>
               <li>3D Tiles</li>
               <li>Cited sources</li>
-            </ul>
-          </div>
-          <div class="note-col">
-            <h3>How I built it</h3>
-            <p>
-              Designed and built with Claude Code: the map, the building record, the 3D view and
-              the system for adding to the record.
-            </p>
-            <ul class="chips">
-              <li>Claude Code</li>
             </ul>
           </div>
         </div>
@@ -2521,7 +2575,7 @@
 
         <div class="notes">
           <div class="note-col">
-            <h3>Under the hood</h3>
+            <h3>Technical details</h3>
             <p>
               The route is the classical shortest path among polygonal obstacles, carried onto the
               sphere: a chain of great-circle arcs that bends only at the avoided countries’ convex
@@ -2539,17 +2593,6 @@
               <li>241 countries</li>
               <li>14,500 places</li>
               <li>Web Worker</li>
-            </ul>
-          </div>
-          <div class="note-col">
-            <h3>How I built it</h3>
-            <p>
-              Designed and built with Claude Code in a day: the geometry engine and its tests, the
-              globe, the search, and two rounds of review by a second agent that found the bugs the
-              first missed.
-            </p>
-            <ul class="chips">
-              <li>Claude Code</li>
             </ul>
           </div>
         </div>
@@ -3541,87 +3584,133 @@
           if (!userTouchedLore) openPlace(2, true);
         });
 
-        /* ======================= the name, in tiles =======================
-           "Noah / Darwin / Lee" set in the site's mark, the square with a circle
-           in it. A black tile (black square, white circle) is ink; its negative
-           is paper. The pointer splits tiles into four, down to four generations,
-           and each split reads the name more finely; left alone for a few
-           seconds, they merge back four at a time until the name is coarse again. */
+        /* ---------- the bridge: as many tiles as fit two rows ---------- */
+        (function () {
+          var el = $("#bridge");
+          if (!el) return;
+          var STEP = 5400 / 6;
+          function fill() {
+            var t = parseFloat(getComputedStyle(el).getPropertyValue("--t")) || 28;
+            var n = Math.max(4, Math.floor(el.clientWidth / (t + 2)));
+            if (el.childElementCount === n * 2) return;
+            el.style.setProperty("--n", n);
+            var html = "";
+            for (var r = 0; r < 2; r++) {
+              for (var c = 0; c < n; c++) {
+                // A negative delay starts each tile partway through the cycle:
+                // a step further along for each column, and the second row half
+                // a step behind the first.
+                var d = -((c * 0.34 + r * 0.5) % 6) * STEP;
+                html += '<i style="--d:' + Math.round(d) + 'ms"></i>';
+              }
+            }
+            el.innerHTML = html;
+          }
+          fill();
+          var rb;
+          addEventListener("resize", function () {
+            clearTimeout(rb);
+            rb = setTimeout(fill, 150);
+          });
+        })();
+
+        /* ======================= the portrait, in tiles =======================
+           A photograph of me set in the site's mark, the square with a circle in
+           it, in four inks: black, blue, orange and white. Each tile takes the
+           pair of inks, one for the square and one for the circle, whose mix
+           comes closest to the patch of photograph under it. The pointer splits
+           tiles into four, down to four generations, and every split reads the
+           photograph again at a finer grain; left alone for a few seconds, they
+           merge back four at a time until the picture is coarse again. */
         (function () {
           var canvas = $("#tiles");
           if (!canvas) return;
           var ctx = canvas.getContext("2d");
+          var SRC = "../art/web/me-tiles-320.webp";
+          var COLS = 16, ROWS = 28; // the photograph is cut to this shape
 
-          // The name is set in the site's own typeface, drawn once into a mask
-          // the tiles read from. Each tile is ink if the letters cover at least
-          // half of it, so the coarse grid is a blocky, barely legible name, and
-          // every split reads the mask again at a finer grain: a few passes of
-          // the pointer and that patch is Familjen Grotesk.
-          var WORDS = ["NOAH", "DARWIN", "LEE"];
-          var MARGIN = 1, LINE = 1, CAP = 5; // in tiles: border, gap between lines, cap height
-          var FONT_W = 700; // heavy enough that a stroke still fills a coarse tile
-          var COLS = 32, ROWS = WORDS.length * CAP + (WORDS.length - 1) * LINE + MARGIN * 2;
-          var maskData = null, maskW = 0, maskH = 0, K = 2; // mask pixels per CSS pixel
-          var fontSizeCells = 8, wordLeft = [];
+          var INKS = [[11, 11, 11], [42, 68, 214], [230, 128, 25], [255, 255, 255]];
+          var INK_CSS = INKS.map(function (c) { return "rgb(" + c.join(",") + ")"; });
+          var CIRCLE = Math.PI / 4; // the share of a tile the circle covers
 
-          function fontAt(px) {
-            return FONT_W + " " + px + 'px "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif';
+          // Every square-and-circle pair of two different inks, and the colour
+          // it reads as from a distance. A tile is never one flat ink: the mark
+          // is always there.
+          var PAIRS = [];
+          for (var a = 0; a < 4; a++) {
+            for (var b = 0; b < 4; b++) {
+              if (a === b) continue;
+              var mix = [0, 1, 2].map(function (k) { return INKS[a][k] * (1 - CIRCLE) + INKS[b][k] * CIRCLE; });
+              PAIRS.push({ sq: a, ci: b, mix: mix, css: "rgb(" + mix.map(Math.round).join(",") + ")" });
+            }
           }
 
-          // Size the grid to the words: their cap height is CAP tiles.
-          function measure() {
-            var m = document.createElement("canvas").getContext("2d");
-            m.font = fontAt(100);
-            if ("letterSpacing" in m) m.letterSpacing = "4px";
-            var capH = m.measureText("H").actualBoundingBoxAscent || 70;
-            fontSizeCells = (CAP * 100) / capH;
-            var widest = 0;
-            wordLeft = WORDS.map(function (w) {
-              var t = m.measureText(w);
-              var ink = (t.actualBoundingBoxRight || t.width) + (t.actualBoundingBoxLeft || 0);
-              widest = Math.max(widest, ink);
-              return t.actualBoundingBoxLeft || 0;
-            });
-            COLS = Math.ceil((widest / 100) * fontSizeCells) + MARGIN * 2;
-          }
-
-          function buildMask() {
-            maskW = Math.round(cssW * K);
-            maskH = Math.round(cssH * K);
-            var mc = document.createElement("canvas");
-            mc.width = maskW;
-            mc.height = maskH;
-            var m = mc.getContext("2d");
-            var px = fontSizeCells * base * K;
-            m.font = fontAt(px);
-            if ("letterSpacing" in m) m.letterSpacing = (4 * px) / 100 + "px";
-            m.fillStyle = "#000";
-            WORDS.forEach(function (w, i) {
-              var x = MARGIN * base * K + (wordLeft[i] * px) / 100;
-              var y = (MARGIN + i * (CAP + LINE) + CAP) * base * K;
-              m.fillText(w, x, y);
-            });
-            maskData = m.getImageData(0, 0, maskW, maskH).data;
-          }
-
-          // How much of a tile the letters cover, sampled on a 4 x 4 grid.
-          function inkAt(x, y, s) {
-            var hit = 0;
-            for (var a = 0; a < 4; a++) {
-              for (var b = 0; b < 4; b++) {
-                var mx = Math.min(maskW - 1, Math.floor((x + ((a + 0.5) * s) / 4) * K));
-                var my = Math.min(maskH - 1, Math.floor((y + ((b + 0.5) * s) / 4) * K));
-                if (maskData[(my * maskW + mx) * 4 + 3] > 127) hit++;
+          // The photograph, as running sums, so the average colour of any patch
+          // is four lookups whatever its size.
+          var imgW = 0, imgH = 0, SR, SG, SB, SL, SQ;
+          function prep(img) {
+            imgW = img.naturalWidth;
+            imgH = img.naturalHeight;
+            var c = document.createElement("canvas");
+            c.width = imgW;
+            c.height = imgH;
+            var x = c.getContext("2d");
+            x.drawImage(img, 0, 0);
+            var d = x.getImageData(0, 0, imgW, imgH).data;
+            var W1 = imgW + 1, N = W1 * (imgH + 1);
+            SR = new Float64Array(N); SG = new Float64Array(N); SB = new Float64Array(N);
+            SL = new Float64Array(N); SQ = new Float64Array(N);
+            for (var y = 0; y < imgH; y++) {
+              var r = 0, g = 0, bl = 0, l = 0, q = 0;
+              for (var xx = 0; xx < imgW; xx++) {
+                var i = (y * imgW + xx) * 4;
+                // A little more contrast and colour than the print has, so four
+                // inks have something to bite on.
+                var R = d[i], G = d[i + 1], B = d[i + 2];
+                var L = 0.299 * R + 0.587 * G + 0.114 * B;
+                R = L + (R - L) * 1.35; G = L + (G - L) * 1.35; B = L + (B - L) * 1.35;
+                R = 128 + (R - 128) * 1.2; G = 128 + (G - 128) * 1.2; B = 128 + (B - 128) * 1.2;
+                r += R; g += G; bl += B; l += L; q += L * L;
+                var o = (y + 1) * W1 + xx + 1, u = y * W1 + xx + 1;
+                SR[o] = SR[u] + r; SG[o] = SG[u] + g; SB[o] = SB[u] + bl; SL[o] = SL[u] + l; SQ[o] = SQ[u] + q;
               }
             }
-            return hit >= 8;
+          }
+
+          function patch(x, y, s) {
+            var k = imgW / cssW;
+            var x0 = Math.max(0, Math.min(imgW - 1, Math.floor(x * k))), x1 = Math.max(x0 + 1, Math.min(imgW, Math.round((x + s) * k)));
+            var y0 = Math.max(0, Math.min(imgH - 1, Math.floor(y * k))), y1 = Math.max(y0 + 1, Math.min(imgH, Math.round((y + s) * k)));
+            var W1 = imgW + 1, n = (x1 - x0) * (y1 - y0);
+            var sum = function (S) { return S[y1 * W1 + x1] - S[y0 * W1 + x1] - S[y1 * W1 + x0] + S[y0 * W1 + x0]; };
+            var l = sum(SL) / n;
+            return { r: sum(SR) / n, g: sum(SG) / n, b: sum(SB) / n, sd: Math.sqrt(Math.max(0, sum(SQ) / n - l * l)) };
+          }
+
+          var dist = function (c, m) {
+            var dr = c[0] - m.r, dg = c[1] - m.g, db = c[2] - m.b;
+            return 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+          };
+          // The pair for a tile big enough to show its circle, and the one ink
+          // for a tile too small to: either way, only the four inks.
+          function inksAt(x, y, s) {
+            var m = patch(x, y, s), best = 0, bestD = Infinity, solo = 0, soloD = Infinity;
+            for (var i = 0; i < PAIRS.length; i++) {
+              var dd = dist(PAIRS[i].mix, m);
+              if (dd < bestD) { bestD = dd; best = i; }
+            }
+            for (var j = 0; j < INKS.length; j++) {
+              var d2 = dist(INKS[j], m);
+              if (d2 < soloD) { soloD = d2; solo = j; }
+            }
+            return [best, solo];
           }
 
           var MAX_GEN = 4; // a tile splits at most four times: 1/16 of its width
           var SPLIT_MS = 240; // how long a split takes to open out
           var MERGE_MS = 380; // and a merge to close up
           var REST_MS = 1500; // untouched this long, a group of four merges...
-          var IDLE_MS = 4500; // ...once the pointer has left the name alone this long
+          var IDLE_MS = 4500; // ...once the pointer has left the picture alone this long
           var lastTouch = 0;
           var FLASH_MS = 900;
           var COLORS = ["#e68019", "#2a44d6"];
@@ -3630,13 +3719,16 @@
           var dpr = 1, base = 16, roots = [], leafCount = 0, running = false, visible = true;
           var cssW = 0, cssH = 0;
 
-          function node(x, y, s, ink, g, now) {
-            return { x: x, y: y, s: s, ink: ink, g: g, kids: null, born: now, from: null, t0: 0, merge0: 0, flash: 0, hue: 0 };
+          function node(x, y, s, g, now) {
+            var k = inksAt(x, y, s);
+            return { x: x, y: y, s: s, p: k[0], solo: k[1], g: g, kids: null, born: now, from: null, t0: 0, merge0: 0, flash: 0, hue: 0 };
           }
 
+          // As big as the column allows, and no taller than most of a window.
           function layout() {
             var w = canvas.parentElement.clientWidth;
-            base = Math.max(6, Math.floor(w / COLS));
+            var maxH = Math.min(720, innerHeight * (innerWidth <= 900 ? 0.6 : 0.78));
+            base = Math.max(6, Math.floor(Math.min(w / COLS, maxH / ROWS)));
             cssW = base * COLS;
             cssH = base * ROWS;
             dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -3645,13 +3737,12 @@
             canvas.width = Math.round(cssW * dpr);
             canvas.height = Math.round(cssH * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            buildMask();
             var now = performance.now();
             roots = [];
             leafCount = 0;
             for (var r = 0; r < ROWS; r++) {
               for (var c = 0; c < COLS; c++) {
-                roots.push(node(c * base, r * base, base, inkAt(c * base, r * base, base), 0, now));
+                roots.push(node(c * base, r * base, base, 0, now));
                 leafCount++;
               }
             }
@@ -3660,12 +3751,12 @@
           function split(n, now, colorful) {
             if (n.kids || n.g >= MAX_GEN || leafCount > MAX_LEAVES) return false;
             var h = n.s / 2;
-            // Each quarter reads the mask for itself, so the letters sharpen.
+            // Each quarter reads the photograph for itself, so the picture sharpens.
             n.kids = [
-              node(n.x, n.y, h, inkAt(n.x, n.y, h), n.g + 1, now),
-              node(n.x + h, n.y, h, inkAt(n.x + h, n.y, h), n.g + 1, now),
-              node(n.x, n.y + h, h, inkAt(n.x, n.y + h, h), n.g + 1, now),
-              node(n.x + h, n.y + h, h, inkAt(n.x + h, n.y + h, h), n.g + 1, now),
+              node(n.x, n.y, h, n.g + 1, now),
+              node(n.x + h, n.y, h, n.g + 1, now),
+              node(n.x, n.y + h, h, n.g + 1, now),
+              node(n.x + h, n.y + h, h, n.g + 1, now),
             ];
             var hue = Math.random() < 0.5 ? 0 : 1;
             n.kids.forEach(function (k) {
@@ -3692,7 +3783,6 @@
           }
 
           function visit(n, px, py, R, now) {
-            // Skip anything wholly outside the brush.
             var nx = Math.max(n.x, Math.min(px, n.x + n.s)), ny = Math.max(n.y, Math.min(py, n.y + n.s));
             if ((nx - px) * (nx - px) + (ny - py) * (ny - py) > R * R) return;
             if (n.kids) {
@@ -3736,40 +3826,40 @@
 
           var ease = function (t) { return 1 - Math.pow(1 - t, 3); };
 
-          function inkColor(n, now) {
-            if (!n.flash) return "#0b0b0b";
+          function flashColor(n, now) {
+            if (!n.flash) return null;
             var t = Math.max(0, (now - n.flash) / FLASH_MS);
             if (t >= 1) {
               n.flash = 0;
-              return "#0b0b0b";
+              return null;
             }
             return COLORS[n.hue] + Math.round((1 - t) * 255).toString(16).padStart(2, "0");
           }
 
           function drawLeaf(n, x, y, s, now) {
-            var col = inkColor(n, now);
+            var pr = PAIRS[n.p];
             var dev = s * dpr;
-            if (n.flash && col !== "#0b0b0b") {
-              // Under the colour, keep the black, so the flash fades to it.
-              drawShape(n.ink, x, y, s, "#0b0b0b", dev);
-            }
-            drawShape(n.ink, x, y, s, col, dev);
-          }
-
-          function drawShape(ink, x, y, s, col, dev) {
+            var fl = flashColor(n, now);
             if (dev < 2.2) {
-              // Too small to draw a circle: draw what the eye would see from
-              // here, the circle's colour, so the finest tiles read as clean
-              // letterforms rather than a grey wash.
-              ctx.fillStyle = ink ? "#ffffff" : col;
+              // Too small to draw a circle: one ink, the nearest to the
+              // photograph here, so the finest tiles stay in the four colours.
+              ctx.fillStyle = INK_CSS[n.solo];
               ctx.fillRect(x, y, s, s);
+              if (fl) {
+                ctx.fillStyle = fl;
+                ctx.fillRect(x, y, s, s);
+              }
               return;
             }
-            ctx.fillStyle = col;
-            if (ink) {
+            ctx.fillStyle = INK_CSS[pr.sq];
+            ctx.fillRect(x, y, s, s);
+            if (fl) {
+              // A fresh split flashes orange or blue in the square, fading to
+              // its own ink.
+              ctx.fillStyle = fl;
               ctx.fillRect(x, y, s, s);
-              ctx.fillStyle = "#ffffff";
             }
+            ctx.fillStyle = INK_CSS[pr.ci];
             ctx.beginPath();
             ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2);
             ctx.fill();
@@ -3810,6 +3900,7 @@
             return false;
           }
 
+          var flashing = false;
           function frame(now) {
             if (!visible) {
               running = false;
@@ -3817,8 +3908,6 @@
             }
             for (var i = 0; i < roots.length; i++) heal(roots[i], now);
             ctx.clearRect(0, 0, cssW, cssH);
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, cssW, cssH);
             for (var j = 0; j < roots.length; j++) drawNode(roots[j], now, null);
             if (busy() || flashing) {
               requestAnimationFrame(frame);
@@ -3827,7 +3916,6 @@
             }
             flashing = false;
           }
-          var flashing = false;
 
           function kick() {
             flashing = true;
@@ -3840,6 +3928,7 @@
           // Pointer: interpolate between events so a fast swipe leaves no gaps.
           var last = null;
           function onMove(e) {
+            if (!started) return;
             var rect = canvas.getBoundingClientRect();
             var px = (e.clientX - rect.left) * (cssW / rect.width);
             var py = (e.clientY - rect.top) * (cssH / rect.height);
@@ -3859,41 +3948,37 @@
           canvas.addEventListener("pointerdown", onMove);
           canvas.addEventListener("pointerleave", function () { last = null; });
 
-          // On arrival the name assembles: every tile starts split two
-          // generations deep and heals in, left to right.
+          // On arrival the picture assembles: every tile starts split two
+          // generations deep and heals in, top to bottom.
           function intro() {
             if (reduce) return;
             var now = performance.now();
             roots.forEach(function (n, i) {
-              var col = i % COLS;
+              var row = Math.floor(i / COLS);
               split(n, now, false);
               n.kids.forEach(function (k) {
                 k.t0 = 0;
                 split(k, now, false);
                 k.kids.forEach(function (g) {
                   g.t0 = 0;
-                  g.born = now - REST_MS + 200 + col * 28;
+                  g.born = now - REST_MS + 200 + row * 40;
                 });
                 k.born = now;
               });
             });
           }
 
-          // Wait for the typeface, so the mask is cut from Familjen Grotesk and
-          // not the fallback; give up waiting after a second and a half.
           var started = false;
-          function start() {
-            if (started) return;
+          var img = new Image();
+          img.decoding = "async";
+          img.onload = function () {
+            prep(img);
             started = true;
-            measure();
             layout();
             intro();
             kick();
-          }
-          if (document.fonts && document.fonts.load) {
-            document.fonts.load(fontAt(100)).then(start, start);
-          }
-          setTimeout(start, 1500);
+          };
+          img.src = SRC;
 
           var rw;
           addEventListener("resize", function () {
@@ -3911,23 +3996,11 @@
             if (visible) kick();
           }).observe(canvas);
 
-          // On a phone there is no pointer to brush the name with, so shaking
-          // does it. Each shake splits the tiles a letter's edge runs through,
-          // one generation a shake, rippling in from the left; tiles wholly in
-          // or out of a letter stay as they are, since splitting them would
-          // add texture and no detail. Left alone, it heals as before.
-          function inkCount(x, y, s) {
-            var hit = 0;
-            for (var a = 0; a < 4; a++) {
-              for (var b = 0; b < 4; b++) {
-                var mx = Math.min(maskW - 1, Math.floor((x + ((a + 0.5) * s) / 4) * K));
-                var my = Math.min(maskH - 1, Math.floor((y + ((b + 0.5) * s) / 4) * K));
-                if (maskData[(my * maskW + mx) * 4 + 3] > 127) hit++;
-              }
-            }
-            return hit;
-          }
-
+          // On a phone there is no pointer to brush the picture with, so
+          // shaking does it. Each shake splits the tiles where the photograph
+          // has detail under them, one generation a shake, rippling down from
+          // the top; flat patches stay as they are, since splitting them would
+          // add texture and no likeness. Left alone, it heals as before.
           var lastShake = 0;
           function shake(now) {
             if (!started || !visible || now - lastShake < 600) return;
@@ -3944,9 +4017,8 @@
                 return;
               }
               if (n.g >= MAX_GEN) return;
-              var c = inkCount(n.x, n.y, n.s);
-              if (c === 0 || c === 16) return;
-              var d = reduce ? 0 : (n.x / cssW) * 260 + Math.random() * 80;
+              if (patch(n.x, n.y, n.s).sd < 14) return;
+              var d = reduce ? 0 : (n.y / cssH) * 300 + Math.random() * 80;
               if (split(n, now, true)) {
                 any = true;
                 n.kids.forEach(function (k) {
@@ -3981,13 +4053,13 @@
             };
             // iOS asks first, and only from a tap.
             if (typeof DeviceMotionEvent.requestPermission === "function") {
-              hint.textContent = "Tap the name, then shake your phone.";
+              hint.textContent = "Tap the picture, then shake your phone.";
               hint.hidden = false;
               var ask = function () {
                 canvas.removeEventListener("click", ask);
                 DeviceMotionEvent.requestPermission().then(function (r) {
                   if (r === "granted") {
-                    hint.textContent = "Shake your phone to sharpen the name.";
+                    hint.textContent = "Shake your phone to sharpen the picture.";
                     addEventListener("devicemotion", onMotion);
                   } else {
                     hint.hidden = true;
@@ -4002,8 +4074,10 @@
         })();
 
         /* ======================= the trail =======================
-           Orange and blue dots dropped behind the pointer, anywhere on the
-           page, each shrinking away in under a second. */
+           Orange and blue marks dropped behind the pointer, anywhere on the
+           page, each shrinking away in under a second: half of them squares
+           and half circles, half filled and half drawn in outline, the two
+           halves of the site's mark come apart. */
         (function () {
           if (reduce || !fine) return;
           var cv = $(".trail");
@@ -4039,6 +4113,8 @@
                 y: ly + ((y - ly) * i) / n,
                 r: 3 + Math.random() * 3.5,
                 c: COLS2[flip % 2],
+                sq: Math.random() < 0.5,
+                hollow: Math.random() < 0.5,
                 t: performance.now(),
               });
             }
@@ -4057,10 +4133,18 @@
               var t = (now - p.t) / 900;
               var e = 1 - t * t;
               c2.globalAlpha = e;
-              c2.fillStyle = p.c;
+              var r = p.r * (0.35 + 0.65 * e);
               c2.beginPath();
-              c2.arc(p.x, p.y, p.r * (0.35 + 0.65 * e), 0, Math.PI * 2);
-              c2.fill();
+              if (p.sq) c2.rect(p.x - r, p.y - r, r * 2, r * 2);
+              else c2.arc(p.x, p.y, r, 0, Math.PI * 2);
+              if (p.hollow) {
+                c2.strokeStyle = p.c;
+                c2.lineWidth = 1.5;
+                c2.stroke();
+              } else {
+                c2.fillStyle = p.c;
+                c2.fill();
+              }
             });
             c2.globalAlpha = 1;
             if (dots.length) requestAnimationFrame(tick);
