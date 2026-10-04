@@ -1,4 +1,4 @@
-/* greatcircleme: a globe that fills the window, a panel over one side of it.
+/* greatercircle: a globe that fills the window, a panel over one side of it.
 
    The site's three colours do the whole page. The globe's own palette is
    named here in those terms so the night theme is the same drawing lit
@@ -21,6 +21,9 @@
   --gc-muted: rgba(255, 255, 255, 0.72);
   --gc-field: rgba(255, 255, 255, 0.1);
   --gc-hover: rgba(255, 255, 255, 0.16);
+  --gc-city: rgba(255, 255, 255, 0.92);
+  --gc-city-ring: #e68019;
+  --gc-label: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -40,6 +43,9 @@
   --gc-muted: rgba(255, 255, 255, 0.62);
   --gc-field: rgba(255, 255, 255, 0.08);
   --gc-hover: rgba(145, 143, 255, 0.28);
+  --gc-city: rgba(255, 255, 255, 0.72);
+  --gc-city-ring: rgba(0, 0, 0, 0);
+  --gc-label: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +66,9 @@
     --gc-muted: rgba(255, 255, 255, 0.62);
     --gc-field: rgba(255, 255, 255, 0.08);
     --gc-hover: rgba(145, 143, 255, 0.28);
+    --gc-city: rgba(255, 255, 255, 0.72);
+    --gc-city-ring: rgba(0, 0, 0, 0);
+    --gc-label: #ffffff;
   }
 }
 
@@ -71,6 +80,42 @@ body.gc-page {
   height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
+  /* No double-tap zoom anywhere on the page: the globe has its own zoom and
+     nothing else here needs it. Pinch-zoom of the page is left alone. */
+  touch-action: manipulation;
+}
+.gc-page .gc-globe,
+.gc-page .gc-ctl,
+.gc-page .gc-sheet-handle,
+.gc-page .gc-chip button,
+.gc-page .gc-suggest li,
+.gc-page .gc-about-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Embedded in another page (the portfolio): no site header, just the globe. */
+.gc-page.is-embed .name,
+.gc-page.is-embed .back-link,
+.gc-page.is-embed .header-line,
+.gc-page.is-embed .theme-btn {
+  display: none !important;
+}
+.gc-zoom-hint {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 26;
+  padding: 10px 16px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  font-size: 15px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.gc-zoom-hint.is-shown {
+  opacity: 1;
 }
 
 /* The header stays in its corners at every width: there is no page under it
@@ -122,6 +167,14 @@ body.gc-page {
   outline: 2px solid var(--ink);
   outline-offset: -4px;
 }
+@media (hover: none), (pointer: coarse) {
+  /* A finger does not need the keyboard's focus ring, which here would be
+     a box around the whole screen. */
+  .gc-globe:focus-visible,
+  .gc-globe:focus {
+    outline: none;
+  }
+}
 .gc-globe.is-dragging {
   cursor: grabbing;
 }
@@ -130,6 +183,9 @@ body.gc-page {
 }
 .gc-globe.is-over-marker {
   cursor: grab;
+}
+.gc-globe.is-over-city {
+  cursor: pointer;
 }
 .gc-globe.is-avoid-mode {
   cursor: crosshair;
@@ -182,6 +238,10 @@ body.gc-page {
 .gc-ctl-text {
   font-size: 14px;
 }
+.gc-ctl svg {
+  display: block;
+  margin: 0 auto;
+}
 .gc-ctl[aria-pressed="true"] {
   background: var(--ink);
   color: var(--bg);
@@ -211,12 +271,92 @@ body.gc-page {
   display: none;
 }
 .gc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   margin: 0 0 12px;
+}
+.gc-head-text {
+  min-width: 0;
+}
+
+/* The i in a circle, and what it shows. The note is a child of the same box
+   as the button, so moving the pointer from one to the other keeps it open;
+   focus inside it (a link) keeps it open for the keyboard; a tap toggles it
+   where there is no hover. */
+.gc-about {
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.gc-about-btn {
+  display: block;
+  width: 26px;
+  height: 26px;
+  padding: 3px;
+  border: 0;
+  background: none;
+  color: var(--gc-muted);
+  cursor: pointer;
+}
+.gc-about-btn svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+.gc-about-btn:hover,
+.gc-about:focus-within .gc-about-btn,
+.gc-about.is-open .gc-about-btn {
+  color: var(--ink);
+}
+.gc-about-tip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: -4px;
+  z-index: 7;
+  width: min(312px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: 11px 13px 7px;
+  background: var(--bg);
+  color: var(--gc-muted);
+  border: 1px solid var(--rule);
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+.gc-about-tip::before {
+  /* Bridges the gap to the button, so the pointer can cross it. */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  height: 6px;
+}
+.gc-about-tip p {
+  margin: 0 0 7px;
+}
+.gc-about-tip a {
+  color: var(--ink);
+}
+.gc-about:hover .gc-about-tip,
+.gc-about:focus-within .gc-about-tip,
+.gc-about.is-open .gc-about-tip {
+  display: block;
+}
+@media (hover: none) {
+  /* A finger cannot hover; only the tap opens it. */
+  .gc-about:hover:not(.is-open):not(:focus-within) .gc-about-tip {
+    display: none;
+  }
 }
 .gc-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 400;
+  letter-spacing: 0.06em;
   line-height: 1.1;
 }
 .gc-sub {
@@ -233,10 +373,22 @@ body.gc-page {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+/* The line under the text starts after the badge, not under it. */
+.gc-line {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border-bottom: 1px solid var(--rule);
 }
-.gc-field + .gc-field {
-  margin-top: 6px;
+.gc-line:focus-within {
+  border-bottom-color: var(--ink);
+}
+.gc-field[data-slot="b"] {
+  margin-top: 32px; /* room for the swap between the badges */
 }
 .gc-badge {
   flex: 0 0 22px;
@@ -260,19 +412,12 @@ body.gc-page {
   font: inherit;
   font-size: 16px; /* at least 16 so a phone does not zoom in on focus */
 }
-/* Room at the end of the two place fields for the swap button between them. */
-.gc-points .gc-field input {
-  padding-right: 34px;
-}
 .gc-field input::placeholder {
   color: var(--gc-muted);
   opacity: 1;
 }
 .gc-field input:focus {
   outline: none;
-}
-.gc-field:focus-within {
-  border-bottom-color: var(--ink);
 }
 .gc-clear {
   flex: 0 0 auto;
@@ -291,9 +436,10 @@ body.gc-page {
   color: var(--ink);
 }
 .gc-swap {
+  /* In the badges' column, between the A and the B. */
   position: absolute;
-  right: 28px; /* inboard of the clear buttons, which take the edge */
-  top: 30px;
+  left: -4px;
+  top: 42px;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -316,6 +462,7 @@ body.gc-page {
 
 /* The suggestions, dropping out of a field. */
 .gc-suggest {
+  touch-action: pan-y;
   position: absolute;
   left: 0;
   right: 0;
@@ -526,22 +673,6 @@ dl.gc-rows {
   margin-bottom: 4px;
 }
 
-/* ---- the small print ---- */
-.gc-foot {
-  margin-top: 16px;
-  padding-top: 10px;
-  border-top: 1px solid var(--rule);
-  color: var(--gc-muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-.gc-foot p {
-  margin: 0 0 6px;
-}
-.gc-foot a {
-  color: inherit;
-}
-
 .gc-load {
   position: fixed;
   left: 50%;
@@ -595,16 +726,32 @@ dl.gc-rows {
     max-height: 76vh;
     max-height: 76dvh;
     overflow-y: auto;
+    touch-action: pan-y;
+  }
+  /* Swiped down out of the way: only the handle shows, and the globe has
+     the screen. */
+  .gc-panel.is-hidden {
+    max-height: calc(30px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Closed or hidden, the sheet does not scroll, so every touch on it is a
+     swipe for the script to read. Open, the handle and the title still are. */
+  .gc-panel:not(.is-open),
+  .gc-sheet-handle,
+  .gc-head {
+    touch-action: none;
   }
   .gc-sheet-handle {
     display: block;
     width: 100%;
-    height: 18px;
-    margin: -6px 0 2px;
+    height: 26px;
+    margin: -6px 0 0;
     padding: 0;
     border: 0;
     background: none;
-    cursor: pointer;
+    cursor: grab;
+  }
+  .gc-panel.is-dragging {
+    transition: none;
   }
   .gc-sheet-handle span {
     display: block;
@@ -618,7 +765,25 @@ dl.gc-rows {
     display: none;
   }
   .gc-panel.is-open .gc-head {
-    display: block;
+    display: flex;
+  }
+  /* The note is a card over the bottom of the screen rather than a
+     dropdown, which the sheet's own scrolling would cut off. */
+  .gc-about-tip {
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 70vh;
+    max-height: 70dvh;
+    overflow-y: auto;
+    z-index: 40;
+    font-size: 13px;
+  }
+  .gc-about-tip::before {
+    display: none;
   }
   .gc-field input {
     padding: 7px 0;
@@ -641,6 +806,10 @@ dl.gc-rows {
   .gc-controls {
     bottom: calc(216px + env(safe-area-inset-bottom, 0px));
     right: 12px;
+    transition: bottom 260ms ease;
+  }
+  .gc-controls.is-low {
+    bottom: calc(44px + env(safe-area-inset-bottom, 0px));
   }
   .gc-panel.is-open ~ .gc-controls,
   .gc-controls.is-lifted {

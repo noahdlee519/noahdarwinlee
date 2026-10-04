@@ -1,4 +1,4 @@
-// greatcircleme: the globe, the two places, the countries to go round.
+// greatercircle: the globe, the two places, the countries to go round.
 //
 // The drawing is a canvas and d3-geo's orthographic projection, which shows
 // the near half of the sphere and clips the far half. The maths of the route
@@ -30,6 +30,7 @@
 
   // The data, once loaded.
   var topology = null, features = [], featureById = new Map(), lod = null, borders = null, graticule = null;
+  var cities = []; // { name, cc, lon, lat, tier, x, y, z }
   var countries = [];          // [{ id, name, key }] sorted, for the avoid search
   var places = null, placesPromise = null;
 
@@ -47,7 +48,8 @@
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     // The globe sits in the part of the window the panel leaves free.
     var phone = W <= 640;
-    var panelW = phone ? 0 : 352 + 2 * 24, sheetH = phone ? 204 : 0;
+    var panelW = phone ? 0 : 352 + 2 * 24;
+    var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 204) : 0;
     var freeW = W - panelW, freeH = H - sheetH - (phone ? 70 : 40);
     cx = phone ? W / 2 : panelW + freeW / 2;
     cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
@@ -70,7 +72,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     // Diagonal lines for the countries being avoided.
     var c = document.createElement("canvas");
@@ -302,6 +304,7 @@
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI);
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
 
+    drawCities();
     drawRoutes();
     drawMarkers();
     ctx.restore();
@@ -345,6 +348,61 @@
         ctx.fillStyle = pal.route; ctx.fill();
       }
     }
+  }
+
+  /* The world cities: a dot each, and names as the globe comes closer, the
+     most important first. Names are placed in order of rank and skipped
+     where they would sit on one already placed. */
+  function cityDotRadius() { var r = B.r; return r < 900 ? 1.4 : r < 2600 ? 1.9 : 2.4; }
+  function labelTierFor(r) { return r >= 5200 ? 4 : r >= 3000 ? 3 : r >= 1500 ? 2 : r >= 640 ? 1 : 0; }
+  var cityScreen = []; // where each city landed this frame, for the pointer
+  function drawCities() {
+    cityScreen = [];
+    if (!cities.length) return;
+    var r = B.r, show = labelTierFor(r), dot = cityDotRadius();
+    if (!show) return; // a city appears, dot and name together, when the globe is close enough
+    var ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
+    ctx.fillStyle = pal.city;
+    ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2;
+    for (var i = 0; i < cities.length; i++) {
+      var c = cities[i];
+      if (c.tier > show) continue;
+      var sz = c.x * vx + c.y * vy + c.z * vz;
+      if (sz <= 0.02) continue;
+      var px = cx + r * (c.x * ex + c.y * ey + c.z * ez), py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
+      if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
+      cityScreen.push({ c: c, x: px, y: py });
+      ctx.beginPath(); ctx.arc(px, py, dot, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
+    ctx.font = "400 11px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
+    var placed = [], pad = 3;
+    for (i = 0; i < cityScreen.length; i++) {
+      var s = cityScreen[i];
+      if (s.c.tier > show) continue;
+      var w = ctx.measureText(s.c.name).width;
+      var lx = s.x + dot + 4, ly = s.y - 7, lw = w + pad * 2, lh = 14;
+      var clash = false;
+      for (var k = 0; k < placed.length; k++) { var q = placed[k]; if (lx < q.x + q.w && lx + lw > q.x && ly < q.y + q.h && ly + lh > q.y) { clash = true; break; } }
+      if (clash) continue;
+      placed.push({ x: lx, y: ly, w: lw, h: lh });
+      ctx.strokeText(s.c.name, s.x + dot + 4, s.y);
+      ctx.fillStyle = pal.label; ctx.fillText(s.c.name, s.x + dot + 4, s.y);
+      ctx.fillStyle = pal.city;
+    }
+  }
+  function cityAt(x, y) {
+    var best = null, bestD = 9;
+    for (var i = 0; i < cityScreen.length; i++) { var d = Math.hypot(cityScreen[i].x - x, cityScreen[i].y - y); if (d < bestD) { bestD = d; best = cityScreen[i].c; } }
+    return best;
+  }
+  function loadCities() {
+    fetch("data/cities.json").then(function (r) { return r.json(); }).then(function (rows) {
+      cities = rows.map(function (r) { var v = G.toVec(r[2], r[3]); return { name: r[0], cc: r[1], lon: r[2], lat: r[3], tier: r[4], x: v[0], y: v[1], z: v[2] }; });
+      cities.sort(function (a, b) { return a.tier - b.tier; });
+      scheduleRender("full");
+    }).catch(function (err) { console.warn("cities", err); });
   }
 
   function visible(lonlat) {
@@ -441,7 +499,7 @@
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, marker: marker,
       lastT: performance.now(), lastX: e.clientX, lastY: e.clientY, vx: 0, vy: 0, shift: e.shiftKey };
     canvas.classList.add("is-dragging");
-    canvas.focus({ preventScroll: true });
+    if (e.pointerType === "mouse") canvas.focus({ preventScroll: true });
   });
 
   canvas.addEventListener("pointermove", function (e) {
@@ -552,9 +610,19 @@
     if (!noSettle) moving();
   }
 
+  var EMBED = /[?&]embed=1(&|$)/.test(location.search);
+  if (EMBED) document.body.classList.add("is-embed");
+  var zoomHintTimer = 0;
   canvas.addEventListener("wheel", function (e) {
+    if (EMBED && !e.ctrlKey && !e.metaKey) {
+      // Inside another page, a plain scroll should scroll that page past
+      // the globe, as a map embed does; say how to zoom instead.
+      var hint = $("zoom-hint");
+      if (hint) { hint.classList.add("is-shown"); clearTimeout(zoomHintTimer); zoomHintTimer = setTimeout(function () { hint.classList.remove("is-shown"); }, 1100); }
+      return;
+    }
     e.preventDefault();
-    stopInertia(); stopFly();
+    stopInertia(); stopFly(); hideTip();
     var f = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0016));
     zoomAt(view.zoom * f, e.clientX, e.clientY);
   }, { passive: false });
@@ -566,7 +634,7 @@
     state.avoidMode = !state.avoidMode;
     $("avoid-mode").setAttribute("aria-pressed", String(state.avoidMode));
     canvas.classList.toggle("is-avoid-mode", state.avoidMode);
-    $("avoid-hint").textContent = state.avoidMode ? (canHover ? "Click" : "Tap") + " a country to add it; again to take it off." : (canHover ? "Or shift-click a country on the globe." : "Or press avoid, then tap countries.");
+    $("avoid-hint").textContent = state.avoidMode ? (canHover ? "Click" : "Tap") + " a country to add it, again to take it off" : (canHover ? "Or shift-click a country on the globe" : "Or press avoid, then tap countries");
   });
 
   canvas.addEventListener("keydown", function (e) {
@@ -602,9 +670,14 @@
       return;
     }
     var slot = !state.a ? "a" : !state.b ? "b" : "b";
+    var city = cityAt(x, y);
+    if (city) {
+      setPoint(slot, { lon: city.lon, lat: city.lat, label: city.name + ", " + ((places && places.countries[city.cc]) || city.cc) }, { quiet: true });
+      commitPoint(slot);
+      return;
+    }
     var idx2 = countryAt(x, y);
-    var label = null;
-    setPoint(slot, { lon: ll[0], lat: ll[1], label: label, country: idx2 >= 0 ? features[idx2].properties.name : null }, { quiet: true });
+    setPoint(slot, { lon: ll[0], lat: ll[1], label: null, country: idx2 >= 0 ? features[idx2].properties.name : null }, { quiet: true });
     commitPoint(slot);
   }
 
@@ -620,6 +693,13 @@
         setHover(-1);
         var pt = m === "a" ? state.a : state.b;
         showTip(x, y, m.toUpperCase(), pt.label || fmtLonLat(pt), "drag to move");
+        return;
+      }
+      var city = cityAt(x, y);
+      canvas.classList.toggle("is-over-city", !!city && !(shift || state.avoidMode));
+      if (city && !(shift || state.avoidMode)) {
+        setHover(-1);
+        showTip(x, y, city.name, places && places.countries[city.cc] || city.cc, "click to set a point here");
         return;
       }
       var idx = countryAt(x, y);
@@ -772,9 +852,9 @@
 
   function updateHint() {
     var h = $("hint"), tap = canHover ? "click" : "tap";
-    if (!state.a && !state.b) h.textContent = "Or " + tap + " the globe: once for A, once for B.";
-    else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place.";
-    else h.textContent = "Drag A or B to move them. " + (canHover ? "Clicking" : "Tapping") + " again moves B.";
+    if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe";
+    else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place";
+    else h.textContent = "Drag A or B to move them, " + (canHover ? "clicking" : "tapping") + " again moves B";
   }
 
   $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
@@ -1038,9 +1118,9 @@
         loadPlaces().then(function () {
           var rows = searchPlaces(q);
           if (rows.length) { cb(rows); return; }
-          if (fold(q).length < 3) { cb([], placesFailed ? "The place list did not load; lat, lon still works." : null); return; }
-          cb([], placesFailed ? "The place list did not load; looking it up…" : "looking further afield…");
-          photon(q, function (more) { cb(more, more.length ? null : (placesFailed ? "The place list did not load and the lookup found nothing; lat, lon still works." : "nothing found")); });
+          if (fold(q).length < 3) { cb([], placesFailed ? "The place list did not load, lat, lon still works" : null); return; }
+          cb([], placesFailed ? "The place list did not load, looking it up…" : "looking further afield…");
+          photon(q, function (more) { cb(more, more.length ? null : (placesFailed ? "The place list did not load and the lookup found nothing, lat, lon still works" : "nothing found")); });
         });
       },
       main: function (r) { return r.kind === 3 ? r.label : r.kind === 4 ? r.label : placeLabel(r); },
@@ -1099,7 +1179,7 @@
     worker.onerror = function (e) {
       console.error("worker", e.message);
       if (!state.ready) { console.warn("worker failed to start; routing on the main thread"); startShim(); return; }
-      if (state.pendingId) { state.pendingId = 0; clearTimeout(busyTimer); showError("Something went wrong working out the route."); }
+      if (state.pendingId) { state.pendingId = 0; clearTimeout(busyTimer); showError("Something went wrong working out the route"); }
     };
     worker.onmessage = onWorkerMessage;
     worker.postMessage({ type: "init", topology: topology });
@@ -1118,14 +1198,14 @@
       worker.onmessage = onWorkerMessage;
       worker.postMessage({ type: "init", topology: topology });
     };
-    sc.onerror = function () { showError("The route finder could not start."); };
+    sc.onerror = function () { showError("The route finder could not start"); };
     document.head.appendChild(sc);
   }
 
   function onWorkerMessage(e) {
     var m = e.data;
     if (m.type === "ready") {
-      state.ready = true; window.__greatcircleme.readyMs = m.ms;
+      state.ready = true; window.__greatercircle.readyMs = m.ms;
       if (queued) { queued = false; requestRoute(); }
       // The globe is up and the route finder ready: fetch the place list
       // in the quiet, so the first keystroke has it.
@@ -1223,7 +1303,7 @@
       big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
       sum.appendChild(big);
       var warn = document.createElement("span"); warn.className = "gc-warn";
-      warn.textContent = parts.join("; ") + ", which you are avoiding. ";
+      warn.textContent = parts.join("; ") + ", which you are avoiding ";
       res.insideA.concat(res.insideB).forEach(function (id) {
         var b = document.createElement("button"); b.type = "button";
         b.textContent = "Allow " + names([id])[0];
@@ -1235,7 +1315,7 @@
       big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
       sum.appendChild(big);
       var w2 = document.createElement("span"); w2.className = "gc-warn";
-      w2.textContent = "There is no way from A to B that stays out of " + joinNames(Array.from(state.avoid.values())) + ".";
+      w2.textContent = "There is no way from A to B that stays out of " + joinNames(Array.from(state.avoid.values()));
       sum.appendChild(w2);
     } else {
       var detour = res.lengthKm > res.directKm + 0.5;
@@ -1243,7 +1323,7 @@
         big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
         sum.appendChild(big);
         line.innerHTML = "";
-        line.appendChild(document.createTextNode("The direct way already keeps out of " + joinNames(Array.from(state.avoid.values())) + "."));
+        line.appendChild(document.createTextNode("The direct way already keeps out of " + joinNames(Array.from(state.avoid.values()))));
         sum.appendChild(line);
       } else if (detour) {
         big.textContent = fmt(res.lengthKm); big.appendChild(small("avoiding " + joinNames(Array.from(state.avoid.values()))));
@@ -1251,12 +1331,12 @@
         var extra = res.lengthKm - res.directKm;
         var b1 = document.createElement("b"); b1.textContent = "+" + fmt(extra) + " (" + (100 * extra / res.directKm).toFixed(1) + "%)";
         line.appendChild(b1);
-        line.appendChild(document.createTextNode(" over the direct " + fmt(res.directKm) + ", with " + res.bends + (res.bends === 1 ? " bend." : " bends.")));
+        line.appendChild(document.createTextNode(" over the direct " + fmt(res.directKm) + ", with " + res.bends + (res.bends === 1 ? " bend" : " bends")));
         sum.appendChild(line);
       } else {
         big.textContent = fmt(res.directKm); big.appendChild(small("great circle"));
         sum.appendChild(big);
-        if (res.antipodal) { line.textContent = "A and B are antipodes: every way round is this long."; sum.appendChild(line); }
+        if (res.antipodal) { line.textContent = "A and B are antipodes: every way round is this long"; sum.appendChild(line); }
       }
     }
 
@@ -1359,18 +1439,104 @@
     return any;
   }
 
+  // ------------------------------------------------------------- the about note
+  (function () {
+    var box = $("about"), btn = $("about-btn");
+    if (!box || !btn) return;
+    function setOpen(open) {
+      box.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", String(open));
+    }
+    btn.addEventListener("click", function () { setOpen(!box.classList.contains("is-open")); });
+    // Hover and focus show it through the stylesheet; the attribute follows.
+    box.addEventListener("mouseenter", function () { if (canHover) btn.setAttribute("aria-expanded", "true"); });
+    box.addEventListener("mouseleave", function () { if (!box.classList.contains("is-open") && !box.contains(document.activeElement)) btn.setAttribute("aria-expanded", "false"); });
+    box.addEventListener("focusin", function () { btn.setAttribute("aria-expanded", "true"); });
+    box.addEventListener("focusout", function (e) { if (!box.contains(e.relatedTarget) && !box.classList.contains("is-open")) btn.setAttribute("aria-expanded", "false"); });
+    document.addEventListener("pointerdown", function (e) { if (box.classList.contains("is-open") && !box.contains(e.target)) setOpen(false); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || !(box.classList.contains("is-open") || box.contains(document.activeElement))) return;
+      setOpen(false);
+      if (box.contains(document.activeElement)) document.activeElement.blur();
+    });
+  })();
+
   // ------------------------------------------------------------- the sheet
-  function setSheet(open) {
+  // On a phone the panel is a sheet at the bottom with three heights: open,
+  // closed (the two fields and the answer), and swiped down out of the way
+  // (the handle alone). The handle's tap moves it a step; a swipe moves it
+  // the way it was swiped.
+  var SHEET_HIDDEN = 0, SHEET_PEEK = 1, SHEET_OPEN = 2;
+  var sheetGestureAt = 0;
+  function sheetState() {
+    return panel.classList.contains("is-open") ? SHEET_OPEN : panel.classList.contains("is-hidden") ? SHEET_HIDDEN : SHEET_PEEK;
+  }
+  function setSheetState(st) {
+    st = Math.max(SHEET_HIDDEN, Math.min(SHEET_OPEN, st));
+    var open = st === SHEET_OPEN;
     panel.classList.toggle("is-open", open);
-    document.querySelector(".gc-controls").classList.toggle("is-lifted", open);
+    panel.classList.toggle("is-hidden", st === SHEET_HIDDEN);
+    var controls = document.querySelector(".gc-controls");
+    controls.classList.toggle("is-lifted", open);
+    controls.classList.toggle("is-low", st === SHEET_HIDDEN);
     $("sheet-handle").setAttribute("aria-expanded", String(open));
     $("sheet-handle").setAttribute("aria-label", open ? "Show less" : "Show more");
+    if (!open) panel.scrollTop = 0;
+    // The globe takes the room the sheet leaves, once it has moved.
+    setTimeout(function () { layout(); scheduleRender("full"); }, 300);
   }
-  $("sheet-handle").addEventListener("click", function () { setSheet(!panel.classList.contains("is-open")); });
+  function setSheet(open) { setSheetState(open ? SHEET_OPEN : SHEET_PEEK); }
+  $("sheet-handle").addEventListener("click", function () {
+    if (performance.now() - sheetGestureAt < 500) return; // the end of a swipe, not a tap
+    var st = sheetState();
+    setSheetState(st === SHEET_OPEN ? SHEET_PEEK : st + 1);
+  });
   // Typing in a field on a phone opens the sheet so the suggestions have room.
   [inputs.a, inputs.b, $("in-avoid")].forEach(function (inp) {
-    inp.addEventListener("focus", function () { if (W <= 640 && !panel.classList.contains("is-open")) setSheet(true); });
+    inp.addEventListener("focus", function () {
+      if (W <= 640 && !panel.classList.contains("is-open") && performance.now() - sheetGestureAt > 500) setSheet(true);
+    });
   });
+
+  var sheetDrag = null;
+  panel.addEventListener("pointerdown", function (e) {
+    if (W > 640 || e.pointerType === "mouse") return;
+    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), engaged: false,
+      onHandle: !!(e.target.closest && e.target.closest(".gc-sheet-handle, .gc-head")) };
+  });
+  panel.addEventListener("pointermove", function (e) {
+    var d = sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    var dy = e.clientY - d.y0, dx = e.clientX - d.x0;
+    if (!d.engaged) {
+      if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+      // In the open sheet the body scrolls; a swipe counts from the handle
+      // or the title, or downward from the top of the scroll.
+      if (sheetState() === SHEET_OPEN && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
+      d.engaged = true;
+      try { panel.setPointerCapture(e.pointerId); } catch (err) {}
+      panel.classList.add("is-dragging");
+      if (document.activeElement && panel.contains(document.activeElement)) document.activeElement.blur();
+    }
+    // Follows the finger downward; upward it snaps on release.
+    var y = Math.max(0, dy);
+    panel.style.transform = y ? "translateY(" + y + "px)" : "";
+  });
+  function endSheetDrag(e) {
+    var d = sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    sheetDrag = null;
+    if (!d.engaged) return;
+    sheetGestureAt = performance.now();
+    var dy = e.clientY - d.y0, v = dy / Math.max(1, performance.now() - d.t0);
+    panel.classList.remove("is-dragging");
+    panel.style.transform = "";
+    var st = sheetState();
+    if (dy > 40 || v > 0.4) setSheetState(st - 1);
+    else if (dy < -40 || v < -0.4) setSheetState(st + 1);
+  }
+  panel.addEventListener("pointerup", endSheetDrag);
+  panel.addEventListener("pointercancel", endSheetDrag);
 
   // ------------------------------------------------------------- start
   function init(topo) {
@@ -1408,8 +1574,9 @@
     var fromUrl = readUrl();
     renderChips();
     updateHint();
-    if (!canHover) $("avoid-hint").textContent = "Or press avoid, then tap countries.";
+    if (!canHover) $("avoid-hint").textContent = "Or press avoid, then tap countries";
     startWorker();
+    loadCities();
     $("load").classList.add("is-gone");
     setTimeout(function () { $("load").remove(); }, 400);
     if (fromUrl) { requestRoute(); setTimeout(function () { fitRoute(true); }, 50); }
@@ -1426,7 +1593,7 @@
   });
 
   // A handle for the tests: where a place lands on the screen, and timings.
-  window.__greatcircleme = {
+  window.__greatercircle = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
     state: state, view: view,
     timeRender: function (detail) { var t0 = performance.now(); render(detail || "full"); return performance.now() - t0; },
@@ -1443,7 +1610,7 @@
   refreshPalette();
   layout();
   fetch("data/countries-50m.json").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(init).catch(function (err) {
-    $("load").textContent = "The map did not load (" + err.message + "). Reload to try again.";
+    $("load").textContent = "The map did not load (" + err.message + "), reload to try again";
     console.error(err);
   });
 })();

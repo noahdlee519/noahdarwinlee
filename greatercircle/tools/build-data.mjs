@@ -6,7 +6,7 @@
 //   data/places.json         What the location boxes search: cities, capitals,
 //                            airports and countries, as compact rows.
 //
-// Run from the greatcircleme directory:
+// Run from the greatercircle directory:
 //
 //   npm install world-atlas@2 world-countries@5 all-the-cities@3 pbf@3   (anywhere)
 //   curl -LO https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv

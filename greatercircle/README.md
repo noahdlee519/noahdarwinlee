@@ -1,7 +1,7 @@
-# greatcircleme
+# greatercircle
 
 The shortest way between two places on the Earth, and the shortest way around
-the countries you would rather not cross. Served at `/greatcircleme/`.
+the countries you would rather not cross. Served at `/greatercircle/`.
 
 ## How it works
 
@@ -33,7 +33,7 @@ the countries you would rather not cross. Served at `/greatcircleme/`.
 
 ## Tests
 
-    cd greatcircleme && node --test test/engine.test.mjs
+    cd greatercircle && node --test test/engine.test.mjs
 
 The engine against d3-geo (12,000 random points in and out of countries),
 synthetic shapes for the arc test's edge cases (touching, running along, and

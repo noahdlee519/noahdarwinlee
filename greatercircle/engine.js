@@ -1,4 +1,4 @@
-// The geometry behind /greatcircleme.
+// The geometry behind /greatercircle.
 //
 // Everything here is done on the sphere itself, with points as unit vectors
 // in three dimensions, rather than on a flat map. A straight line on a flat
