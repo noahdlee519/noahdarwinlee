@@ -384,8 +384,8 @@ body.gc-page {
 .gc-line:focus-within {
   border-bottom-color: var(--ink);
 }
-.gc-field + .gc-field {
-  margin-top: 18px; /* room for the swap between the badges */
+.gc-field[data-slot="b"] {
+  margin-top: 32px; /* room for the swap between the badges */
 }
 .gc-badge {
   flex: 0 0 22px;
@@ -436,7 +436,7 @@ body.gc-page {
   /* In the badges' column, between the A and the B. */
   position: absolute;
   left: -4px;
-  top: 34px;
+  top: 42px;
   width: 30px;
   height: 30px;
   padding: 0;
