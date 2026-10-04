@@ -72,7 +72,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "label"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     // Diagonal lines for the countries being avoided.
     var c = document.createElement("canvas");
@@ -354,24 +354,26 @@
      most important first. Names are placed in order of rank and skipped
      where they would sit on one already placed. */
   function cityDotRadius() { var r = B.r; return r < 900 ? 1.4 : r < 2600 ? 1.9 : 2.4; }
-  function labelTierFor(r) { return r >= 3200 ? 3 : r >= 1500 ? 2 : r >= 640 ? 1 : 0; }
+  function labelTierFor(r) { return r >= 5200 ? 4 : r >= 3000 ? 3 : r >= 1500 ? 2 : r >= 640 ? 1 : 0; }
   var cityScreen = []; // where each city landed this frame, for the pointer
   function drawCities() {
     cityScreen = [];
     if (!cities.length) return;
     var r = B.r, show = labelTierFor(r), dot = cityDotRadius();
+    if (!show) return; // a city appears, dot and name together, when the globe is close enough
     var ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     ctx.fillStyle = pal.city;
+    ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2;
     for (var i = 0; i < cities.length; i++) {
       var c = cities[i];
+      if (c.tier > show) continue;
       var sz = c.x * vx + c.y * vy + c.z * vz;
       if (sz <= 0.02) continue;
       var px = cx + r * (c.x * ex + c.y * ey + c.z * ez), py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
       cityScreen.push({ c: c, x: px, y: py });
-      ctx.beginPath(); ctx.arc(px, py, dot, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, dot, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
     }
-    if (!show) return;
     ctx.font = "400 11px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
     ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;

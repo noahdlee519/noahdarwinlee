@@ -89,7 +89,23 @@ for (const [tier, list] of [[1, T1], [2, T2], [3, T3]]) {
 // Two hundred and fifty: the first two tiers whole, the third cut to fit.
 const LIMIT = 250;
 const kept = out.filter((c) => c[4] < 3).concat(out.filter((c) => c[4] === 3)).slice(0, LIMIT);
+
+// Then a fourth tier: a hundred and fifty more by population, no more than
+// four to a country so they spread, and none on top of one already there.
+const EXTRA = 150, PER_COUNTRY = 4;
+const near = (a, b) => { const dx = (a[0] - b[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), dy = a[1] - b[1]; return Math.hypot(dx, dy) < 0.4; };
+const perCountry = {};
+const bigFirst = cities.slice().sort((a, b) => (b[5] || 0) - (a[5] || 0));
+for (const c of bigFirst) {
+  if (kept.length >= LIMIT + EXTRA) break;
+  const cc = c[2];
+  if ((perCountry[cc] || 0) >= PER_COUNTRY) continue;
+  if (kept.some((k) => k[1] === cc && near([k[2], k[3]], [c[3], c[4]]))) continue;
+  if (kept.some((k) => near([k[2], k[3]], [c[3], c[4]]))) continue;
+  perCountry[cc] = (perCountry[cc] || 0) + 1;
+  kept.push([c[1], cc, c[3], c[4], 4]);
+}
 writeFileSync(resolve(here, "../data/cities.json"), JSON.stringify(kept));
 out.length = 0; kept.forEach((c) => out.push(c));
-console.log("cities.json:", out.length, "cities; tiers", [1, 2, 3].map((t) => out.filter((c) => c[4] === t).length).join("/"));
+console.log("cities.json:", out.length, "cities; tiers", [1, 2, 3, 4].map((t) => out.filter((c) => c[4] === t).length).join("/"));
 if (missing.length) console.log("missing:", missing.join(", "));

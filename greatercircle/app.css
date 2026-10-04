@@ -21,7 +21,8 @@
   --gc-muted: rgba(255, 255, 255, 0.72);
   --gc-field: rgba(255, 255, 255, 0.1);
   --gc-hover: rgba(255, 255, 255, 0.16);
-  --gc-city: rgba(255, 255, 255, 0.78);
+  --gc-city: rgba(255, 255, 255, 0.92);
+  --gc-city-ring: #e68019;
   --gc-label: #ffffff;
 }
 
@@ -43,6 +44,7 @@
   --gc-field: rgba(255, 255, 255, 0.08);
   --gc-hover: rgba(145, 143, 255, 0.28);
   --gc-city: rgba(255, 255, 255, 0.72);
+  --gc-city-ring: rgba(0, 0, 0, 0);
   --gc-label: #ffffff;
 }
 
@@ -65,6 +67,7 @@
     --gc-field: rgba(255, 255, 255, 0.08);
     --gc-hover: rgba(145, 143, 255, 0.28);
     --gc-city: rgba(255, 255, 255, 0.72);
+    --gc-city-ring: rgba(0, 0, 0, 0);
     --gc-label: #ffffff;
   }
 }
