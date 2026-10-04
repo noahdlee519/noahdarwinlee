@@ -876,6 +876,134 @@ a[href="/cv/"]:active {
   display: none;
 }
 
+/* The portrait in tiles takes the photograph's place: the canvas sizes itself
+   to the frame (portrait.js), and a line under it on a phone says what to do. */
+.portrait-frame .tiles {
+  display: block;
+  max-width: 100%;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.portrait-frame .tiles-hint {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 300;
+  opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+  .portrait-frame .tiles {
+    margin: 0 auto;
+  }
+
+  .portrait-frame .tiles-hint {
+    text-align: center;
+  }
+}
+
+/* The message box under about: the site's own light type, a hairline round
+   the box, and one word to send it. */
+.feedback {
+  max-width: 560px;
+  margin: 0 0 24px;
+}
+
+/* With about shut the box is the first thing in the column; give it the
+   room the panel would have had above it. */
+.about-panel:not(.is-open) + .feedback {
+  margin-top: 38px;
+}
+
+.feedback-label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 22px;
+  font-weight: 300;
+}
+
+.feedback textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 300;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.feedback textarea::placeholder {
+  color: inherit;
+  opacity: 0.55;
+}
+
+.feedback textarea:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.feedback-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.feedback-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+}
+
+.feedback-send {
+  appearance: none;
+  padding: 6px 18px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: transform 140ms ease;
+}
+
+.feedback-send:active {
+  transform: scale(0.97);
+}
+
+.feedback-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .feedback-send:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.feedback-status {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 300;
+}
+
+.feedback-status.is-bad {
+  font-weight: 400;
+}
+
 /* "art" in the row of links jumps here; stop short of the name over the top. */
 .about-panel .art-gallery {
   scroll-margin-top: 100px;

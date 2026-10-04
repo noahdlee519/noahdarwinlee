@@ -1,4 +1,5 @@
-// Expands the about panel inline above the artwork. The link points at /#about,
+// Opens and closes the about panel. It is open on arrival (the markup says so),
+// since without it the front page is nearly empty. The link points at /#about,
 // so cmd/ctrl-click opens the homepage with the panel already expanded, and with
 // no script at all a <noscript> rule in index.html just shows the content.
 (function () {
