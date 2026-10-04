@@ -127,9 +127,13 @@
     }
 
     // As big as the column allows, and no taller than most of a window.
+    // The window is the page's layout size, not innerWidth and innerHeight:
+    // Safari on a phone gives those as the zoomed-in part of the page, so
+    // pinching in made the picture shrink to fit what was left on screen.
     function measure() {
       var w = canvas.parentElement.clientWidth;
-      var maxH = Math.min(720, innerHeight * (innerWidth <= 900 ? 0.6 : 0.78));
+      var vw = document.documentElement.clientWidth || innerWidth, vh = document.documentElement.clientHeight || innerHeight;
+      var maxH = Math.min(720, vh * (vw <= 900 ? 0.6 : 0.78));
       return { base: Math.max(6, Math.floor(Math.min(w / COLS, maxH / ROWS))), dpr: Math.min(window.devicePixelRatio || 1, 2) };
     }
     function layout() {
@@ -448,6 +452,8 @@
       clearTimeout(rw);
       rw = setTimeout(function () {
         if (!started) return;
+        // Pinched in, the page has not changed size: leave the picture be.
+        if (window.visualViewport && visualViewport.scale > 1.01) return;
         var m = measure();
         if (m.base === base && m.dpr === dpr) return;
         var had = revealed.slice();
