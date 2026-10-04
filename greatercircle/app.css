@@ -21,6 +21,8 @@
   --gc-muted: rgba(255, 255, 255, 0.72);
   --gc-field: rgba(255, 255, 255, 0.1);
   --gc-hover: rgba(255, 255, 255, 0.16);
+  --gc-city: rgba(255, 255, 255, 0.78);
+  --gc-label: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -40,6 +42,8 @@
   --gc-muted: rgba(255, 255, 255, 0.62);
   --gc-field: rgba(255, 255, 255, 0.08);
   --gc-hover: rgba(145, 143, 255, 0.28);
+  --gc-city: rgba(255, 255, 255, 0.72);
+  --gc-label: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +64,8 @@
     --gc-muted: rgba(255, 255, 255, 0.62);
     --gc-field: rgba(255, 255, 255, 0.08);
     --gc-hover: rgba(145, 143, 255, 0.28);
+    --gc-city: rgba(255, 255, 255, 0.72);
+    --gc-label: #ffffff;
   }
 }
 
@@ -174,6 +180,9 @@ body.gc-page {
 }
 .gc-globe.is-over-marker {
   cursor: grab;
+}
+.gc-globe.is-over-city {
+  cursor: pointer;
 }
 .gc-globe.is-avoid-mode {
   cursor: crosshair;
@@ -342,8 +351,9 @@ body.gc-page {
 }
 .gc-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 400;
+  letter-spacing: 0.06em;
   line-height: 1.1;
 }
 .gc-sub {
@@ -375,7 +385,7 @@ body.gc-page {
   border-bottom-color: var(--ink);
 }
 .gc-field + .gc-field {
-  margin-top: 6px;
+  margin-top: 18px; /* room for the swap between the badges */
 }
 .gc-badge {
   flex: 0 0 22px;
@@ -426,7 +436,7 @@ body.gc-page {
   /* In the badges' column, between the A and the B. */
   position: absolute;
   left: -4px;
-  top: 29px;
+  top: 34px;
   width: 30px;
   height: 30px;
   padding: 0;

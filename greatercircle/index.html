@@ -119,8 +119,8 @@
       </button>
       <header class="gc-head">
         <div class="gc-head-text">
-          <h2 class="gc-title">greatercircle</h2>
-          <p class="gc-sub">The shortest way between two places, around the countries you choose.</p>
+          <h2 class="gc-title">GREATERCIRCLE</h2>
+          <p class="gc-sub">Calculates the shortest path between two points on Earth, avoiding the countries you choose</p>
         </div>
         <!-- How the numbers are made and where the data is from, behind a
              small i: on hover, on focus, or on a tap where there is no hover. -->
@@ -140,6 +140,13 @@
             </svg>
           </button>
           <div class="gc-about-tip" id="about-tip" role="note">
+            <p>
+              The idea came from the seat-back map. It is often out of date, and now and then
+              alarming: a line drawn straight across a war zone the plane will go nowhere near, or
+              a path that was closed months ago. This is a way to see the route an airline actually
+              has to think about: the shortest way between two places, and the shortest way once
+              the closed skies are taken out.
+            </p>
             <p>
               Shortest paths around the chosen countries are exact for the drawn borders: a route of
               great-circle arcs that bends only at their convex corners, found by A* over the tangent
@@ -206,7 +213,7 @@
             <ul class="gc-suggest" id="sug-b" role="listbox" hidden></ul>
           </div>
         </div>
-        <p class="gc-hint" id="hint">Or click two points on the globe.</p>
+        <p class="gc-hint" id="hint">Or click two points on the globe</p>
       </div>
 
       <div class="gc-summary" id="summary" aria-live="polite"></div>
@@ -232,7 +239,7 @@
           </div>
         </div>
         <ul class="gc-chips" id="chips" aria-label="Countries being avoided"></ul>
-        <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe.</p>
+        <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe</p>
       </section>
 
       <section class="gc-results" id="results" hidden>
