@@ -858,11 +858,39 @@ a[href="/cv/"]:active {
   outline: none;
 }
 
-/* Inline about panel, expanded from the homepage nav. */
+/* Inline about panel, expanded from the homepage nav. It holds the art now
+   too, so the panel runs the gallery's full width and only the photo, bio
+   and links keep the old 980. */
 .about-panel {
   display: none;
-  max-width: 980px;
   margin: 0 0 60px;
+}
+
+.about-panel-inner {
+  max-width: 980px;
+}
+
+/* In a flex column a <br> is not a line any more; the gallery's own margin
+   is the room above instagram. */
+.index-page .about-panel > br {
+  display: none;
+}
+
+/* "art" in the row of links jumps here; stop short of the name over the top. */
+.about-panel .art-gallery {
+  scroll-margin-top: 100px;
+}
+
+/* The panel centres its photo and links on a phone; instagram and the row of
+   sections under the pictures keep to the left, as they always have. */
+.about-panel .index-instagram-link {
+  text-align: left;
+}
+
+@media (min-width: 901px) {
+  .about-panel .art-gallery {
+    margin-top: 110px;
+  }
 }
 
 .about-panel.is-open {
@@ -891,14 +919,12 @@ a[href="/cv/"]:active {
      confused; on a phone everything is one column, and the links at the foot
      of the panel run straight into the first title with nothing to say the
      subject has changed. A line, and room on both sides of it. */
-  .about-panel.is-open::after {
-    content: "";
-    display: block;
+  .about-panel .art-gallery {
     /* Far enough below the links for the ring that draws itself round a
        hovered word to have room under it, the same way it has room over it. */
     margin-top: 50px;
-    height: 1px;
-    background: var(--rule);
+    padding-top: 48px;
+    border-top: 1px solid var(--rule);
   }
 }
 
