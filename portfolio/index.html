@@ -310,8 +310,10 @@
         min-height: clamp(84px, 12vw, 176px);
       }
 
+      /* GREATERCIRCLE, in capitals, is the widest name at about 8.2 em: never
+         wider than a phone's column. */
       .row-name {
-        font-size: clamp(46px, 9.4vw, 152px);
+        font-size: min(clamp(40px, 9.4vw, 152px), calc((100vw - 40px) / 8.4));
         line-height: 0.86;
         font-weight: 600;
         letter-spacing: -0.04em;
@@ -533,7 +535,11 @@
         padding: clamp(96px, 16vh, 180px) var(--gutter) 0;
       }
 
+      /* --ts is the size of the project's name. The Visit button beside it is
+         as tall as the name's tall letters (0.67 of it) and stands on the
+         same baseline (0.18 above the heading's foot). */
       .p-head {
+        --ts: min(clamp(54px, 10vw, 160px), calc((100vw - 32px) / 6.4));
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: end;
@@ -546,7 +552,7 @@
         margin: 0;
         /* The longest domain, fuzhounese.org, is about 6.3 em: never wider
            than a phone's column. */
-        font-size: min(clamp(54px, 10vw, 160px), calc((100vw - 32px) / 6.4));
+        font-size: var(--ts);
         line-height: 0.84;
         font-weight: 600;
         letter-spacing: -0.04em;
@@ -577,30 +583,53 @@
       .p-go {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        height: 48px;
-        padding: 0 20px 0 22px;
+        justify-content: center;
+        gap: 0.32em;
+        height: calc(var(--ts) * 0.67);
+        min-height: 44px;
+        margin-bottom: calc(var(--ts) * 0.18);
+        padding: 0 0.9em 0 1em;
         border-radius: 999px;
         background: var(--brand, var(--ink));
         color: var(--paper);
         text-decoration: none;
-        font-size: 16px;
+        font-size: max(16px, calc(var(--ts) * 0.24));
         font-weight: 500;
+        letter-spacing: -0.01em;
         white-space: nowrap;
-        transition: transform 160ms var(--ease-out);
+        transition: transform 160ms var(--ease-out), background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
       }
 
       .p-go svg {
+        width: 0.62em;
+        height: 0.62em;
         transition: transform 260ms var(--ease-out);
       }
 
       .p-go:active {
-        transform: scale(0.97);
+        transform: scale(0.96);
       }
 
+      .p-go:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 4px;
+      }
+
+      /* On hover the button turns to ink and lifts a little, and the arrow
+         leans out the way it will take you. */
       @media (hover: hover) and (pointer: fine) {
+        .p-go:hover {
+          background: var(--ink);
+          transform: translateY(-2px);
+          box-shadow: 0 10px 24px -12px var(--brand, var(--ink));
+        }
+
         .p-go:hover svg {
-          transform: translate(3px, -3px);
+          transform: translate(0.12em, -0.12em);
+        }
+
+        .p-go:hover:active {
+          transform: translateY(0) scale(0.96);
         }
       }
 
@@ -697,27 +726,17 @@
         white-space: nowrap;
       }
 
+      /* Two notes under each demo: how it works, and where it came from. */
       .notes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px clamp(24px, 5vw, 80px);
         margin-top: clamp(36px, 6vh, 64px);
       }
 
-      /* One note per project now: the heading in the left third, the
-         writing beside it, as a label sits beside its text. */
       .note-col {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-        column-gap: clamp(24px, 5vw, 80px);
         border-top: 1px solid var(--rule);
         padding-top: 16px;
-      }
-
-      .note-col > * {
-        grid-column: 2;
-      }
-
-      .note-col > h3 {
-        grid-column: 1;
-        grid-row: 1 / span 9;
       }
 
       .note-col h3 {
@@ -803,7 +822,8 @@
       .spread {
         position: relative;
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        min-height: clamp(520px, 66vh, 680px);
         background: var(--lg-paper);
         border-radius: 3px;
         box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 18px 40px rgba(0, 0, 0, 0.32);
@@ -815,7 +835,7 @@
         position: absolute;
         top: 0;
         bottom: 0;
-        left: calc(57.4% - 24px);
+        left: calc(50% - 24px);
         width: 48px;
         background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.07) 48%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.07) 52%, transparent);
         pointer-events: none;
@@ -823,7 +843,7 @@
 
       .book {
         position: relative;
-        padding: 26px clamp(22px, 4vw, 54px) 54px;
+        padding: 34px clamp(22px, 3.6vw, 52px) 64px;
       }
 
       .run {
@@ -1738,7 +1758,7 @@
         --bldg-lo: #c9cac6;
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
-        min-height: 620px;
+        height: clamp(440px, 60vh, 560px);
         background: var(--lt-paper);
         color: var(--lt-ink);
       }
@@ -1813,7 +1833,6 @@
         display: block;
         width: 100%;
         height: 100%;
-        min-height: 460px;
       }
 
       .lt-street {
@@ -1959,7 +1978,7 @@
 
       .rec {
         height: 100%;
-        max-height: 620px;
+        max-height: 100%;
         overflow: auto;
         overscroll-behavior: contain;
         scrollbar-width: thin;
@@ -2419,12 +2438,11 @@
 
         .lt {
           grid-template-columns: minmax(0, 1fr);
-          min-height: 0;
+          height: auto;
         }
 
         .lt-map svg {
-          height: 540px;
-          min-height: 0;
+          height: 320px;
         }
 
         .lt-card {
@@ -2447,22 +2465,18 @@
           border-top: 1px solid var(--lt-ink);
         }
 
+        /* A short window onto the record, scrolled inside, rather than the
+           whole of it down the page. */
         .rec {
-          max-height: none;
+          max-height: 260px;
         }
 
         .p-sub {
           grid-template-columns: 1fr;
         }
 
-        .note-col {
+        .notes {
           grid-template-columns: minmax(0, 1fr);
-        }
-
-        .note-col > *,
-        .note-col > h3 {
-          grid-column: 1;
-          grid-row: auto;
         }
 
         .reel {
@@ -2497,6 +2511,7 @@
 
         .p-go {
           justify-self: start;
+          margin-bottom: 0;
         }
 
         .stage-bar .note {
@@ -2663,12 +2678,12 @@
           <li>
             <a class="row" href="#greatercircle" data-row="3" data-reel="greatercircle" style="--brand: #d9741a">
               <div class="row-face">
-                <span class="row-name" data-chars>greatercircle</span>
+                <span class="row-name" data-chars>GREATERCIRCLE</span>
                 <span class="row-meta"><b>Globe</b>Flight paths around the countries you'd avoid</span>
               </div>
               <div class="row-ink" aria-hidden="true">
                 <div class="row-face">
-                  <span class="row-name">greatercircle</span>
+                  <span class="row-name">GREATERCIRCLE</span>
                   <span class="row-meta"><b>Globe</b>Flight paths around the countries you'd avoid</span>
                 </div>
                 <div class="reel">
@@ -2776,6 +2791,12 @@
               <li>Web pages + PDFs</li>
             </ul>
           </div>
+          <div class="note-col">
+            <h3>Inspiration</h3>
+            <p>
+              Reading in a language you are learning means stopping at every word you do not know, switching to a dictionary or a translation, and losing the sentence on the way back. I wanted the meaning to arrive beside the word, in the sentence it belongs to, so the reading never stops.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -2801,7 +2822,7 @@
           <div class="stage-bar">
             <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
             <a class="addr" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">fuzhounese.org</a>
-            <span class="note">Demo · real entries, sample answers</span>
+            <span class="note">Demo</span>
           </div>
           <div class="fz">
             <div class="fz-nav" aria-hidden="true">
@@ -2852,6 +2873,12 @@
               <li>Search across 3 scripts</li>
               <li>Native-speaker audio</li>
             </ul>
+          </div>
+          <div class="note-col">
+            <h3>Inspiration</h3>
+            <p>
+              Fuzhounese is the dialect my grandparents mainly speak, and there was no English dictionary of it online. I wanted a place to keep its words and the voices that say them, and to make it something anyone could learn from.
+            </p>
           </div>
         </div>
       </section>
@@ -2916,15 +2943,21 @@
               <li>Cited sources</li>
             </ul>
           </div>
+          <div class="note-col">
+            <h3>Inspiration</h3>
+            <p>
+              Walk past almost any building in New York and there is no way to find out what happened inside it. I wanted a map where every building has a record: what it was, who was there, and what it saw.
+            </p>
+          </div>
         </div>
       </section>
 
       <!-- ======================= greatercircle ======================= -->
       <section class="project" id="greatercircle" aria-labelledby="gc-h" style="--brand: #d9741a">
-        <div class="p-head">
-          <h2 class="p-name" id="gc-h"><span class="mask"><span>greatercircle</span></span></h2>
-          <a class="p-go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer" aria-label="Open greatercircle">
-            Open
+        <div class="p-head" style="--ts: min(clamp(48px, 9vw, 150px), calc((100vw - 32px) / 8.9))">
+          <h2 class="p-name" id="gc-h"><span class="mask"><span>GREATERCIRCLE</span></span></h2>
+          <a class="p-go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer" aria-label="Visit GREATERCIRCLE">
+            Visit
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
           </a>
         </div>
@@ -3002,6 +3035,12 @@
               <li>14,500 places</li>
               <li>Web Worker</li>
             </ul>
+          </div>
+          <div class="note-col">
+            <h3>Inspiration</h3>
+            <p>
+              Seat-back flight maps often show an old route, a straight line, or a path across a country the plane will never enter. I wanted to see where a flight can really go once part of the map is closed to it.
+            </p>
           </div>
         </div>
       </section>
