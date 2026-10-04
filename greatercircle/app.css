@@ -711,7 +711,10 @@ body.gc-page {
 .gc-units {
   display: flex;
   gap: 2px;
-  margin-bottom: 8px;
+  margin: 10px 0 0;
+}
+.gc-units[hidden] {
+  display: none;
 }
 .gc-units button {
   padding: 2px 8px;
@@ -751,6 +754,9 @@ dl.gc-rows {
 }
 .gc-crosses .gc-label {
   margin-bottom: 4px;
+}
+.gc-crosses .gc-label.gc-open-sea {
+  color: var(--ink);
 }
 
 .gc-load {

@@ -1066,7 +1066,7 @@
     var h = $("hint"), tap = canHover ? "click" : "tap";
     if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe";
     else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place";
-    else h.textContent = "Drag A or B to move them, " + (canHover ? "clicking" : "tapping") + " again moves B";
+    else h.textContent = "Drag A or B to move them";
   }
 
   $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
@@ -1817,9 +1817,11 @@
     panel.classList.toggle("has-result", !!res);
     sum.innerHTML = ""; out.innerHTML = "";
     $("results").hidden = true;
+    $("units").hidden = true;
     $("fit").hidden = !(state.a && state.b);
     if (!res) return;
     $("results").hidden = false;
+    $("units").hidden = false;
 
     var big = document.createElement("span"); big.className = "gc-big";
     var line = document.createElement("span"); line.className = "gc-line";
@@ -1870,15 +1872,13 @@
 
     // The details.
     var dl = document.createElement("dl"); dl.className = "gc-rows";
-    row(dl, "Direct, on the sphere", fmt(res.directKm));
-    if (res.directEllipsoidKm != null) row(dl, "Direct, on the WGS84 ellipsoid", fmt(res.directEllipsoidKm));
     var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
     if (detoured) {
       row(dl, "Avoiding " + joinNames(avoidedNames()), fmt(res.lengthKm));
       row(dl, "Bends", String(res.bends));
     }
     if (res.ms != null && res.expanded) row(dl, "Worked out in", (res.ms / 1000).toFixed(res.ms < 100 ? 2 : 1) + " s · " + res.expanded.toLocaleString() + " corners searched");
-    out.appendChild(dl);
+    if (dl.firstChild) out.appendChild(dl);
 
     var ends = (res.startIn || []).concat(res.endIn || []).map(String);
     crossesList(out, "The direct way crosses", res.directCrosses, ends);
@@ -1897,7 +1897,7 @@
   function crossesList(out, title, ids, ends) {
     if (!ids) return;
     var box = document.createElement("div"); box.className = "gc-crosses";
-    var lab = document.createElement("div"); lab.className = "gc-label"; lab.textContent = title + (ids.length ? "" : " nothing: open sea all the way");
+    var lab = document.createElement("div"); lab.className = "gc-label" + (ids.length ? "" : " gc-open-sea"); lab.textContent = title + (ids.length ? "" : " nothing: open sea all the way");
     box.appendChild(lab);
     if (ids.length) {
       var ul = document.createElement("ul"); ul.className = "gc-chips";
