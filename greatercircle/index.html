@@ -145,7 +145,7 @@
       <header class="gc-head">
         <div class="gc-head-text">
           <h2 class="gc-title">GREATERCIRCLE</h2>
-          <p class="gc-sub">Calculates the shortest path between two points on Earth, avoiding the countries you choose</p>
+          <p class="gc-sub">Calculates the shortest path between two points on Earth, avoiding selected regions</p>
         </div>
         <!-- How the numbers are made and where the data is from, behind a
              small i: on hover, on focus, or on a tap where there is no hover. -->
@@ -175,8 +175,7 @@
             <p>
               Shortest paths around the chosen countries are exact for the drawn borders: a route of
               great-circle arcs that bends only at their convex corners, found by A* over the tangent
-              visibility graph. Distances are on a sphere of radius 6,371.0088 km; the direct
-              distance is also given on the WGS84 ellipsoid.
+              visibility graph. Distances are on a sphere of radius 6,371.0088 km.
             </p>
             <p>
               Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, countries at
@@ -242,6 +241,11 @@
       </div>
 
       <div class="gc-summary" id="summary" aria-live="polite"></div>
+      <div class="gc-units" id="units" role="group" aria-label="Units" hidden>
+        <button type="button" data-unit="km" aria-pressed="true">km</button>
+        <button type="button" data-unit="mi" aria-pressed="false">mi</button>
+        <button type="button" data-unit="nmi" aria-pressed="false">nmi</button>
+      </div>
 
       <section class="gc-avoid">
         <label class="gc-label" for="in-avoid">Avoid</label>
@@ -268,11 +272,6 @@
       </section>
 
       <section class="gc-results" id="results" hidden>
-        <div class="gc-units" role="group" aria-label="Units">
-          <button type="button" data-unit="km" aria-pressed="true">km</button>
-          <button type="button" data-unit="mi" aria-pressed="false">mi</button>
-          <button type="button" data-unit="nmi" aria-pressed="false">nmi</button>
-        </div>
         <div id="out"></div>
       </section>
 

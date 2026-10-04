@@ -40,7 +40,13 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   from the place list are drawn too, code and name. **data/admin1.json** — the borders between
   first-level subdivisions (states, provinces, regions), Natural Earth 1:10m
   reduced to the lines inside countries and simplified; fetched when the
-  globe is close enough to draw them dotted; from `tools/build-admin1.mjs`.
+  globe is close enough to draw them dotted; from `tools/build-admin1.mjs`,
+  which leaves out units too fine to read at that zoom (Slovenia's
+  municipalities, Uganda's districts, Switzerland's cantons, the islands'
+  parishes) and draws Natural Earth's regional grouping instead where there
+  is one (Italy's regioni, England's regions, Slovenia's statistical
+  regions). **data/lakes.json** — Natural Earth 1:50m lakes, drawn in the
+  sea's colour; from `tools/build-lakes.mjs`.
 - **vendor/** — d3-array, d3-geo, topojson-client, topojson-simplify, unmodified.
 
 ## Tests

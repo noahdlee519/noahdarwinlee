@@ -33,6 +33,7 @@
   var topology = null, features = [], featureById = new Map(), lod = null, borders = null, graticule = null;
   var cities = []; // { name, cc, lon, lat, tier, x, y, z }
   var admin1 = null, admin1Asked = false; // the borders inside countries, fetched when the globe is close
+  var lakes = null; // prepared like the countries, drawn in the sea's colour
   var airports = null; // { name, cc, lon, lat, iata, big, x, y, z }, from the place list, drawn when the globe is very close
   var countries = [];          // [{ id, name, key }] sorted, for the avoid search
   var places = null, placesPromise = null;
@@ -108,7 +109,9 @@
 
   function frame() {
     renderQueued = false;
-    render(interacting > 0 ? "coarse" : "full");
+    var t0 = performance.now();
+    render("full");
+    if (interacting > 0) noteCost(performance.now() - t0);
   }
 
   /* Interactions call this on every move; the full drawing follows a short
@@ -156,9 +159,12 @@
   }
   function prepareLines(mesh) {
     return mesh.coordinates.map(function (line) {
-      var n = line.length, X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n);
-      for (var k = 0; k < n; k++) { var v = G.toVec(line[k][0], line[k][1]); X[k] = v[0]; Y[k] = v[1]; Z[k] = v[2]; }
-      return { x: X, y: Y, z: Z, n: n };
+      var n = line.length, X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n), sx = 0, sy = 0, sz = 0;
+      for (var k = 0; k < n; k++) { var v = G.toVec(line[k][0], line[k][1]); X[k] = v[0]; Y[k] = v[1]; Z[k] = v[2]; sx += v[0]; sy += v[1]; sz += v[2]; }
+      var c = Math.hypot(sx, sy, sz) > 1e-9 ? G.normalize([sx, sy, sz]) : [X[0], Y[0], Z[0]];
+      var minDot = 1;
+      for (k = 0; k < n; k++) { var d = c[0] * X[k] + c[1] * Y[k] + c[2] * Z[k]; if (d < minDot) minDot = d; }
+      return { x: X, y: Y, z: Z, n: n, cx: c[0], cy: c[1], cz: c[2], radius: Math.acos(Math.max(-1, Math.min(1, minDot))) };
     });
   }
   function makeGraticule() {
@@ -193,18 +199,36 @@
 
   /* Adds a ring to the current path. Vertices behind the horizon go to the
      limb; a ring with nothing in front is left out altogether. */
+  /* Which side of the screen a point is off, as bits: 1 left, 2 right, 4
+     above, 8 below; 0 when it is on the screen (with a margin). A run of
+     vertices all off the same side can be drawn as its two ends: the
+     straight line between them stays off that side, and the fill of the
+     ring is the same on the screen. Close in, this leaves out nearly all
+     of a big country's outline. */
+  var EDGE = 24;
+  function outcode(px, py) {
+    return (px < -EDGE ? 1 : px > W + EDGE ? 2 : 0) | (py < -EDGE ? 4 : py > H + EDGE ? 8 : 0);
+  }
   function traceRing(c, rg) {
     var X = rg.x, Y = rg.y, Z = rg.z, n = rg.n;
     var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     var any = false;
     for (var k = 0; k < n; k++) { if (X[k] * vx + Y[k] * vy + Z[k] * vz > 0) { any = true; break; } }
     if (!any) return false;
+    var side = 0, lx = 0, ly = 0, held = false;
     for (k = 0; k < n; k++) {
       var x = X[k], y = Y[k], z = Z[k];
       var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz, sz = x * vx + y * vy + z * vz;
       if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
-      if (k === 0) c.moveTo(cx + r * sx, cy - r * sy); else c.lineTo(cx + r * sx, cy - r * sy);
+      var px = cx + r * sx, py = cy - r * sy;
+      if (k === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      var oc = outcode(px, py);
+      if (oc & side) { lx = px; ly = py; held = true; side = oc & side; continue; } // still off the same side: hold it
+      if (held) { c.lineTo(lx, ly); held = false; }
+      c.lineTo(px, py);
+      side = oc;
     }
+    if (held) c.lineTo(lx, ly);
     c.closePath();
     return true;
   }
@@ -216,27 +240,41 @@
   function traceLines(c, lines) {
     var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     for (var i = 0; i < lines.length; i++) {
-      var L = lines[i], X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false;
+      var L = lines[i], X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false, side = 0;
+      // Lines whose whole cap is behind or off the screen are skipped.
+      if (L.radius < Math.PI / 2 && !featureInFront(L)) continue;
       for (var k = 0; k < n; k++) {
         var x = X[k], y = Y[k], z = Z[k];
         var sz = x * vx + y * vy + z * vz;
         if (sz < -0.002) { pen = false; continue; }
         var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz;
         if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
-        if (!pen) { c.moveTo(cx + r * sx, cy - r * sy); pen = true; } else c.lineTo(cx + r * sx, cy - r * sy);
+        var px = cx + r * sx, py = cy - r * sy, oc = outcode(px, py);
+        if (!pen) { c.moveTo(px, py); pen = true; side = oc; continue; }
+        // Two in a row off the same side: nothing of the stroke between them shows.
+        if (oc & side) { c.moveTo(px, py); side = oc & side; continue; }
+        c.lineTo(px, py);
+        side = oc;
       }
     }
   }
 
   var marks = null;
   function mark(name) { if (marks) marks.push([name, performance.now()]); }
-  /* The level for the size of the globe on the screen, one step rougher
-     while it moves. */
+  /* The level for the size of the globe on the screen. It is the same
+     still or moving, so the outline does not change under the hand; a
+     device that cannot draw its level in time settles one step down, for
+     good, so that it does not change later either. */
+  var slow = 0, slowFrames = 0;
   function levelFor(detail) {
+    void detail;
     var px = projection.scale(); // radius in pixels
     var level = px < 900 ? 0 : px < 2600 ? 1 : 2;
-    if (detail !== "full" && level > 0) level--;
-    return level;
+    return Math.max(0, level - slow);
+  }
+  function noteCost(ms) {
+    if (slow) return;
+    if (ms > 28) { if (++slowFrames >= 6) slow = 1; } else slowFrames = 0;
   }
   function featuresFor(detail) {
     var level = levelFor(detail);
@@ -298,6 +336,18 @@
       ctx.fillStyle = hatch; ctx.fill();
     });
 
+    mark("avoid");
+    // Lakes, in the sea's colour, over whatever the land is filled with.
+    if (lakes) {
+      ctx.fillStyle = pal.ocean;
+      for (var li = 0; li < lakes.length; li++) {
+        var lk = lakes[li];
+        if (r * Math.sin(Math.min(lk.radius, Math.PI / 2)) < 0.7) continue; // smaller than a pixel
+        if (!featureInFront(lk)) continue;
+        ctx.beginPath(); traceFeature(ctx, lk); ctx.fill();
+      }
+    }
+    mark("lakes");
     // The borders inside countries, dotted, once the globe is close enough
     // that they mean something; they fade in over the first stretch.
     var sub = subdivisionAlpha(r);
@@ -310,6 +360,7 @@
         ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
       }
     }
+    mark("admin1");
     // Borders between countries; the coast is the land's own edge.
     ctx.beginPath(); traceLines(ctx, mesh);
     ctx.strokeStyle = pal.border; ctx.lineWidth = 0.7; ctx.stroke();
@@ -320,7 +371,9 @@
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
 
     drawRegions();
+    mark("regions");
     drawCities();
+    mark("cities");
     drawRoutes();
     drawMarkers();
     drawDrawing();
@@ -374,6 +427,12 @@
      px, whole from 2200. */
   var ADMIN1_FROM = 1400, ADMIN1_FULL = 2200;
   function subdivisionAlpha(r) { return Math.max(0, Math.min(1, (r - ADMIN1_FROM) / (ADMIN1_FULL - ADMIN1_FROM))); }
+  function loadLakes() {
+    fetch("data/lakes.json").then(function (r) { return r.json(); }).then(function (topo) {
+      lakes = prepare(topojson.feature(topo, topo.objects.lakes).features);
+      scheduleRender("full");
+    }).catch(function (err) { console.warn("lakes", err); });
+  }
   function loadAdmin1() {
     if (admin1Asked) return;
     admin1Asked = true;
@@ -424,9 +483,9 @@
         if (sz <= 0.02) continue;
         px = cx + r * (c.x * ex + c.y * ey + c.z * ez); py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
         if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
-        if (!c.label) c.label = c.iata + "  " + c.name.replace(/\s+airport$/i, "");
+        if (!c.label) c.label = c.iata;
         if (!c.w) c.w = ctx.measureText(c.label).width;
-        lx = px + dot + 5; ly = py - 7; lw = c.w + pad * 2; lh = 14;
+        lx = px + dot + 8; ly = py - 7; lw = c.w + pad * 2; lh = 14;
         clash = false;
         for (k = 0; k < placed.length; k++) { q = placed[k]; if (lx < q.x + q.w + 4 && lx + lw + 4 > q.x && ly < q.y + q.h + 1 && ly + lh + 1 > q.y) { clash = true; break; } }
         if (clash) continue;
@@ -448,22 +507,46 @@
       ctx.fillStyle = pal.label; ctx.fillText(s.c.name, s.x + dot + 4, s.y);
     }
     if (cityScreen.length > nCities) {
-      // An airport is a small square set on its corner, and its code and name.
+      // An airport is a little plane, nose up, and its three-letter code.
       ctx.globalAlpha = air;
-      var d = dot + 1.2;
+      ctx.lineJoin = "round"; ctx.lineWidth = 1; ctx.strokeStyle = pal["city-ring"]; ctx.fillStyle = pal.city;
       for (i = nCities; i < cityScreen.length; i++) {
         s = cityScreen[i];
-        ctx.beginPath(); ctx.moveTo(s.x, s.y - d); ctx.lineTo(s.x + d, s.y); ctx.lineTo(s.x, s.y + d); ctx.lineTo(s.x - d, s.y); ctx.closePath();
-        ctx.fillStyle = pal.city; ctx.fill(); ctx.strokeStyle = pal["city-ring"]; ctx.lineWidth = 1.2; ctx.stroke();
+        planePath(s.x, s.y, 5.5);
+        ctx.fill(); ctx.stroke();
       }
       ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
       for (i = nCities; i < cityScreen.length; i++) {
         s = cityScreen[i];
-        ctx.strokeText(s.c.label, s.x + dot + 5, s.y);
-        ctx.fillStyle = pal.label; ctx.fillText(s.c.label, s.x + dot + 5, s.y);
+        ctx.strokeText(s.c.label, s.x + dot + 8, s.y);
+        ctx.fillStyle = pal.label; ctx.fillText(s.c.label, s.x + dot + 8, s.y);
       }
       ctx.globalAlpha = 1;
     }
+  }
+  /* A plane seen from above, nose up, in a box of 2h by 2h around x, y. */
+  function planePath(x, y, h) {
+    var u = h / 10;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 10 * u);                 // nose
+    ctx.lineTo(x + 1.6 * u, y - 7 * u);
+    ctx.lineTo(x + 1.6 * u, y - 2 * u);
+    ctx.lineTo(x + 10 * u, y + 2.5 * u);       // wing tip
+    ctx.lineTo(x + 10 * u, y + 4.5 * u);
+    ctx.lineTo(x + 1.6 * u, y + 2.5 * u);
+    ctx.lineTo(x + 1.2 * u, y + 7 * u);
+    ctx.lineTo(x + 4 * u, y + 9 * u);          // tail
+    ctx.lineTo(x + 4 * u, y + 10 * u);
+    ctx.lineTo(x, y + 8.6 * u);
+    ctx.lineTo(x - 4 * u, y + 10 * u);
+    ctx.lineTo(x - 4 * u, y + 9 * u);
+    ctx.lineTo(x - 1.2 * u, y + 7 * u);
+    ctx.lineTo(x - 1.6 * u, y + 2.5 * u);
+    ctx.lineTo(x - 10 * u, y + 4.5 * u);
+    ctx.lineTo(x - 10 * u, y + 2.5 * u);
+    ctx.lineTo(x - 1.6 * u, y - 2 * u);
+    ctx.lineTo(x - 1.6 * u, y - 7 * u);
+    ctx.closePath();
   }
   /* How visible the airports are at this globe radius: none below 5500 px,
      whole from 7500. */
@@ -557,6 +640,12 @@
   var pinch = null;
   var inertia = null;
 
+  /* The ring round the globe is for the keyboard: it shows when the globe
+     is reached with Tab, not when a click gives it focus for the arrow
+     keys (a script's focus() would otherwise count as the keyboard's). */
+  var focusByPointer = false;
+  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); });
+  canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); });
   function degPerPx() { return 180 / (Math.PI * projection.scale()); }
 
   canvas.addEventListener("pointerdown", function (e) {
@@ -585,7 +674,7 @@
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, marker: marker,
       lastT: performance.now(), lastX: e.clientX, lastY: e.clientY, vx: 0, vy: 0, shift: e.shiftKey };
     canvas.classList.add("is-dragging");
-    if (e.pointerType === "mouse") canvas.focus({ preventScroll: true });
+    if (e.pointerType === "mouse") { focusByPointer = true; canvas.focus({ preventScroll: true }); focusByPointer = false; }
   });
 
   canvas.addEventListener("pointermove", function (e) {
@@ -983,7 +1072,7 @@
     var h = $("hint"), tap = canHover ? "click" : "tap";
     if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe";
     else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place";
-    else h.textContent = "Drag A or B to move them, " + (canHover ? "clicking" : "tapping") + " again moves B";
+    else h.textContent = "Drag A or B to move them";
   }
 
   $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
@@ -1207,13 +1296,40 @@
       open = rows.length > 0 || !!note;
       list.hidden = !open;
       input.setAttribute("aria-expanded", String(open));
-      if (open) {
-        // No taller than the panel has room for below the field, so the
-        // list scrolls itself rather than the panel.
-        var room = panel.getBoundingClientRect().bottom - list.getBoundingClientRect().top - 12;
-        list.style.maxHeight = Math.max(120, Math.min(290, room)) + "px";
-      }
+      place();
     }
+    /* Where the open list goes. With a mouse it floats over everything,
+       fixed under its field and as tall as the window allows, so a short
+       panel does not clip it to a row or two; it opens upward when there
+       is more room above. On a phone it stays in the sheet, which opens to
+       make room: the list takes the sheet's height less the field's, and
+       the sheet scrolls the field up to its top so the list fits below. */
+    function place() {
+      if (!open) return;
+      var floating = window.innerWidth > 640;
+      list.classList.toggle("is-floating", floating);
+      if (!floating) {
+        list.style.left = list.style.top = list.style.bottom = list.style.width = "";
+        var pr = panel.getBoundingClientRect(), line = list.parentElement.getBoundingClientRect();
+        var want = Math.max(120, Math.min(290, pr.height - line.height - 28));
+        list.style.maxHeight = want + "px";
+        var need = line.bottom + want + 12 - pr.bottom;
+        if (need > 1) panel.scrollTop += need;
+        return;
+      }
+      var a = list.parentElement.getBoundingClientRect(), vh = window.innerHeight;
+      var below = vh - a.bottom - 16, above = a.top - 16;
+      var up = below < 200 && above > below;
+      list.style.left = a.left + "px";
+      list.style.width = a.width + "px";
+      if (up) { list.style.top = "auto"; list.style.bottom = (vh - a.top) + "px"; }
+      else { list.style.top = a.bottom + "px"; list.style.bottom = "auto"; }
+      list.style.maxHeight = Math.max(120, Math.min(360, up ? above : below)) + "px";
+    }
+    panel.addEventListener("scroll", place, { passive: true });
+    window.addEventListener("resize", place);
+    // The sheet slides open on a phone after the list has opened.
+    panel.addEventListener("transitionend", function (e) { if (e.target === panel) place(); });
     function choose(i) {
       if (i < 0 || i >= items.length) return;
       var row = items[i];
@@ -1707,9 +1823,11 @@
     panel.classList.toggle("has-result", !!res);
     sum.innerHTML = ""; out.innerHTML = "";
     $("results").hidden = true;
+    $("units").hidden = true;
     $("fit").hidden = !(state.a && state.b);
     if (!res) return;
     $("results").hidden = false;
+    $("units").hidden = false;
 
     var big = document.createElement("span"); big.className = "gc-big";
     var line = document.createElement("span"); line.className = "gc-line";
@@ -1760,15 +1878,13 @@
 
     // The details.
     var dl = document.createElement("dl"); dl.className = "gc-rows";
-    row(dl, "Direct, on the sphere", fmt(res.directKm));
-    if (res.directEllipsoidKm != null) row(dl, "Direct, on the WGS84 ellipsoid", fmt(res.directEllipsoidKm));
     var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
     if (detoured) {
       row(dl, "Avoiding " + joinNames(avoidedNames()), fmt(res.lengthKm));
       row(dl, "Bends", String(res.bends));
     }
     if (res.ms != null && res.expanded) row(dl, "Worked out in", (res.ms / 1000).toFixed(res.ms < 100 ? 2 : 1) + " s · " + res.expanded.toLocaleString() + " corners searched");
-    out.appendChild(dl);
+    if (dl.firstChild) out.appendChild(dl);
 
     var ends = (res.startIn || []).concat(res.endIn || []).map(String);
     crossesList(out, "The direct way crosses", res.directCrosses, ends);
@@ -1787,7 +1903,7 @@
   function crossesList(out, title, ids, ends) {
     if (!ids) return;
     var box = document.createElement("div"); box.className = "gc-crosses";
-    var lab = document.createElement("div"); lab.className = "gc-label"; lab.textContent = title + (ids.length ? "" : " nothing: open sea all the way");
+    var lab = document.createElement("div"); lab.className = "gc-label" + (ids.length ? "" : " gc-open-sea"); lab.textContent = title + (ids.length ? "" : " nothing: open sea all the way");
     box.appendChild(lab);
     if (ids.length) {
       var ul = document.createElement("ul"); ul.className = "gc-chips";
@@ -2013,6 +2129,7 @@
     if (!canHover) $("avoid-hint").textContent = "Or press avoid, then tap countries";
     startWorker();
     loadCities();
+    loadLakes();
     $("load").classList.add("is-gone");
     setTimeout(function () { $("load").remove(); }, 400);
     if (fromUrl) { requestRoute(); setTimeout(function () { fitRoute(true); }, 50); }

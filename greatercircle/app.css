@@ -169,7 +169,7 @@ body.gc-page {
   cursor: grab;
   outline: none;
 }
-.gc-globe:focus-visible {
+.gc-globe.show-ring:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: -4px;
 }
@@ -548,6 +548,14 @@ body.gc-page {
   max-height: 290px;
   overflow-y: auto;
 }
+/* Floating over the page with a mouse, placed by the script under its
+   field, so the panel's own edge does not clip it. */
+.gc-suggest.is-floating {
+  position: fixed;
+  right: auto;
+  z-index: 40;
+  overscroll-behavior: contain;
+}
 .gc-suggest li {
   padding: 7px 10px;
   cursor: pointer;
@@ -703,7 +711,10 @@ body.gc-page {
 .gc-units {
   display: flex;
   gap: 2px;
-  margin-bottom: 8px;
+  margin: 10px 0 0;
+}
+.gc-units[hidden] {
+  display: none;
 }
 .gc-units button {
   padding: 2px 8px;
@@ -743,6 +754,9 @@ dl.gc-rows {
 }
 .gc-crosses .gc-label {
   margin-bottom: 4px;
+}
+.gc-crosses .gc-label.gc-open-sea {
+  color: var(--ink);
 }
 
 .gc-load {
