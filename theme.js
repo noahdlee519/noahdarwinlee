@@ -91,6 +91,11 @@
       anchor.parentNode.insertBefore(line, anchor);
       line.appendChild(anchor);
       line.appendChild(btn);
+      /* The projects page's portfolio link belongs on this same line, to the
+         right of the name. The day/night circle stays with the name; on a
+         phone the circle leaves for the corner and the word stays. */
+      var lead = document.querySelector(".projects-lead");
+      if (lead) line.appendChild(lead);
     } else {
       document.body.appendChild(btn);
     }

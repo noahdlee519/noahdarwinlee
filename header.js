@@ -16,6 +16,8 @@
 
   let targets = [name, ...navLinks];
   if (topRight) targets.push(topRight);
+  const lead = document.querySelector(".projects-lead");
+  if (lead) targets.push(lead);
 
   /* The day/night switch is built after this file runs, so the list of things
      to fade is rebuilt on the first update that finds it. */
