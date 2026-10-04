@@ -163,8 +163,8 @@
       /* The intro on the left, the portrait in tiles on the right. */
       .hero-top {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-        align-items: end;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: stretch;
         gap: 32px clamp(32px, 5vw, 80px);
         margin: 0 0 clamp(40px, 7vh, 72px);
       }
@@ -173,16 +173,80 @@
         margin: 0;
       }
 
-      .hello {
-        margin: 0 0 clamp(14px, 2vh, 22px);
-        font-size: clamp(18px, 1.6vw, 22px);
-        font-weight: 500;
-        color: var(--ink-2);
+      /* The greeting takes the top of the left column and the blurb the bottom,
+         so the two ends of the column meet the two ends of the portrait. "Noah"
+         is set as large as the project names below, and its full stop is the
+         site's mark, cycling through the four inks with the band further down. */
+      .hero-intro {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: clamp(40px, 8vh, 96px);
+        min-width: 0;
       }
 
+      .hello {
+        margin: 0;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        color: var(--ink);
+      }
+
+      .hello .ln {
+        display: block;
+        overflow: clip;
+        padding-bottom: 0.06em;
+      }
+
+      .hello .ln > span {
+        display: block;
+        transform: translateY(105%);
+        transition: transform 1100ms var(--ease-out);
+      }
+
+      .is-ready .hello .ln > span {
+        transform: none;
+      }
+
+      .is-ready .hello .ln-name > span {
+        transition-delay: 120ms;
+      }
+
+      .hello .ln:first-child {
+        font-size: clamp(30px, 3.6vw, 60px);
+        line-height: 1;
+        margin-bottom: 0.1em;
+      }
+
+      .hello .ln-name {
+        font-size: clamp(104px, 15.5vw, 252px);
+        line-height: 0.84;
+        margin-left: -0.05em;
+      }
+
+      .hello-mark {
+        position: relative;
+        display: inline-block;
+        width: 0.19em;
+        height: 0.19em;
+        margin-left: 0.04em;
+        background: #0b0b0b;
+        animation: bridge-sq 5.4s step-end infinite;
+      }
+
+      .hello-mark::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: #fff;
+        animation: bridge-ci 5.4s step-end infinite;
+      }
+
+      /* A definite width: the canvas sizes itself to this column, so the
+         column cannot size itself to the canvas. */
       .tiles-wrap {
-        width: 100%;
-        max-width: 640px;
+        width: clamp(300px, 36vw, 520px);
         justify-self: end;
       }
 
@@ -208,9 +272,11 @@
         pointer-events: none;
       }
 
+      /* The list reaches past the right margin to the window's edge, rules and
+         all; each row pads back in, so only the colour and the lines run on. */
       .index {
         list-style: none;
-        margin: 0;
+        margin: 0 calc(-1 * var(--gutter)) 0 0;
         padding: 0;
         border-top: 1px solid var(--rule);
       }
@@ -223,13 +289,9 @@
          and the top copy is clipped away. Hovering opens the clip from the left,
          so the colour change travels across the row as one edge instead of the
          letters each fading on their own. */
-      /* The row reaches past the page's right margin to the edge of the
-         window, and pads the same distance back in, so the words stay where
-         they were and only the colour runs to the edge. */
       .row {
         position: relative;
         display: block;
-        margin-right: calc(-1 * var(--gutter));
         padding-right: var(--gutter);
         text-decoration: none;
         color: var(--ink);
@@ -590,8 +652,11 @@
         transition-delay: 140ms;
       }
 
+      /* Three columns, the outer two equal, so the address sits in the true
+         middle whatever is either side of it. */
       .stage-bar {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 12px;
         height: 46px;
@@ -614,12 +679,21 @@
       }
 
       .stage-bar .addr {
-        flex: 1;
-        text-align: center;
+        justify-self: center;
+        color: inherit;
+        text-decoration: none;
         font-variant-numeric: tabular-nums;
       }
 
+      .stage-bar .addr:hover,
+      .stage-bar .addr:focus-visible {
+        color: var(--ink);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
       .stage-bar .note {
+        justify-self: end;
         white-space: nowrap;
       }
 
@@ -1387,13 +1461,268 @@
          buildings drawn in outline, the selected one in its blue, and the
          record panel beside the map. Colours are the site's own. */
 
-      /* greatercircle's stage is the page itself, in a frame. */
-      .gc-embed {
+      /* ---------------- greatercircle demo ----------------
+         The tool's own palette: the sea is orange, the land cream, the route
+         white, and a country to keep out of is hatched. */
+      .gcd {
+        --gcd-sea: #e68019;
+        --gcd-land: #e3e3b0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
+        align-items: center;
+        gap: clamp(16px, 3vw, 40px);
+        padding: clamp(16px, 3vw, 40px);
+        background: var(--gcd-sea);
+        /* Black ink on the orange: white on it is too faint to read at text
+           sizes. The globe keeps the tool's white lines. */
+        color: #0b0b0b;
+      }
+
+      .gcd-globe svg {
         display: block;
         width: 100%;
-        height: clamp(440px, 64vh, 640px);
+        max-width: 560px;
+        height: auto;
+        margin: 0 auto;
+        overflow: visible;
+      }
+
+      .gcd-sea {
+        fill: var(--gcd-sea);
+        stroke: rgba(255, 255, 255, 0.55);
+        stroke-width: 1.2;
+        filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.28));
+      }
+
+      .gcd-grat {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.14);
+        stroke-width: 1;
+      }
+
+      .gcd-land {
+        fill: var(--gcd-land);
+      }
+
+      .gcd-closed {
+        fill: url(#gcd-hatch);
+        transition: opacity 320ms ease;
+      }
+
+      .gcd-direct {
+        fill: none;
+        stroke: #fff;
+        stroke-width: 3;
+        stroke-linecap: round;
+        transition: stroke-width 320ms ease, opacity 320ms ease;
+      }
+
+      .gcd.is-avoiding .gcd-direct {
+        stroke-width: 1.6;
+        stroke-dasharray: 4 6;
+        opacity: 0.85;
+      }
+
+      .gcd-around {
+        fill: none;
+        stroke: #fff;
+        stroke-width: 3.2;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        filter: drop-shadow(0 0 3px rgba(230, 128, 25, 0.9));
+      }
+
+      .gcd.is-avoiding .gcd-around {
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 900ms var(--ease-out);
+      }
+
+      .gcd:not(.is-avoiding) .gcd-closed {
+        opacity: 0;
+      }
+
+      .gcd-pin circle {
+        fill: #fff;
+      }
+
+      .gcd-pin text {
+        fill: var(--gcd-sea);
+        font-size: 12px;
+        font-weight: 700;
+        text-anchor: middle;
+      }
+
+      .gcd-globe svg.is-swapping {
+        opacity: 0;
+      }
+
+      .gcd-globe svg {
+        transition: opacity 180ms ease;
+      }
+
+      .gcd-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .gcd-trips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .gcd-trips button,
+      .gcd-switch,
+      .gcd-more {
+        min-height: 44px;
+        font: inherit;
+        color: #0b0b0b;
+      }
+
+      .gcd-trips button {
+        padding: 0 14px;
+        border: 1px solid #0b0b0b;
+        border-radius: 999px;
+        background: none;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background-color 160ms ease, color 160ms ease, transform 140ms var(--ease-out);
+      }
+
+      .gcd-trips button:active,
+      .gcd-switch:active {
+        transform: scale(0.97);
+      }
+
+      .gcd-trips button[aria-pressed="true"] {
+        background: #0b0b0b;
+        border-color: #0b0b0b;
+        color: #fff;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .gcd-trips button[aria-pressed="false"]:hover {
+          background: rgba(11, 11, 11, 0.1);
+        }
+      }
+
+      .gcd-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        align-self: flex-start;
+        padding: 0;
         border: 0;
-        background: #e68019;
+        background: none;
+        font-size: 18px;
+        font-weight: 500;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-out);
+      }
+
+      .gcd-track {
+        position: relative;
+        flex: none;
+        width: 46px;
+        height: 26px;
+        border-radius: 999px;
+        background: rgba(11, 11, 11, 0.22);
+        transition: background-color 200ms ease;
+      }
+
+      .gcd-knob {
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 240ms var(--ease-out);
+      }
+
+      .gcd-switch[aria-checked="true"] .gcd-track {
+        background: #0b0b0b;
+      }
+
+      .gcd-switch[aria-checked="true"] .gcd-knob {
+        transform: translateX(20px);
+      }
+
+      .gcd-switch:focus-visible,
+      .gcd-trips button:focus-visible,
+      .gcd-more:focus-visible {
+        outline: 2px solid #0b0b0b;
+        outline-offset: 3px;
+      }
+
+      .gcd-km {
+        margin: 0;
+        font-size: clamp(40px, 4.4vw, 60px);
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .gcd-km small {
+        display: block;
+        margin-top: 10px;
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.4;
+        letter-spacing: 0;
+        color: #0b0b0b;
+      }
+
+      .gcd-key {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 14px;
+        color: #0b0b0b;
+      }
+
+      .gcd-key li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .gcd-key i {
+        width: 28px;
+        height: 0;
+        border-top: 3px solid #fff;
+      }
+
+      .gcd-key i.k-direct {
+        border-top: 2px dashed #fff;
+      }
+
+      .gcd-more {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        font-size: 15px;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+
+      @media (max-width: 900px) {
+        .gcd {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .gcd-globe svg {
+          max-width: 420px;
+        }
       }
       .lt {
         --lt-paper: #ebece9;
@@ -2034,7 +2363,9 @@
 
       @media (prefers-reduced-motion: reduce) {
         .bridge i,
-        .bridge i::after {
+        .bridge i::after,
+        .hello-mark,
+        .hello-mark::after {
           animation-play-state: paused;
         }
       }
@@ -2046,9 +2377,22 @@
           grid-template-columns: minmax(0, 1fr);
         }
 
+        .hero-intro {
+          display: contents;
+        }
+
+        .hello {
+          order: 0;
+        }
+
         .tiles-wrap {
-          order: -1;
+          order: 1;
+          width: 100%;
           justify-self: start;
+        }
+
+        .hero-top .lede {
+          order: 2;
         }
 
         .spread,
@@ -2205,6 +2549,7 @@
         }
 
         .lede .w > span,
+        .hello .ln > span,
         .row-name .ch,
         .p-name .mask > span,
         .stage {
@@ -2247,14 +2592,16 @@
       <section class="hero" aria-labelledby="lede">
         <div class="hero-top">
           <div class="hero-intro">
-            <p class="hello">Hi, my name is Noah.</p>
+            <p class="hello">
+              <span class="ln"><span>Hi, my name is</span></span>
+              <span class="ln ln-name"><span>Noah<i class="hello-mark" aria-hidden="true"></i></span></span>
+            </p>
             <h1 class="lede" id="lede" data-split>
               I design and build products with AI. Here are four you can try right on this page.
             </h1>
           </div>
           <div class="tiles-wrap">
             <canvas id="tiles" class="tiles" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
-            <p class="tiles-hint" id="tiles-hint" hidden>Tap the picture, a square at a time, to see it in full.</p>
           </div>
         </div>
 
@@ -2332,9 +2679,6 @@
             </a>
           </li>
         </ol>
-        <div class="hero-foot">
-          <span>Built with Claude Code, Claude and Cursor</span>
-        </div>
       </section>
 
       <!-- Between the index and the first project: two rows of the mark,
@@ -2362,7 +2706,7 @@
         <div class="stage">
           <div class="stage-bar">
             <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="addr">getleggio.com</span>
+            <a class="addr" href="https://getleggio.com" target="_blank" rel="noopener noreferrer">getleggio.com</a>
             <span class="note">Demo · glosses written for this page</span>
           </div>
           <div class="lg">
@@ -2456,7 +2800,7 @@
         <div class="stage">
           <div class="stage-bar">
             <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="addr">fuzhounese.org</span>
+            <a class="addr" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">fuzhounese.org</a>
             <span class="note">Demo · real entries, sample answers</span>
           </div>
           <div class="fz">
@@ -2533,7 +2877,7 @@
         <div class="stage">
           <div class="stage-bar">
             <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="addr">loretour.com · Flatiron</span>
+            <a class="addr" href="https://loretour.com" target="_blank" rel="noopener noreferrer">loretour.com · Flatiron</a>
             <span class="note">Demo · real entries, shortened</span>
           </div>
           <div class="lt">
@@ -2598,15 +2942,43 @@
         <div class="stage">
           <div class="stage-bar">
             <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="addr">noahdarwinlee.com/greatercircle</span>
-            <span class="note">Live · the page itself</span>
+            <a class="addr" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">noahdarwinlee.com/greatercircle</a>
+            <span class="note">Demo · real routes, worked out ahead</span>
           </div>
-          <iframe
-            class="gc-embed"
-            src="/greatercircle/?embed=1#a=51.5074,-0.1278,London&amp;b=35.6895,139.6917,Tokyo&amp;avoid=643"
-            title="greatercircle: a globe that finds the shortest way around chosen countries"
-            loading="lazy"
-          ></iframe>
+          <!-- Three trips the tool's engine worked out ahead of time, drawn on
+               its globe in its colours. Nothing loads: the drawings are in the
+               page, about 50 KB for all three. -->
+          <div class="gcd is-avoiding" id="gcd">
+            <div class="gcd-globe">
+              <svg id="gcd-svg" viewBox="0 0 600 600" role="img" aria-labelledby="gcd-title">
+                <title id="gcd-title">The route from London to Tokyo on a globe</title>
+                <defs>
+                  <pattern id="gcd-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="7" height="7" fill="#f3f3d6" />
+                    <line x1="0" y1="0" x2="0" y2="7" stroke="#fff" stroke-width="2.4" />
+                  </pattern>
+                </defs>
+                <circle class="gcd-sea" cx="300" cy="300" r="280" />
+                <path class="gcd-grat" d="M465,74L451,66L434,61L415,60L394,63L348,79L300,109M354,25L343,29L329,45L315,72L300,109M246,25L257,29L270,45L285,72L300,109M135,74L149,66L166,61L185,60L206,63L252,79L300,109M37,204L51,176L72,152L100,132L133,117L170,107L211,102L255,103L300,109M37,396L31,375L30,353L35,315L50,276L75,238L109,202L150,171L197,144L247,123L300,109M135,526L121,512L110,494L104,471L102,445L106,405L117,361L135,314L160,267L190,222L224,179L261,141L300,109M246,575L238,568L232,553L229,529L228,498L233,410L249,305L272,199L300,109M354,575L362,568L368,553L371,529L373,498L367,410L351,305L328,199L300,109M465,526L479,512L490,494L496,471L498,445L494,405L483,361L465,314L440,267L410,222L376,179L339,141L300,109M563,396L569,375L570,353L565,315L550,276L525,238L491,202L450,171L404,144L353,123L300,109M563,204L549,176L528,152L500,132L467,117L430,107L388,102L345,103L300,109M110,505L114,510L121,515L129,521L136,526L144,531L152,536L161,541L170,545L179,549L188,553L198,556L207,559L217,562L227,565L237,567L248,569L258,570L268,571L279,572L290,573L300,573L311,573L321,572L332,571L342,570L353,569L363,567L373,565L383,562L393,559L403,556L412,553L421,549L430,545L439,541L448,536L456,531L464,526L472,521L479,515L486,509L490,505M20,300L20,300L20,309L21,318L22,327L24,336L27,344L30,353L33,362L37,370L41,378L46,387L52,395L58,402L64,410L71,417L78,425L86,432L94,438L102,445L111,451L120,457L130,462L139,468L150,473L160,477L171,482L182,486L193,489L204,492L216,495L228,498L240,500L251,502L264,503L276,504L288,505L300,505L312,505L325,504L337,503L349,502L361,500L373,498L384,495L396,492L407,489L418,486L429,482L440,477L451,473L461,468L471,462L480,457L489,451L498,445L507,438L515,432L522,425L529,417L536,410L543,402L548,394L554,386L559,378L563,370L567,361L570,353L573,344L576,335L578,327L579,318L580,309L580,300M110,95L108,97L101,103L95,109L90,116L85,123L80,130L76,137L72,144L69,151L66,159L63,166L61,174L60,181L58,189L58,197L58,205L58,212L58,220L60,228L61,235L63,243L66,250L69,258L72,265L76,272L80,279L85,286L90,293L96,300L101,306L108,312L114,319L121,324L129,330L136,335L144,340L152,345L161,350L170,354L179,358L188,362L198,365L207,368L217,371L227,374L237,376L248,378L258,379L268,380L279,381L290,382L300,382L311,382L321,381L332,380L342,379L353,378L363,376L373,374L383,371L393,368L403,365L412,362L421,358L430,354L439,350L448,345L456,340L464,335L472,330L479,324L486,318L492,312L499,306L505,300L510,293L515,286L520,279L524,272L528,265L531,258L534,250L537,243L539,235L540,228L542,220L542,212L542,204L542,197L542,189L540,181L539,174L537,166L534,159L531,151L528,144L524,137L520,130L515,123L510,116L504,109L499,103L492,97L490,95M399,62L395,59L390,56L385,53L380,51L375,48L370,46L365,44L359,42L354,40L348,38L342,37L336,36L330,35L324,34L318,33L312,33L306,32L300,32L294,32L288,33L282,33L276,34L270,35L264,36L258,37L252,38L246,40L241,42L235,44L230,46L225,48L220,51L215,53L210,56L205,59L201,62L197,65L193,69L189,72L185,76L182,80L179,83L176,87L173,91L171,95L168,100L166,104L165,108L163,112L162,117L161,121L161,126L160,130L160,135L160,139L161,144L161,148L162,152L163,157L165,161L166,165L168,170L171,174L173,178L176,182L179,186L182,190L185,193L189,197L193,200L197,204L201,207L205,210L210,213L215,216L220,218L225,221L230,223L235,225L241,227L246,229L252,231L258,232L264,233L270,235L276,235L282,236L288,237L294,237L300,237L306,237L312,237L318,236L324,235L330,235L336,233L342,232L348,231L354,229L359,227L365,225L370,223L375,221L380,218L385,216L390,213L395,210L399,207L403,204L407,200L411,197L415,193L418,190L421,186L424,182L427,178L429,174L432,170L434,165L435,161L437,157L438,152L439,148L439,143L440,139L440,135L440,130L439,126L439,121L438,117L437,112L435,108L434,104L432,100L429,95L427,91L424,87L421,83L418,80L415,76L411,72L407,69L403,65L399,62" />
+                <path class="gcd-land" d="M183,549L177,546L170,539L168,535L154,522L153,520L154,512L158,509L154,502L155,500L150,492L153,492L149,490L148,488L144,483L137,473L135,468L138,463L139,460L140,457L134,448L125,445L118,433L113,429L109,427L107,427L96,423L92,419L93,419L93,419L85,413L78,410L74,403L68,389L66,385L65,376L62,364L62,359L59,354L60,351L61,350L60,344L63,342L66,337L69,322L70,320L76,314L79,314L84,309L90,307L95,309L102,307L105,301L111,297L117,298L124,293L125,298L132,304L144,305L161,313L167,317L171,317L173,329L167,331L171,338L182,348L184,354L194,362L199,361L202,355L207,354L219,364L234,371L240,369L247,372L255,373L257,371L260,365L264,358L264,352L265,347L252,349L245,344L240,347L233,340L232,329L233,324L242,326L243,322L250,324L258,321L268,324L276,329L283,329L287,326L287,321L282,317L271,308L278,303L278,299L269,300L266,304L268,307L262,310L258,304L262,302L253,298L248,303L243,310L238,315L239,318L241,323L231,322L223,320L218,322L217,327L221,332L217,333L214,338L209,321L210,310L208,306L206,303L206,303L202,298L201,290L198,286L198,286L194,285L192,290L194,300L204,317L200,314L198,321L195,320L195,314L188,303L185,294L185,288L182,284L177,285L177,285L177,285L172,286L167,280L162,284L161,286L153,286L146,290L146,294L135,297L130,293L125,293L123,284L119,281L122,273L130,266L132,262L134,257L139,258L152,271L159,262L161,253L157,247L163,246L166,250L168,245L171,249L181,246L184,246L186,248L185,246L191,242L197,244L203,243L205,239L205,235L210,229L215,229L213,234L208,237L207,240L209,246L213,245L215,250L216,249L216,249L228,249L230,252L235,249L235,250L236,250L237,246L241,240L244,244L247,240L247,234L253,233L259,235L262,233L259,230L247,230L245,226L248,216L261,206L259,204L256,203L249,211L242,213L236,222L238,228L231,231L225,241L219,243L216,241L220,224L220,221L210,224L207,220L209,214L216,205L228,203L234,200L242,194L248,190L258,185L265,185L269,182L270,185L274,183L277,187L276,189L284,193L293,201L291,206L287,208L282,206L275,201L280,208L279,214L284,218L285,216L283,212L289,215L290,210L295,206L298,209L299,198L302,197L303,200L300,203L302,205L305,204L305,201L315,194L317,197L324,193L325,195L328,192L327,188L331,188L341,192L341,189L336,187L334,180L335,178L334,173L339,172L340,177L342,178L347,187L349,188L349,197L351,199L353,190L346,183L346,179L342,176L344,172L345,176L349,174L345,173L348,169L354,169L349,168L346,164L352,159L348,157L349,151L353,146L351,136L354,135L354,137L357,135L359,133L362,132L367,135L370,145L372,144L372,138L374,139L374,136L376,133L379,133L380,130L377,127L381,123L384,126L390,125L392,124L387,121L389,121L388,118L390,116L389,113L386,114L382,111L383,105L388,99L385,96L384,92L388,91L383,83L382,83L383,80L381,79L378,80L373,75L371,70L371,70L369,64L369,63L366,60L365,58L370,59L375,58L377,61L376,62L380,64L378,66L383,66L384,66L388,67L391,64L395,67L404,71L412,75L418,81L424,86L430,88L431,87L437,87L439,89L444,90L446,93L452,95L455,98L459,100L464,104L449,102L439,98L436,95L423,88L419,85L414,84L423,90L420,90L422,95L434,101L437,105L436,109L440,113L441,121L443,123L456,136L461,143L465,138L463,135L467,133L485,145L495,156L503,168L506,175L504,177L507,183L511,189L513,198L517,199L522,200L528,207L529,217L519,206L517,211L513,205L511,206L512,217L508,210L506,212L509,223L507,226L511,229L515,228L514,223L517,219L518,226L521,237L524,235L532,239L535,246L537,244L542,263L544,267L544,283L542,294L542,295L541,297L541,297L537,310L532,316L530,322L531,333L537,336L542,336L545,340L547,350L539,373L539,368L537,368L532,368L526,367L523,370L523,384L529,391L534,390L538,391L538,397L541,400L538,402L533,404L528,395L522,393L522,385L519,375L516,371L514,364L504,376L503,369L499,363L493,362L487,356L482,365L480,364L481,366L474,373L474,380L456,409L458,418L457,431L449,444L447,444L428,420L419,396L419,401L413,405L406,401L410,398L401,395L392,389L385,393L372,396L354,397L349,391L343,395L338,395L327,389L321,380L315,382L313,382L315,388L322,396L326,405L328,405L329,407L340,407L348,397L350,398L350,401L354,405L360,406L366,411L359,426L349,433L347,437L338,439L334,444L321,449L317,452L293,457L290,442L281,428L273,420L273,414L258,388L258,382L258,381L257,381L254,389L250,385L252,394L258,407L258,412L263,416L265,431L270,434L276,447L282,449L291,458L292,462L297,467L319,463L330,460L328,470L315,489L305,496L297,500L283,510L277,513L272,519L270,523L274,526L273,530L278,535L279,548L273,551L264,551L254,554L258,560L257,563L246,563L248,565L246,567L239,568L231,568L220,566L210,563L202,561L193,557L193,556ZM327,324L327,319L322,318L319,311L322,307L328,307L326,299L321,299L314,303L309,307L306,311L313,325L320,332L317,333L315,341L316,345L324,349L335,347L335,345L334,338L331,336L329,328L336,328L332,322ZM21,318L21,328L24,344L25,351L27,360L27,364L27,364L27,364L25,355L24,345L22,335L21,326ZM262,23L263,23L263,23L267,23L259,24L261,25L278,24L280,25L284,25L287,26L286,27L287,27L287,26L291,28L301,31L300,30L304,30L313,32L322,34L327,36L332,36L332,35L341,36L339,38L347,37L349,36L361,37L362,37L375,40L358,37L354,38L359,39L362,41L365,41L365,44L368,45L370,47L369,49L361,49L360,48L354,47L352,49L356,49L362,52L361,53L363,55L353,53L354,53L351,51L349,53L354,58L352,59L349,58L343,58L333,58L326,54L323,54L317,52L314,51L310,50L303,48L297,49L293,51L293,49L288,52L283,50L280,52L271,52L267,52L263,52L265,50L261,51L256,53L249,53L252,55L250,57L254,55L251,57L246,57L241,58L237,61L239,62L235,64L233,62L233,66L236,67L239,66L244,68L244,70L240,70L227,69L229,71L226,71L223,70L220,71L223,74L227,75L223,78L218,78L218,77L212,77L214,69L219,67L216,67L213,69L211,67L212,64L212,58L206,56L203,57L198,58L190,62L178,68L173,72L166,73L155,78L157,80L167,77L167,82L171,81L179,78L182,80L186,79L191,80L187,84L187,85L179,89L176,92L168,93L164,96L165,99L170,100L157,107L150,109L141,119L141,118L137,123L131,126L130,121L127,119L133,105L131,102L128,99L129,96L128,93L129,96L128,100L130,102L129,107L128,110L125,112L121,112L117,115L111,125L110,116L113,114L116,116L117,110L116,111L117,105L114,105L110,109L114,102L110,100L114,97L105,103L107,99L108,97L107,97L100,104L100,104L107,97L114,90L122,84L129,78L137,72L145,67L154,61L162,56L171,52L179,47L188,43L197,40L206,36L216,33L225,30L235,28L244,26L254,24ZM346,35L344,34L350,34L350,35ZM296,28L292,26L296,27ZM172,236L167,231L172,230L179,226L177,216L188,206L192,208L187,211L190,214L185,218L182,234L183,239L175,244L167,239L162,238L167,235ZM173,215L176,216L172,221L166,227L157,224L159,221L164,219L166,214L168,216L172,213ZM570,373L570,374L571,369L572,367L572,367L572,365L573,363L573,363ZM551,272L549,273L546,264L547,261ZM458,433L461,433L467,438L466,442L460,446L458,440ZM304,144L305,144L302,147L301,146ZM326,159L320,165L317,174L313,175L315,166L319,161L322,160L324,156ZM314,175L315,179L320,186L313,186L313,183L311,183L312,176ZM334,131L338,133L337,135L334,135L333,133ZM338,133L341,133L344,136L341,137L338,137L337,134ZM344,133L347,132L349,135L347,138L344,134ZM368,110L367,109L369,106L374,112L372,113L369,113L367,111ZM369,105L370,101L371,103ZM462,129L470,131L482,134L481,137L487,140L491,141L492,145L486,141L466,132ZM363,73L362,71L364,72L365,72L363,73ZM309,194L307,196L306,193ZM313,143L313,144L311,143ZM307,142L310,143L307,144ZM377,109L380,108L379,111ZM558,286L559,282L561,286L562,296L564,299L566,294L568,295L565,299L563,304L559,298L560,296L557,288ZM571,311L570,312L570,304ZM569,292L571,297L569,295ZM573,301L575,306L574,308L575,316L573,317L573,313L570,319L571,312L572,313ZM579,320L579,320L579,317L579,316L580,310L580,306L580,307L580,307L580,316ZM278,150L280,154L277,155L275,154ZM281,143L283,144L285,146L281,148L279,147L278,143ZM277,144L278,149L274,151L269,156L268,153L270,149L273,149L274,148L270,148L270,146L272,142L275,143L274,147ZM553,381L556,378L556,374L559,366L561,358L562,353L562,353L564,340L568,337L566,347L566,350L567,354L569,353L568,356L567,364L565,372L564,379L562,385L562,383L559,386L554,395L554,391L552,391L552,384ZM567,347L567,346ZM322,540L326,547L322,548L320,554L310,566L301,567L296,566L292,561L297,558L295,552L298,550L306,549L313,546L315,544ZM499,144L501,142L502,146L506,150L505,153L505,158L503,153L495,146ZM533,206L534,204L539,212L538,215L534,209ZM531,194L535,204L532,200ZM509,157L514,159L520,166L526,171L530,180L530,185L533,192L530,192L532,205L528,195L528,187L524,181L523,175L520,170L510,160ZM192,322L188,328L181,319ZM178,301L175,308L172,309L173,299ZM518,409L521,407L524,408L538,406L539,409L545,409L543,418L540,423L536,423L527,419L525,415L515,414ZM571,371L567,382L568,378ZM565,386L566,384L563,392ZM576,333L575,336L571,350L571,354L571,355L574,343L572,355L573,357L572,362L570,362L570,370L568,373L569,368L569,368L570,354L572,345ZM547,414L549,413L554,405L559,398L559,400L557,403L552,411L544,421L542,423L544,418ZM578,323L578,317L578,327ZM202,166L201,170L196,172L188,170L187,165L190,161L193,160L191,157L194,156L199,164ZM218,344L226,349L221,348ZM181,292L177,298L177,293ZM47,180L47,181ZM270,116L269,119L267,121L265,121L263,118L263,121L262,121L265,122L263,123L263,125L265,125L265,128L258,128L257,127L253,129L249,129L246,130L245,134L243,135L240,133L240,135L232,140L226,140L227,137L223,136L225,138L224,141L221,143L214,147L213,144L216,140L213,140L210,139L212,147L203,146L199,142L200,139L191,140L187,138L184,133L180,135L172,135L160,138L159,136L163,132L164,128L176,119L185,115L185,114L191,113L193,112L197,112L196,114L205,114L207,109L209,109L207,112L210,112L212,109L213,107L219,107L222,106L227,105L233,103L237,99L238,95L244,94L243,97L244,97L245,95L249,93L250,94L251,99L255,100L255,99L257,99L261,103L263,106L261,109L263,108L263,109L260,111L263,111L265,110L268,112L266,113L268,113ZM205,111L202,111L204,109L207,109ZM214,142L210,140L213,139ZM216,239L212,243L212,238ZM251,354L256,355ZM540,313L541,319L538,325L537,318ZM276,24L270,24L263,24L268,23L279,23ZM277,76L276,76L279,75ZM276,75L275,73L276,72L278,73ZM280,71L280,68L281,69L282,66L285,66L283,70ZM270,71L266,71L266,68L268,68L272,65L274,65L271,68L276,65L278,65L278,69L275,69L272,68L269,69L272,70L271,72ZM271,60L270,62L263,63L260,62L264,65L260,65L254,62L246,63L249,60L246,59L250,58L253,58L254,57L262,53L264,54L269,53L271,54L263,57L266,57L272,55L276,57L276,59L272,62ZM280,62L277,63L273,62L277,59L278,56L281,54L286,56L285,60L286,62L283,63ZM269,100L267,102L265,103L263,102L262,100L260,100L258,98L255,96L257,93L254,93L252,92L250,91L251,90L246,88L246,86L248,86L249,83L253,81L254,83L256,84L254,85L257,86L258,85L259,86L257,88L265,89L263,90L262,94L264,94L263,92L264,90L268,89L270,90L272,89L272,93L270,94L272,96L270,99ZM252,76L252,74L255,74L255,76ZM256,70L251,71L251,69L248,70L246,68L248,66L256,66L253,68L256,68ZM210,72L204,75L199,76L199,75L204,72L204,70L208,69L213,71ZM260,76L256,74L259,72L260,74L262,72L264,74L262,76ZM273,80L268,80L265,78L271,78L274,79ZM270,88L268,88L266,88L263,87L260,88L259,84L261,83L265,83L264,85L267,83L270,84L272,86L272,88ZM259,79L252,80L249,79L247,83L243,86L239,84L246,78L250,76L256,78L257,77L260,77ZM265,81L263,81L264,79L267,81ZM249,75L245,76L243,73L246,72L245,70L250,72ZM241,64L236,65L236,64L241,62ZM129,127L124,127L121,129L121,133L117,138L114,137L113,141L110,141L115,136L117,125L118,124L128,125ZM232,75L232,78L235,77L238,79L236,83L232,83L231,81L227,87L223,87L221,90L214,93L207,94L206,93L202,97L196,99L193,102L188,99L197,95L194,93L185,98L179,98L187,92L178,97L177,97L186,89L194,86L196,81L201,80L202,81L198,86L201,85L204,88L209,87L223,82L220,81L223,78L231,73L237,73L242,76L242,78L240,80L238,77L231,77ZM198,74L197,72L200,72ZM211,84L207,84L208,82L212,83ZM235,84L233,86L229,86L232,83L235,83ZM259,65L263,66L260,67Z" />
+                <path class="gcd-closed" d="M507,183L506,183L503,178L498,175L498,170L488,159L486,159L488,168L484,167L480,171L466,167L463,170L462,176L464,180L467,181L474,194L472,196L467,199L467,210L464,214L461,214L455,217L453,222L447,220L439,223L440,228L444,232L443,235L437,239L430,239L424,254L424,255L417,256L409,253L402,258L386,246L379,254L379,251L372,253L369,248L365,249L346,263L345,271L350,276L343,278L341,277L330,280L325,277L318,276L307,284L305,293L310,296L314,303L309,307L306,311L313,325L311,328L305,325L300,321L282,317L271,308L278,303L278,299L283,295L284,287L277,282L270,281L267,271L261,272L261,266L264,266L260,258L262,255L255,251L254,244L259,235L262,233L259,230L270,221L268,216L270,206L270,201L272,198L271,196L272,192L276,189L284,193L293,201L291,206L287,208L282,206L275,201L280,208L279,214L284,218L285,216L283,212L289,215L290,210L295,206L298,209L299,198L302,197L303,200L300,203L302,205L305,204L305,201L315,194L317,197L324,193L325,195L328,192L327,188L331,188L341,192L341,189L336,187L334,180L335,178L334,173L339,172L340,177L342,178L347,187L349,188L349,197L351,199L353,190L346,183L346,179L342,176L344,172L345,176L349,174L345,173L348,169L354,169L349,168L346,164L352,159L348,157L349,151L353,146L351,136L354,135L354,137L357,135L359,133L362,132L367,135L370,145L372,144L372,138L374,139L374,136L376,133L379,133L380,130L377,127L381,123L384,126L390,125L392,124L387,121L389,121L388,118L390,116L389,113L386,114L382,111L383,105L388,99L385,96L384,92L388,91L383,83L382,83L383,80L381,79L378,80L373,75L371,70L371,70L369,64L369,63L366,60L365,58L370,59L375,58L377,61L376,62L380,64L378,66L383,66L384,66L388,67L391,64L395,67L404,71L412,75L418,81L424,86L430,88L431,87L437,87L439,89L444,90L446,93L452,95L455,98L459,100L464,104L449,102L439,98L436,95L423,88L419,85L414,84L423,90L420,90L422,95L434,101L437,105L436,109L440,113L441,121L443,123L456,136L461,143L465,138L463,135L467,133L485,145L495,156L503,168L506,175L504,177ZM304,144L305,144L302,147L301,146ZM326,159L320,165L317,174L313,175L315,166L319,161L322,160L324,156ZM314,175L315,179L320,186L313,186L313,183L311,183L312,176ZM334,131L338,133L337,135L334,135L333,133ZM338,133L341,133L344,136L341,137L338,137L337,134ZM344,133L347,132L349,135L347,138L344,134ZM368,110L367,109L369,106L374,112L372,113L369,113L367,111ZM369,105L370,101L371,103ZM462,129L470,131L482,134L481,137L487,140L491,141L492,145L486,141L466,132ZM363,73L362,71L364,72L365,72L363,73ZM309,194L307,196L306,193ZM313,143L313,144L311,143ZM307,142L310,143L307,144ZM377,109L380,108L379,111ZM235,250L236,250L238,255L230,252L235,249ZM262,302L266,304L268,307L262,310L258,304Z" />
+                <path class="gcd-direct" d="M177,240L223,219L272,200L321,185L371,174L417,167L460,165L497,168L527,175" />
+                <path class="gcd-around" d="M177,240L271,306L271,307L271,307L271,308L274,310L282,317L282,317L309,328L309,328L310,328L310,328L311,328L381,284L444,241L494,204L527,175" pathLength="1" />
+                <g class="gcd-pin" id="gcd-pa" transform="translate(176.5 240.4)"><circle r="11" /><text dy="0.35em">A</text></g>
+                <g class="gcd-pin" id="gcd-pb" transform="translate(526.6 174.9)"><circle r="11" /><text dy="0.35em">B</text></g>
+              </svg>
+            </div>
+            <div class="gcd-panel">
+              <div class="gcd-trips" role="group" aria-label="Trips"><button type="button" aria-pressed="true" data-trip="0">London → Tokyo</button><button type="button" aria-pressed="false" data-trip="1">New York → Dubai</button><button type="button" aria-pressed="false" data-trip="2">Delhi → San Francisco</button></div>
+              <button class="gcd-switch" id="gcd-switch" type="button" role="switch" aria-checked="true"><span class="gcd-track" aria-hidden="true"><span class="gcd-knob"></span></span><span id="gcd-switch-label">Avoid Russia</span></button>
+              <p class="gcd-km" id="gcd-km" aria-live="polite">11,439 km<small id="gcd-sub">+1,880 km (19.7%) over the direct 9,559 km, with 12 bends</small></p>
+              <ul class="gcd-key" aria-hidden="true">
+                <li><i class="k-around"></i>The shortest way around</li>
+                <li><i class="k-direct"></i>The great circle, straight over</li>
+              </ul>
+              <a class="gcd-more" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">Try any two places on Earth</a>
+            </div>
+          </div>
         </div>
 
         <div class="notes">
@@ -3652,6 +4024,94 @@
           addEventListener("resize", function () {
             clearTimeout(rb);
             rb = setTimeout(fill, 150);
+          });
+        })();
+
+        /* ======================= greatercircle =======================
+           Three trips worked out ahead by the tool's engine: for each, the
+           globe turned to face it, the great circle, and the shortest way
+           around the countries named. A switch closes and opens them. */
+        (function () {
+          var root = $("#gcd");
+          if (!root) return;
+          var TRIPS = [{"from":"London","to":"Tokyo","avoid":["Russia"],"a":[176.5,240.4],"b":[526.6,174.9],"land":"M183,549L177,546L170,539L168,535L154,522L153,520L154,512L158,509L154,502L155,500L150,492L153,492L149,490L148,488L144,483L137,473L135,468L138,463L139,460L140,457L134,448L125,445L118,433L113,429L109,427L107,427L96,423L92,419L93,419L93,419L85,413L78,410L74,403L68,389L66,385L65,376L62,364L62,359L59,354L60,351L61,350L60,344L63,342L66,337L69,322L70,320L76,314L79,314L84,309L90,307L95,309L102,307L105,301L111,297L117,298L124,293L125,298L132,304L144,305L161,313L167,317L171,317L173,329L167,331L171,338L182,348L184,354L194,362L199,361L202,355L207,354L219,364L234,371L240,369L247,372L255,373L257,371L260,365L264,358L264,352L265,347L252,349L245,344L240,347L233,340L232,329L233,324L242,326L243,322L250,324L258,321L268,324L276,329L283,329L287,326L287,321L282,317L271,308L278,303L278,299L269,300L266,304L268,307L262,310L258,304L262,302L253,298L248,303L243,310L238,315L239,318L241,323L231,322L223,320L218,322L217,327L221,332L217,333L214,338L209,321L210,310L208,306L206,303L206,303L202,298L201,290L198,286L198,286L194,285L192,290L194,300L204,317L200,314L198,321L195,320L195,314L188,303L185,294L185,288L182,284L177,285L177,285L177,285L172,286L167,280L162,284L161,286L153,286L146,290L146,294L135,297L130,293L125,293L123,284L119,281L122,273L130,266L132,262L134,257L139,258L152,271L159,262L161,253L157,247L163,246L166,250L168,245L171,249L181,246L184,246L186,248L185,246L191,242L197,244L203,243L205,239L205,235L210,229L215,229L213,234L208,237L207,240L209,246L213,245L215,250L216,249L216,249L228,249L230,252L235,249L235,250L236,250L237,246L241,240L244,244L247,240L247,234L253,233L259,235L262,233L259,230L247,230L245,226L248,216L261,206L259,204L256,203L249,211L242,213L236,222L238,228L231,231L225,241L219,243L216,241L220,224L220,221L210,224L207,220L209,214L216,205L228,203L234,200L242,194L248,190L258,185L265,185L269,182L270,185L274,183L277,187L276,189L284,193L293,201L291,206L287,208L282,206L275,201L280,208L279,214L284,218L285,216L283,212L289,215L290,210L295,206L298,209L299,198L302,197L303,200L300,203L302,205L305,204L305,201L315,194L317,197L324,193L325,195L328,192L327,188L331,188L341,192L341,189L336,187L334,180L335,178L334,173L339,172L340,177L342,178L347,187L349,188L349,197L351,199L353,190L346,183L346,179L342,176L344,172L345,176L349,174L345,173L348,169L354,169L349,168L346,164L352,159L348,157L349,151L353,146L351,136L354,135L354,137L357,135L359,133L362,132L367,135L370,145L372,144L372,138L374,139L374,136L376,133L379,133L380,130L377,127L381,123L384,126L390,125L392,124L387,121L389,121L388,118L390,116L389,113L386,114L382,111L383,105L388,99L385,96L384,92L388,91L383,83L382,83L383,80L381,79L378,80L373,75L371,70L371,70L369,64L369,63L366,60L365,58L370,59L375,58L377,61L376,62L380,64L378,66L383,66L384,66L388,67L391,64L395,67L404,71L412,75L418,81L424,86L430,88L431,87L437,87L439,89L444,90L446,93L452,95L455,98L459,100L464,104L449,102L439,98L436,95L423,88L419,85L414,84L423,90L420,90L422,95L434,101L437,105L436,109L440,113L441,121L443,123L456,136L461,143L465,138L463,135L467,133L485,145L495,156L503,168L506,175L504,177L507,183L511,189L513,198L517,199L522,200L528,207L529,217L519,206L517,211L513,205L511,206L512,217L508,210L506,212L509,223L507,226L511,229L515,228L514,223L517,219L518,226L521,237L524,235L532,239L535,246L537,244L542,263L544,267L544,283L542,294L542,295L541,297L541,297L537,310L532,316L530,322L531,333L537,336L542,336L545,340L547,350L539,373L539,368L537,368L532,368L526,367L523,370L523,384L529,391L534,390L538,391L538,397L541,400L538,402L533,404L528,395L522,393L522,385L519,375L516,371L514,364L504,376L503,369L499,363L493,362L487,356L482,365L480,364L481,366L474,373L474,380L456,409L458,418L457,431L449,444L447,444L428,420L419,396L419,401L413,405L406,401L410,398L401,395L392,389L385,393L372,396L354,397L349,391L343,395L338,395L327,389L321,380L315,382L313,382L315,388L322,396L326,405L328,405L329,407L340,407L348,397L350,398L350,401L354,405L360,406L366,411L359,426L349,433L347,437L338,439L334,444L321,449L317,452L293,457L290,442L281,428L273,420L273,414L258,388L258,382L258,381L257,381L254,389L250,385L252,394L258,407L258,412L263,416L265,431L270,434L276,447L282,449L291,458L292,462L297,467L319,463L330,460L328,470L315,489L305,496L297,500L283,510L277,513L272,519L270,523L274,526L273,530L278,535L279,548L273,551L264,551L254,554L258,560L257,563L246,563L248,565L246,567L239,568L231,568L220,566L210,563L202,561L193,557L193,556ZM327,324L327,319L322,318L319,311L322,307L328,307L326,299L321,299L314,303L309,307L306,311L313,325L320,332L317,333L315,341L316,345L324,349L335,347L335,345L334,338L331,336L329,328L336,328L332,322ZM21,318L21,328L24,344L25,351L27,360L27,364L27,364L27,364L25,355L24,345L22,335L21,326ZM262,23L263,23L263,23L267,23L259,24L261,25L278,24L280,25L284,25L287,26L286,27L287,27L287,26L291,28L301,31L300,30L304,30L313,32L322,34L327,36L332,36L332,35L341,36L339,38L347,37L349,36L361,37L362,37L375,40L358,37L354,38L359,39L362,41L365,41L365,44L368,45L370,47L369,49L361,49L360,48L354,47L352,49L356,49L362,52L361,53L363,55L353,53L354,53L351,51L349,53L354,58L352,59L349,58L343,58L333,58L326,54L323,54L317,52L314,51L310,50L303,48L297,49L293,51L293,49L288,52L283,50L280,52L271,52L267,52L263,52L265,50L261,51L256,53L249,53L252,55L250,57L254,55L251,57L246,57L241,58L237,61L239,62L235,64L233,62L233,66L236,67L239,66L244,68L244,70L240,70L227,69L229,71L226,71L223,70L220,71L223,74L227,75L223,78L218,78L218,77L212,77L214,69L219,67L216,67L213,69L211,67L212,64L212,58L206,56L203,57L198,58L190,62L178,68L173,72L166,73L155,78L157,80L167,77L167,82L171,81L179,78L182,80L186,79L191,80L187,84L187,85L179,89L176,92L168,93L164,96L165,99L170,100L157,107L150,109L141,119L141,118L137,123L131,126L130,121L127,119L133,105L131,102L128,99L129,96L128,93L129,96L128,100L130,102L129,107L128,110L125,112L121,112L117,115L111,125L110,116L113,114L116,116L117,110L116,111L117,105L114,105L110,109L114,102L110,100L114,97L105,103L107,99L108,97L107,97L100,104L100,104L107,97L114,90L122,84L129,78L137,72L145,67L154,61L162,56L171,52L179,47L188,43L197,40L206,36L216,33L225,30L235,28L244,26L254,24ZM346,35L344,34L350,34L350,35ZM296,28L292,26L296,27ZM172,236L167,231L172,230L179,226L177,216L188,206L192,208L187,211L190,214L185,218L182,234L183,239L175,244L167,239L162,238L167,235ZM173,215L176,216L172,221L166,227L157,224L159,221L164,219L166,214L168,216L172,213ZM570,373L570,374L571,369L572,367L572,367L572,365L573,363L573,363ZM551,272L549,273L546,264L547,261ZM458,433L461,433L467,438L466,442L460,446L458,440ZM304,144L305,144L302,147L301,146ZM326,159L320,165L317,174L313,175L315,166L319,161L322,160L324,156ZM314,175L315,179L320,186L313,186L313,183L311,183L312,176ZM334,131L338,133L337,135L334,135L333,133ZM338,133L341,133L344,136L341,137L338,137L337,134ZM344,133L347,132L349,135L347,138L344,134ZM368,110L367,109L369,106L374,112L372,113L369,113L367,111ZM369,105L370,101L371,103ZM462,129L470,131L482,134L481,137L487,140L491,141L492,145L486,141L466,132ZM363,73L362,71L364,72L365,72L363,73ZM309,194L307,196L306,193ZM313,143L313,144L311,143ZM307,142L310,143L307,144ZM377,109L380,108L379,111ZM558,286L559,282L561,286L562,296L564,299L566,294L568,295L565,299L563,304L559,298L560,296L557,288ZM571,311L570,312L570,304ZM569,292L571,297L569,295ZM573,301L575,306L574,308L575,316L573,317L573,313L570,319L571,312L572,313ZM579,320L579,320L579,317L579,316L580,310L580,306L580,307L580,307L580,316ZM278,150L280,154L277,155L275,154ZM281,143L283,144L285,146L281,148L279,147L278,143ZM277,144L278,149L274,151L269,156L268,153L270,149L273,149L274,148L270,148L270,146L272,142L275,143L274,147ZM553,381L556,378L556,374L559,366L561,358L562,353L562,353L564,340L568,337L566,347L566,350L567,354L569,353L568,356L567,364L565,372L564,379L562,385L562,383L559,386L554,395L554,391L552,391L552,384ZM567,347L567,346ZM322,540L326,547L322,548L320,554L310,566L301,567L296,566L292,561L297,558L295,552L298,550L306,549L313,546L315,544ZM499,144L501,142L502,146L506,150L505,153L505,158L503,153L495,146ZM533,206L534,204L539,212L538,215L534,209ZM531,194L535,204L532,200ZM509,157L514,159L520,166L526,171L530,180L530,185L533,192L530,192L532,205L528,195L528,187L524,181L523,175L520,170L510,160ZM192,322L188,328L181,319ZM178,301L175,308L172,309L173,299ZM518,409L521,407L524,408L538,406L539,409L545,409L543,418L540,423L536,423L527,419L525,415L515,414ZM571,371L567,382L568,378ZM565,386L566,384L563,392ZM576,333L575,336L571,350L571,354L571,355L574,343L572,355L573,357L572,362L570,362L570,370L568,373L569,368L569,368L570,354L572,345ZM547,414L549,413L554,405L559,398L559,400L557,403L552,411L544,421L542,423L544,418ZM578,323L578,317L578,327ZM202,166L201,170L196,172L188,170L187,165L190,161L193,160L191,157L194,156L199,164ZM218,344L226,349L221,348ZM181,292L177,298L177,293ZM47,180L47,181ZM270,116L269,119L267,121L265,121L263,118L263,121L262,121L265,122L263,123L263,125L265,125L265,128L258,128L257,127L253,129L249,129L246,130L245,134L243,135L240,133L240,135L232,140L226,140L227,137L223,136L225,138L224,141L221,143L214,147L213,144L216,140L213,140L210,139L212,147L203,146L199,142L200,139L191,140L187,138L184,133L180,135L172,135L160,138L159,136L163,132L164,128L176,119L185,115L185,114L191,113L193,112L197,112L196,114L205,114L207,109L209,109L207,112L210,112L212,109L213,107L219,107L222,106L227,105L233,103L237,99L238,95L244,94L243,97L244,97L245,95L249,93L250,94L251,99L255,100L255,99L257,99L261,103L263,106L261,109L263,108L263,109L260,111L263,111L265,110L268,112L266,113L268,113ZM205,111L202,111L204,109L207,109ZM214,142L210,140L213,139ZM216,239L212,243L212,238ZM251,354L256,355ZM540,313L541,319L538,325L537,318ZM276,24L270,24L263,24L268,23L279,23ZM277,76L276,76L279,75ZM276,75L275,73L276,72L278,73ZM280,71L280,68L281,69L282,66L285,66L283,70ZM270,71L266,71L266,68L268,68L272,65L274,65L271,68L276,65L278,65L278,69L275,69L272,68L269,69L272,70L271,72ZM271,60L270,62L263,63L260,62L264,65L260,65L254,62L246,63L249,60L246,59L250,58L253,58L254,57L262,53L264,54L269,53L271,54L263,57L266,57L272,55L276,57L276,59L272,62ZM280,62L277,63L273,62L277,59L278,56L281,54L286,56L285,60L286,62L283,63ZM269,100L267,102L265,103L263,102L262,100L260,100L258,98L255,96L257,93L254,93L252,92L250,91L251,90L246,88L246,86L248,86L249,83L253,81L254,83L256,84L254,85L257,86L258,85L259,86L257,88L265,89L263,90L262,94L264,94L263,92L264,90L268,89L270,90L272,89L272,93L270,94L272,96L270,99ZM252,76L252,74L255,74L255,76ZM256,70L251,71L251,69L248,70L246,68L248,66L256,66L253,68L256,68ZM210,72L204,75L199,76L199,75L204,72L204,70L208,69L213,71ZM260,76L256,74L259,72L260,74L262,72L264,74L262,76ZM273,80L268,80L265,78L271,78L274,79ZM270,88L268,88L266,88L263,87L260,88L259,84L261,83L265,83L264,85L267,83L270,84L272,86L272,88ZM259,79L252,80L249,79L247,83L243,86L239,84L246,78L250,76L256,78L257,77L260,77ZM265,81L263,81L264,79L267,81ZM249,75L245,76L243,73L246,72L245,70L250,72ZM241,64L236,65L236,64L241,62ZM129,127L124,127L121,129L121,133L117,138L114,137L113,141L110,141L115,136L117,125L118,124L128,125ZM232,75L232,78L235,77L238,79L236,83L232,83L231,81L227,87L223,87L221,90L214,93L207,94L206,93L202,97L196,99L193,102L188,99L197,95L194,93L185,98L179,98L187,92L178,97L177,97L186,89L194,86L196,81L201,80L202,81L198,86L201,85L204,88L209,87L223,82L220,81L223,78L231,73L237,73L242,76L242,78L240,80L238,77L231,77ZM198,74L197,72L200,72ZM211,84L207,84L208,82L212,83ZM235,84L233,86L229,86L232,83L235,83ZM259,65L263,66L260,67Z","grat":"M465,74L451,66L434,61L415,60L394,63L348,79L300,109M354,25L343,29L329,45L315,72L300,109M246,25L257,29L270,45L285,72L300,109M135,74L149,66L166,61L185,60L206,63L252,79L300,109M37,204L51,176L72,152L100,132L133,117L170,107L211,102L255,103L300,109M37,396L31,375L30,353L35,315L50,276L75,238L109,202L150,171L197,144L247,123L300,109M135,526L121,512L110,494L104,471L102,445L106,405L117,361L135,314L160,267L190,222L224,179L261,141L300,109M246,575L238,568L232,553L229,529L228,498L233,410L249,305L272,199L300,109M354,575L362,568L368,553L371,529L373,498L367,410L351,305L328,199L300,109M465,526L479,512L490,494L496,471L498,445L494,405L483,361L465,314L440,267L410,222L376,179L339,141L300,109M563,396L569,375L570,353L565,315L550,276L525,238L491,202L450,171L404,144L353,123L300,109M563,204L549,176L528,152L500,132L467,117L430,107L388,102L345,103L300,109M110,505L114,510L121,515L129,521L136,526L144,531L152,536L161,541L170,545L179,549L188,553L198,556L207,559L217,562L227,565L237,567L248,569L258,570L268,571L279,572L290,573L300,573L311,573L321,572L332,571L342,570L353,569L363,567L373,565L383,562L393,559L403,556L412,553L421,549L430,545L439,541L448,536L456,531L464,526L472,521L479,515L486,509L490,505M20,300L20,300L20,309L21,318L22,327L24,336L27,344L30,353L33,362L37,370L41,378L46,387L52,395L58,402L64,410L71,417L78,425L86,432L94,438L102,445L111,451L120,457L130,462L139,468L150,473L160,477L171,482L182,486L193,489L204,492L216,495L228,498L240,500L251,502L264,503L276,504L288,505L300,505L312,505L325,504L337,503L349,502L361,500L373,498L384,495L396,492L407,489L418,486L429,482L440,477L451,473L461,468L471,462L480,457L489,451L498,445L507,438L515,432L522,425L529,417L536,410L543,402L548,394L554,386L559,378L563,370L567,361L570,353L573,344L576,335L578,327L579,318L580,309L580,300M110,95L108,97L101,103L95,109L90,116L85,123L80,130L76,137L72,144L69,151L66,159L63,166L61,174L60,181L58,189L58,197L58,205L58,212L58,220L60,228L61,235L63,243L66,250L69,258L72,265L76,272L80,279L85,286L90,293L96,300L101,306L108,312L114,319L121,324L129,330L136,335L144,340L152,345L161,350L170,354L179,358L188,362L198,365L207,368L217,371L227,374L237,376L248,378L258,379L268,380L279,381L290,382L300,382L311,382L321,381L332,380L342,379L353,378L363,376L373,374L383,371L393,368L403,365L412,362L421,358L430,354L439,350L448,345L456,340L464,335L472,330L479,324L486,318L492,312L499,306L505,300L510,293L515,286L520,279L524,272L528,265L531,258L534,250L537,243L539,235L540,228L542,220L542,212L542,204L542,197L542,189L540,181L539,174L537,166L534,159L531,151L528,144L524,137L520,130L515,123L510,116L504,109L499,103L492,97L490,95M399,62L395,59L390,56L385,53L380,51L375,48L370,46L365,44L359,42L354,40L348,38L342,37L336,36L330,35L324,34L318,33L312,33L306,32L300,32L294,32L288,33L282,33L276,34L270,35L264,36L258,37L252,38L246,40L241,42L235,44L230,46L225,48L220,51L215,53L210,56L205,59L201,62L197,65L193,69L189,72L185,76L182,80L179,83L176,87L173,91L171,95L168,100L166,104L165,108L163,112L162,117L161,121L161,126L160,130L160,135L160,139L161,144L161,148L162,152L163,157L165,161L166,165L168,170L171,174L173,178L176,182L179,186L182,190L185,193L189,197L193,200L197,204L201,207L205,210L210,213L215,216L220,218L225,221L230,223L235,225L241,227L246,229L252,231L258,232L264,233L270,235L276,235L282,236L288,237L294,237L300,237L306,237L312,237L318,236L324,235L330,235L336,233L342,232L348,231L354,229L359,227L365,225L370,223L375,221L380,218L385,216L390,213L395,210L399,207L403,204L407,200L411,197L415,193L418,190L421,186L424,182L427,178L429,174L432,170L434,165L435,161L437,157L438,152L439,148L439,143L440,139L440,135L440,130L439,126L439,121L438,117L437,112L435,108L434,104L432,100L429,95L427,91L424,87L421,83L418,80L415,76L411,72L407,69L403,65L399,62","closed":"M507,183L506,183L503,178L498,175L498,170L488,159L486,159L488,168L484,167L480,171L466,167L463,170L462,176L464,180L467,181L474,194L472,196L467,199L467,210L464,214L461,214L455,217L453,222L447,220L439,223L440,228L444,232L443,235L437,239L430,239L424,254L424,255L417,256L409,253L402,258L386,246L379,254L379,251L372,253L369,248L365,249L346,263L345,271L350,276L343,278L341,277L330,280L325,277L318,276L307,284L305,293L310,296L314,303L309,307L306,311L313,325L311,328L305,325L300,321L282,317L271,308L278,303L278,299L283,295L284,287L277,282L270,281L267,271L261,272L261,266L264,266L260,258L262,255L255,251L254,244L259,235L262,233L259,230L270,221L268,216L270,206L270,201L272,198L271,196L272,192L276,189L284,193L293,201L291,206L287,208L282,206L275,201L280,208L279,214L284,218L285,216L283,212L289,215L290,210L295,206L298,209L299,198L302,197L303,200L300,203L302,205L305,204L305,201L315,194L317,197L324,193L325,195L328,192L327,188L331,188L341,192L341,189L336,187L334,180L335,178L334,173L339,172L340,177L342,178L347,187L349,188L349,197L351,199L353,190L346,183L346,179L342,176L344,172L345,176L349,174L345,173L348,169L354,169L349,168L346,164L352,159L348,157L349,151L353,146L351,136L354,135L354,137L357,135L359,133L362,132L367,135L370,145L372,144L372,138L374,139L374,136L376,133L379,133L380,130L377,127L381,123L384,126L390,125L392,124L387,121L389,121L388,118L390,116L389,113L386,114L382,111L383,105L388,99L385,96L384,92L388,91L383,83L382,83L383,80L381,79L378,80L373,75L371,70L371,70L369,64L369,63L366,60L365,58L370,59L375,58L377,61L376,62L380,64L378,66L383,66L384,66L388,67L391,64L395,67L404,71L412,75L418,81L424,86L430,88L431,87L437,87L439,89L444,90L446,93L452,95L455,98L459,100L464,104L449,102L439,98L436,95L423,88L419,85L414,84L423,90L420,90L422,95L434,101L437,105L436,109L440,113L441,121L443,123L456,136L461,143L465,138L463,135L467,133L485,145L495,156L503,168L506,175L504,177ZM304,144L305,144L302,147L301,146ZM326,159L320,165L317,174L313,175L315,166L319,161L322,160L324,156ZM314,175L315,179L320,186L313,186L313,183L311,183L312,176ZM334,131L338,133L337,135L334,135L333,133ZM338,133L341,133L344,136L341,137L338,137L337,134ZM344,133L347,132L349,135L347,138L344,134ZM368,110L367,109L369,106L374,112L372,113L369,113L367,111ZM369,105L370,101L371,103ZM462,129L470,131L482,134L481,137L487,140L491,141L492,145L486,141L466,132ZM363,73L362,71L364,72L365,72L363,73ZM309,194L307,196L306,193ZM313,143L313,144L311,143ZM307,142L310,143L307,144ZM377,109L380,108L379,111ZM235,250L236,250L238,255L230,252L235,249ZM262,302L266,304L268,307L262,310L258,304Z","direct":"M177,240L223,219L272,200L321,185L371,174L417,167L460,165L497,168L527,175","around":"M177,240L271,306L271,307L271,307L271,308L274,310L282,317L282,317L309,328L309,328L310,328L310,328L311,328L381,284L444,241L494,204L527,175","directKm":9559,"aroundKm":11439,"bends":12,"reach":68},{"from":"New York","to":"Dubai","avoid":["Iran","Iraq"],"a":[92,139.2],"b":[418.3,369.4],"land":"M253,564L248,561L243,555L241,551L228,540L228,538L230,529L235,524L231,517L233,516L227,508L231,508L227,507L226,504L222,500L213,491L211,486L214,481L215,477L216,474L210,466L198,465L190,455L184,453L179,452L177,452L163,452L158,449L158,449L159,449L148,444L140,443L134,438L125,426L122,422L120,414L114,402L114,397L109,393L110,390L111,388L110,383L113,379L116,373L117,358L117,355L124,348L128,346L132,340L140,336L145,337L154,333L155,327L162,321L169,320L175,314L178,317L187,322L201,320L220,323L228,326L232,325L236,336L231,340L236,346L250,352L253,358L264,364L270,361L271,354L276,352L290,359L306,363L312,360L319,361L328,360L329,358L331,351L334,343L333,337L334,332L321,338L313,334L309,338L300,333L297,322L297,317L306,317L307,313L314,313L322,308L331,309L340,312L347,311L351,307L350,302L344,299L332,292L337,287L336,282L328,285L326,290L328,293L323,297L317,292L321,288L311,287L308,293L304,301L300,307L302,309L305,314L295,315L286,315L282,318L282,324L287,327L283,329L280,335L272,319L271,308L268,305L265,303L265,303L260,299L257,291L253,288L254,288L249,288L248,294L252,302L267,317L261,314L261,321L257,322L256,316L246,307L241,299L240,293L236,290L231,292L231,292L231,292L226,294L219,290L215,295L215,297L206,299L199,304L200,308L189,314L182,312L176,313L173,305L167,303L169,295L176,286L177,282L178,276L184,275L201,284L207,275L206,265L200,260L206,258L211,261L211,256L215,259L226,254L229,253L231,254L229,252L235,247L242,247L248,245L248,241L248,237L251,230L257,229L256,234L251,238L251,242L254,247L258,245L262,249L262,248L262,248L274,245L278,248L282,244L282,244L283,244L283,240L285,233L290,236L292,232L290,226L295,224L301,225L304,222L301,220L289,223L286,219L286,210L296,197L293,195L290,195L286,204L279,208L276,218L279,222L273,227L269,238L264,241L260,241L260,223L259,220L249,225L246,222L246,217L250,205L262,201L267,197L273,189L277,184L286,177L293,176L296,172L299,175L302,173L306,175L306,178L315,180L325,185L325,191L322,193L316,192L308,189L315,195L316,200L321,203L322,201L319,197L326,199L325,195L328,190L333,191L330,181L333,180L335,182L332,185L335,187L338,186L337,183L345,174L347,177L353,171L354,173L355,170L353,166L357,165L368,167L367,164L362,163L357,157L358,155L355,151L359,148L362,153L364,153L372,161L374,161L377,170L379,171L378,163L370,157L368,154L364,152L364,147L366,150L370,148L365,148L367,144L372,143L368,142L363,139L367,133L363,132L362,127L364,121L358,112L360,111L361,113L363,111L364,109L366,107L372,109L379,118L380,116L377,110L379,111L379,108L379,105L382,105L382,101L378,100L379,96L383,97L389,96L390,94L384,92L385,92L384,89L384,87L382,85L380,86L376,85L374,78L375,73L371,70L369,67L371,65L364,59L362,59L362,56L359,56L357,57L351,54L346,50L346,50L341,45L341,44L336,43L334,41L339,41L342,39L347,42L346,43L350,44L350,45L354,44L355,44L359,45L360,42L365,44L374,46L383,48L391,52L398,55L404,57L404,55L408,55L411,56L415,56L418,58L424,60L427,62L431,63L436,66L425,66L416,64L412,62L398,57L394,55L389,56L400,59L397,60L401,63L414,67L418,70L419,74L424,77L428,83L431,85L446,95L453,101L454,96L451,93L453,91L471,99L483,108L493,118L498,125L498,127L502,131L507,137L512,145L515,145L518,146L524,151L528,161L518,152L518,156L514,151L513,152L517,162L512,156L511,158L517,169L517,172L520,174L523,173L521,167L521,164L524,170L530,180L531,178L538,181L541,187L542,186L551,203L553,207L557,223L558,233L558,233L559,236L559,236L559,249L557,256L557,262L559,272L564,274L567,275L569,278L572,288L570,312L569,306L568,307L565,307L561,307L560,310L562,324L566,331L568,329L571,330L571,337L573,339L571,342L569,344L566,335L561,333L561,326L558,315L555,311L553,305L547,318L546,311L542,306L537,305L532,300L529,310L528,310L529,311L525,319L525,326L515,358L517,367L518,380L513,395L511,395L494,374L483,351L483,356L479,361L472,358L475,354L467,353L459,349L453,354L442,359L426,364L420,359L415,364L411,365L400,361L393,353L387,356L385,357L388,363L396,369L401,377L403,377L404,378L414,376L421,364L422,366L423,369L427,372L433,371L439,375L434,393L425,401L424,405L416,410L413,415L401,423L398,427L375,437L371,423L361,410L353,404L352,397L333,375L332,369L332,368L332,368L329,377L325,373L328,382L336,394L337,398L343,402L346,416L352,419L358,430L364,432L374,438L375,443L380,446L401,438L411,432L410,443L398,465L389,475L381,481L368,494L362,499L357,506L355,511L358,513L357,518L362,523L361,536L354,541L345,544L334,549L336,556L334,559L323,562L324,564L321,566L312,570L302,573L289,574L279,573L269,573L261,570L262,569ZM388,297L387,292L383,291L378,285L380,281L386,279L382,272L377,273L372,278L367,283L366,288L375,300L383,306L381,307L380,316L382,320L390,322L400,318L399,316L397,309L394,308L391,300L397,298L392,294ZM203,37L204,37L207,36L213,35L205,38L209,37L226,32L231,32L235,31L239,31L240,32L239,32L240,31L245,31L258,32L256,31L259,30L270,30L280,29L286,30L290,29L289,29L298,27L298,29L304,27L304,26L316,25L316,25L329,25L314,26L312,27L316,27L320,28L322,28L324,30L328,30L331,31L331,33L325,34L324,34L318,34L318,36L322,35L328,37L328,38L331,39L322,39L322,38L318,38L317,39L325,43L324,44L320,43L316,45L306,47L298,45L295,45L288,45L285,45L280,45L272,44L267,47L264,49L264,48L260,51L255,50L252,52L243,54L240,56L236,57L236,55L233,56L229,59L222,61L226,61L225,64L228,61L227,64L222,65L217,67L214,71L217,70L213,73L211,72L213,76L216,75L219,74L225,74L227,76L222,77L208,79L211,81L209,82L204,81L201,83L207,84L211,85L208,88L203,89L203,88L197,90L194,83L198,80L195,81L193,83L190,82L190,79L185,74L178,74L175,76L169,78L163,84L153,92L150,96L141,100L132,107L135,108L145,102L149,106L154,105L160,100L165,100L169,98L175,98L172,103L173,104L167,109L165,112L156,115L153,120L156,122L162,121L151,130L143,135L138,146L137,145L135,151L129,155L125,151L121,150L121,136L117,134L111,133L109,130L106,128L109,130L111,134L115,135L117,139L117,142L114,145L110,146L106,150L103,160L97,153L100,150L105,151L103,146L102,147L100,142L95,143L93,147L93,141L85,141L89,137L78,146L76,143L75,141L73,142L61,158L60,158L68,146L70,144L75,137L76,135L79,130L84,124L84,122L88,117L93,112L94,110L94,110L101,103L108,97L115,90L122,84L130,78L138,72L146,66L154,61L163,56L171,51L180,47L189,43L198,39ZM30,224L30,225L30,226L29,230L28,234L27,238L28,232L28,236L26,245L25,250L25,257L25,262L24,273L23,275L23,279L23,296L23,299L23,299L23,298L25,308L24,309L25,309L26,322L26,324L27,338L25,338L25,341L26,343L26,348L28,352L30,353L33,363L34,370L36,372L42,385L48,400L52,406L54,415L54,420L50,423L53,430L56,438L58,440L58,440L53,432L49,423L44,414L41,405L37,396L34,387L31,378L28,368L26,359L24,349L23,339L22,330L21,320L20,310L20,300L20,291L21,281L21,271L23,262L24,252L26,242L28,233ZM301,26L299,26L305,25L305,26ZM249,30L244,31L249,30ZM213,246L207,242L211,241L217,234L213,226L221,213L226,215L221,218L227,221L222,225L224,242L226,247L219,253L209,250L203,250L208,246ZM209,226L212,227L209,231L205,239L194,238L195,235L199,232L200,226L204,228L207,224ZM558,211L557,212L553,204L553,201ZM519,382L521,382L526,386L526,390L521,395L519,389ZM317,129L319,130L317,132L316,132ZM343,139L340,146L339,155L336,156L335,148L337,142L340,140L341,137ZM338,156L339,159L346,166L340,167L339,164L337,165L335,157ZM341,111L345,113L345,115L342,115L340,113ZM345,112L347,112L352,114L349,116L346,116L345,114ZM351,111L353,110L355,112L355,115L350,112ZM363,86L361,85L362,82L369,86L368,88L365,88L362,87ZM362,81L361,78L363,79ZM447,88L455,89L464,90L465,92L471,95L473,95L476,99L470,96L452,90ZM341,54L339,52L342,53L342,53L341,54ZM339,175L337,178L335,175ZM325,126L326,128L324,127ZM320,127L323,128L320,129ZM371,84L373,82L373,85ZM565,224L565,221L567,224L569,234L571,236L570,232L571,233L571,237L571,241L568,236L568,234L565,226ZM575,249L575,250L573,242ZM571,231L572,235L571,233ZM576,253L576,251L576,257L575,249L576,251L573,239L573,239L573,240L573,240L575,249ZM294,140L297,144L295,146L293,145ZM295,134L297,134L300,135L297,138L294,137L292,134ZM291,135L294,140L291,142L288,148L286,145L286,142L290,141L290,140L286,141L285,139L286,134L289,135L290,138ZM580,293L580,295L580,298L580,298L580,307L579,317L579,322L579,325L577,335L578,330L577,330L577,323L577,319L577,319L578,317L578,312L579,304L579,295L579,291L579,291L578,278L579,275L579,285L579,288L580,292L580,291L580,291ZM579,285L579,284ZM403,519L406,526L402,527L399,534L386,550L377,554L372,554L371,549L377,543L376,538L379,535L387,531L394,527L396,524ZM480,98L480,95L483,99L487,102L488,104L490,109L487,105L479,100ZM527,150L527,149L532,155L533,159L529,153ZM521,140L527,148L524,145ZM492,108L496,109L503,115L509,120L514,127L517,132L521,137L520,138L526,150L520,141L516,133L512,128L508,123L504,118L494,110ZM255,324L252,332L243,324ZM235,308L234,315L231,316L230,306ZM560,351L562,348L564,349L572,345L572,349L574,349L573,359L572,364L570,364L566,360L565,356L559,356ZM575,354L573,363L572,364L573,359L574,355L574,355L575,353L576,345L576,345L576,345ZM223,173L224,177L219,180L210,180L208,175L209,171L212,169L209,167L212,165L219,172ZM37,208L41,199L40,203L40,205L36,217ZM286,340L295,343L289,343ZM237,298L234,305L233,300ZM34,236L34,236ZM274,111L274,114L273,116L271,116L268,115L269,117L268,118L271,118L269,119L270,121L273,120L274,123L267,125L265,124L262,127L258,128L255,130L256,133L254,134L251,133L251,135L245,142L239,143L239,140L234,140L238,141L237,144L234,146L230,152L227,150L229,145L226,146L222,146L227,153L218,154L211,151L211,148L203,151L197,151L193,147L188,150L180,152L168,157L167,156L168,151L168,147L178,136L186,131L186,129L191,127L192,125L197,124L197,127L206,124L207,120L209,119L208,122L211,121L213,118L212,116L218,115L221,113L226,111L231,108L234,103L233,100L238,97L238,100L240,100L240,98L243,95L245,96L247,100L252,100L252,99L254,99L260,101L263,104L262,106L264,105L264,106L262,108L265,108L267,107L270,108L269,109L271,109ZM205,122L202,122L204,120L207,119ZM227,148L223,147L225,146ZM260,239L257,243L255,238ZM321,342L326,342ZM57,162L55,165L43,193L43,192L46,184L47,183L50,176L58,160L59,158L59,158ZM561,252L563,258L562,264L561,257ZM224,33L219,34L210,36L215,35L227,32ZM263,74L261,74L264,72ZM261,73L259,72L260,71L263,71ZM263,69L262,66L263,67L263,64L266,63L266,68ZM253,71L250,72L248,70L250,69L252,65L254,65L253,68L256,65L259,64L261,67L257,69L254,68L252,69L255,70L255,72ZM248,62L248,63L242,65L238,66L244,67L240,68L233,67L225,69L226,67L223,66L226,65L229,64L229,63L235,57L238,58L242,56L245,56L238,61L242,60L247,57L251,58L253,59L251,63ZM258,61L256,63L252,62L254,59L253,56L255,54L261,54L262,59L265,59L262,61ZM266,97L265,99L263,100L261,100L259,98L258,99L255,98L251,96L251,93L248,94L246,93L243,93L244,92L237,92L236,90L238,89L239,86L242,83L243,86L246,85L244,87L248,87L248,86L250,87L249,89L257,88L256,89L257,93L259,93L257,91L257,89L260,87L263,88L264,87L266,90L265,91L267,93L267,96ZM238,79L237,78L240,77L241,79ZM239,73L235,75L234,74L231,75L228,74L228,72L237,70L235,72L238,72ZM192,86L187,90L182,93L181,92L186,88L183,86L188,84L194,84ZM246,78L241,76L243,74L245,76L246,73L249,75L248,77ZM261,78L256,79L253,78L258,77L262,77ZM262,86L260,86L258,87L254,87L252,88L249,85L250,83L254,83L255,84L256,82L260,82L262,84L263,85ZM246,80L240,83L237,83L236,87L234,90L229,90L233,83L236,80L243,81L244,79L247,78ZM254,81L251,81L251,80L256,80ZM234,79L231,81L228,79L229,77L227,76L234,77ZM220,72L215,73L215,73L219,70ZM127,157L121,158L119,161L120,164L118,170L114,170L114,174L110,175L114,169L111,159L113,157L126,155ZM217,83L218,85L221,84L226,85L225,89L221,90L219,89L218,95L214,96L212,99L207,103L201,106L198,105L195,110L190,113L189,116L181,116L189,109L186,109L177,115L171,117L177,110L170,116L168,116L175,107L181,102L182,98L186,95L188,96L186,101L189,99L193,101L199,99L211,91L208,91L209,88L214,82L221,80L227,82L229,83L227,86L224,84L217,85ZM180,91L178,90L181,89ZM199,96L196,97L195,95L199,95ZM225,90L223,93L220,93L221,91L224,89ZM240,68L243,68L241,70ZM27,344L29,349L28,351L26,347L26,341Z","grat":"M395,37L375,36L352,46L326,67L300,98M291,20L295,40L300,98M187,44L198,41L210,40L238,49L268,68L300,98M76,132L93,114L114,99L139,88L168,82L198,79L231,81L265,88L300,98M21,318L20,309L26,269L42,231L67,195L102,163L145,137L193,117L245,104L300,98M94,490L81,472L72,452L66,429L64,404L69,363L82,319L104,275L133,231L169,190L210,154L254,122L300,98M205,563L191,553L180,534L173,507L171,472L173,430L181,382L193,331L209,279L228,228L251,180L275,136L300,98M309,580L311,557L312,494L312,402L309,294L305,188L300,98M413,556L429,544L441,524L448,497L451,464L448,421L439,374L425,324L407,273L384,223L358,176L329,134L300,98M524,468L535,451L542,432L547,411L548,389L544,348L530,305L507,262L476,221L438,182L395,148L348,120L300,98M579,282L572,244L555,208L528,176L493,148L451,126L404,109L353,100L300,98M506,110L489,95L469,84L445,77L419,73L391,74L362,78L331,86L300,98M98,494L102,497L108,503L114,509L121,515L129,520L136,525L144,530L153,534L161,539L170,543L179,547L188,550L198,553L207,556L217,559L227,561L237,563L248,565L258,566L269,568L279,568L290,569L300,569L311,569L321,568L332,568L342,566L353,565L363,563L373,561L383,559L393,556L403,553L412,550L421,546L430,543L439,539L448,534L456,530L464,525L472,520L479,514L486,509L493,503L499,497L502,494M20,300L20,300L20,309L21,317L22,326L24,334L27,342L30,350L33,359L37,367L41,374L46,382L52,390L58,397L64,404L71,412L78,418L86,425L94,431L102,437L111,443L120,449L130,454L140,459L150,464L160,468L171,472L182,476L193,479L204,482L216,485L228,488L240,490L252,491L264,492L276,493L288,494L300,494L312,494L325,493L337,492L349,491L361,489L373,487L384,485L396,482L407,479L419,476L430,472L440,468L451,464L461,459L471,454L480,449L489,443L498,437L507,431L515,425L522,418L530,411L536,404L543,397L548,389L554,382L559,374L563,366L567,358L571,350L573,342L576,334L578,325L579,317L580,308L580,300M98,106L95,109L90,115L85,122L80,128L76,135L72,142L69,149L66,156L63,163L61,170L60,177L58,185L58,192L58,199L58,207L58,214L60,221L61,228L63,236L66,243L69,250L72,257L76,264L80,270L85,277L90,283L96,290L102,296L108,302L114,307L121,313L129,318L136,323L144,328L153,333L161,337L170,341L179,345L188,348L198,352L207,354L217,357L227,359L237,362L248,363L258,365L269,366L279,367L290,367L300,367L311,367L321,367L332,366L342,365L353,363L363,361L373,359L383,357L393,354L403,351L412,348L421,345L430,341L439,337L448,332L456,328L464,323L472,318L479,313L486,307L493,301L499,295L505,289L510,283L515,277L520,270L524,263L528,256L531,250L534,242L537,235L539,228L540,221L542,214L542,206L542,199L542,192L542,184L540,177L539,170L537,163L534,155L531,148L528,141L524,135L520,128L515,121L510,115L504,109L502,106M365,39L359,37L353,36L348,34L342,33L336,31L330,30L324,30L318,29L312,29L306,28L300,28L294,28L288,29L282,29L276,30L270,31L264,32L258,33L252,34L246,36L241,37L235,39L230,41L225,43L220,46L215,48L210,51L205,54L201,57L197,60L193,63L189,66L185,70L182,73L179,77L176,81L173,84L171,88L168,92L166,96L165,100L163,104L162,108L161,113L161,117L160,121L160,125L160,130L161,134L161,138L162,142L163,146L165,150L167,155L168,159L171,162L173,166L176,170L179,174L182,177L185,181L189,184L193,188L197,191L201,194L206,197L210,200L215,202L220,205L225,207L230,209L235,211L241,213L247,215L252,216L258,218L264,219L270,220L276,221L282,221L288,222L294,222L300,222L306,222L312,222L318,221L324,221L330,220L336,219L342,218L348,216L354,215L359,213L365,211L370,209L375,207L380,205L385,202L390,200L395,197L399,194L403,191L407,188L411,184L415,181L418,177L421,174L424,170L427,166L429,162L432,158L434,154L435,150L437,146L438,142L439,138L439,134L440,129L440,125L440,121L439,117L439,112L438,108L437,104L435,100L433,96L432,92L429,88L427,84L424,80L421,77L418,73L415,69L411,66L407,63L403,60L399,57L394,54L390,51L385,48L380,46L375,43L370,41L365,39","closed":"M399,316L407,308L417,308L425,309L427,314L426,322L431,333L436,334L434,340L443,344L446,350L442,354L442,359L426,364L420,359L415,364L411,365L400,361L393,353L387,356L383,348L372,340L373,331L366,326L362,316L364,314L370,317L371,316L375,311L380,316L382,320L390,322L400,318ZM357,328L366,326L373,331L372,340L383,348L387,356L385,357L380,362L372,363L361,357L348,354L346,348L355,340L354,331Z","direct":"M92,139L147,173L231,230L327,299L418,369","around":"M92,139L131,175L192,228L268,290L348,354L372,363L418,369","directKm":11008,"aroundKm":11163,"bends":2,"reach":70},{"from":"Delhi","to":"San Francisco","avoid":["Russia"],"a":[89.2,316.1],"b":[517,159.5],"land":"M92,202L96,200L97,195L101,189L104,190L105,195L110,191L110,186L107,182L104,179L101,179L92,191L87,200L86,198L81,200L79,202L76,211L78,220L79,218L84,214L85,211L90,205L91,211L94,205ZM165,55L165,55L161,57L161,58L156,60L148,66L141,72L128,83L123,88L121,91L113,97L113,95L107,100L97,111L93,116L85,125L85,128L87,126L86,129L78,142L70,155L70,158L68,164L66,171L67,171L70,170L73,169L77,166L80,165L80,157L84,149L83,147L89,139L96,133L99,132L96,138L99,137L96,143L97,147L94,156L90,164L90,169L91,171L95,169L98,163L105,151L108,154L111,152L111,147L108,146L106,148L105,145L109,140L111,142L114,134L111,133L107,132L104,131L102,133L98,136L101,129L104,123L104,121L100,122L97,127L97,125L94,125L107,114L114,110L117,107L120,105L120,105L125,100L131,96L135,93L135,93L137,90L133,91L126,96L110,110L114,105L110,108L111,106L115,103L125,94L133,88L138,86L141,83L142,81L142,80L142,80L144,78L150,73L149,72L148,73L151,68L152,66L148,68L151,64L158,60L160,58L168,54L173,51L177,50L179,50L181,50L184,49L181,52L164,62L167,63L175,61L182,57L180,59L175,62L179,62L174,65L173,70L172,71L170,73L172,71L173,74L170,78L169,81L172,81L176,80L180,81L179,85L174,85L173,83L170,83L165,86L165,88L160,91L160,91L160,91L158,99L155,101L156,104L156,104L155,104L159,104L163,105L159,108L162,109L168,107L168,111L165,116L166,117L169,115L171,106L175,103L183,103L191,110L194,108L195,105L189,103L187,98L180,96L175,99L173,96L166,94L165,91L167,88L182,87L185,85L184,80L189,77L194,77L201,79L200,86L202,90L207,93L210,96L214,103L213,108L215,110L212,112L213,114L209,117L207,117L202,124L194,132L189,132L187,129L190,125L195,119L188,124L182,125L178,129L180,130L184,127L181,133L185,132L189,135L186,138L197,136L197,138L194,140L192,138L190,140L191,142L193,142L201,148L197,150L202,155L200,156L203,158L207,156L207,160L204,169L207,169L209,164L216,160L218,161L223,160L225,163L220,166L219,167L210,173L209,175L200,178L198,179L207,179L214,172L218,171L220,167L226,168L222,170L224,173L225,169L229,171L230,176L231,172L235,169L241,173L243,170L250,170L256,173L268,170L269,172L267,172L270,176L273,177L274,179L271,184L260,188L261,190L269,189L269,191L272,191L276,193L277,196L281,197L284,193L290,197L288,200L290,206L292,208L295,203L296,205L299,204L303,206L306,205L304,202L306,199L316,200L326,205L330,203L336,203L339,207L350,204L350,202L356,205L357,202L354,199L361,195L369,195L369,195L380,195L383,196L386,193L391,194L391,199L394,204L388,205L386,204L383,206L379,204L382,209L381,210L381,214L388,219L385,222L381,230L378,238L369,243L364,248L364,255L368,257L371,264L368,266L370,272L367,275L368,282L364,284L364,290L362,295L353,275L352,263L355,261L360,247L363,243L361,237L357,246L354,242L348,244L344,256L340,259L333,258L328,261L317,262L315,264L304,278L297,284L307,289L310,287L315,292L313,315L305,329L296,340L289,343L284,341L280,345L276,352L268,356L270,362L273,368L272,378L261,381L263,365L256,362L259,356L256,353L245,357L249,349L245,347L235,353L231,352L231,357L235,363L241,361L248,364L241,367L233,374L236,377L241,390L237,396L241,398L229,412L227,416L214,421L203,422L202,421L200,422L200,422L186,421L177,416L171,416L165,422L170,433L176,442L177,449L174,457L155,459L157,455L155,452L149,445L143,434L139,432L134,441L137,455L144,462L149,469L148,476L152,482L148,480L140,471L136,457L129,445L132,441L133,430L132,422L133,415L120,409L123,404L122,396L118,386L118,376L110,375L110,373L109,375L102,370L98,374L77,371L74,380L71,388L63,388L62,386L61,349L67,324L65,326L61,323L61,313L64,316L62,305L63,293L60,289L56,279L53,262L55,255L52,252L52,247L54,235L59,225L58,221L58,219L54,224L51,234L47,243L46,245L46,247L47,256L52,257L51,259L50,262L49,268L49,273L48,282L41,285L37,280L35,281L34,275L32,275L29,268L29,267L27,251L32,238L38,222L41,211L44,207L57,181L61,177L61,177L61,177L58,179L60,174L55,180L49,192L47,195L44,202L38,212L36,219L31,231L30,237L27,250L26,254L25,262L26,276L27,283L25,289L21,293L20,292L20,289L20,289L21,279L22,269L23,259L25,250L26,240L29,231L31,221L34,212L37,203L41,194L45,185L49,176L54,167L58,159L63,150L69,142L74,134L80,126L87,119L93,111L100,104L107,97L114,91L121,84L129,78L137,73L145,67L153,62L161,57ZM532,143L529,139L528,138L528,141L528,145L524,144L525,148L529,151L532,148L534,149L534,148L536,153L534,151L535,157L532,152L531,155L526,154L524,155L525,160L519,160L515,161L510,160L503,156L491,149L484,147L484,142L480,142L475,150L468,149L467,151L463,151L457,148L460,150L461,151L456,152L443,154L447,155L447,158L440,163L438,169L432,172L432,176L435,177L436,186L429,181L435,190L438,193L441,206L442,206L440,219L437,201L433,196L433,201L429,202L429,205L423,203L422,205L417,205L412,203L409,195L410,194L410,188L405,186L406,190L401,194L399,192L395,193L396,184L398,186L400,183L397,180L387,183L385,181L387,178L384,172L382,163L390,159L390,156L394,152L394,149L397,147L401,142L398,137L395,132L398,134L394,129L398,126L395,123L396,117L395,113L397,111L400,113L400,111L396,106L398,102L394,103L391,101L394,104L389,101L391,98L390,95L386,91L384,92L382,89L385,89L378,87L376,88L376,91L371,93L367,92L368,89L375,83L370,83L371,81L374,80L375,78L368,79L364,80L361,78L362,75L364,76L367,72L380,76L382,79L383,78L381,75L385,75L390,77L403,80L412,80L410,78L414,76L409,70L405,63L400,60L405,58L403,53L398,52L395,56L385,53L382,54L383,58L377,58L377,60L371,62L367,59L365,58L363,54L359,52L363,49L360,47L354,46L350,48L346,42L348,39L338,35L341,35L336,33L336,31L344,32L350,32L369,37L378,38L389,40L395,42L402,44L395,42L386,39L379,38L370,36L366,35L365,34L370,34L369,33L359,29L376,33L376,33L369,32L378,35L379,35L389,38L395,39L392,37L403,41L417,46L417,47L422,48L434,54L442,59L442,59L450,64L458,69L463,73L464,73L471,79L479,85L481,86L487,92L498,102L502,106L504,108L504,108L511,115L517,123L523,131L529,138ZM441,191L442,191L443,197L440,195ZM455,155L460,154L457,156ZM546,321L543,317L546,316ZM186,61L192,57L191,59L193,62L202,59L209,62L205,65L204,63L199,66L198,64L183,66L178,69L177,65L185,60L188,57L188,59ZM205,57L203,58L200,57L196,56L203,51L206,50L205,52L209,52L206,54L207,55ZM243,540L246,540L257,540L246,541L240,542L242,540ZM232,429L228,426L233,419L237,420ZM71,391L72,394L74,405L73,407L69,403L69,396ZM256,131L255,132L252,130L253,129ZM238,151L231,147L221,145L221,142L230,142L236,145L237,147L241,149ZM221,144L217,145L209,150L209,145L212,144L212,142L220,142ZM272,155L270,158L267,157L267,155L270,154ZM270,158L271,161L268,164L265,161L265,159L268,157ZM271,164L272,166L269,168L265,167L270,163ZM305,185L306,184L311,186L304,191L301,189L301,186L303,184ZM313,187L318,188L315,189ZM318,286L321,297L327,312L322,311L321,318L324,324L319,325L319,317L316,291ZM361,186L365,185L363,188L363,188L361,186ZM201,143L199,142L201,140ZM257,138L255,138L257,137ZM257,133L256,136L256,133ZM308,194L310,197L306,196ZM231,446L236,447L236,453L231,459L232,464L239,466L242,470L232,465L227,464L224,453L227,454L228,445ZM237,484L235,482L240,478ZM248,473L247,478L243,472ZM251,485L253,493L250,492L247,498L242,495L242,491L232,487L239,485L240,488ZM375,524L376,527L368,531L358,531L371,528ZM323,527L340,529L346,532L356,533L353,536L359,539L369,540L355,542L347,539L340,538L333,541L331,544L323,544L314,540L309,535L295,532L287,529L284,531L279,527L281,526L276,521L282,520L289,522L290,526L294,529L308,524ZM250,112L245,113L243,111L245,110ZM257,113L257,115L254,117L251,114L253,112L258,111ZM257,110L250,112L249,109L243,106L247,105L251,106L251,108L252,109L252,106L255,105L260,107L258,109L254,109ZM175,490L181,495L182,492L190,492L195,489L199,489L200,489L207,484L218,493L211,495L209,496L211,502L217,507L212,505L210,510L204,512L203,517L197,516L197,514L190,511L178,506L176,501L173,498L172,491ZM211,495L212,495ZM326,335L333,339L328,341L325,346L320,344L313,344L318,341L319,329ZM279,386L282,388L280,396L275,397L276,388ZM292,384L285,390L286,385ZM318,349L322,357L318,366L318,376L311,382L303,381L299,387L294,381L278,384L287,378L298,378L302,372L308,370L312,365L315,350ZM111,105L108,105L116,97ZM130,87L126,89L127,87L133,84ZM122,452L125,455L128,460L148,483L149,488L159,499L159,506L154,504L145,495L131,474L129,468L118,451ZM236,537L222,535L225,534ZM214,532L219,534L209,532ZM245,512L243,514L224,510L222,512L225,516L238,516L228,518L236,526L231,527L223,520L224,527L219,526L220,522L216,520L220,511L226,508ZM166,509L171,514L180,517L195,525L198,528L192,525L180,521L162,511L158,508L160,507ZM259,515L263,513L258,518ZM247,63L242,63L241,61L247,56L253,55L257,56L257,57L260,56L261,58L250,61ZM89,131L85,139L86,135ZM135,86L132,86L136,84ZM423,542L432,540L425,543ZM486,502L486,502L486,501ZM293,104L289,103L286,102L287,100L291,99L288,99L287,98L285,100L284,99L281,99L281,101L278,101L278,96L280,95L278,92L278,90L278,87L273,87L273,86L276,84L273,83L269,79L270,75L274,75L276,73L273,75L270,74L269,72L265,69L269,68L273,69L273,67L276,65L265,67L270,62L276,59L280,59L281,55L285,52L293,51L292,49L296,45L298,40L301,40L306,41L311,42L317,48L317,52L319,52L318,55L319,56L317,58L314,58L311,62L317,64L317,65L313,64L312,65L315,67L318,67L316,71L317,73L316,75L318,79L322,82L328,83L328,87L324,86L323,87L326,88L328,91L327,91L320,91L317,94L319,94L318,95L312,98L307,99L304,97L305,99L303,99L301,97L300,99L301,100L298,102L297,101L297,103ZM315,63L317,61L319,62L317,64ZM271,68L274,66L275,67ZM169,88L167,87L171,85ZM77,158L76,162ZM187,427L185,431L177,429L181,425ZM476,150L477,146L483,145L482,148L476,152ZM350,112L352,112L353,114ZM353,112L355,112L357,113L355,114ZM358,116L364,116L362,117L366,119L367,121L360,118ZM361,109L361,106L365,107L365,108L370,112L370,113L366,111L369,115L369,116L362,115L362,113L364,111L364,109L361,111L358,110ZM379,113L377,111L376,106L378,105L372,106L372,104L379,101L380,96L384,99L387,97L388,100L388,102L390,103L396,110L393,111L394,115L391,115L387,109L387,111L389,116L385,117L382,117L376,113ZM374,118L373,116L376,114L381,118L386,120L389,122L386,126L377,123L375,124L373,121ZM315,104L312,102L311,100L312,99L316,99L316,97L319,96L323,95L328,96L327,94L330,93L331,92L333,92L337,89L340,89L340,91L344,92L347,95L342,95L342,97L341,95L337,97L340,98L337,98L335,97L332,102L331,100L324,99L324,101L328,100L330,101L332,104L329,105L330,107L324,106L323,105L321,106L316,105ZM355,96L358,96L358,98L354,97ZM364,99L363,96L367,97L366,95L370,94L374,96L371,101L368,98L367,100ZM377,73L374,69L374,66L376,67L378,70L384,71L383,73L377,75ZM353,101L358,99L360,101L357,101L360,103L356,104L353,102ZM345,109L346,105L348,104L348,108L346,110ZM332,106L333,104L332,102L335,100L335,99L341,98L343,100L341,103L338,102L341,104L338,106L336,107L333,107ZM349,99L348,95L350,93L344,91L341,88L344,86L353,91L355,94L350,98L352,99L351,101ZM344,103L345,102L347,103L344,105ZM358,94L357,91L362,91L364,93L368,93L362,95ZM378,92L380,89L382,90L383,93ZM335,30L340,29L339,29L334,28L330,26L333,26L329,25L331,25L334,26L350,29L350,29L339,31ZM362,83L358,83L358,85L353,86L348,84L349,82L352,82L344,78L345,76L342,74L339,70L339,66L342,65L338,62L338,59L333,58L340,55L344,60L347,59L344,54L347,52L353,56L349,52L351,51L359,57L360,61L366,64L367,66L364,66L358,63L358,65L352,65L351,68L354,77L356,76L360,78L366,83L364,87L358,89L354,89L352,87L357,87L359,83ZM379,67L383,67L381,68ZM355,70L356,68L359,69L357,70ZM346,83L344,81L345,80L348,81L348,84ZM372,103L371,105L369,103ZM334,578L333,578L333,578L333,578L323,579L319,579L317,579L311,579L306,580L304,579L298,580L292,578L279,577L258,575L249,575L234,572L229,571L223,569L216,567L217,566L211,564L202,558L205,559L201,556L201,554L212,555L215,556L230,558L236,557L238,554L245,555L245,554L256,552L262,555L268,554L276,550L283,551L279,549L295,551L303,552L298,554L297,557L318,562L321,561L325,556L326,551L330,547L333,549L333,549L335,554L342,554L343,557L347,561L356,561L360,564L365,563L373,565L373,567L369,570L361,573L355,574L353,575L353,575L343,577Z","grat":"M468,524L479,513L487,498L492,480L494,459L490,422L479,380L461,336L437,289L408,244L374,200L338,161L300,126M562,398L567,380L569,361L564,326L548,290L524,255L490,221L449,190L403,163L352,142L300,126M567,217L555,190L534,167L507,148L474,133L435,123L392,119L347,120L300,126M477,83L463,75L446,70L425,70L403,73L379,81L353,92L300,126M362,27L357,28L350,32L335,51L318,83L300,126M247,25L258,30L271,50L285,82L300,126M132,76L146,69L163,65L182,66L203,70L250,91L300,126M38,202L51,178L72,156L99,139L132,126L169,118L211,116L255,119L300,126M33,383L28,352L33,317L49,282L74,247L108,214L149,185L196,160L247,140L300,126M123,517L112,505L104,490L99,472L98,452L102,415L113,374L132,330L157,285L188,240L223,198L261,159L300,126M238,573L231,568L226,555L222,511L228,428L245,326L270,220L300,126M353,575L359,570L363,558L367,513L361,431L347,328L325,221L300,126M134,526L140,530L148,535L157,540L165,545L174,549L183,554L193,557L202,561L212,564L222,567L232,569L242,572L253,573L263,575L274,576L284,577L295,577L305,577L316,577L326,576L337,575L347,573L358,572L368,569L378,567L388,564L398,561L407,557L417,554L426,549L435,545L443,540L452,535L460,530L466,526M494,459L502,452L511,445L518,438L526,430L533,422L539,414L545,406L551,397L556,388L561,380L565,371L569,361L572,352L575,343L577,333L578,324L579,314L580,305L580,300M20,300L20,305L21,314L22,324L23,333L25,343L28,352L31,361L35,371L39,380L44,388L49,397L55,406L61,414L67,422L74,430L82,437L89,445L98,452L106,459L115,465L125,471L134,477L144,483L155,488L165,493L176,497L187,501L199,505L210,508L222,511L233,513L245,515L257,517L270,518L282,519L294,520L306,520L318,519L330,518L343,517L355,515L367,513L378,511L390,508L401,505L413,501L424,497L435,493L445,488L456,483L466,477L475,471L485,465L494,459M468,351L475,345L482,339L489,332L496,326L502,319L507,312L513,305L517,297L522,290L526,282L530,274L533,266L536,258L538,250L540,242L541,234L542,226L542,217L542,209L542,201L541,192L540,184L538,176L536,168L533,160L530,152L526,144L522,137L517,129L513,122L507,115L502,108L496,101L489,94L482,88L475,82L468,76L466,74M134,74L132,76L125,82L118,88L111,94L104,101L98,107L93,114L87,122L83,129L78,137L74,144L70,152L67,160L64,168L62,176L60,184L59,192L58,201L58,209L58,217L58,226L59,234L60,242L62,250L64,258L67,266L70,274L74,282L78,290L83,297L87,305L93,312L98,319L104,326L111,332L118,339L125,345L132,351L140,356L148,362L157,367L165,371L174,376L183,380L193,384L202,387L212,391L222,393L232,396L242,398L253,400L263,401L274,402L284,403L295,403L305,403L316,403L326,402L337,401L347,400L358,398L368,396L378,393L388,391L398,387L407,384L417,380L426,376L435,371L443,367L452,362L460,356L468,351M397,229L401,226L405,222L409,218L413,215L416,211L420,207L423,202L426,198L428,194L430,189L433,185L434,180L436,176L437,171L438,166L439,162L440,157L440,152L440,147L440,142L439,138L438,133L437,128L436,124L434,119L433,114L430,110L428,105L426,101L423,97L420,93L416,89L413,85L409,81L405,77L401,74L397,70L392,67L388,64L383,61L378,58L373,56L367,53L362,51L356,49L351,47L345,46L339,44L333,43L327,42L321,41L315,40L309,40L303,40L297,40L291,40L285,40L279,41L273,42L267,43L261,44L255,46L249,47L244,49L238,51L233,53L227,56L222,58L217,61L212,64L208,67L203,70L199,74L195,77L191,81L187,85L184,89L180,93L177,97L174,101L172,105L170,110L167,114L166,119L164,124L163,128L162,133L161,138L160,142L160,147L160,152L160,157L161,162L162,166L163,171L164,176L166,180L167,185L170,189L172,194L174,198L177,202L180,207L184,211L187,215L191,218L195,222L199,226L203,229L208,232L212,235L217,238L222,241L227,244L233,246L238,248L244,250L249,252L255,254L261,255L267,256L273,257L279,258L285,259L291,259L297,259L303,259L309,259L315,259L321,258L327,257L333,256L339,255L345,254L351,252L356,250L362,248L367,246L373,244L378,241L383,238L388,235L392,232L397,229","closed":"M280,345L279,344L282,340L282,332L289,332L295,319L294,316L283,319L282,313L274,309L269,291L264,288L256,288L253,289L254,294L243,303L239,301L233,297L221,298L215,295L215,292L209,286L203,285L202,278L196,270L192,272L189,278L186,278L180,272L177,265L163,264L162,263L159,257L159,249L153,243L160,224L152,220L154,219L151,213L155,209L153,205L139,193L133,196L129,202L127,196L128,194L124,186L127,181L127,174L121,169L114,171L112,176L107,182L104,179L101,179L92,191L89,190L92,185L94,178L98,163L105,151L108,154L111,152L113,155L120,152L124,145L125,140L133,133L133,129L138,127L137,130L144,124L147,124L152,118L158,115L165,116L166,117L169,115L177,120L181,117L191,116L195,115L198,116L201,114L204,115L207,117L202,124L194,132L189,132L187,129L190,125L195,119L188,124L182,125L178,129L180,130L184,127L181,133L185,132L189,135L186,138L197,136L197,138L194,140L192,138L190,140L191,142L193,142L201,148L197,150L202,155L200,156L203,158L207,156L207,160L204,169L207,169L209,164L216,160L218,161L223,160L225,163L220,166L219,167L210,173L209,175L200,178L198,179L207,179L214,172L218,171L220,167L226,168L222,170L224,173L225,169L229,171L230,176L231,172L235,169L241,173L243,170L250,170L256,173L268,170L269,172L267,172L270,176L273,177L274,179L271,184L260,188L261,190L269,189L269,191L272,191L276,193L277,196L281,197L284,193L290,197L288,200L290,206L292,208L295,203L296,205L299,204L303,206L306,205L304,202L306,199L316,200L326,205L330,203L336,203L339,207L350,204L350,202L356,205L357,202L354,199L361,195L369,195L369,195L380,195L383,196L386,193L391,194L391,199L394,204L388,205L386,204L383,206L379,204L382,209L381,210L381,214L388,219L385,222L381,230L378,238L369,243L364,248L364,255L368,257L371,264L368,266L370,272L367,275L368,282L364,284L364,290L362,295L353,275L352,263L355,261L360,247L363,243L361,237L357,246L354,242L348,244L344,256L340,259L333,258L328,261L317,262L315,264L304,278L297,284L307,289L310,287L315,292L313,315L305,329L296,340L289,343L284,341ZM256,131L255,132L252,130L253,129ZM238,151L231,147L221,145L221,142L230,142L236,145L237,147L241,149ZM221,144L217,145L209,150L209,145L212,144L212,142L220,142ZM272,155L270,158L267,157L267,155L270,154ZM270,158L271,161L268,164L265,161L265,159L268,157ZM271,164L272,166L269,168L265,167L270,163ZM305,185L306,184L311,186L304,191L301,189L301,186L303,184ZM313,187L318,188L315,189ZM318,286L321,297L327,312L322,311L321,318L324,324L319,325L319,317L316,291ZM361,186L365,185L363,188L363,188L361,186ZM201,143L199,142L201,140ZM257,138L255,138L257,137ZM257,133L256,136L256,133ZM308,194L310,197L306,196ZM156,104L155,104L150,108L155,101L156,104ZM111,142L108,146L106,148L105,145L109,140Z","direct":"M89,316L132,281L184,247L243,216L305,190L368,170L426,158L477,155L517,160","around":"M89,316L175,333L280,345L289,343L291,343L324,326L388,278L444,232L488,191L517,160","directKm":12355,"aroundKm":13471,"bends":4,"reach":67}];
+          var svg = $("#gcd-svg");
+          var sw = $("#gcd-switch");
+          var touched = false, at = 0, avoiding = true;
+          var fmt = function (n) { return n.toLocaleString("en-US"); };
+          var names = function (a) { return a.length < 2 ? a[0] : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; };
+
+          function readout() {
+            var t = TRIPS[at];
+            var km = $("#gcd-km");
+            var extra = t.aroundKm - t.directKm;
+            km.firstChild.nodeValue = fmt(avoiding ? t.aroundKm : t.directKm) + " km";
+            $("#gcd-sub").textContent = avoiding
+              ? "+" + fmt(extra) + " km (" + ((100 * extra) / t.directKm).toFixed(1) + "%) over the direct " + fmt(t.directKm) + " km, with " + t.bends + " bends"
+              : "The great circle: the shortest way over the Earth, through " + names(t.avoid);
+          }
+
+          function setAvoid(on) {
+            avoiding = on;
+            sw.setAttribute("aria-checked", String(on));
+            root.classList.toggle("is-avoiding", on);
+            readout();
+          }
+
+          function draw(i) {
+            var t = TRIPS[i];
+            $(".gcd-grat", svg).setAttribute("d", t.grat);
+            $(".gcd-land", svg).setAttribute("d", t.land);
+            $(".gcd-closed", svg).setAttribute("d", t.closed);
+            $(".gcd-direct", svg).setAttribute("d", t.direct);
+            $(".gcd-around", svg).setAttribute("d", t.around);
+            $("#gcd-pa").setAttribute("transform", "translate(" + t.a[0] + " " + t.a[1] + ")");
+            $("#gcd-pb").setAttribute("transform", "translate(" + t.b[0] + " " + t.b[1] + ")");
+            $("#gcd-title").textContent = "The route from " + t.from + " to " + t.to + " on a globe";
+            $("#gcd-switch-label").textContent = "Avoid " + names(t.avoid);
+          }
+
+          // A new trip fades the globe out and back, then draws the way
+          // around again from the start.
+          var swapTimer = null;
+          function pick(i) {
+            if (i === at && !swapTimer) return;
+            at = i;
+            $$("button", $(".gcd-trips")).forEach(function (b) { b.setAttribute("aria-pressed", String(Number(b.getAttribute("data-trip")) === i)); });
+            clearTimeout(swapTimer);
+            var go = function () {
+              swapTimer = null;
+              root.classList.remove("is-avoiding");
+              draw(i);
+              svg.classList.remove("is-swapping");
+              readout();
+              void svg.getBoundingClientRect();
+              setAvoid(avoiding);
+            };
+            if (reduce) return go();
+            svg.classList.add("is-swapping");
+            swapTimer = setTimeout(go, 180);
+          }
+
+          $$("button", $(".gcd-trips")).forEach(function (b) {
+            b.addEventListener("click", function () {
+              touched = true;
+              pick(Number(b.getAttribute("data-trip")));
+            });
+          });
+          sw.addEventListener("click", function () {
+            touched = true;
+            setAvoid(!avoiding);
+          });
+
+          // On arrival: the straight line first, then the countries close and
+          // the route bends round them.
+          root.classList.remove("is-avoiding");
+          avoiding = false;
+          sw.setAttribute("aria-checked", "false");
+          readout();
+          $("#greatercircle").addEventListener("arrive", function () {
+            setTimeout(function () { if (!touched) setAvoid(true); }, reduce ? 0 : 1100);
           });
         })();
 

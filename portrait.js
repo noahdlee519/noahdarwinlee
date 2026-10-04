@@ -1,7 +1,6 @@
 // The portrait in tiles: a photograph set in the site's square-and-circle
 // mark, in black, blue, orange and white. Used on the front page's about panel
-// and on the portfolio, which both give it a <canvas id="tiles"> and a
-// <p id="tiles-hint" hidden> under it.
+// and on the portfolio, which both give it a <canvas id="tiles">.
 (function () {
   "use strict";
   var $ = function (q) { return document.querySelector(q); };
@@ -440,9 +439,7 @@
       kick();
     }
 
-    var hint = $("#tiles-hint");
     if (!fine) {
-      hint.hidden = false;
       canvas.addEventListener("click", function (e) {
         if (!started) return;
         var rect = canvas.getBoundingClientRect();
@@ -451,8 +448,6 @@
         var gx = Math.min(GRID - 1, Math.max(0, Math.floor((px / cssW) * GRID)));
         var gy = Math.min(GRID - 1, Math.max(0, Math.floor((py / cssH) * GRID)));
         reveal(gx, gy, px, py);
-        var left = GRID * GRID - revealed.filter(Boolean).length;
-        hint.textContent = left ? left + " to go." : "That’s all sixteen.";
       });
     }
   })();
