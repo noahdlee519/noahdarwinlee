@@ -508,12 +508,17 @@ body.gc-page {
   color: var(--ink);
 }
 .gc-swap {
-  /* In the badges' column, between the A and the B. */
+  /* In the badges' column, between the A and the B: B's field starts 24px
+     below A's, and the badges are centred in their fields, so the point
+     between them is 12px above B's field on every screen. */
   position: absolute;
   left: -4px;
-  top: 38px;
+  top: -27px; /* 12 + half its own 30 */
   width: 30px;
   height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   border: 0;
   background: transparent;
@@ -530,6 +535,14 @@ body.gc-page {
   margin: 6px 0 0;
   color: var(--gc-muted);
   font-size: 13px;
+}
+/* An icon in a line of text, the size of a capital and sitting on the line. */
+.gc-inline-icon {
+  display: inline-block;
+  width: 1.45em;
+  height: 1.45em;
+  margin: 0 0.05em;
+  vertical-align: -0.42em;
 }
 
 /* The suggestions, dropping out of a field. */
