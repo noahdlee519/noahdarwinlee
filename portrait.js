@@ -127,13 +127,17 @@
     }
 
     // As big as the column allows, and no taller than most of a window.
-    function layout() {
+    function measure() {
       var w = canvas.parentElement.clientWidth;
       var maxH = Math.min(720, innerHeight * (innerWidth <= 900 ? 0.6 : 0.78));
-      base = Math.max(6, Math.floor(Math.min(w / COLS, maxH / ROWS)));
+      return { base: Math.max(6, Math.floor(Math.min(w / COLS, maxH / ROWS))), dpr: Math.min(window.devicePixelRatio || 1, 2) };
+    }
+    function layout() {
+      var m = measure();
+      base = m.base;
       cssW = base * COLS;
       cssH = base * ROWS;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = m.dpr;
       canvas.style.width = cssW + "px";
       canvas.style.height = cssH + "px";
       canvas.width = Math.round(cssW * dpr);
@@ -317,6 +321,9 @@
         return;
       }
       for (var i = 0; i < roots.length; i++) heal(roots[i], now);
+      // Set every frame: a canvas whose pixels were dropped comes back with
+      // its scale lost as well.
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, cssW, cssH);
       for (var j = 0; j < roots.length; j++) drawNode(roots[j], now, null);
       // With a mouse the loop runs while anything is split, since what is
@@ -430,14 +437,23 @@
     img.src = SRC;
     if (PRE) start();
 
+    // A phone fires resize whenever its address bar slides in or out on a
+    // scroll. Setting a canvas's size clears it, even to the size it had,
+    // so the canvas is only touched when the tiles' size really changes,
+    // and then it is always drawn again, with any squares already tapped
+    // sharp put back at once. Before, the picture went blank on a scroll
+    // and came back only when tapped.
     var rw;
     addEventListener("resize", function () {
       clearTimeout(rw);
       rw = setTimeout(function () {
         if (!started) return;
-        var before = cssW;
+        var m = measure();
+        if (m.base === base && m.dpr === dpr) return;
+        var had = revealed.slice();
         layout();
-        if (before !== cssW) kick();
+        had.forEach(function (on, key) { if (on) reveal(key % GRID, Math.floor(key / GRID), 0, 0, true); });
+        kick();
       }, 120);
     });
 
@@ -446,23 +462,34 @@
       if (visible) kick();
     }).observe(canvas);
 
+    // A phone may drop a canvas's pixels while the page is out of sight
+    // (another tab, the app in the background, the page kept for Back):
+    // draw it again on the way back.
+    addEventListener("pageshow", function () { if (started) kick(); });
+    document.addEventListener("visibilitychange", function () { if (started && !document.hidden) kick(); });
+    canvas.addEventListener("contextrestored", function () { if (started) kick(); });
+
     // A tap takes its square of the grid to full detail in one go: every
     // tile in it splits down to the finest, a generation at a time, in a
     // ripple out from the finger.
-    function reveal(gx, gy, tx, ty) {
+    // instant: put a square back as it was, with no ripple and no flash
+    // (after the tiles have been rebuilt at a new size).
+    function reveal(gx, gy, tx, ty, instant) {
       var key = gy * GRID + gx;
       if (revealed[key]) return;
       revealed[key] = true;
       var now = performance.now();
+      var still = reduce || instant;
       var c0 = Math.floor((gx * COLS) / GRID), c1 = Math.floor(((gx + 1) * COLS) / GRID);
       var r0 = Math.floor((gy * ROWS) / GRID), r1 = Math.floor(((gy + 1) * ROWS) / GRID);
       var deep = function (n) {
         if (n.g >= MAX_GEN) return;
-        var d = reduce ? 0 : Math.hypot(n.x + n.s / 2 - tx, n.y + n.s / 2 - ty) * 2.2 + n.g * 170;
-        if (!n.kids) split(n, now, n.g === MAX_GEN - 1);
+        var d = still ? 0 : Math.hypot(n.x + n.s / 2 - tx, n.y + n.s / 2 - ty) * 2.2 + n.g * 170;
+        if (!n.kids) split(n, now, !instant && n.g === MAX_GEN - 1);
         if (!n.kids) return;
         n.kids.forEach(function (k) {
-          if (!reduce) {
+          if (still) k.t0 = 0;
+          else {
             k.t0 = now + d;
             if (k.flash) k.flash = now + d;
           }
