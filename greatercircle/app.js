@@ -33,6 +33,7 @@
   var topology = null, features = [], featureById = new Map(), lod = null, borders = null, graticule = null;
   var cities = []; // { name, cc, lon, lat, tier, x, y, z }
   var admin1 = null, admin1Asked = false; // the borders inside countries, fetched when the globe is close
+  var lakes = null; // prepared like the countries, drawn in the sea's colour
   var airports = null; // { name, cc, lon, lat, iata, big, x, y, z }, from the place list, drawn when the globe is very close
   var countries = [];          // [{ id, name, key }] sorted, for the avoid search
   var places = null, placesPromise = null;
@@ -298,6 +299,12 @@
       ctx.fillStyle = hatch; ctx.fill();
     });
 
+    // Lakes, in the sea's colour, over whatever the land is filled with.
+    if (lakes) {
+      ctx.beginPath();
+      for (var li = 0; li < lakes.length; li++) traceFeature(ctx, lakes[li]);
+      ctx.fillStyle = pal.ocean; ctx.fill();
+    }
     // The borders inside countries, dotted, once the globe is close enough
     // that they mean something; they fade in over the first stretch.
     var sub = subdivisionAlpha(r);
@@ -374,6 +381,12 @@
      px, whole from 2200. */
   var ADMIN1_FROM = 1400, ADMIN1_FULL = 2200;
   function subdivisionAlpha(r) { return Math.max(0, Math.min(1, (r - ADMIN1_FROM) / (ADMIN1_FULL - ADMIN1_FROM))); }
+  function loadLakes() {
+    fetch("data/lakes.json").then(function (r) { return r.json(); }).then(function (topo) {
+      lakes = prepare(topojson.feature(topo, topo.objects.lakes).features);
+      scheduleRender("full");
+    }).catch(function (err) { console.warn("lakes", err); });
+  }
   function loadAdmin1() {
     if (admin1Asked) return;
     admin1Asked = true;
@@ -2013,6 +2026,7 @@
     if (!canHover) $("avoid-hint").textContent = "Or press avoid, then tap countries";
     startWorker();
     loadCities();
+    loadLakes();
     $("load").classList.add("is-gone");
     setTimeout(function () { $("load").remove(); }, 400);
     if (fromUrl) { requestRoute(); setTimeout(function () { fitRoute(true); }, 50); }
