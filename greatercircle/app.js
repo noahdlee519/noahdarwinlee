@@ -640,6 +640,12 @@
   var pinch = null;
   var inertia = null;
 
+  /* The ring round the globe is for the keyboard: it shows when the globe
+     is reached with Tab, not when a click gives it focus for the arrow
+     keys (a script's focus() would otherwise count as the keyboard's). */
+  var focusByPointer = false;
+  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); });
+  canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); });
   function degPerPx() { return 180 / (Math.PI * projection.scale()); }
 
   canvas.addEventListener("pointerdown", function (e) {
@@ -668,7 +674,7 @@
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, marker: marker,
       lastT: performance.now(), lastX: e.clientX, lastY: e.clientY, vx: 0, vy: 0, shift: e.shiftKey };
     canvas.classList.add("is-dragging");
-    if (e.pointerType === "mouse") canvas.focus({ preventScroll: true });
+    if (e.pointerType === "mouse") { focusByPointer = true; canvas.focus({ preventScroll: true }); focusByPointer = false; }
   });
 
   canvas.addEventListener("pointermove", function (e) {

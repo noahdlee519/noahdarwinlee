@@ -169,7 +169,7 @@ body.gc-page {
   cursor: grab;
   outline: none;
 }
-.gc-globe:focus-visible {
+.gc-globe.show-ring:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: -4px;
 }
