@@ -548,6 +548,14 @@ body.gc-page {
   max-height: 290px;
   overflow-y: auto;
 }
+/* Floating over the page with a mouse, placed by the script under its
+   field, so the panel's own edge does not clip it. */
+.gc-suggest.is-floating {
+  position: fixed;
+  right: auto;
+  z-index: 40;
+  overscroll-behavior: contain;
+}
 .gc-suggest li {
   padding: 7px 10px;
   cursor: pointer;

@@ -1290,13 +1290,40 @@
       open = rows.length > 0 || !!note;
       list.hidden = !open;
       input.setAttribute("aria-expanded", String(open));
-      if (open) {
-        // No taller than the panel has room for below the field, so the
-        // list scrolls itself rather than the panel.
-        var room = panel.getBoundingClientRect().bottom - list.getBoundingClientRect().top - 12;
-        list.style.maxHeight = Math.max(120, Math.min(290, room)) + "px";
-      }
+      place();
     }
+    /* Where the open list goes. With a mouse it floats over everything,
+       fixed under its field and as tall as the window allows, so a short
+       panel does not clip it to a row or two; it opens upward when there
+       is more room above. On a phone it stays in the sheet, which opens to
+       make room: the list takes the sheet's height less the field's, and
+       the sheet scrolls the field up to its top so the list fits below. */
+    function place() {
+      if (!open) return;
+      var floating = window.innerWidth > 640;
+      list.classList.toggle("is-floating", floating);
+      if (!floating) {
+        list.style.left = list.style.top = list.style.bottom = list.style.width = "";
+        var pr = panel.getBoundingClientRect(), line = list.parentElement.getBoundingClientRect();
+        var want = Math.max(120, Math.min(290, pr.height - line.height - 28));
+        list.style.maxHeight = want + "px";
+        var need = line.bottom + want + 12 - pr.bottom;
+        if (need > 1) panel.scrollTop += need;
+        return;
+      }
+      var a = list.parentElement.getBoundingClientRect(), vh = window.innerHeight;
+      var below = vh - a.bottom - 16, above = a.top - 16;
+      var up = below < 200 && above > below;
+      list.style.left = a.left + "px";
+      list.style.width = a.width + "px";
+      if (up) { list.style.top = "auto"; list.style.bottom = (vh - a.top) + "px"; }
+      else { list.style.top = a.bottom + "px"; list.style.bottom = "auto"; }
+      list.style.maxHeight = Math.max(120, Math.min(360, up ? above : below)) + "px";
+    }
+    panel.addEventListener("scroll", place, { passive: true });
+    window.addEventListener("resize", place);
+    // The sheet slides open on a phone after the list has opened.
+    panel.addEventListener("transitionend", function (e) { if (e.target === panel) place(); });
     function choose(i) {
       if (i < 0 || i >= items.length) return;
       var row = items[i];
