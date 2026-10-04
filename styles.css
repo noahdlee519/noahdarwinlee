@@ -909,10 +909,23 @@ a[href="/cv/"]:active {
   margin: 0 0 24px;
 }
 
-/* With about shut the box is the first thing in the column; give it the
-   room the panel would have had above it. */
+/* The box is for the empty front page. With about open there is already a
+   page to read, so the box stays out of it. */
+.about-panel.is-open + .feedback {
+  display: none;
+}
+
+/* About shut, the page is one window and the box is the only thing in it, so
+   it sits in the middle of that window rather than under the header. */
 .about-panel:not(.is-open) + .feedback {
-  margin-top: 38px;
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  width: min(560px, calc(100vw - 48px));
+  max-width: none;
+  margin: 0;
+  transform: translate(-50%, -50%);
 }
 
 .feedback-label {
@@ -2447,24 +2460,22 @@ body.is-zoomed {
   left: var(--page-left);
 }
 
-/* The name stays where it is. The portfolio word is taller, and centering the
-   row on it would drop the name onto the back link. */
-.materials-page .header-line {
-  align-items: flex-start;
-}
-
-/* On the name's line, to its right: one big word and the same hairline arrow
-   the menu uses for a link that leaves the page. The arrow is drawn here so a
-   phone does not swap it for the emoji tile. */
-.header-line .projects-lead {
-  margin: 1px 0 0 10px;
-  color: inherit;
+/* Level with the name, at the other end of the page: one big word and the
+   same hairline arrow the menu uses for a link that leaves the page. The
+   arrow is drawn here so a phone does not swap it for the emoji tile. */
+.projects-lead {
+  position: fixed;
+  z-index: 10;
+  top: var(--page-top);
+  right: var(--page-left);
+  color: var(--ink);
   text-decoration: none;
   font-size: clamp(36px, 4.6vw, 72px);
   font-weight: 700;
   line-height: 0.85;
   letter-spacing: -0.03em;
   white-space: nowrap;
+  transition: opacity 140ms ease;
 }
 
 .projects-lead::after {
@@ -2645,17 +2656,13 @@ body.is-zoomed {
     padding-left: 16px;
   }
 
-  /* The day/night circle sits in the corner at this width, out of the line.
-     Leave it a gap so the word does not run underneath it. */
-  .materials-page .header-line {
-    align-items: center;
-    padding-right: 44px;
-  }
-
-  .header-line .projects-lead {
-    margin-top: 0;
-    margin-left: 12px;
-    font-size: clamp(22px, 6.2vw, 34px);
+  /* The header scrolls with the page at this width, and the day/night circle
+     takes the top right corner, so the word stands just inboard of it. */
+  .projects-lead {
+    position: absolute;
+    top: 16px;
+    right: calc(16px + 18px + var(--corner-gap));
+    font-size: clamp(24px, 7vw, 36px);
     line-height: 1;
   }
 
