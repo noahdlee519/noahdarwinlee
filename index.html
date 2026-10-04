@@ -13,6 +13,8 @@
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- The portrait's photograph, fetched at once rather than when its script runs. -->
+    <link rel="preload" href="/art/web/me-tiles-320.webp" as="image" type="image/webp" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -146,7 +148,7 @@
                it with the pointer, or tap it a square at a time on a phone.
                portrait.js draws it. -->
           <div class="profile-photo-frame portrait-frame">
-            <canvas id="tiles" class="tiles" data-src="/art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
+            <canvas id="tiles" class="tiles" style="width: 100%; aspect-ratio: 16 / 25" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="/art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
           </div>
           <div class="about-panel-text">
                         <p class="about-panel-bio">

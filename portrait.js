@@ -118,9 +118,12 @@
     var dpr = 1, base = 16, roots = [], leafCount = 0, running = false, visible = true;
     var cssW = 0, cssH = 0;
 
-    function node(x, y, s, g, now) {
-      var k = inksAt(x, y, s);
-      return { x: x, y: y, s: s, p: k[0], solo: k[1], g: g, kids: null, born: now, from: null, t0: 0, merge0: 0, flash: 0, hue: 0 };
+    // pre, when given, is the pair already worked out for this tile (the
+    // coarse picture comes ready-made in the page; see PRE below), so the
+    // first tiles need no photograph at all.
+    function node(x, y, s, g, now, pre) {
+      var k = pre == null ? inksAt(x, y, s) : [pre, 0];
+      return { x: x, y: y, s: s, p: k[0], solo: k[1], g: g, kids: null, born: now, from: null, t0: 0, dur: 0, merge0: 0, flash: 0, hue: 0 };
     }
 
     // As big as the column allows, and no taller than most of a window.
@@ -148,7 +151,7 @@
       leafCount = 0;
       for (var r = 0; r < ROWS; r++) {
         for (var c = 0; c < COLS; c++) {
-          roots.push(node(c * base, r * base, base, 0, now));
+          roots.push(node(c * base, r * base, base, 0, now, PRE ? PRE.charCodeAt(r * COLS + c) - 97 : null));
           leafCount++;
         }
       }
@@ -275,7 +278,7 @@
     function drawNode(n, now, parentRect) {
       var x = n.x, y = n.y, s = n.s;
       if (n.from && n.t0) {
-        var t = (now - n.t0) / SPLIT_MS;
+        var t = (now - n.t0) / (n.dur || SPLIT_MS);
         if (t >= 1) n.t0 = 0;
         else {
           var e = ease(Math.max(0, t));
@@ -319,7 +322,7 @@
       // With a mouse the loop runs while anything is split, since what is
       // split will heal; on a phone nothing heals, so it stops once the
       // last tap has finished moving.
-      if ((fine ? busy() : now < animUntil) || flashing) {
+      if ((fine && busy()) || now < animUntil || flashing) {
         requestAnimationFrame(frame);
       } else {
         running = false;
@@ -338,7 +341,7 @@
     // Pointer: interpolate between events so a fast swipe leaves no gaps.
     var last = null;
     function onMove(e) {
-      if (!started) return;
+      if (!imgReady) return;
       var rect = canvas.getBoundingClientRect();
       var px = (e.clientX - rect.left) * (cssW / rect.width);
       var py = (e.clientY - rect.top) * (cssH / rect.height);
@@ -381,16 +384,51 @@
       });
     }
 
-    var started = false;
+    // The coarse picture, one letter a tile, a to l for the twelve pairs,
+    // row by row: worked out ahead from the same photograph with the same
+    // sums, so the picture can be drawn the moment this script runs. The
+    // photograph itself is only needed to split a tile, and it loads in
+    // the meantime (the page preloads it). If the photograph changes, this
+    // code has to be worked out again; without it, the picture waits for the
+    // photograph as before.
+    var PRE = canvas.getAttribute("data-tiles") || "";
+    if (PRE.length !== COLS * ROWS || /[^a-l]/.test(PRE)) PRE = null;
+
+    // On arrival the tiles grow out of their centres in a wave from the top
+    // left, each flashing orange or blue as it lands and settling to its ink.
+    function appear() {
+      if (reduce) return;
+      var now = performance.now(), last = 0;
+      roots.forEach(function (n, i) {
+        var c = i % COLS, r = Math.floor(i / COLS);
+        var d = (c * 0.7 + r) * 26 + Math.random() * 40;
+        n.from = [n.x + n.s / 2, n.y + n.s / 2, 0];
+        n.t0 = now + d;
+        n.dur = 420;
+        n.flash = now + d;
+        n.hue = Math.random() < 0.5 ? 0 : 1;
+        last = Math.max(last, d);
+      });
+      animUntil = Math.max(animUntil, now + last + FLASH_MS);
+    }
+
+    var started = false, imgReady = false;
+    function start() {
+      if (started) return;
+      started = true;
+      layout();
+      appear();
+      kick();
+    }
     var img = new Image();
     img.decoding = "async";
     img.onload = function () {
       prep(img);
-      started = true;
-      layout();
-      kick();
+      imgReady = true;
+      start();
     };
     img.src = SRC;
+    if (PRE) start();
 
     var rw;
     addEventListener("resize", function () {
@@ -441,7 +479,7 @@
 
     if (!fine) {
       canvas.addEventListener("click", function (e) {
-        if (!started) return;
+        if (!imgReady) return;
         var rect = canvas.getBoundingClientRect();
         var px = (e.clientX - rect.left) * (cssW / rect.width);
         var py = (e.clientY - rect.top) * (cssH / rect.height);

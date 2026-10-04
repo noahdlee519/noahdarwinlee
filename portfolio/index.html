@@ -10,6 +10,8 @@
     <title>Noah Darwin Lee — Work</title>
     <meta name="description" content="Products I designed and built with AI." />
     <link rel="icon" href="../favicon.png" type="image/png" />
+    <!-- The portrait's photograph, fetched at once rather than when its script runs. -->
+    <link rel="preload" href="/art/web/me-tiles-320.webp" as="image" type="image/webp" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -252,6 +254,9 @@
 
       .tiles {
         display: block;
+        /* Hold the picture's shape before the script sizes it. */
+        width: 100%;
+        aspect-ratio: 16 / 25;
         touch-action: pan-y;
         cursor: crosshair;
         image-rendering: auto;
@@ -2616,7 +2621,7 @@
             </h1>
           </div>
           <div class="tiles-wrap">
-            <canvas id="tiles" class="tiles" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
+            <canvas id="tiles" class="tiles" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
           </div>
         </div>
 
