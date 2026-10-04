@@ -9,6 +9,7 @@
   --gc-land: #e3e3b0;
   --gc-land-hover: #f0f0cc;
   --gc-border: rgba(230, 128, 25, 0.75);
+  --gc-border-sub: rgba(230, 128, 25, 0.6);
   --gc-limb: rgba(255, 255, 255, 0.55);
   --gc-glow: rgba(255, 255, 255, 0.28);
   --gc-grat: rgba(255, 255, 255, 0.1);
@@ -32,6 +33,7 @@
   --gc-land: #34346a;
   --gc-land-hover: #45458a;
   --gc-border: rgba(0, 0, 0, 0.7);
+  --gc-border-sub: rgba(0, 0, 0, 0.5);
   --gc-limb: rgba(145, 143, 255, 0.55);
   --gc-glow: rgba(145, 143, 255, 0.3);
   --gc-grat: rgba(255, 255, 255, 0.07);
@@ -56,6 +58,7 @@
     --gc-land: #34346a;
     --gc-land-hover: #45458a;
     --gc-border: rgba(0, 0, 0, 0.7);
+    --gc-border-sub: rgba(0, 0, 0, 0.5);
     --gc-limb: rgba(145, 143, 255, 0.55);
     --gc-glow: rgba(145, 143, 255, 0.3);
     --gc-grat: rgba(255, 255, 255, 0.07);
