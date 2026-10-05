@@ -663,6 +663,12 @@ a[href="/cv/"]:active {
   padding-top: calc(var(--page-top) + 66px);
 }
 
+/* The art page has no about line, so art is the second line, one 33px step
+   under the name, and the column starts that much higher. */
+.index-page.art-page {
+  padding-top: calc(var(--page-top) + 33px);
+}
+
 @media (min-width: 901px) {
   .index-page .art-toggle {
     margin-bottom: 30px;
