@@ -1,9 +1,10 @@
 -- noahdarwinlee.com -- the message boxes on the front page (under about) and
 -- the art page. feedback.js sends to this table.
 --
--- It lives in the loretour Supabase project (oosvhhkkndesnwaekbls), where it
--- was set up on 5 October 2026. Safe to run again: the table is created only if
--- it is missing, and the policy is dropped before it is recreated.
+-- It lives in the site's own Supabase project, the one citylayoutguessr uses
+-- (kigvciyyjlgjcgnwgrwf). Paste all of this into that project's SQL Editor and
+-- press Run, once. Safe to run again: the table is created only if it is
+-- missing, and the policy is dropped before it is recreated.
 --
 -- One table, write-only from the outside: anyone may add a message, nobody may
 -- read one back through the site's key. Read them in the dashboard, under

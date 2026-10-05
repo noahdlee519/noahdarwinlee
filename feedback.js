@@ -1,12 +1,12 @@
 // The message boxes on the front page (under about) and the art page. A
-// message goes into the site_feedback table in the loretour Supabase project,
-// with the page it came from. The key below is the publishable one, meant to
+// message goes into the site_feedback table in the site's own Supabase
+// project (the one citylayoutguessr uses), with the page it came from. The key below is the publishable one, meant to
 // sit in a web page; the table's row-level security and grants let a browser
 // add a message and never read one back. The SQL is in supabase/feedback.sql.
 (function () {
   "use strict";
-  var URL = "https://oosvhhkkndesnwaekbls.supabase.co/rest/v1/site_feedback";
-  var KEY = "sb_publishable_wybrYBoJP3_-VTHS4ZKL7w_K7W5ULsX";
+  var URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/rest/v1/site_feedback";
+  var KEY = "sb_publishable_Ki-kbO5xBeMdVt3Ltv3i7A_dzQz2ivy";
   var PAGE = /^\/art(\/|$)/.test(location.pathname) ? "art" : "about";
 
   var form = document.getElementById("feedback");
