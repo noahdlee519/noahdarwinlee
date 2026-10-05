@@ -8,7 +8,7 @@
     <title>GREATERCIRCLE — Noah Darwin Lee</title>
     <meta name="description" content="An interactive globe built for anyone curious about how we fly." />
     <link rel="icon" href="../../favicon.png" type="image/png" />
-    <link rel="preload" href="../../art/web/materials/shot-greatercircle-1600.webp" as="image" type="image/webp" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -31,10 +31,24 @@
       <p class="p-meta">Globe · Flight paths around the countries you’d avoid</p>
       <p class="p-lede">An interactive globe built for anyone curious about how we fly. While standard maps draw simple straight lines, this tool calculates the true great-circle distance between any two points. Want to see how real-world routing works? Simply type your destinations, call out the countries or airspace to avoid, and watch the globe map the exact shortest route around them. It is the perfect companion for aviation geeks, passengers tired of broken seat-back maps, or anyone wanting to visualize how flights navigate around global conflict zones.</p>
 
-      <figure class="frame">
-        <div class="frame-bar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span>noahdarwinlee.com/greatercircle</span><span></span></div>
-        <img src="../../art/web/materials/shot-greatercircle-1600.webp" width="1600" height="900" alt="The GREATERCIRCLE globe, routing Seoul to Warsaw around Russia, Ukraine, North Korea and Belarus" fetchpriority="high" decoding="async" />
-      </figure>
+      <section class="shots" aria-roledescription="carousel" aria-label="Screenshots of GREATERCIRCLE">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span aria-hidden="true">noahdarwinlee.com/greatercircle</span><span class="count" aria-live="polite">1 / 4</span></div>
+          <div class="track" tabindex="0" aria-label="Screenshots; use the arrow keys to move between them">
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="1 of 4" data-cap="Seoul to Warsaw, around Russia, Ukraine, North Korea and Belarus"><img src="../../art/web/materials/shot-greatercircle-1600.webp" srcset="../../art/web/materials/shot-greatercircle-800.webp 800w, ../../art/web/materials/shot-greatercircle-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="Seoul to Warsaw, around Russia, Ukraine, North Korea and Belarus" fetchpriority="high" decoding="async" /></div>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="2 of 4" data-cap="The globe in the light theme"><img src="../../art/web/materials/shots/greatercircle-2-1600.webp" srcset="../../art/web/materials/shots/greatercircle-2-800.webp 800w, ../../art/web/materials/shots/greatercircle-2-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="The globe in the light theme" loading="lazy" decoding="async" /></div>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="3 of 4" data-cap="Dubai to Baku, around Iran"><img src="../../art/web/materials/shots/greatercircle-3-1600.webp" srcset="../../art/web/materials/shots/greatercircle-3-800.webp 800w, ../../art/web/materials/shots/greatercircle-3-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="Dubai to Baku, around Iran" loading="lazy" decoding="async" /></div>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="4 of 4" data-cap="Cape Town to Perth, around a region drawn with the pen"><img src="../../art/web/materials/shots/greatercircle-4-1600.webp" srcset="../../art/web/materials/shots/greatercircle-4-800.webp 800w, ../../art/web/materials/shots/greatercircle-4-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="Cape Town to Perth, around a region drawn with the pen" loading="lazy" decoding="async" /></div>
+          </div>
+        </div>
+        <div class="shots-foot">
+          <p class="cap">Seoul to Warsaw, around Russia, Ukraine, North Korea and Belarus</p>
+          <div class="shots-nav">
+            <button class="arrow arrow-prev" type="button" aria-label="Previous screenshot" disabled>←</button>
+            <button class="arrow arrow-next" type="button" aria-label="Next screenshot">→</button>
+          </div>
+        </div>
+      </section>
 
         <div class="notes">
                             <div class="note-col">
@@ -80,5 +94,6 @@
       <span>2026 · Noah Darwin Lee</span>
       <a href="../">noahdarwinlee.com/portfolio</a>
     </footer>
+    <script src="../project.js" defer></script>
   </body>
 </html>
