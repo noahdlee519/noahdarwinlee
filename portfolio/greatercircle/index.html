@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Unlisted, like /portfolio/ itself: only its card there links here. -->
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>GREATERCIRCLE — Noah Darwin Lee</title>
+    <meta name="description" content="An interactive globe built for anyone curious about how we fly." />
+    <link rel="icon" href="../../favicon.png" type="image/png" />
+    <link rel="preload" href="../../art/web/materials/shot-greatercircle-1600.webp" as="image" type="image/webp" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../project.css" />
+  </head>
+  <body style="--brand: #d9741a">
+    <header class="top">
+      <a href="/">Noah Darwin Lee</a>
+      <nav aria-label="Portfolio"><a href="../#work">← All work</a></nav>
+    </header>
+
+    <main class="proj">
+      <div class="p-head" style="--em: 8.6">
+        <h1 class="p-name">GREATERCIRCLE</h1>
+        <a class="go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
+      </div>
+      <p class="p-meta">Globe · Flight paths around the countries you’d avoid</p>
+      <p class="p-lede">An interactive globe built for anyone curious about how we fly. While standard maps draw simple straight lines, this tool calculates the true great-circle distance between any two points. Want to see how real-world routing works? Simply type your destinations, call out the countries or airspace to avoid, and watch the globe map the exact shortest route around them. It is the perfect companion for aviation geeks, passengers tired of broken seat-back maps, or anyone wanting to visualize how flights navigate around global conflict zones.</p>
+
+      <figure class="frame">
+        <div class="frame-bar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span><span>noahdarwinlee.com/greatercircle</span><span></span></div>
+        <img src="../../art/web/materials/shot-greatercircle-1600.webp" width="1600" height="900" alt="The GREATERCIRCLE globe, routing Seoul to Warsaw around Russia, Ukraine, North Korea and Belarus" fetchpriority="high" decoding="async" />
+      </figure>
+
+        <div class="notes">
+                            <div class="note-col">
+                              <h2>Technical details</h2>
+                              <p>
+                                The route is the classical shortest path among polygonal obstacles, carried onto the
+                                sphere: a chain of great-circle arcs that bends only at the avoided countries’ convex
+                                corners, found by A* over their tangent visibility graph, in three-dimensional unit
+                                vectors. No grid, no buffer: exact for the drawn 1:50m borders, and settled in a few
+                                hundred milliseconds in a Web Worker.
+                              </p>
+                              <p>
+                                Borders from Natural Earth; places from GeoNames and OurAirports, with Photon for the
+                                long tail. The globe is a canvas with its own projector, a few milliseconds a frame at
+                                any zoom.
+                              </p>
+                              <ul class="chips">
+                                <li>Exact shortest paths</li>
+                                <li>241 countries</li>
+                                <li>14,500 places</li>
+                                <li>Web Worker</li>
+                              </ul>
+                            </div>
+                            <div class="note-col">
+                              <h2>Inspiration</h2>
+                              <p>
+                                Seat-back flight maps often show an old route, a straight line, or a path across a country the plane will never enter. I wanted to see where a flight can really go once part of the map is closed to it.
+                              </p>
+                            </div>
+                          </div>
+
+      <div class="p-cta">
+        <a class="go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">Visit GREATERCIRCLE <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
+      </div>
+
+      <a class="next" href="../loretour/" style="--next: #2a44d6">
+        <span>Next project</span>
+        <b>loretour<i>.com</i> →</b>
+      </a>
+    </main>
+
+    <footer class="foot">
+      <span>2026 · Noah Darwin Lee</span>
+      <a href="../">noahdarwinlee.com/portfolio</a>
+    </footer>
+  </body>
+</html>

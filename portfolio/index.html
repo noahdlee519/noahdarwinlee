@@ -319,12 +319,7 @@
         cursor: pointer;
         opacity: 0;
         transform: translateY(32px);
-        transition: opacity 800ms var(--ease-out), transform 1000ms var(--ease-out), margin-bottom 620ms var(--ease-drawer);
-      }
-
-      /* An open card sits close to its panel. */
-      .card.is-open {
-        margin-bottom: 28px;
+        transition: opacity 800ms var(--ease-out), transform 1000ms var(--ease-out);
       }
 
       .card.is-in {
@@ -409,6 +404,7 @@
         color: var(--ink);
         font: inherit;
         font-size: 16px;
+        text-decoration: none;
         cursor: pointer;
       }
 
@@ -420,35 +416,10 @@
         padding-bottom: 2px;
       }
 
-      /* A plus that turns to a cross when the panel is open. */
+      /* An arrow that steps toward the project's page on hover. */
       .c-more i {
-        position: relative;
-        width: 12px;
-        height: 12px;
-        transition: transform 360ms var(--ease-out);
-      }
-
-      .c-more i::before,
-      .c-more i::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 5.25px;
-        width: 12px;
-        height: 1.5px;
-        background: currentColor;
-      }
-
-      .c-more i::after {
-        transform: rotate(90deg);
-      }
-
-      .card.is-open .c-more i {
-        transform: rotate(45deg);
-      }
-
-      .card.is-open .shot {
-        box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--brand);
+        font-style: normal;
+        transition: transform 260ms var(--ease-out);
       }
 
       /* The way to the site: a pill in the product's colour. */
@@ -481,12 +452,6 @@
         transform: scale(0.96);
       }
 
-      .go.is-big {
-        height: 60px;
-        padding: 0 26px 0 28px;
-        font-size: 20px;
-      }
-
       @media (hover: hover) and (pointer: fine) {
         .card:hover .shot img {
           transform: scale(1.025);
@@ -494,6 +459,10 @@
 
         .card:hover .c-more span {
           background-size: 100% 2px;
+        }
+
+        .card:hover .c-more i {
+          transform: translateX(4px);
         }
 
         .go:hover {
@@ -509,110 +478,6 @@
         .go:hover:active {
           transform: translateY(0) scale(0.96);
         }
-      }
-
-      /* The panel: closed, a row of no height; open, it grows to its content. */
-      .more {
-        order: var(--o);
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-rows: 0fr;
-        transition: grid-template-rows 620ms var(--ease-drawer);
-      }
-
-      .more.is-open {
-        grid-template-rows: 1fr;
-      }
-
-      .more-in {
-        min-height: 0;
-        overflow: hidden;
-      }
-
-      .more-body {
-        position: relative;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 32px clamp(28px, 4vw, 64px);
-        margin-bottom: var(--gap);
-        padding: 10px 0 clamp(40px, 6vw, 64px);
-        border-top: 1px solid var(--rule);
-        border-bottom: 1px solid var(--rule);
-        opacity: 0;
-        transform: translateY(-12px);
-        transition: opacity 400ms ease, transform 620ms var(--ease-out);
-      }
-
-      .more.is-open .more-body {
-        opacity: 1;
-        transform: none;
-        transition-delay: 120ms;
-      }
-
-      .more-text {
-        display: flex;
-        flex-direction: column;
-        gap: 28px;
-        min-width: 0;
-      }
-
-      /* The card above already shows the site, so the panel is words only:
-         how it works and where it came from, side by side. */
-      .more-text .notes {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        margin: 0;
-      }
-
-      .more-close {
-        position: absolute;
-        top: 10px;
-        right: -8px;
-        width: 40px;
-        height: 40px;
-        border: 0;
-        border-radius: 50%;
-        background: transparent;
-        color: var(--ink);
-        cursor: pointer;
-        transition: background-color 160ms ease;
-      }
-
-      .more-close::before,
-      .more-close::after {
-        content: "";
-        position: absolute;
-        left: 13px;
-        top: 19.25px;
-        width: 14px;
-        height: 1.5px;
-        background: currentColor;
-        transform: rotate(45deg);
-      }
-
-      .more-close::after {
-        transform: rotate(-45deg);
-      }
-
-      .more-close:hover {
-        background: var(--wash);
-      }
-
-      .more-label {
-        grid-column: 1 / -1;
-        min-height: 40px;
-        margin: 0 0 -8px;
-        padding: 9px 48px 0 0;
-        font-size: 15px;
-        color: var(--ink-3);
-      }
-
-      .more-label b {
-        font-weight: 500;
-        color: var(--ink);
-      }
-
-      .more-text .go {
-        align-self: flex-start;
       }
 
       /* Coming soon: a striped sheet with the site's mark cycling in it. */
@@ -664,51 +529,6 @@
         font-size: 14px;
         line-height: 1.2;
         white-space: nowrap;
-      }
-
-      /* Two notes in each project's opened panel: how it works, and where it came from. */
-      .notes {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 28px clamp(24px, 5vw, 80px);
-        margin-top: clamp(36px, 6vh, 64px);
-      }
-
-      .note-col {
-        border-top: 1px solid var(--rule);
-        padding-top: 16px;
-      }
-
-      .note-col h4 {
-        margin: 0 0 10px;
-        font-size: 21px;
-        font-weight: 600;
-        letter-spacing: -0.005em;
-      }
-
-      .note-col p {
-        margin: 0 0 12px;
-        max-width: 48ch;
-        color: var(--ink-2);
-        text-wrap: pretty;
-      }
-
-      .chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin: 4px 0 0;
-        padding: 0;
-        list-style: none;
-      }
-
-      .chips li {
-        padding: 5px 11px 6px;
-        border-radius: 999px;
-        box-shadow: inset 0 0 0 1px #cfcfcf;
-        font-size: 14px;
-        line-height: 1.2;
-        color: var(--ink);
       }
 
       /* ---------------- close ---------------- */
@@ -885,19 +705,15 @@
           order: 2;
         }
 
-        .more-text .notes {
-          grid-template-columns: minmax(0, 1fr);
-        }
       }
 
-      /* One card to a row, each panel under its own card. */
+      /* One card to a row. */
       @media (max-width: 760px) {
         .gallery {
           grid-template-columns: minmax(0, 1fr);
         }
 
-        .card,
-        .more {
+        .card {
           order: var(--om);
         }
 
@@ -914,12 +730,6 @@
 
         .top nav a:first-child {
           display: none;
-        }
-
-        .go.is-big {
-          height: 54px;
-          font-size: 18px;
-          align-self: stretch;
         }
 
         .mail {
@@ -940,8 +750,7 @@
 
         .lede .w > span,
         .hello .ln > span,
-        .card,
-        .more-body {
+        .card {
           transform: none !important;
           transition: opacity 200ms ease !important;
         }
@@ -950,7 +759,6 @@
           opacity: 1 !important;
         }
 
-        .more,
         .shot img {
           transition: none !important;
         }
@@ -1007,195 +815,48 @@
         <div class="gallery">
 
           <!-- getleggio.com -->
-          <article class="card" data-more="more-leggio" id="leggio" style="--brand: #1f4e3d; --o: 0; --om: 0">
+          <article class="card" data-href="leggio/" id="leggio" style="--brand: #1f4e3d; --o: 0; --om: 0">
             <figure class="shot"><img src="../art/web/materials/shot-leggio-800.webp" srcset="../art/web/materials/shot-leggio-800.webp 800w, ../art/web/materials/shot-leggio-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The front page of getleggio.com" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
               <h3 class="c-name"><a href="https://getleggio.com" target="_blank" rel="noopener noreferrer">getleggio<span class="tld">.com</span></a></h3>
               <a class="go" href="https://getleggio.com" target="_blank" rel="noopener noreferrer" aria-label="Visit getleggio.com">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
             </div>
             <p class="c-text">Instant, context-aware translations at your fingertips. Just hold a hotkey and select any foreign word or phrase to see its exact meaning pop up instantly. Leggio analyzes the entire sentence to ensure you get the perfect translation every single time. Supports 34 languages.</p>
-            <button class="c-more" type="button" aria-expanded="false" aria-controls="more-leggio"><span>More about it</span><i aria-hidden="true"></i></button>
+            <a class="c-more" href="leggio/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
-          <div class="more" id="more-leggio" role="region" aria-label="More about getleggio.com" style="--brand: #1f4e3d; --o: 5; --om: 5" inert>
-            <div class="more-in">
-              <div class="more-body">
-                <p class="more-label"><b>getleggio.com</b> · Chrome extension · Translation with on-device AI</p>
-                <button class="more-close" type="button" aria-label="Close"></button>
-                <div class="more-text">
-                  <div class="notes">
-                    <div class="note-col">
-                      <h4>Technical details</h4>
-                      <p>
-                        Leggio translates with the AI models built into Chrome, so the words you select are
-                        translated on your own computer, for free. You can plug in your own API key if you’d rather use a
-                        different model.
-                      </p>
-                      <p>
-                        Nothing goes to a server: no account, no analytics, no ads. Saved words stay in your
-                        browser.
-                      </p>
-                      <ul class="chips">
-                        <li>Chrome built-in AI</li>
-                        <li>On-device</li>
-                        <li>Context-aware</li>
-                        <li>Web pages + PDFs</li>
-                      </ul>
-                    </div>
-                    <div class="note-col">
-                      <h4>Inspiration</h4>
-                      <p>
-                        Reading in a language you are learning means stopping at every word you do not know, switching to a dictionary or a translation, and losing the sentence on the way back. I wanted the meaning to arrive beside the word, in the sentence it belongs to, so the reading never stops.
-                      </p>
-                    </div>
-                  </div>
-                  <a class="go is-big" href="https://getleggio.com" target="_blank" rel="noopener noreferrer">Visit getleggio.com <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- fuzhounese.org -->
-          <article class="card" data-more="more-fuzhounese" id="fuzhounese" style="--brand: #c5311d; --o: 1; --om: 10">
+          <article class="card" data-href="fuzhounese/" id="fuzhounese" style="--brand: #c5311d; --o: 1; --om: 10">
             <figure class="shot"><img src="../art/web/materials/shot-fuzhounese-800.webp" srcset="../art/web/materials/shot-fuzhounese-800.webp 800w, ../art/web/materials/shot-fuzhounese-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The front page of fuzhounese.org" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
               <h3 class="c-name"><a href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">fuzhounese<span class="tld">.org</span></a></h3>
               <a class="go" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer" aria-label="Visit fuzhounese.org">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
             </div>
             <p class="c-text">Preserving the Fuzhounese dialect. The world’s first collaborative Fuzhounese–English dictionary. With 3,790 entries and growing, we are also gathering native-speaker audio to train an AI and ensure the sound of the language is never lost.</p>
-            <button class="c-more" type="button" aria-expanded="false" aria-controls="more-fuzhounese"><span>More about it</span><i aria-hidden="true"></i></button>
+            <a class="c-more" href="fuzhounese/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
-          <div class="more" id="more-fuzhounese" role="region" aria-label="More about fuzhounese.org" style="--brand: #c5311d; --o: 6; --om: 15" inert>
-            <div class="more-in">
-              <div class="more-body">
-                <p class="more-label"><b>fuzhounese.org</b> · Dictionary · 3,790 words and a Claude assistant</p>
-                <button class="more-close" type="button" aria-label="Close"></button>
-                <div class="more-text">
-                  <div class="notes">
-                    <div class="note-col">
-                      <h4>Technical details</h4>
-                      <p>
-                        The dictionary has an assistant, powered by Claude, that answers questions in plain
-                        language: how to say “have you eaten?”, what a word means, or what tone sandhi is. It
-                        sits beside search, so a learner who doesn’t know the spelling can still find the
-                        word.
-                      </p>
-                      <ul class="chips">
-                        <li>Claude</li>
-                        <li>Search across 3 scripts</li>
-                        <li>Native-speaker audio</li>
-                      </ul>
-                    </div>
-                    <div class="note-col">
-                      <h4>Inspiration</h4>
-                      <p>
-                        Fuzhounese is the dialect my grandparents mainly speak, and there was no English dictionary of it online. I wanted a place to keep its words and the voices that say them, and to make it something anyone could learn from.
-                      </p>
-                    </div>
-                  </div>
-                  <a class="go is-big" href="https://fuzhounese.org" target="_blank" rel="noopener noreferrer">Visit fuzhounese.org <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- GREATERCIRCLE -->
-          <article class="card" data-more="more-greatercircle" id="greatercircle" style="--brand: #d9741a; --o: 10; --om: 20">
+          <article class="card" data-href="greatercircle/" id="greatercircle" style="--brand: #d9741a; --o: 10; --om: 20">
             <figure class="shot"><img src="../art/web/materials/shot-greatercircle-800.webp" srcset="../art/web/materials/shot-greatercircle-800.webp 800w, ../art/web/materials/shot-greatercircle-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The GREATERCIRCLE globe, routing Seoul to Warsaw around Russia, Ukraine, North Korea and Belarus" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
               <h3 class="c-name"><a href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">GREATERCIRCLE</a></h3>
               <a class="go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer" aria-label="Visit GREATERCIRCLE">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
             </div>
             <p class="c-text">An interactive globe built for anyone curious about how we fly. While standard maps draw simple straight lines, this tool calculates the true great-circle distance between any two points. Want to see how real-world routing works? Simply type your destinations, call out the countries or airspace to avoid, and watch the globe map the exact shortest route around them. It is the perfect companion for aviation geeks, passengers tired of broken seat-back maps, or anyone wanting to visualize how flights navigate around global conflict zones.</p>
-            <button class="c-more" type="button" aria-expanded="false" aria-controls="more-greatercircle"><span>More about it</span><i aria-hidden="true"></i></button>
+            <a class="c-more" href="greatercircle/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
-          <div class="more" id="more-greatercircle" role="region" aria-label="More about GREATERCIRCLE" style="--brand: #d9741a; --o: 15; --om: 25" inert>
-            <div class="more-in">
-              <div class="more-body">
-                <p class="more-label"><b>GREATERCIRCLE</b> · Globe · Flight paths around the countries you’d avoid</p>
-                <button class="more-close" type="button" aria-label="Close"></button>
-                <div class="more-text">
-                  <div class="notes">
-                    <div class="note-col">
-                      <h4>Technical details</h4>
-                      <p>
-                        The route is the classical shortest path among polygonal obstacles, carried onto the
-                        sphere: a chain of great-circle arcs that bends only at the avoided countries’ convex
-                        corners, found by A* over their tangent visibility graph, in three-dimensional unit
-                        vectors. No grid, no buffer: exact for the drawn 1:50m borders, and settled in a few
-                        hundred milliseconds in a Web Worker.
-                      </p>
-                      <p>
-                        Borders from Natural Earth; places from GeoNames and OurAirports, with Photon for the
-                        long tail. The globe is a canvas with its own projector, a few milliseconds a frame at
-                        any zoom.
-                      </p>
-                      <ul class="chips">
-                        <li>Exact shortest paths</li>
-                        <li>241 countries</li>
-                        <li>14,500 places</li>
-                        <li>Web Worker</li>
-                      </ul>
-                    </div>
-                    <div class="note-col">
-                      <h4>Inspiration</h4>
-                      <p>
-                        Seat-back flight maps often show an old route, a straight line, or a path across a country the plane will never enter. I wanted to see where a flight can really go once part of the map is closed to it.
-                      </p>
-                    </div>
-                  </div>
-                  <a class="go is-big" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">Visit GREATERCIRCLE <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- loretour.com -->
-          <article class="card" data-more="more-loretour" id="loretour" style="--brand: #2a44d6; --o: 11; --om: 30">
+          <article class="card" data-href="loretour/" id="loretour" style="--brand: #2a44d6; --o: 11; --om: 30">
             <figure class="shot"><img src="../art/web/materials/shot-loretour-800.webp" srcset="../art/web/materials/shot-loretour-800.webp 800w, ../art/web/materials/shot-loretour-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The front page of loretour.com" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
               <h3 class="c-name"><a href="https://loretour.com" target="_blank" rel="noopener noreferrer">loretour<span class="tld">.com</span></a></h3>
               <a class="go" href="https://loretour.com" target="_blank" rel="noopener noreferrer" aria-label="Visit loretour.com">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
             </div>
             <p class="c-text">Uncover the hidden history of Manhattan, building by building. Explore an interactive map of over 45,000 structures to instantly unlock their lore. Tap any building to dive into deep historical timelines, verified archival photos, crowdsourced visitor notes, and an immersive 3D view.</p>
-            <button class="c-more" type="button" aria-expanded="false" aria-controls="more-loretour"><span>More about it</span><i aria-hidden="true"></i></button>
+            <a class="c-more" href="loretour/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
-          <div class="more" id="more-loretour" role="region" aria-label="More about loretour.com" style="--brand: #2a44d6; --o: 16; --om: 35" inert>
-            <div class="more-in">
-              <div class="more-body">
-                <p class="more-label"><b>loretour.com</b> · Map · Every building in Manhattan</p>
-                <button class="more-close" type="button" aria-label="Close"></button>
-                <div class="more-text">
-                  <div class="notes">
-                    <div class="note-col">
-                      <h4>Technical details</h4>
-                      <p>
-                        Footprints, roof heights and years come from NYC Open Data. Satellite and 3D views come
-                        from Google’s Photorealistic 3D Tiles, and archive photos open on Urban Archive.
-                      </p>
-                      <p>
-                        The record started with researched entries for buildings in every Manhattan
-                        neighborhood, drawn from Wikipedia and the city’s building historians. Anyone signed in
-                        can add to it.
-                      </p>
-                      <ul class="chips">
-                        <li>45,000 buildings</li>
-                        <li>NYC Open Data</li>
-                        <li>3D Tiles</li>
-                        <li>Cited sources</li>
-                      </ul>
-                    </div>
-                    <div class="note-col">
-                      <h4>Inspiration</h4>
-                      <p>
-                        Walk past almost any building in New York and there is no way to find out what happened inside it. I wanted a map where every building has a record: what it was, who was there, and what it saw.
-                      </p>
-                    </div>
-                  </div>
-                  <a class="go is-big" href="https://loretour.com" target="_blank" rel="noopener noreferrer">Visit loretour.com <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
-                </div>
-              </div>
-            </div>
-          </div>
 
 
           <!-- Coming soon: two tools for finance. Nothing to open yet. -->
@@ -1375,60 +1036,17 @@
         })();
 
         /* ======================= the work =======================
-           A card opens its panel; one panel is open at a time. A click
-           anywhere on the card opens it, except on its links, which go to
-           the site. */
-        (function () {
-          var cards = $$(".card[data-more]");
-          function setOpen(card, open) {
-            var panel = document.getElementById(card.getAttribute("data-more"));
-            card.classList.toggle("is-open", open);
-            panel.classList.toggle("is-open", open);
-            panel.inert = !open;
-            $(".c-more", card).setAttribute("aria-expanded", String(open));
-            $(".c-more span", card).textContent = open ? "Close" : "More about it";
-            return panel;
-          }
-          function show(panel) {
-            // Once the panel has grown, bring it into view if most of it is
-            // below the window.
-            setTimeout(function () {
-              var r = panel.getBoundingClientRect();
-              if (r.top > innerHeight * 0.55 || r.bottom > innerHeight + r.height * 0.5) {
-                scrollTo({ top: scrollY + r.top - 24, behavior: reduce ? "auto" : "smooth" });
-              }
-            }, reduce ? 0 : 640);
-          }
-          cards.forEach(function (card) {
-            card.addEventListener("click", function (e) {
-              if (e.target.closest("a")) return;
-              var open = !card.classList.contains("is-open");
-              cards.forEach(function (c) {
-                if (c !== card && c.classList.contains("is-open")) setOpen(c, false);
-              });
-              var panel = setOpen(card, open);
-              if (open) show(panel);
-            });
+           A card goes to its project's page: a click anywhere on it does
+           what its "More about it" link does, except on the links to the
+           site itself, or when the click ends a selection of its text. */
+        $$(".card[data-href]").forEach(function (card) {
+          card.addEventListener("click", function (e) {
+            if (e.target.closest("a") || String(getSelection()).length) return;
+            var href = card.getAttribute("data-href");
+            if (e.metaKey || e.ctrlKey) window.open(href, "_blank", "noopener");
+            else location.href = href;
           });
-          $$(".more-close").forEach(function (b) {
-            b.addEventListener("click", function () {
-              var panel = b.closest(".more");
-              var card = $('.card[data-more="' + panel.id + '"]');
-              setOpen(card, false);
-              $(".c-more", card).focus({ preventScroll: true });
-              var r = card.getBoundingClientRect();
-              if (r.top < 0) scrollTo({ top: scrollY + r.top - 24, behavior: reduce ? "auto" : "smooth" });
-            });
-          });
-          addEventListener("keydown", function (e) {
-            if (e.key !== "Escape") return;
-            var card = $(".card.is-open");
-            if (card) {
-              setOpen(card, false);
-              $(".c-more", card).focus({ preventScroll: true });
-            }
-          });
-        })();
+        });
 
         /* ======================= contact ======================= */
         var copyBtn = $("#copy");
