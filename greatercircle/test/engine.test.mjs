@@ -305,3 +305,98 @@ scenario("Taipei", "London", ["China", "Russia", "India", "Pakistan", "Iran", "A
 scenario("Moscow", "Tokyo", ["Russia"], { status: "inside" });
 scenario("Maseru", "Nairobi", ["South Africa"], { status: "none" });
 scenario("Johannesburg", "Tokyo", ["Indonesia", "Australia", "India", "China", "Russia", "Brazil", "Canada", "United States", "Greenland", "Norway", "Philippines", "Vietnam", "Thailand", "Myanmar", "Malaysia"], { status: "done", maxRatio: 2, maxMs: 15000 });
+
+// ---- drawn regions: turned inside out, and grown by a buffer
+
+const poly = (id, coords, props = {}) => ({ type: "Feature", id, properties: { name: id, ...props }, geometry: { type: "Polygon", coordinates: [coords.concat([coords[0]])] } });
+const V = (lon, lat) => G.toVec(lon, lat);
+// Angular distance from p to the arc a–b.
+function distToArc(p, a, b) {
+  const n = G.normalize([a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]);
+  const d = p[0] * n[0] + p[1] * n[1] + p[2] * n[2];
+  const c = G.normalize([p[0] - d * n[0], p[1] - d * n[1], p[2] - d * n[2]]);
+  if (Math.abs(G.angleBetween(a, c) + G.angleBetween(c, b) - G.angleBetween(a, b)) < 1e-9) return Math.asin(Math.min(1, Math.abs(d)));
+  return Math.min(G.angleBetween(p, a), G.angleBetween(p, b));
+}
+function routePoints(route, step = 0.002) {
+  const pts = [];
+  for (let i = 0; i + 1 < route.waypoints.length; i++) pts.push(...G.sampleArc(route.waypoints[i], route.waypoints[i + 1], step));
+  return pts;
+}
+const SQUARE = [[0, 0], [10, 0], [10, 10], [0, 10]];
+const squareEdges = SQUARE.map((p, i) => [V(...p), V(...SQUARE[(i + 1) % 4])]);
+const distToSquare = (p) => Math.min(...squareEdges.map(([a, b]) => distToArc(p, a, b)));
+
+test("an inverted region is everything outside its ring, whichever way it was drawn", () => {
+  for (const ring of [SQUARE, SQUARE.slice().reverse()]) {
+    const obs = G.buildObstacles([poly("r1", ring, { invert: true })]);
+    assert.deepEqual(G.featuresContaining(obs, V(5, 5)), [], "inside the ring is free");
+    assert.deepEqual(G.featuresContaining(obs, V(30, 5)), [0], "outside it is avoided");
+    assert.deepEqual(G.featuresContaining(obs, V(-150, -40)), [0], "far away too");
+    const free = G.findRoute(obs, V(2, 2), V(8, 8));
+    assert.equal(free.status, "done");
+    assert.equal(free.waypoints.length, 2, "two points inside see each other");
+    const out = G.findRoute(obs, V(2, 2), V(30, 5));
+    assert.equal(out.status, "inside");
+    // the same ring not inverted is the square itself, as before
+    const plain = G.buildObstacles([poly("r1", ring)]);
+    assert.deepEqual(G.featuresContaining(plain, V(5, 5)), [0]);
+    assert.deepEqual(G.featuresContaining(plain, V(30, 5)), []);
+  }
+});
+
+test("inside an inverted L, the route bends round the inner corner and stays in the L", () => {
+  const L = [[0, 0], [20, 0], [20, 6], [6, 6], [6, 20], [0, 20]];
+  const lFeature = poly("L", L.slice().reverse()); // clockwise, so d3 reads it as the L itself
+  for (const ring of [L, L.slice().reverse()]) {
+    const obs = G.buildObstacles([poly("r1", ring, { invert: true })]);
+    const r = G.findRoute(obs, V(18, 3), V(3, 18));
+    assert.equal(r.status, "done");
+    assert.ok(r.waypoints.length >= 3, "bends at least once");
+    const corner = r.waypoints.slice(1, -1).map(G.toLonLat);
+    assert.ok(corner.some(([lon, lat]) => Math.abs(lon - 6) < 1e-6 && Math.abs(lat - 6) < 1e-6), "at the L's inner corner " + JSON.stringify(corner));
+    for (const p of routePoints(r)) assert.ok(d3.geoContains(lFeature, G.toLonLat(p)) || G.angleBetween(p, V(6, 6)) < 1e-6, "stays in the L at " + G.toLonLat(p));
+  }
+});
+
+test("buffer pieces are small, clockwise for d3, and cover the ring's edges and corners", () => {
+  const rings = G.bufferRings(SQUARE, 200);
+  assert.equal(rings.length, 8, "a disc per corner and a strip per edge");
+  for (const r of rings) {
+    assert.ok(d3.geoArea({ type: "Polygon", coordinates: [r] }) < 2 * Math.PI, "clockwise: d3 sees the small side");
+    assert.deepEqual(r[0], r[r.length - 1], "closed");
+  }
+  assert.deepEqual(G.bufferRings(SQUARE, 0), []);
+  // Every point within 200 km of the square's edge is in some piece.
+  const pieces = rings.map((r) => ({ type: "Feature", geometry: { type: "Polygon", coordinates: [r] } }));
+  const rnd = rand(7);
+  for (let i = 0; i < 3000; i++) {
+    const p = [-3 + rnd() * 16, -3 + rnd() * 16];
+    const d = distToSquare(V(...p)) * KM;
+    if (d < 199.5) assert.ok(pieces.some((f) => d3.geoContains(f, p)), `point ${p} (${d.toFixed(1)} km off the edge) is covered`);
+  }
+});
+
+test("a buffered region keeps the route at least the buffer away, and no further than it must", () => {
+  for (const km of [100, 250]) {
+    const feats = [poly("r1", SQUARE)].concat(G.bufferRings(SQUARE, km).map((r, k) => ({ type: "Feature", id: "r1~" + k, properties: { name: "r1" }, geometry: { type: "Polygon", coordinates: [r] } })));
+    const obs = G.buildObstacles(feats);
+    const r = G.findRoute(obs, V(-12, 4), V(22, 6));
+    assert.equal(r.status, "done");
+    const dmin = Math.min(...routePoints(r).map((p) => distToSquare(p) * KM));
+    assert.ok(dmin >= km - 0.01, `${km} km buffer: the route comes no nearer than ${dmin.toFixed(2)} km`);
+    assert.ok(dmin <= km + 6, `${km} km buffer: it hugs the buffer (${dmin.toFixed(2)} km)`);
+    // a point within the buffer is reported as inside the region's pieces
+    const inside = G.findRoute(obs, V(-0.5, 5), V(22, 6));
+    assert.equal(inside.status, "inside");
+  }
+});
+
+test("a buffer on an inverted region shrinks the room inside it", () => {
+  const BIG = [[0, 0], [20, 0], [20, 20], [0, 20]];
+  const feats = [poly("r1", BIG, { invert: true })].concat(G.bufferRings(BIG, 150).map((r, k) => ({ type: "Feature", id: "r1~" + k, properties: { name: "r1" }, geometry: { type: "Polygon", coordinates: [r] } })));
+  const obs = G.buildObstacles(feats);
+  assert.equal(G.findRoute(obs, V(5, 5), V(15, 15)).status, "done", "well inside: free");
+  assert.equal(G.findRoute(obs, V(0.8, 10), V(15, 15)).status, "inside", "within 150 km of the edge, inside: blocked");
+  assert.equal(G.findRoute(obs, V(30, 10), V(15, 15)).status, "inside", "outside: blocked");
+});

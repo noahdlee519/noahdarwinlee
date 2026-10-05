@@ -306,6 +306,84 @@ body.gc-page {
 .gc-chip-region .gc-chip-name {
   cursor: text;
 }
+.gc-chip-region .gc-chip-pre {
+  color: var(--gc-muted);
+  font-size: 12px;
+}
+.gc-chip-region .gc-chip-invert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+.gc-chip-region .gc-chip-invert:hover,
+.gc-chip-region .gc-chip-invert[aria-pressed="true"] {
+  opacity: 1;
+}
+
+/* The buffer round drawn regions: a label and its value, a thin line with a
+   round handle in the panel's ink. */
+.gc-buffer {
+  margin: 12px 0 0;
+}
+.gc-buffer[hidden] {
+  display: none;
+}
+.gc-buffer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--gc-muted);
+  font-size: 13px;
+}
+.gc-buffer-head output {
+  color: var(--ink);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.gc-buffer input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 2px 0 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.gc-buffer input[type="range"]::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--ink);
+}
+.gc-buffer input[type="range"]::-moz-range-track {
+  height: 1px;
+  background: var(--ink);
+}
+.gc-buffer input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.gc-buffer input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.gc-buffer input[type="range"]:focus {
+  outline: none;
+}
+.gc-buffer input[type="range"]:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
 .gc-chip-region input {
   width: 9ch;
   padding: 0;

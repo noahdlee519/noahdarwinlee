@@ -160,18 +160,22 @@
       var polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates]
         : f.geometry.type === "MultiPolygon" ? f.geometry.coordinates : [];
       var featIndex = feats.length;
+      // An inverted feature is the far side of its rings: everything but
+      // what they enclose (a drawn region turned inside out).
+      var invert = !!(f.properties && f.properties.invert);
       feats.push({ id: f.id, name: (f.properties && f.properties.name) || String(f.id), index: featIndex });
       for (var pi = 0; pi < polys.length; pi++) {
         var polyIndex = polygons.length;
-        polygons.push({ feature: featIndex, exterior: -1, holes: [] });
+        polygons.push({ feature: featIndex, exterior: -1, holes: [], inverted: invert });
         for (var ri = 0; ri < polys[pi].length; ri++) {
           var ring = cleanRing(polys[pi][ri]);
           if (ring.length < 3) continue;
           var isHole = ri > 0;
           // Wind it: exterior rings with the inside on the left, holes with
-          // the obstacle (outside the hole) on the left.
+          // the obstacle (outside the hole) on the left. The inside is the
+          // smaller side of the ring, or for an inverted feature the larger.
           var area = sphericalSignedArea(ring.vecs);
-          if ((area < 0) !== isHole) {
+          if ((area < 0) !== (isHole !== invert)) {
             ring.vecs.reverse(); ring.cut.reverse();
           }
           var start = X.length;
@@ -729,7 +733,8 @@
     for (var pi = 0; pi < obs.polygons.length; pi++) {
       var poly = obs.polygons[pi];
       var ext = obs.rings[poly.exterior];
-      if (pointInRing(obs, ext, px, py, pz) !== 1) continue;
+      var inExt = pointInRing(obs, ext, px, py, pz); // 1 inside the smaller side, 0 outside, -1 on the line
+      if (poly.inverted ? inExt !== 0 : inExt !== 1) continue;
       var inHole = false;
       for (var h = 0; h < poly.holes.length; h++) {
         if (pointInRing(obs, obs.rings[poly.holes[h]], px, py, pz) === 1) { inHole = true; break; }
@@ -737,6 +742,75 @@
       if (!inHole && out.indexOf(poly.feature) < 0) out.push(poly.feature);
     }
     return out;
+  }
+
+  /* The pieces that, together with a ring's region, make the region grown
+     by km: a disc round every corner and a strip along every edge, each a
+     polygon of great-circle arcs a little outside the true distance, so the
+     route keeps at least km away. Their union with the region is the
+     region's buffer exactly, convex or not, and also for an inverted region
+     (everything outside the ring), whose buffer eats into the ring. They
+     overlap one another and the region, which the search allows, as it
+     allows neighbouring countries. coords: [lon, lat] points of the ring,
+     closed or not. Returns closed rings of [lon, lat], each wound clockwise
+     about its own small side, as d3 draws them. */
+  var BUFFER_STEP_KM = 100, BUFFER_DISC_SIDES = 24;
+  function bufferRings(coords, km) {
+    if (!(km > 0)) return [];
+    var V = [];
+    for (var i = 0; i < coords.length; i++) {
+      var v = toVec(coords[i][0], coords[i][1]);
+      if (V.length && angleBetween(V[V.length - 1], v) < SAME_POINT) continue;
+      V.push(v);
+    }
+    if (V.length > 1 && angleBetween(V[0], V[V.length - 1]) < SAME_POINT) V.pop();
+    if (V.length < 2) return [];
+    // Half a kilometre more along the edges, and the discs drawn round a
+    // circle a kilometre wider still: a strip's corner (which lies on its
+    // disc's circle) is then inside the disc, not on its edge.
+    var rho = (km + 0.5) / EARTH_RADIUS_KM;
+    var rDisc = (km + 1) / EARTH_RADIUS_KM / Math.cos(Math.PI / BUFFER_DISC_SIDES);
+    var out = [];
+    var emit = function (vecs) {
+      if (sphericalSignedArea(vecs) > 0) vecs.reverse(); // clockwise, as d3 has it
+      var ring = vecs.map(toLonLat);
+      ring.push(ring[0].slice());
+      out.push(ring);
+    };
+    for (var k = 0; k < V.length; k++) {
+      var c = V[k];
+      var ref = Math.abs(c[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+      var e1 = normalize(cross(c, ref)), e2 = cross(c, e1);
+      var disc = [];
+      for (var t = 0; t < BUFFER_DISC_SIDES; t++) {
+        var th = (2 * Math.PI * t) / BUFFER_DISC_SIDES, ct = Math.cos(th), st = Math.sin(th);
+        var cr = Math.cos(rDisc), sr = Math.sin(rDisc);
+        disc.push([cr * c[0] + sr * (ct * e1[0] + st * e2[0]), cr * c[1] + sr * (ct * e1[1] + st * e2[1]), cr * c[2] + sr * (ct * e1[2] + st * e2[2])]);
+      }
+      emit(disc);
+      var a = c, b = V[(k + 1) % V.length];
+      var L = angleBetween(a, b);
+      if (L < SAME_POINT) continue;
+      var n = normalize(cross(a, b));
+      var segs = Math.max(1, Math.ceil((L * EARTH_RADIUS_KM) / BUFFER_STEP_KM));
+      var left = [], right = [];
+      for (var j = 0; j <= segs; j++) {
+        var q = sampleAt(a, b, L, j / segs);
+        var cr2 = Math.cos(rho), sr2 = Math.sin(rho);
+        left.push([cr2 * q[0] + sr2 * n[0], cr2 * q[1] + sr2 * n[1], cr2 * q[2] + sr2 * n[2]]);
+        right.push([cr2 * q[0] - sr2 * n[0], cr2 * q[1] - sr2 * n[1], cr2 * q[2] - sr2 * n[2]]);
+      }
+      emit(left.concat(right.reverse()));
+    }
+    return out;
+  }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  // The point a fraction t of the way along the arc from a to b, L long.
+  function sampleAt(a, b, L, t) {
+    if (t <= 0) return a.slice();
+    if (t >= 1) return b.slice();
+    var s = Math.sin(L), p = Math.sin((1 - t) * L) / s, q = Math.sin(t * L) / s;
+    return normalize([p * a[0] + q * b[0], p * a[1] + q * b[1], p * a[2] + q * b[2]]);
   }
 
   // ------------------------------------------------------------- the search
@@ -1019,6 +1093,7 @@
 
   return {
     EARTH_RADIUS_KM: EARTH_RADIUS_KM,
+    bufferRings: bufferRings,
     toVec: toVec, toLonLat: toLonLat, angleBetween: angleBetween, normalize: normalize,
     sampleArc: sampleArc, sphereDistanceKm: sphereDistanceKm, ellipsoidDistanceKm: ellipsoidDistanceKm,
     sphericalSignedArea: sphericalSignedArea,

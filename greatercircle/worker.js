@@ -44,15 +44,23 @@ function init(m) {
 
 /* The obstacles for a request: the chosen countries, and any regions drawn
    on the globe, which arrive as rings of [lon, lat] with an id and a name. */
+/* Drawn regions come as { id, name, ring, inverted, bufferKm }: the ring's
+   smaller side is the region, or everything else when it is inverted, and a
+   buffer adds the discs and strips that grow it by that distance (their ids
+   are the region's with "~" and a number, so the page can tell whose they
+   are). */
 function obstaclesFor(ids, regions) {
   regions = regions || [];
-  var key = ids.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + r.ring.length + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|");
+  var key = ids.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + (r.inverted ? "i" : "") + ":" + (r.bufferKm || 0) + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|");
   for (var i = 0; i < cache.length; i++) if (cache[i].key === key) return cache[i].obs;
   var feats = ids.map(function (id) { return byId.get(String(id)); }).filter(Boolean);
   regions.forEach(function (r) {
     var ring = r.ring.slice();
     if (ring.length && (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])) ring.push(ring[0]);
-    feats.push({ type: "Feature", id: r.id, properties: { name: r.name }, geometry: { type: "Polygon", coordinates: [ring] } });
+    feats.push({ type: "Feature", id: r.id, properties: { name: r.name, invert: !!r.inverted }, geometry: { type: "Polygon", coordinates: [ring] } });
+    G.bufferRings(ring, r.bufferKm || 0).forEach(function (piece, k) {
+      feats.push({ type: "Feature", id: r.id + "~" + k, properties: { name: r.name }, geometry: { type: "Polygon", coordinates: [piece] } });
+    });
   });
   var obs = G.buildObstacles(feats);
   cache.push({ key: key, obs: obs });
