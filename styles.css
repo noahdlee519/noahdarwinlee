@@ -1023,6 +1023,24 @@ a[href="/cv/"]:active {
   font-weight: 400;
 }
 
+/* The art page has the same box, for when the gallery is folded away and the
+   page is empty again: hidden while the pictures are out, and in the middle
+   of the window, as on the front page, when they are not. */
+.art-gallery:not(.is-collapsed) ~ .feedback {
+  display: none;
+}
+
+.art-gallery.is-collapsed ~ .feedback {
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  width: min(560px, calc(100vw - 48px));
+  max-width: none;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
 /* "art" in the row of links jumps here; stop short of the name over the top. */
 .about-panel .art-gallery {
   scroll-margin-top: 100px;

@@ -374,6 +374,17 @@
         <a href="mailto:noahlee519@gmail.com">email</a>
         <a href="/cv/">cv</a>
       </nav>
+      <!-- The same message box as the front page, shown only with the
+           gallery folded away; feedback.js sends it to the same table. -->
+      <form class="feedback" id="feedback" novalidate>
+        <label class="feedback-label" for="feedback-message">Something to say about the site?</label>
+        <textarea id="feedback-message" name="message" rows="3" maxlength="2000" required placeholder="No name or email needed."></textarea>
+        <input class="feedback-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="feedback-row">
+          <button class="feedback-send" type="submit">send</button>
+          <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
       <!-- The last line of the page, whatever is open or shut. -->
       <footer class="site-foot">
         2026 noah darwin lee | <a href="/terms/">terms</a> |
@@ -386,6 +397,7 @@
     <script src="/carousel.js" defer></script>
     <script src="/lightbox.js" defer></script>
     <script src="/art-toggle.js" defer></script>
+    <script src="/feedback.js" defer></script>
     <script src="/theme.js" defer></script>
   </body>
 </html>
