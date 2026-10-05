@@ -1,12 +1,13 @@
-// The message box on the front page. A message goes into the feedback table
-// in the site's Supabase project, the same one citylayoutguessr uses. The key
-// below is the publishable one, meant to sit in a web page; the table's
-// row-level security lets a browser add a message and never read one back.
-// The SQL that sets the table up is in supabase/feedback.sql.
+// The message boxes on the front page (under about) and the art page. A
+// message goes into the site_feedback table in the loretour Supabase project,
+// with the page it came from. The key below is the publishable one, meant to
+// sit in a web page; the table's row-level security and grants let a browser
+// add a message and never read one back. The SQL is in supabase/feedback.sql.
 (function () {
   "use strict";
-  var URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/rest/v1/feedback";
-  var KEY = "sb_publishable_Ki-kbO5xBeMdVt3Ltv3i7A_dzQz2ivy";
+  var URL = "https://oosvhhkkndesnwaekbls.supabase.co/rest/v1/site_feedback";
+  var KEY = "sb_publishable_wybrYBoJP3_-VTHS4ZKL7w_K7W5ULsX";
+  var PAGE = /^\/art(\/|$)/.test(location.pathname) ? "art" : "about";
 
   var form = document.getElementById("feedback");
   if (!form) return;
@@ -46,7 +47,7 @@
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
-      body: JSON.stringify({ message: message.slice(0, 2000) }),
+      body: JSON.stringify({ page: PAGE, message: message.slice(0, 2000) }),
     })
       .then(function (r) {
         if (!r.ok) throw new Error(String(r.status));
