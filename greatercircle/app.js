@@ -20,7 +20,8 @@
   var state = {
     a: null, b: null,          // { lon, lat, label }
     avoid: new Map(),          // feature id -> name
-    regions: [],               // drawn regions to avoid: { id, name, kind, points | center+radiusKm }
+    regions: [],               // drawn regions to avoid: { id, name, kind, points | center+radiusKm, inverted }
+    bufferKm: 0,               // how far to keep from every drawn region's edge
     units: "km",
     result: null,              // the last answer from the worker
     pendingId: 0,              // the request we are waiting on, or 0
@@ -1111,6 +1112,8 @@
     writeUrl();
     scheduleRender("full");
   }
+  var INVERT_ICON_OFF = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>';
+  var INVERT_ICON_ON = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M2.6 2.6h18.8v18.8H2.6z M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z"/></svg>';
   function renderChips() {
     var ul = $("chips");
     ul.innerHTML = "";
@@ -1126,7 +1129,7 @@
     });
     state.regions.forEach(function (r) {
       var li = document.createElement("li");
-      li.className = "gc-chip gc-chip-region" + (r === selected ? " is-selected" : "");
+      li.className = "gc-chip gc-chip-region" + (r === selected ? " is-selected" : "") + (r.inverted ? " is-inverted" : "");
       li.dataset.region = r.id;
       li.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l3.5-.8L19 7.7a2 2 0 0 0-2.8-2.8L4.8 16.4z"/></svg>';
       var name = document.createElement("span");
@@ -1139,13 +1142,25 @@
         inp.addEventListener("blur", done);
         li.replaceChild(inp, name); inp.focus(); inp.select();
       });
+      if (r.inverted) { var pre = document.createElement("span"); pre.className = "gc-chip-pre"; pre.textContent = "outside"; li.appendChild(pre); }
       li.appendChild(name);
+      // Which side is avoided: the region itself (its inside filled), or
+      // everything outside it (the outside filled). A click turns it over.
+      var inv = document.createElement("button");
+      inv.type = "button"; inv.className = "gc-chip-invert";
+      inv.setAttribute("aria-pressed", String(!!r.inverted));
+      inv.setAttribute("aria-label", "Avoid everywhere outside " + r.name + " instead");
+      inv.title = r.inverted ? "Avoiding everywhere outside it: click to avoid the region itself" : "Invert: avoid everywhere outside it instead";
+      inv.innerHTML = r.inverted ? INVERT_ICON_ON : INVERT_ICON_OFF;
+      inv.addEventListener("click", function () { r.inverted = !r.inverted; regionsChanged(); });
+      li.appendChild(inv);
       var x = document.createElement("button");
       x.type = "button"; x.setAttribute("aria-label", "Remove " + r.name); x.textContent = "×";
       x.addEventListener("click", function () { removeRegion(r); });
       li.appendChild(x);
       ul.appendChild(li);
     });
+    syncBuffer();
     if (state.avoid.size + state.regions.length > 1) {
       var li2 = document.createElement("li");
       var b = document.createElement("button");
@@ -1472,18 +1487,41 @@
     var l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
     return [((l2 * 180 / Math.PI + 540) % 360) - 180, p2 * 180 / Math.PI];
   }
+  /* A region's ring, wound so that it encloses the smaller of the two
+     areas its outline divides the globe into: clockwise, as d3 reads it.
+     An outline drawn the other way round would otherwise enclose all the
+     rest of the globe. */
   function regionRing(r) {
+    var pts;
     if (r.kind === "circle") {
-      var pts = [];
+      pts = [];
       for (var i = 0; i < 72; i++) pts.push(destination(r.center[0], r.center[1], i * 5, r.radiusKm));
-      return pts;
-    }
-    return r.points;
+    } else pts = r.points;
+    return smallSide(pts);
   }
+  function smallSide(pts) {
+    return d3.geoArea({ type: "Polygon", coordinates: [pts.concat([pts[0]])] }) > 2 * Math.PI ? pts.slice().reverse() : pts;
+  }
+  /* What is avoided, for drawing: the smaller side, or for an inverted
+     region everything but it. */
   function regionPolygon(r) {
     var ring = regionRing(r).slice();
+    if (r.inverted) ring.reverse();
     ring.push(ring[0]);
     return { type: "Polygon", coordinates: [ring] };
+  }
+  /* The buffer round a region: the discs and strips that grow it (see
+     bufferRings in the engine), drawn as one shape; cached per region. */
+  var bufferCache = new Map();
+  function bufferShape(r) {
+    if (!(state.bufferKm > 0)) return null;
+    var ring = regionRing(r);
+    var key = state.bufferKm.toFixed(2) + "|" + ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";");
+    var hit = bufferCache.get(r.id);
+    if (hit && hit.key === key) return hit.shape;
+    var shape = { type: "MultiPolygon", coordinates: G.bufferRings(ring, state.bufferKm).map(function (rg) { return [rg]; }) };
+    bufferCache.set(r.id, { key: key, shape: shape });
+    return shape;
   }
 
   /* Is a ring usable: at least three corners, no edge crossing another, and
@@ -1623,6 +1661,14 @@
   function drawRegions() {
     if (!state.regions.length) return;
     ctx.lineJoin = "round";
+    // The buffers, under the regions, in a lighter wash: one path of
+    // pieces wound alike, so where they overlap they fill once.
+    state.regions.forEach(function (r) {
+      var b = bufferShape(r);
+      if (!b) return;
+      ctx.beginPath(); path(b);
+      ctx.fillStyle = pal["region-fill"]; ctx.fill();
+    });
     state.regions.forEach(function (r) {
       var poly = regionPolygon(r);
       ctx.beginPath(); path(poly);
@@ -1781,7 +1827,7 @@
       var id = ++seq;
       state.pendingId = id;
       worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()),
-        regions: state.regions.map(function (r) { return { id: r.id, name: r.name, ring: regionRing(r) }; }) });
+        regions: state.regions.map(function (r) { return { id: r.id, name: r.name, ring: regionRing(r), inverted: !!r.inverted, bufferKm: state.bufferKm }; }) });
       clearTimeout(busyTimer);
       busyTimer = setTimeout(function () { if (state.pendingId === id) showBusy(null); }, 180);
     }, 40);
@@ -1793,12 +1839,19 @@
     var u = UNITS[unit || state.units];
     return Math.round(km * u.f).toLocaleString() + " " + u.label;
   }
+  /* A buffer piece's id is its region's with "~" and a number. */
+  function baseId(id) { id = String(id); var k = id.indexOf("~"); return k < 0 ? id : id.slice(0, k); }
+  function uniqueBase(ids) { var out = []; ids.forEach(function (id) { id = baseId(id); if (out.indexOf(id) < 0) out.push(id); }); return out; }
   function names(ids) {
-    return ids.map(function (id) { var f = featureById.get(String(id)); if (f) return f.properties.name; var r = regionById(String(id)); return r ? r.name : id; });
+    return ids.map(function (id) {
+      id = baseId(id);
+      var f = featureById.get(id); if (f) return f.properties.name;
+      var r = regionById(id); return r ? (r.inverted ? "everywhere outside " + r.name : r.name) : id;
+    });
   }
   /* What is being avoided, countries then regions, for the sentences. */
   function avoidedNames() {
-    return Array.from(state.avoid.values()).concat(state.regions.map(function (r) { return r.name; }));
+    return Array.from(state.avoid.values()).concat(state.regions.map(function (r) { return r.inverted ? "everywhere outside " + r.name : r.name; }));
   }
   function joinNames(list) {
     if (list.length <= 1) return list.join("");
@@ -1848,17 +1901,31 @@
     var line = document.createElement("span"); line.className = "gc-line";
 
     if (res.status === "inside") {
+      // Where each point is, in words: in a country or a region, outside
+      // an inverted region, or within the buffer of one.
+      var plain = true;
+      var where = function (raw) {
+        return joinNames(uniqueBase(raw).map(function (id) {
+          var r = regionById(id);
+          if (!r) return "in " + names([id])[0];
+          var inBase = raw.some(function (x) { return String(x) === id; });
+          if (!inBase) { plain = false; return "within " + fmt(state.bufferKm) + " of " + r.name + (r.inverted ? "'s edge" : ""); }
+          if (r.inverted) { plain = false; return "outside " + r.name; }
+          return "in " + r.name;
+        }));
+      };
       var parts = [];
-      if (res.insideA.length) parts.push("A is in " + joinNames(names(res.insideA)));
-      if (res.insideB.length) parts.push("B is in " + joinNames(names(res.insideB)));
+      if (res.insideA.length) parts.push("A is " + where(res.insideA));
+      if (res.insideB.length) parts.push("B is " + where(res.insideB));
       big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
       sum.appendChild(big);
       var warn = document.createElement("span"); warn.className = "gc-warn";
-      warn.textContent = parts.join("; ") + ", which you are avoiding ";
-      res.insideA.concat(res.insideB).forEach(function (id) {
+      warn.textContent = parts.join("; ") + (plain ? ", which you are avoiding " : " ");
+      uniqueBase(res.insideA.concat(res.insideB)).forEach(function (id) {
         var b = document.createElement("button"); b.type = "button";
-        b.textContent = "Allow " + names([id])[0];
-        b.addEventListener("click", function () { var r = regionById(String(id)); if (r) removeRegion(r); else { state.avoid.delete(String(id)); avoidChanged(); } });
+        var r = regionById(id);
+        b.textContent = (r ? "Remove " + r.name : "Allow " + names([id])[0]);
+        b.addEventListener("click", function () { if (r) removeRegion(r); else { state.avoid.delete(id); avoidChanged(); } });
         warn.appendChild(b); warn.appendChild(document.createTextNode(" "));
       });
       sum.appendChild(warn);
@@ -1948,8 +2015,27 @@
       document.querySelectorAll(".gc-units button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
       try { localStorage.setItem("gc-units", state.units); } catch (e) {}
       showResult();
+      syncBuffer();
     });
   });
+
+  // ---- the buffer round drawn regions: a slider in the chosen unit, up to
+  // 250 miles; the drawing follows it as it moves, the route when let go.
+  var BUFFER_MAX = { km: 400, mi: 250, nmi: 215 };
+  function syncBuffer() {
+    var inp = $("buffer"), u = UNITS[state.units];
+    inp.max = BUFFER_MAX[state.units];
+    inp.value = Math.round((state.bufferKm * u.f) / 5) * 5;
+    showBufferValue();
+    $("buffer-row").hidden = !state.regions.length;
+  }
+  function showBufferValue() { $("buffer-out").textContent = state.bufferKm > 0 ? fmt(state.bufferKm) : "none"; }
+  $("buffer").addEventListener("input", function () {
+    state.bufferKm = +$("buffer").value / UNITS[state.units].f;
+    showBufferValue();
+    scheduleRender("full");
+  });
+  $("buffer").addEventListener("change", function () { requestRoute(); writeUrl(); });
 
   // ------------------------------------------------------------- the url
   var ANTARCTICA = "010";
@@ -1961,14 +2047,15 @@
     state.regions.forEach(function (r) {
       var body = r.kind === "circle" ? "c~" + r.center[1].toFixed(3) + "," + r.center[0].toFixed(3) + "," + r.radiusKm
         : "p~" + r.points.map(function (q) { return q[1].toFixed(3) + "," + q[0].toFixed(3); }).join(";");
-      p.push("r=" + encodeURIComponent(r.name) + "~" + body);
+      p.push("r=" + encodeURIComponent(r.name) + "~" + body + (r.inverted ? "~i" : ""));
     });
+    if (state.bufferKm > 0 && state.regions.length) p.push("buf=" + Math.round(state.bufferKm));
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = 0;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -1990,7 +2077,7 @@
         v.split(",").forEach(function (id) { var f = featureById.get(id); if (f && id !== ANTARCTICA) { state.avoid.set(id, f.properties.name); any = true; } });
       } else if (k === "r") {
         var parts = v.split("~");
-        if (parts.length !== 3) return;
+        if (parts.length !== 3 && !(parts.length === 4 && parts[3] === "i")) return;
         var name; try { name = decodeURIComponent(parts[0]); } catch (err) { name = parts[0]; }
         var r = null;
         if (parts[1] === "c") {
@@ -2000,7 +2087,10 @@
           var pts = parts[2].split(";").map(function (q) { var c = q.split(",").map(Number); return c.length === 2 && c.every(isFinite) ? [c[1], c[0]] : null; }).filter(Boolean);
           if (pts.length >= 3 && !ringProblem(pts)) r = { kind: "polygon", points: pts };
         }
-        if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; state.regions.push(r); any = true; }
+        if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; r.inverted = parts[3] === "i"; state.regions.push(r); any = true; }
+      } else if (k === "buf") {
+        var bk = +v;
+        if (isFinite(bk) && bk > 0) state.bufferKm = Math.min(402.4, bk);
       }
     });
     return any;
@@ -2164,6 +2254,7 @@
   window.__greatercircle = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
     state: state, view: view, drawing: function () { return drawing; },
+    regionShape: function (i) { return regionPolygon(state.regions[i]); },
     setView: function (lon, lat, zoom) { view.lon = lon; view.lat = lat; view.zoom = zoom; applyView(); render("full"); },
     scale: function () { return projection.scale(); }, admin1: function () { return !!admin1; },
     timeRender: function (detail) { var t0 = performance.now(); render(detail || "full"); return performance.now() - t0; },

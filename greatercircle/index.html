@@ -271,6 +271,13 @@
           </div>
         </div>
         <ul class="gc-chips" id="chips" aria-label="Countries being avoided"></ul>
+        <div class="gc-buffer" id="buffer-row" hidden>
+          <div class="gc-buffer-head">
+            <label for="buffer">Buffer round drawn regions</label>
+            <output id="buffer-out" for="buffer">none</output>
+          </div>
+          <input type="range" id="buffer" min="0" max="250" step="5" value="0" />
+        </div>
         <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span></p>
       </section>
 

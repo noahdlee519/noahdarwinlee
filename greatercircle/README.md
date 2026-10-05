@@ -27,7 +27,12 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   of your own to avoid (with a mouse: a polygon corner by corner, a circle
   dragged out from its centre, or a freehand outline; each becomes a ring of
   great-circle edges the engine treats like a country, with handles to adjust
-  it afterwards), the results, and the URL hash that holds the state, so a
+  it afterwards). A region is the smaller side of its outline, whichever way
+  it was drawn, and can be turned inside out to avoid everywhere but it. A
+  buffer of up to 250 miles grows every drawn region: the engine adds a disc
+  round each corner and a strip along each edge as further obstacles, whose
+  union with the region is its buffer exactly (`bufferRings`), and the
+  results, and the URL hash that holds the state, so a
   route can be shared.
 - **data/countries-50m.json** — Natural Earth 1:50m countries (world-atlas),
   with unique ids and display names; **data/places.json** — cities, capitals,
