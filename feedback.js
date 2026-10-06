@@ -1,4 +1,4 @@
-// The message boxes on the front page (under about) and the art page. A
+// The message boxes on the front page (under about), art, projects, blog and cv. A
 // message goes into the site_feedback table in the site's own Supabase
 // project (the one citylayoutguessr uses), with the page it came from. The key below is the publishable one, meant to
 // sit in a web page; the table's row-level security and grants let a browser
@@ -7,7 +7,7 @@
   "use strict";
   var URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/rest/v1/site_feedback";
   var KEY = "sb_publishable_Ki-kbO5xBeMdVt3Ltv3i7A_dzQz2ivy";
-  var PAGE = /^\/art(\/|$)/.test(location.pathname) ? "art" : "about";
+  var PAGE = (location.pathname.match(/^\/(art|projects|blog|cv)(\/|$)/) || [, "about"])[1];
 
   var form = document.getElementById("feedback");
   if (!form) return;

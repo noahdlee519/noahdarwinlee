@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="has-back">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -79,6 +79,7 @@
         <span class="name-word-lee">Lee</span></a
       >
     </h1>
+    <a class="back-link" href="/" data-back>back</a>
     <!-- Eight links behind one mark. Everything about how it opens is in
          menu.js and the stylesheet; this is the list itself, in the markup,
          so it is there for anything that does not run either. -->
@@ -367,14 +368,7 @@
       <!-- The sections of the site, visible at the bottom of the page so a
            visitor who scrolls through the gallery can see where else to go
            without opening the menu or the about panel. -->
-      <nav class="site-nav" aria-label="Site sections">
-        <a href="/index.html">about</a>
-        <a href="/projects/">projects</a>
-        <a href="/blog/">blog</a>
-        <a href="https://www.linkedin.com/in/noahdlee/" target="_blank" rel="noopener noreferrer">linkedin</a>
-        <a href="mailto:noahlee519@gmail.com">email</a>
-        <a href="/cv/">cv</a>
-      </nav>
+    
       <!-- The same message box as the front page, shown only with the
            gallery folded away; feedback.js sends it to the same table. -->
       <form class="feedback" id="feedback" novalidate>
@@ -399,6 +393,7 @@
     <script src="/lightbox.js" defer></script>
     <script src="/art-toggle.js" defer></script>
     <script src="/feedback.js" defer></script>
+    <script src="/back.js" defer></script>
     <script src="/theme.js" defer></script>
   </body>
 </html>

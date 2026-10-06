@@ -439,6 +439,89 @@ body {
   }
 }
 
+/* ---- back, and the page's own name under it ----
+   Three lines at the top left of the front page, art, projects, blog and cv:
+   the name, back, and the page's name, which folds the page away and leaves
+   the message box in its place. The front page shows back only when there is
+   somewhere to go back to (has-back, set in its head). */
+html:not(.has-back) .back-link[data-back] {
+  display: none;
+}
+
+.page-toggle {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin-right: 0;
+  color: var(--ink);
+  font-family: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-toggle::before {
+  content: "\25B8\00a0";
+  font-size: 0.82em;
+}
+
+.page-toggle[aria-expanded="true"]::before {
+  content: "\25BE\00a0";
+}
+
+.page-toggle[aria-expanded="true"]::after {
+  content: "...";
+}
+
+.page-body.is-collapsed,
+#page-body.is-collapsed {
+  display: none !important;
+}
+
+.page-feedback {
+  display: none;
+}
+
+.is-folded .page-feedback {
+  display: block;
+  width: min(560px, 100%);
+  max-width: none;
+  margin: max(40px, 16vh) auto 0;
+}
+
+@media (min-width: 901px) {
+  /* Back takes the second line, so the page's name and everything under it
+     go down one 33px step. */
+  .page-toggle {
+    top: calc(var(--page-top) + 66px);
+  }
+
+  html.has-back .cv-page {
+    padding-top: calc(var(--page-top) + 139px);
+  }
+
+  html.has-back .index-page {
+    padding-top: calc(var(--page-top) + 99px);
+  }
+
+  html.has-back .index-page.art-page {
+    padding-top: calc(var(--page-top) + 66px);
+  }
+
+  html.has-back .index-page .about-toggle {
+    top: calc(var(--page-top) + 66px);
+  }
+
+  /* On these two the header scrolls with the page, so back does too. */
+  .index-page .back-link {
+    position: absolute;
+  }
+}
+
 
 .cv-page h2 {
   font-weight: 300 !important;

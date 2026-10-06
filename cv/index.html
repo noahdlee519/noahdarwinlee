@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="has-back">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -59,11 +59,14 @@
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
     >
-    <a class="back-link" href="/#about">back</a>
+    <a class="back-link" href="/" data-back>back</a>
+    <!-- The page's own name: it folds the page away, and the message box
+         takes its place. page-toggle.js. -->
+    <button class="about-link page-toggle" id="page-toggle" type="button" aria-expanded="true" aria-controls="page-body">cv</button>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
       <img src="../favicon.png" alt="" width="30" height="30" />
     </button>
-    <main>
+    <main id="page-body">
       <p class="cv-contact">
         <a href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>
       </p>
@@ -146,8 +149,22 @@
       </section>
 
     </main>
+    <!-- The same message box as the front page, shown when the page is folded
+         away under its name; feedback.js sends it. -->
+    <form class="feedback page-feedback" id="feedback" novalidate>
+      <label class="feedback-label" for="feedback-message">Share feedback about the website with me</label>
+      <textarea id="feedback-message" name="message" rows="3" maxlength="2000" required placeholder="Your message will be anonymous"></textarea>
+      <input class="feedback-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <div class="feedback-row">
+        <button class="feedback-send" type="submit">send</button>
+        <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
+      </div>
+    </form>
     <script src="../to-top-btn.js" defer></script>
     <script src="../header.js" defer></script>
+    <script src="../back.js" defer></script>
+    <script src="../page-toggle.js" defer></script>
+    <script src="../feedback.js" defer></script>
       <script src="../theme.js" defer></script>
   </body>
 </html>

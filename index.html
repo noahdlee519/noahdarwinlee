@@ -9,6 +9,10 @@
       content="Paintings, drawings and architecture by Noah Darwin Lee"
     />
     <link rel="canonical" href="https://noahdarwinlee.com/" />
+    <!-- A back button only when there is a page to go back to. -->
+    <script>
+      if (history.length > 1) document.documentElement.classList.add("has-back");
+    </script>
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -103,6 +107,7 @@
         <span class="name-word-lee">Lee</span></a
       >
     </h1>
+    <a class="back-link" href="/" data-back>back</a>
     <a
       class="about-link about-toggle"
       id="about-toggle"
@@ -198,6 +203,7 @@
     <script src="about-toggle.js" defer></script>
     <script src="portrait.js" defer></script>
     <script src="feedback.js" defer></script>
+    <script src="back.js" defer></script>
     <script src="contact-menu.js" defer></script>
     <script src="theme.js" defer></script>
   </body>
