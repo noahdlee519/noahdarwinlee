@@ -25,8 +25,8 @@
         <h1 class="p-name">GREATERCIRCLE</h1>
         <a class="go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
       </div>
-      <p class="p-meta">Globe · Flight paths around the countries you’d avoid</p>
-      <p class="p-lede">An interactive globe built for anyone curious about how we fly. While standard maps draw simple straight lines, this tool calculates the true great-circle distance between any two points. Want to see how real-world routing works? Simply type your destinations, call out the countries or airspace to avoid, and watch the globe map the exact shortest route around them. It is the perfect companion for aviation geeks, passengers tired of broken seat-back maps, or anyone wanting to visualize how flights navigate around global conflict zones.</p>
+      <p class="p-meta">Globe · Flight paths beyond a straight line</p>
+      <p class="p-lede">While standard flight maps draw straight lines from point a to point b, this tool calculates the true great-circle distance between any two points, factoring in political geography and user preference. Simply place your points, pick the regions or airspace to avoid, and watch the program plot out the optimal route. It is the perfect companion for aviation geeks, passengers tired of deceptive seat-back flight maps, and aviation personnel hoping to validate their routes.</p>
 
       <section class="shots" aria-roledescription="carousel" aria-label="Screenshots of GREATERCIRCLE">
         <div class="frame">
@@ -51,16 +51,14 @@
                             <div class="note-col">
                               <h2>Technical details</h2>
                               <p>
-                                The route is the classical shortest path among polygonal obstacles, carried onto the
-                                sphere: a chain of great-circle arcs that bends only at the avoided countries’ convex
-                                corners, found by A* over their tangent visibility graph, in three-dimensional unit
-                                vectors. No grid, no buffer: exact for the drawn 1:50m borders, and settled in a few
-                                hundred milliseconds in a Web Worker.
+                                The route improves on great circle distance pathfinding on a sphere by calculating
+                                a chain of great-circle arcs bending only at the avoided regions' convex corners, 
+                                found by an A* algorithm over their tangent visibility graph, in three-dimensional unit
+                                vectors. 
                               </p>
                               <p>
                                 Borders from Natural Earth; places from GeoNames and OurAirports, with Photon for the
-                                long tail. The globe is a canvas with its own projector, a few milliseconds a frame at
-                                any zoom.
+                                long tail. Labeled cities come from a modified GaWC index.
                               </p>
                               <ul class="chips">
                                 <li>Exact shortest paths</li>
@@ -72,7 +70,7 @@
                             <div class="note-col">
                               <h2>Inspiration</h2>
                               <p>
-                                Seat-back flight maps often show an old route, a straight line, or a path across a country the plane will never enter. I wanted to see where a flight can really go once part of the map is closed to it.
+                                I was flying from South Korea to Poland and not long after takeoff, I booted up the seat-back flight map to see that our plane was projected to chart a straight line through four countries with closed off airspaces. As a nervous flier, knowing the accurate flight path would have put me more at ease.
                               </p>
                             </div>
                           </div>
