@@ -1,6 +1,17 @@
 <!doctype html>
-<html lang="en" class="has-back">
+<html lang="en">
   <head>
+    <!-- Back only when the visitor came here from another page of this site;
+         on the first page they open there is nothing of the site to go back to. -->
+    <script>
+      (function () {
+        try {
+          var r = document.referrer && new URL(document.referrer);
+          if (r && r.host === location.host && r.pathname !== location.pathname)
+            document.documentElement.classList.add("has-back");
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CV | Noah Darwin Lee</title>

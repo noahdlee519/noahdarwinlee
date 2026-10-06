@@ -442,8 +442,9 @@ body {
 /* ---- back, and the page's own name under it ----
    Three lines at the top left of the front page, art, projects, blog and cv:
    the name, back, and the page's name, which folds the page away and leaves
-   the message box in its place. The front page shows back only when there is
-   somewhere to go back to (has-back, set in its head). */
+   the message box in its place. Back shows only when the visitor came from
+   another page of the site (has-back, set in each page's head); on the first
+   page they open, the page's name moves up into its line. */
 html:not(.has-back) .back-link[data-back] {
   display: none;
 }
@@ -496,7 +497,7 @@ html:not(.has-back) .back-link[data-back] {
 @media (min-width: 901px) {
   /* Back takes the second line, so the page's name and everything under it
      go down one 33px step. */
-  .page-toggle {
+  html.has-back .page-toggle {
     top: calc(var(--page-top) + 66px);
   }
 

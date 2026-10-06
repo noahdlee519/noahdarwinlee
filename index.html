@@ -9,9 +9,16 @@
       content="Paintings, drawings and architecture by Noah Darwin Lee"
     />
     <link rel="canonical" href="https://noahdarwinlee.com/" />
-    <!-- A back button only when there is a page to go back to. -->
+    <!-- Back only when the visitor came here from another page of this site;
+         on the first page they open there is nothing of the site to go back to. -->
     <script>
-      if (history.length > 1) document.documentElement.classList.add("has-back");
+      (function () {
+        try {
+          var r = document.referrer && new URL(document.referrer);
+          if (r && r.host === location.host && r.pathname !== location.pathname)
+            document.documentElement.classList.add("has-back");
+        } catch (e) {}
+      })();
     </script>
     <link rel="icon" href="favicon.png" type="image/png" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
