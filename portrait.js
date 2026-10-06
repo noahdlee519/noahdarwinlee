@@ -103,7 +103,12 @@
     }
 
     var MAX_GEN = 4; // a tile splits at most four times: 1/16 of its width
-    var GRID = 4; // on a phone, the picture is cut into GRID x GRID squares to tap
+    // On a phone, the picture is cut into GX columns by GY rows of squares to
+    // tap: four by four unless the canvas asks for another cut, as
+    // data-grid="4x6" (columns x rows) does on the front page.
+    var gridSpec = /^(\d+)x(\d+)$/.exec(canvas.getAttribute("data-grid") || "");
+    var GX = gridSpec ? +gridSpec[1] : 4;
+    var GY = gridSpec ? +gridSpec[2] : 4;
     var revealed = []; // which of them have been tapped
     var animUntil = 0; // on a phone, the frame loop runs only while something moves
     var SPLIT_MS = 240; // how long a split takes to open out
@@ -458,7 +463,7 @@
         if (m.base === base && m.dpr === dpr) return;
         var had = revealed.slice();
         layout();
-        had.forEach(function (on, key) { if (on) reveal(key % GRID, Math.floor(key / GRID), 0, 0, true); });
+        had.forEach(function (on, key) { if (on) reveal(key % GX, Math.floor(key / GX), 0, 0, true); });
         kick();
       }, 120);
     });
@@ -481,13 +486,13 @@
     // instant: put a square back as it was, with no ripple and no flash
     // (after the tiles have been rebuilt at a new size).
     function reveal(gx, gy, tx, ty, instant) {
-      var key = gy * GRID + gx;
+      var key = gy * GX + gx;
       if (revealed[key]) return;
       revealed[key] = true;
       var now = performance.now();
       var still = reduce || instant;
-      var c0 = Math.floor((gx * COLS) / GRID), c1 = Math.floor(((gx + 1) * COLS) / GRID);
-      var r0 = Math.floor((gy * ROWS) / GRID), r1 = Math.floor(((gy + 1) * ROWS) / GRID);
+      var c0 = Math.floor((gx * COLS) / GX), c1 = Math.floor(((gx + 1) * COLS) / GX);
+      var r0 = Math.floor((gy * ROWS) / GY), r1 = Math.floor(((gy + 1) * ROWS) / GY);
       var deep = function (n) {
         if (n.g >= MAX_GEN) return;
         var d = still ? 0 : Math.hypot(n.x + n.s / 2 - tx, n.y + n.s / 2 - ty) * 2.2 + n.g * 170;
@@ -516,8 +521,8 @@
         var rect = canvas.getBoundingClientRect();
         var px = (e.clientX - rect.left) * (cssW / rect.width);
         var py = (e.clientY - rect.top) * (cssH / rect.height);
-        var gx = Math.min(GRID - 1, Math.max(0, Math.floor((px / cssW) * GRID)));
-        var gy = Math.min(GRID - 1, Math.max(0, Math.floor((py / cssH) * GRID)));
+        var gx = Math.min(GX - 1, Math.max(0, Math.floor((px / cssW) * GX)));
+        var gy = Math.min(GY - 1, Math.max(0, Math.floor((py / cssH) * GY)));
         reveal(gx, gy, px, py);
       });
     }

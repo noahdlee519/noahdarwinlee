@@ -1020,6 +1020,13 @@ a[href="/cv/"]:active {
 
 /* The portrait in tiles takes the photograph's place: the canvas sizes itself
    to the frame (portrait.js), and a line under it on a phone says what to do. */
+/* The frame is as tall as the portrait in it, not the old photograph's
+   shape (which was taller), so there is no empty band under the picture. The
+   canvas holds its own shape before the script sizes it. */
+.profile-photo-frame.portrait-frame {
+  aspect-ratio: auto;
+}
+
 .portrait-frame .tiles {
   display: block;
   max-width: 100%;
@@ -2406,6 +2413,7 @@ body.is-zoomed {
   .about-panel-inner {
     flex-direction: column;
     align-items: center;
+    gap: 48px;
   }
 
   .about-panel .profile-photo-frame {
