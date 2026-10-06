@@ -921,17 +921,17 @@ a[href="/cv/"]:active {
   display: none;
 }
 
-/* About shut, the page is one window and the box is the only thing in it, so
-   it sits in the middle of that window rather than under the header. */
-.about-panel:not(.is-open) + .feedback {
-  position: fixed;
-  z-index: 1;
-  left: 50%;
-  top: 50%;
-  width: min(560px, calc(100vw - 48px));
+/* About shut (or, on the art page, the gallery folded away), the box is the
+   only thing between the header and the foot line. It sits in the page, not
+   pinned to the window: the free space above and below it is split evenly, so
+   it rests near the middle and scrolls with everything else. */
+.about-panel:not(.is-open) + .feedback,
+.art-gallery.is-collapsed ~ .feedback {
+  align-self: center;
+  width: min(560px, 100%);
   max-width: none;
-  margin: 0;
-  transform: translate(-50%, -50%);
+  margin: auto 0;
+  padding-top: 32px;
 }
 
 .feedback-label {
@@ -1024,21 +1024,9 @@ a[href="/cv/"]:active {
 }
 
 /* The art page has the same box, for when the gallery is folded away and the
-   page is empty again: hidden while the pictures are out, and in the middle
-   of the window, as on the front page, when they are not. */
+   page is empty again: hidden while the pictures are out. */
 .art-gallery:not(.is-collapsed) ~ .feedback {
   display: none;
-}
-
-.art-gallery.is-collapsed ~ .feedback {
-  position: fixed;
-  z-index: 1;
-  left: 50%;
-  top: 50%;
-  width: min(560px, calc(100vw - 48px));
-  max-width: none;
-  margin: 0;
-  transform: translate(-50%, -50%);
 }
 
 /* "art" in the row of links jumps here; stop short of the name over the top. */
