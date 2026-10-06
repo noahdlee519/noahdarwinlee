@@ -505,7 +505,35 @@ body.is-folded {
   width: min(560px, 100%);
   max-width: none;
   margin: auto;
-  padding: 24px 0;
+  padding: 32px 0 0;
+}
+
+/* Folded, projects, blog and cv take the front page's measurements, so the
+   box lands where it does there: the same room above it for the three lines
+   of the header, the same margins either side, and the foot line at the
+   bottom of the window. */
+@media (min-width: 901px) {
+  body.cv-page.is-folded {
+    padding: calc(var(--page-top) + 66px) 36px 0 var(--page-left);
+  }
+
+  html.has-back body.cv-page.is-folded {
+    padding-top: calc(var(--page-top) + 99px);
+  }
+
+  .materials-page .site-foot {
+    padding-left: var(--page-left);
+  }
+}
+
+@media (max-width: 900px) {
+  body.cv-page.is-folded {
+    padding: 16px;
+  }
+
+  .materials-page:not(.is-folded) .site-foot {
+    padding-left: 16px;
+  }
 }
 
 @media (min-width: 901px) {
