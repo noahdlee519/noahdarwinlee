@@ -301,6 +301,63 @@ a {
   line-height: 1.2;
 }
 
+/* Who it's for: the kinds of people who would use it, in groups, under the
+   two notes. Two columns on a wide screen, one on a phone. */
+.uses {
+  margin-top: clamp(56px, 9vh, 104px);
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.uses h2 {
+  margin: 0 0 clamp(20px, 3vw, 32px);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.uses-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px clamp(24px, 5vw, 80px);
+}
+
+.use-group h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.use-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.use-group li {
+  position: relative;
+  max-width: 52ch;
+  margin: 0 0 8px;
+  padding-left: 18px;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* The site's mark, small, for a bullet: half square, half circle. */
+.use-group li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 7px;
+  height: 7px;
+  background: var(--brand);
+  border-radius: 0 50% 50% 0;
+}
+
 .p-cta {
   margin-top: clamp(40px, 6vh, 64px);
 }
@@ -434,7 +491,8 @@ a {
 }
 
 @media (max-width: 760px) {
-  .notes {
+  .notes,
+  .uses-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
