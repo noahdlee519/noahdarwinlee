@@ -487,11 +487,25 @@ html:not(.has-back) .back-link[data-back] {
   display: none;
 }
 
+/* Folded, the page is the header and the box and nothing else: exactly one
+   window tall, padding included, with the box in the middle of what is left,
+   so there is nothing to scroll -- unless the window is too short to hold
+   them, and then it scrolls as any page would. */
+body.is-folded {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 .is-folded .page-feedback {
   display: block;
+  flex: none;
   width: min(560px, 100%);
   max-width: none;
-  margin: max(40px, 16vh) auto 0;
+  margin: auto;
+  padding: 24px 0;
 }
 
 @media (min-width: 901px) {

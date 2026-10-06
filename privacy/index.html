@@ -13,12 +13,9 @@
     <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
     <link rel="manifest" href="../manifest.json" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Noah Darwin Lee" />
@@ -105,8 +102,8 @@
           The pages are plain files, with no cookies, no analytics and no advertising.
           To deliver them, a few services necessarily receive the ordinary request your
           browser makes, which includes your IP address and the kind of browser you use:
-          GitHub Pages, which hosts the site, and Google Fonts, which serves its
-          typefaces. One tool also loads drawing libraries from cdnjs, which is run by
+          GitHub Pages, which hosts the site and its typeface, and Google Fonts, which
+          serves the type of the blog's mail window and of greatercircle. One tool also loads drawing libraries from cdnjs, which is run by
           Cloudflare. None of them is asked to identify you, and none of them reports
           anything back to me. Each handles those requests under its own privacy policy.
         </p>
