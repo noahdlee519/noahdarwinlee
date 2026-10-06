@@ -531,6 +531,16 @@ body.is-folded {
     padding: 16px;
   }
 
+  /* Projects runs its rows edge to edge, so on a narrow screen its header
+     lines carry their own 16px inset. The folded page already has that inset
+     on the body; without this the header stepped 16px to the right on fold. */
+  body.materials-page.is-folded .name,
+  body.materials-page.is-folded .about-link,
+  body.materials-page.is-folded .back-link,
+  body.materials-page.is-folded .header-line {
+    padding-left: 0;
+  }
+
   .materials-page:not(.is-folded) .site-foot {
     padding-left: 16px;
   }
