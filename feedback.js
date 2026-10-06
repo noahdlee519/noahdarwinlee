@@ -40,15 +40,24 @@
     busy = true;
     send.disabled = true;
     say("Sending…");
-    fetch(URL, {
-      method: "POST",
-      headers: {
-        apikey: KEY,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ page: PAGE, message: message.slice(0, 2000) }),
-    })
+    function post(body) {
+      return fetch(URL, {
+        method: "POST",
+        headers: {
+          apikey: KEY,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify(body),
+      });
+    }
+    var text = message.slice(0, 2000);
+    post({ page: PAGE, message: text })
+      // If the table does not yet know this page's name, the message still
+      // goes, without it, rather than being lost.
+      .then(function (r) {
+        return r.status === 400 ? post({ message: text }) : r;
+      })
       .then(function (r) {
         if (!r.ok) throw new Error(String(r.status));
         box.value = "";
