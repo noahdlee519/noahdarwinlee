@@ -1027,6 +1027,15 @@ a[href="/cv/"]:active {
   aspect-ratio: auto;
 }
 
+/* On a phone the front page's portrait loses half a tile top and bottom so
+   its tap squares come out square (portrait.js); hold that shape from the
+   first paint. */
+@media not all and (hover: hover) and (pointer: fine) {
+  .portrait-frame .tiles[data-grid="4x6"] {
+    aspect-ratio: 16 / 24 !important;
+  }
+}
+
 .portrait-frame .tiles {
   display: block;
   max-width: 100%;
@@ -2832,18 +2841,23 @@ body.is-zoomed {
     padding-left: 16px;
   }
 
-  /* The header scrolls with the page at this width, and the day/night circle
-     takes the top right corner, so the word stands just inboard of it. */
+  /* On a narrow screen the word leaves the crowded top corner and stands on
+     its own, centred over the rows, with room above and below. */
   .projects-lead {
-    position: absolute;
-    top: 16px;
-    right: calc(16px + 18px + var(--corner-gap));
-    font-size: clamp(24px, 7vw, 36px);
+    position: static;
+    display: block;
+    width: fit-content;
+    margin: clamp(36px, 9vw, 56px) auto clamp(32px, 8vw, 48px);
+    font-size: clamp(44px, 13vw, 72px);
     line-height: 1;
   }
 
+  .is-folded .projects-lead {
+    display: none;
+  }
+
   .marquee-list {
-    margin-top: 18px;
+    margin-top: 0;
   }
 
   .marquee-row {

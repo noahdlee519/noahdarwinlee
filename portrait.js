@@ -109,6 +109,17 @@
     var gridSpec = /^(\d+)x(\d+)$/.exec(canvas.getAttribute("data-grid") || "");
     var GX = gridSpec ? +gridSpec[1] : 4;
     var GY = gridSpec ? +gridSpec[2] : 4;
+    // With a cut asked for, on a phone, every square should be square: the
+    // picture loses the rows it has over, half from the top and half from
+    // the bottom (on the front page, half a tile each), so GY squares of
+    // COLS/GX tiles fill it exactly. The tiles stay where they were; the
+    // canvas just shows a band of them.
+    var CROP = 0;
+    if (gridSpec && !fine && COLS % GX === 0) {
+      var need = GY * (COLS / GX);
+      if (need < ROWS) CROP = ROWS - need;
+    }
+    var OFF = 0, viewH = 0; // the cut at the top, and the height left, in px
     var revealed = []; // which of them have been tapped
     var animUntil = 0; // on a phone, the frame loop runs only while something moves
     var SPLIT_MS = 240; // how long a split takes to open out
@@ -139,19 +150,21 @@
       var w = canvas.parentElement.clientWidth;
       var vw = document.documentElement.clientWidth || innerWidth, vh = document.documentElement.clientHeight || innerHeight;
       var maxH = Math.min(720, vh * (vw <= 900 ? 0.6 : 0.78));
-      return { base: Math.max(6, Math.floor(Math.min(w / COLS, maxH / ROWS))), dpr: Math.min(window.devicePixelRatio || 1, 2) };
+      return { base: Math.max(6, Math.floor(Math.min(w / COLS, maxH / (ROWS - CROP)))), dpr: Math.min(window.devicePixelRatio || 1, 2) };
     }
     function layout() {
       var m = measure();
       base = m.base;
       cssW = base * COLS;
       cssH = base * ROWS;
+      OFF = (base * CROP) / 2;
+      viewH = cssH - 2 * OFF;
       dpr = m.dpr;
       canvas.style.width = cssW + "px";
-      canvas.style.height = cssH + "px";
+      canvas.style.height = viewH + "px";
       canvas.width = Math.round(cssW * dpr);
-      canvas.height = Math.round(cssH * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvas.height = Math.round(viewH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, -OFF * dpr);
       // On a phone, the finest tiles are about two pixels across: any
       // finer is more than a phone can draw quickly or the eye can see.
       if (!fine) {
@@ -332,7 +345,7 @@
       for (var i = 0; i < roots.length; i++) heal(roots[i], now);
       // Set every frame: a canvas whose pixels were dropped comes back with
       // its scale lost as well.
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, -OFF * dpr);
       ctx.clearRect(0, 0, cssW, cssH);
       for (var j = 0; j < roots.length; j++) drawNode(roots[j], now, null);
       // With a mouse the loop runs while anything is split, since what is
@@ -493,7 +506,18 @@
       var still = reduce || instant;
       var c0 = Math.floor((gx * COLS) / GX), c1 = Math.floor(((gx + 1) * COLS) / GX);
       var r0 = Math.floor((gy * ROWS) / GY), r1 = Math.floor(((gy + 1) * ROWS) / GY);
+      // The square in the tiles' own coordinates. With the cut it is offset
+      // by half a tile, so the tiles across its top and bottom edges split
+      // once, and only their quarters inside it go on to full detail.
+      var x0 = c0 * base, x1 = c1 * base, y0 = r0 * base, y1 = r1 * base;
+      if (CROP) {
+        y0 = OFF + (gy * viewH) / GY;
+        y1 = OFF + ((gy + 1) * viewH) / GY;
+        r0 = Math.max(0, Math.floor(y0 / base));
+        r1 = Math.min(ROWS, Math.ceil(y1 / base));
+      }
       var deep = function (n) {
+        if (n.x >= x1 || n.x + n.s <= x0 || n.y >= y1 || n.y + n.s <= y0) return;
         if (n.g >= MAX_GEN) return;
         var d = still ? 0 : Math.hypot(n.x + n.s / 2 - tx, n.y + n.s / 2 - ty) * 2.2 + n.g * 170;
         if (!n.kids) split(n, now, !instant && n.g === MAX_GEN - 1);
@@ -520,10 +544,10 @@
         if (!imgReady) return;
         var rect = canvas.getBoundingClientRect();
         var px = (e.clientX - rect.left) * (cssW / rect.width);
-        var py = (e.clientY - rect.top) * (cssH / rect.height);
+        var py = (e.clientY - rect.top) * (viewH / rect.height);
         var gx = Math.min(GX - 1, Math.max(0, Math.floor((px / cssW) * GX)));
-        var gy = Math.min(GY - 1, Math.max(0, Math.floor((py / cssH) * GY)));
-        reveal(gx, gy, px, py);
+        var gy = Math.min(GY - 1, Math.max(0, Math.floor((py / viewH) * GY)));
+        reveal(gx, gy, px, py + OFF);
       });
     }
   })();

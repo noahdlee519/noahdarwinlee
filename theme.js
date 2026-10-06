@@ -105,6 +105,18 @@
     });
   }
 
+  /* A page kept for the back button comes back as it was left, theme and all.
+     If the switch was pressed somewhere since, show what was chosen there --
+     and the same when another tab of the site changes it. */
+  function resync() {
+    var t = saved() || system();
+    if (t !== current()) apply(t);
+  }
+  window.addEventListener("pageshow", resync);
+  window.addEventListener("storage", function (e) {
+    if (e.key === KEY) resync();
+  });
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", build);
   } else {
