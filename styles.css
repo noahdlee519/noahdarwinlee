@@ -1629,7 +1629,7 @@ a[href="/cv/"]:active {
 /* ---- the list of projects, on the right ----
    Desktop only. It sits inside the gallery, so it folds away with it, but it
    is placed against the column: level with the first project, at the right
-   edge of the window, in line with the menu above it. It scrolls with the
+   edge of the window. It scrolls with the
    page like everything else up here. The gallery gives up the room it takes,
    so the two never overlap. */
 .art-index {

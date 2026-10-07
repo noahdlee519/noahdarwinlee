@@ -13,7 +13,7 @@
 
 create table if not exists public.site_feedback (
   id         bigint generated always as identity primary key,
-  page       text not null default 'about' check (page in ('about', 'art', 'projects', 'blog', 'cv')),
+  page       text not null default 'about' check (page in ('about', 'art', 'projects', 'blog', 'cv', 'miscellaneous')),
   message    text not null check (char_length(message) between 1 and 2000),
   created_at timestamptz not null default now()
 );
@@ -36,8 +36,9 @@ create or replace view public.site_feedback_latest
   select created_at, page, message from public.site_feedback order by created_at desc;
 revoke all on public.site_feedback_latest from anon, authenticated;
 
--- Added 6 October 2026, when projects, blog and cv got the box too. For a
+-- Added 6 October 2026, when projects, blog and cv got the box too, and
+-- widened for miscellaneous on 7 October. For a
 -- table made before then, this widens the list of pages:
 alter table public.site_feedback drop constraint if exists site_feedback_page_check;
 alter table public.site_feedback add constraint site_feedback_page_check
-  check (page in ('about', 'art', 'projects', 'blog', 'cv'));
+  check (page in ('about', 'art', 'projects', 'blog', 'cv', 'miscellaneous'));

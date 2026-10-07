@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Back only when the visitor came here from another page of this site;
+         on the first page they open there is nothing of the site to go back to. -->
+    <script>
+      (function () {
+        try {
+          var r = document.referrer && new URL(document.referrer);
+          if (r && r.host === location.host && r.pathname !== location.pathname)
+            document.documentElement.classList.add("has-back");
+        } catch (e) {}
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Miscellaneous | Noah Darwin Lee</title>
+    <meta
+      name="description"
+      content="Other places to find Noah Darwin Lee: Expositions Magazine, his Substack and UCGeo."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/miscellaneous/" />
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+    <link rel="manifest" href="../manifest.json" />
+    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="Miscellaneous | Noah Darwin Lee" />
+    <meta property="og:description" content="Other places to find Noah Darwin Lee: Expositions Magazine, his Substack and UCGeo." />
+    <meta property="og:url" content="https://noahdarwinlee.com/miscellaneous/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
+    <link rel="stylesheet" href="../styles.css" />
+    <!-- Before the first paint: a remembered choice, otherwise the system's.
+         The attribute is always written, so the stylesheet never has to guess
+         and the page never flashes the other theme on the way in. The rest of
+         the switch is in theme.js; this part cannot wait for a fetch. -->
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+  </head>
+  <body class="cv-page materials-page" data-fade-distance="90">
+    <h1 class="sr-only">Miscellaneous</h1>
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="back-link" href="/" data-back>back</a>
+    <!-- The page's own name: it folds the page away, and the message box
+         takes its place. page-toggle.js. -->
+    <button class="about-link page-toggle" id="page-toggle" type="button" aria-expanded="true" aria-controls="page-body">miscellaneous</button>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="../favicon.png" alt="" width="30" height="30" />
+    </button>
+
+    <main id="page-body" class="marquee-list">
+      <a
+        class="marquee-row"
+        href="https://cegu.uchicago.edu/expositions/"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Expositions Magazine"
+        data-title="Expositions Magazine"
+        data-offset="-18"
+      ></a>
+
+      <a
+        class="marquee-row"
+        href="https://substack.com/@noahdarwinlee?r=ish50&amp;utm_campaign=profile&amp;utm_medium=profile-page"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Substack"
+        data-title="Substack"
+        data-offset="-44"
+      ></a>
+
+      <a
+        class="marquee-row"
+        href="https://ucgeo.org"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="UCGeo"
+        data-title="UCGeo"
+        data-offset="-9"
+      ></a>
+
+      <a
+        class="marquee-row"
+        href="/projects/"
+        aria-label="More projects"
+        data-title="More projects"
+        data-offset="-35"
+      ></a>
+
+    </main>
+    <!-- The same message box as the front page, shown when the page is folded
+         away under its name; feedback.js sends it. -->
+    <form class="feedback page-feedback" id="feedback" novalidate>
+      <label class="feedback-label" for="feedback-message">Share feedback about the website with me</label>
+      <textarea id="feedback-message" name="message" rows="3" maxlength="2000" required placeholder="Your message will be anonymous"></textarea>
+      <input class="feedback-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <div class="feedback-row">
+        <button class="feedback-send" type="submit">send</button>
+        <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+    <!-- The last line of the page, as on the front page and art. -->
+    <footer class="site-foot">
+      2026 noah darwin lee | <a href="/terms/">terms</a> |
+      <a href="/privacy/">privacy policy</a>
+    </footer>
+
+    <noscript>
+      <ul class="marquee-fallback">
+        <li><a href="https://cegu.uchicago.edu/expositions/">Expositions Magazine</a></li>
+        <li><a href="https://substack.com/@noahdarwinlee?r=ish50&amp;utm_campaign=profile&amp;utm_medium=profile-page">Substack</a></li>
+        <li><a href="https://ucgeo.org">UCGeo</a></li>
+        <li><a href="/projects/">More projects</a></li>
+      </ul>
+    </noscript>
+
+    <script src="../to-top-btn.js" defer></script>
+    <script src="../header.js" defer></script>
+    <script src="../back.js" defer></script>
+    <script src="../page-toggle.js" defer></script>
+    <script src="../feedback.js" defer></script>
+    <script src="../marquee.js" defer></script>
+      <script src="../theme.js" defer></script>
+  </body>
+</html>
