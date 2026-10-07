@@ -611,6 +611,51 @@ body.is-folded {
   text-underline-offset: 3px;
 }
 
+/* The miscellaneous page: a plain list of links, set like the address at the
+   top of the cv. The list is short, so the page is one window, padding
+   included, with the foot line at the bottom of it and nothing to scroll. */
+body.misc-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.misc-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.35;
+}
+
+.misc-links li + li {
+  margin-top: 12px;
+}
+
+/* On a phone the header is an ordinary stack, and the list would sit right
+   under it; this is the room the art page leaves under its own name. */
+@media (max-width: 900px) {
+  .misc-links {
+    margin-top: 28px;
+  }
+}
+
+.misc-links a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.misc-links a:hover,
+.misc-links a:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 /* Without this the first h2's top margin collapses through <main> and drops
    the whole page ~20px below where the other pages begin. */
 .cv-page main > section:first-child > h2:first-child {
