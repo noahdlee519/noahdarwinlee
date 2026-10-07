@@ -499,6 +499,17 @@ body.is-folded {
   flex-direction: column;
 }
 
+/* Folded, only the name stays fixed. Back and the page's own name go with the
+   page, as they do on art and the front page, so on every folded page a
+   scroll moves everything under the name. Absolute against the page puts
+   them exactly where fixed did, so nothing shifts on folding. */
+@media (min-width: 901px) {
+  body.is-folded .back-link,
+  body.is-folded .page-toggle {
+    position: absolute;
+  }
+}
+
 .is-folded .page-feedback {
   display: block;
   flex: none;
@@ -1669,17 +1680,6 @@ a[href="/cv/"]:active {
 /* Folded: the gallery goes, the word stays. */
 .art-gallery.is-collapsed {
   display: none;
-}
-
-/* A folded page is exactly one window and has nothing to scroll, but a
-   trackpad or a phone still pulls the whole page past its edge and lets it
-   spring back. On art and the front page that dragged back and the page's
-   name down while the name above them, which is fixed, stayed put. No
-   overscroll at all on any folded page, so nothing moves. */
-html:has(.art-gallery.is-collapsed),
-html:has(.about-panel:not(.is-open)),
-html:has(body.is-folded) {
-  overscroll-behavior: none;
 }
 
 /* ---- the list of projects, on the right ----
