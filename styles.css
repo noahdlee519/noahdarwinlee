@@ -1626,6 +1626,17 @@ a[href="/cv/"]:active {
   display: none;
 }
 
+/* A folded page is exactly one window and has nothing to scroll, but a
+   trackpad or a phone still pulls the whole page past its edge and lets it
+   spring back. On art and the front page that dragged back and the page's
+   name down while the name above them, which is fixed, stayed put. No
+   overscroll at all on any folded page, so nothing moves. */
+html:has(.art-gallery.is-collapsed),
+html:has(.about-panel:not(.is-open)),
+html:has(body.is-folded) {
+  overscroll-behavior: none;
+}
+
 /* ---- the list of projects, on the right ----
    Desktop only. It sits inside the gallery, so it folds away with it, but it
    is placed against the column: level with the first project, at the right
