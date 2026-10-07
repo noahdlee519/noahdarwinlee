@@ -1626,6 +1626,62 @@ a[href="/cv/"]:active {
   display: none;
 }
 
+/* ---- the list of projects, on the right ----
+   Desktop only. It sits inside the gallery, so it folds away with it, but it
+   is placed against the column: level with the first project, at the right
+   edge of the window, in line with the menu above it. It scrolls with the
+   page like everything else up here. The gallery gives up the room it takes,
+   so the two never overlap. */
+.art-index {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  .index-page .art-main {
+    position: relative;
+  }
+
+  .index-page .art-gallery {
+    max-width: min(1180px, calc(100% - 236px));
+  }
+
+  .art-index {
+    display: block;
+    position: absolute;
+    right: var(--page-left);
+    width: 200px;
+  }
+
+  .art-index ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: right;
+  }
+
+  .art-index li + li {
+    margin-top: 7px;
+  }
+
+  .art-index a {
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.3;
+    text-decoration: none;
+    opacity: 0.72;
+    transition: opacity 120ms ease;
+  }
+
+  .art-index a:hover,
+  .art-index a:focus-visible {
+    opacity: 1;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+}
+
 
 /* ---------------- the gallery ----------------
    Fifteen projects, forty pictures, all of them on the page. There used to be
