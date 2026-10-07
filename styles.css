@@ -1704,7 +1704,9 @@ a[href="/cv/"]:active {
 
 .art-card {
   margin: 0;
-  scroll-margin-top: 90px;
+  /* Where a link to a project leaves it: a little room above its title, and
+     less than the gap between projects, so none of the one before shows. */
+  scroll-margin-top: 28px;
 }
 
 .art-plates {
