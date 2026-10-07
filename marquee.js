@@ -26,10 +26,12 @@
   }
 
   // One repetition: the title's words, with the image after a random word.
-  function makeRun(title, img, ratio) {
+  // Titles are set in capitals, except one whose own casing is part of its
+  // name (data-keep-case on the row, as for GREATERcircle).
+  function makeRun(title, img, ratio, keepCase) {
     const run = document.createElement("span");
     run.className = "marquee-run";
-    const words = title.toUpperCase().split(/\s+/);
+    const words = (keepCase ? title : title.toUpperCase()).split(/\s+/);
     const at = pick(words.length);
     words.forEach((word, i) => {
       const w = document.createElement("span");
@@ -69,6 +71,7 @@
 
   const lanes = rows.map((row, index) => {
     const title = row.dataset.title;
+    const keepCase = row.hasAttribute("data-keep-case");
     const img = row.dataset.img;
     const ratio = parseFloat(row.dataset.ratio) || 1;
 
@@ -85,7 +88,7 @@
     // comes round again. Cloning it gives a seamless wrap.
     let guard = 0;
     do {
-      seq.appendChild(makeRun(title, img, ratio));
+      seq.appendChild(makeRun(title, img, ratio, keepCase));
       const mark = document.createElement("span");
       mark.className = "marquee-mark";
       seq.appendChild(mark);
