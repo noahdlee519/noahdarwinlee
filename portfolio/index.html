@@ -248,6 +248,15 @@
         image-rendering: auto;
       }
 
+      /* On a phone the portrait is tapped a square at a time, four across and
+         six down (data-grid, portrait.js), and loses its bottom row of tiles
+         so the six come out square; hold that shape from the first paint. */
+      @media not all and (hover: hover) and (pointer: fine) {
+        .tiles[data-grid="4x6"] {
+          aspect-ratio: 16 / 24;
+        }
+      }
+
       .tiles-hint {
         margin: 10px 0 0;
         font-size: 14px;
@@ -794,7 +803,7 @@
             </h1>
           </div>
           <div class="tiles-wrap">
-            <canvas id="tiles" class="tiles" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
+            <canvas id="tiles" class="tiles" data-grid="4x6" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
           </div>
         </div>
 
