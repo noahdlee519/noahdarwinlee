@@ -315,6 +315,11 @@ a {
   text-wrap: pretty;
 }
 
+/* The last paragraph of a note ends the note: no room under it. */
+.note-col p:last-child {
+  margin-bottom: 0;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -335,7 +340,9 @@ a {
 /* Who it's for: the kinds of people who would use it, in groups, under the
    two notes. Two columns on a wide screen, one on a phone. */
 .uses {
-  margin-top: clamp(56px, 9vh, 104px);
+  /* Close under the notes: the room between them and this line was most of
+     a screen on a phone, after the short Inspiration note. */
+  margin-top: clamp(36px, 5vh, 48px);
   padding-top: 16px;
   border-top: 1px solid var(--rule);
 }
