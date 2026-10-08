@@ -1,37 +1,20 @@
-// The portrait in tiles: a photograph set in the site's square-and-circle
-// mark, in black, blue, orange and white. Used on the front page's about panel
-// and on the portfolio, which both give it a <canvas id="tiles">.
 (function () {
   "use strict";
   var $ = function (q) { return document.querySelector(q); };
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-  /* ======================= the portrait, in tiles =======================
-     A photograph of me set in the site's mark, the square with a circle in
-     it, in four inks: black, blue, orange and white. Each tile takes the
-     pair of inks, one for the square and one for the circle, whose mix
-     comes closest to the patch of photograph under it. The pointer splits
-     tiles into four, down to four generations, and every split reads the
-     photograph again at a finer grain; left alone for a few seconds, they
-     merge back four at a time until the picture is coarse again.
-     On a phone there is no pointer to brush with: the picture is cut into
-     a four-by-four grid, and a tap on a square takes all of it to full
-     detail at once, to stay until the page is left. */
   (function () {
     var canvas = $("#tiles");
     if (!canvas) return;
     var ctx = canvas.getContext("2d");
     var SRC = canvas.getAttribute("data-src") || "/art/web/me-tiles-320.webp";
-    var COLS = 16, ROWS = 25; // the photograph is cut to this shape
+    var COLS = 16, ROWS = 25;
 
     var INKS = [[11, 11, 11], [42, 68, 214], [230, 128, 25], [255, 255, 255]];
     var INK_CSS = INKS.map(function (c) { return "rgb(" + c.join(",") + ")"; });
-    var CIRCLE = Math.PI / 4; // the share of a tile the circle covers
+    var CIRCLE = Math.PI / 4;
 
-    // Every square-and-circle pair of two different inks, and the colour
-    // it reads as from a distance. A tile is never one flat ink: the mark
-    // is always there.
     var PAIRS = [];
     for (var a = 0; a < 4; a++) {
       for (var b = 0; b < 4; b++) {
@@ -41,8 +24,6 @@
       }
     }
 
-    // The photograph, as running sums, so the average colour of any patch
-    // is four lookups whatever its size.
     var imgW = 0, imgH = 0, SR, SG, SB, SL, SQ;
     function prep(img) {
       imgW = img.naturalWidth;
@@ -60,8 +41,6 @@
         var r = 0, g = 0, bl = 0, l = 0, q = 0;
         for (var xx = 0; xx < imgW; xx++) {
           var i = (y * imgW + xx) * 4;
-          // A little more contrast and colour than the print has, so four
-          // inks have something to bite on.
           var R = d[i], G = d[i + 1], B = d[i + 2];
           var L = 0.299 * R + 0.587 * G + 0.114 * B;
           R = L + (R - L) * 1.35; G = L + (G - L) * 1.35; B = L + (B - L) * 1.35;
@@ -87,8 +66,6 @@
       var dr = c[0] - m.r, dg = c[1] - m.g, db = c[2] - m.b;
       return 2 * dr * dr + 4 * dg * dg + 3 * db * db;
     };
-    // The pair for a tile big enough to show its circle, and the one ink
-    // for a tile too small to: either way, only the four inks.
     function inksAt(x, y, s) {
       var m = patch(x, y, s), best = 0, bestD = Infinity, solo = 0, soloD = Infinity;
       for (var i = 0; i < PAIRS.length; i++) {
@@ -102,52 +79,35 @@
       return [best, solo];
     }
 
-    var MAX_GEN = 4; // a tile splits at most four times: 1/16 of its width
-    // On a phone, the picture is cut into GX columns by GY rows of squares to
-    // tap: four by four unless the canvas asks for another cut, as
-    // data-grid="4x6" (columns x rows) does on the front page.
+    var MAX_GEN = 4;
     var gridSpec = /^(\d+)x(\d+)$/.exec(canvas.getAttribute("data-grid") || "");
     var GX = gridSpec ? +gridSpec[1] : 4;
     var GY = gridSpec ? +gridSpec[2] : 4;
-    // With a cut asked for, on a phone, every square should be square: the
-    // picture loses the rows it has over, so GY squares of COLS/GX tiles fill
-    // it exactly. Whole rows only, so no tile at the edge is cut through its
-    // circle: an even number come off half from the top and half from the
-    // bottom, and an odd one from the bottom (on the front page, the one
-    // bottom row). The tiles stay where they were; the canvas just shows a
-    // band of them.
     var CROP = 0;
     if (gridSpec && !fine && COLS % GX === 0) {
       var need = GY * (COLS / GX);
       if (need < ROWS) CROP = ROWS - need;
     }
-    var OFF = 0, viewH = 0; // the cut at the top, and the height left, in px
-    var revealed = []; // which of them have been tapped
-    var animUntil = 0; // on a phone, the frame loop runs only while something moves
-    var SPLIT_MS = 240; // how long a split takes to open out
-    var MERGE_MS = 380; // and a merge to close up
-    var REST_MS = 1500; // untouched this long, a group of four merges...
-    var IDLE_MS = 4500; // ...once the pointer has left the picture alone this long
+    var OFF = 0, viewH = 0;
+    var revealed = [];
+    var animUntil = 0;
+    var SPLIT_MS = 240;
+    var MERGE_MS = 380;
+    var REST_MS = 1500;
+    var IDLE_MS = 4500;
     var lastTouch = 0;
     var FLASH_MS = 900;
     var COLORS = ["#e68019", "#2a44d6"];
-    var MAX_LEAVES = 120000; // enough for all sixteen squares at full detail
+    var MAX_LEAVES = 120000;
 
     var dpr = 1, base = 16, roots = [], leafCount = 0, running = false, visible = true;
     var cssW = 0, cssH = 0;
 
-    // pre, when given, is the pair already worked out for this tile (the
-    // coarse picture comes ready-made in the page; see PRE below), so the
-    // first tiles need no photograph at all.
     function node(x, y, s, g, now, pre) {
       var k = pre == null ? inksAt(x, y, s) : [pre, 0];
       return { x: x, y: y, s: s, p: k[0], solo: k[1], g: g, kids: null, born: now, from: null, t0: 0, dur: 0, merge0: 0, flash: 0, hue: 0 };
     }
 
-    // As big as the column allows, and no taller than most of a window.
-    // The window is the page's layout size, not innerWidth and innerHeight:
-    // Safari on a phone gives those as the zoomed-in part of the page, so
-    // pinching in made the picture shrink to fit what was left on screen.
     function measure() {
       var w = canvas.parentElement.clientWidth;
       var vw = document.documentElement.clientWidth || innerWidth, vh = document.documentElement.clientHeight || innerHeight;
@@ -167,8 +127,6 @@
       canvas.width = Math.round(cssW * dpr);
       canvas.height = Math.round(viewH * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, -OFF * dpr);
-      // On a phone, the finest tiles are about two pixels across: any
-      // finer is more than a phone can draw quickly or the eye can see.
       if (!fine) {
         MAX_GEN = 0;
         while (MAX_GEN < 4 && base / Math.pow(2, MAX_GEN + 1) >= 2) MAX_GEN++;
@@ -188,7 +146,6 @@
     function split(n, now, colorful) {
       if (n.kids || n.g >= MAX_GEN || leafCount > MAX_LEAVES) return false;
       var h = n.s / 2;
-      // Each quarter reads the photograph for itself, so the picture sharpens.
       n.kids = [
         node(n.x, n.y, h, n.g + 1, now),
         node(n.x + h, n.y, h, n.g + 1, now),
@@ -210,7 +167,6 @@
       return true;
     }
 
-    // Split every leaf whose centre is within the brush, one generation a pass.
     function brush(px, py, now) {
       var R = Math.max(base * 0.8, 10);
       var c0 = Math.max(0, Math.floor((px - R) / base)), c1 = Math.min(COLS - 1, Math.floor((px + R) / base));
@@ -225,7 +181,7 @@
       if ((nx - px) * (nx - px) + (ny - py) * (ny - py) > R * R) return;
       if (n.kids) {
         if (n.merge0) {
-          n.merge0 = 0; // touched mid-merge: stay apart
+          n.merge0 = 0;
           n.kids.forEach(function (k) { k.born = now; });
         }
         n.kids.forEach(function (k) { visit(k, px, py, R, now); });
@@ -233,12 +189,10 @@
       }
       var cx = n.x + n.s / 2, cy = n.y + n.s / 2;
       if ((cx - px) * (cx - px) + (cy - py) * (cy - py) > R * R) return;
-      if (now - n.born < SPLIT_MS + 60) return; // one generation per pass
+      if (now - n.born < SPLIT_MS + 60) return;
       if (!split(n, now, true)) n.born = now;
     }
 
-    // Groups of four leaves that have rested long enough start merging;
-    // a finished merge folds them back into their parent.
     function heal(n, now) {
       if (!fine || !n.kids) return;
       var allLeaves = true;
@@ -279,8 +233,6 @@
       var dev = s * dpr;
       var fl = flashColor(n, now);
       if (dev < 2.2) {
-        // Too small to draw a circle: one ink, the nearest to the
-        // photograph here, so the finest tiles stay in the four colours.
         ctx.fillStyle = INK_CSS[n.solo];
         ctx.fillRect(x, y, s, s);
         if (fl) {
@@ -292,8 +244,6 @@
       ctx.fillStyle = INK_CSS[pr.sq];
       ctx.fillRect(x, y, s, s);
       if (fl) {
-        // A fresh split flashes orange or blue in the square, fading to
-        // its own ink.
         ctx.fillStyle = fl;
         ctx.fillRect(x, y, s, s);
       }
@@ -345,14 +295,9 @@
         return;
       }
       for (var i = 0; i < roots.length; i++) heal(roots[i], now);
-      // Set every frame: a canvas whose pixels were dropped comes back with
-      // its scale lost as well.
       ctx.setTransform(dpr, 0, 0, dpr, 0, -OFF * dpr);
       ctx.clearRect(0, 0, cssW, cssH);
       for (var j = 0; j < roots.length; j++) drawNode(roots[j], now, null);
-      // With a mouse the loop runs while anything is split, since what is
-      // split will heal; on a phone nothing heals, so it stops once the
-      // last tap has finished moving.
       if ((fine && busy()) || now < animUntil || flashing) {
         requestAnimationFrame(frame);
       } else {
@@ -369,7 +314,6 @@
       }
     }
 
-    // Pointer: interpolate between events so a fast swipe leaves no gaps.
     var last = null;
     function onMove(e) {
       if (!imgReady) return;
@@ -394,10 +338,7 @@
       canvas.addEventListener("pointerleave", function () { last = null; });
     }
 
-    // Not used: the page opens on the coarse picture, the same one the
-    // tiles heal back to. Kept in case the assembling entrance returns.
     function intro() {
-      // On a phone the picture starts coarse and stays so until tapped.
       if (reduce || !fine) return;
       var now = performance.now();
       roots.forEach(function (n, i) {
@@ -415,18 +356,9 @@
       });
     }
 
-    // The coarse picture, one letter a tile, a to l for the twelve pairs,
-    // row by row: worked out ahead from the same photograph with the same
-    // sums, so the picture can be drawn the moment this script runs. The
-    // photograph itself is only needed to split a tile, and it loads in
-    // the meantime (the page preloads it). If the photograph changes, this
-    // code has to be worked out again; without it, the picture waits for the
-    // photograph as before.
     var PRE = canvas.getAttribute("data-tiles") || "";
     if (PRE.length !== COLS * ROWS || /[^a-l]/.test(PRE)) PRE = null;
 
-    // On arrival the tiles grow out of their centres in a wave from the top
-    // left, each flashing orange or blue as it lands and settling to its ink.
     function appear() {
       if (reduce) return;
       var now = performance.now(), last = 0;
@@ -461,18 +393,11 @@
     img.src = SRC;
     if (PRE) start();
 
-    // A phone fires resize whenever its address bar slides in or out on a
-    // scroll. Setting a canvas's size clears it, even to the size it had,
-    // so the canvas is only touched when the tiles' size really changes,
-    // and then it is always drawn again, with any squares already tapped
-    // sharp put back at once. Before, the picture went blank on a scroll
-    // and came back only when tapped.
     var rw;
     addEventListener("resize", function () {
       clearTimeout(rw);
       rw = setTimeout(function () {
         if (!started) return;
-        // Pinched in, the page has not changed size: leave the picture be.
         if (window.visualViewport && visualViewport.scale > 1.01) return;
         var m = measure();
         if (m.base === base && m.dpr === dpr) return;
@@ -488,18 +413,10 @@
       if (visible) kick();
     }).observe(canvas);
 
-    // A phone may drop a canvas's pixels while the page is out of sight
-    // (another tab, the app in the background, the page kept for Back):
-    // draw it again on the way back.
     addEventListener("pageshow", function () { if (started) kick(); });
     document.addEventListener("visibilitychange", function () { if (started && !document.hidden) kick(); });
     canvas.addEventListener("contextrestored", function () { if (started) kick(); });
 
-    // A tap takes its square of the grid to full detail in one go: every
-    // tile in it splits down to the finest, a generation at a time, in a
-    // ripple out from the finger.
-    // instant: put a square back as it was, with no ripple and no flash
-    // (after the tiles have been rebuilt at a new size).
     function reveal(gx, gy, tx, ty, instant) {
       var key = gy * GX + gx;
       if (revealed[key]) return;
@@ -508,9 +425,6 @@
       var still = reduce || instant;
       var c0 = Math.floor((gx * COLS) / GX), c1 = Math.floor(((gx + 1) * COLS) / GX);
       var r0 = Math.floor((gy * ROWS) / GY), r1 = Math.floor(((gy + 1) * ROWS) / GY);
-      // The square in the tiles' own coordinates. With the cut it is offset
-      // by half a tile, so the tiles across its top and bottom edges split
-      // once, and only their quarters inside it go on to full detail.
       var x0 = c0 * base, x1 = c1 * base, y0 = r0 * base, y1 = r1 * base;
       if (CROP) {
         y0 = OFF + (gy * viewH) / GY;

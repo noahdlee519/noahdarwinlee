@@ -9,8 +9,6 @@
       content="Paintings, drawings and architecture by Noah Darwin Lee"
     />
     <link rel="canonical" href="https://noahdarwinlee.com/" />
-    <!-- Back only when the visitor came here from another page of this site;
-         on the first page they open there is nothing of the site to go back to. -->
     <script>
       (function () {
         try {
@@ -24,9 +22,7 @@
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- The portrait's photograph, fetched at once rather than when its script runs. -->
     <link rel="preload" href="/art/web/me-tiles-320.webp" as="image" type="image/webp" />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
 
@@ -54,10 +50,6 @@
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
 
     <link rel="stylesheet" href="styles.css" />
-    <!-- Before the first paint: a remembered choice, otherwise the system's.
-         The attribute is always written, so the stylesheet never has to guess
-         and the page never flashes the other theme on the way in. The rest of
-         the switch is in theme.js; this part cannot wait for a fetch. -->
     <script>
       (function () {
         var t = null;
@@ -76,7 +68,6 @@
     </script>
     <noscript>
       <style>
-        /* No script means no toggle, so the about content is simply shown. */
         .about-panel { display: block !important; }
         .about-toggle::before { content: none !important; }
       </style>
@@ -126,9 +117,6 @@
     <main class="art-main">
       <div class="about-panel is-open" id="about-panel">
         <div class="about-panel-inner">
-          <!-- The portrait in tiles, the same one as on the portfolio: brush
-               it with the pointer, or tap it a square at a time on a phone.
-               portrait.js draws it. -->
           <div class="profile-photo-frame portrait-frame">
             <canvas id="tiles" class="tiles" style="width: 100%; aspect-ratio: 16 / 25" data-grid="4x6" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="/art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
           </div>
@@ -156,8 +144,6 @@
           </div>
         </div>
       </div>
-      <!-- A message box for anyone with something to say about the site. It
-           posts to a table nobody outside can read; feedback.js sends it. -->
       <form class="feedback" id="feedback" novalidate>
         <label class="feedback-label" for="feedback-message">Share feedback about the website with me</label>
         <textarea id="feedback-message" name="message" rows="3" maxlength="2000" required placeholder="Your message will be anonymous"></textarea>
@@ -167,7 +153,6 @@
           <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
         </div>
       </form>
-      <!-- The last line of the page, whatever is open or shut. -->
       <footer class="site-foot">
         2026 noah darwin lee | <a href="/terms/">terms</a> |
         <a href="/privacy/">privacy policy</a>

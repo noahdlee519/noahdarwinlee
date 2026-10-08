@@ -3,26 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Unlisted on purpose: nothing on the site links here, it is left out of
-         sitemap.xml, and this keeps search engines from listing it. Do not add
-         it to robots.txt -- a Disallow line there would publish the address. -->
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>Noah Darwin Lee — Work</title>
     <meta name="description" content="Products I designed and built with AI." />
     <link rel="icon" href="../favicon.png" type="image/png" />
-    <!-- The portrait's photograph, fetched at once rather than when its script runs. -->
     <link rel="preload" href="/art/web/me-tiles-320.webp" as="image" type="image/webp" />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <style>
-      /* One page, black on white, nothing borrowed from the day/night switch:
-         this is a room of its own on the site, reached only by its address. */
       :root {
         --paper: #ffffff;
         --ink: #0b0b0b;
-        --ink-2: #4a4a4a; /* 9.0:1 on white */
-        --ink-3: #6b6b6b; /* 5.3:1 on white, the floor for small text */
+        --ink-2: #4a4a4a;
+        --ink-3: #6b6b6b;
         --rule: #0b0b0b;
         --hair: #e4e4e4;
         --wash: #f4f4f2;
@@ -87,8 +80,6 @@
         white-space: nowrap;
       }
 
-      /* ---------------- top line ---------------- */
-
       .top {
         display: flex;
         justify-content: space-between;
@@ -112,8 +103,6 @@
         display: flex;
         gap: 22px;
       }
-
-      /* ---------------- hero: the index ---------------- */
 
       .hero {
         padding: clamp(64px, 12vh, 140px) var(--gutter) 0;
@@ -148,7 +137,6 @@
         transform: none;
       }
 
-      /* The intro on the left, the portrait in tiles on the right. */
       .hero-top {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -161,10 +149,6 @@
         margin: 0;
       }
 
-      /* The greeting takes the top of the left column and the blurb the bottom,
-         so the two ends of the column meet the two ends of the portrait. "Noah"
-         is set as large as the project names below, and its full stop is the
-         site's mark, cycling through the four inks. */
       .hero-intro {
         display: flex;
         flex-direction: column;
@@ -231,8 +215,6 @@
         animation: bridge-ci 5.4s step-end infinite;
       }
 
-      /* A definite width: the canvas sizes itself to this column, so the
-         column cannot size itself to the canvas. */
       .tiles-wrap {
         width: clamp(300px, 36vw, 520px);
         justify-self: end;
@@ -240,7 +222,6 @@
 
       .tiles {
         display: block;
-        /* Hold the picture's shape before the script sizes it. */
         width: 100%;
         aspect-ratio: 16 / 25;
         touch-action: pan-y;
@@ -248,9 +229,6 @@
         image-rendering: auto;
       }
 
-      /* On a phone the portrait is tapped a square at a time, four across and
-         six down (data-grid, portrait.js), and loses its bottom row of tiles
-         so the six come out square; hold that shape from the first paint. */
       @media not all and (hover: hover) and (pointer: fine) {
         .tiles[data-grid="4x6"] {
           aspect-ratio: 16 / 24;
@@ -272,10 +250,6 @@
         pointer-events: none;
       }
 
-      /* ---------------- the work ----------------
-         Four cards, two to a row. Each card's details sit in their own panel
-         after it in the page; the panels are ordered to open under the
-         whole row on a wide screen and under their own card on a phone. */
       .work {
         padding: clamp(96px, 16vh, 180px) var(--gutter) 0;
       }
@@ -416,13 +390,11 @@
         padding-bottom: 2px;
       }
 
-      /* An arrow that steps toward the project's page on hover. */
       .c-more i {
         font-style: normal;
         transition: transform 260ms var(--ease-out);
       }
 
-      /* The way to the site: a pill in the product's colour. */
       .go {
         display: inline-flex;
         flex: none;
@@ -484,7 +456,6 @@
         display: none;
       }
 
-      /* Coming soon: a striped sheet with the site's mark cycling in it. */
       .card.is-soon {
         cursor: default;
       }
@@ -535,8 +506,6 @@
         white-space: nowrap;
       }
 
-      /* ---------------- close ---------------- */
-
       .close {
         padding: clamp(120px, 20vh, 220px) var(--gutter) 28px;
       }
@@ -551,8 +520,6 @@
       .mail {
         position: relative;
         display: inline-block;
-        /* The address is about ten of its own em wide; sized to the page so it
-           always sits on one line. */
         font-size: min(136px, calc((100vw - 120px) / 10));
         line-height: 0.95;
         font-weight: 600;
@@ -598,7 +565,6 @@
         transform: scale(0.97);
       }
 
-      /* The résumé sits beside the copy button and wears its shape. */
       .close-actions {
         display: flex;
         flex-wrap: wrap;
@@ -642,7 +608,6 @@
         color: var(--ink);
       }
 
-      /* The scroll line: how far down the page you are. */
       .progress {
         position: fixed;
         left: 0;
@@ -656,9 +621,6 @@
       }
 
 
-      /* ---------------- the mark's cycle ----------------
-         The site's mark steps through six square-and-circle pairs of the four
-         inks: the full stop after "Noah" and the coming-soon cards. */
       @keyframes bridge-sq {
         0% { background: #0b0b0b; }
         16.666% { background: #2a44d6; }
@@ -683,8 +645,6 @@
           animation-play-state: paused;
         }
       }
-
-      /* ---------------- narrow ---------------- */
 
       @media (max-width: 900px) {
         .hero-top {
@@ -711,7 +671,6 @@
 
       }
 
-      /* One card to a row. */
       @media (max-width: 760px) {
         .gallery {
           grid-template-columns: minmax(0, 1fr);
@@ -809,7 +768,6 @@
 
       </section>
 
-      <!-- ======================= the work ======================= -->
       <section class="work" id="work" aria-labelledby="work-h">
         <div class="work-head">
           <h2 id="work-h">Work</h2>
@@ -817,7 +775,6 @@
 
         <div class="gallery">
 
-          <!-- getleggio.com -->
           <article class="card" data-href="leggio/" id="leggio" style="--brand: #1f4e3d; --o: 0; --om: 0">
             <figure class="shot"><img src="../art/web/materials/shot-leggio-800.webp" srcset="../art/web/materials/shot-leggio-800.webp 800w, ../art/web/materials/shot-leggio-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The front page of getleggio.com" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
@@ -828,7 +785,6 @@
             <a class="c-more" href="leggio/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
 
-          <!-- fuzhounese.org -->
           <article class="card" data-href="fuzhounese/" id="fuzhounese" style="--brand: #c5311d; --o: 1; --om: 10">
             <figure class="shot"><img src="../art/web/materials/shot-fuzhounese-800.webp" srcset="../art/web/materials/shot-fuzhounese-800.webp 800w, ../art/web/materials/shot-fuzhounese-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The front page of fuzhounese.org" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
@@ -839,7 +795,6 @@
             <a class="c-more" href="fuzhounese/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
 
-          <!-- GREATERCIRCLE -->
           <article class="card" data-href="greatercircle/" id="greatercircle" style="--brand: #d9741a; --o: 10; --om: 20">
             <figure class="shot"><img src="../art/web/materials/shot-greatercircle-800.webp" srcset="../art/web/materials/shot-greatercircle-800.webp 800w, ../art/web/materials/shot-greatercircle-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The GREATERCIRCLE globe, routing Seoul to Warsaw around Russia, Ukraine, North Korea and Belarus" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
@@ -850,7 +805,6 @@
             <a class="c-more" href="greatercircle/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
 
-          <!-- loretour.com -->
           <article class="card" data-href="loretour/" id="loretour" style="--brand: #2a44d6; --o: 11; --om: 30">
             <figure class="shot"><img src="../art/web/materials/shot-loretour-800.webp" srcset="../art/web/materials/shot-loretour-800.webp 800w, ../art/web/materials/shot-loretour-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The front page of loretour.com" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
@@ -862,8 +816,6 @@
           </article>
 
 
-          <!-- Coming soon: two tools for finance. Nothing to open yet; add the
-               hidden attribute to both to take them off the page. -->
           <article class="card is-soon" style="--brand: #0b0b0b; --o: 20; --om: 40">
             <div class="shot soon" aria-hidden="true"><span class="soon-mark"></span></div>
             <div class="card-head">
@@ -883,7 +835,6 @@
         </div>
       </section>
 
-      <!-- ======================= close ======================= -->
       <section class="close" id="contact" aria-labelledby="contact-h">
         <h2 class="close-q" id="contact-h">Want to build something together?</h2>
         <a class="mail" href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>
@@ -908,7 +859,6 @@
         var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
         var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
-        /* ---------- split the lede into words and the names into letters ---------- */
         $$("[data-split]").forEach(function (el) {
           var words = el.textContent.trim().split(/\s+/);
           el.setAttribute("aria-label", el.textContent.trim());
@@ -919,14 +869,12 @@
             .join(" ");
         });
 
-        // Two frames so the starting state paints before the entrance runs.
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             document.body.classList.add("is-ready");
           });
         });
 
-        /* ---------- sections arrive once, as they come into view ---------- */
         var io = new IntersectionObserver(
           function (entries) {
             entries.forEach(function (en) {
@@ -941,7 +889,6 @@
         );
         $$(".card, .work-head").forEach(function (s) { io.observe(s); });
 
-        /* ---------- progress line ---------- */
         var bar = $(".progress");
         var onScroll = function () {
           var h = document.documentElement.scrollHeight - innerHeight;
@@ -950,12 +897,6 @@
         addEventListener("scroll", onScroll, { passive: true });
         onScroll();
 
-        /* ======================= the trail =======================
-           Orange and blue marks dropped behind the pointer, anywhere on the
-           page, each shrinking away in under a second: half of them squares
-           and half circles, half filled and half drawn in outline, the two
-           halves of the site's mark come apart. The squares land turned, at
-           some multiple of fifteen degrees. */
         (function () {
           if (reduce || !fine) return;
           var cv = $(".trail");
@@ -992,8 +933,6 @@
                 r: 3 + Math.random() * 3.5,
                 c: COLS2[flip % 2],
                 sq: Math.random() < 0.5,
-                // A square turns to one of 0, 15, 30, 45, 60 or 75 degrees; past
-                // 90 a square looks the same again.
                 a: (Math.floor(Math.random() * 6) * 15 * Math.PI) / 180,
                 hollow: Math.random() < 0.5,
                 t: performance.now(),
@@ -1039,10 +978,6 @@
           }
         })();
 
-        /* ======================= the work =======================
-           A card goes to its project's page: a click anywhere on it does
-           what its "More about it" link does, except on the links to the
-           site itself, or when the click ends a selection of its text. */
         $$(".card[data-href]").forEach(function (card) {
           card.addEventListener("click", function (e) {
             if (e.target.closest("a") || String(getSelection()).length) return;
@@ -1052,7 +987,6 @@
           });
         });
 
-        /* ======================= contact ======================= */
         var copyBtn = $("#copy");
         copyBtn.addEventListener("click", function () {
           var done = function () {

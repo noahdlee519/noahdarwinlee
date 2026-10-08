@@ -1,24 +1,3 @@
-// The blog, which is a mailbox.
-//
-// The letters live in posts.js as window.BLOG_POSTS, written there by
-// import-gmail.mjs from the exported Gmail files. Nothing is fetched: a plain
-// script means the page works from a file:// path as well as from the server,
-// and there is no build step to forget to run.
-//
-// Three things are worth knowing about how this behaves:
-//
-//   The URL carries the open letter — /blog/#tokyo-in-the-rain — so a letter
-//   can be linked to and the back button walks the ones you opened. The list
-//   is not re-rendered on every keystroke of that; only the selection moves.
-//
-//   Read and starred state is this browser's, kept in localStorage and wrapped
-//   in try/catch, because a private window throws rather than returning null.
-//   With no storage at all the page still works; every letter simply reads as
-//   unread each visit, which is the honest default for a mailbox.
-//
-//   The body of a letter is inserted as HTML, because that is what an email is.
-//   It is sanitised at import time rather than here — see import-gmail.mjs —
-//   so what reaches this file is already only the tags a letter needs.
 (function () {
   const posts = Array.isArray(window.BLOG_POSTS) ? window.BLOG_POSTS.slice() : [];
 
@@ -39,13 +18,9 @@
   };
   if (!el.list) return;
 
-  /* Newest first, the way a mailbox is stacked. A letter with no date sinks to
-     the bottom rather than throwing the sort. */
   posts.sort(function (a, b) {
     return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
   });
-
-  /* ---------------- what this browser remembers ---------------- */
 
   const READ_KEY = "ndl-blog-read-v1";
   const STAR_KEY = "ndl-blog-starred-v1";
@@ -64,23 +39,16 @@
     try {
       localStorage.setItem(key, JSON.stringify([...set]));
     } catch (err) {
-      /* A private window, or storage turned off. The page does not depend on
-         it, so there is nothing to do and nothing worth saying. */
     }
   }
 
   const read = load(READ_KEY);
   const starred = load(STAR_KEY);
 
-  /* ---------------- dates, the way a mailbox writes them ---------------- */
-
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const thisYear = new Date().getFullYear();
 
-  /* Short in the list: "12 Mar" for this year, "12 Mar 2024" for any other —
-     which is the rule every mail client lands on, because the year is only
-     news when it is not the current one. */
   function shortDate(iso) {
     const d = new Date(iso);
     if (isNaN(d)) return "";
@@ -98,17 +66,13 @@
     return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear() + ", " + time;
   }
 
-  /* ---------------- filtering ---------------- */
-
-  let label = "inbox";       // the folder in the rail
-  let query = "";            // what is typed in the search box
-  let openId = null;         // the letter in the reading pane
-  let shown = [];            // the rows currently in the list, in order
+  let label = "inbox";
+  let query = "";
+  let openId = null;
+  let shown = [];
 
   function haystack(post) {
     if (post._hay) return post._hay;
-    /* The body is searched as text rather than as markup, so a search for
-       "table" does not match every letter that happens to contain one. */
     const tmp = document.createElement("div");
     tmp.innerHTML = post.body || "";
     post._hay = [
@@ -120,9 +84,6 @@
     return post._hay;
   }
 
-  /* Spam is its own place: what is filed there shows up under Spam and
-     nowhere else — not in the inbox, not in Starred or Unread, not in a
-     label, and not in a search run from any of those. */
   const isSpam = (post) => post.folder === "spam";
 
   function matches(post) {
@@ -140,8 +101,6 @@
     return haystack(post).indexOf(query) !== -1;
   }
 
-  /* ---------------- the rail ---------------- */
-
   function labelCounts() {
     const counts = new Map();
     posts.forEach(function (post) {
@@ -153,8 +112,6 @@
     return counts;
   }
 
-  /* Plain line icons for the rail, drawn here so the page carries no icon
-     font and borrows nobody's set. */
   const ICONS = {
     inbox:
       '<path d="M3 13h5l1.5 2.5h5L16 13h5" />' +
@@ -169,8 +126,6 @@
       '<path d="M12 8v5" /><path d="M12 16.5v.01" />'
   };
 
-  /* The default picture a mail account shows before it has one: a grey disc
-     and the outline of nobody in particular. */
   function anonAvatar(extraClass) {
     const span = document.createElement("span");
     span.className = "mail-avatar" + (extraClass ? " " + extraClass : "");
@@ -181,9 +136,6 @@
     return span;
   }
 
-  /* My own letters carry my initial, and the one sender in spam carries its
-     own; anyone else stays the grey nobody. The reader's bubble in the top
-     bar is anonymous either way, because the reader is whoever they are. */
   function senderAvatar(post) {
     const from = post.fromAddress || "";
     const span = document.createElement("span");
@@ -272,8 +224,6 @@
     });
   }
 
-  /* A label's colour is derived from its own letters, so the same place is the
-     same colour every time without a table to keep in step with the posts. */
   function labelColor(name) {
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -281,8 +231,6 @@
     }
     return "hsl(" + hash + " 52% 46%)";
   }
-
-  /* ---------------- the list ---------------- */
 
   function renderList() {
     shown = posts.filter(matches);
@@ -313,8 +261,6 @@
     if (!read.has(post.id)) li.classList.add("is-unread");
     if (post.id === openId) li.classList.add("is-open");
 
-    /* The star is a button of its own so that starring does not open the
-       letter, and so it is reachable without a mouse. */
     const star = document.createElement("button");
     star.type = "button";
     star.className = "mail-star";
@@ -351,8 +297,6 @@
     middle.appendChild(subject);
     const snippet = document.createElement("span");
     snippet.className = "mail-snippet";
-    /* No dash in front of it: the subject has its own line above, so the two
-       do not run together and nothing is needed to separate them. */
     snippet.textContent = post.preview || "";
     middle.appendChild(snippet);
     open.appendChild(middle);
@@ -379,8 +323,6 @@
 
     li.appendChild(open);
 
-    /* Shown on hover, only on a row that has been read: the one thing this
-       mailbox lets you undo. Opening a letter is how it gets read. */
     if (read.has(post.id)) {
       const tools = document.createElement("span");
       tools.className = "mail-row-tools";
@@ -400,8 +342,6 @@
     return li;
   }
 
-  /* ---------------- the reading pane ---------------- */
-
   function openPost(id, options) {
     const post = posts.find(function (p) { return p.id === id; });
     if (!post) return false;
@@ -417,8 +357,6 @@
     el.read.textContent = "";
     el.read.appendChild(letter(post));
     el.read.scrollTop = 0;
-    /* On a phone the two panes are one column deep; opening a letter slides the
-       list away, and Escape or the back arrow brings it back. */
     if (el.panes) el.panes.classList.add("is-reading");
 
     if (!options || !options.silent) {
@@ -430,8 +368,6 @@
     return true;
   }
 
-  /* Marking a letter unread puts it back the way it was before it was opened,
-     which means closing it: a bold row in the list, and nothing in the pane. */
   function markUnread(id) {
     read.delete(id);
     save(READ_KEY, read);
@@ -568,8 +504,6 @@
     const body = document.createElement("div");
     body.className = "mail-letter-body";
     body.innerHTML = post.body || "";
-    /* Anything that did survive import as a link leaves this site, so it is
-       given the treatment every other outbound link here gets. */
     body.querySelectorAll("a[href]").forEach(function (a) {
       const href = a.getAttribute("href") || "";
       if (/^https?:/i.test(href)) {
@@ -579,9 +513,6 @@
     });
     wrap.appendChild(body);
 
-    /* Reply writes to the sender; Forward opens a blank mail with a link to
-       this letter in it, which is the most a page can do without a mail
-       server of its own. */
     const actions = document.createElement("div");
     actions.className = "mail-letter-actions";
     const subject = post.subject || "(no subject)";
@@ -614,8 +545,6 @@
     return wrap;
   }
 
-  /* Escape is the only key this page claims. It is the one every reader
-     already expects to close what is open, so it needs no telling. */
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
     const typing =
@@ -635,11 +564,6 @@
     });
   }
 
-  /* ---------------- the dividers ---------------- */
-
-  /* The rail and the list can be dragged wider or narrower, and the window
-     remembers where they were left. Each divider sets one custom property on
-     the window; the stylesheet does the rest. Double-click puts one back. */
   const SIZE_KEY = "ndl-blog-panes-v1";
   const PANES = {
     rail: { prop: "--mail-rail-w", min: 150, max: 380, fallback: 240, el: el.rail },
@@ -670,8 +594,6 @@
 
   function setSize(key, px) {
     const pane = PANES[key];
-    /* The list may not eat the letter: whatever it takes, the letter keeps
-       at least 320px. */
     let ceiling = pane.max;
     if (key === "list" && el.panes) {
       ceiling = Math.min(ceiling, el.panes.getBoundingClientRect().width - 320);
@@ -682,7 +604,6 @@
     try {
       localStorage.setItem(SIZE_KEY, JSON.stringify(sizes));
     } catch (err) {
-      /* nothing to do; the drag still works for this visit */
     }
   }
 
@@ -736,8 +657,6 @@
   wireDivider(el.dividerRail, "rail");
   wireDivider(el.dividerList, "list");
 
-  /* The list is one click target per row; the anchor inside carries the href so
-     that middle-click and cmd-click still open a real URL. */
   el.list.addEventListener("click", function (event) {
     const link = event.target.closest ? event.target.closest(".mail-rowlink") : null;
     if (!link) return;

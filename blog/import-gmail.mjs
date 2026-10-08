@@ -1,63 +1,3 @@
-#!/usr/bin/env node
-//
-// Turns exported Gmail messages into blog/posts.js.
-//
-//     node blog/import-gmail.mjs "blog/part 1" "blog/part 2"
-//     node blog/import-gmail.mjs blog/letters --dry
-//     node blog/import-gmail.mjs "blog/part 1" --fresh
-//
-// A picture already in blog/images/ that is newer than its source is left
-// alone, so re-running for one new letter does not re-encode the other
-// ninety. --fresh re-encodes everything, which is what you want after
-// changing the size or quality below.
-//
-// Name one folder or several, and each is walked one level deep. Every .rtf,
-// .eml, .html and .txt found is read as mail: the subject, the date, the sender
-// and the body come out, the pictures go into blog/images/, and posts.js is
-// written. Naming folders one at a time is how a half-finished letter is kept
-// out of the blog until its photographs are with it.
-//
-// The .rtf case is the useful one here. A message copied out of Gmail's "Show
-// original" and saved from TextEdit is the message source wearing a document's
-// clothes: the formatting comes off and what is underneath is mail. Two things
-// about it are broken and are repaired on the way past — TextEdit leaves blank
-// lines inside the headers, which read strictly would end them early; and the
-// copy carries every attachment's headers but none of its data.
-//
-// That second one is why photographs are looked for beside the letter. Each
-// image part in the message takes the next downloaded file of its own type,
-// which is the order a Gmail download names them in ("unnamed.png",
-// "unnamed-1.png", and each type counted separately). A photograph saved as
-// PNG is several times the size it needs to be, so ImageMagick re-encodes it
-// if it is installed; without it the file is copied across and the run says so.
-//
-// Nothing is installed to run this: it uses only what Node already has,
-// because this site has no build step and one script that quietly needs
-// `npm install` first is a script that stops working in a year.
-//
-// What it throws away, and why:
-//
-//   Gmail wraps a message in layers of its own — quoted-printable encoding,
-//   nested tables used as layout, a <style> block, class names, inline styles
-//   that assume a white background and a fixed width, tracking pixels, and the
-//   "On Tuesday, X wrote:" block of everything the message was replying to.
-//   None of that is the letter. What is kept is the text, the structure
-//   (paragraphs, lists, headings, quotes, links) and the images.
-//
-//   Script tags, event handlers, iframes, objects, forms and javascript: URLs
-//   are removed outright. The body is inserted into the page as HTML, so this
-//   is the point at which that has to be safe — blog.js trusts what it is
-//   given, and this is what gives it.
-//
-// What it cannot guess is labels. Add them by hand in posts.js afterwards; the
-// script leaves any you have already added alone when you run it again.
-//
-// A folder named "spam" is the spam folder: what is in it is written with
-// folder: "spam", shows up only under Spam in the rail, and has its remote
-// pictures taken out — a mail client does not load a spammer's images, and
-// neither does this page. Every link in it goes to SPAM_LINK instead of
-// wherever it went: a spammer's links are the last thing to pass on.
-
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -71,11 +11,7 @@ const args = process.argv.slice(2);
 const dry = args.includes("--dry");
 const fresh = args.includes("--fresh");
 
-/* Where every link in a spam letter points. */
 const SPAM_LINK = "https://account.venmo.com/u/noahlee519";
-/* More than one folder may be named, because the letters are not all finished
-   at once: naming the ones that are keeps the half-done ones out of the blog
-   until their photographs are with them. */
 const sources = args.filter((a) => !a.startsWith("--"));
 
 if (!sources.length) {
@@ -91,11 +27,6 @@ for (const dir of sources) {
   }
 }
 
-/* ------------------------------------------------------------ decoding -- */
-
-/* Quoted-printable, which is how a .eml carries anything that is not plain
-   ASCII: "=E2=80=99" is a right single quote, and "=" at the end of a line
-   means the line was only broken there to keep it short. */
 function decodeQuotedPrintable(text) {
   return text
     .replace(/=\r?\n/g, "")
@@ -104,12 +35,7 @@ function decodeQuotedPrintable(text) {
     );
 }
 
-/* An encoded-word: =?UTF-8?Q?...?= or =?UTF-8?B?...?=, which is how a subject
-   line carries anything outside ASCII. */
 function decodeEncodedWords(text) {
-  /* Two encoded words in a row are separated by whitespace that is part of the
-     encoding, not part of the subject — "(Part =?..?= =?..?=1)" is one word
-     split in two, and left in place the space shows up in the title. */
   return text.replace(/\?=\s+=\?/g, "?==?").replace(
     /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g,
     (whole, charset, kind, payload) => {
@@ -146,15 +72,6 @@ function decodeEntities(text) {
     });
 }
 
-/* ------------------------------------------------------- reading a file -- */
-
-/* A message copied out of Gmail's "Show original" and saved from TextEdit has
-   blank lines dropped into the middle of its headers — between Date and
-   Subject, most often. Read strictly, the first of those ends the headers, and
-   everything real about the message (its Subject, its Content-Type, and so the
-   boundary that divides it) is then read as body text and lost.
-   So the top of the file is walked line by line instead: a blank line only
-   ends the headers once something that is not a header has followed it. */
 function repairHeaders(raw) {
   const lines = raw.split(/\r?\n/);
   const isHeader = (line) => /^[A-Za-z][A-Za-z0-9-]*:/.test(line);
@@ -168,23 +85,19 @@ function repairHeaders(raw) {
       continue;
     }
     if (line.trim() === "") {
-      /* Look past the gap: another header means the gap was noise. */
       let j = i + 1;
       while (j < lines.length && lines[j].trim() === "") j++;
       if (j < lines.length && isHeader(lines[j])) {
         i = j - 1;
         continue;
       }
-      break; // a real end of headers
+      break;
     }
-    break; // a line that is neither blank nor a header: headers are over
+    break;
   }
   return out.join("\n") + "\n\n" + lines.slice(i).join("\n");
 }
 
-/* A .eml is headers, a blank line, then the body — possibly in several parts,
-   each with its own headers. This walks it far enough to find the HTML part
-   (or the plain-text one if that is all there is) and any image attachments. */
 function readEml(rawIn) {
   const raw = repairHeaders(rawIn);
   const headers = {};
@@ -193,7 +106,7 @@ function readEml(rawIn) {
   const bodyBlock = split === -1 ? "" : raw.slice(split).replace(/^\r?\n\r?\n/, "");
 
   headerBlock
-    .replace(/\r?\n[ \t]+/g, " ") // unfold wrapped header lines
+    .replace(/\r?\n[ \t]+/g, " ")
     .split(/\r?\n/)
     .forEach((line) => {
       const at = line.indexOf(":");
@@ -239,11 +152,6 @@ function readEml(rawIn) {
     else if (ctype.includes("text/plain")) text = text || asText;
   }
 
-  /* A message from Gmail with both text and pictures is multipart/related
-     wrapping a multipart/alternative wrapping the plain and HTML versions —
-     so the parts nest, and walking only the outer level finds a part whose
-     type is "multipart/alternative" and nothing it can use. Hence the
-     recursion: a part that is itself multipart is split in turn. */
   function walkPart(partHeaders, partBody, depth) {
     const ctype = partHeaders["content-type"] || "";
     const inner = /boundary="?([^";]+)"?/i.exec(ctype);
@@ -283,9 +191,6 @@ function readEml(rawIn) {
   };
 }
 
-/* A saved .html page: the headers are not headers any more, so the subject
-   comes from <title> or the first heading and the date from whatever Gmail
-   printed near the top. */
 function readHtml(raw) {
   const title =
     /<title[^>]*>([\s\S]*?)<\/title>/i.exec(raw)?.[1] ||
@@ -293,17 +198,8 @@ function readHtml(raw) {
     "";
   const whole = /<body[^>]*>([\s\S]*?)<\/body>/i.exec(raw)?.[1] || raw;
 
-  /* A saved Gmail page is the whole application around the message: the
-     subject line, the sender row, the reply box, the chrome. The message
-     itself sits in a container Gmail has marked, and taking that rather than
-     the page keeps the letter from opening with its own headers repeated
-     inside it. If none of the markers is there, the page is used whole —
-     which is right for a message printed or forwarded on its own. */
   const body = messageContainer(whole) || whole;
 
-  /* Gmail writes the sender as the address in a title attribute and the name
-     as the text beside it: <span title="a@b.com">Their Name</span>. Take both
-     when they are there, the address alone when they are not. */
   const pair = /title="([^"@]+@[^"]+)"[^>]*>([^<]{1,80})</i.exec(whole);
   const from = pair
     ? pair[2].trim() + " <" + pair[1].trim() + ">"
@@ -315,17 +211,12 @@ function readHtml(raw) {
     to: "",
     date: "",
     html: body,
-    /* The date is printed in the page's chrome, which the container above
-       deliberately excludes — so the whole page is kept for the date hunt. */
     dateSource: whole,
     text: "",
     images: []
   };
 }
 
-/* The classes Gmail puts on a message body, in the order worth trying. Each is
-   matched by finding its opening tag and then walking forward counting <div>s,
-   because a regex cannot balance them and the container is always nested. */
 const BODY_MARKERS = [
   /<div[^>]*\bclass="[^"]*\ba3s\b[^"]*"[^>]*>/i,
   /<div[^>]*\bclass="[^"]*\bii\b[^"]*"[^>]*>/i,
@@ -345,20 +236,15 @@ function messageContainer(html) {
       depth += m[1] ? -1 : 1;
       if (depth === 0) return html.slice(start, m.index);
     }
-    return html.slice(start); // unbalanced: take the rest
+    return html.slice(start);
   }
   return null;
 }
 
-/* --------------------------------------------------------- cleaning up -- */
-
-/* A space rather than nothing, so that "…Nagoya</p><p>I have…" reads as two
-   words when it is flattened for a preview instead of one. */
 function stripTags(html) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 }
 
-/* Everything a letter is allowed to be, once Gmail's wrapper is off. */
 const KEEP = new Set([
   "p", "br", "hr", "div", "span", "em", "i", "strong", "b", "u", "s",
   "a", "img", "figure", "figcaption",
@@ -366,8 +252,6 @@ const KEEP = new Set([
   "h2", "h3", "h4", "table", "thead", "tbody", "tr", "td", "th", "sup", "sub"
 ]);
 
-/* Attributes worth keeping, per tag. Everything else — class, style, width,
-   bgcolor, data-*, and every on* handler — goes. */
 const ATTRS = {
   a: ["href", "title"],
   img: ["src", "alt", "width", "height"],
@@ -378,7 +262,6 @@ const ATTRS = {
 function sanitize(html) {
   let out = html;
 
-  // whole elements, contents and all
   out = out.replace(
     /<(script|style|head|noscript|iframe|object|embed|form|button|input|select|textarea|svg|link|meta|title)\b[\s\S]*?<\/\1\s*>/gi,
     ""
@@ -386,10 +269,6 @@ function sanitize(html) {
   out = out.replace(/<(link|meta|base)\b[^>]*>/gi, "");
   out = out.replace(/<!--[\s\S]*?-->/g, "");
 
-  // Gmail's quoted history: everything from the "On <date>, <name> wrote:"
-  // marker down. Gmail also puts gmail_quote on a block the writer indented
-  // on purpose — a poem, say — so a gmail_quote container is only cut when
-  // the attribution line is with it; on its own it is kept as a blockquote.
   out = out.replace(
     /<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>(?=[\s\S]{0,600}?(?:gmail_attr|wrote:))[\s\S]*$/i,
     ""
@@ -399,7 +278,6 @@ function sanitize(html) {
     ""
   );
 
-  // tags: keep the allowed ones with their allowed attributes, drop the rest
   out = out.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, (whole, rawTag, rawAttrs) => {
     const tag = rawTag.toLowerCase();
     if (!KEEP.has(tag)) return "";
@@ -420,20 +298,16 @@ function sanitize(html) {
     return "<" + tag + (kept.length ? " " + kept.join(" ") : "") + (selfClosing ? " />" : ">");
   });
 
-  // A pixel is not a picture. Anything 1 or 2 across is a tracker, and it would
-  // report the reader to whoever set it every time this page is opened.
   out = out.replace(/<img\b[^>]*\/?>/gi, (tag) => {
     const w = Number(/\bwidth="(\d+)"/i.exec(tag)?.[1] ?? 99);
     const h = Number(/\bheight="(\d+)"/i.exec(tag)?.[1] ?? 99);
     return w <= 2 || h <= 2 ? "" : tag;
   });
 
-  // An anchor whose href did not survive is no longer a link; keep its words.
   out = out.replace(/<a(?![^>]*\bhref=)[^>]*>([\s\S]*?)<\/a>/gi, "$1");
 
   out = unwrapLayoutTables(out);
 
-  // empty wrappers Gmail leaves behind, and runs of blank paragraphs
   for (let i = 0; i < 4; i++) {
     out = out.replace(/<(div|span|p)>\s*<\/\1>/gi, "");
     out = out.replace(/<div>\s*(<br\s*\/?>\s*)+<\/div>/gi, "");
@@ -444,9 +318,6 @@ function sanitize(html) {
   return balance(out);
 }
 
-/* Cutting the quoted reply off the end takes the closing tags of anything that
-   was still open with it. A browser repairs that silently, but the file should
-   say what it means, so whatever is left open is closed here. */
 const VOID = new Set(["br", "hr", "img"]);
 
 function balance(html) {
@@ -466,10 +337,6 @@ function balance(html) {
   return html + open.reverse().map((tag) => "</" + tag + ">").join("");
 }
 
-/* Gmail lays a message out in tables — often three deep, to centre it at six
-   hundred pixels. A table that never puts two cells in one row is doing that
-   job and nothing else, so its scaffolding comes out and its contents stay. A
-   table with real columns is left alone, because then it is a table. */
 function unwrapLayoutTables(html) {
   let out = html;
   for (let pass = 0; pass < 6; pass++) {
@@ -495,21 +362,9 @@ function safeUrl(value) {
   const url = value.trim().replace(/\s+/g, "");
   if (/^(https?:|mailto:|cid:|#|\/|\.\/|\.\.\/)/i.test(url)) return true;
   if (/^data:image\//i.test(url)) return true;
-  return !/^[a-z][a-z0-9+.-]*:/i.test(url); // a bare relative path is fine
+  return !/^[a-z][a-z0-9+.-]*:/i.test(url);
 }
 
-/* An .rtf here is not a document — it is a message copied out of Gmail's
-   "Show original" and saved from TextEdit, so underneath the formatting it is
-   the message source. This takes the formatting off and hands back the text,
-   which readEml then reads as the mail it is.
-   Only what TextEdit actually produces is handled: the font and colour tables,
-   the \'xx and \uN escapes, and a backslash at end of line, which is how the
-   message's own line breaks were written. */
-/* The tables at the top of an RTF nest, and a regex cannot count braces, so
-   these are cut out by matching them: find the group's opening brace, walk
-   forward until the depth returns to zero, and drop the lot. Left in, their
-   debris ("Courier;", ";;;") is the first thing the reader below sees, and it
-   stops looking for headers before it has found any. */
 function dropGroups(s, names) {
   const opener = new RegExp("\\{\\\\\\*?\\\\(?:" + names.join("|") + ")\\b");
   for (let guard = 0; guard < 40; guard++) {
@@ -547,16 +402,11 @@ function rtfToText(raw) {
   s = s.replace(/\\([{}\\])/g, "$1");
   s = s.replace(/[{}]/g, "");
 
-  /* Whatever survives before the message's own first header is document, not
-     mail. The message begins at the first line that reads like a header. */
   const lines = s.split(/\r?\n/);
   const first = lines.findIndex((line) => /^[A-Za-z][A-Za-z0-9-]*:\s/.test(line));
   return (first === -1 ? lines : lines.slice(first)).join("\n").trim();
 }
 
-/* A plain-text file has no headers, so the convention is the one a letter uses
-   anyway: the first line is the subject if a blank line follows it. Otherwise
-   there is no subject here and the file name has to supply it. */
 function readTxt(text) {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   let subject = "";
@@ -575,7 +425,6 @@ function readTxt(text) {
   };
 }
 
-/* Plain text, when that is all a message had: blank lines become paragraphs. */
 function textToHtml(text) {
   return text
     .split(/\r?\n\s*\r?\n/)
@@ -593,8 +442,6 @@ function textToHtml(text) {
     )
     .join("");
 }
-
-/* --------------------------------------------------------------- bits -- */
 
 function slug(text, taken) {
   let base = text
@@ -633,8 +480,6 @@ function nameAndAddress(from) {
   return { name: bare, address: "" };
 }
 
-/* A date out of the file, or out of the file's name, or the file's mtime —
-   in that order, because the first is right and the last is at least stable. */
 function pickDate(header, html, fallbackFile) {
   const fromHeader = header && Date.parse(header);
   if (fromHeader) return new Date(fromHeader).toISOString();
@@ -655,10 +500,6 @@ function pickDate(header, html, fallbackFile) {
   return new Date(fs.statSync(fallbackFile).mtime).toISOString();
 }
 
-/* --------------------------------------------------- labels, preserved -- */
-
-/* Labels are added by hand after the first import. Re-running should not wipe
-   them, so the labels already in posts.js are read back and reapplied by id. */
 function existingLabels() {
   const map = new Map();
   if (!fs.existsSync(OUT_JS)) return map;
@@ -672,12 +513,6 @@ function existingLabels() {
   return map;
 }
 
-/* ---------------------------------------------------------------- run -- */
-
-/* The letters may sit loose in one folder, or a folder each with their photos
-   beside them — "part 3/part 3.rtf" and "part 3/photos/*.png". So the source
-   is walked two deep, and the blog's own files are stepped over rather than
-   read as mail. */
 const OWN = new Set(["index.html", "posts.js", "blog.js", "import-gmail.mjs"]);
 const MESSAGE = /\.(html?|eml|txt|rtf)$/i;
 const PICTURE = /\.(png|jpe?g|gif|webp|heic|tiff?)$/i;
@@ -702,9 +537,6 @@ function walk(dir, depth, out) {
   return out;
 }
 
-/* Every picture sitting with a letter, in the order a download names them:
-   Gmail calls the first one "unnamed.png" and counts from there, and it counts
-   each file type on its own. */
 function picturesBeside(messagePath) {
   const dir = path.dirname(messagePath);
   const found = [];
@@ -743,11 +575,6 @@ function picturesBeside(messagePath) {
 
 const EXT_FOR = { png: ".png", jpeg: ".jpg", jpg: ".jpg", gif: ".gif", webp: ".webp" };
 
-/* Photographs saved as PNG — which is what Gmail hands back for an inline
-   image — are several times the size they need to be, because PNG keeps every
-   pixel exactly and a photograph does not benefit. ImageMagick, if it is here,
-   re-encodes them; if it is not, the file is copied across unchanged and the
-   run says so. */
 let magick = null;
 function haveMagick() {
   if (magick !== null) return magick;
@@ -768,9 +595,6 @@ function shrink(from, to) {
     fs.copyFileSync(from, to.replace(/\.webp$/, path.extname(from)));
     return false;
   }
-  /* 1200 on the long side is twice the width the reading pane ever gives a
-     picture, which is what a retina screen wants and no more; -strip drops
-     the camera's metadata, including where the photograph was taken. */
   const run = spawnSync(
     cmd,
     [from, "-auto-orient", "-strip", "-resize", "1200x1200>", "-quality", "74",
@@ -813,20 +637,6 @@ for (const full of files) {
     ? sanitize(parsed.html)
     : textToHtml(parsed.text || "");
 
-  /* Copying a message out of "Show original" copies its shape but not its
-     attachments — every image part arrives with its headers and no data. The
-     photographs were downloaded separately, so they are matched back on: each
-     part in turn takes the next downloaded file of its own type, which is the
-     order a download names them in. The rewriting happens here, on the decoded
-     body, because a cid: in the raw source can be split across a line break
-     and would not be found there.
-
-     "In turn" means the order the pictures appear in the letter, not the order
-     the attachments sit in the message — those differ, because Gmail files an
-     attachment when it is added and a picture pasted in last may have been
-     added first. So the parts are put into the order of their first cid:
-     reference in the body before any file is handed out; a part the body
-     never refers to goes last, and takes nothing. */
   const stem = slug(path.parse(name).name, new Set());
   const pools = parsed.images.some((i) => !i.data.length)
     ? picturesBeside(full)
@@ -878,12 +688,8 @@ for (const full of files) {
       bodyHtml = bodyHtml.split("cid:" + image.cid).join("images/" + written);
     }
   });
-  // anything still pointing at a cid: never arrived — drop the tag rather than
-  // leave a broken image in the letter
   bodyHtml = bodyHtml.replace(/<img[^>]*src="cid:[^"]*"[^>]*\/?>/gi, "");
 
-  /* Last resort for a subject: the file name, with any ordering prefix taken
-     off — "01-", "2024-07-19-" — since that was for the folder, not the letter. */
   let subject = parsed.subject.trim();
   if (!subject) {
     subject = path
@@ -898,13 +704,8 @@ for (const full of files) {
   const who = nameAndAddress(parsed.from);
   const id = slug(subject, taken);
 
-  /* The folder the letter came out of decides where it is filed. */
   const folder = /^spam$/i.test(path.basename(path.dirname(full))) ? "spam" : "inbox";
 
-  /* Images still pointing at Gmail's servers are somebody else's to keep. They
-     work today and stop working whenever that URL expires, so they are counted
-     and named at the end rather than quietly left to rot. In spam they are
-     simply not loaded, which is what a mail client does with them too. */
   let remoteDropped = 0;
   if (folder === "spam") {
     bodyHtml = bodyHtml.replace(/<img[^>]*src="https?:\/\/[^"]*"[^>]*\/?>/gi, () => {
@@ -924,9 +725,6 @@ for (const full of files) {
     date: pickDate(parsed.date, parsed.dateSource || parsed.html || parsed.text, full),
     fromName: who.name || "Noah Darwin Lee",
     fromAddress: who.address || "noahlee519@gmail.com",
-    /* "to me", the way the client says it — whoever is reading is the one it
-       was sent to. The newsletters went out blind-copied, so their To header
-       is empty and they say the same. */
     to: parsed.to && !/noah(d)?lee519@gmail\.com/i.test(parsed.to)
       ? nameAndAddress(parsed.to).name
       : "me",

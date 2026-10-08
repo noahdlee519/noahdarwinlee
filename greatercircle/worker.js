@@ -1,10 +1,3 @@
-// The route is worked out off the main thread, so the globe keeps turning
-// while it runs. One message in, one result out; a newer request supersedes
-// an older one still running.
-// Loaded as a worker normally; loaded as a plain script when the page could
-// not start a worker, in which case it answers through the same messages on
-// the main thread (the search still runs in slices, so the page stays
-// responsive, just less so).
 var IN_WORKER = typeof importScripts === "function";
 if (IN_WORKER) importScripts("vendor/topojson-client.min.js", "engine.js");
 
@@ -18,11 +11,11 @@ function send(m) {
   if (IN_WORKER) postMessage(m);
   else if (shim.onmessage) shim.onmessage({ data: m });
 }
-var world = null;      // every country, as GeoJSON features
-var byId = new Map();  // feature id -> feature
-var everything = null; // obstacles built from every country, for "crosses"
-var cache = [];        // recent obstacle sets, by the sorted list of ids
-var latest = 0;        // id of the most recent route request
+var world = null;
+var byId = new Map();
+var everything = null;
+var cache = [];
+var latest = 0;
 
 function handle(m) {
   try {
@@ -42,13 +35,6 @@ function init(m) {
   send({ type: "ready", ms: Math.round(performance.now() - t0), corners: everything.corners.count });
 }
 
-/* The obstacles for a request: the chosen countries, and any regions drawn
-   on the globe, which arrive as rings of [lon, lat] with an id and a name. */
-/* Drawn regions come as { id, name, ring, inverted, bufferKm }: the ring's
-   smaller side is the region, or everything else when it is inverted, and a
-   buffer adds the discs and strips that grow it by that distance (their ids
-   are the region's with "~" and a number, so the page can tell whose they
-   are). */
 function obstaclesFor(ids, regions) {
   regions = regions || [];
   var key = ids.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + (r.inverted ? "i" : "") + ":" + (r.bufferKm || 0) + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|");
@@ -68,10 +54,8 @@ function obstaclesFor(ids, regions) {
   return obs;
 }
 
-/* Which countries a chain of arcs passes over, as ids in the order met.
-   The one the start is in comes first, the one the end is in last. */
 function countriesAlong(waypoints) {
-  var order = new Map(); // feature index -> position along the way
+  var order = new Map();
   var pos = 0;
   G.featuresContaining(everything, waypoints[0]).forEach(function (idx) { order.set(idx, -1); });
   for (var i = 0; i + 1 < waypoints.length; i++) {
@@ -103,7 +87,6 @@ function route(m) {
     result.lengthKm = result.directKm;
     result.bends = 0;
     if (Math.PI - direct < 1e-9) {
-      // Antipodes: let the engine pick a semicircle, so the line is drawn.
       var free = G.findRoute(obstaclesFor([]), a, b);
       result.waypoints = free.waypoints.map(function (v) { return G.toLonLat(v); });
       result.antipodal = true;
@@ -115,7 +98,7 @@ function route(m) {
   var obs = obstaclesFor(m.avoid, regions);
   var s = G.startSearch(obs, a, b);
   var tick = function () {
-    if (latest !== id) return; // superseded while waiting
+    if (latest !== id) return;
     try {
       step();
     } catch (err) {

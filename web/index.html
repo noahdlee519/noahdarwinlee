@@ -13,7 +13,6 @@
     <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
     <link rel="manifest" href="../manifest.json" />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
 
@@ -29,10 +28,6 @@
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
 
     <link rel="stylesheet" href="../styles.css" />
-    <!-- Before the first paint: a remembered choice, otherwise the system's.
-         The attribute is always written, so the stylesheet never has to guess
-         and the page never flashes the other theme on the way in. The rest of
-         the switch is in theme.js; this part cannot wait for a fetch. -->
     <script>
       (function () {
         var t = null;
@@ -50,15 +45,6 @@
       })();
     </script>
     <style>
-      /* ---------------------------------------------------------------------
-         Sixteen links on one colour. The old web this list comes from is in
-         the typewriter face and the blue underline and nothing else: no tiles,
-         no bevels, no counter, no badges. A page of links should look like a
-         page of links.
-
-         The header is the site's own, in the places it holds everywhere else.
-         Only the paint is different.
-         ------------------------------------------------------------------ */
       :root {
         --paper: #e9e5d9;
         --ink-1: #17160f;
@@ -76,10 +62,6 @@
         --visited: #f29bff;
       }
 
-      /* The site's header furniture is painted in --ink, which is white
-         everywhere else because everywhere else is orange or black. Here it
-         takes the page's own ink. The [data-theme] selectors are to
-         out-specify the same declarations in the site stylesheet. */
       :root,
       :root[data-theme="light"],
       :root[data-theme="dark"] {
@@ -96,7 +78,6 @@
         padding-bottom: 64px;
       }
 
-      /* The name and the way back, in the page's own hand. */
       .web-page .name,
       .web-page .back-link {
         font-family: "Georgia", Courier, monospace;
@@ -153,8 +134,6 @@
           padding-top: 16px;
         }
 
-        /* The header is in the stack at this width rather than fixed above it,
-           so the heading needs a line of its own between them. */
         .web-title {
           margin-top: 20px;
         }

@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Back only when the visitor came here from another page of this site;
-         on the first page they open there is nothing of the site to go back to. -->
     <script>
       (function () {
         try {
@@ -26,10 +24,8 @@
     <link rel="manifest" href="../manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
-    <!-- Roboto, for the mail window's chrome, still comes from Google Fonts. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
       rel="stylesheet"
@@ -50,10 +46,6 @@
     <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
 
     <link rel="stylesheet" href="../styles.css" />
-    <!-- Before the first paint: a remembered choice, otherwise the system's.
-         The attribute is always written, so the stylesheet never has to guess
-         and the page never flashes the other theme on the way in. The rest of
-         the switch is in theme.js; this part cannot wait for a fetch. -->
     <script>
       (function () {
         var t = null;
@@ -78,8 +70,6 @@
       <span class="name-word-lee">Lee</span></a
     >
     <a class="back-link" href="/" data-back>back</a>
-    <!-- The page's own name: it folds the page away, and the message box
-         takes its place. page-toggle.js. -->
     <button class="about-link page-toggle" id="page-toggle" type="button" aria-expanded="true" aria-controls="page-body">blog</button>
     <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
       <img src="../favicon.png" alt="" width="30" height="30" />
@@ -91,9 +81,6 @@
         Japan, Korea, and Czechia. Take a look!
       </p>
 
-      <!-- When JavaScript is off the mail window is inert — no post list,
-           no letter pane, nothing. Show the catalogue as a plain list so
-           the page still has something to offer. -->
       <noscript>
         <div class="mail-noscript">
           <p>These letters need JavaScript to read (the mail client is interactive).</p>
@@ -135,9 +122,6 @@
         </style>
       </noscript>
 
-      <!-- The window. Drawn the way the mail client these were read in draws
-           itself — the backdrop, the pill of a search box, the rail, the white
-           card — but with no wordmark and no logo: the arrangement is enough. -->
       <div class="mail-window">
         <div class="mail-bar">
           <span class="mail-menu" aria-hidden="true">
@@ -172,7 +156,6 @@
 
         <div class="mail-body">
           <nav class="mail-rail" aria-label="Folders and labels">
-            <!-- The one thing a visitor can compose here is a mail to me. -->
             <a class="mail-compose" href="mailto:noahlee519@gmail.com">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" />
@@ -182,8 +165,6 @@
             </a>
             <ul class="mail-folders" id="mail-folders"></ul>
           </nav>
-          <!-- Drag to give the folders more or less room; double-click to put
-               it back. -->
           <div
             class="mail-divider"
             id="mail-divider-rail"
@@ -221,8 +202,6 @@
         </div>
       </div>
     </main>
-    <!-- The same message box as the front page, shown when the page is folded
-         away under its name; feedback.js sends it. -->
     <form class="feedback page-feedback" id="feedback" novalidate>
       <label class="feedback-label" for="feedback-message">Share feedback about the website with me</label>
       <textarea id="feedback-message" name="message" rows="3" maxlength="2000" required placeholder="Your message will be anonymous"></textarea>
@@ -232,7 +211,6 @@
         <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
       </div>
     </form>
-    <!-- The last line of the page, as on the front page and art. -->
     <footer class="site-foot">
       2026 noah darwin lee | <a href="/terms/">terms</a> |
       <a href="/privacy/">privacy policy</a>

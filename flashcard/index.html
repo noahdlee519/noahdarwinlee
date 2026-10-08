@@ -20,14 +20,9 @@
     <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
     <link rel="manifest" href="../manifest.json" />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="../styles.css" />
-    <!-- Before the first paint: a remembered choice, otherwise the system's.
-         The attribute is always written, so the stylesheet never has to guess
-         and the page never flashes the other theme on the way in. The rest of
-         the switch is in theme.js; this part cannot wait for a fetch. -->
     <script>
       (function () {
         var t = null;
@@ -43,15 +38,6 @@
         }
         document.documentElement.setAttribute("data-theme", t);
 
-        /* The card's own three colours, for the same reason and at the same
-           moment. They are set further down once the page's script runs, but
-           that is late enough to paint a white card first and then darken it,
-           which is exactly the flash the line above exists to prevent.
-           Only when nothing has been chosen here — a saved set is applied by
-           the script and does not need guessing at. The key and the two sets
-           are repeated from the script below on purpose: this has to run
-           before the stylesheet paints, and nothing fetched can promise
-           that. */
         try {
           if (!localStorage.getItem("front-flashcards-colors-v2")) {
             var c =
@@ -66,21 +52,12 @@
       })();
     </script>
     <style>
-      /* Familjen Grotesk covers Latin Extended; anything it misses falls
-         through to Helvetica Neue / Arial per glyph. */
       :root {
         --bg: #ffffff;
         --text: #000000;
         --bright: #466eff;
       }
 
-      /* The site's header furniture -- the name, the way back, the switch and
-         the ring the keyboard draws -- is painted in --ink, which is white
-         everywhere else because everywhere else is orange or black. This page
-         is white by day and whatever the reader has chosen after that, so --ink
-         is handed the card's own text colour and the header comes out in it.
-         The [data-theme] selector is here to out-specify the same declaration
-         in the site stylesheet, which would otherwise win after dark. */
       :root,
       :root[data-theme="light"],
       :root[data-theme="dark"] {
@@ -96,23 +73,17 @@
         color: var(--text);
         font-family: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
         font-weight: 300;
-        /* Clears the name and the way back, both of which are fixed to the top
-           left of the window at this width. */
         padding-top: calc(var(--page-top) + 78px);
         padding-right: clamp(14px, 3vw, 36px);
         padding-bottom: 48px;
       }
 
-      /* Below the breakpoint the header is not fixed any more -- it is the
-         first two lines of the page and takes its own room. */
       @media (max-width: 900px) {
         body.flashcards-page {
           padding-top: 16px;
         }
       }
 
-      /* In the frame on the materials page there is a header already, a few
-         inches above this one. */
       body.flashcards-page.is-embedded {
         padding-top: calc(var(--page-top) + 8px);
       }
@@ -751,10 +722,6 @@
     </style>
   </head>
   <body class="flashcards-page">
-    <!-- The same header the rest of the site carries: the name, the way back,
-         and the day/night switch that theme.js hangs beside the name. No menu
-         on this one -- it is a tool, and the eight links belong on the front
-         page rather than over somebody's word list. -->
     <a class="name" href="/"
       ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
       <span class="name-word-lee">Lee</span></a
@@ -905,30 +872,13 @@
       const STORAGE_DRAFT = "front-flashcards-draft";
       const STORAGE_NAME = "front-flashcards-name";
       const STORAGE_COLORS = "front-flashcards-colors-v2";
-      /* Which side of the day/night switch a chosen set was chosen under. It is
-         what lets a later visit tell "these are the colours I picked here, in
-         this mode" from "these are colours from before the switch moved", which
-         are the same three hex values and want opposite treatment. */
       const STORAGE_COLORS_THEME = "front-flashcards-colors-theme-v1";
-      /* The fixed reference the sanitiser falls back to when a colour cannot
-         be read at all. It does not follow the theme: a fallback that moved
-         would make a malformed hex mean two different things. */
       const DEFAULT_COLORS = {
         bg: "#ffffff",
         text: "#000000",
         bright: "#466eff",
       };
 
-      /* What a first visit gets, which is not the same question. The rest of
-         the site has a day/night switch and remembers where it was left; a
-         reader who has the whole of noahdarwinlee.com in the dark should not
-         be handed a white card here. So the starting set follows that switch,
-         and the two sets are the Default and Night presets so the list below
-         shows the one you are looking at.
-
-         Only while nothing has been chosen here. The moment a colour is picked
-         or a preset pressed, that is saved, and a choice made on this page is
-         more specific than a switch thrown on another one. */
       const NIGHT_COLORS = {
         bg: "#000000",
         text: "#ffffff",
@@ -939,9 +889,6 @@
         return document.documentElement.getAttribute("data-theme") === "dark";
       }
 
-      /* Where a chosen set goes when the day/night switch takes the page back.
-         Kept rather than dropped: three colours picked by hand should not be
-         lost to a button in the corner. */
       const STORAGE_SET_ASIDE = "front-flashcards-colors-set-aside-v1";
 
       function setAsideColors(colors) {
@@ -981,7 +928,6 @@
       function startingColors() {
         return { ...(siteIsDark() ? NIGHT_COLORS : DEFAULT_COLORS) };
       }
-      // Add presets here. bg = background, bright = primary text, text = secondary text.
       const COLOR_PRESETS = [
         {
           name: "Default",
@@ -1010,7 +956,6 @@
         
         
       ];
-      // text colors vs background — keep enough separation to stay readable
       const MIN_BG_TEXT_CONTRAST = 3;
       const MAX_UNDO = 50;
 
@@ -1065,12 +1010,9 @@
         hideKnown: false,
       };
 
-      // known set kept across edit → start so marked words survive list tweaks
       let resumeKnown = null;
       const undoStack = [];
       let shuffleTimer = null;
-
-      // --- colors ---
 
       let lastValidColors = startingColors();
       let colorWarningTimer = null;
@@ -1117,12 +1059,10 @@
       }
 
       function secondaryReadableAgainstBg(bgHex) {
-        // dark ink on light grounds; light ink on dark grounds
         return relativeLuminance(bgHex) > 0.55 ? "#000000" : "#f5f5f5";
       }
 
       function primaryReadableAgainstBg(bgHex) {
-        // keep a vivid primary on light grounds; white primary on dark grounds
         return relativeLuminance(bgHex) > 0.55 ? DEFAULT_COLORS.bright : "#ffffff";
       }
 
@@ -1181,7 +1121,6 @@
           issues.push("primary-adjusted");
         };
 
-        // Keep the field the user just changed when possible; nudge the other side(s).
         if (changed === "text") {
           fixSecondary();
         } else if (changed === "bright") {
@@ -1265,9 +1204,6 @@
         renderColorPresets();
       }
 
-      /* Back to the start, which means back to following the switch — so
-         the saved choice is cleared rather than overwritten with today's
-         answer, and the page goes on following it afterwards. */
       function resetColors() {
         colorWarning.classList.add("hidden");
         try {
@@ -1284,7 +1220,6 @@
       }
 
       function applyPreset(preset) {
-        // Presets are authored intentionally — apply them as-is.
         const colors = {
           bg: normalizeHex(preset.bg, DEFAULT_COLORS.bg),
           text: normalizeHex(preset.text, DEFAULT_COLORS.text),
@@ -1340,8 +1275,6 @@
         cosmeticToggle.setAttribute("aria-expanded", String(open));
         cosmeticToggle.classList.toggle("is-on", open);
       }
-
-      // --- saving / loading lists ---
 
       function readLists() {
         try {
@@ -1454,8 +1387,6 @@
         showSaveStatus(`deleted “${name}”`);
       }
 
-      // --- parsing + deck helpers ---
-
       function parseEntries(text) {
         const cards = [];
         const lines = text.split(/\r?\n/);
@@ -1536,8 +1467,6 @@
           : { label: "back", word: card.back };
       }
 
-      // --- undo ---
-
       function snapshotSession() {
         return {
           known: Array.from(state.known),
@@ -1591,8 +1520,6 @@
         updateUndoBtn();
         renderCard(false);
       }
-
-      // --- drawing the study screen ---
 
       function renderCard(animate) {
         clampIndex();
@@ -1693,8 +1620,6 @@
         state.flipped = !state.flipped;
         renderCard(true);
       }
-
-      // --- session lifecycle ---
 
       function startSession() {
         const parsed = parseEntries(entryList.value);
@@ -1920,8 +1845,6 @@
         window.scrollTo(0, 0);
       }
 
-      // --- wire up clicks + keys ---
-
       startBtn.addEventListener("click", startSession);
       saveBtn.addEventListener("click", saveList);
       backBtn.addEventListener("click", prevCard);
@@ -2026,17 +1949,6 @@
         }
       });
 
-      /* On the way in, not only when the switch is pressed. A reader who set the
-         site to dark three pages ago and lands here should land in the dark,
-         even though the switch was never touched on this page -- so a set that
-         was chosen under the other mode is put aside on load, exactly as a
-         press would put it aside, and the page opens following the switch.
-
-         A set chosen under the mode that is still in force stands: that is a
-         deliberate choice made on this page, in these conditions, and it should
-         survive a reload. Which is what the recorded mode is for. A set from
-         before that key existed has no recorded mode and is treated as stale
-         -- once. */
       function followSiteThemeOnLoad() {
         if (!hasChosenColors()) return;
         let chosenUnder = null;
@@ -2060,16 +1972,6 @@
         colorWarning.classList.remove("hidden");
       }
 
-      /* theme.js writes data-theme on the root when the switch is pressed, and
-         the card follows it there and then, so pressing the switch darkens the
-         whole page rather than only the frame around it.
-
-         Including when a set has been chosen here. A chosen set is three inline
-         values on the root and it overrules everything, so leaving it in place
-         would mean the switch sat on this page doing nothing visible -- which
-         is worse than no switch at all. It wins, and the set is put aside
-         rather than lost: it comes back at the end of the presets, under
-         "yours". */
       if (window.MutationObserver) {
         new MutationObserver(function () {
           if (hasChosenColors()) setAsideColors(readColors());

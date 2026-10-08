@@ -1,40 +1,14 @@
-/* Structural only: the hidden attribute must beat any author display rule. */
 [hidden] {
   display: none !important;
 }
 
-/* ---------------- light and dark ----------------
-   Three colours make the whole site: the ground, the ink on it, and the one
-   thing that is neither. Everything below is written in those terms, so a
-   theme is three values rather than a second stylesheet.
-
-   Light is the site as it has always been, white on orange -- darkened from
-   #e68019 to #e68019, the original. It does not pass WCAG AA on white (2.81 : 1). Dark keeps none
-   of the orange: it is black, white, and one periwinkle, and the periwinkle
-   takes the job the orange has by day -- the rules, the hover fills, the
-   panel a caption sits in. Orange on black went muddy behind the pictures and
-   made the page look like the daylight one with the lights turned off. This
-   is a different room rather than the same room after dark.
-
-   theme.js resolves the theme before the first paint and writes it here, so
-   there is never a flash of the wrong colour on the way in. The media query
-   below is only for a visitor with no script; with script, data-theme is
-   always set and the query never gets a say. */
 :root {
   color-scheme: light;
   --bg: #e68019;
   --ink: #ffffff;
   --accent: #e3e3b0;
-  /* The little arrows that point at a link under the pointer. By day the
-     accent; after dark the blue of the picture on the front page
-     (portrait.js), rather than the accent's lighter violet. */
   --chevron: var(--accent);
-  /* A line drawn to separate rather than to say anything: the cream of the
-     accent by day, a plain grey after dark, both quiet enough to read as a
-     gap rather than as a mark. */
   --rule: #e3e3b0;
-  /* The letter and the list in the blog's mail window, which is white paper
-     in daylight and Gmail's own dark grey after dark. */
   --mail-surface: #ffffff;
 }
 
@@ -61,20 +35,11 @@
 }
 
 body {
-  /* env(safe-area-inset-top) is 0 in a browser tab; on a phone that has added
-     the game to its home screen it is the height of the status bar, which the
-     page would otherwise run under. */
   --page-top: calc(clamp(16px, 3vh, 100px) + env(safe-area-inset-top, 0px));
   --page-left: clamp(10px, 3vw, 24px);
-  /* Width of the right-hand rail the about-page contact list sits in. */
   --rail-width: 504px;
-  /* The two marks that share the top right corner on a phone: how big the
-     menu's nine squares are, and how far the day/night circle stands off
-     them. Here because neither is inside the other any more. */
   --corner-mark: 18px;
   --corner-gap: 22px;
-  /* Ceiling on a row of details: no picture standing in a row is taller than
-     this, whatever the window does. The lead has its own, higher one. */
   --plate-h: 440px;
   margin: 0;
   min-height: 100vh;
@@ -85,7 +50,6 @@ body {
   padding-left: var(--page-left);
 }
 
-/* Off-screen text for screen readers (page headings, carousel announcements). */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -99,20 +63,6 @@ body {
   border: 0;
 }
 
-/* The day/night switch: a circle and nothing else, on the same line as "about"
-   and just to its right. Where exactly that is depends on how wide the word
-   renders, so theme.js measures the link and writes left and top; the values
-   below are only what it looks like before the first measurement. Its name
-   lives in aria-label and in the tooltip, which is the only place a control
-   this small should keep one.
-
-   Filled in daylight, hollow after dark. Showing a state is the one job an
-   icon is actually good at; naming it is not, and a press to find out costs
-   nothing. */
-/* The switch and the word share a line box, so the circle cannot drift up or
-   down as the type loads or the page changes: it is centred by the same rule
-   that centres anything against text, rather than by arithmetic that has to be
-   redone every time something moves. theme.js builds the wrapper. */
 .header-line {
   position: fixed;
   top: var(--page-top);
@@ -124,40 +74,25 @@ body {
   line-height: 1;
 }
 
-/* The name is fixed to the corner by itself on every page; inside the row it
-   is the row that is fixed and the name that sits in it. The doubled class is
-   to out-specify `.cv-page .name` and `.materials-page .name`, which set the
-   same properties. */
 .header-line .name.name {
   position: static;
   top: auto;
   left: auto;
-  /* The materials page zeroes the body padding and puts the inset back on the
-     name by hand. Inside the row the row carries it, and both would be twice. */
   padding-left: 0;
 }
 
 .theme-btn {
-  /* relative rather than static: it stays in the line, and the enlarged hit
-     area below has something of its own to be measured against — and it is
-     what lets the circle be nudged off the exact centre of the line box.
-     the name is all ascenders and no descenders, so its visual mass sits above
-     the middle of its line and a circle centred by arithmetic reads high. Two
-     pixels down is where the eye puts it. */
   position: relative;
   top: 2px;
   flex: 0 0 auto;
   z-index: 11;
   width: 14px;
-  /* the name is a link and its line box is not; the circle is not underlined */
   text-decoration: none;
   height: 14px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: var(--ink);
-  /* The weight of the ring it becomes at night, named here so that it can grow
-     with the circle rather than thinning as the circle gets bigger. */
   --ring: 1.75px;
   font: inherit;
   line-height: 0;
@@ -182,8 +117,6 @@ body {
   opacity: 0.62;
 }
 
-/* A circle is a small target: this gives the pointer, and the ring the
-   keyboard draws, the room the mark itself does not need. */
 .theme-btn::after {
   content: "";
   position: absolute;
@@ -193,7 +126,6 @@ body {
 
 
 
-/* Only shown to keyboard users; invisible to everyone else. */
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 3px;
@@ -211,21 +143,8 @@ body {
 @media (min-width: 901px) {
   
   }
-/* ---- the menu ----
-   Eight links behind one mark. There were four of them on show at a time up
-   here, changing themselves every few seconds with a caret to turn them by
-   hand -- and a list that moves while you are reading it is a list you cannot
-   use. Nine squares is the oldest sign in software for "everything there is",
-   and everything there is comes out from under it.
-
-   The mark and the day/night switch travel together: two small controls in
-   the corner, one for the light and one for the way out of the page. */
 .site-menu {
   position: fixed;
-  /* The same footprint as the back-to-top mark, which lives in this corner
-     too and is never on screen at the same time: the header fades on the way
-     down the page and that mark arrives as this one goes. One place in the
-     corner, one mark in it, whichever of the two the page needs. */
   top: calc(var(--page-top) + 9px);
   right: var(--page-left);
   z-index: 10;
@@ -235,8 +154,6 @@ body {
   transition: opacity 140ms ease;
 }
 
-/* The header fades as the page scrolls and takes this with it; a faded
-   control must not still be pressable. */
 .site-menu.is-faded,
 .site-menu.is-faded * {
   pointer-events: none;
@@ -244,7 +161,6 @@ body {
 
 .site-menu-btn {
   display: block;
-  /* padding for the finger, negative margin so it costs no room */
   padding: 6px;
   margin: -6px;
   border: 0;
@@ -266,14 +182,10 @@ body {
   opacity: 0.6;
 }
 
-/* Open, the whole grid turns a corner up. Nothing else moves: the nine squares
-   stay the nine squares, just on the diagonal. */
 .site-menu[data-open="true"] .site-menu-icon {
   transform: rotate(45deg);
 }
 
-/* invisible bridge between the button and the panel so hover does not
-   break when the pointer crosses the 17px gap between them. */
 .site-menu[data-open="true"]::after {
   content: "";
   position: absolute;
@@ -293,10 +205,6 @@ body {
   gap: 2px;
   padding: 15px 19px 17px;
   max-width: calc(100vw - 2 * var(--page-left));
-  /* No edge and no shadow: the panel is the page's own ground, laid over
-     whatever it covers. What holds it together is the block of colour and the
-     right margin the links are set to, which is the same margin everything
-     else in this corner is set to. */
   background: var(--bg);
   opacity: 0;
   visibility: hidden;
@@ -330,8 +238,6 @@ body {
     transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* One after another on the way in, so the list arrives rather than appears;
-   all together on the way out, because nobody wants to watch a menu leave. */
 .site-menu[data-open="true"] .site-menu-panel a {
   opacity: 1;
   transform: none;
@@ -340,11 +246,6 @@ body {
 
 .site-menu-panel a[target="_blank"]::after,
 .site-menu-panel a.show-external-icon::after {
-  /* The arrow, with U+FE0E after it. On a phone this character has an emoji
-     face as well as a letter's, and the phone reaches for the emoji: a little
-     blue-and-white tile where the page wants a hairline arrow in the colour of
-     the text. FE0E is the request for the letter. font-variant-emoji says the
-     same thing to browsers new enough to have it. */
   content: "\2197\FE0E";
   font-variant-emoji: text;
   margin-left: 0.22em;
@@ -392,7 +293,6 @@ body {
   transition: opacity 140ms ease;
 }
 
-/* The "> " marker is decoration, so it lives here and is not read aloud. */
 .about-link[aria-current="page"]:not(.about-toggle)::before {
   content: "> ";
 }
@@ -445,12 +345,6 @@ body {
   }
 }
 
-/* ---- back, and the page's own name under it ----
-   Three lines at the top left of the front page, art, projects, blog and cv:
-   the name, back, and the page's name, which folds the page away and leaves
-   the message box in its place. Back shows only when the visitor came from
-   another page of the site (has-back, set in each page's head); on the first
-   page they open, the page's name moves up into its line. */
 html:not(.has-back) .back-link[data-back] {
   display: none;
 }
@@ -493,10 +387,6 @@ html:not(.has-back) .back-link[data-back] {
   display: none;
 }
 
-/* Folded, the page is the header and the box and nothing else: exactly one
-   window tall, padding included, with the box in the middle of what is left,
-   so there is nothing to scroll -- unless the window is too short to hold
-   them, and then it scrolls as any page would. */
 body.is-folded {
   box-sizing: border-box;
   min-height: 100vh;
@@ -505,10 +395,6 @@ body.is-folded {
   flex-direction: column;
 }
 
-/* Folded, only the name stays fixed. Back and the page's own name go with the
-   page, as they do on art and the front page, so on every folded page a
-   scroll moves everything under the name. Absolute against the page puts
-   them exactly where fixed did, so nothing shifts on folding. */
 @media (min-width: 901px) {
   body.is-folded .back-link,
   body.is-folded .page-toggle {
@@ -525,10 +411,6 @@ body.is-folded {
   padding: 32px 0 0;
 }
 
-/* Folded, projects, blog and cv take the front page's measurements, so the
-   box lands where it does there: the same room above it for the three lines
-   of the header, the same margins either side, and the foot line at the
-   bottom of the window. */
 @media (min-width: 901px) {
   body.cv-page.is-folded {
     padding: calc(var(--page-top) + 66px) 36px 0 var(--page-left);
@@ -542,8 +424,6 @@ body.is-folded {
     padding-left: var(--page-left);
   }
 
-  /* Folded, the body carries that inset itself, so the foot line does not
-     add it again and starts at 24 like every other page's. */
   .materials-page.is-folded .site-foot {
     padding-left: 0;
   }
@@ -554,9 +434,6 @@ body.is-folded {
     padding: 16px;
   }
 
-  /* Projects runs its rows edge to edge, so on a narrow screen its header
-     lines carry their own 16px inset. The folded page already has that inset
-     on the body; without this the header stepped 16px to the right on fold. */
   body.materials-page.is-folded .name,
   body.materials-page.is-folded .about-link,
   body.materials-page.is-folded .back-link,
@@ -570,8 +447,6 @@ body.is-folded {
 }
 
 @media (min-width: 901px) {
-  /* Back takes the second line, so the page's name and everything under it
-     go down one 33px step. */
   html.has-back .page-toggle {
     top: calc(var(--page-top) + 66px);
   }
@@ -592,7 +467,6 @@ body.is-folded {
     top: calc(var(--page-top) + 66px);
   }
 
-  /* On these two the header scrolls with the page, so back does too. */
   .index-page .back-link {
     position: absolute;
   }
@@ -607,15 +481,10 @@ body.is-folded {
   margin-left: 1.25em;
 }
 
-/* Sub-entries — the study-abroad lines, the Expositions pieces — sit a step
-   further in than the main entries. The indent shrinks on phones so the text
-   is not pushed too far right. */
 .cv-page main p.cv-sub {
   margin-left: clamp(1.8em, 4vw, 2.5em);
 }
 
-/* Out-specifies `.cv-page main p { margin-left: 1.25em }` so the address sits
-   flush with the section headings rather than indented like an entry. */
 .cv-page main p.cv-contact {
   margin: 0 0 26px 0;
   font-size: 20px;
@@ -634,9 +503,6 @@ body.is-folded {
   text-underline-offset: 3px;
 }
 
-/* The miscellaneous page: a plain list of links, set like the address at the
-   top of the cv. The list is short, so the page is one window, padding
-   included, with the foot line at the bottom of it and nothing to scroll. */
 body.misc-page {
   box-sizing: border-box;
   min-height: 100vh;
@@ -658,8 +524,6 @@ body.misc-page {
   margin-top: 12px;
 }
 
-/* On a phone the header is an ordinary stack, and the list would sit right
-   under it; this is the room the art page leaves under its own name. */
 @media (max-width: 900px) {
   .misc-links {
     margin-top: 28px;
@@ -679,8 +543,6 @@ body.misc-page {
   text-underline-offset: 3px;
 }
 
-/* Without this the first h2's top margin collapses through <main> and drops
-   the whole page ~20px below where the other pages begin. */
 .cv-page main > section:first-child > h2:first-child {
   margin-top: 0;
 }
@@ -689,10 +551,6 @@ body.misc-page {
   font-size: 0.78em;
 }
 
-/* ---- the privacy page ---------------------------------------------------
-   Built on .cv-page for the header and the fade, but its paragraphs are prose
-   rather than CV entries: no hanging indent, a measure that stays readable,
-   and room between them. */
 .privacy-page main {
   max-width: 68ch;
 }
@@ -704,8 +562,6 @@ body.misc-page {
   line-height: 1.5;
 }
 
-/* The lede stands in for the CV's first heading, so it takes that rule's job
-   of not letting a top margin collapse through <main> and push the page down. */
 .privacy-page main p.privacy-lede {
   font-size: 20px;
   margin-top: 0;
@@ -725,9 +581,6 @@ body.misc-page {
   text-underline-offset: 3px;
 }
 
-/* Run-in labels at the head of a clause ("What is public.", "Names."):
-   the page is set at 300, so a plain <b> only reaches 400 and barely
-   shows. 600 makes the label readable as a label. */
 .privacy-page main b {
   font-weight: 600;
 }
@@ -736,7 +589,6 @@ body.misc-page {
   text-decoration-thickness: 2px;
 }
 
-/* The one link out of the game, under the imagery credit. */
 .game-legal {
   margin: 10px 0 0 0;
   font-size: 13px;
@@ -763,18 +615,10 @@ body.misc-page {
     padding-top: calc(var(--page-top) + 106px);
   }
 
-  /* The body only pads its left side at these widths, which would leave the
-     centred column with a wider gap on the right than on the left. Below 901
-     the body already pads all four sides equally, so this is not wanted there. */
   .game-page {
     padding-right: var(--page-left);
   }
 
-  /* While a round is on screen the page gives back part of the top padding it
-     uses to line its heading up with the rest of the site — nothing up there
-     needs aligning mid-game. It cannot give back all of it: the name and the
-     back link are fixed to the top of the window, and the banner would run
-     under them. This clears the back link by a dozen pixels and no more. */
   .game-page.is-playing {
     padding-top: calc(var(--page-top) + 84px);
   }
@@ -838,7 +682,6 @@ a[href="/cv/"]:active {
   display: block;
   width: clamp(90px, 28vw, 320px);
   max-width: 90vw;
-  /* hold the photo's footprint even while the image is still downloading */
   aspect-ratio: 950 / 1656;
 }
 
@@ -856,19 +699,10 @@ a[href="/cv/"]:active {
   padding-bottom: 40px;
 }
 
-/* Three lines at the top — name, about, and art, with the day/night switch
-   beside the name. Art is the first thing in the column rather than a fixed
-   line, so the column starts where art sits: 66px down, one 33px step under
-   about. The first card's title then sits at 137, where it was when art was
-   pinned (the old 104 plus art's 33): art's 41px box plus 30 under it. The
-   about panel, which opens above art, keeps the 104 it has always had by
-   taking the difference as its own margin. */
 .index-page {
   padding-top: calc(var(--page-top) + 66px);
 }
 
-/* The art page has no about line, so art is the second line, one 33px step
-   under the name, and the column starts that much higher. */
 .index-page.art-page {
   padding-top: calc(var(--page-top) + 33px);
 }
@@ -883,11 +717,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* Below 901 the top is an ordinary stack, and art has to sit 8px under about
-   like every other line in it -- so the column's 20px moves off the top of
-   the column (body.index-page, to outrank the 20 set further down) and onto
-   the two things that can come first in it: the panel above, and the room
-   under art before the pictures. */
 @media (max-width: 900px) {
   body.index-page .art-main {
     padding-top: 0;
@@ -906,13 +735,6 @@ a[href="/cv/"]:active {
   padding-top: 0;
 }
 
-/* The small line at the foot of the page belongs at the foot of the window
-   whenever there is too little above it to push it there, which is what
-   folding the gallery away leaves. The body is at least one window tall,
-   padding included, the column inside it stretches, and the spare room goes
-   above that line. That also means no scrolling on a folded page: exactly
-   one window, no more. With the gallery open the pictures are far taller
-   than the window and none of this does anything. */
 .index-page {
   display: flex;
   flex-direction: column;
@@ -927,9 +749,6 @@ a[href="/cv/"]:active {
   flex-direction: column;
 }
 
-/* The room between the last picture and the instagram line comes from the
-   gallery: the 48px a <br> and the link's own 28px margin used to add up to.
-   The <br> goes -- in a flex column it is not a line any more. */
 .index-page .index-instagram-link {
   margin-top: 0;
 }
@@ -942,8 +761,6 @@ a[href="/cv/"]:active {
   margin-bottom: 48px;
 }
 
-/* Instagram and the row of sections are the end of the art, not the end of
-   the page: they come after the last picture, and they go when it does. */
 .art-gallery.is-collapsed ~ .index-instagram-link,
 .art-gallery.is-collapsed ~ .site-nav {
   display: none;
@@ -957,12 +774,6 @@ a[href="/cv/"]:active {
   padding-bottom: 0;
 }
 
-/* The last line of the page: the year, the name, and the two legal pages, in
-   the same small light type as the legal line under the game. margin-top auto
-   is what holds it to the foot of the window on a folded page; the padding is
-   the least room it keeps from whatever is above, so it never runs up into
-   the row of sections. It sits as far off the bottom of the window as the
-   name sits off the top -- below 901 the body's own 16 already does that. */
 .site-foot {
   margin-top: auto;
   padding-top: 56px;
@@ -989,12 +800,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* The chevron under a hovered word hangs 18px below it, and while it waits
-   at opacity 0 it still counts as part of the page -- on a phone, with only
-   16px under the row, that was a folded page two pixels taller than the
-   window, and so a page that scrolled. Out of the layout until it is wanted
-   instead: it comes on instantly either way, so nothing about it looks
-   different. */
 .index-page .site-nav a:not(:hover):not(:focus-visible)::before,
 .index-page .site-nav a:not(:hover):not(:focus-visible)::after {
   display: none;
@@ -1013,10 +818,6 @@ a[href="/cv/"]:active {
   color: var(--ink);
 }
 
-/* Site sections, visible at the foot of the gallery so nobody has to discover
-   the menu or the about panel to find the blog, the game, or the CV.  The
-   same accent-colour chevron hover as the about-panel links, kept simple:
-   five words in a row, the same size as the instagram link above them. */
 .site-nav {
   display: flex;
   flex-wrap: wrap;
@@ -1068,9 +869,6 @@ a[href="/cv/"]:active {
   outline: none;
 }
 
-/* Inline about panel, expanded from the homepage nav. It holds the art now
-   too, so the panel runs the gallery's full width and only the photo, bio
-   and links keep the old 980. */
 .about-panel {
   display: none;
   margin: 0 0 60px;
@@ -1080,24 +878,14 @@ a[href="/cv/"]:active {
   max-width: 980px;
 }
 
-/* In a flex column a <br> is not a line any more; the gallery's own margin
-   is the room above instagram. */
 .index-page .about-panel > br {
   display: none;
 }
 
-/* The portrait in tiles takes the photograph's place: the canvas sizes itself
-   to the frame (portrait.js), and a line under it on a phone says what to do. */
-/* The frame is as tall as the portrait in it, not the old photograph's
-   shape (which was taller), so there is no empty band under the picture. The
-   canvas holds its own shape before the script sizes it. */
 .profile-photo-frame.portrait-frame {
   aspect-ratio: auto;
 }
 
-/* On a phone the front page's portrait loses half a tile top and bottom so
-   its tap squares come out square (portrait.js); hold that shape from the
-   first paint. */
 @media not all and (hover: hover) and (pointer: fine) {
   .portrait-frame .tiles[data-grid="4x6"] {
     aspect-ratio: 16 / 24 !important;
@@ -1128,23 +916,15 @@ a[href="/cv/"]:active {
   }
 }
 
-/* The message box under about: the site's own light type, a hairline round
-   the box, and one word to send it. */
 .feedback {
   max-width: 560px;
   margin: 0 0 24px;
 }
 
-/* The box is for the empty front page. With about open there is already a
-   page to read, so the box stays out of it. */
 .about-panel.is-open + .feedback {
   display: none;
 }
 
-/* About shut (or, on the art page, the gallery folded away), the box is the
-   only thing between the header and the foot line. It sits in the page, not
-   pinned to the window: the free space above and below it is split evenly, so
-   it rests near the middle and scrolls with everything else. */
 .about-panel:not(.is-open) + .feedback,
 .art-gallery.is-collapsed ~ .feedback {
   align-self: center;
@@ -1204,8 +984,6 @@ a[href="/cv/"]:active {
   margin-top: 12px;
 }
 
-/* A plain word, flush with the box above it, underlined in white under the
-   pointer like the links in the bio. */
 .feedback-send {
   appearance: none;
   padding: 6px 0 7px;
@@ -1255,19 +1033,14 @@ a[href="/cv/"]:active {
   font-weight: 400;
 }
 
-/* The art page has the same box, for when the gallery is folded away and the
-   page is empty again: hidden while the pictures are out. */
 .art-gallery:not(.is-collapsed) ~ .feedback {
   display: none;
 }
 
-/* "art" in the row of links jumps here; stop short of the name over the top. */
 .about-panel .art-gallery {
   scroll-margin-top: 100px;
 }
 
-/* The panel centres its photo and links on a phone; instagram and the row of
-   sections under the pictures keep to the left, as they always have. */
 .about-panel .index-instagram-link {
   text-align: left;
 }
@@ -1282,12 +1055,6 @@ a[href="/cv/"]:active {
   display: block;
 }
 
-/* The room above the photograph. It has to be the same room at every width --
-   the panel is one thing opening under one word, and it should open the same
-   way on a phone as on a desk. The two numbers differ because what is above
-   the panel does not: on a wide screen the name and the word are fixed over
-   the top of the page and the panel starts below them on its own, and on a
-   phone they are in the stack and have already spent some of the distance. */
 @media (min-width: 901px) {
   .about-panel {
     padding-top: 14px;
@@ -1299,14 +1066,7 @@ a[href="/cv/"]:active {
     padding-top: 2px;
   }
 
-  /* Where the panel ends and the pictures begin. On a wide screen the panel is
-     a band across the top with the gallery well below it and the two are never
-     confused; on a phone everything is one column, and the links at the foot
-     of the panel run straight into the first title with nothing to say the
-     subject has changed. A line, and room on both sides of it. */
   .about-panel .art-gallery {
-    /* Far enough below the links for the ring that draws itself round a
-       hovered word to have room under it, the same way it has room over it. */
     margin-top: 50px;
     padding-top: 48px;
     border-top: 1px solid var(--rule);
@@ -1328,10 +1088,6 @@ a[href="/cv/"]:active {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  /* The row of links stands well clear of the writing above it. It used to be
-     thirty-two, which was room enough for the words; the ring that draws
-     itself round a hovered word reaches about two dozen pixels above the line,
-     and it should have air over it rather than the last line of the bio. */
   gap: 54px;
   min-width: 0;
 }
@@ -1369,17 +1125,6 @@ a[href="/cv/"]:active {
   text-decoration: none;
 }
 
-/* ---- the marks either side of a word ----
-   Point at one of these and a chevron appears over it and another under it,
-   both centred on the word and both pointing at it. The accent colour, which
-   is already the cream by day and the periwinkle by night.
-
-   Drawn rather than typed: a square with two of its four borders, turned
-   forty-five degrees, which is a chevron of exactly the weight you ask for at
-   exactly the size you ask for -- where a glyph would be whatever the font
-   happened to have. Centred by the same fifty per cent and half-width shift
-   in both cases, and the rotation is about the box's own centre, so turning
-   it does not move it. */
 .about-panel-links a {
   position: relative;
 }
@@ -1396,14 +1141,12 @@ a[href="/cv/"]:active {
   pointer-events: none;
 }
 
-/* Over the word, pointing down at it. */
 .about-panel-links a::before {
   bottom: calc(100% + 4px);
   border-width: 0 2px 2px 0;
   transform: translateX(-50%) rotate(45deg);
 }
 
-/* Under it, pointing up. */
 .about-panel-links a::after {
   top: calc(100% + 7px);
   border-width: 2px 0 0 2px;
@@ -1417,15 +1160,11 @@ a[href="/cv/"]:active {
   opacity: 1;
 }
 
-/* The chevrons are the focus indicator here; the default outline
-   would double up as a white box around the word. */
 .about-panel-links a:focus-visible,
 .contact-menu-btn:focus-visible {
   outline: none;
 }
 
-/* On touch devices the chevrons are invisible because there is no true hover.
-   A tap highlights the word with the accent colour instead. */
 @media (hover: none) {
   .about-panel-links a::before,
   .about-panel-links a::after {
@@ -1436,9 +1175,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* the contact dropdown in the about panel — same language as the
-   nine-square menu, nested inside the links row so it sits with
-   the other words. */
 .contact-menu {
   position: relative;
 }
@@ -1455,7 +1191,6 @@ a[href="/cv/"]:active {
   position: relative;
 }
 
-/* chevrons on hover, same as the links beside it. */
 .contact-menu-btn::before,
 .contact-menu-btn::after {
   content: "";
@@ -1487,8 +1222,6 @@ a[href="/cv/"]:active {
   opacity: 1;
 }
 
-/* invisible bridge so hover stays when the pointer crosses the
-   gap between the button and the panel. */
 .contact-menu[data-open="true"]::after {
   content: "";
   position: absolute;
@@ -1508,8 +1241,6 @@ a[href="/cv/"]:active {
   gap: 2px;
   padding: 12px 16px 14px;
   background: var(--bg);
-  /* No fade and no drop: the list is simply there while the pointer is on
-     contact, and gone when it leaves. */
   visibility: hidden;
   white-space: nowrap;
 }
@@ -1530,9 +1261,6 @@ a[href="/cv/"]:active {
   position: relative;
 }
 
-/* chevrons left and right of each link, pointing inward at the
-   word — the same accent-colour squares as the about-panel links,
-   turned sideways. */
 .contact-menu-panel a::before,
 .contact-menu-panel a::after {
   content: "";
@@ -1545,8 +1273,6 @@ a[href="/cv/"]:active {
   pointer-events: none;
 }
 
-/* left chevron, pointing right. left and bottom are reset because
-   .about-panel-links a::before sets them, and left would beat right. */
 .contact-menu-panel a::before {
   left: auto;
   bottom: auto;
@@ -1555,7 +1281,6 @@ a[href="/cv/"]:active {
   transform: translateY(-50%) rotate(-45deg);
 }
 
-/* right chevron, pointing left */
 .contact-menu-panel a::after {
   right: auto;
   bottom: auto;
@@ -1588,10 +1313,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* The emoji at the end of the row is a picture, and a picture does not want
-   the letter-spacing, the underline or the inherited colour the words beside it
-   want. It wants to be a little bigger than they are and to lift a hair when
-   pressed, which is all an icon in a row of words can do. */
 .about-panel-web {
   font-size: 1.14em;
   line-height: 1;
@@ -1604,9 +1325,6 @@ a[href="/cv/"]:active {
 }
 
 
-/* The marker turns down when the panel is open. */
-/* U+25B8 / U+25BE — the small solid triangles. Deliberately not U+25B6/25BC:
-   those have emoji presentations and render as coloured glyphs on some systems. */
 .about-toggle::before {
   content: "\25B8\00a0";
   font-size: 0.82em;
@@ -1621,15 +1339,7 @@ a[href="/cv/"]:active {
   content: "...";
 }
 
-/* The "art" word, third line under the name. It wears .about-link as well,
-   so it is sized, faded and underlined exactly as about is, and what is here
-   is only what a button needs taken off it and where it sits. It starts
-   open, so the triangle starts pointing down and the "..." is there from the
-   first paint. */
 .art-toggle {
-  /* Strip the button back to plain type -- longhands only. `font: inherit`
-     or `padding: 0` here would undo the size and the 13px under the word
-     that .about-link gives it, because this rule comes later in the file. */
   appearance: none;
   background: none;
   border: 0;
@@ -1653,45 +1363,25 @@ a[href="/cv/"]:active {
   content: "\25BE\00a0";
 }
 
-/* Open, it trails off the way about does. */
 .art-toggle[aria-expanded="true"]::after {
   content: "...";
 }
 
-/* Not pinned, though. It was, as a third fixed line under about, and then
-   the about panel opened below art instead of below about. So it lives in
-   the column now, after the panel and before the pictures, and the page is
-   spaced so that with the panel shut it lands exactly where the pinned one
-   did -- 33px under about, as about is under the name. See .index-page.
-   align-self keeps a flex column from stretching the button into a row-wide
-   hit area. */
 .art-toggle {
   position: static;
   align-self: flex-start;
 }
 
-/* About scrolls with the page too. It keeps its place at the top -- the same
-   top and left, now measured from the top of the page rather than the top of
-   the window -- so nothing moves until you scroll, and then it goes up with
-   everything else instead of hanging over the pictures. Below 901 it is
-   already part of the stack, and the media query keeps this from outranking
-   that. */
 @media (min-width: 901px) {
   .index-page .about-toggle {
     position: absolute;
   }
 }
 
-/* Folded: the gallery goes, the word stays. */
 .art-gallery.is-collapsed {
   display: none;
 }
 
-/* Folded, the message box should sit where it does on every other page. On
-   the others the page's name is out of the column, and the box's share of the
-   free space is measured from the column's top; here "art" is in it, with
-   room under it for the pictures. Folded, that room is taken back, so the
-   box's space starts where it does elsewhere. */
 @media (min-width: 901px) {
   .art-main:has(.art-gallery.is-collapsed) .art-toggle {
     margin-bottom: -8px;
@@ -1704,12 +1394,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* ---- the list of projects, on the right ----
-   Desktop only. It sits inside the gallery, so it folds away with it, but it
-   is placed against the column: level with the first project, at the right
-   edge of the window. It scrolls with the
-   page like everything else up here. The gallery gives up the room it takes,
-   so the two never overlap. */
 .art-index {
   display: none;
 }
@@ -1761,17 +1445,6 @@ a[href="/cv/"]:active {
 }
 
 
-/* ---------------- the gallery ----------------
-   Fifteen projects, forty pictures, all of them on the page. There used to be
-   one picture per project and a carousel behind it, which meant thirty-nine of
-   them were in the markup but not on the wall, and the only way to see a
-   project was to click it and step through.
-
-   A project is a lead and a row now. The lead runs the width of the column and
-   says what the thing is; the rest sit under it in a flush row; the writing
-   goes underneath, where a label goes. Nothing opens, nothing closes, and
-   nothing needs a script — every picture is in the HTML as a picture. */
-
 .art-gallery {
   margin: 0;
   max-width: 1180px;
@@ -1782,8 +1455,6 @@ a[href="/cv/"]:active {
 
 .art-card {
   margin: 0;
-  /* Where a link to a project leaves it: a little room above its title, and
-     less than the gap between projects, so none of the one before shows. */
   scroll-margin-top: 28px;
 }
 
@@ -1804,9 +1475,6 @@ a[href="/cv/"]:active {
   height: auto;
 }
 
-/* Every picture outside the one carousel is a button that opens it full
-   screen. The reset keeps it looking like a bare image; the cursor is the only
-   thing that says otherwise until you press it. */
 .art-zoom {
   display: block;
   width: 100%;
@@ -1829,27 +1497,15 @@ a[href="/cv/"]:active {
   outline-color: var(--accent);
 }
 
-/* ---- the picture, full screen ----
-   Its own ground rather than the page's: a painting reads against something
-   near-black whichever theme you are in, and the page behind it should stop
-   competing. Everything else about it is the picture and the way out. */
 .lightbox {
   --lb-pad: clamp(16px, 4vw, 56px);
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
-  /* Centred by auto margins on the picture rather than by align-items: a
-     centred flex item that is taller than its box has its top pushed out of
-     the scrollable area and cannot be reached at all, which is the difference
-     between a picture with more of it below and a picture with its head cut
-     off. Auto margins go to zero when there is no room to spare. */
   align-items: flex-start;
   justify-content: center;
   padding: var(--lb-pad);
-  /* Anything that will not fit can be scrolled to. Horizontally nothing ever
-     should, and a sideways scrollbar under a picture is only ever a mistake
-     showing. */
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1863,10 +1519,6 @@ a[href="/cv/"]:active {
   opacity: 1;
 }
 
-/* The frame is a real box now, and the thing you press: it takes the size of
-   the picture that fits in it and then holds that size while the picture
-   inside grows, so pressing it magnifies what is in the frame rather than
-   making the frame any bigger. Everything outside the frame is the way out. */
 .lightbox-frame {
   display: block;
   margin: auto;
@@ -1888,25 +1540,13 @@ a[href="/cv/"]:active {
   max-width: 100%;
 }
 
-/* The limits are the window's, written out in the window's own units. They
-   used to be percentages, and a percentage of a box whose height comes from
-   the picture inside it means nothing at all -- so the height cap quietly did
-   not exist, and every portrait picture ran off the bottom of the screen. */
 .lightbox img {
   display: block;
   width: auto;
   height: auto;
   max-width: calc(100vw - 2 * var(--lb-pad));
-  /* vh first for anything that has not heard of dvh; dvh second because on a
-     phone the window is the part not under the browser's own furniture. */
   max-height: calc(100vh - 2 * var(--lb-pad));
   max-height: calc(100dvh - 2 * var(--lb-pad));
-  /* The magnification is a transform, so it changes nothing about the size of
-     the box the frame was built around -- which is the whole trick. The origin
-     is set from the point pressed, and moves with the pointer after that, so
-     what you are looking at is what you asked to look at. Origin is left out
-     of the transition on purpose: the scale should ease, the aim should not
-     lag behind the hand. */
   transform-origin: 50% 50%;
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1917,9 +1557,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* On a phone a picture made to fit the height is a picture in the middle of a
-   lot of nothing. It takes the width instead, and a tall one is read the way
-   anything tall is read on a phone: by scrolling it. */
 @media (max-width: 900px) {
   .lightbox {
     --lb-pad: 10px;
@@ -1931,11 +1568,6 @@ a[href="/cv/"]:active {
   }
 }
 
-/* The way out is the word for the key that does it. A cross is a button that
-   has to be found and understood; this is the instruction itself, and it also
-   happens to be pressable. fixed rather than absolute: the overlay is a
-   scroller, and a way out that scrolls off the top with the picture is no way
-   out. */
 .lightbox-close {
   position: fixed;
   z-index: 1;
@@ -1960,15 +1592,11 @@ a[href="/cv/"]:active {
   opacity: 1;
 }
 
-/* The overlay has a ground of its own and takes no notice of the theme, so
-   neither can the ring the keyboard draws: the site's ink is black by day, and
-   a black ring on this is no ring at all. */
 .lightbox-frame:focus-visible,
 .lightbox-close:focus-visible {
   outline-color: #ffffff;
 }
 
-/* The page must not scroll behind an open picture. */
 body.is-zoomed {
   overflow: hidden;
 }
@@ -1979,32 +1607,14 @@ body.is-zoomed {
   }
 }
 
-/* The lead takes the column, but by height rather than by width: a portrait
-   painting run to 1180px would stand two screens tall and be the only thing
-   anyone ever saw. Capping the height instead lets a landscape lead fill the
-   column and a portrait one come out narrower, which is the same picture in
-   both cases — about as tall as a person looking at it. */
 .art-lead {
   max-width: var(--lead-w, calc(var(--ar, 1) * 760px));
 }
 
-/* Two ceilings, one for the lead and one for a row of details, and no reason
-   for the widths they work out to to have anything to do with each other. Most
-   of the time they do not and nobody minds: the lead is plainly a different
-   size from the row under it. Now and again they land within a few pixels,
-   which does not read as a difference -- it reads as a mistake. A card in that
-   position is given a width of its own, in --lead-w, and the row directly
-   under the lead is held to it too, so the two share an edge at every window
-   size rather than only at the ones where both are at their ceilings. */
 .art-plates > .art-lead + .art-row {
   max-width: var(--lead-w, none);
 }
 
-/* ---- the one card that still cycles ----
-   Two views of the same piece in the same frame, one at a time. The picture is
-   wrapped in a button so it can be reached from the keyboard; the reset keeps
-   it looking like a bare image. Which half you are over decides which way a
-   click goes, and the cursor says so before you commit to it. */
 .art-carousel {
   position: relative;
 }
@@ -2039,7 +1649,6 @@ body.is-zoomed {
   outline-color: var(--accent);
 }
 
-/* Announced on a change of view; never shown. */
 .carousel-status {
   position: absolute;
   width: 1px;
@@ -2050,10 +1659,6 @@ body.is-zoomed {
   white-space: nowrap;
 }
 
-/* Widths within a row are set from the aspect ratios, so every picture in a
-   row comes out the same height and the row is flush at both ends. flex-grow
-   and flex-basis both scale with the ratio, which is what keeps the heights
-   equal rather than merely the widths tidy. */
 .art-row {
   display: flex;
   flex-wrap: wrap;
@@ -2062,21 +1667,9 @@ body.is-zoomed {
 
 .art-row .art-plate {
   flex: var(--ar, 1) 1 calc(var(--ar, 1) * 300px);
-  /* A ceiling on height and nothing else. There used to be a second cap at
-     half the column, meant to stop a picture left over at the end of a row
-     spanning the whole width -- but the ceiling already stops that, and in
-     any row whose pictures are not all the same shape the half-column cap
-     bit first and held the widest one short of the width its ratio asked
-     for. Pictures in a row are sized to come out level, so one that cannot
-     have its width cannot have its height either: it sat a few pixels
-     shallower than the ones beside it while the figure around it stretched
-     to the row, which is the worst of both -- a short picture in a tall
-     box. */
   max-width: calc(var(--ar, 1) * var(--plate-h));
 }
 
-/* A work in panels names its panels: the label under the whole piece says what
-   the piece is, and these say which part of it you are looking at. */
 .art-plate figcaption {
   margin-top: 7px;
   font-size: 14px;
@@ -2086,21 +1679,6 @@ body.is-zoomed {
   opacity: 0.6;
 }
 
-/* The label goes above the work rather than under it. On a wall the card is
-   beside the picture and you take both in at once; on a page you scroll, a
-   label under a tall picture arrives long after you have decided what you are
-   looking at. */
-/* ---- one picture running down the side of several ----
-   A drawing of the whole building does not belong in a row of details at the
-   same size as the details. This puts it in a column of its own beside them,
-   from the foot of the lead down to whatever comes after the band.
-
-   The sheet takes the larger half. It is a drawing of the whole building and
-   everything beside it is a detail of one, so the proportions say so: the
-   drawing gets three fifths of the width and the details and the writing stack
-   in the third that is left. The lead above is held in too, or the picture at
-   the top would be the biggest thing on the page and the sheet the second
-   biggest, which is the wrong way round. */
 .art-split {
   display: flex;
   align-items: stretch;
@@ -2113,42 +1691,21 @@ body.is-zoomed {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* The two sides of the band are the same height whether their contents are
-     or not, and the last thing in each should come out level at the foot. When
-     the sheet beside it is the taller of the two -- which happens as soon as
-     the window narrows enough to stop the writing wrapping the way it does at
-     full width -- the difference is paid out into the gaps in this column,
-     three or four pixels each, rather than left at the bottom as a step. */
   justify-content: space-between;
 }
 
-/* The lead is capped by height everywhere else, which on a landscape picture
-   comes out as very nearly the whole column. Beside a drawing given three
-   fifths of that column, the same cap would leave the sheet looking like the
-   smaller of the two. */
 .art-card-split .art-lead {
   max-width: calc(var(--ar, 1) * 545px);
 }
 
-/* Inside the column a row of one is the column's width: the caps that stop a
-   leftover picture spanning a whole page do not apply to a page this narrow. */
 .art-split-main .art-row .art-plate {
   max-width: none;
 }
 
-/* A note standing on its own wants room around it. A note between two pictures
-   in a column that has to come out level with the column beside it wants as
-   little as it can read with -- and the two together were carrying about
-   seventy pixels more than the other side had to spend. */
 .art-split-main .art-note {
   margin: 6px 0 8px 0;
 }
 
-/* Above 1240 the column is at its full 1180 and the two sides come out level
-   to within a pixel or two. Below it the pictures shrink with the column and
-   the writing does not -- it wraps onto more lines instead -- so the side with
-   the writing on it runs longer. There is no fixing that with spacing alone,
-   the text is simply taller; this gives back what spacing there is to give. */
 @media (min-width: 901px) and (max-width: 1239px) {
   .art-split-main {
     gap: 6px;
@@ -2160,15 +1717,7 @@ body.is-zoomed {
 }
 
 .art-aside {
-  /* The larger half, and a fixed one: the drawing decides the split, and what
-     stands beside it fits into the rest. A column rather than one picture, so
-     the finished model can sit under the sections it was built from and the
-     two sides of the band come out about the same height. */
   flex: 0 0 60%;
-  /* Held at the top, not stretched: below the full width this column is the
-     shorter one by a good margin, and a column of two pictures asked to fill
-     that height would put all of the difference into the one gap between them.
-     A short foot is a margin; an eighty-pixel hole is a mistake. */
   align-self: flex-start;
   display: flex;
   flex-direction: column;
@@ -2180,10 +1729,6 @@ body.is-zoomed {
   max-width: none;
 }
 
-/* At the full 1180 the two sides are within a pixel or two of each other, so
-   the last of the slack can be paid out of this column as well and the two
-   feet come out exactly level. Only here: further down the difference is far
-   too big to hide in one gap. */
 @media (min-width: 1240px) {
   .art-aside {
     align-self: stretch;
@@ -2202,32 +1747,17 @@ body.is-zoomed {
 }
 
 @media (max-width: 900px) {
-  /* No room for a column beside a column. It unwinds, and the drawing takes
-     its turn in the order like every other picture. */
   .art-split {
     display: block;
   }
-
-  /* The column inside it stays a flex column, though, with the same 10px gap
-     the plates outside the band are stacked with. As a block its children's
-     margins would collapse against that gap instead of adding to it, and the
-     writing in this project alone would sit half as far from the pictures as
-     the writing in all the others. */
 
   .art-aside {
     margin-top: 10px;
   }
 }
 
-/* A note that stands on its own across the page rather than inside the narrow
-   column can take a longer line: it has the width of the band under it and a
-   58ch block looks marooned in the middle of it. Still short of the pictures,
-   because a line the width of the page is not a line anybody wants to read. */
 .art-plates > .art-note {
   max-width: 72ch;
-  /* And closer to them. A note between two rows is read as belonging to the
-     pictures on either side of it; with the row gap on top of its own margins
-     it was reading as a gap between two projects instead. */
   margin: 10px 0 12px 0;
 }
 
@@ -2243,8 +1773,6 @@ body.is-zoomed {
   color: var(--ink);
 }
 
-/* The date sits back from the name: on a label the year is the smaller half of
-   the line. */
 .art-date {
   margin-left: 14px;
   opacity: 0.6;
@@ -2252,32 +1780,18 @@ body.is-zoomed {
 
 .art-caption {
   margin: 5px 0 0 0;
-  /* The same measure the notes between the pictures are set to, so the writing
-     in a project stops at one place rather than at two. */
   max-width: 58ch;
   font-size: 16px;
   font-weight: 300;
   line-height: 1.45;
-  /* And no last line left holding one word. At three or four widths -- 320,
-     375 and 414 among them, which is to say most of the phones people have --
-     this paragraph came out with "curiosity." alone on the bottom line. This
-     asks the browser to pull a word down from the line above rather than leave
-     one hanging; where it is not understood, nothing changes. */
   text-wrap: pretty;
   color: var(--ink);
 }
 
-/* The captions use <em> for the medium and the dimensions, which wants to read
-   as a list rather than as emphasis. */
 .art-caption em {
   font-style: normal;
 }
 
-/* Who else made it. Quieter than the writing above it and set apart from it,
-   because it is a fact about the work rather than part of the description. */
-/* The course is a title, so it is set as one. Explicit because .art-caption em
-   turns italics off a few lines up -- there the tag is used for a date, not a
-   name -- and a reader coming to this line should not have to guess which. */
 .art-credit em {
   font-style: italic;
 }
@@ -2292,34 +1806,20 @@ body.is-zoomed {
   opacity: 0.6;
 }
 
-/* the publication line inside a caption — same quiet treatment as the credit,
-   because it is attribution rather than description. */
 .art-pub {
   opacity: 0.6;
 }
 
-/* A line of argument set between the drawings, for the projects that have one.
-   Narrower than the pictures and quieter than the label: it is a caption to
-   the sheet above it, not a heading for the sheet below. */
 .art-note {
   margin: 22px 0 26px 0;
   text-wrap: pretty;
-  /* In the narrow column this never bites -- the column is narrower than the
-     measure -- so it is only doing anything for a note standing across the
-     whole page, where a line has to be stopped somewhere short of the width of
-     the pictures. */
   max-width: 58ch;
   font-size: 16px;
   font-weight: 300;
   line-height: 1.5;
   color: var(--ink);
-  /* opacity was 0.72; removed for the same contrast reason as the caption. */
 }
 
-/* The places named in a project's writing, linked out to whoever can say more
-   about them. The accent colour, which is the cream by day and the periwinkle
-   by night, is enough to mark them as links while the sentence is being read;
-   the rule arrives only when you point at one. */
 .art-caption a,
 .art-note a {
   color: var(--accent);
@@ -2358,11 +1858,6 @@ body.is-zoomed {
   transition: transform 220ms ease;
 }
 
-/* The same mark painted in the night palette: the cream becomes the periwinkle
-   and the orange becomes black, so the composition is identical and nothing
-   orange is left standing on a black page. Swapping the source here rather
-   than in the markup keeps the daylight file as the one the page loads with no
-   stylesheet, and as the icon in the browser tab. */
 :root[data-theme="dark"] .to-top-btn img {
   content: url("/favicon-night.png");
 }
@@ -2392,11 +1887,6 @@ body.is-zoomed {
 }
 
 .bio-materials-link::after {
-  /* The arrow, with U+FE0E after it. On a phone this character has an emoji
-     face as well as a letter's, and the phone reaches for the emoji: a little
-     blue-and-white tile where the page wants a hairline arrow in the colour of
-     the text. FE0E is the request for the letter. font-variant-emoji says the
-     same thing to browsers new enough to have it. */
   content: "\2197\FE0E";
   font-variant-emoji: text;
   margin-left: 0.22em;
@@ -2486,19 +1976,10 @@ body.is-zoomed {
     padding-top: 16px;
   }
 
-  /* Art too: its own padding (one line under the name, for the desktop's
-     fixed header) outranked the line above and put its header 42px lower on
-     a phone than on every other page. */
   .index-page.art-page {
     padding-top: 16px;
   }
 
-  /* Below the breakpoint the header stops being a set of fixed corners and
-     becomes the first two lines of the page. That is a change of arrangement,
-     not of size: the type stays where it is at 900 and only goes up on a
-     phone, further down. A 900-pixel window is a small desktop, and a header
-     a quarter larger than the desktop's read as an enlargement rather than as
-     a header. */
   .name,
   .about-link {
     position: static;
@@ -2517,7 +1998,6 @@ body.is-zoomed {
     padding-top: 16px;
   }
 
-  /* Match index page: is-active adds extra bottom margin on desktop only */
   .about-page .about-link.is-active {
     margin-bottom: 8px;
   }
@@ -2584,8 +2064,6 @@ body.is-zoomed {
     font-size: 20px;
   }
 
-  /* The art page's row of sections, centred and sized like the row under
-     about on the front page. */
   .site-nav {
     justify-content: center;
     font-size: 20px;
@@ -2606,19 +2084,11 @@ body.is-zoomed {
     margin-right: auto;
   }
 
-  /* The header is an ordinary stack at this width rather than a set of fixed
-     corners, so the line joins that stack instead of floating over the
-     pictures. The name carries its own margin; the row adds none. */
   .header-line {
     position: static;
     margin-bottom: 0;
   }
 
-  /* And the switch leaves the row for the top corner, where there is a great
-     deal of nothing and it is out of the way of the reading. Absolute rather
-     than fixed: at this width the header is part of the page and scrolls with
-     it, and a circle left hanging over the pictures would be the one thing on
-     the screen that had not moved. */
   .theme-btn {
     position: absolute;
     top: 21px;
@@ -2628,13 +2098,6 @@ body.is-zoomed {
     --ring: 2.25px;
   }
 
-  /* On the page that has a menu the two of them go to that corner together,
-     the switch first and the nine squares outside it, and the switch gives up
-     its own corner to the pair. */
-  /* The mark comes down to the size of the circle beside it. On a phone the
-     corner is a quarter of an inch of glass and two controls have to share it;
-     a thirty-pixel grid there is a button in the way of the page rather than a
-     mark on it. Same drawing, read small. */
   .site-menu {
     position: absolute;
     top: 21px;
@@ -2647,10 +2110,6 @@ body.is-zoomed {
   }
 
 
-  /* The switch belongs to the name's line and goes to this corner at this
-     width, which on the front page is the mark's corner too. It stands inboard
-     of the mark, measured off the mark rather than guessed at, so the two keep
-     their distance if either ever changes size. */
   body:has(.site-menu) .theme-btn {
     right: calc(16px + var(--corner-mark) + var(--corner-gap));
   }
@@ -2677,19 +2136,12 @@ body.is-zoomed {
     font-size: 15px;
   }
 
-  /* The narrow column that the writing is set tight against in the band is not
-     there at this width: the band has come apart into a single column like
-     every other project, so the writing that sat in it takes the same room as
-     the writing in all of them. */
   .art-note,
   .art-split-main .art-note,
   .art-plates > .art-note {
     margin: 10px 0 12px 0;
   }
 
-  /* On a phone the column is narrow enough that a row of four details is four
-     stamps. Two across is the floor, and a picture wide enough to be worth
-     looking at is worth more than a row that stays flush. */
   .art-row .art-plate {
     flex-basis: calc(var(--ar, 1) * 110px);
   }
@@ -2700,13 +2152,6 @@ body.is-zoomed {
 }
 
 @media (max-width: 610px) {
-  /* One size for the header at every width above the smallest phones, which is
-     what a hierarchy that means anything looks like here: the type does not
-     grow as the screen shrinks. It used to -- twenty-seven under 901 and
-     twenty-four under 611, both above the desktop's twenty-two -- and a window
-     at 700 came out with a header a quarter larger than the same header on a
-     desk, for no reason anybody could see. The name keeps the two per cent
-     over the word under it that it has on a phone. */
   .name {
     line-height: 1.05;
     font-size: 22.4px;
@@ -2768,15 +2213,9 @@ body.is-zoomed {
 }
 
 
-/* ---------------- materials: Stedelijk-style marquee rows ---------------- */
-
 .materials-page {
   padding-left: 0;
   padding-right: 0;
-  /* The rows run edge to edge, but the last one must not end flush against the
-     bottom of the window: on a screen short enough for the list to scroll, a
-     rule sitting on the very last pixel reads as a row that has been cut off
-     with more below it. This leaves a band of background under the last rule. */
   padding-bottom: 40px;
   overflow-x: hidden;
 }
@@ -2788,9 +2227,6 @@ body.is-zoomed {
   left: var(--page-left);
 }
 
-/* Level with the name, at the other end of the page: one big word and the
-   same hairline arrow the menu uses for a link that leaves the page. The
-   arrow is drawn here so a phone does not swap it for the emoji tile. */
 .projects-lead {
   position: fixed;
   z-index: 10;
@@ -2839,8 +2275,6 @@ body.is-zoomed {
   display: block;
   position: relative;
   overflow: hidden;
-  /* Horizontal drags belong to the row; vertical ones are still the page's,
-     so the list scrolls normally on a phone. */
   touch-action: pan-y;
   cursor: grab;
   user-select: none;
@@ -2868,9 +2302,6 @@ body.is-zoomed {
   display: flex;
   width: max-content;
   will-change: transform;
-  /* Position comes from marquee.js, a frame at a time. A CSS animation cannot
-     be dragged, and its duration had to be computed from a width that is not
-     final until the font and the pictures have loaded. */
 }
 
 .marquee-seq {
@@ -2887,9 +2318,6 @@ body.is-zoomed {
   flex: 0 0 auto;
 }
 
-/* The site's mark — a circle inscribed in a square, as in the favicon — drawn
-   rather than loaded, so it takes currentColor and flips along with the row
-   instead of disappearing into the cream. */
 .marquee-mark {
   position: relative;
   flex: 0 0 auto;
@@ -2897,13 +2325,9 @@ body.is-zoomed {
   height: 0.52em;
   box-sizing: border-box;
   border: 0.036em solid currentColor;
-  /* generous, so a repetition reads as a separate thing rather than as more
-     of the same sentence — the word gap inside a run is only 0.3em */
   margin: 0 0.7em;
 }
 
-/* Inscribed: the circle is tangent to all four sides, leaving the four corners
-   of the square open exactly as the icon does. */
 .marquee-mark::before {
   content: "";
   position: absolute;
@@ -2929,9 +2353,6 @@ body.is-zoomed {
   flex: 0 0 auto;
 }
 
-/* A picture gets more air than the 0.3em between words — but only from words.
-   At the end of a repetition the mark's own 0.7em is the whole separation, and
-   adding to it left a visible hole before the title started again. */
 .marquee-run > picture {
   display: block;
   flex: 0 0 auto;
@@ -2974,9 +2395,6 @@ body.is-zoomed {
     padding-right: 0;
   }
 
-  /* This page zeroes the body padding so the rows can run edge to edge, so
-     everything that should line up with the rows' text has to put it back —
-     the back arrow was the one that got missed. */
   .materials-page .name,
   .materials-page .about-link,
   .materials-page .back-link,
@@ -2984,8 +2402,6 @@ body.is-zoomed {
     padding-left: 16px;
   }
 
-  /* On a narrow screen the word leaves the crowded top corner and stands on
-     its own, centred over the rows, with room above and below. */
   .projects-lead {
     position: static;
     display: block;
@@ -3016,21 +2432,6 @@ body.is-zoomed {
 
 
 
-/* ---------------- game ("Where Is This?") ----------------
-   Borrows the materials page's language: full-bleed rules, big light type,
-   cream-on-orange inversion for anything you can press. The recap uses the same
-   circle-in-a-square mark as the site icon — filled for right, empty for wrong. */
-
-/* One column for everything on the page — the banner, the menu, the board, the
-   cosmetic panel, the credit line. Nothing is allowed to run past the banner's
-   right edge, so the column is set once here and every child inherits it.
-
-   It is the same width on the menu as it is mid-game, so nothing changes size
-   when a game starts, and it is centred: the empty space either side is equal.
-   The name and the back link are fixed to the top left and take no part in it.
-
-   The gutter lives on the page rather than on the column, so the 100% the
-   column is measured against already has both margins taken out of it. */
 .game-page {
   --board: 100%;
   --col: var(--board);
@@ -3045,17 +2446,10 @@ body.is-zoomed {
   padding-right: 0;
 }
 
-/* .cv-page main p indents every paragraph like a CV entry; the game's do not. */
 .game-page main p {
   margin-left: 0;
 }
 
-/* ---------------- the wordmark banner ----------------
-   The logo runs the full width of the game window, so it is sized by the same
-   --board variable the map is. It keeps its own black ground, which is why it
-   is not affected by the cosmetic colours. */
-/* The banner is a button — the way back to the menu — but it should look like
-   the picture it is, so it carries none of the usual button furniture. */
 .game-logo-btn {
   display: block;
   width: 100%;
@@ -3072,8 +2466,6 @@ body.is-zoomed {
   outline-offset: 3px;
 }
 
-/* It is a button, so it answers to a press. On the menu there is nowhere for it
-   to go, and there it is disabled and stays put. */
 .game-logo-btn .game-logo {
   transition: opacity 140ms ease;
 }
@@ -3087,10 +2479,6 @@ body.is-zoomed {
   opacity: 0.72;
 }
 
-/* A press repaints the page: the same fade a fresh load would give you, which
-   is what the banner promises when there is nowhere else for it to go. The
-   background belongs to the canvas rather than to the body's own box, so
-   fading the body takes the content with it and leaves the colour behind. */
 @keyframes page-in {
   from {
     opacity: 0;
@@ -3110,10 +2498,6 @@ body.is-refreshing {
   }
 }
 
-/* On a phone the back link sits directly above the banner with only eight
-   pixels between them, which reads as a collision rather than a stack. The
-   space goes on the column as padding: a margin on the banner collapses
-   through main and moves the whole page instead of opening a gap. */
 @media (max-width: 900px) {
   .game-page .game {
     padding-top: 12px;
@@ -3127,9 +2511,6 @@ body.is-refreshing {
   margin: 0 0 clamp(18px, 2.4vw, 34px) 0;
 }
 
-/* The column above already holds the banner to the menu's width off the board
-   and to the map's width in play, so the picture simply fills it. */
-
 .game-heading {
   font-weight: 300;
   font-size: clamp(30px, 4.6vw, 66px);
@@ -3137,11 +2518,6 @@ body.is-refreshing {
   margin: 0 0 18px 0;
 }
 
-/* ---------------- accounts and the daily board ----------------
-   Both are optional: with supabase-config.js empty, cloud.js never unhides
-   them and the page looks exactly as it did before any of this existed. */
-/* Built like the daily row directly above it, so the two buttons are the same
-   size and their notes start at the same place. */
 .game-account {
   display: flex;
   align-items: baseline;
@@ -3150,19 +2526,11 @@ body.is-refreshing {
   margin: 0 0 30px 0;
 }
 
-/* Two class names for the same reason the daily button needs them: .game-btn
-   is defined further down the file and would otherwise win on source order.
-   The shared minimum is what makes the two buttons one size — the daily label
-   is the shorter of the two, so left to the text they would not match. */
 .game-btn.game-signin {
   font-size: clamp(17px, 1.9vw, 25px);
   padding: 12px 32px;
 }
 
-/* Holds whichever of the two sign-in buttons is in use. Baseline is what the
-   row aligns on, but Google's button is a block of its own drawing with no
-   text baseline to find, so this aligns on its bottom edge instead and the
-   note beside it sits where it always did. */
 .game-signin-slot {
   display: inline-flex;
   align-items: flex-end;
@@ -3170,24 +2538,15 @@ body.is-refreshing {
 
 .game-google-btn {
   display: inline-block;
-  /* Google's button is a little shorter than ours. This keeps the row from
-     changing height depending on which one is showing. */
   min-height: 44px;
 }
 
-/* The three big controls on the menu are one size, whatever their labels. */
 .game-btn.game-daily-btn,
 .game-btn.game-signin,
 .game-btn.game-start {
   min-width: clamp(232px, 24vw, 336px);
 }
 
-/* Quieter than start, and the same height as it: this is the thing you press
-   before playing, not instead of it. */
-/* Not a button. Starting a game and copying a link to one are not the same
-   size of decision, and drawing them the same made the row read as a choice
-   between two of them. An underlined line of type is what the rest of the
-   page uses for the smaller of two things. */
 .game-copy-link {
   align-self: center;
   padding: 0 0 1px 0;
@@ -3213,15 +2572,10 @@ body.is-refreshing {
   margin: 14px 0 0 0;
 }
 
-/* Carries .game-daily-note in the markup as well, so the two lines are the
-   same size, weight and colour by construction rather than by coincidence. */
 .game-account-note {
   font-weight: 300;
 }
 
-/* The daily note is two lines now — the day, then what you did with it — so it
-   needs to be able to break, and to sit at the top of the row rather than be
-   centred against a button twice its height. */
 .game-daily-note {
   align-self: center;
 }
@@ -3245,8 +2599,6 @@ body.is-refreshing {
   object-fit: cover;
 }
 
-/* A quieter control than the outlined buttons: neither leaving nor renaming is
-   the point of the page. */
 .game-quiet,
 .game-signout {
   background: none;
@@ -3300,14 +2652,10 @@ body.is-refreshing {
   opacity: 0.75;
 }
 
-/* Full column, like every other rule on the page. */
 .game-leaders {
   margin: 0 0 34px 0;
 }
 
-/* The scoreboard's own header, built like CUSTOM GAME: its rule above it, the
-   name at the same size and weight, and the two tabs at the far end of the
-   same line. */
 .game-leaders-head {
   display: flex;
   align-items: baseline;
@@ -3323,8 +2671,6 @@ body.is-refreshing {
   font: inherit;
 }
 
-/* The name is a button so the section can be folded away; it is styled as the
-   heading it also is. The caret is the same pair the cosmetic settings use. */
 .game-fold {
   padding: 0;
   background: none;
@@ -3349,9 +2695,6 @@ body.is-refreshing {
   content: "\25b8\00a0";
 }
 
-/* Both section headings take the accent, so the two read as the pair they are.
-   Hover goes the other way — to the ink — since the accent is now the resting
-   state and needs something to change to. */
 .game-page .game-custom,
 .game-page .game-fold {
   color: var(--accent);
@@ -3363,13 +2706,10 @@ body.is-refreshing {
   outline: none;
 }
 
-/* Folded away, the tabs would be switching something nobody can see. */
 .game-leaders.is-folded .game-tabs {
   display: none;
 }
 
-/* A short fade whenever the list is repainted, so switching tabs reads as the
-   board fetching itself again rather than the numbers simply changing. */
 @keyframes game-board-in {
   from {
     opacity: 0;
@@ -3396,7 +2736,6 @@ body.is-refreshing {
   gap: 6px;
 }
 
-/* Quiet until chosen: the board is the thing, not the switch. */
 .game-tab {
   background: none;
   border: 2px solid transparent;
@@ -3440,9 +2779,6 @@ body.is-refreshing {
   font-weight: 300;
 }
 
-/* Your own line, so you can find yourself in a long list. Weight as well as
-   colour: the accent is lighter than the ink here, so on its own it would read
-   as the row being played down rather than picked out. */
 .game-leader.is-you {
   color: var(--accent);
   font-weight: 400;
@@ -3476,15 +2812,12 @@ body.is-refreshing {
   font-variant-numeric: tabular-nums;
 }
 
-/* 84 over twelve days and 84 over forty are not the same 84. */
 .game-leader-days {
   margin-left: 0.5em;
   font-size: 0.72em;
   opacity: 0.7;
 }
 
-/* The same size and weight as the daily note and the sign-in note: they are
-   the same kind of aside and were a pixel and a shade apart. */
 .game-leaders-note {
   margin: 10px 0 0 0;
   font-size: clamp(13px, 1.4vw, 17px);
@@ -3510,15 +2843,6 @@ body.is-refreshing {
   border-bottom: 1px solid currentColor;
 }
 
-/* ---------------- the game's palette ----------------
-   The game is drawn from the same three variables as everything else, so it
-   follows the switch like every other page. It used to declare its own copy
-   of them, which meant the game was the one page that could never be dark.
-
-   The cosmetic panel writes its overrides inline on the body, and an inline
-   style beats a :root rule in both themes, so a player who has chosen their
-   own colours still keeps them. */
-
 body.game-page {
   background: var(--bg);
   color: var(--ink);
@@ -3533,8 +2857,6 @@ body.game-page {
   outline-color: var(--ink);
 }
 
-/* The day's puzzle sits above the panel and is the one filled button on the
-   page, because it is the thing most people came for. */
 .game-daily {
   display: flex;
   align-items: baseline;
@@ -3543,9 +2865,6 @@ body.game-page {
   margin: 0 0 30px 0;
 }
 
-/* Everything below this line is the game you build yourself; everything above
-   it is the one puzzle everybody gets. The heading carries the rule so the two
-   halves of the menu read as two halves. */
 .game-custom {
   margin: 0 0 22px 0;
   padding-top: 14px;
@@ -3556,17 +2875,11 @@ body.game-page {
   text-transform: uppercase;
 }
 
-/* .cv-page h2 sets font-weight: 300 !important for the CV's own section
-   headings, and the game page carries that class too — which is why this one
-   had been rendering light despite asking for 500. The game's two headings say
-   it as loudly as the rule they are arguing with. */
 .game-page .game-custom,
 .game-page .game-fold {
   font-weight: 500 !important;
 }
 
-/* Two class names so this beats `.game-btn`'s transparent background, which is
-   defined later in the file. */
 .game-btn.game-daily-btn {
   background: var(--accent);
   border-color: var(--accent);
@@ -3598,20 +2911,10 @@ body.game-page {
   opacity: 0.85;
 }
 
-/* ---- the setup panel ----
-   Replaces the old row of preset buttons. Checkboxes use the site's
-   circle-in-a-square mark, filled when on; the slider thumb is the same square
-   again, so the whole panel is built from one shape. */
-
-/* No width of its own: the page's column decides how far right the panel and
-   its rules run, the same as the banner above them. */
 .game-setup {
   margin: 0 0 8px 0;
 }
 
-/* No rule of their own: the one under CUSTOM GAME divides the menu, and three
-   more lines below it turned the panel into a stack of boxes. The labels do
-   the work of separating them. */
 .game-set {
   margin: 0 0 26px 0;
   padding: 0;
@@ -3637,8 +2940,6 @@ body.game-page {
   flex-wrap: wrap;
   gap: 6px clamp(16px, 2.4vw, 34px);
   clear: both;
-  /* The legend floats above this row, so its height is part of this padding.
-     22 puts the boxes a few pixels under their label rather than adrift. */
   padding-top: 22px;
 }
 
@@ -3679,8 +2980,6 @@ body.game-page {
   background: currentColor;
 }
 
-/* Difficulty, region, and the hints toggle all get a tick in the page
-   background color when checked, rather than relying on fill alone. */
 #setup-levels .game-check-mark::after,
 #setup-continents .game-check-mark::after,
 #setup-hints ~ .game-check-mark::after {
@@ -3703,10 +3002,6 @@ body.game-page {
   opacity: 1;
 }
 
-/* Matches .game-pool's size/weight/opacity so the hint copy reads as a
-   caption, not another option label. Unlike the short pill labels this
-   sentence sits next to, it needs the whole row's width and has to be able
-   to wrap there instead of running past the panel's right edge. */
 .game-check:has(.game-hint-text) {
   width: 100%;
   white-space: normal;
@@ -3738,14 +3033,6 @@ body.game-page {
 .game-check.is-empty {
   opacity: 0.4;
 }
-
-/* ---- the special menu ----
- *
- * One entry in the region row that opens onto the packs. It is drawn as a
- * chip so it reads as one more thing in that row, but it is a button rather
- * than a checkbox because it opens something instead of selecting anything.
- * The count beside it says how many packs are in the mix while it is shut,
- * which is the only thing you would want to know without opening it. */
 
 .game-special-open {
   display: inline-flex;
@@ -3797,10 +3084,6 @@ body.game-page {
   border-bottom: 1px solid currentColor;
 }
 
-/* The same wrapped row the continents are in. They were one per line when
-   each carried a play button; a list of ticks reads across as well as the
-   continents do, and a pack with nothing in it greys itself through
-   .game-check.is-empty, the way an empty level does. */
 .game-packs {
   display: flex;
   flex-wrap: wrap;
@@ -3810,8 +3093,6 @@ body.game-page {
 .game-special-done {
   margin-top: 14px;
 }
-
-/* ---- length slider ---- */
 
 .game-slider {
   padding-top: 34px;
@@ -3888,12 +3169,6 @@ body.game-page {
   white-space: nowrap;
 }
 
-/* "endless" is centred on a mark at the very end of the scale, so half of it
-   would hang outside the column; it hangs off its own right edge instead, and
-   the mark stays where it was. The first label is narrow enough to stay
-   centred. */
-/* Flush with the right end of the scale rather than centred on the last stop,
-   which is inset by half a slider thumb. */
 .game-tick:last-child {
   margin-left: 10px;
   transform: translateX(-100%);
@@ -3905,9 +3180,6 @@ body.game-page {
   margin-left: auto;
 }
 
-/* The mark rises to meet the slider's own line — it read as floating below it
-   with a gap. The extra bottom margin is the same five pixels back, so only the
-   mark moves and the numbers stay where they were. */
 .game-tick::before {
   content: "";
   display: block;
@@ -3921,7 +3193,6 @@ body.game-page {
   color: var(--accent);
 }
 
-/* Lengths the current selection cannot fill. */
 .game-tick.is-off {
   opacity: 0.32;
 }
@@ -3933,9 +3204,6 @@ body.game-page {
   margin: 0 0 20px 0;
 }
 
-/* While it is saying why there is no game to start, it is the only thing on
-   the page that matters, so it takes the accent and drops the dimming the
-   ordinary count is drawn with. */
 .game-pool.is-warning {
   color: var(--accent);
   opacity: 1;
@@ -3947,9 +3215,6 @@ body.game-page {
   gap: clamp(10px, 1.4vw, 18px);
 }
 
-/* Two class names again: .game-btn is further down the file and would win on
-   source order otherwise — which is exactly what had happened here, leaving
-   start noticeably smaller than the button it sits under. */
 .game-btn.game-start {
   font-size: clamp(17px, 1.9vw, 25px);
   padding: 12px 32px;
@@ -3998,8 +3263,6 @@ body.game-page {
   font-weight: 300;
 }
 
-/* Two parts now that the wordmark is a banner above the board: where you are on
-   the left, the tally and the way out on the right. */
 .game-progress {
   flex: 1 1 auto;
   min-width: 0;
@@ -4008,7 +3271,6 @@ body.game-page {
   text-overflow: ellipsis;
 }
 
-/* Set apart by space rather than punctuation. */
 .game-progress-where:not(:empty) {
   margin-right: clamp(26px, 3.4vw, 56px);
 }
@@ -4022,29 +3284,20 @@ body.game-page {
   min-width: 0;
 }
 
-/* The tally and the menu keep their line; the progress on the left is the one
-   allowed to truncate, since it is the least load-bearing of the three. */
 .game-score,
 .game-quit {
   white-space: nowrap;
 }
 
-/* Both only mean anything in the phone's two-row bar; the rules that turn them
-   on live in the narrow-screen block further down. */
 .game-zoom-hint,
 .game-meta-break {
   display: none;
 }
 
-/* The tally carries both spellings — "0 right · 0 wrong" and "0 ✓ · 0 ✗" — and
-   shows the words wherever there is room for them. */
 .game-score-mark {
   display: none;
 }
 
-/* The way out of a game in progress. It was a bare word and read as label
-   rather than control, so it now carries the same outline as the page's other
-   buttons at a size that still fits the bar. */
 .game-quit {
   padding: 3px 13px;
   font-weight: 500;
@@ -4066,9 +3319,6 @@ body.game-page {
   outline: none;
 }
 
-/* The gaps above and below the picture are deliberately tight: on a wide
-   screen the map's width is decided by the height left over, so anything spent
-   here comes straight off the map. */
 .game-frame {
   display: flex;
   align-items: center;
@@ -4085,8 +3335,6 @@ body.game-page {
   line-height: 0;
 }
 
-/* Touch devices zoom the picture in place instead of opening a loupe, so the
-   stage has to crop what runs past the edges. */
 @media (hover: none) {
   .game-stage {
     overflow: hidden;
@@ -4113,7 +3361,6 @@ body.game-page {
   width: auto;
   height: auto;
   max-width: 100%;
-  /* border-box so the 2px rule sits inside the column, flush with the meta bar */
   box-sizing: border-box;
   max-height: 52vh;
   border: 2px solid var(--ink);
@@ -4124,17 +3371,10 @@ body.game-page {
   cursor: zoom-out;
 }
 
-/* The magnified window. Sized and positioned in game.js; it shows the picture
-   at its own resolution, which is about twice what fits on the page. */
-/* A quick wash of colour over the picture when the answer lands. Sits above the
-   image but below the loupe, and never eats the click. */
 .game-flash {
   position: absolute;
   left: 0;
   top: 0;
-  /* Width and height are set from the image in game.js. The stage it sits in
-     does not shrink-wrap to the picture, so `inset: 0` spilled the colour
-     across the empty half of the row. */
   pointer-events: none;
   opacity: 0;
   background: transparent;
@@ -4183,10 +3423,6 @@ body.game-page {
   opacity: 0.8;
 }
 
-/* The field and the button are one object: a bordered box whose right-hand end
-   is the button. No gap, and the shared edge is a single 2px line rather than
-   two sitting side by side. */
-/* Field padding (2 x 10) + its rule (2 x 2) + the line the type sits on. */
 .game-page {
   --field-h: calc(24px + 1.15 * clamp(22px, 2.4vw, 38px));
 }
@@ -4198,9 +3434,6 @@ body.game-page {
   margin: 0 0 10px 0;
 }
 
-/* The field and the list under it are one object, and the list is measured
-   against the field rather than the row, so it lines up with the box and not
-   with the guess button beside it. */
 .game-combo {
   position: relative;
   display: flex;
@@ -4238,7 +3471,6 @@ body.game-page {
   outline: none;
 }
 
-/* The button sits on top so its border wins along the shared edge. */
 .game-form .game-btn:hover,
 .game-form .game-btn:focus-visible {
   position: relative;
@@ -4259,9 +3491,6 @@ body.game-page {
   transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
-/* The browser's own focus ring is dropped only where focus already shows as a
-   colour change — the button fills, the toggle goes accent — so tabbing is
-   still perfectly visible without a black box over the top of it. */
 .game-btn:hover,
 .game-btn:focus-visible {
   background: var(--accent);
@@ -4270,10 +3499,6 @@ body.game-page {
   outline: none;
 }
 
-/* ---- the names the guess box offers ----
-   A panel hung off the bottom edge of the field, sharing its rule: 2px of
-   negative margin puts the list's top border on top of the field's bottom one
-   rather than beside it, the same trick the field and its button use. */
 .game-suggest {
   position: absolute;
   top: 100%;
@@ -4285,15 +3510,12 @@ body.game-page {
   list-style: none;
   max-height: min(44vh, 360px);
   overflow-y: auto;
-  /* Reaching the end of the list must not start scrolling the page behind it. */
   overscroll-behavior: contain;
   background: var(--bg);
   border: 2px solid var(--ink);
   text-align: left;
 }
 
-/* Where the window, or the keyboard on a phone, has left no room under the
-   field, the list goes up over the map instead. */
 .game-suggest.is-above {
   top: auto;
   bottom: 100%;
@@ -4308,25 +3530,17 @@ body.game-page {
   cursor: pointer;
 }
 
-/* Hairlines between the rows, not around them: the panel's own rule is the
-   only full-strength line. */
 .game-suggest li + li {
   border-top: 2px solid color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
-/* The same inversion as every other thing on this page you can press. */
 .game-suggest li:hover,
 .game-suggest li.is-active {
   background: var(--accent);
   color: var(--bg);
 }
 
-/* The country, and the nickname that led you here, are context rather than the
-   answer, so they sit back from the name itself. */
 .game-suggest-where,
-/* Pulled up into the space under the picture: the line appears and disappears
-   between rounds, and it should not shove the guess box down the page when it
-   does. */
 .game-ask {
   margin: -14px 0 6px 0;
   font-size: clamp(15px, 1.5vw, 19px);
@@ -4351,16 +3565,11 @@ body.game-page {
   margin: 0 0 22px 0;
 }
 
-/* Half the size of the city, which is the thing you were actually asked for. */
 .game-answer-country {
   font-size: 0.5em;
   opacity: 0.8;
 }
 
-/* The same box as the guess button, in the same place: after a reveal your
-   hand is already there, and a smaller target a few pixels off is a stumble.
-   The guess button is stretched to the height of the field beside it, so this
-   one is given that same height rather than its own smaller natural one. */
 .game-btn-next {
   margin-bottom: 4px;
   min-width: clamp(104px, 11vw, 176px);
@@ -4387,7 +3596,6 @@ body.game-page {
   font-weight: 300;
 }
 
-/* Same mark as the site icon and the marquee separators. */
 .game-recap-mark {
   position: relative;
   flex: 0 0 auto;
@@ -4406,10 +3614,6 @@ body.game-page {
   background: currentColor;
 }
 
-/* A round that found the right part of the world and the wrong city. The
-   circle is filled as far as it was earned — a quarter, a half, three
-   quarters — so the recap column reads as a picture of the run. The share of
-   the sweep comes in on --fill from game.js. */
 .game-recap-item.is-part .game-recap-mark::before {
   content: "";
   position: absolute;
@@ -4418,7 +3622,6 @@ body.game-page {
   background: conic-gradient(currentColor var(--fill, 50%), transparent 0);
 }
 
-/* The same note under the answer, on the round itself. */
 .game-earned {
   margin: 0.2em 0 0;
   font-size: 0.85em;
@@ -4440,17 +3643,10 @@ body.game-page {
   flex-wrap: wrap;
 }
 
-/* Finishing a daily moves the account row onto the result screen, where it
-   lands straight under these buttons with nothing to hold it off them — and
-   the avatar, centred on a line the row aligns by its baseline, rides up over
-   their bottom border. On the menu it has the daily block above it and needs
-   none of this, so the space is given here rather than on the row itself. */
 .game-result .game-account {
   margin-top: 30px;
 }
 
-/* On the result screen the board follows the buttons, and the two were sharing
-   a line's worth of air between them. */
 .game-result .game-leaders {
   margin-top: clamp(30px, 3.4vw, 52px);
 }
@@ -4463,49 +3659,11 @@ body.game-page {
   opacity: 0.7;
 }
 
-/* --board is the width of the board's working column. The picture is set to it
-   and so is the form, so the right edge of the image and the right edge of the
-   guess button are always the same line. The vh term keeps a wide picture from
-   running off the bottom on a short window; when it bites, both shrink together
-   and the two edges stay aligned. */
 @media (min-width: 701px) {
-  /* Set on the body rather than on .game-board: a custom property is inherited
-     from the nearest ancestor that declares it, so a copy on .game-board would
-     shadow anything set higher up and the playing override below would never
-     reach the picture.
-
-     It is written as available height rather than a flat fraction of the
-     window, because everything around the picture is a fixed amount (page top,
-     the bar, the margins, and the verdict and answer under it) and a fraction
-     gives that fixed part too little room on a short screen.
-
-     The page's own top inset is subtracted by name rather than folded into the
-     constant, because it grows with the height of the window: a fixed number
-     that leaves room to spare at 1080 leaves none at 1440.
-
-     The multiplier converts the height the picture may take into the width it
-     will then be. A map is the 1000 x 700 frame they are all shot in, so on its
-     own that is 1.42; the banner above it is another 1/8.39 of the same width,
-     so the pair together come to 1 / (1/1.42 + 1/8.39) = 1.26.
-
-     One figure, used on the menu as well as mid-game. The menu has no picture
-     to fit and could be wider, but then the banner and the rules under it would
-     jump narrower the moment a game started; holding both to the width the map
-     can actually take is worth more than the extra inches on the menu.
-
-     The floor is for a phone held sideways, where the height term alone would
-     leave a map a few centimetres across. Below it the page scrolls, which is
-     the better of the two bad options. */
   .game-page {
-    /* The ceiling is the map's own size: the round images are built 1200px
-       wide, plus the 2px rule either side. Past that the picture would be
-       upscaled, and — because it stops growing while the banner above it does
-       not — the two would stop lining up. */
     --board: max(360px, min(1204px, 100%, calc((100vh - var(--page-top) - 300px) * 1.26)));
   }
 
-  /* Mid-game the banner sits closer to the bar; every pixel it gives back goes
-     into the map. */
   .is-playing .game-logo {
     margin-bottom: clamp(10px, 1vw, 14px);
   }
@@ -4515,9 +3673,6 @@ body.game-page {
     max-height: none;
   }
 
-  /* The bar's type stays exactly as it was; it just stops running 400px past
-     the picture, so the rule, the image and the guess button share one right
-     edge instead of leaving a bite out of the composition. */
   .game-meta {
     width: var(--board);
     max-width: 100%;
@@ -4532,11 +3687,6 @@ body.game-page {
     max-width: none;
   }
 
-  /* The reveal takes the row the guess field just vacated rather than stacking
-     three things under the map: verdict, answer, and the way on, on one line
-     across the same width. Stacked it cost about 185px of height, which with a
-     banner overhead is the difference between the answer landing on screen and
-     landing under the fold. */
   .game-reveal {
     display: flex;
     align-items: baseline;
@@ -4545,16 +3695,12 @@ body.game-page {
     max-width: 100%;
   }
 
-  /* Held back deliberately: at 2.8vw the verdict was a headline across a
-     full-screen window. It only has two words to say. */
   .game-verdict {
     flex: 0 0 auto;
     font-size: clamp(33px, 2.55vw, 48px);
     margin: 0;
   }
 
-  /* The country keeps its half-size relationship to the city, so it grows with
-     it and stays the quieter half of the line. */
   .game-answer {
     flex: 0 1 auto;
     margin: 0 auto 0 0;
@@ -4569,12 +3715,6 @@ body.game-page {
 }
 
 @media (max-width: 700px) {
-  /* What you are playing — the daily's name, or "hard · europe · endless" —
-     takes the line above the counters rather than being dropped. It is the one
-     thing in the bar that can be long, and on a phone there is no room for it
-     beside three other things; there is room for it above them. display:
-     contents dissolves the wrapper so the two halves can land on separate
-     rows. */
   .game-meta {
     flex-wrap: wrap;
   }
@@ -4595,13 +3735,10 @@ body.game-page {
     opacity: 0.85;
   }
 
-  /* Nothing to say: no empty row. */
   .game-progress-where:empty {
     display: none;
   }
 
-  /* A zero-height item with a full-width basis: it takes a line of its own and
-     so forces the counters onto the row below, whatever is above them. */
   .game-meta-break {
     display: block;
     flex: 0 0 100%;
@@ -4609,10 +3746,6 @@ body.game-page {
     margin: 0;
   }
 
-  /* The bar's markup keeps the round counter next to the game's name, but on a
-     phone they belong on different rows — the name and the zoom hint above, the
-     counters below. display: contents makes them all siblings here, so the
-     order is set outright rather than by rewriting the markup. */
   .game-progress-where {
     order: 1;
   }
@@ -4633,7 +3766,6 @@ body.game-page {
     order: 5;
   }
 
-  /* Only where tapping is how you zoom — a mouse gets the magnifier instead. */
   @media (hover: none) {
     .game-zoom-hint {
       display: block;
@@ -4655,8 +3787,6 @@ body.game-page {
     text-overflow: ellipsis;
   }
 
-  /* Four things share this bar and "map 1 / 10" is longer than "1 / 10" was,
-     so the type comes down a step rather than letting any of them ellipsis. */
   .game-meta {
     font-size: 13px;
     gap: 10px;
@@ -4666,9 +3796,6 @@ body.game-page {
     padding: 2px 7px;
   }
 
-  /* And the two sides take only the room they need rather than an equal half
-     each, or the tally runs into the wordmark. The title still sits between
-     them; it just centres in what is left rather than in the whole bar. */
   .game-progress {
     flex: 0 1 auto;
   }
@@ -4677,10 +3804,6 @@ body.game-page {
     flex: 0 0 auto;
   }
 
-  /* A max-height on a picture with a set width shrinks its width too, which is
-     what left the map narrower than the bar and the guess row above and below
-     it on a tall, narrow window. There is height to spare there, so the cap
-     comes off; it comes back only when the window really is short. */
   .game-image {
     max-height: none;
   }
@@ -4702,9 +3825,6 @@ body.game-page {
     display: none;
   }
 
-  /* One row here as well: the verdict, the answer, and the way on. The answer
-     is the part allowed to take a second line if the name is long; the button
-     keeps the size it has beside the guess field. */
   .game-reveal {
     display: flex;
     align-items: baseline;
@@ -4712,16 +3832,10 @@ body.game-page {
     width: 100%;
   }
 
-  /* Only a round that earned something is allowed a second line. Letting the
-     row wrap the rest of the time pushes the button down on every round,
-     which costs the height the single row was for. */
   .game-reveal:has(.game-earned:not([hidden])) {
     flex-wrap: wrap;
   }
 
-  /* Four across a phone is one too many, so what the near miss was worth drops
-     below the answer and takes the button with it, rather than squeezing the
-     city's name into three lines. */
   .game-earned {
     order: 1;
     flex: 1 1 auto;
@@ -4752,19 +3866,12 @@ body.game-page {
   }
 }
 
-/* Short windows — a phone turned sideways, a small laptop window — are the one
-   place the picture still has to be held back, or the guess row falls off the
-   bottom of the screen. */
 @media (max-width: 700px) and (max-height: 620px) {
   .game-image {
     max-height: 54vh;
   }
 }
 
-/* Four things share this bar and the wordmark is the one that gives way first,
-   so narrow phones buy room back a little at a time: tighter gaps, then a
-   smaller type step, and only on the narrowest phones does the tally trade its
-   words for marks. Measured at 320 / 360 / 390 / 430: nothing truncates. */
 @media (max-width: 420px) {
   .game-meta {
     gap: 8px;
@@ -4785,8 +3892,6 @@ body.game-page {
   }
 }
 
-/* Only the very narrowest phones still cannot hold the words, and there an
-   ellipsised wordmark would be the alternative. */
 @media (max-width: 340px) {
   .game-score-word {
     display: none;
@@ -4797,20 +3902,7 @@ body.game-page {
   }
 }
 
-/* ---------------- print ----------------
-   Browsers drop background colours when printing, so the orange ground
-   disappeared and left white text on white paper. Everything below rebuilds
-   the pages as ink on paper; the CV is the one that matters, since it is the
-   page people actually print or save as PDF. */
-
-/* ---------------- cosmetic settings ----------------
-   Lifted from the flash card tool, in this page's own language: the same three
-   swatches, the same contrast guard, the same named presets. */
-
 .game-cosmetic {
-  /* Same rhythm as the difficulty / region / rounds rules above: the line sits
-     right on top of its label rather than floating well clear of it, and it
-     runs as far right as they do. */
   margin: 30px 0 0 0;
   border-top: 2px solid var(--ink);
 }
@@ -4938,7 +4030,6 @@ body.game-page {
   color: var(--bg);
 }
 
-/* A little three-band chip so you can see a preset before you pick it. */
 .game-preset-chip {
   flex: 0 0 auto;
   width: 1.5em;
@@ -4996,7 +4087,6 @@ body.game-page {
     line-height: 1.28;
   }
 
-  /* Screen furniture that means nothing on paper. */
   .to-top-btn,
   .back-link,
   .about-link,
@@ -5009,8 +4099,6 @@ body.game-page {
     display: none !important;
   }
 
-  /* The name stops being a fixed overlay and becomes the masthead. The
-     selector has to out-specify `.cv-page .name { color: #fff !important }`. */
   .cv-page .name,
   .index-page .name,
   .name,
@@ -5042,7 +4130,6 @@ body.game-page {
     margin: 3.6mm 0 1.3mm;
     padding-bottom: 0.7mm;
     border-bottom: 0.5pt solid #000000;
-    /* never leave a heading stranded at the foot of a page */
     break-after: avoid;
     page-break-after: avoid;
   }
@@ -5051,8 +4138,6 @@ body.game-page {
     margin-top: 0;
   }
 
-  /* Top-level entries sit flush; the inline margin-left on sub-entries still
-     wins on specificity, so the hierarchy survives. */
   .cv-page main p {
     margin: 0 0 0.9mm 0;
     break-inside: avoid;
@@ -5066,7 +4151,6 @@ body.game-page {
     color: #3a3a3a;
   }
 
-  /* Underlined so a reader on paper can see what was a link. */
   .cv-publication-link,
   .cv-publication-link:visited,
   a {
@@ -5094,28 +4178,11 @@ body.game-page {
   }
 }
 
-/* ------------------------------------------------------------------ blog --
- *
- * The blog is a mailbox, because that is what these letters were, and the
- * mailbox is drawn the way the one they were read in draws itself: the pale
- * blue-grey backdrop, a search box that is a pill, a rail with a rounded
- * selection and a filled Compose button, and one white card with rounded
- * corners holding the list and the letter side by side. The arrangement and
- * the palette are what make it read as that program; there is no wordmark
- * and no logo, because those are the parts that are somebody's.
- *
- * The window is centred and narrower than the page, so on a wide screen it
- * sits on the orange like a program open on a desk rather than filling it.
- * Inside it the site's typeface stops: Roboto for the chrome, Arial for the
- * letters themselves, which is what a mail composer's "Sans Serif" is.
- */
-
 .blog-page {
   padding-right: var(--page-left);
   padding-bottom: 60px;
 }
 
-/* The lede and the window share this column, so they share a left edge. */
 .mail {
   max-width: 1120px;
   margin: 0 auto;
@@ -5129,7 +4196,6 @@ body.game-page {
   line-height: 1.45;
 }
 
-/* .cv-page indents body paragraphs like CV entries; nothing in here is one. */
 .blog-page main p.mail-lede,
 .blog-page .mail-window p {
   margin-left: 0;
@@ -5152,18 +4218,10 @@ body.game-page {
   --mail-compose: #c2e7ff;
   --mail-star: #f4b400;
   --mail-star-off: #c4c7c5;
-  /* The letter, which is not the window. Gmail sets the list and the chrome in
-     its own greys and then hands the message body to whatever the composer
-     wrote -- near-black on white paper, and quoted text in the old mail
-     purple. Tokens because the two of them are the only things in here that
-     have to be legible as writing rather than as furniture. */
   --mail-letter-ink: #222222;
   --mail-quote-ink: #500050;
   --mail-quote-line: #cccccc;
 
-  /* As tall as the screen allows under the name and the lede — a little more
-     than fits, so the page scrolls a few lines to its foot rather than the
-     window stopping short. */
   height: clamp(660px, calc(100vh - 120px), 1360px);
   display: flex;
   flex-direction: column;
@@ -5192,11 +4250,6 @@ body.game-page {
   stroke-linejoin: round;
 }
 
-/* Gmail has a dark theme of its own, and the joke only works if the window
-   goes with the rest of the site rather than staying a white rectangle in a
-   dark room. These are Gmail's night colours, near enough: the same greys, the
-   same blue, the letter on charcoal paper instead of white. Only the tokens
-   move — every rule below is already written in terms of them. */
 :root[data-theme="dark"] .mail-window {
   --mail-ink: #e8eaed;
   --mail-soft: #9aa0a6;
@@ -5214,25 +4267,16 @@ body.game-page {
   --mail-compose: #004a77;
   --mail-star: #f4b400;
   --mail-star-off: #5f6368;
-  /* White, and not the #e8eaed the chrome around it uses: the letter is the
-     one thing on this page a reader is actually reading, and on charcoal
-     paper it should be the brightest thing in the window rather than a shade
-     of the furniture. It had been left on the daylight near-black, which on
-     #292a2d was a little over one to one -- there, but not readable. */
   --mail-letter-ink: #ffffff;
   --mail-quote-ink: #9aa0a6;
   --mail-quote-line: #3c4043;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
 }
 
-/* An open row in the dark theme is a blue block, so its text has to be the
-   light blue that goes on top of it rather than the dark ink of the list. */
 :root[data-theme="dark"] .mail-row.is-open,
 :root[data-theme="dark"] .mail-row.is-open.is-unread {
   color: var(--mail-select-ink);
 }
-
-/* -------- the bar across the top -------- */
 
 .mail-bar {
   flex: 0 0 auto;
@@ -5314,8 +4358,6 @@ body.game-page {
   flex: 0 0 auto;
 }
 
-/* The picture an account shows before it has one: grey, and nobody in
-   particular. */
 .mail-avatar {
   display: inline-flex;
   align-items: center;
@@ -5340,7 +4382,6 @@ body.game-page {
   height: 32px;
 }
 
-/* Mine: a white N on periwinkle. */
 .mail-avatar-noah {
   background: #7b8cde;
   color: #ffffff;
@@ -5349,7 +4390,6 @@ body.game-page {
   letter-spacing: 0.02em;
 }
 
-/* The digest in spam: a serif Q on light crimson. */
 .mail-avatar-quora {
   background: #e05a6b;
   color: #ffffff;
@@ -5358,16 +4398,12 @@ body.game-page {
   font-weight: 400;
 }
 
-/* -------- rail, card, list and letter -------- */
-
 .mail-body {
   flex: 1 1 auto;
   display: flex;
   min-height: 0;
 }
 
-/* The rail and the list are as wide as the reader last dragged them; the
-   window carries the two widths as custom properties (see blog.js). */
 .mail-rail {
   flex: 0 0 var(--mail-rail-w, 240px);
   padding: 0 0 16px 8px;
@@ -5375,9 +4411,6 @@ body.game-page {
   min-width: 0;
 }
 
-/* A handle between panes: a strip you can grab, with a line down the middle
-   that only shows itself when you do. The one beside the rail sits in the
-   backdrop's own gutter; the one beside the list draws the card's divider. */
 .mail-divider {
   flex: 0 0 12px;
   position: relative;
@@ -5425,8 +4458,6 @@ body.is-resizing-mail {
   user-select: none;
 }
 
-/* Writing to the mailbox's owner is the one thing a visitor can actually
-   compose here, so the button does that. */
 .mail-compose {
   display: inline-flex;
   align-items: center;
@@ -5522,7 +4553,6 @@ body.is-resizing-mail {
   border-radius: 3px;
 }
 
-/* The white card. Everything to the right of the rail lives in it. */
 .mail-panes {
   flex: 1 1 auto;
   display: flex;
@@ -5567,8 +4597,6 @@ body.is-resizing-mail {
   min-height: 0;
 }
 
-/* A read row sits back on the pale blue; an unread one is white and bold.
-   That inversion — unread is the lit one — is the whole convention. */
 .mail-row {
   position: relative;
   display: flex;
@@ -5592,8 +4620,6 @@ body.is-resizing-mail {
   background: var(--mail-open-row);
 }
 
-/* Hovering a read row swaps its date for the envelope that makes it unread
-   again, the way the client this is drawn after does. */
 .mail-row-tools {
   position: absolute;
   top: 6px;
@@ -5635,13 +4661,6 @@ body.is-resizing-mail {
   color: var(--mail-star);
 }
 
-/* The row is one link laid out in three lines: who and when, the subject, the
-   opening words. In a split view the list is too narrow for the one-line
-   arrangement, and these letters are a series whose subjects differ only at
-   the end — the very place a truncated line stops — so the subject gets a
-   line of its own and is read whole.
-   A link rather than a button so the URL is real: middle-click and cmd-click
-   open the letter in a new tab. */
 .mail-rowlink {
   flex: 1 1 auto;
   display: grid;
@@ -5726,8 +4745,6 @@ body.is-resizing-mail {
   color: var(--mail-soft);
 }
 
-/* -------- the letter -------- */
-
 .mail-read {
   flex: 1 1 auto;
   min-width: 0;
@@ -5763,7 +4780,6 @@ body.is-resizing-mail {
   text-align: center;
 }
 
-/* Only the phone layout needs it; on a wide screen the list never leaves. */
 .mail-back {
   display: none;
 }
@@ -5776,7 +4792,6 @@ body.is-resizing-mail {
   color: var(--mail-ink);
 }
 
-/* The .cv-page heading rule would otherwise lighten it to 300. */
 .blog-page .mail-letter-subject {
   font-weight: 400 !important;
 }
@@ -5785,7 +4800,6 @@ body.is-resizing-mail {
   margin: -6px 0 14px 0;
 }
 
-/* The warning a mail client puts above anything it has filed as spam. */
 .mail-spam-banner {
   display: flex;
   align-items: flex-start;
@@ -5842,7 +4856,6 @@ body.is-resizing-mail {
   line-height: 16px;
 }
 
-/* The little caret that would open the details. */
 .mail-letter-to::after {
   content: " \25BE";
   font-size: 10px;
@@ -5858,7 +4871,6 @@ body.is-resizing-mail {
   white-space: nowrap;
 }
 
-/* Star and mark-as-unread, at the end of the header line. */
 .mail-letter-tools {
   display: flex;
   align-items: center;
@@ -5898,9 +4910,6 @@ body.is-resizing-mail {
   fill: var(--mail-star);
 }
 
-/* The letter itself, in the face a mail composer calls Sans Serif. It flows
-   to the width of the pane, the way mail does, with a stop so that a very
-   wide window does not stretch a line of it past comfortable reading. */
 .mail-letter-body {
   max-width: 720px;
   padding: 16px 0 0 52px;
@@ -5911,9 +4920,6 @@ body.is-resizing-mail {
   overflow-wrap: anywhere;
 }
 
-/* The letters arrive as email, which means their markup is whatever a mail
-   composer produced. These reset the parts that would otherwise inherit the
-   site's own indent, colour and spacing. */
 .blog-page .mail-letter-body p,
 .blog-page .mail-letter-body li {
   margin-left: 0;
@@ -5954,8 +4960,6 @@ body.is-resizing-mail {
   border-collapse: collapse;
 }
 
-/* Reply and Forward, which really do write a mail — to the sender, or to
-   whoever the reader picks, with a link to the letter already in it. */
 .mail-letter-actions {
   display: flex;
   flex-wrap: wrap;
@@ -5988,10 +4992,6 @@ body.is-resizing-mail {
   height: 18px;
 }
 
-/* -------- narrow -------- */
-
-/* The rail is the first thing to go: on a laptop it is orientation, on a phone
-   it is three quarters of the width. The labels stay reachable through search. */
 @media (max-width: 900px) {
   .mail-rail,
   #mail-divider-rail {
@@ -6011,8 +5011,6 @@ body.is-resizing-mail {
   }
 }
 
-/* Below this the two panes stop fitting side by side, so they become one: the
-   list, and then the letter on top of it. */
 @media (max-width: 720px) {
   .mail-window {
     height: auto;
@@ -6075,8 +5073,6 @@ body.is-resizing-mail {
     background: rgba(11, 87, 208, 0.08);
   }
 
-  /* More room to read on a phone than beside a reading pane, so nothing is
-     clamped here. */
   .mail-subject,
   .mail-snippet {
     -webkit-line-clamp: none;

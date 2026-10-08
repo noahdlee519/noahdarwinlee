@@ -1,10 +1,3 @@
-// greatercircle: the globe, the two places, the countries to go round.
-//
-// The drawing is a canvas and d3-geo's orthographic projection, which shows
-// the near half of the sphere and clips the far half. The maths of the route
-// is in engine.js and runs in a worker (worker.js), so turning the globe never
-// waits on it. Places are searched in a list the page carries, with Photon
-// for what it does not have.
 (function () {
   "use strict";
 
@@ -16,30 +9,27 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canHover = window.matchMedia("(hover: hover)").matches;
 
-  // ------------------------------------------------------------- state
   var state = {
-    a: null, b: null,          // { lon, lat, label }
-    avoid: new Map(),          // feature id -> name
-    regions: [],               // drawn regions to avoid: { id, name, kind, points | center+radiusKm, inverted }
-    bufferKm: 0,               // how far to keep from every drawn region's edge
+    a: null, b: null,
+    avoid: new Map(),
+    regions: [],
+    bufferKm: 0,
     units: "km",
-    result: null,              // the last answer from the worker
-    pendingId: 0,              // the request we are waiting on, or 0
+    result: null,
+    pendingId: 0,
     avoidMode: false,
-    hover: -1,                 // index into features, or -1
+    hover: -1,
     ready: false
   };
 
-  // The data, once loaded.
   var topology = null, features = [], featureById = new Map(), lod = null, borders = null, graticule = null;
-  var cities = []; // { name, cc, lon, lat, tier, x, y, z }
-  var admin1 = null, admin1Asked = false; // the borders inside countries, fetched when the globe is close
-  var lakes = null; // prepared like the countries, drawn in the sea's colour
-  var airports = null; // { name, cc, lon, lat, iata, big, x, y, z }, from the place list, drawn when the globe is very close
-  var countries = [];          // [{ id, name, key }] sorted, for the avoid search
+  var cities = [];
+  var admin1 = null, admin1Asked = false;
+  var lakes = null;
+  var airports = null;
+  var countries = [];
   var places = null, placesPromise = null;
 
-  // ------------------------------------------------------------- view
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var path = d3.geoPath(projection, ctx);
   var view = { lon: -25, lat: 28, zoom: 1 };
@@ -51,7 +41,6 @@
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
-    // The globe sits in the part of the window the panel leaves free.
     var phone = W <= 640;
     var panelW = phone ? 0 : 352 + 2 * 24;
     var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 204) : 0;
@@ -72,14 +61,12 @@
     pickDirty = true;
   }
 
-  // ------------------------------------------------------------- palette
   var pal = {}, hatch = null;
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
     ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "region-fill", "border-sub"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
-    // Diagonal lines for the countries being avoided.
     var c = document.createElement("canvas");
     c.width = c.height = 8;
     var hc = c.getContext("2d");
@@ -88,21 +75,8 @@
     hatch = ctx.createPattern(c, "repeat");
   }
 
-  // ------------------------------------------------------------- drawing
-  // The land and the borders are projected here rather than through d3's
-  // path: d3 resamples every edge along its great circle for exactness, which
-  // for a whole globe of coastline means well over a hundred thousand points a
-  // frame, whatever the detail of the data. The orthographic projection of a
-  // unit vector is three dot products, so with the vertices kept as vectors a
-  // frame is a tight loop. A vertex on the far side is pushed out to the limb,
-  // which cuts a polygon straddling the horizon along the limb to within a
-  // pixel. d3 still draws the routes, where its resampling is what makes an
-  // arc an arc, and does the exact point-in-country test for the pointer.
   var renderQueued = false, interacting = 0, settleTimer = null;
 
-  /* Draw on the next frame: rough while the globe is moving, full once it
-     has settled. (The argument is kept for the callers' sake; which it is
-     depends only on whether an interaction is under way.) */
   function scheduleRender(detail) {
     void detail;
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
@@ -115,8 +89,6 @@
     if (interacting > 0) noteCost(performance.now() - t0);
   }
 
-  /* Interactions call this on every move; the full drawing follows a short
-     while after the last one. */
   function moving() {
     interacting = 1;
     clearTimeout(settleTimer);
@@ -124,7 +96,6 @@
     scheduleRender("coarse");
   }
 
-  // Frame basis: screen east, screen north, and the direction to the viewer.
   var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
   function basis() {
     var lon = view.lon * Math.PI / 180, lat = view.lat * Math.PI / 180;
@@ -135,8 +106,6 @@
     B.r = projection.scale();
   }
 
-  /* Vertices of every ring of every feature as vectors, with a cap around
-     each feature, for each level of detail. */
   function prepare(featureList) {
     return featureList.map(function (f, i) {
       var polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
@@ -171,8 +140,6 @@
   function makeGraticule() {
     var lines = [];
     for (var lat = -80; lat <= 80; lat += 10) { var pts = []; for (var lon = -180; lon <= 180; lon += 2) pts.push([lon, lat]); lines.push(pts); }
-    // Meridians stop short of the poles, where they would crowd into a
-    // star; four of them go all the way.
     for (var lo = -180; lo < 180; lo += 10) {
       var top = lo % 90 === 0 ? 90 : 80, mp = [];
       for (var la = -top; la <= top; la += 2) mp.push([lo, la]);
@@ -181,15 +148,11 @@
     return prepareLines({ coordinates: lines });
   }
 
-  /* Is any of the feature in front? Behind the globe entirely when the cap
-     is more than a quarter turn past the horizon. */
   function featureInFront(f) {
     var d = f.cx * B.cx + f.cy * B.cy + f.cz * B.cz;
     var theta = Math.acos(Math.max(-1, Math.min(1, d)));
     if (theta - f.radius > Math.PI / 2) return false;
     if (theta + f.radius < Math.PI / 2) {
-      // Wholly in front: is any of it on the screen? Its footprint lies
-      // within r·sin(radius) of its centre.
       var px = cx + B.r * (f.cx * B.ex + f.cy * B.ey + f.cz * B.ez);
       var py = cy - B.r * (f.cx * B.nx + f.cy * B.ny + f.cz * B.nz);
       var rad = B.r * Math.sin(Math.min(f.radius, Math.PI / 2)) + 2;
@@ -198,14 +161,6 @@
     return true;
   }
 
-  /* Adds a ring to the current path. Vertices behind the horizon go to the
-     limb; a ring with nothing in front is left out altogether. */
-  /* Which side of the screen a point is off, as bits: 1 left, 2 right, 4
-     above, 8 below; 0 when it is on the screen (with a margin). A run of
-     vertices all off the same side can be drawn as its two ends: the
-     straight line between them stays off that side, and the fill of the
-     ring is the same on the screen. Close in, this leaves out nearly all
-     of a big country's outline. */
   var EDGE = 24;
   function outcode(px, py) {
     return (px < -EDGE ? 1 : px > W + EDGE ? 2 : 0) | (py < -EDGE ? 4 : py > H + EDGE ? 8 : 0);
@@ -224,7 +179,7 @@
       var px = cx + r * sx, py = cy - r * sy;
       if (k === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
       var oc = outcode(px, py);
-      if (oc & side) { lx = px; ly = py; held = true; side = oc & side; continue; } // still off the same side: hold it
+      if (oc & side) { lx = px; ly = py; held = true; side = oc & side; continue; }
       if (held) { c.lineTo(lx, ly); held = false; }
       c.lineTo(px, py);
       side = oc;
@@ -237,12 +192,10 @@
     if (!featureInFront(f)) return;
     for (var i = 0; i < f.rings.length; i++) traceRing(c, f.rings[i]);
   }
-  /* Adds polylines to the path, breaking them where they pass behind. */
   function traceLines(c, lines) {
     var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     for (var i = 0; i < lines.length; i++) {
       var L = lines[i], X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false, side = 0;
-      // Lines whose whole cap is behind or off the screen are skipped.
       if (L.radius < Math.PI / 2 && !featureInFront(L)) continue;
       for (var k = 0; k < n; k++) {
         var x = X[k], y = Y[k], z = Z[k];
@@ -252,7 +205,6 @@
         if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
         var px = cx + r * sx, py = cy - r * sy, oc = outcode(px, py);
         if (!pen) { c.moveTo(px, py); pen = true; side = oc; continue; }
-        // Two in a row off the same side: nothing of the stroke between them shows.
         if (oc & side) { c.moveTo(px, py); side = oc & side; continue; }
         c.lineTo(px, py);
         side = oc;
@@ -262,14 +214,10 @@
 
   var marks = null;
   function mark(name) { if (marks) marks.push([name, performance.now()]); }
-  /* The level for the size of the globe on the screen. It is the same
-     still or moving, so the outline does not change under the hand; a
-     device that cannot draw its level in time settles one step down, for
-     good, so that it does not change later either. */
   var slow = 0, slowFrames = 0;
   function levelFor(detail) {
     void detail;
-    var px = projection.scale(); // radius in pixels
+    var px = projection.scale();
     var level = px < 900 ? 0 : px < 2600 ? 1 : 2;
     return Math.max(0, level - slow);
   }
@@ -297,7 +245,6 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
 
-    // The glow outside the limb, then the sea.
     if (r * 1.07 < Math.hypot(W, H)) {
       var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.07);
       glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
@@ -308,14 +255,10 @@
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
     mark("sea");
 
-    // Graticule, faint.
     ctx.beginPath(); traceLines(ctx, graticule);
     ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
     mark("graticule");
 
-    // Land, a fill per country: one path for all of it costs ten times as
-    // much as two hundred small ones. The hovered and avoided ones come
-    // after, in their own colours.
     ctx.fillStyle = pal.land;
     for (var i = 0; i < feats.length; i++) {
       if (i === state.hover || state.avoid.has(feats[i].id)) continue;
@@ -338,19 +281,16 @@
     });
 
     mark("avoid");
-    // Lakes, in the sea's colour, over whatever the land is filled with.
     if (lakes) {
       ctx.fillStyle = pal.ocean;
       for (var li = 0; li < lakes.length; li++) {
         var lk = lakes[li];
-        if (r * Math.sin(Math.min(lk.radius, Math.PI / 2)) < 0.7) continue; // smaller than a pixel
+        if (r * Math.sin(Math.min(lk.radius, Math.PI / 2)) < 0.7) continue;
         if (!featureInFront(lk)) continue;
         ctx.beginPath(); traceFeature(ctx, lk); ctx.fill();
       }
     }
     mark("lakes");
-    // The borders inside countries, dotted, once the globe is close enough
-    // that they mean something; they fade in over the first stretch.
     var sub = subdivisionAlpha(r);
     if (sub > 0) {
       if (!admin1) loadAdmin1();
@@ -362,12 +302,10 @@
       }
     }
     mark("admin1");
-    // Borders between countries; the coast is the land's own edge.
     ctx.beginPath(); traceLines(ctx, mesh);
     ctx.strokeStyle = pal.border; ctx.lineWidth = 0.7; ctx.stroke();
     mark("borders");
 
-    // The limb.
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI);
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
 
@@ -388,9 +326,6 @@
     var direct = { type: "LineString", coordinates: [[state.a.lon, state.a.lat], [state.b.lon, state.b.lat]] };
     if (res && res.antipodal && res.waypoints) direct = { type: "LineString", coordinates: res.waypoints.slice(0, 2).concat(res.waypoints.length > 2 ? [res.waypoints[res.waypoints.length - 1]] : []) };
     if ((drag && drag.marker) || state.stale) {
-      // While a marker is being dragged, or until the worker has answered
-      // for a moved point, the old route no longer starts at it: show the
-      // direct arc from where it is now, and the rest when it comes.
       ctx.lineJoin = "round"; ctx.lineCap = "round";
       ctx.beginPath(); path(direct);
       ctx.strokeStyle = pal.route; ctx.lineWidth = 1.5; ctx.stroke();
@@ -399,7 +334,6 @@
     if (!res || res.status !== "done") return;
     var detour = res.waypoints && res.lengthKm > res.directKm + 0.5;
     if (detour) {
-      // The direct arc, faint and dashed, so the detour is seen against it.
       ctx.beginPath(); path(direct);
       ctx.setLineDash([4, 5]); ctx.strokeStyle = pal.direct; ctx.lineWidth = 1.2; ctx.stroke();
       ctx.setLineDash([]);
@@ -411,7 +345,6 @@
     ctx.beginPath(); path(line);
     ctx.strokeStyle = pal.route; ctx.lineWidth = 2; ctx.stroke();
     if (detour && view.zoom > 1.5) {
-      // The corners it bends at.
       for (var i = 1; i + 1 < res.waypoints.length; i++) {
         var p = projection(res.waypoints[i]);
         if (!p || !visible(res.waypoints[i])) continue;
@@ -421,11 +354,6 @@
     }
   }
 
-  /* The world cities: a dot each, and names as the globe comes closer, the
-     most important first. Names are placed in order of rank and skipped
-     where they would sit on one already placed. */
-  /* How visible the subdivisions are at this globe radius: none below 1400
-     px, whole from 2200. */
   var ADMIN1_FROM = 1400, ADMIN1_FULL = 2200;
   function subdivisionAlpha(r) { return Math.max(0, Math.min(1, (r - ADMIN1_FROM) / (ADMIN1_FULL - ADMIN1_FROM))); }
   function loadLakes() {
@@ -443,20 +371,15 @@
     }).catch(function (err) { console.warn("admin1", err); admin1Asked = false; });
   }
   function cityDotRadius() { var r = B.r; return r < 900 ? 1.4 : r < 2600 ? 1.9 : 2.4; }
-  // Each tier joins in as the globe grows; crowding is settled on screen,
-  // a city whose name would overlap a greater one's waiting for more room.
   function labelTierFor(r) { return r >= 2200 ? 4 : r >= 1300 ? 3 : r >= 850 ? 2 : r >= 560 ? 1 : 0; }
-  var cityScreen = []; // where each city landed this frame, for the pointer
+  var cityScreen = [];
   function drawCities() {
     cityScreen = [];
     if (!cities.length) return;
     var r = B.r, show = labelTierFor(r), dot = cityDotRadius();
-    if (!show) return; // a city appears, dot and name together, when the globe is close enough
+    if (!show) return;
     var ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     ctx.font = "400 11px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
-    // Names first, greater cities first (the list is sorted by tier): a name
-    // that would sit on another is left out, and so is its dot, so a crowded
-    // coast shows its chief cities and an empty quarter shows them all.
     var placed = [], pad = 3;
     for (var i = 0; i < cities.length; i++) {
       var c = cities[i];
@@ -474,7 +397,6 @@
       cityScreen.push({ c: c, x: px, y: py });
     }
     var nCities = cityScreen.length;
-    // Airports, very close in: large ones first, after the cities' names.
     var air = airportAlpha(r);
     if (air > 0) {
       if (!airports) loadPlaces();
@@ -508,7 +430,6 @@
       ctx.fillStyle = pal.label; ctx.fillText(s.c.name, s.x + dot + 4, s.y);
     }
     if (cityScreen.length > nCities) {
-      // An airport is a little plane, nose up, and its three-letter code.
       ctx.globalAlpha = air;
       ctx.lineJoin = "round"; ctx.lineWidth = 1; ctx.strokeStyle = pal["city-ring"]; ctx.fillStyle = pal.city;
       for (i = nCities; i < cityScreen.length; i++) {
@@ -525,18 +446,17 @@
       ctx.globalAlpha = 1;
     }
   }
-  /* A plane seen from above, nose up, in a box of 2h by 2h around x, y. */
   function planePath(x, y, h) {
     var u = h / 10;
     ctx.beginPath();
-    ctx.moveTo(x, y - 10 * u);                 // nose
+    ctx.moveTo(x, y - 10 * u);
     ctx.lineTo(x + 1.6 * u, y - 7 * u);
     ctx.lineTo(x + 1.6 * u, y - 2 * u);
-    ctx.lineTo(x + 10 * u, y + 2.5 * u);       // wing tip
+    ctx.lineTo(x + 10 * u, y + 2.5 * u);
     ctx.lineTo(x + 10 * u, y + 4.5 * u);
     ctx.lineTo(x + 1.6 * u, y + 2.5 * u);
     ctx.lineTo(x + 1.2 * u, y + 7 * u);
-    ctx.lineTo(x + 4 * u, y + 9 * u);          // tail
+    ctx.lineTo(x + 4 * u, y + 9 * u);
     ctx.lineTo(x + 4 * u, y + 10 * u);
     ctx.lineTo(x, y + 8.6 * u);
     ctx.lineTo(x - 4 * u, y + 10 * u);
@@ -549,8 +469,6 @@
     ctx.lineTo(x - 1.6 * u, y - 7 * u);
     ctx.closePath();
   }
-  /* How visible the airports are at this globe radius: none below 5500 px,
-     whole from 7500. */
   var AIRPORTS_FROM = 5500, AIRPORTS_FULL = 7500;
   function airportAlpha(r) { return Math.max(0, Math.min(1, (r - AIRPORTS_FROM) / (AIRPORTS_FULL - AIRPORTS_FROM))); }
   function cityAt(x, y) {
@@ -586,9 +504,6 @@
       ctx.fillStyle = pal.marker; ctx.fill();
       ctx.fillStyle = pal["marker-ink"];
       ctx.font = "500 10px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
-      // Centred on the letter's own ink, not on the font's idea of its
-      // middle, which sits lower or higher from one font (and phone) to
-      // the next.
       ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
       var tm = ctx.measureText(m[0]);
       var inkL = tm.actualBoundingBoxLeft || 0, inkR = tm.actualBoundingBoxRight || tm.width;
@@ -597,16 +512,13 @@
     });
   }
 
-  // ------------------------------------------------------------- picking
-  // A second, unseen canvas with each country in its own colour, so the
-  // country under the pointer is a pixel read rather than a search.
   var pick = document.createElement("canvas");
   var pctx = pick.getContext("2d", { willReadFrequently: true });
   var pickDirty = true;
 
   function renderPick() {
     basis();
-    var feats = lod.full; // at full detail whatever is drawn: small countries stay pickable
+    var feats = lod.full;
     pctx.setTransform(1, 0, 0, 1, 0, 0);
     pctx.clearRect(0, 0, W, H);
     for (var i = 0; i < feats.length; i++) {
@@ -617,9 +529,6 @@
     pickDirty = false;
   }
 
-  /* The country at window position (x, y), as an index, or -1. The pixel's
-     colour is a candidate; the exact test confirms it, since a pixel on a
-     border is a blend of two. */
   function countryAt(x, y) {
     if (!lod) return -1;
     if (pickDirty) renderPick();
@@ -641,15 +550,11 @@
     return -1;
   }
 
-  // ------------------------------------------------------------- interaction
-  var pointers = new Map(); // active pointers, for drag and pinch
-  var drag = null;          // { x, y, lon, lat, moved, marker, lastT, vx, vy, lastX, lastY }
+  var pointers = new Map();
+  var drag = null;
   var pinch = null;
   var inertia = null;
 
-  /* The ring round the globe is for the keyboard: it shows when the globe
-     is reached with Tab, not when a click gives it focus for the arrow
-     keys (a script's focus() would otherwise count as the keyboard's). */
   var focusByPointer = false;
   canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); });
   canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); });
@@ -657,7 +562,7 @@
 
   canvas.addEventListener("pointerdown", function (e) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
-    try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* a pointer that is already gone */ }
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) { }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     stopInertia();
     stopFly();
@@ -668,7 +573,6 @@
       pinch = { d: dist(pts[0], pts[1]), zoom: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
       return;
     }
-    // A handle of the selected region, or a drawing gesture, before the globe.
     var handle = handleAt(e.clientX, e.clientY);
     if (handle) { handleDrag = { region: selected, handle: handle }; return; }
     if (drawing && drawing.tool === "circle") {
@@ -724,7 +628,7 @@
       var s = degPerPx();
       view.lon -= (mx - pinch.mx) * s; view.lat += (my - pinch.my) * s;
       pinch.mx = mx; pinch.my = my;
-      applyView(); // before the zoom reads what is under the fingers
+      applyView();
       zoomAt(pinch.zoom * nd / pinch.d, mx, my, true);
       moving();
       return;
@@ -741,8 +645,6 @@
         moving();
         return;
       }
-      // The surface follows the pointer: a drag to the right carries the
-      // globe right, so what is at the centre moves west, and down, north.
       var sc = degPerPx();
       view.lon = drag.lon - dx * sc;
       view.lat = drag.lat + dy * sc;
@@ -774,7 +676,6 @@
       return;
     }
     if (d.marker) { commitPoint(d.marker); return; }
-    // Let it glide.
     var since = performance.now() - d.lastT;
     if (!reduceMotion && since < 60 && Math.hypot(d.vx, d.vy) > 0.02) startInertia(d.vx, d.vy);
     else { interacting = 0; scheduleRender("full"); }
@@ -796,7 +697,7 @@
     if (!inertia) return;
     var now = performance.now(), dt = Math.min(40, now - inertia.t); inertia.t = now;
     view.lon -= inertia.vx * dt; view.lat += inertia.vy * dt;
-    var decay = Math.pow(0.0025, dt / 1000); // most of it gone within a second
+    var decay = Math.pow(0.0025, dt / 1000);
     inertia.vx *= decay; inertia.vy *= decay;
     applyView();
     if (Math.hypot(inertia.vx, inertia.vy) < 0.004) { inertia = null; interacting = 0; scheduleRender("full"); return; }
@@ -805,15 +706,12 @@
   }
   function stopInertia() { if (inertia) { inertia = null; interacting = 0; } }
 
-  /* Zoom so that what is under (x, y) stays under it. */
   function zoomAt(zoom, x, y, noSettle) {
     var before = projection.invert([x, y]);
     var wasVisible = before && isFinite(before[0]) && visible(before);
     view.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
     applyView();
     if (wasVisible) {
-      // Turn the globe so the point comes back under the pointer; twice,
-      // since the first turn is only right at the centre.
       for (var k = 0; k < 2; k++) {
         var after = projection([before[0], before[1]]);
         if (!after) break;
@@ -831,8 +729,6 @@
   var zoomHintTimer = 0;
   canvas.addEventListener("wheel", function (e) {
     if (EMBED && !e.ctrlKey && !e.metaKey) {
-      // Inside another page, a plain scroll should scroll that page past
-      // the globe, as a map embed does; say how to zoom instead.
       var hint = $("zoom-hint");
       if (hint) { hint.classList.add("is-shown"); clearTimeout(zoomHintTimer); zoomHintTimer = setTimeout(function () { hint.classList.remove("is-shown"); }, 1100); }
       return;
@@ -906,7 +802,6 @@
     commitPoint(slot);
   }
 
-  // ------------------------------------------------------------- hover
   var hoverRAF = 0;
   function hover(x, y, shift) {
     if (!canHover || hoverRAF) return;
@@ -954,7 +849,6 @@
   }
   function hideTip() { tip.hidden = true; }
 
-  // ------------------------------------------------------------- flying
   var fly = null;
   function flyTo(lon, lat, zoom, done) {
     stopInertia();
@@ -983,7 +877,6 @@
   }
   function stopFly() { if (fly) { fly = null; interacting = 0; } }
 
-  /* Turn the globe to show A, B and the route between them. */
   function fitRoute(always) {
     var pts = [];
     if (state.a) pts.push([state.a.lon, state.a.lat]);
@@ -991,7 +884,6 @@
     if (state.result && state.result.status === "done" && state.result.waypoints) pts = state.result.waypoints.slice();
     if (!pts.length) return;
     if (pts.length === 1) { flyTo(pts[0][0], pts[0][1]); return; }
-    // The centre is the mean direction; samples along the arcs count too.
     var sx = 0, sy = 0, sz = 0, all = [];
     for (var i = 0; i + 1 < pts.length; i++) {
       var seg = G.sampleArc(G.toVec(pts[i][0], pts[i][1]), G.toVec(pts[i + 1][0], pts[i + 1][1]), 0.03, i === 0);
@@ -1003,7 +895,7 @@
     all.forEach(function (v) { far = Math.max(far, G.angleBetween(c, v)); });
     var ll = G.toLonLat(c);
     var zoom;
-    if (far > 1.35) zoom = 1; // more than about 77° either way: show the whole globe
+    if (far > 1.35) zoom = 1;
     else {
       var free = Math.min(W - (W <= 640 ? 0 : 400), H - (W <= 640 ? 260 : 60)) / 2 - 24;
       zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, free / (base * Math.max(Math.sin(far) * 1.12, 0.06))));
@@ -1022,7 +914,6 @@
     return true;
   }
 
-  // Versors (unit quaternions) for turning the globe smoothly.
   function versorFromAngles(a) {
     var l = a[0] * Math.PI / 360, p = a[1] * Math.PI / 360, g = a[2] * Math.PI / 360;
     var sl = Math.sin(l), cl = Math.cos(l), sp = Math.sin(p), cp = Math.cos(p), sg = Math.sin(g), cg = Math.cos(g);
@@ -1045,14 +936,12 @@
     };
   }
 
-  // ------------------------------------------------------------- points
   var inputs = { a: $("in-a"), b: $("in-b") };
 
   function fmtLonLat(p) {
     return Math.abs(p.lat).toFixed(2) + "°" + (p.lat >= 0 ? "N" : "S") + " " + Math.abs(p.lon).toFixed(2) + "°" + (p.lon >= 0 ? "E" : "W");
   }
 
-  /* Sets A or B. quiet: during a drag, when the route is not recomputed. */
   function setPoint(slot, pt, opts) {
     opts = opts || {};
     state[slot] = pt;
@@ -1063,11 +952,11 @@
     else scheduleRender("coarse");
   }
 
-  var fitPending = false; // A or B moved: show the new route when it comes
+  var fitPending = false;
   function commitPoint(slot) {
     var pt = state[slot];
     fitPending = true;
-    state.stale = true; // the route drawn no longer starts here
+    state.stale = true;
     if (pt && !pt.label) { var text = fmtLonLat(pt) + (pt.country ? " · " + pt.country : ""); if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text; }
     updateHint();
     requestRoute();
@@ -1075,8 +964,6 @@
     scheduleRender("full");
   }
 
-  /* The line under the avoid field. Where it says to press the avoid
-     button, it shows the button's own icon, the way bending round an x. */
   var AVOID_ICON = '<svg class="gc-inline-icon" viewBox="0 0 24 24" role="img" aria-label="avoid" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17 A 9.5 9.5 0 0 1 21.5 17" /><path d="M9.6 13.1 L 14.4 17.9 M14.4 13.1 L 9.6 17.9" /></svg>';
   function setAvoidHint() {
     var h = $("avoid-hint");
@@ -1100,7 +987,6 @@
     commitPoint("a");
   });
 
-  // ------------------------------------------------------------- avoid
   function toggleAvoid(id, name) {
     if (state.avoid.has(id)) state.avoid.delete(id);
     else state.avoid.set(id, name);
@@ -1144,8 +1030,6 @@
       });
       if (r.inverted) { var pre = document.createElement("span"); pre.className = "gc-chip-pre"; pre.textContent = "outside"; li.appendChild(pre); }
       li.appendChild(name);
-      // Which side is avoided: the region itself (its inside filled), or
-      // everything outside it (the outside filled). A click turns it over.
       var inv = document.createElement("button");
       inv.type = "button"; inv.className = "gc-chip-invert";
       inv.setAttribute("aria-pressed", String(!!r.inverted));
@@ -1170,12 +1054,10 @@
     }
   }
 
-  // ------------------------------------------------------------- search
   function fold(s) {
     return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   }
 
-  /* "51.5, -0.12", "51.5N 0.12W", "51°30'N 0°7'W" and the like. */
   function parseLatLon(q) {
     var s = q.split("·")[0].trim().toUpperCase();
     var m = s.match(/^\s*([-+]?\d+(?:\.\d+)?)\s*°?\s*([NS])?\s*[, ]\s*([-+]?\d+(?:\.\d+)?)\s*°?\s*([EW])?\s*$/);
@@ -1227,14 +1109,11 @@
     return placesPromise;
   }
 
-  /* The countries' other names come with the place list; the country list
-     is built when the map arrives. Whichever is second applies them. */
   function applyAliases() {
     if (!places || !places.aliases || !countries.length) return;
     countries.forEach(function (c) { var a = places.aliases.get(c.id); if (a) c.aliases = a; });
   }
 
-  /* Score every place against the query; the best few come back. */
   function searchPlaces(q) {
     if (!places) return [];
     var fq = fold(q);
@@ -1248,7 +1127,6 @@
       if (key === fq) score = 100;
       else if (key.indexOf(fq) === 0) score = 80;
       else if (key.indexOf(" " + first) >= 0 || key.indexOf(first) === 0) {
-        // every word has to start a word of the name (or its country)
         var ok = true, hay = key + " " + fold(p.country) + (p.extra2 ? " " + fold(p.extra2) : "");
         for (var w = 0; w < words.length; w++) {
           if (!(hay.indexOf(words[w]) === 0 || hay.indexOf(" " + words[w]) >= 0)) { ok = false; break; }
@@ -1261,7 +1139,6 @@
       if (p.kind === 2 && p.iata === upper) score = 120;
       if (!score && p.kind === 2 && fq.length > 2 && fold(p.extra2).indexOf(fq) === 0) score = 40;
       if (!score) continue;
-      // Within a score, the better known first.
       var weight = p.kind === 1 ? Math.log10(p.pop + 1) : p.kind === 0 ? 7.5 : (p.pop === 2 ? 6.5 : 4.5);
       if (p.kind === 2 && fq.length <= 3 && p.iata !== upper) weight -= 2;
       out.push({ p: p, s: score + weight });
@@ -1282,7 +1159,6 @@
   }
   function placeKind(p) { return p.kind === 0 ? "country" : p.kind === 1 ? "city" : "airport"; }
 
-  // Photon, for whatever the list does not know. Only once typing pauses.
   var photonTimer = 0, photonSeq = 0;
   function photon(q, cb) {
     clearTimeout(photonTimer);
@@ -1301,7 +1177,6 @@
     }, 350);
   }
 
-  /* A text field with a list of suggestions under it. */
   function suggester(input, list, opts) {
     var items = [], selected = -1, open = false, closeTimer = 0, enterPending = false;
     function close() { open = false; enterPending = false; list.hidden = true; list.innerHTML = ""; items = []; selected = -1; input.removeAttribute("aria-activedescendant"); input.setAttribute("aria-expanded", "false"); }
@@ -1328,12 +1203,6 @@
       input.setAttribute("aria-expanded", String(open));
       place();
     }
-    /* Where the open list goes. With a mouse it floats over everything,
-       fixed under its field and as tall as the window allows, so a short
-       panel does not clip it to a row or two; it opens upward when there
-       is more room above. On a phone it stays in the sheet, which opens to
-       make room: the list takes the sheet's height less the field's, and
-       the sheet scrolls the field up to its top so the list fits below. */
     function place() {
       if (!open) return;
       var floating = window.innerWidth > 640;
@@ -1358,7 +1227,6 @@
     }
     panel.addEventListener("scroll", place, { passive: true });
     window.addEventListener("resize", place);
-    // The sheet slides open on a phone after the list has opened.
     panel.addEventListener("transitionend", function (e) { if (e.target === panel) place(); });
     function choose(i) {
       if (i < 0 || i >= items.length) return;
@@ -1398,13 +1266,11 @@
       else if (e.key === "Enter") {
         if (open && selected >= 0) { choose(selected); e.preventDefault(); }
         else if (open && items.length) { choose(0); e.preventDefault(); }
-        else if (open || searching) { enterPending = true; e.preventDefault(); } // an answer is still on its way
+        else if (open || searching) { enterPending = true; e.preventDefault(); }
         else if (opts.enter) { opts.enter(input.value); e.preventDefault(); }
       }
       else if (e.key === "Escape") { close(); }
     });
-    /* A value written by the page rather than typed: focusing the field
-       again must not go searching for it. */
     function setValue(v) { input.value = v; lastQuery = v; }
     return { close: close, refresh: update, setValue: setValue };
   }
@@ -1414,7 +1280,7 @@
     var input = inputs[slot];
     suggesters[slot] = suggester(input, $("sug-" + slot), {
       load: loadPlaces,
-      changed: function () { /* typing over a chosen place: it stays until a new one is chosen */ },
+      changed: function () { },
       search: function (q, cb) {
         var ll = parseLatLon(q);
         if (ll) { cb([{ kind: 4, lon: ll.lon, lat: ll.lat, label: fmtLonLat(ll) }]); return; }
@@ -1448,8 +1314,6 @@
 
   function countrySuggester() {
     suggester($("in-avoid"), $("sug-avoid"), {
-      // Every country, on focus, before anything is typed: a list to pick
-      // from as much as a box to search in.
       all: function () { return countries; },
       search: function (q, cb) {
         var fq = fold(q);
@@ -1468,15 +1332,9 @@
     });
   }
 
-  // ------------------------------------------------------------- regions
-  // Shapes drawn on the globe to be avoided like a country: a polygon of
-  // clicked corners, a circle dragged out from its centre, or a freehand
-  // outline. Each becomes a ring of [lon, lat] for the worker; the circle is
-  // a 72-gon of points a fixed distance from its centre. The edges are
-  // great-circle arcs, as the engine and the drawing both treat them.
   var regionSeq = 0;
-  var drawing = null;   // { tool, points, pointer, center, radiusKm, active }
-  var selected = null;  // a region whose handles are shown
+  var drawing = null;
+  var selected = null;
   var handleDrag = null;
   var drawStatus = $("draw-status");
 
@@ -1487,10 +1345,6 @@
     var l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
     return [((l2 * 180 / Math.PI + 540) % 360) - 180, p2 * 180 / Math.PI];
   }
-  /* A region's ring, wound so that it encloses the smaller of the two
-     areas its outline divides the globe into: clockwise, as d3 reads it.
-     An outline drawn the other way round would otherwise enclose all the
-     rest of the globe. */
   function regionRing(r) {
     var pts;
     if (r.kind === "circle") {
@@ -1502,16 +1356,12 @@
   function smallSide(pts) {
     return d3.geoArea({ type: "Polygon", coordinates: [pts.concat([pts[0]])] }) > 2 * Math.PI ? pts.slice().reverse() : pts;
   }
-  /* What is avoided, for drawing: the smaller side, or for an inverted
-     region everything but it. */
   function regionPolygon(r) {
     var ring = regionRing(r).slice();
     if (r.inverted) ring.reverse();
     ring.push(ring[0]);
     return { type: "Polygon", coordinates: [ring] };
   }
-  /* The buffer round a region: the discs and strips that grow it (see
-     bufferRings in the engine), drawn as one shape; cached per region. */
   var bufferCache = new Map();
   function bufferShape(r) {
     if (!(state.bufferKm > 0)) return null;
@@ -1524,15 +1374,13 @@
     return shape;
   }
 
-  /* Is a ring usable: at least three corners, no edge crossing another, and
-     no bigger than a quarter of the globe? Returns a reason, or null. */
   function ringProblem(ring) {
     if (ring.length < 3) return "A region needs at least three corners";
     var V = ring.map(function (p) { return G.toVec(p[0], p[1]); });
     var n = V.length;
     for (var i = 0; i < n; i++) {
       for (var j = i + 2; j < n; j++) {
-        if (i === 0 && j === n - 1) continue; // neighbours round the end
+        if (i === 0 && j === n - 1) continue;
         if (arcsCross(V[i], V[(i + 1) % n], V[j], V[(j + 1) % n])) return "The outline crosses itself";
       }
     }
@@ -1570,8 +1418,6 @@
     writeUrl();
     scheduleRender("full");
   }
-  /* Select a region (or none) and mark its chip, without rebuilding the
-     chips: a double-click to rename lands on the same element. */
   function selectRegion(r) {
     selected = r;
     document.querySelectorAll(".gc-chip-region").forEach(function (li) { li.classList.toggle("is-selected", !!r && li.dataset.region === r.id); });
@@ -1579,7 +1425,6 @@
   }
   function regionById(id) { for (var i = 0; i < state.regions.length; i++) if (state.regions[i].id === id) return state.regions[i]; return null; }
 
-  // ---- drawing
   function setTool(tool) {
     if (drawing && drawing.tool === tool) tool = null;
     cancelDrawing();
@@ -1618,7 +1463,6 @@
   }
   function finishLasso(screenPts) {
     var kept = simplify(screenPts, 2.5);
-    // The loop's end meets its start; one corner there is enough.
     if (kept.length > 1 && Math.hypot(kept[0][0] - kept[kept.length - 1][0], kept[0][1] - kept[kept.length - 1][1]) < 6) kept.pop();
     var pts = [];
     kept.forEach(function (q) { var ll = projection.invert(q); if (ll && isFinite(ll[0]) && visible(ll)) pts.push([ll[0], ll[1]]); });
@@ -1634,12 +1478,9 @@
     addRegion({ kind: "circle", center: d.center, radiusKm: Math.round(d.radiusKm) });
     cancelDrawing();
   }
-  /* Douglas–Peucker on screen points. */
   function simplify(pts, tol) {
     if (pts.length < 3) return pts;
     var keep = new Uint8Array(pts.length); keep[0] = 1; keep[pts.length - 1] = 1;
-    // Split first at the point farthest from the start: a closed loop's ends
-    // coincide, and a chord of no length can measure nothing.
     var far = 0, farD = -1;
     for (var k = 1; k < pts.length; k++) { var dk = Math.hypot(pts[k][0] - pts[0][0], pts[k][1] - pts[0][1]); if (dk > farD) { farD = dk; far = k; } }
     keep[far] = 1;
@@ -1661,8 +1502,6 @@
   function drawRegions() {
     if (!state.regions.length) return;
     ctx.lineJoin = "round";
-    // The buffers, under the regions, in a lighter wash: one path of
-    // pieces wound alike, so where they overlap they fill once.
     state.regions.forEach(function (r) {
       var b = bufferShape(r);
       if (!b) return;
@@ -1683,7 +1522,6 @@
       });
     }
   }
-  /* The draggable points of a region, on screen. */
   function handlesOf(r) {
     var out = [];
     if (r.kind === "circle") {
@@ -1730,7 +1568,6 @@
     ctx.setLineDash([]);
   }
 
-  // ---- the tools' buttons
   $("draw-btn").addEventListener("click", function () {
     var tools = $("draw-tools");
     var open = tools.hidden;
@@ -1754,7 +1591,6 @@
     else if ((e.key === "Delete" || e.key === "Backspace") && selected && !drawing) { removeRegion(selected); e.preventDefault(); }
   });
 
-  // ------------------------------------------------------------- the worker
   var worker = null, routeTimer = 0, seq = 0, queued = false, busyTimer = 0;
 
   function startWorker() {
@@ -1774,8 +1610,6 @@
     worker.postMessage({ type: "init", topology: topology });
   }
 
-  /* The same code, as a script on this thread: worker.js knows which way
-     it was loaded and answers through the same messages. */
   var shimStarted = false;
   function startShim() {
     if (shimStarted) return;
@@ -1796,13 +1630,11 @@
     if (m.type === "ready") {
       state.ready = true; window.__greatercircle.readyMs = m.ms;
       if (queued) { queued = false; requestRoute(); }
-      // The globe is up and the route finder ready: fetch the place list
-      // in the quiet, so the first keystroke has it.
       var prefetch = function () { setTimeout(loadPlaces, 800); };
       if (window.requestIdleCallback) requestIdleCallback(prefetch); else prefetch();
       return;
     }
-    if (m.id !== state.pendingId) return; // an older request, superseded
+    if (m.id !== state.pendingId) return;
     if (m.type === "progress") { showBusy(m); return; }
     if (m.type === "result") {
       state.pendingId = 0;
@@ -1817,7 +1649,6 @@
     }
   }
 
-  /* Ask for the route again, soon; several changes in a row ask once. */
   function requestRoute() {
     clearTimeout(routeTimer);
     if (!state.a || !state.b) { state.result = null; state.pendingId = 0; showResult(); return; }
@@ -1833,13 +1664,11 @@
     }, 40);
   }
 
-  // ------------------------------------------------------------- results
   var UNITS = { km: { f: 1, label: "km" }, mi: { f: 0.621371192, label: "mi" }, nmi: { f: 1 / 1.852, label: "nmi" } };
   function fmt(km, unit) {
     var u = UNITS[unit || state.units];
     return Math.round(km * u.f).toLocaleString() + " " + u.label;
   }
-  /* A buffer piece's id is its region's with "~" and a number. */
   function baseId(id) { id = String(id); var k = id.indexOf("~"); return k < 0 ? id : id.slice(0, k); }
   function uniqueBase(ids) { var out = []; ids.forEach(function (id) { id = baseId(id); if (out.indexOf(id) < 0) out.push(id); }); return out; }
   function names(ids) {
@@ -1849,7 +1678,6 @@
       var r = regionById(id); return r ? (r.inverted ? "everywhere outside " + r.name : r.name) : id;
     });
   }
-  /* What is being avoided, countries then regions, for the sentences. */
   function avoidedNames() {
     return Array.from(state.avoid.values()).concat(state.regions.map(function (r) { return r.inverted ? "everywhere outside " + r.name : r.name; }));
   }
@@ -1861,8 +1689,6 @@
   function showBusy(m) {
     var el = $("summary");
     if (m && el.classList.contains("is-busy")) {
-      // Progress: only the counter changes, and it is kept out of what a
-      // screen reader is told, which would otherwise hear every slice.
       var ctr = $("progress");
       if (ctr) ctr.textContent = m.expanded ? m.expanded.toLocaleString() + " corners so far" : "";
       return;
@@ -1901,8 +1727,6 @@
     var line = document.createElement("span"); line.className = "gc-line";
 
     if (res.status === "inside") {
-      // Where each point is, in words: in a country or a region, outside
-      // an inverted region, or within the buffer of one.
       var plain = true;
       var where = function (raw) {
         return joinNames(uniqueBase(raw).map(function (id) {
@@ -1958,7 +1782,6 @@
       }
     }
 
-    // The details.
     var dl = document.createElement("dl"); dl.className = "gc-rows";
     var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
     if (detoured) {
@@ -1980,8 +1803,6 @@
     var dd = document.createElement("dd"); dd.textContent = v;
     div.appendChild(dt); div.appendChild(dd); dl.appendChild(div);
   }
-  /* The countries a way passes over, each one a button that puts it on the
-     avoid list, except the ones A and B are in, which cannot be avoided. */
   function crossesList(out, title, ids, ends) {
     if (!ids) return;
     var box = document.createElement("div"); box.className = "gc-crosses";
@@ -2019,8 +1840,6 @@
     });
   });
 
-  // ---- the buffer round drawn regions: a slider in the chosen unit, up to
-  // 250 miles; the drawing follows it as it moves, the route when let go.
   var BUFFER_MAX = { km: 400, mi: 250, nmi: 215 };
   function syncBuffer() {
     var inp = $("buffer"), u = UNITS[state.units];
@@ -2037,7 +1856,6 @@
   });
   $("buffer").addEventListener("change", function () { requestRoute(); writeUrl(); });
 
-  // ------------------------------------------------------------- the url
   var ANTARCTICA = "010";
   function writeUrl() {
     var p = [];
@@ -2096,7 +1914,6 @@
     return any;
   }
 
-  // ------------------------------------------------------------- the about note
   (function () {
     var box = $("about"), btn = $("about-btn");
     if (!box || !btn) return;
@@ -2105,7 +1922,6 @@
       btn.setAttribute("aria-expanded", String(open));
     }
     btn.addEventListener("click", function () { setOpen(!box.classList.contains("is-open")); });
-    // Hover and focus show it through the stylesheet; the attribute follows.
     box.addEventListener("mouseenter", function () { if (canHover) btn.setAttribute("aria-expanded", "true"); });
     box.addEventListener("mouseleave", function () { if (!box.classList.contains("is-open") && !box.contains(document.activeElement)) btn.setAttribute("aria-expanded", "false"); });
     box.addEventListener("focusin", function () { btn.setAttribute("aria-expanded", "true"); });
@@ -2118,11 +1934,6 @@
     });
   })();
 
-  // ------------------------------------------------------------- the sheet
-  // On a phone the panel is a sheet at the bottom with three heights: open,
-  // closed (the two fields and the answer), and swiped down out of the way
-  // (the handle alone). The handle's tap moves it a step; a swipe moves it
-  // the way it was swiped.
   var SHEET_HIDDEN = 0, SHEET_PEEK = 1, SHEET_OPEN = 2;
   var sheetGestureAt = 0;
   function sheetState() {
@@ -2139,16 +1950,14 @@
     $("sheet-handle").setAttribute("aria-expanded", String(open));
     $("sheet-handle").setAttribute("aria-label", open ? "Show less" : "Show more");
     if (!open) panel.scrollTop = 0;
-    // The globe takes the room the sheet leaves, once it has moved.
     setTimeout(function () { layout(); scheduleRender("full"); }, 300);
   }
   function setSheet(open) { setSheetState(open ? SHEET_OPEN : SHEET_PEEK); }
   $("sheet-handle").addEventListener("click", function () {
-    if (performance.now() - sheetGestureAt < 500) return; // the end of a swipe, not a tap
+    if (performance.now() - sheetGestureAt < 500) return;
     var st = sheetState();
     setSheetState(st === SHEET_OPEN ? SHEET_PEEK : st + 1);
   });
-  // Typing in a field on a phone opens the sheet so the suggestions have room.
   [inputs.a, inputs.b, $("in-avoid")].forEach(function (inp) {
     inp.addEventListener("focus", function () {
       if (W <= 640 && !panel.classList.contains("is-open") && performance.now() - sheetGestureAt > 500) setSheet(true);
@@ -2167,15 +1976,12 @@
     var dy = e.clientY - d.y0, dx = e.clientX - d.x0;
     if (!d.engaged) {
       if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
-      // In the open sheet the body scrolls; a swipe counts from the handle
-      // or the title, or downward from the top of the scroll.
       if (sheetState() === SHEET_OPEN && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
       d.engaged = true;
       try { panel.setPointerCapture(e.pointerId); } catch (err) {}
       panel.classList.add("is-dragging");
       if (document.activeElement && panel.contains(document.activeElement)) document.activeElement.blur();
     }
-    // Follows the finger downward; upward it snaps on release.
     var y = Math.max(0, dy);
     panel.style.transform = y ? "translateY(" + y + "px)" : "";
   });
@@ -2195,18 +2001,11 @@
   panel.addEventListener("pointerup", endSheetDrag);
   panel.addEventListener("pointercancel", endSheetDrag);
 
-  // ------------------------------------------------------------- start
   function init(topo) {
     topology = topo;
     var obj = topo.objects.countries;
     features = topojson.feature(topo, obj).features;
     features.forEach(function (f, i) { f.id = String(f.id); f.index = i; featureById.set(f.id, f); });
-    // Three levels of detail: all of it, a third of it, a tenth of it, by
-    // Visvalingam's area-of-the-triangle weight on the sphere. The
-    // simplification keeps the topology, so neighbours still share borders.
-    // Which level is drawn depends on how big the globe is on the screen: a
-    // globe a few hundred pixels across cannot show the full eighty thousand
-    // vertices, and tracing them costs the frame.
     var pre = topojson.presimplify(topo, topojson.sphericalTriangleArea);
     var weights = [];
     pre.arcs.forEach(function (arc) { arc.forEach(function (pt) { if (isFinite(pt[2])) weights.push(pt[2]); }); });
@@ -2250,7 +2049,6 @@
     readUrl(); renderChips(); updateHint(); fitPending = true; state.stale = true; requestRoute(); scheduleRender("full");
   });
 
-  // A handle for the tests: where a place lands on the screen, and timings.
   window.__greatercircle = {
     project: function (lon, lat) { return visible([lon, lat]) ? projection([lon, lat]) : null; },
     state: state, view: view, drawing: function () { return drawing; },

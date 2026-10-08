@@ -1,6 +1,3 @@
-// Opens and closes the contact dropdown in the about panel.
-// Hover on pointer devices, tap on touch, same pattern as the
-// nine-square menu in the header.
 (function () {
   var menu = document.getElementById("contact-menu");
   if (!menu) return;
@@ -50,8 +47,6 @@
     }
   });
 
-  // close when the about panel collapses so it does not flash
-  // open the next time the panel expands.
   document.addEventListener("bio:toggle", function () {
     var panel = document.getElementById("about-panel");
     if (panel && !panel.classList.contains("is-open")) {

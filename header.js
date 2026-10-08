@@ -1,10 +1,5 @@
-// Shared header behaviour: fade the fixed nav on scroll (desktop only) and
-// show the back-to-top button. Reads its fade distance from data-fade-distance
-// on <body>, defaulting to 90.
 (function () {
   const name = document.querySelector(".name");
-  // .theme-btn is appended by theme.js after this runs, so it is collected
-  // when the fade next updates rather than here. See refreshTargets().
   const navLinks = document.querySelectorAll(".about-link, .back-link");
   const topRight = document.querySelector(".site-menu");
   const toTop = document.getElementById("to-top-btn");
@@ -19,13 +14,8 @@
   const lead = document.querySelector(".projects-lead");
   if (lead) targets.push(lead);
 
-  /* The day/night switch is built after this file runs, so the list of things
-     to fade is rebuilt on the first update that finds it. */
   function refreshTargets() {
     const theme = document.getElementById("theme-btn");
-    /* Unless it is inside the rail, which is already on the list: two opacities
-       multiplied is not the same fade as one, and the switch would go before
-       the links it stands beside. */
     if (!theme || topRight?.contains(theme)) return;
     if (targets.indexOf(theme) === -1) targets = [...targets, theme];
   }
@@ -44,7 +34,6 @@
     refreshTargets();
     if (window.innerWidth <= 900) return reset();
 
-    // Never let the header fade out on a page too short to scroll back up.
     const maxScroll = Math.max(
       document.documentElement.scrollHeight - window.innerHeight,
       0
@@ -56,7 +45,6 @@
     targets.forEach((el) => {
       el.style.opacity = opacity;
       el.style.pointerEvents = faded ? "none" : "";
-      // Keep faded links out of the tab order and the accessibility tree.
       if (faded) el.setAttribute("inert", "");
       else el.removeAttribute("inert");
     });

@@ -1,10 +1,3 @@
-// The world cities drawn on the globe: the Globalization and World Cities
-// Research Network's ranking (GaWC 2020), reduced to three tiers: 1 for
-// Alpha++, Alpha+ and Alpha; 2 for Alpha-, Beta+ and Beta; 3 for Beta-,
-// Gamma+, Gamma and Gamma-. Written down here from the published list;
-// coordinates come from data/places.json. Run from the greatercircle folder:
-//
-//   node tools/build-cities.mjs
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -72,7 +65,6 @@ function find(name, cc) {
   const k = fold(name);
   const tries = ALIAS[k] || [k];
   for (const t of tries) { const hit = byKey.get(t + "|" + cc); if (hit) return hit; }
-  // the gazetteer's own aliases: a city whose folded name contains the query
   const loose = cities.filter((c) => c[2] === cc && fold(c[1]).split(" ")[0] === k.split(" ")[0]).sort((a, b) => b[5] - a[5]);
   return loose[0] || null;
 }
@@ -86,16 +78,11 @@ for (const [tier, list] of [[1, T1], [2, T2], [3, T3]]) {
     out.push([name, cc, hit[3], hit[4], tier]);
   }
 }
-// The three tiers whole, then capitals, then the rest by population to
-// five hundred in all.
 const LIMIT = 550;
 const kept = out.filter((c) => c[4] < 3).concat(out.filter((c) => c[4] === 3));
 
 const near = (a, b) => { const dx = (a[0] - b[0]) * Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180), dy = a[1] - b[1]; return Math.hypot(dx, dy) < 0.4; };
 
-// Then every capital of a sovereign state that is not there yet, in the
-// third tier: a capital is the city people look for, and in Africa, Central
-// Asia and the Pacific it is often the only one on the map.
 const DEPENDENT = new Set("AI AQ AS AW AX BL BM BQ BV CC CK CW CX EH FK FO GF GG GI GL GP GS GU HK HM IM IO JE KY MF MO MP MQ MS NC NF NU PF PM PN PR PS RE SH SJ SX TC TF TK TW UM VG VI WF XK YT".split(" "));
 const CAPITAL_ALIAS = { "washington d c": "washington", "new delhi": "delhi", "city of san marino": "san marino", "sana a": "sanaa",
   "lobamba": "mbabane", "south tarawa": "tarawa", "naypyidaw": "nay pyi taw" };
@@ -104,23 +91,17 @@ let nCapitals = 0;
 for (const row of places.rows) {
   if (row[0] !== 0 || !row[7] || DEPENDENT.has(row[2])) continue;
   const cc = row[2], cap = row[7];
-  if (kept.some((k) => k[1] === cc && near([k[2], k[3]], [row[3], row[4]]))) continue; // the capital is there under some name
+  if (kept.some((k) => k[1] === cc && near([k[2], k[3]], [row[3], row[4]]))) continue;
   const k = fold(cap);
   const hit = find(CAPITAL_ALIAS[k] || cap, cc) || cities.filter((c) => c[2] === cc && near([c[3], c[4]], [row[3], row[4]])).sort((a, b) => b[5] - a[5])[0];
   if (!hit) { missing.push(cap + " " + cc + " (capital)"); continue; }
   if (kept.some((x) => near([x[2], x[3]], [hit[3], hit[4]]))) continue;
-  // The gazetteer's spelling when it is the same name (it keeps the accents),
-  // else the capital's own (Astana, not Nur-Sultan; Palikir, not its office).
   kept.push([CAPITAL_NAME[k] || (fold(hit[1]) === fold(cap) ? hit[1] : cap), cc, hit[3], hit[4], 3]);
   nCapitals++;
 }
 console.log(nCapitals, "capitals added");
-// A country with no city in the first two tiers has its capital in the
-// second, so that the map of Africa, Central Asia or the Pacific is not
-// blank until the globe is close.
 const CAPITAL_OF = new Map();
 for (const row of places.rows) if (row[0] === 0 && row[7] && !DEPENDENT.has(row[2])) CAPITAL_OF.set(row[2], fold(CAPITAL_ALIAS[fold(row[7])] || row[7]));
-// Where the seat of government or the chief city is the better-known one.
 const INSTEAD = { BO: "la paz", CI: "abidjan", TZ: "dar es salaam", BJ: "cotonou" };
 const hasBig = new Set(kept.filter((c) => c[4] <= 2).map((c) => c[1]));
 let promoted = 0;
@@ -134,12 +115,8 @@ console.log(promoted, "capitals promoted to the second tier");
 for (const c of kept) if (c[0] === "Brno") c[4] = 2;
 kept.sort((a, b) => a[4] - b[4]);
 
-// Then a fourth tier by population, no more than four to a country so they
-// spread, and none on top of one already there.
 const PER_COUNTRY = 5;
 const perCountry = {};
-// The gazetteer's slips: a village with a city's count, a district under
-// its own name, a name longer than the city's.
 const SKIP = new Set(["budta|PH", "takeo|KH", "al mawsil al jadidah|IQ", "malingao|PH"]);
 const RENAME = { "leon de los aldama|MX": "León", "nizhniy novgorod|RU": "Nizhny Novgorod", "rostov na donu|RU": "Rostov-on-Don", "al hudaydah|YE": "Hodeidah", "taizz|YE": "Taiz", "surat|IN": "Surat", "tai an|CN": "Tai'an", "rajshahi|BD": "Rajshahi", "fes|MA": "Fez", "hamhung|KP": "Hamhung", "as sulaymaniyah|IQ": "Sulaymaniyah" };
 const bigFirst = cities.slice().sort((a, b) => (b[5] || 0) - (a[5] || 0));

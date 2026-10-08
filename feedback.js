@@ -1,9 +1,3 @@
-// The message boxes on the front page (under about), art, projects, blog, cv and
-// miscellaneous. A
-// message goes into the site_feedback table in the site's own Supabase
-// project (the one citylayoutguessr uses), with the page it came from. The key below is the publishable one, meant to
-// sit in a web page; the table's row-level security and grants let a browser
-// add a message and never read one back. The SQL is in supabase/feedback.sql.
 (function () {
   "use strict";
   var URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/rest/v1/site_feedback";
@@ -32,7 +26,6 @@
       box.focus();
       return;
     }
-    // A field people never see; a bot that fills it in is thanked and ignored.
     if (trap && trap.value) {
       box.value = "";
       say("Sent. Thank you.");
@@ -54,8 +47,6 @@
     }
     var text = message.slice(0, 2000);
     post({ page: PAGE, message: text })
-      // If the table does not yet know this page's name, the message still
-      // goes, without it, rather than being lost.
       .then(function (r) {
         return r.status === 400 ? post({ message: text }) : r;
       })

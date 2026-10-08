@@ -1,14 +1,3 @@
-// Materials page: each row is one title repeated end to end, with that item's
-// image dropped in after a randomly chosen word.
-//
-// The motion is driven here rather than by a CSS animation. It used to be a
-// keyframe whose duration was computed once from the row's width — which broke
-// on phones, where the webfont and the images often land *after* that
-// measurement: the track then grew, the duration didn't, and the row raced.
-// A velocity in pixels per second doesn't care what the width does.
-//
-// It also means the rows can be thrown. Drag one and it follows your finger,
-// let go and it carries on and settles back into its drift.
 (function () {
   const rows = [...document.querySelectorAll(".marquee-row")];
   if (!rows.length) return;
@@ -16,16 +5,15 @@
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
   const coarse = window.matchMedia("(hover: none)");
 
-  const DRIFT = 50;        // px per second, the speed a row moves on its own
-  const MAX_FLING = 3600;  // px per second, so a hard swipe stays legible
-  const EASE = 0.42;       // seconds for a throw to settle back to the drift
-  const DRAG_SLOP = 6;     // px of movement before it counts as a drag, not a click
+  const DRIFT = 50;
+  const MAX_FLING = 3600;
+  const EASE = 0.42;
+  const DRAG_SLOP = 6;
 
   function pick(max) {
     return Math.floor(Math.random() * max);
   }
 
-  // One repetition: the title's words, with the image after a random word.
   function makeRun(title, img, ratio) {
     const run = document.createElement("span");
     run.className = "marquee-run";
@@ -58,8 +46,6 @@
     return run;
   }
 
-  // Keeps the offset inside one sequence width, so the clone always covers the
-  // gap however far you throw it, in either direction.
   function wrap(x, w) {
     if (!w) return 0;
     x %= w;
@@ -74,15 +60,12 @@
 
     const track = document.createElement("div");
     track.className = "marquee-track";
-    track.setAttribute("aria-hidden", "true"); // the row's aria-label carries the name
+    track.setAttribute("aria-hidden", "true");
     const seq = document.createElement("div");
     seq.className = "marquee-seq";
     track.appendChild(seq);
     row.appendChild(track);
 
-    // Fill one sequence to several screens wide, so the loop never shows a gap
-    // and you travel a long way before the same arrangement of words and images
-    // comes round again. Cloning it gives a seamless wrap.
     let guard = 0;
     do {
       seq.appendChild(makeRun(title, img, ratio));
@@ -102,7 +85,7 @@
       seq: seq,
       clone: clone,
       width: seq.scrollWidth,
-      dir: index % 2 === 1 ? 1 : -1, // every other row runs the other way
+      dir: index % 2 === 1 ? 1 : -1,
       offset: 0,
       velocity: 0,
       hovered: false,
@@ -112,7 +95,6 @@
       lastT: 0,
       moved: 0
     };
-    // A different starting point per row, so the block looks scattered.
     lane.offset = wrap(-((parseFloat(row.dataset.offset) || 0) / 100) * lane.width, lane.width);
     return lane;
   });
@@ -127,7 +109,6 @@
     });
   }
 
-  // The width is only final once the webfont and the pictures are in.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   window.addEventListener("load", measure);
   window.addEventListener("resize", measure);
@@ -142,9 +123,6 @@
     return 0;
   }
 
-  // Pause the loop when every row has scrolled out of view. An
-  // IntersectionObserver flips this flag; the loop only re-requests a frame
-  // while at least one row is visible (or close to it, thanks to the margin).
   let visible = true;
   let looping = false;
 
@@ -155,8 +133,6 @@
     lanes.forEach((lane) => {
       if (!lane.dragging && dt) {
         const target = driftFor(lane);
-        // Exponential approach: a throw slides a long way, then eases into the
-        // steady drift rather than stopping dead.
         lane.velocity += (target - lane.velocity) * (1 - Math.exp(-dt / EASE));
         lane.offset = wrap(lane.offset + lane.velocity * dt, lane.width);
       }
@@ -177,7 +153,6 @@
   }
   startLoop();
 
-  // Watch all rows; the section is visible whenever any one of them is.
   if (typeof IntersectionObserver !== "undefined") {
     let count = 0;
     const io = new IntersectionObserver(
@@ -215,7 +190,6 @@
       const dt = Math.max(1, e.timeStamp - lane.lastT) / 1000;
       lane.moved += Math.abs(dx);
       lane.offset = wrap(lane.offset + dx, lane.width);
-      // Track the recent speed so releasing throws it at the speed it was going.
       lane.velocity = Math.max(-MAX_FLING, Math.min(MAX_FLING, dx / dt));
       lane.lastX = e.clientX;
       lane.lastT = e.timeStamp;
@@ -227,7 +201,6 @@
       lane.dragging = false;
       lane.pointerId = null;
       row.classList.remove("is-dragging");
-      // A drag that went nowhere was a click; one that travelled was not.
       if (lane.moved > DRAG_SLOP) {
         lane.suppressClick = true;
         setTimeout(() => { lane.suppressClick = false; }, 0);
@@ -243,7 +216,6 @@
       }
     });
 
-    // Stop the browser turning a drag into a text selection or an image drag.
     row.addEventListener("dragstart", (e) => e.preventDefault());
   });
 

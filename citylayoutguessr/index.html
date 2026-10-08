@@ -14,8 +14,6 @@
     <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
     <link rel="manifest" href="../manifest.json" />
 
-    <!-- Added to the home screen the game opens on its own, with no address
-         bar and no domain pill above the keyboard. -->
     <link rel="manifest" href="app.webmanifest" />
     <link rel="apple-touch-icon" href="../art/web/citylayoutguessr/icon-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -23,7 +21,6 @@
     <meta name="apple-mobile-web-app-title" content="citylayoutguessr" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#e68019" />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
 
@@ -32,8 +29,6 @@
     <meta property="og:title" content="citylayoutguessr | Noah Darwin Lee" />
     <meta property="og:description" content="Name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each." />
     <meta property="og:url" content="https://noahdarwinlee.com/citylayoutguessr/" />
-    <!-- The game's own share card, not the site's: a round of it, with the
-         wordmark under the map. Every other page keeps /og.jpg. -->
     <meta
       property="og:image"
       content="https://noahdarwinlee.com/art/web/citylayoutguessr/og.jpg"
@@ -51,10 +46,6 @@
     />
 
     <link rel="stylesheet" href="../styles.css" />
-    <!-- Before the first paint: a remembered choice, otherwise the system's.
-         The attribute is always written, so the stylesheet never has to guess
-         and the page never flashes the other theme on the way in. The rest of
-         the switch is in theme.js; this part cannot wait for a fetch. -->
     <script>
       (function () {
         var t = null;
@@ -72,12 +63,6 @@
       })();
     </script>
 
-    <!-- What this page is allowed to load and talk to. A signed-in session is
-         kept in this browser, so the thing to prevent is any script that is not
-         ours running here: script-src names the only two places code may come
-         from, and object/base/form are shut. Everything else on the list is
-         what the page genuinely needs — the webfont, the map images, Google's
-         profile pictures, and this project's own Supabase. -->
     <meta
       http-equiv="Content-Security-Policy"
       content="
@@ -106,10 +91,6 @@
     </button>
 
     <main class="game">
-      <!-- The wordmark, as wide as the game window itself, and the way back to
-           the menu from a game in progress. The page already carries a
-           screen-reader h1 with the name, so the picture itself is marked
-           decorative rather than read out a second time. -->
       <button class="game-logo-btn" type="button" id="game-logo-home">
       <img
         class="game-logo"
@@ -140,13 +121,7 @@
           <span class="game-daily-note" id="daily-note"></span>
         </div>
 
-        <!-- Sign-in and the board only appear once supabase-config.js has been
-             filled in; until then cloud.js leaves them hidden. -->
         <div class="game-account" id="game-account" hidden>
-          <!-- Two ways in, one at a time. Google draws its own button into the
-               first if it can, and cloud.js hides the second; if it cannot —
-               no client ID, the script blocked, an old browser — the second is
-               what stays, and it still works. -->
           <span class="game-signin-slot" id="game-signin-slot">
             <span class="game-google-btn" id="game-google-btn" hidden></span>
             <button class="game-btn game-signin" type="button" id="game-signin">
@@ -163,8 +138,6 @@
             <button class="game-quiet" type="button" id="game-signout">sign out</button>
           </span>
 
-          <!-- The name on the board is whatever Google gave us until you say
-               otherwise. -->
           <form class="game-rename-form" id="game-rename-form" hidden>
             <label class="sr-only" for="game-name-input">The name shown on the board</label>
             <input
@@ -207,11 +180,6 @@
           <fieldset class="game-set">
             <legend class="game-set-label">region</legend>
             <div class="game-checks" id="setup-continents">
-              <!-- The packs sit behind this last entry in the row rather than
-                   beside the continents: there will be more of them than there
-                   are continents, and they are not the ordinary way to play.
-                   Each one inside is a tick that joins whatever else is
-                   selected. -->
               <button
                 class="game-special-open"
                 type="button"
@@ -248,18 +216,12 @@
             </div>
           </fieldset>
 
-          <!-- Hidden by refreshSetup when the selection has already given away
-               both rungs of the hint ladder: with one country in the pool,
-               "it's in Japan" is not a hint, and a switch that cannot change
-               anything should not be on the page. -->
           <fieldset class="game-set" id="setup-hints-set">
             <legend class="game-set-label">hints</legend>
             <div class="game-checks">
               <label class="game-check">
                 <input type="checkbox" id="setup-hints" checked />
                 <span class="game-check-mark" aria-hidden="true"></span>
-                <!-- Rewritten by refreshSetup: with one region picked, naming
-                     that region is no hint, so the ladder loses a rung. -->
                 <span class="game-check-text game-hint-text" id="setup-hint-text"
                   >2 misses reveals the continent &amp; 3 misses reveals the country</span
                 >
@@ -270,12 +232,9 @@
           <p class="game-pool" id="setup-pool"></p>
           <div class="game-start-row">
             <button class="game-btn game-start" type="submit" id="setup-start">START GAME</button>
-            <!-- Only there when a custom game was left part-way through. -->
             <button class="game-btn game-start game-continue" type="button" id="setup-continue" hidden>
               CONTINUE GAME
             </button>
-            <!-- The same game, for somebody else: the settings and the order
-                 the maps will come in, in a link. -->
             <button class="game-copy-link" type="button" id="setup-share">
               copy game link
             </button>
@@ -296,8 +255,6 @@
             ><span class="game-progress-where" id="game-progress-where"></span
             ><span class="game-progress-count" id="game-progress-count"></span
           ></span>
-          <!-- Touch screens only, and only in the two-row bar a phone gets:
-               it sits at the right end of the line the game's name is on. -->
           <span class="game-zoom-hint" aria-hidden="true">tap to zoom</span>
           <span class="game-meta-break" aria-hidden="true"></span>
           <span class="game-meta-right">
@@ -312,10 +269,6 @@
 
         <form class="game-form" id="game-form" autocomplete="off">
           <label class="sr-only" for="game-input">Your guess</label>
-          <!-- Three letters open the list below the field and the guess is
-               whichever name is taken off it, so a city is never turned down
-               over how it was spelled or what was said after it. game.js
-               fills the list; with scripting off there is no game either. -->
           <div class="game-combo">
             <input
               class="game-input"
@@ -352,7 +305,6 @@
         <div class="game-reveal" id="game-reveal" hidden>
           <p class="game-verdict" id="game-verdict"></p>
           <p class="game-answer" id="game-answer"></p>
-          <!-- What a wrong city in the right part of the world was worth. -->
           <p class="game-earned" id="game-earned" hidden></p>
           <button class="game-btn game-btn-next" type="button" id="game-next">next</button>
         </div>
@@ -372,8 +324,6 @@
         <div class="game-leaders-slot" id="game-leaders-slot-result" hidden></div>
       </section>
 
-      <!-- One board, moved between the menu and the result rather than built
-           twice. -->
       <section class="game-leaders" id="game-leaders" hidden aria-label="Scoreboard">
         <div class="game-leaders-head">
           <h2 class="game-leaders-title">

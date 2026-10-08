@@ -1,7 +1,3 @@
-// Opens and closes the about panel. It is open on arrival (the markup says so),
-// since without it the front page is nearly empty. The link points at /#about,
-// so cmd/ctrl-click opens the homepage with the panel already expanded, and with
-// no script at all a <noscript> rule in index.html just shows the content.
 (function () {
   const toggle = document.getElementById("about-toggle");
   const panel = document.getElementById("about-panel");
@@ -16,12 +12,10 @@
     else if (location.hash === "#about") {
       history.replaceState(null, "", location.pathname + location.search);
     }
-    // The fixed header measures against page height, so let it re-run.
     document.dispatchEvent(new Event("bio:toggle"));
   }
 
   toggle.addEventListener("click", (event) => {
-    // Let modified clicks and middle-clicks follow /#about as a normal link.
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
       return;
     }
@@ -33,7 +27,6 @@
     }
   });
 
-  // /#about opens it directly.
   if (location.hash === "#about") setOpen(true);
   window.addEventListener("hashchange", () => {
     if (location.hash === "#about") setOpen(true);

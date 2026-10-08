@@ -1,10 +1,3 @@
-// The lakes drawn on the globe in the sea's colour: Natural Earth 1:50m
-// lakes, every one of them, as a quantised TopoJSON. Run from the
-// greatercircle folder:
-//
-//   npm install topojson-server@3   (anywhere)
-//   curl -LO https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_lakes.geojson
-//   node tools/build-lakes.mjs <node_modules> ne_50m_lakes.geojson
 import { createRequire } from "node:module";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";

@@ -1,6 +1,3 @@
-/* The screenshots on a project's page: the strip scrolls by itself under a
-   swipe; this keeps the count, the caption and the arrows in step with it,
-   and moves it a frame at a time for the arrows and the arrow keys. */
 (function () {
   "use strict";
   var box = document.querySelector(".shots");
@@ -53,13 +50,10 @@
     if (e.key === "ArrowLeft") { e.preventDefault(); go(at - 1); }
   });
 
-  // Keep the same screenshot in view when the window changes width.
   addEventListener("resize", function () {
     track.scrollTo({ left: at * track.clientWidth, behavior: "auto" });
   });
 
-  // The rest load once the page is quiet, so a press of the arrow does not
-  // land on a blank frame.
   addEventListener("load", function () {
     slides.forEach(function (s) {
       var img = s.querySelector("img");

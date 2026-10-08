@@ -1,16 +1,3 @@
-// The day/night switch.
-//
-// The theme is resolved twice: once in a small inline script in every page's
-// <head>, before the first paint, so nobody watches the orange flash past on
-// the way into a dark page; and once here, where the button that changes it
-// gets built. The head script is duplicated on purpose — it has to run before
-// the stylesheet paints, and a file that has to be fetched cannot promise that.
-//
-// A choice is remembered. No choice follows the system, and goes on following
-// it if the system changes while the page is open. There is no third "auto"
-// position on the switch: pressing it always means the theme you can see, and
-// the way back to following the system is to clear the site's storage, which
-// is not something anybody wants a button for.
 (function () {
   var KEY = "ndl-theme";
   var root = document.documentElement;
@@ -36,9 +23,6 @@
     return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
   }
 
-  /* The switch carries no writing — it is a filled circle by day and a hollow
-     one by night — so its whole name is the label, which is what a screen
-     reader reads and what a tooltip shows. */
   function label(theme) {
     if (!btn) return;
     btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
@@ -68,21 +52,8 @@
       try {
         localStorage.setItem(KEY, next);
       } catch (e) {}
-      /* The header fades on scroll and the switch fades with it, so the fade
-         has to be told there is one more thing to fade. */
       if (window.__updateHeaderFade) window.__updateHeaderFade();
     });
-    /* On the line of the name, on every page -- the first line of the site --
-       in a wrapper the stylesheet lays out as a row. The switch used to
-       position itself by measuring the word, which meant re-measuring every
-       time the type loaded or the window moved, and being a few pixels out
-       whenever that had not happened yet. Sharing a line box is the version
-       that cannot drift, and it is why the circle sits at exactly the same
-       height on every page rather than nearly the same height.
-
-       It used to go into the front page's menu instead, which put it in the
-       corner there and beside the name everywhere else -- two arrangements,
-       and the front page's name a line box shorter than everybody else's. */
     anchor = document.querySelector(".name") ||
       document.querySelector(".about-link, .back-link");
     if (anchor && anchor.parentNode) {
@@ -97,17 +68,12 @@
     if (window.__updateHeaderFade) window.__updateHeaderFade();
   }
 
-  /* Only while nothing has been chosen here: somebody who has pressed the
-     switch has said something more specific than their operating system did. */
   if (media && media.addEventListener) {
     media.addEventListener("change", function () {
       if (!saved()) apply(system());
     });
   }
 
-  /* A page kept for the back button comes back as it was left, theme and all.
-     If the switch was pressed somewhere since, show what was chosen there --
-     and the same when another tab of the site changes it. */
   function resync() {
     var t = saved() || system();
     if (t !== current()) apply(t);

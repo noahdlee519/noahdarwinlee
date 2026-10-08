@@ -1,48 +1,24 @@
-/* citylayoutguessr — name the city from its layout, seen from above.
-   One guess per image, no retries: a wrong answer reveals the city and moves on.
-
-   Data lives in citylayoutguessr/cities.json. Images live in art/game/ and are matched to a
-   city by its id: art/game/<id>.webp (or .jpg / .jpeg / .png — whichever is
-   there). A city with no image on disk is skipped silently, so the game works
-   with three images or three hundred and never has to be kept in sync by hand.
-
-   A game in progress is kept in localStorage so a refresh puts you back where
-   you were. It is thrown away the moment the game ends. */
-
 (function () {
   "use strict";
 
   var DATA_URL = "cities.json";
-  /* The names the guess box will offer that are never the answer. */
   var CATALOG_URL = "catalog.json";
   var STORE_KEY = "ndl-layout-guesser-v1";
-  /* The daily keeps its own slot: starting a custom game should not throw away
-     a daily you are half way through, and the other way round. */
   var STORE_KEY_DAILY = "ndl-clg-daily-progress-v1-e2";
   var LENGTHS = [10, 20, 30, 50, Infinity];
   var SETUP_KEY = "ndl-layout-guesser-setup-v1";
   var DAILY_KEY = "ndl-clg-daily-v1-e2";
-  var DAILY_EPOCH = Date.UTC(2026, 8, 2); // no. 1 was 2 September 2026
+  var DAILY_EPOCH = Date.UTC(2026, 8, 2);
   var DAILY_ROUNDS = 10;
 
-  /* With hints on, a miss is not the end of the round: the first is just a
-     second go, the second buys the continent, the third the country, and the
-     fourth is the answer. Off, it is one guess as it always was. */
   var HINT_TRIES = 4;
 
-  /* The shape of a daily: four you should get, three that make you think, three
-     that probably beat you. The numbers must add up to DAILY_ROUNDS. If a level
-     is short of pictures the shortfall is made up from the others, so the day
-     is always ten maps long. */
   var DAILY_MIX = [
     { tier: "easy", count: 4 },
     { tier: "medium", count: 3 },
     { tier: "hard", count: 3 }
   ];
 
-  /* Part of the seed, and of the keys the browser remembers a day by. Changing
-     it deals every day again from scratch and drops any record of the old one —
-     which is what "reset the daily" means. */
   var DAILY_EDITION = "2";
 
   var el = {
@@ -134,11 +110,9 @@
   var data = null;
   var state = null;
   var byId = {};
-  var manifest = null;   // ids that have a picture, written by build-images.sh
+  var manifest = null;
   var loupe = null;
-  var choice = null;     // {levels:[], continents:[], length:number|Infinity}
-
-  /* ---------- text matching ---------- */
+  var choice = null;
 
   function norm(s) {
     return String(s)
@@ -149,9 +123,6 @@
       .trim();
   }
 
-  /* Damerau-Levenshtein (optimal string alignment): like Levenshtein but a
-     swapped pair of letters costs one, not two, so "tornoto" and "chigaco"
-     are one step from the answer the way a typist expects. */
   function lev(a, b) {
     if (a === b) return 0;
     if (!a.length) return b.length;
@@ -181,38 +152,14 @@
     return prev[b.length];
   }
 
-  /* How far off a guess may be, by the length of what it is measured against.
-     Abbreviations have to be exact — otherwise "sf" passes for Singapore and
-     "dc" for Mexico City's "df" — and everything else gets one slip, which is
-     what a typo actually is. Only long names get two, because there is more of
-     them to get wrong. Loosening any of these starts accepting Houston for
-     Boston and Dublin for Berlin, which is worse than rejecting a near miss. */
   function tolerance(len) {
     if (len <= 3) return 0;
     if (len <= 12) return 1;
     return 2;
   }
 
-  /* ---------- the names the box will take ----------
-     One list of every name the guess field offers: the cities in play, with
-     their nicknames, and the ones in catalog.json, which are in the list and
-     never in a game so that what the list offers cannot be read as a table of
-     contents. An entry carries a city id when it is a city in play and nothing
-     when it is only a name, and that is the whole of the judging — a guess is
-     right when the entry you took off the list is this round's city.
-
-     Nothing is measured against anything any more. The game used to compare
-     what you had typed against the answer and forgive a letter or two, which
-     meant it also had to tell somebody that "Madison, Wisconsin" was wrong and
-     that the answer was Madison. A name the game itself handed you cannot be
-     wrong in that way.
-
-     The list is built here rather than left to a native <datalist>, which
-     cannot be styled, behaves differently in every browser, and has nowhere to
-     put a nickname pointing at the name it belongs to. */
-
-  var catalog = [];      // [{ name, country, id, key, terms }]
-  var termIndex = {};    // a normalised name or nickname -> what it stands for
+  var catalog = [];
+  var termIndex = {};
 
   function addToCatalog(name, country, id, aliases) {
     var key = norm(name);
@@ -229,9 +176,6 @@
     catalog.push(entry);
   }
 
-  /* The cities in play go in first, so that a name shared with the catalog —
-     which check.sh will not let you ship, but the code should not lean on that
-     — belongs to the city that can actually be an answer. */
   function buildCatalog(extra) {
     catalog = [];
     termIndex = {};
@@ -243,15 +187,9 @@
     });
   }
 
-  var SUGGEST_MIN = 3;   // letters typed before the list appears
-  var SUGGEST_MAX = 8;   // rows on it
+  var SUGGEST_MIN = 3;
+  var SUGGEST_MAX = 8;
 
-  /* "Madison, Wisconsin" is Madison. Naming the state, region or country after
-     the city is how people talk, and there are far too many of those to keep a
-     list of, so when the whole of what was typed finds nothing the search drops
-     the last word and asks again, down to the first word alone. The longest
-     form that finds anything wins, so "new york" is never answered with
-     everything that begins "new". */
   function queryForms(raw) {
     var g = norm(raw);
     if (!g) return [];
@@ -261,8 +199,6 @@
     return forms;
   }
 
-  /* Where the letters landed, best first: the whole name, its start, the start
-     of a later word ("york" for New York), anywhere in it at all. */
   function placeScore(term, q) {
     if (term === q) return 0;
     if (term.lastIndexOf(q, 0) === 0) return 1;
@@ -273,16 +209,10 @@
 
   function rank(rows) {
     rows.sort(function (a, b) {
-      /* Every city found under its own name comes before every city found
-         under a nickname. Otherwise "paris" answers with Paris and then seven
-         cities that are the Paris of somewhere, which is a list of places
-         nobody was looking for. A nickname still finds its city when nothing
-         is called that. */
       var an = a.alias ? 1 : 0;
       var bn = b.alias ? 1 : 0;
       if (an !== bn) return an - bn;
       if (a.score !== b.score) return a.score - b.score;
-      /* Then the shortest, because the letters are a larger part of it. */
       if (a.entry.name.length !== b.entry.name.length) {
         return a.entry.name.length - b.entry.name.length;
       }
@@ -291,7 +221,6 @@
     return rows.slice(0, SUGGEST_MAX);
   }
 
-  /* One row per city, under whichever of its names the letters fit best. */
   function collect(pick) {
     var rows = [];
     catalog.forEach(function (entry) {
@@ -314,10 +243,6 @@
     return collect(function (t) { return placeScore(t.k, q); });
   }
 
-  /* Only once the plain search has come back empty: a typo should still find
-     the city, but it must never outrank a name that actually contains what was
-     typed. Three letters are one letter away from too many names to be worth
-     offering, so the typo pass starts at four. */
   function searchTypo(q) {
     if (q.length < 4) return [];
     return collect(function (t) {
@@ -342,15 +267,9 @@
     return [];
   }
 
-  /* ---------- the guess box ----------
-     A combobox rather than a plain field: type three letters, take a name off
-     the list, send that. The arrow keys walk the list and enter takes the row
-     they are on; nothing is ever on it to begin with, so enter straight after
-     typing sends what is in the box rather than quietly answering for you. */
-
-  var picked = null;   // the entry the box is standing for, if any
-  var shown = [];      // the rows on the list as it stands
-  var active = -1;     // the row the arrow keys are on, -1 for none
+  var picked = null;
+  var shown = [];
+  var active = -1;
 
   function closeSuggest() {
     if (el.suggest.hidden) return;
@@ -363,9 +282,6 @@
     active = -1;
   }
 
-  /* Under the field, unless there is no room down there — on a phone the
-     keyboard takes the bottom half of the window and the field is sitting just
-     above it, so the list goes up over the map instead. */
   function placeSuggest() {
     var vv = window.visualViewport;
     var floor = vv ? vv.height + vv.offsetTop : window.innerHeight;
@@ -381,13 +297,6 @@
       li.id = "game-suggest-" + i;
       li.setAttribute("role", "option");
       li.setAttribute("aria-selected", "false");
-      /* Names go in as text, never as markup: they come out of a data file.
-
-         Only the city's own name is offered, never the nickname that found
-         it. Typing "the big easy" still gets you New Orleans, but the row
-         says New Orleans — printing the nickname back handed the answer over
-         in the very words that made it a joke, and made the easy ones
-         easier. */
       li.appendChild(document.createTextNode(row.entry.name));
       if (row.entry.country) {
         var where = document.createElement("span");
@@ -451,10 +360,6 @@
     el.input.focus({ preventScroll: true });
   }
 
-  /* What the box stands for: the row taken off the list, or — if what is in it
-     is exactly a name the list would have offered — that name. Typing a city
-     out in full and pressing enter is picking it; anything else is not a
-     guess yet. */
   function standing() {
     if (picked) return picked;
     var hit = termIndex[norm(el.input.value)];
@@ -467,15 +372,10 @@
     el.input.value = "";
   }
 
-  /* ---------- saved game ---------- */
-
   function slot(cfg) {
     return cfg && cfg.daily ? STORE_KEY_DAILY : STORE_KEY;
   }
 
-  /* paused: you pressed menu and left the game standing, rather than simply
-     reloading the page. A paused game is not resumed automatically on the next
-     visit; the menu offers it instead. */
   function save(paused) {
     if (!state) return;
     try {
@@ -508,7 +408,6 @@
         })
       );
     } catch (err) {
-      /* private mode, quota, whatever — the game just won't resume */
     }
   }
 
@@ -518,9 +417,6 @@
     } catch (err) {}
   }
 
-  /* Reads a saved game without entering it, so the menu can say what is
-     waiting. Returns null for anything unusable — an empty slot, a finished
-     one, or yesterday's daily. */
   function peek(which) {
     var saved;
     try {
@@ -546,14 +442,12 @@
       return false;
     }
     if (!saved || !saved.rounds || !saved.rounds.length) return false;
-    /* Left standing on purpose: the menu offers it, the page does not force
-       you back into it. */
     if (saved.paused && !evenIfPaused) return false;
 
     var rounds = [];
     for (var i = 0; i < saved.rounds.length; i++) {
       var city = byId[saved.rounds[i].id];
-      if (!city) return false; // the list changed under it; start fresh
+      if (!city) return false;
       rounds.push({ city: city, url: saved.rounds[i].url });
     }
     if (!(saved.index >= 0) || saved.index >= rounds.length) {
@@ -574,8 +468,6 @@
     if (!cfg || !cfg.levels || !cfg.continents) return false;
     cfg.length = cfg.length === "endless" ? Infinity : cfg.length;
     if (!cfg.daily) delete cfg.daily;
-    /* Yesterday's unfinished daily is not today's; drop it rather than let it
-       be finished under today's number. */
     if (cfg.daily && cfg.daily !== dayKey()) {
       forget(which);
       return false;
@@ -588,9 +480,6 @@
       index: saved.index,
       correct: saved.correct || 0,
       wrong: saved.wrong || 0,
-      /* A game saved before quarters existed has no running total; its own
-         log is what it was, so add up whatever the rounds say they were
-         worth rather than inventing one. */
       points: saved.points !== undefined ? saved.points
               : log.reduce(function (n, e) { return n + fillOf(e); }, 0),
       tries: saved.tries || 0,
@@ -608,8 +497,6 @@
     return true;
   }
 
-  /* ---------- images ---------- */
-
   function shuffle(list) {
     var a = list.slice();
     for (var i = a.length - 1; i > 0; i--) {
@@ -621,7 +508,6 @@
     return a;
   }
 
-  /* Warms the next few images so the player never waits between rounds. */
   function warm(rounds, from, count) {
     for (var i = from; i < from + count && i < rounds.length; i++) {
       var img = new Image();
@@ -629,18 +515,6 @@
     }
   }
 
-  /* With the manifest (art/game/images.json, written by build-images.sh) this
-     is instant: shuffle the cities that have a picture and take ten.
-
-     Without it we have to ask the server about every candidate in turn, and
-     that is what made "mixed" look broken — it draws from all 100 cities, so
-     with 31 pictures it was firing a few hundred 404s and downloading ten
-     images before showing round one. The probing path is kept only as a
-     fallback for a checkout where the manifest hasn't been built. */
-  /* Sorted before it is shuffled, so the order a seed produces depends on the
-     seed and the selection alone — not on the order the cities happen to sit
-     in cities.json, which is what a shared link would otherwise be hostage
-     to. */
   function poolFor(cfg) {
     return playable(cfg).slice().sort(function (a, b) {
       return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
@@ -661,14 +535,9 @@
     return rounds;
   }
 
-  /* Endless: when the last of the shuffled set is used up, shuffle again and
-     keep going. You stop it, it doesn't stop you. */
   function extend() {
     var dir = data.imageDir || "../art/game/";
     var ext = (manifest && manifest.ext) || "webp";
-    /* Endless reshuffles, and a seeded game reshuffles the same way twice: the
-       pass number moves the seed on so the second lap is not the first one
-       again, and two people on the same link still see the same second lap. */
     state.pass = (state.pass || 0) + 1;
     var pool = poolFor(state.cfg);
     var more = (state.cfg.seed
@@ -681,20 +550,6 @@
     return true;
   }
 
-  /* ---------- the daily ----------
-
-     The site is a folder of static files, so there is nowhere to keep "today's
-     ten". Instead the day itself is the seed: everyone who opens the same link
-     on the same day shuffles the same list in the same order and gets the same
-     ten cities. No server, no coordination, and the link never changes.
-
-     The day is counted in UTC so that everyone, everywhere, is on the same
-     puzzle at the same moment — which is the whole point of comparing scores. */
-
-  /* The day is counted in US Eastern rather than UTC. UTC rolls over at 8pm
-     Eastern, so an evening game showed tomorrow's date on your own clock. A
-     fixed reference zone keeps one puzzle worldwide *and* prints the date you
-     expect; Intl handles daylight saving so this needs no maintenance. */
   var DAY_ZONE = "America/New_York";
   var dayFormat = null;
   try {
@@ -707,14 +562,13 @@
 
   function dayKey(d) {
     var when = d || new Date();
-    if (dayFormat) return dayFormat.format(when); // en-CA gives YYYY-MM-DD
+    if (dayFormat) return dayFormat.format(when);
     return when.toISOString().slice(0, 10);
   }
 
   function dayNumber(key) {
     var parts = key.split("-");
     var t = Date.UTC(+parts[0], +parts[1] - 1, +parts[2]);
-    /* Clamped, so a browser whose clock is behind still sees a sane number. */
     return Math.max(1, Math.floor((t - DAILY_EPOCH) / 86400000) + 1);
   }
 
@@ -723,13 +577,10 @@
     return +parts[1] + "/" + +parts[2] + "/" + parts[0].slice(2);
   }
 
-  /* "daily game 1: 9/2/26" — used on the menu and in the bar alike. */
   function dailyName(key) {
     return "daily game " + dayNumber(key) + ": " + prettyDay(key);
   }
 
-  /* FNV-1a, then mulberry32: a small deterministic generator so the shuffle is
-     identical in every browser rather than merely random. */
   function seedFrom(str) {
     var h = 2166136261 >>> 0;
     for (var i = 0; i < str.length; i++) {
@@ -765,22 +616,6 @@
     return a;
   }
 
-  /* ---------- a custom game as a link ----------
-
-     Everything that decides what you are about to play, short enough to send
-     in a message:
-
-         #g=<levels>_<continents>_<length>_<hints>_<seed>[_<packs>]
-         #g=all_europe.asia_20_h_4f2a1b
-         #g=all_none_10_n_4f2a1b_japan.italy
-
-     Names rather than positions, because the order of the lists in cities.json
-     is not a promise and a link should outlive it; "all" rather than every
-     name, because that is the common case and it keeps the link short. The
-     seed is what makes it the same game and not merely the same settings —
-     buildRounds shuffles the sorted pool with it, so two browsers holding the
-     same city list deal the same maps in the same order. Add cities and old
-     links deal a different game; nothing else moves them. */
   function contSlug(id) {
     return String(id).toLowerCase().replace(/\s+/g, "-");
   }
@@ -799,17 +634,10 @@
       cfg.hints ? "h" : "n",
       (cfg.seed >>> 0).toString(36)
     ];
-    /* Packs came later, so they hang off the end and only when there are any:
-       a link to a game without them is the same string it always was, and a
-       build that predates packs reads the first five fields and ignores this
-       one rather than choking on it. */
     if (cfgPacks(cfg).length) parts.push(cfgPacks(cfg).slice().sort().join("."));
     return "g=" + parts.join("_");
   }
 
-  /* Forgiving on the way in: a name this build does not know is dropped, and
-     a field that is missing or nonsense falls back to everything. A link from
-     a future version of the game should still start a game. */
   function decodeCfg(hash) {
     if (!hash || hash.slice(0, 2) !== "g=") return null;
     var parts = hash.slice(2).split("_");
@@ -835,9 +663,6 @@
     });
 
     if (!lv.length) lv = allLevels;
-    /* An empty continent list is only meant when a pack is carrying the game.
-       Otherwise it is a link this build could not read, and the whole world is
-       a better answer than no game at all. */
     if (!co.length && !pk.length) co = allConts;
 
     var len = parts[2] === "endless" ? Infinity : parseInt(parts[2], 10);
@@ -863,22 +688,13 @@
     return {
       levels: levels().map(function (t) { return t.id; }),
       continents: continents().map(function (t) { return t.id; }),
-      /* No packs, ever. The ranked game is the ordinary world; a pack is
-         something you go and ask for. Anything packOnly is invisible here
-         because nothing has asked for its pack. */
       packs: [],
       length: DAILY_ROUNDS,
-      /* Off, and not a choice: the ranked game has to be the same one for
-         everybody who plays it. */
       hints: false,
       daily: key
     };
   }
 
-  /* Sorted first, so the order depends only on which cities exist and not on
-     the order they happen to sit in the file. */
-  /* Sorted by id first so the pool is in the same order everywhere before the
-     seeded shuffle touches it; two browsers must deal the same ten maps. */
   function dailyPool(key) {
     return playable(dailyConfig(key))
       .slice()
@@ -893,8 +709,6 @@
     var taken = {};
     var picked = [];
 
-    /* Each level is shuffled with its own seed, so a level gaining or losing a
-       picture reshuffles that level alone rather than the whole day. */
     DAILY_MIX.forEach(function (part) {
       var ofTier = pool.filter(function (c) { return c.tier === part.tier; });
       seededShuffle(ofTier, seedFrom(seed + "-" + part.tier))
@@ -905,8 +719,6 @@
         });
     });
 
-    /* A level short of pictures leaves a gap; the rest of the pool fills it so
-       the day is always ten long. */
     if (picked.length < DAILY_ROUNDS) {
       var rest = pool.filter(function (c) { return !taken[c.id]; });
       seededShuffle(rest, seedFrom(seed + "-fill"))
@@ -914,7 +726,6 @@
         .forEach(function (c) { picked.push(c); });
     }
 
-    /* Shuffled once more so the day does not run easy-then-hard in order. */
     return seededShuffle(picked, seedFrom(seed + "-order"))
       .slice(0, DAILY_ROUNDS)
       .map(function (c) {
@@ -936,16 +747,11 @@
     } catch (err) {}
   }
 
-  /* A record's score. Records written before quarters existed only counted
-     cities, and a whole number of cities is a whole number of points. */
   function scoreOf(record) {
     if (!record) return 0;
     return record.points !== undefined ? record.points : record.correct || 0;
   }
 
-  /* Five circles for the five scores a round can have. A run reads as a row of
-     them, the way it always did — a half-filled one is a round that found the
-     right part of the world and the wrong city. */
   var MARKS = ["\u25cb", "\u25d4", "\u25d1", "\u25d5", "\u25cf"];
 
   function shareText(record) {
@@ -959,10 +765,6 @@
            "https://noahdarwinlee.com/citylayoutguessr/#daily";
   }
 
-  /* Which day it is, and then what you did with it, on a line of its own.
-     Three things separated by middle dots was a lot to read across for what
-     is mostly a date and a score, and the state reads better as an aside than
-     as a third item in a list. */
   function dailyNote(name, state) {
     el.dailyNote.textContent = "";
     el.dailyNote.appendChild(document.createTextNode(name));
@@ -984,8 +786,6 @@
       dailyNote(dailyName(key),
                 points(scoreOf(done)) + " of " + done.log.length + " (played)");
     } else if (midway) {
-      /* You left part of the way through. There is no starting again — the
-         same ten maps are waiting where you put them down. */
       el.dailyStart.textContent = "resume today\u2019s challenge";
       dailyNote(dailyName(key),
                 "map " + (midway.index + 1) +
@@ -996,8 +796,6 @@
     }
   }
 
-  /* Already played today: show what you got rather than letting you go again,
-     or the number stops meaning anything. */
   function showDailyResult(record) {
     state = {
       cfg: dailyConfig(record.day),
@@ -1030,7 +828,6 @@
       showDailyResult(done);
       return;
     }
-    /* Half-finished from earlier today: pick it up rather than deal again. */
     if (restore(STORE_KEY_DAILY, true)) return;
     var rounds = dailyRounds(key);
     if (!rounds.length) {
@@ -1059,20 +856,10 @@
   }
 
 
-  /* ---------------- cosmetic settings ----------------
-
-     Lifted from the flash card tool. Three colours drive the whole page through
-     CSS variables; the guard below is the part that matters, because a colour
-     picker will happily let you make white text on a white ground. Anything
-     under a 3:1 contrast ratio gets pushed back rather than accepted. */
-
   var COLOR_KEY = "ndl-clg-colors-v1";
-  /* Where a palette goes when the day/night switch takes the page back. Kept
-     rather than dropped: somebody who has picked three colours by hand should
-     not lose them to a button on another part of the page. */
   var SET_ASIDE_KEY = "ndl-clg-colors-set-aside-v1";
-  var MIN_CONTRAST = 3;        // enough to see a fill or a big word
-  var MIN_INK_CONTRAST = 4.5;  // what body text actually needs to read well
+  var MIN_CONTRAST = 3;
+  var MIN_INK_CONTRAST = 4.5;
   var DEFAULT_COLORS = { bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" };
   var COLOR_PRESETS = [
     { name: "orange", bg: "#e68019", ink: "#ffffff", accent: "#e3e3b0" },
@@ -1152,15 +939,10 @@
     }).join("");
   }
 
-  /* Rather than snapping an unreadable colour to grey — which would make the
-     accent and the text identical and flatten the whole design — keep its hue
-     and move only its lightness until it clears the ground. */
   function readableOn(bg, want, target) {
     var need = target || MIN_CONTRAST;
     var light = luminance(bg) <= 0.5;
     var hsl = want ? toHsl(want) : null;
-    /* A near-grey has no hue worth preserving, so snap it to clean ink rather
-       than walking it down to a washed-out mid grey. */
     if (hsl && hsl.s >= 0.12) {
       for (var i = 0; i < 24; i++) {
         hsl.l = light ? Math.min(0.97, hsl.l + 0.04) : Math.max(0.03, hsl.l - 0.04);
@@ -1180,8 +962,6 @@
     }, 3200);
   }
 
-  /* Keeps whichever field was just touched and moves the others out of its way,
-     so changing the background never silently reverts the background. */
   function sanitizeColors(input, changed) {
     var next = {
       bg: normalizeHex(input.bg, DEFAULT_COLORS.bg),
@@ -1202,8 +982,6 @@
       }
     });
 
-    /* If both had to move they can land on the same value; the accent exists to
-       be distinguishable, so push it further rather than leave a duplicate. */
     if (next.ink === next.accent) {
       var hsl = toHsl(next.accent);
       hsl.l = luminance(next.bg) > 0.5 ? Math.max(0.28, hsl.l + 0.22) : Math.min(0.78, hsl.l - 0.18);
@@ -1264,12 +1042,6 @@
     } catch (err) {}
   }
 
-  /* No saved palette means the page is following the site's day/night switch,
-     which lives in the stylesheet. Taking the inline overrides off hands it
-     back rather than painting the daylight colours over the top of a dark
-     page — which is what this used to do, and why the game was the one page
-     that could never be dark. The pickers are then filled from what the page
-     actually ended up being, so they show the theme rather than a default. */
   function followTheme() {
     document.body.style.removeProperty("--bg");
     document.body.style.removeProperty("--ink");
@@ -1287,8 +1059,6 @@
     renderPresets();
   }
 
-  /* null means nothing was chosen here, which is not the same as choosing the
-     daylight colours: one follows the switch and the other overrules it. */
   function loadColors() {
     try {
       var raw = localStorage.getItem(COLOR_KEY);
@@ -1381,13 +1151,6 @@
     if (saved) applyColors(saved);
     else followTheme();
 
-    /* Pressing the day/night switch repaints the page underneath, so the
-       pickers have to be refilled. A palette chosen here is three inline
-       values on the body and it overrules the stylesheet, which meant that
-       once anybody had touched the pickers the switch appeared to do nothing
-       at all on this page. The switch is the site's, and pressing it means
-       day or night, so it wins — and the palette is set aside rather than
-       thrown out: it comes back at the end of the presets, under "yours". */
     var themeWatch = new MutationObserver(function () {
       var chosen = loadColors();
       if (!chosen) return followTheme();
@@ -1411,16 +1174,11 @@
     });
     el.resetColors.addEventListener("click", function () {
       show(el.colorWarning, false);
-      /* Reset goes back to following the site, not to the daylight palette —
-         on a dark page those are two different pictures, and the one somebody
-         pressing "reset" wants is the page as it comes. */
       forgetColors();
       clearSetAside();
       followTheme();
     });
   }
-
-  /* ---------- rendering ---------- */
 
   function show(node, on) {
     if (node) node.hidden = !on;
@@ -1437,19 +1195,6 @@
     return data.continents || [];
   }
 
-  /* ---------- packs ----------
-
-     A pack is a named set of cities that sits beside the continents rather
-     than inside them: USA, Japan, Italy, Benelux, landmarks. Two things can
-     put a city in one — the pack's own list of countries, so every Japanese
-     city already in the file belongs to Japan without being told, and a
-     "packs" field on the city itself, for the ones no country rule would
-     catch. A landmark belongs to no country in particular; it says so.
-
-     A city marked packOnly is invisible everywhere else. It is not in the
-     daily, not in a plain custom game, not in its continent — only in its
-     pack, and only when that pack is asked for. That is what keeps a set of
-     twelve Tokyo neighbourhoods from swamping the ordinary game. */
   function packs() {
     return data.packs || [];
   }
@@ -1469,26 +1214,10 @@
     return (cfg && cfg.packs) || [];
   }
 
-  /* A game needs somewhere to draw from, and either kind of region will do. */
   function hasRegion(cfg) {
     return Boolean(cfg && (cfg.continents.length || cfgPacks(cfg).length));
   }
 
-  /* ---------- where a city is, and how near a guess came ----------
-
-     A guess is worth a quarter for each rung it gets right: the continent, the
-     region, the country, the city. The regions are the twenty-two of the UN's
-     M49 scheme and they sit at the top of cities.json keyed by country, so a
-     name off the guess list that is in no game at all still has somewhere to
-     be measured against.
-
-     The continent comes off the city itself when we have the city, because
-     that is the box it is filed under here: Istanbul is in europe on this page
-     and in Western Asia in M49, and somebody who ticked europe to find it
-     should not then be told it is in Asia. So the two can disagree, and that
-     is the intended reading rather than a hole in it — guessing Moscow when
-     the answer is Vladivostok is the right country and the right region and
-     the wrong continent, and is worth half a point. */
   var regionByCountry = null;
 
   function regionOf(country) {
@@ -1503,10 +1232,6 @@
     return (country && regionByCountry[country]) || null;
   }
 
-  /* Takes either a city out of cities.json or an entry off the guess list,
-     which carries a name and a country and nothing else. An entry that names a
-     city in play is swapped for that city first, so the same place is read the
-     same way whichever side of the comparison it turns up on. */
   function placeOf(city) {
     if (city && city.id && byId[city.id]) city = byId[city.id];
     var country = (city && city.country) || "";
@@ -1521,18 +1246,12 @@
 
   var QUARTER = 0.25;
 
-  /* Quarters are for a game that could be anywhere. Narrowed to one continent,
-     or to a single pack, naming the continent is naming what you chose — so
-     the daily and an everywhere custom game are the only two that score this
-     way, and everything else stays right or wrong. */
   function inQuarters(cfg) {
     if (!cfg) return false;
     if (cfg.daily) return true;
     return cfg.continents.length === continents().length;
   }
 
-  /* What a guess earned, rung by rung. Nothing typed earns nothing: there is
-     no place to have been half right about. */
   function creditFor(guess, answer) {
     var got = { continent: false, region: false, country: false, city: false,
                 points: 0, where: "" };
@@ -1545,7 +1264,6 @@
     got.continent = Boolean(g.continent && g.continent === a.continent);
     got.points = (got.continent ? QUARTER : 0) + (got.region ? QUARTER : 0) +
                  (got.country ? QUARTER : 0) + (got.city ? QUARTER : 0);
-    /* The most particular rung it reached, which is the one worth naming. */
     got.where = got.country ? a.country
               : got.region ? a.regionLabel
               : got.continent ? a.continent
@@ -1553,14 +1271,11 @@
     return got;
   }
 
-  /* A score with no more decimals than it has: 7 rather than 7.00, 7.25 rather
-     than 7.3. */
   function points(n) {
     var r = Math.round((Number(n) || 0) * 100) / 100;
     return r === Math.round(r) ? String(Math.round(r)) : String(r);
   }
 
-  /* How full the round's mark is drawn, as a share of the circle. */
   function fillOf(entry) {
     if (entry.points === undefined || entry.points === null) {
       return entry.right ? 1 : 0;
@@ -1568,13 +1283,6 @@
     return entry.points;
   }
 
-  /* Every city the current selection allows, whether or not it has a picture.
-
-     Continents and packs are one selection, not two lists stuck together:
-     this filters the file once and asks each city whether anything chosen
-     wants it. So a city that is both Japanese and in Asia comes back once
-     however many boxes are ticked — there is no concatenation for a duplicate
-     to appear in. */
   function selected(cfg) {
     var chosenPacks = cfgPacks(cfg);
     return data.cities.filter(function (c) {
@@ -1585,7 +1293,6 @@
     });
   }
 
-  /* ...and the subset that can actually be drawn. */
   function playable(cfg) {
     if (!manifest || !manifest.ids) return selected(cfg);
     return selected(cfg).filter(function (c) {
@@ -1593,16 +1300,12 @@
     });
   }
 
-  /* A short name for what is being played, for the progress bar and the
-     result. Anything unfiltered is left unsaid rather than spelled out. */
   function describe(cfg) {
     if (cfg.daily) return dailyName(cfg.daily);
     var bits = [];
     if (cfg.levels.length < levels().length) {
       bits.push(cfg.levels.join(" + "));
     }
-    /* Some continents but not all is worth saying; none of them is not an
-       empty answer but a pack game, and the pack is about to say so. */
     if (cfg.continents.length && cfg.continents.length < continents().length) {
       bits.push(cfg.continents.map(function (id) {
         var c = continents().filter(function (x) { return x.id === id; })[0];
@@ -1650,16 +1353,6 @@
     return [].slice.call(container.querySelectorAll('input[type="checkbox"]'));
   }
 
-  /* ---------- the special menu ----------
-
-     The packs live behind one entry in the region row rather than beside the
-     continents, because there will be more of them than there are continents
-     and they are not the ordinary way to play. Each is a tick and nothing
-     else: it goes into the mix with whatever else is selected, and a pack on
-     its own is that pack ticked and the continents left alone.
-
-     Packs begin unticked. Continents are a filter on the world and default to
-     all of it; a pack is a thing you go and ask for. */
   function packCount(id) {
     return withPicture(function (c) { return inPack(c, id); });
   }
@@ -1668,8 +1361,6 @@
     if (!el.setupPacks) return;
     el.setupPacks.innerHTML = "";
     packs().forEach(function (pack) {
-      /* check() greys the label by itself when the count is nothing, which is
-         a pack with no pictures in it yet. */
       check(el.setupPacks, pack.id, pack.label, packCount(pack.id)).checked = false;
     });
   }
@@ -1717,7 +1408,6 @@
     }).length;
   }
 
-  /* The "all" box drives the rest and follows them back. */
   function wireAll(container) {
     var all = boxes(container)[0];
     var rest = boxes(container).slice(1);
@@ -1742,16 +1432,12 @@
       .map(function (b) { return b.value; });
   }
 
-  /* The packs have no "all" box in front of them, so every box counts. */
   function chosenEvery(container) {
     if (!container) return [];
     return boxes(container).filter(function (b) { return b.checked; })
       .map(function (b) { return b.value; });
   }
 
-  /* The order the next custom game will be dealt in, settled before it starts
-     so that the link you copy and the game you then press start on are the
-     same game. Moves on once a game has begun, so the one after it is new. */
   var setupSeed = randomSeed();
 
   function readSetup() {
@@ -1761,10 +1447,6 @@
       continents: chosen(el.setupContinents),
       packs: chosenEvery(el.setupPacks),
       length: LENGTHS[i],
-      /* A hidden switch is not a setting: with one country in the pool the
-         hints can only name it, so the game is played without them however
-         the box was last left -- and the box keeps its state for when the
-         selection widens again. */
       hints: Boolean(el.setupHints && el.setupHints.checked)
         && !(el.setupHintsSet && el.setupHintsSet.hidden),
       seed: setupSeed
@@ -1775,9 +1457,6 @@
     return n === Infinity ? "endless" : String(n);
   }
 
-  /* Grey out the lengths this selection cannot fill, and pull the slider back
-     if it is sitting on one of them. Endless always stands, because it repeats. */
-  /* A custom game left part-way through is offered back beside start. */
   function refreshContinue() {
     if (!el.setupContinue) return;
     var midway = peek(STORE_KEY);
@@ -1804,9 +1483,6 @@
       if (ok) highest = i;
       var t = document.createElement("span");
       t.className = "game-tick " + (ok ? "" : "is-off");
-      /* A range thumb's centre travels from half a thumb in to half a thumb
-         short of the end, so the ticks have to be inset by the same amount or
-         they sit beside the stops instead of under them. */
       var pct = (i / (LENGTHS.length - 1)) * 100;
       t.style.left = "calc(" + pct + "% + " + (10 - pct * 0.2).toFixed(2) + "px)";
       t.textContent = lengthLabel(len);
@@ -1823,10 +1499,6 @@
     if (ticks[i]) ticks[i].classList.add("is-on");
 
     cfg = readSetup();
-    /* Naming the one that is missing rather than "one of each", which leaves
-       you to work out which of the two rows it meant. The difficulty first
-       because it is the first row on the page, so somebody reading downward
-       meets that message where the problem is. */
     var missing = !cfg.levels.length
       ? "select at least one difficulty level first"
       : !hasRegion(cfg)
@@ -1835,13 +1507,7 @@
     el.setupPool.textContent = n
       ? "your game will draw from " + n + (n === 1 ? " map" : " maps")
       : (missing || "no maps for that combination yet");
-    /* Coloured only while it is telling you something is wrong; a count of
-       maps is not a warning and should not read as one. */
     el.setupPool.classList.toggle("is-warning", Boolean(missing) || !n);
-    /* The caption says what the hints will actually do for the game as it is
-       set up, which is not the same sentence once a single region is picked --
-       and there is no sentence at all when everything in the pool shares a
-       country, where the whole fieldset goes. */
     var given = givenBy(cfg);
     if (el.setupHintsSet) show(el.setupHintsSet, !given.country);
     if (el.setupHintText) {
@@ -1882,10 +1548,6 @@
     check(el.setupLevels, "__all", "all", null);
     levels().forEach(function (t) {
       check(el.setupLevels, t.id, t.label,
-            /* Pack-only cities are left out here for the same reason they are
-               left out of the continent counts below: they are not reachable
-               without asking for their pack, so counting them would promise a
-               level bigger than the one the pool line then reports. */
             withPicture(function (c) { return !c.packOnly && c.tier === t.id; }));
     });
 
@@ -1893,9 +1555,6 @@
     check(el.setupContinents, "__all", "all", null);
     continents().forEach(function (t) {
       check(el.setupContinents, t.id, t.label,
-            /* A packOnly city is not part of its continent for counting
-               either — it is not reachable that way, so saying it is there
-               would be a lie the pool count then contradicts. */
             withPicture(function (c) { return !c.packOnly && c.continent === t.id; }));
     });
 
@@ -1915,14 +1574,9 @@
       }
       var i = LENGTHS.indexOf(saved.length);
       if (i !== -1) el.setupLength.value = i;
-      /* !== false rather than Boolean(): a setup saved before hints existed has
-         no opinion about them, and should get the default rather than off. */
       if (el.setupHints) el.setupHints.checked = saved.hints !== false;
     }
     boxes(el.setupLevels)[0].checked = boxes(el.setupLevels).slice(1).every(function (b) { return b.checked; });
-    /* The special menu opens from the region row itself, so its button is put
-       back into the row each time the row is rebuilt. It is not a checkbox,
-       so nothing that reads the row picks it up. */
     if (el.setupSpecialOpen) el.setupContinents.appendChild(el.setupSpecialOpen);
     boxes(el.setupContinents)[0].checked = boxes(el.setupContinents).slice(1).every(function (b) { return b.checked; });
 
@@ -1935,8 +1589,6 @@
     refreshSetup();
   }
 
-  /* If a file has been renamed or removed since the game was saved, drop that
-     round rather than showing a broken image. */
   function dropRound() {
     state.rounds.splice(state.index, 1);
     state.total = Math.min(state.total, state.rounds.length);
@@ -1948,9 +1600,6 @@
     }
   }
 
-  /* A loupe: click the image and a small window follows the pointer showing the
-     picture at its own resolution, which is roughly twice what fits on screen.
-     Click again to put it away. Dragging works on a touchscreen. */
   function buildLoupe(stage, img, url) {
     var lens = document.createElement("div");
     lens.className = "game-loupe";
@@ -1960,9 +1609,6 @@
     var on = false;
     var size = 0;
     var zoom = 1;
-    /* The round loads a 1400px file, which has nothing left to magnify on a
-       dense screen. The @2x file is the full 2000px original; it is fetched the
-       first time someone zooms, so people who never zoom never pay for it. */
     var source = url;
     var sourceWidth = 0;
     var wanted = false;
@@ -1984,9 +1630,6 @@
       var dpr = window.devicePixelRatio || 1;
       var natural = sourceWidth || img.naturalWidth || r.width;
       size = Math.round(Math.min(230, r.width * 0.5, r.height * 0.62));
-      /* Magnify as far as the file can go without going soft, within reason,
-         and then 10% past that. The ceiling is the screenshot itself: a bigger
-         original zooms further. */
       zoom = Math.max(1.5, Math.min(3.2, natural / ((r.width || 1) * dpr))) * 1.1;
       lens.style.width = size + "px";
       lens.style.height = size + "px";
@@ -2025,7 +1668,6 @@
       e.preventDefault();
       if (on) hide();
       else show(e.clientX, e.clientY);
-      /* keep typing working — the click would otherwise take focus off the box */
       if (!el.form.hidden) el.input.focus({ preventScroll: true });
     });
     stage.addEventListener("pointermove", function (e) {
@@ -2041,9 +1683,6 @@
     return { hide: hide };
   }
 
-  /* On a phone a loupe is the wrong instrument — your finger covers it, and the
-     window is small to begin with. Tap to zoom into the point you touched, tap
-     again to come back out. */
   function buildTapZoom(stage, img) {
     var on = false;
 
@@ -2054,18 +1693,10 @@
       img.style.transformOrigin = "";
     }
 
-    /* Tapping the map must not take the keyboard away with it: a tap on
-       anything that is not the field blurs it, and iOS closes the keyboard when
-       it does. Preventing the default on the press stops the focus moving at
-       all — the click still arrives, so the zoom below still runs. */
     stage.addEventListener("mousedown", function (e) {
       if (document.activeElement === el.input) e.preventDefault();
     });
 
-    /* The listener goes on the stage, not the image: a transform moves the
-       element's hit area with it, so once zoomed, parts of the frame would no
-       longer be over the picture and the tap to zoom back out could miss. The
-       stage's own box never moves. */
     stage.addEventListener("click", function (e) {
       e.preventDefault();
       if (on) {
@@ -2111,17 +1742,10 @@
     stage.appendChild(img);
     stage.appendChild(flash);
     el.frame.appendChild(stage);
-    /* Pointer, not width: a small laptop still gets the loupe, a large tablet
-       still gets the tap. */
     var touch = window.matchMedia && window.matchMedia("(hover: none)").matches;
     loupe = touch ? buildTapZoom(stage, img) : buildLoupe(stage, img, round.url);
     warm(state.rounds, state.index + 1, 2);
 
-    /* The count is the only thing the bar says mid-game. What you picked is
-       on the menu you picked it from and on the result at the end; repeating
-       it over the map — "hard · asia + europe · hints" — was a caption on
-       something nobody had asked about. The element stays, empty, because the
-       layout is already written for it having nothing to say. */
     el.progressWhere.textContent = "";
     el.progressCount.textContent = state.cfg.length === Infinity
       ? "map " + (state.index + 1)
@@ -2138,11 +1762,6 @@
     save();
   }
 
-  /* The tally is written as markup rather than a plain string so that a narrow
-     phone can drop the words and show the marks instead: four things share
-     that bar, and "0 right · 0 wrong" is the one that can say the same
-     thing in a third of the room. Both spellings are always in the DOM and CSS
-     picks; the marks are hidden from screen readers, which get the words. */
   function scorePart(n, word, mark) {
     return (
       '<span class="game-score-part">' + n +
@@ -2153,8 +1772,6 @@
   }
 
   function setScore() {
-    /* Quarters make "right" and "wrong" two words for the same rounds, so the
-       bar carries the score and the count of cities actually named instead. */
     if (state && inQuarters(state.cfg)) {
       el.score.innerHTML =
         scorePart(points(state.points), "points", "◑") +
@@ -2168,14 +1785,10 @@
       scorePart(state.wrong, "wrong", "✗");
   }
 
-  /* Plain text, for the screen-reader line and anywhere a string is wanted. */
   function answerLine(city) {
     return city.country ? city.city + " [" + city.country + "]" : city.city;
   }
 
-  /* The same thing as nodes, so the country can be set smaller than the city
-     it belongs to. Built rather than written as HTML: these are names out of
-     cities.json and they go in as text, never as markup. */
   function fillAnswer(node, city) {
     node.textContent = city.city;
     if (!city.country) return;
@@ -2193,8 +1806,6 @@
     flash.style.width = img.offsetWidth + "px";
     flash.style.height = img.offsetHeight + "px";
     flash.classList.remove("is-right", "is-wrong");
-    /* Force a reflow so the class can be re-added and replay the animation
-       even when two rounds in a row end the same way. */
     void flash.offsetWidth;
     flash.classList.add(right ? "is-right" : "is-wrong");
   }
@@ -2206,10 +1817,6 @@
     el.verdict.textContent = entry.right ? "Correct" : "Incorrect";
     fillAnswer(el.answer, entry.city);
 
-    /* A wrong city that was in the right part of the world is worth saying
-       out loud, or the quarter arrives on the score with nothing to explain
-       it. Nothing is said when the guess was exact — the verdict has it — or
-       when it earned nothing at all. */
     var near = !entry.right && entry.credit && entry.credit.points > 0;
     if (near) {
       el.earned.textContent =
@@ -2237,11 +1844,8 @@
 
   var emptyAsked = false;
 
-  /* An empty box is almost always a slipped key rather than a decision, and it
-     used to score as a miss. Now the first press asks, the second gives up. */
   function askedToSkip() {
     if (emptyAsked) {
-      /* Giving up is giving up: no more clues, straight to the answer. */
       if (state) state.tries = HINT_TRIES;
       return true;
     }
@@ -2252,15 +1856,6 @@
     return false;
   }
 
-  /* What the selection has already told you, read off the pool itself rather
-     than inferred from the shape of the selection. Naming a place somebody has
-     just chosen is not a hint, it is an echo: if every map in the pool is on
-     one continent the first rung says nothing, and if they are all in one
-     country there is nothing left for the ladder to say at all.
-
-     Off the pool because the old version asked the selection instead, and the
-     selection does not always know: a pack of three countries that happen to
-     be neighbours -- Benelux -- would spend a miss announcing "Europe". */
   function givenBy(cfg) {
     var pool = cfg ? playable(cfg) : [];
     if (!pool.length) return { continent: false, country: false };
@@ -2275,20 +1870,14 @@
     };
   }
 
-  /* When the continent rung is an echo it is skipped and the country arrives a
-     miss earlier; the tries are not spent. */
   function continentIsGiven(cfg) {
     return givenBy(cfg).continent;
   }
 
-  /* And when the country is given too, the whole ladder is echoes. */
   function hintsSayNothing(cfg) {
     return givenBy(cfg).country;
   }
 
-  /* What a miss is worth telling you, in order. The first tells you nothing
-     but that it was wrong; the continent next because it is the smaller
-     give-away; the country last because it usually ends it. */
   function hintFor(city, tries, skipContinent) {
     if (tries === 1) return "try again";
     var where = skipContinent
@@ -2299,29 +1888,16 @@
     return where ? "hint: it\u2019s in " + where : null;
   }
 
-  /* entry is the name that was taken off the list, or nothing if the round was
-     given up on. label is what goes in the recap as what you said. */
   function judge(entry, label) {
     var round = state.rounds[state.index];
     var right = Boolean(entry && entry.id && entry.id === round.city.id);
 
-    /* A miss with hints on and tries left buys a clue rather than the answer.
-       Nothing goes into the log yet: the round is still being played.
-
-       The second test is for the games that never went through the setup form
-       and so never had the switch taken off them: a shared link or a saved
-       setup can still be carrying hints: true for a pool that is all one
-       country, where the ladder has nothing to say. Rather than spend somebody
-       three guesses telling them the country they picked, there are no hints. */
     if (!right && state.cfg.hints && !hintsSayNothing(state.cfg)) {
       state.tries = (state.tries || 0) + 1;
       var clue = state.tries < HINT_TRIES
         ? hintFor(round.city, state.tries, continentIsGiven(state.cfg))
         : null;
       if (clue) {
-        /* One line, replaced rather than added to: the country supersedes the
-           continent, and two clues stacked up would push the field down the
-           page mid-round. */
         flashResult(false);
         el.ask.textContent = clue;
         show(el.ask, true);
@@ -2382,8 +1958,6 @@
       var mark = document.createElement("span");
       mark.className = "game-recap-mark";
       mark.setAttribute("aria-hidden", "true");
-      /* The mark is filled as far as the round was earned, so the column reads
-         as a picture of the run before any of the words are. */
       if (got > 0 && got < 1) mark.style.setProperty("--fill", got * 100 + "%");
       var name = document.createElement("span");
       name.className = "game-recap-name";
@@ -2393,8 +1967,6 @@
       if (!entry.right) {
         var said = document.createElement("span");
         said.className = "game-recap-guess";
-        /* A round with nothing in it was given up on rather than got wrong,
-           and a blank space beside the answer does not say that. */
         said.textContent =
           (entry.guess ? "you said \u2018" + entry.guess + "\u2019" : "pass") +
           (quarters && got > 0 ? " \u00b7 +" + points(got) : "");
@@ -2403,8 +1975,6 @@
       el.recap.appendChild(li);
     });
 
-    /* One go a day, so there is no "play again" on a daily — the share button
-       takes its place. */
     var isDaily = Boolean(state.cfg.daily);
     show(el.replay, !isDaily);
     show(el.share, isDaily);
@@ -2421,13 +1991,7 @@
         day: state.cfg.daily,
         correct: state.correct,
         wrong: state.wrong,
-        /* The score. correct is kept beside it as the count of cities named
-           outright, which is what the recap and the older records mean. */
         points: state.points || 0,
-        /* Whether anybody was signed in when the last round landed. A score
-           played signed out is posted later, when the account appears — and
-           when that does not take, this is what lets the board say why rather
-           than leaving the player to guess. */
         noAccount: !(cloudOn() && cloud.user()),
         log: state.log.map(function (e) {
           return { id: e.city.id, right: e.right, guess: e.guess,
@@ -2435,8 +1999,6 @@
         })
       };
       writeDaily(record);
-      /* The board belongs on this screen now: you have just played, and the
-         only question left is where that put you. */
       placeBoard("result");
       postDaily(record);
     }
@@ -2471,15 +2033,12 @@
       revealed: false,
       log: []
     };
-    /* Spent: the next game the panel offers is a different one. */
     if (cfg.seed === setupSeed) setupSeed = randomSeed();
     tell("game_start", { daily: false, rounds: cfg.length });
     renderRound();
   }
 
   function toIntro() {
-    /* Nothing is dropped here. A finished game has already cleared its own
-       slot in finish(); an unfinished one was just saved by leave(). */
     if (loupe) loupe.hide();
     state = null;
     show(el.board, false);
@@ -2493,14 +2052,6 @@
     refreshContinue();
     if (history.replaceState) history.replaceState(null, "", location.pathname);
   }
-
-  /* ---------------- accounts and the daily board ----------------
-
-     Everything here is optional. cloud.js publishes window.clgCloud whether or
-     not Supabase is configured, and fires clg-cloud-ready once it knows
-     whether anyone is signed in; if it is switched off, cloud.enabled is false
-     and every panel below stays hidden. Nothing in this section is allowed to
-     stop a game from starting. */
 
   var cloud = null;
   var boardDay = null;
@@ -2518,10 +2069,6 @@
     if (cloudOn() && cloud.track) cloud.track(kind, detail || null);
   }
 
-  /* Google's own button, drawn on this page rather than on a page we are sent
-     to, so the sign-in window says this site's name instead of the Supabase
-     project ref. Asked for once; if it cannot be had, our own button is
-     already there and stays. */
   var googleAsked = false;
   function askForGoogleButton() {
     if (googleAsked || !el.googleBtn || !cloudOn()) return;
@@ -2533,9 +2080,6 @@
     });
   }
 
-  /* If Google's button turns out not to be able to sign anyone in — the client
-     ID does not match, this origin is not on it — the redirect is put back, so
-     there is always a way in even when it is the plainer one. */
   document.addEventListener("clg-google-unavailable", function () {
     show(el.googleBtn, false);
     show(el.signIn, true);
@@ -2567,13 +2111,6 @@
     }
   }
 
-  /* The board lives in one place in the markup and is moved to whichever
-     screen is on: the menu, or the result page right after a daily run, which
-     is when anyone actually wants to see it. */
-  /* The account row travels with the board. It sits directly above it on the
-     menu already, so nothing moves there — but it means that finishing a game
-     signed out puts the sign-in button on the same screen as the line asking
-     you to use it, rather than back on a menu you have to go looking for. */
   function placeBoard(where) {
     if (!el.leaders) return;
     var slot = where === "result" ? el.leadersSlotResult : el.leadersSlot;
@@ -2582,10 +2119,6 @@
     slot.parentNode.insertBefore(el.leaders, slot);
   }
 
-  /* How many rows a board shows. Ten is the whole of what a leaderboard is
-     for — past that it stops being a top and starts being a list of everyone
-     who played, which is a different and duller thing. Below the ten, anyone
-     signed in still gets their own place on the line underneath. */
   var BOARD_ROWS = 10;
 
   function ordinal(n) {
@@ -2595,9 +2128,6 @@
     return n + "th";
   }
 
-  /* One row shape for both boards: place, face, name, score. All-time adds the
-     number of days behind the total, because 84 from twelve days and 84 from
-     forty are not the same 84. */
   function boardLine(row, me, allTime) {
     var li = document.createElement("li");
     li.className = "game-leader" + (me && row.user_id === me.id ? " is-you" : "");
@@ -2649,9 +2179,6 @@
 
   var boardTick = null;
 
-  /* loading. loading.. loading... — a second of nothing needs to look like
-     waiting rather than like nothing. Every call clears the one before, so
-     switching tabs twice quickly leaves one timer, not two. */
   function boardLoading(on) {
     if (boardTick) {
       clearInterval(boardTick);
@@ -2679,10 +2206,6 @@
       ? cloud.lifetime(BOARD_ROWS)
       : cloud.board(day, BOARD_ROWS);
 
-    /* Empty it now rather than when the rows land. Leaving the last board up
-       while the next one is fetched reads as though the tab did nothing, and
-       the counting dots say the wait is the network rather than a dead
-       button. */
     el.leadersList.textContent = "";
     show(el.leaders, true);
     boardLoading(true);
@@ -2722,18 +2245,9 @@
         show(el.leadersNote, false);
         return;
       }
-      /* You are on the board but below the part of it we drew. */
       (allTime ? cloud.myLifetime() : cloud.myPlace(day)).then(function (row) {
         if (boardDay !== stamp) return;
         if (!row) {
-          /* Played on this device but not on the board: the score is waiting on
-             something — a sign-in that has only just happened, or a post that
-             did not go through — and saying "you haven't played" would be a
-             plain untruth.
-
-             Played signed out is the ordinary version of that and deserves its
-             own line: the account is only being recognised now, today's score
-             was made before it existed, and tomorrow's will count. */
           var mine = readDaily();
           var playedToday = Boolean(mine && mine.day === dayKey());
           el.leadersNote.textContent = allTime
@@ -2761,10 +2275,6 @@
     });
   }
 
-  /* A short fade whenever the list is repainted. The class is taken off and put
-     back with a forced reflow between, or the animation would only ever play
-     the first time. Anyone who has asked for less motion gets none: the CSS
-     turns the animation off, and this is only a class either way. */
   function freshen() {
     if (!el.leadersList) return;
     el.leadersList.classList.remove("is-fresh");
@@ -2772,10 +2282,6 @@
     el.leadersList.classList.add("is-fresh");
   }
 
-  /* The banner is the way home. Mid-game it does what the menu button does —
-     puts the game down rather than throwing it away — and on the result screen
-     it goes back to the menu. On the menu itself there is nowhere to go, so it
-     just repaints: the page fades in as though it had been loaded again. */
   function repaint() {
     document.body.classList.remove("is-refreshing");
     void document.body.offsetWidth;
@@ -2826,9 +2332,6 @@
     el.tabAllTime.addEventListener("click", function () { pickTab("alltime"); });
   }
 
-  /* Posting is one insert, and the database refuses a second one for the same
-     day — which is the ordinary case, not a failure, so it is reported as
-     already being on the board rather than as something going wrong. */
   function postDaily(record) {
     if (!cloudOn()) return;
     if (!cloud.user()) {
@@ -2849,10 +2352,6 @@
     });
   }
 
-  /* You can play the daily and sign in afterwards — most people will, since
-     there is nothing to sign in for until you have a score. The row is written
-     when the account appears, not only at the moment the game ends, or that
-     score would never reach the board. */
   function postSavedDaily() {
     if (!cloudOn() || !cloud.user()) return;
     var record = readDaily();
@@ -2871,14 +2370,9 @@
     renderAccount();
     if (!cloudOn()) return;
     postSavedDaily();
-    /* On the first load nothing has moved the board yet, so put it on whichever
-       screen is actually showing — the result page if you have already played
-       today, the menu otherwise. */
     placeBoard(el.result && !el.result.hidden ? "result" : "menu");
     loadBoard();
   });
-
-  /* ---------- the name on the board ---------- */
 
   function openRename() {
     if (!cloudOn() || !el.renameForm) return;
@@ -2915,12 +2409,6 @@
       show(el.nameNote, true);
       cloud.setName(wanted).then(function (res) {
         if (!res.ok) {
-          /* Two kinds of no. A name refused for what it says is an ordinary
-             answer, and the refusal already reads as a sentence — whether it
-             came from the page or from the trigger in the database — so it is
-             shown as it is, with whatever it says about why. Anything else is
-             a fault, and its reason is the only clue there is, so that is
-             shown rather than swallowed. */
           var why = res.reason || "";
           el.nameNote.textContent = /not allowed/i.test(why)
             ? why + " — try another."
@@ -2933,7 +2421,6 @@
           return;
         }
         closeRename();
-        /* Your name is on every row you own, so the board is redrawn. */
         loadBoard();
       });
     });
@@ -2958,8 +2445,6 @@
     });
   }
 
-  /* ---------- wiring ---------- */
-
   function send(entry, label) {
     el.input.disabled = true;
     el.submit.disabled = true;
@@ -2979,9 +2464,6 @@
 
     var entry = standing();
     if (!entry) {
-      /* The box only sends names it offered. Saying so and putting the list
-         back up is the whole of the refusal: it costs nothing, the round is
-         still on, and the name they want is almost always on the screen. */
       el.ask.textContent = "pick a city from the list";
       show(el.ask, true);
       openSuggest();
@@ -2998,10 +2480,6 @@
     if (cfg.levels.length && hasRegion(cfg)) start(cfg);
   });
 
-  /* Copying is the whole feature: the link is written for the game the start
-     button beside it would begin, so sending it and then playing gives you
-     both the same maps in the same order. Where the clipboard is refused the
-     link is shown instead, which is still something you can select. */
   if (el.setupShare) {
     el.setupShare.addEventListener("click", function () {
       var cfg = readSetup();
@@ -3025,7 +2503,6 @@
   if (el.setupContinue) {
     el.setupContinue.addEventListener("click", function () {
       if (!restore(STORE_KEY, true)) {
-        /* The slot went stale between the menu being drawn and this click. */
         forget(STORE_KEY);
         refreshContinue();
       }
@@ -3048,25 +2525,12 @@
     }
   });
 
-  /* ---------- the keyboard on a phone ----------
-     iOS puts its own strip above the keyboard (the arrows and Done) and, when
-     the address bar is collapsed, a pill with the domain. Neither belongs to
-     this page and neither can be removed by it — the way to be rid of them is
-     to add the game to the home screen, which the manifest on this page makes
-     possible. What the page can do is make sure the keyboard never lands on
-     top of the guess field: visualViewport reports the part of the window the
-     keyboard has not taken, so when the field falls below that line the page
-     scrolls by exactly the overlap and no further, leaving the map above it. */
   (function keepFieldAboveKeyboard() {
     var vv = window.visualViewport;
     if (!vv) return;
 
     function adjust() {
       if (document.activeElement !== el.input) return;
-      /* Only when a keyboard is actually up. Without this the same arithmetic
-         runs on a desktop, where the visible viewport is the whole window, and
-         nudges the page down a few pixels the moment a round starts — enough
-         to slide the banner under the fixed name and back link. */
       if (window.innerHeight - vv.height < 120) return;
       var box = el.input.getBoundingClientRect();
       var floor = vv.height + vv.offsetTop;
@@ -3076,7 +2540,6 @@
 
     vv.addEventListener("resize", adjust);
     vv.addEventListener("scroll", adjust);
-    /* The keyboard animates in, so the first measurement has to wait for it. */
     el.input.addEventListener("focus", function () {
       setTimeout(adjust, 120);
       setTimeout(adjust, 400);
@@ -3088,8 +2551,6 @@
       emptyAsked = false;
       show(el.ask, false);
     }
-    /* Editing the text lets go of whatever was picked: the box is standing for
-       what it says, and it no longer says that. */
     picked = null;
     openSuggest();
   });
@@ -3106,15 +2567,11 @@
       return;
     }
     if (e.key === "Enter" && !el.suggest.hidden && active !== -1) {
-      /* Enter takes the row the arrows are on. With nothing on it the form
-         submits as usual, so enter never answers on your behalf. */
       e.preventDefault();
       take(shown[active]);
       return;
     }
     if (e.key === "Escape" && !el.suggest.hidden) {
-      /* Shut the list, and do not let this reach the handler that leaves the
-         game — one escape, one thing closed. */
       e.preventDefault();
       e.stopPropagation();
       closeSuggest();
@@ -3123,8 +2580,6 @@
     if (e.key === "Tab") closeSuggest();
   });
 
-  /* Pressing a row must not take the keyboard away before the click lands,
-     which on a phone would close the list out from under the finger. */
   el.suggest.addEventListener("mousedown", function (e) {
     e.preventDefault();
   });
@@ -3148,8 +2603,6 @@
   });
 
   if (window.visualViewport) {
-    /* The keyboard coming up is what decides which side of the field the list
-       goes on, and it arrives as a viewport resize. */
     window.visualViewport.addEventListener("resize", function () {
       if (!el.suggest.hidden) placeSuggest();
     });
@@ -3161,16 +2614,11 @@
   });
   el.change.addEventListener("click", toIntro);
 
-  /* In an endless game, stopping is how it ends — so show the recap rather
-     than throwing the run away. A fixed-length game you quit is abandoned. */
   function leave() {
     if (state && state.cfg.length === Infinity && state.log.length) {
       finish();
       return;
     }
-    /* Anything still running is put down rather than thrown away: the daily so
-       that leaving is not a way to start it over, a custom game so that you can
-       come back to it from the menu. */
     if (state && state.index < state.total) save(true);
     toIntro();
   }
@@ -3182,7 +2630,6 @@
       advance();
       return;
     }
-    /* Escape leaves the game and goes back to the level buttons. */
     if (e.key === "Escape" && state && !el.board.hidden) {
       e.preventDefault();
       leave();
@@ -3205,9 +2652,6 @@
         })
         .then(function (list) {
           manifest = list;
-          /* The catalog is the guess box's manners, not the game itself: if it
-             will not load, the box still offers every city in play and the
-             game is playable. */
           return fetch(CATALOG_URL, { cache: "reload" })
             .then(function (r) {
               return r.ok ? r.json() : null;
@@ -3231,10 +2675,6 @@
       renderSetup();
       var hash = (location.hash || "").replace("#", "");
 
-      /* A link somebody sent you is a decision, so it is answered before any
-         game this browser had going. The hash is then dropped, or reloading
-         the page would deal the game again from the top rather than resuming
-         where you had got to. */
       var shared = decodeCfg(hash);
       if (shared) {
         start(shared);
@@ -3246,7 +2686,6 @@
       if (restore(STORE_KEY)) return;
       refreshContinue();
 
-      /* Old links like /game/#hard still work: they preselect and start. */
       var allLevels = levels().map(function (t) { return t.id; });
       var allConts = continents().map(function (t) { return t.id; });
       if (hash === "daily") {
@@ -3262,8 +2701,6 @@
         if (cont) start({ levels: allLevels, continents: [cont.id], length: 10 });
       }
 
-      /* Pasting #daily into a tab that is already open changes the hash without
-         reloading, so listen for that too. */
       window.addEventListener("hashchange", function () {
         var now = (location.hash || "").replace("#", "");
         if (now === "daily") return startDaily();
@@ -3275,8 +2712,6 @@
       });
     })
     .catch(function (err) {
-      /* Anything thrown while starting up used to vanish into this handler and
-         surface only as "could not be loaded". Say it out loud. */
       if (window.console && console.error) console.error("citylayoutguessr:", err);
       show(el.setup, false);
       show(el.empty, true);

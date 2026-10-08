@@ -1,15 +1,6 @@
-/* Familjen Grotesk, served from this site rather than Google Fonts, so it
-   arrives with the page instead of a moment after it. Each page preloads the
-   upright Latin file, the one every header uses.
-
-   font-display: block on the upright faces: for the fraction of a second the
-   file is still on its way the words are held back, rather than drawn in
-   another typeface and then swapped, which was the flicker on a first visit.
-   The italics are rarer and swap as usual.
-
-   Copyright 2021 The Familjen Grotesk Project Authors, SIL Open Font License
+/* Copyright 2021 The Familjen Grotesk Project Authors, SIL Open Font License
    1.1 (OFL.txt in this folder). Files from @fontsource-variable/familjen-grotesk
-   5.3.0, the same subsets Google Fonts serves. */
+   5.3.0. */
 
 @font-face {
   font-family: "Familjen Grotesk";

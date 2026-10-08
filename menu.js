@@ -1,19 +1,3 @@
-// Eight links behind one mark.
-//
-// What used to be here showed four of them at a time and changed itself every
-// five seconds. A list that moves while you are reading it is a list you
-// cannot use, and eight links do not have to sit across the top of the page to
-// be findable. They are all in the markup, in one panel, and the nine squares
-// open it.
-//
-// Everything visible is done in the stylesheet, off one attribute on the
-// container. This file only decides when that attribute changes -- and what
-// the keyboard, the rest of the page, and the scroll should be able to do
-// about it.
-//
-// On devices that support hover (desktop mice), the menu opens when the
-// pointer enters the container and closes when it leaves. Touch and keyboard
-// still toggle on click/enter, because a finger has no hover state.
 (function () {
   var menu = document.getElementById("site-menu");
   if (!menu) return;
@@ -25,12 +9,8 @@
   var open = false;
   var openedAt = 0;
 
-  // a short grace period so the panel does not snap shut when the pointer
-  // crosses a gap between the button and the panel.
   var leaveTimer = null;
 
-  /* Closed, the links are not in the tab order: a panel nobody can see is not
-     a place the keyboard should be able to arrive at. */
   function setOpen(next, focusFirst) {
     if (open === next) return;
     open = next;
@@ -62,9 +42,6 @@
   panel.setAttribute("inert", "");
   menu.setAttribute("data-open", "false");
 
-  /* ---- pointer hover (desktop) ---- */
-  // matchMedia is checked once: if the device can hover, wire up the
-  // enter/leave pair. Touch-only devices skip this entirely.
   if (window.matchMedia("(hover: hover)").matches) {
     menu.addEventListener("mouseenter", function () {
       cancelLeave();
@@ -73,21 +50,17 @@
 
     menu.addEventListener("mouseleave", function () {
       cancelLeave();
-      // 300 ms grace: enough to cross the gap between button and panel
-      // at a leisurely pace, short enough to feel responsive.
       leaveTimer = setTimeout(function () {
         close(false);
       }, 300);
     });
   }
 
-  /* ---- click (touch / keyboard fallback) ---- */
   button.addEventListener("click", function (event) {
     event.stopPropagation();
     setOpen(!open, false);
   });
 
-  /* Down from the button walks into the list, which is what a menu does. */
   button.addEventListener("keydown", function (event) {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
@@ -102,8 +75,6 @@
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       var step = event.key === "ArrowDown" ? 1 : -1;
-      /* Round, rather than stopping at the ends: with eight of them the way
-         to the last is up from the first. */
       var next = (here + step + links.length) % links.length;
       links[next].focus({ preventScroll: true });
     } else if (event.key === "Home" || event.key === "End") {
@@ -112,8 +83,6 @@
     }
   });
 
-  /* A link that opens in a new tab leaves this page where it was, with the
-     panel still hanging open over it. */
   links.forEach(function (link) {
     link.addEventListener("click", function () {
       close(false);
@@ -126,17 +95,11 @@
     close(true);
   });
 
-  /* Anywhere else on the page. pointerdown rather than click so it closes on
-     the way down, before whatever was pressed happens. */
   document.addEventListener("pointerdown", function (event) {
     if (!open || menu.contains(event.target)) return;
     close(false);
   });
 
-  /* The header fades on the way down the page and takes the mark with it, so a
-     panel left open would be hanging off something invisible. A little travel
-     is allowed first: a phone that jogs a few pixels under a thumb has not
-     scrolled. */
   window.addEventListener(
     "scroll",
     function () {

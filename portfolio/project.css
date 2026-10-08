@@ -1,11 +1,8 @@
-/* One project's page, opened from a card on /portfolio/. The same room as
-   the portfolio -- black on white, Familjen Grotesk -- with the project's
-   own colour on its domain and its buttons. */
 :root {
   --paper: #ffffff;
   --ink: #0b0b0b;
-  --ink-2: #4a4a4a; /* 9.0:1 on white */
-  --ink-3: #6b6b6b; /* 5.3:1 on white, the floor for small text */
+  --ink-2: #4a4a4a;
+  --ink-3: #6b6b6b;
   --rule: #0b0b0b;
   --hair: #e4e4e4;
   --wash: #f4f4f2;
@@ -53,8 +50,6 @@ a {
   border-radius: 2px;
 }
 
-/* ---------------- top line ---------------- */
-
 .top {
   display: flex;
   justify-content: space-between;
@@ -74,8 +69,6 @@ a {
   text-decoration-thickness: 1.5px;
 }
 
-/* The way back to the gallery: an outlined pill in the top right, easy to
-   find, that fills with ink under the pointer. */
 .top {
   align-items: center;
 }
@@ -105,14 +98,10 @@ a {
   }
 }
 
-/* ---------------- the project ---------------- */
-
 .proj {
   padding: clamp(56px, 10vh, 120px) var(--gutter) 0;
 }
 
-/* The name as large as the window allows: --em is the name's width in its
-   own em, so the longest still fits a phone's column. */
 .p-head {
   display: flex;
   flex-wrap: wrap;
@@ -156,7 +145,6 @@ a {
   text-wrap: pretty;
 }
 
-/* The site in a plain window, a picture only. */
 .frame {
   margin: 0;
   border: 1px solid var(--rule);
@@ -188,9 +176,6 @@ a {
   border: 1px solid #bdbdbd;
 }
 
-/* The screenshots, one to a frame, side by side in a strip that scrolls
-   sideways and stops on each: a swipe on a phone, the arrows or the arrow
-   keys anywhere. */
 .track {
   display: flex;
   overflow-x: auto;
@@ -249,8 +234,6 @@ a {
   gap: 8px;
 }
 
-/* The arrows are drawn, not typed: the typeface has no arrow, so a typed
-   one came from whatever font the system had, and sat low in the circle. */
 .arrow {
   display: inline-grid;
   place-items: center;
@@ -288,7 +271,6 @@ a {
   }
 }
 
-/* Two notes under the picture: how it works, and where it came from. */
 .notes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -315,7 +297,6 @@ a {
   text-wrap: pretty;
 }
 
-/* The last paragraph of a note ends the note: no room under it. */
 .note-col p:last-child {
   margin-bottom: 0;
 }
@@ -337,11 +318,7 @@ a {
   line-height: 1.2;
 }
 
-/* Who it's for: the kinds of people who would use it, in groups, under the
-   two notes. Two columns on a wide screen, one on a phone. */
 .uses {
-  /* Close under the notes, so a short Inspiration note is not followed by
-     a wide gap before this line. */
   margin-top: clamp(36px, 5vh, 48px);
   padding-top: 16px;
   border-top: 1px solid var(--rule);
@@ -384,7 +361,6 @@ a {
   text-wrap: pretty;
 }
 
-/* The site's mark, small, for a bullet: half square, half circle. */
 .use-group li::before {
   content: "";
   position: absolute;
@@ -400,7 +376,6 @@ a {
   margin-top: clamp(40px, 6vh, 64px);
 }
 
-/* The way to the site: a pill in the product's colour. */
 .go {
   display: inline-flex;
   flex: none;
@@ -446,7 +421,6 @@ a {
   }
 }
 
-/* The next project, so a reader can go on without going back. */
 .next {
   display: flex;
   justify-content: space-between;
@@ -501,7 +475,6 @@ a {
   color: var(--ink);
 }
 
-/* Arrival: the name, then the picture, rise into place once. */
 .p-head,
 .p-meta,
 .p-lede,

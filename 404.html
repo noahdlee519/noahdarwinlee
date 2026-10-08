@@ -9,14 +9,9 @@
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <!-- The site's typeface, served from here; see fonts/fonts.css. -->
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/styles.css" />
-    <!-- Before the first paint: a remembered choice, otherwise the system's.
-         The attribute is always written, so the stylesheet never has to guess
-         and the page never flashes the other theme on the way in. The rest of
-         the switch is in theme.js; this part cannot wait for a fetch. -->
     <script>
       (function () {
         var t = null;
@@ -38,8 +33,6 @@
         margin-top: 8px;
       }
 
-      /* The number is the page's one big thing; everything else on it is the
-         site's ordinary 22px. */
       .notfound h1 {
         margin: 0 0 6px;
         font-size: clamp(120px, 24vw, 280px);
@@ -48,18 +41,11 @@
         letter-spacing: -0.045em;
       }
 
-      /* The number is the way home. */
       .notfound h1 a {
         color: inherit;
         text-decoration: none;
       }
 
-      /* ---- the anagrams ----
-         The name on top, one rearrangement of it underneath, and a thin line
-         from each letter to the same letter below. Clicking the name brings
-         the next one. Letters are spaced wide so the lines have room to land
-         on a letter rather than between two. */
-      /* The whole figure is the button: the name, the lines and the phrase. */
       .anagram {
         position: relative;
         cursor: pointer;
@@ -131,8 +117,6 @@
         stroke-linecap: round;
       }
 
-      /* The page borrows .cv-page for its header, and with it the CV's 1.25em
-         indent on every paragraph in main. Neither of these is a CV entry. */
       .cv-page main p.ana-phrase {
         margin: 0;
       }
@@ -191,7 +175,6 @@
 
         var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-        // One span per letter, so each can be found and measured.
         function spell(el, text) {
           el.innerHTML = text
             .split("")
@@ -203,15 +186,10 @@
             .join("");
         }
 
-        // How the letters arrive: each is a copy that lifts off its letter in
-        // the name and drops into place below, in the name's order, N first.
-        // About a second for the lot.
-        var STEP = 45; // between one letter leaving and the next
-        var FALL = 420; // how long one letter takes to land
-        var EASE = "cubic-bezier(0.6, 0, 0.3, 1)"; // gathers speed, then settles
+        var STEP = 45;
+        var FALL = 420;
+        var EASE = "cubic-bezier(0.6, 0, 0.3, 1)";
 
-        // Pair each letter of the name with the same letter below, first with
-        // first, second with second. A letter with no partner gets no line.
         function draw(animate) {
           var top = Array.prototype.slice.call(nameEl.querySelectorAll(".ch"));
           var bottom = Array.prototype.slice.call(phraseEl.querySelectorAll(".ch"));
@@ -232,8 +210,6 @@
           var NS = "http://www.w3.org/2000/svg";
           var moving = animate && !reduce;
           pairs.forEach(function (pr, k) {
-            // Layout positions, not painted ones, so a letter still in the air
-            // does not bend its line.
             var a = pr[0], z = pr[1];
             var x1 = a.offsetLeft + a.offsetWidth / 2, y1 = a.offsetTop + a.offsetHeight + 6;
             var x2 = z.offsetLeft + z.offsetWidth / 2, y2 = z.offsetTop - 6;
@@ -253,12 +229,9 @@
               [{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "translate(0px, 0px)" }],
               timing
             );
-            // The line pays out behind the letter, its end riding with it.
             line.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], timing);
           });
 
-          // Letters the name has no partner for, and the comma, appear once
-          // the rest have landed.
           if (moving) {
             var after = Math.max(0, pairs.length * STEP + FALL - 160);
             Array.prototype.forEach.call(phraseEl.querySelectorAll(".ch, .pn"), function (el) {
@@ -275,8 +248,6 @@
         }
 
         spell(nameEl, NAME);
-        // Wait for the typeface before the first drawing, so the lines land
-        // on the letters they will stay on.
         var started = false;
         var start = function () {
           if (started) return;
@@ -285,13 +256,11 @@
         };
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(start);
         setTimeout(start, 700);
-        // A click anywhere on the figure, the name's included, brings the next.
         box.addEventListener("click", function () {
           at = (at + 1) % PHRASES.length;
           show(true);
         });
 
-        // Redraw without animating when the window changes size.
         var settle = function () {
           draw(false);
         };

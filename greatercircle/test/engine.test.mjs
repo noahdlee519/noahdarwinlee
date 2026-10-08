@@ -1,8 +1,3 @@
-// node --test test/   (from greatercircle/)
-//
-// The engine against d3-geo, and against what a route must satisfy: never
-// inside an avoided country, no longer than it has to be, the same length in
-// either direction.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -15,7 +10,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const G = require(resolve(here, "../engine.js"));
 
-// The vendored UMD bundles, run in a bare context so they attach to a global.
 const ctx = vm.createContext({});
 for (const f of ["d3-array", "d3-geo", "topojson-client", "topojson-simplify"]) {
   vm.runInContext(readFileSync(resolve(here, "../vendor", f + ".min.js"), "utf8"), ctx, { filename: f });
@@ -28,7 +22,7 @@ const byName = new Map(world.features.map((f) => [f.properties.name, f]));
 const feat = (name) => { const f = byName.get(name); if (!f) throw new Error("no feature " + name); return f; };
 const KM = G.EARTH_RADIUS_KM;
 
-function rand(seed) { // mulberry32
+function rand(seed) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
@@ -48,7 +42,6 @@ test("lon/lat ↔ vector round trip and angles agree with d3", () => {
 });
 
 test("distances: sphere and ellipsoid in the known range", () => {
-  // Paris – New York: 5,838 km on the sphere, 5,853 km on the ellipsoid.
   const e = G.ellipsoidDistanceKm(2.3522, 48.8566, -74.006, 40.7128);
   assert.ok(Math.abs(e - 5853) < 3, String(e));
   const s = G.sphereDistanceKm(2.3522, 48.8566, -74.006, 40.7128);
@@ -61,12 +54,10 @@ test("signed area: sign follows winding and magnitude matches d3", () => {
   const a = G.sphericalSignedArea(ccw);
   assert.ok(a > 0, "anticlockwise (as seen from outside) is positive");
   assert.ok(G.sphericalSignedArea([...ccw].reverse()) < 0);
-  // d3 wants clockwise exterior rings.
   const d = d3.geoArea({ type: "Polygon", coordinates: [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]] });
   assert.ok(Math.abs(Math.abs(a) - d) < 1e-9, `${a} vs ${d}`);
 });
 
-// A 10°×10° square as a clockwise GeoJSON polygon, the way the data is wound.
 const square = { type: "Feature", id: "sq", properties: { name: "Square" },
   geometry: { type: "Polygon", coordinates: [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]] } };
 
@@ -83,14 +74,12 @@ test("arcs against a square: crossing, touching, running along, through a corner
   assert.ok(G.arcIsFree(obs, V(0, 0), V(10, 0), cornerAt(0, 0), cornerAt(10, 0)), "runs along the bottom edge");
   assert.ok(G.arcIsFree(obs, V(0, 20), V(0, 0), -1, cornerAt(0, 0)), "runs along the west edge from beyond");
   assert.ok(!G.arcIsFree(obs, V(0, 0), V(10, 10), cornerAt(0, 0), cornerAt(10, 10)), "the diagonal goes through");
-  // Through the corner (10,10) transversally: reflect an outside point through it.
   const w = V(10, 10), v = V(15, 15), dot = v[0] * w[0] + v[1] * w[1] + v[2] * w[2];
   const b = G.normalize([2 * dot * w[0] - v[0], 2 * dot * w[1] - v[1], 2 * dot * w[2] - v[2]]);
   assert.ok(G.angleBetween(b, V(5, 5)) < 0.02, "the reflection lands inside");
   assert.ok(!G.arcIsFree(obs, v, b, -1, -1), "passes straight through the corner");
   assert.ok(G.arcIsFree(obs, v, w, -1, -1), "ends on the corner from outside");
   assert.ok(!G.arcIsFree(obs, w, b, -1, -1), "starts on the corner and goes in");
-  // Points in and out.
   assert.deepEqual(G.featuresContaining(obs, V(5, 5)), [0]);
   assert.deepEqual(G.featuresContaining(obs, V(-1, 5)), []);
   assert.deepEqual(G.featuresContaining(obs, V(5, 10.3)), [], "north of the top edge but south of its bulge? no: 10.3 is above the chord too");
@@ -111,10 +100,6 @@ test("arcs along the square's edges in either direction, and endpoints on edges"
   assert.ok(!G.arcIsFree(obs, V(0, 5), V(10, 5), -1, -1), "edge to edge through the middle");
 });
 
-// An S: two bars, the equator the bottom of the upper one from 0 to 5 and the
-// top of the lower one from 15 to 20, and inside the obstacle between. The
-// arc from corner (0,0) to corner (20,0) runs along the boundary, then through
-// the obstacle, then along the boundary again.
 const sShape = { type: "Feature", id: "s", properties: { name: "S" },
   geometry: { type: "Polygon", coordinates: [[[0, 0], [5, 0], [5, -5], [20, -5], [20, 0], [15, 0], [15, 5], [0, 5], [0, 0]]] } };
 
@@ -129,7 +114,6 @@ test("an arc that runs along a straight border and then into the obstacle is blo
   assert.ok(G.arcIsFree(obs, V(0, 0), V(5, 0), cornerAt(0, 0), -1), "but along the first run alone is fine");
   const route = G.findRoute(obs, V(-2, 0), V(22, 0));
   assert.equal(route.status, "done");
-  // Over the top: (-2,0)→(0,5)→(15,5)→(22,0), 5.39° + 14.94° + 8.60°.
   const deg = route.length * 180 / Math.PI;
   assert.ok(deg > 28.9 && deg < 28.95, `goes round: ${deg}°`);
   assert.equal(route.waypoints.length, 4);
@@ -148,9 +132,6 @@ test("antipodes: a free semicircle is found, and obstacles are not ignored", () 
   assert.ok(r.antipodal);
   assert.ok(Math.abs(r.length - Math.PI) < 1e-9);
   assertOutside(r, obs, ["Ghana", "United Kingdom", "Algeria"]);
-  // No semicircle free: ring the start with obstacles? Hard to build; at least
-  // the nudged search must still answer when every meridian is blocked near
-  // the start by a band.
   const band = { type: "Feature", id: "band", properties: { name: "band" }, geometry: { type: "Polygon", coordinates: [[[-179, 20], [-179, 30], [179, 30], [179, 20], [-179, 20]]] } };
   const obs2 = G.buildObstacles([band]);
   const r2 = G.findRoute(obs2, G.toVec(0, 0), G.toVec(180, 0));
@@ -166,7 +147,6 @@ test("a route around the square bends at its corners and is the shortest", () =>
   assert.equal(s.waypoints.length, 4, "start, two corners, end");
   const direct = G.angleBetween(a, b);
   assert.ok(s.length > direct);
-  // Compare with the two obvious candidates: over the top or under the bottom.
   const via = (c1, c2) => G.angleBetween(a, c1) + G.angleBetween(c1, c2) + G.angleBetween(c2, b);
   const top = via(G.toVec(0, 10), G.toVec(10, 10)), bottom = via(G.toVec(0, 0), G.toVec(10, 0));
   assert.ok(Math.abs(s.length - Math.min(top, bottom)) < 1e-12, `${s.length} vs ${top} / ${bottom}`);
@@ -191,11 +171,8 @@ test("point in country agrees with d3.geoContains (Russia, USA, South Africa, It
       if (mine !== theirs) mismatches.push([names[fi], lon.toFixed(4), lat.toFixed(4), mine, theirs]);
     }
   }
-  // Agreement away from boundaries; the two models differ only by how an edge
-  // is drawn between vertices, and a point can only disagree within that.
   console.log(`  point-in-polygon: ${mismatches.length} of ${total} differ from d3 ${JSON.stringify(mismatches.slice(0, 3))}`);
   assert.ok(mismatches.length <= total * 0.002, `${mismatches.length} of ${total}: ${JSON.stringify(mismatches.slice(0, 5))}`);
-  // Lesotho is a hole in South Africa.
   assert.equal(G.featuresContaining(obs, G.toVec(28.2, -29.6)).includes(names.indexOf("South Africa")), false, "Maseru is not in South Africa");
   assert.equal(G.featuresContaining(obs, G.toVec(28.0, -26.2)).includes(names.indexOf("South Africa")), true, "Johannesburg is");
   assert.equal(G.featuresContaining(obs, G.toVec(12.434, 41.902)).includes(names.indexOf("Italy")), false, "the Vatican is not in Italy");
@@ -213,16 +190,12 @@ function samplePath(waypoints, step = 0.002) {
   return pts;
 }
 
-// Every sampled point of the route must be outside every avoided feature, or
-// else on its boundary (the route lies against the obstacles it goes round).
 function assertOutside(route, obs, names) {
   const pts = samplePath(route.waypoints);
   let onBoundary = 0;
   for (const p of pts) {
     const inside = G.featuresContaining(obs, p);
     if (inside.length) {
-      // featuresContaining already treats boundary points as outside; so an
-      // "inside" here is real unless it is within a hair of an edge.
       const d = distanceToEdges(obs, p);
       assert.ok(d < 1e-9, `route point ${G.toLonLat(p)} is inside ${names[inside[0]]} by ${(d * KM).toFixed(3)} km`);
       onBoundary++;
@@ -277,7 +250,6 @@ function scenario(from, to, avoid, expect) {
       const back = G.findRoute(obs, vec(to), vec(from));
       assert.equal(back.status, "done");
       assert.ok(Math.abs(back.length - route.length) < 1e-9, `asymmetric: ${back.length} vs ${route.length}`);
-      // Stepping in slices gives the same answer as one go.
       const s = G.startSearch(obs, vec(from), vec(to));
       let steps = 0;
       while (s.status === "running") { G.stepSearch(s, 2); steps++; }
@@ -306,11 +278,8 @@ scenario("Moscow", "Tokyo", ["Russia"], { status: "inside" });
 scenario("Maseru", "Nairobi", ["South Africa"], { status: "none" });
 scenario("Johannesburg", "Tokyo", ["Indonesia", "Australia", "India", "China", "Russia", "Brazil", "Canada", "United States", "Greenland", "Norway", "Philippines", "Vietnam", "Thailand", "Myanmar", "Malaysia"], { status: "done", maxRatio: 2, maxMs: 15000 });
 
-// ---- drawn regions: turned inside out, and grown by a buffer
-
 const poly = (id, coords, props = {}) => ({ type: "Feature", id, properties: { name: id, ...props }, geometry: { type: "Polygon", coordinates: [coords.concat([coords[0]])] } });
 const V = (lon, lat) => G.toVec(lon, lat);
-// Angular distance from p to the arc a–b.
 function distToArc(p, a, b) {
   const n = G.normalize([a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]);
   const d = p[0] * n[0] + p[1] * n[1] + p[2] * n[2];
@@ -338,7 +307,6 @@ test("an inverted region is everything outside its ring, whichever way it was dr
     assert.equal(free.waypoints.length, 2, "two points inside see each other");
     const out = G.findRoute(obs, V(2, 2), V(30, 5));
     assert.equal(out.status, "inside");
-    // the same ring not inverted is the square itself, as before
     const plain = G.buildObstacles([poly("r1", ring)]);
     assert.deepEqual(G.featuresContaining(plain, V(5, 5)), [0]);
     assert.deepEqual(G.featuresContaining(plain, V(30, 5)), []);
@@ -347,7 +315,7 @@ test("an inverted region is everything outside its ring, whichever way it was dr
 
 test("inside an inverted L, the route bends round the inner corner and stays in the L", () => {
   const L = [[0, 0], [20, 0], [20, 6], [6, 6], [6, 20], [0, 20]];
-  const lFeature = poly("L", L.slice().reverse()); // clockwise, so d3 reads it as the L itself
+  const lFeature = poly("L", L.slice().reverse());
   for (const ring of [L, L.slice().reverse()]) {
     const obs = G.buildObstacles([poly("r1", ring, { invert: true })]);
     const r = G.findRoute(obs, V(18, 3), V(3, 18));
@@ -367,7 +335,6 @@ test("buffer pieces are small, clockwise for d3, and cover the ring's edges and 
     assert.deepEqual(r[0], r[r.length - 1], "closed");
   }
   assert.deepEqual(G.bufferRings(SQUARE, 0), []);
-  // Every point within 200 km of the square's edge is in some piece.
   const pieces = rings.map((r) => ({ type: "Feature", geometry: { type: "Polygon", coordinates: [r] } }));
   const rnd = rand(7);
   for (let i = 0; i < 3000; i++) {
@@ -386,7 +353,6 @@ test("a buffered region keeps the route at least the buffer away, and no further
     const dmin = Math.min(...routePoints(r).map((p) => distToSquare(p) * KM));
     assert.ok(dmin >= km - 0.01, `${km} km buffer: the route comes no nearer than ${dmin.toFixed(2)} km`);
     assert.ok(dmin <= km + 6, `${km} km buffer: it hugs the buffer (${dmin.toFixed(2)} km)`);
-    // a point within the buffer is reported as inside the region's pieces
     const inside = G.findRoute(obs, V(-0.5, 5), V(22, 6));
     assert.equal(inside.status, "inside");
   }
