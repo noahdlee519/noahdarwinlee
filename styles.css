@@ -1409,9 +1409,18 @@ a[href="/cv/"]:active {
 
   .art-index {
     display: block;
-    position: absolute;
+    position: fixed;
+    top: calc(var(--page-top) + 104px);
     right: var(--page-left);
     width: 200px;
+    max-height: calc(100vh - var(--page-top) - 128px);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  html.has-back .art-index {
+    top: calc(var(--page-top) + 137px);
+    max-height: calc(100vh - var(--page-top) - 161px);
   }
 
   .art-index ul {
@@ -1436,7 +1445,8 @@ a[href="/cv/"]:active {
   }
 
   .art-index a:hover,
-  .art-index a:focus-visible {
+  .art-index a:focus-visible,
+  .art-index a[aria-current="true"] {
     opacity: 1;
     text-decoration: underline;
     text-underline-offset: 3px;
