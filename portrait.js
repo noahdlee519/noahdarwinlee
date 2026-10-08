@@ -110,10 +110,12 @@
     var GX = gridSpec ? +gridSpec[1] : 4;
     var GY = gridSpec ? +gridSpec[2] : 4;
     // With a cut asked for, on a phone, every square should be square: the
-    // picture loses the rows it has over, half from the top and half from
-    // the bottom (on the front page, half a tile each), so GY squares of
-    // COLS/GX tiles fill it exactly. The tiles stay where they were; the
-    // canvas just shows a band of them.
+    // picture loses the rows it has over, so GY squares of COLS/GX tiles fill
+    // it exactly. Whole rows only, so no tile at the edge is cut through its
+    // circle: an even number come off half from the top and half from the
+    // bottom, and an odd one from the bottom (on the front page, the one
+    // bottom row). The tiles stay where they were; the canvas just shows a
+    // band of them.
     var CROP = 0;
     if (gridSpec && !fine && COLS % GX === 0) {
       var need = GY * (COLS / GX);
@@ -157,8 +159,8 @@
       base = m.base;
       cssW = base * COLS;
       cssH = base * ROWS;
-      OFF = (base * CROP) / 2;
-      viewH = cssH - 2 * OFF;
+      OFF = base * Math.floor(CROP / 2);
+      viewH = cssH - base * CROP;
       dpr = m.dpr;
       canvas.style.width = cssW + "px";
       canvas.style.height = viewH + "px";
