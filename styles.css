@@ -541,6 +541,12 @@ body.is-folded {
   .materials-page .site-foot {
     padding-left: var(--page-left);
   }
+
+  /* Folded, the body carries that inset itself, so the foot line does not
+     add it again and starts at 24 like every other page's. */
+  .materials-page.is-folded .site-foot {
+    padding-left: 0;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1669,6 +1675,23 @@ a[href="/cv/"]:active {
   display: none;
 }
 
+/* Folded, the message box should sit where it does on every other page. On
+   the others the page's name is out of the column, and the box's share of the
+   free space is measured from the column's top; here "art" is in it, with
+   room under it for the pictures. Folded, that room is taken back, so the
+   box's space starts where it does elsewhere. */
+@media (min-width: 901px) {
+  .art-main:has(.art-gallery.is-collapsed) .art-toggle {
+    margin-bottom: -8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .art-main:has(.art-gallery.is-collapsed) .art-toggle {
+    margin-bottom: 8px;
+  }
+}
+
 /* ---- the list of projects, on the right ----
    Desktop only. It sits inside the gallery, so it folds away with it, but it
    is placed against the column: level with the first project, at the right
@@ -2448,6 +2471,13 @@ body.is-zoomed {
   }
 
   .index-page {
+    padding-top: 16px;
+  }
+
+  /* Art too: its own padding (one line under the name, for the desktop's
+     fixed header) outranked the line above and put its header 42px lower on
+     a phone than on every other page. */
+  .index-page.art-page {
     padding-top: 16px;
   }
 
