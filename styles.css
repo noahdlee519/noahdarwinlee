@@ -1204,11 +1204,12 @@ a[href="/cv/"]:active {
   margin-top: 12px;
 }
 
+/* A plain word, flush with the box above it, underlined in white under the
+   pointer like the links in the bio. */
 .feedback-send {
   appearance: none;
-  padding: 6px 18px 7px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
+  padding: 6px 0 7px;
+  border: 0;
   background: none;
   color: inherit;
   font: inherit;
@@ -1229,8 +1230,19 @@ a[href="/cv/"]:active {
 
 @media (hover: hover) and (pointer: fine) {
   .feedback-send:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.18);
+    text-decoration: underline;
+    text-decoration-color: #ffffff;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
   }
+}
+
+.feedback-send:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-decoration-color: #ffffff;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 }
 
 .feedback-status {
