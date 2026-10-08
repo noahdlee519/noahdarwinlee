@@ -340,8 +340,8 @@ a {
 /* Who it's for: the kinds of people who would use it, in groups, under the
    two notes. Two columns on a wide screen, one on a phone. */
 .uses {
-  /* Close under the notes: the room between them and this line was most of
-     a screen on a phone, after the short Inspiration note. */
+  /* Close under the notes, so a short Inspiration note is not followed by
+     a wide gap before this line. */
   margin-top: clamp(36px, 5vh, 48px);
   padding-top: 16px;
   border-top: 1px solid var(--rule);
