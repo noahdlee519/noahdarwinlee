@@ -37,6 +37,7 @@ const RENAME = {
   CIV: "Ivory Coast", CPV: "Cape Verde",
 };
 const FOLD = { KAB: "KAZ" };
+const PROVINCE_NAME = { "RU-ALT": "Altai Krai" };
 
 const kmArea = (geom) => { const a = d3.geoArea(geom); return Math.min(a, 4 * Math.PI - a) * EARTH * EARTH; };
 const need = (name) => { if (!files.has(name)) throw new Error("missing source file " + name); return files.get(name); };
@@ -54,7 +55,7 @@ for (const f of geo.features) {
   const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
   const areas = polys.map((c) => kmArea({ type: "Polygon", coordinates: c }));
   const biggest = areas.indexOf(Math.max(...areas));
-  parents.push({ n: p.name_en || p.name || RENAME[code] || p.admin, c: code, geo: polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2) });
+  parents.push({ n: PROVINCE_NAME[p.iso_3166_2] || p.name_en || p.name || RENAME[code] || p.admin, c: code, geo: polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2) });
 }
 for (const [code, name] of countries) if (!name) countries.set(code, code);
 
@@ -889,7 +890,7 @@ const check = (simple) => {
   return more;
 };
 for (let round = 0, more = 1; more && round < 8; round++) more = check(simplify.simplify(pre, threshold)) + check(simplify.simplify(pre, fine));
-const simple = simplify.simplify(pre, threshold), detail = client.quantize(simplify.simplify(pre, fine), 1e6);
+const simple = simplify.simplify(pre, threshold), detail = client.quantize(simplify.simplify(pre, fine), 4e5);
 const out = client.quantize(simple, 2e5);
 out.provinces = provinces;
 out.countries = reference.countries;
