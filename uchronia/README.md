@@ -108,10 +108,29 @@ of `/greatercircle/`.
     piece.
   - It is simplified to a tenth of its points by spherical triangle area.
   - Built by `tools/build-provinces.mjs` (see its arguments for the inputs).
-- **data/units.json**: the same provinces with the large-region countries cut
-  into second-level units, all in one topology so that every shared edge is
-  one arc. Loaded only when finer regions are switched on, or when a map
-  needs them. Built by `tools/build-units.mjs`.
+- **data/units.json**: the same provinces with eight large-region countries
+  cut into second-level units, 8,956 regions in all, in one topology so that
+  every shared edge is one arc:
+  - the United States (3,142 counties; DC stays whole), China (352
+    prefectures; the four municipalities stay whole), Germany (398 districts;
+    Berlin and Hamburg stay whole), Canada (72 economic regions; the
+    territories and Prince Edward Island stay whole), DR Congo (188
+    territories and cities), Kazakhstan (171 districts, from before the 2022
+    reform), Pakistan (124 districts) and South Africa (52 district
+    municipalities);
+  - China's prefectures are regrouped from 1999 county boundaries by name and
+    code, so later county splits are missing;
+  - disputed areas follow Natural Earth's assignment and are only cut within
+    their province;
+  - each unit is clipped to the Natural Earth province it falls in, gaps go
+    to a neighbour, and all rings are noded against each other before the
+    topology is built;
+  - it is loaded only when finer regions are switched on, or when a map needs
+    them (3.1 MB, about 950 KB compressed);
+  - built by `tools/build-units.mjs`, which needs clipper-lib (integer
+    polygon clipping), @vant/area-data (current Chinese division codes) and
+    pinyin-pro (romanised Chinese names) at build time; its arguments list the
+    inputs.
 - **data/cities.json**: the cities as `[name, lon, lat, size, capital]`.
   - The first 550 are greatercircle's.
   - The next 500 are the largest of its place list, picked greedily with each
@@ -153,6 +172,8 @@ in the repo. They covered:
 - reloading, links (including hostile ones), files and starting over;
 - the flat map: picking, painting, zooming at the cursor, panning across the
   date line and dragging cities;
+- finer regions: switching them on and off, painting single counties,
+  undoing paint from before the switch, reloading and sharing;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;
@@ -161,8 +182,21 @@ in the repo. They covered:
 ## Credits
 
 - **Borders:** Natural Earth (public domain).
-- **Second-level units:** see `tools/build-units.mjs` and the `sources` list
-  in `data/units.json`.
+- **Second-level units:**
+  - US counties from the US Census Bureau through Natural Earth (public
+    domain);
+  - Chinese prefectures from China's national mapping agency through
+    Revolutionary GIS (ODC PDDL);
+  - German districts © GeoBasis-DE / BKG 2021 (dl-de/by-2-0);
+  - Canada's economic regions from Statistics Canada (Open Government Licence
+    – Canada 2.0);
+  - DR Congo and South Africa from OCHA and its partners (CC BY 3.0 IGO);
+  - Kazakhstan © OpenStreetMap contributors (ODbL 1.0, so the Kazakh part of
+    `data/units.json` is under the ODbL too);
+  - Pakistan, and all of them gathered, from geoBoundaries (Runfola et al.,
+    PLoS ONE 15(4): e0231866, 2020).
+
+  The `sources` list in `data/units.json` has the links.
 - **Cities:** GeoNames (CC BY 4.0).
 - **Satellite view:** NASA Earth Observatory, Blue Marble Next Generation by
   Reto Stöckli, and NASA's Global Imagery Browse Services (public domain).
