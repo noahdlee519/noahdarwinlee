@@ -78,29 +78,50 @@ of `/greatercircle/`.
   - **Styles.** *Light* is black on white and *Dark* white on black; both
     follow the site's day and night setting, which they also set. *Antique*
     is drawn like a hand-coloured map of the 1800s:
-    - parchment, sepia ink and a paper grain laid over the page;
+    - parchment and sepia ink, with a paper grain on the bar, the menus and
+      the buttons;
     - pale washes inside each country, with a stronger band of its colour
       along its borders and coasts (the arcs on its edge, stroked twice as
-      wide and clipped to the country);
-    - water lining: four rings round every coast, cut by stroking the
-      coastline wide in ink and then a little narrower in the sea colour;
+      wide and clipped to the country, and thinner on a small map); the
+      colour buttons show the same wash and band. The eighth colour is a
+      violet rather than the teal of the other styles, and the sea a deeper
+      grey-green, so that no land is tinted like the sea;
+    - water lining: rings round every coast, cut by stroking the coastline
+      wide in ink and then a little narrower in the sea colour; four on a
+      large map, two or three on a small one, and none round islands too
+      small to see;
     - Old Standard TT, a revival of late 19th-century type, for the menus
-      and the names, italic names for 57 oceans and seas, circled cities and
+      and the names, italic names for 57 oceans and seas (the oceans only on
+      a map big enough to hold them), circled cities and
       ringed capitals, and a double frame round the flat map;
     - country names that bend along arcs, as engravers set them (see
       *Labels*);
-    - an aged sheet laid over the whole map: a darkened edge, a fold down the
-      middle each way, a few foxing spots, a faint unevenness in the paper and
-      its grain, all in CSS gradients and SVG noise multiplied over the
-      canvas; the satellite view is toned sepia.
-- **Labels.** A country's name goes on its largest piece, at the point where
-  the biggest text box fits inside the land. To find it, the piece is drawn on
-  an azimuthal-equidistant map around its centre and squeezed sideways by the
+    - age drawn on the map itself, never on the screen around it. The globe
+      is an old paper globe: its twelve gores and two polar caps each a
+      slightly different tone, with faint seams between them, varnish that
+      darkens towards the edge of the sphere and a soft highlight. The flat
+      map is a folded sheet: eight panels of slightly different tones, folds
+      down the middle and the quarters and across the equator, and edges
+      browned by handling. Both carry mottled toning, water stains with
+      tide lines and clusters of foxing, placed on the earth or the sheet
+      from a fixed seed so that they turn and pan with it, and fade as the
+      map is zoomed in close; all of it is multiplied onto the canvas after
+      the borders and before the names. The satellite view is toned sepia;
+    - the site's name in letterspaced capitals and the back link in italic,
+      both in Old Standard TT; on a phone, where they sit over the map, they
+      share a small title block in a double rule.
+- **Labels.** A country's name goes on its largest piece, as near its middle
+  as a good-sized name will fit. To find the place, the piece is drawn on an
+  azimuthal-equidistant map around its centre and squeezed sideways by the
   name's own proportions. The pole of inaccessibility of the squeezed shape
   (the inside point farthest from its edges, found by the quadtree search of
-  Mapbox's polylabel) is then the centre of the largest ellipse of the name's
-  shape that fits in the land, and the text is sized to sit inside that
-  ellipse.
+  Mapbox's polylabel) gives the biggest name that fits; a second quadtree
+  search, ordered by distance from the centre, then finds the point nearest
+  the middle where a name at least 78% of that size still fits, and the text
+  is sized to sit inside the ellipse there.
+  - The name keeps clear of its country's capital (above, below or to the
+    side of it, leaving room for the capital's own name), shrinking a step or
+    two if it must; only where there is no room at all does it sit on top.
   - Names with spaces are tried on two lines too.
   - Long, thin countries (Chile, Norway, Sweden) are also tried along their
     principal axis, and turned when that fits much better.
@@ -111,13 +132,21 @@ of `/greatercircle/`.
     size of the straight one and ten points along its outline lie inside the
     land; on screen, the arc is the circle through three of its points, and
     each letter is set along it.
+  - In Antique, a name too small to read at its full letter spacing is set
+    tighter, and so a little larger, rather than left out.
   - Labels are drawn largest country first and skipped where their turned
-    boxes would overlap. They are worked out again in 14 ms slices after each
+    boxes would overlap, or would run under the scale bar, the map buttons or
+    (on a phone) the site's name. They are worked out again in 14 ms slices after each
     edit or rename.
   - Country names and city names can each be hidden (in the View menu); with
     city names hidden, the cities stay as dots.
 - **Cities.** Capitals, cities and towns each have their own mark and size of
   name (squares, dots and small dots; in Antique, ringed, circled and dotted).
+- **Scale bar.** Kilometres over miles in the bottom corner, in round lengths
+  of 1, 2 or 5 times a power of ten that fit 120 px, true at the centre of the
+  view (on the flat map, along the parallel there); in Antique, chequered bars
+  with the units spelt out. It can be hidden in the View menu.
+- **Zoom.** From a little under the whole globe to 60 times it.
 - **Cities.** 3,050 in four sizes. Each is shown from the zoom its size allows.
 - **New countries.** A new country takes the name of the first region it
   receives, or of the country it swallows whole. Its capital is picked from
@@ -127,7 +156,8 @@ of `/greatercircle/`.
 - **Undo and redo.** Every edit is a step to undo or redo. A paint stroke is
   one step, and typing a name is one step however many keys it takes.
 - **Saving.** The map is kept as its difference from the world as it is:
-  - countries renamed, recoloured or founded;
+  - countries renamed, recoloured or founded, and those whose inner borders
+    are hidden (`l`);
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
   - cities deleted, changed or added;
@@ -252,18 +282,21 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   two menus: **File** (copy a link, save a file, open one, start over) and
-  **View** (the style, country and city names, finer regions). What is
+  **View** (the style, country and city names, the scale bar, finer regions). What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
-- **Select (V)**: click a country to rename or recolour it, paint with it or
-  dissolve it; click a city to rename it, change its size or delete it, and
-  drag it to move it. A region on its own can be made a country.
+- **Select (V)**: click a country to rename or recolour it, show or hide its
+  inner borders (the lines between its regions, and the finer lines inside
+  them), paint with it or dissolve it; click a city to rename it, change its
+  size or delete it, and once it is picked, drag it to move it. A region on
+  its own can be made a country.
 - **Paint borders (B)**: click or drag over regions to give them to the
   chosen country; Alt-click picks the country to paint with.
 - **Draw borders (D)**: drag round some land to give it to the chosen
   country, or to leave it unclaimed; on a phone, draw with one finger and
   move the map with two.
-- **Cities (C)**: click to found a city, drag one to move it.
+- **Cities (C)**: click to found a city; click one to pick it, then drag it
+  to move it (a drag on a city that isn't picked moves the map).
 - **M** switches between the globe and the flat map; **S** turns the
   satellite view on and off; **H** (or the eye button) hides everything but
   the map, and brings it back.
@@ -297,6 +330,8 @@ in the repo. They covered:
 - hiding country and city names, and the detailed borders up close;
 - the top bar and its menus, the three styles, curved names, the hidden
   interface, and keyboard focus;
+- inner borders hidden and shown per country, saved, linked and undone;
+  cities picked before they move; the scale bar and the zoom limit;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;

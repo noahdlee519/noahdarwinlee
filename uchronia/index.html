@@ -157,46 +157,6 @@
               <span>Cities</span>
             </button>
           </div>
-          <div class="uc-new">
-            <button type="button" class="uc-btn" id="new-country">New country</button>
-          </div>
-          <div class="uc-end">
-            <div class="uc-history">
-              <button type="button" class="uc-icon-btn" id="undo" disabled aria-label="Undo" title="Undo (Ctrl+Z)">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
-              </button>
-              <button type="button" class="uc-icon-btn" id="redo" disabled aria-label="Redo" title="Redo (Ctrl+Shift+Z)">
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></svg>
-              </button>
-            </div>
-            <details class="uc-menu" id="file-menu">
-              <summary>File</summary>
-              <div class="uc-menu-list">
-                <button type="button" class="uc-menu-item" id="share">Copy link</button>
-                <button type="button" class="uc-menu-item" id="export">Save file</button>
-                <button type="button" class="uc-menu-item" id="import">Open file</button>
-                <button type="button" class="uc-menu-item" id="reset">Start over</button>
-                <input type="file" id="import-file" accept=".json,application/json" hidden />
-              </div>
-            </details>
-            <details class="uc-menu" id="adv">
-              <summary>View</summary>
-              <div class="uc-menu-list">
-                <div class="uc-style">
-                  <span class="uc-style-label" id="style-label">Style</span>
-                  <div class="uc-seg" id="style-seg" role="group" aria-labelledby="style-label">
-                    <button type="button" data-style="light" aria-pressed="false">Light</button>
-                    <button type="button" data-style="dark" aria-pressed="false">Dark</button>
-                    <button type="button" data-style="antique" aria-pressed="false">Antique</button>
-                  </div>
-                </div>
-                <label class="uc-check"><input type="checkbox" id="show-countries" checked /> <span>Country names</span></label>
-                <label class="uc-check"><input type="checkbox" id="show-cities" checked /> <span>City names</span></label>
-                <label class="uc-check"><input type="checkbox" id="fine" /> <span>Finer regions in large countries</span></label>
-                <p class="uc-adv-note">Counties, prefectures and districts inside large states and provinces, and the municipalities and provinces that smaller countries' regions are made of, so borders can follow them</p>
-              </div>
-            </details>
-          </div>
         </div>
 
         <div class="uc-context">
@@ -210,6 +170,13 @@
               </span>
             </div>
             <div class="uc-swatches" id="swatches" role="group" aria-label="Colour"></div>
+            <div class="uc-inner" id="inner">
+              <span class="uc-inner-label" id="inner-label">Inner borders</span>
+              <div class="uc-seg" role="group" aria-labelledby="inner-label">
+                <button type="button" id="lines-1" aria-pressed="true" title="The lines between its states, provinces and regions">Regions</button>
+                <button type="button" id="lines-2" aria-pressed="true" title="The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions">Finer</button>
+              </div>
+            </div>
             <p class="uc-facts" id="country-facts"></p>
             <div class="uc-actions" id="country-actions">
               <button type="button" class="uc-linkbtn" id="paint-with">Paint with it</button>
@@ -245,6 +212,47 @@
             </div>
           </section>
         </div>
+        <div class="uc-new">
+          <button type="button" class="uc-btn" id="new-country">New country</button>
+        </div>
+        <div class="uc-end">
+          <div class="uc-history">
+            <button type="button" class="uc-icon-btn" id="undo" disabled aria-label="Undo" title="Undo (Ctrl+Z)">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
+            </button>
+            <button type="button" class="uc-icon-btn" id="redo" disabled aria-label="Redo" title="Redo (Ctrl+Shift+Z)">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></svg>
+            </button>
+          </div>
+          <details class="uc-menu" id="file-menu">
+            <summary>File</summary>
+            <div class="uc-menu-list">
+              <button type="button" class="uc-menu-item" id="share">Copy link</button>
+              <button type="button" class="uc-menu-item" id="export">Save file</button>
+              <button type="button" class="uc-menu-item" id="import">Open file</button>
+              <button type="button" class="uc-menu-item" id="reset">Start over</button>
+              <input type="file" id="import-file" accept=".json,application/json" hidden />
+            </div>
+          </details>
+          <details class="uc-menu" id="adv">
+            <summary>View</summary>
+            <div class="uc-menu-list">
+              <div class="uc-style">
+                <span class="uc-style-label" id="style-label">Style</span>
+                <div class="uc-seg" id="style-seg" role="group" aria-labelledby="style-label">
+                  <button type="button" data-style="light" aria-pressed="false">Light</button>
+                  <button type="button" data-style="dark" aria-pressed="false">Dark</button>
+                  <button type="button" data-style="antique" aria-pressed="false">Antique</button>
+                </div>
+              </div>
+              <label class="uc-check"><input type="checkbox" id="show-countries" checked /> <span>Country names</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-cities" checked /> <span>City names</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-scale" checked /> <span>Scale bar</span></label>
+              <label class="uc-check"><input type="checkbox" id="fine" /> <span>Finer regions in large countries</span></label>
+              <p class="uc-adv-note">Counties, prefectures and districts inside large states and provinces, and the municipalities and provinces that smaller countries' regions are made of, so borders can follow them</p>
+            </div>
+          </details>
+        </div>
       </aside>
     </div>
 
@@ -254,7 +262,6 @@
       tabindex="0"
       aria-label="A globe of the world's countries, which you can redraw. Drag to turn it, scroll or pinch to zoom. Arrow keys turn it; plus and minus zoom."
     ></canvas>
-    <div class="uc-paper" aria-hidden="true"></div>
     <div class="uc-tip" id="tip" hidden></div>
     <div class="uc-status" id="status" role="status" hidden><span id="status-text"></span><button type="button" id="status-action" class="uc-linkbtn" hidden></button></div>
 

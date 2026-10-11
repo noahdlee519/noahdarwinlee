@@ -124,7 +124,7 @@
   --accent: #3a2a1b;
   --chevron: #3a2a1b;
   --rule: #3a2a1b;
-  --uc-ocean: #cbd7cc;
+  --uc-ocean: #b4c8c4;
   --uc-grat: rgba(84, 60, 38, 0.3);
   --uc-limb: #3a2a1b;
   --uc-glow: rgba(58, 42, 27, 0.16);
@@ -142,9 +142,9 @@
   --uc-unclaimed: #f3ead3;
   --uc-hatch: rgba(69, 48, 31, 0.3);
   --uc-water: rgba(52, 82, 90, 0.5);
-  --uc-sea-label: rgba(44, 66, 74, 0.78);
+  --uc-sea-label: rgba(44, 66, 74, 0.9);
   --uc-sat-light: 0.12;
-  --uc-muted: rgba(58, 42, 27, 0.66);
+  --uc-muted: rgba(58, 42, 27, 0.74);
   --uc-btn-hover: rgba(58, 42, 27, 0.08);
   --uc-c0: #f1e2ae;
   --uc-c1: #f0d5ae;
@@ -153,7 +153,7 @@
   --uc-c4: #eed0d8;
   --uc-c5: #e0d5e7;
   --uc-c6: #d4ddea;
-  --uc-c7: #cfe2e1;
+  --uc-c7: #c9c3e3;
   --uc-c8: #d6e4ce;
   --uc-c9: #e5e8bf;
   --uc-b0: #c39a2e;
@@ -163,7 +163,7 @@
   --uc-b4: #b45f7f;
   --uc-b5: #8768a6;
   --uc-b6: #5f7db0;
-  --uc-b7: #4e8f9b;
+  --uc-b7: #5b5aa0;
   --uc-b8: #5f945a;
   --uc-b9: #8f9c3a;
   --uc-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 0.34 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
@@ -171,39 +171,36 @@
 :root[data-uc-style="antique"] body.uc-page {
   background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%);
 }
+:root[data-uc-style="antique"] .uc-page .name,
+:root[data-uc-style="antique"] .uc-page .back-link {
+  font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+:root[data-uc-style="antique"] .uc-page .name {
+  font-size: 15px;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+:root[data-uc-style="antique"] .uc-page .back-link {
+  font-size: 18px;
+  font-style: italic;
+}
 :root[data-uc-style="antique"] .uc-panel,
 :root[data-uc-style="antique"] .uc-tip,
 :root[data-uc-style="antique"] .uc-status,
-:root[data-uc-style="antique"] .uc-load {
+:root[data-uc-style="antique"] .uc-load,
+:root[data-uc-style="antique"] .uc-ctl {
   font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
 }
-.uc-paper {
-  display: none;
-}
-:root[data-uc-style="antique"] .uc-paper {
-  display: block;
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  background-image:
-    radial-gradient(ellipse 72% 78% at 50% 52%, rgba(0, 0, 0, 0) 58%, rgba(122, 82, 36, 0.2) 86%, rgba(96, 62, 24, 0.36) 100%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0) calc(50% - 70px), rgba(110, 76, 38, 0.07) calc(50% - 2px), rgba(84, 56, 26, 0.2) 50%, rgba(0, 0, 0, 0) calc(50% + 1.5px)),
-    linear-gradient(180deg, rgba(0, 0, 0, 0) calc(50% - 60px), rgba(110, 76, 38, 0.06) calc(50% - 2px), rgba(84, 56, 26, 0.17) 50%, rgba(0, 0, 0, 0) calc(50% + 1.5px)),
-    radial-gradient(circle at 9% 21%, rgba(150, 100, 45, 0.2), rgba(150, 100, 45, 0.06) 2.5%, rgba(0, 0, 0, 0) 4.5%),
-    radial-gradient(circle at 88% 74%, rgba(150, 100, 45, 0.17), rgba(150, 100, 45, 0.05) 3%, rgba(0, 0, 0, 0) 5.5%),
-    radial-gradient(circle at 71% 9%, rgba(150, 100, 45, 0.13), rgba(0, 0, 0, 0) 2.6%),
-    radial-gradient(circle at 23% 86%, rgba(150, 100, 45, 0.15), rgba(150, 100, 45, 0.04) 2%, rgba(0, 0, 0, 0) 3.8%),
-    radial-gradient(circle at 94% 33%, rgba(150, 100, 45, 0.12), rgba(0, 0, 0, 0) 2.2%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='900' viewBox='0 0 1200 900' preserveAspectRatio='none'><filter id='m' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.0045' numOctaves='4' seed='7'/><feColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.45 0 0 0 0 0.24 1.5 0 0 0 -0.74'/></filter><rect width='1200' height='900' filter='url(%23m)'/></svg>"),
-    var(--uc-grain);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 260px 260px;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat;
-}
-:root[data-uc-style="antique"] .uc-bar {
+:root[data-uc-style="antique"] .uc-bar,
+:root[data-uc-style="antique"] .uc-tip,
+:root[data-uc-style="antique"] .uc-status,
+:root[data-uc-style="antique"] .uc-ctl {
   background-image: var(--uc-grain);
   background-size: 260px 260px;
+}
+:root[data-uc-style="antique"] .uc-swatch {
+  --band-w: 2.5px;
 }
 
 body.uc-page {
@@ -276,8 +273,8 @@ body.uc-page {
 
 .uc-controls {
   position: fixed;
-  right: calc(var(--page-left) + env(safe-area-inset-right, 0px));
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  right: calc(10px + env(safe-area-inset-right, 0px));
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   z-index: 24;
   display: flex;
   flex-direction: column;
@@ -443,6 +440,9 @@ body.uc-page {
 .uc-globe.is-over-city {
   cursor: pointer;
 }
+.uc-globe.is-over-picked {
+  cursor: move;
+}
 .uc-globe.is-turning {
   cursor: grab;
 }
@@ -521,6 +521,7 @@ body.uc-page {
 }
 .uc-name-row:focus-within {
   border-bottom-color: var(--ink);
+  box-shadow: 0 1px 0 var(--ink);
 }
 .uc-name {
   display: block;
@@ -540,6 +541,7 @@ body.uc-page {
 }
 #city-pane .uc-name:focus {
   border-bottom-color: var(--ink);
+  box-shadow: 0 1px 0 var(--ink);
 }
 .uc-name:focus {
   outline: none;
@@ -557,6 +559,10 @@ body.uc-page {
 .uc-pick-wrap:hover,
 .uc-pick-wrap:focus-within {
   color: var(--ink);
+}
+.uc-pick-wrap:has(select:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
 }
 .uc-pick-wrap select {
   position: absolute;
@@ -579,11 +585,19 @@ body.uc-page {
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: 50%;
+  box-shadow: inset 0 0 0 var(--band-w, 0) var(--band, transparent);
   cursor: pointer;
 }
 .uc-swatch[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 var(--band-w, 0) var(--band, transparent), 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink);
+}
+.uc-swatch:focus-visible {
+  outline: 2px dotted var(--ink);
+  outline-offset: 5px;
+}
+.uc-swatch-custom:has(input:focus-visible) {
   outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 .uc-swatch-custom {
   display: inline-flex;
@@ -608,6 +622,22 @@ body.uc-page {
 .uc-facts {
   color: var(--uc-muted);
   font-size: 13px;
+}
+.uc-inner[hidden] {
+  display: none;
+}
+.uc-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.uc-inner-label {
+  color: var(--uc-muted);
+  white-space: nowrap;
+}
+.uc-inner .uc-seg {
+  margin: 0;
 }
 .uc-region {
   font-size: 14px;
@@ -745,6 +775,7 @@ body.uc-page {
 }
 .uc-style .uc-seg {
   flex: 1 1 auto;
+  margin: 0;
 }
 .uc-check {
   display: flex;
@@ -787,11 +818,11 @@ body.uc-page {
 }
 .uc-page.is-bare .uc-controls {
   top: auto !important;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
   flex-direction: column !important;
 }
 
-@media (min-width: 641px) {
+@media not all and (max-width: 640px) {
   .uc-bar {
     position: fixed;
     z-index: 20;
@@ -823,16 +854,21 @@ body.uc-page {
   .uc-panel {
     flex: 1 1 auto;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "main new end" "ctx ctx ctx";
+    align-items: center;
+    gap: 6px 20px;
   }
   .uc-main {
+    grid-area: main;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 6px 20px;
     min-height: 30px;
+  }
+  .uc-new {
+    grid-area: new;
   }
   .uc-sub {
     display: none;
@@ -848,10 +884,11 @@ body.uc-page {
     padding: 0 12px;
   }
   .uc-end {
+    grid-area: end;
+    justify-self: end;
     display: flex;
     align-items: center;
     gap: 6px 18px;
-    margin-left: auto;
   }
   .uc-menu {
     position: relative;
@@ -898,6 +935,10 @@ body.uc-page {
     background: var(--uc-btn-hover);
     outline: none;
   }
+  .uc-menu-item:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: -3px;
+  }
   #adv .uc-menu-list {
     width: 310px;
     padding: 14px 16px 12px;
@@ -906,6 +947,7 @@ body.uc-page {
     margin: 12px 0 0;
   }
   .uc-context {
+    grid-area: ctx;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -913,6 +955,12 @@ body.uc-page {
     min-height: 30px;
     margin-left: -20px;
     overflow: hidden;
+  }
+  @supports (overflow-x: clip) {
+    .uc-context {
+      overflow-x: clip;
+      overflow-y: visible;
+    }
   }
   .uc-hint {
     position: fixed;
@@ -930,6 +978,11 @@ body.uc-page {
   .uc-hint:not(:empty) {
     padding: 2px 10px;
     background: color-mix(in srgb, var(--bg) 78%, transparent);
+  }
+  :root[data-uc-style="antique"] .uc-hint:not(:empty),
+  :root[data-uc-style="antique"] .uc-menu-list {
+    background: var(--bg) var(--uc-grain);
+    background-size: 260px 260px;
   }
   .uc-pane,
   .uc-region {
@@ -956,45 +1009,47 @@ body.uc-page {
     gap: 5px;
   }
   .uc-swatch {
-    width: 17px;
-    height: 17px;
+    width: 19px;
+    height: 19px;
   }
   .uc-swatch-custom {
     font-size: 13px;
   }
   .uc-facts {
-    margin: 0;
-    white-space: nowrap;
-  }
-}
-@media (min-width: 641px) and (max-width: 1179px) {
-  .uc-tool {
-    padding: 0 9px;
-  }
-  .uc-facts {
     display: none;
   }
-  .uc-tool span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+  @media (max-width: 1179px) {
+    .uc-tool {
+      padding: 0 9px;
+    }
+    .uc-tool span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+  @media (max-width: 979px) {
+    .uc-bar {
+      column-gap: 22px;
+    }
+    .uc-panel,
+    .uc-main {
+      column-gap: 16px;
+    }
+    .uc-title {
+      display: none;
+    }
+  }
+  @media (max-width: 799px) {
+    .uc-panel {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: "main main" "new end" "ctx ctx";
+    }
   }
 }
-@media (min-width: 641px) and (max-width: 899px) {
-  .uc-bar {
-    column-gap: 22px;
-  }
-  .uc-main {
-    column-gap: 14px;
-  }
-  .uc-title {
-    display: none;
-  }
-}
-
 @media (max-width: 640px) {
   .uc-bar,
   .uc-site,
@@ -1015,6 +1070,25 @@ body.uc-page {
   .uc-page .back-link {
     top: 44px;
     display: inline;
+  }
+  :root[data-uc-style="antique"] .uc-site {
+    position: fixed;
+    z-index: 30;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 5px 12px 6px;
+    background: var(--bg) var(--uc-grain);
+    background-size: 260px 260px;
+    border: 3px double var(--ink);
+  }
+  :root[data-uc-style="antique"] .uc-page .uc-site .name,
+  :root[data-uc-style="antique"] .uc-page .uc-site .back-link {
+    position: static !important;
+    line-height: 1.45;
+    text-shadow: none;
   }
   .uc-panel {
     position: fixed;
@@ -1058,7 +1132,6 @@ body.uc-page {
     touch-action: none;
   }
   .uc-sheet-handle {
-    order: 0;
     display: block;
     width: 100%;
     height: 26px;
@@ -1080,7 +1153,6 @@ body.uc-page {
     background: var(--rule);
   }
   .uc-head {
-    order: 1;
     display: none;
     align-items: flex-start;
     justify-content: space-between;
@@ -1110,7 +1182,6 @@ body.uc-page {
     display: none;
   }
   .uc-tools {
-    order: 2;
     margin: 2px 0 0;
   }
   .uc-tool {
@@ -1118,12 +1189,10 @@ body.uc-page {
     padding: 7px 4px;
   }
   .uc-hint {
-    order: 3;
     margin: 8px 0 0;
   }
   .uc-pane,
   .uc-region {
-    order: 4;
     margin: 14px 0 0;
   }
   .uc-region {
@@ -1136,15 +1205,31 @@ body.uc-page {
   .uc-swatches,
   .uc-facts,
   .uc-actions,
+  .uc-inner,
   .uc-seg {
     margin: 10px 0 0;
   }
+  .uc-swatch {
+    width: 26px;
+    height: 26px;
+  }
+  .uc-linkbtn,
+  .uc-menu-item {
+    padding: 3px 0;
+  }
+  .uc-menu > summary {
+    min-height: 26px;
+  }
+  .uc-check {
+    padding: 3px 0;
+  }
+  .uc-inner .uc-seg {
+    margin: 0;
+  }
   .uc-new {
-    order: 5;
     margin: 14px 0 0;
   }
   .uc-end {
-    order: 6;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1205,6 +1290,13 @@ body.uc-page {
   }
   .uc-sheet-open .uc-status {
     top: 124px;
+  }
+  :root[data-uc-style="antique"] .uc-controls.is-lifted,
+  :root[data-uc-style="antique"] .uc-status {
+    top: 88px;
+  }
+  :root[data-uc-style="antique"] .uc-sheet-open .uc-status {
+    top: 136px;
   }
 }
 
