@@ -34,33 +34,7 @@
   function lowerFirst(s) { return s.charAt(0).toLowerCase() + s.slice(1); }
   function isInt(v) { return typeof v === "number" && isFinite(v) && Math.floor(v) === v; }
 
-  var EE_A1 = 1.340264, EE_A2 = -0.081106, EE_A3 = 0.000893, EE_A4 = 0.003796, EE_M = Math.sqrt(3) / 2;
-  function eeFx(phi) {
-    var t = Math.asin(EE_M * Math.sin(phi)), t2 = t * t, t6 = t2 * t2 * t2;
-    return Math.cos(t) / (EE_M * (EE_A1 + 3 * EE_A2 * t2 + t6 * (7 * EE_A3 + 9 * EE_A4 * t2)));
-  }
-  function eeFy(phi) {
-    var t = Math.asin(EE_M * Math.sin(phi)), t2 = t * t, t6 = t2 * t2 * t2;
-    return t * (EE_A1 + EE_A2 * t2 + t6 * (EE_A3 + EE_A4 * t2));
-  }
-  var EE_YMAX = eeFy(Math.PI / 2), EE_XMAX = Math.PI * eeFx(0), EE_FXPOLE = eeFx(Math.PI / 2);
-  function eeLat(y) {
-    y = Math.max(-EE_YMAX, Math.min(EE_YMAX, y));
-    var t = y / EE_A1;
-    for (var i = 0; i < 12; i++) {
-      var t2 = t * t, t6 = t2 * t2 * t2;
-      var f = t * (EE_A1 + EE_A2 * t2 + t6 * (EE_A3 + EE_A4 * t2)) - y;
-      var fp = EE_A1 + 3 * EE_A2 * t2 + t6 * (7 * EE_A3 + 9 * EE_A4 * t2);
-      var d = f / fp;
-      t -= d;
-      if (Math.abs(d) < 1e-12) break;
-    }
-    return Math.asin(Math.max(-1, Math.min(1, Math.sin(t) / EE_M)));
-  }
-  var OUTLINE = [];
-  (function () {
-    for (var i = 0; i <= 90; i++) { var p = (-90 + i * 2) * D2R; OUTLINE.push([eeFx(p), eeFy(p)]); }
-  })();
+  var HALF_PI = Math.PI / 2;
 
   var levels = null, feats = null, geoFull = null, objKey = "provinces";
   var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [];
@@ -75,9 +49,9 @@
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
   var flat = false;
-  var dpr = 1, W = 0, H = 0, baseR = 0, baseK = 0, cx = 0, cy = 0, freeH = 0;
+  var dpr = 1, W = 0, H = 0, baseR = 0, baseK = 0, cx = 0, cy = 0, freeL = 0, freeR = 0, freeT = 0, freeB = 0;
   var MIN_ZOOM = 0.6, MAX_ZOOM = 40;
-  var FB = { k: 1, yc: 0, lam0: 0, vmin: -Math.PI, vmax: Math.PI, pmin: -Math.PI / 2, pmax: Math.PI / 2 };
+  var FB = { k: 1, xc: 0, yc: 0, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
 
   var pick = document.createElement("canvas");
   var pctx = pick.getContext("2d", { willReadFrequently: true });
@@ -92,12 +66,12 @@
     var phone = W <= 640;
     var panelW = phone ? 0 : 352 + 2 * 24;
     var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 150) : 0;
-    var freeW = W - panelW;
-    freeH = H - sheetH - (phone ? 70 : 40);
+    var freeW = W - panelW, freeH = H - sheetH - (phone ? 70 : 40);
     cx = phone ? W / 2 : panelW + freeW / 2;
     cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
+    freeL = panelW; freeR = W; freeT = 0; freeB = H - sheetH;
     baseR = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
-    baseK = Math.max(20, Math.min((freeW - 32) / (2 * EE_XMAX), (freeH - 24) / (2 * EE_YMAX)));
+    baseK = Math.max(20, Math.min((freeW - 32) / TAU, (freeH - 24) / Math.PI));
     pick.width = W; pick.height = H;
     pickDirty = true;
     applyView();
@@ -105,27 +79,29 @@
 
   function zoomRange() {
     if (!flat) return [MIN_ZOOM, MAX_ZOOM];
-    return [0.8, Math.max(2, MAX_ZOOM * baseR / (baseK * eeFx(0)))];
+    return [1, Math.max(2, MAX_ZOOM * baseR / baseK)];
   }
   function applyView() {
     var zr = zoomRange();
     view.zoom = Math.max(zr[0], Math.min(zr[1], view.zoom));
-    view.lon = wrap180(view.lon);
     if (flat) {
       var k = baseK * view.zoom;
-      var span = Math.min(EE_YMAX, freeH / 2 / k);
-      var yc = eeFy(Math.max(-90, Math.min(90, view.lat)) * D2R);
-      yc = Math.max(-EE_YMAX + span, Math.min(EE_YMAX - span, yc));
-      view.lat = eeLat(yc) / D2R;
-      FB.k = k; FB.yc = yc; FB.lam0 = view.lon * D2R;
+      var xc = view.lon * D2R, yc = Math.max(-90, Math.min(90, view.lat)) * D2R;
+      var x0 = -Math.PI + (cx - freeL) / k, x1 = Math.PI - (freeR - cx) / k;
+      xc = x0 > x1 ? 0 : Math.max(x0, Math.min(x1, xc));
+      var y0 = (freeB - cy) / k - HALF_PI, y1 = HALF_PI - (cy - freeT) / k;
+      yc = y0 > y1 ? 0 : Math.max(y0, Math.min(y1, yc));
+      view.lon = xc / D2R; view.lat = yc / D2R;
+      FB.k = k; FB.xc = xc; FB.yc = yc;
     } else {
+      view.lon = wrap180(view.lon);
       view.lat = Math.max(-90, Math.min(90, view.lat));
       projection.rotate([-view.lon, -view.lat, 0]).scale(baseR * view.zoom).translate([cx, cy]);
     }
     pickDirty = true;
   }
-  function localScale() { return flat ? baseK * view.zoom * eeFx(view.lat * D2R) : baseR * view.zoom; }
-  function zoomForScale(S, lat) { return flat ? S / (baseK * eeFx(lat * D2R)) : S / baseR; }
+  function localScale() { return (flat ? baseK : baseR) * view.zoom; }
+  function zoomForScale(S) { return S / (flat ? baseK : baseR); }
 
   var pal = {}, hatch = null;
   var PAL_KEYS = ["ocean", "grat", "limb", "glow", "border", "prov", "label", "label-halo", "city", "city-ring", "city-label", "city-halo", "select", "select-fill", "hover", "unclaimed", "hatch", "sat-light"];
@@ -186,15 +162,11 @@
     B.r = projection.scale();
   }
   function flatWindow() {
-    var k = FB.k;
-    var yTop = FB.yc + cy / k, yBot = FB.yc - (H - cy) / k;
-    var pmax = yTop >= EE_YMAX ? Math.PI / 2 : eeLat(yTop), pmin = yBot <= -EE_YMAX ? -Math.PI / 2 : eeLat(yBot);
-    var far = pmin < 0 && pmax > 0 ? Math.max(-pmin, pmax) : Math.max(Math.abs(pmin), Math.abs(pmax));
-    var fxMin = eeFx(Math.min(far, Math.PI / 2));
-    var margin = 40 / k / fxMin;
-    FB.vmin = Math.max(-Math.PI, (-cx / k) / fxMin - margin);
-    FB.vmax = Math.min(Math.PI, ((W - cx) / k) / fxMin + margin);
-    FB.pmin = pmin - 0.03; FB.pmax = pmax + 0.03;
+    var k = FB.k, margin = 40 / k;
+    FB.vmin = Math.max(-Math.PI, FB.xc - cx / k - margin);
+    FB.vmax = Math.min(Math.PI, FB.xc + (W - cx) / k + margin);
+    FB.pmin = Math.max(-HALF_PI, FB.yc - (H - cy) / k - margin);
+    FB.pmax = Math.min(HALF_PI, FB.yc + cy / k + margin);
   }
   function setupFrame() { if (flat) flatWindow(); else basis(); }
 
@@ -268,7 +240,7 @@
     if (lat + r < FB.pmin || lat - r > FB.pmax) return false;
     if (r >= Math.PI / 2 || Math.abs(lat) + r >= Math.PI / 2 - 1e-6) return true;
     var hw = Math.asin(Math.min(1, Math.sin(r) / Math.cos(lat))) + 1e-3;
-    var lc = wrapPi(Math.atan2(f.cy, f.cx) - FB.lam0);
+    var lc = Math.atan2(f.cy, f.cx);
     return rangeHits(lc - hw, lc + hw);
   }
   function inView(f) { return flat ? featureInFlat(f) : featureInFront(f); }
@@ -319,13 +291,12 @@
 
   function flatArrays(rg) {
     if (rg.L) return;
-    var n = rg.n, L = new Float64Array(n), FX = new Float64Array(n), FY = new Float64Array(n);
+    var n = rg.n, L = new Float64Array(n), P = new Float64Array(n);
     for (var k = 0; k < n; k++) {
-      var phi = Math.asin(Math.max(-1, Math.min(1, rg.z[k])));
+      P[k] = Math.asin(Math.max(-1, Math.min(1, rg.z[k])));
       L[k] = Math.atan2(rg.y[k], rg.x[k]);
-      FX[k] = eeFx(phi); FY[k] = eeFy(phi);
     }
-    rg.L = L; rg.FX = FX; rg.FY = FY;
+    rg.L = L; rg.P = P;
   }
   var scratch = new Float64Array(8192);
   function traceFlat(c, rg, closed) {
@@ -333,14 +304,14 @@
     var n = rg.n, L = rg.L;
     if (n < 2) return;
     if (scratch.length < n) scratch = new Float64Array(n * 2);
-    var l = wrapPi(L[0] - FB.lam0), min = l, max = l, sumY = rg.FY[0];
+    var l = wrapPi(L[0]), min = l, max = l, sumY = rg.P[0];
     scratch[0] = l;
     for (var k = 1; k < n; k++) {
       var d = L[k] - L[k - 1];
       if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
       l += d; scratch[k] = l;
       if (l < min) min = l; else if (l > max) max = l;
-      sumY += rg.FY[k];
+      sumY += rg.P[k];
     }
     var wind = 0;
     if (closed) {
@@ -357,10 +328,10 @@
     }
   }
   function emitFlat(c, rg, n, sh, closed, wind, pole) {
-    var k = FB.k, yc = FB.yc, FX = rg.FX, FY = rg.FY;
+    var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc, P = rg.P;
     var side = 0, lx = 0, ly = 0, held = false;
     for (var i = 0; i < n; i++) {
-      var px = cx + k * (scratch[i] + sh) * FX[i], py = cy - k * (FY[i] - yc);
+      var px = x0 + k * (scratch[i] + sh), py = y0 - k * P[i];
       if (i === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
       var oc = outcode(px, py);
       if (oc & side) {
@@ -376,21 +347,16 @@
     if (held) c.lineTo(lx, ly);
     if (!closed) return;
     if (wind) {
-      var end = scratch[0] + wind + sh, start = scratch[0] + sh;
-      c.lineTo(cx + k * end * FX[0], cy - k * (FY[0] - yc));
-      c.lineTo(cx + k * end * EE_FXPOLE, cy - k * (pole * EE_YMAX - yc));
-      c.lineTo(cx + k * start * EE_FXPOLE, cy - k * (pole * EE_YMAX - yc));
+      var end = x0 + k * (scratch[0] + wind + sh), start = x0 + k * (scratch[0] + sh);
+      c.lineTo(end, y0 - k * P[0]);
+      c.lineTo(end, y0 - k * pole * HALF_PI);
+      c.lineTo(start, y0 - k * pole * HALF_PI);
     }
     c.closePath();
   }
   function traceOutline(c) {
-    var k = FB.k, yc = FB.yc;
-    for (var i = 0; i < OUTLINE.length; i++) {
-      var px = cx + k * Math.PI * OUTLINE[i][0], py = cy - k * (OUTLINE[i][1] - yc);
-      if (i) c.lineTo(px, py); else c.moveTo(px, py);
-    }
-    for (i = OUTLINE.length - 1; i >= 0; i--) c.lineTo(cx - k * Math.PI * OUTLINE[i][0], cy - k * (OUTLINE[i][1] - yc));
-    c.closePath();
+    var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc;
+    c.rect(x0 - k * Math.PI, y0 - k * HALF_PI, k * TAU, k * Math.PI);
   }
 
   var geoPathFor = new Map();
@@ -497,7 +463,7 @@
   function mark(name) { if (marks) marks.push([name, performance.now()]); }
   function drawSat() {
     var o = { flat: flat, dpr: dpr, light: parseFloat(pal["sat-light"]) || 0, detail: detail.shown && !detail.off, cx: cx, cy: cy };
-    if (flat) { o.k = FB.k; o.lam0 = FB.lam0; o.yc = FB.yc; }
+    if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     sat.draw(o);
     ctx.drawImage(satCanvas, 0, 0, W, H);
@@ -677,18 +643,15 @@
     ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.stroke();
   }
 
-  function projectVec(x, y, z, lam, fx, fy) {
-    if (flat) {
-      var l = wrapPi(lam - FB.lam0);
-      return [cx + FB.k * l * fx, cy - FB.k * (fy - FB.yc), 1];
-    }
+  function projectVec(x, y, z, lam, phi) {
+    if (flat) return [cx + FB.k * (wrapPi(lam) - FB.xc), cy - FB.k * (phi - FB.yc), 1];
     var d = x * B.cx + y * B.cy + z * B.cz;
     if (d <= 0) return null;
     return [cx + B.r * (x * B.ex + y * B.ey + z * B.ez), cy - B.r * (x * B.nx + y * B.ny + z * B.nz), d];
   }
   function projectLL(lon, lat) {
-    var v = toVec(lon, lat), p = lat * D2R;
-    return projectVec(v[0], v[1], v[2], lon * D2R, eeFx(p), eeFy(p));
+    var v = toVec(lon, lat);
+    return projectVec(v[0], v[1], v[2], lon * D2R, lat * D2R);
   }
 
   var widthCache = new Map();
@@ -714,7 +677,7 @@
       var c = labelOrder[k], co = countries[c];
       if (!co || !co.alive || !co.label || !unitsOf[c] || !unitsOf[c].length) continue;
       var L = co.label;
-      var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.fx, L.fy);
+      var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi);
       if (!p) continue;
       var fore = flat ? 1 : p[2];
       if (fore < 0.2) continue;
@@ -771,7 +734,7 @@
     var ca = Math.cos(L.ang), sa = Math.sin(L.ang), dl = 0.004;
     var q = normalize([v[0] + dl * (ca * E[0] + sa * N[0]), v[1] + dl * (ca * E[1] + sa * N[1]), v[2] + dl * (ca * E[2] + sa * N[2])]);
     var qp = Math.asin(Math.max(-1, Math.min(1, q[2]))), ql = Math.atan2(q[1], q[0]);
-    var p2 = projectVec(q[0], q[1], q[2], ql, eeFx(qp), eeFy(qp));
+    var p2 = projectVec(q[0], q[1], q[2], ql, qp);
     if (!p2) return 0;
     var a = Math.atan2(p2[1] - py, p2[0] - px);
     if (a > Math.PI / 2) a -= Math.PI; else if (a < -Math.PI / 2) a += Math.PI;
@@ -820,7 +783,7 @@
       var c = cities[i];
       var must = c === ui.city || (cityDrag && cityDrag.city === c);
       if (c.tier > show && !must) continue;
-      var p = projectVec(c.x, c.y, c.z, c.lam, c.fx, c.fy);
+      var p = projectVec(c.x, c.y, c.z, c.lam, c.phi);
       if (!p || (!flat && p[2] <= 0.02)) continue;
       var px = p[0], py = p[1];
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
@@ -880,12 +843,9 @@
   }
   function lonLatAt(x, y) {
     if (flat) {
-      var k = FB.k;
-      var py = FB.yc - (y - cy) / k;
-      if (Math.abs(py) > EE_YMAX) return null;
-      var phi = eeLat(py), lam = ((x - cx) / k) / eeFx(phi);
-      if (Math.abs(lam) > Math.PI) return null;
-      return [wrap180(view.lon + lam / D2R), phi / D2R];
+      var lam = FB.xc + (x - cx) / FB.k, phi = FB.yc - (y - cy) / FB.k;
+      if (Math.abs(lam) > Math.PI || Math.abs(phi) > HALF_PI) return null;
+      return [lam / D2R, phi / D2R];
     }
     var ll = projection.invert([x, y]);
     return ll && isFinite(ll[0]) && visible(ll) ? ll : null;
@@ -1004,7 +964,7 @@
   }
   function setLabel(co, lon, lat, fkm, lines, ang, area, size) {
     var p = lat * D2R;
-    co.label = { v: toVec(lon, lat), lam: lon * D2R, fx: eeFx(p), fy: eeFy(p), lon: lon, lat: lat, fkm: fkm, lines: lines, ang: ang, area: area, size: size, name: co.name };
+    co.label = { v: toVec(lon, lat), lam: lon * D2R, phi: p, lon: lon, lat: lat, fkm: fkm, lines: lines, ang: ang, area: area, size: size, name: co.name };
   }
   function computeLabel(c) {
     var us = unitsOf[c], co = countries[c];
@@ -1166,9 +1126,8 @@
   function dist(p, q) { return Math.hypot(p.x - q.x, p.y - q.y); }
   function panBy(dx, dy) {
     if (flat) {
-      var k = FB.k;
-      view.lon -= dx / (k * eeFx(view.lat * D2R)) / D2R;
-      view.lat = eeLat(eeFy(view.lat * D2R) + dy / k) / D2R;
+      view.lon -= dx / FB.k / D2R;
+      view.lat += dy / FB.k / D2R;
     } else {
       var s = degPerPx();
       view.lon -= dx * s; view.lat += dy * s;
@@ -1177,9 +1136,8 @@
   }
   function dragView(d, dx, dy) {
     if (flat) {
-      var k = FB.k;
-      view.lon = d.lon - dx / (k * eeFx(d.lat * D2R)) / D2R;
-      view.lat = eeLat(eeFy(d.lat * D2R) + dy / k) / D2R;
+      view.lon = d.lon - dx / FB.k / D2R;
+      view.lat = d.lat + dy / FB.k / D2R;
     } else {
       var s = degPerPx();
       view.lon = d.lon - dx * s; view.lat = d.lat + dy * s;
@@ -1333,9 +1291,8 @@
     applyView();
     if (before) {
       if (flat) {
-        var k = FB.k, phi = before[1] * D2R;
-        view.lon = before[0] - ((x - cx) / (k * eeFx(phi))) / D2R;
-        view.lat = eeLat(eeFy(phi) + (y - cy) / k) / D2R;
+        view.lon = before[0] - (x - cx) / FB.k / D2R;
+        view.lat = before[1] + (y - cy) / FB.k / D2R;
         applyView();
       } else {
         for (var i = 0; i < 2; i++) {
@@ -1527,7 +1484,7 @@
     var dAngle = d3.geoDistance([view.lon, view.lat], [lon, lat]);
     var ms = Math.min(1400, 450 + dAngle * 350);
     if (flat) {
-      fly = { t0: performance.now(), ms: ms, flat: true, lon0: view.lon, dlon: wrap180(lon - view.lon), lat0: view.lat, lat1: lat, z0: view.zoom, z1: toZoom };
+      fly = { t0: performance.now(), ms: ms, flat: true, lon0: view.lon, dlon: lon - view.lon, lat0: view.lat, lat1: lat, z0: view.zoom, z1: toZoom };
     } else {
       var from = versorFromAngles([-view.lon, -view.lat, 0]);
       var to = versorFromAngles([-lon, -lat, 0]);
@@ -1581,8 +1538,8 @@
     var size = Math.max(L.size || 0, 200);
     var want = Math.min(W - (W <= 640 ? 0 : 400), H - (W <= 640 ? 220 : 60)) / 2 - 30;
     var S = want / Math.min(1, size / 2 / R_KM * 1.3);
-    var zoom = zoomForScale(S, L.lat);
-    var cap = zoomForScale(baseR * 12, L.lat);
+    var zoom = zoomForScale(S);
+    var cap = zoomForScale(baseR * 12);
     flyTo(L.lon, L.lat, Math.max(view.zoom, Math.min(zoom, cap)));
   }
 
@@ -1793,7 +1750,7 @@
     c.lon = lon; c.lat = lat;
     var v = toVec(lon, lat), p = lat * D2R;
     c.x = v[0]; c.y = v[1]; c.z = v[2];
-    c.lam = lon * D2R; c.fx = eeFx(p); c.fy = eeFy(p);
+    c.lam = lon * D2R; c.phi = p;
     c.u = -2;
   }
   function restoreCity(c, s) { placeCity(c, s.lon, s.lat); }
@@ -1974,7 +1931,7 @@
       var b = document.createElement("button");
       b.type = "button"; b.className = "uc-swatch"; b.dataset.color = String(i);
       b.style.background = pal.colors[i];
-      b.setAttribute("aria-label", "Tone " + (i + 1));
+      b.setAttribute("aria-label", "Colour " + (i + 1));
       b.setAttribute("aria-pressed", "false");
       box.appendChild(b);
     }
@@ -2078,11 +2035,11 @@
     var S = localScale(), wasZoom = view.zoom;
     if (on) globeView = { lon: view.lon, lat: view.lat, zoom: view.zoom };
     flat = on;
-    if (flat) view.zoom = wasZoom <= 1.25 ? 1 : zoomForScale(S, view.lat);
+    if (flat) view.zoom = wasZoom <= 1.25 ? (W <= 640 ? 2 : 1) : zoomForScale(S);
     else if (wasZoom <= 1.35) {
       view.zoom = 1;
       if (globeView) view.lat = globeView.lat;
-    } else view.zoom = zoomForScale(S, view.lat);
+    } else view.zoom = zoomForScale(S);
     applyView();
     pickDirty = true;
     detail.key = "";
@@ -2755,7 +2712,7 @@
     try { finePref = localStorage.getItem(STORE_FINE); } catch (e) { }
     var flatPref = null;
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
-    if (flatPref === "1") { flat = true; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").title = "Globe (M)"; }
+    if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").title = "Globe (M)"; }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
 

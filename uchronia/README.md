@@ -2,7 +2,7 @@
 
 An alternate-history map maker: the world as it is, cut into its states,
 provinces and regions, for you to redraw. Give any region to any country,
-found countries and name them, shade them, and put cities where they might
+found countries, name and colour them, and put cities where they might
 have been, on a globe or a flat map. Served at `/uchronia/`. Built on the bones
 of `/greatercircle/`.
 
@@ -26,20 +26,23 @@ of `/greatercircle/`.
     chosen by how big the map is on screen. Shapes so large that they wrap
     behind the globe and enclose the point opposite the view are drawn through
     d3-geo's clipping instead, so they don't flood the whole disc.
-  - **Flat map.** The Equal Earth projection (Šavrič, Patterson and Jenny,
-    2018), equal-area. Its central meridian follows the view, so panning
-    sideways turns the world inside a fixed outline. Each ring is unwrapped
-    across the edge of the map and drawn again a turn over where it crosses
-    it. Rings that go round a pole (Antarctica) are closed along the pole line,
-    and the whole map is clipped to its outline.
+  - **Flat map.** A plain rectangle of latitude and longitude (the
+    equirectangular projection), centred on Greenwich. It stays still: panning
+    moves the view over it and stops at its edges, and zooming keeps the point
+    under the cursor where it is. A ring that crosses the 180th meridian is
+    unwrapped and drawn again a turn over. Rings that go round a pole
+    (Antarctica) are closed along the pole line, and the map is clipped to its
+    rectangle.
   - **Fills.** Each country is filled as one merged outline
     (`topojson.merge` of its regions), cached per level of detail until its
-    regions change. Countries of the same shade share a single path.
+    regions change. Countries of the same colour share a single path.
   - **Picking.** A colour-coded second canvas finds the region under the
     pointer, checked against the exact shape.
-  - **Shades.** Ten greys in CSS variables: light greys on white in the light
-    theme, dark greys on black in the dark one. They are given out so that
-    neighbours get tones well apart, and any colour can still be chosen by
+  - **Colours.** The page is black on white (light theme) or white on black
+    (dark), and the countries are coloured like a political map: ten colours
+    in CSS variables, soft ones on white and deeper ones on black, ordered
+    round the colour wheel. They are given out so that neighbours never share
+    one and sit well apart on the wheel, and any colour can still be chosen by
     hand.
 - **Labels.** A country's name goes on its largest piece, at the point where
   the biggest text box fits inside the land. To find it, the piece is drawn on
@@ -65,7 +68,7 @@ of `/greatercircle/`.
 - **Undo and redo.** Every edit is a step to undo or redo. A paint stroke is
   one step, and typing a name is one step however many keys it takes.
 - **Saving.** The map is kept as its difference from the world as it is:
-  - countries renamed, reshaded or founded;
+  - countries renamed, recoloured or founded;
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
   - cities deleted, changed or added.
@@ -83,8 +86,8 @@ of `/greatercircle/`.
     text.
 - **sat.js**: the satellite view.
   - **Base image.** A WebGL fragment shader turns each pixel back into a
-    latitude and longitude (the orthographic projection or Equal Earth
-    inverted, the latter by Newton's method) and samples NASA's Blue Marble.
+    latitude and longitude (the orthographic or the flat map's projection
+    inverted) and samples NASA's Blue Marble.
     The lookup uses mipmaps and anisotropic filtering, with explicit gradients
     taken on whichever side of the date line is smooth, so the seam doesn't
     show.
@@ -144,7 +147,7 @@ of `/greatercircle/`.
 
 ## Using it
 
-- **Select (V)**: click a country to rename or reshade it, paint with it or
+- **Select (V)**: click a country to rename or recolour it, paint with it or
   dissolve it; click a city to rename it, change its size or delete it, and
   drag it to move it. A region on its own can be made a country.
 - **Paint borders (B)**: click or drag over regions to give them to the
@@ -165,13 +168,13 @@ of `/greatercircle/`.
 
 The page was driven with Playwright during development; those scripts are not
 in the repo. They covered:
-- selecting, renaming, reshading, painting regions and whole countries, and
+- selecting, renaming, recolouring, painting regions and whole countries, and
   unclaiming;
 - founding and dissolving countries, region names and capitals, and cities;
 - undo and redo, including across start-over and file steps;
 - reloading, links (including hostile ones), files and starting over;
-- the flat map: picking, painting, zooming at the cursor, panning across the
-  date line and dragging cities;
+- the flat map: picking, painting, zooming at the cursor, panning up to its
+  edges and dragging cities;
 - finer regions: switching them on and off, painting single counties,
   undoing paint from before the switch, reloading and sharing;
 - label placement;

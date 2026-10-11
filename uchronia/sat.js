@@ -22,12 +22,6 @@
     "uniform float uDetN;",
     "uniform float uDetOn;",
     "const float PI = 3.14159265359;",
-    "const float A1 = 1.340264;",
-    "const float A2 = -0.081106;",
-    "const float A3 = 0.000893;",
-    "const float A4 = 0.003796;",
-    "const float M = 0.86602540378;",
-    "const float YMAX = 1.3173627;",
     "void main() {",
     "  float sx = (gl_FragCoord.x - uView.x) / uView.z;",
     "  float sy = (gl_FragCoord.y - (uHeight - uView.y)) / uView.z;",
@@ -40,22 +34,9 @@
     "    lam = atan(w.y, w.x);",
     "    phi = asin(clamp(w.z, -1.0, 1.0));",
     "  } else {",
-    "    float y = uFlat.y + sy;",
-    "    if (abs(y) > YMAX) discard;",
-    "    float t = y / A1;",
-    "    for (int i = 0; i < 6; i++) {",
-    "      float t2 = t * t;",
-    "      float t6 = t2 * t2 * t2;",
-    "      float f = t * (A1 + A2 * t2 + t6 * (A3 + A4 * t2)) - y;",
-    "      float fp = A1 + 3.0 * A2 * t2 + t6 * (7.0 * A3 + 9.0 * A4 * t2);",
-    "      t -= f / fp;",
-    "    }",
-    "    float t2 = t * t;",
-    "    float t6 = t2 * t2 * t2;",
-    "    float l = M * sx * (A1 + 3.0 * A2 * t2 + t6 * (7.0 * A3 + 9.0 * A4 * t2)) / cos(t);",
-    "    if (abs(l) > PI) discard;",
-    "    phi = asin(clamp(sin(t) / M, -1.0, 1.0));",
-    "    lam = l + uFlat.x;",
+    "    lam = uFlat.x + sx;",
+    "    phi = uFlat.y + sy;",
+    "    if (abs(lam) > PI || abs(phi) > 0.5 * PI) discard;",
     "  }",
     "  float u = fract(lam / (2.0 * PI) + 0.5);",
     "  float v = 0.5 - phi / PI;",
@@ -238,7 +219,7 @@
         gl.uniform1f(loc.uMode, o.flat ? 1 : 0);
         if (o.flat) {
           gl.uniform3f(loc.uView, o.cx * o.dpr, o.cy * o.dpr, o.k * o.dpr);
-          gl.uniform2f(loc.uFlat, o.lam0, o.yc);
+          gl.uniform2f(loc.uFlat, o.xc, o.yc);
         } else {
           gl.uniform3f(loc.uE, o.e[0], o.e[1], o.e[2]);
           gl.uniform3f(loc.uN, o.n[0], o.n[1], o.n[2]);
