@@ -916,6 +916,27 @@ a[href="/cv/"]:active {
   }
 }
 
+.trail {
+  --trail-a: #ffffff;
+  --trail-b: #2a44d6;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .trail {
+  --trail-a: #e68019;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .trail {
+    --trail-a: #e68019;
+  }
+}
+
 .feedback {
   max-width: 560px;
   margin: 0 0 24px;
@@ -1082,6 +1103,10 @@ a[href="/cv/"]:active {
 .about-panel .profile-photo-frame {
   flex: 0 0 auto;
   width: clamp(90px, 20vw, 220px);
+}
+
+.about-panel .profile-photo-frame.portrait-frame {
+  width: min(clamp(300px, 36vw, 520px), 49.9vh, 460px);
 }
 
 .about-panel-text {
@@ -2062,6 +2087,10 @@ body.is-zoomed {
     width: min(100%, 270px);
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .about-panel .profile-photo-frame.portrait-frame {
+    width: 100%;
   }
 
   .about-panel-bio {
@@ -4098,6 +4127,7 @@ body.game-page {
   }
 
   .to-top-btn,
+  .trail,
   .back-link,
   .about-link,
   .site-menu,
