@@ -8,7 +8,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
 const input = resolve(process.argv[3] || "ne_10m_admin_1_states_provinces_lakes.geojson");
 const rest = process.argv.slice(4);
-const keep = +(rest.find((a) => /^[\d.]+$/.test(a)) || 0.1);
+const numbers = rest.filter((a) => /^[\d.]+$/.test(a)), keep = +(numbers[0] || 0.1), keepDetail = +(numbers[1] || 0.6);
 const files = new Map(rest.filter((a) => !/^[\d.]+$/.test(a)).map((a) => [basename(a), resolve(a)]));
 const require = createRequire(resolve(modules, "x.js"));
 const server = require("topojson-server");
@@ -392,8 +392,47 @@ function chinaUnits() {
   return [...groups].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([key, mps]) => ({ n: englishName(key.length === 4 ? cities[key + "00"] : cnties[key]), mp: union(...mps) }));
 }
 
-const fromGB = (iso, level, rename) => () => readJSON(`geoBoundaries-${iso}-ADM${level}_simplified.geojson`).features.filter((f) => f.geometry)
-  .map((f) => ({ n: rename(f.properties.shapeName), mp: union(ints(f.geometry)) }));
+const BR_FIXES = { "São Luiz": "São Luiz do Anauá", Açu: "Assú", Arês: "Arez", "Gracho Cardoso": "Graccho Cardoso", "Barão de Monte Alto": "Barão do Monte Alto", "Santo Antônio do Leverger": "Santo Antônio de Leverger" };
+function brazilUnits() {
+  const feats = readJSON("geoBoundaries-BRA-ADM2_simplified.geojson").features, tables = "@br-geo-kit/ibge/data/2026/tables/";
+  const towns = require(tables + "municipalities.json").slice().sort((a, b) => (a.code < b.code ? -1 : 1));
+  const names = new Map(require(tables + "regions.json").filter((r) => r.kind === "immediate").map((r) => [r.code, r.name.replace(/ [-¿] /g, " – ")]));
+  const plain = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+  const groups = new Map();
+  let j = 0;
+  for (const f of feats) {
+    const want = plain(BR_FIXES[f.properties.shapeName] || f.properties.shapeName), from = j;
+    while (j < towns.length && plain(towns[j].name) !== want) j++;
+    if (j === towns.length || j > from + 1 || !f.geometry) throw new Error("the IBGE municipalities do not match geoBoundaries-BRA-ADM2_simplified.geojson at " + f.properties.shapeName);
+    const code = towns[j++].immediate;
+    if (!groups.has(code)) groups.set(code, []);
+    groups.get(code).push(ints(f.geometry));
+  }
+  return [...groups].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([code, mps]) => ({ n: names.get(code), mp: union(...mps) }));
+}
+const RU = { а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "yo", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "kh", ц: "ts", ч: "ch", ш: "sh", щ: "shch", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya" };
+const latin = (s) => [...s].map((c, i, all) => {
+  const l = c.toLowerCase(), prev = (all[i - 1] || "").toLowerCase(), next = (all[i + 1] || "").toLowerCase(), after = (all[i + 2] || "").toLowerCase();
+  if (!(l in RU)) return c;
+  let t = RU[l];
+  if ((l === "и" || l === "ы") && next === "й" && !(after in RU)) t = "y";
+  else if (l === "й" && (prev === "и" || prev === "ы") && !(next in RU)) t = "";
+  else if (l === "е" && (!(prev in RU) || "аеёиоуыэюяъь".includes(prev))) t = "ye";
+  else if (l === "ь" && "ио".includes(next)) t = "y";
+  return c === l ? t : t.charAt(0).toUpperCase() + t.slice(1);
+}).join("");
+const RU_TYPES = [[/^городской округ (.+)$/, "$1 Urban Okrug"], [/^(.+) городской округ$/, "$1 Urban Okrug"], [/^ЗАТО (.+)$/, "ZATO $1"], [/^(.+) (муниципальный )?район$/, "$1 District"], [/^(.+) кожуун$/, "$1 Kozhuun"], [/^(.+) улус$/, "$1 Ulus"]];
+const russianName = (raw) => {
+  let n = raw.replace(/[\u200e\u200f]/g, "").trim();
+  n = NAMES.RUS[n] || n;
+  const rule = RU_TYPES.find(([re]) => re.test(n));
+  if (rule) n = n.replace(rule[0], rule[1]);
+  return latin(n).replace(/ ([Rr]ayon|[Mm]unicipal [Dd]istrict)$/, " District").replace(/ ([Uu]rban [Dd]istrict|[Uu]rban [Oo]krug|[Mm]unicipality)$/, " Urban Okrug");
+};
+const mongolianName = (n) => n.replace(/([OoUu])'/g, (m, v) => ({ O: "Ö", o: "ö", U: "Ü", u: "ü" })[v]).replace(/X/g, "Kh").replace(/x/g, "kh").replace(/C(?!h)/g, "Ts").replace(/c(?!h)/g, "ts").replace(/ (\p{Ll})/gu, (m, c) => " " + c.toUpperCase());
+const fromGB = (iso, level, rename) => () => readJSON(`geoBoundaries-${iso}-ADM${level}_simplified.geojson`).features
+  .map((f) => ({ f, n: f.geometry && rename(String(f.properties.shapeName || "").replace(/\s+/g, " ").replace(/(\S)\(/g, "$1 (").trim()) }))
+  .filter((u) => u.n).map(({ f, n }) => ({ n, mp: union(ints(f.geometry)) }));
 const US_TYPES = new Set(["County", "Parish", "Borough", "Census Area", "City and Borough", "Municipality", "City"]);
 const NAMES = {
   CAN: {
@@ -405,6 +444,35 @@ const NAMES = {
   KAZ: { "Zhamb.": "Zhambylskiy", Zhualy: "Zhualynskiy", "Almaty (Alma-Ata)": "Almaty" },
   PAK: { Sheikhpura: "Sheikhupura" },
   ZAF: { Cacadu: "Sarah Baartman", Eden: "Garden Route", Sisonke: "Harry Gwala", Uthungulu: "King Cetshwayo" },
+  DZA: { Bashar: "Béchar", Tinduf: "Tindouf", "Burj Umar Idris": "Bordj Omar Driss", "Al Wata": "El Ouata", "Bani Abbas": "Béni Abbès", Ghardaia: "Ghardaïa" },
+  IND: { "DATA NOT AVAILABLE": null, "Leh (Ladakh)": "Leh", "Kadapa (YSR)": "YSR Kadapa", "Warangal (R)": "Warangal Rural", "Warangal (U)": "Warangal Urban" },
+  RUS: {
+    "городской округ Сосновобор": "городской округ Сосновоборск", "городской округ Лесосибирс": "городской округ Лесосибирск", "Closed administrative-territorial formation of Zhe": "ЗАТО Железногорск",
+    "Черемховское городское мун": "городской округ Черемхово", "городской округ Усолье-Сиб": "городской округ Усолье-Сибирское", "городской округ Усть-Илимс": "городской округ Усть-Илимск",
+    "Свирское городское муницип": "городской округ Свирск", "Зиминское городское муници": "городской округ Зима", "городской округ Новый Урен": "городской округ Новый Уренгой",
+    "городской округ Нижневарто": "городской округ Нижневартовск", "городской округ Нефтеюганс": "городской округ Нефтеюганск", "городской округ Петровск-З": "городской округ Петровск-Забайкальский",
+    "городской округ Архангельс": "городской округ Архангельск", "городской округ Новая Земл": "городской округ Новая Земля", "городской округ Северодвин": "городской округ Северодвинск",
+    "городской округ Благовещен": "городской округ Благовещенск", "городской округ Северобайк": "городской округ Северобайкальск", "городской округ Новоалтайс": "городской округ Новоалтайск",
+    "городской округ Красноурал": "городской округ Красноуральск", "городской округ Нижняя Сал": "городской округ Нижняя Салда", "Горноуральский городской о": "Горноуральский городской округ",
+    "Малышевский городской окру": "Малышевский городской округ", "Арамильский городской окру": "Арамильский городской округ", "городской округ Нижний Таг": "городской округ Нижний Тагил",
+    "Асбестовский городской окр": "Асбестовский городской округ", "городской округ Алапаевско": "городской округ Алапаевское", "городской округ Верхняя Пы": "городской округ Верхняя Пышма",
+    "городской округ Верхняя Ту": "городской округ Верхняя Тура", "городской округ Каменск-Ур": "городской округ Каменск-Уральский", "городской округ Краснотурь": "городской округ Краснотурьинск",
+    "городской округ Красноуфим": "городской округ Красноуфимск", "городской округ Староуткин": "городской округ Староуткинск", "Нижнетуринский городской о": "Нижнетуринский городской округ",
+    "Североуральский городской": "Североуральский городской округ", "Сосьвинский городской окру": "Сосьвинский городской округ", "Качканарский городской окр": "Качканарский городской округ",
+    "Кировградский городской ок": "Кировградский городской округ", "Новоуральский городской ок": "Новоуральский городской округ", "Артёмовский городской окру": "Артёмовский городской округ",
+    "городской округ Верхний Та": "городской округ Верхний Тагил", "городской округ Среднеурал": "городской округ Среднеуральск", "городской округ Первоураль": "городской округ Первоуральск",
+    "Берёзовский городской окру": "Берёзовский городской округ", "Лысьвенский городской окру": "Лысьвенский городской округ", "Дальнегорский городской ок": "Дальнегорский городской округ",
+    "Уссурийский городской окру": "Уссурийский городской округ", "Находкинский городской окр": "Находкинский городской округ", "Арсеньевский городской окр": "Арсеньевский городской округ",
+    "Дальнереченский городской": "Дальнереченский городской округ", "Лесозаводский городской ок": "Лесозаводский городской округ", "городской округ Большой Ка": "городской округ Большой Камень",
+    "Владивостокский городской": "Владивостокский городской округ",
+    "Tomsk municipal region": "Tomsky District", "Kargasok region": "Kargasoksky District", "Asino region": "Asinovsky District", "Upper Ket region": "Verkhneketsky District",
+    "Pervomay region": "Pervomaysky District", "Zalari municipal region": "Zalarinsky District", "Ust-Ilimsky": "Ust-Ilimsky District", "Yeniseisk Rayon": "Yeniseysky District",
+    "imeni Lazo Rayon": "Imeni Lazo District", "imeni Poliny Osipenko Rayon": "Imeni Poliny Osipenko District", Komsomolsky: "Komsomolsky District",
+    "Mujejärvi District": "Muyezersky District", "Petroskoi District": "Petrozavodsk Urban Okrug", "Äänisenranta District": "Prionezhsky District", "Pitkäranta District": "Pitkyarantsky District",
+    "Puutoisten District": "Pudozhsky District", "Aunus District": "Olonetsky District", "Kalevala District": "Kalevalsky District", "Kontupohja District": "Kondopozhsky District",
+    "Kostamus City District": "Kostomuksha Urban Okrug", "Lahdenpohja District": "Lakhdenpokhsky District", "Louhi District": "Loukhsky District", "Prääsä District": "Pryazhinsky District",
+    "Sorokka District": "Belomorsky District", "Sortavala District": "Sortavalsky District", "Suojärvi District": "Suoyarvsky District",
+  },
 };
 const SPLIT = [
   {
@@ -448,6 +516,121 @@ const SPLIT = [
     url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/ZAF/ADM2",
     load: fromGB("ZAF", 2, (n) => NAMES.ZAF[n] || n),
   },
+  {
+    c: "BRA", source: "Immediate geographic regions (regiões geográficas imediatas, 2017), IBGE: municipal boundaries (via OCHA ROLAC and geoBoundaries) merged by the IBGE composition of each region (IBGE Localidades API, via the npm package @br-geo-kit/ibge 1.0.0)", license: "CC BY 3.0 IGO (boundaries); IBGE public data (composition)",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/BRA/ADM2",
+    load: brazilUnits,
+  },
+  {
+    c: "RUS", min: 150000, source: "Districts and urban okrugs (2017) of the federal subjects larger than 150,000 km², © OpenStreetMap contributors (via Wambacher and geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/RUS/ADM2",
+    load: fromGB("RUS", 2, russianName),
+  },
+  {
+    c: "AUS", source: "Local government areas (2022), © Australian Bureau of Statistics (via geoBoundaries)", license: "CC BY 4.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/AUS/ADM2",
+    load: fromGB("AUS", 2, (n) => n.replace(/ \((NSW|Vic\.|Qld|SA|WA|Tas\.|NT)\)$/, "")),
+  },
+  {
+    c: "IND", source: "Districts (2021), Pathways Data and the Local Government Directory, lgdirectory.gov.in (via geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/IND/ADM2",
+    load: fromGB("IND", 2, (n) => (n in NAMES.IND ? NAMES.IND[n] : n.replace(/ & /g, " and "))),
+  },
+  {
+    c: "ARG", source: "Departments (2020), Instituto Geográfico Nacional, UNHCR and OCHA ROLAC (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/ARG/ADM2",
+    load: fromGB("ARG", 2, (n) => n.replace(/ de julio$/, " de Julio")),
+  },
+  {
+    c: "IDN", source: "Regencies and cities (2020), BPS – Statistics Indonesia, WFP and OCHA ROAP (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/IDN/ADM2",
+    load: fromGB("IDN", 2, (n) => n),
+  },
+  {
+    c: "MLI", source: "Cercles (2017), DNCT, DNP and OCHA Mali (via geoBoundaries)", license: "CC BY 4.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MLI/ADM2",
+    load: fromGB("MLI", 2, (n) => n),
+  },
+  {
+    c: "NER", source: "Departments (2018), geoBoundaries and City Population (citypopulation.de)", license: "CC BY 3.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/NER/ADM2",
+    load: fromGB("NER", 2, (n) => n),
+  },
+  {
+    c: "TCD", source: "Departments (2019), OCHA Chad (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/TCD/ADM2",
+    load: fromGB("TCD", 2, (n) => n),
+  },
+  {
+    c: "MNG", source: "Sums and Ulaanbaatar districts (2021), National Statistical Office of Mongolia and OCHA ROAP (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MNG/ADM2",
+    load: fromGB("MNG", 2, mongolianName),
+  },
+  {
+    c: "IRN", source: "Counties (shahrestans, 2017), © OpenStreetMap contributors (via Wambacher and geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/IRN/ADM2",
+    load: fromGB("IRN", 2, (n) => n.replace(/ County$/, "")),
+  },
+  {
+    c: "SDN", source: "Localities (2020), OCHA ROSEA and the Information Management Working Group (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/SDN/ADM2",
+    load: fromGB("SDN", 2, (n) => n),
+  },
+  {
+    c: "MRT", source: "Moughataas (2020), WFP and OCHA ROWCA (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MRT/ADM2",
+    load: fromGB("MRT", 2, (n) => n),
+  },
+  {
+    c: "PER", source: "Provinces (2020), Instituto Geográfico Nacional and OCHA ROLAC (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/PER/ADM2",
+    load: fromGB("PER", 2, (n) => (/Ã/.test(n) ? Buffer.from(n, "latin1").toString("utf8") : n)),
+  },
+  {
+    c: "BOL", source: "Provinces (2015), GeoBolivia (via geoBoundaries)", license: "Public domain",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/BOL/ADM2",
+    load: fromGB("BOL", 2, (n) => n),
+  },
+  {
+    c: "AGO", source: "Municipalities (2006), Wikimedia Commons (via geoBoundaries)", license: "Public domain",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/AGO/ADM2",
+    load: fromGB("AGO", 2, (n) => n),
+  },
+  {
+    c: "MOZ", source: "Districts (2019), Instituto Nacional de Estatística and OCHA ROSEA (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MOZ/ADM2",
+    load: fromGB("MOZ", 2, (n) => n),
+  },
+  {
+    c: "TZA", source: "Districts (2021), National Bureau of Statistics and OCHA ROSA (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/TZA/ADM2",
+    load: fromGB("TZA", 2, (n) => n),
+  },
+  {
+    c: "ZMB", source: "Districts (2020), GRID3 and the Office of the Surveyor General (via geoBoundaries)", license: "CC BY 4.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/ZMB/ADM2",
+    load: fromGB("ZMB", 2, (n) => n),
+  },
+  {
+    c: "MDG", source: "Districts (2020), BNGRC and OCHA ROSA (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MDG/ADM2",
+    load: fromGB("MDG", 2, (n) => n),
+  },
+  {
+    c: "ETH", source: "Zones (2016), Open Africa and Code for Ethiopia (via geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/ETH/ADM2",
+    load: fromGB("ETH", 2, (n) => n.replace(/ \(R\d\)$/, "")),
+  },
+  {
+    c: "SAU", source: "Governorates (2021), © OpenStreetMap contributors (via geoBoundaries)", license: "ODbL 1.0 (OpenStreetMap data; geoBoundaries lists CC BY-SA 2.0)",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/SAU/ADM2",
+    load: fromGB("SAU", 2, (n) => n.replace(/ Governorate$/, "")),
+  },
+  {
+    c: "DZA", min: 60000, source: "Communes (2021) of the wilayas larger than 60,000 km², © OpenStreetMap contributors (via osm-boundaries.com and geoBoundaries)", license: "ODbL 1.0 (OpenStreetMap data; geoBoundaries lists CC BY-SA 2.0)",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/DZA/ADM3",
+    load: fromGB("DZA", 3, (n) => NAMES.DZA[n] || n),
+  },
 ];
 
 const t0 = Date.now();
@@ -456,6 +639,7 @@ const units = parents.map((p) => [{ n: p.n, polys: ints({ type: "MultiPolygon", 
 const split = [], counts = {};
 for (const s of SPLIT) {
   for (const [i, kids] of assign(s.c, s.load())) {
+    if (s.min && area(parents[i].mp) < s.min) continue;
     const done = kids.length > 1 ? carve(parents[i], kids) : [];
     if (done.length < 2) continue;
     units[i] = done.sort((a, b) => a.n.localeCompare(b.n, "en") || a.order - b.order);
@@ -539,8 +723,35 @@ function node(list) {
     if (!cell.has(k)) { cell.set(k, QX.length); QX.push(a); QY.push(b); }
     return cell.get(k);
   };
-  const grid = rings.map((u) => u.map((poly) => poly.map((ring) => { const r = []; for (const v of ring) push(r, q(v)); return close(r); })));
-  inserted += refine(grid, QX, QY, 1, 64);
+  for (const u of rings) for (const poly of u) for (const ring of poly) for (const v of ring) q(v);
+  const H = 16, hot = new Map(), gx = (v) => (X[v] / SCALE - x0) * kx, gy = (v) => (Y[v] / SCALE - y0) * ky;
+  QX.forEach((a, c) => { const k = Math.floor(a / H) * 1e6 + Math.floor(QY[c] / H), l = hot.get(k); if (l) l.push(c); else hot.set(k, [c]); });
+  const enter = (px, py, dx, dy, cx, cy) => {
+    let t0 = 0, t1 = 1;
+    if (dx) { const a = (cx - 0.5 - px) / dx, b = (cx + 0.5 - px) / dx; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); } else if (Math.round(px) !== cx) return -1;
+    if (dy) { const a = (cy - 0.5 - py) / dy, b = (cy + 0.5 - py) / dy; t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b)); } else if (Math.round(py) !== cy) return -1;
+    return t0 < t1 || (t0 === t1 && Math.round(px + t0 * dx) === cx && Math.round(py + t0 * dy) === cy) ? t0 : -1;
+  };
+  const trace = (a, b) => {
+    const flip = X[a] > X[b] || (X[a] === X[b] && Y[a] > Y[b]), s = flip ? b : a, e = flip ? a : b, hits = [];
+    const px = gx(s), py = gy(s), dx = gx(e) - px, dy = gy(e) - py, ux = (px + 0.5) / H, uy = (py + 0.5) / H, vx = dx / H, vy = dy / H;
+    const ei = Math.floor(ux + vx), ej = Math.floor(uy + vy), si = Math.sign(vx), sj = Math.sign(vy);
+    let i = Math.floor(ux), j = Math.floor(uy), tx = si ? (si > 0 ? i + 1 - ux : ux - i) / Math.abs(vx) : Infinity, ty = sj ? (sj > 0 ? j + 1 - uy : uy - j) / Math.abs(vy) : Infinity;
+    for (;;) {
+      for (const c of hot.get(i * 1e6 + j) || []) { const t = enter(px, py, dx, dy, QX[c], QY[c]); if (t >= 0) hits.push([t, c]); }
+      if ((i === ei && j === ej) || Math.min(tx, ty) > 1) break;
+      if (tx < ty) { i += si; tx += 1 / Math.abs(vx); } else if (ty < tx) { j += sj; ty += 1 / Math.abs(vy); } else { i += si; j += sj; tx += 1 / Math.abs(vx); ty += 1 / Math.abs(vy); }
+    }
+    const out = [q(s)];
+    for (const [, c] of hits.sort((m, n) => m[0] - n[0] || m[1] - n[1])) if (out[out.length - 1] !== c) out.push(c);
+    if (out[out.length - 1] !== q(e)) out.push(q(e));
+    return flip ? out.reverse() : out;
+  };
+  const grid = rings.map((u) => u.map((poly) => poly.map((ring) => {
+    const r = [];
+    ring.forEach((a, k) => { const path = trace(a, ring[(k + 1) % ring.length]); for (let m = 0; m + 1 < path.length; m++) push(r, path[m]); });
+    return close(r);
+  })));
   const twice = (r) => { let s = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) s += (QX[r[j]] - QX[r[i]]) * (QY[r[j]] + QY[r[i]]); return s; };
   const loops = (ring) => {
     const out = [], stack = [], at = new Map();
@@ -624,7 +835,7 @@ const weights = (topo) => {
   return { pre, w: w.sort((a, b) => a - b) };
 };
 const base = weights(server.topology({ provinces: { type: "FeatureCollection", features: parents.map((p) => ({ type: "Feature", properties: { n: p.n, c: p.c }, geometry: multipolygon(p.geo) })) } }, 1e6)).w;
-const threshold = base[Math.floor((1 - keep) * (base.length - 1))];
+const level = (k) => base[Math.max(0, Math.floor((1 - k) * (base.length - 1)))], threshold = level(keep), fine = level(keepDetail);
 const full = server.topology({ units: { type: "FeatureCollection", features } }, 1e6);
 const { pre } = weights(full);
 const ringsOf = (g) => (g.type === "Polygon" ? [g.arcs] : g.arcs);
@@ -632,10 +843,10 @@ const shapesOf = (topo) => client.feature(topo, topo.objects.units).features.map
 const before = shapesOf(full).map((list) => list.map((c) => kmArea({ type: "Polygon", coordinates: c })));
 const several = new Set(flat.filter((u, i) => i && flat[i - 1].p === u.p).map((u) => u.p));
 const arcBox = pre.arcs.map((arc) => { const b = [Infinity, Infinity, -Infinity, -Infinity]; for (const [x, y] of arc) { if (x < b[0]) b[0] = x; if (x > b[2]) b[2] = x; if (y < b[1]) b[1] = y; if (y > b[3]) b[3] = y; } return b; });
-const guard = (k) => { let n = 0; for (const pt of pre.arcs[k < 0 ? ~k : k]) if (pt[2] !== Infinity) { pt[2] = Infinity; n++; } return n; };
-let simple = simplify.simplify(pre, threshold), guarded = 0;
-for (let round = 0, more = 1; more && round < 8; round++) {
-  more = 0;
+const guard = (k, b) => { let n = 0; for (const pt of pre.arcs[k < 0 ? ~k : k]) if (pt[2] !== Infinity && (!b || (pt[0] >= b[0] && pt[0] <= b[2] && pt[1] >= b[1] && pt[1] <= b[3]))) { pt[2] = Infinity; n++; } return n; };
+let guarded = 0;
+const check = (simple) => {
+  let more = 0;
   const shapes = shapesOf(simple);
   shapes.forEach((list, i) => list.forEach((c, j) => {
     const a = d3.geoArea({ type: "Polygon", coordinates: c }), now = Math.min(a, 4 * Math.PI - a) * EARTH * EARTH;
@@ -644,29 +855,54 @@ for (let round = 0, more = 1; more && round < 8; round++) {
     guarded++;
   }));
   const mp = shapes.map((list) => ints({ type: "MultiPolygon", coordinates: list })), bbs = mp.map((m) => (m.length ? box(m) : [0, 0, -1, -1])), buckets = new Map(), tested = new Set();
+  const near = (u, region) => {
+    const [x0, y0, x1, y1] = box(region).map((v) => v / SCALE), m = Math.max(x1 - x0, y1 - y0) + 0.01, close = [];
+    for (const poly of ringsOf(full.objects.units.geometries[u])) for (const ring of poly) for (const k of ring) {
+      const bb = arcBox[k < 0 ? ~k : k];
+      if (bb[0] <= x1 + m && bb[2] >= x0 - m && bb[1] <= y1 + m && bb[3] >= y0 - m) close.push(k);
+    }
+    const n = close.reduce((t, k) => t + guard(k, [x0 - m, y0 - m, x1 + m, y1 + m]), 0);
+    more += n || close.reduce((t, k) => t + guard(k), 0);
+    guarded++;
+  };
+  mp.forEach((m, i) => {
+    const paths = [], fill = (type) => { const c = new CL.Clipper(), out = new CL.Paths(); c.AddPaths(paths, CL.PolyType.ptSubject, true); c.Execute(CL.ClipType.ctUnion, out, type, type); return out; };
+    for (const poly of m) poly.forEach((ring, j) => { const path = ring.map(([X, Y]) => ({ X, Y })); if ((shoelace(ring) > 0) === (j > 0)) path.reverse(); paths.push(path); });
+    const [all, positive, odd] = [CL.PolyFillType.pftNonZero, CL.PolyFillType.pftPositive, CL.PolyFillType.pftEvenOdd].map(fill);
+    for (const [a, b] of [[all, positive], [positive, odd]]) {
+      const c = new CL.Clipper(), out = new CL.Paths();
+      c.AddPaths(a, CL.PolyType.ptSubject, true);
+      c.AddPaths(b, CL.PolyType.ptClip, true);
+      c.Execute(CL.ClipType.ctDifference, out, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+      const wrong = out.map((path) => [path.map((q) => [q.X, q.Y])]);
+      if (wrong.reduce((t, [r]) => t + signed(r), 0) >= 0.01) near(i, wrong);
+    }
+  });
   bbs.forEach((b, i) => { for (let gx = Math.floor(b[0] / SCALE); gx <= Math.floor(b[2] / SCALE); gx++) for (let gy = Math.floor(b[1] / SCALE); gy <= Math.floor(b[3] / SCALE); gy++) { const k = cellKey(gx, gy); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(i); } });
   for (const l of buckets.values()) for (let a = 0; a < l.length; a++) for (let b = a + 1; b < l.length; b++) {
     const i = l[a], j = l[b], key = i * 1e5 + j;
     if (tested.has(key) || !hit(bbs[i], bbs[j])) continue;
     tested.add(key);
     const both = intersect(mp[i], mp[j]);
-    if (area(both) < 0.01) continue;
-    const [x0, y0, x1, y1] = box(both).map((v) => v / SCALE), m = Math.max(x1 - x0, y1 - y0) + 0.01;
-    for (const u of [i, j]) for (const poly of ringsOf(full.objects.units.geometries[u])) for (const ring of poly) for (const k of ring) {
-      const bb = arcBox[k < 0 ? ~k : k];
-      if (bb[0] <= x1 + m && bb[2] >= x0 - m && bb[1] <= y1 + m && bb[3] >= y0 - m) more += guard(k);
-    }
-    guarded++;
+    if (area(both) >= 0.01) { near(i, both); near(j, both); }
   }
-  if (more) simple = simplify.simplify(pre, threshold);
-}
+  return more;
+};
+for (let round = 0, more = 1; more && round < 8; round++) more = check(simplify.simplify(pre, threshold)) + check(simplify.simplify(pre, fine));
+const simple = simplify.simplify(pre, threshold), detail = client.quantize(simplify.simplify(pre, fine), 1e6);
 const out = client.quantize(simple, 2e5);
 out.provinces = provinces;
 out.countries = reference.countries;
 out.split = split.map((s) => s.c);
 out.sources = split.map(({ c, source, license, url }) => ({ c, source, license, url }));
+out.detail = 1;
 let vertices = 0;
 simple.arcs.forEach((arc) => { vertices += arc.length; });
-const json = JSON.stringify(out);
+const json = JSON.stringify(out), fineJson = JSON.stringify({ type: "Topology", transform: detail.transform, arcs: detail.arcs });
+if (detail.arcs.length !== out.arcs.length) throw new Error("the detail arcs do not line up with units.json");
 writeFileSync(resolve(here, "../data/units.json"), json);
+writeFileSync(resolve(here, "../data/units-detail.json"), fineJson);
+let fineVertices = 0;
+detail.arcs.forEach((arc) => { fineVertices += arc.length; });
 console.log(features.length, "units,", split.map((s) => s.c + " " + counts[s.c]).join(", ") + ";", simple.arcs.length, "arcs,", vertices, "vertices (" + (vertices / pre.arcs.reduce((t, a) => t + a.length, 0)).toFixed(3) + " of the points kept, " + guarded + " polygons or overlaps guarded);", Math.round(json.length / 1024), "KB,", Math.round(gzipSync(json).length / 1024), "KB gzipped;", Math.round((Date.now() - t0) / 1000) + "s");
+console.log("units-detail.json:", fineVertices, "vertices at", keepDetail, "(" + (fineVertices / vertices).toFixed(2) + "x);", Math.round(fineJson.length / 1024), "KB,", Math.round(gzipSync(fineJson).length / 1024), "KB gzipped");
