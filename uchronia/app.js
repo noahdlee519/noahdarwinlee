@@ -782,15 +782,19 @@
   function drawPieceFills(vis, lvl, satellite) {
     clipToLand(vis, lvl);
     ctx.globalAlpha = satellite ? 0.22 : 1;
-    for (var i = 0; i < vis.length; i++) {
-      var p = vis[i];
-      ctx.beginPath(); traceFeature(ctx, p.shape.f);
-      if (p.owner >= 0 && countries[p.owner]) { ctx.fillStyle = colorOf(p.owner); ctx.fill(); }
-      else {
-        ctx.fillStyle = pal.unclaimed; ctx.fill();
-        var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
-      }
-    }
+    var byOwner = new Map();
+    vis.forEach(function (p) {
+      var o = p.owner >= 0 && countries[p.owner] ? p.owner : UNCLAIMED;
+      if (!byOwner.has(o)) byOwner.set(o, []);
+      byOwner.get(o).push(p);
+    });
+    byOwner.forEach(function (list, o) {
+      ctx.beginPath();
+      list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
+      if (o >= 0) { ctx.fillStyle = colorOf(o); ctx.fill(); return; }
+      ctx.fillStyle = pal.unclaimed; ctx.fill();
+      var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
+    });
     ctx.globalAlpha = 1;
     drawPieceHover(vis);
     var c = currentCountry();
@@ -916,8 +920,8 @@
     }
 
     mark("sea");
-    var vis = visiblePieces();
-    if (vis) clipOutPieces(vis);
+    var vis = visiblePieces(), cutFills = vis && satellite;
+    if (cutFills) clipOutPieces(vis);
     ctx.globalAlpha = satellite ? 0.22 : 1;
     for (var g = 0; g < groups.length; g++) {
       var list = groups[g].countries;
@@ -953,7 +957,7 @@
       ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
     }
     mark("provlines");
-    if (vis) { ctx.restore(); drawPieceFills(vis, lvl, satellite); }
+    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite); }
     ctx.lineJoin = "round";
     ctx.beginPath(); traceArcs(ctx, L, coastArcs);
     ctx.globalAlpha = satellite ? 0.55 : 1;
