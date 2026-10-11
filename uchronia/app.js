@@ -56,9 +56,6 @@
   var MIN_ZOOM = 0.6, MAX_ZOOM = 40;
   var FB = { k: 1, xc: 0, yc: 0, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
 
-  var pick = document.createElement("canvas");
-  var pctx = pick.getContext("2d", { willReadFrequently: true });
-  var pickDirty = true;
 
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -75,8 +72,6 @@
     freeL = panelW; freeR = W; freeT = 0; freeB = H - sheetH;
     baseR = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
     baseK = Math.max(20, Math.min((freeW - 32) / TAU, (freeH - 24) / Math.PI));
-    pick.width = W; pick.height = H;
-    pickDirty = true;
     applyView();
   }
 
@@ -101,7 +96,6 @@
       view.lat = Math.max(-90, Math.min(90, view.lat));
       projection.rotate([-view.lon, -view.lat, 0]).scale(baseR * view.zoom).translate([cx, cy]);
     }
-    pickDirty = true;
   }
   function localScale() { return (flat ? baseK : baseR) * view.zoom; }
   function zoomForScale(S) { return S / (flat ? baseK : baseR); }
@@ -204,12 +198,11 @@
     levels[3] = dg.topo; feats[3] = dg.feats; arcLines[3] = dg.lines;
     shapeCache[3].clear();
     dg.ready = true;
-    pickDirty = true;
     scheduleRender();
   }
   function noteCost(ms) {
     if (slow) return;
-    if (ms > 28) { if (++slowFrames >= 6) { slow = 1; pickDirty = true; } } else slowFrames = 0;
+    if (ms > 28) { if (++slowFrames >= 6) { slow = 1; } } else slowFrames = 0;
   }
 
   var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
@@ -528,10 +521,11 @@
     selCache = { c: c, v: ownerVersion, arcs: out };
     return out;
   }
-  function ownersChanged(list) {
+  function ownersChanged(list, keepShapes) {
     ownerVersion++;
     groupsDirty = true;
     arcsDirty = true;
+    if (keepShapes) return;
     if (list) touchShapes(list.concat([UNCLAIMED]));
     else { shapeCache.forEach(function (m) { m.clear(); }); }
   }
@@ -707,16 +701,7 @@
   function unitHolds(u, lam, phi) {
     var k = u * 4, lon = lam / D2R, lat = phi / D2R;
     if (lon < unitBox[k] || lon > unitBox[k + 2] || lat < unitBox[k + 1] || lat > unitBox[k + 3]) return false;
-    var rings = feats[2][u].rings, inside = false;
-    for (var r = 0; r < rings.length; r++) {
-      var rg = rings[r];
-      flatArrays(rg);
-      var X = rg.L, Y = rg.P, n = rg.n;
-      for (var i = 0, j = n - 1; i < n; j = i++) {
-        if ((Y[i] > phi) !== (Y[j] > phi) && lam < (X[j] - X[i]) * (phi - Y[i]) / (Y[j] - Y[i]) + X[i]) inside = !inside;
-      }
-    }
-    return inside;
+    return ringsHold(feats[2][u], lam, phi);
   }
   function unitNear(lon, lat) {
     var lam = lon * D2R, phi = lat * D2R;
@@ -911,6 +896,25 @@
     }
     ctx.restore();
   }
+  function drawStrokeOverlay(F, satellite) {
+    var by = new Map();
+    stroke.changes.forEach(function (from, u) {
+      var o = owner[u];
+      if (o === from) return;
+      var k = o >= 0 && countries[o] ? o : UNCLAIMED;
+      if (!by.has(k)) by.set(k, []);
+      by.get(k).push(u);
+    });
+    ctx.globalAlpha = satellite ? 0.22 : 1;
+    by.forEach(function (list, o) {
+      ctx.beginPath();
+      list.forEach(function (u) { traceFeature(ctx, F[u]); });
+      if (o >= 0) { ctx.fillStyle = colorOf(o); ctx.fill(); return; }
+      ctx.fillStyle = pal.unclaimed; ctx.fill();
+      var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
+    });
+    ctx.globalAlpha = 1;
+  }
   function drawRegionLines(L, uArcs, pArcs, ua, pa) {
     if (ua > 0 && uArcs.length) {
       ctx.beginPath(); traceArcs(ctx, L, uArcs);
@@ -1032,8 +1036,9 @@
     ctx.globalAlpha = 1;
     mark("fills");
 
-    drawHover(F);
-    drawSelectionFill(F);
+    if (stroke && !stroke.merged) drawStrokeOverlay(F, satellite);
+    drawHover(F, lvl);
+    drawSelectionFill(F, lvl);
     mark("overlays");
 
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite); }
@@ -1111,19 +1116,34 @@
     if (!ui.fine) return g >= 0 ? groupName[g] : provName[p];
     return fineData && provUnits[p].length > 1 ? unitName[u] : provName[p];
   }
-  function drawHover(F) {
+  var regionShapes = new Map();
+  function regionShape(u, lvl) {
+    var p = unitProv[u], g = provGroup[p];
+    var key = (ui.fine ? "u" + u : g >= 0 ? "g" + g : fineData ? "p" + p : "u" + u) + ":" + lvl;
+    var f = regionShapes.get(key);
+    if (f) return f;
+    var list = regionUnits(u);
+    if (list.length === 1) f = feats[lvl][list[0]];
+    else {
+      var t = levels[lvl], gs = t.objects[objKey].geometries;
+      f = prepare([{ geometry: topojson.merge(t, list.map(function (q) { return gs[q]; })) }])[0];
+    }
+    regionShapes.set(key, f);
+    return f;
+  }
+  function drawHover(F, lvl) {
     var u = ui.hover, hp = ui.hoverPiece;
     if (u < 0 || drag || stroke || cityDrag || lasso) return;
     var vo = hp ? hp.owner : owner[u];
     if (ui.tool === "paint") {
       var to = brush();
       if (to === null) return;
-      var list = ui.whole && vo >= 0 ? (unitsOf[vo] || []) : hp ? [] : regionUnits(u);
+      var whole = ui.whole && vo >= 0, list = whole ? (unitsOf[vo] || []) : hp ? [] : regionUnits(u);
       var any = false;
       for (var i = 0; i < list.length; i++) if (owner[list[i]] !== to) { any = true; break; }
       if (!any) return;
       ctx.beginPath();
-      for (i = 0; i < list.length; i++) traceFeature(ctx, F[list[i]]);
+      traceFeature(ctx, whole ? shapeOf(vo, lvl) : regionShape(u, lvl));
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill();
       if (to < 0) { ctx.fillStyle = hatch; ctx.fill(); }
@@ -1131,9 +1151,9 @@
       ctx.setLineDash([3, 3]); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
     } else if (ui.tool === "select") {
       var o = vo;
-      if (o < 0 || o === ui.country || !unitsOf[o]) return;
+      if (o < 0 || o === ui.country || !unitsOf[o] || !unitsOf[o].length) return;
       ctx.beginPath();
-      unitsOf[o].forEach(function (q) { traceFeature(ctx, F[q]); });
+      traceFeature(ctx, shapeOf(o, lvl));
       ctx.fillStyle = pal.hover; ctx.fill();
     }
   }
@@ -1141,11 +1161,11 @@
     var c = ui.country;
     return c >= 0 && countries[c] && countries[c].alive ? c : -1;
   }
-  function drawSelectionFill(F) {
+  function drawSelectionFill(F, lvl) {
     var c = currentCountry();
-    if (c < 0 || ui.tool !== "select" || ui.city || !unitsOf[c]) return;
+    if (c < 0 || ui.tool !== "select" || ui.city || !unitsOf[c] || !unitsOf[c].length) return;
     ctx.beginPath();
-    unitsOf[c].forEach(function (q) { traceFeature(ctx, F[q]); });
+    traceFeature(ctx, shapeOf(c, lvl));
     ctx.fillStyle = pal["select-fill"]; ctx.fill();
   }
   function drawSelectionLine(L) {
@@ -1475,56 +1495,35 @@
     return ll && isFinite(ll[0]) && visible(ll) ? ll : null;
   }
 
-  function renderPick() {
-    setupFrame();
-    var F = feats[levelFor()];
-    pctx.setTransform(1, 0, 0, 1, 0, 0);
-    pctx.clearRect(0, 0, W, H);
-    pctx.save();
-    if (flat) { pctx.beginPath(); traceOutline(pctx); pctx.clip(); }
-    for (var u = 0; u < nUnit; u++) {
-      var f = F[u];
-      if (!inView(f)) continue;
-      var code = u + 1;
-      pctx.fillStyle = "rgb(" + (code & 255) + "," + ((code >> 8) & 255) + "," + ((code >> 16) & 255) + ")";
-      pctx.beginPath(); traceFeature(pctx, f); pctx.fill();
+  function ringsHold(f, lam, phi) {
+    var rings = f.rings, inside = false;
+    for (var r = 0; r < rings.length; r++) {
+      var rg = rings[r];
+      flatArrays(rg);
+      var X = rg.L, Y = rg.P, n = rg.n;
+      for (var i = 0, j = n - 1; i < n; j = i++) {
+        if ((Y[i] > phi) !== (Y[j] > phi) && lam < (X[j] - X[i]) * (phi - Y[i]) / (Y[j] - Y[i]) + X[i]) inside = !inside;
+      }
     }
-    pctx.restore();
-    pickDirty = false;
+    return inside;
+  }
+  function unitAtLL(lon, lat, F) {
+    if (!unitGrid) return -1;
+    var lam = lon * D2R, phi = lat * D2R, pad = 0.05;
+    var gx = Math.min(179, Math.floor((lon + 180) / 2)), gy = Math.floor((Math.max(-89.999, Math.min(89.999, lat)) + 90) / 2);
+    var list = unitGrid.get(gx * 100 + gy) || [];
+    for (var i = 0; i < list.length; i++) {
+      var u = list[i], k = u * 4;
+      if (lon < unitBox[k] - pad || lon > unitBox[k + 2] + pad || lat < unitBox[k + 1] - pad || lat > unitBox[k + 3] + pad) continue;
+      if (F[u] && ringsHold(F[u], lam, phi)) return u;
+    }
+    return -1;
   }
   function unitAt(x, y) {
     if (!feats) return -1;
     var ll = lonLatAt(x, y);
     if (!ll) return -1;
-    if (pickDirty) renderPick();
-    var x0 = Math.round(x) - 2, y0 = Math.round(y) - 2;
-    if (x0 < 0 || y0 < 0 || x0 + 5 > W || y0 + 5 > H) return unitAtEdge(x, y, ll);
-    var d = pctx.getImageData(x0, y0, 5, 5).data;
-    var code = function (i, j) { var k = (j * 5 + i) * 4; return d[k + 3] === 255 ? (d[k] | (d[k + 1] << 8) | (d[k + 2] << 16)) - 1 : -1; };
-    var order = [[2, 2], [3, 2], [2, 3], [1, 2], [2, 1], [3, 3], [1, 1], [3, 1], [1, 3]];
-    var tried = {}, solid = levelFor() === 3;
-    for (var n = 0; n < order.length; n++) {
-      var i = order[n][0], j = order[n][1], idx = code(i, j);
-      if (idx < 0 || idx >= nUnit || tried[idx]) continue;
-      tried[idx] = true;
-      if (d3.geoContains(geoFull[idx], ll)) return idx;
-      if (solid && code(i + 1, j) === idx && code(i - 1, j) === idx && code(i, j + 1) === idx && code(i, j - 1) === idx) return idx;
-    }
-    return -1;
-  }
-  function unitAtEdge(x, y, ll) {
-    var tried = {};
-    for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
-      var px = Math.round(x) + dx, py = Math.round(y) + dy;
-      if (px < 0 || py < 0 || px >= W || py >= H) continue;
-      var d = pctx.getImageData(px, py, 1, 1).data;
-      if (d[3] === 0) continue;
-      var idx = (d[0] | (d[1] << 8) | (d[2] << 16)) - 1;
-      if (idx < 0 || idx >= nUnit || tried[idx]) continue;
-      tried[idx] = true;
-      if (d3.geoContains(geoFull[idx], ll)) return idx;
-    }
-    return -1;
+    return unitAtLL(wrap180(ll[0]), ll[1], feats[levelFor()]);
   }
 
   function buildUnitGrid() {
@@ -2064,7 +2063,8 @@
     var was = owner[u];
     stroke.touched.add(was); stroke.touched.add(to);
     owner[u] = to;
-    ownersChanged([was, to]);
+    if (!stroke.merged && stroke.changes.size > 400) { stroke.merged = true; touchShapes(Array.from(stroke.touched).concat([UNCLAIMED])); }
+    ownersChanged([was, to], !stroke.merged);
     scheduleRender();
   }
   function paintAlong(x0, y0, x1, y1) {
@@ -2075,6 +2075,7 @@
     var s = stroke; stroke = null;
     canvas.classList.remove("is-painting");
     if (!s) return;
+    if (!s.merged && s.changes.size) touchShapes(Array.from(s.touched).concat([UNCLAIMED]));
     var ps = [], from = [], to = [];
     s.changes.forEach(function (f, u) { if (owner[u] !== f) { ps.push(u); from.push(f); to.push(owner[u]); } });
     var ops = [];
@@ -2932,7 +2933,6 @@
       if (globeView) view.lat = globeView.lat;
     } else view.zoom = zoomForScale(S);
     applyView();
-    pickDirty = true;
     detail.key = "";
     $("flat-btn").setAttribute("aria-pressed", String(flat));
     $("flat-btn").setAttribute("aria-label", flat ? "Globe" : "Flat map");
@@ -3602,9 +3602,10 @@
     }
     buildUnitGrid();
     shapeCache.forEach(function (m) { m.clear(); });
+    regionShapes.clear();
     selCache = { c: -2, v: -1, arcs: [] };
     cities.forEach(function (c) { c.u = -2; });
-    groupsDirty = true; arcsDirty = true; pickDirty = true;
+    groupsDirty = true; arcsDirty = true;
     ui.hover = -1;
     fineData = isFine;
   }

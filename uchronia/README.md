@@ -176,17 +176,19 @@ of `/greatercircle/`.
     reform), Pakistan (124 districts) and South Africa (52 district
     municipalities);
   - Brazil (510 immediate geographic regions, IBGE's municipalities merged by
-    IBGE's own table), Russia (763 districts and urban okrugs, in the 24
-    federal subjects over 150,000 km² only), Australia (546 local government
-    areas; the ACT stays whole), India (734 districts), Argentina (525
-    departments), Indonesia (518 regencies and cities), Mongolia (339 sums),
-    Iran (431 counties), Sudan (189 localities), Peru (197 provinces),
-    Tanzania (170 districts), Algeria (161 communes, in the eight wilayas over
-    60,000 km²), Angola (157 municipalities, before the 2024 reform),
-    Mozambique (157 districts), Saudi Arabia (147 governorates), Madagascar
-    (119 districts), Zambia (116 districts), Bolivia (110 provinces), Ethiopia
-    (74 zones), Chad (71 departments), Niger (67 departments), Mauritania (57
-    moughataas) and Mali (50 cercles);
+    IBGE's own table), Russia (701 districts and urban okrugs in the 24
+    federal subjects over 150,000 km²; the other 62 stay whole), Australia
+    (542 local government areas; the ACT and three small territories stay
+    whole), India (731 districts), Argentina (525 departments), Indonesia (518
+    regencies and cities), Mongolia (338 sums), Iran (430 counties), Sudan
+    (189 localities), Peru (196 provinces), Tanzania (170 districts), Algeria
+    (121 communes in the eight wilayas over 60,000 km²; the other 40 stay
+    whole), Angola (157 municipalities, before the 2024 reform), Mozambique
+    (156 districts), Saudi Arabia (147 governorates), Madagascar (119
+    districts), Zambia (116 districts), Bolivia (110 provinces), Ethiopia (71
+    zones), Chad (69 departments), Niger (66 departments), Mauritania (56
+    moughataas) and Mali (49 cercles); a province that is a single unit, such
+    as a capital district, stays whole;
   - Egypt is left out: its second level mixes city districts, unnamed desert
     remnants and misplaced shapes;
   - China's prefectures are regrouped from 1999 county boundaries by name and
@@ -202,8 +204,8 @@ of `/greatercircle/`.
   - it is loaded only when finer regions are switched on, or when a map needs
     them (4.9 MB, about 1.4 MB compressed);
   - `data/units-detail.json` holds the same arcs at six tenths of their
-    points for the closest zooms (10 MB, about 3.4 MB compressed), fetched
-    only there;
+    points, on a grid of 400,000 steps, for the closest zooms (9.3 MB, about
+    2.9 MB compressed), fetched only there;
   - built by `tools/build-units.mjs`, which needs clipper-lib (integer
     polygon clipping), @vant/area-data (current Chinese division codes),
     pinyin-pro (romanised Chinese names) and @br-geo-kit/ibge (IBGE's
@@ -286,7 +288,9 @@ in the repo. They covered:
   - Kazakhstan, Russia, Iran, Saudi Arabia and Algeria © OpenStreetMap
     contributors, and India (Pathways Data) and Ethiopia (Open Africa) under
     the same licence: ODbL 1.0, so those parts of `data/units.json` and
-    `data/units-detail.json` are under the ODbL too;
+    `data/units-detail.json` are under the ODbL too (geoBoundaries lists the
+    Saudi and Algerian extracts as CC BY-SA 2.0, but they are OpenStreetMap
+    data from 2021, so OpenStreetMap's own licence is the one that applies);
   - Brazil's municipal boundaries from IBGE through OCHA ROLAC (CC BY 3.0
     IGO), merged by IBGE's region table;
   - Australia © Australian Bureau of Statistics (CC BY 4.0);
