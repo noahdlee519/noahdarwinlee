@@ -1112,6 +1112,12 @@
       scheduleRender();
     }).catch(function (e) { console.warn("rivers", e); });
   }
+  function onScreen(L) {
+    var p = projectVec(L.cx, L.cy, L.cz, 0, 0);
+    if (!p) return true;
+    var r = 2 * B.r * Math.sin(Math.min(Math.PI, L.radius) / 2) + 2;
+    return p[0] + r > 0 && p[0] - r < W && p[1] + r > 0 && p[1] - r < H;
+  }
   function riverRank(S) { return S < 300 ? 2 : S < 520 ? 3 : S < 800 ? 4 : S < 1300 ? 5 : 6; }
   function drawRivers(S) {
     if (!rivers || !ui.rivers) return;
@@ -1122,7 +1128,7 @@
       var list = rivers[r];
       if (!list) continue;
       ctx.beginPath();
-      for (var i = 0; i < list.length; i++) traceArc(ctx, list[i]);
+      for (var i = 0; i < list.length; i++) if (flat || onScreen(list[i])) traceArc(ctx, list[i]);
       ctx.lineWidth = w * (r <= 2 ? 1.35 : r <= 4 ? 1.1 : 0.85);
       ctx.stroke();
     }
