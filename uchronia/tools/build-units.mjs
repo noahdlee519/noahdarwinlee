@@ -21,6 +21,7 @@ const { pinyin } = require("pinyin-pro");
 
 const EARTH = 6371.0088;
 const MIN_ISLAND_KM2 = 12;
+const MIN_ENCLAVE_KM2 = 0.5;
 const MIN_UNIT_KM2 = 1;
 const FRAGMENT_KM2 = 2;
 const SMALL_PART_KM2 = 0.5;
@@ -46,7 +47,27 @@ const readJSON = (name) => JSON.parse(readFileSync(need(name), "utf8"));
 const geo = JSON.parse(readFileSync(input, "utf8"));
 const countries = new Map();
 const parents = [];
+const vertexKey = (pt) => pt[0].toFixed(6) + "," + pt[1].toFixed(6);
+const vertexOwners = new Map();
+geo.features.forEach((f, fi) => {
+  if (!f.geometry) return;
+  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+  polys.forEach((poly) => poly.forEach((ring) => ring.forEach((pt) => {
+    const k = vertexKey(pt);
+    let s = vertexOwners.get(k);
+    if (!s) vertexOwners.set(k, (s = new Set()));
+    s.add(fi);
+  })));
+});
+const enclosed = (ring, fi, km2) => {
+  if (km2 < MIN_ENCLAVE_KM2) return false;
+  let shared = 0;
+  for (const pt of ring) { const s = vertexOwners.get(vertexKey(pt)); if (s && (s.size > 1 || !s.has(fi))) shared++; }
+  return shared >= ring.length * 0.95;
+};
+let fi = -1;
 for (const f of geo.features) {
+  fi++;
   if (!f.geometry) continue;
   const p = f.properties;
   const code = FOLD[p.adm0_a3] || p.adm0_a3;
@@ -55,7 +76,7 @@ for (const f of geo.features) {
   const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
   const areas = polys.map((c) => kmArea({ type: "Polygon", coordinates: c }));
   const biggest = areas.indexOf(Math.max(...areas));
-  parents.push({ n: PROVINCE_NAME[p.iso_3166_2] || p.name_en || p.name || RENAME[code] || p.admin, c: code, geo: polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2) });
+  parents.push({ n: PROVINCE_NAME[p.iso_3166_2] || p.name_en || p.name || RENAME[code] || p.admin, c: code, geo: polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2 || enclosed(c[0], fi, areas[i])) });
 }
 for (const [code, name] of countries) if (!name) countries.set(code, code);
 

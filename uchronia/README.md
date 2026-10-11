@@ -17,7 +17,7 @@ of `/greatercircle/`.
     Kong), they are grouped into the regions above them (Slovenia's 12
     statistical regions, Italy's 20 regions), 102 groups in all, and a group
     changes hands as one.
-  - With *Finer regions* on (under Advanced), those groups come apart again,
+  - With *Finer regions* on (in the View menu), those groups come apart again,
     and the large-region countries are cut further into their second-level
     units (counties, prefectures, districts), each of which can change hands
     on its own.
@@ -68,8 +68,9 @@ of `/greatercircle/`.
   - **Fills.** Each country is filled as one merged outline
     (`topojson.merge` of its regions), cached per level of detail until its
     regions change. Countries of the same colour share a single path.
-  - **Picking.** A colour-coded second canvas finds the region under the
-    pointer, checked against the exact shape.
+  - **Picking.** A two-degree grid of the regions' bounding boxes narrows the
+    search, and a point-in-polygon test on their shapes finds the region under
+    the pointer.
   - **Colours.** The countries are coloured like a political map: ten colours
     in CSS variables, ordered round the colour wheel and given out so that
     neighbours never share one and sit well apart on the wheel; any colour can
@@ -83,9 +84,15 @@ of `/greatercircle/`.
       wide and clipped to the country);
     - water lining: four rings round every coast, cut by stroking the
       coastline wide in ink and then a little narrower in the sea colour;
-    - Old Standard TT, a revival of late 19th-century type, for the panel and
-      the names, italic names for 57 oceans and seas, circled cities and
-      ringed capitals, and a double frame round the flat map.
+    - Old Standard TT, a revival of late 19th-century type, for the menus
+      and the names, italic names for 57 oceans and seas, circled cities and
+      ringed capitals, and a double frame round the flat map;
+    - country names that bend along arcs, as engravers set them (see
+      *Labels*);
+    - an aged sheet laid over the whole map: a darkened edge, a fold down the
+      middle each way, a few foxing spots, a faint unevenness in the paper and
+      its grain, all in CSS gradients and SVG noise multiplied over the
+      canvas; the satellite view is toned sepia.
 - **Labels.** A country's name goes on its largest piece, at the point where
   the biggest text box fits inside the land. To find it, the piece is drawn on
   an azimuthal-equidistant map around its centre and squeezed sideways by the
@@ -97,14 +104,21 @@ of `/greatercircle/`.
   - Names with spaces are tried on two lines too.
   - Long, thin countries (Chile, Norway, Sweden) are also tried along their
     principal axis, and turned when that fits much better.
+  - In Antique, names are also tried along arcs. The piece is unrolled round a
+    centre to its north or south (a log-polar map, which keeps shapes), and
+    the same search on the unrolled shape gives the biggest name that follows
+    those circles. A bent name is used when it is at least four fifths the
+    size of the straight one and ten points along its outline lie inside the
+    land; on screen, the arc is the circle through three of its points, and
+    each letter is set along it.
   - Labels are drawn largest country first and skipped where their turned
     boxes would overlap. They are worked out again in 14 ms slices after each
     edit or rename.
-  - Country names and city names can each be hidden (under Advanced); with
+  - Country names and city names can each be hidden (in the View menu); with
     city names hidden, the cities stay as dots.
 - **Cities.** Capitals, cities and towns each have their own mark and size of
   name (squares, dots and small dots; in Antique, ringed, circled and dotted).
-- **Cities.** 1,050 in four sizes. Each is shown from the zoom its size allows.
+- **Cities.** 3,050 in four sizes. Each is shown from the zoom its size allows.
 - **New countries.** A new country takes the name of the first region it
   receives, or of the country it swallows whole. Its capital is picked from
   the cities already in that land, the largest one, unless one of them is a
@@ -147,8 +161,8 @@ of `/greatercircle/`.
     can't be reached the view stays on the base image.
   - **Drawing.** It renders to a canvas off the page, which is copied under
     the political map each frame; the map's fills go translucent over it.
-  - **Theme and loading.** The imagery is lightened in the light theme and
-    darkened in the dark. It is loaded only when the view is first switched
+  - **Theme and loading.** The imagery is lightened in the light theme,
+    darkened in the dark and toned sepia in Antique. It is loaded only when the view is first switched
     on (2,048 px wide, then 4,096 px on larger screens), and the choice is
     remembered.
 - **data/provinces.json**: Natural Earth 1:10m admin-1 states and provinces
@@ -156,14 +170,18 @@ of `/greatercircle/`.
   - A few country names are made shorter or more current ("United States",
     "DR Congo", "Czechia", "Eswatini").
   - Islets under 12 km² are dropped unless they are a province's largest
-    piece.
+    piece or an enclave: a piece of at least 0.5 km² whose outline lies on its
+    neighbours' all the way round (the Swiss cantons' and Liechtenstein's
+    exclaves, for instance), which would otherwise leave a hole. The units
+    below are cut from the same pieces.
+  - The build stops if simplifying would turn any piece inside out.
   - It is simplified to a tenth of its points by spherical triangle area.
   - The region groups come from Natural Earth's `region` field, with some
     names put into English ("Lombardy", "Nakhchivan") or into their current
     form (Kosovo's districts by their Albanian names).
   - Built by `tools/build-provinces.mjs` (see its arguments for the inputs).
 - **data/provinces-detail.json**: the same arcs kept at four tenths of their
-  points (3.7 MB, about 1.4 MB compressed), for the closest zooms. It holds
+  points (3.8 MB, about 1.3 MB compressed), for the closest zooms. It holds
   only the arcs; the shapes come from `provinces.json`.
 - **data/units.json**: the same provinces with 31 large-region countries cut
   into second-level units, 14,627 regions in all, in one topology so that
@@ -215,6 +233,11 @@ of `/greatercircle/`.
   - The first 550 are greatercircle's.
   - The next 500 are the largest of its place list, picked greedily with each
     country's share damped and none within 45 km of another.
+  - The last 2,000 are towns of at least 15,000 people from the same list,
+    picked the same way with none within 20 km of another. Their names lose
+    the administrative words the list keeps (Chinese "Shi" and "Qu", Korean
+    "-si", Vietnamese "Thành Phố"), and in Arabic-, Persian- and
+    Urdu-speaking countries and a few others the transliteration marks.
   - Built by `tools/build-cities.mjs`.
 - **data/earth-2048.webp**, **data/earth-4096.webp**: NASA Blue Marble Next
   Generation with shaded sea floor, equirectangular. The polar rows and the
@@ -227,6 +250,11 @@ of `/greatercircle/`.
 
 ## Using it
 
+- The bar along the top holds the tools, *New country*, undo and redo, and
+  two menus: **File** (copy a link, save a file, open one, start over) and
+  **View** (the style, country and city names, finer regions). What is
+  selected shows in the bar's second row, and a hint for the tool at the
+  bottom of the map.
 - **Select (V)**: click a country to rename or recolour it, paint with it or
   dissolve it; click a city to rename it, change its size or delete it, and
   drag it to move it. A region on its own can be made a country.
@@ -267,7 +295,8 @@ in the repo. They covered:
   making one a country, areas, the date line, the flat map, the satellite
   view, saving, links, and drawing by touch;
 - hiding country and city names, and the detailed borders up close;
-- the three styles, the hidden interface, and keyboard focus;
+- the top bar and its menus, the three styles, curved names, the hidden
+  interface, and keyboard focus;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;

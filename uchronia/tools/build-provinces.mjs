@@ -16,6 +16,7 @@ const d3 = require("d3-geo");
 
 const EARTH = 6371.0088;
 const MIN_ISLAND_KM2 = 12;
+const MIN_ENCLAVE_KM2 = 0.5;
 
 const RENAME = {
   USA: "United States", TZA: "Tanzania", SRB: "Serbia", COD: "DR Congo", COG: "Congo", MKD: "North Macedonia",
@@ -55,7 +56,27 @@ const countries = new Map();
 const features = [];
 const groups = [], groupIndex = new Map();
 let droppedIslands = 0;
+const vertexKey = (pt) => pt[0].toFixed(6) + "," + pt[1].toFixed(6);
+const vertexOwners = new Map();
+geo.features.forEach((f, fi) => {
+  if (!f.geometry) return;
+  const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+  polys.forEach((poly) => poly.forEach((ring) => ring.forEach((pt) => {
+    const k = vertexKey(pt);
+    let s = vertexOwners.get(k);
+    if (!s) vertexOwners.set(k, (s = new Set()));
+    s.add(fi);
+  })));
+});
+const enclosed = (ring, fi, km2) => {
+  if (km2 < MIN_ENCLAVE_KM2) return false;
+  let shared = 0;
+  for (const pt of ring) { const s = vertexOwners.get(vertexKey(pt)); if (s && (s.size > 1 || !s.has(fi))) shared++; }
+  return shared >= ring.length * 0.95;
+};
+let fi = -1;
 for (const f of geo.features) {
+  fi++;
   if (!f.geometry) continue;
   const p = f.properties;
   const code = FOLD[p.adm0_a3] || p.adm0_a3;
@@ -64,7 +85,7 @@ for (const f of geo.features) {
   let polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
   const areas = polys.map((c) => kmArea({ type: "Polygon", coordinates: c }));
   const biggest = areas.indexOf(Math.max(...areas));
-  const kept = polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2);
+  const kept = polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2 || enclosed(c[0], fi, areas[i]));
   droppedIslands += polys.length - kept.length;
   const properties = { n: PROVINCE_NAME[p.iso_3166_2] || p.name_en || p.name || RENAME[code] || p.admin, c: code };
   if (GROUPED.has(code) && p.region) {
@@ -98,6 +119,9 @@ writeFileSync(resolve(here, "../data/provinces.json"), json);
 console.log(features.length, "provinces in", countries.size, "countries and", groups.length, "groups;", droppedIslands, "islands under", MIN_ISLAND_KM2, "km² dropped;", simple.arcs.length, "arcs,", vertices, "vertices;", Math.round(json.length / 1024), "KB");
 
 const fine = client.quantize(simplify.simplify(pre, threshold(keepDetail)), 1e6);
+const flipped = [out, { type: "Topology", transform: fine.transform, arcs: fine.arcs, objects: out.objects }].flatMap((t) => client.feature(t, t.objects.provinces).features
+  .filter((f) => (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates).some((c) => d3.geoArea({ type: "Polygon", coordinates: c }) > 2 * Math.PI)));
+if (flipped.length) throw new Error("simplifying turned part of " + flipped.map((f) => f.properties.n).join(", ") + " inside out");
 const detail = JSON.stringify({ type: "Topology", transform: fine.transform, arcs: fine.arcs });
 let detailVertices = 0;
 fine.arcs.forEach((arc) => { detailVertices += arc.length; });

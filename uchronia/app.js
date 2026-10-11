@@ -5,7 +5,7 @@
   var canvas = $("globe");
   var ctx = canvas.getContext("2d");
   var satCanvas = document.createElement("canvas");
-  var panel = $("panel");
+  var panel = $("panel"), bar = $("bar"), sheetMode = null;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canHover = window.matchMedia("(hover: hover)").matches;
   var R_KM = 6371.0088;
@@ -64,12 +64,14 @@
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     satCanvas.width = canvas.width; satCanvas.height = canvas.height;
     var phone = W <= 640, bare = ui.bare;
-    var panelW = phone || bare ? 0 : 352 + 2 * 24;
+    var barH = phone || bare ? 0 : Math.ceil(bar.getBoundingClientRect().bottom);
     var sheetH = phone && !bare ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 150) : 0;
-    var freeW = W - panelW, freeH = H - sheetH - (phone && !bare ? 70 : 40);
-    cx = phone ? W / 2 : panelW + freeW / 2;
-    cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
-    freeL = panelW; freeR = W; freeT = 0; freeB = H - sheetH;
+    var freeW = W, freeH = H - barH - sheetH - (phone && !bare ? 70 : 40);
+    cx = W / 2;
+    cy = phone ? (H - sheetH) / 2 + 10 : barH + (H - barH) / 2;
+    freeL = 0; freeR = W; freeT = barH; freeB = H - sheetH;
+    document.documentElement.style.setProperty("--uc-bar-h", barH + "px");
+    if (phone !== sheetMode) { sheetMode = phone; $("file-menu").open = phone; if (!phone) $("adv").open = false; }
     baseR = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
     baseK = Math.max(20, Math.min((freeW - 32) / TAU, (freeH - 24) / Math.PI));
     applyView();
@@ -143,7 +145,7 @@
     return typeof col === "number" ? pal.bands[col % PALETTE] : col;
   }
   function remeasure() {
-    widthCache.clear();
+    widthCache.clear(); glyphCache.clear();
     cities.forEach(function (c) { c.w = 0; });
     if (feats) queueLabels(countries.map(function (c, i) { return i; }));
     scheduleRender();
@@ -954,7 +956,7 @@
   var marks = null;
   function mark(name) { if (marks) marks.push([name, performance.now()]); }
   function drawSat() {
-    var o = { flat: flat, dpr: dpr, light: parseFloat(pal["sat-light"]) || 0, detail: detail.shown && !detail.off, cx: cx, cy: cy };
+    var o = { flat: flat, dpr: dpr, light: parseFloat(pal["sat-light"]) || 0, sepia: pal.antique ? 0.6 : 0, detail: detail.shown && !detail.off, cx: cx, cy: cy };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     sat.draw(o);
@@ -1198,7 +1200,66 @@
     }
     return w;
   }
+  var glyphCache = new Map();
+  function glyphWidth(ch) {
+    var w = glyphCache.get(ch);
+    if (w == null) {
+      ctx.font = "400 100px " + SERIF; ctx.letterSpacing = "0px";
+      w = ctx.measureText(ch).width / 100;
+      glyphCache.set(ch, w);
+    }
+    return w;
+  }
   function labelText(name) { return (name || "").trim().toUpperCase(); }
+  function arcOf(L, px, py, w) {
+    var b = L.arc[0], e = L.arc[1];
+    var pb = projectVec(b.v[0], b.v[1], b.v[2], b.lam, b.phi), pe = projectVec(e.v[0], e.v[1], e.v[2], e.lam, e.phi);
+    if (!pb || !pe) return null;
+    var ax = pb[0] - px, ay = pb[1] - py, bx = pe[0] - px, by = pe[1] - py;
+    if (flat && Math.max(Math.abs(ax), Math.abs(bx)) > Math.PI * FB.k) return null;
+    var d = 2 * (ax * by - ay * bx);
+    var span = Math.hypot(bx - ax, by - ay);
+    if (!(span > 1) || Math.abs(d) < 1e-6 * span * span) return null;
+    var a2 = ax * ax + ay * ay, b2 = bx * bx + by * by;
+    var ux = (by * a2 - ay * b2) / d, uy = (ax * b2 - bx * a2) / d;
+    var R = Math.hypot(ux, uy);
+    if (!(R > w * 0.9) || R > w * 40) return null;
+    var phi = Math.atan2(-uy, -ux), rx = bx - ax, ry = by - ay;
+    if (rx < 0) { rx = -rx; ry = -ry; }
+    var dir = -Math.sin(phi) * rx + Math.cos(phi) * ry >= 0 ? 1 : -1;
+    var tx = -dir * Math.sin(phi), ty = dir * Math.cos(phi);
+    var out = -ty * Math.cos(phi) + tx * Math.sin(phi) > 0 ? 1 : -1;
+    return { qx: px + ux, qy: py + uy, R: R, phi: phi, dir: dir, out: out, ang: Math.atan2(ty, tx) };
+  }
+  function drawArcText(lines, A, f, spacing) {
+    var glyphs = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i], ly = (i - (lines.length - 1) / 2) * f * LINE_H, Ri = A.R + A.out * ly;
+      var ws = [], total = 0;
+      for (var j = 0; j < line.length; j++) { var gw = glyphWidth(line[j]) * f; ws.push(gw); total += gw + spacing; }
+      var x = -(total - spacing) / 2;
+      for (j = 0; j < line.length; j++) {
+        var xc = x + ws[j] / 2, ph = A.phi + A.dir * xc / Ri;
+        x += ws[j] + spacing;
+        if (line[j] === " ") continue;
+        glyphs.push(line[j], A.qx + Ri * Math.cos(ph), A.qy + Ri * Math.sin(ph), ph + A.dir * HALF_PI);
+      }
+    }
+    ctx.save();
+    ctx.font = "400 " + f.toFixed(1) + "px " + SERIF;
+    ctx.letterSpacing = "0px";
+    ctx.lineWidth = Math.max(2, f * 0.22);
+    ctx.strokeStyle = pal["label-halo"];
+    ctx.fillStyle = pal.label;
+    for (var pass = 0; pass < 2; pass++) {
+      for (var k = 0; k < glyphs.length; k += 4) {
+        var c = Math.cos(glyphs[k + 3]), sn = Math.sin(glyphs[k + 3]);
+        ctx.setTransform(dpr * c, dpr * sn, -dpr * sn, dpr * c, dpr * glyphs[k + 1], dpr * glyphs[k + 2]);
+        if (pass) ctx.fillText(glyphs[k], 0, 0); else ctx.strokeText(glyphs[k], 0, 0);
+      }
+    }
+    ctx.restore();
+  }
   var LINE_H = 1.18, CAP_H = 0.92;
   var labelOrder = [];
   function drawLabels(placed) {
@@ -1218,17 +1279,22 @@
       if (px < -300 || px > W + 300 || py < -100 || py > H + 100) continue;
       var lines = L.name === co.name ? L.lines : [labelText(co.name)];
       if (!lines[0]) continue;
-      var f = Math.min(30, L.fkm * kmPx * Math.sqrt(fore));
+      var f = Math.min(24, L.fkm * kmPx * Math.sqrt(fore));
       if (f < 8.5) continue;
-      var ang = L.ang ? screenAngle(L, px, py) : 0;
       var w = 0;
       for (var i = 0; i < lines.length; i++) w = Math.max(w, unitWidth(lines[i]) * f);
       var h = f * (CAP_H + LINE_H * (lines.length - 1));
-      var box = mkBox(px, py, w / 2 + 3, h / 2 + 2, ang);
+      var arc = pal.antique && L.arc && lines === L.lines ? arcOf(L, px, py, w) : null, box;
+      if (arc) {
+        var sag = arc.R - Math.sqrt(Math.max(0, arc.R * arc.R - w * w / 4)), toQ = sag / 2 / arc.R;
+        box = mkBox(px + (arc.qx - px) * toQ, py + (arc.qy - py) * toQ, w / 2 + 3, h / 2 + sag / 2 + 2, arc.ang);
+      } else box = mkBox(px, py, w / 2 + 3, h / 2 + 2, L.ang ? screenAngle(L, px, py) : 0);
+      var ang = box.ang;
       if (!flat && !insideDisc(box)) continue;
       if (collides(placed, box)) continue;
       placed.push(box);
       var spacing = f * (pal.antique ? 0.22 : 0.16);
+      if (arc) { drawArcText(lines, arc, f, spacing); continue; }
       ctx.save();
       ctx.translate(px, py);
       if (ang) ctx.rotate(ang);
@@ -1548,8 +1614,8 @@
   function unitOfPoint(lon, lat, strict) {
     if (!unitGrid) return -1;
     var gx = Math.floor((wrap180(lon) + 180) / 2), gy = Math.floor((Math.max(-89.999, Math.min(89.999, lat)) + 90) / 2);
-    var list = unitGrid.get(gx * 100 + gy) || [];
-    for (var i = 0; i < list.length; i++) if (d3.geoContains(geoFull[list[i]], [lon, lat])) return list[i];
+    var list = unitGrid.get(gx * 100 + gy) || [], lam = lon * D2R, phi = lat * D2R;
+    for (var i = 0; i < list.length; i++) if (unitHolds(list[i], lam, phi)) return list[i];
     if (strict) return -1;
     var best = -1, bestD = 0.004;
     for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) {
@@ -1579,7 +1645,7 @@
     return c.u;
   }
 
-  var labelQueue = new Set(), labelTimer = 0;
+  var labelQueue = new Set(), labelTimer = 0, labelPaint = 0;
   function queueLabels(list) {
     list.forEach(function (c) { if (c >= 0) labelQueue.add(c); });
     clearTimeout(labelTimer);
@@ -1595,7 +1661,8 @@
       try { computeLabel(c); } catch (e) { countries[c].label = null; }
     }
     sortLabels();
-    scheduleRender();
+    var now = performance.now();
+    if (!labelQueue.size || now - labelPaint > 250) { labelPaint = now; scheduleRender(); }
     if (labelQueue.size) labelTimer = setTimeout(runLabels, 0);
   }
   function sortLabels() {
@@ -1645,7 +1712,7 @@
         var sq = rings.map(function (ring) { return ring.map(function (q) { return [(q[0] * cs + q[1] * sn) / aspect, -q[0] * sn + q[1] * cs]; }); });
         var pl = polylabel(sq);
         if (!(pl[2] > 0)) return;
-        var fkm = Math.SQRT2 * pl[2] / lh * 1.2;
+        var fkm = Math.SQRT2 * pl[2] / lh * 0.9;
         var score = fkm * (ang ? 0.62 : 1) * (lines.length > 1 ? 0.88 : 1);
         if (!top || score > top.score) {
           var xr = pl[0] * aspect, yr = pl[1];
@@ -1657,8 +1724,74 @@
       setLabel(co, cen[0], cen[1], 4, [name], 0, bestA * R_KM * R_KM, ext);
       return;
     }
+    var bent = pal.antique ? bendLabel(rings, [top.lines], [top.ang], top, cen[1]) : null;
+    if (bent) top = bent;
     var ll = proj.invert([top.x, -top.y]);
     setLabel(co, ll[0], ll[1], top.fkm, top.lines, top.ang, bestA * R_KM * R_KM, ext);
+    if (bent) co.label.arc = bent.arc.map(function (q) {
+      var g = proj.invert([q[0], -q[1]]);
+      return { v: toVec(g[0], g[1]), lam: g[0] * D2R, phi: g[1] * D2R };
+    });
+  }
+  function bendLabel(rings, layouts, angles, straight, lat) {
+    var best = null;
+    layouts.forEach(function (lines) {
+      var uw = 0;
+      lines.forEach(function (l) { uw = Math.max(uw, unitWidth(l)); });
+      var lh = CAP_H + LINE_H * (lines.length - 1), aspect = Math.max(0.5, uw / lh), wkm = uw * straight.fkm;
+      angles.forEach(function (ang) {
+        var cs = Math.cos(ang), sn = Math.sin(ang);
+        [1, -1].forEach(function (side) {
+          [1.6, 2.6].forEach(function (k) {
+            var rho = k * wkm, torn = false;
+            var sq = rings.map(function (ring) {
+              var prev = null;
+              return ring.map(function (q) {
+                var x = q[0] * cs + q[1] * sn, y = -q[0] * sn + q[1] * cs, dy = y - side * rho;
+                var th = Math.atan2(x, -side * dy), r = Math.max(1e-6, Math.sqrt(x * x + dy * dy));
+                if (prev !== null && Math.abs(th - prev) > Math.PI) torn = true;
+                prev = th;
+                return [th * rho / aspect, side * rho * Math.log(rho / r)];
+              });
+            });
+            if (torn) return;
+            var pl = polylabel(sq);
+            if (!(pl[2] > 0)) return;
+            var r = rho * Math.exp(-side * pl[1] / rho), th0 = pl[0] * aspect / rho;
+            var at = function (t, rr) {
+              var px = rr * Math.sin(t), py = side * rho - side * rr * Math.cos(t);
+              return [px * cs - py * sn, px * sn + py * cs];
+            };
+            var fkm = Math.SQRT2 * pl[2] * (r / rho) / lh * 0.9;
+            for (var tries = 0; tries < 3; tries++, fkm *= 0.85) {
+              var score = fkm * (ang ? 0.62 : 1) * (lines.length > 1 ? 0.88 : 1) * ((side > 0) === (lat >= 0) ? 1.08 : 1);
+              if (best && score <= best.score) return;
+              var half = uw * fkm / 2 / r, hh = lh * fkm / 2, inside = true;
+              for (var i = -2; i <= 2 && inside; i++) for (var j = -1; j <= 1 && inside; j += 2) {
+                var q = at(th0 + i * half / 2, r + j * hh);
+                if (!inRings(rings, q[0], q[1])) inside = false;
+              }
+              if (!inside) continue;
+              var a = at(th0, r);
+              best = { score: score, fkm: fkm, lines: lines, ang: ang, x: a[0], y: a[1], arc: [at(th0 - half, r), at(th0 + half, r)] };
+              return;
+            }
+          });
+        });
+      });
+    });
+    return best && best.fkm >= straight.fkm * 0.8 ? best : null;
+  }
+  function inRings(rings, x, y) {
+    var inside = false;
+    for (var k = 0; k < rings.length; k++) {
+      var ring = rings[k];
+      for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        var a = ring[i], b = ring[j];
+        if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+      }
+    }
+    return inside;
   }
   function extent(ring) {
     var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -2716,7 +2849,7 @@
     if (ui.tool === "select") {
       if (ui.city) setHint(["Drag the city on the " + where + " to move it"]);
       else if (c < 0 && ui.region >= 0 && owner[ui.region] < 0) setHint(["No country holds this land"]);
-      else if (c >= 0) setHint(["Rename or recolour ", { b: countries[c].name }, " here, or paint its borders"]);
+      else if (c >= 0) setHint(["Rename or recolour ", { b: countries[c].name }, ", or paint its borders"]);
       else setHint([verb + " a country or a city to change it, or found a new country"]);
     } else if (ui.tool === "paint") {
       var to = brush();
@@ -2779,10 +2912,14 @@
       var size = citySize(ui.city);
       document.querySelectorAll("#city-size button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.size === size)); });
     }
-    $("new-country").parentNode.hidden = ui.tool === "city";
     $("undo").disabled = !undoStack.length;
     $("redo").disabled = !redoStack.length;
-    $("undo").title = undoStack.length ? "Undo " + lowerFirst(undoStack[undoStack.length - 1].label) + " (Ctrl+Z)" : "Undo (Ctrl+Z)";
+    var undoWhat = undoStack.length ? "Undo " + lowerFirst(undoStack[undoStack.length - 1].label) : "Undo";
+    $("undo").title = undoWhat + " (Ctrl+Z)";
+    $("undo").setAttribute("aria-label", undoWhat);
+    var redoWhat = redoStack.length ? "Redo " + lowerFirst(redoStack[redoStack.length - 1].label) : "Redo";
+    $("redo").title = redoWhat + " (Ctrl+Shift+Z)";
+    $("redo").setAttribute("aria-label", redoWhat);
     $("fine").checked = ui.fine;
     var st = currentStyle();
     document.querySelectorAll("#style-seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.style === st)); });
@@ -3452,6 +3589,33 @@
     });
   })();
 
+  var menus = [$("file-menu"), $("adv")];
+  function closeMenus(except) {
+    menus.forEach(function (m) { if (m !== except && m.open && !(sheetMode && m.id === "file-menu")) m.open = false; });
+  }
+  menus.forEach(function (m) {
+    m.addEventListener("toggle", function () { if (m.open && !sheetMode) closeMenus(m); });
+  });
+  document.addEventListener("pointerdown", function (e) {
+    if (sheetMode) return;
+    menus.forEach(function (m) { if (m.open && !m.contains(e.target)) m.open = false; });
+  }, true);
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || sheetMode) return;
+    var open = menus.filter(function (m) { return m.open; })[0];
+    if (!open) return;
+    e.preventDefault(); e.stopPropagation();
+    open.open = false;
+    open.querySelector("summary").focus();
+  }, true);
+  $("file-menu").querySelectorAll(".uc-menu-item").forEach(function (b) {
+    b.addEventListener("click", function () { if (!sheetMode) $("file-menu").open = false; });
+  });
+  if (window.ResizeObserver) new ResizeObserver(function () {
+    if (sheetMode || ui.bare) return;
+    document.documentElement.style.setProperty("--uc-bar-h", Math.ceil(bar.getBoundingClientRect().bottom) + "px");
+  }).observe(bar);
+
   var SHEET_HIDDEN = 0, SHEET_PEEK = 1, SHEET_OPEN = 2;
   var sheetGestureAt = 0;
   function sheetState() {
@@ -3757,8 +3921,9 @@
   function styleChanged() {
     var bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
     if (bg) document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.setAttribute("content", bg); });
-    if (pal.antique && document.fonts && document.fonts.load) {
-      Promise.all(["400", "italic 400", "700"].map(function (w) { return document.fonts.load(w + " 20px 'Old Standard TT'"); })).then(remeasure, function () { });
+    var faces = ["400", "italic 400", "700"].map(function (w) { return w + " 20px 'Old Standard TT'"; });
+    if (pal.antique && document.fonts && document.fonts.load && !faces.every(function (f) { return document.fonts.check(f); })) {
+      Promise.all(faces.map(function (f) { return document.fonts.load(f); })).then(remeasure, function () { });
     }
   }
   document.querySelectorAll("#style-seg button").forEach(function (b) {
@@ -3785,7 +3950,7 @@
   new MutationObserver(function () { refreshPalette(); styleChanged(); renderPanel(); scheduleRender(); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-uc-style"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
-    widthCache.clear();
+    widthCache.clear(); glyphCache.clear();
     cities.forEach(function (c) { c.w = 0; });
     if (feats) queueLabels(countries.map(function (c, i) { return i; }));
     scheduleRender();

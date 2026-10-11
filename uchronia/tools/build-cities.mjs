@@ -7,6 +7,7 @@ const gc = resolve(here, "../../greatercircle/data");
 const cities = JSON.parse(readFileSync(resolve(gc, "cities.json"), "utf8"));
 const places = JSON.parse(readFileSync(resolve(gc, "places.json"), "utf8"));
 const EXTRA = +(process.argv[2] || 500);
+const EXTRA2 = +(process.argv[3] || 2000);
 const fold = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’‘']/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const ALIAS = { "washington d c": "washington", "new delhi": "delhi", "nur sultan": "astana", "naypyidaw": "naypyidaw" };
 const capitals = places.rows.filter((r) => r[0] === 0 && r[7]).map((r) => ({ cc: r[2], name: ALIAS[fold(r[7])] || fold(r[7]), lon: r[3], lat: r[4] }));
@@ -80,10 +81,52 @@ while (added.length < EXTRA) {
   counts.set(r[2], (counts.get(r[2]) || 0) + 1);
   added.push([name, +r[3].toFixed(4), +r[4].toFixed(4), r[5] >= 1000000 ? 3 : 4, 0, r[2], r[5]]);
 }
+const odd = /\d|township|district|branch|municipality|province|city of|\(|\)|\//i;
+const PLAIN = new Set("AE SA IQ SY JO PS LB KW QA BH OM YE EG LY TN DZ MA SD IR AF PK IN BD NP LK MR KP KR TJ UZ TM".split(" "));
+const LETTERS = { "ā": "a", "ī": "i", "ū": "u", "ē": "e", "ō": "o", "Ā": "A", "Ī": "I", "Ū": "U", "Ē": "E", "Ō": "O", "ḩ": "h", "ḥ": "h", "Ḩ": "H", "Ḥ": "H",
+  "ṭ": "t", "Ṭ": "T", "ẕ": "z", "ẓ": "z", "Ẕ": "Z", "Ẓ": "Z", "ḑ": "d", "ḍ": "d", "Ḑ": "D", "Ḍ": "D", "ṣ": "s", "Ṣ": "S", "ţ": "t", "Ţ": "T", "ş": "sh", "Ş": "Sh", "ẖ": "h", "ğ": "gh", "ň": "n", "ẗ": "t", "ŭ": "u", "Ŭ": "U" };
+const TOWN_NAME = { "Irákleion": "Heraklion", "Nabatîyé et Tahta": "Nabatieh" };
+const tidy = (name, cc) => {
+  let n = name;
+  if (cc === "CN") {
+    const m = /^(.+?) Shi (.+?) Qu$/.exec(n);
+    if (m) n = m[2];
+    n = n.replace(/ (Shi|Qu|Xian|Zhen)$/, "");
+  }
+  if (cc === "KR" || cc === "KP") n = n.replace(/-(si|gun|dong|eup)$/i, "");
+  if (cc === "TW" || cc === "KR" || cc === "CN" || cc === "PH") n = n.replace(/ City$/, "");
+  if (TOWN_NAME[n]) return TOWN_NAME[n];
+  if (cc === "VN") n = n.replace(/^(Thị Xã|Thành Phố|Thị Trấn) /, "");
+  if (cc === "RU" || cc === "UA" || cc === "BY" || cc === "KZ") n = n.replace(/[’ʼ]/g, "");
+  if (cc === "JP") n = n.replace(/[ōūŌŪ]/g, (ch) => LETTERS[ch]);
+  if (PLAIN.has(cc)) n = n.replace(/[‘’ʻʼ`]/g, "").replace(/[āīūēōĀĪŪĒŌḩḥḨḤṭṬẕẓẔẒḑḍḐḌṣṢţŢşŞẖğňẗŭŬ]/g, (ch) => LETTERS[ch]);
+  return n.replace(/^(\p{Ll})/u, (m) => m.toUpperCase());
+};
+const cand2 = places.rows.filter((r) => r[0] === 1 && (r[5] || 0) >= 15000 && !DEPENDENT.has(r[2]) && !SKIP.has(fold(r[1]) + "|" + r[2]) && !odd.test(r[1]));
+const used2 = new Set(), first = added.length;
+const MIN_KM2 = 20;
+while (added.length < first + EXTRA2) {
+  let best = -1, bestScore = 0;
+  for (let i = 0; i < cand2.length; i++) {
+    if (used2.has(i)) continue;
+    const r = cand2[i];
+    const s = r[5] / Math.pow((counts.get(r[2]) || 0) + 1, 0.85);
+    if (s > bestScore) { bestScore = s; best = i; }
+  }
+  if (best < 0) break;
+  used2.add(best);
+  const r = cand2[best];
+  const p = { lon: r[3], lat: r[4] };
+  if (crowded(p, MIN_KM2)) continue;
+  const name = RENAME[fold(r[1])] || tidy(r[1], r[2]);
+  addTaken(p);
+  counts.set(r[2], (counts.get(r[2]) || 0) + 1);
+  added.push([name, +r[3].toFixed(4), +r[4].toFixed(4), r[5] >= 1000000 ? 3 : 4, 0, r[2], r[5]]);
+}
 const all = out.concat(added.map((r) => r.slice(0, 5)));
 writeFileSync(resolve(here, "../data/cities.json"), JSON.stringify(all));
 const byCc = {};
 added.forEach((r) => { byCc[r[5]] = (byCc[r[5]] || 0) + 1; });
 console.log("cities.json:", all.length, "cities,", all.filter((c) => c[4]).length, "capitals;", added.length, "added, smallest", Math.min(...added.map((r) => r[6])));
 console.log(Object.entries(byCc).sort((a, b) => b[1] - a[1]).slice(0, 30).map(([c, n]) => c + " " + n).join(", "));
-if (process.argv[3] === "list") added.forEach((r) => console.log(r[5], r[0], r[6]));
+if (process.argv[4] === "list") added.slice(first).forEach((r) => console.log(r[5], r[0], r[6]));
