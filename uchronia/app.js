@@ -48,7 +48,7 @@
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, scaleBar: true };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, scaleBar: true, rivers: true, gridLabels: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -105,7 +105,7 @@
   function zoomForScale(S) { return S / (flat ? baseK : baseR); }
 
   var pal = {}, hatch = null;
-  var PAL_KEYS = ["ocean", "grat", "limb", "glow", "border", "prov", "label", "label-halo", "city", "city-ring", "city-label", "city-halo", "select", "select-fill", "hover", "unclaimed", "hatch", "sat-light", "water", "sea-label"];
+  var PAL_KEYS = ["ocean", "grat", "limb", "glow", "border", "prov", "label", "label-halo", "city", "city-ring", "city-label", "city-halo", "select", "select-fill", "hover", "unclaimed", "hatch", "sat-light", "water", "sea-label", "river", "grid-label"];
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     PAL_KEYS.forEach(function (k) { pal[k] = cs.getPropertyValue("--uc-" + k).trim(); });
@@ -1056,6 +1056,7 @@
       ctx.restore();
     }
     mark("provlines");
+    if (!satellite) drawRivers(S);
     ctx.lineJoin = "round";
     ctx.beginPath(); traceArcs(ctx, L, coastArcs);
     ctx.globalAlpha = satellite ? 0.55 : 1;
@@ -1087,12 +1088,119 @@
     mark("labels");
     drawCities(placed);
     mark("cities");
+    drawGridLabels(placed, satellite);
     drawScale();
     ctx.restore();
   }
   function niceStep(raw) {
     var p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
     return 5 * p <= raw ? 5 * p : 2 * p <= raw ? 2 * p : p;
+  }
+  var rivers = null;
+  function loadRivers() {
+    fetchJSON("data/rivers.json").then(function (t) {
+      if (!t.objects || !t.objects.rivers) throw new Error("rivers do not match");
+      var byRank = [];
+      topojson.feature(t, t.objects.rivers).features.forEach(function (f) {
+        var g = f.geometry, r = f.properties && f.properties.r;
+        if (!g || !(r >= 1)) return;
+        (g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : []).forEach(function (line) {
+          if (line.length > 1) (byRank[r] = byRank[r] || []).push(prepareArc(line));
+        });
+      });
+      rivers = byRank;
+      scheduleRender();
+    }).catch(function (e) { console.warn("rivers", e); });
+  }
+  function riverRank(S) { return S < 300 ? 2 : S < 520 ? 3 : S < 800 ? 4 : S < 1300 ? 5 : 6; }
+  function drawRivers(S) {
+    if (!rivers || !ui.rivers) return;
+    var top = Math.min(rivers.length - 1, riverRank(S)), w = Math.max(0.6, Math.min(1.5, S / 700));
+    ctx.save();
+    ctx.strokeStyle = pal.river; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    for (var r = 1; r <= top; r++) {
+      var list = rivers[r];
+      if (!list) continue;
+      ctx.beginPath();
+      for (var i = 0; i < list.length; i++) traceArc(ctx, list[i]);
+      ctx.lineWidth = w * (r <= 2 ? 1.35 : r <= 4 ? 1.1 : 0.85);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function degrees(v, ns) {
+    if (!v) return "0°";
+    if (!ns && Math.abs(v) === 180) return "180°";
+    return Math.abs(v) + "°" + (ns ? (v > 0 ? "N" : "S") : (v > 0 ? "E" : "W"));
+  }
+  var gridShown = [];
+  function drawGridLabels(placed, satellite) {
+    gridShown = [];
+    if (!ui.gridLabels || satellite) return;
+    var x0 = freeL + 6, x1 = freeR - 6, y0 = freeT + 6, y1 = freeB - 6, items = [], v, p, best, dist;
+    if (flat) {
+      var k = FB.k, left = Math.max(x0, cx - k * (Math.PI + FB.xc)), right = Math.min(x1, cx + k * (Math.PI - FB.xc));
+      var top = Math.max(y0, cy + k * (FB.yc - HALF_PI)), bottom = Math.min(y1, cy + k * (FB.yc + HALF_PI));
+      for (v = -80; v <= 80; v += 10) {
+        var y = cy - k * (v * D2R - FB.yc);
+        if (y > top + 16 && y < bottom - 8) items.push([degrees(v, true), left + 3, y, true]);
+      }
+      for (v = -170; v < 180; v += 10) {
+        var x = cx + k * (v * D2R - FB.xc);
+        if (x > left + 16 && x < right - 16) items.push([degrees(v, false), x, top + 8, false]);
+      }
+    } else if (B.r > Math.hypot(Math.max(cx - x0, x1 - cx), Math.max(cy - y0, y1 - cy))) {
+      edgeCrossings(items, x0 + 2, y0 + 16, x0 + 2, y1 - 8, 1, true, x0 + 3);
+      edgeCrossings(items, x0 + 16, y0 + 2, x1 - 16, y0 + 2, 0, false, y0 + 8);
+    } else {
+      var xT = cx - 0.5 * Math.min(B.r, cx - x0), yT = cy + (view.lat >= 0 ? 0.5 : -0.5) * Math.min(B.r, view.lat >= 0 ? y1 - cy : cy - y0);
+      var lat0 = Math.max(-80, Math.min(80, view.lat)), lon = null, lat = null;
+      best = Infinity;
+      for (v = -180; v < 180; v += 10) {
+        p = projectLL(v, lat0);
+        if (p && p[2] > 0.3 && p[0] > x0 + 40 && p[0] < x1 - 40 && (dist = Math.abs(p[0] - xT)) < best) { best = dist; lon = v; }
+      }
+      best = Infinity;
+      for (v = -80; v <= 80; v += 10) {
+        p = projectLL(view.lon, v);
+        if (p && p[2] > 0.3 && p[1] > y0 + 20 && p[1] < y1 - 20 && (dist = Math.abs(p[1] - yT)) < best) { best = dist; lat = v; }
+      }
+      if (lon !== null) for (v = -80; v <= 80; v += 10) { p = projectLL(lon, v); if (p && p[2] > 0.3) items.push([degrees(v, true), p[0], p[1], false]); }
+      if (lat !== null) for (v = -180; v < 180; v += 10) { p = projectLL(v, lat); if (p && p[2] > 0.3) items.push([degrees(v, false), p[0], p[1], false]); }
+    }
+    if (!items.length) return;
+    var small = localScale() < 260;
+    ctx.save();
+    ctx.font = pal.antique ? "italic 400 " + (small ? 10 : 11.5) + "px " + SERIF : "500 " + (small ? 9.5 : 10.5) + "px " + FONT;
+    ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["grid-label"];
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i], w = ctx.measureText(it[0]).width, mx = it[3] ? it[1] + w / 2 : it[1];
+      if (mx - w / 2 < x0 || mx + w / 2 > x1 || it[2] < y0 + 4 || it[2] > y1 - 4) continue;
+      var box = mkBox(mx, it[2], w / 2 + 2, 7, 0);
+      if (collides(placed, box)) continue;
+      placed.push(box);
+      gridShown.push(it[0]);
+      ctx.strokeText(it[0], mx, it[2]);
+      ctx.fillText(it[0], mx, it[2]);
+    }
+    ctx.restore();
+  }
+  function edgeCrossings(items, ax, ay, bx, by, axis, ns, at) {
+    var n = Math.ceil(Math.hypot(bx - ax, by - ay) / 4), prev = null;
+    for (var s = 0; s <= n; s++) {
+      var t = s / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t, ll = lonLatAt(x, y);
+      if (ll && prev) {
+        var a = prev[0][axis], b = ll[axis];
+        if (!ns && Math.abs(b - a) > 180) b += b < a ? 360 : -360;
+        var m = Math.ceil(Math.min(a, b) / 10) * 10;
+        if (m <= Math.max(a, b) && a !== b) {
+          var f = (m - a) / (b - a), px = prev[1] + (x - prev[1]) * f, py = prev[2] + (y - prev[2]) * f;
+          items.push([degrees(ns ? m : ((m + 540) % 360) - 180, ns), ns ? at : px, ns ? py : at, ns]);
+        }
+      }
+      prev = ll ? [ll, x, y] : null;
+    }
   }
   function scaleRows() {
     if (!ui.scaleBar) return null;
@@ -1158,52 +1266,13 @@
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
-    function gauss() { return Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(TAU * rnd()); }
-    function along(lon, lat, dist, bearing) {
-      var p1 = lat * D2R, d = dist * D2R;
-      var p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(bearing));
-      var l2 = lon * D2R + Math.atan2(Math.sin(bearing) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
-      return [l2 / D2R, p2 / D2R];
-    }
-    function blob(lon, lat, r, wob, ph, sphere) {
-      var pts = [];
-      for (var i = 0; i < 48; i++) {
-        var t = i / 48 * TAU, k = r * (1 + wob * (0.55 * Math.sin(3 * t + ph[0]) + 0.3 * Math.sin(5 * t + ph[1]) + 0.15 * Math.sin(9 * t + ph[2])));
-        pts.push(sphere ? along(lon, lat, k, t) : [lon + k * Math.cos(t), lat + k * Math.sin(t)]);
-      }
-      pts.push(pts[0]);
-      return pts;
-    }
     function point(lon, lat) { return { v: toVec(lon, lat), lam: lon * D2R, phi: lat * D2R }; }
     function area(ring) { return prepare([{ geometry: { type: "Polygon", coordinates: [ring] } }])[0]; }
-    var out = { mottle: [], stains: [], spots: [], seams: [], gores: [], panels: [] };
+    var out = { mottle: [], seams: [], gores: [], panels: [] };
     for (var i = 0; i < 18; i++) {
       var m = point(rnd() * 360 - 180, Math.asin(rnd() * 1.8 - 0.9) / D2R);
       m.r = (9 + rnd() * 24) * D2R; m.a = 0.05 + rnd() * 0.08; m.warm = rnd();
       out.mottle.push(m);
-    }
-    for (i = 0; i < 12; i++) {
-      var lon = rnd() * 360 - 180, lat = Math.asin(rnd() * 1.6 - 0.8) / D2R;
-      var r = 2.5 + Math.pow(rnd(), 1.6) * 11, wob = 0.12 + rnd() * 0.22, ph = [rnd() * TAU, rnd() * TAU, rnd() * TAU];
-      var st = { fill: 0.03 + rnd() * 0.06, rim: 0.05 + rnd() * 0.07, w: 0.8 + rnd() * 0.9 };
-      var gr = blob(lon, lat, r, wob, ph, true), sr = blob(lon, lat, r, wob, ph, false);
-      st.globe = area(gr); st.globeRim = prepareLine(gr);
-      st.sheet = area(sr); st.sheetRim = prepareLine(sr);
-      if (rnd() < 0.5) {
-        var ph2 = [rnd() * TAU, rnd() * TAU, rnd() * TAU], k2 = 0.45 + rnd() * 0.3;
-        st.globeInner = prepareLine(blob(lon, lat, r * k2, wob, ph2, true));
-        st.sheetInner = prepareLine(blob(lon, lat, r * k2, wob, ph2, false));
-      }
-      out.stains.push(st);
-    }
-    for (var cl = 0; cl < 20; cl++) {
-      var clon = rnd() * 360 - 180, clat = Math.asin(rnd() * 1.7 - 0.85) / D2R;
-      var n = 3 + Math.floor(Math.pow(rnd(), 2) * 28), spread = 0.8 + rnd() * 5;
-      for (var j = 0; j < n; j++) {
-        var sp = point(clon + gauss() * spread / Math.max(0.3, Math.cos(clat * D2R)), Math.max(-84, Math.min(84, clat + gauss() * spread)));
-        sp.r = (0.1 + Math.pow(rnd(), 2.2) * 0.6) * D2R; sp.a = 0.1 + rnd() * 0.24; sp.core = rnd() < 0.35;
-        out.spots.push(sp);
-      }
     }
     for (var g = 0; g < 12; g++) {
       var l0 = -180 + g * 30, line = [], lune = [];
@@ -1227,7 +1296,7 @@
   function drawAging(S) {
     if (!aging) aging = makeAging();
     var A = aging, globe = !flat, k = globe ? B.r : FB.k;
-    var marks = clamp01((9000 - S) / 6500), rims = clamp01((3200 - S) / 2400), seams = clamp01((6000 - S) / 3500);
+    var seams = clamp01((6000 - S) / 3500);
     ctx.save();
     if (globe) { ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.clip(); }
     ctx.globalCompositeOperation = "multiply";
@@ -1252,30 +1321,6 @@
         ctx.fillStyle = "rgba(168,124,64," + A.gores[i].a + ")"; ctx.fill();
       }
     } else drawSheet();
-    if (marks > 0) {
-      for (i = 0; i < A.stains.length; i++) {
-        var st = A.stains[i];
-        ctx.beginPath(); traceFeature(ctx, globe ? st.globe : st.sheet);
-        ctx.fillStyle = "rgba(170,120,58," + (st.fill * marks) + ")"; ctx.fill();
-        if (rims <= 0) continue;
-        ctx.beginPath(); traceArc(ctx, globe ? st.globeRim : st.sheetRim);
-        if (st.globeInner) traceArc(ctx, globe ? st.globeInner : st.sheetInner);
-        ctx.strokeStyle = "rgba(150,100,48," + (st.rim * 0.45 * rims) + ")"; ctx.lineWidth = st.w * 4; ctx.stroke();
-        ctx.strokeStyle = "rgba(118,76,32," + (st.rim * rims) + ")"; ctx.lineWidth = st.w; ctx.stroke();
-      }
-      var scale = Math.min(1, 1100 / Math.max(S, 1));
-      for (var pass = 0; pass < 3; pass++) {
-        for (i = 0; i < A.spots.length; i++) {
-          var sp = A.spots[i], q = projectVec(sp.v[0], sp.v[1], sp.v[2], sp.lam, sp.phi);
-          if (!q || q[0] < -12 || q[1] < -12 || q[0] > W + 12 || q[1] > H + 12) continue;
-          if (pass === 2 && !sp.core) continue;
-          var sr = Math.max(0.6, Math.min(4, k * sp.r * scale * 2)) * (pass === 0 ? 2.4 : pass === 1 ? 1 : 0.4);
-          ctx.beginPath(); ctx.arc(q[0], q[1], sr, 0, TAU);
-          ctx.fillStyle = "rgba(" + (pass === 2 ? "120,66,24," : "172,110,48,") + (sp.a * marks * (pass === 0 ? 0.22 : pass === 1 ? 0.6 : 0.7)) + ")";
-          ctx.fill();
-        }
-      }
-    }
     if (globe && seams > 0) {
       ctx.beginPath(); traceArcs(ctx, A.seams, A.seams.map(function (x, j) { return j; }));
       ctx.strokeStyle = "rgba(96,64,30," + (0.3 * seams) + ")"; ctx.lineWidth = 0.8; ctx.stroke();
@@ -3292,6 +3337,8 @@
     $("show-countries").checked = ui.countryNames;
     $("show-cities").checked = ui.cityNames;
     $("show-scale").checked = ui.scaleBar;
+    $("show-grid").checked = ui.gridLabels;
+    $("show-rivers").checked = ui.rivers;
   }
   function syncCountryPick(c) {
     var sel = $("country-pick");
@@ -4216,12 +4263,12 @@
     ui.countryNames = $("show-countries").checked;
     ui.cityNames = $("show-cities").checked;
     ui.scaleBar = $("show-scale").checked;
-    try { localStorage.setItem(STORE_NAMES, (ui.countryNames ? "1" : "0") + (ui.cityNames ? "1" : "0") + (ui.scaleBar ? "1" : "0")); } catch (e) { }
+    ui.gridLabels = $("show-grid").checked;
+    ui.rivers = $("show-rivers").checked;
+    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
     scheduleRender();
   }
-  $("show-countries").addEventListener("change", setNames);
-  $("show-cities").addEventListener("change", setNames);
-  $("show-scale").addEventListener("change", setNames);
+  ["show-countries", "show-cities", "show-scale", "show-grid", "show-rivers"].forEach(function (id) { $(id).addEventListener("change", setNames); });
 
   function init(topo, cityRows) {
     var geoms = topo.objects.provinces.geometries;
@@ -4262,7 +4309,7 @@
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
     var namesPref = null;
     try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
-    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; }
+    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; }
     if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").title = "Globe (M)"; }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
@@ -4285,6 +4332,7 @@
       });
     }
     ready.then(openSharedFromHash);
+    loadRivers();
   }
 
   var darkMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -4384,6 +4432,8 @@
     countryArea: function (c) { freshGroups(); return countryArea(c); },
     loadFine: loadFine,
     history: function () { return { undo: undoStack.length, redo: redoStack.length }; },
+    gridLabels: function () { render(); return gridShown.slice(); },
+    riverCount: function () { return rivers ? rivers.reduce(function (n, l) { return n + (l ? l.length : 0); }, 0) : 0; },
     lineCounts: function () { freshGroups(); if (arcsDirty) rebuildArcs(); return { prov: provArcs.length, unit: unitArcs.length }; },
     validate: function (d) {
       var keep = makeDiff();

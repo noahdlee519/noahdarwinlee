@@ -25,6 +25,8 @@
   --uc-sat-light: 0.25;
   --uc-muted: rgba(0, 0, 0, 0.58);
   --uc-btn-hover: rgba(0, 0, 0, 0.07);
+  --uc-river: #3b7fc0;
+  --uc-grid-label: rgba(0, 0, 0, 0.62);
   --uc-c0: #f7e98e;
   --uc-c1: #f6d79a;
   --uc-c2: #ebcba2;
@@ -64,6 +66,8 @@
   --uc-sat-light: -0.3;
   --uc-muted: rgba(255, 255, 255, 0.62);
   --uc-btn-hover: rgba(255, 255, 255, 0.12);
+  --uc-river: #6aa6dd;
+  --uc-grid-label: rgba(255, 255, 255, 0.66);
   --uc-c0: #66601f;
   --uc-c1: #6b5424;
   --uc-c2: #5e4532;
@@ -104,6 +108,8 @@
     --uc-sat-light: -0.3;
     --uc-muted: rgba(255, 255, 255, 0.62);
     --uc-btn-hover: rgba(255, 255, 255, 0.12);
+    --uc-river: #6aa6dd;
+    --uc-grid-label: rgba(255, 255, 255, 0.66);
     --uc-c0: #66601f;
     --uc-c1: #6b5424;
     --uc-c2: #5e4532;
@@ -146,6 +152,8 @@
   --uc-sat-light: 0.12;
   --uc-muted: rgba(58, 42, 27, 0.74);
   --uc-btn-hover: rgba(58, 42, 27, 0.08);
+  --uc-river: rgba(38, 88, 138, 0.9);
+  --uc-grid-label: rgba(44, 66, 74, 0.92);
   --uc-c0: #f1e2ae;
   --uc-c1: #f0d5ae;
   --uc-c2: #e7d6b9;

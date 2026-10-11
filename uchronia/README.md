@@ -102,11 +102,10 @@ of `/greatercircle/`.
       darkens towards the edge of the sphere and a soft highlight. The flat
       map is a folded sheet: eight panels of slightly different tones, folds
       down the middle and the quarters and across the equator, and edges
-      browned by handling. Both carry mottled toning, water stains with
-      tide lines and clusters of foxing, placed on the earth or the sheet
-      from a fixed seed so that they turn and pan with it, and fade as the
-      map is zoomed in close; all of it is multiplied onto the canvas after
-      the borders and before the names. The satellite view is toned sepia;
+      browned by handling. Both carry soft, uneven toning, placed on the
+      earth or the sheet from a fixed seed so that it turns and pans with
+      it; all of it is multiplied onto the canvas after the borders and
+      before the names. The satellite view is toned sepia;
     - the site's name in letterspaced capitals and the back link in italic,
       both in Old Standard TT; on a phone, where they sit over the map, they
       share a small title block in a double rule.
@@ -142,6 +141,17 @@ of `/greatercircle/`.
     city names hidden, the cities stay as dots.
 - **Cities.** Capitals, cities and towns each have their own mark and size of
   name (squares, dots and small dots; in Antique, ringed, circled and dotted).
+- **Rivers.** Natural Earth's major rivers, drawn in blue over the countries
+  and under their borders: the largest (the Amazon, the Nile, the Yangtze)
+  from the whole globe, smaller ones as the map is zoomed in, in six steps.
+  They can be hidden in the View menu, and are left off the satellite view.
+- **Latitude and longitude.** The lines every 10° are labelled. On the flat
+  map, the parallels along its left edge and the meridians along its top, or
+  along the edges of the screen once it is zoomed past them. On the globe, a
+  meridian and a parallel half way out from the middle of the view carry the
+  numbers, the parallel on the side towards the equator; zoomed in so that
+  the globe fills the screen, the labels move to the edges as on the flat
+  map. They give way to every other name, and can be hidden in the View menu.
 - **Scale bar.** Kilometres over miles in the bottom corner, in round lengths
   of 1, 2 or 5 times a power of ten that fit 120 px, true at the centre of the
   view (on the flat map, along the parallel there); in Antique, chequered bars
@@ -269,6 +279,11 @@ of `/greatercircle/`.
     "-si", Vietnamese "Thành Phố"), and in Arabic-, Persian- and
     Urdu-speaking countries and a few others the transliteration marks.
   - Built by `tools/build-cities.mjs`.
+- **data/rivers.json**: Natural Earth 1:10m river centerlines, the rivers of
+  scale ranks 1 to 6 and their courses through lakes, without canals, as a
+  TopoJSON of lines with the rank as `r`. Points that fall in the sea or in a
+  lake the map shows are dropped, splitting the line there, and the rest is
+  simplified to a fifth of its points. Built by `tools/build-rivers.mjs`.
 - **data/earth-2048.webp**, **data/earth-4096.webp**: NASA Blue Marble Next
   Generation with shaded sea floor, equirectangular. The polar rows and the
   columns at the date line are evened out so that the wrap is seamless, and
@@ -282,7 +297,8 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   two menus: **File** (copy a link, save a file, open one, start over) and
-  **View** (the style, country and city names, the scale bar, finer regions). What is
+  **View** (the style, country and city names, rivers, latitude and
+  longitude, the scale bar, finer regions). What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
 - **Select (V)**: click a country to rename or recolour it, show or hide its
@@ -332,6 +348,8 @@ in the repo. They covered:
   interface, and keyboard focus;
 - inner borders hidden and shown per country, saved, linked and undone;
   cities picked before they move; the scale bar and the zoom limit;
+- rivers loading, and the latitude and longitude labels on the globe, the
+  flat map and zoomed in, hidden and remembered;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;
@@ -339,7 +357,7 @@ in the repo. They covered:
 
 ## Credits
 
-- **Borders:** Natural Earth (public domain).
+- **Borders and rivers:** Natural Earth (public domain).
 - **Second-level units:**
   - US counties from the US Census Bureau through Natural Earth (public
     domain);
