@@ -17,7 +17,9 @@
   var FONT = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
   var NAME_MAX = 60;
   var MAX_NEW = 2000, MAX_ADDED_CITIES = 8000;
-  var DETAIL_URL = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg";
+  var DETAIL_URLS = ["BlueMarble_ShadedRelief_Bathymetry", "BlueMarble_NextGeneration", "BlueMarble_ShadedRelief"].map(function (layer) {
+    return "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/" + layer + "/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg";
+  });
   var DETAIL_MAX_Z = 8, DETAIL_MAX_TILES = 40;
   var DEFAULT_NAME = /^New country( \d+)?$/;
 
@@ -2113,7 +2115,7 @@
   }
   $("sat-btn").addEventListener("click", function () { setSatellite(!ui.satellite); });
 
-  var detail = { key: "", rect: null, cache: new Map(), gen: 0, ok: 0, failed: 0, off: false, shown: false, put: new Set() };
+  var detail = { key: "", rect: null, cache: new Map(), gen: 0, ok: 0, failed: 0, off: false, shown: false, put: new Set(), source: 0 };
   function mercY(lat) { var p = lat * D2R; return (1 - Math.log(Math.tan(Math.PI / 4 + p / 2)) / Math.PI) / 2; }
   function detailWanted() {
     if (!sat.detailFits()) return null;
@@ -2188,17 +2190,25 @@
       var i = ((x - r.x0) % n + n) % n, j = y - r.y0;
       if (i < r.nx && j >= 0 && j < r.ny && !detail.put.has(key) && sat.putTile(t.img, i, j)) { detail.put.add(key); scheduleRender(); }
     };
+    var source = detail.source;
     t.img.onerror = function () {
       t.failed = true;
+      if (source !== detail.source) return;
       detail.failed++;
-      if (!detail.ok && detail.failed >= 6 && !detail.off) {
-        detail.off = true; detail.shown = false;
-        sat.endDetail();
-        console.warn("satellite detail tiles are unavailable");
+      if (detail.ok || detail.failed < 4 || detail.off) return;
+      if (detail.source + 1 < DETAIL_URLS.length) {
+        detail.source++; detail.failed = 0;
+        detail.cache = new Map(); detail.put = new Set(); detail.key = "";
+        if (detail.rect) { sat.beginDetail(detail.rect); detail.gen++; }
         scheduleRender();
+        return;
       }
+      detail.off = true; detail.shown = false;
+      sat.endDetail();
+      console.warn("satellite detail tiles are unavailable");
+      scheduleRender();
     };
-    t.img.src = DETAIL_URL.replace("{z}", z).replace("{y}", y).replace("{x}", x);
+    t.img.src = DETAIL_URLS[source].replace("{z}", z).replace("{y}", y).replace("{x}", x);
   }
   function trimTiles() {
     if (detail.cache.size <= 160) return;
@@ -2805,7 +2815,7 @@
     makeDiff: function () { return makeDiff(); },
     labelsPending: function () { return labelQueue.size; },
     satReady: function () { return !!(sat && sat.ready()); },
-    detail: function () { return { rect: detail.rect, ok: detail.ok, failed: detail.failed, off: detail.off, put: detail.put.size, cache: detail.cache.size }; },
+    detail: function () { return { rect: detail.rect, ok: detail.ok, failed: detail.failed, off: detail.off, put: detail.put.size, cache: detail.cache.size, source: detail.source }; },
     fine: function () { return { data: fineData, on: ui.fine, units: nUnit }; },
     loadFine: loadFine,
     history: function () { return { undo: undoStack.length, redo: redoStack.length }; }
