@@ -386,7 +386,8 @@ body.uc-page {
 }
 
 .uc-globe.is-painting,
-.uc-globe.is-tool-paint {
+.uc-globe.is-tool-paint,
+.uc-globe.is-tool-draw {
   cursor: crosshair;
 }
 .uc-globe.is-tool-city {

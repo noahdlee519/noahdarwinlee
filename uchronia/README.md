@@ -9,23 +9,55 @@ of `/greatercircle/`.
 ## How it works
 
 - **The model.** The land is a set of regions, and every region has an owner:
-  a country, or nobody. Normally the regions are Natural Earth's 4,596
-  first-level subdivisions (states, provinces). With *Finer regions in large
-  countries* on (under Advanced), the large-region countries are cut further
-  into their second-level units (counties, prefectures, districts), and each
-  of those can change hands on its own. A country is only the set of regions
-  it owns, so borders are never stored or drawn by hand. An edge between two
-  regions is drawn as a border when the regions on its two sides belong to
-  different countries, as a dotted province line when they don't, and as a
-  fainter dotted line when it only separates two second-level units of one
-  province. Painting moves regions from one owner to another; "Whole
+  a country, or nobody. The regions are Natural Earth's 4,596 first-level
+  subdivisions (states, provinces), with two adjustments:
+  - In twelve countries whose subdivisions are very small (Slovenia's 193
+    municipalities, Italy's 110 provinces, Latvia, North Macedonia, Malta,
+    Kosovo, Azerbaijan, Uganda, Bhutan, the Philippines, Sri Lanka and Hong
+    Kong), they are grouped into the regions above them (Slovenia's 12
+    statistical regions, Italy's 20 regions), 102 groups in all, and a group
+    changes hands as one.
+  - With *Finer regions* on (under Advanced), those groups come apart again,
+    and the large-region countries are cut further into their second-level
+    units (counties, prefectures, districts), each of which can change hands
+    on its own.
+
+  A country is only the set of regions it owns, so borders are never stored.
+  An edge between two regions is drawn as a border when the regions on its
+  two sides belong to different countries, as a dotted province line when
+  they don't, and as a fainter dotted line when it only separates two parts of
+  one region. Painting moves regions from one owner to another; "Whole
   countries" moves all of a country's regions at once; "Unclaimed" takes them
-  from everyone. A border can only run along region edges.
+  from everyone. Where a border should not follow region edges, it can be
+  drawn by hand (see *Drawn land*).
+- **Drawn land.** The Draw tool takes a freehand outline and gives the land
+  inside it to the chosen country.
+  - The outline is simplified on screen, turned into longitude and latitude,
+    split where it crosses the date line (or closed over the pole if it goes
+    round one) and cleaned of self-crossings by polygon-clipping.
+  - A drawing lies on top of the regions and keeps its own owner. A newer
+    drawing is cut out of older ones, so drawings never overlap, and a point
+    belongs to the drawing it lies in, or else to its region.
+  - It is drawn clipped to the land at the current level of detail, so its
+    edge follows the coast exactly at every zoom. The regions underneath are
+    clipped out (even-odd), so their lines and fills don't show through.
+  - Its border is worked out by sampling just outside each stretch of its
+    outline: a line is drawn where the land there belongs to someone else.
+  - Its area is found by intersecting it with the regions it overlaps, which
+    also tells each country how much land it lost. Country names are placed
+    on the country's shape with its drawings added and others' taken away.
+  - Painting a drawing repaints it alone; "Whole countries" and dissolving
+    take a country's drawings along. Select a drawing to make it a country or
+    remove it.
 - **app.js**: the map, on a canvas.
-  - **Globe.** A direct orthographic projector at three levels of detail,
-    chosen by how big the map is on screen. Shapes so large that they wrap
-    behind the globe and enclose the point opposite the view are drawn through
-    d3-geo's clipping instead, so they don't flood the whole disc.
+  - **Globe.** A direct orthographic projector at four levels of detail,
+    chosen by how big the map is on screen: three simplified from the loaded
+    topology, and, close up, a more detailed copy of the same arcs that is
+    fetched and prepared in the background the first time it is needed.
+    Shapes so large that they wrap behind the globe and enclose the point
+    opposite the view are drawn through d3-geo's clipping instead, so they
+    don't flood the whole disc. Line segments along the date line and the
+    south pole, where Natural Earth cuts shapes, are left out.
   - **Flat map.** A plain rectangle of latitude and longitude (the
     equirectangular projection), centred on Greenwich. It stays still: panning
     moves the view over it and stops at its edges, and zooming keeps the point
@@ -58,6 +90,8 @@ of `/greatercircle/`.
   - Labels are drawn largest country first and skipped where their turned
     boxes would overlap. They are worked out again in 14 ms slices after each
     edit or rename.
+  - Country names and city names can each be hidden (under Advanced); with
+    city names hidden, the cities stay as dots.
 - **Cities.** 1,050 in four sizes; capitals are marked with a square. Each is
   shown from the zoom its size allows.
 - **New countries.** A new country takes the name of the first region it
@@ -71,7 +105,9 @@ of `/greatercircle/`.
   - countries renamed, recoloured or founded;
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
-  - cities deleted, changed or added.
+  - cities deleted, changed or added;
+  - drawn land (`h`): each drawing's owner and outline, in ten-thousandths of
+    a degree, each ring stored as differences from the point before.
 
   That difference goes to `localStorage` after every edit (and at once when
   the page is hidden or closed), into a link ("Copy link": deflate-raw through
@@ -82,8 +118,9 @@ of `/greatercircle/`.
     across several links.
   - Whatever comes from a link or a file is checked field by field: ranges,
     types, names cut to 60 characters, row counts capped, and new countries
-    renumbered from the first free index. Names only ever reach the page as
-    text.
+    renumbered from the first free index. Drawings are capped at 300 and
+    60,000 points, and cleaned by polygon-clipping again. Names only ever
+    reach the page as text.
 - **sat.js**: the satellite view.
   - **Base image.** A WebGL fragment shader turns each pixel back into a
     latitude and longitude (the orthographic or the flat map's projection
@@ -110,7 +147,13 @@ of `/greatercircle/`.
   - Islets under 12 km² are dropped unless they are a province's largest
     piece.
   - It is simplified to a tenth of its points by spherical triangle area.
+  - The region groups come from Natural Earth's `region` field, with some
+    names put into English ("Lombardy", "Nakhchivan") or into their current
+    form (Kosovo's districts by their Albanian names).
   - Built by `tools/build-provinces.mjs` (see its arguments for the inputs).
+- **data/provinces-detail.json**: the same arcs kept at four tenths of their
+  points (3.7 MB, about 1.4 MB compressed), for the closest zooms. It holds
+  only the arcs; the shapes come from `provinces.json`.
 - **data/units.json**: the same provinces with eight large-region countries
   cut into second-level units, 8,956 regions in all, in one topology so that
   every shared edge is one arc:
@@ -143,7 +186,8 @@ of `/greatercircle/`.
   Generation with shaded sea floor, equirectangular. The polar rows and the
   columns at the date line are evened out so that the wrap is seamless, and
   the smaller one is resized across the wrap.
-- **vendor/**: d3-array, d3-geo, topojson-client, topojson-simplify, unmodified.
+- **vendor/**: d3-array, d3-geo, topojson-client, topojson-simplify and
+  polygon-clipping, unmodified.
 
 ## Using it
 
@@ -152,6 +196,9 @@ of `/greatercircle/`.
   drag it to move it. A region on its own can be made a country.
 - **Paint borders (B)**: click or drag over regions to give them to the
   chosen country; Alt-click picks the country to paint with.
+- **Draw borders (D)**: drag round some land to give it to the chosen
+  country, or to leave it unclaimed; on a phone, draw with one finger and
+  move the map with two.
 - **Cities (C)**: click to found a city, drag one to move it.
 - **M** switches between the globe and the flat map; **S** turns the
   satellite view on and off.
@@ -159,8 +206,8 @@ of `/greatercircle/`.
   Space held (in Select and Cities a plain drag moves it too); scroll or
   pinch to zoom.
 - **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** or **Ctrl+Y** redoes;
-  **Delete** deletes the chosen city; **Escape** lets go of the selection, or
-  goes back to Select.
+  **Delete** deletes the chosen city or drawing; **Escape** drops a drawing
+  in progress, lets go of the selection, or goes back to Select.
 - On a phone: tap to paint or to found a city, drag to move the map, and pull
   the sheet up for the rest.
 
@@ -177,6 +224,12 @@ in the repo. They covered:
   edges and dragging cities;
 - finer regions: switching them on and off, painting single counties,
   undoing paint from before the switch, reloading and sharing;
+- region groups: Slovenia's statistical regions and Italy's regions painted
+  whole, named, made countries, and split again with finer regions on;
+- drawn land: drawing, overlapping drawings, painting and removing them,
+  making one a country, areas, the date line, the flat map, the satellite
+  view, saving, links, and drawing by touch;
+- hiding country and city names, and the detailed borders up close;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;

@@ -7,6 +7,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
 const input = resolve(process.argv[3] || "ne_10m_admin_1_states_provinces_lakes.geojson");
 const keep = +(process.argv[4] || 0.12);
+const keepDetail = +(process.argv[5] || 0.4);
 const require = createRequire(resolve(modules, "x.js"));
 const server = require("topojson-server");
 const client = require("topojson-client");
@@ -26,11 +27,32 @@ const RENAME = {
 };
 const FOLD = { KAB: "KAZ" };
 
+const GROUPED = new Set(["SVN", "LVA", "UGA", "AZE", "MKD", "MLT", "KOS", "HKG", "BTN", "PHL", "LKA", "ITA"]);
+const GROUP_NAME = {
+  "UGA|Western": "Western Region", "UGA|Central": "Central Region", "UGA|Eastern": "Eastern Region", "UGA|Northern": "Northern Region",
+  "BTN|Eastern": "Eastern Bhutan", "BTN|Southern": "Southern Bhutan", "BTN|Western": "Western Bhutan", "BTN|Central": "Central Bhutan",
+  "MKD|Greater Skopje": "Skopje Region", "MKD|Skopje": "Skopje Region", "MKD|Southwestern": "Southwestern Region",
+  "MKD|Polog": "Polog Region", "MKD|Southeastern": "Southeastern Region", "MKD|Vardar": "Vardar Region",
+  "MKD|Pelagonia": "Pelagonia Region", "MKD|Northeastern": "Northeastern Region", "MKD|Eastern": "Eastern Region",
+  "PHL|Autonomous Region in Muslim Mindanao (ARMM)": "Bangsamoro", "PHL|Dinagat Islands (Region XIII)": "Caraga",
+  "PHL|Cordillera Administrative Region (CAR)": "Cordillera",
+  "LKA|Næ̆gĕnahira paḷāta": "Eastern Province", "LKA|Uturu paḷāta": "Northern Province", "LKA|Vayamba paḷāta": "North Western Province",
+  "LKA|Basnāhira paḷāta": "Western Province", "LKA|Dakuṇu paḷāta": "Southern Province", "LKA|Sabaragamuva paḷāta": "Sabaragamuwa",
+  "LKA|Ūva paḷāta": "Uva", "LKA|Madhyama paḷāta": "Central Province", "LKA|Uturumæ̆da paḷāta": "North Central Province",
+  "ITA|Valle d'Aosta": "Aosta Valley", "ITA|Piemonte": "Piedmont", "ITA|Lombardia": "Lombardy", "ITA|Toscana": "Tuscany",
+  "ITA|Sardegna": "Sardinia",
+  "AZE|Naxçıvan Autonomous Republic": "Nakhchivan",
+  "KOS|Đakovica": "Gjakova", "KOS|Gnjilane": "Gjilan", "KOS|Uroševac": "Ferizaj", "KOS|Kosovska Mitrovica": "Mitrovica",
+  "KOS|Peć": "Peja", "HKG|The New Territories": "New Territories",
+};
+const groupName = (code, region) => GROUP_NAME[code + "|" + region] || region.replace(/\s*\([^)]*\)\s*$/, "").replace(/ Economic Region$/, "");
+
 const kmArea = (geom) => { const a = d3.geoArea(geom); return Math.min(a, 4 * Math.PI - a) * EARTH * EARTH; };
 
 const geo = JSON.parse(readFileSync(input, "utf8"));
 const countries = new Map();
 const features = [];
+const groups = [], groupIndex = new Map();
 let droppedIslands = 0;
 for (const f of geo.features) {
   if (!f.geometry) continue;
@@ -43,9 +65,15 @@ for (const f of geo.features) {
   const biggest = areas.indexOf(Math.max(...areas));
   const kept = polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2);
   droppedIslands += polys.length - kept.length;
+  const properties = { n: p.name_en || p.name || RENAME[code] || p.admin, c: code };
+  if (GROUPED.has(code) && p.region) {
+    const name = groupName(code, p.region), key = code + "|" + name;
+    if (!groupIndex.has(key)) { groupIndex.set(key, groups.length); groups.push({ n: name, c: code }); }
+    properties.g = groupIndex.get(key);
+  }
   features.push({
     type: "Feature",
-    properties: { n: p.name_en || p.name || RENAME[code] || p.admin, c: code },
+    properties,
     geometry: kept.length === 1 ? { type: "Polygon", coordinates: kept[0] } : { type: "MultiPolygon", coordinates: kept },
   });
 }
@@ -56,11 +84,22 @@ const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
 const weights = [];
 pre.arcs.forEach((arc) => arc.forEach((pt) => { if (isFinite(pt[2])) weights.push(pt[2]); }));
 weights.sort((a, b) => a - b);
-const simple = simplify.simplify(pre, weights[Math.floor((1 - keep) * (weights.length - 1))]);
+const threshold = (k) => weights[Math.max(0, Math.floor((1 - k) * (weights.length - 1)))];
+const simple = simplify.simplify(pre, threshold(keep));
 const out = client.quantize(simple, 2e5);
 out.countries = [...countries].map(([c, n]) => ({ c, n })).sort((a, b) => a.n.localeCompare(b.n));
+out.groups = groups;
+out.detail = 1;
 let vertices = 0;
 simple.arcs.forEach((arc) => { vertices += arc.length; });
 const json = JSON.stringify(out);
 writeFileSync(resolve(here, "../data/provinces.json"), json);
-console.log(features.length, "provinces in", countries.size, "countries;", droppedIslands, "islands under", MIN_ISLAND_KM2, "km² dropped;", simple.arcs.length, "arcs,", vertices, "vertices;", Math.round(json.length / 1024), "KB");
+console.log(features.length, "provinces in", countries.size, "countries and", groups.length, "groups;", droppedIslands, "islands under", MIN_ISLAND_KM2, "km² dropped;", simple.arcs.length, "arcs,", vertices, "vertices;", Math.round(json.length / 1024), "KB");
+
+const fine = client.quantize(simplify.simplify(pre, threshold(keepDetail)), 1e6);
+const detail = JSON.stringify({ type: "Topology", transform: fine.transform, arcs: fine.arcs });
+let detailVertices = 0;
+fine.arcs.forEach((arc) => { detailVertices += arc.length; });
+if (fine.arcs.length !== out.arcs.length) throw new Error("detail arcs do not line up");
+writeFileSync(resolve(here, "../data/provinces-detail.json"), detail);
+console.log("provinces-detail.json:", fine.arcs.length, "arcs,", detailVertices, "vertices at", keepDetail, ";", Math.round(detail.length / 1024), "KB");

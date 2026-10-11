@@ -13,10 +13,10 @@
   var TAU = 2 * Math.PI;
   var PALETTE = 10;
   var UNCLAIMED = -1;
-  var STORE = "uchronia-map", STORE_PREV = "uchronia-map-previous", STORE_SAT = "uchronia-satellite", STORE_FLAT = "uchronia-flat", STORE_FINE = "uchronia-fine";
+  var STORE = "uchronia-map", STORE_PREV = "uchronia-map-previous", STORE_SAT = "uchronia-satellite", STORE_FLAT = "uchronia-flat", STORE_FINE = "uchronia-fine", STORE_NAMES = "uchronia-names";
   var FONT = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
   var NAME_MAX = 60;
-  var MAX_NEW = 2000, MAX_ADDED_CITIES = 8000;
+  var MAX_NEW = 2000, MAX_ADDED_CITIES = 8000, MAX_PIECES = 300, MAX_PIECE_POINTS = 60000, SEA = -3;
   var DETAIL_URLS = ["BlueMarble_ShadedRelief_Bathymetry", "BlueMarble_NextGeneration", "BlueMarble_ShadedRelief"].map(function (layer) {
     return "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/" + layer + "/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg";
   });
@@ -38,13 +38,15 @@
 
   var levels = null, feats = null, geoFull = null, objKey = "provinces";
   var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [];
+  var provGroup = null, groupName = [], groupProvs = [], baseObjects = null, detailGeo = null, hasDetail = false;
+  var pieces = [], pieceSeq = 0, pieceVersion = 0, lasso = null, unitBox = null, unitCoast = null, edgeHint = -1, PC = window.polygonClipping;
   var unitArea = null, unitNeighbors = null, unitGrid = null;
   var arcA = null, arcB = null, arcLines = null, arcSeam = null;
   var countries = [], owner = null, ownerVersion = 0;
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, city: null, hover: -1, whole: false, erase: false, satellite: false, fine: false };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -142,10 +144,39 @@
     scheduleRender();
   }
   var slow = 0, slowFrames = 0;
+  var DETAIL_S = 3600;
   function levelFor() {
     var px = localScale();
     var level = px < 900 ? 0 : px < 2600 ? 1 : 2;
+    if (level === 2 && px >= DETAIL_S && !slow) {
+      wantDetail();
+      if (detailGeo && detailGeo.ready && levels[3]) level = 3;
+    }
     return Math.max(0, level - slow);
+  }
+  function wantDetail() {
+    if (!hasDetail || (detailGeo && detailGeo.key === objKey)) return;
+    var key = objKey;
+    var dg = detailGeo = { key: key, ready: false, failed: false };
+    fetchJSON(key === "units" ? "data/units-detail.json" : "data/provinces-detail.json").then(function (d) {
+      if (detailGeo !== dg || objKey !== key) return;
+      if (!d || !Array.isArray(d.arcs) || d.arcs.length !== arcA.length) throw new Error("the detailed borders do not match");
+      dg.topo = { type: "Topology", transform: d.transform, arcs: d.arcs, objects: baseObjects };
+      dg.feats = new Array(nUnit); dg.lines = new Array(d.arcs.length);
+      prepareDetail(dg, 0, 0);
+    }).catch(function (e) { dg.failed = true; console.warn("detailed borders", e); });
+  }
+  function prepareDetail(dg, i, a) {
+    if (detailGeo !== dg) return;
+    var t0 = performance.now(), geoms = dg.topo.objects[dg.key].geometries, n = dg.lines.length;
+    while (i < nUnit && performance.now() - t0 < 10) { dg.feats[i] = prepare([topojson.feature(dg.topo, geoms[i])])[0]; i++; }
+    while (i >= nUnit && a < n && performance.now() - t0 < 10) { dg.lines[a] = prepareArc(topojson.feature(dg.topo, { type: "LineString", arcs: [a] }).geometry.coordinates); a++; }
+    if (i < nUnit || a < n) { setTimeout(function () { prepareDetail(dg, i, a); }, 0); return; }
+    levels[3] = dg.topo; feats[3] = dg.feats; arcLines[3] = dg.lines;
+    shapeCache[3].clear();
+    dg.ready = true;
+    pickDirty = true;
+    scheduleRender();
   }
   function noteCost(ms) {
     if (slow) return;
@@ -205,6 +236,22 @@
     var cap = capOf(X, Y, Z, n, sx, sy, sz);
     cap.x = X; cap.y = Y; cap.z = Z; cap.n = n;
     return cap;
+  }
+  function prepareArc(coords) {
+    var parts = null, start = 0;
+    for (var k = 1; k < coords.length; k++) {
+      var a = coords[k - 1], b = coords[k];
+      if ((Math.abs(a[0]) > 179.9999 && Math.abs(b[0]) > 179.9999) || (a[1] < -89.9999 && b[1] < -89.9999)) {
+        if (!parts) parts = [];
+        if (k - 1 > start) parts.push(coords.slice(start, k));
+        start = k;
+      }
+    }
+    if (!parts) return prepareLine(coords);
+    if (coords.length - 1 > start) parts.push(coords.slice(start));
+    var m = prepareLine(coords);
+    m.parts = parts.map(prepareLine);
+    return m;
   }
   function makeGraticule() {
     var lines = [];
@@ -379,6 +426,7 @@
     for (var i = 0; i < f.rings.length; i++) traceRing(c, f.rings[i]);
   }
   function traceArc(c, L) {
+    if (L.parts) { for (var i = 0; i < L.parts.length; i++) traceArc(c, L.parts[i]); return; }
     if (flat) { if (featureInFlat(L)) traceFlat(c, L, false); return; }
     traceLine(c, L);
   }
@@ -404,7 +452,7 @@
     groups = Array.from(map.values());
     groupsDirty = false;
   }
-  var shapeCache = [new Map(), new Map(), new Map()], shapeVersion = new Map();
+  var shapeCache = [new Map(), new Map(), new Map(), new Map()], shapeVersion = new Map();
   var EMPTY_SHAPE = { rings: [], cx: 1, cy: 0, cz: 0, radius: -10, geo: null };
   function touchShapes(list) {
     list.forEach(function (c) { shapeVersion.set(c, (shapeVersion.get(c) || 0) + 1); });
@@ -424,13 +472,14 @@
   }
   function freshGroups() { if (groupsDirty) rebuildGroups(); }
   function rebuildArcs() {
-    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = [];
+    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; unitCoast = null;
     for (var a = 0; a < arcA.length; a++) {
       var A = arcA[a], b = arcB[a];
       if (A < 0) continue;
       if (b < 0) { if (!arcSeam[a]) coastArcs.push(a); continue; }
-      if (owner[A] !== owner[b]) borderArcs.push(a);
-      else if (unitProv[A] !== unitProv[b]) provArcs.push(a);
+      if (owner[A] !== owner[b]) { borderArcs.push(a); continue; }
+      var pa = unitProv[A], pb = unitProv[b];
+      if (pa !== pb && (ui.fine || provGroup[pa] < 0 || provGroup[pa] !== provGroup[pb])) provArcs.push(a);
       else unitArcs.push(a);
     }
     arcsDirty = false;
@@ -454,6 +503,366 @@
     arcsDirty = true;
     if (list) touchShapes(list.concat([UNCLAIMED]));
     else { shapeCache.forEach(function (m) { m.clear(); }); }
+  }
+
+  function hasLand(c) {
+    if (unitsOf[c] && unitsOf[c].length) return true;
+    for (var i = 0; i < pieces.length; i++) if (pieces[i].owner === c) return true;
+    return false;
+  }
+  function piecesChanged() {
+    pieceVersion++;
+    if (ui.piece) ui.piece = pieceById(ui.piece.id);
+    if (ui.hoverPiece) ui.hoverPiece = pieceById(ui.hoverPiece.id);
+    scheduleRender();
+  }
+  function pieceById(id) {
+    for (var i = 0; i < pieces.length; i++) if (pieces[i].id === id) return pieces[i];
+    return null;
+  }
+  function withOwner(p, o) { return { id: p.id, owner: o, shape: p.shape, edges: null }; }
+  function ringSigned(ring) {
+    var s = 0;
+    for (var i = 0; i + 1 < ring.length; i++) s += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+    return s / 2;
+  }
+  function toD3(mp) { return mp.map(function (poly) { return poly.map(function (ring) { return ring.slice().reverse(); }); }); }
+  function cleanPolys(mp) {
+    var q = mp.map(function (poly) { return poly.map(function (ring) { return ring.map(function (pt) { return [Math.round(pt[0] * 1e4) / 1e4, Math.round(pt[1] * 1e4) / 1e4]; }); }); });
+    return toD3(PC.union(q).filter(function (poly) { return Math.abs(ringSigned(poly[0])) > 2e-8; }));
+  }
+  function makeShape(polys) {
+    var bbs = [], n = 0;
+    polys.forEach(function (poly) {
+      var x0 = 180, y0 = 90, x1 = -180, y1 = -90, ring = poly[0];
+      for (var i = 0; i < ring.length; i++) {
+        var pt = ring[i];
+        if (pt[0] < x0) x0 = pt[0]; if (pt[0] > x1) x1 = pt[0];
+        if (pt[1] < y0) y0 = pt[1]; if (pt[1] > y1) y1 = pt[1];
+      }
+      bbs.push([x0, y0, x1, y1]);
+      poly.forEach(function (r) { n += r.length; });
+    });
+    var bb = [180, 90, -180, -90];
+    bbs.forEach(function (b) { bb[0] = Math.min(bb[0], b[0]); bb[1] = Math.min(bb[1], b[1]); bb[2] = Math.max(bb[2], b[2]); bb[3] = Math.max(bb[3], b[3]); });
+    var geo = { type: "MultiPolygon", coordinates: polys };
+    return { polys: polys, geo: geo, f: prepare([{ geometry: geo }])[0], bb: bb, bbs: bbs, n: n, cand: null, candGen: -1, gen: -1, units: [], cover: [], area: 0, labelLand: null, labelGen: -1 };
+  }
+  function polysContain(polys, x, y) {
+    var inside = false;
+    for (var a = 0; a < polys.length; a++) for (var b = 0; b < polys[a].length; b++) {
+      var ring = polys[a][b];
+      for (var i = 0, n = ring.length, j = n - 1; i < n; j = i++) {
+        var p = ring[i], q = ring[j];
+        if ((p[1] > y) !== (q[1] > y) && x < (q[0] - p[0]) * (y - p[1]) / (q[1] - p[1]) + p[0]) inside = !inside;
+      }
+    }
+    return inside;
+  }
+  function pieceAtLL(lon, lat) {
+    for (var i = pieces.length - 1; i >= 0; i--) {
+      var bb = pieces[i].shape.bb;
+      if (lon < bb[0] || lon > bb[2] || lat < bb[1] || lat > bb[3]) continue;
+      if (polysContain(pieces[i].shape.polys, lon, lat)) return pieces[i];
+    }
+    return null;
+  }
+  function pieceAt(x, y, u) {
+    if (!pieces.length) return null;
+    if (u === undefined) u = unitAt(x, y);
+    if (u < 0) return null;
+    var ll = lonLatAt(x, y);
+    return ll ? pieceAtLL(wrap180(ll[0]), ll[1]) : null;
+  }
+  function pickAt(x, y) {
+    var u = unitAt(x, y);
+    if (u < 0) return { u: -1, p: null, o: null };
+    var p = pieceAt(x, y, u);
+    return { u: u, p: p, o: p ? p.owner : owner[u] };
+  }
+  function shapeCand(s) {
+    if (s.cand && s.candGen === geomGen) return s.cand;
+    var out = [], bbs = s.bbs;
+    for (var u = 0; u < nUnit; u++) {
+      var k = u * 4;
+      for (var j = 0; j < bbs.length; j++) {
+        var bb = bbs[j];
+        if (unitBox[k] > bb[2] || unitBox[k + 2] < bb[0] || unitBox[k + 1] > bb[3] || unitBox[k + 3] < bb[1]) continue;
+        out.push(u);
+        break;
+      }
+    }
+    s.cand = out; s.candGen = geomGen;
+    return out;
+  }
+  function lowInside(u, polys) {
+    var f = feats[0][u], ins = 0, outs = 0;
+    for (var r = 0; r < f.rings.length; r++) {
+      var rg = f.rings[r];
+      flatArrays(rg);
+      for (var k = 0; k < rg.n; k++) {
+        if (polysContain(polys, rg.L[k] / D2R, rg.P[k] / D2R)) ins++; else outs++;
+        if (ins && outs) return -1;
+      }
+    }
+    return ins ? 1 : 0;
+  }
+  function shapeCover(s) {
+    if (s.gen === geomGen) return s;
+    var cand = shapeCand(s), verts = [];
+    s.polys.forEach(function (poly) { poly.forEach(function (ring) { for (var i = 0; i < ring.length; i++) verts.push(ring[i]); }); });
+    s.units = []; s.cover = []; s.area = 0; s.labelLand = null;
+    cand.forEach(function (u) {
+      var k = u * 4, x0 = unitBox[k], y0 = unitBox[k + 1], x1 = unitBox[k + 2], y1 = unitBox[k + 3], near = false, km = 0;
+      for (var i = 0; i < verts.length; i++) { var v = verts[i]; if (v[0] >= x0 && v[0] <= x1 && v[1] >= y0 && v[1] <= y1) { near = true; break; } }
+      if (!near) {
+        var st = lowInside(u, s.polys);
+        if (st === 0) return;
+        if (st === 1) km = unitArea[u];
+      }
+      if (!km) {
+        var g = geoFull[u].geometry, part = [];
+        try { part = PC.intersection(s.polys, g.type === "Polygon" ? [g.coordinates] : g.coordinates); } catch (e) { part = []; }
+        part.forEach(function (poly) { var a = d3.geoArea({ type: "Polygon", coordinates: poly }); if (a > TAU) a = 2 * TAU - a; km += a * R_KM * R_KM; });
+      }
+      if (km > 0) { s.units.push(u); s.cover.push(km); s.area += km; }
+    });
+    s.gen = geomGen;
+    return s;
+  }
+  function pieceLabelLand(s) {
+    if (s.labelLand && s.labelGen === geomGen) return s.labelLand;
+    shapeCover(s);
+    var land = [];
+    if (s.units.length) {
+      var t = levels[0], gs = t.objects[objKey].geometries;
+      var m = topojson.merge(t, s.units.map(function (u) { return gs[u]; }));
+      try { land = m.coordinates.length ? PC.intersection(s.polys, m.coordinates) : []; } catch (e) { land = []; }
+    }
+    s.labelLand = land; s.labelGen = geomGen;
+    return land;
+  }
+  function withPieces(c, coords) {
+    var minus = [], plus = [];
+    pieces.forEach(function (p) {
+      var s = shapeCover(p.shape);
+      if (p.owner === c) { var l = pieceLabelLand(s); if (l.length) plus.push(l); return; }
+      for (var i = 0; i < s.units.length; i++) if (owner[s.units[i]] === c) { minus.push(s.polys); return; }
+    });
+    if (!minus.length && !plus.length) return coords;
+    try {
+      var g = coords;
+      if (minus.length && g.length) g = PC.difference.apply(null, [g].concat(minus));
+      if (plus.length) g = PC.union.apply(null, (g.length ? [g] : []).concat(plus));
+      return toD3(g);
+    } catch (e) { return coords; }
+  }
+  function countryArea(c) {
+    var area = 0;
+    (unitsOf[c] || []).forEach(function (u) { area += unitArea[u]; });
+    pieces.forEach(function (p) {
+      var s = shapeCover(p.shape);
+      for (var i = 0; i < s.units.length; i++) if (owner[s.units[i]] === c) area -= s.cover[i];
+      if (p.owner === c) area += s.area;
+    });
+    return Math.max(0, area);
+  }
+  function cityOwner(c) {
+    var u = cityUnit(c);
+    if (u < 0) return null;
+    if (pieces.length) { var p = pieceAtLL(c.lon, c.lat); if (p) return p.owner; }
+    return owner[u];
+  }
+  function unitNear(lon, lat) {
+    if (edgeHint >= 0 && edgeHint < nUnit && d3.geoContains(geoFull[edgeHint], [lon, lat])) return edgeHint;
+    var u = unitOfPoint(lon, lat, true);
+    if (u >= 0) edgeHint = u;
+    return u;
+  }
+  function visibleOwnerLL(lon, lat) {
+    lon = wrap180(lon); lat = Math.max(-90, Math.min(90, lat));
+    var u = unitNear(lon, lat);
+    if (u < 0) return SEA;
+    for (var i = pieces.length - 1; i >= 0; i--) {
+      var q = pieces[i];
+      var bb = q.shape.bb;
+      if (lon < bb[0] || lon > bb[2] || lat < bb[1] || lat > bb[3]) continue;
+      if (polysContain(q.shape.polys, lon, lat)) return q.owner;
+    }
+    return owner[u];
+  }
+  function sideOwner(a, b, right) {
+    var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    var cs = Math.max(0.02, Math.cos(my * D2R));
+    var dx = (b[0] - a[0]) * cs, dy = b[1] - a[1], len = Math.hypot(dx, dy);
+    if (!(len > 0)) return SEA;
+    var eps = Math.min(2e-3, Math.max(2e-6, len * 0.25));
+    var nx = right ? -dy : dy, ny = right ? dx : -dx;
+    return visibleOwnerLL(mx + nx / len * eps / cs, my + ny / len * eps);
+  }
+  function pieceEdges(p) {
+    var key = ownerVersion + ":" + pieceVersion + ":" + geomGen;
+    if (p.edges && p.edges.key === key) return p.edges;
+    var rings = [];
+    edgeHint = -1;
+    p.shape.polys.forEach(function (poly) {
+      poly.forEach(function (ring, ri) {
+        var A = ringSigned(ring), right = ri === 0 ? A < 0 : A > 0;
+        var pts = [ring[0]], out = [];
+        for (var k = 0; k + 1 < ring.length; k++) {
+          var a = ring[k], b = ring[k + 1];
+          var m = Math.max(1, Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / 0.05));
+          for (var j = 1; j <= m; j++) {
+            var q = j === m ? b : [a[0] + (b[0] - a[0]) * j / m, a[1] + (b[1] - a[1]) * j / m];
+            out.push(sideOwner(pts[pts.length - 1], q, right));
+            pts.push(q);
+          }
+        }
+        rings.push({ pts: pts, out: out });
+      });
+    });
+    var e = p.edges = { key: key, rings: rings, sel: null, selKey: "" };
+    e.borders = edgeRuns(e, function (o) { return o !== SEA && o !== p.owner; });
+    return e;
+  }
+  function edgeRuns(e, pred) {
+    var lines = [];
+    e.rings.forEach(function (r) {
+      var pts = r.pts, out = r.out, n = out.length;
+      if (!n) return;
+      var start = 0;
+      while (start < n && pred(out[start])) start++;
+      if (start === n) { lines.push(prepareLine(pts)); return; }
+      var cur = null;
+      for (var i = 1; i <= n; i++) {
+        var k = (start + i) % n;
+        if (pred(out[k])) { if (!cur) cur = [pts[k]]; cur.push(pts[k + 1]); }
+        else if (cur) { lines.push(prepareLine(cur)); cur = null; }
+      }
+      if (cur) lines.push(prepareLine(cur));
+    });
+    return lines;
+  }
+  function pieceSelRuns(p, c) {
+    var e = pieceEdges(p), key = e.key + "|" + c;
+    if (e.selKey !== key) { e.sel = edgeRuns(e, function (o) { return o !== SEA && (p.owner === c) !== (o === c); }); e.selKey = key; }
+    return e.sel;
+  }
+  function coastOf(u) {
+    if (!unitCoast) {
+      unitCoast = new Array(nUnit);
+      coastArcs.forEach(function (a) { var A = arcA[a]; (unitCoast[A] || (unitCoast[A] = [])).push(a); });
+    }
+    return unitCoast[u] || [];
+  }
+  function visiblePieces() {
+    if (!pieces.length) return null;
+    var out = [];
+    for (var i = 0; i < pieces.length; i++) if (inView(pieces[i].shape.f)) out.push(pieces[i]);
+    return out.length ? out : null;
+  }
+  function clipOutPieces(vis) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-10, -10, W + 20, H + 20);
+    for (var i = 0; i < vis.length; i++) traceFeature(ctx, vis[i].shape.f);
+    ctx.clip("evenodd");
+  }
+  function clipToLand(vis, lvl) {
+    var units = new Set(), seen = new Set(), F = feats[lvl];
+    vis.forEach(function (p) {
+      var cand = shapeCand(p.shape);
+      for (var i = 0; i < cand.length; i++) { units.add(cand[i]); seen.add(owner[cand[i]] >= 0 ? owner[cand[i]] : UNCLAIMED); }
+    });
+    ctx.save();
+    ctx.beginPath();
+    if (units.size <= 120) units.forEach(function (u) { traceFeature(ctx, F[u]); });
+    else seen.forEach(function (o) { traceFeature(ctx, shapeOf(o, lvl)); });
+    ctx.clip();
+  }
+  function drawPieceFills(vis, lvl, satellite) {
+    clipToLand(vis, lvl);
+    ctx.globalAlpha = satellite ? 0.22 : 1;
+    for (var i = 0; i < vis.length; i++) {
+      var p = vis[i];
+      ctx.beginPath(); traceFeature(ctx, p.shape.f);
+      if (p.owner >= 0 && countries[p.owner]) { ctx.fillStyle = colorOf(p.owner); ctx.fill(); }
+      else {
+        ctx.fillStyle = pal.unclaimed; ctx.fill();
+        var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
+      }
+    }
+    ctx.globalAlpha = 1;
+    drawPieceHover(vis);
+    var c = currentCountry();
+    if (c >= 0 && ui.tool === "select" && !ui.city) {
+      ctx.beginPath();
+      vis.forEach(function (p) { if (p.owner === c) traceFeature(ctx, p.shape.f); });
+      ctx.fillStyle = pal["select-fill"]; ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawPieceHover(vis) {
+    var u = ui.hover, hp = ui.hoverPiece;
+    if (u < 0 || drag || stroke || cityDrag || lasso) return;
+    var vo = hp ? hp.owner : owner[u], list = [];
+    if (ui.tool === "paint") {
+      var to = brush();
+      if (to === null) return;
+      if (ui.whole && vo >= 0) vis.forEach(function (p) { if (p.owner === vo && p.owner !== to) list.push(p); });
+      else if (hp && hp.owner !== to && vis.indexOf(hp) >= 0) list.push(hp);
+      if (!list.length) return;
+      ctx.beginPath(); list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
+      ctx.globalAlpha = 0.85; ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill();
+      if (to < 0) { ctx.fillStyle = hatch; ctx.fill(); }
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([3, 3]); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+    } else if (ui.tool === "select") {
+      if (vo < 0 || vo === ui.country) return;
+      vis.forEach(function (p) { if (p.owner === vo) list.push(p); });
+      if (!list.length) return;
+      ctx.beginPath(); list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
+      ctx.fillStyle = pal.hover; ctx.fill();
+    }
+  }
+  function drawPieceLines(vis, lvl, L, satellite) {
+    clipToLand(vis, lvl);
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    vis.forEach(function (p) { var b = pieceEdges(p).borders; for (var i = 0; i < b.length; i++) traceArc(ctx, b[i]); });
+    ctx.strokeStyle = pal.border; ctx.lineWidth = satellite ? 1.3 : 1.15; ctx.stroke();
+    var c = currentCountry();
+    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) {
+      ctx.beginPath();
+      vis.forEach(function (p) { var r = pieceSelRuns(p, c); for (var i = 0; i < r.length; i++) traceArc(ctx, r[i]); });
+      ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.stroke();
+      vis.forEach(function (p) {
+        if (p.owner !== c) return;
+        ctx.save();
+        ctx.beginPath(); traceFeature(ctx, p.shape.f); ctx.clip();
+        ctx.beginPath();
+        shapeCand(p.shape).forEach(function (u) { coastOf(u).forEach(function (a) { traceArc(ctx, L[a]); }); });
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+    ctx.restore();
+  }
+  function drawLasso() {
+    if (!lasso) return;
+    ctx.beginPath();
+    var started = false;
+    for (var i = 0; i < lasso.ll.length; i++) {
+      var q = lasso.ll[i];
+      if (!q) continue;
+      var pt = projectLL(q[0], q[1]);
+      if (!pt) continue;
+      if (!started) { ctx.moveTo(pt[0], pt[1]); started = true; } else ctx.lineTo(pt[0], pt[1]);
+    }
+    if (!started) return;
+    ctx.closePath();
+    var to = brush();
+    ctx.globalAlpha = 0.35; ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.setLineDash([4, 3]); ctx.lineJoin = "round"; ctx.strokeStyle = pal.select; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
   }
 
   var sat = null, satTried = false;
@@ -507,6 +916,8 @@
     }
 
     mark("sea");
+    var vis = visiblePieces();
+    if (vis) clipOutPieces(vis);
     ctx.globalAlpha = satellite ? 0.22 : 1;
     for (var g = 0; g < groups.length; g++) {
       var list = groups[g].countries;
@@ -542,14 +953,18 @@
       ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
     }
     mark("provlines");
+    if (vis) { ctx.restore(); drawPieceFills(vis, lvl, satellite); }
     ctx.lineJoin = "round";
     ctx.beginPath(); traceArcs(ctx, L, coastArcs);
     ctx.globalAlpha = satellite ? 0.55 : 1;
     ctx.strokeStyle = pal.border; ctx.lineWidth = 0.75; ctx.stroke();
     ctx.globalAlpha = 1;
+    if (vis) clipOutPieces(vis);
     ctx.beginPath(); traceArcs(ctx, L, borderArcs);
     ctx.strokeStyle = pal.border; ctx.lineWidth = satellite ? 1.3 : 1.15; ctx.stroke();
     drawSelectionLine(L);
+    if (vis) { ctx.restore(); drawPieceLines(vis, lvl, L, satellite); }
+    drawLasso();
 
     if (flat) {
       ctx.restore();
@@ -575,38 +990,40 @@
   }
 
   function brush() {
-    if (ui.tool !== "paint") return null;
+    if (ui.tool !== "paint" && ui.tool !== "draw") return null;
     if (ui.erase) return UNCLAIMED;
     return ui.country >= 0 && countries[ui.country] && countries[ui.country].alive ? ui.country : null;
   }
   function regionUnits(u) {
     if (u < 0) return [];
-    return ui.fine || !fineData ? [u] : provUnits[unitProv[u]];
+    if (ui.fine) return [u];
+    var p = unitProv[u], g = provGroup[p];
+    if (g < 0) return fineData ? provUnits[p] : [u];
+    var out = [];
+    groupProvs[g].forEach(function (q) { provUnits[q].forEach(function (x) { out.push(x); }); });
+    return out;
   }
   function regionName(u) {
     if (u < 0) return "";
-    if (!fineData) return unitName[u];
-    var p = unitProv[u];
-    if (!ui.fine || provUnits[p].length < 2) return provName[p];
-    return unitName[u] + ", " + provName[p];
+    var p = unitProv[u], g = provGroup[p];
+    if (!ui.fine) return g >= 0 ? groupName[g] : provName[p];
+    if (fineData && provUnits[p].length > 1) return unitName[u] + ", " + provName[p];
+    return g >= 0 ? provName[p] + ", " + groupName[g] : provName[p];
   }
   function regionTitle(u) {
     if (u < 0) return "";
-    if (!fineData) return unitName[u];
-    var p = unitProv[u];
-    return ui.fine && provUnits[p].length > 1 ? unitName[u] : provName[p];
-  }
-  function paintList(u, to) {
-    if (ui.whole && owner[u] >= 0 && unitsOf[owner[u]]) return unitsOf[owner[u]];
-    return regionUnits(u);
+    var p = unitProv[u], g = provGroup[p];
+    if (!ui.fine) return g >= 0 ? groupName[g] : provName[p];
+    return fineData && provUnits[p].length > 1 ? unitName[u] : provName[p];
   }
   function drawHover(F) {
-    var u = ui.hover;
-    if (u < 0 || drag || stroke || cityDrag) return;
+    var u = ui.hover, hp = ui.hoverPiece;
+    if (u < 0 || drag || stroke || cityDrag || lasso) return;
+    var vo = hp ? hp.owner : owner[u];
     if (ui.tool === "paint") {
       var to = brush();
       if (to === null) return;
-      var list = paintList(u, to);
+      var list = ui.whole && vo >= 0 ? (unitsOf[vo] || []) : hp ? [] : regionUnits(u);
       var any = false;
       for (var i = 0; i < list.length; i++) if (owner[list[i]] !== to) { any = true; break; }
       if (!any) return;
@@ -618,7 +1035,7 @@
       ctx.globalAlpha = 1;
       ctx.setLineDash([3, 3]); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
     } else if (ui.tool === "select") {
-      var o = owner[u];
+      var o = vo;
       if (o < 0 || o === ui.country || !unitsOf[o]) return;
       ctx.beginPath();
       unitsOf[o].forEach(function (q) { traceFeature(ctx, F[q]); });
@@ -638,7 +1055,7 @@
   }
   function drawSelectionLine(L) {
     var c = currentCountry();
-    if (c < 0 || ui.city || (ui.tool === "paint" && ui.erase)) return;
+    if (c < 0 || ui.city || ((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) return;
     ctx.beginPath(); traceArcs(ctx, L, selectionArcs(c));
     ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.stroke();
   }
@@ -670,12 +1087,13 @@
   var LINE_H = 1.18, CAP_H = 0.92;
   var labelOrder = [];
   function drawLabels(placed) {
+    if (!ui.countryNames) return;
     var S = localScale();
     var kmPx = (flat ? FB.k : S) / R_KM;
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     for (var k = 0; k < labelOrder.length; k++) {
       var c = labelOrder[k], co = countries[c];
-      if (!co || !co.alive || !co.label || !unitsOf[c] || !unitsOf[c].length) continue;
+      if (!co || !co.alive || !co.label || !hasLand(c)) continue;
       var L = co.label;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi);
       if (!p) continue;
@@ -789,11 +1207,11 @@
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
       ctx.font = (c.cap ? "500 12px " : "400 11px ") + FONT;
       if (!c.w) c.w = ctx.measureText(c.name).width;
-      var off = dot + (c.cap ? 6 : 4);
-      var box = mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, 7, 0);
+      var off = dot + (c.cap ? 6 : 4), named = ui.cityNames || must;
+      var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, 7, 0) : mkBox(px, py, dot + 3, dot + 3, 0);
       if (!must && collides(placed, box)) continue;
       placed.push(box);
-      shown.push({ c: c, x: px, y: py, off: off });
+      shown.push({ c: c, x: px, y: py, off: off, named: named });
     }
     ctx.lineWidth = 1.2;
     for (i = 0; i < shown.length; i++) {
@@ -820,6 +1238,7 @@
     ctx.strokeStyle = pal["city-halo"];
     for (i = 0; i < shown.length; i++) {
       s = shown[i];
+      if (!s.named) continue;
       ctx.font = (s.c.cap ? "500 12px " : "400 11px ") + FONT;
       ctx.strokeText(s.c.name, s.x + s.off, s.y);
       ctx.fillStyle = pal["city-label"]; ctx.fillText(s.c.name, s.x + s.off, s.y);
@@ -873,29 +1292,46 @@
     var ll = lonLatAt(x, y);
     if (!ll) return -1;
     if (pickDirty) renderPick();
+    var x0 = Math.round(x) - 2, y0 = Math.round(y) - 2;
+    if (x0 < 0 || y0 < 0 || x0 + 5 > W || y0 + 5 > H) return unitAtEdge(x, y, ll);
+    var d = pctx.getImageData(x0, y0, 5, 5).data;
+    var code = function (i, j) { var k = (j * 5 + i) * 4; return d[k + 3] === 255 ? (d[k] | (d[k + 1] << 8) | (d[k + 2] << 16)) - 1 : -1; };
+    var order = [[2, 2], [3, 2], [2, 3], [1, 2], [2, 1], [3, 3], [1, 1], [3, 1], [1, 3]];
+    var tried = {}, solid = levelFor() === 3;
+    for (var n = 0; n < order.length; n++) {
+      var i = order[n][0], j = order[n][1], idx = code(i, j);
+      if (idx < 0 || idx >= nUnit || tried[idx]) continue;
+      tried[idx] = true;
+      if (d3.geoContains(geoFull[idx], ll)) return idx;
+      if (solid && code(i + 1, j) === idx && code(i - 1, j) === idx && code(i, j + 1) === idx && code(i, j - 1) === idx) return idx;
+    }
+    return -1;
+  }
+  function unitAtEdge(x, y, ll) {
     var tried = {};
-    for (var dy = 0; dy <= 2; dy++) {
-      for (var dx = 0; dx <= 2; dx++) {
-        var px = Math.round(x) + (dx === 2 ? -1 : dx), py = Math.round(y) + (dy === 2 ? -1 : dy);
-        if (px < 0 || py < 0 || px >= W || py >= H) continue;
-        var d = pctx.getImageData(px, py, 1, 1).data;
-        if (d[3] === 0) continue;
-        var idx = (d[0] | (d[1] << 8) | (d[2] << 16)) - 1;
-        if (idx < 0 || idx >= nUnit || tried[idx]) continue;
-        tried[idx] = true;
-        if (d3.geoContains(geoFull[idx], ll)) return idx;
-      }
+    for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+      var px = Math.round(x) + dx, py = Math.round(y) + dy;
+      if (px < 0 || py < 0 || px >= W || py >= H) continue;
+      var d = pctx.getImageData(px, py, 1, 1).data;
+      if (d[3] === 0) continue;
+      var idx = (d[0] | (d[1] << 8) | (d[2] << 16)) - 1;
+      if (idx < 0 || idx >= nUnit || tried[idx]) continue;
+      tried[idx] = true;
+      if (d3.geoContains(geoFull[idx], ll)) return idx;
     }
     return -1;
   }
 
   function buildUnitGrid() {
     unitGrid = new Map();
+    unitBox = new Float64Array(nUnit * 4);
     for (var u = 0; u < nUnit; u++) {
       var b = d3.geoBounds(geoFull[u]);
       var x0 = b[0][0], y0 = b[0][1], x1 = b[1][0], y1 = b[1][1];
+      unitBox[u * 4] = 1e9; unitBox[u * 4 + 1] = 1e9; unitBox[u * 4 + 2] = -1e9; unitBox[u * 4 + 3] = -1e9;
       if (!isFinite(x0) || !isFinite(y0)) continue;
       if (x1 < x0) { x0 = -180; x1 = 180; }
+      unitBox[u * 4] = x0; unitBox[u * 4 + 1] = y0; unitBox[u * 4 + 2] = x1; unitBox[u * 4 + 3] = y1;
       var gx0 = Math.floor((x0 + 180) / 2), gx1 = Math.floor((Math.min(179.999, x1) + 180) / 2);
       var gy0 = Math.floor((y0 + 90) / 2), gy1 = Math.floor((Math.min(89.999, y1) + 90) / 2);
       for (var gx = gx0; gx <= gx1; gx++) for (var gy = gy0; gy <= gy1; gy++) {
@@ -905,11 +1341,12 @@
       }
     }
   }
-  function unitOfPoint(lon, lat) {
+  function unitOfPoint(lon, lat, strict) {
     if (!unitGrid) return -1;
     var gx = Math.floor((wrap180(lon) + 180) / 2), gy = Math.floor((Math.max(-89.999, Math.min(89.999, lat)) + 90) / 2);
     var list = unitGrid.get(gx * 100 + gy) || [];
     for (var i = 0; i < list.length; i++) if (d3.geoContains(geoFull[list[i]], [lon, lat])) return list[i];
+    if (strict) return -1;
     var best = -1, bestD = 0.004;
     for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) {
       var l2 = unitGrid.get(((gx + dx + 180) % 180) * 100 + gy + dy) || [];
@@ -967,18 +1404,20 @@
     co.label = { v: toVec(lon, lat), lam: lon * D2R, phi: p, lon: lon, lat: lat, fkm: fkm, lines: lines, ang: ang, area: area, size: size, name: co.name };
   }
   function computeLabel(c) {
-    var us = unitsOf[c], co = countries[c];
-    if (!co.alive || !us || !us.length) { co.label = null; return; }
+    var us = unitsOf[c] || [], co = countries[c];
+    if (!co.alive || !hasLand(c)) { co.label = null; return; }
     var topo = levels[0], geoms = topo.objects[objKey].geometries;
-    var merged = topojson.merge(topo, us.map(function (u) { return geoms[u]; }));
+    var coords = us.length ? topojson.merge(topo, us.map(function (u) { return geoms[u]; })).coordinates : [];
+    if (pieces.length) coords = withPieces(c, coords);
     var best = null, bestA = 0;
-    merged.coordinates.forEach(function (poly) {
+    coords.forEach(function (poly) {
       var a = d3.geoArea({ type: "Polygon", coordinates: poly });
       if (a > TAU) a = 2 * TAU - a;
       if (a > bestA) { bestA = a; best = poly; }
     });
     var name = labelText(co.name);
     if (!best || !name) {
+      if (!us.length) { co.label = null; return; }
       var cen0 = d3.geoCentroid(geoFull[us[0]]);
       setLabel(co, cen0[0], cen0[1], 4, [name], 0, 0, 20);
       return;
@@ -1164,6 +1603,7 @@
     stopInertia(); stopFly(); hideTip();
     if (pointers.size === 2) {
       if (stroke) endStroke();
+      cancelLasso();
       cancelCityDrag();
       drag = null;
       canvas.classList.remove("is-dragging");
@@ -1174,6 +1614,11 @@
     if (pointers.size > 2) return;
     if (mouse) { focusByPointer = true; canvas.focus({ preventScroll: true }); focusByPointer = false; }
     var turn = mouse && (e.button !== 0 || e.shiftKey || spaceDown);
+    if (!turn && ui.tool === "draw") {
+      if (mouse && e.altKey) { pickUp(e.clientX, e.clientY); return; }
+      startLasso(e.clientX, e.clientY);
+      return;
+    }
     if (!turn && ui.tool !== "paint") {
       var c = cityAt(e.clientX, e.clientY, !mouse);
       if (c) { cityDrag = { city: c, x: e.clientX, y: e.clientY, moved: false, from: citySnapshot(c) }; return; }
@@ -1207,6 +1652,10 @@
       var ll = lonLatAt(e.clientX, e.clientY);
       if (ll) placeCity(cityDrag.city, ll[0], ll[1]);
       scheduleRender();
+      return;
+    }
+    if (lasso) {
+      if (pointers.size <= 1) addLassoPoint(e.clientX, e.clientY);
       return;
     }
     if (stroke) {
@@ -1250,6 +1699,7 @@
       } else selectCity(cd.city);
       return;
     }
+    if (lasso) { if (e.type === "pointercancel") cancelLasso(); else finishLasso(); return; }
     if (stroke) { endStroke(); return; }
     if (!drag) return;
     var d = drag; drag = null;
@@ -1265,7 +1715,7 @@
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
   canvas.addEventListener("lostpointercapture", function (e) { pointers.delete(e.pointerId); });
-  canvas.addEventListener("pointerleave", function () { if (!drag && !stroke && !cityDrag) { setHover(-1); hideTip(); } });
+  canvas.addEventListener("pointerleave", function () { if (!drag && !stroke && !cityDrag && !lasso) { setHover(-1); hideTip(); } });
 
   function startInertia(vx, vy) {
     inertia = { vx: vx, vy: vy, t: performance.now() };
@@ -1343,35 +1793,39 @@
       addCity(ll[0], ll[1]);
       return;
     }
+    if (ui.tool === "draw") return;
     var u = ll ? unitAt(x, y) : -1;
-    if (u < 0) { ui.country = -1; ui.region = -1; ui.city = null; renderPanel(); scheduleRender(); return; }
+    if (u < 0) { ui.country = -1; ui.region = -1; ui.piece = null; ui.city = null; renderPanel(); scheduleRender(); return; }
+    var pc = pieceAt(x, y, u);
     ui.city = null;
-    ui.region = u;
-    ui.country = owner[u];
+    ui.piece = pc;
+    ui.region = pc ? -1 : u;
+    ui.country = pc ? pc.owner : owner[u];
     renderPanel();
     scheduleRender();
   }
 
+  function brushWord() { return ui.tool === "draw" ? "Drawing for " : "Painting with "; }
   function pickUp(x, y) {
-    var u = unitAt(x, y);
-    if (u < 0) return;
-    if (owner[u] < 0) { ui.erase = true; toast("Painting unclaimed land"); }
-    else { ui.erase = false; ui.country = owner[u]; toast("Painting with " + countries[ui.country].name); }
+    var pk = pickAt(x, y);
+    if (pk.u < 0) return;
+    if (pk.o < 0) { ui.erase = true; toast(ui.tool === "draw" ? "Drawing unclaimed land" : "Painting unclaimed land"); }
+    else { ui.erase = false; ui.country = pk.o; toast(brushWord() + countries[ui.country].name); }
     renderPanel();
     scheduleRender();
+  }
+  function pickBrushAt(x, y) {
+    var pk = pickAt(x, y);
+    if (pk.u >= 0 && pk.o >= 0) {
+      ui.country = pk.o; ui.erase = false;
+      toast(brushWord() + countries[ui.country].name);
+      renderPanel(); scheduleRender();
+    }
   }
 
   function startStroke(x, y) {
-    if (brush() === null) {
-      var u = unitAt(x, y);
-      if (u >= 0 && owner[u] >= 0) {
-        ui.country = owner[u]; ui.erase = false;
-        toast("Painting with " + countries[ui.country].name);
-        renderPanel(); scheduleRender();
-      }
-      return;
-    }
-    stroke = { x: x, y: y, changes: new Map(), touched: new Set(), fresh: new Map() };
+    if (brush() === null) { pickBrushAt(x, y); return; }
+    stroke = { x: x, y: y, changes: new Map(), touched: new Set(), fresh: new Map(), pieceFrom: null };
     canvas.classList.add("is-painting");
     paintAt(x, y);
   }
@@ -1381,11 +1835,26 @@
     var to = brush();
     if (to === null) return;
     freshGroups();
+    var pc = pieceAt(x, y, u), vo = pc ? pc.owner : owner[u];
     if (to >= 0 && !stroke.fresh.has(to)) {
-      var landless = !unitsOf[to] || !unitsOf[to].length;
-      stroke.fresh.set(to, landless && DEFAULT_NAME.test(countries[to].name) ? { u: u, whole: ui.whole && owner[u] >= 0 ? owner[u] : -1 } : null);
+      stroke.fresh.set(to, !hasLand(to) && DEFAULT_NAME.test(countries[to].name) ? { u: u, whole: ui.whole && vo >= 0 ? vo : -1 } : null);
     }
-    paintList(u, to).slice().forEach(function (q) { assign(q, to); });
+    if (ui.whole && vo >= 0) {
+      (unitsOf[vo] || []).slice().forEach(function (q) { assign(q, to); });
+      pieces.slice().forEach(function (p) { if (p.owner === vo) assignPiece(p, to); });
+      return;
+    }
+    if (pc) { assignPiece(pc, to); return; }
+    regionUnits(u).slice().forEach(function (q) { assign(q, to); });
+  }
+  function assignPiece(p, to) {
+    if (p.owner === to) return;
+    if (!stroke.pieceFrom) { stroke.pieceFrom = pieces; pieces = pieces.slice(); }
+    var i = pieces.indexOf(p);
+    if (i < 0) return;
+    stroke.touched.add(p.owner); stroke.touched.add(to);
+    pieces[i] = withOwner(p, to);
+    piecesChanged();
   }
   function assign(u, to) {
     if (owner[u] === to) return;
@@ -1403,16 +1872,18 @@
   function endStroke() {
     var s = stroke; stroke = null;
     canvas.classList.remove("is-painting");
-    if (!s || !s.changes.size) return;
+    if (!s) return;
     var ps = [], from = [], to = [];
     s.changes.forEach(function (f, u) { if (owner[u] !== f) { ps.push(u); from.push(f); to.push(owner[u]); } });
-    if (!ps.length) return;
-    var ops = [{ t: "own", ps: ps, from: from, to: to, g: geomGen }];
+    var ops = [];
+    if (ps.length) ops.push({ t: "own", ps: ps, from: from, to: to, g: geomGen });
+    if (s.pieceFrom) ops.push({ t: "pieces", from: s.pieceFrom, to: pieces });
+    if (!ops.length) return;
     var label = "Painting";
     s.fresh.forEach(function (info, c) {
       if (!info || !countries[c] || !countries[c].alive) return;
       freshGroups();
-      if (!unitsOf[c] || !unitsOf[c].length) return;
+      if (!hasLand(c)) return;
       var name = info.whole >= 0 && countries[info.whole] ? countries[info.whole].name : regionTitle(info.u);
       if (name) {
         var co = countries[c], before = { name: co.name, color: co.color };
@@ -1437,29 +1908,32 @@
     hoverRAF = requestAnimationFrame(function () {
       hoverRAF = 0;
       var x = hoverAt[0], y = hoverAt[1];
-      var city = ui.tool !== "paint" ? cityAt(x, y) : null;
+      var city = ui.tool !== "paint" && ui.tool !== "draw" ? cityAt(x, y) : null;
       canvas.classList.toggle("is-over-city", !!city);
       if (city) {
         setHover(-1);
         showTip(x, y, city.name, city.cap ? "Capital" : null, ui.tool === "select" ? "click to edit, drag to move" : "drag to move");
         return;
       }
-      var u = unitAt(x, y);
-      setHover(u);
+      var u = unitAt(x, y), hp = u >= 0 ? pieceAt(x, y, u) : null;
+      setHover(u, hp);
       if (u < 0) { hideTip(); return; }
-      var o = owner[u], main = o >= 0 ? countries[o].name : "Unclaimed land";
+      var o = hp ? hp.owner : owner[u], main = o >= 0 ? countries[o].name : "Unclaimed land";
       var note = null;
       if (ui.tool === "paint") {
         var to = brush();
         if (to === null) note = "click to paint with this country";
         else if (o !== to) note = "to " + (to >= 0 ? countries[to].name : "unclaimed land");
+      } else if (ui.tool === "draw") {
+        if (brush() === null) note = "click to draw for this country";
       } else if (ui.tool === "city") note = "click to found a city here";
-      showTip(x, y, main, regionName(u), note);
+      showTip(x, y, main, hp ? "Drawn land, " + regionName(u) : regionName(u), note);
     });
   }
-  function setHover(u) {
-    if (u === ui.hover) return;
-    ui.hover = u;
+  function setHover(u, hp) {
+    hp = hp || null;
+    if (u === ui.hover && hp === ui.hoverPiece) return;
+    ui.hover = u; ui.hoverPiece = hp;
     scheduleRender();
   }
   var tip = $("tip");
@@ -1595,6 +2069,12 @@
       sortCities();
     } else if (op.t === "replace") {
       loadDiff(back ? op.from : op.to, false);
+    } else if (op.t === "pieces") {
+      var hit = new Set();
+      op.from.concat(op.to).forEach(function (p) { hit.add(p.owner); shapeCover(p.shape).units.forEach(function (q) { hit.add(owner[q]); }); });
+      pieces = (back ? op.from : op.to).slice();
+      piecesChanged();
+      queueLabels(Array.from(hit));
     }
   }
   function undo() {
@@ -1624,6 +2104,7 @@
   }
   function afterHistory() {
     if (ui.city && cityIndex.get(ui.city.id) !== ui.city) ui.city = null;
+    if (ui.piece) ui.piece = pieceById(ui.piece.id);
     if (ui.country >= 0 && !(countries[ui.country] && countries[ui.country].alive)) ui.country = -1;
     changed();
   }
@@ -1679,17 +2160,14 @@
   function newCountry() {
     var op = createCountry(uniqueName("New country"), freeColor([]));
     pushStep("New country", [op]);
-    ui.country = op.c; ui.erase = false; ui.city = null; ui.region = -1;
+    ui.country = op.c; ui.erase = false; ui.city = null; ui.region = -1; ui.piece = null;
     setTool("paint");
     changed();
     if (canHover) { var inp = $("country-name"); inp.focus(); inp.select(); }
   }
   function chooseCapital(c) {
     var inLand = [];
-    for (var i = 0; i < cities.length; i++) {
-      var u = cityUnit(cities[i]);
-      if (u >= 0 && owner[u] === c) inLand.push(cities[i]);
-    }
+    for (var i = 0; i < cities.length; i++) if (cityOwner(cities[i]) === c) inLand.push(cities[i]);
     if (!inLand.length || inLand.some(function (x) { return x.cap; })) return null;
     var best = inLand[0];
     var before = citySnapshot(best);
@@ -1715,16 +2193,193 @@
   }
   function dissolve(c) {
     freshGroups();
-    var us = unitsOf[c].slice();
-    if (!us.length) return;
-    var from = us.map(function () { return c; }), to = us.map(function () { return UNCLAIMED; });
-    us.forEach(function (u) { owner[u] = UNCLAIMED; });
-    ownersChanged([c]);
-    var step = pushStep("Dissolving " + countries[c].name, [{ t: "own", ps: us, from: from, to: to, g: geomGen }]);
+    var us = unitsOf[c].slice(), had = pieces.some(function (p) { return p.owner === c; });
+    if (!us.length && !had) return;
+    var ops = [];
+    if (us.length) {
+      var from = us.map(function () { return c; }), to = us.map(function () { return UNCLAIMED; });
+      us.forEach(function (u) { owner[u] = UNCLAIMED; });
+      ownersChanged([c]);
+      ops.push({ t: "own", ps: us, from: from, to: to, g: geomGen });
+    }
+    if (had) {
+      var before = pieces;
+      pieces = pieces.map(function (p) { return p.owner === c ? withOwner(p, UNCLAIMED) : p; });
+      piecesChanged();
+      ops.push({ t: "pieces", from: before, to: pieces });
+    }
+    var step = pushStep("Dissolving " + countries[c].name, ops);
     queueLabels([c]);
     changed();
     toast(countries[c].name + " dissolved, its land left unclaimed", "Undo", undoIfTop(step));
     toastStep = step;
+  }
+  function startLasso(x, y) {
+    if (brush() === null) { pickBrushAt(x, y); return; }
+    var ll = lonLatAt(x, y);
+    lasso = { pts: [[x, y]], ll: [ll ? [ll[0], ll[1]] : null] };
+    canvas.classList.add("is-painting");
+    hideTip();
+    scheduleRender();
+  }
+  function addLassoPoint(x, y) {
+    var last = lasso.pts[lasso.pts.length - 1];
+    if (Math.hypot(x - last[0], y - last[1]) < 2 || lasso.pts.length >= 20000) return;
+    var ll = lonLatAt(x, y);
+    lasso.pts.push([x, y]); lasso.ll.push(ll ? [ll[0], ll[1]] : null);
+    scheduleRender();
+  }
+  function cancelLasso() {
+    if (!lasso) return;
+    lasso = null;
+    canvas.classList.remove("is-painting");
+    scheduleRender();
+  }
+  function screenArea(pts) {
+    var a = 0;
+    for (var i = 0, n = pts.length, j = n - 1; i < n; j = i++) a += pts[j][0] * pts[i][1] - pts[i][0] * pts[j][1];
+    return Math.abs(a / 2);
+  }
+  function simplifyPts(pts, tol) {
+    var n = pts.length, keep = new Uint8Array(n), t2 = tol * tol, stack = [[0, n - 1]];
+    keep[0] = 1; keep[n - 1] = 1;
+    while (stack.length) {
+      var sg = stack.pop(), a = sg[0], b = sg[1], best = -1, bd = t2;
+      var ax = pts[a][0], ay = pts[a][1], dx = pts[b][0] - ax, dy = pts[b][1] - ay, l2 = dx * dx + dy * dy;
+      for (var i = a + 1; i < b; i++) {
+        var px = pts[i][0] - ax, py = pts[i][1] - ay, d;
+        if (l2 > 0) { var t = Math.max(0, Math.min(1, (px * dx + py * dy) / l2)); d = (px - t * dx) * (px - t * dx) + (py - t * dy) * (py - t * dy); }
+        else d = px * px + py * py;
+        if (d > bd) { bd = d; best = i; }
+      }
+      if (best > 0) { keep[best] = 1; stack.push([a, best], [best, b]); }
+    }
+    var out = [];
+    for (i = 0; i < n; i++) if (keep[i]) out.push(i);
+    return out;
+  }
+  function lassoPolys(ll) {
+    var ring = [], off = 0, prev = null, sumLat = 0;
+    ll.forEach(function (q) {
+      var x = q[0] + off;
+      if (prev !== null) { if (x - prev > 180) { off -= 360; x -= 360; } else if (x - prev < -180) { off += 360; x += 360; } }
+      prev = x; ring.push([x, q[1]]); sumLat += q[1];
+    });
+    var first = ring[0], last = ring[ring.length - 1];
+    if (Math.abs(last[0] - first[0]) > 180) {
+      var pole = sumLat < 0 ? -90 : 90;
+      ring.push([last[0], pole], [first[0], pole]);
+    }
+    ring.push([first[0], first[1]]);
+    var out = [];
+    for (var s = -2; s <= 2; s++) {
+      var x0 = -180 + 360 * s, x1 = 180 + 360 * s;
+      PC.intersection([ring], [[[x0, -90], [x1, -90], [x1, 90], [x0, 90], [x0, -90]]]).forEach(function (poly) {
+        out.push(poly.map(function (r) { return r.map(function (pt) { return [Math.max(-180, Math.min(180, pt[0] - 360 * s)), pt[1]]; }); }));
+      });
+    }
+    return out.length ? cleanPolys(out) : [];
+  }
+  function finishLasso() {
+    var L = lasso;
+    cancelLasso();
+    if (!L || L.pts.length < 3 || screenArea(L.pts) < 60) return;
+    var to = brush();
+    if (to === null) return;
+    var ll = [];
+    simplifyPts(L.pts, 1.2).forEach(function (i) { if (L.ll[i]) ll.push(L.ll[i]); });
+    if (ll.length < 3) return;
+    var polys;
+    try { polys = lassoPolys(ll); } catch (e) { polys = []; }
+    if (!polys.length) return;
+    var shape = makeShape(polys);
+    shapeCover(shape);
+    if (!shape.units.length) { toast("Draw round some land to give it away"); return; }
+    commitPiece(shape, to);
+  }
+  function commitPiece(shape, to) {
+    if (pieces.length >= MAX_PIECES) { toast("That is as many drawn areas as a map can hold, remove some first"); return; }
+    var fresh = to >= 0 && !hasLand(to) && DEFAULT_NAME.test(countries[to].name);
+    var before = pieces, after = [], touched = new Set([to]), cut = false;
+    before.forEach(function (p) {
+      var bb = p.shape.bb, nb = shape.bb;
+      if (bb[0] > nb[2] || bb[2] < nb[0] || bb[1] > nb[3] || bb[3] < nb[1]) { after.push(p); return; }
+      var rest;
+      try {
+        if (!PC.intersection(p.shape.polys, shape.polys).length) { after.push(p); return; }
+        rest = cleanPolys(PC.difference(p.shape.polys, shape.polys));
+      } catch (e) { after.push(p); return; }
+      cut = true; touched.add(p.owner);
+      if (rest.length) after.push({ id: ++pieceSeq, owner: p.owner, shape: makeShape(rest), edges: null });
+    });
+    if (!cut && shape.units.every(function (u) { return owner[u] === to; })) { toast(to >= 0 ? "That land is " + countries[to].name + "'s already" : "That land is unclaimed already"); return; }
+    shape.units.forEach(function (u) { touched.add(owner[u]); });
+    var piece = { id: ++pieceSeq, owner: to, shape: shape, edges: null };
+    after.push(piece);
+    pieces = after;
+    piecesChanged();
+    var ops = [{ t: "pieces", from: before, to: after }], label = "Drawing a border";
+    if (fresh) {
+      var name = cityIn(piece) || titleUnder(shape);
+      if (name) {
+        var co = countries[to], was = { name: co.name, color: co.color };
+        co.name = uniqueName(name, to);
+        ops.push({ t: "country", c: to, from: was, to: { name: co.name, color: co.color } });
+        countriesVersion++;
+        label = "Founding " + co.name;
+      }
+      var capOp = chooseCapital(to);
+      if (capOp) ops.push(capOp);
+    }
+    pushStep(label, ops);
+    queueLabels(Array.from(touched));
+    changed();
+  }
+  function cityIn(p) {
+    for (var i = 0; i < cities.length; i++) {
+      var c = cities[i];
+      if (cityUnit(c) >= 0 && pieceAtLL(c.lon, c.lat) === p) return c.name;
+    }
+    return "";
+  }
+  function titleUnder(s) {
+    var best = -1, km = 0;
+    for (var i = 0; i < s.units.length; i++) if (s.cover[i] > km) { km = s.cover[i]; best = s.units[i]; }
+    return best >= 0 ? regionTitle(best) : "";
+  }
+  function removePiece(p) {
+    var i = pieces.indexOf(p);
+    if (i < 0) return;
+    var before = pieces, after = pieces.slice();
+    after.splice(i, 1);
+    var touched = [p.owner];
+    shapeCover(p.shape).units.forEach(function (u) { touched.push(owner[u]); });
+    pieces = after;
+    piecesChanged();
+    var step = pushStep("Removing drawn land", [{ t: "pieces", from: before, to: after }]);
+    ui.piece = null;
+    queueLabels(touched);
+    changed();
+    toast("Drawn land removed", "Undo", undoIfTop(step));
+    toastStep = step;
+  }
+  function pieceIndependent(p) {
+    var i = pieces.indexOf(p);
+    if (i < 0) return;
+    var s = shapeCover(p.shape), from = p.owner;
+    var near = neighbourCountries(s.units).concat(s.units.map(function (u) { return owner[u]; }), [from]);
+    var op = createCountry(uniqueName(cityIn(p) || titleUnder(s) || "New country"), freeColor(near));
+    var before = pieces;
+    pieces = pieces.slice();
+    pieces[i] = withOwner(p, op.c);
+    piecesChanged();
+    var ops = [op, { t: "pieces", from: before, to: pieces }];
+    var capOp = chooseCapital(op.c);
+    if (capOp) ops.push(capOp);
+    pushStep("Independence", ops);
+    ui.country = op.c; ui.piece = pieces[i];
+    queueLabels([from, op.c]);
+    changed();
   }
   function setCountryName(c, name) {
     var co = countries[c];
@@ -1769,7 +2424,7 @@
     placeCity(c, v.lon, v.lat);
   }
   function selectCity(c) {
-    ui.city = c; ui.country = -1; ui.region = -1;
+    ui.city = c; ui.country = -1; ui.region = -1; ui.piece = null;
     renderPanel(); scheduleRender();
   }
   function addCity(lon, lat) {
@@ -1812,9 +2467,11 @@
 
   function setTool(t) {
     if (stroke) endStroke();
+    cancelLasso();
     ui.tool = t;
-    if (t === "paint") ui.city = null;
+    if (t === "paint" || t === "draw") ui.city = null;
     if (t === "city") ui.country = -1;
+    if (t !== "select") ui.piece = null;
     hideTip();
     renderPanel();
     scheduleRender();
@@ -1831,9 +2488,9 @@
   var pickVersion = -1, countriesVersion = 0;
   function regionCount(c) {
     var us = unitsOf[c] || [];
-    if (ui.fine || !fineData) return us.length;
+    if (ui.fine) return us.length;
     var s = new Set();
-    us.forEach(function (u) { s.add(unitProv[u]); });
+    us.forEach(function (u) { var p = unitProv[u], g = provGroup[p]; s.add(g >= 0 ? -1 - g : p); });
     return s.size;
   }
   function renderPanel() {
@@ -1842,6 +2499,7 @@
     document.querySelectorAll(".uc-tool").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tool === ui.tool)); });
     canvas.classList.toggle("is-tool-paint", ui.tool === "paint");
     canvas.classList.toggle("is-tool-city", ui.tool === "city");
+    canvas.classList.toggle("is-tool-draw", ui.tool === "draw");
     var verb = canHover ? "Click" : "Tap";
     var where = flat ? "map" : "globe";
     var c = currentCountry();
@@ -1856,11 +2514,17 @@
       if (to === UNCLAIMED) setHint([(canHover ? "Click or drag over" : "Tap") + " regions to leave them unclaimed" + more]);
       else if (to === null) setHint([verb + " a country to paint with it, or found a new one"]);
       else setHint([(canHover ? "Click or drag over" : "Tap") + (ui.whole ? " countries to give them whole to " : " regions to give them to "), { b: countries[to].name }, more]);
+    } else if (ui.tool === "draw") {
+      var dto = brush();
+      var dmore = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : " · two fingers move the " + where;
+      if (dto === UNCLAIMED) setHint([(canHover ? "Drag" : "Draw") + " round land to leave it unclaimed" + dmore]);
+      else if (dto === null) setHint([verb + " a country to draw for it, or found a new one"]);
+      else setHint([(canHover ? "Drag" : "Draw") + " round land to give it to ", { b: countries[dto].name }, dmore]);
     } else {
       setHint([(canHover ? "Click the " : "Tap the ") + where + " to found a city, or drag one to move it"]);
     }
 
-    var showCountry = c >= 0 && !ui.city && ui.tool !== "city" && !(ui.tool === "paint" && ui.erase);
+    var showCountry = c >= 0 && !ui.city && ui.tool !== "city" && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase);
     $("country-pane").hidden = !showCountry;
     if (showCountry) {
       var inp = $("country-name");
@@ -1872,20 +2536,27 @@
         custom.setAttribute("aria-pressed", String(typeof col === "string"));
         custom.style.background = typeof col === "string" ? col : "none";
       }
-      var us = unitsOf[c] || [], area = 0, n = regionCount(c);
-      us.forEach(function (u) { area += unitArea[u]; });
-      var capital = null;
-      if (us.length) for (var i = 0; i < cities.length; i++) { if (cities[i].cap) { var cu = cityUnit(cities[i]); if (cu >= 0 && owner[cu] === c) { capital = cities[i]; break; } } }
-      $("country-facts").textContent = us.length ? n.toLocaleString() + (n === 1 ? " region · " : " regions · ") + Math.round(area).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: paint some regions to give it some";
+      var n = regionCount(c), land = hasLand(c), drawn = 0, capital = null;
+      pieces.forEach(function (p) { if (p.owner === c) drawn++; });
+      if (land) for (var i = 0; i < cities.length; i++) { if (cities[i].cap && cityOwner(cities[i]) === c) { capital = cities[i]; break; } }
+      var parts = [];
+      if (n || !drawn) parts.push(n.toLocaleString() + (n === 1 ? " region" : " regions"));
+      if (drawn) parts.push(drawn + (drawn === 1 ? " drawn area" : " drawn areas"));
+      $("country-facts").textContent = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: paint regions or draw round some land to give it some";
       $("paint-with").hidden = ui.tool !== "select";
-      $("dissolve").hidden = !us.length;
+      $("dissolve").hidden = !land;
       syncCountryPick(c);
     }
-    var r0 = ui.region;
-    var showRegion = ui.tool === "select" && !ui.city && r0 >= 0 && r0 < nUnit && ((c >= 0 && owner[r0] === c && regionUnits(r0).length < (unitsOf[c] || []).length) || owner[r0] < 0);
-    $("region-line").hidden = !showRegion;
-    if (showRegion) $("region-name").textContent = owner[r0] < 0 ? regionName(r0) + ", unclaimed land" : regionName(r0);
+    var r0 = ui.region, pc0 = ui.tool === "select" && !ui.city ? ui.piece : null;
+    var showRegion = !pc0 && ui.tool === "select" && !ui.city && r0 >= 0 && r0 < nUnit && ((c >= 0 && owner[r0] === c && regionUnits(r0).length < (unitsOf[c] || []).length) || owner[r0] < 0);
+    $("region-line").hidden = !showRegion && !pc0;
+    $("remove-piece").hidden = !pc0;
+    if (pc0) $("region-name").textContent = pc0.owner < 0 ? "Drawn land, unclaimed" : "Drawn land";
+    else if (showRegion) $("region-name").textContent = owner[r0] < 0 ? regionName(r0) + ", unclaimed land" : regionName(r0);
     $("paint-pane").hidden = ui.tool !== "paint";
+    $("draw-pane").hidden = ui.tool !== "draw";
+    $("draw-land").setAttribute("aria-pressed", String(!ui.erase));
+    $("draw-erase").setAttribute("aria-pressed", String(ui.erase));
     $("paint-regions").setAttribute("aria-pressed", String(!ui.whole && !ui.erase));
     $("paint-whole").setAttribute("aria-pressed", String(ui.whole && !ui.erase));
     $("paint-erase").setAttribute("aria-pressed", String(ui.erase));
@@ -1903,6 +2574,8 @@
     $("redo").disabled = !redoStack.length;
     $("undo").title = undoStack.length ? "Undo " + lowerFirst(undoStack[undoStack.length - 1].label) + " (Ctrl+Z)" : "Undo (Ctrl+Z)";
     $("fine").checked = ui.fine;
+    $("show-countries").checked = ui.countryNames;
+    $("show-cities").checked = ui.cityNames;
   }
   function syncCountryPick(c) {
     var sel = $("country-pick");
@@ -1970,7 +2643,7 @@
   $("country-pick").addEventListener("change", function () {
     var v = $("country-pick").value;
     if (v === "") return;
-    ui.country = +v; ui.erase = false; ui.region = -1; ui.city = null;
+    ui.country = +v; ui.erase = false; ui.region = -1; ui.piece = null; ui.city = null;
     renderPanel(); scheduleRender();
     flyToCountry(ui.country);
   });
@@ -1978,7 +2651,10 @@
   $("country-pick").addEventListener("focus", function () { if (pickVersion !== countriesVersion) { fillCountryPick(); var c = currentCountry(); if (c >= 0) $("country-pick").value = String(c); } });
   $("paint-with").addEventListener("click", function () { ui.erase = false; setTool("paint"); });
   $("dissolve").addEventListener("click", function () { var c = currentCountry(); if (c >= 0) dissolve(c); });
-  $("independent").addEventListener("click", function () { makeIndependent(ui.region); });
+  $("independent").addEventListener("click", function () { if (ui.piece) pieceIndependent(ui.piece); else makeIndependent(ui.region); });
+  $("remove-piece").addEventListener("click", function () { if (ui.piece) removePiece(ui.piece); });
+  $("draw-land").addEventListener("click", function () { ui.erase = false; renderPanel(); scheduleRender(); });
+  $("draw-erase").addEventListener("click", function () { ui.erase = true; ui.whole = false; renderPanel(); scheduleRender(); });
   $("new-country").addEventListener("click", newCountry);
   $("paint-regions").addEventListener("click", function () { ui.whole = false; ui.erase = false; renderPanel(); scheduleRender(); });
   $("paint-whole").addEventListener("click", function () { ui.whole = true; ui.erase = false; renderPanel(); scheduleRender(); });
@@ -2014,14 +2690,17 @@
     var k = e.key.toLowerCase();
     if (k === "v") setTool("select");
     else if (k === "b") setTool("paint");
+    else if (k === "d") setTool("draw");
     else if (k === "c") setTool("city");
     else if (k === "s") setSatellite(!ui.satellite);
     else if (k === "m") setFlat(!flat);
     else if ((e.key === "Delete" || e.key === "Backspace") && ui.city) { e.preventDefault(); deleteCity(ui.city); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && ui.piece && ui.tool === "select") { e.preventDefault(); removePiece(ui.piece); }
     else if (e.key === "Escape") {
+      if (lasso) { cancelLasso(); return; }
       if (ui.city) ui.city = null;
       else if (ui.tool !== "select") { setTool("select"); return; }
-      else { ui.country = -1; ui.region = -1; }
+      else { ui.country = -1; ui.region = -1; ui.piece = null; }
       renderPanel(); scheduleRender();
     }
   });
@@ -2208,7 +2887,45 @@
     return { name: name, lon: row[1], lat: row[2], tier: tier, cap: row[4] ? 1 : 0 };
   }
   function round4(x) { return Math.round(x * 1e4) / 1e4; }
-  var MAP_KEYS = ["c", "o", "u", "x", "m", "a"];
+  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h"];
+  function encodePolys(polys) {
+    return polys.map(function (poly) {
+      return poly.map(function (ring) {
+        var out = [], px = 0, py = 0;
+        for (var i = 0; i + 1 < ring.length; i++) {
+          var x = Math.round(ring[i][0] * 1e4), y = Math.round(ring[i][1] * 1e4);
+          out.push(x - px, y - py); px = x; py = y;
+        }
+        return out;
+      });
+    });
+  }
+  function decodePolys(rows, left) {
+    if (!Array.isArray(rows) || !rows.length || rows.length > 400) return null;
+    var polys = [], n = 0;
+    for (var a = 0; a < rows.length; a++) {
+      var poly = rows[a];
+      if (!Array.isArray(poly) || !poly.length || poly.length > 200) return null;
+      var rings = [];
+      for (var b = 0; b < poly.length; b++) {
+        var r = poly[b];
+        if (!Array.isArray(r) || r.length < 6 || r.length % 2) return null;
+        n += r.length / 2;
+        if (n > left) return null;
+        var ring = [], x = 0, y = 0;
+        for (var i = 0; i < r.length; i += 2) {
+          if (!isInt(r[i]) || !isInt(r[i + 1])) return null;
+          x += r[i]; y += r[i + 1];
+          if (Math.abs(x) > 1800000 || Math.abs(y) > 900000) return null;
+          ring.push([x / 1e4, y / 1e4]);
+        }
+        ring.push(ring[0].slice());
+        rings.push(ring);
+      }
+      polys.push(rings);
+    }
+    return { polys: polys, n: n };
+  }
   function isMapObject(d) {
     if (!d || typeof d !== "object" || Array.isArray(d)) return false;
     var keys = Object.keys(d);
@@ -2245,6 +2962,7 @@
     if (x.length) d.x = x;
     if (m.length) d.m = m;
     if (a.length) d.a = a;
+    if (pieces.length) d.h = pieces.map(function (p) { return [p.owner, encodePolys(p.shape.polys)]; });
     return d;
   }
   function isEmpty(d) { return !d || Object.keys(d).length === 0; }
@@ -2315,6 +3033,20 @@
       });
     }
     sortCities();
+    var list = [], left = MAX_PIECE_POINTS;
+    if (Array.isArray(d.h)) d.h.slice(0, MAX_PIECES).forEach(function (row) {
+      if (!Array.isArray(row)) return;
+      var o = ownerOf(row[0]);
+      if (o === null) return;
+      var dec = decodePolys(row[1], left);
+      if (!dec) return;
+      left -= dec.n;
+      var polys;
+      try { polys = cleanPolys(dec.polys); } catch (e) { return; }
+      if (polys.length) list.push({ id: ++pieceSeq, owner: o, shape: makeShape(polys), edges: null });
+    });
+    pieces = list;
+    piecesChanged();
     ownersChanged();
     countriesVersion++;
     labelQueue.clear();
@@ -2330,7 +3062,7 @@
     var before = makeDiff();
     loadDiff(d, true);
     var step = pushStep(label, [{ t: "replace", from: before, to: makeDiff() }]);
-    ui.city = null; ui.region = -1;
+    ui.city = null; ui.region = -1; ui.piece = null;
     changed();
     return step;
   }
@@ -2569,6 +3301,9 @@
 
   function setGeometry(topo, isFine) {
     objKey = isFine ? "units" : "provinces";
+    baseObjects = topo.objects;
+    detailGeo = null;
+    hasDetail = !!topo.detail;
     var geoms = topo.objects[objKey].geometries;
     nUnit = geoms.length;
     unitProv = new Int32Array(nUnit);
@@ -2590,7 +3325,7 @@
     var gj = levels.map(function (t) { return topojson.feature(t, t.objects[objKey]).features; });
     geoFull = topojson.feature(topo, topo.objects[objKey]).features;
     feats = gj.map(prepare);
-    arcLines = levels.map(function (t) { return t.arcs.map(prepareLine); });
+    arcLines = levels.map(function (t) { return t.arcs.map(prepareArc); });
     arcSeam = new Uint8Array(pre.arcs.length);
     pre.arcs.forEach(function (arc, a) {
       var seam = arc.length > 1;
@@ -2672,13 +3407,23 @@
   $("fine").addEventListener("change", function () {
     var on = $("fine").checked;
     try { localStorage.setItem(STORE_FINE, on ? "1" : "0"); } catch (e) { }
-    if (!on) { ui.fine = false; renderPanel(); scheduleRender(); return; }
+    if (!on) { ui.fine = false; arcsDirty = true; renderPanel(); scheduleRender(); return; }
     loadFine().then(function (ok) {
       ui.fine = !!ok;
+      arcsDirty = true;
       if (!ok) try { localStorage.setItem(STORE_FINE, "0"); } catch (e) { }
       renderPanel(); scheduleRender();
     });
   });
+
+  function setNames() {
+    ui.countryNames = $("show-countries").checked;
+    ui.cityNames = $("show-cities").checked;
+    try { localStorage.setItem(STORE_NAMES, (ui.countryNames ? "1" : "0") + (ui.cityNames ? "1" : "0")); } catch (e) { }
+    scheduleRender();
+  }
+  $("show-countries").addEventListener("change", setNames);
+  $("show-cities").addEventListener("change", setNames);
 
   function init(topo, cityRows) {
     var geoms = topo.objects.provinces.geometries;
@@ -2687,9 +3432,14 @@
     countries = topo.countries.map(function (c, i) { codeIndex.set(c.c, i); return { code: c.c, name: c.n, color: 0, alive: true, label: null }; });
     provName = new Array(nProv);
     var provOwner = new Int32Array(nProv);
+    groupName = (topo.groups || []).map(function (g) { return String(g.n); });
+    groupProvs = groupName.map(function () { return []; });
+    provGroup = new Int32Array(nProv).fill(-1);
     for (var p = 0; p < nProv; p++) {
       provName[p] = geoms[p].properties.n;
       provOwner[p] = codeIndex.has(geoms[p].properties.c) ? codeIndex.get(geoms[p].properties.c) : UNCLAIMED;
+      var g = geoms[p].properties.g;
+      if (g >= 0 && g < groupName.length) { provGroup[p] = g; groupProvs[g].push(p); }
     }
     setGeometry(topo, false);
     owner = new Int32Array(nUnit);
@@ -2712,6 +3462,9 @@
     try { finePref = localStorage.getItem(STORE_FINE); } catch (e) { }
     var flatPref = null;
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
+    var namesPref = null;
+    try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
+    if (namesPref && namesPref.length === 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; }
     if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").title = "Globe (M)"; }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
@@ -2728,7 +3481,7 @@
     var ready = Promise.resolve(true);
     if (finePref === "1" || (stored && needsFine(stored.map))) {
       ready = loadFine().then(function (ok) {
-        if (ok && finePref === "1") ui.fine = true;
+        if (ok && finePref === "1") { ui.fine = true; arcsDirty = true; }
         if (ok && stored && needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
         renderPanel(); scheduleRender();
       });
@@ -2774,6 +3527,12 @@
     satReady: function () { return !!(sat && sat.ready()); },
     detail: function () { return { rect: detail.rect, ok: detail.ok, failed: detail.failed, off: detail.off, put: detail.put.size, cache: detail.cache.size, source: detail.source }; },
     fine: function () { return { data: fineData, on: ui.fine, units: nUnit }; },
+    level: function () { setupFrame(); return levelFor(); },
+    detailBorders: function () { return detailGeo ? { key: detailGeo.key, ready: detailGeo.ready, failed: detailGeo.failed } : null; },
+    regionGroups: function () { return { name: groupName, provs: groupProvs }; },
+    pieces: function () { return pieces.map(function (p) { var s = shapeCover(p.shape); return { id: p.id, owner: p.owner, area: s.area, units: s.units.length, points: p.shape.n }; }); },
+    visibleOwner: function (lon, lat) { var u = unitOfPoint(lon, lat, true); if (u < 0) return null; var p = pieceAtLL(lon, lat); return p ? p.owner : owner[u]; },
+    countryArea: function (c) { freshGroups(); return countryArea(c); },
     loadFine: loadFine,
     history: function () { return { undo: undoStack.length, redo: redoStack.length }; }
   };

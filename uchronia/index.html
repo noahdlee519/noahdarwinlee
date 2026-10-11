@@ -119,8 +119,9 @@
           <div class="uc-about-tip" id="about-tip" role="note">
             <p>
               Every alternate history needs a map. This one starts from the world as it is, cut into its
-              states, provinces and regions: give any of them to any country, found new countries and
-              name them, and put cities where they might have been. The satellite view shows the land
+              states, provinces and regions: give any of them to any country, draw borders by hand where
+              the regions don't fit, found new countries and name them, and put cities where they might
+              have been. The satellite view shows the land
               itself, for when the borders are in the way.
             </p>
             <p>
@@ -155,6 +156,10 @@
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5 19.5 9.5 11 18l-5-5z" /><path d="M6 13c-2.5.5-3 2.6-3 4.2 0 1.4-.6 2.3-1.5 2.8 2.7.6 6 .2 7.7-1.5 1-1 1.3-2.4.8-3.5" /></svg>
           <span>Paint</span>
         </button>
+        <button type="button" class="uc-tool" data-tool="draw" aria-pressed="false" title="Draw borders (D)">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4 20 8.5 9 19.5l-5 1 1-5z" /><path d="M13.5 6 18 10.5" /></svg>
+          <span>Draw</span>
+        </button>
         <button type="button" class="uc-tool" data-tool="city" aria-pressed="false" title="Cities (C)">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" /><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none" /></svg>
           <span>Cities</span>
@@ -177,13 +182,20 @@
           <button type="button" class="uc-linkbtn" id="dissolve">Dissolve</button>
         </div>
       </section>
-      <p class="uc-region" id="region-line" hidden><span id="region-name"></span> <button type="button" class="uc-linkbtn" id="independent">Make it a country</button></p>
+      <p class="uc-region" id="region-line" hidden><span id="region-name"></span> <button type="button" class="uc-linkbtn" id="independent">Make it a country</button> <button type="button" class="uc-linkbtn" id="remove-piece" hidden>Remove</button></p>
 
       <section class="uc-pane" id="paint-pane" hidden>
         <div class="uc-seg" role="group" aria-label="Paint">
           <button type="button" id="paint-regions" aria-pressed="true">Regions</button>
           <button type="button" id="paint-whole" aria-pressed="false">Whole countries</button>
           <button type="button" id="paint-erase" aria-pressed="false">Unclaimed</button>
+        </div>
+      </section>
+
+      <section class="uc-pane" id="draw-pane" hidden>
+        <div class="uc-seg" role="group" aria-label="Draw">
+          <button type="button" id="draw-land" aria-pressed="true">Country</button>
+          <button type="button" id="draw-erase" aria-pressed="false">Unclaimed</button>
         </div>
       </section>
 
@@ -206,7 +218,9 @@
       <details class="uc-adv" id="adv">
         <summary>Advanced</summary>
         <label class="uc-check"><input type="checkbox" id="fine" /> <span>Finer regions in large countries</span></label>
-        <p class="uc-adv-note">Counties, prefectures and districts in countries whose states and provinces are large, so borders can follow them</p>
+        <p class="uc-adv-note">Counties, prefectures and districts inside large states and provinces, and the municipalities and provinces that smaller countries' regions are made of, so borders can follow them</p>
+        <label class="uc-check"><input type="checkbox" id="show-countries" checked /> <span>Country names</span></label>
+        <label class="uc-check"><input type="checkbox" id="show-cities" checked /> <span>City names</span></label>
       </details>
 
       <footer class="uc-foot">
@@ -233,6 +247,7 @@
     <script src="vendor/d3-geo.min.js"></script>
     <script src="vendor/topojson-client.min.js"></script>
     <script src="vendor/topojson-simplify.min.js"></script>
+    <script src="vendor/polygon-clipping.min.js"></script>
     <script src="sat.js"></script>
     <script src="../theme.js" defer></script>
     <script src="app.js" defer></script>
