@@ -433,7 +433,7 @@
   function traceArcs(c, lines, idx) { for (var i = 0; i < idx.length; i++) traceArc(c, lines[idx[i]]); }
 
   var groups = [], unclaimedUnits = [], unitsOf = [], groupsDirty = true, arcsDirty = true;
-  var borderArcs = [], provArcs = [], unitArcs = [], coastArcs = [];
+  var borderArcs = [], provArcs = [], unitArcs = [], coastArcs = [], borderProvArcs = [], borderUnitArcs = [];
   function rebuildGroups() {
     var map = new Map();
     unitsOf = countries.map(function () { return []; });
@@ -472,15 +472,15 @@
   }
   function freshGroups() { if (groupsDirty) rebuildGroups(); }
   function rebuildArcs() {
-    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; unitCoast = null;
+    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; borderProvArcs = []; borderUnitArcs = []; unitCoast = null;
     for (var a = 0; a < arcA.length; a++) {
       var A = arcA[a], b = arcB[a];
       if (A < 0) continue;
       if (b < 0) { if (!arcSeam[a]) coastArcs.push(a); continue; }
-      if (owner[A] !== owner[b]) { borderArcs.push(a); continue; }
       var pa = unitProv[A], pb = unitProv[b];
-      if (pa !== pb && (ui.fine || provGroup[pa] < 0 || provGroup[pa] !== provGroup[pb])) provArcs.push(a);
-      else unitArcs.push(a);
+      var apart = pa !== pb && (ui.fine || provGroup[pa] < 0 || provGroup[pa] !== provGroup[pb]);
+      if (owner[A] !== owner[b]) { borderArcs.push(a); (apart ? borderProvArcs : borderUnitArcs).push(a); continue; }
+      (apart ? provArcs : unitArcs).push(a);
     }
     arcsDirty = false;
   }
@@ -851,6 +851,20 @@
     }
     ctx.restore();
   }
+  function drawRegionLines(L, uArcs, pArcs, ua, pa) {
+    if (ua > 0 && uArcs.length) {
+      ctx.beginPath(); traceArcs(ctx, L, uArcs);
+      ctx.globalAlpha = ua * 0.7; ctx.setLineDash([1, 3]); ctx.lineCap = "round";
+      ctx.strokeStyle = pal.prov; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
+    }
+    if (pa > 0 && pArcs.length) {
+      ctx.beginPath(); traceArcs(ctx, L, pArcs);
+      ctx.globalAlpha = pa; ctx.setLineDash([1.5, 3]); ctx.lineCap = "round";
+      ctx.strokeStyle = pal.prov; ctx.lineWidth = 0.9; ctx.stroke();
+      ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
+    }
+  }
   function drawLasso() {
     if (!lasso) return;
     ctx.beginPath();
@@ -942,22 +956,16 @@
     drawSelectionFill(F);
     mark("overlays");
 
-    var ua = ui.fine ? clamp01((S - 700) / 500) : 0;
-    if (ua > 0 && unitArcs.length) {
-      ctx.beginPath(); traceArcs(ctx, L, unitArcs);
-      ctx.globalAlpha = ua * 0.7; ctx.setLineDash([1, 3]); ctx.lineCap = "round";
-      ctx.strokeStyle = pal.prov; ctx.lineWidth = 0.7; ctx.stroke();
-      ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
-    }
-    var pa = provAlpha(S);
-    if (pa > 0 && provArcs.length) {
-      ctx.beginPath(); traceArcs(ctx, L, provArcs);
-      ctx.globalAlpha = pa; ctx.setLineDash([1.5, 3]); ctx.lineCap = "round";
-      ctx.strokeStyle = pal.prov; ctx.lineWidth = 0.9; ctx.stroke();
-      ctx.setLineDash([]); ctx.lineCap = "butt"; ctx.globalAlpha = 1;
+    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite); }
+    var ua = ui.fine ? clamp01((S - 700) / 500) : 0, pa = provAlpha(S);
+    drawRegionLines(L, unitArcs, provArcs, ua, pa);
+    if (vis && (ua > 0 || pa > 0)) {
+      ctx.save();
+      ctx.beginPath(); vis.forEach(function (p) { traceFeature(ctx, p.shape.f); }); ctx.clip();
+      drawRegionLines(L, borderUnitArcs, borderProvArcs, ua, pa);
+      ctx.restore();
     }
     mark("provlines");
-    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite); }
     ctx.lineJoin = "round";
     ctx.beginPath(); traceArcs(ctx, L, coastArcs);
     ctx.globalAlpha = satellite ? 0.55 : 1;
