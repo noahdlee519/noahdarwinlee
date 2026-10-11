@@ -33,9 +33,10 @@
     <link rel="stylesheet" href="app.css" />
     <script>
       (function () {
-        var t = null;
+        var t = null, s = null;
         try {
           t = localStorage.getItem("ndl-theme");
+          s = localStorage.getItem("uchronia-style");
         } catch (e) {}
         if (t !== "dark" && t !== "light") {
           t =
@@ -43,6 +44,10 @@
             window.matchMedia("(prefers-color-scheme: dark)").matches
               ? "dark"
               : "light";
+        }
+        if (s === "antique") {
+          t = "light";
+          document.documentElement.setAttribute("data-uc-style", "antique");
         }
         document.documentElement.setAttribute("data-theme", t);
       })();
@@ -52,7 +57,7 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'sha256-HoSwDg8nnQk1NXcMOzkswPlauRhTcyy/D3Ksw58Qnag=';
+        script-src 'self' 'sha256-e3Q4YZo/6ik0osg9Ihkp8WHpO3Y/xtKIGihkzxbKPnM=';
         style-src 'self';
         font-src 'self';
         img-src 'self' data: blob: https://gibs.earthdata.nasa.gov;
@@ -77,6 +82,7 @@
       tabindex="0"
       aria-label="A globe of the world's countries, which you can redraw. Drag to turn it, scroll or pinch to zoom. Arrow keys turn it; plus and minus zoom."
     ></canvas>
+    <div class="uc-paper" aria-hidden="true"></div>
     <div class="uc-tip" id="tip" hidden></div>
     <div class="uc-status" id="status" role="status" hidden><span id="status-text"></span><button type="button" id="status-action" class="uc-linkbtn" hidden></button></div>
 
@@ -89,6 +95,10 @@
       </button>
       <button type="button" class="uc-ctl" id="sat-btn" aria-pressed="false" aria-label="Satellite view" title="Satellite view (S)">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><rect x="9.2" y="9.2" width="5.6" height="5.6" transform="rotate(45 12 12)" /><path d="M7.4 7.4 4.6 4.6M4.6 4.6 2.5 6.7 4.9 9.1 7 7M16.6 16.6l2.8 2.8M19.4 19.4l2.1-2.1-2.4-2.4L17 17" /><path d="M15.2 4.3a4.5 4.5 0 0 1 4.5 4.5M15.2 1.8a7 7 0 0 1 7 7" /></svg>
+      </button>
+      <button type="button" class="uc-ctl uc-bare-btn" id="ui-btn" aria-pressed="false" aria-label="Hide the interface" title="Hide the interface (H)">
+        <svg class="uc-icon-shown" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12s3.6-6.3 9.5-6.3 9.5 6.3 9.5 6.3-3.6 6.3-9.5 6.3S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.9" /></svg>
+        <svg class="uc-icon-hidden" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12s3.6-6.3 9.5-6.3 9.5 6.3 9.5 6.3-3.6 6.3-9.5 6.3S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.9" /><path d="M4 4l16 16" /></svg>
       </button>
     </div>
 
@@ -122,7 +132,8 @@
               states, provinces and regions: give any of them to any country, draw borders by hand where
               the regions don't fit, found new countries and name them, and put cities where they might
               have been. The satellite view shows the land
-              itself, for when the borders are in the way.
+              itself, for when the borders are in the way, and the Antique style draws it all
+              like a hand-coloured map of the 1800s.
             </p>
             <p>
               Your map is kept in this browser as you work. Copy a link to share it, or save it as a file
@@ -134,6 +145,7 @@
               (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Satellite view: NASA
               Earth Observatory, Blue Marble Next Generation by Reto St&ouml;ckli, and close up, NASA's Global
               Imagery Browse Services (public domain). The flat map is a plain grid of latitude and longitude (the equirectangular projection).
+              Antique type: Old Standard TT by Alexey Kryukov (SIL Open Font License).
             </p>
             <p>
               Finer regions: US counties from the US Census Bureau through Natural Earth (public domain); Chinese
@@ -215,6 +227,15 @@
         <button type="button" class="uc-btn" id="new-country">New country</button>
       </div>
 
+      <div class="uc-style">
+        <span class="uc-style-label" id="style-label">Style</span>
+        <div class="uc-seg" id="style-seg" role="group" aria-labelledby="style-label">
+          <button type="button" data-style="light" aria-pressed="false">Light</button>
+          <button type="button" data-style="dark" aria-pressed="false">Dark</button>
+          <button type="button" data-style="antique" aria-pressed="false">Antique</button>
+        </div>
+      </div>
+
       <details class="uc-adv" id="adv">
         <summary>Advanced</summary>
         <label class="uc-check"><input type="checkbox" id="fine" /> <span>Finer regions in large countries</span></label>
@@ -249,7 +270,6 @@
     <script src="vendor/topojson-simplify.min.js"></script>
     <script src="vendor/polygon-clipping.min.js"></script>
     <script src="sat.js"></script>
-    <script src="../theme.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

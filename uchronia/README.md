@@ -70,12 +70,22 @@ of `/greatercircle/`.
     regions change. Countries of the same colour share a single path.
   - **Picking.** A colour-coded second canvas finds the region under the
     pointer, checked against the exact shape.
-  - **Colours.** The page is black on white (light theme) or white on black
-    (dark), and the countries are coloured like a political map: ten colours
-    in CSS variables, soft ones on white and deeper ones on black, ordered
-    round the colour wheel. They are given out so that neighbours never share
-    one and sit well apart on the wheel, and any colour can still be chosen by
-    hand.
+  - **Colours.** The countries are coloured like a political map: ten colours
+    in CSS variables, ordered round the colour wheel and given out so that
+    neighbours never share one and sit well apart on the wheel; any colour can
+    still be chosen by hand.
+  - **Styles.** *Light* is black on white and *Dark* white on black; both
+    follow the site's day and night setting, which they also set. *Antique*
+    is drawn like a hand-coloured map of the 1800s:
+    - parchment, sepia ink and a paper grain laid over the page;
+    - pale washes inside each country, with a stronger band of its colour
+      along its borders and coasts (the arcs on its edge, stroked twice as
+      wide and clipped to the country);
+    - water lining: four rings round every coast, cut by stroking the
+      coastline wide in ink and then a little narrower in the sea colour;
+    - Old Standard TT, a revival of late 19th-century type, for the panel and
+      the names, italic names for 57 oceans and seas, circled cities and
+      ringed capitals, and a double frame round the flat map.
 - **Labels.** A country's name goes on its largest piece, at the point where
   the biggest text box fits inside the land. To find it, the piece is drawn on
   an azimuthal-equidistant map around its centre and squeezed sideways by the
@@ -92,8 +102,9 @@ of `/greatercircle/`.
     edit or rename.
   - Country names and city names can each be hidden (under Advanced); with
     city names hidden, the cities stay as dots.
-- **Cities.** 1,050 in four sizes; capitals are marked with a square. Each is
-  shown from the zoom its size allows.
+- **Cities.** Capitals, cities and towns each have their own mark and size of
+  name (squares, dots and small dots; in Antique, ringed, circled and dotted).
+- **Cities.** 1,050 in four sizes. Each is shown from the zoom its size allows.
 - **New countries.** A new country takes the name of the first region it
   receives, or of the country it swallows whole. Its capital is picked from
   the cities already in that land, the largest one, unless one of them is a
@@ -188,6 +199,8 @@ of `/greatercircle/`.
   the smaller one is resized across the wrap.
 - **vendor/**: d3-array, d3-geo, topojson-client, topojson-simplify and
   polygon-clipping, unmodified.
+- **/fonts/**: Old Standard TT (SIL Open Font License), from
+  @fontsource/old-standard-tt, served from the site like its other typeface.
 
 ## Using it
 
@@ -201,7 +214,8 @@ of `/greatercircle/`.
   move the map with two.
 - **Cities (C)**: click to found a city, drag one to move it.
 - **M** switches between the globe and the flat map; **S** turns the
-  satellite view on and off.
+  satellite view on and off; **H** (or the eye button) hides everything but
+  the map, and brings it back.
 - Move the map by dragging with the right or middle button, or with Shift or
   Space held (in Select and Cities a plain drag moves it too); scroll or
   pinch to zoom.
@@ -230,6 +244,7 @@ in the repo. They covered:
   making one a country, areas, the date line, the flat map, the satellite
   view, saving, links, and drawing by touch;
 - hiding country and city names, and the detailed borders up close;
+- the three styles, the hidden interface, and keyboard focus;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;
