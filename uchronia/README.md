@@ -165,8 +165,8 @@ of `/greatercircle/`.
 - **data/provinces-detail.json**: the same arcs kept at four tenths of their
   points (3.7 MB, about 1.4 MB compressed), for the closest zooms. It holds
   only the arcs; the shapes come from `provinces.json`.
-- **data/units.json**: the same provinces with eight large-region countries
-  cut into second-level units, 8,956 regions in all, in one topology so that
+- **data/units.json**: the same provinces with 31 large-region countries cut
+  into second-level units, 14,627 regions in all, in one topology so that
   every shared edge is one arc:
   - the United States (3,142 counties; DC stays whole), China (352
     prefectures; the four municipalities stay whole), Germany (398 districts;
@@ -175,6 +175,20 @@ of `/greatercircle/`.
     territories and cities), Kazakhstan (171 districts, from before the 2022
     reform), Pakistan (124 districts) and South Africa (52 district
     municipalities);
+  - Brazil (510 immediate geographic regions, IBGE's municipalities merged by
+    IBGE's own table), Russia (763 districts and urban okrugs, in the 24
+    federal subjects over 150,000 km² only), Australia (546 local government
+    areas; the ACT stays whole), India (734 districts), Argentina (525
+    departments), Indonesia (518 regencies and cities), Mongolia (339 sums),
+    Iran (431 counties), Sudan (189 localities), Peru (197 provinces),
+    Tanzania (170 districts), Algeria (161 communes, in the eight wilayas over
+    60,000 km²), Angola (157 municipalities, before the 2024 reform),
+    Mozambique (157 districts), Saudi Arabia (147 governorates), Madagascar
+    (119 districts), Zambia (116 districts), Bolivia (110 provinces), Ethiopia
+    (74 zones), Chad (71 departments), Niger (67 departments), Mauritania (57
+    moughataas) and Mali (50 cercles);
+  - Egypt is left out: its second level mixes city districts, unnamed desert
+    remnants and misplaced shapes;
   - China's prefectures are regrouped from 1999 county boundaries by name and
     code, so later county splits are missing;
   - disputed areas follow Natural Earth's assignment and are only cut within
@@ -182,11 +196,18 @@ of `/greatercircle/`.
   - each unit is clipped to the Natural Earth province it falls in, gaps go
     to a neighbour, and all rings are noded against each other before the
     topology is built;
+  - borders are snapped to the integer grid in a way that cannot make
+    neighbouring borders cross, and the simplification is guarded against
+    reversed lobes, stray holes and self-overlap;
   - it is loaded only when finer regions are switched on, or when a map needs
-    them (3.1 MB, about 950 KB compressed);
+    them (4.9 MB, about 1.4 MB compressed);
+  - `data/units-detail.json` holds the same arcs at six tenths of their
+    points for the closest zooms (10 MB, about 3.4 MB compressed), fetched
+    only there;
   - built by `tools/build-units.mjs`, which needs clipper-lib (integer
-    polygon clipping), @vant/area-data (current Chinese division codes) and
-    pinyin-pro (romanised Chinese names) at build time; its arguments list the
+    polygon clipping), @vant/area-data (current Chinese division codes),
+    pinyin-pro (romanised Chinese names) and @br-geo-kit/ibge (IBGE's
+    municipality-to-region table) at build time; its arguments list the
     inputs.
 - **data/cities.json**: the cities as `[name, lon, lat, size, capital]`.
   - The first 550 are greatercircle's.
@@ -262,8 +283,18 @@ in the repo. They covered:
   - Canada's economic regions from Statistics Canada (Open Government Licence
     – Canada 2.0);
   - DR Congo and South Africa from OCHA and its partners (CC BY 3.0 IGO);
-  - Kazakhstan © OpenStreetMap contributors (ODbL 1.0, so the Kazakh part of
-    `data/units.json` is under the ODbL too);
+  - Kazakhstan, Russia, Iran, Saudi Arabia and Algeria © OpenStreetMap
+    contributors, and India (Pathways Data) and Ethiopia (Open Africa) under
+    the same licence: ODbL 1.0, so those parts of `data/units.json` and
+    `data/units-detail.json` are under the ODbL too;
+  - Brazil's municipal boundaries from IBGE through OCHA ROLAC (CC BY 3.0
+    IGO), merged by IBGE's region table;
+  - Australia © Australian Bureau of Statistics (CC BY 4.0);
+  - Argentina, Indonesia, Mongolia, Sudan, Mauritania, Peru, Chad,
+    Mozambique, Tanzania and Madagascar from their national agencies through
+    OCHA and its partners (CC BY 3.0 IGO); Mali (CC BY 4.0) and Zambia (GRID3,
+    CC BY 4.0); Niger (CC BY 3.0); Bolivia (GeoBolivia) and Angola (Wikimedia
+    Commons) in the public domain;
   - Pakistan, and all of them gathered, from geoBoundaries (Runfola et al.,
     PLoS ONE 15(4): e0231866, 2020).
 

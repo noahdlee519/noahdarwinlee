@@ -26,6 +26,7 @@ const RENAME = {
   CIV: "Ivory Coast", CPV: "Cape Verde",
 };
 const FOLD = { KAB: "KAZ" };
+const PROVINCE_NAME = { "RU-ALT": "Altai Krai" };
 
 const GROUPED = new Set(["SVN", "LVA", "UGA", "AZE", "MKD", "MLT", "KOS", "HKG", "BTN", "PHL", "LKA", "ITA"]);
 const GROUP_NAME = {
@@ -65,7 +66,7 @@ for (const f of geo.features) {
   const biggest = areas.indexOf(Math.max(...areas));
   const kept = polys.filter((c, i) => i === biggest || areas[i] >= MIN_ISLAND_KM2);
   droppedIslands += polys.length - kept.length;
-  const properties = { n: p.name_en || p.name || RENAME[code] || p.admin, c: code };
+  const properties = { n: PROVINCE_NAME[p.iso_3166_2] || p.name_en || p.name || RENAME[code] || p.admin, c: code };
   if (GROUPED.has(code) && p.region) {
     const name = groupName(code, p.region), key = code + "|" + name;
     if (!groupIndex.has(key)) { groupIndex.set(key, groups.length); groups.push({ n: name, c: code }); }
