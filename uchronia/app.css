@@ -660,6 +660,27 @@ body.uc-page {
 .uc-inner .uc-seg {
   margin: 0;
 }
+#land-pane {
+  gap: 6px 22px;
+}
+#land-to {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+}
+#land-to-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.uc-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
 .uc-region {
   font-size: 14px;
 }

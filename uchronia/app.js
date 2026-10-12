@@ -2707,11 +2707,11 @@
     scheduleRender();
   }
 
-  function brushWord() { return ui.tool === "draw" ? "Drawing for " : "Painting with "; }
+  function brushWord() { return "Giving land to "; }
   function pickUp(x, y) {
     var pk = pickAt(x, y);
     if (pk.u < 0) return;
-    if (pk.o < 0) { ui.erase = true; toast(ui.tool === "draw" ? "Drawing unclaimed land" : "Painting unclaimed land"); }
+    if (pk.o < 0) { ui.erase = true; toast("Leaving land unclaimed"); }
     else { ui.erase = false; ui.country = pk.o; toast(brushWord() + countries[ui.country].name); }
     renderPanel();
     scheduleRender();
@@ -2827,10 +2827,10 @@
       var note = null;
       if (ui.tool === "paint") {
         var to = brush();
-        if (to === null) note = "click to paint with this country";
+        if (to === null) note = "click to give land to this country";
         else if (o !== to) note = "to " + (to >= 0 ? countries[to].name : "unclaimed land");
       } else if (ui.tool === "draw") {
-        if (brush() === null) note = "click to draw for this country";
+        if (brush() === null) note = "click to give land to this country";
       } else if (ui.tool === "city") note = "click to found a city here";
       showTip(x, y, main, hp ? "Drawn land, " + regionName(u) : regionName(u), note);
     });
@@ -3393,9 +3393,13 @@
   }
   function citySize(c) { return c.cap ? "capital" : c.tier >= 4 ? "town" : "city"; }
 
+  var lastLand = "paint";
+  function landTool() { return ui.tool === "paint" || ui.tool === "draw"; }
   function setTool(t) {
     if (stroke) endStroke();
     cancelLasso();
+    if (t === "land") t = landTool() ? ui.tool : lastLand;
+    if (t === "paint" || t === "draw") lastLand = t;
     ui.tool = t;
     if (t === "paint" || t === "draw") ui.city = null;
     if (t === "city") ui.country = -1;
@@ -3424,7 +3428,7 @@
   function renderPanel() {
     if (!feats) return;
     freshGroups();
-    document.querySelectorAll(".uc-tool").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tool === ui.tool)); });
+    document.querySelectorAll(".uc-tool").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tool === ui.tool || (b.dataset.tool === "land" && landTool()))); });
     canvas.classList.toggle("is-tool-paint", ui.tool === "paint");
     canvas.classList.toggle("is-tool-city", ui.tool === "city");
     canvas.classList.toggle("is-tool-draw", ui.tool === "draw");
@@ -3440,13 +3444,13 @@
       var to = brush();
       var more = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : "";
       if (to === UNCLAIMED) setHint([(canHover ? "Click or drag over" : "Tap") + " regions to leave them unclaimed" + more]);
-      else if (to === null) setHint([verb + " a country to paint with it, or found a new one"]);
+      else if (to === null) setHint([verb + " a country to give land to, or found a new one"]);
       else setHint([(canHover ? "Click or drag over" : "Tap") + (ui.whole ? " countries to give them whole to " : " regions to give them to "), { b: countries[to].name }, more]);
     } else if (ui.tool === "draw") {
       var dto = brush();
       var dmore = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : " · two fingers move the " + where;
       if (dto === UNCLAIMED) setHint([(canHover ? "Drag" : "Draw") + " round land to leave it unclaimed" + dmore]);
-      else if (dto === null) setHint([verb + " a country to draw for it, or found a new one"]);
+      else if (dto === null) setHint([verb + " a country to give land to, or found a new one"]);
       else setHint([(canHover ? "Drag" : "Draw") + " round land to give it to ", { b: countries[dto].name }, dmore]);
     } else {
       setHint([(canHover ? "Click the " : "Tap the ") + where + " to found a city, or pick a city, then drag it to move it"]);
@@ -3473,7 +3477,7 @@
       if (drawn) parts.push(drawn + (drawn === 1 ? " drawn area" : " drawn areas"));
       var facts = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: paint regions or draw round some land to give it some";
       $("country-facts").textContent = facts;
-      if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts + (land ? " · B paints with it" : "")]);
+      if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts + (land ? " · B gives it land" : "")]);
       var hideLines = countries[c].lines || 0;
       if (arcsDirty) { freshGroups(); rebuildArcs(); }
       var kinds = innerKinds[c] || 0;
@@ -3495,13 +3499,19 @@
     $("remove-piece").hidden = !pc0;
     if (pc0) $("region-name").textContent = pc0.owner < 0 ? "Drawn land, unclaimed" : "Drawn land";
     else if (showRegion) $("region-name").textContent = "Region: " + regionName(r0) + (owner[r0] < 0 ? ", unclaimed" : "");
-    $("paint-pane").hidden = ui.tool !== "paint";
-    $("draw-pane").hidden = ui.tool !== "draw";
-    $("draw-land").setAttribute("aria-pressed", String(!ui.erase));
-    $("draw-erase").setAttribute("aria-pressed", String(ui.erase));
-    $("paint-regions").setAttribute("aria-pressed", String(!ui.whole && !ui.erase));
-    $("paint-whole").setAttribute("aria-pressed", String(ui.whole && !ui.erase));
-    $("paint-erase").setAttribute("aria-pressed", String(ui.erase));
+    $("land-pane").hidden = !landTool();
+    if (landTool()) {
+      var bto = brush(), named = bto !== null && bto >= 0;
+      $("land-to").setAttribute("aria-pressed", String(!ui.erase));
+      $("land-to-name").textContent = named ? countries[bto].name : "a country";
+      $("land-to-dot").style.background = named ? colorOf(bto) : "none";
+      $("land-to-dot").style.boxShadow = named && pal.antique ? "inset 0 0 0 2px " + bandOf(bto) : "none";
+      $("paint-erase").setAttribute("aria-pressed", String(ui.erase));
+      $("paint-regions").setAttribute("aria-pressed", String(ui.tool === "paint" && !(ui.whole && !ui.erase)));
+      $("paint-whole").setAttribute("aria-pressed", String(ui.tool === "paint" && ui.whole && !ui.erase));
+      $("paint-whole").disabled = ui.erase;
+      $("brush-lasso").setAttribute("aria-pressed", String(ui.tool === "draw"));
+    }
 
     var showCity = !!ui.city && ui.tool !== "paint";
     $("city-pane").hidden = !showCity;
@@ -3613,12 +3623,12 @@
   $("dissolve").addEventListener("click", function () { var c = currentCountry(); if (c >= 0) dissolve(c); });
   $("independent").addEventListener("click", function () { if (ui.piece) pieceIndependent(ui.piece); else makeIndependent(ui.region); });
   $("remove-piece").addEventListener("click", function () { if (ui.piece) removePiece(ui.piece); });
-  $("draw-land").addEventListener("click", function () { ui.erase = false; renderPanel(); scheduleRender(); });
-  $("draw-erase").addEventListener("click", function () { ui.erase = true; ui.whole = false; renderPanel(); scheduleRender(); });
+  $("land-to").addEventListener("click", function () { ui.erase = false; renderPanel(); scheduleRender(); });
+  $("brush-lasso").addEventListener("click", function () { setTool("draw"); });
   $("new-country").addEventListener("click", newCountry);
-  $("paint-regions").addEventListener("click", function () { ui.whole = false; ui.erase = false; renderPanel(); scheduleRender(); });
-  $("paint-whole").addEventListener("click", function () { ui.whole = true; ui.erase = false; renderPanel(); scheduleRender(); });
-  $("paint-erase").addEventListener("click", function () { ui.erase = !ui.erase; if (ui.erase) ui.whole = false; renderPanel(); scheduleRender(); });
+  $("paint-regions").addEventListener("click", function () { ui.whole = false; if (ui.tool !== "paint") setTool("paint"); else { renderPanel(); scheduleRender(); } });
+  $("paint-whole").addEventListener("click", function () { ui.whole = true; ui.erase = false; if (ui.tool !== "paint") setTool("paint"); else { renderPanel(); scheduleRender(); } });
+  $("paint-erase").addEventListener("click", function () { ui.erase = true; ui.whole = false; renderPanel(); scheduleRender(); });
   $("city-name").addEventListener("input", function () { if (ui.city) setCityName(ui.city, $("city-name").value.slice(0, NAME_MAX)); });
   $("city-name").addEventListener("blur", function () {
     if (ui.city && !ui.city.name.trim()) { setCityName(ui.city, "Unnamed city"); $("city-name").value = ui.city.name; }

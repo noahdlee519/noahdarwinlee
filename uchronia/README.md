@@ -346,14 +346,18 @@ of `/greatercircle/`.
   its keys; a second click closes it.
 - **Select (V)**: click a country to rename or recolour it, show or hide its
   inner borders (the lines between its regions, and the finer lines inside
-  them; a kind it has none of is greyed out), paint with it or dissolve it; click a city to rename it, change its
+  them; a kind it has none of is greyed out), give it land or dissolve it; click a city to rename it, change its
   size or delete it, and once it is picked, drag it to move it. A region on
   its own can be made a country.
-- **Paint borders (B)**: click or drag over regions to give them to the
-  chosen country; Alt-click picks the country to paint with.
-- **Draw borders (D)**: drag round some land to give it to the chosen
-  country, or to leave it unclaimed; on a phone, draw with one finger and
-  move the map with two.
+- **Give land (B)**: one tool for moving borders. Its pane says who gets
+  the land (the chosen country, shown with its colour, or *Unclaimed*) and
+  how it is taken:
+  - *Regions*: click or drag over regions;
+  - *Whole countries*: click a country to give all of it;
+  - *Lasso* (D): drag round any land, across region lines; on a phone, draw
+    with one finger and move the map with two.
+
+  Alt-click picks the country to give land to.
 - **Cities (C)**: click to found a city; click one to pick it, then drag it
   to move it (a drag on a city that isn't picked moves the map).
 - **M** switches between the globe and the flat map; **S** turns the
@@ -365,7 +369,7 @@ of `/greatercircle/`.
 - **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** or **Ctrl+Y** redoes;
   **Delete** deletes the chosen city or drawing; **Escape** drops a drawing
   in progress, lets go of the selection, or goes back to Select.
-- On a phone: tap to paint or to found a city, drag to move the map, and pull
+- On a phone: tap to give regions or to found a city, drag to move the map, and pull
   the sheet up for the rest.
 
 ## Tests
