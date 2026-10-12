@@ -147,7 +147,9 @@ of `/greatercircle/`.
 - **Cities.** A capital is a star in a circle, a city a square and a town a
   white circle, in every style, each with its own size of name; in Antique
   the names are a size larger, on a heavier halo, to read clearly over the
-  coloured map.
+  coloured map. Where a capital's name has no room, its mark is still drawn,
+  and with the Cities tool a click on a city that is not drawn picks it
+  rather than founding another on top of it.
 - **Rivers.** Natural Earth's rivers, drawn in blue over the countries and
   under their borders: the largest (the Amazon, the Nile, the Yangtze) from
   the whole globe, and smaller ones in nine steps as the map is zoomed in;
@@ -332,7 +334,10 @@ of `/greatercircle/`.
   country*, countries founded and given no land, countries that lost their
   capital or gained a second one, two countries with one name, and cities
   dropped in the sea. Picking one goes to it and selects it, ready to rename.
-  A fresh map has nothing to fix.
+  A fresh map has nothing to fix, and a country just founded is left out
+  until it is let go, so the count does not rise while it is being made.
+- The **ⓘ** button by the title opens a note on the map, its sources and
+  its keys; a second click closes it.
 - **Select (V)**: click a country to rename or recolour it, show or hide its
   inner borders (the lines between its regions, and the finer lines inside
   them; a kind it has none of is greyed out), paint with it or dissolve it; click a city to rename it, change its
@@ -385,6 +390,9 @@ in the repo. They covered:
 - the Check menu (a clean map, a forgotten city and country, going to one and
   renaming it), the greyed-out inner borders, rivers fading out up close, and
   Antique's two-tone sea with the satellite view on;
+- a hidden capital picked by the Cities tool, the about note opening and
+  closing, the latitude and longitude labels thinning out on the whole flat
+  map, and the phone's larger buttons;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;

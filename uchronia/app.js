@@ -1311,11 +1311,12 @@
     if (flat) {
       var k = FB.k, left = Math.max(x0, cx - k * (Math.PI + FB.xc)), right = Math.min(x1, cx + k * (Math.PI - FB.xc));
       var top = Math.max(y0, cy + k * (FB.yc - HALF_PI)), bottom = Math.min(y1, cy + k * (FB.yc + HALF_PI));
-      for (v = -80; v <= 80; v += 10) {
+      var st = k * 10 * D2R < 46 ? 20 : 10;
+      for (v = -Math.floor(80 / st) * st; v <= 80; v += st) {
         var y = cy - k * (v * D2R - FB.yc);
         if (y > top + 16 && y < bottom - 8) items.push([degrees(v, true), left + 3, y, true]);
       }
-      for (v = -170; v < 180; v += 10) {
+      for (v = -Math.floor(170 / st) * st; v < 180; v += st) {
         var x = cx + k * (v * D2R - FB.xc);
         if (x > left + 16 && x < right - 16) items.push([degrees(v, false), x, top + 8, false]);
       }
@@ -1946,7 +1947,10 @@
       if (!c.w) c.w = ctx.measureText(c.name).width;
       var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = ui.cityNames || must;
       var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, pal.antique ? 7.5 : 7, 0) : mkBox(px, py, mr + 3, mr + 3, 0);
-      if (!must && collides(placed, box)) continue;
+      if (!must && collides(placed, box)) {
+        if (!c.cap) continue;
+        named = false; box = mkBox(px, py, mr + 1, mr + 1, 0);
+      }
       placed.push(box);
       shown.push({ c: c, x: px, y: py, off: off, named: named, r: mr });
     }
@@ -2006,6 +2010,13 @@
     for (var i = 0; i < cityScreen.length; i++) {
       var d = Math.hypot(cityScreen[i].x - x, cityScreen[i].y - y);
       if (d < bestD) { bestD = d; best = cityScreen[i].c; }
+    }
+    if (best || ui.tool !== "city") return best;
+    for (i = 0; i < cities.length; i++) {
+      var c = cities[i], p = projectVec(c.x, c.y, c.z, c.lam, c.phi);
+      if (!p || (!flat && p[2] <= 0.02)) continue;
+      d = Math.hypot(p[0] - x, p[1] - y);
+      if (d < bestD) { bestD = d; best = c; }
     }
     return best;
   }
@@ -3054,9 +3065,11 @@
     countriesVersion++;
     return { t: "country", c: i, from: null, to: { name: name, color: color } };
   }
+  var freshCountry = -1;
   function newCountry() {
     var op = createCountry(uniqueName("New country"), freeColor([]));
     pushStep("New country", [op]);
+    freshCountry = op.c;
     ui.country = op.c; ui.erase = false; ui.city = null; ui.region = -1; ui.piece = null;
     setTool("paint");
     changed();
@@ -3435,6 +3448,7 @@
       setHint([(canHover ? "Click the " : "Tap the ") + where + " to found a city, or pick a city, then drag it to move it"]);
     }
 
+    if (freshCountry >= 0 && c !== freshCountry) scheduleChecks();
     var showCountry = c >= 0 && !ui.city && ui.tool !== "city" && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase);
     $("country-pane").hidden = !showCountry;
     if (showCountry) {
@@ -3455,12 +3469,12 @@
       if (drawn) parts.push(drawn + (drawn === 1 ? " drawn area" : " drawn areas"));
       var facts = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: paint regions or draw round some land to give it some";
       $("country-facts").textContent = facts;
-      if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts]);
+      if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts + (land ? " · B paints with it" : "")]);
       var hideLines = countries[c].lines || 0;
-      $("lines-1").setAttribute("aria-pressed", String(!(hideLines & 1)));
-      $("lines-2").setAttribute("aria-pressed", String(!(hideLines & 2)));
       if (arcsDirty) { freshGroups(); rebuildArcs(); }
       var kinds = innerKinds[c] || 0;
+      $("lines-1").setAttribute("aria-pressed", String(!!(kinds & 1) && !(hideLines & 1)));
+      $("lines-2").setAttribute("aria-pressed", String(!!(kinds & 2) && !(hideLines & 2)));
       $("lines-1").disabled = !(kinds & 1);
       $("lines-2").disabled = !(kinds & 2);
       $("lines-1").title = kinds & 1 ? "The lines between its states, provinces and regions" : "It is a single region, with no lines inside it";
@@ -3476,7 +3490,7 @@
     $("region-line").hidden = !showRegion && !pc0;
     $("remove-piece").hidden = !pc0;
     if (pc0) $("region-name").textContent = pc0.owner < 0 ? "Drawn land, unclaimed" : "Drawn land";
-    else if (showRegion) $("region-name").textContent = owner[r0] < 0 ? regionName(r0) + ", unclaimed land" : regionName(r0);
+    else if (showRegion) $("region-name").textContent = "Region: " + regionName(r0) + (owner[r0] < 0 ? ", unclaimed" : "");
     $("paint-pane").hidden = ui.tool !== "paint";
     $("draw-pane").hidden = ui.tool !== "draw";
     $("draw-land").setAttribute("aria-pressed", String(!ui.erase));
@@ -4177,11 +4191,26 @@
       box.classList.toggle("is-open", open);
       btn.setAttribute("aria-expanded", String(open));
     }
-    btn.addEventListener("click", function () { setOpen(!box.classList.contains("is-open")); });
-    box.addEventListener("mouseenter", function () { if (canHover) btn.setAttribute("aria-expanded", "true"); });
-    box.addEventListener("mouseleave", function () { if (!box.classList.contains("is-open") && !box.contains(document.activeElement)) btn.setAttribute("aria-expanded", "false"); });
-    box.addEventListener("focusin", function () { btn.setAttribute("aria-expanded", "true"); });
-    box.addEventListener("focusout", function (e) { if (!box.contains(e.relatedTarget) && !box.classList.contains("is-open")) btn.setAttribute("aria-expanded", "false"); });
+    btn.addEventListener("click", function () {
+      var open = !box.classList.contains("is-open");
+      setOpen(open);
+      box.classList.toggle("is-shut", !open);
+    });
+    box.addEventListener("mouseenter", function () {
+      box.classList.remove("is-shut");
+      if (canHover) btn.setAttribute("aria-expanded", "true");
+    });
+    box.addEventListener("mouseleave", function () {
+      if (box.contains(document.activeElement)) return;
+      box.classList.remove("is-shut");
+      if (!box.classList.contains("is-open")) btn.setAttribute("aria-expanded", "false");
+    });
+    box.addEventListener("focusin", function () { if (!box.classList.contains("is-shut")) btn.setAttribute("aria-expanded", "true"); });
+    box.addEventListener("focusout", function (e) {
+      if (box.contains(e.relatedTarget)) return;
+      if (!box.matches(":hover")) box.classList.remove("is-shut");
+      if (!box.classList.contains("is-open")) btn.setAttribute("aria-expanded", "false");
+    });
     document.addEventListener("pointerdown", function (e) { if (box.classList.contains("is-open") && !box.contains(e.target)) setOpen(false); });
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape" || !(box.classList.contains("is-open") || box.contains(document.activeElement))) return;
@@ -4215,8 +4244,9 @@
     if (!feats || !base) return out;
     freshGroups();
     var caps = capitalsBy(), names = new Map();
+    if (freshCountry >= 0 && currentCountry() !== freshCountry) freshCountry = -1;
     countries.forEach(function (co, i) {
-      if (!co.alive) return;
+      if (!co.alive || i === freshCountry) return;
       var founded = /^N\d+$/.test(co.code);
       if (DEFAULT_NAME.test(co.name) || UNNAMED_COUNTRY.test(co.name)) out.push({ country: i, name: co.name, note: "Never renamed", rename: true });
       if (!hasLand(i)) { if (founded) out.push({ country: i, name: co.name, note: "Has no land" }); return; }

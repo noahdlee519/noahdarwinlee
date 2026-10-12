@@ -426,6 +426,14 @@ body.uc-page {
     display: none;
   }
 }
+.uc-about.is-shut .uc-about-tip {
+  display: none;
+}
+@media (hover: none) {
+  .uc-keys {
+    display: none;
+  }
+}
 
 .uc-load {
   position: fixed;
@@ -791,7 +799,7 @@ body.uc-page {
   padding: 0 5px;
   box-sizing: border-box;
   border-radius: 9px;
-  background: var(--uc-select);
+  background: var(--ink);
   color: var(--bg);
   font-size: 11.5px;
   line-height: 18px;
@@ -1240,7 +1248,18 @@ body.uc-page {
   }
   .uc-tool {
     flex: 1 1 0;
+    min-height: 44px;
     padding: 7px 4px;
+  }
+  .uc-ctl {
+    width: 44px;
+    height: 44px;
+  }
+  .uc-about-btn {
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+    margin: -7px;
   }
   .uc-hint {
     margin: 8px 0 0;
@@ -1269,10 +1288,10 @@ body.uc-page {
   }
   .uc-linkbtn,
   .uc-menu-item {
-    padding: 3px 0;
+    padding: 9px 0;
   }
   .uc-menu > summary {
-    min-height: 26px;
+    min-height: 40px;
   }
   .uc-check {
     padding: 3px 0;
