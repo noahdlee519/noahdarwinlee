@@ -847,7 +847,7 @@ body.uc-page {
   flex: 0 0 auto;
   width: 10px;
   height: 10px;
-  border: 1px solid var(--ink);
+  border: 1px solid currentColor;
   border-radius: 50%;
 }
 .uc-region {
@@ -875,7 +875,7 @@ body.uc-page {
 .uc-seg button + button {
   border-left: 0;
 }
-.uc-seg button:hover:not(:disabled) {
+.uc-seg button:hover:not(:disabled):not([aria-pressed="true"]) {
   color: var(--ink);
 }
 .uc-seg button:disabled {
@@ -883,9 +883,12 @@ body.uc-page {
   cursor: default;
 }
 .uc-seg button[aria-pressed="true"] {
+  background: var(--ink);
   border-color: var(--ink);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
+  color: var(--bg);
+}
+.uc-seg button[aria-pressed="true"] + button[aria-pressed="true"] {
+  box-shadow: inset 1px 0 0 var(--bg);
 }
 .uc-btn {
   padding: 6px 12px;
