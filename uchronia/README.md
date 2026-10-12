@@ -59,9 +59,10 @@ of `/greatercircle/`.
     don't flood the whole disc. Line segments along the date line and the
     south pole, where Natural Earth cuts shapes, are left out.
   - **Flat map.** A plain rectangle of latitude and longitude (the
-    equirectangular projection), centred on Greenwich. It stays still: panning
-    moves the view over it and stops at its edges, and zooming keeps the point
-    under the cursor where it is. A ring that crosses the 180th meridian is
+    equirectangular projection), centred on Greenwich. Zoomed out it stays
+    still, stopping at its edges; once it is wider than the window it scrolls
+    sideways without end, round and round the world, and zooming keeps the
+    point under the cursor where it is. A ring that crosses the 180th meridian is
     unwrapped and drawn again a turn over. Rings that go round a pole
     (Antarctica) are closed along the pole line, and the map is clipped to its
     rectangle.
@@ -127,6 +128,18 @@ of `/greatercircle/`.
     side of it, leaving room for the capital's own name), shrinking a step or
     two if it must; only where there is no room at all does it sit on top.
   - Names with spaces are tried on two lines too.
+  - A name may also lie across the sea within its country's reach: the
+    convex hull of its largest piece of land and every other piece within
+    600 km of the group is tried as well, and taken when it gives a clearly
+    larger name with almost none of it over another country's land
+    (Indonesia, Japan, the Philippines, Malaysia, Canada over Hudson Bay).
+  - A country too small for its name on its land has it set in small type
+    beside it, in the water, where there is room (the Caribbean islands,
+    Cyprus, Lebanon).
+  - On the globe, names far from the centre of the view are set straight,
+    not curved or turned along the outline the curve of the earth squeezes.
+  - In Antique, a city name that has no room to the right of its mark tries
+    the left, above and below.
   - Long, thin countries (Chile, Norway, Sweden) are also tried along their
     principal axis, and turned when that fits much better.
   - In Antique, names are also tried along arcs. The piece is unrolled round a
@@ -177,8 +190,9 @@ of `/greatercircle/`.
 - **New countries.** A new country takes the name of the first region it
   receives, or of the country it swallows whole. Its capital is picked from
   the cities already in that land, the largest one, unless one of them is a
-  capital already. "Make it a country" does the same for the region it
-  frees.
+  capital already. When a country takes another's capital whole, and has a
+  capital of its own, the captured one becomes an ordinary city (in the same
+  undo step).
 - **Undo and redo.** Every edit is a step to undo or redo. A paint stroke is
   one step, and typing a name is one step however many keys it takes.
 - **Saving.** The map is kept as its difference from the world as it is:
@@ -318,6 +332,13 @@ of `/greatercircle/`.
   lake the map shows are dropped, splitting the line there. The first file
   holds ranks 1 to 6 simplified to a fifth of their points, the second
   ranks 1 to 9 at 45%. Built by `tools/build-rivers.mjs`.
+- **data/relief-4096.webp**: the terrain layer's shaded relief of the
+  whole world, equirectangular, grey with 128 for flat ground and sea, from
+  the zoom-5 Terrarium elevation tiles: a soft hillshade lit from the
+  north-west with fills from the north and west, plus a broader one so that
+  whole ranges read at world scale. Built by `tools/build-relief.mjs`
+  (sharp and pngjs). Closer in, the page fetches the same tiles at zoom 6
+  to 11 and shades them itself.
 - **data/earth-2048.webp**, **data/earth-4096.webp**: NASA Blue Marble Next
   Generation with shaded sea floor, equirectangular. The polar rows and the
   columns at the date line are evened out so that the wrap is seamless, and
@@ -331,8 +352,10 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
-  over) and **View** (the style, country and city names, rivers, latitude and
-  longitude, the scale bar, finer regions). What is
+  over) and **View** (the style, country and city names, terrain, rivers,
+  latitude and longitude, the scale bar, finer regions). **Terrain**, on by
+  default, lays shaded relief over the land, like an atlas, sharper as the
+  map zooms in; it is left off under the satellite view. What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
 - **History** opens a panel in which a historian of the map's world writes
@@ -363,10 +386,11 @@ of `/greatercircle/`.
 - The **ⓘ** button by the title opens a note on the map, its sources and
   its keys; a second click closes it.
 - **Select (V)**: click a country to rename or recolour it, show or hide its
-  inner borders (the lines between its regions, and the finer lines inside
-  them; a kind it has none of is greyed out), give it land or dissolve it; click a city to rename it, change its
-  size or delete it, and once it is picked, drag it to move it. A region on
-  its own can be made a country.
+  regions' lines (*Tier 1*, the lines between its states, provinces and
+  regions; *Tier 2*, the finer lines inside them; a tier it has none of is
+  greyed out, and hidden tiers stay hidden inside land drawn for it), give it
+  land or dissolve it; click a city to rename it, change its size or delete
+  it, and once it is picked, drag it to move it.
 - **Give land (B)**: one tool for moving borders. Its pane says who gets
   the land (the chosen country, shown with its colour, or *Unclaimed*) and
   how it is taken:
@@ -466,3 +490,10 @@ in the repo. They covered:
 - **Cities:** GeoNames (CC BY 4.0).
 - **Satellite view:** NASA Earth Observatory, Blue Marble Next Generation by
   Reto Stöckli, and NASA's Global Imagery Browse Services (public domain).
+- **Terrain:** Terrain Tiles on the Registry of Open Data on AWS, by Mapzen:
+  ArcticDEM (DigitalGlobe imagery, NSF awards 1043681, 1559691, 1542736);
+  © Commonwealth of Australia (Geoscience Australia) 2017; © offene Daten
+  Österreichs – DGM Österreich; Open Government Licence – Canada; Copernicus
+  EU-DEM; ETOPO1 (NOAA); INEGI Continental relief 2016; © Crown copyright
+  LINZ (New Zealand) 2011; © Kartverket; © Environment Agency 2015; USGS 3DEP
+  (NED), GMTED2010 and SRTM.

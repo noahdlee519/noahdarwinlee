@@ -60,8 +60,8 @@
         script-src 'self' 'sha256-e3Q4YZo/6ik0osg9Ihkp8WHpO3Y/xtKIGihkzxbKPnM=';
         style-src 'self';
         font-src 'self';
-        img-src 'self' data: blob: https://gibs.earthdata.nasa.gov;
-        connect-src 'self' https://aqvagqrbujmxohlercoa.supabase.co;
+        img-src 'self' data: blob: https://gibs.earthdata.nasa.gov https://s3.amazonaws.com;
+        connect-src 'self' https://aqvagqrbujmxohlercoa.supabase.co https://s3.amazonaws.com;
         object-src 'none';
         base-uri 'self';
         form-action 'self';
@@ -129,6 +129,8 @@
                   (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Satellite view: NASA
                   Earth Observatory, Blue Marble Next Generation by Reto St&ouml;ckli, and close up, NASA's Global
                   Imagery Browse Services (public domain). The flat map is a plain grid of latitude and longitude (the equirectangular projection).
+                  Terrain: Mapzen's Terrain Tiles on AWS (SRTM, GMTED2010, ETOPO1, ArcticDEM, EU-DEM and national
+                  agencies; the full list is in the README), shaded for this map.
                   Antique type: Old Standard TT by Alexey Kryukov (SIL Open Font License).
                 </p>
                 <p>
@@ -192,10 +194,10 @@
             </div>
             <div class="uc-swatches" id="swatches" role="group" aria-label="Colour"></div>
             <div class="uc-inner" id="inner">
-              <span class="uc-inner-label" id="inner-label">Inner borders</span>
+              <span class="uc-inner-label" id="inner-label">Regions</span>
               <div class="uc-seg" role="group" aria-labelledby="inner-label">
-                <button type="button" id="lines-1" aria-pressed="true" title="The lines between its states, provinces and regions">Regions</button>
-                <button type="button" id="lines-2" aria-pressed="true" title="The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions">Finer</button>
+                <button type="button" id="lines-1" aria-pressed="true" title="The lines between its states, provinces and regions">Tier 1</button>
+                <button type="button" id="lines-2" aria-pressed="true" title="The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions">Tier 2</button>
               </div>
             </div>
             <p class="uc-facts" id="country-facts"></p>
@@ -204,7 +206,7 @@
               <button type="button" class="uc-linkbtn" id="dissolve">Dissolve</button>
             </div>
           </section>
-          <p class="uc-region" id="region-line" hidden><span id="region-name"></span> <button type="button" class="uc-linkbtn" id="independent">Make it a country</button> <button type="button" class="uc-linkbtn" id="remove-piece" hidden>Remove</button></p>
+          <p class="uc-region" id="region-line" hidden><span id="region-name"></span> <button type="button" class="uc-linkbtn" id="remove-piece" hidden>Remove</button></p>
 
           <section class="uc-pane" id="city-pane" hidden>
             <input id="city-name" class="uc-name" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="City name" />
@@ -258,6 +260,7 @@
               </div>
               <label class="uc-check"><input type="checkbox" id="show-countries" checked /> <span>Country names</span></label>
               <label class="uc-check"><input type="checkbox" id="show-cities" checked /> <span>City names</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-terrain" checked /> <span>Terrain</span></label>
               <label class="uc-check"><input type="checkbox" id="show-rivers" checked /> <span>Rivers</span></label>
               <label class="uc-check"><input type="checkbox" id="show-grid" checked /> <span>Latitude and longitude</span></label>
               <label class="uc-check"><input type="checkbox" id="show-scale" checked /> <span>Scale bar</span></label>

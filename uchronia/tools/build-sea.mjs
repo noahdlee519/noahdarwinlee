@@ -58,6 +58,7 @@ if (Math.abs(before.reduce((a, b) => a + b, 0) - whole) / whole > 0.002) throw n
 
 const pre = simplify.presimplify(server.topology({ deep: { type: "FeatureCollection", features } }, 1e6), simplify.sphericalTriangleArea);
 const weights = [];
+pre.arcs.forEach((arc) => arc.forEach((pt) => { if (Math.abs(pt[1]) > 89.99) pt[2] = Infinity; }));
 pre.arcs.forEach((arc) => arc.forEach((pt) => { if (isFinite(pt[2])) weights.push(pt[2]); }));
 weights.sort((a, b) => a - b);
 const level = (share) => {
