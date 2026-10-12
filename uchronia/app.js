@@ -904,9 +904,14 @@
       var to = brush();
       if (to === null) return;
       if (ui.whole && vo >= 0) vis.forEach(function (p) { if (p.owner === vo && p.owner !== to) list.push(p); });
-      else if (hp && hp.owner !== to && vis.indexOf(hp) >= 0) list.push(hp);
-      if (!list.length) return;
-      ctx.beginPath(); list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
+      else if (hp && vis.indexOf(hp) >= 0) {
+        var ru = regionUnits(u), any = hp.owner !== to;
+        for (var i = 0; !any && i < ru.length; i++) if (owner[ru[i]] !== to) any = true;
+        if (!any) return;
+        ctx.beginPath(); traceFeature(ctx, regionShape(u, levelFor()));
+      }
+      if (list.length) { ctx.beginPath(); list.forEach(function (p) { traceFeature(ctx, p.shape.f); }); }
+      else if (!hp || ui.whole) return;
       ctx.globalAlpha = 0.85; ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill();
       if (to < 0) { ctx.fillStyle = hatch; ctx.fill(); }
       ctx.globalAlpha = 1;
@@ -1684,7 +1689,8 @@
     if (ui.tool === "paint") {
       var to = brush();
       if (to === null) return;
-      var whole = ui.whole && vo >= 0, list = whole ? (unitsOf[vo] || []) : hp ? [] : regionUnits(u);
+      if (hp && !ui.whole) return;
+      var whole = ui.whole && vo >= 0, list = whole ? (unitsOf[vo] || []) : regionUnits(u);
       var any = false;
       for (var i = 0; i < list.length; i++) if (owner[list[i]] !== to) { any = true; break; }
       if (!any) return;
@@ -2945,8 +2951,29 @@
       pieces.slice().forEach(function (p) { if (p.owner === vo) assignPiece(p, to); });
       return;
     }
-    if (pc) { assignPiece(pc, to); return; }
-    regionUnits(u).slice().forEach(function (q) { assign(q, to); });
+    var ru = regionUnits(u);
+    if (pc) cutPieces(ru);
+    ru.slice().forEach(function (q) { assign(q, to); });
+  }
+  function cutPieces(us) {
+    var set = new Set(us), coords = [];
+    us.forEach(function (q) { var g = geoFull[q].geometry; if (g.type === "Polygon") coords.push(g.coordinates); else g.coordinates.forEach(function (c) { coords.push(c); }); });
+    if (!coords.length) return;
+    var after = [], cut = false;
+    pieces.forEach(function (p) {
+      var cover = shapeCover(p.shape).units, hit = false;
+      for (var i = 0; i < cover.length; i++) if (set.has(cover[i])) { hit = true; break; }
+      if (!hit) { after.push(p); return; }
+      var rest;
+      try { rest = cleanPolys(PC.difference(p.shape.polys, coords)); } catch (e) { after.push(p); return; }
+      cut = true;
+      stroke.touched.add(p.owner);
+      if (rest.length) after.push({ id: ++pieceSeq, owner: p.owner, shape: makeShape(rest), edges: null });
+    });
+    if (!cut) return;
+    if (!stroke.pieceFrom) stroke.pieceFrom = pieces;
+    pieces = after;
+    piecesChanged();
   }
   function assignPiece(p, to) {
     if (p.owner === to) return;
@@ -3032,7 +3059,7 @@
       } else if (ui.tool === "draw") {
         if (brush() === null) note = "click to give land to this country";
       } else if (ui.tool === "city") note = "click to found a city here";
-      showTip(x, y, main, hp ? "Drawn land, " + regionName(u) : regionName(u), note);
+      showTip(x, y, main, hp && !(ui.tool === "paint" && !ui.whole) ? "Drawn land, " + regionName(u) : regionName(u), note);
     });
   }
   function setHover(u, hp) {
@@ -3706,7 +3733,7 @@
       if (drawn) parts.push(drawn + (drawn === 1 ? " drawn area" : " drawn areas"));
       var facts = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: Give land (B) gives it some";
       $("country-facts").textContent = facts;
-      if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts + (land ? " · B gives it land" : "")]);
+      if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts]);
       var hideLines = countries[c].lines || 0;
       if (arcsDirty) { freshGroups(); rebuildArcs(); }
       var kinds = innerKinds[c] || 0;
@@ -3714,9 +3741,9 @@
       $("lines-2").setAttribute("aria-pressed", String(!!(kinds & 2) && !(hideLines & 2)));
       $("lines-1").disabled = !(kinds & 1);
       $("lines-2").disabled = !(kinds & 2);
-      $("lines-1").title = kinds & 1 ? "The lines between its states, provinces and regions" : "It is a single region, with no lines inside it";
-      $("lines-2").title = kinds & 2 ? "The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions"
-        : ui.fine ? "Its regions have no finer lines inside them" : "Its regions have no finer lines; Finer regions, in the View menu, adds counties and districts where there are any";
+      setTip($("lines-1"), kinds & 1 ? "The lines between its states, provinces and regions" : "It is a single region, with no lines inside it");
+      setTip($("lines-2"), kinds & 2 ? "The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions"
+        : ui.fine ? "Its regions have no finer lines inside them" : "Its regions have no finer lines; Finer regions, in the View menu, adds counties and districts where there are any");
       $("inner").hidden = ui.tool !== "select";
       $("paint-with").hidden = ui.tool !== "select";
       $("dissolve").hidden = !land;
@@ -3753,10 +3780,10 @@
     $("undo").disabled = !undoStack.length;
     $("redo").disabled = !redoStack.length;
     var undoWhat = undoStack.length ? "Undo " + lowerFirst(undoStack[undoStack.length - 1].label) : "Undo";
-    $("undo").title = undoWhat + " (Ctrl+Z)";
+    setTip($("undo"), undoWhat + " (Ctrl+Z)");
     $("undo").setAttribute("aria-label", undoWhat);
     var redoWhat = redoStack.length ? "Redo " + lowerFirst(redoStack[redoStack.length - 1].label) : "Redo";
-    $("redo").title = redoWhat + " (Ctrl+Shift+Z)";
+    setTip($("redo"), redoWhat + " (Ctrl+Shift+Z)");
     $("redo").setAttribute("aria-label", redoWhat);
     $("fine").checked = ui.fine;
     var st = currentStyle();
@@ -3799,12 +3826,13 @@
       b.style.background = pal.colors[i];
       if (pal.antique) b.style.setProperty("--band", pal.bands[i]);
       b.setAttribute("aria-label", (pal.antique ? SWATCH_NAMES_ANTIQUE : SWATCH_NAMES)[i] || "Colour " + (i + 1));
+      setTip(b, b.getAttribute("aria-label"));
       b.setAttribute("aria-pressed", "false");
       box.appendChild(b);
     }
     var custom = document.createElement("label");
     custom.className = "uc-swatch uc-swatch-custom";
-    custom.title = "Any colour";
+    setTip(custom, "Any colour");
     custom.appendChild(document.createTextNode("+"));
     var input = document.createElement("input");
     input.type = "color"; input.setAttribute("aria-label", "Any colour");
@@ -3923,7 +3951,7 @@
     detail.key = "";
     $("flat-btn").setAttribute("aria-pressed", String(flat));
     $("flat-btn").setAttribute("aria-label", flat ? "Globe" : "Flat map");
-    $("flat-btn").title = flat ? "Globe (M)" : "Flat map (M)";
+    setTip($("flat-btn"), flat ? "Globe (M)" : "Flat map (M)");
     try { localStorage.setItem(STORE_FLAT, flat ? "1" : "0"); } catch (e) { }
     renderPanel();
     moving();
@@ -4428,6 +4456,93 @@
     });
   }
 
+  var tipBox = null, hintOn = null, hintTimer = 0, hintLeft = 0;
+  function describeTip(el) {
+    var t = el.dataset.tip || "";
+    if (t && t !== el.getAttribute("aria-label") && t !== el.textContent.trim()) el.setAttribute("aria-description", t);
+    else el.removeAttribute("aria-description");
+  }
+  function setTip(el, text) {
+    if (el.dataset.tip === text) return;
+    el.dataset.tip = text;
+    describeTip(el);
+    if (hintOn === el) fillHint(el);
+  }
+  function fillHint(el) {
+    var t = el.dataset.tip || "", m = /^(.*?)\s*\(([^()]+)\)$/.exec(t);
+    tipBox.textContent = m ? m[1] : t;
+    if (m) {
+      var k = document.createElement("span");
+      k.className = "uc-hover-key";
+      k.textContent = m[2];
+      tipBox.appendChild(k);
+    }
+    placeHint(el);
+  }
+  function placeHint(el) {
+    var r = el.getBoundingClientRect(), w = tipBox.offsetWidth, h = tipBox.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight, x, y, gap = 8;
+    if (el.dataset.tipSide === "left") {
+      x = r.left - gap - w;
+      y = r.top + r.height / 2 - h / 2;
+    } else {
+      x = r.left + r.width / 2 - w / 2;
+      y = r.bottom + gap;
+      if (y + h > vh - 6) y = r.top - gap - h;
+    }
+    tipBox.style.left = Math.round(Math.max(6, Math.min(vw - w - 6, x))) + "px";
+    tipBox.style.top = Math.round(Math.max(6, Math.min(vh - h - 6, y))) + "px";
+  }
+  function showHint(el) {
+    if (!el.isConnected || !el.dataset.tip || el.closest("[hidden]")) return;
+    hintOn = el;
+    tipBox.hidden = false;
+    fillHint(el);
+    tipBox.classList.add("is-on");
+  }
+  function hideHint() {
+    clearTimeout(hintTimer);
+    if (hintOn) hintLeft = Date.now();
+    hintOn = null;
+    if (!tipBox || tipBox.hidden) return;
+    tipBox.classList.remove("is-on");
+    tipBox.hidden = true;
+  }
+  (function () {
+    tipBox = document.createElement("div");
+    tipBox.className = "uc-hover-tip";
+    tipBox.setAttribute("role", "tooltip");
+    tipBox.setAttribute("aria-hidden", "true");
+    tipBox.hidden = true;
+    document.body.appendChild(tipBox);
+    Array.prototype.forEach.call(document.querySelectorAll("[data-tip]"), describeTip);
+    function soon(el) {
+      clearTimeout(hintTimer);
+      if (hintOn && hintOn !== el) hideHint();
+      hintTimer = setTimeout(showHint, Date.now() - hintLeft < 600 ? 40 : 420, el);
+    }
+    document.addEventListener("pointerover", function (e) {
+      if (e.pointerType !== "mouse") return;
+      var el = e.target.closest ? e.target.closest("[data-tip]") : null;
+      if (el === hintOn) return;
+      if (!el) { hideHint(); return; }
+      if (!e.buttons) soon(el);
+    });
+    document.addEventListener("pointerout", function (e) {
+      var el = e.target.closest ? e.target.closest("[data-tip]") : null;
+      if (el && !el.contains(e.relatedTarget)) hideHint();
+    });
+    document.addEventListener("focusin", function (e) {
+      var el = e.target.closest ? e.target.closest("[data-tip]") : null;
+      if (el && el.matches(":focus-visible")) soon(el);
+    });
+    document.addEventListener("focusout", function (e) { if (hintOn && hintOn.contains(e.target)) hideHint(); });
+    document.addEventListener("pointerdown", hideHint, true);
+    document.addEventListener("keydown", hideHint, true);
+    document.addEventListener("wheel", hideHint, { capture: true, passive: true });
+    window.addEventListener("resize", hideHint);
+    window.addEventListener("blur", hideHint);
+  })();
+
   (function () {
     var box = $("about"), btn = $("about-btn");
     function setOpen(open) {
@@ -4847,7 +4962,7 @@
     var namesPref = null;
     try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
     if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; }
-    if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").title = "Globe (M)"; }
+    if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); setTip($("flat-btn"), "Globe (M)"); }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
 
@@ -4917,7 +5032,7 @@
     var b = $("ui-btn");
     b.setAttribute("aria-pressed", String(ui.bare));
     b.setAttribute("aria-label", ui.bare ? "Show the interface" : "Hide the interface");
-    b.title = ui.bare ? "Show the interface (H)" : "Hide the interface (H)";
+    setTip(b, ui.bare ? "Show the interface (H)" : "Hide the interface (H)");
     hideTip();
     layout();
     scheduleRender();
@@ -5088,7 +5203,7 @@
             try { ev = JSON.parse(line); } catch (e) { continue; }
             if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
             else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to write this one." : ev.reason === "max_tokens" ? "The history ran long and was cut short." : "");
-            else if (ev.t === "error") finish(text ? "The history broke off. Try again." : "The historian could not write this. Try again in a moment.");
+            else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(text ? "The history broke off. Try again." : ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not write this. Try again in a moment."); }
           }
           if (r.done) { if (!done) finish(text ? "" : "The historian could not write this. Try again in a moment."); return; }
           return pump();

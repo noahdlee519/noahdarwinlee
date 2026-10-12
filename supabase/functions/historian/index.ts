@@ -133,7 +133,10 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error(e);
         if (!started) await rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x));
-        send({ t: "error" });
+        const status = typeof (e as any)?.status === "number" ? (e as any).status : 0;
+        const kind = String((e as any)?.error?.error?.type || (e as any)?.name || "error").slice(0, 40);
+        const credit = /credit balance/i.test(String((e as any)?.message || ""));
+        send({ t: "error", status, kind, credit });
       }
       controller.close();
     },

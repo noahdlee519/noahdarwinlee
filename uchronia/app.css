@@ -200,6 +200,7 @@
 }
 :root[data-uc-style="antique"] .uc-panel,
 :root[data-uc-style="antique"] .uc-tip,
+:root[data-uc-style="antique"] .uc-hover-tip,
 :root[data-uc-style="antique"] .uc-status,
 :root[data-uc-style="antique"] .uc-load,
 :root[data-uc-style="antique"] .uc-chron,
@@ -208,6 +209,7 @@
 }
 :root[data-uc-style="antique"] .uc-bar,
 :root[data-uc-style="antique"] .uc-tip,
+:root[data-uc-style="antique"] .uc-hover-tip,
 :root[data-uc-style="antique"] .uc-status,
 :root[data-uc-style="antique"] .uc-chron,
 :root[data-uc-style="antique"] .uc-ctl {
@@ -284,6 +286,41 @@ body.uc-page {
   display: block;
   font-size: 12px;
   color: var(--uc-muted);
+}
+
+.uc-hover-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  max-width: 250px;
+  padding: 5px 8px 6px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  font-size: 12.5px;
+  line-height: 1.35;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+}
+.uc-hover-tip.is-on {
+  opacity: 1;
+  transition: opacity 0.12s ease-out;
+}
+.uc-hover-key {
+  margin-left: 7px;
+  padding: 0 4px;
+  border: 1px solid var(--rule);
+  color: var(--uc-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+:root[data-uc-style="antique"] .uc-hover-key {
+  border: 0;
+  padding: 0;
+  font-style: italic;
+  font-size: 12px;
 }
 
 .uc-controls {
@@ -418,6 +455,11 @@ body.uc-page {
 .uc-about-tip a {
   color: var(--ink);
 }
+.uc-about-tip .uc-sources {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+}
 .uc-about:hover .uc-about-tip,
 .uc-about:focus-within .uc-about-tip,
 .uc-about.is-open .uc-about-tip {
@@ -454,7 +496,7 @@ body.uc-page {
   z-index: 22;
   top: 118px;
   right: calc(62px + env(safe-area-inset-right, 0px));
-  bottom: 16px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   width: min(430px, calc(100vw - 94px));
   box-sizing: border-box;
   overflow-y: auto;
@@ -1261,6 +1303,12 @@ body.uc-page {
   }
   .uc-name-row {
     width: 190px;
+    height: 30px;
+    box-sizing: border-box;
+  }
+  .uc-name-row .uc-pick-wrap,
+  .uc-name-row select {
+    max-height: 29px;
   }
   .uc-name {
     padding: 2px 0 3px;
@@ -1268,6 +1316,7 @@ body.uc-page {
   }
   #city-pane .uc-name {
     width: 190px;
+    height: 30px;
   }
   .uc-swatches {
     flex-wrap: nowrap;
@@ -1593,4 +1642,10 @@ body.uc-page {
   .uc-load {
     transition: none;
   }
+}
+
+.uc-tool > span,
+.uc-btn,
+.uc-seg button {
+  text-box: trim-both cap alphabetic;
 }

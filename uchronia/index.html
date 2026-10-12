@@ -107,59 +107,35 @@
               </button>
               <div class="uc-about-tip" id="about-tip" role="note">
                 <p>
-                  Every alternate history needs a map. This one starts from the world as it is, cut into its
-                  states, provinces and regions: give any of them to any country, draw borders by hand where
-                  the regions don't fit, found new countries and name them, and put cities where they might
-                  have been. The satellite view shows the land
-                  itself, for when the borders are in the way, and the Antique style draws it all
-                  like a hand-coloured map of the 1800s.
-                </p>
-                <p>
-                  Your map is kept in this browser as you work. Copy a link to share it, or save it as a file
-                  to open again later or on another device.
+                  Redraw the world as it might have been: give regions to other countries, draw borders by hand,
+                  found countries and place their cities. Your map stays in this browser; share it as a link or a file.
                 </p>
                 <p class="uc-keys">
-                  Keys: V select, B give land (D with the lasso), C cities; M flat map, S satellite, H hide the interface. Shift-drag
-                  or Space-drag moves the map while giving land, Alt-click picks the country to give it to, Delete removes a
-                  picked city, Esc lets go, Ctrl+Z undoes.
+                  Keys: V select · B give land · D lasso · C cities · M flat map · S satellite · H hide the interface ·
+                  Shift-drag moves the map · Esc lets go · Ctrl+Z undoes
                 </p>
-                <p>
-                  Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a> states and provinces
-                  at 1:10m (public domain), simplified. Cities: <a href="https://www.geonames.org/">GeoNames</a>
-                  (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Satellite view: NASA
-                  Earth Observatory, Blue Marble Next Generation by Reto St&ouml;ckli, and close up, NASA's Global
-                  Imagery Browse Services (public domain). The flat map is a plain grid of latitude and longitude (the equirectangular projection).
-                  Terrain: Mapzen's Terrain Tiles on AWS (SRTM, GMTED2010, ETOPO1, ArcticDEM, EU-DEM and national
-                  agencies; the full list is in the README), shaded for this map.
-                  Antique type: Old Standard TT by Alexey Kryukov (SIL Open Font License).
-                </p>
-                <p>
-                  Finer regions: US counties from the US Census Bureau through Natural Earth (public domain); Chinese
-                  prefectures from China's national mapping agency through Revolutionary GIS (PDDL); German districts
-                  &copy; GeoBasis-DE / BKG 2021 (dl-de/by-2-0); Canada's economic regions from Statistics Canada (Open
-                  Government Licence &ndash; Canada); Australia &copy; Australian Bureau of Statistics (CC BY 4.0); Brazil
-                  from IBGE; Kazakhstan, Russia, Iran, Saudi Arabia and Algeria &copy;
-                  <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and India and Ethiopia,
-                  under the ODbL, as are Poland and Somaliland; Austria &copy; BEV (CC BY-SA 2.0); Belarus from CIESIN and
-                  Malaysia from City Population (CC BY 3.0); Mexico from the World Bank and Myanmar from the Myanmar Analytics
-                  Project (CC BY 4.0); Kenya from RCMRD and Ukraine from Wikimedia Commons (public domain); most other countries
-                  from their national agencies through OCHA and its partners (CC BY 3.0 IGO); all of them gathered by
-                  <a href="https://www.geoboundaries.org/">geoBoundaries</a>.
+                <p class="uc-sources">
+                  Sources: <a href="https://www.naturalearthdata.com/">Natural Earth</a>,
+                  <a href="https://www.geoboundaries.org/">geoBoundaries</a>, <a href="https://www.geonames.org/">GeoNames</a>,
+                  <a href="https://visibleearth.nasa.gov/collection/1484/blue-marble">NASA Blue Marble</a>,
+                  <a href="https://registry.opendata.aws/terrain-tiles/">Terrain Tiles</a> and
+                  &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+                  <a href="https://github.com/noahdlee519/noahdarwinlee/blob/main/uchronia/README.md#credits">All credits and licences</a>
                 </p>
               </div>
             </div>
           </header>
           <div class="uc-tools" role="group" aria-label="Tool">
-            <button type="button" class="uc-tool" data-tool="select" aria-pressed="true" title="Select (V)">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3.5 18.5 12l-6 1.4 3.4 6.6-2.6 1.3-3.4-6.6L5 19z" /></svg>
+            <button type="button" class="uc-tool" data-tool="select" aria-pressed="true" data-tip="Select (V)">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.8v15.6l4.2-4 2.6 6 2.4-1-2.6-5.9h5.8z" /></svg>
               <span>Select</span>
             </button>
-            <button type="button" class="uc-tool" data-tool="land" aria-pressed="false" title="Give land (B; D for the lasso)">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5 19.5 9.5 11 18l-5-5z" /><path d="M6 13c-2.5.5-3 2.6-3 4.2 0 1.4-.6 2.3-1.5 2.8 2.7.6 6 .2 7.7-1.5 1-1 1.3-2.4.8-3.5" /></svg>
+            <button type="button" class="uc-tool" data-tool="land" aria-pressed="false" data-tip="Give land (B; D for the lasso)">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V3.8" /><path d="M6 4.6c2.1-1.3 4.1-1.3 6.1 0s4.1 1.3 6.4 0v8.6c-2.3 1.3-4.3 1.3-6.4 0s-4-1.3-6.1 0" /></svg>
               <span>Give land</span>
             </button>
-            <button type="button" class="uc-tool" data-tool="city" aria-pressed="false" title="Cities (C)">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" /><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none" /></svg>
+            <button type="button" class="uc-tool" data-tool="city" aria-pressed="false" data-tip="Cities (C)">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5h17" /><path d="M5.5 20.5v-8l3.5-3 3.5 3v8" /><path d="M12.5 20.5V7.5l3-3.7 3 3.7v13" /><path d="M15.5 10.5v2" /></svg>
               <span>Cities</span>
             </button>
           </div>
@@ -178,26 +154,25 @@
             <div class="uc-inner">
               <span class="uc-inner-label" id="brush-label">By</span>
               <div class="uc-seg" role="group" aria-labelledby="brush-label">
-                <button type="button" id="paint-regions" aria-pressed="true" title="Click or drag over regions (B)">Regions</button>
-                <button type="button" id="paint-whole" aria-pressed="false" title="Click a country to give all of it">Whole countries</button>
-                <button type="button" id="brush-lasso" aria-pressed="false" title="Draw round any land, across region lines (D)">Lasso</button>
+                <button type="button" id="paint-regions" aria-pressed="true" data-tip="Click or drag over regions (B)">Regions</button>
+                <button type="button" id="paint-whole" aria-pressed="false" data-tip="Click a country to give all of it">Whole countries</button>
+                <button type="button" id="brush-lasso" aria-pressed="false" data-tip="Draw round any land, across region lines (D)">Lasso</button>
               </div>
             </div>
           </section>
           <section class="uc-pane" id="country-pane" hidden>
             <div class="uc-name-row">
               <input id="country-name" class="uc-name" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Country name" />
-              <span class="uc-pick-wrap" title="Choose another country">
+              <span class="uc-pick-wrap" data-tip="Choose another country">
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
                 <select id="country-pick" aria-label="Choose another country"></select>
               </span>
             </div>
             <div class="uc-swatches" id="swatches" role="group" aria-label="Colour"></div>
             <div class="uc-inner" id="inner">
-              <span class="uc-inner-label" id="inner-label">Regions</span>
-              <div class="uc-seg" role="group" aria-labelledby="inner-label">
-                <button type="button" id="lines-1" aria-pressed="true" title="The lines between its states, provinces and regions">Tier 1</button>
-                <button type="button" id="lines-2" aria-pressed="true" title="The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions">Tier 2</button>
+              <div class="uc-seg" role="group" aria-label="Region lines">
+                <button type="button" id="lines-1" aria-pressed="true" data-tip="The lines between its states, provinces and regions">Tier 1</button>
+                <button type="button" id="lines-2" aria-pressed="true" data-tip="The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions">Tier 2</button>
               </div>
             </div>
             <p class="uc-facts" id="country-facts"></p>
@@ -225,10 +200,10 @@
         </div>
         <div class="uc-end">
           <div class="uc-history">
-            <button type="button" class="uc-icon-btn" id="undo" disabled aria-label="Undo" title="Undo (Ctrl+Z)">
+            <button type="button" class="uc-icon-btn" id="undo" disabled aria-label="Undo" data-tip="Undo (Ctrl+Z)">
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
             </button>
-            <button type="button" class="uc-icon-btn" id="redo" disabled aria-label="Redo" title="Redo (Ctrl+Shift+Z)">
+            <button type="button" class="uc-icon-btn" id="redo" disabled aria-label="Redo" data-tip="Redo (Ctrl+Shift+Z)">
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></svg>
             </button>
           </div>
@@ -300,16 +275,16 @@
     </section>
 
     <div class="uc-controls" aria-label="Map controls">
-      <button type="button" class="uc-ctl" id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
-      <button type="button" class="uc-ctl" id="zoom-out" aria-label="Zoom out" title="Zoom out">&minus;</button>
-      <button type="button" class="uc-ctl uc-flat" id="flat-btn" aria-pressed="false" aria-label="Flat map" title="Flat map (M)">
+      <button type="button" class="uc-ctl" id="zoom-in" aria-label="Zoom in" data-tip-side="left" data-tip="Zoom in">+</button>
+      <button type="button" class="uc-ctl" id="zoom-out" aria-label="Zoom out" data-tip-side="left" data-tip="Zoom out">&minus;</button>
+      <button type="button" class="uc-ctl uc-flat" id="flat-btn" aria-pressed="false" aria-label="Flat map" data-tip-side="left" data-tip="Flat map (M)">
         <svg class="uc-icon-flat" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="6.5" width="18" height="11" /><path d="M12 6.5v11M3 12h18" /></svg>
         <svg class="uc-icon-globe" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2" /><path d="M12 3.8c-3.6 4.4-3.6 12 0 16.4M12 3.8c3.6 4.4 3.6 12 0 16.4M3.8 12h16.4" /></svg>
       </button>
-      <button type="button" class="uc-ctl" id="sat-btn" aria-pressed="false" aria-label="Satellite view" title="Satellite view (S)">
+      <button type="button" class="uc-ctl" id="sat-btn" aria-pressed="false" aria-label="Satellite view" data-tip-side="left" data-tip="Satellite view (S)">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><rect x="9.2" y="9.2" width="5.6" height="5.6" transform="rotate(45 12 12)" /><path d="M7.4 7.4 4.6 4.6M4.6 4.6 2.5 6.7 4.9 9.1 7 7M16.6 16.6l2.8 2.8M19.4 19.4l2.1-2.1-2.4-2.4L17 17" /><path d="M15.2 4.3a4.5 4.5 0 0 1 4.5 4.5M15.2 1.8a7 7 0 0 1 7 7" /></svg>
       </button>
-      <button type="button" class="uc-ctl uc-bare-btn" id="ui-btn" aria-pressed="false" aria-label="Hide the interface" title="Hide the interface (H)">
+      <button type="button" class="uc-ctl uc-bare-btn" id="ui-btn" aria-pressed="false" aria-label="Hide the interface" data-tip-side="left" data-tip="Hide the interface (H)">
         <svg class="uc-icon-shown" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12s3.6-6.3 9.5-6.3 9.5 6.3 9.5 6.3-3.6 6.3-9.5 6.3S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.9" /></svg>
         <svg class="uc-icon-hidden" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12s3.6-6.3 9.5-6.3 9.5 6.3 9.5 6.3-3.6 6.3-9.5 6.3S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.9" /><path d="M4 4l16 16" /></svg>
       </button>

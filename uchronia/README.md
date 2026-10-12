@@ -386,8 +386,12 @@ of `/greatercircle/`.
   dropped in the sea. Picking one goes to it and selects it, ready to rename.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
-- The **ⓘ** button by the title opens a note on the map, its sources and
-  its keys; a second click closes it.
+- The **ⓘ** button by the title opens a short note on the map, its keys and
+  links to its sources; a second click closes it.
+- Buttons explain themselves in a tooltip drawn in the page's style (its
+  type, colours and, in Antique, its paper), shown after a moment's hover or
+  on keyboard focus, never on a touch screen; the same words are given to
+  screen readers as the button's description.
 - **Select (V)**: click a country to rename or recolour it, show or hide its
   regions' lines (*Tier 1*, the lines between its states, provinces and
   regions; *Tier 2*, the finer lines inside them; a tier it has none of is
@@ -397,7 +401,8 @@ of `/greatercircle/`.
 - **Give land (B)**: one tool for moving borders. Its pane says who gets
   the land (the chosen country, shown with its colour, or *Unclaimed*) and
   how it is taken:
-  - *Regions*: click or drag over regions;
+  - *Regions*: click or drag over regions; clicking land drawn by hand gives
+    the whole region under it, and cuts that region out of the drawing;
   - *Whole countries*: click a country to give all of it;
   - *Lasso* (D): drag round any land, across region lines; on a phone, draw
     with one finger and move the map with two.
@@ -448,6 +453,9 @@ in the repo. They covered:
 - a hidden capital picked by the Cities tool, the about note opening and
   closing, the latitude and longitude labels thinning out on the whole flat
   map, and the phone's larger buttons;
+- the themed tooltips (delay, placement, keyboard focus, Escape, the three
+  styles, none on a phone), the bar keeping one height whatever is selected,
+  and giving a region back out of land drawn by hand, with undo and redo;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;
