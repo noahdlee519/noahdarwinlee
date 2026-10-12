@@ -967,6 +967,11 @@
     renderSat();
     ctx.drawImage(satCanvas, 0, 0, W, H);
   }
+  function satPattern() {
+    var pat = ctx.createPattern(satCanvas, "no-repeat");
+    if (pat && pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
+    return pat;
+  }
   var seaDeep = null, seaLow = null, seaPath = null, seaLoad = null;
   function loadSea() {
     if (seaLoad) return;
