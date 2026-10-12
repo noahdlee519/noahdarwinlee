@@ -239,8 +239,8 @@ of `/greatercircle/`.
 - **data/provinces-detail.json**: the same arcs kept at four tenths of their
   points (3.8 MB, about 1.3 MB compressed), for the closest zooms. It holds
   only the arcs; the shapes come from `provinces.json`.
-- **data/units.json**: the same provinces with 31 large-region countries cut
-  into second-level units, 14,627 regions in all, in one topology so that
+- **data/units.json**: the same provinces with 40 countries cut into
+  second-level units, 18,311 regions in all, in one topology so that
   every shared edge is one arc:
   - the United States (3,142 counties; DC stays whole), China (352
     prefectures; the four municipalities stay whole), Germany (398 districts;
@@ -261,7 +261,13 @@ of `/greatercircle/`.
     (156 districts), Saudi Arabia (147 governorates), Madagascar (119
     districts), Zambia (116 districts), Bolivia (110 provinces), Ethiopia (71
     zones), Chad (69 departments), Niger (66 departments), Mauritania (56
-    moughataas) and Mali (49 cercles); a province that is a single unit, such
+    moughataas) and Mali (49 cercles);
+  - Mexico (2,457 municipalities), Ukraine (477 raions, from before the 2020
+    reform), Poland (380 powiats), Malaysia (156 districts), Belarus (117
+    raions; Minsk stays whole), Austria (93 districts; Vienna stays whole),
+    Myanmar (74 districts), Kenya (46 counties, inside its eight old
+    provinces; Nairobi stays whole) and Somaliland (5 regions, those of
+    Somalia within its border); a province that is a single unit, such
     as a capital district, stays whole;
   - Egypt is left out: its second level mixes city districts, unnamed desert
     remnants and misplaced shapes;
@@ -276,10 +282,10 @@ of `/greatercircle/`.
     neighbouring borders cross, and the simplification is guarded against
     reversed lobes, stray holes and self-overlap;
   - it is loaded only when finer regions are switched on, or when a map needs
-    them (4.9 MB, about 1.4 MB compressed);
+    them (5.8 MB, about 1.7 MB compressed);
   - `data/units-detail.json` holds the same arcs at six tenths of their
     points, on a grid of 400,000 steps, for the closest zooms (9.3 MB, about
-    2.9 MB compressed), fetched only there;
+    3.3 MB compressed), fetched only there;
   - built by `tools/build-units.mjs`, which needs clipper-lib (integer
     polygon clipping), @vant/area-data (current Chinese division codes),
     pinyin-pro (romanised Chinese names) and @br-geo-kit/ibge (IBGE's
@@ -424,6 +430,13 @@ in the repo. They covered:
     OCHA and its partners (CC BY 3.0 IGO); Mali (CC BY 4.0) and Zambia (GRID3,
     CC BY 4.0); Niger (CC BY 3.0); Bolivia (GeoBolivia) and Angola (Wikimedia
     Commons) in the public domain;
+  - Austria © BEV, Federal Office of Metrology and Surveying (CC BY-SA 2.0,
+    so Austria's part of the units files is under CC BY-SA too); Belarus from
+    CIESIN's Gridded Population of the World (CC BY 3.0); Kenya from RCMRD
+    (public domain); Malaysia from City Population (CC BY 3.0); Mexico from
+    the World Bank (CC BY 4.0); Myanmar from the Myanmar Analytics Project
+    and USAID (CC BY 4.0); Ukraine from Wikimedia Commons (public domain);
+    Poland and Somaliland © OpenStreetMap contributors (ODbL 1.0);
   - Pakistan, and all of them gathered, from geoBoundaries (Runfola et al.,
     PLoS ONE 15(4): e0231866, 2020).
 
