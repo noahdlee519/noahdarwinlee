@@ -2012,8 +2012,12 @@
       if (d < bestD) { bestD = d; best = cityScreen[i].c; }
     }
     if (best || ui.tool !== "city") return best;
+    var show = tierFor(localScale()) + 1;
+    bestD = 9;
     for (i = 0; i < cities.length; i++) {
-      var c = cities[i], p = projectVec(c.x, c.y, c.z, c.lam, c.phi);
+      var c = cities[i];
+      if (c.tier > show) continue;
+      var p = projectVec(c.x, c.y, c.z, c.lam, c.phi);
       if (!p || (!flat && p[2] <= 0.02)) continue;
       d = Math.hypot(p[0] - x, p[1] - y);
       if (d < bestD) { bestD = d; best = c; }
