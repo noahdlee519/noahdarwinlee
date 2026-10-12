@@ -4735,6 +4735,177 @@
     scheduleRender();
   });
 
+  var HISTORIAN = "https://aqvagqrbujmxohlercoa.supabase.co/functions/v1/historian", STORE_HISTORY = "uchronia-history";
+  var places = new Map(), historyBusy = false, historyKey = "";
+  function listOf(names, max) {
+    var uniq = Array.from(new Set(names));
+    if (uniq.length <= max) return uniq.join(", ");
+    return uniq.slice(0, max).join(", ") + " and " + (uniq.length - max) + " more";
+  }
+  function addPlace(name, lon, lat, zoom) { if (name && !places.has(name) && isFinite(lon) && isFinite(lat)) places.set(name, { lon: lon, lat: lat, zoom: zoom }); }
+  function describeChanges() {
+    if (!feats || !base) return "";
+    freshGroups();
+    places = new Map();
+    var lines = [], baseHas = new Set(base.provOwner), oldName = function (o) { return o >= 0 && base.countries[o] ? base.countries[o].name : "no country"; };
+    var nowName = function (o) { return o >= 0 && countries[o] && countries[o].alive ? countries[o].name : "unclaimed land"; };
+    countries.forEach(function (co, i) {
+      var b = base.countries[i], alive = co.alive && hasLand(i);
+      if (alive && co.label) addPlace(co.name, co.label.lon, co.label.lat, 0);
+      if (!b) { if (alive) lines.push("A new country: " + co.name + "."); return; }
+      if (!alive) { if (baseHas.has(i)) lines.push(b.name + " no longer exists."); return; }
+      if (co.name !== b.name) lines.push(b.name + " is now called " + co.name + ".");
+    });
+    var moves = new Map();
+    var move = function (from, to, name, p) {
+      var k = from + ">" + to;
+      if (!moves.has(k)) moves.set(k, { from: from, to: to, names: [] });
+      moves.get(k).names.push(name);
+      if (!places.has(name)) { var cen = d3.geoCentroid(geoFull[provUnits[p][0]]); addPlace(name, cen[0], cen[1], 5); }
+    };
+    for (var p = 0; p < nProv; p++) {
+      var us = provUnits[p], bo = base.provOwner[p];
+      if (!us || !us.length) continue;
+      var now = new Set(us.map(function (u) { return owner[u]; }));
+      if (now.size === 1) { var o = owner[us[0]]; if (o !== bo) move(bo, o, provName[p], p); continue; }
+      now.forEach(function (o) { if (o !== bo) move(bo, o, "part of " + provName[p], p); });
+    }
+    moves.forEach(function (m) {
+      if (m.to < 0) lines.push("Left unclaimed, once " + oldName(m.from) + ": " + listOf(m.names, 40) + ".");
+      else lines.push(nowName(m.to) + " holds, once " + (m.from < 0 ? "unclaimed" : oldName(m.from) + "'s") + ": " + listOf(m.names, 40) + ".");
+    });
+    pieces.forEach(function (pc) {
+      var cover = shapeCover(pc.shape).units, from = new Set(), names = [];
+      cover.forEach(function (u) { var q = unitProv[u]; from.add(base.provOwner[q]); names.push(provName[q]); });
+      if (from.size === 1 && from.has(pc.owner)) return;
+      lines.push("A border drawn by hand gives " + nowName(pc.owner) + " land in " + listOf(names, 6) + ", once " + listOf(Array.from(from).map(oldName), 4) + ".");
+    });
+    base.cities.forEach(function (b, i) {
+      var c = cityIndex.get("b" + i);
+      if (!c) { lines.push("The city of " + b.name + " is gone."); return; }
+      var bits = [];
+      if (c.name !== b.name) bits.push(b.name + " is now called " + c.name);
+      if (c.cap && !b.cap) bits.push(c.name + " became a capital");
+      if (!c.cap && b.cap) bits.push(c.name + " is no longer a capital");
+      if (b.lon !== c.lon || b.lat !== c.lat) bits.push(c.name + " stands somewhere else, in " + nowName(cityOwner(c)));
+      if (bits.length) { lines.push(bits.join("; ") + "."); addPlace(c.name, c.lon, c.lat, 0); }
+    });
+    cities.forEach(function (c) {
+      if (c.id.charAt(0) !== "u") return;
+      var o = cityOwner(c);
+      lines.push("A new " + (c.cap ? "capital" : isTown(c) ? "town" : "city") + ", " + c.name + ", in " + (o === null ? "the sea" : nowName(o)) + ".");
+      addPlace(c.name, c.lon, c.lat, 0);
+    });
+    if (!lines.length) return "";
+    var caps = [];
+    capitalsBy().forEach(function (list, o) {
+      if (!countries[o] || !countries[o].alive) return;
+      var named = lines.some(function (l) { return l.indexOf(countries[o].name) >= 0; });
+      if (named && list.length) { caps.push(countries[o].name + ": " + list.map(function (c) { addPlace(c.name, c.lon, c.lat, 0); return c.name; }).join(", ")); }
+    });
+    if (caps.length) lines.push("Capitals today: " + caps.join("; ") + ".");
+    var text = lines.join("\n");
+    return text.length > 13500 ? text.slice(0, 13500) + "\n(and more)" : text;
+  }
+  function renderHistory(text) {
+    var box = $("history-text");
+    box.textContent = "";
+    var para = null;
+    text.split("\n").forEach(function (line) {
+      var t = line.trim();
+      if (!t) { para = null; return; }
+      var el;
+      if (/^#\s/.test(t)) { el = document.createElement("h3"); el.className = "uc-chron-name"; t = t.replace(/^#\s+/, ""); para = null; }
+      else if (/^##\s/.test(t)) { el = document.createElement("h4"); t = t.replace(/^##\s+/, ""); para = null; }
+      else if (para) { para.appendChild(document.createTextNode(" ")); el = null; }
+      else { el = para = document.createElement("p"); }
+      var target = el || para;
+      t.split(/(\[\[[^\]]*\]\]?)/).forEach(function (bit) {
+        var m = /^\[\[([^\]]*)\]?\]?$/.exec(bit);
+        if (!m) { if (bit) target.appendChild(document.createTextNode(bit.replace(/\*\*|__/g, ""))); return; }
+        var name = m[1], place = places.get(name);
+        if (!place) { target.appendChild(document.createTextNode(name)); return; }
+        var a = document.createElement("button");
+        a.type = "button"; a.className = "uc-place"; a.textContent = name;
+        a.addEventListener("click", function () {
+          var c = countries.findIndex(function (co) { return co.alive && co.name === name; });
+          if (c >= 0) flyToCountry(c);
+          else flyTo(place.lon, place.lat, Math.max(view.zoom, place.zoom || zoomForScale(1600)));
+          if (sheetMode) showHistory(false);
+        });
+        target.appendChild(a);
+      });
+      if (el) box.appendChild(el);
+    });
+  }
+  function historyStatus(msg) { $("history-status").textContent = msg || ""; $("history-status").hidden = !msg; }
+  function showHistory(open) {
+    $("history").hidden = !open;
+    $("history-btn").setAttribute("aria-expanded", String(open));
+    document.body.classList.toggle("is-history", open);
+    if (!open) return;
+    closeMenus(null);
+    var changes = describeChanges();
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(STORE_HISTORY) || "null"); } catch (e) { }
+    if (!historyBusy) {
+      if (saved && saved.key === changes && saved.text) { renderHistory(saved.text); historyStatus(""); $("history-go").textContent = "Write it again"; }
+      else if (saved && saved.text) { renderHistory(saved.text); historyStatus("The map has changed since this was written."); $("history-go").textContent = "Write its history"; }
+      else { $("history-text").textContent = ""; historyStatus(changes ? "" : "This is still our world. Change its map first, and its history will follow."); }
+    }
+    $("history-go").disabled = historyBusy || !changes;
+  }
+  function writeHistory() {
+    var changes = describeChanges();
+    if (!changes || historyBusy) return;
+    historyBusy = true; historyKey = changes;
+    $("history-go").disabled = true;
+    $("history-text").textContent = "";
+    historyStatus("The historian is writing…");
+    var text = "", queued = false, done = false;
+    var paint = function () { queued = false; renderHistory(text); };
+    var finish = function (msg) {
+      historyBusy = false; done = true;
+      $("history-go").disabled = false;
+      $("history-go").textContent = "Write it again";
+      historyStatus(msg);
+      renderHistory(text);
+      if (text && !msg) { try { localStorage.setItem(STORE_HISTORY, JSON.stringify({ key: changes, text: text })); } catch (e) { } }
+    };
+    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: changes, note: $("history-note").value }) }).then(function (res) {
+      if (res.status === 429) return finish("The historian has written all they can for today. Try again tomorrow.");
+      if (res.status === 503) return finish("The historian is not taking requests yet.");
+      if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
+      historyStatus("");
+      var reader = res.body.getReader(), dec = new TextDecoder(), buf = "";
+      var pump = function () {
+        return reader.read().then(function (r) {
+          if (r.value) buf += dec.decode(r.value, { stream: true });
+          var nl;
+          while ((nl = buf.indexOf("\n")) >= 0) {
+            var line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+            if (!line) continue;
+            var ev = null;
+            try { ev = JSON.parse(line); } catch (e) { continue; }
+            if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
+            else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to write this one." : ev.reason === "max_tokens" ? "The history ran long and was cut short." : "");
+            else if (ev.t === "error") finish(text ? "The history broke off. Try again." : "The historian could not write this. Try again in a moment.");
+          }
+          if (r.done) { if (!done) finish(text ? "" : "The historian could not write this. Try again in a moment."); return; }
+          return pump();
+        });
+      };
+      return pump();
+    }).catch(function (e) {
+      console.warn("historian", e);
+      if (!done) finish("The historian could not be reached. Check your connection and try again.");
+    });
+  }
+  $("history-btn").addEventListener("click", function () { showHistory($("history").hidden); });
+  $("history-close").addEventListener("click", function () { showHistory(false); $("history-btn").focus(); });
+  $("history-go").addEventListener("click", writeHistory);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
+
   window.__uchronia = {
     ready: function () { return !!feats; },
     ui: ui, view: view,
@@ -4771,6 +4942,8 @@
     loadFine: loadFine,
     history: function () { return { undo: undoStack.length, redo: redoStack.length }; },
     gridLabels: function () { render(); return gridShown.slice(); },
+    changesText: function () { return describeChanges(); },
+    places: function () { return Array.from(places.keys()); },
     riversShown: function () { return !!rivers && ui.rivers && view.zoom > RIVERS_FROM; },
     riverDetail: function () { return !!riverDetail; },
     issues: function () { return findIssues().map(function (it) { return it.name + ": " + it.note; }); },

@@ -202,12 +202,14 @@
 :root[data-uc-style="antique"] .uc-tip,
 :root[data-uc-style="antique"] .uc-status,
 :root[data-uc-style="antique"] .uc-load,
+:root[data-uc-style="antique"] .uc-chron,
 :root[data-uc-style="antique"] .uc-ctl {
   font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
 }
 :root[data-uc-style="antique"] .uc-bar,
 :root[data-uc-style="antique"] .uc-tip,
 :root[data-uc-style="antique"] .uc-status,
+:root[data-uc-style="antique"] .uc-chron,
 :root[data-uc-style="antique"] .uc-ctl {
   background-image: var(--uc-grain);
   background-size: 260px 260px;
@@ -432,6 +434,173 @@ body.uc-page {
 @media (hover: none) {
   .uc-keys {
     display: none;
+  }
+}
+
+.uc-hist-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.uc-hist-btn[aria-expanded="true"] {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.uc-chron {
+  position: fixed;
+  z-index: 22;
+  top: 118px;
+  right: calc(62px + env(safe-area-inset-right, 0px));
+  bottom: 16px;
+  width: min(430px, calc(100vw - 94px));
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 22px 22px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+}
+.uc-chron[hidden] {
+  display: none;
+}
+.uc-chron-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.uc-chron-title {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uc-muted);
+}
+.uc-chron-close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: -6px -10px 0 0;
+  padding: 7px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.uc-chron-close svg {
+  display: block;
+}
+.uc-chron-lede {
+  margin: 12px 0 14px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.uc-chron-label {
+  display: block;
+  margin: 0 0 5px;
+  font-size: 13px;
+  color: var(--uc-muted);
+}
+.uc-chron-note {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 12px;
+  padding: 7px 9px;
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  resize: vertical;
+}
+#history-go::before {
+  content: none;
+}
+.uc-chron-note::placeholder {
+  color: var(--uc-muted);
+  opacity: 0.7;
+}
+.uc-chron-small {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--uc-muted);
+}
+.uc-chron-status {
+  margin: 16px 0 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--uc-muted);
+}
+.uc-chron-status:empty,
+.uc-chron-text:empty {
+  display: none;
+}
+.uc-chron-text {
+  margin: 6px 0 0;
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+.uc-chron-text .uc-chron-name {
+  margin: 20px 0 4px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 35%, transparent);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.uc-chron-text h4 {
+  margin: 22px 0 6px;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--uc-muted);
+}
+.uc-chron-text p {
+  margin: 0 0 12px;
+}
+.uc-place {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--ink) 45%, transparent);
+  cursor: pointer;
+}
+.uc-place:hover {
+  text-decoration-color: var(--ink);
+}
+:root[data-uc-style="antique"] .uc-chron-text .uc-chron-name {
+  font-size: 27px;
+  letter-spacing: 0.02em;
+}
+@media (max-width: 640px) {
+  .uc-chron {
+    z-index: 45;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 18px calc(28px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+  }
+  .uc-chron-close {
+    width: 44px;
+    height: 44px;
+    padding: 13px;
+    margin: -12px -12px 0 0;
   }
 }
 

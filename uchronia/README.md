@@ -330,11 +330,29 @@ of `/greatercircle/`.
 ## Using it
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
-  three menus: **Check**, **File** (copy a link, save a file, open one, start
+  **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
   over) and **View** (the style, country and city names, rivers, latitude and
   longitude, the scale bar, finer regions). What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
+- **History** opens a panel in which a historian of the map's world writes
+  how it came to look as it does: the points where its history parted from
+  ours, each with a year and a cause, and what followed from them, in three
+  to six eras. A note can say where the history begins or what it should
+  stress. Every country, region and city of the map that the history names
+  is a link that flies the map to it. The last history is kept in the
+  browser, and the panel says when the map has changed since.
+  - The page sends a plain list of the map's differences from ours (which
+    regions changed hands, countries founded, renamed or gone, borders drawn
+    by hand, cities renamed, moved or founded) and the note, nothing else, to
+    a small server function, `supabase/functions/historian`, which asks
+    Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
+    the text back. The function holds the API key, answers only this site,
+    and allows 100 histories a day in all and 5 a visitor; it keeps only a
+    daily count per visitor under a hashed key, never the map or the text.
+  - The function and its daily counter (`historian_usage`, with
+    `historian_take` and `historian_give_back`) live in the Supabase project
+    "uchronia". It needs the `ANTHROPIC_API_KEY` secret set in that project.
 - **Check** counts, in a badge, what may have been left by mistake, and
   lists it: cities and countries never renamed from *New city* or *New
   country*, countries founded and given no land, countries that lost their
