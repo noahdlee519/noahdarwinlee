@@ -896,14 +896,24 @@ body.uc-page {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
   }
   .uc-page .uc-site .name,
   .uc-page .uc-site .back-link {
     position: static !important;
     display: block;
-    line-height: 27px;
+    font-size: 15px;
+    line-height: 20px;
     white-space: nowrap;
+  }
+  :root[data-uc-style="antique"] .uc-page .uc-site .name {
+    font-size: 12px;
+  }
+  :root[data-uc-style="antique"] .uc-page .uc-site .back-link {
+    font-size: 15px;
+  }
+  .uc-title {
+    font-size: 23px;
   }
   .uc-panel {
     flex: 1 1 auto;
