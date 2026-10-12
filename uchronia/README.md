@@ -131,8 +131,13 @@ of `/greatercircle/`.
   - A name may also lie across the sea within its country's reach: the
     convex hull of its largest piece of land and every other piece within
     600 km of the group is tried as well, and taken when it gives a clearly
-    larger name with almost none of it over another country's land
-    (Indonesia, Japan, the Philippines, Malaysia, Canada over Hudson Bay).
+    larger name with almost none of it over another country's land, and
+    only if the country is a true archipelago (its largest piece holds under
+    70% of its land) or the name is ringed by its own land (in at least 65%
+    of sixteen directions, its land lies within 1.3 name-widths): Indonesia,
+    Japan, the Philippines, Malaysia, Canada over Hudson Bay. Norway, Chile
+    and Costa Rica, whose far islands only stretch the hull over open sea,
+    keep their names on land.
   - A country too small for its name on its land has it set in small type
     beside it, in the water, where there is room (the Caribbean islands,
     Cyprus, Lebanon).

@@ -2316,10 +2316,11 @@
     var topo = levels[0], geoms = topo.objects[objKey].geometries;
     var coords = us.length ? topojson.merge(topo, us.map(function (u) { return geoms[u]; })).coordinates : [];
     if (pieces.length) coords = withPieces(c, coords);
-    var best = null, bestA = 0;
+    var best = null, bestA = 0, allA = 0;
     coords.forEach(function (poly) {
       var a = d3.geoArea({ type: "Polygon", coordinates: poly });
       if (a > TAU) a = 2 * TAU - a;
+      allA += a;
       if (a > bestA) { bestA = a; best = poly; }
     });
     var name = labelText(co.name);
@@ -2367,7 +2368,7 @@
     var hull = clusterHull(coords, best, proj);
     if (hull) {
       var wide = search([hull]);
-      if (wide && (!top || wide.score * 0.8 > top.score) && foreignShare(wide, proj, c) < 0.06) { top = wide; shape = [hull]; }
+      if (wide && (!top || wide.score * 0.8 > top.score) && foreignShare(wide, proj, c) < 0.06 && (bestA < 0.7 * allA || enclosure(wide, proj, c) >= 0.65)) { top = wide; shape = [hull]; }
     }
     if (!top) {
       setLabel(co, cen[0], cen[1], 4, [name], 0, bestA * R_KM * R_KM, ext);
@@ -2430,6 +2431,17 @@
       if (o !== SEA && o !== c) bad++;
     }
     return n ? bad / n : 1;
+  }
+  function enclosure(t, proj, c) {
+    var reach = Math.max(t.uw, t.lh) * t.fkm * 1.3, step = Math.max(12, reach / 90), hit = 0, N = 16;
+    for (var k = 0; k < N; k++) {
+      var a = k / N * TAU, dx = Math.cos(a), dy = Math.sin(a);
+      for (var r = step; r <= reach; r += step) {
+        var g = proj.invert([t.x + dx * r, -(t.y + dy * r)]);
+        if (g && isFinite(g[0]) && visibleOwnerLL(g[0], g[1]) === c) { hit++; break; }
+      }
+    }
+    return hit / N;
   }
   var CENTRE_KEEP = 0.78;
   var UNBENDABLE = /[\u0590-\u08FF\u0900-\u0DFF\u0E00-\u0FFF\u1000-\u109F\u1780-\u17FF\uFB1D-\uFDFF\uFE70-\uFEFF]|\p{M}/u;
