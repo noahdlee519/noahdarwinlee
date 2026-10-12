@@ -376,7 +376,7 @@ of `/greatercircle/`.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
     `supabase/migrations/20261012_historian_usage.sql`) live in the Supabase
-    project kigvciyyjlgjcgnwgrwf. The function is deployed as `historian`
+    project kigvciyyjlgjcgnwgrwf. The function is deployed as `dynamic-endpoint`
     with JWT verification off (it checks the origin and the daily caps
     itself) and needs the `ANTHROPIC_API_KEY` secret.
 - **Check** counts, in a badge, what may have been left by mistake, and

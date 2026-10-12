@@ -4934,7 +4934,7 @@
     scheduleRender();
   });
 
-  var HISTORIAN = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/historian", STORE_HISTORY = "uchronia-history";
+  var HISTORIAN = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/dynamic-endpoint", STORE_HISTORY = "uchronia-history";
   var places = new Map(), historyBusy = false, historyKey = "";
   function listOf(names, max) {
     var uniq = Array.from(new Set(names));
