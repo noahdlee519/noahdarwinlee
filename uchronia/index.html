@@ -268,7 +268,12 @@
         <label class="uc-chron-label" for="history-note">Where it begins, or what to stress <span>(optional)</span></label>
         <textarea class="uc-chron-note" id="history-note" rows="2" maxlength="500" placeholder="Napoleon wins at Waterloo"></textarea>
         <button type="button" class="uc-btn" id="history-go">Write its history</button>
-        <p class="uc-chron-small">Written by Claude, an AI, from a list of your map's changes, which is sent to Anthropic to write it. Five histories a visitor a day.</p>
+        <div class="uc-chron-turn">
+          <label class="uc-chron-label" for="redraw-premise">Or give it a turning point, and it redraws the map</label>
+          <textarea class="uc-chron-note" id="redraw-premise" rows="2" maxlength="500" placeholder="What if Rome never fell?"></textarea>
+          <button type="button" class="uc-btn" id="redraw-go">Redraw the map</button>
+        </div>
+        <p class="uc-chron-small">Written by Claude, an AI. Your map's changes and what you type here are sent to Anthropic. Five requests a visitor a day; a redrawn map and its history count as two.</p>
       </div>
       <p class="uc-chron-status" id="history-status" role="status"></p>
       <article class="uc-chron-text" id="history-text"></article>

@@ -5069,6 +5069,131 @@
     return uniq.slice(0, max).join(", ") + " and " + (uniq.length - max) + " more";
   }
   function addPlace(name, lon, lat, zoom) { if (name && !places.has(name) && isFinite(lon) && isFinite(lat)) places.set(name, { lon: lon, lat: lat, zoom: zoom }); }
+  function plainName(t) {
+    return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\u2018\u2019`]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+  var regionIndex = null;
+  function regionsNamed(bc, name) {
+    if (!regionIndex) {
+      regionIndex = new Map();
+      var add = function (k, p) { if (!regionIndex.has(k)) regionIndex.set(k, []); if (regionIndex.get(k).indexOf(p) < 0) regionIndex.get(k).push(p); };
+      for (var p = 0; p < nProv; p++) {
+        var o = base.provOwner[p];
+        if (o < 0) continue;
+        add(o + "|" + plainName(provName[p]), p);
+        if (provGroup[p] >= 0) add(o + "|" + plainName(groupName[provGroup[p]]), p);
+      }
+    }
+    return regionIndex.get(bc + "|" + plainName(name)) || [];
+  }
+  function applyPlan(plan) {
+    freshGroups();
+    var ops = [], caps = capOwners(), touched = new Set(), made = [], missed = 0, moved = 0;
+    var alias = new Map();
+    var findNow = function (name) {
+      var n = plainName(name), hit = -1;
+      if (!n) return -1;
+      if (/^(unclaimed|no one|nobody|none|terra nullius)$/.test(n)) return UNCLAIMED;
+      if (alias.has(n)) return alias.get(n);
+      countries.forEach(function (c, i) { if (hit < 0 && c.alive && plainName(c.name) === n) hit = i; });
+      if (hit < 0) base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n && countries[i] && countries[i].alive) hit = i; });
+      return hit < 0 ? null : hit;
+    };
+    var findBase = function (name) {
+      var n = plainName(name), hit = -1;
+      base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n) hit = i; });
+      if (hit < 0) countries.forEach(function (c, i) { if (hit < 0 && i < base.countries.length && c.alive && plainName(c.name) === n) hit = i; });
+      return hit;
+    };
+    (plan.new_countries || []).forEach(function (nc) {
+      var name = String(nc && nc.name || "").trim().slice(0, 60);
+      if (!name || findNow(name) !== null) return;
+      var op = createCountry(uniqueName(name), 0);
+      ops.push(op); made.push(op);
+      alias.set(plainName(name), op.c);
+    });
+    (plan.renames || []).forEach(function (r) {
+      var c = findNow(r && r.country), name = String(r && r.new_name || "").trim().slice(0, 60);
+      if (c === null || c < 0 || !name) { missed++; return; }
+      var co = countries[c], before = { name: co.name, color: co.color };
+      co.name = uniqueName(name, c);
+      ops.push({ t: "country", c: c, from: before, to: { name: co.name, color: co.color } });
+      alias.set(plainName(name), c); alias.set(plainName(before.name), c);
+      touched.add(c);
+    });
+    countriesVersion++;
+    var next = new Map(), pieceTo = new Map();
+    (plan.transfers || []).forEach(function (t) {
+      var to = findNow(t && t.to), from = findBase(t && t.from);
+      if (to === null || from < 0) { missed++; return; }
+      if (t.whole) {
+        for (var p = 0; p < nProv; p++) if (base.provOwner[p] === from) (provUnits[p] || []).forEach(function (u) { next.set(u, to); });
+        var now = findNow(base.countries[from].name);
+        if (now !== null && now >= 0) pieces.forEach(function (pc) { if (pc.owner === now) pieceTo.set(pc.id, to); });
+        moved++;
+        return;
+      }
+      (t.regions || []).forEach(function (name) {
+        var ps = regionsNamed(from, name);
+        if (!ps.length) { missed++; return; }
+        ps.forEach(function (p) { (provUnits[p] || []).forEach(function (u) { next.set(u, to); }); });
+        moved++;
+      });
+    });
+    var ps = [], fr = [], tv = [];
+    next.forEach(function (to, u) { if (owner[u] !== to) { ps.push(u); fr.push(owner[u]); tv.push(to); touched.add(owner[u]); touched.add(to); owner[u] = to; } });
+    if (ps.length) ops.push({ t: "own", ps: ps, from: fr, to: tv, g: geomGen });
+    if (pieceTo.size) {
+      var before = pieces;
+      pieces = pieces.map(function (pc) { if (!pieceTo.has(pc.id) || pieceTo.get(pc.id) === pc.owner) return pc; touched.add(pc.owner); touched.add(pieceTo.get(pc.id)); return withOwner(pc, pieceTo.get(pc.id)); });
+      ops.push({ t: "pieces", from: before, to: pieces });
+      piecesChanged();
+    }
+    touchShapes(Array.from(touched).concat([UNCLAIMED]));
+    ownersChanged(Array.from(touched));
+    freshGroups();
+    made.forEach(function (op) {
+      var co = countries[op.c];
+      co.color = freeColor(neighbourCountries(unitsOf[op.c] || []));
+      op.to.color = co.color;
+    });
+    demoteCaptured(caps, ops);
+    (plan.capitals || []).forEach(function (k) {
+      var c = findNow(k && k.country), name = String(k && k.city || "").trim().slice(0, 60);
+      if (c === null || c < 0 || !name) { missed++; return; }
+      var n = plainName(name), city = null;
+      cities.forEach(function (x) { if (plainName(x.name) === n && cityOwner(x) === c) city = x; });
+      var at = isFinite(k.lon) && isFinite(k.lat) && Math.abs(k.lat) <= 90 ? unitOfPoint(wrap180(k.lon), k.lat, true) : -1;
+      if (!city && (at < 0 || owner[at] !== c)) { missed++; return; }
+      cities.forEach(function (x) {
+        if (x === city || !x.cap || cityOwner(x) !== c) return;
+        var was = citySnapshot(x);
+        x.cap = 0; x.w = 0;
+        ops.push({ t: "city", id: x.id, from: was, to: citySnapshot(x) });
+      });
+      if (city) {
+        if (city.cap) return;
+        var was = citySnapshot(city);
+        city.cap = 1; city.tier = Math.min(city.tier, 2); city.w = 0;
+        ops.push({ t: "city", id: city.id, from: was, to: citySnapshot(city) });
+        return;
+      }
+      var id = "u" + (++citySeq), v = { name: name, lon: wrap180(k.lon), lat: k.lat, tier: 2, cap: 1 };
+      setCityState(id, v);
+      ops.push({ t: "city", id: id, from: null, to: v });
+    });
+    sortCities();
+    made.forEach(function (op) { var capOp = chooseCapital(op.c); if (capOp) ops.push(capOp); });
+    if (!ps.length && !pieceTo.size && !ops.some(function (op) { return op.t !== "country" || op.from; })) {
+      for (var i = ops.length - 1; i >= 0; i--) if (ops[i].t === "country" && !ops[i].from) countries[ops[i].c].alive = false;
+      return null;
+    }
+    var step = pushStep("Redrawing the map", ops);
+    queueLabels(Array.from(touched).concat(made.map(function (op) { return op.c; })));
+    ui.country = -1; ui.region = -1; ui.piece = null; ui.city = null;
+    changed();
+    return { step: step, moved: moved, missed: missed, made: made.length, units: ps };
+  }
   function describeChanges() {
     if (!feats || !base) return "";
     freshGroups();
@@ -5177,15 +5302,17 @@
     if (!historyBusy) {
       if (saved && saved.key === changes && saved.text) { renderHistory(saved.text); historyStatus(""); $("history-go").textContent = "Write it again"; }
       else if (saved && saved.text) { renderHistory(saved.text); historyStatus("The map has changed since this was written."); $("history-go").textContent = "Write its history"; }
-      else { $("history-text").textContent = ""; historyStatus(changes ? "" : "This is still our world. Change its map first, and its history will follow."); }
+      else { $("history-text").textContent = ""; historyStatus(changes ? "" : "This is still our world. Change its map, or give it a turning point below, and its history will follow."); }
     }
     $("history-go").disabled = historyBusy || !changes;
+    $("redraw-go").disabled = historyBusy;
   }
-  function writeHistory() {
-    var changes = describeChanges();
+  function writeHistory(premise) {
+    var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-note").value;
     if (!changes || historyBusy) return;
     historyBusy = true; historyKey = changes;
     $("history-go").disabled = true;
+    $("redraw-go").disabled = true;
     $("history-text").textContent = "";
     historyStatus("The historian is writing…");
     var text = "", queued = false, done = false;
@@ -5193,12 +5320,13 @@
     var finish = function (msg) {
       historyBusy = false; done = true;
       $("history-go").disabled = false;
+      $("redraw-go").disabled = false;
       $("history-go").textContent = "Write it again";
       historyStatus(msg);
       renderHistory(text);
       if (text && !msg) { try { localStorage.setItem(STORE_HISTORY, JSON.stringify({ key: changes, text: text })); } catch (e) { } }
     };
-    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: changes, note: $("history-note").value }) }).then(function (res) {
+    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: changes, note: note }) }).then(function (res) {
       if (res.status === 429) return finish("The historian has written all they can for today. Try again tomorrow.");
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
@@ -5229,7 +5357,79 @@
   }
   $("history-btn").addEventListener("click", function () { showHistory($("history").hidden); });
   $("history-close").addEventListener("click", function () { showHistory(false); $("history-btn").focus(); });
-  $("history-go").addEventListener("click", writeHistory);
+  $("history-go").addEventListener("click", function () { writeHistory(); });
+  function readEvents(res, on) {
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = "";
+    var pump = function () {
+      return reader.read().then(function (r) {
+        if (r.value) buf += dec.decode(r.value, { stream: true });
+        var nl;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          var line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+          if (!line) continue;
+          var ev = null;
+          try { ev = JSON.parse(line); } catch (e) { continue; }
+          on(ev);
+        }
+        if (r.done) { on({ t: "closed" }); return; }
+        return pump();
+      });
+    };
+    return pump();
+  }
+  function centreOf(units) {
+    var x = 0, y = 0, z = 0, step = Math.max(1, Math.floor(units.length / 400));
+    for (var i = 0; i < units.length; i += step) {
+      var k = units[i] * 4, v = toVec((unitBox[k] + unitBox[k + 2]) / 2, (unitBox[k + 1] + unitBox[k + 3]) / 2);
+      x += v[0]; y += v[1]; z += v[2];
+    }
+    var n = Math.hypot(x, y, z);
+    if (!n) return null;
+    return [Math.atan2(y / n, x / n) / D2R, Math.asin(z / n) / D2R];
+  }
+  function redrawMap() {
+    var premise = $("redraw-premise").value.trim();
+    if (!premise || historyBusy) { if (!premise) $("redraw-premise").focus(); return; }
+    historyBusy = true;
+    $("history-go").disabled = true; $("redraw-go").disabled = true;
+    $("history-text").textContent = "";
+    historyStatus("The historian is redrawing the map. This can take a minute or two…");
+    var done = false;
+    var finish = function (msg) {
+      if (done) return;
+      done = true; historyBusy = false;
+      $("history-go").disabled = !describeChanges(); $("redraw-go").disabled = false;
+      historyStatus(msg);
+    };
+    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "redraw", premise: premise, changes: describeChanges() }) }).then(function (res) {
+      if (res.status === 429) return finish("The historian has done all they can for today. Try again tomorrow.");
+      if (res.status === 503) return finish("The historian is not taking requests yet.");
+      if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
+      return readEvents(res, function (ev) {
+        if (done) return;
+        if (ev.t === "plan") {
+          var r = null;
+          try { r = applyPlan(ev.plan || {}); } catch (e) { console.warn("redraw", e); }
+          if (!r) return finish("The historian's map could not be drawn. Try putting it another way.");
+          if (r.missed) console.warn("redraw: " + r.missed + " names not found");
+          finish("");
+          var title = ev.plan && typeof ev.plan.title === "string" ? ev.plan.title.slice(0, 80) : "";
+          toast(title ? "The map is redrawn: " + title : "The map is redrawn", "Undo", undoIfTop(r.step), 9000);
+          toastStep = r.step;
+          var at = centreOf(r.units);
+          if (at) flyTo(at[0], at[1]);
+          writeHistory(premise);
+        } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : ev.reason === "max_tokens" ? "The historian's map ran too long. Try a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
+        else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not redraw this. Try again in a moment."); }
+        else if (ev.t === "closed") finish("The historian could not redraw this. Try again in a moment.");
+      });
+    }).catch(function (e) {
+      console.warn("historian", e);
+      finish("The historian could not be reached. Check your connection and try again.");
+    });
+  }
+  $("redraw-go").addEventListener("click", redrawMap);
+  $("redraw-premise").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) redrawMap(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 
   window.__uchronia = {
@@ -5242,6 +5442,7 @@
     project: function (lon, lat) { setupFrame(); var p = projectLL(lon, lat); return p ? [p[0], p[1]] : null; },
     provinceAt: unitAt,
     lonLatAt: lonLatAt,
+    applyPlan: function (plan) { var r = applyPlan(plan); return r ? { moved: r.moved, missed: r.missed, made: r.made, units: r.units.length } : null; },
     setView: function (lon, lat, zoom) { view.lon = lon; view.lat = lat; view.zoom = zoom; applyView(); render(); scheduleRender(); },
     setFlat: function (on) { setFlat(!!on); render(); },
     isFlat: function () { return flat; },

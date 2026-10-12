@@ -370,13 +370,27 @@ of `/greatercircle/`.
   stress. Every country, region and city of the map that the history names
   is a link that flies the map to it. The last history is kept in the
   browser, and the panel says when the map has changed since.
+  - **Redraw the map** takes a turning point instead ("What if Rome never
+    fell?"): Claude decides how the world's map would stand today and sends
+    back edits in a fixed JSON shape (new countries, renames, regions changing
+    hands, whole countries, capitals with their coordinates). The page
+    applies them as one step, which one undo takes back, flies to the land
+    that moved, and has the historian write how it came to be, with the
+    turning point as its note.
+  - Claude names land from `data/catalogue.txt`, every country of our world
+    and its regions as the map draws them (250 countries, 3,699 regions),
+    built by `tools/build-catalogue.mjs`. The function fetches it from the
+    site and sends it, unchanged, at the start of every request, so it is
+    cached and later requests pay a tenth for it. The page matches names
+    without regard to case or accents and leaves out any it cannot find.
   - The page sends a plain list of the map's differences from ours (which
     regions changed hands, countries founded, renamed or gone, borders drawn
     by hand, cities renamed, moved or founded) and the note, nothing else, to
     a small server function, `supabase/functions/historian`, which asks
     Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
     the text back. The function holds the API key, answers only this site,
-    and allows 100 histories a day in all and 5 a visitor; it keeps only a
+    and allows 100 requests a day in all and 5 a visitor (a redrawn map and
+  its history count as two); it keeps only a
     daily count per visitor under a hashed key, never the map or the text.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by

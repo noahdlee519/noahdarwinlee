@@ -561,8 +561,14 @@ body.uc-page {
   font-size: 15px;
   resize: vertical;
 }
-#history-go::before {
+#history-go::before,
+#redraw-go::before {
   content: none;
+}
+.uc-chron-turn {
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
 }
 .uc-chron-note::placeholder {
   color: var(--uc-muted);
