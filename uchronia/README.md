@@ -374,8 +374,11 @@ of `/greatercircle/`.
     and allows 100 histories a day in all and 5 a visitor; it keeps only a
     daily count per visitor under a hashed key, never the map or the text.
   - The function and its daily counter (`historian_usage`, with
-    `historian_take` and `historian_give_back`) live in the Supabase project
-    "uchronia". It needs the `ANTHROPIC_API_KEY` secret set in that project.
+    `historian_take` and `historian_give_back`, set up by
+    `supabase/migrations/20261012_historian_usage.sql`) live in the Supabase
+    project kigvciyyjlgjcgnwgrwf. The function is deployed as `historian`
+    with JWT verification off (it checks the origin and the daily caps
+    itself) and needs the `ANTHROPIC_API_KEY` secret.
 - **Check** counts, in a badge, what may have been left by mistake, and
   lists it: cities and countries never renamed from *New city* or *New
   country*, countries founded and given no land, countries that lost their
