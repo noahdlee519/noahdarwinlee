@@ -158,8 +158,8 @@ of `/greatercircle/`.
   names are set in italic beside them, letter by letter along the
   straightest stretch of each river on screen, from the largest down as the
   zoom allows, giving way to country and city names.
-  They fade out from 30 to 45 times zoom, as the borders become finer than
-  their courses, so none show at the closest zooms. They can be hidden in
+  They are left off the whole world, so the map stays clear, and fade in
+  between 1.3 and 2.4 times zoom; close up they stay. They can be hidden in
   the View menu, and are left off the satellite view.
 - **Latitude and longitude.** The lines every 10° are labelled. On the flat
   map, the parallels along its left edge and the meridians along its top, or

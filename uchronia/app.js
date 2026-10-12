@@ -851,6 +851,7 @@
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
     });
     ctx.globalAlpha = 1;
+    drawPieceBands(vis, satellite);
     drawPieceHover(vis);
     var c = currentCountry();
     if (c >= 0 && ui.tool === "select" && !ui.city) {
@@ -859,6 +860,36 @@
       ctx.fillStyle = pal["select-fill"]; ctx.fill();
     }
     ctx.restore();
+  }
+  function drawPieceBands(vis, satellite) {
+    var bw = bandWidth(localScale());
+    if (!bw) return;
+    ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.lineWidth = bw * 2;
+    ctx.globalAlpha = satellite ? 0.45 : 0.6;
+    vis.forEach(function (p) {
+      var e = pieceEdges(p), o = p.owner;
+      if (o >= 0 && countries[o] && e.borders.length) {
+        ctx.save();
+        ctx.beginPath(); traceFeature(ctx, p.shape.f); ctx.clip();
+        ctx.beginPath(); e.borders.forEach(function (b) { traceArc(ctx, b); });
+        ctx.strokeStyle = bandOf(o); ctx.stroke();
+        ctx.restore();
+      }
+      if (!e.next) {
+        e.next = new Map();
+        e.rings.forEach(function (r) { r.out.forEach(function (n) { if (n !== SEA && n !== o && n >= 0 && !e.next.has(n)) e.next.set(n, edgeRuns(e, function (x) { return x === n; })); }); });
+      }
+      if (!e.next.size) return;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(-10, -10, W + 20, H + 20); traceFeature(ctx, p.shape.f); ctx.clip("evenodd");
+      e.next.forEach(function (runs, n) {
+        if (!countries[n]) return;
+        ctx.beginPath(); runs.forEach(function (b) { traceArc(ctx, b); });
+        ctx.strokeStyle = bandOf(n); ctx.stroke();
+      });
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1; ctx.lineCap = "butt";
   }
   function drawPieceHover(vis) {
     var u = ui.hover, hp = ui.hoverPiece;
@@ -1151,7 +1182,7 @@
     var p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
     return 5 * p <= raw ? 5 * p : 2 * p <= raw ? 2 * p : p;
   }
-  var rivers = null, riverDetail = null, riverDetailLoad = null, RIVERS_GONE = 45, RIVER_DETAIL_S = 1300;
+  var rivers = null, riverDetail = null, riverDetailLoad = null, RIVERS_FROM = 1.3, RIVERS_FULL = 2.4, RIVER_DETAIL_S = 1300;
   function riverSet(t) {
     if (!t.objects || !t.objects.rivers) throw new Error("rivers do not match");
     var byRank = [], named = new Map();
@@ -1189,7 +1220,7 @@
     return p[0] + r > 0 && p[0] - r < W && p[1] + r > 0 && p[1] - r < H;
   }
   function riverRank(S) { return S < 300 ? 2 : S < 520 ? 3 : S < 800 ? 4 : S < 1300 ? 5 : S < 2400 ? 6 : S < 4500 ? 7 : S < 8000 ? 8 : 9; }
-  function riverFade() { return clamp01((RIVERS_GONE - view.zoom) / 15); }
+  function riverFade() { return clamp01((view.zoom - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)); }
   function drawRivers(S) {
     var fade = riverFade(), set = riverSetFor(S);
     if (!set || !ui.rivers || fade <= 0) return;
@@ -1734,7 +1765,7 @@
       var bt = pal.antique && L.bent && lines === L.lines ? L.bent : null;
       if (bt) {
         var pb = projectVec(bt.v[0], bt.v[1], bt.v[2], bt.lam, bt.phi);
-        if (pb && (flat || pb[2] >= 0.2)) {
+        if (pb && (flat || pb[2] >= 0.72)) {
           f = Math.min(24, bt.fkm * kmPx * Math.sqrt(flat ? 1 : pb[2]));
           for (i = 0; i < lines.length; i++) w = Math.max(w, unitWidth(lines[i]) * f);
           if (f >= 8.5) arc = arcOf(bt, pb[0], pb[1], w);
@@ -1759,7 +1790,7 @@
       if (arc) {
         var sag = arc.R - Math.sqrt(Math.max(0, arc.R * arc.R - w * w / 4)), toQ = sag / 2 / arc.R;
         box = mkBox(px + (arc.qx - px) * toQ, py + (arc.qy - py) * toQ, w / 2 + 3, h / 2 + sag / 2 + 2, arc.ang);
-      } else box = mkBox(px, py, w / 2 + 3, h / 2 + 2, L.ang ? screenAngle(L, px, py) : 0);
+      } else box = mkBox(px, py, w / 2 + 3, h / 2 + 2, L.ang && (flat || fore >= 0.72) ? screenAngle(L, px, py) : 0);
       var ang = box.ang;
       if (!flat && !insideDisc(box)) continue;
       if (collides(placed, box)) continue;
@@ -3118,14 +3149,14 @@
     }
     if (had) {
       var before = pieces;
-      pieces = pieces.map(function (p) { return p.owner === c ? withOwner(p, UNCLAIMED) : p; });
+      pieces = pieces.filter(function (p) { return p.owner !== c; });
       piecesChanged();
       ops.push({ t: "pieces", from: before, to: pieces });
     }
     var step = pushStep("Dissolving " + countries[c].name, ops);
     queueLabels([c]);
     changed();
-    toast(countries[c].name + " dissolved, its land left unclaimed", "Undo", undoIfTop(step));
+    toast(countries[c].name + " dissolved, its land left unclaimed" + (had ? " and its drawn borders undone" : ""), "Undo", undoIfTop(step));
     toastStep = step;
   }
   function startLasso(x, y) {
@@ -3475,7 +3506,7 @@
       var parts = [];
       if (n || !drawn) parts.push(n.toLocaleString() + (n === 1 ? " region" : " regions"));
       if (drawn) parts.push(drawn + (drawn === 1 ? " drawn area" : " drawn areas"));
-      var facts = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: paint regions or draw round some land to give it some";
+      var facts = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: Give land (B) gives it some";
       $("country-facts").textContent = facts;
       if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts + (land ? " · B gives it land" : "")]);
       var hideLines = countries[c].lines || 0;
@@ -4740,7 +4771,7 @@
     loadFine: loadFine,
     history: function () { return { undo: undoStack.length, redo: redoStack.length }; },
     gridLabels: function () { render(); return gridShown.slice(); },
-    riversShown: function () { return !!rivers && ui.rivers && view.zoom < RIVERS_GONE; },
+    riversShown: function () { return !!rivers && ui.rivers && view.zoom > RIVERS_FROM; },
     riverDetail: function () { return !!riverDetail; },
     issues: function () { return findIssues().map(function (it) { return it.name + ": " + it.note; }); },
     riverCount: function () { return rivers ? rivers.byRank.reduce(function (n, l) { return n + (l ? l.length : 0); }, 0) : 0; },
