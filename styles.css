@@ -1106,7 +1106,7 @@ a[href="/cv/"]:active {
 }
 
 .about-panel .profile-photo-frame.portrait-frame {
-  width: min(clamp(300px, 36vw, 520px), 49.9vh, 460px);
+  width: min(clamp(270px, 32.4vw, 468px), 44.9vh, 414px);
 }
 
 .about-panel-text {
@@ -2090,7 +2090,7 @@ body.is-zoomed {
   }
 
   .about-panel .profile-photo-frame.portrait-frame {
-    width: 100%;
+    width: 90%;
   }
 
   .about-panel-bio {
