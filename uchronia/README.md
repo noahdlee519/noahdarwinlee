@@ -86,6 +86,11 @@ of `/greatercircle/`.
       colour buttons show the same wash and band. The eighth colour is a
       violet rather than the teal of the other styles, and the sea a deeper
       grey-green, so that no land is tinted like the sea;
+    - the sea in two tones, as on old charts: the grey-green over the
+      continental shelves, where it is less than 200 m deep, and a darker one
+      over the deep ocean beyond (Natural Earth's 200 m depth line). With the
+      satellite view on, the sea keeps these tones and only the land shows
+      the imagery;
     - water lining: rings round every coast, cut by stroking the coastline
       wide in ink and then a little narrower in the sea colour; four on a
       large map, two or three on a small one, and none round islands too
@@ -139,12 +144,21 @@ of `/greatercircle/`.
     edit or rename.
   - Country names and city names can each be hidden (in the View menu); with
     city names hidden, the cities stay as dots.
-- **Cities.** Capitals, cities and towns each have their own mark and size of
-  name (squares, dots and small dots; in Antique, ringed, circled and dotted).
-- **Rivers.** Natural Earth's major rivers, drawn in blue over the countries
-  and under their borders: the largest (the Amazon, the Nile, the Yangtze)
-  from the whole globe, smaller ones as the map is zoomed in, in six steps.
-  They can be hidden in the View menu, and are left off the satellite view.
+- **Cities.** A capital is a star in a circle, a city a square and a town a
+  white circle, in every style, each with its own size of name; in Antique
+  the names are a size larger, on a heavier halo, to read clearly over the
+  coloured map.
+- **Rivers.** Natural Earth's rivers, drawn in blue over the countries and
+  under their borders: the largest (the Amazon, the Nile, the Yangtze) from
+  the whole globe, and smaller ones in nine steps as the map is zoomed in;
+  past about 3.5 times zoom a more detailed set, with the smaller rivers and
+  more than twice the points per river, is loaded and drawn instead. Their
+  names are set in italic beside them, letter by letter along the
+  straightest stretch of each river on screen, from the largest down as the
+  zoom allows, giving way to country and city names.
+  They fade out from 30 to 45 times zoom, as the borders become finer than
+  their courses, so none show at the closest zooms. They can be hidden in
+  the View menu, and are left off the satellite view.
 - **Latitude and longitude.** The lines every 10° are labelled. On the flat
   map, the parallels along its left edge and the meridians along its top, or
   along the edges of the screen once it is zoomed past them. On the globe, a
@@ -279,11 +293,23 @@ of `/greatercircle/`.
     "-si", Vietnamese "Thành Phố"), and in Arabic-, Persian- and
     Urdu-speaking countries and a few others the transliteration marks.
   - Built by `tools/build-cities.mjs`.
-- **data/rivers.json**: Natural Earth 1:10m river centerlines, the rivers of
-  scale ranks 1 to 6 and their courses through lakes, without canals, as a
-  TopoJSON of lines with the rank as `r`. Points that fall in the sea or in a
-  lake the map shows are dropped, splitting the line there, and the rest is
-  simplified to a fifth of its points. Built by `tools/build-rivers.mjs`.
+- **data/sea.json**: Natural Earth 1:10m bathymetry, the areas deeper than
+  200 m, cut into 30° tiles so that no piece is large enough to need
+  clipping at the edge of the globe, as two TopoJSON topologies of polygons
+  wound for d3: one simplified to a twelfth of its points, and one to a
+  fiftieth for the whole globe. Areas and shallows under 400 km² are
+  dropped, and the build stops if a large area changes by more than a
+  tenth or any covers land. On the flat map the tiles are one cached path
+  scaled into place, so the second tone costs almost nothing. Built by
+  `tools/build-sea.mjs`.
+- **data/rivers.json**, **data/rivers-detail.json**: Natural Earth 1:10m
+  river centerlines and their courses through lakes, without canals, as
+  TopoJSON lines with the rank as `r` and the name as `n` (the English name
+  where Natural Earth has one that is not garbled, with a few common
+  exonyms such as Rhine and Danube). Points that fall in the sea or in a
+  lake the map shows are dropped, splitting the line there. The first file
+  holds ranks 1 to 6 simplified to a fifth of their points, the second
+  ranks 1 to 9 at 45%. Built by `tools/build-rivers.mjs`.
 - **data/earth-2048.webp**, **data/earth-4096.webp**: NASA Blue Marble Next
   Generation with shaded sea floor, equirectangular. The polar rows and the
   columns at the date line are evened out so that the wrap is seamless, and
@@ -296,14 +322,20 @@ of `/greatercircle/`.
 ## Using it
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
-  two menus: **File** (copy a link, save a file, open one, start over) and
-  **View** (the style, country and city names, rivers, latitude and
+  three menus: **Check**, **File** (copy a link, save a file, open one, start
+  over) and **View** (the style, country and city names, rivers, latitude and
   longitude, the scale bar, finer regions). What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
+- **Check** counts, in a badge, what may have been left by mistake, and
+  lists it: cities and countries never renamed from *New city* or *New
+  country*, countries founded and given no land, countries that lost their
+  capital or gained a second one, two countries with one name, and cities
+  dropped in the sea. Picking one goes to it and selects it, ready to rename.
+  A fresh map has nothing to fix.
 - **Select (V)**: click a country to rename or recolour it, show or hide its
   inner borders (the lines between its regions, and the finer lines inside
-  them), paint with it or dissolve it; click a city to rename it, change its
+  them; a kind it has none of is greyed out), paint with it or dissolve it; click a city to rename it, change its
   size or delete it, and once it is picked, drag it to move it. A region on
   its own can be made a country.
 - **Paint borders (B)**: click or drag over regions to give them to the
@@ -350,6 +382,9 @@ in the repo. They covered:
   cities picked before they move; the scale bar and the zoom limit;
 - rivers loading, and the latitude and longitude labels on the globe, the
   flat map and zoomed in, hidden and remembered;
+- the Check menu (a clean map, a forgotten city and country, going to one and
+  renaming it), the greyed-out inner borders, rivers fading out up close, and
+  Antique's two-tone sea with the satellite view on;
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;

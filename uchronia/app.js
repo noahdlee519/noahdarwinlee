@@ -73,7 +73,7 @@
     freeL = 0; freeR = W; freeT = barH; freeB = H - sheetH;
     scaleL = phone ? 14 : 18; scaleB = H - sheetH - (phone && !bare ? 12 : 16);
     document.documentElement.style.setProperty("--uc-bar-h", barH + "px");
-    if (phone !== sheetMode) { sheetMode = phone; $("file-menu").open = phone; if (!phone) $("adv").open = false; }
+    if (phone !== sheetMode) { sheetMode = phone; $("file-menu").open = phone; if (!phone) { $("adv").open = false; $("check-menu").open = false; } }
     baseR = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
     baseK = Math.max(20, Math.min((freeW - 32) / TAU, (freeH - 24) / Math.PI));
     applyView();
@@ -105,7 +105,7 @@
   function zoomForScale(S) { return S / (flat ? baseK : baseR); }
 
   var pal = {}, hatch = null;
-  var PAL_KEYS = ["ocean", "grat", "limb", "glow", "border", "prov", "label", "label-halo", "city", "city-ring", "city-label", "city-halo", "select", "select-fill", "hover", "unclaimed", "hatch", "sat-light", "water", "sea-label", "river", "grid-label"];
+  var PAL_KEYS = ["ocean", "grat", "limb", "glow", "border", "prov", "label", "label-halo", "city", "city-ring", "city-label", "city-halo", "select", "select-fill", "hover", "unclaimed", "hatch", "sat-light", "water", "sea-label", "river", "grid-label", "ocean-deep", "river-label"];
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     PAL_KEYS.forEach(function (k) { pal[k] = cs.getPropertyValue("--uc-" + k).trim(); });
@@ -117,6 +117,7 @@
       if (pal.antique) pal.bands.push(cs.getPropertyValue("--uc-b" + i).trim() || "#8a6a4a");
     }
     if (was !== undefined && was !== pal.antique) remeasure();
+    if (pal.antique) loadSea();
     var c = document.createElement("canvas");
     c.width = c.height = 8;
     var hc = c.getContext("2d");
@@ -499,8 +500,10 @@
     return f;
   }
   function freshGroups() { if (groupsDirty) rebuildGroups(); }
+  var innerKinds = new Uint8Array(0);
   function rebuildArcs() {
     borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; borderProvArcs = []; borderUnitArcs = []; unitCoast = null; bandArcs = null;
+    innerKinds = new Uint8Array(countries.length);
     for (var a = 0; a < arcA.length; a++) {
       var A = arcA[a], b = arcB[a];
       if (A < 0) continue;
@@ -509,6 +512,7 @@
       var apart = pa !== pb && (ui.fine || provGroup[pa] < 0 || provGroup[pa] !== provGroup[pb]);
       if (owner[A] !== owner[b]) { borderArcs.push(a); (apart ? borderProvArcs : borderUnitArcs).push(a); continue; }
       var co = owner[A] >= 0 ? countries[owner[A]] : null, hide = co && co.lines ? co.lines : 0;
+      if (co) innerKinds[owner[A]] |= apart ? 1 : 2;
       if (!(hide & (apart ? 1 : 2))) (apart ? provArcs : unitArcs).push(a);
     }
     arcsDirty = false;
@@ -829,7 +833,7 @@
     else seen.forEach(function (o) { traceFeature(ctx, shapeOf(o, lvl)); });
     ctx.clip();
   }
-  function drawPieceFills(vis, lvl, satellite) {
+  function drawPieceFills(vis, lvl, satellite, satPat) {
     clipToLand(vis, lvl);
     ctx.globalAlpha = satellite ? 0.22 : 1;
     var byOwner = new Map();
@@ -841,6 +845,7 @@
     byOwner.forEach(function (list, o) {
       ctx.beginPath();
       list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
+      if (satPat) { var sa = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = sa; }
       if (o >= 0) { ctx.fillStyle = colorOf(o); ctx.fill(); return; }
       ctx.fillStyle = pal.unclaimed; ctx.fill();
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
@@ -959,11 +964,50 @@
   var marks = null;
   function mark(name) { if (marks) marks.push([name, performance.now()]); }
   function drawSat() {
+    renderSat();
+    ctx.drawImage(satCanvas, 0, 0, W, H);
+  }
+  var seaDeep = null, seaLow = null, seaPath = null, seaLoad = null;
+  function loadSea() {
+    if (seaLoad) return;
+    seaLoad = fetchJSON("data/sea.json").then(function (t) {
+      if (!t.high || !t.low || !t.high.objects.deep || !t.low.objects.deep) throw new Error("sea does not match");
+      var fs = topojson.feature(t.high, t.high.objects.deep).features, path = new Path2D();
+      fs.forEach(function (f) {
+        var g = f.geometry;
+        (!g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates).forEach(function (poly) {
+          poly.forEach(function (ring) {
+            ring.forEach(function (pt, k) { if (k) path.lineTo(pt[0] * D2R, pt[1] * D2R); else path.moveTo(pt[0] * D2R, pt[1] * D2R); });
+            path.closePath();
+          });
+        });
+      });
+      seaDeep = prepare(fs); seaPath = path;
+      seaLow = prepare(topojson.feature(t.low, t.low.objects.deep).features);
+      scheduleRender();
+    }).catch(function (e) { console.warn("sea", e); });
+  }
+  function drawDeep() {
+    if (!seaDeep) return;
+    ctx.fillStyle = pal["ocean-deep"];
+    if (flat) {
+      var k = FB.k;
+      ctx.save();
+      ctx.transform(k, 0, 0, -k, cx - k * FB.xc, cy + k * FB.yc);
+      ctx.fill(seaPath);
+      ctx.restore();
+      return;
+    }
+    var list = localScale() < 900 ? seaLow : seaDeep;
+    ctx.beginPath();
+    for (var i = 0; i < list.length; i++) if (onScreen(list[i])) traceFeature(ctx, list[i]);
+    ctx.fill();
+  }
+  function renderSat() {
     var o = { flat: flat, dpr: dpr, light: parseFloat(pal["sat-light"]) || 0, sepia: pal.antique ? 0.6 : 0, detail: detail.shown && !detail.off, cx: cx, cy: cy };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     sat.draw(o);
-    ctx.drawImage(satCanvas, 0, 0, W, H);
   }
   function render() {
     try { draw(); }
@@ -976,17 +1020,19 @@
     freshGroups();
     if (arcsDirty) rebuildArcs();
     var lvl = levelFor(), F = feats[lvl], L = arcLines[lvl], S = localScale();
-    var satellite = satOn();
+    var satellite = satOn(), satSea = satellite && !pal.antique, satLand = satellite && pal.antique;
     ctx.save();
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
+    if (satLand) renderSat();
 
     if (flat) {
-      if (satellite) drawSat();
+      if (satSea) drawSat();
       else { ctx.beginPath(); traceOutline(ctx); ctx.fillStyle = pal.ocean; ctx.fill(); }
       ctx.save();
       ctx.beginPath(); traceOutline(ctx); ctx.clip();
-      if (!satellite) {
+      if (!satSea) {
+        if (pal.antique) drawDeep();
         ctx.beginPath(); traceArcs(ctx, graticule, graticuleIdx);
         ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
         if (pal.antique) drawWaterLines(L, S);
@@ -999,10 +1045,11 @@
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, TAU); ctx.arc(cx, cy, r, 0, TAU, true); ctx.fill();
       }
-      if (satellite) drawSat();
+      if (satSea) drawSat();
       else {
         ctx.fillStyle = pal.ocean;
         ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+        if (pal.antique) drawDeep();
         ctx.beginPath(); traceArcs(ctx, graticule, graticuleIdx);
         ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
         if (pal.antique) {
@@ -1018,11 +1065,12 @@
     var vis = visiblePieces(), cutFills = vis && satellite;
     if (cutFills) clipOutPieces(vis);
     ctx.globalAlpha = satellite ? 0.22 : 1;
-    var bandW = bandWidth(S);
+    var bandW = bandWidth(S), satPat = satLand ? satPattern() : null;
     for (var g = 0; g < groups.length; g++) {
       var list = groups[g].countries;
       ctx.beginPath();
       for (var i = 0; i < list.length; i++) traceFeature(ctx, shapeOf(list[i], lvl));
+      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = 0.22; }
       ctx.fillStyle = groups[g].fill; ctx.fill();
       if (bandW && groups[g].band) {
         ctx.save(); ctx.clip();
@@ -1034,6 +1082,7 @@
     }
     if (unclaimedUnits.length) {
       ctx.beginPath(); traceFeature(ctx, shapeOf(UNCLAIMED, lvl));
+      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = 0.22; }
       ctx.fillStyle = pal.unclaimed; ctx.fill();
       ctx.globalAlpha = 1;
       ctx.fillStyle = hatch; ctx.fill();
@@ -1046,7 +1095,7 @@
     drawSelectionFill(F, lvl);
     mark("overlays");
 
-    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite); }
+    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satPat); }
     var ua = ui.fine ? clamp01((S - 700) / 500) : 0, pa = provAlpha(S);
     drawRegionLines(L, unitArcs, provArcs, ua, pa);
     if (vis && (ua > 0 || pa > 0)) {
@@ -1088,7 +1137,8 @@
     mark("labels");
     drawCities(placed);
     mark("cities");
-    drawGridLabels(placed, satellite);
+    if (!satellite) drawRiverLabels(placed, S);
+    drawGridLabels(placed, satSea);
     drawScale();
     ctx.restore();
   }
@@ -1096,21 +1146,36 @@
     var p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
     return 5 * p <= raw ? 5 * p : 2 * p <= raw ? 2 * p : p;
   }
-  var rivers = null;
-  function loadRivers() {
-    fetchJSON("data/rivers.json").then(function (t) {
-      if (!t.objects || !t.objects.rivers) throw new Error("rivers do not match");
-      var byRank = [];
-      topojson.feature(t, t.objects.rivers).features.forEach(function (f) {
-        var g = f.geometry, r = f.properties && f.properties.r;
-        if (!g || !(r >= 1)) return;
-        (g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : []).forEach(function (line) {
-          if (line.length > 1) (byRank[r] = byRank[r] || []).push(prepareArc(line));
-        });
+  var rivers = null, riverDetail = null, riverDetailLoad = null, RIVERS_GONE = 45, RIVER_DETAIL_S = 1300;
+  function riverSet(t) {
+    if (!t.objects || !t.objects.rivers) throw new Error("rivers do not match");
+    var byRank = [], named = new Map();
+    topojson.feature(t, t.objects.rivers).features.forEach(function (f) {
+      var g = f.geometry, pr = f.properties || {}, r = pr.r;
+      if (!g || !(r >= 1)) return;
+      (g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates : []).forEach(function (line) {
+        if (line.length < 2) return;
+        var L = prepareArc(line);
+        (byRank[r] = byRank[r] || []).push(L);
+        if (!pr.n) return;
+        if (!named.has(pr.n)) named.set(pr.n, { name: pr.n, r: r, lines: [] });
+        var e = named.get(pr.n);
+        e.lines.push(L); e.r = Math.min(e.r, r);
       });
-      rivers = byRank;
-      scheduleRender();
-    }).catch(function (e) { console.warn("rivers", e); });
+    });
+    return { byRank: byRank, names: Array.from(named.values()).sort(function (a, b) { return a.r - b.r; }) };
+  }
+  function loadRivers() {
+    fetchJSON("data/rivers.json").then(function (t) { rivers = riverSet(t); scheduleRender(); })
+      .catch(function (e) { console.warn("rivers", e); });
+  }
+  function riverSetFor(S) {
+    if (S >= RIVER_DETAIL_S && ui.rivers) {
+      if (!riverDetailLoad) riverDetailLoad = fetchJSON("data/rivers-detail.json").then(function (t) { riverDetail = riverSet(t); scheduleRender(); })
+        .catch(function (e) { console.warn("river detail", e); });
+      if (riverDetail) return riverDetail;
+    }
+    return rivers;
   }
   function onScreen(L) {
     var p = projectVec(L.cx, L.cy, L.cz, 0, 0);
@@ -1118,19 +1183,113 @@
     var r = 2 * B.r * Math.sin(Math.min(Math.PI, L.radius) / 2) + 2;
     return p[0] + r > 0 && p[0] - r < W && p[1] + r > 0 && p[1] - r < H;
   }
-  function riverRank(S) { return S < 300 ? 2 : S < 520 ? 3 : S < 800 ? 4 : S < 1300 ? 5 : 6; }
+  function riverRank(S) { return S < 300 ? 2 : S < 520 ? 3 : S < 800 ? 4 : S < 1300 ? 5 : S < 2400 ? 6 : S < 4500 ? 7 : S < 8000 ? 8 : 9; }
+  function riverFade() { return clamp01((RIVERS_GONE - view.zoom) / 15); }
   function drawRivers(S) {
-    if (!rivers || !ui.rivers) return;
-    var top = Math.min(rivers.length - 1, riverRank(S)), w = Math.max(0.6, Math.min(1.5, S / 700));
+    var fade = riverFade(), set = riverSetFor(S);
+    if (!set || !ui.rivers || fade <= 0) return;
+    var byRank = set.byRank, top = Math.min(byRank.length - 1, riverRank(S)), w = Math.max(0.6, Math.min(1.5, S / 700));
     ctx.save();
+    ctx.globalAlpha = fade;
     ctx.strokeStyle = pal.river; ctx.lineJoin = "round"; ctx.lineCap = "round";
     for (var r = 1; r <= top; r++) {
-      var list = rivers[r];
+      var list = byRank[r];
       if (!list) continue;
       ctx.beginPath();
       for (var i = 0; i < list.length; i++) if (flat || onScreen(list[i])) traceArc(ctx, list[i]);
-      ctx.lineWidth = w * (r <= 2 ? 1.35 : r <= 4 ? 1.1 : 0.85);
+      ctx.lineWidth = w * (r <= 2 ? 1.35 : r <= 4 ? 1.1 : r <= 6 ? 0.85 : 0.7);
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+  var glyphSizes = new Map();
+  function charWidth(font, ch) {
+    var k = font + "|" + ch, w = glyphSizes.get(k);
+    if (w == null) { ctx.font = font; w = ctx.measureText(ch).width; glyphSizes.set(k, w); }
+    return w;
+  }
+  function riverLabelRank(S) { return S < 650 ? 0 : S < 1100 ? 2 : S < 2000 ? 4 : S < 3800 ? 6 : S < 7000 ? 7 : 9; }
+  function riverRuns(lines, x0, y0, x1, y1, need) {
+    var best = null;
+    function take(run) {
+      if (run.length < 2) return;
+      var cum = [0];
+      for (var k = 1; k < run.length; k++) cum.push(cum[k - 1] + Math.hypot(run[k][0] - run[k - 1][0], run[k][1] - run[k - 1][1]));
+      var len = cum[cum.length - 1];
+      if (len >= need && (!best || len > best.len)) best = { pts: run, cum: cum, len: len };
+    }
+    function walk(L) {
+      if (L.parts) { L.parts.forEach(walk); return; }
+      if (!flat && !onScreen(L)) return;
+      if (flat) flatArrays(L);
+      var run = [];
+      for (var k = 0; k < L.n; k++) {
+        var p = projectVec(L.x[k], L.y[k], L.z[k], flat ? L.L[k] : 0, flat ? L.P[k] : 0);
+        var ok = p && (flat || p[2] > 0.05) && p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1;
+        if (ok && run.length && Math.abs(p[0] - run[run.length - 1][0]) > W / 2) { take(run); run = []; }
+        if (ok) run.push([p[0], p[1]]); else { take(run); run = []; }
+      }
+      take(run);
+    }
+    lines.forEach(walk);
+    return best;
+  }
+  function pointAt(run, s) {
+    var cum = run.cum, pts = run.pts, lo = 0, hi = cum.length - 1;
+    s = Math.max(0, Math.min(run.len, s));
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (cum[mid] <= s) lo = mid; else hi = mid; }
+    var seg = cum[hi] - cum[lo] || 1, t = (s - cum[lo]) / seg;
+    return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * t, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * t];
+  }
+  function placeAlong(run, ws, sp, tw, f) {
+    var free = run.len - tw, tries = free > f * 4 ? 7 : 1, best = null;
+    for (var t = 0; t < tries; t++) {
+      var s0 = tries === 1 ? free / 2 : free * (0.15 + 0.7 * t / (tries - 1));
+      var a = pointAt(run, s0), b = pointAt(run, s0 + tw), back = b[0] < a[0];
+      var glyphs = [], turn = 0, d = 0, prev = null;
+      for (var j = 0; j < ws.length; j++) {
+        var mid = d + ws[j] / 2, s = back ? s0 + tw - mid : s0 + mid;
+        var p = pointAt(run, s), q1 = pointAt(run, s - f * 0.6), q2 = pointAt(run, s + f * 0.6);
+        var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
+        if (prev !== null) { var da = Math.abs(ang - prev); turn += Math.min(da, TAU - da); }
+        prev = ang;
+        glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
+        d += ws[j] + sp;
+      }
+      var score = turn + Math.abs(s0 + tw / 2 - run.len / 2) / run.len;
+      if (turn < 1.4 && (!best || score < best.score)) best = { glyphs: glyphs, score: score };
+    }
+    return best && best.glyphs;
+  }
+  function drawRiverLabels(placed, S) {
+    var set = riverSetFor(S), top = riverLabelRank(S);
+    if (!set || !ui.rivers || !top || riverFade() < 0.6) return;
+    var f = pal.antique ? 11.5 : 10.5, font = (pal.antique ? "italic 400 " : "italic 500 ") + f + "px " + (pal.antique ? SERIF : FONT);
+    var x0 = freeL + 4, x1 = freeR - 4, y0 = freeT + 4, y1 = freeB - 4, shown = 0;
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    for (var i = 0; i < set.names.length && shown < 40; i++) {
+      var rv = set.names[i];
+      if (rv.r > top) break;
+      var chars = Array.from(rv.name), sp = f * 0.06, ws = [], tw = 0;
+      for (var j = 0; j < chars.length; j++) { ws.push(charWidth(font, chars[j])); tw += ws[j] + (j ? sp : 0); }
+      var run = riverRuns(rv.lines, x0, y0, x1, y1, tw * 1.3);
+      var glyphs = run && placeAlong(run, ws, sp, tw, f);
+      if (!glyphs) continue;
+      var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
+      glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
+      var box = mkBox((gx0 + gx1) / 2, (gy0 + gy1) / 2, (gx1 - gx0) / 2 + f * 0.6, (gy1 - gy0) / 2 + f * 0.6, 0);
+      if (collides(placed, box)) continue;
+      placed.push(box);
+      shown++;
+      ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"];
+      for (j = 0; j < glyphs.length; j++) {
+        if (chars[j] === " ") continue;
+        ctx.save();
+        ctx.translate(glyphs[j][0], glyphs[j][1]); ctx.rotate(glyphs[j][2]);
+        ctx.strokeText(chars[j], 0, 0); ctx.fillText(chars[j], 0, 0);
+        ctx.restore();
+      }
     }
     ctx.restore();
   }
@@ -1780,11 +1939,11 @@
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
       ctx.font = cityFont(c);
       if (!c.w) c.w = ctx.measureText(c.name).width;
-      var off = (isTown(c) ? dot * 0.62 : dot) + (c.cap ? (pal.antique ? 7 : 6) : 4), named = ui.cityNames || must;
-      var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, 7, 0) : mkBox(px, py, dot + 3, dot + 3, 0);
+      var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = ui.cityNames || must;
+      var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, pal.antique ? 7.5 : 7, 0) : mkBox(px, py, mr + 3, mr + 3, 0);
       if (!must && collides(placed, box)) continue;
       placed.push(box);
-      shown.push({ c: c, x: px, y: py, off: off, named: named });
+      shown.push({ c: c, x: px, y: py, off: off, named: named, r: mr });
     }
     ctx.lineWidth = 1.2;
     for (i = 0; i < shown.length; i++) {
@@ -1792,13 +1951,13 @@
       drawCityMark(s.c, s.x, s.y, dot);
       if (s.c === ui.city) {
         ctx.strokeStyle = pal.select; ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.arc(s.x, s.y, dot + 6, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r + 4, 0, TAU); ctx.stroke();
         ctx.lineWidth = 1.2;
       }
       cityScreen.push(s);
     }
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
-    ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 4 : 3;
     ctx.strokeStyle = pal["city-halo"];
     for (i = 0; i < shown.length; i++) {
       s = shown[i];
@@ -1812,37 +1971,29 @@
   }
   function isTown(c) { return !c.cap && c.tier >= 4; }
   function cityFont(c) {
-    if (pal.antique) return (c.cap ? "700 12px " : isTown(c) ? "italic 400 11px " : "400 12px ") + SERIF;
+    if (pal.antique) return (c.cap ? "700 13px " : isTown(c) ? "400 11.5px " : "400 12.5px ") + SERIF;
     return (c.cap ? "500 12px " : isTown(c) ? "400 10px " : "400 11px ") + FONT;
   }
+  function markSize(c, dot) { return c.cap ? dot + 3.8 : isTown(c) ? dot * 0.8 + 0.8 : dot + 0.9; }
   function drawCityMark(c, x, y, dot) {
-    ctx.lineWidth = 1.2;
-    if (pal.antique) {
-      if (c.cap) {
-        ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city; ctx.lineWidth = 1.3;
-        ctx.beginPath(); ctx.arc(x, y, dot + 2.4, 0, TAU); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = pal.city;
-        ctx.beginPath(); ctx.arc(x, y, dot * 0.8, 0, TAU); ctx.fill();
-      } else if (isTown(c)) {
-        ctx.fillStyle = pal.city;
-        ctx.beginPath(); ctx.arc(x, y, dot * 0.62, 0, TAU); ctx.fill();
-      } else {
-        ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
-        ctx.beginPath(); ctx.arc(x, y, dot + 0.6, 0, TAU); ctx.fill(); ctx.stroke();
-      }
-      return;
-    }
-    ctx.fillStyle = pal.city; ctx.strokeStyle = pal["city-ring"];
+    var r = markSize(c, dot);
+    ctx.lineWidth = 1.1;
     if (c.cap) {
-      var hs = dot + 2.2;
-      ctx.beginPath(); ctx.rect(x - hs, y - hs, hs * 2, hs * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = pal["city-ring"];
-      ctx.beginPath(); ctx.arc(x, y, dot * 0.85, 0, TAU); ctx.fill();
+      ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = pal.city;
+      ctx.beginPath();
+      for (var k = 0; k < 10; k++) {
+        var a = -HALF_PI + k * Math.PI / 5, q = k % 2 ? r * 0.34 : r * 0.8;
+        if (k) ctx.lineTo(x + q * Math.cos(a), y + q * Math.sin(a)); else ctx.moveTo(x + q * Math.cos(a), y + q * Math.sin(a));
+      }
+      ctx.closePath(); ctx.fill();
     } else if (isTown(c)) {
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(x, y, dot * 0.62, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
     } else {
-      ctx.beginPath(); ctx.arc(x, y, dot, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = pal.city; ctx.strokeStyle = pal["city-ring"];
+      ctx.beginPath(); ctx.rect(x - r, y - r, r * 2, r * 2); ctx.fill(); ctx.stroke();
     }
   }
   function cityAt(x, y, touch) {
@@ -2852,6 +3003,7 @@
   var saveTimer = 0;
   function changed() {
     sharedOpen = 0;
+    scheduleChecks();
     renderPanel();
     scheduleRender();
     clearTimeout(saveTimer);
@@ -3302,6 +3454,13 @@
       var hideLines = countries[c].lines || 0;
       $("lines-1").setAttribute("aria-pressed", String(!(hideLines & 1)));
       $("lines-2").setAttribute("aria-pressed", String(!(hideLines & 2)));
+      if (arcsDirty) { freshGroups(); rebuildArcs(); }
+      var kinds = innerKinds[c] || 0;
+      $("lines-1").disabled = !(kinds & 1);
+      $("lines-2").disabled = !(kinds & 2);
+      $("lines-1").title = kinds & 1 ? "The lines between its states, provinces and regions" : "It is a single region, with no lines inside it";
+      $("lines-2").title = kinds & 2 ? "The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions"
+        : ui.fine ? "Its regions have no finer lines inside them" : "Its regions have no finer lines; Finer regions, in the View menu, adds counties and districts where there are any";
       $("inner").hidden = ui.tool !== "select";
       $("paint-with").hidden = ui.tool !== "select";
       $("dissolve").hidden = !land;
@@ -4026,7 +4185,98 @@
     });
   })();
 
-  var menus = [$("file-menu"), $("adv")];
+  var menus = [$("check-menu"), $("file-menu"), $("adv")];
+  var baseCaps = new Map(), issues = [], checkTimer = 0;
+  var DEFAULT_CITY = /^(New|Unnamed) city( \d+)?$/, UNNAMED_COUNTRY = /^Unnamed country( \d+)?$/;
+  function capitalsBy() {
+    var by = new Map();
+    for (var i = 0; i < cities.length; i++) {
+      var c = cities[i];
+      if (!c.cap) continue;
+      var o = cityOwner(c);
+      if (o === null || o < 0) continue;
+      if (!by.has(o)) by.set(o, []);
+      by.get(o).push(c);
+    }
+    return by;
+  }
+  function cityMoved(c) {
+    if (c.id.charAt(0) === "u") return true;
+    var b = base.cities[+c.id.slice(1)];
+    return !!b && (b.lon !== c.lon || b.lat !== c.lat);
+  }
+  function findIssues() {
+    var out = [];
+    if (!feats || !base) return out;
+    freshGroups();
+    var caps = capitalsBy(), names = new Map();
+    countries.forEach(function (co, i) {
+      if (!co.alive) return;
+      var founded = /^N\d+$/.test(co.code);
+      if (DEFAULT_NAME.test(co.name) || UNNAMED_COUNTRY.test(co.name)) out.push({ country: i, name: co.name, note: "Never renamed", rename: true });
+      if (!hasLand(i)) { if (founded) out.push({ country: i, name: co.name, note: "Has no land" }); return; }
+      var cs = caps.get(i) || [], had = baseCaps.get(i) || 0;
+      if (!cs.length && (founded || had)) out.push({ country: i, name: co.name, note: "Has no capital" });
+      if (cs.length > 1 && cs.length > had) out.push({ country: i, name: co.name, note: "Has " + cs.length + " capitals: " + cs.map(function (c) { return c.name; }).join(", ") });
+      var key = co.name.trim().toLowerCase();
+      if (names.has(key)) out.push({ country: i, name: co.name, note: "Another country has this name" });
+      else names.set(key, i);
+    });
+    cities.forEach(function (c) {
+      var unnamed = DEFAULT_CITY.test(c.name);
+      if (!unnamed && !cityMoved(c)) return;
+      var o = cityOwner(c);
+      if (unnamed) out.push({ city: c, name: c.name, note: "Never renamed, " + (o === null ? "at sea" : o < 0 || !countries[o] ? "on unclaimed land" : "in " + countries[o].name), rename: true });
+      else if (o === null) out.push({ city: c, name: c.name, note: "Stands in the sea" });
+    });
+    return out;
+  }
+  function scheduleChecks() { clearTimeout(checkTimer); checkTimer = setTimeout(runChecks, 300); }
+  function runChecks() {
+    issues = findIssues();
+    var n = $("check-count");
+    n.hidden = !issues.length;
+    n.textContent = issues.length > 99 ? "99+" : String(issues.length);
+    $("check-menu").querySelector("summary").setAttribute("aria-label", issues.length ? "Check: " + issues.length + (issues.length === 1 ? " thing" : " things") + " to look at" : "Check: nothing to fix");
+    if ($("check-menu").open) renderChecks();
+  }
+  function renderChecks() {
+    var box = $("check-list");
+    box.textContent = "";
+    if (!issues.length) {
+      var p = document.createElement("p");
+      p.className = "uc-check-empty"; p.textContent = "Nothing to fix";
+      box.appendChild(p);
+      return;
+    }
+    issues.forEach(function (it) {
+      var b = document.createElement("button"), t = document.createElement("span"), n = document.createElement("small");
+      b.type = "button"; b.className = "uc-menu-item uc-issue";
+      t.textContent = it.name; n.textContent = it.note;
+      b.appendChild(t); b.appendChild(n);
+      b.addEventListener("click", function () { goToIssue(it); });
+      box.appendChild(b);
+    });
+  }
+  function goToIssue(it) {
+    closeMenus(null);
+    if (it.city) {
+      if (cityIndex.get(it.city.id) !== it.city) { runChecks(); return; }
+      if (ui.tool !== "select" && ui.tool !== "city") setTool("select");
+      selectCity(it.city);
+      flyTo(it.city.lon, it.city.lat, Math.max(view.zoom, zoomForScale(1600)));
+      if (it.rename && canHover) { var ci = $("city-name"); ci.focus(); ci.select(); }
+      return;
+    }
+    var c = it.country;
+    if (!countries[c] || !countries[c].alive) { runChecks(); return; }
+    if (ui.tool !== "select") setTool("select");
+    ui.country = c; ui.city = null; ui.region = -1; ui.piece = null; ui.erase = false;
+    renderPanel(); scheduleRender();
+    flyToCountry(c);
+    if (it.rename && canHover) { var ni = $("country-name"); ni.focus(); ni.select(); }
+  }
+  $("check-menu").addEventListener("toggle", function () { if ($("check-menu").open) { runChecks(); renderChecks(); } });
   function closeMenus(except) {
     menus.forEach(function (m) { if (m !== except && m.open && !(sheetMode && m.id === "file-menu")) m.open = false; });
   }
@@ -4308,6 +4558,8 @@
     baseCities.forEach(function (b, i) { setCityState("b" + i, b); });
     sortCities();
     ownersChanged();
+    baseCaps = new Map();
+    capitalsBy().forEach(function (list, o) { baseCaps.set(o, list.length); });
     var stored = readStoredRaw(STORE);
     var finePref = null;
     try { finePref = localStorage.getItem(STORE_FINE); } catch (e) { }
@@ -4337,7 +4589,7 @@
         renderPanel(); scheduleRender();
       });
     }
-    ready.then(openSharedFromHash);
+    ready.then(openSharedFromHash).then(scheduleChecks);
     loadRivers();
   }
 
@@ -4439,7 +4691,10 @@
     loadFine: loadFine,
     history: function () { return { undo: undoStack.length, redo: redoStack.length }; },
     gridLabels: function () { render(); return gridShown.slice(); },
-    riverCount: function () { return rivers ? rivers.reduce(function (n, l) { return n + (l ? l.length : 0); }, 0) : 0; },
+    riversShown: function () { return !!rivers && ui.rivers && view.zoom < RIVERS_GONE; },
+    riverDetail: function () { return !!riverDetail; },
+    issues: function () { return findIssues().map(function (it) { return it.name + ": " + it.note; }); },
+    riverCount: function () { return rivers ? rivers.byRank.reduce(function (n, l) { return n + (l ? l.length : 0); }, 0) : 0; },
     lineCounts: function () { freshGroups(); if (arcsDirty) rebuildArcs(); return { prov: provArcs.length, unit: unitArcs.length }; },
     validate: function (d) {
       var keep = makeDiff();
