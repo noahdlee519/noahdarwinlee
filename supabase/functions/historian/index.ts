@@ -112,24 +112,31 @@ Deno.serve(async (req) => {
   const stream = new ReadableStream({
     async start(controller) {
       const send = (obj: unknown) => controller.enqueue(enc.encode(JSON.stringify(obj) + "\n"));
-      try {
-        const run = client.beta.messages.stream({
-          model: "claude-opus-5-5",
-          max_tokens: 8000,
-          betas: ["server-side-fallback-2026-07-01"],
-          fallbacks: "default",
-          output_config: { effort: "medium" },
-          system: SYSTEM,
-          messages: [{ role: "user", content: text }],
-        } as any);
-        for await (const event of run as any) {
+      const base = {
+        model: "claude-opus-5-5",
+        max_tokens: 8000,
+        output_config: { effort: "medium" },
+        system: SYSTEM,
+        messages: [{ role: "user", content: text }],
+      };
+      const write = async (run: any) => {
+        for await (const event of run) {
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
             started = true;
             send({ t: "text", v: event.delta.text });
           }
         }
-        const final = await (run as any).finalMessage();
+        const final = await run.finalMessage();
         send({ t: "end", reason: final.stop_reason });
+      };
+      try {
+        try {
+          await write(client.beta.messages.stream({ ...base, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" } as any));
+        } catch (e) {
+          if (started || (e as any)?.status !== 400 || /credit balance/i.test(String((e as any)?.message || ""))) throw e;
+          console.error("retrying without fallbacks", e);
+          await write(client.messages.stream(base as any));
+        }
       } catch (e) {
         console.error(e);
         if (!started) await rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x));
