@@ -1846,9 +1846,12 @@
         for (i = 0; i < lines.length; i++) { loose = Math.max(loose, unitWidth(lines[i])); tight = Math.max(tight, unitWidth(lines[i]) - Array.from(lines[i]).length * (sp - TIGHT)); }
         if (pal.antique && f < 8.5 && f * loose / tight >= 8.5) { f *= loose / tight; sp = TIGHT; }
         if (f < 8.5) {
-          var rr = L.size * kmPx * Math.sqrt(fore) / 2;
-          if (rr <= 18 && Math.sqrt(L.area) * kmPx * Math.sqrt(fore) >= 6) small.push({ lines: lines, x: px, y: py, r: rr });
-          continue;
+          var rr = L.size * kmPx * Math.sqrt(fore) / 2, kpx = kmPx * Math.sqrt(fore);
+          if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ lines: lines, x: px, y: py, r: rr }); continue; }
+          if (f < 4.2) continue;
+          var fs = pal.antique ? TIGHT : sp, fw = (pal.antique ? tight : loose) * 8.5;
+          if (!mostlyOwn(c, L, fw / kpx, 8.5 * (CAP_H + LINE_H * (lines.length - 1)) / kpx)) continue;
+          f = 8.5; sp = fs;
         }
         w = (sp === TIGHT ? tight : loose) * f;
       }
@@ -1882,17 +1885,32 @@
     drawBesideLabels(small, placed);
     ctx.letterSpacing = "0px";
   }
+  var BESIDE_KM2 = 30000;
+  function mostlyOwn(c, L, wkm, hkm) {
+    var key = Math.round(Math.log2(wkm) * 12) + ":" + L.name;
+    if (L.fit && L.fit.key === key) return L.fit.ok;
+    var own = 0, foreign = 0, n = 0, cs = Math.cos(L.ang || 0), sn = Math.sin(L.ang || 0), coslat = Math.max(0.05, Math.cos(L.phi));
+    for (var i = 0; i < 7; i++) for (var j = 0; j < 3; j++) {
+      var u = (i / 6 - 0.5) * wkm * 0.92, v = (j / 2 - 0.5) * hkm * 0.8;
+      var x = u * cs - v * sn, y = u * sn + v * cs;
+      var o = visibleOwnerLL(L.lon + x / (111.2 * coslat), L.lat + y / 111.2);
+      n++;
+      if (o === c) own++; else if (o !== SEA) foreign++;
+    }
+    var ok = own >= n * 0.5 && foreign <= n * 0.2;
+    L.fit = { key: key, ok: ok };
+    return ok;
+  }
   var BESIDE = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.75, 0.75], [-0.75, 0.75], [0.75, -0.75], [-0.75, -0.75]];
   function overWater(box) {
     var n = 0, wet = 0;
-    for (var i = 0; i < 5; i++) {
-      var x = i === 4 ? box.ox : box.ox + (i % 2 ? 1 : -1) * box.ex * 0.9, y = i === 4 ? box.oy : box.oy + (i < 2 ? -1 : 1) * box.ey * 0.8;
-      var g = lonLatAt(x, y);
+    for (var i = 0; i < 5; i++) for (var j = 0; j < 3; j++) {
+      var g = lonLatAt(box.ox + (i / 2 - 1) * box.ex * 0.95, box.oy + (j - 1) * box.ey * 0.85);
       if (!g) continue;
       n++;
       if (visibleOwnerLL(g[0], g[1]) === SEA) wet++;
     }
-    return n >= 3 && wet >= n - 1;
+    return n >= 9 && wet === n;
   }
   function drawBesideLabels(list, placed) {
     if (!list.length) return;
@@ -5258,8 +5276,8 @@
     var text = lines.join("\n");
     return text.length > 13500 ? text.slice(0, 13500) + "\n(and more)" : text;
   }
-  function renderHistory(text) {
-    var box = $("history-text");
+  function renderHistory(text) { renderProse($("history-text"), text); }
+  function renderProse(box, text) {
     box.textContent = "";
     var para = null;
     text.split("\n").forEach(function (line) {
@@ -5290,22 +5308,123 @@
     });
   }
   function historyStatus(msg) { $("history-status").textContent = msg || ""; $("history-status").hidden = !msg; }
+  var STORE_CONVS = "uchronia-histories", CONV_MAX = 30, conv = null, convRead = false;
+  function readConvs() {
+    try {
+      var a = JSON.parse(localStorage.getItem(STORE_CONVS) || "[]");
+      return Array.isArray(a) ? a.filter(function (c) { return c && typeof c.id === "string" && typeof c.history === "string" && Array.isArray(c.turns); }) : [];
+    } catch (e) { return []; }
+  }
+  function writeConvs(list) {
+    while (true) {
+      try { localStorage.setItem(STORE_CONVS, JSON.stringify(list)); return; } catch (e) { if (list.length <= 1) return; list = list.slice(0, -1); }
+    }
+  }
+  function storeConv(c) {
+    var list = readConvs().filter(function (x) { return x.id !== c.id; });
+    list.unshift(c);
+    writeConvs(list.slice(0, CONV_MAX));
+    try { localStorage.setItem(STORE_HISTORY, c.id); } catch (e) { }
+  }
+  function titleOf(text) { var m = /^#\s+(.+)$/m.exec(text || ""); return m ? m[1].trim().slice(0, 120) : "A history"; }
+  function currentConv() {
+    if (convRead) return conv;
+    convRead = true;
+    var raw = null;
+    try { raw = localStorage.getItem(STORE_HISTORY); } catch (e) { }
+    if (!raw) return null;
+    var old = null;
+    try { old = JSON.parse(raw); } catch (e) { }
+    if (old && typeof old === "object" && typeof old.text === "string") {
+      conv = { id: Date.now().toString(36), when: Date.now(), title: titleOf(old.text), premise: "", note: "", changes: old.key || "", history: old.text, turns: [], map: null };
+      storeConv(conv);
+      return conv;
+    }
+    conv = readConvs().filter(function (c) { return c.id === raw; })[0] || null;
+    return conv;
+  }
+  function sameMap(c) { return !c.map || JSON.stringify(c.map) === JSON.stringify(makeDiff()); }
+  function renderTurns(c) {
+    var box = $("history-turns");
+    box.textContent = "";
+    c.turns.forEach(function (t) { addTurn(t.q, t.a); });
+  }
+  function addTurn(q, a) {
+    var box = $("history-turns"), qe = document.createElement("p"), ae = document.createElement("div");
+    qe.className = "uc-chron-q"; qe.textContent = q;
+    ae.className = "uc-chron-text";
+    box.appendChild(qe); box.appendChild(ae);
+    if (a) renderProse(ae, a);
+    return { q: qe, a: ae };
+  }
+  function showConv(c) {
+    describeChanges();
+    renderHistory(c.history);
+    renderTurns(c);
+    $("history-chat").hidden = false;
+    $("history-chat-status").textContent = "";
+    var changes = describeChanges();
+    $("history-other").hidden = sameMap(c) || !c.map;
+    historyStatus(!c.map && c.changes !== changes ? "The map has changed since this was written." : "");
+    $("history-go").textContent = c.changes === changes ? "Write it again" : "Write its history";
+  }
+  function showSaved(open) {
+    $("history-saved").hidden = !open;
+    $("history-saved-btn").setAttribute("aria-expanded", String(open));
+    $("history-saved-btn").textContent = open ? "Back" : "Saved";
+    ["history-ask", "history-text"].forEach(function (id) { $(id).hidden = open; });
+    if (open) { $("history-chat").hidden = true; $("history-other").hidden = true; historyStatus(""); renderSaved(); }
+    else showHistory(true);
+  }
+  function renderSaved() {
+    var list = readConvs(), ul = $("history-list"), cur = currentConv();
+    ul.textContent = "";
+    $("history-none").hidden = list.length > 0;
+    list.forEach(function (c) {
+      var li = document.createElement("li"), b = document.createElement("button"), t = document.createElement("span"), m = document.createElement("span"), del = document.createElement("button");
+      b.type = "button"; b.className = "uc-chron-item";
+      t.className = "uc-chron-item-t"; t.textContent = c.title || titleOf(c.history);
+      var bits = [new Date(c.when || 0).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })];
+      if (c.premise) bits.push(c.premise);
+      if (c.turns.length) bits.push(c.turns.length + (c.turns.length === 1 ? " question" : " questions"));
+      if (cur && cur.id === c.id) { bits.push("open"); b.setAttribute("aria-current", "true"); }
+      m.className = "uc-chron-item-m"; m.textContent = bits.join(" · ");
+      b.appendChild(t); b.appendChild(m);
+      b.addEventListener("click", function () {
+        conv = c; convRead = true;
+        try { localStorage.setItem(STORE_HISTORY, c.id); } catch (e) { }
+        showSaved(false);
+      });
+      del.type = "button"; del.className = "uc-chron-del"; del.textContent = "Delete";
+      del.setAttribute("aria-label", "Delete " + (c.title || "this history"));
+      del.addEventListener("click", function () {
+        writeConvs(readConvs().filter(function (x) { return x.id !== c.id; }));
+        if (conv && conv.id === c.id) { conv = null; try { localStorage.removeItem(STORE_HISTORY); } catch (e) { } }
+        renderSaved();
+      });
+      li.appendChild(b); li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
   function showHistory(open) {
     $("history").hidden = !open;
     $("history-btn").setAttribute("aria-expanded", String(open));
     document.body.classList.toggle("is-history", open);
     if (!open) return;
     closeMenus(null);
-    var changes = describeChanges();
-    var saved = null;
-    try { saved = JSON.parse(localStorage.getItem(STORE_HISTORY) || "null"); } catch (e) { }
+    if (!$("history-saved").hidden) return;
+    var changes = describeChanges(), c = currentConv();
     if (!historyBusy) {
-      if (saved && saved.key === changes && saved.text) { renderHistory(saved.text); historyStatus(""); $("history-go").textContent = "Write it again"; }
-      else if (saved && saved.text) { renderHistory(saved.text); historyStatus("The map has changed since this was written."); $("history-go").textContent = "Write its history"; }
-      else { $("history-text").textContent = ""; historyStatus(changes ? "" : "This is still our world. Change its map, or give it a turning point below, and its history will follow."); }
+      if (c) showConv(c);
+      else {
+        $("history-text").textContent = ""; $("history-chat").hidden = true; $("history-other").hidden = true;
+        $("history-go").textContent = "Write its history";
+        historyStatus(changes ? "" : "This is still our world. Change its map, or give it a turning point below, and its history will follow.");
+      }
     }
     $("history-go").disabled = historyBusy || !changes;
     $("redraw-go").disabled = historyBusy;
+    $("history-ask-go").disabled = historyBusy;
   }
   function writeHistory(premise) {
     var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-note").value;
@@ -5314,6 +5433,7 @@
     $("history-go").disabled = true;
     $("redraw-go").disabled = true;
     $("history-text").textContent = "";
+    $("history-chat").hidden = true; $("history-other").hidden = true;
     historyStatus("The historian is writing…");
     var text = "", queued = false, done = false;
     var paint = function () { queued = false; renderHistory(text); };
@@ -5324,7 +5444,12 @@
       $("history-go").textContent = "Write it again";
       historyStatus(msg);
       renderHistory(text);
-      if (text && !msg) { try { localStorage.setItem(STORE_HISTORY, JSON.stringify({ key: changes, text: text })); } catch (e) { } }
+      if (text && !msg) {
+        conv = { id: Date.now().toString(36), when: Date.now(), title: titleOf(text), premise: typeof premise === "string" ? premise : "", note: note, changes: changes, history: text, turns: [], map: makeDiff() };
+        convRead = true;
+        storeConv(conv);
+        showConv(conv);
+      }
     };
     fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: changes, note: note }) }).then(function (res) {
       if (res.status === 429) return finish("The historian has written all they can for today. Try again tomorrow.");
@@ -5429,6 +5554,63 @@
     });
   }
   $("redraw-go").addEventListener("click", redrawMap);
+  function askHistorian() {
+    var c = currentConv(), q = $("history-q").value.trim();
+    if (!c || historyBusy) return;
+    if (!q) { $("history-q").focus(); return; }
+    historyBusy = true;
+    $("history-ask-go").disabled = true; $("history-go").disabled = true; $("redraw-go").disabled = true;
+    $("history-chat-status").textContent = "The historian is answering…";
+    var turn = addTurn(q, ""), text = "", queued = false, done = false;
+    turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    $("history-q").value = "";
+    var paint = function () { queued = false; renderProse(turn.a, text); };
+    var finish = function (msg) {
+      if (done) return;
+      done = true; historyBusy = false;
+      $("history-ask-go").disabled = false; $("redraw-go").disabled = false; $("history-go").disabled = !describeChanges();
+      $("history-chat-status").textContent = msg || "";
+      if (text && !msg) {
+        renderProse(turn.a, text);
+        c.turns.push({ q: q, a: text });
+        c.when = Date.now();
+        storeConv(c);
+        return;
+      }
+      turn.q.remove(); turn.a.remove();
+      if (!$("history-q").value) $("history-q").value = q;
+    };
+    var payload = { mode: "chat", changes: c.changes, note: c.premise || c.note || "", history: c.history, turns: c.turns.slice(-24), question: q };
+    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).then(function (res) {
+      if (res.status === 429) return finish("The historian has answered all they can for today. Try again tomorrow.");
+      if (res.status === 413) return finish("This conversation has grown too long to continue. Write a new history to start another.");
+      if (res.status === 503) return finish("The historian is not taking requests yet.");
+      if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
+      $("history-chat-status").textContent = "";
+      return readEvents(res, function (ev) {
+        if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
+        else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to answer that." : ev.reason === "max_tokens" ? "" : "");
+        else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not answer this. Try again in a moment."); }
+        else if (ev.t === "closed") finish(text ? "" : "The historian could not answer this. Try again in a moment.");
+      });
+    }).catch(function (e) {
+      console.warn("historian", e);
+      finish("The historian could not be reached. Check your connection and try again.");
+    });
+  }
+  $("history-ask-go").addEventListener("click", askHistorian);
+  $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); askHistorian(); } });
+  $("history-saved-btn").addEventListener("click", function () { showSaved($("history-saved").hidden); });
+  $("history-map").addEventListener("click", function () {
+    var c = currentConv();
+    if (!c || !c.map) return;
+    (needsFine(c.map) ? loadFine() : Promise.resolve(true)).then(function () {
+      var step = replaceMap(c.map, "Opening a history's map");
+      toast("Its map is back", "Undo", undoIfTop(step));
+      toastStep = step;
+      showConv(c);
+    });
+  });
   $("redraw-premise").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) redrawMap(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 

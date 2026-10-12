@@ -259,6 +259,7 @@
     <section class="uc-chron" id="history" hidden aria-labelledby="history-title">
       <header class="uc-chron-head">
         <h2 class="uc-chron-title" id="history-title">The history of this world</h2>
+        <button type="button" class="uc-linkbtn uc-chron-saved-btn" id="history-saved-btn" aria-expanded="false" aria-controls="history-saved">Saved</button>
         <button type="button" class="uc-chron-close" id="history-close" aria-label="Close the history">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
@@ -273,10 +274,23 @@
           <textarea class="uc-chron-note" id="redraw-premise" rows="2" maxlength="500" placeholder="What if Rome never fell?"></textarea>
           <button type="button" class="uc-btn" id="redraw-go">Redraw the map</button>
         </div>
-        <p class="uc-chron-small">Written by Claude, an AI. Your map's changes and what you type here are sent to Anthropic. Five requests a visitor a day; a redrawn map and its history count as two.</p>
+        <p class="uc-chron-small">Written by Claude, an AI. Your map's changes and what you type here are sent to Anthropic. Five histories or redrawn maps a visitor a day (a redraw and its history count as two), and twenty questions.</p>
       </div>
       <p class="uc-chron-status" id="history-status" role="status"></p>
+      <p class="uc-chron-other" id="history-other" hidden>This history was written for another map. <button type="button" class="uc-linkbtn" id="history-map">Show its map</button></p>
       <article class="uc-chron-text" id="history-text"></article>
+      <div class="uc-chron-chat" id="history-chat" hidden>
+        <div class="uc-chron-turns" id="history-turns"></div>
+        <label class="uc-chron-label" for="history-q">Ask the historian more</label>
+        <textarea class="uc-chron-note" id="history-q" rows="2" maxlength="1000" placeholder="What became of the old dynasties?"></textarea>
+        <button type="button" class="uc-btn" id="history-ask-go">Ask</button>
+        <p class="uc-chron-status" id="history-chat-status" role="status"></p>
+      </div>
+      <div class="uc-chron-saved" id="history-saved" hidden>
+        <h3 class="uc-chron-sub">Saved in this browser</h3>
+        <ul class="uc-chron-list" id="history-list"></ul>
+        <p class="uc-chron-small" id="history-none">Every history you write is kept here, in this browser, with its map and your questions.</p>
+      </div>
     </section>
 
     <div class="uc-controls" aria-label="Map controls">

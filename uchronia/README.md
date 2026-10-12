@@ -377,6 +377,18 @@ of `/greatercircle/`.
     applies them as one step, which one undo takes back, flies to the land
     that moved, and has the historian write how it came to be, with the
     turning point as its note.
+  - Redraws are asked to be bold: to follow the turning point beyond its own
+    region, to let no border drawn after the divergence survive by
+    coincidence, and to merge, split or invent countries, up to about 1,500
+    regions moved.
+  - Under a history, **Ask the historian more** carries on the conversation:
+    each question goes with the history and the questions and answers before
+    it, and the historian answers in the same voice, inventing where the
+    history was silent.
+  - **Saved** lists every history written in this browser (the last 30),
+    each with its map, its turning point and its questions; opening one
+    carries on its conversation, and **Show its map** brings back the map it
+    was written for, as one step that undo reverses.
   - Claude names land from `data/catalogue.txt`, every country of our world
     and its regions as the map draws them (250 countries, 3,699 regions),
     built by `tools/build-catalogue.mjs`. The function fetches it from the
@@ -389,8 +401,9 @@ of `/greatercircle/`.
     a small server function, `supabase/functions/historian`, which asks
     Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
     the text back. The function holds the API key, answers only this site,
-    and allows 100 requests a day in all and 5 a visitor (a redrawn map and
-  its history count as two); it keeps only a
+    and allows 250 requests a day in all, and to each visitor 5 histories or
+  redrawn maps (a redraw and its history count as two) and 20 questions; it
+  keeps only a
     daily count per visitor under a hashed key, never the map or the text.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
