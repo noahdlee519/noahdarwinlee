@@ -286,7 +286,7 @@ function carve(parent, kids) {
   }
   return kids.map((k, i) => ({ n: k.n, order: k.order, polys: pieces.filter((q) => q.owner === i).map((q) => q.poly) })).filter((u) => u.polys.length);
 }
-function assign(code, children) {
+function assign(code, children, share = 0) {
   const own = parents.map((p, i) => i).filter((i) => parents[i].c === code);
   const groups = new Map(own.map((i) => [i, []]));
   children.forEach((ch, order) => {
@@ -297,7 +297,7 @@ function assign(code, children) {
       const part = intersect(crop(ch.mp, parents[i].bb), crop(parents[i].mp, bb)), a = area(part);
       if (a > most) { most = a; best = i; clip = part; }
     }
-    if (best >= 0) groups.get(best).push({ n: ch.n, mp: clip, bb: box(clip), order });
+    if (best >= 0 && most >= share * area(ch.mp)) groups.get(best).push({ n: ch.n, mp: clip, bb: box(clip), order });
   });
   for (const [i, list] of groups) {
     const byName = new Map();
@@ -468,6 +468,25 @@ const NAMES = {
   ZAF: { Cacadu: "Sarah Baartman", Eden: "Garden Route", Sisonke: "Harry Gwala", Uthungulu: "King Cetshwayo" },
   DZA: { Bashar: "Béchar", Tinduf: "Tindouf", "Burj Umar Idris": "Bordj Omar Driss", "Al Wata": "El Ouata", "Bani Abbas": "Béni Abbès", Ghardaia: "Ghardaïa" },
   IND: { "DATA NOT AVAILABLE": null, "Leh (Ladakh)": "Leh", "Kadapa (YSR)": "YSR Kadapa", "Warangal (R)": "Warangal Rural", "Warangal (U)": "Warangal Urban" },
+  UKR: {
+    "Velyks Mykhailivka": "Velyka Mykhailivka", "Velyka Lepetkya": "Velyka Lepetykha", "Verkhniy Rohackyk": "Verkhnii Rohachyk", Shepetika: "Shepetivka", Izmali: "Izmail",
+    Dunaivti: "Dunaivtsi", Liubashhivka: "Liubashivka", Artsyi: "Artsyz", "Velykyy Bereznyi": "Velykyi Bereznyi", Borschiv: "Borshchiv", Horodysche: "Horodyshche",
+    Monastyrysche: "Monastyryshche", Sofiyivka: "Sofiivka",
+  },
+  BLR: { "Puchavičy": "Pukhavichy", "Yelʹsk": "Yelsk", Akciabrski: "Aktsyabrski", Naroulia: "Narowlya", Svietlahorsk: "Svetlahorsk", Vietka: "Vetka" },
+  MYS: { "Nabawan / Persiangan": "Nabawan", "Kecil Lojing": "Lojing", Kulaijaya: "Kulai", Maradong: "Meradong" },
+  MMR: { "Det Khi Na": "Dekkhina", "Oke Ta Ra": "Ottara" },
+  POL: {
+    Krakow: "Kraków", "Bielsko County": "powiat bielski", "Colberg County": "powiat kołobrzeski", "Gliwice County": "powiat gliwicki", "Grodzisk Mazowiecki County": "powiat grodziski",
+    "Kutno County": "powiat kutnowski", "Lipno County": "powiat lipnowski", "Racibórz County": "powiat raciborski", "Siedlce County": "powiat siedlecki",
+    "Tarnowskie Góry County": "powiat tarnogórski", "Wodzisław County": "powiat wodzisławski", "Żyrardów County": "powiat żyrardowski",
+  },
+  KEN: { Tharaka: "Tharaka-Nithi" },
+  MEX: {
+    "San Juan Mixtepec -Dto. 08 -": "San Juan Mixtepec (Juxtlahuaca)", "San Juan Mixtepec -Dto. 26 -": "San Juan Mixtepec (Miahuatlán)",
+    "San Pedro Mixtepec -Dto. 22 -": "San Pedro Mixtepec (Juquila)", "San Pedro Mixtepec -Dto. 26 -": "San Pedro Mixtepec (Miahuatlán)",
+  },
+  SOL: new Set(["Awdal", "Woqooyi Galbeed", "Togdheer", "Sanaag", "Sool"]),
   RUS: {
     "городской округ Сосновобор": "городской округ Сосновоборск", "городской округ Лесосибирс": "городской округ Лесосибирск", "Closed administrative-territorial formation of Zhe": "ЗАТО Железногорск",
     "Черемховское городское мун": "городской округ Черемхово", "городской округ Усолье-Сиб": "городской округ Усолье-Сибирское", "городской округ Усть-Илимс": "городской округ Усть-Илимск",
@@ -653,6 +672,51 @@ const SPLIT = [
     url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/DZA/ADM3",
     load: fromGB("DZA", 3, (n) => NAMES.DZA[n] || n),
   },
+  {
+    c: "AUT", source: "Districts (Bezirke, 2017), Federal Office of Metrology and Surveying, BEV (via geoBoundaries)", license: "CC BY-SA 2.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/AUT/ADM2",
+    load: fromGB("AUT", 2, (n) => n.replace(/ \(Stadt\)$|-Stadt$/, "").replace(/ \(Land\)$| Land$/, "-Land")),
+  },
+  {
+    c: "BLR", source: "Raions (2005), CIESIN, Gridded Population of the World v3 (via geoBoundaries)", license: "CC BY 3.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/BLR/ADM2",
+    load: fromGB("BLR", 2, (n) => NAMES.BLR[n] || n),
+  },
+  {
+    c: "KEN", source: "Counties (2020), RCMRD GeoPortal and Africa GeoPortal (via geoBoundaries)", license: "Public domain",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/KEN/ADM1",
+    load: fromGB("KEN", 1, (n) => NAMES.KEN[n] || n),
+  },
+  {
+    c: "MYS", source: "Districts (2020), geoBoundaries and City Population (citypopulation.de)", license: "CC BY 3.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MYS/ADM2",
+    load: fromGB("MYS", 2, (n) => NAMES.MYS[n] || n),
+  },
+  {
+    c: "MEX", source: "Municipalities (2012), World Bank (via geoBoundaries)", license: "CC BY 4.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MEX/ADM2",
+    load: fromGB("MEX", 2, (n) => NAMES.MEX[n] || n),
+  },
+  {
+    c: "MMR", source: "Districts (2019), the Myanmar Analytics Project and USAID/Burma (via geoBoundaries)", license: "CC BY 4.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/MMR/ADM2",
+    load: fromGB("MMR", 2, (n) => NAMES.MMR[n] || n),
+  },
+  {
+    c: "POL", source: "Counties (powiats, 2017), © OpenStreetMap contributors (via Wambacher and geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/POL/ADM2",
+    load: fromGB("POL", 2, (n) => (NAMES.POL[n] || n).replace(/^powiat /, "Powiat ")),
+  },
+  {
+    c: "SOL", source: "Regions of Somalia (2015) within Somaliland, © OpenStreetMap contributors (via Wambacher and geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/SOM/ADM1",
+    load: fromGB("SOM", 1, (n) => NAMES.SOL.has(n) && n),
+  },
+  {
+    c: "UKR", share: 0.25, source: "Raions (before the 2020 reform), Wikimedia Commons (via geoBoundaries)", license: "Public domain",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/UKR/ADM2",
+    load: fromGB("UKR", 2, (n) => NAMES.UKR[n] || n),
+  },
 ];
 
 const t0 = Date.now();
@@ -660,7 +724,7 @@ for (const p of parents) if (SPLIT.some((s) => s.c === p.c)) { p.mp = union(ints
 const units = parents.map((p) => [{ n: p.n, polys: ints({ type: "MultiPolygon", coordinates: p.geo }) }]);
 const split = [], counts = {};
 for (const s of SPLIT) {
-  for (const [i, kids] of assign(s.c, s.load())) {
+  for (const [i, kids] of assign(s.c, s.load(), s.share)) {
     if (s.min && area(parents[i].mp) < s.min) continue;
     const done = kids.length > 1 ? carve(parents[i], kids) : [];
     if (done.length < 2) continue;
