@@ -64,7 +64,7 @@
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     satCanvas.width = canvas.width; satCanvas.height = canvas.height;
-    reliefCanvas.width = canvas.width; reliefCanvas.height = canvas.height;
+    reliefCanvas.width = Math.round(W * dpr * RELIEF_RES); reliefCanvas.height = Math.round(H * dpr * RELIEF_RES);
     var phone = phoneQuery.matches, bare = ui.bare;
     var barH = phone || bare ? 0 : Math.ceil(bar.getBoundingClientRect().bottom);
     var sheetH = phone && !bare ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 150) : 0;
@@ -1052,7 +1052,7 @@
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     sat.draw(o);
   }
-  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false;
+  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5;
   var rd = { key: "", rect: null, cache: new Map(), gen: 0, put: new Set(), off: false, failed: 0, ok: 0 };
   var RELIEF_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png", RELIEF_MAX_Z = 11;
   function reliefOn() {
@@ -1068,14 +1068,20 @@
     return !!relief && relief.ready();
   }
   function renderRelief() {
-    var o = { flat: flat, dpr: dpr, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
+    var o = { flat: flat, dpr: dpr * RELIEF_RES, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     relief.draw(o);
   }
+  var reliefKey = "", reliefPat = null;
+  function reliefFrame() {
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
+    if (key !== reliefKey || !reliefPat) { renderRelief(); reliefPat = reliefPattern(); reliefKey = key; }
+    return reliefPat;
+  }
   function reliefPattern() {
-    var pat = ctx.createPattern(reliefCanvas, "no-repeat");
-    if (pat && pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
+    var pat = ctx.createPattern(reliefCanvas, "no-repeat"), f = 1 / (dpr * RELIEF_RES);
+    if (pat && pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([f, 0, 0, f, 0, 0]));
     return pat;
   }
   function shade(pat) {
@@ -1167,7 +1173,7 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
     if (satLand) renderSat();
-    var relPat = !satellite && reliefOn() ? (renderRelief(), reliefPattern()) : null;
+    var relPat = !satellite && reliefOn() ? reliefFrame() : null;
 
     if (flat) {
       if (satSea) drawSat();
