@@ -438,6 +438,10 @@ of `/greatercircle/`.
   - *Whole countries*: click a country to give all of it;
   - *Lasso* (D): drag round any land, across region lines; on a phone, draw
     with one finger and move the map with two.
+    Drawn land that no longer changes anything (given back to the country
+    that holds the land under it, or left as a sliver thinner than about
+    100 m by a later edit) is removed in the same step, so no stray lines or
+    thin coasts stay behind.
 
   Alt-click picks the country to give land to.
 - **Cities (C)**: click to found a city; click one to pick it, then drag it

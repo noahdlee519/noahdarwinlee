@@ -837,6 +837,32 @@
     else seen.forEach(function (o) { traceFeature(ctx, shapeOf(o, lvl)); });
     ctx.clip();
   }
+  var layerCanvas = null;
+  function layerFill(list, color, relPat) {
+    var cv = layerCanvas || (layerCanvas = document.createElement("canvas"));
+    if (cv.width !== canvas.width || cv.height !== canvas.height) { cv.width = canvas.width; cv.height = canvas.height; }
+    var g = cv.getContext("2d"), main = ctx;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = "copy"; g.globalAlpha = 1;
+    g.fillStyle = color; g.fillRect(0, 0, cv.width, cv.height);
+    g.globalCompositeOperation = "source-over";
+    g.setTransform(main.getTransform());
+    ctx = g;
+    try {
+      g.beginPath(); g.rect(-10, -10, W + 20, H + 20);
+      shade(relPat);
+      g.globalCompositeOperation = "destination-in";
+      g.beginPath(); list.forEach(function (p) { traceFeature(g, p.shape.f); });
+      g.fillStyle = "#000"; g.fill();
+    } finally {
+      g.globalCompositeOperation = "source-over";
+      ctx = main;
+    }
+    main.save();
+    main.setTransform(1, 0, 0, 1, 0, 0);
+    main.drawImage(cv, 0, 0);
+    main.restore();
+  }
   function drawPieceFills(vis, lvl, satellite, satPat, relPat) {
     clipToLand(vis, lvl);
     ctx.globalAlpha = satellite ? 0.22 : 1;
@@ -850,7 +876,10 @@
       ctx.beginPath();
       list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
       if (satPat) { var sa = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = sa; }
-      if (o >= 0) { ctx.fillStyle = colorOf(o); ctx.fill(); shade(relPat); return; }
+      if (o >= 0) {
+        if (relPat && !satPat) { layerFill(list, colorOf(o), relPat); return; }
+        ctx.fillStyle = colorOf(o); ctx.fill(); shade(relPat); return;
+      }
       ctx.fillStyle = pal.unclaimed; ctx.fill(); shade(relPat);
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
     });
@@ -3181,7 +3210,40 @@
 
   var undoStack = [], redoStack = [], lastEdit = { key: null, t: 0 }, geomGen = 0;
   var toastStep = null;
+  function solidPoly(poly) {
+    var a = d3.geoArea({ type: "Polygon", coordinates: poly });
+    if (a > TAU) a = 2 * TAU - a;
+    var km2 = a * R_KM * R_KM, km = d3.geoLength({ type: "LineString", coordinates: poly[0] }) * R_KM;
+    return km2 >= 0.3 && km2 / Math.max(km, 1e-6) >= 0.1;
+  }
+  function polysKm2(polys) {
+    var t = 0;
+    polys.forEach(function (poly) { var a = d3.geoArea({ type: "Polygon", coordinates: poly }); if (a > TAU) a = 2 * TAU - a; t += a; });
+    return t * R_KM * R_KM;
+  }
+  function prunePieces() {
+    if (!pieces.length) return null;
+    var after = [], changedAny = false, hit = new Set();
+    pieces.forEach(function (p) {
+      var s = shapeCover(p.shape), other = false;
+      s.units.forEach(function (u, i) { if (s.cover[i] >= 0.5 && owner[u] !== p.owner) other = true; });
+      if (!other) { changedAny = true; hit.add(p.owner); return; }
+      var polys = p.shape.polys;
+      var kept = polys.filter(solidPoly);
+      if (kept.length === polys.length || (kept.length && Math.abs(polysKm2(kept) - polysKm2(polys)) < 0.1)) { after.push(p); return; }
+      changedAny = true; hit.add(p.owner);
+      if (kept.length) after.push({ id: ++pieceSeq, owner: p.owner, shape: makeShape(kept), edges: null });
+    });
+    if (!changedAny) return null;
+    var before = pieces;
+    pieces = after;
+    piecesChanged();
+    queueLabels(Array.from(hit));
+    return { t: "pieces", from: before, to: after };
+  }
   function pushStep(label, ops) {
+    var pruned = prunePieces();
+    if (pruned) ops.push(pruned);
     var step = { label: label, ops: ops };
     if (toastStep) { toastStep = null; hideToast(); }
     undoStack.push(step);
