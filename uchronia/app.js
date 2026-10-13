@@ -1290,6 +1290,7 @@
     mark("overlays");
 
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satPat, relPat); }
+    drawLakes(S, satellite);
     var ua = ui.fine ? clamp01((S - 700) / 500) : 0, pa = provAlpha(S);
     if (vis) clipOutPieces(vis);
     drawRegionLines(L, unitArcs, provArcs, ua, pa);
@@ -1335,6 +1336,7 @@
     var placed = fixedBoxes();
     drawLabels(placed);
     drawSeaLabels(placed, S);
+    drawLakeLabels(placed, S);
     mark("labels");
     drawCities(placed);
     mark("cities");
@@ -2033,6 +2035,56 @@
     return { lines: lines, v: v, lam: r[1] * D2R, phi: r[2] * D2R, tier: r[3] };
   });
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
+  var lakes = null, lakesLoad = null, LAKES_FROM = 650;
+  function lakeKmPx(S) { return (flat ? FB.k : S) / R_KM; }
+  function drawLakes(S, satellite) {
+    if (S < LAKES_FROM) return;
+    if (!lakesLoad) lakesLoad = fetchJSON("data/lakes.json").then(function (rows) {
+      lakes = rows.map(function (r) {
+        var v = toVec(r[2], r[3]);
+        return { name: r[0], km2: r[1], v: v, lam: r[2] * D2R, phi: r[3] * D2R, reach: Math.sqrt(r[1]) * 1.6 + 5, f: prepare([{ geometry: { type: "MultiPolygon", coordinates: r[4] } }])[0] };
+      });
+      scheduleRender();
+    }).catch(function (e) { console.warn("lakes", e); });
+    if (!lakes) return;
+    var kp = lakeKmPx(S), any = false;
+    ctx.beginPath();
+    for (var i = 0; i < lakes.length; i++) {
+      var L = lakes[i];
+      if (Math.sqrt(L.km2) * kp < 2.5) break;
+      var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi), r = L.reach * kp;
+      if (!p || p[0] + r < 0 || p[0] - r > W || p[1] + r < 0 || p[1] - r > H) continue;
+      traceFeature(ctx, L.f); any = true;
+    }
+    if (!any) return;
+    ctx.save();
+    ctx.globalAlpha = satellite ? 0.85 : 1;
+    ctx.fillStyle = pal.ocean; ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineJoin = "round"; ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.restore();
+  }
+  function drawLakeLabels(placed, S) {
+    if (!lakes || !ui.countryNames || S < LAKES_FROM) return;
+    var kp = lakeKmPx(S), size = pal.antique ? 11 : 10;
+    ctx.font = (pal.antique ? "italic 400 " + size + "px " + SERIF : "italic 400 " + size + "px " + FONT);
+    ctx.letterSpacing = "0.5px";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    for (var i = 0; i < lakes.length; i++) {
+      var L = lakes[i];
+      if (Math.sqrt(L.km2) * kp < 18) break;
+      if (!L.name) continue;
+      var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi);
+      if (!p || (!flat && p[2] < 0.3) || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
+      var label = L.name;
+      var w = ctx.measureText(label).width, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6, 0);
+      if (collides(placed, box)) continue;
+      placed.push(box);
+      ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean; ctx.fillStyle = pal["sea-label"];
+      ctx.strokeText(label, p[0], p[1]); ctx.fillText(label, p[0], p[1]);
+    }
+    ctx.letterSpacing = "0px";
+  }
   function drawSeaLabels(placed, S) {
     if (!pal.antique || !ui.countryNames) return;
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
@@ -2167,6 +2219,7 @@
       }
       cityScreen.push(s);
     }
+    drawTowns(placed, S, dot);
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
     ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 4 : 3;
     ctx.strokeStyle = pal["city-halo"];
@@ -2180,6 +2233,45 @@
       ctx.fillStyle = pal["city-label"]; ctx.fillText(s.c.name, s.tx, s.ty);
     }
     ctx.globalAlpha = 1; ctx.textAlign = "left";
+  }
+  var towns = null, townsLoad = null;
+  function townMin(S) { return S >= 8000 ? 5 : S >= 5000 ? 15 : S >= 3200 ? 40 : Infinity; }
+  function loadTowns() {
+    townsLoad = fetchJSON("data/towns.json").then(function (rows) {
+      towns = rows.map(function (r) { var v = toVec(r[1], r[2]); return { name: r[0], pop: r[3], x: v[0], y: v[1], z: v[2], lam: r[1] * D2R, phi: r[2] * D2R, w: 0 }; });
+      scheduleRender();
+    }).catch(function (e) { console.warn("towns", e); });
+  }
+  function drawTowns(placed, S, dot) {
+    var min = townMin(S);
+    if (!ui.cityNames || min === Infinity) return;
+    if (!townsLoad) loadTowns();
+    if (!towns) return;
+    var font = pal.antique ? "400 10.5px " + SERIF : "400 9.5px " + FONT, r = dot * 0.6 + 0.6, shown = [];
+    ctx.font = font;
+    for (var i = 0; i < towns.length; i++) {
+      var t = towns[i];
+      if (t.pop < min) break;
+      var p = projectVec(t.x, t.y, t.z, t.lam, t.phi);
+      if (!p || (!flat && p[2] <= 0.05)) continue;
+      if (p[0] < -10 || p[1] < -10 || p[0] > W + 10 || p[1] > H + 10) continue;
+      if (!t.w) t.w = ctx.measureText(t.name).width;
+      var off = r + 3.5, box = mkBox(p[0] + off + t.w / 2, p[1], t.w / 2 + 2, pal.antique ? 6.5 : 6, 0);
+      if (collides(placed, box)) continue;
+      placed.push(box);
+      shown.push(p[0], p[1], t);
+    }
+    if (!shown.length) return;
+    ctx.lineWidth = 1;
+    ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
+    ctx.beginPath();
+    for (i = 0; i < shown.length; i += 3) { ctx.moveTo(shown[i] + r, shown[i + 1]); ctx.arc(shown[i], shown[i + 1], r, 0, TAU); }
+    ctx.fill(); ctx.stroke();
+    ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.lineJoin = "round";
+    ctx.lineWidth = pal.antique ? 3.5 : 3; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal["city-label"];
+    ctx.globalAlpha = pal.antique ? 0.92 : 0.75;
+    for (i = 0; i < shown.length; i += 3) { ctx.strokeText(shown[i + 2].name, shown[i] + r + 3.5, shown[i + 1]); ctx.fillText(shown[i + 2].name, shown[i] + r + 3.5, shown[i + 1]); }
+    ctx.globalAlpha = 1;
   }
   function isTown(c) { return !c.cap && c.tier >= 4; }
   function cityFont(c) {
@@ -2504,17 +2596,20 @@
   function clearOf(avoid, x, y, d) {
     if (!avoid) return true;
     var hs = 0.64 * d, dx = x - avoid[0];
-    return Math.abs(y - avoid[1]) >= 3.4 * hs || -dx >= 1.4 * hs || dx >= 2.8 * hs;
+    return Math.abs(y - avoid[1]) >= 2.3 * hs || -dx >= 1.4 * hs || dx >= 2.8 * hs;
   }
   function placeLabel(rings, dmax, aspect, start, avoid) {
     var at = nearCentre(rings, dmax * CENTRE_KEEP, aspect, start, avoid, Infinity);
-    if (at || !avoid) return at || start;
-    for (var k = 0; k < 2; k++) {
-      var t = dmax * (k ? 0.48 : 0.62);
-      at = nearCentre(rings, t, aspect, start, avoid, t);
-      if (at) return at;
-    }
-    return nearCentre(rings, dmax * CENTRE_KEEP, aspect, start, null, Infinity) || start;
+    if (!avoid) return at || start;
+    var best = null, bestScore = -1;
+    var weigh = function (c) {
+      if (!c) return;
+      var sc = c[2] * Math.exp(-Math.hypot(c[0] * aspect, c[1]) / (4 * dmax));
+      if (sc > bestScore) { bestScore = sc; best = c; }
+    };
+    weigh(at);
+    [0.62, 0.48].forEach(function (k) { var t = dmax * k; weigh(nearCentre(rings, t, aspect, start, avoid, t)); });
+    return best || nearCentre(rings, dmax * CENTRE_KEEP, aspect, start, null, Infinity) || start;
   }
   function nearCentre(rings, tau, aspect, start, avoid, cap) {
     var ext = rings[0], minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;

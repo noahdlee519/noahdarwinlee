@@ -77,8 +77,9 @@ of `/greatercircle/`.
     neighbours never share one and sit well apart on the wheel; any colour can
     still be chosen by hand.
   - **Styles.** *Light* is black on white and *Dark* white on black; both
-    follow the site's day and night setting, which they also set. *Antique*
-    is drawn like a hand-coloured map of the 1800s:
+    follow the site's day and night setting, which they also set. *Antique*,
+    the style a first visit opens in, is drawn like a hand-coloured map of
+    the 1800s:
     - parchment and sepia ink, with a paper grain on the bar, the menus and
       the buttons;
     - pale washes inside each country, with a stronger band of its colour
@@ -125,8 +126,11 @@ of `/greatercircle/`.
   the middle where a name at least 78% of that size still fits, and the text
   is sized to sit inside the ellipse there.
   - The name keeps clear of its country's capital (above, below or to the
-    side of it, leaving room for the capital's own name), shrinking a step or
-    two if it must; only where there is no room at all does it sit on top.
+    side of it, leaving room for the capital's own name). Where the capital
+    is near the middle (Madrid, Bogotá), a full-size name at the edge and a
+    smaller one beside the capital are weighed by size and by distance from
+    the middle, so the name stays central; only where there is no room at
+    all does it sit on top.
   - Names with spaces are tried on two lines too.
   - A name may also lie across the sea within its country's reach: the
     convex hull of its largest piece of land and every other piece within
@@ -168,6 +172,22 @@ of `/greatercircle/`.
   coloured map. Where a capital's name has no room, its mark is still drawn,
   and with the Cities tool a click on a city that is not drawn picks it
   rather than founding another on top of it.
+- **Towns.** Past the zoom at which the map's own cities are all shown, some
+  40,000 more places are drawn as small rings with their names, from
+  `data/towns.json`, loaded only then: those of more than 40,000 people
+  first, then more than 15,000, then every place of 5,000 or more, each
+  giving way to the names already on the map. They come from GeoNames
+  (through the all-the-cities package), in their Latin-script names, less
+  any within a few kilometres of a city the map already has; they are
+  scenery and cannot be picked or edited. `tools/build-towns.mjs` builds the
+  file.
+- **Lakes.** Some 3,200 lakes from Natural Earth's detailed lakes (with its
+  extra European and North American sets), from about 6 km² up, drawn as
+  water over the land and under the borders, each once it is big enough on
+  screen to see, with its name in italic once it is bigger still: Lake
+  Geneva, the Bodensee, Lake Balaton, the Great Salt Lake. `data/lakes.json`
+  is loaded once the map is zoomed in a little; `tools/build-lakes.mjs`
+  builds it.
 - **Rivers.** Natural Earth's rivers, drawn in blue over the countries and
   under their borders: the largest (the Amazon, the Nile, the Yangtze) from
   the whole globe, and smaller ones in nine steps as the map is zoomed in;
@@ -534,7 +554,9 @@ in the repo. They covered:
     PLoS ONE 15(4): e0231866, 2020).
 
   The `sources` list in `data/units.json` has the links.
-- **Cities:** GeoNames (CC BY 4.0).
+- **Cities and towns:** GeoNames (CC BY 4.0), the towns through the
+  all-the-cities package by Zeke Sikelianos (MIT).
+- **Lakes:** Natural Earth (public domain).
 - **Satellite view:** NASA Earth Observatory, Blue Marble Next Generation by
   Reto Stöckli, and NASA's Global Imagery Browse Services (public domain).
 - **Terrain:** Terrain Tiles on the Registry of Open Data on AWS, by Mapzen:
