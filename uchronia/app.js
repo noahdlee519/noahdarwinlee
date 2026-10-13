@@ -1342,6 +1342,7 @@
     mark("cities");
     if (!satellite) drawRiverLabels(placed, S);
     drawGridLabels(placed, satSea);
+    drawTowns(placed, S, cityDot(S));
     drawScale();
     ctx.restore();
   }
@@ -2219,7 +2220,6 @@
       }
       cityScreen.push(s);
     }
-    drawTowns(placed, S, dot);
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
     ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 4 : 3;
     ctx.strokeStyle = pal["city-halo"];
