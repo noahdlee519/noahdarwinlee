@@ -537,11 +537,6 @@ body.uc-page {
 .uc-chron-close svg {
   display: block;
 }
-.uc-chron-lede {
-  margin: 12px 0 14px;
-  font-size: 15px;
-  line-height: 1.45;
-}
 .uc-chron-label {
   display: block;
   margin: 0 0 5px;
@@ -565,10 +560,35 @@ body.uc-page {
 #redraw-go::before {
   content: none;
 }
-.uc-chron-turn {
+.uc-chron-modes {
+  display: flex;
   margin: 16px 0 0;
-  padding: 14px 0 0;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+}
+.uc-chron-modes button {
+  flex: 1 1 0;
+  padding: 7px 8px;
+  font-size: 13.5px;
+}
+.uc-chron-hint {
+  margin: 12px 0 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.uc-chron-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.uc-chron-row .uc-chron-small {
+  margin: 0;
+}
+.uc-chron-new {
+  display: block;
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+.uc-chron-new[hidden] {
+  display: none;
 }
 .uc-chron-note::placeholder {
   color: var(--uc-muted);

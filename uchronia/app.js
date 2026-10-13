@@ -837,6 +837,14 @@
     else seen.forEach(function (o) { traceFeature(ctx, shapeOf(o, lvl)); });
     ctx.clip();
   }
+  function satTint() { return pal.antique ? 0.45 : 0.22; }
+  function satWash() {
+    if (!pal.antique) return;
+    ctx.save();
+    ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = 0.28;
+    ctx.fillStyle = "#e9d9b4"; ctx.fill();
+    ctx.restore();
+  }
   var layerCanvas = null;
   function layerFill(list, color, relPat) {
     var cv = layerCanvas || (layerCanvas = document.createElement("canvas"));
@@ -865,7 +873,7 @@
   }
   function drawPieceFills(vis, lvl, satellite, satPat, relPat) {
     clipToLand(vis, lvl);
-    ctx.globalAlpha = satellite ? 0.22 : 1;
+    ctx.globalAlpha = satellite ? satTint() : 1;
     var byOwner = new Map();
     vis.forEach(function (p) {
       var o = p.owner >= 0 && countries[p.owner] ? p.owner : UNCLAIMED;
@@ -878,7 +886,7 @@
       if (satPat) { var sa = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = sa; }
       if (o >= 0) {
         if (relPat && !satPat) { layerFill(list, colorOf(o), relPat); return; }
-        ctx.fillStyle = colorOf(o); ctx.fill(); shade(relPat); return;
+        ctx.fillStyle = colorOf(o); ctx.fill(); if (satPat) satWash(); shade(relPat); return;
       }
       ctx.fillStyle = pal.unclaimed; ctx.fill(); shade(relPat);
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
@@ -985,7 +993,7 @@
       if (!by.has(k)) by.set(k, []);
       by.get(k).push(u);
     });
-    ctx.globalAlpha = satellite ? 0.22 : 1;
+    ctx.globalAlpha = satellite ? satTint() : 1;
     by.forEach(function (list, o) {
       ctx.beginPath();
       list.forEach(function (u) { traceFeature(ctx, F[u]); });
@@ -1247,14 +1255,15 @@
     mark("sea");
     var vis = visiblePieces(), cutFills = vis && satellite;
     if (cutFills) clipOutPieces(vis);
-    ctx.globalAlpha = satellite ? 0.22 : 1;
+    ctx.globalAlpha = satellite ? satTint() : 1;
     var bandW = bandWidth(S), satPat = satLand ? satPattern() : null;
     for (var g = 0; g < groups.length; g++) {
       var list = groups[g].countries;
       ctx.beginPath();
       for (var i = 0; i < list.length; i++) traceFeature(ctx, shapeOf(list[i], lvl));
-      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = 0.22; }
+      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = satTint(); }
       ctx.fillStyle = groups[g].fill; ctx.fill();
+      if (satPat) satWash();
       shade(relPat);
       if (bandW && groups[g].band) {
         ctx.save(); ctx.clip();
@@ -1266,7 +1275,7 @@
     }
     if (unclaimedUnits.length) {
       ctx.beginPath(); traceFeature(ctx, shapeOf(UNCLAIMED, lvl));
-      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = 0.22; }
+      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = satTint(); }
       ctx.fillStyle = pal.unclaimed; ctx.fill();
       shade(relPat);
       ctx.globalAlpha = 1;
@@ -3898,8 +3907,9 @@
     var head = new Option("Choose a country", "");
     head.disabled = true;
     sel.appendChild(head);
-    var list = [];
-    countries.forEach(function (co, i) { if (co.alive) list.push(i); });
+    var list = [], cur = currentCountry();
+    freshGroups();
+    countries.forEach(function (co, i) { if (co.alive && (i === cur || hasLand(i))) list.push(i); });
     list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     pickVersion = countriesVersion;
@@ -3962,7 +3972,7 @@
     flyToCountry(ui.country);
   });
   $("country-pick").addEventListener("pointerdown", fillCountryPick);
-  $("country-pick").addEventListener("focus", function () { if (pickVersion !== countriesVersion) { fillCountryPick(); var c = currentCountry(); if (c >= 0) $("country-pick").value = String(c); } });
+  $("country-pick").addEventListener("focus", fillCountryPick);
   [1, 2].forEach(function (bit) {
     $("lines-" + bit).addEventListener("click", function () {
       var c = currentCountry();
@@ -4766,7 +4776,11 @@
     menus.forEach(function (m) { if (m !== except && m.open && !(sheetMode && m.id === "file-menu")) m.open = false; });
   }
   menus.forEach(function (m) {
-    m.addEventListener("toggle", function () { if (m.open && !sheetMode) closeMenus(m); });
+    m.addEventListener("toggle", function () {
+      if (!m.open) return;
+      if (!sheetMode) closeMenus(m);
+      if (!$("history").hidden) showHistory(false);
+    });
   });
   document.addEventListener("pointerdown", function (e) {
     if (sheetMode) return;
@@ -5093,13 +5107,13 @@
     applyStyle(st);
     try {
       if (st === "antique") localStorage.setItem(STORE_STYLE, "antique");
-      else { localStorage.removeItem(STORE_STYLE); localStorage.setItem("ndl-theme", st); }
+      else { localStorage.setItem(STORE_STYLE, "plain"); localStorage.setItem("ndl-theme", st); }
     } catch (e) { }
   }
   function syncStyle() {
     var t = null, st = null;
     try { t = localStorage.getItem("ndl-theme"); st = localStorage.getItem(STORE_STYLE); } catch (e) { }
-    if (st !== "antique") st = t === "dark" || t === "light" ? t : darkMedia && darkMedia.matches ? "dark" : "light";
+    st = st !== "plain" ? "antique" : t === "dark" || t === "light" ? t : darkMedia && darkMedia.matches ? "dark" : "light";
     if (st !== currentStyle()) applyStyle(st);
   }
   function styleChanged() {
@@ -5428,13 +5442,13 @@
     var changes = describeChanges();
     $("history-other").hidden = sameMap(c) || !c.map;
     historyStatus(!c.map && c.changes !== changes ? "The map has changed since this was written." : "");
-    $("history-go").textContent = c.changes === changes ? "Write it again" : "Write its history";
+    showAsk(false);
   }
   function showSaved(open) {
     $("history-saved").hidden = !open;
     $("history-saved-btn").setAttribute("aria-expanded", String(open));
     $("history-saved-btn").textContent = open ? "Back" : "Saved";
-    ["history-ask", "history-text"].forEach(function (id) { $(id).hidden = open; });
+    ["history-ask", "history-new", "history-text"].forEach(function (id) { $(id).hidden = open; });
     if (open) { $("history-chat").hidden = true; $("history-other").hidden = true; historyStatus(""); renderSaved(); }
     else showHistory(true);
   }
@@ -5480,20 +5494,40 @@
       if (c) showConv(c);
       else {
         $("history-text").textContent = ""; $("history-chat").hidden = true; $("history-other").hidden = true;
-        $("history-go").textContent = "Write its history";
-        historyStatus(changes ? "" : "This is still our world. Change its map, or give it a turning point below, and its history will follow.");
+        historyStatus("");
+        showAsk(true);
+        setMode(changes ? "map" : "turn");
       }
     }
-    $("history-go").disabled = historyBusy || !changes;
-    $("redraw-go").disabled = historyBusy;
+    syncAsk();
+  }
+  var askMode = "map";
+  var MODES = {
+    map: { hint: "The historian tells how your map came to be.", hold: "Optional: where it begins, or what to stress", go: "Write its history" },
+    turn: { hint: "Give a turning point: the historian redraws the map from it, then tells its history.", hold: "What if Rome never fell?", go: "Redraw the map" }
+  };
+  function setMode(m) {
+    askMode = m;
+    $("mode-map").setAttribute("aria-pressed", String(m === "map"));
+    $("mode-turn").setAttribute("aria-pressed", String(m === "turn"));
+    $("history-hint").textContent = m === "map" && !describeChanges() ? "Your map is still our world: change it first, or give a turning point." : MODES[m].hint;
+    $("history-input").placeholder = MODES[m].hold;
+    $("history-go").textContent = MODES[m].go;
+    syncAsk();
+  }
+  function syncAsk() {
+    $("history-go").disabled = historyBusy || (askMode === "map" && !describeChanges());
     $("history-ask-go").disabled = historyBusy;
   }
+  function showAsk(open) {
+    $("history-ask").hidden = !open;
+    $("history-new").hidden = open || !currentConv();
+  }
   function writeHistory(premise) {
-    var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-note").value;
+    var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-input").value.trim();
     if (!changes || historyBusy) return;
     historyBusy = true; historyKey = changes;
     $("history-go").disabled = true;
-    $("redraw-go").disabled = true;
     $("history-text").textContent = "";
     $("history-chat").hidden = true; $("history-other").hidden = true;
     historyStatus("The historian is writing…");
@@ -5501,15 +5535,14 @@
     var paint = function () { queued = false; renderHistory(text); };
     var finish = function (msg) {
       historyBusy = false; done = true;
-      $("history-go").disabled = false;
-      $("redraw-go").disabled = false;
-      $("history-go").textContent = "Write it again";
+      syncAsk();
       historyStatus(msg);
       renderHistory(text);
       if (text && !msg) {
         conv = { id: Date.now().toString(36), when: Date.now(), title: titleOf(text), premise: typeof premise === "string" ? premise : "", note: note, changes: changes, history: text, turns: [], map: makeDiff() };
         convRead = true;
         storeConv(conv);
+        $("history-input").value = "";
         showConv(conv);
       }
     };
@@ -5544,7 +5577,11 @@
   }
   $("history-btn").addEventListener("click", function () { showHistory($("history").hidden); });
   $("history-close").addEventListener("click", function () { showHistory(false); $("history-btn").focus(); });
-  $("history-go").addEventListener("click", function () { writeHistory(); });
+  $("history-go").addEventListener("click", function () { if (askMode === "turn") redrawMap(); else writeHistory(); });
+  $("mode-map").addEventListener("click", function () { setMode("map"); });
+  $("mode-turn").addEventListener("click", function () { setMode("turn"); });
+  $("history-new").addEventListener("click", function () { showAsk(true); setMode(describeChanges() ? "map" : "turn"); $("history-input").focus(); });
+  $("history-input").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("history-go").click(); } });
   function readEvents(res, on) {
     var reader = res.body.getReader(), dec = new TextDecoder(), buf = "";
     var pump = function () {
@@ -5575,17 +5612,17 @@
     return [Math.atan2(y / n, x / n) / D2R, Math.asin(z / n) / D2R];
   }
   function redrawMap() {
-    var premise = $("redraw-premise").value.trim();
-    if (!premise || historyBusy) { if (!premise) $("redraw-premise").focus(); return; }
+    var premise = $("history-input").value.trim();
+    if (!premise || historyBusy) { if (!premise) $("history-input").focus(); return; }
     historyBusy = true;
-    $("history-go").disabled = true; $("redraw-go").disabled = true;
+    $("history-go").disabled = true;
     $("history-text").textContent = "";
     historyStatus("The historian is redrawing the map. This can take a minute or two…");
     var done = false;
     var finish = function (msg) {
       if (done) return;
       done = true; historyBusy = false;
-      $("history-go").disabled = !describeChanges(); $("redraw-go").disabled = false;
+      syncAsk();
       historyStatus(msg);
     };
     fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "redraw", premise: premise, changes: describeChanges() }) }).then(function (res) {
@@ -5615,13 +5652,13 @@
       finish("The historian could not be reached. Check your connection and try again.");
     });
   }
-  $("redraw-go").addEventListener("click", redrawMap);
+
   function askHistorian() {
     var c = currentConv(), q = $("history-q").value.trim();
     if (!c || historyBusy) return;
     if (!q) { $("history-q").focus(); return; }
     historyBusy = true;
-    $("history-ask-go").disabled = true; $("history-go").disabled = true; $("redraw-go").disabled = true;
+    $("history-ask-go").disabled = true; $("history-go").disabled = true;
     $("history-chat-status").textContent = "The historian is answering…";
     var turn = addTurn(q, ""), text = "", queued = false, done = false;
     turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
@@ -5630,7 +5667,7 @@
     var finish = function (msg) {
       if (done) return;
       done = true; historyBusy = false;
-      $("history-ask-go").disabled = false; $("redraw-go").disabled = false; $("history-go").disabled = !describeChanges();
+      syncAsk();
       $("history-chat-status").textContent = msg || "";
       if (text && !msg) {
         renderProse(turn.a, text);
@@ -5673,7 +5710,7 @@
       showConv(c);
     });
   });
-  $("redraw-premise").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) redrawMap(); });
+
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 
   window.__uchronia = {

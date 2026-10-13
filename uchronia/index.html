@@ -45,7 +45,7 @@
               ? "dark"
               : "light";
         }
-        if (s === "antique") {
+        if (s !== "plain") {
           t = "light";
           document.documentElement.setAttribute("data-uc-style", "antique");
         }
@@ -57,7 +57,7 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'sha256-e3Q4YZo/6ik0osg9Ihkp8WHpO3Y/xtKIGihkzxbKPnM=';
+        script-src 'self' 'sha256-fzUk4KzGKeD0CPX4LseLuhoUrtQ+D0fsBwxymYe1AxU=';
         style-src 'self';
         font-src 'self';
         img-src 'self' data: blob: https://gibs.earthdata.nasa.gov https://s3.amazonaws.com;
@@ -258,24 +258,25 @@
 
     <section class="uc-chron" id="history" hidden aria-labelledby="history-title">
       <header class="uc-chron-head">
-        <h2 class="uc-chron-title" id="history-title">The history of this world</h2>
+        <h2 class="uc-chron-title" id="history-title">History</h2>
         <button type="button" class="uc-linkbtn uc-chron-saved-btn" id="history-saved-btn" aria-expanded="false" aria-controls="history-saved">Saved</button>
         <button type="button" class="uc-chron-close" id="history-close" aria-label="Close the history">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </header>
       <div class="uc-chron-ask" id="history-ask">
-        <p class="uc-chron-lede">A historian of your world tells how its map came to be: where its history parted from ours, and everything that followed.</p>
-        <label class="uc-chron-label" for="history-note">Where it begins, or what to stress <span>(optional)</span></label>
-        <textarea class="uc-chron-note" id="history-note" rows="2" maxlength="500" placeholder="Napoleon wins at Waterloo"></textarea>
-        <button type="button" class="uc-btn" id="history-go">Write its history</button>
-        <div class="uc-chron-turn">
-          <label class="uc-chron-label" for="redraw-premise">Or give it a turning point, and it redraws the map</label>
-          <textarea class="uc-chron-note" id="redraw-premise" rows="2" maxlength="500" placeholder="What if Rome never fell?"></textarea>
-          <button type="button" class="uc-btn" id="redraw-go">Redraw the map</button>
+        <div class="uc-seg uc-chron-modes" role="group" aria-label="Write the history of">
+          <button type="button" id="mode-map" aria-pressed="true">Your map</button>
+          <button type="button" id="mode-turn" aria-pressed="false">A turning point</button>
         </div>
-        <p class="uc-chron-small">Written by Claude, an AI. Your map's changes and what you type here are sent to Anthropic. Five histories or redrawn maps a visitor a day (a redraw and its history count as two), and twenty questions.</p>
+        <p class="uc-chron-hint" id="history-hint">The historian tells how your map came to be.</p>
+        <textarea class="uc-chron-note" id="history-input" rows="2" maxlength="500" aria-labelledby="history-hint"></textarea>
+        <div class="uc-chron-row">
+          <button type="button" class="uc-btn" id="history-go">Write its history</button>
+          <span class="uc-chron-small">By Claude, an AI. Your map's changes and what you type go to Anthropic.</span>
+        </div>
       </div>
+      <button type="button" class="uc-linkbtn uc-chron-new" id="history-new" hidden>New history</button>
       <p class="uc-chron-status" id="history-status" role="status"></p>
       <p class="uc-chron-other" id="history-other" hidden>This history was written for another map. <button type="button" class="uc-linkbtn" id="history-map">Show its map</button></p>
       <article class="uc-chron-text" id="history-text"></article>
