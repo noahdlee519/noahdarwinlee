@@ -1338,11 +1338,12 @@
     drawSeaLabels(placed, S);
     drawLakeLabels(placed, S);
     mark("labels");
-    drawCities(placed);
-    mark("cities");
+    var cityShown = drawCities(placed);
     if (!satellite) drawRiverLabels(placed, S);
     drawGridLabels(placed, satSea);
     drawTowns(placed, S, cityDot(S));
+    paintCities(cityShown, cityDot(S));
+    mark("cities");
     drawScale();
     ctx.restore();
   }
@@ -2175,11 +2176,11 @@
   }
 
   function cityDot(S) { return S < 900 ? 1.7 : S < 2600 ? 2.2 : 2.7; }
-  function tierFor(S) { return S >= 3200 ? 5 : S >= 2200 ? 4 : S >= 1300 ? 3 : S >= 850 ? 2 : S >= 560 ? 1 : 0; }
+  function tierFor(S) { return S >= 5000 ? 5 : S >= 2200 ? 4 : S >= 1300 ? 3 : S >= 850 ? 2 : S >= 560 ? 1 : 0; }
   var cityScreen = [];
   function drawCities(placed) {
     cityScreen = [];
-    if (!cities.length) return;
+    if (!cities.length) return [];
     var S = localScale(), show = tierFor(S) + (ui.tool === "city" ? 1 : 0), dot = cityDot(S);
     var pad = 3, shown = [];
     for (var i = 0; i < cities.length; i++) {
@@ -2208,23 +2209,28 @@
         named = false; box = mkBox(px, py, mr + 1, mr + 1, 0);
       }
       placed.push(box);
-      shown.push({ c: c, x: px, y: py, off: off, named: named, r: mr, tx: tx, ty: ty, align: align });
+      var it = { c: c, x: px, y: py, off: off, named: named, r: mr, tx: tx, ty: ty, align: align };
+      shown.push(it);
+      cityScreen.push(it);
     }
+    return shown;
+  }
+  function paintCities(shown, dot) {
+    var i, s;
     ctx.lineWidth = 1.2;
-    for (i = 0; i < shown.length; i++) {
-      var s = shown[i];
+    for (i = shown.length - 1; i >= 0; i--) {
+      s = shown[i];
       drawCityMark(s.c, s.x, s.y, dot);
       if (s.c === ui.city) {
         ctx.strokeStyle = pal.select; ctx.lineWidth = 1.6;
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r + 4, 0, TAU); ctx.stroke();
         ctx.lineWidth = 1.2;
       }
-      cityScreen.push(s);
     }
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
     ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 4 : 3;
     ctx.strokeStyle = pal["city-halo"];
-    for (i = 0; i < shown.length; i++) {
+    for (i = shown.length - 1; i >= 0; i--) {
       s = shown[i];
       if (!s.named) continue;
       ctx.font = cityFont(s.c);
@@ -2236,7 +2242,7 @@
     ctx.globalAlpha = 1; ctx.textAlign = "left";
   }
   var towns = null, townsLoad = null;
-  function townMin(S) { return S >= 8000 ? 5 : S >= 5000 ? 15 : S >= 3200 ? 40 : Infinity; }
+  function townMin(S) { return S >= 12000 ? 5 : S >= 8000 ? 15 : S >= 5000 ? 40 : Infinity; }
   function loadTowns() {
     townsLoad = fetchJSON("data/towns.json").then(function (rows) {
       towns = rows.map(function (r) { var v = toVec(r[1], r[2]); return { name: r[0], pop: r[3], x: v[0], y: v[1], z: v[2], lam: r[1] * D2R, phi: r[2] * D2R, w: 0 }; });
@@ -2322,7 +2328,7 @@
     return best;
   }
   function sortCities() {
-    cities.sort(function (a, b) { return a.tier - b.tier || b.cap - a.cap || a.rank - b.rank; });
+    cities.sort(function (a, b) { return b.cap - a.cap || a.tier - b.tier || a.rank - b.rank; });
   }
 
   function visible(lonlat) {
@@ -2514,11 +2520,17 @@
       });
       return best0;
     }
-    var top = search(rings), shape = rings;
+    var top = search(rings), shape = rings, shift = [0, 0];
     var hull = clusterHull(coords, best, proj);
     if (hull) {
-      var wide = search([hull]);
-      if (wide && (!top || wide.score * 0.8 > top.score) && foreignShare(wide, proj, c) < 0.06 && (bestA < 0.7 * allA || enclosure(wide, proj, c) >= 0.65)) { top = wide; shape = [hull]; }
+      var hc = ringCentroid(hull), home0 = home;
+      if (home) home = [home[0] - hc[0], home[1] - hc[1]];
+      var hs = hull.map(function (q) { return [q[0] - hc[0], q[1] - hc[1]]; });
+      var wide = search([hs]);
+      home = home0;
+      if (wide) { wide.x += hc[0]; wide.y += hc[1]; }
+      var isles = bestA < 0.7 * allA;
+      if (wide && (!top || wide.score * (isles ? 0.8 : 0.55) > top.score) && foreignShare(wide, proj, c) < 0.06 && (isles || enclosure(wide, proj, c) >= 0.65)) { top = wide; shape = [hs]; shift = hc; }
     }
     if (!top) {
       setLabel(co, cen[0], cen[1], 4, [name], 0, bestA * R_KM * R_KM, ext);
@@ -2527,13 +2539,24 @@
     var ll = proj.invert([top.x, -top.y]);
     setLabel(co, ll[0], ll[1], top.fkm, top.lines, top.ang, bestA * R_KM * R_KM, ext);
     co.label.sea = shape !== rings;
-    var bent = pal.antique && !UNBENDABLE.test(name) ? bendLabel(shape, top, cen[1], home) : null;
+    var local = { lines: top.lines, ang: top.ang, fkm: top.fkm, x: top.x - shift[0], y: top.y - shift[1] };
+    var bent = pal.antique && !UNBENDABLE.test(name) ? bendLabel(shape, local, cen[1], home ? [home[0] - shift[0], home[1] - shift[1]] : null) : null;
     if (!bent) return;
+    bent.x += shift[0]; bent.y += shift[1];
+    bent.arc = bent.arc.map(function (q) { return [q[0] + shift[0], q[1] + shift[1]]; });
     var bl = proj.invert([bent.x, -bent.y]);
     co.label.bent = { v: toVec(bl[0], bl[1]), lam: bl[0] * D2R, phi: bl[1] * D2R, fkm: bent.fkm, arc: bent.arc.map(function (q) {
       var g = proj.invert([q[0], -q[1]]);
       return { v: toVec(g[0], g[1]), lam: g[0] * D2R, phi: g[1] * D2R };
     }) };
+  }
+  function ringCentroid(ring) {
+    var a = 0, x = 0, y = 0;
+    for (var i = 0; i + 1 < ring.length; i++) {
+      var p = ring[i], q = ring[i + 1], k = p[0] * q[1] - q[0] * p[1];
+      a += k; x += (p[0] + q[0]) * k; y += (p[1] + q[1]) * k;
+    }
+    return a ? [x / (3 * a), y / (3 * a)] : [0, 0];
   }
   function clusterHull(coords, best, proj) {
     var parts = [];

@@ -139,9 +139,12 @@ of `/greatercircle/`.
     only if the country is a true archipelago (its largest piece holds under
     70% of its land) or the name is ringed by its own land (in at least 65%
     of sixteen directions, its land lies within 1.3 name-widths): Indonesia,
-    Japan, the Philippines, Malaysia, Canada over Hudson Bay. Norway, Chile
-    and Costa Rica, whose far islands only stretch the hull over open sea,
-    keep their names on land.
+    Japan, the Philippines, Malaysia, Canada over Hudson Bay. A country that
+    is not an archipelago takes the hull only for a name at least 1.8 times
+    larger. Norway, Chile and Costa Rica, whose far islands only stretch the
+    hull over open sea, and India, keep their names on land. A name on a
+    hull is centred on the hull, not on the largest island, so Indonesia's
+    lies across the Java Sea rather than on Borneo.
   - A country too small for its name on its land has it set in small type
     beside it, in the water, where there is room (the Caribbean islands,
     Cyprus, Lebanon).
@@ -167,6 +170,14 @@ of `/greatercircle/`.
   - Country names and settlements can each be hidden (in the View menu);
     hiding settlements hides their marks and names together, except the one
     picked and all of them while the Settlements tool is in use.
+- **Settlements** are placed in order of rank: capitals first, then cities,
+  towns and small towns, each giving way to those before it, and drawn in
+  the reverse order, so a capital's mark and name sit on top of any other.
+  Africa's largest cities (Cairo, Lagos, Kinshasa, Luanda, Dar es Salaam,
+  Johannesburg, Khartoum, Abidjan, Addis Ababa, Nairobi) are shown from the
+  farthest zoom, its cities of 1.5 million or more a step later and of
+  800,000 a step after that (`tools/retier-africa.mjs`, from GeoNames'
+  populations), so the continent is not left bare beside the others.
 - **Cities.** A capital is a star in a circle, a city a square and a town a
   white circle, in every style, each with its own size of name; in Antique
   the names are a size larger, on a heavier halo, to read clearly over the
