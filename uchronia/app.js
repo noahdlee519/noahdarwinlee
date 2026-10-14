@@ -48,7 +48,7 @@
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, scaleBar: true, rivers: true, gridLabels: true, terrain: true };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -2175,7 +2175,7 @@
   }
 
   function cityDot(S) { return S < 900 ? 1.7 : S < 2600 ? 2.2 : 2.7; }
-  function tierFor(S) { return S >= 2200 ? 4 : S >= 1300 ? 3 : S >= 850 ? 2 : S >= 560 ? 1 : 0; }
+  function tierFor(S) { return S >= 3200 ? 5 : S >= 2200 ? 4 : S >= 1300 ? 3 : S >= 850 ? 2 : S >= 560 ? 1 : 0; }
   var cityScreen = [];
   function drawCities(placed) {
     cityScreen = [];
@@ -2192,7 +2192,8 @@
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
       ctx.font = cityFont(c);
       if (!c.w) c.w = ctx.measureText(c.name).width;
-      var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = ui.cityNames || must;
+      if (!ui.cityNames && !must && ui.tool !== "city") continue;
+      var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = true;
       var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, pal.antique ? 7.5 : 7, 0) : mkBox(px, py, mr + 3, mr + 3, 0);
       var tx = px + off, ty = py, align = "left";
       if (!must && named && pal.antique && collides(placed, box)) {
@@ -2244,7 +2245,7 @@
   }
   function drawTowns(placed, S, dot) {
     var min = townMin(S);
-    if (!ui.cityNames || min === Infinity) return;
+    if (!ui.cityNames || !ui.towns || min === Infinity) return;
     if (!townsLoad) loadTowns();
     if (!towns) return;
     var font = pal.antique ? "400 10.5px " + SERIF : "400 9.5px " + FONT, r = dot * 0.6 + 0.6, shown = [];
@@ -2274,11 +2275,12 @@
     ctx.globalAlpha = 1;
   }
   function isTown(c) { return !c.cap && c.tier >= 4; }
+  function isSmall(c) { return !c.cap && c.tier >= 5; }
   function cityFont(c) {
-    if (pal.antique) return (c.cap ? "700 13px " : isTown(c) ? "400 11.5px " : "400 12.5px ") + SERIF;
-    return (c.cap ? "500 12px " : isTown(c) ? "400 10px " : "400 11px ") + FONT;
+    if (pal.antique) return (c.cap ? "700 13px " : isSmall(c) ? "400 10.5px " : isTown(c) ? "400 11.5px " : "400 12.5px ") + SERIF;
+    return (c.cap ? "500 12px " : isSmall(c) ? "400 9.5px " : isTown(c) ? "400 10px " : "400 11px ") + FONT;
   }
-  function markSize(c, dot) { return c.cap ? dot + 3.8 : isTown(c) ? dot * 0.8 + 0.8 : dot + 0.9; }
+  function markSize(c, dot) { return c.cap ? dot + 3.8 : isSmall(c) ? dot * 0.6 + 0.6 : isTown(c) ? dot * 0.8 + 0.8 : dot + 0.9; }
   function drawCityMark(c, x, y, dot) {
     var r = markSize(c, dot);
     ctx.lineWidth = 1.1;
@@ -3837,13 +3839,14 @@
     var before = citySnapshot(c);
     if (size === "capital") { c.cap = 1; c.tier = Math.min(c.tier, 2); }
     else if (size === "city") { c.cap = 0; c.tier = Math.min(c.tier, 3); }
+    else if (size === "small") { c.cap = 0; c.tier = 5; }
     else { c.cap = 0; c.tier = 4; }
     c.w = 0;
     sortCities();
     pushStep("Resizing a city", [{ t: "city", id: c.id, from: before, to: citySnapshot(c) }]);
     changed();
   }
-  function citySize(c) { return c.cap ? "capital" : c.tier >= 4 ? "town" : "city"; }
+  function citySize(c) { return c.cap ? "capital" : c.tier >= 5 ? "small" : c.tier >= 4 ? "town" : "city"; }
 
   var lastLand = "paint";
   function landTool() { return ui.tool === "paint" || ui.tool === "draw"; }
@@ -3986,6 +3989,7 @@
     document.querySelectorAll("#style-seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.style === st)); });
     $("show-countries").checked = ui.countryNames;
     $("show-cities").checked = ui.cityNames;
+    $("show-towns").checked = !!ui.towns;
     $("show-scale").checked = ui.scaleBar;
     $("show-grid").checked = ui.gridLabels;
     $("show-rivers").checked = ui.rivers;
@@ -5112,14 +5116,15 @@
   function setNames() {
     ui.countryNames = $("show-countries").checked;
     ui.cityNames = $("show-cities").checked;
+    ui.towns = $("show-towns").checked;
     ui.scaleBar = $("show-scale").checked;
     ui.gridLabels = $("show-grid").checked;
     ui.rivers = $("show-rivers").checked;
     ui.terrain = $("show-terrain").checked;
-    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
+    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
     scheduleRender();
   }
-  ["show-countries", "show-cities", "show-scale", "show-grid", "show-rivers", "show-terrain"].forEach(function (id) { $(id).addEventListener("change", setNames); });
+  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain"].forEach(function (id) { $(id).addEventListener("change", setNames); });
 
   function init(topo, cityRows) {
     var geoms = topo.objects.provinces.geometries;
@@ -5162,7 +5167,7 @@
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
     var namesPref = null;
     try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
-    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; }
+    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; }
     if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); setTip($("flat-btn"), "Globe (M)"); }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
@@ -5815,6 +5820,8 @@
     owner: function () { return owner; },
     provinces: function () { return { n: nProv, name: provName, units: nUnit, unitName: unitName, unitProv: unitProv }; },
     cities: function () { return cities; },
+    shownCities: function () { return cityScreen.length; },
+    townsLoaded: function () { return !!townsLoad; },
     project: function (lon, lat) { setupFrame(); var p = projectLL(lon, lat); return p ? [p[0], p[1]] : null; },
     provinceAt: unitAt,
     lonLatAt: lonLatAt,

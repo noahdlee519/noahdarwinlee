@@ -164,16 +164,18 @@ of `/greatercircle/`.
     boxes would overlap, or would run under the scale bar, the map buttons or
     (on a phone) the site's name. They are worked out again in 14 ms slices after each
     edit or rename.
-  - Country names and city names can each be hidden (in the View menu); with
-    city names hidden, the cities stay as dots.
+  - Country names and settlements can each be hidden (in the View menu);
+    hiding settlements hides their marks and names together, except the one
+    picked and all of them while the Settlements tool is in use.
 - **Cities.** A capital is a star in a circle, a city a square and a town a
   white circle, in every style, each with its own size of name; in Antique
   the names are a size larger, on a heavier halo, to read clearly over the
   coloured map. Where a capital's name has no room, its mark is still drawn,
-  and with the Cities tool a click on a city that is not drawn picks it
+  and with the Settlements tool a click on a city that is not drawn picks it
   rather than founding another on top of it.
-- **Towns.** Past the zoom at which the map's own cities are all shown, some
-  40,000 more places are drawn as small rings with their names, from
+- **Small towns.** Off unless **View → Small towns** is ticked: past the zoom
+  at which the map's own cities are all shown, some 40,000 more places are
+  drawn as small rings with their names, from
   `data/towns.json`, loaded only then: those of more than 40,000 people
   first, then more than 15,000, then every place of 5,000 or more, each
   giving way to the names already on the map. They come from GeoNames
@@ -377,7 +379,8 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
-  over) and **View** (the style, country and city names, terrain, rivers,
+  over) and **View** (the style, country names, settlements, small towns,
+  terrain, rivers,
   latitude and longitude, the scale bar, finer regions). **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
   map zooms in; it is left off under the satellite view. What is
@@ -464,8 +467,10 @@ of `/greatercircle/`.
     thin coasts stay behind.
 
   Alt-click picks the country to give land to.
-- **Cities (C)**: click to found a city; click one to pick it, then drag it
-  to move it (a drag on a city that isn't picked moves the map).
+- **Settlements (C)**: click to found a city; click one to pick it, then drag
+  it to move it (a drag on a city that isn't picked moves the map). A picked
+  settlement can be a capital, a city, a town or a small town; small towns
+  show only close up, with the smallest mark.
 - **M** switches between the globe and the flat map; **S** turns the
   satellite view on and off; **H** (or the eye button) hides everything but
   the map, and brings it back.
@@ -506,7 +511,7 @@ in the repo. They covered:
 - the Check menu (a clean map, a forgotten city and country, going to one and
   renaming it), the greyed-out inner borders, rivers fading out up close, and
   Antique's two-tone sea with the satellite view on;
-- a hidden capital picked by the Cities tool, the about note opening and
+- a hidden capital picked by the Settlements tool, the about note opening and
   closing, the latitude and longitude labels thinning out on the whole flat
   map, and the phone's larger buttons;
 - the themed tooltips (delay, placement, keyboard focus, Escape, the three
