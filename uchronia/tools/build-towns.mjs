@@ -53,8 +53,9 @@ cities.forEach((r) => add({ p: [r[1], r[2]], n: fold(r[0]), big: true }));
 
 const latin = (s) => /^[\u0000-\u024F\u1E00-\u1EFF'’ .,()-]+$/.test(s);
 all.forEach((c) => { if (!latin(c.name)) c.name = latin(c.alt) ? c.alt : ""; });
+const BOROUGH = /^(Manhattan|Brooklyn|Queens|The Bronx|Bronx|Staten Island)$/;
 const kept = [];
-all.filter((c) => c.pop >= MIN_POP && /^PPL/.test(c.code) && c.code !== "PPLX" && c.code !== "PPLH" && c.code !== "PPLQ" && c.name)
+all.filter((c) => c.pop >= MIN_POP && /^PPL/.test(c.code) && c.code !== "PPLX" && c.code !== "PPLH" && c.code !== "PPLQ" && c.name && !(BOROUGH.test(c.name) && km([c.lon, c.lat], [-73.95, 40.7]) < 40))
   .sort((a, b) => b.pop - a.pop)
   .forEach((c) => {
     const p = [c.lon, c.lat], n = fold(c.name);

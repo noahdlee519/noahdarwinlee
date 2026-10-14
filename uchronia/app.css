@@ -711,6 +711,12 @@ body.uc-page {
 .uc-chron-q:first-child {
   margin-top: 0;
 }
+.uc-chron-asked {
+  margin: 4px 0 14px;
+}
+.uc-chron-asked:empty {
+  display: none;
+}
 .uc-chron-turns .uc-chron-text {
   margin: 0;
 }

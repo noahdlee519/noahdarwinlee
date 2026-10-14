@@ -5916,8 +5916,11 @@
     if (a) renderProse(ae, a);
     return { q: qe, a: ae };
   }
+  function askedOf(c) { return c.asked || (c.premise || "").split("\n")[0] || c.note || ""; }
+  function showAsked(q) { var e = $("history-asked"); e.textContent = q || ""; e.hidden = !q; }
   function showConv(c) {
     describeChanges();
+    showAsked(askedOf(c));
     renderHistory(c.history);
     renderTurns(c);
     $("history-chat").hidden = false;
@@ -5930,7 +5933,7 @@
     $("history-saved").hidden = !open;
     $("history-saved-btn").setAttribute("aria-expanded", String(open));
     $("history-saved-btn").textContent = open ? "Back" : "Saved";
-    ["history-ask", "history-new", "history-text"].forEach(function (id) { $(id).hidden = open; });
+    ["history-ask", "history-new", "history-asked", "history-text"].forEach(function (id) { $(id).hidden = open; });
     if (open) { $("history-chat").hidden = true; historyStatus(""); renderSaved(); }
     else showHistory(true);
   }
@@ -5943,7 +5946,7 @@
       b.type = "button"; b.className = "uc-chron-item";
       t.className = "uc-chron-item-t"; t.textContent = c.title || titleOf(c.history);
       var bits = [new Date(c.when || 0).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })];
-      if (c.premise) bits.push(c.premise);
+      if (askedOf(c)) bits.push(askedOf(c));
       if (c.turns.length) bits.push(c.turns.length + (c.turns.length === 1 ? " question" : " questions"));
       if (cur && cur.id === c.id) { bits.push("open"); b.setAttribute("aria-current", "true"); }
       m.className = "uc-chron-item-m"; m.textContent = bits.join(" · ");
@@ -5982,6 +5985,7 @@
       if (c) showConv(c);
       else {
         $("history-text").textContent = ""; $("history-chat").hidden = true;
+        showAsked("");
         historyStatus("");
         showAsk(true);
         setMode(changes ? "map" : "turn");
@@ -6009,15 +6013,18 @@
   }
   function showAsk(open) {
     $("history-ask").hidden = !open;
-    $("history-new").hidden = open || !currentConv();
+    $("history-new").hidden = open || historyBusy || !currentConv();
   }
-  function writeHistory(premise) {
+  function writeHistory(premise, asked) {
     var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-input").value.trim();
+    asked = typeof asked === "string" ? asked : note;
     if (!changes || historyBusy) return;
     historyBusy = true; historyKey = changes;
     $("history-go").disabled = true;
     $("history-text").textContent = "";
     $("history-chat").hidden = true;
+    showAsked(asked);
+    showAsk(false);
     historyStatus("The historian is writing…");
     var text = "", queued = false, done = false;
     var paint = function () { queued = false; renderHistory(text); };
@@ -6026,8 +6033,10 @@
       syncAsk();
       historyStatus(msg);
       renderHistory(text);
+      if (!text) showAsked("");
+      if (!text || msg) showAsk(true);
       if (text && !msg) {
-        conv = { id: Date.now().toString(36), when: Date.now(), title: titleOf(text), premise: typeof premise === "string" ? premise : "", note: note, changes: changes, history: text, turns: [], map: makeDiff() };
+        conv = { id: Date.now().toString(36), when: Date.now(), title: titleOf(text), premise: typeof premise === "string" ? premise : "", note: note, asked: asked, changes: changes, history: text, turns: [], map: makeDiff() };
         convRead = true;
         storeConv(conv);
         $("history-input").value = "";
@@ -6106,6 +6115,8 @@
     var asked = performance.now();
     $("history-go").disabled = true;
     $("history-text").textContent = "";
+    showAsked(premise);
+    showAsk(false);
     historyStatus("The historian is redrawing the map. This can take a minute or two…");
     var done = false;
     var finish = function (msg) {
@@ -6113,6 +6124,7 @@
       done = true; historyBusy = false;
       syncAsk();
       historyStatus(msg);
+      if (msg) { showAsked(""); showAsk(true); }
     };
     fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "redraw", premise: premise }) }).then(function (res) {
       if (res.status === 429) return finish("The historian has done all they can for today. Try again tomorrow.");
@@ -6138,7 +6150,7 @@
           var at = centreOf(r.units);
           if (at) flyTo(at[0], at[1]);
           var year = ev.plan && isInt(ev.plan.year) ? ev.plan.year : 0;
-          writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise);
+          writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise, premise);
         } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : ev.reason === "max_tokens" ? "The historian's map ran too long. Try a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not redraw this. Try again in a moment."); }
         else if (ev.t === "closed") finish(performance.now() - asked > 100000 ? "The historian ran out of time on a map this large. Try a smaller part of the world or a narrower turning point." : "The historian could not redraw this. Try again in a moment.");

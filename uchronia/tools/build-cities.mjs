@@ -24,7 +24,7 @@ const out = cities.map(([name, cc, lon, lat, tier]) => {
 
 const SKIP = new Set(["al mawsil al jadidah|IQ", "budta|PH", "takeo|KH", "malingao|PH", "pasragad branch|IR", "kahriz|IR",
   "kyain seikgyi township|MM", "nowrangapur|IN", "teni|IN", "battagram|PK", "kotli|PK", "situbondo|ID", "guankou|CN", "shibganj|BD",
-  "winejok|SS"]);
+  "winejok|SS", "staten island|US"]);
 const RENAME = { "nizhniy novgorod": "Nizhny Novgorod", "rostov na donu": "Rostov-on-Don", "al hudaydah": "Hodeidah", "taizz": "Taiz",
   "tai an": "Tai'an", "fes": "Fez", "as sulaymaniyah": "Sulaymaniyah", "arbil": "Erbil", "al mawsil": "Mosul", "an najaf": "Najaf",
   "halab": "Aleppo", "hims": "Homs", "hamah": "Hama", "al ladhiqiyah": "Latakia", "al iskandariyah": "Alexandria", "bur said": "Port Said",

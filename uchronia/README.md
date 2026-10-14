@@ -450,8 +450,10 @@ of `/greatercircle/`.
   ours, each with a year and a cause, and what followed from them, in three
   to six eras. A note can say where the history begins or what it should
   stress. Every country, region and city of the map that the history names
-  is a link that flies the map to it. The last history is kept in the
-  browser, and the panel says when the map has changed since.
+  is a link that flies the map to it. Once it is sent, the note or turning
+  point stays above its history, in the panel and when a saved history is
+  opened again. The last history is kept in the browser, and the panel says
+  when the map has changed since.
   - **Redraw the map** takes a turning point instead ("What if Rome never
     fell?", "The world in 1925 if the Central Powers had won"): Claude
     decides how the world's map would stand in the year the turning point
