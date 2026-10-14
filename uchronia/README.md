@@ -97,7 +97,7 @@ of `/greatercircle/`.
       wide in ink and then a little narrower in the sea colour; four on a
       large map, two or three on a small one, and none round islands too
       small to see;
-    - Old Standard TT, a revival of late 19th-century type, for the menus
+    - IM Fell English, Igino Marini's revival of the Fell types, for the menus
       and the names, italic names for 57 oceans and seas (the oceans only on
       a map big enough to hold them), circled cities and
       ringed capitals, and a double frame round the flat map;
@@ -114,7 +114,7 @@ of `/greatercircle/`.
       it; all of it is multiplied onto the canvas after the borders and
       before the names. The satellite view is toned sepia;
     - the site's name in letterspaced capitals and the back link in italic,
-      both in Old Standard TT; on a phone, where they sit over the map, they
+      both in IM Fell English; on a phone, where they sit over the map, they
       share a small title block in a double rule.
 - **Labels.** A country's name goes on its largest piece, as near its middle
   as a good-sized name will fit. To find the place, the piece is drawn on an
@@ -383,8 +383,9 @@ of `/greatercircle/`.
   the smaller one is resized across the wrap.
 - **vendor/**: d3-array, d3-geo, topojson-client, topojson-simplify and
   polygon-clipping, unmodified.
-- **/fonts/**: Old Standard TT (SIL Open Font License), from
-  @fontsource/old-standard-tt, served from the site like its other typeface.
+- **/fonts/**: IM Fell English, from @fontsource/im-fell-english, with Old
+  Standard TT, from @fontsource/old-standard-tt, for the letters it lacks
+  (both SIL Open Font License), served from the site like its other typeface.
 
 ## Using it
 

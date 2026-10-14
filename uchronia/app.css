@@ -186,7 +186,7 @@
 }
 :root[data-uc-style="antique"] .uc-page .name,
 :root[data-uc-style="antique"] .uc-page .back-link {
-  font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
+  font-family: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
   font-weight: 400;
 }
 :root[data-uc-style="antique"] .uc-page .name {
@@ -205,7 +205,7 @@
 :root[data-uc-style="antique"] .uc-load,
 :root[data-uc-style="antique"] .uc-chron,
 :root[data-uc-style="antique"] .uc-ctl {
-  font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
+  font-family: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
 }
 :root[data-uc-style="antique"] .uc-bar,
 :root[data-uc-style="antique"] .uc-tip,
