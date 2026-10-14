@@ -1460,30 +1460,58 @@
     return w;
   }
   function riverLabelRank(S) { return S < 650 ? 0 : S < 1100 ? 2 : S < 2000 ? 4 : S < 3800 ? 6 : S < 7000 ? 7 : 9; }
-  function riverRuns(lines, x0, y0, x1, y1, need) {
-    var best = null;
-    function take(run) {
-      if (run.length < 2) return;
-      var cum = [0];
-      for (var k = 1; k < run.length; k++) cum.push(cum[k - 1] + Math.hypot(run[k][0] - run[k - 1][0], run[k][1] - run[k - 1][1]));
-      var len = cum[cum.length - 1];
-      if (len >= need && (!best || len > best.len)) best = { pts: run, cum: cum, len: len };
+  function lineKm(L) {
+    if (L.km) return L.km;
+    var km = new Float64Array(L.n);
+    for (var k = 1; k < L.n; k++) {
+      var d = L.x[k] * L.x[k - 1] + L.y[k] * L.y[k - 1] + L.z[k] * L.z[k - 1];
+      km[k] = km[k - 1] + Math.acos(Math.max(-1, Math.min(1, d))) * R_KM;
     }
-    function walk(L) {
-      if (L.parts) { L.parts.forEach(walk); return; }
-      if (!flat && !onScreen(L)) return;
-      if (flat) flatArrays(L);
-      var run = [];
-      for (var k = 0; k < L.n; k++) {
-        var p = projectVec(L.x[k], L.y[k], L.z[k], flat ? L.L[k] : 0, flat ? L.P[k] : 0);
-        var ok = p && (flat || p[2] > 0.05) && p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1;
-        if (ok && run.length && Math.abs(p[0] - run[run.length - 1][0]) > W / 2) { take(run); run = []; }
-        if (ok) run.push([p[0], p[1]]); else { take(run); run = []; }
+    return (L.km = km);
+  }
+  function leafLines(lines, out) {
+    lines.forEach(function (L) { if (L.parts) leafLines(L.parts, out); else out.push(L); });
+    return out;
+  }
+  function riverSpan(L, a, b, box) {
+    var km = L.km, lo = 0, hi = L.n - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (km[mid] <= a) lo = mid; else hi = mid; }
+    var pts = [], kms = [];
+    if (flat) flatArrays(L);
+    for (var k = lo; k < L.n; k++) {
+      var p = projectVec(L.x[k], L.y[k], L.z[k], flat ? L.L[k] : 0, flat ? L.P[k] : 0);
+      if (!p || (!flat && p[2] <= 0.05) || p[0] < box[0] || p[0] > box[2] || p[1] < box[1] || p[1] > box[3]) return null;
+      if (pts.length && Math.abs(p[0] - pts[pts.length - 1][0]) > W / 2) return null;
+      pts.push([p[0], p[1]]); kms.push(km[k]);
+      if (km[k] >= b) break;
+    }
+    if (pts.length < 2 || kms[kms.length - 1] < b || kms[0] > a) return null;
+    return smoothRun(pts, kms);
+  }
+  function smoothRun(pts, kms) {
+    var step = 2, res = [pts[0]], rk = [kms[0]];
+    for (var k = 1; k < pts.length; k++) {
+      var d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]), m = Math.max(1, Math.ceil(d / step));
+      for (var j = 1; j <= m; j++) {
+        var t = j / m;
+        res.push([pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * t, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t]);
+        rk.push(kms[k - 1] + (kms[k] - kms[k - 1]) * t);
       }
-      take(run);
     }
-    lines.forEach(walk);
-    return best;
+    var w = 7, out = [], cum = [0];
+    for (k = 0; k < res.length; k++) {
+      var sx = 0, sy = 0, c = 0;
+      for (j = Math.max(0, k - w); j <= Math.min(res.length - 1, k + w); j++) { sx += res[j][0]; sy += res[j][1]; c++; }
+      out.push([sx / c, sy / c]);
+      if (k) cum.push(cum[k - 1] + Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]));
+    }
+    return { pts: out, cum: cum, km: rk, len: cum[cum.length - 1] };
+  }
+  function runPx(run, km) {
+    var lo = 0, hi = run.km.length - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (run.km[mid] <= km) lo = mid; else hi = mid; }
+    var t = run.km[hi] > run.km[lo] ? (km - run.km[lo]) / (run.km[hi] - run.km[lo]) : 0;
+    return run.cum[lo] + (run.cum[hi] - run.cum[lo]) * Math.max(0, Math.min(1, t));
   }
   function pointAt(run, s) {
     var cum = run.cum, pts = run.pts, lo = 0, hi = cum.length - 1;
@@ -1492,31 +1520,71 @@
     var seg = cum[hi] - cum[lo] || 1, t = (s - cum[lo]) / seg;
     return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * t, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * t];
   }
-  function placeAlong(run, ws, sp, tw, f) {
-    var free = run.len - tw, tries = free > f * 4 ? 7 : 1, best = null;
-    for (var t = 0; t < tries; t++) {
-      var s0 = tries === 1 ? free / 2 : free * (0.15 + 0.7 * t / (tries - 1));
-      var a = pointAt(run, s0), b = pointAt(run, s0 + tw), back = b[0] < a[0];
-      var glyphs = [], turn = 0, d = 0, prev = null;
-      for (var j = 0; j < ws.length; j++) {
-        var mid = d + ws[j] / 2, s = back ? s0 + tw - mid : s0 + mid;
-        var p = pointAt(run, s), q1 = pointAt(run, s - f * 0.6), q2 = pointAt(run, s + f * 0.6);
-        var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
-        if (prev !== null) { var da = Math.abs(ang - prev); turn += Math.min(da, TAU - da); }
-        prev = ang;
-        glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
-        d += ws[j] + sp;
+  function glyphsAt(run, s0, ws, sp, tw, f) {
+    if (s0 < 0 || s0 + tw > run.len) return null;
+    var a = pointAt(run, s0), b = pointAt(run, s0 + tw), back = b[0] < a[0];
+    var glyphs = [], turn = 0, d = 0, prev = null;
+    for (var j = 0; j < ws.length; j++) {
+      var mid = d + ws[j] / 2, s = back ? s0 + tw - mid : s0 + mid;
+      var p = pointAt(run, s), q1 = pointAt(run, s - f * 0.7), q2 = pointAt(run, s + f * 0.7);
+      var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
+      if (prev !== null) {
+        var da = Math.abs(ang - prev); da = Math.min(da, TAU - da);
+        if (da > 0.6) return null;
+        turn += da;
       }
-      var score = turn + Math.abs(s0 + tw / 2 - run.len / 2) / run.len;
-      if (turn < 1.4 && (!best || score < best.score)) best = { glyphs: glyphs, score: score };
+      prev = ang;
+      glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
+      d += ws[j] + sp;
     }
-    return best && best.glyphs;
+    return turn < 1.6 ? { glyphs: glyphs, turn: turn } : null;
+  }
+  var riverPick = new Map();
+  function glyphBox(glyphs, f) {
+    var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
+    glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
+    return mkBox((gx0 + gx1) / 2, (gy0 + gy1) / 2, (gx1 - gx0) / 2 + f * 0.6, (gy1 - gy0) / 2 + f * 0.6, 0);
+  }
+  function riverSpot(rv, set, ws, sp, tw, f, box, kmPx, placed) {
+    var leaves = rv.leaves || (rv.leaves = leafLines(rv.lines, [])), textKm = tw / kmPx, half = textKm * 0.7, step = textKm * 0.5;
+    var key = rv.name, was = riverPick.get(key);
+    function at(li, m) {
+      var L = leaves[li], c = (m + 0.5) * step;
+      if (c + half > L.km[L.n - 1]) return null;
+      var run = riverSpan(L, c - half, c + half, box);
+      if (!run) return null;
+      var g = glyphsAt(run, runPx(run, c) - tw / 2, ws, sp, tw, f);
+      if (!g) return null;
+      g.box = glyphBox(g.glyphs, f);
+      if (collides(placed, g.box)) return null;
+      g.li = li; g.m = m; g.c = pointAt(run, runPx(run, c));
+      return g;
+    }
+    if (was && was.set === set && was.step > step * 0.8 && was.step < step * 1.25) {
+      var keep = at(was.li, was.m);
+      if (keep) return keep;
+    }
+    var best = null, mx = (box[0] + box[2]) / 2, my = (box[1] + box[3]) / 2, diag = Math.hypot(box[2] - box[0], box[3] - box[1]);
+    for (var li = 0; li < leaves.length; li++) {
+      var L = leaves[li];
+      if (!flat && !onScreen(L)) continue;
+      lineKm(L);
+      var count = Math.floor(L.km[L.n - 1] / step);
+      for (var m = 0; m < count; m++) {
+        var g = at(li, m);
+        if (!g) continue;
+        g.score = g.turn + Math.hypot(g.c[0] - mx, g.c[1] - my) / diag;
+        if (!best || g.score < best.score) best = g;
+      }
+    }
+    if (best) riverPick.set(key, { set: set, li: best.li, m: best.m, step: step });
+    return best;
   }
   function drawRiverLabels(placed, S) {
     var set = riverSetFor(S), top = riverLabelRank(S);
     if (!set || !ui.rivers || !top || riverFade() < 0.6) return;
     var f = pal.antique ? 11.5 : 10.5, font = (pal.antique ? "italic 400 " : "italic 500 ") + f + "px " + (pal.antique ? SERIF : FONT);
-    var x0 = freeL + 4, x1 = freeR - 4, y0 = freeT + 4, y1 = freeB - 4, shown = 0;
+    var box = [freeL + 4, freeT + 4, freeR - 4, freeB - 4], shown = 0, kmPx = (flat ? FB.k : S) / R_KM;
     ctx.save();
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
     for (var i = 0; i < set.names.length && shown < 40; i++) {
@@ -1524,14 +1592,10 @@
       if (rv.r > top) break;
       var chars = Array.from(rv.name), sp = f * 0.06, ws = [], tw = 0;
       for (var j = 0; j < chars.length; j++) { ws.push(charWidth(font, chars[j])); tw += ws[j] + (j ? sp : 0); }
-      var run = riverRuns(rv.lines, x0, y0, x1, y1, tw * 1.3);
-      var glyphs = run && placeAlong(run, ws, sp, tw, f);
-      if (!glyphs) continue;
-      var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
-      glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
-      var box = mkBox((gx0 + gx1) / 2, (gy0 + gy1) / 2, (gx1 - gx0) / 2 + f * 0.6, (gy1 - gy0) / 2 + f * 0.6, 0);
-      if (collides(placed, box)) continue;
-      placed.push(box);
+      var spot = riverSpot(rv, set, ws, sp, tw, f, box, kmPx, placed);
+      if (!spot) continue;
+      var glyphs = spot.glyphs;
+      placed.push(spot.box);
       shown++;
       ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"];
       for (j = 0; j < glyphs.length; j++) {
@@ -2286,7 +2350,8 @@
       ctx.font = cityFont(c);
       if (!c.w) c.w = ctx.measureText(c.name).width;
       if (!ui.cityNames && !must && ui.tool !== "city") continue;
-      var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = true;
+      var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = true, mbox = mkBox(px, py, mr + 1.5, mr + 1.5, 0);
+      if (!must && !c.cap && collides(placed, mbox)) continue;
       var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, pal.antique ? 7.5 : 7, 0) : mkBox(px, py, mr + 3, mr + 3, 0);
       var tx = px + off, ty = py, align = "left";
       if (!must && named && pal.antique && collides(placed, box)) {
@@ -2298,9 +2363,10 @@
       }
       if (!must && collides(placed, box)) {
         if (!c.cap) continue;
-        named = false; box = mkBox(px, py, mr + 1, mr + 1, 0);
+        named = false; box = null;
       }
-      placed.push(box);
+      placed.push(mbox);
+      if (box) placed.push(box);
       var it = { c: c, x: px, y: py, off: off, named: named, r: mr, tx: tx, ty: ty, align: align };
       shown.push(it);
       cityScreen.push(it);
@@ -2385,9 +2451,9 @@
       if (!p || (!flat && p[2] <= 0.05)) continue;
       if (p[0] < -10 || p[1] < -10 || p[0] > W + 10 || p[1] > H + 10) continue;
       if (!t.w) t.w = ctx.measureText(t.name).width;
-      var off = r + 3.5, box = mkBox(p[0] + off + t.w / 2, p[1], t.w / 2 + 2, pal.antique ? 6.5 : 6, 0);
-      if (collides(placed, box)) continue;
-      placed.push(box);
+      var off = r + 3.5, box = mkBox(p[0] + off + t.w / 2, p[1], t.w / 2 + 2, pal.antique ? 6.5 : 6, 0), mb = mkBox(p[0], p[1], r + 1.5, r + 1.5, 0);
+      if (collides(placed, mb) || collides(placed, box)) continue;
+      placed.push(mb, box);
       shown.push(p[0], p[1], t);
     }
     if (!shown.length) return;
@@ -4859,7 +4925,7 @@
         sharedOpen = kept ? 2 : 1;
         requestAnimationFrame(function () { setTimeout(save, 0); });
         history.replaceState(null, "", location.pathname + location.search);
-        if (kept) toast("A shared map is open. Yours is kept", "Back to mine", backToMine, 12000);
+        if (kept) toast("A shared map is open", "Back to mine", backToMine, 12000);
         else toast("A shared map is open");
         return true;
       });
@@ -5780,7 +5846,6 @@
     $("history-chat").hidden = false;
     $("history-chat-status").textContent = "";
     var changes = describeChanges();
-    $("history-other").hidden = sameMap(c) || !c.map;
     historyStatus(!c.map && c.changes !== changes ? "The map has changed since this was written." : "");
     showAsk(false);
   }
@@ -5789,7 +5854,7 @@
     $("history-saved-btn").setAttribute("aria-expanded", String(open));
     $("history-saved-btn").textContent = open ? "Back" : "Saved";
     ["history-ask", "history-new", "history-text"].forEach(function (id) { $(id).hidden = open; });
-    if (open) { $("history-chat").hidden = true; $("history-other").hidden = true; historyStatus(""); renderSaved(); }
+    if (open) { $("history-chat").hidden = true; historyStatus(""); renderSaved(); }
     else showHistory(true);
   }
   function renderSaved() {
@@ -5809,7 +5874,13 @@
       b.addEventListener("click", function () {
         conv = c; convRead = true;
         try { localStorage.setItem(STORE_HISTORY, c.id); } catch (e) { }
-        showSaved(false);
+        if (!c.map || sameMap(c)) { showSaved(false); return; }
+        (needsFine(c.map) ? loadFine() : Promise.resolve(true)).then(function () {
+          var step = replaceMap(c.map, "Opening a history's map");
+          toast("Its map is back", "Undo", undoIfTop(step));
+          toastStep = step;
+          showSaved(false);
+        });
       });
       del.type = "button"; del.className = "uc-chron-del"; del.textContent = "Delete";
       del.setAttribute("aria-label", "Delete " + (c.title || "this history"));
@@ -5833,7 +5904,7 @@
     if (!historyBusy) {
       if (c) showConv(c);
       else {
-        $("history-text").textContent = ""; $("history-chat").hidden = true; $("history-other").hidden = true;
+        $("history-text").textContent = ""; $("history-chat").hidden = true;
         historyStatus("");
         showAsk(true);
         setMode(changes ? "map" : "turn");
@@ -5869,7 +5940,7 @@
     historyBusy = true; historyKey = changes;
     $("history-go").disabled = true;
     $("history-text").textContent = "";
-    $("history-chat").hidden = true; $("history-other").hidden = true;
+    $("history-chat").hidden = true;
     historyStatus("The historian is writing…");
     var text = "", queued = false, done = false;
     var paint = function () { queued = false; renderHistory(text); };
@@ -5971,6 +6042,7 @@
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       return readEvents(res, function (ev) {
         if (done) return;
+        if (ev.t === "plan" && ev.plan && ev.plan.declined) return finish("The historian declines to draw that world.");
         if (ev.t === "plan") {
           var r = null, before = makeDiff();
           cancelLasso();
@@ -6006,7 +6078,7 @@
     historyBusy = true;
     $("history-ask-go").disabled = true; $("history-go").disabled = true;
     $("history-chat-status").textContent = "The historian is answering…";
-    var turn = addTurn(q, ""), text = "", queued = false, done = false;
+    var turn = addTurn(q, ""), text = "", queued = false, done = false, edited = false;
     turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     $("history-q").value = "";
     var paint = function () { queued = false; renderProse(turn.a, text); };
@@ -6015,6 +6087,7 @@
       done = true; historyBusy = false;
       syncAsk();
       $("history-chat-status").textContent = msg || "";
+      if (edited) { c.map = makeDiff(); c.changes = describeChanges(); }
       if (text && !msg) {
         renderProse(turn.a, text);
         c.turns.push({ q: q, a: text });
@@ -6022,10 +6095,11 @@
         storeConv(c);
         return;
       }
+      if (edited) storeConv(c);
       turn.q.remove(); turn.a.remove();
       if (!$("history-q").value) $("history-q").value = q;
     };
-    var payload = { mode: "chat", changes: c.changes, note: c.premise || c.note || "", history: c.history, turns: c.turns.slice(-24), question: q };
+    var payload = { mode: "chat", changes: describeChanges() || c.changes, note: c.premise || c.note || "", history: c.history, turns: c.turns.slice(-24), question: q };
     fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).then(function (res) {
       if (res.status === 429) return finish("The historian has answered all they can for today. Try again tomorrow.");
       if (res.status === 413) return finish("This conversation has grown too long to continue. Write a new history to start another.");
@@ -6034,6 +6108,18 @@
       $("history-chat-status").textContent = "";
       return readEvents(res, function (ev) {
         if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
+        else if (ev.t === "plan") {
+          var r = null;
+          try { r = applyPlan(ev.plan || {}); } catch (e) { console.warn("historian edit", e); }
+          if (!r) return;
+          edited = true;
+          r.step.label = "The historian's changes";
+          if (r.missed) console.warn("historian edit: " + r.missed + " names not found");
+          toast("The historian changed the map", "Undo", undoIfTop(r.step), 9000);
+          toastStep = r.step;
+          var at = centreOf(r.units);
+          if (at) flyTo(at[0], at[1]);
+        }
         else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to answer that." : ev.reason === "max_tokens" ? "" : "");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not answer this. Try again in a moment."); }
         else if (ev.t === "closed") finish(text ? "" : "The historian could not answer this. Try again in a moment.");
@@ -6046,16 +6132,6 @@
   $("history-ask-go").addEventListener("click", askHistorian);
   $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); askHistorian(); } });
   $("history-saved-btn").addEventListener("click", function () { showSaved($("history-saved").hidden); });
-  $("history-map").addEventListener("click", function () {
-    var c = currentConv();
-    if (!c || !c.map) return;
-    (needsFine(c.map) ? loadFine() : Promise.resolve(true)).then(function () {
-      var step = replaceMap(c.map, "Opening a history's map");
-      toast("Its map is back", "Undo", undoIfTop(step));
-      toastStep = step;
-      showConv(c);
-    });
-  });
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 

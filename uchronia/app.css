@@ -671,14 +671,8 @@ body.uc-page {
 .uc-chron-saved-btn[aria-expanded="true"] {
   color: var(--ink);
 }
-.uc-chron-other {
-  margin: 14px 0 0;
-  font-size: 13.5px;
-  color: var(--uc-muted);
-}
 .uc-chron-ask[hidden],
 .uc-chron-text[hidden],
-.uc-chron-other[hidden],
 .uc-chron-chat[hidden],
 .uc-chron-saved[hidden] {
   display: none;

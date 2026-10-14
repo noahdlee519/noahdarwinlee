@@ -110,6 +110,13 @@
                   Redraw the world as it might have been: give regions to other countries, draw borders by hand,
                   found countries and place their cities. Your map stays in this browser; share it as a link or a file.
                 </p>
+                <p>
+                  History asks a historian, Claude, an AI made by Anthropic, to write how your map came to be, to
+                  redraw the world from a turning point you give it, and to answer your questions, changing the map
+                  when you ask or when the history calls for it; undo takes back anything it changes. What you type
+                  and a list of how your map differs from ours go to Anthropic to write each reply. Its histories are
+                  fiction.
+                </p>
                 <p class="uc-keys">
                   Keys: V select · B give land · D lasso · C settlements · M flat map · S satellite · H hide the interface ·
                   Shift-drag moves the map · Esc lets go · Ctrl+Z undoes
@@ -122,6 +129,7 @@
                   &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
                   <a href="https://github.com/noahdlee519/noahdarwinlee/blob/main/uchronia/README.md#credits">All credits and licences</a>
                 </p>
+                <p class="uc-sources"><a href="/privacy/#uchronia">Privacy</a> · <a href="/terms/#uchronia">Terms</a></p>
               </div>
             </div>
           </header>
@@ -288,7 +296,6 @@
       </div>
       <button type="button" class="uc-linkbtn uc-chron-new" id="history-new" hidden>New history</button>
       <p class="uc-chron-status" id="history-status" role="status"></p>
-      <p class="uc-chron-other" id="history-other" hidden>This history was written for another map. <button type="button" class="uc-linkbtn" id="history-map">Show its map</button></p>
       <article class="uc-chron-text" id="history-text"></article>
       <div class="uc-chron-chat" id="history-chat" hidden>
         <div class="uc-chron-turns" id="history-turns"></div>

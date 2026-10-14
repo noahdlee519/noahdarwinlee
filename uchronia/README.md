@@ -179,8 +179,10 @@ of `/greatercircle/`.
     hiding settlements hides their marks and names together, except the one
     picked and all of them while the Settlements tool is in use.
 - **Settlements** are placed in order of rank: capitals first, then cities,
-  towns and small towns, each giving way to those before it, and drawn in
-  the reverse order, so a capital's mark and name sit on top of any other.
+  towns and small towns, each giving way to those before it, mark and name
+  alike: a smaller place is left off, or its name moved, if either would
+  touch a larger one's mark or name. They are drawn in the reverse order, so
+  a capital's mark and name sit on top of any other.
   Africa's largest cities (Cairo, Lagos, Kinshasa, Luanda, Dar es Salaam,
   Johannesburg, Khartoum, Abidjan, Addis Ababa, Nairobi) are shown from the
   farthest zoom, its cities of 1.5 million or more a step later and of
@@ -214,12 +216,17 @@ of `/greatercircle/`.
   the whole globe, and smaller ones in nine steps as the map is zoomed in;
   past about 3.5 times zoom a more detailed set, with the smaller rivers and
   more than twice the points per river, is loaded and drawn instead. Their
-  names are set in italic beside them, letter by letter along the
-  straightest stretch of each river on screen, from the largest down as the
-  zoom allows, giving way to country and city names.
+  names are set in italic beside them, letter by letter, from the largest
+  down as the zoom allows, giving way to country and city names. A name is
+  tried only at fixed places along its river, every half a name's length in
+  kilometres, so it moves with the river as the map pans instead of sliding
+  along it, and it keeps the place it had last time while that place is
+  still on screen and clear. The letters follow the river smoothed over a few
+  letters' width, and a place where the river bends more than a letter can
+  follow is passed over, so names are never squeezed into a meander.
   They are left off the whole world, so the map stays clear, and fade in
   between 1.3 and 2.4 times zoom; close up they stay. They can be hidden in
-  the View menu, and are left off the satellite view.
+  the View menu.
 - **Latitude and longitude.** The lines every 10° are labelled. On the flat
   map, the parallels along its left edge and the meridians along its top, or
   along the edges of the screen once it is zoomed past them. On the globe, a
@@ -452,13 +459,29 @@ of `/greatercircle/`.
     coincidence, and to merge, split or invent countries, up to about 1,500
     regions moved.
   - Under a history, **Ask the historian more** carries on the conversation:
-    each question goes with the history and the questions and answers before
-    it, and the historian answers in the same voice, inventing where the
-    history was silent.
+    each question goes with the history, the questions and answers before
+    it and the map as it now stands, and the historian answers in the same
+    voice, inventing where the history was silent.
+  - The historian can change the map in the conversation, too: asked for a
+    change, or told the map misses something ("you forgot the Balkans"), it
+    calls an `edit_map` tool with the same kinds of edits as a redraw, on the
+    map as it stands. The page applies them as one step, which one undo takes
+    back, flies to the land that moved and says so; the historian then says
+    what it changed. The conversation keeps the changed map as its own.
   - **Saved** lists every history written in this browser (the last 30),
     each with its map, its turning point and its questions; opening one
-    carries on its conversation, and **Show its map** brings back the map it
-    was written for, as one step that undo reverses.
+    brings back the map it was written for, as one step that undo reverses,
+    and carries on its conversation.
+  - **What it will not write.** Every request carries the same limits: nothing
+    that celebrates, excuses or calls for genocide, ethnic cleansing, slavery,
+    terrorism or hatred of a people; nothing sexual; nothing aimed at a real
+    private person; no slurs, even as names. Wars, empires and atrocities stay
+    fair subjects told with a historian's gravity. Asked for something else,
+    the historian declines in a sentence or two, and a redraw comes back
+    marked `declined` and changes nothing. The site's
+    [terms](https://noahdarwinlee.com/terms/#uchronia) say the same, and its
+    [privacy policy](https://noahdarwinlee.com/privacy/#uchronia) says what is
+    sent where.
   - Claude names land from `data/catalogue.txt`, every country of our world
     and its regions as the map draws them (250 countries, 3,699 regions),
     built by `tools/build-catalogue.mjs`. The function fetches it from the
@@ -472,9 +495,10 @@ of `/greatercircle/`.
     Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
     the text back. The function holds the API key, answers only this site,
     and allows 250 requests a day in all, and to each visitor 5 histories or
-  redrawn maps (a redraw and its history count as two) and 20 questions; it
-  keeps only a
-    daily count per visitor under a hashed key, never the map or the text.
+  redrawn maps (a redraw and its history count as two) and 20 questions
+    (the per-visitor limits are lifted until 16 October 2026, 05:00 UTC); it
+    keeps only a daily count per visitor under a hashed key, never the map or
+    the text, and deletes counts older than thirty days.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
     `supabase/migrations/20261012_historian_usage.sql`) live in the Supabase
