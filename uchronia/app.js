@@ -4195,7 +4195,7 @@
       $("lines-2").setAttribute("aria-pressed", String(solo ? fineShown.has(c) && !(hideLines & 2) && !none2 : !!(kinds & 2) && !(hideLines & 2)));
       $("lines-1").disabled = !(kinds & 1);
       $("lines-2").disabled = none2;
-      setTip($("lines-1"), kinds & 1 ? "The lines between its states, provinces and regions" : "It is a single region, with no lines inside it");
+      setTip($("lines-1"), kinds & 1 ? "The lines between its states, provinces, and regions" : "It is a single region, with no lines inside it");
       setTip($("lines-2"), none2 ? "Its regions have no finer lines inside them"
         : solo ? "Its counties and districts, in this country alone, until Finer regions in the View menu is switched on or off"
         : "The finer lines inside them: counties and districts, and the parts of grouped regions");

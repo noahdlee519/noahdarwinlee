@@ -1,7 +1,7 @@
 # UCHRONIA
 
 An alternate-history map maker: the world as it is, cut into its states,
-provinces and regions, for you to redraw. Give any region to any country,
+provinces, and regions, for you to redraw. Give any region to any country,
 found countries, name and colour them, and put cities where they might
 have been, on a globe or a flat map. Served at `/uchronia/`. Built on the bones
 of `/greatercircle/`.
@@ -13,7 +13,7 @@ of `/greatercircle/`.
   subdivisions (states, provinces), with two adjustments:
   - In twelve countries whose subdivisions are very small (Slovenia's 193
     municipalities, Italy's 110 provinces, Latvia, North Macedonia, Malta,
-    Kosovo, Azerbaijan, Uganda, Bhutan, the Philippines, Sri Lanka and Hong
+    Kosovo, Azerbaijan, Uganda, Bhutan, the Philippines, Sri Lanka, and Hong
     Kong), they are grouped into the regions above them (Slovenia's 12
     statistical regions, Italy's 20 regions), 102 groups in all, and a group
     changes hands as one.
@@ -34,7 +34,7 @@ of `/greatercircle/`.
   inside it to the chosen country.
   - The outline is simplified on screen, turned into longitude and latitude,
     split where it crosses the date line (or closed over the pole if it goes
-    round one) and cleaned of self-crossings by polygon-clipping.
+    round one), and cleaned of self-crossings by polygon-clipping.
   - A drawing lies on top of the regions and keeps its own owner. A newer
     drawing is cut out of older ones, so drawings never overlap, and a point
     belongs to the drawing it lies in, or else to its region.
@@ -80,7 +80,7 @@ of `/greatercircle/`.
     follow the site's day and night setting, which they also set. *Antique*,
     the style a first visit opens in, is drawn like a hand-coloured map of
     the 1800s:
-    - parchment and sepia ink, with a paper grain on the bar, the menus and
+    - parchment and sepia ink, with a paper grain on the bar, the menus, and
       the buttons;
     - pale washes inside each country, with a stronger band of its colour
       along its borders and coasts (the arcs on its edge, stroked twice as
@@ -121,7 +121,7 @@ of `/greatercircle/`.
       engravings, with fine hatching: a manicule for Select, a pennon over a
       hillock for Give land, a church and houses for Settlements, swashed
       arrows for undo and redo, a rolled map and a globe on its stand for the
-      flat map and the globe, a Montgolfier balloon for the satellite view and
+      flat map and the globe, a Montgolfier balloon for the satellite view, and
       an open or closed eye for hiding the interface. They are inline SVG
       beside the plain icons, and each style shows only its own.
 - **Labels.** A country's name goes on its largest piece, as near its middle
@@ -133,7 +133,7 @@ of `/greatercircle/`.
   search, ordered by distance from the centre, then finds the point nearest
   the middle where a name at least 78% of that size still fits, and the text
   is sized to sit inside the ellipse there.
-  - The name keeps clear of its country's capital (above, below or to the
+  - The name keeps clear of its country's capital (above, below, or to the
     side of it, leaving room for the capital's own name). Where the capital
     is near the middle (Madrid, Bogotá), a full-size name at the edge and a
     smaller one beside the capital are weighed by size and by distance from
@@ -149,7 +149,7 @@ of `/greatercircle/`.
     of sixteen directions, its land lies within 1.3 name-widths): Indonesia,
     Japan, the Philippines, Malaysia, Canada over Hudson Bay. A country that
     is not an archipelago takes the hull only for a name at least 1.8 times
-    larger. Norway, Chile and Costa Rica, whose far islands only stretch the
+    larger. Norway, Chile, and Costa Rica, whose far islands only stretch the
     hull over open sea, and India, keep their names on land. A name on a
     hull is centred on the hull, not on the largest island, so Indonesia's
     lies across the Java Sea rather than on Borneo.
@@ -159,7 +159,7 @@ of `/greatercircle/`.
   - On the globe, names far from the centre of the view are set straight,
     not curved or turned along the outline the curve of the earth squeezes.
   - In Antique, a city name that has no room to the right of its mark tries
-    the left, above and below.
+    the left, above, and below.
   - Long, thin countries (Chile, Norway, Sweden) are also tried along their
     principal axis, and turned when that fits much better.
   - In Antique, names are also tried along arcs. The piece is unrolled round a
@@ -179,7 +179,7 @@ of `/greatercircle/`.
     hiding settlements hides their marks and names together, except the one
     picked and all of them while the Settlements tool is in use.
 - **Settlements** are placed in order of rank: capitals first, then cities,
-  towns and small towns, each giving way to those before it, mark and name
+  towns, and small towns, each giving way to those before it, mark and name
   alike: a smaller place is left off, or its name moved, if either would
   touch a larger one's mark or name. They are drawn in the reverse order, so
   a capital's mark and name sit on top of any other.
@@ -188,7 +188,7 @@ of `/greatercircle/`.
   farthest zoom, its cities of 1.5 million or more a step later and of
   800,000 a step after that (`tools/retier-africa.mjs`, from GeoNames'
   populations), so the continent is not left bare beside the others.
-- **Cities.** A capital is a star in a circle, a city a square and a town a
+- **Cities.** A capital is a star in a circle, a city a square, and a town a
   white circle, in every style, each with its own size of name; in Antique
   the names are a size larger, on a heavier halo, to read clearly over the
   coloured map. Where a capital's name has no room, its mark is still drawn,
@@ -237,7 +237,7 @@ of `/greatercircle/`.
   the globe fills the screen, the labels move to the edges as on the flat
   map. They give way to every other name, and can be hidden in the View menu.
 - **Scale bar.** Kilometres over miles in the bottom corner, in round lengths
-  of 1, 2 or 5 times a power of ten that fit 120 px, true at the centre of the
+  of 1, 2, or 5 times a power of ten that fit 120 px, true at the centre of the
   view (on the flat map, along the parallel there); in Antique, chequered bars
   with the units spelt out. It can be hidden in the View menu.
 - **Zoom.** From a little under the whole globe to 60 times it.
@@ -249,7 +249,7 @@ of `/greatercircle/`.
   capital of its own, the captured one becomes an ordinary city (in the same
   undo step).
 - **Subjects.** A country can be the subject of another: a colony,
-  dependency, protectorate or vassal. It keeps its own name and land but
+  dependency, protectorate, or vassal. It keeps its own name and land but
   wears its ruler's colour, and its name on the map carries its ruler's in
   small italic beneath it, as old atlases did: *Isle of Man (UK)*,
   *Greenland (Denmark)*. The country pane's *Subject of* picks the ruler,
@@ -257,18 +257,18 @@ of `/greatercircle/`.
   subject whose ruler is dissolved or loses all its land rules itself again.
   The world as it is starts with its dependencies as subjects: the British
   Crown dependencies and overseas territories, the territories of the United
-  States, France, the Netherlands, Denmark, Australia and New Zealand, Hong
+  States, France, the Netherlands, Denmark, Australia, and New Zealand, Hong
   Kong and Macau, and Åland. The historian sees every change of ruler, and
   a redraw can make or free subjects.
 - **Undo and redo.** Every edit is a step to undo or redo. A paint stroke is
   one step, and typing a name is one step however many keys it takes.
 - **Saving.** The map is kept as its difference from the world as it is:
-  - countries renamed, recoloured or founded, those whose inner borders
+  - countries renamed, recoloured, or founded, those whose inner borders
     are hidden (`l`), and those whose ruler differs from our world's (`r`,
     each country with its ruler, or -1 for none);
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
-  - cities deleted, changed or added;
+  - cities deleted, changed, or added;
   - drawn land (`h`): each drawing's owner and outline, in ten-thousandths of
     a degree, each ring stored as differences from the point before.
 
@@ -309,7 +309,7 @@ of `/greatercircle/`.
   - **Drawing.** It renders to a canvas off the page, which is copied under
     the political map each frame; the map's fills go translucent over it.
   - **Theme and loading.** The imagery is lightened in the light theme,
-    darkened in the dark and toned sepia in Antique. It is loaded only when the view is first switched
+    darkened in the dark, and toned sepia in Antique. It is loaded only when the view is first switched
     on (2,048 px wide, then 4,096 px on larger screens), and the choice is
     remembered.
 - **data/provinces.json**: Natural Earth 1:10m admin-1 states and provinces
@@ -361,7 +361,7 @@ of `/greatercircle/`.
     Somalia within its border); a province that is a single unit, such
     as a capital district, stays whole;
   - Egypt is left out: its second level mixes city districts, unnamed desert
-    remnants and misplaced shapes;
+    remnants, and misplaced shapes;
   - China's prefectures are regrouped from 1999 county boundaries by name and
     code, so later county splits are missing;
   - disputed areas follow Natural Earth's assignment and are only cut within
@@ -371,7 +371,7 @@ of `/greatercircle/`.
     topology is built;
   - borders are snapped to the integer grid in a way that cannot make
     neighbouring borders cross, and the simplification is guarded against
-    reversed lobes, stray holes and self-overlap;
+    reversed lobes, stray holes, and self-overlap;
   - it is loaded only when finer regions are switched on, or when a map needs
     them (5.8 MB, about 1.7 MB compressed);
   - `data/units-detail.json` holds the same arcs at six tenths of their
@@ -420,7 +420,7 @@ of `/greatercircle/`.
   Generation with shaded sea floor, equirectangular. The polar rows and the
   columns at the date line are evened out so that the wrap is seamless, and
   the smaller one is resized across the wrap.
-- **vendor/**: d3-array, d3-geo, topojson-client, topojson-simplify and
+- **vendor/**: d3-array, d3-geo, topojson-client, topojson-simplify, and
   polygon-clipping, unmodified.
 - **/fonts/**: IM Fell English, from @fontsource/im-fell-english, with Old
   Standard TT, from @fontsource/old-standard-tt, for the letters it lacks
@@ -430,7 +430,7 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
-  over) and **View** (the style, country names, names of seas, lakes and
+  over) and **View** (the style, country names, names of seas, lakes, and
   rivers, settlements, small towns, region borders (every line inside the
   countries, both tiers), terrain, rivers, small lakes,
   latitude and longitude, the scale bar, finer regions). History and the
@@ -439,7 +439,7 @@ of `/greatercircle/`.
   without the tools' names; one row without the title; the tools and *New
   country* above undo and the menus; the tools above *New country* and the
   menus; and each on a row of its own, and keeps the first in which nothing
-  overlaps or runs off the edge. It fits again when the window, the style or
+  overlaps or runs off the edge. It fits again when the window, the style, or
   the Check badge changes. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
   map zooms in; it is left off under the satellite view. What is
@@ -449,7 +449,7 @@ of `/greatercircle/`.
   how it came to look as it does: the points where its history parted from
   ours, each with a year and a cause, and what followed from them, in three
   to six eras. A note can say where the history begins or what it should
-  stress. Every country, region and city of the map that the history names
+  stress. Every country, region, and city of the map that the history names
   is a link that flies the map to it. Once it is sent, the note or turning
   point stays above its history, in the panel and when a saved history is
   opened again. The last history is kept in the browser, and the panel says
@@ -468,26 +468,26 @@ of `/greatercircle/`.
     the year as its note.
   - Redraws are asked to be bold: to follow the turning point beyond its own
     region, to let no border drawn after the divergence survive by
-    coincidence, and to merge, split or invent countries, up to about 1,500
+    coincidence, and to merge, split, or invent countries, up to about 1,500
     regions moved.
   - Under a history, **Ask the historian more** carries on the conversation:
     each question goes with the history, the questions and answers before
-    it and the map as it now stands, and the historian answers in the same
+    it, and the map as it now stands, and the historian answers in the same
     voice, inventing where the history was silent.
   - The historian can change the map in the conversation, too: asked for a
     change, or told the map misses something ("you forgot the Balkans"), it
     calls an `edit_map` tool with the same kinds of edits as a redraw, on the
     map as it stands. The page applies them as one step, which one undo takes
-    back, flies to the land that moved and says so; the historian then says
+    back, flies to the land that moved, and says so; the historian then says
     what it changed. The conversation keeps the changed map as its own.
   - **Saved** lists every history written in this browser (the last 30),
-    each with its map, its turning point and its questions; opening one
+    each with its map, its turning point, and its questions; opening one
     brings back the map it was written for, as one step that undo reverses,
     and carries on its conversation.
   - **What it will not write.** Every request carries the same limits: nothing
-    that celebrates, excuses or calls for genocide, ethnic cleansing, slavery,
-    terrorism or hatred of a people; nothing sexual; nothing aimed at a real
-    private person; no slurs, even as names. Wars, empires and atrocities stay
+    that celebrates, excuses, or calls for genocide, ethnic cleansing, slavery,
+    terrorism, or hatred of a people; nothing sexual; nothing aimed at a real
+    private person; no slurs, even as names. Wars, empires, and atrocities stay
     fair subjects told with a historian's gravity. Asked for something else,
     the historian declines in a sentence or two, and a redraw comes back
     marked `declined` and changes nothing. The site's
@@ -501,8 +501,8 @@ of `/greatercircle/`.
     cached and later requests pay a tenth for it. The page matches names
     without regard to case or accents and leaves out any it cannot find.
   - The page sends a plain list of the map's differences from ours (which
-    regions changed hands, countries founded, renamed or gone, borders drawn
-    by hand, cities renamed, moved or founded) and the note, nothing else, to
+    regions changed hands, countries founded, renamed, or gone, borders drawn
+    by hand, cities renamed, moved, or founded) and the note, nothing else, to
     a small server function, `supabase/functions/historian`, which asks
     Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
     the text back. The function holds the API key, answers only this site,
@@ -524,7 +524,7 @@ of `/greatercircle/`.
   dropped in the sea. Picking one goes to it and selects it, ready to rename.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
-- The **ⓘ** button by the title opens a short note on the map, its keys and
+- The **ⓘ** button by the title opens a short note on the map, its keys, and
   links to its sources; a second click closes it.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
   type, colours and, in Antique, its paper), shown after a moment's hover or
@@ -532,16 +532,16 @@ of `/greatercircle/`.
   screen readers as the button's description.
 - **Select (V)**: click a country to rename or recolour it, make it a
   subject of another, show or hide its
-  regions' lines (*Tier 1*, the lines between its states, provinces and
+  regions' lines (*Tier 1*, the lines between its states, provinces, and
   regions; *Tier 2*, the finer lines inside them; a tier it has none of is
   greyed out, and hidden tiers stay hidden inside land drawn for it). With
   *Finer regions* off, *Tier 2* loads the finer regions and draws the counties
   and districts of that country alone, for display only, until *Finer
   regions* is switched on or off again; it is offered only for the 40
   countries that have finer regions. With *Finer regions* on, a country whose
-  *Tier 2* is hidden is painted, named and counted by its first-level regions
+  *Tier 2* is hidden is painted, named, and counted by its first-level regions
   again; give it
-  land or dissolve it; click a city to rename it, change its size or delete
+  land or dissolve it; click a city to rename it, change its size, or delete
   it, and once it is picked, drag it to move it.
 - **Give land (B)**: one tool for moving borders. Its pane says who gets
   the land (the chosen country, shown with its colour, or *Unclaimed*) and
@@ -559,7 +559,7 @@ of `/greatercircle/`.
   Alt-click picks the country to give land to.
 - **Settlements (C)**: click to found a city; click one to pick it, then drag
   it to move it (a drag on a city that isn't picked moves the map). A picked
-  settlement can be a capital, a city, a town or a small town; small towns
+  settlement can be a capital, a city, a town, or a small town; small towns
   show only close up, with the smallest mark.
 - **M** switches between the globe and the flat map; **S** turns the
   satellite view on and off; **H** (or the eye button) hides everything but
@@ -584,9 +584,9 @@ in the repo. They covered:
 - undo and redo, including across start-over and file steps;
 - reloading, links (including hostile ones), files and starting over;
 - the flat map: picking, painting, zooming at the cursor, panning up to its
-  edges and dragging cities;
+  edges, and dragging cities;
 - finer regions: switching them on and off, painting single counties,
-  undoing paint from before the switch, reloading and sharing;
+  undoing paint from before the switch, reloading, and sharing;
 - region groups: Slovenia's statistical regions and Italy's regions painted
   whole, named, made countries, and split again with finer regions on;
 - drawn land: drawing, overlapping drawings, painting and removing them,
@@ -595,10 +595,10 @@ in the repo. They covered:
 - hiding country and city names, and the detailed borders up close;
 - the top bar and its menus, the three styles, curved names, the hidden
   interface, and keyboard focus;
-- inner borders hidden and shown per country, saved, linked and undone;
+- inner borders hidden and shown per country, saved, linked, and undone;
   cities picked before they move; the scale bar and the zoom limit;
 - rivers loading, and the latitude and longitude labels on the globe, the
-  flat map and zoomed in, hidden and remembered;
+  flat map, and zoomed in, hidden and remembered;
 - the Check menu (a clean map, a forgotten city and country, going to one and
   renaming it), the greyed-out inner borders, rivers fading out up close, and
   Antique's two-tone sea with the satellite view on;
@@ -625,7 +625,7 @@ in the repo. They covered:
   - Canada's economic regions from Statistics Canada (Open Government Licence
     – Canada 2.0);
   - DR Congo and South Africa from OCHA and its partners (CC BY 3.0 IGO);
-  - Kazakhstan, Russia, Iran, Saudi Arabia and Algeria © OpenStreetMap
+  - Kazakhstan, Russia, Iran, Saudi Arabia, and Algeria © OpenStreetMap
     contributors, and India (Pathways Data) and Ethiopia (Open Africa) under
     the same licence: ODbL 1.0, so those parts of `data/units.json` and
     `data/units-detail.json` are under the ODbL too (geoBoundaries lists the
@@ -635,7 +635,7 @@ in the repo. They covered:
     IGO), merged by IBGE's region table;
   - Australia © Australian Bureau of Statistics (CC BY 4.0);
   - Argentina, Indonesia, Mongolia, Sudan, Mauritania, Peru, Chad,
-    Mozambique, Tanzania and Madagascar from their national agencies through
+    Mozambique, Tanzania, and Madagascar from their national agencies through
     OCHA and its partners (CC BY 3.0 IGO); Mali (CC BY 4.0) and Zambia (GRID3,
     CC BY 4.0); Niger (CC BY 3.0); Bolivia (GeoBolivia) and Angola (Wikimedia
     Commons) in the public domain;

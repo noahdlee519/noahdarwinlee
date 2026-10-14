@@ -36,7 +36,7 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   route can be shared.
 - **data/countries-50m.json** — Natural Earth 1:50m countries (world-atlas),
   with unique ids and display names; **data/places.json** — cities, capitals,
-  airports and countries for the search boxes. Both come from
+  airports, and countries for the search boxes. Both come from
   `tools/build-data.mjs` (see its header for the inputs).
   **data/cities.json** — the five hundred and fifty cities drawn on the
   globe: the GaWC world cities in three tiers, every sovereign capital (in
