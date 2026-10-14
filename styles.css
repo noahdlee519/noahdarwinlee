@@ -2095,7 +2095,7 @@ body.is-zoomed {
 
   .about-panel-bio {
     font-size: 18px;
-    text-align: justify;
+    text-align: center;
   }
 
   .about-panel-links {
@@ -2266,45 +2266,6 @@ body.is-zoomed {
   left: var(--page-left);
 }
 
-.projects-lead {
-  position: fixed;
-  z-index: 10;
-  top: var(--page-top);
-  right: var(--page-left);
-  color: var(--ink);
-  text-decoration: none;
-  font-size: clamp(36px, 4.6vw, 72px);
-  font-weight: 700;
-  line-height: 0.85;
-  letter-spacing: -0.03em;
-  white-space: nowrap;
-  transition: opacity 140ms ease;
-}
-
-.projects-lead::after {
-  content: "\2197\FE0E";
-  font-variant-emoji: text;
-  margin-left: 0.16em;
-  display: inline-block;
-  font-size: 0.62em;
-  line-height: 1;
-  vertical-align: text-top;
-  text-decoration: none;
-}
-
-.projects-lead:hover,
-.projects-lead:focus-visible {
-  text-decoration: underline;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 2.25px;
-  text-underline-offset: 0.08em;
-}
-
-.projects-lead:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 6px;
-}
-
 .marquee-list {
   margin-top: 0;
   border-top: 2px solid var(--ink);
@@ -2439,19 +2400,6 @@ body.is-zoomed {
   .materials-page .back-link,
   .materials-page .header-line {
     padding-left: 16px;
-  }
-
-  .projects-lead {
-    position: static;
-    display: block;
-    width: fit-content;
-    margin: clamp(36px, 9vw, 56px) auto clamp(32px, 8vw, 48px);
-    font-size: clamp(44px, 13vw, 72px);
-    line-height: 1;
-  }
-
-  .is-folded .projects-lead {
-    display: none;
   }
 
   .marquee-list {
