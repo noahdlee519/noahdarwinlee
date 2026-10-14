@@ -610,18 +610,6 @@
         color: var(--ink);
       }
 
-      .progress {
-        position: fixed;
-        left: 0;
-        top: 0;
-        z-index: 40;
-        height: 3px;
-        width: 100%;
-        background: linear-gradient(90deg, #e68019, #2a44d6);
-        transform-origin: 0 50%;
-        transform: scaleX(0);
-      }
-
 
       @keyframes bridge-sq {
         0% { background: #0b0b0b; }
@@ -732,16 +720,11 @@
         .soon-mark::after {
           animation-play-state: paused;
         }
-
-        .progress {
-          display: none;
-        }
       }
     </style>
   </head>
   <body>
     <canvas class="trail" aria-hidden="true"></canvas>
-    <div class="progress" aria-hidden="true"></div>
 
     <header class="top">
       <a href="/">Noah Darwin Lee</a>
@@ -889,14 +872,6 @@
           { rootMargin: "0px 0px -18% 0px" }
         );
         $$(".card, .work-head").forEach(function (s) { io.observe(s); });
-
-        var bar = $(".progress");
-        var onScroll = function () {
-          var h = document.documentElement.scrollHeight - innerHeight;
-          bar.style.transform = "scaleX(" + (h > 0 ? scrollY / h : 0).toFixed(4) + ")";
-        };
-        addEventListener("scroll", onScroll, { passive: true });
-        onScroll();
 
         $$(".card[data-href]").forEach(function (card) {
           card.addEventListener("click", function (e) {
