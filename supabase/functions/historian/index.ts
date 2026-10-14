@@ -42,9 +42,10 @@ The map is made of the regions in the catalogue at the end: each line names a co
 
 The edits:
 - year: the year the map shows.
-- new_countries: countries that are not on the map yet, named as they would be known in that year, in English. Each must then receive land in a transfer. A colony, protectorate, mandate or dominion that the map shows apart from its ruler is a new country too; give its ruler, the country that holds it, by its name on the map after your edits, and leave ruler empty for every country that rules itself.
+- new_countries: countries that are not on the map yet, named as they would be known in that year, in English. Each must then receive land in a transfer. A colony, protectorate, mandate, dominion or vassal that the map shows apart from its ruler is a new country too; give its ruler, the country that holds it, by its name on the map after your edits, and leave ruler empty for every country that rules itself. A subject keeps its own name and land but wears its ruler's colour, and its name is shown with its ruler's, like "Isle of Man (UK)".
 - renames: countries on the map that live on under another name. Use the name the country has on today's map.
 - transfers: land changing hands. "to" is a country on today's map (by its name now, or after your renames), a new country, or "unclaimed". "from" is a country of our world, named as in the catalogue.
+- subjects: countries already on the map whose ruler changes: one that becomes a subject of another (give the ruler by its name on the map after your edits), or a subject that comes to rule itself (leave ruler empty). On today's map the territories of our world that are not sovereign, such as the Isle of Man, Greenland, Puerto Rico and Hong Kong, are already subjects of the countries that hold them.
 - capitals: the capital of every country you create, and of any country whose capital moves. Give the city's name and its longitude and latitude; for a city of our world, use its usual English name.
 - title: a short title for this world, like the title of a history book.
 
@@ -65,13 +66,17 @@ The catalogue:
 const PLAN_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "year", "new_countries", "renames", "transfers", "capitals"],
+  required: ["title", "year", "new_countries", "renames", "subjects", "transfers", "capitals"],
   properties: {
     title: { type: "string" },
     year: { type: "integer" },
     new_countries: {
       type: "array",
       items: { type: "object", additionalProperties: false, required: ["name", "ruler"], properties: { name: { type: "string" }, ruler: { type: "string" } } },
+    },
+    subjects: {
+      type: "array",
+      items: { type: "object", additionalProperties: false, required: ["country", "ruler"], properties: { country: { type: "string" }, ruler: { type: "string" } } },
     },
     renames: {
       type: "array",

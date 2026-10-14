@@ -18,6 +18,7 @@
     "uniform float uHeight;",
     "uniform float uLight;",
     "uniform float uSepia;",
+    "uniform float uWash;",
     "uniform float uSeam;",
     "uniform vec4 uDetRect;",
     "uniform float uDetN;",
@@ -69,6 +70,7 @@
     "  }",
     "  c = mix(c, min(vec3(1.0), vec3(dot(c, vec3(0.393, 0.769, 0.189)), dot(c, vec3(0.349, 0.686, 0.168)), dot(c, vec3(0.272, 0.534, 0.131)))), uSepia);",
     "  c = uLight >= 0.0 ? mix(c, vec3(1.0), uLight) : mix(c, vec3(0.0), -uLight);",
+    "  c = mix(c, vec3(1.0) - (vec3(1.0) - c) * vec3(0.0863, 0.149, 0.294), uWash);",
     "  gl_FragColor = vec4(c, 1.0);",
     "}"
   ].join("\n");
@@ -106,7 +108,7 @@
       var aPos = gl.getAttribLocation(program, "aPos");
       gl.enableVertexAttribArray(aPos);
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-      ["uTex", "uDet", "uE", "uN", "uC", "uView", "uFlat", "uMode", "uHeight", "uLight", "uSepia", "uSeam", "uDetRect", "uDetN", "uDetOn"].forEach(function (n) { loc[n] = gl.getUniformLocation(program, n); });
+      ["uTex", "uDet", "uE", "uN", "uC", "uView", "uFlat", "uMode", "uHeight", "uLight", "uSepia", "uWash", "uSeam", "uDetRect", "uDetN", "uDetOn"].forEach(function (n) { loc[n] = gl.getUniformLocation(program, n); });
       gl.uniform1i(loc.uTex, 0);
       gl.uniform1i(loc.uDet, 1);
       tex = null;
@@ -231,6 +233,7 @@
         gl.uniform1f(loc.uHeight, h);
         gl.uniform1f(loc.uLight, o.light);
         gl.uniform1f(loc.uSepia, o.sepia || 0);
+        gl.uniform1f(loc.uWash, o.wash || 0);
         gl.uniform1f(loc.uSeam, seam ? 1 : 0);
         var on = det && detRect && o.detail ? 1 : 0;
         gl.uniform1f(loc.uDetOn, on);

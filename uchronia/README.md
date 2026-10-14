@@ -231,11 +231,24 @@ of `/greatercircle/`.
   capital already. When a country takes another's capital whole, and has a
   capital of its own, the captured one becomes an ordinary city (in the same
   undo step).
+- **Subjects.** A country can be the subject of another: a colony,
+  dependency, protectorate or vassal. It keeps its own name and land but
+  wears its ruler's colour, and its name on the map carries its ruler's in
+  small italic beneath it, as old atlases did: *Isle of Man (UK)*,
+  *Greenland (Denmark)*. The country pane's *Subject of* picks the ruler,
+  or no one; a country cannot be made a subject of its own subject, and a
+  subject whose ruler is dissolved or loses all its land rules itself again.
+  The world as it is starts with its dependencies as subjects: the British
+  Crown dependencies and overseas territories, the territories of the United
+  States, France, the Netherlands, Denmark, Australia and New Zealand, Hong
+  Kong and Macau, and Åland. The historian sees every change of ruler, and
+  a redraw can make or free subjects.
 - **Undo and redo.** Every edit is a step to undo or redo. A paint stroke is
   one step, and typing a name is one step however many keys it takes.
 - **Saving.** The map is kept as its difference from the world as it is:
-  - countries renamed, recoloured or founded, and those whose inner borders
-    are hidden (`l`);
+  - countries renamed, recoloured or founded, those whose inner borders
+    are hidden (`l`), and those whose ruler differs from our world's (`r`,
+    each country with its ruler, or -1 for none);
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
   - cities deleted, changed or added;
@@ -255,6 +268,15 @@ of `/greatercircle/`.
     60,000 points, and cleaned by polygon-clipping again. Names only ever
     reach the page as text.
 - **sat.js**: the satellite view.
+  - **A layer of its own.** The imagery is drawn on its own canvas beneath
+    the map instead of being copied into the map's canvas every frame. Where
+    the browser can, it renders into an OffscreenCanvas and hands each frame
+    over as an ImageBitmap, which also keeps Chromium from cutting a strip
+    off a WebGL canvas under the opaque top bar. The map's canvas leaves the
+    imagery uncovered: in Antique it cuts the land out of its sea (one cut per
+    colour group, which is far cheaper than one path for the whole world),
+    and the parchment wash is done in the shader, with the country tints
+    washed to match, so the result is the same as before.
   - **Base image.** A WebGL fragment shader turns each pixel back into a
     latitude and longitude (the orthographic or the flat map's projection
     inverted) and samples NASA's Blue Marble.
@@ -410,10 +432,10 @@ of `/greatercircle/`.
     decides how the world's map would stand in the year the turning point
     names, or today, and sends back edits to our world's map in a fixed JSON
     shape (the year, new countries with the ruler of each colony, renames,
-    regions changing hands, whole countries, capitals with their
-    coordinates). A map of a past year starts from our world's map of that
-    year, with its empires and colonies, and colonies take their ruler's
-    colour. The redraw replaces the map rather than building on it, as one
+    countries made or freed as subjects, regions changing hands, whole
+    countries, capitals with their coordinates). A map of a past year starts
+    from our world's map of that year, with its empires and colonies, and
+    colonies are subjects of their rulers. The redraw replaces the map rather than building on it, as one
     step that one undo takes back; the page flies to the land that moved and
     has the historian write how it came to be, with the turning point and
     the year as its note.
@@ -464,7 +486,8 @@ of `/greatercircle/`.
   type, colours and, in Antique, its paper), shown after a moment's hover or
   on keyboard focus, never on a touch screen; the same words are given to
   screen readers as the button's description.
-- **Select (V)**: click a country to rename or recolour it, show or hide its
+- **Select (V)**: click a country to rename or recolour it, make it a
+  subject of another, show or hide its
   regions' lines (*Tier 1*, the lines between its states, provinces and
   regions; *Tier 2*, the finer lines inside them; a tier it has none of is
   greyed out, and hidden tiers stay hidden inside land drawn for it), give it

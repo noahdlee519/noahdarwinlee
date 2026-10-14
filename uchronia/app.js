@@ -4,7 +4,11 @@
   var $ = function (id) { return document.getElementById(id); };
   var canvas = $("globe");
   var ctx = canvas.getContext("2d");
-  var satCanvas = document.createElement("canvas");
+  var satView = document.createElement("canvas"), satCanvas = satView, satShow = null;
+  satView.className = "uc-globe uc-globe-sat";
+  satView.setAttribute("aria-hidden", "true");
+  satView.hidden = true;
+  canvas.parentNode.insertBefore(satView, canvas);
   var panel = $("panel"), bar = $("bar"), sheetMode = null;
   var phoneQuery = window.matchMedia("(max-width: 640px)");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -63,7 +67,7 @@
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
-    satCanvas.width = canvas.width; satCanvas.height = canvas.height;
+    satCanvas.width = satView.width = canvas.width; satCanvas.height = satView.height = canvas.height;
     reliefCanvas.width = Math.round(W * dpr * RELIEF_RES); reliefCanvas.height = Math.round(H * dpr * RELIEF_RES);
     var phone = phoneQuery.matches, bare = ui.bare;
     var barH = phone || bare ? 0 : Math.ceil(bar.getBoundingClientRect().bottom);
@@ -140,13 +144,47 @@
     tints.set(hex, t);
     return t;
   }
+  var HELD_BY = {
+    GBR: "AIA BMU IOT VGB CYM FLK GIB GGY IMN JEY MSR PCN SHN SGS TCA WSB ESB",
+    USA: "ASM GUM MNP PRI VIR UMI USG",
+    FRA: "PYF NCL WLF ATF CLP BLM MAF SPM",
+    NLD: "ABW CUW SXM",
+    DNK: "GRL FRO",
+    AUS: "ATC CSI HMD IOA NFK",
+    NZL: "COK NIU",
+    CHN: "HKG MAC",
+    FIN: "ALD"
+  };
+  var SHORT_NAME = { "United Kingdom": "UK", "United States": "US" };
+  function rulerOf(c) {
+    var co = countries[c], r = co ? co.ruler : -1;
+    return isInt(r) && r >= 0 && r !== c && countries[r] && countries[r].alive && hasLand(r) ? r : -1;
+  }
+  function hueOf(c) {
+    for (var k = 0, r; k < 8 && (r = rulerOf(c)) >= 0; k++) c = r;
+    return c;
+  }
+  function rules(r, c) {
+    for (var k = 0; k < 8 && c >= 0; k++) { if (c === r) return true; c = countries[c] && isInt(countries[c].ruler) ? countries[c].ruler : -1; }
+    return false;
+  }
+  function rulerTag(c) {
+    var r = rulerOf(c);
+    if (r < 0) return "";
+    var n = countries[r].name.trim();
+    return "(" + (SHORT_NAME[n] || n) + ")";
+  }
+  function shownName(c) {
+    var t = rulerTag(c);
+    return t ? countries[c].name + " " + t : countries[c].name;
+  }
   function colorOf(c) {
-    var col = countries[c].color;
+    var col = countries[hueOf(c)].color;
     if (typeof col === "number") return pal.colors[col % PALETTE];
     return pal.antique ? tintOf(col) : col;
   }
   function bandOf(c) {
-    var col = countries[c].color;
+    var col = countries[hueOf(c)].color;
     return typeof col === "number" ? pal.bands[col % PALETTE] : col;
   }
   function remeasure() {
@@ -838,11 +876,27 @@
     ctx.clip();
   }
   function satTint() { return pal.antique ? 0.45 : 0.22; }
-  function satWash() {
-    if (!pal.antique) return;
+  var WASH = 0.28, WASH_RGB = [233, 217, 180], washCache = new Map();
+  function washed(col) {
+    var w = washCache.get(col);
+    if (w) return w;
+    var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(col), rgb = null;
+    if (m) {
+      var hx = m[1].length === 3 ? m[1].replace(/./g, "$&$&") : m[1], n = parseInt(hx, 16);
+      rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    } else {
+      var r = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(col);
+      if (r) rgb = [+r[1], +r[2], +r[3]];
+    }
+    w = rgb ? "rgb(" + rgb.map(function (v, i) { var s = 255 - (255 - v) * (255 - WASH_RGB[i]) / 255; return Math.round(v + (s - v) * WASH); }).join(",") + ")" : col;
+    washCache.set(col, w);
+    return w;
+  }
+  function punch(paths) {
     ctx.save();
-    ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = 0.28;
-    ctx.fillStyle = "#e9d9b4"; ctx.fill();
+    ctx.globalCompositeOperation = "destination-out"; ctx.globalAlpha = 1;
+    ctx.beginPath(); paths();
+    ctx.fillStyle = "#000"; ctx.fill();
     ctx.restore();
   }
   var layerCanvas = null;
@@ -871,7 +925,7 @@
     main.drawImage(cv, 0, 0);
     main.restore();
   }
-  function drawPieceFills(vis, lvl, satellite, satPat, relPat) {
+  function drawPieceFills(vis, lvl, satellite, satLand, relPat) {
     clipToLand(vis, lvl);
     ctx.globalAlpha = satellite ? satTint() : 1;
     var byOwner = new Map();
@@ -883,12 +937,12 @@
     byOwner.forEach(function (list, o) {
       ctx.beginPath();
       list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
-      if (satPat) { var sa = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = sa; }
+      if (satLand) punch(function () { list.forEach(function (p) { traceFeature(ctx, p.shape.f); }); });
       if (o >= 0) {
-        if (relPat && !satPat) { layerFill(list, colorOf(o), relPat); return; }
-        ctx.fillStyle = colorOf(o); ctx.fill(); if (satPat) satWash(); shade(relPat); return;
+        if (relPat && !satLand) { layerFill(list, colorOf(o), relPat); return; }
+        ctx.fillStyle = satLand ? washed(colorOf(o)) : colorOf(o); ctx.fill(); shade(relPat); return;
       }
-      ctx.fillStyle = pal.unclaimed; ctx.fill(); shade(relPat);
+      ctx.fillStyle = satLand ? washed(pal.unclaimed) : pal.unclaimed; ctx.fill(); shade(relPat);
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
     });
     ctx.globalAlpha = 1;
@@ -1041,15 +1095,6 @@
 
   var marks = null;
   function mark(name) { if (marks) marks.push([name, performance.now()]); }
-  function drawSat() {
-    renderSat();
-    ctx.drawImage(satCanvas, 0, 0, W, H);
-  }
-  function satPattern() {
-    var pat = ctx.createPattern(satCanvas, "no-repeat");
-    if (pat && pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
-    return pat;
-  }
   var seaDeep = null, seaLow = null, seaPath = null, seaLoad = null;
   function loadSea() {
     if (seaLoad) return;
@@ -1089,10 +1134,11 @@
     ctx.fill();
   }
   function renderSat() {
-    var o = { flat: flat, dpr: dpr, light: parseFloat(pal["sat-light"]) || 0, sepia: pal.antique ? 0.6 : 0, detail: detail.shown && !detail.off, cx: cx, cy: cy };
+    var o = { flat: flat, dpr: dpr, light: parseFloat(pal["sat-light"]) || 0, sepia: pal.antique ? 0.6 : 0, wash: pal.antique ? WASH : 0, detail: detail.shown && !detail.off, cx: cx, cy: cy };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     sat.draw(o);
+    if (satShow) satShow.transferFromImageBitmap(satCanvas.transferToImageBitmap());
   }
   var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5;
   var rd = { key: "", rect: null, cache: new Map(), gen: 0, put: new Set(), off: false, failed: 0, ok: 0 };
@@ -1214,12 +1260,12 @@
     ctx.save();
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
-    if (satLand) renderSat();
+    if (satView.hidden === satellite) satView.hidden = !satellite;
+    if (satellite) renderSat();
     var relPat = !satellite && reliefOn() ? reliefFrame() : null;
 
     if (flat) {
-      if (satSea) drawSat();
-      else { ctx.beginPath(); traceOutline(ctx); ctx.fillStyle = pal.ocean; ctx.fill(); }
+      if (!satSea) { ctx.beginPath(); traceOutline(ctx); ctx.fillStyle = pal.ocean; ctx.fill(); }
       ctx.save();
       ctx.beginPath(); traceOutline(ctx); ctx.clip();
       if (!satSea) {
@@ -1236,8 +1282,7 @@
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, TAU); ctx.arc(cx, cy, r, 0, TAU, true); ctx.fill();
       }
-      if (satSea) drawSat();
-      else {
+      if (!satSea) {
         ctx.fillStyle = pal.ocean;
         ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
         if (pal.antique) drawDeep();
@@ -1256,14 +1301,16 @@
     var vis = visiblePieces(), cutFills = vis && satellite;
     if (cutFills) clipOutPieces(vis);
     ctx.globalAlpha = satellite ? satTint() : 1;
-    var bandW = bandWidth(S), satPat = satLand ? satPattern() : null;
+    var bandW = bandWidth(S);
+    if (satLand) {
+      groups.forEach(function (gr) { punch(function () { for (var i = 0; i < gr.countries.length; i++) traceFeature(ctx, shapeOf(gr.countries[i], lvl)); }); });
+      if (unclaimedUnits.length) punch(function () { traceFeature(ctx, shapeOf(UNCLAIMED, lvl)); });
+    }
     for (var g = 0; g < groups.length; g++) {
       var list = groups[g].countries;
       ctx.beginPath();
       for (var i = 0; i < list.length; i++) traceFeature(ctx, shapeOf(list[i], lvl));
-      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = satTint(); }
-      ctx.fillStyle = groups[g].fill; ctx.fill();
-      if (satPat) satWash();
+      ctx.fillStyle = satLand ? washed(groups[g].fill) : groups[g].fill; ctx.fill();
       shade(relPat);
       if (bandW && groups[g].band) {
         ctx.save(); ctx.clip();
@@ -1275,8 +1322,7 @@
     }
     if (unclaimedUnits.length) {
       ctx.beginPath(); traceFeature(ctx, shapeOf(UNCLAIMED, lvl));
-      if (satPat) { ctx.globalAlpha = 1; ctx.fillStyle = satPat; ctx.fill(); ctx.globalAlpha = satTint(); }
-      ctx.fillStyle = pal.unclaimed; ctx.fill();
+      ctx.fillStyle = satLand ? washed(pal.unclaimed) : pal.unclaimed; ctx.fill();
       shade(relPat);
       ctx.globalAlpha = 1;
       ctx.fillStyle = hatch; ctx.fill();
@@ -1289,7 +1335,7 @@
     drawSelectionFill(F, lvl);
     mark("overlays");
 
-    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satPat, relPat); }
+    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat); }
     drawLakes(S, satellite);
     var ua = ui.fine ? clamp01((S - 700) / 500) : 0, pa = provAlpha(S);
     if (vis) clipOutPieces(vis);
@@ -1864,7 +1910,7 @@
       var c = labelOrder[k], co = countries[c];
       if (!co || !co.alive || !co.label || !hasLand(c)) continue;
       var L = co.label;
-      var lines = L.name === co.name ? L.lines : [labelText(co.name)];
+      var lines = L.name === co.name ? L.lines : [labelText(co.name)], tag = rulerTag(c), tf = 0, tw = 0, extra = 0;
       if (!lines[0]) continue;
       var arc = null, px = 0, py = 0, f = 0, w = 0, i, sp = pal.antique ? 0.22 : 0.16;
       var bt = pal.antique && L.bent && lines === L.lines ? L.bent : null;
@@ -1889,7 +1935,7 @@
         if (pal.antique && f < 8.5 && f * loose / tight >= 8.5) { f *= loose / tight; sp = TIGHT; }
         if (f < 8.5) {
           var rr = L.size * kmPx * Math.sqrt(fore) / 2, kpx = kmPx * Math.sqrt(fore);
-          if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ lines: lines, x: px, y: py, r: rr }); continue; }
+          if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ lines: tag ? lines.concat([tag]) : lines, x: px, y: py, r: rr }); continue; }
           if (f < 4.2) continue;
           var fs = pal.antique ? TIGHT : sp, fw = (pal.antique ? tight : loose) * 8.5;
           if (!mostlyOwn(c, L, fw / kpx, 8.5 * (CAP_H + LINE_H * (lines.length - 1)) / kpx)) continue;
@@ -1899,16 +1945,27 @@
       }
       if (px < -300 || px > W + 300 || py < -100 || py > H + 100) continue;
       var h = f * (CAP_H + LINE_H * (lines.length - 1)), box;
+      if (tag) {
+        tf = Math.max(8.5, f * 0.62);
+        ctx.font = "italic 400 " + tf.toFixed(1) + "px " + (pal.antique ? SERIF : FONT);
+        ctx.letterSpacing = "0px";
+        tw = ctx.measureText(tag).width;
+        extra = tf * 1.25;
+      }
       if (arc) {
         var sag = arc.R - Math.sqrt(Math.max(0, arc.R * arc.R - w * w / 4)), toQ = sag / 2 / arc.R;
-        box = mkBox(px + (arc.qx - px) * toQ, py + (arc.qy - py) * toQ, w / 2 + 3, h / 2 + sag / 2 + 2, arc.ang);
-      } else box = mkBox(px, py, w / 2 + 3, h / 2 + 2, L.ang && (flat || fore >= 0.72) ? screenAngle(L, px, py) : 0);
+        box = mkBox(px + (arc.qx - px) * toQ - Math.sin(arc.ang) * extra / 2, py + (arc.qy - py) * toQ + Math.cos(arc.ang) * extra / 2, Math.max(w, tw) / 2 + 3, h / 2 + sag / 2 + extra / 2 + 2, arc.ang);
+      } else {
+        var a0 = L.ang && (flat || fore >= 0.72) ? screenAngle(L, px, py) : 0;
+        box = mkBox(px - Math.sin(a0) * extra / 2, py + Math.cos(a0) * extra / 2, Math.max(w, tw) / 2 + 3, h / 2 + extra / 2 + 2, a0);
+      }
       var ang = box.ang;
       if (!flat && !insideDisc(box)) continue;
       if (collides(placed, box)) continue;
       placed.push(box);
       var spacing = f * sp;
-      if (arc) { drawArcText(lines, arc, f, spacing); continue; }
+      if (arc) { drawArcText(lines, arc, f, spacing); if (tf) drawTag(tag, px, py, arc.ang, h / 2 + tf * 0.8, tf); continue; }
+      if (tf) drawTag(tag, px, py, ang, h / 2 + tf * 0.8, tf);
       ctx.save();
       ctx.translate(px, py);
       if (ang) ctx.rotate(ang);
@@ -1926,6 +1983,20 @@
     }
     drawBesideLabels(small, placed);
     ctx.letterSpacing = "0px";
+  }
+  function drawTag(tag, x, y, ang, dy, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (ang) ctx.rotate(ang);
+    ctx.font = "italic 400 " + size.toFixed(1) + "px " + (pal.antique ? SERIF : FONT);
+    ctx.letterSpacing = "0px";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineWidth = Math.max(2, size * 0.3);
+    ctx.strokeStyle = pal["label-halo"];
+    ctx.fillStyle = pal.label;
+    ctx.strokeText(tag, 0, dy);
+    ctx.fillText(tag, 0, dy);
+    ctx.restore();
   }
   var BESIDE_KM2 = 30000;
   function mostlyOwn(c, L, wkm, hkm) {
@@ -2432,7 +2503,9 @@
 
   var labelQueue = new Set(), labelTimer = 0, labelPaint = 0;
   function queueLabels(list) {
-    list.forEach(function (c) { if (c >= 0) labelQueue.add(c); });
+    var hit = new Set();
+    list.forEach(function (c) { if (c >= 0) { labelQueue.add(c); hit.add(c); } });
+    if (hit.size) countries.forEach(function (co, i) { if (isInt(co.ruler) && hit.has(co.ruler)) labelQueue.add(i); });
     clearTimeout(labelTimer);
     labelTimer = setTimeout(runLabels, 90);
   }
@@ -3416,6 +3489,12 @@
       groupsDirty = true;
       countriesVersion++;
       queueLabels([op.c]);
+    } else if (op.t === "ruler") {
+      ensureCountry(op.c);
+      countries[op.c].ruler = back ? op.from : op.to;
+      groupsDirty = true;
+      countriesVersion++;
+      queueLabels([op.c]);
     } else if (op.t === "lines") {
       ensureCountry(op.c);
       countries[op.c].lines = back ? op.from : op.to;
@@ -3795,6 +3874,18 @@
     changed();
   }
 
+  function setCountryRuler(c, r) {
+    var co = countries[c], was = isInt(co.ruler) ? co.ruler : -1;
+    if (r === c || (r >= 0 && rules(c, r))) return;
+    if (was === r) return;
+    co.ruler = r;
+    groupsDirty = true;
+    countriesVersion++;
+    pushStep(r >= 0 ? "Making " + co.name + " a subject of " + countries[r].name : "Freeing " + co.name, [{ t: "ruler", c: c, from: was, to: r }]);
+    queueLabels([c]);
+    changed();
+  }
+
   function setCountryLines(c, lines) {
     var co = countries[c], was = co.lines || 0;
     if (was === lines) return;
@@ -3967,6 +4058,11 @@
       setTip($("lines-2"), kinds & 2 ? "The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions"
         : ui.fine ? "Its regions have no finer lines inside them" : "Its regions have no finer lines; Finer regions, in the View menu, adds counties and districts where there are any");
       $("inner").hidden = ui.tool !== "select";
+      var rr = rulerOf(c);
+      $("subject-row").hidden = ui.tool !== "select" || !land;
+      $("swatches").hidden = rr >= 0;
+      $("subject-name").textContent = rr >= 0 ? countries[rr].name : "no one";
+      if (subjectVersion !== countriesVersion || +$("subject-pick").dataset.c !== c) fillSubjectPick(c);
       $("paint-with").hidden = ui.tool !== "select";
       $("dissolve").hidden = !land;
       syncCountryPick(c);
@@ -4038,6 +4134,25 @@
     var c = currentCountry();
     sel.value = c >= 0 ? String(c) : "";
   }
+  var subjectVersion = -1;
+  function fillSubjectPick(c) {
+    var sel = $("subject-pick");
+    sel.textContent = "";
+    sel.appendChild(new Option("No one: it rules itself", "-1"));
+    var list = [];
+    freshGroups();
+    countries.forEach(function (co, i) { if (i !== c && co.alive && hasLand(i) && !rules(c, i)) list.push(i); });
+    list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
+    list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
+    sel.value = String(rulerOf(c));
+    sel.dataset.c = String(c);
+    subjectVersion = countriesVersion;
+  }
+  $("subject-pick").addEventListener("change", function () {
+    var c = currentCountry(), v = +$("subject-pick").value;
+    if (c < 0 || !isInt(v)) return;
+    setCountryRuler(c, v);
+  });
   var SWATCH_NAMES = ["Yellow", "Apricot", "Sand", "Salmon", "Pink", "Lavender", "Periwinkle", "Sky blue", "Mint", "Lime"];
   var SWATCH_NAMES_ANTIQUE = ["Yellow", "Orange", "Buff", "Salmon", "Rose", "Lavender", "Blue", "Violet", "Green", "Olive"];
   function renderSwatches() {
@@ -4185,7 +4300,14 @@
   function setSatellite(on) {
     if (on && !sat && !satTried) {
       satTried = true;
-      sat = window.UchroniaSat ? window.UchroniaSat(satCanvas) : null;
+      if (window.UchroniaSat && window.OffscreenCanvas) {
+        try {
+          var off = new OffscreenCanvas(canvas.width, canvas.height), show = satView.getContext("bitmaprenderer");
+          sat = show && off.transferToImageBitmap ? window.UchroniaSat(off) : null;
+          if (sat) { satCanvas = off; satShow = show; }
+        } catch (e) { sat = null; }
+      }
+      if (!sat) sat = window.UchroniaSat ? window.UchroniaSat(satCanvas) : null;
       if (sat) {
         sat.onRestore = function () { detail.key = ""; detail.rect = null; scheduleRender(); };
         var urls = [{ src: "data/earth-2048.webp", size: 2048 }];
@@ -4338,7 +4460,7 @@
     return { name: name, lon: row[1], lat: row[2], tier: tier, cap: row[4] ? 1 : 0 };
   }
   function round4(x) { return Math.round(x * 1e4) / 1e4; }
-  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l"];
+  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r"];
   function encodePolys(polys) {
     return polys.map(function (poly) {
       return poly.map(function (ring) {
@@ -4446,6 +4568,12 @@
     var ls = [];
     countries.forEach(function (c, i) { if (c.alive && c.lines) ls.push([i, c.lines]); });
     if (ls.length) d.l = ls;
+    var rs = [];
+    countries.forEach(function (c, i) {
+      var r = isInt(c.ruler) ? c.ruler : -1, b = base.countries[i], br = b ? b.ruler : -1;
+      if (c.alive && r !== br && (r < 0 || countries[r])) rs.push([i, r]);
+    });
+    if (rs.length) d.r = rs;
     return d;
   }
   function isEmpty(d) { return !d || Object.keys(d).length === 0; }
@@ -4454,7 +4582,7 @@
     var old = countries;
     var nb = base.countries.length;
     for (var u = 0; u < nUnit; u++) owner[u] = base.provOwner[unitProv[u]];
-    countries = base.countries.map(function (b, i) { return { code: b.code, name: b.name, color: b.color, alive: true, label: old[i] ? old[i].label : null }; });
+    countries = base.countries.map(function (b, i) { return { code: b.code, name: b.name, color: b.color, ruler: b.ruler, alive: true, label: old[i] ? old[i].label : null }; });
     d = isMapObject(d) ? d : {};
     var remap = new Map();
     if (Array.isArray(d.c)) d.c.slice(0, nb + MAX_NEW).forEach(function (row) {
@@ -4500,6 +4628,12 @@
       if (!Array.isArray(row) || !isInt(row[1]) || row[1] < 1 || row[1] > 3) return;
       var i = ownerOf(row[0]);
       if (i !== null && i >= 0 && countries[i]) countries[i].lines = row[1];
+    });
+    if (Array.isArray(d.r)) d.r.slice(0, nb + MAX_NEW).forEach(function (row) {
+      if (!Array.isArray(row)) return;
+      var i = ownerOf(row[0]), r = ownerOf(row[1]);
+      if (i === null || i < 0 || r === null || !countries[i] || r === i) return;
+      countries[i].ruler = r;
     });
     cities = []; cityIndex = new Map();
     base.cities.forEach(function (b, i) { setCityState("b" + i, b); });
@@ -5153,7 +5287,8 @@
     var geoms = topo.objects.provinces.geometries;
     nProv = geoms.length;
     var codeIndex = new Map();
-    countries = topo.countries.map(function (c, i) { codeIndex.set(c.c, i); return { code: c.c, name: c.n, color: 0, alive: true, label: null }; });
+    countries = topo.countries.map(function (c, i) { codeIndex.set(c.c, i); return { code: c.c, name: c.n, color: 0, ruler: -1, alive: true, label: null }; });
+    Object.keys(HELD_BY).forEach(function (k) { HELD_BY[k].split(" ").forEach(function (h) { if (codeIndex.has(k) && codeIndex.has(h)) countries[codeIndex.get(h)].ruler = codeIndex.get(k); }); });
     provName = new Array(nProv);
     var provOwner = new Int32Array(nProv);
     groupName = (topo.groups || []).map(function (g) { return String(g.n); });
@@ -5175,7 +5310,7 @@
     var baseCities = cityRows.map(function (r) { return { name: r[0], lon: r[1], lat: r[2], tier: r[3], cap: r[4] }; });
     base = {
       provOwner: provOwner,
-      countries: countries.map(function (c) { return { code: c.code, name: c.name, color: c.color }; }),
+      countries: countries.map(function (c) { return { code: c.code, name: c.name, color: c.color, ruler: c.ruler }; }),
       cities: baseCities
     };
     baseCities.forEach(function (b, i) { setCityState("b" + i, b); });
@@ -5371,10 +5506,26 @@
     ownersChanged(Array.from(touched));
     freshGroups();
     made.forEach(function (op) {
-      var co = countries[op.c], by = rulers.has(op.c) ? findNow(rulers.get(op.c)) : null;
-      co.color = by !== null && by >= 0 && by !== op.c && countries[by].alive ? countries[by].color : freeColor(neighbourCountries(unitsOf[op.c] || []));
+      var co = countries[op.c];
+      co.color = freeColor(neighbourCountries(unitsOf[op.c] || []));
       op.to.color = co.color;
     });
+    var subj = [];
+    rulers.forEach(function (name, c) { subj.push([c, name]); });
+    (plan.subjects || []).forEach(function (k) {
+      var c = findNow(k && k.country);
+      if (c === null || c < 0) { missed++; return; }
+      subj.push([c, String(k.ruler || "")]);
+    });
+    subj.forEach(function (k) {
+      var c = k[0], r = k[1].trim() ? findNow(k[1]) : -1, co = countries[c], was = isInt(co.ruler) ? co.ruler : -1;
+      if (r === null) { missed++; return; }
+      if (r === c || (r >= 0 && rules(c, r)) || r === was) return;
+      co.ruler = r;
+      ops.push({ t: "ruler", c: c, from: was, to: r });
+      touched.add(c);
+    });
+    if (subj.length) { groupsDirty = true; freshGroups(); }
     demoteCaptured(caps, ops);
     (plan.capitals || []).forEach(function (k) {
       var c = findNow(k && k.country), name = String(k && k.city || "").trim().slice(0, 60);
@@ -5403,6 +5554,7 @@
     sortCities();
     made.forEach(function (op) { var capOp = chooseCapital(op.c); if (capOp) ops.push(capOp); });
     if (!ps.length && !pieceTo.size && !ops.some(function (op) { return op.t !== "country" || op.from; })) {
+      ops.forEach(function (op) { if (op.t === "ruler") countries[op.c].ruler = op.from; });
       for (var i = ops.length - 1; i >= 0; i--) if (ops[i].t === "country" && !ops[i].from) countries[ops[i].c].alive = false;
       return null;
     }
@@ -5424,6 +5576,13 @@
       if (!b) { if (alive) lines.push("A new country: " + co.name + "."); return; }
       if (!alive) { if (baseHas.has(i)) lines.push(b.name + " no longer exists."); return; }
       if (co.name !== b.name) lines.push(b.name + " is now called " + co.name + ".");
+    });
+    countries.forEach(function (co, i) {
+      if (!co.alive || !hasLand(i)) return;
+      var r = rulerOf(i), b = base.countries[i], br = b && isInt(b.ruler) ? b.ruler : -1;
+      if (r === br) return;
+      if (r >= 0) lines.push(co.name + " is a subject of " + countries[r].name + ".");
+      else if (br >= 0) lines.push(co.name + " rules itself, no longer a subject of " + base.countries[br].name + ".");
     });
     var moves = new Map();
     var move = function (from, to, name, p) {
@@ -5861,6 +6020,8 @@
     isFlat: function () { return flat; },
     scale: function () { return flat ? FB.k : projection.scale(); },
     localScale: localScale,
+    fillOf: function (c) { return colorOf(c); },
+    shownName: function (c) { return shownName(c); },
     timeRender: function () { var t0 = performance.now(); render(); return performance.now() - t0; },
     profile: function () {
       marks = []; render();

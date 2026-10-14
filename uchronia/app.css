@@ -262,6 +262,12 @@ body.uc-page {
     outline: none;
   }
 }
+.uc-globe-sat {
+  pointer-events: none;
+}
+.uc-globe-sat[hidden] {
+  display: none;
+}
 .uc-globe.is-dragging {
   cursor: grabbing;
 }
@@ -998,6 +1004,53 @@ body.uc-page {
 .uc-facts {
   color: var(--uc-muted);
   font-size: 13px;
+}
+.uc-swatches[hidden],
+.uc-subject[hidden] {
+  display: none;
+}
+.uc-subject {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.uc-subject-label {
+  color: var(--uc-muted);
+  white-space: nowrap;
+}
+.uc-subject-pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 26px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.uc-subject-pick #subject-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px dotted var(--uc-muted);
+}
+.uc-subject-pick:hover #subject-name {
+  border-bottom-style: solid;
+  border-bottom-color: var(--ink);
+}
+.uc-subject-pick:has(select:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.uc-subject-pick select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
 }
 .uc-inner[hidden] {
   display: none;
