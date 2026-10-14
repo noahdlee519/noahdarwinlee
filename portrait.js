@@ -394,11 +394,17 @@
     if (PRE) start();
 
     var rw;
+    var lastVW = document.documentElement.clientWidth;
     addEventListener("resize", function () {
       clearTimeout(rw);
       rw = setTimeout(function () {
         if (!started) return;
         if (window.visualViewport && visualViewport.scale > 1.01) return;
+        // On touch screens the browser toolbar hides/shows while scrolling,
+        // changing only the height; keep the portrait size stable then.
+        var vw = document.documentElement.clientWidth;
+        if (!fine && vw === lastVW) return;
+        lastVW = vw;
         var m = measure();
         if (m.base === base && m.dpr === dpr) return;
         var had = revealed.slice();
