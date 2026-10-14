@@ -52,7 +52,7 @@
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, waterNames: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -122,7 +122,7 @@
       pal.colors.push(cs.getPropertyValue("--uc-c" + i).trim() || "#cccccc");
       if (pal.antique) pal.bands.push(cs.getPropertyValue("--uc-b" + i).trim() || "#8a6a4a");
     }
-    if (was !== undefined && was !== pal.antique) remeasure();
+    if (was !== undefined && was !== pal.antique) { remeasure(); fitBar(true); }
     if (pal.antique) loadSea();
     var c = document.createElement("canvas");
     c.width = c.height = 8;
@@ -502,7 +502,13 @@
   function traceArcs(c, lines, idx) { for (var i = 0; i < idx.length; i++) traceArc(c, lines[idx[i]]); }
 
   var groups = [], unclaimedUnits = [], unitsOf = [], groupsDirty = true, arcsDirty = true;
-  var borderArcs = [], provArcs = [], unitArcs = [], coastArcs = [], borderProvArcs = [], borderUnitArcs = [], allProvArcs = [], allUnitArcs = [];
+  var FINER = new Set("AGO ARG AUS AUT BLR BOL BRA CAN CHN COD DEU DZA ETH IDN IND IRN KAZ KEN MDG MEX MLI MMR MNG MOZ MRT MYS NER PAK PER POL RUS SAU SDN SOL TCD TZA UKR USA ZAF ZMB".split(" "));
+  function hasFiner(c) {
+    var us = unitsOf[c] || [];
+    for (var i = 0; i < us.length; i++) { var o = base.provOwner[unitProv[us[i]]]; if (o >= 0 && FINER.has(base.countries[o].code)) return true; }
+    return false;
+  }
+  var borderArcs = [], provArcs = [], unitArcs = [], coastArcs = [], borderProvArcs = [], borderUnitArcs = [], allProvArcs = [], allUnitArcs = [], soloArcs = [], fineShown = new Set(), fineUnits = new Uint8Array(0);
   function rebuildGroups() {
     var map = new Map();
     unitsOf = countries.map(function () { return []; });
@@ -543,8 +549,9 @@
   function freshGroups() { if (groupsDirty) rebuildGroups(); }
   var innerKinds = new Uint8Array(0);
   function rebuildArcs() {
-    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; borderProvArcs = []; borderUnitArcs = []; allProvArcs = []; allUnitArcs = []; unitCoast = null; bandArcs = null;
+    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; borderProvArcs = []; borderUnitArcs = []; allProvArcs = []; allUnitArcs = []; soloArcs = []; unitCoast = null; bandArcs = null;
     innerKinds = new Uint8Array(countries.length);
+    fineUnits = new Uint8Array(countries.length);
     for (var a = 0; a < arcA.length; a++) {
       var A = arcA[a], b = arcB[a];
       if (A < 0) continue;
@@ -555,7 +562,11 @@
       if (owner[A] !== owner[b]) { borderArcs.push(a); (apart ? borderProvArcs : borderUnitArcs).push(a); continue; }
       var co = owner[A] >= 0 ? countries[owner[A]] : null, hide = co && co.lines ? co.lines : 0;
       if (co) innerKinds[owner[A]] |= apart ? 1 : 2;
-      if (!(hide & (apart ? 1 : 2))) (apart ? provArcs : unitArcs).push(a);
+      if (co && fineData && pa === pb) fineUnits[owner[A]] = 1;
+      if (!(hide & (apart ? 1 : 2))) {
+        (apart ? provArcs : unitArcs).push(a);
+        if (!apart && !ui.fine && fineShown.has(owner[A])) soloArcs.push(a);
+      }
     }
     arcsDirty = false;
   }
@@ -1340,6 +1351,7 @@
     var ua = ui.fine ? clamp01((S - 700) / 500) : 0, pa = provAlpha(S);
     if (vis) clipOutPieces(vis);
     drawRegionLines(L, unitArcs, provArcs, ua, pa);
+    if (!ui.fine && soloArcs.length) drawRegionLines(L, soloArcs, [], clamp01((S - 700) / 500), 0);
     if (vis) ctx.restore();
     if (vis && (ua > 0 || pa > 0)) {
       var byHide = new Map();
@@ -1582,7 +1594,7 @@
   }
   function drawRiverLabels(placed, S) {
     var set = riverSetFor(S), top = riverLabelRank(S);
-    if (!set || !ui.rivers || !top || riverFade() < 0.6) return;
+    if (!set || !ui.rivers || !ui.waterNames || !top || riverFade() < 0.6) return;
     var f = pal.antique ? 11.5 : 10.5, font = (pal.antique ? "italic 400 " : "italic 500 ") + f + "px " + (pal.antique ? SERIF : FONT);
     var box = [freeL + 4, freeT + 4, freeR - 4, freeB - 4], shown = 0, kmPx = (flat ? FB.k : S) / R_KM;
     ctx.save();
@@ -1797,9 +1809,14 @@
     if (ui.erase) return UNCLAIMED;
     return ui.country >= 0 && countries[ui.country] && countries[ui.country].alive ? ui.country : null;
   }
+  function fineAt(u) {
+    if (!ui.fine) return false;
+    var o = owner[u], co = o >= 0 ? countries[o] : null;
+    return !(co && co.lines & 2);
+  }
   function regionUnits(u) {
     if (u < 0) return [];
-    if (ui.fine) return [u];
+    if (fineAt(u)) return [u];
     var p = unitProv[u], g = provGroup[p];
     if (g < 0) return fineData ? provUnits[p] : [u];
     var out = [];
@@ -1809,20 +1826,20 @@
   function regionName(u) {
     if (u < 0) return "";
     var p = unitProv[u], g = provGroup[p];
-    if (!ui.fine) return g >= 0 ? groupName[g] : provName[p];
+    if (!fineAt(u)) return g >= 0 ? groupName[g] : provName[p];
     if (fineData && provUnits[p].length > 1) return unitName[u] + ", " + provName[p];
     return g >= 0 ? provName[p] + ", " + groupName[g] : provName[p];
   }
   function regionTitle(u) {
     if (u < 0) return "";
     var p = unitProv[u], g = provGroup[p];
-    if (!ui.fine) return g >= 0 ? groupName[g] : provName[p];
+    if (!fineAt(u)) return g >= 0 ? groupName[g] : provName[p];
     return fineData && provUnits[p].length > 1 ? unitName[u] : provName[p];
   }
   var regionShapes = new Map();
   function regionShape(u, lvl) {
     var p = unitProv[u], g = provGroup[p];
-    var key = (ui.fine ? "u" + u : g >= 0 ? "g" + g : fineData ? "p" + p : "u" + u) + ":" + lvl;
+    var key = (fineAt(u) ? "u" + u : g >= 0 ? "g" + g : fineData ? "p" + p : "u" + u) + ":" + lvl;
     var f = regionShapes.get(key);
     if (f) return f;
     var list = regionUnits(u);
@@ -2172,7 +2189,7 @@
     return { lines: lines, v: v, lam: r[1] * D2R, phi: r[2] * D2R, tier: r[3] };
   });
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
-  var lakes = null, lakesLoad = null, LAKES_FROM = 650;
+  var lakes = null, lakesLoad = null, LAKES_FROM = 650, SMALL_LAKE = 500, lakesDrawn = 0;
   function lakeKmPx(S) { return (flat ? FB.k : S) / R_KM; }
   function drawLakes(S, satellite) {
     if (S < LAKES_FROM) return;
@@ -2185,13 +2202,14 @@
     }).catch(function (e) { console.warn("lakes", e); });
     if (!lakes) return;
     var kp = lakeKmPx(S), any = false;
+    lakesDrawn = 0;
     ctx.beginPath();
     for (var i = 0; i < lakes.length; i++) {
       var L = lakes[i];
-      if (Math.sqrt(L.km2) * kp < 2.5) break;
+      if (Math.sqrt(L.km2) * kp < 2.5 || (!ui.lakes && L.km2 < SMALL_LAKE)) break;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi), r = L.reach * kp;
       if (!p || p[0] + r < 0 || p[0] - r > W || p[1] + r < 0 || p[1] - r > H) continue;
-      traceFeature(ctx, L.f); any = true;
+      traceFeature(ctx, L.f); any = true; lakesDrawn++;
     }
     if (!any) return;
     ctx.save();
@@ -2202,14 +2220,14 @@
     ctx.restore();
   }
   function drawLakeLabels(placed, S) {
-    if (!lakes || !ui.countryNames || S < LAKES_FROM) return;
+    if (!lakes || !ui.waterNames || S < LAKES_FROM) return;
     var kp = lakeKmPx(S), size = pal.antique ? 11 : 10;
     ctx.font = (pal.antique ? "italic 400 " + size + "px " + SERIF : "italic 400 " + size + "px " + FONT);
     ctx.letterSpacing = "0.5px";
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     for (var i = 0; i < lakes.length; i++) {
       var L = lakes[i];
-      if (Math.sqrt(L.km2) * kp < 18) break;
+      if (Math.sqrt(L.km2) * kp < 18 || (!ui.lakes && L.km2 < SMALL_LAKE)) break;
       if (!L.name) continue;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi);
       if (!p || (!flat && p[2] < 0.3) || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
@@ -2223,7 +2241,7 @@
     ctx.letterSpacing = "0px";
   }
   function drawSeaLabels(placed, S) {
-    if (!pal.antique || !ui.countryNames) return;
+    if (!pal.antique || !ui.waterNames) return;
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     for (var i = 0; i < SEAS.length; i++) {
       var sl = SEAS[i];
@@ -4112,7 +4130,7 @@
   var pickVersion = -1, countriesVersion = 0;
   function regionCount(c) {
     var us = unitsOf[c] || [];
-    if (ui.fine) return us.length;
+    if (ui.fine && !(countries[c] && countries[c].lines & 2)) return us.length;
     var s = new Set();
     us.forEach(function (u) { var p = unitProv[u], g = provGroup[p]; s.add(g >= 0 ? -1 - g : p); });
     return s.size;
@@ -4172,14 +4190,15 @@
       if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts]);
       var hideLines = countries[c].lines || 0;
       if (arcsDirty) { freshGroups(); rebuildArcs(); }
-      var kinds = innerKinds[c] || 0;
+      var kinds = innerKinds[c] || 0, solo = !ui.fine && !(kinds & 2), none2 = !(kinds & 2) && (!solo || !hasFiner(c) || (fineData && !fineUnits[c]));
       $("lines-1").setAttribute("aria-pressed", String(!!(kinds & 1) && !(hideLines & 1)));
-      $("lines-2").setAttribute("aria-pressed", String(!!(kinds & 2) && !(hideLines & 2)));
+      $("lines-2").setAttribute("aria-pressed", String(solo ? fineShown.has(c) && !(hideLines & 2) && !none2 : !!(kinds & 2) && !(hideLines & 2)));
       $("lines-1").disabled = !(kinds & 1);
-      $("lines-2").disabled = !(kinds & 2);
+      $("lines-2").disabled = none2;
       setTip($("lines-1"), kinds & 1 ? "The lines between its states, provinces and regions" : "It is a single region, with no lines inside it");
-      setTip($("lines-2"), kinds & 2 ? "The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions"
-        : ui.fine ? "Its regions have no finer lines inside them" : "Its regions have no finer lines; Finer regions, in the View menu, adds counties and districts where there are any");
+      setTip($("lines-2"), none2 ? "Its regions have no finer lines inside them"
+        : solo ? "Its counties and districts, in this country alone, until Finer regions in the View menu is switched on or off"
+        : "The finer lines inside them: counties and districts, and the parts of grouped regions");
       $("inner").hidden = ui.tool !== "select";
       var rr = rulerOf(c);
       $("subject-row").hidden = ui.tool !== "select" || !land;
@@ -4236,6 +4255,8 @@
     $("show-grid").checked = ui.gridLabels;
     $("show-rivers").checked = ui.rivers;
     $("show-terrain").checked = ui.terrain;
+    $("show-lakes").checked = ui.lakes;
+    $("show-water-names").checked = ui.waterNames;
   }
   function syncCountryPick(c) {
     var sel = $("country-pick");
@@ -4295,7 +4316,14 @@
     var custom = document.createElement("label");
     custom.className = "uc-swatch uc-swatch-custom";
     setTip(custom, "Any colour");
-    custom.appendChild(document.createTextNode("+"));
+    var cross = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    cross.setAttribute("viewBox", "0 0 12 12"); cross.setAttribute("width", "12"); cross.setAttribute("height", "12");
+    cross.setAttribute("aria-hidden", "true"); cross.setAttribute("focusable", "false");
+    var arm = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    arm.setAttribute("d", "M6 1.5v9M1.5 6h9"); arm.setAttribute("fill", "none"); arm.setAttribute("stroke", "currentColor");
+    arm.setAttribute("stroke-width", "1.3"); arm.setAttribute("stroke-linecap", "round");
+    cross.appendChild(arm);
+    custom.appendChild(cross);
     var input = document.createElement("input");
     input.type = "color"; input.setAttribute("aria-label", "Any colour");
     custom.appendChild(input);
@@ -4336,7 +4364,16 @@
   [1, 2].forEach(function (bit) {
     $("lines-" + bit).addEventListener("click", function () {
       var c = currentCountry();
-      if (c >= 0) setCountryLines(c, (countries[c].lines || 0) ^ bit);
+      if (c < 0) return;
+      var lines = countries[c].lines || 0;
+      if (bit !== 2 || ui.fine || (innerKinds[c] & 2)) { setCountryLines(c, lines ^ bit); return; }
+      if (fineShown.has(c) && !(lines & 2)) { fineShown.delete(c); arcsDirty = true; renderPanel(); scheduleRender(); return; }
+      loadFine().then(function (ok) {
+        if (!ok || ui.fine) return;
+        fineShown.add(c);
+        if (lines & 2) setCountryLines(c, lines & ~2);
+        arcsDirty = true; renderPanel(); scheduleRender();
+      });
     });
   });
   $("paint-with").addEventListener("click", function () { ui.erase = false; setTool("paint"); });
@@ -5108,8 +5145,9 @@
   function scheduleChecks() { clearTimeout(checkTimer); checkTimer = setTimeout(runChecks, 300); }
   function runChecks() {
     issues = findIssues();
-    var n = $("check-count");
+    var n = $("check-count"), shown = !n.hidden;
     n.hidden = !issues.length;
+    if (shown !== !n.hidden) fitBar(true);
     n.textContent = issues.length > 99 ? "99+" : String(issues.length);
     $("check-menu").querySelector("summary").setAttribute("aria-label", issues.length ? "Check: " + issues.length + (issues.length === 1 ? " thing" : " things") + " to look at" : "Check: nothing to fix");
     if ($("check-menu").open) renderChecks();
@@ -5180,7 +5218,37 @@
       $("file-menu").querySelector("summary").focus();
     });
   });
+  var BAR_MODES = [["", "", ""], ["", "", "no-labels"], ["", "no-title", "no-labels"], ["bar-a", "", ""], ["bar-a", "", "no-labels"], ["bar-b", "", "no-labels"],
+    ["bar-a", "no-title", "no-labels"], ["bar-b", "no-title", "no-labels"], ["bar-c", "no-title", "no-labels"]];
+  var barWidth = -1;
+  function barFits() {
+    var panelBox = panel.getBoundingClientRect(), main = panel.querySelector(".uc-main"), boxes = [main, panel.querySelector(".uc-new"), panel.querySelector(".uc-end")].map(function (el) { return el.getBoundingClientRect(); });
+    if (main.scrollWidth > main.clientWidth + 1) return false;
+    for (var i = 0; i < boxes.length; i++) {
+      var a = boxes[i];
+      if (a.left < panelBox.left - 1 || a.right > panelBox.right + 1) return false;
+      for (var j = i + 1; j < boxes.length; j++) {
+        var b = boxes[j];
+        if (a.top < b.bottom - 2 && b.top < a.bottom - 2 && a.left < b.right + 8 && b.left < a.right + 8) return false;
+      }
+    }
+    return true;
+  }
+  function fitBar(force) {
+    if (!BAR_MODES || sheetMode || ui.bare) return;
+    var w = Math.round(bar.getBoundingClientRect().width);
+    if (w === barWidth && !force) return;
+    barWidth = w;
+    var all = ["bar-a", "bar-b", "bar-c", "no-title", "no-labels"];
+    for (var m = 0; m < BAR_MODES.length; m++) {
+      all.forEach(function (c) { bar.classList.remove(c); });
+      BAR_MODES[m].forEach(function (c) { if (c) bar.classList.add(c); });
+      if (barFits()) return;
+    }
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitBar(true); });
   if (window.ResizeObserver) new ResizeObserver(function () {
+    fitBar(false);
     if (sheetMode || ui.bare) return;
     var h = Math.ceil(bar.getBoundingClientRect().bottom);
     document.documentElement.style.setProperty("--uc-bar-h", h + "px");
@@ -5218,9 +5286,13 @@
   });
   var sheetDrag = null;
   panel.addEventListener("pointerdown", function (e) {
-    if (!sheetMode || e.pointerType === "mouse") return;
-    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), engaged: false,
-      onHandle: !!(e.target.closest && e.target.closest(".uc-sheet-handle, .uc-head")) };
+    if (!sheetMode) return;
+    var onHandle = !!(e.target.closest && e.target.closest(".uc-sheet-handle, .uc-head"));
+    if (e.pointerType === "mouse") {
+      if (e.button !== 0 || !onHandle || e.target.closest("input, select, textarea, a, .uc-about")) return;
+      e.preventDefault();
+    }
+    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), engaged: false, onHandle: onHandle };
   });
   panel.addEventListener("pointermove", function (e) {
     var d = sheetDrag;
@@ -5383,6 +5455,7 @@
   }
   $("fine").addEventListener("change", function () {
     var on = $("fine").checked;
+    fineShown.clear();
     try { localStorage.setItem(STORE_FINE, on ? "1" : "0"); } catch (e) { }
     if (!on) { ui.fine = false; arcsDirty = true; renderPanel(); scheduleRender(); return; }
     loadFine().then(function (ok) {
@@ -5401,10 +5474,12 @@
     ui.gridLabels = $("show-grid").checked;
     ui.rivers = $("show-rivers").checked;
     ui.terrain = $("show-terrain").checked;
-    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
+    ui.lakes = $("show-lakes").checked;
+    ui.waterNames = $("show-water-names").checked;
+    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
     scheduleRender();
   }
-  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain"].forEach(function (id) { $(id).addEventListener("change", setNames); });
+  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain", "show-lakes", "show-water-names"].forEach(function (id) { $(id).addEventListener("change", setNames); });
 
   function init(topo, cityRows) {
     var geoms = topo.objects.provinces.geometries;
@@ -5448,7 +5523,7 @@
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
     var namesPref = null;
     try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
-    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; }
+    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; ui.lakes = namesPref[7] !== "0"; ui.waterNames = namesPref[8] !== "0"; }
     if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); setTip($("flat-btn"), "Globe (M)"); }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
@@ -6155,6 +6230,8 @@
     localScale: localScale,
     fillOf: function (c) { return colorOf(c); },
     shownName: function (c) { return shownName(c); },
+    soloLines: function () { if (arcsDirty) { freshGroups(); rebuildArcs(); } return soloArcs.length; },
+    lakesDrawn: function () { return lakesDrawn; },
     timeRender: function () { var t0 = performance.now(); render(); return performance.now() - t0; },
     profile: function () {
       marks = []; render();

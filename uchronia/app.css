@@ -486,6 +486,9 @@ body.uc-page {
 }
 
 .uc-hist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 0;
   border: 0;
   background: none;
@@ -493,9 +496,17 @@ body.uc-page {
   font: inherit;
   cursor: pointer;
 }
-.uc-hist-btn[aria-expanded="true"] {
-  text-decoration: underline;
-  text-underline-offset: 5px;
+.uc-hist-btn::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.4px solid currentColor;
+  border-bottom: 1.4px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+.uc-hist-btn[aria-expanded="true"]::after {
+  transform: translateY(2px) rotate(-135deg);
 }
 .uc-chron {
   position: fixed;
@@ -982,8 +993,10 @@ body.uc-page {
   overflow: hidden;
   background: none;
   color: var(--ink);
-  font-size: 15px;
-  line-height: 1;
+  line-height: 0;
+}
+.uc-swatch-custom svg {
+  display: block;
 }
 .uc-swatch-custom input {
   position: absolute;
@@ -1523,36 +1536,41 @@ body.uc-page {
   .uc-facts {
     display: none;
   }
-  @media (max-width: 1179px) {
-    .uc-tool {
-      padding: 0 9px;
-    }
-    .uc-tool span {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      white-space: nowrap;
-    }
+  .uc-bar.no-labels .uc-tool {
+    padding: 0 9px;
   }
-  @media (max-width: 979px) {
-    .uc-bar {
-      column-gap: 22px;
-    }
-    .uc-panel,
-    .uc-main {
-      column-gap: 16px;
-    }
-    .uc-title {
-      display: none;
-    }
+  .uc-bar.no-labels .uc-tool span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
-  @media (max-width: 799px) {
-    .uc-panel {
-      grid-template-columns: auto minmax(0, 1fr);
-      grid-template-areas: "main main" "new end" "ctx ctx";
-    }
+  .uc-bar.no-title {
+    column-gap: 22px;
+  }
+  .uc-bar.no-title .uc-panel,
+  .uc-bar.no-title .uc-main {
+    column-gap: 16px;
+  }
+  .uc-bar.no-title .uc-title {
+    display: none;
+  }
+  .uc-bar.bar-a .uc-panel {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "main new" "end end" "ctx ctx";
+  }
+  .uc-bar.bar-b .uc-panel {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "main main" "new end" "ctx ctx";
+  }
+  .uc-bar.bar-c .uc-panel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "main" "new" "end" "ctx";
+  }
+  .uc-bar.bar-c .uc-end {
+    justify-self: start;
   }
 }
 @media (max-width: 640px) {

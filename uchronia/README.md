@@ -208,7 +208,9 @@ of `/greatercircle/`.
   extra European and North American sets), from about 6 km² up, drawn as
   water over the land and under the borders, each once it is big enough on
   screen to see, with its name in italic once it is bigger still: Lake
-  Geneva, the Bodensee, Lake Balaton, the Great Salt Lake. `data/lakes.json`
+  Geneva, the Bodensee, Lake Balaton, the Great Salt Lake. **View → Small
+  lakes**, on by default, can leave out every lake under 500 km² (Lake of the
+  Ozarks, Burdur), keeping the large ones. `data/lakes.json`
   is loaded once the map is zoomed in a little; `tools/build-lakes.mjs`
   builds it.
 - **Rivers.** Natural Earth's rivers, drawn in blue over the countries and
@@ -428,9 +430,16 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
-  over) and **View** (the style, country names, settlements, small towns,
-  terrain, rivers,
-  latitude and longitude, the scale bar, finer regions). **Terrain**, on by
+  over) and **View** (the style, country names, names of seas, lakes and
+  rivers, settlements, small towns, terrain, rivers, small lakes,
+  latitude and longitude, the scale bar, finer regions). History and the
+  menus each carry a caret. The bar fits itself to the window by measuring:
+  it tries, in turn, one row with the tools' names and the title; one row
+  without the tools' names; one row without the title; the tools and *New
+  country* above undo and the menus; the tools above *New country* and the
+  menus; and each on a row of its own, and keeps the first in which nothing
+  overlaps or runs off the edge. It fits again when the window, the style or
+  the Check badge changes. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
   map zooms in; it is left off under the satellite view. What is
   selected shows in the bar's second row, and a hint for the tool at the
@@ -522,7 +531,13 @@ of `/greatercircle/`.
   subject of another, show or hide its
   regions' lines (*Tier 1*, the lines between its states, provinces and
   regions; *Tier 2*, the finer lines inside them; a tier it has none of is
-  greyed out, and hidden tiers stay hidden inside land drawn for it), give it
+  greyed out, and hidden tiers stay hidden inside land drawn for it). With
+  *Finer regions* off, *Tier 2* loads the finer regions and draws the counties
+  and districts of that country alone, for display only, until *Finer
+  regions* is switched on or off again; it is offered only for the 40
+  countries that have finer regions. With *Finer regions* on, a country whose
+  *Tier 2* is hidden is painted, named and counted by its first-level regions
+  again; give it
   land or dissolve it; click a city to rename it, change its size or delete
   it, and once it is picked, drag it to move it.
 - **Give land (B)**: one tool for moving borders. Its pane says who gets
@@ -553,7 +568,8 @@ of `/greatercircle/`.
   **Delete** deletes the chosen city or drawing; **Escape** drops a drawing
   in progress, lets go of the selection, or goes back to Select.
 - On a phone: tap to give regions or to found a city, drag to move the map, and pull
-  the sheet up for the rest.
+  the sheet up for the rest. In a desktop window as narrow as a phone, the
+  sheet's handle can be dragged with a mouse or trackpad too.
 
 ## Tests
 
