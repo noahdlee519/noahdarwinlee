@@ -5147,19 +5147,21 @@
       if (names.has(key)) out.push({ country: i, name: co.name, note: "Another country has this name" });
       else names.set(key, i);
     });
-    var links = countryLinks(), flagged = new Set();
+    var links = countryLinks(), clashes = new Map();
     countries.forEach(function (co, i) {
       if (!co.alive || !hasLand(i)) return;
-      [[links.touch[i], "which borders it"], [links.near[i], "just across the water"]].forEach(function (pair) {
+      [[links.touch[i], 2], [links.near[i], 1]].forEach(function (pair) {
         pair[0].forEach(function (j) {
-          if (j <= i || !countries[j] || !countries[j].alive || !hasLand(j)) return;
-          if (hueOf(i) === hueOf(j) || colorOf(i) !== colorOf(j)) return;
-          var key = i + ":" + j;
-          if (flagged.has(key)) return;
-          flagged.add(key);
-          out.push({ country: i, name: co.name, note: "Same colour as " + countries[j].name + ", " + pair[1] });
+          if (!countries[j] || !countries[j].alive || !hasLand(j)) return;
+          var a = hueOf(i), b = hueOf(j);
+          if (a === b || colorOf(i) !== colorOf(j)) return;
+          var lo = Math.min(a, b), hi = Math.max(a, b), key = lo + ":" + hi, was = clashes.get(key);
+          if (!was || was.how < pair[1]) clashes.set(key, { a: lo, b: hi, how: pair[1] });
         });
       });
+    });
+    clashes.forEach(function (c) {
+      out.push({ country: c.a, name: countries[c.a].name, note: "Same colour as " + countries[c.b].name + (c.how === 2 ? ", which borders it" : ", just across the water") });
     });
     cities.forEach(function (c) {
       var unnamed = DEFAULT_CITY.test(c.name);
