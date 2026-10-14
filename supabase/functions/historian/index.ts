@@ -57,7 +57,11 @@ ${EDITS}
 - title: a short title for this world, like the title of a history book.
 - declined: true only if the premise asks for something you will not write (below); then leave every list empty and the title empty.
 
-If the map's year is in the past, our world's map of that year is your starting point, not today's: its empires, colonies, protectorates, mandates and dominions, its vanished states and its borders as they then stood. Redraw everything that differed then from now, across every continent, even where the premise changes nothing; a map of 1925 shows the British Raj, French West Africa and the Soviet Union, not India, Mali and Russia. Then change that world as the premise demands.
+If the map's year is in the past, our world's map of that year is your starting point, not today's: its empires, colonies, protectorates, mandates and dominions, its vanished states and its borders as they then stood. Redraw everything that differed then from now, even where the premise changes nothing; a map of 1925 shows the British Raj, French West Africa and the Soviet Union, not India, Mali and Russia. Then change that world as the premise demands.
+
+Keep to the part of the world the premise asks about. If it names a continent or a region ("what did Europe look like in 1930"), redraw only that part, and the countries whose fate is bound up with it, and leave the rest of the map alone. Only a premise about the whole world, or one with no place in it, calls for redrawing every continent.
+
+Keep the edits short: the map must be written within a couple of minutes. Move whole countries wherever you can, name each region only once, and leave out any edit that changes nothing.
 
 Draw the map the premise implies as it would stand in its year, after the butterfly effects of all the years from the turning point to then. Be bold and take creative, speculative risks:
 - A turning point ripples outward. Follow it beyond its own region, through alliances, wars, empires and their colonies, revolutions, migrations and trade, to other continents. The older the divergence, the more of the world should differ; one centuries old should leave few of our borders standing.

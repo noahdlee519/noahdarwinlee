@@ -6103,6 +6103,7 @@
     var premise = $("history-input").value.trim();
     if (!premise || historyBusy) { if (!premise) $("history-input").focus(); return; }
     historyBusy = true;
+    var asked = performance.now();
     $("history-go").disabled = true;
     $("history-text").textContent = "";
     historyStatus("The historian is redrawing the map. This can take a minute or two…");
@@ -6140,7 +6141,7 @@
           writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise);
         } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : ev.reason === "max_tokens" ? "The historian's map ran too long. Try a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not redraw this. Try again in a moment."); }
-        else if (ev.t === "closed") finish("The historian could not redraw this. Try again in a moment.");
+        else if (ev.t === "closed") finish(performance.now() - asked > 100000 ? "The historian ran out of time on a map this large. Try a smaller part of the world or a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
       });
     }).catch(function (e) {
       console.warn("historian", e);
