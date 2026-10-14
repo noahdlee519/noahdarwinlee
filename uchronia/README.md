@@ -431,7 +431,8 @@ of `/greatercircle/`.
 - The bar along the top holds the tools, *New country*, undo and redo, and
   **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
   over) and **View** (the style, country names, names of seas, lakes and
-  rivers, settlements, small towns, terrain, rivers, small lakes,
+  rivers, settlements, small towns, region borders (every line inside the
+  countries, both tiers), terrain, rivers, small lakes,
   latitude and longitude, the scale bar, finer regions). History and the
   menus each carry a caret. The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row

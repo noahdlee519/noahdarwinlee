@@ -52,7 +52,7 @@
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, waterNames: true };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, waterNames: true, regionLines: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -1348,10 +1348,10 @@
 
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat); }
     drawLakes(S, satellite);
-    var ua = ui.fine ? clamp01((S - 700) / 500) : 0, pa = provAlpha(S);
+    var ua = ui.fine && ui.regionLines ? clamp01((S - 700) / 500) : 0, pa = ui.regionLines ? provAlpha(S) : 0;
     if (vis) clipOutPieces(vis);
     drawRegionLines(L, unitArcs, provArcs, ua, pa);
-    if (!ui.fine && soloArcs.length) drawRegionLines(L, soloArcs, [], clamp01((S - 700) / 500), 0);
+    if (!ui.fine && ui.regionLines && soloArcs.length) drawRegionLines(L, soloArcs, [], clamp01((S - 700) / 500), 0);
     if (vis) ctx.restore();
     if (vis && (ua > 0 || pa > 0)) {
       var byHide = new Map();
@@ -4257,6 +4257,7 @@
     $("show-terrain").checked = ui.terrain;
     $("show-lakes").checked = ui.lakes;
     $("show-water-names").checked = ui.waterNames;
+    $("show-region-lines").checked = ui.regionLines;
   }
   function syncCountryPick(c) {
     var sel = $("country-pick");
@@ -5476,10 +5477,11 @@
     ui.terrain = $("show-terrain").checked;
     ui.lakes = $("show-lakes").checked;
     ui.waterNames = $("show-water-names").checked;
-    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
+    ui.regionLines = $("show-region-lines").checked;
+    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames, ui.regionLines].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
     scheduleRender();
   }
-  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain", "show-lakes", "show-water-names"].forEach(function (id) { $(id).addEventListener("change", setNames); });
+  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain", "show-lakes", "show-water-names", "show-region-lines"].forEach(function (id) { $(id).addEventListener("change", setNames); });
 
   function init(topo, cityRows) {
     var geoms = topo.objects.provinces.geometries;
@@ -5523,7 +5525,7 @@
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
     var namesPref = null;
     try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
-    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; ui.lakes = namesPref[7] !== "0"; ui.waterNames = namesPref[8] !== "0"; }
+    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; ui.lakes = namesPref[7] !== "0"; ui.waterNames = namesPref[8] !== "0"; ui.regionLines = namesPref[9] !== "0"; }
     if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); setTip($("flat-btn"), "Globe (M)"); }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
