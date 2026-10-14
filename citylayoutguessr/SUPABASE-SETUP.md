@@ -3,7 +3,7 @@
 The game works with none of this switched on. Everything below is additive: if
 `supabase-config.js` is left empty, the page never contacts Supabase, no
 sign-in button appears, and citylayoutguessr behaves exactly as it does today.
-Fill the two values in and the account row, the daily leaderboard and the
+Fill the two values in and the account row, the daily leaderboard, and the
 counters all come to life.
 
 There are two accounts to create, and only you can create them: a Supabase
@@ -154,7 +154,7 @@ thing again.
 
 `profiles` holds the name and picture Google gives us, because a leaderboard
 needs something to put next to a score. `daily_scores` holds your score out of
-ten, in quarters — a quarter each for the continent, the region, the country
+ten, in quarters — a quarter each for the continent, the region, the country,
 and the city. `events` holds a row saying "someone loaded this page" or
 "someone signed in" — a path, a referrer, a date, and the user id if there was
 one. No addresses, no fingerprinting, nothing bought or sold.

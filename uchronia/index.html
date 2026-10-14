@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>UCHRONIA</title>
+    <meta
+      name="description"
+      content="A map maker for alternate histories. Give any state or province to any country, found new countries, rename them, and put cities where they might have been, on a globe with a satellite view for reference."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/uchronia/" />
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+    <link rel="manifest" href="../manifest.json" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="UCHRONIA | Noah Darwin Lee" />
+    <meta property="og:description" content="A map maker for alternate histories: redraw the world's borders, found countries, and rename or move their cities." />
+    <meta property="og:url" content="https://noahdarwinlee.com/uchronia/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="app.css" />
+    <script>
+      (function () {
+        var t = null, s = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+          s = localStorage.getItem("uchronia-style");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        if (s !== "plain") {
+          t = "light";
+          document.documentElement.setAttribute("data-uc-style", "antique");
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'sha256-fzUk4KzGKeD0CPX4LseLuhoUrtQ+D0fsBwxymYe1AxU=';
+        style-src 'self';
+        font-src 'self';
+        img-src 'self' data: blob: https://gibs.earthdata.nasa.gov https://s3.amazonaws.com;
+        connect-src 'self' https://kigvciyyjlgjcgnwgrwf.supabase.co https://s3.amazonaws.com;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
+  </head>
+  <body class="uc-page">
+    <h1 class="sr-only">UCHRONIA</h1>
+
+    <div class="uc-bar" id="bar">
+      <div class="uc-site">
+        <a class="name" href="/"
+          ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+          <span class="name-word-lee">Lee</span></a
+        >
+        <a class="back-link" href="/projects/">back</a>
+      </div>
+
+      <aside class="uc-panel" id="panel" aria-label="Map editor">
+        <button type="button" class="uc-sheet-handle" id="sheet-handle" aria-label="Show more" aria-expanded="false">
+          <span></span>
+        </button>
+        <div class="uc-main">
+          <header class="uc-head">
+            <div class="uc-head-text">
+              <h2 class="uc-title">UCHRONIA</h2>
+              <p class="uc-sub">Redraw the world as it might have been: move its borders, found countries, and rename and place their cities</p>
+            </div>
+            <div class="uc-about" id="about">
+              <button
+                type="button"
+                class="uc-about-btn"
+                id="about-btn"
+                aria-label="About the map and the data"
+                aria-expanded="false"
+                aria-controls="about-tip"
+              >
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+                  <circle cx="10" cy="10" r="8.6" fill="none" stroke="currentColor" stroke-width="1.5" />
+                  <circle cx="10" cy="6.2" r="1.15" fill="currentColor" />
+                  <rect x="9.1" y="8.6" width="1.8" height="6.2" rx="0.9" fill="currentColor" />
+                </svg>
+              </button>
+              <div class="uc-about-tip" id="about-tip" role="note">
+                <p>
+                  Redraw the world as it might have been: give regions to other countries, draw borders by hand,
+                  found countries, and place their cities. Your map stays in this browser; share it as a link or a file.
+                </p>
+                <p>
+                  History asks a historian, Claude, an AI made by Anthropic, to write how your map came to be, to
+                  redraw the world from a turning point you give it, and to answer your questions, changing the map
+                  when you ask or when the history calls for it; undo takes back anything it changes. What you type
+                  and a list of how your map differs from ours go to Anthropic to write each reply. Its histories are
+                  fiction.
+                </p>
+                <p class="uc-keys">
+                  Keys: V select · B give land · D lasso · C settlements · M flat map · S satellite · H hide the interface ·
+                  Shift-drag moves the map · Esc lets go · Ctrl+Z undoes
+                </p>
+                <p class="uc-sources">
+                  Sources: <a href="https://www.naturalearthdata.com/">Natural Earth</a>,
+                  <a href="https://www.geoboundaries.org/">geoBoundaries</a>, <a href="https://www.geonames.org/">GeoNames</a>,
+                  <a href="https://visibleearth.nasa.gov/collection/1484/blue-marble">NASA Blue Marble</a>,
+                  <a href="https://registry.opendata.aws/terrain-tiles/">Terrain Tiles</a> and
+                  &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+                  <a href="https://github.com/noahdlee519/noahdarwinlee/blob/main/uchronia/README.md#credits">All credits and licences</a>
+                </p>
+                <p class="uc-sources"><a href="/privacy/#uchronia">Privacy</a> · <a href="/terms/#uchronia">Terms</a></p>
+              </div>
+            </div>
+          </header>
+          <div class="uc-tools" role="group" aria-label="Tool">
+            <button type="button" class="uc-tool" data-tool="select" aria-pressed="true" data-tip="Select (V)">
+              <svg class="uc-std" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.8v15.6l4.2-4 2.6 6 2.4-1-2.6-5.9h5.8z" /></svg><svg class="uc-ant" viewBox="0 0 32 32" width="21" height="21" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 10.4h5.3v13.4H3.2" /><path d="M3.2 10.4l-1 1.1 1 1.1-1 1.1 1 1.1-1 1.1 1 1.1-1 1.1 1 1.1-1 1.1 1 1.1-1 1.1" /><path class="h" d="M5 11v12.4M6.8 11v12.4" /><path d="M8.5 11.6c3-1.2 6.2-1.5 9-1.2h10c2.2 0 2.3 3.4 0 3.4h-8.6" /><path d="M18.9 13.8c1.9.2 2.4 2.6.6 3h-4.6" /><path d="M15.2 16.8c2.4.1 2.6 2.6.5 2.7h-1.2" /><path d="M14.5 19.5c2.1.2 2.2 2.5.2 2.6h-.7" /><path d="M14 22.1c1.6.3 1.5 2.1-.3 2.1H8.5" /><path class="h" d="M9.8 22.6l2.6-2.4M9.8 20.3l2.1-2M9.8 18l1.4-1.3" /><path class="h" d="M20 11.9h6.6" /></svg>
+              <span>Select</span>
+            </button>
+            <button type="button" class="uc-tool" data-tool="land" aria-pressed="false" data-tip="Give land (B; D for the lasso)">
+              <svg class="uc-std" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V3.8" /><path d="M6 4.6c2.1-1.3 4.1-1.3 6.1 0s4.1 1.3 6.4 0v8.6c-2.3 1.3-4.3 1.3-6.4 0s-4-1.3-6.1 0" /></svg><svg class="uc-ant" viewBox="0 0 32 32" width="21" height="21" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="4.2" r="1.5" class="f" /><path d="M8 5.7V27" /><path d="M8.6 6.6c4.2-1.4 7.7 1.8 12.4.4l6-.2-3.6 4 3.9 4.4-6.2-.1c-4.4 1-8-1.6-12.5-.3" /><path class="h" d="M9.8 12.2c3.6-.6 7 1.3 11.2.5M9.8 13.5c3.6-.6 7 1.3 11.5.6M9.8 10.9c3.6-.6 7 1.3 11-.1" /><path d="M2.5 29.3c3.4-3 8.4-3.6 13.5 0" /><path class="h" d="M5.3 28.8l2-1.6M7.8 29l2.2-1.9M10.4 29.1l1.9-1.6" /><path d="M16 29.3h13.5" /></svg>
+              <span>Give land</span>
+            </button>
+            <button type="button" class="uc-tool" data-tool="city" aria-pressed="false" data-tip="Settlements (C)">
+              <svg class="uc-std" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5h17" /><path d="M5.5 20.5v-8l3.5-3 3.5 3v8" /><path d="M12.5 20.5V7.5l3-3.7 3 3.7v13" /><path d="M15.5 10.5v2" /></svg><svg class="uc-ant" viewBox="0 0 32 32" width="21" height="21" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 29h27" /><path d="M12.6 29V12.4h4.8V29" /><path d="M11.9 12.6 15 4.2l3.1 8.4" /><path d="M15 4.2V1.6M14 2.6h2" /><path class="h" d="M13.3 11.4l1.7-4.6M15 11.4l1.4-3.8" /><path d="M14.1 29v-2.9a.9.9 0 0 1 1.8 0V29" /><path d="M14.5 17.4v-1.2a.5.5 0 0 1 1 0v1.2z" /><path d="M4.2 29v-8.2h7.6" /><path d="M3.1 21.4 7.6 16.6l4.5 4.6" /><path class="h" d="M5 20.7l2.6-2.8M6.8 20.7l1.9-2" /><path d="M6.4 29v-3.3h2v3.3" /><path d="M18.2 29V18.6h10.2V29" /><path d="M17.3 19.2l5.9-5.8 6 5.8" /><path d="M25.8 15.6v-3h1.6v4.6" /><path class="h" d="M19.6 18.5l3.6-3.6M21.6 18.5l2.6-2.6" /><path d="M20.2 21.3h2.2v2.4h-2.2zM24.2 21.3h2.2v2.4h-2.2z" /></svg>
+              <span>Settlements</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="uc-context">
+          <p class="uc-hint" id="hint"></p>
+          <section class="uc-pane" id="land-pane" hidden>
+            <div class="uc-inner">
+              <span class="uc-inner-label" id="to-label">To</span>
+              <div class="uc-seg" role="group" aria-labelledby="to-label">
+                <button type="button" id="land-to" aria-pressed="true"><span class="uc-dot" id="land-to-dot"></span><span id="land-to-name">a country</span></button>
+                <button type="button" id="paint-erase" aria-pressed="false">Unclaimed</button>
+              </div>
+            </div>
+            <div class="uc-inner">
+              <span class="uc-inner-label" id="brush-label">By</span>
+              <div class="uc-seg" role="group" aria-labelledby="brush-label">
+                <button type="button" id="paint-regions" aria-pressed="true" data-tip="Click or drag over regions (B)">Regions</button>
+                <button type="button" id="paint-whole" aria-pressed="false" data-tip="Click a country to give all of it">Whole countries</button>
+                <button type="button" id="brush-lasso" aria-pressed="false" data-tip="Draw round any land, across region lines (D)">Lasso</button>
+              </div>
+            </div>
+          </section>
+          <section class="uc-pane" id="country-pane" hidden>
+            <div class="uc-name-row">
+              <input id="country-name" class="uc-name" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Country name" />
+              <span class="uc-pick-wrap" data-tip="Choose another country">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
+                <select id="country-pick" aria-label="Choose another country"></select>
+              </span>
+            </div>
+            <div class="uc-swatches" id="swatches" role="group" aria-label="Colour"></div>
+            <div class="uc-subject" id="subject-row">
+              <span class="uc-subject-label" id="subject-label">Subject of</span>
+              <span class="uc-subject-pick" data-tip="Make it a subject of another country: it takes that country's colour, and its name carries its ruler's">
+                <span id="subject-name">no one</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
+                <select id="subject-pick" aria-labelledby="subject-label subject-name"></select>
+              </span>
+            </div>
+            <div class="uc-inner" id="inner">
+              <div class="uc-seg" role="group" aria-label="Region lines">
+                <button type="button" id="lines-1" aria-pressed="true" data-tip="The lines between its states, provinces, and regions">Tier 1</button>
+                <button type="button" id="lines-2" aria-pressed="true" data-tip="The finer lines inside them: counties and districts with finer regions on, and the parts of grouped regions">Tier 2</button>
+              </div>
+            </div>
+            <p class="uc-facts" id="country-facts"></p>
+            <div class="uc-actions" id="country-actions">
+              <button type="button" class="uc-linkbtn" id="paint-with">Give it land</button>
+              <button type="button" class="uc-linkbtn" id="dissolve">Dissolve</button>
+            </div>
+          </section>
+          <p class="uc-region" id="region-line" hidden><span id="region-name"></span> <button type="button" class="uc-linkbtn" id="remove-piece" hidden>Remove</button></p>
+
+          <section class="uc-pane" id="city-pane" hidden>
+            <input id="city-name" class="uc-name" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="City name" />
+            <div class="uc-seg" id="city-size" role="group" aria-label="Size">
+              <button type="button" data-size="capital" aria-pressed="false">Capital</button>
+              <button type="button" data-size="city" aria-pressed="false">City</button>
+              <button type="button" data-size="town" aria-pressed="false">Town</button>
+              <button type="button" data-size="small" aria-pressed="false">Small town</button>
+            </div>
+            <div class="uc-actions">
+              <button type="button" class="uc-linkbtn" id="city-delete">Delete</button>
+            </div>
+          </section>
+        </div>
+        <div class="uc-new">
+          <button type="button" class="uc-btn" id="new-country">New country</button>
+        </div>
+        <div class="uc-end">
+          <div class="uc-history">
+            <button type="button" class="uc-icon-btn" id="undo" disabled aria-label="Undo" data-tip="Undo (Ctrl+Z)">
+              <svg class="uc-std" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg><svg class="uc-ant" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path class="f" d="M11 6.6 3.4 12.4 11 18.2 9.3 12.4z" /><path d="M9.6 12.4h10.2c5 0 8.4 3.5 8.4 7.6s-3.3 7.4-7.6 7.4c-2.7 0-4.2-1.7-3.8-3.4.4-1.6 2.4-2 3.3-.8" /><path class="h" d="M10 13.9h9.5c4.1 0 7 2.8 7 6.1" /></svg>
+            </button>
+            <button type="button" class="uc-icon-btn" id="redo" disabled aria-label="Redo" data-tip="Redo (Ctrl+Shift+Z)">
+              <svg class="uc-std" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></svg><svg class="uc-ant" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(32 0) scale(-1 1)"><path class="f" d="M11 6.6 3.4 12.4 11 18.2 9.3 12.4z" /><path d="M9.6 12.4h10.2c5 0 8.4 3.5 8.4 7.6s-3.3 7.4-7.6 7.4c-2.7 0-4.2-1.7-3.8-3.4.4-1.6 2.4-2 3.3-.8" /><path class="h" d="M10 13.9h9.5c4.1 0 7 2.8 7 6.1" /></g></svg>
+            </button>
+          </div>
+          <button type="button" class="uc-hist-btn" id="history-btn" aria-expanded="false" aria-controls="history">History</button>
+          <details class="uc-menu" id="check-menu">
+            <summary>Check<span class="uc-count" id="check-count" hidden></span></summary>
+            <div class="uc-menu-list" id="check-list"></div>
+          </details>
+          <details class="uc-menu" id="file-menu">
+            <summary>File</summary>
+            <div class="uc-menu-list">
+              <button type="button" class="uc-menu-item" id="share">Copy link</button>
+              <button type="button" class="uc-menu-item" id="export">Save file</button>
+              <button type="button" class="uc-menu-item" id="import">Open file</button>
+              <button type="button" class="uc-menu-item" id="reset">Start over</button>
+              <input type="file" id="import-file" accept=".json,application/json" hidden />
+            </div>
+          </details>
+          <details class="uc-menu" id="adv">
+            <summary>View</summary>
+            <div class="uc-menu-list">
+              <div class="uc-style">
+                <span class="uc-style-label" id="style-label">Style</span>
+                <div class="uc-seg" id="style-seg" role="group" aria-labelledby="style-label">
+                  <button type="button" data-style="light" aria-pressed="false">Light</button>
+                  <button type="button" data-style="dark" aria-pressed="false">Dark</button>
+                  <button type="button" data-style="antique" aria-pressed="false">Antique</button>
+                </div>
+              </div>
+              <label class="uc-check"><input type="checkbox" id="show-countries" checked /> <span>Country names</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-water-names" checked /> <span>Names of seas, lakes, and rivers</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-cities" checked /> <span>Settlements</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-towns" /> <span>Small towns</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-region-lines" checked /> <span>Region borders</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-terrain" checked /> <span>Terrain</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-rivers" checked /> <span>Rivers</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-lakes" checked /> <span>Small lakes</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-grid" checked /> <span>Latitude and longitude</span></label>
+              <label class="uc-check"><input type="checkbox" id="show-scale" checked /> <span>Scale bar</span></label>
+              <label class="uc-check"><input type="checkbox" id="fine" /> <span>Finer regions in large countries</span></label>
+              <p class="uc-adv-note">Counties, prefectures, and districts inside large states and provinces, and the municipalities and provinces that smaller countries' regions are made of, so borders can follow them</p>
+            </div>
+          </details>
+        </div>
+      </aside>
+    </div>
+
+    <canvas
+      id="globe"
+      class="uc-globe"
+      tabindex="0"
+      aria-label="A globe of the world's countries, which you can redraw. Drag to turn it, scroll or pinch to zoom. Arrow keys turn it; plus and minus zoom."
+    ></canvas>
+    <div class="uc-tip" id="tip" hidden></div>
+    <div class="uc-status" id="status" role="status" hidden><span id="status-text"></span><button type="button" id="status-action" class="uc-linkbtn" hidden></button></div>
+
+    <section class="uc-chron" id="history" hidden aria-labelledby="history-title">
+      <header class="uc-chron-head">
+        <h2 class="uc-chron-title" id="history-title">History</h2>
+        <button type="button" class="uc-linkbtn uc-chron-saved-btn" id="history-saved-btn" aria-expanded="false" aria-controls="history-saved">Saved</button>
+        <button type="button" class="uc-chron-close" id="history-close" aria-label="Close the history">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </header>
+      <div class="uc-chron-ask" id="history-ask">
+        <div class="uc-seg uc-chron-modes" role="group" aria-label="Write the history of">
+          <button type="button" id="mode-map" aria-pressed="true">Your map</button>
+          <button type="button" id="mode-turn" aria-pressed="false">A turning point</button>
+        </div>
+        <p class="uc-chron-hint" id="history-hint">The historian tells how your map came to be.</p>
+        <textarea class="uc-chron-note" id="history-input" rows="2" maxlength="500" aria-labelledby="history-hint"></textarea>
+        <div class="uc-chron-row">
+          <button type="button" class="uc-btn" id="history-go">Write its history</button>
+          <span class="uc-chron-small">By Claude, an AI. Your map's changes and what you type go to Anthropic.</span>
+        </div>
+      </div>
+      <button type="button" class="uc-linkbtn uc-chron-new" id="history-new" hidden>New history</button>
+      <p class="uc-chron-q uc-chron-asked" id="history-asked" hidden></p>
+      <p class="uc-chron-status" id="history-status" role="status"></p>
+      <article class="uc-chron-text" id="history-text"></article>
+      <div class="uc-chron-chat" id="history-chat" hidden>
+        <div class="uc-chron-turns" id="history-turns"></div>
+        <label class="uc-chron-label" for="history-q">Ask the historian more</label>
+        <textarea class="uc-chron-note" id="history-q" rows="2" maxlength="1000" placeholder="What became of the old dynasties?"></textarea>
+        <button type="button" class="uc-btn" id="history-ask-go">Ask</button>
+        <p class="uc-chron-status" id="history-chat-status" role="status"></p>
+      </div>
+      <div class="uc-chron-saved" id="history-saved" hidden>
+        <h3 class="uc-chron-sub">Saved in this browser</h3>
+        <ul class="uc-chron-list" id="history-list"></ul>
+        <p class="uc-chron-small" id="history-none">Every history you write is kept here, in this browser, with its map and your questions.</p>
+      </div>
+    </section>
+
+    <div class="uc-controls" aria-label="Map controls">
+      <button type="button" class="uc-ctl" id="zoom-in" aria-label="Zoom in" data-tip-side="left" data-tip="Zoom in"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5.5v13M5.5 12h13" /></svg></button>
+      <button type="button" class="uc-ctl" id="zoom-out" aria-label="Zoom out" data-tip-side="left" data-tip="Zoom out"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5.5 12h13" /></svg></button>
+      <button type="button" class="uc-ctl uc-flat" id="flat-btn" aria-pressed="false" aria-label="Flat map" data-tip-side="left" data-tip="Flat map (M)">
+        <svg class="uc-icon-flat uc-std" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="6.5" width="18" height="11" /><path d="M12 6.5v11M3 12h18" /></svg><svg class="uc-ant uc-icon-flat" viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 8.4h17.6v15.2H7.2z" /><rect x="3.6" y="6.8" width="3.6" height="18.4" rx="1.8" /><rect x="24.8" y="6.8" width="3.6" height="18.4" rx="1.8" /><path class="h" d="M5 8.6v14.8M27.1 8.6v14.8" /><path d="M16 8.4v15.2M11.2 8.4c-1.4 4.6-1.4 10.6 0 15.2M20.8 8.4c1.4 4.6 1.4 10.6 0 15.2M7.2 16h17.6" /><path class="h" d="M7.2 12.2h17.6M7.2 19.8h17.6" /></svg>
+        <svg class="uc-icon-globe uc-std" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2" /><path d="M12 3.8c-3.6 4.4-3.6 12 0 16.4M12 3.8c3.6 4.4 3.6 12 0 16.4M3.8 12h16.4" /></svg><svg class="uc-ant uc-icon-globe" viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="14" r="9.4" /><path d="M16 4.6c-4.4 5-4.4 13.8 0 18.8M16 4.6c4.4 5 4.4 13.8 0 18.8M6.6 14h18.8" /><path class="h" d="M8.3 9.4h15.4M8.3 18.6h15.4" /><path class="h" d="M22.2 7.6c1.6 1.8 2.4 4 2.4 6.4M23.6 9.2c.8 1.5 1.2 3.1 1.2 4.8M21 6.4c2.6 2 4.1 4.7 4.2 7.6" /><path d="M5.4 18.6c1.8 4.6 6 7.4 10.6 7.4s8.8-2.8 10.6-7.4" /><path d="M16 26v2.4M11.2 29.6h9.6" /></svg>
+      </button>
+      <button type="button" class="uc-ctl" id="sat-btn" aria-pressed="false" aria-label="Satellite view" data-tip-side="left" data-tip="Satellite view (S)">
+        <svg class="uc-std" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><rect x="9.2" y="9.2" width="5.6" height="5.6" transform="rotate(45 12 12)" /><path d="M7.4 7.4 4.6 4.6M4.6 4.6 2.5 6.7 4.9 9.1 7 7M16.6 16.6l2.8 2.8M19.4 19.4l2.1-2.1-2.4-2.4L17 17" /><path d="M15.2 4.3a4.5 4.5 0 0 1 4.5 4.5M15.2 1.8a7 7 0 0 1 7 7" /></svg><svg class="uc-ant" viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2.6c5.6 0 9.4 4.2 9.4 8.8 0 4.4-5 7.4-6.8 10.4h-5.2c-1.8-3-6.8-6-6.8-10.4 0-4.6 3.8-8.8 9.4-8.8z" /><path d="M16 2.6c-2.8 3.8-3 12.2-1.6 19.2M16 2.6c2.8 3.8 3 12.2 1.6 19.2" /><path d="M6.8 12.2c5.8 1.6 12.6 1.6 18.4 0" /><path class="h" d="M21.6 5.2c1.6 1.6 2.4 3.6 2.4 5.8M20.4 4.2c1.8 2.2 2.6 4.6 2.4 7.2M23 13.8c-.8 1.6-2.4 3-3.8 4.6" /><path d="M13.6 21.8l.6 3.6M18.4 21.8l-.6 3.6" /><path d="M13.4 25.4h5.2v3.8h-5.2z" /><path class="h" d="M15 25.6v3.4M16.8 25.6v3.4" /></svg>
+      </button>
+      <button type="button" class="uc-ctl uc-bare-btn" id="ui-btn" aria-pressed="false" aria-label="Hide the interface" data-tip-side="left" data-tip="Hide the interface (H)">
+        <svg class="uc-icon-shown uc-std" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12s3.6-6.3 9.5-6.3 9.5 6.3 9.5 6.3-3.6 6.3-9.5 6.3S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.9" /></svg><svg class="uc-ant uc-icon-shown" viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 16c3.4-5.2 8-7.8 13.2-7.8S25.8 10.8 29.2 16c-3.4 5.2-8 7.8-13.2 7.8S6.2 21.2 2.8 16z" /><circle cx="16" cy="16" r="5" /><circle cx="16" cy="16" r="2.1" class="f" /><path class="h" d="M16 11.4v1.6M19.3 12.7l-1 1.2M20.6 16H19M12.7 12.7l1 1.2M11.4 16H13M13 19.3l1-1.1M19 19.3l-1-1.1" /><path d="M8.4 10.6 7 8.4M12 8.9l-.8-2.5M16 8.2V5.6M20 8.9l.8-2.5M23.6 10.6 25 8.4" /></svg>
+        <svg class="uc-icon-hidden uc-std" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M2.5 12s3.6-6.3 9.5-6.3 9.5 6.3 9.5 6.3-3.6 6.3-9.5 6.3S2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.9" /><path d="M4 4l16 16" /></svg><svg class="uc-ant uc-icon-hidden" viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 14.6c3.4 4.8 8 7.2 13.2 7.2s9.8-2.4 13.2-7.2" /><path d="M5.6 17.6c3 2.6 6.6 4.2 10.4 4.2" class="h" /><path d="M8.2 19.8 6.6 22.4M12 21.3l-.8 2.7M16 21.8v2.8M20 21.3l.8 2.7M23.8 19.8l1.6 2.6" /></svg>
+      </button>
+    </div>
+
+    <div class="uc-load" id="load" role="status">loading the world&hellip;</div>
+    <noscript>
+      <div class="uc-load">This page draws a globe and lets you redraw it in the browser, so it needs JavaScript.</div>
+    </noscript>
+
+    <script src="vendor/d3-array.min.js"></script>
+    <script src="vendor/d3-geo.min.js"></script>
+    <script src="vendor/topojson-client.min.js"></script>
+    <script src="vendor/topojson-simplify.min.js"></script>
+    <script src="vendor/polygon-clipping.min.js"></script>
+    <script src="sat.js"></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>

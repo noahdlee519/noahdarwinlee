@@ -242,6 +242,8 @@
       }
 
       .trail {
+        --trail-a: #e68019;
+        --trail-b: #2a44d6;
         position: fixed;
         inset: 0;
         z-index: 45;
@@ -762,7 +764,7 @@
             </h1>
           </div>
           <div class="tiles-wrap">
-            <canvas id="tiles" class="tiles" data-grid="4x6" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue and orange"></canvas>
+            <canvas id="tiles" class="tiles" data-grid="4x6" data-tiles="eececlejjjhcceejeeeeccejgjeceeejeeeeclggggjeeeejchjeljgggggjeeejcejeejjlegggeeejeeeeellcilggeeejeeeeeecciegeeeeeeeeeeliiccjeeeebeeeeeeciceeeeebjccjjglcledjjeebechdddccchddddebeeddddciijddddjbejddddcccjjddddbjjddddhccjjjdddjgdddddjchjjjdddjjdddddjhjjjjddddedddddjjhjjdddddeddddjjjjjjdddddjddjjhhhhhhhecccjdhcccciiceeeeeedjehhhhhheeeeeeedcchhhhhjheeeelcccichhhhjjeeecciicchhhhhhheeeeccccccccfccccfffccc" data-src="../art/web/me-tiles-320.webp" role="img" aria-label="A portrait of Noah Darwin Lee reading at a library table, set in tiles of the site's square-and-circle mark in black, blue, and orange"></canvas>
           </div>
         </div>
 
@@ -796,7 +798,7 @@
           </article>
 
           <article class="card" data-href="greatercircle/" id="greatercircle" style="--brand: #d9741a; --o: 10; --om: 20">
-            <figure class="shot"><img src="../art/web/materials/shot-greatercircle-800.webp" srcset="../art/web/materials/shot-greatercircle-800.webp 800w, ../art/web/materials/shot-greatercircle-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The GREATERCIRCLE globe, routing Seoul to Warsaw around Russia, Ukraine, North Korea and Belarus" loading="lazy" decoding="async" /></figure>
+            <figure class="shot"><img src="../art/web/materials/shot-greatercircle-800.webp" srcset="../art/web/materials/shot-greatercircle-800.webp 800w, ../art/web/materials/shot-greatercircle-1600.webp 1600w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="The GREATERCIRCLE globe, routing Seoul to Warsaw around Russia, Ukraine, North Korea, and Belarus" loading="lazy" decoding="async" /></figure>
             <div class="card-head">
               <h3 class="c-name"><a href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer">GREATER<span class="tld">CIRCLE</span></a></h3>
               <a class="go" href="https://noahdarwinlee.com/greatercircle/" target="_blank" rel="noopener noreferrer" aria-label="Visit GREATERCIRCLE">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
@@ -815,6 +817,15 @@
             <a class="c-more" href="loretour/"><span>More about it</span><i aria-hidden="true">→</i></a>
           </article>
 
+          <article class="card" data-href="uchronia/" id="uchronia" style="--brand: #7a5230; --o: 12; --om: 35">
+            <figure class="shot"><img src="../art/web/materials/shot-uchronia-800.webp" srcset="../art/web/materials/shot-uchronia-800.webp 800w, ../art/web/materials/shot-uchronia-1600.webp 1600w, ../art/web/materials/shot-uchronia-2400.webp 2400w" sizes="(max-width: 760px) 100vw, 50vw" width="800" height="450" alt="UCHRONIA’s Antique map of an East African Federation, with the historian’s account beside it" loading="lazy" decoding="async" /></figure>
+            <div class="card-head">
+              <h3 class="c-name"><a href="https://noahdarwinlee.com/uchronia/" target="_blank" rel="noopener noreferrer">UCHRONIA</a></h3>
+              <a class="go" href="https://noahdarwinlee.com/uchronia/" target="_blank" rel="noopener noreferrer" aria-label="Visit UCHRONIA">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
+            </div>
+            <p class="c-text">Redraw the world as it might have been. Hand any of its 3,699 regions to another country, draw borders by hand, found new nations, and place their capitals, on a globe or a flat map dressed as a hand-coloured atlas from the 1800s. Then ask the AI historian how your world came to be, or give it a turning point, like a Rome that never fell, and watch it redraw the map itself.</p>
+            <a class="c-more" href="uchronia/"><span>More about it</span><i aria-hidden="true">→</i></a>
+          </article>
 
           <article class="card is-soon" style="--brand: #0b0b0b; --o: 20; --om: 40">
             <div class="shot soon" aria-hidden="true"><span class="soon-mark"></span></div>
@@ -853,8 +864,6 @@
       (function () {
         "use strict";
 
-        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
         var $ = function (s, r) { return (r || document).querySelector(s); };
         var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
         var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
@@ -897,87 +906,6 @@
         addEventListener("scroll", onScroll, { passive: true });
         onScroll();
 
-        (function () {
-          if (reduce || !fine) return;
-          var cv = $(".trail");
-          var c2 = cv.getContext("2d");
-          var dots = [];
-          var W = 0, H = 0, d = 1, run = false, lx = null, ly = null, flip = 0;
-          var COLS2 = ["#e68019", "#2a44d6"];
-          function size() {
-            d = Math.min(window.devicePixelRatio || 1, 2);
-            W = innerWidth;
-            H = innerHeight;
-            cv.width = W * d;
-            cv.height = H * d;
-            c2.setTransform(d, 0, 0, d, 0, 0);
-          }
-          size();
-          addEventListener("resize", size);
-          addEventListener("pointermove", function (e) {
-            if (e.pointerType !== "mouse") return;
-            var x = e.clientX, y = e.clientY;
-            if (lx === null) {
-              lx = x;
-              ly = y;
-              return;
-            }
-            var dist = Math.hypot(x - lx, y - ly);
-            if (dist < 32) return;
-            var n = Math.min(3, Math.floor(dist / 32));
-            for (var i = 1; i <= n; i++) {
-              flip++;
-              dots.push({
-                x: lx + ((x - lx) * i) / n,
-                y: ly + ((y - ly) * i) / n,
-                r: 3 + Math.random() * 3.5,
-                c: COLS2[flip % 2],
-                sq: Math.random() < 0.5,
-                a: (Math.floor(Math.random() * 6) * 15 * Math.PI) / 180,
-                hollow: Math.random() < 0.5,
-                t: performance.now(),
-              });
-            }
-            lx = x;
-            ly = y;
-            if (dots.length > 160) dots.splice(0, dots.length - 160);
-            if (!run) {
-              run = true;
-              requestAnimationFrame(tick);
-            }
-          }, { passive: true });
-          function tick(now) {
-            c2.clearRect(0, 0, W, H);
-            dots = dots.filter(function (p) { return now - p.t < 900; });
-            dots.forEach(function (p) {
-              var t = (now - p.t) / 900;
-              var e = 1 - t * t;
-              c2.globalAlpha = e;
-              var r = p.r * (0.35 + 0.65 * e);
-              c2.beginPath();
-              if (p.sq) {
-                var ca = Math.cos(p.a) * r, sa = Math.sin(p.a) * r;
-                c2.moveTo(p.x - ca + sa, p.y - sa - ca);
-                c2.lineTo(p.x + ca + sa, p.y + sa - ca);
-                c2.lineTo(p.x + ca - sa, p.y + sa + ca);
-                c2.lineTo(p.x - ca - sa, p.y - sa + ca);
-                c2.closePath();
-              } else c2.arc(p.x, p.y, r, 0, Math.PI * 2);
-              if (p.hollow) {
-                c2.strokeStyle = p.c;
-                c2.lineWidth = 1.5;
-                c2.stroke();
-              } else {
-                c2.fillStyle = p.c;
-                c2.fill();
-              }
-            });
-            c2.globalAlpha = 1;
-            if (dots.length) requestAnimationFrame(tick);
-            else run = false;
-          }
-        })();
-
         $$(".card[data-href]").forEach(function (card) {
           card.addEventListener("click", function (e) {
             if (e.target.closest("a") || String(getSelection()).length) return;
@@ -1002,6 +930,7 @@
         });
       })();
     </script>
+    <script src="../trail.js" defer></script>
     <script src="../portrait.js" defer></script>
   </body>
 </html>

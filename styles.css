@@ -916,6 +916,27 @@ a[href="/cv/"]:active {
   }
 }
 
+.trail {
+  --trail-a: #ffffff;
+  --trail-b: #2a44d6;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .trail {
+  --trail-a: #e68019;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .trail {
+    --trail-a: #e68019;
+  }
+}
+
 .feedback {
   max-width: 560px;
   margin: 0 0 24px;
@@ -1082,6 +1103,10 @@ a[href="/cv/"]:active {
 .about-panel .profile-photo-frame {
   flex: 0 0 auto;
   width: clamp(90px, 20vw, 220px);
+}
+
+.about-panel .profile-photo-frame.portrait-frame {
+  width: min(clamp(270px, 32.4vw, 468px), 44.9vh, 414px);
 }
 
 .about-panel-text {
@@ -2064,9 +2089,13 @@ body.is-zoomed {
     margin-right: auto;
   }
 
+  .about-panel .profile-photo-frame.portrait-frame {
+    width: 90%;
+  }
+
   .about-panel-bio {
     font-size: 18px;
-    text-align: justify;
+    text-align: center;
   }
 
   .about-panel-links {
@@ -2237,45 +2266,6 @@ body.is-zoomed {
   left: var(--page-left);
 }
 
-.projects-lead {
-  position: fixed;
-  z-index: 10;
-  top: var(--page-top);
-  right: var(--page-left);
-  color: var(--ink);
-  text-decoration: none;
-  font-size: clamp(36px, 4.6vw, 72px);
-  font-weight: 700;
-  line-height: 0.85;
-  letter-spacing: -0.03em;
-  white-space: nowrap;
-  transition: opacity 140ms ease;
-}
-
-.projects-lead::after {
-  content: "\2197\FE0E";
-  font-variant-emoji: text;
-  margin-left: 0.16em;
-  display: inline-block;
-  font-size: 0.62em;
-  line-height: 1;
-  vertical-align: text-top;
-  text-decoration: none;
-}
-
-.projects-lead:hover,
-.projects-lead:focus-visible {
-  text-decoration: underline;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 2.25px;
-  text-underline-offset: 0.08em;
-}
-
-.projects-lead:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 6px;
-}
-
 .marquee-list {
   margin-top: 0;
   border-top: 2px solid var(--ink);
@@ -2410,19 +2400,6 @@ body.is-zoomed {
   .materials-page .back-link,
   .materials-page .header-line {
     padding-left: 16px;
-  }
-
-  .projects-lead {
-    position: static;
-    display: block;
-    width: fit-content;
-    margin: clamp(36px, 9vw, 56px) auto clamp(32px, 8vw, 48px);
-    font-size: clamp(44px, 13vw, 72px);
-    line-height: 1;
-  }
-
-  .is-folded .projects-lead {
-    display: none;
   }
 
   .marquee-list {
@@ -4098,6 +4075,7 @@ body.game-page {
   }
 
   .to-top-btn,
+  .trail,
   .back-link,
   .about-link,
   .site-menu,

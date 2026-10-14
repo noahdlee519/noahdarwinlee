@@ -11,7 +11,7 @@ aspect ratios for all maps are 1000 pixels by 700 pixels
 **The folder is in charge.** Drop `helsinki.png` into `citylayoutguessr/maps/`, run the
 build, and Helsinki is in the game — if `cities.json` doesn't know that name,
 an entry is written for it and the build tells you so you can fill in its level,
-country, continent and aliases. You never have to make a filename match a list.
+country, continent, and aliases. You never have to make a filename match a list.
 
 ```
 cd ~/Desktop/noahdarwinlee
@@ -96,7 +96,7 @@ what you chose, and paying for it would be paying you to read your own
 settings back.
 
 **The regions are the twenty-two of the UN's M49 scheme** — Western Europe,
-Eastern Asia, the Caribbean, Melanesia and so on — and they live in a
+Eastern Asia, the Caribbean, Melanesia, and so on — and they live in a
 `regions` block near the top of `cities.json`, each with the countries in it
 and the continent the game files it under:
 
@@ -134,7 +134,7 @@ The start screen is one panel:
 - **difficulty** — `all`, `easy`, `medium`, `hard`. The number beside each is
   how many maps that level actually has.
 - **where** — one box per continent, same idea.
-- **rounds** — a slider at 10, 20, 30, 50 or endless. Lengths the current
+- **rounds** — a slider at 10, 20, 30, 50, or endless. Lengths the current
   selection can't fill are greyed out and the slider won't stop on them.
   Endless never greys out: it reshuffles when it runs out of maps and keeps
   going until you press **stop**, which ends the run and shows the recap.
@@ -146,7 +146,7 @@ a ten-round game with that preselected.
 To add another region, add a line to the `continents` block at the top of
 `cities.json` and set `continent` on the cities that belong to it — the
 checkbox appears by itself. Continents in use are Europe, North America,
-South America, Asia, Africa and Oceania. North America is the geographic one:
+South America, Asia, Africa, and Oceania. North America is the geographic one:
 Canada down through Panama, plus the Caribbean.
 
 While a game is running, **change level** in the bar above the picture (or the
@@ -183,7 +183,7 @@ To add a preset, add a line to `COLOR_PRESETS` near the bottom of `game.js`.
 3. Run `bash citylayoutguessr/build-images.sh`.
 4. Reload `/citylayoutguessr/`. If the name was already in `cities.json` you're done. If it
    wasn't, the build says so and drops a new entry at the bottom of the `hard`
-   list with the country, continent and aliases left blank — fill those in.
+   list with the country, continent, and aliases left blank — fill those in.
 
 To see every id you can use, run the checker (below) or open `cities.json`
 and read the `"id"` values. They're all lowercase with hyphens:
@@ -232,7 +232,7 @@ and you edit it afterwards.
 ## Special packs
 
 **special** sits at the end of the region row, beside the continents, and
-opens a short menu of packs — USA, Japan, Italy and Benelux. Each is a tick
+opens a short menu of packs — USA, Japan, Italy, and Benelux. Each is a tick
 like any other: it goes into a custom game alongside the continents and
 alongside other packs. A pack on its own is that pack ticked and every
 continent left off.
@@ -323,7 +323,7 @@ in `citylayoutguessr/maps/` gets a plain entry. A new file in a pack folder
 gets that entry **plus** `"packs": ["japan"]` and `"packOnly": true` — so a
 city you drop into the Japan folder is in the Japan pack and nowhere else,
 without you touching `cities.json` at all. The build prints the names it added
-so you can go and fill in the level, country, continent and aliases.
+so you can go and fill in the level, country, continent, and aliases.
 
 If a name is already in `cities.json`, the folder does not change it. The
 build only ever writes flags for entries it is creating, so a city you have
@@ -440,7 +440,7 @@ The wordmark above the game is built from `citylayoutguessr/citylayoutguessr.png
 which stays on your machine (it is 10 MB and gitignored). What the page loads
 are four widths in `art/web/citylayoutguessr/`, and the browser picks whichever
 one fits the screen. If you ever change the artwork, rebuild them with a few
-lines of Pillow, resizing the original to 760, 1240, 1860 and 2480 pixels wide
+lines of Pillow, resizing the original to 760, 1240, 1860, and 2480 pixels wide
 and saving each as `logo-<width>.webp` at quality 74.
 
 The banner is always exactly as wide as the map below it, and the map's size is

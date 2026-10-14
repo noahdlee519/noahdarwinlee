@@ -63,7 +63,7 @@
         everything the site collects, why, and what you can do about it.
       </p>
       <p class="privacy-meta">
-        Effective 4 October 2026. See also the <a href="/terms/">terms of use</a>.
+        Effective 14 October 2026. See also the <a href="/terms/">terms of use</a>.
       </p>
 
       <section>
@@ -72,10 +72,13 @@
           Reading the site collects nothing about you. Opening
           <a href="/citylayoutguessr/">citylayoutguessr</a> adds one anonymous line a day
           noting that a browser opened the game. If you choose to sign in to the game, your
-          name, email address and profile picture are stored so that a name and a score can
+          name, email address, and profile picture are stored so that a name and a score can
           appear on the leaderboard. Your email address is never shown to anyone but me.
           Writing in the message box on the front page stores what you wrote and when,
-          and nothing else. Ask, and I will delete all of it.
+          and nothing else. Asking <a href="/uchronia/">UCHRONIA</a>’s historian for a
+          history sends what you type, and a description of your map, to Anthropic to
+          write the reply; the site keeps none of it, only a count of how many requests
+          each visitor made that day. Ask, and I will delete all of it.
         </p>
       </section>
 
@@ -94,12 +97,14 @@
       <section>
         <h2>3. Reading the site</h2>
         <p>
-          The pages are plain files, with no cookies, no analytics and no advertising.
+          The pages are plain files, with no cookies, no analytics, and no advertising.
           To deliver them, a few services necessarily receive the ordinary request your
           browser makes, which includes your IP address and the kind of browser you use:
           GitHub Pages, which hosts the site and its typeface, and Google Fonts, which
           serves the type of the blog's mail window and of GREATERCIRCLE. One tool also loads drawing libraries from cdnjs, which is run by
-          Cloudflare. None of them is asked to identify you, and none of them reports
+          Cloudflare. UCHRONIA's satellite view, once you zoom in, loads its sharper imagery from NASA's Global
+          Imagery Browse Services, and its shaded relief comes from the open Terrain Tiles that Amazon Web
+          Services hosts. None of them is asked to identify you, and none of them reports
           anything back to me. Each handles those requests under its own privacy policy.
         </p>
       </section>
@@ -116,8 +121,8 @@
         </p>
         <p>
           <b>Everything else.</b> The game remembers your round in progress, your
-          settings, your colours and your result on today’s puzzle in your own browser
-          (see section 8). None of that is sent anywhere.
+          settings, your colours, and your result on today’s puzzle in your own browser
+          (see section 9). None of that is sent anywhere.
         </p>
       </section>
 
@@ -130,13 +135,13 @@
         </p>
         <p>
           <b>What is collected.</b> When you sign in, Google passes the site your name,
-          email address, profile picture and Google account identifier. Supabase stores
+          email address, profile picture, and Google account identifier. Supabase stores
           that as your account. The game copies your name and picture into a profile,
           and you can replace the name with any display name you like.
         </p>
         <p>
           <b>What is public.</b> Anyone who opens the game can see your display name,
-          your profile picture, your daily scores and your place on the two leaderboards.
+          your profile picture, your daily scores, and your place on the two leaderboards.
         </p>
         <p>
           <b>What is not.</b> Your email address. It is stored with your account and is
@@ -160,9 +165,9 @@
         <p>
           The front page and the art page each have a box for telling me what you think of
           the site. Sending it stores the message you wrote, which of the two pages it came
-          from and the time it arrived, in a Supabase database. Nothing else is stored with
+          from, and the time it arrived, in a Supabase database. Nothing else is stored with
           it: no name, no email
-          address and no account, unless you choose to write one of them into the
+          address, and no account, unless you choose to write one of them into the
           message. Supabase receives the ordinary request your browser makes, as the
           services in section 3 do, but nothing from that request is kept with the
           message. Nobody but me can read what is sent; the site itself can add a message
@@ -170,16 +175,59 @@
         </p>
       </section>
 
+      <section id="uchronia">
+        <h2>8. Using UCHRONIA</h2>
+        <p>
+          <b>Your map.</b> The map you draw is kept in your own browser (see section 9)
+          and goes nowhere unless you send it. A map you save as a file stays wherever
+          you save it. A share link carries the whole map inside the link itself, after
+          the # sign, a part of an address that browsers never send to a server; anyone
+          you give the link to can open the map, and nobody else can see it.
+        </p>
+        <p>
+          <b>The historian.</b> The History menu asks Claude, an AI model made by
+          Anthropic, to write a history of your map, to redraw the map from a turning
+          point, or to answer your questions about the world it has written. Each request
+          sends what you typed, a written list of the ways your map differs from the
+          world as it is, and, for a question, the history and the questions and answers
+          before it. They go first to a small program of mine that runs on Supabase and
+          holds the key to Anthropic’s service, and from there to Anthropic, which writes
+          the reply and sends it back to your browser. That program keeps none of what
+          you send or what comes back. Anthropic receives it as a request from a
+          business customer and handles it under its
+          <a href="https://www.anthropic.com/legal/privacy">privacy policy</a> and
+          <a href="https://www.anthropic.com/legal/commercial-terms">commercial terms</a>,
+          which do not let it train its models on what you send; it may keep requests
+          for a limited time to watch for misuse. Nothing you send is tied to a name,
+          an account, or an email address, so don’t put anything personal in it.
+        </p>
+        <p>
+          <b>The daily count.</b> To keep the historian within a daily budget, the
+          program counts how many requests each visitor makes in a day. It recognises a
+          visitor by a code made from your IP address, the date, and a secret, which
+          changes every day and cannot be turned back into your address; the address
+          itself is not stored. Each count is a date, that code, and a number, and counts
+          older than thirty days are deleted.
+        </p>
+        <p>
+          <b>Saved histories.</b> The histories written for you, and the
+          conversations under them, are kept in your browser, up to the last thirty.
+          They are not kept anywhere else.
+        </p>
+      </section>
+
       <section>
-        <h2>8. What stays in your browser</h2>
+        <h2>9. What stays in your browser</h2>
         <p>
           Some things are kept in your own browser’s storage so the site remembers them
           next time: whether you chose day or night; in the game, a round in progress,
           your custom setup, your colours, the leaderboard tab you last opened, your
-          result on today’s puzzle and whether it has been posted, the date of your last
+          result on today’s puzzle, and whether it has been posted, the date of your last
           visit, and, if you have signed in, the token that keeps you signed in; in the
-          flash card tool, your lists, drafts and colours; and on the blog, which letters
-          you have read or starred and how you sized the panes.
+          flash card tool, your lists, drafts, and colours; and on the blog, which letters
+          you have read or starred and how you sized the panes; and in UCHRONIA, your
+          map, the one you had before opening a shared map, your view settings, and your
+          saved histories.
         </p>
         <p>
           This information stays on your device. It is not sent to me or to anyone else,
@@ -190,9 +238,9 @@
       </section>
 
       <section>
-        <h2>9. Why this is allowed</h2>
+        <h2>10. Why this is allowed</h2>
         <p>
-          Where the law asks for a legal basis, these are mine. Your account, profile and
+          Where the law asks for a legal basis, these are mine. Your account, profile, and
           scores are kept because you chose to sign in and post them; that choice is your
           consent, and you can withdraw it at any time by asking me to delete your
           account. A message you send through the feedback box is kept because you chose
@@ -203,36 +251,39 @@
       </section>
 
       <section>
-        <h2>10. Who else is involved</h2>
+        <h2>11. Who else is involved</h2>
         <p>
-          Besides the services in section 3, two more take part. Supabase runs the
-          database and the sign-in for the game, and keeps the messages sent through the
-          feedback box; the game's copy of its script is delivered by jsDelivr. Google
-          handles the sign-in itself. These services may store and
+          Besides the services in section 3, three more take part. Supabase runs the
+          database and the sign-in for the game, keeps the messages sent through the
+          feedback box, and runs the program that passes UCHRONIA’s requests to the
+          historian and keeps its daily counts; the game's copy of its script is
+          delivered by jsDelivr. Google handles the sign-in itself. Anthropic writes the
+          historian’s replies, as section 8 describes. These services may store and
           process information on servers outside your country, including in the United
           States.
         </p>
         <p>
-          I do not share, rent or sell anything the site collects. There are no
-          advertising networks, no tracking pixels, no third-party analytics and no
+          I do not share, rent, or sell anything the site collects. There are no
+          advertising networks, no tracking pixels, no third-party analytics, and no
           mailing list. I would disclose information only if the law required me to.
         </p>
       </section>
 
       <section>
-        <h2>11. How long things are kept</h2>
+        <h2>12. How long things are kept</h2>
         <p>
-          Accounts, profiles and scores are kept for as long as the game exists, because
+          Accounts, profiles, and scores are kept for as long as the game exists, because
           a leaderboard with a history is the point of it, or until you ask me to delete
           them. Visit lines are kept as a running count of how the game is used. When an
           account is deleted, everything tied to it is deleted with it. Feedback messages
           are kept until I have read them and no longer need them, and in any case no
-          longer than a year.
+          longer than a year. UCHRONIA’s daily counts are deleted after thirty days, and
+          nothing else from the historian is kept at all.
         </p>
       </section>
 
       <section>
-        <h2>12. Your choices and rights</h2>
+        <h2>13. Your choices and rights</h2>
         <p>
           You can sign out at any time, and you can change your display name from the
           game’s menu. Beyond that, you may ask me to:
@@ -240,7 +291,7 @@
         <p>
           <b>See it.</b> Send you a copy of everything the site holds about you.<br />
           <b>Fix it.</b> Correct anything that is wrong.<br />
-          <b>Delete it.</b> Remove your account, your profile and every score attached to
+          <b>Delete it.</b> Remove your account, your profile, and every score attached to
           it.
         </p>
         <p>
@@ -248,14 +299,14 @@
           the email address you signed in with, so I know the request is yours. I will act
           on it as soon as I read it, and in any case within thirty days. These rights are
           yours wherever you live; if you are in a place whose law grants them formally,
-          such as the United Kingdom, the European Union or California, this is how to
+          such as the United Kingdom, the European Union, or California, this is how to
           exercise them, and you also have the right to complain to your local data
           protection authority.
         </p>
       </section>
 
       <section>
-        <h2>13. Security</h2>
+        <h2>14. Security</h2>
         <p>
           The site is served over HTTPS. The game’s database lets a browser add a visit
           line but never read one back, lets each person post only their own score, and
@@ -265,7 +316,7 @@
       </section>
 
       <section>
-        <h2>14. Children</h2>
+        <h2>15. Children</h2>
         <p>
           The site is not directed at children under 13, and I do not knowingly keep
           information about anyone under 13. If you believe a child has signed in, write
@@ -274,7 +325,7 @@
       </section>
 
       <section>
-        <h2>15. Changes to this policy</h2>
+        <h2>16. Changes to this policy</h2>
         <p>
           If what the site collects changes, this policy changes with it and the date at
           the top moves. There is never a version of this page that is quietly broader
