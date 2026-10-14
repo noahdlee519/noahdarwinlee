@@ -5306,7 +5306,7 @@
   function applyPlan(plan) {
     freshGroups();
     var ops = [], caps = capOwners(), touched = new Set(), made = [], missed = 0, moved = 0;
-    var alias = new Map();
+    var alias = new Map(), rulers = new Map();
     var findNow = function (name) {
       var n = plainName(name), hit = -1;
       if (!n) return -1;
@@ -5328,6 +5328,7 @@
       var op = createCountry(uniqueName(name), 0);
       ops.push(op); made.push(op);
       alias.set(plainName(name), op.c);
+      if (nc.ruler) rulers.set(op.c, String(nc.ruler));
     });
     (plan.renames || []).forEach(function (r) {
       var c = findNow(r && r.country), name = String(r && r.new_name || "").trim().slice(0, 60);
@@ -5370,8 +5371,8 @@
     ownersChanged(Array.from(touched));
     freshGroups();
     made.forEach(function (op) {
-      var co = countries[op.c];
-      co.color = freeColor(neighbourCountries(unitsOf[op.c] || []));
+      var co = countries[op.c], by = rulers.has(op.c) ? findNow(rulers.get(op.c)) : null;
+      co.color = by !== null && by >= 0 && by !== op.c && countries[by].alive ? countries[by].color : freeColor(neighbourCountries(unitsOf[op.c] || []));
       op.to.color = co.color;
     });
     demoteCaptured(caps, ops);
@@ -5627,7 +5628,7 @@
   var askMode = "map";
   var MODES = {
     map: { hint: "The historian tells how your map came to be.", hold: "Optional: where it begins, or what to stress", go: "Write its history" },
-    turn: { hint: "Give a turning point: the historian redraws the map from it, then tells its history.", hold: "What if Rome never fell?", go: "Redraw the map" }
+    turn: { hint: "Give a turning point, and a year if you like: the historian redraws the world from it, then tells its history.", hold: "What if Rome never fell?", go: "Redraw the map" }
   };
   function setMode(m) {
     askMode = m;
@@ -5748,15 +5749,20 @@
       syncAsk();
       historyStatus(msg);
     };
-    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "redraw", premise: premise, changes: describeChanges() }) }).then(function (res) {
+    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "redraw", premise: premise }) }).then(function (res) {
       if (res.status === 429) return finish("The historian has done all they can for today. Try again tomorrow.");
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       return readEvents(res, function (ev) {
         if (done) return;
         if (ev.t === "plan") {
-          var r = null;
-          try { r = applyPlan(ev.plan || {}); } catch (e) { console.warn("redraw", e); }
+          var r = null, before = makeDiff();
+          cancelLasso();
+          if (stroke) endStroke();
+          cancelCityDrag();
+          try { loadDiff({}, true); r = applyPlan(ev.plan || {}); } catch (e) { console.warn("redraw", e); }
+          if (r) r.step.ops = [{ t: "replace", from: before, to: makeDiff() }];
+          else { loadDiff(before, true); changed(); }
           if (!r) return finish("The historian's map could not be drawn. Try putting it another way.");
           if (r.missed) console.warn("redraw: " + r.missed + " names not found");
           finish("");
@@ -5765,7 +5771,8 @@
           toastStep = r.step;
           var at = centreOf(r.units);
           if (at) flyTo(at[0], at[1]);
-          writeHistory(premise);
+          var year = ev.plan && isInt(ev.plan.year) ? ev.plan.year : 0;
+          writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise);
         } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : ev.reason === "max_tokens" ? "The historian's map ran too long. Try a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not redraw this. Try again in a moment."); }
         else if (ev.t === "closed") finish("The historian could not redraw this. Try again in a moment.");

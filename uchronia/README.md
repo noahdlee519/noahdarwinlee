@@ -406,12 +406,17 @@ of `/greatercircle/`.
   is a link that flies the map to it. The last history is kept in the
   browser, and the panel says when the map has changed since.
   - **Redraw the map** takes a turning point instead ("What if Rome never
-    fell?"): Claude decides how the world's map would stand today and sends
-    back edits in a fixed JSON shape (new countries, renames, regions changing
-    hands, whole countries, capitals with their coordinates). The page
-    applies them as one step, which one undo takes back, flies to the land
-    that moved, and has the historian write how it came to be, with the
-    turning point as its note.
+    fell?", "The world in 1925 if the Central Powers had won"): Claude
+    decides how the world's map would stand in the year the turning point
+    names, or today, and sends back edits to our world's map in a fixed JSON
+    shape (the year, new countries with the ruler of each colony, renames,
+    regions changing hands, whole countries, capitals with their
+    coordinates). A map of a past year starts from our world's map of that
+    year, with its empires and colonies, and colonies take their ruler's
+    colour. The redraw replaces the map rather than building on it, as one
+    step that one undo takes back; the page flies to the land that moved and
+    has the historian write how it came to be, with the turning point and
+    the year as its note.
   - Redraws are asked to be bold: to follow the turning point beyond its own
     region, to let no border drawn after the divergence survive by
     coincidence, and to merge, split or invent countries, up to about 1,500
