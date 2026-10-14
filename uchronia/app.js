@@ -46,7 +46,8 @@
   var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [];
   var provGroup = null, groupName = [], groupProvs = [], baseObjects = null, detailGeo = null, hasDetail = false;
   var pieces = [], pieceSeq = 0, pieceVersion = 0, lasso = null, unitBox = null, unitCoast = null, edgeHint = -1, PC = window.polygonClipping;
-  var unitArea = null, unitNeighbors = null, unitGrid = null;
+  var unitArea = null, unitNeighbors = null, unitGrid = null, unitClose = null;
+  var CLOSE_KM = 220;
   var arcA = null, arcB = null, arcLines = null, arcSeam = null;
   var countries = [], owner = null, ownerVersion = 0;
   var cities = [], cityIndex = new Map(), citySeq = 0;
@@ -3712,23 +3713,35 @@
     units.forEach(function (u) { (unitNeighbors[u] || []).forEach(function (q) { if (owner[q] >= 0) near.add(owner[q]); }); });
     return Array.from(near);
   }
-  function pickTone(nearColors, used) {
+  function closeCountries(units) {
+    var near = new Set();
+    if (!unitClose) return [];
+    units.forEach(function (u) { (unitClose[u] || []).forEach(function (q) { if (owner[q] >= 0) near.add(owner[q]); }); });
+    return Array.from(near);
+  }
+  function wheelGap(a, b) {
+    var d = Math.abs(a - b) % PALETTE;
+    return Math.min(d, PALETTE - d);
+  }
+  function pickTone(nearColors, used, closeColors) {
     var best = 0, bestScore = Infinity;
     for (var k = 0; k < PALETTE; k++) {
-      var clash = 0, gap = 9;
-      nearColors.forEach(function (n) { if (n === k) clash++; gap = Math.min(gap, Math.abs(n - k)); });
-      var score = clash * 1000 - Math.min(gap, 4) * 40 + used[k];
+      var clash = 0, gap = 9, closeClash = 0, closeGap = 9;
+      nearColors.forEach(function (n) { if (n === k) clash++; gap = Math.min(gap, wheelGap(n, k)); });
+      (closeColors || []).forEach(function (n) { if (n === k) closeClash++; closeGap = Math.min(closeGap, wheelGap(n, k)); });
+      var score = clash * 1000 + closeClash * 300 - Math.min(gap, 4) * 40 - Math.min(closeGap, 3) * 15 + used[k];
       if (score < bestScore) { bestScore = score; best = k; }
     }
     return best;
   }
-  function freeColor(neighbours) {
+  function freeColor(neighbours, closeBy) {
     freshGroups();
     var used = new Array(PALETTE).fill(0);
     countries.forEach(function (c, i) { if (c.alive && typeof c.color === "number" && unitsOf[i] && unitsOf[i].length) used[c.color % PALETTE]++; });
-    var near = [];
-    neighbours.forEach(function (n) { if (n >= 0 && countries[n] && typeof countries[n].color === "number") near.push(countries[n].color % PALETTE); });
-    return pickTone(near, used);
+    var near = [], close = [];
+    neighbours.forEach(function (n) { if (n >= 0 && countries[n]) { var h = countries[hueOf(n)]; if (typeof h.color === "number") near.push(h.color % PALETTE); } });
+    (closeBy || []).forEach(function (n) { if (n >= 0 && countries[n] && neighbours.indexOf(n) < 0) { var h = countries[hueOf(n)]; if (typeof h.color === "number") close.push(h.color % PALETTE); } });
+    return pickTone(near, used, close);
   }
   function createCountry(name, color) {
     var i = countries.length;
@@ -3790,7 +3803,7 @@
     var list = regionUnits(u).slice();
     var from = list.map(function (q) { return owner[q]; });
     var near = neighbourCountries(list).concat(from);
-    var op = createCountry(uniqueName(regionTitle(u) || "New country"), freeColor(near));
+    var op = createCountry(uniqueName(regionTitle(u) || "New country"), freeColor(near, closeCountries(list)));
     list.forEach(function (q) { owner[q] = op.c; });
     ownersChanged(from.concat([op.c]));
     var ops = [op, { t: "own", ps: list, from: from, to: list.map(function () { return op.c; }), g: geomGen }];
@@ -3984,7 +3997,7 @@
     if (i < 0) return;
     var s = shapeCover(p.shape), from = p.owner;
     var near = neighbourCountries(s.units).concat(s.units.map(function (u) { return owner[u]; }), [from]);
-    var op = createCountry(uniqueName(cityIn(p) || titleUnder(s) || "New country"), freeColor(near));
+    var op = createCountry(uniqueName(cityIn(p) || titleUnder(s) || "New country"), freeColor(near, closeCountries(s.units)));
     var before = pieces;
     pieces = pieces.slice();
     pieces[i] = withOwner(p, op.c);
@@ -5134,6 +5147,20 @@
       if (names.has(key)) out.push({ country: i, name: co.name, note: "Another country has this name" });
       else names.set(key, i);
     });
+    var links = countryLinks(), flagged = new Set();
+    countries.forEach(function (co, i) {
+      if (!co.alive || !hasLand(i)) return;
+      [[links.touch[i], "which borders it"], [links.near[i], "just across the water"]].forEach(function (pair) {
+        pair[0].forEach(function (j) {
+          if (j <= i || !countries[j] || !countries[j].alive || !hasLand(j)) return;
+          if (hueOf(i) === hueOf(j) || colorOf(i) !== colorOf(j)) return;
+          var key = i + ":" + j;
+          if (flagged.has(key)) return;
+          flagged.add(key);
+          out.push({ country: i, name: co.name, note: "Same colour as " + countries[j].name + ", " + pair[1] });
+        });
+      });
+    });
     cities.forEach(function (c) {
       var unnamed = DEFAULT_CITY.test(c.name);
       if (!unnamed && !cityMoved(c)) return;
@@ -5327,25 +5354,96 @@
   panel.addEventListener("pointercancel", endSheetDrag);
 
   function colorAll() {
-    var adj = countries.map(function () { return new Set(); });
+    freshGroups();
+    var links = countryLinks(), hue = countries.map(function (c, i) { return hueOf(i); });
+    var adj = countries.map(function () { return new Set(); }), closeAdj = countries.map(function () { return new Set(); });
+    links.touch.forEach(function (set, i) { set.forEach(function (j) { var a = hue[i], b = hue[j]; if (a !== b) { adj[a].add(b); adj[b].add(a); } }); });
+    links.near.forEach(function (set, i) { set.forEach(function (j) { var a = hue[i], b = hue[j]; if (a !== b && !adj[a].has(b)) { closeAdj[a].add(b); closeAdj[b].add(a); } }); });
+    var order = countries.map(function (c, i) { return i; }).filter(function (i) { return hue[i] === i; });
+    order.sort(function (x, y) { return (adj[y].size + closeAdj[y].size) - (adj[x].size + closeAdj[x].size) || x - y; });
+    var used = new Array(PALETTE).fill(0), done = new Array(countries.length).fill(false);
+    order.forEach(function (i) {
+      var near = [], close = [];
+      adj[i].forEach(function (n) { if (done[n]) near.push(countries[n].color); });
+      closeAdj[i].forEach(function (n) { if (done[n]) close.push(countries[n].color); });
+      var code = countries[i].code, h = 0;
+      for (var k = 0; k < code.length; k++) h = (h * 31 + code.charCodeAt(k)) >>> 0;
+      var rot = used.map(function (n, k) { return n + ((k + h) % PALETTE) * 0.01; });
+      var best = pickTone(near, rot, close);
+      countries[i].color = best; used[best]++; done[i] = true;
+    });
+    countries.forEach(function (c, i) { if (hue[i] !== i) c.color = countries[hue[i]].color; });
+  }
+
+  function closeUnits(arcs) {
+    var grid = new Map(), pts = [], STEP = 0.4;
+    function add(lon, lat, u) {
+      var gx = Math.floor((lon + 180) / 1) % 360, gy = Math.floor(lat + 90);
+      var key = gy * 400 + gx, list = grid.get(key);
+      if (!list) { list = []; grid.set(key, list); }
+      list.push(pts.length);
+      pts.push(lon, lat, u);
+    }
+    for (var a = 0; a < arcA.length; a++) {
+      if (arcB[a] >= 0 || arcA[a] < 0 || arcSeam[a]) continue;
+      var arc = arcs[a], u = arcA[a];
+      if (!arc || !arc.length) continue;
+      for (var k = 0; k < arc.length; k++) {
+        add(arc[k][0], arc[k][1], u);
+        if (k + 1 < arc.length) {
+          var dx = arc[k + 1][0] - arc[k][0], dy = arc[k + 1][1] - arc[k][1];
+          if (Math.abs(dx) > 180) continue;
+          var n = Math.floor(Math.max(Math.abs(dx), Math.abs(dy)) / STEP);
+          for (var j = 1; j <= n; j++) add(arc[k][0] + dx * j / (n + 1), arc[k][1] + dy * j / (n + 1), u);
+        }
+      }
+    }
+    var close = new Array(nUnit), seen = new Set(), KMD = 111.195, reach = CLOSE_KM / KMD;
+    for (var q = 0; q < nUnit; q++) close[q] = [];
+    for (var i = 0; i < pts.length; i += 3) {
+      var lon = pts[i], lat = pts[i + 1], pu = pts[i + 2];
+      var cos = Math.max(0.05, Math.cos(lat * Math.PI / 180));
+      var ry = Math.ceil(reach), rx = Math.min(180, Math.ceil(reach / cos));
+      var cy = Math.floor(lat + 90), cx = Math.floor(lon + 180) % 360;
+      for (var yy = cy - ry; yy <= cy + ry; yy++) {
+        if (yy < 0 || yy >= 180) continue;
+        for (var xx = cx - rx; xx <= cx + rx; xx++) {
+          var list = grid.get(yy * 400 + ((xx % 360) + 360) % 360);
+          if (!list) continue;
+          for (var m = 0; m < list.length; m++) {
+            var o = list[m];
+            if (o <= i) continue;
+            var uo = pts[o + 2];
+            if (uo === pu) continue;
+            var lo = pu < uo ? pu : uo, hi = pu < uo ? uo : pu, pair = lo * 1048576 + hi;
+            if (seen.has(pair)) continue;
+            var ddx = pts[o] - lon;
+            if (ddx > 180) ddx -= 360; else if (ddx < -180) ddx += 360;
+            var ddy = pts[o + 1] - lat, mc = Math.cos((lat + pts[o + 1]) * Math.PI / 360);
+            var km = Math.sqrt(ddx * ddx * mc * mc + ddy * ddy) * KMD;
+            if (km > CLOSE_KM) continue;
+            seen.add(pair);
+            close[lo].push(hi); close[hi].push(lo);
+          }
+        }
+      }
+    }
+    return close;
+  }
+  function countryLinks() {
+    var touch = countries.map(function () { return new Set(); }), near = countries.map(function () { return new Set(); });
     for (var a = 0; a < arcA.length; a++) {
       var b = arcB[a];
       if (b < 0 || arcA[a] < 0) continue;
       var oa = owner[arcA[a]], ob = owner[b];
-      if (oa >= 0 && ob >= 0 && oa !== ob) { adj[oa].add(ob); adj[ob].add(oa); }
+      if (oa >= 0 && ob >= 0 && oa !== ob) { touch[oa].add(ob); touch[ob].add(oa); }
     }
-    var order = countries.map(function (c, i) { return i; });
-    order.sort(function (x, y) { return adj[y].size - adj[x].size || x - y; });
-    var used = new Array(PALETTE).fill(0), done = new Array(countries.length).fill(false);
-    order.forEach(function (i) {
-      var near = [];
-      adj[i].forEach(function (n) { if (done[n]) near.push(countries[n].color); });
-      var code = countries[i].code, h = 0;
-      for (var k = 0; k < code.length; k++) h = (h * 31 + code.charCodeAt(k)) >>> 0;
-      var rot = used.map(function (n, k) { return n + ((k + h) % PALETTE) * 0.01; });
-      var best = pickTone(near, rot);
-      countries[i].color = best; used[best]++; done[i] = true;
-    });
+    if (unitClose) for (var u = 0; u < unitClose.length; u++) {
+      var ou = owner[u];
+      if (ou < 0) continue;
+      unitClose[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
+    }
+    return { touch: touch, near: near };
   }
 
   function setGeometry(topo, isFine) {
@@ -5402,6 +5500,7 @@
       unitNeighbors[arcA[a]].push(arcB[a]);
       unitNeighbors[arcB[a]].push(arcA[a]);
     }
+    unitClose = closeUnits(levels[1].arcs);
     unitArea = new Float64Array(nUnit);
     for (u = 0; u < nUnit; u++) {
       var ar = d3.geoArea(geoFull[u]);
@@ -5707,7 +5806,7 @@
     freshGroups();
     made.forEach(function (op) {
       var co = countries[op.c];
-      co.color = freeColor(neighbourCountries(unitsOf[op.c] || []));
+      co.color = freeColor(neighbourCountries(unitsOf[op.c] || []), closeCountries(unitsOf[op.c] || []));
       op.to.color = co.color;
     });
     var subj = [];
