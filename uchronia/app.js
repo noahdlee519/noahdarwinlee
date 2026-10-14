@@ -208,7 +208,7 @@
   function moving() {
     interacting = 1;
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(function () { interacting = 0; scheduleRender(); }, 140);
+    settleTimer = setTimeout(function () { interacting = 0; scheduleRender(); settled(); }, 140);
     scheduleRender();
   }
   var slow = 0, slowFrames = 0;
@@ -2224,14 +2224,35 @@
     }
     return best;
   }
+  var BOX_CELL = 48, boxStamp = 0;
+  function boxCells(q, fn) {
+    var x0 = Math.floor(q.x / BOX_CELL), x1 = Math.floor((q.x + q.w) / BOX_CELL), y0 = Math.floor(q.y / BOX_CELL), y1 = Math.floor((q.y + q.h) / BOX_CELL);
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 400) return false;
+    for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) fn(x * 4096 + y);
+    return true;
+  }
+  function hits(b, q) {
+    if (!(b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y)) return false;
+    return (!b.ang && !q.ang) || overlapRotated(b, q);
+  }
   function collides(placed, b) {
-    for (var i = 0; i < placed.length; i++) {
-      var q = placed[i];
-      if (!(b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y)) continue;
-      if (!b.ang && !q.ang) return true;
-      if (overlapRotated(b, q)) return true;
+    var grid = placed.grid;
+    if (!grid) { grid = placed.grid = new Map(); placed.wide = []; placed.indexed = 0; }
+    for (; placed.indexed < placed.length; placed.indexed++) {
+      var q = placed[placed.indexed];
+      if (!boxCells(q, function (k) { var l = grid.get(k); if (!l) grid.set(k, (l = [])); l.push(q); })) placed.wide.push(q);
     }
-    return false;
+    for (var i = 0; i < placed.wide.length; i++) if (hits(b, placed.wide[i])) return true;
+    var stamp = ++boxStamp, hit = false;
+    if (!boxCells(b, function (k) {
+      if (hit) return;
+      var l = grid.get(k);
+      if (l) for (var j = 0; j < l.length; j++) { var q = l[j]; if (q.stamp === stamp) continue; q.stamp = stamp; if (hits(b, q)) { hit = true; return; } }
+    })) {
+      for (i = 0; i < placed.length; i++) if (hits(b, placed[i])) return true;
+      return false;
+    }
+    return hit;
   }
   function overlapRotated(a, b) {
     var ca = Math.cos(a.ang), sa = Math.sin(a.ang), cb = Math.cos(b.ang), sb = Math.sin(b.ang);
@@ -2317,8 +2338,37 @@
   function loadTowns() {
     townsLoad = fetchJSON("data/towns.json").then(function (rows) {
       towns = rows.map(function (r) { var v = toVec(r[1], r[2]); return { name: r[0], pop: r[3], x: v[0], y: v[1], z: v[2], lam: r[1] * D2R, phi: r[2] * D2R, w: 0 }; });
+      townCells = new Map();
+      rows.forEach(function (r, i) {
+        var k = cellKey(Math.floor(r[1]), Math.floor(r[2])), list = townCells.get(k);
+        if (!list) townCells.set(k, (list = []));
+        list.push(i);
+      });
       scheduleRender();
     }).catch(function (e) { console.warn("towns", e); });
+  }
+  var townCells = null;
+  function cellKey(lon, lat) { return ((lon % 360) + 360) % 360 * 181 + lat + 90; }
+  function viewCells() {
+    var lons = [], lats = [];
+    for (var i = 0; i <= 4; i++) for (var j = 0; j <= 4; j++) {
+      var g = lonLatAt(freeL + (freeR - freeL) * i / 4, freeT + (freeB - freeT) * j / 4);
+      if (!g) return null;
+      lons.push(wrap180(g[0] - view.lon)); lats.push(g[1]);
+    }
+    var x0 = Math.min.apply(null, lons) - 1, x1 = Math.max.apply(null, lons) + 1;
+    var y0 = Math.max(-90, Math.min.apply(null, lats) - 1), y1 = Math.min(89, Math.max.apply(null, lats) + 1);
+    if (x1 - x0 > 60 || y1 - y0 > 40 || y0 < -80 || y1 > 80) return null;
+    var out = [];
+    for (var lon = Math.floor(view.lon + x0); lon <= Math.floor(view.lon + x1); lon++) for (var lat = Math.floor(y0); lat <= Math.floor(y1); lat++) out.push(cellKey(lon, lat));
+    return out;
+  }
+  function townOrder() {
+    var keys = townCells && viewCells();
+    if (!keys) return null;
+    var list = [];
+    keys.forEach(function (k) { var c = townCells.get(k); if (c) for (var i = 0; i < c.length; i++) list.push(c[i]); });
+    return list.sort(function (a, b) { return a - b; });
   }
   function drawTowns(placed, S, dot) {
     var min = townMin(S);
@@ -2327,8 +2377,9 @@
     if (!towns) return;
     var font = pal.antique ? "400 10.5px " + SERIF : "400 9.5px " + FONT, r = dot * 0.6 + 0.6, shown = [];
     ctx.font = font;
-    for (var i = 0; i < towns.length; i++) {
-      var t = towns[i];
+    var order = townOrder(), n = order ? order.length : towns.length;
+    for (var i = 0; i < n; i++) {
+      var t = towns[order ? order[i] : i];
       if (t.pop < min) break;
       var p = projectVec(t.x, t.y, t.z, t.lam, t.phi);
       if (!p || (!flat && p[2] <= 0.05)) continue;
@@ -3097,7 +3148,7 @@
     var decay = Math.pow(0.0025, dt / 1000);
     inertia.vx *= decay; inertia.vy *= decay;
     applyView();
-    if (Math.hypot(inertia.vx, inertia.vy) < 0.0004) { inertia = null; interacting = 0; scheduleRender(); return; }
+    if (Math.hypot(inertia.vx, inertia.vy) < 0.0004) { inertia = null; interacting = 0; scheduleRender(); settled(); return; }
     scheduleRender();
     requestAnimationFrame(inertiaStep);
   }
@@ -3292,10 +3343,11 @@
     changed();
   }
 
-  var hoverRAF = 0, hoverAt = null;
+  var hoverRAF = 0, hoverAt = null, hoverLater = false;
   function hover(x, y) {
     if (!canHover) return;
     hoverAt = [x, y];
+    if (interacting || inertia) { hoverLater = true; return; }
     if (hoverRAF) return;
     hoverRAF = requestAnimationFrame(function () {
       hoverRAF = 0;
@@ -3322,6 +3374,11 @@
       } else if (ui.tool === "city") note = "click to found a city here";
       showTip(x, y, main, hp && !(ui.tool === "paint" && !ui.whole) ? "Drawn land, " + regionName(u) : regionName(u), note);
     });
+  }
+  function settled() {
+    if (!hoverLater || !hoverAt || drag || inertia) return;
+    hoverLater = false;
+    hover(hoverAt[0], hoverAt[1]);
   }
   function setHover(u, hp) {
     hp = hp || null;

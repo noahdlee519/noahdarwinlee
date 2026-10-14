@@ -116,6 +116,14 @@ of `/greatercircle/`.
     - the site's name in letterspaced capitals and the back link in italic,
       both in IM Fell English; on a phone, where they sit over the map, they
       share a small title block in a double rule.
+    - buttons framed like engraved plates, in a double rule with a small dot
+      at each corner (in paper on a pressed button), and icons drawn as
+      engravings, with fine hatching: a manicule for Select, a pennon over a
+      hillock for Give land, a church and houses for Settlements, swashed
+      arrows for undo and redo, a rolled map and a globe on its stand for the
+      flat map and the globe, a Montgolfier balloon for the satellite view and
+      an open or closed eye for hiding the interface. They are inline SVG
+      beside the plain icons, and each style shows only its own.
 - **Labels.** A country's name goes on its largest piece, as near its middle
   as a good-sized name will fit. To find the place, the piece is drawn on an
   azimuthal-equidistant map around its centre and squeezed sideways by the
