@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>UCHRONIA — Noah Darwin Lee</title>
+    <meta name="description" content="A map editor for alternate history, with an AI historian." />
+    <link rel="icon" href="../../favicon.png" type="image/png" />
+
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="../project.css" />
+  </head>
+  <body style="--brand: #7a5230">
+    <header class="top">
+      <a href="/">Noah Darwin Lee</a>
+      <nav aria-label="Portfolio"><a href="../#work">← All work</a></nav>
+    </header>
+
+    <main class="proj">
+      <div class="p-head" style="--em: 8.6">
+        <h1 class="p-name">UCHRONIA</h1>
+        <a class="go" href="https://noahdarwinlee.com/uchronia/" target="_blank" rel="noopener noreferrer">Visit <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
+      </div>
+      <p class="p-lede">A map editor for alternate history. Hand any of the world’s 3,699 regions to another country, draw borders by hand, found new nations, place their capitals and make them subjects of empires, on a globe or a flat map dressed as a hand-coloured atlas from the 1800s. Then ask the AI historian how your world came to be, or give it a turning point and watch it redraw the map itself.</p>
+
+      <section class="shots" aria-roledescription="carousel" aria-label="Screenshots of UCHRONIA">
+        <div class="frame">
+          <div class="frame-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span aria-hidden="true">noahdarwinlee.com/uchronia</span><span class="count" aria-live="polite">1 / 4</span></div>
+          <div class="track" tabindex="0" aria-label="Screenshots; use the arrow keys to move between them">
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="1 of 4" data-cap="A Europe where Austria-Hungary survived, in the Antique style"><img src="../../art/web/materials/shot-uchronia-1600.webp" srcset="../../art/web/materials/shot-uchronia-800.webp 800w, ../../art/web/materials/shot-uchronia-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="A Europe where Austria-Hungary survived, in the Antique style" fetchpriority="high" decoding="async" /></div>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="2 of 4" data-cap="The flat map, as a hand-coloured sheet"><img src="../../art/web/materials/shots/uchronia-2-1600.webp" srcset="../../art/web/materials/shots/uchronia-2-800.webp 800w, ../../art/web/materials/shots/uchronia-2-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="The flat map, as a hand-coloured sheet" loading="lazy" decoding="async" /></div>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="3 of 4" data-cap="Giving Baden-Württemberg to Austria, in the Light style"><img src="../../art/web/materials/shots/uchronia-3-1600.webp" srcset="../../art/web/materials/shots/uchronia-3-800.webp 800w, ../../art/web/materials/shots/uchronia-3-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="Giving Baden-Württemberg to Austria, in the Light style" loading="lazy" decoding="async" /></div>
+            <div class="slide" role="group" aria-roledescription="slide" aria-label="4 of 4" data-cap="The satellite view, toned to match the parchment"><img src="../../art/web/materials/shots/uchronia-4-1600.webp" srcset="../../art/web/materials/shots/uchronia-4-800.webp 800w, ../../art/web/materials/shots/uchronia-4-1600.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="900" alt="The satellite view, toned to match the parchment" loading="lazy" decoding="async" /></div>
+          </div>
+        </div>
+        <div class="shots-foot">
+          <p class="cap">A Europe where Austria-Hungary survived, in the Antique style</p>
+          <div class="shots-nav">
+            <button class="arrow arrow-prev" type="button" aria-label="Previous screenshot" disabled><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M14 8H2M7 3 2 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+            <button class="arrow arrow-next" type="button" aria-label="Next screenshot"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h12M9 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+          </div>
+        </div>
+      </section>
+
+      <div class="notes">
+        <div class="note-col">
+          <h2>Technical details</h2>
+          <p>
+            The globe and the flat map are drawn on a canvas from Natural Earth’s states and provinces, with
+            geoBoundaries’ counties and districts for 40 large countries, so a border can follow a county line.
+            Each country’s name is fitted to its shape and, in the Antique style, bent along it; rivers, lakes,
+            3,000 cities and 40,000 towns are placed so that nothing collides.
+          </p>
+          <p>
+            The historian is Claude, behind a small server function that holds the key. It reads a plain list of
+            how your map differs from ours, and redraws by sending back edits in a fixed shape, regions changing
+            hands, new countries, subjects and capitals, which the page applies as one step that a single undo
+            takes back. A shared map travels inside its own link, so nothing is stored on a server.
+          </p>
+          <ul class="chips">
+            <li>3,699 regions</li>
+            <li>18,000 counties</li>
+            <li>40,000 towns</li>
+            <li>Canvas and WebGL</li>
+            <li>Claude</li>
+          </ul>
+        </div>
+        <div class="note-col">
+          <h2>The historian</h2>
+          <p>
+            Every map tells a story, so the map comes with a historian. Ask it how your world came to look the way
+            it does and it finds the turning points, gives each a year and a cause, and follows the consequences
+            forward to the map on your screen. Give it a premise instead, like a Rome that never fell or a Great
+            War the Central Powers won, and it redraws the world itself, empires, colonies and all. Keep asking and
+            it keeps answering in the same voice, changing the map when you point out what it missed.
+          </p>
+        </div>
+      </div>
+
+      <section class="uses" aria-labelledby="uses-h">
+        <h2 id="uses-h">Who it’s for</h2>
+        <div class="uses-grid">
+          <div class="use-group">
+            <h3>Writers and worldbuilders</h3>
+            <ul>
+              <li>Drawing the map of an alternate-history novel or screenplay, then asking how it came to be.</li>
+              <li>Testing a premise, such as a surviving Austria-Hungary, against its consequences on other continents.</li>
+              <li>Keeping a world’s map and its history side by side, and sharing both as one link.</li>
+            </ul>
+          </div>
+          <div class="use-group">
+            <h3>Teaching and learning</h3>
+            <ul>
+              <li>Showing how one war or treaty redrew borders far beyond where it was fought.</li>
+              <li>Comparing the world as it is with the world a different decision would have made.</li>
+              <li>Learning where the world’s states, provinces and capitals actually are, by moving them.</li>
+            </ul>
+          </div>
+          <div class="use-group">
+            <h3>History enthusiasts</h3>
+            <ul>
+              <li>Settling “what if” debates with a map instead of an argument.</li>
+              <li>Drawing the borders of a past year, colonies and subjects included, and comparing them with today’s.</li>
+              <li>Asking follow-up questions about a world, and getting the map changed when the history demands it.</li>
+            </ul>
+          </div>
+          <div class="use-group">
+            <h3>Games and play</h3>
+            <ul>
+              <li>Mapping the world of a tabletop campaign or a grand-strategy game run.</li>
+              <li>Sketching the end state of a game of Diplomacy or Risk on the real world.</li>
+              <li>Making a printable-looking antique map of a world that never was.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="p-cta">
+        <a class="go" href="https://noahdarwinlee.com/uchronia/" target="_blank" rel="noopener noreferrer">Visit UCHRONIA <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg></a>
+      </div>
+
+      <a class="next" href="../leggio/" style="--next: #1f4e3d">
+        <span>Next project</span>
+        <b>getleggio<i>.com</i> →</b>
+      </a>
+    </main>
+
+    <footer class="foot">
+      <span>2026 · Noah Darwin Lee</span>
+      <a href="../">noahdarwinlee.com/portfolio</a>
+    </footer>
+    <script src="../project.js" defer></script>
+  </body>
+</html>
