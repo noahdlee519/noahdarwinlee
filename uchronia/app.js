@@ -5305,7 +5305,7 @@
     return true;
   }
   function barBase() {
-    var bottom = bar.getBoundingClientRect().bottom;
+    var bottom = bar.offsetTop + bar.offsetHeight;
     if (bar.classList.contains("has-ctx")) bottom -= bar.querySelector(".uc-context").getBoundingClientRect().height + 6;
     return Math.ceil(bottom);
   }
@@ -5325,7 +5325,7 @@
   if (window.ResizeObserver) new ResizeObserver(function () {
     fitBar(false);
     if (sheetMode || ui.bare) return;
-    document.documentElement.style.setProperty("--uc-bar-h", Math.ceil(bar.getBoundingClientRect().bottom) + "px");
+    document.documentElement.style.setProperty("--uc-bar-h", (bar.offsetTop + bar.offsetHeight) + "px");
     var h = barBase();
     if (h !== freeT) { freeT = h; applyView(); scheduleRender(); }
   }).observe(bar);
