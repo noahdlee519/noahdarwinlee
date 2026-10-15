@@ -1430,9 +1430,10 @@
     });
     return { byRank: byRank, names: Array.from(named.values()).sort(function (a, b) { return a.r - b.r; }) };
   }
+  var riversDone = false;
   function loadRivers() {
-    fetchJSON("data/rivers.json").then(function (t) { rivers = riverSet(t); scheduleRender(); })
-      .catch(function (e) { console.warn("rivers", e); });
+    fetchJSON("data/rivers.json").then(function (t) { rivers = riverSet(t); riversDone = true; scheduleRender(); })
+      .catch(function (e) { riversDone = true; console.warn("rivers", e); });
   }
   function riverSetFor(S) {
     if (S >= RIVER_DETAIL_S && ui.rivers) {
@@ -5678,10 +5679,8 @@
     try { satPref = localStorage.getItem(STORE_SAT); } catch (e) { }
     if (satPref === "1") setSatellite(true);
     renderPanel();
-    $("load").classList.add("is-gone");
-    setTimeout(function () { var l = $("load"); if (l) l.remove(); }, 400);
     scheduleRender();
-    var ready = Promise.resolve(true);
+    var ready = Promise.resolve(true), fineDone = false, shownAt = performance.now();
     if (finePref === "1" || (stored && needsFine(stored.map))) {
       ready = loadFine().then(function (ok) {
         if (ok && finePref === "1") { ui.fine = true; arcsDirty = true; }
@@ -5689,12 +5688,25 @@
         renderPanel(); scheduleRender();
       });
     }
-    ready.then(function () {
-      var rule = function () { bar.classList.add("is-ruled"); };
-      if (window.requestIdleCallback) requestIdleCallback(rule, { timeout: 1500 }); else setTimeout(rule, 300);
-    });
+    ready.then(function () { fineDone = true; }, function () { fineDone = true; });
     ready.then(openSharedFromHash).then(scheduleChecks);
     loadRivers();
+    var settled = function () {
+      return fineDone && labelQueue.size === 0 && (!ui.rivers || riversDone)
+        && (!ui.terrain || ui.satellite || (reliefTried && (!relief || relief.ready())))
+        && (!ui.satellite || !sat || sat.ready());
+    };
+    var reveal = function () {
+      var l = $("load");
+      if (!l) return;
+      l.classList.add("is-gone");
+      bar.classList.add("is-ruled");
+      setTimeout(function () { if (l.isConnected) l.remove(); }, 1000);
+    };
+    (function wait() {
+      if (settled() || performance.now() - shownAt > 8000) requestAnimationFrame(function () { requestAnimationFrame(reveal); });
+      else setTimeout(wait, 120);
+    })();
   }
 
   var darkMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -6152,8 +6164,8 @@
   }
   var askMode = "map", busyKind = "";
   var MODES = {
-    map: { hint: "The historian tells how your map came to be.", hold: "Optional: where it begins, or what to stress", go: "Write its history" },
-    turn: { hint: "Give a turning point, and a year if you like: the historian redraws the world from it, then tells its history.", hold: "What if Rome never fell?", go: "Redraw the map" }
+    map: { hint: "", hold: "Optional: where it begins, or what to stress", go: "Write its history", label: "A note for the historian" },
+    turn: { hint: "The historian redraws the world from your turning point, then writes its history.", hold: "What if Rome never fell? (a year is welcome)", go: "Redraw the map", label: "A turning point" }
   };
   function setMode(m) {
     askMode = m;
@@ -6161,6 +6173,7 @@
     $("mode-turn").setAttribute("aria-pressed", String(m === "turn"));
     $("history-hint").textContent = m === "map" && !describeChanges() ? "Your map is still our world: change it first, or give a turning point." : MODES[m].hint;
     $("history-input").placeholder = MODES[m].hold;
+    $("history-input").setAttribute("aria-label", MODES[m].label);
     $("history-go").textContent = MODES[m].go;
     syncAsk();
   }
@@ -6173,6 +6186,7 @@
   function showAsk(open) {
     $("history-ask").hidden = !open || savedOpen();
     $("history-new").hidden = open || historyBusy || !currentConv() || savedOpen();
+    $("history-cancel").hidden = !open || historyBusy || !currentConv();
   }
   function writeHistory(premise, asked) {
     var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-input").value.trim();
@@ -6237,7 +6251,12 @@
   $("history-go").addEventListener("click", function () { if (askMode === "turn") redrawMap(); else writeHistory(); });
   $("mode-map").addEventListener("click", function () { setMode("map"); });
   $("mode-turn").addEventListener("click", function () { setMode("turn"); });
-  $("history-new").addEventListener("click", function () { showAsk(true); setMode(describeChanges() ? "map" : "turn"); $("history-input").focus(); });
+  $("history-new").addEventListener("click", function () {
+    $("history-text").textContent = ""; $("history-chat").hidden = true;
+    showAsked(""); historyStatus("");
+    showAsk(true); setMode(describeChanges() ? "map" : "turn"); $("history-input").focus();
+  });
+  $("history-cancel").addEventListener("click", function () { var c = currentConv(); if (c) showConv(c); $("history-new").focus(); });
   $("history-input").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("history-go").click(); } });
   function readEvents(res, on) {
     var reader = res.body.getReader(), dec = new TextDecoder(), buf = "";
@@ -6454,6 +6473,7 @@
   layout();
   Promise.all([fetchJSON("data/provinces.json"), fetchJSON("data/cities.json")]).then(function (res) { init(res[0], res[1]); }).catch(function (err) {
     $("load").textContent = "The map did not load (" + err.message + "), reload to try again";
+    $("load").classList.add("is-failed");
     console.error(err);
   });
 })();
