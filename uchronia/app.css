@@ -1979,3 +1979,108 @@ body.uc-page {
     background-position-x: 60px;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-uc-style="antique"]:not(.uc-ready) .uc-globe {
+    clip-path: inset(0 100% 0 0);
+  }
+  :root[data-uc-style="antique"]:not(.uc-ready) .uc-controls {
+    opacity: 0;
+  }
+  @media not all and (max-width: 640px) {
+    :root[data-uc-style="antique"]:not(.uc-ready) .uc-bar {
+      translate: 0 -105%;
+    }
+    :root.uc-intro[data-uc-style="antique"] .uc-bar {
+      animation: uc-pulldown 1100ms cubic-bezier(0.3, 0.7, 0.4, 1) both;
+    }
+  }
+  :root.uc-intro[data-uc-style="antique"] .uc-globe {
+    animation: uc-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 450ms both;
+  }
+  :root.uc-intro[data-uc-style="antique"] .uc-ctl {
+    animation: uc-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    animation-delay: calc(1550ms + var(--uc-i, 0) * 90ms);
+  }
+  :root.uc-intro .uc-ctl:nth-child(2) { --uc-i: 1; }
+  :root.uc-intro .uc-ctl:nth-child(3) { --uc-i: 2; }
+  :root.uc-intro .uc-ctl:nth-child(4) { --uc-i: 3; }
+  :root.uc-intro .uc-ctl:nth-child(5) { --uc-i: 4; }
+  :root.uc-intro .uc-ctl:nth-child(6) { --uc-i: 5; }
+  .uc-roll {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 19;
+    width: 44px;
+    margin-left: -22px;
+    pointer-events: none;
+    border-radius: 22px / 10px;
+    background:
+      linear-gradient(90deg, rgba(58, 42, 27, 0.55), rgba(58, 42, 27, 0) 18%, rgba(255, 250, 235, 0.55) 42%, rgba(58, 42, 27, 0) 62%, rgba(58, 42, 27, 0.6)),
+      #e6d5ad;
+    box-shadow: 10px 0 18px -6px rgba(58, 42, 27, 0.45), -2px 0 6px rgba(58, 42, 27, 0.25);
+    animation: uc-roll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 450ms both;
+  }
+}
+
+@keyframes uc-pulldown {
+  0% {
+    translate: 0 -105%;
+    box-shadow: 0 10px 14px -8px rgba(58, 42, 27, 0.5);
+  }
+  55% {
+    translate: 0 4%;
+  }
+  72% {
+    translate: 0 -2%;
+  }
+  86% {
+    translate: 0 0.8%;
+  }
+  100% {
+    translate: 0 0;
+    box-shadow: 0 0 0 0 rgba(58, 42, 27, 0);
+  }
+}
+
+@keyframes uc-unroll {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes uc-roll {
+  0% {
+    left: 0;
+    width: 52px;
+    margin-left: -26px;
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    width: 26px;
+    margin-left: -13px;
+    opacity: 0;
+  }
+}
+
+@keyframes uc-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}

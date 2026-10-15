@@ -5681,6 +5681,7 @@
     $("load").classList.add("is-gone");
     setTimeout(function () { var l = $("load"); if (l) l.remove(); }, 400);
     scheduleRender();
+    requestAnimationFrame(function () { requestAnimationFrame(playIntro); });
     var ready = Promise.resolve(true);
     if (finePref === "1" || (stored && needsFine(stored.map))) {
       ready = loadFine().then(function (ok) {
@@ -6447,12 +6448,28 @@
     }
   };
 
+  function playIntro() {
+    var root = document.documentElement;
+    if (root.classList.contains("uc-ready")) return;
+    var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (pal.antique && !still) {
+      var roll = document.createElement("div");
+      roll.className = "uc-roll";
+      roll.setAttribute("aria-hidden", "true");
+      document.body.appendChild(roll);
+      root.classList.add("uc-intro");
+      setTimeout(function () { root.classList.remove("uc-intro"); roll.remove(); }, 2600);
+    }
+    root.classList.add("uc-ready");
+  }
+  setTimeout(function () { document.documentElement.classList.add("uc-ready"); }, 20000);
   function fetchJSON(url) {
     return fetch(url).then(function (r) { if (!r.ok) throw new Error(url + " " + r.status); return r.json(); });
   }
   refreshPalette();
   layout();
   Promise.all([fetchJSON("data/provinces.json"), fetchJSON("data/cities.json")]).then(function (res) { init(res[0], res[1]); }).catch(function (err) {
+    document.documentElement.classList.add("uc-ready");
     $("load").textContent = "The map did not load (" + err.message + "), reload to try again";
     console.error(err);
   });
