@@ -146,11 +146,17 @@ a {
 }
 
 .frame {
+  position: relative;
   margin: 0;
   border: 1px solid var(--rule);
   border-radius: 16px;
-  overflow: clip;
   background: var(--paper);
+}
+.frame-bar {
+  border-radius: 15px 15px 0 0;
+}
+.track {
+  border-radius: 0 0 15px 15px;
 }
 
 .frame-bar {
@@ -543,4 +549,28 @@ a {
   .shots {
     animation: none;
   }
+}
+
+.go,
+.top nav a,
+.chips li,
+.arrow {
+  position: relative;
+}
+.frame::after,
+.go::after,
+.top nav a::after,
+.chips li::after,
+.arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 64px #000;
+  clip-path: inset(0);
+  pointer-events: none;
+}
+.frame::after {
+  inset: -1px;
+  border-radius: 16px;
 }
