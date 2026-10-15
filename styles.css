@@ -2276,7 +2276,7 @@ body.is-zoomed {
   position: relative;
   overflow: hidden;
   touch-action: pan-y;
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -2288,7 +2288,7 @@ body.is-zoomed {
 }
 
 .marquee-row.is-dragging {
-  cursor: grabbing;
+  cursor: pointer;
 }
 
 .marquee-row.is-inverse {
@@ -2356,6 +2356,18 @@ body.is-zoomed {
   width: auto;
   margin: 0;
   flex: 0 0 auto;
+}
+
+.marquee-arrow {
+  display: block;
+  flex: 0 0 auto;
+  width: clamp(52px, 9vw, 116px);
+  height: clamp(52px, 9vw, 116px);
+  margin-left: 0.3em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 11;
+  stroke-linecap: square;
 }
 
 .marquee-run > picture {

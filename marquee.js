@@ -18,13 +18,22 @@
     const run = document.createElement("span");
     run.className = "marquee-run";
     const words = title.toUpperCase().split(/\s+/);
-    const at = pick(words.length);
+    const at = img === "arrow" ? words.length - 1 : pick(words.length);
     words.forEach((word, i) => {
       const w = document.createElement("span");
       w.className = "marquee-word";
       w.textContent = word;
       run.appendChild(w);
-      if (img && i === at) {
+      if (img === "arrow" && i === at) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("class", "marquee-arrow");
+        svg.setAttribute("viewBox", "0 0 100 100");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "M20 80 L78 22 M32 22 H78 V68");
+        svg.appendChild(path);
+        run.appendChild(svg);
+      } else if (img && i === at) {
         const picture = document.createElement("picture");
         const source = document.createElement("source");
         source.type = "image/webp";
@@ -55,7 +64,7 @@
 
   const lanes = rows.map((row, index) => {
     const title = row.dataset.title;
-    const img = row.dataset.img;
+    const img = row.hasAttribute("data-arrow") ? "arrow" : row.dataset.img;
     const ratio = parseFloat(row.dataset.ratio) || 1;
 
     const track = document.createElement("div");
@@ -119,8 +128,7 @@
   function driftFor(lane) {
     if (reduce.matches) return 0;
     if (lane.dragging) return 0;
-    if (coarse.matches || lane.hovered) return DRIFT * lane.dir;
-    return 0;
+    return DRIFT * lane.dir;
   }
 
   let visible = true;
