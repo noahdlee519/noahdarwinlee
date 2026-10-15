@@ -46,7 +46,7 @@
   var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [];
   var provGroup = null, groupName = [], groupProvs = [], baseObjects = null, detailGeo = null, hasDetail = false;
   var pieces = [], pieceSeq = 0, pieceVersion = 0, lasso = null, unitBox = null, unitCoast = null, edgeHint = -1, PC = window.polygonClipping;
-  var unitArea = null, unitNeighbors = null, unitGrid = null, unitClose = null;
+  var unitArea = null, unitNeighbors = null, unitGrid = null, unitClose = null, unitCloseWide = null;
   var CLOSE_KM = 220;
   var arcA = null, arcB = null, arcLines = null, arcSeam = null;
   var countries = [], owner = null, ownerVersion = 0;
@@ -1430,9 +1430,10 @@
     });
     return { byRank: byRank, names: Array.from(named.values()).sort(function (a, b) { return a.r - b.r; }) };
   }
+  var riversDone = false;
   function loadRivers() {
-    fetchJSON("data/rivers.json").then(function (t) { rivers = riverSet(t); scheduleRender(); })
-      .catch(function (e) { console.warn("rivers", e); });
+    fetchJSON("data/rivers.json").then(function (t) { rivers = riverSet(t); riversDone = true; scheduleRender(); })
+      .catch(function (e) { riversDone = true; console.warn("rivers", e); });
   }
   function riverSetFor(S) {
     if (S >= RIVER_DETAIL_S && ui.rivers) {
@@ -5398,7 +5399,7 @@
 
   function colorAll() {
     freshGroups();
-    var links = countryLinks(), hue = countries.map(function (c, i) { return hueOf(i); });
+    var links = countryLinks(unitCloseWide), hue = countries.map(function (c, i) { return hueOf(i); });
     var adj = countries.map(function () { return new Set(); }), closeAdj = countries.map(function () { return new Set(); });
     links.touch.forEach(function (set, i) { set.forEach(function (j) { var a = hue[i], b = hue[j]; if (a !== b) { adj[a].add(b); adj[b].add(a); } }); });
     links.near.forEach(function (set, i) { set.forEach(function (j) { var a = hue[i], b = hue[j]; if (a !== b && !adj[a].has(b)) { closeAdj[a].add(b); closeAdj[b].add(a); } }); });
@@ -5441,8 +5442,8 @@
         }
       }
     }
-    var close = new Array(nUnit), seen = new Set(), KMD = 111.195, reach = CLOSE_KM / KMD;
-    for (var q = 0; q < nUnit; q++) close[q] = [];
+    var close = new Array(nUnit), wide = new Array(nUnit), seen = new Set(), seenWide = new Set(), KMD = 111.195, WIDE_KM = CLOSE_KM * 1.3, reach = WIDE_KM / KMD;
+    for (var q = 0; q < nUnit; q++) { close[q] = []; wide[q] = []; }
     for (var i = 0; i < pts.length; i += 3) {
       var lon = pts[i], lat = pts[i + 1], pu = pts[i + 2];
       var cos = Math.max(0.05, Math.cos(lat * Math.PI / 180));
@@ -5459,21 +5460,24 @@
             var uo = pts[o + 2];
             if (uo === pu) continue;
             var lo = pu < uo ? pu : uo, hi = pu < uo ? uo : pu, pair = lo * 1048576 + hi;
-            if (seen.has(pair)) continue;
+            if (seen.has(pair) && seenWide.has(pair)) continue;
             var ddx = pts[o] - lon;
             if (ddx > 180) ddx -= 360; else if (ddx < -180) ddx += 360;
             var ddy = pts[o + 1] - lat, mc = Math.cos((lat + pts[o + 1]) * Math.PI / 360);
             var km = Math.sqrt(ddx * ddx * mc * mc + ddy * ddy) * KMD;
-            if (km > CLOSE_KM) continue;
+            if (km > WIDE_KM) continue;
+            if (!seenWide.has(pair)) { seenWide.add(pair); wide[lo].push(hi); wide[hi].push(lo); }
+            if (km > CLOSE_KM || seen.has(pair)) continue;
             seen.add(pair);
             close[lo].push(hi); close[hi].push(lo);
           }
         }
       }
     }
+    unitCloseWide = wide;
     return close;
   }
-  function countryLinks() {
+  function countryLinks(closeList) {
     var touch = countries.map(function () { return new Set(); }), near = countries.map(function () { return new Set(); });
     for (var a = 0; a < arcA.length; a++) {
       var b = arcB[a];
@@ -5481,10 +5485,11 @@
       var oa = owner[arcA[a]], ob = owner[b];
       if (oa >= 0 && ob >= 0 && oa !== ob) { touch[oa].add(ob); touch[ob].add(oa); }
     }
-    if (unitClose) for (var u = 0; u < unitClose.length; u++) {
+    var cl = closeList || unitClose;
+    if (cl) for (var u = 0; u < cl.length; u++) {
       var ou = owner[u];
       if (ou < 0) continue;
-      unitClose[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
+      cl[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
     }
     return { touch: touch, near: near };
   }
@@ -5678,11 +5683,9 @@
     try { satPref = localStorage.getItem(STORE_SAT); } catch (e) { }
     if (satPref === "1") setSatellite(true);
     renderPanel();
-    $("load").classList.add("is-gone");
-    setTimeout(function () { var l = $("load"); if (l) l.remove(); }, 400);
     scheduleRender();
     requestAnimationFrame(function () { requestAnimationFrame(playIntro); });
-    var ready = Promise.resolve(true);
+    var ready = Promise.resolve(true), fineDone = false, shownAt = performance.now();
     if (finePref === "1" || (stored && needsFine(stored.map))) {
       ready = loadFine().then(function (ok) {
         if (ok && finePref === "1") { ui.fine = true; arcsDirty = true; }
@@ -5690,12 +5693,25 @@
         renderPanel(); scheduleRender();
       });
     }
-    ready.then(function () {
-      var rule = function () { bar.classList.add("is-ruled"); };
-      if (window.requestIdleCallback) requestIdleCallback(rule, { timeout: 1500 }); else setTimeout(rule, 300);
-    });
+    ready.then(function () { fineDone = true; }, function () { fineDone = true; });
     ready.then(openSharedFromHash).then(scheduleChecks);
     loadRivers();
+    var settled = function () {
+      return fineDone && labelQueue.size === 0 && (!ui.rivers || riversDone)
+        && (!ui.terrain || ui.satellite || (reliefTried && (!relief || relief.ready())))
+        && (!ui.satellite || !sat || sat.ready());
+    };
+    var reveal = function () {
+      var l = $("load");
+      if (!l) return;
+      l.classList.add("is-gone");
+      bar.classList.add("is-ruled");
+      setTimeout(function () { if (l.isConnected) l.remove(); }, 1000);
+    };
+    (function wait() {
+      if (settled() || performance.now() - shownAt > 8000) requestAnimationFrame(function () { requestAnimationFrame(reveal); });
+      else setTimeout(wait, 120);
+    })();
   }
 
   var darkMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -6153,8 +6169,8 @@
   }
   var askMode = "map", busyKind = "";
   var MODES = {
-    map: { hint: "The historian tells how your map came to be.", hold: "Optional: where it begins, or what to stress", go: "Write its history" },
-    turn: { hint: "Give a turning point, and a year if you like: the historian redraws the world from it, then tells its history.", hold: "What if Rome never fell?", go: "Redraw the map" }
+    map: { hint: "", hold: "Optional: where it begins, or what to stress", go: "Write its history", label: "A note for the historian" },
+    turn: { hint: "The historian redraws the world from your turning point, then writes its history.", hold: "What if Rome never fell? (a year is welcome)", go: "Redraw the map", label: "A turning point" }
   };
   function setMode(m) {
     askMode = m;
@@ -6162,6 +6178,7 @@
     $("mode-turn").setAttribute("aria-pressed", String(m === "turn"));
     $("history-hint").textContent = m === "map" && !describeChanges() ? "Your map is still our world: change it first, or give a turning point." : MODES[m].hint;
     $("history-input").placeholder = MODES[m].hold;
+    $("history-input").setAttribute("aria-label", MODES[m].label);
     $("history-go").textContent = MODES[m].go;
     syncAsk();
   }
@@ -6174,6 +6191,7 @@
   function showAsk(open) {
     $("history-ask").hidden = !open || savedOpen();
     $("history-new").hidden = open || historyBusy || !currentConv() || savedOpen();
+    $("history-cancel").hidden = !open || historyBusy || !currentConv();
   }
   function writeHistory(premise, asked) {
     var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-input").value.trim();
@@ -6238,7 +6256,12 @@
   $("history-go").addEventListener("click", function () { if (askMode === "turn") redrawMap(); else writeHistory(); });
   $("mode-map").addEventListener("click", function () { setMode("map"); });
   $("mode-turn").addEventListener("click", function () { setMode("turn"); });
-  $("history-new").addEventListener("click", function () { showAsk(true); setMode(describeChanges() ? "map" : "turn"); $("history-input").focus(); });
+  $("history-new").addEventListener("click", function () {
+    $("history-text").textContent = ""; $("history-chat").hidden = true;
+    showAsked(""); historyStatus("");
+    showAsk(true); setMode(describeChanges() ? "map" : "turn"); $("history-input").focus();
+  });
+  $("history-cancel").addEventListener("click", function () { var c = currentConv(); if (c) showConv(c); $("history-new").focus(); });
   $("history-input").addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("history-go").click(); } });
   function readEvents(res, on) {
     var reader = res.body.getReader(), dec = new TextDecoder(), buf = "";
@@ -6471,6 +6494,7 @@
   Promise.all([fetchJSON("data/provinces.json"), fetchJSON("data/cities.json")]).then(function (res) { init(res[0], res[1]); }).catch(function (err) {
     document.documentElement.classList.add("uc-ready");
     $("load").textContent = "The map did not load (" + err.message + "), reload to try again";
+    $("load").classList.add("is-failed");
     console.error(err);
   });
 })();

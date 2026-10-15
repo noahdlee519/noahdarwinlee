@@ -280,6 +280,7 @@
     <section class="uc-chron" id="history" hidden aria-labelledby="history-title">
       <header class="uc-chron-head">
         <h2 class="uc-chron-title" id="history-title">History</h2>
+        <button type="button" class="uc-linkbtn uc-chron-new" id="history-new" hidden>New history</button>
         <button type="button" class="uc-linkbtn uc-chron-saved-btn" id="history-saved-btn" aria-expanded="false" aria-controls="history-saved">Saved</button>
         <button type="button" class="uc-chron-close" id="history-close" aria-label="Close the history">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
@@ -290,14 +291,14 @@
           <button type="button" id="mode-map" aria-pressed="true">Your map</button>
           <button type="button" id="mode-turn" aria-pressed="false">A turning point</button>
         </div>
-        <p class="uc-chron-hint" id="history-hint">The historian tells how your map came to be.</p>
-        <textarea class="uc-chron-note" id="history-input" rows="2" maxlength="500" aria-labelledby="history-hint"></textarea>
+        <p class="uc-chron-hint" id="history-hint"></p>
+        <textarea class="uc-chron-note" id="history-input" rows="2" maxlength="500" aria-label="A note for the historian" aria-describedby="history-hint"></textarea>
         <div class="uc-chron-row">
           <button type="button" class="uc-btn" id="history-go">Write its history</button>
-          <span class="uc-chron-small">By Claude, an AI. Your map's changes and what you type go to Anthropic.</span>
+          <button type="button" class="uc-linkbtn uc-chron-cancel" id="history-cancel" hidden>Cancel</button>
         </div>
+        <p class="uc-chron-small">By Claude, an AI. Your map's changes and what you type go to Anthropic.</p>
       </div>
-      <button type="button" class="uc-linkbtn uc-chron-new" id="history-new" hidden>New history</button>
       <p class="uc-chron-q uc-chron-asked" id="history-asked" hidden></p>
       <p class="uc-chron-status" id="history-status" role="status"></p>
       <article class="uc-chron-text" id="history-text"></article>

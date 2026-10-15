@@ -444,8 +444,12 @@ of `/greatercircle/`.
   the Check badge changes. The bar ends in a ruled border drawn like a
   map's: in the Antique style the neat line of an engraved atlas, a heavy
   rule over a graduated band of alternating ink and paper; in Light and Dark
-  a hairline with ruler ticks. The border is ruled in from the left once the
-  map is ready, and its graduations march while the historian is writing.
+  a hairline with ruler ticks. The border is ruled in from the left as the
+  map appears, and its graduations march while the historian is writing.
+  While the world loads, a plain cover with *loading the world…* hides the
+  map; it stays until the country names are placed and the rivers, the
+  terrain, any finer regions, and the satellite view (when on) are in, at
+  most eight seconds, then fades away to the map.
   With nothing selected the bar's second row closes; it opens when something
   is selected, animated where the browser can, and the map does not move. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
@@ -492,6 +496,10 @@ of `/greatercircle/`.
     each with its map, its turning point, and its questions; opening one
     brings back the map it was written for, as one step that undo reverses,
     and carries on its conversation.
+  - The panel shows one thing at a time. Reading a history, it shows the
+    question asked as a quote, a short note when the map has changed since,
+    then the history and the conversation; *New history* in its header opens
+    the form alone, with *Cancel* to go back.
   - **What it will not write.** Every request carries the same limits: nothing
     that celebrates, excuses, or calls for genocide, ethnic cleansing, slavery,
     terrorism, or hatred of a people; nothing sexual; nothing aimed at a real
