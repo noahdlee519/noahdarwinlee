@@ -331,8 +331,8 @@ of `/greatercircle/`.
 - **data/provinces-detail.json**: the same arcs kept at four tenths of their
   points (3.8 MB, about 1.3 MB compressed), for the closest zooms. It holds
   only the arcs; the shapes come from `provinces.json`.
-- **data/units.json**: the same provinces with 40 countries cut into
-  second-level units, 18,311 regions in all, in one topology so that
+- **data/units.json**: the same provinces with 41 countries cut into
+  second-level units, 18,374 regions in all, in one topology so that
   every shared edge is one arc:
   - the United States (3,142 counties; DC stays whole), China (352
     prefectures; the four municipalities stay whole), Germany (398 districts;
@@ -357,7 +357,7 @@ of `/greatercircle/`.
   - Mexico (2,457 municipalities), Ukraine (477 raions, from before the 2020
     reform), Poland (380 powiats), Malaysia (156 districts), Belarus (117
     raions; Minsk stays whole), Austria (93 districts; Vienna stays whole),
-    Myanmar (74 districts), Kenya (46 counties, inside its eight old
+    Czechia (76 districts; Prague stays whole), Myanmar (74 districts), Kenya (46 counties, inside its eight old
     provinces; Nairobi stays whole) and Somaliland (5 regions, those of
     Somalia within its border); a province that is a single unit, such
     as a capital district, stays whole;
@@ -376,7 +376,7 @@ of `/greatercircle/`.
   - it is loaded only when finer regions are switched on, or when a map needs
     them (5.8 MB, about 1.7 MB compressed);
   - `data/units-detail.json` holds the same arcs at six tenths of their
-    points, on a grid of 400,000 steps, for the closest zooms (9.3 MB, about
+    points, on a grid of 400,000 steps, for the closest zooms (10.4 MB, about
     3.3 MB compressed), fetched only there;
   - built by `tools/build-units.mjs`, which needs clipper-lib (integer
     polygon clipping), @vant/area-data (current Chinese division codes),
@@ -662,7 +662,8 @@ in the repo. They covered:
     CIESIN's Gridded Population of the World (CC BY 3.0); Kenya from RCMRD
     (public domain); Malaysia from City Population (CC BY 3.0); Mexico from
     the World Bank (CC BY 4.0); Myanmar from the Myanmar Analytics Project
-    and USAID (CC BY 4.0); Ukraine from Wikimedia Commons (public domain);
+    and USAID (CC BY 4.0); Ukraine and Czechia from Wikimedia Commons (public
+    domain);
     Poland and Somaliland © OpenStreetMap contributors (ODbL 1.0);
   - Pakistan, and all of them gathered, from geoBoundaries (Runfola et al.,
     PLoS ONE 15(4): e0231866, 2020).
