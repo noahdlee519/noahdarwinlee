@@ -1332,10 +1332,77 @@ body.uc-page {
     align-items: flex-start;
     gap: 10px 32px;
     box-sizing: border-box;
-    padding: var(--page-top) calc(var(--page-left) + env(safe-area-inset-right, 0px)) 11px calc(var(--page-left) + env(safe-area-inset-left, 0px));
+    padding: var(--page-top) calc(var(--page-left) + env(safe-area-inset-right, 0px)) 17px calc(var(--page-left) + env(safe-area-inset-left, 0px));
     background: var(--bg);
     color: var(--ink);
-    border-bottom: 1px solid var(--rule);
+    --tick: color-mix(in srgb, var(--ink) 42%, transparent);
+  }
+  .uc-bar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 7px;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--tick), var(--tick)) 0 100% / 100% 1px repeat-x,
+      repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 60px) 0 100% / 60px 7px repeat-x,
+      repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 12px) 0 100% / 60px 4px repeat-x;
+    clip-path: inset(0 100% 0 0);
+    animation: uc-march 1.2s linear infinite paused;
+  }
+  .uc-bar.is-ruled::after {
+    clip-path: inset(0 0 0 0);
+    animation: uc-rule 900ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both, uc-march 1.2s linear infinite paused;
+  }
+  :root[data-uc-style="antique"] .uc-bar::after {
+    height: 8px;
+    background:
+      linear-gradient(var(--ink), var(--ink)) 0 0 / 100% 1.5px repeat-x,
+      linear-gradient(var(--ink), var(--ink)) 0 100% / 100% 1px repeat-x,
+      linear-gradient(var(--ink), var(--ink)) 0 3px / 100% 1px repeat-x,
+      repeating-linear-gradient(90deg, var(--ink) 0 30px, transparent 30px 60px) 0 4px / 60px 3px repeat-x;
+  }
+  body.uc-thinking .uc-bar.is-ruled::after {
+    animation-play-state: running, running;
+  }
+  .uc-bar:not(.has-ctx) .uc-context {
+    height: 0;
+    min-height: 0;
+    margin-top: -6px;
+  }
+  @supports (interpolate-size: allow-keywords) {
+    .uc-bar {
+      interpolate-size: allow-keywords;
+    }
+    .uc-context {
+      height: auto;
+      transition: height 240ms cubic-bezier(0.16, 1, 0.3, 1), min-height 240ms cubic-bezier(0.16, 1, 0.3, 1), margin-top 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  }
+  .uc-context > .uc-pane,
+  .uc-context > .uc-region {
+    transition: opacity 200ms ease-out 40ms, translate 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @starting-style {
+    .uc-context > .uc-pane,
+    .uc-context > .uc-region {
+      opacity: 0;
+      translate: 0 -5px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .uc-bar::after,
+    .uc-bar.is-ruled::after {
+      clip-path: none;
+      animation: none;
+    }
+    .uc-context,
+    .uc-context > .uc-pane,
+    .uc-context > .uc-region {
+      transition: none;
+    }
   }
   .uc-site {
     flex: 0 0 auto;
@@ -1898,4 +1965,17 @@ body.uc-page {
 :root[data-uc-style="antique"] .uc-tool[aria-pressed="true"] {
   --corner: rgba(241, 231, 207, 0.8);
   box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 2.7px rgba(241, 231, 207, 0.62);
+}
+@keyframes uc-rule {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes uc-march {
+  to {
+    background-position-x: 60px;
+  }
 }

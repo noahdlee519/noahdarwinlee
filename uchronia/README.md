@@ -254,7 +254,8 @@ of `/greatercircle/`.
   small italic beneath it, as old atlases did: *Isle of Man (UK)*,
   *Greenland (Denmark)*. The country pane's *Subject of* picks the ruler,
   or no one; a country cannot be made a subject of its own subject, and a
-  subject whose ruler is dissolved or loses all its land rules itself again.
+  subject whose ruler is dissolved or loses all its land rules itself again,
+  in the same undo step, and stays free if its old ruler later regains land.
   The world as it is starts with its dependencies as subjects: the British
   Crown dependencies and overseas territories, the territories of the United
   States, France, the Netherlands, Denmark, Australia, and New Zealand, Hong
@@ -440,7 +441,13 @@ of `/greatercircle/`.
   country* above undo and the menus; the tools above *New country* and the
   menus; and each on a row of its own, and keeps the first in which nothing
   overlaps or runs off the edge. It fits again when the window, the style, or
-  the Check badge changes. **Terrain**, on by
+  the Check badge changes. The bar ends in a ruled border drawn like a
+  map's: in the Antique style the neat line of an engraved atlas, a heavy
+  rule over a graduated band of alternating ink and paper; in Light and Dark
+  a hairline with ruler ticks. The border is ruled in from the left once the
+  map is ready, and its graduations march while the historian is writing.
+  With nothing selected the bar's second row closes; it opens when something
+  is selected, animated where the browser can, and the map does not move. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
   map zooms in; it is left off under the satellite view. What is
   selected shows in the bar's second row, and a hint for the tool at the
@@ -452,7 +459,8 @@ of `/greatercircle/`.
   stress. Every country, region, and city of the map that the history names
   is a link that flies the map to it. Once it is sent, the note or turning
   point stays above its history, in the panel and when a saved history is
-  opened again. The last history is kept in the browser, and the panel says
+  opened again. A history cut short by its length is kept all the same,
+  with a note saying so. The last history is kept in the browser, and the panel says
   when the map has changed since.
   - **Redraw the map** takes a turning point instead ("What if Rome never
     fell?", "The world in 1925 if the Central Powers had won"): Claude
