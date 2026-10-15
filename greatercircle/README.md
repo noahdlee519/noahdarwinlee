@@ -52,6 +52,20 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   is one (Italy's regioni, England's regions, Slovenia's statistical
   regions). **data/lakes.json** — Natural Earth 1:50m lakes, drawn in the
   sea's colour; from `tools/build-lakes.mjs`.
+- **sat.js** — the satellite view, switched on with the satellite button and
+  remembered in the browser. A WebGL canvas under the map, whose fragment
+  shader turns each pixel back into a latitude and longitude (the
+  orthographic projection inverted) and samples NASA's Blue Marble Next
+  Generation (**data/earth-2048.webp**, and **data/earth-4096.webp** on wider
+  screens; the same images as UCHRONIA's), with mipmaps and gradients taken on
+  whichever side of the date line is smooth, so the seam does not show. Close
+  in, once the view settles, the 256-pixel Web Mercator tiles of NASA's Global
+  Imagery Browse Services (Blue Marble shaded relief and bathymetry) for what
+  is on screen go into an 8-by-8 texture the shader prefers where a tile has
+  arrived; if the service cannot be reached, the view stays on the base
+  image. With it on, the land and sea are left unpainted, and the borders,
+  avoided countries, cities, and routes switch to colours that read on the
+  imagery. Without WebGL the button is disabled.
 - **vendor/** — d3-array, d3-geo, topojson-client, topojson-simplify, unmodified.
 
 ## Tests

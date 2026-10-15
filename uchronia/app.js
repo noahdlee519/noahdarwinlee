@@ -504,7 +504,7 @@
   function traceArcs(c, lines, idx) { for (var i = 0; i < idx.length; i++) traceArc(c, lines[idx[i]]); }
 
   var groups = [], unclaimedUnits = [], unitsOf = [], groupsDirty = true, arcsDirty = true;
-  var FINER = new Set("AGO ARG AUS AUT BLR BOL BRA CAN CHN COD DEU DZA ETH IDN IND IRN KAZ KEN MDG MEX MLI MMR MNG MOZ MRT MYS NER PAK PER POL RUS SAU SDN SOL TCD TZA UKR USA ZAF ZMB".split(" "));
+  var FINER = new Set("AGO ARG AUS AUT BLR BOL BRA CAN CHN COD CZE DEU DZA ETH IDN IND IRN KAZ KEN MDG MEX MLI MMR MNG MOZ MRT MYS NER PAK PER POL RUS SAU SDN SOL TCD TZA UKR USA ZAF ZMB".split(" "));
   function hasFiner(c) {
     var us = unitsOf[c] || [];
     for (var i = 0; i < us.length; i++) { var o = base.provOwner[unitProv[us[i]]]; if (o >= 0 && FINER.has(base.countries[o].code)) return true; }

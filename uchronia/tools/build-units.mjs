@@ -482,6 +482,10 @@ const NAMES = {
     "Tarnowskie Góry County": "powiat tarnogórski", "Wodzisław County": "powiat wodzisławski", "Żyrardów County": "powiat żyrardowski",
   },
   KEN: { Tharaka: "Tharaka-Nithi" },
+  CZE: {
+    "Brno-City": "Brno-město", "Brno-Country": "Brno-venkov", "Ostrava-City": "Ostrava-město", "Plzeň-City": "Plzeň-město", "Plzeň-North": "Plzeň-sever",
+    "Plzeň-South": "Plzeň-jih", Prague: "Praha", "Prague-East": "Praha-východ", "Prague-West": "Praha-západ", Rakovnik: "Rakovník",
+  },
   MEX: {
     "San Juan Mixtepec -Dto. 08 -": "San Juan Mixtepec (Juxtlahuaca)", "San Juan Mixtepec -Dto. 26 -": "San Juan Mixtepec (Miahuatlán)",
     "San Pedro Mixtepec -Dto. 22 -": "San Pedro Mixtepec (Juquila)", "San Pedro Mixtepec -Dto. 26 -": "San Pedro Mixtepec (Miahuatlán)",
@@ -716,6 +720,11 @@ const SPLIT = [
     c: "UKR", share: 0.25, source: "Raions (before the 2020 reform), Wikimedia Commons (via geoBoundaries)", license: "Public domain",
     url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/UKR/ADM2",
     load: fromGB("UKR", 2, (n) => NAMES.UKR[n] || n),
+  },
+  {
+    c: "CZE", source: "Districts (okresy, 2010), Wikimedia Commons (via geoBoundaries)", license: "Public domain",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/CZE/ADM2",
+    load: fromGB("CZE", 2, (n) => NAMES.CZE[n] || n),
   },
 ];
 

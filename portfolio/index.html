@@ -287,6 +287,7 @@
       }
 
       .card {
+        position: relative;
         order: var(--o);
         display: flex;
         flex-direction: column;
@@ -316,6 +317,37 @@
         border-radius: 14px;
         overflow: clip;
         background: var(--brand);
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 14px;
+        box-shadow: 0 0 0 64px #000;
+        clip-path: inset(0);
+        pointer-events: none;
+      }
+
+      .go,
+      .soon-tag,
+      .copy {
+        position: relative;
+      }
+
+      .go::after,
+      .soon-tag::after,
+      .copy::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        box-shadow: 0 0 0 64px #000;
+        clip-path: inset(0);
+        pointer-events: none;
       }
 
       .shot img {
