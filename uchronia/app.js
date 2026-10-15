@@ -4043,6 +4043,15 @@
     changed();
   }
 
+  function recolorFreed(c, was, ops) {
+    var co = countries[c];
+    if (was < 0 || !countries[was] || typeof co.color !== "number" || co.color !== countries[hueOf(was)].color) return;
+    freshGroups();
+    var us = unitsOf[c] || [];
+    var nc = freeColor(neighbourCountries(us).concat([was]), closeCountries(us));
+    ops.push({ t: "country", c: c, from: { name: co.name, color: co.color }, to: { name: co.name, color: nc } });
+    co.color = nc;
+  }
   function setCountryRuler(c, r) {
     var co = countries[c], was = isInt(co.ruler) ? co.ruler : -1;
     if (r === c || (r >= 0 && rules(c, r))) return;
@@ -4050,7 +4059,9 @@
     co.ruler = r;
     groupsDirty = true;
     countriesVersion++;
-    pushStep(r >= 0 ? "Making " + co.name + " a subject of " + countries[r].name : "Freeing " + co.name, [{ t: "ruler", c: c, from: was, to: r }]);
+    var ops = [{ t: "ruler", c: c, from: was, to: r }];
+    if (r < 0) recolorFreed(c, was, ops);
+    pushStep(r >= 0 ? "Making " + co.name + " a subject of " + countries[r].name : "Freeing " + co.name, ops);
     queueLabels([c]);
     changed();
   }
@@ -5858,6 +5869,7 @@
       if (r === c || (r >= 0 && rules(c, r)) || r === was) return;
       co.ruler = r;
       ops.push({ t: "ruler", c: c, from: was, to: r });
+      if (r < 0) { groupsDirty = true; recolorFreed(c, was, ops); }
       touched.add(c);
     });
     if (subj.length) { groupsDirty = true; freshGroups(); }
