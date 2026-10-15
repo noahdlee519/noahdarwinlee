@@ -2291,6 +2291,11 @@ body.is-zoomed {
   cursor: grabbing;
 }
 
+.marquee-row.is-inverse {
+  background: var(--ink);
+  color: var(--bg);
+}
+
 .marquee-row:hover,
 .marquee-row:focus-visible {
   background: var(--accent);
