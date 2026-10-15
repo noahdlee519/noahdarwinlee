@@ -2368,6 +2368,7 @@ body.is-zoomed {
   stroke: currentColor;
   stroke-width: 11;
   stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 
 .marquee-run > picture {
