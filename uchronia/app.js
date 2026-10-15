@@ -5687,7 +5687,6 @@
     if (satPref === "1") setSatellite(true);
     renderPanel();
     scheduleRender();
-    requestAnimationFrame(function () { requestAnimationFrame(playIntro); });
     var ready = Promise.resolve(true), fineDone = false, shownAt = performance.now();
     if (finePref === "1" || (stored && needsFine(stored.map))) {
       ready = loadFine().then(function (ok) {
@@ -5707,6 +5706,7 @@
     var reveal = function () {
       var l = $("load");
       if (!l) return;
+      playIntro();
       l.classList.add("is-gone");
       bar.classList.add("is-ruled");
       setTimeout(function () { if (l.isConnected) l.remove(); }, 1000);
@@ -6415,7 +6415,7 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 
   window.__uchronia = {
-    ready: function () { return !!feats; },
+    ready: function () { var r = document.documentElement.classList; return !!feats && r.contains("uc-ready") && !r.contains("uc-intro"); },
     ui: ui, view: view,
     countries: function () { return countries; },
     owner: function () { return owner; },
