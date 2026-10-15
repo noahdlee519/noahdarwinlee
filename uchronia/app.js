@@ -70,7 +70,7 @@
     satCanvas.width = satView.width = canvas.width; satCanvas.height = satView.height = canvas.height;
     reliefCanvas.width = Math.round(W * dpr * RELIEF_RES); reliefCanvas.height = Math.round(H * dpr * RELIEF_RES);
     var phone = phoneQuery.matches, bare = ui.bare;
-    var barH = phone || bare ? 0 : Math.ceil(bar.getBoundingClientRect().bottom);
+    var barH = phone || bare ? 0 : barBase();
     var sheetH = phone && !bare ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 150) : 0;
     var freeW = W, freeH = H - barH - sheetH - (phone && !bare ? 70 : 40);
     cx = W / 2;
@@ -561,7 +561,8 @@
       (apart ? allProvArcs : allUnitArcs).push(a);
       if (owner[A] !== owner[b]) { borderArcs.push(a); (apart ? borderProvArcs : borderUnitArcs).push(a); continue; }
       var co = owner[A] >= 0 ? countries[owner[A]] : null, hide = co && co.lines ? co.lines : 0;
-      if (co) innerKinds[owner[A]] |= apart ? 1 : 2;
+      var fineOnly = !apart && fineData && pa === pb && !ui.fine;
+      if (co && !fineOnly) innerKinds[owner[A]] |= apart ? 1 : 2;
       if (co && fineData && pa === pb) fineUnits[owner[A]] = 1;
       if (!(hide & (apart ? 1 : 2))) {
         (apart ? provArcs : unitArcs).push(a);
@@ -3584,9 +3585,23 @@
     queueLabels(Array.from(hit));
     return { t: "pieces", from: before, to: after };
   }
+  function freeOrphans(ops) {
+    if (!countries.some(function (co) { return isInt(co.ruler) && co.ruler >= 0; })) return;
+    freshGroups();
+    countries.forEach(function (co, c) {
+      var r = co.ruler;
+      if (!co.alive || !isInt(r) || r < 0 || (countries[r] && countries[r].alive && hasLand(r))) return;
+      co.ruler = -1;
+      ops.push({ t: "ruler", c: c, from: r, to: -1 });
+      groupsDirty = true;
+      countriesVersion++;
+      queueLabels([c]);
+    });
+  }
   function pushStep(label, ops) {
     var pruned = prunePieces();
     if (pruned) ops.push(pruned);
+    freeOrphans(ops);
     var step = { label: label, ops: ops };
     if (toastStep) { toastStep = null; hideToast(); }
     undoStack.push(step);
@@ -4204,7 +4219,7 @@
       $("subject-row").hidden = ui.tool !== "select" || !land;
       $("swatches").hidden = rr >= 0;
       $("subject-name").textContent = rr >= 0 ? countries[rr].name : "no one";
-      if (subjectVersion !== countriesVersion || +$("subject-pick").dataset.c !== c) fillSubjectPick(c);
+      if (subjectVersion !== countriesVersion + "/" + ownerVersion || +$("subject-pick").dataset.c !== c) fillSubjectPick(c);
       $("paint-with").hidden = ui.tool !== "select";
       $("dissolve").hidden = !land;
       syncCountryPick(c);
@@ -4231,6 +4246,7 @@
 
     var showCity = !!ui.city && ui.tool !== "paint";
     $("city-pane").hidden = !showCity;
+    bar.classList.toggle("has-ctx", showCountry || landTool() || showCity || !$("region-line").hidden);
     if (showCity) {
       var cin = $("city-name");
       if (document.activeElement !== cin) cin.value = ui.city.name;
@@ -4291,7 +4307,7 @@
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     sel.value = String(rulerOf(c));
     sel.dataset.c = String(c);
-    subjectVersion = countriesVersion;
+    subjectVersion = countriesVersion + "/" + ownerVersion;
   }
   $("subject-pick").addEventListener("change", function () {
     var c = currentCountry(), v = +$("subject-pick").value;
@@ -5222,8 +5238,17 @@
   var BAR_MODES = [["", "", ""], ["", "", "no-labels"], ["", "no-title", "no-labels"], ["bar-a", "", ""], ["bar-a", "", "no-labels"], ["bar-b", "", "no-labels"],
     ["bar-a", "no-title", "no-labels"], ["bar-b", "no-title", "no-labels"], ["bar-c", "no-title", "no-labels"]];
   var barWidth = -1;
+  function itemsBox(el) {
+    var l = Infinity, t = Infinity, r = -Infinity, btm = -Infinity;
+    Array.prototype.forEach.call(el.children, function (k) {
+      var q = k.getBoundingClientRect();
+      if (!q.width) return;
+      l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); btm = Math.max(btm, q.bottom);
+    });
+    return l === Infinity ? el.getBoundingClientRect() : { left: l, top: t, right: r, bottom: btm };
+  }
   function barFits() {
-    var panelBox = panel.getBoundingClientRect(), main = panel.querySelector(".uc-main"), boxes = [main, panel.querySelector(".uc-new"), panel.querySelector(".uc-end")].map(function (el) { return el.getBoundingClientRect(); });
+    var panelBox = panel.getBoundingClientRect(), main = panel.querySelector(".uc-main"), boxes = [main.getBoundingClientRect(), $("new-country").getBoundingClientRect(), itemsBox(panel.querySelector(".uc-end"))];
     if (main.scrollWidth > main.clientWidth + 1) return false;
     for (var i = 0; i < boxes.length; i++) {
       var a = boxes[i];
@@ -5234,6 +5259,11 @@
       }
     }
     return true;
+  }
+  function barBase() {
+    var bottom = bar.getBoundingClientRect().bottom;
+    if (bar.classList.contains("has-ctx")) bottom -= bar.querySelector(".uc-context").getBoundingClientRect().height + 6;
+    return Math.ceil(bottom);
   }
   function fitBar(force) {
     if (!BAR_MODES || sheetMode || ui.bare) return;
@@ -5251,8 +5281,8 @@
   if (window.ResizeObserver) new ResizeObserver(function () {
     fitBar(false);
     if (sheetMode || ui.bare) return;
-    var h = Math.ceil(bar.getBoundingClientRect().bottom);
-    document.documentElement.style.setProperty("--uc-bar-h", h + "px");
+    document.documentElement.style.setProperty("--uc-bar-h", Math.ceil(bar.getBoundingClientRect().bottom) + "px");
+    var h = barBase();
     if (h !== freeT) { freeT = h; applyView(); scheduleRender(); }
   }).observe(bar);
 
@@ -5547,6 +5577,10 @@
         renderPanel(); scheduleRender();
       });
     }
+    ready.then(function () {
+      var rule = function () { bar.classList.add("is-ruled"); };
+      if (window.requestIdleCallback) requestIdleCallback(rule, { timeout: 1500 }); else setTimeout(rule, 300);
+    });
     ready.then(openSharedFromHash).then(scheduleChecks);
     loadRivers();
   }
@@ -5753,7 +5787,8 @@
     });
     sortCities();
     made.forEach(function (op) { var capOp = chooseCapital(op.c); if (capOp) ops.push(capOp); });
-    if (!ps.length && !pieceTo.size && !ops.some(function (op) { return op.t !== "country" || op.from; })) {
+    var fresh = new Set(ops.filter(function (op) { return op.t === "country" && !op.from; }).map(function (op) { return op.c; }));
+    if (!ps.length && !pieceTo.size && !ops.some(function (op) { return !fresh.has(op.c) || (op.t !== "country" && op.t !== "ruler"); })) {
       ops.forEach(function (op) { if (op.t === "ruler") countries[op.c].ruler = op.from; });
       for (var i = ops.length - 1; i >= 0; i--) if (ops[i].t === "country" && !ops[i].from) countries[ops[i].c].alive = false;
       return null;
@@ -5917,7 +5952,8 @@
     return { q: qe, a: ae };
   }
   function askedOf(c) { return c.asked || (c.premise || "").split("\n")[0] || c.note || ""; }
-  function showAsked(q) { var e = $("history-asked"); e.textContent = q || ""; e.hidden = !q; }
+  function savedOpen() { return !$("history-saved").hidden; }
+  function showAsked(q) { var e = $("history-asked"); e.textContent = q || ""; e.hidden = !q || savedOpen(); }
   function showConv(c) {
     describeChanges();
     showAsked(askedOf(c));
@@ -5925,17 +5961,24 @@
     renderTurns(c);
     $("history-chat").hidden = false;
     $("history-chat-status").textContent = "";
-    var changes = describeChanges();
-    historyStatus(!c.map && c.changes !== changes ? "The map has changed since this was written." : "");
+    var stale = c.map ? !sameMap(c) : c.changes !== describeChanges();
+    historyStatus(stale ? "The map has changed since this was written." : "");
     showAsk(false);
   }
   function showSaved(open) {
     $("history-saved").hidden = !open;
     $("history-saved-btn").setAttribute("aria-expanded", String(open));
     $("history-saved-btn").textContent = open ? "Back" : "Saved";
-    ["history-ask", "history-new", "history-asked", "history-text"].forEach(function (id) { $(id).hidden = open; });
-    if (open) { $("history-chat").hidden = true; historyStatus(""); renderSaved(); }
-    else showHistory(true);
+    if (open) {
+      ["history-ask", "history-new", "history-asked", "history-text", "history-chat", "history-status"].forEach(function (id) { $(id).hidden = true; });
+      renderSaved();
+      return;
+    }
+    $("history-text").hidden = false;
+    $("history-status").hidden = false;
+    $("history-asked").hidden = !$("history-asked").textContent;
+    if (historyBusy) { showAsk(false); $("history-chat").hidden = busyKind !== "chat"; }
+    showHistory(true);
   }
   function renderSaved() {
     var list = readConvs(), ul = $("history-list"), cur = currentConv();
@@ -5943,7 +5986,7 @@
     $("history-none").hidden = list.length > 0;
     list.forEach(function (c) {
       var li = document.createElement("li"), b = document.createElement("button"), t = document.createElement("span"), m = document.createElement("span"), del = document.createElement("button");
-      b.type = "button"; b.className = "uc-chron-item";
+      b.type = "button"; b.className = "uc-chron-item"; b.disabled = historyBusy;
       t.className = "uc-chron-item-t"; t.textContent = c.title || titleOf(c.history);
       var bits = [new Date(c.when || 0).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })];
       if (askedOf(c)) bits.push(askedOf(c));
@@ -5952,6 +5995,7 @@
       m.className = "uc-chron-item-m"; m.textContent = bits.join(" · ");
       b.appendChild(t); b.appendChild(m);
       b.addEventListener("click", function () {
+        if (historyBusy) return;
         conv = c; convRead = true;
         try { localStorage.setItem(STORE_HISTORY, c.id); } catch (e) { }
         if (!c.map || sameMap(c)) { showSaved(false); return; }
@@ -5962,7 +6006,7 @@
           showSaved(false);
         });
       });
-      del.type = "button"; del.className = "uc-chron-del"; del.textContent = "Delete";
+      del.type = "button"; del.className = "uc-chron-del"; del.textContent = "Delete"; del.disabled = historyBusy;
       del.setAttribute("aria-label", "Delete " + (c.title || "this history"));
       del.addEventListener("click", function () {
         writeConvs(readConvs().filter(function (x) { return x.id !== c.id; }));
@@ -5993,7 +6037,7 @@
     }
     syncAsk();
   }
-  var askMode = "map";
+  var askMode = "map", busyKind = "";
   var MODES = {
     map: { hint: "The historian tells how your map came to be.", hold: "Optional: where it begins, or what to stress", go: "Write its history" },
     turn: { hint: "Give a turning point, and a year if you like: the historian redraws the world from it, then tells its history.", hold: "What if Rome never fell?", go: "Redraw the map" }
@@ -6008,19 +6052,21 @@
     syncAsk();
   }
   function syncAsk() {
+    document.body.classList.toggle("uc-thinking", historyBusy);
+    if (savedOpen()) renderSaved();
     $("history-go").disabled = historyBusy || (askMode === "map" && !describeChanges());
     $("history-ask-go").disabled = historyBusy;
   }
   function showAsk(open) {
-    $("history-ask").hidden = !open;
-    $("history-new").hidden = open || historyBusy || !currentConv();
+    $("history-ask").hidden = !open || savedOpen();
+    $("history-new").hidden = open || historyBusy || !currentConv() || savedOpen();
   }
   function writeHistory(premise, asked) {
     var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-input").value.trim();
     asked = typeof asked === "string" ? asked : note;
     if (!changes || historyBusy) return;
-    historyBusy = true; historyKey = changes;
-    $("history-go").disabled = true;
+    historyBusy = true; historyKey = changes; busyKind = "write";
+    syncAsk();
     $("history-text").textContent = "";
     $("history-chat").hidden = true;
     showAsked(asked);
@@ -6028,19 +6074,20 @@
     historyStatus("The historian is writing…");
     var text = "", queued = false, done = false;
     var paint = function () { queued = false; renderHistory(text); };
-    var finish = function (msg) {
+    var finish = function (msg, keep) {
       historyBusy = false; done = true;
       syncAsk();
       historyStatus(msg);
       renderHistory(text);
       if (!text) showAsked("");
-      if (!text || msg) showAsk(true);
-      if (text && !msg) {
+      if (!text || (msg && !keep)) showAsk(true);
+      if (text && (!msg || keep)) {
         conv = { id: Date.now().toString(36), when: Date.now(), title: titleOf(text), premise: typeof premise === "string" ? premise : "", note: note, asked: asked, changes: changes, history: text, turns: [], map: makeDiff() };
         convRead = true;
         storeConv(conv);
         $("history-input").value = "";
-        showConv(conv);
+        if (savedOpen()) renderSaved();
+        else { showConv(conv); if (msg) historyStatus(msg); }
       }
     };
     fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: changes, note: note }) }).then(function (res) {
@@ -6059,7 +6106,7 @@
             var ev = null;
             try { ev = JSON.parse(line); } catch (e) { continue; }
             if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
-            else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to write this one." : ev.reason === "max_tokens" ? "The history ran long and was cut short." : "");
+            else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to write this one." : ev.reason === "max_tokens" ? "The history ran long and was cut short." : "", ev.reason === "max_tokens");
             else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(text ? "The history broke off. Try again." : ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not write this. Try again in a moment."); }
           }
           if (r.done) { if (!done) finish(text ? "" : "The historian could not write this. Try again in a moment."); return; }
@@ -6111,9 +6158,10 @@
   function redrawMap() {
     var premise = $("history-input").value.trim();
     if (!premise || historyBusy) { if (!premise) $("history-input").focus(); return; }
-    historyBusy = true;
+    historyBusy = true; busyKind = "redraw";
     var asked = performance.now();
-    $("history-go").disabled = true;
+    syncAsk();
+    $("history-chat").hidden = true;
     $("history-text").textContent = "";
     showAsked(premise);
     showAsk(false);
@@ -6139,6 +6187,7 @@
           if (stroke) endStroke();
           cancelCityDrag();
           try { loadDiff({}, true); r = applyPlan(ev.plan || {}); } catch (e) { console.warn("redraw", e); }
+          if (r && !describeChanges()) { if (undoStack[undoStack.length - 1] === r.step) undoStack.pop(); r = null; }
           if (r) r.step.ops = [{ t: "replace", from: before, to: makeDiff() }];
           else { loadDiff(before, true); changed(); }
           if (!r) return finish("The historian's map could not be drawn. Try putting it another way.");
@@ -6165,8 +6214,8 @@
     var c = currentConv(), q = $("history-q").value.trim();
     if (!c || historyBusy) return;
     if (!q) { $("history-q").focus(); return; }
-    historyBusy = true;
-    $("history-ask-go").disabled = true; $("history-go").disabled = true;
+    historyBusy = true; busyKind = "chat";
+    syncAsk();
     $("history-chat-status").textContent = "The historian is answering…";
     var turn = addTurn(q, ""), text = "", queued = false, done = false, edited = false;
     turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
