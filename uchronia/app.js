@@ -5706,7 +5706,11 @@
     var reveal = function () {
       var l = $("load");
       if (!l) return;
-      playIntro();
+      if (playIntro()) {
+        l.remove();
+        bar.classList.add("is-ruled", "is-ruled-still");
+        return;
+      }
       l.classList.add("is-gone");
       bar.classList.add("is-ruled");
       setTimeout(function () { if (l.isConnected) l.remove(); }, 1000);
@@ -6476,17 +6480,19 @@
 
   function playIntro() {
     var root = document.documentElement;
-    if (root.classList.contains("uc-ready")) return;
+    if (root.classList.contains("uc-ready")) return false;
     var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (pal.antique && !still) {
+    var play = pal.antique && !still;
+    if (play) {
       var roll = document.createElement("div");
       roll.className = "uc-roll";
       roll.setAttribute("aria-hidden", "true");
       document.body.appendChild(roll);
       root.classList.add("uc-intro");
-      setTimeout(function () { root.classList.remove("uc-intro"); roll.remove(); }, 2600);
+      setTimeout(function () { root.classList.remove("uc-intro"); roll.remove(); }, 3000);
     }
     root.classList.add("uc-ready");
+    return play;
   }
   setTimeout(function () { document.documentElement.classList.add("uc-ready"); }, 20000);
   function fetchJSON(url) {
