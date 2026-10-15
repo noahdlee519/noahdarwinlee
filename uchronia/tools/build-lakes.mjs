@@ -33,7 +33,8 @@ SETS.forEach((set, si) => {
     if (km2 < minKm2) return;
     const c = d3.geoCentroid(f), bb = bbox(f.geometry);
     if (si > 0 && kept.some((k) => c[0] >= k.bb[0] && c[0] <= k.bb[2] && c[1] >= k.bb[1] && c[1] <= k.bb[3] && km2 / k.km2 > 0.4 && km2 / k.km2 < 2.5)) return;
-    const name = f.properties.name || f.properties.name_en || "";
+    let name = f.properties.name || f.properties.name_en || "";
+    if (/[A-Z]/.test(name) && name === name.toUpperCase()) name = name.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (m, s, c) => s + c.toUpperCase());
     kept.push({ name, km2, c, bb, geometry: f.geometry });
   });
 });
