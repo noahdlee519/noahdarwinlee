@@ -30,7 +30,7 @@
         svg.setAttribute("viewBox", "0 0 100 100");
         svg.setAttribute("aria-hidden", "true");
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", "M20 80 L78 22 M32 22 H78 V68");
+        path.setAttribute("d", "M20 80 L72 28 M32 22 H78 V68");
         svg.appendChild(path);
         run.appendChild(svg);
       } else if (img && i === at) {
@@ -162,11 +162,11 @@
   startLoop();
 
   if (typeof IntersectionObserver !== "undefined") {
-    let count = 0;
+    const shown = new Set();
     const io = new IntersectionObserver(
       (entries) => {
-        entries.forEach((e) => { count += e.isIntersecting ? 1 : -1; });
-        visible = count > 0;
+        entries.forEach((e) => { if (e.isIntersecting) shown.add(e.target); else shown.delete(e.target); });
+        visible = shown.size > 0;
         if (visible) startLoop();
       },
       { rootMargin: "200px" }

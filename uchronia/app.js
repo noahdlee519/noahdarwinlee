@@ -1039,6 +1039,10 @@
       ctx.beginPath();
       vis.forEach(function (p) { var r = pieceSelRuns(p, c); for (var i = 0; i < r.length; i++) traceArc(ctx, r[i]); });
       ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.stroke();
+    }
+    ctx.restore();
+    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) {
+      ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.lineJoin = "round";
       vis.forEach(function (p) {
         if (p.owner !== c) return;
         ctx.save();
@@ -1049,7 +1053,6 @@
         ctx.restore();
       });
     }
-    ctx.restore();
   }
   function drawStrokeOverlay(F, satellite) {
     var by = new Map();
@@ -5302,7 +5305,7 @@
     return true;
   }
   function barBase() {
-    var bottom = bar.getBoundingClientRect().bottom;
+    var bottom = bar.offsetTop + bar.offsetHeight;
     if (bar.classList.contains("has-ctx")) bottom -= bar.querySelector(".uc-context").getBoundingClientRect().height + 6;
     return Math.ceil(bottom);
   }
@@ -5322,7 +5325,7 @@
   if (window.ResizeObserver) new ResizeObserver(function () {
     fitBar(false);
     if (sheetMode || ui.bare) return;
-    document.documentElement.style.setProperty("--uc-bar-h", Math.ceil(bar.getBoundingClientRect().bottom) + "px");
+    document.documentElement.style.setProperty("--uc-bar-h", (bar.offsetTop + bar.offsetHeight) + "px");
     var h = barBase();
     if (h !== freeT) { freeT = h; applyView(); scheduleRender(); }
   }).observe(bar);
@@ -6416,7 +6419,7 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 
   window.__uchronia = {
-    ready: function () { return !!feats; },
+    ready: function () { var r = document.documentElement.classList; return !!feats && r.contains("uc-ready") && !r.contains("uc-intro"); },
     ui: ui, view: view,
     countries: function () { return countries; },
     owner: function () { return owner; },

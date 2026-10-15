@@ -449,7 +449,9 @@ of `/greatercircle/`.
   While the world loads, a plain cover with *loading the world…* hides the
   map; it stays until the country names are placed and the rivers, the
   terrain, any finer regions, and the satellite view (when on) are in, at
-  most eight seconds, then fades away to the map.
+  most eight seconds, then fades away to the map. In the Antique style the
+  opening then plays as the cover lifts: the map unrolls from the left like
+  a sheet, the header comes down with its rule, and the controls appear.
   With nothing selected the bar's second row closes; it opens when something
   is selected, animated where the browser can, and the map does not move. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
