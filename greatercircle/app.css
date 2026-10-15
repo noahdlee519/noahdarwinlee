@@ -72,6 +72,23 @@
   }
 }
 
+:root.gc-sat-on {
+  --gc-land: rgba(0, 0, 0, 0.32);
+  --gc-land-hover: rgba(255, 255, 255, 0.2);
+  --gc-border: rgba(255, 255, 255, 0.62);
+  --gc-border-sub: rgba(255, 255, 255, 0.42);
+  --gc-grat: rgba(255, 255, 255, 0.12);
+  --gc-hatch: rgba(255, 255, 255, 0.9);
+  --gc-route: #ffffff;
+  --gc-route-halo: rgba(0, 0, 0, 0.55);
+  --gc-direct: rgba(255, 255, 255, 0.7);
+  --gc-city: rgba(255, 255, 255, 0.95);
+  --gc-city-ring: rgba(0, 0, 0, 0.6);
+  --gc-label: #ffffff;
+  --gc-label-halo: rgba(0, 0, 0, 0.6);
+  --gc-region-fill: rgba(255, 255, 255, 0.2);
+}
+
 body.gc-page {
   margin: 0;
   padding: 0;
@@ -139,6 +156,18 @@ body.gc-page {
 }
 .gc-page .theme-btn {
   z-index: 31;
+}
+
+.gc-sat {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.gc-sat[hidden] {
+  display: none;
 }
 
 .gc-globe {

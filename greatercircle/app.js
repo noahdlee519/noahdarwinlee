@@ -5,6 +5,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var canvas = $("globe");
   var ctx = canvas.getContext("2d");
+  var satCanvas = $("sat"), sat = null, satTried = false, satOn = false, satLive = false;
   var panel = $("panel");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canHover = window.matchMedia("(hover: hover)").matches;
@@ -41,6 +42,8 @@
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    satCanvas.width = canvas.width; satCanvas.height = canvas.height;
+    detail.key = "";
     var phone = W <= 640;
     var panelW = phone ? 0 : 352 + 2 * 24;
     var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 204) : 0;
@@ -65,8 +68,9 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "region-fill", "border-sub"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
+    if (!pal["label-halo"]) pal["label-halo"] = pal.ocean;
     var c = document.createElement("canvas");
     c.width = c.height = 8;
     var hc = c.getContext("2d");
@@ -87,6 +91,7 @@
     var t0 = performance.now();
     render("full");
     if (interacting > 0) noteCost(performance.now() - t0);
+    else maybeDetail();
   }
 
   function moving() {
@@ -251,8 +256,14 @@
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, 2 * Math.PI); ctx.fill();
     }
-    ctx.fillStyle = pal.ocean;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
+    var live = satOn && !!sat && sat.ready();
+    if (live !== satLive) { satLive = live; document.documentElement.classList.toggle("gc-sat-on", live); refreshPalette(); }
+    satCanvas.hidden = !live;
+    if (live) renderSat();
+    else {
+      ctx.fillStyle = pal.ocean;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
+    }
     mark("sea");
 
     ctx.beginPath(); traceLines(ctx, graticule);
@@ -260,7 +271,7 @@
     mark("graticule");
 
     ctx.fillStyle = pal.land;
-    for (var i = 0; i < feats.length; i++) {
+    for (var i = 0; i < feats.length && !live; i++) {
       if (i === state.hover || state.avoid.has(feats[i].id)) continue;
       if (!featureInFront(feats[i])) continue;
       ctx.beginPath(); traceFeature(ctx, feats[i]); ctx.fill();
@@ -281,7 +292,7 @@
     });
 
     mark("avoid");
-    if (lakes) {
+    if (lakes && !live) {
       ctx.fillStyle = pal.ocean;
       for (var li = 0; li < lakes.length; li++) {
         var lk = lakes[li];
@@ -423,7 +434,7 @@
       ctx.beginPath(); ctx.arc(s.x, s.y, dot, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
     }
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
-    ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
+    ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"];
     for (i = 0; i < nCities; i++) {
       s = cityScreen[i];
       ctx.strokeText(s.c.name, s.x + dot + 4, s.y);
@@ -437,7 +448,7 @@
         planePath(s.x, s.y, 5.5);
         ctx.fill(); ctx.stroke();
       }
-      ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean;
+      ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"];
       for (i = nCities; i < cityScreen.length; i++) {
         s = cityScreen[i];
         ctx.strokeText(s.c.label, s.x + dot + 8, s.y);
@@ -742,6 +753,150 @@
   $("zoom-in").addEventListener("click", function () { stopFly(); zoomAt(view.zoom * 1.5, cx, cy); });
   $("zoom-out").addEventListener("click", function () { stopFly(); zoomAt(view.zoom / 1.5, cx, cy); });
   $("fit").addEventListener("click", function () { fitRoute(true); });
+  function renderSat() {
+    sat.draw({ dpr: dpr, light: 0, detail: detail.shown && !detail.off, cx: cx, cy: cy, r: B.r, e: [B.ex, B.ey, B.ez], n: [B.nx, B.ny, B.nz], c: [B.cx, B.cy, B.cz] });
+  }
+  function setSatellite(on) {
+    if (on && !sat && !satTried) {
+      satTried = true;
+      sat = window.GreatCircleSat ? window.GreatCircleSat(satCanvas) : null;
+      if (sat) {
+        sat.onRestore = function () { detail.key = ""; detail.rect = null; scheduleRender("full"); };
+        var urls = [{ src: "data/earth-2048.webp", size: 2048 }];
+        if (W > 640) urls.push({ src: "data/earth-4096.webp", size: 4096 });
+        sat.load(urls, function () { detail.key = ""; scheduleRender("full"); });
+      }
+    }
+    if (on && !sat) {
+      on = false;
+      $("sat-btn").disabled = true;
+      $("sat-btn").title = "The satellite view needs WebGL, which this browser does not offer";
+    }
+    satOn = on;
+    detail.key = "";
+    $("sat-btn").setAttribute("aria-pressed", String(on));
+    try { localStorage.setItem("gc-satellite", on ? "1" : "0"); } catch (e) {}
+    scheduleRender("full");
+  }
+  $("sat-btn").addEventListener("click", function () { setSatellite(!satOn); });
+
+  var DETAIL_URLS = ["BlueMarble_ShadedRelief_Bathymetry", "BlueMarble_NextGeneration", "BlueMarble_ShadedRelief"].map(function (layer) {
+    return "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/" + layer + "/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg";
+  });
+  var DETAIL_MAX_Z = 8, DETAIL_MAX_TILES = 40;
+  var detail = { key: "", rect: null, cache: new Map(), gen: 0, ok: 0, failed: 0, off: false, shown: false, put: new Set(), source: 0 };
+  function wrap180(x) { return ((x + 180) % 360 + 360) % 360 - 180; }
+  function mercY(lat) { var p = lat * Math.PI / 180; return (1 - Math.log(Math.tan(Math.PI / 4 + p / 2)) / Math.PI) / 2; }
+  function lonLatAt(x, y) {
+    if (Math.hypot(x - cx, y - cy) > projection.scale()) return null;
+    var ll = projection.invert([x, y]);
+    return ll && isFinite(ll[0]) && isFinite(ll[1]) ? ll : null;
+  }
+  function detailWanted() {
+    if (!sat.detailFits()) return null;
+    var S = projection.scale() * dpr;
+    var latC = Math.max(-75, Math.min(75, view.lat)) * Math.PI / 180;
+    var z = Math.floor(Math.log(2 * Math.PI * S * Math.cos(latC) / 256 / 1.15) / Math.LN2);
+    if (z < 5) return null;
+    z = Math.min(DETAIL_MAX_Z, z);
+    var lons = [], lats = [], ref = view.lon;
+    for (var i = 0; i <= 8; i++) for (var j = 0; j <= 6; j++) {
+      var ll = lonLatAt(W * i / 8, H * j / 6);
+      if (!ll) continue;
+      lons.push(ref + wrap180(ll[0] - ref)); lats.push(ll[1]);
+    }
+    if (lons.length < 6) return null;
+    var lo0 = Math.min.apply(null, lons), lo1 = Math.max.apply(null, lons);
+    var la0 = Math.max(-85, Math.min.apply(null, lats)), la1 = Math.min(85, Math.max.apply(null, lats));
+    if (la0 >= la1) return null;
+    for (; z >= 5; z--) {
+      var n = 1 << z;
+      var x0 = Math.floor((lo0 + 180) / 360 * n), x1 = Math.floor((lo1 + 180) / 360 * n);
+      var y0 = Math.max(0, Math.floor(mercY(la1) * n)), y1 = Math.min(n - 1, Math.floor(mercY(la0) * n));
+      var nx = Math.min(n, x1 - x0 + 1), ny = y1 - y0 + 1;
+      if (nx <= sat.slots && ny <= sat.slots && nx * ny <= DETAIL_MAX_TILES) return { z: z, x0: ((x0 % n) + n) % n, y0: y0, nx: nx, ny: ny };
+    }
+    return null;
+  }
+  function maybeDetail() {
+    if (detail.off || !sat || !satOn || !sat.ready()) return;
+    var key = [view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), W, H].join();
+    if (key === detail.key) return;
+    detail.key = key;
+    var want = detailWanted();
+    if (!want) {
+      if (detail.rect) { detail.rect = null; detail.shown = false; sat.endDetail(); scheduleRender("full"); }
+      return;
+    }
+    var r = detail.rect;
+    if (!r || r.z !== want.z || r.x0 !== want.x0 || r.y0 !== want.y0 || r.nx !== want.nx || r.ny !== want.ny) {
+      if (!sat.beginDetail(want)) { detail.off = true; return; }
+      detail.rect = want; detail.gen++; detail.put = new Set(); detail.shown = true;
+    }
+    requestTiles();
+  }
+  function requestTiles() {
+    var r = detail.rect, n = 1 << r.z, gen = detail.gen, changedAny = false;
+    for (var j = 0; j < r.ny; j++) for (var i = 0; i < r.nx; i++) {
+      var x = (r.x0 + i) % n, y = r.y0 + j, key = r.z + "/" + x + "/" + y;
+      if (detail.put.has(key)) continue;
+      var t = detail.cache.get(key);
+      if (t && t.ok) {
+        detail.cache.delete(key); detail.cache.set(key, t);
+        if (sat.putTile(t.img, i, j)) { detail.put.add(key); changedAny = true; }
+        continue;
+      }
+      if (t) continue;
+      loadTile(r.z, x, y, key, gen);
+    }
+    trimTiles();
+    if (changedAny) scheduleRender("full");
+  }
+  function loadTile(z, x, y, key, gen) {
+    var t = { img: new Image(), ok: false };
+    detail.cache.set(key, t);
+    t.img.crossOrigin = "anonymous";
+    t.img.decoding = "async";
+    t.img.onload = function () {
+      t.ok = true; detail.ok++;
+      if (detail.gen !== gen || !detail.rect) return;
+      var r = detail.rect, n = 1 << r.z;
+      if (r.z !== z) return;
+      var i = ((x - r.x0) % n + n) % n, j = y - r.y0;
+      if (i < r.nx && j >= 0 && j < r.ny && !detail.put.has(key) && sat.putTile(t.img, i, j)) { detail.put.add(key); scheduleRender("full"); }
+    };
+    var source = detail.source;
+    t.img.onerror = function () {
+      t.failed = true;
+      if (source !== detail.source) return;
+      detail.failed++;
+      if (detail.ok || detail.failed < 4 || detail.off) return;
+      if (detail.source + 1 < DETAIL_URLS.length) {
+        detail.source++; detail.failed = 0;
+        detail.cache = new Map(); detail.put = new Set(); detail.key = "";
+        if (detail.rect) { sat.beginDetail(detail.rect); detail.gen++; }
+        scheduleRender("full");
+        return;
+      }
+      detail.off = true; detail.shown = false;
+      sat.endDetail();
+      console.warn("satellite detail tiles are unavailable");
+      scheduleRender("full");
+    };
+    t.img.src = DETAIL_URLS[source].replace("{z}", z).replace("{y}", y).replace("{x}", x);
+  }
+  function trimTiles() {
+    if (detail.cache.size <= 160) return;
+    var keep = new Set(detail.put);
+    var it = detail.cache.keys();
+    while (detail.cache.size > 140) {
+      var nx = it.next();
+      if (nx.done) break;
+      var tv = detail.cache.get(nx.value);
+      if (!keep.has(nx.value) && (tv.ok || tv.failed)) detail.cache.delete(nx.value);
+    }
+  }
+
   $("avoid-mode").addEventListener("click", function () {
     state.avoidMode = !state.avoidMode;
     $("avoid-mode").setAttribute("aria-pressed", String(state.avoidMode));
@@ -2027,6 +2182,7 @@
 
     refreshPalette();
     layout();
+    try { if (localStorage.getItem("gc-satellite") === "1") setSatellite(true); } catch (e) {}
     var fromUrl = readUrl();
     renderChips();
     updateHint();
@@ -2063,6 +2219,7 @@
       marks = null; return out;
     },
     ready: function () { return !!lod; },
+    satellite: function () { return { on: satOn, live: satLive, tiles: detail.put.size, rect: detail.rect }; },
     exp: { traceFeature: traceFeature, basis: basis, featuresFor: featuresFor, ctx: ctx }
   };
 
