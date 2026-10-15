@@ -46,7 +46,7 @@
   var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [];
   var provGroup = null, groupName = [], groupProvs = [], baseObjects = null, detailGeo = null, hasDetail = false;
   var pieces = [], pieceSeq = 0, pieceVersion = 0, lasso = null, unitBox = null, unitCoast = null, edgeHint = -1, PC = window.polygonClipping;
-  var unitArea = null, unitNeighbors = null, unitGrid = null, unitClose = null;
+  var unitArea = null, unitNeighbors = null, unitGrid = null, unitClose = null, unitCloseWide = null;
   var CLOSE_KM = 220;
   var arcA = null, arcB = null, arcLines = null, arcSeam = null;
   var countries = [], owner = null, ownerVersion = 0;
@@ -5399,7 +5399,7 @@
 
   function colorAll() {
     freshGroups();
-    var links = countryLinks(), hue = countries.map(function (c, i) { return hueOf(i); });
+    var links = countryLinks(unitCloseWide), hue = countries.map(function (c, i) { return hueOf(i); });
     var adj = countries.map(function () { return new Set(); }), closeAdj = countries.map(function () { return new Set(); });
     links.touch.forEach(function (set, i) { set.forEach(function (j) { var a = hue[i], b = hue[j]; if (a !== b) { adj[a].add(b); adj[b].add(a); } }); });
     links.near.forEach(function (set, i) { set.forEach(function (j) { var a = hue[i], b = hue[j]; if (a !== b && !adj[a].has(b)) { closeAdj[a].add(b); closeAdj[b].add(a); } }); });
@@ -5442,8 +5442,8 @@
         }
       }
     }
-    var close = new Array(nUnit), seen = new Set(), KMD = 111.195, reach = CLOSE_KM / KMD;
-    for (var q = 0; q < nUnit; q++) close[q] = [];
+    var close = new Array(nUnit), wide = new Array(nUnit), seen = new Set(), seenWide = new Set(), KMD = 111.195, WIDE_KM = CLOSE_KM * 1.3, reach = WIDE_KM / KMD;
+    for (var q = 0; q < nUnit; q++) { close[q] = []; wide[q] = []; }
     for (var i = 0; i < pts.length; i += 3) {
       var lon = pts[i], lat = pts[i + 1], pu = pts[i + 2];
       var cos = Math.max(0.05, Math.cos(lat * Math.PI / 180));
@@ -5460,21 +5460,24 @@
             var uo = pts[o + 2];
             if (uo === pu) continue;
             var lo = pu < uo ? pu : uo, hi = pu < uo ? uo : pu, pair = lo * 1048576 + hi;
-            if (seen.has(pair)) continue;
+            if (seen.has(pair) && seenWide.has(pair)) continue;
             var ddx = pts[o] - lon;
             if (ddx > 180) ddx -= 360; else if (ddx < -180) ddx += 360;
             var ddy = pts[o + 1] - lat, mc = Math.cos((lat + pts[o + 1]) * Math.PI / 360);
             var km = Math.sqrt(ddx * ddx * mc * mc + ddy * ddy) * KMD;
-            if (km > CLOSE_KM) continue;
+            if (km > WIDE_KM) continue;
+            if (!seenWide.has(pair)) { seenWide.add(pair); wide[lo].push(hi); wide[hi].push(lo); }
+            if (km > CLOSE_KM || seen.has(pair)) continue;
             seen.add(pair);
             close[lo].push(hi); close[hi].push(lo);
           }
         }
       }
     }
+    unitCloseWide = wide;
     return close;
   }
-  function countryLinks() {
+  function countryLinks(closeList) {
     var touch = countries.map(function () { return new Set(); }), near = countries.map(function () { return new Set(); });
     for (var a = 0; a < arcA.length; a++) {
       var b = arcB[a];
@@ -5482,10 +5485,11 @@
       var oa = owner[arcA[a]], ob = owner[b];
       if (oa >= 0 && ob >= 0 && oa !== ob) { touch[oa].add(ob); touch[ob].add(oa); }
     }
-    if (unitClose) for (var u = 0; u < unitClose.length; u++) {
+    var cl = closeList || unitClose;
+    if (cl) for (var u = 0; u < cl.length; u++) {
       var ou = owner[u];
       if (ou < 0) continue;
-      unitClose[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
+      cl[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
     }
     return { touch: touch, near: near };
   }
