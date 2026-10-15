@@ -1039,6 +1039,10 @@
       ctx.beginPath();
       vis.forEach(function (p) { var r = pieceSelRuns(p, c); for (var i = 0; i < r.length; i++) traceArc(ctx, r[i]); });
       ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.stroke();
+    }
+    ctx.restore();
+    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) {
+      ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.lineJoin = "round";
       vis.forEach(function (p) {
         if (p.owner !== c) return;
         ctx.save();
@@ -1049,7 +1053,6 @@
         ctx.restore();
       });
     }
-    ctx.restore();
   }
   function drawStrokeOverlay(F, satellite) {
     var by = new Map();
