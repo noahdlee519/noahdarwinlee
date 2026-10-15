@@ -202,7 +202,8 @@ of `/greatercircle/`.
   giving way to the names already on the map. They come from GeoNames
   (through the all-the-cities package), in their Latin-script names, less
   any within a few kilometres of a city the map already has; they are
-  scenery and cannot be picked or edited. `tools/build-towns.mjs` builds the
+  scenery and cannot be picked or edited, though the historian can rename
+  one (see below). `tools/build-towns.mjs` builds the
   file.
 - **Lakes.** Some 3,200 lakes from Natural Earth's detailed lakes (with its
   extra European and North American sets), from about 6 km² up, drawn as
@@ -474,7 +475,8 @@ of `/greatercircle/`.
     names, or today, and sends back edits to our world's map in a fixed JSON
     shape (the year, new countries with the ruler of each colony, renames,
     countries made or freed as subjects, regions changing hands, whole
-    countries, capitals with their coordinates). A map of a past year starts
+    countries, cities and towns renamed, capitals with their coordinates).
+    A map of a past year starts
     from our world's map of that year, with its empires and colonies, and
     colonies are subjects of their rulers. The redraw replaces the map rather than building on it, as one
     step that one undo takes back; the page flies to the land that moved and
@@ -494,6 +496,15 @@ of `/greatercircle/`.
     map as it stands. The page applies them as one step, which one undo takes
     back, flies to the land that moved, and says so; the historian then says
     what it changed. The conversation keeps the changed map as its own.
+  - Both can rename cities and towns: a place that changes hands may take
+    its new rulers' name for it (Brno under Austria becomes Brünn). Each
+    rename names the place as the map has it now, with its longitude and
+    latitude; the page renames the city of that name nearest the point,
+    within 60 km. A small town from **View → Small towns** becomes a small
+    town of the map's own under its new name, in the same place, so it can
+    be edited like any other. The small towns start loading as soon as the
+    historian is asked, so they are there when its edits come back. A
+    capital can be given by a city's old name or its new one.
   - **Saved** lists every history written in this browser (the last 30),
     each with its map, its turning point, and its questions; opening one
     brings back the map it was written for, as one step that undo reverses,

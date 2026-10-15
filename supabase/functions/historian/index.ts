@@ -27,7 +27,8 @@ The edits:
 - renames: countries on the map that live on under another name. Use the name the country has on the map now.
 - transfers: land changing hands. "to" is a country on the map (by its name now, or after your renames), a new country, or "unclaimed". "from" is a country of our world, named as in the catalogue.
 - subjects: countries already on the map whose ruler changes: one that becomes a subject of another (give the ruler by its name on the map after your edits), or a subject that comes to rule itself (leave ruler empty). On our world's map the territories that are not sovereign, such as the Isle of Man, Greenland, Puerto Rico, and Hong Kong, are already subjects of the countries that hold them.
-- capitals: the capital of every country you create, and of any country whose capital moves. Give the city's name and its longitude and latitude; for a city of our world, use its usual English name.`;
+- city_renames: cities and towns that this history calls by another name. A place that has changed hands often takes the name its new rulers give it: Brno under Austria is Brünn, Lviv under Poland is Lwów, and Gdańsk under Germany is Danzig. Give the name the place has on the map now, its longitude and latitude, and its new name. Rename only where the history gives a reason, and keep to places a reader would know.
+- capitals: the capital of every country you create, and of any country whose capital moves. Give the city's name and its longitude and latitude; for a city of our world, use its usual English name, or its new name if you renamed it.`;
 
 const SYSTEM = `You are the historian of an alternate world. A mapmaker has redrawn today's world map, and you are given the list of every way their map differs from ours. Write the history of that world: how it came to look like this.
 
@@ -54,7 +55,7 @@ The mapmaker has read your history and now asks you more about this world. Answe
 const PLAN = `You redraw the political map of an alternate world. You are given a premise, a turning point in history. Decide how this world's map looks in the year the premise asks about, or today if it names no year, and set it down as edits to today's map of our world.
 
 ${EDITS}
-- year: the year the map shows. Name new countries as they would be known in that year.
+- year: the year the map shows. Name new countries as they would be known in that year, and rename the better-known cities whose names then differed from today's, such as Constantinople, Königsberg, and Bombay.
 - title: a short title for this world, like the title of a history book.
 - declined: true only if the premise asks for something you will not write (below); then leave every list empty and the title empty.
 
@@ -90,7 +91,7 @@ The catalogue:
 const PLAN_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "year", "declined", "new_countries", "renames", "subjects", "transfers", "capitals"],
+  required: ["title", "year", "declined", "new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"],
   properties: {
     title: { type: "string" },
     year: { type: "integer" },
@@ -116,6 +117,15 @@ const PLAN_SCHEMA = {
         properties: { to: { type: "string" }, from: { type: "string" }, whole: { type: "boolean" }, regions: { type: "array", items: { type: "string" } } },
       },
     },
+    city_renames: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["city", "new_name", "lon", "lat"],
+        properties: { city: { type: "string" }, new_name: { type: "string" }, lon: { type: "number" }, lat: { type: "number" } },
+      },
+    },
     capitals: {
       type: "array",
       items: {
@@ -130,16 +140,17 @@ const PLAN_SCHEMA = {
 
 const EDIT_TOOL = {
   name: "edit_map",
-  description: "Change the map the mapmaker is looking at: found, rename, subject, or free countries, move regions between them, and set capitals. The edits apply to the map as it stands now.",
+  description: "Change the map the mapmaker is looking at: found, rename, subject, or free countries, move regions between them, rename cities and towns, and set capitals. The edits apply to the map as it stands now.",
   input_schema: {
     type: "object",
     additionalProperties: false,
-    required: ["new_countries", "renames", "subjects", "transfers", "capitals"],
+    required: ["new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"],
     properties: {
       new_countries: PLAN_SCHEMA.properties.new_countries,
       renames: PLAN_SCHEMA.properties.renames,
       subjects: PLAN_SCHEMA.properties.subjects,
       transfers: PLAN_SCHEMA.properties.transfers,
+      city_renames: PLAN_SCHEMA.properties.city_renames,
       capitals: PLAN_SCHEMA.properties.capitals,
     },
   },

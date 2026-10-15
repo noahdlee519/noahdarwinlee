@@ -22,6 +22,7 @@
   var FONT = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
   var NAME_MAX = 60;
+  var RENAME_KM = 60;
   var MAX_NEW = 2000, MAX_ADDED_CITIES = 8000, MAX_PIECES = 300, MAX_PIECE_POINTS = 60000, SEA = -3;
   var DETAIL_URLS = ["BlueMarble_ShadedRelief_Bathymetry", "BlueMarble_NextGeneration", "BlueMarble_ShadedRelief"].map(function (layer) {
     return "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/" + layer + "/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg";
@@ -5902,11 +5903,38 @@
     });
     if (subj.length) { groupsDirty = true; freshGroups(); }
     demoteCaptured(caps, ops);
+    var renamed = new Map();
+    (plan.city_renames || []).forEach(function (k) {
+      var n = plainName(k && k.city), name = String(k && k.new_name || "").trim().slice(0, NAME_MAX);
+      if (!n || !name) { missed++; return; }
+      var at = isFinite(k.lon) && isFinite(k.lat) && Math.abs(k.lat) <= 90 ? toVec(wrap180(k.lon), k.lat) : null;
+      var km = function (x) { return at ? Math.acos(Math.max(-1, Math.min(1, x.x * at[0] + x.y * at[1] + x.z * at[2]))) * R_KM : 0; };
+      var city = null, best = RENAME_KM;
+      cities.forEach(function (x) { if (plainName(x.name) === n && km(x) <= best) { best = km(x); city = x; } });
+      if (!city && at && towns) {
+        var town = null;
+        towns.forEach(function (t) { if (plainName(t.name) === n && km(t) <= best) { best = km(t); town = t; } });
+        if (town) {
+          var id = "u" + (++citySeq), v = { name: name, lon: town.lam / D2R, lat: town.phi / D2R, tier: 5, cap: 0 };
+          setCityState(id, v);
+          ops.push({ t: "city", id: id, from: null, to: v });
+          renamed.set(n, cityById(id));
+          return;
+        }
+      }
+      if (!city) { missed++; return; }
+      if (city.name === name) return;
+      var was = citySnapshot(city);
+      city.name = name; city.w = 0;
+      ops.push({ t: "city", id: city.id, from: was, to: citySnapshot(city) });
+      renamed.set(n, city);
+    });
     (plan.capitals || []).forEach(function (k) {
       var c = findNow(k && k.country), name = String(k && k.city || "").trim().slice(0, 60);
       if (c === null || c < 0 || !name) { missed++; return; }
       var n = plainName(name), city = null;
       cities.forEach(function (x) { if (plainName(x.name) === n && cityOwner(x) === c) city = x; });
+      if (!city && renamed.has(n) && cityOwner(renamed.get(n)) === c) city = renamed.get(n);
       var at = isFinite(k.lon) && isFinite(k.lat) && Math.abs(k.lat) <= 90 ? unitOfPoint(wrap180(k.lon), k.lat, true) : -1;
       if (!city && (at < 0 || owner[at] !== c)) { missed++; return; }
       cities.forEach(function (x) {
@@ -6307,6 +6335,7 @@
     var premise = $("history-input").value.trim();
     if (!premise || historyBusy) { if (!premise) $("history-input").focus(); return; }
     historyBusy = true; busyKind = "redraw";
+    if (!townsLoad) loadTowns();
     var asked = performance.now();
     syncAsk();
     $("history-chat").hidden = true;
@@ -6363,6 +6392,7 @@
     if (!c || historyBusy) return;
     if (!q) { $("history-q").focus(); return; }
     historyBusy = true; busyKind = "chat";
+    if (!townsLoad) loadTowns();
     syncAsk();
     $("history-chat-status").textContent = "The historian is answering…";
     var turn = addTurn(q, ""), text = "", queued = false, done = false, edited = false;
