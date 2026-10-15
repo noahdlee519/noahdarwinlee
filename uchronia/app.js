@@ -3135,7 +3135,7 @@
       return;
     }
     drag = { x: e.clientX, y: e.clientY, lon: view.lon, lat: view.lat, moved: false, turnOnly: turn,
-      lastT: performance.now(), vx: 0, vy: 0, alt: e.altKey, city: c };
+      lastT: e.timeStamp || performance.now(), vx: 0, vy: 0, alt: e.altKey, city: c };
     canvas.classList.add("is-dragging");
   });
 
@@ -3175,10 +3175,12 @@
       drag.moved = true;
       var pl = view.lon, pt = view.lat;
       dragView(drag, dx, dy);
-      var now = performance.now(), dt = now - drag.lastT;
-      if (dt > 0) {
-        drag.vx = 0.6 * drag.vx + 0.4 * (wrap180(view.lon - pl) / dt);
-        drag.vy = 0.6 * drag.vy + 0.4 * ((view.lat - pt) / dt);
+      var now = e.timeStamp || performance.now(), dt = now - drag.lastT;
+      if (dt > 100) { drag.vx = 0; drag.vy = 0; }
+      else if (dt > 0) {
+        var step = Math.max(dt, 8);
+        drag.vx = 0.6 * drag.vx + 0.4 * (wrap180(view.lon - pl) / step);
+        drag.vy = 0.6 * drag.vy + 0.4 * ((view.lat - pt) / step);
       }
       drag.lastT = now;
       moving();
@@ -3217,7 +3219,9 @@
       }
       return;
     }
-    var since = performance.now() - d.lastT;
+    var since = (e.timeStamp || performance.now()) - d.lastT;
+    var cap = 2 * (flat ? 1 / (FB.k * D2R) : degPerPx()), speed = Math.hypot(d.vx, d.vy);
+    if (speed > cap) { d.vx *= cap / speed; d.vy *= cap / speed; }
     if (!reduceMotion && since < 60 && Math.hypot(d.vx, d.vy) > 0.002) startInertia(d.vx, d.vy);
     else { interacting = 0; scheduleRender(); }
   }
