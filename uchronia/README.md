@@ -280,7 +280,9 @@ of `/greatercircle/`.
   That difference goes to `localStorage` after every edit (and at once when
   the page is hidden or closed), into a link ("Copy link": deflate-raw through
   `CompressionStream`, then base64url, in `#m=`), or into a file ("Save file",
-  JSON).
+  JSON). Under "Copy link", "Post to r/uchronia" opens the map's subreddit,
+  [r/uchronia](https://www.reddit.com/r/uchronia/), in a new tab, where a
+  copied link can be posted.
   - Opening a link or a file, and "Start over", are steps that can be undone.
   - Opening a link keeps your own map one click away ("Back to mine"), even
     across several links.
@@ -589,7 +591,7 @@ of `/greatercircle/`.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
 - The **ⓘ** button by the title opens a short note on the map, a link that
-  opens History, its keys, and links to its sources; a second click closes it.
+  opens History, a link to r/uchronia, its keys, and links to its sources; a second click closes it.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
   type, colours and, in Antique, its paper), shown after a moment's hover or
   on keyboard focus, never on a touch screen; the same words are given to

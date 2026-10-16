@@ -1278,6 +1278,9 @@ body.uc-page {
   text-align: left;
   cursor: pointer;
 }
+a.uc-menu-item {
+  box-sizing: border-box;
+}
 .uc-count {
   display: inline-block;
   min-width: 18px;
@@ -1546,6 +1549,9 @@ body.uc-page {
   .uc-menu-item {
     width: 100%;
     padding: 7px 16px;
+  }
+  a.uc-menu-item {
+    text-decoration: none;
   }
   .uc-menu-item:hover,
   .uc-menu-item:focus-visible {
