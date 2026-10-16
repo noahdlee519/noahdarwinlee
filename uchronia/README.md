@@ -585,8 +585,8 @@ of `/greatercircle/`.
   dropped in the sea. Picking one goes to it and selects it, ready to rename.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
-- The **ⓘ** button by the title opens a short note on the map, its keys, and
-  links to its sources; a second click closes it.
+- The **ⓘ** button by the title opens a short note on the map, a link that
+  opens History, its keys, and links to its sources; a second click closes it.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
   type, colours and, in Antique, its paper), shown after a moment's hover or
   on keyboard focus, never on a touch screen; the same words are given to

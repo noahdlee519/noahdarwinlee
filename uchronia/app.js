@@ -5124,6 +5124,13 @@
       setOpen(open);
       box.classList.toggle("is-shut", !open);
     });
+    $("about-history").addEventListener("click", function (e) {
+      e.preventDefault();
+      setOpen(false);
+      box.classList.add("is-shut");
+      btn.setAttribute("aria-expanded", "false");
+      if ($("history").hidden) showHistory(true);
+    });
     box.addEventListener("mouseenter", function () {
       box.classList.remove("is-shut");
       if (canHover) btn.setAttribute("aria-expanded", "true");
