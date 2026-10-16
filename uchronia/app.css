@@ -684,6 +684,10 @@ body.uc-page {
   font-size: 27px;
   letter-spacing: 0.02em;
 }
+:root[data-uc-style="antique"] .uc-chron-text h4 .uc-num {
+  font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
+  letter-spacing: 0.06em;
+}
 .uc-chron-title {
   flex: 1 1 auto;
 }

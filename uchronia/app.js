@@ -6063,7 +6063,17 @@
       var target = el || para;
       t.split(/(\[\[[^\]]*\]\]?)/).forEach(function (bit) {
         var m = /^\[\[([^\]]*)\]?\]?$/.exec(bit);
-        if (!m) { if (bit) target.appendChild(document.createTextNode(bit.replace(/\*\*|__/g, ""))); return; }
+        if (!m) {
+          if (!bit) return;
+          bit = bit.replace(/\*\*|__/g, "");
+          if (target.tagName !== "H4") { target.appendChild(document.createTextNode(bit)); return; }
+          bit.split(/(\d+)/).forEach(function (part, k) {
+            if (!part) return;
+            if (k % 2) { var n = document.createElement("span"); n.className = "uc-num"; n.textContent = part; target.appendChild(n); }
+            else target.appendChild(document.createTextNode(part));
+          });
+          return;
+        }
         var name = m[1], place = places.get(name);
         if (!place) { target.appendChild(document.createTextNode(name)); return; }
         var a = document.createElement("button");

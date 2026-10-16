@@ -101,6 +101,9 @@ of `/greatercircle/`.
       and the names, italic names for 57 oceans and seas (the oceans only on
       a map big enough to hold them), circled cities and
       ringed capitals, and a double frame round the flat map;
+    - in a history's era headings, which are set in capitals, the years in
+      Old Standard TT, whose figures stand as tall as the capitals (IM Fell's
+      old-style figures look too small beside them);
     - country names that bend along arcs, as engravers set them (see
       *Labels*);
     - age drawn on the map itself, never on the screen around it. The globe
