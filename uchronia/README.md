@@ -453,10 +453,16 @@ of `/greatercircle/`.
   most eight seconds, then fades away to the map. In the Antique style the
   opening then plays as the cover lifts: the map unrolls from the left like
   a sheet, the header comes down with its rule, and the controls appear.
+  On a phone the bottom sheet rises in place of the header, and the box
+  with the site's name drops in from the top.
   With nothing selected the bar's second row closes; it opens when something
   is selected, animated where the browser can, and the map does not move. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the
-  map zooms in; it is left off under the satellite view. What is
+  map zooms in; it is left off under the satellite view. The relief is
+  drawn by WebGL on a canvas of its own at half the screen's resolution,
+  and at a quarter while the map moves, then laid over each country's fill;
+  copying it to the map is the costliest step of a frame, so the smaller
+  canvas roughly halves the time a frame takes while dragging. What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
 - **History** opens a panel in which a historian of the map's world writes

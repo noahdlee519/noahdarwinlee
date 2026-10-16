@@ -70,7 +70,7 @@
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
     satCanvas.width = satView.width = canvas.width; satCanvas.height = satView.height = canvas.height;
-    reliefCanvas.width = Math.round(W * dpr * RELIEF_RES); reliefCanvas.height = Math.round(H * dpr * RELIEF_RES);
+    sizeRelief(RELIEF_RES);
     var phone = phoneQuery.matches, bare = ui.bare;
     var barH = phone || bare ? 0 : barBase();
     var sheetH = phone && !bare ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 150) : 0;
@@ -1157,7 +1157,11 @@
     sat.draw(o);
     if (satShow) satShow.transferFromImageBitmap(satCanvas.transferToImageBitmap());
   }
-  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5;
+  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.25, reliefRes = RELIEF_RES;
+  function sizeRelief(res) {
+    reliefRes = res;
+    reliefCanvas.width = Math.max(1, Math.round(W * dpr * res)); reliefCanvas.height = Math.max(1, Math.round(H * dpr * res));
+  }
   var rd = { key: "", rect: null, cache: new Map(), gen: 0, put: new Set(), off: false, failed: 0, ok: 0 };
   var RELIEF_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png", RELIEF_MAX_Z = 11;
   function reliefOn() {
@@ -1173,28 +1177,26 @@
     return !!relief && relief.ready();
   }
   function renderRelief() {
-    var o = { flat: flat, dpr: dpr * RELIEF_RES, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
+    var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     relief.draw(o);
   }
-  var reliefKey = "", reliefPat = null;
+  var reliefKey = "", reliefPat = false;
   function reliefFrame() {
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
-    if (key !== reliefKey || !reliefPat) { renderRelief(); reliefPat = reliefPattern(); reliefKey = key; }
+    var res = interacting ? RELIEF_MOVING : RELIEF_RES;
+    if (res !== reliefRes) sizeRelief(res);
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
+    if (key !== reliefKey || !reliefPat) { renderRelief(); reliefPat = true; reliefKey = key; }
     return reliefPat;
   }
-  function reliefPattern() {
-    var pat = ctx.createPattern(reliefCanvas, "no-repeat"), f = 1 / (dpr * RELIEF_RES);
-    if (pat && pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([f, 0, 0, f, 0, 0]));
-    return pat;
-  }
-  function shade(pat) {
-    if (!pat) return;
+  function shade(on) {
+    if (!on) return;
     ctx.save();
+    ctx.clip();
     ctx.globalCompositeOperation = "overlay";
     ctx.globalAlpha = pal.antique ? 0.72 : 0.6;
-    ctx.fillStyle = pat; ctx.fill();
+    ctx.drawImage(reliefCanvas, 0, 0, W, H);
     ctx.restore();
   }
   function maybeRelief() {
