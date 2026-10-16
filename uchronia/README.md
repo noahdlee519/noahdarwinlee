@@ -482,6 +482,28 @@ of `/greatercircle/`.
     step that one undo takes back; the page flies to the land that moved and
     has the historian write how it came to be, with the turning point and
     the year as its note.
+  - A redraw is drawn in two steps, because a map of the whole world takes
+    Claude longer to write than the server function may run (150 seconds a
+    request). First an outline: the year, the title, a short history, the
+    new countries, renames, and subjects, and a brief for each part of the
+    world whose map changes. The page then asks for every part named in the
+    outline at once, each its own request: Western Europe; Eastern Europe
+    and Russia; Western and Central Asia; South and East Asia; Africa; North
+    America and the Caribbean; South America; and Oceania and Antarctica.
+    Each part's mapmaker sees the outline and only its own part's regions,
+    and sends back that part's edits. The page draws each part as it
+    arrives, redrawing from our world's map with every part so far, so
+    colours are chosen with all the neighbours in view; the finished
+    redraw is still one step for undo. A part that fails is left as our
+    world has it, and the message says which. A part still being written
+    when its time is nearly up is cut short at the last complete edit,
+    rather than lost.
+  - The outline counts once against the daily limits; its parts do not, but
+    each part can be asked for only once, and only with the ticket the
+    outline came with: a signature over the outline and the turning point,
+    good for twenty minutes, that the function checks (`historian_once`
+    keeps the parts already drawn). The old one-step redraw still answers,
+    for pages loaded before the change.
   - Redraws are asked to be bold: to follow the turning point beyond its own
     region, to let no border drawn after the divergence survive by
     coincidence, and to merge, split, or invent countries, up to about 1,500
@@ -525,9 +547,12 @@ of `/greatercircle/`.
     sent where.
   - Claude names land from `data/catalogue.txt`, every country of our world
     and its regions as the map draws them (250 countries, 3,699 regions),
-    built by `tools/build-catalogue.mjs`. The function fetches it from the
-    site and sends it, unchanged, at the start of every request, so it is
-    cached and later requests pay a tenth for it. The page matches names
+    built by `tools/build-catalogue.mjs`, which also writes
+    `data/parts.json`, the countries in each part of the world (a redraw's
+    outline sees only these names, and each part's mapmaker only its own
+    lines of the catalogue). The function fetches both from the
+    site. For a chat it sends the whole catalogue, unchanged, at the start
+    of every request, so it is cached and later requests pay a tenth for it. The page matches names
     without regard to case or accents and leaves out any it cannot find.
   - The page sends a plain list of the map's differences from ours (which
     regions changed hands, countries founded, renamed, or gone, borders drawn
@@ -542,7 +567,8 @@ of `/greatercircle/`.
     the text, and deletes counts older than thirty days.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
-    `supabase/migrations/20261012_historian_usage.sql`) live in the Supabase
+    `supabase/migrations/20261012_historian_usage.sql`, and `historian_once`,
+    set up by `supabase/migrations/20261015_historian_once.sql`) live in the Supabase
     project kigvciyyjlgjcgnwgrwf. The function is deployed as `dynamic-endpoint`
     with JWT verification off (it checks the origin and the daily caps
     itself) and needs the `ANTHROPIC_API_KEY` secret.

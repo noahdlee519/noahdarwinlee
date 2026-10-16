@@ -6336,7 +6336,6 @@
     if (!premise || historyBusy) { if (!premise) $("history-input").focus(); return; }
     historyBusy = true; busyKind = "redraw";
     if (!townsLoad) loadTowns();
-    var asked = performance.now();
     syncAsk();
     $("history-chat").hidden = true;
     $("history-text").textContent = "";
@@ -6351,35 +6350,81 @@
       historyStatus(msg);
       if (msg) { showAsked(""); showAsk(true); }
     };
-    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "redraw", premise: premise }) }).then(function (res) {
+    var post = function (body) { return fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); };
+    var KEYS = ["new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"];
+    var outline = null, names = {}, plans = [], failed = [], total = 0, left = 0, before = null, step = null, last = null;
+    var merged = function () {
+      var m = { title: outline.title, year: outline.year };
+      KEYS.forEach(function (k) { m[k] = Array.isArray(outline[k]) ? outline[k].slice() : []; });
+      plans.forEach(function (p) { KEYS.forEach(function (k) { if (Array.isArray(p[k])) m[k] = m[k].concat(p[k]); }); });
+      return m;
+    };
+    var draw = function () {
+      var r = null;
+      if (!before) before = makeDiff();
+      cancelLasso();
+      if (stroke) endStroke();
+      cancelCityDrag();
+      if (step && undoStack[undoStack.length - 1] === step) undoStack.pop();
+      step = null;
+      try { loadDiff({}, true); r = applyPlan(merged()); } catch (e) { console.warn("redraw", e); }
+      if (r && !describeChanges()) { if (undoStack[undoStack.length - 1] === r.step) undoStack.pop(); r = null; }
+      if (r) { r.step.ops = [{ t: "replace", from: before, to: makeDiff() }]; step = r.step; }
+      else { loadDiff(before, true); changed(); }
+      last = r;
+    };
+    var progress = function () { if (!done && left > 0) historyStatus("The historian is drawing the map, one part of the world at a time: " + (total - left) + " of " + total + " done…"); };
+    var settle = function () {
+      if (done || left > 0) return;
+      if (total && !plans.length) return finish("The historian could not draw this map. Try again in a moment.");
+      draw();
+      if (!last) return finish("The historian's map could not be drawn. Try putting it another way.");
+      if (last.missed) console.warn("redraw: " + last.missed + " names not found");
+      finish("");
+      var title = typeof outline.title === "string" ? outline.title.slice(0, 80) : "";
+      var lost = failed.length ? " " + listOf(failed.map(function (id) { return names[id] || id; }), 8) + " could not be drawn." : "";
+      toast((title ? "The map is redrawn: " + title : "The map is redrawn") + (lost ? "." + lost : ""), "Undo", undoIfTop(last.step), 9000);
+      toastStep = last.step;
+      var at = centreOf(last.units);
+      if (at) flyTo(at[0], at[1]);
+      var year = isInt(outline.year) ? outline.year : 0;
+      writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise, premise);
+    };
+    var drawPart = function (id, ticket) {
+      var over = false;
+      var end = function (plan) {
+        if (over) return;
+        over = true; left--;
+        if (plan) plans.push(plan); else failed.push(id);
+        progress();
+        if (left > 0 && plan && !done) draw();
+        settle();
+      };
+      post({ mode: "part", premise: premise, outline: outline, part: id, ticket: ticket }).then(function (res) {
+        if (!res.ok || !res.body) { console.warn("historian part", id, res.status); return end(null); }
+        return readEvents(res, function (ev) {
+          if (ev.t === "plan" && ev.plan && typeof ev.plan === "object") { if (ev.partial) console.warn("historian part " + id + " cut short"); end(ev.plan); }
+          else if (ev.t === "error" || ev.t === "end" || ev.t === "closed") { if (ev.t !== "closed") console.warn("historian part", id, ev.status || ev.reason); end(null); }
+        });
+      }).catch(function (e) { console.warn("historian part", id, e); end(null); });
+    };
+    post({ mode: "outline", premise: premise }).then(function (res) {
       if (res.status === 429) return finish("The historian has done all they can for today. Try again tomorrow.");
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       return readEvents(res, function (ev) {
-        if (done) return;
-        if (ev.t === "plan" && ev.plan && ev.plan.declined) return finish("The historian declines to draw that world.");
-        if (ev.t === "plan") {
-          var r = null, before = makeDiff();
-          cancelLasso();
-          if (stroke) endStroke();
-          cancelCityDrag();
-          try { loadDiff({}, true); r = applyPlan(ev.plan || {}); } catch (e) { console.warn("redraw", e); }
-          if (r && !describeChanges()) { if (undoStack[undoStack.length - 1] === r.step) undoStack.pop(); r = null; }
-          if (r) r.step.ops = [{ t: "replace", from: before, to: makeDiff() }];
-          else { loadDiff(before, true); changed(); }
-          if (!r) return finish("The historian's map could not be drawn. Try putting it another way.");
-          if (r.missed) console.warn("redraw: " + r.missed + " names not found");
-          finish("");
-          var title = ev.plan && typeof ev.plan.title === "string" ? ev.plan.title.slice(0, 80) : "";
-          toast(title ? "The map is redrawn: " + title : "The map is redrawn", "Undo", undoIfTop(r.step), 9000);
-          toastStep = r.step;
-          var at = centreOf(r.units);
-          if (at) flyTo(at[0], at[1]);
-          var year = ev.plan && isInt(ev.plan.year) ? ev.plan.year : 0;
-          writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise, premise);
-        } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : ev.reason === "max_tokens" ? "The historian's map ran too long. Try a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
+        if (done || outline) return;
+        if (ev.t === "outline") {
+          if (!ev.outline || typeof ev.outline !== "object" || ev.outline.declined) return finish("The historian declines to draw that world.");
+          outline = ev.outline; names = ev.names || {};
+          var ids = (Array.isArray(outline.parts) ? outline.parts : []).map(function (b) { return b && b.part; }).filter(function (id, k, all) { return typeof id === "string" && all.indexOf(id) === k; });
+          total = left = ids.length;
+          if (!total) return settle();
+          progress();
+          ids.forEach(function (id) { drawPart(id, ev.ticket); });
+        } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : "The historian could not redraw this. Try again in a moment.");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not redraw this. Try again in a moment."); }
-        else if (ev.t === "closed") finish(performance.now() - asked > 100000 ? "The historian ran out of time on a map this large. Try a smaller part of the world or a narrower turning point." : "The historian could not redraw this. Try again in a moment.");
+        else if (ev.t === "closed") finish("The historian could not redraw this. Try again in a moment.");
       });
     }).catch(function (e) {
       console.warn("historian", e);
