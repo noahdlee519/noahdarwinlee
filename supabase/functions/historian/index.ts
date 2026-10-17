@@ -24,7 +24,7 @@ const MAX_OUTLINE = 30000;
 
 const LIMITS = `What you will not write, whatever the request: anything that celebrates, excuses, or calls for genocide, ethnic cleansing, slavery, terrorism, or hatred of a people, faith, sex, sexuality, or disability; anything sexual; anything that names, mocks, or harasses a real private person; slurs, even as the names of countries, places, or peoples. Wars, empires, atrocities, and the darkest turns of history are fair subjects when they are told with a historian's gravity. If you are asked for something you will not write, decline in one or two plain sentences, outside the historian's voice, and write nothing else.`;
 
-const EDITS = `The map is made of the regions in the catalogue at the end: each line names a country of our world and then its regions. Land moves only in whole regions. Name each region exactly as the catalogue spells it, under the country of our world it belongs to (the "from" of a transfer), even if it has since changed hands. To move all of a country of our world, set whole to true and leave regions empty. In Europe some regions are followed, in square brackets, by their smaller parts (districts, counties, or provinces). To move only part of such a region, name the region, a slash, and the part, each exactly as the catalogue spells it: "Bavaria / Passau". Name the region alone to move all of it.
+const EDITS = `The map is made of the regions in the catalogue at the end: each line names a country of our world and then its regions. Land moves only in whole regions. Name each region exactly as the catalogue spells it, under the country of our world it belongs to (the "from" of a transfer), even if it has since changed hands. To move all of a country of our world, set whole to true and leave regions empty.
 
 The edits:
 - new_countries: countries that are not on the map yet, named in English as they would be known. Each must then receive land in a transfer. A colony, protectorate, mandate, dominion, or vassal that the map shows apart from its ruler is a new country too; give its ruler, the country that holds it, by its name on the map after your edits, and leave ruler empty for every country that rules itself. A subject keeps its own name and land but wears its ruler's colour, and its name is shown with its ruler's, like "Isle of Man (UK)".
@@ -139,6 +139,8 @@ const CHAT_EDITS = `
 You can also change the map. When the mapmaker asks for a change, or points out something the map gets wrong for this history (a border your history implies but the map lacks, or one it should no longer have), call edit_map with the edits to the map as it stands now; the list at the start of the conversation describes it. Then answer as the historian: say plainly what you changed on the map and why. Do not call edit_map for questions that need no change, and do not undo the mapmaker's own work unless they ask.
 
 ${EDITS}
+
+Many regions in Europe (outside Latvia, Slovenia, and Russia) are made of smaller parts: districts, counties, or provinces. To move only part of a region, first call region_parts with that region to learn its parts, before you write anything; then, in edit_map, name the region, a slash, and the part, each exactly as spelt: "Bavaria / Passau". Name the region alone to move all of it, and do not look up parts you will not use.
 
 The catalogue:
 `;
@@ -389,6 +391,51 @@ function ndjson(o: string, work: (send: (obj: unknown) => void) => Promise<void>
   return new Response(stream, { headers: { ...cors(o), "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" } });
 }
 
+const PARTS_TOOL = {
+  name: "region_parts",
+  description: "List the smaller parts (districts, counties, or provinces) of regions in Europe, so that edit_map can move part of a region. Regions outside Europe, and in Latvia, Slovenia, and Russia, have none.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["regions"],
+    properties: {
+      regions: {
+        type: "array",
+        items: { type: "object", additionalProperties: false, required: ["country", "region"], properties: { country: { type: "string" }, region: { type: "string" } } },
+      },
+    },
+  },
+};
+
+const fold = (t: string) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+function splitCatalogue(raw: string) {
+  const parts = new Map<string, string>();
+  const plain = raw.split("\n").map((line) => {
+    const at = line.indexOf(": ");
+    if (at < 0 || line.indexOf("[") < 0) return line;
+    const country = line.slice(0, at);
+    const regions = line.slice(at + 2).split("; ").map((r) => {
+      const m = /^(.*?) \[(.*)\]$/.exec(r);
+      if (!m) return r;
+      parts.set(fold(country) + "|" + fold(m[1]), m[2]);
+      return m[1];
+    });
+    return country + ": " + regions.join("; ");
+  }).join("\n");
+  return { plain, parts };
+}
+
+function lookUpParts(input: any, parts: Map<string, string>) {
+  const asked = Array.isArray(input?.regions) ? input.regions.slice(0, 12) : [];
+  if (!asked.length) return "Name the regions to look up.";
+  return asked.map((r: any) => {
+    const country = String(r?.country || "").slice(0, 80), region = String(r?.region || "").slice(0, 120);
+    const list = parts.get(fold(country) + "|" + fold(region));
+    return region + " (" + country + "): " + (list || "no smaller parts on this map");
+  }).join("\n");
+}
+
 let catalogue: Promise<string> | null = null;
 function loadCatalogue() {
   if (!catalogue) {
@@ -502,10 +549,13 @@ Deno.serve(async (req) => {
     }
   }
   let cat = "";
+  let partIndex = new Map<string, string>();
   let list: Part[] = [];
   if (planning || chat) {
     try {
-      cat = await loadCatalogue();
+      const split = splitCatalogue(await loadCatalogue());
+      cat = split.plain;
+      partIndex = split.parts;
       if (outlining || drawing) list = await loadParts();
     } catch (e) {
       console.error(e);
@@ -651,7 +701,7 @@ Deno.serve(async (req) => {
           : SYSTEM,
         messages,
       };
-      if (editing) base.tools = [EDIT_TOOL];
+      if (editing) base.tools = [EDIT_TOOL, PARTS_TOOL];
       const write = async (run: any) => {
         for await (const event of run) {
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
@@ -672,16 +722,27 @@ Deno.serve(async (req) => {
         }
       };
       try {
-        let edits = 0;
+        let edits = 0, lookups = 0;
         for (;;) {
           const final: any = await once();
-          const use = (final.content || []).find((b: any) => b.type === "tool_use" && b.name === "edit_map");
-          if (final.stop_reason === "tool_use" && use && edits < 2) {
-            edits++;
-            started = true;
-            send({ t: "plan", plan: use.input });
+          const uses = (final.content || []).filter((b: any) => b.type === "tool_use");
+          if (final.stop_reason === "tool_use" && uses.length && edits < 2 && lookups < 4) {
+            const results: unknown[] = [];
+            for (const use of uses) {
+              if (use.name === "edit_map") {
+                edits++;
+                started = true;
+                send({ t: "plan", plan: use.input });
+                results.push({ type: "tool_result", tool_use_id: use.id, content: "The map now shows these edits." });
+              } else if (use.name === "region_parts") {
+                lookups++;
+                results.push({ type: "tool_result", tool_use_id: use.id, content: lookUpParts(use.input, partIndex) });
+              } else {
+                results.push({ type: "tool_result", tool_use_id: use.id, content: "There is no such tool.", is_error: true });
+              }
+            }
             messages.push({ role: "assistant", content: final.content });
-            messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: use.id, content: "The map now shows these edits." }] });
+            messages.push({ role: "user", content: results });
             continue;
           }
           send({ t: "end", reason: final.stop_reason });

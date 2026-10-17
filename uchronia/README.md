@@ -575,15 +575,19 @@ of `/greatercircle/`.
     of every request, so it is cached and later requests pay a tenth for it. The page matches names
     without regard to case or accents and leaves out any it cannot find.
   - In Europe (all but Latvia and Slovenia, whose regions are already
-    municipalities) the catalogue also lists, in square brackets after a
-    region, its smaller parts: the districts of Germany, Austria, Poland,
-    Czechia, Belarus, Ukraine, and Russia from the finer regions, and the
+    municipalities, and Russia) the catalogue also lists, in square brackets
+    after a region, its smaller parts: the districts of Germany, Austria,
+    Poland, Czechia, Belarus, and Ukraine from the finer regions, and the
     provinces inside the regions of Italy, Malta, North Macedonia, and
-    Kosovo (2,518 parts in all). Elsewhere in Europe the regions are already
-    the smallest the map has. Claude names a part as "Bavaria / Passau" to
-    move only that part. A province is found at once; a district needs the
-    finer regions, so the page loads them before it applies an edit that
-    names one, and the list of changes sent with later requests names the
+    Kosovo (1,817 parts in all). Elsewhere in Europe the regions are already
+    the smallest the map has. The function takes the brackets out before it
+    sends the catalogue, so the parts cost nothing until they are wanted: in
+    a conversation the historian has a second tool, `region_parts`, that
+    returns the parts of the regions it names, and then names a part in
+    edit_map as "Bavaria / Passau" to move only that part. Redraws get the
+    regions alone. A province is found at once; a district needs the finer
+    regions, so the page loads them before it applies an edit that names
+    one, and the list of changes sent with later requests names the
     districts that moved ("part of Bavaria (Passau)").
   - The page sends a plain list of the map's differences from ours (which
     regions changed hands, countries founded, renamed, or gone, borders drawn

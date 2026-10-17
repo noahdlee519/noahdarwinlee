@@ -8,7 +8,7 @@ const names = new Map(topo.countries.map((c) => [c.c, c.n]));
 const groups = topo.groups || [];
 const units = JSON.parse(readFileSync(resolve(here, "../data/units.json"), "utf8"));
 const byCountry = new Map();
-const PARTS_OF = new Set("ALD AND AUT BEL DNK FRO FIN FRA DEU GIB GGY ISL IRL IMN ITA JEY LIE LUX MLT MCO NLD NOR PRT SMR ESP SWE CHE GBR VAT ALB BLR BIH BGR HRV CYP CYN WSB ESB CZE EST GRC HUN KOS LTU MDA MNE MKD POL ROU RUS SRB SVK UKR".split(" "));
+const PARTS_OF = new Set("ALD AND AUT BEL DNK FRO FIN FRA DEU GIB GGY ISL IRL IMN ITA JEY LIE LUX MLT MCO NLD NOR PRT SMR ESP SWE CHE GBR VAT ALB BLR BIH BGR HRV CYP CYN WSB ESB CZE EST GRC HUN KOS LTU MDA MNE MKD POL ROU SRB SVK UKR".split(" "));
 const unitsOf = new Map();
 for (const g of units.objects.units.geometries) {
   const p = g.properties;
