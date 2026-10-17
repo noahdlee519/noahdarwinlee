@@ -5833,6 +5833,26 @@
   function plainName(t) {
     return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\u2018\u2019`]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
   }
+  function partOf(bc, name) {
+    var raw = String(name || ""), cut = raw.indexOf("/"), units = [];
+    var add = function (p) { (provUnits[p] || []).forEach(function (u) { units.push(u); }); };
+    if (cut < 0) { regionsNamed(bc, raw).forEach(add); return { units: units, fine: false }; }
+    var ps = regionsNamed(bc, raw.slice(0, cut)), part = plainName(raw.slice(cut + 1));
+    ps.forEach(function (p) { if (plainName(provName[p]) === part) add(p); });
+    if (units.length) return { units: units, fine: false };
+    if (!fineData) return { units: units, fine: ps.length > 0 };
+    ps.forEach(function (p) { provUnits[p].forEach(function (u) { if (plainName(unitName[u]) === part) units.push(u); }); });
+    return { units: units, fine: false };
+  }
+  function planWantsFine(plan) {
+    if (fineData || !plan) return false;
+    return (plan.transfers || []).some(function (t) {
+      if (!t || t.whole || !Array.isArray(t.regions)) return false;
+      var n = plainName(t.from), from = -1;
+      base.countries.forEach(function (b, i) { if (from < 0 && plainName(b.name) === n) from = i; });
+      return from >= 0 && t.regions.some(function (name) { return partOf(from, name).fine; });
+    });
+  }
   var regionIndex = null;
   function regionsNamed(bc, name) {
     if (!regionIndex) {
@@ -5896,9 +5916,9 @@
         return;
       }
       (t.regions || []).forEach(function (name) {
-        var ps = regionsNamed(from, name);
-        if (!ps.length) { missed++; return; }
-        ps.forEach(function (p) { (provUnits[p] || []).forEach(function (u) { next.set(u, to); }); });
+        var us = partOf(from, name).units;
+        if (!us.length) { missed++; return; }
+        us.forEach(function (u) { next.set(u, to); });
         moved++;
       });
     });
@@ -6034,7 +6054,12 @@
       if (!us || !us.length) continue;
       var now = new Set(us.map(function (u) { return owner[u]; }));
       if (now.size === 1) { var o = owner[us[0]]; if (o !== bo) move(bo, o, provName[p], p); continue; }
-      now.forEach(function (o) { if (o !== bo) move(bo, o, "part of " + provName[p], p); });
+      now.forEach(function (o) {
+        if (o === bo) return;
+        var bits = [];
+        us.forEach(function (u) { if (owner[u] === o && unitName[u] && unitName[u] !== provName[p] && bits.indexOf(unitName[u]) < 0) bits.push(unitName[u]); });
+        move(bo, o, "part of " + provName[p] + (bits.length && bits.length <= 12 ? " (" + bits.join(", ") + ")" : ""), p);
+      });
     }
     moves.forEach(function (m) {
       if (m.to < 0) lines.push("Left unclaimed, once " + oldName(m.from) + ": " + listOf(m.names, 40) + ".");
@@ -6438,11 +6463,15 @@
       var over = false;
       var end = function (plan) {
         if (over) return;
-        over = true; left--;
-        if (plan) plans.push(plan); else failed.push(id);
-        progress();
-        if (left > 0 && plan && !done) draw();
-        settle();
+        over = true;
+        var go = function () {
+          left--;
+          if (plan) plans.push(plan); else failed.push(id);
+          progress();
+          if (left > 0 && plan && !done) draw();
+          settle();
+        };
+        if (planWantsFine(plan)) loadFine().then(go, go); else go();
       };
       post({ mode: "part", premise: premise, outline: outline, part: id, ticket: ticket }).then(function (res) {
         if (!res.ok || !res.body) { console.warn("historian part", id, res.status); return end(null); }
@@ -6488,8 +6517,10 @@
     turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     $("history-q").value = "";
     var paint = function () { queued = false; renderProse(turn.a, text); };
+    var edits = Promise.resolve(), pending = 0;
     var finish = function (msg) {
       if (done) return;
+      if (pending) { edits.then(function () { finish(msg); }); return; }
       done = true; historyBusy = false;
       syncAsk();
       $("history-chat-status").textContent = msg || "";
@@ -6515,16 +6546,20 @@
       return readEvents(res, function (ev) {
         if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
         else if (ev.t === "plan") {
-          var r = null;
-          try { r = applyPlan(ev.plan || {}); } catch (e) { console.warn("historian edit", e); }
-          if (!r) return;
-          edited = true;
-          r.step.label = "The historian's changes";
-          if (r.missed) console.warn("historian edit: " + r.missed + " names not found");
-          toast("The historian changed the map", "Undo", undoIfTop(r.step), 9000);
-          toastStep = r.step;
-          var at = centreOf(r.units);
-          if (at) flyTo(at[0], at[1]);
+          var edit = function () {
+            var r = null;
+            try { r = applyPlan(ev.plan || {}); } catch (e) { console.warn("historian edit", e); }
+            if (!r) return;
+            edited = true;
+            r.step.label = "The historian's changes";
+            if (r.missed) console.warn("historian edit: " + r.missed + " names not found");
+            toast("The historian changed the map", "Undo", undoIfTop(r.step), 9000);
+            toastStep = r.step;
+            var at = centreOf(r.units);
+            if (at) flyTo(at[0], at[1]);
+          };
+          pending++;
+          edits = edits.then(function () { return planWantsFine(ev.plan) ? loadFine() : null; }).then(edit, edit).then(function () { pending--; });
         }
         else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to answer that." : ev.reason === "max_tokens" ? "" : "");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not answer this. Try again in a moment."); }

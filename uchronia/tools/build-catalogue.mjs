@@ -6,18 +6,31 @@ const here = dirname(fileURLToPath(import.meta.url));
 const topo = JSON.parse(readFileSync(resolve(here, "../data/provinces.json"), "utf8"));
 const names = new Map(topo.countries.map((c) => [c.c, c.n]));
 const groups = topo.groups || [];
+const units = JSON.parse(readFileSync(resolve(here, "../data/units.json"), "utf8"));
 const byCountry = new Map();
-
-for (const g of topo.objects.provinces.geometries) {
-  const p = g.properties, country = names.get(p.c);
-  if (!country) continue;
-  const region = p.g >= 0 && p.g < groups.length ? String(groups[p.g].n) : p.n;
-  if (!byCountry.has(country)) byCountry.set(country, new Set());
-  byCountry.get(country).add(region);
+const PARTS_OF = new Set("ALD AND AUT BEL DNK FRO FIN FRA DEU GIB GGY ISL IRL IMN ITA JEY LIE LUX MLT MCO NLD NOR PRT SMR ESP SWE CHE GBR VAT ALB BLR BIH BGR HRV CYP CYN WSB ESB CZE EST GRC HUN KOS LTU MDA MNE MKD POL ROU RUS SRB SVK UKR".split(" "));
+const unitsOf = new Map();
+for (const g of units.objects.units.geometries) {
+  const p = g.properties;
+  if (!unitsOf.has(p.p)) unitsOf.set(p.p, []);
+  unitsOf.get(p.p).push(p.n);
 }
 
+topo.objects.provinces.geometries.forEach((g, i) => {
+  const p = g.properties, country = names.get(p.c);
+  if (!country) return;
+  const grouped = p.g >= 0 && p.g < groups.length, region = grouped ? String(groups[p.g].n) : p.n;
+  if (!byCountry.has(country)) byCountry.set(country, new Map());
+  const regions = byCountry.get(country);
+  if (!regions.has(region)) regions.set(region, new Set());
+  if (!PARTS_OF.has(p.c)) return;
+  if (grouped) regions.get(region).add(p.n);
+  else if ((unitsOf.get(i) || []).length > 1) unitsOf.get(i).forEach((n) => regions.get(region).add(n));
+});
+
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const lines = [...byCountry.keys()].sort(cmp).map((c) => c + ": " + [...byCountry.get(c)].sort(cmp).join("; "));
+const part = (region, inner) => (inner.size > 1 ? region + " [" + [...inner].sort(cmp).join(", ") + "]" : region);
+const lines = [...byCountry.keys()].sort(cmp).map((c) => c + ": " + [...byCountry.get(c)].sort((a, b) => cmp(a[0], b[0])).map(([r, inner]) => part(r, inner)).join("; "));
 writeFileSync(resolve(here, "../data/catalogue.txt"), lines.join("\n") + "\n");
 
 const PARTS = [
@@ -44,4 +57,4 @@ const parts = PARTS.map(([id, name, codes]) => {
 const unplaced = [...names.keys()].filter((c) => !placed.has(c));
 if (unplaced.length) throw new Error("in no part: " + unplaced.join(" "));
 writeFileSync(resolve(here, "../data/parts.json"), JSON.stringify(parts) + "\n");
-console.log(byCountry.size + " countries, " + [...byCountry.values()].reduce((n, s) => n + s.size, 0) + " regions");
+console.log(byCountry.size + " countries, " + [...byCountry.values()].reduce((n, m) => n + m.size, 0) + " regions, " + [...byCountry.values()].reduce((n, m) => n + [...m.values()].reduce((k, s) => k + (s.size > 1 ? s.size : 0), 0), 0) + " smaller parts listed");
