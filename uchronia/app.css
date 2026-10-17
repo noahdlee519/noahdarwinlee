@@ -652,6 +652,18 @@ body.uc-page {
   line-height: 1.4;
   color: var(--uc-muted);
 }
+.uc-chron-status.is-limit {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #c0262d;
+}
+:root[data-theme="dark"]:not([data-uc-style="antique"]) .uc-chron-status.is-limit {
+  color: #ff7b72;
+}
+:root[data-uc-style="antique"] .uc-chron-status.is-limit {
+  color: #9e1b1b;
+}
 .uc-chron-asked + .uc-chron-status {
   margin-top: 6px;
 }

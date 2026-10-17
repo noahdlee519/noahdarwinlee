@@ -6139,7 +6139,11 @@
       if (el) box.appendChild(el);
     });
   }
-  function historyStatus(msg) { $("history-status").textContent = msg || ""; $("history-status").hidden = !msg; }
+  function setStatus(el, msg) {
+    el.textContent = msg || "";
+    el.classList.toggle("is-limit", /all they can for today/.test(msg || ""));
+  }
+  function historyStatus(msg) { setStatus($("history-status"), msg); $("history-status").hidden = !msg; }
   var STORE_CONVS = "uchronia-histories", CONV_MAX = 30, conv = null, convRead = false;
   function readConvs() {
     try {
@@ -6198,7 +6202,7 @@
     renderHistory(c.history);
     renderTurns(c);
     $("history-chat").hidden = false;
-    $("history-chat-status").textContent = "";
+    setStatus($("history-chat-status"), "");
     var stale = c.map ? !sameMap(c) : c.changes !== describeChanges();
     historyStatus(stale ? "The map has changed since this was written." : "");
     showAsk(false);
@@ -6512,7 +6516,7 @@
     historyBusy = true; busyKind = "chat";
     if (!townsLoad) loadTowns();
     syncAsk();
-    $("history-chat-status").textContent = "The historian is answering…";
+    setStatus($("history-chat-status"), "The historian is answering…");
     var turn = addTurn(q, ""), text = "", queued = false, done = false, edited = false;
     turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     $("history-q").value = "";
@@ -6523,7 +6527,7 @@
       if (pending) { edits.then(function () { finish(msg); }); return; }
       done = true; historyBusy = false;
       syncAsk();
-      $("history-chat-status").textContent = msg || "";
+      setStatus($("history-chat-status"), msg);
       if (edited) { c.map = makeDiff(); c.changes = describeChanges(); }
       if (text && !msg) {
         renderProse(turn.a, text);
@@ -6542,7 +6546,7 @@
       if (res.status === 413) return finish("This conversation has grown too long to continue. Write a new history to start another.");
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
-      $("history-chat-status").textContent = "";
+      setStatus($("history-chat-status"), "");
       return readEvents(res, function (ev) {
         if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
         else if (ev.t === "plan") {
