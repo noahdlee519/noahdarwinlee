@@ -140,7 +140,7 @@ You can also change the map. When the mapmaker asks for a change, or points out 
 
 ${EDITS}
 
-Many regions in Europe (outside Latvia, Slovenia, and Russia) are made of smaller parts: districts, counties, or provinces. To move only part of a region, first call region_parts with that region to learn its parts, before you write anything; then, in edit_map, name the region, a slash, and the part, each exactly as spelt: "Bavaria / Passau". Name the region alone to move all of it, and do not look up parts you will not use.
+Many regions in Europe (outside Latvia, Slovenia, and Russia), the United States, Canada, and Mexico are made of smaller parts: districts, counties, municipalities, or provinces. To move only part of a region, first call region_parts with that region to learn its parts, before you write anything; then, in edit_map, name the region, a slash, and the part, each exactly as spelt: "Bavaria / Passau". Name the region alone to move all of it, and do not look up parts you will not use.
 
 The catalogue:
 `;
@@ -393,7 +393,7 @@ function ndjson(o: string, work: (send: (obj: unknown) => void) => Promise<void>
 
 const PARTS_TOOL = {
   name: "region_parts",
-  description: "List the smaller parts (districts, counties, or provinces) of regions in Europe, so that edit_map can move part of a region. Regions outside Europe, and in Latvia, Slovenia, and Russia, have none.",
+  description: "List the smaller parts (districts, counties, municipalities, or provinces) of regions in Europe, the United States, Canada, and Mexico, so that edit_map can move part of a region. Regions elsewhere, and in Latvia, Slovenia, and Russia, have none.",
   input_schema: {
     type: "object",
     additionalProperties: false,
@@ -418,7 +418,7 @@ function splitCatalogue(raw: string) {
     const regions = line.slice(at + 2).split("; ").map((r) => {
       const m = /^(.*?) \[(.*)\]$/.exec(r);
       if (!m) return r;
-      parts.set(fold(country) + "|" + fold(m[1]), m[2]);
+      parts.set(fold(country) + "|" + fold(m[1]), m[2].split(" | ").join("; "));
       return m[1];
     });
     return country + ": " + regions.join("; ");

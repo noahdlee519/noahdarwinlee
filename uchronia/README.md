@@ -575,11 +575,13 @@ of `/greatercircle/`.
     of every request, so it is cached and later requests pay a tenth for it. The page matches names
     without regard to case or accents and leaves out any it cannot find.
   - In Europe (all but Latvia and Slovenia, whose regions are already
-    municipalities, and Russia) the catalogue also lists, in square brackets
-    after a region, its smaller parts: the districts of Germany, Austria,
-    Poland, Czechia, Belarus, and Ukraine from the finer regions, and the
+    municipalities, and Russia) and in the United States, Canada, and Mexico
+    the catalogue also lists, in square brackets after a region and
+    separated by " | ", its smaller parts: the districts, counties, and
+    municipalities of Germany, Austria, Poland, Czechia, Belarus, Ukraine,
+    the United States, Canada, and Mexico from the finer regions, and the
     provinces inside the regions of Italy, Malta, North Macedonia, and
-    Kosovo (1,817 parts in all). Elsewhere in Europe the regions are already
+    Kosovo (7,488 parts in all). Elsewhere in Europe the regions are already
     the smallest the map has. The function takes the brackets out before it
     sends the catalogue, so the parts cost nothing until they are wanted: in
     a conversation the historian has a second tool, `region_parts`, that
