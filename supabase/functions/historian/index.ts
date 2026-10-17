@@ -96,6 +96,7 @@ The outline:
 - title: a short title for this world, like the title of a history book.
 - declined: true only if the premise asks for something you will not write (below); then leave every other field empty.
 - summary: the history from the turning point to the map's year, in at most 150 words.
+- detail: true only if the premise explicitly asks for borders drawn by county, municipality, district, or another division below states and provinces; otherwise false.
 - new_countries: every country on the map that is not on our world's map today, named in English as it would be known in the map's year. A colony, protectorate, mandate, dominion, or vassal that the map shows apart from its ruler is a new country too; give its ruler, by its name on the map after your edits, and leave ruler empty for every country that rules itself. A subject keeps its own name and land but wears its ruler's colour.
 - renames: countries of our world that live on under another name. Use the name the country has on our world's map.
 - subjects: countries of our world whose ruler changes: one that becomes a subject of another (give the ruler by its name after your edits), or a subject that comes to rule itself (leave ruler empty). On our world's map the territories that are not sovereign, such as the Isle of Man, Greenland, Puerto Rico, and Hong Kong, are already subjects of the countries that hold them.
@@ -133,6 +134,10 @@ ${LIMITS}
 
 The catalogue of your part:
 `;
+
+const PART_DETAIL = `
+
+Some regions in the catalogue are followed, in square brackets, by their smaller parts, separated by vertical bars. Where a border you draw cuts through such a region, name the region, a slash, and the part, each exactly as spelt: "Bavaria / Passau". Everywhere else move whole regions and whole countries, and never list the parts of a region that moves whole.`;
 
 const CHAT_EDITS = `
 
@@ -219,12 +224,13 @@ function outlineSchema(ids: string[]) {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["title", "year", "declined", "summary", "new_countries", "renames", "subjects", "parts"],
+    required: ["title", "year", "declined", "summary", "detail", "new_countries", "renames", "subjects", "parts"],
     properties: {
       title: { type: "string" },
       year: { type: "integer" },
       declined: { type: "boolean" },
       summary: { type: "string" },
+      detail: { type: "boolean" },
       new_countries: PLAN_SCHEMA.properties.new_countries,
       renames: PLAN_SCHEMA.properties.renames,
       subjects: PLAN_SCHEMA.properties.subjects,
@@ -548,12 +554,13 @@ Deno.serve(async (req) => {
       return json(413, { error: "long" }, o);
     }
   }
-  let cat = "";
+  let cat = "", rawCat = "";
   let partIndex = new Map<string, string>();
   let list: Part[] = [];
   if (planning || chat) {
     try {
-      const split = splitCatalogue(await loadCatalogue());
+      rawCat = await loadCatalogue();
+      const split = splitCatalogue(rawCat);
       cat = split.plain;
       partIndex = split.parts;
       if (outlining || drawing) list = await loadParts();
@@ -579,12 +586,13 @@ Deno.serve(async (req) => {
     if (!fresh) return json(429, { error: "limit" }, o);
     const deadline = Date.now() + DEADLINE;
     const client = new Anthropic({ apiKey: key });
+    const detailed = id === "western-europe" || id === "eastern-europe" || (id === "north-america" && outline.detail === true);
     return ndjson(o, async (send) => {
       const r = await drawJSON(client, {
         model: "claude-opus-5-5",
         max_tokens: 16000,
         output_config: { effort: "low", format: { type: "json_schema", schema: PART_SCHEMA } },
-        system: [{ type: "text", text: PART(part.name) + partCatalogue(cat, part) }],
+        system: [{ type: "text", text: detailed ? PART(part.name).replace(/\n\nThe catalogue of your part:\n$/, PART_DETAIL + "\n\nThe catalogue of your part:\n") + partCatalogue(rawCat, part) : PART(part.name) + partCatalogue(cat, part) }],
         messages: [{ role: "user", content: "The premise:\n" + premise + "\n\n" + outlineText(outline, list) + "\n\nNow draw " + part.name + "." }],
       }, deadline, "part " + id);
       if (r.value) send({ t: "plan", plan: r.value, partial: r.stop !== "end_turn" });

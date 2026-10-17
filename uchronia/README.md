@@ -586,8 +586,14 @@ of `/greatercircle/`.
     sends the catalogue, so the parts cost nothing until they are wanted: in
     a conversation the historian has a second tool, `region_parts`, that
     returns the parts of the regions it names, and then names a part in
-    edit_map as "Bavaria / Passau" to move only that part. Redraws get the
-    regions alone. A province is found at once; a district needs the finer
+    edit_map as "Bavaria / Passau" to move only that part. In a redraw, the
+    mapmakers for Western and Eastern Europe always get their parts, which
+    cost little (about 3,000 and 5,300 tokens), and are told to name parts
+    only where a border cuts through a region. North America's parts (about
+    32,000 tokens of counties and municipalities) go to its mapmaker only
+    when the outline's `detail` is true, which the historian sets only when
+    the turning point explicitly asks for borders by county, municipality,
+    or district; other parts of the world get regions alone. A province is found at once; a district needs the finer
     regions, so the page loads them before it applies an edit that names
     one, and the list of changes sent with later requests names the
     districts that moved ("part of Bavaria (Passau)").
