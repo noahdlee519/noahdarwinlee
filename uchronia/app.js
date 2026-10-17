@@ -1569,8 +1569,10 @@
   function riverSpot(rv, set, ws, sp, tw, f, box, kmPx, placed) {
     var leaves = rv.leaves || (rv.leaves = leafLines(rv.lines, [])), textKm = tw / kmPx, half = textKm * 0.7, step = textKm * 0.5;
     var key = rv.name, was = riverPick.get(key);
-    function at(li, m) {
-      var L = leaves[li], c = (m + 0.5) * step;
+    function at(li, c) {
+      var L = leaves[li];
+      if (!L) return null;
+      lineKm(L);
       if (c + half > L.km[L.n - 1]) return null;
       var run = riverSpan(L, c - half, c + half, box);
       if (!run) return null;
@@ -1578,11 +1580,16 @@
       if (!g) return null;
       g.box = glyphBox(g.glyphs, f);
       if (collides(placed, g.box)) return null;
-      g.li = li; g.m = m; g.c = pointAt(run, runPx(run, c));
+      g.li = li; g.ckm = c; g.c = pointAt(run, runPx(run, c));
       return g;
     }
+    if (was && was.set !== set && was.v) {
+      var moved = nearestOn(leaves, was.v);
+      if (moved) { was = { set: set, li: moved.li, ckm: moved.ckm, step: was.step, v: was.v }; riverPick.set(key, was); }
+    }
+    if (interacting) return was && was.set === set ? at(was.li, was.ckm) : null;
     if (was && was.set === set && was.step > step * 0.8 && was.step < step * 1.25) {
-      var keep = at(was.li, was.m);
+      var keep = at(was.li, was.ckm);
       if (keep) return keep;
     }
     var best = null, mx = (box[0] + box[2]) / 2, my = (box[1] + box[3]) / 2, diag = Math.hypot(box[2] - box[0], box[3] - box[1]);
@@ -1592,13 +1599,31 @@
       lineKm(L);
       var count = Math.floor(L.km[L.n - 1] / step);
       for (var m = 0; m < count; m++) {
-        var g = at(li, m);
+        var g = at(li, (m + 0.5) * step);
         if (!g) continue;
         g.score = g.turn + Math.hypot(g.c[0] - mx, g.c[1] - my) / diag;
         if (!best || g.score < best.score) best = g;
       }
     }
-    if (best) riverPick.set(key, { set: set, li: best.li, m: best.m, step: step });
+    if (best) riverPick.set(key, { set: set, li: best.li, ckm: best.ckm, step: step, v: vecAt(leaves[best.li], best.ckm) });
+    return best;
+  }
+  function vecAt(L, km) {
+    var k = 0;
+    while (k < L.n - 2 && L.km[k + 1] < km) k++;
+    var t = L.km[k + 1] > L.km[k] ? Math.max(0, Math.min(1, (km - L.km[k]) / (L.km[k + 1] - L.km[k]))) : 0;
+    return [L.x[k] + (L.x[k + 1] - L.x[k]) * t, L.y[k] + (L.y[k + 1] - L.y[k]) * t, L.z[k] + (L.z[k + 1] - L.z[k]) * t];
+  }
+  function nearestOn(leaves, v) {
+    var best = null, bestDot = -2;
+    for (var li = 0; li < leaves.length; li++) {
+      var L = leaves[li];
+      lineKm(L);
+      for (var k = 0; k < L.n; k++) {
+        var d = L.x[k] * v[0] + L.y[k] * v[1] + L.z[k] * v[2];
+        if (d > bestDot) { bestDot = d; best = { li: li, ckm: L.km[k] }; }
+      }
+    }
     return best;
   }
   function drawRiverLabels(placed, S) {
@@ -6524,6 +6549,7 @@
     provinces: function () { return { n: nProv, name: provName, units: nUnit, unitName: unitName, unitProv: unitProv }; },
     cities: function () { return cities; },
     shownCities: function () { return cityScreen.length; },
+    riverPicks: function () { var o = {}; riverPick.forEach(function (v, k) { o[k] = [v.li, Math.round(v.ckm)]; }); return o; },
     townsLoaded: function () { return !!townsLoad; },
     project: function (lon, lat) { setupFrame(); var p = projectLL(lon, lat); return p ? [p[0], p[1]] : null; },
     provinceAt: unitAt,

@@ -227,7 +227,11 @@ of `/greatercircle/`.
   tried only at fixed places along its river, every half a name's length in
   kilometres, so it moves with the river as the map pans instead of sliding
   along it, and it keeps the place it had last time while that place is
-  still on screen and clear. The letters follow the river smoothed over a few
+  still on screen and clear. While the map is moving (a drag, a zoom, a
+  glide), no name looks for a new place: each stays at the same point on its
+  river, found again on the next set of rivers when the zoom changes set, or
+  is left out until the map settles, when every name may choose afresh. The
+  letters follow the river smoothed over a few
   letters' width, and a place where the river bends more than a letter can
   follow is passed over, so names are never squeezed into a meander.
   They are left off the whole world, so the map stays clear, and fade in
@@ -441,11 +445,11 @@ of `/greatercircle/`.
 ## Using it
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
-  **History** and three menus: **Check**, **File** (copy a link, save a file, open one, start
+  **Historian** and three menus: **Check**, **File** (copy a link, save a file, open one, start
   over) and **View** (the style, country names, names of seas, lakes, and
   rivers, settlements, small towns, region borders (every line inside the
   countries, both tiers), terrain, rivers, small lakes,
-  latitude and longitude, the scale bar, finer regions). History and the
+  latitude and longitude, the scale bar, finer regions). Historian and the
   menus each carry a caret. The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
   without the tools' names; one row without the title; the tools and *New
@@ -475,7 +479,7 @@ of `/greatercircle/`.
   canvas roughly halves the time a frame takes while dragging. What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
-- **History** opens a panel in which a historian of the map's world writes
+- **Historian** opens a panel in which a historian of the map's world writes
   how it came to look as it does: the points where its history parted from
   ours, each with a year and a cause, and what followed from them, in three
   to six eras. A note can say where the history begins or what it should
@@ -596,7 +600,7 @@ of `/greatercircle/`.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
 - The **ⓘ** button by the title opens a short note on the map, a link that
-  opens History, a link to r/uchronia, its keys, links to its sources, and,
+  opens Historian, a link to r/uchronia, its keys, links to its sources, and,
   after Privacy and Terms, a DONATE button that opens
   [ko-fi.com/noahdarwinlee](https://ko-fi.com/noahdarwinlee) in a new tab; a second click closes it.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
