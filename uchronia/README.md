@@ -599,7 +599,7 @@ of `/greatercircle/`.
     the text back. The function holds the API key, answers only this site,
     and allows 250 requests a day in all, and to each visitor 5 histories or
   redrawn maps (a redraw and its history count as two) and 20 questions
-    (the per-visitor limits are lifted until 16 October 2026, 05:00 UTC); it
+    (the per-visitor limits are lifted until 18 October 2026, 04:00 UTC, midnight in New York); it
     keeps only a daily count per visitor under a hashed key, never the map or
     the text, and deletes counts older than thirty days.
   - The function and its daily counter (`historian_usage`, with
