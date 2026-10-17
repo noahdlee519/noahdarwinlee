@@ -591,7 +591,9 @@ of `/greatercircle/`.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
 - The **ⓘ** button by the title opens a short note on the map, a link that
-  opens History, a link to r/uchronia, its keys, and links to its sources; a second click closes it.
+  opens History, a link to r/uchronia, its keys, links to its sources, and,
+  after Privacy and Terms, a DONATE button that opens
+  [ko-fi.com/noahdarwinlee](https://ko-fi.com/noahdarwinlee) in a new tab; a second click closes it.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
   type, colours and, in Antique, its paper), shown after a moment's hover or
   on keyboard focus, never on a touch screen; the same words are given to
