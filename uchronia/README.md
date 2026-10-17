@@ -391,6 +391,11 @@ of `/greatercircle/`.
     inputs.
 - **data/cities.json**: the cities as `[name, lon, lat, size, capital]`.
   - The first 550 are greatercircle's.
+  - The place list had Ironville, Kentucky, a community of 782 people, at
+    288,649, which made it a city on the map. The list now gives 782, and the
+    map's entry for it was replaced in place, at the same index so saved maps
+    still line up, by Huntington, West Virginia (49,000), the nearby city it
+    had crowded out; Huntington left the small towns' list.
   - The next 500 are the largest of its place list, picked greedily with each
     country's share damped and none within 45 km of another.
   - The last 2,000 are towns of at least 15,000 people from the same list,
