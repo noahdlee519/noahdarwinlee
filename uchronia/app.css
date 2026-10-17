@@ -244,6 +244,9 @@ body.uc-page {
 .uc-page .back-link {
   margin: 0;
 }
+.uc-page .name {
+  line-height: normal;
+}
 
 .uc-globe {
   position: fixed;
