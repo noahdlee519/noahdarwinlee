@@ -877,16 +877,19 @@
     for (var i = 0; i < vis.length; i++) traceFeature(ctx, vis[i].shape.f);
     ctx.clip("evenodd");
   }
-  function clipToLand(vis, lvl) {
+  function traceLand(c, vis, lvl) {
     var units = new Set(), seen = new Set(), F = feats[lvl];
     vis.forEach(function (p) {
       var cand = shapeCand(p.shape);
       for (var i = 0; i < cand.length; i++) { units.add(cand[i]); seen.add(owner[cand[i]] >= 0 ? owner[cand[i]] : UNCLAIMED); }
     });
+    c.beginPath();
+    if (units.size <= 120) units.forEach(function (u) { traceFeature(c, F[u]); });
+    else seen.forEach(function (o) { traceFeature(c, shapeOf(o, lvl)); });
+  }
+  function clipToLand(vis, lvl) {
     ctx.save();
-    ctx.beginPath();
-    if (units.size <= 120) units.forEach(function (u) { traceFeature(ctx, F[u]); });
-    else seen.forEach(function (o) { traceFeature(ctx, shapeOf(o, lvl)); });
+    traceLand(ctx, vis, lvl);
     ctx.clip();
   }
   function satTint() { return pal.antique ? 0.45 : 0.22; }
@@ -939,7 +942,7 @@
     main.drawImage(cv, 0, 0);
     main.restore();
   }
-  function drawPieceFills(vis, lvl, satellite, satLand, relPat) {
+  function drawPieceFills(vis, lvl, satellite, satLand, relPat, bl) {
     clipToLand(vis, lvl);
     ctx.globalAlpha = satellite ? satTint() : 1;
     var byOwner = new Map();
@@ -960,7 +963,7 @@
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
     });
     ctx.globalAlpha = 1;
-    drawPieceBands(vis, satellite, arcLines[lvl]);
+    drawPieceBands(vis, arcLines[lvl], bl, lvl);
     drawPieceHover(vis);
     var c = currentCountry();
     if (c >= 0 && ui.tool === "select" && !ui.city) {
@@ -969,37 +972,61 @@
       ctx.fillStyle = pal["select-fill"]; ctx.fill();
     }
     ctx.restore();
+    if (bl) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = satellite ? 0.45 : 0.6;
+      ctx.drawImage(bandCanvas, 0, 0);
+      ctx.restore();
+    }
   }
-  function drawPieceBands(vis, satellite, L) {
+  var bandCanvas = document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d");
+  function bandLayer() {
+    if (bandCanvas.width !== canvas.width || bandCanvas.height !== canvas.height) { bandCanvas.width = canvas.width; bandCanvas.height = canvas.height; }
+    var b = bandCtx;
+    b.setTransform(1, 0, 0, 1, 0, 0);
+    b.globalAlpha = 1; b.globalCompositeOperation = "source-over";
+    b.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
+    b.setTransform(ctx.getTransform());
+    b.lineJoin = "round"; b.lineCap = "round";
+    return b;
+  }
+  function drawPieceBands(vis, L, bl, lvl) {
     var bw = bandWidth(localScale());
-    if (!bw) return;
-    ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.lineWidth = bw * 2;
-    ctx.globalAlpha = satellite ? 0.45 : 0.6;
+    if (!bw || !bl) return;
+    bl.save();
+    bl.globalCompositeOperation = "destination-out";
+    bl.beginPath(); vis.forEach(function (p) { traceFeature(bl, p.shape.f); }); bl.fill();
+    bl.restore();
+    bl.save();
+    traceLand(bl, vis, lvl);
+    bl.clip();
+    bl.lineWidth = bw * 2;
     vis.forEach(function (p) {
       var e = pieceEdges(p), o = p.owner;
       if (o >= 0 && countries[o]) {
-        ctx.save();
-        ctx.beginPath(); traceFeature(ctx, p.shape.f); ctx.clip();
-        ctx.beginPath(); e.borders.forEach(function (b) { traceArc(ctx, b); });
-        shapeCand(p.shape).forEach(function (u) { coastOf(u).forEach(function (a) { traceArc(ctx, L[a]); }); });
-        ctx.strokeStyle = bandOf(o); ctx.stroke();
-        ctx.restore();
+        bl.save();
+        bl.beginPath(); traceFeature(bl, p.shape.f); bl.clip();
+        bl.beginPath(); e.borders.forEach(function (b) { traceArc(bl, b); });
+        shapeCand(p.shape).forEach(function (u) { coastOf(u).forEach(function (a) { traceArc(bl, L[a]); }); });
+        bl.strokeStyle = bandOf(o); bl.stroke();
+        bl.restore();
       }
       if (!e.next) {
         e.next = new Map();
         e.rings.forEach(function (r) { r.out.forEach(function (n) { if (n !== SEA && n !== o && n >= 0 && !e.next.has(n)) e.next.set(n, edgeRuns(e, function (x) { return x === n; })); }); });
       }
       if (!e.next.size) return;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(-10, -10, W + 20, H + 20); traceFeature(ctx, p.shape.f); ctx.clip("evenodd");
+      bl.save();
+      bl.beginPath(); bl.rect(-10, -10, W + 20, H + 20); traceFeature(bl, p.shape.f); bl.clip("evenodd");
       e.next.forEach(function (runs, n) {
         if (!countries[n]) return;
-        ctx.beginPath(); runs.forEach(function (b) { traceArc(ctx, b); });
-        ctx.strokeStyle = bandOf(n); ctx.stroke();
+        bl.beginPath(); runs.forEach(function (b) { traceArc(bl, b); });
+        bl.strokeStyle = bandOf(n); bl.stroke();
       });
-      ctx.restore();
+      bl.restore();
     });
-    ctx.globalAlpha = 1; ctx.lineCap = "butt";
+    bl.restore();
   }
   function drawPieceHover(vis) {
     var u = ui.hover, hp = ui.hoverPiece;
@@ -1320,7 +1347,7 @@
     var vis = visiblePieces(), cutFills = vis && satellite;
     if (cutFills) clipOutPieces(vis);
     ctx.globalAlpha = satellite ? satTint() : 1;
-    var bandW = bandWidth(S);
+    var bandW = bandWidth(S), bl = vis && bandW ? bandLayer() : null;
     if (satLand) {
       groups.forEach(function (gr) { punch(function () { for (var i = 0; i < gr.countries.length; i++) traceFeature(ctx, shapeOf(gr.countries[i], lvl)); }); });
       if (unclaimedUnits.length) punch(function () { traceFeature(ctx, shapeOf(UNCLAIMED, lvl)); });
@@ -1331,7 +1358,13 @@
       for (var i = 0; i < list.length; i++) traceFeature(ctx, shapeOf(list[i], lvl));
       ctx.fillStyle = satLand ? washed(groups[g].fill) : groups[g].fill; ctx.fill();
       shade(relPat);
-      if (bandW && groups[g].band) {
+      if (bl && groups[g].band) {
+        bl.save();
+        bl.beginPath(); for (i = 0; i < list.length; i++) traceFeature(bl, shapeOf(list[i], lvl)); bl.clip();
+        bl.beginPath(); traceArcs(bl, L, bandArcsOf(g));
+        bl.strokeStyle = groups[g].band; bl.lineWidth = bandW * 2; bl.stroke();
+        bl.restore();
+      } else if (bandW && groups[g].band) {
         ctx.save(); ctx.clip();
         ctx.beginPath(); traceArcs(ctx, L, bandArcsOf(g));
         ctx.globalAlpha = satellite ? 0.45 : 0.6;
@@ -1354,7 +1387,7 @@
     drawSelectionFill(F, lvl);
     mark("overlays");
 
-    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat); }
+    if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat, bl); }
     drawLakes(S, satellite);
     var ua = ui.fine && ui.regionLines ? clamp01((S - 700) / 500) : 0, pa = ui.regionLines ? provAlpha(S) : 0;
     if (vis) clipOutPieces(vis);
@@ -1462,6 +1495,11 @@
     if (!set || !ui.rivers || fade <= 0) return;
     var byRank = set.byRank, top = Math.min(byRank.length - 1, riverRank(S)), w = Math.max(0.6, Math.min(1.5, S / 700));
     ctx.save();
+    if (lakesShown.length) {
+      ctx.beginPath(); ctx.rect(-10, -10, W + 20, H + 20);
+      lakesShown.forEach(function (f) { traceFeature(ctx, f); });
+      ctx.clip("evenodd");
+    }
     ctx.globalAlpha = fade;
     ctx.strokeStyle = pal.river; ctx.lineJoin = "round"; ctx.lineCap = "round";
     for (var r = 1; r <= top; r++) {
@@ -2225,7 +2263,9 @@
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
   var lakes = null, lakesLoad = null, LAKES_FROM = 650, SMALL_LAKE = 500, lakesDrawn = 0;
   function lakeKmPx(S) { return (flat ? FB.k : S) / R_KM; }
+  var lakesShown = [];
   function drawLakes(S, satellite) {
+    lakesShown = [];
     if (S < LAKES_FROM) return;
     if (!lakesLoad) lakesLoad = fetchJSON("data/lakes.json").then(function (rows) {
       lakes = rows.map(function (r) {
@@ -2243,7 +2283,7 @@
       if (Math.sqrt(L.km2) * kp < 2.5 || (!ui.lakes && L.km2 < SMALL_LAKE)) break;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi), r = L.reach * kp;
       if (!p || p[0] + r < 0 || p[0] - r > W || p[1] + r < 0 || p[1] - r > H) continue;
-      traceFeature(ctx, L.f); any = true; lakesDrawn++;
+      traceFeature(ctx, L.f); any = true; lakesDrawn++; lakesShown.push(L.f);
     }
     if (!any) return;
     ctx.save();
@@ -2736,7 +2776,7 @@
     if (name.indexOf(" ") > 0) layouts.push(bestSplit(name));
     var capital = capitalAt && capitalAt.get(c), home = null;
     if (capital) { var hq = proj([capital.lon, capital.lat]); if (hq && isFinite(hq[0])) home = [hq[0], -hq[1]]; }
-    function search(rs) {
+    function search(rs, all) {
       var axis = principalAxis(rs[0]);
       var angles = [0];
       if (axis.elong > 2.1 && Math.abs(axis.angle) > 0.25) angles.push(axis.angle);
@@ -2754,10 +2794,10 @@
           pl = placeLabel(sq, dmax, aspect, pl, avoid);
           var fkm = Math.SQRT2 * pl[2] / lh * 0.9;
           var score = Math.SQRT2 * Math.min(dmax, pl[2] / CENTRE_KEEP) / lh * 0.9 * (ang ? 0.62 : 1) * (lines.length > 1 ? 0.88 : 1);
-          if (!best0 || score > best0.score) {
-            var xr = pl[0] * aspect, yr = pl[1];
-            best0 = { score: score, fkm: fkm, lines: lines, ang: ang, uw: uw, lh: lh, x: xr * cs - yr * sn, y: xr * sn + yr * cs };
-          }
+          var xr = pl[0] * aspect, yr = pl[1];
+          var rec = { score: score, fkm: fkm, lines: lines, ang: ang, uw: uw, lh: lh, x: xr * cs - yr * sn, y: xr * sn + yr * cs };
+          if (all) all.push(rec);
+          if (!best0 || score > best0.score) best0 = rec;
         });
       });
       return best0;
@@ -2778,14 +2818,73 @@
       setLabel(co, cen[0], cen[1], 4, [name], 0, bestA * R_KM * R_KM, ext);
       return;
     }
-    var ll = proj.invert([top.x, -top.y]);
-    setLabel(co, ll[0], ll[1], top.fkm, top.lines, top.ang, bestA * R_KM * R_KM, ext);
-    co.label.sea = shape !== rings;
-    var local = { lines: top.lines, ang: top.ang, fkm: top.fkm, x: top.x - shift[0], y: top.y - shift[1] };
-    var bent = pal.antique && !UNBENDABLE.test(name) ? bendLabel(shape, local, cen[1], home ? [home[0] - shift[0], home[1] - shift[1]] : null) : null;
+    function spotNear(rs, lines, ang, tx, ty) {
+      var uw = 0;
+      lines.forEach(function (l) { uw = Math.max(uw, unitWidth(l)); });
+      var lh = CAP_H + LINE_H * (lines.length - 1), aspect = Math.max(0.5, uw / lh), cs = Math.cos(ang), sn = Math.sin(ang);
+      var turn = function (q) { var x = q[0] - tx, y = q[1] - ty; return [(x * cs + y * sn) / aspect, -x * sn + y * cs]; };
+      var sq = rs.map(function (ring) { return ring.map(turn); });
+      var pl = polylabel(sq);
+      if (!(pl[2] > 0)) return null;
+      var at = nearCentre(sq, pl[2] * 0.55, aspect, pl, home ? turn(home) : null, pl[2]);
+      if (!at) return null;
+      var xr = at[0] * aspect, yr = at[1];
+      return { score: 0, fkm: Math.SQRT2 * at[2] / lh * 0.9, lines: lines, ang: ang, uw: uw, lh: lh, x: xr * cs - yr * sn + tx, y: xr * sn + yr * cs + ty };
+    }
+    function bendFor(t, sh, sf) {
+      var local = { lines: t.lines, ang: t.ang, fkm: t.fkm, x: t.x - sf[0], y: t.y - sf[1] };
+      var b = bendLabel(sh, local, cen[1], home ? [home[0] - sf[0], home[1] - sf[1]] : null);
+      if (!b) return null;
+      b.x += sf[0]; b.y += sf[1];
+      b.arc = b.arc.map(function (q) { return [q[0] + sf[0], q[1] + sf[1]]; });
+      return b;
+    }
+    function sameSpot(a, b) {
+      return a.lines.length === b.lines.length && Math.abs(a.ang - b.ang) < 0.1 && Math.hypot(a.x - b.x, a.y - b.y) < 0.4 * Math.min(a.uw * a.fkm, b.uw * b.fkm);
+    }
+    var bent0 = pal.antique && !UNBENDABLE.test(name) ? bendFor(top, shape, shift) : null;
+    var cands = [{ t: top, shape: shape, bent: bent0 }], want = isInt(co.spot) && co.spot > 0 ? co.spot : 0;
+    if (want) {
+      if (bent0) cands.push({ t: top, shape: shape, bent: null });
+      var more = [];
+      search(rings, more);
+      (top.ang ? [0, top.ang] : [0]).forEach(function (ang) {
+        var cs = Math.cos(ang), sn = Math.sin(ang), x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        rings[0].forEach(function (q) {
+          var x = q[0] * cs + q[1] * sn, y = -q[0] * sn + q[1] * cs;
+          x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        });
+        layouts.forEach(function (lines) {
+          [[0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3], [0.25, 0.25], [-0.25, 0.25], [0.25, -0.25], [-0.25, -0.25]].forEach(function (k) {
+            var u = (x0 + x1) / 2 + k[0] * (x1 - x0), v = (y0 + y1) / 2 + k[1] * (y1 - y0);
+            var t = spotNear(rings, lines, ang, u * cs - v * sn, u * sn + v * cs);
+            if (t) more.push(t);
+          });
+        });
+      });
+      coords.filter(function (poly) { return poly !== best; }).map(function (poly) {
+        var a = d3.geoArea({ type: "Polygon", coordinates: poly });
+        return { poly: poly, a: a > TAU ? 2 * TAU - a : a };
+      }).filter(function (q) { return q.a > 0.12 * bestA && d3.geoDistance(d3.geoCentroid({ type: "Polygon", coordinates: q.poly }), proj.invert([top.x, -top.y])) * R_KM < 2500; }).sort(function (a, b) { return b.a - a.a; }).slice(0, 2).forEach(function (q) {
+        var prs = q.poly.map(function (ring) { return ring.map(function (pt) { var r = proj(pt); return [r[0], -r[1]]; }); });
+        search(prs, more);
+      });
+      var most = 0;
+      more.forEach(function (t) { most = Math.max(most, t.fkm); });
+      more.filter(function (t) { return t.fkm >= 0.4 * Math.min(top.fkm, most); }).sort(function (a, b) { return b.fkm - a.fkm; }).forEach(function (t) {
+        if (cands.length >= 8) return;
+        if (cands.some(function (q) { return sameSpot(q.t, t); })) return;
+        if (foreignShare(t, proj, c) >= 0.06) return;
+        cands.push({ t: t, shape: rings, bent: null });
+      });
+    }
+    var pick = cands[want % cands.length];
+    var ll = proj.invert([pick.t.x, -pick.t.y]);
+    setLabel(co, ll[0], ll[1], pick.t.fkm, pick.t.lines, pick.t.ang, bestA * R_KM * R_KM, ext);
+    co.label.sea = pick.shape !== rings;
+    co.label.spots = want ? cands.length : 0;
+    var bent = pick.bent;
     if (!bent) return;
-    bent.x += shift[0]; bent.y += shift[1];
-    bent.arc = bent.arc.map(function (q) { return [q[0] + shift[0], q[1] + shift[1]]; });
     var bl = proj.invert([bent.x, -bent.y]);
     co.label.bent = { v: toVec(bl[0], bl[1]), lam: bl[0] * D2R, phi: bl[1] * D2R, fkm: bent.fkm, arc: bent.arc.map(function (q) {
       var g = proj.invert([q[0], -q[1]]);
@@ -3692,6 +3791,10 @@
       ensureCountry(op.c);
       countries[op.c].lines = back ? op.from : op.to;
       arcsDirty = true;
+    } else if (op.t === "spot") {
+      ensureCountry(op.c);
+      countries[op.c].spot = back ? op.from : op.to;
+      queueLabels([op.c]);
     } else if (op.t === "city") {
       v = back ? op.from : op.to;
       setCityState(op.id, v);
@@ -4111,6 +4214,23 @@
     pushStep(label, [{ t: "lines", c: c, from: was, to: lines }]);
     changed();
   }
+  function moveName(c) {
+    var co = countries[c];
+    if (!co || !co.alive) return;
+    var was = isInt(co.spot) ? co.spot : 0;
+    freshGroups();
+    co.spot = was + 1;
+    try { computeLabel(c); } catch (e) { co.spot = was; queueLabels([c]); return; }
+    var n = co.label && co.label.spots || 1;
+    if (co.spot >= n) {
+      co.spot = 0;
+      try { computeLabel(c); } catch (e) { co.label = null; }
+    }
+    sortLabels();
+    if (co.spot === was) { scheduleRender(); toast(co.name + "’s name has no other place that fits"); return; }
+    editStep("spot" + c, "Moving the name of " + co.name, { t: "spot", c: c, from: was, to: co.spot });
+    changed();
+  }
   function citySnapshot(c) { return { name: c.name, lon: c.lon, lat: c.lat, tier: c.tier, cap: c.cap }; }
   function cityById(id) { return cityIndex.get(id) || null; }
   function placeCity(c, lon, lat) {
@@ -4282,6 +4402,7 @@
       if (subjectVersion !== countriesVersion + "/" + ownerVersion || +$("subject-pick").dataset.c !== c) fillSubjectPick(c);
       $("paint-with").hidden = ui.tool !== "select";
       $("dissolve").hidden = !land;
+      $("move-name").hidden = ui.tool !== "select" || !land || !ui.countryNames || !countries[c].label;
       syncCountryPick(c);
     }
     var r0 = ui.region, pc0 = ui.tool === "select" && !ui.city ? ui.piece : null;
@@ -4455,6 +4576,7 @@
   });
   $("paint-with").addEventListener("click", function () { ui.erase = false; setTool("paint"); });
   $("dissolve").addEventListener("click", function () { var c = currentCountry(); if (c >= 0) dissolve(c); });
+  $("move-name").addEventListener("click", function () { var c = currentCountry(); if (c >= 0) moveName(c); });
   $("remove-piece").addEventListener("click", function () { if (ui.piece) removePiece(ui.piece); });
   $("land-to").addEventListener("click", function () { ui.erase = false; renderPanel(); scheduleRender(); });
   $("brush-lasso").addEventListener("click", function () { setTool("draw"); });
@@ -4697,7 +4819,7 @@
     return { name: name, lon: row[1], lat: row[2], tier: tier, cap: row[4] ? 1 : 0 };
   }
   function round4(x) { return Math.round(x * 1e4) / 1e4; }
-  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r"];
+  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r", "n"];
   function encodePolys(polys) {
     return polys.map(function (poly) {
       return poly.map(function (ring) {
@@ -4805,6 +4927,9 @@
     var ls = [];
     countries.forEach(function (c, i) { if (c.alive && c.lines) ls.push([i, c.lines]); });
     if (ls.length) d.l = ls;
+    var ns = [];
+    countries.forEach(function (c, i) { if (c.alive && isInt(c.spot) && c.spot > 0) ns.push([i, c.spot]); });
+    if (ns.length) d.n = ns;
     var rs = [];
     countries.forEach(function (c, i) {
       var r = isInt(c.ruler) ? c.ruler : -1, b = base.countries[i], br = b ? b.ruler : -1;
@@ -4865,6 +4990,11 @@
       if (!Array.isArray(row) || !isInt(row[1]) || row[1] < 1 || row[1] > 3) return;
       var i = ownerOf(row[0]);
       if (i !== null && i >= 0 && countries[i]) countries[i].lines = row[1];
+    });
+    if (Array.isArray(d.n)) d.n.slice(0, nb + MAX_NEW).forEach(function (row) {
+      if (!Array.isArray(row) || !isInt(row[1]) || row[1] < 1 || row[1] > 7) return;
+      var i = ownerOf(row[0]);
+      if (i !== null && i >= 0 && countries[i]) countries[i].spot = row[1];
     });
     if (Array.isArray(d.r)) d.r.slice(0, nb + MAX_NEW).forEach(function (row) {
       if (!Array.isArray(row)) return;
@@ -6281,7 +6411,7 @@
   }
   var askMode = "map", busyKind = "";
   var MODES = {
-    map: { hint: "", hold: "Optional: where it begins, or what to stress", go: "Write its history", label: "A note for the historian" },
+    map: { hint: "", hold: "Optional: add additional context about the map you've made", go: "Write its history", label: "A note for the historian" },
     turn: { hint: "The historian redraws the world from your turning point, then writes its history.", hold: "What if Rome never fell? (a year is welcome)", go: "Redraw the map", label: "A turning point" }
   };
   function setMode(m) {

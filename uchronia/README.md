@@ -85,7 +85,11 @@ of `/greatercircle/`.
     - pale washes inside each country, with a stronger band of its colour
       along its borders and coasts (the arcs on its edge, stroked twice as
       wide and clipped to the country, and thinner on a small map); the
-      colour buttons show the same wash and band. The eighth colour is a
+      colour buttons show the same wash and band. When borders drawn by hand
+      are on screen, every band is first painted at full strength on a layer
+      of its own, where bands that meet cover one another, and the layer is
+      laid on the map once at the bands' transparency, so two bands meeting
+      never darken each other; The eighth colour is a
       violet rather than the teal of the other styles, and the sea a deeper
       grey-green, so that no land is tinted like the sea;
     - the sea in two tones, as on old charts: the grey-green over the
@@ -174,6 +178,16 @@ of `/greatercircle/`.
     each letter is set along it.
   - In Antique, a name too small to read at its full letter spacing is set
     tighter, and so a little larger, rather than left out.
+  - *Move its name*, in the country pane, steps through other places for the
+    name, up to eight in all, and back to the first. In Antique the second is
+    the first set straight. The rest are the other layouts and angles tried
+    above, the nearest place to each of eight points around the piece
+    (left, right, above, below, and the four corners) where a name at least
+    55% of the size that fits there will go, and the two next largest pieces
+    within 2,500 km of the name. Places smaller than two fifths of the
+    largest, places that overlap another country's land, and places close
+    to one already listed are left out. Presses in quick succession are one
+    undo step.
   - Labels are drawn largest country first and skipped where their turned
     boxes would overlap, or would run under the scale bar, the map buttons or
     (on a phone) the site's name. They are worked out again in 14 ms slices after each
@@ -221,7 +235,9 @@ of `/greatercircle/`.
   under their borders: the largest (the Amazon, the Nile, the Yangtze) from
   the whole globe, and smaller ones in nine steps as the map is zoomed in;
   past about 3.5 times zoom a more detailed set, with the smaller rivers and
-  more than twice the points per river, is loaded and drawn instead. Their
+  more than twice the points per river, is loaded and drawn instead. Where
+  a lake is drawn, the rivers are cut out of it, so a river that runs
+  through a reservoir stops at its shore and starts again past it. Their
   names are set in italic beside them, letter by letter, from the largest
   down as the zoom allows, giving way to country and city names. A name is
   tried only at fixed places along its river, every half a name's length in
@@ -273,8 +289,9 @@ of `/greatercircle/`.
   one step, and typing a name is one step however many keys it takes.
 - **Saving.** The map is kept as its difference from the world as it is:
   - countries renamed, recoloured, or founded, those whose inner borders
-    are hidden (`l`), and those whose ruler differs from our world's (`r`,
-    each country with its ruler, or -1 for none);
+    are hidden (`l`), those whose ruler differs from our world's (`r`,
+    each country with its ruler, or -1 for none), and those whose name was
+    moved (`n`, each country with the place it was moved to);
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
   - cities deleted, changed, or added;
@@ -631,7 +648,7 @@ of `/greatercircle/`.
   on keyboard focus, never on a touch screen; the same words are given to
   screen readers as the button's description.
 - **Select (V)**: click a country to rename or recolour it, make it a
-  subject of another, show or hide its
+  subject of another, move its name, show or hide its
   regions' lines (*Tier 1*, the lines between its states, provinces, and
   regions; *Tier 2*, the finer lines inside them; a tier it has none of is
   greyed out, and hidden tiers stay hidden inside land drawn for it). With
