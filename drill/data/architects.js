@@ -107,7 +107,7 @@ window.DRILL_DATA.architects = [
     ],
     works: [
       { title: "Tempio Malatestiano", year: "c. 1450–68", place: "Rimini, Italy", note: "Medieval church remodeled for the lord Sigismondo Malatesta, wrapped in a Roman-inspired marble shell; left unfinished." },
-      { title: "Façade of Santa Maria Novella", year: "1470", place: "Florence, Italy", note: "Completion of a Gothic church front in green and white marble, using great scrolls to link the narrow upper story to the wide lower one." },
+      { title: "Façade of Santa Maria Novella", year: "c. 1456–70", place: "Florence, Italy", note: "Completion of a Gothic church front in green and white marble, using great scrolls to link the narrow upper story to the wide lower one." },
       { title: "Sant’Andrea", year: "begun 1472", place: "Mantua, Italy", note: "Church with a single barrel-vaulted nave flanked by chapels, its façade fusing a temple front with a triumphal arch." },
       { title: "Palazzo Rucellai", year: "c. 1446–51", place: "Florence, Italy", note: "Palace façade with superimposed classical pilasters across three stories, the first such use on a Renaissance town house." }
     ],
@@ -130,7 +130,7 @@ window.DRILL_DATA.architects = [
       "Became chief architect to Pope Julius II, who laid a foundation stone of the new basilica in 1506."
     ],
     ideas: [
-      { term: "Centralized plan", text: "Favored symmetrical churches arranged around a central dome, which humanists saw as an image of divine perfection." },
+      { term: "Centralized plan", text: "Favored domed churches on circular or Greek-cross plans, images of divine perfection, an ideal he shared with Leonardo in Milan." },
       { term: "Illusionistic perspective", text: "Faked a deep choir in a cramped Milan church with a shallow relief built in forced perspective." }
     ],
     works: [
@@ -181,7 +181,7 @@ window.DRILL_DATA.architects = [
     facts: [
       "Born in Padua, the son of a miller, and trained as a stonemason.",
       "His humanist patron, Gian Giorgio Trissino, gave him the classical name by which he is known.",
-      "Built mostly in and around Vicenza and Venice; his works there are a UNESCO World Heritage Site.",
+      "Built mostly in and around Vicenza and Venice; Vicenza and his villas in the Veneto form a UNESCO World Heritage Site.",
       "Illustrated an edition of Julius Caesar’s Commentaries and wrote a guidebook to the antiquities of Rome."
     ],
     ideas: [
@@ -348,7 +348,7 @@ window.DRILL_DATA.architects = [
     facts: [
       "Was Savilian Professor of Astronomy at Oxford before turning to architecture.",
       "A founding member of the Royal Society in 1660.",
-      "Designed some fifty new churches for the City of London after the Great Fire of 1666.",
+      "His office rebuilt some fifty City of London parish churches after the Great Fire of 1666.",
       "His epitaph in his cathedral reads, in Latin, “Reader, if you seek his monument, look around you.”"
     ],
     ideas: [
@@ -384,7 +384,7 @@ window.DRILL_DATA.architects = [
       { term: "Plantation villa", text: "Adapted the Italian farm villa to a Virginia plantation, tucking kitchens, stables, and service rooms beneath terraces out of sight." }
     ],
     works: [
-      { title: "Monticello", year: "1772–1809", place: "Charlottesville, United States", note: "His hilltop plantation house, rebuilt over decades with a low dome and porticoes; it was worked by enslaved people." },
+      { title: "Monticello", year: "1769–1809", place: "Charlottesville, United States", note: "His hilltop plantation house, rebuilt over decades with a low dome and porticoes; it was worked by enslaved people." },
       { title: "Academical Village", year: "1817–26", place: "Charlottesville, United States", note: "University of Virginia campus of professors’ pavilions and student rooms on a terraced lawn, closed by a domed library modeled on the Pantheon at half scale." },
       { title: "Virginia State Capitol", year: "1785–88", place: "Richmond, United States", note: "Temple-form capitol modeled on a Roman temple at Nîmes, designed with Charles-Louis Clérisseau." }
     ],
@@ -411,7 +411,7 @@ window.DRILL_DATA.architects = [
       { term: "Stripped classicism", text: "Reduced the classical orders to incised lines and shallow planes, an abstraction that later architects saw as proto-modern." }
     ],
     works: [
-      { title: "Bank of England", year: "1788–1833", place: "London, England", note: "Banking halls lit from above by domes and lanterns inside a windowless screen wall; largely demolished in the 1920s." },
+      { title: "Bank of England", year: "1788–1833", place: "London, England", note: "Banking halls lit from above by domes and lanterns inside a windowless screen wall; largely demolished between the world wars." },
       { title: "Dulwich Picture Gallery", year: "1811–17", place: "London, England", note: "The first purpose-built public art gallery in England, with top-lit rooms and a mausoleum for its founders." },
       { title: "Pitzhanger Manor", year: "1800–04", place: "London, England", note: "Country villa in Ealing that he rebuilt for himself, with a triumphal-arch front." }
     ],
@@ -446,6 +446,33 @@ window.DRILL_DATA.architects = [
     quotes: []
   },
 
+  {
+    id: "pugin",
+    name: "A. W. N. Pugin",
+    born: 1812,
+    dates: "1812–1852",
+    place: "England",
+    group: "premodern",
+    tag: "Gothic Revival",
+    blurb: "Passionate English designer and polemicist who championed Gothic as the only true Christian architecture and designed the interiors of the Houses of Parliament.",
+    facts: [
+      "Son of a French émigré architectural draftsman.",
+      "Converted to Roman Catholicism in 1835.",
+      "Drew the design for London’s most famous clock tower in 1852, months before a breakdown and his death at forty.",
+      "Designed the Medieval Court at the Great Exhibition of 1851."
+    ],
+    ideas: [
+      { term: "Contrasts", text: "Illustrated book of 1836 pairing noble medieval towns and buildings with mean modern ones, arguing that Gothic reflected a healthier, Christian society." },
+      { term: "Truth to structure", text: "Insisted that ornament should enrich a building’s essential construction rather than disguise it, a principle later echoed by modernists." }
+    ],
+    works: [
+      { title: "Palace of Westminster", year: "1840–70", place: "London, England", note: "Houses of Parliament planned by Charles Barry, for which he designed the Gothic interiors, furniture, fittings, and clock tower." },
+      { title: "St Giles’ Catholic Church", year: "1841–46", place: "Cheadle, England", note: "Parish church with a tall spire, its interior entirely covered in painted stencil decoration and tiles." },
+      { title: "St Augustine’s Church", year: "1845–52", place: "Ramsgate, England", note: "Flint church he built and paid for himself beside his home on the Kent coast; he is buried there." }
+    ],
+    quotes: ["There should be no features about a building which are not necessary for convenience, construction, or propriety."]
+  },
+
   /* ===================== Turn of the century (c. 1850–1918) ===================== */
 
   {
@@ -472,34 +499,7 @@ window.DRILL_DATA.architects = [
       { title: "Restoration of Carcassonne", year: "from 1853", place: "Carcassonne, France", note: "Rebuilding of the walled medieval city’s ramparts and towers, criticized for its northern-style slate conical roofs." },
       { title: "Château de Pierrefonds", year: "1857–85", place: "Pierrefonds, France", note: "Ruined castle rebuilt for Napoleon III as an idealized medieval fortress-residence." }
     ],
-    quotes: ["To restore a building is not to preserve it, to repair it, or to rebuild it; it is to reinstate it in a condition of completeness that could never have existed at any given time."]
-  },
-
-  {
-    id: "pugin",
-    name: "A. W. N. Pugin",
-    born: 1812,
-    dates: "1812–1852",
-    place: "England",
-    group: "turn-of-century",
-    tag: "Gothic Revival",
-    blurb: "Passionate English designer and polemicist who championed Gothic as the only true Christian architecture and designed the interiors of the Houses of Parliament.",
-    facts: [
-      "Son of a French émigré architectural draftsman.",
-      "Converted to Roman Catholicism in 1835.",
-      "Drew the design for London’s most famous clock tower in 1852, shortly before his final breakdown.",
-      "Suffered a breakdown and died in 1852 at forty."
-    ],
-    ideas: [
-      { term: "Contrasts", text: "Illustrated book of 1836 pairing noble medieval towns and buildings with mean modern ones, arguing that Gothic reflected a healthier, Christian society." },
-      { term: "Truth to structure", text: "Insisted that ornament should enrich a building’s essential construction rather than disguise it, a principle later echoed by modernists." }
-    ],
-    works: [
-      { title: "Palace of Westminster", year: "1840–70", place: "London, England", note: "Houses of Parliament planned by Charles Barry, for which he designed the Gothic interiors, furniture, fittings, and clock tower." },
-      { title: "St Giles’ Catholic Church", year: "1841–46", place: "Cheadle, England", note: "Parish church with a tall spire, its interior entirely covered in painted stencil decoration and tiles." },
-      { title: "St Augustine’s Church", year: "1845–52", place: "Ramsgate, England", note: "Flint church he built and paid for himself beside his home on the Kent coast; he is buried there." }
-    ],
-    quotes: ["There should be no features about a building which are not necessary for convenience, construction, or propriety."]
+    quotes: ["To restore a building is not to preserve it, to repair it, or to rebuild it; it is to reinstate it in a condition of completeness that may never have existed at any given time."]
   },
 
   {
@@ -681,12 +681,12 @@ window.DRILL_DATA.architects = [
     blurb: "Glasgow architect and designer who blended Scottish baronial tradition, Art Nouveau, and Japanese influence into a distinctive, proto-modern style.",
     facts: [
       "Exhibited as one of “The Four” with his wife Margaret Macdonald, her sister Frances, and Herbert MacNair.",
-      "His masterpiece was gutted by fires in 2014 and again in 2018.",
+      "His masterpiece was badly damaged by fire in 2014 and gutted by a second fire in 2018.",
       "Gave up architecture late in life and painted watercolors in southern France.",
       "Designed high-backed chairs that became icons of the Glasgow Style."
     ],
     ideas: [
-      { term: "Total design", text: "Designed every element of an interior, from walls and lights to furniture, cutlery, and stencils, as a single work of art." },
+      { term: "Total design", text: "Designed every element of an interior, from stencils and light fittings to furniture and cutlery, often with gesso panels by his wife." },
       { term: "Rose motif", text: "Used a stylized Glasgow rose, with grids of small squares and tall verticals, as a signature decorative language." }
     ],
     works: [
@@ -860,7 +860,7 @@ window.DRILL_DATA.architects = [
       "Designed more than 1,000 works, about half of them built."
     ],
     ideas: [
-      { term: "Organic architecture", text: "Sought harmony between a building, its site, and its occupants, with structure, materials, and furnishings growing from one idea." },
+      { term: "Organic architecture", text: "Extended his mentor’s nature-based ideal into a harmony of building, site, and occupant, with structure, materials, and built-in furniture growing from one idea." },
       { term: "Prairie style", text: "Low, horizontal houses with deep eaves, bands of windows, and open plans flowing from a central hearth, echoing the Midwest landscape." },
       { term: "Usonian house", text: "Modest, affordable single-story houses for middle-class Americans, with radiant floor heating, carports, and open living areas." }
     ],
@@ -887,7 +887,7 @@ window.DRILL_DATA.architects = [
       "Appeared on Finland’s last 50-markka banknote.",
       "Worked in partnership with his first wife, Aino, and later his second wife, Elissa, both architects.",
       "Co-founded the furniture company Artek in 1935.",
-      "Designed a glass vase with a wavy outline for the Savoy restaurant in Helsinki in 1936."
+      "Designed a wavy-outlined glass vase for a 1936 glassware competition; it is named after a Helsinki restaurant."
     ],
     ideas: [
       { term: "Humanized modernism", text: "Softened the machine aesthetic with wood, brick, and copper, curving walls and ceilings, and careful control of daylight and acoustics." },
@@ -1066,7 +1066,7 @@ window.DRILL_DATA.architects = [
     place: "United States",
     group: "modernism",
     tag: "Beaux-Arts",
-    blurb: "California architect, the first woman trained at the École des Beaux-Arts, who designed hundreds of buildings including William Randolph Hearst’s castle.",
+    blurb: "California architect, the first woman to study architecture at the École des Beaux-Arts, who designed hundreds of buildings including William Randolph Hearst’s castle.",
     facts: [
       "The first woman admitted to the architecture section of the École des Beaux-Arts in Paris, in 1898.",
       "The first woman licensed as an architect in California, in 1904.",
@@ -1152,7 +1152,7 @@ window.DRILL_DATA.architects = [
     tag: "Neo-futurism",
     blurb: "Finnish-American architect whose varied, expressive designs, from a stainless-steel arch to swooping airport terminals, captured postwar optimism.",
     facts: [
-      "Son of the Finnish architect Eliel, with whom he emigrated to Michigan in 1923.",
+      "Son of the Finnish architect Eliel, with whom he emigrated to the United States in 1923.",
       "Studied sculpture in Paris before architecture at Yale.",
       "Sat on the 1957 Sydney Opera House jury that chose Jørn Utzon’s design.",
       "Died at fifty-one of a brain tumor; his associates Kevin Roche and John Dinkeloo finished his projects."
@@ -1182,10 +1182,10 @@ window.DRILL_DATA.architects = [
       "Trained as an engineer in Guadalajara and was largely self-taught as an architect.",
       "Won the second Pritzker Prize, in 1980.",
       "His Mexico City house and studio was named a UNESCO World Heritage Site in 2004.",
-      "In 2016 an artist had some of his cremated remains made into a diamond ring, in a dispute over access to his archive."
+      "In 2016 an artist made some of his ashes into a diamond ring, offered in exchange for returning his archive to Mexico."
     ],
     ideas: [
-      { term: "Emotional architecture", text: "Held that architecture should move the spirit, evoking serenity, mystery, and silence rather than merely serving function." },
+      { term: "Emotional architecture", text: "Shared with the artist Mathias Goeritz the belief that architecture should move the spirit, evoking serenity, mystery, and silence, not merely serve function." },
       { term: "Color and enclosure", text: "Used high, plain walls painted pink, yellow, and purple, with pools and fountains, to create secluded spaces of light and calm." }
     ],
     works: [
@@ -1217,7 +1217,7 @@ window.DRILL_DATA.architects = [
       { term: "Platforms and plateaus", text: "Set buildings on massive raised bases, inspired by Mayan temples, with light roofs that seem to float above them." }
     ],
     works: [
-      { title: "Sydney Opera House", year: "1973", place: "Sydney, Australia", note: "Performing arts center of shell-like vaults clad in white tiles on a granite-faced podium in the harbor; a World Heritage Site." },
+      { title: "Sydney Opera House", year: "1973", place: "Sydney, Australia", note: "Performing arts center of white-tiled shell vaults on a harbor podium; its glass walls and interiors were completed by Peter Hall’s team." },
       { title: "Bagsværd Church", year: "1976", place: "Bagsværd, Denmark", note: "Plain, industrial-looking exterior enclosing a white interior beneath a billowing concrete vault." },
       { title: "Can Lis", year: "1972", place: "Porto Petro, Spain", note: "His own clifftop house on Mallorca, a series of local sandstone pavilions with deep-set windows framing the sea." },
       { title: "Kuwait National Assembly", year: "1982", place: "Kuwait City, Kuwait", note: "Parliament under a great sweeping concrete roof inspired by a tent." }
@@ -1266,7 +1266,7 @@ window.DRILL_DATA.architects = [
     facts: [
       "First winner of the Pritzker Prize, in 1979.",
       "Founded the architecture department of the Museum of Modern Art in 1932.",
-      "Qualified as an architect only in his late thirties, at Harvard’s Graduate School of Design.",
+      "Earned his architecture degree only in his mid-thirties, at Harvard’s Graduate School of Design, in 1943.",
       "Collaborated with Mies on the Seagram Building and designed its Four Seasons restaurant."
     ],
     ideas: [
@@ -1397,7 +1397,7 @@ window.DRILL_DATA.architects = [
     dates: "1931–1997",
     place: "Italy",
     group: "postwar",
-    tag: "Rationalism",
+    tag: "Neo-Rationalism",
     blurb: "Italian architect, theorist, and artist whose spare, archetypal buildings and writings on the city shaped postmodern architecture.",
     facts: [
       "First Italian to win the Pritzker Prize, in 1990.",
@@ -1602,7 +1602,7 @@ window.DRILL_DATA.architects = [
       "Was made a life peer in 1999."
     ],
     ideas: [
-      { term: "High-tech", text: "Expresses advanced structure and services, using prefabricated components, lightweight materials, and engineering for flexible, efficient buildings." }
+      { term: "Ecological skyscraper", text: "Gave office towers spiraling sky gardens and openable windows for natural ventilation, beginning with a Frankfurt bank headquarters completed in 1997." }
     ],
     works: [
       { title: "HSBC Main Building", year: "1985", place: "Hong Kong, China", note: "Bank headquarters hung from steel masts and trusses, leaving a public plaza beneath a soaring atrium." },
@@ -1657,11 +1657,11 @@ window.DRILL_DATA.architects = [
       "Was appointed an Italian senator for life in 2013."
     ],
     ideas: [
-      { term: "Lightness and craft", text: "Pursues lightness, transparency, and carefully engineered components, often with elaborate roofs to filter natural light." }
+      { term: "Lightness and craft", text: "Develops buildings piece by piece through full-size prototypes of their components, seeking lightness and roofs that filter daylight onto art." }
     ],
     works: [
       { title: "The Shard", year: "2012", place: "London, England", note: "Tapering glass skyscraper of fragmented, splintered facets near London Bridge, the tallest building in the United Kingdom." },
-      { title: "Kansai International Airport Terminal", year: "1994", place: "Osaka, Japan", note: "Mile-long terminal under a wing-like steel roof, on an artificial island in Osaka Bay." },
+      { title: "Kansai International Airport Terminal", year: "1994", place: "Izumisano, Japan", note: "Mile-long terminal under a wing-like steel roof, on an artificial island in Osaka Bay." },
       { title: "Jean-Marie Tjibaou Cultural Centre", year: "1998", place: "Nouméa, New Caledonia", note: "Center for Kanak culture with curved timber shells inspired by traditional huts and catching sea breezes." },
       { title: "Menil Collection", year: "1987", place: "Houston, United States", note: "Low museum of cypress and steel with a roof of curved ferro-cement leaves that diffuse daylight." },
       { title: "Genoa San Giorgio Bridge", year: "2020", place: "Genoa, Italy", note: "Steel and concrete viaduct replacing the Morandi bridge that collapsed in 2018, in his home city." }
@@ -1956,7 +1956,7 @@ window.DRILL_DATA.architects = [
       "Co-wrote Questions of Perception (1994) with Juhani Pallasmaa and Alberto Pérez-Gómez."
     ],
     ideas: [
-      { term: "Phenomenology of architecture", text: "Puts lived experience first: light, shadow, texture, and movement through space as perceived by the whole body." },
+      { term: "Phenomenology of architecture", text: "Drew on the philosopher Maurice Merleau-Ponty to put lived perception first, from the shifting views of a moving body to textures seen up close." },
       { term: "Anchoring", text: "Holds that each building should be rooted in its specific site and situation rather than following a universal style." }
     ],
     works: [
@@ -2174,12 +2174,12 @@ window.DRILL_DATA.architects = [
       "In 2002 became the first Australian to win the Pritzker Prize."
     ],
     ideas: [
-      { term: "Touch the earth lightly", text: "His adopted Aboriginal saying: build light, often raised structures that respond to sun, wind, and rain and could be removed without trace." }
+      { term: "Touch this earth lightly", text: "His guiding principle: build light, often raised structures that respond to sun, wind, and rain and could be removed with little trace." }
     ],
     works: [
       { title: "Magney House", year: "1984", place: "Bingie, Australia", note: "Long coastal house with an asymmetric curved corrugated-iron roof that collects rainwater and admits winter sun." },
       { title: "Marika-Alderton House", year: "1994", place: "Yirrkala, Australia", note: "House for an Aboriginal family in Arnhem Land, on stilts with operable plywood flaps for ventilation." },
-      { title: "Arthur and Yvonne Boyd Education Centre", year: "1999", place: "Riversdale, Australia", note: "Arts education center on the Shoalhaven River, with Wendy Lewin and Reg Lark." },
+      { title: "Arthur and Yvonne Boyd Education Centre", year: "1999", place: "Shoalhaven, Australia", note: "Arts education center on the Shoalhaven River, with Wendy Lewin and Reg Lark." },
       { title: "Australian Islamic Centre", year: "2016", place: "Melbourne, Australia", note: "Mosque with Hakan Elevli, lit by colored roof lanterns rather than domes and minarets." }
     ],
     quotes: []

@@ -786,8 +786,11 @@
 
     termWho: function (item, pool) {
       var ideas = list(item.ideas);
-      if (!ideas.length) return null;
-      var i = rand(ideas.length);
+      var ok = ideas.filter(function (d) {
+        return !namesItself(d.term, item);
+      });
+      if (!ok.length) return null;
+      var i = ideas.indexOf(pick(ok));
       return nameQuestion(item, pool, {
         label: label("termWho"),
         prompt: esc(ideas[i].term),
@@ -1401,6 +1404,7 @@
     deck.cardClues.forEach(function (sec) {
       list(item[sec]).forEach(function (v, i) {
         if (sec === "works" && namesItself(v.title, item)) return;
+        if (sec === "ideas" && namesItself(v.term, item)) return;
         opts.push([sec, i, v]);
       });
     });

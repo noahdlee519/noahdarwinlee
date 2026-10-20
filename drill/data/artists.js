@@ -121,7 +121,7 @@ window.DRILL_DATA.artists = [
     blurb: "Netherlandish painter of teeming, nightmarish moral fantasies whose demons and hybrids still defy full interpretation.",
     facts: [
       "Born Jheronimus van Aken into a family of painters.",
-      "Spent almost his whole life in the Brabant town of ’s-Hertogenbosch, which gave him his name.",
+      "Spent almost his whole life in one Brabant town, from which he took his adopted surname.",
       "Belonged to the Illustrious Brotherhood of Our Blessed Lady, a religious confraternity.",
       "King Philip II of Spain avidly collected his paintings."
     ],
@@ -158,7 +158,7 @@ window.DRILL_DATA.artists = [
     works: [
       { title: "Mona Lisa", year: "c. 1503–19", place: "Louvre, Paris", note: "Half-length oil portrait, probably of the wife of a Florentine silk merchant, set before a hazy, imaginary landscape." },
       { title: "The Last Supper", year: "c. 1495–98", place: "Santa Maria delle Grazie, Milan", note: "Refectory wall painting of the apostles reacting to the announcement of betrayal; its experimental technique began flaking within decades." },
-      { title: "Lady with an Ermine", year: "c. 1489–91", place: "Czartoryski Museum, Kraków", note: "Portrait of Cecilia Gallerani, the Milanese duke’s mistress, turning with a white stoat in her arms." },
+      { title: "Lady with an Ermine", year: "c. 1489–91", place: "Czartoryski Museum, Kraków", note: "Portrait of Cecilia Gallerani, mistress of the Milanese ruler, turning with a white stoat in her arms." },
       { title: "Vitruvian Man", year: "c. 1490", place: "Gallerie dell’Accademia, Venice", note: "Pen-and-ink drawing of a man inscribed in a circle and a square, illustrating the ideal proportions described by an ancient Roman architect." }
     ],
     quotes: []
@@ -204,7 +204,7 @@ window.DRILL_DATA.artists = [
       "Apprenticed at 13 to the Florentine painter Domenico Ghirlandaio.",
       "His nose was broken in a fight with the sculptor Pietro Torrigiano.",
       "Named architect of St Peter’s Basilica in 1546 and designed its great dome.",
-      "Wrote some 300 sonnets and madrigals, many addressed to Tommaso de’ Cavalieri."
+      "Wrote some 300 poems, including sonnets to Tommaso de’ Cavalieri and Vittoria Colonna."
     ],
     ideas: [
       { term: "Terribilità", text: "Contemporaries’ word for the awe-inspiring force and emotional intensity of his figures and personality." },
@@ -314,7 +314,7 @@ window.DRILL_DATA.artists = [
       "Born on Crete, then a Venetian possession, and trained as an icon painter.",
       "Worked in Venice and Rome before settling in Toledo in 1577.",
       "Said to have offered to repaint Michelangelo’s Last Judgment more decently.",
-      "Signed his paintings in Greek letters with his birth name, Doménikos Theotokópoulos."
+      "Signed his paintings with his birth name, Doménikos Theotokópoulos, in his native alphabet."
     ],
     ideas: [
       { term: "Elongated figures", text: "Stretched, flame-like bodies, acid colors, and unstable space that give his religious scenes a visionary, otherworldly intensity." }
@@ -452,7 +452,7 @@ window.DRILL_DATA.artists = [
       "Made some 80 self-portraits in paint, etching, and drawing across his life."
     ],
     ideas: [
-      { term: "Impasto", text: "Thickly built-up paint, sometimes worked with the brush handle or palette knife, that catches the light and gives flesh and fabric sculptural presence." },
+      { term: "Impasto", text: "Thick paint, sometimes scratched with the brush handle, catching the light so that gold chains and aged, wrinkled faces seem to project from the dark." },
       { term: "Etching", text: "Explored the print medium with drypoint and selective plate wiping, so that each impression could differ in mood." }
     ],
     works: [
@@ -530,7 +530,7 @@ window.DRILL_DATA.artists = [
     tag: "Classicism",
     blurb: "French painter who spent most of his career in Rome and became the founding model of French classical painting.",
     facts: [
-      "Spent almost his entire career in Rome.",
+      "A Normandy-born Frenchman who spent almost his entire career in Rome.",
       "Summoned to Paris as First Painter to Louis XIII in 1640, he returned to Rome within two years.",
       "Planned compositions by arranging small wax figures in a miniature box-stage.",
       "Later French academic debate split into camps named after him and after Rubens."
@@ -566,7 +566,7 @@ window.DRILL_DATA.artists = [
       { term: "Fête galante", text: "Scenes of elegantly dressed couples flirting, dancing, and making music in parkland; the Academy created the category for his reception piece." }
     ],
     works: [
-      { title: "Pilgrimage to Cythera", year: "1717", place: "Louvre, Paris", note: "His reception piece: couples linger before boarding a gilded boat on the island of Venus, tinged with melancholy." },
+      { title: "Pilgrimage to Cythera", year: "1717", place: "Louvre, Paris", note: "His reception piece: amorous couples drift toward a gilded boat in a hazy landscape sacred to Venus, tinged with melancholy." },
       { title: "Pierrot", year: "c. 1718–19", place: "Louvre, Paris", note: "A life-size clown in white satin stands stiffly facing us with a blank, poignant gaze; once known as Gilles." },
       { title: "Gersaint’s Shop Sign", year: "1720", place: "Charlottenburg Palace, Berlin", note: "Painted in days for a Paris art dealer: clients browse pictures while a portrait of Louis XIV is packed into a crate." }
     ],
@@ -584,7 +584,7 @@ window.DRILL_DATA.artists = [
     blurb: "Prolific painter of playful, sensuous Rococo scenes whose dashing brushwork outlived the taste for his subjects.",
     facts: [
       "Studied briefly with Chardin before joining the studio of François Boucher.",
-      "Won the Prix de Rome in 1752.",
+      "After early Academy success, abandoned grand history painting to work for private patrons.",
       "Produced more than 550 paintings, only a handful of them dated.",
       "Lost his aristocratic patrons with the Revolution and died largely forgotten."
     ],
@@ -610,7 +610,7 @@ window.DRILL_DATA.artists = [
     tag: "Veduta",
     blurb: "Venetian painter of crisp, luminous city views prized by British Grand Tour travelers.",
     facts: [
-      "Born Giovanni Antonio Canal, son of a theater-scenery painter he first assisted.",
+      "Son of a theater-scenery painter, whom he first assisted in Venice and Rome.",
       "His agent, the British consul Joseph Smith, sold his views to English collectors.",
       "Worked in England from 1746 to about 1755, painting London and country houses.",
       "King George III bought Smith’s collection, putting many of his works in the Royal Collection."
@@ -663,7 +663,7 @@ window.DRILL_DATA.artists = [
     tag: "Neoclassicism",
     blurb: "Leading Neoclassical painter, artist of the French Revolution, and later Napoleon’s official painter.",
     facts: [
-      "Won the Prix de Rome in 1774 after several failed attempts.",
+      "Won the Prix de Rome in 1774 after repeated failures, one of which drove him to a hunger strike.",
       "As a deputy to the National Convention, voted for the king’s execution.",
       "Imprisoned after Robespierre’s fall in 1794.",
       "Became Napoleon’s First Painter and died in exile in Brussels."
@@ -702,7 +702,7 @@ window.DRILL_DATA.artists = [
       { title: "The Third of May 1808", year: "1814", place: "Prado, Madrid", note: "A French firing squad executes Madrid civilians; a man in a white shirt flings out his arms like a martyr." },
       { title: "Saturn Devouring His Son", year: "c. 1819–23", place: "Prado, Madrid", note: "A wild-eyed Titan gnaws a headless body, painted on the wall of his dining room." },
       { title: "The Sleep of Reason Produces Monsters", year: "c. 1797–99", place: "Prado, Madrid", note: "Etching and aquatint of a man slumped at a desk as owls and bats swarm behind him; plate 43 of Los Caprichos." },
-      { title: "The Nude Maja", year: "c. 1797–1800", place: "Prado, Madrid", note: "A reclining nude gazing frankly at the viewer, paired with a clothed version; it brought him before the Inquisition." }
+      { title: "The Nude Maja", year: "c. 1797–1800", place: "Prado, Madrid", note: "A reclining nude gazing frankly at the viewer, paired with a clothed version; in 1815 the pair drew the Inquisition’s scrutiny." }
     ],
     quotes: []
   },
@@ -754,7 +754,7 @@ window.DRILL_DATA.artists = [
     ],
     ideas: [
       { term: "Skying", text: "Made dozens of oil sketches of clouds, noting date, time, and wind, treating the sky as the “chief organ of sentiment” in landscape." },
-      { term: "Six-footers", text: "Large exhibition canvases of the Stour valley, each prepared through a full-size oil sketch." }
+      { term: "Six-footers", text: "Large exhibition canvases, mostly of the Stour valley, several of them worked out first in full-size oil sketches." }
     ],
     works: [
       { title: "The Hay Wain", year: "1821", place: "National Gallery, London", note: "A horse-drawn cart stands in a millstream beside a cottage on the Stour, under billowing summer clouds." },
@@ -829,7 +829,7 @@ window.DRILL_DATA.artists = [
     blurb: "Neoclassical painter and great portraitist who defended the primacy of drawing against the Romantic colorists.",
     facts: [
       "Studied in the studio of Jacques-Louis David.",
-      "Won the Prix de Rome in 1801.",
+      "Won the Prix de Rome in 1801 but, with state funds short, reached Rome only in 1806.",
       "Directed the French Academy in Rome from 1835 to 1841.",
       "His amateur violin playing gave French its idiom for a cherished side hobby."
     ],
@@ -914,12 +914,12 @@ window.DRILL_DATA.artists = [
     ],
     ideas: [
       { term: "Series painting", text: "Painted the same motif (haystacks, poplars, a cathedral façade) again and again at different hours and seasons to record changing light." },
-      { term: "En plein air", text: "Painting outdoors, directly from nature, to catch momentary effects of light and atmosphere." }
+      { term: "En plein air", text: "Painting outdoors, even from a floating studio boat on the Seine, to catch momentary effects of light and atmosphere." }
     ],
     works: [
       { title: "Impression, Sunrise", year: "1872", place: "Musée Marmottan Monet, Paris", note: "Hazy view of Le Havre harbor with an orange sun; a critic’s mockery of its title named the movement." },
       { title: "Water Lilies (Orangerie murals)", year: "1914–26", place: "Musée de l’Orangerie, Paris", note: "Eight huge curved panels of pond surface wrapping two oval rooms, donated to France after the First World War." },
-      { title: "Rouen Cathedral series", year: "1892–94", place: "Musée d’Orsay, Paris", note: "More than 30 views of the Gothic façade in shifting light, the paint crusted like stone." }
+      { title: "Woman with a Parasol – Madame Monet and Her Son", year: "1875", place: "National Gallery of Art, Washington", note: "His wife and young son on a breezy hilltop, seen from below against a bright, cloud-swept sky." }
     ],
     quotes: []
   },
@@ -946,7 +946,7 @@ window.DRILL_DATA.artists = [
     works: [
       { title: "Little Dancer Aged Fourteen", year: "1878–81", place: "National Gallery of Art, Washington", note: "Wax figure of a ballet student dressed in a real tutu and hair ribbon, mocked as ugly when shown in 1881." },
       { title: "L’Absinthe", year: "1875–76", place: "Musée d’Orsay, Paris", note: "A dazed woman and a man sit side by side in a café, isolated from each other, a glass of green spirits before her." },
-      { title: "The Ballet Class", year: "1871–74", place: "Musée d’Orsay, Paris", note: "Dancers stretch, fidget, and wait as an old ballet master leans on his stick in a rehearsal room." }
+      { title: "The Ballet Class", year: "1873–76", place: "Musée d’Orsay, Paris", note: "Dancers stretch, fidget, and wait as an old ballet master leans on his stick in a rehearsal room." }
     ],
     quotes: []
   },
@@ -967,7 +967,7 @@ window.DRILL_DATA.artists = [
       "Father of the filmmaker who directed La Grande Illusion."
     ],
     ideas: [
-      { term: "Feathery brushwork", text: "Soft, shimmering strokes and dappled light celebrating pleasure, leisure, and the human figure." }
+      { term: "Feathery brushwork", text: "Soft, shimmering strokes and dappled sunlight on faces and clothes; in the mid-1880s he briefly adopted crisp, Ingres-like contours." }
     ],
     works: [
       { title: "Bal du moulin de la Galette", year: "1876", place: "Musée d’Orsay, Paris", note: "A Sunday dance in a Montmartre garden, with sunlight filtering through the trees onto the crowd." },
@@ -993,12 +993,12 @@ window.DRILL_DATA.artists = [
       "Her daughter Julie became a painter and diarist."
     ],
     ideas: [
-      { term: "Domestic intimacy", text: "Light-filled scenes of women and children in interiors and gardens, the spaces open to a bourgeois woman painter." },
+      { term: "Domestic intimacy", text: "Scenes of her sister, her daughter, and household servants in interiors and gardens, the spaces open to a bourgeois woman painter." },
       { term: "Sketch-like finish", text: "Rapid, zigzagging strokes left visibly unfinished, among the most radical brushwork in the group." }
     ],
     works: [
       { title: "The Cradle", year: "1872", place: "Musée d’Orsay, Paris", note: "A young mother, the painter’s sister Edma, watches over her sleeping baby through a gauzy veil." },
-      { title: "Summer’s Day", year: "1879", place: "National Gallery, London", note: "Two women in a rowboat on a lake in the Bois de Boulogne, painted in quick, flickering strokes." }
+      { title: "The Mother and Sister of the Artist", year: "1869–70", place: "National Gallery of Art, Washington", note: "Her pregnant sister Edma sits beside their mother, who reads; Édouard Manet heavily retouched it before the 1870 Salon." }
     ],
     quotes: []
   },
@@ -1019,7 +1019,7 @@ window.DRILL_DATA.artists = [
       "Stopped working around 1914 as her eyesight failed."
     ],
     ideas: [
-      { term: "Mother and child", text: "Tender but unsentimental scenes of women bathing, holding, and caring for children." },
+      { term: "Mother and child", text: "Her signature theme from the late 1880s: unsentimental scenes of women bathing and holding children, though she never had children herself." },
       { term: "Color prints", text: "Inspired by Japanese woodblocks, made color drypoints and aquatints with flat areas of color and crisp outlines." }
     ],
     works: [
@@ -1043,7 +1043,7 @@ window.DRILL_DATA.artists = [
       "Childhood friend of the novelist Émile Zola in Aix-en-Provence.",
       "Son of a wealthy banker who wanted him to study law.",
       "Rejected again and again by the official Salon.",
-      "Broke with Zola after a novel portrayed a failed painter much like himself."
+      "Showed at the first Impressionist exhibition in 1874."
     ],
     ideas: [
       { term: "Constructive stroke", text: "Built forms from parallel patches of color laid side by side, giving solidity and structure to nature." },
@@ -1069,11 +1069,11 @@ window.DRILL_DATA.artists = [
     facts: [
       "Worked as an art dealer, teacher, and lay preacher before turning to art at 27.",
       "Was supported financially for years by his brother Theo, an art dealer.",
-      "Cut off part of his ear in Arles in 1888 after a quarrel with Gauguin.",
+      "Cut off all or part of his left ear in Arles in December 1888 after a quarrel with Gauguin.",
       "Died of a gunshot wound at Auvers-sur-Oise in 1890, aged 37."
     ],
     ideas: [
-      { term: "Expressive color", text: "Used intense, non-naturalistic color to convey emotion rather than describe appearance, a foundation for Expressionism." },
+      { term: "Expressive color", text: "Set clashing complementaries, such as chrome yellow against blue, to convey emotion rather than describe appearance, a foundation for Expressionism." },
       { term: "Rhythmic brushwork", text: "Thick, directional strokes that swirl and pulse across skies, fields, and faces." }
     ],
     works: [
@@ -1212,7 +1212,7 @@ window.DRILL_DATA.artists = [
       { term: "Poetic landscape", text: "Lyrical scenes of travelers in rain, snow, mist, and moonlight, using daring cropping and close foreground framing." }
     ],
     works: [
-      { title: "The Fifty-three Stations of the Tōkaidō", year: "1833–34", place: "Brooklyn Museum, New York", note: "Print series of the post towns on the highway between Edo and Kyoto, a huge popular success." },
+      { title: "The Fifty-three Stations of the Tōkaidō", year: "1833–34", place: "Metropolitan Museum of Art, New York", note: "Print series of the post towns on the highway between Edo and Kyoto, a huge popular success." },
       { title: "One Hundred Famous Views of Edo", year: "1856–58", place: "Brooklyn Museum, New York", note: "Vertical-format print series of the city, noted for dramatic foreground objects; his last major work." },
       { title: "Sudden Shower over Shin-Ōhashi Bridge and Atake", year: "1857", place: "Brooklyn Museum, New York", note: "Figures hurry across a bridge under slanting lines of rain; Van Gogh copied it in oil." }
     ],
@@ -1274,12 +1274,40 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "munch",
+    name: "Edvard Munch",
+    born: 1863,
+    dates: "1863–1944",
+    place: "Norway",
+    group: "19th",
+    tag: "Symbolism",
+    blurb: "Norwegian painter and printmaker of anxiety, love, and death whose psychological intensity anticipated Expressionism.",
+    facts: [
+      "Lost his mother and his elder sister to tuberculosis before he was 15.",
+      "His 1892 exhibition in Berlin caused such a scandal that it closed within a week.",
+      "Had a nervous breakdown in 1908 and spent months in a Copenhagen clinic.",
+      "Left his remaining works to the city of Oslo."
+    ],
+    ideas: [
+      { term: "The Frieze of Life", text: "His name for a cycle of paintings on love, anxiety, and death, intended to be seen together as a single poem of life." }
+    ],
+    works: [
+      { title: "The Scream", year: "1893", place: "National Museum, Oslo", note: "The 1893 tempera-and-crayon version on cardboard: a figure clutches its face under a blood-red sky; other painted, pastel, and print versions exist." },
+      { title: "The Sick Child", year: "1885–86", place: "National Museum, Oslo", note: "A pale girl in bed beside a grieving woman, painted from the memory of his dying sister and scraped and reworked." },
+      { title: "Madonna", year: "1894–95", place: "National Museum, Oslo", note: "A nude woman with closed eyes and a red halo, at once erotic and deathly; also made as a lithograph." }
+    ],
+    quotes: []
+  },
+
+  /* ===================== Modern (c. 1900–1945) ===================== */
+
+  {
     id: "klimt",
     name: "Gustav Klimt",
     born: 1862,
     dates: "1862–1918",
     place: "Austria",
-    group: "19th",
+    group: "modern",
     tag: "Vienna Secession",
     blurb: "Viennese painter of sensuous, gold-encrusted figures and patterns, a founder and first president of the Vienna Secession.",
     facts: [
@@ -1295,34 +1323,6 @@ window.DRILL_DATA.artists = [
       { title: "The Kiss", year: "1907–08", place: "Belvedere, Vienna", note: "A couple embrace on a flowery meadow, wrapped in a gold robe patterned with rectangles for him and circles for her." },
       { title: "Portrait of Adele Bloch-Bauer I", year: "1907", place: "Neue Galerie, New York", note: "A Viennese society hostess in a shimmering gold field; restituted to her heirs after Nazi looting and sold in 2006." },
       { title: "Beethoven Frieze", year: "1902", place: "Secession Building, Vienna", note: "Mural cycle on the longing for happiness, based on the Ninth Symphony, painted for a temporary exhibition." }
-    ],
-    quotes: []
-  },
-
-  /* ===================== Modern (c. 1900–1945) ===================== */
-
-  {
-    id: "munch",
-    name: "Edvard Munch",
-    born: 1863,
-    dates: "1863–1944",
-    place: "Norway",
-    group: "modern",
-    tag: "Expressionism",
-    blurb: "Norwegian painter and printmaker of anxiety, love, and death whose psychological intensity anticipated Expressionism.",
-    facts: [
-      "Lost his mother and his elder sister to tuberculosis before he was 15.",
-      "His 1892 exhibition in Berlin caused such a scandal that it closed within a week.",
-      "Had a nervous breakdown in 1908 and spent months in a Copenhagen clinic.",
-      "Left his remaining works to the city of Oslo."
-    ],
-    ideas: [
-      { term: "The Frieze of Life", text: "His name for a cycle of paintings on love, anxiety, and death, intended to be seen together as a single poem of life." }
-    ],
-    works: [
-      { title: "The Scream", year: "1893", place: "National Museum, Oslo", note: "A figure clutches its face on a bridge under a blood-red sky; he made several painted, pastel, and print versions." },
-      { title: "The Sick Child", year: "1885–86", place: "National Museum, Oslo", note: "A pale girl in bed beside a grieving woman, painted from the memory of his dying sister and scraped and reworked." },
-      { title: "Madonna", year: "1894–95", place: "National Museum, Oslo", note: "A nude woman with closed eyes and a red halo, at once erotic and deathly; also made as a lithograph." }
     ],
     quotes: []
   },
@@ -1343,13 +1343,13 @@ window.DRILL_DATA.artists = [
       "Designed the Chapel of the Rosary at Vence, from windows to vestments."
     ],
     ideas: [
-      { term: "Fauvism", text: "Pure, intense, non-naturalistic color applied in bold strokes to express feeling rather than describe nature." },
+      { term: "Fauvism", text: "Pure, unmixed color in bold strokes, often straight from the tube, freed from description, so that a green stripe could model a face." },
       { term: "Cut-outs", text: "In old age, cut shapes from paper painted with gouache and arranged them into large, vivid compositions." }
     ],
     works: [
       { title: "The Dance", year: "1910", place: "Hermitage Museum, Saint Petersburg", note: "Five red nude figures dance in a ring on a green hill against a blue sky, commissioned by the Moscow collector Shchukin." },
       { title: "Woman with a Hat", year: "1905", place: "San Francisco Museum of Modern Art, San Francisco", note: "Portrait of his wife with a face streaked in green and purple; a sensation of the Fauve room." },
-      { title: "The Snail", year: "1953", place: "Tate Modern, London", note: "Large collage of colored paper shapes arranged in a spiral, made when he could no longer stand to paint." },
+      { title: "The Snail", year: "1953", place: "Tate Modern, London", note: "Large collage of colored paper shapes arranged in a spiral, made when ill health kept him from the easel." },
       { title: "The Red Studio", year: "1911", place: "Museum of Modern Art, New York", note: "His studio flooded with Venetian red, its furniture drawn only in outline among his own works." }
     ],
     quotes: ["What I dream of is an art of balance, of purity and serenity, devoid of troubling or depressing subject matter."]
@@ -1399,7 +1399,7 @@ window.DRILL_DATA.artists = [
     ],
     ideas: [
       { term: "Papier collé", text: "Glued strips of patterned paper, such as faux wood-grain wallpaper, into drawings, beginning in 1912." },
-      { term: "Analytic Cubism", text: "Fractured still lifes and figures into small, monochrome facets in browns and grays, nearly dissolving the subject." }
+      { term: "Analytic Cubism", text: "Fractured still lifes, often of violins and guitars, into brown-and-gray facets, and in 1911 began adding stenciled letters to them." }
     ],
     works: [
       { title: "Houses at L’Estaque", year: "1908", place: "Kunstmuseum Bern, Bern", note: "Blocky ochre houses and trees in a Provençal landscape; a critic’s jibe about “little cubes” helped name a movement." },
@@ -1765,7 +1765,7 @@ window.DRILL_DATA.artists = [
     facts: [
       "Born in Livorno to a Sephardic Jewish family.",
       "His only solo show, in 1917, was closed by police on its opening day over nudes in the window.",
-      "Died of tubercular meningitis at 35; his pregnant partner killed herself days later."
+      "Died of tubercular meningitis at 35; his pregnant partner killed herself within two days."
     ],
     ideas: [
       { term: "Elongated portraits", text: "Long necks, oval mask-like faces, and blank almond eyes, influenced by African and Cycladic sculpture." }
@@ -1822,7 +1822,7 @@ window.DRILL_DATA.artists = [
     ],
     ideas: [
       { term: "Biomorphic signs", text: "A private alphabet of stars, eyes, moons, and amoeba-like creatures floating on open color fields." },
-      { term: "Automatism", text: "Let chance and the unconscious guide the first marks on the canvas, then developed them deliberately." }
+      { term: "Automatism", text: "Began pictures with spontaneous stains and washes, then developed them deliberately into signs; Breton called him the most Surrealist of them all." }
     ],
     works: [
       { title: "The Farm", year: "1921–22", place: "National Gallery of Art, Washington", note: "A meticulously detailed Catalan farmyard under a blank sky; once owned by Ernest Hemingway." },
@@ -1981,7 +1981,7 @@ window.DRILL_DATA.artists = [
       "Continued to paint in the 1980s while suffering from dementia."
     ],
     ideas: [
-      { term: "Action painting", text: "Harold Rosenberg’s term for painting as an arena in which to act, the canvas recording the gestures of the event." },
+      { term: "Content as a glimpse", text: "Said content was “a glimpse of something, an encounter like a flash,” building pictures from fleeting fragments of bodies and city scenes." },
       { term: "Figure in abstraction", text: "Refused to abandon the figure, embedding aggressive images of women in violent abstract brushwork." }
     ],
     works: [
@@ -2380,8 +2380,7 @@ window.DRILL_DATA.artists = [
     works: [
       { title: "Puppy", year: "1992", place: "Guggenheim Museum Bilbao, Bilbao", note: "A giant West Highland terrier covered in tens of thousands of living flowers, on a stainless steel frame." },
       { title: "Michael Jackson and Bubbles", year: "1988", place: "San Francisco Museum of Modern Art, San Francisco", note: "Life-size gilded porcelain of the pop star with his pet chimpanzee; one of three versions." },
-      { title: "Balloon Dog (Blue)", year: "1994–2000", place: "The Broad, Los Angeles", note: "A huge mirror-polished steel version of a twisted party balloon animal." },
-      { title: "Rabbit", year: "1986", place: "Private collection", note: "A stainless-steel cast of an inflatable toy bunny holding a carrot, its face a blank mirror." }
+      { title: "Balloon Dog (Blue)", year: "1994–2000", place: "The Broad, Los Angeles", note: "A huge mirror-polished steel version of a twisted party balloon animal." }
     ],
     quotes: []
   },
@@ -2456,7 +2455,7 @@ window.DRILL_DATA.artists = [
     ],
     works: [
       { title: "Untitled Film Stills", year: "1977–80", place: "Museum of Modern Art, New York", note: "Seventy black-and-white photographs of herself as female types from imaginary 1950s and ’60s B-movies." },
-      { title: "Untitled #96", year: "1981", place: "Private collection", note: "From a series of centerfold-format color photographs: a teenage girl in orange lies on a kitchen floor clutching a scrap of newspaper." }
+      { title: "Untitled Film Still #21", year: "1978", place: "Museum of Modern Art, New York", note: "A wide-eyed young woman in a hat and suit, a small-town girl newly arrived in the city, framed against tall downtown buildings." }
     ],
     quotes: []
   },
@@ -2541,7 +2540,7 @@ window.DRILL_DATA.artists = [
     name: "Christo and Jeanne-Claude",
     born: 1935,
     dates: "1935–2020; 1935–2009",
-    place: "France",
+    place: "United States",
     group: "postwar",
     tag: "Land art",
     blurb: "Husband-and-wife team who wrapped buildings and transformed landscapes with fabric in vast, temporary works.",
@@ -2574,7 +2573,7 @@ window.DRILL_DATA.artists = [
     facts: [
       "Born in Mumbai; moved to London in 1973 to study art.",
       "Represented Britain at the Venice Biennale in 1990.",
-      "Won the Turner Prize in 1991.",
+      "Filled Tate Modern’s Turbine Hall in 2002 with a vast red membrane stretched between steel rings.",
       "Acquired exclusive artistic rights to the ultra-black coating Vantablack, angering other artists."
     ],
     ideas: [
@@ -2625,7 +2624,7 @@ window.DRILL_DATA.artists = [
     blurb: "American painter who places Black figures at the center of grand history painting, filling a gap in the Western canon.",
     facts: [
       "Born in Birmingham, Alabama, and grew up in Watts, Los Angeles.",
-      "Received a MacArthur Fellowship in 1997.",
+      "Studied at the Otis Art Institute in Los Angeles, where Charles White was his mentor.",
       "In 2018 one of his paintings sold for $21.1 million, bought by Sean Combs."
     ],
     ideas: [
