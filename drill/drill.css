@@ -891,3 +891,11 @@ cite {
 .d-switch a {
   color: var(--bright);
 }
+
+.card-grade .text-action:first-child {
+  color: inherit;
+}
+
+.card-grade .text-action:first-child:hover {
+  color: var(--bright);
+}

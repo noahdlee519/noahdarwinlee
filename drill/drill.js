@@ -254,6 +254,10 @@
     return out;
   }
 
+  function namesItself(text, item) {
+    return mask(text, item) !== String(text);
+  }
+
   function fmtTime(ms) {
     var s = Math.floor(ms / 1000);
     return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
@@ -498,7 +502,7 @@
     var opts = [{ text: title, owner: item, kind: "title", correct: true }];
     for (var i = 0; i < ds.length; i++) {
       var ws = list(ds[i].works).filter(function (w) {
-        return !used[w.title];
+        return !used[w.title] && !namesItself(w.title, ds[i]);
       });
       if (!ws.length) return null;
       var w = pick(ws);
@@ -600,8 +604,11 @@
 
     workWho: function (item, pool) {
       var works = list(item.works);
-      if (!works.length) return null;
-      var i = rand(works.length);
+      var ok = works.filter(function (w) {
+        return !namesItself(w.title, item);
+      });
+      if (!ok.length) return null;
+      var i = works.indexOf(pick(ok));
       return nameQuestion(item, pool, {
         label: deckId === "authors" ? "who wrote it?" : "whose work is this?",
         prompt: "<cite>" + esc(works[i].title) + "</cite>",
@@ -824,9 +831,10 @@
         " to drill, then a way to drill them.</p>" +
         '<div class="d-sec"><h2 class="d-h">' +
         deck.groupWord +
-        ' <button type="button" class="text-action is-small" data-act="all-groups">' +
-        (allOn ? "only one" : "all") +
-        "</button></h2>" +
+        (allOn
+          ? ""
+          : ' <button type="button" class="text-action is-small" data-act="all-groups">all</button>') +
+        "</h2>" +
         '<div class="chip-row">' +
         groupsHTML +
         "</div></div>" +
@@ -855,14 +863,15 @@
         group: function (el) {
           var g = el.getAttribute("data-group");
           var i = settings.groups.indexOf(g);
-          if (i === -1) settings.groups.push(g);
+          // With every era on, a click narrows to that one era.
+          if (settings.groups.length === groupIds.length) settings.groups = [g];
+          else if (i === -1) settings.groups.push(g);
           else if (settings.groups.length > 1) settings.groups.splice(i, 1);
           saveSettings();
           menu();
         },
         "all-groups": function () {
-          if (settings.groups.length === groupIds.length) settings.groups = [groupIds[0]];
-          else settings.groups = groupIds.slice();
+          settings.groups = groupIds.slice();
           saveSettings();
           menu();
         },
@@ -1105,6 +1114,7 @@
     var opts = [];
     deck.cardClues.forEach(function (sec) {
       list(item[sec]).forEach(function (v, i) {
+        if (sec === "works" && namesItself(v.title, item)) return;
         opts.push([sec, i, v]);
       });
     });
