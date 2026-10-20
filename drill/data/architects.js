@@ -16,7 +16,7 @@ window.DRILL_DATA.architects = [
       "Served as a military engineer under Julius Caesar, building and maintaining artillery such as ballistae.",
       "Dedicated his ten-book treatise to the emperor Augustus.",
       "His account of ideal human proportions inspired Leonardo da Vinci’s drawing of a man inscribed in a circle and a square.",
-      "His treatise was rediscovered in a manuscript at St. Gall in 1416 and shaped Renaissance architecture."
+      "A copy of his treatise found by Poggio Bracciolini at St. Gall in 1416 helped spark Renaissance interest in it."
     ],
     ideas: [
       { term: "Firmitas, utilitas, venustas", text: "Held that good building must have strength, usefulness, and beauty, a triad later rendered in English as “firmness, commodity, and delight.”" },
@@ -237,7 +237,7 @@ window.DRILL_DATA.architects = [
     tag: "Baroque",
     blurb: "Brooding, radical architect of Baroque Rome whose geometrically complex, undulating churches challenged classical convention.",
     facts: [
-      "Born Francesco Castelli in Bissone on Lake Lugano, in present-day Switzerland.",
+      "Born with the surname Castelli in Bissone on Lake Lugano, in present-day Switzerland.",
       "Began in Rome as a stonecutter, working under his relative Carlo Maderno.",
       "Was the bitter rival of Bernini, under whom he had worked at St. Peter’s.",
       "Took his own life in 1667, falling on his sword."
@@ -296,7 +296,7 @@ window.DRILL_DATA.architects = [
       "Worked for the Mughal emperor Shah Jahan, who built a great mausoleum for his wife Mumtaz Mahal.",
       "Known chiefly through writings by his son, Lutfullah Muhandis, a mathematician and poet.",
       "Was reportedly also skilled in mathematics and astronomy.",
-      "Died in 1649, as Shah Jahan’s new capital at Delhi neared completion."
+      "Died in 1649, the year after Shah Jahan moved his court to his new capital at Delhi."
     ],
     ideas: [
       { term: "Garden tomb", text: "Places the tomb at the far end of a fourfold Persian garden (charbagh) divided by water channels, an image of paradise." },
@@ -381,11 +381,11 @@ window.DRILL_DATA.architects = [
     ],
     ideas: [
       { term: "Roman temple as civic model", text: "Proposed ancient temples as models for public buildings, so that the new republic would visibly inherit the virtues of antiquity." },
-      { term: "Academical village", text: "Conceived a university as a community of pavilions housing professors and students around a lawn, rather than one large building." }
+      { term: "Plantation villa", text: "Adapted the Italian farm villa to a Virginia plantation, tucking kitchens, stables, and service rooms beneath terraces out of sight." }
     ],
     works: [
       { title: "Monticello", year: "1772–1809", place: "Charlottesville, United States", note: "His hilltop plantation house, rebuilt over decades with a low dome and porticoes; it was worked by enslaved people." },
-      { title: "University of Virginia Rotunda and Lawn", year: "1817–26", place: "Charlottesville, United States", note: "Campus of pavilions and student rooms on a terraced lawn, closed by a domed library modeled on the Pantheon at half scale." },
+      { title: "Academical Village", year: "1817–26", place: "Charlottesville, United States", note: "University of Virginia campus of professors’ pavilions and student rooms on a terraced lawn, closed by a domed library modeled on the Pantheon at half scale." },
       { title: "Virginia State Capitol", year: "1785–88", place: "Richmond, United States", note: "Temple-form capitol modeled on a Roman temple at Nîmes, designed with Charles-Louis Clérisseau." }
     ],
     quotes: []
@@ -472,7 +472,7 @@ window.DRILL_DATA.architects = [
       { title: "Restoration of Carcassonne", year: "from 1853", place: "Carcassonne, France", note: "Rebuilding of the walled medieval city’s ramparts and towers, criticized for its northern-style slate conical roofs." },
       { title: "Château de Pierrefonds", year: "1857–85", place: "Pierrefonds, France", note: "Ruined castle rebuilt for Napoleon III as an idealized medieval fortress-residence." }
     ],
-    quotes: ["To restore a building is not to maintain it, repair it, or rebuild it; it is to reinstate it in a condition of completeness that could never have existed at any given time."]
+    quotes: ["To restore a building is not to preserve it, to repair it, or to rebuild it; it is to reinstate it in a condition of completeness that could never have existed at any given time."]
   },
 
   {
@@ -487,7 +487,7 @@ window.DRILL_DATA.architects = [
     facts: [
       "Son of a French émigré architectural draftsman.",
       "Converted to Roman Catholicism in 1835.",
-      "Designed the detailing of the Palace of Westminster’s clock tower, his last major design.",
+      "Drew the design for London’s most famous clock tower in 1852, shortly before his final breakdown.",
       "Suffered a breakdown and died in 1852 at forty."
     ],
     ideas: [
@@ -608,7 +608,7 @@ window.DRILL_DATA.architects = [
       { title: "Flatiron Building", year: "1902", place: "New York, United States", note: "Steel-framed triangular skyscraper at the junction of Broadway and Fifth Avenue, clad in limestone and terracotta." },
       { title: "World’s Columbian Exposition", year: "1893", place: "Chicago, United States", note: "World’s fair whose uniform classical “White City” he directed, sparking a national taste for Beaux-Arts planning." },
       { title: "Plan of Chicago", year: "1909", place: "Chicago, United States", note: "Regional plan with Edward H. Bennett proposing lakefront parks, diagonal boulevards, and a civic center." },
-      { title: "Reliance Building", year: "1895", place: "Chicago, United States", note: "Skyscraper of glass and white terracotta whose light frame anticipates the glass towers of the twentieth century." },
+      { title: "Reliance Building", year: "1895", place: "Chicago, United States", note: "Skyscraper of glass and white terracotta, completed by the firm’s designer Charles Atwood, anticipating later glass towers." },
       { title: "Union Station", year: "1907", place: "Washington, United States", note: "Beaux-Arts rail terminal modeled on Roman baths and triumphal arches." }
     ],
     quotes: []
@@ -738,7 +738,7 @@ window.DRILL_DATA.architects = [
       "Born in Brno, Moravia, the son of a stonemason.",
       "Spent three years in the United States in the 1890s, seeing the Chicago World’s Fair.",
       "Lived in Paris in the 1920s, where he built a house for the Dada poet Tristan Tzara.",
-      "Taught Richard Neutra and Rudolph Schindler at his private building school in Vienna."
+      "Ran a private building school in Vienna whose students included the young Richard Neutra."
     ],
     ideas: [
       { term: "Ornament and crime", text: "Lecture-essay arguing that applied decoration wastes labor and materials and marks cultural backwardness unfit for modern people." },
@@ -1051,7 +1051,7 @@ window.DRILL_DATA.architects = [
       { term: "Expressive cantilevered volumes", text: "Gave buildings sculptural, almost mechanical shapes, such as auditoria that cantilever out from a wedge-shaped core." }
     ],
     works: [
-      { title: "Soviet Pavilion, Paris 1925", year: "1925", place: "Paris, France", note: "Timber and glass pavilion for the decorative arts exposition, cut through diagonally by an open stair; it won the Grand Prix." },
+      { title: "Soviet Pavilion, Paris 1925", year: "1925", place: "Paris, France", note: "Timber and glass pavilion for the decorative arts exposition, cut through diagonally by an open stair beneath crossed roof panels." },
       { title: "Rusakov Workers’ Club", year: "1928", place: "Moscow, Russia", note: "Workers’ club with three concrete auditorium blocks cantilevered from its façade." },
       { title: "Bakhmetevsky Bus Garage", year: "1927", place: "Moscow, Russia", note: "Parallelogram-plan garage under a steel roof by Vladimir Shukhov, letting buses drive through without reversing." }
     ],
@@ -1097,7 +1097,7 @@ window.DRILL_DATA.architects = [
     tag: "Late modernism",
     blurb: "Philadelphia architect who gave late modernism a timeless monumentality of massive walls, pure geometry, and dramatic natural light.",
     facts: [
-      "Born on the Estonian island of Saaremaa, then in the Russian Empire; his family emigrated to Philadelphia in 1906.",
+      "Born in Estonia, then part of the Russian Empire; his family emigrated to Philadelphia in 1906.",
       "His face was scarred by burns from a childhood accident with hot coals.",
       "Died of a heart attack in a Penn Station restroom in 1974, deeply in debt.",
       "His son Nathaniel made the 2003 documentary My Architect about him."
@@ -1192,7 +1192,7 @@ window.DRILL_DATA.architects = [
       { title: "Casa Gilardi", year: "1976", place: "Mexico City, Mexico", note: "His last house, built around a jacaranda tree, with an indoor pool in a room of saturated red, blue, and yellow." },
       { title: "Cuadra San Cristóbal", year: "1968", place: "Atizapán de Zaragoza, Mexico", note: "Equestrian estate with stables, a house, and a horse pool framed by pink and purple walls and a spout of water." },
       { title: "Satellite Towers", year: "1958", place: "Naucalpan, Mexico", note: "Five tall triangular colored concrete towers, designed with the artist Mathias Goeritz, as a gateway to a new suburb." },
-      { title: "Capuchinas Chapel", year: "1960", place: "Mexico City, Mexico", note: "Convent chapel in Tlalpan with golden light from hidden windows falling on a latticed cross." }
+      { title: "Capuchinas Chapel", year: "1952–55", place: "Mexico City, Mexico", note: "Convent chapel in Tlalpan with golden light from hidden windows falling on a latticed cross." }
     ],
     quotes: ["Any work of architecture which does not express serenity is a mistake."]
   },
@@ -1414,7 +1414,7 @@ window.DRILL_DATA.architects = [
       { title: "San Cataldo Cemetery", year: "begun 1978", place: "Modena, Italy", note: "Cemetery with a hollow red cube ossuary of empty windows and a conical tower; designed with Gianni Braghieri and never finished." },
       { title: "Teatro del Mondo", year: "1979", place: "Venice, Italy", note: "Floating timber theater for the Venice Biennale, towed across the Adriatic to Dubrovnik and later dismantled." },
       { title: "Bonnefanten Museum", year: "1995", place: "Maastricht, Netherlands", note: "Brick E-shaped museum on the Maas with a domed zinc-clad tower." },
-      { title: "Gallaratese Housing", year: "1969–73", place: "Milan, Italy", note: "Long white housing block raised on a colonnade of thin concrete fins with four massive cylinders." }
+      { title: "Gallaratese Housing", year: "1969–73", place: "Milan, Italy", note: "Long white housing block raised on a colonnade of thin concrete fins, with massive cylindrical columns where its two parts meet." }
     ],
     quotes: []
   },
@@ -1624,7 +1624,7 @@ window.DRILL_DATA.architects = [
     tag: "High-tech",
     blurb: "Italian-born British architect who turned buildings inside out, exposing their services in the high-tech Pompidou Centre and Lloyd’s Building.",
     facts: [
-      "Born in Florence to an Anglo-Italian family that moved to England in 1938.",
+      "Born in Florence to an Anglo-Italian family that moved to England before the Second World War.",
       "Was dyslexic and struggled at school.",
       "Won the Pritzker Prize in 2007.",
       "A Labour life peer who championed compact, sustainable cities, chairing the Urban Task Force in 1998."
@@ -1660,7 +1660,7 @@ window.DRILL_DATA.architects = [
       { term: "Lightness and craft", text: "Pursues lightness, transparency, and carefully engineered components, often with elaborate roofs to filter natural light." }
     ],
     works: [
-      { title: "The Shard", year: "2012", place: "London, England", note: "Tapering glass skyscraper of fragmented, splintered facets near London Bridge, long the tallest building in western Europe." },
+      { title: "The Shard", year: "2012", place: "London, England", note: "Tapering glass skyscraper of fragmented, splintered facets near London Bridge, the tallest building in the United Kingdom." },
       { title: "Kansai International Airport Terminal", year: "1994", place: "Osaka, Japan", note: "Mile-long terminal under a wing-like steel roof, on an artificial island in Osaka Bay." },
       { title: "Jean-Marie Tjibaou Cultural Centre", year: "1998", place: "Nouméa, New Caledonia", note: "Center for Kanak culture with curved timber shells inspired by traditional huts and catching sea breezes." },
       { title: "Menil Collection", year: "1987", place: "Houston, United States", note: "Low museum of cypress and steel with a roof of curved ferro-cement leaves that diffuse daylight." },
