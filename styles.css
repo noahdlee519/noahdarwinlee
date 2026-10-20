@@ -16,8 +16,8 @@
   color-scheme: dark;
   --bg: #000000;
   --ink: #ffffff;
-  --accent: #e68019;
-  --chevron: #e68019;
+  --accent: #918fff;
+  --chevron: #918fff;
   --rule: #5a5a5f;
   --mail-surface: #292a2d;
 }
@@ -37,8 +37,8 @@
     color-scheme: dark;
     --bg: #000000;
     --ink: #ffffff;
-    --accent: #e68019;
-    --chevron: #e68019;
+    --accent: #918fff;
+    --chevron: #918fff;
     --rule: #5a5a5f;
     --mail-surface: #292a2d;
   }
