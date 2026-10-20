@@ -101,7 +101,7 @@ window.DRILL_DATA.musicians = [
       { term: "Stile antico", text: "Smooth, mostly stepwise lines, carefully prepared and resolved dissonance, and clear text declamation, later codified as the ideal of sacred counterpoint." }
     ],
     works: [
-      { title: "Missa Papae Marcelli", year: "1562", note: "Six-voice Mass named for the short-reigning Pope Marcellus II; its clarity of text fed the legend that it saved church polyphony." },
+      { title: "Missa Papae Marcelli", year: "c. 1562", note: "Six-voice Mass named for the short-reigning Pope Marcellus II; its clarity of text fed the legend that it saved church polyphony." },
       { title: "Canticum canticorum", year: "1584", note: "Twenty-nine five-voice motets setting sensuous texts from the Song of Songs." }
     ],
     quotes: []
@@ -144,7 +144,7 @@ window.DRILL_DATA.musicians = [
     blurb: "The greatest English composer of the Elizabethan age, master of Latin church music, English song, and keyboard music.",
     facts: [
       "Remained a recusant Catholic while serving in Elizabeth I’s Protestant Chapel Royal.",
-      "In 1575 received, with Tallis, a royal monopoly on printing music and ruled music paper.",
+      "Organist of Lincoln Cathedral before joining the Chapel Royal in 1572.",
       "Called ‘a Father of Musick’ in the Chapel Royal’s record of his death.",
       "Wrote Masses for secret Catholic services held in country houses."
     ],
@@ -153,8 +153,8 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Mass for Five Voices", year: "c. 1595", note: "One of three Latin Mass settings printed discreetly without title pages for clandestine Catholic worship." },
-      { title: "Gradualia", year: "1605–1607", note: "Two books of Latin Propers for the Catholic church year, a complete liturgical cycle." },
-      { title: "My Ladye Nevells Booke", year: "1591", note: "A manuscript anthology of 42 of his keyboard pieces, copied for a noblewoman pupil." }
+      { title: "Gradualia", year: "1605–1607", note: "Two books of Latin Mass Propers and motets for the major feasts of the Catholic church year." },
+      { title: "My Ladye Nevells Booke", year: "1591", note: "A manuscript anthology of 42 of his keyboard pieces, copied by John Baldwin for Lady Nevell." }
     ],
     quotes: []
   },
@@ -184,13 +184,15 @@ window.DRILL_DATA.musicians = [
     quotes: []
   },
 
+  /* ===================== Baroque ===================== */
+
   {
     id: "monteverdi",
     name: "Claudio Monteverdi",
     born: 1567,
     dates: "1567–1643",
     place: "Italy",
-    group: "early",
+    group: "baroque",
     tag: "Early Baroque",
     blurb: "The pivotal figure between Renaissance and Baroque, who wrote the first operatic masterpiece and championed expressive dissonance.",
     facts: [
@@ -210,8 +212,6 @@ window.DRILL_DATA.musicians = [
     ],
     quotes: []
   },
-
-  /* ===================== Baroque ===================== */
 
   {
     id: "lully",
@@ -276,7 +276,7 @@ window.DRILL_DATA.musicians = [
     blurb: "Violinist-composer in Rome whose few, perfectly polished collections set the standards for the sonata and the concerto grosso.",
     facts: [
       "Worked in Rome for patrons including Queen Christina of Sweden and Cardinal Pietro Ottoboni.",
-      "Published only six numbered collections in his lifetime.",
+      "Left only six numbered collections, the last published just after his death.",
       "Buried in the Pantheon in Rome.",
       "Also a pioneering violin teacher whose pupils spread his style across Europe."
     ],
@@ -304,7 +304,7 @@ window.DRILL_DATA.musicians = [
       "An ordained priest nicknamed ‘il Prete Rosso’ (the Red Priest) for his red hair.",
       "Taught at the Ospedale della Pietà, a Venetian foundling home with a famous all-female orchestra.",
       "Wrote some 500 concertos, more than 200 of them for violin.",
-      "Died poor in Vienna and was buried in a pauper’s grave."
+      "Died impoverished in Vienna, where he had gone seeking imperial patronage."
     ],
     ideas: [
       { term: "Ritornello form", text: "Fast concerto movements in which a recurring orchestral refrain alternates with virtuosic solo episodes that travel through different keys." },
@@ -338,7 +338,7 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Tafelmusik", year: "1733", note: "Three published ‘productions’ of banquet music, each with an overture-suite, quartet, concerto, trio, sonata, and conclusion." },
-      { title: "Paris Quartets", year: "1730", note: "Quartets for flute, violin, viola da gamba or cello, and continuo, a hit when he visited Paris in 1737." },
+      { title: "Paris Quartets", year: "1730 and 1738", note: "Two sets of quartets for flute, violin, viola da gamba or cello, and continuo; the second was published in Paris during his 1737–38 visit." },
       { title: "Twelve Fantasias for Solo Flute", year: "1733", note: "Unaccompanied flute pieces that imply harmony and counterpoint through a single melodic line." }
     ],
     quotes: []
@@ -414,7 +414,7 @@ window.DRILL_DATA.musicians = [
       "Born in Halle the same year as J. S. Bach; the two never met.",
       "Became a naturalized British subject in 1727.",
       "Said to have survived a 1704 duel with Johann Mattheson when a sword struck a coat button.",
-      "Went blind late in life after eye surgery by the same quack surgeon who treated Bach."
+      "Went blind in his last years; the itinerant eye surgeon John Taylor, who had operated on Bach, also treated him."
     ],
     ideas: [
       { term: "English oratorio", text: "Turned to unstaged biblical dramas in English, with grand choruses, when Italian opera lost favor with London audiences." },
@@ -610,13 +610,13 @@ window.DRILL_DATA.musicians = [
     blurb: "The most popular opera composer of the early 19th century, master of sparkling comedy, who retired from opera at 37.",
     facts: [
       "Wrote some 39 operas, then stopped writing them at 37 after a final Paris triumph.",
-      "Spent his long retirement mostly in Paris as a famous gourmet and salon host.",
+      "In retirement became a famous gourmet, and his Paris salon of the 1860s drew the musical elite.",
       "Wrote a comic masterpiece reportedly in under three weeks.",
       "Born on 29 February, so had only a handful of true birthdays."
     ],
     ideas: [
       { term: "Orchestral crescendo", text: "A trademark build-up in which a short phrase repeats over and over, growing louder as more instruments pile in." },
-      { term: "Bel canto", text: "Florid, virtuosic singing with ornate runs and embellishments, central to Italian opera of the early 1800s." }
+      { term: "Bel canto", text: "Florid, virtuosic singing whose ornaments he began writing out himself rather than leaving them to the singers’ improvisation." }
     ],
     works: [
       { title: "The Barber of Seville", year: "1816", note: "Opera buffa after Beaumarchais, with Figaro’s patter aria ‘Largo al factotum.’" },
@@ -677,8 +677,8 @@ window.DRILL_DATA.musicians = [
     works: [
       { title: "Symphonie fantastique", year: "1830", note: "Five-movement program symphony about a lovesick artist’s opium dreams, ending in a witches’ sabbath." },
       { title: "Grande messe des morts", year: "1837", note: "Huge Requiem with four brass bands placed at the corners of the hall." },
-      { title: "Les Troyens", year: "1858", note: "Five-act grand opera after Virgil’s Aeneid, never staged complete in his lifetime." },
-      { title: "Harold en Italie", year: "1834", note: "Symphony with solo viola, after Byron, commissioned but rejected by Paganini." }
+      { title: "Les Troyens", year: "1863", note: "Five-act grand opera after Virgil’s Aeneid; only its last three acts were staged in his lifetime." },
+      { title: "Harold in Italy", year: "1834", note: "Symphony with solo viola, after Byron, commissioned but rejected by Paganini." }
     ],
     quotes: []
   },
@@ -819,7 +819,7 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Piano Sonata in B minor", year: "1853", note: "A single half-hour movement fusing four movements into one, dedicated to Robert Schumann." },
-      { title: "Hungarian Rhapsodies", year: "1846–1853", note: "Nineteen piano pieces in Hungarian Romani style, with slow lassan and fast friska sections." },
+      { title: "Hungarian Rhapsodies", year: "1846–1885", note: "Nineteen piano pieces in Hungarian Romani style, with slow lassan and fast friska sections." },
       { title: "Transcendental Études", year: "1852", note: "Twelve fiendish studies, including Mazeppa and Feux follets." },
       { title: "A Faust Symphony", year: "1857", note: "Three character portraits: Faust, Gretchen, and Mephistopheles, with a choral ending." },
       { title: "Les préludes", year: "1854", note: "His best-known symphonic poem, presenting life as a series of preludes to death." }
@@ -928,7 +928,7 @@ window.DRILL_DATA.musicians = [
     ],
     ideas: [
       { term: "Organ-like orchestration", text: "Blocks of brass and strings alternate like organ registrations, with grand chorales and dramatic general pauses." },
-      { term: "Duple-triplet rhythm", text: "A signature pattern of two beats plus three beats (2 + 3) that pervades his themes." }
+      { term: "Duple-triplet rhythm", text: "A signature rhythm of two even notes followed by a triplet (2 + 3), pervading his themes." }
     ],
     works: [
       { title: "Symphony No. 7 in E major", year: "1883", note: "His first great success, whose Adagio became an elegy for Wagner, with Wagner tubas." },
@@ -950,8 +950,7 @@ window.DRILL_DATA.musicians = [
     facts: [
       "Spent five years in Gothenburg, Sweden, as a teacher and conductor.",
       "Conducted at Prague’s Provisional Theatre, home of Czech-language opera.",
-      "Became completely deaf in 1874 yet kept composing.",
-      "Died in a Prague asylum."
+      "Became completely deaf in 1874 yet kept composing, and died in a Prague asylum ten years later."
     ],
     ideas: [
       { term: "Czech national opera", text: "Created a Czech national style in opera and orchestral music, using polkas, furiants, and village life." },
@@ -989,7 +988,7 @@ window.DRILL_DATA.musicians = [
       { title: "Symphony No. 1 in C minor", year: "1876", note: "Long-awaited symphony, dubbed ‘Beethoven’s Tenth’ for the finale’s theme recalling the ‘Ode to Joy.’" },
       { title: "Symphony No. 4 in E minor", year: "1885", note: "Final symphony ending in a passacaglia of 30 variations on an eight-bar theme." },
       { title: "Violin Concerto in D major, Op. 77", year: "1878", note: "Symphonic concerto written for Joseph Joachim, with an oboe solo opening the slow movement." },
-      { title: "Hungarian Dances", year: "1869", note: "Twenty-one lively piano duets on Hungarian and Romani tunes, later orchestrated." }
+      { title: "Hungarian Dances", year: "1869–1880", note: "Twenty-one lively piano duets on Hungarian and Romani tunes, later orchestrated." }
     ],
     quotes: []
   },
@@ -1004,7 +1003,7 @@ window.DRILL_DATA.musicians = [
     tag: "French Romantic",
     blurb: "French prodigy and polymath of elegant craftsmanship, whose long career ran from Berlioz’s day to the jazz age.",
     facts: [
-      "A child prodigy who gave his formal debut recital at 10.",
+      "At his formal debut at 10, offered to play any of Beethoven’s 32 piano sonatas from memory as an encore.",
       "Organist of the Madeleine in Paris for about 20 years; Liszt called him the world’s greatest organist.",
       "Co-founded the Société nationale de musique in 1871 to promote new French music.",
       "Wrote one of the first original film scores, for L’assassinat du duc de Guise (1908)."
@@ -1013,7 +1012,7 @@ window.DRILL_DATA.musicians = [
       { term: "Classical clarity", text: "Championed polished craftsmanship, clear forms, and restraint, and in old age opposed Debussy and Stravinsky." }
     ],
     works: [
-      { title: "The Carnival of the Animals", year: "1886", note: "Humorous suite including The Swan; he banned public performances in his lifetime." },
+      { title: "The Carnival of the Animals", year: "1886", note: "Humorous suite he withheld from publication in his lifetime, except for The Swan." },
       { title: "Symphony No. 3 in C minor, “Organ”", year: "1886", note: "Symphony with organ and piano, dedicated to the memory of Liszt." },
       { title: "Danse macabre", year: "1874", note: "Tone poem of Death fiddling for dancing skeletons at midnight, with a xylophone for rattling bones." },
       { title: "Samson et Dalila", year: "1877", note: "Biblical opera featuring the seductive aria ‘Mon cœur s’ouvre à ta voix.’" }
@@ -1096,7 +1095,7 @@ window.DRILL_DATA.musicians = [
       { title: "The Nutcracker", year: "1892", note: "Christmas fairy-tale ballet, with the Dance of the Sugar Plum Fairy featuring the celesta." },
       { title: "Symphony No. 6 in B minor, “Pathétique”", year: "1893", note: "His last symphony, ending unusually with a slow, despairing finale." },
       { title: "Violin Concerto in D major, Op. 35", year: "1878", note: "Concerto once called unplayable by its intended dedicatee, Leopold Auer." },
-      { title: "Romeo and Juliet (fantasy overture)", year: "1880", note: "Concert overture after Shakespeare, revised twice, with a famous love theme." }
+      { title: "Romeo and Juliet, Fantasy-Overture", year: "1880", note: "Concert overture after Shakespeare, revised twice, with a famous love theme." }
     ],
     quotes: []
   },
@@ -1139,7 +1138,7 @@ window.DRILL_DATA.musicians = [
     tag: "Nationalist",
     blurb: "Norway’s national composer, a miniaturist of genius who drew on Norwegian folk music.",
     facts: [
-      "Studied at the Leipzig Conservatory.",
+      "Sent to the Leipzig Conservatory at 15 on the advice of the violinist Ole Bull.",
       "Lived at Troldhaugen, his villa near Bergen, where he is buried.",
       "Liszt sight-read his piano concerto from manuscript in Rome and encouraged him.",
       "Stood only about five feet tall."
@@ -1178,7 +1177,7 @@ window.DRILL_DATA.musicians = [
     works: [
       { title: "Scheherazade", year: "1888", note: "Symphonic suite on the Arabian Nights, with a solo violin as the storyteller." },
       { title: "Capriccio espagnol", year: "1887", note: "Showpiece on Spanish themes, built around solos for nearly every instrument." },
-      { title: "The Golden Cockerel", year: "1907", note: "Satirical fairy-tale opera, premiered only after his death." },
+      { title: "The Golden Cockerel", year: "1909", note: "Satirical fairy-tale opera, premiered only after his death." },
       { title: "Flight of the Bumblebee", year: "1900", note: "Frantic orchestral interlude from the opera The Tale of Tsar Saltan." }
     ],
     quotes: []
@@ -1290,7 +1289,7 @@ window.DRILL_DATA.musicians = [
       { title: "Symphony No. 2 in C minor, “Resurrection”", year: "1894", note: "Five-movement symphony ending with chorus and soloists proclaiming rebirth." },
       { title: "Das Lied von der Erde", year: "1909", note: "Symphonic song cycle for tenor, alto, and orchestra on Chinese poems in German translation." },
       { title: "Symphony No. 5 in C-sharp minor", year: "1902", note: "Opens with a trumpet funeral march; its harp-and-strings Adagietto is said to be a love letter to Alma." },
-      { title: "Symphony No. 8 in E-flat major, “Symphony of a Thousand”", year: "1910", note: "Huge choral symphony setting a Latin hymn and the end of Goethe’s Faust." },
+      { title: "Symphony No. 8 in E-flat major, “Symphony of a Thousand”", year: "1906", note: "Huge choral symphony setting a Latin hymn and the end of Goethe’s Faust, premiered in Munich in 1910." },
       { title: "Kindertotenlieder", year: "1904", note: "Five songs on Rückert’s poems on the death of children." }
     ],
     quotes: ["A symphony must be like the world. It must embrace everything."]
@@ -1401,10 +1400,10 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Jenůfa", year: "1904", note: "Village tragedy of infanticide and forgiveness that made his name after its 1916 Prague staging." },
-      { title: "The Cunning Little Vixen", year: "1924", note: "Opera based on a newspaper comic strip about a fox, blending human and animal worlds." },
+      { title: "The Cunning Little Vixen", year: "1924", note: "Opera based on an illustrated newspaper serial about a fox, blending human and animal worlds." },
       { title: "Sinfonietta", year: "1926", note: "Orchestral work opening with a fanfare for massed brass, dedicated to the Czechoslovak army." },
       { title: "String Quartet No. 2, “Intimate Letters”", year: "1928", note: "Passionate quartet inspired by hundreds of love letters to a younger woman." },
-      { title: "Glagolitic Mass", year: "1927", note: "Mass setting in Old Church Slavonic with a wild organ solo." }
+      { title: "Glagolitic Mass", year: "1926", note: "Mass setting in Old Church Slavonic with a wild organ solo." }
     ],
     quotes: []
   },
@@ -1430,10 +1429,10 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Prelude to the Afternoon of a Faun", year: "1894", note: "Orchestral evocation of Mallarmé’s poem, opening with a sinuous, unaccompanied flute solo." },
-      { title: "La mer", year: "1905", note: "Three ‘symphonic sketches’ of the sea, from dawn to a stormy dialogue of wind and waves." },
+      { title: "La mer", year: "1905", note: "Three ‘symphonic sketches’ of the sea, from dawn to a stormy dialogue of wind and sea." },
       { title: "Pelléas et Mélisande", year: "1902", note: "Symbolist opera after Maeterlinck, with understated, speech-like vocal writing." },
       { title: "Suite bergamasque", year: "1905", note: "Four-movement piano suite containing Clair de lune." },
-      { title: "Preludes for Piano, Books 1 and 2", year: "1913", note: "Twenty-four pieces with titles placed at the end, such as The Sunken Cathedral." }
+      { title: "Preludes for Piano, Books 1 and 2", year: "1910–1913", note: "Twenty-four pieces with titles placed at the end, such as The Sunken Cathedral." }
     ],
     quotes: []
   },
@@ -1449,7 +1448,7 @@ window.DRILL_DATA.musicians = [
     blurb: "Eccentric Parisian whose spare, deadpan music influenced Debussy, Les Six, and later minimalists and ambient composers.",
     facts: [
       "Played piano at Montmartre cabarets, including Le Chat Noir.",
-      "Owned seven identical gray velvet suits and was nicknamed ‘the Velvet Gentleman.’",
+      "Bought seven identical velvet suits and was nicknamed ‘the Velvet Gentleman.’",
       "Founded his own church, of which he was the only member.",
       "Went back to school at 39 to study counterpoint at the Schola Cantorum."
     ],
@@ -1459,7 +1458,7 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Gymnopédies", year: "1888", note: "Three slow, melancholic piano pieces in 3/4 over simple, swaying chords." },
-      { title: "Gnossiennes", year: "1890", note: "Piano pieces written without bar lines or time signatures." },
+      { title: "Gnossiennes", year: "c. 1890", note: "Piano pieces written without bar lines or time signatures." },
       { title: "Parade", year: "1917", note: "Ballet for Diaghilev with Cocteau and Picasso, scored for typewriter, sirens, and pistol shots." },
       { title: "Vexations", year: "c. 1893", note: "Short piano piece with a note suggesting 840 repetitions; John Cage organized a complete performance in 1963." }
     ],
@@ -1488,7 +1487,7 @@ window.DRILL_DATA.musicians = [
       { title: "The Lark Ascending", year: "1920", note: "Romance for violin and orchestra after George Meredith’s poem, the soloist soaring like a bird." },
       { title: "Fantasia on a Theme by Thomas Tallis", year: "1910", note: "For string quartet and double string orchestra, on a Tudor psalm tune." },
       { title: "A Sea Symphony", year: "1910", note: "His first symphony, a choral setting of Walt Whitman." },
-      { title: "Fantasia on Greensleeves", year: "1934", note: "Short arrangement from his opera Sir John in Love." }
+      { title: "Fantasia on Greensleeves", year: "1934", note: "Interlude from his Falstaff opera Sir John in Love, arranged for concert use by Greaves." }
     ],
     quotes: []
   },
@@ -1517,7 +1516,7 @@ window.DRILL_DATA.musicians = [
       { title: "Pierrot lunaire", year: "1912", note: "Twenty-one melodramas for voice and five players, setting poems about a moonstruck clown." },
       { title: "Transfigured Night", year: "1899", note: "Lush late-Romantic string sextet (Verklärte Nacht) after a poem by Richard Dehmel." },
       { title: "Suite for Piano, Op. 25", year: "1923", note: "Among the first works built entirely on a twelve-tone row, in Baroque dance forms." },
-      { title: "Moses und Aron", year: "1932", note: "Unfinished twelve-tone opera on the conflict between an idea and its communication." },
+      { title: "Moses und Aron", year: "1957", note: "Unfinished twelve-tone opera on the conflict between an idea and its communication, staged only after his death." },
       { title: "A Survivor from Warsaw", year: "1947", note: "Short cantata for narrator, male chorus, and orchestra on the Holocaust, ending with the Shema Yisrael." }
     ],
     quotes: ["If it is art, it is not for all, and if it is for all, it is not art."]
@@ -1544,7 +1543,7 @@ window.DRILL_DATA.musicians = [
     works: [
       { title: "The Planets", year: "1916", note: "Seven-movement orchestral suite of astrological portraits, from Mars, the Bringer of War, to Neptune, the Mystic." },
       { title: "St Paul’s Suite", year: "1913", note: "Suite for strings written for his school orchestra, ending with a folk-tune finale." },
-      { title: "Savitri", year: "1908", note: "Chamber opera on an episode from the Mahabharata." }
+      { title: "Savitri", year: "1916", note: "Chamber opera on an episode from the Mahabharata." }
     ],
     quotes: []
   },
@@ -1569,8 +1568,8 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "The Unanswered Question", year: "1906", note: "Offstage strings, a questioning trumpet, and flutes that fail to answer it." },
-      { title: "Three Places in New England", year: "1914", note: "Orchestral set including two marching bands colliding in a Connecticut town." },
-      { title: "Piano Sonata No. 2, “Concord, Mass., 1840–60”", year: "1915", note: "Sonata portraying the Transcendentalists, using a board to press tone clusters." },
+      { title: "Three Places in New England", year: "c. 1914", note: "Orchestral set including two marching bands colliding in a Connecticut town." },
+      { title: "Piano Sonata No. 2, “Concord, Mass., 1840–60”", year: "c. 1915", note: "Sonata portraying the Transcendentalists, using a board to press tone clusters." },
       { title: "Central Park in the Dark", year: "1906", note: "Night sounds of the city, with ragtime and street noise over quiet strings." }
     ],
     quotes: []
@@ -1674,7 +1673,7 @@ window.DRILL_DATA.musicians = [
     blurb: "Schoenberg pupil whose concentrated, crystalline twelve-tone miniatures inspired the postwar avant-garde.",
     facts: [
       "Earned a doctorate in musicology with an edition of Heinrich Isaac’s music.",
-      "His 31 published opus numbers fit on a handful of records, many pieces lasting under a minute.",
+      "His 31 opus numbers last only about three hours in all, with some movements under a minute.",
       "Accidentally shot dead by an American soldier in Mittersill, Austria, in 1945."
     ],
     ideas: [
@@ -1684,7 +1683,7 @@ window.DRILL_DATA.musicians = [
     works: [
       { title: "Symphony, Op. 21", year: "1928", note: "Two-movement chamber symphony built on palindromic rows and canons." },
       { title: "Five Pieces for Orchestra, Op. 10", year: "1913", note: "Miniatures, some only a few bars long, for chamber orchestra." },
-      { title: "Variations for Piano, Op. 27", year: "1936", note: "His only mature solo piano piece, using a twelve-tone row in mirror canons." },
+      { title: "Variations for Piano, Op. 27", year: "1936", note: "His only solo piano work with an opus number, built on mirror symmetries and canons." },
       { title: "Passacaglia, Op. 1", year: "1908", note: "Late-Romantic orchestral variations written at the end of his studies." }
     ],
     quotes: []
@@ -1710,7 +1709,7 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Wozzeck", year: "1925", note: "Atonal opera of a tormented soldier, with each scene cast in a traditional form." },
-      { title: "Violin Concerto “To the Memory of an Angel”", year: "1935", note: "Memorial to Manon Gropius, quoting the chorale ‘Es ist genug.’" },
+      { title: "Violin Concerto, “To the Memory of an Angel”", year: "1935", note: "Memorial to Manon Gropius, quoting the chorale ‘Es ist genug.’" },
       { title: "Lulu", year: "1937", note: "Twelve-tone opera of a femme fatale, left unfinished, premiered posthumously." },
       { title: "Lyric Suite", year: "1926", note: "String quartet in six movements, partly twelve-tone." }
     ],
@@ -1817,7 +1816,7 @@ window.DRILL_DATA.musicians = [
     ],
     works: [
       { title: "Dialogues of the Carmelites", year: "1957", note: "Opera on nuns guillotined in the French Revolution, ending with their march to the scaffold." },
-      { title: "Gloria in G major", year: "1961", note: "Bright, irreverent choral setting with soprano solo, commissioned by the Koussevitzky Foundation." },
+      { title: "Gloria in G major", year: "1960", note: "Bright, irreverent choral setting with soprano solo, commissioned by the Koussevitzky Foundation." },
       { title: "Concerto for Two Pianos in D minor", year: "1932", note: "Playful concerto with echoes of Balinese gamelan and Mozart." },
       { title: "Sonata for Flute and Piano", year: "1957", note: "A staple of the flute repertoire, written for Jean-Pierre Rampal." }
     ],
@@ -1835,7 +1834,7 @@ window.DRILL_DATA.musicians = [
     blurb: "The ‘dean of American composers,’ who created the open-prairie sound of American concert music.",
     facts: [
       "Born in Brooklyn to Lithuanian Jewish immigrants.",
-      "Studied in Paris with Nadia Boulanger.",
+      "Studied in Paris with Nadia Boulanger, who premiered his organ symphony in New York in 1925.",
       "Questioned by Senator McCarthy’s committee in 1953 about leftist associations."
     ],
     ideas: [
@@ -1864,7 +1863,7 @@ window.DRILL_DATA.musicians = [
       "Played piano for silent films in Leningrad cinemas as a student.",
       "Denounced in Pravda in 1936 after Stalin walked out of his opera.",
       "Said to have kept a packed suitcase by the door in fear of arrest.",
-      "Wrote a symphony in besieged Leningrad in 1941 that became a wartime symbol."
+      "Began a symphony in besieged Leningrad in 1941 that became a symbol of wartime resistance."
     ],
     ideas: [
       { term: "DSCH motif", text: "A musical signature, D–E-flat–C–B (D–S–C–H in German notation), spelling his initials." },
@@ -1919,7 +1918,7 @@ window.DRILL_DATA.musicians = [
     blurb: "American lyricist of the orchestra whose tonal, expressive music stayed popular through the serial era.",
     facts: [
       "Entered the Curtis Institute at 14.",
-      "Lifelong partner of composer Gian Carlo Menotti, who wrote his libretti.",
+      "Longtime partner of composer Gian Carlo Menotti, who wrote the libretti for two of his operas.",
       "Won two Pulitzer Prizes for music.",
       "His opera for the opening of the new Met at Lincoln Center in 1966 was a costly failure."
     ],
@@ -2008,7 +2007,7 @@ window.DRILL_DATA.musicians = [
       "In Berlin in 1989 conducted Beethoven’s Ninth with ‘Freude’ changed to ‘Freiheit.’"
     ],
     ideas: [
-      { term: "Broadway–concert fusion", text: "Blended jazz, Latin dance rhythms, and Broadway song with symphonic writing." },
+      { term: "Broadway–concert fusion", text: "Moved between Broadway shows and concert works, bringing mambo, jazz, and Jewish liturgical chant into symphonic writing." },
       { term: "Televised music education", text: "Pioneered explaining classical music on network TV to millions." }
     ],
     works: [
@@ -2030,7 +2029,7 @@ window.DRILL_DATA.musicians = [
     tag: "Postwar avant-garde",
     blurb: "Greek-French engineer, architect, and composer who built music from mathematics.",
     facts: [
-      "Lost an eye in street fighting in Athens in 1944; later sentenced to death in absentia.",
+      "Lost an eye to a British tank shell in Athens street fighting in 1944–45; later sentenced to death in absentia.",
       "Fled to Paris in 1947.",
       "Worked as an engineer-architect for Le Corbusier and designed the Philips Pavilion for Expo 58.",
       "Studied with Messiaen, who urged him to use mathematics in music."
@@ -2086,7 +2085,7 @@ window.DRILL_DATA.musicians = [
     tag: "Postwar avant-garde",
     blurb: "Uncompromising French modernist composer, conductor, and institution builder.",
     facts: [
-      "Studied with Messiaen in Paris.",
+      "Studied harmony with Messiaen and twelve-tone technique with René Leibowitz.",
       "Declared ‘Schoenberg is dead’ in a polemical 1952 essay.",
       "Founded the computer music institute IRCAM in Paris, opened in 1977.",
       "Conducted the centenary ‘Ring’ at Bayreuth in 1976."
@@ -2121,7 +2120,7 @@ window.DRILL_DATA.musicians = [
     ideas: [
       { term: "Moment form", text: "Works made of self-contained ‘moments’ with no beginning or end, rather than a goal-directed narrative." },
       { term: "Spatial music", text: "Distributing performers or loudspeakers around the audience so sound moves through space." },
-      { term: "Electronic music", text: "Synthesized sound from sine-wave generators, combined with recorded voice." }
+      { term: "Electronic music", text: "Built pieces in a radio studio from pure sine tones, then fused synthesized sound with recorded voice." }
     ],
     works: [
       { title: "Gesang der Jünglinge", year: "1956", note: "Electronic work blending a boy’s voice with synthesized sound across five loudspeaker groups." },
@@ -2142,7 +2141,7 @@ window.DRILL_DATA.musicians = [
     tag: "Japanese modernism",
     blurb: "Self-taught Japanese composer who blended Debussy, Messiaen, and Japanese aesthetics.",
     facts: [
-      "Largely self-taught in composition.",
+      "Drawn to music as a teenager on hearing a French chanson on a record during wartime labor service.",
       "Co-founded the experimental arts group Jikken Kōbō in 1951.",
       "Stravinsky praised one of his works on a 1959 visit to Japan.",
       "Scored more than 90 films, including Kurosawa’s Ran."
@@ -2227,7 +2226,7 @@ window.DRILL_DATA.musicians = [
       "A 1992 recording of one of his symphonies, sung by Dawn Upshaw, sold over a million copies."
     ],
     ideas: [
-      { term: "Sacred minimalism", text: "Very slow, repetitive, modal music of grief and devotion, built from simple chords and folk or chant fragments." }
+      { term: "Sacred minimalism", text: "Very slow, repetitive, modal music of grief and devotion, built from simple chords and fragments of Polish folk song and church chant." }
     ],
     works: [
       { title: "Symphony No. 3, “Symphony of Sorrowful Songs”", year: "1976", note: "For soprano and orchestra, including a prayer written by a teenage prisoner on a Gestapo cell wall." },
@@ -2362,7 +2361,7 @@ window.DRILL_DATA.musicians = [
       "Won the 2003 Pulitzer Prize for a work memorializing the victims of 9/11."
     ],
     ideas: [
-      { term: "Post-minimalism", text: "Combines minimalist repetition with Romantic harmony, big climaxes, and orchestral drama." },
+      { term: "Post-minimalism", text: "Grafts minimalism’s pulse onto large symphonic forms with Romantic harmony and Mahler-sized climaxes." },
       { term: "CNN opera", text: "Operas on contemporary events, such as a presidential visit to Beijing and the first atomic bomb test." }
     ],
     works: [
@@ -2495,7 +2494,7 @@ window.DRILL_DATA.musicians = [
       "Died in Berlin at 48."
     ],
     ideas: [
-      { term: "Electro-acoustic blending", text: "Layering orchestral strings with electronic processing and drones until the sources become indistinguishable." }
+      { term: "Electro-acoustic blending", text: "Layers slow string and brass chords with analog electronics, tape loops, and found recordings until acoustic and electronic sources merge." }
     ],
     works: [
       { title: "Englabörn", year: "2002", note: "Debut album for strings, piano, and electronics, drawn from music for a play." },
@@ -2546,7 +2545,7 @@ window.DRILL_DATA.musicians = [
       "Co-founded the Luna Composition Lab to mentor young women and gender-nonconforming composers."
     ],
     ideas: [
-      { term: "Indie classical", text: "Blends rock band energy, electronics, and drones with classical ensembles and opera." }
+      { term: "Indie classical", text: "Brings the drones, distorted keyboards, and electronics of her own band into opera and orchestral writing." }
     ],
     works: [
       { title: "Breaking the Waves", year: "2016", note: "Opera after Lars von Trier’s film about a devout woman in the Scottish Hebrides." },
