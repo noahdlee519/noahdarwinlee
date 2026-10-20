@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" class="drill-root">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Philosophers | Noah Darwin Lee</title>
+    <meta name="description" content="Drill the key philosophers and their ideas: quizzes, flip cards, matching, and a timeline, from Thales to Rawls." />
+    <link rel="canonical" href="https://noahdarwinlee.com/drill/philosophers/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="Philosophers" />
+    <meta property="og:description" content="Drill the key philosophers and their ideas: quizzes, flip cards, matching, and a timeline, from Thales to Rawls." />
+    <meta property="og:url" content="https://noahdarwinlee.com/drill/philosophers/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/drill/drill.css" />
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <script src="/visit.js" defer></script>
+  </head>
+  <body class="drill-page" data-deck="philosophers">
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="back-link" href="/drill/">back</a>
+
+    <h1 class="page-title"><a href="/drill/">Drill</a> | Philosophers</h1>
+
+    <main id="drill" class="drill"></main>
+    <noscript><p class="lede">The drills need JavaScript.</p></noscript>
+
+    <script src="/drill/data/philosophers.js"></script>
+    <script src="/drill/drill.js"></script>
+    <script src="/header.js" defer></script>
+    <script src="/theme.js" defer></script>
+  </body>
+</html>
