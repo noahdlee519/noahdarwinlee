@@ -63,7 +63,7 @@
         everything the site collects, why, and what you can do about it.
       </p>
       <p class="privacy-meta">
-        Effective 17 October 2026. See also the <a href="/terms/">terms of use</a>.
+        Effective 19 October 2026. See also the <a href="/terms/">terms of use</a>.
       </p>
 
       <section>
@@ -75,10 +75,11 @@
           name, email address, and profile picture are stored so that a name and a score can
           appear on the leaderboard. Your email address is never shown to anyone but me.
           Writing in the message box on the front page stores what you wrote and when,
-          and nothing else. Asking <a href="/uchronia/">UCHRONIA</a>’s historian for a
-          history sends what you type, and a description of your map, to Anthropic to
-          write the reply; the site keeps none of it, only a count of how many requests
-          each visitor made that day. Ask, and I will delete all of it.
+          and nothing else. <a href="/uchronia/">UCHRONIA</a>’s historian needs the same
+          Google sign-in. Asking it for a history sends what you type, and a description
+          of your map, to Anthropic to write the reply; the site keeps none of it, only a
+          count of how many requests each account made that day. Ask, and I will delete
+          all of it.
         </p>
       </section>
 
@@ -129,9 +130,12 @@
       <section>
         <h2>5. Signing in</h2>
         <p>
-          Signing in is optional and exists for one reason: to put a name next to a score
-          on the leaderboard. It uses your Google account, through Supabase, the service
-          that runs the game’s database and sign-in.
+          Signing in is optional. In the game it puts a name next to a score on the
+          leaderboard, and in UCHRONIA it is needed to use the historian, so that each
+          person’s daily allowance can be counted. It uses your Google account, through
+          Supabase, the service that runs the game’s database and sign-in. Both use the
+          same account, but UCHRONIA makes no profile and shows nothing about you to
+          anyone.
         </p>
         <p>
           <b>What is collected.</b> When you sign in, Google passes the site your name,
@@ -198,16 +202,18 @@
           <a href="https://www.anthropic.com/legal/privacy">privacy policy</a> and
           <a href="https://www.anthropic.com/legal/commercial-terms">commercial terms</a>,
           which do not let it train its models on what you send; it may keep requests
-          for a limited time to watch for misuse. Nothing you send is tied to a name,
-          an account, or an email address, so don’t put anything personal in it.
+          for a limited time to watch for misuse. The program checks that you are signed
+          in, but it does not store what you send with your account, and it does not
+          pass your name or email address to Anthropic. Even so, don’t put anything
+          personal in it.
         </p>
         <p>
-          <b>The daily count.</b> To keep the historian within a daily budget, the
-          program counts how many requests each visitor makes in a day. It recognises a
-          visitor by a code made from your IP address, the date, and a secret, which
-          changes every day and cannot be turned back into your address; the address
-          itself is not stored. Each count is a date, that code, and a number, and counts
-          older than thirty days are deleted.
+          <b>The daily count.</b> To keep the historian within a daily budget, each
+          account may make five requests a day: a history, a redrawn map with the
+          history written for it, and a question each count as one. The program counts
+          them under a code made from your account identifier and a secret, which cannot
+          be turned back into the identifier. Each count is a date, that code, and a
+          number, and counts older than thirty days are deleted.
         </p>
         <p>
           <b>Saved histories.</b> The histories written for you, and the
@@ -226,14 +232,15 @@
           visit, and, if you have signed in, the token that keeps you signed in; in the
           flash card tool, your lists, drafts, and colours; and on the blog, which letters
           you have read or starred and how you sized the panes; and in UCHRONIA, your
-          map, the one you had before opening a shared map, your view settings, and your
-          saved histories.
+          map, the one you had before opening a shared map, your view settings, your
+          saved histories, and, if you have signed in, the token that keeps you signed
+          in to the historian.
         </p>
         <p>
           This information stays on your device. It is not sent to me or to anyone else,
           and clearing your browser’s data for noahdarwinlee.com removes all of it. The
-          sign-in token is the one exception in kind: your browser presents it to
-          Supabase to prove it is you, which is all it is for.
+          sign-in tokens are the one exception in kind: your browser presents them to
+          Supabase to prove it is you, which is all they are for.
         </p>
       </section>
 
@@ -246,7 +253,8 @@
           account. A message you send through the feedback box is kept because you chose
           to send it. The daily visit counter rests on my legitimate interest in knowing,
           roughly, whether anyone plays the game, which it serves without identifying
-          anyone who is not signed in.
+          anyone who is not signed in. UCHRONIA’s daily counts rest on my legitimate
+          interest in keeping the historian within its budget.
         </p>
       </section>
 
@@ -254,7 +262,7 @@
         <h2>11. Who else is involved</h2>
         <p>
           Besides the services in section 3, three more take part. Supabase runs the
-          database and the sign-in for the game, keeps the messages sent through the
+          database and the sign-in for the game and the historian, keeps the messages sent through the
           feedback box, and runs the program that passes UCHRONIA’s requests to the
           historian and keeps its daily counts; the game's copy of its script is
           delivered by jsDelivr. Google handles the sign-in itself. Anthropic writes the

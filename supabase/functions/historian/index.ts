@@ -6,8 +6,7 @@ const ORIGINS = [
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
 const ALL_CAP = 250;
-const VISITOR_CAP = 5;
-const CHAT_CAP = 20;
+const USER_CAP = 5;
 const MAX_HISTORY = 20000;
 const MAX_TURNS = 24;
 const MAX_QUESTION = 1000;
@@ -15,7 +14,6 @@ const MAX_ANSWER = 12000;
 const MAX_CHAT = 90000;
 const MAX_CHANGES = 14000;
 const MAX_NOTE = 500;
-const OPEN_UNTIL = Date.parse("2026-10-18T04:00:00Z");
 const CATALOGUE_URL = "https://noahdarwinlee.com/uchronia/data/catalogue.txt";
 const PARTS_URL = "https://noahdarwinlee.com/uchronia/data/parts.json";
 const DEADLINE = 135000;
@@ -469,7 +467,7 @@ function cors(origin: string) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "content-type",
+    "Access-Control-Allow-Headers": "content-type, authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
@@ -479,7 +477,7 @@ function json(status: number, body: unknown, origin: string) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors(origin), "Content-Type": "application/json" } });
 }
 
-function dbKey() {
+function dbKey(): Record<string, string> {
   const keys = Deno.env.get("SUPABASE_SECRET_KEYS");
   if (keys) {
     try {
@@ -507,12 +505,38 @@ async function prune() {
   if (!res.ok) throw new Error("prune " + res.status);
 }
 
-async function visitor(req: Request) {
-  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
-  const day = new Date().toISOString().slice(0, 10);
+async function account(req: Request) {
+  const m = /^Bearer\s+(\S{20,4000})$/.exec(req.headers.get("authorization") || "");
+  if (!m) return null;
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/user", { headers: { apikey: dbKey().apikey, Authorization: "Bearer " + m[1] } });
+  if (!res.ok) return null;
+  const user = await res.json();
+  return user && typeof user.id === "string" ? user.id : null;
+}
+
+async function userKey(id: string) {
   const salt = Deno.env.get("HISTORIAN_SALT") || "uchronia";
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + "|" + day + "|" + ip));
-  return Array.from(new Uint8Array(bytes).slice(0, 12)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + "|user|" + id));
+  return "u" + Array.from(new Uint8Array(bytes).slice(0, 12)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function used(who: string) {
+  const day = new Date().toISOString().slice(0, 10);
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/rest/v1/historian_usage?select=n&day=eq." + day + "&who=eq." + who, { headers: dbKey() });
+  if (!res.ok) throw new Error("used " + res.status);
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length ? Number(rows[0].n) || 0 : 0;
+}
+
+async function refresh(token: string) {
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/token?grant_type=refresh_token", {
+    method: "POST",
+    headers: { apikey: dbKey().apikey, "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: token }),
+  });
+  if (!res.ok) return null;
+  const s = await res.json();
+  return s && typeof s.access_token === "string" && typeof s.refresh_token === "string" ? { access_token: s.access_token, refresh_token: s.refresh_token } : null;
 }
 
 Deno.serve(async (req) => {
@@ -530,6 +554,28 @@ Deno.serve(async (req) => {
     body = await req.json();
   } catch (_) {
     return json(400, { error: "body" }, o);
+  }
+  if (body.mode === "refresh") {
+    const token = str((body as any).refresh_token, 400);
+    const fresh = token ? await refresh(token).catch((e) => { console.error(e); return null; }) : null;
+    return fresh ? json(200, fresh, o) : json(401, { error: "signin" }, o);
+  }
+  let uid: string | null = null;
+  try {
+    uid = await account(req);
+  } catch (e) {
+    console.error(e);
+    return json(500, { error: "auth" }, o);
+  }
+  if (!uid) return json(401, { error: "signin" }, o);
+  const who = await userKey(uid);
+  if (body.mode === "me") {
+    try {
+      return json(200, { left: Math.max(0, USER_CAP - (await used(who))), cap: USER_CAP }, o);
+    } catch (e) {
+      console.error(e);
+      return json(500, { error: "count" }, o);
+    }
   }
   const redraw = body.mode === "redraw", chat = body.mode === "chat", outlining = body.mode === "outline", drawing = body.mode === "part";
   const planning = redraw || outlining || drawing;
@@ -600,15 +646,20 @@ Deno.serve(async (req) => {
     });
   }
 
-  const who = (await visitor(req)) + (chat ? "c" : "");
-  let ok = false;
+  let counted = true, ok = false, full = false;
   try {
-    ok = await rpc("historian_take", { p_who: who, p_all_cap: ALL_CAP, p_who_cap: Date.now() < OPEN_UNTIL ? 100000 : chat ? CHAT_CAP : VISITOR_CAP });
+    const ticket = str((body as any).ticket, 200), outline = (body as any).outline;
+    if (!chat && !planning && ticket && premise && outline && typeof outline === "object" && (await checkTicket(ticket, premise, outline))) {
+      counted = !(await rpc("historian_once", { p_key: ticket.slice(-32) + ":history" }));
+    }
+    ok = counted ? await rpc("historian_take", { p_who: who, p_all_cap: ALL_CAP, p_who_cap: USER_CAP }) : true;
+    if (!ok) full = (await used(who)) < USER_CAP;
   } catch (e) {
     console.error(e);
     return json(500, { error: "count" }, o);
   }
-  if (!ok) return json(429, { error: "limit" }, o);
+  if (!ok) return json(429, { error: full ? "full" : "limit", cap: USER_CAP }, o);
+  const giveBack = () => counted ? rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x)) : Promise.resolve();
   if (Math.random() < 0.05) prune().catch((e) => console.error(e));
 
   const text = "How this world's map differs from ours:\n\n" + changes + (note ? "\n\nThe mapmaker's note:\n" + note : "");
@@ -630,12 +681,12 @@ Deno.serve(async (req) => {
           messages: [{ role: "user", content: "The premise:\n" + premise }],
         }, deadline, "outline");
       } catch (e) {
-        await rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x));
+        await giveBack();
         throw e;
       }
       const outline = r.value;
       if (!outline || typeof outline !== "object") {
-        await rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x));
+        await giveBack();
         send({ t: "end", reason: r.stop });
         return;
       }
@@ -678,7 +729,7 @@ Deno.serve(async (req) => {
           }
         } catch (e) {
           console.error(e);
-          await rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x));
+          await giveBack();
           send(failure(e));
         }
         clearInterval(ping);
@@ -758,7 +809,7 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         console.error(e);
-        if (!started) await rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x));
+        if (!started) await giveBack();
         send(failure(e));
       }
       controller.close();

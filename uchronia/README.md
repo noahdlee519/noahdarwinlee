@@ -535,11 +535,12 @@ of `/greatercircle/`.
     world has it, and the message says which. A part still being written
     when its time is nearly up is cut short at the last complete edit,
     rather than lost.
-  - The outline counts once against the daily limits; its parts do not, but
+  - The outline counts once against the daily limits; its parts and the
+    history written after it do not, but
     each part can be asked for only once, and only with the ticket the
     outline came with: a signature over the outline and the turning point,
     good for twenty minutes, that the function checks (`historian_once`
-    keeps the parts already drawn). The old one-step redraw still answers,
+    keeps the parts already drawn, and the one history the ticket pays for). The old one-step redraw still answers,
     for pages loaded before the change.
   - Redraws are asked to be bold: to follow the turning point beyond its own
     region, to let no border drawn after the divergence survive by
@@ -620,18 +621,35 @@ of `/greatercircle/`.
     a small server function, `supabase/functions/historian`, which asks
     Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
     the text back. The function holds the API key, answers only this site,
-    and allows 250 requests a day in all, and to each visitor 5 histories or
-  redrawn maps (a redraw and its history count as two) and 20 questions
-    (the per-visitor limits are lifted until 18 October 2026, 04:00 UTC, midnight in New York); it
-    keeps only a daily count per visitor under a hashed key, never the map or
-    the text, and deletes counts older than thirty days.
+    and allows 250 requests a day in all, and to each account 5, counting
+    histories, redrawn maps (a redraw and its history count as one), and
+    questions alike; it keeps only a daily count per account under a hashed
+    key, never the map or the text, and deletes counts older than thirty
+    days. When an account has used its five, the message says so in red;
+    when the site as a whole has, the message says the historian has done
+    all it can.
+  - Using the historian needs a Google sign-in, the same Supabase sign-in
+    citylayoutguessr uses. Signed out, the Historian panel offers *Sign in
+    with Google* and its buttons are disabled; saved histories can still be
+    read. The button goes to Supabase's `/auth/v1/authorize` and comes back to
+    `/uchronia/?historian` with the session in the address's fragment, which
+    the page keeps in `localStorage` (`uchronia-auth`), clears from the
+    address, and answers by opening the panel. Signed in, the panel shows the
+    account's email, how many requests are left today, and *Sign out*. Every
+    request carries the access token; the function checks it with Supabase
+    (`/auth/v1/user`) and answers 401 without one. A token about to expire is
+    renewed through the function itself (`mode: "refresh"`), so the page
+    needs no Supabase key of its own, and `mode: "me"` returns the count
+    left.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
     `supabase/migrations/20261012_historian_usage.sql`, and `historian_once`,
     set up by `supabase/migrations/20261015_historian_once.sql`) live in the Supabase
     project kigvciyyjlgjcgnwgrwf. The function is deployed as `dynamic-endpoint`
-    with JWT verification off (it checks the origin and the daily caps
-    itself) and needs the `ANTHROPIC_API_KEY` secret.
+    with JWT verification off (it checks the origin, the sign-in, and the
+    daily caps itself) and needs the `ANTHROPIC_API_KEY` secret. Supabase's
+    Authentication settings must list `https://noahdarwinlee.com/uchronia/**`
+    among the redirect URLs.
 - **Check** counts, in a badge, what may have been left by mistake, and
   lists it: cities and countries never renamed from *New city* or *New
   country*, countries founded and given no land, countries that lost their

@@ -5865,7 +5865,7 @@
       });
     }
     ready.then(function () { fineDone = true; }, function () { fineDone = true; });
-    ready.then(openSharedFromHash).then(scheduleChecks);
+    ready.then(openSharedFromHash).then(scheduleChecks).then(function () { if (signedBack) showHistory(true); });
     loadRivers();
     var settled = function () {
       return fineDone && labelQueue.size === 0 && (!ui.rivers || riversDone)
@@ -5954,6 +5954,88 @@
 
   var HISTORIAN = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/dynamic-endpoint", STORE_HISTORY = "uchronia-history";
   var places = new Map(), historyBusy = false, historyKey = "";
+  var AUTH = "https://kigvciyyjlgjcgnwgrwf.supabase.co/auth/v1", STORE_AUTH = "uchronia-auth";
+  var session = null, sessionRead = false, refreshing = null, historianLeft = null, historianCap = 5, signedBack = false;
+  function readSession() {
+    if (sessionRead) return session;
+    sessionRead = true;
+    try {
+      var s = JSON.parse(localStorage.getItem(STORE_AUTH) || "null");
+      session = s && typeof s.a === "string" && typeof s.r === "string" ? s : null;
+    } catch (e) { session = null; }
+    return session;
+  }
+  function keepSession(s) {
+    session = s; sessionRead = true;
+    if (!s) historianLeft = null;
+    try { if (s) localStorage.setItem(STORE_AUTH, JSON.stringify(s)); else localStorage.removeItem(STORE_AUTH); } catch (e) { }
+  }
+  function claimsOf(token) {
+    try {
+      var p = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p), function (ch) { return ch.charCodeAt(0); }))) || {};
+    } catch (e) { return {}; }
+  }
+  function sessionFrom(a, r, was) { var c = claimsOf(a); return { a: a, r: r, e: (+c.exp || 0) * 1000, email: typeof c.email === "string" ? c.email : was ? was.email : "" }; }
+  (function takeSignIn() {
+    var h = location.hash;
+    if (!/^#(.*&)?(access_token|error_description)=/.test(h)) return;
+    var q = new URLSearchParams(h.slice(1));
+    signedBack = /(^|[?&])historian(=|&|$)/.test(location.search.slice(1));
+    history.replaceState(null, "", location.pathname);
+    if (q.get("access_token") && q.get("refresh_token")) keepSession(sessionFrom(q.get("access_token"), q.get("refresh_token")));
+    else setTimeout(function () { toast("Signing in did not work: " + (q.get("error_description") || "try again")); }, 0);
+  })();
+  function signedIn() { return !!readSession(); }
+  function signIn() {
+    flushSave();
+    location.href = AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname + "?historian");
+  }
+  function freshToken() {
+    var s = readSession();
+    if (!s) return Promise.resolve(null);
+    if (s.e - Date.now() > 60000) return Promise.resolve(s.a);
+    if (refreshing) return refreshing;
+    refreshing = fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "refresh", refresh_token: s.r }) }).then(function (res) {
+      if (res.status === 401) { keepSession(null); return null; }
+      if (!res.ok) throw new Error("refresh " + res.status);
+      return res.json().then(function (d) { keepSession(sessionFrom(d.access_token, d.refresh_token, s)); return d.access_token; });
+    });
+    refreshing.then(function () { refreshing = null; }, function () { refreshing = null; });
+    return refreshing;
+  }
+  function callHistorian(body) {
+    return freshToken().then(function (t) {
+      if (!t) return new Response("{\"error\":\"signin\"}", { status: 401 });
+      return fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t }, body: JSON.stringify(body) });
+    }).then(function (res) {
+      if (res.status === 401) { keepSession(null); showAccount(); }
+      return res;
+    });
+  }
+  var SIGN_IN = "Sign in to use the historian.";
+  function limitText(res, full) {
+    return res.json().catch(function () { return {}; }).then(function (d) {
+      if (d && isInt(d.cap)) historianCap = d.cap;
+      var times = ["once", "twice", "three times", "four times", "five times", "six times", "seven times", "eight times", "nine times", "ten times"][historianCap - 1] || historianCap + " times";
+      return d && d.error === "full" ? full : "You have asked the historian " + times + " today, as many as one account can. Try again tomorrow.";
+    });
+  }
+  function showAccount() {
+    var s = signedIn() ? session : null;
+    $("history-signin").hidden = !!s;
+    $("history-account").hidden = !s;
+    if (s) $("history-who").textContent = (s.email || "Signed in") + (historianLeft === null ? "" : " · " + historianLeft + " of " + historianCap + " left today");
+    if ($("history-ask-go")) syncAsk();
+  }
+  function syncAccount() {
+    showAccount();
+    if (!signedIn()) return;
+    callHistorian({ mode: "me" }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
+      if (d && isInt(d.left)) { historianLeft = d.left; if (isInt(d.cap)) historianCap = d.cap; }
+      showAccount();
+    }).catch(function (e) { console.warn("historian", e); });
+  }
   function listOf(names, max) {
     var uniq = Array.from(new Set(names));
     if (uniq.length <= max) return uniq.join(", ");
@@ -6271,7 +6353,7 @@
   }
   function setStatus(el, msg) {
     el.textContent = msg || "";
-    el.classList.toggle("is-limit", /all they can for today/.test(msg || ""));
+    el.classList.toggle("is-limit", /Try again tomorrow\.$/.test(msg || ""));
   }
   function historyStatus(msg) { setStatus($("history-status"), msg); $("history-status").hidden = !msg; }
   var STORE_CONVS = "uchronia-histories", CONV_MAX = 30, conv = null, convRead = false;
@@ -6397,6 +6479,7 @@
     closeMenus(null);
     if (!$("history-saved").hidden) return;
     var changes = describeChanges(), c = currentConv();
+    syncAccount();
     if (!historyBusy) {
       if (c) showConv(c);
       else {
@@ -6427,15 +6510,15 @@
   function syncAsk() {
     document.body.classList.toggle("uc-thinking", historyBusy);
     if (savedOpen()) renderSaved();
-    $("history-go").disabled = historyBusy || (askMode === "map" && !describeChanges());
-    $("history-ask-go").disabled = historyBusy;
+    $("history-go").disabled = historyBusy || !signedIn() || (askMode === "map" && !describeChanges());
+    $("history-ask-go").disabled = historyBusy || !signedIn();
   }
   function showAsk(open) {
     $("history-ask").hidden = !open || savedOpen();
     $("history-new").hidden = open || historyBusy || !currentConv() || savedOpen();
     $("history-cancel").hidden = !open || historyBusy || !currentConv();
   }
-  function writeHistory(premise, asked) {
+  function writeHistory(premise, asked, after) {
     var changes = describeChanges(), note = typeof premise === "string" ? premise : $("history-input").value.trim();
     asked = typeof asked === "string" ? asked : note;
     if (!changes || historyBusy) return;
@@ -6450,7 +6533,7 @@
     var paint = function () { queued = false; renderHistory(text); };
     var finish = function (msg, keep) {
       historyBusy = false; done = true;
-      syncAsk();
+      syncAccount();
       historyStatus(msg);
       renderHistory(text);
       if (!text) showAsked("");
@@ -6464,8 +6547,11 @@
         else { showConv(conv); if (msg) historyStatus(msg); }
       }
     };
-    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ changes: changes, note: note }) }).then(function (res) {
-      if (res.status === 429) return finish("The historian has written all they can for today. Try again tomorrow.");
+    var body = { changes: changes, note: note };
+    if (after) { body.ticket = after.ticket; body.premise = after.premise; body.outline = after.outline; }
+    callHistorian(body).then(function (res) {
+      if (res.status === 401) return finish(SIGN_IN);
+      if (res.status === 429) return limitText(res, "The historian has written all they can for today. Try again tomorrow.").then(function (m) { finish(m); });
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       historyStatus("");
@@ -6549,11 +6635,11 @@
     var finish = function (msg) {
       if (done) return;
       done = true; historyBusy = false;
-      syncAsk();
+      syncAccount();
       historyStatus(msg);
       if (msg) { showAsked(""); showAsk(true); }
     };
-    var post = function (body) { return fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); };
+    var post = callHistorian, ticket = "";
     var KEYS = ["new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"];
     var outline = null, names = {}, plans = [], failed = [], total = 0, left = 0, before = null, step = null, last = null;
     var merged = function () {
@@ -6591,7 +6677,7 @@
       var at = centreOf(last.units);
       if (at) flyTo(at[0], at[1]);
       var year = isInt(outline.year) ? outline.year : 0;
-      writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise, premise);
+      writeHistory(year && year < new Date().getFullYear() ? premise + "\nThe map shows the world in " + (year < 0 ? -year + " BC" : year) + "." : premise, premise, ticket ? { ticket: ticket, premise: premise, outline: outline } : null);
     };
     var drawPart = function (id, ticket) {
       var over = false;
@@ -6616,14 +6702,15 @@
       }).catch(function (e) { console.warn("historian part", id, e); end(null); });
     };
     post({ mode: "outline", premise: premise }).then(function (res) {
-      if (res.status === 429) return finish("The historian has done all they can for today. Try again tomorrow.");
+      if (res.status === 401) return finish(SIGN_IN);
+      if (res.status === 429) return limitText(res, "The historian has done all they can for today. Try again tomorrow.").then(finish);
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       return readEvents(res, function (ev) {
         if (done || outline) return;
         if (ev.t === "outline") {
           if (!ev.outline || typeof ev.outline !== "object" || ev.outline.declined) return finish("The historian declines to draw that world.");
-          outline = ev.outline; names = ev.names || {};
+          outline = ev.outline; names = ev.names || {}; ticket = typeof ev.ticket === "string" ? ev.ticket : "";
           var ids = (Array.isArray(outline.parts) ? outline.parts : []).map(function (b) { return b && b.part; }).filter(function (id, k, all) { return typeof id === "string" && all.indexOf(id) === k; });
           total = left = ids.length;
           if (!total) return settle();
@@ -6656,7 +6743,7 @@
       if (done) return;
       if (pending) { edits.then(function () { finish(msg); }); return; }
       done = true; historyBusy = false;
-      syncAsk();
+      syncAccount();
       setStatus($("history-chat-status"), msg);
       if (edited) { c.map = makeDiff(); c.changes = describeChanges(); }
       if (text && !msg) {
@@ -6671,8 +6758,9 @@
       if (!$("history-q").value) $("history-q").value = q;
     };
     var payload = { mode: "chat", changes: describeChanges() || c.changes, note: c.premise || c.note || "", history: c.history, turns: c.turns.slice(-24), question: q };
-    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).then(function (res) {
-      if (res.status === 429) return finish("The historian has answered all they can for today. Try again tomorrow.");
+    callHistorian(payload).then(function (res) {
+      if (res.status === 401) return finish(SIGN_IN);
+      if (res.status === 429) return limitText(res, "The historian has answered all they can for today. Try again tomorrow.").then(finish);
       if (res.status === 413) return finish("This conversation has grown too long to continue. Write a new history to start another.");
       if (res.status === 503) return finish("The historian is not taking requests yet.");
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
@@ -6705,6 +6793,8 @@
     });
   }
   $("history-ask-go").addEventListener("click", askHistorian);
+  $("history-google").addEventListener("click", signIn);
+  $("history-signout").addEventListener("click", function () { keepSession(null); showAccount(); });
   $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); askHistorian(); } });
   $("history-saved-btn").addEventListener("click", function () { showSaved($("history-saved").hidden); });
 

@@ -593,6 +593,7 @@ body.uc-page {
   resize: vertical;
 }
 #history-go::before,
+#history-google::before,
 #redraw-go::before {
   content: none;
 }
@@ -730,6 +731,24 @@ body.uc-page {
 .uc-chron-saved-btn[aria-expanded="true"] {
   color: var(--ink);
 }
+.uc-chron-signin {
+  margin: 16px 0 6px;
+}
+.uc-chron-signin .uc-chron-hint {
+  margin: 0 0 12px;
+}
+.uc-chron-account {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--uc-muted);
+}
+.uc-chron-account .uc-linkbtn {
+  margin-left: 6px;
+  color: var(--uc-muted);
+}
+.uc-chron-signin[hidden],
+.uc-chron-account[hidden],
 .uc-chron-ask[hidden],
 .uc-chron-text[hidden],
 .uc-chron-chat[hidden],
