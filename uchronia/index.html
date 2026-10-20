@@ -38,6 +38,7 @@
           t = localStorage.getItem("ndl-theme");
           s = localStorage.getItem("uchronia-style");
         } catch (e) {}
+        if (t === "white") t = "light";
         if (t !== "dark" && t !== "light") {
           t =
             window.matchMedia &&
@@ -57,7 +58,7 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'sha256-fzUk4KzGKeD0CPX4LseLuhoUrtQ+D0fsBwxymYe1AxU=';
+        script-src 'self' 'sha256-BM7z/HN/mtmJzgslIVKd8dLlpp+CkuJCutHlG1vLr5s=';
         style-src 'self';
         font-src 'self';
         img-src 'self' data: blob: https://gibs.earthdata.nasa.gov https://s3.amazonaws.com;

@@ -40,7 +40,7 @@
         try {
           t = localStorage.getItem("ndl-theme");
         } catch (e) {}
-        if (t !== "dark" && t !== "light") {
+        if (t !== "dark" && t !== "light" && t !== "white") {
           t =
             window.matchMedia &&
             window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -55,7 +55,7 @@
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'sha256-HoSwDg8nnQk1NXcMOzkswPlauRhTcyy/D3Ksw58Qnag=';
+        script-src 'self' 'sha256-vQvv26Rj3mOdKCO/5HuhWihrgCwcvDkb/uUcEzxviug=';
         worker-src 'self';
         style-src 'self' https://fonts.googleapis.com;
         font-src https://fonts.gstatic.com;

@@ -30,7 +30,7 @@
         try {
           t = localStorage.getItem("ndl-theme");
         } catch (e) {}
-        if (t !== "dark" && t !== "light") {
+        if (t !== "dark" && t !== "light" && t !== "white") {
           t =
             window.matchMedia &&
             window.matchMedia("(prefers-color-scheme: dark)").matches

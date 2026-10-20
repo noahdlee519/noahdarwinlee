@@ -5910,6 +5910,7 @@
   function syncStyle() {
     var t = null, st = null;
     try { t = localStorage.getItem("ndl-theme"); st = localStorage.getItem(STORE_STYLE); } catch (e) { }
+    if (t === "white") t = "light";
     st = st !== "plain" ? "antique" : t === "dark" || t === "light" ? t : darkMedia && darkMedia.matches ? "dark" : "light";
     if (st !== currentStyle()) applyStyle(st);
   }

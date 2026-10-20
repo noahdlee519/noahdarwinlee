@@ -77,7 +77,8 @@ of `/greatercircle/`.
     neighbours never share one and sit well apart on the wheel; any colour can
     still be chosen by hand.
   - **Styles.** *Light* is black on white and *Dark* white on black; both
-    follow the site's day and night setting, which they also set. *Antique*,
+    follow the site's theme, which they also set (the site's orange and white
+    themes both open *Light*). *Antique*,
     the style a first visit opens in, is drawn like a hand-coloured map of
     the 1800s:
     - parchment and sepia ink, with a paper grain on the bar, the menus, and

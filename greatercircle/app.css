@@ -72,6 +72,30 @@
   }
 }
 
+:root[data-theme="white"] {
+  --gc-ocean: #ffffff;
+  --gc-land: #d6d6d6;
+  --gc-land-hover: #f6d3b0;
+  --gc-border: rgba(255, 255, 255, 0.9);
+  --gc-border-sub: rgba(255, 255, 255, 0.7);
+  --gc-limb: rgba(0, 0, 0, 0.5);
+  --gc-glow: rgba(230, 128, 25, 0.16);
+  --gc-grat: rgba(0, 0, 0, 0.07);
+  --gc-hatch: rgba(230, 128, 25, 0.9);
+  --gc-route: #e68019;
+  --gc-route-halo: rgba(255, 255, 255, 0.8);
+  --gc-direct: rgba(0, 0, 0, 0.4);
+  --gc-marker: #e68019;
+  --gc-marker-ink: #ffffff;
+  --gc-muted: rgba(0, 0, 0, 0.6);
+  --gc-field: rgba(0, 0, 0, 0.05);
+  --gc-hover: rgba(230, 128, 25, 0.16);
+  --gc-city: rgba(0, 0, 0, 0.82);
+  --gc-city-ring: #ffffff;
+  --gc-label: #000000;
+  --gc-region-fill: rgba(230, 128, 25, 0.2);
+}
+
 :root.gc-sat-on {
   --gc-land: rgba(0, 0, 0, 0.32);
   --gc-land-hover: rgba(255, 255, 255, 0.2);

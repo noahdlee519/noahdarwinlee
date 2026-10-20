@@ -9,7 +9,7 @@
   function saved() {
     try {
       var v = localStorage.getItem(KEY);
-      return v === "dark" || v === "light" ? v : null;
+      return v === "dark" || v === "light" || v === "white" ? v : null;
     } catch (e) {
       return null;
     }
@@ -19,18 +19,23 @@
     return media && media.matches ? "dark" : "light";
   }
 
+  var NEXT = { light: "white", white: "dark", dark: "light" };
+  var NAME = { light: "Orange", white: "White", dark: "Night" };
+
   function current() {
-    return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    var t = root.getAttribute("data-theme");
+    return t === "dark" || t === "white" ? t : "light";
   }
 
   function label(theme) {
     if (!btn) return;
-    btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+    var next = NEXT[theme];
+    btn.removeAttribute("aria-pressed");
     btn.setAttribute(
       "aria-label",
-      theme === "dark" ? "Night. Switch to day." : "Day. Switch to night."
+      NAME[theme] + ". Switch to " + NAME[next].toLowerCase() + "."
     );
-    btn.title = theme === "dark" ? "Switch to day" : "Switch to night";
+    btn.title = "Switch to " + NAME[next].toLowerCase();
   }
 
   function apply(theme) {
@@ -47,7 +52,7 @@
     btn.id = "theme-btn";
     label(current());
     btn.addEventListener("click", function () {
-      var next = current() === "dark" ? "light" : "dark";
+      var next = NEXT[current()];
       apply(next);
       try {
         localStorage.setItem(KEY, next);
