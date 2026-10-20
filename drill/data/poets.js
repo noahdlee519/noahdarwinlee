@@ -42,14 +42,14 @@ window.DRILL_DATA.poets = [
     tag: "Lyric poetry",
     blurb: "The most celebrated lyric poet of ancient Greece, famed for intensely personal poems of love and desire.",
     facts: [
-      "Lived on the island of Lesbos, whose name entered English through her poetry.",
+      "Lived on the island of Lesbos, whose name, through her, gave English the word “lesbian.”",
       "An ancient epigram attributed to Plato calls her “the tenth Muse.”",
       "A four-line stanza of three long lines and a short one is named after her.",
       "Her poems filled nine books, but most survive only as fragments, some recovered from Egyptian papyri."
     ],
     works: [
       { title: "Fragment 31", year: "c. 600 BCE", note: "Lyric listing the physical symptoms of desire—fire under the skin, ringing ears—while watching a beloved woman laugh with a man." },
-      { title: "Ode to Aphrodite", year: "c. 600 BCE", note: "Her only complete surviving poem: a prayer asking the goddess of love to help win over a reluctant beloved." }
+      { title: "Ode to Aphrodite", year: "c. 600 BCE", note: "Long thought her only complete surviving poem: a prayer asking the goddess of love to help win over a reluctant beloved." }
     ],
     lines: [
       { text: "He seems to me equal to gods that man / whoever he is who opposite you / sits and listens close / to your sweet speaking", work: "Fragment 31" }
@@ -77,7 +77,7 @@ window.DRILL_DATA.poets = [
       { title: "Ave atque vale", year: "c. 57 BCE", note: "Poem 101: an elegy spoken at a brother’s grave in the Troad, ending with a final farewell." }
     ],
     lines: [
-      { text: "da mi basia mille, deinde centum", work: "Vivamus, mea Lesbia" }
+      { text: "Let us live, my Lesbia, and let us love", work: "Vivamus, mea Lesbia" }
     ]
   },
 
@@ -92,8 +92,8 @@ window.DRILL_DATA.poets = [
     blurb: "Rome’s national poet, whose epic gave Augustus’s empire a founding myth in Troy.",
     facts: [
       "Born near Mantua in northern Italy.",
-      "Enjoyed the patronage of Maecenas, Augustus’s cultural minister.",
-      "Asked on his deathbed for his unfinished epic to be burned; Emperor Augustus refused.",
+      "With the poet Varius, introduced the young Horace to the great patron Maecenas.",
+      "Reportedly asked on his deathbed for his unfinished epic to be burned; Emperor Augustus overruled him.",
       "Serves as the pilgrim’s guide through Hell and Purgatory in Dante’s great poem."
     ],
     works: [
@@ -102,9 +102,7 @@ window.DRILL_DATA.poets = [
       { title: "The Eclogues", year: "c. 38 BCE", note: "Ten pastoral poems of shepherds’ songs; the fourth was long read as a prophecy of Christ." }
     ],
     lines: [
-      { text: "Arms, and the man I sing, who, forc’d by fate, / And haughty Juno’s unrelenting hate", work: "The Aeneid" },
-      { text: "timeo Danaos et dona ferentes", work: "The Aeneid" },
-      { text: "sed fugit interea, fugit irreparabile tempus", work: "The Georgics" }
+      { text: "Arms, and the man I sing, who, forc’d by fate, / And haughty Juno’s unrelenting hate", work: "The Aeneid" }
     ]
   },
 
@@ -129,7 +127,7 @@ window.DRILL_DATA.poets = [
       { title: "Satires", year: "c. 35–30 BCE", note: "Two books of conversational hexameter poems mocking human folly and greed." }
     ],
     lines: [
-      { text: "carpe diem, quam minimum credula postero", work: "Odes" }
+      { text: "Carpe diem", work: "Odes" }
     ]
   },
 
@@ -153,7 +151,7 @@ window.DRILL_DATA.poets = [
       { title: "Heroides", year: "c. 20 BCE", note: "Verse letters from abandoned heroines of myth, such as Penelope and Dido, to the men who left them." }
     ],
     lines: [
-      { text: "In nova fert animus mutatas dicere formas / corpora", work: "Metamorphoses" }
+      { text: "Now I am ready to tell how bodies are changed / Into different bodies.", work: "Metamorphoses" }
     ]
   },
 
@@ -267,7 +265,7 @@ window.DRILL_DATA.poets = [
     blurb: "Florentine poet of the great medieval journey through Hell, Purgatory, and Paradise, the father of the Italian language.",
     facts: [
       "Exiled from Florence in 1302 after his political faction lost power, and never returned.",
-      "Devoted much of his poetry to Beatrice Portinari, whom he first met as a child.",
+      "Devoted much of his poetry to Beatrice, traditionally identified as Beatrice Portinari, whom he first met when both were nine.",
       "Wrote his masterpiece in the Tuscan vernacular rather than Latin, shaping standard Italian.",
       "Invented terza rima, the interlocking three-line rhyme scheme (aba bcb cdc)."
     ],
@@ -302,7 +300,7 @@ window.DRILL_DATA.poets = [
       { title: "Africa", year: "c. 1338–1343", note: "Unfinished Latin epic on Scipio Africanus and the Second Punic War." }
     ],
     lines: [
-      { text: "Voi ch’ascoltate in rime sparse il suono / di quei sospiri ond’io nudriva ’l core", work: "Canzoniere" }
+      { text: "You who hear in scattered rhymes the sound of those sighs with which I nourished my heart", work: "Canzoniere" }
     ]
   },
 
@@ -403,7 +401,7 @@ window.DRILL_DATA.poets = [
     ],
     works: [
       { title: "Holy Sonnets", year: "1633", note: "Nineteen religious sonnets of spiritual anguish, including a defiant address to Death itself." },
-      { title: "A Valediction: Forbidding Mourning", year: "1633", note: "Parting poem to a wife that compares two lovers’ souls to the legs of a drawing compass." },
+      { title: "A Valediction: Forbidding Mourning", year: "1633", note: "Parting poem, said to be addressed to his wife, that compares two lovers’ souls to the legs of a drawing compass." },
       { title: "The Flea", year: "1633", note: "Witty seduction poem arguing that, since a flea has mingled two lovers’ blood, sex would be no sin." },
       { title: "Devotions upon Emergent Occasions", year: "1624", note: "Prose meditations written during a near-fatal illness, as church bells toll for the dying." }
     ],
@@ -476,7 +474,7 @@ window.DRILL_DATA.poets = [
     place: "England",
     group: "early-modern",
     tag: "Metaphysical poetry",
-    blurb: "Witty Metaphysical poet and Puritan politician, best known for the most persuasive carpe diem poem in English.",
+    blurb: "Witty Metaphysical poet and long-serving Member of Parliament, best known for the most persuasive carpe diem poem in English.",
     facts: [
       "Assisted John Milton as Latin secretary under Cromwell and is credited with helping protect him after the Restoration.",
       "Sat as Member of Parliament for Hull for nearly twenty years.",
@@ -515,8 +513,7 @@ window.DRILL_DATA.poets = [
       { title: "The Narrow Road to the Deep North", year: "1702", note: "Travel journal of prose and haiku recording a five-month walk through northern Japan in 1689." }
     ],
     lines: [
-      { text: "furuike ya / kawazu tobikomu / mizu no oto", work: "The Old Pond" },
-      { text: "natsukusa ya / tsuwamonodomo ga / yume no ato", work: "The Narrow Road to the Deep North" }
+      { text: "Days and months are travellers of eternity. So are the years that pass by.", work: "The Narrow Road to the Deep North" }
     ]
   },
 
@@ -570,9 +567,8 @@ window.DRILL_DATA.poets = [
       { title: "Roman Elegies", year: "1795", note: "Sensual cycle in classical elegiac couplets celebrating love and art during a stay in Rome." }
     ],
     lines: [
-      { text: "Wer reitet so spät durch Nacht und Wind? / Es ist der Vater mit seinem Kind", work: "The Erl-King" },
-      { text: "Über allen Gipfeln / Ist Ruh", work: "Wanderer’s Night Song" },
-      { text: "Zwei Seelen wohnen, ach! in meiner Brust", work: "Faust" }
+      { text: "O, who rides by night thro’ the woodland so wild? / It is the fond father embracing his child", work: "The Erl-King" },
+      { text: "O’er all the hill-tops / Is quiet now", work: "Wanderer’s Night Song" }
     ]
   },
 
@@ -588,7 +584,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "Kidnapped from West Africa as a child and sold in Boston in 1761.",
       "Was named after the slave ship that brought her across the Atlantic.",
-      "Had to prove her authorship before a panel of eminent Boston men, including John Hancock.",
+      "Her book opened with an attestation of authorship signed by eighteen prominent Boston men, including John Hancock.",
       "Wrote a poem to George Washington, who invited her to visit him at his headquarters."
     ],
     works: [
@@ -669,7 +665,7 @@ window.DRILL_DATA.poets = [
     blurb: "The great poet of nature and memory who, with Coleridge, launched English Romanticism.",
     facts: [
       "Lived for decades in the Lake District, at Dove Cottage and then Rydal Mount.",
-      "Served as Poet Laureate from 1843 until his death.",
+      "Accepted the Poet Laureateship in 1843 only after being assured he need write no official verse.",
       "Fathered a daughter with Annette Vallon during a stay in revolutionary France.",
       "His sister Dorothy’s journals inspired several of his poems."
     ],
@@ -789,7 +785,7 @@ window.DRILL_DATA.poets = [
     works: [
       { title: "Ode to a Nightingale", year: "1819", note: "A poet longs to escape mortal suffering by following a bird’s song, then is tolled back to himself." },
       { title: "Ode on a Grecian Urn", year: "1820", note: "Meditation on scenes painted on an ancient vase, frozen forever in art." },
-      { title: "To Autumn", year: "1820", note: "Three stanzas on autumn’s ripeness, harvest, and fading music; often called the most perfect short poem in English." },
+      { title: "To Autumn", year: "1820", note: "Three stanzas on autumn’s ripeness, harvest, and fading music; often called one of the most perfect short poems in English." },
       { title: "On First Looking into Chapman’s Homer", year: "1816", note: "Sonnet comparing the thrill of reading an Elizabethan translation of Greek epic to discovering a new planet or ocean." },
       { title: "Endymion", year: "1818", note: "Long romance about a shepherd loved by the moon goddess, savaged by reviewers." }
     ],
@@ -822,8 +818,7 @@ window.DRILL_DATA.poets = [
       { title: "Almansor", year: "1823", note: "Tragedy set in Moorish Spain after the Christian conquest, containing a prophetic line on book burning." }
     ],
     lines: [
-      { text: "Ich weiß nicht, was soll es bedeuten, / Daß ich so traurig bin", work: "Die Lorelei" },
-      { text: "Dort, wo man Bücher verbrennt, verbrennt man auch am Ende Menschen.", work: "Almansor" }
+      { text: "Where they burn books, they will ultimately burn people also.", work: "Almansor" }
     ]
   },
 
@@ -848,7 +843,7 @@ window.DRILL_DATA.poets = [
       { title: "I Loved You", year: "1830", note: "Eight-line lyric renouncing a beloved with tender generosity, wishing her another’s equal love." }
     ],
     lines: [
-      { text: "Люблю тебя, Петра творенье", work: "The Bronze Horseman" }
+      { text: "My uncle has most honest principles", work: "Eugene Onegin" }
     ]
   },
 
@@ -949,7 +944,7 @@ window.DRILL_DATA.poets = [
       "Recorded readings of his poems on Edison wax cylinders around 1890."
     ],
     works: [
-      { title: "In Memoriam A.H.H.", year: "1850", note: "Elegy in 131 sections tracing grief, religious doubt, and the threat of Darwinian nature toward renewed faith." },
+      { title: "In Memoriam A.H.H.", year: "1850", note: "Elegy in 131 sections moving from grief and doubt, shaken by a pre-Darwinian vision of pitiless nature, toward renewed faith." },
       { title: "Ulysses", year: "1842", note: "Dramatic monologue of the aging Odysseus, restless at home and resolved to sail once more." },
       { title: "The Charge of the Light Brigade", year: "1854", note: "Ballad honoring British cavalry destroyed by a blundered order at Balaclava in the Crimean War." },
       { title: "The Lady of Shalott", year: "1832", note: "Arthurian ballad of a cursed woman who weaves a world seen only in a mirror until she looks at Lancelot." },
@@ -975,7 +970,7 @@ window.DRILL_DATA.poets = [
       "Courted the invalid poet Elizabeth Barrett through hundreds of letters before eloping with her to Italy in 1846.",
       "Based his longest poem on a 1698 Roman murder trial documented in an old yellow book bought at a Florence market stall.",
       "Died in Venice on the day his last collection was published.",
-      "Is buried in Poets’ Corner in Westminster Abbey."
+      "His early long poem on a medieval troubadour, Sordello (1840), became a byword for obscurity."
     ],
     works: [
       { title: "My Last Duchess", year: "1842", note: "A Renaissance duke, showing a portrait to an envoy, hints that he had his late wife killed." },
@@ -1040,8 +1035,7 @@ window.DRILL_DATA.poets = [
       { title: "Paris Spleen", year: "1869", note: "Posthumous collection of prose poems sketching Parisian street life." }
     ],
     lines: [
-      { text: "Hypocrite lecteur,—mon semblable,—mon frère!", work: "Les Fleurs du mal" },
-      { text: "La Nature est un temple où de vivants piliers / Laissent parfois sortir de confuses paroles", work: "Correspondences" }
+      { text: "Hypocrite lecteur,—mon semblable,—mon frère!", work: "Les Fleurs du mal" }
     ]
   },
 
@@ -1112,7 +1106,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "Sister of the painter-poet who co-founded the Pre-Raphaelite Brotherhood.",
       "Modeled for the Virgin Mary in two of her brother’s paintings.",
-      "Broke off engagements to two suitors, partly on religious grounds.",
+      "Broke off one engagement and refused another suitor’s proposal, both largely on religious grounds.",
       "Volunteered for years at a Highgate refuge for “fallen women.”"
     ],
     works: [
@@ -1133,7 +1127,7 @@ window.DRILL_DATA.poets = [
     born: 1840,
     dates: "1840–1928",
     place: "England",
-    group: "19th",
+    group: "modern",
     tag: "Victorian poetry",
     blurb: "The great novelist turned poet, whose bleak, plainspoken lyrics bridged Victorian and modern verse.",
     facts: [
@@ -1176,8 +1170,7 @@ window.DRILL_DATA.poets = [
       { title: "Le Tombeau d’Edgar Poe", year: "1877", note: "Sonnet-epitaph for an American poet misunderstood by his own country." }
     ],
     lines: [
-      { text: "La chair est triste, hélas! et j’ai lu tous les livres.", work: "Brise marine" },
-      { text: "Donner un sens plus pur aux mots de la tribu", work: "Le Tombeau d’Edgar Poe" }
+      { text: "The flesh is sad, alas! and I have read all the books.", work: "Brise marine" }
     ]
   },
 
@@ -1231,8 +1224,7 @@ window.DRILL_DATA.poets = [
       { title: "Fêtes galantes", year: "1869", note: "Poems evoking Watteau’s paintings of masked lovers in moonlit parks." }
     ],
     lines: [
-      { text: "Les sanglots longs / Des violons / De l’automne / Blessent mon cœur / D’une langueur / Monotone.", work: "Chanson d’automne" },
-      { text: "De la musique avant toute chose", work: "Art poétique" }
+      { text: "The long sobs / of the violins / of autumn / wound my heart / with a monotonous / languor.", work: "Chanson d’automne" }
     ]
   },
 
@@ -1253,13 +1245,13 @@ window.DRILL_DATA.poets = [
     ],
     works: [
       { title: "A Season in Hell", year: "1873", note: "Prose-poem confession of spiritual and artistic crisis; the only book its author published himself." },
-      { title: "Illuminations", year: "1886", note: "Hallucinatory prose poems, among the first free verse in French." },
+      { title: "Illuminations", year: "1886", note: "Hallucinatory prose poems, including two of the earliest free-verse poems in French." },
       { title: "The Drunken Boat", year: "1883", note: "A boat, freed of its haulers, narrates its ecstatic, visionary voyage through the sea." },
       { title: "Vowels", year: "1883", note: "Sonnet assigning a color to each vowel, a famous example of synesthesia." }
     ],
     lines: [
-      { text: "A noir, E blanc, I rouge, U vert, O bleu : voyelles", work: "Vowels" },
-      { text: "Comme je descendais des Fleuves impassibles", work: "The Drunken Boat" }
+      { text: "A Black, E white, I red, U green, O blue", work: "Vowels" },
+      { text: "As I was going down impassive Rivers", work: "The Drunken Boat" }
     ]
   },
 
@@ -1385,7 +1377,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "Co-founded Dublin’s Abbey Theatre with Lady Gregory.",
       "Proposed repeatedly to the revolutionary Maud Gonne, who refused him.",
-      "Won the Nobel Prize in Literature in 1923.",
+      "Won the Nobel Prize in Literature in 1923, the first Irish writer to do so.",
       "Served as a senator of the Irish Free State."
     ],
     works: [
@@ -1454,7 +1446,7 @@ window.DRILL_DATA.poets = [
     ],
     lines: [
       { text: "You must change your life.", work: "Archaic Torso of Apollo" },
-      { text: "Wer, wenn ich schriee, hörte mich denn aus der Engel / Ordnungen?", work: "Duino Elegies" }
+      { text: "Who, if I cried out, would hear me among the angels’ / hierarchies?", work: "Duino Elegies" }
     ]
   },
 
@@ -1477,7 +1469,7 @@ window.DRILL_DATA.poets = [
       { title: "Harmonium", year: "1923", note: "Debut collection of exotic, comic, and philosophical poems, which sold poorly at first." },
       { title: "Thirteen Ways of Looking at a Blackbird", year: "1917", note: "Thirteen haiku-like sections, each viewing a bird from a different angle." },
       { title: "Sunday Morning", year: "1915", note: "A woman skips church to muse that earthly beauty and death are enough without heaven." },
-      { title: "The Emperor of Ice-Cream", year: "1922", note: "A wake in a kitchen where cigar-rolling muscles whip desserts beside a corpse." },
+      { title: "The Emperor of Ice-Cream", year: "1922", note: "A wake: a muscular cigar-roller whips up curds in the kitchen while a dead woman lies under a sheet." },
       { title: "The Snow Man", year: "1921", note: "One-sentence poem urging a “mind of winter” to see a bare landscape without projecting misery onto it." }
     ],
     lines: [
@@ -1509,8 +1501,7 @@ window.DRILL_DATA.poets = [
       { title: "Zone", year: "1912", note: "Long free-verse walk through modern Paris, weary of the ancient world, with airplanes and the Eiffel Tower." }
     ],
     lines: [
-      { text: "Vienne la nuit sonne l’heure / Les jours s’en vont je demeure", work: "Le Pont Mirabeau" },
-      { text: "À la fin tu es las de ce monde ancien", work: "Zone" }
+      { text: "Let night come on bells end the day / The days go by me still I stay", work: "Le Pont Mirabeau" }
     ]
   },
 
@@ -1527,7 +1518,7 @@ window.DRILL_DATA.poets = [
       "Worked for four decades as a family doctor in Rutherford, New Jersey, writing between patients.",
       "Befriended Ezra Pound while studying medicine at the University of Pennsylvania.",
       "Won the first National Book Award for Poetry in 1950.",
-      "Won a posthumous Pulitzer Prize in 1963."
+      "Won a Pulitzer Prize in 1963, two months after his death."
     ],
     works: [
       { title: "The Red Wheelbarrow", year: "1923", note: "Sixteen-word poem on a rain-glazed barrow beside white chickens." },
@@ -1696,8 +1687,8 @@ window.DRILL_DATA.poets = [
       { title: "The Tobacco Shop", year: "1933", note: "Long poem, signed by an alter ego, of a man at his window weighing his nothingness against his dreams." }
     ],
     lines: [
-      { text: "O poeta é um fingidor. / Finge tão completamente / Que chega a fingir que é dor / A dor que deveras sente.", work: "Autopsychography" },
-      { text: "Não sou nada. / Nunca serei nada.", work: "The Tobacco Shop" }
+      { text: "The poet is a faker / Who’s so good at his act / He even fakes the pain / Of pain he feels in fact.", work: "Autopsychography" },
+      { text: "I’m nothing. / I’ll always be nothing.", work: "The Tobacco Shop" }
     ]
   },
 
@@ -1713,7 +1704,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "Born in St. Louis, Missouri; became a British subject in 1927.",
       "Worked for years as a clerk at Lloyds Bank in London.",
-      "Won the Nobel Prize in Literature in 1948.",
+      "Received both the Nobel Prize in Literature and the Order of Merit in 1948.",
       "His book of whimsical cat poems became the basis of a hit stage musical."
     ],
     works: [
@@ -1827,7 +1818,7 @@ window.DRILL_DATA.poets = [
       { title: "Voronezh Notebooks", year: "c. 1935–37", note: "Late poems written in internal exile, preserved by memory and secret copies." }
     ],
     lines: [
-      { text: "Мы живём, под собою не чуя страны", work: "The Stalin Epigram" }
+      { text: "We live, deaf to the land beneath us, / Ten steps away no one hears our speeches", work: "The Stalin Epigram" }
     ]
   },
 
@@ -1852,7 +1843,7 @@ window.DRILL_DATA.poets = [
       { title: "I Like That You’re Not Sick with Me", year: "c. 1915", note: "Lyric of relief at being free of love’s fever, later a famous Soviet film song." }
     ],
     lines: [
-      { text: "Мне нравится, что вы больны не мной, / Мне нравится, что я больна не вами", work: "I Like That You’re Not Sick with Me" }
+      { text: "In this most Christian of worlds / all poets are Jews", work: "Poem of the End" }
     ]
   },
 
@@ -1962,8 +1953,7 @@ window.DRILL_DATA.poets = [
       { title: "Poet in New York", year: "1940", note: "Surreal, posthumously published poems of alienation in Manhattan and Harlem." }
     ],
     lines: [
-      { text: "Verde que te quiero verde.", work: "Romance sonámbulo" },
-      { text: "A las cinco de la tarde.", work: "Lament for Ignacio Sánchez Mejías" }
+      { text: "At five in the afternoon.", work: "Lament for Ignacio Sánchez Mejías" }
     ]
   },
 
@@ -1983,7 +1973,7 @@ window.DRILL_DATA.poets = [
       "Graduated from Lincoln University in Pennsylvania after leaving Columbia."
     ],
     works: [
-      { title: "The Negro Speaks of Rivers", year: "1921", note: "Written at seventeen on a train over the Mississippi: Black history traced through the Euphrates, Congo, Nile, and Mississippi." },
+      { title: "The Negro Speaks of Rivers", year: "1921", note: "Written as a teenager on a train crossing the Mississippi: Black history traced through the Euphrates, Congo, Nile, and Mississippi." },
       { title: "Harlem", year: "1951", note: "Short poem asking what happens to a dream postponed—does it shrivel, fester, or explode?" },
       { title: "I, Too", year: "1926", note: "A Black servant sent to eat in the kitchen insists he too is American." },
       { title: "The Weary Blues", year: "1926", note: "Debut collection whose title poem describes a blues pianist in Harlem." }
@@ -2008,7 +1998,7 @@ window.DRILL_DATA.poets = [
       "Moved to the United States in 1939 and became an American citizen in 1946.",
       "Married Erika Mann, Thomas Mann’s daughter, in 1935 to give her a British passport.",
       "Wrote opera librettos, including one for Stravinsky, with his partner Chester Kallman.",
-      "Served as Oxford Professor of Poetry from 1956 to 1961."
+      "Won the 1948 Pulitzer Prize for a long poem set in a New York bar."
     ],
     works: [
       { title: "Funeral Blues", year: "1936", note: "Lament demanding that the world stop for a lover’s death; made famous by a 1994 film." },
@@ -2074,7 +2064,7 @@ window.DRILL_DATA.poets = [
       { title: "Anthologie de la nouvelle poésie nègre et malgache", year: "1948", note: "Landmark anthology of Black francophone poets, prefaced by Sartre’s essay “Black Orpheus.”" }
     ],
     lines: [
-      { text: "Vêtue de ta couleur qui est vie, de ta forme qui est beauté!", work: "Femme noire" }
+      { text: "Naked woman, black woman", work: "Femme noire" }
     ]
   },
 
@@ -2142,7 +2132,7 @@ window.DRILL_DATA.poets = [
     tag: "Lyric poetry",
     blurb: "Craftsman of African American history and memory, best known for a small, perfect poem about a father’s love.",
     facts: [
-      "Born Asa Bundy Sheffer and raised by foster parents in Detroit’s Paradise Valley.",
+      "Born Asa Bundy Sheffey and raised by foster parents in Detroit’s Paradise Valley.",
       "Taught for over two decades at Fisk University in Nashville.",
       "Was a devoted member of the Bahá’í Faith.",
       "In 1976 became the first African American appointed Consultant in Poetry to the Library of Congress."
@@ -2197,7 +2187,7 @@ window.DRILL_DATA.poets = [
       "Attended an antifascist writers’ congress in Spain during the Civil War in 1937.",
       "Resigned as Mexico’s ambassador to India in protest at the 1968 Tlatelolco massacre.",
       "Founded the influential literary magazines Plural and Vuelta.",
-      "Won the Nobel Prize in Literature in 1990."
+      "Won the Nobel Prize in Literature in 1990, the first Mexican to do so."
     ],
     works: [
       { title: "Sunstone", year: "1957", note: "Circular poem of 584 lines, matching the Aztec count of Venus’s cycle, on love, time, and history." },
@@ -2206,7 +2196,7 @@ window.DRILL_DATA.poets = [
       { title: "Blanco", year: "1967", note: "Experimental poem printed on a single folding sheet, readable in multiple ways." }
     ],
     lines: [
-      { text: "un sauce de cristal, un chopo de agua", work: "Sunstone" }
+      { text: "a crystal willow, a poplar of water", work: "Sunstone" }
     ]
   },
 
@@ -2287,7 +2277,7 @@ window.DRILL_DATA.poets = [
     ],
     lines: [
       { text: "Black milk of daybreak we drink it at evening", work: "Death Fugue" },
-      { text: "der Tod ist ein Meister aus Deutschland", work: "Death Fugue" }
+      { text: "death is a master from Germany", work: "Death Fugue" }
     ]
   },
 
@@ -2332,7 +2322,7 @@ window.DRILL_DATA.poets = [
       "Lived most of her life in Kraków.",
       "Worked for decades as poetry editor of the Kraków weekly Życie Literackie.",
       "Wrote early poems in line with socialist realism, which she later disowned.",
-      "Won the Nobel Prize in Literature in 1996."
+      "Won the 1996 Nobel Prize in Literature, sixteen years after her compatriot Czesław Miłosz."
     ],
     works: [
       { title: "The End and the Beginning", year: "1993", note: "After a war, someone has to clean up the rubble, unglamorous work that goes on long after the cameras leave." },
@@ -2408,7 +2398,7 @@ window.DRILL_DATA.poets = [
     tag: "New York School",
     blurb: "Elusive, dreamlike master of the New York School, often called the most influential American poet of his era.",
     facts: [
-      "His first book was chosen by W. H. Auden for the Yale Series of Younger Poets in 1956.",
+      "Grew up on a fruit farm near Lake Ontario in upstate New York.",
       "Lived in Paris for a decade, writing art criticism for the Herald Tribune.",
       "Swept the Pulitzer Prize, National Book Award, and National Book Critics Circle Award for one book.",
       "Became the first living poet published in the Library of America series."
@@ -2437,7 +2427,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "Began writing poetry at a therapist’s suggestion after a breakdown.",
       "Worked briefly as a fashion model in Boston.",
-      "Won the Pulitzer Prize for Poetry in 1967.",
+      "Studied in Robert Lowell’s Boston University workshop alongside Sylvia Plath.",
       "Formed a chamber-rock band to perform her poems with music."
     ],
     works: [
@@ -2517,7 +2507,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "Grew up in the Calder Valley of West Yorkshire, the son of a carpenter.",
       "Married Sylvia Plath in 1956.",
-      "Served as Poet Laureate from 1984 until his death.",
+      "Succeeded John Betjeman as Poet Laureate in 1984, after Philip Larkin declined the post.",
       "Broke decades of silence about his first marriage in a book of poems published months before he died."
     ],
     works: [
@@ -2544,9 +2534,9 @@ window.DRILL_DATA.poets = [
     blurb: "Caribbean poet and playwright who fused Homeric epic, island landscape, and colonial history.",
     facts: [
       "Born in Castries on the Caribbean island of Saint Lucia.",
-      "Was also a painter in watercolors.",
+      "Taught for years at Boston University, where he founded the Boston Playwrights’ Theatre.",
       "Founded the Trinidad Theatre Workshop in 1959.",
-      "Won the Nobel Prize in Literature in 1992."
+      "Won the 1992 Nobel Prize in Literature; the island’s other laureate, the economist Arthur Lewis, shared his birthday."
     ],
     works: [
       { title: "Omeros", year: "1990", note: "Caribbean epic in loose terza rima that recasts the Iliad among Saint Lucian fishermen." },
@@ -2574,7 +2564,7 @@ window.DRILL_DATA.poets = [
       "Was a guest editor at Mademoiselle magazine in 1953.",
       "Married the English poet Ted Hughes in 1956.",
       "Died by suicide in London in 1963, at 30.",
-      "Won a posthumous Pulitzer Prize for Poetry in 1982."
+      "Won a posthumous Pulitzer Prize for Poetry in 1982 for her collected poems."
     ],
     works: [
       { title: "Ariel", year: "1965", note: "Posthumous collection of furious late poems, written in a burst in 1962." },
@@ -2629,7 +2619,7 @@ window.DRILL_DATA.poets = [
     facts: [
       "As a teenager stayed at Edna St. Vincent Millay’s former home, helping sort the late poet’s papers.",
       "Lived for decades in Provincetown, Massachusetts, with photographer Molly Malone Cook.",
-      "Won the Pulitzer Prize for Poetry in 1984.",
+      "Attended Ohio State and Vassar but never took a degree.",
       "Wrote much of her work while walking in the woods with a notebook."
     ],
     works: [
@@ -2655,8 +2645,8 @@ window.DRILL_DATA.poets = [
     blurb: "Northern Irish poet of the bog, the farm, and the Troubles, the most celebrated poet writing in English of his time.",
     facts: [
       "Grew up the eldest of nine children on a farm in County Derry.",
-      "Served as Oxford Professor of Poetry.",
-      "Won the Nobel Prize in Literature in 1995.",
+      "Taught at Harvard for over a decade, holding the Boylston Professorship of Rhetoric and Oratory.",
+      "Won the 1995 Nobel Prize in Literature, the fourth Irish writer to do so.",
       "His last words, texted to his wife, were “Noli timere” (“Don’t be afraid”)."
     ],
     works: [
@@ -2720,7 +2710,7 @@ window.DRILL_DATA.poets = [
       { title: "In the Presence of Absence", year: "2006", note: "Late prose-poem self-elegy." }
     ],
     lines: [
-      { text: "Sajjil! / Ana ‘Arabi", work: "Identity Card" }
+      { text: "Record! / I am an Arab", work: "Identity Card" }
     ]
   },
 
@@ -2735,9 +2725,9 @@ window.DRILL_DATA.poets = [
     blurb: "Austere, mythic lyric poet of trauma, family, and nature, awarded the Nobel Prize in 2020.",
     facts: [
       "Battled anorexia as a teenager, which led to years of psychoanalysis.",
-      "Won the Pulitzer Prize for Poetry in 1993.",
+      "Taught for some twenty years at Williams College before joining the faculty at Yale.",
       "Served as US Poet Laureate in 2003–04.",
-      "Won the Nobel Prize in Literature in 2020."
+      "In 2020 became the first American woman poet to win the Nobel Prize in Literature."
     ],
     works: [
       { title: "The Wild Iris", year: "1992", note: "Collection in which garden flowers, a gardener, and a god speak in turn." },
