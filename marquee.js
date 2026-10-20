@@ -33,6 +33,19 @@
         path.setAttribute("d", "M20 80 L72 28 M32 22 H78 V68");
         svg.appendChild(path);
         run.appendChild(svg);
+      } else if (img === "plus" && i === at) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("class", "marquee-plus");
+        svg.setAttribute("viewBox", "0 0 100 100");
+        svg.setAttribute("aria-hidden", "true");
+        const box = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        box.setAttribute("width", "100");
+        box.setAttribute("height", "100");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "M50 24 V76 M24 50 H76");
+        svg.appendChild(box);
+        svg.appendChild(path);
+        run.appendChild(svg);
       } else if (img && i === at) {
         const picture = document.createElement("picture");
         const source = document.createElement("source");
@@ -64,7 +77,7 @@
 
   const lanes = rows.map((row, index) => {
     const title = row.dataset.title;
-    const img = row.hasAttribute("data-arrow") ? "arrow" : row.dataset.img;
+    const img = row.hasAttribute("data-arrow") ? "arrow" : row.hasAttribute("data-plus") ? "plus" : row.dataset.img;
     const ratio = parseFloat(row.dataset.ratio) || 1;
 
     const track = document.createElement("div");

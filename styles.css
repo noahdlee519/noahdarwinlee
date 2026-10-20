@@ -2376,6 +2376,25 @@ body.is-zoomed {
   stroke-linejoin: miter;
 }
 
+.marquee-plus {
+  display: block;
+  flex: 0 0 auto;
+  width: clamp(52px, 9vw, 116px);
+  height: clamp(52px, 9vw, 116px);
+  margin-left: 0.3em;
+}
+
+.marquee-plus rect {
+  fill: #111;
+}
+
+.marquee-plus path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 14;
+  stroke-linecap: square;
+}
+
 .marquee-run > picture {
   display: block;
   flex: 0 0 auto;
