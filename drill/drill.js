@@ -206,6 +206,11 @@
     });
   }
 
+  // Wrap in quotation marks unless the line already opens with one.
+  function quoted(html) {
+    return /^[“‘"']/.test(html) ? html : "“" + html + "”";
+  }
+
   function escRe(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -340,12 +345,12 @@
     if (sec === "facts") return list(item.facts).map(esc);
     if (sec === "quotes") {
       return list(item.quotes).map(function (q) {
-        return "“" + esc(q) + "”";
+        return quoted(esc(q));
       });
     }
     if (sec === "lines") {
       return list(item.lines).map(function (l) {
-        return "“" + esc(l.text) + "” <cite>" + esc(l.work) + "</cite>";
+        return quoted(esc(l.text)) + " <cite>" + esc(l.work) + "</cite>";
       });
     }
     if (sec === "characters") {
@@ -584,7 +589,7 @@
       var i = rand(quotes.length);
       return nameQuestion(item, pool, {
         label: "who said it?",
-        prompt: "“" + esc(mask(quotes[i], item)) + "”",
+        prompt: quoted(esc(mask(quotes[i], item))),
         promptClass: "is-quote",
         focus: ["quotes", i],
       });
@@ -596,7 +601,7 @@
       var i = rand(lines.length);
       return nameQuestion(item, pool, {
         label: "who wrote this line?",
-        prompt: "“" + esc(mask(lines[i].text, item)) + "”",
+        prompt: quoted(esc(mask(lines[i].text, item))),
         promptClass: "is-quote",
         focus: ["lines", i],
       });
@@ -650,7 +655,7 @@
       var i = rand(lines.length);
       return titleQuestion(item, lines[i].work, pool, {
         label: "which work is this line from?",
-        prompt: "“" + esc(mask(lines[i].text, item)) + "”",
+        prompt: quoted(esc(mask(lines[i].text, item))),
         promptClass: "is-quote",
         focus: ["lines", i],
       });
@@ -1125,8 +1130,8 @@
     var html;
     if (sec === "ideas") html = '<span class="card-term">' + esc(v.term) + "</span>" + esc(mask(v.text, item));
     else if (sec === "works") html = "<cite>" + esc(v.title) + "</cite>";
-    else if (sec === "quotes") html = "“" + esc(mask(v, item)) + "”";
-    else if (sec === "lines") html = "“" + esc(mask(v.text, item)) + "”";
+    else if (sec === "quotes") html = quoted(esc(mask(v, item)));
+    else if (sec === "lines") html = quoted(esc(mask(v.text, item)));
     else if (sec === "characters") html = esc(v.name) + ' <span class="card-in">in <cite>' + esc(v.work) + "</cite></span>";
     else html = esc(mask(v, item));
     return { html: html, focus: [sec, c[1]], long: sec !== "works" && sec !== "characters" };
