@@ -70,7 +70,9 @@ a {
 }
 
 .top {
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .top nav a {
@@ -556,21 +558,4 @@ a {
 .chips li,
 .arrow {
   position: relative;
-}
-.frame::after,
-.go::after,
-.top nav a::after,
-.chips li::after,
-.arrow::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: 0 0 0 64px #000;
-  clip-path: inset(0);
-  pointer-events: none;
-}
-.frame::after {
-  inset: -1px;
-  border-radius: 16px;
 }
