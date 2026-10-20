@@ -246,6 +246,7 @@
         whichWork: "which of these did they make?",
         termWho: "whose technique or idea?",
         ideaWho: "whose technique or idea is this?",
+        ideaMeaning: "what is it?",
         workWhere: "where is it now?",
       },
       gens: {
