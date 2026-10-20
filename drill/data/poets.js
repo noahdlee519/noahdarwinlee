@@ -150,7 +150,7 @@ window.DRILL_DATA.poets = [
     works: [
       { title: "Metamorphoses", year: "8 CE", note: "Fifteen-book epic of some 250 myths of transformation, from the creation of the world to the deification of Julius Caesar." },
       { title: "Ars Amatoria", year: "c. 2 CE", note: "Mock-didactic poem teaching men and women how to find and keep a lover." },
-      { title: "Heroides", year: "c. 15 BCE", note: "Verse letters from abandoned heroines of myth, such as Penelope and Dido, to the men who left them." }
+      { title: "Heroides", year: "c. 20 BCE", note: "Verse letters from abandoned heroines of myth, such as Penelope and Dido, to the men who left them." }
     ],
     lines: [
       { text: "In nova fert animus mutatas dicere formas / corpora", work: "Metamorphoses" }
@@ -297,7 +297,7 @@ window.DRILL_DATA.poets = [
       "Often called the “father of humanism” for reviving the study of classical Latin authors."
     ],
     works: [
-      { title: "Canzoniere", year: "1374", note: "366 Italian poems, mostly sonnets, charting love for Laura during her life and after her death; it gave the Italian sonnet its name." },
+      { title: "Canzoniere", year: "1374", note: "366 Italian poems, mostly sonnets, charting love for Laura in life and after death; the model for European sonnets for centuries." },
       { title: "Trionfi", year: "c. 1351–1374", note: "Allegorical poem in terza rima of successive triumphs: Love, Chastity, Death, Fame, Time, and Eternity." },
       { title: "Africa", year: "c. 1338–1343", note: "Unfinished Latin epic on Scipio Africanus and the Second Punic War." }
     ],
@@ -319,7 +319,7 @@ window.DRILL_DATA.poets = [
       "Spent nearly his whole life in Shiraz, where his tomb is a place of pilgrimage.",
       "His pen name is a title for someone who has memorized the entire Quran.",
       "Iranians traditionally open his collected poems at random to tell their fortunes.",
-      "Inspired Goethe’s late collection West–Eastern Divan."
+      "Inspired Goethe’s late cycle of poems in the Persian manner."
     ],
     works: [
       { title: "Divan", year: "14th century", note: "Collection of some 500 ghazals blending earthly love, wine, and Sufi mysticism, compiled after the poet’s death." },
@@ -1118,7 +1118,7 @@ window.DRILL_DATA.poets = [
     works: [
       { title: "Goblin Market", year: "1862", note: "Narrative poem of two sisters, one of whom eats enchanted fruit sold by goblin men and is saved by the other." },
       { title: "In the Bleak Midwinter", year: "1872", note: "Christmas poem of the Nativity in a frozen landscape, later a beloved carol." },
-      { title: "Remember", year: "1862", note: "Sonnet asking a beloved to remember her after death, but rather to forget and smile than grieve." },
+      { title: "Remember", year: "1862", note: "Sonnet asking a beloved to keep her in mind after death, yet preferring that he forget and smile than grieve." },
       { title: "Up-Hill", year: "1861", note: "Question-and-answer poem in which the road of life leads to an inn with beds for all." }
     ],
     lines: [
@@ -1596,6 +1596,32 @@ window.DRILL_DATA.poets = [
   },
 
   {
+    id: "sassoon",
+    name: "Siegfried Sassoon",
+    born: 1886,
+    dates: "1886–1967",
+    place: "England",
+    group: "modern",
+    tag: "War poetry",
+    blurb: "Decorated officer whose bitter satires attacked the generals and the home front of World War I.",
+    facts: [
+      "Won the Military Cross and was nicknamed “Mad Jack” for his reckless bravery.",
+      "Published a public protest against the war in 1917 and was sent to a hospital instead of being court-martialed.",
+      "At Craiglockhart War Hospital met and mentored Wilfred Owen.",
+      "Later wrote a series of fictionalized memoirs about a fox-hunting country gentleman."
+    ],
+    works: [
+      { title: "Suicide in the Trenches", year: "1918", note: "A cheerful boy soldier shoots himself in the trenches; the poem turns on cheering civilian crowds." },
+      { title: "Everyone Sang", year: "1919", note: "Lyric of sudden joy at the war’s end, like caged birds set free." },
+      { title: "Counter-Attack", year: "1918", note: "Collection of harsh, realistic war poems that shocked readers." }
+    ],
+    lines: [
+      { text: "You smug-faced crowds with kindling eye / Who cheer when soldier lads march by", work: "Suicide in the Trenches" },
+      { text: "Everyone suddenly burst out singing", work: "Everyone Sang" }
+    ]
+  },
+
+  {
     id: "marianne-moore",
     name: "Marianne Moore",
     born: 1887,
@@ -1611,7 +1637,7 @@ window.DRILL_DATA.poets = [
       "Was known for her tricorne hat and black cape."
     ],
     works: [
-      { title: "Poetry", year: "1919", note: "Admits to disliking verse but praises the genuine, demanding “imaginary gardens with real toads in them”; later cut to three lines." },
+      { title: "Poetry", year: "1919", note: "Admits to disliking the art it names but defends its “genuine” power; famously cut by its author to three lines in 1967." },
       { title: "Marriage", year: "1923", note: "Long collage poem of quotations examining the institution of matrimony." },
       { title: "Observations", year: "1924", note: "Collection with extensive notes on sources, winner of the Dial Award." },
       { title: "Collected Poems", year: "1951", note: "Volume that won the Pulitzer Prize, the National Book Award, and the Bollingen Prize." }
@@ -1649,32 +1675,6 @@ window.DRILL_DATA.poets = [
   },
 
   {
-    id: "sassoon",
-    name: "Siegfried Sassoon",
-    born: 1886,
-    dates: "1886–1967",
-    place: "England",
-    group: "modern",
-    tag: "War poetry",
-    blurb: "Decorated officer whose bitter satires attacked the generals and the home front of World War I.",
-    facts: [
-      "Won the Military Cross and was nicknamed “Mad Jack” for his reckless bravery.",
-      "Published a public protest against the war in 1917 and was sent to a hospital instead of being court-martialed.",
-      "At Craiglockhart War Hospital met and mentored Wilfred Owen.",
-      "Later wrote a series of fictionalized memoirs about a fox-hunting country gentleman."
-    ],
-    works: [
-      { title: "Suicide in the Trenches", year: "1918", note: "A cheerful boy soldier shoots himself in the trenches; the poem turns on cheering civilian crowds." },
-      { title: "Everyone Sang", year: "1919", note: "Lyric of sudden joy at the war’s end, like caged birds set free." },
-      { title: "Counter-Attack", year: "1918", note: "Collection of harsh, realistic war poems that shocked readers." }
-    ],
-    lines: [
-      { text: "You smug-faced crowds with kindling eye / Who cheer when soldier lads march by", work: "Suicide in the Trenches" },
-      { text: "Everyone suddenly burst out singing", work: "Everyone Sang" }
-    ]
-  },
-
-  {
     id: "pessoa",
     name: "Fernando Pessoa",
     born: 1888,
@@ -1684,8 +1684,8 @@ window.DRILL_DATA.poets = [
     tag: "Modernism",
     blurb: "Portugal’s great modernist, who wrote as dozens of invented poets with their own lives and styles.",
     facts: [
-      "Wrote under some seventy “heteronyms,” notably Alberto Caeiro, Ricardo Reis, and Álvaro de Campos.",
-      "Spent his childhood in Durban, South Africa, and wrote early verse in English.",
+      "Wrote under dozens of “heteronyms,” notably Alberto Caeiro, Ricardo Reis, and Álvaro de Campos.",
+      "Spent much of his youth in Durban, South Africa, and wrote early verse in English.",
       "Worked as a freelance commercial translator in Lisbon offices.",
       "Left a trunk of some 25,000 manuscript pages, still being edited."
     ],
@@ -2683,7 +2683,7 @@ window.DRILL_DATA.poets = [
     blurb: "Russian poet tried as a “social parasite” and exiled, who became a Nobel laureate and US Poet Laureate.",
     facts: [
       "Left school at fifteen and worked in a factory, a morgue, and on geological expeditions.",
-      "Was tried in 1964 for “social parasitism” and sentenced to internal exile in the Arctic north.",
+      "Was tried in 1964 for “social parasitism” and sentenced to internal exile in the far north.",
       "Was expelled from the USSR in 1972 and settled in the United States.",
       "Won the Nobel Prize in Literature in 1987 and is buried in Venice."
     ],
