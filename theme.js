@@ -19,7 +19,7 @@
     return media && media.matches ? "dark" : "light";
   }
 
-  var NEXT = { light: "white", white: "dark", dark: "light" };
+  var NEXT = { white: "light", light: "dark", dark: "white" };
   var NAME = { light: "Orange", white: "White", dark: "Night" };
 
   function current() {
