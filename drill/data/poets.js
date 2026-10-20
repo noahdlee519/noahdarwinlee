@@ -486,7 +486,7 @@ window.DRILL_DATA.poets = [
     works: [
       { title: "To His Coy Mistress", year: "1681", note: "Seduction poem in three movements: if only there were time, but time is short, so let us seize the day." },
       { title: "The Garden", year: "1681", note: "Meditation on the solitude of a garden as a paradise of the mind, “a green thought in a green shade.”" },
-      { title: "An Horatian Ode upon Cromwell’s Return from Ireland", year: "1681", note: "Balanced political ode praising a victorious general while dignifying the beheaded Charles I." }
+      { title: "An Horatian Ode upon Cromwell’s Return from Ireland", year: "c. 1650", note: "Balanced political ode praising a victorious general while dignifying the beheaded Charles I." }
     ],
     lines: [
       { text: "Had we but world enough and time, / This coyness, lady, were no crime.", work: "To His Coy Mistress" },
@@ -566,7 +566,7 @@ window.DRILL_DATA.poets = [
     works: [
       { title: "Faust", year: "1808", note: "Two-part verse drama of a scholar who wagers his soul with Mephistopheles; worked on for about sixty years." },
       { title: "The Erl-King", year: "1782", note: "Ballad of a father riding through the night with a feverish son who is lured to death by a supernatural king." },
-      { title: "Wanderer’s Night Song", year: "1780", note: "Eight-line lyric penciled on a hut wall on a mountain: the hills and birds are hushed, and soon you too will rest." },
+      { title: "Wanderer’s Night Song", year: "c. 1780", note: "Eight-line lyric penciled on a hut wall on a mountain: the hills and birds are hushed, and soon you too will rest." },
       { title: "Roman Elegies", year: "1795", note: "Sensual cycle in classical elegiac couplets celebrating love and art during a stay in Rome." }
     ],
     lines: [
@@ -645,7 +645,7 @@ window.DRILL_DATA.poets = [
       "His birthday, 25 January, is celebrated worldwide with suppers of haggis."
     ],
     works: [
-      { title: "Auld Lang Syne", year: "1788", note: "Song of old friendship, adapted from a folk tune and sung around the world at New Year." },
+      { title: "Auld Lang Syne", year: "c. 1788", note: "Song of old friendship, adapted from a folk tune and sung around the world at New Year." },
       { title: "To a Mouse", year: "1786", note: "A farmer apologizes to a field mouse whose nest his plough has destroyed, and reflects on the futility of plans." },
       { title: "A Red, Red Rose", year: "1794", note: "Love song promising devotion until the seas run dry and the rocks melt with the sun." },
       { title: "Tam o’ Shanter", year: "1791", note: "Comic narrative poem of a drunken farmer who spies on a witches’ dance and flees on his mare, Meg." }
@@ -895,7 +895,7 @@ window.DRILL_DATA.poets = [
     ],
     works: [
       { title: "Paul Revere’s Ride", year: "1860", note: "Galloping narrative of a silversmith’s midnight warning to the Massachusetts countryside in 1775." },
-      { title: "The Song of Hiawatha", year: "1855", note: "Epic in trochaic tetrameter about an Ojibwe hero and his love, Minnehaha, modeled on the Finnish Kalevala." },
+      { title: "The Song of Hiawatha", year: "1855", note: "Epic in trochaic tetrameter about a Native American hero and his love, Minnehaha, by Lake Superior; its meter echoes the Finnish Kalevala." },
       { title: "Evangeline", year: "1847", note: "Epic in dactylic hexameter of an Acadian woman searching for her lover after the British expulsion of 1755." },
       { title: "A Psalm of Life", year: "1838", note: "Upbeat lyric urging readers to act in the living present and leave footprints on the sands of time." }
     ],
@@ -978,7 +978,7 @@ window.DRILL_DATA.poets = [
       "Is buried in Poets’ Corner in Westminster Abbey."
     ],
     works: [
-      { title: "My Last Duchess", year: "1842", note: "A Renaissance duke, showing a portrait to an envoy, lets slip that he had his late wife killed." },
+      { title: "My Last Duchess", year: "1842", note: "A Renaissance duke, showing a portrait to an envoy, hints that he had his late wife killed." },
       { title: "The Ring and the Book", year: "1868–69", note: "Twelve-book verse novel in which a murder case is retold by its participants and observers." },
       { title: "Andrea del Sarto", year: "1855", note: "Monologue of the flawless but uninspired “faultless painter,” henpecked and resigned." },
       { title: "Porphyria’s Lover", year: "1836", note: "A madman calmly recounts strangling his lover with her own hair to preserve a perfect moment." },
@@ -1474,7 +1474,7 @@ window.DRILL_DATA.poets = [
       "Won the Pulitzer Prize and a National Book Award for his collected poems in 1955."
     ],
     works: [
-      { title: "Harmonium", year: "1923", note: "Debut collection of exotic, comic, and philosophical poems; it sold barely a hundred copies at first." },
+      { title: "Harmonium", year: "1923", note: "Debut collection of exotic, comic, and philosophical poems, which sold poorly at first." },
       { title: "Thirteen Ways of Looking at a Blackbird", year: "1917", note: "Thirteen haiku-like sections, each viewing a bird from a different angle." },
       { title: "Sunday Morning", year: "1915", note: "A woman skips church to muse that earthly beauty and death are enough without heaven." },
       { title: "The Emperor of Ice-Cream", year: "1922", note: "A wake in a kitchen where cigar-rolling muscles whip desserts beside a corpse." },
@@ -2122,8 +2122,8 @@ window.DRILL_DATA.poets = [
     ],
     works: [
       { title: "The Captive Mind", year: "1953", note: "Study of how intellectuals accommodated themselves to Stalinism, through four portraits." },
-      { title: "Campo dei Fiori", year: "1943", note: "Compares Warsaw crowds riding a carousel beside the burning ghetto to Romans watching Giordano Bruno burn." },
-      { title: "A Song on the End of the World", year: "1944", note: "Ironic lyric in which the world ends on an ordinary sunny day and no one notices." },
+      { title: "Campo dei Fiori", year: "c. 1943", note: "Compares Warsaw crowds riding a carousel beside the burning ghetto to Romans watching Giordano Bruno burn." },
+      { title: "A Song on the End of the World", year: "c. 1944", note: "Ironic lyric in which the world ends on an ordinary sunny day and no one notices." },
       { title: "Dedication", year: "1945", note: "Address to the war dead, offering poetry as both apology and promise." }
     ],
     lines: [
