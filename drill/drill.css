@@ -471,13 +471,7 @@ cite {
 }
 
 .pf-known::before {
-  content: "";
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-right: 0.3rem;
-  border-radius: 50%;
-  background: var(--bright);
+  content: "|\00a0";
 }
 
 .pf-blurb {

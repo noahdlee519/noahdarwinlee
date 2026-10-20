@@ -3,8 +3,11 @@
 
   // One engine for every deck. A page sets <body data-deck="…"> and loads
   // data/<deck>.js first, which fills window.DRILL_DATA[deck].
+  var MODES = ["quiz", "cards", "match", "order", "browse"];
+
   var DECKS = {
     philosophers: {
+      title: "Philosophers",
       noun: "philosopher",
       plural: "philosophers",
       tagWord: "school",
@@ -17,8 +20,8 @@
         ["19th", "19th century"],
         ["20th", "20th century"],
       ],
-      other: ["../authors/", "authors and their works", "authors"],
       sections: ["ideas", "works", "facts", "quotes"],
+      labels: { workWho: "whose work is this?" },
       gens: {
         termWho: 3,
         ideaWho: 3,
@@ -32,17 +35,20 @@
         bornFirst: 1,
       },
       cardClues: ["ideas", "facts", "quotes", "works"],
+      recall: "ideas, works, school, and life",
+      searchHint: "search names, ideas, and works",
       matchClue: "ideas",
       matchLabel: "match each philosopher to one of their ideas",
-      modes: [
-        ["quiz", "multiple choice on ideas, works, quotes, lives, and dates"],
-        ["cards", "flip cards: recall everything you can, then check"],
-        ["match", "pair six philosophers with their ideas against the clock"],
-        ["order", "put five philosophers in order of birth"],
-        ["browse", "read through every entry"],
+      modeHints: [
+        "multiple choice on ideas, works, quotes, lives, and dates",
+        "flip cards: recall everything you can, then check",
+        "pair six philosophers with their ideas against the clock",
+        "put five philosophers in order of birth",
+        "read through every entry",
       ],
     },
     authors: {
+      title: "Authors",
       noun: "author",
       plural: "authors",
       tagWord: "movement",
@@ -54,7 +60,6 @@
         ["modern", "Modernism"],
         ["postwar", "Postwar and contemporary"],
       ],
-      other: ["../philosophers/", "philosophers and their ideas", "philosophers"],
       sections: ["works", "facts", "lines", "characters"],
       gens: {
         workWho: 4,
@@ -69,17 +74,222 @@
         bornFirst: 1,
       },
       cardClues: ["works", "facts", "lines", "characters"],
+      recall: "works, movement, and life",
+      searchHint: "search names, works, and characters",
       matchClue: "works",
       matchLabel: "match each author to one of their works",
-      modes: [
-        ["quiz", "multiple choice on works, first lines, characters, lives, and dates"],
-        ["cards", "flip cards: recall everything you can, then check"],
-        ["match", "pair six authors with their works against the clock"],
-        ["order", "put five authors in order of birth"],
-        ["browse", "read through every entry"],
+      modeHints: [
+        "multiple choice on works, first lines, characters, lives, and dates",
+        "flip cards: recall everything you can, then check",
+        "pair six authors with their works against the clock",
+        "put five authors in order of birth",
+        "read through every entry",
+      ],
+    },
+    poets: {
+      title: "Poets",
+      noun: "poet",
+      plural: "poets",
+      tagWord: "movement",
+      groupWord: "periods",
+      groups: [
+        ["classical", "Antiquity and the Middle Ages"],
+        ["early-modern", "Renaissance to 1800"],
+        ["19th", "19th century"],
+        ["modern", "Modernism"],
+        ["postwar", "Postwar and contemporary"],
+      ],
+      sections: ["works", "lines", "facts"],
+      sectionTitles: { works: "poems and books" },
+      labels: { workNote: "which poem or book is this?" },
+      gens: {
+        workWho: 3,
+        lineWho: 3,
+        factWho: 3,
+        lineWork: 2,
+        whichWork: 2,
+        workNote: 2,
+        tag: 1,
+        place: 1,
+        bornFirst: 1,
+      },
+      cardClues: ["lines", "works", "facts"],
+      recall: "poems, lines, movement, and life",
+      searchHint: "search names, poems, and lines",
+      matchClue: "works",
+      matchLabel: "match each poet to one of their poems or books",
+      modeHints: [
+        "multiple choice on poems, famous lines, lives, and dates",
+        "flip cards: recall everything you can, then check",
+        "pair six poets with their poems against the clock",
+        "put five poets in order of birth",
+        "read through every entry",
+      ],
+    },
+    musicians: {
+      title: "Musicians",
+      noun: "composer",
+      plural: "composers",
+      tagWord: "style",
+      groupWord: "eras",
+      groups: [
+        ["early", "Medieval and Renaissance"],
+        ["baroque", "Baroque"],
+        ["classical", "Classical"],
+        ["romantic", "Romantic"],
+        ["modern", "20th century"],
+        ["contemporary", "Contemporary"],
+      ],
+      sections: ["works", "ideas", "facts", "quotes"],
+      sectionTitles: { ideas: "innovations" },
+      labels: {
+        workWho: "who composed it?",
+        whichWork: "which of these did they compose?",
+        workNote: "which piece is this?",
+        termWho: "whose innovation?",
+        ideaWho: "whose innovation is this?",
+        ideaMeaning: "what is it?",
+      },
+      gens: {
+        workWho: 4,
+        factWho: 3,
+        whichWork: 2,
+        workNote: 2,
+        termWho: 2,
+        ideaWho: 1,
+        ideaMeaning: 1,
+        quoteWho: 1,
+        tag: 1,
+        place: 1,
+        bornFirst: 1,
+      },
+      cardClues: ["works", "ideas", "facts"],
+      recall: "works, innovations, style, and life",
+      searchHint: "search names, works, and innovations",
+      matchClue: "works",
+      matchLabel: "match each composer to one of their works",
+      modeHints: [
+        "multiple choice on works, innovations, lives, and dates",
+        "flip cards: recall everything you can, then check",
+        "pair six composers with their works against the clock",
+        "put five composers in order of birth",
+        "read through every entry",
+      ],
+    },
+    architects: {
+      title: "Architects",
+      noun: "architect",
+      plural: "architects",
+      tagWord: "style",
+      groupWord: "eras",
+      groups: [
+        ["premodern", "Before 1850"],
+        ["turn-of-century", "1850 to 1918"],
+        ["modernism", "Modernism"],
+        ["postwar", "Postwar"],
+        ["contemporary", "Contemporary"],
+      ],
+      sections: ["works", "ideas", "facts", "quotes"],
+      sectionTitles: { works: "buildings", ideas: "principles" },
+      labels: {
+        workWho: "who designed it?",
+        whichWork: "which of these did they design?",
+        workNote: "which building is this?",
+        termWho: "whose principle?",
+        ideaWho: "whose principle is this?",
+        workWhere: "where is it?",
+      },
+      gens: {
+        workWho: 4,
+        whichWork: 2,
+        workNote: 2,
+        workWhere: 2,
+        factWho: 2,
+        termWho: 2,
+        ideaWho: 1,
+        ideaMeaning: 1,
+        quoteWho: 1,
+        tag: 1,
+        place: 1,
+        bornFirst: 1,
+      },
+      cardClues: ["works", "ideas", "facts"],
+      recall: "buildings, principles, style, and life",
+      searchHint: "search names, buildings, and cities",
+      matchClue: "works",
+      matchLabel: "match each architect to one of their buildings",
+      modeHints: [
+        "multiple choice on buildings, cities, principles, lives, and dates",
+        "flip cards: recall everything you can, then check",
+        "pair six architects with their buildings against the clock",
+        "put five architects in order of birth",
+        "read through every entry",
+      ],
+    },
+    artists: {
+      title: "Artists",
+      noun: "artist",
+      plural: "artists",
+      tagWord: "movement",
+      groupWord: "periods",
+      groups: [
+        ["renaissance", "To 1600"],
+        ["baroque", "1600 to 1800"],
+        ["19th", "19th century"],
+        ["modern", "Modern"],
+        ["postwar", "Postwar and contemporary"],
+      ],
+      sections: ["works", "ideas", "facts", "quotes"],
+      sectionTitles: { ideas: "techniques and ideas" },
+      labels: {
+        workWho: "who made it?",
+        whichWork: "which of these did they make?",
+        termWho: "whose technique or idea?",
+        ideaWho: "whose technique or idea is this?",
+        workWhere: "where is it now?",
+      },
+      gens: {
+        workWho: 4,
+        factWho: 3,
+        whichWork: 2,
+        workNote: 2,
+        workWhere: 1,
+        termWho: 2,
+        ideaWho: 1,
+        ideaMeaning: 1,
+        quoteWho: 1,
+        tag: 1,
+        place: 1,
+        bornFirst: 1,
+      },
+      cardClues: ["works", "ideas", "facts"],
+      recall: "works, techniques, movement, and life",
+      searchHint: "search names, works, and museums",
+      matchClue: "works",
+      matchLabel: "match each artist to one of their works",
+      modeHints: [
+        "multiple choice on works, museums, techniques, lives, and dates",
+        "flip cards: recall everything you can, then check",
+        "pair six artists with their works against the clock",
+        "put five artists in order of birth",
+        "read through every entry",
       ],
     },
   };
+
+  var LABELS = {
+    workWho: "who wrote it?",
+    whichWork: "which of these did they write?",
+    workNote: "which work is this?",
+    termWho: "whose idea?",
+    ideaWho: "whose idea is this?",
+    ideaMeaning: "what does it mean?",
+    workWhere: "where is it?",
+  };
+
+  function label(name) {
+    return (deck.labels && deck.labels[name]) || LABELS[name];
+  }
 
   var SECTION_TITLES = {
     ideas: "ideas",
@@ -89,6 +299,10 @@
     lines: "lines",
     characters: "characters",
   };
+
+  function sectionTitle(sec) {
+    return (deck.sectionTitles && deck.sectionTitles[sec]) || SECTION_TITLES[sec];
+  }
 
   var LENGTHS = [10, 20, 50, 0];
   var KNOWN_AT = 4;
@@ -344,7 +558,9 @@
           "<cite>" +
           esc(w.title) +
           "</cite>" +
-          (w.year ? ' <span class="pf-year">' + esc(w.year) + "</span>" : "") +
+          (w.year || w.place
+            ? ' <span class="pf-year">' + esc([w.year, w.place].filter(Boolean).join(", ")) + "</span>"
+            : "") +
           (w.note ? " " + esc(w.note) : "")
         );
       });
@@ -373,7 +589,7 @@
     if (!rows.length) return "";
     return (
       '<div class="pf-sec"><h3 class="pf-h">' +
-      SECTION_TITLES[sec] +
+      sectionTitle(sec) +
       '</h3><ul class="pf-list">' +
       rows
         .map(function (r, i) {
@@ -389,7 +605,7 @@
     return [item.dates, item.place, item.tag]
       .filter(Boolean)
       .map(esc)
-      .join(" · ");
+      .join(" | ");
   }
 
   function headHTML(item) {
@@ -427,7 +643,7 @@
       if (rows[focus[1]] != null) {
         focusRow =
           '<div class="pf-sec"><h3 class="pf-h">' +
-          SECTION_TITLES[focus[0]] +
+          sectionTitle(focus[0]) +
           '</h3><ul class="pf-list"><li class="is-focus">' +
           rows[focus[1]] +
           "</li></ul></div>";
@@ -572,7 +788,7 @@
       if (!ideas.length) return null;
       var i = rand(ideas.length);
       return nameQuestion(item, pool, {
-        label: "whose idea?",
+        label: label("termWho"),
         prompt: esc(ideas[i].term),
         promptClass: "is-term",
         focus: ["ideas", i],
@@ -584,7 +800,7 @@
       if (!ideas.length) return null;
       var i = rand(ideas.length);
       return nameQuestion(item, pool, {
-        label: "whose idea is this?",
+        label: label("ideaWho"),
         prompt: esc(mask(ideas[i].text, item)),
         focus: ["ideas", i],
       });
@@ -622,7 +838,7 @@
       if (!ok.length) return null;
       var i = works.indexOf(pick(ok));
       return nameQuestion(item, pool, {
-        label: deckId === "authors" ? "who wrote it?" : "whose work is this?",
+        label: label("workWho"),
         prompt: "<cite>" + esc(works[i].title) + "</cite>",
         sub: esc(works[i].year || ""),
         promptClass: "is-title",
@@ -635,7 +851,7 @@
       if (!works.length) return null;
       var i = rand(works.length);
       return titleQuestion(item, works[i].title, pool, {
-        label: "which of these did they write?",
+        label: label("whichWork"),
         prompt: esc(item.name),
         sub: esc(item.dates || ""),
         promptClass: "is-name",
@@ -650,7 +866,7 @@
       if (!works.length) return null;
       var w = pick(works);
       return titleQuestion(item, w.title, pool, {
-        label: "which work is this?",
+        label: label("workNote"),
         prompt: esc(mask(w.note, item)),
         focus: ["works", list(item.works).indexOf(w)],
       });
@@ -701,12 +917,46 @@
       opts[0].ownerTerm = ideas[i].term;
       return {
         item: item,
-        label: "what does it mean?",
+        label: label("ideaMeaning"),
         prompt: esc(ideas[i].term),
         sub: esc(item.name),
         promptClass: "is-term",
         focus: ["ideas", i],
         options: shuffle(opts),
+      };
+    },
+
+    workWhere: function (item) {
+      var works = list(item.works).filter(function (w) {
+        return w.place;
+      });
+      if (!works.length) return null;
+      var w = pick(works);
+      var seen = {};
+      seen[w.place] = true;
+      var near = [];
+      var far = [];
+      shuffle(ALL).forEach(function (c) {
+        list(c.works).forEach(function (o) {
+          if (!o.place || seen[o.place]) return;
+          seen[o.place] = true;
+          (c.group === item.group ? near : far).push(o.place);
+        });
+      });
+      var others = near.slice(0, 2).concat(far, near.slice(2)).slice(0, 3);
+      if (others.length < 3) return null;
+      return {
+        item: item,
+        label: label("workWhere"),
+        prompt: "<cite>" + esc(w.title) + "</cite>",
+        sub: esc([w.year, item.name].filter(Boolean).join(" | ")),
+        promptClass: "is-title",
+        focus: ["works", list(item.works).indexOf(w)],
+        options: shuffle(
+          [w.place].concat(others).map(function (v) {
+            return { text: v, kind: "plain", correct: v === w.place };
+          })
+        ),
       };
     },
 
@@ -815,21 +1065,31 @@
       );
     }).join("");
 
-    var modesHTML = deck.modes
-      .map(function (m, i) {
+    var modesHTML = MODES.map(function (m, i) {
+      return (
+        '<li><button type="button" class="text-action d-mode" data-act="mode" data-mode="' +
+        m +
+        '">' +
+        m +
+        '<span class="kbd-hint"> [' +
+        (i + 1) +
+        ']</span></button><span class="d-mode-desc">' +
+        esc(deck.modeHints[i]) +
+        "</span></li>"
+      );
+    }).join("");
+
+    // Links to the other decks; pages holding every deck switch in place.
+    var othersHTML = Object.keys(DECKS)
+      .filter(function (id) {
+        return id !== deckId;
+      })
+      .map(function (id) {
         return (
-          '<li><button type="button" class="text-action d-mode" data-act="mode" data-mode="' +
-          m[0] +
-          '">' +
-          m[0] +
-          '<span class="kbd-hint"> [' +
-          (i + 1) +
-          ']</span></button><span class="d-mode-desc">' +
-          esc(m[1]) +
-          "</span></li>"
+          '<a href="../' + id + '/" data-act="switch" data-deck="' + id + '">' + esc(DECKS[id].plural) + "</a>"
         );
       })
-      .join("");
+      .join(" | ");
 
     var allOn = settings.groups.length === groupIds.length;
 
@@ -858,21 +1118,17 @@
         "</ul></div>" +
         '<p class="d-progress">' +
         pool.length +
-        " in play · seen " +
+        " in play | seen " +
         seen +
-        " · known " +
+        " | known " +
         known +
         ' <span class="d-bar" aria-hidden="true"><span style="width:' +
         (pool.length ? Math.round((known / pool.length) * 100) : 0) +
         '%"></span></span></p>' +
         '<p class="d-small"><button type="button" class="text-action is-small" data-act="reset">reset progress</button></p>' +
-        '<p class="d-small d-switch">also: <a href="' +
-        deck.other[0] +
-        '" data-act="switch" data-deck="' +
-        deck.other[2] +
-        '">' +
-        esc(deck.other[1]) +
-        "</a></p>",
+        '<p class="d-small d-switch">also drill: ' +
+        othersHTML +
+        "</p>",
       {
         group: function (el) {
           var g = el.getAttribute("data-group");
@@ -916,8 +1172,8 @@
       },
       function (key) {
         var n = Number(key);
-        if (n >= 1 && n <= deck.modes.length) {
-          start(deck.modes[n - 1][0]);
+        if (n >= 1 && n <= MODES.length) {
+          start(MODES[n - 1]);
           return true;
         }
       }
@@ -1035,7 +1291,7 @@
           else b.classList.add("is-dim");
           var note = "";
           if (o.owner && (o.kind === "title" || o.kind === "plain")) {
-            note = o.owner.name + (o.ownerTerm ? " · " + o.ownerTerm : "");
+            note = o.owner.name + (o.ownerTerm ? " | " + o.ownerTerm : "");
           } else if (o.owner && (q.showDates || !o.correct)) {
             note = o.owner.dates || "";
           }
@@ -1200,7 +1456,7 @@
             : '<span class="flip-name">' +
               esc(item.name) +
               '</span><span class="flip-sub">' +
-              esc(deckId === "philosophers" ? "ideas, works, school, and life" : "works, movement, and life") +
+              esc(deck.recall) +
               "</span>") +
           '<span class="flip-hint">click to flip <span class="kbd-hint">[space]</span></span>' +
           "</button>" +
@@ -1738,8 +1994,8 @@
     render(
       metaBar([ALL.length + " " + deck.plural]) +
         '<label class="sr-only" for="browse-q">Search</label>' +
-        '<input type="search" id="browse-q" class="d-search" placeholder="search names, ' +
-        (deckId === "philosophers" ? "ideas, and works" : "works, and characters") +
+        '<input type="search" id="browse-q" class="d-search" placeholder="' +
+        esc(deck.searchHint) +
         '" autocomplete="off" />' +
         '<div id="browse-list"></div>',
       { menu: menu },
