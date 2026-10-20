@@ -44,6 +44,7 @@
         document.documentElement.setAttribute("data-theme", t);
       })();
     </script>
+    <script src="/visit.js" defer></script>
   </head>
   <body class="cv-page privacy-page" data-fade-distance="90">
     <h1 class="sr-only">Privacy policy</h1>
@@ -63,13 +64,14 @@
         everything the site collects, why, and what you can do about it.
       </p>
       <p class="privacy-meta">
-        Effective 19 October 2026. See also the <a href="/terms/">terms of use</a>.
+        Effective 20 October 2026. See also the <a href="/terms/">terms of use</a>.
       </p>
 
       <section>
         <h2>1. The short version</h2>
         <p>
-          Reading the site collects nothing about you. Opening
+          Reading the site collects nothing about you: it adds one to a running count of
+          visits for the day, and that count holds no address, name, or page. Opening
           <a href="/citylayoutguessr/">citylayoutguessr</a> adds one anonymous line a day
           noting that a browser opened the game. If you choose to sign in to the game, your
           name, email address, and profile picture are stored so that a name and a score can
@@ -99,6 +101,13 @@
         <h2>3. Reading the site</h2>
         <p>
           The pages are plain files, with no cookies, no analytics, and no advertising.
+          The one measure is a count of visits across the whole site. When a page opens
+          and the browser has not opened a page here in the last thirty minutes, it asks
+          the site’s database to add one to the day’s total. The database keeps only the
+          date and that number: not your address, the page, where you came from, or
+          anything else about the visit. To tell a new visit from the next page of the
+          same one, your browser keeps the time it last opened a page here (see section
+          9).
           To deliver them, a few services necessarily receive the ordinary request your
           browser makes, which includes your IP address and the kind of browser you use:
           GitHub Pages, which hosts the site and its typeface, and Google Fonts, which
@@ -231,7 +240,8 @@
           result on today’s puzzle, and whether it has been posted, the date of your last
           visit, and, if you have signed in, the token that keeps you signed in; in the
           flash card tool, your lists, drafts, and colours; and on the blog, which letters
-          you have read or starred and how you sized the panes; and in UCHRONIA, your
+          you have read or starred and how you sized the panes; on every page, the time
+          you last opened one, for the visit count; and in UCHRONIA, your
           map, the one you had before opening a shared map, your view settings, your
           saved histories, and, if you have signed in, the token that keeps you signed
           in to the historian.
@@ -254,7 +264,8 @@
           to send it. The daily visit counter rests on my legitimate interest in knowing,
           roughly, whether anyone plays the game, which it serves without identifying
           anyone who is not signed in. UCHRONIA’s daily counts rest on my legitimate
-          interest in keeping the historian within its budget.
+          interest in keeping the historian within its budget, and the site’s visit count
+          on my interest in knowing, roughly, how many people read the site.
         </p>
       </section>
 
@@ -290,7 +301,8 @@
         <p>
           Accounts, profiles, and scores are kept for as long as the game exists, because
           a leaderboard with a history is the point of it, or until you ask me to delete
-          them. Visit lines are kept as a running count of how the game is used. When an
+          them. Visit lines are kept as a running count of how the game is used, and the
+          site’s daily visit totals as a running count of how it is read. When an
           account is deleted, everything tied to it is deleted with it. Feedback messages
           are kept until I have read them and no longer need them, and in any case no
           longer than a year. UCHRONIA’s daily counts are deleted after thirty days, and
