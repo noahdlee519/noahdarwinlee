@@ -927,8 +927,13 @@
     },
 
     workWhere: function (item) {
+      // A private collection, a temporary piece, or a museum named after
+      // the maker makes a poor "where is it?" question.
+      function askable(w, owner) {
+        return w.place && !/private|temporary|performance/i.test(w.place) && !namesItself(w.place, owner);
+      }
       var works = list(item.works).filter(function (w) {
-        return w.place;
+        return askable(w, item);
       });
       if (!works.length) return null;
       var w = pick(works);
@@ -938,7 +943,7 @@
       var far = [];
       shuffle(ALL).forEach(function (c) {
         list(c.works).forEach(function (o) {
-          if (!o.place || seen[o.place]) return;
+          if (!askable(o, c) || seen[o.place]) return;
           seen[o.place] = true;
           (c.group === item.group ? near : far).push(o.place);
         });
