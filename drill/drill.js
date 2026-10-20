@@ -17,7 +17,7 @@
         ["19th", "19th century"],
         ["20th", "20th century"],
       ],
-      other: ["../authors/", "authors and their works"],
+      other: ["../authors/", "authors and their works", "authors"],
       sections: ["ideas", "works", "facts", "quotes"],
       gens: {
         termWho: 3,
@@ -54,7 +54,7 @@
         ["modern", "Modernism"],
         ["postwar", "Postwar and contemporary"],
       ],
-      other: ["../philosophers/", "philosophers and their ideas"],
+      other: ["../philosophers/", "philosophers and their ideas", "philosophers"],
       sections: ["works", "facts", "lines", "characters"],
       gens: {
         workWho: 4,
@@ -95,18 +95,12 @@
   var MAX_BOX = 5;
 
   var root = document.getElementById("drill");
-  var deckId = document.body.getAttribute("data-deck");
-  var deck = DECKS[deckId];
-  var ALL = (window.DRILL_DATA && window.DRILL_DATA[deckId]) || [];
   if (!root) return;
-  if (!deck || !ALL.length) {
-    root.innerHTML = '<p class="lede">This deck could not be loaded.</p>';
-    return;
-  }
+
+  // Set by boot(), which can switch decks in place.
+  var deckId, deck, ALL, KEY, stats, settings, groupIds;
 
   /* ---------- storage ---------- */
-
-  var KEY = "ndl-drill-" + deckId;
 
   function load(key, fallback) {
     try {
@@ -123,18 +117,31 @@
     } catch (e) {}
   }
 
-  // stats[id] = [box 0–5, times right, times wrong]
-  var stats = load(KEY + "-stats", {});
-  var settings = load(KEY + "-settings", {});
-  var groupIds = deck.groups.map(function (g) {
-    return g[0];
-  });
-  if (!Array.isArray(settings.groups)) settings.groups = groupIds.slice();
-  settings.groups = settings.groups.filter(function (g) {
-    return groupIds.indexOf(g) !== -1;
-  });
-  if (!settings.groups.length) settings.groups = groupIds.slice();
-  if (LENGTHS.indexOf(settings.length) === -1) settings.length = 20;
+  function boot(id) {
+    deckId = id;
+    deck = DECKS[id];
+    ALL = (window.DRILL_DATA && window.DRILL_DATA[id]) || [];
+    if (!deck || !ALL.length) {
+      render('<p class="lede">This deck could not be loaded.</p>');
+      return;
+    }
+    KEY = "ndl-drill-" + id;
+    // stats[id] = [box 0–5, times right, times wrong]
+    stats = load(KEY + "-stats", {});
+    settings = load(KEY + "-settings", {});
+    groupIds = deck.groups.map(function (g) {
+      return g[0];
+    });
+    if (!Array.isArray(settings.groups)) settings.groups = groupIds.slice();
+    settings.groups = settings.groups.filter(function (g) {
+      return groupIds.indexOf(g) !== -1;
+    });
+    if (!settings.groups.length) settings.groups = groupIds.slice();
+    if (LENGTHS.indexOf(settings.length) === -1) settings.length = 20;
+    document.dispatchEvent(new CustomEvent("drill:deck", { detail: id }));
+    scrollTop();
+    menu();
+  }
 
   function saveSettings() {
     store(KEY + "-settings", settings);
@@ -235,8 +242,8 @@
   // The data is written without names in its clues; this is a backstop.
   var maskCache = {};
   function mask(text, item) {
-    if (!maskCache[item.id]) {
-      maskCache[item.id] = item.name
+    if (!maskCache[item.name]) {
+      maskCache[item.name] = item.name
         .split(/[\s\-]+/)
         .map(function (t) {
           return t.replace(/[.,()]/g, "");
@@ -253,7 +260,7 @@
         });
     }
     var out = String(text);
-    maskCache[item.id].forEach(function (re) {
+    maskCache[item.name].forEach(function (re) {
       out = out.replace(re, "———");
     });
     return out;
@@ -861,6 +868,8 @@
         '<p class="d-small"><button type="button" class="text-action is-small" data-act="reset">reset progress</button></p>' +
         '<p class="d-small d-switch">also: <a href="' +
         deck.other[0] +
+        '" data-act="switch" data-deck="' +
+        deck.other[2] +
         '">' +
         esc(deck.other[1]) +
         "</a></p>",
@@ -888,8 +897,18 @@
         mode: function (el) {
           start(el.getAttribute("data-mode"));
         },
-        reset: function () {
-          if (!window.confirm("Forget what you have seen and known in this deck?")) return;
+        switch: function (el, e) {
+          // Pages that hold every deck switch in place; the site links across.
+          if (!document.body.hasAttribute("data-inline")) return;
+          e.preventDefault();
+          boot(el.getAttribute("data-deck"));
+        },
+        reset: function (el) {
+          if (!el.classList.contains("is-armed")) {
+            el.classList.add("is-armed");
+            el.textContent = "forget everything in this deck? click again";
+            return;
+          }
           stats = {};
           store(KEY + "-stats", stats);
           menu();
@@ -1781,5 +1800,6 @@
     draw();
   }
 
-  menu();
+  window.DrillBoot = boot;
+  boot(document.body.getAttribute("data-deck"));
 })();

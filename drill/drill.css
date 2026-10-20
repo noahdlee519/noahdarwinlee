@@ -899,3 +899,7 @@ cite {
 .card-grade .text-action:first-child:hover {
   color: var(--bright);
 }
+
+.text-action.is-armed {
+  color: var(--wrong);
+}
