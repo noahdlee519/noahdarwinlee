@@ -26,7 +26,7 @@ window.DRILL_DATA.authors = [
       { title: "The Odyssey", year: "8th century BCE", note: "A cunning hero’s ten-year voyage home from Troy to Ithaca and his reckoning with his wife’s suitors." }
     ],
     lines: [
-      { text: "Rage—Goddess, sing the rage of Peleus’ son Achilles, murderous, doomed …", work: "The Iliad" },
+      { text: "Rage—Goddess, sing the rage of Peleus’ son Achilles, / murderous, doomed …", work: "The Iliad" },
       { text: "Sing to me of the man, Muse, the man of twists and turns …", work: "The Odyssey" }
     ],
     characters: [
@@ -52,7 +52,7 @@ window.DRILL_DATA.authors = [
     ],
     works: [
       { title: "Ode to Aphrodite", year: "c. 600 BCE", note: "Her only complete surviving poem: a prayer asking the goddess of love to help win over a reluctant beloved." },
-      { title: "Fragment 31", year: "c. 600 BCE", note: "A lyric describing the physical symptoms of desire—fire under the skin, ringing ears—on seeing a beloved woman sit beside a man." }
+      { title: "Fragment 31", year: "c. 600 BCE", note: "A lyric describing the physical symptoms of desire—fire under the skin, ringing ears—while watching a beloved woman laugh with a man." }
     ],
     lines: [],
     characters: []
@@ -248,7 +248,7 @@ window.DRILL_DATA.authors = [
     tag: "Sufi poetry",
     blurb: "Persian Sufi mystic and poet whose ecstatic verse on divine love is read worldwide.",
     facts: [
-      "Born in Balkh, in present-day Afghanistan, and settled in Konya in Anatolia.",
+      "Born in Central Asia, traditionally said to be Balkh, and settled in Konya in Anatolia.",
       "His intense friendship with the wandering dervish Shams of Tabriz transformed him into a poet.",
       "His followers founded the Mevlevi order, known as the “whirling dervishes.”",
       "Became one of the best-selling poets in the United States in Coleman Barks’s versions."
@@ -281,34 +281,13 @@ window.DRILL_DATA.authors = [
       { title: "La Vita Nuova", year: "c. 1294", note: "Poems linked by prose commentary recounting the poet’s love for Beatrice and his grief at her death." }
     ],
     lines: [
-      { text: "Abandon all hope, ye who enter here.", work: "The Divine Comedy" }
+      { text: "Midway upon the journey of our life / I found myself within a forest dark", work: "The Divine Comedy" },
+      { text: "All hope abandon, ye who enter in!", work: "The Divine Comedy" }
     ],
     characters: [
       { name: "Francesca da Rimini", work: "The Divine Comedy" },
       { name: "Count Ugolino", work: "The Divine Comedy" }
     ]
-  },
-
-  {
-    id: "boccaccio",
-    name: "Giovanni Boccaccio",
-    born: 1313,
-    dates: "1313–1375",
-    place: "Italy",
-    group: "classical",
-    tag: "Renaissance humanism",
-    blurb: "Florentine writer and early humanist whose frame-tale collection set the pattern for European prose fiction.",
-    facts: [
-      "Spent his youth in Naples, training in banking and canon law before turning to literature.",
-      "Close friend and correspondent of Petrarch.",
-      "Gave the first public lectures on Dante’s poem in Florence in 1373."
-    ],
-    works: [
-      { title: "The Decameron", year: "c. 1353", note: "Ten young Florentines fleeing the Black Death tell 100 stories over ten days at a country villa." },
-      { title: "Il Filostrato", year: "c. 1338", note: "A verse romance of the Trojan lovers Troilus and Criseida, later adapted by Chaucer." }
-    ],
-    lines: [],
-    characters: []
   },
 
   {
@@ -339,6 +318,28 @@ window.DRILL_DATA.authors = [
   },
 
   /* ───────────────────────── Renaissance to the 18th century ───────────────────────── */
+
+  {
+    id: "boccaccio",
+    name: "Giovanni Boccaccio",
+    born: 1313,
+    dates: "1313–1375",
+    place: "Italy",
+    group: "early-modern",
+    tag: "Renaissance humanism",
+    blurb: "Florentine writer and early humanist whose frame-tale collection set the pattern for European prose fiction.",
+    facts: [
+      "Spent his youth in Naples, training in banking and canon law before turning to literature.",
+      "Close friend and correspondent of Petrarch.",
+      "Gave the first public lectures on Dante’s poem in Florence in 1373."
+    ],
+    works: [
+      { title: "The Decameron", year: "c. 1353", note: "Ten young Florentines fleeing the Black Death tell 100 stories over ten days at a country villa." },
+      { title: "Il Filostrato", year: "c. 1338", note: "A verse romance of the Trojan lovers Troilus and Criseida, later adapted by Chaucer." }
+    ],
+    lines: [],
+    characters: []
+  },
 
   {
     id: "cervantes",
@@ -496,7 +497,7 @@ window.DRILL_DATA.authors = [
     facts: [
       "Born Jean-Baptiste Poquelin, the son of an upholsterer to the king.",
       "Enjoyed the patronage of Louis XIV.",
-      "Collapsed on stage while playing a hypochondriac in his own play and died hours later.",
+      "Was taken ill on stage while playing a hypochondriac in his own play and died hours later.",
       "His troupe later merged into the Comédie-Française, founded seven years after his death."
     ],
     works: [
@@ -688,7 +689,7 @@ window.DRILL_DATA.authors = [
       { title: "I Wandered Lonely as a Cloud", year: "1807", note: "A short lyric recalling the sight of a host of golden daffodils beside a lake." }
     ],
     lines: [
-      { text: "All good poetry is the spontaneous overflow of powerful feelings.", work: "Lyrical Ballads" }
+      { text: "Five years have past; five summers, with the length / Of five long winters!", work: "Lyrical Ballads" }
     ],
     characters: []
   },
@@ -792,7 +793,7 @@ window.DRILL_DATA.authors = [
     ],
     works: [
       { title: "Ode to a Nightingale", year: "1819", note: "The speaker, aching with heartache, longs to escape mortal sorrow by joining a bird’s immortal song." },
-      { title: "Ode on a Grecian Urn", year: "1819", note: "A meditation on the frozen scenes painted on an ancient vase and the permanence of art." },
+      { title: "Ode on a Grecian Urn", year: "1820", note: "A meditation on the frozen scenes painted on an ancient vase and the permanence of art." },
       { title: "Endymion", year: "1818", note: "A long poetic romance about a shepherd’s love for the moon goddess." },
       { title: "The Eve of St. Agnes", year: "1820", note: "Young Porphyro steals into a hostile castle to elope with Madeline on a winter feast night." }
     ],
@@ -923,7 +924,7 @@ window.DRILL_DATA.authors = [
       "Was found delirious in Baltimore days before his death; the cause remains a mystery."
     ],
     works: [
-      { title: "The Raven", year: "1845", note: "A grieving student is visited at midnight by a black bird that answers every question with one word." },
+      { title: "The Raven", year: "1845", note: "A grieving man is visited at midnight by a black bird that answers every question with one word." },
       { title: "The Tell-Tale Heart", year: "1843", note: "A murderer insists on his sanity while describing how the beating of his victim’s heart drove him to confess." },
       { title: "The Fall of the House of Usher", year: "1839", note: "A visitor watches the last members of a decaying family line, and their mansion, collapse." },
       { title: "The Murders in the Rue Morgue", year: "1841", note: "The detective C. Auguste Dupin solves a pair of brutal killings in a locked Paris apartment." }
@@ -1415,7 +1416,7 @@ window.DRILL_DATA.authors = [
     blurb: "American-born master of the psychological novel, chronicler of Americans abroad and the clash of innocence and experience.",
     facts: [
       "His older brother was a pioneering American psychologist and pragmatist philosopher.",
-      "Spent most of his adult life in England, at Lamb House in Rye.",
+      "Settled in England, making his home from 1897 at Lamb House in Rye.",
       "Dictated his late novels to a typist.",
       "Became a British subject in 1915 in protest at American neutrality in World War I."
     ],
@@ -1480,7 +1481,7 @@ window.DRILL_DATA.authors = [
       { title: "The Cherry Orchard", year: "1904", note: "An aristocratic family, unable to face reality, loses its estate to the son of a former serf." },
       { title: "The Seagull", year: "1896", note: "Aspiring artists and their elders at a country estate wrestle with love, fame, and failure." },
       { title: "Three Sisters", year: "1901", note: "Siblings stuck in a provincial garrison town long in vain to return to Moscow." },
-      { title: "Uncle Vanya", year: "1899", note: "A weary estate manager realizes he has wasted his life serving a pompous professor." }
+      { title: "Uncle Vanya", year: "1897", note: "A weary estate manager realizes he has wasted his life serving a pompous professor." }
     ],
     lines: [],
     characters: [
@@ -1768,7 +1769,7 @@ window.DRILL_DATA.authors = [
     blurb: "English Modernist novelist and essayist, a pioneer of stream of consciousness and of feminist criticism.",
     facts: [
       "Daughter of the critic Leslie Stephen, first editor of the Dictionary of National Biography.",
-      "A central figure of the Bloomsbury Group.",
+      "Her sister was the painter Vanessa Bell, a fellow member of the Bloomsbury Group.",
       "Founded the Hogarth Press with her husband, Leonard.",
       "Drowned herself in the River Ouse in 1941, her pockets weighted with stones."
     ],
@@ -2028,7 +2029,7 @@ window.DRILL_DATA.authors = [
     blurb: "American novelist of the Depression and the dispossessed, especially in his native California.",
     facts: [
       "Grew up in Salinas, California, the setting of much of his fiction.",
-      "Studied marine biology alongside his friend Ed Ricketts.",
+      "Sailed the Gulf of California collecting marine specimens with his friend, the biologist Ed Ricketts.",
       "Worked as a war correspondent in World War II.",
       "Won the Nobel Prize in Literature in 1962."
     ],
@@ -2120,7 +2121,7 @@ window.DRILL_DATA.authors = [
     ],
     works: [
       { title: "Blood Wedding", year: "1933", note: "A bride runs off with her former lover on her wedding day, and both men die in a knife fight." },
-      { title: "The House of Bernarda Alba", year: "1936", note: "A tyrannical widow imposes eight years of mourning on her five daughters, with tragic consequences." },
+      { title: "The House of Bernarda Alba", year: "1945", note: "A tyrannical widow imposes eight years of mourning on her five daughters, with tragic consequences." },
       { title: "Gypsy Ballads", year: "1928", note: "Poems blending Andalusian folklore, Romani life, and surreal imagery." }
     ],
     lines: [],
@@ -2145,7 +2146,7 @@ window.DRILL_DATA.authors = [
     works: [
       { title: "Mother Courage and Her Children", year: "1941", note: "A canteen woman profits from the Thirty Years’ War while losing all three of her children to it." },
       { title: "The Threepenny Opera", year: "1928", note: "A musical with Kurt Weill about the London criminal Macheath, featuring “Mack the Knife.”" },
-      { title: "The Caucasian Chalk Circle", year: "1948", note: "A servant girl who rescued an abandoned noble child must prove she is its true mother." }
+      { title: "The Caucasian Chalk Circle", year: "1948", note: "A servant girl who rescued an abandoned noble child must win custody from its birth mother in a chalk-circle test." }
     ],
     lines: [],
     characters: [
@@ -2229,7 +2230,7 @@ window.DRILL_DATA.authors = [
       "Born in French Algeria to a poor family; his father was killed in World War I.",
       "Played goalkeeper for a university football team in Algiers.",
       "Edited the Resistance newspaper Combat during the German occupation.",
-      "Won the Nobel Prize in Literature in 1957 and died in a car crash three years later."
+      "Won the Nobel Prize in Literature in 1957 and died in a car crash in 1960."
     ],
     works: [
       { title: "The Stranger", year: "1942", note: "A detached clerk in Algiers kills an Arab man on a beach and is condemned as much for his indifference as for the crime." },
@@ -2315,7 +2316,7 @@ window.DRILL_DATA.authors = [
     works: [
       { title: "Twenty Love Poems and a Song of Despair", year: "1924", note: "A youthful collection of passionate, melancholy love lyrics, one of the best-selling poetry books in Spanish." },
       { title: "Canto General", year: "1950", note: "An epic of the history and nature of the Americas, including “The Heights of Macchu Picchu.”" },
-      { title: "Elemental Odes", year: "1954", note: "Plain-spoken poems celebrating everyday things such as onions, socks, and tomatoes." }
+      { title: "Elemental Odes", year: "1954", note: "Plain-spoken poems celebrating everyday things such as onions and tomatoes." }
     ],
     lines: [
       { text: "Tonight I can write the saddest lines.", work: "Twenty Love Poems and a Song of Despair" }
@@ -2464,7 +2465,7 @@ window.DRILL_DATA.authors = [
     facts: [
       "Worked as a play reader at London’s Royal Court Theatre.",
       "Was imprisoned for 22 months during the Nigerian Civil War, much of it in solitary confinement.",
-      "In 1986 became the first African to win the Nobel Prize in Literature."
+      "In 1986 became the first Black African to win the Nobel Prize in Literature."
     ],
     works: [
       { title: "Death and the King’s Horseman", year: "1975", note: "A colonial officer in Nigeria prevents a royal horseman from performing a ritual suicide, with tragic results." },
@@ -2742,7 +2743,7 @@ window.DRILL_DATA.authors = [
       { title: "All My Sons", year: "1947", note: "A manufacturer’s concealment of defective aircraft parts sold during the war comes back to destroy his family." }
     ],
     lines: [
-      { text: "So attention must be paid.", work: "Death of a Salesman" }
+      { text: "Attention, attention must be finally paid to such a person.", work: "Death of a Salesman" }
     ],
     characters: [
       { name: "Willy Loman", work: "Death of a Salesman" },
@@ -2762,7 +2763,7 @@ window.DRILL_DATA.authors = [
     facts: [
       "Served in the U.S. Navy and studied engineering physics at Cornell.",
       "Worked as a technical writer for Boeing.",
-      "Famously reclusive; very few photographs of him exist.",
+      "Sent the comedian Irwin Corey to accept his 1974 National Book Award on his behalf.",
       "Appeared as himself on The Simpsons with a paper bag over his head."
     ],
     works: [
@@ -2890,7 +2891,7 @@ window.DRILL_DATA.authors = [
     facts: [
       "Ran a jazz bar in Tokyo called Peter Cat before becoming a novelist.",
       "Decided to write a novel while watching a baseball game in 1978.",
-      "A dedicated marathon runner.",
+      "A dedicated long-distance runner who has completed dozens of marathons and a 100-kilometer ultramarathon.",
       "Has translated Raymond Carver and F. Scott Fitzgerald into Japanese."
     ],
     works: [
@@ -2999,7 +3000,7 @@ window.DRILL_DATA.authors = [
     works: [
       { title: "The Handmaid’s Tale", year: "1985", note: "In the theocratic Republic of Gilead, a fertile woman is forced to bear children for a ruling Commander." },
       { title: "The Blind Assassin", year: "2000", note: "An elderly woman recounts her sister’s death, interwoven with a novel-within-a-novel of a secret affair." },
-      { title: "Alias Grace", year: "1996", note: "A fictionalized account of a 19th-century Canadian maidservant convicted of a double murder." }
+      { title: "Alias Grace", year: "1996", note: "A fictionalized account of a 19th-century Canadian maidservant convicted of murder after a notorious double killing." }
     ],
     lines: [],
     characters: [
@@ -3016,10 +3017,10 @@ window.DRILL_DATA.authors = [
     place: "United States",
     group: "postwar",
     tag: "Southern Gothic",
-    blurb: "American novelist of violence and grace in the South and the Southwest, writing in biblical, unpunctuated prose.",
+    blurb: "American novelist of violence and grace in the South and the Southwest, writing in biblical, sparsely punctuated prose.",
     facts: [
       "Received a MacArthur “genius” grant in 1981.",
-      "Was famously reclusive and gave very few interviews.",
+      "Won the Pulitzer Prize for Fiction in 2007.",
       "Spent decades as a trustee and fellow at the Santa Fe Institute, a scientific think tank.",
       "His old Olivetti typewriter sold at auction for over $250,000."
     ],
@@ -3094,8 +3095,8 @@ window.DRILL_DATA.authors = [
   {
     id: "ferrante",
     name: "Elena Ferrante",
-    born: 1943,
-    dates: "b. 1943 (reported)",
+    born: null,
+    dates: "pseudonymous; birth year unknown",
     place: "Italy",
     group: "postwar",
     tag: "Contemporary fiction",
@@ -3209,7 +3210,7 @@ window.DRILL_DATA.authors = [
     works: [
       { title: "Red Sorghum", year: "1986", note: "Three generations of a family in rural Shandong during the war against Japan." },
       { title: "The Garlic Ballads", year: "1988", note: "Farmers riot when the government fails to buy the crop it ordered them to grow." },
-      { title: "Life and Death Are Wearing Me Out", year: "2006", note: "A landlord executed in 1948 is reincarnated as a series of farm animals in Communist China." }
+      { title: "Life and Death Are Wearing Me Out", year: "2006", note: "A landlord executed in 1948 is reincarnated as a donkey, an ox, a pig, and other animals in Communist China." }
     ],
     lines: [],
     characters: []
@@ -3226,12 +3227,12 @@ window.DRILL_DATA.authors = [
     blurb: "British novelist raised in Africa, whose fiction explored politics, colonialism, and women’s lives.",
     facts: [
       "Born in Persia and raised on a farm in Southern Rhodesia.",
-      "Left school at about 14.",
+      "Left school in her early teens and educated herself through wide reading.",
       "Was banned from Southern Rhodesia and South Africa for her political views.",
       "Won the Nobel Prize in Literature in 2007, at 88 the oldest recipient at the time."
     ],
     works: [
-      { title: "The Golden Notebook", year: "1962", note: "A writer records her life in four colored notebooks—political, fictional, personal, and literary—and a fifth that unites them." },
+      { title: "The Golden Notebook", year: "1962", note: "A writer divides her life among four colored notebooks—her African past, politics, fiction, and daily life—until a fifth unites them." },
       { title: "The Grass Is Singing", year: "1950", note: "The murder of a white farmer’s wife by her Black servant in Southern Rhodesia." },
       { title: "The Fifth Child", year: "1988", note: "A couple’s idyllic family life is shattered by the birth of a violent, seemingly atavistic son." }
     ],
@@ -3337,7 +3338,7 @@ window.DRILL_DATA.authors = [
       "In 1968 became the first Japanese writer to win the Nobel Prize in Literature."
     ],
     works: [
-      { title: "Snow Country", year: "1948", note: "A Tokyo dilettante’s affair with a geisha at a remote hot-spring resort in the mountains." },
+      { title: "Snow Country", year: "1935–48", note: "A Tokyo dilettante’s affair with a geisha at a remote hot-spring resort in the mountains." },
       { title: "Thousand Cranes", year: "1952", note: "A young man is drawn into affairs with his late father’s mistress and her daughter, amid the tea ceremony." },
       { title: "The Sound of the Mountain", year: "1954", note: "An aging Tokyo businessman confronts his mortality and his children’s troubled marriages." }
     ],

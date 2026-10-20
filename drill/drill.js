@@ -1489,7 +1489,9 @@
       for (var g = 0; g < gapFor.length; g++) {
         for (var tries = 0; tries < 20; tries++) {
           var picks = [];
-          var src = shuffle(pool.length >= 5 ? pool : ALL);
+          var src = shuffle(pool.length >= 5 ? pool : ALL).filter(function (it) {
+            return typeof it.born === "number";
+          });
           var first = weightedPick(src, weight);
           picks.push(first);
           for (var i = 0; i < src.length && picks.length < 5; i++) {
@@ -1502,7 +1504,7 @@
           if (picks.length === 5) return picks;
         }
       }
-      return shuffle(ALL).slice(0, 5);
+      return shuffle(ALL.filter(function (it) { return typeof it.born === "number"; })).slice(0, 5);
     }
 
     function play() {
@@ -1748,7 +1750,7 @@
             return h.indexOf(w) !== -1;
           });
         }).sort(function (a, b) {
-          return a.born - b.born;
+          return (a.born == null ? 1e4 : a.born) - (b.born == null ? 1e4 : b.born);
         });
         if (!items.length) return;
         html +=
