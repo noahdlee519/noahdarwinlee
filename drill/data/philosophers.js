@@ -64,7 +64,7 @@ window.DRILL_DATA.philosophers = [
       "Nicknamed “the Obscure” for his riddling, aphoristic style.",
       "Said to have deposited his book in the temple of Artemis at Ephesus.",
       "Later tradition called him “the weeping philosopher.”",
-      "His thought survives only in about a hundred short fragments quoted by later writers."
+      "His thought survives only in some 130 short fragments quoted by later writers."
     ],
     ideas: [
       { term: "Flux", text: "Held that everything is constantly changing: you cannot step into the same river twice, because new waters keep flowing." },
@@ -93,7 +93,7 @@ window.DRILL_DATA.philosophers = [
     facts: [
       "Wrote his philosophy as a hexameter poem in which a goddess reveals the truth.",
       "Teacher and older friend of Zeno of Elea.",
-      "Plato depicts him, as an old man, debating a young Socrates.",
+      "Plato portrays him at about sixty-five, testing a young Socrates’ theory of Forms.",
       "Said to have written the laws for his home city of Elea."
     ],
     ideas: [
@@ -142,7 +142,7 @@ window.DRILL_DATA.philosophers = [
     tag: "Atomism",
     blurb: "Developed, with his teacher Leucippus, the theory that everything consists of indivisible atoms moving in empty space.",
     facts: [
-      "From Abdera in Thrace, in northern Greece.",
+      "Credited with some seventy works on ethics, physics, mathematics, music, and more, none of which survive whole.",
       "Known as “the laughing philosopher” for mocking human folly.",
       "Developed his theory of matter together with his teacher Leucippus.",
       "Reportedly spent his inheritance traveling widely, perhaps as far as Egypt and Persia."
@@ -150,7 +150,7 @@ window.DRILL_DATA.philosophers = [
     ideas: [
       { term: "Atoms and the void", text: "Reality consists only of tiny, indivisible, eternal particles moving through empty space." },
       { term: "Sensory qualities by convention", text: "Sweet, bitter, hot, cold, and color exist only by convention; in reality there are only particles and emptiness." },
-      { term: "Euthymia", text: "The goal of life is cheerfulness or tranquility of soul, achieved through moderation." }
+      { term: "Euthymia", text: "The goal of life is a cheerful, untroubled soul, gained by moderating desires and comparing oneself with those worse off, not those envied." }
     ],
     works: [],
     quotes: ["By convention sweet, by convention bitter, by convention hot, by convention cold, by convention color; but in reality atoms and void."]
@@ -195,7 +195,7 @@ window.DRILL_DATA.philosophers = [
       "Wrote nothing; known mainly through Plato, Xenophon, and the comic playwright Aristophanes.",
       "Died after drinking hemlock, sentenced by an Athenian jury for impiety and corrupting the youth.",
       "Served as a hoplite soldier in the Peloponnesian War.",
-      "The oracle at Delphi declared that no one was wiser than he."
+      "According to Plato, the Delphic oracle told his friend Chaerephon that no one was wiser than he."
     ],
     ideas: [
       { term: "Elenchus", text: "A method of cross-examining someone’s beliefs with questions until contradictions show they do not know what they thought they knew." },
@@ -282,13 +282,13 @@ window.DRILL_DATA.philosophers = [
     tag: "Cynicism",
     blurb: "The most famous Cynic, who lived in deliberate poverty and shamelessness to show that virtue requires nothing but rejecting convention.",
     facts: [
-      "Lived in a large ceramic storage jar in the Athenian marketplace.",
-      "Carried a lamp in broad daylight, claiming to be searching for a real human being.",
+      "Said to have lived in a large ceramic storage jar in the Athenian marketplace.",
+      "Said to have carried a lamp in broad daylight, claiming to be searching for a real human being.",
       "When Alexander the Great offered him anything he wished, reportedly asked him to stand out of his sunlight.",
-      "Exiled from his home city on the Black Sea after a scandal over defacing the currency."
+      "Reportedly exiled from his home city on the Black Sea after a scandal over defacing the currency."
     ],
     ideas: [
-      { term: "Living according to nature", text: "Happiness comes from living simply and naturally, rejecting wealth, status, and social custom." },
+      { term: "Self-sufficiency (autarkeia)", text: "Happiness lies in needing almost nothing; on seeing a boy drink from his cupped hands, he reportedly threw away his only cup." },
       { term: "Cosmopolitanism", text: "Declared allegiance to the whole cosmos rather than to any single city-state." },
       { term: "Shamelessness (anaideia)", text: "Performed private acts in public to show that conventional shame and propriety are arbitrary." },
       { term: "Askesis", text: "Trained himself through deliberate hardship, such as embracing snow-covered statues in winter, to become self-sufficient." }
@@ -335,7 +335,7 @@ window.DRILL_DATA.philosophers = [
     tag: "Stoicism",
     blurb: "Founder of Stoicism, who taught in Athens that virtue, living in agreement with nature, is the only true good.",
     facts: [
-      "A merchant from Cyprus who turned to philosophy after a shipwreck brought him to Athens.",
+      "A merchant from Cyprus said to have turned to philosophy after a shipwreck brought him to Athens.",
       "Taught at the Painted Porch (Stoa Poikile), which gave his school its name.",
       "Studied under the Cynic Crates of Thebes.",
       "Honored by Athens with a golden crown and a public tomb."
@@ -343,8 +343,7 @@ window.DRILL_DATA.philosophers = [
     ideas: [
       { term: "Living in agreement with nature", text: "The goal of life is to live consistently with nature and with reason." },
       { term: "Virtue as the sole good", text: "Only virtue is good and only vice bad; health, wealth, and reputation are merely “indifferents.”" },
-      { term: "Divine reason", text: "The universe is ordered by a rational, divine principle (logos) that pervades all things." },
-      { term: "Apatheia", text: "Freedom from destructive passions, which arise from false judgments about what is good or bad." }
+      { term: "Cataleptic impression", text: "Knowledge rests on a “grasping” impression so clear it could only come from its object; he likened knowledge to a clenched fist." }
     ],
     works: [
       { title: "Republic (Politeia)", year: "c. 300 BCE", note: "A lost utopian work describing a community of the wise without temples, law courts, or money." }
@@ -400,7 +399,7 @@ window.DRILL_DATA.philosophers = [
       { term: "Anger as temporary madness", text: "Anger is a destructive passion based on a false judgment, which reason can learn to prevent." }
     ],
     works: [
-      { title: "Letters to Lucilius (Moral Letters)", year: "c. 65 CE", note: "124 letters to a friend offering Stoic guidance on friendship, death, wealth, and self-improvement." },
+      { title: "Letters to Lucilius (Moral Letters)", year: "c. 62–65 CE", note: "124 letters to a friend offering Stoic guidance on friendship, death, wealth, and self-improvement." },
       { title: "On the Shortness of Life", year: "c. 49 CE", note: "Essay arguing that life is long enough if we stop wasting time on trivial pursuits." },
       { title: "On Anger", year: "c. 45 CE", note: "Treatise analyzing anger and offering techniques to avoid and control it." }
     ],
@@ -425,7 +424,7 @@ window.DRILL_DATA.philosophers = [
     ideas: [
       { term: "The inner citadel", text: "The mind can retreat into itself and remain untouched by external events if it guards its judgments." },
       { term: "View from above", text: "Imagine human affairs from a great height to see their smallness and impermanence." },
-      { term: "Cosmic citizenship", text: "Every person is a fellow citizen of one rational world-city, so we are made for cooperation." },
+      { term: "The obstacle becomes the way", text: "The mind turns every hindrance into material for its own action, as a fire makes flame of whatever is thrown on it." },
       { term: "Impermanence", text: "Everything, including fame and life itself, passes quickly away, so we should accept change calmly." }
     ],
     works: [
@@ -482,7 +481,7 @@ window.DRILL_DATA.philosophers = [
       { term: "Mystical union", text: "The soul can turn inward and ascend to unite with the ultimate source in ecstatic experience." }
     ],
     works: [
-      { title: "Enneads", year: "c. 270 CE", note: "Fifty-four treatises arranged by Porphyry into six sets of nine, covering the One, Intellect, and Soul." }
+      { title: "Enneads", year: "c. 253–270 CE", note: "Fifty-four treatises, edited by Porphyry around 301 into six sets of nine, covering the One, Intellect, and Soul." }
     ],
     quotes: ["A flight of the alone to the Alone."]
   },
@@ -561,7 +560,7 @@ window.DRILL_DATA.philosophers = [
     blurb: "The “second sage” of Confucianism, who argued that human nature is innately good.",
     facts: [
       "Said to have studied with disciples of Zisi, the grandson of Confucius.",
-      "His mother famously moved house three times to find a good environment for his education.",
+      "According to legend, his mother moved house three times to find a good environment for his education.",
       "Traveled among warring states urging rulers to govern with benevolence.",
       "Debated the philosopher Gaozi, who held that human nature is neither good nor bad."
     ],
@@ -587,8 +586,8 @@ window.DRILL_DATA.philosophers = [
     tag: "Daoism",
     blurb: "Daoist thinker whose witty, paradoxical stories celebrate spontaneity and question every fixed distinction.",
     facts: [
-      "Declined an offer to become a chief minister, saying he would rather drag his tail in the mud like a live turtle.",
-      "Drummed on a basin and sang after his wife died, reflecting on the natural cycle of life and death.",
+      "In a famous story, declines a post as chief minister, preferring to drag his tail in the mud like a live turtle.",
+      "Said to have drummed on a basin and sung after his wife died, reflecting on the natural cycle of life and death.",
       "Often debated with his friend, the logician Hui Shi.",
       "Said to have served as a minor official in charge of a lacquer garden."
     ],
@@ -694,17 +693,17 @@ window.DRILL_DATA.philosophers = [
     tag: "Buddhism",
     blurb: "Indian sage whose awakening and teaching of the Middle Way founded one of the world’s great religious and philosophical traditions.",
     facts: [
-      "Born a prince of the Shakya clan at Lumbini, in present-day Nepal.",
-      "Left palace life after seeing an old man, a sick man, a corpse, and a wandering ascetic.",
+      "Traditionally said to have been born a prince of the Shakya clan at Lumbini, in present-day Nepal.",
+      "According to legend, left palace life after seeing an old man, a sick man, a corpse, and a wandering ascetic.",
       "Attained awakening while meditating under a fig tree at Bodh Gaya.",
       "Gave his first sermon in a deer park at Sarnath."
     ],
     ideas: [
       { term: "Four Noble Truths", text: "Life involves suffering (dukkha); suffering arises from craving; suffering can cease; and an eightfold path leads to its cessation." },
       { term: "Noble Eightfold Path", text: "Right view, intention, speech, action, livelihood, effort, mindfulness, and concentration." },
-      { term: "Anatta (no-self)", text: "There is no permanent, unchanging self; a person is a changing bundle of physical and mental processes." },
+      { term: "Anatta (no-self)", text: "There is no permanent self; a person is only five changing aggregates: form, feeling, perception, mental formations, and consciousness." },
       { term: "Middle Way", text: "The path to liberation lies between sensual indulgence and extreme self-denial." },
-      { term: "Dependent origination", text: "Everything arises in dependence on conditions; nothing exists independently or permanently." }
+      { term: "Dependent origination", text: "“When this exists, that comes to be”: a twelve-link chain runs from ignorance through craving to birth, old age, and death." }
     ],
     works: [],
     quotes: ["Hatred does not cease by hatred at any time: hatred ceases by love; this is an old rule."]
@@ -933,20 +932,20 @@ window.DRILL_DATA.philosophers = [
     name: "Avicenna (Ibn Sina)",
     born: 980,
     dates: "980–1037",
-    place: "Persia (born near Bukhara)",
+    place: "Central Asia and Persia",
     group: "medieval",
     tag: "Islamic philosophy",
     blurb: "Persian polymath whose philosophy and medicine dominated both the Islamic world and medieval Europe.",
     facts: [
       "Born near Bukhara in Central Asia.",
       "Said to have memorized the Qur’an by age ten and to have practiced medicine as a teenager.",
-      "Read Aristotle’s Metaphysics forty times without understanding it, until he found a commentary by al-Farabi.",
+      "By his own account, read Aristotle’s Metaphysics forty times without understanding it, until he found a commentary by al-Farabi.",
       "Served as physician and vizier to several Persian rulers."
     ],
     ideas: [
       { term: "Floating man", text: "A person created in midair, with no sensations at all, would still be aware of his own existence, so the self is distinct from the body." },
       { term: "Essence and existence", text: "What a thing is (its essence) is distinct from the fact that it is; existence is added to essence." },
-      { term: "Necessary existent", text: "Contingent things need a cause, and the chain must end in a being whose existence is necessary in itself: God." }
+      { term: "Necessary existent", text: "Everything is either merely possible in itself, needing a cause to exist, or necessary through itself; only one being, God, is the latter." }
     ],
     works: [
       { title: "The Canon of Medicine", year: "1025", note: "Encyclopedia of medicine used as a standard textbook in Europe and the Islamic world for centuries." },
@@ -977,8 +976,8 @@ window.DRILL_DATA.philosophers = [
     ],
     works: [
       { title: "The Incoherence of the Philosophers", year: "1095", note: "Attack on the Aristotelian philosophers on twenty points, three of which it judged to be unbelief." },
-      { title: "Deliverance from Error", year: "c. 1100", note: "Spiritual autobiography describing a skeptical crisis and the search for certain knowledge." },
-      { title: "The Revival of the Religious Sciences", year: "c. 1097", note: "Massive guide to Islamic belief, worship, and inner spiritual life." }
+      { title: "Deliverance from Error", year: "c. 1106", note: "Spiritual autobiography describing a skeptical crisis and the search for certain knowledge." },
+      { title: "The Revival of the Religious Sciences", year: "c. 1096–1102", note: "Massive guide to Islamic belief, worship, and inner spiritual life." }
     ],
     quotes: []
   },
@@ -998,7 +997,7 @@ window.DRILL_DATA.philosophers = [
       "Fell into disgrace late in life and saw his books burned, though he was later restored to favor."
     ],
     ideas: [
-      { term: "Harmony of religion and philosophy", text: "Truth does not contradict truth: demonstrative philosophy and correctly interpreted scripture cannot conflict." },
+      { term: "Harmony of religion and philosophy", text: "Truth does not contradict truth; scripture speaks to the masses through rhetoric, to theologians through dialectic, and to philosophers through demonstration." },
       { term: "Unity of the intellect", text: "There is a single material intellect shared by all humans, a view fiercely debated by Latin scholastics." },
       { term: "Defense of philosophy", text: "Against al-Ghazali, argued that philosophical reasoning is permitted, and even obligatory, for those able to pursue it." }
     ],
@@ -1031,7 +1030,7 @@ window.DRILL_DATA.philosophers = [
     ],
     works: [
       { title: "The Guide for the Perplexed", year: "c. 1190", note: "Philosophical work explaining biblical language and reconciling scripture with Aristotle." },
-      { title: "Mishneh Torah", year: "1180", note: "Comprehensive fourteen-volume code of Jewish law." }
+      { title: "Mishneh Torah", year: "1180", note: "Comprehensive code of Jewish law in fourteen books." }
     ],
     quotes: []
   },
@@ -1047,14 +1046,14 @@ window.DRILL_DATA.philosophers = [
     blurb: "Dominican friar who synthesized Aristotle with Christian theology; the most influential of the scholastic philosophers.",
     facts: [
       "His family held him captive for about a year to stop him joining the Dominicans.",
-      "Classmates nicknamed him “the Dumb Ox” for his size and quietness.",
+      "Said to have been nicknamed “the Dumb Ox” by classmates for his size and quietness.",
       "Studied under Albert the Great.",
-      "Stopped writing after a mystical experience, saying that all he had written seemed like straw."
+      "Reportedly stopped writing after a mystical experience in 1273, saying that all he had written seemed like straw."
     ],
     ideas: [
       { term: "Five Ways", text: "Five arguments for God’s existence: from motion, causation, contingency, degrees of perfection, and order in nature." },
       { term: "Natural law", text: "A moral law grounded in human nature and knowable by reason, directing us to preserve life, seek truth, and live in society." },
-      { term: "Faith and reason", text: "Reason and revelation cannot truly conflict; philosophy can prove some truths of faith, while others exceed reason." },
+      { term: "Faith and reason", text: "Reason can prove “preambles of faith” such as God’s existence, but mysteries like the Trinity and the Incarnation are known only by revelation." },
       { term: "Just war theory", text: "A war is just only if waged by legitimate authority, for a just cause, and with right intention." },
       { term: "Doctrine of double effect", text: "An act with both a good and a bad effect may be permissible if the bad effect is foreseen but not intended." }
     ],
@@ -1107,7 +1106,7 @@ window.DRILL_DATA.philosophers = [
       "Excommunicated after siding against Pope John XXII in a dispute over Franciscan poverty."
     ],
     ideas: [
-      { term: "The razor (principle of parsimony)", text: "Do not multiply entities beyond necessity; prefer the explanation that assumes the least." },
+      { term: "The razor (principle of parsimony)", text: "It is futile to do with more what can be done with fewer; an explanation should posit no more entities than it needs." },
       { term: "Nominalism", text: "Only individual things exist; universals like “redness” are just names or concepts that apply to many things." },
       { term: "Divine omnipotence", text: "God can do anything that does not involve a contradiction, so the order of the world depends entirely on God’s will." },
       { term: "Limits of papal power", text: "The pope has no authority over secular rulers in temporal matters." }
@@ -1132,7 +1131,7 @@ window.DRILL_DATA.philosophers = [
     facts: [
       "Served as a diplomat and secretary of the Florentine Republic.",
       "Imprisoned and tortured after the Medici returned to power in Florence.",
-      "Wrote his most famous work while in exile on his farm and dedicated it to Lorenzo de’ Medici."
+      "Wrote his most famous work while banished to his farm outside Florence and dedicated it to Lorenzo di Piero de’ Medici."
     ],
     ideas: [
       { term: "Virtù and fortuna", text: "A ruler’s energy, skill, and boldness must master fortune, which controls about half of human affairs." },
@@ -1197,7 +1196,7 @@ window.DRILL_DATA.philosophers = [
     ],
     works: [
       { title: "Novum Organum", year: "1620", note: "Proposes a new inductive method for science to replace Aristotle’s logic." },
-      { title: "The New Atlantis", year: "1627", note: "Unfinished utopia about an island society run by a scientific research institution." },
+      { title: "The New Atlantis", year: "1626", note: "Unfinished utopia, published posthumously, about an island society run by a scientific research institution." },
       { title: "Essays", year: "1597", note: "Short, aphoristic essays on topics such as truth, studies, ambition, and friendship." }
     ],
     quotes: ["Knowledge itself is power."]
@@ -1216,11 +1215,11 @@ window.DRILL_DATA.philosophers = [
       "Born prematurely as the Spanish Armada approached; he said that fear and he were born twins.",
       "Fled to Paris during the English Civil War, where he tutored the future Charles II in mathematics.",
       "Fell in love with geometry on reading Euclid at about age forty.",
-      "Translated Thucydides as a young man and Homer in his eighties."
+      "Published an English translation of Thucydides at about forty and of Homer in his eighties."
     ],
     ideas: [
       { term: "State of nature", text: "Without government there would be a war of every man against every man, with no industry, arts, or society." },
-      { term: "Social contract", text: "People rationally agree to give up their natural liberty to a sovereign in exchange for security and peace." },
+      { term: "Social contract", text: "Each person covenants with every other to authorize one sovereign, who is not a party to the covenant and so can never breach it." },
       { term: "Absolute sovereignty", text: "The sovereign’s power must be undivided and unchallengeable, since divided power leads back to civil war." },
       { term: "Materialism", text: "Everything that exists is matter in motion, including thought itself." }
     ],
@@ -1241,7 +1240,7 @@ window.DRILL_DATA.philosophers = [
     tag: "Rationalism",
     blurb: "French mathematician and “father of modern philosophy,” who sought certainty by doubting everything that could be doubted.",
     facts: [
-      "Invented analytic geometry, uniting algebra and geometry through coordinates.",
+      "Pioneered analytic geometry, uniting algebra and geometry through coordinates.",
       "Had his decisive philosophical vision in a stove-heated room in Germany in 1619.",
       "Lived for about twenty years in the Dutch Republic.",
       "Died in Stockholm after being summoned to tutor Queen Christina of Sweden."
@@ -1275,7 +1274,7 @@ window.DRILL_DATA.philosophers = [
     blurb: "French mathematician, physicist, and Christian thinker best known for his wager and his reflections on the human condition.",
     facts: [
       "Built one of the first mechanical calculators, at about eighteen, to help his father with tax accounts.",
-      "Founded probability theory in correspondence with Pierre de Fermat.",
+      "Laid the foundations of probability theory in correspondence with Pierre de Fermat.",
       "Had an intense religious experience on 23 November 1654, recorded on a note he kept sewn into his coat.",
       "Closely associated with the Jansenist convent of Port-Royal."
     ],
@@ -1323,7 +1322,7 @@ window.DRILL_DATA.philosophers = [
     ],
     quotes: [
       "All things excellent are as difficult as they are rare.",
-      "I have striven not to laugh at human actions, not to weep at them, nor to hate them, but to understand them."
+      "I have laboured carefully, not to mock, lament, or execrate, but to understand human actions."
     ]
   },
 
@@ -1345,7 +1344,7 @@ window.DRILL_DATA.philosophers = [
       { term: "Tabula rasa", text: "The mind at birth is a blank slate; all ideas come from experience, through sensation and reflection." },
       { term: "Natural rights", text: "Everyone has rights to life, liberty, and property that exist before, and independently of, government." },
       { term: "Consent of the governed", text: "Legitimate government rests on the people’s agreement, and they may resist and replace a ruler who violates their rights." },
-      { term: "Primary and secondary qualities", text: "Shape, size, and motion exist in objects themselves, while colors, tastes, and sounds exist only as effects in perceivers." },
+      { term: "Primary and secondary qualities", text: "Solidity, extension, figure, and motion really belong to bodies, while colors, tastes, and sounds are only powers in bodies to produce ideas in us." },
       { term: "Labor theory of property", text: "Mixing one’s labor with unowned natural resources makes them one’s own." }
     ],
     works: [
@@ -1431,7 +1430,7 @@ window.DRILL_DATA.philosophers = [
     ],
     ideas: [
       { term: "Écrasez l’infâme", text: "“Crush the infamous thing”: a rallying cry against religious fanaticism and the abuses of the church." },
-      { term: "Religious toleration", text: "No one should be persecuted for their beliefs; fanaticism is a disease of reason." },
+      { term: "Religious toleration", text: "Persecution for belief is absurd and barbaric; fanaticism is to superstition what delirium is to fever." },
       { term: "Deism", text: "Believed in a creator known through reason and nature, but rejected revealed religion and miracles." },
       { term: "Critique of optimism", text: "Mocked the idea that this is the best possible world, especially after the 1755 Lisbon earthquake." }
     ],
@@ -1607,11 +1606,11 @@ window.DRILL_DATA.philosophers = [
       "Mother of the novelist who wrote Frankenstein.",
       "Married the radical philosopher William Godwin.",
       "Witnessed the French Revolution firsthand in Paris.",
-      "Was the first to answer Edmund Burke’s attack on the French Revolution in print."
+      "Answered Edmund Burke’s attack on the French Revolution in print within a month of its publication."
     ],
     ideas: [
       { term: "Education for women", text: "Women seem frivolous and weak only because they are denied a rational education; they are equally capable of reason." },
-      { term: "Equal rights", text: "Rights belong to all rational beings, so women deserve the same moral and civil rights as men." },
+      { term: "One standard of virtue", text: "Virtue has no sex: since women share in reason, they must be held to the same moral standard as men, not a softer, separate one." },
       { term: "Critique of sensibility", text: "The ideal of women as delicate, emotional ornaments keeps them dependent on men." }
     ],
     works: [
@@ -1639,7 +1638,7 @@ window.DRILL_DATA.philosophers = [
       "Mentor to James Mill and to his son, the young John Stuart Mill."
     ],
     ideas: [
-      { term: "Principle of utility", text: "The right action is the one that produces the greatest happiness for the greatest number." },
+      { term: "Principle of utility", text: "Nature has placed mankind under two sovereign masters, pain and pleasure, which alone point out what we ought to do." },
       { term: "Felicific (hedonic) calculus", text: "Pleasures and pains can be measured by intensity, duration, certainty, nearness, and more, and then summed." },
       { term: "Panopticon", text: "A prison design in which a single watchman can observe all inmates without their knowing whether they are being watched." },
       { term: "Natural rights as nonsense", text: "Dismissed natural rights as “nonsense upon stilts”; only legal rights backed by law are real." }
@@ -1711,7 +1710,7 @@ window.DRILL_DATA.philosophers = [
       { title: "The World as Will and Representation", year: "1818", note: "Argues that the world is representation to a subject and, in itself, a blind striving will." },
       { title: "Parerga and Paralipomena", year: "1851", note: "Popular essays and aphorisms that finally brought the author fame late in life." }
     ],
-    quotes: ["Talent hits a target no one else can hit; genius hits a target no one else can see."]
+    quotes: ["Every man takes the limits of his own field of vision for the limits of the world."]
   },
 
   {
@@ -1738,7 +1737,7 @@ window.DRILL_DATA.philosophers = [
     ],
     works: [
       { title: "On Liberty", year: "1859", note: "Defends freedom of thought, speech, and individuality against both state and social coercion." },
-      { title: "Utilitarianism", year: "1863", note: "Defends the greatest happiness principle and distinguishes higher from lower pleasures." },
+      { title: "Utilitarianism", year: "1861", note: "Defends the greatest happiness principle and distinguishes higher from lower pleasures." },
       { title: "The Subjection of Women", year: "1869", note: "Argues for full legal and social equality between the sexes." },
       { title: "A System of Logic", year: "1843", note: "Treatise on deductive and inductive reasoning, including methods for identifying causes." }
     ],
@@ -1854,11 +1853,11 @@ window.DRILL_DATA.philosophers = [
     blurb: "American psychologist and philosopher who popularized pragmatism and wrote influentially on religious experience.",
     facts: [
       "Elder brother of the novelist who wrote The Portrait of a Lady.",
-      "Taught the first psychology course in the United States, at Harvard.",
+      "Taught what is often called the first psychology course in the United States, at Harvard.",
       "Earned a medical degree but never practiced medicine."
     ],
     ideas: [
-      { term: "Pragmatic theory of truth", text: "True ideas are those we can assimilate, validate, and verify; truth is what works in the long run of experience." },
+      { term: "Pragmatic theory of truth", text: "True ideas are those we can assimilate, validate, corroborate, and verify; truth happens to an idea, which is made true by events." },
       { term: "Will to believe", text: "When a choice is live, forced, and momentous, and evidence cannot settle it, we may rightly let our passions decide." },
       { term: "Stream of consciousness", text: "Thought is not a chain of separate ideas but a continuous, ever-changing flow." },
       { term: "Radical empiricism", text: "Relations between things are experienced as directly as the things themselves." }
@@ -1923,8 +1922,8 @@ window.DRILL_DATA.philosophers = [
     ],
     ideas: [
       { term: "Sense and reference", text: "An expression’s reference is what it picks out, its sense the way it presents it: “the Morning Star” and “the Evening Star” both refer to Venus." },
-      { term: "Logicism", text: "Arithmetic can be derived from pure logic plus definitions." },
-      { term: "Quantificational logic", text: "Invented quantifiers and variables, creating the first logic adequate to mathematical reasoning." },
+      { term: "Logicism", text: "Arithmetic is a branch of logic, and numbers are self-standing objects defined as extensions of concepts." },
+      { term: "Quantificational logic", text: "Devised a two-dimensional notation with quantifiers and bound variables, the first logic adequate to mathematical proof." },
       { term: "Context principle", text: "Never ask for the meaning of a word in isolation, but only in the context of a sentence." }
     ],
     works: [
@@ -1980,7 +1979,7 @@ window.DRILL_DATA.philosophers = [
       "Helped found the American Association of University Professors and the New School."
     ],
     ideas: [
-      { term: "Instrumentalism", text: "Ideas are tools for solving problems; their value lies in how well they guide action." },
+      { term: "Instrumentalism", text: "Ideas are tools for resolving problematic situations; successful inquiry yields “warranted assertibility” rather than fixed truth." },
       { term: "Learning by doing", text: "Education should be active and experiential, building on children’s interests rather than rote memorization." },
       { term: "Democracy as a way of life", text: "Democracy is more than voting: it is a mode of associated living and shared inquiry." }
     ],
@@ -2010,7 +2009,6 @@ window.DRILL_DATA.philosophers = [
     ideas: [
       { term: "Theory of descriptions", text: "“The present King of France is bald” is analyzed as a claim that exactly one such king exists and is bald, so it is false rather than meaningless." },
       { term: "Paradox of naive set theory", text: "The set of all sets that are not members of themselves both is and is not a member of itself." },
-      { term: "Logical atomism", text: "The world consists of atomic facts, mirrored by atomic propositions from which complex statements are built." },
       { term: "Knowledge by acquaintance and by description", text: "We know some things directly, like sense data, and others only through descriptions." },
       { term: "Celestial teapot", text: "The burden of proof lies on whoever makes an unfalsifiable claim, such as that a teapot orbits the Sun between Earth and Mars." }
     ],
@@ -2128,7 +2126,7 @@ window.DRILL_DATA.philosophers = [
       "Declined the Nobel Prize in Literature in 1964.",
       "Lifelong companion of Simone de Beauvoir.",
       "Held as a prisoner of war by the Germans in 1940–1941.",
-      "Co-founded the journal Les Temps modernes."
+      "Tens of thousands of people followed his funeral procession through Paris."
     ],
     ideas: [
       { term: "Existence precedes essence", text: "There is no fixed human nature; we first exist and then define ourselves through our choices." },
@@ -2195,7 +2193,7 @@ window.DRILL_DATA.philosophers = [
     ideas: [
       { term: "Woman as Other", text: "Men have defined themselves as the norm and women as the secondary sex, the object against which the male subject defines himself." },
       { term: "Social construction of gender", text: "Femininity is produced by upbringing, myths, and institutions rather than by biology." },
-      { term: "Ethics of ambiguity", text: "Humans are both free subjects and material objects; ethics means willing one’s own freedom and that of others." }
+      { term: "Ambiguity", text: "Humans are both free subjects and material objects; ethics means willing one’s own freedom and that of others." }
     ],
     works: [
       { title: "The Second Sex", year: "1949", note: "Landmark study of how women have been made into “the Other” throughout history and culture." },
@@ -2217,7 +2215,7 @@ window.DRILL_DATA.philosophers = [
     facts: [
       "Co-edited Les Temps modernes with Jean-Paul Sartre before breaking with him over politics.",
       "Held the chair of philosophy at the Collège de France from 1952.",
-      "Died suddenly of a stroke at the age of fifty-three."
+      "Died suddenly in 1961, at the age of fifty-three."
     ],
     ideas: [
       { term: "Primacy of perception", text: "Perception, not abstract thought, is our basic way of being in contact with the world." },
@@ -2312,7 +2310,7 @@ window.DRILL_DATA.philosophers = [
       { term: "Original position", text: "A thought experiment: imagine choosing the basic principles of society as free and equal parties in a fair initial situation." },
       { term: "Veil of ignorance", text: "Those choosing principles do not know their race, class, talents, or conception of the good, which ensures impartiality." },
       { term: "Difference principle", text: "Social and economic inequalities are just only if they benefit the least advantaged members of society." },
-      { term: "Justice as fairness", text: "Just principles are those that free and equal persons would agree to under fair conditions." },
+      { term: "Justice as fairness", text: "Two principles: equal basic liberties for all come first; inequalities are then allowed only with fair equality of opportunity." },
       { term: "Reflective equilibrium", text: "Adjust general principles and particular judgments against each other until they cohere." }
     ],
     works: [
@@ -2367,7 +2365,7 @@ window.DRILL_DATA.philosophers = [
     ],
     ideas: [
       { term: "Power/knowledge", text: "Power and knowledge are intertwined: institutions produce knowledge that in turn extends their control." },
-      { term: "Disciplinary power", text: "Modern society trains and normalizes people through surveillance, so they police themselves as if always watched." },
+      { term: "Disciplinary power", text: "Schools, barracks, factories, and prisons produce “docile bodies” through timetables, examinations, and constant observation." },
       { term: "Biopower", text: "Modern states manage the life, health, and reproduction of whole populations, not just punish subjects." },
       { term: "Genealogy", text: "Historical analysis that shows how ideas and institutions taken as natural arose from contingent struggles." },
       { term: "Episteme", text: "The underlying framework that defines what can count as knowledge in a given historical period." }
@@ -2448,7 +2446,7 @@ window.DRILL_DATA.philosophers = [
     facts: [
       "Taught at the University of California, Berkeley, for some six decades.",
       "Studied at Oxford as a Rhodes Scholar, where he was influenced by J. L. Austin.",
-      "Was the first tenured Berkeley professor to join the 1964 Free Speech Movement."
+      "As a young Berkeley professor, backed the 1964 Free Speech Movement."
     ],
     ideas: [
       { term: "Chinese room", text: "Someone following rules to manipulate Chinese symbols could seem fluent without understanding, so running a program is not enough for a mind." },
@@ -2480,7 +2478,7 @@ window.DRILL_DATA.philosophers = [
     ],
     ideas: [
       { term: "Subjective character of experience", text: "An organism is conscious if there is something it is like to be that organism, which physical science seems to leave out." },
-      { term: "The view from nowhere", text: "The tension between our subjective standpoint and the objective, impersonal view we try to attain." },
+      { term: "Subjective and objective standpoints", text: "The tension between our subjective standpoint and the objective, impersonal view we try to attain." },
       { term: "Moral luck", text: "We are judged for outcomes and circumstances beyond our control, conflicting with the idea that we are responsible only for what we control." },
       { term: "The absurd as self-transcendence", text: "Life seems absurd because we take it seriously while also being able to step back and see it as arbitrary." }
     ],
@@ -2532,7 +2530,7 @@ window.DRILL_DATA.philosophers = [
       "Published a completeness result in modal logic while still a teenager.",
       "Gave his most famous lectures at Princeton in 1970 without notes.",
       "Taught at Princeton and later at the CUNY Graduate Center.",
-      "Son of a rabbi from Omaha, Nebraska."
+      "Grew up in Omaha, Nebraska, the son of a rabbi."
     ],
     ideas: [
       { term: "Rigid designators", text: "Proper names pick out the same object in every possible world in which it exists." },
@@ -2542,7 +2540,7 @@ window.DRILL_DATA.philosophers = [
       { term: "Rule-following paradox", text: "A reading of Wittgenstein: no fact about a speaker’s past usage determines which rule they are following." }
     ],
     works: [
-      { title: "Naming and Necessity", year: "1980", note: "Lectures, given in 1970, attacking descriptivism and defending rigid designation." },
+      { title: "Naming and Necessity", year: "1972", note: "Lectures given in 1970, first printed in 1972 and as a book in 1980, attacking descriptivism." },
       { title: "Wittgenstein on Rules and Private Language", year: "1982", note: "Influential interpretation presenting a skeptical paradox about rule-following." }
     ],
     quotes: []
@@ -2566,7 +2564,7 @@ window.DRILL_DATA.philosophers = [
       { term: "Speciesism", text: "Giving less moral weight to beings’ interests merely because they are not human, a prejudice analogous to racism." },
       { term: "Drowning child", text: "If you would ruin your clothes to save a child drowning in a pond, you should also give to save distant lives." },
       { term: "Equal consideration of interests", text: "Similar interests deserve equal weight regardless of whose they are, including those of animals that can suffer." },
-      { term: "Preference utilitarianism", text: "The right action maximizes the satisfaction of the preferences of all those affected." }
+      { term: "Preference utilitarianism", text: "For most of his career held that the right action maximizes the satisfaction of the preferences of all those affected." }
     ],
     works: [
       { title: "Animal Liberation", year: "1975", note: "Argues against factory farming and animal experimentation on grounds of equal consideration." },
