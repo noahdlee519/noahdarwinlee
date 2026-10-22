@@ -2,13 +2,20 @@
 
 html.drill-root {
   color-scheme: light;
+  --bg: #e68019;
+  --text: #ffffff;
+  --bright: #e3e3b0;
+  --wrong: #5c0a00;
+  --ink: var(--text);
+  --faint: color-mix(in srgb, var(--text) 22%, transparent);
+  --muted: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
+html.drill-root[data-theme="white"] {
   --bg: #ffffff;
   --text: #000000;
   --bright: #466eff;
   --wrong: #c8361b;
-  --ink: var(--text);
-  --faint: color-mix(in srgb, var(--text) 22%, transparent);
-  --muted: color-mix(in srgb, var(--text) 62%, transparent);
 }
 
 html.drill-root[data-theme="dark"] {

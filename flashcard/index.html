@@ -43,6 +43,8 @@
             var c =
               t === "dark"
                 ? { bg: "#000000", text: "#ffffff", bright: "#918fff" }
+                : t === "light"
+                ? { bg: "#e68019", text: "#ffffff", bright: "#e3e3b0" }
                 : { bg: "#ffffff", text: "#000000", bright: "#466eff" };
             document.documentElement.style.setProperty("--bg", c.bg);
             document.documentElement.style.setProperty("--text", c.text);
@@ -887,8 +889,15 @@
         bright: "#918fff",
       };
 
-      function siteIsDark() {
-        return document.documentElement.getAttribute("data-theme") === "dark";
+      const ORANGE_COLORS = {
+        bg: "#e68019",
+        text: "#ffffff",
+        bright: "#e3e3b0",
+      };
+
+      function siteTheme() {
+        const t = document.documentElement.getAttribute("data-theme");
+        return t === "dark" || t === "white" ? t : "light";
       }
 
       const STORAGE_SET_ASIDE = "front-flashcards-colors-set-aside-v1";
@@ -928,7 +937,8 @@
       }
 
       function startingColors() {
-        return { ...(siteIsDark() ? NIGHT_COLORS : DEFAULT_COLORS) };
+        const t = siteTheme();
+        return { ...(t === "dark" ? NIGHT_COLORS : t === "light" ? ORANGE_COLORS : DEFAULT_COLORS) };
       }
       const COLOR_PRESETS = [
         {
@@ -1168,7 +1178,7 @@
       function saveColors(colors) {
         localStorage.setItem(STORAGE_COLORS, JSON.stringify(colors));
         try {
-          localStorage.setItem(STORAGE_COLORS_THEME, siteIsDark() ? "dark" : "light");
+          localStorage.setItem(STORAGE_COLORS_THEME, siteTheme());
         } catch (error) {}
       }
 
@@ -1957,7 +1967,7 @@
         try {
           chosenUnder = localStorage.getItem(STORAGE_COLORS_THEME);
         } catch (error) {}
-        if (chosenUnder === (siteIsDark() ? "dark" : "light")) return;
+        if (chosenUnder === (siteTheme())) return;
         setAsideColors(readColors());
         try {
           localStorage.removeItem(STORAGE_COLORS);
