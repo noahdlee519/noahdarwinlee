@@ -38,9 +38,19 @@
     btn.title = "Switch to " + NAME[next].toLowerCase();
   }
 
+  var still = 0;
+
   function apply(theme) {
+    root.classList.add("theme-instant");
     root.setAttribute("data-theme", theme);
     label(theme);
+    void root.offsetWidth;
+    cancelAnimationFrame(still);
+    still = requestAnimationFrame(function () {
+      still = requestAnimationFrame(function () {
+        root.classList.remove("theme-instant");
+      });
+    });
   }
 
   var anchor = null;
