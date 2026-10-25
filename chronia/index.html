@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" class="ch" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Chronia</title>
+    <meta
+      name="description"
+      content="An atlas of the world's borders from 3000 BC to today. Move through the years on a globe or a flat map, and click any state or people to read about it."
+    />
+    <link rel="canonical" href="https://noahdarwinlee.com/chronia/" />
+    <link rel="icon" href="../favicon.png" type="image/png" />
+    <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+    <link rel="manifest" href="../manifest.json" />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Noah Darwin Lee" />
+    <meta property="og:title" content="Chronia | Noah Darwin Lee" />
+    <meta property="og:description" content="An atlas of the world's borders from 3000 BC to today, year by year." />
+    <meta property="og:url" content="https://noahdarwinlee.com/chronia/" />
+    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
+
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="app.css" />
+
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self';
+        font-src 'self';
+        img-src 'self' data: blob: https://upload.wikimedia.org;
+        connect-src 'self' https://en.wikipedia.org https://kigvciyyjlgjcgnwgrwf.supabase.co;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
+    <script src="/visit.js" defer></script>
+  </head>
+  <body class="ch-page">
+    <h1 class="sr-only">Chronia</h1>
+
+    <div class="ch-site">
+      <a class="name" href="/"
+        ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+        <span class="name-word-lee">Lee</span></a
+      >
+      <a class="back-link" href="/projects/">back</a>
+    </div>
+
+    <header class="ch-head" id="head">
+      <div class="ch-head-text">
+        <h2 class="ch-title">CHRONIA</h2>
+        <p class="ch-sub">The world's borders from 3000 BC to today</p>
+      </div>
+      <div class="ch-about" id="about">
+        <button
+          type="button"
+          class="ch-about-btn"
+          id="about-btn"
+          aria-label="About the atlas and its sources"
+          aria-expanded="false"
+          aria-controls="about-tip"
+        >
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false">
+            <circle cx="10" cy="10" r="8.6" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <circle cx="10" cy="6.2" r="1.15" fill="currentColor" />
+            <rect x="9.1" y="8.6" width="1.8" height="6.2" rx="0.9" fill="currentColor" />
+          </svg>
+        </button>
+        <div class="ch-about-tip" id="about-tip" role="note">
+          <p>
+            An atlas of the world's states and peoples from 3000 BC to today. Move the year at the foot of the page, and
+            click a state or people to read about it.
+          </p>
+          <p>
+            The borders come from dated maps, so between two of them the atlas shows the earlier one and says so. Before
+            the mid-1600s most borders are approximate and are drawn as dotted lines. Peoples and cultures, as distinct
+            from states, are left uncoloured and named in italics.
+          </p>
+          <p>
+            To redraw history instead, try <a href="/uchronia/">UCHRONIA</a>.
+          </p>
+          <p class="ch-keys">Keys: ← → the previous or next map | P plays the maps in order | M flat map | + and − zoom | Esc closes</p>
+          <p class="ch-sources">
+            Sources: <a href="https://github.com/aourednik/historical-basemaps">historical-basemaps</a> (A. Ourednik),
+            <a href="https://www.naturalearthdata.com/">Natural Earth</a>,
+            <a href="https://registry.opendata.aws/terrain-tiles/">Terrain Tiles</a>, and
+            <a href="https://en.wikipedia.org/">Wikipedia</a>.
+            <a href="https://github.com/noahdlee519/noahdarwinlee/blob/main/chronia/README.md#credits">All credits and licences</a>
+          </p>
+          <p class="ch-sources"><a href="/privacy/">Privacy</a> | <a href="/terms/">Terms</a> | <a class="ch-donate" href="https://ko-fi.com/noahdarwinlee" target="_blank" rel="noopener noreferrer">DONATE</a></p>
+        </div>
+      </div>
+    </header>
+
+    <canvas
+      id="globe"
+      class="ch-globe"
+      tabindex="0"
+      aria-label="A globe of the world's states and peoples in the chosen year. Drag to turn it, scroll or pinch to zoom, and click a state to read about it."
+    ></canvas>
+
+    <div class="ch-ctls" id="ctls">
+      <button type="button" class="ch-ctl" id="zoom-in" aria-label="Zoom in" data-tip="Zoom in (+)">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M10 3.5v13M3.5 10h13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+      </button>
+      <button type="button" class="ch-ctl" id="zoom-out" aria-label="Zoom out" data-tip="Zoom out (−)">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3.5 10h13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+      </button>
+      <button type="button" class="ch-ctl" id="flat-btn" aria-pressed="false" aria-label="Flat map" data-tip="Flat map (M)">
+        <svg class="ch-icon-flat" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="4.5" width="15" height="11" /><path d="M2.5 10h15M7.5 4.5v11M12.5 4.5v11" /></svg>
+        <svg class="ch-icon-globe" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="10" cy="10" r="7.5" /><path d="M2.5 10h15M10 2.5c-3.6 4.2-3.6 10.8 0 15M10 2.5c3.6 4.2 3.6 10.8 0 15" /></svg>
+      </button>
+    </div>
+
+    <section class="ch-card" id="card" hidden aria-labelledby="card-name">
+      <button type="button" class="ch-card-close" id="card-close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+      </button>
+      <p class="ch-card-kind" id="card-kind"></p>
+      <h3 class="ch-card-name" id="card-name"></h3>
+      <p class="ch-card-facts" id="card-facts"></p>
+      <div class="ch-wiki" id="wiki" aria-live="polite">
+        <img class="ch-wiki-img" id="wiki-img" alt="" hidden />
+        <p class="ch-wiki-text" id="wiki-text"></p>
+        <p class="ch-wiki-more" id="wiki-more" hidden><a id="wiki-link" href="#" target="_blank" rel="noopener noreferrer">Read more on Wikipedia</a></p>
+      </div>
+    </section>
+
+    <section class="ch-time" id="time" aria-label="Year">
+      <div class="ch-when">
+        <button type="button" class="ch-step" id="prev-map" aria-label="Previous map" data-tip="Previous map (←)">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12.5 4 6.5 10l6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <div class="ch-year-box">
+          <label class="sr-only" for="year-input">Year</label>
+          <input class="ch-year" id="year-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="1815" />
+          <p class="ch-asof" id="asof"></p>
+        </div>
+        <button type="button" class="ch-step" id="next-map" aria-label="Next map" data-tip="Next map (→)">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M7.5 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <button type="button" class="ch-step ch-play" id="play" aria-pressed="false" aria-label="Play the maps in order" data-tip="Play (P)">
+          <svg class="ch-icon-play" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6.5 4.5v11l9-5.5z" fill="currentColor" /></svg>
+          <svg class="ch-icon-pause" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 4.5h2.6v11H6zM11.4 4.5H14v11h-2.6z" fill="currentColor" /></svg>
+        </button>
+      </div>
+      <div class="ch-track" id="track">
+        <div class="ch-ticks" id="ticks" aria-hidden="true"></div>
+        <input class="ch-range" id="range" type="range" min="0" max="1000" step="1" value="800" aria-label="Year" />
+        <div class="ch-eras" id="eras" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <div class="ch-tip" id="tip" hidden></div>
+    <div class="ch-hover-tip" id="hover-tip" role="tooltip"></div>
+    <div class="ch-load" id="load" role="status">Opening the atlas</div>
+
+    <script src="../uchronia/vendor/d3-array.min.js"></script>
+    <script src="../uchronia/vendor/d3-geo.min.js"></script>
+    <script src="../uchronia/vendor/topojson-client.min.js"></script>
+    <script src="../uchronia/sat.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

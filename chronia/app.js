@@ -1,0 +1,1609 @@
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $("globe");
+  var ctx = canvas.getContext("2d");
+  var R_KM = 6371.0088, D2R = Math.PI / 180, TAU = 2 * Math.PI, HALF_PI = Math.PI / 2;
+  var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
+  var UC = "../uchronia/";
+  var STORE_FLAT = "chronia-flat";
+  var PALETTE = 10;
+  var SOFT_BEFORE = 1648;
+  var START_YEAR = 1815;
+  var LAST_YEAR = 2026;
+  var KEEP_MAPS = 8;
+  var phoneQuery = window.matchMedia("(max-width: 640px)");
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var canHover = window.matchMedia("(hover: hover)").matches;
+
+  function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+  function wrap180(x) { return ((x + 180) % 360 + 360) % 360 - 180; }
+  function wrapPi(x) { return ((x + Math.PI) % TAU + TAU) % TAU - Math.PI; }
+  function toVec(lon, lat) {
+    var l = lon * D2R, p = lat * D2R, c = Math.cos(p);
+    return [c * Math.cos(l), c * Math.sin(l), Math.sin(p)];
+  }
+  function normalize(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+  function fetchJSON(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error(url + " " + r.status);
+      return r.json();
+    });
+  }
+
+  var view = { lon: 15, lat: 32, zoom: 1 };
+  var flat = false;
+  var dpr = 1, W = 0, H = 0, cx = 0, cy = 0, baseR = 0, baseK = 0, freeT = 0, freeB = 0;
+  var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
+  var MIN_ZOOM = 0.6, MAX_ZOOM = 40;
+  var FB = { k: 1, xc: 0, yc: 0, wrap: false, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
+  var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
+
+  function layout() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    sizeRelief();
+    var phone = phoneQuery.matches;
+    var timeH = $("time").getBoundingClientRect().height || 80;
+    var cardH = phone && !$("card").hidden ? $("card").getBoundingClientRect().height : 0;
+    freeT = phone ? 58 : 76;
+    freeB = H - timeH - cardH;
+    cx = W / 2;
+    cy = (freeT + freeB) / 2;
+    baseR = Math.max(80, Math.min(W - 20, freeB - freeT) / 2 - 14);
+    baseK = Math.max(20, Math.min((W - 24) / TAU, (freeB - freeT - 16) / Math.PI));
+    applyView();
+    placeTicks();
+  }
+  function zoomRange() {
+    if (!flat) return [MIN_ZOOM, MAX_ZOOM];
+    return [1, Math.max(2, MAX_ZOOM * baseR / baseK)];
+  }
+  function applyView() {
+    var zr = zoomRange();
+    view.zoom = Math.max(zr[0], Math.min(zr[1], view.zoom));
+    if (flat) {
+      var k = baseK * view.zoom;
+      var xc = view.lon * D2R, yc = Math.max(-90, Math.min(90, view.lat)) * D2R;
+      var x0 = -Math.PI + cx / k, x1 = Math.PI - (W - cx) / k;
+      FB.wrap = k * TAU > W + 1;
+      xc = FB.wrap ? wrapPi(xc) : x0 > x1 ? 0 : Math.max(x0, Math.min(x1, xc));
+      var y0 = (freeB - cy) / k - HALF_PI, y1 = HALF_PI - (cy - freeT) / k;
+      yc = y0 > y1 ? 0 : Math.max(y0, Math.min(y1, yc));
+      view.lon = xc / D2R; view.lat = yc / D2R;
+      FB.k = k; FB.xc = xc; FB.yc = yc;
+      var margin = 40 / k;
+      FB.vmin = FB.wrap ? xc - cx / k - margin : Math.max(-Math.PI, xc - cx / k - margin);
+      FB.vmax = FB.wrap ? xc + (W - cx) / k + margin : Math.min(Math.PI, xc + (W - cx) / k + margin);
+      FB.pmin = Math.max(-HALF_PI, yc - (H - cy) / k - margin);
+      FB.pmax = Math.min(HALF_PI, yc + cy / k + margin);
+    } else {
+      view.lon = wrap180(view.lon);
+      view.lat = Math.max(-89.5, Math.min(89.5, view.lat));
+      projection.rotate([-view.lon, -view.lat, 0]).scale(baseR * view.zoom).translate([cx, cy]);
+      var lon = view.lon * D2R, lat = view.lat * D2R;
+      var sl = Math.sin(lon), cl = Math.cos(lon), sp = Math.sin(lat), cp = Math.cos(lat);
+      B.ex = -sl; B.ey = cl; B.ez = 0;
+      B.nx = -sp * cl; B.ny = -sp * sl; B.nz = cp;
+      B.cx = cp * cl; B.cy = cp * sl; B.cz = sp;
+      B.r = baseR * view.zoom;
+    }
+  }
+  function localScale() { return (flat ? baseK : baseR) * view.zoom; }
+  function kmPx() { return localScale() / R_KM; }
+
+  function capOf(X, Y, Z, n, sx, sy, sz) {
+    var c = Math.hypot(sx, sy, sz) > 1e-9 ? normalize([sx, sy, sz]) : [X[0], Y[0], Z[0]];
+    var minDot = 1;
+    for (var k = 0; k < n; k++) { var d = c[0] * X[k] + c[1] * Y[k] + c[2] * Z[k]; if (d < minDot) minDot = d; }
+    return { cx: c[0], cy: c[1], cz: c[2], radius: Math.acos(Math.max(-1, Math.min(1, minDot))) };
+  }
+  function prepare(f) {
+    var g = f.geometry || f;
+    var polys = !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    var rings = [], sx = 0, sy = 0, sz = 0, AX = [], AY = [], AZ = [];
+    polys.forEach(function (poly) {
+      poly.forEach(function (ring) {
+        var n = ring.length, X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n);
+        for (var k = 0; k < n; k++) {
+          var v = toVec(ring[k][0], ring[k][1]);
+          X[k] = v[0]; Y[k] = v[1]; Z[k] = v[2]; sx += v[0]; sy += v[1]; sz += v[2];
+          AX.push(v[0]); AY.push(v[1]); AZ.push(v[2]);
+        }
+        rings.push({ x: X, y: Y, z: Z, n: n });
+      });
+    });
+    if (!rings.length) return { rings: [], cx: 1, cy: 0, cz: 0, radius: -10, geo: null };
+    var cap = capOf(AX, AY, AZ, AX.length, sx, sy, sz);
+    cap.rings = rings;
+    cap.geo = g;
+    return cap;
+  }
+  function preparePolys(f) {
+    var g = f.geometry || f;
+    var polys = !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    return polys.map(function (poly) { return prepare({ type: "Polygon", coordinates: poly }); });
+  }
+  function prepareLine(coords) {
+    var n = coords.length, X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n), sx = 0, sy = 0, sz = 0;
+    for (var k = 0; k < n; k++) { var v = toVec(coords[k][0], coords[k][1]); X[k] = v[0]; Y[k] = v[1]; Z[k] = v[2]; sx += v[0]; sy += v[1]; sz += v[2]; }
+    var cap = capOf(X, Y, Z, n, sx, sy, sz);
+    cap.x = X; cap.y = Y; cap.z = Z; cap.n = n;
+    return cap;
+  }
+  function prepareArc(coords) {
+    var parts = null, start = 0;
+    for (var k = 1; k < coords.length; k++) {
+      var a = coords[k - 1], b = coords[k];
+      if ((Math.abs(a[0]) > 179.9999 && Math.abs(b[0]) > 179.9999) || (a[1] < -89.9999 && b[1] < -89.9999)) {
+        if (!parts) parts = [];
+        if (k - 1 > start) parts.push(coords.slice(start, k));
+        start = k;
+      }
+    }
+    if (!parts) return prepareLine(coords);
+    if (coords.length - 1 > start) parts.push(coords.slice(start));
+    var m = prepareLine(coords);
+    m.parts = parts.map(prepareLine);
+    return m;
+  }
+  function prepareLines(g) {
+    if (!g) return [];
+    var list = g.type === "MultiLineString" ? g.coordinates : g.type === "LineString" ? [g.coordinates] : [];
+    return list.filter(function (c) { return c.length >= 2; }).map(prepareArc);
+  }
+
+  function featureInFront(f) {
+    if (f.radius < -1) return false;
+    var d = f.cx * B.cx + f.cy * B.cy + f.cz * B.cz;
+    var theta = Math.acos(Math.max(-1, Math.min(1, d)));
+    if (theta - f.radius > HALF_PI) return false;
+    if (theta + f.radius < HALF_PI) {
+      var px = cx + B.r * (f.cx * B.ex + f.cy * B.ey + f.cz * B.ez);
+      var py = cy - B.r * (f.cx * B.nx + f.cy * B.ny + f.cz * B.nz);
+      var rad = B.r * Math.sin(Math.min(f.radius, HALF_PI)) + 2;
+      if (px + rad < 0 || px - rad > W || py + rad < 0 || py - rad > H) return false;
+    }
+    return true;
+  }
+  function rangeHits(a, b) {
+    for (var s = -1; s <= 1; s++) { var sh = s * TAU; if (b + sh >= FB.vmin && a + sh <= FB.vmax) return true; }
+    return false;
+  }
+  function featureInFlat(f) {
+    if (f.radius < -1) return false;
+    var lat = Math.asin(Math.max(-1, Math.min(1, f.cz))), r = f.radius;
+    if (lat + r < FB.pmin || lat - r > FB.pmax) return false;
+    if (r >= HALF_PI || Math.abs(lat) + r >= HALF_PI - 1e-6) return true;
+    var hw = Math.asin(Math.min(1, Math.sin(r) / Math.cos(lat))) + 1e-3;
+    var lc = Math.atan2(f.cy, f.cx);
+    return rangeHits(lc - hw, lc + hw);
+  }
+  function inView(f) { return flat ? featureInFlat(f) : featureInFront(f); }
+
+  var EDGE = 24;
+  function outcode(px, py) {
+    return (px < -EDGE ? 1 : px > W + EDGE ? 2 : 0) | (py < -EDGE ? 4 : py > H + EDGE ? 8 : 0);
+  }
+  function traceRing(c, rg) {
+    var X = rg.x, Y = rg.y, Z = rg.z, n = rg.n;
+    var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
+    var any = false;
+    for (var k = 0; k < n; k++) { if (X[k] * vx + Y[k] * vy + Z[k] * vz > 0) { any = true; break; } }
+    if (!any) return;
+    var side = 0, lx = 0, ly = 0, held = false;
+    for (k = 0; k < n; k++) {
+      var x = X[k], y = Y[k], z = Z[k];
+      var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz, sz = x * vx + y * vy + z * vz;
+      if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
+      var px = cx + r * sx, py = cy - r * sy;
+      if (k === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      var oc = outcode(px, py);
+      if (oc & side) { lx = px; ly = py; held = true; side = oc & side; continue; }
+      if (held) { c.lineTo(lx, ly); held = false; }
+      c.lineTo(px, py);
+      side = oc;
+    }
+    if (held) c.lineTo(lx, ly);
+    c.closePath();
+  }
+  function traceLine(c, L) {
+    if (L.radius < HALF_PI && !featureInFront(L)) return;
+    var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
+    var X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false, side = 0;
+    for (var k = 0; k < n; k++) {
+      var x = X[k], y = Y[k], z = Z[k];
+      var sz = x * vx + y * vy + z * vz;
+      if (sz < -0.002) { pen = false; continue; }
+      var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz;
+      if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
+      var px = cx + r * sx, py = cy - r * sy, oc = outcode(px, py);
+      if (!pen) { c.moveTo(px, py); pen = true; side = oc; continue; }
+      if (oc & side) { c.moveTo(px, py); side = oc & side; continue; }
+      c.lineTo(px, py);
+      side = oc;
+    }
+  }
+  function flatArrays(rg) {
+    if (rg.L) return;
+    var n = rg.n, L = new Float64Array(n), P = new Float64Array(n);
+    for (var k = 0; k < n; k++) {
+      P[k] = Math.asin(Math.max(-1, Math.min(1, rg.z[k])));
+      L[k] = Math.atan2(rg.y[k], rg.x[k]);
+    }
+    rg.L = L; rg.P = P;
+  }
+  var scratch = new Float64Array(8192);
+  function traceFlat(c, rg, closed) {
+    flatArrays(rg);
+    var n = rg.n, L = rg.L;
+    if (n < 2) return;
+    if (scratch.length < n) scratch = new Float64Array(n * 2);
+    var l = wrapPi(L[0]), min = l, max = l, sumY = rg.P[0];
+    scratch[0] = l;
+    for (var k = 1; k < n; k++) {
+      var d = L[k] - L[k - 1];
+      if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+      l += d; scratch[k] = l;
+      if (l < min) min = l; else if (l > max) max = l;
+      sumY += rg.P[k];
+    }
+    var wind = 0;
+    if (closed) {
+      var dc = L[0] - L[n - 1];
+      if (dc > Math.PI) dc -= TAU; else if (dc < -Math.PI) dc += TAU;
+      wind = l + dc - scratch[0];
+      if (Math.abs(wind) < Math.PI) wind = 0;
+      else { if (scratch[0] + wind < min) min = scratch[0] + wind; if (scratch[0] + wind > max) max = scratch[0] + wind; }
+    }
+    for (var s = -1; s <= 1; s++) {
+      var sh = s * TAU;
+      if (max + sh < FB.vmin || min + sh > FB.vmax) continue;
+      emitFlat(c, rg, n, sh, closed, wind, sumY < 0 ? -1 : 1);
+    }
+  }
+  function emitFlat(c, rg, n, sh, closed, wind, pole) {
+    var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc, P = rg.P;
+    var side = 0, lx = 0, ly = 0, held = false;
+    for (var i = 0; i < n; i++) {
+      var px = x0 + k * (scratch[i] + sh), py = y0 - k * P[i];
+      if (i === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      var oc = outcode(px, py);
+      if (oc & side) {
+        if (closed) { lx = px; ly = py; held = true; }
+        else c.moveTo(px, py);
+        side = oc & side;
+        continue;
+      }
+      if (held) { c.lineTo(lx, ly); held = false; }
+      c.lineTo(px, py);
+      side = oc;
+    }
+    if (held) c.lineTo(lx, ly);
+    if (!closed) return;
+    if (wind) {
+      var end = x0 + k * (scratch[0] + wind + sh), start = x0 + k * (scratch[0] + sh);
+      c.lineTo(end, y0 - k * P[0]);
+      c.lineTo(end, y0 - k * pole * HALF_PI);
+      c.lineTo(start, y0 - k * pole * HALF_PI);
+    }
+    c.closePath();
+  }
+  function traceOutline(c, d) {
+    var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc;
+    d = d || 0;
+    if (FB.wrap) { c.rect(-20, y0 - k * HALF_PI - d, W + 40, k * Math.PI + 2 * d); return; }
+    c.rect(x0 - k * Math.PI - d, y0 - k * HALF_PI - d, k * TAU + 2 * d, k * Math.PI + 2 * d);
+  }
+  function traceSphere(c, d) {
+    if (flat) traceOutline(c, d);
+    else c.arc(cx, cy, B.r + (d || 0), 0, TAU);
+  }
+  var geoPath = d3.geoPath(projection, ctx);
+  function traceFeature(c, f) {
+    if (flat) {
+      if (!featureInFlat(f)) return;
+      for (var j = 0; j < f.rings.length; j++) traceFlat(c, f.rings[j], true);
+      return;
+    }
+    if (!featureInFront(f)) return;
+    if (f.radius > Math.PI / 4 && f.geo && -(f.cx * B.cx + f.cy * B.cy + f.cz * B.cz) >= Math.cos(f.radius) - 1e-9) {
+      if (c !== ctx) d3.geoPath(projection, c)(f.geo); else geoPath(f.geo);
+      return;
+    }
+    for (var i = 0; i < f.rings.length; i++) traceRing(c, f.rings[i]);
+  }
+  function traceArc(c, L) {
+    if (L.parts) { for (var i = 0; i < L.parts.length; i++) traceArc(c, L.parts[i]); return; }
+    if (flat) { if (featureInFlat(L)) traceFlat(c, L, false); return; }
+    traceLine(c, L);
+  }
+  function traceAll(c, list) { for (var i = 0; i < list.length; i++) traceFeature(c, list[i]); }
+  function traceArcs(c, list) { for (var i = 0; i < list.length; i++) traceArc(c, list[i]); }
+  function projectLL(lon, lat) {
+    if (flat) {
+      var lam = lon * D2R;
+      return [cx + FB.k * (FB.wrap ? wrapPi(lam - FB.xc) : wrapPi(lam) - FB.xc), cy - FB.k * (lat * D2R - FB.yc), 1];
+    }
+    var v = toVec(lon, lat), d = v[0] * B.cx + v[1] * B.cy + v[2] * B.cz;
+    if (d <= 0) return null;
+    return [cx + B.r * (v[0] * B.ex + v[1] * B.ey + v[2] * B.ez), cy - B.r * (v[0] * B.nx + v[1] * B.ny + v[2] * B.nz), d];
+  }
+  function lonLatAt(x, y) {
+    if (flat) {
+      var lam = FB.xc + (x - cx) / FB.k, phi = FB.yc - (y - cy) / FB.k;
+      if (FB.wrap) lam = wrapPi(lam);
+      if (Math.abs(lam) > Math.PI || Math.abs(phi) > HALF_PI) return null;
+      return [lam / D2R, phi / D2R];
+    }
+    if (Math.hypot(x - cx, y - cy) > B.r) return null;
+    var ll = projection.invert([x, y]);
+    return ll && isFinite(ll[0]) ? ll : null;
+  }
+
+  var pal = {};
+  function readPalette() {
+    var cs = getComputedStyle(document.documentElement);
+    ["ocean", "ocean-deep", "grat", "limb", "glow", "border", "label", "label-halo", "people", "city", "city-ring", "select", "hover", "paper", "people-fill", "water", "sea-label", "river"].forEach(function (k) {
+      pal[k] = cs.getPropertyValue("--ch-" + k).trim();
+    });
+    pal.colors = []; pal.bands = [];
+    for (var i = 0; i < PALETTE; i++) {
+      pal.colors.push(cs.getPropertyValue("--ch-c" + i).trim() || "#e7d6b9");
+      pal.bands.push(cs.getPropertyValue("--ch-b" + i).trim() || "#957049");
+    }
+  }
+
+  var renderQueued = false, moving = false, settleTimer = 0;
+  function scheduleRender() {
+    if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
+  }
+  function frame() {
+    renderQueued = false;
+    try { draw(); } catch (e) { console.error(e); }
+  }
+  function nudge() {
+    moving = true;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(function () { moving = false; scheduleRender(); writeHash(); }, 160);
+    scheduleRender();
+  }
+
+  var catalogue = null, maps = [], land = null, places = [], sea = null, rivers = null, riversLoad = null, lakes = null, lakesLoad = null;
+  var current = null, wantYear = START_YEAR, year = START_YEAR;
+  var selected = -1, hoverId = -1, ready = false;
+
+  function polityName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
+  function polityColor(id) {
+    var e = catalogue[id];
+    if (!e) return 0;
+    if (e[1] >= 0) return e[1];
+    var h = 0;
+    for (var i = 0; i < e[0].length; i++) h = (h * 31 + e[0].charCodeAt(i)) >>> 0;
+    return h % PALETTE;
+  }
+  function mapIndexFor(y) {
+    var k = 0;
+    for (var i = 0; i < maps.length; i++) if (maps[i].y <= y) k = i;
+    return k;
+  }
+
+  var loadedOrder = [];
+  function loadMap(i) {
+    var m = maps[i];
+    if (!m) return Promise.reject(new Error("no map " + i));
+    if (m.snap) return Promise.resolve(m.snap);
+    if (!m.loading) {
+      m.loading = fetchJSON(m.file).then(function (d) {
+        m.snap = buildSnap(d);
+        loadedOrder = loadedOrder.filter(function (j) { return j !== i; });
+        loadedOrder.push(i);
+        for (var n = 0; loadedOrder.length > KEEP_MAPS && n < loadedOrder.length; n++) {
+          var old = loadedOrder[0];
+          if (maps[old].snap === current) { loadedOrder.push(loadedOrder.shift()); continue; }
+          loadedOrder.shift();
+          maps[old].snap = null; maps[old].loading = null;
+        }
+        return m.snap;
+      }).catch(function (e) { m.loading = null; throw e; });
+    }
+    return m.loading;
+  }
+
+  function buildSnap(d) {
+    var rows = d.rows, softYear = d.year < SOFT_BEFORE;
+    var polys = rows.map(function (r, i) {
+      if (r[0] < 0) return null;
+      var hue = r[1] >= 0 ? r[1] : r[0];
+      return {
+        i: i, id: r[0], ruler: r[1], part: r[2], b: r[3], people: !!r[4], label: r[5],
+        hue: hue, color: r[4] ? -1 : polityColor(hue), soft: softYear || r[3] <= 1 || !!r[4]
+      };
+    });
+    var order = polys.filter(Boolean).sort(function (a, b) { return (b.label ? b.label[5] : 0) - (a.label ? a.label[5] : 0); });
+    var snap = { year: d.year, rows: rows, polys: polys, order: order, topo: { hi: d.hi, lo: d.lo }, levels: {}, byId: new Map() };
+    order.forEach(function (p) { if (!snap.byId.has(p.id)) snap.byId.set(p.id, p); });
+    return snap;
+  }
+  function level(snap, key) {
+    var L = snap.levels[key];
+    if (L) return L;
+    var topo = snap.topo[key], geoms = topo.objects.p.geometries, polys = snap.polys;
+    geoms.forEach(function (g, i) { g.ix = i; });
+    var geo = geoms.map(function (g) { return topojson.feature(topo, g); });
+    var feats = geo.map(function (f) { return preparePolys(f); });
+    var colOf = function (g) { var p = polys[g.ix]; return p && !p.people ? p.color : -1; };
+    var groups = [];
+    for (var c = 0; c < PALETTE; c++) groups.push([]);
+    var peoples = [], unnamed = [];
+    polys.forEach(function (p, i) {
+      var target = !p ? unnamed : p.people ? peoples : groups[p.color];
+      for (var j = 0; j < feats[i].length; j++) target.push(feats[i][j]);
+    });
+    var kind = function (a, b) {
+      var pa = polys[a.ix], pb = polys[b.ix];
+      if (!pa && !pb) return 0;
+      if (pa && pb && pa.id === pb.id) return 0;
+      var soft = (pa ? pa.soft : false) || (pb ? pb.soft : false);
+      if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
+      return soft ? 2 : 1;
+    };
+    var mesh = function (fn) { return prepareLines(topojson.mesh(topo, topo.objects.p, fn)); };
+    L = {
+      geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed,
+      hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }),
+      soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }),
+      kin: mesh(function (a, b) { return a !== b && kind(a, b) === 3; }),
+      bands: groups.map(function (list, c) {
+        if (!list.length) return null;
+        return mesh(function (a, b) {
+          if (a === b) return colOf(a) === c;
+          return (colOf(a) === c) !== (colOf(b) === c);
+        });
+      })
+    };
+    if (key === "hi") {
+      L.bounds = geo.map(function (f) { return d3.geoBounds(f); });
+      L.area = geo.map(function (f) { return d3.geoArea(f); });
+    }
+    snap.levels[key] = L;
+    return L;
+  }
+  function useLevel() {
+    var S = localScale();
+    return (!moving && S >= 900) || S >= 2600 ? "hi" : "lo";
+  }
+
+  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.3, reliefRes = RELIEF_RES, reliefKey = "";
+  function sizeRelief(res) {
+    reliefRes = res || RELIEF_RES;
+    reliefCanvas.width = Math.max(1, Math.round(W * dpr * reliefRes));
+    reliefCanvas.height = Math.max(1, Math.round(H * dpr * reliefRes));
+    reliefKey = "";
+  }
+  function reliefReady() {
+    if (!relief && !reliefTried) {
+      reliefTried = true;
+      relief = window.UchroniaSat ? window.UchroniaSat(reliefCanvas) : null;
+      if (relief) {
+        relief.onRestore = function () { reliefKey = ""; scheduleRender(); };
+        relief.load([{ src: UC + "data/relief-4096.webp", size: 4096 }], function () { reliefKey = ""; scheduleRender(); });
+      }
+    }
+    return !!relief && relief.ready();
+  }
+  function renderRelief() {
+    var res = moving ? RELIEF_MOVING : RELIEF_RES;
+    if (res !== reliefRes) sizeRelief(res);
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes].join();
+    if (key === reliefKey) return;
+    reliefKey = key;
+    var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: false, cx: cx, cy: cy };
+    if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; }
+    else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
+    relief.draw(o);
+  }
+
+  var graticule = (function () {
+    var lines = [];
+    for (var lat = -80; lat <= 80; lat += 10) { var pts = []; for (var lon = -180; lon <= 180; lon += 2) pts.push([lon, lat]); lines.push(prepareLine(pts)); }
+    for (var lo = -180; lo < 180; lo += 10) {
+      var top = lo % 90 === 0 ? 90 : 80, mp = [];
+      for (var la = -top; la <= top; la += 2) mp.push([lo, la]);
+      lines.push(prepareLine(mp));
+    }
+    return lines;
+  })();
+  var seams = (function () {
+    var out = [];
+    for (var g = 0; g < 12; g++) { var l0 = -180 + g * 30, line = []; for (var la = -70; la <= 70; la += 2) line.push([l0, la]); out.push(prepareLine(line)); }
+    [70, -70].forEach(function (cap) { var ring = []; for (var lo = -180; lo <= 180; lo += 3) ring.push([lo, cap]); out.push(prepareLine(ring)); });
+    return out;
+  })();
+
+  function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
+  function drawWaterLines(coast, S) {
+    var gap = Math.max(1.25, Math.min(3.4, S < 450 ? S / 240 : Math.max(1.7, S / 520))), n = moving ? 1 : S < 250 ? 2 : S < 450 ? 3 : 4;
+    ctx.save();
+    ctx.beginPath(); traceArcs(ctx, coast);
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    for (var i = n; i >= 1; i--) {
+      ctx.globalAlpha = n === 1 ? 0.6 : 0.3 + 0.7 * (n - i) / (n - 1);
+      ctx.strokeStyle = pal.water; ctx.lineWidth = 2 * i * gap + 0.9; ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = pal.ocean; ctx.lineWidth = 2 * i * gap - 0.7; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  var seaCanvas = document.createElement("canvas"), seaCtx = seaCanvas.getContext("2d"), seaKey = "";
+  function drawSea(coast, S) {
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.coastHi ? 1 : 0].join();
+    if (key !== seaKey) {
+      seaKey = key;
+      if (seaCanvas.width !== canvas.width || seaCanvas.height !== canvas.height) { seaCanvas.width = canvas.width; seaCanvas.height = canvas.height; }
+      var main = ctx;
+      ctx = seaCtx;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      ctx.lineJoin = "round";
+      ctx.beginPath(); traceSphere(ctx); ctx.fillStyle = pal.ocean; ctx.fill();
+      ctx.save();
+      ctx.beginPath(); traceSphere(ctx); ctx.clip();
+      if (sea) { ctx.beginPath(); traceAll(ctx, S < 900 ? sea.low : sea.high); ctx.fillStyle = pal["ocean-deep"]; ctx.fill(); }
+      ctx.beginPath(); traceArcs(ctx, graticule); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+      drawWaterLines(coast, S);
+      ctx.restore();
+      ctx = main;
+    }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(seaCanvas, 0, 0);
+    ctx.restore();
+  }
+
+  var placedLabels = [];
+  function draw() {
+    if (!ready || !current) return;
+    applyView();
+    var S = localScale(), kp = kmPx(), key = useLevel();
+    var snap = current, L = level(snap, key);
+    var landList = land[key];
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineJoin = "round";
+
+    if (!flat && B.r * 1.07 < Math.hypot(W, H)) {
+      var glow = ctx.createRadialGradient(cx, cy, B.r, cx, cy, B.r * 1.07);
+      glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(cx, cy, B.r * 1.07, 0, TAU); ctx.arc(cx, cy, B.r, 0, TAU, true); ctx.fill();
+    }
+    var coast = key === "hi" ? land.coastHi : land.coastLo;
+    drawSea(coast, S);
+
+    var landPath = new Path2D();
+    traceAll(landPath, landList);
+    ctx.save();
+    ctx.clip(landPath);
+    ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, W, H);
+    var groupPaths = [], c;
+    for (c = 0; c < PALETTE; c++) {
+      if (!L.groups[c].length) { groupPaths.push(null); continue; }
+      var gp = new Path2D(); traceAll(gp, L.groups[c]); groupPaths.push(gp);
+    }
+    var peoplePath = new Path2D(); traceAll(peoplePath, L.peoples);
+    var unnamedPath = new Path2D(); traceAll(unnamedPath, L.unnamed);
+    var bleed = Math.min(60, 24 * kp);
+    if (bleed > 0.6) {
+      for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { ctx.strokeStyle = pal.colors[c]; ctx.lineWidth = bleed; ctx.stroke(groupPaths[c]); }
+      ctx.strokeStyle = pal["people-fill"]; ctx.lineWidth = bleed; ctx.stroke(peoplePath);
+    }
+    for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { ctx.fillStyle = pal.colors[c]; ctx.fill(groupPaths[c]); }
+    ctx.fillStyle = pal["people-fill"]; ctx.fill(peoplePath);
+    ctx.fillStyle = pal.paper; ctx.fill(unnamedPath);
+    if (reliefReady()) {
+      renderRelief();
+      ctx.save();
+      ctx.globalCompositeOperation = "overlay";
+      ctx.globalAlpha = 0.72;
+      ctx.drawImage(reliefCanvas, 0, 0, W, H);
+      ctx.restore();
+    }
+    var bw = bandWidth(S), softMap = snap.year < SOFT_BEFORE;
+    for (c = 0; c < PALETTE; c++) {
+      if (!groupPaths[c] || !L.bands[c]) continue;
+      ctx.save();
+      ctx.clip(groupPaths[c]);
+      ctx.beginPath(); traceArcs(ctx, L.bands[c]);
+      ctx.globalAlpha = softMap ? 0.4 : 0.6;
+      ctx.strokeStyle = pal.bands[c]; ctx.lineWidth = bw * (softMap ? 3 : 2); ctx.lineCap = "round"; ctx.stroke();
+      ctx.restore();
+    }
+    var hp = hoverId >= 0 ? snap.byId.get(hoverId) : null, sp = selected >= 0 ? snap.byId.get(selected) : null;
+    if (hp && hp !== sp) { ctx.beginPath(); tracePolity(snap, L, hp.id); ctx.fillStyle = pal.hover; ctx.fill(); }
+    if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.fillStyle = "rgba(140,42,26,0.12)"; ctx.fill(); }
+    ctx.restore();
+
+    drawLakes(kp);
+    drawRivers(S);
+
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.beginPath(); traceArcs(ctx, coast); ctx.strokeStyle = pal.border; ctx.lineWidth = 0.75; ctx.stroke();
+    ctx.save();
+    ctx.clip(landPath);
+    ctx.beginPath(); traceArcs(ctx, L.kin); ctx.globalAlpha = 0.55; ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.beginPath(); traceArcs(ctx, L.hard); ctx.lineWidth = 1.15; ctx.stroke();
+    ctx.beginPath(); traceArcs(ctx, L.soft);
+    ctx.setLineDash([0.1, S < 500 ? 2.6 : 3.4]); ctx.lineWidth = S < 500 ? 1.3 : 1.6; ctx.stroke();
+    ctx.setLineDash([]);
+    if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.8; ctx.stroke(); }
+    ctx.restore();
+
+    drawAging(S);
+    ctx.strokeStyle = pal.limb;
+    if (flat) {
+      ctx.beginPath(); traceOutline(ctx, 0); ctx.lineWidth = 1; ctx.stroke();
+      ctx.beginPath(); traceOutline(ctx, 5); ctx.lineWidth = 2.4; ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, B.r + 5, 0, TAU); ctx.lineWidth = 0.8; ctx.stroke();
+    }
+
+    placedLabels = [];
+    var placed = fixedBoxes();
+    drawPolityLabels(snap, placed, kp);
+    drawSeaLabels(placed, S);
+    drawPlaces(placed, S);
+  }
+  function tracePolity(snap, L, id) {
+    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && p.id === id) traceAll(ctx, L.feats[i]); }
+  }
+
+  function drawAging(S) {
+    var amt = clamp01((6000 - S) / 3500);
+    ctx.save();
+    if (!flat) { ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.clip(); }
+    ctx.globalCompositeOperation = "multiply";
+    if (flat) {
+      var k = FB.k, y0 = cy + k * FB.yc, top = y0 - k * HALF_PI, h = k * Math.PI, e = h * 0.07;
+      [[top, top + e, top], [top + h, top + h - e, top + h - e]].forEach(function (d) {
+        var gy = ctx.createLinearGradient(0, d[0], 0, d[1]);
+        gy.addColorStop(0, "rgba(140,94,40,0.26)"); gy.addColorStop(1, "rgba(140,94,40,0)");
+        ctx.fillStyle = gy; ctx.fillRect(0, d[2], W, e);
+      });
+    } else {
+      var r = B.r;
+      if (amt > 0) { ctx.beginPath(); traceArcs(ctx, seams); ctx.strokeStyle = "rgba(96,64,30," + (0.22 * amt) + ")"; ctx.lineWidth = 0.7; ctx.stroke(); }
+      var vg = ctx.createRadialGradient(cx - r * 0.22, cy - r * 0.26, r * 0.15, cx, cy, r * 1.02);
+      vg.addColorStop(0, "rgba(255,255,255,0)"); vg.addColorStop(0.62, "rgba(214,176,112,0.12)"); vg.addColorStop(1, "rgba(150,104,48,0.38)");
+      ctx.fillStyle = vg;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = "screen";
+      var hl = ctx.createRadialGradient(cx - r * 0.38, cy - r * 0.42, 0, cx - r * 0.38, cy - r * 0.42, r * 0.55);
+      hl.addColorStop(0, "rgba(255,248,226,0.2)"); hl.addColorStop(1, "rgba(255,248,226,0)");
+      ctx.fillStyle = hl;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawLakes(kp) {
+    if (!lakes) {
+      if (!lakesLoad) lakesLoad = fetchJSON(UC + "data/lakes.json").then(function (rows) {
+        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
+        lakes.sort(function (a, b) { return b.km2 - a.km2; });
+        scheduleRender();
+      }).catch(function (e) { console.warn("lakes", e); });
+      return;
+    }
+    ctx.beginPath();
+    for (var i = 0; i < lakes.length; i++) {
+      if (Math.sqrt(lakes[i].km2) * kp < 2.5) break;
+      traceFeature(ctx, lakes[i].f);
+    }
+    ctx.fillStyle = pal.ocean; ctx.fill();
+    ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6; ctx.stroke();
+  }
+
+  var RIVERS_FROM = 520, RIVERS_FULL = 960;
+  function riverRank(S) { return S < 800 ? 4 : S < 1300 ? 5 : 6; }
+  function drawRivers(S) {
+    if (S < RIVERS_FROM) return;
+    if (!rivers) {
+      if (!riversLoad) riversLoad = fetchJSON(UC + "data/rivers.json").then(function (t) {
+        if (!t.objects || !t.objects.rivers) throw new Error("rivers do not match");
+        var byRank = [[], [], [], [], [], [], []];
+        topojson.feature(t, t.objects.rivers).features.forEach(function (f) {
+          var rk = f.properties && f.properties.r;
+          if (rk >= 1 && rk <= 6) byRank[rk] = byRank[rk].concat(prepareLines(f.geometry));
+        });
+        rivers = byRank;
+        scheduleRender();
+      }).catch(function (e) { console.warn("rivers", e); });
+      return;
+    }
+    var top = riverRank(S), fade = clamp01((S - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM));
+    ctx.save();
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.strokeStyle = pal.river;
+    for (var rk = 1; rk <= top; rk++) {
+      ctx.beginPath(); traceArcs(ctx, rivers[rk]);
+      ctx.globalAlpha = fade * (rk <= 2 ? 1 : 0.85);
+      ctx.lineWidth = rk <= 1 ? 1.25 : rk <= 3 ? 1 : 0.75;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  var LINE_H = 1.18, CAP_H = 0.92, SPACE = 0.22, PEOPLE_SPACE = 0.05;
+  var widthCache = new Map();
+  function unitWidth(text, people) {
+    var k = (people ? "i" : "n") + text, w = widthCache.get(k);
+    if (w !== undefined) return w;
+    ctx.font = (people ? "italic 400 " : "400 ") + "100px " + SERIF;
+    ctx.letterSpacing = "0px";
+    w = ctx.measureText(text).width / 100 + Array.from(text).length * (people ? PEOPLE_SPACE : SPACE);
+    widthCache.set(k, w);
+    return w;
+  }
+  function splits(text) {
+    var words = text.split(" "), out = [[text]];
+    if (words.length >= 2) {
+      var best2 = null, bw = Infinity;
+      for (var i = 1; i < words.length; i++) {
+        var a = words.slice(0, i).join(" "), b = words.slice(i).join(" "), w = Math.max(a.length, b.length);
+        if (w < bw) { bw = w; best2 = [a, b]; }
+      }
+      out.push(best2);
+    }
+    if (words.length >= 4) {
+      var best3 = null, b3 = Infinity;
+      for (var x = 1; x < words.length - 1; x++) for (var y = x + 1; y < words.length; y++) {
+        var l = [words.slice(0, x).join(" "), words.slice(x, y).join(" "), words.slice(y).join(" ")];
+        var m = Math.max(l[0].length, l[1].length, l[2].length);
+        if (m < b3) { b3 = m; best3 = l; }
+      }
+      out.push(best3);
+    }
+    return out;
+  }
+  var labelCache = new Map();
+  function labelFit(name, people, r, span) {
+    var key = (people ? "i" : "n") + name + "|" + r + "|" + span;
+    var hit = labelCache.get(key);
+    if (hit) return hit;
+    var text = people ? name : name.toUpperCase(), best = null;
+    splits(text).forEach(function (lines) {
+      var w = 0;
+      lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people)); });
+      var h = CAP_H + LINE_H * (lines.length - 1);
+      var fkm = Math.min(span * 0.94 / w, 2 * r * 0.82 / h);
+      if (!best || fkm > best.fkm * 1.12) best = { lines: lines, fkm: fkm, w: w, h: h };
+    });
+    labelCache.set(key, best);
+    return best;
+  }
+  function mkBox(x, y, hw, hh, ang) {
+    var c = Math.abs(Math.cos(ang)), s = Math.abs(Math.sin(ang));
+    var ex = hw * c + hh * s, ey = hw * s + hh * c;
+    return { x: x - ex, y: y - ey, w: 2 * ex, h: 2 * ey };
+  }
+  function collides(placed, b) {
+    for (var i = 0; i < placed.length; i++) {
+      var q = placed[i];
+      if (b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y) return true;
+    }
+    return false;
+  }
+  function fixedBoxes() {
+    var out = [];
+    [$("head"), $("ctls"), document.querySelector(".ch-site"), $("card"), $("time")].forEach(function (el) {
+      if (!el || el.hidden) return;
+      var r = el.getBoundingClientRect();
+      if (r.width) out.push({ x: r.left - 4, y: r.top - 4, w: r.width + 8, h: r.height + 8 });
+    });
+    return out;
+  }
+  function insideView(b) {
+    if (b.x < 2 || b.y < 2 || b.x + b.w > W - 2 || b.y + b.h > H - 2) return false;
+    if (flat) {
+      var k = FB.k, y0 = cy + k * FB.yc;
+      return b.y > y0 - k * HALF_PI + 3 && b.y + b.h < y0 + k * HALF_PI - 3;
+    }
+    var corners = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]];
+    for (var i = 0; i < 4; i++) if (Math.hypot(corners[i][0] - cx, corners[i][1] - cy) > B.r - 2) return false;
+    return true;
+  }
+  function screenAngle(lon, lat, deg, p) {
+    if (!deg) return 0;
+    var a = deg * D2R, d = 60 / 111.2, cl = Math.max(0.05, Math.cos(lat * D2R));
+    var q = projectLL(lon + Math.cos(a) * d / cl, lat + Math.sin(a) * d);
+    if (!q) return 0;
+    var t = Math.atan2(q[1] - p[1], q[0] - p[0]);
+    if (t > HALF_PI) t -= Math.PI;
+    if (t < -HALF_PI) t += Math.PI;
+    if (Math.abs(t) < 0.1) return 0;
+    return Math.max(-0.7, Math.min(0.7, t));
+  }
+  function labelSpots(L) {
+    var cands = L[6] ? [L].concat(L[6]) : [L], out = [];
+    for (var i = 0; i < cands.length; i++) {
+      var s = cands[i], p = projectLL(s[0], s[1]);
+      if (!p || p[2] < 0.25 || p[0] < -100 || p[0] > W + 100 || p[1] < -60 || p[1] > H + 60) continue;
+      out.push({ s: s, p: p, v: s[2] * p[2] * (i === 0 ? 1.15 : 1) });
+    }
+    return out.sort(function (a, b) { return b.v - a.v; });
+  }
+  function drawPolityLabels(snap, placed, kp) {
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    var small = [];
+    for (var k = 0; k < snap.order.length; k++) {
+      var p = snap.order[k], L = p.label;
+      if (!L || L[2] < 1) continue;
+      var name = polityName(p.id);
+      if (!name) continue;
+      var spots = labelSpots(L), got = null;
+      for (var q = 0; q < spots.length && !got; q++) {
+        var s = spots[q].s, pt = spots[q].p;
+        var fit = labelFit(name, p.people, s[2], s[3]);
+        var f = fit.fkm * kp * Math.sqrt(pt[2]);
+        var cap = p.people ? 15 : 26;
+        if (f > cap) f = cap;
+        if (f < 8.5) {
+          if (q === 0 && !p.people && f >= 3.5 && L[5] > 1500) small.push({ p: p, x: pt[0], y: pt[1], name: name, lines: fit.lines });
+          continue;
+        }
+        var ang = screenAngle(s[0], s[1], s[4], pt);
+        var box = mkBox(pt[0], pt[1], fit.w * f / 2 + 2, f * fit.h / 2 + 2, ang);
+        if (!insideView(box) || collides(placed, box)) continue;
+        got = { pt: pt, fit: fit, f: f, ang: ang, box: box };
+      }
+      if (!got) continue;
+      var pt = got.pt, fit = got.fit, f = got.f, ang = got.ang;
+      var sp = f * (p.people ? PEOPLE_SPACE : SPACE);
+      placed.push(got.box);
+      placedLabels.push({ name: name, x: pt[0], y: pt[1], size: f });
+      ctx.save();
+      ctx.translate(pt[0], pt[1]);
+      if (ang) ctx.rotate(ang);
+      ctx.font = (p.people ? "italic 400 " : "400 ") + f.toFixed(1) + "px " + SERIF;
+      ctx.letterSpacing = sp.toFixed(2) + "px";
+      ctx.lineWidth = Math.max(2, f * 0.22);
+      ctx.strokeStyle = pal["label-halo"];
+      ctx.fillStyle = p.people ? pal.people : pal.label;
+      for (var i = 0; i < fit.lines.length; i++) {
+        var ly = (i - (fit.lines.length - 1) / 2) * f * LINE_H;
+        ctx.strokeText(fit.lines[i], sp / 2, ly);
+        ctx.fillText(fit.lines[i], sp / 2, ly);
+      }
+      ctx.restore();
+    }
+    ctx.font = "400 9px " + SERIF;
+    ctx.letterSpacing = "1.2px";
+    ctx.lineWidth = 2.6; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+    for (var j = 0; j < small.length; j++) {
+      var it = small[j], lines = it.lines.length > 1 && it.name.length > 18 ? it.lines : [it.name.toUpperCase()], w = 0;
+      lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
+      var b = mkBox(it.x, it.y, w / 2 + 2, 4.5 + 5.5 * lines.length, 0);
+      if (!insideView(b) || collides(placed, b)) continue;
+      placed.push(b);
+      placedLabels.push({ name: it.name, x: it.x, y: it.y, size: 9 });
+      for (var li = 0; li < lines.length; li++) {
+        var yy = it.y + (li - (lines.length - 1) / 2) * 10.6;
+        ctx.strokeText(lines[li], it.x + 0.6, yy); ctx.fillText(lines[li], it.x + 0.6, yy);
+      }
+    }
+    ctx.letterSpacing = "0px";
+  }
+
+  var SEAS = [
+    ["North Atlantic Ocean", -42, 31, 1], ["South Atlantic Ocean", -17, -24, 1], ["North Pacific Ocean", -152, 31, 1],
+    ["South Pacific Ocean", -122, -27, 1], ["Pacific Ocean", 168, 9, 1], ["Indian Ocean", 79, -22, 1],
+    ["Southern Ocean", 95, -59, 1], ["Arctic Ocean", 10, 84, 1],
+    ["Mediterranean Sea", 18, 34.6, 2], ["Caribbean Sea", -76, 15, 2], ["Gulf of Mexico", -91, 25, 2], ["North Sea", 3.5, 56, 2],
+    ["Baltic Sea", 19.4, 57.6, 2], ["Black Sea", 34.4, 43.3, 2], ["Caspian Sea", 50.8, 42.4, 2], ["Red Sea", 38.4, 20.4, 2],
+    ["Arabian Sea", 64, 14, 2], ["Bay of Bengal", 89, 15, 2], ["South China Sea", 114, 13, 2], ["East China Sea", 125.5, 29, 2],
+    ["Sea of Japan", 134.5, 40.2, 2], ["Sea of Okhotsk", 150, 54, 2], ["Bering Sea", -178, 58, 2], ["Gulf of Alaska", -146, 56.5, 2],
+    ["Hudson Bay", -86, 59.5, 2], ["Labrador Sea", -55, 58, 2], ["Norwegian Sea", 2, 68, 2], ["Barents Sea", 40, 73.5, 2],
+    ["Kara Sea", 70, 75, 2], ["Laptev Sea", 125, 76, 2], ["East Siberian Sea", 165, 74, 2], ["Beaufort Sea", -140, 72.5, 2],
+    ["Greenland Sea", -5, 76, 2], ["Coral Sea", 155, -16, 2], ["Tasman Sea", 160, -38, 2], ["Philippine Sea", 132, 18, 2],
+    ["Gulf of Guinea", 2.5, 1.5, 2], ["Weddell Sea", -45, -72, 2], ["Ross Sea", -175, -76, 2],
+    ["Persian Gulf", 51.5, 27, 3], ["Yellow Sea", 123, 35.5, 3], ["Adriatic Sea", 15.6, 42.9, 3], ["Aegean Sea", 25, 38.6, 3],
+    ["Tyrrhenian Sea", 12, 40, 3], ["Bay of Biscay", -5, 45.5, 3], ["Java Sea", 110, -5, 3], ["Celebes Sea", 122, 3.5, 3],
+    ["Banda Sea", 127, -5.5, 3], ["Arafura Sea", 135, -10, 3], ["Timor Sea", 126, -11.5, 3], ["Gulf of Aden", 48, 12.6, 3],
+    ["Andaman Sea", 96, 11, 3], ["Chukchi Sea", -170, 69, 3], ["Mozambique Channel", 41, -18, 3], ["Great Australian Bight", 130, -35.5, 3]
+  ].map(function (r) {
+    var name = r[3] === 1 ? r[0].toUpperCase() : r[0], cut = name.lastIndexOf(" ");
+    var lines = r[3] === 1 && name.split(" ").length > 2 ? [name.slice(0, cut), name.slice(cut + 1)] : [name];
+    return { lines: lines, lon: r[1], lat: r[2], tier: r[3] };
+  });
+  function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
+  function drawSeaLabels(placed, S) {
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    for (var i = 0; i < SEAS.length; i++) {
+      var sl = SEAS[i];
+      if (!seaShown(sl.tier, S)) continue;
+      var p = projectLL(sl.lon, sl.lat);
+      if (!p || p[2] < 0.3) continue;
+      var size = sl.tier === 1 ? Math.max(11, Math.min(15, S / 45)) : sl.tier === 2 ? 12.5 : 11, spacing = size * (sl.tier === 1 ? 0.3 : 0.12);
+      ctx.font = "italic 400 " + size.toFixed(1) + "px " + SERIF;
+      ctx.letterSpacing = spacing.toFixed(2) + "px";
+      var w = 0;
+      for (var j = 0; j < sl.lines.length; j++) w = Math.max(w, ctx.measureText(sl.lines[j]).width);
+      var lh = size * 1.3, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6 + lh * (sl.lines.length - 1) / 2, 0);
+      if (!insideView(box) || collides(placed, box)) continue;
+      placed.push(box);
+      ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean; ctx.fillStyle = pal["sea-label"];
+      for (j = 0; j < sl.lines.length; j++) {
+        var ly = p[1] + (j - (sl.lines.length - 1) / 2) * lh;
+        ctx.strokeText(sl.lines[j], p[0] + spacing / 2, ly);
+        ctx.fillText(sl.lines[j], p[0] + spacing / 2, ly);
+      }
+    }
+    ctx.letterSpacing = "0px";
+  }
+  function placeName(r) {
+    var n = r[0];
+    if (r[5]) for (var i = 0; i < r[5].length; i++) if (r[5][i][0] <= year) n = r[5][i][1];
+    return n;
+  }
+  function placesNow() {
+    return places.filter(function (r) { return r[3] <= year && (r[4] === null || year < r[4]); });
+  }
+  function drawPlaces(placed, S) {
+    if (S < 260) return;
+    var list = placesNow(), dot = S < 900 ? 1.9 : 2.5;
+    ctx.font = "italic 400 12px " + SERIF;
+    ctx.letterSpacing = "0px";
+    ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i], p = projectLL(r[1], r[2]);
+      if (!p || p[2] < 0.25) continue;
+      var name = placeName(r), w = ctx.measureText(name).width;
+      var box = { x: p[0] - dot - 1, y: p[1] - 7, w: w + dot + 8, h: 14 };
+      if (!insideView(box) || collides(placed, box)) continue;
+      placed.push(box);
+      ctx.beginPath(); ctx.arc(p[0], p[1], dot + 1, 0, TAU); ctx.fillStyle = pal["city-ring"]; ctx.fill();
+      ctx.beginPath(); ctx.arc(p[0], p[1], dot, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+      ctx.strokeText(name, p[0] + dot + 4, p[1]); ctx.fillText(name, p[0] + dot + 4, p[1]);
+    }
+    ctx.textAlign = "center";
+  }
+
+  function inBounds(b, ll) {
+    if (ll[1] < b[0][1] || ll[1] > b[1][1]) return false;
+    if (b[0][0] <= b[1][0]) return ll[0] >= b[0][0] && ll[0] <= b[1][0];
+    return ll[0] >= b[0][0] || ll[0] <= b[1][0];
+  }
+  var landGeo = null;
+  function polityAt(x, y) {
+    if (!current) return null;
+    var ll = lonLatAt(x, y);
+    if (!ll) return null;
+    if (landGeo && !d3.geoContains(landGeo, ll)) return null;
+    var L = level(current, "hi"), best = null, bestA = Infinity;
+    for (var i = 0; i < current.polys.length; i++) {
+      var p = current.polys[i];
+      if (!p || !inBounds(L.bounds[i], ll)) continue;
+      if (L.area[i] < bestA && d3.geoContains(L.geo[i], ll)) { best = p; bestA = L.area[i]; }
+    }
+    return best;
+  }
+
+  function degPerPx() { return 180 / (Math.PI * (flat ? FB.k : B.r)); }
+  function panBy(dx, dy) {
+    var s = degPerPx();
+    view.lon -= dx * s; view.lat += dy * s;
+    applyView();
+    nudge();
+  }
+  function zoomAt(z, x, y) {
+    var before = lonLatAt(x, y);
+    view.zoom = z;
+    applyView();
+    if (before) {
+      if (flat) {
+        view.lon = before[0] - (x - cx) / FB.k / D2R;
+        view.lat = before[1] + (y - cy) / FB.k / D2R;
+        applyView();
+      } else {
+        for (var i = 0; i < 2; i++) {
+          var after = projection(before);
+          if (!after) break;
+          var s = degPerPx();
+          view.lon -= (x - after[0]) * s;
+          view.lat += (y - after[1]) * s;
+          applyView();
+        }
+      }
+    }
+    nudge();
+  }
+
+  var pointers = new Map(), drag = null, pinch = null, inertia = null, downAt = null;
+  function stopInertia() { if (inertia) { cancelAnimationFrame(inertia.raf); inertia = null; } }
+  canvas.addEventListener("pointerdown", function (e) {
+    stopInertia();
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    hideTip();
+    if (pointers.size === 1) {
+      drag = { x: e.clientX, y: e.clientY, samples: [[e.timeStamp, e.clientX, e.clientY]] };
+      downAt = { x: e.clientX, y: e.clientY, t: e.timeStamp, moved: false };
+    } else if (pointers.size === 2) {
+      var pts = Array.from(pointers.values());
+      pinch = { d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), z: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
+      drag = null;
+      if (downAt) downAt.moved = true;
+    }
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!pointers.has(e.pointerId)) {
+      if (e.pointerType === "mouse") hoverAt(e.clientX, e.clientY);
+      return;
+    }
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pointers.size >= 2) {
+      var pts = Array.from(pointers.values());
+      var d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
+      zoomAt(pinch.z * d / Math.max(1, pinch.d), mx, my);
+      panBy(mx - pinch.mx, my - pinch.my);
+      pinch.mx = mx; pinch.my = my;
+      return;
+    }
+    if (!drag) return;
+    if (downAt && !downAt.moved && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 5) downAt.moved = true;
+    if (!downAt || downAt.moved) {
+      panBy(e.clientX - drag.x, e.clientY - drag.y);
+      drag.x = e.clientX; drag.y = e.clientY;
+      drag.samples.push([e.timeStamp, e.clientX, e.clientY]);
+      if (drag.samples.length > 8) drag.samples.shift();
+      setHover(-1);
+    }
+  });
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (pointers.size === 1) {
+      var rest = Array.from(pointers.values())[0];
+      drag = { x: rest.x, y: rest.y, samples: [] };
+      return;
+    }
+    if (pointers.size) return;
+    var clickLike = downAt && !downAt.moved && e.timeStamp - downAt.t < 600 && e.type === "pointerup";
+    if (clickLike) {
+      var p = polityAt(e.clientX, e.clientY);
+      select(p ? p.id : -1);
+    } else if (drag && drag.samples.length >= 2 && !reduceMotion) {
+      var s = drag.samples, a = s[0], b = s[s.length - 1];
+      for (var i = s.length - 1; i > 0; i--) if (b[0] - s[i][0] > 80) { a = s[i]; break; }
+      var dt = Math.max(8, b[0] - a[0]);
+      var vx = (b[1] - a[1]) / dt, vy = (b[2] - a[2]) / dt, sp = Math.hypot(vx, vy);
+      if (e.timeStamp - b[0] < 60 && sp > 0.25) {
+        if (sp > 2) { vx *= 2 / sp; vy *= 2 / sp; }
+        inertia = { vx: vx * 16, vy: vy * 16, raf: 0 };
+        var step = function () {
+          if (!inertia) return;
+          panBy(inertia.vx, inertia.vy);
+          inertia.vx *= 0.9; inertia.vy *= 0.9;
+          if (Math.hypot(inertia.vx, inertia.vy) < 0.3) { inertia = null; return; }
+          inertia.raf = requestAnimationFrame(step);
+        };
+        inertia.raf = requestAnimationFrame(step);
+      }
+    }
+    drag = null; downAt = null;
+  }
+  canvas.addEventListener("pointerup", endPointer);
+  canvas.addEventListener("pointercancel", endPointer);
+  canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && !pointers.size) { setHover(-1); hideTip(); } });
+  canvas.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    stopInertia();
+    var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    zoomAt(view.zoom * Math.exp(-dy * 0.0016), e.clientX, e.clientY);
+  }, { passive: false });
+  canvas.addEventListener("dblclick", function (e) { zoomAt(view.zoom * 2, e.clientX, e.clientY); });
+
+  var hoverRaf = 0, hoverXY = null;
+  function hoverAt(x, y) {
+    hoverXY = [x, y];
+    if (hoverRaf) return;
+    hoverRaf = requestAnimationFrame(function () {
+      hoverRaf = 0;
+      if (!hoverXY || drag) return;
+      var p = polityAt(hoverXY[0], hoverXY[1]);
+      setHover(p ? p.id : -1);
+      if (p) showTip(hoverXY[0], hoverXY[1], p); else hideTip();
+    });
+  }
+  function setHover(id) {
+    if (id === hoverId) return;
+    hoverId = id;
+    canvas.classList.toggle("is-over", id >= 0);
+    scheduleRender();
+  }
+  var tip = $("tip");
+  function showTip(x, y, p) {
+    tip.textContent = polityName(p.id);
+    var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.people ? "a people or culture" : "";
+    if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
+    tip.hidden = false;
+    var w = tip.offsetWidth;
+    tip.style.left = (x + 14 + w > W - 8 ? x - w - 28 : x) + "px";
+    tip.style.top = y + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+
+  function fmtYear(y) {
+    if (y < 0) return -y + " BC";
+    if (y < 1000) return "AD " + y;
+    return String(y);
+  }
+  function parseYear(s) {
+    var t = String(s || "").trim().toUpperCase().replace(/\./g, "").replace(/\s+/g, " ");
+    var m = /^(AD |CE )?(-)?(\d{1,4})( ?(BC|BCE|AD|CE))?$/.exec(t);
+    if (!m) return null;
+    var n = +m[3];
+    if (m[2] || m[5] === "BC" || m[5] === "BCE") n = -n;
+    if (n === 0) n = 1;
+    return n;
+  }
+  function listYears(ys) {
+    var t = ys.map(fmtYear);
+    if (t.length === 1) return t[0];
+    if (t.length === 2) return t[0] + " and " + t[1];
+    return t.slice(0, -1).join(", ") + ", and " + t[t.length - 1];
+  }
+
+  var KNOTS = [[-3000, 0], [-500, 0.17], [500, 0.32], [1400, 0.5], [1800, 0.76], [LAST_YEAR, 1]];
+  function posOf(y) {
+    for (var i = 1; i < KNOTS.length; i++) {
+      var a = KNOTS[i - 1], b = KNOTS[i];
+      if (y <= b[0]) return a[1] + (b[1] - a[1]) * (y - a[0]) / (b[0] - a[0]);
+    }
+    return 1;
+  }
+  function yearAt(t) {
+    for (var i = 1; i < KNOTS.length; i++) {
+      var a = KNOTS[i - 1], b = KNOTS[i];
+      if (t <= b[1]) return a[0] + (b[0] - a[0]) * (t - a[1]) / (b[1] - a[1]);
+    }
+    return LAST_YEAR;
+  }
+  var range = $("range"), yearInput = $("year-input"), asof = $("asof");
+  function trackWidth() { return Math.max(1, $("ticks").getBoundingClientRect().width); }
+  function placeTicks() {
+    if (!maps.length) return;
+    var ticks = $("ticks"), eras = $("eras"), w = trackWidth();
+    ticks.textContent = ""; eras.textContent = "";
+    var add = function (y, cls) {
+      var s = document.createElement("span");
+      if (cls) s.className = cls;
+      s.style.left = (posOf(y) * 100).toFixed(3) + "%";
+      ticks.appendChild(s);
+      return s;
+    };
+    var marks = [];
+    for (var y = -3000; y <= 1000; y += 500) marks.push(y);
+    for (y = 1100; y <= 2000; y += 100) marks.push(y);
+    marks.forEach(function (y) { add(y === 0 ? 1 : y, y % 1000 === 0 || y === 1500 ? "is-major" : ""); });
+    maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });
+    var labels = [-3000, -2000, -1000, 1, 500, 1000, 1500, 1700, 1800, 1900, 2000], lastRight = -Infinity;
+    labels.forEach(function (y) {
+      var x = posOf(y) * w, text = y === 1 ? "AD 1" : fmtYear(y), tw = text.length * 6.6, shift = x < tw / 2 ? x / tw : 0.5;
+      var left = x - tw * shift;
+      if (left < lastRight + 10) return;
+      lastRight = left + tw;
+      var s = document.createElement("span");
+      s.textContent = text;
+      s.style.left = (posOf(y) * 100).toFixed(3) + "%";
+      if (shift !== 0.5) s.style.translate = (-shift * 100).toFixed(1) + "% 0";
+      eras.appendChild(s);
+    });
+    markCurrentTick();
+  }
+  function markCurrentTick() {
+    maps.forEach(function (m) { if (m.tick) m.tick.classList.toggle("is-now", !!current && m.snap === current); });
+  }
+  var rangeActive = false;
+  function syncTime() {
+    if (!rangeActive) range.value = String(Math.round(posOf(year) * 1000));
+    range.setAttribute("aria-valuetext", fmtYear(year));
+    if (document.activeElement !== yearInput) yearInput.value = fmtYear(year);
+    var mi = mapIndexFor(year), m = maps[mi];
+    asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : m.y === year ? "The map of " + fmtYear(m.y) : "Borders as of " + fmtYear(m.y);
+    $("prev-map").disabled = year <= maps[0].y;
+    $("next-map").disabled = mi >= maps.length - 1;
+    markCurrentTick();
+  }
+  function setYear(y, fromRange) {
+    if (!maps.length) return;
+    y = Math.round(y);
+    if (y === 0) y = 1;
+    y = Math.max(KNOTS[0][0], Math.min(LAST_YEAR, y));
+    year = y;
+    if (!fromRange) rangeActive = false;
+    var mi = mapIndexFor(y);
+    wantYear = y;
+    syncTime();
+    loadMap(mi).then(function (snap) {
+      if (mapIndexFor(wantYear) !== mi) return;
+      if (current !== snap) {
+        current = snap;
+        if (selected >= 0) renderCard();
+        hideTip();
+        hoverId = -1;
+        canvas.classList.remove("is-over");
+      }
+      syncTime();
+      writeHash();
+      scheduleRender();
+      if (mi > 0) loadMap(mi - 1).catch(function () {});
+      if (mi < maps.length - 1) loadMap(mi + 1).catch(function () {});
+    }).catch(function (e) {
+      console.warn("map", e);
+      asof.textContent = "The map of " + fmtYear(maps[mi].y) + " could not be loaded";
+    });
+    scheduleRender();
+  }
+  function stepMap(dir) {
+    var mi = mapIndexFor(year);
+    if (dir < 0) {
+      if (year > maps[mi].y) setYear(maps[mi].y);
+      else if (mi > 0) setYear(maps[mi - 1].y);
+    } else if (mi < maps.length - 1) setYear(maps[mi + 1].y);
+  }
+  range.addEventListener("input", function () {
+    stopPlay();
+    rangeActive = true;
+    var t = +range.value / 1000, y = yearAt(t), w = trackWidth(), snapTo = null;
+    for (var i = 0; i < maps.length; i++) if (Math.abs(posOf(maps[i].y) - t) * w < 5) { snapTo = maps[i].y; break; }
+    if (snapTo !== null) y = snapTo;
+    else if (y < 1000) y = Math.round(y / 10) * 10;
+    setYear(y, true);
+  });
+  range.addEventListener("change", function () { rangeActive = false; syncTime(); });
+  range.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      stopPlay();
+      stepMap(e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1);
+    } else if (e.key === "Home") { e.preventDefault(); setYear(maps[0].y); }
+    else if (e.key === "End") { e.preventDefault(); setYear(LAST_YEAR); }
+  });
+  function commitYearInput() {
+    var y = parseYear(yearInput.value);
+    if (y === null) { yearInput.value = fmtYear(year); return; }
+    stopPlay();
+    if (y !== year) setYear(y); else yearInput.value = fmtYear(year);
+  }
+  yearInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); yearInput.blur(); }
+    else if (e.key === "Escape") { yearInput.value = fmtYear(year); yearInput.blur(); }
+  });
+  yearInput.addEventListener("blur", commitYearInput);
+  yearInput.addEventListener("focus", function () { yearInput.select(); });
+  $("prev-map").addEventListener("click", function () { stopPlay(); stepMap(-1); });
+  $("next-map").addEventListener("click", function () { stopPlay(); stepMap(1); });
+
+  var playTimer = 0;
+  function startPlay() {
+    if (mapIndexFor(year) >= maps.length - 1) setYear(maps[0].y);
+    $("play").setAttribute("aria-pressed", "true");
+    $("play").setAttribute("aria-label", "Stop playing");
+    playTimer = setInterval(function () {
+      var mi = mapIndexFor(year);
+      if (mi >= maps.length - 1) { stopPlay(); return; }
+      if (maps[mi].snap !== current) return;
+      setYear(maps[mi + 1].y);
+    }, 1400);
+  }
+  function stopPlay() {
+    if (!playTimer) return;
+    clearInterval(playTimer); playTimer = 0;
+    $("play").setAttribute("aria-pressed", "false");
+    $("play").setAttribute("aria-label", "Play the maps in order");
+  }
+  $("play").addEventListener("click", function () { if (playTimer) stopPlay(); else startPlay(); });
+
+  function setFlat(on) {
+    if (on === flat) return;
+    var S = localScale();
+    flat = on;
+    view.zoom = S / (flat ? baseK : baseR);
+    reliefKey = "";
+    applyView();
+    $("flat-btn").setAttribute("aria-pressed", flat ? "true" : "false");
+    $("flat-btn").setAttribute("aria-label", flat ? "Globe" : "Flat map");
+    $("flat-btn").setAttribute("data-tip", flat ? "Globe (M)" : "Flat map (M)");
+    try { localStorage.setItem(STORE_FLAT, flat ? "1" : "0"); } catch (e) {}
+    nudge();
+  }
+  $("flat-btn").addEventListener("click", function () { setFlat(!flat); });
+  $("zoom-in").addEventListener("click", function () { zoomAt(view.zoom * 1.6, cx, cy); });
+  $("zoom-out").addEventListener("click", function () { zoomAt(view.zoom / 1.6, cx, cy); });
+
+  var card = $("card"), wikiCache = new Map(), wikiAsk = 0;
+  function select(id) {
+    if (id < 0) { closeCard(); return; }
+    selected = id;
+    card.hidden = false;
+    renderCard();
+    if (phoneQuery.matches) layout();
+    scheduleRender();
+  }
+  function closeCard() {
+    selected = -1;
+    card.hidden = true;
+    if (phoneQuery.matches) layout();
+    scheduleRender();
+  }
+  $("card-close").addEventListener("click", closeCard);
+  function polityButton(id) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = polityName(id);
+    b.addEventListener("click", function () { select(id); });
+    return b;
+  }
+  function wikiTitle(id, y) {
+    var w = catalogue[id][3];
+    if (typeof w === "string") return w;
+    var t = w[0][1];
+    for (var i = 0; i < w.length; i++) if (w[i][0] <= y) t = w[i][1];
+    return t;
+  }
+  function renderCard() {
+    if (selected < 0 || !catalogue[selected]) return;
+    var e = catalogue[selected], p = current ? current.byId.get(selected) : null, mapYear = current ? current.year : year;
+    $("card-kind").textContent = e[4] ? "People or culture" : p && p.ruler >= 0 ? "Dependency" : "State";
+    $("card-name").textContent = e[0];
+    var facts = $("card-facts");
+    facts.textContent = "";
+    var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
+    if (p) {
+      if (p.ruler >= 0) {
+        addText("Held by ");
+        if (current.byId.has(p.ruler)) facts.appendChild(polityButton(p.ruler)); else addText(polityName(p.ruler));
+        addText(" on the map of " + fmtYear(mapYear) + ". ");
+      }
+      if (p.part >= 0 && p.part !== p.ruler) {
+        addText("Part of ");
+        if (current.byId.has(p.part)) facts.appendChild(polityButton(p.part)); else addText(polityName(p.part));
+        addText(". ");
+      }
+    } else {
+      addText("Not on the map of " + fmtYear(mapYear) + ". ");
+    }
+    var ys = e[2];
+    if (ys.length) {
+      if (ys.length <= 4) addText("On the maps of " + listYears(ys) + ".");
+      else addText("On " + ys.length + " maps, from " + fmtYear(ys[0]) + " to " + fmtYear(ys[ys.length - 1]) + ".");
+    }
+    if (p && p.b <= 1 && !p.people) addText(" Its borders here are approximate.");
+    loadWiki(e[0], wikiTitle(selected, mapYear));
+  }
+  function wikiSummary(title) {
+    var url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title.replace(/ /g, "_")) + "?redirect=true";
+    return fetch(url).then(function (r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("wikipedia " + r.status);
+      return r.json();
+    }).then(function (d) { return d && d.type !== "disambiguation" && d.extract ? d : null; });
+  }
+  function wikiSearch(q) {
+    var url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srnamespace=0&srlimit=1&format=json&origin=*&srsearch=" + encodeURIComponent(q);
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("wikipedia search " + r.status);
+      return r.json();
+    }).then(function (d) {
+      var hit = d && d.query && d.query.search && d.query.search[0];
+      return hit ? wikiSummary(hit.title) : null;
+    });
+  }
+  function loadWiki(name, title) {
+    var ask = ++wikiAsk, text = $("wiki-text"), img = $("wiki-img"), more = $("wiki-more");
+    var show = function (d) {
+      if (ask !== wikiAsk) return;
+      if (!d) {
+        text.className = "ch-wiki-text is-quiet";
+        text.textContent = "Wikipedia has no article under this name.";
+        img.hidden = true; more.hidden = true;
+        return;
+      }
+      text.className = "ch-wiki-text";
+      text.textContent = d.extract;
+      if (d.thumbnail && d.thumbnail.source && /^https:\/\/upload\.wikimedia\.org\//.test(d.thumbnail.source)) {
+        img.src = d.thumbnail.source; img.hidden = false;
+      } else img.hidden = true;
+      var href = d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page;
+      if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) {
+        $("wiki-link").href = href;
+        $("wiki-link").textContent = d.title && d.title !== name ? "Read “" + d.title + "” on Wikipedia" : "Read more on Wikipedia";
+        more.hidden = false;
+      } else more.hidden = true;
+    };
+    img.hidden = true; more.hidden = true;
+    text.className = "ch-wiki-text is-quiet";
+    text.textContent = "Looking it up on Wikipedia";
+    var job = wikiCache.get(title);
+    if (!job) {
+      job = wikiSummary(title).then(function (d) { return d || (title !== name ? wikiSummary(name) : null); }).then(function (d) { return d || wikiSearch(name); });
+      wikiCache.set(title, job);
+      job.catch(function () { wikiCache.delete(title); });
+    }
+    job.then(show).catch(function () {
+      if (ask !== wikiAsk) return;
+      text.className = "ch-wiki-text is-quiet";
+      text.textContent = "Wikipedia could not be reached.";
+    });
+  }
+
+  var about = $("about"), aboutBtn = $("about-btn");
+  function setAbout(open) {
+    about.classList.toggle("is-open", open);
+    about.classList.toggle("is-shut", !open);
+    aboutBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  aboutBtn.addEventListener("click", function () { setAbout(!about.classList.contains("is-open")); });
+  about.addEventListener("mouseleave", function () { about.classList.remove("is-shut"); });
+  document.addEventListener("pointerdown", function (e) {
+    if (about.classList.contains("is-open") && !about.contains(e.target)) {
+      about.classList.remove("is-open");
+      aboutBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  var hoverTip = $("hover-tip"), tipTimer = 0;
+  if (canHover) {
+    document.querySelectorAll("[data-tip]").forEach(function (el) {
+      el.addEventListener("mouseenter", function () {
+        clearTimeout(tipTimer);
+        tipTimer = setTimeout(function () {
+          hoverTip.textContent = el.getAttribute("data-tip");
+          var r = el.getBoundingClientRect(), side = !!el.closest(".ch-ctls");
+          hoverTip.classList.add("is-on");
+          var w = hoverTip.offsetWidth, h = hoverTip.offsetHeight;
+          var x = side ? r.left - w - 8 : Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2));
+          var y = side ? r.top + r.height / 2 - h / 2 : r.top - h - 8;
+          hoverTip.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+        }, 380);
+      });
+      el.addEventListener("mouseleave", function () { clearTimeout(tipTimer); hoverTip.classList.remove("is-on"); });
+      el.addEventListener("click", function () { clearTimeout(tipTimer); hoverTip.classList.remove("is-on"); });
+    });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    var t = e.target, typing = t && ((t.tagName === "INPUT" && t.type === "text") || t.tagName === "TEXTAREA");
+    if (e.key === "Escape") {
+      if (about.classList.contains("is-open")) { setAbout(false); return; }
+      if (!card.hidden) closeCard();
+      return;
+    }
+    if (typing || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); stepMap(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); stepMap(1); }
+    else if (e.key === "p" || e.key === "P") { if (playTimer) stopPlay(); else startPlay(); }
+    else if (e.key === "m" || e.key === "M") setFlat(!flat);
+    else if (e.key === "+" || e.key === "=") zoomAt(view.zoom * 1.6, cx, cy);
+    else if (e.key === "-" || e.key === "_" || e.key === "−") zoomAt(view.zoom / 1.6, cx, cy);
+  });
+
+  var hashTimer = 0;
+  function writeHash() {
+    clearTimeout(hashTimer);
+    hashTimer = setTimeout(function () {
+      if (!ready) return;
+      var h = "#y=" + year + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "");
+      if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
+    }, 250);
+  }
+  function readHash() {
+    var out = {};
+    String(location.hash || "").replace(/^#/, "").split("&").forEach(function (kv) {
+      var i = kv.indexOf("=");
+      if (i > 0) out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
+      else if (/^-?\d+$/.test(kv)) out.y = kv;
+    });
+    return out;
+  }
+
+  window.addEventListener("resize", function () { layout(); scheduleRender(); });
+  if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", function () { layout(); scheduleRender(); });
+
+  function reveal() {
+    ready = true;
+    $("load").classList.add("is-gone");
+    document.documentElement.classList.add("ch-ready");
+    scheduleRender();
+  }
+  function prepLand(topo) {
+    var f = topojson.feature(topo, topo.objects.land);
+    var list = [];
+    (f.features || [f]).forEach(function (x) { list = list.concat(preparePolys(x)); });
+    return list;
+  }
+
+  function start() {
+    readPalette();
+    var h = readHash();
+    try { flat = localStorage.getItem(STORE_FLAT) === "1"; } catch (e) {}
+    if (h.flat === "1") flat = true;
+    if (h.v) {
+      var v = h.v.split(",").map(Number);
+      if (v.length === 3 && v.every(isFinite)) { view.lon = v[0]; view.lat = v[1]; view.zoom = v[2]; }
+    }
+    $("flat-btn").setAttribute("aria-pressed", flat ? "true" : "false");
+    if (flat) { $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").setAttribute("data-tip", "Globe (M)"); }
+    var y0 = h.y ? parseYear(h.y) : null;
+    if (y0 !== null) year = wantYear = y0;
+    layout();
+    Promise.all([fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/places.json").catch(function () { return []; })]).then(function (r) {
+      var idx = r[0];
+      catalogue = idx.polities;
+      maps = idx.maps.map(function (m) { return { y: m[0], file: "data/" + m[1], snap: null, loading: null }; });
+      land = {
+        hi: prepLand(r[1].hi), lo: prepLand(r[1].lo),
+        coastHi: prepareLines(topojson.mesh(r[1].hi, r[1].hi.objects.land)), coastLo: prepareLines(topojson.mesh(r[1].lo, r[1].lo.objects.land))
+      };
+      landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
+      places = r[2] || [];
+      layout();
+      return loadMap(mapIndexFor(year)).then(function (snap) {
+        current = snap;
+        reveal();
+        setYear(year);
+        fetchJSON(UC + "data/sea.json").then(function (t) {
+          var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(prepare); };
+          sea = { high: prep(t.high), low: prep(t.low) };
+          scheduleRender();
+        }).catch(function (e) { console.warn("sea", e); });
+      });
+    }).catch(function (e) {
+      console.error(e);
+      $("load").textContent = "The atlas could not be loaded. Try reloading the page.";
+      document.documentElement.classList.add("ch-ready");
+    });
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load("400 20px 'IM Fell English'").then(function () { widthCache.clear(); labelCache.clear(); scheduleRender(); }).catch(function () {});
+    }
+  }
+
+  window.__chronia = {
+    ready: function () { return ready && !!current; },
+    year: function () { return year; },
+    mapYear: function () { return current ? current.year : null; },
+    maps: function () { return maps.map(function (m) { return m.y; }); },
+    setYear: function (y) { stopPlay(); setYear(y); },
+    view: view,
+    setView: function (lon, lat, zoom) { view.lon = lon; view.lat = lat; if (zoom) view.zoom = zoom; applyView(); scheduleRender(); },
+    setFlat: setFlat,
+    polities: function () { return current ? current.order.map(function (p) { return polityName(p.id); }) : []; },
+    selected: function () { return selected >= 0 ? polityName(selected) : null; },
+    selectName: function (n) {
+      var p = current && current.order.find(function (q) { return polityName(q.id) === n; });
+      if (p) select(p.id);
+      return !!p;
+    },
+    hitAt: function (x, y) { var p = polityAt(x, y); return p ? polityName(p.id) : null; },
+    project: function (lon, lat) { return projectLL(lon, lat); },
+    labels: function () { return placedLabels.slice(); },
+    timeRender: function (n) {
+      n = n || 10;
+      var t0 = performance.now();
+      for (var i = 0; i < n; i++) draw();
+      return (performance.now() - t0) / n;
+    },
+    moving: function (on) { moving = !!on; }
+  };
+
+  start();
+})();
