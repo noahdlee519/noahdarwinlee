@@ -2,13 +2,15 @@ import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, copyFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
 const source = resolve(process.argv[3] || "historical-basemaps/geojson");
 const provincesPath = resolve(process.argv[4] || resolve(here, "../../uchronia/data/provinces.json"));
 const cshapesPath = resolve(process.argv[5] || "cshapes_2_gw.topojson");
-const citiesPath = resolve(process.argv[6] || resolve(here, "../../uchronia/data/cities.json"));
+const clioPath = resolve(process.argv[6] || "cliopatria.geojson");
+const nePath = resolve(process.argv[7] || "ne_10m_admin_1_states_provinces.geojson");
 const out = resolve(here, "../data");
 const require = createRequire(resolve(modules, "x.js"));
 const server = require("topojson-server");
@@ -18,7 +20,8 @@ const d3 = require("d3-geo");
 const clip = require("polygon-clipping");
 
 const FIRST = -3000;
-const CS_FROM = "1886-01-01", CS_TO = "2019-12-31", CITIES_FROM = "1900-01-01";
+const DATED_FROM = 1400, DATED_TO = 1885, CHUNK = 100;
+const CS_FROM = "1886-01-01", CS_TO = "2019-12-31";
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
 const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
@@ -28,31 +31,34 @@ const HI_Q = 2e5, LO_Q = 2e4;
 const weightFor = (km) => (km / R_KM) ** 2;
 
 const LINEAGE = [
-  ["England", "Kingdom of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland", "British Empire"],
-  ["Kingdom of France", "France", "French Empire", "French Republic"],
-  ["Grand Duchy of Moscow", "Tsardom of Muscovy", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"],
-  ["Han", "Han Empire", "Jin", "Sui Empire", "Tang Empire", "Song Empire", "Ming Empire", "Ming Chinese Empire", "Manchu Empire", "Qing Empire", "China"],
+  ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland"],
+  ["Kingdom of France", "France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"],
+  ["Grand Duchy of Moscow", "Grand Principality of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"],
+  ["Han", "Han Empire", "Jin", "Sui Empire", "Tang Empire", "Song Empire", "Ming Empire", "Ming Chinese Empire", "Ming dynasty", "Manchu Empire", "Qing Empire", "Qing dynasty", "China"],
   ["United States of America", "United States"],
-  ["Castile", "Spain", "Spanish Habsburg", "Habsburg Spain"],
+  ["Castile", "Crown of Castile", "Spain", "Kingdom of Spain", "Spanish Habsburg", "Habsburg Spain", "First Spanish Republic"],
   ["Portugal", "Kingdom of Portugal"],
-  ["Dutch Republic", "United Provinces", "United Kingdom of Netherlands", "Netherlands"],
-  ["Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "German Empire", "Germany", "West Germany"],
-  ["Austrian Empire", "Austro-Hungarian Empire", "Austria", "Habsburg Monarchy"],
+  ["Dutch Republic", "United Provinces", "Batavian Republic", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"],
+  ["Brandenburg", "Margraviate of Brandenburg", "Electorate of Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "North German Confederation", "German Empire", "Germany", "West Germany"],
+  ["Habsburg Monarchy", "House of Habsburg", "Austrian Empire", "Austro-Hungarian Empire", "Austria-Hungary", "Austria"],
   ["Ottoman Empire", "Turkey"],
-  ["Safavid Empire", "Persia", "Iran"],
-  ["Imperial Japan (Fujiwara)", "Tokugawa shogunate", "Japan", "Empire of Japan"],
+  ["Swiss Confederation", "Switzerland"],
+  ["Asante", "Ashanti Empire"],
+  ["Alwa", "Alodia"],
+  ["Safavid Empire", "Safavid dynasty", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Persia", "Iran"],
+  ["Imperial Japan (Fujiwara)", "Ashikaga Shogunate", "Warring States Japan", "Tokugawa shogunate", "Tokugawa Shogunate", "Japan", "Empire of Japan"],
   ["Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"],
-  ["Kingdom of Sardinia", "Kingdom of Italy", "Italy"],
+  ["County of Savoy", "House of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"],
   ["Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"],
-  ["Ayutthaya", "Rattanakosin Kingdom", "Siam", "Thailand"],
-  ["Abyssinia", "Ethiopia"],
-  ["Poland-Lithuania", "Poland"],
-  ["Denmark-Norway", "Denmark"],
-  ["Sweden", "Sweden–Norway"],
+  ["Ayutthaya", "Ayutthaya Kingdom", "Thonburi Kingdom", "Rattanakosin Kingdom", "Siam", "Thailand"],
+  ["Abyssinia", "Ethiopian Empire", "Ethiopia"],
+  ["Kingdom of Poland", "Poland-Lithuania", "Polish-Lithuanian Commonwealth", "Poland"],
+  ["Kingdom of Denmark", "Denmark-Norway", "Denmark"],
+  ["Kingdom of Sweden", "Swedish Empire", "Sweden", "United Kingdoms of Sweden and Norway", "Sweden–Norway"],
   ["Mughal Empire", "India"],
-  ["Viceroyalty of New Spain", "Mexico"],
+  ["Viceroyalty of New Spain", "First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"],
   ["Ceylon", "Sri Lanka"],
-  ["Burma", "Myanmar"],
+  ["First Toungoo Empire", "Konbaung dynasty", "Burma", "Myanmar"],
   ["Dahomey", "Benin"],
   ["Upper Volta", "Burkina Faso"],
   ["Gold Coast", "Ghana"],
@@ -71,7 +77,8 @@ const RULER_ALIAS = {
   "United Kingdom of Netherlands": "United Kingdom of Netherlands"
 };
 const RENAME = [
-  [1801, 1922, "United Kingdom", "United Kingdom of Great Britain and Ireland"]
+  [1801, 1922, "United Kingdom", "United Kingdom of Great Britain and Ireland"],
+  [1878, 1879, "M?ori", "Maori"]
 ];
 const RULER_FIX = [
   ["Philippines", 1565, 1898, "Spain"],
@@ -351,7 +358,22 @@ const isPeople = (name, ruler, y, label) => {
 function topoFor(feats, km, q) {
   const topo = server.topology({ p: { type: "FeatureCollection", features: feats } }, q);
   const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
-  return client.quantize(stripZ(simplify.simplify(pre, weightFor(km))), q);
+  const kept = new Set();
+  const walk = (a) => { if (typeof a === "number") kept.add(a < 0 ? ~a : a); else if (a) a.forEach(walk); };
+  pre.objects.p.geometries.forEach((g) => { if (g.properties && g.properties.keep) walk(g.arcs); });
+  kept.forEach((i) => pre.arcs[i].forEach((p) => { p[2] = Infinity; }));
+  return outward(client.quantize(stripZ(simplify.simplify(pre, weightFor(km))), q));
+}
+function outward(topo) {
+  const flip = (poly) => {
+    if (d3.geoArea(client.feature(topo, { type: "Polygon", arcs: poly })) <= 2 * Math.PI) return poly;
+    return poly.map((ring) => ring.slice().reverse().map((i) => ~i));
+  };
+  for (const g of topo.objects.p.geometries) {
+    if (g.type === "Polygon") g.arcs = flip(g.arcs);
+    else if (g.type === "MultiPolygon") g.arcs = g.arcs.map(flip);
+  }
+  return topo;
 }
 function stripZ(topo) {
   topo.arcs = topo.arcs.map((arc) => {
@@ -365,6 +387,7 @@ function stripZ(topo) {
 mkdirSync(resolve(out, "eras"), { recursive: true });
 const index = [];
 for (const s of snapshots) {
+  if (s.y >= DATED_FROM) continue;
   const props = [];
   const clean = s.feats.map((f, i) => {
     props.push(f.properties);
@@ -397,7 +420,501 @@ for (const s of snapshots) {
   index.push([s.y, file]);
 }
 
-const CS_STATUS = { independent: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4 };
+const prov = JSON.parse(readFileSync(provincesPath, "utf8"));
+const polysOf = (g) => (!g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []);
+const boxOf = (polys) => {
+  const b = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const poly of polys) for (const p of poly[0]) { if (p[0] < b[0]) b[0] = p[0]; if (p[1] < b[1]) b[1] = p[1]; if (p[0] > b[2]) b[2] = p[0]; if (p[1] > b[3]) b[3] = p[1]; }
+  return b;
+};
+const boxHit = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+const ringKm2 = (ring) => {
+  const lat0 = ring.reduce((t, p) => t + p[1], 0) / ring.length;
+  return Math.abs(planar(ring)) * Math.cos((lat0 * Math.PI) / 180) * 111.195 ** 2;
+};
+const polyKm2 = (poly) => Math.max(0, ringKm2(poly[0]) - poly.slice(1).reduce((t, r) => t + ringKm2(r), 0));
+const km2Of = (polys) => polys.reduce((t, p) => t + polyKm2(p), 0);
+const ringKm = (ring) => {
+  let s = 0;
+  for (let i = 1; i < ring.length; i++) {
+    const k = Math.cos((((ring[i][1] + ring[i - 1][1]) / 2) * Math.PI) / 180);
+    s += Math.hypot((ring[i][0] - ring[i - 1][0]) * k, ring[i][1] - ring[i - 1][1]) * 111.195;
+  }
+  return s;
+};
+const rewind = (polys) => polys.map((poly) => poly.map((ring, k) => ((planar(ring) > 0) === (k === 0) ? ring.slice().reverse() : ring)));
+const subtract = (polys, clips) => {
+  if (!clips.length || !polys.length) return polys;
+  try { return rewind(clip.difference(polys, ...clips)); } catch (e) {
+    let rest = polys;
+    for (const c of clips) { try { rest = clip.difference(rest, c); } catch (e2) {} }
+    return rewind(rest);
+  }
+};
+const RG = 1440, RGK = 4;
+const pack = (set) => {
+  const a = Int32Array.from(set).sort();
+  const has = (i) => { let lo = 0, hi = a.length - 1; while (lo <= hi) { const m = (lo + hi) >> 1; if (a[m] === i) return true; if (a[m] < i) lo = m + 1; else hi = m - 1; } return false; };
+  return { a, size: a.length, has, [Symbol.iterator]: () => a[Symbol.iterator]() };
+};
+const cellsOf = (polys) => {
+  const set = new Set();
+  for (const poly of polys) {
+    const b = boxOf([poly]);
+    for (let r = Math.max(0, Math.floor((90 - b[3]) * RGK)); r <= Math.min(RG / 2 - 1, Math.ceil((90 - b[1]) * RGK)); r++) {
+      const lat = 90 - (r + 0.5) / RGK, xs = [];
+      for (const ring of poly) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const a = ring[i], c = ring[j];
+        if ((a[1] > lat) !== (c[1] > lat)) xs.push(a[0] + ((lat - a[1]) * (c[0] - a[0])) / (c[1] - a[1]));
+      }
+      xs.sort((x, y) => x - y);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        for (let q = Math.max(0, Math.ceil((xs[k] + 180) * RGK - 0.5)); q <= Math.min(RG - 1, Math.floor((xs[k + 1] + 180) * RGK - 0.5)); q++) set.add(r * RG + q);
+      }
+    }
+  }
+  return pack(set);
+};
+const cellW = (i) => Math.cos(((90 - (Math.floor(i / RG) + 0.5) / RGK) * Math.PI) / 180);
+const cellSum = (s) => { let t = 0; for (const i of s) t += cellW(i); return t; };
+const dilate = (set) => {
+  const out = new Set(set);
+  for (const i of set) { const r = Math.floor(i / RG), c = i % RG; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const rr = r + dr; if (rr >= 0 && rr < RG / 2) out.add(rr * RG + ((c + dc + RG) % RG)); } }
+  return pack(out);
+};
+const meets = (a, b) => { const [x, y] = a.size < b.size ? [a, b] : [b, a]; for (const i of x) if (y.has(i)) return true; return false; };
+function cutOver(polys, box, first, last, cands, opt = {}) {
+  const near = opt.cells && opt.cells.size ? dilate(opt.cells) : null;
+  const rel = cands.filter((c) => c.last >= first && c.first <= last && boxHit(c.box, box) && (!near || !c.cells || !c.cells.size || meets(near, c.cells)));
+  const cuts = new Set([first]);
+  rel.forEach((c) => { if (c.first > first) cuts.add(c.first); if (c.last + 1 <= last) cuts.add(c.last + 1); });
+  (opt.cuts || []).forEach((y) => { if (y > first && y <= last) cuts.add(y); });
+  const bounds = [...cuts].sort((a, b) => a - b);
+  const memo = new Map(), res = [];
+  bounds.forEach((s, k) => {
+    const e = k + 1 < bounds.length ? bounds[k + 1] - 1 : last;
+    const act = rel.filter((c) => c.first <= s && s <= c.last);
+    const key = act.map((c) => c.uid).join(",") + "|" + (opt.bucket ? opt.bucket(s) : "");
+    let r = memo.get(key);
+    if (r === undefined) {
+      let covered = 0, owner = null, share = null;
+      if (opt.cells && opt.cells.size && act.length) {
+        share = new Map();
+        for (const i of opt.cells) {
+          let hit = false;
+          for (const c of act) if (c.cells && c.cells.has(i)) { hit = true; share.set(c, (share.get(c) || 0) + cellW(i)); }
+          if (hit) covered += cellW(i);
+        }
+        covered /= opt.cellsW;
+        for (const [c, w] of share) if ((opt.anyOwner || w >= 0.5 * opt.cellsW) && (!owner || w > share.get(owner))) owner = c;
+        if (opt.same) for (const c of act) if (opt.same(c.name) && (!owner || !opt.same(owner.name) || (share.get(c) || 0) > (share.get(owner) || 0))) owner = c;
+      }
+      let member = null;
+      if (opt.member && act.length) {
+        let top = null, best = 0;
+        for (const c of act) { const w = share && share.get(c) || 0; if (w > best) { best = w; top = c; } }
+        if (top && opt.member(top, best / opt.cellsW, s)) { member = top; owner = null; }
+      }
+      const d = member ? subtract(polys, act.filter((c) => c !== member).map((c) => c.polys)) : opt.drop && covered >= opt.drop ? [] : subtract(polys, act.map((c) => c.polys));
+      r = { polys: d, owner, member, text: JSON.stringify(d) + "|" + (owner ? owner.uid : "") + "|" + (member ? member.uid : "") };
+      memo.set(key, r);
+    }
+    const prev = res[res.length - 1];
+    if (prev && prev.text === r.text) prev.last = e; else res.push({ first: s, last: e, polys: r.polys, owner: r.owner, member: r.member, text: r.text });
+  });
+  res.forEach((r) => { delete r.text; });
+  return res;
+}
+const MIN_KM2 = 1500, MIN_WIDTH_KM = 25, OWN_KM2 = 20, OWN_WIDTH_KM = 4, SLIVER_KM2 = 300, SLIVER_WIDTH_KM = 8;
+const ownPiece = (p) => { const a = polyKm2(p); return a >= OWN_KM2 && (2 * a) / ringKm(p[0]) >= OWN_WIDTH_KM; };
+const keepRemnant = (polys, whole, maxCovered, wholeWidth = Infinity) => {
+  const total = km2Of(polys);
+  if (!(whole > 0) || total < whole * (1 - maxCovered)) return [];
+  const minA = Math.min(MIN_KM2, 0.3 * whole), minW = Math.min(MIN_WIDTH_KM, 0.6 * wholeWidth);
+  return polys.filter((p) => {
+    const a = polyKm2(p);
+    return a >= whole * 0.6 || (a >= minA && (2 * a) / ringKm(p[0]) >= minW);
+  });
+};
+const widthOf = (polys) => { let a = 0, l = 0; for (const p of polys) { a += polyKm2(p); l += ringKm(p[0]); } return l > 0 ? (2 * a) / l : 0; };
+function carve(list, sm) {
+  const next = [];
+  for (const r of list) {
+    if (r.last < sm.first || r.first > sm.last || !boxHit(r.box, sm.box)) { next.push(r); continue; }
+    let hit = [];
+    try { hit = clip.intersection(r.polys, sm.polys); } catch (e) {}
+    if (!hit.length) { next.push(r); continue; }
+    const s = Math.max(r.first, sm.first), e = Math.min(r.last, sm.last);
+    if (r.first < s) next.push({ ...r, last: s - 1 });
+    const polys = subtract(r.polys, [sm.polys]);
+    if (polys.length) next.push({ ...r, first: s, last: e, polys });
+    if (r.last > e) next.push({ ...r, first: e + 1 });
+  }
+  return next;
+}
+let uidNext = 0;
+const withBox = (s) => ({ ...s, uid: uidNext++, box: boxOf(s.polys), cells: cellsOf(s.polys) });
+const cellOpt = (polys, drop) => { const cells = cellsOf(polys); return { cells, cellsW: cellSum(cells), drop }; };
+
+const CLIO_NAME = {
+  "Holy Roman Empire Minor States": "Holy Roman Empire",
+  "Old Kingdom of Norway": "Kingdom of Norway",
+  "Kingdom of Hawaï'i": "Kingdom of Hawaii",
+  "Free Orange State": "Orange Free State",
+  "Principality of Regensberg": "Principality of Regensburg",
+  "People's Republic of Zanzibar": "Sultanate of Zanzibar",
+  "Hashemite Arab Federation": "Arab Iraq",
+  "Napoleonic Batavia Republic": "Dutch Cape Colony",
+  "Livonian Conference": "Livonian Confederation",
+  "Kingdom of Monaco": "Principality of Monaco",
+  "United States of America": "United States"
+};
+const CLIO_RENAME = [[1801, 9999, "Kingdom of Great Britain", "United Kingdom"]];
+const CLIO_WIKI = {
+  "United Kingdom": "United Kingdom of Great Britain and Ireland", "Livonian Confederation": "Livonian Confederation",
+  "Sultanate of Zanzibar": "Sultanate of Zanzibar", "Dutch Cape Colony": "Dutch Cape Colony", "Arab Iraq": "Arab Iraq",
+  "Kingdom of Pajana": "", "Sultanate of Sambaliung": "", "Holy Roman Empire": "Holy Roman Empire", "Kingdom of Hawaii": "Hawaiian Kingdom"
+};
+const CLIO_DROP = new Set(["Principality of Monaco", "Kingdom of Monaco", "Principality of Liechtenstein", "Republic of San Marino", "Principality of Andorra", "Isle of Man"]);
+const CLIO_HEAD = { "(Spanish Empire)": "Kingdom of Spain", "(Portuguese Empire)": "Kingdom of Portugal", "(British Empire)": "Kingdom of Great Britain" };
+const CLIO_PART = new Set(["(Holy Roman Empire)", "(Kalmar Union)", "(Delhi Sultanate)", "(Polish-Lithuania Kingdom)"]);
+const clioName = (raw, y) => {
+  let n = (CLIO_NAME[raw] || raw).replace(/\s*\([^)]*\)/g, "").trim().replace(/ Dynasty$/, " dynasty");
+  for (const [a, b, from, to] of CLIO_RENAME) if (n === from && y >= a && y < b) n = to;
+  return n;
+};
+const clioWiki = (name, raw) => {
+  if (name in CLIO_WIKI) return CLIO_WIKI[name] || name;
+  return raw && !/^[a-z]+\.wikipedia/.test(raw) ? raw : name;
+};
+
+const clioRaw = existsSync(clioPath) ? JSON.parse(readFileSync(clioPath, "utf8")).features.filter((f) => f.geometry && f.properties.ToYear >= DATED_FROM) : null;
+if (!clioRaw) throw new Error("Cliopatria not found: " + clioPath);
+const clioRows = clioRaw.map((f) => ({ ...f.properties, geometry: f.geometry }));
+clioRaw.length = 0;
+const clioHeadAt = (group, y) => {
+  if (CLIO_PART.has(group)) return null;
+  if (CLIO_HEAD[group]) return CLIO_HEAD[group];
+  const n = group.slice(1, -1);
+  return clioRows.some((r) => r.Name === n && r.FromYear <= y && y <= r.ToYear) ? n : null;
+};
+const vassalOf = new Map();
+for (const r of clioRows) {
+  const m = /^\(Vassalage of (.+) to (.+)\)$/.exec(r.Name);
+  if (m) { if (!vassalOf.has(m[1])) vassalOf.set(m[1], []); vassalOf.get(m[1]).push([r.FromYear, r.ToYear, m[2]]); }
+}
+const clioSpans = [];
+{
+  const byKey = new Map();
+  for (const r of clioRows) {
+    if (r.Name.startsWith("(") || CLIO_DROP.has(r.Name)) continue;
+    const mid = Math.floor((Math.max(r.FromYear, DATED_FROM) + r.ToYear) / 2);
+    let ruler = "", part = "";
+    for (const g of String(r.MemberOf || "").split(/[;,]/).map((x) => x.trim()).filter(Boolean)) {
+      const head = clioHeadAt(g, mid);
+      if (head && head !== r.Name) { if (!ruler) ruler = head; }
+      else if (CLIO_PART.has(g) && g.slice(1, -1) !== r.Name && !part) part = clioName(g.slice(1, -1), mid);
+    }
+    for (const [a, b, y] of vassalOf.get(r.Name) || []) if (a <= mid && mid <= b) ruler = y;
+    const geoKey = JSON.stringify(r.geometry.coordinates);
+    const bounds = [r.FromYear, ...CLIO_RENAME.filter(([a, , from]) => from === r.Name && a > r.FromYear && a <= r.ToYear).map(([a]) => a)];
+    bounds.forEach((a, k) => {
+      const b = k + 1 < bounds.length ? bounds[k + 1] - 1 : r.ToYear;
+      const name = clioName(r.Name, a);
+      const span = { name, ruler: ruler ? clioName(ruler, a) : "", part: part && part !== name ? part : "", people: 0, b: 2, status: ruler ? 5 : 0, first: a, last: b, polys: rewind(polysOf(r.geometry)), wiki: clioWiki(name, r.Wikipedia), src: "clio", geoKey };
+      const key = name + "|" + span.ruler + "|" + span.part;
+      const prev = byKey.get(key);
+      if (prev && prev.last + 1 === a && prev.geoKey === geoKey) { prev.last = b; return; }
+      byKey.set(key, span);
+      clioSpans.push(span);
+    });
+  }
+  clioSpans.forEach((s) => { delete s.geoKey; });
+}
+clioRows.length = 0;
+
+const LONDON = [-0.12, 51.5], LISBON = [-9.14, 38.72], COPENHAGEN = [12.57, 55.68], BERGEN = [5.32, 60.39], OSLO = [10.75, 59.91];
+const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARIS = [2.35, 48.86], ISTANBUL = [28.98, 41.01];
+const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
+const HB_STALE = { "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496 };
+const SMR_CORE = ["San Marino", "Borgo Maggiore", "Acquaviva", "Chiesanuova", "Domagnano"];
+const HK_ISLAND = ["Central and Western", "Wan Chai", "Eastern", "Southern"], HK_KOWLOON = ["Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong"];
+const SMALL = [
+  { name: "Liechtenstein", shape: { c: "LIE" }, periods: [["1719-01-23", "2019-12-31", "state"]] },
+  { name: "Monaco", shape: { c: "MCO" }, periods: [["1419-01-01", "1792-12-31", "state"], ["1814-05-30", "1860-12-31", "protectorate", TURIN], ["1861-01-01", "2019-12-31", "state"]] },
+  { name: "San Marino", shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
+  { name: "San Marino", shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
+  { name: "San Marino", shape: { c: "SMR" }, periods: [["1464-01-01", "2019-12-31", "state"]] },
+  { name: "Andorra", shape: { c: "AND" }, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", "2019-12-31", "state"]] },
+  { name: "Vatican City", shape: { c: "VAT" }, periods: [["1929-06-07", "2019-12-31", "state"]] },
+  { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", "2019-12-31", "dependency", LONDON]] },
+  { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
+  { name: "Guernsey", shape: { c: "GGY" }, wiki: "Bailiwick of Guernsey", periods: [["1400-01-01", "1940-06-29", "dependency", LONDON], ["1940-06-30", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
+  { name: "Gibraltar", shape: { c: "GIB" }, periods: [["1704-08-04", "2019-12-31", "colony", LONDON]] },
+  { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND }, wiki: "British Hong Kong", periods: [["1841-01-26", "1860-10-23", "colony", LONDON]] },
+  { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND.concat(HK_KOWLOON) }, wiki: "British Hong Kong", periods: [["1860-10-24", "1898-06-30", "colony", LONDON]] },
+  { name: "Hong Kong", shape: { c: "HKG" }, wiki: "British Hong Kong", periods: [["1898-07-01", "1941-12-24", "colony", LONDON], ["1941-12-25", "1945-08-29", "occupied", TOKYO], ["1945-08-30", "1997-06-30", "colony", LONDON]] },
+  { name: "Macau", shape: { c: "MAC" }, wiki: "Portuguese Macau", periods: [["1557-01-01", "1999-12-19", "colony", LISBON]] },
+  { name: "Portuguese India", shape: { n: ["Goa"] }, periods: [["1510-11-25", "1961-12-18", "colony", LISBON]] },
+  { name: "Faroe Islands", shape: { c: "FRO" }, periods: [["1400-01-01", "1814-01-13", "dependency", BERGEN], ["1814-01-14", "1940-04-11", "dependency", COPENHAGEN], ["1940-04-12", "1945-09-16", "occupied", LONDON], ["1945-09-17", "2019-12-31", "dependency", COPENHAGEN]] },
+  { name: "Bahrain", shape: { c: "BHR" }, wiki: "History of Bahrain (1783–1971)", periods: [["1886-01-01", "1971-08-14", "protectorate", LONDON, "fill"]] },
+  { name: "Kuwait", shape: { c: "KWT" }, wiki: "Sheikhdom of Kuwait", periods: [["1899-01-23", "1961-06-18", "protectorate", LONDON, "fill"]] },
+  { name: "Qatar", shape: { c: "QAT" }, wiki: "Qatar under Ottoman rule", periods: [["1886-01-01", "1915-12-31", "dependency", ISTANBUL, "fill"]] },
+  { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", "2019-12-31", "dependency", COPENHAGEN, "fill"]] },
+  { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", "2019-12-31", "dependency", OSLO, "fill"]] },
+  { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", "2019-12-31", "colony", LONDON, "fill"]] }
+];
+const SMALL_KEEP_KM2 = 3000;
+const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, occupied: 4, dependency: 5 };
+const neUnits = JSON.parse(readFileSync(nePath, "utf8")).features.filter((f) => SMALL.some((s) => (!s.shape.c || s.shape.c === f.properties.adm0_a3) && (!s.shape.n || s.shape.n.includes(f.properties.name))));
+const smallShape = (sh) => {
+  const feats = neUnits.filter((f) => (!sh.c || f.properties.adm0_a3 === sh.c) && (!sh.n || sh.n.includes(f.properties.name)));
+  if (!feats.length || (sh.n && feats.length !== sh.n.length)) throw new Error("SMALL: Natural Earth units missing for " + JSON.stringify(sh));
+  return rewind(clip.union(...feats.map((f) => polysOf(f.geometry))));
+};
+const smallPolys = SMALL.map((s) => smallShape(s.shape));
+const yearsOf = (from, to) => [+from.slice(0, 4), +to.slice(0, 4) - (to.slice(5) === "12-31" ? 0 : 1)];
+function rulerSplit(ref, first, last, list, nameOf) {
+  if (!ref) return [{ first, last, ruler: "" }];
+  const hits = list.filter((s) => s.last >= first && s.first <= last && s.box[0] <= ref[0] && ref[0] <= s.box[2] && s.box[1] <= ref[1] && ref[1] <= s.box[3] && d3.geoContains({ type: "MultiPolygon", coordinates: s.polys }, ref));
+  const cuts = new Set([first]);
+  hits.forEach((s) => { if (s.first > first) cuts.add(s.first); if (s.last + 1 <= last) cuts.add(s.last + 1); });
+  const bounds = [...cuts].sort((a, b) => a - b), res = [];
+  bounds.forEach((s, k) => {
+    const e = k + 1 < bounds.length ? bounds[k + 1] - 1 : last;
+    const h = hits.find((x) => x.first <= s && s <= x.last && !x.small);
+    const ruler = h ? nameOf(h) : "";
+    const prev = res[res.length - 1];
+    if (prev && prev.ruler === ruler) prev.last = e; else res.push({ first: s, last: e, ruler });
+  });
+  return res;
+}
+function addSmall(list, timeOf, nameOf) {
+  const carves = [], fills = [];
+  SMALL.forEach((s, i) => s.periods.forEach(([from, to, status, ref, mode]) => {
+    const t = timeOf(from, to);
+    if (!t) return;
+    (mode === "fill" ? fills : carves).push({ s, polys: smallPolys[i], first: t[0], last: t[1], status, ref });
+  }));
+  const piece = (x, first, last, ruler, polys) => withBox({ name: x.s.name, ruler, part: "", people: 0, b: 3, status: ruler ? SMALL_STATUS[x.status] : 0, first, last, polys, wiki: x.s.wiki || x.s.name, src: "small", small: true, keep: km2Of(polys) < SMALL_KEEP_KM2 });
+  for (const x of carves) {
+    const parts = rulerSplit(x.ref, x.first, x.last, list, nameOf);
+    for (const p of parts) {
+      const sm = piece(x, p.first, p.last, p.ruler, x.polys);
+      list = carve(list, sm);
+      list.push(sm);
+    }
+  }
+  for (const x of fills) {
+    const parts = rulerSplit(x.ref, x.first, x.last, list, nameOf);
+    for (const p of parts) {
+      for (const r of cutOver(x.polys, boxOf(x.polys), p.first, p.last, list, cellOpt(x.polys, 0))) if (r.polys.length) list.push(piece(x, r.first, r.last, p.ruler, r.polys));
+    }
+  }
+  return list;
+}
+
+const lineageNames = (name) => (lineageOf.has(name) ? LINEAGE[lineageOf.get(name)] : [name]);
+const NAME_FILLER = new Set(["of", "the", "and", "kingdom", "empire", "sultanate", "dynasty", "khanate", "republic", "principality", "duchy", "grand", "emirate", "regency", "county", "state", "states", "confederation", "caliphate", "union", "realm", "great", "united", "beylik", "imamate", "tsardom", "electorate", "margraviate", "lordship", "house"]);
+const coreWords = (name) => new Set(name.toLowerCase().split(/[^a-zà-öø-ÿāēīōūăđơưạ-ỹ']+/).filter((w) => w && !NAME_FILLER.has(w)));
+const sameAs = (name) => {
+  const kin = new Set(lineageNames(name)), core = coreWords(name);
+  const within = (a, b) => a.size > 0 && [...a].every((w) => b.has(w));
+  return (other) => kin.has(other) || (core.size > 0 && (within(core, coreWords(other)) || within(coreWords(other), core)));
+};
+let dated = clioSpans.filter((s) => s.last >= DATED_FROM && s.first <= DATED_TO).map((s) => withBox({ ...s, first: Math.max(s.first, DATED_FROM), last: Math.min(s.last, DATED_TO) }));
+function reshape(list, edits, dropSlivers) {
+  const byBase = new Map(), extra = [];
+  edits.forEach((e) => { if (!byBase.has(e.base)) byBase.set(e.base, []); byBase.get(e.base).push(e); });
+  const out = list.filter((o) => !byBase.has(o));
+  for (const [o, mine] of byBase) {
+    const cuts = new Set([o.first]);
+    mine.forEach((a) => { if (a.first > o.first) cuts.add(a.first); if (a.last + 1 <= o.last) cuts.add(a.last + 1); });
+    const bounds = [...cuts].sort((a, b) => a - b);
+    let prev = null;
+    bounds.forEach((s0, k) => {
+      const e0 = k + 1 < bounds.length ? bounds[k + 1] - 1 : o.last;
+      const now = mine.filter((a) => a.first <= s0 && s0 <= a.last);
+      const add = now.filter((a) => a.add).map((a) => a.polys), cut = now.filter((a) => !a.add).map((a) => a.polys);
+      let polys = o.polys;
+      if (add.length) { try { polys = rewind(clip.union(polys, ...add)); } catch (e) { polys = polys.concat(...add); } }
+      if (cut.length) {
+        polys = subtract(polys, cut);
+        if (dropSlivers) {
+          const all = km2Of(polys), near = now.filter((a) => !a.add && a.to).map((a) => ({ to: a.to, cells: a.near || (a.near = dilate(cellsOf(a.polys))) }));
+          const moved = new Map();
+          polys = polys.filter((q) => {
+            const a = polyKm2(q);
+            if (a < 0.25 * all) {
+              const qc = cellsOf([q]);
+              for (const n of near) {
+                let inside = 0;
+                for (const i of qc) if (n.cells.has(i)) inside++;
+                if (qc.size ? inside >= 0.5 * qc.size : n.cells.has(cellAt(q[0][0]))) { if (!moved.has(n.to)) moved.set(n.to, []); moved.get(n.to).push(q); return false; }
+              }
+            }
+            return a >= 0.1 * all || (a >= SLIVER_KM2 && (2 * a) / ringKm(q[0]) >= SLIVER_WIDTH_KM);
+          });
+          for (const [to, qs] of moved) extra.push(withBox({ ...to, first: Math.max(s0, to.first), last: Math.min(e0, to.last), polys: qs }));
+        }
+      }
+      const key = now.map((a) => a.polys.length + (a.add ? "+" : "-")).join(",");
+      if (prev && prev.key === key && !now.length) { prev.span.last = e0; return; }
+      if (!polys.length) { prev = null; return; }
+      const span = withBox({ ...o, first: s0, last: e0, polys });
+      delete span.km2; delete span.pole;
+      out.push(span);
+      prev = { key, span };
+    });
+  }
+  return out.concat(extra.filter((e) => e.first <= e.last));
+}
+const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * RGK))) * RG + Math.max(0, Math.min(RG - 1, Math.floor((p[0] + 180) * RGK)));
+{
+  const order = dated.map((s, i) => i).sort((a, b) => dated[a].box[0] - dated[b].box[0]);
+  const edits = [];
+  for (let x = 0; x < order.length; x++) {
+    const A = dated[order[x]];
+    for (let y = x + 1; y < order.length; y++) {
+      const B = dated[order[y]];
+      if (B.box[0] > A.box[2]) break;
+      if (B.last < A.first || A.last < B.first || !boxHit(A.box, B.box) || A.name === B.name) continue;
+      const [small, big] = A.cells.size <= B.cells.size ? [A, B] : [B, A];
+      let shared = 0;
+      for (const i of small.cells) if (big.cells.has(i)) { shared++; break; }
+      if (!shared) continue;
+      edits.push({ base: big, first: Math.max(A.first, B.first), last: Math.min(A.last, B.last), polys: small.polys, add: false });
+    }
+  }
+  const before = dated.length;
+  dated = reshape(dated, edits, false);
+  console.log("overlaps in Cliopatria: " + edits.length + " pairs, the smaller shape kept, " + before + " spans to " + dated.length);
+}
+{
+  const hbSnaps = snapshots.filter((s) => s.y >= DATED_FROM);
+  const clioOnly = dated.slice();
+  const fills = [], absorbed = [], members = [];
+  const clioNamed = (same, y) => clioOnly.find((c) => c.first <= y && y <= c.last && same(c.name)) || null;
+  const clioNear = (same, y) => {
+    let best = null, gap = TWIN_YEARS + 1;
+    for (const c of clioOnly) { if (!same(c.name)) continue; const g = y < c.first ? c.first - y : y > c.last ? y - c.last : 0; if (g < gap) { gap = g; best = c; } }
+    return best;
+  };
+  const resolveName = (name, y) => { const c = clioNamed(sameAs(name), y); return c ? c.name : null; };
+  hbSnaps.forEach((s, k) => {
+    console.log("filling from the map of " + s.y + ", " + Math.round(process.uptime()) + " s");
+    const first = k ? Math.ceil((hbSnaps[k - 1].y + s.y) / 2) : DATED_FROM, last = k + 1 < hbSnaps.length ? Math.ceil((s.y + hbSnaps[k + 1].y) / 2) - 1 : DATED_TO;
+    const memberLast = k + 1 < hbSnaps.length ? hbSnaps[k + 1].y - 1 : DATED_TO;
+    const thenSpans = clioOnly.filter((c) => c.first <= s.y && s.y <= c.last);
+    for (const f of s.feats) {
+      const p = f.properties;
+      if (!p.name) continue;
+      const polys = rewind(polysOf(f.geometry)), whole = km2Of(polys), box = boxOf(polys);
+      if (!(whole > 0)) continue;
+      const people = isPeople(p.name, p.ruler, s.y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2]) ? 1 : 0;
+      const opt = cellOpt(polys, 0.97);
+      opt.same = sameAs(p.name);
+      const until = HB_STALE[p.name] ?? Infinity;
+      if (!people && whole >= MIN_KM2) {
+        const multi = { type: "MultiPolygon", coordinates: polys };
+        let home;
+        opt.cuts = [last + 1, s.y - UMBRELLA_YEARS, s.y + UMBRELLA_YEARS + 1];
+        opt.bucket = (y) => (y > last ? "L" : "F") + (Math.abs(y - s.y) > UMBRELLA_YEARS ? "o" : "");
+        opt.member = (c, frac, y) => {
+          if (frac < 0.5 || opt.same(c.name)) return false;
+          if (home === undefined) {
+            home = null;
+            let best = 0;
+            for (const t of thenSpans) {
+              if (!boxHit(t.box, box)) continue;
+              let w = 0;
+              for (const i of opt.cells) if (t.cells && t.cells.has(i)) w += cellW(i);
+              if (w > best) { best = w; home = t.name; }
+            }
+            if (best < 0.5 * opt.cellsW) home = null;
+          }
+          if (c.name !== home && !(UMBRELLA.test(c.name) && Math.abs(y - s.y) <= UMBRELLA_YEARS)) return false;
+          if (c.km2 === undefined) { c.km2 = km2Of(c.polys); const l = labelOf({ type: "MultiPolygon", coordinates: c.polys }, true); c.pole = l ? [l[0], l[1]] : null; }
+          if (UMBRELLA.test(c.name)) return frac * whole <= 0.95 * c.km2;
+          return frac * whole <= 0.5 * c.km2 && (frac * whole < 0.25 * c.km2 || !(c.pole && d3.geoContains(multi, c.pole)));
+        };
+      }
+      const upTo = Math.min(until, opt.member ? memberLast : last);
+      for (const r of upTo >= first ? cutOver(polys, box, first, upTo, clioOnly, opt) : []) {
+        if (r.first > last && !r.member) continue;
+        if (r.member) {
+          let inside = r.polys;
+          if (r.first > last) { try { inside = rewind(clip.intersection(polys, r.member.polys)); } catch (e) { inside = []; } }
+          const kept = inside.filter(ownPiece);
+          if (!kept.length) continue;
+          const c = r.member, umbrella = UMBRELLA.test(c.name), twin = clioNear(opt.same, r.first);
+          const ruler = p.ruler ? resolveName(p.ruler, r.first) || (umbrella ? "" : c.name) : "";
+          const span = withBox({ name: twin ? twin.name : p.name, ruler, part: umbrella ? c.name : "", people: 0, b: p.b, status: ruler ? 5 : 0, first: r.first, last: r.last, polys: kept, wiki: twin ? twin.wiki : wikiFor(p.name, s.y), src: "member" });
+          members.push({ base: c, first: r.first, last: r.last, cut: polys, to: span });
+          fills.push(span);
+          continue;
+        }
+        const o = r.owner;
+        const kept = o && !people ? r.polys.filter(ownPiece) : keepRemnant(r.polys, whole, 1, widthOf(polys));
+        if (!kept.length) continue;
+        if (o && !people) absorbed.push({ owner: o, first: r.first, last: r.last, polys: kept });
+        else fills.push(withBox({ name: p.name, ruler: people ? "" : p.ruler, part: p.part, people, b: p.b, status: p.ruler && !people ? 5 : 0, first: r.first, last: r.last, polys: kept, wiki: wikiFor(p.name, s.y), src: "hb" }));
+      }
+      if (until < last && !people) {
+        for (const r of cutOver(polys, box, Math.max(first, until + 1), last, clioOnly, { cells: opt.cells, cellsW: opt.cellsW, anyOwner: true })) {
+          const kept = r.owner ? r.polys.filter(ownPiece) : [];
+          if (kept.length) absorbed.push({ owner: r.owner, first: r.first, last: r.last, polys: kept });
+        }
+      }
+    }
+  });
+  const edits = absorbed.map((a) => ({ base: a.owner, first: a.first, last: a.last, polys: a.polys, add: true })).concat(members.map((m) => ({ base: m.base, first: m.first, last: m.last, polys: m.cut, add: false, to: m.to })));
+  dated = reshape(dated, edits, true).concat(fills);
+  console.log("absorbed " + absorbed.length + " pieces of historical-basemaps into Cliopatria spans, and drew " + members.length + " spans of member states out of " + new Set(members.map((m) => m.base)).size + " Cliopatria spans");
+  console.log("filled from historical-basemaps: " + fills.length + " spans");
+  dated = addSmall(dated, (from, to) => {
+    const [a, b] = yearsOf(from, to);
+    return b < DATED_FROM || a > DATED_TO || b < a ? null : [Math.max(a, DATED_FROM), Math.min(b, DATED_TO)];
+  }, (h) => h.name);
+  dated.forEach((s) => { delete s.cells; });
+  console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
+}
+
+mkdirSync(resolve(out, "dated"), { recursive: true });
+const datedChunks = [];
+const datedLabel = new Map();
+for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
+  const cEnd = Math.min(c + CHUNK - 1, DATED_TO);
+  const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
+  const feats = spans.map((s, i) => ({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
+  const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
+  const rows = spans.map((s, i) => {
+    if (!s.geoHash) s.geoHash = createHash("md5").update(JSON.stringify(s.polys)).digest("hex");
+    let label = datedLabel.get(s.geoHash);
+    if (label === undefined) {
+      const geom = client.feature(hi, hi.objects.p.geometries[i]).geometry;
+      label = geom ? labelOf(geom) : null;
+      if (label && label[5] > BIG_KM2) {
+        const spots = labelSpots(geom, label[5]);
+        if (spots.length > 1) label.push(spots);
+      }
+      datedLabel.set(s.geoHash, label);
+    }
+    const id = catId(s.name), entry = catalogue[id];
+    entry.dated = entry.dated ? [Math.min(entry.dated[0], s.first), Math.max(entry.dated[1], s.last)] : [s.first, s.last];
+    if (!entry.wiki.has(s.first)) entry.wiki.set(s.first, s.wiki || s.name);
+    if (s.people) entry.kind = 1;
+    return [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, null, label, s.people, s.part ? catId(s.part) : -1, s.b];
+  });
+  hi.objects.p.geometries.forEach((g) => { delete g.properties; });
+  lo.objects.p.geometries.forEach((g) => { delete g.properties; });
+  const file = "dated/" + c + ".json";
+  writeFileSync(resolve(out, file), JSON.stringify({ from: c, to: cEnd, rows, hi, lo }));
+  datedChunks.push({ from: c, to: cEnd, file, rows, lo, spans });
+}
+const datedChanges = [...new Set(dated.map((s) => s.first).concat(dated.filter((s) => s.last < DATED_TO).map((s) => s.last + 1)))].filter((y) => y >= DATED_FROM && y <= DATED_TO).sort((a, b) => a - b);
+
+const CS_STATUS = { independent: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
 const CS_NAMES = {
   "United States of America": [["1886-01-01", "United States"]],
   "Russia (Soviet Union)": [["1886-01-01", "Russian Empire"], ["1917-11-07", "Soviet Russia"], ["1922-12-30", "Soviet Union"], ["1991-12-26", "Russia"]],
@@ -501,17 +1018,6 @@ const csWiki = (name, year) => {
   return CS_WIKI[name] || wikiFor(name, year);
 };
 
-const CITY_SINCE = {
-  "Brasília": "1960-04-21", "Canberra": "1913-03-12", "Islamabad": "1961-01-01", "Naypyidaw": "2005-11-06", "Abuja": "1976-02-03",
-  "Chandigarh": "1952-01-01", "Belmopan": "1970-08-01", "Gaborone": "1964-01-01", "Nouakchott": "1958-01-01", "Tel Aviv": "1909-04-11",
-  "Palmas": "1989-05-20", "Navi Mumbai": "1972-01-01", "Shenzhen": "1979-03-05", "Bhubaneswar": "1948-01-01", "Gandhinagar": "1965-01-01",
-  "Ciudad Guayana": "1961-07-02", "Brazzaville": "1900-01-01", "Lilongwe": "1904-01-01", "Kampala": "1900-01-01", "Nairobi": "1899-05-30",
-  "Johannesburg": "1886-09-08", "Las Vegas": "1905-05-15", "Miami": "1896-07-28", "Vancouver": "1886-04-06", "Anchorage": "1914-01-01",
-  "Haifa": "1886-01-01", "Ashdod": "1956-01-01", "Eilat": "1951-01-01", "Beersheba": "1900-01-01", "Magnitogorsk": "1929-01-01",
-  "Norilsk": "1935-01-01", "Tolyatti": "1737-01-01", "Novosibirsk": "1893-01-01", "Karaganda": "1934-01-01", "Kemerovo": "1918-01-01",
-  "Komsomolsk-on-Amur": "1932-01-01", "Murmansk": "1916-10-04", "Dzerzhinsk": "1930-01-01", "Angarsk": "1948-01-01", "Bratsk": "1955-01-01",
-  "Surgut": "1965-01-01", "Nizhnevartovsk": "1972-01-01", "Naberezhnye Chelny": "1930-01-01", "Ciudad Juárez": "1886-01-01"
-};
 const CITY_NAMES = {
   "St. Petersburg|30": [["1886-01-01", "Saint Petersburg"], ["1914-08-31", "Petrograd"], ["1924-01-26", "Leningrad"], ["1991-09-06", "Saint Petersburg"]],
   "Volgograd": [["1886-01-01", "Tsaritsyn"], ["1925-04-10", "Stalingrad"], ["1961-11-10", "Volgograd"]],
@@ -627,7 +1133,6 @@ const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.f
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
 const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
-const polysOf = (g) => (g.type === "Polygon" ? [g.coordinates] : g.coordinates);
 const csWithExtras = (rows) => {
   const cowPath = cshapesPath.replace(/_gw\.topojson$/, "_cow.topojson");
   const hasCow = cowPath !== cshapesPath && existsSync(cowPath);
@@ -675,17 +1180,50 @@ for (const r of csWithExtras(csRaw)) {
     csParts.push({ p, geometry: r.geometry, start: s0, end: e0, name: csNameAt(p.country_name, s0) });
   });
 }
+{
+  const endDay = dayOf(CS_TO);
+  let list = csParts.map((r) => withBox({ cs: r, name: r.name, first: r.start, last: r.end < 0 ? endDay : r.end, polys: rewind(polysOf(r.geometry)) }));
+  const csOnly = list.slice();
+  const fills = [], csNames = new Set(csOnly.map((x) => x.name));
+  for (const s of clioSpans) {
+    if (s.last < 1886 || lineageNames(s.name).some((n) => csNames.has(n))) continue;
+    const first = s.first >= 1886 ? dayOf(s.first + "-01-01") : 0, last = Math.min(endDay, dayOf(s.last + "-12-31"));
+    if (last < first) continue;
+    const whole = km2Of(s.polys), box = boxOf(s.polys);
+    for (const r of cutOver(s.polys, box, first, last, csOnly, cellOpt(s.polys, 0.75))) {
+      const kept = keepRemnant(r.polys, whole, 0.5);
+      if (kept.length) fills.push(withBox({ name: s.name, ruler: s.ruler, part: "", people: 0, b: 2, status: s.status, first: r.first, last: r.last, polys: kept, wiki: s.wiki, src: "clio" }));
+    }
+  }
+  list = list.concat(fills);
+  list = addSmall(list, (from, to) => {
+    const a = Math.max(0, dayOf(from)), b = Math.min(endDay, dayOf(to));
+    return b < a ? null : [a, b];
+  }, (h) => h.name);
+  const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
+  const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
+  const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency"];
+  csParts.length = 0;
+  for (const x of list) {
+    const geometry = { type: "MultiPolygon", coordinates: x.polys };
+    if (x.cs) { csParts.push({ ...x.cs, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
+    const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
+    csParts.push({ p: { gwcode: "x:" + x.name, status: owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+  }
+  console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria, " + list.filter((x) => x.small).length + " small territories");
+}
 const byGw = new Map();
 csParts.forEach((r) => { const k = String(r.p.gwcode); if (!byGw.has(k)) byGw.set(k, []); byGw.get(k).push(r); });
 const activeOn = (r, day) => r.start <= day && (r.end < 0 || day <= r.end);
 const ownerName = (r) => {
+  if (r.owner !== undefined) return r.owner;
   const p = r.p;
   if (p.status === "independent" || p.status === "N/A" || String(p.owner) === String(p.gwcode)) return "";
   const list = byGw.get(String(p.owner)) || [];
   const hit = list.find((o) => activeOn(o, r.start)) || list.find((o) => activeOn(o, Math.max(r.start, o.start))) || list[0];
   return hit ? hit.name : "";
 };
-const csFeats = csParts.map((r, i) => ({ type: "Feature", properties: { i }, geometry: r.geometry }));
+const csFeats = csParts.map((r, i) => ({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
 const csHi = topoFor(csFeats, HI_KM, HI_Q);
 const csLo = topoFor(csFeats, LO_KM, LO_Q);
 const labelMemo = new Map();
@@ -706,7 +1244,7 @@ const csRows = csParts.map((r, i) => {
   const entry = catalogue[id];
   const y0 = yearOfDay(r.start), y1 = r.end < 0 ? 2019 : yearOfDay(r.end);
   entry.cs = entry.cs ? [Math.min(entry.cs[0], y0), Math.max(entry.cs[1], y1)] : [y0, y1];
-  entry.wiki.set(y0, csWiki(r.name, y0));
+  entry.wiki.set(y0, r.wiki || csWiki(r.name, y0));
   const cap = r.p.capname ? capitalOf(String(r.p.capname), +r.p.caplong, +r.p.caplat) : null;
   return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode)];
 });
@@ -725,13 +1263,52 @@ for (const [gw, list] of byGw) {
   gwKey.set(gw, baseKey(catId(first.name)));
 }
 csRows.forEach((r) => { if (!nameKey.has(r[0]) || !lineageOf.has(catalogue[r[0]].n)) nameKey.set(r[0], gwKey.get(r[7])); });
-const keyOf = (id) => nameKey.get(id) || baseKey(id);
+const keyLink = new Map();
+const findKey = (k) => { while (keyLink.has(k)) k = keyLink.get(k); return k; };
+const rawKey = (id) => nameKey.get(id) || baseKey(id);
+const keyOf = (id) => findKey(rawKey(id));
+let links = 0;
+{
+  const life = new Map();
+  const note = (name, a, z, polys) => {
+    const e = life.get(name);
+    if (!e) { life.set(name, { a, z, first: polys, last: polys }); return; }
+    if (a < e.a) { e.a = a; e.first = polys; }
+    if (z > e.z) { e.z = z; e.last = polys; }
+  };
+  for (const s of dated) if (!s.small && !s.people) note(s.name, s.first, s.last + 1, s.polys);
+  csParts.forEach((r) => note(r.name, 1886 + r.start / 365.2425, 1886 + ((r.end < 0 ? dayOf(CS_TO) : r.end) + 1) / 365.2425, polysOf(r.geometry)));
+  const all = [...life.entries()];
+  const ends = all.filter(([, e]) => e.z < 2019.9), starts = all.filter(([, e]) => e.a > DATED_FROM);
+  const cells = new Map();
+  const cellsFor = (key, polys) => { if (!cells.has(key)) { const c = cellsOf(polys); cells.set(key, { c, w: cellSum(c) }); } return cells.get(key); };
+  for (const [an, A] of ends) {
+    const cands = starts.filter(([bn, B]) => bn !== an && Math.abs(B.a - A.z) <= 1.01);
+    if (!cands.length) continue;
+    const ca = cellsFor("z" + an, A.last);
+    if (!ca.w) continue;
+    for (const [bn, B] of cands) {
+      const cb = cellsFor("a" + bn, B.first);
+      if (!cb.w) continue;
+      let both = 0;
+      for (const i of ca.c) if (cb.c.has(i)) both += cellW(i);
+      if (both >= 0.6 * ca.w && both >= 0.6 * cb.w) {
+        const x = findKey(rawKey(catId(an))), y = findKey(rawKey(catId(bn)));
+        if (x !== y) { keyLink.set(y.startsWith("L") && !x.startsWith("L") ? x : y, y.startsWith("L") && !x.startsWith("L") ? y : x); links++; }
+      }
+    }
+  }
+}
 const edges = new Map(), weight = new Map();
+const touch = new Set();
+const addTouch = (a, b) => { if (a !== b) touch.add(a < b ? a + "|" + b : b + "|" + a); };
 const addEdge = (a, b, w) => {
   if (a === b) return;
   const k = a < b ? a + "|" + b : b + "|" + a;
   edges.set(k, (edges.get(k) || 0) + w);
 };
+const SPREAD = [[60, -15, 150, 52]], SPREAD_KM = 1500, SPREAD_W = 0.06, KEEP_COST = 30, TOUCH_YEARS = 30;
+const inSpread = (lon, lat) => SPREAD.some((b) => lon >= b[0] && lon <= b[2] && lat >= b[1] && lat <= b[3]);
 for (const [y, file] of index) {
   const data = JSON.parse(readFileSync(resolve(out, file), "utf8"));
   const geoms = data.lo.objects.p.geometries;
@@ -753,7 +1330,7 @@ for (const [y, file] of index) {
   nb.forEach((list, i) => {
     const a = hueOf(i);
     if (!a) return;
-    list.forEach((j) => { const b = hueOf(j); if (b) addEdge(a, b, 1); });
+    list.forEach((j) => { const b = hueOf(j); if (b) { addEdge(a, b, 1); addTouch(a, b); } });
   });
   const labs = rows.map((r, i) => (hueOf(i) && r[5] ? [hueOf(i), r[5][0], r[5][1], Math.sqrt(r[5][5])] : null)).filter(Boolean);
   for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) {
@@ -761,8 +1338,37 @@ for (const [y, file] of index) {
     if (A[0] === B[0]) continue;
     const km = d3.geoDistance([A[1], A[2]], [B[1], B[2]]) * R_KM;
     if (km < (A[3] + B[3]) * 0.75 + 250) addEdge(A[0], B[0], 0.35);
+    else if (inSpread(A[1], A[2]) && inSpread(B[1], B[2]) && km < A[3] + B[3] + SPREAD_KM) addEdge(A[0], B[0], SPREAD_W);
   }
 }
+const touchYears = new Map();
+for (const ch of datedChunks) {
+  const rows = ch.rows;
+  const hueOf = (i) => (rows[i][7] ? null : keyOf(rows[i][1] >= 0 ? rows[i][1] : rows[i][0]));
+  const yearsIn = (r) => Math.min(r[3], ch.to) - Math.max(r[2], ch.from) + 1;
+  rows.forEach((r, i) => {
+    const k = hueOf(i);
+    if (k) weight.set(k, (weight.get(k) || 0) + (r[6] ? r[6][5] : 0) * Math.min(1, yearsIn(r) / 30));
+  });
+  const overlap = (a, b) => a[2] <= b[3] && b[2] <= a[3];
+  const together = (a, b) => Math.min(a[3], b[3], ch.to) - Math.max(a[2], b[2], ch.from) + 1;
+  client.neighbors(ch.lo.objects.p.geometries).forEach((list, i) => {
+    list.forEach((j) => {
+      if (j <= i || together(rows[i], rows[j]) <= 0) return;
+      const a = hueOf(i), b = hueOf(j);
+      if (!a || !b || a === b) return;
+      const k = a < b ? a + "|" + b : b + "|" + a;
+      touchYears.set(k, (touchYears.get(k) || 0) + together(rows[i], rows[j]));
+    });
+  });
+  const labs = rows.map((r, i) => (hueOf(i) && r[6] && inSpread(r[6][0], r[6][1]) ? [hueOf(i), r[6][0], r[6][1], Math.sqrt(r[6][5]), r] : null)).filter(Boolean);
+  for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) {
+    const A = labs[i], B = labs[j];
+    if (A[0] === B[0] || !overlap(A[4], B[4])) continue;
+    if (d3.geoDistance([A[1], A[2]], [B[1], B[2]]) * R_KM < A[3] + B[3] + SPREAD_KM) addEdge(A[0], B[0], SPREAD_W);
+  }
+}
+for (const [k, y] of touchYears) { const [a, b] = k.split("|"); addEdge(a, b, Math.min(1, y / TOUCH_YEARS)); addTouch(a, b); }
 {
   const geoms = csLo.objects.p.geometries;
   const hueOf = (i) => keyOf(csRows[i][1] >= 0 ? csRows[i][1] : csRows[i][0]);
@@ -773,8 +1379,14 @@ for (const [y, file] of index) {
   });
   const overlap = (a, b) => a[2] <= (b[3] < 0 ? Infinity : b[3]) && b[2] <= (a[3] < 0 ? Infinity : a[3]);
   client.neighbors(geoms).forEach((list, i) => {
-    list.forEach((j) => { if (j > i && overlap(csRows[i], csRows[j])) addEdge(hueOf(i), hueOf(j), 1); });
+    list.forEach((j) => { if (j > i && overlap(csRows[i], csRows[j])) { addEdge(hueOf(i), hueOf(j), 1); addTouch(hueOf(i), hueOf(j)); } });
   });
+  const labs = csRows.map((r, i) => (r[6] && inSpread(r[6][0], r[6][1]) ? [hueOf(i), r[6][0], r[6][1], Math.sqrt(r[6][5]), r] : null)).filter(Boolean);
+  for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) {
+    const A = labs[i], B = labs[j];
+    if (A[0] === B[0] || !overlap(A[4], B[4])) continue;
+    if (d3.geoDistance([A[1], A[2]], [B[1], B[2]]) * R_KM < A[3] + B[3] + SPREAD_KM) addEdge(A[0], B[0], SPREAD_W);
+  }
 }
 const PALETTE = 10;
 const wheel = (a, b) => { const d = Math.abs(a - b) % PALETTE; return Math.min(d, PALETTE - d); };
@@ -785,31 +1397,74 @@ for (const [k, w] of edges) {
   if (!adj.has(b)) adj.set(b, []);
   adj.get(a).push([b, w]); adj.get(b).push([a, w]);
 }
-const order = [...weight.keys()].sort((a, b) => weight.get(b) - weight.get(a));
 const prevColor = new Map();
 try {
   const prevByName = new Map(JSON.parse(readFileSync(resolve(out, "eras.json"), "utf8")).polities.filter((p) => p[1] >= 0).map((p) => [p[0], p[1]]));
-  catalogue.forEach((e, id) => { const k = keyOf(id); if (!prevColor.has(k) && prevByName.has(e.n)) prevColor.set(k, prevByName.get(e.n)); });
+  [true, false].forEach((pass) => catalogue.forEach((e, id) => { const k = keyOf(id); if (!!e.cs === pass && !prevColor.has(k) && prevByName.has(e.n)) prevColor.set(k, prevByName.get(e.n)); }));
 } catch (e) { console.warn("No earlier eras.json, so colours are chosen afresh"); }
+const stable = (k) => prevColor.has(k);
+const order = [...weight.keys()].sort((a, b) => stable(b) - stable(a) || weight.get(b) - weight.get(a));
 const color = new Map();
 const used = new Array(PALETTE).fill(0);
+const costOf = (k, c) => {
+  let cost = used[c] * 1e-4;
+  if (prevColor.has(k) && prevColor.get(k) !== c) cost += KEEP_COST;
+  for (const [n, w] of adj.get(k) || []) {
+    if (!color.has(n)) continue;
+    const g = wheel(c, color.get(n));
+    cost += Math.min(w, 1) * (g === 0 ? 100 : g === 1 ? 6 : g === 2 ? 1 : 0);
+  }
+  return cost;
+};
 for (const k of order) {
   let best = 0, bestCost = Infinity;
-  for (let c = 0; c < PALETTE; c++) {
-    let cost = used[c] * 1e-4;
-    if (prevColor.has(k) && prevColor.get(k) !== c) cost += 5;
-    for (const [n, w] of adj.get(k) || []) {
-      if (!color.has(n)) continue;
-      const g = wheel(c, color.get(n));
-      cost += w * (g === 0 ? 100 : g === 1 ? 6 : g === 2 ? 1 : 0);
-    }
-    if (cost < bestCost) { bestCost = cost; best = c; }
-  }
+  for (let c = 0; c < PALETTE; c++) { const cost = costOf(k, c); if (cost < bestCost) { bestCost = cost; best = c; } }
   color.set(k, best);
   used[best]++;
 }
-let clash = 0;
-for (const [k, w] of edges) { const [a, b] = k.split("|"); if (w >= 1 && color.get(a) === color.get(b)) clash++; }
+const touchOf = new Map();
+for (const p of touch) { const [a, b] = p.split("|"); if (!color.has(a) || !color.has(b)) continue; if (!touchOf.has(a)) touchOf.set(a, []); if (!touchOf.has(b)) touchOf.set(b, []); touchOf.get(a).push(b); touchOf.get(b).push(a); }
+const namesIn = new Map();
+catalogue.forEach((e, id) => { const k = keyOf(id); namesIn.set(k, (namesIn.get(k) || 0) + 1); });
+const clashes = () => [...touch].filter((p) => { const [a, b] = p.split("|"); return color.has(a) && color.get(a) === color.get(b); });
+const greedyList = clashes(), greedyClash = greedyList.length;
+const freeFor = (k) => { const taken = new Set((touchOf.get(k) || []).map((n) => color.get(n))); return taken.size < PALETTE - (taken.has(color.get(k)) ? 0 : 1); };
+const brief = greedyList.filter((p) => (edges.get(p) || 0) * 100 < KEEP_COST).length, free = greedyList.filter((p) => p.split("|").some(freeFor)).length;
+let repaired = 0;
+for (let round = 0; round < 10; round++) {
+  let moved = false;
+  for (const p of clashes()) {
+    const [a, b] = p.split("|");
+    if (color.get(a) !== color.get(b)) continue;
+    const sides = [a, b].sort((x, y) => (namesIn.get(x) || 0) - (namesIn.get(y) || 0) || (weight.get(x) || 0) - (weight.get(y) || 0));
+    for (const k of sides) {
+      const taken = new Set((touchOf.get(k) || []).map((n) => color.get(n)));
+      let best = -1, bestCost = Infinity;
+      for (let c = 0; c < PALETTE; c++) { if (taken.has(c)) continue; const cost = costOf(k, c); if (cost < bestCost) { bestCost = cost; best = c; } }
+      if (best >= 0) { used[color.get(k)]--; color.set(k, best); used[best]++; repaired++; moved = true; break; }
+    }
+  }
+  if (!moved) break;
+}
+const freeColour = (k, not) => { const taken = new Set((touchOf.get(k) || []).map((n) => color.get(n))); let best = -1, bestCost = Infinity; for (let c = 0; c < PALETTE; c++) { if (taken.has(c) || c === not) continue; const cost = costOf(k, c); if (cost < bestCost) { bestCost = cost; best = c; } } return best; };
+for (const p of clashes()) {
+  const [a, b] = p.split("|");
+  if (color.get(a) !== color.get(b)) continue;
+  let plan = null;
+  for (const k of [a, b]) for (let c = 0; c < PALETTE; c++) {
+    if (c === color.get(k)) continue;
+    const blockers = (touchOf.get(k) || []).filter((n) => color.get(n) === c);
+    const moves = blockers.map((n) => [n, freeColour(n, c)]);
+    if (moves.some(([, m]) => m < 0) || moves.some(([n]) => (touchOf.get(n) || []).some((x) => blockers.includes(x)))) continue;
+    const cost = moves.reduce((t, [n]) => t + (namesIn.get(n) || 0), namesIn.get(k) || 0);
+    if (!plan || cost < plan.cost) plan = { k, c, moves, cost };
+  }
+  if (plan) { for (const [n, m] of plan.moves) { used[color.get(n)]--; color.set(n, m); used[m]++; repaired++; } used[color.get(plan.k)]--; color.set(plan.k, plan.c); used[plan.c]++; repaired++; }
+}
+const left = clashes();
+const clash = left.length;
+if (left.length) console.log("touching pairs left in one colour, with every colour taken round both, even after moving their neighbours: " + left.map((p) => p.split("|").map((k) => (catalogue[+k.slice(1)] && k[0] === "N" ? catalogue[+k.slice(1)].n : LINEAGE[+k.slice(1)] ? LINEAGE[+k.slice(1)][0] : k)).join(" and ")).join("; "));
+console.log("colours: " + greedyClash + " touching pairs in one colour after the greedy pass (" + brief + " touching too briefly or too weakly to outweigh an earlier colour, " + free + " where a free colour existed), " + repaired + " keys recoloured, " + clash + " left");
 
 const entries = catalogue.map((e, id) => {
   const k = keyOf(id);
@@ -817,12 +1472,11 @@ const entries = catalogue.map((e, id) => {
   const steps = [];
   [...e.wiki.entries()].sort((a, b) => a[0] - b[0]).forEach(([y, t]) => { if (!steps.length || steps[steps.length - 1][1] !== t) steps.push([y, t]); });
   const wiki = wikis.length <= 1 ? wikis[0] || e.n : steps;
-  return [e.n, color.has(k) ? color.get(k) : -1, e.years.sort((a, b) => a - b), wiki, e.kind, e.cs || null];
+  return [e.n, color.has(k) ? color.get(k) : -1, e.years.sort((a, b) => a - b), wiki, e.kind, e.cs || null, e.dated || null];
 });
 writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => r.slice(0, 7)), hi: csHi, lo: csLo }));
-writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, polities: entries }));
+writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges }, polities: entries }));
 
-const prov = JSON.parse(readFileSync(provincesPath, "utf8"));
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
 const polys = landGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);
 const land = { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: polys } }] };
@@ -832,70 +1486,8 @@ const landTopo = (km, q) => {
 };
 writeFileSync(resolve(out, "land.json"), JSON.stringify({ hi: landTopo(0.6, 5e5), lo: landTopo(LO_KM, LO_Q) }));
 
-const PLACE_DROP = new Set(["Calusa", "Levisa", "Cumbe Mayo", "Ōyu site"]);
-const PLACE_EDIT = {
-  "Göbekli Tepe": { until: -8000 },
-  "Çatal Höyük": { until: -5950 },
-  "Taljanky": { until: -3700 },
-  "Sannai-Maruyama Site": { until: -2300, name: "Sannai-Maruyama" },
-  "Harappa site": { until: -1300, name: "Harappa" },
-  "Kaneš": { until: -1400 },
-  "Ur": { until: -500 },
-  "Uruk": { until: 700 },
-  "Taxila": { until: 500 },
-  "Siga": { until: 400 },
-  "Lambaesa": { until: 700 },
-  "Xanadu": { since: 1256, until: 1369 },
-  "Great Zimbabwe": { until: 1450 },
-  "Vijayanagara": { since: 1336, until: 1565 },
-  "Ziz,  Palermo": { name: "Palermo", names: [[-734, "Ziz"], [-254, "Panormus"], [831, "Palermo"]] },
-  "Constantinople": { names: [[324, "Constantinople"], [1930, "Istanbul"]] },
-  "Kyiv": { names: [[840, "Kiev"], [1995, "Kyiv"]] }
-};
-let placesOut = [];
-try {
-  const places = JSON.parse(readFileSync(resolve(source, "places.geojson"), "utf8"));
-  placesOut = places.features
-    .filter((f) => f.geometry && f.geometry.type === "Point" && Number.isFinite(f.properties.inhabitedSince) && !PLACE_DROP.has(f.properties.name))
-    .map((f) => {
-      const e = PLACE_EDIT[f.properties.name] || {};
-      const row = [e.name || f.properties.name, +f.geometry.coordinates[0].toFixed(3), +f.geometry.coordinates[1].toFixed(3), e.since ?? f.properties.inhabitedSince, e.until ?? (Number.isFinite(f.properties.inhabitedUntil) ? f.properties.inhabitedUntil : null)];
-      if (e.names) row.push(e.names);
-      return row;
-    })
-    .sort((a, b) => a[3] - b[3]);
-} catch (e) {
-  console.warn("places.geojson not read:", e.message);
-}
-writeFileSync(resolve(out, "places.json"), JSON.stringify(placesOut));
-
-let citiesOut = [], unmatched = [];
-try {
-  const raw = JSON.parse(readFileSync(citiesPath, "utf8"));
-  const used = new Set();
-  const keyFor = (name, lon) => {
-    if (CITY_NAMES[name + "|" + Math.round(lon / 10) * 10]) return name + "|" + Math.round(lon / 10) * 10;
-    return CITY_NAMES[name] ? name : null;
-  };
-  citiesOut = raw.map((r) => {
-    const [name, lon, lat, tier] = r;
-    const k = keyFor(name, lon);
-    if (k) used.add(k);
-    const since = CITY_SINCE[name] ? Math.max(dayOf(CITY_SINCE[name]), dayOf(CITIES_FROM)) : null;
-    const names = k && CITY_NAMES[k].length ? CITY_NAMES[k].map(([d, n]) => [dayOf(d), n]) : null;
-    const row = [name, +lon.toFixed(3), +lat.toFixed(3), tier, since];
-    if (names) row.push(names);
-    return row;
-  });
-  unmatched = Object.keys(CITY_NAMES).filter((k) => CITY_NAMES[k].length && !used.has(k));
-} catch (e) {
-  console.warn("cities not read:", e.message);
-}
-writeFileSync(resolve(out, "cities.json"), JSON.stringify({ from: dayOf(CITIES_FROM), rows: citiesOut }));
-if (unmatched.length) console.warn("renamed cities not found in cities.json: " + unmatched.join(", "));
-
 const licence = resolve(source, "../LICENSE");
 if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-basemaps.txt"));
 else console.warn("historical-basemaps LICENSE not found beside " + source + "; data/COPYING-historical-basemaps.txt not written");
 
-console.log(index.length + " maps to 1880, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour, " + placesOut.length + " dated places, " + citiesOut.length + " cities");
+console.log(index.length + " maps to " + index[index.length - 1][0] + ", " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");

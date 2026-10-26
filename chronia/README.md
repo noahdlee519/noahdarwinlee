@@ -1,8 +1,8 @@
 # Chronia
 
-An atlas of the world's borders from 3000 BC to today. A year control at the foot of the page moves the map through time, on a globe or a flat map, in the Antique style of [UCHRONIA](../uchronia/). Clicking a state or a people opens a card with what the maps say about it and the opening of its Wikipedia article.
+An atlas of the world's borders from 3000 BC to today. A year control at the foot of the page moves the map through time, on a globe or a flat map, in the Antique style of [UCHRONIA](../uchronia/). Clicking a state, a people, or a city opens a card with what the maps say about it and a short note on it at that date, written by Claude and kept for everyone who opens the same card after, with a link to its Wikipedia article. Until the note's server function is deployed, the card shows the opening of the Wikipedia article instead (see [Deploying the notes](#deploying-the-notes)).
 
-Until 1880 the borders come from dated snapshot maps. From 1886 they are dated to the day, so every month can be shown, with each state's capital and, from 1900, about 3,000 cities under the names they had at the time.
+Until 1400 the borders come from dated snapshot maps. From 1400 to 1885 they change year by year, from the Cliopatria dataset, with the land it leaves blank filled from the snapshot maps. From 1886 they are dated to the day, so every month can be shown, with each state's capital. In every period the map shows the cities of the time, ranked by their size then and named as they were then, and, for some countries, their first-level divisions, such as the states and territories of the United States. The land, lakes, and rivers are today's, except for a list of large, well-dated changes, such as the Zuiderzee, the Aral Sea, the great reservoirs, and the Suez and Panama Canals.
 
 Chronia is the real-history companion to UCHRONIA, which redraws history. The two share the same look, the same base geography, and the same rendering approach. Chronia has its own page, data, and code, and it reads some of UCHRONIA's files in place (see [What it borrows from UCHRONIA](#what-it-borrows-from-uchronia)).
 
@@ -14,51 +14,81 @@ Chronia is the real-history companion to UCHRONIA, which redraws history. The tw
 - **The year:**
   - Drag the marker along the scale.
   - Type into the box: `1815`, `500 BC`, `-500`, `AD 800`, `1950`, `June 1991`, `25 June 1991`, `1991-06`, and `6/1991` all work.
-  - The arrow buttons, or ← and →, go to the previous or next change of borders: the previous or next map before 1886, and the previous or next dated change after it, shown with its day ("30 June 1960").
-  - With Shift, they move by one year before 1886, and by one month from 1886.
-  - The play button, or P, plays through time: map by map until 1880, 1.4 seconds apart, then month by month from January 1886 to December 2019, the end of the data. A month takes 60 ms, about a year and a half a second, and a month in which the borders change stays for 0.4 seconds, so each change can be seen. 1886 to 2019 takes about three and a half minutes, and the busy years take longest: 1960 about three and a half seconds, a quiet year under one.
+  - ← and → go to the previous or next change of borders: the previous or next map before 1400, the previous or next year in which a border changed from 1400 to 1885, and the previous or next dated change from 1886, shown with its day ("30 June 1960"). With Shift, they move by one year before 1886, and by one month from 1886.
+  - Two play buttons at the bottom left play through time. The first, or P, plays at the normal pace; the second, marked with a double triangle, or Shift P, plays at double speed. Each turns into a pause button while it plays, and only one plays at a time: pressing the other switches the pace without stopping.
+  - The normal pace is map by map until 1400, 1.4 seconds apart; then year by year to 1885, a quarter of a second a year, with a year in which the borders change held for 0.7 seconds; then month by month from January 1886 to December 2019, the end of the data. A month takes 60 ms, about a year and a half a second, and a month in which the borders change stays for 0.4 seconds, so each change can be seen. 1400 to 1885 takes a little over three minutes, and 1886 to 2019 about three and a half, where the busy years take longest: 1960 about three and a half seconds, a quiet year under one. Double speed halves every one of these times.
 - **The map:** drag to turn the globe or move the flat map. Scroll, pinch, the + and − buttons, or the + and − keys zoom. A double-click zooms in on the spot. M switches between the globe and the flat map.
 - **A state:** hover to see its name and, for a dependency, its ruler. Click it to open the card. Esc closes the card.
-- **Layers:** the layers button at the top right opens a list of what the map shows: the names of states and peoples, capitals, cities and places, the names of seas and oceans, rivers and lakes, terrain relief, and lines of latitude and longitude. Each can be turned off and on, and the map redraws at once. The choices are kept in the browser, not in the address. Esc closes the list.
+- **A city:** hover over a city's mark or name to see its name and, if it has changed, its name today. Click the mark or the name to open the same card for the city.
+- **Layers:** the layers button at the top right opens a list of what the map shows: the names of states and peoples, capitals, cities and places, the names of seas and oceans, rivers and lakes, terrain relief, lines of latitude and longitude, and first-level divisions. Each can be turned off and on, and the map redraws at once. The choices are kept in the browser, not in the address. Esc closes the list.
+- **Key:** the key at the bottom left, above the date, explains the map's signs in the Antique style: a capital (ringed mark), a city (dot), a town (small dot, italic name), a border (solid line), an approximate border (dotted line), a dependency (in its ruler's colour, with the ruler named on hover and in the card), a people or culture (uncoloured, italic name), and a first-level division (fine broken line). It shows only the rows that apply to the map on screen and to the layers that are on (see [The key](#the-key)). The "Key" bar folds it away and opens it again; the choice is kept in the browser as `chronia-key`. Without a saved choice it starts open, and closed on phones and on screens under 600 px tall. On a phone it is hidden while the card is open.
 - **Links:** the address keeps the time and the view (`#y=1815&v=10.00,48.00,4.00&flat=1`). From 1886 the time is a month, `#y=1991-06`, or a day, `#y=1991-06-25`, so a link opens the same map.
 
 ## How it is built
 
-A static page, no build step, like the rest of the site.
+A static page, no build step, like the rest of the site. The data files are made by the builders in `tools/`, run by hand.
 
 | Path | What it holds |
 | --- | --- |
-| `index.html` | The page. Its CSP allows no inline script and no inline style. `connect-src` adds `https://en.wikipedia.org`, and `img-src` adds `https://upload.wikimedia.org`, for the card. |
-| `app.js` | The whole app in one function scope: projection and tracing, the map loader, drawing, labels, the year control, the card, and input. |
+| `index.html` | The page. Its CSP allows no inline script and no inline style. `connect-src` adds `https://en.wikipedia.org`, for the card, and `https://kigvciyyjlgjcgnwgrwf.supabase.co`, for the visit counter and the card's notes. `img-src` adds `https://upload.wikimedia.org`, for the card. |
+| `app.js` | The whole app in one function scope: projection and tracing, the map loader, drawing, labels, cities, first-level divisions, the dated geography, the year control, the key, the card, and input. |
 | `app.css` | All styling. Chronia has one style, Antique, set by `class="ch"` and `data-theme="light"` on `<html>`, so it ignores the site's theme toggle. |
-| `tools/build-eras.mjs` | The data builder. |
-| `data/eras.json` | The list of maps, the dates of the changes from 1886, and the catalogue of every state and people named on them. |
-| `data/eras/*.json` | One file per snapshot map, from `bc3000.json` to `1880.json`. |
-| `data/modern.json` | Every state and dependency from 1886, each a span of days with one shape, as one TopoJSON. |
+| `tools/build-eras.mjs` | The builder of the borders, the catalogue of states, and the land. |
+| `tools/build-cities.mjs` | Builds the two city files (see [Cities](#cities)). |
+| `tools/city-tables.mjs` | Chronia's own tables for the cities: founding and end dates, names by date, corrections to the sources, and a few cities the sources lack. |
+| `tools/build-divisions.mjs` | The builder of the first-level divisions (see [First-level divisions](#first-level-divisions)). |
+| `tools/build-geography.mjs` | The builder of the dated geography. |
+| `data/eras.json` | The list of maps, the years of the changes from 1400 to 1885 and their files, the dates of the changes from 1886, and the catalogue of every state and people named on them. |
+| `data/eras/*.json` | One file per snapshot map, from `bc3000.json` to `1300.json`. |
+| `data/dated/*.json` | The states and peoples from 1400 to 1885, each a span of years with one shape, as one TopoJSON per century: `1400.json` to `1800.json` (the last runs to 1885). |
+| `data/modern.json` | Every state and dependency from 1886, each a span of days with one shape, as one TopoJSON, with the land CShapes leaves blank filled from Cliopatria, and the small territories (see [Small territories](#small-territories)). |
 | `data/land.json` | Natural Earth land, merged from UCHRONIA's provinces. |
-| `data/places.json` | Places with known dates, used before 1900. |
-| `data/cities.json` | UCHRONIA's cities, with founding dates and names by date, used from 1900. |
-| `data/COPYING-historical-basemaps.txt` | The GPL-3.0 text that covers the map files (see [Credits](#credits)). |
+| `data/cities-dated.json` | About 2,200 cities that are among the 500 largest of the world at some time, with their dates, populations by date, and names by date. Loaded at the start. |
+| `data/cities-dated-minor.json` | About 2,700 smaller cities and towns in the same form, loaded once the map is zoomed in far enough to show them. |
+| `data/divisions.json` | The list of countries with first-level divisions, with their dates and bounds. |
+| `data/divisions/*.json` | One file per country: its divisions, each a span of days with one shape, as one TopoJSON. |
+| `data/geography.json` | The dated geography: land reclaimed from the sea, lakes and reservoirs that came, went, or changed, and rivers and canals that changed or were dug (see [Geography over time](#geography-over-time)). About 80 KB, loaded after the first map is shown. |
+| `data/COPYING-historical-basemaps.txt` | The GPL-3.0 text that covers the files derived from historical-basemaps (see [Credits](#credits)). |
+| `supabase/functions/chronia-blurb/index.ts` | At the repository's root: the server function that writes the card's notes (see [The note's server function](#the-notes-server-function)). |
+| `supabase/migrations/20261026_chronia_blurbs.sql` | At the repository's root: the function's tables and counters. |
 
 ### The page
 
-The top of the page is one row, `.ch-top`, laid out as a grid of three: the site's name and the back link on the left, the title in the middle, and the map controls on the right. All three are framed the same way, with `.ch-frame`: a rule, a fainter inner rule, the parchment, and a soft shadow, at one height (`--ch-bar`). The info button is the last part of the title's frame, and the zoom, flat map, and layers buttons are parts of one frame, divided by faint rules. The about note, the layers list, and the card use the same frame. On phones the zoom buttons are hidden, the subtitle is dropped, and the title's frame fills the space between the other two.
+The top of the page is one row, `.ch-top`, laid out as a grid of three: the site's name and the back link on the left, the title in the middle, and the map controls on the right. All three are framed the same way, with `.ch-frame`: a rule, a fainter inner rule, the parchment, and a soft shadow, at one height (`--ch-bar`). The title stands alone in its frame, with no subtitle. The info button is the last part of the title's frame, and the zoom, flat map, and layers buttons are parts of one frame, divided by faint rules. The about note, the layers list, the key, and the card use the same frame. On phones the zoom buttons are hidden, and the title's frame fills the space between the other two.
+
+The year bar holds the two play buttons, the date, and the scale. On phones the date is centred between the two play buttons, with the scale below.
 
 `layout()` writes the height of the year bar to `--ch-time-h`, so that the card and the about note on a phone sit directly on top of it.
 
 ### Layers
 
-`layers` holds one flag for each layer (`states`, `capitals`, `cities`, `seas`, `water`, `relief`, `grid`). Each place that draws a layer checks its flag first:
+`layers` holds one flag for each layer (`states`, `capitals`, `cities`, `seas`, `water`, `relief`, `grid`, `subdivisions`). Each place that draws a layer checks its flag first:
 
-- capitals: `reserveCapitals`, which holds room for their marks before the names of states are placed, and `placeOne`;
-- cities, and the dated places before 1900: `placeOne`;
-- the names of states and peoples: `drawPolityLabels`, which checks the flag only after the capitals are reserved, so the capitals are placed the same way with the names of states on or off;
+- capitals: `placeOne`, after the names of states;
+- cities: `placeOne`, from `drawPlaces`;
+- the names of states and peoples: `drawPolityLabels`;
 - the names of seas: `drawSeaLabels`;
 - rivers and lakes: `drawLakes` and `drawRivers`;
 - relief: the relief overlay in `draw`;
-- latitude and longitude: the graticule in `drawSea`.
+- latitude and longitude: the graticule in `drawSea`;
+- first-level divisions: `drawDivisionLines` and `drawDivisionLabels`, and the line on the card from `syncCardDivision`.
 
 Changing a flag clears the cached sea layer and relief, then redraws. The flags are saved in `localStorage` as `chronia-layers`.
+
+### The key
+
+The key is the `#key` section in `index.html`, one `<li data-key="…">` per row, each with a small SVG sample drawn to match the map: the capital's mark at 4.3, 3.2, and 1.35 px, the city's dot at 1.85 px and the town's at 1.4 px, each with its halo; a 1.15 px border between two colours with their bands at 0.6 opacity; the dotted border as 0.1 px dashes 3.05 px apart with the softer bands; the dependency's faint inner line; and the division's broken line. The colours come from the same `--ch-` properties the canvas reads.
+
+`KEY_ROWS` in `app.js` holds one test per row, given the current map, and `syncKey()` hides the rows whose test fails:
+
+- capital: from 1886, with the capitals layer on;
+- city: from a scale of 230 px for the globe's radius, where the page starts drawing marks, with the cities layer on;
+- town: from city tier 2 (a scale of 480 px), with the cities layer on;
+- border: when any shape on the map is drawn with a firm border;
+- approximate border, dependency, and people: when the current map has any;
+- first-level division: only when division lines were drawn in the last frame.
+
+`syncKey()` runs whenever the date or a layer changes, and in each frame just after the division lines are drawn, so the division row follows the zoom and the layer. To add a row, add an `<li>` and a test. The key's box is one of the page's panels in `fixedBoxes()`, so names on the map keep clear of it.
 
 ### What it borrows from UCHRONIA
 
@@ -68,36 +98,58 @@ Chronia loads these from `../uchronia/` rather than copying them, so they are no
 - `sat.js`, the WebGL layer, which Chronia uses only for terrain relief;
 - `data/relief-4096.webp`, `data/sea.json` (deep water), `data/rivers.json`, and `data/lakes.json`.
 
-Renaming or reshaping any of these in UCHRONIA breaks Chronia. `data/land.json` is built from `uchronia/data/provinces.json`, so a change to UCHRONIA's coastline reaches Chronia only after a rebuild.
+Renaming or reshaping any of these in UCHRONIA breaks Chronia. The builders also read UCHRONIA's files: `data/land.json` and the divisions outside the United States are built from `uchronia/data/provinces.json`, and the cities from `uchronia/data/cities.json`, so a change to UCHRONIA's coastline, provinces, or cities reaches Chronia only after a rebuild.
+
+`data/geography.json` refers to `data/land.json`, UCHRONIA's `data/lakes.json`, and UCHRONIA's `data/rivers.json` by their contents: a polygon of the land by its first point and length, a lake by its name and area, and a river by its index, first point, and length. When any of the three is rebuilt, rebuild the geography too. Anything that no longer matches is left as it is today rather than changed wrongly.
 
 ## The data
 
 ### Source
 
-**Until 1880:** [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik, one GeoJSON file per year. Chronia uses the 39 maps from 3000 BC to 1880:
+**Until 1400:** [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik, one GeoJSON file per year. Chronia shows the 26 maps from 3000 BC to 1300:
 
-3000, 2000, 1500, 1000, 700, 500, 400, 323, 300, 200, 100, and 1 BC; AD 100 to 1400 by centuries, with 1279 added; 1492, 1500, 1530, 1600, 1650, 1700, 1715, 1783, 1800, 1815, 1878, and 1880.
+3000, 2000, 1500, 1000, 700, 500, 400, 323, 300, 200, 100, and 1 BC; AD 100 to 1300 by centuries, with 1279 added.
 
-**From 1886:** [CShapes 2.0](https://icr.ethz.ch/data/cshapes/) (Schvitz, Girardin, Rüegger, Weidmann, Cederman, and Gleditsch, 2022), from 1 January 1886 to 31 December 2019. It records every independent state and dependent territory as a series of spans, each with its own shape, start and end dates, status (independent, colony, protectorate, mandate, or occupied), owner, and capital. The builder reads the Gleditsch and Ward edition, `cshapes_2_gw.topojson`, and takes a few corrections from the Correlates of War edition, `cshapes_2_cow.topojson`. Both ship inside the CShapes R package. It is easiest to get from the CRAN mirror on GitHub, because the ETH site can't be reached from Claude's sessions. historical-basemaps' own maps from 1900 on are not used.
+Its 13 maps from 1400 to 1880 (1400, 1492, 1500, 1530, 1600, 1650, 1700, 1715, 1783, 1800, 1815, 1878, and 1880) are no longer shown as maps of their own. The builder uses them to fill the land that Cliopatria leaves blank (see [From 1400 to 1885](#from-1400-to-1885)). Its maps from 1900 on are not used.
 
 In historical-basemaps, each shape has a name (`NAME`), the power it is subject to (`SUBJECTO`), the larger cultural area it is part of (`PARTOF`), and how precise its border is (`BORDERPRECISION`, 1 to 3). Shapes with no name are land that no state or people on that map covers.
+
+**From 1400 to 1885:** [Cliopatria](https://github.com/Seshat-Global-History-Databank/cliopatria), from the Seshat Global History Databank (Bennett and others, 2025), version 0.2.1. It is one GeoJSON file of about 14,000 rows, each a polity's shape for a span of years (`FromYear` to `ToYear`, inclusive), with its `Name`, its `Area`, its `Wikipedia` and `Wikidata` titles, and, for a polity that belongs to a larger one, the group in brackets it is a member of (`MemberOf`, such as "(Spanish Empire)" or "(Holy Roman Empire)"). Rows whose name is in brackets are those groups, or relations between polities ("(Vassalage of … to …)", "(Allegiance of … to …)", "(Personal union of … with …)"). Cliopatria covers the world from 3400 BC to 2024, but Chronia uses it from 1400, where it records a change somewhere on Earth every three years on average, against historical-basemaps' 13 maps in those five centuries.
+
+What Cliopatria has, set against the other two sources:
+
+- **Detail:** it divides what historical-basemaps draws as one shape. In 1650, the Holy Roman Empire is Brandenburg, Saxony, Bavaria, the Habsburg lands, and the rest; Hungary is split between the Habsburgs, the Ottomans, and Transylvania.
+- **Coverage:** it records states only, no peoples or cultures, and leaves much of the Americas, Africa, Siberia, and Australia blank before colonial rule. In 1700 it covers 45% of the land outside Antarctica, against 71% for historical-basemaps' map with its peoples.
+- **Coasts:** its coastlines are coarse, with steps several kilometres long. The page clips every shape to Natural Earth's land, so this shows only where a shape stops short of the coast.
+- **Colonies:** a colonial empire is often one shape for all its colonies, such as "Spanish Empire" or "British Colonial Empire", a member of a group with the metropolis ("Kingdom of Spain").
+
+The download is a zip of the GeoJSON in the repository, or on Zenodo (record 13363121).
+
+**From 1886:** [CShapes 2.0](https://icr.ethz.ch/data/cshapes/) (Schvitz, Girardin, Rüegger, Weidmann, Cederman, and Gleditsch, 2022), from 1 January 1886 to 31 December 2019. It records every independent state and dependent territory as a series of spans, each with its own shape, start and end dates, status (independent, colony, protectorate, mandate, or occupied), owner, and capital. The builder reads the Gleditsch and Ward edition, `cshapes_2_gw.topojson`, and takes a few corrections from the Correlates of War edition, `cshapes_2_cow.topojson`. Both ship inside the CShapes R package. It is easiest to get from the CRAN mirror on GitHub, because the ETH site can't be reached from Claude's sessions.
+
+**Small territories:** [Natural Earth](https://www.naturalearthdata.com/)'s 10 m states and provinces (`ne_10m_admin_1_states_provinces.geojson`, public domain), for the territories that the other sources leave out (see [Small territories](#small-territories)). UCHRONIA's `provinces.json` comes from the same source, but simplified so far that Monaco, Gibraltar, Macau, and Vatican City have no area, so the builder reads the full file.
 
 ### Building
 
 ```
 git clone --depth 1 https://github.com/aourednik/historical-basemaps.git
 git clone --depth 1 https://github.com/cran/cshapes.git
+git clone --depth 1 https://github.com/Seshat-Global-History-Databank/cliopatria.git
 xz -dk cshapes/inst/extdata/cshapes_2_gw.topojson.xz cshapes/inst/extdata/cshapes_2_cow.topojson.xz
+unzip cliopatria/cliopatria.geojson.zip -d cliopatria
+curl -LO https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
 npm i topojson-server topojson-client topojson-simplify d3-geo polygon-clipping
-node chronia/tools/build-eras.mjs node_modules historical-basemaps/geojson "" cshapes/inst/extdata/cshapes_2_gw.topojson
+node --max-old-space-size=6500 chronia/tools/build-eras.mjs node_modules historical-basemaps/geojson "" cshapes/inst/extdata/cshapes_2_gw.topojson cliopatria/cliopatria_polities_only_v021.geojson ne_10m_admin_1_states_provinces.geojson
 ```
 
-The third argument points at UCHRONIA's `provinces.json`; an empty string keeps the default, `../../uchronia/data/provinces.json` from the tools folder. An optional sixth argument points at the cities, by default UCHRONIA's `data/cities.json`. The builder reads `cshapes_2_cow.topojson` from beside the Gleditsch and Ward file, for the corrections in `CS_FROM_COW` (see [From 1886](#from-1886)). Without it, the build says so and leaves them out. The build takes about two minutes. It writes into `data/` but doesn't clear it, so when maps are dropped, delete their files from `data/eras/` first. Keep `data/eras.json`, because the builder reads it to keep the colours (see step 6). When a map's data is wrong, fix it in the builder's tables, so that a rebuild keeps the fix.
+The builder's arguments are, in order: the npm modules; historical-basemaps' `geojson` folder; UCHRONIA's `provinces.json`, where an empty string keeps the default, `../../uchronia/data/provinces.json` from the tools folder; CShapes' Gleditsch and Ward file; Cliopatria's GeoJSON (the file inside the zip is named for its version); and Natural Earth's 10 m states and provinces. The builder reads `cshapes_2_cow.topojson` from beside the Gleditsch and Ward file, for the corrections in `CS_FROM_COW` (see [From 1886](#from-1886)). Without it, the build says so and leaves them out.
+
+The build takes about seven minutes and needs over 2 GB of memory, so the command raises Node's limit. It writes `data/eras.json`, `data/eras/`, `data/dated/`, `data/modern.json`, and `data/land.json`, but doesn't clear `data/`, so when maps are dropped, delete their files from `data/eras/` first. Keep `data/eras.json`, because the builder reads it to keep the colours (see step 6). When a map's data is wrong, fix it in the builder's tables, so that a rebuild keeps the fix. The cities, the first-level divisions, and the dated geography have builders of their own (see [Cities](#cities), [First-level divisions](#first-level-divisions), and [Geography over time](#geography-over-time)).
 
 What the builder does to each map:
 
 1. **Cleaning:**
-   - `RENAME` merges names that mean the same state. For example, the 1815 map has both "United Kingdom" and "United Kingdom of Great Britain and Ireland".
+   - `RENAME` merges names that mean the same state. For example, the 1815 map has both "United Kingdom" and "United Kingdom of Great Britain and Ireland". It also repairs the 1878 map's "M?ori", whose macron the source lost, as Maori.
    - `RULER_FIX` sets the ruler of dependencies that the source lists as independent, by name and years. Examples are the Philippines under Spain until 1898 and the United States after, Ceylon and the Cape Colony under Britain, and Kamerun and Togoland under Germany.
    - `RULER_ALIAS` and `LINEAGE` resolve a ruler named differently from any state on the same map. In 1914, for example, the British Raj is held by "United Kingdom", while the state on the map is "United Kingdom of Great Britain and Ireland".
    - A ruler equal to the state itself, or written as a note in brackets, is dropped.
@@ -111,20 +163,65 @@ What the builder does to each map:
    - `hi`: simplified to about 1.6 km and quantized to 200,000 steps;
    - `lo`: simplified to about 12 km and quantized to 20,000 steps.
 
-   Both are TopoJSON with one object, `p`, whose geometries are in the same order as `rows`.
+   Both are TopoJSON with one object, `p`, whose geometries are in the same order as `rows`. Simplifying and quantizing can turn a small polygon inside out, so that d3 takes it for the whole globe less the polygon, which confuses hovering and bounds. `topoFor` therefore ends with `outward()`, which reverses any polygon whose area comes out over half the globe, so the files have none (an earlier build had 1,170, mostly small pieces at the `lo` level).
 5. **Labels:** for each state, the builder computes:
    - the pole of inaccessibility of its largest piece, with the radius of the largest circle inside it;
    - the room along a principal axis, with the axis angle when it lies between 12° and 40°;
    - its area.
 
-   States over 1.5 million km² also get extra spots, one per 30° band of longitude that holds a large part of them. Each extra spot's room is measured along its own parallel across the whole state. The page starts its search for a name's place on the screen from the pole and these spots (see step 9 of [The order of a frame](#the-order-of-a-frame)), and uses the radius and area to pass over states too small to name. It no longer uses the room and the angle.
+   States over 1.5 million km² also get extra spots, one per 30° band of longitude that holds a large part of them. Each extra spot's room is measured along its own parallel across the whole state. The page lays out a name on the ground starting from the pole and these spots (see [Names of states and peoples](#names-of-states-and-peoples)), and sizes it by the area. It no longer uses the room and the angle.
 6. **Colour:** every state gets one of the ten Antique colours, and keeps it across all maps:
-   - States in a `LINEAGE` (England through the United Kingdom, Muscovy through the Russian Federation, the Chinese dynasties, and others) share one colour.
+   - States in a `LINEAGE` (England through the United Kingdom, Muscovy through the Russian Federation, the Chinese dynasties, the French monarchies and republics, and others) share one colour. The lineages include Cliopatria's names, such as the Bourbon Kingdom of France, the Second French Empire, and the French Third Republic.
+   - A state that ends where another begins, in the same year or within a year, shares its colour with it when each covers at least 60% of the other, measured on a 0.25° grid. This joins 91 pairs that the lineages miss, such as Cliopatria's last span of a state in 1885 and its CShapes successor in 1886.
    - A dependency takes its ruler's colour.
-   - Colours are chosen greedily, largest first, to keep neighbours apart round the colour wheel. Neighbours are the shapes that touch on any map, plus labels close across water.
-   - The builder reads the existing `data/eras.json`, when there is one, and keeps each state's earlier colour, matched by name, unless that would put it next to a neighbour of the same or a nearby colour. Each change from the earlier colour costs 5, against 100 for each neighbour in the same colour, 6 for a neighbour one step round the colour wheel, and 1 for one two steps round. So a rebuild doesn't reshuffle the colours: adding the 1938 to 1945 data changed none. A first build, with no `eras.json`, chooses the colours afresh and warns.
-   - The build prints how many touching pairs still share a colour (18 at present).
+   - Colours are chosen greedily, keeping neighbours apart round the colour wheel. Neighbours are the shapes that touch on any map, plus labels close across water on the snapshot maps. From 1400 to 1885, two states that touch count as neighbours in proportion to the years they touch, in full from 30 years (`TOUCH_YEARS`).
+   - The builder reads the existing `data/eras.json`, when there is one, and keeps each state's earlier colour, matched by name (a name from 1886 first). The states that had a colour are coloured first, largest first, then the new states are fitted round them. Each change from the earlier colour costs 30 (`KEEP_COST`), against 100 for a neighbour in the same colour, 6 for a neighbour one step round the colour wheel, and 1 for one two steps round. A neighbour counts once however many maps the two touch on, so long borders don't push a state off its colour. So a rebuild doesn't reshuffle the colours: with the member states drawn out (see [From 1400 to 1885](#from-1400-to-1885)), 2,491 of the 2,718 names that had a colour kept it, and 227 changed, 34 of them names used from 1886, counting the repair below. A first build, with no `eras.json`, chooses the colours afresh and warns.
+   - **East, South, and Southeast Asia** (the box from 60° to 150° E and 15° S to 52° N, `SPREAD`): there, states whose labels are within 1,500 km of each other, beyond their own size, also count as weak neighbours (0.06). Before Cliopatria, China was red, and Japan, Korea, Mongolia, Burma, the Philippines, and the United Kingdom's colonies were nearly all one blue, so that from 1900 to 1930 a quarter of the region was blue and half red. Now Japan is green, Korea, Mongolia, Burma, Siam, and the Philippines each have their own colour, and India after 1947 no longer shares the United Kingdom's. The cause was partly the lineages: "British Empire", which Cliopatria uses for the East India Company's India, was in England's lineage, so it joined the United Kingdom to India; it is no longer there. The first build with Cliopatria let the states of the region change their colour for less, once, to break up the clusters; that is no longer needed, since their colours are now in `eras.json`.
+   - **Repair:** the greedy pass weighs a change of colour against the neighbours, so it leaves two kinds of clash: states that touch too briefly or too weakly (under 30 years, or only across water) to outweigh an earlier colour, and states fitted in an order that left them no free colour. After it, the builder takes each pair of touching states in one colour and recolours the side with fewer names, to the colour closest to its old one that none of its neighbours uses. When every colour is taken round both sides, it moves one of the neighbours instead, where that neighbour has a free colour of its own. Here, touching means on any map (or, from 1400 to 1885, in any year), and not across water.
+   - The build prints how many touching pairs shared a colour after the greedy pass (35 at present), how many colour keys the repair recoloured, and how many touching pairs still share a colour, with their names: none at present.
 7. **Wikipedia titles:** `WIKI` and `WIKI_BY_YEAR` give an article title where the plain name would find the wrong article, such as Han → Han dynasty, or France from 843 to 1792 → Kingdom of France.
+
+### From 1400 to 1885
+
+What the builder does with Cliopatria:
+
+1. **Rows:** it keeps the rows of states, not the groups and relations in brackets, that last into 1400 or later. Consecutive rows of the same polity with the same shape are joined into one span. The microstates and the Isle of Man are left out (`CLIO_DROP`), because the small territories table draws them (see [Small territories](#small-territories)).
+2. **Names:**
+   - `CLIO_NAME` corrects names that are wrong or awkward: "Kingdom of Monaco" is the Principality of Monaco, "People's Republic of Zanzibar" (1856 to 1889) the Sultanate of Zanzibar, "Hashemite Arab Federation" (1415 to 1439, a name from 1958) Arab Iraq, "Napoleonic Batavia Republic" the Dutch Cape Colony, "Livonian Conference" the Livonian Confederation, "Free Orange State" the Orange Free State, "Holy Roman Empire Minor States" the Holy Roman Empire, and "United States of America" the United States, as from 1886.
+   - Brackets are dropped ("Kingdom of Naples (Napoleonic)" is the Kingdom of Naples), and "Dynasty" at the end of a name is written "dynasty", as Wikipedia does ("Ming dynasty").
+   - `CLIO_RENAME` renames by year: Cliopatria keeps "Kingdom of Great Britain" until 1889, so from 1801 it is the United Kingdom.
+3. **Rulers and parts:** a member of a group is held by the group's head: the member with the group's own name ("Kingdom of France" in "(Kingdom of France)"), or the head in `CLIO_HEAD` where the group is named for its colonies: "(Spanish Empire)" is headed by the Kingdom of Spain, "(Portuguese Empire)" by the Kingdom of Portugal, and "(British Empire)" by the Kingdom of Great Britain. So the colonies of an empire, and the fiefs of a kingdom (Foix, Brittany, Burgundy), take its colour. The groups in `CLIO_PART` are not rulers: a member of "(Holy Roman Empire)", "(Kalmar Union)", "(Delhi Sultanate)", or "(Polish-Lithuania Kingdom)" is part of it, as the card says. A "(Vassalage of … to …)" relation makes the overlord the vassal's ruler for its years. Allegiances and personal unions are not shown as rule.
+4. **Wikipedia:** each row's own `Wikipedia` title is used for its years. `CLIO_WIKI` replaces the few that are wrong (the Kingdom of Pajana's is "Lontara script", the Livonian Confederation's "Livonian language", Sambaliung's a link to the Indonesian Wikipedia).
+5. **Filling from historical-basemaps:** Cliopatria has no peoples and leaves much land blank, so each of historical-basemaps' maps from 1400 to 1880 fills the land that Cliopatria leaves blank in the years nearest to it: from halfway after the map before to halfway before the map after (the 1815 map from 1797 to 1846, for example). For each shape on the map and each stretch of years in which the Cliopatria shapes around it stay the same, the builder cuts those shapes out of it.
+   - What is left is kept in pieces at least 1,500 km² in area and 25 km wide on average, or 60% of the whole shape, so that the slivers between two sources' borders and coasts are dropped. For a shape that is itself small or narrow, such as the Gambia, the limits shrink with it: 30% of its area, and 60% of its own average width.
+   - When the shape is the same polity as a Cliopatria one around it, the pieces are joined to the Cliopatria polity's shape, year by year. It is the same polity when its name is in the same lineage, when the two names share their distinctive words ("Algiers" and "Regency of Algiers", "Hafsid Caliphate" and "Hafsid dynasty", leaving out words such as kingdom, empire, dynasty, and of, listed in `NAME_FILLER`), or when one Cliopatria polity covers at least half of the shape. So the United States of 1815 includes the Louisiana Purchase, which Cliopatria leaves out, and Algiers has one name and one border, not two. Pieces joined this way are kept down to 20 km² and 4 km wide (`OWN_KM2`, `OWN_WIDTH_KM`), since they only fill out the polity's own coast and edges: this puts Naples, which Cliopatria's coarse coast leaves out, in the Kingdom of the Two Sicilies. In all, 1,920 pieces are joined to Cliopatria spans.
+   - Otherwise the pieces keep their historical-basemaps name, ruler, and kind (8,871 spans), so the Siberians, the Plains bison hunters, and the Aboriginal nations stay on the map as peoples.
+   - To keep the build quick, every shape is first drawn into a grid of 0.25° cells, and a shape is cut only by the Cliopatria shapes whose cells meet its own. A shape at least 97% covered is dropped without cutting.
+6. **Overlaps in Cliopatria:** where two Cliopatria shapes overlap in the same years, the larger loses the overlap and the smaller keeps it (732 pairs). So the Duchy of Lorraine is not under the Kingdom of France, and in 1783 the Kingdom of Naples is not under the Habsburg Monarchy, whose shape Cliopatria draws over it.
+7. **Member states:** Cliopatria often draws one shape where historical-basemaps draws several states: an umbrella over its members (the German Confederation over Prussia, Hanover, and Saxony in 1815; the Holy Roman Empire's minor states; the Confederation of the Rhine), or a state that swallows its neighbours or dependencies (the Austrian Empire over Tuscany in 1815; the Kingdom of Spain over Naples, Sicily, Sardinia, and Milan in 1700; the Kingdom of England over Scotland in 1700; the East India Company's "British Empire" over Mysore, Oudh, and Ceylon). The builder then draws the smaller state out of the larger one, and shows it as a polity of its own:
+   - A state on a historical-basemaps map is drawn out of a Cliopatria shape when at least half of it lies in that shape and it is not the same polity (by the name test above). If the shape is an umbrella, named in `UMBRELLA` (confederation, Holy Roman Empire, union, confederacy, league, Haudenosaunee), the state may be up to 95% of it. Otherwise it may be at most half of it, and if it is more than a quarter of it, it must not hold the larger shape's centre, so that a state's own core under another name (Annam in the Nguyễn state, Oman under the Yaʿrubids) is left alone.
+   - The larger shape loses the state's shape for those years; the state keeps the part of its own shape that lies in the larger one or in blank land. What is left of the larger shape loses its slivers, pieces under 300 km² or 8 km wide that are less than a tenth of it (`SLIVER_KM2`, `SLIVER_WIDTH_KM`), which are left where the two sources' borders and coasts differ. Pieces of the larger shape that are left mostly inside the state's area (the Hebrides, Orkney, and the Highland coasts that Cliopatria gives the Kingdom of England in 1700) go to the state.
+   - An umbrella's members get the umbrella as their part ("Part of German Confederation" on the card). Other states keep their ruler from historical-basemaps, matched to a Cliopatria name in force (Lombardy is held by the Austrian Empire, Ceylon by the United Kingdom), and are independent when it gives none (Tuscany, Scotland).
+   - The state takes the name of a Cliopatria polity of the same name within 60 years (`TWIN_YEARS`), if there is one, so Hanover is the Kingdom of Hanover and Saxony the Kingdom of Saxony.
+   - Because such states change less often than the umbrella's outline, a map's states are drawn out until the next map, not only in the years nearest to it, while the larger shape is the one that held the state in the map's own year; an umbrella new since that year counts for 15 years either side (`UMBRELLA_YEARS`). So Prussia, Hanover, and Saxony are drawn out of the German Confederation from 1815 to 1877, but Lombardy is not drawn out of the Kingdom of Sardinia after 1859.
+   - `HB_STALE` gives the last year of states that historical-basemaps draws after their end: New Amsterdam (1664), Dutch Brazil (1654), Dutch Formosa (1662), the Post-Ming Warlords (1681), and the Guanches (1496). After that year, their land goes to the Cliopatria state that covers most of their shape in each year (the Crown of Castile and the Spanish Empire for the Guanches, the English colonies for New Amsterdam, Portugal for Dutch Brazil, Tungning and then the Qing for Dutch Formosa).
+   - This draws 3,106 spans of member states out of 878 Cliopatria spans.
+8. **Small territories:** see below.
+9. **Files:** the spans, 16,507 in all, are written as one TopoJSON per century, `data/dated/1400.json` to `1800.json`, at the same two levels of detail as the snapshots. A span that crosses into the next century is in both files. Labels are computed per span, as for the snapshots, and spans with the same shape share one.
+10. **Changes:** every year a span starts, or the year after one ends, is a change: 165 years from 1400 to 1885.
+
+A row in a file in `data/dated/` is `[id, ruler id, first year, last year, status, capital, label, people, part-of id, precision]`, where the capital is always `null`, and the status is 0 for a state, 1 for a colony, 2 for a protectorate, 4 for an occupied territory, and 5 for another dependency.
+
+### Small territories
+
+`SMALL` lists territories that the sources leave blank or merge into a neighbour, with their shape from Natural Earth and their status by date, each from the territory's Wikipedia article. For each period it gives the status and a point in the ruler's capital, so the ruler is whoever holds that point at the time: the Isle of Man is held by the Kingdom of England, then Great Britain, then the United Kingdom.
+
+- **Microstates:** Liechtenstein from 23 January 1719; Monaco from 1419 to 1792, under Sardinian protection from 30 May 1814 to 1860, and independent from 1861; San Marino from 1400, with Fiorentino, Montegiardino, and Serravalle from 1463 and Faetano from 1464; Andorra from 1400, except when France annexed it in 1812 and 1813; Vatican City from 7 June 1929.
+- **Crown dependencies:** the Isle of Man from 1400; Jersey from 1400, except the French occupation of 1461 to 1468; and Guernsey from 1400. Jersey and Guernsey are under German occupation from 1 and 30 June 1940 to 8 May 1945.
+- **Colonies:** Gibraltar from 4 August 1704; Hong Kong from 26 January 1841 (the island), with Kowloon from 24 October 1860 and the New Territories from 1 July 1898, under Japanese occupation from 25 December 1941 to 29 August 1945, to 30 June 1997; Macau from 1557 to 19 December 1999; Portuguese India (Goa) from 25 November 1510 to 18 December 1961; Bermuda from 11 July 1612.
+- **Others:** the Faroe Islands from 1400 (held from Bergen until 14 January 1814, then from Copenhagen, and under British occupation from 12 April 1940 to 16 September 1945); Greenland from 3 July 1721 (a colony until 4 June 1953, then part of the Danish realm); Svalbard, Norwegian from 14 August 1925; Bahrain as a British protectorate to 14 August 1971; Kuwait as a British protectorate from 23 January 1899 to 18 June 1961; and Qatar under the Ottomans to 1915.
+
+Most are cut out of whatever shape covers them for their period. Bahrain, Kuwait, Qatar, Greenland, Svalbard, and Bermuda are only laid on land that is blank, so where a source has them, the source wins. Those under 3,000 km² are not simplified, so they keep their outline at every level of detail. There are 79 spans of them from 1400 to 1885, and 49 from 1886.
 
 ### From 1886
 
@@ -133,7 +230,7 @@ What the builder does to CShapes:
 1. **Names by date:** `CS_NAMES` gives each CShapes name its names over time, and a span that crosses a renaming is split in two with the same shape. For example, Russia (Soviet Union) becomes the Russian Empire, then Soviet Russia from 7 November 1917, the Soviet Union from 30 December 1922, and Russia from 26 December 1991. The table holds about 70 such names, from Ceylon to Sri Lanka to Upper Volta and Burkina Faso. Other names lose their brackets.
 2. **Corrections:** the Gleditsch and Ward edition keeps a state in being while it is occupied or annexed in war, so it has no Anschluss. `CS_FROM_COW` takes a country's spans for a stretch of time from CShapes' own Correlates of War edition instead, which has the same shapes. It is used for Germany and Austria from 14 March 1938 to 12 April 1945: Germany with Austria from 14 March 1938, and with the Sudetenland too from 30 September 1938, and Austria again from 13 April 1945. `CS_CARVE` lengthens a span whose end date is wrong and cuts its shape out of a neighbour's for the extra time. It is used for the Free City of Danzig, which both editions end on 31 August 1938 and add to Germany from 30 September 1938, a year early: Danzig now lasts until 31 August 1939, and Germany from 30 September 1938 to 31 August 1939 is drawn without it. Both tables take only shapes and dates that are already in CShapes.
 3. **Owners:** a dependency's owner code is matched to the owner's name on the day the span starts. It becomes the ruler, so a colony takes its ruler's colour, as before 1886.
-4. **Capitals:** `CAP_FIX` corrects spellings (Bukarest, Tirane, Masqat, and others). Capitals that appear in the city table take its names by date, so Harare shows as Salisbury in 1950. CShapes gives each span a single capital, and for some spans that is a later capital, so `CAP_BEFORE` lists earlier capitals by date:
+4. **Capitals:** `CAP_FIX` corrects spellings (Bukarest, Tirane, Masqat, and others), and the builder's small `CITY_NAMES` table gives a few capitals' names by date (St. Petersburg, Petrograd, and Leningrad; Tsaritsyn, Stalingrad, and Volgograd) and tidies others' spellings. On the page, a capital also takes the names by date of the city at its place (see [Cities](#cities)), so Harare shows as Salisbury in 1950. CShapes gives each span a single capital, and for some spans that is a later capital, so `CAP_BEFORE` lists earlier capitals by date:
    - Abuja: Lagos until 11 December 1991;
    - Dodoma: Dar es Salaam until 1996;
    - Lilongwe: Zomba until 1974;
@@ -142,38 +239,117 @@ What the builder does to CShapes:
    - Nouakchott: Saint-Louis until 1957;
    - Kampala: Entebbe until independence in 1962;
    - Beijing: Peking until June 1928, Nanjing to November 1937, Chongqing to May 1946, and Nanjing again to September 1949.
-5. **One topology:** all 744 spans go into one TopoJSON at the same two levels of detail as the snapshots, so the borders shared between spans are stored once. Labels are computed per span, and spans with the same shape share a label.
-6. **Colours:** each country code keeps one colour key throughout, taken from its first name: its lineage, or its historical-basemaps name if it has one. A state therefore keeps the colour it had in 1880 where the names match. Neighbours are spans that touch and overlap in time.
-7. **Changes:** every day a span starts, or the day after one ends, goes into `eras.json` as a change, 399 in all. 371 come from CShapes' own dates, and 28 more are renamings from `CS_NAMES`.
+5. **Filling from Cliopatria:** CShapes records only states and recognised dependencies. For each Cliopatria span from 1886, the builder cuts out the CShapes spans around it, day by day, and keeps the pieces that are left, with the same filter as before 1886, when at least half of the Cliopatria shape is left. A Cliopatria polity with the same name as a CShapes one, or in the same lineage, is left out, because CShapes is the authority for it. This adds 97 spans, such as the Emirates of Nejd and Jabal Shammar in Arabia until 1921, the Mahdist State in the Sudan from 1890 to 1899, and the Sultanate of Hobyo. Cliopatria's changes are dated to 1 January of their year.
+6. **Small territories:** the same table as before 1886, from its dates in days, cut out of the CShapes spans or laid on blank land. This adds 49 spans, among them Liechtenstein, Monaco, San Marino, Andorra, and Vatican City, the Isle of Man, Jersey, Guernsey, Gibraltar, Hong Kong, Macau, Greenland, the Faroe Islands, and Bahrain before 1971.
+7. **One topology:** all 897 spans go into one TopoJSON at the same two levels of detail as the snapshots, so the borders shared between spans are stored once. Labels are computed per span, and spans with the same shape share a label.
+8. **Colours:** each country code keeps one colour key throughout, taken from its first name: its lineage, or its historical-basemaps name if it has one. A state therefore keeps the colour it had in 1885 where the names match or where it succeeds a state of 1885 (see step 6 of [Building](#building)). Neighbours are spans that touch and overlap in time.
+9. **Changes:** every day a span starts, or the day after one ends, goes into `eras.json` as a change, 439 in all, including the renamings from `CS_NAMES`.
 
 A row in `modern.json` is `[id, owner id, first day, last day, status, capital, label]`. Days count from 1 January 1886, and a last day of `-1` means the span runs to the end of the data. A capital is `[name, lon, lat, names by day, earlier capitals]`, where the last two are optional: the fourth is `null` when a capital has earlier capitals but no names by day, and the fifth is a list of `[last day, name, longitude, latitude]` from `CAP_BEFORE`. The page's `capitalAt(cap, day)` picks the capital in force on the day, for the map and for the card.
 
-### Cities from 1900
+### Cities
 
-From 1900, Chronia shows UCHRONIA's 3,060 cities (GeoNames), by their tiers as the map zooms in:
+#### What the page shows
 
-- `CITY_SINCE` holds the founding dates of cities that didn't exist in 1900, such as Brasília (1960), Canberra (1913), Islamabad (1961), Naypyidaw (2005), Tel Aviv (1909), and Soviet new towns like Magnitogorsk and Norilsk. They appear from that date.
-- `CITY_NAMES` holds about 90 cities' names by date: St. Petersburg, Petrograd, Leningrad, and St. Petersburg again; Tsaritsyn, Stalingrad, and Volgograd; Königsberg and Kaliningrad; Saigon; Léopoldville; Salisbury; Bombay; Peking and Peiping; Constantinople; Alma-Ata; Frunze; Akmolinsk through Nur-Sultan and back to Astana; and so on. The build lists any names in the table that it can't find in the cities.
+The page shows, at every date, the cities that existed then, ranked by their population at that date, not today's. Each city has a first year, a last year (or none, if it still exists), a series of populations by year, and, where it changed, a list of names by date.
 
-Capitals are drawn with a ringed mark and upright names at 12.4 px. Large cities (the first two tiers) have a solid dot and upright names at 11.2 px, and smaller cities a smaller dot and italic names at 10.8 px. All are in a warm brown ink (`--ch-city`, and `--ch-town` for the smallest), with a thin, half-clear parchment halo (`--ch-city-halo`), so that they read as engraved over every colour and over the sea.
+On each date the page takes the cities that exist, estimates each one's population by interpolating between its two nearest figures (geometrically, so a city that grew from 100,000 to 400,000 over a century is 200,000 halfway), and sorts them. The rank gives the tier:
+
+- the 68 largest: tier 1, from a globe radius of 330 px;
+- the next 226: tier 2, from 480 px;
+- the next 206: tier 3, from 800 px;
+- the rest: tier 4, from 1,400 px.
+
+The numbers are those of UCHRONIA's city tiers, so a map of 2019 is about as full as before. The ranking is kept for each date and redone only when the date changes, in about 1 ms. `data/cities-dated-minor.json` is loaded when the map first reaches tier 4.
+
+Capitals are drawn with a ringed mark and upright names at 12.4 px. Tier 1 cities have a solid dot and upright names at 11.2 px, and tiers 2 to 4 are drawn as towns, with a smaller dot and italic names at 10.8 px. All are in a warm brown ink (`--ch-city`, and `--ch-town` for towns), with a thin, half-clear parchment halo (`--ch-city-halo`), so that they read as engraved over every colour and over the sea.
+
+Capitals still come from the border data, from 1886, and are drawn from a globe radius of 230 px. A city that is the capital being drawn is not drawn again as a city; the page finds it by its name (at the date) near the capital's position, so Brazzaville and Kinshasa, across the river from each other, stay apart. The capital's name is then taken from the city's names by date, so the capital and the card both say Peking in 1960 and Angora in 1925. Before 1886, a capital is drawn as a city.
+
+#### The sources and how they are combined
+
+`tools/build-cities.mjs` combines these, in this order:
+
+1. **Reba, Reitsma, and Seto (2016):** Tertius Chandler's (1987) and George Modelski's (2003) estimates of city populations, from 3700 BC to 1975, geocoded: 1,597 cities from Chandler and 154 from Modelski. For dates up to AD 1000, Modelski's figures are used, and Chandler's only where Modelski has none within 60 years; after 1000, Chandler's. A figure that is four times higher or lower than both its neighbours (within 400 years) is dropped as a misprint, such as Delhi's 1,250,000 in 1375 or Baghdad's 10,000 in 1150. Modelski's list for 2000 is not used: several of its cities are geocoded to the wrong place.
+2. **UCHRONIA's 3,060 cities** (GeoNames), the cities of today. A Reba city joins one of them when it has the same name, or one of its other names, within 60 km, or lies within 8 km and has figures from 1850 on (so ancient Merv does not become modern Bayramaly).
+3. **Natural Earth's populated places**, matched by name within 40 km, give each city its Wikidata id, today's population (`POP_MIN`, the city proper), and, for about 590 cities, the UN's World Urbanization Prospects figures from 1950 to 2020.
+4. **Hanson (2016):** J. W. Hanson's Cities Database of 1,388 cities of the Greek and Roman world, with their founding dates, as published by the SDAM project with population estimates from their areas. A city joins an existing one within 8 km with the same modern name, or within 3 km. Its figure counts for AD 100, and is held from its founding date.
+5. **historical-basemaps' dated places:** the 70 of the 2,340 places in its `places.geojson` that have a founding year (the undated ones are left out, because showing them would put ruins on maps of centuries when they were not lived in). `PLACE_DROP` removes four that are not settlements (Calusa, Levisa, Cumbe Mayo, and the Ōyu stone circles), and `PLACE_EDIT` adds end years to places long abandoned (Ur, Uruk, Harappa, Great Zimbabwe, Taxila, and others), corrects the dates of Xanadu and Vijayanagara, and gives some places names by year. Both tables are in `tools/city-tables.mjs`.
+6. **`CITY_ADD`:** a few cities the sources lack, such as Karakorum, Nineveh, Persepolis, Mapungubwe, and Koumbi Saleh, with their dates.
+
+`REBA_FIX` corrects cities the source geocoded wrongly: Kalyani (Chandler's "Kalyan" before 1500, placed at Kalyan near Mumbai), Shangqiu (placed at Shanghai), Cahokia and St. Louis, Sarai, Djenné, Niani, Memphis (Egypt before 1000, Tennessee after), Richmond (Virginia) and Hamilton (Ontario), which the source gave with eastern longitudes, and others. A Reba city with figures from 1850 that matches nothing near it, and has a namesake among today's cities within 1,000 km, is moved to it (Minneapolis, Ohrid, and three others; the build lists them).
+
+#### Dates and gaps
+
+- **First year:** the founding year in `CITY_SINCE` if there is one (Baghdad 762, Edo 1457, St. Petersburg 1703, New York 1624, Lelystad 1967, and about 240 others); otherwise the earliest of Hanson's founding date, historical-basemaps' date, and the first figure. A city whose first figure is earlier than 1850 and has no other date appears 100 years before it, at a quarter of that figure. A city of today with no figure before 1900 appears in 1900.
+- **Last year:** `CITY_UNTIL` (Cahokia 1350, Angkor 1431, Vijayanagara 1565, Teotihuacan 650, and others), or a date from Hanson or historical-basemaps. A city that is not a city of today ends 100 years after its last figure, falling to a quarter of it. A Roman town known only from Hanson ends when its region's ancient names give way (see below), at half its size.
+- **Gaps:** Chandler lists only the largest cities of each date, so a city missing from his lists was smaller. Where two figures are more than 250 years apart, the city falls to a third of the smaller one for the years between, 100 years after the first and before the second.
+- **The years from 1850:** for a city of today, a missing figure for 1950 is estimated from the next figure scaled by the growth of the world's urban population (17% of 2020's in 1950, 5% in 1900, 2.7% in 1850), but not above 200,000, the smallest city in Chandler's 1950 list. A missing figure for 1900 is estimated the same way, but not above 40,000, about the smallest in his 1900 list. A city with no figure at all for today takes its UCHRONIA tier's typical size.
+
+#### Names by date
+
+Cities are named as an English-language atlas of the time would print them: the English name where English had one in common use (Rome, Athens, Constantinople, Moscow, Peking, Canton, Bombay), otherwise the name used locally at the time in its usual Latin-script form (Lutetia, Eboracum, Edo, Danzig, Pressburg, Léopoldville). For the Greek and Roman world this is the usage of the Barrington Atlas, through Hanson: Latin names in the West and Greek in the East, except where English has its own name (Athens, Carthage, Syracuse). A name changes on the date it was officially changed. Where the English form changed without a renaming, the change follows English usage:
+
+- Chinese cities have pinyin names before 1800 (Chang'an, Lin'an, Khanbaliq, Jiankang), the postal and Wade–Giles forms of English atlases from 1800 (Peking, Nanking, Canton, Tientsin, Sian), and pinyin again from 1 January 1979, when English usage switched to it. The postal forms come from the alternative names in Chandler's data.
+- Indian and Ukrainian cities change on the date the new form was made official (Bombay became Mumbai in 1995, and Lvov became Lviv in 1991).
+- Turkish cities take their Turkish names on 28 March 1930, when the Turkish post office stopped accepting the old ones (Constantinople, Angora, Smyrna, Adrianople, Trebizond, Brusa, Konia).
+
+`CITY_NAMES` in `tools/city-tables.mjs` holds the names by date of about 420 cities, keyed by the city's name today (`"Name|lon"`, with the longitude rounded to tens, tells apart cities of the same name). The first name in each list applies from the city's first year. Examples: Byzantium, Constantinople, Istanbul; Eboracum, Eoforwic, Jórvík, York; Lutetia, Paris; Edo, Tokyo; New Amsterdam, New York; Sunda Kelapa, Jayakarta, Batavia, Jakarta; Christiania, Oslo; Tsaritsyn, Stalingrad, Volgograd; Pressburg, Bratislava; Tenochtitlan, Mexico City; Yathrib, Medina; Heian-kyō, Kyoto; Thăng Long, Hanoi; Salisbury, Harare.
+
+A city from Hanson's database that is also a city of today, and has no entry in the table, keeps its Latin or Greek name until its region's ancient names give way, by `REGION_SWITCH`: 500 in the Latin West, 640 in Syria, Palestine, Egypt, and Arabia (the Arab conquests), 698 in North Africa, 1300 in Anatolia, and 1400 in the Balkans and Greece (the Turkish conquests). These dates are approximate. About 2,000 more cities that no longer exist, or that the data shows only in the past, are shown under their names of the time (Babylon, Memphis, Taxila, Merv, Cahokia, Vijayanagara, and Hanson's towns).
+
+#### Building the cities
+
+```
+node chronia/tools/build-cities.mjs <sources dir> <historical-basemaps geojson dir> [UCHRONIA cities.json] [--check]
+```
+
+The sources directory holds `chandlerV2.csv`, `modelskiAncientV2.csv`, `roman_cities_pop.csv`, and `ne_10m_populated_places.geojson`. They can be fetched from GitHub:
+
+- the Reba files from `input/chandler/` and `input/modelski/` of [Confoederatio/Stadester](https://github.com/Confoederatio/Stadester), a copy of the files published on figshare and by NASA SEDAC;
+- `roman_cities_pop.csv` from `data/` of [sdam-au/social_diversity](https://github.com/sdam-au/social_diversity);
+- `ne_10m_populated_places.geojson` from `geojson/` of [nvkelso/natural-earth-vector](https://github.com/nvkelso/natural-earth-vector).
+
+UCHRONIA's `cities.json` is read from `../../uchronia/data/cities.json` by default. The build takes about two seconds. It lists the table keys it can't match, the cities it moved, and the counts; `--check` also prints the 25 largest cities at a series of dates. It writes the cities that rank among the 500 largest at any decade into `data/cities-dated.json` (270 KB, 68 KB gzipped) and the rest into `data/cities-dated-minor.json` (230 KB, 94 KB gzipped).
+
+A row is `[id, name, lon, lat, first year, last year or null, [year, population in thousands, …], names by date or 0, Wikidata id or 0]`. Years are decimal: 1924.07 is late January 1924, and a whole year means 1 January. Names by date are `[[year, name], …]`, the first from -9999. The id is the city's name today, in lower case with hyphens, made unique; it stays the same across builds while the sources do.
+
+### First-level divisions
+
+The internal first-level divisions of some countries, such as the states and territories of the United States, are drawn inside them from the dates their boundaries are known. They come from two sources:
+
+- **The United States, from 3 September 1783:** the Newberry Library's [Atlas of Historical County Boundaries](https://publications.newberry.org/ahcb/) (AHCB), whose layer of states and territories dates every change of a state's or territory's boundary to the day, from the Treaty of Paris to 31 December 2000. Chronia uses its version generalised to 0.01°, as converted to GeoJSON in the [USAboundariesData](https://github.com/ropensci/USAboundariesData) package (`data-raw/historical/histstates.geojson`). It keeps the states, territories, unorganised territories, and the District of Columbia, and leaves out the AHCB's areas of type "Other", which were never divisions of the United States: the Vermont Republic, the Texas Republic, Oregon Country, the State of Deseret, and an area of uncertain boundary. No state's boundaries have changed since 2000, so the shapes in force on 31 December 2000 run on to today.
+- **Other countries, from the date their present boundaries have held:** Natural Earth's admin-1 states and provinces, through UCHRONIA's `data/provinces.json`. Present-day shapes are used only from the date since which they have not changed, with older names, and with divisions merged or cut where they were created later, from the builder's table `NE_REGIONS`:
+  - Canada from 15 May 1912 (the extensions of Quebec, Ontario, and Manitoba): Newfoundland from 31 March 1949, Nunavut, part of the Northwest Territories until then, from 1 April 1999, and the names Yukon Territory until 31 March 2003 and Newfoundland until 5 December 2001;
+  - Australia from federation on 1 January 1901: the Australian Capital Territory part of New South Wales and the Northern Territory part of South Australia until 1911, North Australia and Central Australia, divided at 20° south, from 1 March 1927 to 11 June 1931, and the Federal Capital Territory under that name until 28 July 1938;
+  - Mexico from 11 January 1935, when Quintana Roo was restored: the territories of Baja California Norte (a state from 16 January 1952), Baja California Sur, and Quintana Roo (states from 8 October 1974), and the Federal District (Mexico City from 29 January 2016);
+  - West Germany from 25 April 1952 (Baden-Württemberg), with the Saarland from 1 January 1957, and the eastern states and Berlin from 3 October 1990;
+  - Austria from 1 January 1958, after Vienna's boundaries were settled in 1954 and adjusted in 1956 and 1957;
+  - China from 26 April 1988 (Hainan), with Chongqing part of Sichuan until 13 March 1997;
+  - India from 30 May 1987 (Goa), with Chhattisgarh, Uttaranchal (Uttarakhand from 2007), and Jharkhand part of their old states until November 2000, Telangana part of Andhra Pradesh until 1 June 2014, and Ladakh part of Jammu and Kashmir until 30 October 2019; Orissa and Pondicherry under those names until 2011 and 2006.
+
+`tools/build-divisions.mjs` writes one file per country into `data/divisions/`, and the list of them into `data/divisions.json`. It takes the path to the npm modules, the AHCB GeoJSON, and optionally UCHRONIA's `provinces.json`, and runs in a few seconds, separately from the main builder:
+
+```
+git clone --depth 1 https://github.com/ropensci/USAboundariesData.git
+node chronia/tools/build-divisions.mjs node_modules USAboundariesData/data-raw/historical/histstates.geojson
+```
+
+What it does:
+
+1. Each division is a span of days with one shape, `[name, first day, last day, shape]`, where days count from 1 January 1886 as in `modern.json` (so days before 1886 are negative) and a last day of `null` means the span runs to the end. A renaming is a new span with the same shape.
+2. All of a country's shapes go into one TopoJSON, `topo`, so the boundaries shared between spans are stored once. Only the internal lines are drawn, so only the arcs that two divisions in force at the same time share are kept at full detail (simplified to about 1.6 km and quantized to 200,000 steps); the other arcs, along coasts and the country's own border, are simplified to about 12 km, since they serve only to find a division under a click and to place its name.
+3. Pieces that simplifying turns inside out (two tiny islands of North Carolina) are dropped, and where a division is cut from a Natural Earth shape (North and Central Australia, at 20° south), the cut points are added to its neighbours too, so that their shared boundaries stay shared arcs.
+4. `labels` holds, for each shape, `[lon, lat, radius, half room, area, middle lon, middle radius, middle half room]`: the pole of inaccessibility of its largest piece and the radius of the largest circle inside it in km; the room along the parallel through the pole, to the nearer edge; its area in km²; and the same for the middle of that parallel's run across the piece, for long shapes whose pole sits off centre.
+5. A row in `divisions.json` is `[key, names of the country on the map, first day, last day, [west, south, east, north], file]`.
+
+The eight files come to about 325 KB, or 110 KB compressed (us 155 KB, ca 49 KB, cn 39 KB, in 28 KB, mx 20 KB, au 13 KB, de 8 KB, at 4 KB), and none is loaded at the start.
 
 ### Rows in the snapshot files
 
 A row in a map file is `[id, ruler id, part-of id, precision, people, label]`, with ids into `polities` in `eras.json`. A missing row value is `-1`, and unnamed land is `[-1]`. A `label` is `[lon, lat, radius km, room km, angle°, area km², spots]`.
 
-A `polities` entry is `[name, colour, years on the snapshot maps, Wikipedia title or [[year, title], …], people, [first year, last year] from 1886 or null]`.
-
-### Places before 1900
-
-Only 70 of the 2,340 places in the source's `places.geojson` have a founding year, and almost none have an end year. Chronia shows those places from their founding year onwards, with these changes:
-
-- `PLACE_DROP` removes four that are not settlements (Calusa, Levisa, Cumbe Mayo, and the Ōyu stone circles).
-- `PLACE_EDIT` adds end years to places long abandoned (Ur, Uruk, Harappa, Great Zimbabwe, Taxila, and others), corrects the dates of Xanadu and Vijayanagara, and gives some places names by year:
-  - Ziz, then Panormus, then Palermo;
-  - Constantinople, then Istanbul from 1930;
-  - Kiev, then Kyiv from 1995.
-
-The undated places are left out, because showing them would put ruins on maps of centuries when they were not lived in.
+A `polities` entry is `[name, colour, years on the snapshot maps, Wikipedia title or [[year, title], …], people, [first year, last year] from 1886 or null, [first year, last year] from 1400 to 1885 or null]`.
 
 ## Drawing
 
@@ -189,75 +365,211 @@ Chronia first used d3's own path with clipping for everything. It took about 190
 ### The order of a frame
 
 1. **The sea:** ocean, deep water, the graticule, and the ripple lines along the coast.
-   - These are kept in an offscreen canvas and redrawn only when the view changes. Scrubbing through the years therefore never redraws them.
+   - These are kept in an offscreen canvas and redrawn only when the view or the dated land changes. Scrubbing through the years therefore seldom redraws them.
    - While the map moves, one ripple is drawn instead of up to four.
    - The ripples scale with the island: an island gets one ripple for every 9 px of its size, up to the usual four, and islands under 9 px get none.
 2. **The land:**
-   - Clipped to Natural Earth land, the land is filled with paper colour, then with each state's colour, peoples' colour, and unnamed land.
+   - Clipped to Natural Earth land, as it was at the date (see [Geography over time](#geography-over-time)), the land is filled with paper colour, then with each state's colour, peoples' colour, and unnamed land.
    - Islands smaller than about 1.6 px across at the current zoom are left out of the land, the coastline, and the clip, so the open sea isn't scattered with specks.
    - The historical shapes' coastlines don't match Natural Earth's exactly. So before the fills, each state's coast is stroked about 40 km wide in its colour inside the land clip. That fills the slivers between the two coastlines, and the fills then cover it everywhere else. Only the parts of a state's outline that run near a coast are stroked this way, so a colour never spills over an inland edge.
 3. **Relief:** UCHRONIA's relief image is laid over the land through `sat.js`, at 72% "overlay".
 4. **Colour bands:** along every border and coast, a band is drawn inside each state, as in UCHRONIA's Antique style.
    - Along a border between two colours, the band follows the border and is clipped to the state's own shape.
    - Along a coast, the band follows Natural Earth's coastline, not the state's own coast, so it sits on the coast at every zoom and never doubles it. Each stretch of coast takes the band colour of the state that covers it. This is drawn into a separate layer: the states are filled in their band colours, and the result is kept only within a band along the coast. Islands too small for a band are tinted whole in their band colour instead.
-   - The layer is redrawn only when the view or the set of shapes changes, at the screen's resolution, or half of it on high-density screens, and lower while the map moves. Hovering and redraws that change neither reuse it.
+   - The layer is redrawn only when the view, the set of shapes, or the dated land changes, at the screen's resolution, or half of it on high-density screens, and lower while the map moves. Hovering and redraws that change none of these reuse it.
 5. **Hover and selection:** a hovered state is tinted. A selected state is tinted red and outlined in red.
-6. **Water:** lakes and rivers. Lakes appear from about 6 px across. Those under about 18 px have a faint water-coloured shore instead of an inked one, so a land of small lakes, like Canada or Finland, doesn't become a scatter of outlines. Rivers start at a scale of about 520 px for the globe's radius.
-7. **Lines:** the coastline, then the borders, each clipped to land:
+6. **Water:** the lakes of the date, then the rivers. Lakes appear from about 6 px across. Those under about 18 px have a faint water-coloured shore instead of an inked one, so a land of small lakes, like Canada or Finland, doesn't become a scatter of outlines. Rivers start at a scale of about 520 px for the globe's radius.
+7. **Lines:** the first-level divisions (see [First-level divisions](#first-level-divisions-1)), then the coastline, then the borders, each clipped to land:
    - between a dependency and its ruler, or two dependencies of one ruler: thin and faint;
    - between other states: solid;
    - soft borders: dotted. A border is soft when the map is before 1648, when either side has precision 1, or when either side is a people.
-   - Where a state's edge meets no other shape on land, as with Arabia's interior before 1932 or the Sahara before its colonial borders, the edge is drawn as a border too, in that state's style, with its band.
+   - Where a state's edge meets no other shape on land, as in the interior of Arabia or the central Sahara around 1890, the edge is drawn as a border too, in that state's style, with its band.
    - Lines get slightly heavier as the map zooms in, from a scale of about 700 px to 4,000 px: solid borders from 1.15 to 1.7 px, the coastline from 0.75 to 1.1 px, and the dots of soft borders from 1.6 to 2.1 px.
 8. **Finishing:** the aged paper (seams, vignette, and highlight on the globe; darkened top and bottom on the flat map), and the double rim.
 9. **Labels:**
-   - **Capitals** are reserved first, as small marks, when the globe's radius is at least 700 px, so that names of states keep clear of them. Further out, state names come first and capitals fill in where there is room.
-   - **States**, largest first. Each state's shape is projected to the screen as it is drawn, and its name goes where it has most room inside that shape: the pole of inaccessibility for a box of the name's own proportions, found by a cell search like polylabel's but measuring room as the largest box that fits rather than the largest circle. The screen's edges, the page's panels, the capital marks, and names already placed count as walls, so a name never crosses a border, the rim, the header, or the bar at the foot. Names are in capitals, up to 26 px, on one, two, or three lines, whichever gives the larger size.
-   - **Long shapes:** a name is turned along the shape's long axis only when the shape is clearly long (its axes differ by more than 1.9 times) and turning it gives a name at least 40% larger. A steep turn, of more than about 43°, is used only when the name would otherwise be under 10 px, and a near-upright name reads from the bottom up.
-   - **States too small** for 8.5 px first try tighter letter spacing, down to 7.5 px. If that is still too small, a state that is small on the screen (under about 70 px across, fully in view, and with the globe's radius at least 600 px) gets a 9 px name offshore, against its coast, if there is open sea there: below, above, beside, or at a corner of its main piece. Otherwise it gets no name.
-   - **Peoples:** in italics, up to 15 px, inside their shapes only.
+   - **States and peoples** first, largest first, but names shown in the last frame go before names that were not, so a name that is showing keeps its place against a newcomer (see [Names of states and peoples](#names-of-states-and-peoples)).
    - **Seas** (the same list and scales as UCHRONIA).
-   - **Capitals and cities** from 1886, or dated places before. A name goes to the right of its mark, or else to the left, above, or below, wherever it doesn't collide.
+   - **Capitals and cities** (see [Cities](#cities)). They come after the names of states and keep clear of them: a capital's mark gives way to a state's name, not the reverse. A name goes to the right of its mark, or else to the left, above, or below, wherever it doesn't collide.
+   - **First-level divisions**, last, so they never cover the others.
 
-   Labels never overlap one another or the page's panels. Collisions are tested on the rotated boxes themselves, not on their bounding boxes, so a slanted name doesn't block a whole neighbouring country.
-
-   **Keeping it fast:** the placement of state names is kept for each map and view, so a frame redrawn for hovering or for the card costs nothing extra. While the map moves or the year is dragged, names keep the spots (in longitude and latitude) they had when the view last settled, and are only resized to fit; the full search runs once the view settles. Each search measures room against the shape's edges through a grid, so it looks only at edges nearby. A full placement takes about 5 to 18 ms in headless Chromium, once per settled view or map; `__chronia.timeLabels(n)` times it.
+   Labels never overlap one another or the page's panels.
 
 The `hi` level is used when the globe's radius is at least 900 px and the map is still, or at 2,600 px and over. Otherwise `lo` is used.
 
+### Names of states and peoples
+
+A state's name is laid out once per map on the ground, in longitude and latitude, and the screen only projects it, scales it, and decides whether it shows. So panning and turning the globe move a name with the land, zooming changes its size smoothly, and the names don't reshuffle when the view settles.
+
+- **On the ground:** for each state, the page takes its shape at the `lo` level and maps it into a plane around a starting spot: on the globe a sinusoidal projection in a frame whose parallels are the parallels of latitude (tilted towards the spot when it lies beyond 60°), on the flat map the map's own longitude and latitude. In that plane a name is a straight box, so its place is found as the pole of inaccessibility for a box of the name's own proportions, by a cell search like polylabel's that measures room as the largest box that fits rather than the largest circle. The search is done for each form of the name: one, two, or three lines (a hyphenated name like Congo-Léopoldville can break after the hyphen), and, when the shape is clearly long (its axes differ by more than 1.5 times), turned along its main axis, but never more than 30° (35° for names of six letters or fewer). Each form also gets a version with tighter letter spacing. If the best spot is more than about 3.4° from the starting spot, the frame is moved there and the search repeated, so the frame is centred on the name.
+- **Spots:** the starting spots are the builder's pole and its extra spots for large states. For a state over about 7° across, a grid of further spots, about a fifth of the state's size apart, is added when needed: when none of its names can be shown, the spots that lie on the screen are worked out, two or three at a time, so that a name stays on screen when the map is zoomed into part of a large state.
+- **Capitals:** when a form's box covers the state's capital, the form is searched again with the capital as a small obstacle, and that place is kept if the name loses no more than 15% of its size.
+- **On the screen:** each form's size is the room it has, at 88%, scaled by the zoom. It is capped by a size for the state's area on the screen, 5 + 3.6 × log₂(side ÷ 10 px), where the side is the square root of the area, between 7.5 px and 26 px (peoples 85% of that, up to 15 px), so names grow with their countries. Names are in capitals, peoples' in italics. The form with the largest size wins, with tilted forms, extra lines, and tight spacing counting 20%, 10 to 18%, and 10% less. The form and spot shown last are kept unless another is 12% better, so a name changes form only at clear zoom thresholds.
+- **Showing:** a name shows at 7.5 px or more (peoples 8.5 px), and once shown keeps showing down to 7% less. A newly shown name needs some free room around it (2 px and 15% of its size), so it isn't pushed off again by a neighbour as the map zooms. A name whose baseline runs more than about 30° from the horizontal on the screen (35° for short names), as happens along the parallels near the edge of the globe, is not shown. Names fade in and out over 150 ms, or appear at once with reduced motion.
+- **A slight overlap:** a large state (over 64 px across), or any state over 28 px on a map zoomed out below a scale of 600 px, whose name doesn't quite fit at 7.5 px still gets it at 7.5 px if it has at least 85% of the room it needs, so it may cross its border a little.
+- **Offshore:** a state under 64 px across, fully in view, with the globe's radius at least 600 px, whose name doesn't fit inside gets a 9 px name in the sea against its coast: beside its middle for a tall state, below or above it for a wide one, or at a corner, wherever the box is clear of land. The side used last is kept.
+- **Curved names:** on the globe each name follows its line on the sphere, so its baseline bends with the globe, like the names on a printed globe. Each letter is drawn with the projection's own scale and turn at its place, so letters near the edge narrow with the globe's curve. A line that is straight to within 0.3 px on the screen is drawn in one piece. The flat map's names are straight. Collisions are tested on the boxes of runs of three letters (one box per line when it is straight), not on one box for the name, so a slanted or curved name doesn't block a whole neighbouring country.
+
+**Keeping it fast:** the layout on the ground is kept for each state, keyed by its name, its shape's label numbers, and its capital, so a state whose shape doesn't change between two maps, as with most states from one month to the next, isn't laid out again. Laying out a whole new map takes about 30 to 160 ms in headless Chromium, and placing the names for a view about 1 to 11 ms; the placement is kept for each map and view, so redrawing for hovering or the card costs nothing. While the map moves or the year is dragged, new layouts are worked out for at most 16 ms a frame, and a state without one uses its layout from the last map that had it until the view settles. `__chronia.timeLabels(n)` times the placement (`polities`), the cities (`places`), and a full layout on the ground (`ground`).
+
 ### Coasts and inland edges
 
-To tell a state's coast from an inland edge, the page draws Natural Earth's land once into a hidden equirectangular grid of 2,880 by 1,440 cells (0.125°), with a band about 32 km either side of every coastline cut out of it. A point is inland when its cell, and enough neighbouring cells to cover the same distance east and west at its latitude, are still land. Each state's outer edges, the ones it shares with no other shape on the map, are then split into coastal runs (stroked for the coast fill) and inland runs (drawn as borders). An inland run is extended up to about 45 km into the coastal stretch at each end, so that it reaches the shore.
+To tell a state's coast from an inland edge, the page draws Natural Earth's land once into a hidden equirectangular grid of 2,880 by 1,440 cells (0.125°), with a band about 32 km either side of every coastline cut out of it. A point is inland when its cell, and enough neighbouring cells to cover the same distance east and west at its latitude, are still land. Each state's outer edges, the ones it shares with no other shape on the map, are then split into coastal runs (stroked for the coast fill) and inland runs (drawn as borders). An inland run is extended up to about 45 km into the coastal stretch at each end, so that it reaches the shore. The grid follows the dated land and the past lakes (see [Land](#land)).
+
+The historical shapes' coasts also stop short of Natural Earth's in places, so a coastal city such as Naples or Edinburgh can be on land but in no shape. `polityAt`, which finds the state under the pointer for hovering, clicking, and `__chronia.hitAt`, then falls back to `polityNear`: it tries eight points round the spot, 0.06° away, then 0.12° and 0.18°, and takes the state that most of the first ring with any hits fall in.
+
+### First-level divisions
+
+- **When they load:** from a scale of 620 px for the globe's radius, with the layer on, the page loads `data/divisions.json`, then the file of each country whose dates hold the day shown and whose bounds are on the screen. Before 1886, the day is 1 July of the year shown, so the divisions follow the year even between two snapshot maps.
+- **Lines:** for the day, the spans in force are found, and the arcs that two of them share are drawn. Each arc is converted once, and the last 64 sets of arcs are kept per country, so scrubbing through the years costs little. The lines are drawn after the rivers and before the coastline and the borders, clipped to the land and to the shapes of the country on the current map (`names` in `divisions.json`), so a division's line never runs into a neighbour, and parts of a division that the map gives to another state are not drawn. They are a fine broken line in brown ink, `--ch-division`, 0.65 to 1 px wide as the map zooms in, in dashes of about 4.2 widths and gaps of about 2.6.
+- **Names:** from a scale of 1,250 px, after the names of states, capitals, and cities, so they never cover those. A name is in spaced capitals, 8 to 11 px by the division's size, in `--ch-division-label` with a thin parchment halo, on one line or two, at the division's pole or else at the middle of the parallel through it. It is placed only where it fits the room measured there, where the pole lies inside the country on the map, and where it is clear of every other label. The placement is kept until the view, the day, or the labels before it change.
+- **The card:** when a state is clicked, the card also names the division under the click, such as "The place clicked is in Dakota Territory.", and follows it as the year changes. It is not shown when a state is picked from the card or by name.
+
+## Geography over time
+
+The land, lakes, and rivers are today's, from Natural Earth, at every date unless `data/geography.json` says otherwise. It holds the changes that are large enough to see at the map's scales and well documented. They follow the date shown, not the map: in 1150 the Yellow River runs south to the Yellow Sea, although the borders are still those of the map of 1100.
+
+### Land
+
+- **The Zuiderzee:** until 31 August 1930 the Zuiderzee is open sea: the IJsselmeer, the Markermeer, and the four polders. From then the Wieringermeer is land, and from 28 May 1932, when the Afsluitdijk closed it, the water is a lake, the IJsselmeer (see [Lakes](#lakes)).
+- **Caofeidian:** the reclaimed island in the Bohai Sea is left out before 2003, when the work began.
+- **The Aral Sea:** Natural Earth's land has today's two parts of the Aral Sea as holes. Until August 2014 they are filled, so that the larger lakes of those years can be drawn over them.
+
+A change to the land is stored as a patch of one polygon of `land.json`, for each level (`hi` and `lo`), with the dates it holds between:
+
+- `s`: a run of points of the outer ring and the points that replace it;
+- `h`: holes to add, and `x`: holes to remove;
+- `a`: polygons to add, such as Wieringen, Urk, and Marken while they were islands;
+- `d`: the polygon is dropped.
+
+The builder makes the patch by cutting the area of the old sea out of the land inside a box, so only the stretch of coast in the box changes. `datedLand(key)` applies the patches in force and keeps the last eight lists. The result takes the place of `land[key]` everywhere: the land clip, the coastline, the ripples, the coast band, and the sea layer. The sea layer's and the band's keys include the patches in force, so they are redrawn when the land changes.
+
+`inland()` sees the dated land as well. When the patches or the past lakes in force change, `syncGrid()` redraws the coast grid only in the boxes that changed, from the polygons near them. A past lake counts as water there, with a band along its shore like a coast, so that a state's edge that ends on its shore, or under it, isn't drawn as a border across the water. Each map's borders are kept for each state of the grid, so a change of the land or of a past lake recomputes them once.
+
+### Lakes
+
+- **Reservoirs:** the 272 of UCHRONIA's lakes that Natural Earth marks as reservoirs, and ten more that are reservoirs though marked as lakes (such as Qadisiyah, Koka, and Dale Hollow). 147 appear from 1 January of the year Natural Earth gives for the dam, so Lake Nasser from 1970, Lake Volta from 1965, Lake Kariba from 1959, the Kuybyshev (Samara) reservoir from 1955, and Lake Mead from 1936. 85 that have no year in Natural Earth, or one that belongs to a later dam (Wheeler Lake, Trinity Lake, American Falls, Wyangala, and Orellana), take the year the dam was completed, listed in `YEAR_ADD` and `YEAR_FIX`: Guri 1968, Vilyuy 1967, Robert-Bourassa 1979, Tharthar 1956, and so on. 38 are natural lakes that a dam raised, such as Zaysan, Lac Saint-Jean, Oulujärvi, and the Arrow Lakes, or whose state before the dam is unclear, and are always shown (`RAISED`), as are 12 with no year found. Before each reservoir's year, Natural Earth's line of the river is drawn through it, so the Nile, the Volga, and the Zambezi run unbroken.
+- **The Kakhovka Reservoir** is left out from 6 June 2023, when the dam was destroyed.
+- **The Aral Sea:** the late-1950s extent of Natural Earth's historic lakes (67,500 km²) until 1987, when the sea split in two; then the single Aral Sea of Natural Earth 4.1 (18,400 km², about its extent in 2003 and 2004 by area) until August 2014, when the eastern basin dried; then today's North Aral Sea, South Aral Sea, and Barsakelmes Lake.
+- **Lake Chad:** the early-1960s extent of Natural Earth's historic lakes (23,400 km²) until 1974, then today's.
+- **Lop Nur:** Natural Earth's historic lake from 1921, when the Tarim's terminal lake moved back to Lop Nur, until 1964, when it had dried.
+- **Lake Texcoco:** Natural Earth's historic lakes of the Valley of Mexico (early 1500s) until 1900, when the Gran Canal del Desagüe opened, then today's remnant.
+- **New lakes:** the Salton Sea from 1905, Sarygamysh from 1960, Aydar Lake from February 1969, and the Great Bitter Lake from 18 March 1869, when it was filled from the Suez Canal.
+- **The IJsselmeer:** from 28 May 1932 to 9 September 1942 it covers the Noordoostpolder and both Flevoland polders; to 29 June 1957, both Flevolands; to 29 May 1968, Southern Flevoland; then Natural Earth's lake of today.
+- **The Haarlemmermeer:** a lake from 1647, when it had grown to about 150 km², until 1 July 1852, when it was dry.
+
+`lakesAt()` gives the lakes for the date, sorted by area, and is recomputed only when the date crosses one of the dates in the file. Rivers are clipped out of the past lakes, so the Amu Darya and the Syr Darya end at the shore of the year.
+
+### Rivers and canals
+
+- **The Yellow River:** its lower course to the Bohai Sea, from the bend near Lankao, is drawn before 1128 and from 1 August 1855, when the river broke its north bank at Tongwaxiang. From 1128 to 1855 it is replaced by the southern course to the Yellow Sea. That course is an approximation: Natural Earth has no line for it, so it is drawn straight from the bend through the towns it passed (Shangqiu, Dangshan, Xuzhou, Suqian, Siyang, Huai'an, Lianshui, and Binhai) to the coast. Before the 16th century the river wandered among several channels to the Huai, and before 1128 its courses north of Shandong were not today's, so both are shown only roughly.
+- **The Suez Canal** from 17 November 1869 and **the Panama Canal** from 15 August 1914, from Natural Earth's lines, which UCHRONIA's rivers leave out.
+
+### The file
+
+`geography.json` is `{ land: { hi, lo }, lakes: { only, add }, rivers: { drop, add } }`. Times are decimal years, as in the page, and `null` is open-ended:
+
+- `land[level]`: patches `{ g, f, t, k, s, h, x, a, d, b }`, where `g` names the change, `f` and `t` are the first and the end time, `k` is the polygon's key `[length, lon, lat]`, and `b` is the box to redraw in the coast grid.
+- `lakes.only`: `[name, km², from, to]` for lakes of `lakes.json` shown only between two times.
+- `lakes.add`: `[name, km², from, to, MultiPolygon]` for past extents.
+- `rivers.drop`: `[index, length, lon, lat]` for lines of `rivers.json` replaced here.
+- `rivers.add`: `[name, rank, [[from, to], …], line]`.
+
+### Building the geography
+
+```
+mkdir ne cbs
+for f in ne_10m_lakes ne_10m_lakes_europe ne_10m_lakes_north_america ne_10m_lakes_historic ne_10m_rivers_lake_centerlines; do
+  curl -L -o ne/$f.geojson https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/$f.geojson
+done
+curl -L -o ne/ne_10m_lakes_v4.1.0.geojson https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v4.1.0/geojson/ne_10m_lakes.geojson
+curl -L -o cbs/gemeente_1995.geojson https://raw.githubusercontent.com/cartomap/nl/gh-pages/wgs84/gemeente_1995.geojson
+curl -L -o cbs/buurt_2011.geojson https://raw.githubusercontent.com/cartomap/nl/gh-pages/wgs84/buurt_2011.geojson
+npm i topojson-client d3-geo polygon-clipping @turf/buffer
+node chronia/tools/build-geography.mjs node_modules ne cbs
+```
+
+It takes a few seconds. An optional fourth argument points at Natural Earth 4.1's lakes, by default `ne_10m_lakes_v4.1.0.geojson` in the Natural Earth folder. With `GEO_LOG=file` it writes how each reservoir was dated.
+
+The polders come from Statistics Netherlands' municipalities of 1995: the Wieringermeer; the Noordoostpolder (without Urk, which stays an island); Eastern Flevoland, which is Dronten and Lelystad without its Oostvaardersplassen neighbourhood; and Southern Flevoland, which is Zeewolde, Almere, and the Oostvaardersplassen, since the Knardijk between the two polders runs along the edge of that neighbourhood and the boundary of Zeewolde. The old land is every other municipality, with strips under 800 m wide removed so that dikes like the Afsluitdijk don't close the sea. The Zuiderzee is the IJsselmeer and the undrained polders, widened by 6 km, less the old land, inside a box from 4.8° to 6.05° E and 52.2° to 53.15° N. The past IJsselmeer is today's lake joined to the undrained polders, widened by 600 m to close the gaps along the dikes.
 
 ## The year
 
 - **Time:** the page keeps one number, the time in decimal years. Before 1886 it is a whole year. From 1886 it stands for a day: the 15th for a month, unless a change or a typed date gives another day. A year typed on its own from 1886 means July of that year.
-- **The date shown:** the box shows the time as exactly as it is set: a year before 1886 ("1815", "500 BC"); from 1886 a month ("July 1960", the 15th), or a full date for any other day ("30 June 1960", "25 June 1991"). The line under it names the source of the borders on the map: "Borders from the map of 1815" before 1886, also between maps; "Borders since 30 June 1960" from 1886, the date of the latest change on or before the day shown; and "The latest borders, of 2019" after the data ends.
+- **The date shown:** the box shows the time as exactly as it is set: a year before 1886 ("1815", "500 BC"); from 1886 a month ("July 1960", the 15th), or a full date for any other day ("30 June 1960", "25 June 1991"). Nothing else is shown under it. `__chronia.asof()` still gives the source of the borders on the map, for tests: "Borders from the map of 1300" before 1400, also between maps; "Borders since 1772" from 1400 to 1885, the latest year on or before the one shown in which a border changed; "Borders since 30 June 1960" from 1886; and "The latest borders, of 2019" after the data ends.
 - **The scale:** it is uneven, so that recent times get room. It is set by `KNOTS`: 3000 BC at 0, 500 BC at 0.13, AD 500 at 0.24, 1400 at 0.37, 1800 at 0.53, 1886 at 0.6, and the end of 2026 at 1, so every year from 1886 has the same room. The slider has 10,000 steps.
-- **Ticks:** above the line, a mark for each snapshot map, and a fainter one for each change from 1886. The current map's mark is red, and from 1886 so is the mark of the change the borders date from.
+- **Ticks:** above the line, a mark for each snapshot map, and a fainter one for each change from 1400. The current map's mark is red, and from 1400 so is the mark of the change the borders date from.
 - **Snapping:** dragging moves in steps of 10 years before AD 1000, single years from then to 1885, and months from 1886. Within 5 px of a snapshot map's tick, the marker snaps to that map's year.
 - **What is shown:**
-  - Before 1886, the latest map at or before the year.
+  - Before 1400, the latest map at or before the year.
+  - From 1400 to 1885, the spans that hold in that year.
   - From 1886, the spans that hold on that day.
   - After 2019, the last day of the data.
 - **Loading:**
   - Snapshot files load when needed, and the maps before and after the current one load next. At most eight are kept.
+  - From 1400 to 1885, the century's file loads when needed (2.6 to 5.7 MB, or 0.7 to 1.9 MB compressed; the 1700 and 1800 files are the largest), and the centuries before and after load next. Opening at 1815 therefore downloads the 1800 file (5.7 MB) after `eras.json` and `modern.json` (2.4 MB), then the 1700 file (5.3 MB). A year's set of spans becomes a map, and the last 24 sets are kept, as from 1886.
   - `modern.json` loads at the start. A day's set of spans becomes a map, and the last 24 sets are kept.
-  - Shapes are converted once per span, so moving between sets only recomputes the borders. Scrubbing through a century takes about 100 ms in headless Chromium.
+  - Shapes are converted once per span, so moving between sets only recomputes the borders. Scrubbing through a century from 1886 takes about 100 ms in headless Chromium.
+- **Play:** `PLAY` holds every pace in one place: `yearlyFrom` (1400, where play turns from maps to years), `map`, `year`, `yearChange`, `month`, and `monthChange`, in milliseconds. `playNext(t)` gives the next time to show and `playWait(from, to)` how long to stay on it, holding when one of the change points (`points`: the maps, the change years from 1400, and the changes from 1886) falls between the two. From 1400 to 1885, play waits for the century's file to load before it steps on, checking every 100 ms (`load`), so no year is passed over while its borders load. Double speed halves every wait in `playDelay`.
+
+The page's `dated` object holds the years (`from`, `to`), the change years (`changes`), and the century files (`chunks`); `isDated(t)`, `chunkIndexFor(y)`, `loadChunk(k)`, `datedSnap(k, y)`, and `datedChangeBefore(y)` do for these years what `modern`, `modernSnap`, and `changeBefore` do from 1886. The change years go into the same list of change points as the snapshot maps and the changes from 1886, which `stepMap`, the arrow keys, and play use, and they get ticks of class `is-change`, kept in `datedTicks`.
 
 ## The card
 
-- **The heading:** whether it is a state, a colony, protectorate, mandate, occupied territory, or other dependency, or a people or culture, and its name.
-- **What the current map says:** who holds it, with a link to the ruler; what it is part of; and the maps it appears on.
-  - From 1886, it also gives the capital in force on the day, under its name at the time (Lagos for Nigeria in 1980), and the dates of the current borders ("These borders from 16 June 1910 to 29 June 1960").
-  - If it is not on the current map, the card says so and stays open, so a state can be followed through time.
-  - States with precision 1 carry "Its borders here are approximate".
-- **Wikipedia:** the card fetches the summary of the article named by the builder's title for that map's year, from `https://en.wikipedia.org/api/rest_v1/page/summary/`.
+- **The heading:** for a state, whether it is a state, a colony, protectorate, mandate, occupied territory, or other dependency, or a people or culture, and its name. A dependency from Cliopatria or the small territories is called a dependency, or by its status from the table. For a city, whether it is a capital, a city, or a town, and its name at the date.
+- **What the current map says:**
+  - For a state: who holds it, with a link to the ruler; what it is part of; and the years it is on the map, given as runs ("On the map from 1400 to 1885 and from 1886 to today", or "On the maps from 1000, and continuously from 1400 to 1885"). From 1400 to 1885, it gives who holds a dependency in the year shown ("Held by Kingdom of Spain in 1700") and the years of the current borders ("These borders from 1772 to 1792"). From 1886, it gives the capital in force on the day, under its name at the time (Lagos for Nigeria in 1980), and the dates of the current borders ("These borders from 16 June 1910 to 29 June 1960"). If it is not on the current map, the card says so and stays open, so a state can be followed through time. States with precision 1 carry "Its borders here are approximate". With the divisions layer on, it names the first-level division under the click (see [First-level divisions](#first-level-divisions-1)).
+  - For a city: its name today, if it differs ("Now Gdańsk"), and the state it lies in on the date, or whose capital it is ("Capital of Free City of Danzig on 15 July 1925"), with a link that opens that state's card. A capital's name today comes from the city table, matched by place.
+- **The note:** a paragraph of 80 to 140 words about the subject as it was at that date and in the wider period, written by Claude (Sonnet 5.5) through a server function, `supabase/functions/chronia-blurb` (see [The note's server function](#the-notes-server-function)). It is written only when someone opens the card, then kept, so everyone who opens the same card after reads the same note and nothing more is spent. While it is written the card says "Writing about Prussia in 1815…", and under the note it says "Written by Claude for this date".
+  - The page sends only what the card shows: for a state, its name, its Wikipedia title for the year, its status, ruler, the state it is part of, its capital, the first day of its current borders (from 1886), and the year; for a city, its name at the date, its name today, its place, the state it lies in, whether it is that state's capital, and the year. Before 1886 the year is the one in the year box, not the map's.
+  - When the card is opened by a click (on the map, on a state named in a card, or through `__chronia.selectName`), the note is written if it does not exist. When the card is already open and the date changes, nothing is written: the card shows the Wikipedia summary and offers "Write about Prussia in 1878" as a link, and after the date has stayed put for 0.7 seconds it asks the function, with `peek: true`, whether a note for the new date already exists, and shows it if so. Playing through time with a card open therefore writes nothing.
+  - The page keeps the notes it has fetched, by request, for as long as it is open, so reopening a card asks nothing.
+  - If the function fails, is over its daily cap, can't be reached (as until it is deployed), or takes more than 28 seconds, the card falls back to the Wikipedia summary, with no note under it.
+- **Wikipedia:** the card fetches the summary of the article named by the builder's title for that map's year, from `https://en.wikipedia.org/api/rest_v1/page/summary/`, for the link, the thumbnail, and the fallback. For a city it looks up its name today.
   - If there is none, or it is a disambiguation page, the card tries the plain name, then Wikipedia's search.
-  - The card shows the extract and the article's thumbnail, sepia-toned, and links to the article. When the article's title differs from the state's name, the link names it.
+  - The card shows the article's thumbnail, sepia-toned, and links to the article below the note. When the article's title differs from the name on the card, the link names it.
   - Only `upload.wikimedia.org` images and `en.wikipedia.org` links are used.
 
-These requests go from the visitor's browser to Wikipedia when a state is clicked, and nothing else is sent. The privacy page does not yet mention this.
+All text from the function and from Wikipedia goes into the page as text, never as HTML.
+
+These requests go from the visitor's browser to Wikipedia and to the site's Supabase project when a state or a city is clicked. The function counts new notes per visitor under a salted hash of the visitor's address and the day, and deletes the counts each day. Section 8 of the site's [privacy page](../privacy/) describes both, and section 3 the requests to Wikipedia.
+
+### The note's server function
+
+`supabase/functions/chronia-blurb/index.ts` is a Supabase edge function (Deno), built like UCHRONIA's Historian: it answers only the site's origins (the same list as Historian's: `https://noahdarwinlee.com`, `https://www.noahdarwinlee.com`, `https://noahdlee519.github.io`, and `http://localhost` or `http://127.0.0.1` on any port), checks every field, and calls Anthropic's Messages API with the `ANTHROPIC_API_KEY` secret. It is one file with no imports. Its table and counters are set up by `supabase/migrations/20261026_chronia_blurbs.sql`.
+
+- **The request:** a POST of JSON, `{ kind: "state", name, wiki, status, ruler, partOf, capital, since, year }` or `{ kind: "city", name, modern, lon, lat, state, capital, year }`, with `peek: true` to ask only for a note already written. Names are at most 80 characters (a Wikipedia title 120), must contain a letter, and may hold only letters, marks, digits, spaces, and the punctuation found in the atlas's names (`. , ' ’ ‘ ʼ ( ) - – & / : · • ‧ ꞉ [ ] " ? ^`), so no markup, braces, backticks, hashes, or line breaks reach the model. `status` is one of `state`, `colony`, `protectorate`, `mandate`, `occupied`, `dependency`, or `people`; `year` is a whole year from 3000 BC (`-3000`) to 2026, not 0; `since` is a date from 1886; `lon` and `lat` are numbers in range and are rounded to 0.01°. A body over 4,000 characters is refused. Anything else is a 400 naming the field.
+- **The period:** each note is written for a period, not a day, so that it can be shared: from 1886 a state's note is for its year; a city's from 1886 is for its decade; before 1886, both are for a decade from 1500, a quarter-century from 1000, a half-century from AD 1, and a century BC ("the 1810s", "from 1275 to 1299", "from AD 800 to 849", "from 400 to 301 BC"). Before 1886 the borders change by the year at most and the record thins out, so a note per year would cost thousands of near-identical notes per state; from 1886 the borders are dated to the day and a year matters (1914, 1918, and 1919 are different worlds), but a city changes more slowly than the states around it. The model is given the period, never the exact year, so the note fits every date it is shown for.
+- **The cache key:** the kind, the name, the period's first year, and the first 16 hex digits of a SHA-256 of every field the model sees, after checking and rounding, for example `s:prussia:1810:f1119762b36c9fca`. Chronia's own ids are not used, because they are indexes into `eras.json` and move when the data is rebuilt. Because the key covers every fact in the prompt, a request with altered facts gets a note of its own and can never replace the one honest requests share; and a state whose status, ruler, or capital changes within a period gets a note for each.
+- **The model:** `claude-sonnet-5-5`, with `thinking: { type: "between_tools" }` (no thinking before the answer, which a short note doesn't need), `output_config.effort` `medium`, at most 400 tokens, and the system prompt cached. The prompt asks for one paragraph of 80 to 140 words of plain prose in British spelling with the serial comma: for a state, what it was then, who ruled it, what was happening around then, and where it stood; for a people, what is known of them and what the evidence is; for a city, what it was, whose, what it was known for, and what was happening there. It must say plainly when the record is thin, never present a guess as fact or later events as known at the time, never repeat a fact from the atlas it knows to be wrong, and write about the whole period. The subject's details go in the user turn as JSON, and the prompt says they are data, never instructions; a subject it can't identify gets the single word `UNKNOWN`, which is not kept.
+- **The text:** the function strips headings, list marks, emphasis, tags, control characters, and quotation marks round the whole note, folds it into one paragraph, cuts it at a sentence end if it runs over 170 words or stops mid-sentence, and refuses one under 25 words. It doesn't stream: a note takes a few seconds, and checking the whole text before it is kept or shown is worth more than showing it word by word.
+- **The answers:** 200 with `{ text, model, period, cached }` (a peek that finds nothing returns `text: null`); 400 for a bad field; 413 for a long body; 429 with `error: "cap"` when the site has written its day's notes, or `"limit"` when the visitor has; 502 when the model fails or its text is unusable; 503 when `ANTHROPIC_API_KEY` is unset (notes already written are still served); 500 when the database can't be reached; 403, with no CORS headers, for any other origin or none.
+- **The caps and the cost:** at most 500 new notes a day for the whole site (`ALL_CAP`), and 30 a day for one visitor (`WHO_CAP`). Notes already written are free and are never counted. A note's prompt is about 650 tokens in (a 560-token system prompt and the subject) and 110 to 190 tokens out, at most 400. At Sonnet 5.5's price on Anthropic's pricing page on 26 October 2026, $2 per million input tokens and $10 per million output tokens, a note costs about $0.003, and at most about $0.005; a cached system prompt, read at $0.10 per million, saves about $0.001 more. 500 notes a day is therefore at most about $2.70 a day, or about $80 a month if the cap were reached every day, and much less in practice, since every note is written once. 30 a visitor is enough for anyone reading around the map, and keeps one visitor to 6% of the day's notes. A failed call to the model gives its count back; a refusal or an unusable answer, which costs tokens, does not.
+- **The visitor:** the visitor is the first address in `x-forwarded-for` (or `x-real-ip`), IPv6 by its /64, hashed with SHA-256 together with a salt (`CHRONIA_SALT`, or the service key when that is unset) and the day, and cut to 24 hex digits. The first new note of each day (UTC) deletes the earlier days' counts, so no count outlives its day. A request with no usable address counts only towards the site's cap.
+- **Two at once:** two requests in the same function instance for the same note make one call to the model.
+- **The tables:** `chronia_blurbs` (`key`, `kind`, `subject`, `period`, `text`, `model`, `created_at`) and `chronia_blurb_usage` (`day`, `who`, `n`), both with row-level security on and no access for `anon` or `authenticated`; `chronia_blurb_take`, `chronia_blurb_give_back`, and `chronia_blurb_save`, callable only by `service_role`. `chronia_blurb_save` keeps the first note written under a key and returns it. To withdraw a bad note, delete its row and the next click writes it afresh; `select key, period, left(text, 60) from chronia_blurbs order by created_at desc limit 20;` lists the latest.
+
+### Deploying the notes
+
+The notes are not live until the function is deployed to the Supabase project `kigvciyyjlgjcgnwgrwf`, the one Historian uses. Until then the card falls back to the Wikipedia summary.
+
+1. **The migration:** apply `supabase/migrations/20261026_chronia_blurbs.sql` (named `20261026_chronia_blurbs`) with `supabase db push`, the SQL editor, or the Supabase MCP's `apply_migration`. It only creates new objects and touches nothing of Historian's, and it is safe to run twice.
+2. **The function:** deploy `supabase/functions/chronia-blurb` with JWT verification off, since the page sends no Authorization header and no Supabase key, and the function checks the origin, the fields, and its own caps:
+
+   ```
+   supabase functions deploy chronia-blurb --no-verify-jwt --project-ref kigvciyyjlgjcgnwgrwf
+   ```
+
+   or the MCP's `deploy_edge_function` with `name: "chronia-blurb"`, `verify_jwt: false`, and the file as `index.ts`. The page calls `https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb` (`BLURB_URL` in `app.js`); if the function ends up under another slug, change `BLURB_URL` to match. The CSP needs no change, since the host is already in `connect-src`.
+3. **The secrets:** `ANTHROPIC_API_KEY` is already set for Historian, and function secrets are project-wide, so there is nothing to do. `CHRONIA_SALT` is optional but recommended, any long random string (`supabase secrets set CHRONIA_SALT=$(openssl rand -hex 32)`); without it the function salts the visitor counter with the service key, which also works. `SUPABASE_URL` and the service key are given to every function by Supabase.
+4. **A check:** a peek costs nothing and writes nothing:
+
+   ```
+   curl -s -X POST https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb \
+     -H 'origin: https://noahdarwinlee.com' -H 'content-type: application/json' \
+     -d '{"kind":"state","name":"Prussia","wiki":"Kingdom of Prussia","status":"state","capital":"Berlin","year":1815,"peek":true}'
+   ```
+
+   It should answer `{"text":null,"period":"the 1810s","cached":false}`. The same without `"peek":true` writes the first note (about $0.003) and answers `cached: false`; again, `cached: true`. The usage line in the function's logs gives the tokens. Then open Chronia, click a state and a city, and check the note and "Written by Claude for this date".
 
 ## Testing
 
@@ -266,41 +578,75 @@ As with UCHRONIA, test on a local copy, never the live site.
 1. Serve the repository root with `python3 -m http.server`. Chronia needs `../uchronia/`, `/fonts/`, and `../styles.css` beside it.
 2. Drive it with Playwright (headless Chromium). Wait for `__chronia.ready()`.
 3. Wikipedia can't be reached from Claude's sessions, so stand in for it with `page.route(/wikipedia\.org/, …)`, returning a summary object.
-4. Check the globe and the flat map, a phone width (390×844 with touch), a tablet width, BC years (dotted borders, peoples), a year between maps ("Borders from the map of …"), the step from 1880 to 1886, a month and a day from 1886, the Shift steps, play, the layers list, the card, and the about note.
+4. Stand in for the note's function too, with `page.route(/functions\/v1\/chronia-blurb/, …)`: answer `OPTIONS` with 204 and CORS headers, and `POST` with `{ text }`, `{ text: null }` for a peek, a 429, a 502, or `route.abort()`. The function itself was tested with Deno against a real Postgres (the migration applied as is) behind a small stand-in for Supabase's REST API, and with `fetch` to `api.anthropic.com` replaced by a stand-in; those scripts are not in the repository.
+5. Check the globe and the flat map, a phone width (390×844 with touch), a tablet width, BC years (dotted borders, peoples), a year between two maps before 1400, the step from 1300 to 1400, years from 1400 to 1885 and the step from 1885 to 1886, a month and a day from 1886, the arrow keys and the Shift steps, both play buttons and P and Shift P, the key's toggle and its rows at 1200, 1815, and 1991, the layers list, the card for a state and for a city, the divisions (the United States in 1850 and 1900), the dated geography (the Zuiderzee in 1920 and 1935, the Aral Sea in 1960 and 2019), and the about note.
+
+After a build, the yearly data can be checked against the old snapshot maps. For every historical-basemaps map from 1400 to 1880, the check lists each state the map names, over 5,000 km² and not a people, that the dated data at that year does not show over at least half of its area, under its own name or a name the builder treats as the same polity (its lineage, or the same distinctive words). A state shown over at least half its area by one polity no more than 2.5 times its size counts as the same state under another name (Korea as Joseon). A state under a shape that the same map also has is the map's own overlap and is not counted, and the states in `HB_STALE` are skipped on maps after their last year. The rest are listed as blank, inside a larger state, or split between several. The script, `regress-check.mjs`, is not yet in the repository; it reads the name tables from the builder, and runs from the repository root with `HB_DIR` set to historical-basemaps' `geojson` folder: `node --max-old-space-size=4000 regress-check.mjs . "" out.txt`.
+
+Before the member states were drawn out, it flagged 369 states at the 13 maps: 284 inside a larger state, 18 blank, and 67 split. Now it flags 81: 14 inside a larger state, 3 blank, and 64 split. The split ones are mostly coarse units that Cliopatria divides more finely (Đại Việt between the Trịnh and Nguyễn lords, the Khiva Khanate, the Maratha Confederacy); the blank ones are the Kuril Islands and two small peoples, lost to the coastline filter; and those inside a larger state are mostly peoples of 1492 that another people's shape covers, Corsica under Genoa in 1400, and pieces of the United Kingdom in the West Indies in 1815.
 
 `window.__chronia` has:
 
-- `ready()`, `year()` (the time in decimal years), `shown()` (the text in the year box), `asof()` (the line under it), `date()` (from 1886, as in the address), `mapYear()` (a snapshot's year, or `"modern"`), `maps()`, `setYear(y)` (a number, or text as typed in the box), `step(dir, unit)`, `play(on)`, `playing()`;
+- `ready()`, `year()` (the time in decimal years), `shown()` (the text in the year box), `asof()` (the source of the borders, no longer shown on the page; see [The year](#the-year)), `date()` (from 1886, as in the address), `mapYear()` (a snapshot's year, `"dated"` from 1400 to 1885, or `"modern"`), `maps()`, `changes()` (every change point, as times in decimal years: the snapshot maps, the change years from 1400, and the changes from 1886), `setYear(y)` (a number, or text as typed in the box), `step(dir, unit)`, `play(on, fast)` (starts the normal or the double-speed play, or stops), `playing()` (`false`, `"normal"`, or `"fast"`);
 - `view`, `setView(lon, lat, zoom)`, `setFlat(on)`, `project(lon, lat)`, `inland(lon, lat)` (whether a point is more than about 32 km from a coast, by the grid in [Coasts and inland edges](#coasts-and-inland-edges));
-- `polities()`, `selectName(name)`, `selected()`, `hitAt(x, y)`, `labels()` (each label's `name`, position, size, `kind` (`polity`, `people`, `capital`, `city`, or `town`), and `box`, with `sea: true` for a state's name placed offshore);
-- `layers()` (a copy of the layer flags), `setLayer(name, on)`, and `layersOpen()`;
+- `polities()`, `selectName(name)`, `selected()`, `hitAt(x, y)`, `labels()` (each label's `name`, position, size, `kind` (`polity`, `people`, `capital`, `city`, `town`, or `division`), and `box`; a state's or people's label also has `lines` (how many), `ang` (the baseline's angle on the screen at its centre), and `boxes` (the boxes of its runs of letters), with `sea: true` for a name placed offshore; a city's or capital's also has `id`, `qid`, `lon`, and `lat`), `labelInfo(name)` (a state's layout on the ground: its spots and, for each form, its lines, turn, spacing, size at this zoom, place on the screen, and angle there);
+- `cityAt(x, y)` (the city or capital drawn nearest a point on the screen, within 8 px of its mark or on its name: `{ id, name, kind, qid, modern, lon, lat, pop, since, until, x, y }`, where `name` is its name at the date, `modern` its name today, `qid` its Wikidata id, and `pop` the population estimated for the date), `cityCount()` (how many cities are loaded, how many exist at the date, and whether the smaller ones have been loaded);
+- `cityHitAt(x, y, touch)` (the city label under a point, from the last frame's labels: its mark, or its name's box, with 3 px of slack, or 8 px for touch), `openCityAt(x, y)`, `selectedCity()`, and `card()` (what the card shows: `open`, `kind`, `name`, `facts`, `text`, `writing` while a note is being written, `by`, the offer's text as `offer`, and the Wikipedia link as `more` and `href`);
+- `layers()` (a copy of the layer flags), `setLayer(name, on)`, and `layersOpen()`; `keyOpen()`, `setKeyOpen(on)`, and `keyRows()` (the keys of the rows shown);
+- `divisions()` (the day used and, for each loaded country in force, the names of its divisions and the number of lines), `divisionAt(x, y)` (the division under a point, within the state there), and `cardDivision()` (the division's line on the card, or `null`);
+- `geography()` (whether the file has loaded, the land changes in force (`land`), the keys of the land and the coast grid (`landTag`, `gridTag`), the past lakes shown (`lakes`, each as name and area), how many lakes are drawn and how many of today's are hidden (`lakeCount`, `hidden`), and the dated rivers and canals shown (`rivers`)), and `hasLake(name)` (whether a lake of that name is among those for the date);
 - `timeRender(n)`, `timeLabels(n)`, and `moving(on)` to time the moving path.
 
 Headless Chromium has no GPU, so frame times there are several times what a real machine shows. Compare them with each other, not with a phone.
 
 ## Known limits
 
-- **Snapshots:** before 1886, nothing moves between two maps, so 1815 to 1878 is one jump.
-- **CShapes' coverage:** it records only states and recognised dependencies. Land outside them is left as paper: Arabia before Saudi Arabia (1932), parts of the Sahara and the Horn of Africa before colonial borders were fixed, and Antarctica.
+- **Snapshots:** before 1400, nothing moves between two maps, so 1100 to 1200 is one jump.
+- **Cliopatria's dates:** its spans are years, often five or ten years long before 1800, so a change can show a few years late or early, and the changes it adds after 1886 are dated to 1 January.
+- **Cliopatria's coverage:** before about 1850 it leaves much of the world blank, and the fill comes from the nearest historical-basemaps map, which can be decades away. Its colonial empires are often one shape for all their colonies.
+- **Ireland before 1801:** Cliopatria draws Ireland in the Kingdom of Great Britain, where historical-basemaps had a Kingdom of Ireland.
+- **Member states:** a state is drawn out of an umbrella or a larger state only where a historical-basemaps map names it, so its own border changes only at those maps, and one that no map names stays inside the larger shape. Some places are still wrong in 1700: Hanover is shown as the Holy Roman Empire itself, Dresden in the Polish–Lithuanian Commonwealth (Saxony's elector was then also Poland's king), Florence in a "Republic of Florence", though it had been the Grand Duchy of Tuscany since 1569, and the spot where Liechtenstein is drawn from 1719 in the Swiss Confederation. The regression check under [Testing](#testing) still flags 81 states, most of them finer splits.
+- **CShapes' coverage:** it records only states and recognised dependencies. The builder fills some of the land it leaves out from Cliopatria, but CShapes and Cliopatria both leave the central Sahara and the interior of Arabia blank around 1890, so they stay blank, as does Antarctica.
+- **Blank land:** the share of land outside Antarctica in no state and no people, before the yearly data and the fill from Cliopatria and after: 1400, 22% and 21%; 1453, 22% and 14%; 1600, 29% and 27%; 1700, 29% and 27%; 1772, 28% and 18%; 1815, 21% and 18%; 1848, 21% and 14%; 1885, 15% and 11%; 1890, 16% and 11%; 1911, 3.7% and 1.8%; 1930, 3.8% and 0.9%; 1950 and 2000, 2.1% and 0.4%.
 - **CShapes and the Second World War:** the Gleditsch and Ward edition dates the changes that were settled by treaty or annexation, such as Munich (30 September 1938), the First Vienna Award (2 November 1938), Vilnius (1 October 1939), the Winter War (12 March 1940), the Baltic states (2 June 1940), Bessarabia (28 June 1940), Southern Dobruja (7 September 1940), and the settlement of 8 May 1945. It does not have the end of Czechoslovakia in March 1939, Memel (March 1939), Albania (April 1939), the partition of Poland (September 1939), the occupations of 1940 and 1941, or the Saar under the League (1920 to 1935). The Correlates of War edition has some of these, but only as the whole state "occupied" by one power, which is wrong for Poland, Czechoslovakia, Yugoslavia, Greece, and Albania, so they are not used.
 - **Treaty dates:** CShapes dates the First World War settlements by the day each treaty was signed, such as Versailles on 28 June 1919, not the day it came into force.
-- **CShapes' capitals:** each span has one capital, so a capital that moved within a span is shown in its later place. `CAP_BEFORE` corrects the cases listed under [From 1886](#from-1886); any others still show the later capital.
+- **CShapes' capitals:** each span has one capital, so a capital that moved within a span is shown in its later place. `CAP_BEFORE` corrects the cases listed under [From 1886](#from-1886); any others still show the later capital. Before 1886 the data has no capitals, so a capital shows only as a city.
 - **After 2019:** CShapes ends on 31 December 2019, and the map stays as it was then. No internationally recognised border has changed since, but claimed annexations are not shown.
-- **Play** visits the 15th of each month, so a span shorter than a month that holds no 15th is passed over. There are nine, such as the Soviet Union's last few days in December 1991.
-- **Coasts:** where a historical shape stops well short of the coast, more than about 20 km, the land between is left as paper. Small islands that a snapshot map leaves out, like several Danish islands in 1880, show as paper.
-- **State names:** a name is placed only where it fits inside its shape, or offshore for a small state, so names that don't fit are dropped. The flat map zoomed out therefore shows fewer state names.
-- **The source's own errors:** there is more to correct in `RULER_FIX`. For example, 1815 still has a Hong Kong, and the United States Virgin Islands appear in 1914, three years before the US bought them.
-- **Places before 1900:** 66 places is thin, and most of them are in the Mediterranean and the Near East.
+- **Play** visits the 15th of each month from 1886, so a span shorter than a month that holds no 15th is passed over. There are nine, such as the Soviet Union's last few days in December 1991. From 1400 to 1885 it holds on the change years, which are only as exact as Cliopatria's years.
+- **Coasts:** where a historical shape stops well short of the coast, more than about 20 km, the land between is left as paper. Small islands that a source leaves out show as paper.
+- **Small territories:** Vatican City is in the data from 1929, but Natural Earth's shape of it is a few hundred metres across and collapses at the map's finest level of detail (about 200 m), so it can't be seen or clicked. Portuguese India is Goa only; Daman, Diu, and Dadra and Nagar Haveli share one Natural Earth province with each other and are left in India.
+- **State names:** a name is placed only where it fits inside its shape, slightly over its border for a large state, or offshore for a small one, so the names of small states inland are dropped when they don't fit. Names along steep parallels near the edge of the globe are hidden until the globe is turned. A large state's name is placed at fixed spots on the ground, so when the map is zoomed far into a state between its spots, its name can be off the screen.
+- **The sources' own errors:** there is more to correct in the builder's tables. Among the errors found in Cliopatria and left in place, its "British Africa" holds the Sudan in 1885, the year the Mahdists took Khartoum, and its Kingdom of Portugal includes Angola and Mozambique in the 1880s.
+- **Cities through time:** the populations are estimates, often a single figure for a century or more, and Chandler's lists name only the largest cities of each date, so smaller cities come and go with the data. Many of Hanson's estimates come from the areas inside city walls and can be high (Phigalia, Maronea). Some cities are still geocoded wrongly; `REBA_FIX` holds the corrections found so far.
+- **Founding dates:** a city with no founding date appears 100 years before its first figure, so some appear too early or too late.
+- **1900:** about 2,500 smaller cities of today have no figures before 1900 and appear then. They are all in the lowest tier, so the jump shows only when the map is zoomed in close.
+- **City names:** about 550 cities have names by date (420 from the table, the rest by the rule for Hanson's cities); most others keep today's name throughout, or their ancient name. The switch from ancient to modern names by region is approximate.
+- **Americas before 1500:** the sources hold few cities there (Teotihuacan, Tikal, Tollan, Cahokia, Tenochtitlan, Texcoco, Cusco, and a few more).
+- **First-level divisions:** they are shown only for the United States from 1783, and for Canada, Australia, Mexico, Germany, Austria, China, and India from the dates their present boundaries have held. Germany's eastern states are drawn as they are now from 1990, although a few small areas, such as Amt Neuhaus (moved from Mecklenburg-Western Pomerania to Lower Saxony in 1993), changed state in 1992 and 1993. A division's lines stop at the border of the country on the current map, so where the borders lag behind the divisions, as they can where Cliopatria's dates are years long or a fill comes from a map decades away, part of a division's lines may not be drawn.
+- **Geography over time:** only the changes listed under [Geography over time](#geography-over-time) are made. The coastline elsewhere is today's at every date: the growth of the Yellow River's and other deltas, the reclamations of Tokyo Bay, Singapore, Hong Kong, and Dubai, and the draining of the Fens and of the smaller Dutch lakes are not shown, either because no dated outline was at hand or because Natural Earth's land, simplified to about 1.6 km and with Honshu in fewer than 300 points, is too coarse to show them. Lakes and the Zuiderzee change on one day, though most filled or shrank over years. Between its mapped extents, the Aral Sea is drawn as it was in 2003 and 2004 from 1987 to 2014, so 1990 shows it too small and 2010 too large. Lop Nur's historic extent is smaller than the 2,400 km² of 1930. Wieringen is drawn as an island until 1930, though a dike joined it to the mainland in 1924. The Yellow River's course from 1128 to 1855 is a straight-lined approximation. The flooding of 1938 to 1947, when the Yellow River ran south to the Huai after the dikes at Huayuankou were breached, is not shown.
+- **The notes:** they are written by a model, so they can be wrong, especially for peoples and early periods where the record is thin, and a wrong one stays until its row in `chronia_blurbs` is deleted. Each is written once for a period, not a day, so a note on Danzig in the 1920s is shown for every date in that decade.
+- **Cities' cards:** a city's state is the state under its mark, found from the point or, for a city on the coast, from up to 10 px around it; a city just off the land at Natural Earth's resolution may be shown "in no state".
 - **Wikipedia:** for peoples and obscure names, the search fallback can find a loosely related article. The link always names the article it found.
 
 ## Credits
 
-- **Historical borders:** [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik and contributors, under the GNU General Public License v3.0. The files in `data/eras/`, `data/eras.json`, and `data/places.json` are derived from it and are under the same licence; its text is in `data/COPYING-historical-basemaps.txt`.
+- **Historical borders:** [historical-basemaps](https://github.com/aourednik/historical-basemaps) by André Ourednik and contributors, under the GNU General Public License v3.0. The files in `data/eras/` and `data/dated/`, and `data/eras.json`, are derived from it and are under the same licence; its text is in `data/COPYING-historical-basemaps.txt`.
+- **Borders from 1400 to 1885:** Cliopatria, from the Seshat Global History Databank: James S. Bennett, Erin Mutch, Andrew Tollefson, Ed Chalstrey, Majid Benam, Enrico Cioni, Jenny Reddish, Jakob Zsambok, Jill Levine, C. Justin Cook, Pieter François, Daniel Hoyer, and Peter Turchin, "Cliopatria – A geospatial database of world-wide political entities from 3400BCE to 2024CE", *Scientific Data* 12 (2025), doi:10.1038/s41597-025-04516-9, version 0.2.1 from [GitHub](https://github.com/Seshat-Global-History-Databank/cliopatria) (also Zenodo record 13363121), under the Creative Commons Attribution 4.0 licence. The files in `data/dated/` are derived from it and from historical-basemaps, so they are under the GPL-3.0 as well, and the spans added to `data/modern.json` from it are under CShapes' licence with the rest of that file. Chronia changes some of its names, rulers, and Wikipedia titles, as listed under [From 1400 to 1885](#from-1400-to-1885).
 - **Borders from 1886:** CShapes 2.0, by Guy Schvitz, Luc Girardin, Seraina Rüegger, Nils B. Weidmann, Lars-Erik Cederman, and Kristian Skrede Gleditsch ("Mapping the International System, 1886–2019: The CShapes 2.0 Dataset", *Journal of Conflict Resolution* 66(1), 2022), under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 licence. `data/modern.json` is derived from it and is under the same licence, so it may not be used commercially.
-- **Cities:** GeoNames (CC BY 4.0), through UCHRONIA's `data/cities.json`.
+- **Small territories:** Natural Earth's 10 m states and provinces (public domain).
+- **Cities through time:** Reba, M., Reitsma, F., and Seto, K. C. (2016), "Spatializing 6,000 years of global urbanization from 3700 BC to AD 2000", *Scientific Data* 3, 160034, [doi:10.1038/sdata.2016.34](https://doi.org/10.1038/sdata.2016.34), and the data set Historical Urban Population: 3700 BC – AD 2000 (NASA SEDAC, [doi:10.7927/H4ZG6QBX](https://doi.org/10.7927/H4ZG6QBX)), which "is openly shared, without restriction" with citation; from T. Chandler, *Four Thousand Years of Urban Growth* (1987), and G. Modelski, *World Cities: –3000 to 2000* (2003).
+- **Roman cities:** Hanson, J. W. (2016), Cities Database, Version 1.0 (OXREP databases), [doi:10.5287/bodleian:eqapevAn8](https://doi.org/10.5287/bodleian:eqapevAn8), and *An Urban Geography of the Roman World, 100 B.C. to A.D. 300* (Archaeopress, 2016); with population estimates by the SDAM project, Aarhus University ([sdam-au/social_diversity](https://github.com/sdam-au/social_diversity)), under CC BY-SA 4.0.
+- **Cities today:** GeoNames (CC BY 4.0), through UCHRONIA's `data/cities.json`; Natural Earth's populated places (public domain), with the UN's World Urbanization Prospects figures and Wikidata ids they carry.
+- **City dates and names:** Chronia's tables in `tools/city-tables.mjs`, from the cities' Wikipedia articles.
+- **The city files' licence:** `data/cities-dated.json` and `data/cities-dated-minor.json` mix material under two share-alike licences: historical-basemaps' dated places, under the GPL-3.0, and the SDAM project's estimates for Hanson's cities, under CC BY-SA 4.0. Creative Commons lists the GPL-3.0 as a licence compatible with CC BY-SA 4.0 for adapted material, so the files are offered under the GNU General Public License v3.0, with the credits above. This is the reading of the cities' builder and has not been checked further; until it is, treat the licence of the two files as an open question.
+- **Divisions of the United States:** John H. Long, ed., *Atlas of Historical County Boundaries* (Chicago: Dr. William M. Scholl Center for American History and Culture, The Newberry Library, 2010), https://publications.newberry.org/ahcb/, under the Creative Commons Attribution-NonCommercial-ShareAlike 2.5 licence; as converted in Lincoln A. Mullen and Jordan Bratt, USAboundariesData (rOpenSci, CC BY-NC-SA 4.0), https://github.com/ropensci/USAboundariesData. `data/divisions/us.json` is derived from it and is under the same licence, so it may not be used commercially.
+- **Divisions of other countries:** Natural Earth 1:10m admin-1 states and provinces (public domain), through UCHRONIA's `data/provinces.json`.
 - **Land, coastlines, lakes, and rivers:** Natural Earth (public domain), through UCHRONIA's data.
+- **Past lakes and reservoir years:** Natural Earth (public domain): `ne_10m_lakes_historic` for the Aral Sea of the late 1950s, Lake Chad of the early 1960s, Lop Nur, and Lake Texcoco; `ne_10m_lakes` of version 4.1.0 (2018) for the Aral Sea of about 2004; the `year` of each reservoir in `ne_10m_lakes`; and the Suez and Panama canals and the river lines under reservoirs from `ne_10m_rivers_lake_centerlines`.
+- **The Dutch polders:** Statistics Netherlands (CBS), *Wijk- en buurtkaart* and *Gebiedsindelingen* (municipalities of 1995 and neighbourhoods of 2011), under the Creative Commons Attribution 4.0 licence, through the generalised GeoJSON of [cartomap/nl](https://github.com/cartomap/nl).
+- **Dates of the geography:** the dates of the Zuiderzee Works (Wieringermeer dry on 31 August 1930, the Afsluitdijk closed on 28 May 1932, the Noordoostpolder dry on 9 September 1942, Eastern Flevoland on 29 June 1957, Southern Flevoland on 29 May 1968) and of the Haarlemmermeer (dry on 1 July 1852), and the dates for the Yellow River, the Aral Sea, Lake Chad, Lop Nur, Aydar Lake, Sarygamysh, and the Salton Sea, are from the English Wikipedia articles "Zuiderzee Works", "Haarlemmermeer", "Changes in the course of the Yellow River", "Aral Sea", "Lake Chad", "Lop Nur", "Aydar Lake", "Sarygamysh Lake", and "Salton Sea", and the Knardijk's course from Waterschap Zuiderzeeland's *Knardijk, een cultuurhistorische verkenning*.
 - **Terrain:** Terrain Tiles on the Registry of Open Data on AWS, through UCHRONIA's relief image. Its full attribution is in [UCHRONIA's credits](../uchronia/README.md#credits).
-- **Text on the card:** Wikipedia, under CC BY-SA 4.0, fetched when a state is clicked and linked to its article.
+- **Text on the card:** notes written by Claude (Anthropic's Sonnet 5.5) for each subject and period, when first asked for. The fallback text, the thumbnails, and the links are from Wikipedia, under CC BY-SA 4.0, fetched when a state or city is clicked and linked to its article.
 - **Type:** IM Fell English and Old Standard TT (SIL Open Font License), in `/fonts/`.
 - **Icons:** drawn for the site in the style of UCHRONIA's Antique icons, engraved lines with fine hatching (`class="h"`), all 1.35 px on a 32-unit grid.
 - **Code:** d3-geo, d3-array, and topojson-client, loaded from UCHRONIA's `vendor/` (licences in `uchronia/vendor/LICENSES.txt`).
