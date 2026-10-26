@@ -197,6 +197,18 @@ a {
   display: none;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .track {
+    cursor: grab;
+  }
+}
+
+.track.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+
 .slide {
   flex: 0 0 100%;
   scroll-snap-align: start;
