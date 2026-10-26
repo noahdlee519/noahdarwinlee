@@ -156,7 +156,19 @@
               <span class="uc-inner-label" id="to-label">To</span>
               <div class="uc-seg" role="group" aria-labelledby="to-label">
                 <button type="button" id="land-to" aria-pressed="true"><span class="uc-dot" id="land-to-dot"></span><span id="land-to-name">a country</span></button>
+                <button type="button" id="paint-dispute" aria-pressed="false" data-tip="Land claimed by two or more countries, drawn in their colours">Disputed</button>
                 <button type="button" id="paint-erase" aria-pressed="false">Unclaimed</button>
+              </div>
+            </div>
+            <div class="uc-inner" id="claims-row" hidden>
+              <span class="uc-inner-label" id="claims-label">Between</span>
+              <div class="uc-claims">
+                <span class="uc-claims" id="claims-list"></span>
+                <span class="uc-subject-pick uc-claim-add" data-tip="Add a country that claims the land">
+                  <span id="claims-add-name">add a country</span>
+                  <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
+                  <select id="claims-add" aria-labelledby="claims-label claims-add-name"></select>
+                </span>
               </div>
             </div>
             <div class="uc-inner">

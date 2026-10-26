@@ -291,8 +291,9 @@ of `/greatercircle/`.
 - **Saving.** The map is kept as its difference from the world as it is:
   - countries renamed, recoloured, or founded, those whose inner borders
     are hidden (`l`), those whose ruler differs from our world's (`r`,
-    each country with its ruler, or -1 for none), and those whose name was
-    moved (`n`, each country with the place it was moved to);
+    each country with its ruler, or -1 for none), those whose name was
+    moved (`n`, each country with the place it was moved to), and disputes
+    (`d`, each dispute with its claimants);
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
   - cities deleted, changed, or added;
@@ -680,8 +681,8 @@ of `/greatercircle/`.
   land or dissolve it; click a city to rename it, change its size, or delete
   it, and once it is picked, drag it to move it.
 - **Give land (B)**: one tool for moving borders. Its pane says who gets
-  the land (the chosen country, shown with its colour, or *Unclaimed*) and
-  how it is taken:
+  the land (the chosen country, shown with its colour, *Disputed*, or
+  *Unclaimed*) and how it is taken:
   - *Regions*: click or drag over regions; clicking land drawn by hand gives
     the whole region under it, and cuts that region out of the drawing;
   - *Whole countries*: click a country to give all of it;
@@ -693,6 +694,19 @@ of `/greatercircle/`.
     thin coasts stay behind.
 
   Alt-click picks the country to give land to.
+
+  *Disputed* gives land to no one country but to a dispute between two or
+  more claimants, like the Siachen Glacier between India and Pakistan. The
+  pane lists the claimants under *Between*: the country chosen before is
+  the first, others are added from *add a country* or by clicking (or
+  Alt-clicking) them on the map, and a claimant is taken off by clicking its
+  name. Disputed land is striped in the claimants' colours, has no name of
+  its own on the map, and says who disputes it when picked with Select. Each
+  set of claimants is one dispute, kept as a country with a `claims` list
+  that is left out of the country lists, the Check menu, and colouring; it
+  is created in the same undo step as the first land given to it. A dispute
+  whose claimant is dissolved keeps the colours of those that remain. The
+  historian is told which land is disputed and between whom.
 - **Settlements (C)**: click to found a city; click one to pick it, then drag
   it to move it (a drag on a city that isn't picked moves the map). A picked
   settlement can be a capital, a city, a town, or a small town; small towns

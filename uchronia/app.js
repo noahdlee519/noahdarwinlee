@@ -17,7 +17,7 @@
   var D2R = Math.PI / 180;
   var TAU = 2 * Math.PI;
   var PALETTE = 10;
-  var UNCLAIMED = -1;
+  var UNCLAIMED = -1, NEW_DISPUTE = -3;
   var STORE = "uchronia-map", STORE_PREV = "uchronia-map-previous", STORE_SAT = "uchronia-satellite", STORE_FLAT = "uchronia-flat", STORE_FINE = "uchronia-fine", STORE_NAMES = "uchronia-names", STORE_STYLE = "uchronia-style";
   var FONT = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
@@ -54,7 +54,7 @@
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, waterNames: true, regionLines: true };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, dispute: false, claims: [], satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, waterNames: true, regionLines: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -112,14 +112,14 @@
   function localScale() { return (flat ? baseK : baseR) * view.zoom; }
   function zoomForScale(S) { return S / (flat ? baseK : baseR); }
 
-  var pal = {}, hatch = null;
+  var pal = {}, hatch = null, stripeCache = new Map();
   var PAL_KEYS = ["ocean", "grat", "limb", "glow", "border", "prov", "label", "label-halo", "city", "city-ring", "city-label", "city-halo", "select", "select-fill", "hover", "unclaimed", "hatch", "sat-light", "water", "sea-label", "river", "grid-label", "ocean-deep", "river-label"];
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     PAL_KEYS.forEach(function (k) { pal[k] = cs.getPropertyValue("--uc-" + k).trim(); });
     var was = pal.antique;
     pal.antique = document.documentElement.getAttribute("data-uc-style") === "antique";
-    pal.colors = []; pal.bands = []; tints.clear();
+    pal.colors = []; pal.bands = []; tints.clear(); stripeCache.clear();
     for (var i = 0; i < PALETTE; i++) {
       pal.colors.push(cs.getPropertyValue("--uc-c" + i).trim() || "#cccccc");
       if (pal.antique) pal.bands.push(cs.getPropertyValue("--uc-b" + i).trim() || "#8a6a4a");
@@ -181,13 +181,55 @@
     return t ? countries[c].name + " " + t : countries[c].name;
   }
   function colorOf(c) {
+    if (isDispute(c)) return pal.unclaimed;
     var col = countries[hueOf(c)].color;
     if (typeof col === "number") return pal.colors[col % PALETTE];
     return pal.antique ? tintOf(col) : col;
   }
   function bandOf(c) {
+    if (isDispute(c)) return "rgba(0,0,0,0)";
     var col = countries[hueOf(c)].color;
     return typeof col === "number" ? pal.bands[col % PALETTE] : col;
+  }
+  function isDispute(c) {
+    var co = c >= 0 ? countries[c] : null;
+    return !!(co && co.claims);
+  }
+  function claimantsOf(c) {
+    return (countries[c] && countries[c].claims || []).filter(function (k) { return countries[k] && countries[k].alive && !countries[k].claims; });
+  }
+  function liveClaims() {
+    return ui.claims.filter(function (k) { return countries[k] && countries[k].alive && !countries[k].claims; });
+  }
+  function claimNames(list) {
+    var names = list.map(function (k) { return countries[k].name; });
+    return names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + ", and " + names[names.length - 1];
+  }
+  function findDispute(list) {
+    var key = list.slice().sort(function (a, b) { return a - b; }).join(",");
+    for (var i = 0; i < countries.length; i++) {
+      var co = countries[i];
+      if (co.alive && co.claims && co.claims.slice().sort(function (a, b) { return a - b; }).join(",") === key) return i;
+    }
+    return -1;
+  }
+  function stripes(cols) {
+    if (!cols.length) return pal.unclaimed;
+    var key = cols.join("|"), p = stripeCache.get(key);
+    if (p) return p;
+    var B = 12, cv = document.createElement("canvas");
+    cv.width = B * cols.length; cv.height = 2;
+    var g = cv.getContext("2d");
+    cols.forEach(function (col, i) { g.fillStyle = col; g.fillRect(i * B, 0, B, 2); });
+    p = ctx.createPattern(cv, "repeat");
+    if (p && p.setTransform && window.DOMMatrix) p.setTransform(new DOMMatrix().rotateSelf(45).scaleSelf(0.5));
+    stripeCache.set(key, p);
+    return p;
+  }
+  function fillOf(c) {
+    if (c === NEW_DISPUTE) return stripes(liveClaims().map(colorOf));
+    if (isDispute(c)) return stripes(claimantsOf(c).map(colorOf));
+    return colorOf(c);
   }
   function remeasure() {
     widthCache.clear(); glyphCache.clear();
@@ -521,9 +563,9 @@
     }
     for (var c = 0; c < countries.length; c++) {
       if (!unitsOf[c].length) continue;
-      var fill = colorOf(c);
+      var fill = fillOf(c);
       var g = map.get(fill);
-      if (!g) { g = { fill: fill, band: pal.antique ? bandOf(c) : null, countries: [] }; map.set(fill, g); }
+      if (!g) { g = { fill: fill, band: pal.antique && !isDispute(c) ? bandOf(c) : null, countries: [] }; map.set(fill, g); }
       g.countries.push(c);
     }
     groups = Array.from(map.values());
@@ -956,8 +998,8 @@
       list.forEach(function (p) { traceFeature(ctx, p.shape.f); });
       if (satLand) punch(function () { list.forEach(function (p) { traceFeature(ctx, p.shape.f); }); });
       if (o >= 0) {
-        if (relPat && !satLand) { layerFill(list, colorOf(o), relPat); return; }
-        ctx.fillStyle = satLand ? washed(colorOf(o)) : colorOf(o); ctx.fill(); shade(relPat); return;
+        if (relPat && !satLand) { layerFill(list, fillOf(o), relPat); return; }
+        ctx.fillStyle = satLand ? washed(fillOf(o)) : fillOf(o); ctx.fill(); shade(relPat); return;
       }
       ctx.fillStyle = satLand ? washed(pal.unclaimed) : pal.unclaimed; ctx.fill(); shade(relPat);
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
@@ -1044,8 +1086,8 @@
       }
       if (list.length) { ctx.beginPath(); list.forEach(function (p) { traceFeature(ctx, p.shape.f); }); }
       else if (!hp || ui.whole) return;
-      ctx.globalAlpha = 0.85; ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill();
-      if (to < 0) { ctx.fillStyle = hatch; ctx.fill(); }
+      ctx.globalAlpha = 0.85; ctx.fillStyle = to === UNCLAIMED ? pal.unclaimed : fillOf(to); ctx.fill();
+      if (to === UNCLAIMED) { ctx.fillStyle = hatch; ctx.fill(); }
       ctx.globalAlpha = 1;
       ctx.setLineDash([3, 3]); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
     } else if (ui.tool === "select") {
@@ -1063,13 +1105,13 @@
     vis.forEach(function (p) { var b = pieceEdges(p).borders; for (var i = 0; i < b.length; i++) traceArc(ctx, b[i]); });
     ctx.strokeStyle = pal.border; ctx.lineWidth = satellite ? 1.3 : 1.15; ctx.stroke();
     var c = currentCountry();
-    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) {
+    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && (ui.erase || ui.dispute))) {
       ctx.beginPath();
       vis.forEach(function (p) { var r = pieceSelRuns(p, c); for (var i = 0; i < r.length; i++) traceArc(ctx, r[i]); });
       ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.stroke();
     }
     ctx.restore();
-    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) {
+    if (c >= 0 && !ui.city && !((ui.tool === "paint" || ui.tool === "draw") && (ui.erase || ui.dispute))) {
       ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.lineJoin = "round";
       vis.forEach(function (p) {
         if (p.owner !== c) return;
@@ -1095,7 +1137,7 @@
     by.forEach(function (list, o) {
       ctx.beginPath();
       list.forEach(function (u) { traceFeature(ctx, F[u]); });
-      if (o >= 0) { ctx.fillStyle = colorOf(o); ctx.fill(); return; }
+      if (o >= 0) { ctx.fillStyle = fillOf(o); ctx.fill(); return; }
       ctx.fillStyle = pal.unclaimed; ctx.fill();
       var ga = ctx.globalAlpha; ctx.globalAlpha = 1; ctx.fillStyle = hatch; ctx.fill(); ctx.globalAlpha = ga;
     });
@@ -1130,7 +1172,7 @@
     ctx.closePath();
     var to = brush();
     if (to === null) return;
-    ctx.globalAlpha = 0.35; ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.globalAlpha = 0.35; ctx.fillStyle = to === UNCLAIMED ? pal.unclaimed : fillOf(to); ctx.fill(); ctx.globalAlpha = 1;
     ctx.setLineDash([4, 3]); ctx.lineJoin = "round"; ctx.strokeStyle = pal.select; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
   }
 
@@ -1879,6 +1921,12 @@
   function brush() {
     if (ui.tool !== "paint" && ui.tool !== "draw") return null;
     if (ui.erase) return UNCLAIMED;
+    if (ui.dispute) {
+      var cl = liveClaims();
+      if (cl.length < 2) return null;
+      var d = findDispute(cl);
+      return d >= 0 ? d : NEW_DISPUTE;
+    }
     return ui.country >= 0 && countries[ui.country] && countries[ui.country].alive ? ui.country : null;
   }
   function fineAt(u) {
@@ -1938,8 +1986,8 @@
       ctx.beginPath();
       traceFeature(ctx, whole ? shapeOf(vo, lvl) : regionShape(u, lvl));
       ctx.globalAlpha = 0.85;
-      ctx.fillStyle = to >= 0 ? colorOf(to) : pal.unclaimed; ctx.fill();
-      if (to < 0) { ctx.fillStyle = hatch; ctx.fill(); }
+      ctx.fillStyle = to === UNCLAIMED ? pal.unclaimed : fillOf(to); ctx.fill();
+      if (to === UNCLAIMED) { ctx.fillStyle = hatch; ctx.fill(); }
       ctx.globalAlpha = 1;
       ctx.setLineDash([3, 3]); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
     } else if (ui.tool === "select") {
@@ -1963,7 +2011,7 @@
   }
   function drawSelectionLine(L) {
     var c = currentCountry();
-    if (c < 0 || ui.city || ((ui.tool === "paint" || ui.tool === "draw") && ui.erase)) return;
+    if (c < 0 || ui.city || ((ui.tool === "paint" || ui.tool === "draw") && (ui.erase || ui.dispute))) return;
     ctx.beginPath(); traceArcs(ctx, L, selectionArcs(c));
     ctx.strokeStyle = pal.select; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.stroke();
   }
@@ -2750,7 +2798,7 @@
   }
   function computeLabel(c) {
     var us = unitsOf[c] || [], co = countries[c];
-    if (!co.alive || !hasLand(c)) { co.label = null; return; }
+    if (!co.alive || co.claims || !hasLand(c)) { co.label = null; return; }
     var topo = levels[0], geoms = topo.objects[objKey].geometries;
     var coords = us.length ? topojson.merge(topo, us.map(function (u) { return geoms[u]; })).coordinates : [];
     if (pieces.length) coords = withPieces(c, coords);
@@ -3446,18 +3494,39 @@
   }
 
   function brushWord() { return "Giving land to "; }
+  function takeClaim(o) {
+    if (isDispute(o)) ui.claims = claimantsOf(o);
+    else {
+      var cl = liveClaims(), at = cl.indexOf(o);
+      if (at >= 0) cl.splice(at, 1); else cl.push(o);
+      ui.claims = cl;
+    }
+    var now = liveClaims();
+    toast(now.length ? (now.length > 1 ? "Disputed between " + claimNames(now) : "Claimed by " + claimNames(now) + ": add another claimant") : "No claimants yet");
+  }
+  function disputeNow() {
+    var cl = liveClaims(), d = findDispute(cl);
+    if (d >= 0) return { c: d, op: null };
+    var op = createCountry("Disputed", 0, cl);
+    return { c: op.c, op: op };
+  }
   function pickUp(x, y) {
     var pk = pickAt(x, y);
     if (pk.u < 0) return;
+    if (ui.dispute) { if (pk.o >= 0) takeClaim(pk.o); renderPanel(); scheduleRender(); return; }
     if (pk.o < 0) { ui.erase = true; toast("Leaving land unclaimed"); }
-    else { ui.erase = false; ui.country = pk.o; toast(brushWord() + countries[ui.country].name); }
+    else { ui.erase = false; ui.dispute = false; ui.country = pk.o; toast(brushWord() + countries[ui.country].name); }
     renderPanel();
     scheduleRender();
   }
   function pickBrushAt(x, y) {
     var pk = pickAt(x, y);
+    if (ui.dispute) {
+      if (pk.u >= 0 && pk.o >= 0) { takeClaim(pk.o); renderPanel(); scheduleRender(); }
+      return;
+    }
     if (pk.u >= 0 && pk.o >= 0) {
-      ui.country = pk.o; ui.erase = false;
+      ui.country = pk.o; ui.erase = false; ui.dispute = false;
       toast(brushWord() + countries[ui.country].name);
       renderPanel(); scheduleRender();
     }
@@ -3465,7 +3534,8 @@
 
   function startStroke(x, y) {
     if (brush() === null) { pickBrushAt(x, y); return; }
-    stroke = { x: x, y: y, changes: new Map(), touched: new Set(), fresh: new Map(), pieceFrom: null, caps: capOwners() };
+    var made = brush() === NEW_DISPUTE ? disputeNow().op : null;
+    stroke = { x: x, y: y, changes: new Map(), touched: new Set(), fresh: new Map(), pieceFrom: null, caps: capOwners(), made: made };
     canvas.classList.add("is-painting");
     paintAt(x, y);
   }
@@ -3541,8 +3611,12 @@
     var ops = [];
     if (ps.length) ops.push({ t: "own", ps: ps, from: from, to: to, g: geomGen });
     if (s.pieceFrom) ops.push({ t: "pieces", from: s.pieceFrom, to: pieces });
+    if (s.made) {
+      if (ops.length) ops.unshift(s.made);
+      else { countries[s.made.c].alive = false; groupsDirty = true; countriesVersion++; }
+    }
     if (!ops.length) return;
-    var label = "Painting";
+    var label = s.made || isDispute(brush()) ? "Making land disputed" : "Painting";
     s.fresh.forEach(function (info, c) {
       if (!info || !countries[c] || !countries[c].alive) return;
       freshGroups();
@@ -3584,14 +3658,14 @@
       var u = unitAt(x, y), hp = u >= 0 ? pieceAt(x, y, u) : null;
       setHover(u, hp);
       if (u < 0) { hideTip(); return; }
-      var o = hp ? hp.owner : owner[u], main = o >= 0 ? countries[o].name : "Unclaimed land";
-      var note = null;
+      var o = hp ? hp.owner : owner[u], main = isDispute(o) ? "Disputed between " + claimNames(claimantsOf(o)) : o >= 0 ? countries[o].name : "Unclaimed land";
+      var note = null, pickNote = ui.dispute ? "click to add as a claimant" : "click to give land to this country";
       if (ui.tool === "paint") {
         var to = brush();
-        if (to === null) note = "click to give land to this country";
-        else if (o !== to) note = "to " + (to >= 0 ? countries[to].name : "unclaimed land");
+        if (to === null) note = pickNote;
+        else if (o !== to) note = "to " + (to === NEW_DISPUTE || isDispute(to) ? "land disputed between " + claimNames(liveClaims()) : to >= 0 ? countries[to].name : "unclaimed land");
       } else if (ui.tool === "draw") {
-        if (brush() === null) note = "click to give land to this country";
+        if (brush() === null) note = pickNote;
       } else if (ui.tool === "city") note = "click to found a city here";
       showTip(x, y, main, hp && !(ui.tool === "paint" && !ui.whole) ? "Drawn land, " + regionName(u) : regionName(u), note);
     });
@@ -3777,7 +3851,7 @@
       ensureCountry(op.c);
       var co = countries[op.c];
       if (!v) co.alive = false;
-      else { co.alive = true; co.name = v.name; co.color = v.color; }
+      else { co.alive = true; co.name = v.name; co.color = v.color; co.claims = v.claims ? v.claims.slice() : undefined; }
       groupsDirty = true;
       countriesVersion++;
       queueLabels([op.c]);
@@ -3858,19 +3932,19 @@
 
   function uniqueName(stem, except) {
     var taken = new Set();
-    countries.forEach(function (c, i) { if (c.alive && i !== except) taken.add(c.name); });
+    countries.forEach(function (c, i) { if (c.alive && !c.claims && i !== except) taken.add(c.name); });
     if (!taken.has(stem)) return stem;
     for (var i = 2; ; i++) if (!taken.has(stem + " " + i)) return stem + " " + i;
   }
   function neighbourCountries(units) {
     var near = new Set();
-    units.forEach(function (u) { (unitNeighbors[u] || []).forEach(function (q) { if (owner[q] >= 0) near.add(owner[q]); }); });
+    units.forEach(function (u) { (unitNeighbors[u] || []).forEach(function (q) { if (owner[q] >= 0 && !isDispute(owner[q])) near.add(owner[q]); }); });
     return Array.from(near);
   }
   function closeCountries(units) {
     var near = new Set();
     if (!unitClose) return [];
-    units.forEach(function (u) { (unitClose[u] || []).forEach(function (q) { if (owner[q] >= 0) near.add(owner[q]); }); });
+    units.forEach(function (u) { (unitClose[u] || []).forEach(function (q) { if (owner[q] >= 0 && !isDispute(owner[q])) near.add(owner[q]); }); });
     return Array.from(near);
   }
   function wheelGap(a, b) {
@@ -3897,19 +3971,19 @@
     (closeBy || []).forEach(function (n) { if (n >= 0 && countries[n] && neighbours.indexOf(n) < 0) { var h = countries[hueOf(n)]; if (typeof h.color === "number") close.push(h.color % PALETTE); } });
     return pickTone(near, used, close);
   }
-  function createCountry(name, color) {
+  function createCountry(name, color, claims) {
     var i = countries.length;
-    countries.push({ code: "N" + i, name: name, color: color, alive: true, label: null });
+    countries.push({ code: "N" + i, name: name, color: color, alive: true, label: null, claims: claims ? claims.slice() : undefined });
     groupsDirty = true;
     countriesVersion++;
-    return { t: "country", c: i, from: null, to: { name: name, color: color } };
+    return { t: "country", c: i, from: null, to: claims ? { name: name, color: color, claims: claims.slice() } : { name: name, color: color } };
   }
   var freshCountry = -1;
   function newCountry() {
     var op = createCountry(uniqueName("New country"), freeColor([]));
     pushStep("New country", [op]);
     freshCountry = op.c;
-    ui.country = op.c; ui.erase = false; ui.city = null; ui.region = -1; ui.piece = null;
+    ui.country = op.c; ui.erase = false; ui.dispute = false; ui.city = null; ui.region = -1; ui.piece = null;
     setTool("paint");
     changed();
     if (canHover) { var inp = $("country-name"); inp.focus(); inp.select(); }
@@ -4095,12 +4169,15 @@
     var points = shape.n;
     after.forEach(function (p) { points += p.shape.n; });
     if (points > MAX_PIECE_POINTS) { toast("That is as much drawn land as a map can hold, remove some first"); return; }
+    var made = null;
+    if (to === NEW_DISPUTE) { var dn = disputeNow(); made = dn.op; to = dn.c; touched.add(to); }
     shape.units.forEach(function (u) { touched.add(owner[u]); });
     var piece = { id: ++pieceSeq, owner: to, shape: shape, edges: null };
     after.push(piece);
     pieces = after;
     piecesChanged();
-    var ops = [{ t: "pieces", from: before, to: after }], label = "Drawing a border";
+    var ops = [{ t: "pieces", from: before, to: after }], label = isDispute(to) ? "Making land disputed" : "Drawing a border";
+    if (made) ops.unshift(made);
     if (fresh) {
       var name = cityIn(piece) || titleUnder(shape);
       if (name) {
@@ -4343,18 +4420,23 @@
     if (ui.tool === "select") {
       if (ui.city) setHint(["Drag the city on the " + where + " to move it"]);
       else if (c < 0 && ui.region >= 0 && owner[ui.region] < 0) setHint(["No country holds this land"]);
+      else if (isDispute(c)) setHint(["Disputed between " + claimNames(claimantsOf(c))]);
       else if (c >= 0) setHint(["Rename or recolour ", { b: countries[c].name }, ", or paint its borders"]);
       else setHint([verb + " a country or a city to change it, or found a new country"]);
     } else if (ui.tool === "paint") {
       var to = brush();
       var more = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : "";
       if (to === UNCLAIMED) setHint([(canHover ? "Click or drag over" : "Tap") + " regions to leave them unclaimed" + more]);
+      else if (ui.dispute && to === null) setHint([verb + " the countries that claim the land, at least two, or add them in the bar"]);
+      else if (ui.dispute) setHint([(canHover ? "Click or drag over" : "Tap") + (ui.whole ? " countries to make them disputed between " : " regions to make them disputed between ") + claimNames(liveClaims()) + more]);
       else if (to === null) setHint([verb + " a country to give land to, or found a new one"]);
       else setHint([(canHover ? "Click or drag over" : "Tap") + (ui.whole ? " countries to give them whole to " : " regions to give them to "), { b: countries[to].name }, more]);
     } else if (ui.tool === "draw") {
       var dto = brush();
       var dmore = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : " · two fingers move the " + where;
       if (dto === UNCLAIMED) setHint([(canHover ? "Drag" : "Draw") + " round land to leave it unclaimed" + dmore]);
+      else if (ui.dispute && dto === null) setHint([verb + " the countries that claim the land, at least two, or add them in the bar"]);
+      else if (ui.dispute) setHint([(canHover ? "Drag" : "Draw") + " round land to make it disputed between " + claimNames(liveClaims()) + dmore]);
       else if (dto === null) setHint([verb + " a country to give land to, or found a new one"]);
       else setHint([(canHover ? "Drag" : "Draw") + " round land to give it to ", { b: countries[dto].name }, dmore]);
     } else {
@@ -4362,7 +4444,7 @@
     }
 
     if (freshCountry >= 0 && c !== freshCountry) scheduleChecks();
-    var showCountry = c >= 0 && !ui.city && ui.tool !== "city" && !((ui.tool === "paint" || ui.tool === "draw") && ui.erase);
+    var showCountry = c >= 0 && !ui.city && ui.tool !== "city" && !((ui.tool === "paint" || ui.tool === "draw") && (ui.erase || ui.dispute)) && !isDispute(c);
     $("country-pane").hidden = !showCountry;
     if (showCountry) {
       var inp = $("country-name");
@@ -4406,15 +4488,18 @@
       syncCountryPick(c);
     }
     var r0 = ui.region, pc0 = ui.tool === "select" && !ui.city ? ui.piece : null;
-    var showRegion = !pc0 && ui.tool === "select" && !ui.city && r0 >= 0 && r0 < nUnit && ((c >= 0 && owner[r0] === c && regionUnits(r0).length < (unitsOf[c] || []).length) || owner[r0] < 0);
+    var showRegion = !pc0 && ui.tool === "select" && !ui.city && r0 >= 0 && r0 < nUnit && ((c >= 0 && owner[r0] === c && regionUnits(r0).length < (unitsOf[c] || []).length) || owner[r0] < 0 || isDispute(owner[r0]));
     $("region-line").hidden = !showRegion && !pc0;
     $("remove-piece").hidden = !pc0;
-    if (pc0) $("region-name").textContent = pc0.owner < 0 ? "Drawn land, unclaimed" : "Drawn land";
-    else if (showRegion) $("region-name").textContent = "Region: " + regionName(r0) + (owner[r0] < 0 ? ", unclaimed" : "");
+    if (pc0) $("region-name").textContent = pc0.owner < 0 ? "Drawn land, unclaimed" : isDispute(pc0.owner) ? "Drawn land, disputed between " + claimNames(claimantsOf(pc0.owner)) : "Drawn land";
+    else if (showRegion) $("region-name").textContent = "Region: " + regionName(r0) + (owner[r0] < 0 ? ", unclaimed" : isDispute(owner[r0]) ? ", disputed between " + claimNames(claimantsOf(owner[r0])) : "");
     $("land-pane").hidden = !landTool();
     if (landTool()) {
-      var bto = brush(), named = bto !== null && bto >= 0;
-      $("land-to").setAttribute("aria-pressed", String(!ui.erase));
+      var bto = ui.dispute ? currentCountry() : brush(), named = bto !== null && bto >= 0 && !isDispute(bto);
+      $("land-to").setAttribute("aria-pressed", String(!ui.erase && !ui.dispute));
+      $("paint-dispute").setAttribute("aria-pressed", String(ui.dispute));
+      $("claims-row").hidden = !ui.dispute;
+      if (ui.dispute) renderClaims();
       $("land-to-name").textContent = named ? countries[bto].name : "a country";
       $("land-to-dot").style.background = named ? colorOf(bto) : "none";
       $("land-to-dot").style.boxShadow = named && pal.antique ? "inset 0 0 0 2px " + bandOf(bto) : "none";
@@ -4469,7 +4554,7 @@
     sel.appendChild(head);
     var list = [], cur = currentCountry();
     freshGroups();
-    countries.forEach(function (co, i) { if (co.alive && (i === cur || hasLand(i))) list.push(i); });
+    countries.forEach(function (co, i) { if (co.alive && !co.claims && (i === cur || hasLand(i))) list.push(i); });
     list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     pickVersion = countriesVersion;
@@ -4483,7 +4568,7 @@
     sel.appendChild(new Option("No one: it rules itself", "-1"));
     var list = [];
     freshGroups();
-    countries.forEach(function (co, i) { if (i !== c && co.alive && hasLand(i) && !rules(c, i)) list.push(i); });
+    countries.forEach(function (co, i) { if (i !== c && co.alive && !co.claims && hasLand(i) && !rules(c, i)) list.push(i); });
     list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     sel.value = String(rulerOf(c));
@@ -4553,7 +4638,7 @@
   $("country-pick").addEventListener("change", function () {
     var v = $("country-pick").value;
     if (v === "") return;
-    ui.country = +v; ui.erase = false; ui.region = -1; ui.piece = null; ui.city = null;
+    ui.country = +v; ui.erase = false; ui.dispute = false; ui.region = -1; ui.piece = null; ui.city = null;
     renderPanel(); scheduleRender();
     flyToCountry(ui.country);
   });
@@ -4574,16 +4659,56 @@
       });
     });
   });
-  $("paint-with").addEventListener("click", function () { ui.erase = false; setTool("paint"); });
+  $("paint-with").addEventListener("click", function () { ui.erase = false; ui.dispute = false; setTool("paint"); });
   $("dissolve").addEventListener("click", function () { var c = currentCountry(); if (c >= 0) dissolve(c); });
   $("move-name").addEventListener("click", function () { var c = currentCountry(); if (c >= 0) moveName(c); });
   $("remove-piece").addEventListener("click", function () { if (ui.piece) removePiece(ui.piece); });
-  $("land-to").addEventListener("click", function () { ui.erase = false; renderPanel(); scheduleRender(); });
+  $("land-to").addEventListener("click", function () { ui.erase = false; ui.dispute = false; renderPanel(); scheduleRender(); });
   $("brush-lasso").addEventListener("click", function () { setTool("draw"); });
   $("new-country").addEventListener("click", newCountry);
   $("paint-regions").addEventListener("click", function () { ui.whole = false; if (ui.tool !== "paint") setTool("paint"); else { renderPanel(); scheduleRender(); } });
-  $("paint-whole").addEventListener("click", function () { ui.whole = true; ui.erase = false; if (ui.tool !== "paint") setTool("paint"); else { renderPanel(); scheduleRender(); } });
-  $("paint-erase").addEventListener("click", function () { ui.erase = true; ui.whole = false; renderPanel(); scheduleRender(); });
+  $("paint-whole").addEventListener("click", function () { ui.whole = true; ui.erase = false; ui.dispute = false; if (ui.tool !== "paint") setTool("paint"); else { renderPanel(); scheduleRender(); } });
+  $("paint-erase").addEventListener("click", function () { ui.erase = true; ui.dispute = false; ui.whole = false; renderPanel(); scheduleRender(); });
+  $("paint-dispute").addEventListener("click", function () {
+    ui.dispute = true; ui.erase = false;
+    var c = currentCountry();
+    if (!liveClaims().length && c >= 0 && !isDispute(c)) ui.claims = [c];
+    renderPanel(); scheduleRender();
+  });
+  $("claims-add").addEventListener("change", function () {
+    var v = +this.value;
+    this.value = "";
+    if (isInt(v) && v >= 0) takeClaim(v);
+    renderPanel(); scheduleRender();
+  });
+  var claimsVersion = "";
+  function renderClaims() {
+    var cl = liveClaims(), box = $("claims-list");
+    ui.claims = cl;
+    box.textContent = "";
+    cl.forEach(function (k) {
+      var b = document.createElement("button"), dot = document.createElement("span");
+      b.type = "button"; b.className = "uc-claim";
+      dot.className = "uc-dot"; dot.style.background = colorOf(k);
+      dot.style.boxShadow = pal.antique ? "inset 0 0 0 2px " + bandOf(k) : "none";
+      b.appendChild(dot); b.appendChild(document.createTextNode(countries[k].name + " \u00d7"));
+      b.setAttribute("aria-label", "Remove " + countries[k].name + " from the claimants");
+      b.addEventListener("click", function () { ui.claims = liveClaims().filter(function (x) { return x !== k; }); renderPanel(); scheduleRender(); });
+      box.appendChild(b);
+    });
+    var key = countriesVersion + "/" + ownerVersion + "/" + cl.join(",");
+    if (key === claimsVersion) return;
+    claimsVersion = key;
+    var sel = $("claims-add"), head = cl.length ? "add another" : "add a country", list = [];
+    sel.textContent = "";
+    sel.appendChild(new Option(head, ""));
+    freshGroups();
+    countries.forEach(function (co, i) { if (co.alive && !co.claims && hasLand(i) && cl.indexOf(i) < 0) list.push(i); });
+    list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
+    list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
+    sel.value = "";
+    $("claims-add-name").textContent = head;
+  }
   $("city-name").addEventListener("input", function () { if (ui.city) setCityName(ui.city, $("city-name").value.slice(0, NAME_MAX)); });
   $("city-name").addEventListener("blur", function () {
     if (ui.city && !ui.city.name.trim()) { setCityName(ui.city, "Unnamed city"); $("city-name").value = ui.city.name; }
@@ -4819,7 +4944,7 @@
     return { name: name, lon: row[1], lat: row[2], tier: tier, cap: row[4] ? 1 : 0 };
   }
   function round4(x) { return Math.round(x * 1e4) / 1e4; }
-  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r", "n"];
+  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r", "n", "d"];
   function encodePolys(polys) {
     return polys.map(function (poly) {
       return poly.map(function (ring) {
@@ -4930,6 +5055,9 @@
     var ns = [];
     countries.forEach(function (c, i) { if (c.alive && isInt(c.spot) && c.spot > 0) ns.push([i, c.spot]); });
     if (ns.length) d.n = ns;
+    var ds = [];
+    countries.forEach(function (c, i) { if (c.alive && c.claims && c.claims.length) ds.push([i, c.claims.slice()]); });
+    if (ds.length) d.d = ds;
     var rs = [];
     countries.forEach(function (c, i) {
       var r = isInt(c.ruler) ? c.ruler : -1, b = base.countries[i], br = b ? b.ruler : -1;
@@ -4990,6 +5118,14 @@
       if (!Array.isArray(row) || !isInt(row[1]) || row[1] < 1 || row[1] > 3) return;
       var i = ownerOf(row[0]);
       if (i !== null && i >= 0 && countries[i]) countries[i].lines = row[1];
+    });
+    if (Array.isArray(d.d)) d.d.slice(0, MAX_NEW).forEach(function (row) {
+      if (!Array.isArray(row) || !Array.isArray(row[1])) return;
+      var i = ownerOf(row[0]);
+      if (i === null || i < nb || !countries[i]) return;
+      var cl = [];
+      row[1].slice(0, 12).forEach(function (v) { var o = ownerOf(v); if (o !== null && o >= 0 && o !== i && cl.indexOf(o) < 0) cl.push(o); });
+      if (cl.length) countries[i].claims = cl;
     });
     if (Array.isArray(d.n)) d.n.slice(0, nb + MAX_NEW).forEach(function (row) {
       if (!Array.isArray(row) || !isInt(row[1]) || row[1] < 1 || row[1] > 7) return;
@@ -5336,7 +5472,7 @@
     var caps = capitalsBy(), names = new Map();
     if (freshCountry >= 0 && currentCountry() !== freshCountry) freshCountry = -1;
     countries.forEach(function (co, i) {
-      if (!co.alive || i === freshCountry) return;
+      if (!co.alive || co.claims || i === freshCountry) return;
       var founded = /^N\d+$/.test(co.code);
       if (DEFAULT_NAME.test(co.name) || UNNAMED_COUNTRY.test(co.name)) out.push({ country: i, name: co.name, note: "Never renamed", rename: true });
       if (!hasLand(i)) { if (founded) out.push({ country: i, name: co.name, note: "Has no land" }); return; }
@@ -5413,7 +5549,7 @@
     var c = it.country;
     if (!countries[c] || !countries[c].alive) { runChecks(); return; }
     if (ui.tool !== "select") setTool("select");
-    ui.country = c; ui.city = null; ui.region = -1; ui.piece = null; ui.erase = false;
+    ui.country = c; ui.city = null; ui.region = -1; ui.piece = null; ui.erase = false; ui.dispute = false;
     renderPanel(); scheduleRender();
     flyToCountry(c);
     if (it.rename && canHover) { var ni = $("country-name"); ni.focus(); ni.select(); }
@@ -5655,13 +5791,13 @@
       var b = arcB[a];
       if (b < 0 || arcA[a] < 0) continue;
       var oa = owner[arcA[a]], ob = owner[b];
-      if (oa >= 0 && ob >= 0 && oa !== ob) { touch[oa].add(ob); touch[ob].add(oa); }
+      if (oa >= 0 && ob >= 0 && oa !== ob && !isDispute(oa) && !isDispute(ob)) { touch[oa].add(ob); touch[ob].add(oa); }
     }
     var cl = closeList || unitClose;
     if (cl) for (var u = 0; u < cl.length; u++) {
       var ou = owner[u];
-      if (ou < 0) continue;
-      cl[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
+      if (ou < 0 || isDispute(ou)) continue;
+      cl[u].forEach(function (q) { var oq = owner[q]; if (oq >= 0 && !isDispute(oq) && oq !== ou && !touch[ou].has(oq)) { near[ou].add(oq); near[oq].add(ou); } });
     }
     return { touch: touch, near: near };
   }
@@ -6089,7 +6225,7 @@
       if (!n) return -1;
       if (/^(unclaimed|no one|nobody|none|terra nullius)$/.test(n)) return UNCLAIMED;
       if (alias.has(n)) return alias.get(n);
-      countries.forEach(function (c, i) { if (hit < 0 && c.alive && plainName(c.name) === n) hit = i; });
+      countries.forEach(function (c, i) { if (hit < 0 && c.alive && !c.claims && plainName(c.name) === n) hit = i; });
       if (hit < 0) base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n && countries[i] && countries[i].alive) hit = i; });
       return hit < 0 ? null : hit;
     };
@@ -6240,8 +6376,9 @@
     freshGroups();
     places = new Map();
     var lines = [], baseHas = new Set(base.provOwner), oldName = function (o) { return o >= 0 && base.countries[o] ? base.countries[o].name : "no country"; };
-    var nowName = function (o) { return o >= 0 && countries[o] && countries[o].alive ? countries[o].name : "unclaimed land"; };
+    var nowName = function (o) { return o >= 0 && countries[o] && countries[o].alive ? (countries[o].claims ? "land disputed between " + claimNames(claimantsOf(o)) : countries[o].name) : "unclaimed land"; };
     countries.forEach(function (co, i) {
+      if (co.claims) return;
       var b = base.countries[i], alive = co.alive && hasLand(i);
       if (alive && co.label) addPlace(co.name, co.label.lon, co.label.lat, 0);
       if (!b) { if (alive) lines.push("A new country: " + co.name + "."); return; }
@@ -6276,13 +6413,15 @@
     }
     moves.forEach(function (m) {
       if (m.to < 0) lines.push("Left unclaimed, once " + oldName(m.from) + ": " + listOf(m.names, 40) + ".");
+      else if (isDispute(m.to)) lines.push("Disputed between " + claimNames(claimantsOf(m.to)) + ", once " + (m.from < 0 ? "unclaimed" : oldName(m.from) + "'s") + ": " + listOf(m.names, 40) + ".");
       else lines.push(nowName(m.to) + " holds, once " + (m.from < 0 ? "unclaimed" : oldName(m.from) + "'s") + ": " + listOf(m.names, 40) + ".");
     });
     pieces.forEach(function (pc) {
       var cover = shapeCover(pc.shape).units, from = new Set(), names = [];
       cover.forEach(function (u) { var q = unitProv[u]; from.add(base.provOwner[q]); names.push(provName[q]); });
       if (from.size === 1 && from.has(pc.owner)) return;
-      lines.push("A border drawn by hand gives " + nowName(pc.owner) + " land in " + listOf(names, 6) + ", once " + listOf(Array.from(from).map(oldName), 4) + ".");
+      if (isDispute(pc.owner)) lines.push("A border drawn by hand makes land in " + listOf(names, 6) + " disputed between " + claimNames(claimantsOf(pc.owner)) + ", once " + listOf(Array.from(from).map(oldName), 4) + ".");
+      else lines.push("A border drawn by hand gives " + nowName(pc.owner) + " land in " + listOf(names, 6) + ", once " + listOf(Array.from(from).map(oldName), 4) + ".");
     });
     base.cities.forEach(function (b, i) {
       var c = cityIndex.get("b" + i);
@@ -6303,7 +6442,7 @@
     if (!lines.length) return "";
     var caps = [];
     capitalsBy().forEach(function (list, o) {
-      if (!countries[o] || !countries[o].alive) return;
+      if (!countries[o] || !countries[o].alive || countries[o].claims) return;
       var named = lines.some(function (l) { return l.indexOf(countries[o].name) >= 0; });
       if (named && list.length) { caps.push(countries[o].name + ": " + list.map(function (c) { addPlace(c.name, c.lon, c.lat, 0); return c.name; }).join(", ")); }
     });

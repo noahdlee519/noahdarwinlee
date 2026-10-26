@@ -1185,6 +1185,37 @@ body.uc-page {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.uc-claims {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.uc-claim {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border: 1px solid var(--uc-muted);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.uc-claim:hover {
+  border-color: var(--ink);
+}
+.uc-claim-add #claims-add-name {
+  white-space: nowrap;
+  border-bottom: 1px dotted var(--uc-muted);
+}
+.uc-claim-add:hover #claims-add-name {
+  border-bottom-style: solid;
+  border-bottom-color: var(--ink);
+}
 .uc-dot {
   flex: 0 0 auto;
   width: 10px;
