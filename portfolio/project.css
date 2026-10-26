@@ -203,7 +203,8 @@ a {
   scroll-snap-stop: always;
 }
 
-.slide img {
+.slide img,
+.slide video {
   display: block;
   width: 100%;
   height: auto;

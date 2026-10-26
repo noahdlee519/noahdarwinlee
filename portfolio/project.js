@@ -18,6 +18,15 @@
 
   function show(i) {
     at = i;
+    slides.forEach(function (s, k) {
+      var v = s.querySelector("video");
+      if (!v) return;
+      if (k !== i) v.pause();
+      else if (!reduce) {
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+    });
     count.textContent = i + 1 + " / " + slides.length;
     cap.textContent = slides[i].getAttribute("data-cap");
     prev.disabled = i === 0;
