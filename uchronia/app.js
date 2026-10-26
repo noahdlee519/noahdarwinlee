@@ -6024,8 +6024,10 @@
       if (playIntro()) {
         l.remove();
         bar.classList.add("is-ruled", "is-ruled-still");
+        firstTour(3300);
         return;
       }
+      firstTour(900);
       l.classList.add("is-gone");
       bar.classList.add("is-ruled");
       setTimeout(function () { if (l.isConnected) l.remove(); }, 1000);
@@ -6950,7 +6952,144 @@
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 
+  var STORE_TOUR = "uchronia-tour";
+  var TOUR = [
+    { title: "Welcome to UCHRONIA", text: "Redraw the world as it might have been: give land to other countries, found new ones, and place their cities. This tour takes a minute, and the File menu opens it again." },
+    { target: ".uc-controls", title: "Moving the map", text: "Drag the globe to turn it, and scroll or pinch to zoom. These buttons zoom, switch to the flat map (M) or the satellite view (S), and hide the interface (H)." },
+    { target: "[data-tool=\"select\"]", title: "Select", text: "Select (V): click a country to rename or recolour it, make it a subject of another, or dissolve it. Click a city to rename it, change its size, or drag it somewhere else." },
+    { target: "[data-tool=\"land\"]", title: "Give land", text: "Give land (B): choose a country, then click or drag over states and provinces to give them to it. Whole countries go in one click, the lasso (D) draws round land freehand, and Disputed stripes land between its claimants." },
+    { target: "[data-tool=\"city\"]", title: "Settlements", text: "Settlements (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
+    { target: "#new-country", title: "New country", text: "Founds a country with a name and a colour of its own. Give it land next." },
+    { target: "#undo", title: "Undo", text: "Every change is one step. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
+    { target: "#history-btn", title: "Historian", text: "Claude writes how your map came to be, answers questions about it, or redraws the whole world from a turning point, such as “What if Rome never fell?” It needs a Google sign-in, and each account can ask five times a day." },
+    { target: "#check-menu", title: "Check", text: "Lists things worth a look: countries with no name or no capital, and neighbours that share a colour. Click one to go to it." },
+    { target: "#file-menu", title: "File", text: "Copy a link to your map, save it as a file or open one, post it to r/uchronia, or start over. Your map is also kept in this browser as you go, and this tour is here too." },
+    { target: "#adv", title: "View", text: "Switch between the Antique, Light, and Dark styles, and choose what the map shows: names, settlements, borders, terrain, rivers, and more." },
+    { title: "Over to you", text: "Try giving a province to a neighbour, or ask the historian what would have happened if a war had gone the other way." }
+  ];
+  var tourAt = -1, tourBack = null, tourRaf = 0, tourRect = "", tourSheet = -1;
+  function tourSeen() { try { return localStorage.getItem(STORE_TOUR) === "done"; } catch (e) { return false; } }
+  function tourDone() { try { localStorage.setItem(STORE_TOUR, "done"); } catch (e) { } }
+  function tourTarget(step) {
+    if (!step.target) return null;
+    var el = document.querySelector(step.target);
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) return null;
+    if (el.closest("[hidden]")) return null;
+    if (panel.contains(el)) {
+      var p = panel.getBoundingClientRect();
+      if (r.top < p.top - 1 || r.bottom > p.bottom + 1) return null;
+    }
+    return r;
+  }
+  function tourSheetFor(step) {
+    if (!sheetMode || !step.target) return;
+    var el = document.querySelector(step.target);
+    if (!el || !panel.contains(el)) return;
+    if (tourSheet < 0) tourSheet = sheetState();
+    if (sheetState() !== SHEET_OPEN) setSheetState(SHEET_OPEN);
+    setTimeout(function () {
+      if (tourAt < 0 || TOUR[tourAt] !== step) return;
+      var r = el.getBoundingClientRect(), c = $("tour-card").getBoundingClientRect(), p = panel.getBoundingClientRect();
+      var top = Math.max(p.top, c.bottom) + 16, bottom = Math.min(p.bottom, window.innerHeight) - 16;
+      if (r.top < top) panel.scrollTop -= top - r.top;
+      else if (r.bottom > bottom) panel.scrollTop += r.bottom - bottom;
+      tourRect = "";
+    }, 320);
+  }
+  function placeTour() {
+    if (tourAt < 0) return;
+    var step = TOUR[tourAt], r = tourTarget(step), ring = $("tour-ring"), card = $("tour-card");
+    var key = r ? [r.left, r.top, r.width, r.height, window.innerWidth, window.innerHeight].map(Math.round).join() : "none" + window.innerWidth + "x" + window.innerHeight;
+    if (key === tourRect) return;
+    tourRect = key;
+    var vw = window.innerWidth, vh = window.innerHeight, pad = 6;
+    $("tour").classList.toggle("is-free", !r);
+    if (r) {
+      ring.hidden = false;
+      ring.style.left = Math.round(r.left - pad) + "px";
+      ring.style.top = Math.round(r.top - pad) + "px";
+      ring.style.width = Math.round(r.width + pad * 2) + "px";
+      ring.style.height = Math.round(r.height + pad * 2) + "px";
+    } else ring.hidden = true;
+    card.style.left = card.style.top = "";
+    if (!r || phoneQuery.matches) return;
+    var cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
+    var x = Math.max(12, Math.min(vw - cw - 12, r.left + r.width / 2 - cw / 2));
+    var y = r.bottom + pad + gap;
+    if (y + ch > vh - 12) y = r.top - pad - gap - ch;
+    if (y < 12) {
+      y = Math.max(12, Math.min(vh - ch - 12, r.top + r.height / 2 - ch / 2));
+      x = r.left - pad - gap - cw >= 12 ? r.left - pad - gap - cw : Math.min(vw - cw - 12, r.right + pad + gap);
+    }
+    card.style.left = Math.round(x) + "px";
+    card.style.top = Math.round(y) + "px";
+  }
+  function tourFrame() {
+    tourRaf = 0;
+    if (tourAt < 0) return;
+    placeTour();
+    tourRaf = requestAnimationFrame(tourFrame);
+  }
+  function showTourStep(i) {
+    tourAt = Math.max(0, Math.min(TOUR.length - 1, i));
+    var step = TOUR[tourAt], last = tourAt === TOUR.length - 1;
+    $("tour-count").textContent = (tourAt + 1) + " of " + TOUR.length;
+    $("tour-title").textContent = step.title;
+    $("tour-text").textContent = step.text;
+    $("tour-back").hidden = tourAt === 0;
+    $("tour-skip").hidden = last;
+    $("tour-next").textContent = last ? "Start" : tourAt === 0 ? "Show me" : "Next";
+    tourRect = "";
+    placeTour();
+    tourSheetFor(step);
+  }
+  function openTour(i) {
+    closeMenus();
+    if (!$("history").hidden) showHistory(false);
+    hideHint();
+    tourBack = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
+    $("tour").hidden = false;
+    showTourStep(i || 0);
+    $("tour-next").focus({ preventScroll: true });
+    if (!tourRaf) tourRaf = requestAnimationFrame(tourFrame);
+  }
+  function closeTour() {
+    if (tourAt < 0) return;
+    tourAt = -1;
+    tourDone();
+    $("tour").hidden = true;
+    if (tourRaf) { cancelAnimationFrame(tourRaf); tourRaf = 0; }
+    if (tourSheet >= 0 && sheetMode) setSheetState(tourSheet);
+    tourSheet = -1;
+    if (tourBack && tourBack.isConnected && tourBack.focus) tourBack.focus({ preventScroll: true });
+    else canvas.focus({ preventScroll: true });
+    tourBack = null;
+  }
+  function firstTour(delay) {
+    if (tourSeen() || signedBack) return;
+    setTimeout(function () {
+      if (tourAt >= 0 || tourSeen() || !$("history").hidden) return;
+      openTour(0);
+    }, delay);
+  }
+  $("tour-next").addEventListener("click", function () { if (tourAt >= TOUR.length - 1) closeTour(); else showTourStep(tourAt + 1); });
+  $("tour-back").addEventListener("click", function () { showTourStep(tourAt - 1); });
+  $("tour-skip").addEventListener("click", closeTour);
+  $("tutorial").addEventListener("click", function () { setTimeout(function () { openTour(0); }, 0); });
+  window.addEventListener("keydown", function (e) {
+    if (tourAt < 0) return;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
+    if (!$("tour-card").contains(e.target)) return;
+    if (e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); $("tour-next").click(); }
+    else if (e.key === "ArrowLeft" && tourAt > 0) { e.preventDefault(); e.stopPropagation(); showTourStep(tourAt - 1); }
+  }, true);
+
   window.__uchronia = {
+    tour: function (i) { openTour(i || 0); },
+    tourStep: function () { return tourAt; },
+    tourBox: function () { var c = $("tour-card").getBoundingClientRect(), r = $("tour-ring"); return { card: [c.left, c.top, c.width, c.height], ring: r.hidden ? null : [r.offsetLeft, r.offsetTop, r.offsetWidth, r.offsetHeight] }; },
     ready: function () { var r = document.documentElement.classList; return !!feats && r.contains("uc-ready") && !r.contains("uc-intro"); },
     ui: ui, view: view,
     countries: function () { return countries; },

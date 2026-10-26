@@ -465,7 +465,7 @@ of `/greatercircle/`.
 
 - The bar along the top holds the tools, *New country*, undo and redo, and
   **Historian** and three menus: **Check**, **File** (copy a link, save a file, open one, start
-  over) and **View** (the style, country names, names of seas, lakes, and
+  over, the tutorial) and **View** (the style, country names, names of seas, lakes, and
   rivers, settlements, small towns, region borders (every line inside the
   countries, both tiers), terrain, rivers, small lakes,
   latitude and longitude, the scale bar, finer regions). Historian and the
@@ -498,6 +498,22 @@ of `/greatercircle/`.
   canvas roughly halves the time a frame takes while dragging. What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
+- **The tutorial** is a tour of twelve short cards that a first-time visitor
+  sees once the map has appeared (after the Antique opening, about 3.3
+  seconds in; otherwise just under a second). It is not shown to a visitor
+  returning from Google sign-in, or while the historian is open. Each card
+  names a part of the page and what it does: the map controls, Select, Give
+  land, Settlements, *New country*, undo, Historian, Check, File, and View,
+  between a welcome and a closing card. The part in question is ringed in
+  the selection colour, and the rest of the page is dimmed but stays usable;
+  a card with nothing to ring sits in the middle of the window. The card
+  goes below the part it describes, or above or beside it where there is no
+  room. On a phone it sits at the top of the screen, and the sheet opens
+  and scrolls so that the part shows below it, going back to how it was when
+  the tour ends. *Skip the tour*, the last card's *Start*, or Escape ends it,
+  and ← and → step through it while the card has the focus. Once ended it is
+  not shown again (`localStorage["uchronia-tour"]` is `done`), and
+  **Tutorial** in the File menu opens it at the start.
 - **Historian** opens a panel in which a historian of the map's world writes
   how it came to look as it does: the points where its history parted from
   ours, each with a year and a cause, and what followed from them, in three
@@ -766,7 +782,11 @@ in the repo. They covered:
 - label placement;
 - the satellite view and its close-up tiles, against a stand-in tile server
   built from the base image;
-- the phone sheet, and both themes.
+- the phone sheet, and both themes;
+- the tutorial: shown once on a first visit, after the Antique opening and
+  without it, every card's ring and placement in the three styles and on a
+  phone (with the sheet opening and scrolling), Escape, the arrow keys,
+  focus coming back, and opening it again from the File menu.
 
 ## Credits
 

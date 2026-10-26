@@ -1361,6 +1361,121 @@ body.uc-page {
 a.uc-menu-item {
   box-sizing: border-box;
 }
+.uc-tour[hidden],
+.uc-tour-ring[hidden],
+.uc-tour-card [hidden] {
+  display: none;
+}
+.uc-tour-ring {
+  position: fixed;
+  z-index: 49;
+  box-sizing: border-box;
+  border: 2px solid var(--uc-select);
+  border-radius: 4px;
+  box-shadow: 0 0 0 9999px var(--uc-tour-dim);
+  pointer-events: none;
+}
+.uc-tour.is-free::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: var(--uc-tour-dim);
+  pointer-events: none;
+}
+.uc-tour-card {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(360px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 14px 18px 14px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.uc-tour-card[style*="left"] {
+  translate: none;
+}
+.uc-tour-count {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--uc-muted);
+}
+.uc-tour-title {
+  margin: 4px 0 0;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.uc-tour-text {
+  margin: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.uc-tour-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+.uc-tour-skip {
+  margin-right: auto;
+  color: var(--uc-muted);
+}
+.uc-tour-next {
+  margin-left: auto;
+  padding: 6px 14px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.uc-tour-next:hover {
+  background: none;
+  color: var(--ink);
+}
+:root {
+  --uc-tour-dim: rgba(0, 0, 0, 0.22);
+}
+:root[data-theme="dark"] {
+  --uc-tour-dim: rgba(0, 0, 0, 0.5);
+}
+:root[data-uc-style="antique"] {
+  --uc-tour-dim: rgba(58, 42, 27, 0.26);
+}
+:root[data-uc-style="antique"] .uc-tour-card {
+  font-family: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
+  background-image: var(--uc-grain);
+  background-size: 260px 260px;
+  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px rgba(58, 42, 27, 0.3);
+}
+:root[data-uc-style="antique"] .uc-tour-title {
+  font-size: 24px;
+}
+@media (max-width: 640px) {
+  .uc-tour-card,
+  .uc-tour-card[style*="left"] {
+    left: 12px !important;
+    right: 12px;
+    top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    width: auto;
+    translate: none;
+  }
+  .uc-tour-row button {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+}
 .uc-count {
   display: inline-block;
   min-width: 18px;
