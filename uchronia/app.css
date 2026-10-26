@@ -1713,7 +1713,8 @@ a.uc-menu-item {
     padding: 0 2px;
     font-size: 15px;
   }
-  .uc-menu > summary:hover {
+  .uc-menu > summary:hover,
+  .uc-hist-btn:hover {
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
