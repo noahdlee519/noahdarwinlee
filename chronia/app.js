@@ -47,6 +47,7 @@
     sizeRelief();
     var phone = phoneQuery.matches;
     var timeH = $("time").getBoundingClientRect().height || 80;
+    document.documentElement.style.setProperty("--ch-time-h", Math.round(timeH) + "px");
     var cardH = phone && !$("card").hidden ? $("card").getBoundingClientRect().height : 0;
     freeT = phone ? 58 : 76;
     freeB = H - timeH - cardH;
@@ -349,6 +350,7 @@
     ["ocean", "ocean-deep", "grat", "limb", "glow", "border", "label", "label-halo", "people", "city", "city-ring", "select", "hover", "paper", "people-fill", "water", "sea-label", "river"].forEach(function (k) {
       pal[k] = cs.getPropertyValue("--ch-" + k).trim();
     });
+    ["city-halo", "town"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
     pal.colors = []; pal.bands = [];
     for (var i = 0; i < PALETTE; i++) {
       pal.colors.push(cs.getPropertyValue("--ch-c" + i).trim() || "#e7d6b9");
@@ -374,7 +376,7 @@
   var catalogue = null, maps = [], land = null, places = [], sea = null, rivers = null, riversLoad = null, lakes = null, lakesLoad = null;
   var current = null, now = START_YEAR, wantKey = "", modern = null, cities = null;
   var selected = -1, hoverId = -1, ready = false;
-  var DAY0 = Date.UTC(1886, 0, 1), DAY_MS = 86400000, MONTHLY_FROM = 1976;
+  var DAY0 = Date.UTC(1886, 0, 1), DAY_MS = 86400000, MID_DAY = 15;
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   function dayFromDate(y, m, d) { return Math.round((Date.UTC(y, m - 1, d) - DAY0) / DAY_MS); }
@@ -512,17 +514,22 @@
     };
     var collection = { type: "GeometryCollection", geometries: geoms };
     var mesh = function (fn) { return prepareLines(topojson.mesh(topo, collection, fn)); };
+    var edges = outerEdges(topo, geoms, function (g) {
+      var p = polys[ix.get(g)];
+      return !p ? null : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
+    });
+    var arcsOf = function (lines) { return lines.map(prepareArc); };
     L = {
       geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed,
-      hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }),
-      soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }),
+      hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }).concat(arcsOf(edges.hard)),
+      soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }).concat(arcsOf(edges.soft)),
       kin: mesh(function (a, b) { return a !== b && kind(a, b) === 3; }),
+      bleed: edges.bleed.map(arcsOf), peopleBleed: arcsOf(edges.peopleBleed),
       bands: groups.map(function (list, c) {
         if (!list.length) return null;
         return mesh(function (a, b) {
-          if (a === b) return colOf(a) === c;
-          return (colOf(a) === c) !== (colOf(b) === c);
-        });
+          return a !== b && (colOf(a) === c) !== (colOf(b) === c);
+        }).concat(arcsOf(edges.inner[c]));
       })
     };
     if (key === "hi") {
@@ -531,6 +538,38 @@
     }
     snap.levels[key] = L;
     return L;
+  }
+  function outerEdges(topo, geoms, bucketOf) {
+    var owner = new Map();
+    var walk = function (g, a) {
+      if (typeof a === "number") {
+        var i = a < 0 ? ~a : a, o = owner.get(i);
+        if (o === undefined) owner.set(i, g); else if (o !== g) owner.set(i, null);
+        return;
+      }
+      for (var k = 0; k < a.length; k++) walk(g, a[k]);
+    };
+    geoms.forEach(function (g) { if (g.arcs) walk(g, g.arcs); });
+    var buckets = {};
+    owner.forEach(function (g, i) {
+      if (!g) return;
+      var b = bucketOf(g);
+      if (b === null) return;
+      (buckets[b] = buckets[b] || []).push([i]);
+    });
+    var out = { hard: [], soft: [], peopleBleed: [], bleed: [], inner: [] };
+    for (var c = 0; c < PALETTE; c++) { out.bleed.push([]); out.inner.push([]); }
+    Object.keys(buckets).forEach(function (b) {
+      var lines = topojson.feature(topo, { type: "MultiLineString", arcs: buckets[b] }).geometry.coordinates;
+      var coastal = [], inner = [];
+      splitCoast(lines, coastal, inner);
+      if (b === "p") { out.peopleBleed = coastal; out.soft = out.soft.concat(inner); return; }
+      var col = +b.slice(1);
+      out.bleed[col] = out.bleed[col].concat(coastal);
+      out.inner[col] = out.inner[col].concat(inner);
+      if (b[0] === "s") out.soft = out.soft.concat(inner); else out.hard = out.hard.concat(inner);
+    });
+    return out;
   }
   function useLevel() {
     var S = localScale();
@@ -585,12 +624,72 @@
   })();
 
   function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
-  function drawWaterLines(coast, S) {
-    var gap = Math.max(1.25, Math.min(3.4, S < 450 ? S / 240 : Math.max(1.7, S / 520))), n = moving ? 1 : S < 250 ? 2 : S < 450 ? 3 : 4;
+  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.35;
+  var canOff = typeof OffscreenCanvas === "function";
+  var bandCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d"), bandKey = "", bandImage = null, bandOld = null, bandFill = null;
+  var maskCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), maskCtx = maskCanvas.getContext("2d"), maskKey = "";
+  function drawCoastBand(id, paintFills, list, landPath, kp, line, alpha, peopleBleed, peoplePath, unnamedPath, bleed) {
+    var n = landCount(list, kp, line * BAND_ISLAND), m = landCount(list, kp, ISLAND_PX);
+    if (!m) return;
+    var res = moving ? Math.max(0.5, dpr * BAND_MOVING) : Math.max(1, dpr * BAND_RES);
+    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, res, line, n, m, list === land.hi ? 1 : 0].join();
+    if (vkey !== maskKey) paintCoastMask(list, landPath, n, m, line, res);
+    maskKey = vkey;
+    var key = id + "|" + vkey;
+    if (key !== bandKey) paintCoastBand(paintFills, peopleBleed, peoplePath, unnamedPath, bleed, res);
+    bandKey = key;
     ctx.save();
-    ctx.beginPath(); traceArcs(ctx, coast);
+    var k = canvas.width / bandCanvas.width;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = bandFill;
+    ctx.fillRect(0, 0, bandCanvas.width, bandCanvas.height);
+    ctx.restore();
+  }
+  function resetLayer(cv, res) {
+    var w = Math.max(1, Math.round(W * res)), h = Math.max(1, Math.round(H * res));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    var c = cv.getContext("2d");
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalCompositeOperation = "source-over"; c.globalAlpha = 1;
+    c.clearRect(0, 0, w, h);
+    c.setTransform(res, 0, 0, res, 0, 0);
+    c.lineJoin = "round"; c.lineCap = "round";
+    return c;
+  }
+  function paintCoastMask(list, landPath, n, m, line, res) {
+    var k = resetLayer(maskCanvas, res);
+    k.beginPath(); traceCoast(k, list, n); k.lineWidth = line; k.strokeStyle = "#000"; k.stroke();
+    k.beginPath();
+    for (var i = n; i < m; i++) traceFeature(k, list[i]);
+    k.fillStyle = "rgba(0,0,0," + ISLAND_TINT + ")"; k.fill();
+    k.globalCompositeOperation = "destination-in"; k.fillStyle = "#000"; k.fill(landPath);
+    k.globalCompositeOperation = "source-over";
+  }
+  function paintCoastBand(paintFills, peopleBleed, peoplePath, unnamedPath, bleed, res) {
+    var g = resetLayer(bandCanvas, res);
+    paintFills(g, pal.bands);
+    g.globalCompositeOperation = "destination-out";
+    g.fillStyle = "#000"; g.strokeStyle = "#000";
+    if (bleed > 0.6) { g.lineWidth = bleed; g.stroke(peopleBleed); }
+    g.fill(peoplePath); g.fill(unnamedPath);
+    g.globalCompositeOperation = "destination-in";
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.drawImage(maskCanvas, 0, 0);
+    g.globalCompositeOperation = "source-over";
+    if (bandOld && bandOld.close) bandOld.close();
+    bandOld = bandImage;
+    bandImage = canOff ? bandCanvas.transferToImageBitmap() : bandCanvas;
+    bandFill = ctx.createPattern(bandImage, "no-repeat");
+  }
+  function lineWeight(S) { return clamp01((S - 700) / 3300); }
+  function drawWaterLines(list, S) {
+    var gap = Math.max(1.25, Math.min(3.4, S < 450 ? S / 240 : Math.max(1.7, S / 520))), n = moving ? 1 : S < 250 ? 2 : S < 450 ? 3 : 4;
+    var kp = kmPx();
+    ctx.save();
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     for (var i = n; i >= 1; i--) {
+      ctx.beginPath(); traceCoast(ctx, list, landCount(list, kp, RIPPLE_PX * (n === 1 ? 1 : i)));
       ctx.globalAlpha = n === 1 ? 0.6 : 0.3 + 0.7 * (n - i) / (n - 1);
       ctx.strokeStyle = pal.water; ctx.lineWidth = 2 * i * gap + 0.9; ctx.stroke();
       ctx.globalAlpha = 1;
@@ -601,7 +700,7 @@
 
   var seaCanvas = document.createElement("canvas"), seaCtx = seaCanvas.getContext("2d"), seaKey = "";
   function drawSea(coast, S) {
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.coastHi ? 1 : 0].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : 0].join();
     if (key !== seaKey) {
       seaKey = key;
       if (seaCanvas.width !== canvas.width || seaCanvas.height !== canvas.height) { seaCanvas.width = canvas.width; seaCanvas.height = canvas.height; }
@@ -614,7 +713,7 @@
       ctx.save();
       ctx.beginPath(); traceSphere(ctx); ctx.clip();
       if (sea) { ctx.beginPath(); traceAll(ctx, S < 900 ? sea.low : sea.high); ctx.fillStyle = pal["ocean-deep"]; ctx.fill(); }
-      ctx.beginPath(); traceArcs(ctx, graticule); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+      if (layers.grid) { ctx.beginPath(); traceArcs(ctx, graticule); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke(); }
       drawWaterLines(coast, S);
       ctx.restore();
       ctx = main;
@@ -642,30 +741,37 @@
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(cx, cy, B.r * 1.07, 0, TAU); ctx.arc(cx, cy, B.r, 0, TAU, true); ctx.fill();
     }
-    var coast = key === "hi" ? land.coastHi : land.coastLo;
-    drawSea(coast, S);
+    drawSea(landList, S);
 
+    var nLand = landCount(landList, kp, ISLAND_PX);
     var landPath = new Path2D();
-    traceAll(landPath, landList);
+    for (var li = 0; li < nLand; li++) traceFeature(landPath, landList[li]);
     ctx.save();
     ctx.clip(landPath);
     ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, W, H);
-    var groupPaths = [], c;
+    var groupPaths = [], bleedPaths = [], c;
     for (c = 0; c < PALETTE; c++) {
-      if (!L.groups[c].length) { groupPaths.push(null); continue; }
+      if (!L.groups[c].length) { groupPaths.push(null); bleedPaths.push(null); continue; }
       var gp = new Path2D(); traceAll(gp, L.groups[c]); groupPaths.push(gp);
+      var bp = new Path2D(); traceArcs(bp, L.bleed[c]); bleedPaths.push(bp);
     }
     var peoplePath = new Path2D(); traceAll(peoplePath, L.peoples);
+    var peopleBleed = new Path2D(); traceArcs(peopleBleed, L.peopleBleed);
     var unnamedPath = new Path2D(); traceAll(unnamedPath, L.unnamed);
-    var bleed = Math.min(60, 24 * kp);
-    if (bleed > 0.6) {
-      for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { ctx.strokeStyle = pal.colors[c]; ctx.lineWidth = bleed; ctx.stroke(groupPaths[c]); }
-      ctx.strokeStyle = pal["people-fill"]; ctx.lineWidth = bleed; ctx.stroke(peoplePath);
-    }
-    for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { ctx.fillStyle = pal.colors[c]; ctx.fill(groupPaths[c]); }
+    var bleed = Math.min(80, 2 * BLEED_KM * kp);
+    var paintFills = function (g, colors) {
+      g.lineJoin = "round"; g.lineCap = "round";
+      if (bleed > 0.6) {
+        g.lineWidth = bleed;
+        for (c = 0; c < PALETTE; c++) if (bleedPaths[c]) { g.strokeStyle = colors[c]; g.stroke(bleedPaths[c]); }
+      }
+      for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { g.fillStyle = colors[c]; g.fill(groupPaths[c]); }
+    };
+    paintFills(ctx, pal.colors);
+    if (bleed > 0.6) { ctx.strokeStyle = pal["people-fill"]; ctx.lineWidth = bleed; ctx.stroke(peopleBleed); }
     ctx.fillStyle = pal["people-fill"]; ctx.fill(peoplePath);
     ctx.fillStyle = pal.paper; ctx.fill(unnamedPath);
-    if (reliefReady()) {
+    if (layers.relief && reliefReady()) {
       renderRelief();
       ctx.save();
       ctx.globalCompositeOperation = "overlay";
@@ -674,32 +780,36 @@
       ctx.restore();
     }
     var bw = bandWidth(S), softMap = snap.year !== null && snap.year < SOFT_BEFORE;
+    var bandAlpha = softMap ? 0.4 : 0.6, bandLine = bw * (softMap ? 3 : 2);
     for (c = 0; c < PALETTE; c++) {
       if (!groupPaths[c] || !L.bands[c]) continue;
       ctx.save();
       ctx.clip(groupPaths[c]);
       ctx.beginPath(); traceArcs(ctx, L.bands[c]);
-      ctx.globalAlpha = softMap ? 0.4 : 0.6;
-      ctx.strokeStyle = pal.bands[c]; ctx.lineWidth = bw * (softMap ? 3 : 2); ctx.lineCap = "round"; ctx.stroke();
+      ctx.globalAlpha = bandAlpha;
+      ctx.strokeStyle = pal.bands[c]; ctx.lineWidth = bandLine; ctx.lineCap = "round"; ctx.stroke();
       ctx.restore();
     }
     var hp = hoverId >= 0 ? snap.byId.get(hoverId) : null, sp = selected >= 0 ? snap.byId.get(selected) : null;
     if (hp && hp !== sp) { ctx.beginPath(); tracePolity(snap, L, hp.id); ctx.fillStyle = pal.hover; ctx.fill(); }
     if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.fillStyle = "rgba(140,42,26,0.12)"; ctx.fill(); }
     ctx.restore();
+    drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
 
     drawLakes(kp);
     drawRivers(S);
 
+    var lw = lineWeight(S);
     ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.beginPath(); traceArcs(ctx, coast); ctx.strokeStyle = pal.border; ctx.lineWidth = 0.75; ctx.stroke();
+    ctx.beginPath(); traceCoast(ctx, landList, nLand); ctx.strokeStyle = pal.border; ctx.lineWidth = 0.75 + 0.35 * lw; ctx.stroke();
     ctx.save();
     ctx.clip(landPath);
-    ctx.beginPath(); traceArcs(ctx, L.kin); ctx.globalAlpha = 0.55; ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.beginPath(); traceArcs(ctx, L.kin); ctx.globalAlpha = 0.55; ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6 + 0.3 * lw; ctx.stroke();
     ctx.globalAlpha = 1;
-    ctx.beginPath(); traceArcs(ctx, L.hard); ctx.lineWidth = 1.15; ctx.stroke();
+    ctx.beginPath(); traceArcs(ctx, L.hard); ctx.lineWidth = 1.15 + 0.55 * lw; ctx.stroke();
     ctx.beginPath(); traceArcs(ctx, L.soft);
-    ctx.setLineDash([0.1, S < 500 ? 2.6 : 3.4]); ctx.lineWidth = S < 500 ? 1.3 : 1.6; ctx.stroke();
+    var dot = S < 500 ? 1.3 : 1.6 + 0.5 * lw;
+    ctx.setLineDash([0.1, dot * 2.1]); ctx.lineWidth = dot; ctx.stroke();
     ctx.setLineDash([]);
     if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.8; ctx.stroke(); }
     ctx.restore();
@@ -753,6 +863,7 @@
   }
 
   function drawLakes(kp) {
+    if (!layers.water) return;
     if (!lakes) {
       if (!lakesLoad) lakesLoad = fetchJSON(UC + "data/lakes.json").then(function (rows) {
         lakes = rows.map(function (r) { return { name: r[0], km2: r[1], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
@@ -761,18 +872,23 @@
       }).catch(function (e) { console.warn("lakes", e); });
       return;
     }
-    ctx.beginPath();
+    var big = new Path2D(), small = new Path2D(), w = 0.6 + 0.3 * lineWeight(localScale());
     for (var i = 0; i < lakes.length; i++) {
-      if (Math.sqrt(lakes[i].km2) * kp < 2.5) break;
-      traceFeature(ctx, lakes[i].f);
+      var px = Math.sqrt(lakes[i].km2) * kp;
+      if (px < LAKE_PX) break;
+      traceFeature(px < LAKE_LINE_PX ? small : big, lakes[i].f);
     }
-    ctx.fillStyle = pal.ocean; ctx.fill();
-    ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.fillStyle = pal.ocean; ctx.fill(big); ctx.fill(small);
+    ctx.lineWidth = w;
+    ctx.strokeStyle = pal.border; ctx.stroke(big);
+    ctx.strokeStyle = pal.water; ctx.stroke(small);
   }
+  var LAKE_PX = 6, LAKE_LINE_PX = 18;
 
   var RIVERS_FROM = 520, RIVERS_FULL = 960;
   function riverRank(S) { return S < 800 ? 4 : S < 1300 ? 5 : 6; }
   function drawRivers(S) {
+    if (!layers.water) return;
     if (S < RIVERS_FROM) return;
     if (!rivers) {
       if (!riversLoad) riversLoad = fetchJSON(UC + "data/rivers.json").then(function (t) {
@@ -834,20 +950,18 @@
     return out;
   }
   var labelCache = new Map();
-  function labelFit(name, people, r, span, space) {
-    var key = (people ? "i" : "n") + (space || "") + name + "|" + r + "|" + span;
-    var hit = labelCache.get(key);
+  function labelOptions(name, people, space) {
+    var sp = space === undefined ? (people ? PEOPLE_SPACE : SPACE) : space;
+    var key = (people ? "i" : "n") + sp + name, hit = labelCache.get(key);
     if (hit) return hit;
-    var text = people ? name : name.toUpperCase(), best = null;
-    splits(text).forEach(function (lines) {
+    var text = people ? name : name.toUpperCase();
+    hit = splits(text).map(function (lines) {
       var w = 0;
-      lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people, space)); });
-      var h = CAP_H + LINE_H * (lines.length - 1);
-      var fkm = Math.min(span * 0.94 / w, 2 * r * 0.82 / h);
-      if (!best || fkm > best.fkm * 1.12) best = { lines: lines, fkm: fkm, w: w, h: h, space: space === undefined ? (people ? PEOPLE_SPACE : SPACE) : space };
+      lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people, sp)); });
+      return { lines: lines, w: w, h: CAP_H + LINE_H * (lines.length - 1), space: sp };
     });
-    labelCache.set(key, best);
-    return best;
+    labelCache.set(key, hit);
+    return hit;
   }
   function mkBox(x, y, hw, hh, ang) {
     var c = Math.abs(Math.cos(ang)), s = Math.abs(Math.sin(ang));
@@ -893,89 +1007,474 @@
     for (var i = 0; i < 4; i++) if (Math.hypot(corners[i][0] - cx, corners[i][1] - cy) > B.r - 2) return false;
     return true;
   }
-  function screenAngle(lon, lat, deg, p) {
-    if (!deg) return 0;
-    var a = deg * D2R, d = 60 / 111.2, cl = Math.max(0.05, Math.cos(lat * D2R));
-    var q = projectLL(lon + Math.cos(a) * d / cl, lat + Math.sin(a) * d);
-    if (!q) return 0;
-    var t = Math.atan2(q[1] - p[1], q[0] - p[0]);
-    if (t > HALF_PI) t -= Math.PI;
-    if (t < -HALF_PI) t += Math.PI;
-    if (Math.abs(t) < 0.1) return 0;
-    return Math.max(-0.7, Math.min(0.7, t));
-  }
   function labelSpots(L) {
     var cands = L[6] ? [L].concat(L[6]) : [L], out = [];
     for (var i = 0; i < cands.length; i++) {
-      var s = cands[i], p = projectLL(s[0], s[1]);
-      if (!p || p[2] < 0.25 || p[0] < -100 || p[0] > W + 100 || p[1] < -60 || p[1] > H + 60) continue;
-      out.push({ s: s, p: p, v: s[2] * p[2] * (i === 0 ? 1.15 : 1) });
+      var p = projectLL(cands[i][0], cands[i][1]);
+      if (p && p[2] >= 0.2) out.push(p);
     }
-    return out.sort(function (a, b) { return b.v - a.v; });
+    return out;
   }
-  function drawPolityLabels(snap, placed, kp) {
-    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
-    var small = [];
+  function packRing(xy, m) {
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (var k = 0; k < m; k += 2) {
+      var x = xy[k], y = xy[k + 1];
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+    return { xy: xy, n: m >> 1, x0: x0, y0: y0, x1: x1, y1: y1 };
+  }
+  function globeRing(rg, tol) {
+    var X = rg.x, Y = rg.y, Z = rg.z, n = rg.n, r = B.r, k;
+    for (k = 0; k < n; k++) if (X[k] * B.cx + Y[k] * B.cy + Z[k] * B.cz > 0) break;
+    if (k === n) return null;
+    var xy = new Float64Array(2 * n + 2), m = 0, lx = Infinity, ly = Infinity, side = 0, held = false, hx = 0, hy = 0;
+    for (k = 0; k < n; k++) {
+      var x = X[k], y = Y[k], z = Z[k];
+      var sx = x * B.ex + y * B.ey + z * B.ez, sy = x * B.nx + y * B.ny + z * B.nz;
+      if (x * B.cx + y * B.cy + z * B.cz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
+      var px = cx + r * sx, py = cy - r * sy, oc = outcode(px, py);
+      if (oc & side) { hx = px; hy = py; held = true; side &= oc; continue; }
+      if (held) { xy[m++] = hx; xy[m++] = hy; held = false; }
+      side = oc;
+      if (Math.abs(px - lx) + Math.abs(py - ly) < tol) continue;
+      xy[m++] = px; xy[m++] = py; lx = px; ly = py;
+    }
+    if (held) { xy[m++] = hx; xy[m++] = hy; }
+    return m >= 6 ? packRing(xy, m) : null;
+  }
+  function flatRing(rg, tol) {
+    flatArrays(rg);
+    var n = rg.n, LL = rg.L, P = rg.P, U = new Float64Array(n), l = wrapPi(LL[0]), min = l, max = l, sumY = P[0], k, d;
+    U[0] = l;
+    for (k = 1; k < n; k++) {
+      d = LL[k] - LL[k - 1];
+      if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+      l += d; U[k] = l; sumY += P[k];
+      if (l < min) min = l; else if (l > max) max = l;
+    }
+    d = LL[0] - LL[n - 1];
+    if (d > Math.PI) d -= TAU; else if (d < -Math.PI) d += TAU;
+    var wind = l + d - U[0];
+    if (Math.abs(wind) < Math.PI) wind = 0;
+    var sh = 0, over = 0;
+    for (var s = -1; s <= 1; s++) {
+      var o = Math.min(max + s * TAU, FB.vmax) - Math.max(min + s * TAU, FB.vmin);
+      if (o > over) { over = o; sh = s * TAU; }
+    }
+    if (over <= 0) return null;
+    var kk = FB.k, x0 = cx - kk * FB.xc, y0 = cy + kk * FB.yc;
+    var xy = new Float64Array(2 * n + 8), m = 0, lx = Infinity, ly = Infinity, side = 0, held = false, hx = 0, hy = 0;
+    for (k = 0; k < n; k++) {
+      var px = x0 + kk * (U[k] + sh), py = y0 - kk * P[k], oc = outcode(px, py);
+      if (oc & side) { hx = px; hy = py; held = true; side &= oc; continue; }
+      if (held) { xy[m++] = hx; xy[m++] = hy; held = false; }
+      side = oc;
+      if (Math.abs(px - lx) + Math.abs(py - ly) < tol) continue;
+      xy[m++] = px; xy[m++] = py; lx = px; ly = py;
+    }
+    if (held) { xy[m++] = hx; xy[m++] = hy; }
+    if (wind) {
+      var end = x0 + kk * (U[0] + wind + sh), start = x0 + kk * (U[0] + sh), pole = y0 - kk * (sumY < 0 ? -1 : 1) * HALF_PI;
+      xy[m++] = end; xy[m++] = y0 - kk * P[0]; xy[m++] = end; xy[m++] = pole; xy[m++] = start; xy[m++] = pole;
+    }
+    return m >= 6 ? packRing(xy, m) : null;
+  }
+  function rimRing() {
+    var xy = new Float64Array(144);
+    for (var k = 0; k < 72; k++) { xy[2 * k] = cx + B.r * Math.cos(k * TAU / 72); xy[2 * k + 1] = cy + B.r * Math.sin(k * TAU / 72); }
+    return packRing(xy, 144);
+  }
+  function screenShape(feats, tol, minSize) {
+    var rings = [], i, j, r;
+    for (i = 0; i < feats.length; i++) {
+      var f = feats[i];
+      if (!inView(f)) continue;
+      for (j = 0; j < f.rings.length; j++) {
+        r = flat ? flatRing(f.rings[j], tol) : globeRing(f.rings[j], tol);
+        if (r && r.x1 > 0 && r.x0 < W && r.y1 > 0 && r.y0 < H && r.x1 - r.x0 + r.y1 - r.y0 > minSize) rings.push(r);
+      }
+      if (!flat && f.radius > Math.PI / 4 && f.geo && -(f.cx * B.cx + f.cy * B.cy + f.cz * B.cz) >= Math.cos(f.radius) - 1e-9 &&
+        d3.geoContains(f.geo, [wrap180(view.lon + 180), -view.lat])) rings.push(rimRing());
+    }
+    if (!rings.length) return null;
+    var s = { rings: rings, x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    for (i = 0; i < rings.length; i++) {
+      r = rings[i];
+      s.x0 = Math.min(s.x0, r.x0); s.y0 = Math.min(s.y0, r.y0); s.x1 = Math.max(s.x1, r.x1); s.y1 = Math.max(s.y1, r.y1);
+    }
+    return s;
+  }
+  function boxCorners(b) {
+    var A = axesOf(b), ux = A.c * A.hw, uy = A.s * A.hw, vx = -A.s * A.hh, vy = A.c * A.hh;
+    return [A.cx - ux - vx, A.cy - uy - vy, A.cx + ux - vx, A.cy + uy - vy, A.cx + ux + vx, A.cy + uy + vy, A.cx - ux + vx, A.cy - uy + vy];
+  }
+  function obstacles(placed, s) {
+    var x0 = s.x0 - 40, y0 = s.y0 - 40, x1 = s.x1 + 40, y1 = s.y1 + 40;
+    var e = 6, out = [e, e, W - e, e, W - e, e, W - e, H - e, W - e, H - e, e, H - e, e, H - e, e, e];
+    for (var i = 0; i < placed.length; i++) {
+      var b = placed[i];
+      if (b.x > x1 || b.x + b.w < x0 || b.y > y1 || b.y + b.h < y0) continue;
+      var c = boxCorners(b);
+      for (var k = 0; k < 8; k += 2) out.push(c[k], c[k + 1], c[(k + 2) % 8], c[(k + 3) % 8]);
+    }
+    return out;
+  }
+  var segBuf = new Float64Array(8192);
+  function prepFit(s, obst, a, b, ang) {
+    var c = Math.cos(ang), sn = Math.sin(ang), ia = 1 / a, ib = 1 / b, need = obst.length, i, k;
+    for (i = 0; i < s.rings.length; i++) need += 4 * s.rings[i].n;
+    if (segBuf.length < need) segBuf = new Float64Array(need * 2);
+    var g = segBuf, m = 0, u0 = Infinity, v0 = Infinity, u1 = -Infinity, v1 = -Infinity;
+    for (i = 0; i < s.rings.length; i++) {
+      var xy = s.rings[i].xy, n = s.rings[i].n;
+      var pu = (xy[2 * n - 2] * c + xy[2 * n - 1] * sn) * ia, pv = (-xy[2 * n - 2] * sn + xy[2 * n - 1] * c) * ib;
+      for (k = 0; k < n; k++) {
+        var qu = (xy[2 * k] * c + xy[2 * k + 1] * sn) * ia, qv = (-xy[2 * k] * sn + xy[2 * k + 1] * c) * ib;
+        g[m++] = pu; g[m++] = pv; g[m++] = qu; g[m++] = qv;
+        if (qu < u0) u0 = qu;
+        if (qu > u1) u1 = qu;
+        if (qv < v0) v0 = qv;
+        if (qv > v1) v1 = qv;
+        pu = qu; pv = qv;
+      }
+    }
+    var poly = m;
+    for (k = 0; k < obst.length; k += 2) { g[m++] = (obst[k] * c + obst[k + 1] * sn) * ia; g[m++] = (-obst[k] * sn + obst[k + 1] * c) * ib; }
+    indexFit(g, poly, m);
+    var cu = [], cv = [];
+    [[3, 3], [W - 3, 3], [3, H - 3], [W - 3, H - 3]].forEach(function (q) { cu.push((q[0] * c + q[1] * sn) * ia); cv.push((-q[0] * sn + q[1] * c) * ib); });
+    return {
+      g: g, poly: poly, end: m, a: a, b: b, c: c, s: sn, ia: ia, ib: ib, grid: { start: grid.start, items: grid.items, U0: grid.U0, V0: grid.V0, cs: grid.cs, gu: grid.gu, gv: grid.gv },
+      u0: Math.max(u0, Math.min.apply(null, cu)), u1: Math.min(u1, Math.max.apply(null, cu)),
+      v0: Math.max(v0, Math.min.apply(null, cv)), v1: Math.min(v1, Math.max.apply(null, cv))
+    };
+  }
+  var grid = { start: new Int32Array(2), items: new Int32Array(1) };
+  function cellAt(d, cs, n) { return Math.max(0, Math.min(n - 1, Math.floor(d / cs))); }
+  function indexFit(g, poly, end) {
+    var U0 = Infinity, V0 = Infinity, U1 = -Infinity, V1 = -Infinity, k, n = poly >> 2;
+    for (k = 0; k < poly; k += 2) {
+      if (g[k] < U0) U0 = g[k];
+      if (g[k] > U1) U1 = g[k];
+      if (g[k + 1] < V0) V0 = g[k + 1];
+      if (g[k + 1] > V1) V1 = g[k + 1];
+    }
+    var cs = Math.max(U1 - U0, V1 - V0, 1e-6) / Math.max(2, Math.min(40, Math.round(Math.sqrt(n / 2))));
+    var gu = Math.max(1, Math.ceil((U1 - U0) / cs)), gv = Math.max(1, Math.ceil((V1 - V0) / cs)), cells = gu * gv;
+    if (grid.start.length < cells + 2) grid.start = new Int32Array(cells * 2 + 2);
+    var start = grid.start, i, j, i0, i1, j0, j1;
+    start.fill(0, 0, cells + 2);
+    for (var pass = 0; pass < 2; pass++) {
+      if (pass) {
+        for (i = 1; i <= cells; i++) start[i] += start[i - 1];
+        start[cells + 1] = start[cells];
+        if (grid.items.length < start[cells]) grid.items = new Int32Array(start[cells] * 2);
+      }
+      for (k = 0; k < end; k += 4) {
+        i0 = cellAt(Math.min(g[k], g[k + 2]) - U0, cs, gu); i1 = cellAt(Math.max(g[k], g[k + 2]) - U0, cs, gu);
+        j0 = cellAt(Math.min(g[k + 1], g[k + 3]) - V0, cs, gv); j1 = cellAt(Math.max(g[k + 1], g[k + 3]) - V0, cs, gv);
+        for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
+          if (pass) grid.items[--start[j * gu + i + 1]] = k;
+          else start[j * gu + i + 1]++;
+        }
+      }
+    }
+    grid.U0 = U0; grid.V0 = V0; grid.cs = cs; grid.gu = gu; grid.gv = gv;
+  }
+  function linf(ax, ay, bx, by) {
+    var m = Math.min(Math.max(Math.abs(ax), Math.abs(ay)), Math.max(Math.abs(bx), Math.abs(by)));
+    var dx = bx - ax, dy = by - ay, t, x;
+    if (dx !== dy) { t = (ay - ax) / (dx - dy); if (t > 0 && t < 1) { x = Math.abs(ax + t * dx); if (x < m) m = x; } }
+    if (dx !== -dy) { t = -(ax + ay) / (dx + dy); if (t > 0 && t < 1) { x = Math.abs(ax + t * dx); if (x < m) m = x; } }
+    return m;
+  }
+  function bruteDist(F, u, v) {
+    var g = F.g, poly = F.poly, end = F.end, dm = Infinity, inside = false;
+    for (var k = 0; k < end; k += 4) {
+      var ax = g[k] - u, ay = g[k + 1] - v, bx = g[k + 2] - u, by = g[k + 3] - v;
+      if (k < poly && (ay > 0) !== (by > 0) && ax + (bx - ax) * ay / (ay - by) > 0) inside = !inside;
+      if ((ax > dm && bx > dm) || (ax < -dm && bx < -dm) || (ay > dm && by > dm) || (ay < -dm && by < -dm)) continue;
+      var d = linf(ax, ay, bx, by);
+      if (d < dm) dm = d;
+    }
+    return inside ? dm : -dm;
+  }
+  function cellDist(F, cell, u, v, dm) {
+    var g = F.g, items = F.grid.items, start = F.grid.start;
+    for (var t = start[cell + 1]; t < start[cell + 2]; t++) {
+      var k = items[t], ax = g[k] - u, ay = g[k + 1] - v, bx = g[k + 2] - u, by = g[k + 3] - v;
+      if ((ax > dm && bx > dm) || (ax < -dm && bx < -dm) || (ay > dm && by > dm) || (ay < -dm && by < -dm)) continue;
+      var d = linf(ax, ay, bx, by);
+      if (d < dm) dm = d;
+    }
+    return dm;
+  }
+  function fitDist(F, u, v) {
+    var G = F.grid, cs = G.cs, gu = G.gu, gv = G.gv, ci = Math.floor((u - G.U0) / cs), cj = Math.floor((v - G.V0) / cs);
+    if (ci < 0 || cj < 0 || ci >= gu || cj >= gv) return bruteDist(F, u, v);
+    var g = F.g, poly = F.poly, start = G.start, items = G.items, inside = false, dm = Infinity, c, t, k, ay, by;
+    for (c = ci; c < gu; c++) {
+      var row = cj * gu + c;
+      for (t = start[row + 1]; t < start[row + 2]; t++) {
+        k = items[t];
+        if (k >= poly) continue;
+        ay = g[k + 1] - v; by = g[k + 3] - v;
+        if ((ay > 0) === (by > 0)) continue;
+        var x = g[k] + (g[k + 2] - g[k]) * ay / (ay - by);
+        if (x > u && Math.min(gu - 1, Math.floor((x - G.U0) / cs)) === c) inside = !inside;
+      }
+    }
+    for (var r = 0; ; r++) {
+      if (r > 0 && (r - 1) * cs >= dm) break;
+      if (ci - r < 0 && cj - r < 0 && ci + r >= gu && cj + r >= gv) break;
+      for (var j = Math.max(0, cj - r); j <= Math.min(gv - 1, cj + r); j++) {
+        if (j === cj - r || j === cj + r) {
+          for (var i = Math.max(0, ci - r); i <= Math.min(gu - 1, ci + r); i++) dm = cellDist(F, j * gu + i, u, v, dm);
+        } else {
+          if (ci - r >= 0) dm = cellDist(F, j * gu + ci - r, u, v, dm);
+          if (ci + r < gu) dm = cellDist(F, j * gu + ci + r, u, v, dm);
+        }
+      }
+    }
+    return inside ? dm : -dm;
+  }
+  function toFit(F, x, y) { return [(x * F.c + y * F.s) * F.ia, (-x * F.s + y * F.c) * F.ib]; }
+  function fromFit(F, u, v) { var x = u * F.a, y = v * F.b; return [x * F.c - y * F.s, x * F.s + y * F.c]; }
+  function heapPush(q, c) {
+    q.push(c);
+    for (var i = q.length - 1; i > 0;) { var j = (i - 1) >> 1; if (q[j].max >= c.max) break; q[i] = q[j]; q[j] = c; i = j; }
+  }
+  function heapPop(q) {
+    var top = q[0], last = q.pop();
+    if (q.length) {
+      q[0] = last;
+      for (var i = 0; ;) {
+        var l = 2 * i + 1, r = l + 1, k = i;
+        if (l < q.length && q[l].max > q[k].max) k = l;
+        if (r < q.length && q[r].max > q[k].max) k = r;
+        if (k === i) break;
+        q[i] = q[k]; q[k] = last; i = k;
+      }
+    }
+    return top;
+  }
+  function poleOf(F, seeds, budget, enough) {
+    var best = { u: 0, v: 0, d: -Infinity }, evals = 0, q = [], i;
+    var cell = function (u, v, h) {
+      evals++;
+      var d = fitDist(F, u, v);
+      if (d > best.d) best = { u: u, v: v, d: d };
+      return { u: u, v: v, h: h, max: d + h };
+    };
+    for (i = 0; i < seeds.length; i++) { var t = toFit(F, seeds[i][0], seeds[i][1]); cell(t[0], t[1], 0); }
+    var w = F.u1 - F.u0, hh = F.v1 - F.v0;
+    if (evals < budget && w > 0 && hh > 0) {
+      var size = Math.max(Math.min(w, hh), Math.sqrt(w * hh / 20)), h = size / 2;
+      for (var u = F.u0; u < F.u1; u += size) for (var v = F.v0; v < F.v1; v += size) heapPush(q, cell(u + h, v + h, h));
+      while (q.length && evals < budget && !(best.d >= enough)) {
+        var c = heapPop(q), eps = Math.max(0.2, best.d * 0.04);
+        if (c.max - best.d <= eps) break;
+        h = c.h / 2;
+        var kids = [cell(c.u - h, c.v - h, h), cell(c.u + h, c.v - h, h), cell(c.u - h, c.v + h, h), cell(c.u + h, c.v + h, h)];
+        for (i = 0; i < 4; i++) if (kids[i].max > best.d + eps) heapPush(q, kids[i]);
+      }
+    }
+    if (best.d === -Infinity) return null;
+    var xy = fromFit(F, best.u, best.v);
+    return { x: xy[0], y: xy[1], d: best.d };
+  }
+  function climb(F, x, y) {
+    var t = toFit(F, x, y), u = t[0], v = t[1], d = fitDist(F, u, v), step = Math.max(0.3, Math.abs(d) * 0.25);
+    for (var it = 0; it < 3; it++, step /= 2) {
+      var moves = [[step, 0], [-step, 0], [0, step], [0, -step]];
+      for (var i = 0; i < 4; i++) {
+        var e = fitDist(F, u + moves[i][0], v + moves[i][1]);
+        if (e > d) { d = e; u += moves[i][0]; v += moves[i][1]; }
+      }
+    }
+    var xy = fromFit(F, u, v);
+    return { x: xy[0], y: xy[1], d: d };
+  }
+  function fontFor(d, o) {
+    var pad = Math.max(1, Math.min(2.2, d * o.h * 0.12));
+    return Math.min(d * 0.9, d - pad / (o.h / 2), d - 1.8 * pad / (o.w / 2));
+  }
+  function roomFor(f, o) { return 1.6 * Math.max(f / 0.9, f + 4.4 / o.h, f + 8 / o.w); }
+  function principalAxis(s, x, y) {
+    var pick = null, area = 0;
+    for (var i = 0; i < s.rings.length; i++) {
+      var r = s.rings[i];
+      if (x < r.x0 || x > r.x1 || y < r.y0 || y > r.y1) continue;
+      var a = (r.x1 - r.x0) * (r.y1 - r.y0);
+      if (a > area) { area = a; pick = r; }
+    }
+    if (!pick) return null;
+    var xy = pick.xy, n = pick.n, A = 0, Sx = 0, Sy = 0, Sxx = 0, Syy = 0, Sxy = 0, ox = pick.x0, oy = pick.y0;
+    for (var k = 0, j = n - 1; k < n; j = k++) {
+      var x0 = xy[2 * j] - ox, y0 = xy[2 * j + 1] - oy, x1 = xy[2 * k] - ox, y1 = xy[2 * k + 1] - oy, cr = x0 * y1 - x1 * y0;
+      A += cr; Sx += (x0 + x1) * cr; Sy += (y0 + y1) * cr;
+      Sxx += (x0 * x0 + x0 * x1 + x1 * x1) * cr; Syy += (y0 * y0 + y0 * y1 + y1 * y1) * cr;
+      Sxy += (x0 * y1 + 2 * x0 * y0 + 2 * x1 * y1 + x1 * y0) * cr;
+    }
+    if (Math.abs(A) < 1) return null;
+    A /= 2;
+    var mx = Sx / (6 * A), my = Sy / (6 * A);
+    var cxx = Sxx / (12 * A) - mx * mx, cyy = Syy / (12 * A) - my * my, cxy = Sxy / (24 * A) - mx * my;
+    var tr = (cxx + cyy) / 2, det = Math.sqrt(Math.max(0, (cxx - cyy) * (cxx - cyy) / 4 + cxy * cxy));
+    var l1 = tr + det, l2 = tr - det;
+    if (l2 <= 0) return null;
+    return { ang: 0.5 * Math.atan2(2 * cxy, cxx - cyy), e: Math.sqrt(l1 / l2) };
+  }
+  function fitPolity(p, name, s, obst, seeds, budget, memo) {
+    var cap = p.people ? 15 : 26, opts = labelOptions(name, p.people), best = null, i, o, F, r, f;
+    if (memo) {
+      o = labelOptions(name, p.people, memo.sp)[memo.oi];
+      var at = projectLL(memo.lon, memo.lat);
+      if (o && at) {
+        F = prepFit(s, obst, o.w / 2, o.h / 2, memo.ang);
+        r = climb(F, at[0], at[1]);
+        if (r.d > 0) return { o: o, oi: memo.oi, x: r.x, y: r.y, f: Math.min(cap, fontFor(r.d, o)), ang: memo.ang };
+      }
+      budget = seeds.length;
+    }
+    for (i = 0; i < opts.length; i++) {
+      o = opts[i];
+      F = prepFit(s, obst, o.w / 2, o.h / 2, 0);
+      r = poleOf(F, best ? [[best.x, best.y]].concat(seeds) : seeds, best ? budget / 3 : budget, roomFor(cap, o));
+      if (!r || r.d <= 0) continue;
+      f = fontFor(r.d, o);
+      if (!best || f > best.f * 1.12) best = { o: o, oi: i, x: r.x, y: r.y, f: f, ang: 0 };
+      if (best.f >= cap) break;
+    }
+    var ax = best && best.f < cap * 0.9 && budget > seeds.length ? principalAxis(s, best.x, best.y) : null;
+    if (ax && ax.e > 1.9 && Math.abs(ax.ang) > 0.14 && (Math.abs(ax.ang) <= 0.75 || (ax.e > 2.4 && best.f < 10))) {
+      var ang = Math.abs(ax.ang) > 1.2 ? -HALF_PI : ax.ang, top = best;
+      for (i = 0; i <= top.oi; i += top.oi || 1) {
+        o = opts[i];
+        F = prepFit(s, obst, o.w / 2, o.h / 2, ang);
+        r = poleOf(F, [[top.x, top.y]], budget / 2, roomFor(cap, o));
+        if (r && r.d > 0 && fontFor(r.d, o) > best.f * (best === top ? 1.4 : 1.12)) best = { o: o, oi: i, x: r.x, y: r.y, f: fontFor(r.d, o), ang: ang };
+      }
+    }
+    if (best && best.f < 8.5 && !p.people) {
+      o = labelOptions(name, false, TIGHT)[best.oi];
+      F = prepFit(s, obst, o.w / 2, o.h / 2, best.ang);
+      r = poleOf(F, [[best.x, best.y]], budget / 2, roomFor(cap, o));
+      if (r && r.d > 0 && fontFor(r.d, o) > best.f) best = { o: o, oi: best.oi, x: r.x, y: r.y, f: fontFor(r.d, o), ang: best.ang };
+    }
+    if (best) best.f = Math.min(cap, best.f);
+    return best;
+  }
+  function seaSide(s, size, lines) {
+    var main = null, i;
+    for (i = 0; i < s.rings.length; i++) { var r = s.rings[i]; if (!main || (r.x1 - r.x0) * (r.y1 - r.y0) > (main.x1 - main.x0) * (main.y1 - main.y0)) main = r; }
+    if (!main || main.x1 - main.x0 > 200 || main.y1 - main.y0 > 200) return null;
+    ctx.font = "400 " + size + "px " + SERIF;
+    ctx.letterSpacing = "1px";
+    var w = 0;
+    lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
+    var hw = w / 2 + 2, hh = size * 0.6 * lines.length + 1, out = [];
+    [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(function (d) {
+      var xy = main.xy, best = -Infinity, bx = 0, by = 0;
+      for (var k = 0; k < main.n; k++) { var v = xy[2 * k] * d[0] + xy[2 * k + 1] * d[1]; if (v > best) { best = v; bx = xy[2 * k]; by = xy[2 * k + 1]; } }
+      out.push(mkBox(bx + d[0] * (hw + 2), by + d[1] * (hh + 2), hw, hh, 0));
+    });
+    return out;
+  }
+  function boxOnLand(L, b, cache) {
+    for (var i = 0; i < L.feats.length; i++) {
+      var feats = L.feats[i], near = false;
+      for (var j = 0; j < feats.length && !near; j++) {
+        var f = feats[j];
+        if (!inView(f)) continue;
+        if (flat) { near = true; break; }
+        var px = cx + B.r * (f.cx * B.ex + f.cy * B.ey + f.cz * B.ez), py = cy - B.r * (f.cx * B.nx + f.cy * B.ny + f.cz * B.nz);
+        var rad = B.r * Math.sin(Math.min(f.radius, HALF_PI)) + 4;
+        near = f.radius >= HALF_PI || (px + rad > b.x && px - rad < b.x + b.w && py + rad > b.y && py - rad < b.y + b.h);
+      }
+      if (!near) continue;
+      var s = cache.get(i);
+      if (s === undefined) { s = screenShape(feats, 1, 0); cache.set(i, s); }
+      if (!s || s.x0 > b.x + b.w || s.x1 < b.x || s.y0 > b.y + b.h || s.y1 < b.y) continue;
+      var F = prepFit(s, [], b.w / 2, b.h / 2, 0), t = toFit(F, b.x + b.w / 2, b.y + b.h / 2), d = fitDist(F, t[0], t[1]);
+      if (d > -1) return true;
+    }
+    return false;
+  }
+  var anchors = new Map(), settleLabels = 0;
+  function layoutPolities(snap, placed, kp) {
+    var key = useLevel(), L = level(snap, key), items = [], small = [], shapes = new Map(), S = localScale();
+    var quick = moving || rangeActive, budget = 120;
     for (var k = 0; k < snap.order.length; k++) {
-      var p = snap.order[k], L = p.label;
-      if (!L || L[2] < 1) continue;
+      var p = snap.order[k], lab = p.label;
+      if (!lab || lab[2] * kp < 0.6) continue;
       var name = polityName(p.id);
       if (!name) continue;
-      var spots = labelSpots(L), got = null;
-      for (var q = 0; q < spots.length && !got; q++) {
-        var s = spots[q].s, pt = spots[q].p;
-        var fit = labelFit(name, p.people, s[2], s[3]);
-        var f = fit.fkm * kp * Math.sqrt(pt[2]);
-        var cap = p.people ? 15 : 26;
-        if (f > cap) f = cap;
-        if (f < 8.5 && !p.people) {
-          var tight = labelFit(name, false, s[2], s[3], TIGHT);
-          var ft = Math.min(cap, tight.fkm * kp * Math.sqrt(pt[2]));
-          if (ft >= 8.5) { fit = tight; f = ft; }
-        }
-        if (f < 8.5) {
-          if (q === 0 && !p.people && f >= 3.5 && L[5] > 1500) small.push({ p: p, x: pt[0], y: pt[1], name: name, lines: fit.lines });
-          continue;
-        }
-        var ang = screenAngle(s[0], s[1], s[4], pt);
-        var box = mkBox(pt[0], pt[1], fit.w * f / 2 + 2, f * fit.h / 2 + 2, ang);
-        if (!insideView(box) || collides(placed, box)) continue;
-        got = { pt: pt, fit: fit, f: f, ang: ang, box: box };
+      var size = Math.sqrt(lab[5]) * kp, s = screenShape(L.feats[p.i], Math.max(0.8, Math.min(5, size / 40)), Math.min(4, size / 8));
+      shapes.set(p.i, s);
+      if (!s) continue;
+      var seeds = labelSpots(lab);
+      var got = fitPolity(p, name, s, obstacles(placed, s), seeds, quick ? seeds.length : budget, quick ? anchors.get(p.id) : null);
+      if (!got || got.f < (p.people ? 8.5 : 7.5)) {
+        if (!p.people && (lab[5] > 1500 || lab[2] * kp > 2) && S >= 600 && Math.sqrt(lab[5]) * kp < 70 && s.x0 > 0 && s.y0 > 0 && s.x1 < W && s.y1 < H) small.push({ p: p, name: name, s: s });
+        continue;
       }
-      if (!got) continue;
-      var pt = got.pt, fit = got.fit, f = got.f, ang = got.ang;
-      var sp = f * fit.space;
-      placed.push(got.box);
-      placedLabels.push({ name: name, x: pt[0], y: pt[1], size: f });
+      var box = mkBox(got.x, got.y, got.o.w * got.f / 2 + 1, got.f * got.o.h / 2 + 1, got.ang);
+      if (!insideView(box) || collides(placed, box)) continue;
+      placed.push(box);
+      items.push({ id: p.id, name: name, people: p.people, x: got.x, y: got.y, f: got.f, ang: got.ang, lines: got.o.lines, space: got.o.space, box: box });
+      if (!quick) {
+        var ll = lonLatAt(got.x, got.y);
+        if (ll) anchors.set(p.id, { lon: ll[0], lat: ll[1], oi: got.oi, sp: got.o.space, ang: got.ang });
+      }
+    }
+    for (var j = 0; j < small.length; j++) {
+      var it = small[j], at = projectLL(it.p.label[0], it.p.label[1]);
+      if (at && at[2] < 0.45) continue;
+      var opts = labelOptions(it.name, false), lines = opts[it.name.length > 24 && opts[2] ? 2 : it.name.length > 10 && opts[1] ? 1 : 0].lines;
+      var boxes = seaSide(it.s, 9, lines);
+      if (!boxes) continue;
+      for (var q = 0; q < boxes.length; q++) {
+        var b = boxes[q];
+        if (!insideView(b) || collides(placed, b) || boxOnLand(L, b, shapes)) continue;
+        placed.push(b);
+        items.push({ id: it.p.id, name: it.name, people: false, x: b.cx, y: b.cy, f: 9, ang: 0, lines: lines, space: 1 / 9, box: b, sea: true });
+        break;
+      }
+    }
+    return items;
+  }
+  function drawPolityLabels(snap, placed, kp) {
+    var S = localScale(), caps = reserveCapitals(snap, placed, S), nFixed = placed.length - caps.length;
+    if (!layers.states) return;
+    var quick = moving || rangeActive;
+    var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), flat ? 1 : 0, W, H, quick ? 1 : 0, caps.length,
+      placed.slice(0, nFixed).map(function (b) { return Math.round(b.x) + ":" + Math.round(b.y) + ":" + Math.round(b.w) + ":" + Math.round(b.h); }).join(",")].join("|");
+    var memo = labelCache.get("layout");
+    if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
+    if (quick && !settleLabels) settleLabels = setTimeout(function wait() { settleLabels = moving || rangeActive ? setTimeout(wait, 200) : 0; if (!settleLabels) scheduleRender(); }, 200);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    for (var k = 0; k < memo.items.length; k++) {
+      var it = memo.items[k], f = it.f, sp = f * it.space;
+      placed.push(it.box);
+      placedLabels.push({ name: it.name, x: it.x, y: it.y, size: f, kind: it.people ? "people" : "polity", id: it.id, ang: it.ang, box: it.box, sea: !!it.sea });
       ctx.save();
-      ctx.translate(pt[0], pt[1]);
-      if (ang) ctx.rotate(ang);
-      ctx.font = (p.people ? "italic 400 " : "400 ") + f.toFixed(1) + "px " + SERIF;
+      ctx.translate(it.x, it.y);
+      if (it.ang) ctx.rotate(it.ang);
+      ctx.font = (it.people ? "italic 400 " : "400 ") + f.toFixed(1) + "px " + SERIF;
       ctx.letterSpacing = sp.toFixed(2) + "px";
-      ctx.lineWidth = Math.max(2, f * 0.22);
-      ctx.strokeStyle = pal["label-halo"];
-      ctx.fillStyle = p.people ? pal.people : pal.label;
-      for (var i = 0; i < fit.lines.length; i++) {
-        var ly = (i - (fit.lines.length - 1) / 2) * f * LINE_H;
-        ctx.strokeText(fit.lines[i], sp / 2, ly);
-        ctx.fillText(fit.lines[i], sp / 2, ly);
+      ctx.lineWidth = it.sea ? 3 : Math.max(2, f * 0.22);
+      ctx.strokeStyle = it.sea ? pal.ocean : pal["label-halo"];
+      ctx.fillStyle = it.people ? pal.people : pal.label;
+      for (var i = 0; i < it.lines.length; i++) {
+        var ly = (i - (it.lines.length - 1) / 2) * f * LINE_H;
+        ctx.strokeText(it.lines[i], sp / 2, ly);
+        ctx.fillText(it.lines[i], sp / 2, ly);
       }
       ctx.restore();
-    }
-    ctx.font = "400 9px " + SERIF;
-    ctx.letterSpacing = "1.2px";
-    ctx.lineWidth = 2.6; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
-    for (var j = 0; j < small.length; j++) {
-      var it = small[j], lines = it.lines.length > 1 && it.name.length > 10 ? it.lines : [it.name.toUpperCase()], w = 0;
-      lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
-      var b = mkBox(it.x, it.y, w / 2 + 2, 4.5 + 5.5 * lines.length, 0);
-      if (!insideView(b) || collides(placed, b)) continue;
-      placed.push(b);
-      placedLabels.push({ name: it.name, x: it.x, y: it.y, size: 9 });
-      for (var li = 0; li < lines.length; li++) {
-        var yy = it.y + (li - (lines.length - 1) / 2) * 10.6;
-        ctx.strokeText(lines[li], it.x + 0.6, yy); ctx.fillText(lines[li], it.x + 0.6, yy);
-      }
     }
     ctx.letterSpacing = "0px";
   }
@@ -1003,6 +1502,7 @@
   });
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
   function drawSeaLabels(placed, S) {
+    if (!layers.seas) return;
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     for (var i = 0; i < SEAS.length; i++) {
       var sl = SEAS[i];
@@ -1026,6 +1526,11 @@
     }
     ctx.letterSpacing = "0px";
   }
+  function capitalAt(c, day) {
+    var m = c[4];
+    if (m) for (var i = 0; i < m.length; i++) if (day <= m[i][0]) return [m[i][1], m[i][2], m[i][3]];
+    return [namedAt(c[3], c[0], day), c[1], c[2]];
+  }
   function namedAt(names, fallback, when) {
     var n = fallback;
     if (names) for (var i = 0; i < names.length; i++) if (names[i][0] <= when) n = names[i][1];
@@ -1036,59 +1541,99 @@
     return places.filter(function (r) { return r[3] <= y && (r[4] === null || y < r[4]); });
   }
   function cityTier(S) { return S < 330 ? 0 : S < 480 ? 1 : S < 800 ? 2 : S < 1400 ? 3 : 4; }
-  function drawMark(p, dot, cap) {
-    if (cap) {
-      ctx.beginPath(); ctx.arc(p[0], p[1], dot + 3.2, 0, TAU); ctx.fillStyle = pal["city-ring"]; ctx.fill();
-      ctx.beginPath(); ctx.arc(p[0], p[1], dot + 2.2, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 1.1; ctx.stroke();
-      ctx.beginPath(); ctx.arc(p[0], p[1], dot * 0.75, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
+  function markSize(S) { return S < 900 ? 1 : 1.15; }
+  function capitalList(snap, S) {
+    var out = [];
+    if (!snap.modern || S < 230) return out;
+    var day = dayOfTime(now);
+    for (var i = 0; i < snap.order.length; i++) {
+      var p = snap.order[i];
+      if (!p.cap) continue;
+      var c = capitalAt(p.cap, day), pt = projectLL(c[1], c[2]);
+      if (pt && pt[2] >= 0.25) out.push({ pt: pt, name: c[0] });
+    }
+    return out;
+  }
+  function reserveCapitals(snap, placed, S) {
+    var list = S >= 700 && layers.capitals ? capitalList(snap, S) : [], rm = 4.3 * markSize(S) + 0.5, out = [];
+    for (var i = 0; i < list.length; i++) {
+      var pt = list[i].pt, mark = { x: pt[0] - rm, y: pt[1] - rm, w: 2 * rm, h: 2 * rm };
+      if (!insideView(mark) || collides(placed, mark)) continue;
+      placed.push(mark);
+      out.push(list[i]);
+    }
+    out.placed = placed;
+    out.held = S >= 700;
+    capSpots = out;
+    return out;
+  }
+  var capSpots = [];
+  function drawMark(p, k, kind) {
+    var x = p[0], y = p[1];
+    ctx.fillStyle = pal["city-halo"];
+    if (kind === 0) {
+      ctx.beginPath(); ctx.arc(x, y, 4.3 * k, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 1.35 * k, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
       return;
     }
-    ctx.beginPath(); ctx.arc(p[0], p[1], dot + 1, 0, TAU); ctx.fillStyle = pal["city-ring"]; ctx.fill();
-    ctx.beginPath(); ctx.arc(p[0], p[1], dot, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
+    var r = kind === 1 ? 1.85 * k : 1.4 * k;
+    ctx.beginPath(); ctx.arc(x, y, r + 1, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = kind === 1 ? pal.city : pal.town; ctx.fill();
   }
-  function placeOne(placed, lon, lat, name, dot, cap) {
-    var p = projectLL(lon, lat);
-    if (!p || p[2] < 0.25) return false;
-    var pad = cap ? dot + 3.4 : dot + 1;
+  var CITY_STYLE = [
+    { size: 12.4, font: "400 ", ls: 0.2, ink: "city", halo: 2.4 },
+    { size: 11.2, font: "400 ", ls: 0.1, ink: "city", halo: 2.2 },
+    { size: 10.8, font: "italic 400 ", ls: 0, ink: "town", halo: 2 }
+  ];
+  function placeOne(placed, p, name, k, kind, held) {
+    if (!(kind === 0 ? layers.capitals : layers.cities)) return false;
+    var st = CITY_STYLE[kind], size = st.size * (k > 1 ? 1.05 : 1);
+    ctx.font = st.font + size.toFixed(2) + "px " + SERIF;
+    ctx.letterSpacing = st.ls + "px";
     var w = ctx.measureText(name).width;
-    var box = { x: p[0] - pad, y: p[1] - 7.5, w: w + pad + 6 + (cap ? 3 : 0), h: 15 };
-    if (!insideView(box) || collides(placed, box)) return false;
-    placed.push(box);
-    drawMark(p, dot, cap);
-    ctx.strokeText(name, p[0] + pad + 3, p[1]); ctx.fillText(name, p[0] + pad + 3, p[1]);
-    placedLabels.push({ name: name, x: p[0], y: p[1], size: 12, kind: cap ? "capital" : "city" });
-    return true;
+    var rm = kind === 0 ? 4.3 * k : (kind === 1 ? 2.85 : 2.4) * k, h = size * 0.86, gap = rm + 3;
+    var mark = held ? null : { x: p[0] - rm, y: p[1] - rm, w: 2 * rm, h: 2 * rm };
+    if (mark && (!insideView(mark) || collides(placed, mark))) return false;
+    var spots = [[p[0] + gap, p[1]], [p[0] - gap - w, p[1]], [p[0] - w / 2, p[1] - rm - 2.5 - h / 2], [p[0] - w / 2, p[1] + rm + 2.5 + h / 2]];
+    for (var s = 0; s < spots.length; s++) {
+      var tx = spots[s][0], ty = spots[s][1], box = { x: tx - 1.5, y: ty - h / 2 - 1.5, w: w + 3, h: h + 3 };
+      if (!insideView(box) || collides(placed, box)) continue;
+      if (mark) placed.push(mark);
+      placed.push(box);
+      drawMark(p, k, kind);
+      ctx.textAlign = "left";
+      ctx.lineWidth = st.halo; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal[st.ink];
+      ctx.strokeText(name, tx, ty); ctx.fillText(name, tx, ty);
+      placedLabels.push({ name: name, x: p[0], y: p[1], size: size, kind: ["capital", "city", "town"][kind], box: box });
+      return true;
+    }
+    return false;
   }
   function drawPlaces(placed, S) {
     if (S < 230) return;
-    var dot = S < 900 ? 1.9 : 2.5, modernNow = current && current.modern, day = modernNow ? dayOfTime(now) : -Infinity, i;
-    ctx.letterSpacing = "0px";
-    ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
-    ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+    var k = markSize(S), modernNow = current && current.modern, day = modernNow ? dayOfTime(now) : -Infinity, i;
+    ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     if (modernNow) {
-      ctx.font = "400 12.5px " + SERIF;
-      var caps = current.order.filter(function (p) { return p.cap; });
-      for (i = 0; i < caps.length; i++) {
-        ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
-        placeOne(placed, caps[i].cap[1], caps[i].cap[2], namedAt(caps[i].cap[3], caps[i].cap[0], day), dot, true);
-      }
+      var held = capSpots.placed === placed && capSpots.held, caps = held ? capSpots : capitalList(current, S);
+      for (i = 0; i < caps.length; i++) placeOne(placed, caps[i].pt, caps[i].name, k, 0, held);
     }
-    ctx.font = "italic 400 12px " + SERIF;
     if (modernNow && cities && day >= cities.from) {
       var top = cityTier(S);
       for (i = 0; i < cities.rows.length; i++) {
         var c = cities.rows[i];
         if (c[3] > top || (c[4] !== null && day < c[4])) continue;
-        ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
-        placeOne(placed, c[1], c[2], namedAt(c[5], c[0], day), dot, false);
+        var p = projectLL(c[1], c[2]);
+        if (p && p[2] >= 0.25) placeOne(placed, p, namedAt(c[5], c[0], day), k, c[3] <= 1 ? 1 : 2);
       }
     } else {
       var list = placesNow(), y = Math.round(now);
       for (i = 0; i < list.length; i++) {
-        ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
-        placeOne(placed, list[i][1], list[i][2], namedAt(list[i][5], list[i][0], y), dot, false);
+        var q = projectLL(list[i][1], list[i][2]);
+        if (q && q[2] >= 0.25) placeOne(placed, q, namedAt(list[i][5], list[i][0], y), k, 1);
       }
     }
+    ctx.letterSpacing = "0px";
     ctx.textAlign = "center";
   }
 
@@ -1267,7 +1812,13 @@
   function fmtNow(t) {
     if (!isModern(t)) return fmtYear(Math.round(t));
     var d = dateOfDay(dayOfTime(t));
-    return d[0] >= MONTHLY_FROM ? MONTHS[d[1] - 1] + " " + d[0] : String(d[0]);
+    return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
+  }
+  function monthTime(y, m) { return timeOfDay(dayFromDate(y, m, MID_DAY)); }
+  function changeBefore(day) {
+    var c = modern.changes, lo = 0, hi = c.length - 1, k = -1;
+    while (lo <= hi) { var mid = (lo + hi) >> 1; if (c[mid] <= day) { k = mid; lo = mid + 1; } else hi = mid - 1; }
+    return k;
   }
   function monthIndex(word) {
     var w = word.toLowerCase();
@@ -1276,8 +1827,9 @@
   }
   function modernTime(y, m, d) {
     if (!modern || y < 1886) return null;
-    if (!m) return timeOfDay(dayFromDate(y, 7, 1));
-    return timeOfDay(dayFromDate(y, m, d || 15));
+    if (!m) return monthTime(y, 7);
+    if (m > 12 || (d && d > new Date(Date.UTC(y, m, 0)).getUTCDate())) return null;
+    return timeOfDay(dayFromDate(y, m, d || MID_DAY));
   }
   function parseTime(s) {
     var t = String(s || "").trim().replace(/\./g, "").replace(/,/g, " ").replace(/\s+/g, " ");
@@ -1302,7 +1854,7 @@
     return t.slice(0, -1).join(", ") + ", and " + t[t.length - 1];
   }
 
-  var KNOTS = [[-3000, 0], [-500, 0.13], [500, 0.24], [1400, 0.37], [1800, 0.53], [1886, 0.6], [1976, 0.79], [LAST_YEAR + 1, 1]];
+  var KNOTS = [[-3000, 0], [-500, 0.13], [500, 0.24], [1400, 0.37], [1800, 0.53], [1886, 0.6], [LAST_YEAR + 1, 1]];
   var RANGE_MAX = 10000;
   function posOf(y) {
     for (var i = 1; i < KNOTS.length; i++) {
@@ -1344,7 +1896,8 @@
     for (y = 1810; y <= 2020; y += 10) marks.push(y);
     marks.forEach(function (y) { add(y === 0 ? 1 : y, y % 1000 === 0 || y === 1500 || y === 1900 || y === 1950 ? "is-major" : ""); });
     maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });
-    if (modern) modern.changes.forEach(function (d) { add(timeOfDay(d), "is-change"); });
+    changeTicks = modern ? modern.changes.map(function (d) { return add(timeOfDay(d), "is-change"); }) : [];
+    nowTick = null;
     var labels = [-3000, -2000, -1000, 1, 500, 1000, 1500, 1700, 1800, 1900, 1950, 2000], lastRight = -Infinity;
     labels.forEach(function (y) {
       var x = posOf(y) * w, text = y === 1 ? "AD 1" : fmtYear(y), tw = text.length * 6.6, shift = x < tw / 2 ? x / tw : 0.5;
@@ -1359,8 +1912,14 @@
     });
     markCurrentTick();
   }
+  var changeTicks = [], nowTick = null;
   function markCurrentTick() {
     maps.forEach(function (m) { if (m.tick) m.tick.classList.toggle("is-now", !!current && m.snap === current); });
+    var t = current && current.modern ? changeTicks[changeBefore(Math.min(dayOfTime(now), modern.toDay))] || null : null;
+    if (t === nowTick) return;
+    if (nowTick) nowTick.classList.remove("is-now");
+    if (t) t.classList.add("is-now");
+    nowTick = t;
   }
   var rangeActive = false;
   function syncTime() {
@@ -1368,14 +1927,15 @@
     range.setAttribute("aria-valuetext", fmtNow(now));
     if (document.activeElement !== yearInput) yearInput.value = fmtNow(now);
     yearInput.classList.toggle("is-long", yearInput.value.length > 9);
+    yearInput.classList.toggle("is-longer", yearInput.value.length > 14);
     if (isModern(now)) {
-      var day = dayOfTime(now);
+      var day = dayOfTime(now), since = modern.changes[changeBefore(Math.min(day, modern.toDay))];
       if (!current || !current.modern) asof.textContent = "Loading the borders";
-      else if (day > modern.toDay) asof.textContent = "Borders at the end of 2019, the latest in the data";
-      else asof.textContent = "Borders on " + fmtDay(day);
+      else if (day > modern.toDay) asof.textContent = "The latest borders, of " + dateOfDay(modern.toDay)[0];
+      else asof.textContent = "Borders since " + fmtDay(since);
     } else {
-      var mi = mapIndexFor(now), m = maps[mi], y = Math.round(now);
-      asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : m.y === y ? "The map of " + fmtYear(m.y) : "Borders as of " + fmtYear(m.y);
+      var m = maps[mapIndexFor(now)];
+      asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : "Borders from the map of " + fmtYear(m.y);
     }
     $("prev-map").disabled = !points.length || now <= points[0] + 1e-6;
     $("next-map").disabled = !points.length || now >= points[points.length - 1] - 1e-6;
@@ -1432,23 +1992,15 @@
   }
   function stepUnit(dir) {
     if (isModern(now)) {
-      var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1];
-      if (y >= MONTHLY_FROM) {
-        m += dir;
-        if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
-        setTime(y < MONTHLY_FROM ? modernTime(y, 0, 0) : modernTime(y, m, 15));
-        return;
-      }
-      var ny = y + dir;
-      if (ny >= MONTHLY_FROM) { setTime(modernTime(ny, 1, 15)); return; }
-      var mt = modernTime(ny, 0, 0);
-      setTime(mt !== null ? mt : ny);
+      var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1] + dir;
+      if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+      if (y < 1886) setTime(1885);
+      else if (y <= LAST_YEAR) setTime(monthTime(y, m));
       return;
     }
     var next = Math.round(now) + dir;
     if (next === 0) next = dir;
-    var asModern = modernTime(next, 0, 0);
-    setTime(asModern !== null ? asModern : next);
+    setTime(modern && next >= 1886 ? monthTime(1886, 1) : next);
   }
   range.addEventListener("input", function () {
     stopPlay();
@@ -1456,12 +2008,9 @@
     var t = +range.value / RANGE_MAX, y = yearAt(t), w = trackWidth(), snapTo = null;
     for (var i = 0; i < maps.length; i++) if (Math.abs(posOf(maps[i].y) - t) * w < 5) { snapTo = maps[i].y; break; }
     if (snapTo !== null) y = snapTo;
-    else if (modern && y >= 1886) {
-      var yr = Math.floor(y);
-      if (yr >= MONTHLY_FROM) {
-        var mo = Math.min(12, Math.floor((y - yr) * 12) + 1);
-        y = modernTime(Math.min(yr, LAST_YEAR), yr > LAST_YEAR ? 12 : mo, 15);
-      } else y = modernTime(yr, 0, 0);
+    else if (modern && y >= 1885.5) {
+      var yr = Math.floor(Math.max(y, 1886)), mo = Math.min(12, Math.floor((Math.max(y, 1886) - yr) * 12) + 1);
+      y = yr > LAST_YEAR ? monthTime(LAST_YEAR, 12) : monthTime(yr, mo);
     } else if (y < 1000) y = Math.round(y / 10) * 10;
     setTime(y, true);
   });
@@ -1473,7 +2022,7 @@
       var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
       if (e.shiftKey) stepUnit(dir); else stepMap(dir);
     } else if (e.key === "Home") { e.preventDefault(); setTime(maps[0].y); }
-    else if (e.key === "End") { e.preventDefault(); setTime(LAST_YEAR + 0.5); }
+    else if (e.key === "End") { e.preventDefault(); setTime(modern ? monthTime(LAST_YEAR, 12) : LAST_YEAR); }
   });
   function commitYearInput() {
     var t = parseTime(yearInput.value);
@@ -1490,35 +2039,36 @@
   $("prev-map").addEventListener("click", function (e) { stopPlay(); if (e.shiftKey) stepUnit(-1); else stepMap(-1); });
   $("next-map").addEventListener("click", function (e) { stopPlay(); if (e.shiftKey) stepUnit(1); else stepMap(1); });
 
-  var playTimer = 0, playLast = 0;
+  var playTimer = 0, PLAY_MAP = 1400, PLAY_MONTH = 60, PLAY_CHANGE = 400;
+  function playEnd() { return modern ? monthTime(2019, 12) : maps[maps.length - 1].y; }
   function playStep() {
     if (isModern(now)) {
-      var y = dateOfDay(dayOfTime(now))[0];
-      if (y >= LAST_YEAR) return false;
-      setTime(modernTime(y + 1, 0, 0));
-      return true;
+      var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1] + 1, was = current;
+      if (m > 12) { m = 1; y++; }
+      if (monthTime(y, m) > playEnd() + 1e-9) return -1;
+      setTime(monthTime(y, m));
+      return current !== was ? PLAY_CHANGE : PLAY_MONTH;
     }
     var mi = mapIndexFor(now);
-    if (maps[mi].snap !== current) return true;
+    if (maps[mi].snap !== current) return 100;
     if (mi < maps.length - 1) setTime(maps[mi + 1].y);
-    else if (modern) setTime(modernTime(1886, 0, 0));
-    else return false;
-    return true;
+    else if (modern) setTime(monthTime(1886, 1));
+    else return -1;
+    return isModern(now) ? PLAY_CHANGE : PLAY_MAP;
   }
   function startPlay() {
-    if (now >= LAST_YEAR) setTime(maps[0].y);
+    if (now >= playEnd() - 1e-9) setTime(maps[0].y);
     $("play").setAttribute("aria-pressed", "true");
     $("play").setAttribute("aria-label", "Stop playing");
-    playLast = Date.now();
-    playTimer = setInterval(function () {
-      if (Date.now() - playLast < (isModern(now) ? 700 : 1400)) return;
-      playLast = Date.now();
-      if (!playStep()) stopPlay();
-    }, 100);
+    var tick = function () {
+      var wait = playStep();
+      if (wait < 0) stopPlay(); else playTimer = setTimeout(tick, wait);
+    };
+    playTimer = setTimeout(tick, isModern(now) ? PLAY_CHANGE : PLAY_MAP);
   }
   function stopPlay() {
     if (!playTimer) return;
-    clearInterval(playTimer); playTimer = 0;
+    clearTimeout(playTimer); playTimer = 0;
     $("play").setAttribute("aria-pressed", "false");
     $("play").setAttribute("aria-label", "Play through time");
   }
@@ -1589,7 +2139,7 @@
         addText((modernNow ? " on " : " on ") + when + ". ");
       }
       if (p.part >= 0 && p.part !== p.ruler) { addText("Part of "); addPolity(p.part); addText(". "); }
-      if (p.cap) addText("Capital: " + namedAt(p.cap[3], p.cap[0], Math.min(dayOfTime(now), modern.toDay)) + ". ");
+      if (p.cap) addText("Capital: " + capitalAt(p.cap, Math.min(dayOfTime(now), modern.toDay))[0] + ". ");
       if (modernNow) {
         addText(p.end < 0 ? "These borders since " + fmtDay(p.start) + ". " : "These borders from " + fmtDay(p.start) + " to " + fmtDay(p.end) + ". ");
       }
@@ -1670,13 +2220,66 @@
     aboutBtn.setAttribute("aria-expanded", open ? "true" : "false");
   }
   aboutBtn.addEventListener("click", function () { setAbout(!about.classList.contains("is-open")); });
-  about.addEventListener("mouseleave", function () { about.classList.remove("is-shut"); });
+  about.addEventListener("mouseleave", function () { if (!about.contains(document.activeElement)) about.classList.remove("is-shut"); });
+  about.addEventListener("focusout", function (e) { if (!about.contains(e.relatedTarget)) about.classList.remove("is-shut"); });
   document.addEventListener("pointerdown", function (e) {
     if (about.classList.contains("is-open") && !about.contains(e.target)) {
       about.classList.remove("is-open");
       aboutBtn.setAttribute("aria-expanded", "false");
     }
   });
+
+  var STORE_LAYERS = "chronia-layers";
+  var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true };
+  var layersBtn = $("layers-btn"), layersPanel = $("layers");
+  try {
+    var savedLayers = JSON.parse(localStorage.getItem(STORE_LAYERS) || "{}");
+    Object.keys(layers).forEach(function (k) { if (typeof savedLayers[k] === "boolean") layers[k] = savedLayers[k]; });
+  } catch (e) {}
+  function syncLayerInputs() {
+    layersPanel.querySelectorAll("input[data-layer]").forEach(function (el) { el.checked = !!layers[el.getAttribute("data-layer")]; });
+  }
+  function setLayer(name, on) {
+    if (!(name in layers)) return false;
+    layers[name] = !!on;
+    syncLayerInputs();
+    try { localStorage.setItem(STORE_LAYERS, JSON.stringify(layers)); } catch (e) {}
+    seaKey = ""; reliefKey = "";
+    scheduleRender();
+    return true;
+  }
+  function setLayersOpen(open, focusBtn) {
+    layersPanel.hidden = !open;
+    layersBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) { if (about.classList.contains("is-open")) setAbout(false); var first = layersPanel.querySelector("input"); if (first) first.focus(); }
+    else if (focusBtn) layersBtn.focus();
+  }
+  syncLayerInputs();
+  layersPanel.addEventListener("change", function (e) {
+    var name = e.target && e.target.getAttribute("data-layer");
+    if (name) setLayer(name, e.target.checked);
+  });
+  layersBtn.addEventListener("click", function () { setLayersOpen(layersPanel.hidden, false); });
+  aboutBtn.addEventListener("click", function () { if (!layersPanel.hidden) setLayersOpen(false, false); });
+  document.addEventListener("pointerdown", function (e) {
+    if (!layersPanel.hidden && !layersPanel.contains(e.target) && !layersBtn.contains(e.target)) setLayersOpen(false, false);
+  });
+  layersPanel.addEventListener("focusout", function (e) {
+    if (!layersPanel.hidden && e.relatedTarget && !layersPanel.contains(e.relatedTarget) && e.relatedTarget !== layersBtn) setLayersOpen(false, false);
+  });
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || layersPanel.hidden) return;
+    e.stopPropagation();
+    setLayersOpen(false, true);
+  }, true);
+  layersPanel.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || /^[pPmM+=_−-]$/.test(e.key)) e.stopPropagation();
+  });
+  var layersApi = {
+    layers: function () { return Object.assign({}, layers); },
+    setLayer: setLayer,
+    layersOpen: function () { return !layersPanel.hidden; }
+  };
 
   var hoverTip = $("hover-tip"), tipTimer = 0;
   if (canHover) {
@@ -1685,11 +2288,11 @@
         clearTimeout(tipTimer);
         tipTimer = setTimeout(function () {
           hoverTip.textContent = el.getAttribute("data-tip");
-          var r = el.getBoundingClientRect(), side = !!el.closest(".ch-ctls");
+          var r = el.getBoundingClientRect(), top = !!el.closest(".ch-top");
           hoverTip.classList.add("is-on");
           var w = hoverTip.offsetWidth, h = hoverTip.offsetHeight;
-          var x = side ? r.left - w - 8 : Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2));
-          var y = side ? r.top + r.height / 2 - h / 2 : r.top - h - 8;
+          var x = Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2));
+          var y = top ? el.closest(".ch-frame").getBoundingClientRect().bottom + 8 : r.top - h - 8;
           hoverTip.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
         }, 380);
       });
@@ -1726,14 +2329,14 @@
   function hashTime() {
     if (!isModern(now)) return String(Math.round(now));
     var d = dateOfDay(dayOfTime(now));
-    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
+    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
   }
   function readHash() {
     var out = {};
     String(location.hash || "").replace(/^#/, "").split("&").forEach(function (kv) {
       var i = kv.indexOf("=");
       if (i > 0) out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
-      else if (/^-?\d+(-\d+-\d+)?$/.test(kv)) out.y = kv;
+      else if (/^-?\d+(-\d+){0,2}$/.test(kv)) out.y = kv;
     });
     return out;
   }
@@ -1751,7 +2354,91 @@
     var f = topojson.feature(topo, topo.objects.land);
     var list = [];
     (f.features || [f]).forEach(function (x) { list = list.concat(preparePolys(x)); });
+    list.forEach(function (p) {
+      var a = d3.geoArea({ type: "Polygon", coordinates: [p.geo.coordinates[0]] });
+      if (a > TAU) a = 2 * TAU - a;
+      p.km = Math.sqrt(a) * R_KM;
+      p.coast = p.geo.coordinates.filter(function (r) { return r.length >= 2; }).map(prepareArc);
+    });
+    list.sort(function (a, b) { return b.km - a.km; });
     return list;
+  }
+  function landCount(list, kp, px) {
+    var lo = 0, hi = list.length;
+    while (lo < hi) { var mid = (lo + hi) >> 1; if (list[mid].km * kp >= px) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
+  function traceCoast(c, list, n) {
+    for (var i = 0; i < n; i++) { var p = list[i]; if (inView(p)) traceArcs(c, p.coast); }
+  }
+  var coastGrid = null, COAST_KM = 32, GRID_W = 2880, GRID_H = 1440;
+  function buildCoastGrid(list) {
+    try {
+      var cv = document.createElement("canvas"), k = GRID_W / 360;
+      cv.width = GRID_W; cv.height = GRID_H;
+      var g = cv.getContext("2d", { willReadFrequently: true });
+      var path = new Path2D();
+      list.forEach(function (p) {
+        p.geo.coordinates.forEach(function (ring) {
+          for (var i = 0; i < ring.length; i++) {
+            var x = (ring[i][0] + 180) * k, y = (90 - ring[i][1]) * k;
+            if (i === 0) path.moveTo(x, y); else path.lineTo(x, y);
+          }
+          path.closePath();
+        });
+      });
+      g.fillStyle = "#000"; g.fill(path, "evenodd");
+      g.globalCompositeOperation = "destination-out";
+      g.lineJoin = "round"; g.lineCap = "round";
+      g.lineWidth = 2 * COAST_KM * k / 111.195;
+      list.forEach(function (p) {
+        p.coast.forEach(function (L) {
+          (L.parts || [L]).forEach(function (q) {
+            g.beginPath();
+            for (var i = 0; i < q.n; i++) {
+              var lon = Math.atan2(q.y[i], q.x[i]) / D2R, lat = Math.asin(Math.max(-1, Math.min(1, q.z[i]))) / D2R;
+              var x = (lon + 180) * k, y = (90 - lat) * k;
+              if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+            }
+            g.stroke();
+          });
+        });
+      });
+      var px = g.getImageData(0, 0, GRID_W, GRID_H).data, a = new Uint8Array(GRID_W * GRID_H);
+      for (var i = 0; i < a.length; i++) a[i] = px[i * 4 + 3] > 127 ? 1 : 0;
+      coastGrid = { a: a, k: k, r: COAST_KM * k / 111.195 };
+    } catch (e) { coastGrid = null; }
+  }
+  function inland(lon, lat) {
+    if (!coastGrid) return false;
+    var G = coastGrid, y = Math.floor((90 - lat) * G.k);
+    if (y < 0 || y >= GRID_H) return false;
+    var x = Math.floor((wrap180(lon) + 180) * G.k), c = Math.cos(lat * D2R);
+    var w = Math.min(40, Math.ceil(G.r / Math.max(0.05, c) - G.r));
+    for (var d = -w; d <= w; d++) if (!G.a[y * GRID_W + ((x + d) % GRID_W + GRID_W) % GRID_W]) return false;
+    return true;
+  }
+  function splitCoast(lines, coastal, inner) {
+    var reach = 1.4 * COAST_KM / 111.195;
+    var step = function (a, b) { var dx = (a[0] - b[0]) * Math.cos(a[1] * D2R); return Math.sqrt(dx * dx + (a[1] - b[1]) * (a[1] - b[1])); };
+    lines.forEach(function (ln) {
+      var n = ln.length, m = new Uint8Array(n), k, s, e;
+      for (k = 0; k < n; k++) m[k] = inland(ln[k][0], ln[k][1]) ? 1 : 0;
+      var used = new Uint8Array(n);
+      for (s = 0; s < n; s = e) {
+        for (e = s + 1; e < n && m[e] === m[s]; e++);
+        if (!m[s]) continue;
+        var a = s, b = e - 1;
+        for (var d = 0; a > 0 && d < reach; a--) d += step(ln[a], ln[a - 1]);
+        for (d = 0; b < n - 1 && d < reach; b++) d += step(ln[b], ln[b + 1]);
+        for (k = a; k <= b; k++) used[k] = 1;
+        if (b > a) inner.push(ln.slice(a, b + 1));
+      }
+      for (s = 0; s < n; s = e) {
+        for (e = s + 1; e < n && used[e] === used[s]; e++);
+        if (!used[s] && e - s >= 2) coastal.push(ln.slice(s, e));
+      }
+    });
   }
 
   function start() {
@@ -1780,10 +2467,8 @@
       buildPoints();
       var t0 = h.y ? parseTime(h.y) : null;
       now = t0 !== null ? t0 : START_YEAR;
-      land = {
-        hi: prepLand(r[1].hi), lo: prepLand(r[1].lo),
-        coastHi: prepareLines(topojson.mesh(r[1].hi, r[1].hi.objects.land)), coastLo: prepareLines(topojson.mesh(r[1].lo, r[1].lo.objects.land))
-      };
+      land = { hi: prepLand(r[1].hi), lo: prepLand(r[1].lo) };
+      buildCoastGrid(land.lo);
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
       places = r[2] || [];
       layout();
@@ -1812,6 +2497,9 @@
     ready: function () { return ready && !!current; },
     year: function () { return now; },
     shown: function () { return yearInput.value; },
+    asof: function () { return asof.textContent; },
+    playing: function () { return !!playTimer; },
+    play: function (on) { if (on && !playTimer) startPlay(); else if (!on) stopPlay(); },
     date: function () { return isModern(now) ? hashTime() : null; },
     mapYear: function () { return current ? (current.modern ? "modern" : current.year) : null; },
     maps: function () { return maps.map(function (m) { return m.y; }); },
@@ -1836,8 +2524,18 @@
       for (var i = 0; i < n; i++) draw();
       return (performance.now() - t0) / n;
     },
-    moving: function (on) { moving = !!on; }
+    moving: function (on) { moving = !!on; },
+    timeLabels: function (n) {
+      n = n || 10;
+      var kp = kmPx(), t0 = performance.now();
+      for (var i = 0; i < n; i++) layoutPolities(current, fixedBoxes(), kp);
+      var t1 = performance.now();
+      for (i = 0; i < n; i++) { placedLabels = []; drawPlaces(fixedBoxes(), localScale()); }
+      return { polities: (t1 - t0) / n, places: (performance.now() - t1) / n };
+    },
+    inland: function (lon, lat) { return inland(lon, lat); }
   };
+  Object.assign(window.__chronia, layersApi);
 
   start();
 })();

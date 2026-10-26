@@ -602,19 +602,71 @@ const CAP_FIX = {
 };
 const CAP_ALIAS = { "Saint Petersburg": "St. Petersburg|30", "Kiev": "Kyiv", "Rangoon": "Yangon", "Saigon": "Ho Chi Minh City", "Calcutta": "Kolkata", "Usumbura": "Bujumbura" };
 const CITY_NAMES_REF = CITY_NAMES;
+const CAP_BEFORE = {
+  "Abuja": [["1991-12-11", "Lagos", 3.39, 6.45]],
+  "Dodoma": [["1996-01-31", "Dar es Salaam", 39.28, -6.82]],
+  "Lilongwe": [["1974-12-31", "Zomba", 35.32, -15.39]],
+  "Lusaka": [["1935-05-31", "Livingstone", 25.85, -17.85]],
+  "Gaborone": [["1965-01-31", "Mafeking", 25.64, -25.86]],
+  "Nouakchott": [["1957-12-31", "Saint-Louis", -16.49, 16.03]],
+  "Kampala": [["1962-10-08", "Entebbe", 32.46, 0.06]],
+  "Beijing": [["1928-06-14", "Peking", 116.4, 39.9], ["1937-11-19", "Nanjing", 118.8, 32.06], ["1946-05-04", "Chongqing", 106.55, 29.56], ["1949-09-30", "Nanjing", 118.8, 32.06]]
+};
 const capitalOf = (raw, lon, lat) => {
   const name = CAP_FIX[cleanCs(raw)] || cleanCs(raw);
   const cap = [name, +lon.toFixed(3), +lat.toFixed(3)];
   const key = CAP_ALIAS[name] || name;
   const steps = CITY_NAMES_REF && CITY_NAMES_REF[key];
   if (steps && steps.length) cap.push(steps.map(([d, n]) => [dayOf(d), n]));
+  if (CAP_BEFORE[name]) { if (cap.length < 4) cap.push(null); cap.push(CAP_BEFORE[name].map(([d, n, x, y]) => [dayOf(d), n, x, y])); }
   return cap;
 };
 const csTopo = JSON.parse(readFileSync(cshapesPath, "utf8"));
 const csObj = Object.values(csTopo.objects)[0];
 const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry }));
+const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
+const CS_CARVE = [["291", "1939-08-31", "255"]];
+const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
+const polysOf = (g) => (g.type === "Polygon" ? [g.coordinates] : g.coordinates);
+const csWithExtras = (rows) => {
+  const cowPath = cshapesPath.replace(/_gw\.topojson$/, "_cow.topojson");
+  const hasCow = cowPath !== cshapesPath && existsSync(cowPath);
+  if (!hasCow) console.warn("CShapes COW edition not found beside the GW one, so CS_FROM_COW is not applied: " + cowPath);
+  const cowTopo = hasCow ? JSON.parse(readFileSync(cowPath, "utf8")) : null;
+  const cow = hasCow ? Object.values(cowTopo.objects)[0].geometries.map((g) => ({ p: { ...g.properties, gwcode: g.properties.cowcode }, geometry: client.feature(cowTopo, g).geometry })) : [];
+  let list = rows;
+  for (const [code, a, b] of hasCow ? CS_FROM_COW : []) {
+    const next = [];
+    for (const r of list) {
+      if (String(r.p.gwcode) !== code || r.p.end < a || r.p.start > b) { next.push(r); continue; }
+      if (r.p.start < a) next.push({ p: { ...r.p, end: isoAdd(a, -1) }, geometry: r.geometry });
+      if (r.p.end > b) next.push({ p: { ...r.p, start: isoAdd(b, 1) }, geometry: r.geometry });
+    }
+    for (const r of cow) {
+      if (String(r.p.gwcode) !== code || r.p.end < a || r.p.start > b) continue;
+      next.push({ p: { ...r.p, start: r.p.start < a ? a : r.p.start, end: r.p.end > b ? b : r.p.end }, geometry: r.geometry });
+    }
+    list = next;
+  }
+  for (const [code, end, from] of CS_CARVE) {
+    const own = list.filter((r) => String(r.p.gwcode) === code);
+    if (own.length !== 1) throw new Error("CS_CARVE expects one span for " + code);
+    const me = own[0], a = isoAdd(me.p.end, 1);
+    me.p = { ...me.p, end };
+    const next = [];
+    for (const r of list) {
+      if (String(r.p.gwcode) !== from || r.p.end < a || r.p.start > end || !clip.intersection(polysOf(r.geometry), polysOf(me.geometry)).length) { next.push(r); continue; }
+      const s = r.p.start < a ? a : r.p.start, e = r.p.end > end ? end : r.p.end;
+      if (r.p.start < s) next.push({ p: { ...r.p, end: isoAdd(s, -1) }, geometry: r.geometry });
+      next.push({ p: { ...r.p, start: s, end: e }, geometry: { type: "MultiPolygon", coordinates: clip.difference(polysOf(r.geometry), polysOf(me.geometry)) } });
+      if (r.p.end > e) next.push({ p: { ...r.p, start: isoAdd(e, 1) }, geometry: r.geometry });
+    }
+    list = next;
+  }
+  return list;
+};
 const csParts = [];
-for (const r of csRaw) {
+for (const r of csWithExtras(csRaw)) {
   const p = r.p, start = dayOf(p.start), end = p.end >= CS_TO ? -1 : dayOf(p.end);
   const cuts = (CS_NAMES[p.country_name] || []).map(([d]) => dayOf(d)).filter((d) => d > start && (end < 0 || d <= end));
   const bounds = [start, ...cuts];
@@ -734,12 +786,18 @@ for (const [k, w] of edges) {
   adj.get(a).push([b, w]); adj.get(b).push([a, w]);
 }
 const order = [...weight.keys()].sort((a, b) => weight.get(b) - weight.get(a));
+const prevColor = new Map();
+try {
+  const prevByName = new Map(JSON.parse(readFileSync(resolve(out, "eras.json"), "utf8")).polities.filter((p) => p[1] >= 0).map((p) => [p[0], p[1]]));
+  catalogue.forEach((e, id) => { const k = keyOf(id); if (!prevColor.has(k) && prevByName.has(e.n)) prevColor.set(k, prevByName.get(e.n)); });
+} catch (e) { console.warn("No earlier eras.json, so colours are chosen afresh"); }
 const color = new Map();
 const used = new Array(PALETTE).fill(0);
 for (const k of order) {
   let best = 0, bestCost = Infinity;
   for (let c = 0; c < PALETTE; c++) {
     let cost = used[c] * 1e-4;
+    if (prevColor.has(k) && prevColor.get(k) !== c) cost += 5;
     for (const [n, w] of adj.get(k) || []) {
       if (!color.has(n)) continue;
       const g = wheel(c, color.get(n));
