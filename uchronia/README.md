@@ -706,7 +706,12 @@ of `/greatercircle/`.
   that is left out of the country lists, the Check menu, and colouring; it
   is created in the same undo step as the first land given to it. A dispute
   whose claimant is dissolved keeps the colours of those that remain. The
-  historian is told which land is disputed and between whom.
+  historian is told which land is disputed and between whom. The world as it
+  is starts with one dispute: the Siachen Glacier, which Natural Earth
+  draws apart from both India and Pakistan, is disputed between the two
+  (`DISPUTED_BY` in `app.js`). Land made disputed between the same
+  claimants joins it, and hovering it reads *Siachen Glacier, disputed
+  between India and Pakistan*.
 - **Settlements (C)**: click to found a city; click one to pick it, then drag
   it to move it (a drag on a city that isn't picked moves the map). A picked
   settlement can be a capital, a city, a town, or a small town; small towns

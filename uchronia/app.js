@@ -158,6 +158,7 @@
     FIN: "ALD"
   };
   var SHORT_NAME = { "United Kingdom": "UK", "United States": "US" };
+  var DISPUTED_BY = { KAS: "IND PAK" };
   function rulerOf(c) {
     var co = countries[c], r = co ? co.ruler : -1;
     return isInt(r) && r >= 0 && r !== c && countries[r] && countries[r].alive && hasLand(r) ? r : -1;
@@ -200,6 +201,10 @@
   }
   function liveClaims() {
     return ui.claims.filter(function (k) { return countries[k] && countries[k].alive && !countries[k].claims; });
+  }
+  function disputeTitle(c) {
+    var n = countries[c].name;
+    return (n && n !== "Disputed" ? n + ", disputed" : "Disputed") + " between " + claimNames(claimantsOf(c));
   }
   function claimNames(list) {
     var names = list.map(function (k) { return countries[k].name; });
@@ -3658,7 +3663,7 @@
       var u = unitAt(x, y), hp = u >= 0 ? pieceAt(x, y, u) : null;
       setHover(u, hp);
       if (u < 0) { hideTip(); return; }
-      var o = hp ? hp.owner : owner[u], main = isDispute(o) ? "Disputed between " + claimNames(claimantsOf(o)) : o >= 0 ? countries[o].name : "Unclaimed land";
+      var o = hp ? hp.owner : owner[u], main = isDispute(o) ? disputeTitle(o) : o >= 0 ? countries[o].name : "Unclaimed land";
       var note = null, pickNote = ui.dispute ? "click to add as a claimant" : "click to give land to this country";
       if (ui.tool === "paint") {
         var to = brush();
@@ -4420,7 +4425,7 @@
     if (ui.tool === "select") {
       if (ui.city) setHint(["Drag the city on the " + where + " to move it"]);
       else if (c < 0 && ui.region >= 0 && owner[ui.region] < 0) setHint(["No country holds this land"]);
-      else if (isDispute(c)) setHint(["Disputed between " + claimNames(claimantsOf(c))]);
+      else if (isDispute(c)) setHint([disputeTitle(c)]);
       else if (c >= 0) setHint(["Rename or recolour ", { b: countries[c].name }, ", or paint its borders"]);
       else setHint([verb + " a country or a city to change it, or found a new country"]);
     } else if (ui.tool === "paint") {
@@ -5056,7 +5061,7 @@
     countries.forEach(function (c, i) { if (c.alive && isInt(c.spot) && c.spot > 0) ns.push([i, c.spot]); });
     if (ns.length) d.n = ns;
     var ds = [];
-    countries.forEach(function (c, i) { if (c.alive && c.claims && c.claims.length) ds.push([i, c.claims.slice()]); });
+    countries.forEach(function (c, i) { if (c.alive && c.claims && c.claims.length && i >= base.countries.length) ds.push([i, c.claims.slice()]); });
     if (ds.length) d.d = ds;
     var rs = [];
     countries.forEach(function (c, i) {
@@ -5072,7 +5077,7 @@
     var old = countries;
     var nb = base.countries.length;
     for (var u = 0; u < nUnit; u++) owner[u] = base.provOwner[unitProv[u]];
-    countries = base.countries.map(function (b, i) { return { code: b.code, name: b.name, color: b.color, ruler: b.ruler, alive: true, label: old[i] ? old[i].label : null }; });
+    countries = base.countries.map(function (b, i) { return { code: b.code, name: b.name, color: b.color, ruler: b.ruler, claims: b.claims ? b.claims.slice() : undefined, alive: true, label: old[i] ? old[i].label : null }; });
     d = isMapObject(d) ? d : {};
     var remap = new Map();
     if (Array.isArray(d.c)) d.c.slice(0, nb + MAX_NEW).forEach(function (row) {
@@ -5944,6 +5949,11 @@
     var codeIndex = new Map();
     countries = topo.countries.map(function (c, i) { codeIndex.set(c.c, i); return { code: c.c, name: c.n, color: 0, ruler: -1, alive: true, label: null }; });
     Object.keys(HELD_BY).forEach(function (k) { HELD_BY[k].split(" ").forEach(function (h) { if (codeIndex.has(k) && codeIndex.has(h)) countries[codeIndex.get(h)].ruler = codeIndex.get(k); }); });
+    Object.keys(DISPUTED_BY).forEach(function (k) {
+      if (!codeIndex.has(k)) return;
+      var cl = DISPUTED_BY[k].split(" ").filter(function (h) { return codeIndex.has(h); }).map(function (h) { return codeIndex.get(h); });
+      if (cl.length > 1) countries[codeIndex.get(k)].claims = cl;
+    });
     provName = new Array(nProv);
     var provOwner = new Int32Array(nProv);
     groupName = (topo.groups || []).map(function (g) { return String(g.n); });
@@ -5965,7 +5975,7 @@
     var baseCities = cityRows.map(function (r) { return { name: r[0], lon: r[1], lat: r[2], tier: r[3], cap: r[4] }; });
     base = {
       provOwner: provOwner,
-      countries: countries.map(function (c) { return { code: c.code, name: c.name, color: c.color, ruler: c.ruler }; }),
+      countries: countries.map(function (c) { return { code: c.code, name: c.name, color: c.color, ruler: c.ruler, claims: c.claims }; }),
       cities: baseCities
     };
     baseCities.forEach(function (b, i) { setCityState("b" + i, b); });
