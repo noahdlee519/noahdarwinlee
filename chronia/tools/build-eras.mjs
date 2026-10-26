@@ -7,6 +7,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
 const source = resolve(process.argv[3] || "historical-basemaps/geojson");
 const provincesPath = resolve(process.argv[4] || resolve(here, "../../uchronia/data/provinces.json"));
+const cshapesPath = resolve(process.argv[5] || "cshapes_2_gw.topojson");
+const citiesPath = resolve(process.argv[6] || resolve(here, "../../uchronia/data/cities.json"));
 const out = resolve(here, "../data");
 const require = createRequire(resolve(modules, "x.js"));
 const server = require("topojson-server");
@@ -16,6 +18,10 @@ const d3 = require("d3-geo");
 const clip = require("polygon-clipping");
 
 const FIRST = -3000;
+const CS_FROM = "1886-01-01", CS_TO = "2019-12-31", CITIES_FROM = "1900-01-01";
+const DAY0 = Date.UTC(1886, 0, 1);
+const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
+const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
 const R_KM = 6371.0088;
 const HI_KM = 1.6, LO_KM = 12;
 const HI_Q = 2e5, LO_Q = 2e4;
@@ -24,13 +30,13 @@ const weightFor = (km) => (km / R_KM) ** 2;
 const LINEAGE = [
   ["England", "Kingdom of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland", "British Empire"],
   ["Kingdom of France", "France", "French Empire", "French Republic"],
-  ["Grand Duchy of Moscow", "Tsardom of Muscovy", "Russian Empire", "USSR", "Russia", "Russian Federation"],
+  ["Grand Duchy of Moscow", "Tsardom of Muscovy", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"],
   ["Han", "Han Empire", "Jin", "Sui Empire", "Tang Empire", "Song Empire", "Ming Empire", "Ming Chinese Empire", "Manchu Empire", "Qing Empire", "China"],
   ["United States of America", "United States"],
   ["Castile", "Spain", "Spanish Habsburg", "Habsburg Spain"],
   ["Portugal", "Kingdom of Portugal"],
   ["Dutch Republic", "United Provinces", "United Kingdom of Netherlands", "Netherlands"],
-  ["Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "German Empire", "Germany"],
+  ["Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "German Empire", "Germany", "West Germany"],
   ["Austrian Empire", "Austro-Hungarian Empire", "Austria", "Habsburg Monarchy"],
   ["Ottoman Empire", "Turkey"],
   ["Safavid Empire", "Persia", "Iran"],
@@ -44,7 +50,16 @@ const LINEAGE = [
   ["Denmark-Norway", "Denmark"],
   ["Sweden", "Sweden–Norway"],
   ["Mughal Empire", "India"],
-  ["Viceroyalty of New Spain", "Mexico"]
+  ["Viceroyalty of New Spain", "Mexico"],
+  ["Ceylon", "Sri Lanka"],
+  ["Burma", "Myanmar"],
+  ["Dahomey", "Benin"],
+  ["Upper Volta", "Burkina Faso"],
+  ["Gold Coast", "Ghana"],
+  ["Nyasaland", "Malawi"],
+  ["Northern Rhodesia", "Zambia"],
+  ["Southern Rhodesia", "Rhodesia", "Zimbabwe"],
+  ["Congo Free State", "Belgian Congo", "Congo-Léopoldville", "Zaire", "DR Congo"]
 ];
 const RULER_ALIAS = {
   "United Kingdom": "United Kingdom of Great Britain and Ireland",
@@ -144,7 +159,7 @@ const yearOf = (file) => {
   const m = /^world_(bc)?(\d+)\.geojson$/.exec(file);
   return m ? (m[1] ? -+m[2] : +m[2]) : null;
 };
-const files = readdirSync(source).map((f) => ({ f, y: yearOf(f) })).filter((x) => x.y !== null && x.y >= FIRST).sort((a, b) => a.y - b.y);
+const files = readdirSync(source).map((f) => ({ f, y: yearOf(f) })).filter((x) => x.y !== null && x.y >= FIRST && x.y < +CS_FROM.slice(0, 4)).sort((a, b) => a.y - b.y);
 if (!files.length) throw new Error("no world_*.geojson files in " + source);
 
 const lineageOf = new Map();
@@ -382,10 +397,283 @@ for (const s of snapshots) {
   index.push([s.y, file]);
 }
 
-const keyOf = (id) => {
+const CS_STATUS = { independent: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4 };
+const CS_NAMES = {
+  "United States of America": [["1886-01-01", "United States"]],
+  "Russia (Soviet Union)": [["1886-01-01", "Russian Empire"], ["1917-11-07", "Soviet Russia"], ["1922-12-30", "Soviet Union"], ["1991-12-26", "Russia"]],
+  "Turkey (Ottoman Empire)": [["1886-01-01", "Ottoman Empire"], ["1923-10-29", "Turkey"]],
+  "Iran (Persia)": [["1886-01-01", "Persia"], ["1935-03-21", "Iran"]],
+  "Germany (Prussia)": [["1886-01-01", "German Empire"], ["1918-11-09", "Germany"]],
+  "German Federal Republic": [["1886-01-01", "West Germany"], ["1990-10-03", "Germany"]],
+  "German Democratic Republic": [["1886-01-01", "East Germany"]],
+  "Italy/Sardinia": [["1886-01-01", "Italy"]],
+  "Rumania": [["1886-01-01", "Romania"]],
+  "Thailand": [["1886-01-01", "Siam"], ["1939-06-24", "Thailand"]],
+  "Sri Lanka (Ceylon)": [["1886-01-01", "Ceylon"], ["1972-05-22", "Sri Lanka"]],
+  "Myanmar (Burma)": [["1886-01-01", "Burma"], ["1989-06-18", "Myanmar"]],
+  "Cambodia (Kampuchea)": [["1886-01-01", "Cambodia"], ["1975-04-17", "Kampuchea"], ["1989-04-30", "Cambodia"]],
+  "Congo, Democratic Republic of (Zaire)": [["1886-01-01", "Congo Free State"], ["1908-11-15", "Belgian Congo"], ["1960-06-30", "Congo-Léopoldville"], ["1971-10-27", "Zaire"], ["1997-05-17", "DR Congo"]],
+  "Zimbabwe (Rhodesia)": [["1886-01-01", "Southern Rhodesia"], ["1964-10-24", "Rhodesia"], ["1980-04-18", "Zimbabwe"]],
+  "Burkina Faso (Upper Volta)": [["1886-01-01", "Upper Volta"], ["1984-08-04", "Burkina Faso"]],
+  "Benin": [["1886-01-01", "Dahomey"], ["1975-11-30", "Benin"]],
+  "Madagascar (Malagasy)": [["1886-01-01", "Madagascar"]],
+  "Swaziland (Eswatini)": [["1886-01-01", "Swaziland"], ["2018-04-19", "Eswatini"]],
+  "Macedonia (FYROM/North Macedonia)": [["1886-01-01", "Macedonia"], ["2019-02-12", "North Macedonia"]],
+  "Belarus (Byelorussia)": [["1886-01-01", "Belarus"]],
+  "Tanzania (Tanganyika)": [["1886-01-01", "Tanganyika"], ["1964-04-26", "Tanzania"]],
+  "Yemen (Arab Republic of Yemen)": [["1886-01-01", "North Yemen"], ["1990-05-22", "Yemen"]],
+  "Yemen, People's Republic of": [["1886-01-01", "South Yemen"]],
+  "Korea, People's Republic of": [["1886-01-01", "North Korea"]],
+  "Korea, Republic of": [["1886-01-01", "South Korea"]],
+  "Vietnam, Democratic Republic of": [["1886-01-01", "North Vietnam"], ["1976-07-02", "Vietnam"]],
+  "Vietnam, Republic of": [["1886-01-01", "South Vietnam"]],
+  "Vietnam (Annam/Cochin China/Tonkin)": [["1886-01-01", "Vietnam"]],
+  "Kyrgyz Republic": [["1886-01-01", "Kyrgyzstan"]],
+  "Cote D'Ivoire": [["1886-01-01", "Côte d'Ivoire"]],
+  "Surinam": [["1886-01-01", "Suriname"]],
+  "French Guyana": [["1886-01-01", "French Guiana"]],
+  "British Somaliland (Somaliland Republic)": [["1886-01-01", "British Somaliland"]],
+  "Sabah (North Borneo)": [["1886-01-01", "North Borneo"], ["1963-09-16", "Sabah"]],
+  "West Irian (Dutch New Guinea)": [["1886-01-01", "Dutch New Guinea"], ["1962-10-01", "West Irian"]],
+  "New Guinea (German New Guinea) (Kaiser Wilhelmsland)": [["1886-01-01", "German New Guinea"], ["1914-11-11", "New Guinea"]],
+  "Selangore": [["1886-01-01", "Selangor"]],
+  "Ghana": [["1886-01-01", "Gold Coast"], ["1957-03-06", "Ghana"]],
+  "Malawi": [["1886-01-01", "Nyasaland"], ["1964-07-06", "Malawi"]],
+  "Zambia": [["1886-01-01", "Northern Rhodesia"], ["1964-10-24", "Zambia"]],
+  "Namibia": [["1886-01-01", "South West Africa"], ["1990-03-21", "Namibia"]],
+  "Botswana": [["1886-01-01", "Bechuanaland"], ["1966-09-30", "Botswana"]],
+  "Lesotho": [["1886-01-01", "Basutoland"], ["1966-10-04", "Lesotho"]],
+  "Djibouti": [["1886-01-01", "French Somaliland"], ["1967-07-05", "Afars and Issas"], ["1977-06-27", "Djibouti"]],
+  "Belize": [["1886-01-01", "British Honduras"], ["1973-06-01", "Belize"]],
+  "Guyana": [["1886-01-01", "British Guiana"], ["1966-05-26", "Guyana"]],
+  "Jordan": [["1886-01-01", "Transjordan"], ["1949-04-26", "Jordan"]],
+  "Sudan": [["1886-01-01", "Anglo-Egyptian Sudan"], ["1956-01-01", "Sudan"]],
+  "Indonesia": [["1886-01-01", "Dutch East Indies"], ["1949-12-27", "Indonesia"]],
+  "India": [["1886-01-01", "British India"], ["1947-08-15", "India"]],
+  "Equatorial Guinea": [["1886-01-01", "Spanish Guinea"], ["1968-10-12", "Equatorial Guinea"]],
+  "Guinea-Bissau": [["1886-01-01", "Portuguese Guinea"], ["1973-09-24", "Guinea-Bissau"]],
+  "Central African Republic": [["1886-01-01", "Ubangi-Shari"], ["1958-12-01", "Central African Republic"]],
+  "Kenya": [["1886-01-01", "British East Africa"], ["1920-07-23", "Kenya"]],
+  "Reunion": [["1886-01-01", "Réunion"]],
+  "Kashmir (North, Azad)": [["1886-01-01", "Azad Kashmir"]],
+  "Bokhara": [["1886-01-01", "Bukhara"]],
+  "Hawaii": [["1886-01-01", "Hawaii"]],
+  "Congo": [["1886-01-01", "French Congo"], ["1960-08-15", "Congo"]],
+  "Mali": [["1886-01-01", "French Sudan"], ["1960-06-20", "Mali"]],
+  "Bangladesh": [["1886-01-01", "East Pakistan"], ["1971-12-16", "Bangladesh"]],
+  "Taiwan": [["1886-01-01", "Taiwan"]],
+  "Iraq": [["1886-01-01", "Mesopotamia"], ["1921-08-23", "Iraq"]],
+  "Palestine": [["1886-01-01", "Mandatory Palestine"]],
+  "Danzig": [["1886-01-01", "Free City of Danzig"]],
+  "Newfoundland": [["1886-01-01", "Newfoundland"]],
+  "Federation of Rhodesia and Nyasaland": [["1886-01-01", "Rhodesia and Nyasaland"]]
+};
+const CS_WIKI = {
+  "Soviet Russia": "Russian Soviet Federative Socialist Republic", "Soviet Union": "Soviet Union", "Russia": "Russia",
+  "West Germany": "West Germany", "East Germany": "East Germany", "Germany": "Germany",
+  "Congo": "Republic of the Congo", "French Congo": "French Congo", "DR Congo": "Democratic Republic of the Congo", "Congo-Léopoldville": "Republic of the Congo (Léopoldville)",
+  "Georgia": "Georgia (country)", "Gaza": "Gaza Strip", "Natal": "Colony of Natal", "Transvaal": "South African Republic",
+  "Victoria": "Colony of Victoria", "Queensland": "Colony of Queensland", "New South Wales": "Colony of New South Wales",
+  "Western Australia": "Western Australia", "South Australia": "South Australia", "Tasmania": "Tasmania",
+  "Lagos": "Lagos Colony", "Aden": "Colony of Aden", "Bukhara": "Emirate of Bukhara", "Khiva": "Khanate of Khiva",
+  "Jammu and Kashmir": "Jammu and Kashmir (princely state)", "Tibet": "Tibet (1912–1951)", "Newfoundland": "Newfoundland (island)",
+  "Korea": "Korea under Japanese rule", "Taiwan": "Taiwan under Japanese rule", "British India": "British Raj",
+  "Mesopotamia": "Mandatory Iraq", "Italy": "Italy", "Serbia": "Serbia", "Persia": "History of Iran", "Hawaii": "Hawaii",
+  "Kampuchea": "Democratic Kampuchea", "Rhodesia": "Rhodesia", "Southern Rhodesia": "Southern Rhodesia", "Siam": "Rattanakosin Kingdom (1782–1932)",
+  "Vietnam": "Vietnam", "Macedonia": "North Macedonia", "Afars and Issas": "French Territory of the Afars and the Issas"
+};
+const CS_WIKI_BY_YEAR = [
+  ["Korea", 1886, 1910, "Joseon"], ["Taiwan", 1950, 9999, "Taiwan"], ["Hawaii", 1886, 1898, "Hawaiian Kingdom"],
+  ["Vietnam", 1886, 1945, "French Indochina"], ["Serbia", 1886, 1918, "Kingdom of Serbia"], ["Italy", 1886, 1946, "Kingdom of Italy"],
+  ["Persia", 1925, 1936, "Pahlavi Iran"], ["Persia", 1886, 1925, "Qajar Iran"], ["China", 1886, 1912, "Qing dynasty"], ["China", 1912, 1949, "Republic of China (1912–1949)"],
+  ["Japan", 1886, 1947, "Empire of Japan"], ["Egypt", 1886, 1953, "History of Egypt"], ["Ethiopia", 1886, 1974, "Ethiopian Empire"]
+];
+const cleanCs = (n) => n.replace(/\s*\([^)]*\)/g, "").trim();
+const csNameAt = (csName, day) => {
+  const steps = CS_NAMES[csName];
+  if (!steps) return cleanCs(csName);
+  let name = steps[0][1];
+  for (const [d, n] of steps) if (dayOf(d) <= day) name = n;
+  return name;
+};
+const csWiki = (name, year) => {
+  for (const [n, a, b, t] of CS_WIKI_BY_YEAR) if (n === name && year >= a && year < b) return t;
+  return CS_WIKI[name] || wikiFor(name, year);
+};
+
+const CITY_SINCE = {
+  "Brasília": "1960-04-21", "Canberra": "1913-03-12", "Islamabad": "1961-01-01", "Naypyidaw": "2005-11-06", "Abuja": "1976-02-03",
+  "Chandigarh": "1952-01-01", "Belmopan": "1970-08-01", "Gaborone": "1964-01-01", "Nouakchott": "1958-01-01", "Tel Aviv": "1909-04-11",
+  "Palmas": "1989-05-20", "Navi Mumbai": "1972-01-01", "Shenzhen": "1979-03-05", "Bhubaneswar": "1948-01-01", "Gandhinagar": "1965-01-01",
+  "Ciudad Guayana": "1961-07-02", "Brazzaville": "1900-01-01", "Lilongwe": "1904-01-01", "Kampala": "1900-01-01", "Nairobi": "1899-05-30",
+  "Johannesburg": "1886-09-08", "Las Vegas": "1905-05-15", "Miami": "1896-07-28", "Vancouver": "1886-04-06", "Anchorage": "1914-01-01",
+  "Haifa": "1886-01-01", "Ashdod": "1956-01-01", "Eilat": "1951-01-01", "Beersheba": "1900-01-01", "Magnitogorsk": "1929-01-01",
+  "Norilsk": "1935-01-01", "Tolyatti": "1737-01-01", "Novosibirsk": "1893-01-01", "Karaganda": "1934-01-01", "Kemerovo": "1918-01-01",
+  "Komsomolsk-on-Amur": "1932-01-01", "Murmansk": "1916-10-04", "Dzerzhinsk": "1930-01-01", "Angarsk": "1948-01-01", "Bratsk": "1955-01-01",
+  "Surgut": "1965-01-01", "Nizhnevartovsk": "1972-01-01", "Naberezhnye Chelny": "1930-01-01", "Ciudad Juárez": "1886-01-01"
+};
+const CITY_NAMES = {
+  "St. Petersburg|30": [["1886-01-01", "Saint Petersburg"], ["1914-08-31", "Petrograd"], ["1924-01-26", "Leningrad"], ["1991-09-06", "Saint Petersburg"]],
+  "Volgograd": [["1886-01-01", "Tsaritsyn"], ["1925-04-10", "Stalingrad"], ["1961-11-10", "Volgograd"]],
+  "Yekaterinburg": [["1886-01-01", "Yekaterinburg"], ["1924-10-14", "Sverdlovsk"], ["1991-09-23", "Yekaterinburg"]],
+  "Nizhny Novgorod": [["1886-01-01", "Nizhny Novgorod"], ["1932-10-07", "Gorky"], ["1990-10-22", "Nizhny Novgorod"]],
+  "Samara": [["1886-01-01", "Samara"], ["1935-01-25", "Kuybyshev"], ["1991-01-25", "Samara"]],
+  "Donetsk": [["1886-01-01", "Yuzovka"], ["1924-04-22", "Stalino"], ["1961-11-09", "Donetsk"]],
+  "Dnipro": [["1886-01-01", "Yekaterinoslav"], ["1926-07-20", "Dnipropetrovsk"], ["2016-05-19", "Dnipro"]],
+  "Kaliningrad": [["1886-01-01", "Königsberg"], ["1946-07-04", "Kaliningrad"]],
+  "Gdańsk": [["1886-01-01", "Danzig"], ["1945-03-30", "Gdańsk"]],
+  "Wrocław": [["1886-01-01", "Breslau"], ["1945-05-06", "Wrocław"]],
+  "Szczecin": [["1886-01-01", "Stettin"], ["1945-07-05", "Szczecin"]],
+  "Bratislava": [["1886-01-01", "Pressburg"], ["1919-03-06", "Bratislava"]],
+  "Chemnitz": [["1886-01-01", "Chemnitz"], ["1953-05-10", "Karl-Marx-Stadt"], ["1990-06-01", "Chemnitz"]],
+  "Ho Chi Minh City": [["1886-01-01", "Saigon"], ["1976-07-02", "Ho Chi Minh City"]],
+  "Kinshasa": [["1886-01-01", "Léopoldville"], ["1966-05-02", "Kinshasa"]],
+  "Lubumbashi": [["1886-01-01", "Élisabethville"], ["1966-05-02", "Lubumbashi"]],
+  "Kisangani": [["1886-01-01", "Stanleyville"], ["1966-05-02", "Kisangani"]],
+  "Harare": [["1886-01-01", "Salisbury"], ["1982-04-18", "Harare"]],
+  "Maputo": [["1886-01-01", "Lourenço Marques"], ["1976-02-03", "Maputo"]],
+  "Jakarta": [["1886-01-01", "Batavia"], ["1942-03-05", "Jakarta"]],
+  "Mumbai": [["1886-01-01", "Bombay"], ["1995-11-01", "Mumbai"]],
+  "Chennai": [["1886-01-01", "Madras"], ["1996-07-17", "Chennai"]],
+  "Kolkata": [["1886-01-01", "Calcutta"], ["2001-01-01", "Kolkata"]],
+  "Bengaluru": [["1886-01-01", "Bangalore"], ["2014-11-01", "Bengaluru"]],
+  "Yangon": [["1886-01-01", "Rangoon"], ["1989-06-18", "Yangon"]],
+  "Dhaka": [["1886-01-01", "Dacca"], ["1982-01-01", "Dhaka"]],
+  "Beijing": [["1886-01-01", "Peking"], ["1928-06-28", "Peiping"], ["1949-09-27", "Beijing"]],
+  "Istanbul": [["1886-01-01", "Constantinople"], ["1930-03-28", "Istanbul"]],
+  "İzmir": [["1886-01-01", "Smyrna"], ["1930-03-28", "İzmir"]],
+  "Ankara": [["1886-01-01", "Angora"], ["1930-03-28", "Ankara"]],
+  "Tbilisi": [["1886-01-01", "Tiflis"], ["1936-08-08", "Tbilisi"]],
+  "Almaty": [["1886-01-01", "Verny"], ["1921-02-05", "Alma-Ata"], ["1993-01-28", "Almaty"]],
+  "Bishkek": [["1886-01-01", "Pishpek"], ["1926-05-05", "Frunze"], ["1991-02-05", "Bishkek"]],
+  "Dushanbe": [["1886-01-01", "Dushanbe"], ["1929-10-16", "Stalinabad"], ["1961-11-10", "Dushanbe"]],
+  "Astana": [["1886-01-01", "Akmolinsk"], ["1961-03-14", "Tselinograd"], ["1992-06-06", "Akmola"], ["1998-05-06", "Astana"], ["2019-03-23", "Nur-Sultan"], ["2022-09-17", "Astana"]],
+  "Oslo": [["1886-01-01", "Kristiania"], ["1925-01-01", "Oslo"]],
+  "Tallinn": [["1886-01-01", "Reval"], ["1918-02-24", "Tallinn"]],
+  "Kyiv": [["1886-01-01", "Kiev"], ["1995-01-01", "Kyiv"]],
+  "Lviv": [["1886-01-01", "Lemberg"], ["1918-11-01", "Lwów"], ["1945-01-01", "Lvov"], ["1991-08-24", "Lviv"]],
+  "Seoul": [["1886-01-01", "Hanseong"], ["1910-10-01", "Keijō"], ["1945-08-15", "Seoul"]],
+  "Taipei": [["1886-01-01", "Taipei"], ["1895-06-17", "Taihoku"], ["1945-10-25", "Taipei"]],
+  "Ulaanbaatar": [["1886-01-01", "Urga"], ["1924-11-29", "Ulaanbaatar"]],
+  "Nuuk": [["1886-01-01", "Godthåb"], ["1979-05-01", "Nuuk"]],
+  "N'Djamena": [["1900-01-01", "Fort-Lamy"], ["1973-04-06", "N'Djamena"]],
+  "Bujumbura": [["1886-01-01", "Usumbura"], ["1962-07-01", "Bujumbura"]],
+  "Banjul": [["1886-01-01", "Bathurst"], ["1973-04-24", "Banjul"]],
+  "Malabo": [["1886-01-01", "Santa Isabel"], ["1973-01-01", "Malabo"]],
+  "Zaporizhia": [["1886-01-01", "Aleksandrovsk"], ["1921-01-01", "Zaporizhia"]],
+  "Tolyatti": [["1886-01-01", "Stavropol-on-Volga"], ["1964-08-28", "Tolyatti"]],
+  "Tver": [["1886-01-01", "Tver"], ["1931-11-20", "Kalinin"], ["1990-07-17", "Tver"]],
+  "Vladikavkaz": [["1886-01-01", "Vladikavkaz"], ["1931-01-01", "Ordzhonikidze"], ["1990-01-01", "Vladikavkaz"]],
+  "Chișinău": [["1886-01-01", "Kishinev"], ["1990-01-01", "Chișinău"]],
+  "Vilnius": [["1886-01-01", "Vilna"], ["1920-10-09", "Wilno"], ["1939-10-10", "Vilnius"]],
+  "Kaunas": [["1886-01-01", "Kovno"], ["1918-02-16", "Kaunas"]],
+  "Podgorica": [["1886-01-01", "Podgorica"], ["1946-07-13", "Titograd"], ["1992-04-02", "Podgorica"]],
+  "Guangzhou": [["1886-01-01", "Canton"], ["1949-10-14", "Guangzhou"]],
+  "Zhangjiakou": [["1886-01-01", "Kalgan"], ["1949-01-01", "Zhangjiakou"]],
+  "Hohhot": [["1886-01-01", "Guisui"], ["1954-01-01", "Hohhot"]],
+  "Shenyang": [["1886-01-01", "Mukden"], ["1945-08-20", "Shenyang"]],
+  "Dalian": [["1898-01-01", "Dalny"], ["1905-01-01", "Dairen"], ["1945-08-22", "Dalian"]],
+  "Ashgabat": [["1886-01-01", "Ashkhabad"], ["1919-07-01", "Poltoratsk"], ["1927-01-01", "Ashkhabad"], ["1992-01-01", "Ashgabat"]],
+  "Pune": [["1886-01-01", "Poona"], ["1978-01-01", "Pune"]],
+  "Varanasi": [["1886-01-01", "Benares"], ["1956-05-24", "Varanasi"]],
+  "Kanpur": [["1886-01-01", "Cawnpore"], ["1948-01-01", "Kanpur"]],
+  "Vadodara": [["1886-01-01", "Baroda"], ["1974-01-01", "Vadodara"]],
+  "Thiruvananthapuram": [["1886-01-01", "Trivandrum"], ["1991-01-01", "Thiruvananthapuram"]],
+  "Kochi": [["1886-01-01", "Cochin"], ["1996-01-01", "Kochi"]],
+  "Faisalabad": [["1886-01-01", "Lyallpur"], ["1977-09-01", "Faisalabad"]],
+  "Sahiwal": [["1886-01-01", "Montgomery"], ["1966-11-01", "Sahiwal"]],
+  "Chittagong": [["1886-01-01", "Chittagong"], ["2018-04-02", "Chattogram"]],
+  "Lusaka": [["1905-01-01", "Lusaka"]],
+  "Kirov": [["1886-01-01", "Vyatka"], ["1934-12-05", "Kirov"]],
+  "Ulyanovsk": [["1886-01-01", "Simbirsk"], ["1924-05-09", "Ulyanovsk"]],
+  "Makhachkala": [["1886-01-01", "Petrovsk-Port"], ["1921-05-14", "Makhachkala"]],
+  "Luhansk": [["1886-01-01", "Lugansk"], ["1935-11-05", "Voroshilovgrad"], ["1958-03-05", "Lugansk"], ["1970-01-05", "Voroshilovgrad"], ["1990-05-04", "Luhansk"]],
+  "Bandar Seri Begawan": [["1886-01-01", "Brunei Town"], ["1970-10-04", "Bandar Seri Begawan"]],
+  "Kingston": [["1886-01-01", "Kingston"]],
+  "Ivano-Frankivsk": [["1886-01-01", "Stanislau"], ["1919-01-01", "Stanisławów"], ["1962-11-09", "Ivano-Frankivsk"]],
+  "Pyongyang": [["1886-01-01", "Pyongyang"], ["1910-10-01", "Heijō"], ["1945-08-15", "Pyongyang"]],
+  "Busan": [["1886-01-01", "Busan"], ["1910-10-01", "Fusan"], ["1945-08-15", "Busan"]]
+};
+const CAP_FIX = {
+  "Bukarest": "Bucharest", "Tirane": "Tirana", "Masqat": "Muscat", "T'bilisi": "Tbilisi", "Ulan Bator": "Ulaanbaatar",
+  "Singapore City": "Singapore", "Asuncion": "Asunción", "Bogota": "Bogotá", "San Jose": "San José", "Reykjavik": "Reykjavík",
+  "Brasilia": "Brasília", "Chisinau": "Chișinău", "Pietermatritzburg": "Pietermaritzburg", "Sana'a": "Sanaa", "Kuwait": "Kuwait City",
+  "Durres": "Durrës", "Vlore": "Vlorë", "Iasi": "Iași", "Duala": "Douala", "El Aaiun": "Laayoune", "Hue": "Huế", "(East) Jerusalem": "East Jerusalem"
+};
+const CAP_ALIAS = { "Saint Petersburg": "St. Petersburg|30", "Kiev": "Kyiv", "Rangoon": "Yangon", "Saigon": "Ho Chi Minh City", "Calcutta": "Kolkata", "Usumbura": "Bujumbura" };
+const CITY_NAMES_REF = CITY_NAMES;
+const capitalOf = (raw, lon, lat) => {
+  const name = CAP_FIX[cleanCs(raw)] || cleanCs(raw);
+  const cap = [name, +lon.toFixed(3), +lat.toFixed(3)];
+  const key = CAP_ALIAS[name] || name;
+  const steps = CITY_NAMES_REF && CITY_NAMES_REF[key];
+  if (steps && steps.length) cap.push(steps.map(([d, n]) => [dayOf(d), n]));
+  return cap;
+};
+const csTopo = JSON.parse(readFileSync(cshapesPath, "utf8"));
+const csObj = Object.values(csTopo.objects)[0];
+const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry }));
+const csParts = [];
+for (const r of csRaw) {
+  const p = r.p, start = dayOf(p.start), end = p.end >= CS_TO ? -1 : dayOf(p.end);
+  const cuts = (CS_NAMES[p.country_name] || []).map(([d]) => dayOf(d)).filter((d) => d > start && (end < 0 || d <= end));
+  const bounds = [start, ...cuts];
+  bounds.forEach((s0, k) => {
+    const e0 = k + 1 < bounds.length ? bounds[k + 1] - 1 : end;
+    csParts.push({ p, geometry: r.geometry, start: s0, end: e0, name: csNameAt(p.country_name, s0) });
+  });
+}
+const byGw = new Map();
+csParts.forEach((r) => { const k = String(r.p.gwcode); if (!byGw.has(k)) byGw.set(k, []); byGw.get(k).push(r); });
+const activeOn = (r, day) => r.start <= day && (r.end < 0 || day <= r.end);
+const ownerName = (r) => {
+  const p = r.p;
+  if (p.status === "independent" || p.status === "N/A" || String(p.owner) === String(p.gwcode)) return "";
+  const list = byGw.get(String(p.owner)) || [];
+  const hit = list.find((o) => activeOn(o, r.start)) || list.find((o) => activeOn(o, Math.max(r.start, o.start))) || list[0];
+  return hit ? hit.name : "";
+};
+const csFeats = csParts.map((r, i) => ({ type: "Feature", properties: { i }, geometry: r.geometry }));
+const csHi = topoFor(csFeats, HI_KM, HI_Q);
+const csLo = topoFor(csFeats, LO_KM, LO_Q);
+const labelMemo = new Map();
+const csRows = csParts.map((r, i) => {
+  const g = csHi.objects.p.geometries[i];
+  const memoKey = JSON.stringify(g.arcs || g.coordinates || null);
+  let label = labelMemo.get(memoKey);
+  if (label === undefined) {
+    const geom = client.feature(csHi, g).geometry;
+    label = geom ? labelOf(geom) : null;
+    if (label && label[5] > BIG_KM2) {
+      const spots = labelSpots(geom, label[5]);
+      if (spots.length > 1) label.push(spots);
+    }
+    labelMemo.set(memoKey, label);
+  }
+  const id = catId(r.name), owner = ownerName(r);
+  const entry = catalogue[id];
+  const y0 = yearOfDay(r.start), y1 = r.end < 0 ? 2019 : yearOfDay(r.end);
+  entry.cs = entry.cs ? [Math.min(entry.cs[0], y0), Math.max(entry.cs[1], y1)] : [y0, y1];
+  entry.wiki.set(y0, csWiki(r.name, y0));
+  const cap = r.p.capname ? capitalOf(String(r.p.capname), +r.p.caplong, +r.p.caplat) : null;
+  return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode)];
+});
+csHi.objects.p.geometries.forEach((g) => { delete g.properties; });
+csLo.objects.p.geometries.forEach((g) => { delete g.properties; });
+const csChanges = [...new Set(csRows.map((r) => r[2]).concat(csRows.filter((r) => r[3] >= 0).map((r) => r[3] + 1)))].sort((a, b) => a - b);
+
+const nameKey = new Map();
+const gwKey = new Map();
+const baseKey = (id) => {
   const n = catalogue[id].n;
   return lineageOf.has(n) ? "L" + lineageOf.get(n) : "N" + id;
 };
+for (const [gw, list] of byGw) {
+  const first = list.slice().sort((a, b) => a.start - b.start)[0];
+  gwKey.set(gw, baseKey(catId(first.name)));
+}
+csRows.forEach((r) => { if (!nameKey.has(r[0]) || !lineageOf.has(catalogue[r[0]].n)) nameKey.set(r[0], gwKey.get(r[7])); });
+const keyOf = (id) => nameKey.get(id) || baseKey(id);
 const edges = new Map(), weight = new Map();
 const addEdge = (a, b, w) => {
   if (a === b) return;
@@ -423,6 +711,19 @@ for (const [y, file] of index) {
     if (km < (A[3] + B[3]) * 0.75 + 250) addEdge(A[0], B[0], 0.35);
   }
 }
+{
+  const geoms = csLo.objects.p.geometries;
+  const hueOf = (i) => keyOf(csRows[i][1] >= 0 ? csRows[i][1] : csRows[i][0]);
+  csRows.forEach((r, i) => {
+    const days = (r[3] < 0 ? dayOf(CS_TO) : r[3]) - r[2] + 1;
+    const k = hueOf(i);
+    weight.set(k, (weight.get(k) || 0) + (r[6] ? r[6][5] : 0) * Math.min(1, days / 3650));
+  });
+  const overlap = (a, b) => a[2] <= (b[3] < 0 ? Infinity : b[3]) && b[2] <= (a[3] < 0 ? Infinity : a[3]);
+  client.neighbors(geoms).forEach((list, i) => {
+    list.forEach((j) => { if (j > i && overlap(csRows[i], csRows[j])) addEdge(hueOf(i), hueOf(j), 1); });
+  });
+}
 const PALETTE = 10;
 const wheel = (a, b) => { const d = Math.abs(a - b) % PALETTE; return Math.min(d, PALETTE - d); };
 const adj = new Map();
@@ -458,9 +759,10 @@ const entries = catalogue.map((e, id) => {
   const steps = [];
   [...e.wiki.entries()].sort((a, b) => a[0] - b[0]).forEach(([y, t]) => { if (!steps.length || steps[steps.length - 1][1] !== t) steps.push([y, t]); });
   const wiki = wikis.length <= 1 ? wikis[0] || e.n : steps;
-  return [e.n, color.has(k) ? color.get(k) : -1, e.years.sort((a, b) => a - b), wiki, e.kind];
+  return [e.n, color.has(k) ? color.get(k) : -1, e.years.sort((a, b) => a - b), wiki, e.kind, e.cs || null];
 });
-writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, polities: entries }));
+writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => r.slice(0, 7)), hi: csHi, lo: csLo }));
+writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, polities: entries }));
 
 const prov = JSON.parse(readFileSync(provincesPath, "utf8"));
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
@@ -508,8 +810,34 @@ try {
   console.warn("places.geojson not read:", e.message);
 }
 writeFileSync(resolve(out, "places.json"), JSON.stringify(placesOut));
+
+let citiesOut = [], unmatched = [];
+try {
+  const raw = JSON.parse(readFileSync(citiesPath, "utf8"));
+  const used = new Set();
+  const keyFor = (name, lon) => {
+    if (CITY_NAMES[name + "|" + Math.round(lon / 10) * 10]) return name + "|" + Math.round(lon / 10) * 10;
+    return CITY_NAMES[name] ? name : null;
+  };
+  citiesOut = raw.map((r) => {
+    const [name, lon, lat, tier] = r;
+    const k = keyFor(name, lon);
+    if (k) used.add(k);
+    const since = CITY_SINCE[name] ? Math.max(dayOf(CITY_SINCE[name]), dayOf(CITIES_FROM)) : null;
+    const names = k && CITY_NAMES[k].length ? CITY_NAMES[k].map(([d, n]) => [dayOf(d), n]) : null;
+    const row = [name, +lon.toFixed(3), +lat.toFixed(3), tier, since];
+    if (names) row.push(names);
+    return row;
+  });
+  unmatched = Object.keys(CITY_NAMES).filter((k) => CITY_NAMES[k].length && !used.has(k));
+} catch (e) {
+  console.warn("cities not read:", e.message);
+}
+writeFileSync(resolve(out, "cities.json"), JSON.stringify({ from: dayOf(CITIES_FROM), rows: citiesOut }));
+if (unmatched.length) console.warn("renamed cities not found in cities.json: " + unmatched.join(", "));
+
 const licence = resolve(source, "../LICENSE");
 if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-basemaps.txt"));
 else console.warn("historical-basemaps LICENSE not found beside " + source + "; data/COPYING-historical-basemaps.txt not written");
 
-console.log(index.length + " maps, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour, " + placesOut.length + " dated places");
+console.log(index.length + " maps to 1880, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour, " + placesOut.length + " dated places, " + citiesOut.length + " cities");

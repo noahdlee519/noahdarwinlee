@@ -372,8 +372,22 @@
   }
 
   var catalogue = null, maps = [], land = null, places = [], sea = null, rivers = null, riversLoad = null, lakes = null, lakesLoad = null;
-  var current = null, wantYear = START_YEAR, year = START_YEAR;
+  var current = null, now = START_YEAR, wantKey = "", modern = null, cities = null;
   var selected = -1, hoverId = -1, ready = false;
+  var DAY0 = Date.UTC(1886, 0, 1), DAY_MS = 86400000, MONTHLY_FROM = 1976;
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  function dayFromDate(y, m, d) { return Math.round((Date.UTC(y, m - 1, d) - DAY0) / DAY_MS); }
+  function dateOfDay(day) { var d = new Date(DAY0 + day * DAY_MS); return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]; }
+  function timeOfDay(day) {
+    var dt = dateOfDay(day), y = dt[0], start = Date.UTC(y, 0, 1), len = (Date.UTC(y + 1, 0, 1) - start) / DAY_MS;
+    return y + ((DAY0 + day * DAY_MS - start) / DAY_MS + 0.5) / len;
+  }
+  function dayOfTime(t) {
+    var y = Math.floor(t), start = Date.UTC(y, 0, 1), len = (Date.UTC(y + 1, 0, 1) - start) / DAY_MS;
+    return Math.floor((start + (t - y) * len * DAY_MS - DAY0) / DAY_MS);
+  }
+  function isModern(t) { return !!modern && t >= modern.fromTime; }
 
   function polityName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
   function polityColor(id) {
@@ -412,29 +426,75 @@
     return m.loading;
   }
 
+  function finishSnap(snap) {
+    snap.order = snap.polys.filter(Boolean).sort(function (a, b) { return (b.label ? b.label[5] : 0) - (a.label ? a.label[5] : 0); });
+    snap.byId = new Map();
+    snap.order.forEach(function (p) { if (!snap.byId.has(p.id)) snap.byId.set(p.id, p); });
+    snap.levels = {};
+    return snap;
+  }
   function buildSnap(d) {
-    var rows = d.rows, softYear = d.year < SOFT_BEFORE;
-    var polys = rows.map(function (r, i) {
+    var softYear = d.year < SOFT_BEFORE;
+    var polys = d.rows.map(function (r, i) {
       if (r[0] < 0) return null;
       var hue = r[1] >= 0 ? r[1] : r[0];
       return {
         i: i, id: r[0], ruler: r[1], part: r[2], b: r[3], people: !!r[4], label: r[5],
-        hue: hue, color: r[4] ? -1 : polityColor(hue), soft: softYear || r[3] <= 1 || !!r[4]
+        hue: hue, color: r[4] ? -1 : polityColor(hue), soft: softYear || r[3] <= 1 || !!r[4], status: -1
       };
     });
-    var order = polys.filter(Boolean).sort(function (a, b) { return (b.label ? b.label[5] : 0) - (a.label ? a.label[5] : 0); });
-    var snap = { year: d.year, rows: rows, polys: polys, order: order, topo: { hi: d.hi, lo: d.lo }, levels: {}, byId: new Map() };
-    order.forEach(function (p) { if (!snap.byId.has(p.id)) snap.byId.set(p.id, p); });
+    return finishSnap({
+      year: d.year, key: "y" + d.year, polys: polys, topo: { hi: d.hi, lo: d.lo },
+      geoms: { hi: d.hi.objects.p.geometries, lo: d.lo.objects.p.geometries }
+    });
+  }
+  var modernSnaps = new Map();
+  function activeRows(day) {
+    var out = [], rows = modern.rows;
+    for (var i = 0; i < rows.length; i++) { var r = rows[i]; if (r[2] <= day && (r[3] < 0 || day <= r[3])) out.push(i); }
+    return out;
+  }
+  function modernSnap(day) {
+    var idx = activeRows(day), key = "m" + idx.join(",");
+    var snap = modernSnaps.get(key);
+    if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); return snap; }
+    var polys = idx.map(function (ri, i) {
+      var r = modern.rows[ri], hue = r[1] >= 0 ? r[1] : r[0];
+      return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: 3, people: false, label: r[6], hue: hue, color: polityColor(hue), soft: false, status: r[4], cap: r[5], start: r[2], end: r[3] };
+    });
+    snap = finishSnap({
+      year: null, key: key, modern: true, polys: polys, topo: { hi: modern.hi, lo: modern.lo },
+      geoms: { hi: idx.map(function (i) { return modern.hi.objects.p.geometries[i]; }), lo: idx.map(function (i) { return modern.lo.objects.p.geometries[i]; }) }
+    });
+    modernSnaps.set(key, snap);
+    while (modernSnaps.size > 24) {
+      var oldest = modernSnaps.keys().next().value;
+      if (modernSnaps.get(oldest) === current) { var keep = modernSnaps.get(oldest); modernSnaps.delete(oldest); modernSnaps.set(oldest, keep); break; }
+      modernSnaps.delete(oldest);
+    }
     return snap;
+  }
+
+  var featCache = { hi: new WeakMap(), lo: new WeakMap() };
+  function featOf(topo, key, g) {
+    var c = featCache[key].get(g);
+    if (!c) {
+      var geo = topojson.feature(topo, g);
+      c = { geo: geo, prep: preparePolys(geo) };
+      featCache[key].set(g, c);
+    }
+    return c;
   }
   function level(snap, key) {
     var L = snap.levels[key];
     if (L) return L;
-    var topo = snap.topo[key], geoms = topo.objects.p.geometries, polys = snap.polys;
-    geoms.forEach(function (g, i) { g.ix = i; });
-    var geo = geoms.map(function (g) { return topojson.feature(topo, g); });
-    var feats = geo.map(function (f) { return preparePolys(f); });
-    var colOf = function (g) { var p = polys[g.ix]; return p && !p.people ? p.color : -1; };
+    var topo = snap.topo[key], geoms = snap.geoms[key], polys = snap.polys;
+    var ix = new Map();
+    geoms.forEach(function (g, i) { ix.set(g, i); });
+    var cached = geoms.map(function (g) { return featOf(topo, key, g); });
+    var geo = cached.map(function (c) { return c.geo; });
+    var feats = cached.map(function (c) { return c.prep; });
+    var colOf = function (g) { var p = polys[ix.get(g)]; return p && !p.people ? p.color : -1; };
     var groups = [];
     for (var c = 0; c < PALETTE; c++) groups.push([]);
     var peoples = [], unnamed = [];
@@ -443,14 +503,15 @@
       for (var j = 0; j < feats[i].length; j++) target.push(feats[i][j]);
     });
     var kind = function (a, b) {
-      var pa = polys[a.ix], pb = polys[b.ix];
+      var pa = polys[ix.get(a)], pb = polys[ix.get(b)];
       if (!pa && !pb) return 0;
       if (pa && pb && pa.id === pb.id) return 0;
       var soft = (pa ? pa.soft : false) || (pb ? pb.soft : false);
       if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
       return soft ? 2 : 1;
     };
-    var mesh = function (fn) { return prepareLines(topojson.mesh(topo, topo.objects.p, fn)); };
+    var collection = { type: "GeometryCollection", geometries: geoms };
+    var mesh = function (fn) { return prepareLines(topojson.mesh(topo, collection, fn)); };
     L = {
       geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed,
       hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }),
@@ -465,8 +526,8 @@
       })
     };
     if (key === "hi") {
-      L.bounds = geo.map(function (f) { return d3.geoBounds(f); });
-      L.area = geo.map(function (f) { return d3.geoArea(f); });
+      L.bounds = cached.map(function (c) { if (!c.bounds) c.bounds = d3.geoBounds(c.geo); return c.bounds; });
+      L.area = cached.map(function (c) { if (c.area === undefined) c.area = d3.geoArea(c.geo); return c.area; });
     }
     snap.levels[key] = L;
     return L;
@@ -612,7 +673,7 @@
       ctx.drawImage(reliefCanvas, 0, 0, W, H);
       ctx.restore();
     }
-    var bw = bandWidth(S), softMap = snap.year < SOFT_BEFORE;
+    var bw = bandWidth(S), softMap = snap.year !== null && snap.year < SOFT_BEFORE;
     for (c = 0; c < PALETTE; c++) {
       if (!groupPaths[c] || !L.bands[c]) continue;
       ctx.save();
@@ -739,14 +800,15 @@
     ctx.restore();
   }
 
-  var LINE_H = 1.18, CAP_H = 0.92, SPACE = 0.22, PEOPLE_SPACE = 0.05;
+  var LINE_H = 1.18, CAP_H = 0.92, SPACE = 0.22, PEOPLE_SPACE = 0.05, TIGHT = 0.1;
   var widthCache = new Map();
-  function unitWidth(text, people) {
-    var k = (people ? "i" : "n") + text, w = widthCache.get(k);
+  function unitWidth(text, people, space) {
+    var sp = space === undefined ? (people ? PEOPLE_SPACE : SPACE) : space;
+    var k = (people ? "i" : "n") + sp + text, w = widthCache.get(k);
     if (w !== undefined) return w;
     ctx.font = (people ? "italic 400 " : "400 ") + "100px " + SERIF;
     ctx.letterSpacing = "0px";
-    w = ctx.measureText(text).width / 100 + Array.from(text).length * (people ? PEOPLE_SPACE : SPACE);
+    w = ctx.measureText(text).width / 100 + Array.from(text).length * sp;
     widthCache.set(k, w);
     return w;
   }
@@ -772,17 +834,17 @@
     return out;
   }
   var labelCache = new Map();
-  function labelFit(name, people, r, span) {
-    var key = (people ? "i" : "n") + name + "|" + r + "|" + span;
+  function labelFit(name, people, r, span, space) {
+    var key = (people ? "i" : "n") + (space || "") + name + "|" + r + "|" + span;
     var hit = labelCache.get(key);
     if (hit) return hit;
     var text = people ? name : name.toUpperCase(), best = null;
     splits(text).forEach(function (lines) {
       var w = 0;
-      lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people)); });
+      lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people, space)); });
       var h = CAP_H + LINE_H * (lines.length - 1);
       var fkm = Math.min(span * 0.94 / w, 2 * r * 0.82 / h);
-      if (!best || fkm > best.fkm * 1.12) best = { lines: lines, fkm: fkm, w: w, h: h };
+      if (!best || fkm > best.fkm * 1.12) best = { lines: lines, fkm: fkm, w: w, h: h, space: space === undefined ? (people ? PEOPLE_SPACE : SPACE) : space };
     });
     labelCache.set(key, best);
     return best;
@@ -790,13 +852,26 @@
   function mkBox(x, y, hw, hh, ang) {
     var c = Math.abs(Math.cos(ang)), s = Math.abs(Math.sin(ang));
     var ex = hw * c + hh * s, ey = hw * s + hh * c;
-    return { x: x - ex, y: y - ey, w: 2 * ex, h: 2 * ey };
+    return { x: x - ex, y: y - ey, w: 2 * ex, h: 2 * ey, cx: x, cy: y, hw: hw, hh: hh, ang: ang || 0 };
+  }
+  function axesOf(b) {
+    if (b.hw === undefined) return { cx: b.x + b.w / 2, cy: b.y + b.h / 2, hw: b.w / 2, hh: b.h / 2, c: 1, s: 0 };
+    return { cx: b.cx, cy: b.cy, hw: b.hw, hh: b.hh, c: Math.cos(b.ang), s: Math.sin(b.ang) };
+  }
+  function separated(A, B, ax, ay) {
+    var d = Math.abs((B.cx - A.cx) * ax + (B.cy - A.cy) * ay);
+    var ra = A.hw * Math.abs(A.c * ax + A.s * ay) + A.hh * Math.abs(-A.s * ax + A.c * ay);
+    var rb = B.hw * Math.abs(B.c * ax + B.s * ay) + B.hh * Math.abs(-B.s * ax + B.c * ay);
+    return d > ra + rb;
+  }
+  function overlaps(a, b) {
+    if (!(a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y)) return false;
+    if (!a.ang && !b.ang) return true;
+    var A = axesOf(a), B = axesOf(b);
+    return !(separated(A, B, A.c, A.s) || separated(A, B, -A.s, A.c) || separated(A, B, B.c, B.s) || separated(A, B, -B.s, B.c));
   }
   function collides(placed, b) {
-    for (var i = 0; i < placed.length; i++) {
-      var q = placed[i];
-      if (b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y) return true;
-    }
+    for (var i = 0; i < placed.length; i++) if (overlaps(b, placed[i])) return true;
     return false;
   }
   function fixedBoxes() {
@@ -853,6 +928,11 @@
         var f = fit.fkm * kp * Math.sqrt(pt[2]);
         var cap = p.people ? 15 : 26;
         if (f > cap) f = cap;
+        if (f < 8.5 && !p.people) {
+          var tight = labelFit(name, false, s[2], s[3], TIGHT);
+          var ft = Math.min(cap, tight.fkm * kp * Math.sqrt(pt[2]));
+          if (ft >= 8.5) { fit = tight; f = ft; }
+        }
         if (f < 8.5) {
           if (q === 0 && !p.people && f >= 3.5 && L[5] > 1500) small.push({ p: p, x: pt[0], y: pt[1], name: name, lines: fit.lines });
           continue;
@@ -864,7 +944,7 @@
       }
       if (!got) continue;
       var pt = got.pt, fit = got.fit, f = got.f, ang = got.ang;
-      var sp = f * (p.people ? PEOPLE_SPACE : SPACE);
+      var sp = f * fit.space;
       placed.push(got.box);
       placedLabels.push({ name: name, x: pt[0], y: pt[1], size: f });
       ctx.save();
@@ -886,7 +966,7 @@
     ctx.letterSpacing = "1.2px";
     ctx.lineWidth = 2.6; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
     for (var j = 0; j < small.length; j++) {
-      var it = small[j], lines = it.lines.length > 1 && it.name.length > 18 ? it.lines : [it.name.toUpperCase()], w = 0;
+      var it = small[j], lines = it.lines.length > 1 && it.name.length > 10 ? it.lines : [it.name.toUpperCase()], w = 0;
       lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
       var b = mkBox(it.x, it.y, w / 2 + 2, 4.5 + 5.5 * lines.length, 0);
       if (!insideView(b) || collides(placed, b)) continue;
@@ -946,31 +1026,68 @@
     }
     ctx.letterSpacing = "0px";
   }
-  function placeName(r) {
-    var n = r[0];
-    if (r[5]) for (var i = 0; i < r[5].length; i++) if (r[5][i][0] <= year) n = r[5][i][1];
+  function namedAt(names, fallback, when) {
+    var n = fallback;
+    if (names) for (var i = 0; i < names.length; i++) if (names[i][0] <= when) n = names[i][1];
     return n;
   }
   function placesNow() {
-    return places.filter(function (r) { return r[3] <= year && (r[4] === null || year < r[4]); });
+    var y = Math.round(now);
+    return places.filter(function (r) { return r[3] <= y && (r[4] === null || y < r[4]); });
+  }
+  function cityTier(S) { return S < 330 ? 0 : S < 480 ? 1 : S < 800 ? 2 : S < 1400 ? 3 : 4; }
+  function drawMark(p, dot, cap) {
+    if (cap) {
+      ctx.beginPath(); ctx.arc(p[0], p[1], dot + 3.2, 0, TAU); ctx.fillStyle = pal["city-ring"]; ctx.fill();
+      ctx.beginPath(); ctx.arc(p[0], p[1], dot + 2.2, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 1.1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(p[0], p[1], dot * 0.75, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
+      return;
+    }
+    ctx.beginPath(); ctx.arc(p[0], p[1], dot + 1, 0, TAU); ctx.fillStyle = pal["city-ring"]; ctx.fill();
+    ctx.beginPath(); ctx.arc(p[0], p[1], dot, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
+  }
+  function placeOne(placed, lon, lat, name, dot, cap) {
+    var p = projectLL(lon, lat);
+    if (!p || p[2] < 0.25) return false;
+    var pad = cap ? dot + 3.4 : dot + 1;
+    var w = ctx.measureText(name).width;
+    var box = { x: p[0] - pad, y: p[1] - 7.5, w: w + pad + 6 + (cap ? 3 : 0), h: 15 };
+    if (!insideView(box) || collides(placed, box)) return false;
+    placed.push(box);
+    drawMark(p, dot, cap);
+    ctx.strokeText(name, p[0] + pad + 3, p[1]); ctx.fillText(name, p[0] + pad + 3, p[1]);
+    placedLabels.push({ name: name, x: p[0], y: p[1], size: 12, kind: cap ? "capital" : "city" });
+    return true;
   }
   function drawPlaces(placed, S) {
-    if (S < 260) return;
-    var list = placesNow(), dot = S < 900 ? 1.9 : 2.5;
-    ctx.font = "italic 400 12px " + SERIF;
+    if (S < 230) return;
+    var dot = S < 900 ? 1.9 : 2.5, modernNow = current && current.modern, day = modernNow ? dayOfTime(now) : -Infinity, i;
     ctx.letterSpacing = "0px";
     ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
-    for (var i = 0; i < list.length; i++) {
-      var r = list[i], p = projectLL(r[1], r[2]);
-      if (!p || p[2] < 0.25) continue;
-      var name = placeName(r), w = ctx.measureText(name).width;
-      var box = { x: p[0] - dot - 1, y: p[1] - 7, w: w + dot + 8, h: 14 };
-      if (!insideView(box) || collides(placed, box)) continue;
-      placed.push(box);
-      ctx.beginPath(); ctx.arc(p[0], p[1], dot + 1, 0, TAU); ctx.fillStyle = pal["city-ring"]; ctx.fill();
-      ctx.beginPath(); ctx.arc(p[0], p[1], dot, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
-      ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
-      ctx.strokeText(name, p[0] + dot + 4, p[1]); ctx.fillText(name, p[0] + dot + 4, p[1]);
+    ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+    if (modernNow) {
+      ctx.font = "400 12.5px " + SERIF;
+      var caps = current.order.filter(function (p) { return p.cap; });
+      for (i = 0; i < caps.length; i++) {
+        ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+        placeOne(placed, caps[i].cap[1], caps[i].cap[2], namedAt(caps[i].cap[3], caps[i].cap[0], day), dot, true);
+      }
+    }
+    ctx.font = "italic 400 12px " + SERIF;
+    if (modernNow && cities && day >= cities.from) {
+      var top = cityTier(S);
+      for (i = 0; i < cities.rows.length; i++) {
+        var c = cities.rows[i];
+        if (c[3] > top || (c[4] !== null && day < c[4])) continue;
+        ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+        placeOne(placed, c[1], c[2], namedAt(c[5], c[0], day), dot, false);
+      }
+    } else {
+      var list = placesNow(), y = Math.round(now);
+      for (i = 0; i < list.length; i++) {
+        ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+        placeOne(placed, list[i][1], list[i][2], namedAt(list[i][5], list[i][0], y), dot, false);
+      }
     }
     ctx.textAlign = "center";
   }
@@ -1146,14 +1263,37 @@
     if (y < 1000) return "AD " + y;
     return String(y);
   }
-  function parseYear(s) {
-    var t = String(s || "").trim().toUpperCase().replace(/\./g, "").replace(/\s+/g, " ");
-    var m = /^(AD |CE )?(-)?(\d{1,4})( ?(BC|BCE|AD|CE))?$/.exec(t);
+  function fmtDay(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
+  function fmtNow(t) {
+    if (!isModern(t)) return fmtYear(Math.round(t));
+    var d = dateOfDay(dayOfTime(t));
+    return d[0] >= MONTHLY_FROM ? MONTHS[d[1] - 1] + " " + d[0] : String(d[0]);
+  }
+  function monthIndex(word) {
+    var w = word.toLowerCase();
+    for (var i = 0; i < 12; i++) if (MONTHS[i].toLowerCase().indexOf(w) === 0 && w.length >= 3) return i + 1;
+    return 0;
+  }
+  function modernTime(y, m, d) {
+    if (!modern || y < 1886) return null;
+    if (!m) return timeOfDay(dayFromDate(y, 7, 1));
+    return timeOfDay(dayFromDate(y, m, d || 15));
+  }
+  function parseTime(s) {
+    var t = String(s || "").trim().replace(/\./g, "").replace(/,/g, " ").replace(/\s+/g, " ");
+    var u = t.toUpperCase(), m;
+    if ((m = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(t))) return modernTime(+m[1], +m[2], m[3] ? +m[3] : 0);
+    if ((m = /^(\d{1,2})\/(\d{4})$/.exec(t))) return modernTime(+m[2], +m[1], 0);
+    if ((m = /^(\d{1,2}) ([A-Za-z]+) (\d{4})$/.exec(t)) && monthIndex(m[2])) return modernTime(+m[3], monthIndex(m[2]), +m[1]);
+    if ((m = /^([A-Za-z]+) (\d{1,2}) (\d{4})$/.exec(t)) && monthIndex(m[1])) return modernTime(+m[3], monthIndex(m[1]), +m[2]);
+    if ((m = /^([A-Za-z]+) (\d{4})$/.exec(t)) && monthIndex(m[1])) return modernTime(+m[2], monthIndex(m[1]), 0);
+    m = /^(AD |CE )?(-)?(\d{1,4})( ?(BC|BCE|AD|CE))?$/.exec(u);
     if (!m) return null;
     var n = +m[3];
     if (m[2] || m[5] === "BC" || m[5] === "BCE") n = -n;
     if (n === 0) n = 1;
-    return n;
+    var mt = modernTime(n, 0, 0);
+    return mt !== null ? mt : n;
   }
   function listYears(ys) {
     var t = ys.map(fmtYear);
@@ -1162,7 +1302,8 @@
     return t.slice(0, -1).join(", ") + ", and " + t[t.length - 1];
   }
 
-  var KNOTS = [[-3000, 0], [-500, 0.17], [500, 0.32], [1400, 0.5], [1800, 0.76], [LAST_YEAR, 1]];
+  var KNOTS = [[-3000, 0], [-500, 0.13], [500, 0.24], [1400, 0.37], [1800, 0.53], [1886, 0.6], [1976, 0.79], [LAST_YEAR + 1, 1]];
+  var RANGE_MAX = 10000;
   function posOf(y) {
     for (var i = 1; i < KNOTS.length; i++) {
       var a = KNOTS[i - 1], b = KNOTS[i];
@@ -1175,10 +1316,17 @@
       var a = KNOTS[i - 1], b = KNOTS[i];
       if (t <= b[1]) return a[0] + (b[0] - a[0]) * (t - a[1]) / (b[1] - a[1]);
     }
-    return LAST_YEAR;
+    return LAST_YEAR + 1;
   }
   var range = $("range"), yearInput = $("year-input"), asof = $("asof");
+  range.max = String(RANGE_MAX);
   function trackWidth() { return Math.max(1, $("ticks").getBoundingClientRect().width); }
+  var points = [];
+  function buildPoints() {
+    points = maps.map(function (m) { return m.y; });
+    if (modern) modern.changes.forEach(function (d) { points.push(timeOfDay(d)); });
+    points.sort(function (a, b) { return a - b; });
+  }
   function placeTicks() {
     if (!maps.length) return;
     var ticks = $("ticks"), eras = $("eras"), w = trackWidth();
@@ -1192,10 +1340,12 @@
     };
     var marks = [];
     for (var y = -3000; y <= 1000; y += 500) marks.push(y);
-    for (y = 1100; y <= 2000; y += 100) marks.push(y);
-    marks.forEach(function (y) { add(y === 0 ? 1 : y, y % 1000 === 0 || y === 1500 ? "is-major" : ""); });
+    for (y = 1100; y <= 1800; y += 100) marks.push(y);
+    for (y = 1810; y <= 2020; y += 10) marks.push(y);
+    marks.forEach(function (y) { add(y === 0 ? 1 : y, y % 1000 === 0 || y === 1500 || y === 1900 || y === 1950 ? "is-major" : ""); });
     maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });
-    var labels = [-3000, -2000, -1000, 1, 500, 1000, 1500, 1700, 1800, 1900, 2000], lastRight = -Infinity;
+    if (modern) modern.changes.forEach(function (d) { add(timeOfDay(d), "is-change"); });
+    var labels = [-3000, -2000, -1000, 1, 500, 1000, 1500, 1700, 1800, 1900, 1950, 2000], lastRight = -Infinity;
     labels.forEach(function (y) {
       var x = posOf(y) * w, text = y === 1 ? "AD 1" : fmtYear(y), tw = text.length * 6.6, shift = x < tw / 2 ? x / tw : 0.5;
       var left = x - tw * shift;
@@ -1214,34 +1364,52 @@
   }
   var rangeActive = false;
   function syncTime() {
-    if (!rangeActive) range.value = String(Math.round(posOf(year) * 1000));
-    range.setAttribute("aria-valuetext", fmtYear(year));
-    if (document.activeElement !== yearInput) yearInput.value = fmtYear(year);
-    var mi = mapIndexFor(year), m = maps[mi];
-    asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : m.y === year ? "The map of " + fmtYear(m.y) : "Borders as of " + fmtYear(m.y);
-    $("prev-map").disabled = year <= maps[0].y;
-    $("next-map").disabled = mi >= maps.length - 1;
+    if (!rangeActive) range.value = String(Math.round(posOf(now) * RANGE_MAX));
+    range.setAttribute("aria-valuetext", fmtNow(now));
+    if (document.activeElement !== yearInput) yearInput.value = fmtNow(now);
+    yearInput.classList.toggle("is-long", yearInput.value.length > 9);
+    if (isModern(now)) {
+      var day = dayOfTime(now);
+      if (!current || !current.modern) asof.textContent = "Loading the borders";
+      else if (day > modern.toDay) asof.textContent = "Borders at the end of 2019, the latest in the data";
+      else asof.textContent = "Borders on " + fmtDay(day);
+    } else {
+      var mi = mapIndexFor(now), m = maps[mi], y = Math.round(now);
+      asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : m.y === y ? "The map of " + fmtYear(m.y) : "Borders as of " + fmtYear(m.y);
+    }
+    $("prev-map").disabled = !points.length || now <= points[0] + 1e-6;
+    $("next-map").disabled = !points.length || now >= points[points.length - 1] - 1e-6;
     markCurrentTick();
   }
-  function setYear(y, fromRange) {
+  function useSnap(snap) {
+    if (current === snap) return;
+    current = snap;
+    if (selected >= 0) renderCard();
+    hideTip();
+    hoverId = -1;
+    canvas.classList.remove("is-over");
+  }
+  function setTime(t, fromRange) {
     if (!maps.length) return;
-    y = Math.round(y);
-    if (y === 0) y = 1;
-    y = Math.max(KNOTS[0][0], Math.min(LAST_YEAR, y));
-    year = y;
+    t = Math.max(KNOTS[0][0], Math.min(LAST_YEAR + 0.999, t));
+    if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
+    now = t;
     if (!fromRange) rangeActive = false;
-    var mi = mapIndexFor(y);
-    wantYear = y;
+    if (isModern(t)) {
+      var day = Math.min(dayOfTime(t), modern.toDay);
+      wantKey = "d" + day;
+      useSnap(modernSnap(day));
+      syncTime();
+      writeHash();
+      scheduleRender();
+      return;
+    }
+    var mi = mapIndexFor(t);
+    wantKey = "y" + maps[mi].y;
     syncTime();
     loadMap(mi).then(function (snap) {
-      if (mapIndexFor(wantYear) !== mi) return;
-      if (current !== snap) {
-        current = snap;
-        if (selected >= 0) renderCard();
-        hideTip();
-        hoverId = -1;
-        canvas.classList.remove("is-over");
-      }
+      if (wantKey !== "y" + maps[mi].y) return;
+      useSnap(snap);
       syncTime();
       writeHash();
       scheduleRender();
@@ -1254,62 +1422,105 @@
     scheduleRender();
   }
   function stepMap(dir) {
-    var mi = mapIndexFor(year);
+    if (!points.length) return;
+    var eps = 1e-6, k = -1;
+    for (var i = 0; i < points.length; i++) if (points[i] <= now + eps) k = i;
     if (dir < 0) {
-      if (year > maps[mi].y) setYear(maps[mi].y);
-      else if (mi > 0) setYear(maps[mi - 1].y);
-    } else if (mi < maps.length - 1) setYear(maps[mi + 1].y);
+      if (k >= 0 && now > points[k] + eps) setTime(points[k]);
+      else if (k > 0) setTime(points[k - 1]);
+    } else if (k + 1 < points.length) setTime(points[k + 1]);
+  }
+  function stepUnit(dir) {
+    if (isModern(now)) {
+      var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1];
+      if (y >= MONTHLY_FROM) {
+        m += dir;
+        if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
+        setTime(y < MONTHLY_FROM ? modernTime(y, 0, 0) : modernTime(y, m, 15));
+        return;
+      }
+      var ny = y + dir;
+      if (ny >= MONTHLY_FROM) { setTime(modernTime(ny, 1, 15)); return; }
+      var mt = modernTime(ny, 0, 0);
+      setTime(mt !== null ? mt : ny);
+      return;
+    }
+    var next = Math.round(now) + dir;
+    if (next === 0) next = dir;
+    var asModern = modernTime(next, 0, 0);
+    setTime(asModern !== null ? asModern : next);
   }
   range.addEventListener("input", function () {
     stopPlay();
     rangeActive = true;
-    var t = +range.value / 1000, y = yearAt(t), w = trackWidth(), snapTo = null;
+    var t = +range.value / RANGE_MAX, y = yearAt(t), w = trackWidth(), snapTo = null;
     for (var i = 0; i < maps.length; i++) if (Math.abs(posOf(maps[i].y) - t) * w < 5) { snapTo = maps[i].y; break; }
     if (snapTo !== null) y = snapTo;
-    else if (y < 1000) y = Math.round(y / 10) * 10;
-    setYear(y, true);
+    else if (modern && y >= 1886) {
+      var yr = Math.floor(y);
+      if (yr >= MONTHLY_FROM) {
+        var mo = Math.min(12, Math.floor((y - yr) * 12) + 1);
+        y = modernTime(Math.min(yr, LAST_YEAR), yr > LAST_YEAR ? 12 : mo, 15);
+      } else y = modernTime(yr, 0, 0);
+    } else if (y < 1000) y = Math.round(y / 10) * 10;
+    setTime(y, true);
   });
   range.addEventListener("change", function () { rangeActive = false; syncTime(); });
   range.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       stopPlay();
-      stepMap(e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1);
-    } else if (e.key === "Home") { e.preventDefault(); setYear(maps[0].y); }
-    else if (e.key === "End") { e.preventDefault(); setYear(LAST_YEAR); }
+      var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
+      if (e.shiftKey) stepUnit(dir); else stepMap(dir);
+    } else if (e.key === "Home") { e.preventDefault(); setTime(maps[0].y); }
+    else if (e.key === "End") { e.preventDefault(); setTime(LAST_YEAR + 0.5); }
   });
   function commitYearInput() {
-    var y = parseYear(yearInput.value);
-    if (y === null) { yearInput.value = fmtYear(year); return; }
+    var t = parseTime(yearInput.value);
+    if (t === null) { yearInput.value = fmtNow(now); return; }
     stopPlay();
-    if (y !== year) setYear(y); else yearInput.value = fmtYear(year);
+    if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fmtNow(now);
   }
   yearInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); yearInput.blur(); }
-    else if (e.key === "Escape") { yearInput.value = fmtYear(year); yearInput.blur(); }
+    else if (e.key === "Escape") { yearInput.value = fmtNow(now); yearInput.blur(); }
   });
   yearInput.addEventListener("blur", commitYearInput);
   yearInput.addEventListener("focus", function () { yearInput.select(); });
-  $("prev-map").addEventListener("click", function () { stopPlay(); stepMap(-1); });
-  $("next-map").addEventListener("click", function () { stopPlay(); stepMap(1); });
+  $("prev-map").addEventListener("click", function (e) { stopPlay(); if (e.shiftKey) stepUnit(-1); else stepMap(-1); });
+  $("next-map").addEventListener("click", function (e) { stopPlay(); if (e.shiftKey) stepUnit(1); else stepMap(1); });
 
-  var playTimer = 0;
+  var playTimer = 0, playLast = 0;
+  function playStep() {
+    if (isModern(now)) {
+      var y = dateOfDay(dayOfTime(now))[0];
+      if (y >= LAST_YEAR) return false;
+      setTime(modernTime(y + 1, 0, 0));
+      return true;
+    }
+    var mi = mapIndexFor(now);
+    if (maps[mi].snap !== current) return true;
+    if (mi < maps.length - 1) setTime(maps[mi + 1].y);
+    else if (modern) setTime(modernTime(1886, 0, 0));
+    else return false;
+    return true;
+  }
   function startPlay() {
-    if (mapIndexFor(year) >= maps.length - 1) setYear(maps[0].y);
+    if (now >= LAST_YEAR) setTime(maps[0].y);
     $("play").setAttribute("aria-pressed", "true");
     $("play").setAttribute("aria-label", "Stop playing");
+    playLast = Date.now();
     playTimer = setInterval(function () {
-      var mi = mapIndexFor(year);
-      if (mi >= maps.length - 1) { stopPlay(); return; }
-      if (maps[mi].snap !== current) return;
-      setYear(maps[mi + 1].y);
-    }, 1400);
+      if (Date.now() - playLast < (isModern(now) ? 700 : 1400)) return;
+      playLast = Date.now();
+      if (!playStep()) stopPlay();
+    }, 100);
   }
   function stopPlay() {
     if (!playTimer) return;
     clearInterval(playTimer); playTimer = 0;
     $("play").setAttribute("aria-pressed", "false");
-    $("play").setAttribute("aria-label", "Play the maps in order");
+    $("play").setAttribute("aria-label", "Play through time");
   }
   $("play").addEventListener("click", function () { if (playTimer) stopPlay(); else startPlay(); });
 
@@ -1360,35 +1571,41 @@
     for (var i = 0; i < w.length; i++) if (w[i][0] <= y) t = w[i][1];
     return t;
   }
+  var STATUS = ["State", "Colony", "Protectorate", "Mandate", "Occupied territory"];
   function renderCard() {
     if (selected < 0 || !catalogue[selected]) return;
-    var e = catalogue[selected], p = current ? current.byId.get(selected) : null, mapYear = current ? current.year : year;
-    $("card-kind").textContent = e[4] ? "People or culture" : p && p.ruler >= 0 ? "Dependency" : "State";
+    var e = catalogue[selected], p = current ? current.byId.get(selected) : null;
+    var modernNow = !!(current && current.modern), when = modernNow ? fmtDay(Math.min(dayOfTime(now), modern.toDay)) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
+    var whenYear = modernNow ? dateOfDay(dayOfTime(now))[0] : current ? current.year : Math.round(now);
+    $("card-kind").textContent = e[4] ? "People or culture" : p && p.status > 0 ? STATUS[p.status] : p && p.ruler >= 0 ? "Dependency" : "State";
     $("card-name").textContent = e[0];
     var facts = $("card-facts");
     facts.textContent = "";
     var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
+    var addPolity = function (id) { if (current.byId.has(id)) facts.appendChild(polityButton(id)); else addText(polityName(id)); };
     if (p) {
       if (p.ruler >= 0) {
-        addText("Held by ");
-        if (current.byId.has(p.ruler)) facts.appendChild(polityButton(p.ruler)); else addText(polityName(p.ruler));
-        addText(" on the map of " + fmtYear(mapYear) + ". ");
+        addText("Held by "); addPolity(p.ruler);
+        addText((modernNow ? " on " : " on ") + when + ". ");
       }
-      if (p.part >= 0 && p.part !== p.ruler) {
-        addText("Part of ");
-        if (current.byId.has(p.part)) facts.appendChild(polityButton(p.part)); else addText(polityName(p.part));
-        addText(". ");
+      if (p.part >= 0 && p.part !== p.ruler) { addText("Part of "); addPolity(p.part); addText(". "); }
+      if (p.cap) addText("Capital: " + namedAt(p.cap[3], p.cap[0], Math.min(dayOfTime(now), modern.toDay)) + ". ");
+      if (modernNow) {
+        addText(p.end < 0 ? "These borders since " + fmtDay(p.start) + ". " : "These borders from " + fmtDay(p.start) + " to " + fmtDay(p.end) + ". ");
       }
     } else {
-      addText("Not on the map of " + fmtYear(mapYear) + ". ");
+      addText("Not on the map " + (modernNow ? "on " : "of ") + (modernNow ? when : current ? fmtYear(current.year) : fmtNow(now)) + ". ");
     }
-    var ys = e[2];
-    if (ys.length) {
+    var ys = e[2], cs = e[5];
+    if (cs) {
+      var first = ys.length ? Math.min(ys[0], cs[0]) : cs[0];
+      addText(first < cs[0] ? "On the maps from " + fmtYear(first) + ", and continuously from " + cs[0] + " to " + (cs[1] >= 2019 ? "today" : cs[1]) + "." : "On the map from " + cs[0] + " to " + (cs[1] >= 2019 ? "today" : cs[1]) + ".");
+    } else if (ys.length) {
       if (ys.length <= 4) addText("On the maps of " + listYears(ys) + ".");
       else addText("On " + ys.length + " maps, from " + fmtYear(ys[0]) + " to " + fmtYear(ys[ys.length - 1]) + ".");
     }
     if (p && p.b <= 1 && !p.people) addText(" Its borders here are approximate.");
-    loadWiki(e[0], wikiTitle(selected, mapYear));
+    loadWiki(e[0], wikiTitle(selected, whenYear));
   }
   function wikiSummary(title) {
     var url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title.replace(/ /g, "_")) + "?redirect=true";
@@ -1489,8 +1706,8 @@
       return;
     }
     if (typing || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
-    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); stepMap(-1); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); stepMap(1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(-1); else stepMap(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(1); else stepMap(1); }
     else if (e.key === "p" || e.key === "P") { if (playTimer) stopPlay(); else startPlay(); }
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
     else if (e.key === "+" || e.key === "=") zoomAt(view.zoom * 1.6, cx, cy);
@@ -1502,16 +1719,21 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "#y=" + year + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "");
+      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "");
       if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
     }, 250);
+  }
+  function hashTime() {
+    if (!isModern(now)) return String(Math.round(now));
+    var d = dateOfDay(dayOfTime(now));
+    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
   }
   function readHash() {
     var out = {};
     String(location.hash || "").replace(/^#/, "").split("&").forEach(function (kv) {
       var i = kv.indexOf("=");
       if (i > 0) out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
-      else if (/^-?\d+$/.test(kv)) out.y = kv;
+      else if (/^-?\d+(-\d+-\d+)?$/.test(kv)) out.y = kv;
     });
     return out;
   }
@@ -1543,13 +1765,21 @@
     }
     $("flat-btn").setAttribute("aria-pressed", flat ? "true" : "false");
     if (flat) { $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").setAttribute("data-tip", "Globe (M)"); }
-    var y0 = h.y ? parseYear(h.y) : null;
-    if (y0 !== null) year = wantYear = y0;
     layout();
-    Promise.all([fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/places.json").catch(function () { return []; })]).then(function (r) {
+    Promise.all([
+      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/places.json").catch(function () { return []; }),
+      fetchJSON("data/modern.json"), fetchJSON("data/cities.json").catch(function () { return null; })
+    ]).then(function (r) {
       var idx = r[0];
       catalogue = idx.polities;
       maps = idx.maps.map(function (m) { return { y: m[0], file: "data/" + m[1], snap: null, loading: null }; });
+      var md = r[3], from = idx.modern.from.split("-").map(Number), to = idx.modern.to.split("-").map(Number);
+      modern = { rows: md.rows, hi: md.hi, lo: md.lo, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
+      modern.fromTime = timeOfDay(dayFromDate(from[0], from[1], from[2])) - 0.5 / 365;
+      cities = r[4];
+      buildPoints();
+      var t0 = h.y ? parseTime(h.y) : null;
+      now = t0 !== null ? t0 : START_YEAR;
       land = {
         hi: prepLand(r[1].hi), lo: prepLand(r[1].lo),
         coastHi: prepareLines(topojson.mesh(r[1].hi, r[1].hi.objects.land)), coastLo: prepareLines(topojson.mesh(r[1].lo, r[1].lo.objects.land))
@@ -1557,10 +1787,11 @@
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
       places = r[2] || [];
       layout();
-      return loadMap(mapIndexFor(year)).then(function (snap) {
+      var first = isModern(now) ? Promise.resolve(modernSnap(Math.min(dayOfTime(now), modern.toDay))) : loadMap(mapIndexFor(now));
+      return first.then(function (snap) {
         current = snap;
         reveal();
-        setYear(year);
+        setTime(now);
         fetchJSON(UC + "data/sea.json").then(function (t) {
           var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(prepare); };
           sea = { high: prep(t.high), low: prep(t.low) };
@@ -1579,10 +1810,13 @@
 
   window.__chronia = {
     ready: function () { return ready && !!current; },
-    year: function () { return year; },
-    mapYear: function () { return current ? current.year : null; },
+    year: function () { return now; },
+    shown: function () { return yearInput.value; },
+    date: function () { return isModern(now) ? hashTime() : null; },
+    mapYear: function () { return current ? (current.modern ? "modern" : current.year) : null; },
     maps: function () { return maps.map(function (m) { return m.y; }); },
-    setYear: function (y) { stopPlay(); setYear(y); },
+    setYear: function (y) { stopPlay(); setTime(typeof y === "string" ? parseTime(y) : y); },
+    step: function (dir, unit) { if (unit) stepUnit(dir); else stepMap(dir); },
     view: view,
     setView: function (lon, lat, zoom) { view.lon = lon; view.lat = lat; if (zoom) view.zoom = zoom; applyView(); scheduleRender(); },
     setFlat: setFlat,
