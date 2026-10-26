@@ -54,6 +54,9 @@ of `/greatercircle/`.
     chosen by how big the map is on screen: three simplified from the loaded
     topology, and, close up, a more detailed copy of the same arcs that is
     fetched and prepared in the background the first time it is needed.
+    On a device too slow to keep up while the map moves, it draws one level
+    coarser while it moves and the full level again once it settles (it
+    used to stay coarse until the page was reloaded).
     Shapes so large that they wrap behind the globe and enclose the point
     opposite the view are drawn through d3-geo's clipping instead, so they
     don't flood the whole disc. Line segments along the date line and the
@@ -164,8 +167,14 @@ of `/greatercircle/`.
   - A country too small for its name on its land has it set in small type
     beside it, in the water, where there is room (the Caribbean islands,
     Cyprus, Lebanon).
-  - On the globe, names far from the centre of the view are set straight,
-    not curved or turned along the outline the curve of the earth squeezes.
+  - On the globe, names are painted onto the sphere. Each is laid out on a
+    small map of the land round it whose grid follows the parallels and
+    meridians (a straight name runs along its parallel, a turned one at its
+    angle across them, and a bent one along its arc), and each letter is
+    carried onto the globe with its own position, turn, and stretch, so names
+    tilt, curve, and foreshorten with the lines of latitude and longitude
+    beneath them. A name that would read upside down runs the other way. The
+    flat map sets names flat as before.
   - In Antique, a city name that has no room to the right of its mark tries
     the left, above, and below.
   - Long, thin countries (Chile, Norway, Sweden) are also tried along their
@@ -524,6 +533,17 @@ of `/greatercircle/`.
   opened again. A history cut short by its length is kept all the same,
   with a note saying so. The last history is kept in the browser, and the panel says
   when the map has changed since.
+  - While the historian writes or redraws, a line under the question says
+    what it is doing, and a thin bar beneath fills as it goes. Writing, the
+    line names the section being written and the bar follows the word count
+    (a history runs 600 to 1,000 words). Redrawing, the line follows the
+    outline and then each part of the world as its mapmaker works ("Western
+    Europe: Giving Passau to Austria"), from `peek` events the server function
+    streams while the JSON is written (`{t: "peek", v, n}`: what the newest
+    finished entry does, and how many characters are written); the bar counts
+    the parts drawn and how far along each is. Between events, and with a
+    server that sends none, the bar creeps on and the line steps through a
+    few stock phrases.
   - **Redraw the map** takes a turning point instead ("What if Rome never
     fell?", "The world in 1925 if the Central Powers had won"): Claude
     decides how the world's map would stand in the year the turning point
@@ -630,8 +650,11 @@ of `/greatercircle/`.
     when the outline's `detail` is true, which the historian sets only when
     the turning point explicitly asks for borders by county, municipality,
     or district; other parts of the world get regions alone. A province is found at once; a district needs the finer
-    regions, so the page loads them before it applies an edit that names
-    one, and the list of changes sent with later requests names the
+    regions. If *Finer regions* (Tier 2) are switched off in the View menu,
+    the panel asks before using them: *Turn them on* switches them on and
+    applies the edit; *Keep them off* leaves those districts where they were.
+    The same question comes up when the historian edits the map in a
+    conversation. The list of changes sent with later requests names the
     districts that moved ("part of Bavaria (Passau)").
   - The page sends a plain list of the map's differences from ours (which
     regions changed hands, countries founded, renamed, or gone, borders drawn

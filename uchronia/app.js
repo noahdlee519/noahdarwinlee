@@ -237,7 +237,7 @@
     return colorOf(c);
   }
   function remeasure() {
-    widthCache.clear(); glyphCache.clear();
+    widthCache.clear(); glyphCache.clear(); if (paintWidths) paintWidths.clear();
     cities.forEach(function (c) { c.w = 0; });
     if (feats) queueLabels(countries.map(function (c, i) { return i; }));
     scheduleRender();
@@ -263,13 +263,14 @@
   var slow = 0, slowFrames = 0;
   var DETAIL_S = 3600;
   function levelFor() {
-    var px = localScale();
+    // On a slow device the map draws coarser borders while it moves, and full ones again once it settles.
+    var px = localScale(), lag = interacting > 0 ? slow : 0;
     var level = px < 900 ? 0 : px < 2600 ? 1 : 2;
-    if (level === 2 && px >= DETAIL_S && !slow) {
+    if (level === 2 && px >= DETAIL_S) {
       wantDetail();
-      if (detailGeo && detailGeo.ready && levels[3]) level = 3;
+      if (!lag && detailGeo && detailGeo.ready && levels[3]) level = 3;
     }
-    return Math.max(0, level - slow);
+    return Math.max(0, level - lag);
   }
   function wantDetail() {
     if (!hasDetail || (detailGeo && detailGeo.key === objKey)) return;
@@ -2118,6 +2119,7 @@
       var L = co.label;
       var lines = L.name === co.name ? L.lines : [labelText(co.name)], tag = rulerTag(c), tf = 0, tw = 0, extra = 0;
       if (!lines[0]) continue;
+      if (!flat) { globeLabel(c, L, lines, tag, kmPx, placed, small); continue; }
       var arc = null, px = 0, py = 0, f = 0, w = 0, i, sp = pal.antique ? 0.22 : 0.16;
       var bt = pal.antique && L.bent && lines === L.lines ? L.bent : null;
       if (bt) {
@@ -2189,6 +2191,146 @@
     }
     drawBesideLabels(small, placed);
     ctx.letterSpacing = "0px";
+  }
+  // On the globe, names are painted onto the sphere: laid out on a small map of the land round them, whose grid
+  // follows the parallels and meridians, then carried onto the globe glyph by glyph, so they tilt, curve, and
+  // foreshorten with the latitude and longitude lines beneath them.
+  var paintWidths = new Map();
+  function paintWidth(font, ch) {
+    var key = font + "\u0001" + ch, w = paintWidths.get(key);
+    if (w == null) {
+      ctx.font = font.replace("@", "100px"); ctx.letterSpacing = "0px";
+      w = ctx.measureText(ch).width / 100;
+      paintWidths.set(key, w);
+    }
+    return w;
+  }
+  function onSphere(A, x, y) {
+    var lam = A.lam + x / (R_KM * A.cl), phi = A.phi - y / R_KM;
+    if (phi > HALF_PI) phi = HALF_PI; else if (phi < -HALF_PI) phi = -HALF_PI;
+    var c = Math.cos(phi);
+    return projectVec(c * Math.cos(lam), c * Math.sin(lam), Math.sin(phi), lam, phi);
+  }
+  function planeOf(A, q) {
+    return [wrapPi(q.lam - A.lam) * R_KM * A.cl, -(q.phi - A.phi) * R_KM];
+  }
+  function planeArc(A, bt, w) {
+    var pb = planeOf(A, bt.arc[0]), pe = planeOf(A, bt.arc[1]);
+    var ax = pb[0], ay = pb[1], bx = pe[0], by = pe[1];
+    var d = 2 * (ax * by - ay * bx), span = Math.hypot(bx - ax, by - ay);
+    if (!(span > 0) || Math.abs(d) < 1e-6 * span * span) return null;
+    var a2 = ax * ax + ay * ay, b2 = bx * bx + by * by;
+    var ux = (by * a2 - ay * b2) / d, uy = (ax * b2 - bx * a2) / d, R = Math.hypot(ux, uy);
+    if (!(R > w * 0.9) || R > w * 40) return null;
+    var phi = Math.atan2(-uy, -ux), rx = bx - ax, ry = by - ay;
+    if (rx < 0) { rx = -rx; ry = -ry; }
+    var dir = -Math.sin(phi) * rx + Math.cos(phi) * ry >= 0 ? 1 : -1;
+    var tx = -dir * Math.sin(phi), ty = dir * Math.cos(phi);
+    var out = -ty * Math.cos(phi) + tx * Math.sin(phi) > 0 ? 1 : -1;
+    return { qx: ux, qy: uy, R: R, phi: phi, dir: dir, out: out };
+  }
+  // rows: [{ text, font ("400 @ serif"), size (px), track (px between glyphs), y (px below the centre) }]
+  function paintLabel(A, rows, ang, arc, placed) {
+    var k = 1 / A.kpx, glyphs = [], i, j, e = 4 * k;
+    var bx = Math.cos(ang), by = -Math.sin(ang);
+    // Which way the name reads on screen, at its middle: if it would read upside down, run it the other way.
+    var r0 = arc ? arc.phi + arc.dir * HALF_PI : Math.atan2(by, bx);
+    var s0 = onSphere(A, -Math.cos(r0) * e, -Math.sin(r0) * e), s1 = onSphere(A, Math.cos(r0) * e, Math.sin(r0) * e);
+    if (!s0 || !s1) return false;
+    var sang = Math.atan2(s1[1] - s0[1], s1[0] - s0[0]);
+    if (s1[0] < s0[0]) {
+      sang += Math.PI;
+      if (arc) arc = { qx: arc.qx, qy: arc.qy, R: arc.R, phi: arc.phi, dir: -arc.dir, out: -arc.out };
+      else { bx = -bx; by = -by; }
+    }
+    if (sang > Math.PI) sang -= TAU;
+    var nx = -by, ny = bx;
+    for (i = 0; i < rows.length; i++) {
+      var row = rows[i], chars = Array.from(row.text), ws = [], total = 0;
+      for (j = 0; j < chars.length; j++) { var gw = paintWidth(row.font, chars[j]) * row.size; ws.push(gw); total += gw + row.track; }
+      var x = -(total - row.track) / 2;
+      for (j = 0; j < chars.length; j++) {
+        var xc = x + ws[j] / 2, px, py, rot;
+        x += ws[j] + row.track;
+        if (chars[j] === " ") continue;
+        if (arc) {
+          var Ri = arc.R + arc.out * row.y * k, ph = arc.phi + arc.dir * xc * k / Ri;
+          px = arc.qx + Ri * Math.cos(ph); py = arc.qy + Ri * Math.sin(ph); rot = ph + arc.dir * HALF_PI;
+        } else {
+          px = (bx * xc + nx * row.y) * k; py = (by * xc + ny * row.y) * k; rot = Math.atan2(by, bx);
+        }
+        glyphs.push({ ch: chars[j], x: px, y: py, rot: rot, w: ws[j], row: row });
+      }
+    }
+    if (!glyphs.length) return false;
+    var cs = Math.cos(sang), sn = Math.sin(sang), x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, d = 0.5 * k;
+    for (i = 0; i < glyphs.length; i++) {
+      var g = glyphs[i];
+      var P = onSphere(A, g.x, g.y), Px = onSphere(A, g.x + d, g.y), Py = onSphere(A, g.x, g.y + d);
+      if (!P || !Px || !Py || P[2] < 0.06) return false;
+      var jxx = (Px[0] - P[0]) / d, jxy = (Px[1] - P[1]) / d, jyx = (Py[0] - P[0]) / d, jyy = (Py[1] - P[1]) / d;
+      var rc = Math.cos(g.rot) * k, rs = Math.sin(g.rot) * k;
+      g.m = [jxx * rc + jyx * rs, jxy * rc + jyy * rs, -jxx * rs + jyx * rc, -jxy * rs + jyy * rc, P[0], P[1]];
+      var hw = g.w / 2, hh = g.row.size * CAP_H / 2;
+      for (var c = 0; c < 4; c++) {
+        var lx = c & 1 ? hw : -hw, ly = c & 2 ? hh : -hh;
+        var sx = g.m[0] * lx + g.m[2] * ly + g.m[4] - P[0], sy = g.m[1] * lx + g.m[3] * ly + g.m[5] - P[1];
+        var qx = P[0] + sx, qy = P[1] + sy, u = (qx - cx) * cs + (qy - cy) * sn, v = -(qx - cx) * sn + (qy - cy) * cs;
+        if (u < x0) x0 = u; if (u > x1) x1 = u; if (v < y0) y0 = v; if (v > y1) y1 = v;
+      }
+    }
+    var mu = (x0 + x1) / 2, mv = (y0 + y1) / 2;
+    var box = mkBox(cx + mu * cs - mv * sn, cy + mu * sn + mv * cs, (x1 - x0) / 2 + 3, (y1 - y0) / 2 + 2, sang);
+    if (box.ox < -300 || box.ox > W + 300 || box.oy < -100 || box.oy > H + 100) return false;
+    if (!insideDisc(box) || collides(placed, box)) return false;
+    placed.push(box);
+    ctx.save();
+    ctx.letterSpacing = "0px";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+    for (var pass = 0; pass < 2; pass++) {
+      var font = "";
+      for (i = 0; i < glyphs.length; i++) {
+        g = glyphs[i];
+        if (g.row.css !== font) { font = g.row.css; ctx.font = font; ctx.lineWidth = g.row.halo; }
+        var m = g.m;
+        ctx.setTransform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * m[4], dpr * m[5]);
+        if (pass) ctx.fillText(g.ch, 0, 0); else ctx.strokeText(g.ch, 0, 0);
+      }
+    }
+    ctx.restore();
+    return true;
+  }
+  function globeLabel(c, L, lines, tag, kmPx, placed, small, straight) {
+    var bt = !straight && pal.antique && L.bent && lines === L.lines ? L.bent : null, A = bt || L;
+    var p = projectVec(A.v[0], A.v[1], A.v[2], A.lam, A.phi);
+    if (!p || p[2] < 0.2) return;
+    var fore = p[2], sp = pal.antique ? 0.22 : 0.16, f = Math.min(24, A.fkm * kmPx * Math.sqrt(fore)), i;
+    if (bt && f < 8.5) { bt = null; A = L; p = projectVec(A.v[0], A.v[1], A.v[2], A.lam, A.phi); if (!p || p[2] < 0.2) return; fore = p[2]; f = Math.min(24, A.fkm * kmPx * Math.sqrt(fore)); }
+    var loose = 0, tight = 0;
+    for (i = 0; i < lines.length; i++) { loose = Math.max(loose, unitWidth(lines[i])); tight = Math.max(tight, unitWidth(lines[i]) - Array.from(lines[i]).length * (sp - TIGHT)); }
+    if (!bt) {
+      if (pal.antique && f < 8.5 && f * loose / tight >= 8.5) { f *= loose / tight; sp = TIGHT; }
+      if (f < 8.5) {
+        var rr = L.size * kmPx * Math.sqrt(fore) / 2, kpx = kmPx * Math.sqrt(fore);
+        if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ lines: tag ? lines.concat([tag]) : lines, x: p[0], y: p[1], r: rr }); return; }
+        if (f < 4.2) return;
+        var fs = pal.antique ? TIGHT : sp, fw = (pal.antique ? tight : loose) * 8.5;
+        if (!mostlyOwn(c, L, fw / kpx, 8.5 * (CAP_H + LINE_H * (lines.length - 1)) / kpx)) return;
+        f = 8.5; sp = fs;
+      }
+    }
+    var w = (sp === TIGHT ? tight : loose) * f;
+    var frame = { lam: A.lam, phi: A.phi, cl: Math.max(0.12, Math.cos(A.phi)), kpx: kmPx * Math.sqrt(fore) };
+    var arc = bt ? planeArc(frame, bt, w / frame.kpx) : null;
+    if (bt && !arc) return globeLabel(c, L, lines, tag, kmPx, placed, small, true);
+    var face = pal.antique ? "400 @ " + SERIF : "500 @ " + FONT, rows = [], h = f * (CAP_H + LINE_H * (lines.length - 1));
+    for (i = 0; i < lines.length; i++) rows.push({ text: lines[i], font: face, css: face.replace("@", f.toFixed(1) + "px"), size: f, track: f * sp, y: (i - (lines.length - 1) / 2) * f * LINE_H, halo: Math.max(2, f * 0.22) });
+    if (tag) {
+      var tf = Math.max(8.5, f * 0.62), tface = "italic 400 @ " + (pal.antique ? SERIF : FONT);
+      rows.push({ text: tag, font: tface, css: tface.replace("@", tf.toFixed(1) + "px"), size: tf, track: 0, y: h / 2 + tf * 0.8, halo: Math.max(2, tf * 0.3) });
+    }
+    paintLabel(frame, rows, L.ang || 0, arc, placed);
   }
   function drawTag(tag, x, y, ang, dy, size) {
     ctx.save();
@@ -6095,7 +6237,7 @@
   new MutationObserver(function () { refreshPalette(); styleChanged(); renderPanel(); scheduleRender(); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-uc-style"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
-    widthCache.clear(); glyphCache.clear();
+    widthCache.clear(); glyphCache.clear(); if (paintWidths) paintWidths.clear();
     cities.forEach(function (c) { c.w = 0; });
     if (feats) queueLabels(countries.map(function (c, i) { return i; }));
     scheduleRender();
@@ -6201,12 +6343,12 @@
     var ps = regionsNamed(bc, raw.slice(0, cut)), part = plainName(raw.slice(cut + 1));
     ps.forEach(function (p) { if (plainName(provName[p]) === part) add(p); });
     if (units.length) return { units: units, fine: false };
-    if (!fineData) return { units: units, fine: ps.length > 0 };
+    if (!fineData || fineNo) return { units: units, fine: ps.length > 0 };
     ps.forEach(function (p) { provUnits[p].forEach(function (u) { if (plainName(unitName[u]) === part) units.push(u); }); });
-    return { units: units, fine: false };
+    return { units: units, fine: units.length > 0 };
   }
   function planWantsFine(plan) {
-    if (fineData || !plan) return false;
+    if (ui.fine || fineNo || !plan) return false;
     return (plan.transfers || []).some(function (t) {
       if (!t || t.whole || !Array.isArray(t.regions)) return false;
       var n = plainName(t.from), from = -1;
@@ -6508,6 +6650,95 @@
     el.classList.toggle("is-limit", /Try again tomorrow\.$/.test(msg || ""));
   }
   function historyStatus(msg) { setStatus($("history-status"), msg); $("history-status").hidden = !msg; }
+  var work = null;
+  function workStart(lines) {
+    workEnd();
+    work = { shown: 0, real: 0, a: 0, b: 0, tau: 1, t0: Date.now(), lines: lines || [], said: "", saidAt: 0, own: 0, timer: 0 };
+    $("history-work").hidden = false;
+    workPhase(0, 0.12, 20, lines);
+    work.timer = setInterval(workTick, 250);
+    workTick();
+  }
+  function workPhase(a, b, tau, lines) {
+    if (!work) return;
+    work.a = Math.max(a, work.shown); work.b = Math.max(b, work.a); work.tau = tau; work.t0 = Date.now();
+    if (lines) { work.lines = lines; work.own = 0; workSay(lines[0], true); }
+  }
+  function workReal(p) { if (work) work.real = Math.max(work.real, Math.min(0.99, p)); }
+  function workSay(text, keepLines) {
+    if (!work || !text) return;
+    if (!keepLines) work.own = Date.now();
+    work.saidAt = Date.now();
+    if (text === work.said) return;
+    work.said = text;
+    var el = $("history-doing");
+    el.textContent = text.replace(/[.…]+$/, "") + "…";
+    el.classList.remove("is-fresh"); void el.offsetWidth; el.classList.add("is-fresh");
+  }
+  function workTick() {
+    if (!work) return;
+    var t = (Date.now() - work.t0) / 1000, creep = work.a + (work.b - work.a) * (1 - Math.exp(-t / work.tau));
+    work.shown = Math.max(work.shown, creep, work.real);
+    var pct = Math.round(work.shown * 100);
+    $("history-meter-fill").style.width = (work.shown * 100).toFixed(1) + "%";
+    $("history-meter").setAttribute("aria-valuenow", String(pct));
+    if (work.lines.length > 1 && Date.now() - work.saidAt > 5200 && Date.now() - work.own > 7000) {
+      var k = (work.lines.indexOf(work.said) + 1) % work.lines.length;
+      workSay(work.lines[k], true);
+    }
+  }
+  function workEnd(full) {
+    if (!work) return;
+    clearInterval(work.timer);
+    work = null;
+    if (full) { $("history-meter-fill").style.width = "100%"; }
+    $("history-work").hidden = true;
+    $("history-doing").textContent = "";
+    $("history-meter-fill").style.width = "0";
+  }
+  var fineAsk = null, fineNo = false;
+  function fineReset() {
+    fineAsk = null; fineNo = false;
+    $("history-fine").hidden = true;
+    $("history-fine-yes").onclick = $("history-fine-no").onclick = null;
+  }
+  function turnFineOn() {
+    return loadFine().then(function (ok) {
+      if (!ok) return false;
+      ui.fine = true; $("fine").checked = true; fineShown.clear(); arcsDirty = true;
+      try { localStorage.setItem(STORE_FINE, "1"); } catch (e) { }
+      renderPanel(); scheduleRender();
+      return true;
+    });
+  }
+  function askFine(near) {
+    if (fineAsk) return fineAsk;
+    fineAsk = new Promise(function (done) {
+      var box = $("history-fine");
+      if (near && box.nextSibling !== near) near.parentNode.insertBefore(box, near);
+      box.hidden = false;
+      if (work) workSay("Waiting for your answer about finer regions");
+      try { box.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" }); } catch (e) { }
+      var answer = function (yes) {
+        $("history-fine-yes").onclick = $("history-fine-no").onclick = null;
+        box.hidden = true;
+        if (yes) turnFineOn().then(function () { done(true); }, function () { done(false); });
+        else { fineNo = true; done(false); }
+      };
+      $("history-fine-yes").onclick = function () { answer(true); };
+      $("history-fine-no").onclick = function () { answer(false); };
+      $("history-fine-yes").focus({ preventScroll: true });
+    });
+    return fineAsk;
+  }
+  function fineFor(plan, near) {
+    if (!planWantsFine(plan)) return Promise.resolve();
+    return ui.fine ? loadFine() : askFine(near);
+  }
+  function peekWords(text) {
+    var words = (text.match(/\S+/g) || []).length, heads = text.match(/^#{1,3} +(.+)$/gm);
+    return { words: words, head: heads ? heads[heads.length - 1].replace(/^#+ +/, "").replace(/[*_\[\]]/g, "").trim() : "" };
+  }
   var STORE_CONVS = "uchronia-histories", CONV_MAX = 30, conv = null, convRead = false;
   function readConvs() {
     try {
@@ -6680,10 +6911,18 @@
     $("history-chat").hidden = true;
     showAsked(asked);
     showAsk(false);
-    historyStatus("The historian is writing…");
-    var text = "", queued = false, done = false;
-    var paint = function () { queued = false; renderHistory(text); };
+    historyStatus("");
+    workStart(after ? ["Reading the new map", "Following the turning point forward", "Working out how this world came to be"] : ["Reading your map", "Weighing what changed", "Working out how this world came to be", "Choosing where the story begins"]);
+    workPhase(0, 0.16, 18);
+    var text = "", queued = false, done = false, head = null;
+    var paint = function () {
+      queued = false; renderHistory(text);
+      var pk = peekWords(text);
+      workReal(0.16 + 0.82 * Math.min(1, pk.words / 900));
+      if (pk.head !== head) { head = pk.head; workSay(head ? "Writing \u201c" + head + "\u201d" : "Writing the history"); }
+    };
     var finish = function (msg, keep) {
+      workEnd(!msg);
       historyBusy = false; done = true;
       syncAccount();
       historyStatus(msg);
@@ -6717,7 +6956,7 @@
             if (!line) continue;
             var ev = null;
             try { ev = JSON.parse(line); } catch (e) { continue; }
-            if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
+            if (ev.t === "text") { if (!text) { workPhase(0.16, 0.2, 30, []); workSay("Writing the history"); } text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
             else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to write this one." : ev.reason === "max_tokens" ? "The history ran long and was cut short." : "", ev.reason === "max_tokens");
             else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(text ? "The history broke off. Try again." : ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not write this. Try again in a moment."); }
           }
@@ -6782,11 +7021,15 @@
     $("history-text").textContent = "";
     showAsked(premise);
     showAsk(false);
-    historyStatus("The historian is redrawing the map. This can take a minute or two…");
+    historyStatus("");
+    fineReset();
+    workStart(["Reading your turning point", "Imagining how events unfold", "Deciding which borders move", "Sketching the new world"]);
+    workPhase(0, 0.2, 30);
     var done = false;
     var finish = function (msg) {
       if (done) return;
       done = true; historyBusy = false;
+      workEnd(!msg); fineReset();
       syncAccount();
       historyStatus(msg);
       if (msg) { showAsked(""); showAsk(true); }
@@ -6814,10 +7057,18 @@
       else { loadDiff(before, true); changed(); }
       last = r;
     };
-    var progress = function () { if (!done && left > 0) historyStatus("The historian is drawing the map, one part of the world at a time: " + (total - left) + " of " + total + " done…"); };
+    var partDone = {}, partFrac = {};
+    var progress = function () {
+      if (done || !total) return;
+      var sum = 0;
+      Object.keys(partFrac).forEach(function (id) { sum += partDone[id] ? 1 : 0.9 * partFrac[id]; });
+      Object.keys(partDone).forEach(function (id) { if (!(id in partFrac)) sum += 1; });
+      workReal(0.2 + 0.74 * sum / total);
+    };
     var settle = function () {
       if (done || left > 0) return;
       if (total && !plans.length) return finish("The historian could not draw this map. Try again in a moment.");
+      workSay("Placing the new borders"); workReal(0.97);
       draw();
       if (!last) return finish("The historian's map could not be drawn. Try putting it another way.");
       if (last.missed) console.warn("redraw: " + last.missed + " names not found");
@@ -6838,17 +7089,24 @@
         over = true;
         var go = function () {
           left--;
+          partDone[id] = true;
           if (plan) plans.push(plan); else failed.push(id);
           progress();
+          if (left > 0 && !done) workSay((plan ? "Finished " : "Could not finish ") + (names[id] || "a part") + " \u00b7 " + (total - left) + " of " + total + " parts drawn");
           if (left > 0 && plan && !done) draw();
           settle();
         };
-        if (planWantsFine(plan)) loadFine().then(go, go); else go();
+        fineFor(plan, $("history-text")).then(go, go);
       };
       post({ mode: "part", premise: premise, outline: outline, part: id, ticket: ticket }).then(function (res) {
         if (!res.ok || !res.body) { console.warn("historian part", id, res.status); return end(null); }
         return readEvents(res, function (ev) {
-          if (ev.t === "plan" && ev.plan && typeof ev.plan === "object") { if (ev.partial) console.warn("historian part " + id + " cut short"); end(ev.plan); }
+          if (ev.t === "peek") {
+            if (done || partDone[id]) return;
+            if (isFinite(ev.n)) { partFrac[id] = 1 - Math.exp(-ev.n / 2500); progress(); }
+            if (typeof ev.v === "string" && ev.v) workSay((names[id] ? names[id] + ": " : "") + ev.v.slice(0, 120));
+          }
+          else if (ev.t === "plan" && ev.plan && typeof ev.plan === "object") { if (ev.partial) console.warn("historian part " + id + " cut short"); end(ev.plan); }
           else if (ev.t === "error" || ev.t === "end" || ev.t === "closed") { if (ev.t !== "closed") console.warn("historian part", id, ev.status || ev.reason); end(null); }
         });
       }).catch(function (e) { console.warn("historian part", id, e); end(null); });
@@ -6860,12 +7118,19 @@
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       return readEvents(res, function (ev) {
         if (done || outline) return;
-        if (ev.t === "outline") {
+        if (ev.t === "peek") {
+          if (isFinite(ev.n)) workReal(0.02 + 0.17 * (1 - Math.exp(-ev.n / 3000)));
+          if (typeof ev.v === "string" && ev.v) workSay(ev.v.slice(0, 120));
+        }
+        else if (ev.t === "outline") {
           if (!ev.outline || typeof ev.outline !== "object" || ev.outline.declined) return finish("The historian declines to draw that world.");
           outline = ev.outline; names = ev.names || {}; ticket = typeof ev.ticket === "string" ? ev.ticket : "";
           var ids = (Array.isArray(outline.parts) ? outline.parts : []).map(function (b) { return b && b.part; }).filter(function (id, k, all) { return typeof id === "string" && all.indexOf(id) === k; });
           total = left = ids.length;
           if (!total) return settle();
+          ids.forEach(function (id) { partFrac[id] = 0; });
+          workPhase(0.2, 0.3, 45, ids.map(function (id) { return "Drawing " + (names[id] || "the map"); }));
+          if (typeof outline.title === "string" && outline.title) workSay("Drawing \u201c" + outline.title.slice(0, 80) + "\u201d, " + total + (total === 1 ? " part" : " parts") + " of the world");
           progress();
           ids.forEach(function (id) { drawPart(id, ev.ticket); });
         } else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to redraw this one." : "The historian could not redraw this. Try again in a moment.");
@@ -6883,6 +7148,7 @@
     if (!c || historyBusy) return;
     if (!q) { $("history-q").focus(); return; }
     historyBusy = true; busyKind = "chat";
+    fineReset();
     if (!townsLoad) loadTowns();
     syncAsk();
     setStatus($("history-chat-status"), "The historian is answering…");
@@ -6895,6 +7161,7 @@
       if (done) return;
       if (pending) { edits.then(function () { finish(msg); }); return; }
       done = true; historyBusy = false;
+      fineReset();
       syncAccount();
       setStatus($("history-chat-status"), msg);
       if (edited) { c.map = makeDiff(); c.changes = describeChanges(); }
@@ -6933,7 +7200,7 @@
             if (at) flyTo(at[0], at[1]);
           };
           pending++;
-          edits = edits.then(function () { return planWantsFine(ev.plan) ? loadFine() : null; }).then(edit, edit).then(function () { pending--; });
+          edits = edits.then(function () { return fineFor(ev.plan, $("history-chat-status")); }).then(edit, edit).then(function () { pending--; });
         }
         else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to answer that." : ev.reason === "max_tokens" ? "" : "");
         else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not answer this. Try again in a moment."); }

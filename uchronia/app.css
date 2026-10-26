@@ -672,6 +672,81 @@ body.uc-page {
 .uc-chron-text:empty {
   display: none;
 }
+.uc-chron-work {
+  margin: 16px 0 0;
+}
+.uc-chron-asked + .uc-chron-status + .uc-chron-work {
+  margin-top: 8px;
+}
+.uc-chron-work[hidden],
+.uc-chron-fine[hidden] {
+  display: none;
+}
+.uc-chron-doing {
+  margin: 0 0 8px;
+  min-height: 1.4em;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--uc-muted);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .uc-chron-doing {
+    background: linear-gradient(90deg, var(--uc-muted) 0%, var(--uc-muted) 38%, var(--ink) 50%, var(--uc-muted) 62%, var(--uc-muted) 100%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: uc-doing-shine 2.4s linear infinite;
+  }
+}
+.uc-chron-doing.is-fresh {
+  animation: uc-doing-in 260ms ease-out, uc-doing-shine 2.4s linear infinite;
+}
+@keyframes uc-doing-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes uc-doing-shine {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+.uc-chron-meter {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.uc-chron-meter > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  border-radius: inherit;
+  background: var(--ink);
+  transition: width 500ms ease-out;
+}
+.uc-chron-fine {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 8px;
+}
+.uc-chron-fine-text {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .uc-chron-doing,
+  .uc-chron-doing.is-fresh {
+    animation: none;
+  }
+  .uc-chron-meter > span {
+    transition: none;
+  }
+}
 .uc-chron-text {
   margin: 6px 0 0;
   font-size: 15.5px;
@@ -1488,6 +1563,11 @@ a.uc-menu-item {
   font-size: 11.5px;
   line-height: 18px;
   text-align: center;
+}
+:root[data-uc-style="antique"] .uc-count {
+  font-family: "Old Standard TT", Georgia, "Times New Roman", serif;
+  line-height: 16px;
+  padding-top: 2px;
 }
 .uc-count[hidden] {
   display: none;

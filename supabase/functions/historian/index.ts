@@ -311,13 +311,84 @@ function repair(text: string) {
   }
 }
 
-async function drawJSON(client: Anthropic, base: Record<string, unknown>, deadline: number, label: string) {
+const clip = (x: unknown) => (typeof x === "string" ? x.trim().slice(0, 60) : "");
+
+function grown(v: any, key: string, seen: Record<string, string>) {
+  const a = v && Array.isArray(v[key]) ? v[key] : [];
+  const last = a.length && a[a.length - 1] && typeof a[a.length - 1] === "object" ? a[a.length - 1] : null;
+  const mark = last ? a.length + ":" + JSON.stringify(last) : "";
+  const fresh = !!last && mark !== (seen[key] || "");
+  seen[key] = mark;
+  return fresh ? last : null;
+}
+
+// What the newest finished entry of a plan does, in a few words, for the progress line.
+function peekPlan(v: any, seen: Record<string, string>, names?: Map<string, string>) {
+  if (!v || typeof v !== "object") return "";
+  let out = "", x: any;
+  if ((x = grown(v, "new_countries", seen)) && clip(x.name)) out = "Founding " + clip(x.name);
+  if ((x = grown(v, "renames", seen)) && clip(x.country) && clip(x.new_name)) out = "Renaming " + clip(x.country) + " to " + clip(x.new_name);
+  if ((x = grown(v, "subjects", seen)) && clip(x.country)) out = clip(x.ruler) ? "Making " + clip(x.country) + " a subject of " + clip(x.ruler) : "Freeing " + clip(x.country);
+  if ((x = grown(v, "transfers", seen)) && clip(x.to)) {
+    const regions = Array.isArray(x.regions) ? x.regions.map(clip).filter(Boolean) : [];
+    const last = regions.length ? regions[regions.length - 1].split("/").pop()!.trim() : "";
+    if (x.whole && clip(x.from)) out = "Giving all of " + clip(x.from) + " to " + clip(x.to);
+    else if (last) out = "Giving " + last + (regions.length > 1 ? " and " + (regions.length - 1) + (regions.length === 2 ? " more region" : " more regions") : "") + " to " + clip(x.to);
+    else if (clip(x.from)) out = "Moving land from " + clip(x.from) + " to " + clip(x.to);
+  }
+  if ((x = grown(v, "city_renames", seen)) && clip(x.city) && clip(x.new_name)) out = "Renaming " + clip(x.city) + " to " + clip(x.new_name);
+  if ((x = grown(v, "capitals", seen)) && clip(x.city) && clip(x.country)) out = "Making " + clip(x.city) + " the capital of " + clip(x.country);
+  if (names && (x = grown(v, "parts", seen)) && names.has(x.part)) out = "Writing the brief for " + names.get(x.part);
+  return out;
+}
+
+function peekOutline(text: string) {
+  if (/"new_countries"\s*:/.test(text)) return "";
+  if (/"summary"\s*:\s*"/.test(text)) return "Tracing what happened";
+  const m = /"title"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(text);
+  if (!m) return "";
+  try {
+    return "Imagining \u201c" + clip(JSON.parse('"' + m[1] + '"')) + "\u201d";
+  } catch (_) {
+    return "";
+  }
+}
+
+// Streams {t: "peek", v, n} now and then while JSON is written: v says what the newest entry does, n is how much is written.
+function peeker(send: (obj: unknown) => void, names?: Map<string, string>) {
+  const seen: Record<string, string> = {};
+  let at = 0, said = "", sentN = 0;
+  return (text: string) => {
+    const now = Date.now();
+    if (now - at < 600) return;
+    at = now;
+    let v = peekPlan(repair(text), seen, names);
+    if (!v && names) v = peekOutline(text);
+    if (v && v !== said) {
+      said = v;
+      sentN = text.length;
+      send({ t: "peek", v, n: text.length });
+    } else if (text.length - sentN >= 300) {
+      sentN = text.length;
+      send({ t: "peek", n: text.length });
+    }
+  };
+}
+
+async function drawJSON(client: Anthropic, base: Record<string, unknown>, deadline: number, label: string, peek?: (text: string) => void) {
   let text = "";
   const run = async (s: any) => {
     const timer = setTimeout(() => s.abort(), Math.max(1000, deadline - Date.now()));
     try {
       for await (const event of s) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") text += event.delta.text;
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          text += event.delta.text;
+          if (peek) {
+            try {
+              peek(text);
+            } catch (_) {}
+          }
+        }
       }
       return await s.finalMessage();
     } finally {
@@ -640,7 +711,7 @@ Deno.serve(async (req) => {
         output_config: { effort: "low", format: { type: "json_schema", schema: PART_SCHEMA } },
         system: [{ type: "text", text: detailed ? PART(part.name).replace(/\n\nThe catalogue of your part:\n$/, PART_DETAIL + "\n\nThe catalogue of your part:\n") + partCatalogue(rawCat, part) : PART(part.name) + partCatalogue(cat, part) }],
         messages: [{ role: "user", content: "The premise:\n" + premise + "\n\n" + outlineText(outline, list) + "\n\nNow draw " + part.name + "." }],
-      }, deadline, "part " + id);
+      }, deadline, "part " + id, peeker(send));
       if (r.value) send({ t: "plan", plan: r.value, partial: r.stop !== "end_turn" });
       else send({ t: "end", reason: r.stop });
     });
@@ -679,7 +750,7 @@ Deno.serve(async (req) => {
           output_config: { effort: "medium", format: { type: "json_schema", schema: outlineSchema(list.map((p) => p.id)) } },
           system: [{ type: "text", text: OUTLINE + byPart, cache_control: { type: "ephemeral" } }],
           messages: [{ role: "user", content: "The premise:\n" + premise }],
-        }, deadline, "outline");
+        }, deadline, "outline", peeker(send, new Map(list.map((p) => [p.id, p.name]))));
       } catch (e) {
         await giveBack();
         throw e;
