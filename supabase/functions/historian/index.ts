@@ -29,7 +29,11 @@ The edits:
 - renames: countries on the map that live on under another name. Use the name the country has on the map now.
 - transfers: land changing hands. "to" is a country on the map (by its name now, or after your renames), a new country, or "unclaimed". "from" is a country of our world, named as in the catalogue.
 - subjects: countries already on the map whose ruler changes: one that becomes a subject of another (give the ruler by its name on the map after your edits), or a subject that comes to rule itself (leave ruler empty). On our world's map the territories that are not sovereign, such as the Isle of Man, Greenland, Puerto Rico, and Hong Kong, are already subjects of the countries that hold them.
-- city_renames: cities and towns that this history calls by another name. A place that has changed hands often takes the name its new rulers give it: Brno under Austria is Brünn, Lviv under Poland is Lwów, and Gdańsk under Germany is Danzig. Give the name the place has on the map now, its longitude and latitude, and its new name. Rename only where the history gives a reason, and keep to places a reader would know.
+- city_removals: cities and towns on the map that this history never built, or destroyed and never rebuilt: a city of our world founded after the turning point for reasons this history lacks (Saint Petersburg, Brasília, Islamabad), or one razed for good. Give its name on the map now and its longitude and latitude.
+- city_moves: cities and towns that stand somewhere else in this history, such as a capital built on another site or a port founded on the other side of a bay. Give the name on the map now, its longitude and latitude now, and the longitude and latitude where it stands instead (new_lon, new_lat).
+- city_sizes: cities and towns whose size differs from ours: a capital that grew into a great city, or a city that dwindled to a town. Give the name on the map now, its longitude and latitude, and its size.
+- city_founds: cities and towns this history has that ours lacks, or that are too small to show on our map: a colonial port, a fortress, a new capital, a city that grew from a village. Give the name in this history, its longitude and latitude, and its size. A size is one of "great city" (among the largest in the world), "large city", "city", "town", or "small town".
+- city_renames: cities and towns that this history calls by another name. A place that has changed hands often takes the name its new rulers give it: Brno under Austria is Brünn, Lviv under Poland is Lwów, and Gdańsk under Germany is Danzig. Give the name the place has on the map now, its longitude and latitude, and its new name. Rename only where the history gives a reason, and keep to places a reader would know. The same holds for removing, moving, resizing, and founding cities: change a place only where the history gives a reason, and keep these lists short.
 - capitals: the capital of every country you create, and of any country whose capital moves. Give the city's name and its longitude and latitude; for a city of our world, use its usual English name, or its new name if you renamed it.`;
 
 const SYSTEM = `You are the historian of an alternate world. A mapmaker has redrawn today's world map, and you are given the list of every way their map differs from ours. Write the history of that world: how it came to look like this.
@@ -126,7 +130,7 @@ ${EDITS}
 In your part:
 - transfers: move only land in your part. "from" is always one of the countries in the catalogue below; "to" is any country on the map, a country of the outline, or "unclaimed".
 - new_countries, renames, and subjects: the outline's are made already, so list only what the outline lacks and your part needs.
-- city_renames and capitals: only places in your part. Give the capital of every country of the outline whose capital lies in your part.
+- city_removals, city_moves, city_sizes, city_founds, city_renames, and capitals: only places in your part. Give the capital of every country of the outline whose capital lies in your part.
 
 If the map's year is in the past, our world's map of that year is your starting point, not today's: redraw everything in your part that differed then from now, even where the brief is silent.
 
@@ -149,7 +153,7 @@ You can also change the map. When the mapmaker asks for a change, or points out 
 
 ${EDITS}
 
-Many regions in Europe (outside Latvia, Slovenia, and Russia), the United States, Canada, and Mexico are made of smaller parts: districts, counties, municipalities, or provinces. To move only part of a region, first call region_parts with that region to learn its parts, before you write anything; then, in edit_map, name the region, a slash, and the part, each exactly as spelt: "Bavaria / Passau". Name the region alone to move all of it, and do not look up parts you will not use.
+Many regions in Europe (outside Latvia, Slovenia, and Russia), the United States, Canada, Mexico, and South America (outside Uruguay and Guyana) are made of smaller parts: districts, counties, municipalities, or provinces. To move only part of a region, first call region_parts with that region to learn its parts, before you write anything; then, in edit_map, name the region, a slash, and the part, each exactly as spelt: "Bavaria / Passau". Name the region alone to move all of it, and do not look up parts you will not use.
 
 The catalogue:
 `;
@@ -157,7 +161,7 @@ The catalogue:
 const PLAN_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "year", "declined", "new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"],
+  required: ["title", "year", "declined", "new_countries", "renames", "subjects", "transfers", "city_removals", "city_moves", "city_sizes", "city_renames", "city_founds", "capitals"],
   properties: {
     title: { type: "string" },
     year: { type: "integer" },
@@ -183,6 +187,42 @@ const PLAN_SCHEMA = {
         properties: { to: { type: "string" }, from: { type: "string" }, whole: { type: "boolean" }, regions: { type: "array", items: { type: "string" } } },
       },
     },
+    city_removals: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["city", "lon", "lat"],
+        properties: { city: { type: "string" }, lon: { type: "number" }, lat: { type: "number" } },
+      },
+    },
+    city_moves: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["city", "lon", "lat", "new_lon", "new_lat"],
+        properties: { city: { type: "string" }, lon: { type: "number" }, lat: { type: "number" }, new_lon: { type: "number" }, new_lat: { type: "number" } },
+      },
+    },
+    city_sizes: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["city", "lon", "lat", "size"],
+        properties: { city: { type: "string" }, lon: { type: "number" }, lat: { type: "number" }, size: { type: "string", enum: ["great city", "large city", "city", "town", "small town"] } },
+      },
+    },
+    city_founds: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["city", "lon", "lat", "size"],
+        properties: { city: { type: "string" }, lon: { type: "number" }, lat: { type: "number" }, size: { type: "string", enum: ["great city", "large city", "city", "town", "small town"] } },
+      },
+    },
     city_renames: {
       type: "array",
       items: {
@@ -206,17 +246,21 @@ const PLAN_SCHEMA = {
 
 const EDIT_TOOL = {
   name: "edit_map",
-  description: "Change the map the mapmaker is looking at: found, rename, subject, or free countries, move regions between them, rename cities and towns, and set capitals. The edits apply to the map as it stands now.",
+  description: "Change the map the mapmaker is looking at: found, rename, subject, or free countries, move regions between them, remove, move, resize, found, and rename cities and towns, and set capitals. The edits apply to the map as it stands now.",
   input_schema: {
     type: "object",
     additionalProperties: false,
-    required: ["new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"],
+    required: ["new_countries", "renames", "subjects", "transfers", "city_removals", "city_moves", "city_sizes", "city_renames", "city_founds", "capitals"],
     properties: {
       new_countries: PLAN_SCHEMA.properties.new_countries,
       renames: PLAN_SCHEMA.properties.renames,
       subjects: PLAN_SCHEMA.properties.subjects,
       transfers: PLAN_SCHEMA.properties.transfers,
+      city_removals: PLAN_SCHEMA.properties.city_removals,
+      city_moves: PLAN_SCHEMA.properties.city_moves,
+      city_sizes: PLAN_SCHEMA.properties.city_sizes,
       city_renames: PLAN_SCHEMA.properties.city_renames,
+      city_founds: PLAN_SCHEMA.properties.city_founds,
       capitals: PLAN_SCHEMA.properties.capitals,
     },
   },
@@ -342,7 +386,11 @@ function peekPlan(v: any, seen: Record<string, string>, names?: Map<string, stri
     else if (last) out = "Giving " + last + (regions.length > 1 ? " and " + (regions.length - 1) + (regions.length === 2 ? " more region" : " more regions") : "") + " to " + clip(x.to);
     else if (clip(x.from)) out = "Moving land from " + clip(x.from) + " to " + clip(x.to);
   }
+  if ((x = grown(v, "city_removals", seen)) && clip(x.city)) out = "Taking " + clip(x.city) + " off the map";
+  if ((x = grown(v, "city_moves", seen)) && clip(x.city)) out = "Moving " + clip(x.city);
+  if ((x = grown(v, "city_sizes", seen)) && clip(x.city) && clip(x.size)) out = "Making " + clip(x.city) + " a " + clip(x.size);
   if ((x = grown(v, "city_renames", seen)) && clip(x.city) && clip(x.new_name)) out = "Renaming " + clip(x.city) + " to " + clip(x.new_name);
+  if ((x = grown(v, "city_founds", seen)) && clip(x.city)) out = "Founding " + clip(x.city);
   if ((x = grown(v, "capitals", seen)) && clip(x.city) && clip(x.country)) out = "Making " + clip(x.city) + " the capital of " + clip(x.country);
   if (names && (x = grown(v, "parts", seen)) && names.has(x.part)) out = "Writing the brief for " + names.get(x.part);
   return out;
@@ -474,7 +522,7 @@ function ndjson(o: string, work: (send: (obj: unknown) => void) => Promise<void>
 
 const PARTS_TOOL = {
   name: "region_parts",
-  description: "List the smaller parts (districts, counties, municipalities, or provinces) of regions in Europe, the United States, Canada, and Mexico, so that edit_map can move part of a region. Regions elsewhere, and in Latvia, Slovenia, and Russia, have none.",
+  description: "List the smaller parts (districts, counties, municipalities, or provinces) of regions in Europe, the United States, Canada, Mexico, and South America, so that edit_map can move part of a region. Regions elsewhere, and in Latvia, Slovenia, Russia, Uruguay, and Guyana, have none.",
   input_schema: {
     type: "object",
     additionalProperties: false,
@@ -729,7 +777,7 @@ Deno.serve(async (req) => {
     if (!fresh) return json(429, { error: "limit" }, o);
     const deadline = Date.now() + DEADLINE;
     const client = new Anthropic({ apiKey: key });
-    const detailed = id === "western-europe" || id === "eastern-europe" || (id === "north-america" && outline.detail === true);
+    const detailed = id === "western-europe" || id === "eastern-europe" || ((id === "north-america" || id === "south-america") && outline.detail === true);
     return ndjson(o, async (send) => {
       const r = await drawJSON(client, {
         model: "claude-opus-5-5",

@@ -189,5 +189,5 @@ Use it to measure rather than guess. Examples:
 - [ ] The README describes the new behaviour.
 - [ ] `git status` shows only your files. You've checked `git log` for
       someone else's commits.
-- [ ] Committed with a short message. Noah has been told to Sync Changes in
-      Cursor.
+- [ ] Committed with a short message and pushed. If the change touches
+      `../supabase/functions/historian/`, Noah has been told to redeploy it.

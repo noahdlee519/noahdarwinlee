@@ -2820,7 +2820,7 @@
     }
     ctx.globalAlpha = 1; ctx.textAlign = "left";
   }
-  var towns = null, townsLoad = null;
+  var towns = null, townsLoad = null, townHidden = new Set();
   function townMin(S) { return S >= 12000 ? 5 : S >= 8000 ? 15 : S >= 5000 ? 40 : Infinity; }
   function loadTowns() {
     townsLoad = fetchJSON("data/towns.json").then(function (rows) {
@@ -2866,8 +2866,9 @@
     ctx.font = font;
     var order = townOrder(), n = order ? order.length : towns.length;
     for (var i = 0; i < n; i++) {
-      var t = towns[order ? order[i] : i];
+      var ti = order ? order[i] : i, t = towns[ti];
       if (t.pop < min) break;
+      if (townHidden.has(ti)) continue;
       var p = projectVec(t.x, t.y, t.z, t.lam, t.phi);
       if (!p || (!flat && p[2] <= 0.05)) continue;
       if (p[0] < -10 || p[1] < -10 || p[0] > W + 10 || p[1] > H + 10) continue;
@@ -4154,6 +4155,8 @@
       v = back ? op.from : op.to;
       setCityState(op.id, v);
       sortCities();
+    } else if (op.t === "towns") {
+      townHidden = new Set(back ? op.from : op.to);
     } else if (op.t === "replace") {
       loadDiff(back ? op.from : op.to, false);
     } else if (op.t === "pieces") {
@@ -5236,11 +5239,11 @@
     if (!Array.isArray(row) || row.length < 5) return null;
     var name = validName(row[0]);
     if (name === null || !validLonLat(row[1], row[2])) return null;
-    var tier = Math.max(1, Math.min(4, Math.round(+row[3] || 3)));
+    var tier = Math.max(1, Math.min(5, Math.round(+row[3] || 3)));
     return { name: name, lon: row[1], lat: row[2], tier: tier, cap: row[4] ? 1 : 0 };
   }
   function round4(x) { return Math.round(x * 1e4) / 1e4; }
-  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r", "n", "d"];
+  var MAP_KEYS = ["c", "o", "u", "x", "m", "a", "h", "l", "r", "n", "d", "t"];
   function encodePolys(polys) {
     return polys.map(function (poly) {
       return poly.map(function (ring) {
@@ -5344,6 +5347,7 @@
     if (x.length) d.x = x;
     if (m.length) d.m = m;
     if (a.length) d.a = a;
+    if (townHidden.size) d.t = Array.from(townHidden).sort(function (p, q) { return p - q; });
     if (pieces.length) d.h = pieces.map(function (p) { return [p.owner, encodePolys(p.shape.polys)]; });
     var ls = [];
     countries.forEach(function (c, i) { if (c.alive && c.lines) ls.push([i, c.lines]); });
@@ -5454,6 +5458,7 @@
       });
     }
     sortCities();
+    townHidden = new Set(Array.isArray(d.t) ? d.t.slice(0, MAX_ADDED_CITIES).filter(function (i) { return isInt(i) && i >= 0 && i < 1000000; }) : []);
     var list = [], left = MAX_PIECE_POINTS;
     if (Array.isArray(d.h)) d.h.slice(0, MAX_PIECES).forEach(function (row) {
       if (!Array.isArray(row)) return;
@@ -6712,6 +6717,53 @@
     });
     if (subj.length) { groupsDirty = true; freshGroups(); }
     demoteCaptured(caps, ops);
+    var hide = new Set(townHidden), SIZES = { "great city": 1, "large city": 2, city: 3, town: 4, "small town": 5 };
+    var sizeOf = function (v) { return SIZES[plainName(v)] || 0; };
+    var vecOf = function (lon, lat) { return isFinite(lon) && isFinite(lat) && Math.abs(lat) <= 90 ? toVec(wrap180(lon), lat) : null; };
+    var placeOf = function (k) {
+      var n = plainName(k && k.city), at = k ? vecOf(k.lon, k.lat) : null;
+      if (!n) return null;
+      var km = function (x) { return at ? Math.acos(Math.max(-1, Math.min(1, x.x * at[0] + x.y * at[1] + x.z * at[2]))) * R_KM : 0; };
+      var city = null, town = -1, best = RENAME_KM;
+      cities.forEach(function (x) { if (plainName(x.name) === n && km(x) <= best) { best = km(x); city = x; } });
+      if (city) return { city: city };
+      if (at && towns) towns.forEach(function (t, i) { if (!hide.has(i) && plainName(t.name) === n && km(t) <= best) { best = km(t); town = i; } });
+      return town >= 0 ? { town: town } : null;
+    };
+    var fromTown = function (i, tier, lon, lat) {
+      var t = towns[i], id = "u" + (++citySeq);
+      var v = { name: t.name, lon: lon === undefined ? t.lam / D2R : lon, lat: lat === undefined ? t.phi / D2R : lat, tier: tier || 5, cap: 0 };
+      setCityState(id, v);
+      ops.push({ t: "city", id: id, from: null, to: v });
+      hide.add(i);
+      return cityById(id);
+    };
+    var editCity = function (city, fn) {
+      var was = citySnapshot(city);
+      fn(city); city.w = 0;
+      ops.push({ t: "city", id: city.id, from: was, to: citySnapshot(city) });
+    };
+    (plan.city_removals || []).forEach(function (k) {
+      var f = placeOf(k);
+      if (!f) { missed++; return; }
+      if (!f.city) { hide.add(f.town); return; }
+      var was = citySnapshot(f.city);
+      setCityState(f.city.id, null);
+      ops.push({ t: "city", id: f.city.id, from: was, to: null });
+    });
+    (plan.city_moves || []).forEach(function (k) {
+      var f = placeOf(k), to = k && vecOf(k.new_lon, k.new_lat);
+      if (!f || !to) { missed++; return; }
+      var lon = wrap180(k.new_lon), lat = k.new_lat;
+      if (f.city) editCity(f.city, function (c) { placeCity(c, lon, lat); });
+      else fromTown(f.town, 5, lon, lat);
+    });
+    (plan.city_sizes || []).forEach(function (k) {
+      var f = placeOf(k), tier = sizeOf(k && k.size);
+      if (!f || !tier) { missed++; return; }
+      if (!f.city) { fromTown(f.town, tier); return; }
+      if (f.city.tier !== tier) editCity(f.city, function (c) { c.tier = tier; });
+    });
     var renamed = new Map();
     (plan.city_renames || []).forEach(function (k) {
       var n = plainName(k && k.city), name = String(k && k.new_name || "").trim().slice(0, NAME_MAX);
@@ -6721,12 +6773,13 @@
       var city = null, best = RENAME_KM;
       cities.forEach(function (x) { if (plainName(x.name) === n && km(x) <= best) { best = km(x); city = x; } });
       if (!city && at && towns) {
-        var town = null;
-        towns.forEach(function (t) { if (plainName(t.name) === n && km(t) <= best) { best = km(t); town = t; } });
+        var town = null, ti = -1;
+        towns.forEach(function (t, i) { if (!hide.has(i) && plainName(t.name) === n && km(t) <= best) { best = km(t); town = t; ti = i; } });
         if (town) {
           var id = "u" + (++citySeq), v = { name: name, lon: town.lam / D2R, lat: town.phi / D2R, tier: 5, cap: 0 };
           setCityState(id, v);
           ops.push({ t: "city", id: id, from: null, to: v });
+          hide.add(ti);
           renamed.set(n, cityById(id));
           return;
         }
@@ -6737,6 +6790,16 @@
       city.name = name; city.w = 0;
       ops.push({ t: "city", id: city.id, from: was, to: citySnapshot(city) });
       renamed.set(n, city);
+    });
+    (plan.city_founds || []).forEach(function (k) {
+      var name = String(k && k.city || "").trim().slice(0, NAME_MAX), tier = sizeOf(k && k.size) || 3, f = placeOf(k);
+      if (!name) { missed++; return; }
+      if (f && f.city) { if (f.city.tier !== tier && !f.city.cap) editCity(f.city, function (c) { c.tier = tier; }); return; }
+      if (f) { fromTown(f.town, tier); return; }
+      if (!vecOf(k.lon, k.lat)) { missed++; return; }
+      var id = "u" + (++citySeq), v = { name: name, lon: wrap180(k.lon), lat: k.lat, tier: tier, cap: 0 };
+      setCityState(id, v);
+      ops.push({ t: "city", id: id, from: null, to: v });
     });
     (plan.capitals || []).forEach(function (k) {
       var c = findNow(k && k.country), name = String(k && k.city || "").trim().slice(0, 60);
@@ -6763,6 +6826,7 @@
       setCityState(id, v);
       ops.push({ t: "city", id: id, from: null, to: v });
     });
+    if (hide.size !== townHidden.size) { ops.push({ t: "towns", from: Array.from(townHidden), to: Array.from(hide) }); townHidden = hide; }
     sortCities();
     made.forEach(function (op) { var capOp = chooseCapital(op.c); if (capOp) ops.push(capOp); });
     if (!ops.length) return null;
@@ -6840,6 +6904,12 @@
       lines.push("A new " + (c.cap ? "capital" : isTown(c) ? "town" : "city") + ", " + c.name + ", in " + (o === null ? "the sea" : nowName(o)) + ".");
       addPlace(c.name, c.lon, c.lat, 0);
     });
+    if (townHidden.size) {
+      var kept = new Set(cities.filter(function (c) { return c.id.charAt(0) === "u"; }).map(function (c) { return plainName(c.name); }));
+      var gone = towns ? Array.from(townHidden).filter(function (i) { return towns[i] && !kept.has(plainName(towns[i].name)); }).map(function (i) { return towns[i].name; }) : [];
+      if (gone.length) lines.push("Small towns that are gone: " + listOf(gone, 40) + ".");
+      else if (!towns) lines.push(townHidden.size + " small towns are gone or changed.");
+    }
     if (!lines.length) return "";
     var caps = [];
     capitalsBy().forEach(function (list, o) {
@@ -7417,7 +7487,7 @@
       if (msg) { showAsked(""); showAsk(true); }
     };
     var post = callHistorian, ticket = "";
-    var KEYS = ["new_countries", "renames", "subjects", "transfers", "city_renames", "capitals"];
+    var KEYS = ["new_countries", "renames", "subjects", "transfers", "city_removals", "city_moves", "city_sizes", "city_renames", "city_founds", "capitals"];
     var outline = null, names = {}, plans = [], failed = [], total = 0, left = 0, before = null, step = null, last = null;
     var merged = function () {
       var m = { title: outline.title, year: outline.year };

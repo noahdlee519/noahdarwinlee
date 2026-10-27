@@ -455,6 +455,20 @@ const mongolianName = (n) => n.replace(/([OoUu])'/g, (m, v) => ({ O: "Ö", o: "�
 const fromGB = (iso, level, rename) => () => readJSON(`geoBoundaries-${iso}-ADM${level}_simplified.geojson`).features
   .map((f) => ({ f, n: f.geometry && rename(String(f.properties.shapeName || "").replace(/\s+/g, " ").replace(/(\S)\(/g, "$1 (").trim()) }))
   .filter((u) => u.n).map(({ f, n }) => ({ n, mp: union(ints(f.geometry)) }));
+function colombiaUnits() {
+  const table = JSON.parse(readFileSync(resolve(here, "colombia-subregions.json"), "utf8"));
+  return readJSON("geoBoundaries-COL-ADM2_simplified.geojson").features.filter((f) => f.geometry).map((f) => {
+    const code = table.units[f.properties.shapeID];
+    if (!code || !table.names[code]) throw new Error("no subregion for " + f.properties.shapeName);
+    return { n: code + " " + table.names[code], mp: union(ints(f.geometry)) };
+  });
+}
+const oneDepartment = (kids) => {
+  const by = new Map();
+  for (const k of kids) by.set(k.n.slice(0, 2), (by.get(k.n.slice(0, 2)) || 0) + area(k.mp));
+  const d = top(by);
+  return kids.filter((k) => k.n.slice(0, 2) === d).map((k) => ({ ...k, n: k.n.slice(5) }));
+};
 const US_TYPES = new Set(["County", "Parish", "Borough", "Census Area", "City and Borough", "Municipality", "City"]);
 const NAMES = {
   CAN: {
@@ -726,6 +740,36 @@ const SPLIT = [
     url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/CZE/ADM2",
     load: fromGB("CZE", 2, (n) => NAMES.CZE[n] || n),
   },
+  {
+    c: "COL", source: "Subregions and provinces of the departments (2012), Esri Colombia from DANE and SIGOT-IGAC (ags.esri.co, DatosAbiertos/SUBREGIONES_PROVINCIAS_2012), made from DANE's municipalities (2020, via geoBoundaries) as tools/colombia-subregions.json groups them", license: "CC BY 4.0 (municipal boundaries); Colombian public open data, with attribution (subregions)",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/COL/ADM2",
+    load: colombiaUnits, keep: oneDepartment,
+  },
+  {
+    c: "VEN", source: "Municipalities (2015), Efraín Porto Tapiquén, Geografía, SIG y Estudios Ambientales (via geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/VEN/ADM2",
+    load: fromGB("VEN", 2, (n) => n),
+  },
+  {
+    c: "CHL", source: "Provinces (2017), © OpenStreetMap contributors (via Wambacher and geoBoundaries)", license: "ODbL 1.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/CHL/ADM2",
+    load: fromGB("CHL", 2, (n) => n.replace(/^Provincia (de la |del |de )/, "").replace(/ Province$/, "")),
+  },
+  {
+    c: "ECU", source: "Cantons (2019), INEC, Instituto Nacional de Estadística y Censos, and OCHA ROLAC (via geoBoundaries)", license: "CC BY 3.0 IGO",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/ECU/ADM2",
+    load: fromGB("ECU", 2, (n) => n),
+  },
+  {
+    c: "PRY", source: "Districts (2012), Dirección General de Estadística, Encuestas y Censos (via geoBoundaries)", license: "CC BY 4.0",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/PRY/ADM2",
+    load: fromGB("PRY", 2, (n) => n.replace(/ (De|Del|La|Las|Los|Y|E) /g, (m) => m.toLowerCase())),
+  },
+  {
+    c: "SUR", source: "Resorts (ressorten, 2021), Wikimedia Commons (via geoBoundaries)", license: "Public domain",
+    url: "https://github.com/wmgeolab/geoBoundaries/tree/main/releaseData/gbOpen/SUR/ADM2",
+    load: fromGB("SUR", 2, (n) => n),
+  },
 ];
 
 const t0 = Date.now();
@@ -733,7 +777,8 @@ for (const p of parents) if (SPLIT.some((s) => s.c === p.c)) { p.mp = union(ints
 const units = parents.map((p) => [{ n: p.n, polys: ints({ type: "MultiPolygon", coordinates: p.geo }) }]);
 const split = [], counts = {};
 for (const s of SPLIT) {
-  for (const [i, kids] of assign(s.c, s.load(), s.share)) {
+  for (const [i, all] of assign(s.c, s.load(), s.share)) {
+    const kids = s.keep ? s.keep(all) : all;
     if (s.min && area(parents[i].mp) < s.min) continue;
     const done = kids.length > 1 ? carve(parents[i], kids) : [];
     if (done.length < 2) continue;

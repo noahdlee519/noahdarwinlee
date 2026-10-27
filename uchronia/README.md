@@ -262,8 +262,8 @@ of `/greatercircle/`.
   giving way to the names already on the map. They come from GeoNames
   (through the all-the-cities package), in their Latin-script names, less
   any within a few kilometres of a city the map already has; they are
-  scenery and cannot be picked or edited, though the historian can rename
-  one (see below). `tools/build-towns.mjs` builds the
+  scenery and cannot be picked or edited, though the historian can rename,
+  move, resize, or remove one (see below). `tools/build-towns.mjs` builds the
   file.
 - **Lakes.** Some 3,200 lakes from Natural Earth's detailed lakes (with its
   extra European and North American sets), from about 6 km² up, drawn as
@@ -338,7 +338,8 @@ of `/greatercircle/`.
     (`d`, each dispute with its claimants);
   - the owners of provinces that changed hands whole (`o`), and of the
     second-level units of those that were split (`u`);
-  - cities deleted, changed, or added;
+  - cities deleted, changed, or added, and small towns the historian has
+    taken away (`t`, their places in `data/towns.json`);
   - drawn land (`h`): each drawing's owner and outline, in ten-thousandths of
     a degree, each ring stored as differences from the point before.
 
@@ -402,8 +403,8 @@ of `/greatercircle/`.
 - **data/provinces-detail.json**: the same arcs kept at four tenths of their
   points (3.8 MB, about 1.3 MB compressed), for the closest zooms. It holds
   only the arcs; the shapes come from `provinces.json`.
-- **data/units.json**: the same provinces with 41 countries cut into
-  second-level units, 18,374 regions in all, in one topology so that
+- **data/units.json**: the same provinces with 47 countries cut into
+  second-level units, 19,307 regions in all, in one topology so that
   every shared edge is one arc:
   - the United States (3,142 counties; DC stays whole), China (352
     prefectures; the four municipalities stay whole), Germany (398 districts;
@@ -432,6 +433,18 @@ of `/greatercircle/`.
     provinces; Nairobi stays whole) and Somaliland (5 regions, those of
     Somalia within its border); a province that is a single unit, such
     as a capital district, stays whole;
+  - Venezuela (332 municipalities), Paraguay (244 districts), Ecuador (224
+    cantons), Colombia (130 subregions and provinces), Suriname (59
+    resorts) and Chile (56 provinces). Colombia's 1,121 municipalities are
+    too many to be useful, so they are grouped into the subregions and
+    provinces of their departments (Antioquia's Urabá, Boyacá's Sugamuxi);
+    `tools/colombia-subregions.json` gives each municipality its subregion,
+    found by where most of it lies on Esri Colombia's subregion map, and a
+    municipality that the subregion map puts in another department is
+    left to its neighbours. The nine departments with no subregions, and
+    Bogotá and San Andrés, stay whole. Uruguay and Guyana are left out:
+    Uruguay's municipalities do not cover the whole country, and Guyana's
+    neighbourhood councils come with cut-off names;
   - Egypt is left out: its second level mixes city districts, unnamed desert
     remnants, and misplaced shapes;
   - China's prefectures are regrouped from 1999 county boundaries by name and
@@ -445,10 +458,10 @@ of `/greatercircle/`.
     neighbouring borders cross, and the simplification is guarded against
     reversed lobes, stray holes, and self-overlap;
   - it is loaded only when finer regions are switched on, or when a map needs
-    them (5.8 MB, about 1.7 MB compressed);
+    them (6.0 MB, about 1.8 MB compressed);
   - `data/units-detail.json` holds the same arcs at six tenths of their
-    points, on a grid of 400,000 steps, for the closest zooms (10.4 MB, about
-    3.3 MB compressed), fetched only there;
+    points, on a grid of 400,000 steps, for the closest zooms (10.7 MB, about
+    3.4 MB compressed), fetched only there;
   - built by `tools/build-units.mjs`, which needs clipper-lib (integer
     polygon clipping), @vant/area-data (current Chinese division codes),
     pinyin-pro (romanised Chinese names) and @br-geo-kit/ibge (IBGE's
@@ -599,7 +612,8 @@ of `/greatercircle/`.
     names, or today, and sends back edits to our world's map in a fixed JSON
     shape (the year, new countries with the ruler of each colony, renames,
     countries made or freed as subjects, regions changing hands, whole
-    countries, cities and towns renamed, capitals with their coordinates).
+    countries, cities and towns removed, moved, resized, renamed, or founded,
+    capitals with their coordinates).
     A map of a past year starts
     from our world's map of that year, with its empires and colonies, and
     colonies are subjects of their rulers. The redraw replaces the map rather than building on it, as one
@@ -652,6 +666,18 @@ of `/greatercircle/`.
     be edited like any other. The small towns start loading as soon as the
     historian is asked, so they are there when its edits come back. A
     capital can be given by a city's old name or its new one.
+  - Both can also remove, move, resize, and found cities and towns of any
+    size: a city this history never built (Saint Petersburg before 1703), a
+    capital raised on another site, a city grown great or shrunk to a town,
+    a colonial port that never was. Each names the place as the map has it
+    now, with its longitude and latitude, and is matched the same way as a
+    rename. A size is one of *great city*, *large city*, *city*, *town*, or
+    *small town* (the map's tiers 1 to 5). A small town that is moved or
+    resized becomes a place of the map's own and its ring in the small towns
+    goes, and one that is removed is taken out of the small towns; the list
+    of changes sent with later requests names the small towns that are
+    gone. Founding a place that is already there within 60 km resizes it
+    instead.
   - **Saved** lists every history written in this browser (the last 30),
     each with its map, its turning point, and its questions; opening one
     brings back the map it was written for, as one step that undo reverses,
@@ -691,13 +717,15 @@ of `/greatercircle/`.
     of every request, so it is cached and later requests pay a tenth for it. The page matches names
     without regard to case or accents and leaves out any it cannot find.
   - In Europe (all but Latvia and Slovenia, whose regions are already
-    municipalities, and Russia) and in the United States, Canada, and Mexico
-    the catalogue also lists, in square brackets after a region and
+    municipalities, and Russia), in the United States, Canada, and Mexico,
+    and in South America (all but Uruguay and Guyana) the catalogue also
+    lists, in square brackets after a region and
     separated by " | ", its smaller parts: the districts, counties, and
     municipalities of Germany, Austria, Poland, Czechia, Belarus, Ukraine,
-    the United States, Canada, and Mexico from the finer regions, and the
-    provinces inside the regions of Italy, Malta, North Macedonia, and
-    Kosovo (7,488 parts in all). Elsewhere in Europe the regions are already
+    the United States, Canada, and Mexico, of Brazil, Argentina, Peru,
+    Bolivia, Colombia, Venezuela, Chile, Ecuador, Paraguay, and Suriname
+    from the finer regions, and the provinces inside the regions of Italy,
+    Malta, North Macedonia, and Kosovo (9,873 parts in all). Elsewhere in Europe the regions are already
     the smallest the map has. The function takes the brackets out before it
     sends the catalogue, so the parts cost nothing until they are wanted: in
     a conversation the historian has a second tool, `region_parts`, that
@@ -706,8 +734,9 @@ of `/greatercircle/`.
     mapmakers for Western and Eastern Europe always get their parts, which
     cost little (about 3,000 and 5,300 tokens), and are told to name parts
     only where a border cuts through a region. North America's parts (about
-    32,000 tokens of counties and municipalities) go to its mapmaker only
-    when the outline's `detail` is true, which the historian sets only when
+    32,000 tokens of counties and municipalities) and South America's
+    (about 11,000 tokens of departments, municipalities, and provinces) go to their mapmakers only when the outline's
+    `detail` is true, which the historian sets only when
     the turning point explicitly asks for borders by county, municipality,
     or district; other parts of the world get regions alone. A province is found at once; a district needs the finer
     regions. If *Finer regions* (Tier 2) are switched off in the View menu,
@@ -928,6 +957,13 @@ in the repo. They covered:
     and USAID (CC BY 4.0); Ukraine and Czechia from Wikimedia Commons (public
     domain);
     Poland and Somaliland © OpenStreetMap contributors (ODbL 1.0);
+  - Colombia's municipalities from DANE (CC BY 4.0), grouped by the
+    subregions and provinces of Esri Colombia's open data (from DANE and
+    SIGOT-IGAC, 2012, used with attribution); Venezuela from Efraín Porto
+    Tapiquén (ODbL 1.0); Chile © OpenStreetMap contributors (ODbL 1.0);
+    Ecuador from INEC and OCHA ROLAC (CC BY 3.0 IGO); Paraguay from the
+    Dirección General de Estadística, Encuestas y Censos (CC BY 4.0);
+    Suriname from Wikimedia Commons (public domain);
   - Pakistan, and all of them gathered, from geoBoundaries (Runfola et al.,
     PLoS ONE 15(4): e0231866, 2020).
 
