@@ -975,7 +975,8 @@ const SMALL = [
 ];
 const SMALL_KEEP_KM2 = 3000;
 const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
-const neUnits = JSON.parse(readFileSync(nePath, "utf8")).features.filter((f) => SMALL.some((s) => (!s.shape.c || s.shape.c === f.properties.adm0_a3) && (!s.shape.n || s.shape.n.includes(f.properties.name))));
+const neAll = JSON.parse(readFileSync(nePath, "utf8")).features;
+const neUnits = neAll.filter((f) => SMALL.some((s) => (!s.shape.c || s.shape.c === f.properties.adm0_a3) && (!s.shape.n || s.shape.n.includes(f.properties.name))));
 const smallShape = (sh) => {
   const feats = neUnits.filter((f) => (!sh.c || f.properties.adm0_a3 === sh.c) && (!sh.n || sh.n.includes(f.properties.name)));
   if (!feats.length || (sh.n && feats.length !== sh.n.length)) throw new Error("SMALL: Natural Earth units missing for " + JSON.stringify(sh));
@@ -1568,6 +1569,11 @@ const csTopo = JSON.parse(readFileSync(cshapesPath, "utf8"));
 const csObj = Object.values(csTopo.objects)[0];
 const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry }));
 const CLIO_TWIN = { "First Hellenic Republic": "Greece" };
+const CS_REDRAW = [
+  { a: "265", b: "260", from: "1945-05-08", to: "1990-10-02", country: "DEU", reachKm: 25,
+    aUnits: ["Mecklenburg-Vorpommern", "Brandenburg", "Berlin", "Sachsen-Anhalt", "Thüringen", "Sachsen"],
+    bUnits: ["Schleswig-Holstein", "Hamburg", "Niedersachsen", "Bremen", "Nordrhein-Westfalen", "Hessen", "Rheinland-Pfalz", "Saarland", "Baden-Württemberg", "Bayern"] }
+];
 const CS_BACK = [
   { gw: "510", until: "1890-12-31", names: [["1886-01-01", "German East Africa", 1, "German Empire"]] },
   { gw: "625", until: "1899-01-18", names: [["1886-01-01", "Mahdist State", 0, ""], ["1898-09-02", "Anglo-Egyptian Sudan", 1, "United Kingdom"]] },
@@ -1623,7 +1629,29 @@ const csWithExtras = (rows) => {
   return list;
 };
 const csParts = [];
-for (const r of csWithExtras(csRaw)) {
+const csRedraw = (rows) => {
+  const bufferMod = require("@turf/buffer"), turfBuffer = bufferMod.default || bufferMod.buffer || bufferMod;
+  for (const rd of CS_REDRAW) {
+    const pick = (names) => {
+      const feats = neAll.filter((f) => f.properties.adm0_a3 === rd.country && names.includes(f.properties.name));
+      if (feats.length !== names.length) throw new Error("CS_REDRAW: Natural Earth units missing for " + names.join(", "));
+      return clip.union(...feats.map((f) => polysOf(f.geometry)));
+    };
+    const inSpan = (r) => r.p.end >= rd.from && r.p.start <= rd.to;
+    const a = rows.filter((r) => String(r.p.gwcode) === rd.a && inSpan(r)), b = rows.filter((r) => String(r.p.gwcode) === rd.b && inSpan(r));
+    if (!a.length || !b.length) throw new Error("CS_REDRAW: no spans for " + rd.a + " and " + rd.b);
+    const whole = clip.union(polysOf(a[0].geometry), polysOf(b[0].geometry));
+    const land = pick(rd.aUnits), other = pick(rd.bUnits);
+    const reach = turfBuffer({ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: land } }, rd.reachKm, { units: "kilometers", steps: 6 }).geometry;
+    const side = clip.union(land, clip.difference(polysOf(reach), other));
+    const aPolys = rewind(clip.intersection(whole, side)).filter((q) => polyKm2(q) >= 1), bPolys = rewind(clip.difference(whole, side)).filter((q) => polyKm2(q) >= 1);
+    console.log("CS_REDRAW " + rd.a + " and " + rd.b + ": " + Math.round(km2Of(rewind(polysOf(a[0].geometry)))) + " and " + Math.round(km2Of(rewind(polysOf(b[0].geometry)))) + " km² become " + Math.round(km2Of(aPolys)) + " and " + Math.round(km2Of(bPolys)));
+    a.forEach((r) => { r.geometry = { type: "MultiPolygon", coordinates: aPolys }; });
+    b.forEach((r) => { r.geometry = { type: "MultiPolygon", coordinates: bPolys }; });
+  }
+  return rows;
+};
+for (const r of csRedraw(csWithExtras(csRaw))) {
   const p = r.p, start = dayOf(p.start), end = p.end >= CS_TO ? -1 : dayOf(p.end);
   const cuts = (CS_NAMES[p.country_name] || []).map(([d]) => dayOf(d)).filter((d) => d > start && (end < 0 || d <= end));
   const bounds = [start, ...cuts];
