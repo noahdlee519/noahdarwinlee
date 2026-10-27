@@ -462,6 +462,7 @@ body.is-folded {
 
   .materials-page:not(.is-folded) .site-foot {
     padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
@@ -820,6 +821,7 @@ a[href="/cv/"]:active {
 @media (max-width: 900px) {
   .site-foot {
     padding-bottom: 0;
+    text-align: center;
   }
 }
 

@@ -540,6 +540,7 @@
     if (!settings.groups.length) settings.groups = groupIds.slice();
     if (LENGTHS.indexOf(settings.length) === -1) settings.length = 20;
     document.dispatchEvent(new CustomEvent("drill:deck", { detail: id }));
+    loadPics();
     scrollTop();
     menu();
   }
@@ -788,6 +789,162 @@
     );
   }
 
+  /* ---------- portraits ---------- */
+
+  // A picture of each figure: the lead image of their Wikipedia article,
+  // looked up a deck at a time when the deck opens (fifty to a request) and
+  // kept in the browser for a week. The images are Wikimedia's own thumbnails,
+  // each linked to its file page there for its author and licence.
+  var WIKI_TITLE = {
+    "venturi-scott-brown": "Robert Venturi",
+    stirling: "James Stirling (architect)",
+    rudolph: "Paul Rudolph (architect)",
+    "lacaton-vassal": "Lacaton & Vassal",
+    "margaret-knight": "Margaret E. Knight",
+    seneca: "Seneca the Younger",
+    zhuangzi: "Zhuang Zhou",
+    xunzi: "Xunzi (philosopher)",
+    buddha: "The Buddha",
+    anselm: "Anselm of Canterbury",
+    avicenna: "Avicenna",
+    averroes: "Averroes",
+    ocasey: "Seán O'Casey",
+    "king-john": "John, King of England",
+    "jonathan-edwards": "Jonathan Edwards (theologian)",
+    "francis-bacon": "Francis Bacon (artist)",
+    adams: "John Adams (composer)",
+    "han-feizi": "Han Fei",
+    dominic: "Saint Dominic",
+  };
+  // Where the article's own lead image is not a picture of the person
+  // (a signature, a seal, a page of text), or it has none, a chosen file.
+  var WIKI_FILE = {
+    sinan: "Mimar Sinan büstü, ODTÜ.jpg",
+    lahauri: "Miniature painting of Ustad Ahmad Mimar Lahori.jpg",
+    terragni: "Giuseppe Terragni.jpg",
+    barragan: "Luis Barragán Morfín 234.jpg",
+    "aldo-rossi": "AldoRossi.jpg",
+    "herzog-de-meuron": "AllianzArenaSunset.jpg",
+    "lacaton-vassal": "L'école d'architecture (Nantes) (9304278276).jpg",
+    "francis-bacon": "Bacon by Gray 257.jpg",
+    "agnes-martin": "Agnes-Martin.jpg",
+    "barbara-kruger": "Barbara Kruger.jpg",
+    "su-song": "蘇頌全身.jpg",
+    "al-jazari": "Ismail al jazari.jpg",
+    "josephine-cochrane": "Josephine Garis Cochrane.png",
+    takemitsu: "Toru Takemitsu Shinchosha 1961-7.jpg",
+    laozi: "Zhang Lu-Laozi Riding an Ox (cropped).jpg",
+    anselm: "Anselm of Canterbury.jpg",
+    fugard: "Athol Fugard, 1960 (cropped).jpg",
+    larkin: "Philip Larkin by Humphrey Ocean.jpg",
+    "thomas-merton": "Merton Trappist.gif",
+  };
+  // Lead images that show something else, with nothing better to hand.
+  var WIKI_NONE = {
+    rudolph: 1,
+    smithson: 1,
+    "zhang-heng": 1,
+    newcomen: 1,
+    "margaret-knight": 1,
+    ades: 1,
+    "sextus-empiricus": 1,
+    "harun-al-rashid": 1,
+    "baal-shem-tov": 1,
+  };
+  var PIC_KEY = "ndl-drill-portraits",
+    PIC_WEEK = 7 * 864e5,
+    pics = load(PIC_KEY, {}),
+    picsAsked = {};
+
+  function picOf(item) {
+    if (WIKI_NONE[item.id]) return null;
+    var file = WIKI_FILE[item.id];
+    if (file) return { src: "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(file) + "?width=330", file: file };
+    var p = pics[deckId + ":" + item.id];
+    return p && p.s ? { src: p.s, file: p.f } : null;
+  }
+
+  function picHTML(item) {
+    var p = picOf(item);
+    if (!p) return '<span class="pf-pic" data-pic="' + esc(item.id) + '"></span>';
+    var page = p.file ? "https://en.wikipedia.org/wiki/File:" + encodeURIComponent(p.file.replace(/ /g, "_")) : "https://en.wikipedia.org/wiki/" + encodeURIComponent((WIKI_TITLE[item.id] || item.name).replace(/ /g, "_"));
+    return (
+      '<span class="pf-pic is-set" data-pic="' + esc(item.id) + '"><a href="' + esc(page) +
+      '" target="_blank" rel="noopener" title="Picture from Wikipedia"><img src="' + esc(p.src) +
+      '" alt="' + esc(item.name) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer" /></a></span>'
+    );
+  }
+
+  function fillPics() {
+    Array.prototype.forEach.call(root.querySelectorAll(".pf-pic:not(.is-set)"), function (el) {
+      var item = null;
+      for (var i = 0; i < ALL.length; i++) if (ALL[i].id === el.getAttribute("data-pic")) { item = ALL[i]; break; }
+      if (item && picOf(item)) el.outerHTML = picHTML(item);
+    });
+  }
+
+  root.addEventListener(
+    "error",
+    function (e) {
+      var slot = e.target && e.target.tagName === "IMG" && e.target.closest(".pf-pic");
+      if (slot) slot.parentNode.removeChild(slot);
+    },
+    true
+  );
+
+  function loadPics() {
+    if (!window.fetch) return;
+    var now = Date.now();
+    var want = ALL.filter(function (it) {
+      if (WIKI_NONE[it.id] || WIKI_FILE[it.id] || picsAsked[deckId + ":" + it.id]) return false;
+      var p = pics[deckId + ":" + it.id];
+      return !p || !(now - p.t < PIC_WEEK);
+    });
+    want.forEach(function (it) {
+      picsAsked[deckId + ":" + it.id] = 1;
+    });
+    for (var i = 0; i < want.length; i += 50) askWiki(deckId, want.slice(i, i + 50));
+  }
+
+  // Keyed by deck as well as id: a few ids name different people in
+  // different decks (Shaw, Lessing, Gluck, Richter).
+  function askWiki(deckKey, items) {
+    var titles = items.map(function (it) {
+      return WIKI_TITLE[it.id] || it.name;
+    });
+    fetch(
+      "https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&redirects=1" +
+        "&prop=pageimages&piprop=thumbnail%7Cname&pithumbsize=330&pilimit=50&titles=" + encodeURIComponent(titles.join("|"))
+    )
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        var q = (j && j.query) || {}, norm = {}, moved = {}, pages = {}, now = Date.now();
+        (q.normalized || []).forEach(function (n) {
+          norm[n.from] = n.to;
+        });
+        (q.redirects || []).forEach(function (n) {
+          moved[n.from] = n.to;
+        });
+        (q.pages || []).forEach(function (p) {
+          pages[p.title] = p;
+        });
+        items.forEach(function (it, i) {
+          var t = norm[titles[i]] || titles[i];
+          var p = pages[moved[t] || t];
+          pics[deckKey + ":" + it.id] = { t: now, s: p && p.thumbnail ? p.thumbnail.source : "", f: (p && p.pageimage) || "" };
+        });
+        store(PIC_KEY, pics);
+        if (deckKey === deckId) fillPics();
+      })
+      .catch(function () {
+        items.forEach(function (it) {
+          delete picsAsked[deckKey + ":" + it.id];
+        });
+      });
+  }
+
   function metaLine(item) {
     return [item.dates, item.place, item.tag]
       .filter(Boolean)
@@ -811,6 +968,7 @@
   function profileHTML(item, focus) {
     return (
       '<div class="pf">' +
+      picHTML(item) +
       headHTML(item) +
       (item.blurb ? '<p class="pf-blurb">' + esc(item.blurb) + "</p>" : "") +
       deck.sections
@@ -838,6 +996,7 @@
     }
     return (
       '<div class="pf">' +
+      picHTML(item) +
       headHTML(item) +
       focusRow +
       (item.blurb ? '<p class="pf-blurb">' + esc(item.blurb) + "</p>" : "") +

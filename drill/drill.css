@@ -454,6 +454,42 @@ cite {
 
 /* ---------- profiles ---------- */
 
+.pf::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.pf-pic {
+  float: right;
+  width: 108px;
+  margin: 0.15rem 0 0.75rem 1.25rem;
+}
+
+.pf-pic:empty {
+  display: none;
+}
+
+.pf-pic a {
+  display: block;
+}
+
+.pf-pic img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: 50% 22%;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+@media (max-width: 600px) {
+  .pf-pic {
+    width: 84px;
+    margin-left: 0.9rem;
+  }
+}
+
 .pf-head {
   display: flex;
   flex-wrap: wrap;
