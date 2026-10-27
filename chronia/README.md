@@ -7,6 +7,7 @@ Until 1400 the borders come from dated snapshot maps. From 1400 to 1885 they cha
 CHRONIA is the real-history companion to UCHRONIA, which redraws history. The two share the same look, the same base geography, and the same rendering approach. CHRONIA has its own page, data, and code, and it reads some of UCHRONIA's files in place (see [What it borrows from UCHRONIA](#what-it-borrows-from-uchronia)).
 
 - **Live:** https://noahdarwinlee.com/chronia/, linked from UCHRONIA's about note
+- **Adding to the maps:** read [MAPMAKING.md](MAPMAKING.md), the rules for sources, historiography, and method, and record each change in [LEDGER.md](LEDGER.md).
 - **First built:** 25 October 2026.
 
 ## Using it
