@@ -366,6 +366,7 @@
   function frame() {
     renderQueued = false;
     try { draw(); } catch (e) { console.error(e); }
+    if (!moving && relief) { try { maybeRelief(); } catch (e) { console.warn("terrain", e); rd.off = true; } }
   }
   function nudge() {
     moving = true;
@@ -634,7 +635,7 @@
       reliefTried = true;
       relief = window.UchroniaSat ? window.UchroniaSat(reliefCanvas) : null;
       if (relief) {
-        relief.onRestore = function () { reliefKey = ""; scheduleRender(); };
+        relief.onRestore = function () { reliefKey = ""; rd.key = ""; rd.rect = null; scheduleRender(); };
         relief.load([{ src: UC + "data/relief-4096.webp", size: 4096 }], function () { reliefKey = ""; scheduleRender(); });
       }
     }
@@ -643,13 +644,107 @@
   function renderRelief() {
     var res = moving ? RELIEF_MOVING : RELIEF_RES;
     if (res !== reliefRes) sizeRelief(res);
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
     if (key === reliefKey) return;
     reliefKey = key;
-    var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: false, cx: cx, cy: cy };
+    var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     relief.draw(o);
+  }
+  var rd = { key: "", rect: null, cache: new Map(), gen: 0, put: new Set(), off: false, failed: 0, ok: 0 };
+  var RELIEF_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png", RELIEF_MAX_Z = 11, RELIEF_MAX_TILES = 40;
+  function mercY(lat) { var p = lat * D2R; return (1 - Math.log(Math.tan(Math.PI / 4 + p / 2)) / Math.PI) / 2; }
+  function reliefWanted() {
+    if (!relief.detailFits()) return null;
+    var S = localScale() * dpr;
+    var latC = Math.max(-75, Math.min(75, view.lat)) * D2R;
+    var z = Math.floor(Math.log(TAU * S * Math.cos(latC) / 256 / 1.15) / Math.LN2);
+    if (z < 5) return null;
+    z = Math.min(RELIEF_MAX_Z, z);
+    var lons = [], lats = [], ref = view.lon;
+    for (var i = 0; i <= 8; i++) for (var j = 0; j <= 6; j++) {
+      var ll = lonLatAt(W * i / 8, H * j / 6);
+      if (!ll) continue;
+      lons.push(ref + wrap180(ll[0] - ref)); lats.push(ll[1]);
+    }
+    if (lons.length < 6) return null;
+    var lo0 = Math.min.apply(null, lons), lo1 = Math.max.apply(null, lons);
+    var la0 = Math.max(-85, Math.min.apply(null, lats)), la1 = Math.min(85, Math.max.apply(null, lats));
+    if (la0 >= la1) return null;
+    for (; z >= 5; z--) {
+      var n = 1 << z;
+      var x0 = Math.floor((lo0 + 180) / 360 * n), x1 = Math.floor((lo1 + 180) / 360 * n);
+      var y0 = Math.max(0, Math.floor(mercY(la1) * n)), y1 = Math.min(n - 1, Math.floor(mercY(la0) * n));
+      var nx = Math.min(n, x1 - x0 + 1), ny = y1 - y0 + 1;
+      if (nx <= relief.slots && ny <= relief.slots && nx * ny <= RELIEF_MAX_TILES) return { z: z, x0: ((x0 % n) + n) % n, y0: y0, nx: nx, ny: ny };
+    }
+    return null;
+  }
+  function maybeRelief() {
+    if (rd.off || !relief || !layers.relief || !relief.ready()) return;
+    var key = [flat ? 1 : 0, view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), W, H].join();
+    if (key === rd.key) return;
+    rd.key = key;
+    var want = reliefWanted();
+    if (!want || want.z < 6) {
+      if (rd.rect) { rd.rect = null; relief.endDetail(); scheduleRender(); }
+      return;
+    }
+    var r = rd.rect;
+    if (!r || r.z !== want.z || r.x0 !== want.x0 || r.y0 !== want.y0 || r.nx !== want.nx || r.ny !== want.ny) {
+      if (!relief.beginDetail(want)) { rd.off = true; return; }
+      rd.rect = want; rd.gen++; rd.put = new Set();
+    }
+    var n = 1 << want.z, gen = rd.gen, any = false;
+    for (var j = 0; j < want.ny; j++) for (var i = 0; i < want.nx; i++) {
+      var x = (want.x0 + i) % n, y = want.y0 + j, k = want.z + "/" + x + "/" + y;
+      if (rd.put.has(k)) continue;
+      var t = rd.cache.get(k);
+      if (t && t.canvas) { if (relief.putTile(t.canvas, i, j)) { rd.put.add(k); any = true; } continue; }
+      if (!t) reliefTile(want.z, x, y, k, gen);
+    }
+    if (rd.cache.size > 200) { var it = rd.cache.keys(); while (rd.cache.size > 160) { var nk = it.next(); if (nk.done) break; if (!rd.put.has(nk.value)) rd.cache.delete(nk.value); else break; } }
+    if (any) scheduleRender();
+  }
+  function reliefTile(z, x, y, key, gen) {
+    var t = { canvas: null }, img = new Image();
+    rd.cache.set(key, t);
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.onload = function () {
+      try { t.canvas = hillshade(img, z, y); } catch (e) { console.warn("terrain tile", e); rd.off = true; return; }
+      rd.ok++;
+      if (rd.gen !== gen || !rd.rect || rd.rect.z !== z) return;
+      var r = rd.rect, n = 1 << z, i = ((x - r.x0) % n + n) % n, j = y - r.y0;
+      if (i < r.nx && j >= 0 && j < r.ny && relief.putTile(t.canvas, i, j)) { rd.put.add(key); scheduleRender(); }
+    };
+    img.onerror = function () { rd.cache.delete(key); rd.failed++; if (!rd.ok && rd.failed > 6) { rd.off = true; relief.endDetail(); rd.rect = null; scheduleRender(); } };
+    img.src = RELIEF_URL.replace("{z}", z).replace("{x}", x).replace("{y}", y);
+  }
+  function hillshade(img, z, y) {
+    var N = 256, c = document.createElement("canvas");
+    c.width = c.height = N;
+    var g = c.getContext("2d", { willReadFrequently: true });
+    g.drawImage(img, 0, 0);
+    var src = g.getImageData(0, 0, N, N), d = src.data, e = new Float32Array(N * N);
+    for (var i = 0; i < N * N; i++) e[i] = d[i * 4] * 256 + d[i * 4 + 1] + d[i * 4 + 2] / 256 - 32768;
+    var lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 0.5) / (1 << z))));
+    var cell = 40075016 * Math.cos(lat) / (N << z), ex = z <= 6 ? 6 : z <= 8 ? 4 : z <= 10 ? 3 : 2.4;
+    var lights = [[-0.7071, 0.7071, 0.6], [0, 1, 0.2], [-1, 0, 0.2]], alt = Math.SQRT1_2;
+    for (var row = 0; row < N; row++) for (var col = 0; col < N; col++) {
+      var k = row * N + col, h = e[k];
+      var l = e[row * N + Math.max(0, col - 1)], r = e[row * N + Math.min(N - 1, col + 1)];
+      var u = e[Math.max(0, row - 1) * N + col], dn = e[Math.min(N - 1, row + 1) * N + col];
+      var gx = (r - l) / (2 * cell) * ex, gy = (u - dn) / (2 * cell) * ex;
+      var nz = 1 / Math.sqrt(1 + gx * gx + gy * gy), nx = -gx * nz, ny = -gy * nz, v = 0;
+      for (var q = 0; q < 3; q++) v += lights[q][2] * ((nx * lights[q][0] + ny * lights[q][1]) * alt + nz * alt - alt);
+      var o = Math.round(128 + 127 * Math.tanh(4.2 * v * (v > 0 ? 1.6 : 1)));
+      d[k * 4] = d[k * 4 + 1] = d[k * 4 + 2] = o;
+      d[k * 4 + 3] = h > 0 ? 255 : 0;
+    }
+    g.putImageData(src, 0, 0);
+    return c;
   }
 
   var graticule = (function () {
