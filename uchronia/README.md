@@ -56,7 +56,11 @@ of `/greatercircle/`.
     fetched and prepared in the background the first time it is needed.
     On a device too slow to keep up while the map moves, it draws one level
     coarser while it moves and the full level again once it settles (it
-    used to stay coarse until the page was reloaded).
+    used to stay coarse until the page was reloaded). When frames come more
+    than 24 ms apart four times running while the map moves, it also draws
+    at half resolution (and no finer region lines) while it moves, for the
+    rest of the visit, and sharp again as soon as it stops; on a sharp
+    (2x) screen that is a quarter of the pixels.
     Shapes so large that they wrap behind the globe and enclose the point
     opposite the view are drawn through d3-geo's clipping instead, so they
     don't flood the whole disc. Line segments along the date line and the
@@ -732,14 +736,18 @@ of `/greatercircle/`.
 - **Select (V)**: click a country to rename or recolour it, make it a
   subject of another, move its name, show or hide its
   regions' lines (*Tier 1*, the lines between its states, provinces, and
-  regions; *Tier 2*, the finer lines inside them; a tier it has none of is
-  greyed out, and hidden tiers stay hidden inside land drawn for it). With
-  *Finer regions* off, *Tier 2* loads the finer regions and draws the counties
-  and districts of that country alone, for display only, until *Finer
-  regions* is switched on or off again; it is offered only for the 40
-  countries that have finer regions. With *Finer regions* on, a country whose
-  *Tier 2* is hidden is painted, named, and counted by its first-level regions
-  again; give it
+  regions; *Tier 2*, the finer lines inside them, such as counties and
+  districts; a tier it has none of is greyed out). The two buttons override
+  the View menu for that country: each shows whether that tier is on there,
+  and a click turns it the other way whatever *Region borders* and *Finer
+  regions* say, loading the finer regions first if they are needed. When a
+  click brings a country back in line with the View menu, it follows the
+  View menu again. Each country keeps this in `lines`: 1 and 2 hide Tier 1
+  and Tier 2, and 4 and 8 show them; the setting is part of the map, saved
+  and shared with it, and one undo step. A country with Tier 2 shown is
+  painted, named, and counted by its finer regions even with *Finer regions*
+  off, and one with Tier 2 hidden by its first-level regions; the tiers
+  also apply inside land drawn for the country. Give it
   land or dissolve it; click a city to rename it, change its size, or delete
   it, and once it is picked, drag it to move it. A country founded on the
   map, by hand or by the historian, has *Delete* in place of *Dissolve*:

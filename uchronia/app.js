@@ -59,13 +59,13 @@
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
   var flat = false;
-  var dpr = 1, W = 0, H = 0, baseR = 0, baseK = 0, cx = 0, cy = 0, freeL = 0, freeR = 0, freeT = 0, freeB = 0, scaleL = 18, scaleB = 0;
+  var dpr = 1, dprFull = 1, W = 0, H = 0, baseR = 0, baseK = 0, cx = 0, cy = 0, freeL = 0, freeR = 0, freeT = 0, freeB = 0, scaleL = 18, scaleB = 0;
   var MIN_ZOOM = 0.6, MAX_ZOOM = 60;
   var FB = { k: 1, xc: 0, yc: 0, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
 
 
   function layout() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = dprFull = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     canvas.style.width = W + "px"; canvas.style.height = H + "px";
@@ -247,8 +247,23 @@
   function scheduleRender() {
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
   }
-  function frame() {
+  // When frames come slowly while the map moves (most often a large, sharp
+  // screen), it is drawn at a lower resolution until it stops, and sharp again then.
+  var lastFrameAt = 0, lagFrames = 0, lowRes = false;
+  function backing(v) {
+    if (dpr === v) return;
+    dpr = v;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+  }
+  function frame(now) {
     renderQueued = false;
+    now = now || performance.now();
+    if (interacting > 0) {
+      var gap = lastFrameAt ? now - lastFrameAt : 0;
+      if (gap > 0 && gap < 1000) { if (gap > 24) { if (++lagFrames >= 4) lowRes = true; } else lagFrames = 0; }
+      lastFrameAt = now;
+    } else lastFrameAt = 0;
+    backing(interacting > 0 && lowRes ? Math.max(0.75, dprFull / 2) : dprFull);
     var t0 = performance.now();
     render();
     if (interacting > 0) noteCost(performance.now() - t0);
@@ -558,7 +573,17 @@
     for (var i = 0; i < us.length; i++) { var o = base.provOwner[unitProv[us[i]]]; if (o >= 0 && FINER.has(base.countries[o].code)) return true; }
     return false;
   }
-  var borderArcs = [], provArcs = [], unitArcs = [], coastArcs = [], borderProvArcs = [], borderUnitArcs = [], allProvArcs = [], allUnitArcs = [], soloArcs = [], fineShown = new Set(), fineUnits = new Uint8Array(0);
+  var borderArcs = [], provArcs = [], unitArcs = [], coastArcs = [], borderProvArcs = [], borderUnitArcs = [], allProvArcs = [], allUnitArcs = [], fineUnits = new Uint8Array(0);
+  // A country's Tier 1 lines (between its regions) and Tier 2 lines (finer
+  // ones: counties and districts, and the parts of grouped regions) follow the
+  // View menu unless the country says otherwise: co.lines holds, per tier, a
+  // bit to hide them (1, 2) or to show them (4, 8) whatever the View menu says.
+  function tierOn(c, t) {
+    var l = c >= 0 && countries[c] ? countries[c].lines || 0 : 0;
+    if (l & t) return false;
+    if (l & (t * 4)) return true;
+    return t === 1 ? ui.regionLines : ui.regionLines && ui.fine;
+  }
   function rebuildGroups() {
     var map = new Map();
     unitsOf = countries.map(function () { return []; });
@@ -599,7 +624,7 @@
   function freshGroups() { if (groupsDirty) rebuildGroups(); }
   var innerKinds = new Uint8Array(0);
   function rebuildArcs() {
-    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; borderProvArcs = []; borderUnitArcs = []; allProvArcs = []; allUnitArcs = []; soloArcs = []; unitCoast = null; bandArcs = null;
+    borderArcs = []; provArcs = []; unitArcs = []; coastArcs = []; borderProvArcs = []; borderUnitArcs = []; allProvArcs = []; allUnitArcs = []; unitCoast = null; bandArcs = null;
     innerKinds = new Uint8Array(countries.length);
     fineUnits = new Uint8Array(countries.length);
     for (var a = 0; a < arcA.length; a++) {
@@ -610,14 +635,10 @@
       var apart = pa !== pb && (ui.fine || provGroup[pa] < 0 || provGroup[pa] !== provGroup[pb]);
       (apart ? allProvArcs : allUnitArcs).push(a);
       if (owner[A] !== owner[b]) { borderArcs.push(a); (apart ? borderProvArcs : borderUnitArcs).push(a); continue; }
-      var co = owner[A] >= 0 ? countries[owner[A]] : null, hide = co && co.lines ? co.lines : 0;
-      var fineOnly = !apart && fineData && pa === pb && !ui.fine;
-      if (co && !fineOnly) innerKinds[owner[A]] |= apart ? 1 : 2;
+      var co = owner[A] >= 0 ? countries[owner[A]] : null;
+      if (co) innerKinds[owner[A]] |= apart ? 1 : 2;
       if (co && fineData && pa === pb) fineUnits[owner[A]] = 1;
-      if (!(hide & (apart ? 1 : 2))) {
-        (apart ? provArcs : unitArcs).push(a);
-        if (!apart && !ui.fine && fineShown.has(owner[A])) soloArcs.push(a);
-      }
+      if (tierOn(owner[A], apart ? 1 : 2)) (apart ? provArcs : unitArcs).push(a);
     }
     arcsDirty = false;
   }
@@ -1437,19 +1458,18 @@
 
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat, bl); }
     drawLakes(S, satellite);
-    var ua = ui.fine && ui.regionLines ? clamp01((S - 700) / 500) : 0, pa = ui.regionLines ? provAlpha(S) : 0;
+    var ua = interacting > 0 && lowRes ? 0 : clamp01((S - 700) / 500), pa = provAlpha(S);
     if (vis) clipOutPieces(vis);
     drawRegionLines(L, unitArcs, provArcs, ua, pa);
-    if (!ui.fine && ui.regionLines && soloArcs.length) drawRegionLines(L, soloArcs, [], clamp01((S - 700) / 500), 0);
     if (vis) ctx.restore();
     if (vis && (ua > 0 || pa > 0)) {
-      var byHide = new Map();
-      vis.forEach(function (p) { var h = p.owner >= 0 && countries[p.owner] ? countries[p.owner].lines || 0 : 0; if (!byHide.has(h)) byHide.set(h, []); byHide.get(h).push(p); });
-      byHide.forEach(function (list, h) {
-        if ((h & 3) === 3) return;
+      var byTier = new Map();
+      vis.forEach(function (p) { var h = (tierOn(p.owner, 1) ? 1 : 0) | (tierOn(p.owner, 2) ? 2 : 0); if (!byTier.has(h)) byTier.set(h, []); byTier.get(h).push(p); });
+      byTier.forEach(function (list, h) {
+        if (!h) return;
         ctx.save();
         ctx.beginPath(); list.forEach(function (p) { traceFeature(ctx, p.shape.f); }); ctx.clip();
-        drawRegionLines(L, h & 2 ? [] : allUnitArcs, h & 1 ? [] : allProvArcs, ua, pa);
+        drawRegionLines(L, h & 2 ? allUnitArcs : [], h & 1 ? allProvArcs : [], ua, pa);
         ctx.restore();
       });
     }
@@ -1936,9 +1956,9 @@
     return ui.country >= 0 && countries[ui.country] && countries[ui.country].alive ? ui.country : null;
   }
   function fineAt(u) {
-    if (!ui.fine) return false;
-    var o = owner[u], co = o >= 0 ? countries[o] : null;
-    return !(co && co.lines & 2);
+    var o = owner[u], l = o >= 0 && countries[o] ? countries[o].lines || 0 : 0;
+    if (l & 2) return false;
+    return ui.fine || (fineData && !!(l & 8));
   }
   function regionUnits(u) {
     if (u < 0) return [];
@@ -2634,8 +2654,7 @@
       if (!p || (!flat && p[2] <= 0.02)) continue;
       var px = p[0], py = p[1];
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
-      ctx.font = cityFont(c);
-      if (!c.w) c.w = ctx.measureText(c.name).width;
+      if (!c.w) { ctx.font = cityFont(c); c.w = ctx.measureText(c.name).width; }
       if (!ui.cityNames && !must && ui.tool !== "city") continue;
       var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = true, mbox = mkBox(px, py, mr + 1.5, mr + 1.5, 0);
       if (!must && !c.cap && collides(placed, mbox)) continue;
@@ -2675,10 +2694,12 @@
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
     ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 4 : 3;
     ctx.strokeStyle = pal["city-halo"];
+    var lastFont = "";
     for (i = shown.length - 1; i >= 0; i--) {
       s = shown[i];
       if (!s.named) continue;
-      ctx.font = cityFont(s.c);
+      var cf = cityFont(s.c);
+      if (cf !== lastFont) { ctx.font = cf; lastFont = cf; }
       ctx.globalAlpha = isTown(s.c) && !pal.antique ? 0.8 : 1;
       ctx.textAlign = s.align;
       ctx.strokeText(s.c.name, s.tx, s.ty);
@@ -4441,7 +4462,8 @@
     if (was === lines) return;
     co.lines = lines;
     arcsDirty = true;
-    var hid = lines & ~was, label = hid ? (hid & 1 ? "Hiding region lines" : "Hiding finer lines") : ((was & ~lines) & 1 ? "Showing region lines" : "Showing finer lines");
+    var t = (was ^ lines) & 5 ? 1 : 2, on = !!(lines & (t * 4)) || (!(lines & t) && (t === 1 ? ui.regionLines : ui.regionLines && ui.fine));
+    var label = (on ? "Showing " : "Hiding ") + (t === 1 ? "region lines" : "finer lines");
     pushStep(label, [{ t: "lines", c: c, from: was, to: lines }]);
     changed();
   }
@@ -4556,7 +4578,8 @@
   var pickVersion = -1, countriesVersion = 0;
   function regionCount(c) {
     var us = unitsOf[c] || [];
-    if (ui.fine && !(countries[c] && countries[c].lines & 2)) return us.length;
+    var l = countries[c] ? countries[c].lines || 0 : 0;
+    if (!(l & 2) && (ui.fine || (fineData && l & 8))) return us.length;
     var s = new Set();
     us.forEach(function (u) { var p = unitProv[u], g = provGroup[p]; s.add(g >= 0 ? -1 - g : p); });
     return s.size;
@@ -4619,17 +4642,19 @@
       var facts = land ? parts.join(" and ") + " | " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " | capital " + capital.name : "") : "No land yet: Give land (B) gives it some";
       $("country-facts").textContent = facts;
       if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts]);
-      var hideLines = countries[c].lines || 0;
+      var own = countries[c].lines || 0;
       if (arcsDirty) { freshGroups(); rebuildArcs(); }
-      var kinds = innerKinds[c] || 0, solo = !ui.fine && !(kinds & 2), none2 = !(kinds & 2) && (!solo || !hasFiner(c) || (fineData && !fineUnits[c]));
-      $("lines-1").setAttribute("aria-pressed", String(!!(kinds & 1) && !(hideLines & 1)));
-      $("lines-2").setAttribute("aria-pressed", String(solo ? fineShown.has(c) && !(hideLines & 2) && !none2 : !!(kinds & 2) && !(hideLines & 2)));
-      $("lines-1").disabled = !(kinds & 1);
-      $("lines-2").disabled = none2;
-      setTip($("lines-1"), kinds & 1 ? "The lines between its states, provinces, and regions" : "It is a single region, with no lines inside it");
-      setTip($("lines-2"), none2 ? "Its regions have no finer lines inside them"
-        : solo ? "Its counties and districts, in this country alone, until Finer regions in the View menu is switched on or off"
-        : "The finer lines inside them: counties and districts, and the parts of grouped regions");
+      var kinds = innerKinds[c] || 0, has1 = !!(kinds & 1), has2 = !!(kinds & 2) || (!fineData && hasFiner(c));
+      var on1 = has1 && tierOn(c, 1), on2 = has2 && tierOn(c, 2);
+      $("lines-1").setAttribute("aria-pressed", String(on1));
+      $("lines-2").setAttribute("aria-pressed", String(on2));
+      $("lines-1").disabled = !has1;
+      $("lines-2").disabled = !has2;
+      var just = " in this country, whatever the View menu says";
+      setTip($("lines-1"), !has1 ? "It is a single region, with no borders inside it"
+        : (on1 ? "Hide" : "Show") + " the borders between its states, provinces, and regions" + (own & 5 ? just : ""));
+      setTip($("lines-2"), !has2 ? "Its regions have no finer divisions inside them"
+        : (on2 ? "Hide" : "Show") + " its finer borders, such as counties and districts" + (own & 10 ? just : ""));
       $("inner").hidden = ui.tool !== "select";
       var rr = rulerOf(c);
       $("subject-row").hidden = ui.tool !== "select" || !land;
@@ -4807,15 +4832,13 @@
     $("lines-" + bit).addEventListener("click", function () {
       var c = currentCountry();
       if (c < 0) return;
-      var lines = countries[c].lines || 0;
-      if (bit !== 2 || ui.fine || (innerKinds[c] & 2)) { setCountryLines(c, lines ^ bit); return; }
-      if (fineShown.has(c) && !(lines & 2)) { fineShown.delete(c); arcsDirty = true; renderPanel(); scheduleRender(); return; }
-      loadFine().then(function (ok) {
-        if (!ok || ui.fine) return;
-        fineShown.add(c);
-        if (lines & 2) setCountryLines(c, lines & ~2);
-        arcsDirty = true; renderPanel(); scheduleRender();
-      });
+      // Turn this tier the other way for this country. Where that matches the
+      // View menu again, the country goes back to following it.
+      var lines = (countries[c].lines || 0) & ~(bit | bit * 4), want = !tierOn(c, bit);
+      var view = bit === 1 ? ui.regionLines : ui.regionLines && ui.fine;
+      if (want !== view) lines |= want ? bit * 4 : bit;
+      if (bit === 2 && want && !fineData && hasFiner(c)) { loadFine().then(function () { setCountryLines(c, lines); renderPanel(); scheduleRender(); }); return; }
+      setCountryLines(c, lines);
     });
   });
   $("paint-with").addEventListener("click", function () { ui.erase = false; ui.dispute = false; setTool("paint"); });
@@ -6091,7 +6114,6 @@
   }
   $("fine").addEventListener("change", function () {
     var on = $("fine").checked;
-    fineShown.clear();
     try { localStorage.setItem(STORE_FINE, on ? "1" : "0"); } catch (e) { }
     if (!on) { ui.fine = false; arcsDirty = true; renderPanel(); scheduleRender(); return; }
     loadFine().then(function (ok) {
@@ -6112,8 +6134,10 @@
     ui.terrain = $("show-terrain").checked;
     ui.lakes = $("show-lakes").checked;
     ui.waterNames = $("show-water-names").checked;
+    if (ui.regionLines !== $("show-region-lines").checked) arcsDirty = true;
     ui.regionLines = $("show-region-lines").checked;
     try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames, ui.regionLines].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
+    renderPanel();
     scheduleRender();
   }
   ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain", "show-lakes", "show-water-names", "show-region-lines"].forEach(function (id) { $(id).addEventListener("change", setNames); });
@@ -6770,7 +6794,7 @@
   function turnFineOn() {
     return loadFine().then(function (ok) {
       if (!ok) return false;
-      ui.fine = true; $("fine").checked = true; fineShown.clear(); arcsDirty = true;
+      ui.fine = true; $("fine").checked = true; arcsDirty = true;
       try { localStorage.setItem(STORE_FINE, "1"); } catch (e) { }
       renderPanel(); scheduleRender();
       return true;
@@ -7544,7 +7568,8 @@
     localScale: localScale,
     fillOf: function (c) { return colorOf(c); },
     shownName: function (c) { return shownName(c); },
-    soloLines: function () { if (arcsDirty) { freshGroups(); rebuildArcs(); } return soloArcs.length; },
+    tierOn: function (c, t) { return tierOn(c, t); },
+    lineArcs: function () { if (arcsDirty) { freshGroups(); rebuildArcs(); } return { prov: provArcs.length, unit: unitArcs.length }; },
     lakesDrawn: function () { return lakesDrawn; },
     timeRender: function () { var t0 = performance.now(); render(); return performance.now() - t0; },
     profile: function () {
