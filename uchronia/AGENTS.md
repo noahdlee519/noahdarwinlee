@@ -22,8 +22,10 @@ them.
   it. Never retype a large file from memory or from truncated output:
   `app.js` is over 6,000 lines and `app.css` nearly 2,000.
 - **Commits.** Short and declarative ("UCHRONIA: Chiemsee no longer in
-  capitals"). Commit when a change is tested. Noah pushes from Cursor with
-  Sync Changes, so say that the work is committed and still needs syncing.
+  capitals"). Commit when a change is tested, then push it to `origin`
+  yourself: Noah no longer syncs from Cursor. If the push is rejected because
+  `origin` has moved on, `git pull --no-rebase`, check the merge, and push
+  again. Never force-push.
 - **Nothing destructive.** No `git checkout`, `reset`, `clean`, `stash`,
   `rebase`, or deleting branches. Don't delete files: move them into
   `_to_delete/` (ignored by git) and say so.
