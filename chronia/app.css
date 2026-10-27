@@ -1245,3 +1245,90 @@ body.ch-page {
     display: none;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  :root.ch:not(.ch-ready) .ch-globe {
+    visibility: hidden;
+  }
+  :root.ch:not(.ch-ready) .ch-top {
+    translate: 0 calc(-100% - 20px);
+  }
+  :root.ch:not(.ch-ready) .ch-time {
+    translate: 0 105%;
+  }
+  :root.ch:not(.ch-ready) .ch-key,
+  :root.ch:not(.ch-ready) .ch-load {
+    opacity: 0;
+  }
+  :root.ch-intro .ch-top {
+    animation: ch-dropin 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
+  }
+  :root.ch-intro .ch-time {
+    animation: ch-pullup 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
+  }
+  :root.ch-intro .ch-key {
+    animation: ch-fade 600ms ease 2300ms both;
+  }
+  :root.ch-intro .ch-ctl {
+    animation: ch-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    animation-delay: calc(2250ms + var(--ch-i, 0) * 90ms);
+  }
+  :root.ch-intro .ch-ctls .ch-ctl:nth-child(2) { --ch-i: 1; }
+  :root.ch-intro .ch-ctls .ch-ctl:nth-child(3) { --ch-i: 2; }
+  :root.ch-intro .ch-ctls .ch-ctl:nth-child(4) { --ch-i: 3; }
+  :root.ch-intro .ch-ctls .ch-ctl:nth-child(5) { --ch-i: 4; }
+  .ch-roll {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    pointer-events: none;
+    background: inherit;
+    will-change: translate;
+    animation: ch-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both;
+  }
+  .ch-roll::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -22px;
+    width: 44px;
+    border-radius: 22px / 10px;
+    background:
+      linear-gradient(90deg, rgba(58, 42, 27, 0.55), rgba(58, 42, 27, 0) 18%, rgba(255, 250, 235, 0.55) 42%, rgba(58, 42, 27, 0) 62%, rgba(58, 42, 27, 0.6)),
+      #e6d5ad;
+    box-shadow: 10px 0 18px -6px rgba(58, 42, 27, 0.45), -2px 0 6px rgba(58, 42, 27, 0.25);
+  }
+}
+
+@keyframes ch-unroll {
+  0% { translate: 0 0; }
+  88% { opacity: 1; }
+  100% { translate: 100% 0; opacity: 0; }
+}
+
+@keyframes ch-dropin {
+  0% { translate: 0 calc(-100% - 20px); }
+  55% { translate: 0 6px; }
+  72% { translate: 0 -3px; }
+  86% { translate: 0 1px; }
+  100% { translate: 0 0; }
+}
+
+@keyframes ch-pullup {
+  0% { translate: 0 105%; }
+  55% { translate: 0 -4%; }
+  72% { translate: 0 2%; }
+  86% { translate: 0 -0.8%; }
+  100% { translate: 0 0; }
+}
+
+@keyframes ch-pop {
+  from { opacity: 0; scale: 0.6; translate: 0 8px; }
+  to { opacity: 1; scale: 1; translate: 0 0; }
+}
+
+@keyframes ch-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

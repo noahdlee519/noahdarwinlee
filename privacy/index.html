@@ -81,7 +81,7 @@
           Google sign-in. Asking it for a history sends what you type, and a description
           of your map, to Anthropic to write the reply; the site keeps none of it, only a
           count of how many requests each account made that day. Opening a state or a city in
-          <a href="/chronia/">Chronia</a> may ask Claude to write a short note about it; that sends
+          <a href="/chronia/">CHRONIA</a> may ask Claude to write a short note about it; that sends
           only what the atlas shows about the subject, never anything about you. Ask, and I will delete
           all of it.
         </p>
@@ -116,7 +116,7 @@
           serves the type of the blog's mail window and of GREATERCIRCLE. One tool also loads drawing libraries from cdnjs, which is run by
           Cloudflare. The satellite views of UCHRONIA and GREATERCIRCLE, once you zoom in, load their sharper imagery from NASA's Global
           Imagery Browse Services, and UCHRONIA's shaded relief comes from the open Terrain Tiles that Amazon Web
-          Services hosts. Chronia’s cards load the opening of a Wikipedia article, and its picture, from Wikipedia and Wikimedia, and Drill looks up each figure’s picture on Wikipedia and loads it from Wikimedia. None of them is asked to identify you, and none of them reports
+          Services hosts. CHRONIA’s cards load the opening of a Wikipedia article, and its picture, from Wikipedia and Wikimedia, and Drill looks up each figure’s picture on Wikipedia and loads it from Wikimedia. None of them is asked to identify you, and none of them reports
           anything back to me. Each handles those requests under its own privacy policy.
         </p>
       </section>
@@ -191,7 +191,7 @@
       </section>
 
       <section id="uchronia">
-        <h2>8. Using UCHRONIA and Chronia</h2>
+        <h2>8. Using UCHRONIA and CHRONIA</h2>
         <p>
           <b>Your map.</b> The map you draw is kept in your own browser (see section 9)
           and goes nowhere unless you send it. A map you save as a file stays wherever
@@ -232,8 +232,8 @@
           They are not kept anywhere else.
         </p>
         <p>
-          <b>Chronia’s notes.</b> When you open the card for a state, a people, or a city in
-          <a href="/chronia/">Chronia</a>, the atlas asks Claude to write a short note about it as
+          <b>CHRONIA’s notes.</b> When you open the card for a state, a people, or a city in
+          <a href="/chronia/">CHRONIA</a>, the atlas asks Claude to write a short note about it as
           it was at that date. The request carries only what the atlas shows about the subject:
           its name, the date, and facts such as its ruler or capital, or, for a city, where it is
           on the map. It goes to a second small program of mine on Supabase, which passes it to
@@ -242,7 +242,7 @@
           stored with it, and no sign-in is needed.
         </p>
         <p>
-          <b>Chronia’s daily count.</b> To keep the notes within a daily budget, the program
+          <b>CHRONIA’s daily count.</b> To keep the notes within a daily budget, the program
           counts how many new notes each visitor asks for in a day, under a code made from your
           IP address, the date, and a secret, which cannot be turned back into the address. Each
           count is a date, that code, and a number. Your IP address itself is not stored, and
@@ -263,7 +263,7 @@
           you last opened one, for the visit count; and in UCHRONIA, your
           map, the one you had before opening a shared map, your view settings, your
           saved histories, and, if you have signed in, the token that keeps you signed
-          in to the historian; and in Chronia, which map layers you turned on or off, whether the
+          in to the historian; and in CHRONIA, which map layers you turned on or off, whether the
           key is open, and whether you chose the flat map; and in Drill, your progress and settings in each deck, and the addresses of the figures’ pictures, for a week.
         </p>
         <p>
@@ -284,7 +284,7 @@
           to send it. The daily visit counter rests on my legitimate interest in knowing,
           roughly, whether anyone plays the game, which it serves without identifying
           anyone who is not signed in. UCHRONIA’s daily counts rest on my legitimate
-          interest in keeping the historian within its budget, Chronia’s on keeping its notes within theirs, and the site’s visit count
+          interest in keeping the historian within its budget, CHRONIA’s on keeping its notes within theirs, and the site’s visit count
           on my interest in knowing, roughly, how many people read the site.
         </p>
       </section>
@@ -295,9 +295,9 @@
           Besides the services in section 3, three more take part. Supabase runs the
           database and the sign-in for the game and the historian, keeps the messages sent through the
           feedback box, and runs the program that passes UCHRONIA’s requests to the
-          historian and keeps its daily counts, and the one that writes and keeps Chronia’s notes; the game's copy of its script is
+          historian and keeps its daily counts, and the one that writes and keeps CHRONIA’s notes; the game's copy of its script is
           delivered by jsDelivr. Google handles the sign-in itself. Anthropic writes the
-          historian’s replies and Chronia’s notes, as section 8 describes. These services may store and
+          historian’s replies and CHRONIA’s notes, as section 8 describes. These services may store and
           process information on servers outside your country, including in the United
           States.
         </p>
@@ -326,8 +326,8 @@
           account is deleted, everything tied to it is deleted with it. Feedback messages
           are kept until I have read them and no longer need them, and in any case no
           longer than a year. UCHRONIA’s daily counts are deleted after thirty days, and
-          nothing else from the historian is kept at all. Chronia’s daily counts are deleted
-          soon after their day ends, and its notes are kept for as long as Chronia exists; they hold nothing
+          nothing else from the historian is kept at all. CHRONIA’s daily counts are deleted
+          soon after their day ends, and its notes are kept for as long as CHRONIA exists; they hold nothing
           about anyone who asked for them.
         </p>
       </section>

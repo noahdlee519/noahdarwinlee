@@ -83,7 +83,7 @@ of `/greatercircle/`.
     in CSS variables, ordered round the colour wheel and given out so that
     neighbours never share one and sit well apart on the wheel; any colour can
     still be chosen by hand. Our world's countries open in the colours of a
-    reference map Noah chose: `BASE_COLORS` in `app.js` gives 125 of them
+    reference map Noah chose: `BASE_COLORS` in `app.js` gives 135 of them
     their colour by code (Canada pale lime, the United States periwinkle,
     Mexico pink, Brazil and Russia mint, China salmon, and so on), read off
     a screenshot of the flat map by sampling each country on a half-degree

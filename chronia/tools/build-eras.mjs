@@ -38,24 +38,35 @@ const LINEAGE = [
   ["United States of America", "United States"],
   ["Castile", "Crown of Castile", "Spain", "Kingdom of Spain", "Spanish Habsburg", "Habsburg Spain", "First Spanish Republic"],
   ["Portugal", "Kingdom of Portugal"],
-  ["Dutch Republic", "United Provinces", "Batavian Republic", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"],
+  ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"],
   ["Brandenburg", "Margraviate of Brandenburg", "Electorate of Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "North German Confederation", "German Empire", "Germany", "West Germany"],
-  ["Habsburg Monarchy", "House of Habsburg", "Austrian Empire", "Austro-Hungarian Empire", "Austria-Hungary", "Austria"],
+  ["Duchy of Austria", "Archduchy of Austria", "Habsburg Monarchy", "House of Habsburg", "Austrian Empire", "Austro-Hungarian Empire", "Austria-Hungary", "Austria"],
   ["Ottoman Empire", "Turkey"],
   ["Swiss Confederation", "Switzerland"],
   ["Asante", "Ashanti Empire"],
   ["Alwa", "Alodia"],
-  ["Safavid Empire", "Safavid dynasty", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Persia", "Iran"],
+  ["Safavid Empire", "Safavid dynasty", "Safavid Iran", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Qajar Iran", "Persia", "Iran"],
   ["Imperial Japan (Fujiwara)", "Ashikaga Shogunate", "Warring States Japan", "Tokugawa shogunate", "Tokugawa Shogunate", "Japan", "Empire of Japan"],
   ["Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"],
-  ["County of Savoy", "House of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"],
-  ["Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"],
+  ["County of Savoy", "House of Savoy", "Duchy of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"],
+  ["Colonial Brazil", "Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"],
   ["Ayutthaya", "Ayutthaya Kingdom", "Thonburi Kingdom", "Rattanakosin Kingdom", "Siam", "Thailand"],
   ["Abyssinia", "Ethiopian Empire", "Ethiopia"],
   ["Kingdom of Poland", "Poland-Lithuania", "Polish-Lithuanian Commonwealth", "Poland"],
   ["Kingdom of Denmark", "Denmark-Norway", "Denmark"],
   ["Kingdom of Sweden", "Swedish Empire", "Sweden", "United Kingdoms of Sweden and Norway", "Sweden–Norway"],
   ["Mughal Empire", "India"],
+  ["First Hellenic Republic", "Kingdom of Greece", "Greece"],
+  ["Revolutionary Serbia", "Principality of Serbia", "Kingdom of Serbia", "Serbia"],
+  ["United Principalities of Moldavia and Wallachia", "Principality of Romania", "Kingdom of Romania", "Romania"],
+  ["Prince-Bishopric of Montenegro", "Principality of Montenegro", "Montenegro"],
+  ["Egypt", "Khedivate of Egypt"],
+  ["Durrani Empire", "Emirate of Afghanistan", "Afghanistan"],
+  ["Khanate of Bukhara", "Emirate of Bukhara", "Bukhara"],
+  ["Republic of Haiti", "Empire of Haiti", "Haiti"],
+  ["Argentine Confederation", "Argentina"],
+  ["Gorkha Kingdom", "Kingdom of Nepal", "Nepal"],
+  ["Sikh Confederacy", "Sikh Empire"],
   ["Viceroyalty of New Spain", "First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"],
   ["Ceylon", "Sri Lanka"],
   ["First Toungoo Empire", "Konbaung dynasty", "Burma", "Myanmar"],
@@ -636,7 +647,284 @@ clioRows.length = 0;
 const LONDON = [-0.12, 51.5], LISBON = [-9.14, 38.72], COPENHAGEN = [12.57, 55.68], BERGEN = [5.32, 60.39], OSLO = [10.75, 59.91];
 const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARIS = [2.35, 48.86], ISTANBUL = [28.98, 41.01];
 const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
-const HB_STALE = { "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496 };
+const HB_STALE = { "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
+const REGIMES = {
+  france: { from: 1400, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
+  britain: { from: 1400, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
+  netherlands: { from: 1581, names: ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "United Kingdom of the Netherlands", "Netherlands"], rulers: ["Netherlands Antilles", "Dutch Cape Colony"], eras: [[1794, "Dutch Republic"], [1805, "Batavian Republic"], [1809, "Kingdom of Holland"], [1813, "First French Empire"], [1814, "Sovereign Principality of the United Netherlands"], [9999, "Netherlands"]] },
+  spain: { from: 1516, names: ["Spain", "Kingdom of Spain", "First Spanish Republic"], rulers: ["Spanish Empire", "Spanish Habsburg", "Habsburg Spain"], eras: [[1872, "Kingdom of Spain"], [1874, "First Spanish Republic"], [9999, "Kingdom of Spain"]] },
+  portugal: { from: 1400, names: ["Portugal", "Kingdom of Portugal"], rulers: [], eras: [[9999, "Kingdom of Portugal"]] },
+  austria: { from: 1487, names: ["Habsburg Monarchy", "Austrian Empire", "Austria-Hungary", "Austro-Hungarian Empire"], rulers: [], eras: [[1803, "Habsburg Monarchy"], [1867, "Austrian Empire"], [9999, "Austria-Hungary"]] },
+  denmark: { from: 1468, names: ["Denmark-Norway", "Kingdom of Denmark", "Denmark"], rulers: [], eras: [[1813, "Denmark-Norway"], [9999, "Kingdom of Denmark"]] },
+  russia: { from: 1400, names: ["Grand Principality of Moscow", "Grand Duchy of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire"], rulers: ["Russia"], eras: [[1546, "Grand Principality of Moscow"], [1720, "Tsardom of Russia"], [9999, "Russian Empire"]] },
+  sweden: { from: 1612, names: ["Swedish Empire", "Kingdom of Sweden"], rulers: [], eras: [[1720, "Swedish Empire"], [1814, "Kingdom of Sweden"], [9999, "United Kingdoms of Sweden and Norway"]] }
+};
+const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ireland", "Kingdom of Denmark": "Denmark", "Netherlands": "Netherlands" };
+const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
+const NAME_FIX = [
+  ["Serbs", "Revolutionary Serbia", 1804, 1813],
+  ["Serbs", "Principality of Serbia", 1815, 1881],
+  ["Serbs", "Kingdom of Serbia", 1882, 1885],
+  ["Kingdom of Serbia", "Principality of Serbia", 1815, 1881],
+  ["First Hellenic Republic", "Kingdom of Greece", 1832, 1885],
+  ["Greece", "First Hellenic Republic", 1822, 1831],
+  ["Greece", "Kingdom of Greece", 1832, 1885],
+  ["United Principalities of Moldavia and Wallachia", "Principality of Romania", 1866, 1880, { wiki: "United Principalities" }],
+  ["United Principalities of Moldavia and Wallachia", "Kingdom of Romania", 1881, 1885],
+  ["Montenegro", "Prince-Bishopric of Montenegro", 1516, 1851],
+  ["Montenegro", "Principality of Montenegro", 1852, 1885],
+  ["Bosnia-Herzegovina", "Bosnia Eyalet", 1400, 1866, { ruler: "Ottoman Empire" }],
+  ["Bosnia-Herzegovina", "Bosnia Vilayet", 1867, 1877, { ruler: "Ottoman Empire" }],
+  ["Bosnia-Herzegovina", "Bosnia and Herzegovina", 1878, 1885, { ruler: "Austria-Hungary", wiki: "Bosnia and Herzegovina under Austro-Hungarian rule" }],
+  ["Moldova", "Principality of Moldavia", 1400, 1858],
+  ["Serbian Empire", "Serbian Despotate", 1400, 1459],
+  ["Serbian Despots", "Serbian Despotate", 1400, 1459],
+  ["Hungarian Nationalists", "Hungarian State", 1848, 1849, { wiki: "Hungarian State (1849)" }],
+  ["Hungarian Nationalists", "Austrian Empire", 1850, 1867],
+  ["Poles", "Congress Poland", 1815, 1867, { ruler: "Russian Empire" }],
+  ["Helvetic Republic", "Swiss Confederation", 1400, 1797],
+  ["Helvetic Republic", "Swiss Confederation", 1803, 1885],
+  ["Khedivate of Egypt", "Egypt", 1805, 1866, { wiki: "History of Egypt under the Muhammad Ali dynasty" }],
+  ["Muhammad Ali dynasty", "Egypt", 1805, 1821, { wiki: "History of Egypt under the Muhammad Ali dynasty" }],
+  ["Muhammad Ali dynasty", "Egyptian Sudan", 1822, 1866, { ruler: "Egypt", wiki: "Turkiyya" }],
+  ["British Africa", "Khedivate of Egypt", 1882, 1885, { box: [20, 5, 40, 33], ruler: "United Kingdom" }],
+  ["Harer (Egypt)", "Emirate of Harar", 1647, 1874, { ruler: "" }],
+  ["Harer (Egypt)", "Emirate of Harar", 1875, 1885, { ruler: "Khedivate of Egypt" }],
+  ["Algeria (FR)", "French Algeria", 1830, 1885],
+  ["French Africa", "French Algeria", 1830, 1885, { box: [-2.5, 28, 9.5, 37.5] }],
+  ["Senegal (FR)", "French Senegal", 1659, 1885, { ruler: "@france", wiki: "History of Senegal" }],
+  ["Gold Coast (GB)", "British Gold Coast", 1400, 1885, { ruler: "@britain" }],
+  ["Sultinate of Zanzibar", "Zanzibar", 1400, 1855, { ruler: "Sultanate of Oman" }],
+  ["Sultinate of Zanzibar", "Sultanate of Zanzibar", 1856, 1885, { ruler: "" }],
+  ["Omani Slave Coast", "Zanzibar", 1400, 1855, { ruler: "Sultanate of Oman" }],
+  ["Omani Slave Coast", "Sultanate of Zanzibar", 1856, 1885, { ruler: "" }],
+  ["Zanzibar", "Zanzibar", 1698, 1855, { ruler: "Sultanate of Oman", wiki: "Omani Empire" }],
+  ["Zanzibar", "Sultanate of Zanzibar", 1856, 1885, { ruler: "" }],
+  ["Tukular Caliphate", "Toucouleur Empire", 1400, 1885],
+  ["Natalia Republic", "Colony of Natal", 1843, 1885, { ruler: "@britain" }],
+  ["Papua New Guinea", "Papuans", 1400, 1885, { people: 1, ruler: "", wiki: "Papuan people" }],
+  ["Benin", "Kingdom of Benin", 1400, 1885],
+  ["Oyo", "Oyo Empire", 1400, 1835],
+  ["Great Zimbabwe", "Kingdom of Zimbabwe", 1400, 1885],
+  ["Mwenemutapa", "Kingdom of Mutapa", 1400, 1885],
+  ["Makkura", "Makuria", 1400, 1885],
+  ["Makuria Kingdom", "Makuria", 1400, 1885],
+  ["Adal", "Adal Sultanate", 1400, 1577],
+  ["Adal", "Imamate of Aussa", 1578, 1885],
+  ["Awsa", "Imamate of Aussa", 1400, 1733],
+  ["Awsa", "Sultanate of Aussa", 1734, 1885],
+  ["Great Khanate", "Jurchens", 1400, 1462, { box: [115, 38, 150, 62], people: 1, ruler: "", part: "", wiki: "Jurchen people" }],
+  ["Mongol Khanate", "Northern Yuan", 1400, 1635],
+  ["Golden Horde", "Great Horde", 1466, 1502, { box: [30, 40, 85, 62] }],
+  ["Golden Horde", "Astrakhan Khanate", 1503, 1556, { box: [30, 40, 85, 62] }],
+  ["Golden Horde", "Mongols", 1503, 1691, { box: [85, 35, 130, 62], people: 1, ruler: "", wiki: "Mongols" }],
+  ["Golden Horde", "Khalkha", 1692, 1885, { box: [85, 35, 130, 62], ruler: "Qing dynasty", wiki: "Khalkha Mongols" }],
+  ["Astrakhan Khanate", "@russia", 1557, 1885],
+  ["Khanate of Sibir", "Tyumen Khanate", 1400, 1489],
+  ["Nogai Horde", "Nogais", 1635, 1885, { people: 1, ruler: "", wiki: "Nogais" }],
+  ["Dzungar Khanate", "Oirat Confederation", 1400, 1633],
+  ["Ming dynasty", "Southern Ming", 1645, 1662],
+  ["Southern Ming", "Kingdom of Tungning", 1661, 1683, { box: [118.5, 21, 123, 26.5] }],
+  ["Southern Ming", "Three Feudatories", 1673, 1681, { wiki: "Revolt of the Three Feudatories" }],
+  ["Southern Ming", "Qing dynasty", 1663, 1885],
+  ["Mughal Empire", "Timurid Empire", 1400, 1525],
+  ["Mughal Empire", "British Raj", 1858, 1885, { ruler: "@britain" }],
+  ["Lodi dynasty", "Mughal Empire", 1527, 1885],
+  ["Sur Empire", "Mughal Empire", 1557, 1885],
+  ["Sultanate of Bengal", "Bengal Subah", 1577, 1885, { ruler: "Mughal Empire" }],
+  ["Ahmadnagar Sultanate", "Mughal Empire", 1637, 1885],
+  ["Bidar Sultanate", "Bijapur Sultanate", 1620, 1885],
+  ["Berar Sultanate", "Ahmadnagar Sultanate", 1575, 1885],
+  ["Maratha Empire", "Maratha states", 1819, 1885, { ruler: "@britain", wiki: "Maratha Confederacy" }],
+  ["Safavid dynasty", "Afsharid Iran", 1736, 1885],
+  ["Afsharid Iran", "Safavid Iran", 1400, 1735],
+  ["Aq Qoyunlu", "Safavid Iran", 1504, 1885],
+  ["Rasulid dynasty", "Tahirid Sultanate", 1455, 1885],
+  ["Kingdom of Georgia", "Kingdom of Kartli", 1491, 1761],
+  ["Kingdom of Georgia", "Kingdom of Kartli-Kakheti", 1762, 1800],
+  ["Kingdom of Georgia", "@russia", 1801, 1885],
+  ["Byzantine Empire", "Principality of Theodoro", 1454, 1475, { box: [32, 43, 37, 46] }],
+  ["Byzantine Empire", "Despotate of the Morea", 1454, 1460],
+  ["Byzantine Empire", "Ottoman Empire", 1461, 1885],
+  ["Hanthawaddy Kingdom", "First Toungoo Empire", 1540, 1885],
+  ["Konbaung dynasty", "First Toungoo Empire", 1400, 1751],
+  ["First Toungoo Empire", "Burma", 1752, 1885, { wiki: "Konbaung dynasty" }],
+  ["Nguyễn dynasty", "Nguyễn lords", 1400, 1801],
+  ["Warring States Japan", "Japan", 1590, 1602, { wiki: "Azuchi–Momoyama period" }],
+  ["Tokugawa Shogunate", "Japan", 1400, 1602, { wiki: "Azuchi–Momoyama period" }],
+  ["Tokugawa Shogunate", "Empire of Japan", 1868, 1885],
+  ["Sultanate of Malacca", "Portuguese Malacca", 1511, 1640, { ruler: "@portugal" }],
+  ["Sultanate of Malacca", "Dutch Malacca", 1641, 1824, { ruler: "@netherlands" }],
+  ["Sultanate of Malacca", "Straits Settlements", 1825, 1885, { ruler: "@britain" }],
+  ["Inca Empire", "Neo-Inca State", 1534, 1572],
+  ["Inca Empire", "Spanish Empire", 1573, 1885, { ruler: "@spain" }],
+  ["Songhai Empire", "Dendi Kingdom", 1592, 1885],
+  ["Songhai", "Dendi Kingdom", 1592, 1885],
+  ["Regency of Algiers", "Emirate of Abdelkader", 1831, 1847],
+  ["Saadi Sultanate", "Morocco", 1660, 1885, { wiki: "Alaouite dynasty" }],
+  ["Brandenburg-Prussia", "Kingdom of Prussia", 1701, 1885],
+  ["Kingdom of Hanover", "Electorate of Hanover", 1400, 1813],
+  ["United Kingdom", "Kingdom of Hanover", 1814, 1866, { box: [6.5, 51, 12, 54], ruler: "" }],
+  ["Gran Colombia", "Republic of New Granada", 1831, 1885],
+  ["Federated Republic of Mexico", "Centralist Mexico", 1835, 1846],
+  ["Federated Republic of Mexico", "Second Mexican Empire", 1864, 1867],
+  ["Federated Republic of Mexico", "Mexico", 1868, 1885],
+  ["Orange Free State", "Orange River Sovereignty", 1848, 1853, { ruler: "@britain" }],
+  ["Khanate of Bukhara", "Emirate of Bukhara", 1785, 1885],
+  ["Gorkha Kingdom", "Kingdom of Nepal", 1768, 1885],
+  ["Nepal", "Nepal Mandala", 1400, 1767, { wiki: "Malla dynasty (Nepal)" }],
+  ["Nepal", "Kingdom of Nepal", 1768, 1885],
+  ["Chagatai Khanate", "Moghulistan", 1400, 1515],
+  ["Eastern Chagatai Khanate", "Moghulistan", 1400, 1515],
+  ["Eastern Moghulistan", "Yarkent Khanate", 1514, 1705],
+  ["Bukara Khanate", "Khanate of Bukhara", 1400, 1885],
+  ["Bokhara Khanate", "Emirate of Bukhara", 1785, 1885],
+  ["Emirate of the White Sheep Turks", "Aq Qoyunlu", 1400, 1885],
+  ["Four Oirats", "Oirat Confederation", 1400, 1885],
+  ["Laos", "Lan Xang", 1400, 1707],
+  ["Chámpa", "Champa", 1400, 1885],
+  ["Lan Na", "Lan Na Kingdom", 1400, 1885],
+  ["Vijayanagara", "Vijayanagara Empire", 1400, 1646],
+  ["Rajastan", "Rajputana", 1400, 1885],
+  ["Rajputs", "Rajputana", 1400, 1885],
+  ["Golkonda", "Golconda Sultanate", 1518, 1687],
+  ["Ngô dynasty", "Hồ dynasty", 1400, 1407],
+  ["Aceh", "Sultanate of Aceh", 1496, 1885],
+  ["Khmer Empire", "Kingdom of Cambodia", 1432, 1862, { wiki: "Post-Angkor period" }],
+  ["Khmer Empire", "Kingdom of Cambodia", 1863, 1885, { ruler: "@france", wiki: "French protectorate of Cambodia" }],
+  ["Cambodia", "Kingdom of Cambodia", 1432, 1862, { wiki: "Post-Angkor period" }],
+  ["Konbaung dynasty", "Burma", 1752, 1885, { wiki: "Konbaung dynasty" }],
+  ["Burma", "Burma", 1752, 1885, { wiki: "Konbaung dynasty" }],
+  ["Qajar dynasty", "Qajar Iran", 1400, 1885],
+  ["Safavid dynasty", "Safavid Iran", 1400, 1885],
+  ["Rattanakosin Kingdom", "Siam", 1400, 1885, { wiki: "Rattanakosin Kingdom (1782–1932)" }],
+  ["Durrani Empire", "Emirate of Afghanistan", 1823, 1885],
+  ["Durrani dynasty", "Durrani Empire", 1747, 1822],
+  ["Durrani dynasty", "Emirate of Afghanistan", 1823, 1885],
+  ["Afghanistan", "Durrani Empire", 1747, 1822],
+  ["Afghanistan", "Emirate of Afghanistan", 1823, 1885],
+  ["Emirate of Afghanistan", "Durrani Empire", 1747, 1822],
+  ["Nejd", "Emirate of Diriyah", 1744, 1818],
+  ["Nejd", "Emirate of Nejd", 1824, 1885],
+  ["Netherlands Indies", "Dutch East Indies", 1400, 1885],
+  ["Oudh", "Oudh State", 1400, 1885],
+  ["Nawab of Awadh", "Oudh State", 1400, 1885],
+  ["Nizam's Dominions", "Hyderabad State", 1400, 1885],
+  ["Sikhs", "Sikh Confederacy", 1748, 1798],
+  ["Sikhs", "Sikh Empire", 1799, 1849],
+  ["Spanish Empire", "Philippines", 1565, 1885, { box: [115, 0, 130, 22], ruler: "@spain", wiki: "Captaincy General of the Philippines" }],
+  ["Kingdom of Spain", "Philippines", 1565, 1885, { box: [115, 0, 130, 22], ruler: "@spain", wiki: "Captaincy General of the Philippines" }],
+  ["Kingdom of Spain", "Spanish Empire", 1516, 1885, { box: AMERICAS, ruler: "@spain" }],
+  ["Portuguese Empire", "Colonial Brazil", 1500, 1815, { box: [-75, -35, -30, 6], ruler: "@portugal" }],
+  ["Portuguese Empire", "Kingdom of Brazil", 1816, 1821, { box: [-75, -35, -30, 6], ruler: "" }],
+  ["Viceroyalty of Brazil", "Colonial Brazil", 1500, 1815, { ruler: "@portugal" }],
+  ["United States of America", "British America", 1607, 1775, { ruler: "@britain" }],
+  ["United States of America", "United States", 1776, 1885, { ruler: "" }],
+  ["British Empire", "British America", 1607, 1775, { box: NEW_ENGLAND, ruler: "@britain" }],
+  ["British Empire", "British India", 1757, 1858, { box: INDIA, ruler: "@britain", wiki: "Company rule in India" }],
+  ["British Empire", "British Guiana", 1400, 1885, { box: GUIANA, ruler: "@britain" }],
+  ["British Colonial Empire", "English Colonial Empire", 1400, 1706],
+  ["English Colonial Empire", "British Colonial Empire", 1707, 1885],
+  ["British Colonial Empire", "British America", 1607, 1783, { box: [-100, 24, -50, 75], ruler: "@britain" }],
+  ["British Colonial Empire", "British North America", 1784, 1885, { box: [-140, 40, -50, 75], ruler: "@britain" }],
+  ["British Colonial Empire", "Australian colonies", 1788, 1885, { box: [110, -45, 155, -9], ruler: "@britain" }],
+  ["Louisiana", "Spanish Louisiana", 1763, 1800, { ruler: "@spain" }],
+  ["Louisiana", "Louisiana", 1682, 1762, { ruler: "@france", wiki: "Louisiana (New France)" }],
+  ["Sind", "Sindh", 1400, 1885],
+  ["Acadian Peninsula (UK)", "Nova Scotia", 1713, 1885, { ruler: "@britain" }],
+  ["Luisiana", "Louisiana", 1682, 1762, { ruler: "@france", wiki: "Louisiana (New France)" }],
+  ["Luisiana", "Spanish Louisiana", 1763, 1800, { ruler: "@spain" }],
+  ["Luisiana", "Louisiana", 1801, 1803, { ruler: "@france", wiki: "Louisiana (New France)" }],
+  ["Luisiana", "Louisiana Territory", 1804, 1885, { ruler: "United States" }],
+  ["Quebec", "New France", 1534, 1763, { ruler: "@france" }],
+  ["Quebec", "Province of Quebec", 1764, 1790, { ruler: "@britain", wiki: "Province of Quebec (1763–1791)" }],
+  ["Quebec", "Lower Canada", 1791, 1840, { ruler: "@britain" }],
+  ["New France", "Province of Quebec", 1764, 1790, { ruler: "@britain", wiki: "Province of Quebec (1763–1791)" }],
+  ["Florida (Spain)", "Spanish Florida", 1513, 1821, { ruler: "@spain" }],
+  ["Florida", "Spanish Florida", 1513, 1762, { ruler: "@spain" }],
+  ["Guyana (Netherlands)", "Dutch Guiana", 1400, 1885, { ruler: "@netherlands" }],
+  ["Netherlands Antilles", "Surinam", 1667, 1885, { box: GUIANA, ruler: "@netherlands", wiki: "Surinam (Dutch colony)" }],
+  ["Netherlands Antilles", "Curaçao and Dependencies", 1400, 1885, { box: CARIBBEAN, ruler: "@netherlands" }],
+  ["Netherlands", "Dutch Gold Coast", 1400, 1885, { box: [-5, 0, 5, 12], ruler: "@netherlands" }],
+  ["Dutch Republic", "Dutch East Indies", 1400, 1885, { box: [90, -15, 145, 10], ruler: "@netherlands" }],
+  ["Batavian Republic", "Dutch East Indies", 1400, 1885, { box: [90, -15, 145, 10], ruler: "@netherlands" }],
+  ["Dutch Republic", "Dutch Cape Colony", 1652, 1805, { box: [10, -40, 35, -20], ruler: "@netherlands" }],
+  ["Dutch Republic", "British Cape Colony", 1806, 1885, { box: [10, -40, 35, -20], ruler: "@britain", wiki: "Cape Colony" }],
+  ["Jamaica (UK)", "Jamaica", 1655, 1885, { ruler: "@britain", wiki: "Colony of Jamaica" }],
+  ["Saint Kitts and Nevis (UK)", "Saint Kitts and Nevis", 1400, 1885, { ruler: "@britain" }],
+  ["Virgin Islands (Danemark)", "Danish West Indies", 1400, 1885, { ruler: "@denmark" }],
+  ["Cuba (Spain)", "Cuba", 1400, 1885, { ruler: "@spain", wiki: "Captaincy General of Cuba" }],
+  ["Haiti", "Saint-Domingue", 1659, 1803, { ruler: "@france" }],
+  ["Empire of Haiti", "Republic of Haiti", 1807, 1848, { wiki: "Republic of Haiti (1820–1849)" }],
+  ["Empire of Haiti", "Republic of Haiti", 1859, 1885, { wiki: "History of Haiti" }],
+  ["Argentina", "Argentine Confederation", 1831, 1861],
+  ["Argentine Confederation", "Argentina", 1862, 1885],
+  ["New South Wales (UK)", "New South Wales", 1788, 1885, { ruler: "@britain", wiki: "Colony of New South Wales" }],
+  ["Victoria (UK)", "New South Wales", 1788, 1850, { ruler: "@britain", wiki: "Colony of New South Wales" }],
+  ["Victoria (UK)", "Victoria", 1851, 1885, { ruler: "@britain", wiki: "Colony of Victoria" }],
+  ["Queensland (UK)", "New South Wales", 1788, 1858, { ruler: "@britain", wiki: "Colony of New South Wales" }],
+  ["Queensland (UK)", "Queensland", 1859, 1885, { ruler: "@britain", wiki: "Colony of Queensland" }],
+  ["Northern Territory (UK)", "New South Wales", 1825, 1862, { ruler: "@britain", wiki: "Colony of New South Wales" }],
+  ["Northern Territory (UK)", "Northern Territory", 1863, 1885, { ruler: "@britain", wiki: "History of the Northern Territory" }],
+  ["South Australia (UK)", "South Australia", 1836, 1885, { ruler: "@britain", wiki: "Colony of South Australia" }],
+  ["Western Australia (UK)", "Western Australia", 1829, 1885, { ruler: "@britain", wiki: "Swan River Colony" }],
+  ["Britany", "Duchy of Brittany", 1400, 1491],
+  ["Britany", "Duchy of Brittany", 1492, 1532, { ruler: "@france" }],
+  ["Britany", "@france", 1533, 1885],
+  ["Duchy of Brittany", "Duchy of Brittany", 1492, 1532, { ruler: "@france" }],
+  ["Scotland", "Kingdom of Scotland", 1400, 1706],
+  ["Scotland", "@britain", 1707, 1885],
+  ["Kingdom of Scotland", "@britain", 1707, 1885],
+  ["Sardinia", "Kingdom of Sardinia", 1400, 1707, { ruler: "@spain" }],
+  ["Kingdom of Sardinia", "Kingdom of Sardinia", 1516, 1707, { ruler: "@spain" }],
+  ["Kingdom of Sardinia", "Kingdom of Sardinia", 1708, 1716, { ruler: "Habsburg Monarchy" }],
+  ["Kingdom of Sardinia", "Kingdom of Sardinia", 1717, 1719, { ruler: "@spain" }],
+  ["Kingdom of Sardinia", "Kingdom of Sardinia", 1720, 1885, { ruler: "" }],
+  ["Sicily", "Kingdom of Sicily", 1516, 1712, { ruler: "@spain" }],
+  ["Sicily", "Kingdom of Sicily", 1713, 1719, { ruler: "Duchy of Savoy" }],
+  ["Naples", "Kingdom of Naples", 1504, 1706, { ruler: "@spain" }],
+  ["House of Savoy", "Duchy of Savoy", 1416, 1720],
+  ["County of Savoy", "Duchy of Savoy", 1416, 1720],
+  ["Milano (Austria)", "Duchy of Milan", 1714, 1796, { ruler: "Habsburg Monarchy" }],
+  ["Lombardy", "Duchy of Milan", 1714, 1796, { ruler: "Habsburg Monarchy" }],
+  ["Austrian Empire", "Austrian Netherlands", 1714, 1794, { box: [2, 49, 7, 52.5], ruler: "Habsburg Monarchy" }],
+  ["Austrian Empire", "@france", 1795, 1814, { box: [2, 49, 7, 52.5], ruler: "" }],
+  ["Habsburg Netherlands", "Spanish Netherlands", 1556, 1714, { ruler: "@spain" }],
+  ["House of Habsburg", "Duchy of Austria", 1400, 1452],
+  ["House of Habsburg", "Archduchy of Austria", 1453, 1515],
+  ["House of Jagiellon", "Poland-Lithuania", 1400, 1568, { wiki: "Jagiellonian dynasty" }],
+  ["House of Oldenburg", "Kingdom of Denmark", 1400, 1885],
+  ["House of Valois-Anjou", "Duchy of Anjou", 1400, 1480, { box: [-5, 45, 2.5, 50] }],
+  ["House of Valois-Anjou", "County of Provence", 1400, 1481, { box: [3, 42, 9, 46], ruler: "" }],
+  ["House of Bourbon", "Duchy of Bourbon", 1400, 1527],
+  ["Teutonic Knights", "Livonian Order", 1400, 1561, { box: [20, 55.5, 30, 60.5], part: "Livonian Confederation" }],
+  ["Teutonic Knights", "Teutonic Order", 1400, 1524],
+  ["Teutonic Knights", "Duchy of Prussia", 1525, 1618],
+  ["Teutonic Order", "Duchy of Prussia", 1525, 1618],
+  ["Kingdom of Cyprus", "Kingdom of Cyprus", 1489, 1570, { ruler: "Republic of Venice" }],
+  ["Ryazan", "Grand Principality of Ryazan", 1400, 1521],
+  ["Chimu Empire", "Chimú Empire", 1400, 1885],
+  ["Mexihcah (Triple Alliance)", "Aztec Triple Alliance", 1400, 1885],
+  ["P’urhépecha", "Purépecha Empire", 1400, 1530],
+  ["Michoacán", "Purépecha Empire", 1400, 1530],
+  ["Swedish Empire", "Kingdom of Sweden", 1721, 1885],
+  ["Duchy of Bavaria", "Electorate of Bavaria", 1623, 1805],
+  ["Electorate of Württemberg", "Duchy of Württemberg", 1400, 1802],
+  ["Electorate of Baden", "Margraviate of Baden", 1400, 1802],
+  ["Republic of Florence", "Duchy of Florence", 1532, 1568],
+  ["Republic of Florence", "Grand Duchy of Tuscany", 1569, 1885],
+  ["Maori", "Māori", 1400, 1885],
+  ["Maoris", "Māori", 1400, 1885],
+  ["M?ori", "Māori", 1400, 1885],
+  ["minor Hindu and Buddhist kingdoms", "Minor Hindu and Buddhist kingdoms", 1400, 1885],
+  ["central Asian khanates", "Central Asian khanates", 1400, 1885]
+];
+const RULER_DROP = { "Mongol Empire": 1368 };
+const regimeName = new Map(), regimeRuler = new Map();
+for (const [g, r] of Object.entries(REGIMES)) { r.names.forEach((n) => regimeName.set(n, g)); r.names.concat(r.rulers).forEach((n) => regimeRuler.set(n, g)); }
+const regimeAt = (g, y) => { const r = REGIMES[g]; if (y < r.from) return null; for (const [to, n] of r.eras) if (y <= to) return n; return null; };
+const renamedFrom = new Map();
+const noteRename = (from, to) => { if (!renamedFrom.has(to)) renamedFrom.set(to, new Set()); renamedFrom.get(to).add(from); };
 const SMR_CORE = ["San Marino", "Borgo Maggiore", "Acquaviva", "Chiesanuova", "Domagnano"];
 const HK_ISLAND = ["Central and Western", "Wan Chai", "Eastern", "Southern"], HK_KOWLOON = ["Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong"];
 const SMALL = [
@@ -876,6 +1164,127 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
     const [a, b] = yearsOf(from, to);
     return b < DATED_FROM || a > DATED_TO || b < a ? null : [Math.max(a, DATED_FROM), Math.min(b, DATED_TO)];
   }, (h) => h.name);
+  {
+    const centreOf = (polys) => { let best = null, area = -1; for (const poly of polys) { const a = Math.abs(planar(poly[0])); if (a > area) { area = a; best = poly[0]; } } if (!best) return null; const b = boxOf([[best]]); return [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2]; };
+    const inBox = (c, b) => !!c && c[0] >= b[0] && c[0] <= b[2] && c[1] >= b[1] && c[1] <= b[3];
+    const fixesOf = new Map();
+    NAME_FIX.forEach((r) => { if (!fixesOf.has(r[0])) fixesOf.set(r[0], []); fixesOf.get(r[0]).push(r); });
+    const fixAt = (s, y, c) => {
+      let name = s.name, ruler = s.ruler || "", part = s.part || "", people = s.people ? 1 : 0, wiki = s.wiki, status = s.status;
+      for (const [, to, a, b, o = {}] of fixesOf.get(name) || []) {
+        if (y < a || y > b || (o.box && !inBox(c, o.box))) continue;
+        const n = to.startsWith("@") ? regimeAt(to.slice(1), y) || name : to;
+        if (n !== name) { name = n; wiki = o.wiki || REGIME_WIKI[n] || n; } else if (o.wiki) wiki = o.wiki;
+        if (o.ruler !== undefined) ruler = o.ruler.startsWith("@") ? regimeAt(o.ruler.slice(1), y) || "" : o.ruler;
+        if (o.part !== undefined) part = o.part;
+        if (o.people !== undefined) people = o.people;
+        break;
+      }
+      const gn = regimeName.get(name);
+      if (gn) { const n = regimeAt(gn, y); if (n && n !== name) { name = n; wiki = REGIME_WIKI[n] || n; } }
+      const gr = regimeRuler.get(ruler);
+      if (gr) ruler = regimeAt(gr, y) || ruler;
+      const gp = regimeRuler.get(part);
+      if (gp) part = regimeAt(gp, y) || part;
+      if (y > (RULER_DROP[ruler] ?? Infinity)) ruler = "";
+      if (y > (RULER_DROP[part] ?? Infinity)) part = "";
+      if (ruler === name) ruler = "";
+      if (part === name) part = "";
+      if (people) ruler = "";
+      if (people) status = 0;
+      else if (ruler && !s.ruler) status = 5;
+      else if (!ruler && s.ruler) status = 0;
+      return { name, ruler, part, people, wiki, status };
+    };
+    const boxRules = new Map();
+    NAME_FIX.forEach((r) => { if (r[4] && r[4].box) { if (!boxRules.has(r[0])) boxRules.set(r[0], []); boxRules.get(r[0]).push(r[4].box); } });
+    let parted = 0;
+    dated = dated.flatMap((s) => {
+      const boxes = boxRules.get(s.name);
+      if (!boxes || s.polys.length < 2) return [s];
+      const groups = new Map();
+      for (const p of s.polys) { const b = boxOf([p]), k = boxes.findIndex((x) => inBox([(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], x)); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
+      if (groups.size < 2) return [s];
+      parted++;
+      return [...groups.values()].map((polys, i) => ({ ...s, polys, box: boxOf(polys), cells: undefined, geoHash: undefined, uid: i ? uidNext++ : s.uid }));
+    });
+    let split = 0, changed = 0;
+    dated = dated.flatMap((s) => {
+      const c = centreOf(s.polys), base = JSON.stringify({ name: s.name, ruler: s.ruler || "", part: s.part || "", people: s.people ? 1 : 0, wiki: s.wiki, status: s.status });
+      const out = [];
+      let cur = null, key = "";
+      for (let y = s.first; y <= s.last; y++) {
+        const f = fixAt(s, y, c), k = JSON.stringify(f);
+        if (cur && k === key) { cur.last = y; continue; }
+        cur = { ...s, ...f, first: y, last: y, uid: out.length ? uidNext++ : s.uid }; key = k; out.push(cur);
+      }
+      if (out.length === 1 && key === base) return [s];
+      changed++;
+      split += out.length - 1;
+      out.forEach((o) => { if (o.name !== s.name) noteRename(s.name, o.name); });
+      return out;
+    });
+    console.log("names: " + parted + " spans parted by region, " + changed + " spans renamed or given another ruler, in " + (changed + split) + " pieces");
+    const dil = new Map(), dilOf = (s) => { let d = dil.get(s); if (!d) { if (!s.cells) s.cells = cellsOf(s.polys); d = dilate(s.cells); dil.set(s, d); } return d; };
+    const groups = new Map();
+    for (const s of dated) { if (s.small) continue; const k = s.name + "|" + (s.ruler || "") + "|" + (s.people ? 1 : 0); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); }
+    const drop = new Set(), add = [];
+    let joined = 0;
+    for (const g of groups.values()) {
+      if (g.length < 2) continue;
+      const cuts = [...new Set(g.flatMap((s) => [s.first, s.last + 1]))].sort((a, b) => a - b);
+      const segs = [], multi = new Set();
+      for (let i = 0; i + 1 < cuts.length; i++) {
+        const a = cuts[i], b = cuts[i + 1] - 1, act = g.filter((s) => s.first <= a && a <= s.last);
+        if (act.length < 2) { segs.push({ a, b, comps: act.map((s) => [s]) }); continue; }
+        const up = act.map((_, j) => j), find = (j) => (up[j] === j ? j : (up[j] = find(up[j])));
+        for (let x = 0; x < act.length; x++) for (let z = x + 1; z < act.length; z++) {
+          if (find(x) === find(z)) continue;
+          const A = act[x], B = act[z];
+          if (!A.box || !B.box || !boxHit([A.box[0] - 0.6, A.box[1] - 0.6, A.box[2] + 0.6, A.box[3] + 0.6], B.box)) continue;
+          if (!B.cells) B.cells = cellsOf(B.polys);
+          if (meets(dilOf(A), B.cells)) up[find(x)] = find(z);
+        }
+        const comps = new Map();
+        act.forEach((s, j) => { const r = find(j); if (!comps.has(r)) comps.set(r, []); comps.get(r).push(s); });
+        const list = [...comps.values()];
+        list.forEach((m) => { if (m.length > 1) m.forEach((s) => multi.add(s)); });
+        segs.push({ a, b, comps: list });
+      }
+      if (!multi.size) continue;
+      const unions = new Map();
+      let open = new Map();
+      for (const { a, b, comps } of segs) {
+        const next = new Map();
+        for (const m of comps) {
+          if (m.length === 1 && !multi.has(m[0])) continue;
+          const key = m.map((s) => s.uid).sort((p, q) => p - q).join(",");
+          const prev = open.get(key);
+          if (prev && prev.last === a - 1) { prev.last = b; next.set(key, prev); continue; }
+          let span;
+          if (m.length === 1) span = { ...m[0], first: a, last: b, uid: uidNext++ };
+          else {
+            let u = unions.get(key);
+            if (!u) {
+              const top = m.reduce((p, q) => (cellSum(q.cells || (q.cells = cellsOf(q.polys))) > cellSum(p.cells || (p.cells = cellsOf(p.polys))) ? q : p));
+              let polys;
+              try { polys = rewind(clip.union(...m.map((s) => s.polys))); } catch (e) { polys = null; }
+              u = polys ? { ...top, polys, keep: m.some((s) => s.keep), box: boxOf(polys), cells: null, geoHash: undefined } : null;
+              unions.set(key, u);
+            }
+            if (!u) { m.forEach((s) => { const c = { ...s, first: a, last: b, uid: uidNext++ }; add.push(c); }); continue; }
+            span = { ...u, first: a, last: b, uid: uidNext++ };
+            joined++;
+          }
+          add.push(span); next.set(key, span);
+        }
+        open = next;
+      }
+      multi.forEach((s) => drop.add(s));
+    }
+    dated = dated.filter((s) => !drop.has(s)).concat(add);
+    console.log("names: joined touching spans of one state with one name in " + joined + " stretches of years, " + drop.size + " spans to " + add.length);
+  }
   dated.forEach((s) => { delete s.cells; });
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
@@ -1130,6 +1539,7 @@ const capitalOf = (raw, lon, lat) => {
 const csTopo = JSON.parse(readFileSync(cshapesPath, "utf8"));
 const csObj = Object.values(csTopo.objects)[0];
 const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry }));
+const CLIO_TWIN = { "First Hellenic Republic": "Greece" };
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
 const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
@@ -1185,14 +1595,18 @@ for (const r of csWithExtras(csRaw)) {
   let list = csParts.map((r) => withBox({ cs: r, name: r.name, first: r.start, last: r.end < 0 ? endDay : r.end, polys: rewind(polysOf(r.geometry)) }));
   const csOnly = list.slice();
   const fills = [], csNames = new Set(csOnly.map((x) => x.name));
+  let twins = 0;
   for (const s of clioSpans) {
-    if (s.last < 1886 || lineageNames(s.name).some((n) => csNames.has(n))) continue;
+    const twin = CLIO_TWIN[s.name] || null;
+    if (s.last < 1886 || (!twin && lineageNames(s.name).some((n) => csNames.has(n)))) continue;
     const first = s.first >= 1886 ? dayOf(s.first + "-01-01") : 0, last = Math.min(endDay, dayOf(s.last + "-12-31"));
     if (last < first) continue;
     const whole = km2Of(s.polys), box = boxOf(s.polys);
     for (const r of cutOver(s.polys, box, first, last, csOnly, cellOpt(s.polys, 0.75))) {
       const kept = keepRemnant(r.polys, whole, 0.5);
-      if (kept.length) fills.push(withBox({ name: s.name, ruler: s.ruler, part: "", people: 0, b: 2, status: s.status, first: r.first, last: r.last, polys: kept, wiki: s.wiki, src: "clio" }));
+      if (!kept.length) continue;
+      if (twin) twins++;
+      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler, part: "", people: 0, b: 2, status: twin ? 0 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
     }
   }
   list = list.concat(fills);
@@ -1210,7 +1624,7 @@ for (const r of csWithExtras(csRaw)) {
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
     csParts.push({ p: { gwcode: "x:" + x.name, status: owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
   }
-  console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria, " + list.filter((x) => x.small).length + " small territories");
+  console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
 const byGw = new Map();
 csParts.forEach((r) => { const k = String(r.p.gwcode); if (!byGw.has(k)) byGw.set(k, []); byGw.get(k).push(r); });
@@ -1270,20 +1684,21 @@ const keyOf = (id) => findKey(rawKey(id));
 let links = 0;
 {
   const life = new Map();
-  const note = (name, a, z, polys) => {
+  const note = (name, a, z, polys, dep) => {
     const e = life.get(name);
-    if (!e) { life.set(name, { a, z, first: polys, last: polys }); return; }
-    if (a < e.a) { e.a = a; e.first = polys; }
-    if (z > e.z) { e.z = z; e.last = polys; }
+    if (!e) { life.set(name, { a, z, first: polys, last: polys, depA: dep, depZ: dep }); return; }
+    if (a < e.a) { e.a = a; e.first = polys; e.depA = dep; }
+    if (z > e.z) { e.z = z; e.last = polys; e.depZ = dep; }
   };
-  for (const s of dated) if (!s.small && !s.people) note(s.name, s.first, s.last + 1, s.polys);
-  csParts.forEach((r) => note(r.name, 1886 + r.start / 365.2425, 1886 + ((r.end < 0 ? dayOf(CS_TO) : r.end) + 1) / 365.2425, polysOf(r.geometry)));
+  for (const s of dated) if (!s.small && !s.people) note(s.name, s.first, s.last + 1, s.polys, !!s.ruler);
+  csParts.forEach((r) => note(r.name, 1886 + r.start / 365.2425, 1886 + ((r.end < 0 ? dayOf(CS_TO) : r.end) + 1) / 365.2425, polysOf(r.geometry), !!(r.p && r.p.status && r.p.status !== "independent")));
   const all = [...life.entries()];
   const ends = all.filter(([, e]) => e.z < 2019.9), starts = all.filter(([, e]) => e.a > DATED_FROM);
   const cells = new Map();
   const cellsFor = (key, polys) => { if (!cells.has(key)) { const c = cellsOf(polys); cells.set(key, { c, w: cellSum(c) }); } return cells.get(key); };
   for (const [an, A] of ends) {
-    const cands = starts.filter(([bn, B]) => bn !== an && Math.abs(B.a - A.z) <= 1.01);
+    if (A.depZ) continue;
+    const cands = starts.filter(([bn, B]) => bn !== an && !B.depA && Math.abs(B.a - A.z) <= 1.01);
     if (!cands.length) continue;
     const ca = cellsFor("z" + an, A.last);
     if (!ca.w) continue;
@@ -1397,13 +1812,38 @@ for (const [k, w] of edges) {
   if (!adj.has(b)) adj.set(b, []);
   adj.get(a).push([b, w]); adj.get(b).push([a, w]);
 }
+const BASE_COLOURS = {
+  "Afghanistan": 6, "Albania": 1, "Angola": 5, "Argentina": 6, "Australia": 0, "Austria": 2, "Azerbaijan": 6,
+  "Bangladesh": 5, "Belarus": 5, "Belgium": 0, "Benin": 5, "Bolivia": 0, "Bosnia-Herzegovina": 9,
+  "Botswana": 9, "Brazil": 8, "Bulgaria": 7, "Burkina Faso": 2, "Cambodia": 4, "Cameroon": 4, "Canada": 9,
+  "Central African Republic": 8, "Chad": 3, "Chile": 3, "China": 3, "Colombia": 4, "Congo": 3, "Costa Rica": 5,
+  "Croatia": 6, "Cuba": 2, "Czech Republic": 0, "Côte d'Ivoire": 7, "DR Congo": 2, "Denmark": 3, "Ecuador": 8,
+  "Egypt": 9, "Eritrea": 8, "Estonia": 4, "Ethiopia": 5, "Finland": 2, "France": 7, "Gabon": 9, "Germany": 9,
+  "Ghana": 8, "Greece": 6, "Greenland": 3, "Guatemala": 9, "Guinea": 0, "Guyana": 4, "Honduras": 7,
+  "Hungary": 1, "Iceland": 2, "India": 9, "Indonesia": 5, "Iran": 2, "Iraq": 5, "Ireland": 9, "Italy": 8,
+  "Japan": 5, "Jordan": 3, "Kazakhstan": 7, "Kenya": 9, "Kosovo": 8, "Kyrgyzstan": 2, "Laos": 7, "Latvia": 9,
+  "Liberia": 3, "Libya": 5, "Lithuania": 3, "Luxembourg": 8, "Madagascar": 6, "Malawi": 7, "Malaysia": 2,
+  "Mali": 6, "Mauritania": 8, "Mexico": 4, "Moldova": 1, "Mongolia": 0, "Montenegro": 4, "Morocco": 7,
+  "Mozambique": 8, "Myanmar": 2, "Namibia": 2, "Netherlands": 1, "New Zealand": 4, "Nicaragua": 1, "Niger": 7,
+  "North Korea": 7, "North Macedonia": 3, "Norway": 6, "Oman": 5, "Pakistan": 1, "Papua New Guinea": 1,
+  "Paraguay": 5, "Peru": 2, "Philippines": 9, "Poland": 4, "Portugal": 6, "Romania": 0, "Russia": 8,
+  "Saudi Arabia": 7, "Senegal": 3, "Serbia": 2, "Sierra Leone": 7, "Slovakia": 7, "Slovenia": 5, "Somalia": 4,
+  "South Africa": 6, "South Sudan": 0, "Spain": 0, "Sri Lanka": 4, "Suriname": 0, "Sweden": 7,
+  "Switzerland": 3, "Syria": 0, "Tajikistan": 8, "Tanzania": 5, "Thailand": 0, "Tunisia": 3, "Turkey": 1,
+  "Turkmenistan": 3, "Uganda": 7, "Ukraine": 6, "United Arab Emirates": 3, "United Kingdom": 3,
+  "United States": 6, "Uruguay": 0, "Uzbekistan": 0, "Venezuela": 9, "Vietnam": 1, "Yemen": 2, "Zambia": 0,
+  "Zimbabwe": 4
+};
 const prevColor = new Map();
 try {
   const prevByName = new Map(JSON.parse(readFileSync(resolve(out, "eras.json"), "utf8")).polities.filter((p) => p[1] >= 0).map((p) => [p[0], p[1]]));
+  for (const [to, froms] of renamedFrom) if (!prevByName.has(to)) for (const f of froms) if (prevByName.has(f)) { prevByName.set(to, prevByName.get(f)); break; }
   [true, false].forEach((pass) => catalogue.forEach((e, id) => { const k = keyOf(id); if (!!e.cs === pass && !prevColor.has(k) && prevByName.has(e.n)) prevColor.set(k, prevByName.get(e.n)); }));
 } catch (e) { console.warn("No earlier eras.json, so colours are chosen afresh"); }
+const seeded = new Set();
+catalogue.forEach((e, id) => { if (e.cs && Object.hasOwn(BASE_COLOURS, e.n)) { const k = keyOf(id); prevColor.set(k, BASE_COLOURS[e.n]); seeded.add(k); } });
 const stable = (k) => prevColor.has(k);
-const order = [...weight.keys()].sort((a, b) => stable(b) - stable(a) || weight.get(b) - weight.get(a));
+const order = [...weight.keys()].sort((a, b) => seeded.has(b) - seeded.has(a) || stable(b) - stable(a) || weight.get(b) - weight.get(a));
 const color = new Map();
 const used = new Array(PALETTE).fill(0);
 const costOf = (k, c) => {
@@ -1416,7 +1856,11 @@ const costOf = (k, c) => {
   }
   return cost;
 };
+const touchAdj = new Map();
+for (const p of touch) { const [a, b] = p.split("|"); if (!touchAdj.has(a)) touchAdj.set(a, []); if (!touchAdj.has(b)) touchAdj.set(b, []); touchAdj.get(a).push(b); touchAdj.get(b).push(a); }
 for (const k of order) {
+  const was = prevColor.get(k);
+  if (was !== undefined && (seeded.has(k) || !(touchAdj.get(k) || []).some((n) => color.get(n) === was))) { color.set(k, was); used[was]++; continue; }
   let best = 0, bestCost = Infinity;
   for (let c = 0; c < PALETTE; c++) { const cost = costOf(k, c); if (cost < bestCost) { bestCost = cost; best = c; } }
   color.set(k, best);
@@ -1429,14 +1873,15 @@ catalogue.forEach((e, id) => { const k = keyOf(id); namesIn.set(k, (namesIn.get(
 const clashes = () => [...touch].filter((p) => { const [a, b] = p.split("|"); return color.has(a) && color.get(a) === color.get(b); });
 const greedyList = clashes(), greedyClash = greedyList.length;
 const freeFor = (k) => { const taken = new Set((touchOf.get(k) || []).map((n) => color.get(n))); return taken.size < PALETTE - (taken.has(color.get(k)) ? 0 : 1); };
-const brief = greedyList.filter((p) => (edges.get(p) || 0) * 100 < KEEP_COST).length, free = greedyList.filter((p) => p.split("|").some(freeFor)).length;
+const free = greedyList.filter((p) => p.split("|").some(freeFor)).length;
+const keptAll = [...color].filter(([k, c]) => prevColor.get(k) === c).length, hadColour = [...color.keys()].filter((k) => prevColor.has(k)).length;
 let repaired = 0;
 for (let round = 0; round < 10; round++) {
   let moved = false;
   for (const p of clashes()) {
     const [a, b] = p.split("|");
     if (color.get(a) !== color.get(b)) continue;
-    const sides = [a, b].sort((x, y) => (namesIn.get(x) || 0) - (namesIn.get(y) || 0) || (weight.get(x) || 0) - (weight.get(y) || 0));
+    const sides = [a, b].filter((x) => !seeded.has(x)).sort((x, y) => (namesIn.get(x) || 0) - (namesIn.get(y) || 0) || (weight.get(x) || 0) - (weight.get(y) || 0));
     for (const k of sides) {
       const taken = new Set((touchOf.get(k) || []).map((n) => color.get(n)));
       let best = -1, bestCost = Infinity;
@@ -1451,11 +1896,11 @@ for (const p of clashes()) {
   const [a, b] = p.split("|");
   if (color.get(a) !== color.get(b)) continue;
   let plan = null;
-  for (const k of [a, b]) for (let c = 0; c < PALETTE; c++) {
+  for (const k of [a, b].filter((x) => !seeded.has(x))) for (let c = 0; c < PALETTE; c++) {
     if (c === color.get(k)) continue;
     const blockers = (touchOf.get(k) || []).filter((n) => color.get(n) === c);
     const moves = blockers.map((n) => [n, freeColour(n, c)]);
-    if (moves.some(([, m]) => m < 0) || moves.some(([n]) => (touchOf.get(n) || []).some((x) => blockers.includes(x)))) continue;
+    if (moves.some(([, m]) => m < 0) || moves.some(([n]) => seeded.has(n) || (touchOf.get(n) || []).some((x) => blockers.includes(x)))) continue;
     const cost = moves.reduce((t, [n]) => t + (namesIn.get(n) || 0), namesIn.get(k) || 0);
     if (!plan || cost < plan.cost) plan = { k, c, moves, cost };
   }
@@ -1464,7 +1909,7 @@ for (const p of clashes()) {
 const left = clashes();
 const clash = left.length;
 if (left.length) console.log("touching pairs left in one colour, with every colour taken round both, even after moving their neighbours: " + left.map((p) => p.split("|").map((k) => (catalogue[+k.slice(1)] && k[0] === "N" ? catalogue[+k.slice(1)].n : LINEAGE[+k.slice(1)] ? LINEAGE[+k.slice(1)][0] : k)).join(" and ")).join("; "));
-console.log("colours: " + greedyClash + " touching pairs in one colour after the greedy pass (" + brief + " touching too briefly or too weakly to outweigh an earlier colour, " + free + " where a free colour existed), " + repaired + " keys recoloured, " + clash + " left");
+console.log("colours: " + keptAll + " of " + hadColour + " keys with an earlier colour keep it after the greedy pass, " + greedyClash + " touching pairs in one colour (" + free + " where a free colour existed), " + repaired + " keys recoloured, " + clash + " left");
 
 const entries = catalogue.map((e, id) => {
   const k = keyOf(id);

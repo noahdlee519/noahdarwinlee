@@ -353,7 +353,7 @@ const major = live.filter((e) => best.get(e) < RANKS[2]), minor = live.filter((e
 const order = (a, b) => best.get(a) - best.get(b);
 major.sort(order);
 minor.sort(order);
-const SOURCES = "Reba, Reitsma, and Seto (2016) from Chandler (1987) and Modelski (2003); UN World Urbanization Prospects and Hanson (2016) via SDAM; Natural Earth; GeoNames via UCHRONIA; historical-basemaps; Chronia's tables";
+const SOURCES = "Reba, Reitsma, and Seto (2016) from Chandler (1987) and Modelski (2003); UN World Urbanization Prospects and Hanson (2016) via SDAM; Natural Earth; GeoNames via UCHRONIA; historical-basemaps; CHRONIA's tables";
 writeFileSync(resolve(out, "cities-dated.json"), JSON.stringify({ ranks: RANKS, sources: SOURCES, rows: major.map(rowOf) }));
 writeFileSync(resolve(out, "cities-dated-minor.json"), JSON.stringify({ rows: minor.map(rowOf) }));
 

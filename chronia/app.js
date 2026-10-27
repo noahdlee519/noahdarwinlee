@@ -3499,8 +3499,23 @@
   function reveal() {
     ready = true;
     $("load").classList.add("is-gone");
-    document.documentElement.classList.add("ch-ready");
+    playIntro();
     scheduleRender();
+  }
+  function playIntro() {
+    var root = document.documentElement;
+    if (root.classList.contains("ch-ready")) return false;
+    var play = !reduceMotion;
+    if (play) {
+      var roll = document.createElement("div");
+      roll.className = "ch-roll";
+      roll.setAttribute("aria-hidden", "true");
+      document.body.appendChild(roll);
+      root.classList.add("ch-intro");
+      setTimeout(function () { root.classList.remove("ch-intro"); roll.remove(); }, 3000);
+    }
+    root.classList.add("ch-ready");
+    return play;
   }
   function prepLand(topo) {
     var f = topojson.feature(topo, topo.objects.land);
