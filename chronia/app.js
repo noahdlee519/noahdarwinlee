@@ -1946,8 +1946,9 @@
       var cv = G.cands[ci].v, dd = Math.acos(Math.min(1, cv[0] * st.v[0] + cv[1] * st.v[1] + cv[2] * st.v[2]));
       if (dd < nd) { nd = dd; near = ci; }
     }
+    if (near > 0 && !(moving || rangeActive)) order.push(0);
     if (near >= 0) order.push(near);
-    for (ci = 0; ci < G.cands.length; ci++) if (ci !== near) order.push(ci);
+    for (ci = 0; ci < G.cands.length; ci++) if (order.indexOf(ci) < 0) order.push(ci);
     for (var oi = 0; oi < order.length; oi++) {
       ci = order[oi];
       var c = G.cands[ci], ranked = [];
