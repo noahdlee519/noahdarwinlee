@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1400–1885 | world | capitals
+
+- Claimed by: the capitals session, 2026-10-27. Dated capitals from Wikidata for the yearly borders, in a new table read by the builder.
+
 ## 1200–1399 | world | yearly borders from 1200
 
 - What changed: the yearly borders now start in 1200, not 1400 (`DATED_FROM`). The snapshot maps of 1200, 1279, and 1300 are no longer shown as maps; like the later snapshots, they fill the land Cliopatria leaves blank. `REGIMES` for France, England and Britain, and Portugal start in 1200.
