@@ -1852,13 +1852,13 @@
       var span = 0;
       for (var i = 0; i < 2; i++) span = Math.max(span, rows[i][0] + 7 + ctx.measureText(rows[i][1]).width);
       ctx.restore();
-      out.push(mkBox(scaleL + span / 2, scaleB - 8.5, span / 2 + 6, 16, 0));
+      out.push(Object.assign(mkBox(scaleL + span / 2, scaleB - 8.5, span / 2 + 6, 16, 0), { ui: true }));
     }
     var els = [controlsEl];
     if (sheetMode && !ui.bare) els = els.concat(Array.from(siteEls));
     els.forEach(function (el) {
       var r = el && el.getBoundingClientRect();
-      if (r && r.width && r.height) out.push(mkBox(r.left + r.width / 2, r.top + r.height / 2, r.width / 2 + 4, r.height / 2 + 4, 0));
+      if (r && r.width && r.height) out.push(Object.assign(mkBox(r.left + r.width / 2, r.top + r.height / 2, r.width / 2 + 4, r.height / 2 + 4, 0), { ui: true }));
     });
     return out;
   }
@@ -2126,9 +2126,19 @@
     ctx.restore();
   }
   var LINE_H = 1.18, CAP_H = 0.92, TIGHT = 0.1;
-  var labelOrder = [];
+  var labelOrder = [], namesShown = new Set(), namesNow = new Set(), besideShown = new Map(), besideNow = new Map();
+  function inSight(placed, b) {
+    var c = Math.cos(b.ang || 0), s = Math.sin(b.ang || 0);
+    for (var k = -2; k <= 2; k++) {
+      var x = b.ox + c * b.ex * k / 2.4, y = b.oy + s * b.ex * k / 2.4, hid = x < 0 || x > W || y < 0 || y > H;
+      for (var j = 0; j < placed.length && !hid; j++) { var q = placed[j]; if (q.ui && Math.abs(x - q.ox) < q.ex && Math.abs(y - q.oy) < q.ey) hid = true; }
+      if (!hid) return true;
+    }
+    return false;
+  }
   function drawLabels(placed) {
-    if (!ui.countryNames) return;
+    namesNow = new Set(); besideNow = new Map();
+    if (!ui.countryNames) { namesShown = namesNow; besideShown = besideNow; return; }
     var S = localScale();
     var kmPx = (flat ? FB.k : S) / R_KM;
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
@@ -2163,7 +2173,7 @@
         if (pal.antique && f < 8.5 && f * loose / tight >= 8.5) { f *= loose / tight; sp = TIGHT; }
         if (f < 8.5) {
           var rr = L.size * kmPx * Math.sqrt(fore) / 2, kpx = kmPx * Math.sqrt(fore);
-          if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ lines: tag ? lines.concat([tag]) : lines, x: px, y: py, r: rr }); continue; }
+          if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ c: c, lines: tag ? lines.concat([tag]) : lines, x: px, y: py, r: rr }); continue; }
           if (f < 4.2) continue;
           var fs = pal.antique ? TIGHT : sp, fw = (pal.antique ? tight : loose) * 8.5;
           if (!mostlyOwn(c, L, fw / kpx, 8.5 * (CAP_H + LINE_H * (lines.length - 1)) / kpx)) continue;
@@ -2187,10 +2197,11 @@
         var a0 = L.ang && (flat || fore >= 0.72) ? screenAngle(L, px, py) : 0;
         box = mkBox(px - Math.sin(a0) * extra / 2, py + Math.cos(a0) * extra / 2, Math.max(w, tw) / 2 + 3, h / 2 + extra / 2 + 2, a0);
       }
-      var ang = box.ang;
+      var ang = box.ang, held = namesShown.has(c);
       if (!flat && !insideDisc(box)) continue;
-      if (collides(placed, box)) continue;
+      if (collides(placed, box, held && inSight(placed, box))) continue;
       placed.push(box);
+      namesNow.add(c);
       var spacing = f * sp;
       if (arc) { drawArcText(lines, arc, f, spacing); if (tf) drawTag(tag, px, py, arc.ang, h / 2 + tf * 0.8, tf); continue; }
       if (tf) drawTag(tag, px, py, ang, h / 2 + tf * 0.8, tf);
@@ -2211,6 +2222,7 @@
     }
     drawBesideLabels(small, placed);
     ctx.letterSpacing = "0px";
+    namesShown = namesNow; besideShown = besideNow;
   }
   // On the globe, names are painted onto the sphere: laid out on a small map of the land round them, whose grid
   // follows the parallels and meridians, then carried onto the globe glyph by glyph, so they tilt, curve, and
@@ -2250,7 +2262,7 @@
     return { qx: ux, qy: uy, R: R, phi: phi, dir: dir, out: out };
   }
   // rows: [{ text, font ("400 @ serif"), size (px), track (px between glyphs), y (px below the centre) }]
-  function paintLabel(A, rows, ang, arc, placed) {
+  function paintLabel(A, rows, ang, arc, placed, held) {
     var k = 1 / A.kpx, glyphs = [], i, j, e = 4 * k;
     var bx = Math.cos(ang), by = -Math.sin(ang);
     // Which way the name reads on screen, at its middle: if it would read upside down, run it the other way.
@@ -2302,7 +2314,7 @@
     var mu = (x0 + x1) / 2, mv = (y0 + y1) / 2;
     var box = mkBox(cx + mu * cs - mv * sn, cy + mu * sn + mv * cs, (x1 - x0) / 2 + 3, (y1 - y0) / 2 + 2, sang);
     if (box.ox < -300 || box.ox > W + 300 || box.oy < -100 || box.oy > H + 100) return false;
-    if (!insideDisc(box) || collides(placed, box)) return false;
+    if (!insideDisc(box) || collides(placed, box, held && inSight(placed, box))) return false;
     placed.push(box);
     ctx.save();
     ctx.letterSpacing = "0px";
@@ -2321,19 +2333,25 @@
     ctx.restore();
     return true;
   }
+  function foreOnScreen(p) {
+    var x = Math.max(0, Math.min(W, p[0])), y = Math.max(0, Math.min(H, p[1]));
+    if (x === p[0] && y === p[1]) return p[2];
+    var d = Math.hypot(x - cx, y - cy) / B.r;
+    return d < 1 ? Math.max(p[2], Math.sqrt(1 - d * d)) : p[2];
+  }
   function globeLabel(c, L, lines, tag, kmPx, placed, small, straight) {
     var bt = !straight && pal.antique && L.bent && lines === L.lines ? L.bent : null, A = bt || L;
     var p = projectVec(A.v[0], A.v[1], A.v[2], A.lam, A.phi);
     if (!p || p[2] < 0.2) return;
-    var fore = p[2], sp = pal.antique ? 0.22 : 0.16, f = Math.min(24, A.fkm * kmPx * Math.sqrt(fore)), i;
-    if (bt && f < 8.5) { bt = null; A = L; p = projectVec(A.v[0], A.v[1], A.v[2], A.lam, A.phi); if (!p || p[2] < 0.2) return; fore = p[2]; f = Math.min(24, A.fkm * kmPx * Math.sqrt(fore)); }
+    var fore = foreOnScreen(p), sp = pal.antique ? 0.22 : 0.16, f = Math.min(24, A.fkm * kmPx * Math.sqrt(fore)), i;
+    if (bt && f < 8.5) { bt = null; A = L; p = projectVec(A.v[0], A.v[1], A.v[2], A.lam, A.phi); if (!p || p[2] < 0.2) return; fore = foreOnScreen(p); f = Math.min(24, A.fkm * kmPx * Math.sqrt(fore)); }
     var loose = 0, tight = 0;
     for (i = 0; i < lines.length; i++) { loose = Math.max(loose, unitWidth(lines[i])); tight = Math.max(tight, unitWidth(lines[i]) - Array.from(lines[i]).length * (sp - TIGHT)); }
     if (!bt) {
       if (pal.antique && f < 8.5 && f * loose / tight >= 8.5) { f *= loose / tight; sp = TIGHT; }
       if (f < 8.5) {
         var rr = L.size * kmPx * Math.sqrt(fore) / 2, kpx = kmPx * Math.sqrt(fore);
-        if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ lines: tag ? lines.concat([tag]) : lines, x: p[0], y: p[1], r: rr }); return; }
+        if (L.area < BESIDE_KM2 && rr <= 18 && Math.sqrt(L.area) * kpx >= 6) { small.push({ c: c, lines: tag ? lines.concat([tag]) : lines, x: p[0], y: p[1], r: rr }); return; }
         if (f < 4.2) return;
         var fs = pal.antique ? TIGHT : sp, fw = (pal.antique ? tight : loose) * 8.5;
         if (!mostlyOwn(c, L, fw / kpx, 8.5 * (CAP_H + LINE_H * (lines.length - 1)) / kpx)) return;
@@ -2350,7 +2368,7 @@
       var tf = Math.max(8.5, f * 0.62), tface = "italic 400 @ " + (pal.antique ? SERIF : FONT);
       rows.push({ text: tag, font: tface, css: tface.replace("@", tf.toFixed(1) + "px"), size: tf, track: 0, y: h / 2 + tf * 0.8, halo: Math.max(2, tf * 0.3) });
     }
-    paintLabel(frame, rows, L.ang || 0, arc, placed);
+    if (paintLabel(frame, rows, L.ang || 0, arc, placed, namesShown.has(c))) namesNow.add(c);
   }
   function drawTag(tag, x, y, ang, dy, size) {
     ctx.save();
@@ -2402,15 +2420,18 @@
     list.forEach(function (it) {
       var w = 0;
       it.lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
-      var h = f * (CAP_H + LINE_H * (it.lines.length - 1));
-      for (var d = 0; d < BESIDE.length; d++) {
+      var h = f * (CAP_H + LINE_H * (it.lines.length - 1)), was = besideShown.get(it.c), dirs = [];
+      if (was !== undefined) dirs.push(was);
+      for (var d = 0; d < BESIDE.length; d++) if (d !== was) dirs.push(d);
+      for (var q = 0; q < dirs.length; q++) {
+        d = dirs[q];
         var dx = BESIDE[d][0], dy = BESIDE[d][1], gap = it.r + 5;
-        var bx = it.x + dx * (gap + w / 2), by = it.y + dy * (gap + h / 2);
-        if (bx - w / 2 < 4 || bx + w / 2 > W - 4 || by - h / 2 < freeT + 4 || by + h / 2 > freeB - 4) continue;
-        var box = mkBox(bx, by, w / 2 + 2, h / 2 + 2, 0);
+        var bx = it.x + dx * (gap + w / 2), by = it.y + dy * (gap + h / 2), box = mkBox(bx, by, w / 2 + 2, h / 2 + 2, 0), held = d === was && inSight(placed, box);
+        if (!held && (bx - w / 2 < 4 || bx + w / 2 > W - 4 || by - h / 2 < freeT + 4 || by + h / 2 > freeB - 4)) continue;
         if (!flat && !insideDisc(box)) continue;
-        if (collides(placed, box) || !overWater(box)) continue;
+        if (collides(placed, box, held) || !overWater(box)) continue;
         placed.push(box);
+        besideNow.set(it.c, d);
         for (var i = 0; i < it.lines.length; i++) {
           var ly = by + (i - (it.lines.length - 1) / 2) * f * LINE_H;
           ctx.strokeText(it.lines[i], bx + sp / 2, ly);
@@ -2606,21 +2627,21 @@
     if (!(b.x < q.x + q.w && b.x + b.w > q.x && b.y < q.y + q.h && b.y + b.h > q.y)) return false;
     return (!b.ang && !q.ang) || overlapRotated(b, q);
   }
-  function collides(placed, b) {
+  function collides(placed, b, held) {
     var grid = placed.grid;
     if (!grid) { grid = placed.grid = new Map(); placed.wide = []; placed.indexed = 0; }
     for (; placed.indexed < placed.length; placed.indexed++) {
       var q = placed[placed.indexed];
       if (!boxCells(q, function (k) { var l = grid.get(k); if (!l) grid.set(k, (l = [])); l.push(q); })) placed.wide.push(q);
     }
-    for (var i = 0; i < placed.wide.length; i++) if (hits(b, placed.wide[i])) return true;
+    for (var i = 0; i < placed.wide.length; i++) if (!(held && placed.wide[i].ui) && hits(b, placed.wide[i])) return true;
     var stamp = ++boxStamp, hit = false;
     if (!boxCells(b, function (k) {
       if (hit) return;
       var l = grid.get(k);
-      if (l) for (var j = 0; j < l.length; j++) { var q = l[j]; if (q.stamp === stamp) continue; q.stamp = stamp; if (hits(b, q)) { hit = true; return; } }
+      if (l) for (var j = 0; j < l.length; j++) { var q = l[j]; if (q.stamp === stamp) continue; q.stamp = stamp; if (!(held && q.ui) && hits(b, q)) { hit = true; return; } }
     })) {
-      for (i = 0; i < placed.length; i++) if (hits(b, placed[i])) return true;
+      for (i = 0; i < placed.length; i++) if (!(held && placed[i].ui) && hits(b, placed[i])) return true;
       return false;
     }
     return hit;
@@ -7551,6 +7572,7 @@
     ready: function () { var r = document.documentElement.classList; return !!feats && r.contains("uc-ready") && !r.contains("uc-intro"); },
     ui: ui, view: view,
     countries: function () { return countries; },
+    names: function () { return Array.from(namesShown).concat(Array.from(besideShown.keys())); },
     owner: function () { return owner; },
     provinces: function () { return { n: nProv, name: provName, units: nUnit, unitName: unitName, unitProv: unitProv }; },
     cities: function () { return cities; },

@@ -186,6 +186,21 @@ of `/greatercircle/`.
     tilt, curve, and foreshorten with the lines of latitude and longitude
     beneath them. A name that would read upside down runs the other way. The
     flat map sets names flat as before.
+  - Names keep their place at the edges of the screen. A country's name sits
+    at a fixed spot on its land, so panning only carries it across the
+    screen; a name already showing stays as it is while any part of it is in
+    sight, even when it runs off the edge or under the top bar, the scale, or
+    the site's header, and only gives way to those panels once it is hidden
+    behind them (a new name still keeps clear of them). The same holds for a
+    small country's name in the water beside it, which keeps its side. On the
+    globe, a name whose spot has left the screen is sized and set (bent,
+    straight, or tight) as it was at the screen's edge, so it doesn't shrink
+    or change form as it slides off. In the code, the panels' boxes are
+    marked `ui` in `fixedBoxes()`, `namesShown` and `besideShown` hold the
+    names shown in the last frame, `inSight()` tests whether a name can still
+    be seen, and `foreOnScreen()` gives the globe's tilt at the nearest point
+    on the screen. `__uchronia.names()` lists the countries whose names are
+    showing.
   - In Antique, a city name that has no room to the right of its mark tries
     the left, above, and below.
   - Long, thin countries (Chile, Norway, Sweden) are also tried along their

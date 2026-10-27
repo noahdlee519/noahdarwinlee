@@ -1231,12 +1231,27 @@
     [$("head"), $("ctls"), document.querySelector(".ch-site"), $("card"), $("time"), $("key")].forEach(function (el) {
       if (!el || el.hidden) return;
       var r = el.getBoundingClientRect();
-      if (r.width) out.push({ x: r.left - 4, y: r.top - 4, w: r.width + 8, h: r.height + 8 });
+      if (r.width) out.push({ x: r.left - 4, y: r.top - 4, w: r.width + 8, h: r.height + 8, ui: true });
     });
     return out;
   }
   function insideView(b) {
     if (b.x < 2 || b.y < 2 || b.x + b.w > W - 2 || b.y + b.h > H - 2) return false;
+    return insideMap(b);
+  }
+  function hitsLabel(placed, b) {
+    for (var i = 0; i < placed.length; i++) if (!placed[i].ui && overlaps(b, placed[i])) return true;
+    return false;
+  }
+  function inSight(placed, boxes) {
+    for (var i = 0; i < boxes.length; i++) {
+      var b = boxes[i], x = b.x + b.w / 2, y = b.y + b.h / 2, hid = x < 0 || x > W || y < 0 || y > H;
+      for (var j = 0; j < placed.length && !hid; j++) { var u = placed[j]; if (u.ui && x > u.x && x < u.x + u.w && y > u.y && y < u.y + u.h) hid = true; }
+      if (!hid) return true;
+    }
+    return false;
+  }
+  function insideMap(b) {
     if (flat) {
       var k = FB.k, y0 = cy + k * FB.yc;
       return b.y > y0 - k * HALF_PI + 3 && b.y + b.h < y0 + k * HALF_PI - 3;
@@ -1904,22 +1919,26 @@
           tilt = Math.atan2(q1[1] - q0[1], q1[0] - q0[0]);
         }
         tilt = Math.abs(tilt);
-        if (tilt > (name.length > 6 ? 0.55 : 0.65) + (same ? 0.07 : 0)) continue;
+        if (tilt > (name.length > 6 ? 0.55 : 0.65) + (same ? 0.25 : 0)) continue;
         var pen = (fm.ang ? 0.8 : 1) * (fm.oi ? (fm.oi === 1 ? 0.9 : 0.82) : 1) * (fm.tight ? 0.9 : 1) * (tilt > 0.2 ? 1.2 - tilt : 1);
         if (f < thr && !people && side >= 28 && (side >= 64 || localScale() < 600) && fit * 1.18 >= thr) { f = thr; pen *= 0.7; }
         ranked.push({ k: k, f: f, s: f * pen * (same ? 1.12 : 1), same: same });
       }
+      var top = 0, keep = null;
+      ranked.forEach(function (r) { top = Math.max(top, r.f); if (r.same) keep = r; });
       ranked.sort(function (a, b) { return b.s - a.s; });
+      if (keep && keep.f * 1.25 >= top) ranked = [keep].concat(ranked.filter(function (r) { return r !== keep; }));
       for (var t = 0; t < Math.min(3, ranked.length); t++) {
         var rk = ranked[t];
         if (rk.f < thr) continue;
         var fmk = c.forms[rk.k], o = labelOptions(name, people, fmk.sp)[fmk.oi], geo = glyphLayout(c.fr, fmk, o, rk.f, people, scale);
         if (!geo) continue;
-        var ok = true, pad = rk.same ? 0 : 2 + 0.15 * rk.f;
+        var ok = true, held = rk.same, pad = rk.same ? 0 : 2 + 0.15 * rk.f;
         for (var bi = 0; bi < geo.boxes.length && ok; bi++) {
           var bx = geo.boxes[bi];
-          ok = insideView(bx) && !collides(placed, pad ? mkBox(bx.cx, bx.cy, bx.hw + pad, bx.hh + pad, bx.ang) : bx);
+          ok = held ? insideMap(bx) && !hitsLabel(placed, bx) : insideView(bx) && !collides(placed, pad ? mkBox(bx.cx, bx.cy, bx.hw + pad, bx.hh + pad, bx.ang) : bx);
         }
+        if (ok && held) ok = inSight(placed, geo.boxes);
         if (!ok) continue;
         return { id: p.id, name: name, people: people, f: rk.f, geo: geo, v: c.v, form: !t || !st ? formSig(fmk) : st.form, src: { fr: c.fr, fm: fmk, o: o, scale: scale } };
       }
@@ -1960,7 +1979,8 @@
       if (!p.people && (lab[5] > 1500 || lab[2] * kp > 2) && S >= 600 && side < 64) {
         var s = screenShape(feats, Math.max(0.8, Math.min(5, side / 40)), Math.min(4, side / 8));
         shapes.set(p.i, s);
-        if (s && s.x0 > 0 && s.y0 > 0 && s.x1 < W && s.y1 < H) small.push({ p: p, name: name, s: s });
+        var was = labelState.get(p.id);
+        if (s && (was && was.dir >= 0 ? s.x1 > 0 && s.y1 > 0 && s.x0 < W && s.y0 < H : s.x0 > 0 && s.y0 > 0 && s.x1 < W && s.y1 < H)) small.push({ p: p, name: name, s: s });
       }
     }
     for (j = 0; j < small.length; j++) {
@@ -1971,8 +1991,9 @@
       if (!boxes) continue;
       if (st && st.dir >= 0) dirs = [st.dir].concat(dirs.filter(function (d) { return d !== st.dir; }));
       for (var q = 0; q < dirs.length; q++) {
-        var b = boxes[dirs[q]];
-        if (!insideView(b) || collides(placed, b) || boxOnLand(L, b, shapes)) continue;
+        var b = boxes[dirs[q]], held = st && st.dir === dirs[q];
+        if (held ? !insideMap(b) || hitsLabel(placed, b) || !inSight(placed, [b]) : !insideView(b) || collides(placed, b)) continue;
+        if (boxOnLand(L, b, shapes)) continue;
         placed.push(b);
         seen.add(sm.p.id);
         items.push({ id: sm.p.id, name: sm.name, people: false, f: 9, sea: true, dir: dirs[q], geo: { lines: straightLines(lines, b.cx, b.cy, 9, 1), boxes: [b], x: b.cx, y: b.cy, ang: 0 } });
