@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 3400 BC–1199 | world | yearly borders before 1200, Roman provinces, and Chinese dynasties
+
+- Claimed by the session of 27 October 2026 (Holy Roman Empire, search, marshes): Cliopatria year by year back to 3400 BC, the snapshots filling what it leaves blank; Roman provinces from the Ancient World Mapping Center; the China Historical GIS for the dynasties if its licence allows. Touches `DATED_FROM`, `NAME_FIX`, `dated/*.json`, and the dated code in `app.js`.
+
 ## 1400–1885 | world | capitals
 
 - What changed: states and dependencies on the yearly maps show their capitals from 1400, year by year, where Wikidata records one, so capital marks no longer stop at 1886. 4,321 spans have a capital for some or all of their years. The Ottoman Empire's moves from Bursa to Edirne to Constantinople, the Kingdom of France at Versailles from 1682 to 1789, Safavid Iran at Tabriz, Qazvin, and Isfahan, and the Ming court's move to Beijing in 1421 come from Wikidata's dates.
