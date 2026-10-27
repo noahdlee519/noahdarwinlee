@@ -815,6 +815,7 @@
     adams: "John Adams (composer)",
     "han-feizi": "Han Fei",
     dominic: "Saint Dominic",
+    garnier: "Charles Garnier (architect)",
   };
   // Where the article's own lead image is not a picture of the person
   // (a signature, a seal, a page of text), or it has none, a chosen file.
@@ -838,6 +839,10 @@
     fugard: "Athol Fugard, 1960 (cropped).jpg",
     larkin: "Philip Larkin by Humphrey Ocean.jpg",
     "thomas-merton": "Merton Trappist.gif",
+    breuer: "Marcel Breuer (cropped).jpg",
+    "frei-otto": "OttoFrei.jpg",
+    petronius: "Petronius Arbiter by Bodart 1707.jpg",
+    bolano: "Roberto Bolaño Ávalos.jpg",
   };
   // Lead images that show something else, with nothing better to hand.
   var WIKI_NONE = {

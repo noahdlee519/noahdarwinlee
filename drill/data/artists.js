@@ -84,6 +84,89 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "masaccio",
+    name: "Masaccio",
+    born: 1401,
+    dates: "1401–1428",
+    place: "Italy",
+    group: "renaissance",
+    tag: "Early Renaissance",
+    blurb: "Florentine painter who, in a career of barely a decade, brought weighty figures, single-source light, and true linear perspective to painting.",
+    facts: [
+      "His nickname, a pejorative twist on his first name, means roughly “clumsy” or “sloppy Tom.”",
+      "Joined the Florentine guild of physicians and apothecaries, which included painters, in 1422.",
+      "Worked alongside the older painter Masolino on the Brancacci Chapel frescoes.",
+      "Died in Rome in 1428 at only 26."
+    ],
+    ideas: [
+      { term: "Linear perspective", text: "Among the first to apply Brunelleschi’s system of one-point perspective in painting, building convincing architectural space around his figures." },
+      { term: "Consistent light", text: "Modeled solid, sculptural figures with light falling from a single direction, in the Brancacci Chapel matched to the chapel’s real window." }
+    ],
+    works: [
+      { title: "Holy Trinity", year: "c. 1425–27", place: "Santa Maria Novella, Florence", note: "Fresco of the crucified Christ upheld by God the Father beneath a coffered barrel vault in rigorous perspective, with donors kneeling outside and a skeleton on a tomb below." },
+      { title: "The Tribute Money", year: "c. 1425", place: "Brancacci Chapel, Santa Maria del Carmine, Florence", note: "Christ tells Peter to find a coin in a fish’s mouth to pay a tax collector, with Peter shown three times in a single continuous scene." },
+      { title: "Expulsion from the Garden of Eden", year: "c. 1425", place: "Brancacci Chapel, Santa Maria del Carmine, Florence", note: "Adam covers his face and Eve howls in anguish as an angel with a sword drives the naked pair out of paradise." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "piero-della-francesca",
+    name: "Piero della Francesca",
+    born: 1415,
+    dates: "c. 1415–1492",
+    place: "Italy",
+    group: "renaissance",
+    tag: "Early Renaissance",
+    blurb: "Painter and mathematician from Tuscany whose calm, geometrically ordered pictures and pale, even light gave the Early Renaissance its most serene images.",
+    facts: [
+      "Born and died in the small Tuscan town of Sansepolcro.",
+      "Wrote treatises on mathematics and geometry, including a pioneering handbook on perspective for painters.",
+      "Worked for Federico da Montefeltro, Duke of Urbino, and painted his famous profile portrait.",
+      "Died on 12 October 1492, the day Columbus reached the Americas."
+    ],
+    ideas: [
+      { term: "Geometric order", text: "Built compositions on measured proportions and perspective, giving figures a still, monumental, almost abstract clarity." },
+      { term: "Cool daylight", text: "Bathed scenes in soft, pale, even light and a palette of chalky blues, pinks, and whites." }
+    ],
+    works: [
+      { title: "The Baptism of Christ", year: "c. 1448–50", place: "National Gallery, London", note: "Jesus stands in a shallow stream as John pours water over his head, beneath a hovering dove, with three angels by a walnut tree." },
+      { title: "The Flagellation of Christ", year: "c. 1455–60", place: "Galleria Nazionale delle Marche, Urbino", note: "Small, enigmatic panel in which a scourging takes place deep inside a classical loggia while three unexplained men talk in the foreground." },
+      { title: "The Legend of the True Cross", year: "c. 1452–66", place: "San Francesco, Arezzo", note: "Fresco cycle in a church choir tracing the wood of the crucifixion from Adam’s death to its recovery by the emperor Heraclius." },
+      { title: "The Resurrection", year: "c. 1463–65", place: "Museo Civico, Sansepolcro", note: "Jesus steps from his tomb holding a banner above sleeping soldiers; Aldous Huxley called it the best picture in the world." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "mantegna",
+    name: "Andrea Mantegna",
+    born: 1431,
+    dates: "c. 1431–1506",
+    place: "Italy",
+    group: "renaissance",
+    tag: "Early Renaissance",
+    blurb: "Paduan painter and Gonzaga court artist whose hard-edged, archaeologically precise classicism and daring foreshortening shaped northern Italian art.",
+    facts: [
+      "Adopted as a boy by the Paduan painter Francesco Squarcione, whom he later took to court to win his independence.",
+      "Married the daughter of the Venetian painter Jacopo Bellini, becoming Giovanni Bellini’s brother-in-law.",
+      "Served the Gonzaga family in Mantua as court painter from 1460 until his death.",
+      "His early frescoes in Padua’s Ovetari Chapel were largely destroyed by bombing in 1944."
+    ],
+    ideas: [
+      { term: "Di sotto in sù", text: "Dramatic foreshortening “from below,” painting figures and architecture as if seen from beneath, inventing the illusionistic ceiling." },
+      { term: "Archaeological classicism", text: "Studied Roman ruins, inscriptions, and sculpture, giving figures a stony, chiseled look and settings full of accurate ancient detail." }
+    ],
+    works: [
+      { title: "Lamentation of Christ", year: "c. 1480", place: "Pinacoteca di Brera, Milan", note: "Jesus’ corpse lies on a marble slab seen feet-first in startling foreshortening, his wounds exposed, as mourners weep at the side." },
+      { title: "Camera degli Sposi", year: "1465–74", place: "Ducal Palace, Mantua", note: "Frescoed chamber of the Gonzaga court whose ceiling opens onto a painted oculus, with courtiers and putti peering down over a balustrade." },
+      { title: "Saint Sebastian", year: "c. 1457–59", place: "Kunsthistorisches Museum, Vienna", note: "Small panel of the arrow-pierced martyr bound to a ruined classical arch, signed in Greek letters down the pillar." },
+      { title: "The Triumphs of Caesar", year: "c. 1484–92", place: "Hampton Court Palace, London", note: "Nine large canvases of a Roman general’s victory procession, later bought by Charles I for the English royal collection." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "botticelli",
     name: "Sandro Botticelli",
     born: 1445,
@@ -274,6 +357,33 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "holbein",
+    name: "Hans Holbein the Younger",
+    born: 1497,
+    dates: "c. 1497–1543",
+    place: "Germany",
+    group: "renaissance",
+    tag: "Northern Renaissance",
+    blurb: "German painter and designer whose minutely observed, coolly penetrating portraits record Tudor England, above all the court of Henry VIII.",
+    facts: [
+      "Son of an Augsburg painter of the same name, and worked first in Basel.",
+      "A letter of introduction from Erasmus, whom he painted several times, helped him find patrons in England.",
+      "Became court painter to Henry VIII, whose image as a broad-shouldered, legs-apart king he fixed.",
+      "Designed a celebrated woodcut series on the Dance of Death."
+    ],
+    ideas: [
+      { term: "Precise realism", text: "Recorded faces, fabrics, fur, and metal with near-photographic exactness, yet kept sitters reserved and psychologically guarded." },
+      { term: "Anamorphosis", text: "Hid a distorted image within a picture that resolves only from an oblique viewpoint, a trick of perspective used as a memento mori." }
+    ],
+    works: [
+      { title: "The Ambassadors", year: "1533", place: "National Gallery, London", note: "Two French envoys flank a shelf of globes and instruments, while a stretched skull across the floor snaps into shape when viewed from the side." },
+      { title: "Sir Thomas More", year: "1527", place: "Frick Collection, New York", note: "The English humanist and statesman in velvet sleeves and a gold chain of office, painted during the artist’s first stay in England." },
+      { title: "The Body of the Dead Christ in the Tomb", year: "1520–22", place: "Kunstmuseum Basel, Basel", note: "A long, narrow, coffin-like panel of Jesus’ greenish corpse laid out alone; Dostoevsky wrote that it could make a person lose his faith." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "bruegel",
     name: "Pieter Bruegel the Elder",
     born: 1525,
@@ -405,6 +515,34 @@ window.DRILL_DATA.artists = [
       { title: "The Elevation of the Cross", year: "1610–11", place: "Cathedral of Our Lady, Antwerp", note: "Triptych of straining, muscular men hauling the cross upright on a steep diagonal." },
       { title: "Marie de’ Medici Cycle", year: "1622–25", place: "Louvre, Paris", note: "Two dozen huge canvases glorifying the French queen mother’s life with gods, allegories, and pageantry." },
       { title: "Massacre of the Innocents", year: "c. 1611–12", place: "Art Gallery of Ontario, Toronto", note: "Soldiers tear infants from frantic mothers in a tangle of bodies; it fetched a record price at auction in 2002." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "hals",
+    name: "Frans Hals",
+    born: 1582,
+    dates: "c. 1582–1666",
+    place: "Netherlands",
+    group: "baroque",
+    tag: "Dutch Golden Age",
+    blurb: "Haarlem portraitist whose loose, rapid brushwork caught laughter, swagger, and fleeting expression as no painter had before.",
+    facts: [
+      "Born in Antwerp; his family moved north to Haarlem after the city fell to Spain in 1585.",
+      "Spent almost his entire career in Haarlem, painting merchants, militia companies, and street characters.",
+      "Painted vast group portraits of the city’s civic militia companies at their banquets.",
+      "In his eighties, poor, he received a small annuity from the city and painted the governors of its old men’s almshouse."
+    ],
+    ideas: [
+      { term: "Bravura brushwork", text: "Left quick, broken, visible strokes unblended, giving portraits a sense of spontaneity admired later by Manet and the Impressionists." },
+      { term: "Captured moment", text: "Showed sitters laughing, turning, or about to speak, as if caught in an instant rather than posed." }
+    ],
+    works: [
+      { title: "The Laughing Cavalier", year: "1624", place: "Wallace Collection, London", note: "A swaggering man with an upturned moustache and an elaborately embroidered sleeve smirks at the viewer; the name was a Victorian invention." },
+      { title: "The Merry Drinker", year: "c. 1628–30", place: "Rijksmuseum, Amsterdam", note: "A tipsy, ruddy-faced man raises a glass and gestures toward the viewer, painted in loose, rapid strokes." },
+      { title: "Malle Babbe", year: "c. 1633–35", place: "Gemäldegalerie, Berlin", note: "A cackling Haarlem woman grips a pewter tankard with an owl perched on her shoulder." },
+      { title: "Marriage Portrait of Isaac Massa and Beatrix van der Laen", year: "c. 1622", place: "Rijksmuseum, Amsterdam", note: "A relaxed, smiling Dutch couple sit together beneath a tree in a garden of love, she resting her hand on his shoulder." }
     ],
     quotes: []
   },
@@ -548,6 +686,32 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "van-dyck",
+    name: "Anthony van Dyck",
+    born: 1599,
+    dates: "1599–1641",
+    place: "Flanders",
+    group: "baroque",
+    tag: "Baroque",
+    blurb: "Flemish prodigy and Rubens’s star pupil who became court painter to Charles I and set the elegant pattern of aristocratic portraiture for two centuries.",
+    facts: [
+      "Worked as chief assistant in Rubens’s Antwerp studio while still a teenager.",
+      "Spent about six years in Italy, mostly in Genoa, painting its nobility.",
+      "Became principal painter to Charles I in 1632 and was knighted.",
+      "A short, pointed style of beard is named after him."
+    ],
+    ideas: [
+      { term: "Aristocratic elegance", text: "Gave sitters elongated figures, relaxed poses, and shimmering silks, projecting effortless nobility; Gainsborough and Reynolds followed his lead." }
+    ],
+    works: [
+      { title: "Charles I at the Hunt", year: "c. 1635", place: "Louvre, Paris", note: "The English king, dismounted in the countryside, stands at ease with hand on hip while a groom holds his horse." },
+      { title: "Charles I in Three Positions", year: "1635–36", place: "Royal Collection, Windsor Castle", note: "A triple portrait of the king in profile, full face, and at an angle, sent to Rome so Bernini could carve a marble bust." },
+      { title: "Marchesa Elena Grimaldi Cattaneo", year: "1623", place: "National Gallery of Art, Washington", note: "A Genoese noblewoman in black on a terrace, shaded by a red parasol held by a young African servant." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "watteau",
     name: "Antoine Watteau",
     born: 1684,
@@ -569,6 +733,33 @@ window.DRILL_DATA.artists = [
       { title: "Pilgrimage to Cythera", year: "1717", place: "Louvre, Paris", note: "His reception piece: amorous couples drift toward a gilded boat in a hazy landscape sacred to Venus, tinged with melancholy." },
       { title: "Pierrot", year: "c. 1718–19", place: "Louvre, Paris", note: "A life-size clown in white satin stands stiffly facing us with a blank, poignant gaze; once known as Gilles." },
       { title: "Gersaint’s Shop Sign", year: "1720", place: "Charlottenburg Palace, Berlin", note: "Painted in days for a Paris art dealer: clients browse pictures while a portrait of Louis XIV is packed into a crate." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "tiepolo",
+    name: "Giovanni Battista Tiepolo",
+    born: 1696,
+    dates: "1696–1770",
+    place: "Italy",
+    group: "baroque",
+    tag: "Rococo",
+    blurb: "Venetian master of vast, light-filled ceiling frescoes whose airy skies and pastel colors crowned palaces across Europe.",
+    facts: [
+      "Married the sister of the Venetian view painter Francesco Guardi.",
+      "Spent 1750–53 frescoing the prince-bishop’s palace at Würzburg.",
+      "Called to Madrid by Charles III in 1762 to decorate the Royal Palace, and died there.",
+      "Two of his sons trained and worked as his assistants."
+    ],
+    ideas: [
+      { term: "Illusionistic ceilings", text: "Opened ceilings into luminous skies of foreshortened gods and allegories seen from below, the last great flowering of the tradition." },
+      { term: "Light palette", text: "Bright, silvery, pastel color and fluent brushwork that made his heavens feel weightless." }
+    ],
+    works: [
+      { title: "Würzburg Residence staircase ceiling", year: "1752–53", place: "Würzburg Residence, Würzburg", note: "Among the largest frescoes ever painted, vaulting over a grand stair, with the sun god at its center and personifications of America, Africa, Asia, and Europe along the edges." },
+      { title: "The Banquet of Cleopatra", year: "1743–44", place: "National Gallery of Victoria, Melbourne", note: "An Egyptian queen drops a pearl into vinegar to win a bet with Mark Antony at a lavish feast in a Veronese-style setting." },
+      { title: "The Immaculate Conception", year: "1767–69", place: "Prado, Madrid", note: "The Virgin stands on a crescent moon and globe, crushing a serpent, borne on clouds of cherubs; painted for a royal convent church at Aranjuez." }
     ],
     quotes: []
   },
@@ -649,6 +840,33 @@ window.DRILL_DATA.artists = [
       { title: "Marriage A-la-Mode", year: "c. 1743", place: "National Gallery, London", note: "Six canvases satirizing an arranged match between a bankrupt earl’s son and a rich merchant’s daughter." },
       { title: "Gin Lane", year: "1751", place: "British Museum, London", note: "Print of a London slum ravaged by cheap spirits, with a drunken mother letting her baby fall; paired with the cheerful Beer Street." },
       { title: "The Painter and His Pug", year: "1745", place: "Tate Britain, London", note: "Self-portrait as an oval canvas propped on books by Shakespeare, Swift, and Milton, beside a palette marked with a curving line." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "gainsborough",
+    name: "Thomas Gainsborough",
+    born: 1727,
+    dates: "1727–1788",
+    place: "England",
+    group: "baroque",
+    tag: "Society portraiture",
+    blurb: "English portraitist and landscape painter whose feathery brushwork and silvery palette rivaled Reynolds for the patronage of Georgian society.",
+    facts: [
+      "Born in Sudbury, Suffolk.",
+      "Worked for about fifteen years in the spa town of Bath, painting fashionable visitors.",
+      "Was a founding member of the Royal Academy in 1768, though he later stopped exhibiting there after a quarrel over how his work was hung.",
+      "Preferred landscape to portraiture, which he painted chiefly for money."
+    ],
+    ideas: [
+      { term: "Feathery brushwork", text: "Light, flickering strokes that dissolve silk, foliage, and hair into shimmer, admired for their freshness." },
+      { term: "Portrait in landscape", text: "Set sitters out of doors, blending English conversation-piece portraiture with his love of countryside." }
+    ],
+    works: [
+      { title: "Mr and Mrs Andrews", year: "c. 1750", place: "National Gallery, London", note: "A newly married Suffolk couple pose under an oak beside their fields of harvested wheat, with an unfinished patch on the wife’s lap." },
+      { title: "The Blue Boy", year: "c. 1770", place: "Huntington Library, San Marino", note: "A youth in a shimmering satin costume of Van Dyck–era fashion; its 1921 sale to America caused a public outcry in Britain." },
+      { title: "The Morning Walk", year: "1785", place: "National Gallery, London", note: "A young newly-wed couple stroll arm in arm through woodland with a white Pomeranian dog, painted in feathery strokes." }
     ],
     quotes: []
   },
@@ -1220,6 +1438,60 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "dante-gabriel-rossetti",
+    name: "Dante Gabriel Rossetti",
+    born: 1828,
+    dates: "1828–1882",
+    place: "England",
+    group: "19th",
+    tag: "Pre-Raphaelites",
+    blurb: "English painter and poet who co-founded the Pre-Raphaelite Brotherhood and later painted languid, sensuous female icons that fed the Aesthetic movement.",
+    facts: [
+      "Born in London, son of an exiled Italian scholar and brother of a celebrated Victorian poet.",
+      "Co-founded the Pre-Raphaelite Brotherhood in 1848 with John Everett Millais and William Holman Hunt.",
+      "Buried a manuscript of his poems with his wife Elizabeth Siddal in 1862, then had it exhumed in 1869 to publish them.",
+      "Kept a menagerie, including a wombat, at his house on Cheyne Walk in Chelsea."
+    ],
+    ideas: [
+      { term: "Pre-Raphaelitism", text: "A rebellion against academic conventions traced to Raphael, favoring bright color, sharp detail, and medieval and literary subjects." },
+      { term: "Idealized beauty", text: "Later half-length paintings of women with heavy hair and full lips, steeped in symbolism and mood rather than narrative." }
+    ],
+    works: [
+      { title: "Ecce Ancilla Domini!", year: "1849–50", place: "Tate Britain, London", note: "A frightened, white-clad Virgin shrinks back on her bed as an angel holds out a lily toward her." },
+      { title: "Beata Beatrix", year: "c. 1864–70", place: "Tate Britain, London", note: "A memorial to his dead wife, shown in a trance-like ecstasy as a red bird drops a poppy into her hands." },
+      { title: "Proserpine", year: "1874", place: "Tate Britain, London", note: "Jane Morris as the queen of the underworld, holding the pomegranate whose seeds bind her there." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "pissarro",
+    name: "Camille Pissarro",
+    born: 1830,
+    dates: "1830–1903",
+    place: "France",
+    group: "19th",
+    tag: "Impressionism",
+    blurb: "Caribbean-born painter of villages, fields, and Paris boulevards, the patient elder and mentor of the Impressionist circle.",
+    facts: [
+      "Born on the island of St Thomas, then a Danish colony in the Caribbean.",
+      "The only artist to show in all eight Impressionist exhibitions, from 1874 to 1886.",
+      "Mentored Cézanne and Gauguin; Cézanne later described himself as his pupil.",
+      "Briefly adopted Seurat’s dot technique in the mid-1880s."
+    ],
+    ideas: [
+      { term: "Rural life", text: "Painted ordinary villages, orchards, and peasants at work around Pontoise and Éragny, with an anarchist’s sympathy for labor." },
+      { term: "Window series", text: "Late in life, an eye infection kept him indoors, so he painted city streets from hotel windows in changing weather and light." }
+    ],
+    works: [
+      { title: "Hoarfrost", year: "1873", place: "Musée d’Orsay, Paris", note: "A peasant carries a bundle of wood along a road between frosted, furrowed fields; mocked by a critic at the first Impressionist show." },
+      { title: "The Red Roofs", year: "1877", place: "Musée d’Orsay, Paris", note: "Village houses near Pontoise glimpsed through a screen of bare orchard trees, built of dense, interlocking strokes." },
+      { title: "Boulevard Montmartre at Night", year: "1897", place: "National Gallery, London", note: "A broad Paris avenue seen from a hotel window after dark, its gaslights and shop windows streaking reflections on the wet street." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "whistler",
     name: "James McNeill Whistler",
     born: 1834,
@@ -1244,6 +1516,34 @@ window.DRILL_DATA.artists = [
       { title: "The Peacock Room", year: "1876–77", place: "Freer Gallery of Art, Washington", note: "A London dining room he painted over in blue and gold with fighting peacocks, without the owner’s consent." }
     ],
     quotes: ["Art should be independent of all clap-trap."]
+  },
+
+  {
+    id: "winslow-homer",
+    name: "Winslow Homer",
+    born: 1836,
+    dates: "1836–1910",
+    place: "United States",
+    group: "19th",
+    tag: "American Realism",
+    blurb: "American painter and illustrator whose stark, powerful images of the sea, the Civil War, and outdoor life defined a national realism.",
+    facts: [
+      "Largely self-taught, he apprenticed to a Boston lithographer.",
+      "Covered the Civil War as an illustrator for Harper’s Weekly.",
+      "Spent 1881–82 in the English fishing village of Cullercoats.",
+      "Settled in 1883 at Prouts Neck on the Maine coast."
+    ],
+    ideas: [
+      { term: "Struggle with nature", text: "Late seascapes pit lone figures against crashing waves and storms, with stark drama and little sentiment." },
+      { term: "Watercolor", text: "Used watercolor with unprecedented freedom and luminosity, raising it to the level of oil in American art." }
+    ],
+    works: [
+      { title: "The Gulf Stream", year: "1899", place: "Metropolitan Museum of Art, New York", note: "A Black sailor lies on the deck of a dismasted boat in heaving seas, ringed by sharks, with a waterspout on the horizon." },
+      { title: "Snap the Whip", year: "1872", place: "Butler Institute of American Art, Youngstown", note: "Barefoot schoolboys play a game in a meadow before a red one-room schoolhouse." },
+      { title: "Breezing Up (A Fair Wind)", year: "1873–76", place: "National Gallery of Art, Washington", note: "Three boys and a fisherman sail a catboat heeling over in choppy water under a bright sky." },
+      { title: "Prisoners from the Front", year: "1866", place: "Metropolitan Museum of Art, New York", note: "A Union officer confronts three captured Confederate soldiers on a ravaged Virginia battlefield." }
+    ],
+    quotes: []
   },
 
   {
@@ -1295,6 +1595,33 @@ window.DRILL_DATA.artists = [
       { title: "The Scream", year: "1893", place: "National Museum, Oslo", note: "The 1893 tempera-and-crayon version on cardboard: a figure clutches its face under a blood-red sky; other painted, pastel, and print versions exist." },
       { title: "The Sick Child", year: "1885–86", place: "National Museum, Oslo", note: "A pale girl in bed beside a grieving woman, painted from the memory of his dying sister and scraped and reworked." },
       { title: "Madonna", year: "1894–95", place: "National Museum, Oslo", note: "A nude woman with closed eyes and a red halo, at once erotic and deathly; also made as a lithograph." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "toulouse-lautrec",
+    name: "Henri de Toulouse-Lautrec",
+    born: 1864,
+    dates: "1864–1901",
+    place: "France",
+    group: "19th",
+    tag: "Post-Impressionism",
+    blurb: "Aristocratic chronicler of Montmartre’s cabarets, dance halls, and brothels, whose bold posters transformed commercial lithography.",
+    facts: [
+      "Born into an old noble family in Albi; his parents were first cousins.",
+      "Broke both thighbones as a teenager, and his legs stopped growing, probably from a hereditary bone disorder.",
+      "Settled in Montmartre and became a fixture of the Moulin Rouge.",
+      "Alcoholism led to his confinement in a sanatorium in 1899; he died two years later at 36."
+    ],
+    ideas: [
+      { term: "Poster art", text: "Flat color, bold outline, and cropped, tilted compositions, much indebted to Japanese prints, turned the advertising poster into art." },
+      { term: "Nightlife", text: "Observed performers, patrons, and prostitutes with sharp, unsentimental, often caricatural insight." }
+    ],
+    works: [
+      { title: "At the Moulin Rouge", year: "1892–95", place: "Art Institute of Chicago, Chicago", note: "Nightclub patrons around a table, with a woman’s face lit an eerie green at the right edge and the artist’s own short figure passing in the background." },
+      { title: "Moulin Rouge: La Goulue", year: "1891", place: "Museum of Modern Art, New York", note: "His first poster: a cancan dancer kicks up her petticoats before a silhouetted crowd, with a lanky, shadowy dancer in the foreground." },
+      { title: "Jane Avril Dancing", year: "c. 1892", place: "Musée d’Orsay, Paris", note: "A thin, pale performer sketched mid-kick in a solo number, in thinned oil on cardboard, with two onlookers in the sparse background." }
     ],
     quotes: []
   },
@@ -1936,6 +2263,141 @@ window.DRILL_DATA.artists = [
     quotes: []
   },
 
+  {
+    id: "man-ray",
+    name: "Man Ray",
+    born: 1890,
+    dates: "1890–1976",
+    place: "United States",
+    group: "modern",
+    tag: "Dada and Surrealism",
+    blurb: "American artist in Paris who moved between painting, objects, and photography, inventing new camera-less and darkroom techniques for Dada and Surrealism.",
+    facts: [
+      "Born in Philadelphia to Russian Jewish immigrants and raised in Brooklyn.",
+      "Joined Duchamp in New York Dada, then moved to Paris in 1921.",
+      "Developed the solarization technique with his assistant and lover Lee Miller.",
+      "Spent World War II in Hollywood, marrying the dancer Juliet Browner in a double wedding with Max Ernst and Dorothea Tanning."
+    ],
+    ideas: [
+      { term: "Rayographs", text: "Camera-less photographs made by placing objects directly on light-sensitive paper and exposing them to light." },
+      { term: "Solarization", text: "Partially re-exposing a print during developing to reverse tones and outline forms with a ghostly halo." }
+    ],
+    works: [
+      { title: "Le Violon d’Ingres", year: "1924", place: "Centre Pompidou, Paris", note: "A model’s bare back, seen from behind with a turban, painted with two f-holes to resemble a stringed instrument; a print set a photography auction record in 2022." },
+      { title: "Cadeau", year: "1921", place: "Museum of Modern Art, New York", note: "A flatiron with a row of tacks glued to its sole, turning a household tool into a hostile thing." },
+      { title: "Indestructible Object", year: "1923", place: "Museum of Modern Art, New York", note: "A metronome with a cut-out photograph of an eye clipped to its pendulum; remade after the original was destroyed." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "calder",
+    name: "Alexander Calder",
+    born: 1898,
+    dates: "1898–1976",
+    place: "United States",
+    group: "modern",
+    tag: "Kinetic sculpture",
+    blurb: "American sculptor who invented the mobile, setting abstract forms in motion, and filled public plazas with monumental painted-steel stabiles.",
+    facts: [
+      "The third generation in a family of sculptors.",
+      "Trained as a mechanical engineer before turning to art.",
+      "Performed a miniature circus of wire and found-material figures for Paris audiences in the late 1920s.",
+      "Turned to abstraction after a 1930 visit to Mondrian’s studio."
+    ],
+    ideas: [
+      { term: "Mobile", text: "Hanging, balanced sculptures of wire and painted metal that move with air currents; Duchamp coined the name." },
+      { term: "Stabile", text: "Stationary abstract sculptures, often huge and painted bright red or black; the name was Jean Arp’s." }
+    ],
+    works: [
+      { title: "Calder’s Circus", year: "1926–31", place: "Whitney Museum of American Art, New York", note: "A miniature big top of acrobats, animals, and performers made of wire, cloth, and cork, which he worked by hand in live shows." },
+      { title: "Lobster Trap and Fish Tail", year: "1939", place: "Museum of Modern Art, New York", note: "A hanging mobile of painted sheet metal and wire, commissioned for the stairwell of a New York museum’s new building." },
+      { title: "Flamingo", year: "1974", place: "Federal Plaza, Chicago", note: "A 53-foot vermilion steel stabile arching over a federal plaza among Mies van der Rohe’s black towers." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "henry-moore",
+    name: "Henry Moore",
+    born: 1898,
+    dates: "1898–1986",
+    place: "England",
+    group: "modern",
+    tag: "Modern sculpture",
+    blurb: "British sculptor of monumental, semi-abstract reclining figures pierced by hollows, whose bronzes became fixtures of public spaces worldwide.",
+    facts: [
+      "Son of a Yorkshire coal miner, born in Castleford.",
+      "Was gassed at the Battle of Cambrai in 1917.",
+      "Studied at Leeds School of Art alongside Barbara Hepworth.",
+      "As an official war artist, drew Londoners sheltering in Underground stations during the Blitz."
+    ],
+    ideas: [
+      { term: "Reclining figure", text: "His lifelong theme: a woman lying back on one elbow, abstracted into rolling forms like hills and valleys." },
+      { term: "Pierced form", text: "Opened holes through solid masses so that space and void become as important as material." }
+    ],
+    works: [
+      { title: "Recumbent Figure", year: "1938", place: "Tate Britain, London", note: "A green stone woman leaning on her elbow, her body opened into hollows and undulations like a landscape; made for an architect’s garden." },
+      { title: "Knife Edge Two Piece", year: "1962–65", place: "Abingdon Street Gardens, London", note: "A pair of massive bronze forms with sharp ridges, set opposite the Houses of Parliament and given by the artist." },
+      { title: "Tube Shelter Perspective", year: "1941", place: "Tate Britain, London", note: "Rows of sleepers lining a curving Underground tunnel during the Blitz, drawn as an official war artist." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "giacometti",
+    name: "Alberto Giacometti",
+    born: 1901,
+    dates: "1901–1966",
+    place: "Switzerland",
+    group: "modern",
+    tag: "Modern sculpture",
+    blurb: "Swiss sculptor and painter in Paris, first a Surrealist, then maker of the gaunt, elongated figures that became emblems of postwar existential isolation.",
+    facts: [
+      "Son of a Swiss Post-Impressionist painter.",
+      "Moved to Paris in 1922 and studied under the sculptor Antoine Bourdelle.",
+      "Was expelled from the Surrealist group in 1935 for returning to work from life models.",
+      "His brother Diego was his lifelong assistant and model."
+    ],
+    ideas: [
+      { term: "Elongated figures", text: "Thin, rough-surfaced bronzes reduced almost to lines, conveying how a figure looks across a distance." },
+      { term: "Existential vision", text: "Admired by Sartre, his isolated figures were read as images of solitude and the struggle to see truly." }
+    ],
+    works: [
+      { title: "The Palace at 4 a.m.", year: "1932", place: "Museum of Modern Art, New York", note: "A fragile Surrealist scaffold of wood, glass, wire, and string, holding a bird skeleton, a spine, and a small woman." },
+      { title: "Man Pointing", year: "1947", place: "Museum of Modern Art, New York", note: "A thin bronze figure with one arm outstretched; another cast became the most expensive sculpture sold at auction in 2015." },
+      { title: "Walking Man I", year: "1960", place: "Carnegie Museum of Art, Pittsburgh", note: "A life-size, emaciated bronze figure in mid-stride; another cast sold for over $100 million in 2010." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "jacob-lawrence",
+    name: "Jacob Lawrence",
+    born: 1917,
+    dates: "1917–2000",
+    place: "United States",
+    group: "modern",
+    tag: "American modernism",
+    blurb: "Harlem-raised painter whose vivid narrative series in flat, angular color told the history and struggles of Black Americans.",
+    facts: [
+      "Born in Atlantic City, New Jersey, and raised from age 13 in Harlem.",
+      "In 1941 became the first African American artist whose work was acquired by the Museum of Modern Art.",
+      "Served in the US Coast Guard during World War II, recording life aboard ship.",
+      "Married the painter Gwendolyn Knight and later taught for years at the University of Washington in Seattle."
+    ],
+    ideas: [
+      { term: "Narrative series", text: "Told sweeping histories in sequences of small numbered panels with captions, like illustrated chapters." },
+      { term: "Dynamic Cubism", text: "His own term for his style: flat shapes, bold primary colors, and angular, rhythmic compositions." }
+    ],
+    works: [
+      { title: "The Migration Series", year: "1940–41", place: "Museum of Modern Art, New York, and Phillips Collection, Washington", note: "Sixty captioned panels tracing Black Americans’ movement from the rural South to Northern cities, split between two museums by odd and even numbers." },
+      { title: "Toussaint L’Ouverture series", year: "1938", place: "Amistad Research Center, New Orleans", note: "Forty-one panels on the life of the leader of the Haitian Revolution, painted when he was about 20." },
+      { title: "Harriet Tubman series", year: "1939–40", place: "Hampton University Museum, Hampton", note: "Thirty-one panels on the escaped slave who led others north on the Underground Railroad." }
+    ],
+    quotes: []
+  },
+
   /* ===================== Postwar and contemporary (after 1945) ===================== */
 
   {
@@ -2013,6 +2475,33 @@ window.DRILL_DATA.artists = [
       { title: "Seagram Murals", year: "1958–59", place: "Tate Modern, London", note: "Dark maroon and black canvases first meant for a Manhattan restaurant; nine were given to the Tate." },
       { title: "No. 61 (Rust and Blue)", year: "1953", place: "Museum of Contemporary Art, Los Angeles", note: "Glowing blocks of blue and rust floating on a deep blue ground." },
       { title: "No. 14, 1960", year: "1960", place: "San Francisco Museum of Modern Art, San Francisco", note: "A dark blue-black rectangle hovering above a glowing orange-red one on a deep red ground." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "cartier-bresson",
+    name: "Henri Cartier-Bresson",
+    born: 1908,
+    dates: "1908–2004",
+    place: "France",
+    group: "postwar",
+    tag: "Photojournalism",
+    blurb: "French photographer whose candid, perfectly composed 35mm street pictures defined modern photojournalism and the idea of the decisive moment.",
+    facts: [
+      "Studied painting with the Cubist André Lhote before taking up the camera.",
+      "Captured by the Germans in 1940, he escaped on his third attempt in 1943.",
+      "Co-founded the Magnum Photos agency in 1947 with Robert Capa and others.",
+      "Photographed Gandhi shortly before his assassination in 1948, and late in life gave up photography to draw."
+    ],
+    ideas: [
+      { term: "The decisive moment", text: "Pressing the shutter at the split second when form and meaning come together within the frame." },
+      { term: "Discreet camera", text: "Worked with a small Leica, often taping over its shiny parts, to move unnoticed through the street." }
+    ],
+    works: [
+      { title: "Behind the Gare Saint-Lazare", year: "1932", place: "Museum of Modern Art, New York", note: "A man leaps across a flooded lot near a Paris rail terminus, his heel about to touch his own reflection; shot through a gap in a fence." },
+      { title: "Hyères, France", year: "1932", place: "Museum of Modern Art, New York", note: "Seen from the top of a stairway, a blurred cyclist speeds along the street below, framed by the spiraling railing." },
+      { title: "Images à la sauvette (The Decisive Moment)", year: "1952", place: "Éditions Verve, Paris (book)", note: "Landmark photobook with a cut-paper cover by Matisse and a preface setting out his philosophy of photography." }
     ],
     quotes: []
   },
@@ -2486,6 +2975,33 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "ellsworth-kelly",
+    name: "Ellsworth Kelly",
+    born: 1923,
+    dates: "1923–2015",
+    place: "United States",
+    group: "postwar",
+    tag: "Hard-edge painting",
+    blurb: "American painter and sculptor of crisp, flat color shapes and shaped canvases, abstracted from things he observed in the world.",
+    facts: [
+      "Served in the Ghost Army, a camouflage and deception unit, in World War II.",
+      "Lived in France from 1948 to 1954 on the GI Bill.",
+      "Was a keen birdwatcher as a boy and cited Audubon as an early influence.",
+      "His last work is a chapel-like building in Texas, completed after his death."
+    ],
+    ideas: [
+      { term: "Hard-edge", text: "Flat, unmodulated fields of pure color with sharp edges, often on separate panels or shaped canvases." },
+      { term: "Observed form", text: "Abstract shapes drawn from shadows, windows, and fragments of buildings or landscape." }
+    ],
+    works: [
+      { title: "Colors for a Large Wall", year: "1951", place: "Museum of Modern Art, New York", note: "Sixty-four small square canvases, each a single flat hue, black, or white, joined into one checkered grid, made in Paris." },
+      { title: "Spectrum V", year: "1969", place: "Metropolitan Museum of Art, New York", note: "Thirteen tall adjoining panels, each a single flat hue, stepping through the rainbow." },
+      { title: "Austin", year: "2015", place: "Blanton Museum of Art, Austin", note: "A stone building with colored-glass windows, a wooden totem, and black-and-white marble panels; his only building, opened in 2018." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "frankenthaler",
     name: "Helen Frankenthaler",
     born: 1928,
@@ -2536,6 +3052,89 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "twombly",
+    name: "Cy Twombly",
+    born: 1928,
+    dates: "1928–2011",
+    place: "United States",
+    group: "postwar",
+    tag: "Gestural abstraction",
+    blurb: "American painter in Rome whose scrawled, graffiti-like marks, words, and smears evoke classical myth, poetry, and memory.",
+    facts: [
+      "Born in Lexington, Virginia; his father pitched for the Chicago White Sox.",
+      "Studied at Black Mountain College and traveled to Europe and North Africa with Robert Rauschenberg.",
+      "Served as a cryptographer in the US Army.",
+      "Settled in Italy in the late 1950s and lived mostly in Rome."
+    ],
+    ideas: [
+      { term: "Scrawl", text: "Handwriting-like loops, scribbles, and smudges in pencil, crayon, and paint that blur the line between drawing, writing, and painting." },
+      { term: "Classical allusion", text: "Names and lines from Homer, Virgil, and poets scrawled across canvases, conjuring antiquity through fragments." }
+    ],
+    works: [
+      { title: "Leda and the Swan", year: "1962", place: "Museum of Modern Art, New York", note: "Frenzied scrawls of crayon, pencil, and red paint, with hearts and a phallus amid the chaos, evoke a god’s violent seduction of a mortal." },
+      { title: "Fifty Days at Iliam", year: "1978", place: "Philadelphia Museum of Art, Philadelphia", note: "A ten-part cycle on the Trojan War based on Alexander Pope’s translation of the epic, shown in its own gallery." },
+      { title: "The Ceiling", year: "2010", place: "Louvre, Paris", note: "A deep blue expanse floating with disks and the names of ancient Greek sculptors, painted over a gallery of antique bronzes." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "judd",
+    name: "Donald Judd",
+    born: 1928,
+    dates: "1928–1994",
+    place: "United States",
+    group: "postwar",
+    tag: "Minimalism",
+    blurb: "American artist and critic whose industrially made boxes and stacks rejected illusion for real objects in real space.",
+    facts: [
+      "Studied philosophy at Columbia University and wrote art criticism for Arts Magazine.",
+      "Rejected the label “Minimalism” for his work.",
+      "Moved to Marfa, Texas, where he founded the Chinati Foundation to show art permanently.",
+      "Also designed spare, rectilinear furniture."
+    ],
+    ideas: [
+      { term: "Specific objects", text: "His 1965 essay’s term for three-dimensional work that is neither painting nor sculpture, freed from illusion and composition." },
+      { term: "Industrial fabrication", text: "Repeated units made by manufacturers in aluminum, steel, plywood, and Plexiglas, with no trace of the artist’s hand." }
+    ],
+    works: [
+      { title: "Untitled (Stack)", year: "1967", place: "Museum of Modern Art, New York", note: "Twelve identical green-lacquered galvanized-iron boxes cantilevered from the wall at equal intervals, floor to ceiling." },
+      { title: "100 untitled works in mill aluminum", year: "1982–86", place: "Chinati Foundation, Marfa", note: "A hundred metal boxes of the same outer size but each different inside, lined up in two converted artillery sheds." },
+      { title: "15 untitled works in concrete", year: "1980–84", place: "Chinati Foundation, Marfa", note: "Large open boxes of cast slabs set in a line across a desert field." }
+    ],
+    quotes: [
+      "Actual space is intrinsically more powerful and specific than paint on a flat surface."
+    ]
+  },
+
+  {
+    id: "bridget-riley",
+    name: "Bridget Riley",
+    born: 1931,
+    dates: "b. 1931",
+    place: "England",
+    group: "postwar",
+    tag: "Op art",
+    blurb: "British painter of dazzling black-and-white and color patterns that seem to vibrate, ripple, and shimmer before the eye.",
+    facts: [
+      "Spent much of her childhood in Cornwall during World War II.",
+      "Studied at Goldsmiths and the Royal College of Art, and worked in advertising.",
+      "In 1968 became the first British artist and first woman to win the International Prize for Painting at the Venice Biennale.",
+      "Objected to the fashion industry’s copying of her patterns after a 1965 MoMA show."
+    ],
+    ideas: [
+      { term: "Op art", text: "Precise geometric patterns that exploit the eye’s responses to create sensations of movement, swelling, and flicker." },
+      { term: "Color", text: "From 1967 moved from black and white to color, using stripes and curves to produce optical mixtures and glows." }
+    ],
+    works: [
+      { title: "Movement in Squares", year: "1961", place: "Arts Council Collection, Southbank Centre, London", note: "A black-and-white checkerboard whose units narrow toward the center so the surface seems to fold." },
+      { title: "Fall", year: "1963", place: "Tate, London", note: "Black wavy lines run down the canvas, their curves tightening toward the bottom to create a dizzying ripple." },
+      { title: "Cataract 3", year: "1967", place: "British Council Collection, London", note: "Undulating vermilion and turquoise stripes ripple diagonally across a white canvas; made as she prepared for the 1968 Venice Biennale." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "christo-and-jeanne-claude",
     name: "Christo and Jeanne-Claude",
     born: 1935,
@@ -2557,6 +3156,33 @@ window.DRILL_DATA.artists = [
       { title: "Wrapped Reichstag", year: "1995", place: "Reichstag, Berlin (temporary)", note: "The German parliament building shrouded in silvery fabric and blue rope for two weeks, after 24 years of negotiation." },
       { title: "The Gates", year: "2005", place: "Central Park, New York (temporary)", note: "Thousands of frames hung with saffron fabric along the park’s paths for 16 days in February." },
       { title: "Running Fence", year: "1972–76", place: "Sonoma and Marin Counties, California (temporary)", note: "A white nylon curtain over 24 miles long running across ranchland to the Pacific." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "ruscha",
+    name: "Ed Ruscha",
+    born: 1937,
+    dates: "b. 1937",
+    place: "United States",
+    group: "postwar",
+    tag: "Pop art",
+    blurb: "Los Angeles artist whose deadpan paintings of words, logos, and gas stations and photobooks of the urban landscape fused Pop and Conceptual art.",
+    facts: [
+      "Born in Omaha, Nebraska, and raised in Oklahoma City.",
+      "Drove to Los Angeles in 1956 to study at the Chouinard Art Institute.",
+      "Showed in the 1962 “New Painting of Common Objects,” an early Pop show at the Pasadena Art Museum.",
+      "Represented the United States at the 2005 Venice Biennale."
+    ],
+    ideas: [
+      { term: "Word paintings", text: "Single words or phrases in crisp lettering, floating over flat or atmospheric grounds, treating language as image." },
+      { term: "Artist’s books", text: "Inexpensive photobooks of deadpan snapshots, such as gas stations along Route 66 or every building on the Sunset Strip." }
+    ],
+    works: [
+      { title: "Standard Station, Amarillo, Texas", year: "1963", place: "Hood Museum of Art, Hanover", note: "A Route 66 fuel stop thrust along a sharp diagonal, with searchlight beams, in red, white, and blue." },
+      { title: "OOF", year: "1962–63", place: "Museum of Modern Art, New York", note: "A single comic-book exclamation in thick yellow capitals across a deep blue field." },
+      { title: "The Los Angeles County Museum on Fire", year: "1965–68", place: "Hirshhorn Museum, Washington", note: "An aerial view of a new modernist cultural complex in Hancock Park, with flames and smoke rising from one building." }
     ],
     quotes: []
   },
@@ -2666,6 +3292,60 @@ window.DRILL_DATA.artists = [
   },
 
   {
+    id: "serra",
+    name: "Richard Serra",
+    born: 1938,
+    dates: "1938–2024",
+    place: "United States",
+    group: "postwar",
+    tag: "Post-Minimalism",
+    blurb: "American sculptor of massive, gravity-defying steel plates, curves, and spirals that reshape how viewers move through space.",
+    facts: [
+      "Worked in steel mills to support himself as a student.",
+      "Studied English literature at UC Santa Barbara before earning an MFA from Yale.",
+      "Early on threw molten lead into the corner where wall meets floor.",
+      "A public sculpture he made for a Manhattan plaza was removed in 1989 after a long public controversy."
+    ],
+    ideas: [
+      { term: "Verb list", text: "A 1967–68 list of actions such as to roll, to fold, to lift, used to generate works through process rather than image." },
+      { term: "Weight and balance", text: "Huge plates of weathering steel held up by gravity and counterbalance, making mass and instability felt in the body." }
+    ],
+    works: [
+      { title: "Tilted Arc", year: "1981", place: "Destroyed (removed 1989)", note: "A 120-foot curving wall of weathering steel slicing across a federal plaza in Lower Manhattan, dismantled after office workers complained." },
+      { title: "The Matter of Time", year: "1994–2005", place: "Guggenheim Museum, Bilbao", note: "Eight monumental weathering-steel spirals, ellipses, and snakes that fill a vast gallery." },
+      { title: "Torqued Ellipses", year: "1996–97", place: "Dia Beacon, Beacon", note: "Towering plates of steel bent into skewed ovals that lean in and out as you walk through them." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "turrell",
+    name: "James Turrell",
+    born: 1943,
+    dates: "b. 1943",
+    place: "United States",
+    group: "postwar",
+    tag: "Light and Space",
+    blurb: "American artist who uses light itself as his material, building rooms and skyspaces that alter how we perceive color and the sky.",
+    facts: [
+      "Raised a Quaker in Southern California.",
+      "Studied perceptual psychology at Pomona College.",
+      "A licensed pilot since his teens, he has also flown aerial survey work.",
+      "Received a MacArthur Fellowship in 1984."
+    ],
+    ideas: [
+      { term: "Skyspace", text: "An enclosed room with an opening in the ceiling, where the sky appears as a flat plane of color shifting with daylight." },
+      { term: "Ganzfeld", text: "Spaces flooded with uniform colored light that erase edges and depth, disorienting perception." }
+    ],
+    works: [
+      { title: "Roden Crater", year: "begun late 1970s", place: "Painted Desert, near Flagstaff, Arizona", note: "An extinct volcanic cinder cone he has spent decades turning into a naked-eye observatory of tunnels and chambers, still unfinished." },
+      { title: "Meeting", year: "1980–86", place: "MoMA PS1, New York", note: "A square opening cut in the ceiling of a former schoolroom in Queens, with benches for watching the sky at dusk; his first skyspace in the United States." },
+      { title: "Aten Reign", year: "2013", place: "Guggenheim Museum, New York (temporary)", note: "Concentric rings of slowly shifting colored light filling a spiraling museum rotunda." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "barbara-kruger",
     name: "Barbara Kruger",
     born: 1945,
@@ -2686,6 +3366,33 @@ window.DRILL_DATA.artists = [
       { title: "Untitled (Your body is a battleground)", year: "1989", place: "The Broad, Los Angeles", note: "A woman’s face split into positive and negative, made for a march for abortion rights in Washington." },
       { title: "Untitled (I shop therefore I am)", year: "1987", place: "Private collection", note: "A hand holds a card bearing a consumerist twist on Descartes." },
       { title: "Belief+Doubt", year: "2012", place: "Hirshhorn Museum, Washington", note: "An immersive installation wrapping the museum’s lower lobby in text on walls, floor, and escalators." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "haring",
+    name: "Keith Haring",
+    born: 1958,
+    dates: "1958–1990",
+    place: "United States",
+    group: "postwar",
+    tag: "Street art",
+    blurb: "New York artist whose bold, cartoonish figures moved from subway walls to galleries and murals, carrying messages about AIDS, drugs, and social justice.",
+    facts: [
+      "Grew up in Kutztown, Pennsylvania, and studied at the School of Visual Arts in New York.",
+      "Drew in chalk on blank black advertising panels in subway stations, and was arrested for it several times.",
+      "Opened the Pop Shop in SoHo in 1986 to sell affordable merchandise of his imagery.",
+      "Was diagnosed with AIDS in 1988, set up a foundation in 1989, and died at 31."
+    ],
+    ideas: [
+      { term: "Pictographic style", text: "A vocabulary of thick-outlined figures: radiant babies, barking dogs, dancing people, and flying saucers." },
+      { term: "Public art", text: "Made art for everyone, in streets, subways, and murals, often in support of AIDS awareness and anti-drug campaigns." }
+    ],
+    works: [
+      { title: "Crack Is Wack", year: "1986", place: "Harlem River Drive, New York", note: "A bright mural on a handball court beside a Harlem highway, first painted without permission, warning against a drug epidemic." },
+      { title: "Tuttomondo", year: "1989", place: "Sant’Antonio Abate, Pisa", note: "Thirty interlocking figures on the back wall of a church, a large mural celebrating peace and harmony." },
+      { title: "Once Upon a Time…", year: "1989", place: "LGBT Community Center, New York", note: "A floor-to-ceiling, explicitly erotic black-line mural covering a restroom at a Greenwich Village community center." }
     ],
     quotes: []
   },

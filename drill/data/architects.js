@@ -4,6 +4,33 @@ window.DRILL_DATA.architects = [
   /* ===================== Premodern (antiquity to c. 1850) ===================== */
 
   {
+    id: "imhotep",
+    name: "Imhotep",
+    born: -2650,
+    dates: "fl. c. 2650 BCE",
+    place: "Ancient Egypt",
+    group: "premodern",
+    tag: "Ancient Egyptian architecture",
+    blurb: "Egyptian sage and royal official credited with designing the Step Pyramid at Saqqara, the earliest colossal stone building in Egypt.",
+    facts: [
+      "Served the Third Dynasty king Djoser as chancellor and was high priest of the sun god Ra at Heliopolis.",
+      "His name and titles are carved on the base of a statue of the king found at Saqqara.",
+      "Some two thousand years after his death he was worshipped as a god of medicine, and the Greeks identified him with Asclepius.",
+      "His tomb has never been found."
+    ],
+    ideas: [
+      { term: "Building in dressed stone", text: "Credited by the Ptolemaic historian Manetho with inventing building in cut stone, translating forms once made of reeds, timber, and mud brick into permanent masonry." },
+      { term: "Stacked mastabas", text: "Turned the flat-topped royal tomb into a tower of diminishing tiers, enlarging it in stages into the first pyramid." }
+    ],
+    works: [
+      { title: "Step Pyramid of Djoser", year: "27th century BCE", place: "Saqqara, Egypt", note: "Six-tiered limestone tomb about 62 meters high for a Third Dynasty king, begun as a mastaba and enlarged in stages." },
+      { title: "Heb Sed Court, Saqqara", year: "27th century BCE", place: "Saqqara, Egypt", note: "Open space lined with solid dummy chapels, built so the king could celebrate his jubilee rite of renewal for eternity." },
+      { title: "Enclosure of the Djoser complex", year: "27th century BCE", place: "Saqqara, Egypt", note: "Limestone perimeter about 1.6 kilometers long and 10.5 meters high, paneled with niches, with fourteen false doorways and a single real entrance." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "vitruvius",
     name: "Vitruvius",
     born: -80,
@@ -365,6 +392,63 @@ window.DRILL_DATA.architects = [
   },
 
   {
+    id: "neumann",
+    name: "Balthasar Neumann",
+    born: 1687,
+    dates: "1687–1753",
+    place: "Germany",
+    group: "premodern",
+    tag: "Baroque",
+    blurb: "Bohemian-born military engineer turned architect whose palaces and pilgrimage churches mark the summit of the German late Baroque and Rococo.",
+    facts: [
+      "Born in Eger, Bohemia (now Cheb, Czech Republic), and apprenticed in a bell and cannon foundry.",
+      "Served in the prince-bishop of Würzburg’s artillery for the rest of his life, rising to the rank of colonel.",
+      "Marched with his unit to Belgrade in the Austro-Turkish War of 1717.",
+      "His portrait appeared on the last series of the 50 Deutsche Mark banknote."
+    ],
+    ideas: [
+      { term: "Interlocking ovals", text: "Built church plans from overlapping oval bays and vaults, so that space seems to flow and swell rather than divide into fixed compartments." },
+      { term: "Daring vaulting", text: "Spanned grand staircases with wide, thin masonry vaults that critics predicted would fall." }
+    ],
+    works: [
+      { title: "Würzburg Residence", year: "1720–44", place: "Würzburg, Germany", note: "Prince-bishops’ palace whose unsupported staircase vault carries Tiepolo’s fresco of the four continents; it survived the fire of the 1945 bombing." },
+      { title: "Vierzehnheiligen", year: "1743–72", place: "Bad Staffelstein, Germany", note: "Pilgrimage church above the Main valley whose nave is a chain of interlocking ovals, with its shrine altar standing at the center of the nave." },
+      { title: "Neresheim Abbey", year: "begun 1747", place: "Neresheim, Germany", note: "Lofty, light-filled Benedictine church of ovals and shallow domes in Swabia, completed decades after his death." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "boullee",
+    name: "Étienne-Louis Boullée",
+    born: 1728,
+    dates: "1728–1799",
+    place: "France",
+    group: "premodern",
+    tag: "Neoclassicism",
+    blurb: "French visionary architect and teacher whose mostly unbuilt designs of colossal spheres, cones, and vaults sought a sublime architecture of pure geometry and light.",
+    facts: [
+      "Wanted to be a painter, but his father, an architect, steered him into architecture.",
+      "Elected to the Académie royale d’architecture in 1762.",
+      "His pupils included Jean-François Chalgrin, Alexandre-Théodore Brongniart, and the theorist Durand.",
+      "His treatise Architecture, essai sur l’art remained unpublished until 1953."
+    ],
+    ideas: [
+      { term: "Architecture of shadows", text: "Conceived funerary monuments as low, buried masses whose image is drawn by darkness, a discovery he claimed as his own." },
+      { term: "Theory of bodies", text: "Assigned expressive character to the cube, pyramid, cylinder, and above all the sphere, which he held to be the most perfect form." }
+    ],
+    works: [
+      { title: "Cenotaph for Newton", year: "1784", place: "France", note: "Hollow sphere about 150 meters across honoring the English physicist, its shell pierced so that daylight would mimic a starry night inside." },
+      { title: "Royal Library project", year: "1785", place: "Paris, France", note: "Unbuilt design for a vast reading hall under a coffered barrel vault, its walls stepped with tiers of books like an amphitheater." },
+      { title: "Métropole", year: "1781–82", place: "France", note: "Visionary design for a colossal domed cathedral ringed by colonnades, drawn crowded with a Corpus Christi procession." },
+      { title: "Hôtel Alexandre", year: "1763–66", place: "Paris, France", note: "Neoclassical town house in the 8th arrondissement, the only one of his Paris residences to survive." }
+    ],
+    quotes: [
+      "Sublime mind! Prodigious and profound genius! Divine being! Newton!"
+    ]
+  },
+
+  {
     id: "jefferson",
     name: "Thomas Jefferson",
     born: 1743,
@@ -476,6 +560,34 @@ window.DRILL_DATA.architects = [
   /* ===================== Turn of the century (c. 1850–1918) ===================== */
 
   {
+    id: "paxton",
+    name: "Joseph Paxton",
+    born: 1803,
+    dates: "1803–1865",
+    place: "England",
+    group: "turn-of-century",
+    tag: "Iron and glass",
+    blurb: "English gardener, engineer, and MP whose prefabricated glasshouse for the Great Exhibition of 1851 became a symbol of the industrial age.",
+    facts: [
+      "Became head gardener at Chatsworth for the Duke of Devonshire in 1826.",
+      "In 1849 became the first to bring the giant Amazon water lily to flower in England, testing a leaf’s strength by floating his young daughter on it.",
+      "Sketched his first idea for the exhibition hall on blotting paper during a Midland Railway board meeting in Derby.",
+      "Knighted in 1851 and served as MP for Coventry from 1854 until his death."
+    ],
+    ideas: [
+      { term: "Ridge-and-furrow glazing", text: "Pleated glass roofs set at angles to catch low morning and evening sun and drain rainwater into gutters that doubled as structure." },
+      { term: "Prefabrication", text: "Assembled vast buildings from mass-produced, standardized iron, timber, and glass parts, allowing construction in a matter of months." }
+    ],
+    works: [
+      { title: "Crystal Palace", year: "1851", place: "London, England", note: "Iron-and-glass exhibition hall in Hyde Park for the Great Exhibition, erected in months, moved to Sydenham, and destroyed by fire in 1936." },
+      { title: "Great Conservatory, Chatsworth", year: "1836–41", place: "Derbyshire, England", note: "Huge glasshouse on a ducal estate, large enough for a carriage to drive through; demolished in the 1920s." },
+      { title: "Birkenhead Park", year: "1847", place: "Birkenhead, England", note: "Early publicly funded green space across the Mersey from Liverpool, whose curving drives and lakes impressed the young Frederick Law Olmsted." },
+      { title: "Mentmore Towers", year: "1850s", place: "Buckinghamshire, England", note: "Jacobethan-style country house for Baron Mayer de Rothschild, with a glass-roofed central hall." }
+    ],
+    quotes: []
+  },
+
+  {
     id: "viollet-le-duc",
     name: "Eugène Viollet-le-Duc",
     born: 1814,
@@ -527,6 +639,61 @@ window.DRILL_DATA.architects = [
       { title: "Prospect Park", year: "1867–73", place: "New York, United States", note: "Brooklyn park designed with Calvert Vaux, centered on the vast Long Meadow." },
       { title: "Emerald Necklace", year: "1878–96", place: "Boston, United States", note: "Chain of linked parks and parkways, including the Back Bay Fens, built partly to manage drainage and flooding." },
       { title: "Biltmore Estate grounds", year: "1888–95", place: "Asheville, United States", note: "Gardens, approach road, and managed forest for George Vanderbilt’s mansion; his last major project." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "garnier",
+    name: "Charles Garnier",
+    born: 1825,
+    dates: "1825–1898",
+    place: "France",
+    group: "turn-of-century",
+    tag: "Beaux-Arts",
+    blurb: "French architect whose opulent Paris Opéra became the definitive monument of Second Empire Beaux-Arts splendor.",
+    facts: [
+      "Won the Grand Prix de Rome in 1848.",
+      "In Greece he studied the temple of Aphaia on Aegina and argued it had originally been brightly painted.",
+      "Won the 1861 competition for a new Paris opera house against some 170 entrants, while still little known.",
+      "Signed the 1887 artists’ protest against the iron tower planned for the Paris Exposition."
+    ],
+    ideas: [
+      { term: "Napoleon III style", text: "Told Empress Eugénie, who asked what style his building was, that it was in the style of Napoleon III, an eclectic, lavish mix of Renaissance and Baroque in marble, gilding, and color." },
+      { term: "Architecture as social theater", text: "Gave as much splendor to foyers and stairs, where audiences came to see and be seen, as to the auditorium itself." }
+    ],
+    works: [
+      { title: "Palais Garnier", year: "1861–75", place: "Paris, France", note: "Lyric theater with a grand marble staircase, gilded foyer, and polychrome façade crowned by gilded statues." },
+      { title: "Opéra de Monte-Carlo", year: "1879", place: "Monte Carlo, Monaco", note: "Gilded concert hall and lyric theater attached to the casino of Monaco." },
+      { title: "Nice Observatory", year: "1879–88", place: "Nice, France", note: "Astronomical complex on Mont Gros whose largest dome, floating on a ring, was engineered by Gustave Eiffel." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "eiffel",
+    name: "Gustave Eiffel",
+    born: 1832,
+    dates: "1832–1923",
+    place: "France",
+    group: "turn-of-century",
+    tag: "Iron engineering",
+    blurb: "French engineer and contractor whose firm built daring iron bridges, the skeleton of the Statue of Liberty, and the tower that became the emblem of Paris.",
+    facts: [
+      "Born in Dijon and graduated from the École Centrale des Arts et Manufactures in 1855.",
+      "Convicted in 1893 over the Panama Canal scandal, a verdict overturned on appeal.",
+      "Built wind tunnels at the foot of his tower and later at Auteuil, becoming a pioneer of aerodynamics.",
+      "Promoted his tower’s use for science and radiotelegraphy, which saved it from demolition when its permit ran out in 1909."
+    ],
+    ideas: [
+      { term: "Designing for wind", text: "Shaped tall iron structures as open lattices whose curving profiles follow the calculated forces of the wind." },
+      { term: "Precision prefabrication", text: "Had thousands of parts drawn and fabricated to exact tolerances in his workshop, so that they could be riveted together quickly on site." }
+    ],
+    works: [
+      { title: "Eiffel Tower", year: "1889", place: "Paris, France", note: "Wrought-iron lattice structure 300 meters high, built for the Exposition Universelle and the world’s tallest structure until 1930." },
+      { title: "Garabit Viaduct", year: "1884", place: "Cantal, France", note: "Railway bridge carried across the Truyère gorge on a great crescent-shaped iron arch." },
+      { title: "Maria Pia Bridge", year: "1877", place: "Porto, Portugal", note: "Wrought-iron railway arch over the Douro, opened by the king and queen of Portugal." },
+      { title: "Statue of Liberty armature", year: "1886", place: "New York, United States", note: "Iron pylon and flexible skeleton supporting the hammered copper skin of Bartholdi’s colossus in New York Harbor." }
     ],
     quotes: []
   },
@@ -723,6 +890,34 @@ window.DRILL_DATA.architects = [
       { title: "Karlsplatz Stadtbahn Station", year: "1899", place: "Vienna, Austria", note: "Twin railway pavilions of a steel frame with marble slabs and gilded sunflower ornament." }
     ],
     quotes: ["Nothing that is not practical can be beautiful."]
+  },
+
+  {
+    id: "behrens",
+    name: "Peter Behrens",
+    born: 1868,
+    dates: "1868–1940",
+    place: "Germany",
+    group: "turn-of-century",
+    tag: "Early modernism",
+    blurb: "German painter turned architect and designer who shaped an electrical company’s entire image and trained a generation of modernist masters.",
+    facts: [
+      "Born in Hamburg, he started out as a painter and graphic artist in Munich.",
+      "Joined the Darmstadt Artists’ Colony in 1899 and built his own Jugendstil house there in 1901.",
+      "A founding member of the Deutscher Werkbund in 1907.",
+      "Walter Gropius, Mies van der Rohe, and Le Corbusier all worked in his Berlin office early in their careers."
+    ],
+    ideas: [
+      { term: "Corporate identity", text: "Designed an electrical firm’s logo, kettles, fans, lamps, catalogues, and factories as one unified image, making him a pioneer of industrial design." },
+      { term: "Art and industry", text: "Sought to give mass production and factory buildings the dignity of art, merging engineering with a stripped monumental classicism." }
+    ],
+    works: [
+      { title: "AEG Turbine Factory", year: "1909", place: "Berlin, Germany", note: "Steel-and-glass assembly hall in Moabit with a temple-like polygonal gable and exposed steel hinges at the base of its frames." },
+      { title: "German Embassy, Saint Petersburg", year: "1912", place: "Saint Petersburg, Russia", note: "Diplomatic mission on St. Isaac’s Square with a severe granite façade and a colossal colonnade." },
+      { title: "Technical Administration Building, Hoechst", year: "1924", place: "Frankfurt, Germany", note: "Brick Expressionist offices for a chemical company, with a tall, prismatic entrance hall in colored brick." },
+      { title: "New Ways", year: "1926", place: "Northampton, England", note: "White-fronted house for the model-railway maker W. J. Bassett-Lowke, often called the first modernist house in Britain." }
+    ],
+    quotes: []
   },
 
   {
@@ -1085,7 +1280,90 @@ window.DRILL_DATA.architects = [
     quotes: []
   },
 
+  {
+    id: "raymond-hood",
+    name: "Raymond Hood",
+    born: 1881,
+    dates: "1881–1934",
+    place: "United States",
+    group: "modernism",
+    tag: "Art Deco",
+    blurb: "American architect who moved from Gothic to Art Deco to near-modernism in a string of New York and Chicago skyscrapers, and helped design Rockefeller Center.",
+    facts: [
+      "Born in Pawtucket, Rhode Island, and studied at Brown, MIT, and the École des Beaux-Arts in Paris.",
+      "Was little known and struggling when he and John Mead Howells won the 1922 competition for a Chicago newspaper’s headquarters.",
+      "Their winning Gothic design beat entries by Eliel Saarinen, Walter Gropius, and Adolf Loos.",
+      "Was a senior member of the team of architects for Rockefeller Center and died in 1934 at fifty-three."
+    ],
+    ideas: [
+      { term: "Color and light", text: "Used black brick, gilded crowns, colored terra-cotta, and floodlighting to make skyscrapers vivid by day and glowing at night." },
+      { term: "From verticals to bands", text: "Moved from soaring vertical piers toward horizontal stripes of windows, bringing the skyscraper close to European modernism." }
+    ],
+    works: [
+      { title: "Tribune Tower", year: "1925", place: "Chicago, United States", note: "Gothic headquarters for a Chicago newspaper, crowned by flying buttresses and studded with fragments of famous buildings; designed with John Mead Howells." },
+      { title: "American Radiator Building", year: "1924", place: "New York, United States", note: "Black-brick tower facing Bryant Park, its crown picked out in gold-colored terra-cotta and floodlit at night." },
+      { title: "Daily News Building", year: "1930", place: "New York, United States", note: "Tabloid’s headquarters on East 42nd Street with white brick piers rising uninterrupted to a flat top and a giant globe in the lobby." },
+      { title: "McGraw-Hill Building", year: "1931", place: "New York, United States", note: "Blue-green terra-cotta tower on West 42nd Street with horizontal bands, the only New York skyscraper in MoMA’s 1932 International Style exhibition." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "van-alen",
+    name: "William Van Alen",
+    born: 1883,
+    dates: "1883–1954",
+    place: "United States",
+    group: "modernism",
+    tag: "Art Deco",
+    blurb: "Brooklyn-born architect whose single masterpiece, the Chrysler Building, briefly made him the designer of the world’s tallest building.",
+    facts: [
+      "Won the Paris Prize in 1908 and studied in Victor Laloux’s atelier at the École des Beaux-Arts.",
+      "His bitter split with his partner H. Craig Severance in 1924 turned into a race for the world height record.",
+      "Sued his client, who refused to pay his fee and accused him of taking bribes, and won, but his career never recovered.",
+      "Came to the 1931 Beaux-Arts Ball in New York dressed as his own skyscraper."
+    ],
+    ideas: [
+      { term: "Machine-age ornament", text: "Decorated a skyscraper with motifs taken from automobiles, such as radiator caps, hubcaps, and fenders, rendered in metal." },
+      { term: "Secret spire", text: "Assembled a 125-foot steel spire inside the top of his tower and hoisted it into place in about ninety minutes, overtaking a rival." }
+    ],
+    works: [
+      { title: "Chrysler Building", year: "1930", place: "New York, United States", note: "Midtown Art Deco tower for a carmaker, with a stainless-steel crown of stacked sunburst arches, 1,046 feet high and briefly the world’s tallest." },
+      { title: "Childs Restaurant, Fifth Avenue", year: "1925", place: "New York, United States", note: "Slender six-story building for a popular lunchroom chain, with curved glass corner windows lacking any corner post, which caught Le Corbusier’s eye." },
+      { title: "Childs Restaurant, Washington", year: "1926", place: "Washington, D.C., United States", note: "Single-story stone eatery for the same chain on a small triangular lot near Union Station, with large arched windows; now a bank." }
+    ],
+    quotes: []
+  },
+
   /* ===================== Postwar (c. 1945–1980) ===================== */
+
+  {
+    id: "nervi",
+    name: "Pier Luigi Nervi",
+    born: 1891,
+    dates: "1891–1979",
+    place: "Italy",
+    group: "postwar",
+    tag: "Structural expressionism",
+    blurb: "Italian engineer-builder whose ribbed concrete domes, vaults, and hangars made structure itself the source of architectural beauty.",
+    facts: [
+      "Born in Sondrio and trained as a civil engineer at Bologna, graduating in 1913.",
+      "Served in the Italian army’s engineering corps during World War I.",
+      "His concrete aircraft hangars for the Italian air force were destroyed by German forces in 1944.",
+      "Gave Harvard’s Charles Eliot Norton Lectures in 1961–62 and won the AIA Gold Medal in 1964."
+    ],
+    ideas: [
+      { term: "Ferrocement", text: "Developed thin, strong elements of layered fine steel mesh coated with cement mortar, cast in reusable molds with little or no formwork." },
+      { term: "Ribs along lines of stress", text: "Laid out floor and roof ribs along the paths of force in a structure, producing lacy patterns that are both efficient and beautiful." }
+    ],
+    works: [
+      { title: "Palazzetto dello Sport", year: "1957", place: "Rome, Italy", note: "Small arena for the 1960 Olympics under a shallow ribbed concrete dome of precast pieces, carried on Y-shaped outer buttresses." },
+      { title: "Stadio Artemio Franchi", year: "1931", place: "Florence, Italy", note: "Football ground with a thin cantilevered concrete roof over the grandstand and sculptural helical stairs." },
+      { title: "Pirelli Tower", year: "1958", place: "Milan, Italy", note: "Slender skyscraper with tapering ends and a concrete structure, designed with Gio Ponti for a tire company." },
+      { title: "Paul VI Audience Hall", year: "1971", place: "Vatican City", note: "Papal assembly space for thousands, roofed by an undulating concrete shell beside St. Peter’s Basilica." }
+    ],
+    quotes: []
+  },
 
   {
     id: "kahn",
@@ -1525,6 +1803,336 @@ window.DRILL_DATA.architects = [
       { title: "Dymaxion House", year: "1945–46", place: "Wichita, United States", note: "Round, aluminum, factory-made house hung from a central mast; the Wichita prototype never went into production." },
       { title: "Dymaxion car", year: "1933", place: "Bridgeport, United States", note: "Teardrop-shaped three-wheeled car steered by its single rear wheel; three were built." },
       { title: "Dome over Manhattan", year: "unbuilt", place: "New York, United States", note: "1960 proposal with Shoji Sadao for a two-mile-wide dome over Midtown to control the climate." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "fathy",
+    name: "Hassan Fathy",
+    born: 1900,
+    dates: "1900–1989",
+    place: "Egypt",
+    group: "postwar",
+    tag: "Vernacular architecture",
+    blurb: "Egyptian architect who revived mud-brick building and traditional techniques to house the rural poor with dignity and at low cost.",
+    facts: [
+      "Born in Alexandria and graduated in architecture in Cairo in 1926.",
+      "Received both the Right Livelihood Award and the Aga Khan Award’s Chairman’s Award in 1980.",
+      "Founded an institute for appropriate technology in the late 1970s.",
+      "A 1941 trip to Nubia, near Aswan, showed him the mud-brick domes and vaults he would go on to revive."
+    ],
+    ideas: [
+      { term: "Nubian vault", text: "Revived the Nubian method of building mud-brick vaults and domes in inclined courses, without wooden centering, so villagers could build cheaply with local earth." },
+      { term: "Passive cooling", text: "Used thick earthen walls, courtyards, wind catchers, and screened openings to cool buildings in the desert without machines." }
+    ],
+    works: [
+      { title: "New Gourna", year: "1946–52", place: "Luxor, Egypt", note: "Mud-brick village of domed and vaulted buildings on the Nile’s West Bank, built to relocate villagers living among ancient tombs; never finished." },
+      { title: "Architecture for the Poor", year: "1973", place: "Chicago, United States", note: "Book recounting his struggle to build a village with its future inhabitants, a classic of self-help and vernacular design." },
+      { title: "Dar al-Islam", year: "1981", place: "Abiquiú, United States", note: "Adobe mosque and madrasa of domes and vaults for a Muslim educational community in the New Mexico desert." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "breuer",
+    name: "Marcel Breuer",
+    born: 1902,
+    dates: "1902–1981",
+    place: "United States",
+    group: "postwar",
+    tag: "Brutalism",
+    blurb: "Hungarian-born Bauhaus designer who invented tubular-steel furniture and later built sculptural concrete buildings in America and Europe.",
+    facts: [
+      "Born in Pécs, Hungary, he was one of the first and youngest students at the Bauhaus and later led its furniture workshop.",
+      "Said the idea for his bent tubular-steel chairs came from bicycle handlebars.",
+      "Taught at Harvard with Walter Gropius, where students included I. M. Pei, Philip Johnson, and Paul Rudolph.",
+      "Moved his practice to New York in 1946."
+    ],
+    ideas: [
+      { term: "Tubular-steel furniture", text: "Bent seamless steel tubing into light, mass-producible chairs with leather or cane seats, such as the club chair later named for Wassily Kandinsky." },
+      { term: "Binuclear house", text: "Split the house into separate wings for living and for sleeping, joined at the entrance." }
+    ],
+    works: [
+      { title: "Whitney Museum of American Art", year: "1966", place: "New York, United States", note: "Granite-clad gallery building on Madison Avenue that steps outward over a sunken sculpture court, with a few odd trapezoidal windows." },
+      { title: "UNESCO Headquarters", year: "1958", place: "Paris, France", note: "Y-shaped secretariat for a United Nations agency on raised concrete supports, designed with Pier Luigi Nervi and Bernard Zehrfuss." },
+      { title: "St. John’s Abbey Church", year: "1961", place: "Collegeville, United States", note: "Benedictine monastery’s worship space in Minnesota, of folded-plate concrete, fronted by a freestanding concrete bell banner and a honeycomb wall of stained glass." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "yamasaki",
+    name: "Minoru Yamasaki",
+    born: 1912,
+    dates: "1912–1986",
+    place: "United States",
+    group: "postwar",
+    tag: "New Formalism",
+    blurb: "American architect of delicate, Gothic-tinged modernism, remembered for both the twin towers of New York and an ill-fated public housing project.",
+    facts: [
+      "Born in Seattle to Japanese immigrant parents.",
+      "Worked five summers in an Alaska salmon cannery to pay for his architecture studies at the University of Washington.",
+      "Worked for Shreve, Lamb & Harmon, designers of the Empire State Building.",
+      "Had a fear of heights, which is often linked to the narrow windows of his tallest towers."
+    ],
+    ideas: [
+      { term: "Serenity, surprise, and delight", text: "Aimed for buildings that calm and uplift people, using reflecting pools, skylit courts, and refined detail." },
+      { term: "Gothic-inspired modernism", text: "Gave modern buildings slender pointed arches and tracery-like screens, a strand of New Formalism." }
+    ],
+    works: [
+      { title: "World Trade Center", year: "1973", place: "New York, United States", note: "Twin 110-story towers in Lower Manhattan with narrow windows between closely spaced steel columns; destroyed in the attacks of September 11, 2001." },
+      { title: "Pruitt–Igoe", year: "1954–56", place: "St. Louis, United States", note: "Public housing of thirty-three eleven-story slabs whose demolition, begun in 1972, Charles Jencks called the death of modern architecture." },
+      { title: "Lambert–St. Louis Airport Terminal", year: "1956", place: "St. Louis, United States", note: "Airline hall roofed by intersecting thin-shell concrete vaults." },
+      { title: "Pacific Science Center", year: "1962", place: "Seattle, United States", note: "Pavilion for the 1962 World’s Fair, its white buildings set around pools beneath tall, lacy pointed arches." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "bawa",
+    name: "Geoffrey Bawa",
+    born: 1919,
+    dates: "1919–2003",
+    place: "Sri Lanka",
+    group: "postwar",
+    tag: "Tropical modernism",
+    blurb: "Sri Lankan architect, the leading figure of tropical modernism, whose buildings dissolve into gardens, landscapes, and the monsoon climate.",
+    facts: [
+      "Read English at Cambridge, then studied law and was called to the bar in London in 1944.",
+      "Turned to architecture in his thirties after buying an abandoned rubber estate, qualifying at the Architectural Association in London in the mid-1950s.",
+      "Took over the Colombo practice Edwards, Reid and Begg.",
+      "Received the Aga Khan Award’s Chairman’s Award in 2001 for lifetime achievement."
+    ],
+    ideas: [
+      { term: "Tropical modernism", text: "Blurred inside and outside with open pavilions, verandas, courtyards, and deep tiled roofs suited to heat and monsoon rain." },
+      { term: "Building with the landscape", text: "Let rocks, trees, water, and slopes shape buildings, often letting vegetation overgrow them." }
+    ],
+    works: [
+      { title: "Sri Lankan Parliament Building", year: "1982", place: "Kotte, Sri Lanka", note: "Legislature of pavilions with copper-clad hipped roofs rising from an island in a lake outside Colombo." },
+      { title: "Kandalama Hotel", year: "1994", place: "Dambulla, Sri Lanka", note: "Long resort built along a rock outcrop above an ancient reservoir, its concrete frame now swallowed by jungle." },
+      { title: "Lunuganga", year: "1948–98", place: "Bentota, Sri Lanka", note: "Former rubber estate on a lake that he reshaped over fifty years into a garden of vistas and terraces, his country retreat." },
+      { title: "Lighthouse Hotel", year: "1997", place: "Galle, Sri Lanka", note: "Seaside resort on rocks whose spiral stair is wrapped by Laki Senanayake’s bronze sculpture of a battle between the Sinhalese and the Portuguese." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "frei-otto",
+    name: "Frei Otto",
+    born: 1925,
+    dates: "1925–2015",
+    place: "Germany",
+    group: "postwar",
+    tag: "Tensile architecture",
+    blurb: "German architect and engineer who pioneered lightweight tensile structures of cable nets and membranes, found through physical models.",
+    facts: [
+      "Was drafted as a Luftwaffe pilot in the last years of World War II.",
+      "As a prisoner of war near Chartres, he began experimenting with tents for shelter.",
+      "Founded the Institute for Lightweight Structures at the University of Stuttgart in 1964.",
+      "Won the 2015 Pritzker Prize, announced a day after his death."
+    ],
+    ideas: [
+      { term: "Form-finding", text: "Let physical models find the ideal shape, using soap films, hanging chains, and stretched fabrics to reveal minimal surfaces." },
+      { term: "Lightweight building", text: "Sought to enclose the most space with the least material, using cable nets, membranes, and gridshells." }
+    ],
+    works: [
+      { title: "Munich Olympic Park roofs", year: "1972", place: "Munich, Germany", note: "Sweeping cable-net canopy hung with acrylic glass panels over a stadium, arena, and pool for the 1972 Games, with Günter Behnisch." },
+      { title: "West German Pavilion, Expo 67", year: "1967", place: "Montreal, Canada", note: "Tent of steel cable net and translucent fabric on tall masts for the world’s fair, designed with Rolf Gutbrod." },
+      { title: "Multihalle", year: "1975", place: "Mannheim, Germany", note: "Timber gridshell for a garden show, its laths laid flat and then pushed up into shape." },
+      { title: "Japan Pavilion, Expo 2000", year: "2000", place: "Hanover, Germany", note: "Recyclable gridshell of paper tubes for the world’s fair, designed with Shigeru Ban." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "correa",
+    name: "Charles Correa",
+    born: 1930,
+    dates: "1930–2015",
+    place: "India",
+    group: "postwar",
+    tag: "Critical regionalism",
+    blurb: "Indian architect and planner who fused modernism with India’s climate and traditions, from courtyard museums to the planning of a new city.",
+    facts: [
+      "Born in Secunderabad and studied at the University of Michigan and MIT.",
+      "Served as chief architect of New Bombay (Navi Mumbai) in the early 1970s.",
+      "Received the RIBA Royal Gold Medal in 1984.",
+      "Awarded India’s Padma Vibhushan in 2006."
+    ],
+    ideas: [
+      { term: "Open-to-sky space", text: "Treated courtyards, terraces, and verandas open to the sky as essential rooms in a hot climate." },
+      { term: "Form follows climate", text: "Argued that buildings should take their shape from sun, breeze, and rain rather than from imported glass-box models." }
+    ],
+    works: [
+      { title: "Gandhi Smarak Sangrahalaya", year: "1963", place: "Ahmedabad, India", note: "Grid of tile-roofed pavilions on brick piers around a water court at the Sabarmati Ashram, honoring the Mahatma." },
+      { title: "Kanchanjunga Apartments", year: "1983", place: "Mumbai, India", note: "Residential tower of interlocking split-level units, each with a two-story garden terrace cut into the corners for shade and breeze." },
+      { title: "Jawahar Kala Kendra", year: "1992", place: "Jaipur, India", note: "Arts center laid out as nine squares after a mandala of the planets, one square shifted as in the old city’s own plan." },
+      { title: "Champalimaud Centre for the Unknown", year: "2010", place: "Lisbon, Portugal", note: "Medical research complex on the Tagus where the explorers’ ships once departed, with a ramp rising toward a view of the ocean." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "isozaki",
+    name: "Arata Isozaki",
+    born: 1931,
+    dates: "1931–2022",
+    place: "Japan",
+    group: "postwar",
+    tag: "Postmodernism",
+    blurb: "Japanese architect and theorist who moved from Metabolist-era concrete to a playful, eclectic postmodernism and built across the world.",
+    facts: [
+      "Born in Ōita on Kyushu, he trained and worked under Kenzo Tange.",
+      "As a juror for the 1983 Peak competition in Hong Kong, he rescued the rule-breaking entry of the unknown Zaha Hadid and backed it for first prize.",
+      "Married the sculptor Aiko Miyawaki.",
+      "Won the Pritzker Prize in 2019."
+    ],
+    ideas: [
+      { term: "Ma", text: "Explored the Japanese idea of interval joining space and time in a 1978 exhibition first shown at the Musée des Arts Décoratifs in Paris." }
+    ],
+    works: [
+      { title: "Museum of Contemporary Art, Los Angeles", year: "1986", place: "Los Angeles, United States", note: "Red sandstone galleries on Bunker Hill sunk partly below a plaza, topped by pyramidal skylights and a barrel vault." },
+      { title: "Tsukuba Center Building", year: "1983", place: "Tsukuba, Japan", note: "Civic complex for a new science city around a sunken oval plaza that inverts Michelangelo’s Campidoglio." },
+      { title: "Palau Sant Jordi", year: "1990", place: "Barcelona, Spain", note: "Indoor arena on Montjuïc for the 1992 Olympics, its domed roof assembled on the ground and jacked into place." },
+      { title: "Art Tower Mito", year: "1990", place: "Mito, Japan", note: "Arts complex marked by a 100-meter twisting column of stacked titanium-clad tetrahedra." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "eisenman",
+    name: "Peter Eisenman",
+    born: 1932,
+    dates: "b. 1932",
+    place: "United States",
+    group: "postwar",
+    tag: "Deconstructivism",
+    blurb: "American architect and theorist whose rigorous formal experiments and deconstructivist buildings pushed architecture toward autonomy from function and tradition.",
+    facts: [
+      "Born in Newark, New Jersey, and earned a PhD from the University of Cambridge.",
+      "Founded the Institute for Architecture and Urban Studies in New York in 1967.",
+      "A member of the New York Five and a second cousin of Richard Meier.",
+      "Featured in MoMA’s 1988 Deconstructivist Architecture exhibition."
+    ],
+    ideas: [
+      { term: "Architectural autonomy", text: "Generated designs from formal operations on grids and cubes, recorded in numbered houses, rather than from function, symbolism, or comfort." }
+    ],
+    works: [
+      { title: "Memorial to the Murdered Jews of Europe", year: "2005", place: "Berlin, Germany", note: "Field of 2,711 gray concrete slabs of varying heights on undulating ground near the Brandenburg Gate." },
+      { title: "Wexner Center for the Arts", year: "1989", place: "Columbus, United States", note: "Venue for contemporary exhibitions and performance at Ohio State, a white scaffolding-like grid running between brick turrets that recall an armory once on the site." },
+      { title: "House VI", year: "1975", place: "Cornwall, United States", note: "Weekend retreat in Connecticut with a slot splitting the bedroom floor and an upside-down staircase on the ceiling." },
+      { title: "City of Culture of Galicia", year: "begun 1999", place: "Santiago de Compostela, Spain", note: "Vast hilltop complex of stone-clad buildings that swell like folds in the landscape; scaled back before completion." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "meier",
+    name: "Richard Meier",
+    born: 1934,
+    dates: "b. 1934",
+    place: "United States",
+    group: "postwar",
+    tag: "Late modernism",
+    blurb: "American architect whose gleaming white buildings of grids, ramps, and glass reworked the early modernism of Le Corbusier.",
+    facts: [
+      "Born in Newark, New Jersey, and graduated from Cornell in 1957.",
+      "Worked for Skidmore, Owings & Merrill and for Marcel Breuer before opening his own office in 1963.",
+      "A member of the New York Five and a second cousin of fellow member Peter Eisenman.",
+      "Won the Pritzker Prize in 1984."
+    ],
+    ideas: [
+      { term: "Whiteness", text: "Used white enameled metal panels, stucco, and glass on crisp grids, so that light, shadow, and the changing sky become the color of the building." }
+    ],
+    works: [
+      { title: "Getty Center", year: "1997", place: "Los Angeles, United States", note: "Hilltop arts campus in Brentwood clad in rough-cut Italian travertine and white metal panels, reached by a tram." },
+      { title: "Smith House", year: "1967", place: "Darien, United States", note: "White timber residence on the rocky Connecticut shore, closed toward the land and fully glazed toward Long Island Sound." },
+      { title: "High Museum of Art", year: "1983", place: "Atlanta, United States", note: "White gallery building whose quarter-circle atrium of ramps nods to Wright’s Guggenheim." },
+      { title: "Jubilee Church", year: "2003", place: "Rome, Italy", note: "Catholic parish building in the suburb of Tor Tre Teste with three curved white concrete shells like sails." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "graves",
+    name: "Michael Graves",
+    born: 1934,
+    dates: "1934–2015",
+    place: "United States",
+    group: "postwar",
+    tag: "Postmodernism",
+    blurb: "American architect and designer who led postmodernism’s turn to color and classical symbols, and brought design to everyday household goods.",
+    facts: [
+      "Born in Indianapolis, he won the Rome Prize in 1960.",
+      "Taught at Princeton for nearly forty years and was a member of the New York Five.",
+      "Designed hundreds of household products sold at Target from 1999.",
+      "Was paralyzed from the waist down by a spinal infection in 2003 and became an advocate for health-care design."
+    ],
+    ideas: [
+      { term: "Figurative architecture", text: "Rejected abstract modernism for buildings with a recognizable base, body, and head, using simplified classical elements and earthy, sky-inspired colors." },
+      { term: "Entertainment architecture", text: "Embraced humor and storytelling, from giant statues to playful household objects." }
+    ],
+    works: [
+      { title: "Portland Building", year: "1982", place: "Portland, United States", note: "Municipal office block in Oregon with small square windows, giant flattened pilasters, stucco garlands, and a hammered-copper statue over the entrance." },
+      { title: "Humana Building", year: "1985", place: "Louisville, United States", note: "Pink-granite tower for a health insurer, with a fountain-fronted loggia and an open-air deck near the top." },
+      { title: "Team Disney Building", year: "1990", place: "Burbank, United States", note: "Studio executive offices whose pediment is held up by 19-foot cartoon dwarfs as caryatids." },
+      { title: "Alessi 9093 kettle", year: "1985", place: "Italy", note: "Stainless-steel pot for boiling water with a red whistle shaped like a bird, an Italian housewares bestseller." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "safdie",
+    name: "Moshe Safdie",
+    born: 1938,
+    dates: "b. 1938",
+    place: "Canada",
+    group: "postwar",
+    tag: "Late modernism",
+    blurb: "Israeli-Canadian-American architect who burst onto the scene with stacked modular housing at Expo 67 and later built vast cultural and resort complexes.",
+    facts: [
+      "Born in Haifa, he moved with his family to Montreal in 1953.",
+      "His McGill thesis on city living grew into the housing he built for Expo 67.",
+      "Apprenticed with Louis Kahn in Philadelphia.",
+      "Received the AIA Gold Medal in 2015 and the Wolf Prize in 2019."
+    ],
+    ideas: [
+      { term: "Three-dimensional modular housing", text: "Stacked prefabricated concrete units so that each roof becomes a neighbor’s garden terrace, bringing light, air, and privacy to dense city living." },
+      { term: "For everyone a garden", text: "Title of his 1974 book, summing up his goal of giving every urban dwelling its own outdoor space." }
+    ],
+    works: [
+      { title: "Habitat 67", year: "1967", place: "Montreal, Canada", note: "Craggy pile of hundreds of prefabricated concrete boxes on a pier in the St. Lawrence, built for the world’s fair, each home with its own terrace." },
+      { title: "Marina Bay Sands", year: "2010", place: "Singapore", note: "Resort of three 55-story towers bridged at the top by a ship-like park with an infinity pool." },
+      { title: "Yad Vashem Holocaust History Museum", year: "2005", place: "Jerusalem, Israel", note: "Triangular concrete prism slicing through a hillside, with galleries branching off its spine and an end that opens onto a view of the hills." },
+      { title: "Jewel Changi Airport", year: "2019", place: "Singapore", note: "Glass-and-steel torus around an indoor forest and the world’s tallest indoor waterfall, linking terminals at Singapore’s air hub." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "jahn",
+    name: "Helmut Jahn",
+    born: 1940,
+    dates: "1940–2021",
+    place: "United States",
+    group: "postwar",
+    tag: "High-tech",
+    blurb: "German-born Chicago architect whose flamboyant glass-and-steel towers, terminals, and atria brought high-tech showmanship to the skyline.",
+    facts: [
+      "Born near Nuremberg, he studied in Munich before coming to Chicago in 1966 to study at IIT.",
+      "Joined C. F. Murphy Associates in 1967 and took control of the firm in 1981, adding his own name to its title.",
+      "Was nicknamed “Flash Gordon” for his flashy style.",
+      "Died in 2021 when he was struck by cars while riding his bicycle near his home in suburban Chicago."
+    ],
+    ideas: [
+      { term: "Glass and light", text: "Wrapped large public interiors in glass and exposed steel, creating dramatic light-filled atria and concourses." }
+    ],
+    works: [
+      { title: "James R. Thompson Center", year: "1985", place: "Chicago, United States", note: "State government offices in the Loop with a sloping glass rotunda around a seventeen-story atrium, painted salmon, red, and blue." },
+      { title: "United Airlines Terminal 1", year: "1987", place: "Chicago, United States", note: "Vaulted glass-and-steel concourses at O’Hare linked by an underground walkway glowing with neon light." },
+      { title: "Sony Center", year: "2000", place: "Berlin, Germany", note: "Office and entertainment complex on Potsdamer Platz around an oval forum under a tent-like roof." },
+      { title: "Messeturm", year: "1991", place: "Frankfurt, Germany", note: "Pyramid-capped office tower at the trade-fair grounds, the tallest building in Europe when completed." }
     ],
     quotes: []
   },
@@ -2181,6 +2789,62 @@ window.DRILL_DATA.architects = [
       { title: "Marika-Alderton House", year: "1994", place: "Yirrkala, Australia", note: "House for an Aboriginal family in Arnhem Land, on stilts with operable plywood flaps for ventilation." },
       { title: "Arthur and Yvonne Boyd Education Centre", year: "1999", place: "Shoalhaven, Australia", note: "Arts education center on the Shoalhaven River, with Wendy Lewin and Reg Lark." },
       { title: "Australian Islamic Centre", year: "2016", place: "Melbourne, Australia", note: "Mosque with Hakan Elevli, lit by colored roof lanterns rather than domes and minarets." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "moneo",
+    name: "Rafael Moneo",
+    born: 1937,
+    dates: "b. 1937",
+    place: "Spain",
+    group: "contemporary",
+    tag: "Contextualism",
+    blurb: "Spanish architect and teacher whose quietly inventive buildings grow from their site, history, and materials rather than a signature style.",
+    facts: [
+      "Born in Tudela, Navarre, and after graduating in Madrid worked in Denmark for Jørn Utzon while the Sydney Opera House was being designed.",
+      "Chaired Harvard’s architecture department in the second half of the 1980s.",
+      "Won the Pritzker Prize in 1996, the first Spaniard to do so.",
+      "Received the Venice Biennale’s Golden Lion for lifetime achievement in 2021."
+    ],
+    ideas: [
+      { term: "On typology", text: "1978 essay arguing that architectural types are not fixed models but frameworks that evolve and can be transformed by each new design." },
+      { term: "Building in time", text: "Treats each building as part of a site’s history, letting it engage old structures and surroundings rather than stand apart." }
+    ],
+    works: [
+      { title: "National Museum of Roman Art", year: "1986", place: "Mérida, Spain", note: "Halls of tall brick arches, built of thin bricks in the ancient manner, rising over excavated remains of the colony of Augusta Emerita." },
+      { title: "Kursaal Congress Centre", year: "1999", place: "San Sebastián, Spain", note: "Two translucent, slightly tilted glass prisms holding an auditorium and a hall at the mouth of the Urumea, likened to stranded rocks." },
+      { title: "Cathedral of Our Lady of the Angels", year: "2002", place: "Los Angeles, United States", note: "Seat of a Catholic archdiocese in ochre concrete with alabaster windows, deliberately avoiding right angles." },
+      { title: "Atocha station expansion", year: "1992", place: "Madrid, Spain", note: "Enlargement of Madrid’s main rail terminus that turned the old iron-and-glass train shed into a tropical garden." }
+    ],
+    quotes: []
+  },
+
+  {
+    id: "toyo-ito",
+    name: "Toyo Ito",
+    born: 1941,
+    dates: "b. 1941",
+    place: "Japan",
+    group: "contemporary",
+    tag: "Contemporary",
+    blurb: "Japanese architect of light, fluid buildings that blur structure, nature, and digital-age space.",
+    facts: [
+      "Born in Seoul under Japanese rule and raised in rural Nagano.",
+      "Worked for the Metabolist Kiyonori Kikutake before founding his own studio, Urban Robot, in 1971.",
+      "Kazuyo Sejima worked in his office before founding her own.",
+      "Won the Pritzker Prize in 2013."
+    ],
+    ideas: [
+      { term: "Blurring architecture", text: "Seeks light, transparent buildings that dissolve boundaries between inside and outside, like clothing for the nomadic city dweller." },
+      { term: "Home-for-All", text: "After the 2011 tsunami, designed small communal gathering houses with other architects for survivors in temporary housing." }
+    ],
+    works: [
+      { title: "Sendai Mediatheque", year: "2001", place: "Sendai, Japan", note: "Glass-walled public library and arts hub whose floor slabs rest on thirteen hollow tubes of steel lattice that twist like seaweed." },
+      { title: "Tama Art University Library", year: "2007", place: "Hachiōji, Japan", note: "Campus building of thin concrete arches of varying spans springing from a gently sloping floor." },
+      { title: "Tod’s Omotesando", year: "2004", place: "Tokyo, Japan", note: "Fashion flagship whose concrete façade branches like the silhouettes of the zelkova trees lining the boulevard." },
+      { title: "White U", year: "1976", place: "Tokyo, Japan", note: "Horseshoe-shaped concrete residence for his widowed sister, curving around an inner garden; demolished in 1997." }
     ],
     quotes: []
   },

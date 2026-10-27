@@ -192,6 +192,33 @@ window.DRILL_DATA.authors = [
   },
 
   {
+    id: "petronius",
+    name: "Petronius",
+    born: 27,
+    dates: "c. 27–66 CE",
+    place: "Ancient Rome",
+    group: "classical",
+    tag: "Satire",
+    blurb: "Roman courtier of Nero’s age, the probable author of a bawdy comic novel of low life in imperial Italy.",
+    facts: [
+      "Tacitus calls him the emperor Nero’s “judge of elegance,” the final authority on matters of taste at court.",
+      "Served as governor of Bithynia and later as consul before joining Nero’s inner circle.",
+      "Accused of treason in 66 CE, he opened his veins and chatted with friends as he died.",
+      "In his will, instead of flattering Nero, he sent the emperor a sealed list of his debaucheries and partners."
+    ],
+    works: [
+      { title: "Satyricon", year: "1st century CE", note: "A fragmentary comic novel in prose and verse following the misadventures of the narrator Encolpius and his young lover Giton." },
+      { title: "Cena Trimalchionis", year: "1st century CE", note: "The longest surviving episode of his novel: a grotesquely lavish dinner party thrown by a vulgar freedman turned millionaire." },
+      { title: "The Widow of Ephesus", year: "1st century CE", note: "A tale told within his novel: a grieving woman keeping vigil in her husband’s tomb is seduced by a soldier and offers her husband’s corpse to save him from punishment." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Trimalchio", work: "Satyricon" },
+      { name: "Encolpius", work: "Satyricon" }
+    ]
+  },
+
+  {
     id: "murasaki",
     name: "Murasaki Shikibu",
     born: 973,
@@ -235,6 +262,30 @@ window.DRILL_DATA.authors = [
       { title: "Drinking Alone by Moonlight", year: "8th century", note: "A poet with a jug of wine and no companions invites the moon and his own shadow to drink with him." }
     ],
     lines: [],
+    characters: []
+  },
+
+  {
+    id: "sei-shonagon",
+    name: "Sei Shōnagon",
+    born: 966,
+    dates: "c. 966–after 1017",
+    place: "Japan",
+    group: "classical",
+    tag: "Heian literature",
+    blurb: "Witty Heian court lady whose book of lists, anecdotes, and sharp observations is a classic of Japanese prose.",
+    facts: [
+      "Served as a lady-in-waiting to Empress Teishi at the Heian court in Kyoto from 993.",
+      "Was the daughter of the noted waka poet and scholar Kiyohara no Motosuke.",
+      "Her real given name is unknown; the name she is known by combines part of her clan name with a court title.",
+      "Her rival Murasaki Shikibu dismissed her in her diary as “dreadfully conceited.”"
+    ],
+    works: [
+      { title: "The Pillow Book", year: "c. 1002", note: "A miscellany of lists such as “Hateful Things,” anecdotes, and observations of life at the court of Empress Teishi." }
+    ],
+    lines: [
+      { text: "In spring it is the dawn that is most beautiful.", work: "The Pillow Book" }
+    ],
     characters: []
   },
 
@@ -291,6 +342,36 @@ window.DRILL_DATA.authors = [
   },
 
   {
+    id: "luo-guanzhong",
+    name: "Luo Guanzhong",
+    born: 1330,
+    dates: "c. 1330–c. 1400",
+    place: "China",
+    group: "classical",
+    tag: "Classical Chinese novel",
+    blurb: "Shadowy writer of the late Yuan and early Ming dynasties, credited with China’s great historical epic of war and statecraft.",
+    facts: [
+      "Almost nothing certain is known of his life; even his birthplace, possibly Taiyuan, is disputed.",
+      "Lived through the collapse of the Mongol Yuan dynasty and the founding of the Ming.",
+      "Is traditionally credited with editing a famous outlaw saga begun by Shi Nai’an into its 100-chapter form.",
+      "His most famous novel is one of the Four Great Classical Novels of Chinese literature."
+    ],
+    works: [
+      { title: "Romance of the Three Kingdoms", year: "14th century", note: "An epic of the wars among Wei, Shu, and Wu after the fall of the Han dynasty, featuring Liu Bei, Cao Cao, and the strategist Zhuge Liang." },
+      { title: "Water Margin", year: "14th century", note: "A saga, co-attributed to Shi Nai’an, of 108 outlaws who gather in the marshes of Mount Liang under Song Jiang." },
+      { title: "The Three Sui Quash the Demons’ Revolt", year: "14th century", note: "A fantastic tale of an 11th-century uprising led by sorcerers, later expanded from 20 to 40 chapters by Feng Menglong." }
+    ],
+    lines: [
+      { text: "The empire, long divided, must unite; long united, must divide.", work: "Romance of the Three Kingdoms" }
+    ],
+    characters: [
+      { name: "Zhuge Liang", work: "Romance of the Three Kingdoms" },
+      { name: "Cao Cao", work: "Romance of the Three Kingdoms" },
+      { name: "Guan Yu", work: "Romance of the Three Kingdoms" }
+    ]
+  },
+
+  {
     id: "chaucer",
     name: "Geoffrey Chaucer",
     born: 1343,
@@ -339,6 +420,33 @@ window.DRILL_DATA.authors = [
     ],
     lines: [],
     characters: []
+  },
+
+  {
+    id: "rabelais",
+    name: "François Rabelais",
+    born: 1494,
+    dates: "c. 1494–1553",
+    place: "France",
+    group: "early-modern",
+    tag: "Renaissance humanism",
+    blurb: "French monk, physician, and humanist whose bawdy comic saga of two giants is a landmark of Renaissance prose.",
+    facts: [
+      "Was a Franciscan and then a Benedictine monk before qualifying as a doctor at Montpellier.",
+      "Worked as a physician at the Hôtel-Dieu hospital in Lyon.",
+      "Published his first book under the anagram pseudonym Alcofribas Nasier.",
+      "His books were condemned by the theologians of the Sorbonne, and his name became an adjective for earthy, exuberant humor."
+    ],
+    works: [
+      { title: "Pantagruel", year: "1532", note: "The birth, education, and exploits of a giant prince who befriends the cunning rogue Panurge." },
+      { title: "Gargantua", year: "1534", note: "The upbringing of a giant father, his war against King Picrochole, and his founding of the Abbey of Thélème for Friar John." },
+      { title: "The Third Book", year: "1546", note: "Panurge consults sibyls, poets, theologians, and a fool on whether he should marry." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Panurge", work: "Pantagruel" },
+      { name: "Friar John", work: "Gargantua" }
+    ]
   },
 
   {
@@ -640,6 +748,90 @@ window.DRILL_DATA.authors = [
   },
 
   {
+    id: "fielding",
+    name: "Henry Fielding",
+    born: 1707,
+    dates: "1707–1754",
+    place: "England",
+    group: "early-modern",
+    tag: "Early novel",
+    blurb: "English playwright, magistrate, and novelist who brought broad comedy and an intrusive, ironic narrator to the early English novel.",
+    facts: [
+      "His satirical plays against Robert Walpole helped provoke the theatrical Licensing Act of 1737, ending his stage career.",
+      "As a London magistrate, helped found the Bow Street Runners, often called London’s first police force.",
+      "Began writing fiction by parodying Samuel Richardson’s Pamela.",
+      "Died in Lisbon, where he had gone in search of a cure for his failing health."
+    ],
+    works: [
+      { title: "Tom Jones", year: "1749", note: "An abandoned baby raised by Squire Allworthy grows into a lusty, good-hearted young man who pursues his beloved Sophia Western to London." },
+      { title: "Joseph Andrews", year: "1742", note: "The virtuous footman brother of Richardson’s Pamela resists his employer Lady Booby and travels home with Parson Adams." },
+      { title: "Amelia", year: "1751", note: "A patient, loyal wife stands by her imprudent army-officer husband, Captain Booth, through debt, prison, and temptation in London." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Sophia Western", work: "Tom Jones" },
+      { name: "Squire Western", work: "Tom Jones" },
+      { name: "Parson Adams", work: "Joseph Andrews" }
+    ]
+  },
+
+  {
+    id: "sterne",
+    name: "Laurence Sterne",
+    born: 1713,
+    dates: "1713–1768",
+    place: "England",
+    group: "early-modern",
+    tag: "Early novel",
+    blurb: "Yorkshire parson whose digressive, playful comic novel anticipated the experiments of modernism by two centuries.",
+    facts: [
+      "Born in Clonmel, Ireland, the son of an army officer.",
+      "Served for some twenty years as vicar of Sutton-on-the-Forest, near York.",
+      "Became perpetual curate of Coxwold, Yorkshire, in 1760, after his first volumes made him a London celebrity.",
+      "Rumor held that his body was stolen by grave robbers and recognized on a Cambridge dissecting table."
+    ],
+    works: [
+      { title: "Tristram Shandy", year: "1759–67", note: "A narrator tries to tell his life story but barely gets past his birth, amid digressions, a black page, and his uncle’s military hobbyhorse." },
+      { title: "A Sentimental Journey Through France and Italy", year: "1768", note: "Parson Yorick’s tender, comic encounters on a trip across the Channel, breaking off mid-sentence; its author died weeks after publication." },
+      { title: "The Sermons of Mr. Yorick", year: "1760–66", note: "Collected Anglican pulpit addresses, published under the name of a clergyman from his famous novel." }
+    ],
+    lines: [
+      { text: "I wish either my father or my mother, or indeed both of them, as they were in duty both equally bound to it, had minded what they were about when they begot me …", work: "Tristram Shandy" }
+    ],
+    characters: [
+      { name: "Uncle Toby", work: "Tristram Shandy" },
+      { name: "Walter Shandy", work: "Tristram Shandy" },
+      { name: "Parson Yorick", work: "Tristram Shandy" }
+    ]
+  },
+
+  {
+    id: "cao-xueqin",
+    name: "Cao Xueqin",
+    born: 1715,
+    dates: "c. 1715–c. 1763",
+    place: "China",
+    group: "early-modern",
+    tag: "Classical Chinese novel",
+    blurb: "Qing dynasty writer whose vast novel of a declining aristocratic family is considered the summit of Chinese fiction.",
+    facts: [
+      "His grandfather, the imperial textile commissioner at Nanjing, hosted the Kangxi Emperor four times on his southern tours.",
+      "His family’s wealth was confiscated under the Yongzheng Emperor in the late 1720s, plunging it into decline.",
+      "Spent his last years in poverty in the countryside west of Beijing.",
+      "Left his great novel unfinished at about 80 chapters; a 120-chapter version was published decades after his death."
+    ],
+    works: [
+      { title: "Dream of the Red Chamber", year: "1791", note: "The rise and fall of the wealthy Jia clan, centered on the sensitive heir Baoyu and his doomed love for his cousin Daiyu; also called The Story of the Stone." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Jia Baoyu", work: "Dream of the Red Chamber" },
+      { name: "Lin Daiyu", work: "Dream of the Red Chamber" },
+      { name: "Wang Xifeng", work: "Dream of the Red Chamber" }
+    ]
+  },
+
+  {
     id: "goethe",
     name: "Johann Wolfgang von Goethe",
     born: 1749,
@@ -722,6 +914,34 @@ window.DRILL_DATA.authors = [
       { name: "Mr. Darcy", work: "Pride and Prejudice" },
       { name: "Mr. Knightley", work: "Emma" },
       { name: "Marianne Dashwood", work: "Sense and Sensibility" }
+    ]
+  },
+
+  {
+    id: "stendhal",
+    name: "Stendhal",
+    born: 1783,
+    dates: "1783–1842",
+    place: "France",
+    group: "19th",
+    tag: "Realism",
+    blurb: "French novelist of ambition and passion whose psychological acuity made him a founder of the realist novel.",
+    facts: [
+      "Born Marie-Henri Beyle in Grenoble; his pen name came from a small German town.",
+      "Served in Napoleon’s administration and witnessed the burning of Moscow in 1812.",
+      "Spent his later years as French consul at Civitavecchia in the Papal States.",
+      "A syndrome of dizziness and palpitations brought on by great art is named after his account of a visit to Florence."
+    ],
+    works: [
+      { title: "The Red and the Black", year: "1830", note: "A carpenter’s ambitious son rises in Restoration France by seducing a mayor’s wife and an aristocrat’s daughter, and ends on the guillotine." },
+      { title: "The Charterhouse of Parma", year: "1839", note: "A young Italian aristocrat wanders through the Battle of Waterloo and the intrigues of a small court; dictated in 52 days." },
+      { title: "On Love", year: "1822", note: "A treatise on romantic passion describing “crystallization,” the mind’s way of covering its object with imagined perfections." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Julien Sorel", work: "The Red and the Black" },
+      { name: "Madame de Rênal", work: "The Red and the Black" },
+      { name: "Fabrice del Dongo", work: "The Charterhouse of Parma" }
     ]
   },
 
@@ -879,6 +1099,34 @@ window.DRILL_DATA.authors = [
       { name: "Jean Valjean", work: "Les Misérables" },
       { name: "Javert", work: "Les Misérables" },
       { name: "Quasimodo", work: "The Hunchback of Notre-Dame" }
+    ]
+  },
+
+  {
+    id: "dumas",
+    name: "Alexandre Dumas",
+    born: 1802,
+    dates: "1802–1870",
+    place: "France",
+    group: "19th",
+    tag: "Romanticism",
+    blurb: "Prolific French master of the swashbuckling historical adventure and the tale of revenge.",
+    facts: [
+      "His father, born in Saint-Domingue to a French nobleman and an enslaved woman, became a general in the Revolutionary army.",
+      "Worked with collaborators, above all Auguste Maquet, who later sued him for recognition.",
+      "Built an extravagant country house near Paris, named after his most famous hero, and soon had to sell it.",
+      "His remains were moved to the Panthéon in 2002; his son of the same name wrote The Lady of the Camellias."
+    ],
+    works: [
+      { title: "The Three Musketeers", year: "1844", note: "A young Gascon, d’Artagnan, comes to Paris and joins Athos, Porthos, and Aramis against Cardinal Richelieu and the spy Milady." },
+      { title: "The Count of Monte Cristo", year: "1844–46", note: "A sailor wrongly imprisoned in the Château d’If escapes, finds a hidden fortune, and takes elaborate revenge under a noble alias." },
+      { title: "The Vicomte de Bragelonne", year: "1847–50", note: "The last of the d’Artagnan novels, whose final part tells of a plot to replace Louis XIV with his imprisoned twin." }
+    ],
+    lines: [],
+    characters: [
+      { name: "d’Artagnan", work: "The Three Musketeers" },
+      { name: "Milady de Winter", work: "The Three Musketeers" },
+      { name: "Edmond Dantès", work: "The Count of Monte Cristo" }
     ]
   },
 
@@ -1299,6 +1547,65 @@ window.DRILL_DATA.authors = [
   },
 
   {
+    id: "verne",
+    name: "Jules Verne",
+    born: 1828,
+    dates: "1828–1905",
+    place: "France",
+    group: "19th",
+    tag: "Science fiction",
+    blurb: "French pioneer of science fiction whose “extraordinary voyages” sent readers under the sea, into the earth, and around the globe.",
+    facts: [
+      "Born in the port city of Nantes and trained as a lawyer in Paris.",
+      "Wrote nearly all his novels for the publisher Hetzel, who signed him to deliver three volumes a year.",
+      "Was shot in the leg by his mentally ill nephew in 1886 and limped for the rest of his life.",
+      "Is the second most-translated author in the world, behind Agatha Christie."
+    ],
+    works: [
+      { title: "Twenty Thousand Leagues Under the Seas", year: "1870", note: "A captured professor, his servant, and a harpooner roam the oceans aboard Captain Nemo’s submarine, the Nautilus." },
+      { title: "Around the World in Eighty Days", year: "1872", note: "A punctual English gentleman, Phileas Fogg, wagers that he can circle the globe on a strict deadline, with his valet Passepartout." },
+      { title: "Journey to the Center of the Earth", year: "1864", note: "Professor Lidenbrock deciphers a runic message and descends through an Icelandic volcano into a prehistoric underground world." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Captain Nemo", work: "Twenty Thousand Leagues Under the Seas" },
+      { name: "Phileas Fogg", work: "Around the World in Eighty Days" },
+      { name: "Passepartout", work: "Around the World in Eighty Days" }
+    ]
+  },
+
+  {
+    id: "carroll",
+    name: "Lewis Carroll",
+    born: 1832,
+    dates: "1832–1898",
+    place: "England",
+    group: "19th",
+    tag: "Children’s literature",
+    blurb: "Oxford mathematician whose dream-logic nonsense for children became some of the most quoted books in English.",
+    facts: [
+      "Born Charles Lutwidge Dodgson; his pen name came from Latinizing his first two names, reversing them, and turning them back into English.",
+      "Lectured in mathematics at Christ Church, Oxford, for 26 years.",
+      "Was a skilled amateur photographer, taking some 3,000 pictures.",
+      "Improvised his most famous story for the daughters of the dean of Christ Church on a rowing trip on 4 July 1862."
+    ],
+    works: [
+      { title: "Alice’s Adventures in Wonderland", year: "1865", note: "A girl follows a White Rabbit down a hole and meets the Mad Hatter, the Cheshire Cat, and the Queen of Hearts." },
+      { title: "Through the Looking-Glass", year: "1871", note: "A girl climbs into a mirror and crosses a land laid out like a chessboard, meeting Tweedledum, Tweedledee, and Humpty Dumpty." },
+      { title: "The Hunting of the Snark", year: "1876", note: "A nonsense poem in eight “fits” about a crew led by the Bellman pursuing an elusive creature that may prove to be a Boojum." }
+    ],
+    lines: [
+      { text: "“Curiouser and curiouser!” cried Alice.", work: "Alice’s Adventures in Wonderland" },
+      { text: "’Twas brillig, and the slithy toves / Did gyre and gimble in the wabe …", work: "Through the Looking-Glass" }
+    ],
+    characters: [
+      { name: "The Cheshire Cat", work: "Alice’s Adventures in Wonderland" },
+      { name: "The Mad Hatter", work: "Alice’s Adventures in Wonderland" },
+      { name: "Humpty Dumpty", work: "Through the Looking-Glass" }
+    ]
+  },
+
+  {
     id: "machado-de-assis",
     name: "Machado de Assis",
     born: 1839,
@@ -1433,6 +1740,63 @@ window.DRILL_DATA.authors = [
   },
 
   {
+    id: "stevenson",
+    name: "Robert Louis Stevenson",
+    born: 1850,
+    dates: "1850–1894",
+    place: "Scotland",
+    group: "19th",
+    tag: "Adventure fiction",
+    blurb: "Scottish novelist, poet, and travel writer, master of the adventure story and the tale of the double self.",
+    facts: [
+      "Came from a famous Edinburgh family of lighthouse engineers, and qualified as a lawyer but never practiced.",
+      "Began his pirate novel with a map he drew to amuse his young stepson.",
+      "Spent his last years at Vailima in Samoa, where islanders called him Tusitala, “teller of tales.”",
+      "Died suddenly at 44, probably of a brain hemorrhage."
+    ],
+    works: [
+      { title: "Treasure Island", year: "1883", note: "Young Jim Hawkins sails in search of Captain Flint’s buried gold and falls in with the one-legged cook Long John Silver." },
+      { title: "Strange Case of Dr Jekyll and Mr Hyde", year: "1886", note: "A London lawyer investigates the link between a respected doctor and a murderous brute, who prove to be the same man." },
+      { title: "Kidnapped", year: "1886", note: "Betrayed by his miserly uncle and shipped off to be sold in the Carolinas, young David Balfour flees across the Highlands with the Jacobite Alan Breck." }
+    ],
+    lines: [
+      { text: "Fifteen men on the dead man’s chest— / Yo-ho-ho, and a bottle of rum!", work: "Treasure Island" }
+    ],
+    characters: [
+      { name: "Long John Silver", work: "Treasure Island" },
+      { name: "Jim Hawkins", work: "Treasure Island" },
+      { name: "Alan Breck Stewart", work: "Kidnapped" }
+    ]
+  },
+
+  {
+    id: "maupassant",
+    name: "Guy de Maupassant",
+    born: 1850,
+    dates: "1850–1893",
+    place: "France",
+    group: "19th",
+    tag: "Naturalism",
+    blurb: "French master of the short story, famous for ironic twist endings and unsparing portraits of bourgeois hypocrisy.",
+    facts: [
+      "Was mentored by Gustave Flaubert, a friend of his mother’s.",
+      "Fought in the Franco-Prussian War and then worked for a decade as a government clerk in Paris.",
+      "Wrote about 300 short stories in little more than a decade.",
+      "Died at 42 in a Paris asylum, after syphilis had driven him to attempt suicide."
+    ],
+    works: [
+      { title: "Boule de Suif", year: "1880", note: "A prostitute fleeing the Prussian occupation by coach with respectable passengers is pressured to sleep with an officer for their sake, then scorned." },
+      { title: "The Necklace", year: "1884", note: "A clerk’s wife loses a borrowed piece of diamond jewelry and spends ten years repaying a replacement, only to learn the original was fake." },
+      { title: "Bel-Ami", year: "1885", note: "A handsome, unscrupulous former soldier climbs to the top of Parisian journalism and society by seducing influential women." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Mathilde Loisel", work: "The Necklace" },
+      { name: "Georges Duroy", work: "Bel-Ami" }
+    ]
+  },
+
+  {
     id: "wilde",
     name: "Oscar Wilde",
     born: 1854,
@@ -1459,6 +1823,36 @@ window.DRILL_DATA.authors = [
     characters: [
       { name: "Lord Henry Wotton", work: "The Picture of Dorian Gray" },
       { name: "Lady Bracknell", work: "The Importance of Being Earnest" }
+    ]
+  },
+
+  {
+    id: "conan-doyle",
+    name: "Arthur Conan Doyle",
+    born: 1859,
+    dates: "1859–1930",
+    place: "Scotland",
+    group: "19th",
+    tag: "Detective fiction",
+    blurb: "Scottish doctor turned writer who created the most famous detective in literature.",
+    facts: [
+      "Trained in medicine at Edinburgh, where his teacher Joseph Bell inspired his detective’s powers of deduction.",
+      "Served as a ship’s doctor on an Arctic whaler before setting up a practice in Southsea.",
+      "Killed off his hero at the Reichenbach Falls in 1893, then brought him back after public outcry.",
+      "Became a fervent spiritualist and publicly defended the faked Cottingley Fairies photographs."
+    ],
+    works: [
+      { title: "A Study in Scarlet", year: "1887", note: "A consulting detective and an army doctor wounded in Afghanistan meet and share lodgings in Baker Street, then solve a murder rooted in Mormon Utah." },
+      { title: "The Hound of the Baskervilles", year: "1902", note: "A detective investigates a family curse and a spectral beast said to haunt an estate on Dartmoor." },
+      { title: "The Lost World", year: "1912", note: "The irascible Professor Challenger leads an expedition to a South American plateau where dinosaurs still survive." }
+    ],
+    lines: [
+      { text: "“You have been in Afghanistan, I perceive.”", work: "A Study in Scarlet" }
+    ],
+    characters: [
+      { name: "Sherlock Holmes", work: "A Study in Scarlet" },
+      { name: "Dr. John Watson", work: "A Study in Scarlet" },
+      { name: "Professor Challenger", work: "The Lost World" }
     ]
   },
 
@@ -1569,6 +1963,34 @@ window.DRILL_DATA.authors = [
     ],
     lines: [],
     characters: []
+  },
+
+  {
+    id: "wharton",
+    name: "Edith Wharton",
+    born: 1862,
+    dates: "1862–1937",
+    place: "United States",
+    group: "modern",
+    tag: "Novel of manners",
+    blurb: "American novelist who anatomized the rigid codes of old New York society from the inside.",
+    facts: [
+      "Born into a wealthy, old New York family in Manhattan.",
+      "Co-wrote a book on interior design, The Decoration of Houses, and designed her own estate, The Mount, in Lenox, Massachusetts.",
+      "Was made a Chevalier of the Legion of Honour for her refugee relief work in France during World War I.",
+      "In 1921 became the first woman to win the Pulitzer Prize for Fiction."
+    ],
+    works: [
+      { title: "The House of Mirth", year: "1905", note: "Lily Bart, a beautiful but penniless New York socialite, slides down the social ladder while seeking a rich husband." },
+      { title: "Ethan Frome", year: "1911", note: "A poor New England farmer falls for his sickly wife’s cousin, and their sledding ride ends in disaster." },
+      { title: "The Age of Innocence", year: "1920", note: "In 1870s New York, a lawyer engaged to May Welland falls for her unconventional cousin, Countess Ellen Olenska." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Lily Bart", work: "The House of Mirth" },
+      { name: "Newland Archer", work: "The Age of Innocence" },
+      { name: "Ellen Olenska", work: "The Age of Innocence" }
+    ]
   },
 
   {
@@ -1695,6 +2117,61 @@ window.DRILL_DATA.authors = [
     ],
     lines: [],
     characters: []
+  },
+
+  {
+    id: "cather",
+    name: "Willa Cather",
+    born: 1873,
+    dates: "1873–1947",
+    place: "United States",
+    group: "modern",
+    tag: "Realism",
+    blurb: "American novelist of the Great Plains, celebrating immigrant pioneers and the land they settled.",
+    facts: [
+      "Born in Virginia, she moved with her family to Nebraska at age nine, settling in the town of Red Cloud.",
+      "Worked as an editor at McClure’s Magazine in New York before writing full-time.",
+      "Won the Pulitzer Prize in 1923 for One of Ours, a novel of World War I."
+    ],
+    works: [
+      { title: "O Pioneers!", year: "1913", note: "Alexandra Bergson, daughter of Swedish immigrants, makes her family’s Nebraska farm prosper against hardship and tragedy." },
+      { title: "My Ántonia", year: "1918", note: "A New York lawyer recalls growing up on the Nebraska prairie alongside a spirited Bohemian immigrant girl." },
+      { title: "Death Comes for the Archbishop", year: "1927", note: "A French priest, Jean Marie Latour, and his friend Father Vaillant spend their lives building the Catholic Church in New Mexico." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Ántonia Shimerda", work: "My Ántonia" },
+      { name: "Jim Burden", work: "My Ántonia" },
+      { name: "Alexandra Bergson", work: "O Pioneers!" }
+    ]
+  },
+
+  {
+    id: "hesse",
+    name: "Hermann Hesse",
+    born: 1877,
+    dates: "1877–1962",
+    place: "Germany",
+    group: "modern",
+    tag: "Modernism",
+    blurb: "German-born Swiss novelist of spiritual quest and self-discovery, rediscovered by the 1960s counterculture.",
+    facts: [
+      "His mother was born at a Protestant mission in India, where her parents served.",
+      "Ran away from the Maulbronn seminary as a teenager.",
+      "Underwent psychoanalysis with a follower of Carl Jung, and later met Jung himself.",
+      "Settled in Montagnola, Switzerland, became a Swiss citizen, and won the Nobel Prize in Literature in 1946."
+    ],
+    works: [
+      { title: "Siddhartha", year: "1922", note: "In the time of the Buddha, a Brahmin’s son leaves home in search of enlightenment and finds it as a ferryman on a river." },
+      { title: "Steppenwolf", year: "1927", note: "A lonely, middle-aged intellectual, Harry Haller, torn between his human and bestial natures, is drawn into a nightlife of jazz and a Magic Theater." },
+      { title: "The Glass Bead Game", year: "1943", note: "In a future province of scholars called Castalia, Joseph Knecht rises to master an abstract pastime that synthesizes all knowledge." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Harry Haller", work: "Steppenwolf" },
+      { name: "Hermine", work: "Steppenwolf" },
+      { name: "Joseph Knecht", work: "The Glass Bead Game" }
+    ]
   },
 
   {
@@ -1867,6 +2344,36 @@ window.DRILL_DATA.authors = [
     ],
     lines: [],
     characters: []
+  },
+
+  {
+    id: "dh-lawrence",
+    name: "D. H. Lawrence",
+    born: 1885,
+    dates: "1885–1930",
+    place: "England",
+    group: "modern",
+    tag: "Modernism",
+    blurb: "English novelist, poet, and coal miner’s son who wrote frankly of sexuality, instinct, and the damage of industrial life.",
+    facts: [
+      "Grew up in the mining town of Eastwood, Nottinghamshire, the son of a barely literate miner.",
+      "Eloped with Frieda Weekley, the German wife of his former professor, in 1912.",
+      "Was expelled from Cornwall in 1917 on suspicion of signaling to German submarines.",
+      "Died of tuberculosis in Vence, France, at 44, after years of wandering he called his “savage pilgrimage.”"
+    ],
+    works: [
+      { title: "Sons and Lovers", year: "1913", note: "Paul Morel, a miner’s artistic son, is torn between his possessive mother and the women in his life." },
+      { title: "Women in Love", year: "1920", note: "The Brangwen sisters, Ursula and Gudrun, enter turbulent relationships with Rupert Birkin and the mine owner Gerald Crich." },
+      { title: "Lady Chatterley’s Lover", year: "1928", note: "A baronet’s wife, married to a paralyzed war veteran, begins an affair with his gamekeeper; its 1960 British edition led to a famous obscenity trial." }
+    ],
+    lines: [
+      { text: "Ours is essentially a tragic age, so we refuse to take it tragically.", work: "Lady Chatterley’s Lover" }
+    ],
+    characters: [
+      { name: "Paul Morel", work: "Sons and Lovers" },
+      { name: "Ursula Brangwen", work: "Women in Love" },
+      { name: "Oliver Mellors", work: "Lady Chatterley’s Lover" }
+    ]
   },
 
   {
@@ -2181,6 +2688,34 @@ window.DRILL_DATA.authors = [
     characters: [
       { name: "Woland", work: "The Master and Margarita" },
       { name: "Behemoth", work: "The Master and Margarita" }
+    ]
+  },
+
+  {
+    id: "waugh",
+    name: "Evelyn Waugh",
+    born: 1903,
+    dates: "1903–1966",
+    place: "England",
+    group: "modern",
+    tag: "Satire",
+    blurb: "English comic novelist whose savage satires of high society gave way to an elegy for Catholic, aristocratic England.",
+    facts: [
+      "Left Hertford College, Oxford, without a degree.",
+      "Taught at a boys’ preparatory school in North Wales, which inspired his first novel.",
+      "Converted to Roman Catholicism in 1930.",
+      "Served with the Royal Marines and the commandos in World War II, including a mission to Yugoslavia."
+    ],
+    works: [
+      { title: "Decline and Fall", year: "1928", note: "Paul Pennyfeather, sent down from Oxford after drunken aristocrats strip off his trousers, teaches at a Welsh school, nearly marries a society hostess, and lands in prison." },
+      { title: "Scoop", year: "1938", note: "A shy nature columnist is mistakenly sent to cover a war in an African country, in a satire of Fleet Street." },
+      { title: "Brideshead Revisited", year: "1945", note: "Charles Ryder recalls his entanglement with an aristocratic Catholic family, beginning with his friendship with their son at Oxford." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Sebastian Flyte", work: "Brideshead Revisited" },
+      { name: "Charles Ryder", work: "Brideshead Revisited" },
+      { name: "William Boot", work: "Scoop" }
     ]
   },
 
@@ -3345,6 +3880,371 @@ window.DRILL_DATA.authors = [
     lines: [],
     characters: [
       { name: "Komako", work: "Snow Country" }
+    ]
+  },
+
+  {
+    id: "bellow",
+    name: "Saul Bellow",
+    born: 1915,
+    dates: "1915–2005",
+    place: "United States",
+    group: "postwar",
+    tag: "Postwar fiction",
+    blurb: "Chicago novelist of exuberant, brainy prose whose restless intellectual heroes search for meaning in modern America.",
+    facts: [
+      "Born in Lachine, Quebec, to Jewish immigrants from Russia, and raised in Chicago.",
+      "Taught for more than 30 years on the University of Chicago’s Committee on Social Thought.",
+      "Won the National Book Award for Fiction three times.",
+      "Won both the Pulitzer Prize and the Nobel Prize in Literature in 1976."
+    ],
+    works: [
+      { title: "The Adventures of Augie March", year: "1953", note: "A Depression-era Chicago youth drifts through jobs, schemes, and love affairs, refusing to be defined by others." },
+      { title: "Herzog", year: "1964", note: "A twice-divorced professor in crisis writes unsent letters to friends, enemies, the famous, and the dead." },
+      { title: "Humboldt’s Gift", year: "1975", note: "A successful writer, Charlie Citrine, reckons with his friendship with a brilliant poet who died a failure, modeled on Delmore Schwartz." }
+    ],
+    lines: [
+      { text: "I am an American, Chicago born—Chicago, that somber city—and go at things as I have taught myself, free-style …", work: "The Adventures of Augie March" },
+      { text: "If I am out of my mind, it’s all right with me, thought Moses Herzog.", work: "Herzog" }
+    ],
+    characters: [
+      { name: "Augie March", work: "The Adventures of Augie March" },
+      { name: "Moses Herzog", work: "Herzog" },
+      { name: "Charlie Citrine", work: "Humboldt’s Gift" }
+    ]
+  },
+
+  {
+    id: "lispector",
+    name: "Clarice Lispector",
+    born: 1920,
+    dates: "1920–1977",
+    place: "Brazil",
+    group: "postwar",
+    tag: "Modernism",
+    blurb: "Ukrainian-born Brazilian writer of intensely inward, mystical fiction that broke the conventions of the novel.",
+    facts: [
+      "Born in Ukraine to a Jewish family that fled to Brazil when she was a baby; she grew up in Recife.",
+      "Studied law in Rio de Janeiro and worked as a journalist.",
+      "Published her first novel at 23 to great acclaim.",
+      "Spent years abroad with her diplomat husband, in Naples, Bern, and Washington."
+    ],
+    works: [
+      { title: "Near to the Wild Heart", year: "1943", note: "A debut novel tracing the inner life of Joana from a restless childhood through a failing marriage." },
+      { title: "The Passion According to G.H.", year: "1964", note: "A wealthy Rio sculptor crushes a cockroach in her maid’s empty room and undergoes a mystical crisis." },
+      { title: "The Hour of the Star", year: "1977", note: "A male narrator tells the life of Macabéa, a poor, naïve typist from the Northeast adrift in Rio de Janeiro." }
+    ],
+    lines: [
+      { text: "Everything in the world began with a yes. One molecule said yes to another molecule and life was born.", work: "The Hour of the Star" }
+    ],
+    characters: [
+      { name: "Macabéa", work: "The Hour of the Star" }
+    ]
+  },
+
+  {
+    id: "vonnegut",
+    name: "Kurt Vonnegut",
+    born: 1922,
+    dates: "1922–2007",
+    place: "United States",
+    group: "postwar",
+    tag: "Postmodernism",
+    blurb: "American satirist who blended science fiction, black humor, and moral outrage at war and technology.",
+    facts: [
+      "As an American prisoner of war, survived the 1945 firebombing of Dresden in an underground meat locker.",
+      "Worked in public relations for General Electric in Schenectady before writing full-time.",
+      "The University of Chicago accepted one of his novels in place of a master’s thesis in anthropology, decades after he left.",
+      "Taught at the Iowa Writers’ Workshop in the mid-1960s."
+    ],
+    works: [
+      { title: "Slaughterhouse-Five", year: "1969", note: "Billy Pilgrim, an American POW who survives the firebombing of Dresden, comes unstuck in time and is abducted by Tralfamadorians." },
+      { title: "Cat’s Cradle", year: "1963", note: "A writer researching the atomic bomb discovers ice-nine, a substance that can freeze the world’s water, and the invented religion Bokononism." },
+      { title: "Breakfast of Champions", year: "1973", note: "A Midwestern car dealer goes mad after reading a novel by the obscure science-fiction writer Kilgore Trout." }
+    ],
+    lines: [
+      { text: "All this happened, more or less.", work: "Slaughterhouse-Five" },
+      { text: "So it goes.", work: "Slaughterhouse-Five" }
+    ],
+    characters: [
+      { name: "Billy Pilgrim", work: "Slaughterhouse-Five" },
+      { name: "Kilgore Trout", work: "Breakfast of Champions" }
+    ]
+  },
+
+  {
+    id: "gordimer",
+    name: "Nadine Gordimer",
+    born: 1923,
+    dates: "1923–2014",
+    place: "South Africa",
+    group: "postwar",
+    tag: "Postcolonial literature",
+    blurb: "South African novelist whose fiction laid bare the moral and personal costs of apartheid.",
+    facts: [
+      "Grew up in Springs, a mining town east of Johannesburg.",
+      "Several of her books were banned by the apartheid government.",
+      "Helped Nelson Mandela edit his “I Am Prepared to Die” speech, and joined the ANC while it was still outlawed.",
+      "Won the Booker Prize in 1974 and the Nobel Prize in Literature in 1991."
+    ],
+    works: [
+      { title: "The Conservationist", year: "1974", note: "A wealthy white industrialist’s weekend farm outside Johannesburg is unsettled by the discovery of an unidentified Black man’s body." },
+      { title: "Burger’s Daughter", year: "1979", note: "A young woman whose white communist father died in prison struggles with the political legacy she has inherited." },
+      { title: "July’s People", year: "1981", note: "During an imagined revolution, a liberal white family flees Johannesburg to hide in the village of their Black servant." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Rosa Burger", work: "Burger’s Daughter" },
+      { name: "Mehring", work: "The Conservationist" }
+    ]
+  },
+
+  {
+    id: "flannery-oconnor",
+    name: "Flannery O’Connor",
+    born: 1925,
+    dates: "1925–1964",
+    place: "United States",
+    group: "postwar",
+    tag: "Southern Gothic",
+    blurb: "Georgia writer whose violent, darkly comic stories of the South are shot through with Catholic visions of grace.",
+    facts: [
+      "As a six-year-old in Savannah, she was filmed for a newsreel with a chicken she had trained to walk backward.",
+      "Studied at the Iowa Writers’ Workshop.",
+      "Lived on her family’s farm, Andalusia, near Milledgeville, Georgia, where she raised peacocks.",
+      "Died of lupus, the disease that had killed her father, at 39."
+    ],
+    works: [
+      { title: "Wise Blood", year: "1952", note: "A young veteran, Hazel Motes, preaches a “Church Without Christ” in a Southern city." },
+      { title: "A Good Man Is Hard to Find", year: "1955", note: "A story collection whose title story follows a Georgia family’s road trip that ends in murder by an escaped convict called The Misfit." },
+      { title: "Everything That Rises Must Converge", year: "1965", note: "A posthumous story collection; its title story follows a young man and his bigoted mother on a newly integrated bus." }
+    ],
+    lines: [
+      { text: "“She would of been a good woman,” The Misfit said, “if it had been somebody there to shoot her every minute of her life.”", work: "A Good Man Is Hard to Find" }
+    ],
+    characters: [
+      { name: "The Misfit", work: "A Good Man Is Hard to Find" },
+      { name: "Hazel Motes", work: "Wise Blood" }
+    ]
+  },
+
+  {
+    id: "grass",
+    name: "Günter Grass",
+    born: 1927,
+    dates: "1927–2015",
+    place: "Germany",
+    group: "postwar",
+    tag: "Postwar fiction",
+    blurb: "German novelist, artist, and public conscience whose grotesque, comic fables confronted his country’s Nazi past.",
+    facts: [
+      "Born in the Free City of Danzig, now Gdańsk, Poland.",
+      "Trained as a stonemason and sculptor and designed the covers of his own books.",
+      "Campaigned for decades for Willy Brandt and the Social Democrats, and won the Nobel Prize in Literature in 1999.",
+      "Revealed in 2006 that he had been drafted into the Waffen-SS at 17."
+    ],
+    works: [
+      { title: "The Tin Drum", year: "1959", note: "Oskar Matzerath, who wills himself to stop growing at three, recounts Nazi-era Danzig from a mental hospital, shattering glass with his screams." },
+      { title: "Cat and Mouse", year: "1961", note: "A novella about Joachim Mahlke, a wartime Danzig schoolboy with an enormous Adam’s apple, and his quest for the Knight’s Cross." },
+      { title: "Dog Years", year: "1963", note: "The final book of a trilogy set around Danzig: the friendship of a half-Jewish scarecrow-maker and a miller’s son who turns Nazi and beats him." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Oskar Matzerath", work: "The Tin Drum" },
+      { name: "Joachim Mahlke", work: "Cat and Mouse" }
+    ]
+  },
+
+  {
+    id: "updike",
+    name: "John Updike",
+    born: 1932,
+    dates: "1932–2009",
+    place: "United States",
+    group: "postwar",
+    tag: "Postwar fiction",
+    blurb: "Prolific American novelist, critic, and stylist who chronicled the desires and discontents of the Protestant middle class.",
+    facts: [
+      "Grew up in Shillington, Pennsylvania, and was president of the Harvard Lampoon.",
+      "Studied at the Ruskin School of Art in Oxford, hoping to become a cartoonist.",
+      "Contributed stories, poems, and criticism to The New Yorker for more than five decades.",
+      "Is one of only four writers to win the Pulitzer Prize for Fiction twice."
+    ],
+    works: [
+      { title: "Rabbit, Run", year: "1960", note: "Harry Angstrom, a former high-school basketball star in Pennsylvania, flees his wife and dead-end job; the first of four novels about him." },
+      { title: "Couples", year: "1968", note: "Adultery and partner-swapping among young married pairs in a small Massachusetts town in the early 1960s." },
+      { title: "The Witches of Eastwick", year: "1984", note: "Three women in a Rhode Island town discover magical powers and fall under the spell of a mysterious newcomer, Darryl Van Horne." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Harry “Rabbit” Angstrom", work: "Rabbit, Run" },
+      { name: "Darryl Van Horne", work: "The Witches of Eastwick" }
+    ]
+  },
+
+  {
+    id: "didion",
+    name: "Joan Didion",
+    born: 1934,
+    dates: "1934–2021",
+    place: "United States",
+    group: "postwar",
+    tag: "New Journalism",
+    blurb: "American essayist and novelist whose cool, precise prose dissected California, the 1960s, and grief.",
+    facts: [
+      "Born in Sacramento, she won Vogue’s Prix de Paris essay contest as a Berkeley senior and went to work at the magazine.",
+      "Co-wrote screenplays, including A Star Is Born (1976), with her husband, John Gregory Dunne.",
+      "Won the National Book Award in 2005 for a memoir of mourning."
+    ],
+    works: [
+      { title: "Slouching Towards Bethlehem", year: "1968", note: "Essays on 1960s California, including a portrait of the hippie scene in San Francisco’s Haight-Ashbury." },
+      { title: "The White Album", year: "1979", note: "Essays on California in the late 1960s and 1970s, from the Manson murders to the Doors and the Black Panthers." },
+      { title: "The Year of Magical Thinking", year: "2005", note: "A memoir of the months after her husband died suddenly at the dinner table, while their daughter lay critically ill." }
+    ],
+    lines: [
+      { text: "We tell ourselves stories in order to live.", work: "The White Album" },
+      { text: "Life changes fast. Life changes in the instant. You sit down to dinner and life as you know it ends.", work: "The Year of Magical Thinking" }
+    ],
+    characters: []
+  },
+
+  {
+    id: "coetzee",
+    name: "J. M. Coetzee",
+    born: 1940,
+    dates: "b. 1940",
+    place: "South Africa",
+    group: "postwar",
+    tag: "Postcolonial literature",
+    blurb: "South African–born novelist of spare, unsparing allegories of power, complicity, and the limits of sympathy.",
+    facts: [
+      "Worked as a computer programmer for IBM in London in the early 1960s.",
+      "Earned a PhD at the University of Texas with a computer-aided study of Samuel Beckett’s prose.",
+      "Was the first writer to win the Booker Prize twice, and won the Nobel Prize in Literature in 2003.",
+      "Moved to Adelaide in 2002 and became an Australian citizen."
+    ],
+    works: [
+      { title: "Waiting for the Barbarians", year: "1980", note: "The magistrate of a frontier town in an unnamed empire turns against the regime after witnessing the torture of captives." },
+      { title: "Life & Times of Michael K", year: "1983", note: "A harelipped gardener tries to take his dying mother to her rural birthplace through a South Africa torn by civil war." },
+      { title: "Disgrace", year: "1999", note: "A Cape Town professor, dismissed after an affair with a student, retreats to his daughter’s smallholding, where they are violently attacked." }
+    ],
+    lines: [
+      { text: "For a man of his age, fifty-two, divorced, he has, to his mind, solved the problem of sex rather well.", work: "Disgrace" }
+    ],
+    characters: [
+      { name: "David Lurie", work: "Disgrace" },
+      { name: "The Magistrate", work: "Waiting for the Barbarians" }
+    ]
+  },
+
+  {
+    id: "allende",
+    name: "Isabel Allende",
+    born: 1942,
+    dates: "b. 1942",
+    place: "Chile",
+    group: "postwar",
+    tag: "Magical realism",
+    blurb: "Chilean novelist whose family sagas mixing magic and politics made her one of the most widely read Spanish-language writers.",
+    facts: [
+      "Born in Lima, Peru, where her Chilean father was a diplomat.",
+      "Her father was a first cousin of Chile’s socialist president, overthrown in the 1973 coup.",
+      "Fled to Venezuela after the coup and lived there for 13 years.",
+      "Her first novel began as a letter to her dying grandfather; she received the U.S. Presidential Medal of Freedom in 2014."
+    ],
+    works: [
+      { title: "The House of the Spirits", year: "1982", note: "Four generations of the Trueba family, from clairvoyant Clara to her granddaughter Alba, amid a South American country’s slide into dictatorship." },
+      { title: "Eva Luna", year: "1987", note: "An orphaned storyteller grows up as a servant and finds love with an Austrian-born filmmaker in a Latin American country beset by guerrilla war." },
+      { title: "Paula", year: "1994", note: "A memoir written at the bedside of her daughter, who had fallen into a coma." }
+    ],
+    lines: [
+      { text: "Barrabás came to us by sea, the child Clara wrote in her delicate calligraphy.", work: "The House of the Spirits" }
+    ],
+    characters: [
+      { name: "Clara del Valle", work: "The House of the Spirits" },
+      { name: "Esteban Trueba", work: "The House of the Spirits" }
+    ]
+  },
+
+  {
+    id: "sebald",
+    name: "W. G. Sebald",
+    born: 1944,
+    dates: "1944–2001",
+    place: "Germany",
+    group: "postwar",
+    tag: "Contemporary fiction",
+    blurb: "German writer of hybrid, melancholy prose works that blend fiction, memoir, travelogue, and photographs to trace the shadows of history.",
+    facts: [
+      "Born in the Bavarian village of Wertach near the end of World War II.",
+      "Taught for three decades at the University of East Anglia in Norwich, where he was founding director of the British Centre for Literary Translation.",
+      "Scattered unexplained black-and-white photographs throughout his books.",
+      "Died in 2001 when he suffered a heart attack at the wheel near Norwich."
+    ],
+    works: [
+      { title: "The Emigrants", year: "1992", note: "Four long portraits of displaced men, several of them Jewish, whose lives are shadowed by exile and loss." },
+      { title: "The Rings of Saturn", year: "1995", note: "A walk along the Suffolk coast prompts digressions on decay, herring, silkworms, Joseph Conrad, and Sir Thomas Browne." },
+      { title: "Austerlitz", year: "2001", note: "An architectural historian raised by a Welsh preacher discovers he was sent to Britain from Prague as a child in 1939 and searches for his parents’ fate." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Jacques Austerlitz", work: "Austerlitz" }
+    ]
+  },
+
+  {
+    id: "mantel",
+    name: "Hilary Mantel",
+    born: 1952,
+    dates: "1952–2022",
+    place: "England",
+    group: "postwar",
+    tag: "Historical fiction",
+    blurb: "English novelist who reinvented historical fiction with a vivid, present-tense trilogy about a Tudor power broker.",
+    facts: [
+      "Grew up in a Catholic family of Irish descent in Derbyshire.",
+      "Lived for years in Botswana and in Jeddah, Saudi Arabia, with her geologist husband.",
+      "Suffered for years from undiagnosed endometriosis, which shaped much of her life and writing.",
+      "Was the first woman to win the Booker Prize twice, and was made a dame in 2014."
+    ],
+    works: [
+      { title: "Wolf Hall", year: "2009", note: "A blacksmith’s son from Putney rises to become Henry VIII’s chief fixer, smoothing the king’s path to marrying Anne Boleyn." },
+      { title: "Bring Up the Bodies", year: "2012", note: "Thomas Cromwell engineers the downfall and execution of Anne Boleyn in 1536." },
+      { title: "The Mirror & the Light", year: "2020", note: "The final four years of Thomas Cromwell’s life, ending with his execution in 1540." }
+    ],
+    lines: [
+      { text: "“So now get up.”", work: "Wolf Hall" }
+    ],
+    characters: [
+      { name: "Thomas Cromwell", work: "Wolf Hall" }
+    ]
+  },
+
+  {
+    id: "bolano",
+    name: "Roberto Bolaño",
+    born: 1953,
+    dates: "1953–2003",
+    place: "Chile",
+    group: "postwar",
+    tag: "Contemporary fiction",
+    blurb: "Chilean novelist and poet whose sprawling, haunted fictions of poets, exiles, and violence made him a posthumous literary sensation.",
+    facts: [
+      "Moved with his family to Mexico City as a teenager in 1968.",
+      "Co-founded Infrarealism, a rebellious avant-garde poetry movement, in Mexico City in 1975.",
+      "Spent his final years in Blanes, a small Catalan beach town.",
+      "Died of liver failure at 50 while waiting for a transplant."
+    ],
+    works: [
+      { title: "The Savage Detectives", year: "1998", note: "Two young poets, Arturo Belano and Ulises Lima, search the Sonoran desert for a vanished avant-garde poet, their story told by dozens of witnesses." },
+      { title: "2666", year: "2004", note: "A posthumous five-part novel converging on Santa Teresa, a Mexican border city where hundreds of women are being murdered." },
+      { title: "By Night in Chile", year: "2000", note: "The feverish deathbed monologue of a priest and literary critic who once taught Marxism to Pinochet’s junta." }
+    ],
+    lines: [],
+    characters: [
+      { name: "Arturo Belano", work: "The Savage Detectives" },
+      { name: "Ulises Lima", work: "The Savage Detectives" },
+      { name: "Benno von Archimboldi", work: "2666" }
     ]
   }
 ];
