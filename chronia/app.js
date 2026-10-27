@@ -2059,19 +2059,48 @@
     var win = !reach ? null : [[-e, -e], [e, -e], [-e, e], [e, e]];
     var forms = allForms(p, name, sp, win);
     if (!forms.length) return null;
-    var top = bestOf(forms), ctr = cenLL ? planeOf(fr, cenLL[0], cenLL[1]) : [0, 0], wall = null;
-    if (capLL) {
-      var cpt = planeOf(fr, capLL[0], capLL[1]), hc = 0.4 * top.d, x0 = cpt[0] - hc, x1 = cpt[0] + hc + 0.3 * capLL[2] * top.d, y0 = cpt[1] - hc, y1 = cpt[1] + hc;
-      if (x1 > sp.x0 && x0 < sp.x1 && y1 > sp.y0 && y0 < sp.y1) wall = [x0, y0, x1, y0, x1, y0, x1, y1, x1, y1, x0, y1, x0, y1, x0, y0];
-    }
+    var top = bestOf(forms), ctr = cenLL ? planeOf(fr, cenLL[0], cenLL[1]) : [0, 0], wall = capWall(fr, capLL, top.d, sp);
     var out = [];
     forms.forEach(function (fm) { out = out.concat(centred(sp, win, name, p.people, fm, ctr, wall)); });
     var plain = bestOf(out.filter(function (fm) { return !fm.tight && !fm.pole; }), false) || out[0];
+    var lazy = { p: p, name: name, capLL: capLL, sp: sp, win: win, ctr: ctr, made: new Map() };
     if (!fr.flat && !again && !reach && (Math.abs(plain.u) > RECENTER || Math.abs(plain.v) > RECENTER)) {
       var ll = planeLL(fr, plain.u, plain.v);
-      return groundCand(p, name, feats, ll[0], ll[1], capLL, reach, true, cenLL) || { fr: fr, forms: out };
+      return groundCand(p, name, feats, ll[0], ll[1], capLL, reach, true, cenLL) || { fr: fr, forms: out, lazy: lazy };
     }
-    return { fr: fr, forms: out };
+    return { fr: fr, forms: out, lazy: lazy };
+  }
+  function capWall(fr, capLL, d, sp) {
+    if (!capLL) return null;
+    var cpt = planeOf(fr, capLL[0], capLL[1]), hc = 0.4 * d, x0 = cpt[0] - hc, x1 = cpt[0] + hc + 0.3 * capLL[2] * d, y0 = cpt[1] - hc, y1 = cpt[1] + hc;
+    return x1 > sp.x0 && x0 < sp.x1 && y1 > sp.y0 && y0 < sp.y1 ? [x0, y0, x1, y0, x1, y0, x1, y1, x1, y1, x0, y1, x0, y1, x0, y0] : null;
+  }
+  // On a globe turned so that north isn't up, a name laid along its parallel looks slanted on the screen,
+  // and past the tilt limit it can't be used at all. These forms are laid at the angle on the ground that
+  // reads level on the screen, and are centred like the others, so the name stays in the middle of its land.
+  var LEVEL_FROM = 0.3, LEVEL_STEP = 0.1;
+  function screenTilt(fr, u, v, ang, scale) {
+    var q0 = screenAt(fr, u, v, 0), q1 = screenAt(fr, u + Math.cos(ang) * 4 / scale, v + Math.sin(ang) * 4 / scale, 0);
+    return Math.atan2(q1[1] - q0[1], q1[0] - q0[0]);
+  }
+  function levelForms(c, scale, was) {
+    var z = c.lazy, fm0 = c.forms[0];
+    if (!z || c.fr.flat || !fm0) return null;
+    var t0 = screenTilt(c.fr, fm0.u, fm0.v, 0, scale);
+    if (Math.abs(t0) <= LEVEL_FROM) return null;
+    var a = t0;
+    for (var it = 0; it < 2; it++) a = wrapPi(a + screenTilt(c.fr, fm0.u, fm0.v, a, scale));
+    var m = was && /l(-?\d+)/.exec(was), key = m && Math.abs(a / LEVEL_STEP - +m[1]) < 1.5 ? +m[1] : Math.round(a / LEVEL_STEP), hit = z.made.get(key);
+    if (hit) return hit;
+    a = key * LEVEL_STEP;
+    var opts = labelOptions(z.name, z.p.people), forms = fitForms(opts, z.sp, [], z.win, [[0, 0], z.ctr], a, 100), out = [];
+    var top = bestOf(forms), wall = top ? capWall(c.fr, z.capLL, top.d, z.sp) : null;
+    forms.forEach(function (fm) {
+      centred(z.sp, z.win, z.name, z.p.people, fm, z.ctr, wall).forEach(function (f) { f.lev = key; out.push(f); });
+    });
+    if (z.made.size > 5) z.made.delete(z.made.keys().next().value);
+    z.made.set(key, out);
+    return out;
   }
 
   function groundLayout(snap, p, name, allow) {
@@ -2223,7 +2252,7 @@
   function labelTarget(side, people, minF, cap) {
     return Math.max(minF, Math.min(cap, (5 + 3.6 * Math.log2(Math.max(1, side) / 10)) * (people ? 0.85 : 1)));
   }
-  function formSig(fm) { return fm.oi + (fm.ang ? "a" : "h") + (fm.tight ? "t" : "n") + (fm.pole ? "p" : ""); }
+  function formSig(fm) { return fm.oi + (fm.lev !== undefined ? "l" + fm.lev : fm.ang ? "a" : "h") + (fm.tight ? "t" : "n") + (fm.pole ? "p" : ""); }
   function placeGround(p, name, G, side, placed, scale) {
     var st = labelState.get(p.id), people = p.people, cap = people ? 15 : 26, minF = people ? 8.5 : 7.5, thr = st ? minF * 0.93 : minF;
     var target = labelTarget(side, people, minF, cap), order = [], ci, k, near = -1, nd = 0.2;
@@ -2236,9 +2265,9 @@
     for (ci = 0; ci < G.cands.length; ci++) if (order.indexOf(ci) < 0) order.push(ci);
     for (var oi = 0; oi < order.length; oi++) {
       ci = order[oi];
-      var c = G.cands[ci], ranked = [];
-      for (k = 0; k < c.forms.length; k++) {
-        var fm = c.forms[k], fit = 0.88 * fm.d * scale, f = Math.min(cap, target, fit), fmax = fm.pole ? f : Math.min(cap, target, 0.88 * fm.dmax * scale), same = ci === near && st.form === formSig(fm), tilt = fm.ang;
+      var c = G.cands[ci], ranked = [], lev = levelForms(c, scale, ci === near ? st.form : null), forms = lev ? c.forms.concat(lev) : c.forms;
+      for (k = 0; k < forms.length; k++) {
+        var fm = forms[k], fit = 0.88 * fm.d * scale, f = Math.min(cap, target, fit), fmax = fm.pole ? f : Math.min(cap, target, 0.88 * fm.dmax * scale), same = ci === near && st.form === formSig(fm), tilt = fm.ang;
         if (!c.fr.flat) {
           var q0 = screenAt(c.fr, fm.u, fm.v, 0), q1 = screenAt(c.fr, fm.u + Math.cos(fm.ang) * 4 / scale, fm.v + Math.sin(fm.ang) * 4 / scale, 0);
           if (q0[2] < 0.25) continue;
@@ -2246,7 +2275,7 @@
         }
         tilt = Math.abs(tilt);
         if (tilt > (name.length > 6 ? 0.55 : 0.65) + (same ? 0.25 : 0)) continue;
-        var pen = (fm.ang ? 0.8 : 1) * (fm.oi ? (fm.oi === 1 ? 0.9 : 0.82) : 1) * (fm.tight ? 0.9 : 1) * (fm.pole ? 0.75 : 1) * (tilt > 0.2 ? 1.2 - tilt : 1);
+        var pen = (fm.lev !== undefined ? 0.88 : fm.ang ? 0.8 : 1) * (fm.oi ? (fm.oi === 1 ? 0.9 : 0.82) : 1) * (fm.tight ? 0.9 : 1) * (fm.pole ? 0.75 : 1) * (tilt > 0.2 ? 1.2 - tilt : 1);
         if (f < thr && !people && side >= 28 && (side >= 64 || localScale() < 600) && fit * 1.18 >= thr) { f = thr; pen *= 0.7; }
         ranked.push({ k: k, f: f, s: Math.max(f, fmax) * pen * (same ? 1.12 : 1), same: same });
       }
@@ -2257,7 +2286,7 @@
       for (var t = 0; t < Math.min(4, ranked.length); t++) {
         var rk = ranked[t];
         if (rk.f < thr) continue;
-        var fmk = c.forms[rk.k], o = labelOptions(name, people, fmk.sp)[fmk.oi], geo = glyphLayout(c.fr, fmk, o, rk.f, people, scale);
+        var fmk = forms[rk.k], o = labelOptions(name, people, fmk.sp)[fmk.oi], geo = glyphLayout(c.fr, fmk, o, rk.f, people, scale);
         if (!geo) continue;
         var ok = true, held = rk.same, pad = rk.same ? 0 : 2 + 0.15 * rk.f;
         for (var bi = 0; bi < geo.boxes.length && ok; bi++) {
