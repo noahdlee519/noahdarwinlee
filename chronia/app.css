@@ -777,6 +777,7 @@ body.ch-page {
 .ch-key-sample .k-kin { fill: none; stroke: var(--ch-border); stroke-width: 0.6; opacity: 0.55; }
 .ch-key-sample .k-people { fill: var(--ch-people-fill); }
 .ch-key-sample .k-people-name { fill: var(--ch-people); font-family: var(--ch-serif); font-size: 11px; font-style: italic; text-anchor: middle; }
+.ch-key-sample .k-band-name { fill: var(--ch-people); font-family: var(--ch-serif); font-size: 11px; font-style: italic; text-anchor: middle; opacity: 0.72; }
 .ch-key-sample .k-division { fill: none; stroke: var(--ch-division); stroke-width: 0.8; stroke-dasharray: 3.4 2.1; }
 
 .ch-card {

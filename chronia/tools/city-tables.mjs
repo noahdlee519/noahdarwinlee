@@ -42,19 +42,23 @@ export const CITY_SINCE = {
   "Singapore": "1819-02-06", "Hong Kong": 1841, "Kuala Lumpur": 1857, "George Town": 1786, "Manila": 1571, "Bangkok": 1782, "Mandalay": 1857, "Kolkata": 1690, "Chennai": 1639, "Mumbai": 1534, "Hyderabad|80": 1591, "Ahmedabad": 1411,
   "Agra": 1504, "Jaipur": 1727, "Lucknow": 1528, "Amritsar": 1577, "Karachi": 1729, "Colombo": 1505, "Sapporo": 1868, "Seoul": 1394, "Busan": 1400, "Tehran": 1200, "Riyadh": 1746, "Kuwait City": 1613,
   "Doha": 1825, "Abu Dhabi": 1761, "Dubai": 1833, "Tripoli|10": -700, "Algiers": -400,
-  "Casablanca": 1468, "Washington": 1790
+  "Casablanca": 1468, "Washington": 1790,
+  "Karakorum": 1220, "Sarai": 1254, "Ava": 1365, "Majapahit": 1293, "Chanchan": 850, "Tombouctou": 1100, "Vijayanagar": 1336,
+  "Kamakura": 1180, "Cuzco": 1200, "Hamadan": -700, "Maragheh": 800, "Ife": 1000, "Benin": 1200, "Kabul": -500, "Tashkent": -200,
+  "Malacca": 1400, "Mogadishu": 900, "Mombasa": 1150, "Aden": -500, "Zanzibar": 1700
 };
 
 export const CITY_UNTIL = {
   "Babylon": 1000, "Cahokia": 1350, "Teotihuacan": 650, "Tikal": 900, "Angkor": 1431, "Vijayanagar": 1565, "Ctesiphon": 800,
   "Seleucia": 300, "Persepolis": -330, "Nineveh": -612, "Carthage": 698, "Pompeii": 79, "Tiahuanaco": 1000, 
-  "Memphis|30": 900, "Karakorum": 1388, "Sarai": 1480, "Fatehpur Sikri": 1610, "Chanchan": 1470, "Tollan": 1150,
-  "Mohenjodaro": -1900, "Ayutthaya": 1767, "Xianyang": -206, "Palmyra": 1400, "Petra": 700, "Bagan": 1300, "Zimbabwe": 1450,
+  "Memphis|30": 900, "Karakorum": 1388, "Sarai": 1502, "Mayapan": 1450, "Gauda": 1576, "Hormuz": 1622, "Fatehpur Sikri": 1610, "Chanchan": 1470, "Tollan": 1150,
+  "Mohenjodaro": -1900, "Ayutthaya": 1767, "Xianyang": -206, "Palmyra": 1400, "Petra": 700, "Bagan": 1369, "Zimbabwe": 1450,
   "Mapungubwe": 1290, "Kilwa": 1600, "Niani": 1600, "Koumbi Saleh": 1240
 };
 
 export const CITY_ADD = [
-  ["Karakorum", 102.83, 47.2, 1220, 1388],
+  ["Sultaniyeh", 48.797, 36.434, 1302, 1500, [[1302, 5], [1320, 50], [1340, 30], [1384, 15], [1400, 8], [1500, 3]]],
+  ["Mrauk U", 93.19, 20.59, 1430, 1785, [[1430, 5], [1550, 30], [1600, 50], [1785, 20]]],
   ["Fatehpur Sikri", 77.66, 27.09, 1571, 1610],
   ["Nineveh", 43.15, 36.36, -2500, -612],
   ["Persepolis", 52.89, 29.93, -515, -330],
@@ -73,10 +77,59 @@ export const REBA_FIX = {
   "Hamilton": { move: [-79.87, 43.25] },
   "Dienne": { move: [-4.55, 13.91, "Djenné"] },
   "Mali": { move: [-8.38, 11.38, "Niani"] },
+  "Mayapan": { move: [-89.461, 20.629] },
+  "Oyo": { split: 1836, early: [4.308, 8.975, "Oyo-Ile"] },
   "Gelibolu": { before: 1400 },
   "Ruhr": { drop: true },
   "Liaotung": { drop: true },
   "Prambanan": { drop: true }
+};
+
+export const CITY_POP = {
+  "Zanzibar": { drop: [-9999, 1849], pts: [[1700, 3], [1800, 10]] },
+  "Gauda": { drop: [1576, 9999], pts: [[1575, 20]] },
+  "Hormuz": { pts: [[1622, 13]] },
+  "Sarai": { drop: [-9999, 1253], pts: [[1254, 5], [1395, 120], [1396, 15], [1502, 5]] },
+  "Chanchan": { pts: [[1100, 10]] },
+  "Tombouctou": { pts: [[1200, 1]] },
+  "Kamakura": { pts: [[1333, 200], [1340, 60]] },
+  "Malacca": { pts: [[1400, 1], [1450, 20], [1510, 40], [1512, 15], [1600, 15]] },
+  "Mogadishu": { pts: [[1300, 10], [1500, 10]] },
+  "Mombasa": { pts: [[1300, 5], [1500, 10]] },
+  "Aden": { pts: [[1300, 10], [1500, 10]] },
+  "Tashkent": { pts: [[1300, 5], [1550, 15]] },
+  "Ife": { pts: [[1300, 10]] },
+  "Benin": { pts: [[1400, 5], [1500, 13]] },
+  "Osaka": { pts: [[1200, 2], [1496, 5], [1580, 45]] },
+  "Maragheh": { pts: [[1260, 20]] },
+  "Cuzco": { pts: [[1200, 3]] },
+  "Mexico City": { pts: [[1325, 2], [1400, 10], [1521, 40]] },
+  "Samarkand": { pts: [[1220, 110], [1221, 25], [1360, 50], [1400, 130]] },
+  "Bukhara": { pts: [[1220, 70], [1221, 20], [1273, 15], [1400, 40]] },
+  "Merv": { pts: [[1221, 70], [1222, 5]] },
+  "Nishapur": { pts: [[1221, 18], [1222, 2]] },
+  "Konye-Urgench": { pts: [[1220, 25], [1222, 1], [1330, 20], [1388, 20], [1389, 2]] },
+  "Herat": { pts: [[1221, 60], [1222, 5], [1240, 10], [1300, 40]] },
+  "Kiev": { pts: [[1240, 25], [1241, 2]] },
+  "Vladimir": { pts: [[1237, 20], [1238, 5], [1300, 10]] },
+  "Beijing": { pts: [[1215, 130], [1216, 40], [1267, 60]] },
+  "Baghdad": { pts: [[1258, 100], [1259, 30], [1401, 60], [1402, 20]] },
+  "Aleppo": { pts: [[1260, 55], [1261, 25], [1400, 75], [1401, 40]] },
+  "Acre": { drop: [1300, 1700], pts: [[1291, 40], [1292, 0.5], [1700, 1]] },
+  "Antioch": { pts: [[1268, 27], [1269, 3]] },
+  "Polonnaruwa": { pts: [[1215, 70], [1220, 10]] },
+  "Bagan": { pts: [[1287, 180], [1300, 30], [1369, 10]] },
+  "Zimbabwe": { drop: [-9999, 1449], pts: [[1150, 2], [1250, 10], [1350, 18], [1420, 18], [1449, 5]] },
+  "Cahokia": { drop: [-9999, 1400], pts: [[1050, 15], [1100, 15], [1200, 6], [1275, 2], [1349, 0.5]] },
+  "Florence": { drop: [1301, 1550], pts: [[1300, 100], [1338, 110], [1348, 110], [1352, 42], [1400, 60], [1427, 38], [1500, 55], [1551, 59]] },
+  "Venice": { drop: [1301, 1599], pts: [[1338, 120], [1348, 120], [1350, 70], [1422, 85], [1509, 115], [1563, 168], [1576, 170], [1581, 124]] },
+  "Paris": { drop: [1301, 1499], pts: [[1328, 220], [1350, 150], [1422, 100], [1500, 200]] },
+  "Cairo": { pts: [[1348, 500], [1350, 330]] },
+  "Siena": { pts: [[1347, 50], [1350, 20]] },
+  "Novgorod": { pts: [[1570, 30], [1571, 10], [1600, 8]] },
+  "Daulatabad": { pts: [[1327, 13], [1330, 60], [1336, 15]] },
+  "Delhi": { pts: [[1398, 130], [1399, 30]] },
+  "Axum": { drop: [1050, 1150], pts: [[1100, 10]] }
 };
 
 export const PLACE_DROP = new Set(["Calusa", "Levisa", "Cumbe Mayo", "Ōyu site"]);

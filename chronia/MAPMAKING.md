@@ -1,6 +1,6 @@
 # Making CHRONIA's maps
 
-The rules for anyone, agent or person, who adds to or corrects CHRONIA's borders, above all before 1400, where the record is thinnest. The [README](README.md) says how the data is built. This file says how to decide what goes in it, and how to work so that the result can be trusted and checked.
+The rules for anyone, agent or person, who adds to or corrects CHRONIA's borders, above all before 1200, where the maps are snapshots and the record is thinnest. The [README](README.md) says how the data is built. This file says how to decide what goes in it, and how to work so that the result can be trusted and checked.
 
 Read the README's [The data](README.md#the-data) and [Known limits](README.md#known-limits) first. The house rules in [`../uchronia/AGENTS.md`](../uchronia/AGENTS.md#ground-rules) apply here too.
 
@@ -21,11 +21,12 @@ Every decision has to be expressed in these terms. If something can't be express
 | **State** (coloured, solid or dotted border) | A polity with a recognisable central authority over the land drawn | Kingdoms, empires, city-states, leagues with a common government, organised nomadic polities |
 | **Dependency** (ruler's colour, ruler on hover) | A polity that keeps its own identity but answers to another: `ruler` set, `status` 1 colony, 2 protectorate, 4 occupied, 5 other | Client kingdoms, satrapies shown as units, tributaries with real obligations, vassals |
 | **Part of** | A member of a larger body that is not a ruler over it | Members of a confederation or league, states of the Holy Roman Empire |
-| **People or culture** (uncoloured, italic, dotted) | A group known from texts or archaeology without, or before, state-level rule | Archaeological cultures ("Yamnaya culture"), peoples named by scholars ("Scythians" where no single state is meant) |
-| **Precision** 1 to 3 | How exact the border is: 1 approximate, 2 moderately precise, 3 fixed by treaty or survey | Almost everything before 1400 is 1 or 2 |
+| **People or culture** (uncoloured, italic, dotted) | A group known from texts or archaeology without, or before, state-level rule | Archaeological cultures ("Yamnaya culture"), tribes, chiefdoms, and confederations named by scholars ("Scythians" where no single state is meant) |
+| **Band** (uncoloured, faint italic, no border) | Bands of hunters, gatherers, or fishers who ranged over land without fixed borders | Any name with "hunter", "gatherer", "forager", or "fisher" in it is drawn this way (`BANDS` in the builder) |
+| **Precision** 1 to 3 | How exact the border is: 1 approximate, 2 moderately precise, 3 fixed by treaty or survey | Almost everything before 1200 is 1 or 2; steppe, Sahelian, and pre-Columbian polities, whose rule ran through allegiance rather than lines, are 1 (`APPROX` in the builder) |
 | **Blank land** | No evidence of who held it | Leave it blank rather than guess |
 
-Before 1648 every border is drawn dotted, and so is any border with precision 1 or with a people on either side. So the sign of doubt is already there; it only has to be used honestly.
+On the snapshot maps before 1200 every border is drawn dotted. From 1200 a border is solid where both sides are states with precision 2 or 3, and dotted where either side has precision 1 or is a people; bands have no border line at all. So the sign of doubt is there; it only has to be used honestly, by giving each polity the precision its evidence supports.
 
 Capitals are not part of the data before 1886, and cities have their own builder and tables. This file is about borders, names, rulers, and peoples.
 
@@ -67,7 +68,7 @@ Never use maps from nationalist or irredentist sites, game maps, uncredited imag
 - **Fuzzy dates:** where a date is only known to a range, use the conventional date, and note the range.
 - **Snapshot years:** a snapshot map stands for one year. Draw that year, and nothing from a decade before or after, except where the evidence can't tell the two apart.
 
-## What a border means before 1400
+## What a border means before 1400 (and long after, in much of the world)
 
 Ancient and medieval rule was mostly held through zones, cities, and allegiances, not lines. Draw what the sources support, in the terms above.
 
@@ -198,12 +199,14 @@ A claim in progress is an entry with "Claimed by" and the date, replaced by the 
 
 These were settled with Noah. Don't reopen them without asking.
 
-- **Sources:** up to 1400 the borders are historical-basemaps' snapshots; from 1400 to 1885, Cliopatria, filled from historical-basemaps; from 1886, CShapes 2.0, dated to the day. A source is never mixed into a period by hand. A change of source for a period is a decision for Noah.
+- **Sources:** up to 1100 the borders are historical-basemaps' snapshots; from 1200 to 1885, Cliopatria, filled from historical-basemaps (moved back from 1400 on 27 October 2026); from 1886, CShapes 2.0, dated to the day. A source is never mixed into a period by hand. A change of source for a period is a decision for Noah.
 - **Colours:** the reference map's base colours win over keeping every pair of neighbours apart. Lineages carry a modern state's colour back through time. A dependency is shown in its ruler's colour.
 - **Colours while touching** (27 October 2026): where two touching states would still share a colour, one takes another colour only for the years they touch, then its own again. Noah asked for this for Czechoslovakia (its own colour while it bordered Romania, the Czech Republic's after), and for the other pairs.
 - **Disputed land** (27 October 2026): overlaps between two states are cleaned up by the rules under Shapes, and only large ones between firmly drawn states are shown as disputed, striped in the claimants' colours. Well-known disputes the sources give to one side are shown from the dated `DISPUTES` list. Taiwan is not shown as disputed.
 - **Name, not just colour:** a state is named for its regime at the date, through `REGIMES` and `NAME_FIX`, rather than keeping one name across regimes.
-- **Signs of doubt:** borders before 1648 are drawn dotted, peoples are uncoloured and in italics, and "approximate" borders say so on the card.
+- **Signs of doubt:** borders on the snapshot maps before 1200 are dotted; from 1200 a border is dotted only where a side is approximate (precision 1) or a people (this replaced dotting every border before 1648, on 27 October 2026). Peoples are uncoloured and in italics, bands of hunters and gatherers have no border at all, and "approximate" borders say so on the card.
+- **One owner per place:** no place has two owners in the same years. Overlaps are settled by the rules under Shapes (`resolveOverlaps`), and only large ones between firmly drawn states become disputed land.
+- **Smooth, not stepped:** stair-stepped edges, left where a source was traced from a grid, are smoothed on the shared topology, so neighbours still meet exactly. This is done before 1886 only; CShapes' borders from 1886 are left as they are.
 - **Leaving things out:** small territories the sources lose are added from Natural Earth's shapes (`SMALL`), not drawn by hand. Thin or patchy data is left out rather than shown misleadingly. In UCHRONIA, Uruguay's and Guyana's second level was left out for this reason, and Colombia's 1,121 municipalities were grouped into the departments' own subregions as the more useful level.
 - **The notes on the cards** are written by a model and are not a source for the map.
 - **Writing:** plain and specific, British spelling, and the serial comma. Interface text uses "|" rather than middle dots or round bullets.

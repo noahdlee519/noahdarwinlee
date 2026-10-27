@@ -20,7 +20,7 @@ const d3 = require("d3-geo");
 const clip = require("polygon-clipping");
 
 const FIRST = -3000;
-const DATED_FROM = 1400, DATED_TO = 1885, CHUNK = 100;
+const DATED_FROM = 1200, DATED_TO = 1885, CHUNK = 100;
 const CS_FROM = "1886-01-01", CS_TO = "2019-12-31";
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
@@ -148,6 +148,9 @@ const RULER_FIX = [
 ];
 const PEOPLES = /hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$/i;
 const AUSTRALIA = [112, -45, 155, -9];
+const BANDS = /hunter|gatherer|forager|fisher|fichers/i;
+const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya"]);
+const kindOf = (name) => (BANDS.test(name) ? 2 : 1);
 const WIKI = {
   "Han": "Han dynasty", "Han Empire": "Han dynasty", "Jin": "Jin dynasty (266–420)", "Sui Empire": "Sui dynasty",
   "Tang Empire": "Tang dynasty", "Song Empire": "Song dynasty", "Ming Empire": "Ming dynasty", "Ming Chinese Empire": "Ming dynasty",
@@ -368,8 +371,58 @@ const isPeople = (name, ruler, y, label) => {
   return false;
 };
 
-function topoFor(feats, km, q) {
-  const topo = server.topology({ p: { type: "FeatureCollection", features: feats } }, q);
+const STAIR_SEG = 0.5, STAIR_SHARE = 0.3, STAIR_PASSES = 2;
+let stairArcs = 0;
+function smoothArc(arc) {
+  const n = arc.length;
+  if (n < 4) return arc;
+  const len = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  let ax = 0, tot = 0;
+  for (let i = 1; i < n; i++) {
+    const dx = Math.abs(arc[i][0] - arc[i - 1][0]), dy = Math.abs(arc[i][1] - arc[i - 1][1]), L = Math.hypot(dx, dy);
+    tot += L;
+    if (L && Math.min(dx, dy) < 0.05 * L) ax += L;
+  }
+  if (!tot || ax < STAIR_SHARE * tot) return arc;
+  stairArcs++;
+  let P = [], F = [];
+  const put = (p, f) => {
+    const q = P[P.length - 1];
+    if (q && q[0] === p[0] && q[1] === p[1]) { if (f) F[F.length - 1] = true; return; }
+    P.push([p[0], p[1]]); F.push(f);
+  };
+  put(arc[0], true);
+  for (let k = 0; k < n - 1; k++) {
+    const a = arc[k], b = arc[k + 1];
+    if (len(a, b) < STAIR_SEG) put([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], false);
+    else { put(a, true); put(b, true); }
+  }
+  put(arc[n - 1], true);
+  for (let it = 0; it < STAIR_PASSES; it++) {
+    const Q = [P[0]], G = [true];
+    for (let i = 0; i + 1 < P.length; i++) {
+      const a = P[i], b = P[i + 1];
+      if (!(F[i] && F[i + 1])) {
+        Q.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]]); G.push(false);
+        Q.push([0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]); G.push(false);
+      }
+      if (F[i + 1]) { Q.push(b); G.push(true); }
+    }
+    P = Q; F = G;
+  }
+  return P;
+}
+function smoothTopo(topo) {
+  if (topo.transform) {
+    const t = client.transform(topo.transform);
+    topo.arcs = topo.arcs.map((arc) => arc.map((p, i) => { const o = t(p, i); return [o[0], o[1]]; }));
+    delete topo.transform;
+  }
+  topo.arcs = topo.arcs.map(smoothArc);
+  return topo;
+}
+function topoFor(feats, km, q, smooth = true) {
+  const raw = server.topology({ p: { type: "FeatureCollection", features: feats } }, q), topo = smooth ? smoothTopo(raw) : raw;
   const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
   const kept = new Set();
   const walk = (a) => { if (typeof a === "number") kept.add(a < 0 ? ~a : a); else if (a) a.forEach(walk); };
@@ -423,8 +476,8 @@ for (const s of snapshots) {
     if (!entry.years.includes(s.y)) entry.years.push(s.y);
     entry.wiki.set(s.y, wikiFor(p.name, s.y));
     const people = isPeople(p.name, p.ruler, s.y, label);
-    if (people) entry.kind = 1;
-    return [id, p.ruler && !people ? catId(p.ruler) : -1, p.part ? catId(p.part) : -1, p.b, people ? 1 : 0, label];
+    if (people) entry.kind = kindOf(p.name);
+    return [id, p.ruler && !people ? catId(p.ruler) : -1, p.part ? catId(p.part) : -1, p.b, people ? kindOf(p.name) : 0, label];
   });
   hiFeats.forEach((g) => { delete g.properties; });
   loFeats.forEach((g) => { delete g.properties; });
@@ -456,11 +509,22 @@ const ringKm = (ring) => {
   return s;
 };
 const rewind = (polys) => polys.map((poly) => poly.map((ring, k) => ((planar(ring) > 0) === (k === 0) ? ring.slice().reverse() : ring)));
+const snapAt = (polys, k) => polys.map((poly) => poly.map((ring) => {
+  const out = [];
+  for (const pt of ring) { const q = [Math.round(pt[0] * k) / k, Math.round(pt[1] * k) / k], l = out[out.length - 1]; if (!l || l[0] !== q[0] || l[1] !== q[1]) out.push(q); }
+  return out;
+})).map((poly) => (poly[0].length >= 4 ? poly.filter((ring) => ring.length >= 4) : [])).filter((poly) => poly.length);
+const tryClip = (op, a, ...bs) => {
+  for (const k of [0, 1e6, 1e5, 1e4]) {
+    try { return k ? op(snapAt(a, k), ...bs.map((b) => snapAt(b, k))) : op(a, ...bs); } catch (e) {}
+  }
+  return null;
+};
 const subtract = (polys, clips) => {
   if (!clips.length || !polys.length) return polys;
   try { return rewind(clip.difference(polys, ...clips)); } catch (e) {
     let rest = polys;
-    for (const c of clips) { try { rest = clip.difference(rest, c); } catch (e2) {} }
+    for (const c of clips) { const d = tryClip(clip.difference, rest, c); if (d) rest = d; }
     return rewind(rest);
   }
 };
@@ -742,11 +806,11 @@ const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARI
 const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
 const HB_STALE = { "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
 const REGIMES = {
-  france: { from: 1400, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
-  britain: { from: 1400, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
+  france: { from: 1200, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
+  britain: { from: 1200, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
   netherlands: { from: 1581, names: ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "United Kingdom of the Netherlands", "Netherlands"], rulers: ["Netherlands Antilles", "Dutch Cape Colony"], eras: [[1794, "Dutch Republic"], [1805, "Batavian Republic"], [1809, "Kingdom of Holland"], [1813, "First French Empire"], [1814, "Sovereign Principality of the United Netherlands"], [9999, "Netherlands"]] },
   spain: { from: 1516, names: ["Spain", "Kingdom of Spain", "First Spanish Republic"], rulers: ["Spanish Empire", "Spanish Habsburg", "Habsburg Spain"], eras: [[1872, "Kingdom of Spain"], [1874, "First Spanish Republic"], [9999, "Kingdom of Spain"]] },
-  portugal: { from: 1400, names: ["Portugal", "Kingdom of Portugal"], rulers: [], eras: [[9999, "Kingdom of Portugal"]] },
+  portugal: { from: 1200, names: ["Portugal", "Kingdom of Portugal"], rulers: [], eras: [[9999, "Kingdom of Portugal"]] },
   austria: { from: 1487, names: ["Habsburg Monarchy", "Austrian Empire", "Austria-Hungary", "Austro-Hungarian Empire"], rulers: [], eras: [[1803, "Habsburg Monarchy"], [1867, "Austrian Empire"], [9999, "Austria-Hungary"]] },
   denmark: { from: 1468, names: ["Denmark-Norway", "Kingdom of Denmark", "Denmark"], rulers: [], eras: [[1813, "Denmark-Norway"], [9999, "Kingdom of Denmark"]] },
   russia: { from: 1400, names: ["Grand Principality of Moscow", "Grand Duchy of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire"], rulers: ["Russia"], eras: [[1546, "Grand Principality of Moscow"], [1720, "Tsardom of Russia"], [9999, "Russian Empire"]] },
@@ -755,6 +819,143 @@ const REGIMES = {
 const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ireland", "Kingdom of Denmark": "Denmark", "Netherlands": "Netherlands" };
 const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
 const NAME_FIX = [
+  ["Mongol Empire", "Mongols", 1200, 1205, { people: 1, wiki: "Mongols" }],
+  ["Tibetans", "Tibetans", 1200, 1249, { people: 1 }],
+  ["Tibet", "Tibet", 1294, 1353, { ruler: "Yuan dynasty", wiki: "Tibet under Yuan rule" }],
+  ["Tibet", "Phagmodrupa dynasty", 1354, 1401, { ruler: "" }],
+  ["Great Seljuk Empire", "Khwarazmian Empire", 1200, 1201],
+  ["Great Seljuk Empire", "Sultanate of Rum", 1202, 1399, { ruler: "" }],
+  ["Seljuk Caliphate", "Sultanate of Rum", 1200, 1307, { ruler: "" }],
+  ["Seljuk Caliphate", "Ilkhanate", 1308, 1334, { ruler: "" }],
+  ["Seljuk Caliphate", "Eretnids", 1335, 1399, { ruler: "" }],
+  ["Khwarezmid Empire", "Khwarazmian Empire", 1200, 1399],
+  ["Khwarezmid dynasty", "Khwarazmian Empire", 1200, 1399],
+  ["Khwarazmian dynasty", "Khwarazmian Empire", 1200, 1399],
+  ["Hamdanid Emirates", "Saltukids", 1200, 1201],
+  ["Hamdanid Emirates", "Eldiguzids", 1202, 1209],
+  ["Hamdanid Emirates", "Khwarazmian Empire", 1210, 1215],
+  ["Hamdanid Emirates", "Ayyubid Sultanate", 1216, 1219],
+  ["Hamdanid Emirates", "Mongol Empire", 1220, 1249],
+  ["Hamdanid Emirates", "Uyunid Emirate", 1250, 1259],
+  ["Buwayhid Emirates", "Uyunid Emirate", 1200, 1399],
+  ["Buyid dynasty", "", 1200, 1399, { drop: 1 }],
+  ["Ghaznavid Empire", "", 1200, 1399, { drop: 1 }],
+  ["Bhutan", "", 1200, 1399, { drop: 1 }],
+  ["Kediri", "", 1240, 1499, { drop: 1 }],
+  ["Mahdids", "Nabhani dynasty", 1200, 1499],
+  ["Sind-Habbari dynasty", "Soomra dynasty", 1200, 1351],
+  ["Ngô dynasty", "Lý dynasty", 1200, 1225],
+  ["Ngô dynasty", "Trần dynasty", 1226, 1399],
+  ["Đại Việt", "Trần dynasty", 1200, 1399],
+  ["Halych-Volhynia occupation", "Cumania", 1200, 1240, { wiki: "Cumania" }],
+  ["Cuman Khanates", "Cumania", 1200, 1240, { wiki: "Cumania" }],
+  ["Kara-Khitans", "Qara Khitai", 1200, 1220, { wiki: "Qara Khitai" }],
+  ["Kara Khitai Khaganate", "Qara Khitai", 1200, 1220, { wiki: "Qara Khitai" }],
+  ["Volga Bulgars", "Volga Bulgaria", 1200, 1240],
+  ["Great Khanate", "Jurchens", 1200, 1399, { box: [115, 38, 150, 62], people: 1, ruler: "", part: "", wiki: "Jurchen people" }],
+  ["Great Khanate", "Northern Yuan", 1368, 1399],
+  ["Novgorod", "Novgorod Republic", 1200, 1399, { ruler: "" }],
+  ["Ryazan", "Principality of Ryazan", 1200, 1399],
+  ["Teutonic Knights", "Teutonic Order", 1200, 1399],
+  ["Castilla", "Kingdom of Castile", 1200, 1229],
+  ["Castilla", "Crown of Castile", 1230, 1399],
+  ["Aragón", "Crown of Aragon", 1200, 1399],
+  ["Britany", "Duchy of Brittany", 1200, 1399],
+  ["Burgandy", "Kingdom of Arles", 1200, 1399],
+  ["Sicily", "Kingdom of Sicily", 1200, 1399],
+  ["Duchy of Benevento", "Kingdom of Sicily", 1200, 1281],
+  ["Moldova", "Principality of Moldavia", 1200, 1399],
+  ["Kingdom of Alba", "Kingdom of Scotland", 1200, 1399],
+  ["Brythons", "Lordship of Galloway", 1200, 1234],
+  ["Brythons", "Kingdom of Scotland", 1235, 1399],
+  ["Celtic kingdoms", "Gaelic Ireland", 1200, 1399],
+  ["Viking settlements", "Lordship of Ireland", 1200, 1271, { box: [-11, 51, -5, 56], ruler: "Kingdom of England" }],
+  ["Viking settlements", "Norse Greenland", 1200, 1399, { box: [-75, 58, -20, 84] }],
+  ["Viking settlements", "Kingdom of Norway", 1200, 1399, { box: [4, 57, 32, 72] }],
+  ["Viking settlements", "Kingdom of Norway", 1200, 1399],
+  ["Kievan Rus'", "Principality of Kiev", 1200, 1240],
+  ["Pagan", "Pagan Kingdom", 1200, 1297],
+  ["Harapunchai", "Haripuñjaya", 1200, 1399],
+  ["Ceylon", "Kingdom of Dambadeniya", 1200, 1292],
+  ["Ceylon", "Kingdom of Kurunegala", 1293, 1340],
+  ["Ceylon", "Kingdom of Gampola", 1341, 1411],
+  ["Ceylon", "Kingdom of Kotte", 1412, 1506],
+  ["East Java", "Kediri Kingdom", 1200, 1221],
+  ["East Java", "Singhasari", 1222, 1292],
+  ["Gahadavala dynasty", "Ghurid dynasty", 1200, 1205],
+  ["Chauhan dynasty", "Ghurid dynasty", 1200, 1205],
+  ["Puebloans - Aztec Regional System", "Ancestral Puebloans", 1200, 1399, { people: 1, wiki: "Ancestral Puebloans" }],
+  ["Luxembourg", "Spanish Netherlands", 1556, 1713, { ruler: "Kingdom of Spain" }],
+  ["Luxembourg", "Austrian Netherlands", 1714, 1794, { ruler: "Habsburg Monarchy" }],
+  ["Croatia", "Kingdom of Croatia", 1200, 1399, { ruler: "Kingdom of Hungary", wiki: "Kingdom of Croatia (1102–1526)" }],
+  ["Corsica", "Corsica", 1200, 1284, { ruler: "Republic of Pisa" }],
+  ["Corsica", "Corsica", 1285, 1399, { ruler: "Republic of Genoa" }],
+  ["Hainan", "Southern Song", 1200, 1278],
+  ["Hainan", "Yuan dynasty", 1279, 1367],
+  ["Hainan", "Ming dynasty", 1368, 1499],
+  ["Yemen", "Ayyubid Sultanate", 1200, 1228],
+  ["Yemen", "Rasulid dynasty", 1229, 1399],
+  ["Ifat", "Sultanate of Showa", 1200, 1284],
+  ["Shoa", "Sultanate of Showa", 1200, 1284],
+  ["Ifat", "Ifat Sultanate", 1285, 1414],
+  ["Shoa", "Ifat Sultanate", 1285, 1414],
+  ["Ethiopia", "Zagwe dynasty", 1200, 1270],
+  ["Ethiopia", "Ethiopian Empire", 1271, 1399],
+  ["Kanem", "Empire of Kanem", 1200, 1399],
+  ["Srivijaya", "Dharmasraya", 1286, 1399],
+  ["Srivijaya Empire", "Dharmasraya", 1200, 1399],
+  ["Pandya state", "Tughlaq dynasty", 1200, 1334],
+  ["Pandya state", "Madurai Sultanate", 1335, 1378],
+  ["Chola Empire", "Pandya Empire", 1280, 1310],
+  ["Chola Empire", "Sambuvarayar", 1311, 1360],
+  ["Chola Empire", "Vijayanagara Empire", 1361, 1499],
+  ["Orissa", "Eastern Ganga Kingdom", 1200, 1434],
+  ["Orissa", "Gajapati Kingdom", 1435, 1499],
+  ["Sultanate of Delhi", "Ghurid dynasty", 1200, 1209],
+  ["Sultanate of Delhi", "Mamluk dynasty", 1210, 1293, { wiki: "Mamluk dynasty (Delhi)" }],
+  ["Sultanate of Delhi", "Khalji dynasty", 1294, 1325],
+  ["Sultanate of Delhi", "Tughlaq dynasty", 1326, 1413],
+  ["Toltec Empire", "Mesoamerican city-states and chiefdoms", 1200, 1399],
+  ["Classic Veracruz Culture", "Mesoamerican city-states and chiefdoms", 1200, 1399],
+  ["Huari Empire", "Andean states and chiefdoms", 1200, 1399],
+  ["Tiahuanaco Empire", "Andean states and chiefdoms", 1200, 1399],
+  ["Zapotec Empire", "Zapotec city-states", 1200, 1399, { wiki: "Zapotec civilization" }],
+  ["Mixtec Empire", "Mixtec city-states", 1200, 1399, { wiki: "Mixtec" }],
+  ["Cuzco", "Kingdom of Cusco", 1200, 1437],
+  ["Islamic city-states", "Sultanate of Mogadishu", 1200, 1399, { box: [40, -2, 52, 12] }],
+  ["Abdelouadides", "Zayyanid dynasty", 1200, 1399],
+  ["Hafsid Caliphate", "Hafsid dynasty", 1200, 1399],
+  ["Pyu state", "Pagan Kingdom", 1200, 1287],
+  ["Mon state", "Pagan Kingdom", 1200, 1287],
+  ["Bagan", "Pagan Kingdom", 1200, 1297],
+  ["Pagan", "Myinsaing Kingdom", 1298, 1312],
+  ["Pagan", "Kingdom of Pinya", 1313, 1364],
+  ["Pagan", "Ava Kingdom", 1365, 1428],
+  ["Luva", "Lavo Kingdom", 1200, 1399],
+  ["Makkura", "Makuria", 1200, 1399],
+  ["Great Zimbabwe", "Kingdom of Zimbabwe", 1200, 1399],
+  ["Benin", "Kingdom of Benin", 1200, 1399],
+  ["Chámpa", "Champa", 1200, 1399],
+  ["Nepal", "Nepal Mandala", 1200, 1399, { wiki: "Malla dynasty (Nepal)" }],
+  ["Chimu Empire", "Chimú Empire", 1200, 1399],
+  ["Maori", "Māori", 1200, 1399],
+  ["Merina Kingdom", "Malagasy", 1200, 1539, { people: 1, wiki: "Malagasy people" }],
+  ["Madagascar", "Malagasy", 1200, 1539, { people: 1, wiki: "Malagasy people" }],
+  ["Malays", "Malays", 1200, 1399, { people: 1, wiki: "Malays (ethnic group)" }],
+  ["Ibadites", "Ibadites", 1200, 1399, { people: 1, wiki: "Mozabites" }],
+  ["Boethuk", "Beothuk", 1200, 1399, { people: 1 }],
+  ["Beothuk", "Beothuk", 1200, 1399, { people: 1 }],
+  ["Samis", "Sámi", 1200, 1399, { people: 1 }],
+  ["Ainus", "Ainu", 1200, 1399, { people: 1 }],
+  ["Touareg", "Tuaregs", 1200, 1399, { people: 1 }],
+  ["Tuareg Nomadic Tribes", "Tuaregs", 1200, 1399, { people: 1 }],
+  ["Taino", "Taíno", 1200, 1399, { people: 1 }],
+  ["Guanahatabeyes", "Guanahatabey", 1200, 1399, { people: 1 }],
+  ["Kalinago", "Kalinago", 1200, 1399, { people: 1 }],
+  ["Arawaks", "Arawaks", 1200, 1399, { people: 1 }],
+  ["Innu", "Innu", 1200, 1399, { people: 1 }],
+  ["Shuar", "Shuar", 1200, 1399, { people: 1 }],
+  ["Guanches", "Guanches", 1200, 1399, { people: 1 }],
   ["Serbs", "Revolutionary Serbia", 1804, 1813],
   ["Serbs", "Principality of Serbia", 1815, 1881],
   ["Serbs", "Kingdom of Serbia", 1882, 1885],
@@ -1212,6 +1413,7 @@ function reshape(list, edits, dropSlivers) {
       if (!polys.length) { prev = null; return; }
       const span = withBox({ ...o, first: s0, last: e0, polys });
       delete span.km2; delete span.pole;
+      if (polys !== o.polys) delete span.geoHash;
       out.push(span);
       prev = { key, span };
     });
@@ -1340,6 +1542,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
         if (o.ruler !== undefined) ruler = o.ruler.startsWith("@") ? regimeAt(o.ruler.slice(1), y) || "" : o.ruler;
         if (o.part !== undefined) part = o.part;
         if (o.people !== undefined) people = o.people;
+        if (o.drop) return { drop: 1 };
         break;
       }
       const gn = regimeName.get(name);
@@ -1377,15 +1580,44 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
       let cur = null, key = "";
       for (let y = s.first; y <= s.last; y++) {
         const f = fixAt(s, y, c), k = JSON.stringify(f);
+        if (f.drop) { cur = null; key = ""; continue; }
         if (cur && k === key) { cur.last = y; continue; }
         cur = { ...s, ...f, first: y, last: y, uid: out.length ? uidNext++ : s.uid }; key = k; out.push(cur);
       }
-      if (out.length === 1 && key === base) return [s];
+      if (out.length === 1 && key === base && out[0].first === s.first && out[0].last === s.last) return [s];
       changed++;
       split += out.length - 1;
       out.forEach((o) => { if (o.name !== s.name) noteRename(s.name, o.name); });
       return out;
     });
+    const CARVE = [
+      ["Duchy of Austria", 1450, 1452, [["Duchy of Austria", 1449, null]], "Kingdom of Hungary"],
+      ["Archduchy of Austria", 1453, 1458, [["Duchy of Austria", 1449, null], ["Kingdom of Bohemia", 1452, "Kingdom of Bohemia"]], "Kingdom of Hungary"],
+    ];
+    for (const [name, a, b, refs, restName] of CARVE) {
+      const found = refs.map(([refName, refYear, as]) => ({ ref: dated.find((x) => x.name === refName && x.first <= refYear && refYear <= x.last), as, refName, refYear }));
+      const miss = found.find((f) => !f.ref);
+      if (miss) { console.log("carve: no " + miss.refName + " in " + miss.refYear); continue; }
+      const next = [];
+      for (const x of dated) {
+        if (x.name !== name || x.last < a || x.first > b || found.some((f) => f.ref === x)) { next.push(x); continue; }
+        const lo = Math.max(a, x.first), hi = Math.min(b, x.last), parts = [];
+        let rest = x.polys;
+        try {
+          for (const f of found) { parts.push([f, rewind(clip.intersection(rest, f.ref.polys))]); rest = rewind(clip.difference(rest, f.ref.polys)); }
+        } catch (e) { next.push(x); continue; }
+        if (x.first < lo) next.push({ ...x, last: lo - 1 });
+        let own = x.first < lo;
+        for (const [f, polys] of parts) {
+          if (km2Of(polys) <= 100) continue;
+          if (!f.as) { next.push(withBox({ ...x, first: lo, last: hi, polys, cells: undefined, geoHash: undefined, uid: own ? uidNext++ : x.uid })); own = true; }
+          else next.push(withBox({ ...x, name: f.as, wiki: f.ref.wiki, ruler: f.ref.ruler, part: f.ref.part, status: f.ref.status, first: lo, last: hi, polys, cells: undefined, geoHash: undefined, uid: uidNext++ }));
+        }
+        if (km2Of(rest) > 100) next.push(withBox({ ...x, name: restName, wiki: restName, ruler: "", status: 0, first: lo, last: hi, polys: rest, cells: undefined, geoHash: undefined, uid: uidNext++ }));
+        if (x.last > hi) next.push({ ...x, first: hi + 1, uid: uidNext++ });
+      }
+      dated = next;
+    }
     console.log("names: " + parted + " spans parted by region, " + changed + " spans renamed or given another ruler, in " + (changed + split) + " pieces");
     const dil = new Map(), dilOf = (s) => { let d = dil.get(s); if (!d) { if (!s.cells) s.cells = cellsOf(s.polys); d = dilate(s.cells); dil.set(s, d); } return d; };
     const groups = new Map();
@@ -1451,7 +1683,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
-dated = resolveOverlaps(dated, "from 1400 to 1885");
+dated = resolveOverlaps(dated, "from 1200 to 1885");
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -1475,8 +1707,8 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     const id = catId(s.name), entry = catalogue[id];
     entry.dated = entry.dated ? [Math.min(entry.dated[0], s.first), Math.max(entry.dated[1], s.last)] : [s.first, s.last];
     if (!entry.wiki.has(s.first)) entry.wiki.set(s.first, s.wiki || s.name);
-    if (s.people) entry.kind = 1;
-    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, null, s.noLabel ? null : label, s.people, s.part ? catId(s.part) : -1, s.b];
+    if (s.people) entry.kind = kindOf(s.name);
+    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, APPROX.has(s.name) ? Math.min(1, s.b ?? 2) : s.b];
     if (s.claims) row.push(s.claims.map(catId));
     return row;
   });
@@ -1900,8 +2132,8 @@ const ownerName = (r) => {
   return hit ? hit.name : "";
 };
 const csFeats = csParts.map((r, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
-const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q);
-const csLo = topoFor(csFeats, LO_KM, LO_Q);
+const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q, false);
+const csLo = topoFor(csFeats, LO_KM, LO_Q, false);
 const labelMemo = new Map();
 const csRows = csParts.map((r, i) => {
   const g = csHi.objects.p.geometries[i];
@@ -2314,4 +2546,5 @@ if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-
 else console.warn("historical-basemaps LICENSE not found beside " + source + "; data/COPYING-historical-basemaps.txt not written");
 
 console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
+console.log("smoothed " + stairArcs + " stair-stepped arcs");
 console.log(index.length + " maps to " + index[index.length - 1][0] + ", " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");

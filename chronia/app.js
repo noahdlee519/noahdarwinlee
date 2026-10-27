@@ -465,7 +465,7 @@
       if (r[0] < 0) return null;
       var hue = r[1] >= 0 ? r[1] : r[0];
       return {
-        i: i, id: r[0], ruler: r[1], part: r[2], b: r[3], people: !!r[4], label: r[5],
+        i: i, id: r[0], ruler: r[1], part: r[2], b: r[3], people: !!r[4], band: r[4] === 2, label: r[5],
         hue: hue, color: r[4] ? -1 : polityColor(hue), soft: softYear || r[3] <= 1 || !!r[4], status: -1
       };
     });
@@ -516,14 +516,14 @@
     return c.loading;
   }
   function datedSnap(k, y) {
-    var c = dated.chunks[k], rows = c.data.rows, idx = [], soft = y < SOFT_BEFORE;
+    var c = dated.chunks[k], rows = c.data.rows, idx = [], soft = false;
     for (var i = 0; i < rows.length; i++) if (rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
     var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y);
     var snap = datedSnaps.get(key);
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], hue = r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], b: r[9], people: people, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: null, start: r[2], end: r[3] };
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: null, start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, topo: { hi: c.data.hi, lo: c.data.lo },
@@ -578,6 +578,7 @@
       if (!pa && !pb) return 0;
       if (pa && pb && pa.id === pb.id) return 0;
       if ((pa && pa.claims) || (pb && pb.claims)) return 2;
+      if ((!pa || pa.band) && (!pb || pb.band)) return 0;
       var soft = (pa ? pa.soft : false) || (pb ? pb.soft : false);
       if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
       return soft ? 2 : 1;
@@ -586,7 +587,7 @@
     var mesh = function (fn) { return prepareLines(topojson.mesh(topo, collection, fn)); };
     var edges = outerEdges(topo, geoms, function (g) {
       var p = polys[ix.get(g)];
-      return !p ? null : p.claims ? "d" : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
+      return !p ? null : p.claims ? "d" : p.band ? "b" : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
     });
     var arcsOf = function (lines) { return lines.map(prepareArc); };
     L = {
@@ -634,7 +635,7 @@
       var lines = topojson.feature(topo, { type: "MultiLineString", arcs: buckets[b] }).geometry.coordinates;
       var coastal = [], inner = [];
       splitCoast(lines, coastal, inner);
-      if (b === "p") { out.peopleBleed = coastal; out.soft = out.soft.concat(inner); return; }
+      if (b === "p" || b === "b") { out.peopleBleed = out.peopleBleed.concat(coastal); if (b === "p") out.soft = out.soft.concat(inner); return; }
       if (b === "d") { out.soft = out.soft.concat(inner); return; }
       var col = +b.slice(1);
       out.bleed[col] = out.bleed[col].concat(coastal);
@@ -2171,7 +2172,7 @@
         }
         if (ok && held) ok = inSight(placed, geo.boxes);
         if (!ok) continue;
-        return { id: p.id, name: name, people: people, f: rk.f, geo: geo, v: c.v, form: !t || !st ? formSig(fmk) : st.form, src: { fr: c.fr, fm: fmk, o: o, scale: scale } };
+        return { id: p.id, name: name, people: people, band: !!p.band, f: rk.f, geo: geo, v: c.v, form: !t || !st ? formSig(fmk) : st.form, src: { fr: c.fr, fm: fmk, o: o, scale: scale } };
       }
     }
     return null;
@@ -2255,6 +2256,7 @@
     ctx.lineWidth = it.sea ? 3 : Math.max(2, f * 0.22);
     ctx.strokeStyle = it.sea ? pal.ocean : pal["label-halo"];
     ctx.fillStyle = it.people ? pal.people : pal.label;
+    if (it.band) ctx.globalAlpha = alpha * 0.72;
     for (var pass = 0; pass < 2; pass++) {
       for (i = 0; i < lines.length; i++) {
         ln = lines[i];
@@ -2300,7 +2302,7 @@
       if (a <= 0 || !src) return false;
       live = true;
       var f = Math.min(x.it.people ? 15 : 26, x.it.f * scale / src.scale), geo = !!src.fr.flat === flat ? glyphLayout(src.fr, src.fm, src.o, f, x.it.people, scale) : null;
-      if (geo) drawLabelItem({ f: f, people: x.it.people }, geo, a);
+      if (geo) drawLabelItem({ f: f, people: x.it.people, band: x.it.band }, geo, a);
       return true;
     });
     ctx.letterSpacing = "0px";
@@ -2930,7 +2932,7 @@
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
     tip.textContent = dv ? dv + ", " + polityName(p.id) : polityName(p.id);
-    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.people ? "a people or culture" : "";
+    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
@@ -3012,7 +3014,7 @@
     return t.slice(0, -1).join(", ") + ", and " + t[t.length - 1];
   }
 
-  var KNOTS = [[-3000, 0], [-500, 0.13], [500, 0.24], [1400, 0.37], [1800, 0.53], [1886, 0.6], [LAST_YEAR + 1, 1]];
+  var KNOTS = [[-3000, 0], [-500, 0.12], [500, 0.22], [1200, 0.31], [1400, 0.37], [1800, 0.53], [1886, 0.6], [LAST_YEAR + 1, 1]];
   var RANGE_MAX = 10000;
   function posOf(y) {
     for (var i = 1; i < KNOTS.length; i++) {
@@ -3218,7 +3220,7 @@
   yearInput.addEventListener("blur", commitYearInput);
   yearInput.addEventListener("focus", function () { yearInput.select(); });
 
-  var PLAY = { yearlyFrom: 1400, map: 1400, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
+  var PLAY = { yearlyFrom: 1200, map: 1400, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
   var playTimer = 0, playMode = "";
   function playEnd() { return modern ? monthTime(2019, 12) : maps[maps.length - 1].y; }
   function playNext(t) {
@@ -3453,7 +3455,8 @@
       if (ys.length <= 4) addText("On the maps of " + listYears(ys) + ".");
       else addText("On " + ys.length + " maps, from " + fmtYear(ys[0]) + " to " + fmtYear(ys[ys.length - 1]) + ".");
     }
-    if (p && p.b <= 1 && !p.people) addText(" Its borders here are approximate.");
+    if (p && p.band) addText(" Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.");
+    else if (p && p.b <= 1 && !p.people) addText(" Its borders here are approximate.");
     var title = wikiTitle(selected, whenYear), y = askYear();
     loadWiki(e[0], title, {
       ask: {
@@ -3709,7 +3712,8 @@
     border: function (s) { return s.polys.some(function (p) { return p && !p.soft; }); },
     soft: function (s) { return s.polys.some(function (p) { return p && p.soft; }); },
     dependency: function (s) { return s.polys.some(function (p) { return p && p.ruler >= 0 && !p.claims; }); },
-    people: function (s) { return s.polys.some(function (p) { return p && p.people; }); },
+    people: function (s) { return s.polys.some(function (p) { return p && p.people && !p.band; }); },
+    band: function (s) { return s.polys.some(function (p) { return p && p.band; }); },
     disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
     division: function () { return divDrawn; }
   };
@@ -3937,7 +3941,7 @@
       modern = { rows: md.rows, hi: md.hi, lo: md.lo, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
       modern.fromTime = timeOfDay(dayFromDate(from[0], from[1], from[2])) - 0.5 / 365;
       if (idx.dated) {
-        dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) };
+        dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) }; PLAY.yearlyFrom = dated.from;
       }
       cities = r[2] ? { ranks: r[2].ranks, rows: prepCities(r[2], false), minorLoad: null } : null;
       buildPoints();

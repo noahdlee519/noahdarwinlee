@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CITY_SINCE, CITY_UNTIL, CITY_NAMES, CITY_ADD, REBA_FIX, PLACE_DROP, PLACE_EDIT, REGION_SWITCH } from "./city-tables.mjs";
+import { CITY_SINCE, CITY_UNTIL, CITY_NAMES, CITY_ADD, CITY_POP, REBA_FIX, PLACE_DROP, PLACE_EDIT, REGION_SWITCH } from "./city-tables.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = resolve(process.argv[2] || "city-sources");
@@ -202,7 +202,7 @@ for (const f of hb) {
   e.hb = { since: ed.since ?? p.inhabitedSince, until: ed.until ?? (Number.isFinite(p.inhabitedUntil) ? p.inhabitedUntil : null) };
 }
 
-for (const [name, lon, lat, since, until] of CITY_ADD) addEnt({ name, lon, lat, sources: new Set(["t"]), add: { since, until } });
+for (const [name, lon, lat, since, until, pop] of CITY_ADD) addEnt({ name, lon, lat, sources: new Set(["t"]), add: { since, until }, tPop: pop ? { pts: pop } : undefined });
 
 const toT = (v) => {
   if (typeof v === "number") return v;
@@ -231,6 +231,7 @@ const applyTable = (table, field) => {
 applyTable(CITY_SINCE, "tSince");
 applyTable(CITY_UNTIL, "tUntil");
 applyTable(CITY_NAMES, "tNames");
+applyTable(CITY_POP, "tPop");
 
 const URBAN = [[1800, 0.016], [1850, 0.027], [1900, 0.05], [1950, 0.17], [2020, 1]];
 const urbanAt = (t) => t <= 1800 ? 0.016 : interp(URBAN, t);
@@ -273,6 +274,11 @@ for (const e of ents) {
     if (!has(1880, 1920) && (e.tSince === undefined || toT(e.tSince) <= 1900)) pts.push([1900, scaled(1900, CAP_1900)]);
   }
   pts.sort((a, b) => a[0] - b[0]);
+  if (e.tPop) {
+    const d = e.tPop.drop, own = e.tPop.pts.map(([y, k]) => [y, k * 1000]);
+    pts = pts.filter(([y]) => !(d && y >= d[0] && y <= d[1]) && !own.some(([o]) => Math.abs(o - y) < 1)).concat(own).sort((a, b) => a[0] - b[0]);
+    e.real = true;
+  }
   for (let i = pts.length - 1; i > 0; i--) {
     const [y0, p0] = pts[i - 1], [y1, p1] = pts[i];
     if (y1 - y0 > 250) pts.splice(i, 0, [y0 + 100, Math.min(p0, p1) / 3], [y1 - 100, Math.min(p0, p1) / 3]);
@@ -340,12 +346,14 @@ for (const e of live) {
 }
 const r3 = (v) => Math.round(v * 1000) / 1000;
 const sig2 = (v) => { if (v < 1) return Math.round(v * 10) / 10; const m = Math.pow(10, Math.floor(Math.log10(v)) - 1); return Math.round(v / m) * m; };
-const thin = (pts) => {
+const thin = (pts, keep) => {
   let last = -Infinity;
-  return pts.filter((p, i) => { if (i === 0 || i === pts.length - 1 || p[0] - last >= 20) { last = p[0]; return true; } return false; }).map(([y, v]) => [y, sig2(v)]);
+  const held = new Set(keep ? keep.map(([y]) => y) : []);
+  const kept = pts.filter((p, i) => { if (i === 0 || i === pts.length - 1 || held.has(p[0]) || p[0] - last >= 20) { last = p[0]; return true; } return false; });
+  return kept.filter((p, i) => held.has(p[0]) || !kept[i + 1] || !held.has(kept[i + 1][0]) || kept[i + 1][0] - p[0] >= 5 || i === 0).map(([y, v]) => [y, sig2(v)]);
 };
 const rowOf = (e) => {
-  const row = [ids.get(e), e.display, r3(e.lon), r3(e.lat), e.since, e.until, thin(e.pts).flat(), e.steps || 0, e.qid || 0];
+  const row = [ids.get(e), e.display, r3(e.lon), r3(e.lat), e.since, e.until, thin(e.pts, e.tPop && e.tPop.pts).flat(), e.steps || 0, e.qid || 0];
   while (row.length > 7 && !row[row.length - 1]) row.pop();
   return row;
 };
