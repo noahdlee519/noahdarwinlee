@@ -20,6 +20,43 @@ Each entry:
 
 - Claimed by: the capitals session, 2026-10-27. Dated capitals from Wikidata for the yearly borders, in a new table read by the builder.
 
+## 1200–1806 | Central Europe and Italy | the Holy Roman Empire as a state of states
+
+- What changed: the Empire is drawn in one colour with its members inside it, divided by fine broken lines, instead of as one shape beside states that sources sometimes do and sometimes don't mark as members. Membership follows historical-basemaps' outline of the Empire on its maps of 1279, 1300, 1400, 1492, 1500, 1530, 1600, 1650, and 1700; states astride the outline are cut along it (the Habsburg Monarchy into its Austrian and Bohemian lands and its Hungarian lands).
+- Tables: `GROUPS` in `tools/build-eras.mjs`.
+- Sources: (1) Whaley, *Germany and the Holy Roman Empire*, 2 vols (2012). (2) Wilson, *Heart of Europe: A History of the Holy Roman Empire* (2016). (3) Ourednik, historical-basemaps, for the outlines.
+- Confidence: medium; the outline is an atlas convention, and membership at the edges (imperial Italy, the Swiss, the Low Countries, the Teutonic Order) was disputed in law and practice.
+- Alternatives: keeping members in their own colours inside a heavy imperial outline; Noah chose one colour.
+- Also: Cliopatria draws the Electorate of Saxony inside the Polish-Lithuanian Commonwealth from 1700 to 1762, during the personal union of Augustus II and Augustus III; it is Saxony again (`NAME_FIX`), since a personal union is not one state.
+- Left out: the Imperial Circles, and the hundreds of small territories the sources draw as one "Holy Roman Empire" shape.
+
+## 1886–2019 | North Pacific | the middle and northern Kuril Islands
+
+- What changed: Urup and the islands north of it were blank in every year, since CShapes leaves them out. They are now Japan's until 4 September 1945, the Soviet Union's from 5 September 1945, and Russia's from 26 December 1991.
+- Tables: `SMALL`.
+- Sources: (1) Stephan, *The Kuril Islands: Russo-Japanese Frontier in the Pacific* (1974). (2) The Treaty of Saint Petersburg (1875), by which Russia ceded Urup and the islands north of it to Japan.
+- Confidence: high.
+- Alternatives: none.
+- Left out: nothing.
+
+## Before 1653, 1818, 1851, and 1935 | England and Italy | the Fens, Whittlesey Mere, and the Pontine Marshes
+
+- What changed: the Fens are drawn as marsh until 1653 (the Great Level) and 1818 (the Lincolnshire fens), Whittlesey Mere as a lake until 1851, and the Pontine Marshes as marsh until 1935. Their outlines are contoured from elevation, at 5 m and 25 m, since no source maps their old edges.
+- Tables: `tools/wetlands.json`, `addMarsh` and `addLake` in `tools/build-geography.mjs`.
+- Sources: (1) Darby, *The Draining of the Fens* (1940; 2nd ed. 1956). (2) Darby, *The Changing Fenland* (1983), on Whittlesey Mere. (3) Snowden, *The Conquest of Malaria: Italy, 1900–1962* (2006), and Caprotti, *Mussolini's Cities* (2007), on the Pontine reclamation.
+- Confidence: medium for the dates, low for the edges, which are the extent of the low ground rather than of the water.
+- Alternatives: a single date for all the Fens; the northern fens were drained a century and a half after the southern.
+- Left out: the seasonal floods, the meres other than Whittlesey, the Somerset Levels, and the Wash's reclaimed salt marshes.
+
+## 1932–1968 | Netherlands | the IJsselmeer's islands
+
+- What changed: tiny holes under 0.5 km² that the cuts along the polders' dikes left in the past IJsselmeer, drawn as dots along its shores, are gone.
+- Tables: `simplePolys` in `tools/build-geography.mjs`.
+- Sources: none needed; these were artefacts.
+- Confidence: high.
+- Alternatives: none.
+- Left out: nothing.
+
 ## 1200–1399 | world | yearly borders from 1200
 
 - What changed: the yearly borders now start in 1200, not 1400 (`DATED_FROM`). The snapshot maps of 1200, 1279, and 1300 are no longer shown as maps; like the later snapshots, they fill the land Cliopatria leaves blank. `REGIMES` for France, England and Britain, and Portugal start in 1200.

@@ -3,8 +3,12 @@ const ORIGINS = [
   /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
-const MODEL = "claude-sonnet-5-5";
-const API = "https://api.anthropic.com/v1/messages";
+const DEEPSEEK_API = "https://api.deepseek.com/chat/completions";
+const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MODEL") || "deepseek-flash";
+const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+const CLAUDE_MODEL = Deno.env.get("CHRONIA_CLAUDE_MODEL") || "claude-haiku-5-5";
+const PROMPT_VERSION = 2;
+const MAX_NEIGHBOURS = 10;
 const ALL_CAP = 500;
 const WHO_CAP = 30;
 const MAX_BODY = 4000;
@@ -13,7 +17,8 @@ const MAX_TITLE = 120;
 const MAX_TOKENS = 400;
 const MAX_WORDS = 170;
 const MIN_WORDS = 25;
-const DEADLINE = 25000;
+const DEEPSEEK_DEADLINE = 16000;
+const CLAUDE_DEADLINE = 10000;
 const FIRST_YEAR = -3000;
 const LAST_YEAR = 2026;
 
@@ -25,6 +30,8 @@ Write one paragraph of plain prose, between 80 and 140 words, about the subject 
 - For a city: what it was then, whose it was, what it was known for, and what was happening there around then.
 
 The note is shown for any date in the period, so write about the period as a whole rather than a single day.
+
+Tie the subject to its era. Name the larger story it belonged to then, as historians name it (the Mongol conquests, the Hundred Years' War, the Reformation, the Scramble for Africa, the Cold War), and its place in it. Where the details list neighbours, mention one or two that mattered to it then: rivals, overlords, allies, or trading partners. Prefer the concrete detail of the period (a ruler, a war, a treaty, a trade, a plague, a building) to general description that could fit any century.
 
 Rules:
 - Be factual. Where the record is thin or uncertain, as it often is for early periods and for peoples known mainly from archaeology, say so plainly. Never fill a gap with invention, and never present a guess or a theory as settled fact.
@@ -40,7 +47,7 @@ const STATUS = ["state", "colony", "protectorate", "mandate", "occupied", "depen
 const NAME_RE = /^(?=.*\p{L})[\p{L}\p{M}\p{N}\p{Zs}.,'’‘ʼ()\-–&\/:·•‧꞉\[\]"?^�]+$/u;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-type Subject = Record<string, string | number | boolean | number[]>;
+type Subject = Record<string, string | number | boolean | number[] | string[]>;
 type Ask = { kind: "state" | "city"; name: string; from: number; to: number; period: string; facts: Subject; peek: boolean };
 
 class Bad extends Error {
@@ -123,6 +130,11 @@ export function parse(body: any): Ask {
     }
     const since = day(body.since, "since");
     if (since) facts.borders_from = since;
+    if (body.neighbours !== undefined) {
+      if (!Array.isArray(body.neighbours) || body.neighbours.length > MAX_NEIGHBOURS) throw new Bad("neighbours");
+      const near = body.neighbours.map((v: unknown) => { try { return text(v, "neighbours", MAX_NAME, true); } catch (_) { return ""; } }).filter((v: string) => v && v !== name);
+      if (near.length) facts.neighbours = near;
+    }
   } else {
     const modern = text(body.modern, "modern", MAX_NAME);
     if (modern && modern !== name) facts.modern_name = modern;
@@ -144,7 +156,7 @@ function slug(s: string) {
 }
 
 export async function cacheKey(ask: Ask) {
-  const canon = JSON.stringify(Object.keys(ask.facts).sort().map((k) => [k, ask.facts[k]]));
+  const canon = JSON.stringify([PROMPT_VERSION].concat(Object.keys(ask.facts).filter((k) => k !== "neighbours").sort().map((k) => [k, ask.facts[k]]) as any));
   const h = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canon)), 8);
   return (ask.kind === "state" ? "s:" : "c:") + slug(ask.name) + ":" + ask.from + ":" + h;
 }
@@ -249,38 +261,72 @@ class Upstream extends Error {
   }
 }
 
-async function write(ask: Ask, apiKey: string) {
+type Made = { text: string | null; model: string };
+
+async function post(url: string, headers: Record<string, string>, body: unknown, deadline: number, who: string) {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), DEADLINE);
+  const timer = setTimeout(() => ctl.abort(), deadline);
   try {
-    const res = await fetch(API, {
-      method: "POST",
-      signal: ctl.signal,
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        thinking: { type: "between_tools" },
-        output_config: { effort: "medium" },
-        system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: "Write the note for this subject. Its details, as JSON data:\n" + JSON.stringify(ask.facts) }],
-      }),
-    });
-    if (!res.ok) {
-      const detail = (await res.text()).slice(0, 300);
-      throw new Upstream(res.status, "anthropic " + res.status + " " + detail);
-    }
-    const out = await res.json();
-    console.log("chronia-blurb usage", JSON.stringify(out.usage || {}));
-    if (out.stop_reason !== "end_turn" && out.stop_reason !== "max_tokens") throw new Upstream(200, "stop " + out.stop_reason);
-    const raw = (Array.isArray(out.content) ? out.content : []).filter((b: any) => b && b.type === "text").map((b: any) => String(b.text)).join("\n");
-    return { text: tidy(raw), model: typeof out.model === "string" ? out.model.slice(0, 60) : MODEL };
+    const res = await fetch(url, { method: "POST", signal: ctl.signal, headers: { ...headers, "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Upstream(res.status, who + " " + res.status + " " + (await res.text()).slice(0, 300));
+    return await res.json();
   } catch (e) {
     if (e instanceof Upstream) throw e;
-    throw new Upstream(0, (e as any)?.name === "AbortError" ? "timeout" : String((e as any)?.message || e));
+    throw new Upstream(0, who + " " + ((e as any)?.name === "AbortError" ? "timeout" : String((e as any)?.message || e)));
   } finally {
     clearTimeout(timer);
   }
+}
+
+function userText(ask: Ask) {
+  return "Write the note for this subject. Its details, as JSON data:\n" + JSON.stringify(ask.facts);
+}
+
+async function writeDeepSeek(ask: Ask, key: string): Promise<Made> {
+  const out = await post(DEEPSEEK_API, { Authorization: "Bearer " + key }, {
+    model: DEEPSEEK_MODEL,
+    max_tokens: MAX_TOKENS,
+    temperature: 0.6,
+    stream: false,
+    thinking: { type: "disabled" },
+    messages: [{ role: "system", content: SYSTEM }, { role: "user", content: userText(ask) }],
+  }, DEEPSEEK_DEADLINE, "deepseek");
+  console.log("chronia-blurb usage deepseek", JSON.stringify(out.usage || {}));
+  const choice = Array.isArray(out.choices) ? out.choices[0] : null;
+  if (!choice || (choice.finish_reason !== "stop" && choice.finish_reason !== "length")) throw new Upstream(200, "deepseek stop " + (choice && choice.finish_reason));
+  return { text: tidy(String(choice.message?.content || "")), model: typeof out.model === "string" ? out.model.slice(0, 60) : DEEPSEEK_MODEL };
+}
+
+async function writeClaude(ask: Ask, key: string): Promise<Made> {
+  const out = await post(CLAUDE_API, { "x-api-key": key, "anthropic-version": "2023-06-01" }, {
+    model: CLAUDE_MODEL,
+    max_tokens: MAX_TOKENS,
+    thinking: { type: "between_tools" },
+    output_config: { effort: "low" },
+    system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: userText(ask) }],
+  }, CLAUDE_DEADLINE, "anthropic");
+  console.log("chronia-blurb usage claude", JSON.stringify(out.usage || {}));
+  if (out.stop_reason !== "end_turn" && out.stop_reason !== "max_tokens") throw new Upstream(200, "anthropic stop " + out.stop_reason);
+  const raw = (Array.isArray(out.content) ? out.content : []).filter((b: any) => b && b.type === "text").map((b: any) => String(b.text)).join("\n");
+  return { text: tidy(raw), model: typeof out.model === "string" ? out.model.slice(0, 60) : CLAUDE_MODEL };
+}
+
+type Keys = { deepseek: string; claude: string };
+
+async function write(ask: Ask, keys: Keys): Promise<Made> {
+  let failure: Upstream | null = null;
+  if (keys.deepseek) {
+    try {
+      const made = await writeDeepSeek(ask, keys.deepseek);
+      if (made.text || !keys.claude) return made;
+    } catch (e) {
+      console.error(e);
+      failure = e instanceof Upstream ? e : new Upstream(0, String(e));
+    }
+  }
+  if (keys.claude) return await writeClaude(ask, keys.claude);
+  throw failure || new Upstream(0, "no writer");
 }
 
 const inflight = new Map<string, Promise<Response>>();
@@ -319,12 +365,12 @@ export async function handle(req: Request): Promise<Response> {
   }
   if (ask.peek) return json(200, { text: null, period: ask.period, cached: false }, o);
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return json(503, { error: "unset" }, o);
+  const keys = { deepseek: Deno.env.get("DEEPSEEK_API_KEY") || "", claude: Deno.env.get("ANTHROPIC_API_KEY") || "" };
+  if (!keys.deepseek && !keys.claude) return json(503, { error: "unset" }, o);
 
   const running = inflight.get(key);
   if (running) return (await running).clone();
-  const job = generate(req, ask, key, apiKey, o);
+  const job = generate(req, ask, key, keys, o);
   inflight.set(key, job);
   try {
     return (await job).clone();
@@ -333,7 +379,7 @@ export async function handle(req: Request): Promise<Response> {
   }
 }
 
-async function generate(req: Request, ask: Ask, key: string, apiKey: string, o: string) {
+async function generate(req: Request, ask: Ask, key: string, keys: Keys, o: string) {
   const who = await visitor(req);
   let took: string;
   try {
@@ -345,9 +391,9 @@ async function generate(req: Request, ask: Ask, key: string, apiKey: string, o: 
   if (took !== "ok") return json(429, { error: took === "cap" ? "cap" : "limit" }, o);
   const giveBack = () => rpc("chronia_blurb_give_back", { p_who: who }).catch((e) => console.error(e));
 
-  let made: { text: string | null; model: string };
+  let made: Made;
   try {
-    made = await write(ask, apiKey);
+    made = await write(ask, keys);
   } catch (e) {
     console.error(e);
     const status = e instanceof Upstream ? e.status : 0;

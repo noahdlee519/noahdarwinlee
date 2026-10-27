@@ -517,18 +517,26 @@
   }
   function datedSnap(k, y) {
     var c = dated.chunks[k], rows = c.data.rows, idx = [], soft = false;
+    var groupIds = new Set((c.data.groups || []).map(function (g) { return g[0]; }));
     for (var i = 0; i < rows.length; i++) if (rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
     var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y);
     var snap = datedSnaps.get(key);
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
-      var r = rows[ri], people = !!r[7], hue = r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: null, start: r[2], end: r[3] };
+      var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: null, start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, topo: { hi: c.data.hi, lo: c.data.lo },
       geoms: { hi: idx.map(function (i) { return c.data.hi.objects.p.geometries[i]; }), lo: idx.map(function (i) { return c.data.lo.objects.p.geometries[i]; }) }
     });
+    snap.groups = (c.data.groups || []).filter(function (g) { return g[1] <= y && y <= g[2] && g[4]; }).map(function (g) {
+      var mem = g[3].filter(function (ri) { return idx.indexOf(ri) >= 0; });
+      if (mem.length < 2) return null;
+      return { id: g[0], group: true, label: g[4], people: false,
+        geoLo: topojson.mergeArcs(c.data.lo, mem.map(function (ri) { return c.data.lo.objects.p.geometries[ri]; })),
+        geoHi: topojson.mergeArcs(c.data.hi, mem.map(function (ri) { return c.data.hi.objects.p.geometries[ri]; })) };
+    }).filter(Boolean);
     datedSnaps.set(key, snap);
     while (datedSnaps.size > 24) {
       var oldest = datedSnaps.keys().next().value;
@@ -580,6 +588,7 @@
       if ((pa && pa.claims) || (pb && pb.claims)) return 2;
       if ((!pa || pa.band) && (!pb || pb.band)) return 0;
       var soft = (pa ? pa.soft : false) || (pb ? pb.soft : false);
+      if (pa && pb && pa.member >= 0 && pa.member === pb.member) return 4;
       if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
       return soft ? 2 : 1;
     };
@@ -596,6 +605,7 @@
       hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }).concat(arcsOf(edges.hard)),
       soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }).concat(arcsOf(edges.soft)),
       kin: mesh(function (a, b) { return a !== b && kind(a, b) === 3; }),
+      member: mesh(function (a, b) { return a !== b && kind(a, b) === 4; }),
       bleed: edges.bleed.map(arcsOf), peopleBleed: arcsOf(edges.peopleBleed),
       bands: groups.map(function (list, c) {
         if (!list.length) return null;
@@ -1002,6 +1012,7 @@
     ctx.restore();
     drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
 
+    drawMarshes(kp, landPath);
     drawRivers(S);
     drawLakes(kp);
 
@@ -1013,6 +1024,11 @@
     ctx.save();
     ctx.clip(landPath);
     ctx.beginPath(); traceArcs(ctx, L.kin); ctx.globalAlpha = 0.55; ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6 + 0.3 * lw; ctx.stroke();
+    if (L.member && L.member.length) {
+      var mw = 0.7 + 0.3 * lw;
+      ctx.beginPath(); traceArcs(ctx, L.member); ctx.globalAlpha = 0.7; ctx.lineWidth = mw; ctx.lineCap = "butt";
+      ctx.setLineDash([mw * 4.2, mw * 2.6]); ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = "round";
+    }
     ctx.globalAlpha = 1;
     ctx.beginPath(); traceArcs(ctx, L.hard); ctx.lineWidth = 1.15 + 0.55 * lw; ctx.stroke();
     ctx.beginPath(); traceArcs(ctx, L.soft);
@@ -1101,7 +1117,7 @@
     if (!layers.water) return;
     if (!lakes) {
       if (!lakesLoad) lakesLoad = fetchJSON(UC + "data/lakes.json").then(function (rows) {
-        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
+        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
         bigLakes = rows.filter(function (r) { return r[1] >= BIG_LAKE_KM2; }).map(function (r, i) {
           var b = [180, 90, -180, -90];
           r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
@@ -1124,6 +1140,45 @@
     ctx.strokeStyle = pal.water; ctx.stroke(small);
   }
   var LAKE_PX = 6, LAKE_LINE_PX = 18;
+  var marshPat = null, marshPatKey = "", marshDrawn = false, MARSH_PX = 8;
+  function marshPattern() {
+    var key = dpr + pal.river;
+    if (marshPat && marshPatKey === key) return marshPat;
+    var cw = 18, chh = 12, cv = document.createElement("canvas");
+    cv.width = Math.round(cw * dpr); cv.height = Math.round(chh * dpr);
+    var g = cv.getContext("2d");
+    g.scale(dpr, dpr);
+    g.strokeStyle = pal.river; g.lineWidth = 0.75; g.lineCap = "round";
+    var tuft = function (x, y) {
+      g.beginPath();
+      g.moveTo(x - 3.2, y); g.lineTo(x + 3.2, y);
+      g.moveTo(x, y); g.lineTo(x, y - 2.8);
+      g.moveTo(x - 1.4, y); g.lineTo(x - 2.4, y - 2.1);
+      g.moveTo(x + 1.4, y); g.lineTo(x + 2.4, y - 2.1);
+      g.stroke();
+    };
+    tuft(4.5, 4.8); tuft(13.5, 10.8);
+    marshPat = ctx.createPattern(cv, "repeat");
+    if (marshPat && marshPat.setTransform) marshPat.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
+    marshPatKey = key;
+    return marshPat;
+  }
+  function marshesNow() {
+    return geog ? geog.marshes.filter(function (m) { return inSpan(m.from, m.to); }) : [];
+  }
+  function drawMarshes(kp, landPath) {
+    marshDrawn = false;
+    if (!layers.water) return;
+    var path = new Path2D(), any = false;
+    marshesNow().forEach(function (m) { if (Math.sqrt(m.km2) * kp >= MARSH_PX) { traceFeature(path, m.f); any = true; } });
+    if (!any) return;
+    ctx.save();
+    ctx.clip(landPath);
+    ctx.globalAlpha = 0.4; ctx.fillStyle = pal.ocean; ctx.fill(path, "evenodd");
+    ctx.globalAlpha = 0.85; ctx.fillStyle = marshPattern(); ctx.fill(path, "evenodd");
+    ctx.restore();
+    marshDrawn = true;
+  }
 
   var RIVERS_FROM = 520, RIVERS_FULL = 960;
   function riverRank(S) { return S < 800 ? 4 : S < 1300 ? 5 : 6; }
@@ -1179,13 +1234,21 @@
       return q;
     }).filter(function (q) { return q.base; });
   }
-  var FINE_S = 5000, fineLoad = null, geogRaw = null;
+  var FINE_S = 5000, fineLoad = null, geogRaw = null, fineGridMs = -1;
+  function coastKey() { return land.fine && (!geog || geog.land.fine) ? "fine" : "lo"; }
   function loadFine() {
     if (fineLoad) return;
     fineLoad = fetchJSON("data/land-detail.json").then(function (t) {
       land.fine = prepLand(t);
       if (geog && geogRaw) geog.land.fine = patchesFor("fine", geogRaw);
       landCache.clear();
+      setTimeout(function () {
+        var t0 = performance.now();
+        buildCoastGrid(datedLand(coastKey()).list);
+        gridTag = "fine";
+        fineGridMs = Math.round(performance.now() - t0);
+        scheduleRender();
+      }, 0);
       scheduleRender();
     }).catch(function (e) { console.warn("land detail", e); });
   }
@@ -1196,7 +1259,7 @@
     return "fine";
   }
   function prepGeography(g) {
-    var out = { land: {}, lakeOnly: new Map(), lakeAdd: [], lakeTimes: [], riverDrop: new Map(), riverAdd: [], riverTimes: [] };
+    var out = { land: {}, lakeOnly: new Map(), lakeAdd: [], lakeTimes: [], riverDrop: new Map(), riverAdd: [], riverTimes: [], marshes: [] };
     geogRaw = g;
     ["hi", "lo"].concat(land.fine ? ["fine"] : []).forEach(function (key) { out.land[key] = patchesFor(key, g); });
     var times = function (list, from, to) { if (from !== null) list.push(from); if (to !== null) list.push(to); };
@@ -1206,6 +1269,11 @@
       r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
       out.lakeAdd.push({ id: "w" + i, name: r[0], km2: r[1], from: r[2], to: r[3], added: true, b: b, coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) });
       times(out.lakeTimes, r[2], r[3]);
+    });
+    (g.marshes || []).forEach(function (r) {
+      var b = [180, 90, -180, -90];
+      r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
+      out.marshes.push({ name: r[0], km2: r[1], from: r[2], to: r[3], b: b, f: prepare({ type: "MultiPolygon", coordinates: r[4] }) });
     });
     g.rivers.drop.forEach(function (r) { out.riverDrop.set(r[0], r); });
     g.rivers.add.forEach(function (r) {
@@ -1262,10 +1330,10 @@
   var bigLakes = [], BIG_LAKE_KM2 = 800;
   function syncGrid() {
     if (!geog || !coastGrid) return;
-    var act = activePatches("lo"), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); }).concat(bigLakes);
-    var tag = act.map(function (q) { return q.id; }).concat(wet.map(function (l) { return l.id; })).join();
+    var ck = coastKey(), act = activePatches(ck), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); }).concat(bigLakes);
+    var tag = (ck === "fine" ? "fine," : "") + act.map(function (q) { return q.id; }).concat(wet.map(function (l) { return l.id; })).join();
     if (tag === gridTag) return;
-    var was = gridTag.split(","), list = datedLand("lo").list;
+    var was = gridTag.split(","), list = datedLand(ck).list;
     var near = function (b) {
       var m = 1;
       return list.filter(function (p) {
@@ -1273,7 +1341,7 @@
         return p.bb[0] <= b[2] + m && b[0] - m <= p.bb[2] && p.bb[1] <= b[3] + m && b[1] - m <= p.bb[3];
       });
     };
-    geog.land.lo.forEach(function (q) { if (act.indexOf(q) >= 0 || was.indexOf(q.id) >= 0) buildCoastGrid(near(q.b), q.b); });
+    geog.land[ck].forEach(function (q) { if (act.indexOf(q) >= 0 || was.indexOf(q.id) >= 0) buildCoastGrid(near(q.b), q.b); });
     geog.lakeAdd.forEach(function (l) { if (was.indexOf(l.id) >= 0 && wet.indexOf(l) < 0) buildCoastGrid(near(l.b), l.b); });
     wet.forEach(wetGrid);
     gridTag = tag;
@@ -2008,8 +2076,8 @@
 
   function groundLayout(snap, p, name, allow) {
     labelEpoch();
-    var g = snap.geoms.lo[p.i], cap = snap.modern && p.cap ? capitalAt(p.cap, dayOfTime(now)) : null;
-    var key = (flat ? "f" : "g") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : ""), hit = groundCache.get(key);
+    var g = p.group ? p.geoLo : snap.geoms.lo[p.i], cap = snap.modern && p.cap ? capitalAt(p.cap, dayOfTime(now)) : null;
+    var key = (flat ? "f" : "g") + (p.group ? "G" : "") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : ""), hit = groundCache.get(key);
     if (hit) { groundCache.delete(key); groundCache.set(key, hit); }
     if (hit || !allow) return hit;
     if (groundCache.size > 2000) groundCache.delete(groundCache.keys().next().value);
@@ -2213,13 +2281,13 @@
     var quick = moving || rangeActive, t0 = performance.now(), scale = (flat ? FB.k : B.r) / GU, fk = flat ? "f" : "g";
     var first = [], rest = [];
     for (i = 0; i < snap.order.length; i++) (labelState.has(snap.order[i].id) ? first : rest).push(snap.order[i]);
-    var order = first.concat(rest), seen = new Set();
+    var order = (snap.groups || []).concat(first, rest), seen = new Set();
     for (i = 0; i < order.length; i++) {
       var p = order[i], lab = p.label;
       if (!lab || lab[2] * kp < 0.5 || seen.has(p.id)) continue;
       var name = polityName(p.id);
       if (!name) continue;
-      var feats = L.feats[p.i], any = false;
+      var feats = p.group ? featOf(snap.topo[lv], lv, lv === "hi" ? p.geoHi : p.geoLo).prep : L.feats[p.i], any = false;
       for (var j = 0; j < feats.length && !any; j++) any = inView(feats[j]);
       if (!any) continue;
       var side = Math.sqrt(lab[5]) * kp, wh = Infinity;
@@ -2234,7 +2302,7 @@
         items.push(it);
         continue;
       }
-      if (!p.people && (lab[5] > 1500 || lab[2] * kp > 2) && S >= 600 && side < 64) {
+      if (!p.group && !p.people && (lab[5] > 1500 || lab[2] * kp > 2) && S >= 600 && side < 64) {
         var s = screenShape(feats, Math.max(0.8, Math.min(5, side / 40)), Math.min(4, side / 8));
         shapes.set(p.i, s);
         var was = labelState.get(p.id);
@@ -2354,7 +2422,7 @@
   ].map(function (r) {
     var name = r[3] === 1 ? r[0].toUpperCase() : r[0], cut = name.lastIndexOf(" ");
     var lines = r[3] === 1 && name.split(" ").length > 2 ? [name.slice(0, cut), name.slice(cut + 1)] : [name];
-    return { lines: lines, lon: r[1], lat: r[2], tier: r[3] };
+    return { name: r[0], lines: lines, lon: r[1], lat: r[2], tier: r[3] };
   });
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
   function drawSeaLabels(placed, S) {
@@ -2958,7 +3026,7 @@
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
     tip.textContent = dv ? dv + ", " + polityName(p.id) : polityName(p.id);
-    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
+    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) + (p.member >= 0 && p.member !== p.id ? ", in the " + polityName(p.member) : "") : p.member >= 0 && p.member !== p.id ? "in the " + polityName(p.member) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
@@ -3283,6 +3351,7 @@
   }
   function playDelay(ms) { return playMode === "fast" ? ms / 2 : ms; }
   function syncPlayButtons() {
+    syncSearch();
     [["play", "normal", "Play through time"], ["play-fast", "fast", "Play at double speed"]].forEach(function (b) {
       var on = playMode === b[1];
       $(b[0]).setAttribute("aria-pressed", on ? "true" : "false");
@@ -3492,11 +3561,30 @@
         partOf: p && p.part >= 0 && p.part !== p.ruler ? polityName(p.part) : "",
         capital: p && p.cap ? capitalAt(p.cap, Math.min(dayOfTime(now), modern.toDay))[0] : "",
         since: modernNow && p ? isoDay(p.start) : "",
+        neighbours: neighbourNames(selected),
         year: y
       },
       label: e[0], when: fmtYear(y), click: click
     });
   }
+  function neighbourNames(id) {
+    var snap = current;
+    if (!snap || !snap.geoms || !snap.geoms.lo) return [];
+    if (!snap.nb) snap.nb = topojson.neighbors(snap.geoms.lo);
+    var seen = new Set([id]), out = [];
+    snap.polys.forEach(function (p, i) {
+      if (!p || p.id !== id) return;
+      snap.nb[i].forEach(function (j) {
+        var q = snap.polys[j];
+        if (!q || q.claims || seen.has(q.id) || !polityName(q.id)) return;
+        seen.add(q.id);
+        out.push({ name: polityName(q.id), w: q.label ? q.label[5] : 0 });
+      });
+    });
+    return out.sort(function (a, b) { return b.w - a.w; }).slice(0, 10).map(function (x) { return x.name; });
+  }
+  var blurbWriter = new Map();
+  function writerName(t) { var m = blurbWriter.get(t) || ""; return /deepseek/i.test(m) ? "DeepSeek" : "Claude"; }
   function blurbFetch(ask, peek) {
     var k = JSON.stringify(ask), have = blurbCache.get(k);
     if (have) return have;
@@ -3508,6 +3596,7 @@
       body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
       signal: ctl ? ctl.signal : undefined
     }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (d && typeof d.text === "string" && d.text && typeof d.model === "string") blurbWriter.set(d.text, d.model);
       return d && typeof d.text === "string" && d.text ? d.text : null;
     }).catch(function () { return null; }).then(function (t) {
       clearTimeout(timer);
@@ -3592,7 +3681,7 @@
           mode = "done";
           text.className = "ch-wiki-text";
           text.textContent = t;
-          by.textContent = "Written by Claude for this date";
+          by.textContent = "Written by " + writerName(t) + " for this date";
           by.hidden = false;
         } else mode = "wiki";
         paint();
@@ -3723,6 +3812,151 @@
   layersPanel.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || /^[pPmM+=_−-]$/.test(e.key)) e.stopPropagation();
   });
+  var searchBtn = $("search-btn"), searchPanel = $("search"), searchInput = $("search-input"), searchList = $("search-list"), searchNone = $("search-none");
+  var searchHits = [], searchAt = -1, flyRaf = 0, SEARCH_MAX = 8;
+  var SEARCH_ORDER = { State: 0, City: 1, Ocean: 2, Sea: 2, Town: 3, Lake: 4, Marsh: 4, People: 5, Band: 5 };
+  function fold(t) { return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[’']/g, "").trim(); }
+  function centreOfCoords(coords) { var c = d3.geoCentroid({ type: "MultiPolygon", coordinates: coords }); return [c[0], c[1]]; }
+  function searchIndex() {
+    var out = [], seen = new Set();
+    if (current) current.order.forEach(function (p) {
+      if (seen.has(p.id) || p.claims) return;
+      seen.add(p.id);
+      var name = polityName(p.id);
+      if (!name || !p.label) return;
+      var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.member >= 0 && p.member !== p.id ? "in the " + polityName(p.member) : "";
+      out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
+    });
+    if (cities) cityRanked(now).forEach(function (x) {
+      var c = x.c, nm = namedAt(c.steps, c.name, now);
+      out.push({ kind: x.tier <= 2 ? "City" : "Town", name: nm, alt: nm !== c.name ? c.name : "", sub: nm !== c.name ? "now " + c.name : "", w: x.pop, city: c, tier: x.tier, ll: [c.lon, c.lat] });
+    });
+    SEAS.forEach(function (sl) { out.push({ kind: /Ocean/.test(sl.name) ? "Ocean" : "Sea", name: sl.name, ll: [sl.lon, sl.lat], w: 4 - sl.tier, sea: sl.tier }); });
+    if (lakes) {
+      var lseen = new Set();
+      lakesAt().forEach(function (l) {
+        if (!l.name || l.km2 < 150 || lseen.has(l.name)) return;
+        lseen.add(l.name);
+        if (!l.ll && l.coords) l.ll = centreOfCoords(l.coords);
+        if (l.ll) out.push({ kind: "Lake", name: l.name, ll: l.ll, w: l.km2, km2: l.km2 });
+      });
+    }
+    marshesNow().forEach(function (m) { out.push({ kind: "Marsh", name: m.name, ll: [(m.b[0] + m.b[2]) / 2, (m.b[1] + m.b[3]) / 2], w: m.km2, km2: m.km2 }); });
+    return out;
+  }
+  function searchScore(q, it) {
+    var n = fold(it.name), a = it.alt ? fold(it.alt) : "";
+    if (n === q) return 0;
+    if (n.indexOf(q) === 0) return 1;
+    if (a && (a === q || a.indexOf(q) === 0)) return 1.5;
+    if ((" " + n).indexOf(" " + q) >= 0) return 2;
+    if (a && (" " + a).indexOf(" " + q) >= 0) return 2.5;
+    if (q.length >= 3 && n.indexOf(q) >= 0) return 3;
+    return -1;
+  }
+  function runSearch() {
+    var q = fold(searchInput.value);
+    searchHits = [];
+    if (q) {
+      searchIndex().forEach(function (it) { var sc = searchScore(q, it); if (sc >= 0) { it.sc = sc; searchHits.push(it); } });
+      searchHits.sort(function (a, b) { return a.sc - b.sc || SEARCH_ORDER[a.kind] - SEARCH_ORDER[b.kind] || b.w - a.w; });
+      var dedupe = new Set();
+      searchHits = searchHits.filter(function (it) { var k = it.kind + "|" + it.name; if (dedupe.has(k)) return false; dedupe.add(k); return true; }).slice(0, SEARCH_MAX);
+    }
+    searchAt = searchHits.length ? 0 : -1;
+    drawSearchList();
+    searchNone.hidden = !q || searchHits.length > 0;
+  }
+  function drawSearchList() {
+    searchList.textContent = "";
+    searchHits.forEach(function (it, i) {
+      var li = document.createElement("li"), nm = document.createElement("span"), sm = document.createElement("small");
+      li.className = "ch-search-hit" + (i === searchAt ? " is-on" : "");
+      li.id = "search-hit-" + i;
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", i === searchAt ? "true" : "false");
+      nm.textContent = it.name;
+      sm.textContent = it.kind + (it.sub ? " | " + it.sub : "");
+      li.appendChild(nm); li.appendChild(sm);
+      li.addEventListener("pointerdown", function (e) { e.preventDefault(); goSearch(it); });
+      searchList.appendChild(li);
+    });
+    searchInput.setAttribute("aria-expanded", searchHits.length ? "true" : "false");
+    if (searchAt >= 0) searchInput.setAttribute("aria-activedescendant", "search-hit-" + searchAt); else searchInput.removeAttribute("aria-activedescendant");
+  }
+  function scaleFor(km2, lo, hi) { return Math.max(lo, Math.min(hi, 0.32 * Math.min(W, H) * R_KM / Math.sqrt(Math.max(1, km2)))); }
+  function flyTo(lon, lat, S) {
+    stopInertia();
+    cancelAnimationFrame(flyRaf);
+    var zr = zoomRange(), z1 = Math.max(zr[0], Math.min(zr[1], S / (flat ? baseK : baseR)));
+    var a = { lon: view.lon, lat: view.lat, z: view.zoom }, dl = ((lon - a.lon + 540) % 360) - 180;
+    if (reduceMotion) { view.lon = a.lon + dl; view.lat = lat; view.zoom = z1; applyView(); nudge(); return; }
+    var far = Math.min(1, Math.hypot(dl * Math.cos(lat * D2R), lat - a.lat) / 90), t0 = performance.now(), dur = 700 + 600 * far;
+    var step = function (t) {
+      var k = Math.min(1, (t - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      view.lon = a.lon + dl * e; view.lat = a.lat + (lat - a.lat) * e;
+      view.zoom = a.z * Math.pow(z1 / a.z, e) * Math.pow(0.35, far * 4 * e * (1 - e));
+      applyView(); nudge();
+      if (k < 1) flyRaf = requestAnimationFrame(step);
+    };
+    flyRaf = requestAnimationFrame(step);
+  }
+  function goSearch(it) {
+    setSearchOpen(false, false);
+    var S = localScale();
+    if (it.city) { flyTo(it.ll[0], it.ll[1], Math.max(S, it.tier <= 1 ? 900 : 1500)); openCity({ ref: { city: it.city }, kind: it.tier <= 1 ? "city" : "town" }); return; }
+    if (it.id !== undefined) { flyTo(it.ll[0], it.ll[1], scaleFor(it.km2, 200, 6000)); select(it.id); return; }
+    if (it.sea) { flyTo(it.ll[0], it.ll[1], it.sea === 1 ? 260 : it.sea === 2 ? 700 : 1700); return; }
+    flyTo(it.ll[0], it.ll[1], scaleFor(it.km2, 500, 8000));
+  }
+  function searchWhen() { return yearInput && yearInput.value ? yearInput.value : ""; }
+  function setSearchOpen(open, focusBtn) {
+    if (open && playMode) return;
+    searchPanel.hidden = !open;
+    searchBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      if (!layersPanel.hidden) setLayersOpen(false, false);
+      if (about.classList.contains("is-open")) setAbout(false);
+      if (cities && !cities.minorLoad) loadMinorCities();
+      $("search-when").textContent = searchWhen();
+      searchInput.value = "";
+      runSearch();
+      searchInput.focus();
+    } else if (focusBtn) searchBtn.focus();
+  }
+  function syncSearch() {
+    if (!searchBtn) return;
+    var busy = !!playMode;
+    searchBtn.disabled = busy;
+    searchBtn.setAttribute("data-tip", busy ? "Search (pause to search)" : "Search (/)");
+    if (busy && !searchPanel.hidden) setSearchOpen(false, false);
+  }
+  searchBtn.addEventListener("click", function () { setSearchOpen(searchPanel.hidden, false); });
+  searchInput.addEventListener("input", runSearch);
+  searchInput.addEventListener("keydown", function (e) {
+    e.stopPropagation();
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!searchHits.length) return;
+      searchAt = (searchAt + (e.key === "ArrowDown" ? 1 : searchHits.length - 1)) % searchHits.length;
+      drawSearchList();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (searchAt >= 0) goSearch(searchHits[searchAt]);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setSearchOpen(false, true);
+    }
+  });
+  document.addEventListener("pointerdown", function (e) {
+    if (!searchPanel.hidden && !searchPanel.contains(e.target) && !searchBtn.contains(e.target)) setSearchOpen(false, false);
+  });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target, typing = t && ((t.tagName === "INPUT" && t.type === "text") || t.tagName === "TEXTAREA");
+    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "/") { e.preventDefault(); setSearchOpen(true, false); }
+  });
+  syncSearch();
   var layersApi = {
     layers: function () { return Object.assign({}, layers); },
     setLayer: setLayer,
@@ -3741,7 +3975,9 @@
     people: function (s) { return s.polys.some(function (p) { return p && p.people && !p.band; }); },
     band: function (s) { return s.polys.some(function (p) { return p && p.band; }); },
     disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
-    division: function () { return divDrawn; }
+    division: function () { return divDrawn; },
+    member: function (s) { return s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
+    marsh: function () { return marshDrawn; }
   };
   function syncKey() {
     if (!current) return;
@@ -3921,7 +4157,7 @@
     return true;
   }
   function splitCoast(lines, coastal, inner) {
-    var reach = 1.4 * COAST_KM / 111.195;
+    var reach = (gridTag.indexOf("fine") === 0 ? 0.12 : 1.4) * COAST_KM / 111.195;
     var step = function (a, b) { var dx = (a[0] - b[0]) * Math.cos(a[1] * D2R); return Math.sqrt(dx * dx + (a[1] - b[1]) * (a[1] - b[1])); };
     lines.forEach(function (ln) {
       var n = ln.length, m = new Uint8Array(n), k, s, e;
@@ -4001,6 +4237,8 @@
   }
 
   window.__chronia = {
+    search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
+    searchOpen: function () { return !searchPanel.hidden; },
     ready: function () { return ready && !!current; },
     year: function () { return now; },
     shown: function () { return yearInput.value; },

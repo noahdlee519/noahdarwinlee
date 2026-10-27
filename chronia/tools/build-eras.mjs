@@ -853,6 +853,7 @@ const NAME_FIX = [
   ["Kara Khitai Khaganate", "Qara Khitai", 1200, 1220, { wiki: "Qara Khitai" }],
   ["Volga Bulgars", "Volga Bulgaria", 1200, 1240],
   ["Great Khanate", "Jurchens", 1200, 1399, { box: [115, 38, 150, 62], people: 1, ruler: "", part: "", wiki: "Jurchen people" }],
+  ["Polish-Lithuanian Commonwealth", "Electorate of Saxony", 1700, 1762, { box: [10.5, 49.8, 15.6, 52.4], ruler: "", part: "", wiki: "Electorate of Saxony" }],
   ["Great Khanate", "Northern Yuan", 1368, 1399],
   ["Novgorod", "Novgorod Republic", 1200, 1399, { ruler: "" }],
   ["Ryazan", "Principality of Ryazan", 1200, 1399],
@@ -1260,7 +1261,10 @@ const SMALL = [
   { name: "South Georgia", shape: { c: "SGS" }, wiki: "South Georgia and the South Sandwich Islands", periods: [["1886-01-01", "1982-04-02", "colony", LONDON, "fill"], ["1982-04-03", "1982-04-25", "occupied", BUENOS_AIRES, "fill"], ["1982-04-26", "2019-12-31", "colony", LONDON, "fill"]] },
   { name: "German New Guinea", shape: { c: "PNG", n: ["North Solomons"] }, periods: [["1886-01-01", "1914-11-10", "colony", BERLIN, "fill"]] },
   { name: "Soviet Union", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1926-04-15", "1991-12-25", "state", null, "fill"]] },
-  { name: "Russia", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1991-12-26", "2019-12-31", "state", null, "fill"]] }
+  { name: "Russia", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1991-12-26", "2019-12-31", "state", null, "fill"]] },
+  { name: "Japan", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1886-01-01", "1945-09-04", "state", null, "fill"]] },
+  { name: "Soviet Union", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1945-09-05", "1991-12-25", "state", null, "fill"]] },
+  { name: "Russia", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1991-12-26", "2019-12-31", "state", null, "fill"]] }
 ];
 const SMALL_KEEP_KM2 = 3000;
 const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
@@ -1684,6 +1688,58 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
 }
 
 dated = resolveOverlaps(dated, "from 1200 to 1885");
+const GROUPS = [{
+  name: "Holy Roman Empire",
+  maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, 1491, ["1400"]], [1492, 1499, ["1492"]], [1500, 1529, ["1500"]], [1530, 1599, ["1530"]], [1600, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
+  never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
+}];
+{
+  const t0 = Date.now();
+  let whole = 0, parted = 0;
+  for (const G of GROUPS) {
+    const outlines = G.maps.map(([a, b, ys]) => {
+      const polys = ys.flatMap((y) => JSON.parse(readFileSync(resolve(source, "world_" + y + ".geojson"), "utf8")).features.filter((f) => f.properties.NAME === G.name).flatMap((f) => polysOf(f.geometry)));
+      const u = rewind(tryClip(clip.union, polys) || polys);
+      return { a, b, polys: u, box: boxOf(u), km2: km2Of(u) };
+    });
+    const next = [];
+    for (const s of dated) {
+      const hit = outlines.filter((o) => s.last >= o.a && s.first <= o.b);
+      const free = s.part === G.name && s.name !== G.name ? { ...s, part: "" } : s;
+      if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length ? free : s); continue; }
+      const area = km2Of(s.polys), segs = [];
+      if (s.first < hit[0].a) segs.push({ a: s.first, b: hit[0].a - 1, kind: "out" });
+      for (const o of hit) {
+        const a = Math.max(s.first, o.a), b = Math.min(s.last, o.b);
+        const inter = boxHit(o.box, s.box) ? tryClip(clip.intersection, s.polys, o.polys) : [];
+        const share = inter ? km2Of(inter) / area : 0;
+        if (share >= 0.8) segs.push({ a, b, kind: "in" });
+        else if (inter && (km2Of(inter) >= 3000 || (share >= 0.1 && km2Of(inter) >= 500))) {
+          const rest = tryClip(clip.difference, s.polys, o.polys);
+          if (rest) segs.push({ a, b, kind: "split", inside: rewind(inter), rest: rewind(rest) });
+          else segs.push({ a, b, kind: "out" });
+        } else segs.push({ a, b, kind: "out" });
+      }
+      const lastB = hit[hit.length - 1].b;
+      if (s.last > lastB) segs.push({ a: lastB + 1, b: s.last, kind: "out" });
+      const merged = [];
+      for (const g of segs) { const m = merged[merged.length - 1]; if (m && m.kind === g.kind && g.kind !== "split" && m.b + 1 === g.a) m.b = g.b; else merged.push({ ...g }); }
+      if (merged.length === 1 && merged[0].kind === "out") { next.push(free); continue; }
+      merged.forEach((g, k) => {
+        const uid = k ? uidNext++ : s.uid;
+        if (g.kind === "out") next.push({ ...free, first: g.a, last: g.b, uid });
+        else if (g.kind === "in") { next.push({ ...s, first: g.a, last: g.b, part: G.name, uid }); whole++; }
+        else {
+          next.push(withBox({ ...s, first: g.a, last: g.b, polys: g.inside, part: G.name, geoHash: undefined, cells: undefined }));
+          next.push(withBox({ ...free, first: g.a, last: g.b, polys: g.rest, geoHash: undefined, cells: undefined }));
+          parted++;
+        }
+      });
+    }
+    dated = next;
+  }
+  console.log("groups: " + whole + " spans inside the Holy Roman Empire, " + parted + " parted at its border, " + Math.round((Date.now() - t0) / 1000) + " s");
+}
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -1712,10 +1768,27 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     if (s.claims) row.push(s.claims.map(catId));
     return row;
   });
+  const groups = [];
+  for (const G of GROUPS) {
+    const gid = catId(G.name);
+    let prev = null;
+    for (let y = c; y <= cEnd; y++) {
+      const ix = [];
+      spans.forEach((s, i) => { if (s.first <= y && y <= s.last && (s.part === G.name || s.name === G.name)) ix.push(i); });
+      const key = ix.join(",");
+      if (prev && prev.key === key) { prev.row[2] = y; continue; }
+      if (ix.length < 2) { prev = null; continue; }
+      const geom = client.merge(hi, ix.map((i) => hi.objects.p.geometries[i]));
+      let label = geom && geom.coordinates.length ? labelOf(geom) : null;
+      if (label && label[5] > BIG_KM2) { const spots = labelSpots(geom, label[5]); if (spots.length > 1) label.push(spots); }
+      prev = { key, row: [gid, y, y, ix, label] };
+      if (label) groups.push(prev.row); else prev = null;
+    }
+  }
   hi.objects.p.geometries.forEach((g) => { delete g.properties; });
   lo.objects.p.geometries.forEach((g) => { delete g.properties; });
   const file = "dated/" + c + ".json";
-  writeFileSync(resolve(out, file), JSON.stringify({ from: c, to: cEnd, rows, hi, lo }));
+  writeFileSync(resolve(out, file), JSON.stringify(groups.length ? { from: c, to: cEnd, rows, groups, hi, lo } : { from: c, to: cEnd, rows, hi, lo }));
   datedChunks.push({ from: c, to: cEnd, file, rows, lo, spans });
 }
 const datedChanges = [...new Set(dated.map((s) => s.first).concat(dated.filter((s) => s.last < DATED_TO).map((s) => s.last + 1)))].filter((y) => y >= DATED_FROM && y <= DATED_TO).sort((a, b) => a - b);

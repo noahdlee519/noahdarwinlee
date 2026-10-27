@@ -70,7 +70,7 @@ const simplifyRing = (ring, tol) => {
   return out.length >= 4 ? out : ring;
 };
 const roundPolys = (mp, f) => mp.map((p) => p.map((r) => r.map(([x, y]) => [f(x), f(y)])));
-const simplePolys = (mp, tol, f, minKm2) => roundPolys(mp.filter((p) => planarKm2(p) >= minKm2).map((p) => p.map((r) => simplifyRing(r, tol))), f);
+const simplePolys = (mp, tol, f, minKm2) => roundPolys(mp.filter((p) => planarKm2(p) >= minKm2).map((p) => [p[0]].concat(p.slice(1).filter((h) => planarKm2([h]) >= minKm2)).map((r) => simplifyRing(r, tol))), f);
 
 const ne = (name) => readJSON(resolve(neDir, name));
 const neLakes = ne("ne_10m_lakes.geojson");
@@ -212,6 +212,24 @@ addLake("IJsselmeer", at(1932, 5, 28), at(1942, 9, 9), lakeWith([P.NOP, P.EF, P.
 addLake("IJsselmeer", at(1942, 9, 9), at(1957, 6, 29), lakeWith([P.EF, P.SF], [P.W, P.NOP]), 0.0008, r4);
 addLake("IJsselmeer", at(1957, 6, 29), at(1968, 5, 29), lakeWith([P.SF], [P.W, P.NOP, P.EF]), 0.0008, r4);
 addLake("Haarlemmermeer", at(1647), at(1852, 7, 1), cbs("Haarlemmermeer"), 0.0008, r4);
+const ellipse = (lon, lat, aKm, bKm, n) => {
+  const ring = [];
+  for (let i = 0; i < n; i++) { const t = (i / n) * 2 * Math.PI; ring.push([lon + (aKm * Math.cos(t)) / (111.32 * Math.cos(lat * Math.PI / 180)), lat + (bKm * Math.sin(t)) / 110.57]); }
+  ring.push(ring[0]);
+  return [[ring]];
+};
+addLake("Whittlesey Mere", null, at(1851), ellipse(-0.225, 52.49, 1.9, 1.3, 36), 0.0008, r4);
+
+const wet = readJSON(resolve(here, "wetlands.json"));
+const marshes = [];
+const addMarsh = (name, from, to, mp) => {
+  const polys = roundPolys(mp.map((p) => p.map((r) => simplifyRing(r, 0.0005))), r3);
+  marshes.push([name, Math.round(km2Of({ type: "MultiPolygon", coordinates: polys })), from, to, polys]);
+};
+const boxPoly = (x0, y0, x1, y1) => [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
+addMarsh("The Fens", null, at(1653), clip.intersection([wet.fens], boxPoly(-1, 52, 1, 52.82)));
+addMarsh("The Fens (Lincolnshire)", null, at(1818), clip.intersection([wet.fens], boxPoly(-1, 52.82, 1, 53.4)));
+addMarsh("Pontine Marshes", null, at(1935), [wet.pontine]);
 
 const landGroups = [
   { name: "Zuiderzee", win: [4.8, 52.2, 6.05, 53.15], states: [
@@ -411,6 +429,7 @@ lakeOnly.forEach(([name, km2, from]) => {
 const out = {
   land,
   lakes: { only: lakeOnly, add: lakeAdd },
+  marshes,
   rivers: { drop: riverDrop, add: riverAdd }
 };
 const json = JSON.stringify(out);

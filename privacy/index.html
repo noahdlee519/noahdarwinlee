@@ -81,8 +81,8 @@
           Google sign-in. Asking it for a history sends what you type, and a description
           of your map, to Anthropic to write the reply; the site keeps none of it, only a
           count of how many requests each account made that day. Opening a state or a city in
-          <a href="/chronia/">CHRONIA</a> may ask Claude to write a short note about it; that sends
-          only what the atlas shows about the subject, never anything about you. Ask, and I will delete
+          <a href="/chronia/">CHRONIA</a> may ask an AI model, DeepSeek or else Claude, to write a short note
+          about it; that sends only what the atlas shows about the subject, never anything about you. Ask, and I will delete
           all of it.
         </p>
       </section>
@@ -235,12 +235,15 @@
         </p>
         <p>
           <b>CHRONIA’s notes.</b> When you open the card for a state, a people, or a city in
-          <a href="/chronia/">CHRONIA</a>, the atlas asks Claude to write a short note about it as
+          <a href="/chronia/">CHRONIA</a>, the atlas asks an AI model to write a short note about it as
           it was at that date. The request carries only what the atlas shows about the subject:
-          its name, the date, and facts such as its ruler or capital, or, for a city, where it is
-          on the map. It goes to a second small program of mine on Supabase, which passes it to
-          Anthropic in the same way as the historian’s requests, keeps the note that comes back,
-          and shows that same note to anyone who opens the same card later. Nothing about you is
+          its name, the date, and facts such as its ruler, its capital, and its neighbours, or, for
+          a city, where it is on the map. It goes to a second small program of mine on Supabase,
+          which passes it to DeepSeek, a model made by the Chinese company DeepSeek, or, when
+          DeepSeek can’t answer, to Anthropic’s Claude in the same way as the historian’s requests.
+          DeepSeek and Anthropic each receive it as a request from my program, under their own
+          privacy policies, not from you. The program keeps the note that comes back and shows that
+          same note to anyone who opens the same card later. Nothing about you is
           stored with it, and no sign-in is needed.
         </p>
         <p>
