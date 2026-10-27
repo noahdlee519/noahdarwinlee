@@ -1049,6 +1049,26 @@ body.ch-page {
   transform: translate(14px, -50%);
 }
 
+.ch-tip-ico {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  vertical-align: -2.5px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ch-tip-ico [stroke-dasharray] {
+  stroke-width: 1.7;
+}
+
+.ch-tip.has-ico small {
+  padding-left: 21px;
+}
+
 .ch-tip small {
   display: block;
   font-size: 12.5px;

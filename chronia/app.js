@@ -3029,9 +3029,27 @@
     stripeCache.set(key, p);
     return p;
   }
+  var TIP_ICONS = {
+    flag: '<path d="M4 14.2V2.2" /><path d="M4 2.9c1.9-1 3.5.9 5.4 0s3.2-.8 4.2-.2v6c-1-.6-2.3-.7-4.2.2s-3.5-1-5.4 0" />',
+    region: '<path stroke-dasharray="0.1 2.3" d="M2.2 6.2L5.6 2.4l4.1 1.6 3.9-.6.7 4.6-2.2 2.5.6 3.6-4.6-.6-3.4 1.2-1.4-4.4z" />',
+    city: '<path d="M1.8 14h12.4M3 14V8.2h3V14M6 14V3.6h4V14M10 14V6.8h3.2V14" /><path d="M7.4 6v.1M8.6 6v.1M7.4 8.4v.1M8.6 8.4v.1M7.4 10.8v.1M8.6 10.8v.1M4.5 10.4v.1M11.6 9.2v.1M11.6 11.4v.1" />'
+  };
+  function setTip(icon, text) {
+    tip.textContent = "";
+    tip.classList.toggle("has-ico", !!icon);
+    if (icon) {
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "ch-tip-ico");
+      svg.setAttribute("viewBox", "0 0 16 16");
+      svg.setAttribute("aria-hidden", "true");
+      svg.innerHTML = TIP_ICONS[icon];
+      tip.appendChild(svg);
+    }
+    tip.appendChild(document.createTextNode(text));
+  }
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
-    tip.textContent = dv ? dv + ", " + polityName(p.id) : polityName(p.id);
+    setTip(dv ? "region" : p.people ? null : "flag", dv ? dv + ", " + polityName(p.id) : polityName(p.id));
     var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) + (p.member >= 0 && p.member !== p.id ? ", in the " + polityName(p.member) : "") : p.member >= 0 && p.member !== p.id ? "in the " + polityName(p.member) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
@@ -3054,7 +3072,7 @@
   }
   function showCityTip(x, y, l) {
     var ref = cityRef(l), c = cityFacts(ref), st = cityState(ref);
-    tip.textContent = st ? c.name + ", " + polityName(st.id) : c.name;
+    setTip("city", st ? c.name + ", " + polityName(st.id) : c.name);
     var sub = c.modern !== c.name ? "now " + c.modern : l.kind === "capital" ? "a capital" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
