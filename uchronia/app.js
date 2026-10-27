@@ -54,7 +54,7 @@
   var cities = [], cityIndex = new Map(), citySeq = 0;
   var base = null, fineData = false, sharedOpen = 0;
   var graticule = null, graticuleIdx = [];
-  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, dispute: false, claims: [], satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, waterNames: true, regionLines: true };
+  var ui = { tool: "select", country: -1, region: -1, piece: null, city: null, hover: -1, hoverPiece: null, bare: false, whole: false, erase: false, dispute: false, claims: [], satellite: false, fine: false, countryNames: true, cityNames: true, towns: false, scaleBar: true, rivers: true, gridLabels: true, terrain: true, lakes: true, midLakes: true, waterNames: true, regionLines: true };
 
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
   var view = { lon: 15, lat: 30, zoom: 1 };
@@ -257,7 +257,7 @@
   var FAST_ZOOM = 1.7, TEX_W = 4096, TEX_H = 2048;
   var mapGen = 0, texPass = false, mapTex = { canvas: null, gl: null, glCanvas: null, key: "", ready: false, timer: 0, failed: false };
   function texKey() {
-    return [mapGen, ownerVersion, countriesVersion, pieces.length, pal.antique ? 1 : 0, pal.ocean, (pal.colors || []).join(), ui.terrain, ui.rivers, ui.lakes, ui.regionLines, ui.fine,
+    return [mapGen, ownerVersion, countriesVersion, pieces.length, pal.antique ? 1 : 0, pal.ocean, (pal.colors || []).join(), ui.terrain, ui.rivers, ui.lakes, ui.midLakes, ui.regionLines, ui.fine,
       fineData ? 1 : 0, seaDeep ? 1 : 0, rivers ? 1 : 0, lakes ? 1 : 0, relief && relief.ready() ? 1 : 0, rd.gen, rd.put.size].join("|");
   }
   function fastGlobe() {
@@ -2589,7 +2589,8 @@
     return { lines: lines, v: v, lam: r[1] * D2R, phi: r[2] * D2R, tier: r[3] };
   });
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
-  var lakes = null, lakesLoad = null, LAKES_FROM = 650, SMALL_LAKE = 500, lakesDrawn = 0;
+  var lakes = null, lakesLoad = null, LAKES_FROM = 650, SMALL_LAKE = 500, MID_LAKE = 1500, lakesDrawn = 0;
+  function lakeHidden(L) { return L.km2 < SMALL_LAKE ? !ui.lakes : L.km2 < MID_LAKE && !ui.midLakes; }
   function lakeKmPx(S) { return (flat ? FB.k : S) / R_KM; }
   var lakesShown = [];
   function drawLakes(S, satellite) {
@@ -2608,7 +2609,8 @@
     ctx.beginPath();
     for (var i = 0; i < lakes.length; i++) {
       var L = lakes[i];
-      if (Math.sqrt(L.km2) * kp < 2.5 || (!ui.lakes && L.km2 < SMALL_LAKE)) break;
+      if (Math.sqrt(L.km2) * kp < 2.5) break;
+      if (lakeHidden(L)) continue;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi), r = L.reach * kp;
       if (!p || p[0] + r < 0 || p[0] - r > W || p[1] + r < 0 || p[1] - r > H) continue;
       traceFeature(ctx, L.f); any = true; lakesDrawn++; lakesShown.push(L.f);
@@ -2629,7 +2631,8 @@
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     for (var i = 0; i < lakes.length; i++) {
       var L = lakes[i];
-      if (Math.sqrt(L.km2) * kp < 18 || (!ui.lakes && L.km2 < SMALL_LAKE)) break;
+      if (Math.sqrt(L.km2) * kp < 18) break;
+      if (lakeHidden(L)) continue;
       if (!L.name) continue;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi);
       if (!p || (!flat && p[2] < 0.3) || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
@@ -4835,6 +4838,7 @@
     $("show-rivers").checked = ui.rivers;
     $("show-terrain").checked = ui.terrain;
     $("show-lakes").checked = ui.lakes;
+    $("show-mid-lakes").checked = ui.midLakes;
     $("show-water-names").checked = ui.waterNames;
     $("show-region-lines").checked = ui.regionLines;
   }
@@ -6209,7 +6213,7 @@
         console.warn("finer regions", e);
         fineLoad = null;
         $("fine").disabled = false;
-        toast("The finer regions did not load");
+        toast("The smaller subdivisions did not load");
         return false;
       });
     }
@@ -6252,14 +6256,15 @@
     ui.rivers = $("show-rivers").checked;
     ui.terrain = $("show-terrain").checked;
     ui.lakes = $("show-lakes").checked;
+    ui.midLakes = $("show-mid-lakes").checked;
     ui.waterNames = $("show-water-names").checked;
     if (ui.regionLines !== $("show-region-lines").checked) arcsDirty = true;
     ui.regionLines = $("show-region-lines").checked;
-    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames, ui.regionLines].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
+    try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames, ui.regionLines, ui.midLakes].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
     renderPanel();
     scheduleRender();
   }
-  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain", "show-lakes", "show-water-names", "show-region-lines"].forEach(function (id) { $(id).addEventListener("change", setNames); });
+  ["show-countries", "show-cities", "show-towns", "show-scale", "show-grid", "show-rivers", "show-terrain", "show-lakes", "show-mid-lakes", "show-water-names", "show-region-lines"].forEach(function (id) { $(id).addEventListener("change", setNames); });
 
   function init(topo, cityRows) {
     var geoms = topo.objects.provinces.geometries;
@@ -6308,7 +6313,7 @@
     try { flatPref = localStorage.getItem(STORE_FLAT); } catch (e) { }
     var namesPref = null;
     try { namesPref = localStorage.getItem(STORE_NAMES); } catch (e) { }
-    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; ui.lakes = namesPref[7] !== "0"; ui.waterNames = namesPref[8] !== "0"; ui.regionLines = namesPref[9] !== "0"; }
+    if (namesPref && namesPref.length >= 2) { ui.countryNames = namesPref[0] !== "0"; ui.cityNames = namesPref[1] !== "0"; ui.scaleBar = namesPref[2] !== "0"; ui.gridLabels = namesPref[3] !== "0"; ui.rivers = namesPref[4] !== "0"; ui.terrain = namesPref[5] !== "0"; ui.towns = namesPref[6] === "1"; ui.lakes = namesPref[7] !== "0"; ui.waterNames = namesPref[8] !== "0"; ui.regionLines = namesPref[9] !== "0"; ui.midLakes = namesPref[10] !== "0"; }
     if (flatPref === "1") { flat = true; view.zoom = window.innerWidth <= 640 ? 2 : 1; $("flat-btn").setAttribute("aria-pressed", "true"); $("flat-btn").setAttribute("aria-label", "Globe"); setTip($("flat-btn"), "Globe (M)"); }
     if (stored && !needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
     else queueLabels(countries.map(function (c, i) { return i; }));
@@ -7071,7 +7076,7 @@
       var box = $("history-fine");
       if (near && box.nextSibling !== near) near.parentNode.insertBefore(box, near);
       box.hidden = false;
-      if (work) workSay("Waiting for your answer about finer regions");
+      if (work) workSay("Waiting for your answer about smaller subdivisions");
       try { box.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" }); } catch (e) { }
       var answer = function (yes) {
         $("history-fine-yes").onclick = $("history-fine-no").onclick = null;

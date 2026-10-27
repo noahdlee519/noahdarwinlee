@@ -17,7 +17,7 @@ of `/greatercircle/`.
     Kong), they are grouped into the regions above them (Slovenia's 12
     statistical regions, Italy's 20 regions), 102 groups in all, and a group
     changes hands as one.
-  - With *Finer regions* on (in the View menu), those groups come apart again,
+  - With *Smaller subdivisions* on (in the View menu), those groups come apart again,
     and the large-region countries are cut further into their second-level
     units (counties, prefectures, districts), each of which can change hands
     on its own.
@@ -254,7 +254,7 @@ of `/greatercircle/`.
   coloured map. Where a capital's name has no room, its mark is still drawn,
   and with *New city* on, a click on a city that is not drawn picks it
   rather than founding another on top of it.
-- **Small towns.** Off unless **View → Small towns** is ticked: past the zoom
+- **Small towns.** Hidden unless **View → Small towns** is shown: past the zoom
   at which the map's own cities are all shown, some 40,000 more places are
   drawn as small rings with their names, from
   `data/towns.json`, loaded only then: those of more than 40,000 people
@@ -270,8 +270,11 @@ of `/greatercircle/`.
   water over the land and under the borders, each once it is big enough on
   screen to see, with its name in italic once it is bigger still: Lake
   Geneva, the Bodensee, Lake Balaton, the Great Salt Lake. **View → Small
-  lakes**, on by default, can leave out every lake under 500 km² (Lake of the
-  Ozarks, Burdur), keeping the large ones. `data/lakes.json`
+  lakes**, shown by default, can leave out every lake under 500 km² (Lake of the
+  Ozarks, Burdur), and **View → Medium lakes** every lake from 500 to 1,500 km²
+  (`SMALL_LAKE` and `MID_LAKE`: the Gorky Reservoir, Represa Iepê, Lake
+  Balaton), keeping the large ones (the Great Lakes, Lake Ladoga, the Rybinsk
+  Reservoir, Vättern). Each can be hidden without the other. `data/lakes.json`
   is loaded once the map is zoomed in a little; `tools/build-lakes.mjs`
   builds it.
 - **Rivers.** Natural Earth's rivers, drawn in blue over the countries and
@@ -521,10 +524,15 @@ of `/greatercircle/`.
 - The bar along the top holds the tools (Select and Give land), *New country*
   and *New city*, undo and redo, and
   **Historian** and three menus: **Check**, **File** (copy a link, save a file, open one, start
-  over, the tutorial) and **View** (the style, country names, names of seas, lakes, and
-  rivers, settlements, small towns, region borders (every line inside the
-  countries, both tiers), terrain, rivers, small lakes,
-  latitude and longitude, the scale bar, finer regions). Historian and the
+  over, the tutorial) and **View** (the style, then three groups: **Borders**,
+  with *Larger subdivisions* (every line inside the countries, both tiers)
+  and *Smaller subdivisions* (the finer regions); **Labels**, with country
+  names, settlements, small towns, names of seas, lakes, and rivers,
+  latitude and longitude, and the scale bar; and **Natural**, with terrain,
+  rivers, medium lakes, and small lakes). Each item has a small eye in place
+  of a checkbox, open when it is shown and struck through, in a fainter ink,
+  when it is hidden; the checkbox is still there, unseen, for the keyboard
+  and screen readers. Historian and the
   menus each carry a caret. The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
   without the tools' names; one row without the title; the tools, *New
@@ -740,7 +748,7 @@ of `/greatercircle/`.
     `detail` is true, which the historian sets only when
     the turning point explicitly asks for borders by county, municipality,
     or district; other parts of the world get regions alone. A province is found at once; a district needs the finer
-    regions. If *Finer regions* (Tier 2) are switched off in the View menu,
+    regions. If *Smaller subdivisions* (Tier 2) are hidden in the View menu,
     the panel asks before using them: *Turn them on* switches them on and
     applies the edit; *Keep them off* leaves those districts where they were.
     The same question comes up when the historian edits the map in a
@@ -815,14 +823,14 @@ of `/greatercircle/`.
   regions; *Tier 2*, the finer lines inside them, such as counties and
   districts; a tier it has none of is greyed out). The two buttons override
   the View menu for that country: each shows whether that tier is on there,
-  and a click turns it the other way whatever *Region borders* and *Finer
-  regions* say, loading the finer regions first if they are needed. When a
+  and a click turns it the other way whatever *Larger subdivisions* and *Smaller
+  subdivisions* say, loading the finer regions first if they are needed. When a
   click brings a country back in line with the View menu, it follows the
   View menu again. Each country keeps this in `lines`: 1 and 2 hide Tier 1
   and Tier 2, and 4 and 8 show them; the setting is part of the map, saved
   and shared with it, and one undo step. A country with Tier 2 shown is
-  painted, named, and counted by its finer regions even with *Finer regions*
-  off, and one with Tier 2 hidden by its first-level regions; the tiers
+  painted, named, and counted by its finer regions even with *Smaller
+  subdivisions* off, and one with Tier 2 hidden by its first-level regions; the tiers
   also apply inside land drawn for the country. Give it
   land or dissolve it; click a city to rename it, change its size, or delete
   it, and once it is picked, drag it to move it. A country founded on the

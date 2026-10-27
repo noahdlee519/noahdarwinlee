@@ -1890,8 +1890,48 @@ a.uc-menu-item {
 .uc-check input:disabled {
   cursor: progress;
 }
+#adv .uc-check {
+  position: relative;
+  align-items: center;
+}
+#adv .uc-check input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  opacity: 0;
+}
+.uc-eye {
+  flex: 0 0 auto;
+}
+#adv .uc-check input:checked ~ .uc-eye-off,
+#adv .uc-check input:not(:checked) ~ .uc-eye-on {
+  display: none;
+}
+#adv .uc-check input:not(:checked) ~ span,
+#adv .uc-check input:not(:checked) ~ .uc-eye {
+  color: var(--uc-muted);
+}
+#adv .uc-check input:focus-visible ~ .uc-eye {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+#adv .uc-check:hover span {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.uc-view-h {
+  margin: 16px 0 0;
+  color: var(--uc-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .uc-adv-note {
-  margin: 4px 0 0 23px;
+  margin: 4px 0 0 26px;
   color: var(--uc-muted);
   font-size: 12.5px;
   line-height: 1.4;
