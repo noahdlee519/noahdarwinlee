@@ -783,6 +783,24 @@
     }
     return lines;
   })();
+  function densify(f) {
+    var g = f.geometry;
+    if (!g) return f;
+    var ring = function (r) {
+      var out = [];
+      for (var i = 0; i < r.length; i++) {
+        if (i) {
+          var a = r[i - 1], b = r[i], n = Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / SEA_STEP);
+          for (var k = 1; k < n; k++) out.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+        }
+        out.push(r[i]);
+      }
+      return out;
+    };
+    var polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    return { type: "Feature", properties: f.properties, geometry: { type: "MultiPolygon", coordinates: polys.map(function (p) { return p.map(ring); }) } };
+  }
+  var SEA_STEP = 1;
   var seams = (function () {
     var out = [];
     for (var g = 0; g < 12; g++) { var l0 = -180 + g * 30, line = []; for (var la = -70; la <= 70; la += 2) line.push([l0, la]); out.push(prepareLine(line)); }
@@ -1065,7 +1083,7 @@
       });
     } else {
       var r = B.r;
-      if (amt > 0) { ctx.beginPath(); traceArcs(ctx, seams); ctx.strokeStyle = "rgba(96,64,30," + (0.22 * amt) + ")"; ctx.lineWidth = 0.7; ctx.stroke(); }
+      if (amt > 0 && layers.grid) { ctx.beginPath(); traceArcs(ctx, seams); ctx.strokeStyle = "rgba(96,64,30," + (0.22 * amt) + ")"; ctx.lineWidth = 0.7; ctx.stroke(); }
       var vg = ctx.createRadialGradient(cx - r * 0.22, cy - r * 0.26, r * 0.15, cx, cy, r * 1.02);
       vg.addColorStop(0, "rgba(255,255,255,0)"); vg.addColorStop(0.62, "rgba(214,176,112,0.12)"); vg.addColorStop(1, "rgba(150,104,48,0.38)");
       ctx.fillStyle = vg;
@@ -3958,7 +3976,7 @@
         reveal();
         setTime(now);
         fetchJSON(UC + "data/sea.json").then(function (t) {
-          var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(prepare); };
+          var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(function (f) { return prepare(densify(f)); }); };
           sea = { high: prep(t.high), low: prep(t.low) };
           scheduleRender();
         }).catch(function (e) { console.warn("sea", e); });

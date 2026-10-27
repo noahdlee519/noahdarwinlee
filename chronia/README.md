@@ -403,6 +403,7 @@ CHRONIA first used d3's own path with clipping for everything. It took about 190
 ### The order of a frame
 
 1. **The sea:** ocean, deep water, the graticule, and the ripple lines along the coast.
+   - UCHRONIA's deep water comes in tiles whose edges are long straight runs along meridians and parallels, which the globe would draw as chords, leaving a sliver of shallow water along 180°. `densify` adds a point every degree along them (`SEA_STEP`) before they are prepared.
    - These are kept in an offscreen canvas and redrawn only when the view or the dated land changes. Scrubbing through the years therefore seldom redraws them.
    - While the map moves, one ripple is drawn instead of up to four.
    - The ripples scale with the island: an island gets one ripple for every 9 px of its size, up to the usual four, and islands under 9 px get none.
@@ -425,7 +426,7 @@ CHRONIA first used d3's own path with clipping for everything. It took about 190
    - a band has no border: an edge between a band and a band, or a band and blank land, is not drawn, and an edge between a band and a state is drawn in the state's style.
    - Where a state's edge meets no other shape on land, as in the interior of Arabia or the central Sahara around 1890, the edge is drawn as a border too, in that state's style, with its band.
    - Lines get slightly heavier as the map zooms in, from a scale of about 700 px to 4,000 px: solid borders from 1.15 to 1.7 px, the coastline from 0.75 to 1.1 px, and the dots of soft borders from 1.6 to 2.1 px.
-8. **Finishing:** the aged paper (seams, vignette, and highlight on the globe; darkened top and bottom on the flat map), and the double rim.
+8. **Finishing:** the aged paper (seams, vignette, and highlight on the globe; darkened top and bottom on the flat map), and the double rim. The seams run along every 30° of longitude, so they are drawn only when the lines of latitude and longitude are on.
 9. **Labels:**
    - **States and peoples** first, largest first, but names shown in the last frame go before names that were not, so a name that is showing keeps its place against a newcomer (see [Names of states and peoples](#names-of-states-and-peoples)).
    - **Seas** (the same list and scales as UCHRONIA).
