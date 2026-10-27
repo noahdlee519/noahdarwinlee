@@ -7513,8 +7513,21 @@
     fineReset();
     if (!townsLoad) loadTowns();
     syncAsk();
-    setStatus($("history-chat-status"), "The historian is answering…");
+    setStatus($("history-chat-status"), "");
     var turn = addTurn(q, ""), text = "", queued = false, done = false, edited = false;
+    // Until the answer starts, a line under the question says what the historian is doing.
+    var doing = document.createElement("p"), sayAt = 0, said = -1, sayTimer = 0;
+    var SAY_CHAT = ["Reading your question", "Looking back over the history", "Consulting the sources", "Weighing the evidence", "Thinking it through"];
+    doing.className = "uc-chron-doing";
+    turn.q.parentNode.insertBefore(doing, turn.a);
+    var say = function (t) {
+      doing.textContent = t.replace(/[.…]+$/, "") + "…";
+      doing.classList.remove("is-fresh"); void doing.offsetWidth; doing.classList.add("is-fresh");
+      doing.hidden = false; sayAt = Date.now();
+    };
+    var stopSaying = function () { clearInterval(sayTimer); sayTimer = 0; if (doing.parentNode) doing.parentNode.removeChild(doing); };
+    say(SAY_CHAT[(said = 0)]);
+    sayTimer = setInterval(function () { if (!text && Date.now() - sayAt > 3800) say(SAY_CHAT[(said = (said + 1) % SAY_CHAT.length)]); }, 500);
     turn.q.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     $("history-q").value = "";
     var paint = function () { queued = false; renderProse(turn.a, text); };
@@ -7523,6 +7536,7 @@
       if (done) return;
       if (pending) { edits.then(function () { finish(msg); }); return; }
       done = true; historyBusy = false;
+      stopSaying();
       fineReset();
       syncAccount();
       setStatus($("history-chat-status"), msg);
@@ -7547,8 +7561,9 @@
       if (!res.ok || !res.body) return finish("The historian could not be reached. Try again in a moment.");
       setStatus($("history-chat-status"), "");
       return readEvents(res, function (ev) {
-        if (ev.t === "text") { text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
+        if (ev.t === "text") { if (!text) doing.hidden = true; text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
         else if (ev.t === "plan") {
+          say("Changing the map");
           var edit = function () {
             var r = null;
             try { r = applyPlan(ev.plan || {}); } catch (e) { console.warn("historian edit", e); }

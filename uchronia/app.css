@@ -678,6 +678,7 @@ body.uc-page {
 .uc-chron-asked + .uc-chron-status + .uc-chron-work {
   margin-top: 8px;
 }
+.uc-chron-doing[hidden],
 .uc-chron-work[hidden],
 .uc-chron-fine[hidden] {
   display: none;
@@ -891,6 +892,9 @@ body.uc-page {
 }
 .uc-chron-asked-more[hidden] {
   display: none;
+}
+.uc-chron-turns .uc-chron-doing {
+  margin: 0 0 12px;
 }
 .uc-chron-steps {
   margin: 0 0 14px;
