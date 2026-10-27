@@ -325,16 +325,37 @@
           <button type="button" id="mode-turn" aria-pressed="false">A turning point</button>
         </div>
         <p class="uc-chron-hint" id="history-hint"></p>
-        <textarea class="uc-chron-note" id="history-input" rows="2" maxlength="500" aria-label="A note for the historian" aria-describedby="history-hint"></textarea>
-        <div class="uc-chron-row">
-          <button type="button" class="uc-btn" id="history-go">Write its history</button>
+        <label class="uc-chron-flabel" for="history-input" id="history-input-label">A note <span>optional</span></label>
+        <textarea class="uc-chron-note" id="history-input" rows="2" maxlength="500" aria-describedby="history-hint"></textarea>
+        <fieldset class="uc-chron-more" id="history-turn-fields" hidden>
+          <legend class="uc-chron-flabel">Details <span>all optional</span></legend>
+          <div class="uc-chron-grid">
+            <label class="uc-chron-field"><span class="uc-chron-flabel">Diverges in</span><input type="text" id="turn-when" maxlength="100" autocomplete="off" placeholder="476, or Odoacer’s coup" /></label>
+            <label class="uc-chron-field"><span class="uc-chron-flabel">Show the world in</span><input type="text" id="turn-year" maxlength="24" autocomplete="off" placeholder="Today" /></label>
+            <label class="uc-chron-field is-wide"><span class="uc-chron-flabel">Focus on</span><input type="text" id="turn-focus" maxlength="160" autocomplete="off" placeholder="Europe and the Mediterranean" /></label>
+            <label class="uc-chron-field is-wide"><span class="uc-chron-flabel">Leave as in our world</span><input type="text" id="turn-keep" maxlength="160" autocomplete="off" placeholder="The Americas" /></label>
+            <div class="uc-chron-field is-wide">
+              <span class="uc-chron-flabel" id="turn-bold-label">How far it goes</span>
+              <div class="uc-seg uc-chron-bold" role="group" aria-labelledby="turn-bold-label">
+                <button type="button" data-bold="close" aria-pressed="false" data-tip="Only the changes the turning point would most likely bring">Close to history</button>
+                <button type="button" data-bold="" aria-pressed="true" data-tip="Follow the consequences boldly, as the historian usually does">Bold</button>
+                <button type="button" data-bold="wild" aria-pressed="false" data-tip="Let the butterfly effects run as far as they can">Wild</button>
+              </div>
+            </div>
+          </div>
+          <label class="uc-check uc-chron-check"><input type="checkbox" id="turn-fine" /> <span>Draw borders by county and district where they change</span></label>
+        </fieldset>
+        <div class="uc-chron-row uc-chron-gorow">
+          <button type="button" class="uc-btn uc-chron-go" id="history-go">Write its history</button>
           <button type="button" class="uc-linkbtn uc-chron-cancel" id="history-cancel" hidden>Cancel</button>
         </div>
         <p class="uc-chron-small">Generated responses by Claude. Your prompts and responses are private.</p>
       </div>
       <p class="uc-chron-q uc-chron-asked" id="history-asked" hidden></p>
+      <p class="uc-chron-asked-more" id="history-asked-more" hidden></p>
       <p class="uc-chron-status" id="history-status" role="status"></p>
       <div class="uc-chron-work" id="history-work" hidden>
+        <ol class="uc-chron-steps" id="history-steps"></ol>
         <p class="uc-chron-doing" id="history-doing" aria-live="polite"></p>
         <div class="uc-chron-meter" id="history-meter" role="progressbar" aria-label="The historian's progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="history-meter-fill"></span></div>
       </div>

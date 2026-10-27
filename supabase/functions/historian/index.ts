@@ -13,7 +13,7 @@ const MAX_QUESTION = 1000;
 const MAX_ANSWER = 12000;
 const MAX_CHAT = 90000;
 const MAX_CHANGES = 14000;
-const MAX_NOTE = 500;
+const MAX_NOTE = 1500;
 const CATALOGUE_URL = "https://noahdarwinlee.com/uchronia/data/catalogue.txt";
 const PARTS_URL = "https://noahdarwinlee.com/uchronia/data/parts.json";
 const DEADLINE = 135000;
@@ -56,6 +56,8 @@ The mapmaker has read your history and now asks you more about this world. Answe
 
 const PAST = `If the map's year is in the past, our world's map of that year is your starting point, not today's: its empires, colonies, protectorates, mandates, and dominions, its vanished states and its borders as they then stood. Redraw everything that differed then from now, even where the premise changes nothing; a map of 1925 shows the British Raj, French West Africa, and the Soviet Union, not India, Mali, and Russia. Then change that world as the premise demands.`;
 
+const DETAILS = `The premise may end with "Details from the mapmaker": the point of divergence, the year the map shows, the places to focus on, what to leave as in our world, how far to take the changes, and whether to draw borders by county and district. Follow every detail given. Begin the history at that point of divergence; show that year; keep to the places in focus, and to the countries whose fate is bound up with them, and leave the rest of the map as ours; leave what the mapmaker names exactly as in our world; "close to history" means only the changes the turning point would most likely bring, and "wild" means following the butterfly effects as far as they can run; and draw borders by county and district only when asked.`;
+
 const SCOPE = `Keep to the part of the world the premise asks about. If it names a continent or a region ("what did Europe look like in 1930"), redraw only that part, and the countries whose fate is bound up with it, and leave the rest of the map alone. Only a premise about the whole world, or one with no place in it, calls for redrawing every continent.`;
 
 const BOLD = `Draw the map the premise implies as it would stand in its year, after the butterfly effects of all the years from the turning point to then. Be bold and take creative, speculative risks:
@@ -74,6 +76,8 @@ ${EDITS}
 ${PAST}
 
 ${SCOPE}
+
+${DETAILS}
 
 Keep the edits short: the map must be written within a couple of minutes. Move whole countries wherever you can, name each region only once, and leave out any edit that changes nothing.
 
@@ -103,6 +107,8 @@ The outline:
 ${PAST}
 
 ${SCOPE}
+
+${DETAILS}
 
 ${BOLD}
 

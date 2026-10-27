@@ -6677,14 +6677,50 @@
     el.classList.toggle("is-limit", /Try again tomorrow\.$/.test(msg || ""));
   }
   function historyStatus(msg) { setStatus($("history-status"), msg); $("history-status").hidden = !msg; }
+  // While the historian works, a list of its steps (done, now, to come), a
+  // line saying what it is doing at that moment, and a bar that fills.
   var work = null;
-  function workStart(lines) {
+  var STEPS_MAP = ["Reading your map", "Finding where history parted", "Writing the history"];
+  var STEPS_TURN = ["Reading your turning point", "Researching the period", "Drawing the new borders", "Placing them on the map", "Writing the history"];
+  var SAY = {
+    readMap: ["Reading your map", "Listing what changed"],
+    research: ["Researching the history", "Finding the points of divergence", "Weighing causes and consequences", "Running the timeline forward", "Choosing where the story begins"],
+    readTurn: ["Reading your turning point", "Noting the details you gave"],
+    outline: ["Researching the period", "Running the simulation forward", "Tracing the butterfly effects", "Weighing wars, treaties, and marriages", "Deciding who holds what", "Sketching the new world"],
+    newMap: ["Reading the new map", "Consulting the sources", "Choosing where the story begins"]
+  };
+  function workStart(steps, at) {
     workEnd();
-    work = { shown: 0, real: 0, a: 0, b: 0, tau: 1, t0: Date.now(), lines: lines || [], said: "", saidAt: 0, own: 0, timer: 0 };
+    work = { shown: 0, real: 0, a: 0, b: 0, tau: 1, t0: Date.now(), lines: [], said: "", saidAt: 0, own: 0, timer: 0, steps: steps || [], at: -1, notes: {} };
     $("history-work").hidden = false;
-    workPhase(0, 0.12, 20, lines);
+    workStep(at || 0);
     work.timer = setInterval(workTick, 250);
     workTick();
+  }
+  function workStep(i, lines) {
+    if (!work) return;
+    work.at = Math.max(work.at, i);
+    if (lines) { work.lines = lines; work.own = 0; workSay(lines[0], true); }
+    drawSteps();
+  }
+  function workNote(i, text) {
+    if (!work) return;
+    work.notes[i] = text;
+    drawSteps();
+  }
+  function drawSteps() {
+    var ol = $("history-steps");
+    ol.hidden = !work.steps.length;
+    ol.textContent = "";
+    work.steps.forEach(function (label, i) {
+      var li = document.createElement("li"), mark = document.createElement("span"), text = document.createElement("span");
+      li.className = i < work.at ? "is-done" : i === work.at ? "is-now" : "";
+      if (i === work.at) li.setAttribute("aria-current", "step");
+      mark.className = "uc-step-mark"; mark.setAttribute("aria-hidden", "true");
+      text.className = "uc-step-label"; text.textContent = label;
+      if (work.notes[i]) { var n = document.createElement("span"); n.className = "uc-step-note"; n.textContent = work.notes[i]; text.appendChild(document.createTextNode(" ")); text.appendChild(n); }
+      li.appendChild(mark); li.appendChild(text); ol.appendChild(li);
+    });
   }
   function workPhase(a, b, tau, lines) {
     if (!work) return;
@@ -6709,7 +6745,7 @@
     var pct = Math.round(work.shown * 100);
     $("history-meter-fill").style.width = (work.shown * 100).toFixed(1) + "%";
     $("history-meter").setAttribute("aria-valuenow", String(pct));
-    if (work.lines.length > 1 && Date.now() - work.saidAt > 5200 && Date.now() - work.own > 7000) {
+    if (work.lines.length > 1 && Date.now() - work.saidAt > 4200 && Date.now() - work.own > 6500) {
       var k = (work.lines.indexOf(work.said) + 1) % work.lines.length;
       workSay(work.lines[k], true);
     }
@@ -6721,6 +6757,7 @@
     if (full) { $("history-meter-fill").style.width = "100%"; }
     $("history-work").hidden = true;
     $("history-doing").textContent = "";
+    $("history-steps").innerHTML = "";
     $("history-meter-fill").style.width = "0";
   }
   var fineAsk = null, fineNo = false;
@@ -6817,7 +6854,11 @@
   }
   function askedOf(c) { return c.asked || (c.premise || "").split("\n")[0] || c.note || ""; }
   function savedOpen() { return !$("history-saved").hidden; }
-  function showAsked(q) { var e = $("history-asked"); e.textContent = q || ""; e.hidden = !q || savedOpen(); }
+  function showAsked(q) {
+    var parts = splitPremise(q || ""), e = $("history-asked"), m = $("history-asked-more");
+    e.textContent = parts.main; e.hidden = !parts.main || savedOpen();
+    m.textContent = parts.details.join(" \u00b7 "); m.hidden = !parts.details.length || e.hidden;
+  }
   function showConv(c) {
     describeChanges();
     showAsked(askedOf(c));
@@ -6834,13 +6875,14 @@
     $("history-saved-btn").setAttribute("aria-expanded", String(open));
     $("history-saved-btn").textContent = open ? "Back" : "Saved";
     if (open) {
-      ["history-ask", "history-new", "history-asked", "history-text", "history-chat", "history-status"].forEach(function (id) { $(id).hidden = true; });
+      ["history-ask", "history-new", "history-asked", "history-asked-more", "history-text", "history-chat", "history-status"].forEach(function (id) { $(id).hidden = true; });
       renderSaved();
       return;
     }
     $("history-text").hidden = false;
     $("history-status").hidden = false;
     $("history-asked").hidden = !$("history-asked").textContent;
+    $("history-asked-more").hidden = $("history-asked").hidden || !$("history-asked-more").textContent;
     if (historyBusy) { showAsk(false); $("history-chat").hidden = busyKind !== "chat"; }
     showHistory(true);
   }
@@ -6904,8 +6946,8 @@
   }
   var askMode = "map", busyKind = "";
   var MODES = {
-    map: { hint: "", hold: "Optional: add additional context about the map you've made", go: "Write its history", label: "A note for the historian" },
-    turn: { hint: "The historian redraws the world from your turning point, then writes its history.", hold: "What if Rome never fell? (a year is welcome)", go: "Redraw the map", label: "A turning point" }
+    map: { hint: "The historian works out how your map came to be and writes its history, era by era.", hold: "Add additional context about the map you've made", go: "Write its history", label: "A note" },
+    turn: { hint: "The historian redraws the world from a turning point, then writes its history.", hold: "What if Rome never fell?", go: "Redraw the map", label: "The turning point" }
   };
   function setMode(m) {
     askMode = m;
@@ -6913,10 +6955,60 @@
     $("mode-turn").setAttribute("aria-pressed", String(m === "turn"));
     $("history-hint").textContent = m === "map" && !describeChanges() ? "Your map is still our world: change it first, or give a turning point." : MODES[m].hint;
     $("history-input").placeholder = MODES[m].hold;
-    $("history-input").setAttribute("aria-label", MODES[m].label);
+    $("history-input-label").firstChild.nodeValue = MODES[m].label + " ";
+    $("history-input-label").lastChild.hidden = m === "turn";
+    $("history-input").rows = m === "turn" ? 3 : 2;
+    $("history-turn-fields").hidden = m !== "turn";
     $("history-go").textContent = MODES[m].go;
     syncAsk();
   }
+  // A turning point and its optional details become one premise for the
+  // historian: the question, then a labelled list it is told to follow.
+  var DETAILS = "Details from the mapmaker:", turnBold = "";
+  var DETAIL_SHORT = [
+    [/^Point of divergence: /, "Diverges in "],
+    [/^Show the world in: /, "Shows "],
+    [/^Focus on: /, "Focus: "],
+    [/^Leave as in our world: /, "Leaves alone: "],
+    [/^How far it goes: close to history.*/, "Close to history"],
+    [/^How far it goes: wild.*/, "Wild"],
+    [/^Borders: .*/, "County and district borders"]
+  ];
+  function turnPremise() {
+    var main = $("history-input").value.trim(), d = [], v;
+    if (!main) return "";
+    if ((v = $("turn-when").value.trim())) d.push("Point of divergence: " + v);
+    if ((v = $("turn-year").value.trim())) d.push("Show the world in: " + v);
+    if ((v = $("turn-focus").value.trim())) d.push("Focus on: " + v);
+    if ((v = $("turn-keep").value.trim())) d.push("Leave as in our world: " + v);
+    if (turnBold === "close") d.push("How far it goes: close to history, only the changes the turning point would most likely bring");
+    else if (turnBold === "wild") d.push("How far it goes: wild, follow the butterfly effects as far as they can run");
+    if ($("turn-fine").checked) d.push("Borders: draw them by county and district where they change");
+    return d.length ? main + "\n\n" + DETAILS + "\n" + d.map(function (x) { return "- " + x; }).join("\n") : main;
+  }
+  function splitPremise(q) {
+    var at = q.indexOf("\n\n" + DETAILS + "\n");
+    if (at < 0) return { main: q, details: [] };
+    var details = q.slice(at + DETAILS.length + 3).split("\n").map(function (l) {
+      l = l.replace(/^- /, "").trim();
+      for (var i = 0; i < DETAIL_SHORT.length; i++) if (DETAIL_SHORT[i][0].test(l)) return l.replace(DETAIL_SHORT[i][0], DETAIL_SHORT[i][1]);
+      return l;
+    }).filter(Boolean);
+    return { main: q.slice(0, at), details: details };
+  }
+  function setBold(v) {
+    turnBold = v;
+    document.querySelectorAll("[data-bold]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-bold") === v)); });
+  }
+  function clearTurnFields() {
+    ["turn-when", "turn-year", "turn-focus", "turn-keep"].forEach(function (id) { $(id).value = ""; });
+    $("turn-fine").checked = false;
+    setBold("");
+  }
+  document.querySelectorAll("[data-bold]").forEach(function (b) { b.addEventListener("click", function () { setBold(b.getAttribute("data-bold")); }); });
+  ["turn-when", "turn-year", "turn-focus", "turn-keep"].forEach(function (id) {
+    $(id).addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); $("history-go").click(); } });
+  });
   function syncAsk() {
     document.body.classList.toggle("uc-thinking", historyBusy);
     if (savedOpen()) renderSaved();
@@ -6939,7 +7031,11 @@
     showAsked(asked);
     showAsk(false);
     historyStatus("");
-    workStart(after ? ["Reading the new map", "Following the turning point forward", "Working out how this world came to be"] : ["Reading your map", "Weighing what changed", "Working out how this world came to be", "Choosing where the story begins"]);
+    if (after) { workStart(STEPS_TURN, 4); workStep(4, SAY.newMap); }
+    else {
+      workStart(STEPS_MAP, 0); workStep(0, SAY.readMap);
+      setTimeout(function () { if (work && work.steps === STEPS_MAP && work.at === 0) workStep(1, SAY.research); }, 2500);
+    }
     workPhase(0, 0.16, 18);
     var text = "", queued = false, done = false, head = null;
     var paint = function () {
@@ -6961,6 +7057,7 @@
         convRead = true;
         storeConv(conv);
         $("history-input").value = "";
+        if (after) clearTurnFields();
         if (savedOpen()) renderSaved();
         else { showConv(conv); if (msg) historyStatus(msg); }
       }
@@ -6983,7 +7080,7 @@
             if (!line) continue;
             var ev = null;
             try { ev = JSON.parse(line); } catch (e) { continue; }
-            if (ev.t === "text") { if (!text) { workPhase(0.16, 0.2, 30, []); workSay("Writing the history"); } text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
+            if (ev.t === "text") { if (!text) { workPhase(0.16, 0.2, 30, []); if (work) workStep(work.steps.length - 1); workSay("Writing the history"); } text += ev.v; if (!queued) { queued = true; requestAnimationFrame(paint); } }
             else if (ev.t === "end") finish(ev.reason === "refusal" ? "The historian declined to write this one." : ev.reason === "max_tokens" ? "The history ran long and was cut short." : "", ev.reason === "max_tokens");
             else if (ev.t === "error") { if (ev.status) console.warn("historian", ev.status, ev.kind); finish(text ? "The history broke off. Try again." : ev.status === 401 || ev.status === 403 ? "The historian's key was refused." : ev.credit ? "The historian is out of credit." : "The historian could not write this. Try again in a moment."); }
           }
@@ -7039,7 +7136,7 @@
     return [Math.atan2(y / n, x / n) / D2R, Math.asin(z / n) / D2R];
   }
   function redrawMap() {
-    var premise = $("history-input").value.trim();
+    var premise = turnPremise();
     if (!premise || historyBusy) { if (!premise) $("history-input").focus(); return; }
     historyBusy = true; busyKind = "redraw";
     if (!townsLoad) loadTowns();
@@ -7050,8 +7147,10 @@
     showAsk(false);
     historyStatus("");
     fineReset();
-    workStart(["Reading your turning point", "Imagining how events unfold", "Deciding which borders move", "Sketching the new world"]);
-    workPhase(0, 0.2, 30);
+    workStart(STEPS_TURN, 0);
+    workStep(0, SAY.readTurn);
+    workPhase(0, 0.05, 3);
+    setTimeout(function () { if (work && work.steps === STEPS_TURN && work.at === 0) { workStep(1, SAY.outline); workPhase(0.05, 0.2, 30); } }, 1800);
     var done = false;
     var finish = function (msg) {
       if (done) return;
@@ -7091,11 +7190,12 @@
       Object.keys(partFrac).forEach(function (id) { sum += partDone[id] ? 1 : 0.9 * partFrac[id]; });
       Object.keys(partDone).forEach(function (id) { if (!(id in partFrac)) sum += 1; });
       workReal(0.2 + 0.74 * sum / total);
+      workNote(2, (total - left) + " of " + total + (total === 1 ? " part" : " parts"));
     };
     var settle = function () {
       if (done || left > 0) return;
       if (total && !plans.length) return finish("The historian could not draw this map. Try again in a moment.");
-      workSay("Placing the new borders"); workReal(0.97);
+      workStep(3, ["Placing the new borders"]); workReal(0.97);
       draw();
       if (!last) return finish("The historian's map could not be drawn. Try putting it another way.");
       if (last.missed) console.warn("redraw: " + last.missed + " names not found");
@@ -7146,6 +7246,7 @@
       return readEvents(res, function (ev) {
         if (done || outline) return;
         if (ev.t === "peek") {
+          if (work && work.at < 1) workStep(1, SAY.outline);
           if (isFinite(ev.n)) workReal(0.02 + 0.17 * (1 - Math.exp(-ev.n / 3000)));
           if (typeof ev.v === "string" && ev.v) workSay(ev.v.slice(0, 120));
         }
@@ -7156,6 +7257,7 @@
           total = left = ids.length;
           if (!total) return settle();
           ids.forEach(function (id) { partFrac[id] = 0; });
+          workStep(2);
           workPhase(0.2, 0.3, 45, ids.map(function (id) { return "Drawing " + (names[id] || "the map"); }));
           if (typeof outline.title === "string" && outline.title) workSay("Drawing \u201c" + outline.title.slice(0, 80) + "\u201d, " + total + (total === 1 ? " part" : " parts") + " of the world");
           progress();
@@ -7255,7 +7357,9 @@
     { target: "[data-tool=\"city\"]", title: "Settlements", text: "Settlements (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
     { target: "#new-country", title: "New country", text: "Founds a country with a name and a colour of its own. Give it land next." },
     { target: "#undo", title: "Undo", text: "Every change is one step. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
-    { target: "#history-btn", title: "Historian", text: "Claude writes how your map came to be, answers questions about it, or redraws the whole world from a turning point, such as “What if Rome never fell?” It needs a Google sign-in, and each account can ask five times a day." },
+    { target: "#history-btn", title: "Historian", text: "A historian of your world, played by Claude. It writes how your map came to be: where this world parted from ours and what followed, era by era, with every place it names linked to the map. It needs a Google sign-in, and each account can ask five times a day." },
+    { target: "#history-turn-fields|#history", history: "turn", title: "Redraw from a turning point", text: "Or give it a what-if, such as “What if Rome never fell?”, and it redraws the world itself. The details are optional: when history parts from ours, the year to show, where to focus, what to leave alone, and how far to take it. While it works, it shows each step it is on." },
+    { target: "#history-saved-btn|#history", history: "map", title: "Ask more, and keep it", text: "Under each history you can ask the historian more, or ask it to change the map; its edits are one undo step. Every history is kept under Saved, in this browser, with its map and your questions." },
     { target: "#check-menu", title: "Check", text: "Lists things worth a look: countries with no name or no capital, and neighbours that share a colour. Click one to go to it." },
     { target: "#file-menu", title: "File", text: "Copy a link to your map, save it as a file or open one, post it to r/uchronia, or start over. Your map is also kept in this browser as you go, and this tour is here too." },
     { target: "#adv", title: "View", text: "Switch between the Antique, Light, and Dark styles, and choose what the map shows: names, settlements, borders, terrain, rivers, and more." },
@@ -7266,7 +7370,11 @@
   function tourDone() { try { localStorage.setItem(STORE_TOUR, "done"); } catch (e) { } }
   function tourTarget(step) {
     if (!step.target) return null;
-    var el = document.querySelector(step.target);
+    var tries = step.target.split("|"), el = null;
+    for (var i = 0; i < tries.length && !el; i++) {
+      var c = document.querySelector(tries[i]);
+      if (c && !c.closest("[hidden]")) el = c;
+    }
     if (!el) return null;
     var r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) return null;
@@ -7279,7 +7387,7 @@
   }
   function tourSheetFor(step) {
     if (!sheetMode || !step.target) return;
-    var el = document.querySelector(step.target);
+    var el = document.querySelector(step.target.split("|")[0]);
     if (!el || !panel.contains(el)) return;
     if (tourSheet < 0) tourSheet = sheetState();
     if (sheetState() !== SHEET_OPEN) setSheetState(SHEET_OPEN);
@@ -7310,6 +7418,14 @@
     card.style.left = card.style.top = "";
     if (!r || phoneQuery.matches) return;
     var cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
+    if (step.history && !$("history").hidden) {
+      var hp = $("history").getBoundingClientRect();
+      if (hp.left - cw - gap * 2 >= 12) {
+        card.style.left = Math.round(hp.left - cw - gap * 2) + "px";
+        card.style.top = Math.round(Math.max(12, Math.min(vh - ch - 12, r.top + r.height / 2 - ch / 2))) + "px";
+        return;
+      }
+    }
     var x = Math.max(12, Math.min(vw - cw - 12, r.left + r.width / 2 - cw / 2));
     var y = r.bottom + pad + gap;
     if (y + ch > vh - 12) y = r.top - pad - gap - ch;
@@ -7326,9 +7442,21 @@
     placeTour();
     tourRaf = requestAnimationFrame(tourFrame);
   }
+  // Steps about the historian open its panel (and close it again after).
+  var tourOpened = false;
+  function tourHistory(mode) {
+    if (mode) {
+      if ($("history").hidden) { tourOpened = true; showHistory(true); }
+      if (!historyBusy && !$("history-ask").hidden) setMode(mode);
+    } else if (tourOpened) {
+      tourOpened = false;
+      showHistory(false);
+    }
+  }
   function showTourStep(i) {
     tourAt = Math.max(0, Math.min(TOUR.length - 1, i));
     var step = TOUR[tourAt], last = tourAt === TOUR.length - 1;
+    tourHistory(step.history);
     $("tour-count").textContent = (tourAt + 1) + " of " + TOUR.length;
     $("tour-title").textContent = step.title;
     $("tour-text").textContent = step.text;
@@ -7353,6 +7481,7 @@
     if (tourAt < 0) return;
     tourAt = -1;
     tourDone();
+    tourHistory(null);
     $("tour").hidden = true;
     if (tourRaf) { cancelAnimationFrame(tourRaf); tourRaf = 0; }
     if (tourSheet >= 0 && sheetMode) setSheetState(tourSheet);

@@ -514,13 +514,17 @@ of `/greatercircle/`.
   canvas roughly halves the time a frame takes while dragging. What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
-- **The tutorial** is a tour of twelve short cards that a first-time visitor
+- **The tutorial** is a tour of fourteen short cards that a first-time visitor
   sees once the map has appeared (after the Antique opening, about 3.3
   seconds in; otherwise just under a second). It is not shown to a visitor
   returning from Google sign-in, or while the historian is open. Each card
   names a part of the page and what it does: the map controls, Select, Give
   land, Settlements, *New country*, undo, Historian, Check, File, and View,
-  between a welcome and a closing card. The part in question is ringed in
+  between a welcome and a closing card. Two more after Historian open its
+  panel: one rings the turning point's details, the other *Saved* (for
+  asking more, the historian's edits, and saved histories); the panel closes
+  again when the tour moves on or ends, and on a wide screen those cards sit
+  to the left of the panel. The part in question is ringed in
   the selection colour, and the rest of the page is dimmed but stays usable;
   a card with nothing to ring sits in the middle of the window. The card
   goes below the part it describes, or above or beside it where there is no
@@ -540,8 +544,11 @@ of `/greatercircle/`.
   opened again. A history cut short by its length is kept all the same,
   with a note saying so. The last history is kept in the browser, and the panel says
   when the map has changed since.
-  - While the historian writes or redraws, a line under the question says
-    what it is doing, and a thin bar beneath fills as it goes. Writing, the
+  - While the historian writes or redraws, the panel lists its steps (done,
+    now, to come: reading the map or the turning point, researching, drawing
+    the borders with a count of the parts, placing them, writing), a line
+    under them says what it is doing at that moment, and a thin bar beneath
+    fills as it goes. Writing, the
     line names the section being written and the bar follows the word count
     (a history runs 600 to 1,000 words). Redrawing, the line follows the
     outline and then each part of the world as its mapmaker works ("Western
@@ -552,7 +559,16 @@ of `/greatercircle/`.
     server that sends none, the bar creeps on and the line steps through a
     few stock phrases.
   - **Redraw the map** takes a turning point instead ("What if Rome never
-    fell?", "The world in 1925 if the Central Powers had won"): Claude
+    fell?", "The world in 1925 if the Central Powers had won"), with
+    optional details under it: when history parts from ours, the year to
+    show, places to focus on, what to leave as in our world, how far it goes
+    (*Close to history*, *Bold*, the historian's usual, or *Wild*), and
+    whether to draw borders by county and district. The page sends them
+    after the question as a labelled list ("Details from the mapmaker:"),
+    which the server function's outline and plan prompts tell Claude to
+    follow; above the history the question shows on its own, with the
+    details in a short line beneath. Notes and premises may be up to 1,500
+    characters. Claude
     decides how the world's map would stand in the year the turning point
     names, or today, and sends back edits to our world's map in a fixed JSON
     shape (the year, new countries with the ruler of each colony, renames,
