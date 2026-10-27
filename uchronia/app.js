@@ -1549,6 +1549,7 @@
     mark("overlays");
 
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat, bl); }
+    drawRivers(S);
     drawLakes(S, satellite);
     var ua = interacting > 0 && lowRes ? 0 : clamp01((S - 700) / 500), pa = provAlpha(S);
     if (vis) clipOutPieces(vis);
@@ -1566,7 +1567,6 @@
       });
     }
     mark("provlines");
-    drawRivers(S);
     ctx.lineJoin = "round";
     ctx.beginPath(); traceArcs(ctx, L, coastArcs);
     ctx.globalAlpha = satellite ? 0.55 : 1;
@@ -1656,11 +1656,6 @@
     if (!set || !ui.rivers || fade <= 0) return;
     var byRank = set.byRank, top = Math.min(byRank.length - 1, riverRank(S)), w = Math.max(0.6, Math.min(1.5, S / 700));
     ctx.save();
-    if (lakesShown.length) {
-      ctx.beginPath(); ctx.rect(-10, -10, W + 20, H + 20);
-      lakesShown.forEach(function (f) { traceFeature(ctx, f); });
-      ctx.clip("evenodd");
-    }
     ctx.globalAlpha = fade;
     ctx.strokeStyle = pal.river; ctx.lineJoin = "round"; ctx.lineCap = "round";
     for (var r = 1; r <= top; r++) {
@@ -2592,9 +2587,7 @@
   var lakes = null, lakesLoad = null, LAKES_FROM = 650, SMALL_LAKE = 500, MID_LAKE = 1500, lakesDrawn = 0;
   function lakeHidden(L) { return L.km2 < SMALL_LAKE ? !ui.lakes : L.km2 < MID_LAKE && !ui.midLakes; }
   function lakeKmPx(S) { return (flat ? FB.k : S) / R_KM; }
-  var lakesShown = [];
   function drawLakes(S, satellite) {
-    lakesShown = [];
     if (S < LAKES_FROM) return;
     if (!lakesLoad) lakesLoad = fetchJSON("data/lakes.json").then(function (rows) {
       lakes = rows.map(function (r) {
@@ -2613,7 +2606,7 @@
       if (lakeHidden(L)) continue;
       var p = projectVec(L.v[0], L.v[1], L.v[2], L.lam, L.phi), r = L.reach * kp;
       if (!p || p[0] + r < 0 || p[0] - r > W || p[1] + r < 0 || p[1] - r > H) continue;
-      traceFeature(ctx, L.f); any = true; lakesDrawn++; lakesShown.push(L.f);
+      traceFeature(ctx, L.f); any = true; lakesDrawn++;
     }
     if (!any) return;
     ctx.save();

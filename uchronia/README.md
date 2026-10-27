@@ -281,9 +281,12 @@ of `/greatercircle/`.
   under their borders: the largest (the Amazon, the Nile, the Yangtze) from
   the whole globe, and smaller ones in nine steps as the map is zoomed in;
   past about 3.5 times zoom a more detailed set, with the smaller rivers and
-  more than twice the points per river, is loaded and drawn instead. Where
-  a lake is drawn, the rivers are cut out of it, so a river that runs
-  through a reservoir stops at its shore and starts again past it. Their
+  more than twice the points per river, is loaded and drawn instead. The
+  rivers are drawn before the lakes, so every lake that is drawn covers the
+  rivers running through it, and a river that runs through a reservoir
+  stops at its shore and starts again past it. (They were once cut out
+  with an even-odd clip, which let a river show through where two of
+  Natural Earth's lake sets overlap.) Their
   names are set in italic beside them, letter by letter, from the largest
   down as the zoom allows, giving way to country and city names. A name is
   tried only at fixed places along its river, every half a name's length in

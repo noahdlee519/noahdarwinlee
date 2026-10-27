@@ -955,8 +955,8 @@
     ctx.restore();
     drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
 
-    drawLakes(kp);
     drawRivers(S);
+    drawLakes(kp);
 
     drawDivisionLines(snap, L, landPath, S);
     syncKey();
