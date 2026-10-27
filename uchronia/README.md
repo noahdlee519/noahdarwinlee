@@ -148,7 +148,7 @@ of `/greatercircle/`.
     - buttons framed like engraved plates, in a double rule with a small dot
       at each corner (in paper on a pressed button), and icons drawn as
       engravings, with fine hatching: a manicule for Select, a pennon over a
-      hillock for Give land, a church and houses for Settlements, swashed
+      hillock for Give land, swashed
       arrows for undo and redo, a rolled map and a globe on its stand for the
       flat map and the globe, a Montgolfier balloon for the satellite view, and
       an open or closed eye for hiding the interface. They are inline SVG
@@ -237,7 +237,7 @@ of `/greatercircle/`.
     edit or rename.
   - Country names and settlements can each be hidden (in the View menu);
     hiding settlements hides their marks and names together, except the one
-    picked and all of them while the Settlements tool is in use.
+    picked and all of them while *New city* is on.
 - **Settlements** are placed in order of rank: capitals first, then cities,
   towns, and small towns, each giving way to those before it, mark and name
   alike: a smaller place is left off, or its name moved, if either would
@@ -252,7 +252,7 @@ of `/greatercircle/`.
   white circle, in every style, each with its own size of name; in Antique
   the names are a size larger, on a heavier halo, to read clearly over the
   coloured map. Where a capital's name has no room, its mark is still drawn,
-  and with the Settlements tool a click on a city that is not drawn picks it
+  and with *New city* on, a click on a city that is not drawn picks it
   rather than founding another on top of it.
 - **Small towns.** Off unless **View → Small towns** is ticked: past the zoom
   at which the map's own cities are all shown, some 40,000 more places are
@@ -518,7 +518,8 @@ of `/greatercircle/`.
 
 ## Using it
 
-- The bar along the top holds the tools, *New country*, undo and redo, and
+- The bar along the top holds the tools (Select and Give land), *New country*
+  and *New city*, undo and redo, and
   **Historian** and three menus: **Check**, **File** (copy a link, save a file, open one, start
   over, the tutorial) and **View** (the style, country names, names of seas, lakes, and
   rivers, settlements, small towns, region borders (every line inside the
@@ -526,9 +527,9 @@ of `/greatercircle/`.
   latitude and longitude, the scale bar, finer regions). Historian and the
   menus each carry a caret. The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
-  without the tools' names; one row without the title; the tools and *New
-  country* above undo and the menus; the tools above *New country* and the
-  menus; and each on a row of its own, and keeps the first in which nothing
+  without the tools' names; one row without the title; the tools, *New
+  country*, and *New city* above undo and the menus; the tools above *New
+  country*, *New city*, and the menus; and each on a row of its own, and keeps the first in which nothing
   overlaps or runs off the edge. It fits again when the window, the style, or
   the Check badge changes. The bar ends in a ruled border drawn like a
   map's: in the Antique style the neat line of an engraved atlas, a heavy
@@ -557,7 +558,7 @@ of `/greatercircle/`.
   seconds in; otherwise just under a second). It is not shown to a visitor
   returning from Google sign-in, or while the historian is open. Each card
   names a part of the page and what it does: the map controls, Select, Give
-  land, Settlements, *New country*, undo, Historian, Check, File, and View,
+  land, *New country*, *New city*, undo, Historian, Check, File, and View,
   between a welcome and a closing card. Two more after Historian open its
   panel: one rings the turning point's details, the other *Saved* (for
   asking more, the historian's edits, and saved histories); the panel closes
@@ -800,7 +801,8 @@ of `/greatercircle/`.
   A fresh map has nothing to fix, and a country just founded is left out
   until it is let go, so the count does not rise while it is being made.
 - The **ⓘ** button by the title opens a short note on the map, a link that
-  opens Historian, a link to r/uchronia, its keys, links to its sources, and,
+  opens Historian, a link to r/uchronia, a link to [CHRONIA](../chronia/) for
+  the borders as they really were, its keys, links to its sources, and,
   after Privacy and Terms, a DONATE button that opens
   [ko-fi.com/noahdarwinlee](https://ko-fi.com/noahdarwinlee) in a new tab; a second click closes it.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
@@ -863,7 +865,8 @@ of `/greatercircle/`.
   (`DISPUTED_BY` in `app.js`). Land made disputed between the same
   claimants joins it, and hovering it reads *Siachen Glacier, disputed
   between India and Pakistan*.
-- **Settlements (C)**: click to found a city; click one to pick it, then drag
+- **New city (C)**: a button beside *New country* that stays pressed while it
+  is on. Click the map to found a city; click one to pick it, then drag
   it to move it (a drag on a city that isn't picked moves the map). A picked
   settlement can be a capital, a city, a town, or a small town; small towns
   show only close up, with the smallest mark.
@@ -908,7 +911,7 @@ in the repo. They covered:
 - the Check menu (a clean map, a forgotten city and country, going to one and
   renaming it), the greyed-out inner borders, rivers fading out up close, and
   Antique's two-tone sea with the satellite view on;
-- a hidden capital picked by the Settlements tool, the about note opening and
+- a hidden capital picked with *New city* on, the about note opening and
   closing, the latitude and longitude labels thinning out on the whole flat
   map, and the phone's larger buttons;
 - the themed tooltips (delay, placement, keyboard focus, Escape, the three

@@ -1621,6 +1621,18 @@ body.uc-page {
   content: "+ ";
   color: var(--uc-muted);
 }
+.uc-btn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+.uc-btn[aria-pressed="true"]::before {
+  color: inherit;
+}
+.uc-new {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .uc-linkbtn {
   padding: 0;
   border: 0;
@@ -2498,7 +2510,8 @@ a.uc-menu-item {
 }
 :root[data-uc-style="antique"] .uc-ctl[aria-pressed="true"]:not(.uc-flat),
 :root[data-uc-style="antique"] .uc-ctl.is-on,
-:root[data-uc-style="antique"] .uc-tool[aria-pressed="true"] {
+:root[data-uc-style="antique"] .uc-tool[aria-pressed="true"],
+:root[data-uc-style="antique"] .uc-btn[aria-pressed="true"] {
   --corner: rgba(241, 231, 207, 0.8);
   box-shadow: inset 0 0 0 2px var(--ink), inset 0 0 0 2.7px rgba(241, 231, 207, 0.62);
 }

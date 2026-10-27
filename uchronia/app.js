@@ -4704,7 +4704,7 @@
   function renderPanel() {
     if (!feats) return;
     freshGroups();
-    document.querySelectorAll(".uc-tool").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tool === ui.tool || (b.dataset.tool === "land" && landTool()))); });
+    document.querySelectorAll("[data-tool]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.tool === ui.tool || (b.dataset.tool === "land" && landTool()))); });
     canvas.classList.toggle("is-tool-paint", ui.tool === "paint");
     canvas.classList.toggle("is-tool-city", ui.tool === "city");
     canvas.classList.toggle("is-tool-draw", ui.tool === "draw");
@@ -4922,7 +4922,7 @@
     lastEdit = { key: null, t: 0 };
   });
 
-  document.querySelectorAll(".uc-tool").forEach(function (b) { b.addEventListener("click", function () { setTool(b.dataset.tool); }); });
+  document.querySelectorAll("[data-tool]").forEach(function (b) { b.addEventListener("click", function () { setTool(b.dataset.tool); }); });
   $("country-name").addEventListener("input", function () {
     var c = currentCountry();
     if (c < 0) return;
@@ -5898,7 +5898,7 @@
     return l === Infinity ? el.getBoundingClientRect() : { left: l, top: t, right: r, bottom: btm };
   }
   function barFits() {
-    var panelBox = panel.getBoundingClientRect(), main = panel.querySelector(".uc-main"), boxes = [main.getBoundingClientRect(), $("new-country").getBoundingClientRect(), itemsBox(panel.querySelector(".uc-end"))];
+    var panelBox = panel.getBoundingClientRect(), main = panel.querySelector(".uc-main"), boxes = [main.getBoundingClientRect(), itemsBox(panel.querySelector(".uc-new")), itemsBox(panel.querySelector(".uc-end"))];
     if (main.scrollWidth > main.clientWidth + 1) return false;
     for (var i = 0; i < boxes.length; i++) {
       var a = boxes[i];
@@ -7701,8 +7701,8 @@
     { target: ".uc-controls", title: "Moving the map", text: "Drag the globe to turn it, and scroll or pinch to zoom. These buttons zoom, switch to the flat map (M) or the satellite view (S), and hide the interface (H)." },
     { target: "[data-tool=\"select\"]", title: "Select", text: "Select (V): click a country to rename or recolour it, make it a subject of another, or dissolve it. Click a city to rename it, change its size, or drag it somewhere else." },
     { target: "[data-tool=\"land\"]", title: "Give land", text: "Give land (B): choose a country, then click or drag over states and provinces to give them to it. Whole countries go in one click, the lasso (D) draws round land freehand, and Disputed stripes land between its claimants." },
-    { target: "[data-tool=\"city\"]", title: "Settlements", text: "Settlements (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
     { target: "#new-country", title: "New country", text: "Founds a country with a name and a colour of its own. Give it land next." },
+    { target: "[data-tool=\"city\"]", title: "New city", text: "New city (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
     { target: "#undo", title: "Undo", text: "Every change is one step. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
     { target: "#history-btn", title: "Historian", text: "A historian of your world, played by Claude. It writes how your map came to be: where this world parted from ours and what followed, era by era, with every place it names linked to the map. It needs a Google sign-in, and each account can ask five times a day." },
     { target: "#history-turn-fields|#history", history: "turn", title: "Redraw from a turning point", text: "Or give it a what-if, such as “What if Rome never fell?”, and it redraws the world itself. The details are optional: when history parts from ours, the year to show, where to focus, what to leave alone, and how far to take it. While it works, it shows each step it is on." },
