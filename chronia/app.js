@@ -2053,6 +2053,13 @@
     groundCache.set(key, hit);
     return hit;
   }
+  function upright(g) {
+    var tl = Math.hypot(g.tx, g.ty), nl = Math.hypot(g.nx, g.ny);
+    if (!(tl > 0) || !(nl > 0)) return;
+    var px = -g.ty / tl * nl, py = g.tx / tl * nl;
+    if (px * g.nx + py * g.ny < 0) { px = -px; py = -py; }
+    g.nx = px; g.ny = py;
+  }
   function glyphLayout(fr, fm, o, f, people, scale) {
     var ca = Math.cos(fm.ang), sa = Math.sin(fm.ang), inv = 1 / scale, spx = f * o.space, L = o.lines.length, sh = 0, i, j;
     if (fr.flat) { var lam = fr.lc + fm.u / GU; sh = FB.wrap ? wrapPi(lam - FB.xc) - (lam - FB.xc) : wrapPi(lam) - lam; }
@@ -2069,6 +2076,7 @@
         if (q[2] < 0.22) return null;
         var qa = screenAt(fr, pu + ca * inv, pv + sa * inv, sh), qb = screenAt(fr, pu - sa * inv, pv + ca * inv, sh);
         var g = { ch: chars[j], x: q[0], y: q[1], tx: qa[0] - q[0], ty: qa[1] - q[1], nx: qb[0] - q[0], ny: qb[1] - q[1], adv: adv[j] };
+        upright(g);
         nmax = Math.max(nmax, Math.hypot(g.nx, g.ny));
         gl.push(g);
         t += adv[j] + spx;
