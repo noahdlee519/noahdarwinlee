@@ -4579,7 +4579,7 @@
       else setHint([verb + " a country or a city to change it, or found a new country"]);
     } else if (ui.tool === "paint") {
       var to = brush();
-      var more = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : "";
+      var more = canHover ? " | Shift-drag moves the " + where + " | Alt-click picks a country" : "";
       if (to === UNCLAIMED) setHint([(canHover ? "Click or drag over" : "Tap") + " regions to leave them unclaimed" + more]);
       else if (ui.dispute && to === null) setHint([verb + " the countries that claim the land, at least two, or add them in the bar"]);
       else if (ui.dispute) setHint([(canHover ? "Click or drag over" : "Tap") + (ui.whole ? " countries to make them disputed between " : " regions to make them disputed between ") + claimNames(liveClaims()) + more]);
@@ -4587,7 +4587,7 @@
       else setHint([(canHover ? "Click or drag over" : "Tap") + (ui.whole ? " countries to give them whole to " : " regions to give them to "), { b: countries[to].name }, more]);
     } else if (ui.tool === "draw") {
       var dto = brush();
-      var dmore = canHover ? " · Shift-drag moves the " + where + " · Alt-click picks a country" : " · two fingers move the " + where;
+      var dmore = canHover ? " | Shift-drag moves the " + where + " | Alt-click picks a country" : " | two fingers move the " + where;
       if (dto === UNCLAIMED) setHint([(canHover ? "Drag" : "Draw") + " round land to leave it unclaimed" + dmore]);
       else if (ui.dispute && dto === null) setHint([verb + " the countries that claim the land, at least two, or add them in the bar"]);
       else if (ui.dispute) setHint([(canHover ? "Drag" : "Draw") + " round land to make it disputed between " + claimNames(liveClaims()) + dmore]);
@@ -4616,7 +4616,7 @@
       var parts = [];
       if (n || !drawn) parts.push(n.toLocaleString() + (n === 1 ? " region" : " regions"));
       if (drawn) parts.push(drawn + (drawn === 1 ? " drawn area" : " drawn areas"));
-      var facts = land ? parts.join(" and ") + " · " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " · capital " + capital.name : "") : "No land yet: Give land (B) gives it some";
+      var facts = land ? parts.join(" and ") + " | " + Math.round(countryArea(c)).toLocaleString() + " km²" + (capital ? " | capital " + capital.name : "") : "No land yet: Give land (B) gives it some";
       $("country-facts").textContent = facts;
       if (ui.tool === "select" && !ui.city && !sheetMode) setHint([{ b: countries[c].name }, ": " + facts]);
       var hideLines = countries[c].lines || 0;
@@ -5865,16 +5865,17 @@
   panel.addEventListener("pointercancel", endSheetDrag);
 
   var BASE_COLORS = {
-    AFG: 6, AGO: 5, ARE: 3, ARG: 6, ATA: 2, AUS: 0, AUT: 6, AZE: 6, BEL: 9, BEN: 5, BFA: 2, BGD: 5, BGR: 7,
+    AFG: 6, AGO: 5, ARE: 3, ARG: 6, ATA: 2, AUS: 0, AUT: 2, AZE: 6, BEL: 0, BEN: 5, BFA: 2, BGD: 5, BGR: 7,
     BLR: 5, BOL: 0, BRA: 8, BWA: 9, CAF: 8, CAN: 9, CHL: 3, CHN: 3, CIV: 7, CMR: 4, COD: 2, COG: 3, COL: 4,
     CRI: 5, CUB: 2, CZE: 0, DEU: 9, ECU: 8, EGY: 9, ERI: 8, ESP: 0, EST: 4, ETH: 5, FIN: 2, FRA: 7, GAB: 9,
-    GBR: 3, GHA: 8, GIN: 0, GRC: 6, GRL: 3, GTM: 9, GUY: 4, HND: 7, HUN: 2, IDN: 5, IND: 9, IRL: 9, IRN: 2,
+    GBR: 3, GHA: 8, GIN: 0, GRC: 6, GRL: 3, GTM: 9, GUY: 4, HND: 7, HUN: 1, IDN: 5, IND: 9, IRL: 9, IRN: 2,
     IRQ: 5, ISL: 2, ITA: 8, JOR: 3, JPN: 5, KAZ: 7, KEN: 9, KGZ: 2, KHM: 4, LAO: 7, LBR: 3, LBY: 5, LKA: 4,
     LTU: 3, LVA: 9, MAR: 7, MDA: 1, MDG: 6, MEX: 4, MLI: 6, MMR: 2, MNG: 0, MOZ: 8, MRT: 8, MWI: 7, MYS: 2,
     NAM: 2, NER: 7, NIC: 1, NLD: 1, NOR: 6, NZL: 4, OMN: 5, PAK: 1, PER: 2, PHL: 9, PNG: 1, POL: 4, PRK: 7,
     PRT: 6, PRY: 5, ROU: 0, RUS: 8, SAH: 4, SAU: 7, SDS: 0, SEN: 3, SLE: 7, SOL: 0, SOM: 4, SRB: 2, SUR: 0,
-    SVK: 7, SWE: 7, SYR: 0, TCD: 3, THA: 0, TJK: 8, TKM: 3, TUN: 3, TUR: 3, TZA: 5, UGA: 7, UKR: 6, URY: 0,
-    USA: 6, UZB: 0, VEN: 9, VNM: 1, YEM: 2, ZAF: 6, ZMB: 0, ZWE: 4
+    SVK: 7, SWE: 7, SYR: 0, TCD: 3, THA: 0, TJK: 8, TKM: 3, TUN: 3, TUR: 1, TZA: 5, UGA: 7, UKR: 6, URY: 0,
+    USA: 6, UZB: 0, VEN: 9, VNM: 1, YEM: 2, ZAF: 6, ZMB: 0, ZWE: 4,
+    ALB: 1, BIH: 9, CHE: 3, DNK: 3, HRV: 6, KOS: 8, LUX: 8, MKD: 3, MNE: 4, SVN: 5
   };
   function colorAll() {
     freshGroups();
@@ -6348,7 +6349,7 @@
     var s = signedIn() ? session : null;
     $("history-signin").hidden = !!s;
     $("history-account").hidden = !s;
-    if (s) $("history-who").textContent = (s.email || "Signed in") + (historianLeft === null ? "" : " · " + historianLeft + " of " + historianCap + " left today");
+    if (s) $("history-who").textContent = (s.email || "Signed in") + (historianLeft === null ? "" : " | " + historianLeft + " of " + historianCap + " left today");
     if ($("history-ask-go")) syncAsk();
   }
   function syncAccount() {
@@ -6857,7 +6858,7 @@
   function showAsked(q) {
     var parts = splitPremise(q || ""), e = $("history-asked"), m = $("history-asked-more");
     e.textContent = parts.main; e.hidden = !parts.main || savedOpen();
-    m.textContent = parts.details.join(" \u00b7 "); m.hidden = !parts.details.length || e.hidden;
+    m.textContent = parts.details.join(" | "); m.hidden = !parts.details.length || e.hidden;
   }
   function showConv(c) {
     describeChanges();
@@ -6898,7 +6899,7 @@
       if (askedOf(c)) bits.push(askedOf(c));
       if (c.turns.length) bits.push(c.turns.length + (c.turns.length === 1 ? " question" : " questions"));
       if (cur && cur.id === c.id) { bits.push("open"); b.setAttribute("aria-current", "true"); }
-      m.className = "uc-chron-item-m"; m.textContent = bits.join(" · ");
+      m.className = "uc-chron-item-m"; m.textContent = bits.join(" | ");
       b.appendChild(t); b.appendChild(m);
       b.addEventListener("click", function () {
         if (historyBusy) return;
@@ -7012,8 +7013,8 @@
   function syncAsk() {
     document.body.classList.toggle("uc-thinking", historyBusy);
     if (savedOpen()) renderSaved();
-    $("history-go").disabled = historyBusy || !signedIn() || (askMode === "map" && !describeChanges());
-    $("history-ask-go").disabled = historyBusy || !signedIn();
+    $("history-go").disabled = historyBusy || (askMode === "map" && !describeChanges());
+    $("history-ask-go").disabled = historyBusy;
   }
   function showAsk(open) {
     $("history-ask").hidden = !open || savedOpen();
@@ -7096,7 +7097,17 @@
   }
   $("history-btn").addEventListener("click", function () { showHistory($("history").hidden); });
   $("history-close").addEventListener("click", function () { showHistory(false); $("history-btn").focus(); });
-  $("history-go").addEventListener("click", function () { if (askMode === "turn") redrawMap(); else writeHistory(); });
+  // Signed out, the buttons still work: they point to the sign-in instead.
+  function needSignIn() {
+    if (signedIn()) return false;
+    historyStatus(SIGN_IN + " Each account can ask five times a day.");
+    var g = $("history-google");
+    g.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    g.focus({ preventScroll: true });
+    g.classList.remove("is-nudged"); void g.offsetWidth; g.classList.add("is-nudged");
+    return true;
+  }
+  $("history-go").addEventListener("click", function () { if (needSignIn()) return; if (askMode === "turn") redrawMap(); else writeHistory(); });
   $("mode-map").addEventListener("click", function () { setMode("map"); });
   $("mode-turn").addEventListener("click", function () { setMode("turn"); });
   $("history-new").addEventListener("click", function () {
@@ -7219,7 +7230,7 @@
           partDone[id] = true;
           if (plan) plans.push(plan); else failed.push(id);
           progress();
-          if (left > 0 && !done) workSay((plan ? "Finished " : "Could not finish ") + (names[id] || "a part") + " \u00b7 " + (total - left) + " of " + total + " parts drawn");
+          if (left > 0 && !done) workSay((plan ? "Finished " : "Could not finish ") + (names[id] || "a part") + " | " + (total - left) + " of " + total + " parts drawn");
           if (left > 0 && plan && !done) draw();
           settle();
         };
@@ -7340,10 +7351,10 @@
       finish("The historian could not be reached. Check your connection and try again.");
     });
   }
-  $("history-ask-go").addEventListener("click", askHistorian);
+  $("history-ask-go").addEventListener("click", function () { if (!needSignIn()) askHistorian(); });
   $("history-google").addEventListener("click", signIn);
   $("history-signout").addEventListener("click", function () { keepSession(null); showAccount(); });
-  $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); askHistorian(); } });
+  $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("history-ask-go").click(); } });
   $("history-saved-btn").addEventListener("click", function () { showSaved($("history-saved").hidden); });
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
