@@ -7075,14 +7075,24 @@
     return { q: qe, a: ae };
   }
   function syncLatest() {
-    var qs = $("history-turns").querySelectorAll(".uc-chron-q"), last = qs.length && $("history-chat").hidden === false ? qs[qs.length - 1].textContent : "";
-    var l = $("history-latest"), m = $("history-latest-more"), a = $("history-asked"), text = last || a.textContent, more = last ? "" : $("history-asked-more").textContent;
+    var shown = "", line = document.querySelector(".uc-chron-top").getBoundingClientRect().bottom + 1;
+    if ($("history-chat").hidden === false) {
+      var qs = $("history-turns").querySelectorAll(".uc-chron-q");
+      for (var i = 0; i < qs.length && qs[i].getBoundingClientRect().top <= line; i++) shown = qs[i].textContent;
+    }
+    var l = $("history-latest"), m = $("history-latest-more"), a = $("history-asked"), text = shown || a.textContent, more = shown ? "" : $("history-asked-more").textContent;
     if (l.textContent !== text) { l.textContent = text; l.setAttribute("aria-expanded", "false"); m.classList.remove("is-open"); }
-    m.textContent = more;
+    if (m.textContent !== more) m.textContent = more;
     l.hidden = !text || savedOpen();
     m.hidden = l.hidden || !more;
-    $("history").classList.toggle("is-asked-top", !last);
+    $("history").classList.toggle("is-asked-top", !!a.textContent);
   }
+  var latestQueued = false;
+  $("history").addEventListener("scroll", function () {
+    if (latestQueued) return;
+    latestQueued = true;
+    requestAnimationFrame(function () { latestQueued = false; syncLatest(); });
+  }, { passive: true });
   function askedOf(c) { return c.asked || (c.premise || "").split("\n")[0] || c.note || ""; }
   function savedOpen() { return !$("history-saved").hidden; }
   function showAsked(q) {

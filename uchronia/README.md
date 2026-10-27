@@ -666,13 +666,15 @@ of `/greatercircle/`.
     the form alone, with *Cancel* to go back.
   - The top of the panel stays in place while the history scrolls beneath
     it: the title with *New history*, *Saved*, and the close button, the
-    account's email with *Sign out*, and the most recent prompt, which is the
-    question asked last in the conversation or, before any, the history's own
-    turning point or note. A long prompt is cut to three lines; clicking it
-    shows it whole. When the history's own prompt is the one at the top, it
-    is not repeated above the history. In the code, `.uc-chron-top` is the
-    sticky block and `syncLatest()` fills `#history-latest` whenever the
-    asked question, the conversation, or the Saved list changes.
+    account's email with *Sign out*, and the prompt behind the answer being
+    read: the history's own turning point or note while the history is in
+    view, and a follow-up question once its answer has scrolled up under the
+    top. A long prompt is cut to three lines; clicking it shows it whole. The
+    history's own prompt is shown only at the top, not again above the
+    history. In the code, `.uc-chron-top` is the sticky block, and
+    `syncLatest()` fills `#history-latest` with the last question whose top
+    has passed under the block, on every scroll (once a frame) and whenever
+    the asked question, the conversation, or the Saved list changes.
   - **What it will not write.** Every request carries the same limits: nothing
     that celebrates, excuses, or calls for genocide, ethnic cleansing, slavery,
     terrorism, or hatred of a people; nothing sexual; nothing aimed at a real
