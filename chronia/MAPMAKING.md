@@ -115,6 +115,7 @@ These follow the rules already used for 1400 to 1885 (see the README's [Names fi
 - **Colours** are never chosen by hand. A dependency takes its ruler's colour, and a lineage shares one colour through time (`LINEAGE`). The builder keeps colours stable from build to build.
   - Add a lineage only when it is one continuous state under changing names, such as Muscovy into Russia, or Wessex into England. Don't add one for a claimed succession, such as a modern state "descending" from an ancient one.
   - If two neighbours end up in one colour because of a lineage, break it with `NO_LINK`. That's what was done for Czechoslovakia against Romania. Don't reshuffle colours.
+  - Where two touching states still share a colour because both have base colours, or one is a colony in its ruler's colour, the builder's `windowColours` gives one of them another colour for just the years they touch, and its own colour again after (Noah's decision; see below). `COLOUR_FROM` does the same from a date for a state whose successor's colour it takes back (Czechoslovakia takes the Czech Republic's from 8 May 1945). Don't set these colours by hand.
 - **Base colours:** the 132 base colours of 2019 come from a reference map Noah chose, and are not to be changed.
 
 ## Shapes
@@ -126,7 +127,8 @@ These follow the rules already used for 1400 to 1885 (see the README's [Names fi
   - UCHRONIA's provinces and second-level units;
   - rivers, used as borders where the sources say a river was the border.
 - **When a shape has to be drawn from an atlas,** trace it from a cited, georeferenced map. Record the map, its scale, and the method in the ledger, and set precision to 1.
-- **One owner per place.** Shapes on one map don't overlap. Where two sources overlap, the builder's rules decide (the smaller keeps the overlap); don't paper over it by hand.
+- **One owner per place.** Shapes on one map don't overlap. Where two sources overlap, the builder's rules decide (the smaller keeps the overlap); don't paper over it by hand. `resolveOverlaps` applies them to every span at the end of the build: a state's own duplicates are dropped, a people gives way to a state, a dependency keeps its land against its ruler, a state lying mostly inside another keeps its land, a border of precision 1 gives way to a firmer one, and any other overlap is cut from the larger, except a large one between two firmly drawn states (over 10,000 km² and a tenth of the smaller), which becomes disputed land.
+- **Disputed land** (status 6, striped in its claimants' colours) is for land two states both held or claimed: the overlaps above, and the disputes listed in `DISPUTES`, each with its Natural Earth shape, its dates, its holder, and its claimants, and a ledger entry with its sources.
 - **No slivers.** Pieces narrower or smaller than the builder's limits are dropped. Don't defeat the limits to keep a sliver that the sources' differing coastlines made.
 - **Continuity:** a state that exists on two neighbouring maps should change shape between them only for a reason a source gives.
 
@@ -198,6 +200,8 @@ These were settled with Noah. Don't reopen them without asking.
 
 - **Sources:** up to 1400 the borders are historical-basemaps' snapshots; from 1400 to 1885, Cliopatria, filled from historical-basemaps; from 1886, CShapes 2.0, dated to the day. A source is never mixed into a period by hand. A change of source for a period is a decision for Noah.
 - **Colours:** the reference map's base colours win over keeping every pair of neighbours apart. Lineages carry a modern state's colour back through time. A dependency is shown in its ruler's colour.
+- **Colours while touching** (27 October 2026): where two touching states would still share a colour, one takes another colour only for the years they touch, then its own again. Noah asked for this for Czechoslovakia (its own colour while it bordered Romania, the Czech Republic's after), and for the other pairs.
+- **Disputed land** (27 October 2026): overlaps between two states are cleaned up by the rules under Shapes, and only large ones between firmly drawn states are shown as disputed, striped in the claimants' colours. Well-known disputes the sources give to one side are shown from the dated `DISPUTES` list. Taiwan is not shown as disputed.
 - **Name, not just colour:** a state is named for its regime at the date, through `REGIMES` and `NAME_FIX`, rather than keeping one name across regimes.
 - **Signs of doubt:** borders before 1648 are drawn dotted, peoples are uncoloured and in italics, and "approximate" borders say so on the card.
 - **Leaving things out:** small territories the sources lose are added from Natural Earth's shapes (`SMALL`), not drawn by hand. Thin or patchy data is left out rather than shown misleadingly. In UCHRONIA, Uruguay's and Guyana's second level was left out for this reason, and Colombia's 1,121 municipalities were grouped into the departments' own subregions as the more useful level.

@@ -395,10 +395,30 @@
   function isModern(t) { return !!modern && t >= modern.fromTime; }
   function isDated(t) { return !!dated && !isModern(t) && t >= dated.from - 0.5; }
 
+  var DISPUTED = 6;
+  function apart(cols) {
+    var out = [];
+    cols.forEach(function (c) {
+      var k = c, tries = 0;
+      while (out.indexOf(k) >= 0 && tries++ < PALETTE) k = (k + 5 + tries) % PALETTE;
+      out.push(k);
+    });
+    return out;
+  }
   function polityName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
-  function polityColor(id) {
+  var colourDays = [], colourYears = [];
+  function colourMarks() {
+    var d = new Set(), y = new Set();
+    catalogue.forEach(function (e) { (e[7] || []).forEach(function (s) { d.add(s[0]); }); (e[8] || []).forEach(function (s) { y.add(s[0]); }); });
+    colourDays = Array.from(d).sort(function (a, b) { return a - b; });
+    colourYears = Array.from(y).sort(function (a, b) { return a - b; });
+  }
+  function marksBefore(list, t) { var n = 0; while (n < list.length && list[n] <= t) n++; return n; }
+  function polityColor(id, day, year) {
     var e = catalogue[id];
     if (!e) return 0;
+    var steps = day !== undefined ? e[7] : year !== undefined ? e[8] : null, t = day !== undefined ? day : year;
+    if (steps) for (var k = steps.length - 1; k >= 0; k--) if (t >= steps[k][0]) return steps[k][1];
     if (e[1] >= 0) return e[1];
     var h = 0;
     for (var i = 0; i < e[0].length; i++) h = (h * 31 + e[0].charCodeAt(i)) >>> 0;
@@ -461,12 +481,12 @@
     return out;
   }
   function modernSnap(day) {
-    var idx = activeRows(day), key = "m" + idx.join(",");
+    var idx = activeRows(day), key = "m" + idx.join(",") + "|" + marksBefore(colourDays, day);
     var snap = modernSnaps.get(key);
     if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
-      var r = modern.rows[ri], hue = r[1] >= 0 ? r[1] : r[0];
-      return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: 3, people: false, label: r[6], hue: hue, color: polityColor(hue), soft: false, status: r[4], cap: r[5], start: r[2], end: r[3] };
+      var r = modern.rows[ri], hue = r[1] >= 0 ? r[1] : r[0], claims = r[4] === DISPUTED && r[7] ? r[7] : null;
+      return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: 3, people: false, label: r[6], hue: hue, color: claims ? -1 : polityColor(hue, day), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, day); })) : null, soft: !!claims, status: r[4], cap: claims ? null : r[5], start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, modern: true, polys: polys, topo: { hi: modern.hi, lo: modern.lo },
@@ -498,12 +518,12 @@
   function datedSnap(k, y) {
     var c = dated.chunks[k], rows = c.data.rows, idx = [], soft = y < SOFT_BEFORE;
     for (var i = 0; i < rows.length; i++) if (rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
-    var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",");
+    var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y);
     var snap = datedSnaps.get(key);
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
-      var r = rows[ri], people = !!r[7], hue = r[1] >= 0 && !people ? r[1] : r[0];
-      return { i: i, row: ri, id: r[0], ruler: people ? -1 : r[1], part: r[8], b: r[9], people: people, label: r[6], hue: hue, color: people ? -1 : polityColor(hue), soft: soft || r[9] <= 1 || people, status: r[4], cap: null, start: r[2], end: r[3] };
+      var r = rows[ri], people = !!r[7], hue = r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], b: r[9], people: people, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: null, start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, topo: { hi: c.data.hi, lo: c.data.lo },
@@ -543,18 +563,21 @@
     var cached = geoms.map(function (g) { return featOf(topo, key, g); });
     var geo = cached.map(function (c) { return c.geo; });
     var feats = cached.map(function (c) { return c.prep; });
-    var colOf = function (g) { var p = polys[ix.get(g)]; return p && !p.people ? p.color : -1; };
+    var colOf = function (g) { var p = polys[ix.get(g)]; return p && !p.people && !p.claims ? p.color : -1; };
     var groups = [];
     for (var c = 0; c < PALETTE; c++) groups.push([]);
-    var peoples = [], unnamed = [];
+    var peoples = [], unnamed = [], disputes = new Map();
     polys.forEach(function (p, i) {
-      var target = !p ? unnamed : p.people ? peoples : groups[p.color];
+      var dk = p && p.claims ? p.claimColors.join(",") : null;
+      if (dk && !disputes.has(dk)) disputes.set(dk, { cols: p.claimColors, feats: [] });
+      var target = !p ? unnamed : p.people ? peoples : dk ? disputes.get(dk).feats : groups[p.color];
       for (var j = 0; j < feats[i].length; j++) target.push(feats[i][j]);
     });
     var kind = function (a, b) {
       var pa = polys[ix.get(a)], pb = polys[ix.get(b)];
       if (!pa && !pb) return 0;
       if (pa && pb && pa.id === pb.id) return 0;
+      if ((pa && pa.claims) || (pb && pb.claims)) return 2;
       var soft = (pa ? pa.soft : false) || (pb ? pb.soft : false);
       if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
       return soft ? 2 : 1;
@@ -563,12 +586,12 @@
     var mesh = function (fn) { return prepareLines(topojson.mesh(topo, collection, fn)); };
     var edges = outerEdges(topo, geoms, function (g) {
       var p = polys[ix.get(g)];
-      return !p ? null : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
+      return !p ? null : p.claims ? "d" : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
     });
     var arcsOf = function (lines) { return lines.map(prepareArc); };
     L = {
       topo: topo, geoms: geoms, polys: polys,
-      geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed,
+      geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed, disputes: Array.from(disputes.values()),
       hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }).concat(arcsOf(edges.hard)),
       soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }).concat(arcsOf(edges.soft)),
       kin: mesh(function (a, b) { return a !== b && kind(a, b) === 3; }),
@@ -612,6 +635,7 @@
       var coastal = [], inner = [];
       splitCoast(lines, coastal, inner);
       if (b === "p") { out.peopleBleed = coastal; out.soft = out.soft.concat(inner); return; }
+      if (b === "d") { out.soft = out.soft.concat(inner); return; }
       var col = +b.slice(1);
       out.bleed[col] = out.bleed[col].concat(coastal);
       out.inner[col] = out.inner[col].concat(inner);
@@ -910,6 +934,10 @@
       for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { g.fillStyle = colors[c]; g.fill(groupPaths[c]); }
     };
     paintFills(ctx, pal.colors);
+    L.disputes.forEach(function (d) {
+      var dp = new Path2D(); traceAll(dp, d.feats);
+      ctx.fillStyle = stripes(d.cols); ctx.fill(dp);
+    });
     if (bleed > 0.6) { ctx.strokeStyle = pal["people-fill"]; ctx.lineWidth = bleed; ctx.stroke(peopleBleed); }
     ctx.fillStyle = pal["people-fill"]; ctx.fill(peoplePath);
     ctx.fillStyle = pal.paper; ctx.fill(unnamedPath);
@@ -2882,10 +2910,27 @@
     scheduleRender();
   }
   var tip = $("tip");
+  function claimNames(ids) {
+    var n = ids.map(polityName);
+    return n.length < 3 ? n.join(" and ") : n.slice(0, -1).join(", ") + ", and " + n[n.length - 1];
+  }
+  var stripeCache = new Map();
+  function stripes(cols) {
+    var key = cols.join("|") + "|" + pal.colors.join(","), p = stripeCache.get(key);
+    if (p) return p;
+    var B = 12, cv = document.createElement("canvas");
+    cv.width = B * cols.length; cv.height = 2;
+    var g = cv.getContext("2d");
+    cols.forEach(function (col, i) { g.fillStyle = pal.colors[col]; g.fillRect(i * B, 0, B, 2); });
+    p = ctx.createPattern(cv, "repeat");
+    if (p && p.setTransform && window.DOMMatrix) p.setTransform(new DOMMatrix().rotateSelf(45).scaleSelf(0.5));
+    stripeCache.set(key, p);
+    return p;
+  }
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
     tip.textContent = dv ? dv + ", " + polityName(p.id) : polityName(p.id);
-    var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.people ? "a people or culture" : "";
+    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.people ? "a people or culture" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
@@ -3290,7 +3335,7 @@
     for (var i = 0; i < w.length; i++) if (w[i][0] <= y) t = w[i][1];
     return t;
   }
-  var STATUS = ["State", "Colony", "Protectorate", "Mandate", "Occupied territory", "Dependency"];
+  var STATUS = ["State", "Colony", "Protectorate", "Mandate", "Occupied territory", "Dependency", "Disputed land"];
   var STATUS_ASK = ["state", "colony", "protectorate", "mandate", "occupied", "dependency"];
   function isoDay(day) {
     var d = dateOfDay(day);
@@ -3375,6 +3420,11 @@
     var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
     var addPolity = function (id) { if (current.byId.has(id)) facts.appendChild(polityButton(id)); else addText(polityName(id)); };
     if (p) {
+      if (p.claims) {
+        addText("Disputed between ");
+        p.claims.forEach(function (c, k) { if (k) addText(k === p.claims.length - 1 ? (p.claims.length > 2 ? ", and " : " and ") : ", "); addPolity(c); });
+        addText((datedNow ? " in " : " on ") + when + ". ");
+      }
       if (p.ruler >= 0) {
         addText("Held by "); addPolity(p.ruler);
         addText((datedNow ? " in " : " on ") + when + ". ");
@@ -3408,7 +3458,7 @@
     loadWiki(e[0], title, {
       ask: {
         kind: "state", name: e[0], wiki: title,
-        status: e[4] || (p && p.people) ? "people" : p && p.status > 0 ? STATUS_ASK[p.status] || "dependency" : p && p.ruler >= 0 ? "dependency" : "state",
+        status: e[4] || (p && p.people) ? "people" : p && p.claims ? "state" : p && p.status > 0 ? STATUS_ASK[p.status] || "dependency" : p && p.ruler >= 0 ? "dependency" : "state",
         ruler: p && p.ruler >= 0 ? polityName(p.ruler) : "",
         partOf: p && p.part >= 0 && p.part !== p.ruler ? polityName(p.part) : "",
         capital: p && p.cap ? capitalAt(p.cap, Math.min(dayOfTime(now), modern.toDay))[0] : "",
@@ -3658,8 +3708,9 @@
     town: function () { return layers.cities && !!cities && cityTier(localScale()) >= 2; },
     border: function (s) { return s.polys.some(function (p) { return p && !p.soft; }); },
     soft: function (s) { return s.polys.some(function (p) { return p && p.soft; }); },
-    dependency: function (s) { return s.polys.some(function (p) { return p && p.ruler >= 0; }); },
+    dependency: function (s) { return s.polys.some(function (p) { return p && p.ruler >= 0 && !p.claims; }); },
     people: function (s) { return s.polys.some(function (p) { return p && p.people; }); },
+    disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
     division: function () { return divDrawn; }
   };
   function syncKey() {
@@ -3880,6 +3931,7 @@
     ]).then(function (r) {
       var idx = r[0];
       catalogue = idx.polities;
+      colourMarks();
       maps = idx.maps.map(function (m) { return { y: m[0], file: "data/" + m[1], snap: null, loading: null }; });
       var md = r[3], from = idx.modern.from.split("-").map(Number), to = idx.modern.to.split("-").map(Number);
       modern = { rows: md.rows, hi: md.hi, lo: md.lo, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };

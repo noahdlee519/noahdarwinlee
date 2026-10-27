@@ -464,6 +464,94 @@ const subtract = (polys, clips) => {
     return rewind(rest);
   }
 };
+const snapPolys = (polys) => polys.map((poly) => poly.map((ring) => ring.map((q) => [Math.round(q[0] * 1e6) / 1e6, Math.round(q[1] * 1e6) / 1e6])));
+let unionDropped = 0, dissolved = 0;
+const unionSafe = (polys, adds) => {
+  try { return rewind(clip.union(polys, ...adds)); } catch (e) {}
+  let acc = polys;
+  for (const add of adds) for (const piece of add) {
+    try { acc = rewind(clip.union(acc, [piece])); continue; } catch (e) {}
+    try { acc = rewind(clip.union(snapPolys(acc), snapPolys([piece]))); continue; } catch (e) {}
+    try { acc = acc.concat(rewind(clip.difference([piece], acc))); } catch (e) { unionDropped++; }
+  }
+  return acc;
+};
+const overlapsItself = (polys) => {
+  if (polys.length < 2) return false;
+  const boxes = polys.map((p) => boxOf([p]));
+  for (let a = 0; a < polys.length; a++) for (let b = a + 1; b < polys.length; b++) {
+    const A = boxes[a], B = boxes[b];
+    if (A[2] <= B[0] || B[2] <= A[0] || A[3] <= B[1] || B[3] <= A[1]) continue;
+    let inter;
+    try { inter = clip.intersection([polys[a]], [polys[b]]); } catch (e) { return true; }
+    if (inter.some((p) => polyKm2(p) > 1)) return true;
+  }
+  return false;
+};
+const dissolveMemo = new WeakMap();
+const dissolveFeat = (ft) => {
+  if (dissolveMemo.has(ft)) return dissolveMemo.get(ft);
+  let out = ft;
+  const g = ft.geometry;
+  if (g && g.type === "MultiPolygon" && overlapsItself(g.coordinates)) {
+    const polys = unionSafe([g.coordinates[0]], [g.coordinates.slice(1)]);
+    out = { ...ft, geometry: { type: "MultiPolygon", coordinates: polys } };
+    dissolved++;
+  }
+  dissolveMemo.set(ft, out);
+  return out;
+};
+const DISPUTE_KM2 = 10000, DISPUTE_SHARE = 0.1, NEST_SHARE = 0.8, OVERLAP_KM2 = 50;
+function resolveOverlaps(list, label) {
+  const order = list.map((s, i) => i).sort((a, b) => list[a].box[0] - list[b].box[0]);
+  const edits = [], disputes = [], count = { same: 0, people: 0, ruler: 0, nested: 0, vague: 0, sliver: 0, disputed: 0 };
+  const area = new Map(), areaOf = (s) => { if (!area.has(s)) area.set(s, km2Of(s.polys)); return area.get(s); };
+  for (let x = 0; x < order.length; x++) {
+    const A = list[order[x]];
+    if (A.claims) continue;
+    for (let y = x + 1; y < order.length; y++) {
+      const B = list[order[y]];
+      if (B.box[0] > A.box[2]) break;
+      if (B.claims || B.last < A.first || A.last < B.first || !boxHit(A.box, B.box)) continue;
+      {
+        if (!A.cells) A.cells = cellsOf(A.polys);
+        if (!B.cells) B.cells = cellsOf(B.polys);
+        const [sm, bg] = A.cells.size <= B.cells.size ? [A, B] : [B, A];
+        let shared = false;
+        for (const i of sm.cells) if (bg.cells.has(i)) { shared = true; break; }
+        if (!shared) continue;
+      }
+      let inter = null;
+      try { inter = clip.intersection(A.polys, B.polys); } catch (e) {}
+      if (!inter) {
+        const aA0 = areaOf(A), aB0 = areaOf(B), first = Math.max(A.first, B.first), last = Math.min(A.last, B.last);
+        const lose = A.name === B.name ? (aA0 <= aB0 ? A : B) : A.people !== B.people ? (A.people ? A : B) : aA0 >= aB0 ? A : B;
+        edits.push({ base: lose, first, last, polys: (lose === A ? B : A).polys, add: false });
+        count.failed = (count.failed || 0) + 1;
+        continue;
+      }
+      const ia = km2Of(inter);
+      if (ia < OVERLAP_KM2) continue;
+      const first = Math.max(A.first, B.first), last = Math.min(A.last, B.last), aA = areaOf(A), aB = areaOf(B);
+      let lose = null, kind;
+      if (A.name === B.name) { lose = aA <= aB ? A : B; kind = "same"; }
+      else if (A.people || B.people) { lose = A.people && B.people ? (aA <= aB ? A : B) : A.people ? A : B; kind = "people"; }
+      else if (A.ruler === B.name || B.ruler === A.name) { lose = A.ruler === B.name ? B : A; kind = "ruler"; }
+      else if (A.ruler && A.ruler === B.ruler) { lose = aA >= aB ? A : B; kind = "ruler"; }
+      else if (ia >= NEST_SHARE * Math.min(aA, aB)) { lose = aA >= aB ? A : B; kind = "nested"; }
+      else if ((A.b ?? 3) <= 1 || (B.b ?? 3) <= 1) { lose = (A.b ?? 3) < (B.b ?? 3) ? A : (B.b ?? 3) < (A.b ?? 3) ? B : aA >= aB ? A : B; kind = "vague"; }
+      else if (ia >= DISPUTE_KM2 && ia >= DISPUTE_SHARE * Math.min(aA, aB)) kind = "disputed";
+      else { lose = aA >= aB ? A : B; kind = "sliver"; }
+      count[kind]++;
+      if (lose) { edits.push({ base: lose, first, last, polys: inter, add: false }); continue; }
+      edits.push({ base: A, first, last, polys: inter, add: false }, { base: B, first, last, polys: inter, add: false });
+      disputes.push(withBox({ name: "Disputed land", ruler: "", part: "", people: 0, b: 2, status: 6, claims: [A.name, B.name].sort(), first, last, polys: inter, wiki: "", src: "overlap", noLabel: true }));
+    }
+  }
+  const out = reshape(list, edits, false).concat(disputes);
+  console.log(label + ": overlaps between spans resolved, " + Object.entries(count).map(([k, v]) => v + " " + k).join(", ") + "; " + list.length + " spans to " + out.length);
+  return out;
+}
 const RG = 1440, RGK = 4;
 const pack = (set) => {
   const a = Int32Array.from(set).sort();
@@ -1029,6 +1117,52 @@ function addSmall(list, timeOf, nameOf) {
   return list;
 }
 
+const DISPUTES = [
+  { name: "Jammu and Kashmir", units: ["Jammu and Kashmir"], periods: [["1947-10-27", "2019-12-31", "India", ["India", "Pakistan"]]] },
+  { name: "Azad Kashmir", units: ["Azad Kashmir"], periods: [["1947-10-27", "2019-12-31", "Pakistan", ["Pakistan", "India"]]] },
+  { name: "Gilgit-Baltistan", units: ["Gilgit-Baltistan"], periods: [["1947-11-16", "2019-12-31", "Pakistan", ["Pakistan", "India"]]] },
+  { name: "Siachen Glacier", units: ["Siachen Glacier"], periods: [["1984-04-13", "2019-12-31", "India", ["India", "Pakistan"]]] },
+  { name: "Aksai Chin", units: ["Aksai Chin"], periods: [["1959-01-23", "2019-12-31", "China", ["China", "India"]]] },
+  { name: "Shaksam Valley", units: ["Shaksam Valley"], periods: [["1963-03-02", "2019-12-31", "China", ["China", "India"]]] },
+  { name: "North-East Frontier Agency", units: ["Arunachal Pradesh"], wiki: "North-East Frontier Agency", periods: [["1959-01-23", "1972-01-20", "India", ["India", "China"]]] },
+  { name: "Arunachal Pradesh", units: ["Arunachal Pradesh"], periods: [["1972-01-21", "2019-12-31", "India", ["India", "China"]]] },
+  { name: "Western Sahara", units: ["W. Sahara"], periods: [["1976-02-27", "1979-08-04", "", ["Morocco", "Mauritania", "Sahrawi Republic"]], ["1979-08-05", "2019-12-31", "", ["Morocco", "Sahrawi Republic"]]] },
+  { name: "Somaliland", units: ["Somaliland"], periods: [["1991-05-18", "2019-12-31", "", ["Somaliland", "Somalia"]]] },
+  { name: "Guayana Esequiba", units: ["West of Essequibo River"], periods: [["1966-05-26", "2019-12-31", "Guyana", ["Guyana", "Venezuela"]]] },
+  { name: "Crimea", units: ["Crimea"], wiki: "Annexation of Crimea by the Russian Federation", periods: [["2014-03-18", "2019-12-31", "Russia", ["Russia", "Ukraine"]]] },
+  { name: "Donetsk People's Republic", units: ["Donetsk People's Republic"], periods: [["2014-05-11", "2019-12-31", "", ["Donetsk People's Republic", "Ukraine"]]] },
+  { name: "Luhansk People's Republic", units: ["Luhansk People's Republic"], periods: [["2014-05-11", "2019-12-31", "", ["Luhansk People's Republic", "Ukraine"]]] },
+  { name: "Golan Heights", units: ["Golan Heights"], periods: [["1967-06-10", "2019-12-31", "Israel", ["Israel", "Syria"]]] },
+  { name: "West Bank", units: ["West Bank"], wiki: "Israeli-occupied territories", periods: [["1967-06-10", "1988-07-30", "Israel", ["Israel", "Jordan"]], ["1988-07-31", "2019-12-31", "Israel", ["Israel", "Palestine"]]] },
+  { name: "Halaib Triangle", units: ["Halayib Triangle"], periods: [["1958-02-01", "2019-12-31", "", ["Egypt", "Sudan"]]] },
+  { name: "Southern Kuril Islands", units: ["Kuril Is."], wiki: "Kuril Islands dispute", periods: [["1945-09-05", "1991-12-25", "Soviet Union", ["Soviet Union", "Japan"]], ["1991-12-26", "2019-12-31", "Russia", ["Russia", "Japan"]]] },
+  { name: "Abyei", units: ["Abyei"], periods: [["2011-07-09", "2019-12-31", "", ["Sudan", "South Sudan"]]] },
+  { name: "Ilemi Triangle", units: ["Ilemi Triangle"], periods: [["1963-12-12", "2011-07-08", "Kenya", ["Kenya", "Sudan"]], ["2011-07-09", "2019-12-31", "Kenya", ["Kenya", "South Sudan"]]] },
+  { name: "Northern Cyprus", units: ["N. Cyprus"], periods: [["1974-08-16", "2019-12-31", "", ["Northern Cyprus", "Cyprus"]]] },
+  { name: "Abkhazia", units: ["Abkhazia"], periods: [["1993-09-30", "2019-12-31", "", ["Abkhazia", "Georgia"]]] },
+  { name: "South Ossetia", units: ["South Ossetia"], periods: [["1992-06-24", "2019-12-31", "", ["South Ossetia", "Georgia"]]] },
+  { name: "Transnistria", units: ["Transnistria"], periods: [["1992-07-21", "2019-12-31", "", ["Transnistria", "Moldova"]]] },
+  { name: "Kosovo", units: ["Kosovo"], periods: [["2008-02-17", "2019-12-31", "Kosovo", ["Kosovo", "Serbia"]]] }
+];
+const disputedPath = resolve(dirname(nePath), "ne_10m_admin_0_disputed_areas.geojson");
+const disputedUnits = existsSync(disputedPath) ? JSON.parse(readFileSync(disputedPath, "utf8")).features : null;
+if (!disputedUnits) console.warn("Natural Earth's disputed areas not found beside the states and provinces, so DISPUTES is not applied: " + disputedPath);
+function addDisputes(list) {
+  if (!disputedUnits) return list;
+  for (const d of DISPUTES) {
+    const feats = disputedUnits.filter((f) => d.units.includes(String(f.properties.BRK_NAME).replace(/^\uFEFF/, "")));
+    if (!feats.length) throw new Error("DISPUTES: Natural Earth disputed area missing for " + d.name);
+    const polys = rewind(clip.union(...feats.map((f) => polysOf(f.geometry))));
+    for (const [from, to, admin, claims] of d.periods) {
+      const a = Math.max(0, dayOf(from)), b = Math.min(dayOf(CS_TO), dayOf(to));
+      if (b < a) continue;
+      const sm = withBox({ name: d.name, ruler: admin, part: "", people: 0, b: 3, status: 6, claims, first: a, last: b, polys, wiki: d.wiki || d.name, src: "dispute", small: true, keep: km2Of(polys) < SMALL_KEEP_KM2 });
+      list = carve(list, sm);
+      list.push(sm);
+    }
+  }
+  return list;
+}
 const lineageNames = (name) => (lineageOf.has(name) ? LINEAGE[lineageOf.get(name)] : [name]);
 const NAME_FILLER = new Set(["of", "the", "and", "kingdom", "empire", "sultanate", "dynasty", "khanate", "republic", "principality", "duchy", "grand", "emirate", "regency", "county", "state", "states", "confederation", "caliphate", "union", "realm", "great", "united", "beylik", "imamate", "tsardom", "electorate", "margraviate", "lordship", "house"]);
 const coreWords = (name) => new Set(name.toLowerCase().split(/[^a-zà-öø-ÿāēīōūăđơưạ-ỹ']+/).filter((w) => w && !NAME_FILLER.has(w)));
@@ -1052,7 +1186,7 @@ function reshape(list, edits, dropSlivers) {
       const now = mine.filter((a) => a.first <= s0 && s0 <= a.last);
       const add = now.filter((a) => a.add).map((a) => a.polys), cut = now.filter((a) => !a.add).map((a) => a.polys);
       let polys = o.polys;
-      if (add.length) { try { polys = rewind(clip.union(polys, ...add)); } catch (e) { polys = polys.concat(...add); } }
+      if (add.length) polys = unionSafe(polys, add);
       if (cut.length) {
         polys = subtract(polys, cut);
         if (dropSlivers) {
@@ -1317,13 +1451,14 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
+dated = resolveOverlaps(dated, "from 1400 to 1885");
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
 for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
   const cEnd = Math.min(c + CHUNK - 1, DATED_TO);
   const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
-  const feats = spans.map((s, i) => ({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
+  const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
   const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
   const rows = spans.map((s, i) => {
     if (!s.geoHash) s.geoHash = createHash("md5").update(JSON.stringify(s.polys)).digest("hex");
@@ -1341,7 +1476,9 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     entry.dated = entry.dated ? [Math.min(entry.dated[0], s.first), Math.max(entry.dated[1], s.last)] : [s.first, s.last];
     if (!entry.wiki.has(s.first)) entry.wiki.set(s.first, s.wiki || s.name);
     if (s.people) entry.kind = 1;
-    return [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, null, label, s.people, s.part ? catId(s.part) : -1, s.b];
+    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, null, s.noLabel ? null : label, s.people, s.part ? catId(s.part) : -1, s.b];
+    if (s.claims) row.push(s.claims.map(catId));
+    return row;
   });
   hi.objects.p.geometries.forEach((g) => { delete g.properties; });
   lo.objects.p.geometries.forEach((g) => { delete g.properties; });
@@ -1351,7 +1488,7 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
 }
 const datedChanges = [...new Set(dated.map((s) => s.first).concat(dated.filter((s) => s.last < DATED_TO).map((s) => s.last + 1)))].filter((y) => y >= DATED_FROM && y <= DATED_TO).sort((a, b) => a - b);
 
-const CS_STATUS = { independent: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
+const CS_STATUS = { independent: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5, disputed: 6 };
 const CS_NAMES = {
   "United States of America": [["1886-01-01", "United States"]],
   "Russia (Soviet Union)": [["1886-01-01", "Russian Empire"], ["1917-11-07", "Soviet Russia"], ["1922-12-30", "Soviet Union"], ["1991-12-26", "Russia"]],
@@ -1739,13 +1876,15 @@ for (const r of csRedraw(csWithExtras(csRaw))) {
   list = reshape(list, hbEdits, false).concat(hbFills);
   const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
   const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
-  const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency"];
+  list = addDisputes(resolveOverlaps(list, "from 1886"));
+  const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency", "disputed"];
   csParts.length = 0;
   for (const x of list) {
     const geometry = { type: "MultiPolygon", coordinates: x.polys };
     if (x.cs) { csParts.push({ ...x.cs, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
-    csParts.push({ p: { gwcode: "x:" + x.name, status: owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+    const claims = x.claims ? x.claims.map((n) => rulerFor(n, x.first)) : null;
+    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, noLabel: !!x.noLabel, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
   }
   console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
@@ -1760,16 +1899,16 @@ const ownerName = (r) => {
   const hit = list.find((o) => activeOn(o, r.start)) || list.find((o) => activeOn(o, Math.max(r.start, o.start))) || list[0];
   return hit ? hit.name : "";
 };
-const csFeats = csParts.map((r, i) => ({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
+const csFeats = csParts.map((r, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
 const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q);
 const csLo = topoFor(csFeats, LO_KM, LO_Q);
 const labelMemo = new Map();
 const csRows = csParts.map((r, i) => {
   const g = csHi.objects.p.geometries[i];
-  const memoKey = JSON.stringify(g.arcs || g.coordinates || null);
+  const memoKey = (r.noLabel ? "n" : "") + JSON.stringify(g.arcs || g.coordinates || null);
   let label = labelMemo.get(memoKey);
   if (label === undefined) {
-    const geom = client.feature(csHi, g).geometry;
+    const geom = r.noLabel ? null : client.feature(csHi, g).geometry;
     label = geom ? labelOf(geom) : null;
     if (label && label[5] > BIG_KM2) {
       const spots = labelSpots(geom, label[5]);
@@ -1783,7 +1922,7 @@ const csRows = csParts.map((r, i) => {
   entry.cs = entry.cs ? [Math.min(entry.cs[0], y0), Math.max(entry.cs[1], y1)] : [y0, y1];
   entry.wiki.set(y0, r.wiki || csWiki(r.name, y0));
   const cap = r.p.capname ? capitalOf(String(r.p.capname), +r.p.caplong, +r.p.caplat) : null;
-  return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode)];
+  return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode), r.claims ? r.claims.map(catId) : null];
 });
 csHi.objects.p.geometries.forEach((g) => { delete g.properties; });
 csLo.objects.p.geometries.forEach((g) => { delete g.properties; });
@@ -1806,6 +1945,7 @@ const rawKey = (id) => nameKey.get(id) || baseKey(id);
 const keyOf = (id) => findKey(rawKey(id));
 let links = 0;
 const NO_LINK = new Set(["Czechoslovakia|Czech Republic"]);
+const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
 {
   const life = new Map();
   const note = (name, a, z, polys, dep) => {
@@ -1884,7 +2024,7 @@ for (const [y, file] of index) {
 const touchYears = new Map();
 for (const ch of datedChunks) {
   const rows = ch.rows;
-  const hueOf = (i) => (rows[i][7] ? null : keyOf(rows[i][1] >= 0 ? rows[i][1] : rows[i][0]));
+  const hueOf = (i) => (rows[i][7] || rows[i][10] ? null : keyOf(rows[i][1] >= 0 ? rows[i][1] : rows[i][0]));
   const yearsIn = (r) => Math.min(r[3], ch.to) - Math.max(r[2], ch.from) + 1;
   rows.forEach((r, i) => {
     const k = hueOf(i);
@@ -1919,7 +2059,7 @@ for (const [k, y] of touchYears) { const [a, b] = k.split("|"); addEdge(a, b, Ma
   });
   const overlap = (a, b) => a[2] <= (b[3] < 0 ? Infinity : b[3]) && b[2] <= (a[3] < 0 ? Infinity : a[3]);
   client.neighbors(geoms).forEach((list, i) => {
-    list.forEach((j) => { if (j > i && overlap(csRows[i], csRows[j])) { addEdge(hueOf(i), hueOf(j), 1); addTouch(hueOf(i), hueOf(j)); } });
+    list.forEach((j) => { if (j > i && !csRows[i][8] && !csRows[j][8] && overlap(csRows[i], csRows[j])) { addEdge(hueOf(i), hueOf(j), 1); addTouch(hueOf(i), hueOf(j)); } });
   });
   const labs = csRows.map((r, i) => (r[6] && inSpread(r[6][0], r[6][1]) ? [hueOf(i), r[6][0], r[6][1], Math.sqrt(r[6][5]), r] : null)).filter(Boolean);
   for (let i = 0; i < labs.length; i++) for (let j = i + 1; j < labs.length; j++) {
@@ -2036,15 +2176,117 @@ const clash = left.length;
 if (left.length) console.log("touching pairs left in one colour, with every colour taken round both, even after moving their neighbours: " + left.map((p) => p.split("|").map((k) => (catalogue[+k.slice(1)] && k[0] === "N" ? catalogue[+k.slice(1)].n : LINEAGE[+k.slice(1)] ? LINEAGE[+k.slice(1)][0] : k)).join(" and ")).join("; "));
 console.log("colours: " + keptAll + " of " + hadColour + " keys with an earlier colour keep it after the greedy pass, " + greedyClash + " touching pairs in one colour (" + free + " where a free colour existed), " + repaired + " keys recoloured, " + clash + " left");
 
+const baseColour = (id) => { const k = keyOf(id); return color.has(k) ? color.get(k) : -1; };
+const colourFrom = new Map();
+for (const [name, from, like] of COLOUR_FROM) colourFrom.set(catId(name), [[dayOf(from), baseColour(catId(like))]]);
+const stepAt = (steps, t, base) => { let c = base; if (steps) for (const [a, k] of steps) if (t >= a) c = k; return c; };
+const wheelCost = (a, b) => { const d = Math.min((a - b + PALETTE) % PALETTE, (b - a + PALETTE) % PALETTE); return d === 0 ? 100 : d === 1 ? 6 : d === 2 ? 1 : 0; };
+const WINDOW_MAX_KM2 = 3e6;
+function windowColours(units, pairs, fixed, gap) {
+  const over = new Map(), size = new Map();
+  units.forEach((u) => { if (u) size.set(u.hue, Math.max(size.get(u.hue) || 0, u.w)); });
+  const colourAt = (hue, t) => { const l = over.get(hue); if (l) for (const [a, b, c] of l) if (t >= a && t <= b) return c; return fixed(hue, t); };
+  const adj = new Map(), byHue = new Map();
+  for (const [i, j] of pairs) {
+    if (!units[i] || !units[j]) continue;
+    if (!adj.has(i)) adj.set(i, []); if (!adj.has(j)) adj.set(j, []);
+    adj.get(i).push(j); adj.get(j).push(i);
+  }
+  units.forEach((u, i) => { if (u) { if (!byHue.has(u.hue)) byHue.set(u.hue, []); byHue.get(u.hue).push(i); } });
+  const clashes = [];
+  for (const [i, j] of pairs) {
+    const A = units[i], B = units[j];
+    if (!A || !B || A.hue === B.hue) continue;
+    const a = Math.max(A.first, B.first), b = Math.min(A.last, B.last);
+    if (a <= b) clashes.push([i, j, a, b]);
+  }
+  clashes.sort((x, y) => x[2] - y[2]);
+  let fixedCount = 0;
+  const pick = (hue, a, b) => {
+    const taken = new Map();
+    for (const m of byHue.get(hue) || []) {
+      const me = units[m];
+      if (me.last < a || me.first > b) continue;
+      for (const o of adj.get(m) || []) {
+        const other = units[o];
+        if (other.hue === hue) continue;
+        const s0 = Math.max(me.first, other.first, a), e0 = Math.min(me.last, other.last, b);
+        if (s0 > e0) continue;
+        for (const t of [s0, Math.floor((s0 + e0) / 2), e0]) { const c = colourAt(other.hue, t); if (c >= 0) taken.set(c, (taken.get(c) || 0) + 1); }
+      }
+    }
+    const base = fixed(hue, a);
+    let best = -1, bestCost = Infinity;
+    for (let c = 0; c < PALETTE; c++) {
+      if (c === base) continue;
+      let cost = 0;
+      for (const [t, n] of taken) cost += wheelCost(c, t) * n;
+      cost += Math.min((c - base + PALETTE) % PALETTE, (base - c + PALETTE) % PALETTE) * 0.01;
+      if (cost < bestCost) { bestCost = cost; best = c; }
+    }
+    return best;
+  };
+  for (let pass = 0; pass < 2; pass++) for (const [i, j, a, b] of clashes) {
+    const A = units[i], B = units[j];
+    const sameAt = (t) => { const ca = colourAt(A.hue, t); return ca >= 0 && ca === colourAt(B.hue, t); };
+    const at = [a, Math.floor((a + b) / 2), b].filter(sameAt);
+    if (!at.length) continue;
+    const can = [A, B].filter((u) => size.get(u.hue) <= WINDOW_MAX_KM2);
+    if (!can.length) continue;
+    const side = can.length === 1 ? can[0] : A.free && !B.free ? A : B.free && !A.free ? B : size.get(A.hue) <= size.get(B.hue) ? A : B;
+    if (!over.has(side.hue)) over.set(side.hue, []);
+    const mine = over.get(side.hue), near = mine.find((w) => w[0] - gap <= b && a <= w[1] + gap);
+    if (near) {
+      near[0] = Math.min(near[0], a); near[1] = Math.max(near[1], b);
+      near[2] = -1; near[2] = pick(side.hue, near[0], near[1]);
+    } else {
+      const w = [a, b, -1];
+      mine.push(w);
+      w[2] = pick(side.hue, a, b);
+    }
+    fixedCount++;
+  }
+  return { over, count: fixedCount };
+}
+const toSteps = (wins, base, first) => {
+  const steps = first ? first.slice() : [];
+  for (const [a, b, c] of wins.slice().sort((x, y) => x[0] - y[0])) {
+    const after = stepAt(steps, b + 1, base);
+    steps.push([a, c], [b + 1, after]);
+    steps.sort((x, y) => x[0] - y[0]);
+  }
+  return steps;
+};
+const modernWins = (() => {
+  const units = csRows.map((r) => (r[8] ? null : { hue: r[1] >= 0 ? r[1] : r[0], first: r[2], last: r[3] < 0 ? dayOf(CS_TO) : r[3], free: r[1] < 0, w: r[6] ? r[6][5] : 0 }));
+  const pairs = [];
+  client.neighbors(csLo.objects.p.geometries).forEach((list, i) => list.forEach((j) => { if (j > i) pairs.push([i, j]); }));
+  return windowColours(units, pairs, (hue, t) => stepAt(colourFrom.get(hue), t, baseColour(hue)), 3650);
+})();
+const datedWins = (() => {
+  const units = [], pairs = [];
+  for (const ch of datedChunks) {
+    const off = units.length;
+    ch.rows.forEach((r) => units.push(r[7] || r[10] ? null : { hue: r[1] >= 0 ? r[1] : r[0], first: Math.max(r[2], ch.from), last: Math.min(r[3], ch.to), free: r[1] < 0, w: r[6] ? r[6][5] : 0 }));
+    client.neighbors(ch.lo.objects.p.geometries).forEach((list, i) => list.forEach((j) => { if (j > i) pairs.push([off + i, off + j]); }));
+  }
+  return windowColours(units, pairs, (hue) => baseColour(hue), 10);
+})();
+console.log("colours by date: " + modernWins.count + " stretches from 1886 and " + datedWins.count + " from 1400 to 1885 where a state takes another colour while it touches a neighbour of its own colour");
 const entries = catalogue.map((e, id) => {
   const k = keyOf(id);
   const wikis = [...new Set(e.wiki.values())];
   const steps = [];
   [...e.wiki.entries()].sort((a, b) => a[0] - b[0]).forEach(([y, t]) => { if (!steps.length || steps[steps.length - 1][1] !== t) steps.push([y, t]); });
   const wiki = wikis.length <= 1 ? wikis[0] || e.n : steps;
-  return [e.n, color.has(k) ? color.get(k) : -1, e.years.sort((a, b) => a - b), wiki, e.kind, e.cs || null, e.dated || null];
+  const row = [e.n, color.has(k) ? color.get(k) : -1, e.years.sort((a, b) => a - b), wiki, e.kind, e.cs || null, e.dated || null];
+  const base = row[1], days = modernWins.over.has(id) ? toSteps(modernWins.over.get(id), base, colourFrom.get(id)) : colourFrom.get(id) || null;
+  const years = datedWins.over.has(id) ? toSteps(datedWins.over.get(id), base, null) : null;
+  if (days || years) row.push(days);
+  if (years) row.push(years);
+  return row;
 });
-writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => r.slice(0, 7)), hi: csHi, lo: csLo }));
+writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), hi: csHi, lo: csLo }));
 writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges }, polities: entries }));
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
@@ -2071,4 +2313,5 @@ const licence = resolve(source, "../LICENSE");
 if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-basemaps.txt"));
 else console.warn("historical-basemaps LICENSE not found beside " + source + "; data/COPYING-historical-basemaps.txt not written");
 
+console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
 console.log(index.length + " maps to " + index[index.length - 1][0] + ", " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");

@@ -764,6 +764,7 @@ body.ch-page {
 .ch-key-sample .k-city { fill: var(--ch-city); }
 .ch-key-sample .k-town { fill: var(--ch-town); }
 .ch-key-sample .k-c1 { fill: var(--ch-c1); }
+.ch-key-sample .k-stripes { fill: url(#k-stripes); }
 .ch-key-sample .k-c3 { fill: var(--ch-c3); }
 .ch-key-sample .k-c6 { fill: var(--ch-c6); }
 .ch-key-sample .k-c8 { fill: var(--ch-c8); }
