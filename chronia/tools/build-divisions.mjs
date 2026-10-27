@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,13 +18,67 @@ const clip = require("polygon-clipping");
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
 const R_KM = 6371.0088, KM_DEG = 111.195;
-const HI_KM = 1.6, LO_KM = 12, HI_Q = 2e5;
+const HI_KM = 0.5, LO_KM = 12, HI_Q = 2e5;
 const weightFor = (km) => (km / R_KM) ** 2;
 const AHCB_END = "2000-12-31";
 
 const OPEN = null;
 const span = (name, ne, first, last) => ({ name, ne: Array.isArray(ne) ? ne : [ne], first, last: last || OPEN });
-const same = (first, list) => list.map((n) => span(Array.isArray(n) ? n[0] : n, Array.isArray(n) ? n[1] : n, first));
+const same = (first, list, last) => list.map((n) => span(Array.isArray(n) ? n[0] : n, Array.isArray(n) ? n[1] : n, first, last));
+
+const FR_OLD = {
+  "Alsace": ["Bas-Rhin", "Haut-Rhin"],
+  "Lorraine": ["Meurthe-et-Moselle", "Meuse", "Moselle", "Vosges"],
+  "Champagne-Ardenne": ["Ardennes", "Aube", "Marne", "Haute-Marne"],
+  "Nord-Pas-de-Calais": ["Nord", "Pas-de-Calais"],
+  "Picardy": ["Aisne", "Oise", "Somme"],
+  "Lower Normandy": ["Calvados", "Manche", "Orne"],
+  "Upper Normandy": ["Eure", "Seine-Maritime"],
+  "Aquitaine": ["Dordogne", "Gironde", "Landes", "Lot-et-Garonne", "Pyrenees-Atlantics"],
+  "Limousin": ["Corrèze", "Creuse", "Haute-Vienne"],
+  "Poitou-Charentes": ["Charente", "Charente-Maritime", "Deux-Sèvres", "Vienne"],
+  "Languedoc-Roussillon": ["Aude", "Gard", "Hérault", "Lozère", "Pyrénées-Orientales"],
+  "Midi-Pyrénées": ["Ariège", "Aveyron", "Haute-Garonne", "Gers", "Lot", "Hautes-Pyrénées", "Tarn", "Tarn-et-Garonne"],
+  "Auvergne": ["Allier", "Cantal", "Haute-Loire", "Puy-de-Dôme"],
+  "Rhône-Alpes": ["Ain", "Ardèche", "Drôme", "Isère", "Loire", "Rhône", "Savoie", "Haute-Savoie"],
+  "Burgundy": ["Côte-d’Or", "Nièvre", "Saône-et-Loire", "Yonne"],
+  "Franche-Comté": ["Doubs", "Jura", "Haute-Saône", "Territoire de Belfort"],
+  "Brittany": ["Côtes-d'Armor", "Finistère", "Ille-et-Vilaine", "Morbihan"],
+  "Centre": ["Cher", "Eure-et-Loir", "Indre", "Indre-et-Loire", "Loir-et-Cher", "Loiret"],
+  "Corsica": ["Corse-du-Sud", "Haute-Corse"],
+  "Île-de-France": ["Paris", "Seine-et-Marne", "Yvelines", "Essonne", "Hauts-de-Seine", "Seine-Saint-Denis", "Val-de-Marne", "Val-d'Oise"],
+  "Pays de la Loire": ["Loire-Atlantique", "Maine-et-Loire", "Mayenne", "Sarthe", "Vendée"],
+  "Provence-Alpes-Côte d'Azur": ["Alpes-de-Haute-Provence", "Hautes-Alpes", "Alpes-Maritimes", "Bouches-du-Rhône", "Var", "Vaucluse"]
+};
+const frOld = (...names) => names.flatMap((n) => FR_OLD[n]);
+const FR_MERGED = [
+  ["Alsace-Champagne-Ardenne-Lorraine", "Grand Est", ["Alsace", "Champagne-Ardenne", "Lorraine"]],
+  ["Nord-Pas-de-Calais-Picardie", "Hauts-de-France", ["Nord-Pas-de-Calais", "Picardy"]],
+  ["Normandy", "Normandy", ["Lower Normandy", "Upper Normandy"]],
+  ["Aquitaine-Limousin-Poitou-Charentes", "Nouvelle-Aquitaine", ["Aquitaine", "Limousin", "Poitou-Charentes"]],
+  ["Languedoc-Roussillon-Midi-Pyrénées", "Occitania", ["Languedoc-Roussillon", "Midi-Pyrénées"]],
+  ["Auvergne-Rhône-Alpes", "Auvergne-Rhône-Alpes", ["Auvergne", "Rhône-Alpes"]],
+  ["Bourgogne-Franche-Comté", "Bourgogne-Franche-Comté", ["Burgundy", "Franche-Comté"]]
+];
+const ES_COMMUNITIES = [
+  ["Andalusia", ["Almería", "Cádiz", "Córdoba", "Granada", "Huelva", "Jaén", "Málaga", "Seville"]],
+  ["Aragon", ["Huesca", "Teruel", "Zaragoza"]],
+  ["Asturias", ["Asturias"]],
+  ["Balearic Islands", ["Balearic Islands"]],
+  ["Basque Country", ["Araba / Álava", "Biscay", "Gipuzkoa"]],
+  ["Canary Islands", ["Las Palmas", "Santa Cruz de Tenerife"]],
+  ["Cantabria", ["Cantabria"]],
+  ["Castile and León", ["Ávila", "Burgos", "León", "Palencia", "Salamanca", "Segovia", "Soria", "Valladolid", "Zamora"]],
+  ["Castilla–La Mancha", ["Albacete", "Ciudad Real", "Cuenca", "Guadalajara", "Toledo"]],
+  ["Catalonia", ["Barcelona", "Girona", "Lleida", "Tarragona"]],
+  ["Extremadura", ["Badajoz", "Cáceres"]],
+  ["Galicia", ["A Coruña", "Lugo", "Ourense", "Pontevedra"]],
+  ["La Rioja", ["La Rioja"]],
+  ["Community of Madrid", ["Community of Madrid"]],
+  ["Region of Murcia", ["Murcia"]],
+  ["Navarre", ["Navarre"]],
+  ["Valencian Community", ["Alicante", "Castellón", "Valencia"]]
+];
 
 const NE_REGIONS = [
   {
@@ -119,6 +173,64 @@ const NE_REGIONS = [
       Object.assign(span("Daman and Diu", "Dadra and Nagar Haveli and Daman and Diu", "1987-05-30", "2020-01-25"), { pick: (c) => !(c[0] > 72.9 && c[1] < 20.37) }),
       span("Dadra and Nagar Haveli and Daman and Diu", "Dadra and Nagar Haveli and Daman and Diu", "2020-01-26")
     ]
+  },
+  {
+    key: "br", c: "BRA", names: ["Brazil"],
+    parts: [
+      ...same("1975-03-15", ["Acre", "Alagoas", "Amazonas", "Bahia", "Ceará", "Espírito Santo", "Maranhão", "Minas Gerais", "Paraná", "Paraíba", "Pará", "Pernambuco", "Piauí", "Rio Grande do Norte", "Rio Grande do Sul", "Rio de Janeiro", "Santa Catarina", "Sergipe", "São Paulo", ["Federal District", "Federal"]]),
+      span("Mato Grosso", ["Mato Grosso", "Mato Grosso do Sul"], "1975-03-15", "1978-12-31"),
+      ...same("1979-01-01", ["Mato Grosso", "Mato Grosso do Sul"]),
+      span("Goiás", ["Goiás", "Tocantins"], "1975-03-15", "1988-10-04"),
+      ...same("1988-10-05", ["Goiás", "Tocantins"]),
+      span("Territory of Rondônia", "Rondônia", "1975-03-15", "1982-01-03"),
+      span("Rondônia", "Rondônia", "1982-01-04"),
+      span("Territory of Roraima", "Roraima", "1975-03-15", "1988-10-04"),
+      span("Roraima", "Roraima", "1988-10-05"),
+      span("Territory of Amapá", "Amapá", "1975-03-15", "1988-10-04"),
+      span("Amapá", "Amapá", "1988-10-05")
+    ]
+  },
+  {
+    key: "ar", c: "ARG", names: ["Argentina"],
+    parts: [
+      ...same("1956-01-01", ["Buenos Aires", "Catamarca", "Chaco", "Chubut", "Corrientes", "Córdoba", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tucumán"]),
+      span("National Territory of Tierra del Fuego", "Tierra del Fuego", "1956-01-01", "1990-04-25"),
+      span("Tierra del Fuego", "Tierra del Fuego", "1990-04-26"),
+      span("Federal Capital", "Buenos Aires City", "1956-01-01", "1996-09-30"),
+      span("Buenos Aires City", "Buenos Aires City", "1996-10-01")
+    ]
+  },
+  {
+    key: "es", c: "ESP", names: ["Spain"],
+    parts: [
+      ...ES_COMMUNITIES.map(([n, ps]) => span(n, ps, "1983-02-25")),
+      ...same("1995-03-14", ["Ceuta", "Melilla"])
+    ]
+  },
+  {
+    key: "fr", c: "FRA", names: ["France"],
+    parts: [
+      ...Object.keys(FR_OLD).filter((n) => !FR_MERGED.some((m) => m[2].includes(n))).map((n) => span(n, FR_OLD[n], "1970-01-09", n === "Centre" ? "2015-01-16" : null)),
+      span("Centre-Val de Loire", FR_OLD["Centre"], "2015-01-17"),
+      ...FR_MERGED.flatMap(([interim, final, olds]) => [
+        ...olds.map((n) => span(n, FR_OLD[n], "1970-01-09", "2015-12-31")),
+        ...(interim === final ? [span(final, frOld(...olds), "2016-01-01")] : [span(interim, frOld(...olds), "2016-01-01", "2016-09-29"), span(final, frOld(...olds), "2016-09-30")])
+      ]),
+      ...same("1970-01-09", ["Guadeloupe", "Martinique", "French Guiana", "Réunion"]),
+      span("Mayotte", "Mayotte", "2011-03-31")
+    ]
+  },
+  {
+    key: "jp", c: "JPN", names: ["Japan"],
+    parts: [
+      ...same("1893-04-01", ["Aichi Prefecture", "Akita Prefecture", "Aomori Prefecture", "Chiba Prefecture", "Ehime Prefecture", "Fukui Prefecture", "Fukuoka Prefecture", "Fukushima Prefecture", "Gifu Prefecture", "Gunma Prefecture", "Hiroshima Prefecture", "Hokkaidō", "Hyōgo Prefecture", "Ibaraki Prefecture", "Ishikawa Prefecture", "Iwate Prefecture", "Kagawa Prefecture", "Kagoshima Prefecture", "Kanagawa Prefecture", "Kumamoto Prefecture", "Kyōto Prefecture", "Kōchi Prefecture", "Mie Prefecture", "Miyagi Prefecture", "Miyazaki Prefecture", "Nagano Prefecture", "Nagasaki Prefecture", "Nara Prefecture", "Niigata Prefecture", "Okayama Prefecture", "Okinawa Prefecture", "Saga Prefecture", "Saitama Prefecture", "Shiga Prefecture", "Shimane Prefecture", "Shizuoka Prefecture", "Tochigi Prefecture", "Tokushima Prefecture", "Tottori Prefecture", "Toyama Prefecture", "Wakayama Prefecture", "Yamagata Prefecture", "Yamaguchi Prefecture", "Yamanashi Prefecture", "Ōita Prefecture", "Ōsaka Prefecture"]),
+      span("Tokyo Prefecture", "Tokyo", "1893-04-01", "1943-06-30"),
+      span("Tokyo", "Tokyo", "1943-07-01")
+    ]
+  },
+  {
+    key: "ng", c: "NGA", names: ["Nigeria"],
+    parts: same("1996-10-01", ["Abia State", "Adamawa State", "Akwa Ibom State", "Anambra State", "Bauchi State", "Bayelsa State", "Benue State", "Borno State", "Cross River State", "Delta State", "Ebonyi State", "Edo State", "Ekiti State", "Enugu State", "Federal Capital Territory", "Gombe State", "Imo State", "Jigawa State", "Kaduna State", "Kano State", "Katsina State", "Kebbi State", "Kogi State", "Kwara State", "Lagos", "Nasarawa State", "Niger State", "Ogun State", "Ondo State", "Osun State", "Oyo State", "Plateau State", "Rivers State", "Sokoto State", "Taraba State", "Yobe State", "Zamfara State"])
   }
 ];
 
@@ -313,6 +425,14 @@ function ahcb() {
 
 function naturalEarth() {
   const topo = JSON.parse(readFileSync(provincesPath, "utf8"));
+  const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
+  if (detailPath !== provincesPath && existsSync(detailPath)) {
+    const fine = JSON.parse(readFileSync(detailPath, "utf8"));
+    if (fine.arcs.length !== topo.arcs.length) throw new Error("provinces-detail.json does not line up with provinces.json");
+    topo.arcs = fine.arcs;
+    topo.transform = fine.transform;
+    console.log("Natural Earth at the detail of " + detailPath);
+  }
   const geoms = topo.objects.provinces.geometries;
   const out = [];
   for (const R of NE_REGIONS) {
@@ -324,6 +444,7 @@ function naturalEarth() {
       const a = d3.geoArea(f) * R_KM * R_KM;
       if (R.c === "MEX" && n === "Mexico") { if (a < 50) continue; n = "Mexico City"; }
       if (R.c === "USA" && n === "Washington" && a < 1000) n = "District of Columbia";
+      if (R.c === "ARG" && n === "Buenos Aires" && a < 1000) n = "Buenos Aires City";
       if (!byName.has(n)) byName.set(n, []);
       byName.get(n).push(g);
     }

@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1893–2026 | Brazil, Argentina, Spain, France, Japan, and Nigeria | first-level divisions
+
+- What changed: the first-level divisions of six more countries are drawn, each from the date since which Natural Earth's present shapes have held, with the older names and the merged divisions of the years between (README, "First-level divisions"). All the divisions from Natural Earth are now drawn at the detail of UCHRONIA's `provinces-detail.json`, with internal lines simplified to about 0.5 km instead of 1.6 km.
+- Tables: `NE_REGIONS`, `ES_COMMUNITIES`, `FR_OLD`, and `FR_MERGED` in `tools/build-divisions.mjs`.
+- Sources: (1) Natural Earth, admin-1 states and provinces, 10 m. (2) For the dates: Brazil, Complementary Law 31 of 1977 (Mato Grosso do Sul, installed 1 January 1979), Complementary Law 41 of 22 December 1981 (Rondônia, installed 4 January 1982), and the Constitution of 5 October 1988; Argentina, Law 14,408 of 1955 and Law 23,775 of 26 April 1990 (Tierra del Fuego), and the Constitution of the City of Buenos Aires of 1 October 1996; Spain, the statutes of autonomy of 25 February 1983 and of Ceuta and Melilla of 14 March 1995; France, the decree of 9 January 1970 (Corsica), Law 2015-29 of 16 January 2015, and Decrees 2016-1262 to 2016-1268 of 28 September 2016; Japan, the transfer of the Tama districts to Tokyo on 1 April 1893 and the Tokyo Metropolis of 1 July 1943; Nigeria, the creation of six states on 1 October 1996.
+- Confidence: high for the shapes after each start date, medium for the start dates of Argentina (1956 is a safe year after the renamings of late 1955, not the day of a law) and of France's overseas regions, which were departments, not regions, until 1982.
+- Alternatives: Tierra del Fuego as a province from the swearing of its constitution on 1 June 1991 rather than the law of 1990.
+- Left out: Italy, whose regions changed slightly in 2009 and 2017; the divisions before each start date; Fernando de Noronha, which Natural Earth's simplified provinces leave out.
+
 ## 3400 BC–1199 | world | yearly borders before 1200, Roman provinces, and Chinese dynasties
 
 - Claimed by the session of 27 October 2026 (Holy Roman Empire, search, marshes): Cliopatria year by year back to 3400 BC, the snapshots filling what it leaves blank; Roman provinces from the Ancient World Mapping Center; the China Historical GIS for the dynasties if its licence allows. Touches `DATED_FROM`, `NAME_FIX`, `dated/*.json`, and the dated code in `app.js`.
