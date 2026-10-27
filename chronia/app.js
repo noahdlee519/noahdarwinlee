@@ -3150,10 +3150,10 @@
       addText(" on " + when + ".");
     } else addText("In no state on " + when + ".");
     var y = askYear();
-    loadWiki(f.modern || f.name, f.modern || f.name, {
+    loadWiki(f.name, f.modern || f.name, {
       ask: { kind: "city", name: f.name, modern: f.modern || "", lon: c.lon, lat: c.lat, state: p ? polityName(p.id) : "", capital: isCap, year: y },
       label: f.name, when: fmtYear(y), click: click
-    });
+    }, [c.lon, c.lat]);
   }
   function renderCard() {
     var click = cardClick;
@@ -3253,7 +3253,29 @@
       return hit ? wikiSummary(hit.title) : null;
     });
   }
-  function loadWiki(name, title, blurb) {
+  var WIKI_NEAR_KM = 60;
+  function nearPage(d, at) {
+    var c = d && d.coordinates;
+    if (!c || !isFinite(c.lat) || !isFinite(c.lon)) return null;
+    var p1 = c.lat * D2R, p2 = at[1] * D2R, dp = p2 - p1, dl = (at[0] - c.lon) * D2R;
+    var h = Math.sin(dp / 2) * Math.sin(dp / 2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+    return 2 * R_KM * Math.asin(Math.min(1, Math.sqrt(h))) <= WIKI_NEAR_KM ? d : null;
+  }
+  function wikiSearchNear(q, at) {
+    var url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srnamespace=0&srlimit=5&format=json&origin=*&srsearch=" + encodeURIComponent(q);
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("wikipedia search " + r.status);
+      return r.json();
+    }).then(function (d) {
+      var hits = (d && d.query && d.query.search) || [], k = 0;
+      var next = function () {
+        if (k >= hits.length) return null;
+        return wikiSummary(hits[k++].title).then(function (s) { return nearPage(s, at) || next(); });
+      };
+      return next();
+    });
+  }
+  function loadWiki(name, title, blurb, at) {
     var ask = ++wikiAsk, text = $("wiki-text"), img = $("wiki-img"), more = $("wiki-more"), by = $("wiki-by");
     var wiki = null, wikiState = 0, mode = blurb ? "ai" : "wiki";
     var quiet = function (t) { text.className = "ch-wiki-text is-quiet"; text.textContent = t; };
@@ -3273,7 +3295,7 @@
       if (mode === "ai" || mode === "done") return;
       if (wikiState === 0) quiet("Looking it up on Wikipedia");
       else if (wikiState === 2) quiet("Wikipedia could not be reached.");
-      else if (!wiki) quiet("Wikipedia has no article under this name.");
+      else if (!wiki) quiet(at ? "Wikipedia has no article on this place." : "Wikipedia has no article under this name.");
       else { text.className = "ch-wiki-text"; text.textContent = wiki.extract; }
     };
     var writing = function (job) {
@@ -3306,11 +3328,12 @@
     };
     clearTimeout(blurbTimer);
     img.hidden = true; more.hidden = true; by.hidden = true;
-    var job = wikiCache.get(title);
+    var key = at ? title + "@" + at[0].toFixed(2) + "," + at[1].toFixed(2) : title, job = wikiCache.get(key);
     if (!job) {
-      job = wikiSummary(title).then(function (d) { return d || (title !== name ? wikiSummary(name) : null); }).then(function (d) { return d || wikiSearch(name); });
-      wikiCache.set(title, job);
-      job.catch(function () { wikiCache.delete(title); });
+      if (at) job = wikiSummary(title).then(function (d) { return nearPage(d, at) || (title !== name ? wikiSummary(name).then(function (e) { return nearPage(e, at); }) : null); }).then(function (d) { return d || wikiSearchNear(name, at); });
+      else job = wikiSummary(title).then(function (d) { return d || (title !== name ? wikiSummary(name) : null); }).then(function (d) { return d || wikiSearch(name); });
+      wikiCache.set(key, job);
+      job.catch(function () { wikiCache.delete(key); });
     }
     job.then(function (d) { wiki = d; wikiState = 1; paint(); }, function () { wikiState = 2; paint(); });
     if (blurb) {
