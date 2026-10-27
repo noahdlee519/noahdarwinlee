@@ -78,7 +78,14 @@ of `/greatercircle/`.
   - **Colours.** The countries are coloured like a political map: ten colours
     in CSS variables, ordered round the colour wheel and given out so that
     neighbours never share one and sit well apart on the wheel; any colour can
-    still be chosen by hand.
+    still be chosen by hand. Our world's countries open in the colours of a
+    reference map Noah chose: `BASE_COLORS` in `app.js` gives 125 of them
+    their colour by code (Canada pale lime, the United States periwinkle,
+    Mexico pink, Brazil and Russia mint, China salmon, and so on), read off
+    a screenshot of the flat map by sampling each country on a half-degree
+    grid. The rest, and any country whose given colour a neighbour already
+    holds, are coloured as before. CHRONIA's states of 2019 take the same
+    colours.
   - **Styles.** *Light* is black on white and *Dark* white on black; both
     follow the site's theme, which they also set (the site's orange and white
     themes both open *Light*). *Antique*,
@@ -718,7 +725,14 @@ of `/greatercircle/`.
   *Tier 2* is hidden is painted, named, and counted by its first-level regions
   again; give it
   land or dissolve it; click a city to rename it, change its size, or delete
-  it, and once it is picked, drag it to move it.
+  it, and once it is picked, drag it to move it. A country founded on the
+  map, by hand or by the historian, has *Delete* in place of *Dissolve*:
+  its land is left unclaimed and it leaves the lists, and undo brings it
+  back. The *Choose a country* list, and the lists for a subject's ruler
+  and for a disputed region's claimants, hold every country with land and
+  every country founded on the map, with land or not, until it is deleted.
+  A country the historian founds is kept even when none of the land it was
+  meant to get could be found.
 - **Give land (B)**: one tool for moving borders. Its pane says who gets
   the land (the chosen country, shown with its colour, *Disputed*, or
   *Unclaimed*) and how it is taken:

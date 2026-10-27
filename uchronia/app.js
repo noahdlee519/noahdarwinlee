@@ -4191,8 +4191,8 @@
   }
   function dissolve(c) {
     freshGroups();
-    var us = unitsOf[c].slice(), had = pieces.some(function (p) { return p.owner === c; });
-    if (!us.length && !had) return;
+    var us = unitsOf[c].slice(), had = pieces.some(function (p) { return p.owner === c; }), made = c >= base.countries.length;
+    if (!us.length && !had && !made) return;
     var ops = [];
     if (us.length) {
       var from = us.map(function () { return c; }), to = us.map(function () { return UNCLAIMED; });
@@ -4206,10 +4206,17 @@
       piecesChanged();
       ops.push({ t: "pieces", from: before, to: pieces });
     }
-    var step = pushStep("Dissolving " + countries[c].name, ops);
+    if (made) {
+      var co = countries[c];
+      ops.push({ t: "country", c: c, from: co.claims ? { name: co.name, color: co.color, claims: co.claims.slice() } : { name: co.name, color: co.color }, to: null });
+      co.alive = false;
+      groupsDirty = true;
+      countriesVersion++;
+    }
+    var step = pushStep((made ? "Deleting " : "Dissolving ") + countries[c].name, ops);
     queueLabels([c]);
     changed();
-    toast(countries[c].name + " dissolved, its land left unclaimed" + (had ? " and its drawn borders undone" : ""), "Undo", undoIfTop(step));
+    toast(countries[c].name + (made ? " deleted" : " dissolved") + (us.length ? ", its land left unclaimed" : "") + (had ? " and its drawn borders undone" : ""), "Undo", undoIfTop(step));
     toastStep = step;
   }
   function startLasso(x, y) {
@@ -4630,7 +4637,8 @@
       $("subject-name").textContent = rr >= 0 ? countries[rr].name : "no one";
       if (subjectVersion !== countriesVersion + "/" + ownerVersion || +$("subject-pick").dataset.c !== c) fillSubjectPick(c);
       $("paint-with").hidden = ui.tool !== "select";
-      $("dissolve").hidden = !land;
+      $("dissolve").hidden = !land && c < base.countries.length;
+      $("dissolve").textContent = c >= base.countries.length ? "Delete" : "Dissolve";
       $("move-name").hidden = ui.tool !== "select" || !land || !ui.countryNames || !countries[c].label;
       syncCountryPick(c);
     }
@@ -4693,6 +4701,10 @@
     if (pickVersion !== countriesVersion || sel.options.length < 2) fillCountryPick();
     sel.value = String(c);
   }
+  function listedCountry(i) {
+    var co = countries[i];
+    return !!co && co.alive && !co.claims && (hasLand(i) || i >= base.countries.length);
+  }
   function fillCountryPick() {
     var sel = $("country-pick");
     sel.textContent = "";
@@ -4701,7 +4713,7 @@
     sel.appendChild(head);
     var list = [], cur = currentCountry();
     freshGroups();
-    countries.forEach(function (co, i) { if (co.alive && !co.claims && (i === cur || hasLand(i))) list.push(i); });
+    countries.forEach(function (co, i) { if ((i === cur && co.alive && !co.claims) || listedCountry(i)) list.push(i); });
     list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     pickVersion = countriesVersion;
@@ -4715,7 +4727,7 @@
     sel.appendChild(new Option("No one: it rules itself", "-1"));
     var list = [];
     freshGroups();
-    countries.forEach(function (co, i) { if (i !== c && co.alive && !co.claims && hasLand(i) && !rules(c, i)) list.push(i); });
+    countries.forEach(function (co, i) { if (i !== c && listedCountry(i) && !rules(c, i)) list.push(i); });
     list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     sel.value = String(rulerOf(c));
@@ -4850,7 +4862,7 @@
     sel.textContent = "";
     sel.appendChild(new Option(head, ""));
     freshGroups();
-    countries.forEach(function (co, i) { if (co.alive && !co.claims && hasLand(i) && cl.indexOf(i) < 0) list.push(i); });
+    countries.forEach(function (co, i) { if (listedCountry(i) && cl.indexOf(i) < 0) list.push(i); });
     list.sort(function (a, b) { return countries[a].name.localeCompare(countries[b].name); });
     list.forEach(function (i) { sel.appendChild(new Option(countries[i].name || "Unnamed", String(i))); });
     sel.value = "";
@@ -5852,6 +5864,18 @@
   panel.addEventListener("pointerup", endSheetDrag);
   panel.addEventListener("pointercancel", endSheetDrag);
 
+  var BASE_COLORS = {
+    AFG: 6, AGO: 5, ARE: 3, ARG: 6, ATA: 2, AUS: 0, AUT: 6, AZE: 6, BEL: 9, BEN: 5, BFA: 2, BGD: 5, BGR: 7,
+    BLR: 5, BOL: 0, BRA: 8, BWA: 9, CAF: 8, CAN: 9, CHL: 3, CHN: 3, CIV: 7, CMR: 4, COD: 2, COG: 3, COL: 4,
+    CRI: 5, CUB: 2, CZE: 0, DEU: 9, ECU: 8, EGY: 9, ERI: 8, ESP: 0, EST: 4, ETH: 5, FIN: 2, FRA: 7, GAB: 9,
+    GBR: 3, GHA: 8, GIN: 0, GRC: 6, GRL: 3, GTM: 9, GUY: 4, HND: 7, HUN: 2, IDN: 5, IND: 9, IRL: 9, IRN: 2,
+    IRQ: 5, ISL: 2, ITA: 8, JOR: 3, JPN: 5, KAZ: 7, KEN: 9, KGZ: 2, KHM: 4, LAO: 7, LBR: 3, LBY: 5, LKA: 4,
+    LTU: 3, LVA: 9, MAR: 7, MDA: 1, MDG: 6, MEX: 4, MLI: 6, MMR: 2, MNG: 0, MOZ: 8, MRT: 8, MWI: 7, MYS: 2,
+    NAM: 2, NER: 7, NIC: 1, NLD: 1, NOR: 6, NZL: 4, OMN: 5, PAK: 1, PER: 2, PHL: 9, PNG: 1, POL: 4, PRK: 7,
+    PRT: 6, PRY: 5, ROU: 0, RUS: 8, SAH: 4, SAU: 7, SDS: 0, SEN: 3, SLE: 7, SOL: 0, SOM: 4, SRB: 2, SUR: 0,
+    SVK: 7, SWE: 7, SYR: 0, TCD: 3, THA: 0, TJK: 8, TKM: 3, TUN: 3, TUR: 3, TZA: 5, UGA: 7, UKR: 6, URY: 0,
+    USA: 6, UZB: 0, VEN: 9, VNM: 1, YEM: 2, ZAF: 6, ZMB: 0, ZWE: 4
+  };
   function colorAll() {
     freshGroups();
     var links = countryLinks(unitCloseWide), hue = countries.map(function (c, i) { return hueOf(i); });
@@ -5862,6 +5886,14 @@
     order.sort(function (x, y) { return (adj[y].size + closeAdj[y].size) - (adj[x].size + closeAdj[x].size) || x - y; });
     var used = new Array(PALETTE).fill(0), done = new Array(countries.length).fill(false);
     order.forEach(function (i) {
+      var k = BASE_COLORS[countries[i].code], taken = false;
+      if (!isInt(k)) return;
+      adj[i].forEach(function (n) { if (done[n] && countries[n].color === k) taken = true; });
+      closeAdj[i].forEach(function (n) { if (done[n] && countries[n].color === k) taken = true; });
+      if (!taken) { countries[i].color = k; used[k]++; done[i] = true; }
+    });
+    order.forEach(function (i) {
+      if (done[i]) return;
       var near = [], close = [];
       adj[i].forEach(function (n) { if (done[n]) near.push(countries[n].color); });
       closeAdj[i].forEach(function (n) { if (done[n]) close.push(countries[n].color); });
@@ -6513,12 +6545,7 @@
     });
     sortCities();
     made.forEach(function (op) { var capOp = chooseCapital(op.c); if (capOp) ops.push(capOp); });
-    var fresh = new Set(ops.filter(function (op) { return op.t === "country" && !op.from; }).map(function (op) { return op.c; }));
-    if (!ps.length && !pieceTo.size && !ops.some(function (op) { return !fresh.has(op.c) || (op.t !== "country" && op.t !== "ruler"); })) {
-      ops.forEach(function (op) { if (op.t === "ruler") countries[op.c].ruler = op.from; });
-      for (var i = ops.length - 1; i >= 0; i--) if (ops[i].t === "country" && !ops[i].from) countries[ops[i].c].alive = false;
-      return null;
-    }
+    if (!ops.length) return null;
     var step = pushStep("Redrawing the map", ops);
     queueLabels(Array.from(touched).concat(made.map(function (op) { return op.c; })));
     ui.country = -1; ui.region = -1; ui.piece = null; ui.city = null;
