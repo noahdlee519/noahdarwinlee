@@ -1688,6 +1688,83 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
 }
 
 dated = resolveOverlaps(dated, "from 1200 to 1885");
+
+const CAP_FROM = 1400, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
+const CAP_SKIP = new Set(["Holy Roman Empire"]);
+const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"]];
+const CAP_NAME = {
+  "Ahilyanagar": "Ahmednagar", "Antalya Province": "Antalya", "Bengaluru": "Bangalore", "Bintan Island": "Bintan", "Coop of Brussels": "Brussels",
+  "Hanseongbu": "Hanseong", "Historic City of Ayutthaya": "Ayutthaya", "Kalaburagi": "Gulbarga", "Kolkata": "Calcutta", "Lutherstadt Wittenberg": "Wittenberg",
+  "Madrid city": "Madrid", "Mbarara City": "Mbarara", "Menteşe district": "Menteşe", "Mukim Kota Batu": "Kota Batu", "Municipality of Macau": "Macau",
+  "Old City of Taiz": "Taiz", "Old Delhi": "Delhi", "Quebec City": "Quebec", "Sri Jayawardenepura Kotte": "Kotte", "Thiruvananthapuram": "Trivandrum",
+  "Thonburi Province": "Thonburi", "Toledo city": "Toledo", "Trowulan Temple": "Trowulan", "Valladolid city": "Valladolid", "Vijayapura": "Bijapur", "Zanzibar City": "Zanzibar"
+};
+const capsPath = resolve(here, "capitals-wikidata.json");
+const capData = existsSync(capsPath) ? JSON.parse(readFileSync(capsPath, "utf8")) : null;
+const capLive = new Set(capData ? capData.live : []), capSince = capData ? capData.since : {};
+const capKm = (a, b) => { const r = Math.PI / 180, x = (b[1] - a[1]) * r * Math.cos((a[2] + b[2]) * r / 2), y = (b[2] - a[2]) * r; return Math.hypot(x, y) * R_KM; };
+const capPick = (c) => {
+  if (!c.length) return null;
+  const pref = c.filter((r) => r[5]);
+  if (pref.length === 1) return pref[0];
+  const pool = pref.length ? pref : c;
+  if (!pool.every((r) => capKm(r, pool[0]) <= CAP_SAME_KM)) return null;
+  return pool.slice().sort((a, b) => a[0].length - b[0].length || (a[0] < b[0] ? -1 : 1))[0];
+};
+const capUsable = (qid, r, y) => {
+  if (r[3] === null && r[6] !== null && r[6] > y && (r[6] < 1886 || capLive.has(qid))) return false;
+  return !(r[3] === null && r[4] === null && capLive.has(qid) && capSince[qid] != null && y < capSince[qid]);
+};
+const capitalIn = (qid, all, y) => {
+  const rows = all.filter((r) => capUsable(qid, r, y));
+  const dated = rows.filter((r) => (r[3] !== null || r[4] !== null) && (r[3] === null || r[3] <= y) && (r[4] === null || y <= r[4]));
+  if (dated.length) {
+    const top = Math.max(...dated.map((r) => r[3] ?? -Infinity));
+    const late = dated.filter((r) => (r[3] ?? -Infinity) === top), pref = late.filter((r) => r[5]), pool = pref.length ? pref : late;
+    const end = Math.max(...pool.map((r) => r[4] ?? Infinity));
+    return capPick(pool.filter((r) => (r[4] ?? Infinity) === end));
+  }
+  return capPick(rows.filter((r) => r[3] === null && r[4] === null));
+};
+const inRing = (x, y, ring) => {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
+const inPolys = (x, y, polys) => polys.some((p) => inRing(x, y, p[0]) && !p.slice(1).some((h) => inRing(x, y, h)));
+const capOnLand = (r, polys) => [[0, 0], [CAP_NEAR_DEG, 0], [-CAP_NEAR_DEG, 0], [0, CAP_NEAR_DEG], [0, -CAP_NEAR_DEG]].some(([dx, dy]) => inPolys(r[1] + dx, r[2] + dy, polys));
+const capStats = { spans: 0, outside: 0 };
+const capFor = (s) => {
+  if (!capData || s.people || s.last < CAP_FROM) return null;
+  const title = s.wiki || s.name;
+  const qid = capData.titles[title];
+  if (CAP_SKIP.has(title) || !qid || !capData.caps[qid]) return null;
+  const drop = new Set(CAP_DROP.filter((d) => d[0] === title).map((d) => d[1]));
+  const rows = capData.caps[qid].filter((r) => !/^Q\d+$/.test(r[0]) && !drop.has(r[0]));
+  const runs = [], seen = new Map();
+  for (let y = s.first; y <= s.last; y++) {
+    let r = y < CAP_FROM ? null : capitalIn(qid, rows, y);
+    if (r) {
+      if (!seen.has(r)) seen.set(r, capOnLand(r, s.polys));
+      if (!seen.get(r)) { capStats.outside++; r = null; }
+    }
+    const key = r ? r[0] + "|" + r[1] + "|" + r[2] : "";
+    const prev = runs[runs.length - 1];
+    if (prev && prev.key === key) prev.last = y;
+    else runs.push({ key, r, last: y });
+  }
+  if (!runs.some((u) => u.r)) return null;
+  capStats.spans++;
+  const at = (u) => (u.r ? [CAP_NAME[u.r[0]] || u.r[0], u.r[1], u.r[2]] : [null, null, null]);
+  const cap = at(runs[runs.length - 1]);
+  if (runs.length > 1) cap.push(null, runs.slice(0, -1).map((u) => [dayOf(u.last + "-12-31"), ...at(u)]));
+  return cap;
+};
+dated.forEach((s) => { s.cap = capFor(s); });
+console.log("capitals from Wikidata: " + capStats.spans + " dated spans with a capital from " + CAP_FROM + ", " + capStats.outside + " years where the capital lies outside the span and is left out");
 const GROUPS = [{
   name: "Holy Roman Empire",
   maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, 1491, ["1400"]], [1492, 1499, ["1492"]], [1500, 1529, ["1500"]], [1530, 1599, ["1530"]], [1600, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
@@ -1764,7 +1841,7 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     entry.dated = entry.dated ? [Math.min(entry.dated[0], s.first), Math.max(entry.dated[1], s.last)] : [s.first, s.last];
     if (!entry.wiki.has(s.first)) entry.wiki.set(s.first, s.wiki || s.name);
     if (s.people) entry.kind = kindOf(s.name);
-    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, APPROX.has(s.name) ? Math.min(1, s.b ?? 2) : s.b];
+    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, s.cap || null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, APPROX.has(s.name) ? Math.min(1, s.b ?? 2) : s.b];
     if (s.claims) row.push(s.claims.map(catId));
     return row;
   });

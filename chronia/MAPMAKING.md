@@ -28,7 +28,7 @@ Every decision has to be expressed in these terms. If something can't be express
 
 On the snapshot maps before 1200 every border is drawn dotted. From 1200 a border is solid where both sides are states with precision 2 or 3, and dotted where either side has precision 1 or is a people; bands have no border line at all. So the sign of doubt is there; it only has to be used honestly, by giving each polity the precision its evidence supports.
 
-Capitals are not part of the data before 1886, and cities have their own builder and tables. This file is about borders, names, rulers, and peoples.
+Capitals from 1400 to 1885 come from Wikidata (see step 10 of the README's [From 1200 to 1885](README.md#from-1200-to-1885)). A wrong one is left out with `CAP_SKIP` or `CAP_DROP` in the builder, with a ledger entry, or corrected on Wikidata and fetched again; there are none before 1400. Cities have their own builder and tables. This file is about borders, names, rulers, and peoples.
 
 ## Standards of evidence
 

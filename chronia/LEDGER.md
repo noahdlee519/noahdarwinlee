@@ -18,7 +18,12 @@ Each entry:
 ---
 ## 1400–1885 | world | capitals
 
-- Claimed by: the capitals session, 2026-10-27. Dated capitals from Wikidata for the yearly borders, in a new table read by the builder.
+- What changed: states and dependencies on the yearly maps show their capitals from 1400, year by year, where Wikidata records one, so capital marks no longer stop at 1886. 4,321 spans have a capital for some or all of their years. The Ottoman Empire's moves from Bursa to Edirne to Constantinople, the Kingdom of France at Versailles from 1682 to 1789, Safavid Iran at Tabriz, Qazvin, and Isfahan, and the Ming court's move to Beijing in 1421 come from Wikidata's dates.
+- Tables: `tools/capitals-wikidata.json` (fetched by `tools/fetch-capitals.mjs`), `CAP_FROM`, `CAP_SKIP`, `CAP_DROP`, `CAP_NAME`, `CAP_NEAR_DEG`, and `CAP_SAME_KM` in the builder; the rules are in the README, step 10 of "From 1200 to 1885".
+- Sources: (1) Wikidata, capital (P36) statements with their start and end dates (P580, P582), ranks, and the capitals' coordinates, fetched on 27 October 2026 for the 575 states whose Wikipedia articles have them. (2) The states' Wikipedia articles, through which the states are matched, for the spot checks above. Hungary: Engel, *The Realm of St Stephen* (2001), on Buda as the royal seat and Székesfehérvár as the coronation city. Morocco: Rabat became the capital under the protectorate in 1912. Montserrat: Brades has been the de facto capital since the eruption of 1997.
+- Confidence: medium, because Wikidata is uneven: the well-studied states have dated statements, many others have one capital with no dates, and some have none. The two sources are not independent, since Wikidata's statements are often taken from Wikipedia.
+- Alternatives: a hand-made table of capitals by date from the atlases in MAPMAKING, which would be better and is left for later; a single capital per state, as CShapes has after 1886, which would show later capitals for earlier years.
+- Left out: the Holy Roman Empire, whose statements are the seats of its institutions; states whose capitals have no dates and lie far apart, such as the Mughal Empire between Delhi and Lahore outside its dated stretches, the Crown of Castile, and Konbaung Burma; capitals more than about 30 km outside the state's land in that year, such as London for British North America; and everything before 1400.
 
 ## 1200–1806 | Central Europe and Italy | the Holy Roman Empire as a state of states
 

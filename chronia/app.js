@@ -524,7 +524,7 @@
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: null, start: r[2], end: r[3] };
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, topo: { hi: c.data.hi, lo: c.data.lo },
@@ -2076,7 +2076,7 @@
 
   function groundLayout(snap, p, name, allow) {
     labelEpoch();
-    var g = p.group ? p.geoLo : snap.geoms.lo[p.i], cap = snap.modern && p.cap ? capitalAt(p.cap, dayOfTime(now)) : null;
+    var g = p.group ? p.geoLo : snap.geoms.lo[p.i], cap = (snap.modern || snap.dated) && p.cap ? capitalNow(p.cap) : null;
     var key = (flat ? "f" : "g") + (p.group ? "G" : "") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : ""), hit = groundCache.get(key);
     if (hit) { groundCache.delete(key); groundCache.set(key, hit); }
     if (hit || !allow) return hit;
@@ -2455,6 +2455,11 @@
     if (m) for (var i = 0; i < m.length; i++) if (day <= m[i][0]) return [m[i][1], m[i][2], m[i][3]];
     return [namedAt(c[3], c[0], day), c[1], c[2]];
   }
+  function capitalNow(cap) {
+    if (!cap) return null;
+    var c = capitalAt(cap, Math.min(dayOfTime(now), modern.toDay));
+    return c[0] ? c : null;
+  }
   function namedAt(names, fallback, when) {
     var n = fallback;
     if (names) for (var i = 0; i < names.length; i++) if (names[i][0] <= when) n = names[i][1];
@@ -2521,12 +2526,13 @@
   function markSize(S) { return S < 900 ? 1 : 1.15; }
   function capitalList(snap, S) {
     var out = [];
-    if (!snap.modern || S < 230) return out;
-    var day = dayOfTime(now);
+    if (!(snap.modern || snap.dated) || S < 230) return out;
+    var seen = new Set();
     for (var i = 0; i < snap.order.length; i++) {
-      var p = snap.order[i];
-      if (!p.cap) continue;
-      var c = capitalAt(p.cap, day), pt = projectLL(c[1], c[2]);
+      var p = snap.order[i], c = capitalNow(p.cap);
+      if (!c || seen.has(p.id + "|" + c[1] + "|" + c[2])) continue;
+      seen.add(p.id + "|" + c[1] + "|" + c[2]);
+      var pt = projectLL(c[1], c[2]);
       if (pt && pt[2] >= 0.25) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: p.cap, city: cityNear(c[1], c[2], c[0]) });
     }
     return out;
@@ -2580,7 +2586,7 @@
     var k = markSize(S), modernNow = current && current.modern, i;
     ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     var capCity = new Set();
-    if (modernNow) {
+    if (current) {
       var caps = capitalList(current, S);
       for (i = 0; i < caps.length; i++) {
         placeOne(placed, caps[i].pt, caps[i].name, k, 0, false, { cap: caps[i].cap, of: caps[i].id, city: caps[i].city });
@@ -3443,8 +3449,8 @@
   }
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
-    if (!r.cap) return { lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, of: -1, kind: l.kind };
-    var day = Math.min(dayOfTime(now), modern.toDay), at = capitalAt(r.cap, day);
+    var at = r.cap ? capitalNow(r.cap) || (city ? null : capitalAt(r.cap, Math.min(dayOfTime(now), modern.toDay))) : null;
+    if (!at) return { lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, of: -1, kind: l.kind };
     if (city) return { lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, of: r.of, kind: l.kind };
     return { lon: at[1], lat: at[2], modern: at[0], names: null, since: null, of: r.of, kind: l.kind };
   }
@@ -3456,10 +3462,8 @@
     if (!current) return null;
     if (c.of >= 0 && current.byId.has(c.of)) {
       var own = current.byId.get(c.of);
-      if (own.cap) {
-        var at = capitalAt(own.cap, Math.min(dayOfTime(now), modern.toDay));
-        if (Math.abs(at[1] - c.lon) < 0.05 && Math.abs(at[2] - c.lat) < 0.05) return own;
-      }
+      var at = capitalNow(own.cap);
+      if (at && Math.abs(at[1] - c.lon) < 0.05 && Math.abs(at[2] - c.lat) < 0.05) return own;
     }
     var pt = projectLL(c.lon, c.lat);
     if (!pt) return null;
@@ -3481,20 +3485,21 @@
   }
   function renderCityCard(click) {
     var c = selCity, f = cityFacts(c), p = cityState(c);
-    var when = f.modernNow ? fmtDay(f.day) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
-    var isCap = !!(p && p.cap && (function () { var at = capitalAt(p.cap, Math.min(dayOfTime(now), modern.toDay)); return Math.abs(at[1] - c.lon) < 0.05 && Math.abs(at[2] - c.lat) < 0.05; })());
+    var datedNow = !!(current && current.dated), on = datedNow ? " in " : " on ";
+    var when = f.modernNow ? fmtDay(f.day) : datedNow ? fmtYear(Math.round(now)) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
+    var capAt = p ? capitalNow(p.cap) : null, isCap = !!(capAt && Math.abs(capAt[1] - c.lon) < 0.05 && Math.abs(capAt[2] - c.lat) < 0.05);
     $("card-kind").textContent = isCap ? "Capital" : c.place ? "Place" : c.kind === "town" ? "Town" : "City";
     $("card-name").textContent = f.name;
     var facts = $("card-facts");
     facts.textContent = "";
     var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
     if (f.modern && f.modern !== f.name) addText("Now " + f.modern + ". ");
-    if (f.early) addText("Not yet founded on " + when + ". ");
+    if (f.early) addText("Not yet founded" + on + when + ". ");
     else if (p) {
       addText(isCap ? "Capital of " : "In ");
       facts.appendChild(polityButton(p.id));
-      addText(" on " + when + ".");
-    } else addText("In no state on " + when + ".");
+      addText(on + when + ".");
+    } else addText("In no state" + on + when + ".");
     var y = askYear();
     loadWiki(f.modern || f.name, f.modern && f.modern !== f.name ? f.name : f.modern || f.name, {
       ask: { kind: "city", name: f.name, modern: f.modern || "", lon: c.lon, lat: c.lat, state: p ? polityName(p.id) : "", capital: isCap, year: y },
@@ -3527,7 +3532,8 @@
         addText((datedNow ? " in " : " on ") + when + ". ");
       }
       if (p.part >= 0 && p.part !== p.ruler) { addText("Part of "); addPolity(p.part); addText(". "); }
-      if (p.cap) addText("Capital: " + capitalName(capitalAt(p.cap, Math.min(dayOfTime(now), modern.toDay))) + ". ");
+      var capNow = capitalNow(p.cap);
+      if (capNow) addText("Capital: " + capitalName(capNow) + ". ");
       if (modernNow) {
         addText(p.end < 0 ? "These borders since " + fmtDay(p.start) + ". " : "These borders from " + fmtDay(p.start) + " to " + fmtDay(p.end) + ". ");
       } else if (datedNow) {
@@ -3559,7 +3565,7 @@
         status: e[4] || (p && p.people) ? "people" : p && p.claims ? "state" : p && p.status > 0 ? STATUS_ASK[p.status] || "dependency" : p && p.ruler >= 0 ? "dependency" : "state",
         ruler: p && p.ruler >= 0 ? polityName(p.ruler) : "",
         partOf: p && p.part >= 0 && p.part !== p.ruler ? polityName(p.part) : "",
-        capital: p && p.cap ? capitalAt(p.cap, Math.min(dayOfTime(now), modern.toDay))[0] : "",
+        capital: p && capitalNow(p.cap) ? capitalNow(p.cap)[0] : "",
         since: modernNow && p ? isoDay(p.start) : "",
         neighbours: neighbourNames(selected),
         year: y
@@ -3966,7 +3972,7 @@
   var STORE_KEY = "chronia-key";
   var keyBtn = $("key-btn"), keyList = $("key-list"), keyState = "";
   var KEY_ROWS = {
-    capital: function (s) { return layers.capitals && !!s.modern; },
+    capital: function (s) { return layers.capitals && (!!s.modern || s.dated && s.polys.some(function (p) { return p && !!capitalNow(p.cap); })); },
     city: function () { return layers.cities && !!cities && localScale() >= 230; },
     town: function () { return layers.cities && !!cities && cityTier(localScale()) >= 2; },
     border: function (s) { return s.polys.some(function (p) { return p && !p.soft; }); },
