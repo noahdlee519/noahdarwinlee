@@ -7071,7 +7071,17 @@
     ae.className = "uc-chron-text";
     box.appendChild(qe); box.appendChild(ae);
     if (a) renderProse(ae, a);
+    syncLatest();
     return { q: qe, a: ae };
+  }
+  function syncLatest() {
+    var qs = $("history-turns").querySelectorAll(".uc-chron-q"), last = qs.length && $("history-chat").hidden === false ? qs[qs.length - 1].textContent : "";
+    var l = $("history-latest"), m = $("history-latest-more"), a = $("history-asked"), text = last || a.textContent, more = last ? "" : $("history-asked-more").textContent;
+    if (l.textContent !== text) { l.textContent = text; l.setAttribute("aria-expanded", "false"); m.classList.remove("is-open"); }
+    m.textContent = more;
+    l.hidden = !text || savedOpen();
+    m.hidden = l.hidden || !more;
+    $("history").classList.toggle("is-asked-top", !last);
   }
   function askedOf(c) { return c.asked || (c.premise || "").split("\n")[0] || c.note || ""; }
   function savedOpen() { return !$("history-saved").hidden; }
@@ -7079,6 +7089,7 @@
     var parts = splitPremise(q || ""), e = $("history-asked"), m = $("history-asked-more");
     e.textContent = parts.main; e.hidden = !parts.main || savedOpen();
     m.textContent = parts.details.join(" | "); m.hidden = !parts.details.length || e.hidden;
+    syncLatest();
   }
   function showConv(c) {
     describeChanges();
@@ -7086,6 +7097,7 @@
     renderHistory(c.history);
     renderTurns(c);
     $("history-chat").hidden = false;
+    syncLatest();
     setStatus($("history-chat-status"), "");
     var stale = c.map ? !sameMap(c) : c.changes !== describeChanges();
     historyStatus(stale ? "The map has changed since this was written." : "");
@@ -7097,6 +7109,7 @@
     $("history-saved-btn").textContent = open ? "Back" : "Saved";
     if (open) {
       ["history-ask", "history-new", "history-asked", "history-asked-more", "history-text", "history-chat", "history-status"].forEach(function (id) { $(id).hidden = true; });
+      syncLatest();
       renderSaved();
       return;
     }
@@ -7105,6 +7118,7 @@
     $("history-asked").hidden = !$("history-asked").textContent;
     $("history-asked-more").hidden = $("history-asked").hidden || !$("history-asked-more").textContent;
     if (historyBusy) { showAsk(false); $("history-chat").hidden = busyKind !== "chat"; }
+    syncLatest();
     showHistory(true);
   }
   function renderSaved() {
@@ -7550,6 +7564,7 @@
       }
       if (edited) storeConv(c);
       turn.q.remove(); turn.a.remove();
+      syncLatest();
       if (!$("history-q").value) $("history-q").value = q;
     };
     var payload = { mode: "chat", changes: describeChanges() || c.changes, note: c.premise || c.note || "", history: c.history, turns: c.turns.slice(-24), question: q };
@@ -7593,6 +7608,11 @@
   $("history-signout").addEventListener("click", function () { keepSession(null); showAccount(); });
   $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("history-ask-go").click(); } });
   $("history-saved-btn").addEventListener("click", function () { showSaved($("history-saved").hidden); });
+  $("history-latest").addEventListener("click", function () {
+    var open = this.getAttribute("aria-expanded") !== "true";
+    this.setAttribute("aria-expanded", String(open));
+    $("history-latest-more").classList.toggle("is-open", open);
+  });
 
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("history").hidden && $("history").contains(document.activeElement)) { showHistory(false); $("history-btn").focus(); } });
 

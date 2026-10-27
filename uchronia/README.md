@@ -664,6 +664,15 @@ of `/greatercircle/`.
     question asked as a quote, a short note when the map has changed since,
     then the history and the conversation; *New history* in its header opens
     the form alone, with *Cancel* to go back.
+  - The top of the panel stays in place while the history scrolls beneath
+    it: the title with *New history*, *Saved*, and the close button, the
+    account's email with *Sign out*, and the most recent prompt, which is the
+    question asked last in the conversation or, before any, the history's own
+    turning point or note. A long prompt is cut to three lines; clicking it
+    shows it whole. When the history's own prompt is the one at the top, it
+    is not repeated above the history. In the code, `.uc-chron-top` is the
+    sticky block and `syncLatest()` fills `#history-latest` whenever the
+    asked question, the conversation, or the Saved list changes.
   - **What it will not write.** Every request carries the same limits: nothing
     that celebrates, excuses, or calls for genocide, ethnic cleansing, slavery,
     terrorism, or hatred of a people; nothing sexual; nothing aimed at a real

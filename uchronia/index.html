@@ -306,6 +306,7 @@
     <div class="uc-status" id="status" role="status" hidden><span id="status-text"></span><button type="button" id="status-action" class="uc-linkbtn" hidden></button></div>
 
     <section class="uc-chron" id="history" hidden aria-labelledby="history-title">
+      <div class="uc-chron-top">
       <header class="uc-chron-head">
         <h2 class="uc-chron-title" id="history-title">Historian</h2>
         <button type="button" class="uc-linkbtn uc-chron-new" id="history-new" hidden>New history</button>
@@ -314,12 +315,15 @@
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </header>
+      <p class="uc-chron-account" id="history-account" hidden><span id="history-who"></span> <button type="button" class="uc-linkbtn" id="history-signout">Sign out</button></p>
+      <button type="button" class="uc-chron-q uc-chron-latest" id="history-latest" aria-expanded="false" hidden></button>
+      <p class="uc-chron-asked-more uc-chron-latest-more" id="history-latest-more" hidden></p>
+      </div>
       <div class="uc-chron-signin" id="history-signin" hidden>
         <p class="uc-chron-hint">Sign in to use the historian. Each account can ask it five times a day, counting histories, redrawn maps, and questions.</p>
         <div class="uc-chron-gsi" id="history-gsi" hidden></div>
         <button type="button" class="uc-btn" id="history-google">Sign in with Google</button>
       </div>
-      <p class="uc-chron-account" id="history-account" hidden><span id="history-who"></span> <button type="button" class="uc-linkbtn" id="history-signout">Sign out</button></p>
       <div class="uc-chron-ask" id="history-ask">
         <div class="uc-seg uc-chron-modes" role="group" aria-label="Write the history of">
           <button type="button" id="mode-map" aria-pressed="true">Your map</button>

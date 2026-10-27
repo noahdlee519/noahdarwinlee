@@ -537,13 +537,63 @@ body.uc-page {
   box-sizing: border-box;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 16px 22px 22px;
+  --chron-pt: 16px;
+  --chron-px: 22px;
+  padding: var(--chron-pt) var(--chron-px) 22px;
   background: var(--bg);
   color: var(--ink);
   border: 1px solid var(--rule);
 }
 .uc-chron[hidden] {
   display: none;
+}
+.uc-chron-top {
+  position: sticky;
+  top: calc(-1 * var(--chron-pt));
+  z-index: 3;
+  margin: calc(-1 * var(--chron-pt)) calc(-1 * var(--chron-px)) 0;
+  padding: var(--chron-pt) var(--chron-px) 12px;
+  background: inherit;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 35%, transparent);
+}
+.uc-chron-q.uc-chron-latest {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--uc-muted);
+  cursor: pointer;
+}
+.uc-chron-q.uc-chron-latest[aria-expanded="true"] {
+  display: block;
+}
+.uc-chron-q.uc-chron-latest[hidden],
+.uc-chron-latest-more[hidden],
+.uc-chron.is-asked-top #history-asked,
+.uc-chron.is-asked-top #history-asked-more {
+  display: none;
+}
+.uc-chron-latest-more {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.uc-chron-latest-more.is-open {
+  display: block;
+}
+.uc-chron-q {
+  scroll-margin-top: 140px;
 }
 .uc-chron-head {
   display: flex;
@@ -1178,7 +1228,9 @@ body.uc-page {
     bottom: 0;
     left: 0;
     width: auto;
-    padding: calc(16px + env(safe-area-inset-top, 0px)) 18px calc(28px + env(safe-area-inset-bottom, 0px));
+    --chron-pt: calc(16px + env(safe-area-inset-top, 0px));
+    --chron-px: 18px;
+    padding: var(--chron-pt) var(--chron-px) calc(28px + env(safe-area-inset-bottom, 0px));
     border: 0;
   }
   .uc-chron-close {
