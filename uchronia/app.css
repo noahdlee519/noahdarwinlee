@@ -774,6 +774,14 @@ body.uc-page {
 .uc-chron-flabel span::before {
   content: "| ";
 }
+.uc-chron-gsi {
+  min-height: 44px;
+}
+.uc-chron-gsi[hidden],
+#history-google[hidden] {
+  display: none;
+}
+#history-gsi.is-nudged,
 #history-google.is-nudged {
   animation: uc-nudge 900ms ease-out;
 }

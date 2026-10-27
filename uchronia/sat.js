@@ -205,6 +205,7 @@
         }
         next();
       },
+      put: function (src) { upload(src); },
       detailFits: function () { return gl.getParameter(gl.MAX_TEXTURE_SIZE) >= SLOT * SLOTS; },
       beginDetail: beginDetail,
       putTile: putTile,

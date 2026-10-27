@@ -616,6 +616,21 @@ async function refresh(token: string) {
   return s && typeof s.access_token === "string" && typeof s.refresh_token === "string" ? { access_token: s.access_token, refresh_token: s.refresh_token } : null;
 }
 
+// Google's own sign-in button on the page hands back an ID token; Supabase trades it for a session.
+async function google(idToken: string, nonce: string) {
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/token?grant_type=id_token", {
+    method: "POST",
+    headers: { apikey: dbKey().apikey, "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: "google", id_token: idToken, nonce }),
+  });
+  if (!res.ok) {
+    console.error("google sign-in", res.status, (await res.text()).slice(0, 300));
+    return null;
+  }
+  const s = await res.json();
+  return s && typeof s.access_token === "string" && typeof s.refresh_token === "string" ? { access_token: s.access_token, refresh_token: s.refresh_token } : null;
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   if (!allowed(origin)) return new Response("Forbidden", { status: 403 });
@@ -631,6 +646,11 @@ Deno.serve(async (req) => {
     body = await req.json();
   } catch (_) {
     return json(400, { error: "body" }, o);
+  }
+  if (body.mode === "google") {
+    const idToken = str((body as any).id_token, 4000), nonce = str((body as any).nonce, 200);
+    const fresh = idToken ? await google(idToken, nonce).catch((e) => { console.error(e); return null; }) : null;
+    return fresh ? json(200, fresh, o) : json(401, { error: "signin" }, o);
   }
   if (body.mode === "refresh") {
     const token = str((body as any).refresh_token, 400);

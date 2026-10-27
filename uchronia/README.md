@@ -61,6 +61,16 @@ of `/greatercircle/`.
     at half resolution (and no finer region lines) while it moves, for the
     rest of the visit, and sharp again as soon as it stops; on a sharp
     (2x) screen that is a quarter of the pixels.
+  - **Turning the whole globe**, as Google Earth does it: while the globe is
+    zoomed out (to 1.7), the map is not drawn afresh each frame. It is
+    painted once, when the map is still, onto a flat 4096 by 2048 image of
+    the whole world (equirectangular: the flat map's own drawing, with the
+    sea, fills, terrain, bands, lines, rivers, and borders, but no names),
+    which `sat.js` hands to the graphics card; each frame while the globe
+    turns, its shader wraps that image round the globe, and the page draws
+    the names, cities, frame, and aging on top as usual. The image is painted
+    again about a second after the map, the style, or the View menu changes
+    (`texKey()`), and while it is out of date the globe is drawn the usual way.
     Shapes so large that they wrap behind the globe and enclose the point
     opposite the view are drawn through d3-geo's clipping instead, so they
     don't flood the whole disc. Line segments along the date line and the
@@ -582,7 +592,8 @@ of `/greatercircle/`.
     optional details under it: when history parts from ours, the year to
     show, places to focus on, what to leave as in our world, how far it goes
     (*Close to history*, *Bold*, the historian's usual, or *Wild*), and
-    whether to draw borders by county and district. The page sends them
+    whether territory may change at the second-level subdivision level
+    (counties and districts). The page sends them
     after the question as a labelled list ("Details from the mapmaker:"),
     which the server function's outline and plan prompts tell Claude to
     follow; above the history the question shows on its own, with the
@@ -712,9 +723,21 @@ of `/greatercircle/`.
     when the site as a whole has, the message says the historian has done
     all it can.
   - Using the historian needs a Google sign-in, the same Supabase sign-in
-    citylayoutguessr uses. Signed out, the Historian panel offers *Sign in
-    with Google* and its buttons are disabled; saved histories can still be
-    read. The button goes to Supabase's `/auth/v1/authorize` and comes back to
+    citylayoutguessr uses. Signed out, the Historian panel shows Google's own
+    sign-in button, loaded from Google (`accounts.google.com/gsi/client`) once
+    `GOOGLE_CLIENT` in `app.js` holds the site's Google OAuth client ID. The
+    sign-in then happens on this page, so Google names noahdarwinlee.com rather
+    than Supabase, and nothing typed is lost. Google hands back an ID token,
+    made with a nonce whose SHA-256 the page gives Google; the page sends the
+    token and the nonce to the server function (`mode: "google"`), which trades
+    them with Supabase (`/auth/v1/token?grant_type=id_token`) for a session.
+    The Historian's buttons stay live signed out: a click points to the
+    sign-in, opens Google's one-tap prompt, and runs once the sign-in is done.
+    Without a client ID, or if Google's script won't load, the panel offers
+    *Sign in with Google*, which keeps the draft (the turning point, its
+    details, and a question being written) in the tab's `sessionStorage`
+    (`uchronia-draft`) and puts it back on return. It goes to Supabase's
+    `/auth/v1/authorize` and comes back to
     `/uchronia/?historian` with the session in the address's fragment, which
     the page keeps in `localStorage` (`uchronia-auth`), clears from the
     address, and answers by opening the panel. Signed in, the panel shows the

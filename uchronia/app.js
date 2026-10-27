@@ -247,6 +247,98 @@
   function scheduleRender() {
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
   }
+  // The globe while it turns, as Google Earth does it: the map is painted once
+  // onto a flat image of the whole world (equirectangular, 4096 by 2048), which
+  // the graphics card wraps round the globe each frame, so a turn costs almost
+  // nothing. Names, cities, and the frame are still drawn on top as usual. It is
+  // used only while the whole globe or most of it is in view, where drawing the
+  // map afresh each frame is slowest, and the image is painted again, when the
+  // map is still, after anything about the map changes.
+  var FAST_ZOOM = 1.7, TEX_W = 4096, TEX_H = 2048;
+  var mapGen = 0, texPass = false, mapTex = { canvas: null, gl: null, glCanvas: null, key: "", ready: false, timer: 0, failed: false };
+  function texKey() {
+    return [mapGen, ownerVersion, countriesVersion, pieces.length, pal.antique ? 1 : 0, pal.ocean, (pal.colors || []).join(), ui.terrain, ui.rivers, ui.lakes, ui.regionLines, ui.fine,
+      fineData ? 1 : 0, seaDeep ? 1 : 0, rivers ? 1 : 0, lakes ? 1 : 0, relief && relief.ready() ? 1 : 0, rd.gen, rd.put.size].join("|");
+  }
+  function fastGlobe() {
+    return interacting > 0 && !flat && !texPass && mapTex.ready && mapTex.key === texKey() && view.zoom <= FAST_ZOOM && !satOn();
+  }
+  function scheduleTexture() {
+    if (mapTex.failed || flat || satOn() || view.zoom > FAST_ZOOM * 1.4 || mapTex.key === texKey()) return;
+    clearTimeout(mapTex.timer);
+    mapTex.timer = setTimeout(function () {
+      if (interacting > 0 || stroke || flat) return scheduleTexture();
+      try { buildTexture(); } catch (e) { mapTex.failed = true; console.warn("map texture", e); }
+    }, 900);
+  }
+  function buildTexture() {
+    if (!mapTex.glCanvas) {
+      mapTex.glCanvas = document.createElement("canvas");
+      mapTex.gl = window.UchroniaSat ? window.UchroniaSat(mapTex.glCanvas) : null;
+      if (!mapTex.gl || !mapTex.gl.put) { mapTex.failed = true; return; }
+      mapTex.canvas = document.createElement("canvas");
+      mapTex.canvas.width = TEX_W; mapTex.canvas.height = TEX_H;
+    }
+    var key = texKey();
+    var keep = { ctx: ctx, W: W, H: H, dpr: dpr, cx: cx, cy: cy, flat: flat, k: FB.k, xc: FB.xc, yc: FB.yc, wrap: FB.wrap, vmin: FB.vmin, vmax: FB.vmax, pmin: FB.pmin, pmax: FB.pmax,
+      freeL: freeL, freeR: freeR, freeT: freeT, freeB: freeB, zoom: view.zoom, reliefRes: reliefRes };
+    var g = mapTex.canvas.getContext("2d");
+    try {
+      texPass = true;
+      ctx = g; W = TEX_W; H = TEX_H; dpr = 1; cx = TEX_W / 2; cy = TEX_H / 2; flat = true;
+      freeL = 0; freeR = TEX_W; freeT = 0; freeB = TEX_H;
+      FB.k = TEX_W / TAU; FB.xc = 0; FB.yc = 0; FB.wrap = false;
+      view.zoom = FB.k / baseK;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, TEX_W, TEX_H);
+      draw();
+    } finally {
+      texPass = false;
+      ctx = keep.ctx; W = keep.W; H = keep.H; dpr = keep.dpr; cx = keep.cx; cy = keep.cy; flat = keep.flat;
+      FB.k = keep.k; FB.xc = keep.xc; FB.yc = keep.yc; FB.wrap = keep.wrap; FB.vmin = keep.vmin; FB.vmax = keep.vmax; FB.pmin = keep.pmin; FB.pmax = keep.pmax;
+      freeL = keep.freeL; freeR = keep.freeR; freeT = keep.freeT; freeB = keep.freeB; view.zoom = keep.zoom;
+      reliefRes = -1; reliefKey = "";
+      if (relief) sizeRelief(keep.reliefRes);
+    }
+    mapTex.gl.put(mapTex.canvas);
+    mapTex.key = key;
+    mapTex.ready = true;
+  }
+  function drawFast() {
+    var S = localScale(), lvl = levelFor(), L = arcLines[lvl], r = B.r, gc = mapTex.glCanvas;
+    if (gc.width !== canvas.width || gc.height !== canvas.height) { gc.width = canvas.width; gc.height = canvas.height; }
+    mapTex.gl.draw({ flat: false, dpr: dpr, light: 0, sepia: 0, wash: 0, detail: false, cx: cx, cy: cy, e: [B.ex, B.ey, B.ez], n: [B.nx, B.ny, B.nz], c: [B.cx, B.cy, B.cz], r: r });
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
+    if (satView.hidden === false) satView.hidden = true;
+    if (r * 1.07 < Math.hypot(W, H)) {
+      var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.07);
+      glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, TAU); ctx.arc(cx, cy, r, 0, TAU, true); ctx.fill();
+    }
+    ctx.drawImage(gc, 0, 0, W, H);
+    mark("fills");
+    drawSelectionLine(L);
+    if (pal.antique) drawAging(S);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU);
+    ctx.strokeStyle = pal.limb; ctx.lineWidth = pal.antique ? 1.6 : 1; ctx.stroke();
+    if (pal.antique) { ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, TAU); ctx.lineWidth = 0.8; ctx.stroke(); }
+    mark("borders");
+    var placed = fixedBoxes();
+    drawLabels(placed);
+    drawSeaLabels(placed, S);
+    drawLakeLabels(placed, S);
+    mark("labels");
+    var cityShown = drawCities(placed);
+    drawRiverLabels(placed, S);
+    drawGridLabels(placed, false);
+    paintCities(cityShown, cityDot(S));
+    mark("cities");
+    drawScale();
+    ctx.restore();
+  }
   // When frames come slowly while the map moves (most often a large, sharp
   // screen), it is drawn at a lower resolution until it stops, and sharp again then.
   var lastFrameAt = 0, lagFrames = 0, lowRes = false;
@@ -267,7 +359,7 @@
     var t0 = performance.now();
     render();
     if (interacting > 0) noteCost(performance.now() - t0);
-    else { maybeDetail(); maybeRelief(); }
+    else { maybeDetail(); maybeRelief(); scheduleTexture(); }
   }
   function moving() {
     interacting = 1;
@@ -988,7 +1080,7 @@
   var layerCanvas = null;
   function layerFill(list, color, relPat) {
     var cv = layerCanvas || (layerCanvas = document.createElement("canvas"));
-    if (cv.width !== canvas.width || cv.height !== canvas.height) { cv.width = canvas.width; cv.height = canvas.height; }
+    if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) { cv.width = ctx.canvas.width; cv.height = ctx.canvas.height; }
     var g = cv.getContext("2d"), main = ctx;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = "copy"; g.globalAlpha = 1;
@@ -1051,7 +1143,7 @@
   }
   var bandCanvas = document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d");
   function bandLayer() {
-    if (bandCanvas.width !== canvas.width || bandCanvas.height !== canvas.height) { bandCanvas.width = canvas.width; bandCanvas.height = canvas.height; }
+    if (bandCanvas.width !== ctx.canvas.width || bandCanvas.height !== ctx.canvas.height) { bandCanvas.width = ctx.canvas.width; bandCanvas.height = ctx.canvas.height; }
     var b = bandCtx;
     b.setTransform(1, 0, 0, 1, 0, 0);
     b.globalAlpha = 1; b.globalCompositeOperation = "source-over";
@@ -1370,6 +1462,7 @@
     setupFrame();
     freshGroups();
     if (arcsDirty) rebuildArcs();
+    if (fastGlobe()) { drawFast(); return; }
     var lvl = levelFor(), F = feats[lvl], L = arcLines[lvl], S = localScale();
     var satellite = satOn(), satSea = satellite && !pal.antique, satLand = satellite && pal.antique;
     ctx.save();
@@ -1451,9 +1544,8 @@
     ctx.globalAlpha = 1;
     mark("fills");
 
-    if (stroke && !stroke.merged) drawStrokeOverlay(F, satellite);
-    drawHover(F, lvl);
-    drawSelectionFill(F, lvl);
+    if (stroke && !stroke.merged && !texPass) drawStrokeOverlay(F, satellite);
+    if (!texPass) { drawHover(F, lvl); drawSelectionFill(F, lvl); }
     mark("overlays");
 
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat, bl); }
@@ -1483,8 +1575,9 @@
     if (vis) clipOutPieces(vis);
     ctx.beginPath(); traceArcs(ctx, L, borderArcs);
     ctx.strokeStyle = pal.border; ctx.lineWidth = satellite ? 1.3 : 1.15; ctx.stroke();
-    drawSelectionLine(L);
+    if (!texPass) drawSelectionLine(L);
     if (vis) { ctx.restore(); drawPieceLines(vis, lvl, L, satellite); }
+    if (texPass) { if (flat) ctx.restore(); ctx.restore(); return; }
     drawLasso();
     if (pal.antique) drawAging(S);
 
@@ -4108,6 +4201,7 @@
 
   var saveTimer = 0;
   function changed() {
+    mapGen++;
     sharedOpen = 0;
     scheduleChecks();
     renderPanel();
@@ -6231,7 +6325,7 @@
       });
     }
     ready.then(function () { fineDone = true; }, function () { fineDone = true; });
-    ready.then(openSharedFromHash).then(scheduleChecks).then(function () { if (signedBack) showHistory(true); });
+    ready.then(openSharedFromHash).then(scheduleChecks).then(function () { if (signedBack) { showHistory(true); takeDraft(); } });
     loadRivers();
     var settled = function () {
       return fineDone && labelQueue.size === 0 && (!ui.rivers || riversDone)
@@ -6356,7 +6450,82 @@
     else setTimeout(function () { toast("Signing in did not work: " + (q.get("error_description") || "try again")); }, 0);
   })();
   function signedIn() { return !!readSession(); }
+  // Google's own sign-in button, on this page: Google shows the site's own name,
+  // and the page never leaves, so whatever was typed stays. Google hands back
+  // an ID token, which the server function trades with Supabase for a session.
+  // Without a client ID, or if Google's script won't load, the page falls
+  // back to Supabase's redirect, keeping the draft in the tab while it goes.
+  var GOOGLE_CLIENT = "", gsiState = 0, gsiNonce = "", pendingAsk = null;
+  function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join(""); }
+  function sha256Hex(text) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
+      return Array.from(new Uint8Array(buf), function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join("");
+    });
+  }
+  function startGoogle() {
+    if (!GOOGLE_CLIENT || gsiState || !window.crypto || !crypto.subtle) return;
+    gsiState = 1;
+    var sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true;
+    sc.onerror = function () { gsiState = -1; showAccount(); };
+    sc.onload = function () {
+      gsiNonce = randomHex(32);
+      sha256Hex(gsiNonce).then(function (hashed) {
+        try {
+          google.accounts.id.initialize({ client_id: GOOGLE_CLIENT, callback: googleSignedIn, nonce: hashed, ux_mode: "popup", context: "signin", itp_support: true, use_fedcm_for_prompt: true });
+          gsiState = 2;
+          drawGoogleButton();
+        } catch (e) { console.warn("google sign-in", e); gsiState = -1; }
+        showAccount();
+      });
+    };
+    document.head.appendChild(sc);
+  }
+  function drawGoogleButton() {
+    var box = $("history-gsi");
+    if (gsiState !== 2 || !box || box.childElementCount) return;
+    var dark = document.documentElement.getAttribute("data-theme") === "dark" && !pal.antique;
+    google.accounts.id.renderButton(box, { type: "standard", theme: dark ? "filled_black" : "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 260 });
+  }
+  function googleSignedIn(resp) {
+    if (!resp || !resp.credential) return;
+    historyStatus("Signing in…");
+    fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "google", id_token: resp.credential, nonce: gsiNonce }) }).then(function (res) {
+      if (!res.ok) throw new Error("google " + res.status);
+      return res.json();
+    }).then(function (d) {
+      keepSession(sessionFrom(d.access_token, d.refresh_token));
+      historyStatus("");
+      syncAccount();
+      var go = pendingAsk;
+      pendingAsk = null;
+      if (go) $(go).click();
+    }).catch(function (e) {
+      console.warn("google sign-in", e);
+      historyStatus("Signing in did not work. Try again, or use the other sign-in below.");
+      gsiState = -1; showAccount();
+    });
+  }
+  var STORE_DRAFT = "uchronia-draft";
+  function keepDraft() {
+    var d = { mode: askMode, input: $("history-input").value, q: $("history-q").value, bold: turnBold, fine: $("turn-fine").checked };
+    ["turn-when", "turn-year", "turn-focus", "turn-keep"].forEach(function (id) { d[id] = $(id).value; });
+    try { sessionStorage.setItem(STORE_DRAFT, JSON.stringify(d)); } catch (e) { }
+  }
+  function takeDraft() {
+    var d = null;
+    try { d = JSON.parse(sessionStorage.getItem(STORE_DRAFT) || "null"); sessionStorage.removeItem(STORE_DRAFT); } catch (e) { }
+    if (!d) return;
+    if (d.mode === "turn" || d.mode === "map") setMode(d.mode);
+    if (typeof d.input === "string") $("history-input").value = d.input;
+    if (typeof d.q === "string") $("history-q").value = d.q;
+    ["turn-when", "turn-year", "turn-focus", "turn-keep"].forEach(function (id) { if (typeof d[id] === "string") $(id).value = d[id]; });
+    $("turn-fine").checked = !!d.fine;
+    setBold(typeof d.bold === "string" ? d.bold : "");
+  }
   function signIn() {
+    keepDraft();
     flushSave();
     location.href = AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname + "?historian");
   }
@@ -6394,6 +6563,12 @@
     var s = signedIn() ? session : null;
     $("history-signin").hidden = !!s;
     $("history-account").hidden = !s;
+    if (!s) {
+      startGoogle();
+      drawGoogleButton();
+      $("history-gsi").hidden = gsiState !== 2;
+      $("history-google").hidden = gsiState === 2;
+    }
     if (s) $("history-who").textContent = (s.email || "Signed in") + (historianLeft === null ? "" : " | " + historianLeft + " of " + historianCap + " left today");
     if ($("history-ask-go")) syncAsk();
   }
@@ -7018,7 +7193,7 @@
     [/^Leave as in our world: /, "Leaves alone: "],
     [/^How far it goes: close to history.*/, "Close to history"],
     [/^How far it goes: wild.*/, "Wild"],
-    [/^Borders: .*/, "County and district borders"]
+    [/^Borders: .*/, "Second-level changes"]
   ];
   function turnPremise() {
     var main = $("history-input").value.trim(), d = [], v;
@@ -7029,7 +7204,7 @@
     if ((v = $("turn-keep").value.trim())) d.push("Leave as in our world: " + v);
     if (turnBold === "close") d.push("How far it goes: close to history, only the changes the turning point would most likely bring");
     else if (turnBold === "wild") d.push("How far it goes: wild, follow the butterfly effects as far as they can run");
-    if ($("turn-fine").checked) d.push("Borders: draw them by county and district where they change");
+    if ($("turn-fine").checked) d.push("Borders: territory may change hands at the second-level subdivision level, by county and district");
     return d.length ? main + "\n\n" + DETAILS + "\n" + d.map(function (x) { return "- " + x; }).join("\n") : main;
   }
   function splitPremise(q) {
@@ -7143,16 +7318,18 @@
   $("history-btn").addEventListener("click", function () { showHistory($("history").hidden); });
   $("history-close").addEventListener("click", function () { showHistory(false); $("history-btn").focus(); });
   // Signed out, the buttons still work: they point to the sign-in instead.
-  function needSignIn() {
+  function needSignIn(go) {
     if (signedIn()) return false;
+    pendingAsk = go || null;
     historyStatus(SIGN_IN + " Each account can ask five times a day.");
-    var g = $("history-google");
+    if (gsiState === 2) { try { google.accounts.id.prompt(); } catch (e) { } }
+    var g = gsiState === 2 ? $("history-gsi") : $("history-google");
     g.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
     g.focus({ preventScroll: true });
     g.classList.remove("is-nudged"); void g.offsetWidth; g.classList.add("is-nudged");
     return true;
   }
-  $("history-go").addEventListener("click", function () { if (needSignIn()) return; if (askMode === "turn") redrawMap(); else writeHistory(); });
+  $("history-go").addEventListener("click", function () { if (needSignIn("history-go")) return; if (askMode === "turn") redrawMap(); else writeHistory(); });
   $("mode-map").addEventListener("click", function () { setMode("map"); });
   $("mode-turn").addEventListener("click", function () { setMode("turn"); });
   $("history-new").addEventListener("click", function () {
@@ -7396,7 +7573,7 @@
       finish("The historian could not be reached. Check your connection and try again.");
     });
   }
-  $("history-ask-go").addEventListener("click", function () { if (!needSignIn()) askHistorian(); });
+  $("history-ask-go").addEventListener("click", function () { if (!needSignIn("history-ask-go")) askHistorian(); });
   $("history-google").addEventListener("click", signIn);
   $("history-signout").addEventListener("click", function () { keepSession(null); showAccount(); });
   $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("history-ask-go").click(); } });
@@ -7591,6 +7768,9 @@
     fillOf: function (c) { return colorOf(c); },
     shownName: function (c) { return shownName(c); },
     tierOn: function (c, t) { return tierOn(c, t); },
+    texture: function () { return { ready: mapTex.ready, fresh: mapTex.key === texKey(), failed: mapTex.failed }; },
+    buildTexture: function () { var t0 = performance.now(); buildTexture(); return performance.now() - t0; },
+    timeMoving: function () { var i = interacting; interacting = 1; var t0 = performance.now(); render(); var t = performance.now() - t0; interacting = i; return t; },
     lineArcs: function () { if (arcsDirty) { freshGroups(); rebuildArcs(); } return { prov: provArcs.length, unit: unitArcs.length }; },
     lakesDrawn: function () { return lakesDrawn; },
     timeRender: function () { var t0 = performance.now(); render(); return performance.now() - t0; },
