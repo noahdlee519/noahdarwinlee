@@ -6455,7 +6455,7 @@
   // an ID token, which the server function trades with Supabase for a session.
   // Without a client ID, or if Google's script won't load, the page falls
   // back to Supabase's redirect, keeping the draft in the tab while it goes.
-  var GOOGLE_CLIENT = "", gsiState = 0, gsiNonce = "", pendingAsk = null;
+  var GOOGLE_CLIENT = "925004414037-rc7f9m47jivrobj48p33vmkdfpvuva7t.apps.googleusercontent.com", gsiState = 0, gsiNonce = "", pendingAsk = null;
   function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join(""); }
   function sha256Hex(text) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
