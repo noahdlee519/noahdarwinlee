@@ -318,7 +318,7 @@ const catId = (name) => {
 };
 const snapshots = [];
 
-for (const { f, y } of files) {
+const readHb = (f, y) => {
   const geo = JSON.parse(readFileSync(resolve(source, f), "utf8"));
   const groups = new Map();
   const unnamed = [];
@@ -357,8 +357,9 @@ for (const { f, y } of files) {
     feats.push({ type: "Feature", properties: { name: g.name, ruler, part: g.part && g.part !== g.name ? g.part : "", b: Math.min(...g.prec) }, geometry: { type: "MultiPolygon", coordinates: polys } });
   }
   for (const geom of unnamed) feats.push({ type: "Feature", properties: { name: "" }, geometry: geom });
-  snapshots.push({ y, feats });
-}
+  return { y, feats };
+};
+for (const { f, y } of files) snapshots.push(readHb(f, y));
 
 const isPeople = (name, ruler, y, label) => {
   if (PEOPLES.test(name)) return true;
@@ -526,7 +527,7 @@ function cutOver(polys, box, first, last, cands, opt = {}) {
         for (const c of act) { const w = share && share.get(c) || 0; if (w > best) { best = w; top = c; } }
         if (top && opt.member(top, best / opt.cellsW, s)) { member = top; owner = null; }
       }
-      const d = member ? subtract(polys, act.filter((c) => c !== member).map((c) => c.polys)) : opt.drop && covered >= opt.drop ? [] : subtract(polys, act.map((c) => c.polys));
+      const d = member ? subtract(polys, act.filter((c) => c !== member).map((c) => c.polys)) : opt.drop && covered >= opt.drop ? (opt.whole && (1 - covered) * opt.whole >= BIG_REST_KM2 ? subtract(polys, act.map((c) => c.polys)).filter(bigPiece) : []) : subtract(polys, act.map((c) => c.polys));
       r = { polys: d, owner, member, text: JSON.stringify(d) + "|" + (owner ? owner.uid : "") + "|" + (member ? member.uid : "") };
       memo.set(key, r);
     }
@@ -537,6 +538,8 @@ function cutOver(polys, box, first, last, cands, opt = {}) {
   return res;
 }
 const MIN_KM2 = 1500, MIN_WIDTH_KM = 25, OWN_KM2 = 20, OWN_WIDTH_KM = 4, SLIVER_KM2 = 300, SLIVER_WIDTH_KM = 8;
+const BIG_REST_KM2 = 20000, PIECE_KM2 = 5000, PIECE_WIDTH_KM = 40;
+const bigPiece = (p) => { const a = polyKm2(p); return a >= PIECE_KM2 && (2 * a) / ringKm(p[0]) >= PIECE_WIDTH_KM; };
 const ownPiece = (p) => { const a = polyKm2(p); return a >= OWN_KM2 && (2 * a) / ringKm(p[0]) >= OWN_WIDTH_KM; };
 const keepRemnant = (polys, whole, maxCovered, wholeWidth = Infinity) => {
   const total = km2Of(polys);
@@ -644,6 +647,7 @@ const clioSpans = [];
 }
 clioRows.length = 0;
 
+const WELLINGTON = [174.78, -41.29], BUENOS_AIRES = [-58.38, -34.6], WASHINGTON = [-77.04, 38.9];
 const LONDON = [-0.12, 51.5], LISBON = [-9.14, 38.72], COPENHAGEN = [12.57, 55.68], BERGEN = [5.32, 60.39], OSLO = [10.75, 59.91];
 const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARIS = [2.35, 48.86], ISTANBUL = [28.98, 41.01];
 const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
@@ -950,15 +954,36 @@ const SMALL = [
   { name: "Qatar", shape: { c: "QAT" }, wiki: "Qatar under Ottoman rule", periods: [["1886-01-01", "1915-12-31", "dependency", ISTANBUL, "fill"]] },
   { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", "2019-12-31", "dependency", COPENHAGEN, "fill"]] },
   { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", "2019-12-31", "dependency", OSLO, "fill"]] },
-  { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", "2019-12-31", "colony", LONDON, "fill"]] }
+  { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", "2019-12-31", "colony", LONDON, "fill"]] },
+  { name: "Samoa", shape: { c: "WSM" }, periods: [["1886-01-01", "1900-02-28", "state", null, "fill"], ["1962-01-01", "2019-12-31", "state", null, "fill"]] },
+  { name: "Samoa", shape: { c: "ASM" }, periods: [["1886-01-01", "1900-04-16", "state", null, "fill"]] },
+  { name: "American Samoa", shape: { c: "ASM" }, periods: [["1900-04-17", "2019-12-31", "dependency", WASHINGTON, "fill"]] },
+  { name: "Ottoman Empire", shape: { c: "SAU", n: ["Tabuk", "Al Madinah", "Makkah", "Al Bahah"] }, periods: [["1886-01-01", "1916-06-09", "state", null, "fill"]] },
+  { name: "Kingdom of Hejaz", shape: { c: "SAU", n: ["Tabuk", "Al Madinah", "Makkah", "Al Bahah"] }, periods: [["1916-06-10", "1925-12-19", "state", null, "fill"]] },
+  { name: "German Samoa", shape: { c: "WSM" }, periods: [["1900-03-01", "1914-08-29", "colony", BERLIN, "fill"]] },
+  { name: "Western Samoa", shape: { c: "WSM" }, wiki: "Western Samoa Trust Territory", periods: [["1914-08-30", "1961-12-31", "mandate", WELLINGTON, "fill"]] },
+  { name: "Tonga", shape: { c: "TON" }, periods: [["1886-01-01", "1900-05-17", "state", null, "fill"], ["1900-05-18", "1970-06-03", "protectorate", LONDON, "fill"], ["1970-06-04", "2019-12-31", "state", null, "fill"]] },
+  { name: "New Hebrides", shape: { c: "VUT" }, periods: [["1906-10-20", "1980-07-29", "dependency", LONDON, "fill"]] },
+  { name: "Vanuatu", shape: { c: "VUT" }, periods: [["1980-07-30", "2019-12-31", "state", null, "fill"]] },
+  { name: "Kerguelen Islands", shape: { c: "ATF", n: ["Archipel des Kerguelen"] }, periods: [["1893-01-01", "2019-12-31", "colony", PARIS, "fill"]] },
+  { name: "Falkland Islands", shape: { c: "FLK" }, periods: [["1886-01-01", "1982-04-01", "colony", LONDON, "fill"], ["1982-04-02", "1982-06-14", "occupied", BUENOS_AIRES, "fill"], ["1982-06-15", "2019-12-31", "colony", LONDON, "fill"]] },
+  { name: "South Georgia", shape: { c: "SGS" }, wiki: "South Georgia and the South Sandwich Islands", periods: [["1886-01-01", "1982-04-02", "colony", LONDON, "fill"], ["1982-04-03", "1982-04-25", "occupied", BUENOS_AIRES, "fill"], ["1982-04-26", "2019-12-31", "colony", LONDON, "fill"]] },
+  { name: "German New Guinea", shape: { c: "PNG", n: ["North Solomons"] }, periods: [["1886-01-01", "1914-11-10", "colony", BERLIN, "fill"]] },
+  { name: "Soviet Union", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1926-04-15", "1991-12-25", "state", null, "fill"]] },
+  { name: "Russia", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1991-12-26", "2019-12-31", "state", null, "fill"]] }
 ];
 const SMALL_KEEP_KM2 = 3000;
-const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, occupied: 4, dependency: 5 };
+const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
 const neUnits = JSON.parse(readFileSync(nePath, "utf8")).features.filter((f) => SMALL.some((s) => (!s.shape.c || s.shape.c === f.properties.adm0_a3) && (!s.shape.n || s.shape.n.includes(f.properties.name))));
 const smallShape = (sh) => {
   const feats = neUnits.filter((f) => (!sh.c || f.properties.adm0_a3 === sh.c) && (!sh.n || sh.n.includes(f.properties.name)));
   if (!feats.length || (sh.n && feats.length !== sh.n.length)) throw new Error("SMALL: Natural Earth units missing for " + JSON.stringify(sh));
-  return rewind(clip.union(...feats.map((f) => polysOf(f.geometry))));
+  const all = rewind(clip.union(...feats.map((f) => polysOf(f.geometry))));
+  if (!sh.box) return all;
+  const boxes = sh.box.map(([x0, y0, x1, y1]) => [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]);
+  const cut = rewind(clip.intersection(all, clip.union(...boxes)));
+  if (!cut.length) throw new Error("SMALL: nothing inside the boxes for " + JSON.stringify(sh));
+  return cut;
 };
 const smallPolys = SMALL.map((s) => smallShape(s.shape));
 const yearsOf = (from, to) => [+from.slice(0, 4), +to.slice(0, 4) - (to.slice(5) === "12-31" ? 0 : 1)];
@@ -1101,6 +1126,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
       if (!(whole > 0)) continue;
       const people = isPeople(p.name, p.ruler, s.y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2]) ? 1 : 0;
       const opt = cellOpt(polys, 0.97);
+      opt.whole = whole;
       opt.same = sameAs(p.name);
       const until = HB_STALE[p.name] ?? Infinity;
       if (!people && whole >= MIN_KM2) {
@@ -1346,7 +1372,8 @@ const CS_NAMES = {
   "Swaziland (Eswatini)": [["1886-01-01", "Swaziland"], ["2018-04-19", "Eswatini"]],
   "Macedonia (FYROM/North Macedonia)": [["1886-01-01", "Macedonia"], ["2019-02-12", "North Macedonia"]],
   "Belarus (Byelorussia)": [["1886-01-01", "Belarus"]],
-  "Tanzania (Tanganyika)": [["1886-01-01", "Tanganyika"], ["1964-04-26", "Tanzania"]],
+  "Tanzania (Tanganyika)": [["1886-01-01", "German East Africa"], ["1920-07-22", "Tanganyika"], ["1964-04-26", "Tanzania"]],
+  "United Arab Emirates": [["1886-01-01", "Trucial States"], ["1971-12-02", "United Arab Emirates"]],
   "Yemen (Arab Republic of Yemen)": [["1886-01-01", "North Yemen"], ["1990-05-22", "Yemen"]],
   "Yemen, People's Republic of": [["1886-01-01", "South Yemen"]],
   "Korea, People's Republic of": [["1886-01-01", "North Korea"]],
@@ -1540,6 +1567,20 @@ const csTopo = JSON.parse(readFileSync(cshapesPath, "utf8"));
 const csObj = Object.values(csTopo.objects)[0];
 const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry }));
 const CLIO_TWIN = { "First Hellenic Republic": "Greece" };
+const CS_BACK = [
+  { gw: "510", until: "1890-12-31", names: [["1886-01-01", "German East Africa", 1, "German Empire"]] },
+  { gw: "625", until: "1899-01-18", names: [["1886-01-01", "Mahdist State", 0, ""], ["1898-09-02", "Anglo-Egyptian Sudan", 1, "United Kingdom"]] },
+  { gw: "620", until: "1912-10-17", names: [["1886-01-01", "Ottoman Empire", 0, ""]] },
+  { gw: "678", until: "1918-10-29", names: [["1886-01-01", "Ottoman Empire", 0, ""]] },
+  { gw: "670", until: "1932-09-22", names: [["1886-01-01", "Emirate of Nejd", 0, "", "Emirate of Nejd"], ["1891-01-24", "Emirate of Jabal Shammar", 0, ""], ["1902-01-15", "Emirate of Nejd", 0, "", "Emirate of Riyadh"], ["1921-08-22", "Sultanate of Nejd", 0, ""], ["1926-01-08", "Kingdom of Hejaz and Nejd", 0, ""]] },
+  { gw: "681", until: "1937-03-31", names: [["1886-01-01", "Aden Protectorate", 2, "United Kingdom"]] },
+  { gw: "6812", until: "1937-03-31", names: [["1886-01-01", "Aden Protectorate", 2, "United Kingdom"]] },
+  { gw: "696", until: "1892-03-07", names: [["1886-01-01", "Trucial States", 2, "United Kingdom"]] }
+];
+const HB_MODERN_FROM = 1880;
+const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"]];
+const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides"]);
+const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
 const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
@@ -1598,7 +1639,7 @@ for (const r of csWithExtras(csRaw)) {
   let twins = 0;
   for (const s of clioSpans) {
     const twin = CLIO_TWIN[s.name] || null;
-    if (s.last < 1886 || (!twin && lineageNames(s.name).some((n) => csNames.has(n)))) continue;
+    if (s.last < 1886 || CLIO_MODERN_DROP.has(s.name) || (!twin && lineageNames(s.name).some((n) => csNames.has(n)))) continue;
     const first = s.first >= 1886 ? dayOf(s.first + "-01-01") : 0, last = Math.min(endDay, dayOf(s.last + "-12-31"));
     if (last < first) continue;
     const whole = km2Of(s.polys), box = boxOf(s.polys);
@@ -1614,6 +1655,59 @@ for (const r of csWithExtras(csRaw)) {
     const a = Math.max(0, dayOf(from)), b = Math.min(endDay, dayOf(to));
     return b < a ? null : [a, b];
   }, (h) => h.name);
+  const backEdits = [];
+  let backs = 0;
+  for (const bk of CS_BACK) {
+    const rows = csOnly.filter((x) => String(x.cs.p.gwcode) === bk.gw).sort((a, b) => a.first - b.first);
+    if (!rows.length) throw new Error("CS_BACK: no CShapes span for " + bk.gw);
+    const polys = rows[0].polys, whole = km2Of(polys), box = boxOf(polys), width = widthOf(polys);
+    bk.names.forEach(([from, name, status, ruler, wiki], k) => {
+      const a = dayOf(from), b = k + 1 < bk.names.length ? dayOf(bk.names[k + 1][0]) - 1 : dayOf(bk.until);
+      for (const r of cutOver(polys, box, a, b, list, cellOpt(polys, 0))) {
+        const kept = keepRemnant(r.polys, whole, 1, width);
+        if (!kept.length) continue;
+        const home = list.filter((x) => x.cs && x.name === name && x.first <= r.last && r.first <= x.last);
+        if (home.length) { home.forEach((x) => backEdits.push({ base: x, first: Math.max(r.first, x.first), last: Math.min(r.last, x.last), polys: kept, add: true })); continue; }
+        list.push(withBox({ name, ruler, part: "", people: 0, b: 2, status, first: r.first, last: r.last, polys: kept, wiki: wiki || name, src: "back" }));
+        backs++;
+      }
+    });
+  }
+  list = reshape(list, backEdits, false);
+  const hbFiles = readdirSync(source).map((f) => ({ f, y: yearOf(f) })).filter((x) => x.y !== null && x.y >= HB_MODERN_FROM).sort((a, b) => a.y - b.y);
+  const hbEdits = [], hbFills = [], skipCuts = HB_MODERN_SKIP.map((s) => dayOf(s.until) + 1);
+  const inBox = (poly, b) => poly[0].every((q) => q[0] >= b[0] && q[0] <= b[2] && q[1] >= b[1] && q[1] <= b[3]);
+  hbFiles.forEach(({ f, y }, k) => {
+    const y0 = k ? Math.ceil((hbFiles[k - 1].y + y) / 2) : 1886, y1 = k + 1 < hbFiles.length ? Math.ceil((y + hbFiles[k + 1].y) / 2) - 1 : 2019;
+    const a = Math.max(0, dayOf(y0 + "-01-01")), b = Math.min(endDay, dayOf(y1 + "-12-31"));
+    if (b < a) return;
+    console.log("filling from the map of " + y + " (" + y0 + " to " + y1 + "), " + Math.round(process.uptime()) + " s");
+    for (const ft of readHb(f, y).feats) {
+      const p = ft.properties;
+      if (!p.name) continue;
+      const polys = rewind(polysOf(ft.geometry)), whole = km2Of(polys), box = boxOf(polys);
+      if (!(whole > 0) || isPeople(p.name, p.ruler, y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2])) continue;
+      const drop = HB_MODERN_DROP.filter(([n]) => n === p.name).map(([, bx]) => bx || [-180, -90, 180, 90]);
+      const opt = cellOpt(polys, 0.97);
+      opt.whole = whole;
+      opt.cuts = skipCuts;
+      for (const r of cutOver(polys, box, a, b, list, opt)) {
+        const pieces = r.polys.filter((q) => !drop.some((bx) => inBox(q, bx)) && !HB_MODERN_SKIP.some((s) => r.last <= dayOf(s.until) && inBox(q, s.box)));
+        if (!pieces.length) continue;
+        if (r.owner) {
+          const kept = pieces.filter(bigPiece);
+          if (kept.length) hbEdits.push({ base: r.owner, first: r.first, last: r.last, polys: kept, add: true, from: p.name, y });
+          continue;
+        }
+        const kept = keepRemnant(pieces, whole, 1, widthOf(polys));
+        if (kept.length) hbFills.push(withBox({ name: p.name, ruler: p.ruler, part: p.part, people: 0, b: p.b, status: p.ruler ? 5 : 0, first: r.first, last: r.last, polys: kept, wiki: wikiFor(p.name, y), src: "hb" }));
+      }
+    }
+  });
+  const added = new Map();
+  hbEdits.forEach((e) => { const k = e.base.name + " <- " + e.from + " " + e.y; added.set(k, Math.max(added.get(k) || 0, km2Of(e.polys))); });
+  console.log("from 1886: " + backs + " spans backfilled from later CShapes shapes, " + backEdits.length + " pieces added to CShapes spans by them; " + hbFills.length + " spans filled from historical-basemaps, " + hbEdits.length + " pieces of it added to the states that hold most of their shape: " + [...added].sort((p, q) => q[1] - p[1]).slice(0, 25).map(([k, v]) => k + " " + Math.round(v / 1000) + "k km²").join("; "));
+  list = reshape(list, hbEdits, false).concat(hbFills);
   const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
   const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
   const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency"];
