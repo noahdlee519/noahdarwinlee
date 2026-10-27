@@ -1776,6 +1776,7 @@ const findKey = (k) => { while (keyLink.has(k)) k = keyLink.get(k); return k; };
 const rawKey = (id) => nameKey.get(id) || baseKey(id);
 const keyOf = (id) => findKey(rawKey(id));
 let links = 0;
+const NO_LINK = new Set(["Czechoslovakia|Czech Republic"]);
 {
   const life = new Map();
   const note = (name, a, z, polys, dep) => {
@@ -1797,6 +1798,7 @@ let links = 0;
     const ca = cellsFor("z" + an, A.last);
     if (!ca.w) continue;
     for (const [bn, B] of cands) {
+      if (NO_LINK.has(an + "|" + bn)) continue;
       const cb = cellsFor("a" + bn, B.first);
       if (!cb.w) continue;
       let both = 0;
