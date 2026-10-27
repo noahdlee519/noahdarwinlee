@@ -567,6 +567,7 @@
     });
     var arcsOf = function (lines) { return lines.map(prepareArc); };
     L = {
+      topo: topo, geoms: geoms, polys: polys,
       geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed,
       hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }).concat(arcsOf(edges.hard)),
       soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }).concat(arcsOf(edges.soft)),
@@ -773,7 +774,7 @@
     var n = landCount(list, kp, line * BAND_ISLAND), m = landCount(list, kp, ISLAND_PX);
     if (!m) return;
     var res = moving ? Math.max(0.5, dpr * BAND_MOVING) : Math.max(1, dpr * BAND_RES);
-    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, res, line, n, m, list === land.hi ? 1 : 0, landTag].join();
+    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, res, line, n, m, list === land.hi ? 1 : list === land.fine ? 2 : 0, landTag].join();
     if (vkey !== maskKey) paintCoastMask(list, landPath, n, m, line, res);
     maskKey = vkey;
     var key = id + "|" + vkey;
@@ -841,7 +842,7 @@
 
   var seaCanvas = document.createElement("canvas"), seaCtx = seaCanvas.getContext("2d"), seaKey = "";
   function drawSea(coast, S) {
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : 0, landTag].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : coast === land.fine ? 2 : 0, landTag].join();
     if (key !== seaKey) {
       seaKey = key;
       if (seaCanvas.width !== canvas.width || seaCanvas.height !== canvas.height) { seaCanvas.width = canvas.width; seaCanvas.height = canvas.height; }
@@ -871,7 +872,7 @@
     applyView();
     var S = localScale(), kp = kmPx(), key = useLevel();
     var snap = current, L = level(snap, key);
-    var landList = landAt(key);
+    var landList = landAt(landKey(key));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = "round";
@@ -932,8 +933,25 @@
       ctx.restore();
     }
     var hp = hoverId >= 0 ? snap.byId.get(hoverId) : null, sp = selected >= 0 ? snap.byId.get(selected) : null;
-    if (hp && hp !== sp) { ctx.beginPath(); tracePolity(snap, L, hp.id); ctx.fillStyle = pal.hover; ctx.fill(); }
-    if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.fillStyle = "rgba(140,42,26,0.12)"; ctx.fill(); }
+    var unheld = null;
+    var tint = function (id, color) {
+      if (bleed > 0.6) {
+        if (!unheld) {
+          unheld = new Path2D();
+          unheld.rect(-10, -10, W + 20, H + 20);
+          for (c = 0; c < PALETTE; c++) if (groupPaths[c]) unheld.addPath(groupPaths[c]);
+          unheld.addPath(peoplePath); unheld.addPath(unnamedPath);
+        }
+        ctx.save();
+        ctx.clip(unheld, "evenodd");
+        ctx.beginPath(); traceArcs(ctx, coastOf(L, id));
+        ctx.lineWidth = bleed; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = color; ctx.stroke();
+        ctx.restore();
+      }
+      ctx.beginPath(); tracePolity(snap, L, id); ctx.fillStyle = color; ctx.fill();
+    };
+    if (hp && hp !== sp) tint(hp.id, pal.hover);
+    if (sp) tint(sp.id, "rgba(140,42,26,0.12)");
     ctx.restore();
     drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
 
@@ -975,6 +993,31 @@
     drawDivisionLabels(placed, S);
     syncCardDivision();
   }
+  function coastOf(L, id) {
+    if (!L.coastOf) L.coastOf = new Map();
+    var hit = L.coastOf.get(id);
+    if (hit) return hit;
+    if (!L.arcUse) {
+      L.arcUse = new Map();
+      L.geoms.forEach(function (g) {
+        var seen = new Set();
+        var walk = function (a) { if (typeof a === "number") { var i = a < 0 ? ~a : a; if (!seen.has(i)) { seen.add(i); L.arcUse.set(i, (L.arcUse.get(i) || 0) + 1); } } else if (a) for (var k = 0; k < a.length; k++) walk(a[k]); };
+        walk(g.arcs);
+      });
+    }
+    var own = [];
+    L.geoms.forEach(function (g, i) {
+      var p = L.polys[i];
+      if (!p || p.id !== id) return;
+      var walk = function (a) { if (typeof a === "number") { var j = a < 0 ? ~a : a; if (L.arcUse.get(j) === 1) own.push([j]); } else if (a) for (var k = 0; k < a.length; k++) walk(a[k]); };
+      walk(g.arcs);
+    });
+    var coastal = [];
+    if (own.length) splitCoast(topojson.feature(L.topo, { type: "MultiLineString", arcs: own }).geometry.coordinates, coastal, []);
+    hit = coastal.map(prepareArc);
+    L.coastOf.set(id, hit);
+    return hit;
+  }
   function tracePolity(snap, L, id) {
     for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && p.id === id) traceAll(ctx, L.feats[i]); }
   }
@@ -1012,6 +1055,11 @@
     if (!lakes) {
       if (!lakesLoad) lakesLoad = fetchJSON(UC + "data/lakes.json").then(function (rows) {
         lakes = rows.map(function (r) { return { name: r[0], km2: r[1], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
+        bigLakes = rows.filter(function (r) { return r[1] >= BIG_LAKE_KM2; }).map(function (r, i) {
+          var b = [180, 90, -180, -90];
+          r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
+          return { id: "L" + i, b: b, coords: r[4] };
+        });
         lakes.sort(function (a, b) { return b.km2 - a.km2; });
         scheduleRender();
       }).catch(function (e) { console.warn("lakes", e); });
@@ -1076,16 +1124,34 @@
       scheduleRender();
     }).catch(function (e) { console.warn("geography", e); });
   }
+  function patchesFor(key, g) {
+    var byKey = new Map();
+    land[key].forEach(function (p) { var r = p.geo.coordinates[0]; byKey.set(r.length + "," + r[0][0] + "," + r[0][1], p); });
+    return (g.land[key] || []).map(function (q, i) {
+      q.id = key + i; q.base = byKey.get(q.k.join()) || null;
+      return q;
+    }).filter(function (q) { return q.base; });
+  }
+  var FINE_S = 5000, fineLoad = null, geogRaw = null;
+  function loadFine() {
+    if (fineLoad) return;
+    fineLoad = fetchJSON("data/land-detail.json").then(function (t) {
+      land.fine = prepLand(t);
+      if (geog && geogRaw) geog.land.fine = patchesFor("fine", geogRaw);
+      landCache.clear();
+      scheduleRender();
+    }).catch(function (e) { console.warn("land detail", e); });
+  }
+  function landKey(key) {
+    if (key !== "hi" || localScale() < FINE_S) return key;
+    if (!land.fine) { loadFine(); return key; }
+    if (geog && !(geog.land.fine && geog.land.fine.length) && activePatches("hi").length) return key;
+    return "fine";
+  }
   function prepGeography(g) {
     var out = { land: {}, lakeOnly: new Map(), lakeAdd: [], lakeTimes: [], riverDrop: new Map(), riverAdd: [], riverTimes: [] };
-    ["hi", "lo"].forEach(function (key) {
-      var byKey = new Map();
-      land[key].forEach(function (p) { var r = p.geo.coordinates[0]; byKey.set(r.length + "," + r[0][0] + "," + r[0][1], p); });
-      out.land[key] = (g.land[key] || []).map(function (q, i) {
-        q.id = key + i; q.base = byKey.get(q.k.join()) || null;
-        return q;
-      }).filter(function (q) { return q.base; });
-    });
+    geogRaw = g;
+    ["hi", "lo"].concat(land.fine ? ["fine"] : []).forEach(function (key) { out.land[key] = patchesFor(key, g); });
     var times = function (list, from, to) { if (from !== null) list.push(from); if (to !== null) list.push(to); };
     g.lakes.only.forEach(function (r) { out.lakeOnly.set(r[0] + "|" + r[1], [r[2], r[3]]); times(out.lakeTimes, r[2], r[3]); });
     g.lakes.add.forEach(function (r, i) {
@@ -1104,7 +1170,7 @@
     return out;
   }
   function activePatches(key) {
-    return geog ? geog.land[key].filter(function (q) { return inSpan(q.f, q.t); }) : [];
+    return geog && geog.land[key] ? geog.land[key].filter(function (q) { return inSpan(q.f, q.t); }) : [];
   }
   function landItem(poly) {
     var p = prepare({ type: "Polygon", coordinates: poly });
@@ -1146,9 +1212,10 @@
     landTag = r.tag;
     return r.list;
   }
+  var bigLakes = [], BIG_LAKE_KM2 = 800;
   function syncGrid() {
     if (!geog || !coastGrid) return;
-    var act = activePatches("lo"), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); });
+    var act = activePatches("lo"), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); }).concat(bigLakes);
     var tag = act.map(function (q) { return q.id; }).concat(wet.map(function (l) { return l.id; })).join();
     if (tag === gridTag) return;
     var was = gridTag.split(","), list = datedLand("lo").list;
@@ -2816,7 +2883,8 @@
   }
   var tip = $("tip");
   function showTip(x, y, p) {
-    tip.textContent = polityName(p.id);
+    var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
+    tip.textContent = dv ? dv + ", " + polityName(p.id) : polityName(p.id);
     var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.people ? "a people or culture" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
@@ -2838,8 +2906,8 @@
     return best;
   }
   function showCityTip(x, y, l) {
-    var c = cityFacts(cityRef(l));
-    tip.textContent = c.name;
+    var ref = cityRef(l), c = cityFacts(ref), st = cityState(ref);
+    tip.textContent = st ? c.name + ", " + polityName(st.id) : c.name;
     var sub = c.modern !== c.name ? "now " + c.modern : l.kind === "capital" ? "a capital" : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
@@ -3286,7 +3354,7 @@
       addText(" on " + when + ".");
     } else addText("In no state on " + when + ".");
     var y = askYear();
-    loadWiki(f.name, f.modern || f.name, {
+    loadWiki(f.modern || f.name, f.modern && f.modern !== f.name ? f.name : f.modern || f.name, {
       ask: { kind: "city", name: f.name, modern: f.modern || "", lon: c.lon, lat: c.lat, state: p ? polityName(p.id) : "", capital: isCap, year: y },
       label: f.name, when: fmtYear(y), click: click
     }, [c.lon, c.lat]);

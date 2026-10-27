@@ -28,6 +28,7 @@ const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
 const R_KM = 6371.0088;
 const HI_KM = 1.6, LO_KM = 12;
 const HI_Q = 2e5, LO_Q = 2e4;
+const CS_HI_KM = 0.5, CS_HI_Q = 5e5, FINE_KM = 0.15, FINE_Q = 1e6;
 const weightFor = (km) => (km / R_KM) ** 2;
 
 const LINEAGE = [
@@ -1732,7 +1733,7 @@ const ownerName = (r) => {
   return hit ? hit.name : "";
 };
 const csFeats = csParts.map((r, i) => ({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
-const csHi = topoFor(csFeats, HI_KM, HI_Q);
+const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q);
 const csLo = topoFor(csFeats, LO_KM, LO_Q);
 const labelMemo = new Map();
 const csRows = csParts.map((r, i) => {
@@ -2026,6 +2027,17 @@ const landTopo = (km, q) => {
   return client.quantize(stripZ(simplify.simplify(simplify.presimplify(t, simplify.sphericalTriangleArea), weightFor(km))), q);
 };
 writeFileSync(resolve(out, "land.json"), JSON.stringify({ hi: landTopo(0.6, 5e5), lo: landTopo(LO_KM, LO_Q) }));
+{
+  const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
+  if (detailPath === provincesPath || !existsSync(detailPath)) console.warn("UCHRONIA's provinces-detail.json not found beside provinces.json, so data/land-detail.json is not written: " + detailPath);
+  else {
+    const detail = JSON.parse(readFileSync(detailPath, "utf8"));
+    const fineGeom = client.merge({ ...prov, arcs: detail.arcs, transform: detail.transform }, prov.objects.provinces.geometries);
+    const fine = { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: fineGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4) } }] };
+    const t = server.topology({ land: fine }, FINE_Q);
+    writeFileSync(resolve(out, "land-detail.json"), JSON.stringify(client.quantize(stripZ(simplify.simplify(simplify.presimplify(t, simplify.sphericalTriangleArea), weightFor(FINE_KM))), FINE_Q)));
+  }
+}
 
 const licence = resolve(source, "../LICENSE");
 if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-basemaps.txt"));

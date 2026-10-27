@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -80,6 +80,8 @@ const neRivers = ne("ne_10m_rivers_lake_centerlines.geojson");
 const cbsGem = readJSON(resolve(cbsDir, "gemeente_1995.geojson"));
 const cbsBuurt = readJSON(resolve(cbsDir, "buurt_2011.geojson"));
 const landTopo = readJSON(resolve(here, "../data/land.json"));
+const finePath = resolve(here, "../data/land-detail.json");
+if (existsSync(finePath)) landTopo.fine = readJSON(finePath);
 const ucLakes = readJSON(resolve(UC, "lakes.json"));
 const ucRivers = readJSON(resolve(UC, "rivers.json"));
 
@@ -288,7 +290,7 @@ const windowSplice = (poly, cut, w, tol) => {
   return { splice: [i0, i1 - i0 + 1, thin.map(([x, y]) => [r4(x), r4(y)])], holes: holes.map((h) => simplifyRing(h, tol)), add: add.map((d) => d.map((r) => simplifyRing(r, tol))), cutKm2 };
 };
 const land = {};
-for (const level of ["hi", "lo"]) {
+for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
   const fc = client.feature(landTopo[level], landTopo[level].objects.land);
   const mp = (fc.features || [fc]).flatMap((f) => polysOf(f.geometry));
   const boxes = mp.map((p) => bboxOf([p]));
@@ -318,7 +320,7 @@ for (const level of ["hi", "lo"]) {
         return;
       }
       if (!clip.intersection([poly], s.cut).some((c) => planarKm2(c) >= 0.5)) return;
-      const r = windowSplice(poly, s.cut, w, level === "hi" ? 0.002 : 0.006);
+      const r = windowSplice(poly, s.cut, w, level === "fine" ? 0.001 : level === "hi" ? 0.002 : 0.006);
       if (!r) return;
       const sign = Math.sign(signed(poly[0]));
       const holes = r.holes.filter((h) => planarKm2([h]) >= 0.5).map((h) => orient(h, -sign).map(([x, y]) => [r4(x), r4(y)]));
