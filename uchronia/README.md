@@ -628,7 +628,10 @@ of `/greatercircle/`.
     colonies are subjects of their rulers. The redraw replaces the map rather than building on it, as one
     step that one undo takes back; the page flies to the land that moved and
     has the historian write how it came to be, with the turning point and
-    the year as its note.
+    the year as its note. The history is also given the outline the map was
+    drawn from (its title, short history, and briefs), checked against the
+    outline's ticket, so it tells the story the map was drawn to, under the
+    outline's title; where the outline and the map differ, the map wins.
   - A redraw is drawn in two steps, because a map of the whole world takes
     Claude longer to write than the server function may run (150 seconds a
     request). First an outline: the year, the title, a short history, the
@@ -645,6 +648,16 @@ of `/greatercircle/`.
     world has it, and the message says which. A part still being written
     when its time is nearly up is cut short at the last complete edit,
     rather than lost.
+  - Once every part is in, the page lists what it could not place: a region
+    not in the catalogue under the country named, a country that is neither
+    on the map nor founded, and a new country left without land. If there
+    are any (up to 60), it sends them once to the function as a `fix`
+    request, with the outline, its ticket, and the map's changes so far. A
+    mender sees only the catalogue lines of the countries concerned, and of
+    the parts whose briefs name the countries left without land, and writes
+    edits that are added to the parts' own. Then the page draws the map
+    again and writes the history. Like the parts, the mending is allowed
+    once per ticket and does not count against the daily limits.
   - The outline counts once against the daily limits; its parts and the
     history written after it do not, but
     each part can be asked for only once, and only with the ticket the
@@ -656,6 +669,12 @@ of `/greatercircle/`.
     region, to let no border drawn after the divergence survive by
     coincidence, and to merge, split, or invent countries, up to about 1,500
     regions moved.
+  - The list of changes the historian is given keeps under 13,500
+    characters. A country that loses all its regions to one other is "all
+    of" it. If the list is still too long, the regions moved between each
+    pair of countries are named twelve at most, then four, then the cities'
+    changes are grouped (cities renamed, new capitals, and so on), and last
+    the regions are only counted; only then is the rest cut off.
   - Under a history, **Ask the historian more** carries on the conversation:
     each question goes with the history, the questions and answers before
     it, and the map as it now stands, and the historian answers in the same
@@ -724,7 +743,16 @@ of `/greatercircle/`.
     lines of the catalogue). The function fetches both from the
     site. For a chat it sends the whole catalogue, unchanged, at the start
     of every request, so it is cached and later requests pay a tenth for it. The page matches names
-    without regard to case or accents and leaves out any it cannot find.
+    without regard to case or accents. A name it cannot find exactly is
+    matched more loosely: without punctuation and words such as "Province",
+    "Oblast", or "County", with "St." read as "Saint", and then allowing a
+    letter or two to differ (one per six letters) among that country's
+    regions or a region's parts, as long as only one fits. A region named
+    under the wrong country is taken if it is spelt exactly and only one
+    country has it, and a country named as a region moves whole. Country
+    names are matched loosely only from eight letters up, with one letter
+    off, so Prussia is never taken for Russia. Anything still not found is
+    left out, and in a redraw sent to be mended.
   - In Europe (all but Latvia and Slovenia, whose regions are already
     municipalities, and Russia), in the United States, Canada, and Mexico,
     and in South America (all but Uruguay and Guyana) the catalogue also

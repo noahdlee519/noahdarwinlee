@@ -6601,12 +6601,26 @@
   function partOf(bc, name) {
     var raw = String(name || ""), cut = raw.indexOf("/"), units = [];
     var add = function (p) { (provUnits[p] || []).forEach(function (u) { units.push(u); }); };
-    if (cut < 0) { regionsNamed(bc, raw).forEach(add); return { units: units, fine: false }; }
+    if (cut < 0) {
+      var whole = regionsNamed(bc, raw);
+      if (!whole.length) whole = closeRegions(bc, raw);
+      whole.forEach(add);
+      return { units: units, fine: false };
+    }
     var ps = regionsNamed(bc, raw.slice(0, cut)), part = plainName(raw.slice(cut + 1));
+    if (!ps.length) ps = closeRegions(bc, raw.slice(0, cut));
     ps.forEach(function (p) { if (plainName(provName[p]) === part) add(p); });
     if (units.length) return { units: units, fine: false };
+    var near = closest(ps, raw.slice(cut + 1), function (p) { return looseName(provName[p]); });
+    if (near !== null && provName[near] !== undefined) { add(near); return { units: units, fine: false }; }
     if (!fineData || fineNo) return { units: units, fine: ps.length > 0 };
     ps.forEach(function (p) { provUnits[p].forEach(function (u) { if (plainName(unitName[u]) === part) units.push(u); }); });
+    if (!units.length) {
+      var pool = [];
+      ps.forEach(function (p) { provUnits[p].forEach(function (u) { pool.push(u); }); });
+      var name = closest(pool, raw.slice(cut + 1), function (u) { return looseName(unitName[u] || ""); });
+      if (name !== null) pool.forEach(function (u) { if (unitName[u] === unitName[name]) units.push(u); });
+    }
     return { units: units, fine: units.length > 0 };
   }
   function planWantsFine(plan) {
@@ -6632,28 +6646,100 @@
     }
     return regionIndex.get(bc + "|" + plainName(name)) || [];
   }
+  var LOOSE_WORDS = /\b(province|provincia|provinz|region|regione|oblast|krai|kray|governorate|department|departement|departamento|county|district|prefecture|municipality|voivodeship|canton|raion|rayon|okrug|the)\b/g;
+  function looseName(t) {
+    return plainName(t).replace(/&/g, " and ").replace(/[^a-z0-9 ]+/g, " ").replace(/\bst\b/g, "saint").replace(/\bste\b/g, "sainte").replace(LOOSE_WORDS, " ").replace(/\s+/g, " ").trim();
+  }
+  function editGap(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    var prev = [], i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      var cur = [i], low = i;
+      for (j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1));
+        if (cur[j] < low) low = cur[j];
+      }
+      if (low > max) return max + 1;
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function closest(list, name, keyOf, strict) {
+    var l = looseName(name);
+    if (!l) return null;
+    var max = strict ? (l.length >= 8 ? 1 : 0) : l.length >= 5 ? Math.max(1, Math.floor(l.length / 6)) : 0, best = null, gap = Infinity, tie = false;
+    list.forEach(function (x) {
+      var k = keyOf(x), g = k === l ? 0 : max ? editGap(k, l, max) : 1;
+      if (g > max) return;
+      if (g < gap) { gap = g; best = x; tie = false; } else if (g === gap && x !== best) tie = true;
+    });
+    return best !== null && !tie ? best : null;
+  }
+  var looseIndex = null;
+  function closeRegions(bc, name) {
+    if (!looseIndex || looseIndex.of !== regionIndex) {
+      regionsNamed(-1, "");
+      looseIndex = { of: regionIndex, by: new Map() };
+      var seen = new Map();
+      regionIndex.forEach(function (ps, k) {
+        var cut = k.indexOf("|"), o = +k.slice(0, cut), l = looseName(k.slice(cut + 1)), sk = o + "|" + l;
+        if (!l) return;
+        if (seen.has(sk)) { var had = seen.get(sk); ps.forEach(function (p) { if (had.ps.indexOf(p) < 0) had.ps.push(p); }); return; }
+        var row = { l: l, ps: ps.slice() };
+        seen.set(sk, row);
+        if (!looseIndex.by.has(o)) looseIndex.by.set(o, []);
+        looseIndex.by.get(o).push(row);
+      });
+    }
+    var key = function (r) { return r.l; };
+    var hit = closest(looseIndex.by.get(bc) || [], name, key);
+    if (hit) return hit.ps;
+    var l = looseName(name), found = null, many = false;
+    looseIndex.by.forEach(function (list, o) {
+      if (o === bc) return;
+      list.forEach(function (r) { if (r.l === l) { if (found && found !== r) many = true; found = r; } });
+    });
+    if (found && !many) return found.ps;
+    var c = -1, n = plainName(name);
+    base.countries.forEach(function (b, i) { if (c < 0 && plainName(b.name) === n) c = i; });
+    if (c < 0) return [];
+    var all = [];
+    for (var p = 0; p < nProv; p++) if (base.provOwner[p] === c) all.push(p);
+    return all;
+  }
   function applyPlan(plan) {
     freshGroups();
-    var ops = [], caps = capOwners(), touched = new Set(), made = [], missed = 0, moved = 0;
+    var ops = [], caps = capOwners(), touched = new Set(), made = [], missed = 0, moved = 0, lost = [];
     var alias = new Map(), rulers = new Map();
-    var findNow = function (name) {
+    var findNow = function (name, exact) {
       var n = plainName(name), hit = -1;
       if (!n) return -1;
       if (/^(unclaimed|no one|nobody|none|terra nullius)$/.test(n)) return UNCLAIMED;
       if (alias.has(n)) return alias.get(n);
       countries.forEach(function (c, i) { if (hit < 0 && c.alive && !c.claims && plainName(c.name) === n) hit = i; });
       if (hit < 0) base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n && countries[i] && countries[i].alive) hit = i; });
+      if (hit < 0 && !exact) {
+        var live = [];
+        countries.forEach(function (c, i) { if (c.alive && !c.claims) live.push(i); });
+        var near = closest(live, name, function (i) { return looseName(countries[i].name); }, true);
+        if (near !== null) hit = near;
+      }
       return hit < 0 ? null : hit;
     };
     var findBase = function (name) {
       var n = plainName(name), hit = -1;
       base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n) hit = i; });
       if (hit < 0) countries.forEach(function (c, i) { if (hit < 0 && i < base.countries.length && c.alive && plainName(c.name) === n) hit = i; });
+      if (hit < 0) {
+        var near = closest(base.countries.map(function (b, i) { return i; }), name, function (i) { return looseName(base.countries[i].name); }, true);
+        if (near !== null) hit = near;
+      }
       return hit;
     };
     (plan.new_countries || []).forEach(function (nc) {
       var name = String(nc && nc.name || "").trim().slice(0, 60);
-      if (!name || findNow(name) !== null) return;
+      if (!name || findNow(name, true) !== null) return;
       var op = createCountry(uniqueName(name), 0);
       ops.push(op); made.push(op);
       alias.set(plainName(name), op.c);
@@ -6672,7 +6758,12 @@
     var next = new Map(), pieceTo = new Map();
     (plan.transfers || []).forEach(function (t) {
       var to = findNow(t && t.to), from = findBase(t && t.from);
-      if (to === null || from < 0) { missed++; return; }
+      if (to === null || from < 0) {
+        missed++;
+        if (to === null) lost.push("A transfer gives land to " + String(t && t.to || "no one") + ", but no country of that name is on the map or among the new countries.");
+        else lost.push("A transfer takes land from " + String(t && t.from || "no one") + ", which is not a country of our world in the catalogue.");
+        return;
+      }
       if (t.whole) {
         for (var p = 0; p < nProv; p++) if (base.provOwner[p] === from) (provUnits[p] || []).forEach(function (u) { next.set(u, to); });
         var now = findNow(base.countries[from].name);
@@ -6681,8 +6772,12 @@
         return;
       }
       (t.regions || []).forEach(function (name) {
-        var us = partOf(from, name).units;
-        if (!us.length) { missed++; return; }
+        var got = partOf(from, name), us = got.units;
+        if (!us.length) {
+          missed++;
+          if (!got.fine) lost.push("A transfer from " + base.countries[from].name + " to " + String(t.to) + " names \u201c" + String(name).slice(0, 80) + "\u201d, which is not a region of " + base.countries[from].name + " in the catalogue.");
+          return;
+        }
         us.forEach(function (u) { next.set(u, to); });
         moved++;
       });
@@ -6839,7 +6934,8 @@
     queueLabels(Array.from(touched).concat(made.map(function (op) { return op.c; })));
     ui.country = -1; ui.region = -1; ui.piece = null; ui.city = null;
     changed();
-    return { step: step, moved: moved, missed: missed, made: made.length, units: ps };
+    var bare = made.filter(function (op) { return countries[op.c] && countries[op.c].alive && !hasLand(op.c); }).map(function (op) { return "The new country " + countries[op.c].name + " was founded but received no land."; });
+    return { step: step, moved: moved, missed: missed, made: made.length, units: ps, lost: lost, bare: bare };
   }
   function describeChanges() {
     if (!feats || !base) return "";
@@ -6862,18 +6958,20 @@
       if (r >= 0) lines.push(co.name + " is a subject of " + countries[r].name + ".");
       else if (br >= 0) lines.push(co.name + " rules itself, no longer a subject of " + base.countries[br].name + ".");
     });
-    var moves = new Map();
-    var move = function (from, to, name, p) {
+    var moves = new Map(), provCount = new Map();
+    base.provOwner.forEach(function (o) { provCount.set(o, (provCount.get(o) || 0) + 1); });
+    var move = function (from, to, name, p, whole) {
       var k = from + ">" + to;
-      if (!moves.has(k)) moves.set(k, { from: from, to: to, names: [] });
+      if (!moves.has(k)) moves.set(k, { from: from, to: to, names: [], whole: 0 });
       moves.get(k).names.push(name);
+      if (whole) moves.get(k).whole++;
       if (!places.has(name)) { var cen = d3.geoCentroid(geoFull[provUnits[p][0]]); addPlace(name, cen[0], cen[1], 5); }
     };
     for (var p = 0; p < nProv; p++) {
       var us = provUnits[p], bo = base.provOwner[p];
       if (!us || !us.length) continue;
       var now = new Set(us.map(function (u) { return owner[u]; }));
-      if (now.size === 1) { var o = owner[us[0]]; if (o !== bo) move(bo, o, provName[p], p); continue; }
+      if (now.size === 1) { var o = owner[us[0]]; if (o !== bo) move(bo, o, provName[p], p, true); continue; }
       now.forEach(function (o) {
         if (o === bo) return;
         var bits = [];
@@ -6881,11 +6979,20 @@
         move(bo, o, "part of " + provName[p] + (bits.length && bits.length <= 12 ? " (" + bits.join(", ") + ")" : ""), p);
       });
     }
-    moves.forEach(function (m) {
-      if (m.to < 0) lines.push("Left unclaimed, once " + oldName(m.from) + ": " + listOf(m.names, 40) + ".");
-      else if (isDispute(m.to)) lines.push("Disputed between " + claimNames(claimantsOf(m.to)) + ", once " + (m.from < 0 ? "unclaimed" : oldName(m.from) + "'s") + ": " + listOf(m.names, 40) + ".");
-      else lines.push(nowName(m.to) + " holds, once " + (m.from < 0 ? "unclaimed" : oldName(m.from) + "'s") + ": " + listOf(m.names, 40) + ".");
-    });
+    var moveLines = function (k) {
+      var out = [];
+      moves.forEach(function (m) {
+        var all = m.from >= 0 && m.whole === m.names.length && m.whole === provCount.get(m.from);
+        var what = all ? "all of " + oldName(m.from) : k ? listOf(m.names, k) : m.names.length + (m.names.length === 1 ? " region" : " regions");
+        var once = all ? "" : ", once " + (m.from < 0 ? "unclaimed" : oldName(m.from) + "'s");
+        if (m.to < 0) out.push("Left unclaimed" + (all ? "" : ", once " + oldName(m.from)) + ": " + what + ".");
+        else if (isDispute(m.to)) out.push("Disputed between " + claimNames(claimantsOf(m.to)) + once + ": " + what + ".");
+        else out.push(nowName(m.to) + " holds" + (all ? " " : once + ": ") + what + ".");
+      });
+      return out;
+    };
+    var moveAt = lines.length, moved = moveLines(40), moveLen = moved.length;
+    lines.push.apply(lines, moved);
     pieces.forEach(function (pc) {
       var cover = shapeCover(pc.shape).units, from = new Set(), names = [];
       cover.forEach(function (u) { var q = unitProv[u]; from.add(base.provOwner[q]); names.push(provName[q]); });
@@ -6893,16 +7000,18 @@
       if (isDispute(pc.owner)) lines.push("A border drawn by hand makes land in " + listOf(names, 6) + " disputed between " + claimNames(claimantsOf(pc.owner)) + ", once " + listOf(Array.from(from).map(oldName), 4) + ".");
       else lines.push("A border drawn by hand gives " + nowName(pc.owner) + " land in " + listOf(names, 6) + ", once " + listOf(Array.from(from).map(oldName), 4) + ".");
     });
+    var cityAt = lines.length, sorts = { gone: [], renamed: [], made: [], unmade: [], moved: [] };
     base.cities.forEach(function (b, i) {
       var c = cityIndex.get("b" + i);
-      if (!c) { lines.push("The city of " + b.name + " is gone."); return; }
+      if (!c) { lines.push("The city of " + b.name + " is gone."); sorts.gone.push(b.name); return; }
       var bits = [];
-      if (c.name !== b.name) bits.push(b.name + " is now called " + c.name);
-      if (c.cap && !b.cap) bits.push(c.name + " became a capital");
-      if (!c.cap && b.cap) bits.push(c.name + " is no longer a capital");
-      if (b.lon !== c.lon || b.lat !== c.lat) bits.push(c.name + " stands somewhere else, in " + nowName(cityOwner(c)));
+      if (c.name !== b.name) { bits.push(b.name + " is now called " + c.name); sorts.renamed.push(b.name + " (now " + c.name + ")"); }
+      if (c.cap && !b.cap) { bits.push(c.name + " became a capital"); sorts.made.push(c.name); }
+      if (!c.cap && b.cap) { bits.push(c.name + " is no longer a capital"); sorts.unmade.push(c.name); }
+      if (b.lon !== c.lon || b.lat !== c.lat) { bits.push(c.name + " stands somewhere else, in " + nowName(cityOwner(c))); sorts.moved.push(c.name); }
       if (bits.length) { lines.push(bits.join("; ") + "."); addPlace(c.name, c.lon, c.lat, 0); }
     });
+    var cityCount = lines.length - cityAt;
     cities.forEach(function (c) {
       if (c.id.charAt(0) !== "u") return;
       var o = cityOwner(c);
@@ -6924,6 +7033,22 @@
     });
     if (caps.length) lines.push("Capitals today: " + caps.join("; ") + ".");
     var text = lines.join("\n");
+    [12, 4, -1, 0].forEach(function (k) {
+      if (text.length <= 13500) return;
+      if (k < 0) {
+        var grouped = [];
+        [["gone", "Cities that are gone"], ["renamed", "Cities renamed"], ["made", "New capitals"], ["unmade", "No longer capitals"], ["moved", "Cities that stand somewhere else"]].forEach(function (g) {
+          if (sorts[g[0]].length) grouped.push(g[1] + ": " + listOf(sorts[g[0]], 30) + ".");
+        });
+        lines.splice.apply(lines, [cityAt + moved.length - moveLen, cityCount].concat(grouped));
+        cityCount = grouped.length;
+      } else {
+        var fewer = moveLines(k);
+        lines.splice.apply(lines, [moveAt, moved.length].concat(fewer));
+        moved = fewer;
+      }
+      text = lines.join("\n");
+    });
     return text.length > 13500 ? text.slice(0, 13500) + "\n(and more)" : text;
   }
   function renderHistory(text) { renderProse($("history-text"), text); }
@@ -7523,13 +7648,42 @@
       workReal(0.2 + 0.74 * sum / total);
       workNote(2, (total - left) + " of " + total + (total === 1 ? " part" : " parts"));
     };
+    var mended = false;
+    var mend = function (problems) {
+      mended = true;
+      workSay("Mending " + problems.length + (problems.length === 1 ? " place" : " places") + " the mapmakers could not place");
+      var over = false;
+      var end = function (plan) {
+        if (over) return;
+        over = true;
+        var go = function () {
+          if (plan) {
+            plans.push(plan);
+            draw();
+            if (!last) { plans.pop(); draw(); }
+          }
+          settle();
+        };
+        if (plan) fineFor(plan, $("history-text")).then(go, go); else go();
+      };
+      post({ mode: "fix", premise: premise, outline: outline, ticket: ticket, changes: describeChanges(), problems: problems.join("\n") }).then(function (res) {
+        if (!res.ok || !res.body) { console.warn("historian fix", res.status); return end(null); }
+        return readEvents(res, function (ev) {
+          if (ev.t === "peek") { if (!over && typeof ev.v === "string" && ev.v) workSay("Mending the map: " + ev.v.slice(0, 110)); }
+          else if (ev.t === "plan" && ev.plan && typeof ev.plan === "object") end(ev.plan);
+          else if (ev.t === "error" || ev.t === "end" || ev.t === "closed") end(null);
+        });
+      }).catch(function (e) { console.warn("historian fix", e); end(null); });
+    };
     var settle = function () {
       if (done || left > 0) return;
       if (total && !plans.length) return finish("The historian could not draw this map. Try again in a moment.");
       workStep(3, ["Placing the new borders"]); workReal(0.97);
       draw();
       if (!last) return finish("The historian's map could not be drawn. Try putting it another way.");
-      if (last.missed) console.warn("redraw: " + last.missed + " names not found");
+      var problems = mended || !ticket ? [] : last.lost.concat(last.bare).slice(0, 60);
+      if (problems.length) return mend(problems);
+      if (last.missed) console.warn("redraw: " + last.missed + " names not found", last.lost);
       finish("");
       var title = typeof outline.title === "string" ? outline.title.slice(0, 80) : "";
       var lost = failed.length ? " " + listOf(failed.map(function (id) { return names[id] || id; }), 8) + " could not be drawn." : "";
@@ -7613,7 +7767,6 @@
     syncAsk();
     setStatus($("history-chat-status"), "");
     var turn = addTurn(q, ""), text = "", queued = false, done = false, edited = false;
-    // Until the answer starts, a line under the question says what the historian is doing.
     var doing = document.createElement("p"), sayAt = 0, said = -1, sayTimer = 0;
     var SAY_CHAT = ["Reading your question", "Looking back over the history", "Consulting the sources", "Weighing the evidence", "Thinking it through"];
     doing.className = "uc-chron-doing";
@@ -7878,7 +8031,7 @@
     project: function (lon, lat) { setupFrame(); var p = projectLL(lon, lat); return p ? [p[0], p[1]] : null; },
     provinceAt: unitAt,
     lonLatAt: lonLatAt,
-    applyPlan: function (plan) { var r = applyPlan(plan); return r ? { moved: r.moved, missed: r.missed, made: r.made, units: r.units.length } : null; },
+    applyPlan: function (plan) { var r = applyPlan(plan); return r ? { moved: r.moved, missed: r.missed, made: r.made, units: r.units.length, lost: r.lost, bare: r.bare } : null; },
     setView: function (lon, lat, zoom) { view.lon = lon; view.lat = lat; view.zoom = zoom; applyView(); render(); scheduleRender(); },
     setFlat: function (on) { setFlat(!!on); render(); },
     isFlat: function () { return flat; },
