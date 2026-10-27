@@ -54,7 +54,7 @@ A static page, no build step, like the rest of the site. The data files are made
 
 ### The page
 
-The top of the page is one row, `.ch-top`, laid out as a grid of three: the site's name and the back link on the left, the title in the middle, and the map controls on the right. All three are framed the same way, with `.ch-frame`: a rule, a fainter inner rule, the parchment, and a soft shadow, at one height (`--ch-bar`). The title stands alone in its frame, with no subtitle. The info button is the last part of the title's frame, and the zoom, flat map, and layers buttons are parts of one frame, divided by faint rules. The about note, the layers list, the key, and the card use the same frame. On phones the zoom buttons are hidden, and the title's frame fills the space between the other two.
+The top of the page is one row, `.ch-top`, laid out as a grid: the title on the left and the map controls on the right, with the space between them left to the map. Both are framed the same way, with `.ch-frame`: a rule, a fainter inner rule, the parchment, and a soft shadow, at one height (`--ch-bar`). The title stands alone in its frame, with no subtitle. The info button is the last part of the title's frame, and the zoom, flat map, and layers buttons are parts of one frame, divided by faint rules. The about note, the layers list, the key, and the card use the same frame. On phones the zoom buttons are hidden, and the title's frame stretches to the controls.
 
 The year bar holds the two play buttons, the date, and the scale. On phones the date is centred between the two play buttons, with the scale below.
 

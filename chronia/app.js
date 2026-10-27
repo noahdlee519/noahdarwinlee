@@ -1228,7 +1228,7 @@
   }
   function fixedBoxes() {
     var out = [];
-    [$("head"), $("ctls"), document.querySelector(".ch-site"), $("card"), $("time"), $("key")].forEach(function (el) {
+    [$("head"), $("ctls"), $("card"), $("time"), $("key")].forEach(function (el) {
       if (!el || el.hidden) return;
       var r = el.getBoundingClientRect();
       if (r.width) out.push({ x: r.left - 4, y: r.top - 4, w: r.width + 8, h: r.height + 8, ui: true });

@@ -184,20 +184,6 @@
 :root[data-uc-style="antique"] body.uc-page {
   background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%);
 }
-:root[data-uc-style="antique"] .uc-page .name,
-:root[data-uc-style="antique"] .uc-page .back-link {
-  font-family: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
-  font-weight: 400;
-}
-:root[data-uc-style="antique"] .uc-page .name {
-  font-size: 15px;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
-}
-:root[data-uc-style="antique"] .uc-page .back-link {
-  font-size: 18px;
-  font-style: italic;
-}
 :root[data-uc-style="antique"] .uc-panel,
 :root[data-uc-style="antique"] .uc-tip,
 :root[data-uc-style="antique"] .uc-hover-tip,
@@ -238,14 +224,6 @@ body.uc-page {
 .uc-page .uc-suggest li,
 .uc-page .uc-about-btn {
   -webkit-tap-highlight-color: transparent;
-}
-
-.uc-page .name,
-.uc-page .back-link {
-  margin: 0;
-}
-.uc-page .name {
-  line-height: normal;
 }
 
 .uc-globe {
@@ -2011,26 +1989,6 @@ a.uc-menu-item {
       transition: none;
     }
   }
-  .uc-site {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .uc-page .uc-site .name,
-  .uc-page .uc-site .back-link {
-    position: static !important;
-    display: block;
-    font-size: 15px;
-    line-height: 20px;
-    white-space: nowrap;
-  }
-  :root[data-uc-style="antique"] .uc-page .uc-site .name {
-    font-size: 12px;
-  }
-  :root[data-uc-style="antique"] .uc-page .uc-site .back-link {
-    font-size: 15px;
-  }
   .uc-title {
     font-size: 23px;
   }
@@ -2259,51 +2217,9 @@ a.uc-menu-item {
 }
 @media (max-width: 640px) {
   .uc-bar,
-  .uc-site,
   .uc-main,
   .uc-context {
     display: contents;
-  }
-  .uc-page .name,
-  .uc-page .back-link {
-    position: fixed !important;
-    z-index: 30;
-    left: 16px;
-    text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 12px var(--bg);
-  }
-  .uc-page .name {
-    top: 14px;
-    font-size: 16px;
-  }
-  .uc-page .back-link {
-    top: 36px;
-    display: inline;
-    font-size: 16px;
-  }
-  :root[data-uc-style="antique"] .uc-site {
-    position: fixed;
-    z-index: 30;
-    top: 10px;
-    left: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 3px 9px 4px;
-    background: var(--bg) var(--uc-grain);
-    background-size: 260px 260px;
-    border: 3px double var(--ink);
-  }
-  :root[data-uc-style="antique"] .uc-page .uc-site .name,
-  :root[data-uc-style="antique"] .uc-page .uc-site .back-link {
-    position: static !important;
-    line-height: 1.4;
-    text-shadow: none;
-  }
-  :root[data-uc-style="antique"] .uc-page .uc-site .name {
-    font-size: 12px;
-  }
-  :root[data-uc-style="antique"] .uc-page .uc-site .back-link {
-    font-size: 14px;
   }
   .uc-panel {
     position: fixed;
@@ -2622,14 +2538,8 @@ a.uc-menu-item {
     :root[data-uc-style="antique"]:not(.uc-ready) .uc-panel {
       translate: 0 105%;
     }
-    :root[data-uc-style="antique"]:not(.uc-ready) .uc-site {
-      translate: 0 calc(-100% - 16px);
-    }
     :root.uc-intro[data-uc-style="antique"] .uc-panel {
       animation: uc-pullup 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
-    }
-    :root.uc-intro[data-uc-style="antique"] .uc-site {
-      animation: uc-dropin 800ms cubic-bezier(0.3, 0.7, 0.4, 1) 1550ms both;
     }
   }
   :root.uc-intro[data-uc-style="antique"] .uc-globe {
@@ -2706,21 +2616,6 @@ a.uc-menu-item {
   100% {
     translate: 0 0;
     box-shadow: 0 0 0 0 rgba(58, 42, 27, 0);
-  }
-}
-
-@keyframes uc-dropin {
-  0% {
-    translate: 0 calc(-100% - 16px);
-  }
-  60% {
-    translate: 0 3px;
-  }
-  80% {
-    translate: 0 -1px;
-  }
-  100% {
-    translate: 0 0;
   }
 }
 

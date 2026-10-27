@@ -145,9 +145,6 @@ of `/greatercircle/`.
       earth or the sheet from a fixed seed so that it turns and pans with
       it; all of it is multiplied onto the canvas after the borders and
       before the names. The satellite view is toned sepia;
-    - the site's name in letterspaced capitals and the back link in italic,
-      both in IM Fell English; on a phone, where they sit over the map, they
-      share a small title block in a double rule.
     - buttons framed like engraved plates, in a double rule with a small dot
       at each corner (in paper on a pressed button), and icons drawn as
       engravings, with fine hatching: a manicule for Select, a pennon over a
@@ -235,8 +232,8 @@ of `/greatercircle/`.
     to one already listed are left out. Presses in quick succession are one
     undo step.
   - Labels are drawn largest country first and skipped where their turned
-    boxes would overlap, or would run under the scale bar, the map buttons or
-    (on a phone) the site's name. They are worked out again in 14 ms slices after each
+    boxes would overlap, or would run under the scale bar or the map buttons.
+    They are worked out again in 14 ms slices after each
     edit or rename.
   - Country names and settlements can each be hidden (in the View menu);
     hiding settlements hides their marks and names together, except the one
@@ -531,8 +528,7 @@ of `/greatercircle/`.
   most eight seconds, then fades away to the map. In the Antique style the
   opening then plays as the cover lifts: the map unrolls from the left like
   a sheet, the header comes down with its rule, and the controls appear.
-  On a phone the bottom sheet rises in place of the header, and the box
-  with the site's name drops in from the top.
+  On a phone the bottom sheet rises in place of the header.
   With nothing selected the bar's second row closes; it opens when something
   is selected, animated where the browser can, and the map does not move. **Terrain**, on by
   default, lays shaded relief over the land, like an atlas, sharper as the

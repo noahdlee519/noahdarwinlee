@@ -1936,7 +1936,7 @@
     return [[km * perKm, km.toLocaleString() + (pal.antique ? " kilometres" : " km")], [mi * perKm * 1.609344, mi.toLocaleString() + (pal.antique ? " miles" : " mi")]];
   }
   function scaleFont() { return pal.antique ? "italic 400 12.5px " + SERIF : "500 11px " + FONT; }
-  var controlsEl = document.querySelector(".uc-controls"), siteEls = document.querySelectorAll(".uc-site, .uc-site .name, .uc-site .back-link");
+  var controlsEl = document.querySelector(".uc-controls");
   function fixedBoxes() {
     var out = [], rows = scaleRows();
     if (rows) {
@@ -1948,7 +1948,6 @@
       out.push(Object.assign(mkBox(scaleL + span / 2, scaleB - 8.5, span / 2 + 6, 16, 0), { ui: true }));
     }
     var els = [controlsEl];
-    if (sheetMode && !ui.bare) els = els.concat(Array.from(siteEls));
     els.forEach(function (el) {
       var r = el && el.getBoundingClientRect();
       if (r && r.width && r.height) out.push(Object.assign(mkBox(r.left + r.width / 2, r.top + r.height / 2, r.width / 2 + 4, r.height / 2 + 4, 0), { ui: true }));
