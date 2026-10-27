@@ -1539,6 +1539,31 @@
     var xy = fromFit(F, best.u, best.v);
     return { x: xy[0], y: xy[1], d: best.d };
   }
+  function nearCentre(F, x, y, tau, budget) {
+    var t = toFit(F, x, y), cu = t[0], cv = t[1], a = F.a, b = F.b, best = null, bd = Infinity, evals = 0, q = [], hmin = Math.max(0.05, tau * 0.04);
+    var cell = function (u, v, h) {
+      evals++;
+      var d = fitDist(F, u, v), dist = Math.hypot((u - cu) * a, (v - cv) * b);
+      if (d >= tau && dist < bd) { bd = dist; best = { u: u, v: v, d: d }; }
+      return { u: u, v: v, h: h, d: d, max: -Math.hypot(Math.max(0, Math.abs(u - cu) - h) * a, Math.max(0, Math.abs(v - cv) - h) * b) };
+    };
+    cell(cu, cv, 0);
+    var w = F.u1 - F.u0, hh = F.v1 - F.v0;
+    if (best || !(w > 0 && hh > 0)) return best ? (function (xy) { return { x: xy[0], y: xy[1], d: best.d }; })(fromFit(F, best.u, best.v)) : null;
+    var size = Math.max(Math.min(w, hh), Math.sqrt(w * hh / 20)), h = size / 2, i;
+    for (var u = F.u0; u < F.u1; u += size) for (var v = F.v0; v < F.v1; v += size) { var c0 = cell(u + h, v + h, h); if (c0.d + h >= tau) heapPush(q, c0); }
+    while (q.length && evals < budget) {
+      var c = heapPop(q);
+      if (-c.max >= bd) break;
+      if (c.h <= hmin) continue;
+      h = c.h / 2;
+      var kids = [cell(c.u - h, c.v - h, h), cell(c.u + h, c.v - h, h), cell(c.u - h, c.v + h, h), cell(c.u + h, c.v + h, h)];
+      for (i = 0; i < 4; i++) if (kids[i].d + h >= tau && -kids[i].max < bd) heapPush(q, kids[i]);
+    }
+    if (!best) return null;
+    var xy = fromFit(F, best.u, best.v);
+    return { x: xy[0], y: xy[1], d: best.d };
+  }
   function climb(F, x, y) {
     var t = toFit(F, x, y), u = t[0], v = t[1], d = fitDist(F, u, v), step = Math.max(0.3, Math.abs(d) * 0.25);
     for (var it = 0; it < 3; it++, step /= 2) {
@@ -1581,7 +1606,7 @@
     if (l2 <= 0) return null;
     return { ang: 0.5 * Math.atan2(2 * cxy, cxx - cyy), e: Math.sqrt(l1 / l2) };
   }
-  var GU = 4000, GROUND_WIN = 0.2 * GU, RECENTER = 0.06 * GU, MAX_TILT = 0.52, MAX_TILT_SHORT = 0.6, FADE_MS = 150;
+  var CENTRE_KEEP = 0.78, GU = 4000, GROUND_WIN = 0.2 * GU, RECENTER = 0.06 * GU, MAX_TILT = 0.52, MAX_TILT_SHORT = 0.6, FADE_MS = 150;
   var groundCache = new Map(), lastGround = new Map(), labelState = new Map(), labelFading = [];
   function labelEpoch() {
     if (!labelCache.has("epoch")) { labelCache.set("epoch", 1); groundCache.clear(); lastGround.clear(); }
@@ -1727,37 +1752,51 @@
     }
     return forms;
   }
-  function formCovers(name, people, fm, pt, margin) {
-    var o = labelOptions(name, people, fm.sp)[fm.oi], dx = pt[0] - fm.u, dy = pt[1] - fm.v, c = Math.cos(fm.ang), s = Math.sin(fm.ang);
-    var m = margin * o.h * fm.d;
-    return Math.abs(dx * c + dy * s) < o.w / 2 * fm.d + m && Math.abs(-dx * s + dy * c) < o.h / 2 * fm.d + m;
+  function centred(sp, win, name, people, fm, ctr, wall) {
+    var o = labelOptions(name, people, fm.sp)[fm.oi], dmax = fm.d, F = null, pole = fm;
+    if (wall) {
+      F = prepFit(sp, wall, o.w / 2, o.h / 2, fm.ang, win);
+      var r = poleOf(F, [[fm.u, fm.v], [ctr[0], ctr[1]], [0, 0]], 80, Infinity);
+      if (r && r.d >= 0.85 * fm.d) { dmax = r.d; pole = { u: r.x, v: r.y, d: r.d }; } else F = null;
+    }
+    if (!F) F = prepFit(sp, [], o.w / 2, o.h / 2, fm.ang, win);
+    var at = nearCentre(F, ctr[0], ctr[1], CENTRE_KEEP * dmax, 260) || { x: pole.u, y: pole.v, d: pole.d };
+    var out = [{ oi: fm.oi, sp: fm.sp, ang: fm.ang, u: at.x, v: at.y, d: at.d, dmax: dmax, tight: fm.tight }];
+    if (at.d < 0.97 * pole.d) out.push({ oi: fm.oi, sp: fm.sp, ang: fm.ang, u: pole.u, v: pole.v, d: pole.d, dmax: pole.d, tight: fm.tight, pole: true });
+    return out;
   }
-  function groundCand(p, name, feats, lon, lat, capLL, reach, again) {
+  function centreOf(geo) {
+    var g = geo && geo.geometry, polys = !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [], big = null, ba = 0;
+    polys.forEach(function (poly) {
+      var a = d3.geoArea({ type: "Polygon", coordinates: poly });
+      if (a > TAU) a = 2 * TAU - a;
+      if (a > ba) { ba = a; big = poly; }
+    });
+    if (!big) return null;
+    var c = d3.geoCentroid({ type: "Polygon", coordinates: big });
+    return isFinite(c[0]) && isFinite(c[1]) ? c : null;
+  }
+  function groundCand(p, name, feats, lon, lat, capLL, reach, again, cenLL) {
     var fr = groundFrame(lon, lat), sp = planeShape(feats, fr, reach ? reach + 0.35 : 0.6), e = reach * GU;
     if (!sp) return null;
     var win = !reach ? null : [[-e, -e], [e, -e], [-e, e], [e, e]];
     var forms = allForms(p, name, sp, win);
     if (!forms.length) return null;
-    var top = bestOf(forms);
-    var plain = bestOf(forms.filter(function (fm) { return !fm.tight; }), false) || top;
+    var top = bestOf(forms), ctr = cenLL ? planeOf(fr, cenLL[0], cenLL[1]) : [0, 0], wall = null;
+    if (capLL) {
+      var cpt = planeOf(fr, capLL[0], capLL[1]), hc = 0.4 * top.d, x0 = cpt[0] - hc, x1 = cpt[0] + hc + 0.3 * capLL[2] * top.d, y0 = cpt[1] - hc, y1 = cpt[1] + hc;
+      if (x1 > sp.x0 && x0 < sp.x1 && y1 > sp.y0 && y0 < sp.y1) wall = [x0, y0, x1, y0, x1, y0, x1, y1, x1, y1, x0, y1, x0, y1, x0, y0];
+    }
+    var out = [];
+    forms.forEach(function (fm) { out = out.concat(centred(sp, win, name, p.people, fm, ctr, wall)); });
+    var plain = bestOf(out.filter(function (fm) { return !fm.tight && !fm.pole; }), false) || out[0];
     if (!fr.flat && !again && !reach && (Math.abs(plain.u) > RECENTER || Math.abs(plain.v) > RECENTER)) {
       var ll = planeLL(fr, plain.u, plain.v);
-      return groundCand(p, name, feats, ll[0], ll[1], capLL, GROUND_WIN / GU, true) || { fr: fr, forms: forms };
+      return groundCand(p, name, feats, ll[0], ll[1], capLL, reach, true, cenLL) || { fr: fr, forms: out };
     }
-    if (capLL) {
-      var cp = planeOf(fr, capLL[0], capLL[1]);
-      if (forms.some(function (fm) { return formCovers(name, p.people, fm, cp, 0.25); })) {
-        var hc = 0.3 * labelOptions(name, p.people)[top.oi].h * top.d, x0 = cp[0] - hc, x1 = cp[0] + hc, y0 = cp[1] - hc, y1 = cp[1] + hc;
-        var wall = [x0, y0, x1, y0, x1, y0, x1, y1, x1, y1, x0, y1, x0, y1, x0, y0];
-        forms = forms.map(function (fm) {
-          if (!formCovers(name, p.people, fm, cp, 0.25)) return fm;
-          var o = labelOptions(name, p.people, fm.sp)[fm.oi], r = poleOf(prepFit(sp, wall, o.w / 2, o.h / 2, fm.ang, win), [[fm.u, fm.v], [0, 0]], 80, Infinity);
-          return r && r.d >= 0.85 * fm.d ? { oi: fm.oi, sp: fm.sp, ang: fm.ang, u: r.x, v: r.y, d: r.d, tight: fm.tight } : fm;
-        });
-      }
-    }
-    return { fr: fr, forms: forms };
+    return { fr: fr, forms: out };
   }
+
   function groundLayout(snap, p, name, allow) {
     labelEpoch();
     var g = snap.geoms.lo[p.i], cap = snap.modern && p.cap ? capitalAt(p.cap, dayOfTime(now)) : null;
@@ -1765,7 +1804,7 @@
     if (hit) { groundCache.delete(key); groundCache.set(key, hit); }
     if (hit || !allow) return hit;
     if (groundCache.size > 2000) groundCache.delete(groundCache.keys().next().value);
-    var feats = featOf(snap.topo.lo, "lo", g).prep, lab = p.label, spots = [[lab[0], lab[1]]].concat(lab[6] || []), cands = [], capLL = cap ? [cap[1], cap[2]] : null;
+    var feats = featOf(snap.topo.lo, "lo", g).prep, lab = p.label, spots = [[lab[0], lab[1]]].concat(lab[6] || []), cands = [], capLL = cap ? [cap[1], cap[2], String(cap[0] || "").length] : null;
     var span = Math.sqrt(lab[5]) / R_KM, gap = Math.max(0.07, span / 5), i, c;
     var add = function (c) {
             if (!c) return;
@@ -1775,7 +1814,8 @@
       c.v = v;
       cands.push(c);
     };
-    for (i = 0; i < spots.length && cands.length < 6; i++) add(groundCand(p, name, feats, spots[i][0], spots[i][1], capLL, i ? GROUND_WIN / GU : 0, false));
+    var cen = centreOf(featOf(snap.topo.lo, "lo", g).geo);
+    for (i = 0; i < spots.length && cands.length < 6; i++) add(groundCand(p, name, feats, spots[i][0], spots[i][1], capLL, i ? GROUND_WIN / GU : 0, false, i ? null : cen));
     hit = { cands: cands, more: cands.length && span > 0.12 ? { pts: null, grow: function (lim) {
       var m = hit.more;
       if (!m.pts) {
@@ -1898,7 +1938,7 @@
   function labelTarget(side, people, minF, cap) {
     return Math.max(minF, Math.min(cap, (5 + 3.6 * Math.log2(Math.max(1, side) / 10)) * (people ? 0.85 : 1)));
   }
-  function formSig(fm) { return fm.oi + (fm.ang ? "a" : "h") + (fm.tight ? "t" : "n"); }
+  function formSig(fm) { return fm.oi + (fm.ang ? "a" : "h") + (fm.tight ? "t" : "n") + (fm.pole ? "p" : ""); }
   function placeGround(p, name, G, side, placed, scale) {
     var st = labelState.get(p.id), people = p.people, cap = people ? 15 : 26, minF = people ? 8.5 : 7.5, thr = st ? minF * 0.93 : minF;
     var target = labelTarget(side, people, minF, cap), order = [], ci, k, near = -1, nd = 0.2;
@@ -1912,7 +1952,7 @@
       ci = order[oi];
       var c = G.cands[ci], ranked = [];
       for (k = 0; k < c.forms.length; k++) {
-        var fm = c.forms[k], fit = 0.88 * fm.d * scale, f = Math.min(cap, target, fit), same = ci === near && st.form === formSig(fm), tilt = fm.ang;
+        var fm = c.forms[k], fit = 0.88 * fm.d * scale, f = Math.min(cap, target, fit), fmax = fm.pole ? f : Math.min(cap, target, 0.88 * fm.dmax * scale), same = ci === near && st.form === formSig(fm), tilt = fm.ang;
         if (!c.fr.flat) {
           var q0 = screenAt(c.fr, fm.u, fm.v, 0), q1 = screenAt(c.fr, fm.u + Math.cos(fm.ang) * 4 / scale, fm.v + Math.sin(fm.ang) * 4 / scale, 0);
           if (q0[2] < 0.25) continue;
@@ -1920,15 +1960,15 @@
         }
         tilt = Math.abs(tilt);
         if (tilt > (name.length > 6 ? 0.55 : 0.65) + (same ? 0.25 : 0)) continue;
-        var pen = (fm.ang ? 0.8 : 1) * (fm.oi ? (fm.oi === 1 ? 0.9 : 0.82) : 1) * (fm.tight ? 0.9 : 1) * (tilt > 0.2 ? 1.2 - tilt : 1);
+        var pen = (fm.ang ? 0.8 : 1) * (fm.oi ? (fm.oi === 1 ? 0.9 : 0.82) : 1) * (fm.tight ? 0.9 : 1) * (fm.pole ? 0.75 : 1) * (tilt > 0.2 ? 1.2 - tilt : 1);
         if (f < thr && !people && side >= 28 && (side >= 64 || localScale() < 600) && fit * 1.18 >= thr) { f = thr; pen *= 0.7; }
-        ranked.push({ k: k, f: f, s: f * pen * (same ? 1.12 : 1), same: same });
+        ranked.push({ k: k, f: f, s: Math.max(f, fmax) * pen * (same ? 1.12 : 1), same: same });
       }
       var top = 0, keep = null;
       ranked.forEach(function (r) { top = Math.max(top, r.f); if (r.same) keep = r; });
       ranked.sort(function (a, b) { return b.s - a.s; });
       if (keep && keep.f * 1.25 >= top) ranked = [keep].concat(ranked.filter(function (r) { return r !== keep; }));
-      for (var t = 0; t < Math.min(3, ranked.length); t++) {
+      for (var t = 0; t < Math.min(4, ranked.length); t++) {
         var rk = ranked[t];
         if (rk.f < thr) continue;
         var fmk = c.forms[rk.k], o = labelOptions(name, people, fmk.sp)[fmk.oi], geo = glyphLayout(c.fr, fmk, o, rk.f, people, scale);
@@ -2220,7 +2260,7 @@
   var CITY_STYLE = [
     { size: 12.4, font: "400 ", ls: 0.2, ink: "city", halo: 2.4 },
     { size: 11.2, font: "400 ", ls: 0.1, ink: "city", halo: 2.2 },
-    { size: 10.8, font: "italic 400 ", ls: 0, ink: "town", halo: 2 }
+    { size: 10.8, font: "400 ", ls: 0, ink: "town", halo: 2 }
   ];
   function placeOne(placed, p, name, k, kind, held, ref) {
     if (!(kind === 0 ? layers.capitals : layers.cities)) return false;
