@@ -109,7 +109,7 @@
       projection.rotate([-view.lon, -view.lat, 0]).scale(baseR * view.zoom).translate([cx, cy]);
     }
   }
-  function localScale() { return (flat ? baseK : baseR) * view.zoom; }
+  function localScale() { return texPass ? texS : (flat ? baseK : baseR) * view.zoom; }
   function zoomForScale(S) { return S / (flat ? baseK : baseR); }
 
   var pal = {}, hatch = null, stripeCache = new Map();
@@ -255,10 +255,10 @@
   // map afresh each frame is slowest, and the image is painted again, when the
   // map is still, after anything about the map changes.
   var FAST_ZOOM = 1.7, TEX_W = 4096, TEX_H = 2048;
-  var mapGen = 0, texPass = false, mapTex = { canvas: null, gl: null, glCanvas: null, key: "", ready: false, timer: 0, failed: false };
+  var mapGen = 0, texPass = false, texS = 0, texZoom = 1, texLine = 1, mapTex = { canvas: null, gl: null, glCanvas: null, key: "", ready: false, timer: 0, failed: false };
   function texKey() {
     return [mapGen, ownerVersion, countriesVersion, pieces.length, pal.antique ? 1 : 0, pal.ocean, (pal.colors || []).join(), ui.terrain, ui.rivers, ui.lakes, ui.midLakes, ui.regionLines, ui.fine,
-      fineData ? 1 : 0, seaDeep ? 1 : 0, rivers ? 1 : 0, lakes ? 1 : 0, relief && relief.ready() ? 1 : 0, rd.gen, rd.put.size].join("|");
+      fineData ? 1 : 0, seaDeep ? 1 : 0, rivers ? 1 : 0, lakes ? 1 : 0, relief && relief.ready() ? 1 : 0, rd.gen, rd.put.size, Math.round(Math.log2(view.zoom) * 3)].join("|");
   }
   function fastGlobe() {
     return interacting > 0 && !flat && !texPass && mapTex.ready && mapTex.key === texKey() && view.zoom <= FAST_ZOOM && !satOn();
@@ -283,7 +283,18 @@
     var keep = { ctx: ctx, W: W, H: H, dpr: dpr, cx: cx, cy: cy, flat: flat, k: FB.k, xc: FB.xc, yc: FB.yc, wrap: FB.wrap, vmin: FB.vmin, vmax: FB.vmax, pmin: FB.pmin, pmax: FB.pmax,
       freeL: freeL, freeR: freeR, freeT: freeT, freeB: freeB, zoom: view.zoom, reliefRes: reliefRes };
     var g = mapTex.canvas.getContext("2d");
+    // Lines are drawn into the texture in its own pixels, and the globe shows it smaller or larger than that,
+    // so their widths are scaled to come out on the globe as wide as when it is still.
+    if (!g.texLines) {
+      var lw = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "lineWidth");
+      if (lw && lw.set) Object.defineProperty(g, "lineWidth", { configurable: true, get: function () { return lw.get.call(this) / texLine; }, set: function (v) { lw.set.call(this, v * texLine); } });
+      g.texLines = true;
+    }
+    texLine = TEX_W / TAU / (baseR * view.zoom);
     try {
+      // The texture shows what the globe shows at this zoom (rivers, region lines, lakes, and the detail of
+      // the shapes), not what a flat map 4,096 pixels wide would, so the globe looks the same moving as still.
+      texS = baseR * keep.zoom; texZoom = keep.zoom;
       texPass = true;
       ctx = g; W = TEX_W; H = TEX_H; dpr = 1; cx = TEX_W / 2; cy = TEX_H / 2; flat = true;
       freeL = 0; freeR = TEX_W; freeT = 0; freeB = TEX_H;
@@ -1372,8 +1383,9 @@
   }
   var reliefKey = "", reliefPat = false;
   function reliefFrame() {
-    var res = interacting ? RELIEF_MOVING : RELIEF_RES;
-    if (res !== reliefRes) sizeRelief(res);
+    var res = interacting && !texPass ? RELIEF_MOVING : RELIEF_RES;
+    // The map texture for the moving globe draws the whole world at its own size, so the terrain is drawn at that size too.
+    if (res !== reliefRes || reliefCanvas.width !== Math.max(1, Math.round(W * dpr * res)) || reliefCanvas.height !== Math.max(1, Math.round(H * dpr * res))) sizeRelief(res);
     var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
     if (key !== reliefKey || !reliefPat) { renderRelief(); reliefPat = true; reliefKey = key; }
     return reliefPat;
@@ -1654,7 +1666,7 @@
     return p[0] + r > 0 && p[0] - r < W && p[1] + r > 0 && p[1] - r < H;
   }
   function riverRank(S) { return S < 300 ? 2 : S < 520 ? 3 : S < 800 ? 4 : S < 1300 ? 5 : S < 2400 ? 6 : S < 4500 ? 7 : S < 8000 ? 8 : 9; }
-  function riverFade() { return clamp01((view.zoom - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)); }
+  function riverFade() { return clamp01(((texPass ? texZoom : view.zoom) - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)); }
   function drawRivers(S) {
     var fade = riverFade(), set = riverSetFor(S);
     if (!set || !ui.rivers || fade <= 0) return;

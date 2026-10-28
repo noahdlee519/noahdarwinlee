@@ -71,6 +71,15 @@ of `/greatercircle/`.
     the names, cities, frame, and aging on top as usual. The image is painted
     again about a second after the map, the style, or the View menu changes
     (`texKey()`), and while it is out of date the globe is drawn the usual way.
+    The image shows what the globe shows at its zoom, not what a flat map
+    4096 pixels wide would: the same level of detail, rivers, lakes, and
+    region lines, with lines widened or narrowed by how much larger the image
+    is than the globe on screen, so the globe looks the same turning as
+    still; it is painted again when the zoom changes by about a quarter. Its
+    terrain is drawn at the image's size (it used to be drawn at the
+    screen's, so the terrain for the whole world landed in a corner of the
+    image and slid over the globe as a second, misplaced skin while it
+    turned).
     Shapes so large that they wrap behind the globe and enclose the point
     opposite the view are drawn through d3-geo's clipping instead, so they
     don't flood the whole disc. Line segments along the date line and the
