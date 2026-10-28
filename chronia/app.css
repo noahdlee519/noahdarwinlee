@@ -938,6 +938,24 @@ body.ch-page {
   display: none;
 }
 
+.ch-fact {
+  display: block;
+}
+
+.ch-fact[hidden] {
+  display: none;
+}
+
+.ch-flag {
+  display: inline-block;
+  height: 14px;
+  width: auto;
+  max-width: 32px;
+  vertical-align: -2px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-sizing: content-box;
+}
+
 .ch-card-facts a,
 .ch-card-facts button {
   padding: 0;

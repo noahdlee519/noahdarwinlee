@@ -3124,6 +3124,8 @@
     return String(y);
   }
   function fmtDay(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
+  function fmtDate(day) { var d = dateOfDay(day); return MONTHS[d[1] - 1] + " " + d[2] + ", " + d[0]; }
+  function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
     if (!isModern(t)) return fmtYear(Math.round(t));
     var d = dateOfDay(dayOfTime(t));
@@ -3272,6 +3274,8 @@
     if (!maps.length && !dated) return;
     t = Math.max(KNOTS[0][0], Math.min(LAST_YEAR + 0.999, t));
     if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
+    // A card describes one date, so changing the date closes it.
+    if (t !== now && (selected >= 0 || selCity) && !card.hidden) closeCard();
     now = t;
     if (!fromRange) rangeActive = false;
     if (isModern(t)) {
@@ -3464,6 +3468,7 @@
   var card = $("card"), wikiCache = new Map(), wikiAsk = 0;
   var BLURB_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
   var blurbCache = new Map(), blurbTimer = 0, selCity = null, cardClick = false;
+  var factsAsk = 0;
   function select(id) {
     if (id < 0) { closeCard(); return; }
     selected = id;
@@ -3576,47 +3581,46 @@
     var whenYear = modernNow ? dateOfDay(dayOfTime(now))[0] : datedNow ? Math.round(now) : current ? current.year : Math.round(now);
     $("card-kind").textContent = e[4] ? "People or culture" : p && p.status > 0 ? STATUS[p.status] : p && p.ruler >= 0 ? "Dependency" : "State";
     $("card-name").textContent = e[0];
-    var facts = $("card-facts");
+    var facts = $("card-facts"), factsAt = ++factsAsk;
     facts.textContent = "";
-    var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
-    var addPolity = function (id) { if (current.byId.has(id)) facts.appendChild(polityButton(id)); else addText(polityName(id)); };
+    // One fact a line, as "Label: value".
+    var line = function (label) {
+      var el = document.createElement("span");
+      el.className = "ch-fact";
+      if (label) { var b = document.createElement("span"); b.className = "ch-fact-label"; b.textContent = label + ": "; el.appendChild(b); }
+      facts.appendChild(el);
+      return el;
+    };
+    var textLine = function (label, t) { var el = line(label); el.appendChild(document.createTextNode(t)); return el; };
+    var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityName(id))); };
     if (p) {
       if (p.claims) {
-        addText("Disputed between ");
-        p.claims.forEach(function (c, k) { if (k) addText(k === p.claims.length - 1 ? (p.claims.length > 2 ? ", and " : " and ") : ", "); addPolity(c); });
-        addText((datedNow ? " in " : " on ") + when + ". ");
+        var dl = line("Disputed between");
+        p.claims.forEach(function (c, k) { if (k) dl.appendChild(document.createTextNode(k === p.claims.length - 1 ? (p.claims.length > 2 ? ", and " : " and ") : ", ")); addPolity(dl, c); });
       }
-      if (p.ruler >= 0) {
-        addText("Held by "); addPolity(p.ruler);
-        addText((datedNow ? " in " : " on ") + when + ". ");
-      }
-      if (p.part >= 0 && p.part !== p.ruler) { addText("Part of "); addPolity(p.part); addText(". "); }
+      if (p.ruler >= 0) addPolity(line("Held by"), p.ruler);
+      if (p.part >= 0 && p.part !== p.ruler) addPolity(line("Part of"), p.part);
       var capNow = capitalNow(p.cap);
-      if (capNow) addText("Capital: " + capitalName(capNow) + ". ");
-      if (modernNow) {
-        addText(p.end < 0 ? "These borders since " + fmtDay(p.start) + ". " : "These borders from " + fmtDay(p.start) + " to " + fmtDay(p.end) + ". ");
-      } else if (datedNow) {
-        addText(p.start === p.end ? "These borders in " + fmtYear(p.start) + ". " : "These borders from " + fmtYear(p.start) + " to " + fmtYear(p.end) + ". ");
+      if (capNow) textLine("Capital", capitalName(capNow));
+      var big = !e[4] && !p.people ? largestCity(p) : null;
+      if (big) textLine("Largest city", namedAt(big.steps, big.name, now));
+      var flagLine = null, langLine = null;
+      if (!e[4] && !p.people && !p.claims) {
+        flagLine = line("Flag"); flagLine.hidden = true;
+        langLine = line("Language"); langLine.hidden = true;
       }
+      if (modernNow) {
+        textLine("Borders from", fmtDate(p.start));
+        if (p.end >= 0) textLine("Borders until", fmtDate(p.end));
+      } else if (datedNow) {
+        if (p.start === p.end) textLine("Borders", fmtYear(p.start));
+        else { textLine("Borders from", fmtYear(p.start)); textLine("Borders until", fmtYear(p.end)); }
+      }
+      if (p.band) line("").textContent = "Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.";
+      else if (p.b <= 1 && !p.people) line("").textContent = "Its borders here are approximate.";
     } else {
-      addText("Not on the map " + (modernNow ? "on " : datedNow ? "in " : "of ") + (modernNow || datedNow ? when : current ? fmtYear(current.year) : fmtNow(now)) + ". ");
+      line("").textContent = "Not on the map " + (modernNow ? "on " : datedNow ? "in " : "of ") + (modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : when) : current ? fmtYear(current.year) : fmtNow(now)) + ".";
     }
-    var ys = e[2], cs = e[5], runs = [];
-    [e[6], cs].forEach(function (r) {
-      if (!r) return;
-      var last = runs[runs.length - 1];
-      if (last && r[0] <= last[1] + 1) last[1] = Math.max(last[1], r[1]); else runs.push([r[0], r[1]]);
-    });
-    if (runs.length) {
-      var runText = runs.map(function (r) { return r[0] === r[1] ? "in " + fmtYear(r[0]) : "from " + fmtYear(r[0]) + " to " + (r[1] >= 2019 ? "today" : fmtYear(r[1])); });
-      var before = ys.filter(function (y) { return y < runs[0][0]; });
-      addText(before.length ? "On the maps from " + fmtYear(before[0]) + ", and continuously " + runText.join(" and ") + "." : "On the map " + runText.join(" and ") + ".");
-    } else if (ys.length) {
-      if (ys.length <= 4) addText("On the maps of " + listYears(ys) + ".");
-      else addText("On " + ys.length + " maps, from " + fmtYear(ys[0]) + " to " + fmtYear(ys[ys.length - 1]) + ".");
-    }
-    if (p && p.band) addText(" Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.");
-    else if (p && p.b <= 1 && !p.people) addText(" Its borders here are approximate.");
     var title = wikiTitle(selected, whenYear), y = askYear();
     loadWiki(e[0], title, {
       ask: {
@@ -3631,6 +3635,120 @@
       },
       label: e[0], when: fmtYear(y), click: click
     });
+    if (flagLine) {
+      var at = modernNow ? dayYear(Math.min(dayOfTime(now), modern.toDay)) : whenYear + 0.5, job = wikiCache.get(title);
+      if (job) job.then(function (d) { return d && d.wikibase_item ? wdFacts(d.wikibase_item, at) : null; }).then(function (f) {
+        if (!f || factsAt !== factsAsk) return;
+        if (f.flag) {
+          var im = document.createElement("img");
+          im.className = "ch-flag"; im.alt = "Flag of " + e[0]; im.src = f.flag;
+          flagLine.appendChild(im); flagLine.hidden = false;
+        }
+        if (f.langs.length) {
+          langLine.firstChild.textContent = (f.langs.length > 1 ? "Languages" : "Language") + ": ";
+          langLine.appendChild(document.createTextNode(f.langs.join(", "))); langLine.hidden = false;
+        }
+      }, function () {});
+    }
+  }
+  // The state's largest city on the map at this time: the most populous city inside its land, or just
+  // off its coast when no other state's land holds it.
+  var bigCache = new Map();
+  function largestCity(p) {
+    if (!cities || !current) return null;
+    var key = current.key + "|" + p.id + "|" + now;
+    if (bigCache.has(key)) return bigCache.get(key);
+    if (bigCache.size > 200) bigCache.clear();
+    var L = level(current, "hi"), own = [], out = null;
+    current.polys.forEach(function (q, i) { if (q && q.id === p.id) own.push(i); });
+    var inside = function (list, ll) {
+      for (var j = 0; j < list.length; j++) if (inBounds(L.bounds[list[j]], ll) && d3.geoContains(L.geo[list[j]], ll)) return true;
+      return false;
+    };
+    var other = function (ll) {
+      for (var i = 0; i < current.polys.length; i++) { var q = current.polys[i]; if (q && q.id !== p.id && inBounds(L.bounds[i], ll) && d3.geoContains(L.geo[i], ll)) return true; }
+      return false;
+    };
+    var list = cityRanked(now);
+    for (var k = 0; k < list.length && !out; k++) {
+      var c = list[k].c, ll = [c.lon, c.lat];
+      if (inside(own, ll)) { out = c; break; }
+      for (var a = 0; a < 8 && !out; a++) {
+        var q = [c.lon + 0.1 * Math.cos(a * Math.PI / 4) / Math.max(0.2, Math.cos(c.lat * D2R)), c.lat + 0.1 * Math.sin(a * Math.PI / 4)];
+        if (inside(own, q) && !other(ll)) out = c;
+      }
+    }
+    bigCache.set(key, out);
+    return out;
+  }
+  // Flags and languages come from Wikidata, by the Wikipedia article's item: the flag (P41), and the official
+  // languages (P37) then the other languages used (P2936), up to four, whose dates hold at the date shown.
+  var wdCache = new Map(), wdLabelCache = new Map();
+  function wdGet(params) {
+    return fetch("https://www.wikidata.org/w/api.php?format=json&origin=*&" + params).then(function (r) {
+      if (!r.ok) throw new Error("wikidata " + r.status);
+      return r.json();
+    });
+  }
+  function wdTime(qs, end) {
+    if (!qs || !qs[0] || !qs[0].datavalue) return null;
+    var v = qs[0].datavalue.value, m = /^([+-]\d+)-(\d\d)-(\d\d)/.exec(v.time || "");
+    if (!m) return null;
+    var y = +m[1], mo = +m[2], d = +m[3], pr = v.precision || 11;
+    if (pr <= 9 || !mo) return end ? y + 0.999 : y;
+    if (pr === 10 || !d) return y + (end ? mo : mo - 1) / 12;
+    return y + ((mo - 1) * 30.44 + d - (end ? 0 : 1)) / 366;
+  }
+  function wdPick(claims, prop, at) {
+    var list = (claims[prop] || []).filter(function (c) { return c.rank !== "deprecated" && c.mainsnak && c.mainsnak.datavalue; });
+    var dated = [], open = [];
+    list.forEach(function (c) {
+      var q = c.qualifiers || {}, a = wdTime(q.P580, false), b = wdTime(q.P582, true);
+      if (a === null && b === null) open.push(c);
+      else if ((a === null || a <= at) && (b === null || at <= b)) dated.push(c);
+    });
+    var use = dated.length ? dated : open;
+    var best = use.filter(function (c) { return c.rank === "preferred"; });
+    return (best.length ? best : use).map(function (c) { return c.mainsnak.datavalue.value; });
+  }
+  function wdFacts(qid, at) {
+    var job = wdCache.get(qid);
+    if (!job) {
+      job = wdGet("action=wbgetentities&props=claims&ids=" + encodeURIComponent(qid)).then(function (d) { return d && d.entities && d.entities[qid] && d.entities[qid].claims || null; });
+      wdCache.set(qid, job);
+      job.catch(function () { wdCache.delete(qid); });
+    }
+    return job.then(function (claims) {
+      if (!claims) return null;
+      var flags = wdPick(claims, "P41", at), langs = [];
+      wdPick(claims, "P37", at).concat(wdPick(claims, "P2936", at)).forEach(function (v) { if (v.id && langs.indexOf(v.id) < 0) langs.push(v.id); });
+      langs = langs.slice(0, 4);
+      return Promise.all([flags.length ? flagThumb(flags[0]) : null, wdLabels(langs)]).then(function (r) { return { flag: r[0], langs: r[1] }; });
+    });
+  }
+  function wdLabels(ids) {
+    var need = ids.filter(function (q) { return !wdLabelCache.has(q); });
+    var got = need.length ? wdGet("action=wbgetentities&props=labels&languages=en&ids=" + need.join("|")).then(function (d) {
+      need.forEach(function (q) { var e = d && d.entities && d.entities[q]; wdLabelCache.set(q, e && e.labels && e.labels.en ? e.labels.en.value : null); });
+    }) : Promise.resolve();
+    return got.then(function () {
+      return ids.map(function (q) { var n = wdLabelCache.get(q); return n ? n.charAt(0).toUpperCase() + n.slice(1) : null; }).filter(Boolean);
+    });
+  }
+  var flagCache = new Map();
+  function flagThumb(file) {
+    if (flagCache.has(file)) return flagCache.get(file);
+    var job = fetch("https://en.wikipedia.org/w/api.php?action=query&prop=imageinfo&iiprop=url&iiurlheight=40&format=json&origin=*&titles=" + encodeURIComponent("File:" + file)).then(function (r) {
+      if (!r.ok) throw new Error("flag " + r.status);
+      return r.json();
+    }).then(function (d) {
+      var pages = d && d.query && d.query.pages, url = null;
+      for (var k in pages) { var ii = pages[k].imageinfo; if (ii && ii[0]) url = ii[0].thumburl || ii[0].url; }
+      return url && /^https:\/\/upload\.wikimedia\.org\//.test(url) ? url : null;
+    });
+    flagCache.set(file, job);
+    job.catch(function () { flagCache.delete(file); });
+    return job;
   }
   function neighbourNames(id) {
     var snap = current;
@@ -3648,8 +3766,6 @@
     });
     return out.sort(function (a, b) { return b.w - a.w; }).slice(0, 10).map(function (x) { return x.name; });
   }
-  var blurbWriter = new Map();
-  function writerName(t) { var m = blurbWriter.get(t) || ""; return /deepseek/i.test(m) ? "DeepSeek" : "Claude"; }
   function blurbFetch(ask, peek) {
     var k = JSON.stringify(ask), have = blurbCache.get(k);
     if (have) return have;
@@ -3661,7 +3777,6 @@
       body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
       signal: ctl ? ctl.signal : undefined
     }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      if (d && typeof d.text === "string" && d.text && typeof d.model === "string") blurbWriter.set(d.text, d.model);
       return d && typeof d.text === "string" && d.text ? d.text : null;
     }).catch(function () { return null; }).then(function (t) {
       clearTimeout(timer);
@@ -3746,8 +3861,8 @@
           mode = "done";
           text.className = "ch-wiki-text";
           text.textContent = t;
-          by.textContent = "Written by " + writerName(t) + " for this date";
-          by.hidden = false;
+          by.textContent = "";
+          by.hidden = true;
         } else mode = "wiki";
         paint();
       });
