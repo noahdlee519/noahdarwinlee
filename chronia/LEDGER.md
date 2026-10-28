@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## until 1885 | world | borders snapped to CShapes' lines of 1886
+
+- Claimed by the capitals session, 27 October 2026: where a state's shape before 1886 matches its CShapes shape of 1886 but for thin slivers, it takes the CShapes lines, so the borders don't jump in detail at 1886. A new step after the overlaps are settled in `tools/build-eras.mjs`, and a rebuild.
+
 ## 1886–2019, and the lineages before | world | base colours from Noah's UCHRONIA map
 
 - Claimed by the session of 27 October 2026 (globe names, UCHRONIA's turning globe): `BASE_COLOURS` in the builder from the map Noah coloured and saved in UCHRONIA, 196 states by name, then a rebuild of `eras.json`, `modern.json`, and `dated/*.json` for their colours only. Touches `BASE_COLOURS` and the colour fields of the data files.
