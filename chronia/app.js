@@ -1017,7 +1017,7 @@
     drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
 
     drawMarshes(kp, landPath);
-    drawRivers(S);
+    drawRivers(S, landPath);
     drawLakes(kp);
 
     drawDivisionLines(snap, L, landPath, S);
@@ -1186,7 +1186,7 @@
 
   var RIVERS_FROM = 520, RIVERS_FULL = 960;
   function riverRank(S) { return S < 800 ? 4 : S < 1300 ? 5 : 6; }
-  function drawRivers(S) {
+  function drawRivers(S, landPath) {
     if (!layers.water) return;
     if (S < RIVERS_FROM) return;
     if (!rivers) {
@@ -1200,6 +1200,9 @@
     }
     var top = riverRank(S), fade = clamp01((S - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM));
     ctx.save();
+    // Only on the land of the date, so a river doesn't run across water that the coastline takes in then
+    // (the Fens before they were drained, the Zuiderzee).
+    if (landPath) ctx.clip(landPath);
     clipOutLakes();
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     ctx.strokeStyle = pal.river;

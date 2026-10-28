@@ -218,7 +218,7 @@ const ellipse = (lon, lat, aKm, bKm, n) => {
   ring.push(ring[0]);
   return [[ring]];
 };
-addLake("Whittlesey Mere", null, at(1851), ellipse(-0.225, 52.49, 1.9, 1.3, 36), 0.0008, r4);
+addLake("Whittlesey Mere", at(1653), at(1851), ellipse(-0.225, 52.49, 1.9, 1.3, 36), 0.0008, r4);
 
 const wet = readJSON(resolve(here, "wetlands.json"));
 const marshes = [];
@@ -227,14 +227,33 @@ const addMarsh = (name, from, to, mp) => {
   marshes.push([name, Math.round(km2Of({ type: "MultiPolygon", coordinates: polys })), from, to, polys]);
 };
 const boxPoly = (x0, y0, x1, y1) => [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
-addMarsh("The Fens", null, at(1653), clip.intersection([wet.fens], boxPoly(-1, 52, 1, 52.82)));
-addMarsh("The Fens (Lincolnshire)", null, at(1818), clip.intersection([wet.fens], boxPoly(-1, 52.82, 1, 53.4)));
 addMarsh("Pontine Marshes", null, at(1935), [wet.pontine]);
+// The Fens are water joined to the Wash until they were drained, part of the coastline rather than a marsh
+// over the land. The shore is the outline traced from elevation, closed by 1.5 km and opened by 1 km so it
+// runs smooth. The islands of firmer ground are the outline's own holes of 4 km² or more (the Isle of Ely,
+// and the silt round Boston and Spalding), with the fen islands that the shrunken peat no longer shows in
+// the elevation added round their towns, a few kilometres across.
+const FEN_ISLANDS = [["March", 0.088, 52.551, 2.2, 1.6], ["Whittlesey", -0.13, 52.557, 2.4, 1.3], ["Chatteris", 0.053, 52.456, 1.6, 1.3], ["Ramsey", -0.104, 52.449, 1.6, 1.2], ["Thorney", -0.106, 52.62, 1.4, 1]];
+const fens = (() => {
+  let mp = buffer(buffer([[wet.fens[0]]], 1.5), -1.5);
+  mp = buffer(buffer(mp, -1), 1);
+  const shore = mp.filter((p) => planarKm2(p) >= 20).map((p) => [simplifyRing(p[0], 0.002)]);
+  const islands = wet.fens.slice(1).filter((h) => planarKm2([h]) >= 4).map((h) => [[simplifyRing(h, 0.002)]]).concat(FEN_ISLANDS.map(([, lon, lat, a, b]) => ellipse(lon, lat, a, b, 24)));
+  return clip.difference(shore, ...islands);
+})();
+// After 1653 only the fens north of the River Welland, in Lincolnshire, are left, from Stamford by Market
+// Deeping, Crowland, and Spalding to its outfall; the Great Level to its south was drained.
+const WELLAND_NORTH = [[[-1, 52.653], [-0.479, 52.653], [-0.318, 52.677], [-0.29, 52.672], [-0.17, 52.675], [-0.13, 52.74], [-0.153, 52.787], [-0.04, 52.875], [0.05, 52.9], [0.5, 52.97], [1, 52.97], [1, 53.4], [-1, 53.4], [-1, 52.653]]];
+const FEN_WIN = [-0.75, 52.05, 0.9, 53.32];
 
 const landGroups = [
   { name: "Zuiderzee", win: [4.8, 52.2, 6.05, 53.15], states: [
     { from: null, to: at(1930, 8, 31), cut: zuiderzee([P.W, P.NOP, P.EF, P.SF], []) },
     { from: at(1930, 8, 31), to: at(1932, 5, 28), cut: zuiderzee([P.NOP, P.EF, P.SF], [P.W]) }
+  ] },
+  { name: "The Fens", win: FEN_WIN, states: [
+    { from: null, to: at(1653), cut: fens },
+    { from: at(1653), to: at(1818), cut: clip.intersection(fens, [WELLAND_NORTH]) }
   ] },
   { name: "Caofeidian", states: [{ from: null, to: at(2003), dropAt: [118.55, 39.0] }] },
   { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] }

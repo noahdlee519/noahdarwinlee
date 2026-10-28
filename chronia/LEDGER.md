@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## Before 1653 and 1818 | England | the Fens as part of the coastline
+
+- What changed: the Fens are no longer a marsh pattern over the land but water joined to the Wash, part of the coastline, with the shore, coast band, and water rings of any coast: all of the basin until 1653, and the Lincolnshire fens north of the River Welland until 1818. The divide is now the Welland, from Stamford to its outfall, instead of a straight line at 52.82° N. The traced outline is smoothed (closed by 1.5 km, opened by 1 km), its islands of 4 km² or more are kept (the Isle of Ely, and the silt round Boston and Spalding), and ovals of a few kilometres are added for the islands of March, Whittlesey, Chatteris, Ramsey, and Thorney, which the shrunken peat no longer shows in the elevation. Whittlesey Mere is drawn from 1653, since before then it lies in the Fens' water. Rivers are drawn only on the land of the date, so none crosses the Fens or the Zuiderzee.
+- Tables: `fens`, `FEN_ISLANDS`, `WELLAND_NORTH`, and the "The Fens" land group in `tools/build-geography.mjs`; `drawRivers` in `app.js`.
+- Sources: (1) the outline traced earlier from the Terrarium elevation tiles (`tools/wetlands.json`), and the dates of 1653 and 1818 from the earlier entry for the Fens. (2) The English Wikipedia article "The Fens": the Bedford Level's North Level, "between the Nene and the River Welland"; Deeping Fen, north of the Welland; the "islands" of raised ground that stayed dry in floods, the largest the Isle of Ely, with the fen towns "sited chiefly on the few areas of raised ground"; and the East, West, and Wildmore Fens, drained in the 18th and 19th centuries. The towns' places and the Welland's course are from general knowledge of the map, not from a survey.
+- Confidence: medium. The dates and the divide are firm; the shore is the extent of the basin, not of the water in any one year, since much of the fen was seasonal flood and reed swamp rather than open water, and the added islands are approximate in size and shape.
+- Alternatives: keeping the Fens as a marsh pattern over the land, as before; Noah asked for them to be part of the coastline.
+- Left out: the smaller islands (Crowland, Wisbech's silt, Littleport apart from Ely), the gradual draining between the campaigns, and the Lincolnshire Marsh along the coast north of Wainfleet, which the outline keeps.
+
 ## 1492–2019 | North America | the United States, Canada, and their colonial predecessors; cities by prominence; notes for first-level divisions
 
 - Claimed by the session of 28 October 2026 (North America): the borders and rulers of the United States, Canada, and the British, French, Spanish, Russian, and Mexican lands before them, in `tools/build-eras.mjs`; the cities' first years and early populations in `tools/build-cities.mjs` and `tools/city-tables.mjs`; and a note for the division clicked on the card, in `app.js` and the note's server function. A rebuild of `data/dated/`, `data/eras.json`, `data/modern.json`, and the city files.
