@@ -1936,6 +1936,25 @@ a.uc-menu-item {
   font-size: 12.5px;
   line-height: 1.4;
 }
+#adv .uc-check.uc-check-sub {
+  margin-left: 26px;
+}
+.uc-adv-note.uc-adv-note-sub {
+  margin-left: 52px;
+}
+#adv .uc-check.is-locked {
+  cursor: default;
+}
+#adv .uc-check.is-locked input {
+  cursor: default;
+}
+#adv .uc-check.is-locked span,
+#adv .uc-check.is-locked .uc-eye {
+  opacity: 0.5;
+}
+#adv .uc-check.is-locked:hover span {
+  text-decoration: none;
+}
 
 .uc-bare-btn .uc-icon-hidden,
 .uc-page.is-bare .uc-bare-btn .uc-icon-shown {

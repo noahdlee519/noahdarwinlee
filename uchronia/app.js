@@ -2016,7 +2016,7 @@
     if (globe) { ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.clip(); }
     ctx.globalCompositeOperation = "multiply";
     if (!globe) drawSheet();
-    if (globe && seams > 0) {
+    if (globe && seams > 0 && ui.gridLabels) {
       ctx.beginPath(); traceArcs(ctx, A.seams, A.seams.map(function (x, j) { return j; }));
       ctx.strokeStyle = "rgba(96,64,30," + (0.22 * seams) + ")"; ctx.lineWidth = 0.7; ctx.stroke();
     }
@@ -4837,6 +4837,8 @@
     setTip($("redo"), redoWhat + " (Ctrl+Shift+Z)");
     $("redo").setAttribute("aria-label", redoWhat);
     $("fine").checked = ui.fine;
+    $("fine").disabled = !ui.regionLines || (!!fineLoad && !fineData);
+    $("fine").closest("label").classList.toggle("is-locked", !ui.regionLines);
     var st = currentStyle();
     document.querySelectorAll("#style-seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.style === st)); });
     $("show-countries").checked = ui.countryNames;
@@ -6222,12 +6224,12 @@
       fineLoad = fetchJSON("data/units.json").then(function (t) {
         if (!t.objects || !t.objects.units || !Array.isArray(t.provinces) || t.provinces.length !== nProv) throw new Error("units do not match");
         switchToFine(t);
-        $("fine").disabled = false;
+        $("fine").disabled = !ui.regionLines;
         return true;
       }).catch(function (e) {
         console.warn("finer regions", e);
         fineLoad = null;
-        $("fine").disabled = false;
+        $("fine").disabled = !ui.regionLines;
         toast("The smaller subdivisions did not load");
         return false;
       });
@@ -6275,6 +6277,11 @@
     ui.waterNames = $("show-water-names").checked;
     if (ui.regionLines !== $("show-region-lines").checked) arcsDirty = true;
     ui.regionLines = $("show-region-lines").checked;
+    if (!ui.regionLines && ui.fine) {
+      ui.fine = false;
+      $("fine").checked = false;
+      try { localStorage.setItem(STORE_FINE, "0"); } catch (e) { }
+    }
     try { localStorage.setItem(STORE_NAMES, [ui.countryNames, ui.cityNames, ui.scaleBar, ui.gridLabels, ui.rivers, ui.terrain, ui.towns, ui.lakes, ui.waterNames, ui.regionLines, ui.midLakes].map(function (on) { return on ? "1" : "0"; }).join("")); } catch (e) { }
     renderPanel();
     scheduleRender();
@@ -6343,7 +6350,7 @@
     var ready = Promise.resolve(true), fineDone = false, shownAt = performance.now();
     if (finePref === "1" || (stored && needsFine(stored.map))) {
       ready = loadFine().then(function (ok) {
-        if (ok && finePref === "1") { ui.fine = true; arcsDirty = true; }
+        if (ok && finePref === "1" && ui.regionLines) { ui.fine = true; arcsDirty = true; }
         if (ok && stored && needsFine(stored.map)) { loadDiff(stored.map, true); sharedOpen = stored.shared === 2 ? 2 : stored.shared ? 1 : 0; }
         renderPanel(); scheduleRender();
       });
@@ -7204,6 +7211,7 @@
   function turnFineOn() {
     return loadFine().then(function (ok) {
       if (!ok) return false;
+      if (!ui.regionLines) { $("show-region-lines").checked = true; setNames(); }
       ui.fine = true; $("fine").checked = true; arcsDirty = true;
       try { localStorage.setItem(STORE_FINE, "1"); } catch (e) { }
       renderPanel(); scheduleRender();

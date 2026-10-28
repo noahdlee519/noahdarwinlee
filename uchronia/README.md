@@ -146,7 +146,9 @@ of `/greatercircle/`.
       *Labels*);
     - age drawn on the map itself, never on the screen around it. The globe
       is an old paper globe: its twelve gores and two polar caps each a
-      slightly different tone, with faint seams between them, varnish that
+      slightly different tone, with faint seams between them (drawn only while
+      latitude and longitude are shown, since they run along meridians and
+      the 70th parallels), varnish that
       darkens towards the edge of the sphere and a soft highlight. The flat
       map is a folded sheet: eight panels of slightly different tones, folds
       down the middle and the quarters and across the equator, and edges
@@ -567,9 +569,13 @@ of `/greatercircle/`.
   and *New city*, undo and redo, and
   **Historian** and three menus: **Check**, **File** (copy a link, save a file, open one, start
   over, the tutorial) and **View** (the style, then three groups: **Borders**,
-  with *Larger subdivisions* (every line inside the countries, both tiers)
-  and *Smaller subdivisions* (the finer regions); **Labels**, with country
-  names, settlements, small towns, names of seas, lakes, and rivers,
+  with *Subdivisions* (every line inside the countries, both tiers)
+  and, set in under it, *Smaller subdivisions* (the finer regions), which
+  can only be turned on while *Subdivisions* is: turning *Subdivisions* off
+  turns *Smaller subdivisions* off too and greys it out, and the historian,
+  when it turns the finer regions on, turns *Subdivisions* on with them;
+  **Labels**, with country names, settlements, small towns (set in under
+  settlements), names of seas, lakes, and rivers,
   latitude and longitude, and the scale bar; and **Natural**, with terrain,
   rivers, medium lakes, and small lakes). Each item has a small eye in place
   of a checkbox, open when it is shown and struck through, in a fainter ink,
@@ -893,7 +899,7 @@ of `/greatercircle/`.
   regions; *Tier 2*, the finer lines inside them, such as counties and
   districts; a tier it has none of is greyed out). The two buttons override
   the View menu for that country: each shows whether that tier is on there,
-  and a click turns it the other way whatever *Larger subdivisions* and *Smaller
+  and a click turns it the other way whatever *Subdivisions* and *Smaller
   subdivisions* say, loading the finer regions first if they are needed. When a
   click brings a country back in line with the View menu, it follows the
   View menu again. Each country keeps this in `lines`: 1 and 2 hide Tier 1
