@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## all years | world | stray border lines inside states, as in the Holy Roman Empire
+
+- Claimed by the 1886 session, 28 October 2026: short border lines float inside states where two neighbours' shared edge has a point on one side and not on the other, so the topology doesn't see the edge as shared and draws it as an inland edge of each. The fix gives each edge the other side's points before the topology is made (`topoFor` in `tools/build-eras.mjs`), and a rebuild.
+
 ## Before 1653 and 1818 | England | the Fens as part of the coastline
 
 - What changed: the Fens are no longer a marsh pattern over the land but water joined to the Wash, part of the coastline, with the shore, coast band, and water rings of any coast: all of the basin until 1653, and the Lincolnshire fens north of the River Welland until 1818. The divide is now the Welland, from Stamford to its outfall, instead of a straight line at 52.82° N. The traced outline is smoothed (closed by 1.5 km, opened by 1 km), its islands of 4 km² or more are kept (the Isle of Ely, and the silt round Boston and Spalding), and ovals of a few kilometres are added for the islands of March, Whittlesey, Chatteris, Ramsey, and Thorney, which the shrunken peat no longer shows in the elevation. Whittlesey Mere is drawn from 1653, since before then it lies in the Fens' water. Rivers are drawn only on the land of the date, so none crosses the Fens or the Zuiderzee.
