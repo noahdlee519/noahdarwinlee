@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1886–2019, and the lineages before | world | base colours from Noah's UCHRONIA map
+
+- Claimed by the session of 27 October 2026 (globe names, UCHRONIA's turning globe): `BASE_COLOURS` in the builder from the map Noah coloured and saved in UCHRONIA, 196 states by name, then a rebuild of `eras.json`, `modern.json`, and `dated/*.json` for their colours only. Touches `BASE_COLOURS` and the colour fields of the data files.
+
 ## 1893–2026 | Brazil, Argentina, Spain, France, Japan, and Nigeria | first-level divisions
 
 - What changed: the first-level divisions of six more countries are drawn, each from the date since which Natural Earth's present shapes have held, with the older names and the merged divisions of the years between (README, "First-level divisions"). All the divisions from Natural Earth are now drawn at the detail of UCHRONIA's `provinces-detail.json`, with internal lines simplified to about 0.5 km instead of 1.6 km.
