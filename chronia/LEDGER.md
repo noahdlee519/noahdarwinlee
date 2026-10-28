@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1492–2019 | North America | the United States, Canada, and their colonial predecessors; cities by prominence; notes for first-level divisions
+
+- Claimed by the session of 28 October 2026 (North America): the borders and rulers of the United States, Canada, and the British, French, Spanish, Russian, and Mexican lands before them, in `tools/build-eras.mjs`; the cities' first years and early populations in `tools/build-cities.mjs` and `tools/city-tables.mjs`; and a note for the division clicked on the card, in `app.js` and the note's server function. A rebuild of `data/dated/`, `data/eras.json`, `data/modern.json`, and the city files.
+
 ## 1500–1885 | world | borders given CShapes' lines of 1886
 
 - What changed: where a state's border before 1886 differs from its CShapes border of 1 January 1886 only by Cliopatria's grid steps (pieces under 800 km² or under 15 km across that touch the state), the state takes the 1886 line and the neighbour that held the steps gives them up, back to the border's last real change. So the borders of Europe and elsewhere no longer change their look between 1885 and 1886: the German Empire's, Austria-Hungary's, Switzerland's, and Italy's lines of 1871 to 1885 are those of 1886. 2,769 spans of 233 states took steps, 4,706 km² a span on average, in 8,992 cuts of neighbours; 477 cuts were spared because the neighbour would have lost more than a fifth of its land, which keeps the Mughal Empire of 1857 and the like. A new step, `snapTo1886`, after the overlaps are settled; see "Meeting the lines of 1886" in the README. The files from 1500 to 1885 are about two-thirds larger, and 30 states before 1886 have another colour because their neighbours changed.
