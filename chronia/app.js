@@ -926,6 +926,7 @@
   function draw() {
     if (!ready || !current) return;
     applyView();
+    anchorStripes(false);
     var S = localScale(), kp = kmPx(), key = useLevel();
     var snap = current, L = level(snap, key);
     var landList = landAt(landKey(key));
@@ -3054,6 +3055,22 @@
     return n.length < 3 ? n.join(" and ") : n.slice(0, -1).join(", ") + ", and " + n[n.length - 1];
   }
   var stripeCache = new Map();
+  var stripeAnchor = null, stripeT = [0, 0], stripeNow = [0, 0];
+  function setStripeT(p) {
+    if (p && p.setTransform && window.DOMMatrix) p.setTransform(new DOMMatrix().translateSelf(stripeNow[0], stripeNow[1]).rotateSelf(45).scaleSelf(0.5));
+  }
+  function anchorStripes(fixed) {
+    if (!fixed) {
+      var p = stripeAnchor ? projectLL(stripeAnchor.lon, stripeAnchor.lat) : null;
+      if (!p || Math.hypot(p[0] - cx, p[1] - cy) > (flat ? Math.max(W, H) : B.r * 0.6)) {
+        var ll = lonLatAt(cx, cy), q = ll ? projectLL(ll[0], ll[1]) : null;
+        if (q) { stripeAnchor = { lon: ll[0], lat: ll[1], ox: stripeT[0] - q[0], oy: stripeT[1] - q[1] }; p = q; }
+      }
+      if (p && stripeAnchor) stripeT = [p[0] + stripeAnchor.ox, p[1] + stripeAnchor.oy];
+    }
+    stripeNow = fixed ? [0, 0] : stripeT;
+    stripeCache.forEach(setStripeT);
+  }
   function stripes(cols) {
     var key = cols.join("|") + "|" + pal.colors.join(","), p = stripeCache.get(key);
     if (p) return p;
@@ -3062,7 +3079,7 @@
     var g = cv.getContext("2d");
     cols.forEach(function (col, i) { g.fillStyle = pal.colors[col]; g.fillRect(i * B, 0, B, 2); });
     p = ctx.createPattern(cv, "repeat");
-    if (p && p.setTransform && window.DOMMatrix) p.setTransform(new DOMMatrix().rotateSelf(45).scaleSelf(0.5));
+    setStripeT(p);
     stripeCache.set(key, p);
     return p;
   }

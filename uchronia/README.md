@@ -940,7 +940,11 @@ of `/greatercircle/`.
   pane lists the claimants under *Between*: the country chosen before is
   the first, others are added from *add a country* or by clicking (or
   Alt-clicking) them on the map, and a claimant is taken off by clicking its
-  name. Disputed land is striped in the claimants' colours, has no name of
+  name. Disputed land is striped in the claimants' colours (the stripes
+  are fixed to the ground, not the screen: `anchorStripes()` moves them each
+  frame with a point of the map near the centre of the view, handing over to
+  a new point with the same offset when it drifts far off, and the globe's
+  texture for turning draws them in its own fixed place), has no name of
   its own on the map, and says who disputes it when picked with Select. Each
   set of claimants is one dispute, kept as a country with a `claims` list
   that is left out of the country lists, the Check menu, and colouring; it
