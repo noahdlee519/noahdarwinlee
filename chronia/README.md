@@ -449,6 +449,7 @@ The projection and tracing come from UCHRONIA's `app.js`: `prepare`, `traceRing`
 
 - **On the globe:** points behind the horizon are pushed to the rim. A shape that might wrap round the far side, meaning its bounding cap holds the point opposite the view, is drawn through d3 instead.
 - **On the flat map:** shapes are unwrapped in longitude and drawn up to three times, so the map scrolls without end once it is wider than the window.
+  - When the whole map fits in the window, the copies either side would show past its frame, so everything from the land to the borders is clipped to the frame (`traceOutline`), as UCHRONIA does. The sea is already clipped the same way.
 
 CHRONIA first used d3's own path with clipping for everything. It took about 190 ms a frame in headless Chromium, against about 35 ms now.
 
