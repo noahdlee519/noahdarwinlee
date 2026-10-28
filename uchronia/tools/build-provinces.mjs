@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { splitWesternSahara, orderCountries } from "./western-sahara.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -23,7 +24,7 @@ const RENAME = {
   SWZ: "Eswatini", CZE: "Czechia", BHS: "Bahamas", GNB: "Guinea-Bissau", SDS: "South Sudan", HKG: "Hong Kong",
   MAC: "Macau", PSX: "Palestine", FSM: "Micronesia", TLS: "Timor-Leste", ALD: "Åland", PGA: "Spratly Islands",
   SGS: "South Georgia", VAT: "Vatican City", BLM: "Saint Barthélemy", STP: "São Tomé and Príncipe",
-  USG: "Guantánamo Bay", UMI: "US Minor Outlying Islands", ESB: "Dhekelia", WSB: "Akrotiri", KAS: "Siachen Glacier",
+  USG: "Guantánamo Bay", UMI: "US Minor Outlying Islands", ESB: "Dhekelia", WSB: "Akrotiri", KAS: "Siachen Glacier", WSD: "Western Sahara", SAH: "Sahrawi Republic",
   CIV: "Ivory Coast", CPV: "Cape Verde",
 };
 const FOLD = { KAB: "KAZ" };
@@ -52,6 +53,7 @@ const groupName = (code, region) => GROUP_NAME[code + "|" + region] || region.re
 const kmArea = (geom) => { const a = d3.geoArea(geom); return Math.min(a, 4 * Math.PI - a) * EARTH * EARTH; };
 
 const geo = JSON.parse(readFileSync(input, "utf8"));
+geo.features = splitWesternSahara(geo.features, input, require("polygon-clipping"), d3);
 const countries = new Map();
 const features = [];
 const groups = [], groupIndex = new Map();
@@ -109,7 +111,7 @@ weights.sort((a, b) => a - b);
 const threshold = (k) => weights[Math.max(0, Math.floor((1 - k) * (weights.length - 1)))];
 const simple = simplify.simplify(pre, threshold(keep));
 const out = client.quantize(simple, 2e5);
-out.countries = [...countries].map(([c, n]) => ({ c, n })).sort((a, b) => a.n.localeCompare(b.n));
+out.countries = orderCountries([...countries].map(([c, n]) => ({ c, n })));
 out.groups = groups;
 out.detail = 1;
 let vertices = 0;

@@ -158,7 +158,7 @@
     FIN: "ALD"
   };
   var SHORT_NAME = { "United Kingdom": "UK", "United States": "US" };
-  var DISPUTED_BY = { KAS: "IND PAK" };
+  var DISPUTED_BY = { KAS: "IND PAK", WSD: "MAR SAH" };
   function rulerOf(c) {
     var co = countries[c], r = co ? co.ruler : -1;
     return isInt(r) && r >= 0 && r !== c && countries[r] && countries[r].alive && hasLand(r) ? r : -1;
@@ -1478,8 +1478,10 @@
       ctx.beginPath(); traceOutline(ctx); ctx.clip();
       if (!satSea) {
         if (pal.antique) drawDeep();
-        ctx.beginPath(); traceArcs(ctx, graticule, graticuleIdx);
-        ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+        if (ui.gridLabels) {
+          ctx.beginPath(); traceArcs(ctx, graticule, graticuleIdx);
+          ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+        }
         if (pal.antique) drawWaterLines(L, S);
       }
     } else {
@@ -1494,8 +1496,10 @@
         ctx.fillStyle = pal.ocean;
         ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
         if (pal.antique) drawDeep();
-        ctx.beginPath(); traceArcs(ctx, graticule, graticuleIdx);
-        ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+        if (ui.gridLabels) {
+          ctx.beginPath(); traceArcs(ctx, graticule, graticuleIdx);
+          ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+        }
         if (pal.antique) {
           ctx.save();
           ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.clip();

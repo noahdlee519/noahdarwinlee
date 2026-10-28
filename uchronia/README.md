@@ -308,7 +308,8 @@ of `/greatercircle/`.
   meridian and a parallel half way out from the middle of the view carry the
   numbers, the parallel on the side towards the equator; zoomed in so that
   the globe fills the screen, the labels move to the edges as on the flat
-  map. They give way to every other name, and can be hidden in the View menu.
+  map. They give way to every other name. *Latitude and longitude* in the
+  View menu hides the lines and their numbers together.
 - **Scale bar.** Kilometres over miles in the bottom corner, in round lengths
   of 1, 2, or 5 times a power of ten that fit 120 px, true at the centre of the
   view (on the flat map, along the parallel there); in Antique, chequered bars
@@ -405,7 +406,23 @@ of `/greatercircle/`.
   - The region groups come from Natural Earth's `region` field, with some
     names put into English ("Lombardy", "Nakhchivan") or into their current
     form (Kosovo's districts by their Albanian names).
-  - Built by `tools/build-provinces.mjs` (see its arguments for the inputs).
+  - Western Sahara: Natural Earth gives Morocco's provinces south of 27°40′
+    to Morocco, and only the strip east of the berm to Western Sahara.
+    `tools/western-sahara.mjs` cuts Morocco's provinces along the
+    Moroccan-held part of Western Sahara in Natural Earth's disputed areas
+    (`ne_10m_admin_0_disputed_areas.geojson`, read from beside the provinces
+    file; the build stops without it). Laâyoune-Boujdour-Sakia El Hamra and
+    Oued Ed-Dahab, and the Es Semara part of Guelmim-Es Semara, go to a
+    country of their own, `WSD`, named Western Sahara, which the page makes
+    disputed between Morocco and the strip (see *Disputed* below); the strip
+    is named Sahrawi Republic. Guelmim-Es Semara's remaining part is named
+    Guelmim, and Laâyoune's part north of 27°40′ is a province of Morocco
+    named Tarfaya. The two new provinces come last, and the countries keep
+    their order with `WSD` last and the strip sorted by its old name
+    (`orderCountries`), so saved maps, which refer to provinces and countries
+    by index, still line up. The cut needs polygon-clipping.
+  - Built by `tools/build-provinces.mjs` (see its arguments for the inputs;
+    the current files were built with a keep of 0.1).
 - **data/provinces-detail.json**: the same arcs kept at four tenths of their
   points (3.8 MB, about 1.3 MB compressed), for the closest zooms. It holds
   only the arcs; the shapes come from `provinces.json`.
@@ -472,7 +489,14 @@ of `/greatercircle/`.
     polygon clipping), @vant/area-data (current Chinese division codes),
     pinyin-pro (romanised Chinese names) and @br-geo-kit/ibge (IBGE's
     municipality-to-region table) at build time; its arguments list the
-    inputs.
+    inputs. It makes the same Western Sahara cut as the provinces;
+  - `tools/split-units-western-sahara.mjs` made that cut in the existing
+    `units.json` and `units-detail.json` without rebuilding them: for
+    Guelmim-Es Semara and Laâyoune, each one unit, it takes the boundary
+    between the old and new province from `provinces-detail.json`, splits the
+    unit's ring where that line meets it in both files, adds the line as a
+    new arc, and gives the new province a unit of its own at the end. It
+    stops if `units.json` is already cut.
 - **data/cities.json**: the cities as `[name, lon, lat, size, capital]`.
   - The first 550 are greatercircle's.
   - The place list had Ironville, Kentucky, a community of 782 people, at
@@ -488,6 +512,12 @@ of `/greatercircle/`.
     "-si", Vietnamese "Thành Phố"), and in Arabic-, Persian- and
     Urdu-speaking countries and a few others the transliteration marks.
   - Built by `tools/build-cities.mjs`.
+  - Laayoune, added by hand with the capitals at the end, is no longer a
+    capital: it lies in disputed Western Sahara, and it made a second capital
+    for Morocco.
+  - Saint Paul, Minnesota (285,000), was crowded out by Minneapolis, 13 km
+    away; it is added by hand at the end, size 3, so saved maps still line
+    up. Close in, it shows beside Minneapolis.
 - **data/sea.json**: Natural Earth 1:10m bathymetry, the areas deeper than
   200 m, cut into 30° tiles so that no piece is large enough to need
   clipping at the edge of the globe, as two TopoJSON topologies of polygons
@@ -899,11 +929,13 @@ of `/greatercircle/`.
   is created in the same undo step as the first land given to it. A dispute
   whose claimant is dissolved keeps the colours of those that remain. The
   historian is told which land is disputed and between whom. The world as it
-  is starts with one dispute: the Siachen Glacier, which Natural Earth
-  draws apart from both India and Pakistan, is disputed between the two
-  (`DISPUTED_BY` in `app.js`). Land made disputed between the same
-  claimants joins it, and hovering it reads *Siachen Glacier, disputed
-  between India and Pakistan*.
+  is starts with two disputes (`DISPUTED_BY` in `app.js`): the Siachen
+  Glacier, which Natural Earth draws apart from both India and Pakistan, is
+  disputed between the two; and the Moroccan-held part of Western Sahara,
+  with Laayoune, is disputed between Morocco and the Sahrawi Republic.
+  Land made disputed between the same claimants joins it, and hovering it
+  reads *Siachen Glacier, disputed between India and Pakistan* or *Western
+  Sahara, disputed between Morocco and Sahrawi Republic*.
 - **New city (C)**: a button beside *New country* that stays pressed while it
   is on. Click the map to found a city; click one to pick it, then drag
   it to move it (a drag on a city that isn't picked moves the map). A picked

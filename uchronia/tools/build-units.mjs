@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import { splitWesternSahara, orderCountries } from "./western-sahara.mjs";
 import { gzipSync } from "node:zlib";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -34,7 +35,7 @@ const RENAME = {
   SWZ: "Eswatini", CZE: "Czechia", BHS: "Bahamas", GNB: "Guinea-Bissau", SDS: "South Sudan", HKG: "Hong Kong",
   MAC: "Macau", PSX: "Palestine", FSM: "Micronesia", TLS: "Timor-Leste", ALD: "Åland", PGA: "Spratly Islands",
   SGS: "South Georgia", VAT: "Vatican City", BLM: "Saint Barthélemy", STP: "São Tomé and Príncipe",
-  USG: "Guantánamo Bay", UMI: "US Minor Outlying Islands", ESB: "Dhekelia", WSB: "Akrotiri", KAS: "Siachen Glacier",
+  USG: "Guantánamo Bay", UMI: "US Minor Outlying Islands", ESB: "Dhekelia", WSB: "Akrotiri", KAS: "Siachen Glacier", WSD: "Western Sahara", SAH: "Sahrawi Republic",
   CIV: "Ivory Coast", CPV: "Cape Verde",
 };
 const FOLD = { KAB: "KAZ" };
@@ -45,6 +46,7 @@ const need = (name) => { if (!files.has(name)) throw new Error("missing source f
 const readJSON = (name) => JSON.parse(readFileSync(need(name), "utf8"));
 
 const geo = JSON.parse(readFileSync(input, "utf8"));
+geo.features = splitWesternSahara(geo.features, input, require("polygon-clipping"), d3);
 const countries = new Map();
 const parents = [];
 const vertexKey = (pt) => pt[0].toFixed(6) + "," + pt[1].toFixed(6);
@@ -82,7 +84,7 @@ for (const [code, name] of countries) if (!name) countries.set(code, code);
 
 const reference = JSON.parse(readFileSync(resolve(here, "../data/provinces.json"), "utf8"));
 const provinces = reference.objects.provinces.geometries.map((g) => ({ n: g.properties.n, c: g.properties.c }));
-const listed = [...countries].map(([c, n]) => ({ c, n })).sort((a, b) => a.n.localeCompare(b.n));
+const listed = orderCountries([...countries].map(([c, n]) => ({ c, n })));
 if (provinces.length !== parents.length || provinces.some((q, i) => q.n !== parents[i].n || q.c !== parents[i].c)) throw new Error("the provinces differ from data/provinces.json");
 if (JSON.stringify(listed) !== JSON.stringify(reference.countries)) throw new Error("the countries differ from data/provinces.json");
 
