@@ -3698,8 +3698,8 @@
     bigCache.set(key, out);
     return out;
   }
-  // Flags and languages come from Wikidata, by the Wikipedia article's item: the flag (P41), and the official
-  // languages (P37) then the other languages used (P2936), up to four, whose dates hold at the date shown.
+  // Flags and languages come from Wikidata, by the Wikipedia article's item: the flag (P41) and the official
+  // languages of the whole state (P37, not those of one part of it), whose dates hold at the date shown.
   var wdCache = new Map(), wdLabelCache = new Map();
   function wdGet(params) {
     return fetch("https://www.wikidata.org/w/api.php?format=json&origin=*&" + params).then(function (r) {
@@ -3716,15 +3716,21 @@
     if (pr === 10 || !d) return y + (end ? mo : mo - 1) / 12;
     return y + ((mo - 1) * 30.44 + d - (end ? 0 : 1)) / 366;
   }
-  function wdPick(claims, prop, at) {
-    var list = (claims[prop] || []).filter(function (c) { return c.rank !== "deprecated" && c.mainsnak && c.mainsnak.datavalue; });
-    var dated = [], open = [];
+  function wdPick(claims, prop, at, whole) {
+    var list = (claims[prop] || []).filter(function (c) {
+      var q = c.qualifiers || {};
+      return c.rank !== "deprecated" && c.mainsnak && c.mainsnak.datavalue && !(whole && (q.P518 || q.P3005));
+    });
+    var dated = [], open = [], later = [];
     list.forEach(function (c) {
       var q = c.qualifiers || {}, a = wdTime(q.P580, false), b = wdTime(q.P582, true);
       if (a === null && b === null) open.push(c);
       else if ((a === null || a <= at) && (b === null || at <= b)) dated.push(c);
+      else if (a !== null && a > at) later.push(c);
     });
-    var use = dated.length ? dated : open;
+    // A whole state's official language that Wikidata dates from a later law (French in France from 1992) was
+    // its language before too, so for languages those count when nothing else holds at the date.
+    var use = dated.length ? dated : open.length ? open : whole ? later : [];
     var best = use.filter(function (c) { return c.rank === "preferred"; });
     return (best.length ? best : use).map(function (c) { return c.mainsnak.datavalue.value; });
   }
@@ -3737,11 +3743,27 @@
     }
     return job.then(function (claims) {
       if (!claims) return null;
+      // Nothing from an item for a date before it began or after it ended (Morocco's item is the state since 1956).
+      var born = wdTime(claims.P571, false), gone = wdTime(claims.P576, true);
+      if ((born !== null && at < born) || (gone !== null && at > gone)) return null;
       var flags = wdPick(claims, "P41", at), langs = [];
-      wdPick(claims, "P37", at).concat(wdPick(claims, "P2936", at)).forEach(function (v) { if (v.id && langs.indexOf(v.id) < 0) langs.push(v.id); });
+      wdPick(claims, "P37", at, true).concat(langsUsed(claims, at)).forEach(function (v) { if (v.id && langs.indexOf(v.id) < 0) langs.push(v.id); });
       langs = langs.slice(0, 4);
       return Promise.all([flags.length ? flagThumb(flags[0]) : null, wdLabels(langs)]).then(function (r) { return { flag: r[0], langs: r[1] }; });
     });
+  }
+  // Only when Wikidata gives no official language for the whole state (the United States has none): the
+  // languages used that it ranks preferred, or else the one or two with the most speakers, or the only one it lists.
+  function langsUsed(claims, at) {
+    if (wdPick(claims, "P37", at, true).length) return [];
+    var all = (claims.P2936 || []).filter(function (c) { var q = c.qualifiers || {}; return c.rank !== "deprecated" && c.mainsnak && c.mainsnak.datavalue && !q.P518 && !q.P3005; });
+    var top = all.filter(function (c) { return c.rank === "preferred"; });
+    if (!top.length) {
+      var speakers = function (c) { var q = c.qualifiers && c.qualifiers.P1098; return q && q[0] && q[0].datavalue ? +q[0].datavalue.value.amount : 0; };
+      top = all.filter(function (c) { return speakers(c) > 0; }).sort(function (a, b) { return speakers(b) - speakers(a); }).slice(0, 2);
+    }
+    if (!top.length && all.length === 1) top = all;
+    return top.map(function (c) { return c.mainsnak.datavalue.value; });
   }
   function wdLabels(ids) {
     var need = ids.filter(function (q) { return !wdLabelCache.has(q); });
@@ -3752,6 +3774,8 @@
       return ids.map(function (q) { var n = wdLabelCache.get(q); return n ? n.charAt(0).toUpperCase() + n.slice(1) : null; }).filter(Boolean);
     });
   }
+  // Wikimedia serves thumbnails from thumb.wikimedia.org and originals from upload.wikimedia.org.
+  var WM_IMG = /^https:\/\/(upload|thumb)\.wikimedia\.org\//;
   var flagCache = new Map();
   function flagThumb(file) {
     if (flagCache.has(file)) return flagCache.get(file);
@@ -3761,7 +3785,7 @@
     }).then(function (d) {
       var pages = d && d.query && d.query.pages, url = null;
       for (var k in pages) { var ii = pages[k].imageinfo; if (ii && ii[0]) url = ii[0].thumburl || ii[0].url; }
-      return url && /^https:\/\/upload\.wikimedia\.org\//.test(url) ? url : null;
+      return url && WM_IMG.test(url) ? url : null;
     });
     flagCache.set(file, job);
     job.catch(function () { flagCache.delete(file); });
@@ -3851,7 +3875,7 @@
     var paint = function () {
       if (ask !== wikiAsk) return;
       if (wiki) {
-        if (wiki.thumbnail && wiki.thumbnail.source && /^https:\/\/upload\.wikimedia\.org\//.test(wiki.thumbnail.source)) {
+        if (wiki.thumbnail && wiki.thumbnail.source && WM_IMG.test(wiki.thumbnail.source)) {
           img.src = wiki.thumbnail.source; img.hidden = false;
         } else img.hidden = true;
         var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
@@ -3870,7 +3894,7 @@
     var writing = function (job) {
       mode = "ai";
       by.hidden = true;
-      quiet("Writing about " + blurb.label + " in " + blurb.when + "…");
+      quiet("");
       text.classList.add("is-writing");
       job.then(function (t) {
         if (ask !== wikiAsk) return;

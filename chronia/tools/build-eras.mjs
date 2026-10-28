@@ -2131,7 +2131,12 @@ const CS_WIKI_BY_YEAR = [
   ["Korea", 1886, 1910, "Joseon"], ["Taiwan", 1950, 9999, "Taiwan"], ["Hawaii", 1886, 1898, "Hawaiian Kingdom"],
   ["Vietnam", 1886, 1945, "French Indochina"], ["Serbia", 1886, 1918, "Kingdom of Serbia"], ["Italy", 1886, 1946, "Kingdom of Italy"],
   ["Persia", 1925, 1936, "Pahlavi Iran"], ["Persia", 1886, 1925, "Qajar Iran"], ["China", 1886, 1912, "Qing dynasty"], ["China", 1912, 1949, "Republic of China (1912–1949)"],
-  ["Japan", 1886, 1947, "Empire of Japan"], ["Egypt", 1886, 1953, "History of Egypt"], ["Ethiopia", 1886, 1974, "Ethiopian Empire"]
+  ["Japan", 1886, 1947, "Empire of Japan"], ["Ethiopia", 1886, 1974, "Ethiopian Empire"],
+  ["Egypt", 1886, 1914, "Khedivate of Egypt"], ["Egypt", 1914, 1922, "Sultanate of Egypt"], ["Egypt", 1922, 1953, "Kingdom of Egypt"],
+  ["Libya", 1912, 1943, "Italian Libya"], ["Libya", 1943, 1951, "Allied administration of Libya"],
+  ["Algeria", 1886, 1962, "French Algeria"], ["Tunisia", 1886, 1956, "French protectorate of Tunisia"], ["Morocco", 1912, 1956, "French protectorate in Morocco"],
+  ["Eritrea", 1886, 1941, "Italian Eritrea"], ["Eritrea", 1941, 1952, "British Military Administration (Eritrea)"],
+  ["Lebanon", 1920, 1943, "Greater Lebanon"], ["Syria", 1920, 1946, "Mandate for Syria and the Lebanon"], ["Iraq", 1921, 1932, "Mandatory Iraq"]
 ];
 const cleanCs = (n) => n.replace(/\s*\([^)]*\)/g, "").trim();
 const csNameAt = (csName, day) => {
