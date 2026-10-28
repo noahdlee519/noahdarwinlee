@@ -102,13 +102,13 @@ of `/greatercircle/`.
     in CSS variables, ordered round the colour wheel and given out so that
     neighbours never share one and sit well apart on the wheel; any colour can
     still be chosen by hand. Our world's countries open in the colours of a
-    reference map Noah chose: `BASE_COLORS` in `app.js` gives 135 of them
-    their colour by code (Canada pale lime, the United States periwinkle,
-    Mexico pink, Brazil and Russia mint, China salmon, and so on), read off
-    a screenshot of the flat map by sampling each country on a half-degree
-    grid. The rest, and any country whose given colour a neighbour already
-    holds, are coloured as before. CHRONIA's states of 2019 take the same
-    colours.
+    map Noah coloured in UCHRONIA itself and saved on 27 October 2026:
+    `BASE_COLORS` in `app.js` gives every country its colour by code (Canada
+    pale lime, the United States periwinkle, Brazil and Russia mint, China
+    salmon, India pale orange, Antarctica white, and so on). They are given
+    as they are, even where two neighbours share a colour, so the map opens
+    exactly as he saved it; a country without one is coloured as before.
+    CHRONIA's states take the same colours.
   - **Styles.** *Light* is black on white and *Dark* white on black; both
     follow the site's theme, which they also set (the site's orange and white
     themes both open *Light*). *Antique*,

@@ -6020,17 +6020,24 @@
   panel.addEventListener("pointercancel", endSheetDrag);
 
   var BASE_COLORS = {
-    AFG: 6, AGO: 5, ARE: 3, ARG: 6, ATA: 2, AUS: 0, AUT: 2, AZE: 6, BEL: 0, BEN: 5, BFA: 2, BGD: 5, BGR: 7,
-    BLR: 5, BOL: 0, BRA: 8, BWA: 9, CAF: 8, CAN: 9, CHL: 3, CHN: 3, CIV: 7, CMR: 4, COD: 2, COG: 3, COL: 4,
-    CRI: 5, CUB: 2, CZE: 0, DEU: 9, ECU: 8, EGY: 9, ERI: 8, ESP: 0, EST: 4, ETH: 5, FIN: 2, FRA: 7, GAB: 9,
-    GBR: 3, GHA: 8, GIN: 0, GRC: 6, GRL: 3, GTM: 9, GUY: 4, HND: 7, HUN: 1, IDN: 5, IND: 9, IRL: 9, IRN: 2,
-    IRQ: 5, ISL: 2, ITA: 8, JOR: 3, JPN: 5, KAZ: 7, KEN: 9, KGZ: 2, KHM: 4, LAO: 7, LBR: 3, LBY: 5, LKA: 4,
-    LTU: 3, LVA: 9, MAR: 7, MDA: 1, MDG: 6, MEX: 4, MLI: 6, MMR: 2, MNG: 0, MOZ: 8, MRT: 8, MWI: 7, MYS: 2,
-    NAM: 2, NER: 7, NIC: 1, NLD: 1, NOR: 6, NZL: 4, OMN: 5, PAK: 1, PER: 2, PHL: 9, PNG: 1, POL: 4, PRK: 7,
-    PRT: 6, PRY: 5, ROU: 0, RUS: 8, SAH: 4, SAU: 7, SDS: 0, SEN: 3, SLE: 7, SOL: 0, SOM: 4, SRB: 2, SUR: 0,
-    SVK: 7, SWE: 7, SYR: 0, TCD: 3, THA: 0, TJK: 8, TKM: 3, TUN: 3, TUR: 1, TZA: 5, UGA: 7, UKR: 6, URY: 0,
-    USA: 6, UZB: 0, VEN: 9, VNM: 1, YEM: 2, ZAF: 6, ZMB: 0, ZWE: 4,
-    ALB: 1, BIH: 9, CHE: 3, DNK: 3, HRV: 6, KOS: 8, LUX: 8, MKD: 3, MNE: 4, SVN: 5
+    ABW: 1, AFG: 6, AGO: 5, AIA: 3, ALB: 3, ALD: 2, AND: 3, ARE: 3, ARG: 6, ARM: 6, ASM: 6, ATA: "#ffffff", ATC: 0,
+    ATF: 7, ATG: 9, AUS: 0, AUT: 2, AZE: 4, BDI: 6, BEL: 0, BEN: 5, BFA: 2, BGD: 5, BGR: 9, BHR: 6, BHS: 1, BIH: 7,
+    BLM: 7, BLR: 5, BLZ: 0, BMU: 3, BOL: 5, BRA: 8, BRB: 9, BRN: 8, BTN: 6, BWA: 9, CAF: 8, CAN: 9, CHE: 3, CHL: 3,
+    CHN: 3, CIV: 9, CLP: 7, CMR: 4, COD: 2, COG: 1, COK: 4, COL: 4, COM: 3, CPV: 7, CRI: 5, CSI: 0, CUB: 2, CUW: 1,
+    CYM: 3, CYN: 7, CYP: 9, CZE: 0, DEU: 9, DJI: 3, DMA: 5, DNK: 3, DOM: 4, DZA: 1, ECU: 1, EGY: 0, ERI: 8, ESB: 3,
+    ESP: 0, EST: 4, ETH: 5, FIN: 2, FJI: 5, FLK: 3, FRA: 7, FRO: 3, FSM: 7, GAB: 9, GBR: 3, GEO: 3, GGY: 3, GHA: 4,
+    GIB: 3, GIN: 0, GMB: 1, GNB: 2, GNQ: 6, GRC: 6, GRD: 4, GRL: 3, GTM: 9, GUM: 6, GUY: 3, HKG: 3, HMD: 0, HND: 7,
+    HRV: 5, HTI: 9, HUN: 1, IDN: 5, IMN: 3, IND: 1, IOA: 0, IOT: 3, IRL: 9, IRN: 9, IRQ: 5, ISL: 2, ISR: 6, ITA: 8,
+    JAM: 3, JEY: 3, JOR: 3, JPN: 5, KAS: 7, KAZ: 7, KEN: 9, KGZ: 2, KHM: 4, KIR: 1, KNA: 8, KOR: 1, KOS: 8, KWT: 1,
+    LAO: 7, LBN: 8, LBR: 3, LBY: 9, LCA: 1, LIE: 6, LKA: 4, LSO: 3, LTU: 1, LUX: 8, LVA: 9, MAC: 3, MAF: 7, MAR: 7,
+    MCO: 2, MDA: 3, MDG: 6, MDV: 5, MEX: 4, MHL: 6, MKD: 0, MLI: 6, MLT: 4, MMR: 8, MNE: 4, MNG: 0, MNP: 6, MOZ: 8,
+    MRT: 8, MSR: 3, MUS: 0, MWI: 7, MYS: 2, NAM: 2, NCL: 7, NER: 7, NFK: 0, NGA: 0, NIC: 1, NIU: 4, NLD: 1, NOR: 6,
+    NPL: 0, NRU: 8, NZL: 4, OMN: 0, PAK: 8, PAN: 8, PCN: 3, PER: 9, PGA: 5, PHL: 9, PLW: 9, PNG: 1, POL: 4, PRI: 6,
+    PRK: 7, PRT: 6, PRY: 0, PSX: 1, PYF: 7, QAT: 8, ROU: 0, RUS: 8, RWA: 9, SAH: 4, SAU: 7, SDN: 1, SDS: 0, SEN: 5,
+    SGP: 8, SGS: 3, SHN: 3, SLB: 5, SLE: 7, SLV: 3, SMR: 3, SOL: 6, SOM: 4, SPM: 7, SRB: 2, STP: 2, SUR: 1, SVK: 7,
+    SVN: 6, SWE: 7, SWZ: 1, SXM: 1, SYC: 1, SYR: 4, TCA: 3, TCD: 3, TGO: 8, THA: 0, TJK: 4, TKM: 3, TLS: 9, TON: 4,
+    TTO: 6, TUN: 3, TUR: 1, TUV: 5, TWN: 6, TZA: 1, UGA: 7, UKR: 6, UMI: 6, URY: 7, USA: 6, USG: 6, UZB: 0, VAT: 4,
+    VCT: 2, VEN: 0, VGB: 3, VIR: 6, VNM: 1, VUT: 0, WLF: 7, WSB: 3, WSM: 0, YEM: 2, ZAF: 6, ZMB: 0, ZWE: 4
   };
   function colorAll() {
     freshGroups();
@@ -6042,11 +6049,10 @@
     order.sort(function (x, y) { return (adj[y].size + closeAdj[y].size) - (adj[x].size + closeAdj[x].size) || x - y; });
     var used = new Array(PALETTE).fill(0), done = new Array(countries.length).fill(false);
     order.forEach(function (i) {
-      var k = BASE_COLORS[countries[i].code], taken = false;
-      if (!isInt(k)) return;
-      adj[i].forEach(function (n) { if (done[n] && countries[n].color === k) taken = true; });
-      closeAdj[i].forEach(function (n) { if (done[n] && countries[n].color === k) taken = true; });
-      if (!taken) { countries[i].color = k; used[k]++; done[i] = true; }
+      // Our world's countries open in the colours Noah chose, as given, even where two neighbours share one.
+      var k = BASE_COLORS[countries[i].code];
+      if (!isInt(k) && typeof k !== "string") return;
+      countries[i].color = k; if (isInt(k)) used[k]++; done[i] = true;
     });
     order.forEach(function (i) {
       if (done[i]) return;
