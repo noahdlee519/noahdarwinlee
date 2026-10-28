@@ -5,6 +5,8 @@ const ORIGINS = [
 ];
 const DEEPSEEK_API = "https://api.deepseek.com/chat/completions";
 const DEEPSEEK_MODEL = Deno.env.get("DEEPSEEK_MODEL") || "deepseek-flash";
+const OPENROUTER_API = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL = Deno.env.get("OPENROUTER_MODEL") || "deepseek/deepseek-v4.1-flash";
 const CLAUDE_API = "https://api.anthropic.com/v1/messages";
 const CLAUDE_MODEL = Deno.env.get("CHRONIA_CLAUDE_MODEL") || "claude-haiku-5-5";
 const PROMPT_VERSION = 2;
@@ -282,15 +284,15 @@ function userText(ask: Ask) {
   return "Write the note for this subject. Its details, as JSON data:\n" + JSON.stringify(ask.facts);
 }
 
-async function writeDeepSeek(ask: Ask, key: string): Promise<Made> {
-  const out = await post(DEEPSEEK_API, { Authorization: "Bearer " + key }, {
-    model: DEEPSEEK_MODEL,
+async function writeDeepSeek(ask: Ask, key: string, viaRouter: boolean): Promise<Made> {
+  const out = await post(viaRouter ? OPENROUTER_API : DEEPSEEK_API, viaRouter ? { Authorization: "Bearer " + key, "HTTP-Referer": "https://noahdarwinlee.com/chronia/", "X-Title": "CHRONIA" } : { Authorization: "Bearer " + key }, {
+    model: viaRouter ? OPENROUTER_MODEL : DEEPSEEK_MODEL,
     max_tokens: MAX_TOKENS,
     temperature: 0.6,
     stream: false,
-    thinking: { type: "disabled" },
+    ...(viaRouter ? { reasoning: { enabled: false } } : { thinking: { type: "disabled" } }),
     messages: [{ role: "system", content: SYSTEM }, { role: "user", content: userText(ask) }],
-  }, DEEPSEEK_DEADLINE, "deepseek");
+  }, DEEPSEEK_DEADLINE, viaRouter ? "openrouter" : "deepseek");
   console.log("chronia-blurb usage deepseek", JSON.stringify(out.usage || {}));
   const choice = Array.isArray(out.choices) ? out.choices[0] : null;
   if (!choice || (choice.finish_reason !== "stop" && choice.finish_reason !== "length")) throw new Upstream(200, "deepseek stop " + (choice && choice.finish_reason));
@@ -312,13 +314,13 @@ async function writeClaude(ask: Ask, key: string): Promise<Made> {
   return { text: tidy(raw), model: typeof out.model === "string" ? out.model.slice(0, 60) : CLAUDE_MODEL, why: out.stop_reason + ", " + (Array.isArray(out.content) ? out.content.map((b: any) => b && b.type).join("+") : "no content") + ", " + raw.split(/\s+/).filter(Boolean).length + " words: " + raw.slice(0, 60) };
 }
 
-type Keys = { deepseek: string; claude: string };
+type Keys = { deepseek: string; openrouter: string; claude: string };
 
 async function write(ask: Ask, keys: Keys): Promise<Made> {
   let failure: Upstream | null = null;
-  if (keys.deepseek) {
+  if (keys.deepseek || keys.openrouter) {
     try {
-      const made = await writeDeepSeek(ask, keys.deepseek);
+      const made = await writeDeepSeek(ask, keys.deepseek || keys.openrouter, !keys.deepseek);
       if (made.text || !keys.claude) return made;
     } catch (e) {
       console.error(e);
@@ -365,8 +367,8 @@ export async function handle(req: Request): Promise<Response> {
   }
   if (ask.peek) return json(200, { text: null, period: ask.period, cached: false }, o);
 
-  const keys = { deepseek: Deno.env.get("DEEPSEEK_API_KEY") || "", claude: Deno.env.get("ANTHROPIC_API_KEY") || "" };
-  if (!keys.deepseek && !keys.claude) return json(503, { error: "unset" }, o);
+  const keys = { deepseek: Deno.env.get("DEEPSEEK_API_KEY") || "", openrouter: Deno.env.get("OPENROUTER_API_KEY") || "", claude: Deno.env.get("ANTHROPIC_API_KEY") || "" };
+  if (!keys.deepseek && !keys.openrouter && !keys.claude) return json(503, { error: "unset" }, o);
 
   const running = inflight.get(key);
   if (running) return (await running).clone();
