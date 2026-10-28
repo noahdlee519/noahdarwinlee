@@ -261,7 +261,7 @@ class Upstream extends Error {
   }
 }
 
-type Made = { text: string | null; model: string };
+type Made = { text: string | null; model: string; why?: string };
 
 async function post(url: string, headers: Record<string, string>, body: unknown, deadline: number, who: string) {
   const ctl = new AbortController();
@@ -294,20 +294,22 @@ async function writeDeepSeek(ask: Ask, key: string): Promise<Made> {
   console.log("chronia-blurb usage deepseek", JSON.stringify(out.usage || {}));
   const choice = Array.isArray(out.choices) ? out.choices[0] : null;
   if (!choice || (choice.finish_reason !== "stop" && choice.finish_reason !== "length")) throw new Upstream(200, "deepseek stop " + (choice && choice.finish_reason));
-  return { text: tidy(String(choice.message?.content || "")), model: typeof out.model === "string" ? out.model.slice(0, 60) : DEEPSEEK_MODEL };
+  const said = String(choice.message?.content || "");
+  return { text: tidy(said), model: typeof out.model === "string" ? out.model.slice(0, 60) : DEEPSEEK_MODEL, why: choice.finish_reason + ", " + said.split(/\s+/).filter(Boolean).length + " words: " + said.slice(0, 60) };
 }
 
 async function writeClaude(ask: Ask, key: string): Promise<Made> {
   const out = await post(CLAUDE_API, { "x-api-key": key, "anthropic-version": "2023-06-01" }, {
     model: CLAUDE_MODEL,
     max_tokens: MAX_TOKENS,
+    thinking: { type: "disabled" },
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: userText(ask) }],
   }, CLAUDE_DEADLINE, "anthropic");
   console.log("chronia-blurb usage claude", JSON.stringify(out.usage || {}));
   if (out.stop_reason !== "end_turn" && out.stop_reason !== "max_tokens") throw new Upstream(200, "anthropic stop " + out.stop_reason);
   const raw = (Array.isArray(out.content) ? out.content : []).filter((b: any) => b && b.type === "text").map((b: any) => String(b.text)).join("\n");
-  return { text: tidy(raw), model: typeof out.model === "string" ? out.model.slice(0, 60) : CLAUDE_MODEL };
+  return { text: tidy(raw), model: typeof out.model === "string" ? out.model.slice(0, 60) : CLAUDE_MODEL, why: out.stop_reason + ", " + (Array.isArray(out.content) ? out.content.map((b: any) => b && b.type).join("+") : "no content") + ", " + raw.split(/\s+/).filter(Boolean).length + " words: " + raw.slice(0, 60) };
 }
 
 type Keys = { deepseek: string; claude: string };
@@ -399,7 +401,7 @@ async function generate(req: Request, ask: Ask, key: string, keys: Keys, o: stri
     const detail = String((e as any)?.message || "").replace(/sk-[A-Za-z0-9_-]+/g, "[key]").slice(0, 240);
     return json(502, { error: "upstream", status, detail }, o);
   }
-  if (!made.text) return json(502, { error: "empty" }, o);
+  if (!made.text) return json(502, { error: "empty", model: made.model, why: (made.why || "").slice(0, 160) }, o);
   let kept = made.text;
   try {
     kept = (await rpc("chronia_blurb_save", { p_key: key, p_kind: ask.kind, p_subject: ask.name, p_period: ask.period, p_text: made.text, p_model: made.model })) || made.text;
