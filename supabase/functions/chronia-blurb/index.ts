@@ -24,12 +24,13 @@ const CLAUDE_DEADLINE = 10000;
 const FIRST_YEAR = -3400;
 const LAST_YEAR = 2026;
 
-const SYSTEM = `You write the short notes in CHRONIA, an atlas of the world's borders through history. A reader has picked a state, a people, or a city on the atlas at some date, and your note tells them what it was in that period.
+const SYSTEM = `You write the short notes in CHRONIA, an atlas of the world's borders through history. A reader has picked a state, a people, a city, or a country's state or province on the atlas at some date, and your note tells them what it was in that period.
 
 Write one paragraph of plain prose, between 80 and 140 words, about the subject as it was in the period given, and how it fits that period:
 - For a state: what it was then, who ruled it, what was happening to it around then, and where it stood among its neighbours.
 - For a people or culture: what is known of them then, where and how they lived, and what the evidence for them is.
 - For a city: what it was then, whose it was, what it was known for, and what was happening there around then.
+- For a state, province, or territory within a country: what it was then (a state, territory, province, district, or colony, and since when), who governed it, who lived there, what was happening there around then, and its place in the country.
 
 The note is shown for any date in the period, so write about the period as a whole rather than a single day.
 
@@ -50,7 +51,7 @@ const NAME_RE = /^(?=.*\p{L})[\p{L}\p{M}\p{N}\p{Zs}.,'’‘ʼ()\-–&\/:·•�
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 type Subject = Record<string, string | number | boolean | number[] | string[]>;
-type Ask = { kind: "state" | "city"; name: string; from: number; to: number; period: string; facts: Subject; peek: boolean };
+type Ask = { kind: "state" | "city" | "division"; name: string; from: number; to: number; period: string; facts: Subject; peek: boolean };
 
 class Bad extends Error {
   field: string;
@@ -96,7 +97,7 @@ function fmtYear(y: number) {
   return y < 0 ? -y + " BC" : y < 1000 ? "AD " + y : String(y);
 }
 
-function bucket(y: number, kind: "state" | "city") {
+function bucket(y: number, kind: "state" | "city" | "division") {
   if (y >= 1886 && kind === "state") return [y, y];
   if (y >= 1500) return [Math.floor(y / 10) * 10, Math.floor(y / 10) * 10 + 9];
   if (y >= 1000) return [Math.floor(y / 25) * 25, Math.floor(y / 25) * 25 + 24];
@@ -115,7 +116,7 @@ function periodName(from: number, to: number) {
 export function parse(body: any): Ask {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new Bad("body");
   const kind = body.kind;
-  if (kind !== "state" && kind !== "city") throw new Bad("kind");
+  if (kind !== "state" && kind !== "city" && kind !== "division") throw new Bad("kind");
   const year = int(body.year, "year", FIRST_YEAR, LAST_YEAR);
   const [from, to] = bucket(year, kind);
   const period = periodName(from, to);
@@ -137,6 +138,8 @@ export function parse(body: any): Ask {
       const near = body.neighbours.map((v: unknown) => { try { return text(v, "neighbours", MAX_NAME, true); } catch (_) { return ""; } }).filter((v: string) => v && v !== name);
       if (near.length) facts.neighbours = near;
     }
+  } else if (kind === "division") {
+    facts.country = text(body.country, "country", MAX_NAME, true);
   } else {
     const modern = text(body.modern, "modern", MAX_NAME);
     if (modern && modern !== name) facts.modern_name = modern;
@@ -160,7 +163,7 @@ function slug(s: string) {
 export async function cacheKey(ask: Ask) {
   const canon = JSON.stringify([PROMPT_VERSION].concat(Object.keys(ask.facts).filter((k) => k !== "neighbours").sort().map((k) => [k, ask.facts[k]]) as any));
   const h = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canon)), 8);
-  return (ask.kind === "state" ? "s:" : "c:") + slug(ask.name) + ":" + ask.from + ":" + h;
+  return (ask.kind === "state" ? "s:" : ask.kind === "division" ? "d:" : "c:") + slug(ask.name) + ":" + ask.from + ":" + h;
 }
 
 export function tidy(raw: string) {

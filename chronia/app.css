@@ -927,6 +927,24 @@ body.ch-page {
   display: none;
 }
 
+.ch-card-divnote {
+  margin: 4px 0 0;
+}
+
+.ch-card-divnote[hidden],
+.ch-card-divnote .ch-wiki-text[hidden],
+.ch-card-divnote .ch-wiki-by[hidden] {
+  display: none;
+}
+
+.ch-card-divnote .ch-wiki-text {
+  margin: 6px 0 0;
+}
+
+.ch-card-divnote .ch-wiki-by {
+  margin: 4px 0 0;
+}
+
 .ch-card-facts {
   margin: 10px 0 0;
   font-size: 14.5px;

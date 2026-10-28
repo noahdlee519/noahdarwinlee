@@ -2865,10 +2865,49 @@
     divCardKey = key;
     var name = !card.hidden && layers.subdivisions ? divisionAt(divClick, selected) : null;
     var text = name ? "The place clicked is in " + name + "." : "";
-    if (text === divShown) return;
-    divShown = text;
+    var shown = text + "|" + (name ? askYear() + "|" + selected : "");
+    if (shown === divShown) return;
+    divShown = shown;
     el.textContent = text;
     el.hidden = !text;
+    divNote(name);
+  }
+  var divNoteAsk = 0, divNoteTimer = 0;
+  function divNote(name) {
+    var box = $("card-divnote"), out = $("divnote-text"), by = $("divnote-by"), ask = ++divNoteAsk;
+    clearTimeout(divNoteTimer);
+    by.textContent = "";
+    out.textContent = "";
+    out.hidden = true;
+    out.className = "ch-wiki-text";
+    if (!name || selected < 0) { box.hidden = true; return; }
+    var y = askYear(), q = { kind: "division", name: name, country: polityName(selected), year: y };
+    var show = function (job) {
+      by.hidden = true;
+      out.hidden = false;
+      out.classList.add("is-writing");
+      job.then(function (t) {
+        if (ask !== divNoteAsk) return;
+        out.classList.remove("is-writing");
+        if (t) { out.textContent = t; return; }
+        out.hidden = true;
+        by.textContent = "The note could not be written just now.";
+        by.hidden = false;
+      });
+    };
+    var have = blurbCache.get(JSON.stringify(q));
+    box.hidden = false;
+    if (have) { show(have); return; }
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "ch-wiki-ask";
+    b.textContent = "Write about " + name + " in " + fmtYear(y);
+    b.addEventListener("click", function () { if (ask === divNoteAsk) show(blurbFetch(q)); });
+    by.appendChild(b);
+    by.hidden = false;
+    divNoteTimer = setTimeout(function () {
+      blurbFetch(q, true).then(function (t) { if (t && ask === divNoteAsk && !out.textContent) show(Promise.resolve(t)); });
+    }, BLURB_PEEK);
   }
 
   function inBounds(b, ll) {
@@ -4571,6 +4610,7 @@
     return p ? divisionAt(ll, p.id) : null;
   };
   window.__chronia.cardDivision = function () { var el = $("card-div"); return el && !el.hidden ? el.textContent : null; };
+  window.__chronia.cardDivisionNote = function () { var box = $("card-divnote"), btn = box.querySelector("button"); return box.hidden ? null : { offer: btn ? btn.textContent : "", text: $("divnote-text").hidden ? "" : $("divnote-text").textContent, writing: $("divnote-text").classList.contains("is-writing") }; };
 
   start();
 })();
