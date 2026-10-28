@@ -38,6 +38,15 @@ Each entry:
 - Alternatives: Tierra del Fuego as a province from the swearing of its constitution on 1 June 1991 rather than the law of 1990.
 - Left out: Italy, whose regions changed slightly in 2009 and 2017; the divisions before each start date; Fernando de Noronha, which Natural Earth's simplified provinces leave out.
 
+## 1400–2019 | Alps, Pyrenees, and Apennines | the gaps beside Liechtenstein, Andorra, and San Marino
+
+- What changed: blank slivers up to about 3 km wide lay along Liechtenstein's border with Austria and around Andorra (and smaller ones beside San Marino), where Natural Earth's outline of the microstate, which the builder cuts into its neighbours, differs from their borders in CShapes and Cliopatria. Land within 4 km of these three that no shape covers is now theirs, worked out separately for each stretch of years in which their neighbours' shapes stay the same.
+- Tables: `gapKm` in `SMALL`, applied by `fillSmallGaps` after the overlaps are settled.
+- Sources: none needed; these were gaps between two sources' outlines of the same border.
+- Confidence: high.
+- Alternatives: giving the gaps to the neighbours; the microstates' own outlines are the more detailed.
+- Left out: the other small territories, which are on coasts, where such a buffer would reach into the sea.
+
 ## 3400 BC–1199 | world | yearly borders before 1200
 
 - What changed: the borders change year by year from 3400 BC, from Cliopatria, instead of from 1200; historical-basemaps' 23 maps from 3000 BC to 1100 are no longer shown as maps, and fill the land Cliopatria leaves blank, each from halfway after the map before to halfway before the map after, as its later maps do. Cliopatria's states before 1200 have firm borders, like its later ones, by the precision rule; the peoples and the states from the snapshots keep their dotted borders. On the page, play goes from one change of borders to the next until 1200, 0.8 seconds apart, then year by year. The changes before 1200 are 327 years, in 46 century files.

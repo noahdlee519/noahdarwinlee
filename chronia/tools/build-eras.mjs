@@ -18,6 +18,7 @@ const client = require("topojson-client");
 const simplify = require("topojson-simplify");
 const d3 = require("d3-geo");
 const clip = require("polygon-clipping");
+const turfBuf = (() => { const m = require("@turf/buffer"); return m.default || m.buffer || m; })();
 
 const FIRST = -3400;
 const DATED_FROM = -3400, DATED_TO = 1885, CHUNK = 100;
@@ -1312,12 +1313,12 @@ const noteRename = (from, to) => { if (!renamedFrom.has(to)) renamedFrom.set(to,
 const SMR_CORE = ["San Marino", "Borgo Maggiore", "Acquaviva", "Chiesanuova", "Domagnano"];
 const HK_ISLAND = ["Central and Western", "Wan Chai", "Eastern", "Southern"], HK_KOWLOON = ["Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong"];
 const SMALL = [
-  { name: "Liechtenstein", shape: { c: "LIE" }, periods: [["1719-01-23", "2019-12-31", "state"]] },
+  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, periods: [["1719-01-23", "2019-12-31", "state"]] },
   { name: "Monaco", shape: { c: "MCO" }, periods: [["1419-01-01", "1792-12-31", "state"], ["1814-05-30", "1860-12-31", "protectorate", TURIN], ["1861-01-01", "2019-12-31", "state"]] },
-  { name: "San Marino", shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
-  { name: "San Marino", shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
-  { name: "San Marino", shape: { c: "SMR" }, periods: [["1464-01-01", "2019-12-31", "state"]] },
-  { name: "Andorra", shape: { c: "AND" }, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", "2019-12-31", "state"]] },
+  { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
+  { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
+  { name: "San Marino", gapKm: 4, shape: { c: "SMR" }, periods: [["1464-01-01", "2019-12-31", "state"]] },
+  { name: "Andorra", shape: { c: "AND" }, gapKm: 4, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", "2019-12-31", "state"]] },
   { name: "Vatican City", shape: { c: "VAT" }, periods: [["1929-06-07", "2019-12-31", "state"]] },
   { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", "2019-12-31", "dependency", LONDON]] },
   { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
@@ -1385,6 +1386,33 @@ function rulerSplit(ref, first, last, list, nameOf) {
     if (prev && prev.ruler === ruler) prev.last = e; else res.push({ first: s, last: e, ruler });
   });
   return res;
+}
+let smallGaps = 0;
+const boxMemo = new WeakMap();
+const freshBox = (polys) => { let b = boxMemo.get(polys); if (!b) { b = boxOf(polys); boxMemo.set(polys, b); } return b; };
+function fillSmallGaps(list) {
+  const out = [];
+  for (const sm of list) {
+    const def = sm.small && SMALL.find((d) => d.name === sm.name && d.gapKm);
+    if (!def) { out.push(sm); continue; }
+    const ring = rewind(polysOf(turfBuf({ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: sm.polys } }, def.gapKm, { units: "kilometers", steps: 8 }).geometry));
+    const rb = boxOf(ring), near = list.filter((o) => o !== sm && o.last >= sm.first && o.first <= sm.last && boxHit(freshBox(o.polys), rb));
+    const cuts = [...new Set([sm.first, ...near.flatMap((o) => [o.first, o.last + 1]).filter((t) => t > sm.first && t <= sm.last)])].sort((a, b) => a - b);
+    let prev = null;
+    cuts.forEach((a, k) => {
+      const b = k + 1 < cuts.length ? cuts[k + 1] - 1 : sm.last;
+      const others = near.filter((o) => o.first <= a && a <= o.last).map((o) => o.polys);
+      const gap = others.length ? tryClip(clip.difference, ring, ...others) : null;
+      const bits = (gap || []).filter((q) => polyKm2(q) >= 0.01);
+      const key = JSON.stringify(bits);
+      if (prev && prev.key === key) { prev.span.last = b; return; }
+      const span = { ...sm, first: a, last: b, uid: k ? uidNext++ : sm.uid, geoHash: undefined };
+      if (bits.length) { span.polys = unionSafe(sm.polys, [rewind(bits)]); span.box = boxOf(span.polys); span.cells = undefined; smallGaps += km2Of(bits); }
+      out.push(span);
+      prev = { key, span };
+    });
+  }
+  return out;
 }
 function addSmall(list, timeOf, nameOf) {
   const carves = [], fills = [];
@@ -1776,7 +1804,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
-dated = resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO);
+dated = fillSmallGaps(resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO));
 
 const CAP_FROM = 1400, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
 const CAP_SKIP = new Set(["Holy Roman Empire"]);
@@ -2401,7 +2429,7 @@ for (const r of csRedraw(csWithExtras(csRaw))) {
   list = reshape(list, hbEdits, false).concat(hbFills);
   const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
   const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
-  list = addDisputes(resolveOverlaps(list, "from 1886"));
+  list = fillSmallGaps(addDisputes(resolveOverlaps(list, "from 1886")));
   const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency", "disputed"];
   csParts.length = 0;
   for (const x of list) {
@@ -2851,4 +2879,5 @@ else console.warn("historical-basemaps LICENSE not found beside " + source + "; 
 
 console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
 console.log("smoothed " + stairArcs + " stair-stepped arcs");
+console.log("small territories: " + Math.round(smallGaps) + " km² of gaps beside Liechtenstein, Andorra, and San Marino joined to them");
 console.log(index.length + " snapshot maps shown, " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");

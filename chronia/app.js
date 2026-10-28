@@ -1208,7 +1208,7 @@
     ctx.restore();
   }
 
-  var geog = null, geogLoad = null, landTag = "", gridTag = "", landCache = new Map(), riverTopo = null;
+  var geog = null, geogLoad = null, landTag = "", gridTag = "", gridBase = "lo", hiGridMs = -1, landCache = new Map(), riverTopo = null;
   var lakeState = { key: -1, base: null, list: null }, riverState = { key: -1, lists: null }, landGeoState = { tag: "", geo: null };
   function inSpan(from, to) { return (from === null || now >= from) && (to === null || now < to); }
   function stateOf(times) {
@@ -1235,7 +1235,13 @@
     }).filter(function (q) { return q.base; });
   }
   var FINE_S = 5000, fineLoad = null, geogRaw = null, fineGridMs = -1;
-  function coastKey() { return land.fine && (!geog || geog.land.fine) ? "fine" : "lo"; }
+  function coastKey() { return gridBase; }
+  function upgradeGrid(k) {
+    var t0 = performance.now();
+    buildCoastGrid(datedLand(k).list);
+    gridBase = k; gridTag = k;
+    return Math.round(performance.now() - t0);
+  }
   function loadFine() {
     if (fineLoad) return;
     fineLoad = fetchJSON("data/land-detail.json").then(function (t) {
@@ -1243,10 +1249,7 @@
       if (geog && geogRaw) geog.land.fine = patchesFor("fine", geogRaw);
       landCache.clear();
       setTimeout(function () {
-        var t0 = performance.now();
-        buildCoastGrid(datedLand(coastKey()).list);
-        gridTag = "fine";
-        fineGridMs = Math.round(performance.now() - t0);
+        fineGridMs = upgradeGrid(land.fine && (!geog || geog.land.fine) ? "fine" : "hi");
         scheduleRender();
       }, 0);
       scheduleRender();
@@ -1331,7 +1334,7 @@
   function syncGrid() {
     if (!geog || !coastGrid) return;
     var ck = coastKey(), act = activePatches(ck), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); }).concat(bigLakes);
-    var tag = (ck === "fine" ? "fine," : "") + act.map(function (q) { return q.id; }).concat(wet.map(function (l) { return l.id; })).join();
+    var tag = ck + "," + act.map(function (q) { return q.id; }).concat(wet.map(function (l) { return l.id; })).join();
     if (tag === gridTag) return;
     var was = gridTag.split(","), list = datedLand(ck).list;
     var near = function (b) {
@@ -1421,6 +1424,8 @@
         land: activePatches("hi").map(function (q) { return q.g; }),
         landTag: landTag,
         gridTag: gridTag,
+        gridBase: gridBase,
+        hiGridMs: hiGridMs,
         lakes: lk.filter(function (l) { return l.added; }).map(function (l) { return l.name + " " + l.km2; }),
         lakeCount: lk.length,
         hidden: geog && lakes ? lakes.length - lk.filter(function (l) { return !l.added; }).length : 0,
@@ -4214,7 +4219,7 @@
     return true;
   }
   function splitCoast(lines, coastal, inner) {
-    var reach = (gridTag.indexOf("fine") === 0 ? 0.12 : 1.4) * COAST_KM / 111.195;
+    var reach = (gridBase === "lo" ? 1.4 : 0.12) * COAST_KM / 111.195;
     var step = function (a, b) { var dx = (a[0] - b[0]) * Math.cos(a[1] * D2R); return Math.sqrt(dx * dx + (a[1] - b[1]) * (a[1] - b[1])); };
     lines.forEach(function (ln) {
       var n = ln.length, m = new Uint8Array(n), k, s, e;
@@ -4276,6 +4281,7 @@
         current = snap;
         reveal();
         setTime(now);
+        setTimeout(function () { if (gridBase === "lo") { hiGridMs = upgradeGrid("hi"); scheduleRender(); } }, 400);
         fetchJSON(UC + "data/sea.json").then(function (t) {
           var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(function (f) { return prepare(densify(f)); }); };
           sea = { high: prep(t.high), low: prep(t.low) };
