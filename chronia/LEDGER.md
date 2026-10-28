@@ -16,9 +16,14 @@ Each entry:
 ```
 
 ---
-## until 1885 | world | borders snapped to CShapes' lines of 1886
+## 1500–1885 | world | borders given CShapes' lines of 1886
 
-- Claimed by the capitals session, 27 October 2026: where a state's shape before 1886 matches its CShapes shape of 1886 but for thin slivers, it takes the CShapes lines, so the borders don't jump in detail at 1886. A new step after the overlaps are settled in `tools/build-eras.mjs`, and a rebuild.
+- What changed: where a state's border before 1886 differs from its CShapes border of 1 January 1886 only by Cliopatria's grid steps (pieces under 800 km² or under 15 km across that touch the state), the state takes the 1886 line and the neighbour that held the steps gives them up, back to the border's last real change. So the borders of Europe and elsewhere no longer change their look between 1885 and 1886: the German Empire's, Austria-Hungary's, Switzerland's, and Italy's lines of 1871 to 1885 are those of 1886. 2,769 spans of 233 states took steps, 4,706 km² a span on average, in 8,992 cuts of neighbours; 477 cuts were spared because the neighbour would have lost more than a fifth of its land, which keeps the Mughal Empire of 1857 and the like. A new step, `snapTo1886`, after the overlaps are settled; see "Meeting the lines of 1886" in the README. The files from 1500 to 1885 are about two-thirds larger, and 30 states before 1886 have another colour because their neighbours changed.
+- Tables: `SNAP_DAY`, `SNAP_FROM`, `SNAP_OWN`, `SNAP_THIN_KM`, `SNAP_SMALL_KM2`, `SNAP_KM`, `SNAP_HAIR_KM`, `SNAP_HAIR_KM2`, and `SNAP_SPARE` in `tools/build-eras.mjs`.
+- Sources: (1) CShapes 2.0, the states of 1 January 1886. (2) Cliopatria, whose shapes decide where a border differed from 1886 by more than its steps.
+- Confidence: medium. The lines of 1886 are surveyed ones, but a border that moved by less than a step in the years before 1886 is drawn with its 1886 line in those years.
+- Alternatives: taking the 1886 shape only for states whose whole shape matched it but for slivers (tried first; only 46 states qualified, since a large state always differs somewhere); simplifying the lines from 1886 to Cliopatria's coarseness instead.
+- Left out: the coasts, which keep Cliopatria's line; borders of spans that ended before 1500; peoples, small territories, and disputed land; islands and colonies that CShapes counts as part of a state but that don't touch its span.
 
 ## 1886–2019, and the lineages before | world | base colours from Noah's UCHRONIA map
 

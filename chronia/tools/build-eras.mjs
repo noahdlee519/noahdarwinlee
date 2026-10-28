@@ -1805,6 +1805,185 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
 }
 
 dated = fillSmallGaps(resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO));
+const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
+const SNAPPED = Symbol("snapped");
+function clipRect(polys, b) {
+  const edge = (ring, inside, cut) => {
+    const out = [];
+    for (let i = 0; i < ring.length; i++) {
+      const p = ring[i], q = ring[(i + 1) % ring.length], a = inside(p), c = inside(q);
+      if (a) out.push(p);
+      if (a !== c) out.push(cut(p, q));
+    }
+    return out;
+  };
+  const at = (k, v) => (p, q) => { const t = (v - p[k]) / (q[k] - p[k]); return k ? [p[0] + t * (q[0] - p[0]), v] : [v, p[1] + t * (q[1] - p[1])]; };
+  const res = [];
+  for (const poly of polys) {
+    const rings = [];
+    for (const ring of poly) {
+      let r = ring.slice(0, -1);
+      r = edge(r, (p) => p[0] >= b[0], at(0, b[0]));
+      r = edge(r, (p) => p[0] <= b[2], at(0, b[2]));
+      r = edge(r, (p) => p[1] >= b[1], at(1, b[1]));
+      r = edge(r, (p) => p[1] <= b[3], at(1, b[3]));
+      if (r.length >= 3) rings.push(r.concat([r[0]]));
+      else if (!rings.length) break;
+    }
+    if (rings.length) res.push(rings);
+  }
+  return res;
+}
+function touches(q, polys) {
+  const b = boxOf([q]), e = 1e-5;
+  const segs = [];
+  for (const poly of polys) for (const ring of poly) for (let i = 0; i + 1 < ring.length; i++) {
+    const p = ring[i], r = ring[i + 1];
+    if (Math.max(p[0], r[0]) < b[0] - e || Math.min(p[0], r[0]) > b[2] + e || Math.max(p[1], r[1]) < b[1] - e || Math.min(p[1], r[1]) > b[3] + e) continue;
+    segs.push([p, r]);
+  }
+  for (const v of q[0]) for (const [p, r] of segs) {
+    const dx = r[0] - p[0], dy = r[1] - p[1], L = dx * dx + dy * dy;
+    const t = L ? Math.max(0, Math.min(1, ((v[0] - p[0]) * dx + (v[1] - p[1]) * dy) / L)) : 0;
+    if (Math.hypot(p[0] + t * dx - v[0], p[1] + t * dy - v[1]) < e) return true;
+  }
+  return false;
+}
+function snapTo1886(list) {
+  const t0 = Date.now();
+  const raw = JSON.parse(readFileSync(cshapesPath, "utf8"));
+  const topo = simplify.simplify(simplify.presimplify(raw, simplify.sphericalTriangleArea), weightFor(SNAP_KM));
+  const pieces = [];
+  for (const g of Object.values(topo.objects)[0].geometries) {
+    const p = g.properties;
+    if (!(p.start <= SNAP_DAY && SNAP_DAY <= p.end)) continue;
+    for (const poly of polysOf(client.feature(topo, g).geometry)) {
+      const q = snapPolys(rewind([poly]));
+      if (polyKm2(q[0]) < 1) continue;
+      pieces.push({ polys: q, box: boxOf(q), cells: cellsOf(q) });
+    }
+  }
+  const thin = (q) => { const a = polyKm2(q); return a < SNAP_SMALL_KM2 || (2 * a) / ringKm(q[0]) < SNAP_THIN_KM; };
+  list.forEach((s) => { if (!s.box) s.box = boxOf(s.polys); });
+  const keep = list.filter((t) => t.small || t.claims);
+  const sp = new Map();
+  const snapOf = (t) => { let v = sp.get(t); if (!v) sp.set(t, (v = snapPolys(t.polys))); return v; };
+  const memo = new Map();
+  const gainOf = (s) => {
+    if (memo.has(s.polys)) return memo.get(s.polys);
+    const cells = s.cells || cellsOf(s.polys);
+    const gain = [], thick = [], took = [];
+    for (const P of pieces) {
+      if (!boxHit(P.box, s.box) || !P.cells.size) continue;
+      let k = 0;
+      for (const i of P.cells) if (cells.has(i)) k++;
+      if (k < SNAP_OWN * P.cells.size) continue;
+      const pb = P.box, near = clipRect(snapOf(s), [pb[0] - 0.05, pb[1] - 0.05, pb[2] + 0.05, pb[3] + 0.05]);
+      const lack = near.length ? tryClip(clip.difference, P.polys, near) : P.polys;
+      if (!lack) continue;
+      const mine = lack.filter((q) => thin(q) && touches(q, near));
+      if (!mine.length) continue;
+      gain.push(...mine);
+      thick.push(...lack.filter((q) => !mine.includes(q)).map((q) => [q]));
+      took.push(P.polys);
+    }
+    const got = { gain, thick, took };
+    memo.set(s.polys, got);
+    return got;
+  };
+  const owners = [];
+  for (const s of list) {
+    if (s.claims || s.people || s.small || s.last < SNAP_FROM) continue;
+    const got = gainOf(s);
+    let gain = got.gain;
+    if (!gain.length) continue;
+    const shield = keep.filter((t) => t.last >= s.first && s.last >= t.first && boxHit(t.box, boxOf(gain))).map(snapOf);
+    const out = got.thick.slice();
+    if (shield.length) {
+      const held = tryClip(clip.intersection, gain, ...shield);
+      if (held && held.length) out.push(held);
+      gain = subtract(gain, shield);
+    }
+    gain = snapPolys(gain);
+    if (!gain.length) continue;
+    owners.push({ s, gain, out, took: got.took, box: boxOf(gain) });
+  }
+  const sig = (polys) => polys.map((q) => { let x = 0, y = 0; q[0].forEach((v) => { x += v[0]; y += v[1]; }); return Math.round(polyKm2(q) * 10) + "@" + (x / q[0].length).toFixed(3) + "," + (y / q[0].length).toFixed(3); }).sort().join(";");
+  owners.forEach((o) => { o.h = sig(o.gain); });
+  owners.sort((a, b) => (a.s.name < b.s.name ? -1 : a.s.name > b.s.name ? 1 : a.s.first - b.s.first));
+  const groups = [];
+  for (const o of owners) {
+    const g = groups[groups.length - 1];
+    if (g && g.name === o.s.name && g.h === o.h && g.last + 1 === o.s.first) { g.last = o.s.last; g.own.push(o.s); g.owners.push(o); }
+    else groups.push({ name: o.s.name, h: o.h, first: o.s.first, last: o.s.last, gain: o.gain, box: o.box, own: [o.s], owners: [o], held: [] });
+  }
+  const order = list.map((t, i) => i).sort((a, b) => list[a].box[0] - list[b].box[0]);
+  const edits = [], cuts = new Map(), areaOf = new Map();
+  let spared = 0;
+  let km2 = 0, took = 0;
+  for (const g of groups) {
+    const mine = new Set(g.own);
+    for (const j of order) {
+      const t = list[j];
+      if (t.box[0] > g.box[2]) break;
+      if (mine.has(t) || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
+      const near = g.gain.filter((q) => boxHit(boxOf([q]), t.box));
+      if (!near.length) continue;
+      const nb = boxOf(near), local = clipRect(snapOf(t), [nb[0] - 0.05, nb[1] - 0.05, nb[2] + 0.05, nb[3] + 0.05]);
+      if (!local.length) continue;
+      const got = tryClip(clip.intersection, local, near);
+      if (!got || km2Of(got) < 0.01) continue;
+      if (!areaOf.has(t)) areaOf.set(t, km2Of(t.polys));
+      if (km2Of(got) > SNAP_SPARE * areaOf.get(t)) { spared++; continue; }
+      g.held.push(snapPolys(got));
+      if (!cuts.has(t)) cuts.set(t, []);
+      cuts.get(t).push({ first: Math.max(t.first, g.first), last: Math.min(t.last, g.last), polys: near, h: sig(snapPolys(got)) });
+    }
+  }
+  const grown = new Map();
+  for (const g of groups) {
+    if (!g.held.length) continue;
+    const spare = snapPolys(subtract(g.gain, g.held)).filter((q) => (2 * polyKm2(q)) / ringKm(q[0]) >= SNAP_HAIR_KM);
+    const kept = km2Of(g.gain) - km2Of(spare);
+    if (kept < 0.01) continue;
+    for (const o of g.owners) {
+      grown.set(o.s, snapPolys(subtract(unionSafe(snapOf(o.s), o.took), spare.length ? o.out.concat([spare]) : o.out)));
+      km2 += kept;
+      took++;
+    }
+  }
+  let trimmed = 0;
+  for (const [t, list2] of cuts) {
+    list2.sort((a, b) => (a.h < b.h ? -1 : a.h > b.h ? 1 : a.first - b.first));
+    let cur = null;
+    for (const c of list2) {
+      if (cur && cur.h === c.h && c.first <= cur.last + 1) { cur.last = Math.max(cur.last, c.last); continue; }
+      if (cur) { edits.push({ base: t, first: cur.first, last: cur.last, polys: cur.polys, add: false }); trimmed++; }
+      cur = { ...c };
+    }
+    if (cur) { edits.push({ base: t, first: cur.first, last: cur.last, polys: cur.polys, add: false }); trimmed++; }
+  }
+  const copies = new Map();
+  for (const [o, polys] of grown) { const c = { ...o, polys, [SNAPPED]: true }; delete c.geoHash; delete c.km2; delete c.pole; copies.set(o, Object.assign(c, { box: boxOf(c.polys), cells: cellsOf(c.polys) })); }
+  for (const e of edits) if (!copies.has(e.base)) { const c = { ...e.base, polys: snapOf(e.base), [SNAPPED]: true }; delete c.geoHash; copies.set(e.base, c); }
+  edits.forEach((e) => { e.base = copies.get(e.base); });
+  let hairs = 0;
+  const out = reshape(list.map((t) => copies.get(t) || t), edits, false).filter((t) => {
+    if (!t[SNAPPED]) return true;
+    delete t[SNAPPED];
+    const kept = t.polys.filter((q) => { const a = polyKm2(q); return a >= SNAP_HAIR_KM2 || (2 * a) / ringKm(q[0]) >= SNAP_HAIR_KM; });
+    hairs += t.polys.length - kept.length;
+    if (kept.length === t.polys.length) return true;
+    if (!kept.length) return false;
+    t.polys = kept;
+    t.box = boxOf(kept);
+    t.cells = cellsOf(kept);
+    return true;
+  });
+  console.log("snapped to CShapes' lines of 1886: " + took + " spans of " + new Set([...grown.keys()].map((o) => o.name)).size + " states took the thin pieces of their 1886 land that a neighbour held, " + Math.round(km2 / took || 0) + " km² a span on average, " + trimmed + " trims of neighbours, " + spared + " neighbours spared, " + hairs + " hairline pieces dropped, " + Math.round((Date.now() - t0) / 1000) + " s; " + list.length + " spans to " + out.length);
+  return out;
+}
+dated = snapTo1886(dated);
 
 const CAP_FROM = 1400, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
 const CAP_SKIP = new Set(["Holy Roman Empire"]);
