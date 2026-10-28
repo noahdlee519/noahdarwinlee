@@ -3130,7 +3130,8 @@
   var TIP_ICONS = {
     flag: '<path d="M4 14.2V2.2" /><path d="M4 2.9c1.9-1 3.5.9 5.4 0s3.2-.8 4.2-.2v6c-1-.6-2.3-.7-4.2.2s-3.5-1-5.4 0" />',
     region: '<path stroke-dasharray="0.1 2.3" d="M2.2 6.2L5.6 2.4l4.1 1.6 3.9-.6.7 4.6-2.2 2.5.6 3.6-4.6-.6-3.4 1.2-1.4-4.4z" />',
-    city: '<path d="M1.8 14h12.4M3 14V8.2h3V14M6 14V3.6h4V14M10 14V6.8h3.2V14" /><path d="M7.4 6v.1M8.6 6v.1M7.4 8.4v.1M8.6 8.4v.1M7.4 10.8v.1M8.6 10.8v.1M4.5 10.4v.1M11.6 9.2v.1M11.6 11.4v.1" />'
+    city: '<path d="M1.8 14h12.4M3 14V8.2h3V14M6 14V3.6h4V14M10 14V6.8h3.2V14" /><path d="M7.4 6v.1M8.6 6v.1M7.4 8.4v.1M8.6 8.4v.1M7.4 10.8v.1M8.6 10.8v.1M4.5 10.4v.1M11.6 9.2v.1M11.6 11.4v.1" />',
+    capital: '<path d="M1.8 14h12.4M3 14V8.2h3V14M6 14V5.6h4V14M10 14V6.8h3.2V14" /><path d="M8 5.6V1" /><path d="M8 1.3h3l-.8 1 .8 1H8" /><path d="M7.4 7.6v.1M8.6 7.6v.1M7.4 9.7v.1M8.6 9.7v.1M7.4 11.8v.1M8.6 11.8v.1M4.5 10.4v.1M11.6 9.2v.1M11.6 11.4v.1" />'
   };
   function setTip(icon, text) {
     tip.textContent = "";
@@ -3170,8 +3171,8 @@
   }
   function showCityTip(x, y, l) {
     var ref = cityRef(l), c = cityFacts(ref), st = cityState(ref);
-    setTip("city", st ? c.name + ", " + polityName(st.id) : c.name);
-    var sub = c.modern !== c.name ? "now " + c.modern : l.kind === "capital" ? "a capital" : "";
+    setTip(l.kind === "capital" ? "capital" : "city", st ? c.name + ", " + polityName(st.id) : c.name);
+    var sub = c.modern !== c.name ? "now " + c.modern : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
