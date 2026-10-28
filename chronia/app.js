@@ -3654,7 +3654,8 @@
     });
     if (flagLine) {
       var at = modernNow ? dayYear(Math.min(dayOfTime(now), modern.toDay)) : whenYear + 0.5, job = wikiCache.get(title);
-      if (job) job.then(function (d) { return d && d.wikibase_item ? wdFacts(d.wikibase_item, at) : null; }).then(function (f) {
+      var chosen = title !== e[0];
+      if (job) job.then(function (d) { return d && d.wikibase_item ? wdFacts(d.wikibase_item, at, chosen) : null; }).then(function (f) {
         if (!f || factsAt !== factsAsk) return;
         if (f.flag) {
           var im = document.createElement("img");
@@ -3734,18 +3735,34 @@
     var best = use.filter(function (c) { return c.rank === "preferred"; });
     return (best.length ? best : use).map(function (c) { return c.mainsnak.datavalue.value; });
   }
-  function wdFacts(qid, at) {
+  // Wikidata's answers are kept in the browser for a week, only the statements the card reads, so a card
+  // opened again asks nothing.
+  var WD_KEEP = 7 * 864e5, WD_PROPS = ["P41", "P37", "P2936", "P571", "P576"];
+  function wdStored(key) {
+    try { var v = JSON.parse(localStorage.getItem(key) || "null"); return v && Date.now() - v.t < WD_KEEP ? v.d : undefined; } catch (e) { return undefined; }
+  }
+  function wdStore(key, d) {
+    try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), d: d })); } catch (e) { }
+  }
+  function wdFacts(qid, at, chosen) {
     var job = wdCache.get(qid);
     if (!job) {
-      job = wdGet("action=wbgetentities&props=claims&ids=" + encodeURIComponent(qid)).then(function (d) { return d && d.entities && d.entities[qid] && d.entities[qid].claims || null; });
+      var kept = wdStored("chronia-wd:" + qid);
+      job = kept !== undefined ? Promise.resolve(kept) : wdGet("action=wbgetentities&props=claims&ids=" + encodeURIComponent(qid)).then(function (d) {
+        var all = d && d.entities && d.entities[qid] && d.entities[qid].claims, claims = null;
+        if (all) { claims = {}; WD_PROPS.forEach(function (k) { if (all[k]) claims[k] = all[k]; }); }
+        wdStore("chronia-wd:" + qid, claims);
+        return claims;
+      });
       wdCache.set(qid, job);
       job.catch(function () { wdCache.delete(qid); });
     }
     return job.then(function (claims) {
       if (!claims) return null;
-      // Nothing from an item for a date before it began or after it ended (Morocco's item is the state since 1956).
+      // Nothing from an item for a date before it began or after it ended (Morocco's item is the state since
+      // 1956), unless the article was chosen for these years (Italian Libya, whose item begins in 1934, for 1913).
       var born = wdTime(claims.P571, false), gone = wdTime(claims.P576, true);
-      if ((born !== null && at < born) || (gone !== null && at > gone)) return null;
+      if (!chosen && ((born !== null && at < born) || (gone !== null && at > gone))) return null;
       var flags = wdPick(claims, "P41", at), langs = [];
       wdPick(claims, "P37", at, true).concat(langsUsed(claims, at)).forEach(function (v) { if (v.id && langs.indexOf(v.id) < 0) langs.push(v.id); });
       langs = langs.slice(0, 4);
@@ -3766,9 +3783,10 @@
     return top.map(function (c) { return c.mainsnak.datavalue.value; });
   }
   function wdLabels(ids) {
+    ids.forEach(function (q) { if (!wdLabelCache.has(q)) { var k = wdStored("chronia-wdl:" + q); if (k !== undefined) wdLabelCache.set(q, k); } });
     var need = ids.filter(function (q) { return !wdLabelCache.has(q); });
     var got = need.length ? wdGet("action=wbgetentities&props=labels&languages=en&ids=" + need.join("|")).then(function (d) {
-      need.forEach(function (q) { var e = d && d.entities && d.entities[q]; wdLabelCache.set(q, e && e.labels && e.labels.en ? e.labels.en.value : null); });
+      need.forEach(function (q) { var e = d && d.entities && d.entities[q], n = e && e.labels && e.labels.en ? e.labels.en.value : null; wdLabelCache.set(q, n); wdStore("chronia-wdl:" + q, n); });
     }) : Promise.resolve();
     return got.then(function () {
       return ids.map(function (q) { var n = wdLabelCache.get(q); return n ? n.charAt(0).toUpperCase() + n.slice(1) : null; }).filter(Boolean);
