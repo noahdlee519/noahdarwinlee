@@ -942,6 +942,7 @@
     }
     drawSea(landList, S);
 
+    if (flat) { ctx.save(); ctx.beginPath(); traceOutline(ctx); ctx.clip(); }
     var nLand = landCount(landList, kp, ISLAND_PX);
     var landPath = new Path2D();
     for (var li = 0; li < nLand; li++) traceFeature(landPath, landList[li]);
@@ -1041,6 +1042,7 @@
     ctx.setLineDash([]);
     if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.8; ctx.stroke(); }
     ctx.restore();
+    if (flat) ctx.restore();
 
     drawAging(S);
     ctx.strokeStyle = pal.limb;
