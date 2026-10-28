@@ -3161,7 +3161,7 @@
     return t.slice(0, -1).join(", ") + ", and " + t[t.length - 1];
   }
 
-  var KNOTS = [[-3000, 0], [-500, 0.12], [500, 0.22], [1200, 0.31], [1400, 0.37], [1800, 0.53], [1886, 0.6], [LAST_YEAR + 1, 1]];
+  var KNOTS = [[-3400, 0], [-500, 0.12], [500, 0.22], [1200, 0.31], [1400, 0.37], [1800, 0.53], [1886, 0.6], [LAST_YEAR + 1, 1]];
   var RANGE_MAX = 10000;
   function posOf(y) {
     for (var i = 1; i < KNOTS.length; i++) {
@@ -3188,7 +3188,7 @@
     points.sort(function (a, b) { return a - b; });
   }
   function placeTicks() {
-    if (!maps.length) return;
+    if (!maps.length && !dated) return;
     var ticks = $("ticks"), eras = $("eras"), w = trackWidth();
     ticks.textContent = ""; eras.textContent = "";
     var add = function (y, cls) {
@@ -3245,7 +3245,7 @@
     } else if (isDated(now)) {
       var dc = dated.changes[datedChangeBefore(Math.round(now))];
       asof.textContent = !current || !current.dated || wantKey !== "e" + Math.round(now) ? "Loading the borders" : "Borders since " + fmtYear(dc);
-    } else {
+    } else if (maps.length) {
       var m = maps[mapIndexFor(now)];
       asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : "Borders from the map of " + fmtYear(m.y);
     }
@@ -3261,7 +3261,7 @@
     canvas.classList.remove("is-over");
   }
   function setTime(t, fromRange) {
-    if (!maps.length) return;
+    if (!maps.length && !dated) return;
     t = Math.max(KNOTS[0][0], Math.min(LAST_YEAR + 0.999, t));
     if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
     now = t;
@@ -3351,7 +3351,7 @@
       stopPlay();
       var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
       if (e.shiftKey) stepUnit(dir); else stepMap(dir);
-    } else if (e.key === "Home") { e.preventDefault(); setTime(maps[0].y); }
+    } else if (e.key === "Home") { e.preventDefault(); setTime(KNOTS[0][0]); }
     else if (e.key === "End") { e.preventDefault(); setTime(modern ? monthTime(LAST_YEAR, 12) : LAST_YEAR); }
   });
   function commitYearInput() {
@@ -3367,14 +3367,18 @@
   yearInput.addEventListener("blur", commitYearInput);
   yearInput.addEventListener("focus", function () { yearInput.select(); });
 
-  var PLAY = { yearlyFrom: 1200, map: 1400, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
+  var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
   var playTimer = 0, playMode = "";
-  function playEnd() { return modern ? monthTime(2019, 12) : maps[maps.length - 1].y; }
+  function playEnd() { return modern ? monthTime(2019, 12) : dated ? dated.to : maps[maps.length - 1].y; }
   function playNext(t) {
     if (isModern(t)) {
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
       return monthTime(y, m);
+    }
+    if (t < PLAY.yearlyFrom && isDated(t)) {
+      for (var p = 0; p < points.length; p++) if (points[p] > t + 1e-6) return Math.min(points[p], PLAY.yearlyFrom);
+      return PLAY.yearlyFrom;
     }
     if (t < PLAY.yearlyFrom) {
       var mi = mapIndexFor(t);
@@ -3391,10 +3395,10 @@
   function playWait(from, to) {
     var changed = changedBetween(from, to);
     if (isModern(to)) return changed ? PLAY.monthChange : PLAY.month;
-    if (to <= PLAY.yearlyFrom) return PLAY.map;
+    if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return changed ? PLAY.yearChange : PLAY.year;
   }
-  function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + Math.round(now) : maps[mapIndexFor(now)].snap === current); }
+  function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + Math.round(now) : !!maps.length && maps[mapIndexFor(now)].snap === current); }
   function playStep() {
     if (!playLoaded()) return PLAY.load;
     var from = now, to = playNext(now);
@@ -3414,14 +3418,14 @@
   function startPlay(fast) {
     var mode = fast ? "fast" : "normal";
     if (playTimer) { playMode = mode; syncPlayButtons(); return; }
-    if (now >= playEnd() - 1e-9) setTime(maps[0].y);
+    if (now >= playEnd() - 1e-9) setTime(KNOTS[0][0]);
     playMode = mode;
     syncPlayButtons();
     var tick = function () {
       var wait = playStep();
       if (wait < 0) stopPlay(); else playTimer = setTimeout(tick, playDelay(wait));
     };
-    playTimer = setTimeout(tick, playDelay(isModern(now) ? PLAY.monthChange : now < PLAY.yearlyFrom ? PLAY.map : PLAY.yearChange));
+    playTimer = setTimeout(tick, playDelay(isModern(now) ? PLAY.monthChange : now < PLAY.yearlyFrom ? (isDated(now) ? PLAY.early : PLAY.map) : PLAY.yearChange));
   }
   function stopPlay() {
     if (!playTimer) return;
@@ -3492,7 +3496,7 @@
     return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
   }
   function askYear() {
-    return Math.max(-3000, Math.min(2026, isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now) || 1));
+    return Math.max(KNOTS[0][0], Math.min(2026, isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now) || 1));
   }
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
@@ -4256,12 +4260,12 @@
       modern = { rows: md.rows, hi: md.hi, lo: md.lo, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
       modern.fromTime = timeOfDay(dayFromDate(from[0], from[1], from[2])) - 0.5 / 365;
       if (idx.dated) {
-        dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) }; PLAY.yearlyFrom = dated.from;
+        dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) }; PLAY.yearlyFrom = Math.max(dated.from, PLAY.yearlyFrom);
       }
       cities = r[2] ? { ranks: r[2].ranks, rows: prepCities(r[2], false), minorLoad: null } : null;
       buildPoints();
       var t0 = h.y ? parseTime(h.y) : null;
-      now = t0 !== null ? t0 : START_YEAR;
+      now = Math.max(KNOTS[0][0], t0 !== null ? t0 : START_YEAR);
       land = { hi: prepLand(r[1].hi), lo: prepLand(r[1].lo) };
       buildCoastGrid(land.lo);
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);

@@ -1,6 +1,6 @@
 # Making CHRONIA's maps
 
-The rules for anyone, agent or person, who adds to or corrects CHRONIA's borders, above all before 1200, where the maps are snapshots and the record is thinnest. The [README](README.md) says how the data is built. This file says how to decide what goes in it, and how to work so that the result can be trusted and checked.
+The rules for anyone, agent or person, who adds to or corrects CHRONIA's borders, above all before 1200, where the record is thinnest and much of the map still comes from snapshots. The [README](README.md) says how the data is built. This file says how to decide what goes in it, and how to work so that the result can be trusted and checked.
 
 Read the README's [The data](README.md#the-data) and [Known limits](README.md#known-limits) first. The house rules in [`../uchronia/AGENTS.md`](../uchronia/AGENTS.md#ground-rules) apply here too.
 
@@ -26,7 +26,7 @@ Every decision has to be expressed in these terms. If something can't be express
 | **Precision** 1 to 3 | How exact the border is: 1 approximate, 2 moderately precise, 3 fixed by treaty or survey | Almost everything before 1200 is 1 or 2; steppe, Sahelian, and pre-Columbian polities, whose rule ran through allegiance rather than lines, are 1 (`APPROX` in the builder) |
 | **Blank land** | No evidence of who held it | Leave it blank rather than guess |
 
-On the snapshot maps before 1200 every border is drawn dotted. From 1200 a border is solid where both sides are states with precision 2 or 3, and dotted where either side has precision 1 or is a people; bands have no border line at all. So the sign of doubt is there; it only has to be used honestly, by giving each polity the precision its evidence supports.
+A border is solid where both sides are states with precision 2 or 3, and dotted where either side has precision 1 or is a people; bands have no border line at all. So the sign of doubt is there; it only has to be used honestly, by giving each polity the precision its evidence supports.
 
 Capitals from 1400 to 1885 come from Wikidata (see step 10 of the README's [From 1200 to 1885](README.md#from-1200-to-1885)). A wrong one is left out with `CAP_SKIP` or `CAP_DROP` in the builder, with a ledger entry, or corrected on Wikidata and fetched again; there are none before 1400. Cities have their own builder and tables. This file is about borders, names, rulers, and peoples.
 
@@ -34,7 +34,7 @@ Capitals from 1400 to 1885 come from Wikidata (see step 10 of the README's [From
 
 ### Sources, in order of weight
 
-1. **The project's datasets.** These are historical-basemaps (Ourednik) and Cliopatria (Seshat, Bennett and others, 2025), which covers 3400 BC to 2024 although CHRONIA uses it only from 1400. They are the baseline. A change to them needs a reason and a source.
+1. **The project's datasets.** These are historical-basemaps (Ourednik) and Cliopatria (Seshat, Bennett and others, 2025), which covers 3400 BC to 2024; CHRONIA uses it for every year to 1885. They are the baseline. A change to them needs a reason and a source.
 2. **Scholarly historical atlases and gazetteers.** Starting points by region:
    - Mediterranean and Near East: the *Barrington Atlas of the Greek and Roman World* (Talbert, 2000), with Pleiades and the Digital Atlas of the Roman Empire (DARE); the *Tübinger Atlas des Vorderen Orients* (TAVO).
    - China: Tan Qixiang's *Historical Atlas of China* (中国历史地图集), and the China Historical GIS (CHGIS).
@@ -199,14 +199,16 @@ A claim in progress is an entry with "Claimed by" and the date, replaced by the 
 
 These were settled with Noah. Don't reopen them without asking.
 
-- **Sources:** up to 1100 the borders are historical-basemaps' snapshots; from 1200 to 1885, Cliopatria, filled from historical-basemaps (moved back from 1400 on 27 October 2026); from 1886, CShapes 2.0, dated to the day. A source is never mixed into a period by hand. A change of source for a period is a decision for Noah.
+- **Sources:** until 1885, Cliopatria, year by year from 3400 BC, filled from historical-basemaps' snapshots (Cliopatria began in 1400, then in 1200, and since 27 October 2026 in 3400 BC, at Noah's request; the snapshots before 1200 were shown as maps until then); from 1886, CShapes 2.0, dated to the day. A source is never mixed into a period by hand. A change of source for a period is a decision for Noah.
 - **Colours:** the reference map's base colours win over keeping every pair of neighbours apart. Lineages carry a modern state's colour back through time. A dependency is shown in its ruler's colour.
 - **Colours while touching** (27 October 2026): where two touching states would still share a colour, one takes another colour only for the years they touch, then its own again. Noah asked for this for Czechoslovakia (its own colour while it bordered Romania, the Czech Republic's after), and for the other pairs.
 - **Disputed land** (27 October 2026): overlaps between two states are cleaned up by the rules under Shapes, and only large ones between firmly drawn states are shown as disputed, striped in the claimants' colours. Well-known disputes the sources give to one side are shown from the dated `DISPUTES` list. Taiwan is not shown as disputed.
 - **The Holy Roman Empire** (27 October 2026): drawn as a state of states, like the United States with its states: one colour, one name, and its members inside with fine broken lines between them. Membership follows the atlas outline of the Empire for the period.
+- **The Roman provinces** (27 October 2026): from AD 106 to 117 the Roman Empire is drawn as a state of states, like the Holy Roman Empire, with the provinces of the Digital Atlas of the Roman Empire. Other years have no provinces, since no open source maps them by date.
+- **The China Historical GIS is not used** (27 October 2026): its terms forbid redistribution, and its download can't be reached from Claude's sessions. The Chinese dynasties come from Cliopatria and the snapshots.
 - **Wetlands:** large marshes drained in a well-dated campaign (the Fens, the Pontine Marshes) are drawn as marsh until their draining, from outlines traced from elevation where no source maps them.
 - **Name, not just colour:** a state is named for its regime at the date, through `REGIMES` and `NAME_FIX`, rather than keeping one name across regimes.
-- **Signs of doubt:** borders on the snapshot maps before 1200 are dotted; from 1200 a border is dotted only where a side is approximate (precision 1) or a people (this replaced dotting every border before 1648, on 27 October 2026). Peoples are uncoloured and in italics, bands of hunters and gatherers have no border at all, and "approximate" borders say so on the card.
+- **Signs of doubt:** a border is dotted only where a side is approximate (precision 1) or a people, in every year (this replaced dotting every border before 1648, and every border on the snapshot maps before 1200, on 27 October 2026). Peoples are uncoloured and in italics, bands of hunters and gatherers have no border at all, and "approximate" borders say so on the card.
 - **One owner per place:** no place has two owners in the same years. Overlaps are settled by the rules under Shapes (`resolveOverlaps`), and only large ones between firmly drawn states become disputed land.
 - **Smooth, not stepped:** stair-stepped edges, left where a source was traced from a grid, are smoothed on the shared topology, so neighbours still meet exactly. This is done before 1886 only; CShapes' borders from 1886 are left as they are.
 - **Leaving things out:** small territories the sources lose are added from Natural Earth's shapes (`SMALL`), not drawn by hand. Thin or patchy data is left out rather than shown misleadingly. In UCHRONIA, Uruguay's and Guyana's second level was left out for this reason, and Colombia's 1,121 municipalities were grouped into the departments' own subregions as the more useful level.

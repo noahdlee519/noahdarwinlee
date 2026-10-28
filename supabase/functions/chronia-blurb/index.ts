@@ -19,7 +19,7 @@ const MAX_WORDS = 170;
 const MIN_WORDS = 25;
 const DEEPSEEK_DEADLINE = 16000;
 const CLAUDE_DEADLINE = 10000;
-const FIRST_YEAR = -3000;
+const FIRST_YEAR = -3400;
 const LAST_YEAR = 2026;
 
 const SYSTEM = `You write the short notes in CHRONIA, an atlas of the world's borders through history. A reader has picked a state, a people, or a city on the atlas at some date, and your note tells them what it was in that period.

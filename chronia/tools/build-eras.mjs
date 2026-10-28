@@ -19,8 +19,8 @@ const simplify = require("topojson-simplify");
 const d3 = require("d3-geo");
 const clip = require("polygon-clipping");
 
-const FIRST = -3000;
-const DATED_FROM = 1200, DATED_TO = 1885, CHUNK = 100;
+const FIRST = -3400;
+const DATED_FROM = -3400, DATED_TO = 1885, CHUNK = 100;
 const CS_FROM = "1886-01-01", CS_TO = "2019-12-31";
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
@@ -90,6 +90,63 @@ const RULER_ALIAS = {
 };
 const RENAME = [
   [1801, 1922, "United Kingdom", "United Kingdom of Great Britain and Ireland"],
+  [-9999, 1200, "Rome (Constantinus)", "Roman Empire"],
+  [-9999, 1200, "Rome (Maximian)", "Roman Empire"],
+  [-9999, 1200, "Rome (Diocletianus)", "Roman Empire"],
+  [-9999, 1200, "Rome (Galerius)", "Roman Empire"],
+  [-9999, 1200, "Rome", "Roman Republic"],
+  [-9999, 1200, "Mauryan Empire", "Maurya Empire"],
+  [-9999, 1200, "Parthia", "Parthian Empire"],
+  [-9999, 1200, "Saba", "Sabaeans"],
+  [-9999, 1200, "Carthaginian Empire", "Carthage"],
+  [-9999, 1200, "Nabatean Kingdom", "Nabataean Kingdom"],
+  [-9999, 1200, "Bosporian Kingdom", "Bosporan Kingdom"],
+  [-9999, 1200, "Sabini", "Sabines"],
+  [-9999, 1200, "Kadambas", "Kadamba Empire"],
+  [-9999, 1200, "Chalukyas", "Chalukya dynasty"],
+  [-9999, 1200, "Avars", "Avar Khaganate"],
+  [-9999, 1200, "Frankish Kingdom", "Kingdom of the Franks"],
+  [-9999, 1200, "Western Gokturk Khaganate", "Western Göktürks"],
+  [-9999, 1200, "Volga Bulgars", "Volga Bulgaria"],
+  [-9999, 1200, "Palas", "Pala Empire"],
+  [-9999, 1200, "Ghana", "Ghana Empire"],
+  [-9999, 1200, "Empire of Ghana", "Ghana Empire"],
+  [-9999, 1200, "Khazars", "Khazaria"],
+  [-9999, 1200, "Idrisid Caliphate", "Idrisids"],
+  [-9999, 1200, "Cholas", "Chola Empire"],
+  [-9999, 1200, "Chola", "Early Cholas"],
+  [-9999, 1200, "Olmec", "Olmec Civilization"],
+  [-9999, 1200, "Indus valley civilization", "Indus Valley Civilization"],
+  [-9999, 1200, "Zhoa", "Zhou dynasty"],
+  [-9999, 1200, "Andronovo", "Andronovo culture"],
+  [-9999, 1200, "Afanasevo", "Afanasievo culture"],
+  [-9999, 1200, "Sintashta", "Sintashta culture"],
+  [-9999, 1200, "Beaker", "Bell Beaker culture"],
+  [-9999, 1200, "Únětice", "Únětice culture"],
+  [-9999, 1200, "Oxus", "Oxus civilisation"],
+  [-9999, 1200, "Namazga", "Namazga culture"],
+  [-9999, 1200, "Valdivia", "Valdivia culture"],
+  [-9999, 1200, "Chorrera", "Chorrera culture"],
+  [-9999, 1200, "Jōmon", "Jōmon culture"],
+  [-9999, 1200, "Yayoi", "Yayoi culture"],
+  [-9999, 1200, "Chavin", "Chavín culture"],
+  [-9999, 1200, "Chinchoros", "Chinchorro culture"],
+  [-9999, 1200, "Burmese", "Tibeto-Burman peoples"],
+  [-9999, 1200, "Tibeto-Burmanese", "Tibeto-Burman peoples"],
+  [-9999, 1200, "Koreans", "Korean peoples"],
+  [-9999, 1200, "Paleo-Koreans", "Korean peoples"],
+  [-9999, 1200, "Malays", "Malay peoples"],
+  [-9999, 1200, "Malay", "Malay peoples"],
+  [-9999, 1200, "Mon-Khmer", "Mon-Khmer peoples"],
+  [-9999, 1200, "Papuan", "Papuan peoples"],
+  [-9999, 1200, "city-states", "Syrian city-states"],
+  [-9999, 1200, "Nan-Yue", "Nanyue"],
+  [-9999, 1200, "Min-Yue", "Minyue"],
+  [-9999, 1200, "Hadramaut", "Hadhramaut"],
+  [-9999, 1200, "Meroe", "Kingdom of Kush"],
+  [-256, -119, "Bactria", "Greco-Bactrian Kingdom"],
+  [918, 1200, "Korea", "Goryeo"],
+  [850, 1200, "Tibetan Empire", "Tibetans"],
   [1878, 1879, "M?ori", "Maori"]
 ];
 const RULER_FIX = [
@@ -146,7 +203,7 @@ const RULER_FIX = [
   ["Spanish Morocco", 1912, 1956, "Spain"],
   ["Niue", 1901, 1974, "New Zealand"]
 ];
-const PEOPLES = /hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$/i;
+const PEOPLES = /^norte chico$|^el paraiso$|complex$|^point peninsula$|^oxus civilisation$|^celtiberians$|^arameans$|^norsemen$|^northmen$|^celts$|^illyrians$|^dacians$|^phrygians$|^scythians$|^sarmates$|^saces$|^tupis$|^mandes$|^bedouins$|^azandes$|^anasazi$|^mogollon$|^samoyèdes$|^permians$|^cushites$|^kushites$|^samis?$|^malagasy$|^vazimba$|^finns$|^balts$|^bashkirs$|^kryvichs$|^karelians$|^veps$|^mordvinians$|^innu$|^taino$|^ciboney$|^beja people$|^danes$|^peshemegs$|^karluks$|^khitans$|^bulgars$|^frisians$|hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$/i;
 const AUSTRALIA = [112, -45, 155, -9];
 const BANDS = /hunter|gatherer|forager|fisher|fichers/i;
 const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya"]);
@@ -337,7 +394,7 @@ const readHb = (f, y) => {
     if (ruler === name) ruler = "";
     const fixed = rulerFix(name, y);
     if (fixed) ruler = renamed(RULER_ALIAS[fixed] && y >= 1801 && y < 1922 && fixed === "United Kingdom" ? RULER_ALIAS[fixed] : fixed, y);
-    if (!groups.has(name)) groups.set(name, { name, ruler, part: (p.PARTOF || "").trim(), prec: [], geoms: [] });
+    if (!groups.has(name)) groups.set(name, { name, ruler, part: renamed((p.PARTOF || "").trim(), y), prec: [], geoms: [] });
     const g = groups.get(name);
     if (ruler && !g.ruler) g.ruler = ruler;
     g.prec.push(+p.BORDERPRECISION || 1);
@@ -724,6 +781,16 @@ const withBox = (s) => ({ ...s, uid: uidNext++, box: boxOf(s.polys), cells: cell
 const cellOpt = (polys, drop) => { const cells = cellsOf(polys); return { cells, cellsW: cellSum(cells), drop }; };
 
 const CLIO_NAME = {
+  "Nabataeans": "Nabataean Kingdom",
+  "Cimmerian Bosporus": "Bosporan Kingdom",
+  "Chámpa": "Champa",
+  "West Franks": "West Francia",
+  "East Franks": "East Francia",
+  "Middle Franks": "Middle Francia",
+  "Greek City-States": "Greek city-states",
+  "Greek Colonies": "Greek colonies",
+  "Magadha - Haryanka dynasty": "Magadha",
+  "Magadha - Shaishunaga dynasty": "Magadha",
   "Holy Roman Empire Minor States": "Holy Roman Empire",
   "Old Kingdom of Norway": "Kingdom of Norway",
   "Kingdom of Hawaï'i": "Kingdom of Hawaii",
@@ -804,7 +871,7 @@ const WELLINGTON = [174.78, -41.29], BUENOS_AIRES = [-58.38, -34.6], WASHINGTON 
 const LONDON = [-0.12, 51.5], LISBON = [-9.14, 38.72], COPENHAGEN = [12.57, 55.68], BERGEN = [5.32, 60.39], OSLO = [10.75, 59.91];
 const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARIS = [2.35, 48.86], ISTANBUL = [28.98, 41.01];
 const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
-const HB_STALE = { "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
+const HB_STALE = { "Avar Khaganate": 805, "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
 const REGIMES = {
   france: { from: 1200, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
   britain: { from: 1200, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
@@ -819,6 +886,28 @@ const REGIMES = {
 const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ireland", "Kingdom of Denmark": "Denmark", "Netherlands": "Netherlands" };
 const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
 const NAME_FIX = [
+  ["Egypt", "Naqada culture", -3400, -3001, { people: 1, wiki: "Naqada culture" }],
+  ["Ur", "", -3400, -2113, { drop: 1 }],
+  ["Ur", "Third Dynasty of Ur", -2112, -2004, { wiki: "Third Dynasty of Ur" }],
+  ["Ur", "", -2003, -1751, { drop: 1 }],
+  ["Kush", "Kerma", -1750, -1501, { wiki: "Kerma culture" }],
+  ["Kush", "", -1500, -1071, { drop: 1 }],
+  ["Zhou dynasty", "", -1750, -1047, { drop: 1 }],
+  ["Zhou dynasty", "", -750, -501, { drop: 1 }],
+  ["Later Zhou", "Eastern Zhou", -770, -256, { wiki: "Eastern Zhou" }],
+  ["Kingdom of David and Solomon", "", -1750, -601, { drop: 1 }],
+  ["Greek Dark Ages", "Dark Age Greece", -1100, -801, { people: 1, wiki: "Greek Dark Ages" }],
+  ["Thrace", "Thracians", -1750, -551, { people: 1, wiki: "Thracians" }],
+  ["Macedonian Empire", "Kingdom of Macedonia", -700, -337, { wiki: "Macedonia (ancient kingdom)" }],
+  ["Macedonian Empire", "Kingdom of Macedonia", -318, -277, { wiki: "Macedonia (ancient kingdom)" }],
+  ["Han", "State of Han", -404, -230, { wiki: "Han (state)" }],
+  ["Han", "Han", -208, -203, { wiki: "Han dynasty" }],
+  ["Great Yuan", "Dayuan", -110, 50, { wiki: "Dayuan" }],
+  ["Kingdom of Italy", "Kingdom of the Lombards", 568, 774, { wiki: "Kingdom of the Lombards" }],
+  ["Uyghurs", "Uyghurs", 841, 1199, { people: 1 }],
+  ["Hittites", "", -2500, -1651, { drop: 1 }],
+  ["Kush", "", 351, 1199, { drop: 1 }],
+  ["Sasanian dependencies", "", 652, 1199, { drop: 1 }],
   ["Mongol Empire", "Mongols", 1200, 1205, { people: 1, wiki: "Mongols" }],
   ["Tibetans", "Tibetans", 1200, 1249, { people: 1 }],
   ["Tibet", "Tibet", 1294, 1353, { ruler: "Yuan dynasty", wiki: "Tibet under Yuan rule" }],
@@ -1687,7 +1776,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
-dated = resolveOverlaps(dated, "from 1200 to 1885");
+dated = resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO);
 
 const CAP_FROM = 1400, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
 const CAP_SKIP = new Set(["Holy Roman Empire"]);
@@ -1817,6 +1906,60 @@ const GROUPS = [{
   }
   console.log("groups: " + whole + " spans inside the Holy Roman Empire, " + parted + " parted at its border, " + Math.round((Date.now() - t0) / 1000) + " s");
 }
+const PROVINCE_SETS = [{ name: "Roman Empire", file: "roman-provinces.json" }];
+{
+  let made = 0, rests = 0, joinedBits = 0;
+  for (const P of PROVINCE_SETS) {
+    const provs = JSON.parse(readFileSync(resolve(here, P.file), "utf8")).provinces.map(([name, wiki, a, b, polys]) => ({ name, wiki, a, b, polys: rewind(polys) }));
+    provs.forEach((p) => { p.box = boxOf(p.polys); });
+    P.a = Math.min(...provs.map((p) => p.a));
+    P.b = Math.max(...provs.map((p) => p.b));
+    const next = [];
+    for (const s of dated) {
+      if (s.name !== P.name || s.last < P.a || s.first > P.b) { next.push(s); continue; }
+      const cuts = [...new Set([s.first, ...provs.flatMap((p) => [p.a, p.b + 1]).filter((y) => y > s.first && y <= s.last)])].sort((x, y) => x - y);
+      cuts.forEach((a, k) => {
+        const b = k + 1 < cuts.length ? cuts[k + 1] - 1 : s.last;
+        const live = provs.filter((p) => p.a <= a && b <= p.b);
+        if (!live.length) { next.push({ ...s, first: a, last: b, uid: k ? uidNext++ : s.uid }); return; }
+        let rest = s.polys;
+        const pieces = [];
+        for (const p of live) {
+          if (!boxHit(p.box, s.box || (s.box = boxOf(s.polys)))) continue;
+          const inside = tryClip(clip.intersection, rest, p.polys);
+          if (!inside || !inside.length) continue;
+          const left = tryClip(clip.difference, rest, p.polys);
+          if (!left) continue;
+          pieces.push({ p, polys: rewind(inside) });
+          rest = rewind(left);
+        }
+        const keep = [];
+        for (const q of rest) {
+          if (bigPiece(q)) { keep.push(q); continue; }
+          const qc = cellsOf([q]);
+          let best = null, hit = 0;
+          for (const pc of pieces) {
+            if (!pc.near) pc.near = dilate(cellsOf(pc.polys));
+            let n = 0;
+            for (const i of qc) if (pc.near.has(i)) n++;
+            if (!qc.size && pc.near.has(cellAt(q[0][0]))) n = 1;
+            if (n > hit) { hit = n; best = pc; }
+          }
+          if (best) { best.polys = unionSafe(best.polys, [[q]]); joinedBits++; } else keep.push(q);
+        }
+        for (const pc of pieces) {
+          const polys = pc.polys.filter((q) => polyKm2(q) >= OWN_KM2);
+          if (!polys.length) continue;
+          next.push(withBox({ ...s, name: pc.p.name, wiki: pc.p.wiki, ruler: "", part: P.name, status: 0, cap: null, first: a, last: b, polys, geoHash: undefined, cells: undefined }));
+          made++;
+        }
+        if (keep.length) { next.push(withBox({ ...s, first: a, last: b, polys: keep, geoHash: undefined, cells: undefined })); rests++; }
+      });
+    }
+    dated = next;
+  }
+  console.log("provinces: " + made + " spans of provinces, " + rests + " remainders, " + joinedBits + " slivers joined to the province beside them");
+}
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -1846,7 +1989,7 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     return row;
   });
   const groups = [];
-  for (const G of GROUPS) {
+  for (const G of GROUPS.concat(PROVINCE_SETS)) {
     const gid = catId(G.name);
     let prev = null;
     for (let y = c; y <= cEnd; y++) {
@@ -1864,7 +2007,7 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
   }
   hi.objects.p.geometries.forEach((g) => { delete g.properties; });
   lo.objects.p.geometries.forEach((g) => { delete g.properties; });
-  const file = "dated/" + c + ".json";
+  const file = "dated/" + (c < 0 ? "bc" + -c : c) + ".json";
   writeFileSync(resolve(out, file), JSON.stringify(groups.length ? { from: c, to: cEnd, rows, groups, hi, lo } : { from: c, to: cEnd, rows, hi, lo }));
   datedChunks.push({ from: c, to: cEnd, file, rows, lo, spans });
 }
@@ -2697,4 +2840,4 @@ else console.warn("historical-basemaps LICENSE not found beside " + source + "; 
 
 console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
 console.log("smoothed " + stairArcs + " stair-stepped arcs");
-console.log(index.length + " maps to " + index[index.length - 1][0] + ", " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");
+console.log(index.length + " snapshot maps shown, " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");
