@@ -18,7 +18,12 @@ Each entry:
 ---
 ## all years | world | stray border lines inside states, as in the Holy Roman Empire
 
-- Claimed by the 1886 session, 28 October 2026: short border lines float inside states where two neighbours' shared edge has a point on one side and not on the other, so the topology doesn't see the edge as shared and draws it as an inland edge of each. The fix gives each edge the other side's points before the topology is made (`topoFor` in `tools/build-eras.mjs`), and a rebuild.
+- What changed: short border lines no longer float inside states, as they did inside the Holy Roman Empire from 1400 on and in many other places. Two causes: a shared edge where only one neighbour had a point partway along it, which the topology took for two separate edges and the page drew as inland borders; and overlaps under 50 km², which `resolveOverlaps` left alone. Before the topology is made, `nodeFeats` gives each edge the points of other shapes that lie on it (about 1.4 million points), and overlaps from 0.01 to 50 km² are cut from the larger span (1,941, and 139 more after the Holy Roman Empire's members and the Roman provinces are drawn out). Edges used by one shape only, most of them coasts, fell by 5% in 1410, a quarter in 1600 and 1750, and a sixth in 1850. Leipzig in the 1410s, where the House of Ascania's shape and the Empire's still differ after simplifying, keeps one short line.
+- Tables: `nodeFeats` and `topoFor`; `SMALL_OVERLAP_KM2` and the `onlySmall` pass of `resolveOverlaps`; in `tools/build-eras.mjs`.
+- Sources: no new sources; the shapes are the same.
+- Confidence: high; no shape moves by more than half a step of the grid (about 100 m in the detailed files), and the slivers cut are under 50 km².
+- Alternatives: hiding short inland edges on the page (rejected: it would hide real borders of small territories too).
+- Left out: gaps under a step wide between two neighbours, which still draw a line where the two shapes don't meet.
 
 ## Before 1653 and 1818 | England | the Fens as part of the coastline
 

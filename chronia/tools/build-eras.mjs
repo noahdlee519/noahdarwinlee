@@ -486,8 +486,63 @@ function smoothTopo(topo) {
   topo.arcs = topo.arcs.map(smoothArc);
   return topo;
 }
+let nodesAdded = 0;
+function nodeFeats(feats, q) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const copy = feats.map((f) => {
+    const g = f.geometry;
+    if (!g || (g.type !== "Polygon" && g.type !== "MultiPolygon")) return f;
+    const polys = (g.type === "Polygon" ? [g.coordinates] : g.coordinates).map((poly) => poly.map((ring) => ring.slice()));
+    for (const poly of polys) for (const ring of poly) for (const p of ring) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+    return { ...f, geometry: { type: "MultiPolygon", coordinates: polys } };
+  });
+  if (x0 === Infinity) return feats;
+  const kx = x1 - x0 ? (x1 - x0) / (q - 1) : 1, ky = y1 - y0 ? (y1 - y0) / (q - 1) : 1;
+  const rings = [];
+  for (const f of copy) if (f.geometry && f.geometry.type === "MultiPolygon") for (const poly of f.geometry.coordinates) for (const ring of poly) rings.push(ring);
+  const grid = rings.map((ring) => ring.map((p) => [Math.round((p[0] - x0) / kx), Math.round((p[1] - y0) / ky)]));
+  const hash = new Map();
+  for (const r of grid) for (const p of r) {
+    const k = (p[0] >> 6) * 1e6 + (p[1] >> 6);
+    let b = hash.get(k);
+    if (!b) hash.set(k, (b = new Map()));
+    b.set(p[0] * 4194304 + p[1], p);
+  }
+  rings.forEach((ring, ri) => {
+    const r = grid[ri], out = [ring[0]];
+    let changed = false;
+    for (let i = 0; i + 1 < r.length; i++) {
+      const a = r[i], b = r[i + 1];
+      const lx = Math.min(a[0], b[0]), hx = Math.max(a[0], b[0]), ly = Math.min(a[1], b[1]), hy = Math.max(a[1], b[1]);
+      const cx0 = lx >> 6, cx1 = hx >> 6, cy0 = ly >> 6, cy1 = hy >> 6;
+      let mids = null;
+      if ((a[0] !== b[0] || a[1] !== b[1]) && (cx1 - cx0 + 1) * (cy1 - cy0 + 1) <= 4096) {
+        const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
+        for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
+          const cell = hash.get(cx * 1e6 + cy);
+          if (cell) for (const v of cell.values()) {
+            if (v[0] < lx || v[0] > hx || v[1] < ly || v[1] > hy) continue;
+            const cross = (v[0] - a[0]) * dy - (v[1] - a[1]) * dx;
+            if (cross * cross > 0.25 * L) continue;
+            const t = ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / L;
+            if (t > 0 && t < 1) (mids = mids || []).push([t, v]);
+          }
+        }
+      }
+      if (mids) {
+        mids.sort((m, n) => m[0] - n[0]);
+        for (const [, v] of mids) out.push([x0 + v[0] * kx, y0 + v[1] * ky]);
+        nodesAdded += mids.length;
+        changed = true;
+      }
+      out.push(ring[i + 1]);
+    }
+    if (changed) { ring.length = 0; for (const p of out) ring.push(p); }
+  });
+  return copy;
+}
 function topoFor(feats, km, q, smooth = true) {
-  const raw = server.topology({ p: { type: "FeatureCollection", features: feats } }, q), topo = smooth ? smoothTopo(raw) : raw;
+  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) } }, q), topo = smooth ? smoothTopo(raw) : raw;
   const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
   const kept = new Set();
   const walk = (a) => { if (typeof a === "number") kept.add(a < 0 ? ~a : a); else if (a) a.forEach(walk); };
@@ -630,8 +685,8 @@ const dissolveFeat = (ft) => {
   dissolveMemo.set(ft, out);
   return out;
 };
-const DISPUTE_KM2 = 10000, DISPUTE_SHARE = 0.1, NEST_SHARE = 0.8, OVERLAP_KM2 = 50, NEAR_CELLS = 40;
-function resolveOverlaps(list, label) {
+const DISPUTE_KM2 = 10000, DISPUTE_SHARE = 0.1, NEST_SHARE = 0.8, OVERLAP_KM2 = 50, SMALL_OVERLAP_KM2 = 0.01, NEAR_CELLS = 40;
+function resolveOverlaps(list, label, onlySmall = false) {
   const order = list.map((s, i) => i).sort((a, b) => list[a].box[0] - list[b].box[0]);
   const edits = [], disputes = [], count = { same: 0, people: 0, ruler: 0, nested: 0, vague: 0, sliver: 0, disputed: 0 };
   const area = new Map(), areaOf = (s) => { if (!area.has(s)) area.set(s, km2Of(s.polys)); return area.get(s); };
@@ -655,6 +710,7 @@ function resolveOverlaps(list, label) {
       let inter = null;
       try { inter = clip.intersection(A.polys, B.polys); } catch (e) {}
       if (inter && !inter.length && A.near > 2) { try { const again = clip.intersection(snapAt(A.polys, 1e6), snapAt(B.polys, 1e6)); if (again.length) { inter = again; count.retried = (count.retried || 0) + 1; } } catch (e) {} }
+      if (!inter && onlySmall) continue;
       if (!inter) {
         const aA0 = areaOf(A), aB0 = areaOf(B), first = Math.max(A.first, B.first), last = Math.min(A.last, B.last);
         const lose = A.name === B.name ? (aA0 <= aB0 ? A : B) : A.people !== B.people ? (A.people ? A : B) : aA0 >= aB0 ? A : B;
@@ -663,7 +719,15 @@ function resolveOverlaps(list, label) {
         continue;
       }
       const ia = km2Of(inter);
-      if (ia < OVERLAP_KM2) continue;
+      if (ia < OVERLAP_KM2) {
+        if (ia < SMALL_OVERLAP_KM2) continue;
+        const aA = areaOf(A), aB = areaOf(B);
+        const lose = A.people !== B.people ? (A.people ? A : B) : aA >= aB ? A : B;
+        edits.push({ base: lose, first: Math.max(A.first, B.first), last: Math.min(A.last, B.last), polys: inter, add: false });
+        count.small = (count.small || 0) + 1;
+        continue;
+      }
+      if (onlySmall) continue;
       const first = Math.max(A.first, B.first), last = Math.min(A.last, B.last), aA = areaOf(A), aB = areaOf(B);
       let lose = null, kind;
       if (A.name === B.name) { lose = aA <= aB ? A : B; kind = "same"; }
@@ -2295,6 +2359,7 @@ const PROVINCE_SETS = [{ name: "Roman Empire", file: "roman-provinces.json" }];
   }
   console.log("provinces: " + made + " spans of provinces, " + rests + " remainders, " + joinedBits + " slivers joined to the province beside them");
 }
+dated = resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO + ", after the groups and provinces, overlaps under " + OVERLAP_KM2 + " km²", true);
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -3198,5 +3263,6 @@ else console.warn("historical-basemaps LICENSE not found beside " + source + "; 
 
 console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
 console.log("smoothed " + stairArcs + " stair-stepped arcs");
+console.log("noded " + nodesAdded + " points into edges that another shape's point lay on");
 console.log("small territories: " + Math.round(smallGaps) + " km² of gaps beside Liechtenstein, Andorra, and San Marino joined to them");
 console.log(index.length + " snapshot maps shown, " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");
