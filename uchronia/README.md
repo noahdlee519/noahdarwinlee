@@ -60,7 +60,10 @@ of `/greatercircle/`.
     than 24 ms apart four times running while the map moves, it also draws
     at half resolution (and no finer region lines) while it moves, for the
     rest of the visit, and sharp again as soon as it stops; on a sharp
-    (2x) screen that is a quarter of the pixels.
+    (2x) screen that is a quarter of the pixels. The satellite picture's
+    canvas changes resolution with it (it used to stay at full size, so
+    the satellite globe was drawn at half scale in its top-left corner, a
+    second, smaller globe beside the map while it moved).
   - **Turning the whole globe**, as Google Earth does it: while the globe is
     zoomed out (to 1.7), the map is not drawn afresh each frame. It is
     painted once, when the map is still, onto a flat 4096 by 2048 image of

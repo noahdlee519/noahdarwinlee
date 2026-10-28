@@ -357,6 +357,9 @@
     if (dpr === v) return;
     dpr = v;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    // The satellite globe is drawn on its own canvas, at this resolution too: kept at the full size, it drew
+    // the globe at the lower scale into its top-left corner, a second, smaller globe while the map moved.
+    satCanvas.width = satView.width = canvas.width; satCanvas.height = satView.height = canvas.height;
   }
   function frame(now) {
     renderQueued = false;
