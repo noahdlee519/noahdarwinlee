@@ -10,7 +10,7 @@ const geoNamesPath = resolve(process.argv[4] || resolve(here, "../../uchronia/da
 const out = resolve(here, "../data");
 const check = process.argv.includes("--check");
 
-const NOW = 2020, LEAD = 100, LAG = 100, CAP_1900 = 4e4, CAP_1950 = 2e5, EARLY_CAP = 1e4;
+const NOW = 2020, LEAD = 100, LAG = 100, CAP_1900 = 4e4, CAP_1950 = 2e5, EARLY_CAP = 2e3, APPEAR = 5000, UNKNOWN_FROM = 1850, US_TOP = 100, US_GONE = 2500;
 const TIER_POP = { 1: 5e6, 2: 1.5e6, 3: 7e5, 4: 2e5 };
 const RANKS = [68, 294, 500];
 const R_KM = 6371.0088, rad = Math.PI / 180;
@@ -204,6 +204,37 @@ for (const f of hb) {
 
 for (const [name, lon, lat, since, until, pop] of CITY_ADD) addEnt({ name, lon, lat, sources: new Set(["t"]), add: { since, until }, tPop: pop ? { pts: pop } : undefined });
 
+const WD = new Map();
+for (const line of readFileSync(resolve(here, "cities-wikidata.txt"), "utf8").split("\n")) {
+  const [q, inc, pops] = line.split("|");
+  if (!q) continue;
+  WD.set(q, { inc: inc === "" || inc === undefined ? null : +inc, pts: pops ? pops.split(",").map((v) => v.split(":").map(Number)) : [] });
+}
+const usPath = resolve(src, "1790-2010_MASTER.csv");
+let usMatched = 0, usAdded = 0;
+if (existsSync(usPath)) {
+  const rows = csv(readFileSync(usPath, "utf8").replace(/\r\n?/g, "\n")), head = rows[0], col = (n) => head.indexOf(n);
+  const decades = [];
+  for (let y = 1790; y <= 2010; y += 10) decades.push(y);
+  const recs = rows.slice(1).map((r) => ({ name: r[col("City")], st: r[col("ST")], lon: +r[col("LON")], lat: +r[col("LAT")], pts: decades.map((y) => [y, +r[col(String(y))] || 0]).filter(([, p]) => p > 0) }))
+    .filter((r) => r.name && r.pts.length && Number.isFinite(r.lon) && Number.isFinite(r.lat));
+  const top = new Set();
+  for (const y of decades) recs.filter((r) => r.pts.some(([t]) => t === y)).sort((a, b) => b.pts.find(([t]) => t === y)[1] - a.pts.find(([t]) => t === y)[1]).slice(0, US_TOP).forEach((r) => top.add(r));
+  const peak = (r) => Math.max(...r.pts.map(([, p]) => p));
+  for (const r of recs.sort((a, b) => peak(b) - peak(a))) {
+    const named = near(r.lon, r.lat, 20).find(([e]) => e.names.has(norm(r.name)));
+    let e = named ? named[0] : null;
+    if (e && e.us) continue;
+    if (!e) {
+      if (!top.has(r) || near(r.lon, r.lat, 3).length) continue;
+      e = addEnt({ name: r.name, lon: r.lon, lat: r.lat, sources: new Set(["u"]), usGone: true });
+      usAdded++;
+    } else usMatched++;
+    e.sources.add("u");
+    e.us = r;
+  }
+}
+
 const toT = (v) => {
   if (typeof v === "number") return v;
   const [y, m, d] = v.split("-").map(Number), a = Date.UTC(y, 0, 1), len = (Date.UTC(y + 1, 0, 1) - a) / 864e5;
@@ -235,6 +266,12 @@ applyTable(CITY_POP, "tPop");
 
 const URBAN = [[1800, 0.016], [1850, 0.027], [1900, 0.05], [1950, 0.17], [2020, 1]];
 const urbanAt = (t) => t <= 1800 ? 0.016 : interp(URBAN, t);
+const prominentFrom = (pts, lo) => {
+  if (!pts.length) return 1900;
+  const est = (t) => t >= pts[0][0] ? interp(pts, t) : pts[0][1] * urbanAt(t) / urbanAt(pts[0][0]);
+  for (let t = lo; t <= NOW; t++) if (est(t) >= APPEAR) return Math.min(t, pts[pts.length - 1][0]);
+  return Math.min(1900, pts[pts.length - 1][0]);
+};
 const switchFor = (province) => {
   for (const [re, y] of REGION_SWITCH) if (re.test(province)) return y;
   return 500;
@@ -260,14 +297,23 @@ for (const e of ents) {
   const un = [];
   if (e.ne) for (let y = 1950; y <= 2020; y += 5) if (e.ne["POP" + y] > 0) un.push([y, e.ne["POP" + y] * 1000]);
   if (un.length) pts = pts.filter(([y]) => y < 1950).concat(un);
+  if (e.us) {
+    const cp = e.us.pts, c0 = cp[0][0], c1 = un.length ? Math.min(cp[cp.length - 1][0], un[0][0] - 1) : cp[cp.length - 1][0];
+    pts = pts.filter(([y]) => y < c0 - 5 || y > c1 + 5).concat(cp.filter(([y]) => y <= c1)).sort((a, b) => a[0] - b[0]);
+  }
+  const wd = !e.us && e.qid ? WD.get(e.qid) : null;
+  if (wd && wd.pts.length) {
+    const cut = pts.length ? pts[0][0] - 1 : Infinity, add = wd.pts.filter(([y, p]) => y < cut && p > 0);
+    if (add.length) pts = add.concat(pts);
+  }
   const modern = !!(e.geo || e.ne || pts.some(([y]) => y >= 1900));
   e.real = pts.length > 0;
-  if (modern && !pts.some(([y]) => y >= 1990)) {
+  if (modern && !e.usGone && !pts.some(([y]) => y >= 1990)) {
     const anchor = e.ne && e.ne.POP_MIN > 0 ? e.ne.POP_MIN : TIER_POP[e.tier || 4];
     pts.push([NOW, anchor]);
   }
   const has = (a, b) => pts.some(([y]) => y >= a && y <= b);
-  if (modern && !e.add) {
+  if (modern && !e.add && !e.usGone) {
     const scaled = (t, cap) => { const nx = pts.find(([y]) => y > t); return Math.min(cap, nx[1] * urbanAt(t) / urbanAt(nx[0])); };
     if (!has(1925, 1975)) pts.push([1950, scaled(1950, CAP_1950)]);
     pts.sort((a, b) => a[0] - b[0]);
@@ -291,15 +337,27 @@ for (const e of ents) {
     if (e.real && !fromHanson && firstReal - LEAD > since) { const v = Math.min(pts[0][1] / 4, EARLY_CAP); pts.unshift([since, v], [firstReal - LEAD, v]); }
   }
   else if (dated.length) since = Math.min(...dated, firstReal ?? Infinity);
+  else if (e.us && firstReal >= e.us.pts[0][0] - 5) { since = prominentFrom(pts, e.us.pts[0][0] - 10); if (since < pts[0][0]) pts.unshift([since, pts[0][1] / 2]); }
   else if (e.real && firstReal < 1850) { since = firstReal - LEAD; pts.unshift([since, pts[0][1] / 4]); }
-  else if (e.real) since = Math.min(1900, pts[0][0]);
-  else since = 1900;
+  else {
+    if (e.real) since = prominentFrom(pts, Math.max(1800, firstReal - LEAD));
+    else {
+      const now = pts.length ? pts[pts.length - 1][1] : APPEAR;
+      since = NOW;
+      for (let t = UNKNOWN_FROM; t <= NOW; t++) if (now * urbanAt(t) >= APPEAR) { since = t; break; }
+    }
+    if (wd && wd.inc !== null && wd.inc > since && wd.inc < (e.real ? firstReal : NOW)) since = wd.inc;
+  }
   if (pts.length && pts[0][0] >= 1850 && since < pts[0][0]) pts.unshift([Math.floor(since), pts[0][1] * urbanAt(since) / urbanAt(pts[0][0])]);
   pts = pts.filter(([y], i) => y >= Math.floor(since) || (pts[i + 1] && pts[i + 1][0] > since));
   if (pts.length && pts[0][0] < since) pts[0] = [Math.floor(since), interp(pts, since)];
   let until = null;
   const datedEnd = [e.hb && e.hb.until, e.add && e.add.until, e.hanson && e.hanson.end].filter((v) => Number.isFinite(v));
   if (e.tUntil !== undefined) until = e.tUntil;
+  else if (e.usGone) {
+    const big = e.us.pts.filter(([, p]) => p >= US_GONE), last = big.length ? big[big.length - 1][0] : e.us.pts[e.us.pts.length - 1][0];
+    if (last < 1990) { until = last + 10; pts.push([until, interp(pts, last) / 2]); }
+  }
   else if (!modern) {
     if (datedEnd.length) until = Math.max(...datedEnd);
     else if (e.hanson && !e.reba) { until = switchFor(e.hanson.province); if (pts.length) pts.push([until, pts[pts.length - 1][1] / 2]); }

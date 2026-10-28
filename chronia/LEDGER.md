@@ -24,6 +24,18 @@ Each entry:
 - Confidence: medium. The dates and the divide are firm; the shore is the extent of the basin, not of the water in any one year, since much of the fen was seasonal flood and reed swamp rather than open water, and the added islands are approximate in size and shape.
 - Alternatives: keeping the Fens as a marsh pattern over the land, as before; Noah asked for them to be part of the coastline.
 - Left out: the smaller islands (Crowland, Wisbech's silt, Littleport apart from Ely), the gradual draining between the campaigns, and the Lincolnshire Marsh along the coast north of Wainfleet, which the outline keeps.
+## 1790–2020 | world, and above all the United States | cities appear when they become prominent
+
+- What changed: every city of today with no figure before 1900, about 2,550, appeared in 1900 at once. Now:
+  - A city of the United States takes its census populations from 1790 to 2010 and appears when they first reach 5,000, from ten years before its first census figure: Chicago from 1833, Denver 1858, Phoenix 1899, Tulsa 1905, and Miami 1896. Places that were among the hundred largest of the country at some census and are not cities of today are added for their years: Brooklyn to its merger with New York in 1898, and Roxbury, Dorchester, Kensington, and Williamsburgh to their annexations by Boston, Philadelphia, and Brooklyn.
+  - Elsewhere, a city appears when its figures, or their projection back along the world's urban growth, first reach 5,000, not before its Wikidata founding year (Abidjan 1898, Nairobi 1899, Tulsa 1905). For 836 cities Wikidata gives a founding year or dated populations from before 1960, which are used.
+  - A founding date with no figure for a century after it starts the city at no more than 2,000 people instead of 10,000 (Winnipeg's 1738).
+  In North America, the cities that appeared in 1900 (152) now appear from 1780 to 1950, decade by decade; 131 historical places are added.
+- Tables: `APPEAR`, `UNKNOWN_FROM`, `US_TOP`, `US_GONE`, `EARLY_CAP`, and `prominentFrom` in `tools/build-cities.mjs`; `tools/cities-wikidata.txt`.
+- Sources: (1) Steiner, *Historical U.S. City Populations* (Stanford CESTA), from the U.S. Census Bureau's censuses of 1790 to 2010 (and Gibson, *Population of the 100 Largest Cities and Other Urban Places in the United States: 1790 to 1990*, U.S. Census Bureau Working Paper 27, 1998, for the same figures). (2) Wikidata, inception (P571) and population (P1082) with point in time (P585), fetched 28 October 2026.
+- Confidence: high for the United States; medium elsewhere, where the projection along the world's urban growth is a stand-in for missing figures.
+- Alternatives: a fade in the page for cities whose first year is an estimate (not taken: a half-drawn mark reads as a fault); spreading cities with no history over the years by some rule (not taken: it would be invented).
+- Left out: about 840 cities with no history in any source still appear together in 1850, and about 550 in 1800 (see Known limits); Canada's census figures, which no open file gave.
 
 ## 1492–2019 | North America | the United States, Canada, and their colonial predecessors; cities by prominence; notes for first-level divisions
 
