@@ -117,7 +117,7 @@ These follow the rules already used for 1400 to 1885 (see the README's [Names fi
   - Add a lineage only when it is one continuous state under changing names, such as Muscovy into Russia, or Wessex into England. Don't add one for a claimed succession, such as a modern state "descending" from an ancient one.
   - If two neighbours end up in one colour because of a lineage, break it with `NO_LINK`. That's what was done for Czechoslovakia against Romania. Don't reshuffle colours.
   - Where two touching states still share a colour because both have base colours, or one is a colony in its ruler's colour, the builder's `windowColours` gives one of them another colour for just the years they touch, and its own colour again after (Noah's decision; see below). `COLOUR_FROM` does the same from a date for a state whose successor's colour it takes back (Czechoslovakia takes the Czech Republic's from 8 May 1945). Don't set these colours by hand.
-- **Base colours:** the 132 base colours of 2019 come from a reference map Noah chose, and are not to be changed.
+- **Base colours:** the 196 base colours of 2019 come from the map Noah coloured and saved in UCHRONIA, and are not to be changed; UCHRONIA and CHRONIA share them.
 
 ## Shapes
 
@@ -200,7 +200,7 @@ A claim in progress is an entry with "Claimed by" and the date, replaced by the 
 These were settled with Noah. Don't reopen them without asking.
 
 - **Sources:** until 1885, Cliopatria, year by year from 3400 BC, filled from historical-basemaps' snapshots (Cliopatria began in 1400, then in 1200, and since 27 October 2026 in 3400 BC, at Noah's request; the snapshots before 1200 were shown as maps until then); from 1886, CShapes 2.0, dated to the day. A source is never mixed into a period by hand. A change of source for a period is a decision for Noah.
-- **Colours:** the reference map's base colours win over keeping every pair of neighbours apart. Lineages carry a modern state's colour back through time. A dependency is shown in its ruler's colour.
+- **Colours:** the base colours win over keeping every pair of neighbours apart. Lineages carry a modern state's colour back through time. A dependency is shown in its ruler's colour.
 - **Colours while touching** (27 October 2026): where two touching states would still share a colour, one takes another colour only for the years they touch, then its own again. Noah asked for this for Czechoslovakia (its own colour while it bordered Romania, the Czech Republic's after), and for the other pairs.
 - **Disputed land** (27 October 2026): overlaps between two states are cleaned up by the rules under Shapes, and only large ones between firmly drawn states are shown as disputed, striped in the claimants' colours. Well-known disputes the sources give to one side are shown from the dated `DISPUTES` list. Taiwan is not shown as disputed.
 - **The Holy Roman Empire** (27 October 2026): drawn as a state of states, like the United States with its states: one colour, one name, and its members inside with fine broken lines between them. Membership follows the atlas outline of the Empire for the period.

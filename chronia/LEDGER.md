@@ -22,7 +22,12 @@ Each entry:
 
 ## 1886–2019, and the lineages before | world | base colours from Noah's UCHRONIA map
 
-- Claimed by the session of 27 October 2026 (globe names, UCHRONIA's turning globe): `BASE_COLOURS` in the builder from the map Noah coloured and saved in UCHRONIA, 196 states by name, then a rebuild of `eras.json`, `modern.json`, and `dated/*.json` for their colours only. Touches `BASE_COLOURS` and the colour fields of the data files.
+- What changed: the states of 2019 take the colours of the map Noah coloured in UCHRONIA and saved on 27 October 2026, the same colours UCHRONIA now opens in. `BASE_COLOURS` gives 196 states by name (it gave 132, read off a screenshot of an earlier reference map); 31 changed colour, among them India, Iran, Egypt, Libya, Pakistan, Peru, and Venezuela, and 64 are newly fixed. Each lineage carries its state's colour back through time, so Safavid Iran takes Iran's lime. Only `eras.json` changed; the borders and the yearly files are the same as before.
+- Tables: `BASE_COLOURS` in `tools/build-eras.mjs`; `BASE_COLORS` in UCHRONIA's `app.js`.
+- Sources: (1) Noah's UCHRONIA save of 27 October 2026, matched to the states of 2019 by name (Bosnia and Herzegovina as Bosnia-Herzegovina, Ivory Coast as Côte d'Ivoire, Saint Vincent and Saint Kitts as in CShapes).
+- Confidence: high; the colours are Noah's choice.
+- Alternatives: keeping the earlier reference map's colours.
+- Left out: UCHRONIA's dependencies and other areas that CHRONIA doesn't draw as states of their own (Hong Kong, Western Sahara, Somaliland, and so on), and Antarctica, which CHRONIA doesn't draw. 25 touching pairs of lineages now share a colour at some time (20 before); each is drawn apart by colours by date while they touch, except the Republic of Venice and the Mongol Empire in 1241, and France and Saint Barthélemy, which is French and shares its colour in Noah's map too.
 
 ## 1893–2026 | Brazil, Argentina, Spain, France, Japan, and Nigeria | first-level divisions
 
