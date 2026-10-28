@@ -622,11 +622,11 @@
     return L;
   }
   function outerEdges(topo, geoms, bucketOf) {
-    var owner = new Map();
+    var owner = new Map(), twice = new Set();
     var walk = function (g, a) {
       if (typeof a === "number") {
         var i = a < 0 ? ~a : a, o = owner.get(i);
-        if (o === undefined) owner.set(i, g); else if (o !== g) owner.set(i, null);
+        if (o === undefined) owner.set(i, g); else if (o !== g) owner.set(i, null); else twice.add(i);
         return;
       }
       for (var k = 0; k < a.length; k++) walk(g, a[k]);
@@ -634,7 +634,7 @@
     geoms.forEach(function (g) { if (g.arcs) walk(g, g.arcs); });
     var buckets = {};
     owner.forEach(function (g, i) {
-      if (!g) return;
+      if (!g || twice.has(i)) return;
       var b = bucketOf(g);
       if (b === null) return;
       (buckets[b] = buckets[b] || []).push([i]);
@@ -642,7 +642,10 @@
     var out = { hard: [], soft: [], peopleBleed: [], bleed: [], inner: [] };
     for (var c = 0; c < PALETTE; c++) { out.bleed.push([]); out.inner.push([]); }
     Object.keys(buckets).forEach(function (b) {
-      var lines = topojson.feature(topo, { type: "MultiLineString", arcs: buckets[b] }).geometry.coordinates;
+      var lines = topojson.feature(topo, { type: "MultiLineString", arcs: buckets[b] }).geometry.coordinates.filter(function (l) {
+        for (var k = 1; k < l.length; k++) if (l[k][0] !== l[0][0] || l[k][1] !== l[0][1]) return true;
+        return false;
+      });
       var coastal = [], inner = [];
       splitCoast(lines, coastal, inner);
       if (b === "p" || b === "b") { out.peopleBleed = out.peopleBleed.concat(coastal); if (b === "p") out.soft = out.soft.concat(inner); return; }
@@ -1064,7 +1067,7 @@
       L.arcUse = new Map();
       L.geoms.forEach(function (g) {
         var seen = new Set();
-        var walk = function (a) { if (typeof a === "number") { var i = a < 0 ? ~a : a; if (!seen.has(i)) { seen.add(i); L.arcUse.set(i, (L.arcUse.get(i) || 0) + 1); } } else if (a) for (var k = 0; k < a.length; k++) walk(a[k]); };
+        var walk = function (a) { if (typeof a === "number") { var i = a < 0 ? ~a : a; if (!seen.has(i)) { seen.add(i); L.arcUse.set(i, (L.arcUse.get(i) || 0) + 1); } else L.arcUse.set(i, 2); } else if (a) for (var k = 0; k < a.length; k++) walk(a[k]); };
         walk(g.arcs);
       });
     }
@@ -1121,7 +1124,7 @@
         bigLakes = rows.filter(function (r) { return r[1] >= BIG_LAKE_KM2; }).map(function (r, i) {
           var b = [180, 90, -180, -90];
           r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
-          return { id: "L" + i, b: b, coords: r[4] };
+          return { id: "L" + i, b: b, coords: r[4], key: r[0] + "|" + r[1] };
         });
         lakes.sort(function (a, b) { return b.km2 - a.km2; });
         scheduleRender();
@@ -1333,7 +1336,7 @@
   var bigLakes = [], BIG_LAKE_KM2 = 800;
   function syncGrid() {
     if (!geog || !coastGrid) return;
-    var ck = coastKey(), act = activePatches(ck), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); }).concat(bigLakes);
+    var ck = coastKey(), act = activePatches(ck), wet = geog.lakeAdd.filter(function (l) { return inSpan(l.from, l.to); }).concat(bigLakes.filter(function (l) { var s = geog.lakeOnly.get(l.key); return !s || inSpan(s[0], s[1]); }));
     var tag = ck + "," + act.map(function (q) { return q.id; }).concat(wet.map(function (l) { return l.id; })).join();
     if (tag === gridTag) return;
     var was = gridTag.split(","), list = datedLand(ck).list;
