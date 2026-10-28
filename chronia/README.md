@@ -243,9 +243,9 @@ What the builder does with Cliopatria:
     - `CAP_SKIP` leaves out the Holy Roman Empire, whose statements are the seats of its courts and diet rather than a capital, and `CAP_DROP` drops single statements: Székesfehérvár for the Kingdom of Hungary, the coronation city, so Buda is its capital, Rabat for Morocco, the capital only from 1912, and Brades for Montserrat, the capital only from 1998;
     - `CAP_NAME` gives the city's own name where Wikidata's label is for a district, a heritage site, or a later spelling (Coop of Brussels, Historic City of Ayutthaya, Toledo city, Kolkata as Calcutta, Ahilyanagar as Ahmednagar). On the page, a capital also takes the names by date of the city at its place, as from 1886.
 
-    This gives a capital to 4,450 spans. A span's capitals are written in the same form as from 1886 (see [From 1886](#from-1886)): the capital of its last years, with the earlier ones as a list ending on 31 December of their last year.
-11. **Files:** the spans, 28,060 in all, are written as one TopoJSON per century, `data/dated/bc3400.json` to `1800.json`, 53 files, at the same two levels of detail as the snapshots. A span that crosses into the next century is in both files. Labels are computed per span, as for the snapshots, and spans with the same shape share one.
-12. **Changes:** every year a span starts, or the year after one ends, is a change: 605 years from 3400 BC to 1885, 327 of them before 1200.
+    This gives a capital to 4,496 spans. A span's capitals are written in the same form as from 1886 (see [From 1886](#from-1886)): the capital of its last years, with the earlier ones as a list ending on 31 December of their last year.
+11. **Files:** the spans, 26,329 in all, are written as one TopoJSON per century, `data/dated/bc3400.json` to `1800.json`, 53 files, at the same two levels of detail as the snapshots. A span that crosses into the next century is in both files. Labels are computed per span, as for the snapshots, and spans with the same shape share one.
+12. **Changes:** every year a span starts, or the year after one ends, is a change: 653 years from 3400 BC to 1885, 363 of them before 1200.
 
 A row in a file in `data/dated/` is `[id, ruler id, first year, last year, status, capital, label, people, part-of id, precision]`, where the capital is `null` or as in `modern.json` (see [From 1886](#from-1886)), with a name of `null` for years with no capital, and the status is 0 for a state, 1 for a colony, 2 for a protectorate, 4 for an occupied territory, and 5 for another dependency.
 
