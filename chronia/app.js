@@ -3766,7 +3766,9 @@
       var flags = wdPick(claims, "P41", at), langs = [];
       wdPick(claims, "P37", at, true).concat(langsUsed(claims, at)).forEach(function (v) { if (v.id && langs.indexOf(v.id) < 0) langs.push(v.id); });
       langs = langs.slice(0, 4);
-      return Promise.all([flags.length ? flagThumb(flags[0]) : null, wdLabels(langs)]).then(function (r) { return { flag: r[0], langs: r[1] }; });
+      // Each line stands on its own: a flag that can't be fetched doesn't take the languages with it.
+      var flag = flags.length ? flagThumb(flags[0]).catch(function () { return null; }) : null;
+      return Promise.all([flag, wdLabels(langs).catch(function () { return []; })]).then(function (r) { return { flag: r[0], langs: r[1] }; });
     });
   }
   // Only when Wikidata gives no official language for the whole state (the United States has none): the

@@ -96,6 +96,11 @@ const RENAME = [
   [-9999, 1200, "Rome (Diocletianus)", "Roman Empire"],
   [-9999, 1200, "Rome (Galerius)", "Roman Empire"],
   [-9999, 1200, "Rome", "Roman Republic"],
+  [450, 901, "Axum", "Aksum"],
+  [-9999, 700, "Makkura", "Makuria"],
+  [1815, 1816, "Nejd", "Najd"],
+  [-9999, 1200, "Thai", "Tai-Kadai peoples"],
+  [-9999, 1200, "Thai Kingdoms", "Tai-Kadai peoples"],
   [-9999, 1200, "Mauryan Empire", "Maurya Empire"],
   [-9999, 1200, "Parthia", "Parthian Empire"],
   [-9999, 1200, "Saba", "Sabaeans"],
@@ -204,10 +209,11 @@ const RULER_FIX = [
   ["Spanish Morocco", 1912, 1956, "Spain"],
   ["Niue", 1901, 1974, "New Zealand"]
 ];
-const PEOPLES = /^norte chico$|^el paraiso$|complex$|^point peninsula$|^oxus civilisation$|^celtiberians$|^arameans$|^norsemen$|^northmen$|^celts$|^illyrians$|^dacians$|^phrygians$|^scythians$|^sarmates$|^saces$|^tupis$|^mandes$|^bedouins$|^azandes$|^anasazi$|^mogollon$|^samoyèdes$|^permians$|^cushites$|^kushites$|^samis?$|^malagasy$|^vazimba$|^finns$|^balts$|^bashkirs$|^kryvichs$|^karelians$|^veps$|^mordvinians$|^innu$|^taino$|^ciboney$|^beja people$|^danes$|^peshemegs$|^karluks$|^khitans$|^bulgars$|^frisians$|hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$/i;
+const PEOPLES = /^norte chico$|^el paraiso$|complex$|^point peninsula$|^oxus civilisation$|^celtiberians$|^arameans$|^norsemen$|^northmen$|^celts$|^illyrians$|^dacians$|^phrygians$|^scythians$|^sarmates$|^saces$|^tupis$|^mandes$|^bedouins$|^azandes$|^anasazi$|^mogollon$|^samoyèdes$|^permians$|^cushites$|^kushites$|^samis?$|^malagasy$|^vazimba$|^finns$|^balts$|^bashkirs$|^kryvichs$|^karelians$|^veps$|^mordvinians$|^innu$|^taino$|^ciboney$|^beja people$|^danes$|^peshemegs$|^karluks$|^khitans$|^bulgars$|^frisians$|hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$|^paleo-inuit$|^beothuk$|^boethuk$|^arawaks$|^guanahatabeyes$|^mixtecs$|^veracruz civilization$|^porter$|^goodall focus$|^copena$|^wankarani$|^paracas$|^nazca$|^moche$|^chavin culture$|^mayas$|^mapuche$|^shuar$|^quechua$|^aymara$|^wari$|^abnaki$|^acaxea$|^algonquin$|^apache$|^apalachee$|^arapaho$|^arikara$|^assiniboin$|^atakapa$|^biloxi$|^blackfoot$|^cahitas$|^cahulia$|^calusa$|^caxcane$|^cayuse$|^chatot$|^cherokee$|^cheyenne$|^chickasaw$|^chiricahua$|^chisos$|^choctaw$|^chtimacha$|^chumash$|^coahuiltec$|^cochim[ií]$|^conoy$|^costanoan$|^cusabo$|^erie$|^eyaq$|^flathead$|^gros ventre$|^guachichiles$|^guachimis$|^guamar|^havasupai$|^hitchiti$|^hopi$|^hopie$|^houma$|^huron$|^irritilas$|^janabres$|^jicarilla$|^kalapuya$|^kalispel$|^kamia$|^kansa$|^karankawa$|^kawahsu$|^kijkitat$|^kiowa$|^knucati$|^kwakwaka|^lagunero$|^lipan$|^luiseno$|^mahican$|^maiou$|^mandan$|^maratines$|^massachusett$|^menomini$|^mescalero$|^mi.kma.ki$|^miwok$|^modoc$|^montagnais innu$|^muskogee$|^naniaho$|^naskapi innu$|^natchez$|^navaho$|^navajo$|^nez perce$|^ninticoy$|^northern paiute$|^obiwa$|^omaha$|^oto$|^otomies$|^papago$|^patwin$|^pawnee$|^pennacook$|^pewa$|^pima$|^pisones$|^pocumtuk$|^pomo$|^ponca$|^potawatomi$|^quapaw$|^sahtu$|^santee$|^saunan$|^serano$|^shawnee$|^shoshoni$|^southern paiute$|^spokane$|^suspiaq$|^susquehanna$|^t.atsaot.ine$|^tamalipueca$|^tancalba$|^tano$|^tecuexe$|^tenimo$|^tepehuane$|^teton$|^timucua$|^tlinoit$|^toboso$|^tonkawa$|^tunica$|^tutelo$|^umatilla$|^ute$|^walapai$|^wappynger$|^wichita$|^winebago$|^xecora$|^yakima$|^yankontai$|^yankton$|^yavapai$|^yokuts$|^yuchi$|^yuma$|^yup.ik & cup.ik$|^zacatecs$|^zuni$/i;
 const AUSTRALIA = [112, -45, 155, -9];
+const NATIVE_LAND_STATES = /^(inca empire|aztec triple alliance|purépecha empire|chimú empire|chimu empire|chimú|chimu|later mayan city-states|mayan city-states|mixtec empire|zapotec empire|haudenosaunee|iroquois|muisca|muisca confederation|itza mayans|michoacán|tenochtitlan|texcoco|tlaxcala|mexihcah \(triple alliance\)|p.urhépecha)$/i;
 const BANDS = /hunter|gatherer|forager|fisher|fichers/i;
-const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya"]);
+const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya", "Sokoto Caliphate", "Sultanate of Darfur", "Wadai Empire", "Emirate of Diriyah", "Emirate of Nejd", "Emirate of Jabal Shammar", "Xiongnu", "Xianbei", "Rouran Khaganate", "Göktürk Khaganate", "Eastern Göktürks", "Western Göktürks", "Second Turkic Khaganate", "Uyghur Khaganate", "White Huns", "Kidarites", "Xionites", "Oghuz Turks", "Qarlugs", "Wusun", "Yuezhi", "Southern Xiongnu", "Kara-Khitans", "Tibetan Empire", "Goguryeo", "Balhae", "Tarim Basin oasis states"]);
 const kindOf = (name) => (BANDS.test(name) ? 2 : 1);
 const WIKI = {
   "Han": "Han dynasty", "Han Empire": "Han dynasty", "Jin": "Jin dynasty (266–420)", "Sui Empire": "Sui dynasty",
@@ -425,6 +431,7 @@ for (const { f, y } of files) snapshots.push(readHb(f, y));
 
 const isPeople = (name, ruler, y, label) => {
   if (PEOPLES.test(name)) return true;
+  if (!ruler && y >= 1446 && y <= 1499 && label && label[0] > AMERICAS[0] && label[0] < AMERICAS[2] && label[1] > AMERICAS[1] && label[1] < AMERICAS[3] && !NATIVE_LAND_STATES.test(name)) return true;
   if (!ruler && label && y < 1900 && label[0] > AUSTRALIA[0] && label[0] < AUSTRALIA[2] && label[1] > AUSTRALIA[1] && label[1] < AUSTRALIA[3] && !/wales|australia|queensland|territory|victoria|tasmania/i.test(name)) return true;
   return false;
 };
@@ -623,7 +630,7 @@ const dissolveFeat = (ft) => {
   dissolveMemo.set(ft, out);
   return out;
 };
-const DISPUTE_KM2 = 10000, DISPUTE_SHARE = 0.1, NEST_SHARE = 0.8, OVERLAP_KM2 = 50;
+const DISPUTE_KM2 = 10000, DISPUTE_SHARE = 0.1, NEST_SHARE = 0.8, OVERLAP_KM2 = 50, NEAR_CELLS = 40;
 function resolveOverlaps(list, label) {
   const order = list.map((s, i) => i).sort((a, b) => list[a].box[0] - list[b].box[0]);
   const edits = [], disputes = [], count = { same: 0, people: 0, ruler: 0, nested: 0, vague: 0, sliver: 0, disputed: 0 };
@@ -639,12 +646,15 @@ function resolveOverlaps(list, label) {
         if (!A.cells) A.cells = cellsOf(A.polys);
         if (!B.cells) B.cells = cellsOf(B.polys);
         const [sm, bg] = A.cells.size <= B.cells.size ? [A, B] : [B, A];
-        let shared = false;
-        for (const i of sm.cells) if (bg.cells.has(i)) { shared = true; break; }
-        if (!shared) continue;
+        let shared = 0, near = false;
+        for (const i of sm.cells) if (bg.cells.has(i)) { if (++shared > 2) break; }
+        if (!shared && sm.cells.size <= NEAR_CELLS) for (const i of sm.cells) if (bg.cells.has(i - 1) || bg.cells.has(i + 1) || bg.cells.has(i - RG) || bg.cells.has(i + RG)) { near = true; break; }
+        if (!shared && !near) continue;
+        A.near = shared;
       }
       let inter = null;
       try { inter = clip.intersection(A.polys, B.polys); } catch (e) {}
+      if (inter && !inter.length && A.near > 2) { try { const again = clip.intersection(snapAt(A.polys, 1e6), snapAt(B.polys, 1e6)); if (again.length) { inter = again; count.retried = (count.retried || 0) + 1; } } catch (e) {} }
       if (!inter) {
         const aA0 = areaOf(A), aB0 = areaOf(B), first = Math.max(A.first, B.first), last = Math.min(A.last, B.last);
         const lose = A.name === B.name ? (aA0 <= aB0 ? A : B) : A.people !== B.people ? (A.people ? A : B) : aA0 >= aB0 ? A : B;
@@ -872,7 +882,7 @@ const WELLINGTON = [174.78, -41.29], BUENOS_AIRES = [-58.38, -34.6], WASHINGTON 
 const LONDON = [-0.12, 51.5], LISBON = [-9.14, 38.72], COPENHAGEN = [12.57, 55.68], BERGEN = [5.32, 60.39], OSLO = [10.75, 59.91];
 const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARIS = [2.35, 48.86], ISTANBUL = [28.98, 41.01];
 const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
-const HB_STALE = { "Avar Khaganate": 805, "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
+const HB_STALE = { "Sui Empire": 618, "Tang Empire": 907, "Nanyue": -111, "Minyue": -111, "Maurya Empire": -232, "Koguryo": 668, "Huari Empire": 1000, "Tiahuanaco Empire": 1100, "Seleucid Kingdom": -141, "Sasanian Empire": 651, "Sasanian dependencies": 628, "Kingdom of Lysimachus": -281, "Khazaria": 979, "Armenia": 1064, "Avar Khaganate": 805, "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
 const REGIMES = {
   france: { from: 1200, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
   britain: { from: 1200, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
@@ -900,7 +910,30 @@ const NAME_FIX = [
   ["Greek Dark Ages", "Dark Age Greece", -1100, -801, { people: 1, wiki: "Greek Dark Ages" }],
   ["Thrace", "Thracians", -1750, -551, { people: 1, wiki: "Thracians" }],
   ["Macedonian Empire", "Kingdom of Macedonia", -700, -337, { wiki: "Macedonia (ancient kingdom)" }],
-  ["Macedonian Empire", "Kingdom of Macedonia", -318, -277, { wiki: "Macedonia (ancient kingdom)" }],
+  ["Macedonian Empire", "Kingdom of Macedonia", -318, -277, { box: [15, 36, 30, 46], wiki: "Macedonia (ancient kingdom)" }],
+  ["Ptolemaic Kingdom", "Macedonian Empire", -331, -324],
+  ["New Kingdom of Egypt", "Twenty-first Dynasty of Egypt", -1069, -946, { wiki: "Twenty-first Dynasty of Egypt" }],
+  ["New Kingdom of Egypt", "Twenty-second Dynasty of Egypt", -945, -801, { wiki: "Twenty-second Dynasty of Egypt" }],
+  ["Early Dynastic Period of Egypt", "Old Kingdom of Egypt", -2686, -2501, { wiki: "Old Kingdom of Egypt" }],
+  ["Twenty-sixth Dynasty of Egypt", "Achaemenid Empire", -525, -501, { ruler: "" }],
+  ["Hyksos", "", -1549, -1401, { drop: 1 }],
+  ["Achaemenid Empire", "", -600, -551, { drop: 1 }],
+  ["Neo-Babylonian Empire", "Achaemenid Empire", -538, -531],
+  ["Lydia", "Achaemenid Empire", -545, -541],
+  ["Hittites", "", -1179, -601, { drop: 1 }],
+  ["Nicaean Empire", "Byzantine Empire", 1262, 1278],
+  ["Almohad Caliphate", "Marinid Sultanate", 1269, 1343, { wiki: "Marinid Sultanate" }],
+  ["Gallic Empire", "Roman Empire", 275, 282],
+  ["Idrisids", "", 750, 792, { drop: 1 }],
+  ["Aghlabid Emirate", "", 750, 799, { drop: 1 }],
+  ["Sasanian Empire", "", 652, 1199, { drop: 1 }],
+  ["Principality of Wallachia", "Principality of Wallachia", 1462, 1858, { ruler: "Ottoman Empire" }],
+  ["Principality of Moldavia", "Principality of Moldavia", 1538, 1858, { ruler: "Ottoman Empire" }],
+  ["Principality of Transylvania", "Principality of Transylvania", 1572, 1687, { ruler: "Ottoman Empire" }],
+  ["Eastern Hungarian Kingdom", "Eastern Hungarian Kingdom", 1541, 1570, { ruler: "Ottoman Empire" }],
+  ["Crimean Khanate", "Crimean Khanate", 1478, 1773, { ruler: "Ottoman Empire" }],
+  ["Akkadian Empire", "Gutians", -2153, -2112, { people: 1, wiki: "Gutian people" }],
+  ["Gutian dynasty", "Gutians", -2111, -2001, { people: 1, wiki: "Gutian people" }],
   ["Han", "State of Han", -404, -230, { wiki: "Han (state)" }],
   ["Han", "Han", -208, -203, { wiki: "Han dynasty" }],
   ["Great Yuan", "Dayuan", -110, 50, { wiki: "Dayuan" }],
@@ -1029,7 +1062,7 @@ const NAME_FIX = [
   ["Chámpa", "Champa", 1200, 1399],
   ["Nepal", "Nepal Mandala", 1200, 1399, { wiki: "Malla dynasty (Nepal)" }],
   ["Chimu Empire", "Chimú Empire", 1200, 1399],
-  ["Maori", "Māori", 1200, 1399],
+  ["Maori", "Māori", 1200, 1399, { people: 1, wiki: "Māori people" }],
   ["Merina Kingdom", "Malagasy", 1200, 1539, { people: 1, wiki: "Malagasy people" }],
   ["Madagascar", "Malagasy", 1200, 1539, { people: 1, wiki: "Malagasy people" }],
   ["Malays", "Malays", 1200, 1399, { people: 1, wiki: "Malays (ethnic group)" }],
@@ -1083,6 +1116,7 @@ const NAME_FIX = [
   ["Sultinate of Zanzibar", "Sultanate of Zanzibar", 1856, 1885, { ruler: "" }],
   ["Omani Slave Coast", "Zanzibar", 1400, 1855, { ruler: "Sultanate of Oman" }],
   ["Omani Slave Coast", "Sultanate of Zanzibar", 1856, 1885, { ruler: "" }],
+  ["Zanzibar", "Swahili city-states", 1742, 1805, { ruler: "", wiki: "Swahili Coast" }],
   ["Zanzibar", "Zanzibar", 1698, 1855, { ruler: "Sultanate of Oman", wiki: "Omani Empire" }],
   ["Zanzibar", "Sultanate of Zanzibar", 1856, 1885, { ruler: "" }],
   ["Tukular Caliphate", "Toucouleur Empire", 1400, 1885],
@@ -1099,6 +1133,7 @@ const NAME_FIX = [
   ["Awsa", "Imamate of Aussa", 1400, 1733],
   ["Awsa", "Sultanate of Aussa", 1734, 1885],
   ["Great Khanate", "Jurchens", 1400, 1462, { box: [115, 38, 150, 62], people: 1, ruler: "", part: "", wiki: "Jurchen people" }],
+  ["Great Khanate", "Northern Yuan", 1400, 1462, { wiki: "Northern Yuan" }],
   ["Mongol Khanate", "Northern Yuan", 1400, 1635],
   ["Golden Horde", "Great Horde", 1466, 1502, { box: [30, 40, 85, 62] }],
   ["Golden Horde", "Astrakhan Khanate", 1503, 1556, { box: [30, 40, 85, 62] }],
@@ -1141,8 +1176,39 @@ const NAME_FIX = [
   ["Sultanate of Malacca", "Portuguese Malacca", 1511, 1640, { ruler: "@portugal" }],
   ["Sultanate of Malacca", "Dutch Malacca", 1641, 1824, { ruler: "@netherlands" }],
   ["Sultanate of Malacca", "Straits Settlements", 1825, 1885, { ruler: "@britain" }],
-  ["Inca Empire", "Neo-Inca State", 1534, 1572],
+  ["Inca Empire", "Governorate of New Castile", 1534, 1539, { ruler: "@spain", wiki: "Governorate of New Castile" }],
+  ["Inca Empire", "Neo-Inca State", 1540, 1572],
+  ["Canada", "British North America", 1808, 1866, { ruler: "@britain", wiki: "British North America" }],
+  ["Rupert's Land", "Rupert's Land", 1749, 1808, { ruler: "@britain" }],
+  ["Greenland", "Danish Greenland", 1721, 1885, { ruler: "@denmark", wiki: "Colonial Greenland" }],
+  ["New Granada", "Gran Colombia", 1820, 1821, { wiki: "Gran Colombia" }],
+  ["United Provinces of Central America", "Federal Republic of Central America", 1824, 1839, { wiki: "Federal Republic of Central America" }],
+  ["Olmec Civilization", "", -1750, -1201, { drop: 1 }],
+  ["Olmec Civilization", "Olmec culture", -1200, -351, { people: 1, wiki: "Olmec" }],
+  ["Classic Veracruz Culture", "Classic Veracruz Culture", 555, 1199, { people: 1 }],
+  ["Puebloans - Chaco Regional System", "Ancestral Puebloans", 850, 1199, { people: 1, wiki: "Ancestral Puebloans" }],
+  ["Puebloans - Aztec Regional System", "Ancestral Puebloans", 1152, 1199, { people: 1, wiki: "Ancestral Puebloans" }],
+  ["Mixtec Empire", "Mixtec city-states", 1400, 1525, { wiki: "Mixtec people" }],
+  ["Zapotec Empire", "Zapotec city-states", 1400, 1445, { wiki: "Zapotec peoples" }],
+  ["Huari Empire", "Wari Empire", 550, 1199, { wiki: "Wari Empire" }],
+  ["Tiahuanaco Empire", "Tiwanaku Empire", 550, 1199, { wiki: "Tiwanaku Empire" }],
+  ["Comanche", "", 1500, 1699, { drop: 1 }],
+  ["Viceroyalty of New Spain", "", 1515, 1525, { drop: 1 }],
+  ["Viceroyalty of New Spain", "Spanish Empire", 1526, 1533, { ruler: "@spain", part: "", wiki: "Spanish Empire" }],
+  ["Republic of Peru", "Viceroyalty of Peru", 1762, 1821, { ruler: "@spain", wiki: "Viceroyalty of Peru" }],
+  ["Río de la Plata", "Viceroyalty of Peru", 1752, 1775, { ruler: "@spain", wiki: "Viceroyalty of Peru" }],
+  ["Río de la Plata", "Viceroyalty of the Río de la Plata", 1776, 1810, { ruler: "@spain", wiki: "Viceroyalty of the Río de la Plata" }],
+  ["Río de la Plata", "United Provinces of the Río de la Plata", 1811, 1833, { wiki: "United Provinces of the Río de la Plata" }],
+  ["New Granada", "Viceroyalty of New Granada", 1752, 1810, { ruler: "@spain", wiki: "Viceroyalty of New Granada" }],
+  ["Jesuit Reducciones", "Jesuit Reductions", 1595, 1768, { ruler: "@spain", wiki: "Jesuit Reductions" }],
+  ["Tuʻi Tonga Empire", "", 450, 949, { drop: 1 }],
+  ["Tuʻi Tonga Empire", "Tongan and Fijian chiefdoms", 1500, 1846, { people: 1, wiki: "History of Tonga" }],
+  ["Fiji", "Fijian chiefdoms", 1847, 1870, { people: 1, ruler: "", wiki: "History of Fiji" }],
+  ["Kingdom of Fiji", "Colony of Fiji", 1874, 1885, { ruler: "@britain", wiki: "Colony of Fiji" }],
+  ["Tonga", "Kingdom of Tonga", 1847, 1885, { wiki: "Tonga" }],
   ["Inca Empire", "Spanish Empire", 1573, 1885, { ruler: "@spain" }],
+  ["Songhai", "", 1592, 1624, { drop: 1 }],
+  ["Songhai Empire", "", 1592, 1608, { drop: 1 }],
   ["Songhai Empire", "Dendi Kingdom", 1592, 1885],
   ["Songhai", "Dendi Kingdom", 1592, 1885],
   ["Regency of Algiers", "Emirate of Abdelkader", 1831, 1847],
@@ -1189,6 +1255,64 @@ const NAME_FIX = [
   ["Afghanistan", "Durrani Empire", 1747, 1822],
   ["Afghanistan", "Emirate of Afghanistan", 1823, 1885],
   ["Emirate of Afghanistan", "Durrani Empire", 1747, 1822],
+  ["Xia", "", -2500, -2071, { drop: 1 }],
+  ["Shang dynasty", "", -1045, -1001, { drop: 1 }],
+  ["Han Empire", "", -230, -203, { drop: 1 }],
+  ["Kushan Empire", "", -144, 42, { drop: 1 }],
+  ["Cao Cao", "Cao Wei", 220, 223, { wiki: "Cao Wei" }],
+  ["Han dynasty", "Shu Han", 221, 223, { wiki: "Shu Han" }],
+  ["Gupta Empire", "", 250, 319, { drop: 1 }],
+  ["Western Jin", "Eastern Jin", 317, 420, { wiki: "Eastern Jin" }],
+  ["Western Jin", "Liu Song dynasty", 421, 425, { wiki: "Liu Song dynasty" }],
+  ["Sui Empire", "", 550, 580, { drop: 1 }],
+  ["Pala Empire", "", 650, 749, { drop: 1 }],
+  ["Protectorate of the Western Regions", "Tarim Basin oasis states", 317, 601, { wiki: "Western Regions" }],
+  ["Göktürks", "Second Turkic Khaganate", 682, 691, { wiki: "Second Turkic Khaganate" }],
+  ["Türgesh", "Second Turkic Khaganate", 692, 744, { wiki: "Second Turkic Khaganate" }],
+  ["Tibetans", "Tibetans", 850, 1199, { people: 1 }],
+  ["Nan Chao", "", 903, 936, { drop: 1 }],
+  ["Nan Chao", "Kingdom of Dali", 937, 946, { wiki: "Dali Kingdom" }],
+  ["Song Empire", "", 950, 959, { drop: 1 }],
+  ["Ngô dynasty", "Đinh dynasty", 968, 979, { wiki: "Đinh dynasty" }],
+  ["Ngô dynasty", "Early Lê dynasty", 980, 1008, { wiki: "Early Lê dynasty" }],
+  ["Ngô dynasty", "Lý dynasty", 1009, 1199, { wiki: "Lý dynasty" }],
+  ["Kingdom of Sukhotai", "", 1050, 1237, { drop: 1 }],
+  ["Northern Song", "Southern Song", 1127, 1138, { wiki: "Southern Song" }],
+  ["Mongol Empire", "Mongols", 1150, 1199, { people: 1, wiki: "Mongols" }],
+  ["Xiongnu", "Xiongnu", -450, -210, { people: 1 }],
+  ["Taiwan", "Taiwan", 1847, 1885, { ruler: "Qing dynasty", wiki: "Taiwan under Qing rule" }],
+  ["Talpur dynasty", "", 1840, 1895, { drop: 1, box: [70, 33, 78, 38] }],
+  ["Talpur dynasty", "", 1844, 1895, { drop: 1 }],
+  ["Nejd", "", 1744, 1823, { drop: 1 }],
+  ["Najd", "", 1808, 1885, { drop: 1 }],
+  ["Arabia", "", 1847, 1885, { drop: 1 }],
+  ["British Colonial Empire", "", 1870, 1885, { drop: 1, box: [43, 11.5, 55, 20] }],
+  ["Ottoman Empire", "", 1794, 1853, { drop: 1, box: [49, 23, 52, 25] }],
+  ["Sultanate of Oman", "Yarubid dynasty", 1650, 1743, { wiki: "Yarubid dynasty" }],
+  ["Ghana Empire", "", 1, 792, { drop: 1 }],
+  ["Kingdom of Kush", "", 347, 1199, { drop: 1 }],
+  ["Aksum", "", 450, 949, { drop: 1 }],
+  ["Kingdom of Axum", "Kingdom of Aksum", -50, 946, { wiki: "Kingdom of Aksum" }],
+  ["Himyarite Kingdom", "Sasanian Yemen", 575, 601, { ruler: "Sasanian Empire", wiki: "Sasanian Yemen" }],
+  ["Hejaz", "Tribes of the Hejaz", 550, 632, { people: 1, wiki: "Hejaz" }],
+  ["Hejaz", "", 633, 749, { drop: 1 }],
+  ["Great Zimbabwe", "Zimbabwe culture", 950, 1199, { people: 1, wiki: "Zimbabwe culture" }],
+  ["Islamic city-states", "Swahili city-states", 950, 1649, { wiki: "Swahili Coast" }],
+  ["Algiers", "", 1831, 1869, { drop: 1 }],
+  ["Madagascar", "Malagasy", 1540, 1885, { people: 1, wiki: "Malagasy people" }],
+  ["Somalia", "Somalis", 1500, 1885, { people: 1, wiki: "Somali people" }],
+  ["Lozi", "Kuba Kingdom", 1749, 1807, { box: [17, -8, 23, -2], wiki: "Kuba Kingdom" }],
+  ["Lozi", "Kololo Kingdom", 1838, 1863, { wiki: "Makololo" }],
+  ["Sotho", "", 1700, 1885, { drop: 1, box: [0, 3, 10, 10] }],
+  ["Africa", "", 1700, 1885, { drop: 1, box: [0, 3, 10, 10] }],
+  ["Kingdom of Lunda", "Kingdom of Kongo", 1709, 1885, { wiki: "Kingdom of Kongo" }],
+  ["Congo", "Kingdom of Kongo", 1670, 1885, { ruler: "", box: [10, -10, 18, -3], wiki: "Kingdom of Kongo" }],
+  ["Toucouleur Empire", "Bamana Empire", 1847, 1860, { wiki: "Bamana Empire" }],
+  ["Yeke", "", 1847, 1855, { drop: 1 }],
+  ["Mirambo Unyanyembe Ukimbu", "", 1847, 1859, { drop: 1 }],
+  ["Dutch settlements", "Dutch Cape Colony", 1749, 1795, { ruler: "@netherlands" }],
+  ["Zulu", "Zulu Kingdom", 1816, 1879, { people: 0, wiki: "Zulu Kingdom" }],
+  ["Zululand", "Zulu Kingdom", 1816, 1879, { wiki: "Zulu Kingdom" }],
   ["Nejd", "Emirate of Diriyah", 1744, 1818],
   ["Nejd", "Emirate of Nejd", 1824, 1885],
   ["Netherlands Indies", "Dutch East Indies", 1400, 1885],
@@ -1199,6 +1323,7 @@ const NAME_FIX = [
   ["Sikhs", "Sikh Empire", 1799, 1849],
   ["Spanish Empire", "Philippines", 1565, 1885, { box: [115, 0, 130, 22], ruler: "@spain", wiki: "Captaincy General of the Philippines" }],
   ["Kingdom of Spain", "Philippines", 1565, 1885, { box: [115, 0, 130, 22], ruler: "@spain", wiki: "Captaincy General of the Philippines" }],
+  ["Kingdom of Spain", "", 1519, 1520, { box: [-92, 10, -62, 17], drop: 1 }],
   ["Kingdom of Spain", "Spanish Empire", 1516, 1885, { box: AMERICAS, ruler: "@spain" }],
   ["Portuguese Empire", "Colonial Brazil", 1500, 1815, { box: [-75, -35, -30, 6], ruler: "@portugal" }],
   ["Portuguese Empire", "Kingdom of Brazil", 1816, 1821, { box: [-75, -35, -30, 6], ruler: "" }],
@@ -1298,9 +1423,12 @@ const NAME_FIX = [
   ["Electorate of Baden", "Margraviate of Baden", 1400, 1802],
   ["Republic of Florence", "Duchy of Florence", 1532, 1568],
   ["Republic of Florence", "Grand Duchy of Tuscany", 1569, 1885],
-  ["Maori", "Māori", 1400, 1885],
-  ["Maoris", "Māori", 1400, 1885],
-  ["M?ori", "Māori", 1400, 1885],
+  ["Maori", "Māori", 1400, 1840, { people: 1, wiki: "Māori people" }],
+  ["Maori", "New Zealand", 1841, 1885, { ruler: "@britain", people: 0, wiki: "Colony of New Zealand" }],
+  ["Maoris", "Māori", 1400, 1840, { people: 1, wiki: "Māori people" }],
+  ["Maoris", "New Zealand", 1841, 1885, { ruler: "@britain", people: 0, wiki: "Colony of New Zealand" }],
+  ["M?ori", "Māori", 1400, 1840, { people: 1, wiki: "Māori people" }],
+  ["M?ori", "New Zealand", 1841, 1885, { ruler: "@britain", people: 0, wiki: "Colony of New Zealand" }],
   ["minor Hindu and Buddhist kingdoms", "Minor Hindu and Buddhist kingdoms", 1400, 1885],
   ["central Asian khanates", "Central Asian khanates", 1400, 1885]
 ];
@@ -2517,7 +2645,14 @@ const csRedraw = (rows) => {
     const whole = clip.union(polysOf(a[0].geometry), polysOf(b[0].geometry));
     const land = pick(rd.aUnits), other = pick(rd.bUnits);
     const reach = turfBuffer({ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: land } }, rd.reachKm, { units: "kilometers", steps: 6 }).geometry;
-    const side = clip.union(land, clip.difference(polysOf(reach), other));
+    const pts = (polys) => polys.flatMap((poly) => poly[0]);
+    const aPts = pts(land), bPts = pts(other);
+    const nearest = (c, list) => { let m = Infinity; const k = Math.cos((c[1] * Math.PI) / 180); for (const q of list) { const dx = (q[0] - c[0]) * k, dy = q[1] - c[1], d = dx * dx + dy * dy; if (d < m) m = d; } return m; };
+    const rest = clip.difference(clip.intersection(whole, polysOf(reach)), land, other).filter((q) => {
+      const ring = q[0], c = [ring.reduce((t, v) => t + v[0], 0) / ring.length, ring.reduce((t, v) => t + v[1], 0) / ring.length];
+      return nearest(c, aPts) < nearest(c, bPts);
+    });
+    const side = rest.length ? clip.union(land, rest) : land;
     const aPolys = rewind(clip.intersection(whole, side)).filter((q) => polyKm2(q) >= 1), bPolys = rewind(clip.difference(whole, side)).filter((q) => polyKm2(q) >= 1);
     console.log("CS_REDRAW " + rd.a + " and " + rd.b + ": " + Math.round(km2Of(rewind(polysOf(a[0].geometry)))) + " and " + Math.round(km2Of(rewind(polysOf(b[0].geometry)))) + " km² become " + Math.round(km2Of(aPolys)) + " and " + Math.round(km2Of(bPolys)));
     a.forEach((r) => { r.geometry = { type: "MultiPolygon", coordinates: aPolys }; });
