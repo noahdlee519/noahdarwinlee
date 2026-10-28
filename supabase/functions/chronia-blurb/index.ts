@@ -301,8 +301,6 @@ async function writeClaude(ask: Ask, key: string): Promise<Made> {
   const out = await post(CLAUDE_API, { "x-api-key": key, "anthropic-version": "2023-06-01" }, {
     model: CLAUDE_MODEL,
     max_tokens: MAX_TOKENS,
-    thinking: { type: "between_tools" },
-    output_config: { effort: "low" },
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: userText(ask) }],
   }, CLAUDE_DEADLINE, "anthropic");
@@ -398,7 +396,8 @@ async function generate(req: Request, ask: Ask, key: string, keys: Keys, o: stri
     console.error(e);
     const status = e instanceof Upstream ? e.status : 0;
     if (status !== 200) await giveBack();
-    return json(502, { error: "upstream", status }, o);
+    const detail = String((e as any)?.message || "").replace(/sk-[A-Za-z0-9_-]+/g, "[key]").slice(0, 240);
+    return json(502, { error: "upstream", status, detail }, o);
   }
   if (!made.text) return json(502, { error: "empty" }, o);
   let kept = made.text;
