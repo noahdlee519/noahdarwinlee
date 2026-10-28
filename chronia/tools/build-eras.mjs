@@ -210,10 +210,11 @@ const RULER_FIX = [
   ["Niue", 1901, 1974, "New Zealand"]
 ];
 const PEOPLES = /^norte chico$|^el paraiso$|complex$|^point peninsula$|^oxus civilisation$|^celtiberians$|^arameans$|^norsemen$|^northmen$|^celts$|^illyrians$|^dacians$|^phrygians$|^scythians$|^sarmates$|^saces$|^tupis$|^mandes$|^bedouins$|^azandes$|^anasazi$|^mogollon$|^samoyèdes$|^permians$|^cushites$|^kushites$|^samis?$|^malagasy$|^vazimba$|^finns$|^balts$|^bashkirs$|^kryvichs$|^karelians$|^veps$|^mordvinians$|^innu$|^taino$|^ciboney$|^beja people$|^danes$|^peshemegs$|^karluks$|^khitans$|^bulgars$|^frisians$|hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$|^paleo-inuit$|^beothuk$|^boethuk$|^arawaks$|^guanahatabeyes$|^mixtecs$|^veracruz civilization$|^porter$|^goodall focus$|^copena$|^wankarani$|^paracas$|^nazca$|^moche$|^chavin culture$|^mayas$|^mapuche$|^shuar$|^quechua$|^aymara$|^wari$|^abnaki$|^acaxea$|^algonquin$|^apache$|^apalachee$|^arapaho$|^arikara$|^assiniboin$|^atakapa$|^biloxi$|^blackfoot$|^cahitas$|^cahulia$|^calusa$|^caxcane$|^cayuse$|^chatot$|^cherokee$|^cheyenne$|^chickasaw$|^chiricahua$|^chisos$|^choctaw$|^chtimacha$|^chumash$|^coahuiltec$|^cochim[ií]$|^conoy$|^costanoan$|^cusabo$|^erie$|^eyaq$|^flathead$|^gros ventre$|^guachichiles$|^guachimis$|^guamar|^havasupai$|^hitchiti$|^hopi$|^hopie$|^houma$|^huron$|^irritilas$|^janabres$|^jicarilla$|^kalapuya$|^kalispel$|^kamia$|^kansa$|^karankawa$|^kawahsu$|^kijkitat$|^kiowa$|^knucati$|^kwakwaka|^lagunero$|^lipan$|^luiseno$|^mahican$|^maiou$|^mandan$|^maratines$|^massachusett$|^menomini$|^mescalero$|^mi.kma.ki$|^miwok$|^modoc$|^montagnais innu$|^muskogee$|^naniaho$|^naskapi innu$|^natchez$|^navaho$|^navajo$|^nez perce$|^ninticoy$|^northern paiute$|^obiwa$|^omaha$|^oto$|^otomies$|^papago$|^patwin$|^pawnee$|^pennacook$|^pewa$|^pima$|^pisones$|^pocumtuk$|^pomo$|^ponca$|^potawatomi$|^quapaw$|^sahtu$|^santee$|^saunan$|^serano$|^shawnee$|^shoshoni$|^southern paiute$|^spokane$|^suspiaq$|^susquehanna$|^t.atsaot.ine$|^tamalipueca$|^tancalba$|^tano$|^tecuexe$|^tenimo$|^tepehuane$|^teton$|^timucua$|^tlinoit$|^toboso$|^tonkawa$|^tunica$|^tutelo$|^umatilla$|^ute$|^walapai$|^wappynger$|^wichita$|^winebago$|^xecora$|^yakima$|^yankontai$|^yankton$|^yavapai$|^yokuts$|^yuchi$|^yuma$|^yup.ik & cup.ik$|^zacatecs$|^zuni$/i;
-const AUSTRALIA = [112, -45, 155, -9];
+const AUSTRALIA = [112, -45, 155, -9], HISPANIOLA_W = [-75, 17.5, -71.6, 20.2], NORTH_AMERICA = [-170, 24, -50, 75];
+const NA_STATES = /^(iroquois|haudenosaunee|comanche|south carolina|louisiana|luisiana|acadian peninsula.*|rupert's land|bahamas|united states.*|canada|russian empire|confederate states.*|republic of texas|texas|vermont.*|mexico.*|new france|quebec|florida.*|nova scotia|newfoundland.*|british.*|spanish.*|french.*|new spain|cuba.*|virginia|massachusetts.*|new netherland|new sweden)$/i;
 const NATIVE_LAND_STATES = /^(inca empire|aztec triple alliance|purépecha empire|chimú empire|chimu empire|chimú|chimu|later mayan city-states|mayan city-states|mixtec empire|zapotec empire|haudenosaunee|iroquois|muisca|muisca confederation|itza mayans|michoacán|tenochtitlan|texcoco|tlaxcala|mexihcah \(triple alliance\)|p.urhépecha)$/i;
 const BANDS = /hunter|gatherer|forager|fisher|fichers/i;
-const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya", "Sokoto Caliphate", "Sultanate of Darfur", "Wadai Empire", "Emirate of Diriyah", "Emirate of Nejd", "Emirate of Jabal Shammar", "Xiongnu", "Xianbei", "Rouran Khaganate", "Göktürk Khaganate", "Eastern Göktürks", "Western Göktürks", "Second Turkic Khaganate", "Uyghur Khaganate", "White Huns", "Kidarites", "Xionites", "Oghuz Turks", "Qarlugs", "Wusun", "Yuezhi", "Southern Xiongnu", "Kara-Khitans", "Tibetan Empire", "Goguryeo", "Balhae", "Tarim Basin oasis states"]);
+const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya", "Rupert's Land", "Louisiana", "Spanish Louisiana", "Sokoto Caliphate", "Sultanate of Darfur", "Wadai Empire", "Emirate of Diriyah", "Emirate of Nejd", "Emirate of Jabal Shammar", "Xiongnu", "Xianbei", "Rouran Khaganate", "Göktürk Khaganate", "Eastern Göktürks", "Western Göktürks", "Second Turkic Khaganate", "Uyghur Khaganate", "White Huns", "Kidarites", "Xionites", "Oghuz Turks", "Qarlugs", "Wusun", "Yuezhi", "Southern Xiongnu", "Kara-Khitans", "Tibetan Empire", "Goguryeo", "Balhae", "Tarim Basin oasis states"]);
 const kindOf = (name) => (BANDS.test(name) ? 2 : 1);
 const WIKI = {
   "Han": "Han dynasty", "Han Empire": "Han dynasty", "Jin": "Jin dynasty (266–420)", "Sui Empire": "Sui dynasty",
@@ -431,6 +432,7 @@ for (const { f, y } of files) snapshots.push(readHb(f, y));
 
 const isPeople = (name, ruler, y, label) => {
   if (PEOPLES.test(name)) return true;
+  if (!ruler && y >= 1500 && y <= 1885 && label && label[0] > NORTH_AMERICA[0] && label[0] < NORTH_AMERICA[2] && label[1] > NORTH_AMERICA[1] && label[1] < NORTH_AMERICA[3] && !NA_STATES.test(name)) return true;
   if (!ruler && y >= 1446 && y <= 1499 && label && label[0] > AMERICAS[0] && label[0] < AMERICAS[2] && label[1] > AMERICAS[1] && label[1] < AMERICAS[3] && !NATIVE_LAND_STATES.test(name)) return true;
   if (!ruler && label && y < 1900 && label[0] > AUSTRALIA[0] && label[0] < AUSTRALIA[2] && label[1] > AUSTRALIA[1] && label[1] < AUSTRALIA[3] && !/wales|australia|queensland|territory|victoria|tasmania/i.test(name)) return true;
   return false;
@@ -666,8 +668,12 @@ const overlapsItself = (polys) => {
   for (let a = 0; a < polys.length; a++) for (let b = a + 1; b < polys.length; b++) {
     const A = boxes[a], B = boxes[b];
     if (A[2] <= B[0] || B[2] <= A[0] || A[3] <= B[1] || B[3] <= A[1]) continue;
+    // Only the box both pieces share can hold their overlap, so each is cut to it first: a mainland's box takes in hundreds of islands.
+    const box = [Math.max(A[0], B[0]), Math.max(A[1], B[1]), Math.min(A[2], B[2]), Math.min(A[3], B[3])];
+    const pa = clipRect([polys[a]], box), pb = clipRect([polys[b]], box);
+    if (!pa.length || !pb.length) continue;
     let inter;
-    try { inter = clip.intersection([polys[a]], [polys[b]]); } catch (e) { return true; }
+    try { inter = clip.intersection(pa, pb); } catch (e) { return true; }
     if (inter.some((p) => polyKm2(p) > 1)) return true;
   }
   return false;
@@ -1402,18 +1408,24 @@ const NAME_FIX = [
   ["British Colonial Empire", "British America", 1607, 1783, { box: [-100, 24, -50, 75], ruler: "@britain" }],
   ["British Colonial Empire", "British North America", 1784, 1885, { box: [-140, 40, -50, 75], ruler: "@britain" }],
   ["British Colonial Empire", "Australian colonies", 1788, 1885, { box: [110, -45, 155, -9], ruler: "@britain" }],
-  ["Louisiana", "Spanish Louisiana", 1763, 1800, { ruler: "@spain" }],
+  ["Louisiana", "Spanish Louisiana", 1763, 1803, { ruler: "@spain" }],
   ["Louisiana", "Louisiana", 1682, 1762, { ruler: "@france", wiki: "Louisiana (New France)" }],
   ["Sind", "Sindh", 1400, 1885],
   ["Acadian Peninsula (UK)", "Nova Scotia", 1713, 1885, { ruler: "@britain" }],
   ["Luisiana", "Louisiana", 1682, 1762, { ruler: "@france", wiki: "Louisiana (New France)" }],
-  ["Luisiana", "Spanish Louisiana", 1763, 1800, { ruler: "@spain" }],
-  ["Luisiana", "Louisiana", 1801, 1803, { ruler: "@france", wiki: "Louisiana (New France)" }],
+  ["Luisiana", "Spanish Louisiana", 1763, 1803, { ruler: "@spain" }],
   ["Luisiana", "Louisiana Territory", 1804, 1885, { ruler: "United States" }],
-  ["Quebec", "New France", 1534, 1763, { ruler: "@france" }],
-  ["Quebec", "Province of Quebec", 1764, 1790, { ruler: "@britain", wiki: "Province of Quebec (1763–1791)" }],
+  ["Quebec", "New France", 1534, 1762, { ruler: "@france" }],
+  ["Quebec", "Spanish Louisiana", 1763, 1803, { box: [-95, 28, -89.5, 31.5], ruler: "@spain", wiki: "Louisiana (New Spain)" }],
+  ["Quebec", "Province of Quebec", 1763, 1790, { ruler: "@britain", wiki: "Province of Quebec (1763–1791)" }],
   ["Quebec", "Lower Canada", 1791, 1840, { ruler: "@britain" }],
-  ["New France", "Province of Quebec", 1764, 1790, { ruler: "@britain", wiki: "Province of Quebec (1763–1791)" }],
+  ["New France", "Saint-Domingue", 1659, 1803, { box: HISPANIOLA_W, ruler: "@france", wiki: "Saint-Domingue" }],
+  ["New France", "Spanish Louisiana", 1763, 1803, { box: [-95, 28, -89.5, 31.5], ruler: "@spain", wiki: "Louisiana (New Spain)" }],
+  ["New France", "Province of Quebec", 1763, 1790, { ruler: "@britain", wiki: "Province of Quebec (1763–1791)" }],
+  ["Province of Quebec", "Saint-Domingue", 1659, 1803, { box: HISPANIOLA_W, ruler: "@france", wiki: "Saint-Domingue" }],
+  ["French Louisiana", "Saint-Domingue", 1659, 1803, { box: HISPANIOLA_W, ruler: "@france", wiki: "Saint-Domingue" }],
+  ["French Louisiana", "Empire of Haiti", 1804, 1806, { box: HISPANIOLA_W, ruler: "", wiki: "First Empire of Haiti" }],
+  ["French Louisiana", "Spanish Louisiana", 1763, 1803, { box: [-100, 25, -85, 40], ruler: "@spain", wiki: "Louisiana (New Spain)" }],
   ["Florida (Spain)", "Spanish Florida", 1513, 1821, { ruler: "@spain" }],
   ["Florida", "Spanish Florida", 1513, 1762, { ruler: "@spain" }],
   ["Guyana (Netherlands)", "Dutch Guiana", 1400, 1885, { ruler: "@netherlands" }],
@@ -1996,7 +2008,194 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
-dated = fillSmallGaps(resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO));
+const AHCB_FROM = 1784, AHCB_TO = 1885, AHCB_DAY = "-07-01";
+const NA_KEEP = new Set(["Confederate States of America"]);
+const NA_DISPUTES = [
+  { unit: "Oregon Country", first: 1819, last: 1845, name: "Oregon Country", claims: ["United States", "United Kingdom"] },
+  { unit: "Texas Republic", first: 1836, last: 1845, minus: "Republic of Texas", claims: ["Republic of Texas", null] },
+];
+const NA_UNITS = [{ unit: "Vermont Republic", name: "Vermont Republic", first: 1784, last: 1790 }];
+const northAmerica = (list) => {
+  const p = resolve(dirname(nePath), "histstates.geojson");
+  if (!existsSync(p)) { console.log("north america: no histstates.geojson beside the Natural Earth file, so the United States keeps its source shapes"); return list; }
+  const feats = JSON.parse(readFileSync(p, "utf8")).features.filter((f) => f.geometry);
+  const P = (f) => f.properties, polyU = (fs) => rewind(fs.length === 1 ? polysOf(fs[0].geometry) : tryClip(clip.union, polysOf(fs[0].geometry), ...fs.slice(1).map((f) => polysOf(f.geometry))) || []);
+  const inForce = (f, y) => P(f).START_DATE.slice(0, 10) <= y + AHCB_DAY && P(f).END_DATE.slice(0, 10) >= y + AHCB_DAY;
+  const unit = (name, y) => feats.filter((f) => P(f).NAME === name && inForce(f, y));
+  const periods = [];
+  for (let y = AHCB_FROM; y <= AHCB_TO; y++) {
+    const fs = feats.filter((f) => P(f).TERR_TYPE !== "Other" && inForce(f, y)), key = fs.map((f) => P(f).ID_NUM).sort((a, b) => a - b).join();
+    const last = periods[periods.length - 1];
+    if (!fs.length) continue;
+    if (last && last.key === key && last.last === y - 1) last.last = y; else periods.push({ first: y, last: y, key, fs });
+  }
+  periods.forEach((pd) => { pd.polys = polyU(pd.fs); pd.box = boxOf(pd.polys); });
+  const isUS = (s) => (s.name === "United States" || s.name === "United States of America") && !s.claims;
+  const template = list.find((s) => isUS(s)) || { name: "United States", ruler: "", part: "", people: 0, b: 3, status: 0, wiki: "United States" };
+  const inRange = (s) => s.last >= AHCB_FROM && s.first <= AHCB_TO;
+  let out = [];
+  for (const s of list) {
+    if (!inRange(s) || !(isUS(s) || s.ruler === "United States")) { out.push(s); continue; }
+    if (s.first < AHCB_FROM) out.push({ ...s, last: AHCB_FROM - 1, uid: uidNext++ });
+    if (s.last > AHCB_TO) out.push({ ...s, first: AHCB_TO + 1, uid: uidNext++ });
+  }
+  const added = [], cuts = [];
+  for (const pd of periods) {
+    const keep = out.filter((s) => NA_KEEP.has(s.name) && s.last >= pd.first && s.first <= pd.last && boxHit(s.box, pd.box));
+    const bounds = new Set([pd.first, pd.last + 1]);
+    keep.forEach((k) => { if (k.first > pd.first) bounds.add(k.first); if (k.last + 1 <= pd.last) bounds.add(k.last + 1); });
+    const b = [...bounds].sort((x, y) => x - y);
+    for (let i = 0; i + 1 < b.length; i++) {
+      const first = b[i], last = b[i + 1] - 1, here = keep.filter((k) => k.first <= first && last <= k.last);
+      const polys = here.length ? subtract(pd.polys, here.map((k) => k.polys)) : pd.polys;
+      added.push(withBox({ ...template, name: "United States", ruler: "", part: "", people: 0, status: 0, claims: undefined, b: 3, first, last, polys, src: "ahcb" }));
+      cuts.push({ first, last, polys, box: boxOf(polys), skip: (s) => NA_KEEP.has(s.name) || s.people });
+    }
+  }
+  for (const u of NA_UNITS) {
+    const fs = unit(u.unit, u.first);
+    if (!fs.length) { console.log("north america: no " + u.unit + " in the atlas"); continue; }
+    const polys = polyU(fs);
+    out = out.filter((s) => !(s.name === u.name && s.first >= u.first && s.last <= u.last));
+    added.push(withBox({ ...template, name: u.name, ruler: "", part: "", people: 0, status: 0, claims: undefined, b: 3, first: u.first, last: u.last, polys, wiki: u.name, src: "ahcb" }));
+    cuts.push({ first: u.first, last: u.last, polys, box: boxOf(polys), skip: (s) => s.people });
+  }
+  for (const d of NA_DISPUTES) {
+    const fs = unit(d.unit, d.first);
+    if (!fs.length) { console.log("north america: no " + d.unit + " in the atlas"); continue; }
+    let polys = polyU(fs);
+    if (d.minus) {
+      const held = out.filter((s) => s.name === d.minus && s.first <= d.last && s.last >= d.first);
+      if (held.length) polys = subtract(polys, held.map((s) => s.polys));
+    }
+    let claims = d.claims.slice();
+    if (claims.includes(null)) {
+      const box = boxOf(polys), cand = out.filter((s) => !s.people && !s.claims && s.first <= d.first && d.first <= s.last && s.name !== d.minus && boxHit(s.box, box));
+      let best = null, area = 0;
+      for (const s of cand) { const x = tryClip(clip.intersection, s.polys, polys); const a = x ? km2Of(x) : 0; if (a > area) { area = a; best = s.name; } }
+      claims = claims.map((c) => c === null ? best : c).filter(Boolean);
+    }
+    added.push(withBox({ name: d.name || "Disputed land", ruler: "", part: "", people: 0, b: 1, status: 6, claims: claims.sort(), first: d.first, last: d.last, polys, wiki: d.name || "", src: "ahcb", noLabel: !d.name }));
+    cuts.push({ first: d.first, last: d.last, polys, box: boxOf(polys), skip: () => false });
+  }
+  const edits = [];
+  for (const c of cuts) for (const s of out) {
+    if (s.last < c.first || s.first > c.last || s.claims || c.skip(s) || !boxHit(s.box, c.box)) continue;
+    edits.push({ base: s, first: Math.max(s.first, c.first), last: Math.min(s.last, c.last), polys: c.polys, add: false });
+  }
+  const result = reshape(out, edits, false).concat(added);
+  console.log("north america: the United States from the Atlas of Historical County Boundaries in " + periods.length + " periods from " + AHCB_FROM + " to " + AHCB_TO + ", " + edits.length + " cuts, " + NA_DISPUTES.length + " disputes");
+  return result;
+};
+const CANADA_FROM = 1763, CANADA_TO = 1885, RL_FROM = 1670, RL_TO = 1870;
+const britainAt = (y) => (y <= 1706 ? "Kingdom of England" : y <= 1800 ? "Kingdom of Great Britain" : "United Kingdom");
+const canada = (list) => {
+  const can = neAll.filter((f) => f.properties.adm0_a3 === "CAN"), rlPath = resolve(here, "ruperts-land-1867.txt");
+  if (!can.length || !existsSync(rlPath)) { console.log("canada: no Natural Earth provinces or no ruperts-land-1867.txt, so British North America keeps its source shapes"); return list; }
+  const prov = (code) => { const f = can.find((x) => x.properties.iso_3166_2 === code); if (!f) throw new Error("canada: Natural Earth has no " + code); return rewind(polysOf(f.geometry)); };
+  const ring = [];
+  for (const p of readFileSync(rlPath, "utf8").trim().split(/\s+/).map((t) => t.split(",").map(Number))) { const l = ring[ring.length - 1]; if (!l || l[0] !== p[0] || l[1] !== p[1]) ring.push(p); }
+  if (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1]) ring.push(ring[0]);
+  const zone = rewind(clip.union([[ring]]));
+  const centre = (poly) => { const b = boxOf([poly]); return [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2]; };
+  const inBox = (poly, b) => { const c = centre(poly); return c[0] > b[0] && c[0] < b[2] && c[1] > b[1] && c[1] < b[3]; };
+  const U = (...sets) => { const all = sets.filter((s) => s.length); return all.length <= 1 ? all[0] || [] : rewind(tryClip(clip.union, ...all) || all.flat()); };
+  const I = (a, b) => rewind(tryClip(clip.intersection, a, b) || []);
+  const rect = (b) => [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]];
+  const mainOf = (ps, pt) => { let m = null; for (const p of ps) { const b = boxOf([p]); if (pt[0] > b[0] && pt[0] < b[2] && pt[1] > b[1] && pt[1] < b[3] && (!m || polyKm2(p) > polyKm2(m))) m = p; } return m; };
+  const NS = prov("CA-NS"), NB = prov("CA-NB"), PE = prov("CA-PE"), QC = prov("CA-QC"), ON = prov("CA-ON"), BC = prov("CA-BC"), NL = prov("CA-NL");
+  const CB = NS.filter((p) => inBox(p, [-61.6, 45.5, -59.6, 47.1])), NSm = NS.filter((p) => !CB.includes(p));
+  const LAB = NL.filter((p) => { const c = centre(p); return c[1] > 51.7 && c[0] < -55.7; }), NFI = NL.filter((p) => !LAB.includes(p));
+  const VI = BC.filter((p) => inBox(p, [-128.6, 48.25, -123.25, 50.95])), BCm = BC.filter((p) => !VI.includes(p)), BCnorth = I(BCm, rect([-141, 54.67, -114, 60.5]));
+  const NU = prov("CA-NU"), NT = prov("CA-NT"), nuMain = mainOf(NU, [-95, 63]), ntMain = mainOf(NT, [-120, 63]);
+  const islands = NU.filter((p) => p !== nuMain).concat(NT.filter((p) => p !== ntMain));
+  const rest = U(prov("CA-MB"), prov("CA-SK"), prov("CA-AB"), prov("CA-YT"), [nuMain], [ntMain]);
+  const toRL = [];
+  const coreOf = (land) => subtract(land, [zone]).filter((p) => { const [x, y] = centre(p); if (y > 54 || (y > 51 && x < -76)) { toRL.push(p); return false; } return true; });
+  const coreON = coreOf(ON), coreQC = coreOf(QC);
+  const nwtAll = subtract(rest, [zone]), shore = (p) => polyKm2(p) < 3000 && centre(p)[0] > -102, NWT = nwtAll.filter((p) => !shore(p));
+  const RL = U(I(U(rest, ON, QC), zone), toRL, nwtAll.filter(shore));
+  const core = U(coreON, coreQC);
+  const added = [];
+  const add = (name, wiki, polys, first, last, status) => {
+    if (!polys.length || last < first) return;
+    if (status === 0) { added.push(withBox({ name, ruler: "", part: "", people: 0, b: 3, status: 0, first, last, polys, wiki, src: "nrcan" })); return; }
+    for (const [a, b] of [[first, Math.min(last, 1706)], [Math.max(first, 1707), Math.min(last, 1800)], [Math.max(first, 1801), last]]) {
+      if (a <= b) added.push(withBox({ name, ruler: britainAt(a), part: "", people: 0, b: 3, status, first: a, last: b, polys, wiki, src: "nrcan" }));
+    }
+  };
+  add("Rupert's Land", "Rupert's Land", RL, RL_FROM, RL_TO, 5);
+  add("Province of Quebec", "Province of Quebec (1763–1791)", coreQC, 1763, 1773, 1);
+  add("Province of Quebec", "Province of Quebec (1763–1791)", U(coreQC, coreON, LAB), 1774, 1791, 1);
+  add("Upper Canada", "Upper Canada", coreON, 1792, 1840, 1);
+  add("Lower Canada", "Lower Canada", U(coreQC, LAB), 1792, 1808, 1);
+  add("Lower Canada", "Lower Canada", coreQC, 1809, 1840, 1);
+  add("Province of Canada", "Province of Canada", core, 1841, 1866, 1);
+  add("Nova Scotia", "Nova Scotia", U(NS, NB, PE), 1763, 1768, 1);
+  add("Nova Scotia", "Nova Scotia", U(NS, NB), 1769, 1783, 1);
+  add("Nova Scotia", "Nova Scotia", NSm, 1784, 1820, 1);
+  add("Nova Scotia", "Nova Scotia", NS, 1821, 1866, 1);
+  add("Cape Breton", "Cape Breton Island", CB, 1784, 1820, 1);
+  add("New Brunswick", "New Brunswick", NB, 1784, 1866, 1);
+  add("St. John's Island", "Prince Edward Island", PE, 1769, 1798, 1);
+  add("Prince Edward Island", "Prince Edward Island", PE, 1799, 1872, 1);
+  add("Newfoundland", "Newfoundland Colony", U(NFI, LAB), 1763, 1773, 1);
+  add("Newfoundland", "Newfoundland Colony", NFI, 1774, 1808, 1);
+  add("Newfoundland", "Newfoundland Colony", U(NFI, LAB), 1809, CANADA_TO, 1);
+  add("North-Western Territory", "North-Western Territory", U(NWT, islands), 1821, 1870, 5);
+  add("British Arctic Territories", "British Arctic Territories", islands, 1871, 1880, 5);
+  add("New Caledonia", "New Caledonia (Canada)", BCnorth, 1821, 1845, 5);
+  add("New Caledonia", "New Caledonia (Canada)", BC, 1846, 1848, 5);
+  add("New Caledonia", "New Caledonia (Canada)", BCm, 1849, 1857, 5);
+  add("Vancouver Island", "Colony of Vancouver Island", VI, 1849, 1866, 1);
+  add("British Columbia", "Colony of British Columbia (1858–1866)", BCm, 1858, 1866, 1);
+  add("British Columbia", "Colony of British Columbia (1866–1871)", BC, 1867, 1871, 1);
+  const dom = U(core, NS, NB);
+  add("Canada", "Canada", dom, 1867, 1870, 0);
+  add("Canada", "Canada", U(dom, RL, NWT), 1871, 1871, 0);
+  add("Canada", "Canada", U(dom, RL, NWT, BC), 1872, 1872, 0);
+  add("Canada", "Canada", U(dom, RL, NWT, BC, PE), 1873, 1880, 0);
+  add("Canada", "Canada", U(dom, RL, NWT, BC, PE, islands), 1881, CANADA_TO, 0);
+  // Rupert's Land from the sources is replaced outright; everything else that is not a people loses the land of Canada from 1763.
+  const parts = [core, NS, NB, RL, NWT, BC, PE, islands, NL], land = U(...parts), landBox = boxOf(land);
+  let out = [];
+  for (const s of list) {
+    if (s.name !== "Rupert's Land" || s.last < RL_FROM || s.first > RL_TO) { out.push(s); continue; }
+    if (s.first < RL_FROM) out.push({ ...s, last: RL_FROM - 1, uid: uidNext++ });
+    if (s.last > RL_TO) out.push({ ...s, first: RL_TO + 1, uid: uidNext++ });
+  }
+  const edits = [];
+  for (const s of out) {
+    if (s.people || s.src === "ahcb" || s.last < CANADA_FROM || s.first > CANADA_TO || !boxHit(s.box, landBox)) continue;
+    for (const polys of parts) edits.push({ base: s, first: Math.max(s.first, CANADA_FROM), last: Math.min(s.last, CANADA_TO), polys, add: false });
+  }
+  // A cut can fail on a source shape that polygon-clipping can't take; a span still mostly on Canada's land in these years is then dropped.
+  let dropped = 0;
+  // What is left of a British span there is slivers between its coarse coast and Natural Earth's, which would draw its colour and name along the shore.
+  const BRITISH = /Great Britain|United Kingdom|England/, BRITISH_NAME = /British|Canada|Quebec|Rupert|Nova Scotia|Newfoundland|Brunswick|Hudson/;
+  const landCells = cellsOf(land), nearLand = dilate(landCells);
+  const onShore = (p) => { const cs = cellsOf([p]); if (!cs.size) return nearLand.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (nearLand.has(c)) n++; return n > 0.5 * cs.size; };
+  let shorn = 0;
+  const result = reshape(out, edits, false).map((s) => {
+    if (s.people || s.src === "ahcb" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox) || !(BRITISH.test(s.ruler || "") || BRITISH_NAME.test(s.name))) return s;
+    const polys = s.polys.filter((p) => !onShore(p));
+    if (polys.length === s.polys.length) return s;
+    shorn++;
+    return polys.length ? withBox({ ...s, polys }) : null;
+  }).filter((s) => {
+    if (!s) return false;
+    if (s.people || s.src === "ahcb" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox)) return true;
+    const cells = cellsOf(s.polys);
+    let inside = 0;
+    for (const c of cells) if (landCells.has(c)) inside++;
+    if (cells.size && inside > 0.5 * cells.size) { dropped++; return false; }
+    return true;
+  });
+  const sized = (polys) => Math.round(km2Of(polys) / 1000) + " thousand km²";
+  console.log("canada: Rupert's Land " + sized(RL) + ", North-Western Territory " + sized(NWT) + ", Arctic islands " + sized(islands) + ", the Canadas " + sized(core) + "; " + added.length + " spans, " + edits.length + " cuts, " + shorn + " British spans cleared of slivers, " + dropped + " spans left mostly on Canada's land dropped");
+  return result.concat(added);
+};
+dated = fillSmallGaps(resolveOverlaps(canada(northAmerica(dated)), "from " + DATED_FROM + " to " + DATED_TO));
 const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
 const SNAPPED = Symbol("snapped");
 function clipRect(polys, b) {
@@ -2652,7 +2851,7 @@ const CS_BACK = [
   { gw: "696", until: "1892-03-07", names: [["1886-01-01", "Trucial States", 2, "United Kingdom"]] }
 ];
 const HB_MODERN_FROM = 1880;
-const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"]];
+const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"]];
 const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides"]);
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
