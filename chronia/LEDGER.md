@@ -18,7 +18,7 @@ Each entry:
 ---
 ## 1931–1945 | Europe, North and East Africa, the Middle East, China, Southeast Asia, and the Pacific | World War II: wartime borders and zones of control
 
-- Claimed by the session of 29 October 2026 (the save button's), 29 October 2026: wartime borders on the main map (annexations, occupation regimes, and puppet states such as the Protectorate of Bohemia and Moravia, the General Government, Vichy France, Croatia, Manchukuo, and Wang Jingwei's government, dated to the day and cut to the ground the Axis held each month), and a zones-of-control layer for the war, month by month, from towns' capture and liberation dates. Touches `tools/build-eras.mjs`, `tools/build-control.mjs`, `data/modern.json`, and `data/control/`.
+- Claimed by the session of 29 October 2026 (the save button's), 29 October 2026: wartime borders on the main map (annexations, occupation regimes, and puppet states such as the Protectorate of Bohemia and Moravia, the General Government, Vichy France, Croatia, Manchukuo, and Wang Jingwei's government, dated to the day and cut to the ground the Axis held each month), and a zones-of-control layer for the war, month by month, from towns' capture and liberation dates. Touches `tools/build-eras.mjs`, `tools/build-control.mjs`, `data/modern.json`, and `data/control/`. Noah asked this session for the war on 29 October 2026, so it takes over the Second World War part of the 1886 session's control-layer claim below; please pull before rebuilding `data/modern.json`.
 
 ## 1839–1870 | the Low Countries, Denmark, and northern Germany | the Netherlands, Belgium, Luxembourg, Denmark, Schleswig-Holstein, Hanover, Hesse-Kassel, Nassau, and Frankfurt
 
@@ -117,7 +117,7 @@ Each entry:
 ## 1861–2026 | world | zones of control by month (US Civil War, WWII, recent wars, Mexican cartels)
 
 - Claimed by the 1886 session, 28 October 2026: a Control layer over the map, hatching the land each side held month by month, with front lines, for the US Civil War, the Second World War, wars since 1990, and the presence of Mexican cartels by municipality and year. New files under `data/control/`, a new builder, and the layer in `app.js`; the borders and the yearly data are untouched.
-- Done: Syria and Ukraine and the US Civil War (entries above), and Mexico's cartels (described in the README, with OCVED as the source). Left: the Second World War, from the War Department's semimonthly atlas from July 1943 and at its turning points before.
+- Done: Syria and Ukraine and the US Civil War (entries above), and Mexico's cartels (described in the README, with OCVED as the source). Left: the Second World War, from the War Department's semimonthly atlas from July 1943 and at its turning points before (taken over by the save button's session on 29 October 2026, at Noah's request; see its claim at the top).
 
 ## 1500–1885 and 1886–2019 | North America | the United States, British North America, and Canada; Saint-Domingue; Greenland
 
