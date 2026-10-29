@@ -13,7 +13,7 @@
 // units are widened into the sea by COAST_KM, so that CShapes' coarser coasts don't leave slivers
 // of the state underneath.
 
-const COAST_KM = 10, MIN_KM2 = 30, SAME_SHARE = 0.003;
+const COAST_KM = 10, MIN_KM2 = 30, SAME_SHARE = 0.01;
 
 // The German–Soviet line of 28 September 1939, from the Lithuanian border by Suwałki, along the
 // Pisa, the Narew, the Bug, and the San, to the Slovak border (approximate, to a few kilometres).
@@ -243,7 +243,7 @@ export function applyWW2(env) {
   }).filter((ring) => ring.length >= 4)).filter((poly) => poly.length);
   const safe = (op, a, ...bs) => {
     let err;
-    for (const k of [0, 1e6, 1e5, 1e4]) {
+    for (const k of [0, 1e6, 1e5, 1e4, 1e3]) {
       try { return k ? op(snapAt(a, k), ...bs.map((b) => snapAt(b, k))) : op(a, ...bs); } catch (e) { err = e; }
     }
     throw err;
@@ -300,6 +300,36 @@ export function applyWW2(env) {
     if (d <= last) push(d, last, polys);
     return out.filter((x) => km2Of(x.polys) >= MIN_KM2);
   };
+  // The builder's carve() keeps a span whole when a difference fails, and the overlap is then settled
+  // later, often against the new piece. Here a failed difference is tried again with the coordinates
+  // rounded, then polygon by polygon, so the piece is cut out of the spans under it.
+  let cutFailed = 0;
+  const cutOut = (polys, hole) => {
+    try { return safe(clip.difference, polys, hole); } catch (e) {}
+    const out = [];
+    for (const poly of polys) {
+      let rest = [poly];
+      for (const h of hole) { try { rest = safe(clip.difference, rest, [h]); } catch (e) { cutFailed++; } }
+      out.push(...rest);
+    }
+    return out;
+  };
+  const boxHit = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+  const carveWW2 = (spans, sm) => {
+    const next = [];
+    for (const r of spans) {
+      if (r.last < sm.first || r.first > sm.last || !boxHit(r.box || boxOf(r.polys), sm.box)) { next.push(r); continue; }
+      let hit = [];
+      try { hit = safe(clip.intersection, r.polys, sm.polys); } catch (e) { hit = [[[0, 0]]]; }
+      if (!hit.length) { next.push(r); continue; }
+      const s0 = Math.max(r.first, sm.first), e0 = Math.min(r.last, sm.last);
+      if (r.first < s0) next.push({ ...r, last: s0 - 1 });
+      const polys = rewind(cutOut(r.polys, sm.polys)).filter((q) => polyKm2(q) > 0.001);
+      if (polys.length) next.push(withBox({ ...r, first: s0, last: e0, polys }));
+      if (r.last > e0) next.push({ ...r, first: e0 + 1 });
+    }
+    return next;
+  };
   const STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
   let pieces = 0;
   const lay = (name, wiki, status, ruler, b, first, last, polys) => {
@@ -307,7 +337,7 @@ export function applyWW2(env) {
     // A regime with the name of a state on the map at the time is that state, and shares its article.
     if (!wiki) { const same = list.find((x) => x.name === name && x.first <= last && x.last >= first && x.src !== "ww2"); wiki = same ? same.wiki : name; }
     const sm = withBox({ name, ruler: ruler || "", part: "", people: 0, b, status: ruler ? STATUS[status] : 0, first, last, polys, wiki, src: "ww2" });
-    list = carve(list, sm);
+    list = carveWW2(list, sm);
     list.push(sm);
     pieces++;
   };
@@ -343,6 +373,6 @@ export function applyWW2(env) {
     const [a, z] = clampDays(from, to);
     for (const m of cut ? monthly(polys, a, z) : [{ first: a, last: z, polys }]) lay(r.name, r.wiki, r.status, r.ruler, r.b, m.first, m.last, m.polys);
   }
-  console.log("WW2: " + WW2_FIXES.length + " fixes, " + occPieces + " pieces before the regimes (" + occ.length + " occupied), " + (pieces - occPieces) + " pieces of " + WW2_REGIMES.length + " regimes, " + theatres.length + " theatres of the Axis's ground");
+  console.log("WW2: " + WW2_FIXES.length + " fixes, " + occPieces + " pieces before the regimes (" + occ.length + " occupied), " + (pieces - occPieces) + " pieces of " + WW2_REGIMES.length + " regimes, " + theatres.length + " theatres of the Axis's ground, " + cutFailed + " cuts failed");
   return list;
 }

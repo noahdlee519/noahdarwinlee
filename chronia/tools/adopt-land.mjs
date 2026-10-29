@@ -44,6 +44,12 @@ const ringKm2 = (ring) => { const lat0 = ring.reduce((t, p) => t + p[1], 0) / ri
 const polyKm2 = (poly) => Math.max(0, ringKm2(poly[0]) - poly.slice(1).reduce((t, r) => t + ringKm2(r), 0));
 const ringKm = (ring) => { let s = 0; for (let i = 1; i < ring.length; i++) { const k = Math.cos(((ring[i][1] + ring[i - 1][1]) / 2) * RAD); s += Math.hypot((ring[i][0] - ring[i - 1][0]) * k, ring[i][1] - ring[i - 1][1]) * KM; } return s; };
 
+const snapTo = (polys, k) => polys.map((poly) => poly.map((ring) => {
+  const out = [];
+  for (const q of ring) { const v = [Math.round(q[0] * k) / k, Math.round(q[1] * k) / k], l = out[out.length - 1]; if (!l || l[0] !== v[0] || l[1] !== v[1]) out.push(v); }
+  return out;
+}).filter((ring) => ring.length >= 4)).filter((poly) => poly.length);
+
 function clipRect(polys, b) {
   const edge = (ring, inside, cut) => {
     const out = [];
@@ -187,7 +193,15 @@ export function adoptLand({ list, land, clip, endDay, units = [], same = () => f
     let rest;
     try { rest = sp.length ? clip.difference(lp, ...sp) : clip.union(lp); } catch (e) {
       rest = lp;
-      for (const c of sp) { try { rest = clip.difference(rest, c); } catch (e2) { failed++; } }
+      // One span at a time, and, if that fails, with the coordinates rounded to about 10 cm and then
+      // 1 m, so that a failed clip doesn't leave the span's land counted as uncovered.
+      for (const c of sp) {
+        let done = false;
+        for (const k of [0, 1e6, 1e5]) {
+          try { rest = k ? clip.difference(snapTo(rest, k), snapTo(c, k)) : clip.difference(rest, c); done = true; break; } catch (e2) {}
+        }
+        if (!done) failed++;
+      }
     }
     for (const poly of rest) {
       const a = polyKm2(poly);
