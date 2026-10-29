@@ -44,7 +44,10 @@ const SIDES = {
   cjng: ["Jalisco New Generation Cartel", "#9a2d55"],
   juarez: ["Juárez Cartel", "#4c7a2f"],
   tijuana: ["Tijuana Cartel", "#3a5fa8"],
-  fuel: ["fuel-theft gangs (huachicoleros)", "#7d6a52"]
+  fuel: ["fuel-theft gangs (huachicoleros)", "#7d6a52"],
+  pa: ["Palestinian Authority", "#2f8a4a"],
+  hamas: ["Hamas", "#c0562a"],
+  popular: ["Popular Forces", "#c9a227"]
 };
 const OCVED_GROUPS = {
   "Cartel de Sinaloa": "sinaloa", "Los Zetas": "zetas", "Cartel del Golfo": "golfo", "La Familia Michoacana": "familia", "Beltran Leyva": "beltran", "La Barbie": "barbie",
@@ -85,6 +88,22 @@ const WARS = [
     ],
     fallback: { blue: "ukraine", red: "russia" },
     defaults: [[["Kursk", "Belgorod", "Bryansk"], "russia"]]
+  },
+  {
+    key: "israel",
+    name: "Israel, the West Bank, and Gaza",
+    from: "2016-06",
+    credit: "Wikipedia's town maps",
+    region: (p) => p.adm0_a3 === "ISR" || p.adm0_a3 === "PSX",
+    parts: [(p) => p.adm0_a3 === "ISR", (p) => p.name === "West Bank", (p) => p.name === "Gaza Strip"],
+    rules: [
+      [/Palestinian Authority|Ramallah/i, "pa"],
+      [/Hamas/i, "hamas"],
+      [/Popular Forces/i, "popular"],
+      [/Hezbollah|Leban|Syria|Jordan|Egypt/i, null],
+      [/Israel/i, "israel"]
+    ],
+    fallback: { blue: "israel", green0d0: "pa", lime: "hamas", yellow: "popular" }
   }
 ];
 
@@ -147,6 +166,7 @@ for (const war of WARS) {
       }
     }
   }
+  const pieces = war.parts ? war.parts.map((pred) => clip.union(...ne.features.filter((f) => pred(f.properties)).flatMap((f) => polysOf(f.geometry)).map((q) => [q]))) : [region];
   const inBox = (t) => t[1] >= bbox[0] - 0.2 && t[1] <= bbox[2] + 0.2 && t[0] >= bbox[1] - 0.2 && t[0] <= bbox[3] + 0.2;
   const state = new Map(), memory = new Map(), shapes = [], rows = [], open = new Map();
   let prevSig = "", prevShapes = null, monthsUsed = 0;
@@ -154,6 +174,7 @@ for (const war of WARS) {
   for (let m = 0; m < src.deltas.length; m++) {
     const [month, delta] = src.deltas[m];
     if (delta) for (const item of delta.split(",")) { const [i, c] = item.split(":"); if (c === "-") state.delete(+i); else state.set(+i, c); }
+    if (war.from && month < war.from) continue;
     const leg = src.legends[month] || {};
     const sides = new Map();
     for (const [i, c] of state) {
@@ -175,16 +196,22 @@ for (const war of WARS) {
         const id = "f" + pts.length;
         ids.push(id); sides.set(id, s); pts.push([x, yy]);
       }
-      const cells = cellsOf(pts, region, bbox);
-      const geoms = [], groups = new Map();
-      ids.forEach((id, k) => { if (!cells[k]) return; const s = sides.get(id); if (!groups.has(s)) groups.set(s, []); groups.get(s).push(geoms.length); geoms.push({ type: "Polygon", arcs: null, coords: cells[k] }); });
-      const topo = server.topology({ c: { type: "GeometryCollection", geometries: geoms.map((g) => ({ type: "Polygon", coordinates: g.coords })) } });
       byside = new Map();
-      for (const [s, list] of groups) {
-        const merged = client.merge(topo, list.map((k) => topo.objects.c.geometries[k]));
-        let polys = clip.intersection(merged.coordinates, region);
-        polys = polys.filter((p) => areaKm2(p) >= MIN_PART_KM2);
-        if (polys.length) byside.set(s, polys);
+      for (const piece of pieces) {
+        const inside = ids.map((id, k) => !war.parts || piece.some((poly) => inRing(poly[0], pts[k][0], pts[k][1])));
+        const pIds = ids.filter((id, k) => inside[k]), pPts = pts.filter((q, k) => inside[k]);
+        if (!pPts.length) continue;
+        const cells = cellsOf(pPts, piece, bbox);
+        const geoms = [], groups = new Map();
+        pIds.forEach((id, k) => { if (!cells[k]) return; const s = sides.get(id); if (!groups.has(s)) groups.set(s, []); groups.get(s).push(geoms.length); geoms.push({ type: "Polygon", arcs: null, coords: cells[k] }); });
+        const topo = server.topology({ c: { type: "GeometryCollection", geometries: geoms.map((g) => ({ type: "Polygon", coordinates: g.coords })) } });
+        for (const [s, list] of groups) {
+          const merged = client.merge(topo, list.map((k) => topo.objects.c.geometries[k]));
+          let polys = clip.intersection(merged.coordinates, piece);
+          polys = polys.filter((p) => areaKm2(p) >= MIN_PART_KM2);
+          if (!polys.length) continue;
+          byside.set(s, byside.has(s) ? clip.union(byside.get(s), polys) : polys);
+        }
       }
       prevSig = sig;
       prevShapes = byside;

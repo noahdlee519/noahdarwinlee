@@ -8,7 +8,8 @@ const API = "https://en.wikipedia.org/w/api.php";
 const UA = "CHRONIA zones of control (noahdarwinlee.com)";
 const WARS = [
   { key: "syria", from: "2014-09", modules: ["Module:Syrian Civil War detailed map"], marks: ["Module:Middle East conflicts map marks"] },
-  { key: "ukraine", from: "2022-03", modules: ["Module:Russo-Ukrainian war detailed map", "Module:Russo-Ukrainian war overview map"], marks: [] }
+  { key: "ukraine", from: "2022-03", modules: ["Module:Russo-Ukrainian war detailed map", "Module:Russo-Ukrainian war overview map"], marks: [] },
+  { key: "israel", from: "2016-01", modules: ["Module:Israeli-Palestinian conflict detailed map"], marks: [] }
 ];
 const only = process.argv.slice(2);
 
@@ -51,7 +52,7 @@ function legend(text) {
   const i = text.indexOf("caption");
   if (i < 0) return {};
   const cap = text.slice(i, i + 3000), leg = {};
-  const re = /\[\[File:([^|\]]+)\|\d+px\]\]\s*([^;\[<]*(?:\[\[[^\]]*\]\][^;\[<]*)*)/g;
+  const re = /\[\[File:([^|\]]+)\|\d+px\]\]\s*([^;\[<*]*(?:\[\[(?!File:)[^\]]*\]\][^;\[<*]*)*)/g;
   let m;
   while ((m = re.exec(cap))) {
     const c = colourOf(m[1]);

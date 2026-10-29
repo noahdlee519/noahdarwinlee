@@ -105,6 +105,15 @@ Each entry:
 - Alternatives: Esri's "Union troops control extent", a tracing of an earlier edition of the Army's map (no open licence); the Official Records atlas's maps of the United States every six months (plates CLXII to CLXXI), which shade whole States, not the ground held.
 - Left out: April to June 1861; changes between the dated maps, such as the Confederate invasion of Kentucky in the autumn of 1862 and the Union's gains of 1865, which no source dates within the year; western Texas, beyond both maps; New Mexico and Arizona; and the Indian Territory.
 
+## 2016–2026 | Israel, the West Bank, and Gaza | zones of control by month
+
+- What changed: the Zones of control layer shows who held the ground in Israel, the West Bank, and the Gaza Strip from June 2016, month by month: Israel, the Palestinian Authority, Hamas, and from June 2026 the Popular Forces in Gaza. Each month's towns are split into cells within each of the three separately, and joined by side, with the front between the sides.
+- Tables: `WARS` (`israel`, with `parts` and `from`), `SIDES`, and `rules` in `tools/build-control.mjs`; the towns in `tools/control/israel-towns.json`, from `tools/fetch-control.mjs`, whose caption reading now stops at the next file or bullet.
+- Sources: (1) English Wikipedia's `Module:Israeli-Palestinian conflict detailed map`, one revision a month (CC BY-SA 4.0). (2) None independent and openly licensed: OCHA's maps of Areas A, B, and C are not published as data under a licence, and Natural Earth draws the West Bank and Gaza as whole units. Wikipedia alone, as MAPMAKING.md allows for the control layer of wars since 1990.
+- Confidence: medium for the West Bank since 2024 and Gaza during the war, where the module marks over a thousand places; low for 2016 to 2023, when it marks 50 to 125.
+- Alternatives: the Oslo II areas themselves (not openly available as data).
+- Left out: the module's first five months (January to May 2016), whose one colour "Palestine" covers both the Palestinian Authority and Hamas; the years before 2016; places marked mixed or contested; the Golan Heights and southern Lebanon, outside the region.
+
 ## 2014–2026 | Syria and Ukraine | zones of control by month
 
 - What changed: the Zones of control layer shows who held the ground in Syria from September 2014 and in Ukraine from March 2022, month by month: the Syrian government, the opposition and the Turkish-backed forces, the Kurdish-led SDF, al-Nusra and Tahrir al-Sham, the Islamic State, United States forces at al-Tanf, Israel in the south from 2025, Druze militias, and the transitional government from 2025; and Ukraine and Russia. Each month's towns are split into Voronoi cells and joined by side, with the front between the sides.
