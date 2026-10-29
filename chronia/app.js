@@ -1005,6 +1005,11 @@
     if (bleed > 0.6) { ctx.strokeStyle = pal["people-fill"]; ctx.lineWidth = bleed; ctx.stroke(peopleBleed); }
     ctx.fillStyle = pal["people-fill"]; ctx.fill(peoplePath);
     ctx.fillStyle = pal.paper; ctx.fill(unnamedPath);
+    var held = heldPath(), outside = null;
+    if (held) {
+      ctx.fillStyle = pal.paper; ctx.fill(held);
+      outside = new Path2D(); outside.rect(-10, -10, W + 20, H + 20); outside.addPath(held);
+    }
     if (layers.relief && reliefReady()) {
       renderRelief();
       ctx.save();
@@ -1015,6 +1020,7 @@
     }
     var bw = bandWidth(S), softMap = !!snap.soft || (snap.year !== null && snap.year < SOFT_BEFORE);
     var bandAlpha = softMap ? 0.4 : 0.6, bandLine = bw * (softMap ? 3 : 2);
+    if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     for (c = 0; c < PALETTE; c++) {
       if (!groupPaths[c] || !L.bands[c]) continue;
       ctx.save();
@@ -1024,6 +1030,7 @@
       ctx.strokeStyle = pal.bands[c]; ctx.lineWidth = bandLine; ctx.lineCap = "round"; ctx.stroke();
       ctx.restore();
     }
+    if (outside) ctx.restore();
     var hp = hoverId >= 0 ? snap.byId.get(hoverId) : null, sp = selected >= 0 ? snap.byId.get(selected) : null;
     var unheld = null;
     var tint = function (id, color) {
@@ -1045,7 +1052,9 @@
     if (hp && hp !== sp) tint(hp.id, pal.hover);
     if (sp) tint(sp.id, "rgba(140,42,26,0.12)");
     ctx.restore();
+    if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
+    if (outside) ctx.restore();
 
     drawMarshes(kp, landPath);
     drawRivers(S, landPath);
@@ -2882,6 +2891,22 @@
       ctx.strokeStyle = pal.front; ctx.lineWidth = 1.1 + 0.5 * lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
     }
     ctx.restore();
+  }
+  function heldPath() {
+    if (!layers.control) return null;
+    var day = ctlDay();
+    if (day === null) return null;
+    var wars = ctlWars(day, true), path = null;
+    for (var k = 0; k < wars.length; k++) {
+      var w = wars[k], D = w.data;
+      if (D.kind === "presence") continue;
+      var st = ctlState(w, day);
+      for (var i = 0; i < st.rows.length; i++) {
+        if (!path) path = new Path2D();
+        traceFeature(path, ctlFeat(w, D.rows[st.rows[i]][3]).shape);
+      }
+    }
+    return path;
   }
   function controlAt(ll) {
     if (!layers.control || !ll) return null;
