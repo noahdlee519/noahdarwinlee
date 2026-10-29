@@ -798,6 +798,14 @@ body.ch-page {
   cursor: grab;
 }
 
+.ch-range.is-off::-webkit-slider-thumb {
+  visibility: hidden;
+}
+
+.ch-range.is-off::-moz-range-thumb {
+  visibility: hidden;
+}
+
 .ch-range:focus {
   outline: none;
 }

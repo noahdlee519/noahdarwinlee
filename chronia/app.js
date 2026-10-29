@@ -11,7 +11,10 @@
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
   var START_YEAR = 1815;
-  var LAST_YEAR = 2026;
+  // The timeline runs to the present month by the viewer's clock (never before October 2026), so months
+  // that have not happened yet are not on it.
+  var LAST_YM = Math.max(2026 * 12 + 9, new Date().getFullYear() * 12 + new Date().getMonth());
+  var LAST_YEAR = Math.floor(LAST_YM / 12), LAST_MONTH = LAST_YM % 12 + 1;
   var KEEP_MAPS = 8;
   var phoneQuery = window.matchMedia("(max-width: 640px)");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -3365,7 +3368,9 @@
   var KNOTS = [[-3400, 0]], FIRST_T = -3400;
   var RANGE_MAX = 10000, TL_PX = 5, TL_MIN = 80, TL_MAX = 300, TL_EDGE = 6;
   var tl = { start: 1760, span: 250, ppy: 5, w: 1250 };
-  function lastT() { return LAST_YEAR + 1; }
+  // The end of the timeline (the end of the present month) and the last date play and the End key go to.
+  function lastT() { return timeOfDay(dayFromDate(LAST_YEAR, LAST_MONTH + 1, 1)) - 0.5 / 365; }
+  function lastTime() { return modern ? monthTime(LAST_YEAR, LAST_MONTH) : LAST_YEAR; }
   function posOf(y) { return (y - tl.start) / tl.span; }
   function yearAt(t) { return tl.start + t * tl.span; }
   function clampStart(s) { return Math.max(FIRST_T, Math.min(lastT() - tl.span, s)); }
@@ -3448,7 +3453,7 @@
   }
   var rangeActive = false;
   function syncTime() {
-    if (!drag) { follow(now); range.value = String(Math.round(posOf(now) * RANGE_MAX)); }
+    if (!drag) { follow(now); range.value = String(Math.round(posOf(now) * RANGE_MAX)); range.classList.remove("is-off"); }
     range.setAttribute("aria-valuetext", fmtNow(now));
     if (document.activeElement !== yearInput) yearInput.value = fmtNow(now);
     if (isModern(now)) {
@@ -3476,7 +3481,7 @@
   }
   function setTime(t, fromRange) {
     if (!maps.length && !dated) return;
-    t = Math.max(FIRST_T, Math.min(LAST_YEAR + 0.999, t));
+    t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
     if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
     // A card describes one date, so changing the date closes it.
     if (t !== now && (selected >= 0 || selCity) && !card.hidden) closeCard();
@@ -3541,7 +3546,7 @@
       var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1] + dir;
       if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
       if (y < 1886) setTime(1885);
-      else if (y <= LAST_YEAR) setTime(monthTime(y, m));
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
       return;
     }
     var next = Math.round(now) + dir;
@@ -3555,7 +3560,7 @@
     y = Math.max(FIRST_T, Math.min(lastT() - 1e-6, y));
     if (modern && y >= 1885.5) {
       var yr = Math.floor(Math.max(y, 1886)), mo = Math.min(12, Math.floor((Math.max(y, 1886) - yr) * 12) + 1);
-      return yr > LAST_YEAR ? monthTime(LAST_YEAR, 12) : monthTime(yr, mo);
+      return yr * 12 + mo > LAST_YEAR * 12 + LAST_MONTH ? monthTime(LAST_YEAR, LAST_MONTH) : monthTime(yr, mo);
     }
     y = Math.round(y);
     return y === 0 ? 1 : y;
@@ -3603,6 +3608,19 @@
     if (drag) { rangeActive = true; showDrag(t); } else setTime(t);
   });
   range.addEventListener("change", function () { if (drag) endDrag(); });
+  // Scrolling over the bar (two fingers on a trackpad, sideways or up and down, or a mouse wheel) moves the
+  // window of years without changing the date; the marker is hidden while its date is outside the window.
+  $("track").addEventListener("wheel", function (e) {
+    if (drag) return;
+    var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= tl.w;
+    if (!d) return;
+    e.preventDefault();
+    setWindow(tl.start + d / tl.ppy);
+    var p = posOf(now);
+    range.value = String(Math.round(Math.max(0, Math.min(1, p)) * RANGE_MAX));
+    range.classList.toggle("is-off", p < 0 || p > 1);
+  }, { passive: false });
   range.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -3610,7 +3628,7 @@
       var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
       if (e.shiftKey) stepUnit(dir); else stepMap(dir);
     } else if (e.key === "Home") { e.preventDefault(); setTime(FIRST_T); }
-    else if (e.key === "End") { e.preventDefault(); setTime(modern ? monthTime(LAST_YEAR, 12) : LAST_YEAR); }
+    else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
   function commitYearInput() {
     var t = parseTime(yearInput.value);
@@ -3627,7 +3645,8 @@
 
   var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
   var playTimer = 0, playMode = "";
-  function playEnd() { return modern ? monthTime(2019, 12) : dated ? dated.to : maps[maps.length - 1].y; }
+  // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
+  function playEnd() { return modern ? lastTime() : dated ? dated.to : maps[maps.length - 1].y; }
   function playNext(t) {
     if (isModern(t)) {
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
@@ -3775,7 +3794,7 @@
     return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
   }
   function askYear() {
-    return Math.max(KNOTS[0][0], Math.min(2026, isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now) || 1));
+    return Math.max(KNOTS[0][0], Math.min(LAST_YEAR, isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now) || 1));
   }
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
