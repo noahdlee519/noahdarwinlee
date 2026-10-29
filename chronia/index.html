@@ -51,6 +51,10 @@
     <h1 class="sr-only">CHRONIA</h1>
 
     <div class="ch-top" id="top">
+      <div class="ch-year-box ch-frame" id="year-box">
+        <label class="sr-only" for="year-input">Year</label>
+        <input class="ch-year" id="year-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="1815" />
+      </div>
       <header class="ch-head ch-frame" id="head">
         <div class="ch-head-text">
           <h2 class="ch-title">CHRONIA</h2>
@@ -81,6 +85,8 @@
                 <dt><kbd>Shift</kbd> <kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward a month (a year before 1886)</dd>
                 <dt><kbd>P</kbd></dt><dd>Play or pause</dd>
                 <dt><kbd>Shift</kbd> <kbd>P</kbd></dt><dd>Play at double speed</dd>
+                <dt><kbd>O</kbd></dt><dd>Play backwards or pause</dd>
+                <dt><kbd>Shift</kbd> <kbd>O</kbd></dt><dd>Play backwards at double speed</dd>
                 <dt><kbd>M</kbd></dt><dd>Switch between the globe and the flat map</dd>
                 <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>Zoom in or out</dd>
                 <dt><kbd>/</kbd></dt><dd>Search</dd>
@@ -108,12 +114,6 @@
       <div class="ch-ctls ch-frame" id="ctls" role="group" aria-label="Map controls">
         <button type="button" class="ch-ctl" id="search-btn" aria-expanded="false" aria-controls="search" aria-label="Search the map" data-tip="Search (/)">
           <svg class="ch-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9.2h10.4M7 13.4h7.2M7 17.6h5.6" /><circle cx="20.2" cy="18.4" r="5.2" /><path class="h" d="M17.6 16.6c.5-1 1.3-1.6 2.4-1.9" /><path d="M24 22.2l4.2 4.2" /></svg>
-        </button>
-        <button type="button" class="ch-ctl" id="zoom-in" aria-label="Zoom in" data-tip="Zoom in (+)">
-          <svg class="ch-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.4" cy="13.4" r="8.6" /><circle cx="13.4" cy="13.4" r="6.6" class="h" /><path d="M19.6 19.6l7.6 7.6M21.4 18.6l6.8 6.8-2 2-6.8-6.8" /><path d="M13.4 9.6v7.6M9.6 13.4h7.6" /><path class="h" d="M8.4 11.2c.5-1.6 1.6-2.7 3.2-3.2" /></svg>
-        </button>
-        <button type="button" class="ch-ctl" id="zoom-out" aria-label="Zoom out" data-tip="Zoom out (−)">
-          <svg class="ch-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.4" cy="13.4" r="8.6" /><circle cx="13.4" cy="13.4" r="6.6" class="h" /><path d="M19.6 19.6l7.6 7.6M21.4 18.6l6.8 6.8-2 2-6.8-6.8" /><path d="M9.6 13.4h7.6" /><path class="h" d="M8.4 11.2c.5-1.6 1.6-2.7 3.2-3.2" /></svg>
         </button>
         <button type="button" class="ch-ctl" id="flat-btn" aria-pressed="false" aria-label="Flat map" data-tip="Flat map (M)">
           <svg class="ch-ico ch-icon-flat" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 8.4h17.6v15.2H7.2z" /><rect x="3.6" y="6.8" width="3.6" height="18.4" rx="1.8" /><rect x="24.8" y="6.8" width="3.6" height="18.4" rx="1.8" /><path class="h" d="M5 8.6v14.8M27.1 8.6v14.8" /><path d="M16 8.4v15.2M11.2 8.4c-1.4 4.6-1.4 10.6 0 15.2M20.8 8.4c1.4 4.6 1.4 10.6 0 15.2M7.2 16h17.6" /><path class="h" d="M7.2 12.2h17.6M7.2 19.8h17.6" /></svg>
@@ -238,7 +238,22 @@
     </section>
 
     <section class="ch-time" id="time" aria-label="Year">
-      <div class="ch-when">
+      <div class="ch-when ch-when-back">
+        <button type="button" class="ch-step ch-play ch-play-fast ch-play-back" id="play-back-fast" aria-pressed="false" aria-label="Play backwards at double speed" data-tip="Play backwards at double speed (Shift O)">
+          <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 8v16L16 16zM16 8v16l11.4-8z" /><path class="h" d="M6.8 11.2v9.6M9 12.8v6.4M11.2 14.4v3.2M18.2 11.2v9.6M20.4 12.8v6.4M22.6 14.4v3.2" /></svg>
+          <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
+        </button>
+        <button type="button" class="ch-step ch-play ch-play-back" id="play-back" aria-pressed="false" aria-label="Play backwards" data-tip="Play backwards (O)">
+          <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.8v18.4L25 16z" /><path class="h" d="M12.6 10.6v10.8M15.2 12.2v7.6M17.8 13.8v4.4" /></svg>
+          <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
+        </button>
+      </div>
+      <div class="ch-track" id="track">
+        <div class="ch-ticks" id="ticks" aria-hidden="true"></div>
+        <input class="ch-range" id="range" type="range" min="0" max="1000" step="1" value="800" aria-label="Year" />
+        <div class="ch-eras" id="eras" aria-hidden="true"></div>
+      </div>
+      <div class="ch-when ch-when-fwd">
         <button type="button" class="ch-step ch-play" id="play" aria-pressed="false" aria-label="Play through time" data-tip="Play (P)">
           <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.8v18.4L25 16z" /><path class="h" d="M12.6 10.6v10.8M15.2 12.2v7.6M17.8 13.8v4.4" /></svg>
           <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
@@ -247,15 +262,6 @@
           <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 8v16L16 16zM16 8v16l11.4-8z" /><path class="h" d="M6.8 11.2v9.6M9 12.8v6.4M11.2 14.4v3.2M18.2 11.2v9.6M20.4 12.8v6.4M22.6 14.4v3.2" /></svg>
           <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
         </button>
-        <div class="ch-year-box">
-          <label class="sr-only" for="year-input">Year</label>
-          <input class="ch-year" id="year-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="1815" />
-        </div>
-      </div>
-      <div class="ch-track" id="track">
-        <div class="ch-ticks" id="ticks" aria-hidden="true"></div>
-        <input class="ch-range" id="range" type="range" min="0" max="1000" step="1" value="800" aria-label="Year" />
-        <div class="ch-eras" id="eras" aria-hidden="true"></div>
       </div>
     </section>
 

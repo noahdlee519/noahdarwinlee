@@ -49,7 +49,9 @@
     var timeH = $("time").getBoundingClientRect().height || 80;
     document.documentElement.style.setProperty("--ch-time-h", Math.round(timeH) + "px");
     var cardH = phone && !$("card").hidden ? $("card").getBoundingClientRect().height : 0;
-    freeT = phone ? 58 : 76;
+    // The date sits under the top row on narrower screens, so the map starts below it there.
+    var yb = $("year-box"), ybBottom = yb ? $("top").offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
+    freeT = Math.max(phone ? 58 : 76, ybBottom);
     freeB = H - timeH - cardH;
     cx = W / 2;
     cy = (freeT + freeB) / 2;
@@ -3643,13 +3645,28 @@
     var next = Math.round(t) + 1;
     return modern && next >= 1886 ? monthTime(1886, 1) : next;
   }
+  // The time before t when playing backwards: a month back from 1886, a year back to 1200, and the
+  // previous change before that, the steps forward play takes.
+  function playPrev(t) {
+    if (isModern(t)) {
+      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1;
+      if (m < 1) { m = 12; y--; }
+      return y < 1886 ? 1885 : monthTime(y, m);
+    }
+    if (t <= PLAY.yearlyFrom) {
+      for (var p = points.length - 1; p >= 0; p--) if (points[p] < t - 1e-6) return points[p];
+      return FIRST_T;
+    }
+    var prev = Math.round(t) - 1;
+    return prev === 0 ? -1 : prev;
+  }
   function changedBetween(a, b) {
     if (isModern(a) !== isModern(b)) return true;
     for (var i = 0; i < points.length; i++) if (points[i] > a + 1e-6 && points[i] <= b + 1e-6) return true;
     return false;
   }
   function playWait(from, to) {
-    var changed = changedBetween(from, to);
+    var changed = changedBetween(Math.min(from, to), Math.max(from, to));
     if (isModern(to)) return changed ? PLAY.monthChange : PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return changed ? PLAY.yearChange : PLAY.year;
@@ -3657,24 +3674,29 @@
   function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + Math.round(now) : !!maps.length && maps[mapIndexFor(now)].snap === current); }
   function playStep() {
     if (!playLoaded()) return PLAY.load;
-    var from = now, to = playNext(now);
-    if (to > playEnd() + 1e-9) return -1;
+    var back = playBack(), from = now, to = back ? playPrev(now) : playNext(now);
+    if (back ? from <= FIRST_T + 1e-9 || to < FIRST_T - 1e-9 : to > playEnd() + 1e-9) return -1;
     setTime(to);
     return playWait(from, to);
   }
-  function playDelay(ms) { return playMode === "fast" ? ms / 2 : ms; }
+  // playMode is "normal", "fast", "back", or "back-fast".
+  function playBack() { return playMode.indexOf("back") === 0; }
+  function playDelay(ms) { return /fast$/.test(playMode) ? ms / 2 : ms; }
+  var PLAY_BUTTONS = [["play", "normal", "Play through time"], ["play-fast", "fast", "Play at double speed"], ["play-back", "back", "Play backwards"], ["play-back-fast", "back-fast", "Play backwards at double speed"]];
   function syncPlayButtons() {
     syncSearch();
-    [["play", "normal", "Play through time"], ["play-fast", "fast", "Play at double speed"]].forEach(function (b) {
+    PLAY_BUTTONS.forEach(function (b) {
       var on = playMode === b[1];
       $(b[0]).setAttribute("aria-pressed", on ? "true" : "false");
       $(b[0]).setAttribute("aria-label", on ? "Pause" : b[2]);
     });
   }
-  function startPlay(fast) {
-    var mode = fast ? "fast" : "normal";
+  function playModeOf(fast, back) { return (back ? "back" : "") + (back && fast ? "-fast" : fast ? "fast" : back ? "" : "normal"); }
+  function startPlay(fast, back) {
+    var mode = playModeOf(fast, back);
     if (playTimer) { playMode = mode; syncPlayButtons(); return; }
-    if (now >= playEnd() - 1e-9) setTime(KNOTS[0][0]);
+    if (back) { if (now <= FIRST_T + 1e-9 || now > playEnd() + 1e-9) setTime(playEnd()); }
+    else if (now >= playEnd() - 1e-9) setTime(FIRST_T);
     playMode = mode;
     syncPlayButtons();
     var tick = function () {
@@ -3688,9 +3710,11 @@
     clearTimeout(playTimer); playTimer = 0; playMode = "";
     syncPlayButtons();
   }
-  function togglePlay(fast) { if (playMode === (fast ? "fast" : "normal")) stopPlay(); else startPlay(fast); }
-  $("play").addEventListener("click", function () { togglePlay(false); });
-  $("play-fast").addEventListener("click", function () { togglePlay(true); });
+  function togglePlay(fast, back) { if (playMode === playModeOf(fast, back)) stopPlay(); else startPlay(fast, back); }
+  $("play").addEventListener("click", function () { togglePlay(false, false); });
+  $("play-fast").addEventListener("click", function () { togglePlay(true, false); });
+  $("play-back").addEventListener("click", function () { togglePlay(false, true); });
+  $("play-back-fast").addEventListener("click", function () { togglePlay(true, true); });
 
   function setFlat(on) {
     if (on === flat) return;
@@ -3706,8 +3730,6 @@
     nudge();
   }
   $("flat-btn").addEventListener("click", function () { setFlat(!flat); });
-  $("zoom-in").addEventListener("click", function () { zoomAt(view.zoom * 1.6, cx, cy); });
-  $("zoom-out").addEventListener("click", function () { zoomAt(view.zoom / 1.6, cx, cy); });
 
   var card = $("card"), wikiCache = new Map(), wikiAsk = 0;
   var BLURB_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
@@ -4495,7 +4517,8 @@
     if (typing || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
     if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(-1); else stepMap(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(1); else stepMap(1); }
-    else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey);
+    else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
+    else if (e.key === "o" || e.key === "O") togglePlay(e.shiftKey, true);
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
     else if (e.key === "+" || e.key === "=") zoomAt(view.zoom * 1.6, cx, cy);
     else if (e.key === "-" || e.key === "_" || e.key === "−") zoomAt(view.zoom / 1.6, cx, cy);
@@ -4712,7 +4735,7 @@
     shown: function () { return yearInput.value; },
     asof: function () { return asof.textContent; },
     playing: function () { return playTimer ? playMode : false; },
-    play: function (on, fast) { if (on) startPlay(!!fast); else stopPlay(); },
+    play: function (on, fast, back) { if (on) startPlay(!!fast, !!back); else stopPlay(); },
     keyOpen: function () { return !keyList.hidden; },
     keyRows: function () { return Array.prototype.filter.call(keyList.children, function (li) { return !li.hidden; }).map(function (li) { return li.getAttribute("data-key"); }); },
     setKeyOpen: function (on) { setKeyOpen(on, true); },

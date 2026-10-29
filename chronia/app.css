@@ -589,7 +589,7 @@ body.ch-page {
   align-items: center;
   gap: 22px;
   box-sizing: border-box;
-  padding: 12px calc(28px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
+  padding: 12px calc(20px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--rule);
   box-shadow: inset 0 3px 0 var(--bg), inset 0 4px 0 var(--ch-faint), 0 -4px 12px -6px rgba(58, 42, 27, 0.3);
 }
@@ -606,10 +606,20 @@ body.ch-page {
   height: 34px;
 }
 
-.ch-year-box {
-  width: 176px;
-  margin-left: 4px;
-  text-align: center;
+.ch-play-back .ch-icon-play {
+  transform: scaleX(-1);
+}
+
+/* The date sits at the top, in the middle of the page, in a frame like the title's. */
+.ch-top > .ch-year-box {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  width: 250px;
+  padding: 0 14px;
 }
 
 .ch-year {
@@ -1215,7 +1225,18 @@ body.ch-page {
   }
 }
 
+@media (max-width: 880px) {
+  .ch-top > .ch-year-box {
+    top: calc(var(--ch-bar) + var(--ch-gap));
+  }
+}
+
 @media (max-width: 640px) {
+  .ch-top > .ch-year-box {
+    width: 220px;
+    height: 40px;
+  }
+
   :root.ch,
   :root.ch[data-theme] {
     --ch-gap: 8px;
@@ -1268,15 +1289,6 @@ body.ch-page {
     display: none;
   }
 
-  #zoom-in,
-  #zoom-out {
-    display: none;
-  }
-
-  #flat-btn {
-    border-left: 0;
-  }
-
   .ch-layers {
     width: min(250px, calc(100vw - 16px));
   }
@@ -1286,22 +1298,24 @@ body.ch-page {
   }
 
   .ch-time {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "back . fwd" "track track track";
+    align-items: center;
+    gap: 2px 8px;
     padding: 8px calc(14px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
   }
 
-  .ch-when {
-    justify-content: space-between;
+  .ch-when-back {
+    grid-area: back;
   }
 
-  .ch-play-fast {
-    order: 2;
+  .ch-when-fwd {
+    grid-area: fwd;
   }
 
-  .ch-year-box {
-    margin-left: 0;
+  .ch-track {
+    grid-area: track;
   }
 
   .ch-key-btn {
