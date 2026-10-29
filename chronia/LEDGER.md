@@ -70,6 +70,15 @@ Each entry:
 - Alternatives: a different estimate for 1950 for every European city (see Known limits).
 - Left out: other towns of the region the sources lack (Lund, Landskrona, Kristianstad, Helsingør, Fredericia, Wismar, Greifswald); the 1950 estimates of Rostock, Flensburg, Schwerin, and Stralsund, still well under their real size.
 
+## 2014–2026 | Syria and Ukraine | zones of control by month
+
+- What changed: the Zones of control layer shows who held the ground in Syria from September 2014 and in Ukraine from March 2022, month by month: the Syrian government, the opposition and the Turkish-backed forces, the Kurdish-led SDF, al-Nusra and Tahrir al-Sham, the Islamic State, United States forces at al-Tanf, Israel in the south from 2025, Druze militias, and the transitional government from 2025; and Ukraine and Russia. Each month's towns are split into Voronoi cells and joined by side, with the front between the sides.
+- Tables: `WARS`, `SIDES`, `rules`, `overrides`, and `defaults` in `tools/build-control.mjs`; the towns in `tools/control/syria-towns.json` and `ukraine-towns.json`, from `tools/fetch-control.mjs`.
+- Sources: (1) English Wikipedia's `Module:Syrian Civil War detailed map` and `Module:Russo-Ukrainian war detailed map` with its overview map, one revision a month (CC BY-SA 4.0), whose town entries editors source one by one. (2) None independent: no open dataset of control areas exists for either war (ISW's and DeepStateMap's maps are not openly licensed). Noah agreed to Wikipedia as the source for recent wars, against MAPMAKING.md's rule, on 29 October 2026.
+- Confidence: medium. Cells between towns are a guess at the line, best where towns are dense; the desert of eastern Syria and the north of Ukraine are drawn from few towns.
+- Alternatives: ISW's daily control polygons for Ukraine (more exact, but not openly licensed).
+- Left out: Ukraine from 2014 to February 2022 (Crimea and the Donbas), which the module doesn't cover; the Kursk incursion of 2024–25, which the modules marked in too few towns to draw; contested towns.
+
 ## 1861–2026 | world | zones of control by month (US Civil War, WWII, recent wars, Mexican cartels)
 
 - Claimed by the 1886 session, 28 October 2026: a Control layer over the map, hatching the land each side held month by month, with front lines, for the US Civil War, the Second World War, wars since 1990, and the presence of Mexican cartels by municipality and year. New files under `data/control/`, a new builder, and the layer in `app.js`; the borders and the yearly data are untouched.

@@ -69,7 +69,8 @@ const WARS = [
       [/Russian|Ba'athist Loyalists|tribe|Military Council|Truce|Uncontrolled/i, null],
       [/Government|Syrian Arab Army|SAA/i, "syGov"]
     ],
-    fallback: { red: "syGov", black: "isis", yellow: "syKurd", green: "syOpp", green0d0: "syOpp" }
+    fallback: { red: "syGov", black: "isis", yellow: "syKurd", green: "syOpp", green0d0: "syOpp" },
+    overrides: [["2016-05", "2024-11", "lime", "syHts"]]
   },
   {
     key: "ukraine",
@@ -80,7 +81,8 @@ const WARS = [
       [/Ukraine/i, "ukraine"],
       [/Uncontrolled|truce/i, null]
     ],
-    fallback: { blue: "ukraine", red: "russia" }
+    fallback: { blue: "ukraine", red: "russia" },
+    defaults: [[["Kursk", "Belgorod", "Bryansk"], "russia"]]
   }
 ];
 
@@ -100,7 +102,11 @@ const areaKm2 = (poly) => {
 const signed = (r) => { let s = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) s += (r[j][0] - r[i][0]) * (r[j][1] + r[i][1]); return s / 2; };
 const clockwise = (polys) => polys.map((poly) => poly.map((r, k) => ((signed(r) < 0) === (k === 0) ? r : r.slice().reverse())));
 
+const DEFAULT_STEP = 0.15, DEFAULT_GAP = 0.12;
+const inRing = (r, x, y) => { let inside = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const a = r[i], b = r[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside; } return inside; };
+
 function sideOf(war, month, colour, legends, memory) {
+  for (const [from, to, c, side] of war.overrides || []) if (c === colour && month >= from && month <= to) return side;
   const label = legends[colour] ?? memory.get(colour);
   if (legends[colour] !== undefined) memory.set(colour, legends[colour]);
   if (label !== undefined) {
@@ -128,6 +134,17 @@ for (const war of WARS) {
   const region = clip.union(...regionPolys.map((p) => [p]));
   let bbox = [Infinity, Infinity, -Infinity, -Infinity];
   for (const poly of region) for (const [x, y] of poly[0]) { bbox = [Math.min(bbox[0], x), Math.min(bbox[1], y), Math.max(bbox[2], x), Math.max(bbox[3], y)]; }
+  const fill = [];
+  for (const [names, side] of war.defaults || []) {
+    for (const f of ne.features.filter((g) => names.includes(g.properties.name))) {
+      const polys = polysOf(f.geometry);
+      let b = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const poly of polys) for (const [x, yy] of poly[0]) b = [Math.min(b[0], x), Math.min(b[1], yy), Math.max(b[2], x), Math.max(b[3], yy)];
+      for (let x = Math.ceil(b[0] / DEFAULT_STEP) * DEFAULT_STEP; x <= b[2]; x += DEFAULT_STEP) for (let yy = Math.ceil(b[1] / DEFAULT_STEP) * DEFAULT_STEP; yy <= b[3]; yy += DEFAULT_STEP) {
+        if (polys.some((poly) => inRing(poly[0], x, yy))) fill.push([+x.toFixed(3), +yy.toFixed(3), side]);
+      }
+    }
+  }
   const inBox = (t) => t[1] >= bbox[0] - 0.2 && t[1] <= bbox[2] + 0.2 && t[0] >= bbox[1] - 0.2 && t[0] <= bbox[3] + 0.2;
   const state = new Map(), memory = new Map(), shapes = [], rows = [], open = new Map();
   let prevSig = "", prevShapes = null, monthsUsed = 0;
@@ -151,6 +168,11 @@ for (const war of WARS) {
     else {
       const ids = [...sides.keys()];
       const pts = ids.map((i) => [src.towns[i][1], src.towns[i][0]]);
+      for (const [x, yy, s] of fill) {
+        if (pts.some((q) => Math.abs(q[0] - x) < DEFAULT_GAP && Math.abs(q[1] - yy) < DEFAULT_GAP)) continue;
+        const id = "f" + pts.length;
+        ids.push(id); sides.set(id, s); pts.push([x, yy]);
+      }
       const cells = cellsOf(pts, region, bbox);
       const geoms = [], groups = new Map();
       ids.forEach((id, k) => { if (!cells[k]) return; const s = sides.get(id); if (!groups.has(s)) groups.set(s, []); groups.get(s).push(geoms.length); geoms.push({ type: "Polygon", arcs: null, coords: cells[k] }); });
