@@ -235,6 +235,47 @@ const NE_REGIONS = [
   }
 ];
 
+// More countries, from tools/divisions-ne.json: for each, the days its Natural Earth units held (`from`, `to`), and the changes inside that range as
+// the arrangement just before each date (`events`, newest first). On a day d, a unit belongs to the `before` group of the earliest event after d that
+// lists it, and otherwise is its own division (under `rename`, or with the units of `groups`). Consecutive stretches with the same divisions join into one span.
+const MORE_PATH = resolve(here, "divisions-ne.json");
+const PIECE_PICKS = { DNH: (c) => c[0] > 72.9 && c[1] < 20.37, DD: (c) => !(c[0] > 72.9 && c[1] < 20.37) };
+const dayBefore = (iso) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) - 86400000).toISOString().slice(0, 10);
+function researchParts(rec, units) {
+  const drop = new Set(rec.drop || []), rename = rec.rename || {}, groups = rec.groups || [];
+  const base = (u) => u.replace(/\[[^\]]*\]$/, "");
+  const pieces = new Set();
+  for (const e of rec.events || []) for (const g of e.before) for (const u of g.ne) if (u !== base(u)) pieces.add(u);
+  for (const g of groups) for (const u of g.ne) if (u !== base(u)) pieces.add(u);
+  const live = units.filter((u) => !drop.has(u)).concat([...pieces].filter((u) => !drop.has(base(u))));
+  const groupOf = new Map();
+  for (const g of groups) for (const u of g.ne) groupOf.set(u, g);
+  const own = (u) => groupOf.has(u) ? { name: groupOf.get(u).name, ne: groupOf.get(u).ne.filter((x) => !drop.has(x)) } : { name: rename[u] || u, ne: [u] };
+  const events = (rec.events || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  const dayAfter = (iso) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + 86400000).toISOString().slice(0, 10);
+  const ends = Object.values(rec.until || {}).map(dayAfter).concat(Object.values(rec.only_from || {}));
+  const bounds = [...new Set([rec.from, ...events.map((e) => e.date), ...ends].filter((d) => d >= rec.from && (!rec.to || d <= rec.to)))].sort();
+  const stretches = bounds.map((a, i) => [a, i + 1 < bounds.length ? dayBefore(bounds[i + 1]) : rec.to || null]);
+  const open = new Map(), parts = [];
+  for (const [a, b] of stretches) {
+    const now = new Map();
+    for (const u of live) {
+      if (rec.until && rec.until[base(u)] && rec.until[base(u)] < a) continue;
+      if (rec.only_from && rec.only_from[base(u)] && rec.only_from[base(u)] > a) continue;
+      // A unit cut into pieces (`Unit[TAG]`) is drawn whole or as its pieces, as the next event after the day lists it.
+      const ev = events.find((e) => e.date > a && e.before.some((g) => g.ne.some((x) => base(x) === base(u))));
+      if (ev ? !ev.before.some((x) => x.ne.includes(u)) : u !== base(u) && !groupOf.has(u)) continue;
+      const g = ev ? ev.before.find((x) => x.ne.includes(u)) : own(u);
+      const ne = g.ne.filter((x) => !drop.has(x)).slice().sort(), key = g.name + "|" + ne.join("|");
+      now.set(key, { name: g.name, ne });
+    }
+    for (const [key, p] of open) if (!now.has(key)) { parts.push(span(p.name, p.ne, p.first, dayBefore(a))); open.delete(key); }
+    for (const [key, g] of now) if (!open.has(key)) open.set(key, { ...g, first: a });
+  }
+  for (const p of open.values()) parts.push(span(p.name, p.ne, p.first, rec.to || null));
+  return parts;
+}
+
 function rewind(g) {
   const fix = (poly) => {
     const a = d3.geoArea({ type: "Polygon", coordinates: [poly[0]] });
@@ -436,11 +477,21 @@ function naturalEarth() {
   }
   const geoms = topo.objects.provinces.geometries;
   const out = [];
-  for (const R of NE_REGIONS) {
-    const mine = geoms.filter((g) => g.properties.c === R.c);
+  const more = existsSync(MORE_PATH) ? JSON.parse(readFileSync(MORE_PATH, "utf8")).regions.map((m) => ({ key: m.key, c: m.c, names: m.names, rec: m })) : [];
+  // A country in divisions-ne.json takes the place of its entry in NE_REGIONS.
+  for (const R of NE_REGIONS.filter((r) => !more.some((m) => m.c === r.c)).concat(more)) {
+    const take = R.rec && R.rec.take ? R.rec.take : {};
+    const mine = geoms.filter((g) => g.properties.c === R.c || (take[g.properties.c] || []).includes(g.properties.n));
     const byName = new Map();
+    // Natural Earth gives some capitals the name of the province round them (Moscow, Kyiv, Almaty, Tashkent, Sanaa); for these countries the larger keeps the name in `dupes`.
+    const dupes = R.rec && R.rec.dupes ? R.rec.dupes : {}, sizes = new Map();
+    for (const g of mine) { const n = g.properties.n; if (dupes[n]) sizes.set(g, d3.geoArea(client.feature(topo, g))); }
     for (const g of mine) {
       let n = g.properties.n;
+      if (dupes[n]) {
+        const big = mine.filter((x) => x.properties.n === n).sort((a, b) => sizes.get(b) - sizes.get(a))[0], two = Array.isArray(dupes[n]) ? dupes[n] : [n, dupes[n]];
+        n = g === big ? two[1] : two[0];
+      }
       const f = client.feature(topo, g);
       const a = d3.geoArea(f) * R_KM * R_KM;
       if (R.c === "MEX" && n === "Mexico") { if (a < 50) continue; n = "Mexico City"; }
@@ -450,14 +501,30 @@ function naturalEarth() {
       byName.get(n).push(g);
     }
     const used = new Set();
+    if (!R.parts) R.parts = researchParts(R.rec, [...byName.keys()]);
+    for (const n of R.rec ? R.rec.drop || [] : []) used.add(n);
     const entries = R.parts.map((pt) => {
-      const gs = [];
+      const gs = [], cutPieces = [];
       for (const n of pt.ne) {
+        const m = n.match(/^(.*)\[([^\]]*)\]$/);
+        if (m) { cutPieces.push([m[1], m[2]]); continue; }
         if (!byName.has(n)) throw new Error(R.key + ": no " + n + " in Natural Earth");
         used.add(n);
         gs.push(...byName.get(n));
       }
-      let geo = client.merge(topo, gs);
+      let geo = gs.length ? client.merge(topo, gs) : { type: "MultiPolygon", coordinates: [] };
+      // Pieces of a unit: `lat>X` or `lat<X` cut it at a parallel, and named picks keep the pieces whose centre passes the test in PIECE_PICKS.
+      for (const [n, tag] of cutPieces) {
+        if (!byName.has(n)) throw new Error(R.key + ": no " + n + " in Natural Earth");
+        used.add(n);
+        let polys = client.merge(topo, byName.get(n)).coordinates;
+        const lat = tag.match(/^lat([<>])(-?[\d.]+)$/);
+        if (lat) polys = clip.intersection(polys, lat[1] === ">" ? [[[-180, +lat[2]], [180, +lat[2]], [180, 90], [-180, 90], [-180, +lat[2]]]] : [[[-180, -90], [180, -90], [180, +lat[2]], [-180, +lat[2]], [-180, -90]]]);
+        else if (PIECE_PICKS[tag]) polys = polys.filter((p) => PIECE_PICKS[tag](d3.geoCentroid({ type: "Polygon", coordinates: p })));
+        else throw new Error(R.key + ": no way to cut " + n + "[" + tag + "]");
+        geo = { type: "MultiPolygon", coordinates: geo.coordinates.concat(polys) };
+        if (lat) (R.splits || (R.splits = [])).push(+lat[2]);
+      }
       if (pt.cut || pt.pick) {
         let polys = geo.coordinates;
         if (pt.pick) polys = polys.filter((p) => pt.pick(d3.geoCentroid({ type: "Polygon", coordinates: p })));
@@ -469,9 +536,9 @@ function naturalEarth() {
       }
       return { name: pt.name, first: pt.first, last: pt.last, geo: rewind(geo) };
     });
-    const cuts = [];
+    const cuts = (R.splits || []).slice();
     R.parts.forEach((pt) => { if (pt.cut) cuts.push(pt.cut[0][1], pt.cut[1][1]); });
-    if (cuts.length) entries.forEach((en, i) => { if (!R.parts[i].cut) en.geo = splitAt(en.geo, cuts); });
+    if (cuts.length) entries.forEach((en, i) => { if (!R.parts[i].cut && !R.parts[i].ne.some((n) => /\[lat/.test(n))) en.geo = splitAt(en.geo, cuts); });
     const unused = [...byName.keys()].filter((n) => !used.has(n));
     if (unused.length) console.log(R.key + ": Natural Earth pieces not used: " + unused.join(", "));
     out.push(writeRegion(R.key, R.names, entries));

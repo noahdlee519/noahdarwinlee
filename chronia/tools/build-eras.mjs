@@ -1528,7 +1528,8 @@ const SMALL = [
   { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", "2019-12-31", "dependency", LONDON]] },
   { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
   { name: "Guernsey", shape: { c: "GGY" }, wiki: "Bailiwick of Guernsey", periods: [["1400-01-01", "1940-06-29", "dependency", LONDON], ["1940-06-30", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
-  { name: "Gibraltar", shape: { c: "GIB" }, periods: [["1704-08-04", "2019-12-31", "colony", LONDON]] },
+  // Natural Earth's Gibraltar is six points that stop 1.5 km short of the border with Spain, leaving the north of the town and the isthmus in Spain; this outline follows the border fence (36.156° N), the airport, the harbour moles, and the coast round Europa Point.
+  { name: "Gibraltar", shape: { c: "GIB", ring: [[-5.359, 36.1557], [-5.35, 36.156], [-5.3425, 36.1548], [-5.342, 36.148], [-5.342, 36.1425], [-5.3405, 36.1327], [-5.3398, 36.125], [-5.3415, 36.116], [-5.3455, 36.1095], [-5.349, 36.111], [-5.353, 36.117], [-5.3555, 36.1215], [-5.359, 36.129], [-5.3615, 36.135], [-5.363, 36.142], [-5.3645, 36.146], [-5.364, 36.1515], [-5.359, 36.1557]] }, periods: [["1704-08-04", "2019-12-31", "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND }, wiki: "British Hong Kong", periods: [["1841-01-26", "1860-10-23", "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND.concat(HK_KOWLOON) }, wiki: "British Hong Kong", periods: [["1860-10-24", "1898-06-30", "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG" }, wiki: "British Hong Kong", periods: [["1898-07-01", "1941-12-24", "colony", LONDON], ["1941-12-25", "1945-08-29", "occupied", TOKYO], ["1945-08-30", "1997-06-30", "colony", LONDON]] },
@@ -1566,6 +1567,7 @@ const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupie
 const neAll = JSON.parse(readFileSync(nePath, "utf8")).features;
 const neUnits = neAll.filter((f) => SMALL.some((s) => (!s.shape.c || s.shape.c === f.properties.adm0_a3) && (!s.shape.n || s.shape.n.includes(f.properties.name))));
 const smallShape = (sh) => {
+  if (sh.ring) return rewind([[sh.ring]]);
   const feats = neUnits.filter((f) => (!sh.c || f.properties.adm0_a3 === sh.c) && (!sh.n || sh.n.includes(f.properties.name)));
   if (!feats.length || (sh.n && feats.length !== sh.n.length)) throw new Error("SMALL: Natural Earth units missing for " + JSON.stringify(sh));
   const all = rewind(clip.union(...feats.map((f) => polysOf(f.geometry))));
@@ -3652,7 +3654,23 @@ writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: C
 writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges }, polities: entries }));
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
-const polys = landGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);
+let polys = landGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);
+// UCHRONIA's provinces are simplified so far that some small territories lose their land (Gibraltar's Rock was sea south of 36.14° N), and the page clips every shape to the land; so the part of a small territory's shape that the land leaves out is joined to the land beside it.
+{
+  const added = [];
+  SMALL.forEach((s, i) => {
+    const sp = rewind(smallPolys[i]), b = boxOf(sp), near = [b[0] - 0.05, b[1] - 0.05, b[2] + 0.05, b[3] + 0.05];
+    const hit = polys.map((p, k) => k).filter((k) => boxHit(boxOf([polys[k]]), near));
+    const missing = hit.length ? rewind(tryClip(clip.difference, sp, rewind(clipRect(hit.map((k) => polys[k]), near))) || []) : sp;
+    const km2 = km2Of(missing);
+    if (km2 < 0.5) return;
+    const joined = rewind(tryClip(clip.union, hit.map((k) => polys[k]), missing) || []);
+    if (!joined.length) return;
+    polys = polys.filter((p, k) => !hit.includes(k)).concat(joined);
+    added.push(s.name + " " + km2.toFixed(1) + " km²");
+  });
+  console.log("land: small territories' land added where the land left it out: " + (added.join(", ") || "none"));
+}
 const land = { type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: polys } }] };
 const landTopo = (km, q) => {
   const t = server.topology({ land }, q);
