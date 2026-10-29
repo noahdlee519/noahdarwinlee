@@ -266,21 +266,26 @@
   // The globe while it turns, as Google Earth does it: the map is painted once
   // onto a flat image of the whole world (equirectangular, 4096 by 2048), which
   // the graphics card wraps round the globe each frame, so a turn costs almost
-  // nothing. Names, cities, and the frame are still drawn on top as usual. It is
-  // used only while the whole globe or most of it is in view, where drawing the
-  // map afresh each frame is slowest, and the image is painted again, when the
-  // map is still, after anything about the map changes.
-  var FAST_ZOOM = 1.7, TEX_W = 4096, TEX_H = 2048;
+  // nothing. Names, cities, and the frame are still drawn on top as usual. The
+  // image has about 11 pixels to a degree, so it is used only while the globe is
+  // small enough that a pixel of the image covers no more than a pixel of the
+  // screen at its centre: any larger, and the turning globe would be blurred and
+  // sharpen when it stops. On a sharp (retina) screen that is a globe smaller
+  // than the opening one, so there the map is drawn afresh each frame, as CHRONIA's is.
+  // The image is painted again, when the map is still, after anything about the map changes.
+  var TEX_W = 4096, TEX_H = 2048;
   var mapGen = 0, texPass = false, texS = 0, texZoom = 1, texLine = 1, mapTex = { canvas: null, gl: null, glCanvas: null, key: "", ready: false, timer: 0, failed: false };
   function texKey() {
     return [mapGen, ownerVersion, countriesVersion, pieces.length, pal.antique ? 1 : 0, pal.ocean, (pal.colors || []).join(), ui.terrain, ui.rivers, ui.lakes, ui.midLakes, ui.regionLines, ui.fine,
       fineData ? 1 : 0, seaDeep ? 1 : 0, rivers ? 1 : 0, lakes ? 1 : 0, relief && relief.ready() ? 1 : 0, rd.gen, rd.put.size, Math.round(Math.log2(view.zoom) * 3)].join("|");
   }
+  // Whether the image is as sharp as the screen at the globe's centre (slack > 1 allows a larger globe).
+  function texSharp(slack) { return projection.scale() * dprFull * D2R <= TEX_W / 360 * slack; }
   function fastGlobe() {
-    return interacting > 0 && !flat && !texPass && mapTex.ready && mapTex.key === texKey() && view.zoom <= FAST_ZOOM && !satOn();
+    return interacting > 0 && !flat && !texPass && mapTex.ready && mapTex.key === texKey() && texSharp(1) && !satOn();
   }
   function scheduleTexture() {
-    if (mapTex.failed || flat || satOn() || view.zoom > FAST_ZOOM * 1.4 || mapTex.key === texKey()) return;
+    if (mapTex.failed || flat || satOn() || !texSharp(1.4) || mapTex.key === texKey()) return;
     clearTimeout(mapTex.timer);
     mapTex.timer = setTimeout(function () {
       if (interacting > 0 || stroke || flat) return scheduleTexture();
@@ -366,9 +371,6 @@
     drawScale();
     ctx.restore();
   }
-  // When frames come slowly while the map moves (most often a large, sharp
-  // screen), it is drawn at a lower resolution until it stops, and sharp again then.
-  var lastFrameAt = 0, lagFrames = 0, lowRes = false;
   function backing(v) {
     if (dpr === v) return;
     dpr = v;
@@ -380,12 +382,7 @@
   function frame(now) {
     renderQueued = false;
     now = now || performance.now();
-    if (interacting > 0) {
-      var gap = lastFrameAt ? now - lastFrameAt : 0;
-      if (gap > 0 && gap < 1000) { if (gap > 24) { if (++lagFrames >= 4) lowRes = true; } else lagFrames = 0; }
-      lastFrameAt = now;
-    } else lastFrameAt = 0;
-    backing(interacting > 0 && lowRes ? Math.max(0.75, dprFull / 2) : dprFull);
+    backing(dprFull);
     var t0 = performance.now();
     render();
     if (interacting > 0) noteCost(performance.now() - t0);
@@ -1375,7 +1372,7 @@
     sat.draw(o);
     if (satShow) satShow.transferFromImageBitmap(satCanvas.transferToImageBitmap());
   }
-  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.25, reliefRes = RELIEF_RES;
+  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, reliefRes = RELIEF_RES;
   function sizeRelief(res) {
     reliefRes = res;
     reliefCanvas.width = Math.max(1, Math.round(W * dpr * res)); reliefCanvas.height = Math.max(1, Math.round(H * dpr * res));
@@ -1402,7 +1399,7 @@
   }
   var reliefKey = "", reliefPat = false;
   function reliefFrame() {
-    var res = interacting && !texPass ? RELIEF_MOVING : RELIEF_RES;
+    var res = RELIEF_RES;
     // The map texture for the moving globe draws the whole world at its own size, so the terrain is drawn at that size too.
     if (res !== reliefRes || reliefCanvas.width !== Math.max(1, Math.round(W * dpr * res)) || reliefCanvas.height !== Math.max(1, Math.round(H * dpr * res))) sizeRelief(res);
     var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
@@ -1587,7 +1584,7 @@
     if (vis) { if (cutFills) ctx.restore(); drawPieceFills(vis, lvl, satellite, satLand, relPat, bl); }
     drawRivers(S);
     drawLakes(S, satellite);
-    var ua = interacting > 0 && lowRes ? 0 : clamp01((S - 700) / 500), pa = provAlpha(S);
+    var ua = clamp01((S - 700) / 500), pa = provAlpha(S);
     if (vis) clipOutPieces(vis);
     drawRegionLines(L, unitArcs, provArcs, ua, pa);
     if (vis) ctx.restore();
