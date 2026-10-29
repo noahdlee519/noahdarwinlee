@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1914–1930 | Europe and the Middle East | World War I: occupations on the main map
+
+- Claimed by the session of 29 October 2026 (the months-from-1800 session's), 29 October 2026: the land each side held in the First World War, drawn on the borders map as occupied territory under its occupier and dated stage by stage (Belgium, Luxembourg, and northern France; Russian Poland, the Baltic, Belarus, and Ukraine; East Prussia, Galicia, and Bukovina; Romania, Serbia, Montenegro, Albania, eastern Macedonia, and Friuli and Veneto; Mesopotamia, Palestine and Syria, Sinai, and Western Armenia), and the occupations that followed the armistices until the treaties (Alsace-Lorraine, Italy's, the Rhineland to 1930, and Constantinople). Adds `tools/occupations.json` and a step in `tools/build-eras.mjs` (csOccupy, before the WWII step), and rebuilds `data/modern.json` and `data/eras.json`.
+
 ## 1931–1945 | Europe, North and East Africa, the Middle East, China, Southeast Asia, and the Pacific | World War II: wartime borders and zones of control
 
 - Claimed by the session of 29 October 2026 (the save button's), 29 October 2026: wartime borders on the main map (annexations, occupation regimes, and puppet states such as the Protectorate of Bohemia and Moravia, the General Government, Vichy France, Croatia, Manchukuo, and Wang Jingwei's government, dated to the day and cut to the ground the Axis held each month), and a zones-of-control layer for the war, month by month, from towns' capture and liberation dates. Touches `tools/build-eras.mjs`, `tools/build-control.mjs`, `data/modern.json`, and `data/control/`. Noah asked this session for the war on 29 October 2026, so it takes over the Second World War part of the 1886 session's control-layer claim below; please pull before rebuilding `data/modern.json`.
