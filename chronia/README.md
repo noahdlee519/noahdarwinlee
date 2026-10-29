@@ -448,6 +448,10 @@ What it does:
 
 The 14 files come to about 613 KB, or 219 KB compressed (us 166 KB, cn 84 KB, in 60 KB, ca 59 KB, br 55 KB, mx 36 KB, ng 27 KB, jp 26 KB, ar 22 KB, fr 22 KB, de 17 KB, es 17 KB, au 16 KB, at 6 KB), and none is loaded at the start. A file is loaded only when its country is on the screen.
 
+### Zones of control
+
+A layer in progress: who held the ground month by month in wars since 1861, hatched over the map. The towns behind it for recent wars come from English Wikipedia's "detailed map" modules, which mark each town with the colour of the side holding it (`Module:Syrian Civil War detailed map` from September 2014, and `Module:Russo-Ukrainian war detailed map` with its overview map from March 2022). `tools/fetch-control.mjs` takes, for each month, the last revision of each module before the 15th, reads every mark's latitude, longitude, and colour (resolving the modules' shortcuts such as `m.SDF` and `mk.rus`, and the colour of each side from the map's own caption that month), and writes `tools/control/<war>-towns.json`: the places, the changes from month to month, the captions, and the revisions used. It needs network access to Wikipedia and runs from the repository root with `node chronia/tools/fetch-control.mjs` (or with the wars' keys, `syria ukraine`), waiting between requests as Wikipedia asks. The modules are CC BY-SA 4.0.
+
 ### Rows in the snapshot files
 
 A row in a map file is `[id, ruler id, part-of id, precision, people, label]`, with ids into `polities` in `eras.json`. A missing row value is `-1`, and unnamed land is `[-1]`. A `label` is `[lon, lat, radius km, room km, angle°, area km², spots]`.
