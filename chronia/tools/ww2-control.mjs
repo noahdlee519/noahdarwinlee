@@ -14,7 +14,7 @@ export const WW2_SIDES = {
 };
 
 // The countries in each war, from the day they entered it: [Natural Earth adm0_a3, first day, test on
-// the unit's properties and centre (optional)]. Neutral countries are left out, so they are never hatched.
+// the unit's properties and centre (optional), last day (optional)]. Neutral countries are left out, so they are never hatched.
 const west = (lon) => (p, c) => c[0] < lon;
 const north = (lat) => (p, c) => c[1] > lat;
 const named = (...names) => (p) => names.includes(p.name);
@@ -25,7 +25,8 @@ const EUROPE_UNITS = [
   ["BLR", "1939-09-17"], ["UKR", "1939-09-17", (p) => p.name !== "Transcarpathia" && p.name !== "Chernivtsi"],
   ["RUS", "1939-09-17", (p, c) => c[0] < 60 && p.name !== "Kaliningrad" && !["Nenets", "Komi", "Yamal-Nenets", "Khanty-Mansiy"].includes(p.name)],
   ["GEO", "1939-09-17"], ["ARM", "1939-09-17"], ["AZE", "1939-09-17"],
-  ["FIN", "1939-11-30"], ["ALA", "1939-11-30"],
+  // Finland was at peace between the Winter War and the Continuation War.
+  ["FIN", "1939-11-30", null, "1940-03-13"], ["FIN", "1941-06-25"],
   ["DNK", "1940-04-09"], ["NOR", "1940-04-09", (p) => !["Svalbard", "Bouvet Island"].includes(p.name)],
   ["NLD", "1940-05-10", (p, c) => c[1] > 50], ["BEL", "1940-05-10"], ["LUX", "1940-05-10"],
   ["ITA", "1940-06-10"], ["SMR", "1940-06-10"], ["VAT", "1940-06-10"], ["MLT", "1940-06-10"], ["ALB", "1940-06-10"],
@@ -81,13 +82,13 @@ export function buildWW2(env) {
     const feats = [], unitFrom = [];
     ne.features.forEach((f) => {
       const p = f.properties, c = centre(f);
-      let first = null;
-      for (const [a3, from, test] of war.units) {
+      const spans = [];
+      for (const [a3, from, test, to] of war.units) {
         if (p.adm0_a3 !== a3 || (test && !test(p, c))) continue;
         if (a3 === "USA" && !(c[0] > ALEUTIANS[0] || c[0] < -165)) continue;
-        if (first === null || from < first) first = from;
+        spans.push([from, to || "9999-12-31"]);
       }
-      if (first === null) return;
+      if (!spans.length) return;
       let geom = f.geometry;
       if (p.adm0_a3 === "USA") {
         const bx = [[[ALEUTIANS[0], ALEUTIANS[1]], [ALEUTIANS[2], ALEUTIANS[1]], [ALEUTIANS[2], ALEUTIANS[3]], [ALEUTIANS[0], ALEUTIANS[3]], [ALEUTIANS[0], ALEUTIANS[1]]]];
@@ -96,13 +97,13 @@ export function buildWW2(env) {
         geom = { type: "MultiPolygon", coordinates: cut };
       }
       feats.push({ type: "Feature", properties: {}, geometry: geom });
-      unitFrom.push(first);
+      unitFrom.push(spans);
     });
     const rawTopo = server.topology({ u: { type: "FeatureCollection", features: feats } }, 1e6);
     const topoU = simplify.simplify(simplify.presimplify(rawTopo, simplify.sphericalTriangleArea), weightFor(0.5));
     const regionMemo = new Map();
     const regionAt = (iso) => {
-      const ids = []; unitFrom.forEach((d, i) => { if (d <= iso) ids.push(i); });
+      const ids = []; unitFrom.forEach((sp, i) => { if (sp.some(([a, b]) => a <= iso && iso <= b)) ids.push(i); });
       const key = ids.length + ":" + ids[0] + ":" + ids[ids.length - 1] + ":" + ids.reduce((t, i) => (t * 31 + i) % 1e9, 7);
       if (!regionMemo.has(key)) regionMemo.set(key, { key, polys: ids.length ? client.merge(topoU, ids.map((i) => topoU.objects.u.geometries[i])).coordinates : [] });
       return regionMemo.get(key);
