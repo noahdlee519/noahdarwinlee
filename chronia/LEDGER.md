@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1931–1945 | Europe, North and East Africa, the Middle East, China, Southeast Asia, and the Pacific | World War II: wartime borders and zones of control
+
+- Claimed by the session of 29 October 2026 (the save button's), 29 October 2026: wartime borders on the main map (annexations, occupation regimes, and puppet states such as the Protectorate of Bohemia and Moravia, the General Government, Vichy France, Croatia, Manchukuo, and Wang Jingwei's government, dated to the day and cut to the ground the Axis held each month), and a zones-of-control layer for the war, month by month, from towns' capture and liberation dates. Touches `tools/build-eras.mjs`, `tools/build-control.mjs`, `data/modern.json`, and `data/control/`.
+
 ## 1839–1870 | the Low Countries, Denmark, and northern Germany | the Netherlands, Belgium, Luxembourg, Denmark, Schleswig-Holstein, Hanover, Hesse-Kassel, Nassau, and Frankfurt
 
 - Claimed by the 1886 session, 29 October 2026: the Netherlands, Belgium, and Luxembourg from 1839, and Denmark from 1865, drawn with their borders of 1886 (unchanged in between), so the hole east of Arnhem, the lines across the Netherlands, the slivers south of Zeeland, and Belgium's province of Luxembourg drawn as a second Luxembourg go; Schleswig, Holstein, and Lauenburg held jointly by Austria and Prussia in 1865 and 1866 and Prussian from 1867, instead of unclaimed; and Hanover, Hesse-Kassel, Nassau, and Frankfurt ending with their annexation by Prussia in 1866. Changes `tools/build-eras.mjs` and rebuilds `data/dated/` and `data/eras.json`.
