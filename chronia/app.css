@@ -344,7 +344,46 @@ body.ch-page {
 }
 
 .ch-about-tip .ch-keys {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
   font-size: 12px;
+}
+
+.ch-about-tip .ch-keys-head {
+  margin: 0 0 5px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ch-muted);
+}
+
+.ch-about-tip .ch-keys dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  align-items: baseline;
+}
+
+.ch-about-tip .ch-keys dt {
+  white-space: nowrap;
+}
+
+.ch-about-tip .ch-keys dd {
+  margin: 0;
+}
+
+.ch-about-tip kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 4px;
+  border: 1px solid color-mix(in srgb, var(--rule) 45%, transparent);
+  border-radius: 3px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .ch-about-tip .ch-donate {
@@ -1411,4 +1450,10 @@ body.ch-page {
 @keyframes ch-fade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .ch-about-tip .ch-keys {
+    display: none;
+  }
 }
