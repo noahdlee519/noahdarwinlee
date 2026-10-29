@@ -79,6 +79,15 @@ Each entry:
 - Alternatives: a different estimate for 1950 for every European city (see Known limits).
 - Left out: other towns of the region the sources lack (Lund, Landskrona, Kristianstad, Helsingør, Fredericia, Wismar, Greifswald); the 1950 estimates of Rostock, Flensburg, Schwerin, and Stralsund, still well under their real size.
 
+## 1861–1865 | the United States | zones of control in the Civil War
+
+- What changed: the Zones of control layer shows the Union's and the Confederacy's ground in the slave States from July 1861 to May 1865, county by county, on the dates the sources give: 1 July 1861 (with Kentucky and Missouri, outside the loyal line, held by neither side), 1 March, 15 May, and 15 July 1862, 31 July 1863, 1 January 1864, and 31 December 1864, the last holding until 26 May 1865. With the layer on, Shift and the arrows step by month in those years, and the date and the address show the month.
+- Tables: `SCANS` (the city markers read off each scan), `LINES` (each dated limit's colours, and the lines it borrows where it runs under them), `BANDS`, and `SEEDS` in `tools/civilwar.py`; the shapes in `tools/control/civilwar.json`; `buildCivilWar` in `tools/build-control.mjs`.
+- Sources: (1) the U.S. Coast Survey's *Historical sketch of the rebellion*, July 1862 and 1864 editions (public domain), whose coloured limits give every date to 1 January 1864. (2) The U.S. Army Center of Military History's map 37 in *American Military History*, vol. 1 (2009, public domain), the land the Confederacy lost year by year, which gives the gains of 1864 and checks the first: at the end of 1863 the two agree on 796 of 906 counties, and differ most in Louisiana west of the Mississippi, which the Coast Survey counts as held and the Army's map does not.
+- Confidence: medium. The Coast Survey's lines are contemporary and dated but generous, drawn at 1:5,850,000; the Army's map is a sketch in broad bands; and a county takes whichever side holds most of it.
+- Alternatives: Esri's "Union troops control extent", a tracing of an earlier edition of the Army's map (no open licence); the Official Records atlas's maps of the United States every six months (plates CLXII to CLXXI), which shade whole States, not the ground held.
+- Left out: April to June 1861; changes between the dated maps, such as the Confederate invasion of Kentucky in the autumn of 1862 and the Union's gains of 1865, which no source dates within the year; western Texas, beyond both maps; New Mexico and Arizona; and the Indian Territory.
+
 ## 2014–2026 | Syria and Ukraine | zones of control by month
 
 - What changed: the Zones of control layer shows who held the ground in Syria from September 2014 and in Ukraine from March 2022, month by month: the Syrian government, the opposition and the Turkish-backed forces, the Kurdish-led SDF, al-Nusra and Tahrir al-Sham, the Islamic State, United States forces at al-Tanf, Israel in the south from 2025, Druze militias, and the transitional government from 2025; and Ukraine and Russia. Each month's towns are split into Voronoi cells and joined by side, with the front between the sides.
@@ -91,6 +100,7 @@ Each entry:
 ## 1861–2026 | world | zones of control by month (US Civil War, WWII, recent wars, Mexican cartels)
 
 - Claimed by the 1886 session, 28 October 2026: a Control layer over the map, hatching the land each side held month by month, with front lines, for the US Civil War, the Second World War, wars since 1990, and the presence of Mexican cartels by municipality and year. New files under `data/control/`, a new builder, and the layer in `app.js`; the borders and the yearly data are untouched.
+- Done: Syria and Ukraine and the US Civil War (entries above), and Mexico's cartels (described in the README, with OCVED as the source). Left: the Second World War, from the War Department's semimonthly atlas from July 1943 and at its turning points before.
 
 ## 1500–1885 and 1886–2019 | North America | the United States, British North America, and Canada; Saint-Domingue; Greenland
 

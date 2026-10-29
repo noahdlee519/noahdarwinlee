@@ -260,5 +260,24 @@ function buildMexico() {
   index.wars = index.wars.filter((w) => w[0] !== "mexico").concat([["mexico", "Mexican cartels", rows[0][1], rows[rows.length - 1][2], bbox.map((v) => +v.toFixed(2)), "control/mexico.json"]]).sort((a, b) => a[2] - b[2]);
   console.log("mexico: " + years.length + " years, " + rows.length + " shapes of " + sideKeys.length + " groups, " + missing.size + " municipalities not found, " + Math.round(JSON.stringify(data).length / 1024) + " KB");
 }
+function buildCivilWar() {
+  const file = resolve(input, "civilwar.json");
+  if (!existsSync(file)) { console.warn("civilwar: no " + file + " (run civilwar.py)"); return; }
+  const src = JSON.parse(readFileSync(file, "utf8"));
+  const day = (s) => { const [y, m, d] = s.split("-").map(Number); return dayOf(y, m, d); };
+  const sideKeys = [...new Set(src.rows.map((r) => r[0]))];
+  const shapes = src.rows.map((r) => ({ type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: clockwise(r[3].type === "Polygon" ? [r[3].coordinates] : r[3].coordinates) } }));
+  let bbox = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const f of shapes) for (const poly of f.geometry.coordinates) for (const [x, y] of poly[0]) bbox = [Math.min(bbox[0], x), Math.min(bbox[1], y), Math.max(bbox[2], x), Math.max(bbox[3], y)];
+  const raw = server.topology({ c: { type: "FeatureCollection", features: shapes } }, Q);
+  const topo = client.quantize(simplify.simplify(simplify.presimplify(raw, simplify.sphericalTriangleArea), weightFor(SIMPLIFY_KM * 3)), Q);
+  const rows = src.rows.map((r, i) => [sideKeys.indexOf(r[0]), day(r[1]), day(r[2]), i]);
+  const data = { key: "civilwar", name: "American Civil War", credit: "the Coast Survey's war maps and the Army's map", source: src.source, sides: sideKeys.map((k) => [k, src.sides[k][0], src.sides[k][1]]), rows, topo };
+  writeFileSync(resolve(out, "civilwar.json"), JSON.stringify(data));
+  const first = rows.reduce((a, r) => Math.min(a, r[1]), Infinity), last = rows.reduce((a, r) => Math.max(a, r[2]), -Infinity);
+  index.wars = index.wars.filter((w) => w[0] !== "civilwar").concat([["civilwar", data.name, first, last, bbox.map((v) => +v.toFixed(2)), "control/civilwar.json"]]).sort((a, b) => a[2] - b[2]);
+  console.log("civilwar: " + rows.length + " shapes of " + sideKeys.length + " sides, " + Math.round(JSON.stringify(data).length / 1024) + " KB");
+}
 if (!only.length || only.includes("mexico")) buildMexico();
+if (!only.length || only.includes("civilwar")) buildCivilWar();
 writeFileSync(resolve(out, "../control.json"), JSON.stringify(index));

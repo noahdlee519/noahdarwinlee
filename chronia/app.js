@@ -2768,7 +2768,13 @@
     }).catch(function (e) { w.load = null; console.warn("control", w.key, e); });
     return w.load;
   }
-  function ctlDay() { return isModern(now) ? dayOfTime(now) : null; }
+  var ctlMonth = 0;
+  function ctlDay() { return isModern(now) ? dayOfTime(now) : dayFromDate(Math.round(now), ctlMonth || 7, MID_DAY); }
+  function ctlFineYear(y) {
+    if (!layers.control || !ctlIndex || y >= 1886) return false;
+    var a = dayFromDate(y, 1, 1), b = dayFromDate(y, 12, 31);
+    return ctlIndex.some(function (w) { return w.first < 0 && w.first <= b && w.last >= a; });
+  }
   function ctlWars(day, needView) {
     if (!ctlIndex) { ctlLoadIndex(); return []; }
     var out = [];
@@ -3318,7 +3324,7 @@
   function fmtDate(day) { var d = dateOfDay(day); return MONTHS[d[1] - 1] + " " + d[2] + ", " + d[0]; }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
-    if (!isModern(t)) return fmtYear(Math.round(t));
+    if (!isModern(t)) return (ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " : "") + fmtYear(Math.round(t));
     var d = dateOfDay(dayOfTime(t));
     return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
   }
@@ -3483,6 +3489,7 @@
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
     if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
+    if (isModern(t) || fromRange || t !== Math.round(now)) ctlMonth = 0;
     // A card describes one date, so changing the date closes it.
     if (t !== now && (selected >= 0 || selCity) && !card.hidden) closeCard();
     now = t;
@@ -3549,9 +3556,28 @@
       else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
       return;
     }
-    var next = Math.round(now) + dir;
+    var yr = Math.round(now);
+    if (ctlFineYear(yr)) {
+      var mo = (ctlMonth || 7) + dir, y2 = yr;
+      if (mo < 1) { mo = 12; y2--; } else if (mo > 12) { mo = 1; y2++; }
+      if (ctlFineYear(y2)) {
+        if (y2 !== yr) setTime(y2);
+        ctlMonth = mo;
+        syncTime();
+        writeHash();
+        scheduleRender();
+        return;
+      }
+    }
+    var next = yr + dir;
     if (next === 0) next = dir;
     setTime(modern && next >= 1886 ? monthTime(1886, 1) : next);
+    if (ctlFineYear(next) && Math.round(now) === next) {
+      ctlMonth = dir > 0 ? 1 : 12;
+      syncTime();
+      writeHash();
+      scheduleRender();
+    }
   }
   // While the marker is dragged, only the date in the box follows it; the map is drawn for the new
   // date when the marker is let go (drag.t is the date it points at).
@@ -3631,7 +3657,16 @@
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
   function commitYearInput() {
-    var t = parseTime(yearInput.value);
+    var t = parseTime(yearInput.value), fine = /^([A-Za-z]+) (\d{4})$/.exec(String(yearInput.value).trim());
+    if (t === null && fine && monthIndex(fine[1]) && ctlFineYear(+fine[2])) {
+      stopPlay();
+      setTime(+fine[2]);
+      ctlMonth = monthIndex(fine[1]);
+      syncTime();
+      writeHash();
+      scheduleRender();
+      return;
+    }
     if (t === null) { yearInput.value = fmtNow(now); return; }
     stopPlay();
     if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fmtNow(now);
@@ -4553,7 +4588,7 @@
     }, 250);
   }
   function hashTime() {
-    if (!isModern(now)) return String(Math.round(now));
+    if (!isModern(now)) return String(Math.round(now)) + (ctlMonth && layers.control ? "-" + (ctlMonth < 10 ? "0" : "") + ctlMonth : "");
     var d = dateOfDay(dayOfTime(now));
     return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
   }
@@ -4716,6 +4751,8 @@
       }
       cities = r[2] ? { ranks: r[2].ranks, rows: prepCities(r[2], false), minorLoad: null } : null;
       buildPoints();
+      var fine = h.y ? /^(\d{4})-(\d{2})$/.exec(h.y) : null;
+      if (fine && +fine[1] < 1886 && +fine[2] >= 1 && +fine[2] <= 12) { ctlMonth = +fine[2]; h.y = fine[1]; }
       var t0 = h.y ? parseTime(h.y) : null;
       now = Math.max(KNOTS[0][0], t0 !== null ? t0 : START_YEAR);
       land = { hi: prepLand(r[1].hi), lo: prepLand(r[1].lo) };
