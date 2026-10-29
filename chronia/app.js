@@ -351,7 +351,7 @@
       pal[k] = cs.getPropertyValue("--ch-" + k).trim();
     });
     ["city-halo", "town"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
-    ["division", "division-label"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
+    ["division", "division-label", "front"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
     pal.colors = []; pal.bands = [];
     for (var i = 0; i < PALETTE; i++) {
       pal.colors.push(cs.getPropertyValue("--ch-c" + i).trim() || "#e7d6b9");
@@ -1022,6 +1022,7 @@
     drawLakes(kp);
 
     drawDivisionLines(snap, L, landPath, S);
+    drawControl(landPath, S);
     syncKey();
     var lw = lineWeight(S);
     ctx.lineJoin = "round"; ctx.lineCap = "round";
@@ -2738,6 +2739,119 @@
     for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && reg.names.indexOf(polityName(p.id)) >= 0) out.push(i); }
     return out;
   }
+  var ctlIndex = null, ctlIndexLoad = null;
+  function ctlLoadIndex() {
+    if (!ctlIndexLoad) ctlIndexLoad = fetchJSON("data/control.json").then(function (d) {
+      ctlIndex = d.wars.map(function (w) { return { key: w[0], name: w[1], first: w[2], last: w[3], cap: divBoxCap(w[4]), file: "data/" + w[5], data: null, load: null }; });
+      scheduleRender();
+    }).catch(function (e) { console.warn("control", e); });
+    return ctlIndexLoad;
+  }
+  function ctlLoad(w) {
+    if (!w.load) w.load = fetchJSON(w.file).then(function (d) {
+      w.data = { kind: d.kind || "control", sides: d.sides, source: d.source, rows: d.rows, topo: d.topo, geoms: d.topo.objects.c.geometries, feats: [], arcs: [], states: new Map() };
+      scheduleRender();
+      return w;
+    }).catch(function (e) { w.load = null; console.warn("control", w.key, e); });
+    return w.load;
+  }
+  function ctlDay() { return isModern(now) ? dayOfTime(now) : null; }
+  function ctlWars(day, needView) {
+    if (!ctlIndex) { ctlLoadIndex(); return []; }
+    var out = [];
+    for (var i = 0; i < ctlIndex.length; i++) {
+      var w = ctlIndex[i];
+      if (day < w.first || day > w.last) continue;
+      if (needView && !divInView(w.cap)) continue;
+      if (!w.data) { ctlLoad(w); continue; }
+      out.push(w);
+    }
+    return out;
+  }
+  function ctlState(w, day) {
+    var D = w.data, idx = [];
+    for (var i = 0; i < D.rows.length; i++) { var r = D.rows[i]; if (r[1] <= day && day <= r[2]) idx.push(i); }
+    var key = idx.join(","), st = D.states.get(key);
+    if (st) return st;
+    var owner = new Map(), lines = [];
+    var walk = function (g, a) {
+      if (typeof a === "number") {
+        var j = a < 0 ? ~a : a, o = owner.get(j);
+        if (o === undefined) owner.set(j, g); else if (o !== g && o !== -1) { owner.set(j, -1); lines.push(ctlArc(D, j)); }
+        return;
+      }
+      for (var m = 0; m < a.length; m++) walk(g, a[m]);
+    };
+    idx.forEach(function (i) { var g = D.rows[i][3]; if (D.geoms[g].arcs) walk(g, D.geoms[g].arcs); });
+    st = { rows: idx, lines: lines };
+    D.states.set(key, st);
+    if (D.states.size > 64) D.states.delete(D.states.keys().next().value);
+    return st;
+  }
+  function ctlArc(D, j) {
+    var a = D.arcs[j];
+    if (!a) a = D.arcs[j] = prepareArc(topojson.feature(D.topo, { type: "LineString", arcs: [j] }).geometry.coordinates);
+    return a;
+  }
+  function ctlFeat(w, g) {
+    var D = w.data, f = D.feats[g];
+    if (!f) { var geo = topojson.feature(D.topo, D.geoms[g]); f = D.feats[g] = { geo: geo, shape: prepare(geo) }; }
+    return f;
+  }
+  function hatch(colour) {
+    var key = "ctl|" + colour, p = stripeCache.get(key);
+    if (p) return p;
+    var cv = document.createElement("canvas");
+    cv.width = 14; cv.height = 2;
+    var g = cv.getContext("2d");
+    g.fillStyle = colour; g.fillRect(0, 0, 5, 2);
+    p = ctx.createPattern(cv, "repeat");
+    setStripeT(p);
+    stripeCache.set(key, p);
+    return p;
+  }
+  var ctlDrawn = false;
+  function drawControl(landPath, S) {
+    ctlDrawn = false;
+    if (!layers.control) return;
+    var day = ctlDay();
+    if (day === null) return;
+    var wars = ctlWars(day, true);
+    if (!wars.length) return;
+    ctlDrawn = true;
+    var lw = lineWeight(S);
+    ctx.save();
+    ctx.clip(landPath);
+    for (var k = 0; k < wars.length; k++) {
+      var w = wars[k], D = w.data, st = ctlState(w, day);
+      for (var i = 0; i < st.rows.length; i++) {
+        var r = D.rows[st.rows[i]], side = D.sides[r[0]];
+        ctx.beginPath(); traceFeature(ctx, ctlFeat(w, r[3]).shape);
+        var presence = D.kind === "presence";
+        ctx.globalAlpha = presence ? 0.1 : 0.16; ctx.fillStyle = side[2]; ctx.fill();
+        ctx.globalAlpha = presence ? 0.45 : 0.62; ctx.fillStyle = hatch(side[2]); ctx.fill();
+      }
+      if (D.kind === "presence") continue;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath(); traceArcs(ctx, st.lines);
+      ctx.strokeStyle = pal.front; ctx.lineWidth = 1.1 + 0.5 * lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function controlAt(ll) {
+    if (!layers.control || !ll) return null;
+    var day = ctlDay();
+    if (day === null) return null;
+    var wars = ctlWars(day, false);
+    for (var k = 0; k < wars.length; k++) {
+      var w = wars[k], D = w.data, st = ctlState(w, day);
+      for (var i = 0; i < st.rows.length; i++) {
+        var r = D.rows[st.rows[i]];
+        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return (D.kind === "presence" ? "presence of " : "held by ") + D.sides[r[0]][1];
+      }
+    }
+    return null;
+  }
   var divDrawn = false;
   function drawDivisionLines(snap, L, landPath, S) {
     divDrawn = false;
@@ -3150,6 +3264,8 @@
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
     setTip(dv ? "region" : p.people ? null : "flag", dv ? dv + ", " + polityName(p.id) : polityName(p.id));
     var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) + (p.member >= 0 && p.member !== p.id ? ", in the " + polityName(p.member) : "") : p.member >= 0 && p.member !== p.id ? "in the " + polityName(p.member) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
+    var held = controlAt(lonLatAt(x, y));
+    if (held) sub = (sub ? sub + " | " : "") + held;
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
@@ -4052,7 +4168,7 @@
   });
 
   var STORE_LAYERS = "chronia-layers";
-  var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true, subdivisions: true };
+  var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true, subdivisions: true, control: false };
   var layersBtn = $("layers-btn"), layersPanel = $("layers");
   try {
     var savedLayers = JSON.parse(localStorage.getItem(STORE_LAYERS) || "{}");
@@ -4262,6 +4378,7 @@
     band: function (s) { return s.polys.some(function (p) { return p && p.band; }); },
     disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
     division: function () { return divDrawn; },
+    control: function () { return ctlDrawn; },
     member: function (s) { return s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
     marsh: function () { return marshDrawn; }
   };

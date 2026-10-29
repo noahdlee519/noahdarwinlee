@@ -25,6 +25,7 @@
   --ch-city-ring: #f3ead3;
   --ch-city-halo: rgba(243, 234, 211, 0.62);
   --ch-division: rgba(92, 64, 38, 0.62);
+  --ch-front: #6e1d14;
   --ch-division-label: rgba(84, 60, 38, 0.8);
   --ch-select: #8c2a1a;
   --ch-hover: rgba(58, 42, 27, 0.1);
@@ -848,6 +849,9 @@ body.ch-page {
 .ch-key-sample .k-town { fill: var(--ch-town); }
 .ch-key-sample .k-c1 { fill: var(--ch-c1); }
 .ch-key-sample .k-stripes { fill: url(#k-stripes); }
+.ch-key-sample .k-hatch { fill: url(#k-hatch); }
+.ch-key-sample .k-hatch-line { fill: #3d8a3a; fill-opacity: 0.75; }
+.ch-key-sample .k-front { fill: none; stroke: var(--ch-front); stroke-width: 1.4; }
 .ch-key-sample .k-c3 { fill: var(--ch-c3); }
 .ch-key-sample .k-c6 { fill: var(--ch-c6); }
 .ch-key-sample .k-c8 { fill: var(--ch-c8); }
