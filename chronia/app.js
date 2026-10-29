@@ -3449,8 +3449,6 @@
     if (!drag) { follow(now); range.value = String(Math.round(posOf(now) * RANGE_MAX)); }
     range.setAttribute("aria-valuetext", fmtNow(now));
     if (document.activeElement !== yearInput) yearInput.value = fmtNow(now);
-    yearInput.classList.toggle("is-long", yearInput.value.length > 9);
-    yearInput.classList.toggle("is-longer", yearInput.value.length > 14);
     if (isModern(now)) {
       var day = dayOfTime(now), since = modern.changes[changeBefore(Math.min(day, modern.toDay))];
       if (!current || !current.modern) asof.textContent = "Loading the borders";
@@ -3563,8 +3561,6 @@
   function showDrag(t) {
     drag.t = t;
     yearInput.value = fmtNow(t);
-    yearInput.classList.toggle("is-long", yearInput.value.length > 9);
-    yearInput.classList.toggle("is-longer", yearInput.value.length > 14);
     range.setAttribute("aria-valuetext", yearInput.value);
   }
   function endDrag() {
@@ -4381,7 +4377,6 @@
     if (it.sea) { flyTo(it.ll[0], it.ll[1], it.sea === 1 ? 260 : it.sea === 2 ? 700 : 1700); return; }
     flyTo(it.ll[0], it.ll[1], scaleFor(it.km2, 500, 8000));
   }
-  function searchWhen() { return yearInput && yearInput.value ? yearInput.value : ""; }
   function setSearchOpen(open, focusBtn) {
     if (open && playMode) return;
     searchPanel.hidden = !open;
@@ -4390,7 +4385,6 @@
       if (!layersPanel.hidden) setLayersOpen(false, false);
       if (about.classList.contains("is-open")) setAbout(false);
       if (cities && !cities.minorLoad) loadMinorCities();
-      $("search-when").textContent = searchWhen();
       searchInput.value = "";
       runSearch();
       searchInput.focus();
