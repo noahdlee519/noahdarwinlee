@@ -3606,8 +3606,8 @@
       scheduleRender();
     }
   }
-  // While the marker is dragged, only the date in the box follows it; the map is drawn for the new
-  // date when the marker is let go (drag.t is the date it points at).
+  // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
+  // (drag.t is the date it points at).
   var drag = null;
   function snapTime(y) {
     y = Math.max(FIRST_T, Math.min(lastT() - 1e-6, y));
@@ -3621,6 +3621,8 @@
   }
   function showDrag(t) {
     drag.t = t;
+    rangeActive = true;
+    if (Math.abs(t - now) > 1e-9) setTime(t, true);
     yearInput.value = fmtNow(t);
     range.setAttribute("aria-valuetext", yearInput.value);
   }
@@ -3630,7 +3632,7 @@
     cancelAnimationFrame(drag.raf);
     drag = null;
     rangeActive = false;
-    if (t !== null && Math.abs(t - now) > 1e-9) setTime(t); else syncTime();
+    if (t !== null && Math.abs(t - now) > 1e-9) setTime(t); else { syncTime(); scheduleRender(); }
   }
   // At either end of the bar, the window scrolls while the marker is held there, slowly at first and
   // faster the longer it is held (from 60% of the window a second, gaining twice that each second).
