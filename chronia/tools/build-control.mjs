@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildWW2 } from "./ww2-control.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -307,4 +308,5 @@ function buildCivilWar() {
 }
 if (!only.length || only.includes("mexico")) buildMexico();
 if (!only.length || only.includes("civilwar")) buildCivilWar();
+buildWW2({ ne, server, client, simplify, clip, Delaunay, input, out, index, dayOf, areaKm2, clockwise, weightFor, writeFileSync, readFileSync, existsSync, resolve, only });
 writeFileSync(resolve(out, "../control.json"), JSON.stringify(index));

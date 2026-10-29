@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { adoptLand } from "./adopt-land.mjs";
 import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
+import { applyWW2 } from "./ww2-borders.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -36,10 +37,12 @@ const weightFor = (km) => (km / R_KM) ** 2;
 
 const LINEAGE = [
   ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland"],
-  ["Kingdom of France", "France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"],
+  ["Kingdom of France", "France", "Vichy France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"],
   ["Grand Duchy of Moscow", "Grand Principality of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"],
   ["Han", "Han Empire", "Jin", "Sui Empire", "Tang Empire", "Song Empire", "Ming Empire", "Ming Chinese Empire", "Ming dynasty", "Manchu Empire", "Qing Empire", "Qing dynasty", "China"],
   ["United States of America", "United States"],
+  ["Slovak Republic", "Slovakia"],
+  ["Independent State of Croatia", "Croatia"],
   ["Castile", "Crown of Castile", "Spain", "Kingdom of Spain", "Spanish Habsburg", "Habsburg Spain", "First Spanish Republic"],
   ["Portugal", "Kingdom of Portugal"],
   ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"],
@@ -1536,8 +1539,8 @@ const SMALL = [
   { name: "Andorra", shape: { c: "AND" }, gapKm: 4, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", "2019-12-31", "state"]] },
   { name: "Vatican City", shape: { c: "VAT" }, periods: [["1929-06-07", "2019-12-31", "state"]] },
   { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", "2019-12-31", "dependency", LONDON]] },
-  { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
-  { name: "Guernsey", shape: { c: "GGY" }, wiki: "Bailiwick of Guernsey", periods: [["1400-01-01", "1940-06-29", "dependency", LONDON], ["1940-06-30", "1945-05-08", "occupied", BERLIN], ["1945-05-09", "2019-12-31", "dependency", LONDON]] },
+  { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-07", "occupied", BERLIN], ["1945-05-08", "2019-12-31", "dependency", LONDON]] },
+  { name: "Guernsey", shape: { c: "GGY" }, wiki: "Bailiwick of Guernsey", periods: [["1400-01-01", "1940-06-29", "dependency", LONDON], ["1940-06-30", "1945-05-07", "occupied", BERLIN], ["1945-05-08", "2019-12-31", "dependency", LONDON]] },
   // Natural Earth's Gibraltar is six points that stop 1.5 km short of the border with Spain, leaving the north of the town and the isthmus in Spain; this outline follows the border fence (36.156° N), the airport, the harbour moles, and the coast round Europa Point.
   { name: "Gibraltar", shape: { c: "GIB", ring: [[-5.359, 36.1557], [-5.35, 36.156], [-5.3425, 36.1548], [-5.342, 36.148], [-5.342, 36.1425], [-5.3405, 36.1327], [-5.3398, 36.125], [-5.3415, 36.116], [-5.3455, 36.1095], [-5.349, 36.111], [-5.353, 36.117], [-5.3555, 36.1215], [-5.359, 36.129], [-5.3615, 36.135], [-5.363, 36.142], [-5.3645, 36.146], [-5.364, 36.1515], [-5.359, 36.1557]] }, periods: [["1704-08-04", "2019-12-31", "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND }, wiki: "British Hong Kong", periods: [["1841-01-26", "1860-10-23", "colony", LONDON]] },
@@ -3241,6 +3244,14 @@ for (const r of csZones(csRedraw(csWithExtras(csRaw)))) {
   hbEdits.forEach((e) => { const k = e.base.name + " <- " + e.from + " " + e.y; added.set(k, Math.max(added.get(k) || 0, km2Of(e.polys))); });
   console.log("from 1886: " + backs + " spans backfilled from later CShapes shapes, " + backEdits.length + " pieces added to CShapes spans by them; " + hbFills.length + " spans filled from historical-basemaps, " + hbEdits.length + " pieces of it added to the states that hold most of their shape: " + [...added].sort((p, q) => q[1] - p[1]).slice(0, 25).map(([k, v]) => k + " " + Math.round(v / 1000) + "k km²").join("; "));
   list = reshape(list, hbEdits, false).concat(hbFills);
+  {
+    const axisPath = resolve(here, "control/ww2-axis.json");
+    if (!existsSync(axisPath)) console.warn("WW2: no " + axisPath + " (run build-control.mjs first), so the wartime borders are left out");
+    else {
+      list = applyWW2({ list, clip, csRaw, neAll, carve, withBox, rewind, polysOf, km2Of, polyKm2, boxOf, dayOf, turfBuf, endDay, axisFile: JSON.parse(readFileSync(axisPath, "utf8")) });
+      console.log("WW2 done, " + Math.round(process.uptime()) + " s");
+    }
+  }
   const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
   const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
   list = fillSmallGaps(addDisputes(resolveOverlaps(list, "from 1886")));
