@@ -727,6 +727,24 @@ body.ch-page {
   pointer-events: none;
 }
 
+.ch-ticks,
+.ch-eras {
+  clip-path: inset(-12px 0 -12px 0);
+}
+
+.ch-eras {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+}
+
+.ch-strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  will-change: transform;
+}
+
 .ch-eras span {
   position: absolute;
   translate: -50% 0;

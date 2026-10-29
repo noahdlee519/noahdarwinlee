@@ -3357,22 +3357,16 @@
     return t.slice(0, -1).join(", ") + ", and " + t[t.length - 1];
   }
 
-  var KNOTS = [[-3400, 0], [-500, 0.12], [500, 0.22], [1200, 0.31], [1400, 0.37], [1800, 0.53], [1886, 0.6], [LAST_YEAR + 1, 1]];
-  var RANGE_MAX = 10000;
-  function posOf(y) {
-    for (var i = 1; i < KNOTS.length; i++) {
-      var a = KNOTS[i - 1], b = KNOTS[i];
-      if (y <= b[0]) return a[1] + (b[1] - a[1]) * (y - a[0]) / (b[0] - a[0]);
-    }
-    return 1;
-  }
-  function yearAt(t) {
-    for (var i = 1; i < KNOTS.length; i++) {
-      var a = KNOTS[i - 1], b = KNOTS[i];
-      if (t <= b[1]) return a[0] + (b[0] - a[0]) * (t - a[1]) / (b[1] - a[1]);
-    }
-    return LAST_YEAR + 1;
-  }
+  // The scale is even, at a few pixels a year, and shows a window of the years (tl.start for tl.span
+  // years); the window scrolls when the date leaves it, and while the marker is held at either end of
+  // the bar, so dragging it to the left edge runs back continuously to 3400 BC.
+  var KNOTS = [[-3400, 0]], FIRST_T = -3400;
+  var RANGE_MAX = 10000, TL_PX = 5, TL_MIN = 80, TL_MAX = 300, TL_EDGE = 6;
+  var tl = { start: 1760, span: 250, ppy: 5, w: 1250 };
+  function lastT() { return LAST_YEAR + 1; }
+  function posOf(y) { return (y - tl.start) / tl.span; }
+  function yearAt(t) { return tl.start + t * tl.span; }
+  function clampStart(s) { return Math.max(FIRST_T, Math.min(lastT() - tl.span, s)); }
   var range = $("range"), yearInput = $("year-input"), asof = { textContent: "" };
   range.max = String(RANGE_MAX);
   function trackWidth() { return Math.max(1, $("ticks").getBoundingClientRect().width); }
@@ -3383,38 +3377,62 @@
     if (dated) dated.changes.forEach(function (y) { points.push(y); });
     points.sort(function (a, b) { return a - b; });
   }
+  function sizeWindow() {
+    var w = trackWidth();
+    tl.w = w;
+    tl.span = Math.max(TL_MIN, Math.min(TL_MAX, Math.round(w / TL_PX)));
+    tl.ppy = w / tl.span;
+    tl.start = clampStart(tl.start);
+  }
+  // Moves the window; the ticks and their labels are one long strip each, moved with a transform.
+  function setWindow(s) {
+    tl.start = clampStart(s);
+    var x = "translateX(" + (-(tl.start - FIRST_T) * tl.ppy).toFixed(1) + "px)";
+    ["ticks-strip", "eras-strip"].forEach(function (id) { var el = $(id); if (el) el.style.transform = x; });
+  }
+  // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it.
+  function follow(t) {
+    var p = posOf(t);
+    if (p < 0.04 || p > 0.96) setWindow(t - tl.span / 2);
+  }
   function placeTicks() {
     if (!maps.length && !dated) return;
-    var ticks = $("ticks"), eras = $("eras"), w = trackWidth();
+    sizeWindow();
+    var ticks = $("ticks"), eras = $("eras"), ppy = tl.ppy, width = (lastT() - FIRST_T) * ppy;
     ticks.textContent = ""; eras.textContent = "";
+    var ts = document.createElement("div"), es = document.createElement("div");
+    ts.id = "ticks-strip"; es.id = "eras-strip";
+    ts.className = es.className = "ch-strip";
+    ts.style.width = es.style.width = width.toFixed(0) + "px";
+    ticks.appendChild(ts); eras.appendChild(es);
+    var at = function (y) { return ((y - FIRST_T) * ppy).toFixed(1) + "px"; };
     var add = function (y, cls) {
       var s = document.createElement("span");
       if (cls) s.className = cls;
-      s.style.left = (posOf(y) * 100).toFixed(3) + "%";
-      ticks.appendChild(s);
+      s.style.left = at(y);
+      ts.appendChild(s);
       return s;
     };
-    var marks = [];
-    for (var y = -3000; y <= 1000; y += 500) marks.push(y);
-    for (y = 1100; y <= 1800; y += 100) marks.push(y);
-    for (y = 1810; y <= 2020; y += 10) marks.push(y);
-    marks.forEach(function (y) { add(y === 0 ? 1 : y, y % 1000 === 0 || y === 1500 || y === 1900 || y === 1950 ? "is-major" : ""); });
+    // Labels every so many years, with at least 70 px between them, and five minor ticks to a label.
+    var steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000], step = steps[steps.length - 1];
+    for (var i = 0; i < steps.length; i++) if (steps[i] * ppy >= 70) { step = steps[i]; break; }
+    var minor = step / 5;
+    for (var y = Math.ceil(FIRST_T / minor) * minor; y <= lastT(); y += minor) {
+      var major = y % step === 0;
+      add(y === 0 ? 1 : y, major ? "is-major" : "");
+      if (!major) continue;
+      var lab = document.createElement("span");
+      lab.textContent = y === 0 ? "AD 1" : y < 0 ? fmtYear(y) : String(y);
+      lab.style.left = at(y === 0 ? 1 : y);
+      es.appendChild(lab);
+    }
     maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });
     changeTicks = modern ? modern.changes.map(function (d) { return add(timeOfDay(d), "is-change"); }) : [];
     datedTicks = dated ? dated.changes.map(function (y) { return add(y, "is-change"); }) : [];
     nowTick = null;
-    var labels = [-3000, -2000, -1000, 1, 500, 1000, 1500, 1700, 1800, 1900, 1950, 2000], lastRight = -Infinity;
-    labels.forEach(function (y) {
-      var x = posOf(y) * w, text = y === 1 ? "AD 1" : fmtYear(y), tw = text.length * 6.6, shift = x < tw / 2 ? x / tw : 0.5;
-      var left = x - tw * shift;
-      if (left < lastRight + 10) return;
-      lastRight = left + tw;
-      var s = document.createElement("span");
-      s.textContent = text;
-      s.style.left = (posOf(y) * 100).toFixed(3) + "%";
-      if (shift !== 0.5) s.style.translate = (-shift * 100).toFixed(1) + "% 0";
-      eras.appendChild(s);
-    });
+    setWindow(tl.start);
+    follow(drag ? drag.t : now);
+    if (!drag) range.value = String(Math.round(posOf(now) * RANGE_MAX));
     markCurrentTick();
   }
   var changeTicks = [], nowTick = null, datedTicks = [];
@@ -3428,7 +3446,7 @@
   }
   var rangeActive = false;
   function syncTime() {
-    if (!rangeActive) range.value = String(Math.round(posOf(now) * RANGE_MAX));
+    if (!drag) { follow(now); range.value = String(Math.round(posOf(now) * RANGE_MAX)); }
     range.setAttribute("aria-valuetext", fmtNow(now));
     if (document.activeElement !== yearInput) yearInput.value = fmtNow(now);
     yearInput.classList.toggle("is-long", yearInput.value.length > 9);
@@ -3458,7 +3476,7 @@
   }
   function setTime(t, fromRange) {
     if (!maps.length && !dated) return;
-    t = Math.max(KNOTS[0][0], Math.min(LAST_YEAR + 0.999, t));
+    t = Math.max(FIRST_T, Math.min(LAST_YEAR + 0.999, t));
     if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
     // A card describes one date, so changing the date closes it.
     if (t !== now && (selected >= 0 || selCity) && !card.hidden) closeCard();
@@ -3530,26 +3548,70 @@
     if (next === 0) next = dir;
     setTime(modern && next >= 1886 ? monthTime(1886, 1) : next);
   }
+  // While the marker is dragged, only the date in the box follows it; the map is drawn for the new
+  // date when the marker is let go (drag.t is the date it points at).
+  var drag = null;
+  function snapTime(y) {
+    y = Math.max(FIRST_T, Math.min(lastT() - 1e-6, y));
+    if (modern && y >= 1885.5) {
+      var yr = Math.floor(Math.max(y, 1886)), mo = Math.min(12, Math.floor((Math.max(y, 1886) - yr) * 12) + 1);
+      return yr > LAST_YEAR ? monthTime(LAST_YEAR, 12) : monthTime(yr, mo);
+    }
+    y = Math.round(y);
+    return y === 0 ? 1 : y;
+  }
+  function showDrag(t) {
+    drag.t = t;
+    yearInput.value = fmtNow(t);
+    yearInput.classList.toggle("is-long", yearInput.value.length > 9);
+    yearInput.classList.toggle("is-longer", yearInput.value.length > 14);
+    range.setAttribute("aria-valuetext", yearInput.value);
+  }
+  function endDrag() {
+    if (!drag) return;
+    var t = drag.t;
+    cancelAnimationFrame(drag.raf);
+    drag = null;
+    rangeActive = false;
+    if (t !== null && Math.abs(t - now) > 1e-9) setTime(t); else syncTime();
+  }
+  // At either end of the bar, the window scrolls while the marker is held there, slowly at first and
+  // faster the longer it is held (from 60% of the window a second, gaining twice that each second).
+  function edgeScroll(ts) {
+    if (!drag) return;
+    var dt = Math.min(0.1, (ts - (drag.last || ts)) / 1000), r = $("ticks").getBoundingClientRect();
+    drag.last = ts;
+    var dir = drag.x <= r.left + TL_EDGE ? -1 : drag.x >= r.right - TL_EDGE ? 1 : 0;
+    if (dir && (dir < 0 ? tl.start > FIRST_T : tl.start + tl.span < lastT())) {
+      drag.held = (drag.held || 0) + dt;
+      setWindow(tl.start + dir * tl.span * 0.6 * (1 + 2 * drag.held) * dt);
+      range.value = dir < 0 ? "0" : String(RANGE_MAX);
+      showDrag(snapTime(yearAt(dir < 0 ? 0 : 1)));
+    } else drag.held = 0;
+    drag.raf = requestAnimationFrame(edgeScroll);
+  }
+  range.addEventListener("pointerdown", function (e) {
+    stopPlay();
+    if (drag) cancelAnimationFrame(drag.raf);
+    drag = { x: e.clientX, t: null, held: 0, last: 0, raf: 0 };
+    drag.raf = requestAnimationFrame(edgeScroll);
+  });
+  window.addEventListener("pointermove", function (e) { if (drag) drag.x = e.clientX; });
+  window.addEventListener("pointerup", endDrag);
+  window.addEventListener("pointercancel", endDrag);
   range.addEventListener("input", function () {
     stopPlay();
-    rangeActive = true;
-    var t = +range.value / RANGE_MAX, y = yearAt(t), w = trackWidth(), snapTo = null;
-    for (var i = 0; i < maps.length; i++) if (Math.abs(posOf(maps[i].y) - t) * w < 5) { snapTo = maps[i].y; break; }
-    if (snapTo !== null) y = snapTo;
-    else if (modern && y >= 1885.5) {
-      var yr = Math.floor(Math.max(y, 1886)), mo = Math.min(12, Math.floor((Math.max(y, 1886) - yr) * 12) + 1);
-      y = yr > LAST_YEAR ? monthTime(LAST_YEAR, 12) : monthTime(yr, mo);
-    } else if (y < 1000) y = Math.round(y / 10) * 10;
-    setTime(y, true);
+    var t = snapTime(yearAt(+range.value / RANGE_MAX));
+    if (drag) { rangeActive = true; showDrag(t); } else setTime(t);
   });
-  range.addEventListener("change", function () { rangeActive = false; syncTime(); });
+  range.addEventListener("change", function () { if (drag) endDrag(); });
   range.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       stopPlay();
       var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
       if (e.shiftKey) stepUnit(dir); else stepMap(dir);
-    } else if (e.key === "Home") { e.preventDefault(); setTime(KNOTS[0][0]); }
+    } else if (e.key === "Home") { e.preventDefault(); setTime(FIRST_T); }
     else if (e.key === "End") { e.preventDefault(); setTime(modern ? monthTime(LAST_YEAR, 12) : LAST_YEAR); }
   });
   function commitYearInput() {
