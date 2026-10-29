@@ -127,7 +127,8 @@ const NE_REGIONS = [
   {
     key: "de", c: "DEU", names: ["West Germany", "Germany"],
     parts: [
-      ...same("1952-04-25", ["Schleswig-Holstein", "Hamburg", "Lower Saxony", ["Bremen", "Free Hanseatic Bremen"], "North Rhine-Westphalia", "Hesse", "Rhineland-Palatinate", "Baden-Württemberg", "Bavaria"]),
+      ...same("1949-09-21", ["Schleswig-Holstein", "Hamburg", "Lower Saxony", ["Bremen", "Free Hanseatic Bremen"], "North Rhine-Westphalia", "Hesse", "Rhineland-Palatinate", "Bavaria"]),
+      span("Baden-Württemberg", "Baden-Württemberg", "1952-04-25"),
       span("Saarland", "Saarland", "1957-01-01"),
       ...same("1990-10-03", ["Berlin", "Brandenburg", "Mecklenburg-Western Pomerania", "Saxony", "Saxony-Anhalt", "Thuringia"])
     ]

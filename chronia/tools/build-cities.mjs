@@ -308,23 +308,24 @@ for (const e of ents) {
   }
   const modern = !!(e.geo || e.ne || pts.some(([y]) => y >= 1900));
   e.real = pts.length > 0;
+  // CITY_POP's figures come before the estimates below, which are not made for a city it gives figures from 1850 for.
+  if (e.tPop) {
+    const d = e.tPop.drop, own = e.tPop.pts.map(([y, k]) => [y, k * 1000]);
+    pts = pts.filter(([y]) => !(d && y >= d[0] && y <= d[1]) && !own.some(([o]) => Math.abs(o - y) < 1)).concat(own).sort((a, b) => a[0] - b[0]);
+    e.real = true;
+  }
   if (modern && !e.usGone && !pts.some(([y]) => y >= 1990)) {
     const anchor = e.ne && e.ne.POP_MIN > 0 ? e.ne.POP_MIN : TIER_POP[e.tier || 4];
     pts.push([NOW, anchor]);
   }
   const has = (a, b) => pts.some(([y]) => y >= a && y <= b);
-  if (modern && !e.add && !e.usGone) {
+  if (modern && !e.add && !e.usGone && !(e.tPop && e.tPop.pts.some(([y]) => y >= 1850))) {
     const scaled = (t, cap) => { const nx = pts.find(([y]) => y > t); return Math.min(cap, nx[1] * urbanAt(t) / urbanAt(nx[0])); };
     if (!has(1925, 1975)) pts.push([1950, scaled(1950, CAP_1950)]);
     pts.sort((a, b) => a[0] - b[0]);
     if (!has(1880, 1920) && (e.tSince === undefined || toT(e.tSince) <= 1900)) pts.push([1900, scaled(1900, CAP_1900)]);
   }
   pts.sort((a, b) => a[0] - b[0]);
-  if (e.tPop) {
-    const d = e.tPop.drop, own = e.tPop.pts.map(([y, k]) => [y, k * 1000]);
-    pts = pts.filter(([y]) => !(d && y >= d[0] && y <= d[1]) && !own.some(([o]) => Math.abs(o - y) < 1)).concat(own).sort((a, b) => a[0] - b[0]);
-    e.real = true;
-  }
   for (let i = pts.length - 1; i > 0; i--) {
     const [y0, p0] = pts[i - 1], [y1, p1] = pts[i];
     if (y1 - y0 > 250) pts.splice(i, 0, [y0 + 100, Math.min(p0, p1) / 3], [y1 - 100, Math.min(p0, p1) / 3]);

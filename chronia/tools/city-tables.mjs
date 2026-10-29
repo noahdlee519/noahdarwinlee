@@ -82,7 +82,8 @@ export const REBA_FIX = {
   "Gelibolu": { before: 1400 },
   "Ruhr": { drop: true },
   "Liaotung": { drop: true },
-  "Prambanan": { drop: true }
+  "Prambanan": { drop: true },
+  "Meckenbeuren": { move: [11.413, 53.629, "Schwerin"] }
 };
 
 export const CITY_POP = {
@@ -129,7 +130,25 @@ export const CITY_POP = {
   "Novgorod": { pts: [[1570, 30], [1571, 10], [1600, 8]] },
   "Daulatabad": { pts: [[1327, 13], [1330, 60], [1336, 15]] },
   "Delhi": { pts: [[1398, 130], [1399, 30]] },
-  "Axum": { drop: [1050, 1150], pts: [[1100, 10]] }
+  "Axum": { drop: [1050, 1150], pts: [[1100, 10]] },
+  // Towns of Denmark and southern Sweden the sources have no figures for before 1950, or none at
+  // all: the Danish censuses of 1880, 1890, 1901, and 1911 (Statesman's Year-Book 1899 and 1913,
+  // Encyclopaedia Britannica 1911, Wikipedia), Sweden's of 1805, 1850, 1880, and 1900 (Sweden: Its
+  // People and Its Industry, 1904, table 11; Britannica 1911), and Statistics Denmark's urban areas
+  // of 2026. The estimates the build would make in between are dropped, so the figures run straight.
+  "Horsens": { drop: [1851, 2025], pts: [[1890, 17.29], [1911, 23.843], [2026, 65.037]] },
+  "Randers": { drop: [1851, 2025], pts: [[1880, 13.457], [1890, 16.617], [1911, 22.97], [2026, 64.764]] },
+  "Kolding": { drop: [1851, 2025], pts: [[1901, 12.516], [2026, 63.664]] },
+  "Esbjerg": { drop: [1851, 2015], pts: [[1868, 0.013], [1880, 1.529], [1890, 4.211], [1901, 13.355]] },
+  "Helsingborg": { drop: [1851, 2015], pts: [[1850, 4.14], [1900, 24.67]] },
+  "Jönköping": { drop: [1851, 2015], pts: [[1850, 6.008], [1900, 23.143]] },
+  "Halmstad": { drop: [1851, 2015], pts: [[1850, 2.761], [1900, 15.362]] },
+  "Borås": { drop: [1851, 2015], pts: [[1850, 2.733], [1880, 4.723], [1900, 15.837]] },
+  "Växjö": { drop: [1851, 2015], pts: [[1900, 7.365]] },
+  "Malmö": { drop: [1851, 2015], pts: [[1850, 13.087], [1900, 60.857]] },
+  "Aarhus": { drop: [1851, 2015], pts: [[1890, 33.308], [1901, 51.814], [1911, 61.755]] },
+  "Odense": { drop: [1851, 2015], pts: [[1890, 30.277], [1911, 42.237]] },
+  "Aalborg": { drop: [1851, 2015], pts: [[1890, 19.503], [1911, 33.449]] }
 };
 
 export const PLACE_DROP = new Set(["Calusa", "Levisa", "Cumbe Mayo", "Ōyu site"]);

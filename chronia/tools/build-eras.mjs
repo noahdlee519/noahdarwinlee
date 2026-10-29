@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, copyFi
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { adoptLand } from "./adopt-land.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -1698,6 +1699,46 @@ const sameAs = (name) => {
   return (other) => kin.has(other) || (core.size > 0 && (within(core, coreWords(other)) || within(coreWords(other), core)));
 };
 let dated = clioSpans.filter((s) => s.last >= DATED_FROM && s.first <= DATED_TO).map((s) => withBox({ ...s, first: Math.max(s.first, DATED_FROM), last: Math.min(s.last, DATED_TO) }));
+// Turns land no span covers (see adopt-land.mjs) into spans of their own, one per state and
+// stretch of time, rather than joining each piece to every span of its state: joining thousands of
+// strips of coast to large states takes hours, and adding them to each span separately repeats
+// them in every span of the state. A piece goes into the stretch of each edit, and consecutive
+// edits that give it to spans of one state, under one name, owner, and status, are merged, so a
+// strip of Germany's coast is one piece from 1990 to 2019 however many records CShapes has in
+// those years. The page draws no border between two shapes of one state, and these have no name
+// or capital of their own.
+let pieceSpanCount = 0;
+function pieceSpans(list, edits) {
+  const keyOf = (o) => (o.cs ? "c|" + o.cs.p.gwcode + "|" + o.name + "|" + o.cs.p.status + "|" + o.cs.p.owner : "x|" + o.name + "|" + (o.ruler || "") + "|" + o.status + "|" + (o.claims || []).join("/"));
+  const byPiece = new Map();
+  for (const e of edits) { const q = e.polys[0]; if (!byPiece.has(q)) byPiece.set(q, []); byPiece.get(q).push(e); }
+  const groups = new Map();
+  for (const [q, es] of byPiece) {
+    es.sort((a, b) => a.first - b.first);
+    let run = null;
+    const flush = () => { if (!run) return; const g = run.key + "|" + run.first + "|" + run.last; if (!groups.has(g)) groups.set(g, { base: run.base, first: run.first, last: run.last, polys: [] }); groups.get(g).polys.push(q); };
+    for (const e of es) {
+      const k = keyOf(e.base);
+      if (run && run.key === k && run.last + 1 === e.first) { run.last = e.last; continue; }
+      flush();
+      run = { key: k, base: e.base, first: e.first, last: e.last };
+    }
+    flush();
+  }
+  const out = [];
+  for (const g of groups.values()) {
+    const o = g.base;
+    let polys = rewind(g.polys);
+    try { polys = rewind(clip.union(...snapPolys(polys).map((q) => [q]))); } catch (e) {}
+    const span = o.cs
+      ? { cs: { ...o.cs, p: { ...o.cs.p, capname: null } }, name: o.name, piece: true, first: g.first, last: g.last, polys }
+      : { ...o, piece: true, keep: false, first: g.first, last: g.last, polys };
+    delete span.km2; delete span.pole; delete span.geoHash; delete span.small;
+    out.push(withBox(span));
+  }
+  pieceSpanCount = out.length;
+  return list.concat(out);
+}
 function reshape(list, edits, dropSlivers) {
   const byBase = new Map(), extra = [];
   edits.forEach((e) => { if (!byBase.has(e.base)) byBase.set(e.base, []); byBase.get(e.base).push(e); });
@@ -2677,7 +2718,7 @@ const CS_NAMES = {
   "Iran (Persia)": [["1886-01-01", "Persia"], ["1935-03-21", "Iran"]],
   "Germany (Prussia)": [["1886-01-01", "German Empire"], ["1918-11-09", "Germany"]],
   "German Federal Republic": [["1886-01-01", "West Germany"], ["1990-10-03", "Germany"]],
-  "German Democratic Republic": [["1886-01-01", "East Germany"]],
+  "German Democratic Republic": [["1886-01-01", "Soviet occupation zone"], ["1949-10-07", "East Germany"]],
   "Italy/Sardinia": [["1886-01-01", "Italy"]],
   "Rumania": [["1886-01-01", "Romania"]],
   "Thailand": [["1886-01-01", "Siam"], ["1939-06-24", "Thailand"]],
@@ -2744,6 +2785,7 @@ const CS_NAMES = {
 const CS_WIKI = {
   "Soviet Russia": "Russian Soviet Federative Socialist Republic", "Soviet Union": "Soviet Union", "Russia": "Russia",
   "West Germany": "West Germany", "East Germany": "East Germany", "Germany": "Germany",
+  "Soviet occupation zone": "Soviet occupation zone in Germany", "British occupation zone": "British occupation zone in Germany", "American occupation zone": "American occupation zone in Germany", "French occupation zone": "French occupation zone in Germany", "Saar Protectorate": "Saar Protectorate",
   "Congo": "Republic of the Congo", "French Congo": "French Congo", "DR Congo": "Democratic Republic of the Congo", "Congo-Léopoldville": "Republic of the Congo (Léopoldville)",
   "Georgia": "Georgia (country)", "Gaza": "Gaza Strip", "Natal": "Colony of Natal", "Transvaal": "South African Republic",
   "Victoria": "Colony of Victoria", "Queensland": "Colony of Queensland", "New South Wales": "Colony of New South Wales",
@@ -2915,6 +2957,37 @@ const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", 
 const CS_CARVE = [["291", "1939-08-31", "255"]];
 // CShapes, following Gleditsch and Ward, counts Canada as independent from 1867; it was a dominion under the United Kingdom until the Statute of Westminster of 11 December 1931.
 const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"]];
+// Changes CShapes dates to a day other than the one it gives, for every span of the country that
+// starts on that day (and the span before it, which then ends the day before): [code, CShapes day, day].
+const CS_REDATE = [
+  // North Schleswig voted for Denmark on 10 February 1920 and was handed over on 15 June 1920.
+  ["390", "1920-02-10", "1920-06-15"], ["255", "1920-02-10", "1920-06-15"],
+  // The German Democratic Republic was founded on 7 October 1949, not the 5th.
+  ["265", "1949-10-05", "1949-10-07"]
+];
+// CShapes draws the western zones of occupied Germany from 1945 to 1949 as one territory occupied by
+// the United States, and has no Saar. CS_ZONES splits the German Federal Republic's spans of those
+// years into the British, American, and French zones and the Saar Protectorate, from Natural
+// Earth's present states (the zones followed the states made in them), with Baden-Württemberg cut
+// along the line between Württemberg-Baden and the French zone, which ran south of Karlsruhe,
+// Pforzheim, Stuttgart, and Ulm (ZONE_LINE, approximate), and the district of Lindau, French until
+// 1955, cut from Bavaria (LINDAU). Bremen and Bremerhaven were American from 1 January 1947. The
+// Saar left the French zone on 16 February 1946 and joined the Federal Republic on 1 January 1957.
+const ZONE_LINE = [[7.4, 48.9], [8.1, 48.9], [8.45, 48.86], [8.62, 48.85], [8.8, 48.72], [8.92, 48.58], [9.2, 48.57], [9.55, 48.56], [9.75, 48.42], [9.9, 48.33], [10.6, 48.3]];
+const LINDAU = [[9.55, 47.5], [10.0, 47.5], [10.0, 47.73], [9.55, 47.73], [9.55, 47.5]];
+const CS_ZONES = {
+  gw: "260", soviet: "265", from: "1945-05-08", to: "1949-09-20", saarUntil: "1956-12-31",
+  units: { SH: "Schleswig-Holstein", HH: "Hamburg", NI: "Niedersachsen", HB: "Bremen", NW: "Nordrhein-Westfalen", HE: "Hessen", RP: "Rheinland-Pfalz", SL: "Saarland", BW: "Baden-Württemberg", BY: "Bayern" },
+  zones: [
+    { name: "British occupation zone", owner: "200", status: "occupied", periods: [["1945-05-08", "1946-12-31", ["SH", "HH", "NI", "HB", "NW"]], ["1947-01-01", "1949-09-20", ["SH", "HH", "NI", "NW"]]] },
+    { name: "American occupation zone", owner: "2", status: "occupied", periods: [["1945-05-08", "1946-12-31", ["HE", "BY", "BWN"]], ["1947-01-01", "1949-09-20", ["HB", "HE", "BY", "BWN"]]] },
+    { name: "French occupation zone", owner: "220", status: "occupied", periods: [["1945-05-08", "1946-02-15", ["RP", "SL", "BWS", "LI"]], ["1946-02-16", "1949-09-20", ["RP", "BWS", "LI"]]] },
+    { name: "Saar Protectorate", owner: "220", status: "protectorate", cap: ["Saarbrücken", 6.997, 49.234], periods: [["1946-02-16", "1949-09-20", ["SL"]]] }
+  ]
+};
+// Natural Earth's names for states whose names differ here, for giving land no span covers to
+// the state Natural Earth gives it to (see adopt-land.mjs).
+const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
 const csWithExtras = (rows) => {
   const cowPath = cshapesPath.replace(/_gw\.topojson$/, "_cow.topojson");
@@ -2923,6 +2996,16 @@ const csWithExtras = (rows) => {
   const cowTopo = hasCow ? JSON.parse(readFileSync(cowPath, "utf8")) : null;
   const cow = hasCow ? Object.values(cowTopo.objects)[0].geometries.map((g) => ({ p: { ...g.properties, gwcode: g.properties.cowcode }, geometry: client.feature(cowTopo, g).geometry })) : [];
   let list = rows;
+  for (const [code, from, to] of CS_REDATE) {
+    const before = isoAdd(from, -1), hit = list.filter((r) => String(r.p.gwcode) === code && r.p.start === from);
+    if (!hit.length) throw new Error("CS_REDATE: no span of " + code + " starts on " + from);
+    list = list.map((r) => {
+      if (String(r.p.gwcode) !== code) return r;
+      if (r.p.start === from) return { ...r, p: { ...r.p, start: to } };
+      if (r.p.end === before) return { ...r, p: { ...r.p, end: isoAdd(to, -1) } };
+      return r;
+    });
+  }
   for (const [code, a, b] of hasCow ? CS_FROM_COW : []) {
     const next = [];
     for (const r of list) {
@@ -2993,7 +3076,56 @@ const csRedraw = (rows) => {
   }
   return rows;
 };
-for (const r of csRedraw(csWithExtras(csRaw))) {
+const csZones = (rows) => {
+  const z = CS_ZONES, unit = (name) => {
+    const feats = neAll.filter((f) => f.properties.adm0_a3 === "DEU" && f.properties.name === name);
+    if (!feats.length) throw new Error("CS_ZONES: Natural Earth has no " + name);
+    return clip.union(...feats.map((f) => polysOf(f.geometry)));
+  };
+  const north = [[...ZONE_LINE, [10.6, 50.5], [7.4, 50.5], ZONE_LINE[0]]];
+  const atoms = {};
+  for (const [k, n] of Object.entries(z.units)) atoms[k] = unit(n);
+  atoms.BWN = clip.intersection(atoms.BW, [north]); atoms.BWS = clip.difference(atoms.BW, [north]); delete atoms.BW;
+  atoms.LI = clip.intersection(atoms.BY, [[LINDAU]]); atoms.BY = clip.difference(atoms.BY, [[LINDAU]]);
+  const keys = Object.keys(atoms);
+  // A shape cut into the atoms; land outside every atom (along the coasts and outer borders,
+  // where CShapes and Natural Earth differ) goes, piece by piece, to the nearest one.
+  const split = (polys) => {
+    const out = {};
+    for (const k of keys) out[k] = clip.intersection(polys, atoms[k]);
+    const pts = keys.map((k) => atoms[k].flatMap((poly) => poly[0]));
+    const nearest = (c) => { let best = 0, bd = Infinity; pts.forEach((list, i) => { const kx = Math.cos((c[1] * Math.PI) / 180); for (const q of list) { const d = ((q[0] - c[0]) * kx) ** 2 + (q[1] - c[1]) ** 2; if (d < bd) { bd = d; best = i; } } }); return keys[best]; };
+    for (const q of clip.difference(polys, ...keys.map((k) => atoms[k]))) {
+      const ring = q[0], c = [ring.reduce((t, v) => t + v[0], 0) / ring.length, ring.reduce((t, v) => t + v[1], 0) / ring.length];
+      const k = nearest(c);
+      out[k] = clip.union(out[k], [q]);
+    }
+    return out;
+  };
+  // The Soviet zone likewise: its own colour (East Germany's, from 1949), and no capital (CShapes
+  // gives it East Berlin).
+  rows = rows.map((r) => (String(r.p.gwcode) === z.soviet && r.p.status === "occupied" ? { ...r, p: { ...r.p, owner: z.soviet, capname: null } } : r));
+  const occ = rows.filter((r) => String(r.p.gwcode) === z.gw && r.p.start === z.from && r.p.end === z.to);
+  const fed = rows.filter((r) => String(r.p.gwcode) === z.gw && r.p.start === isoAdd(z.to, 1));
+  if (occ.length !== 1 || fed.length !== 1) throw new Error("CS_ZONES: expected one occupied and one following span of " + z.gw);
+  const occParts = split(polysOf(occ[0].geometry)), fedParts = split(polysOf(fed[0].geometry));
+  const out = rows.filter((r) => r !== occ[0] && r !== fed[0]);
+  const geom = (parts, ks) => ({ type: "MultiPolygon", coordinates: rewind(clip.union(...ks.map((k) => parts[k]))) });
+  for (const zone of z.zones) zone.periods.forEach(([a, b, ks], i) => {
+    const cap = zone.cap ? { capname: zone.cap[0], caplong: zone.cap[1], caplat: zone.cap[2] } : { capname: null };
+    // A zone is its own owner, so it takes a colour of its own: in its occupier's, the British zone
+    // would share Denmark's colour, and Denmark would change colour for those four years.
+    const gw = z.gw + ":" + zone.name, owner = zone.status === "occupied" ? gw : zone.owner;
+    out.push({ p: { ...occ[0].p, ...cap, gwcode: gw, country_name: zone.name, status: zone.status, owner, start: a, end: b }, geometry: geom(occParts, ks) });
+  });
+  const saar = z.zones.find((x) => x.name === "Saar Protectorate");
+  out.push({ p: { ...fed[0].p, capname: saar.cap[0], caplong: saar.cap[1], caplat: saar.cap[2], gwcode: z.gw + ":" + saar.name, country_name: saar.name, status: saar.status, owner: saar.owner, start: isoAdd(z.to, 1), end: z.saarUntil }, geometry: geom(fedParts, ["SL"]) });
+  out.push({ p: { ...fed[0].p, end: z.saarUntil }, geometry: geom(fedParts, keys.filter((k) => k !== "SL")) });
+  out.push({ p: { ...fed[0].p, start: isoAdd(z.saarUntil, 1) }, geometry: fed[0].geometry });
+  console.log("CS_ZONES: the western zones of 1945 to 1949 and the Saar until " + z.saarUntil + ": " + z.zones.map((x) => x.name + " " + x.periods.map(([, , ks]) => Math.round(km2Of(rewind(clip.union(...ks.map((k) => occParts[k]))))) + " km²").join(", ")).join("; "));
+  return out;
+};
+for (const r of csZones(csRedraw(csWithExtras(csRaw)))) {
   const p = r.p, start = dayOf(p.start), end = p.end >= CS_TO ? -1 : dayOf(p.end);
   const cuts = (CS_NAMES[p.country_name] || []).map(([d]) => dayOf(d)).filter((d) => d > start && (end < 0 || d <= end));
   const bounds = [start, ...cuts];
@@ -3082,14 +3214,26 @@ for (const r of csRedraw(csWithExtras(csRaw))) {
   const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
   const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
   list = fillSmallGaps(addDisputes(resolveOverlaps(list, "from 1886")));
+  {
+    const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
+    const detail = existsSync(detailPath) ? JSON.parse(readFileSync(detailPath, "utf8")) : null;
+    const geom = detail ? client.merge({ ...prov, arcs: detail.arcs, transform: detail.transform }, prov.objects.provinces.geometries) : client.merge(prov, prov.objects.provinces.geometries);
+    const land = geom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);
+    const units = [];
+    for (const f of neAll) for (const poly of polysOf(f.geometry)) units.push({ name: f.properties.admin, polys: [poly], box: boxOf([poly]) });
+    const same = (unit, name) => lineageNames(NE_ADMIN[unit] || unit).includes(name);
+    const { edits } = adoptLand({ list, land, clip, endDay, units, same });
+    list = pieceSpans(list, edits);
+    console.log("adopting land: " + pieceSpanCount + " spans of pieces, " + Math.round(process.uptime()) + " s");
+  }
   const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency", "disputed"];
   csParts.length = 0;
   for (const x of list) {
     const geometry = { type: "MultiPolygon", coordinates: x.polys };
-    if (x.cs) { csParts.push({ ...x.cs, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
+    if (x.cs) { csParts.push({ ...x.cs, noLabel: !!x.piece, piece: !!x.piece, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
     const claims = x.claims ? x.claims.map((n) => rulerFor(n, x.first)) : null;
-    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, noLabel: !!x.noLabel, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
   }
   console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
@@ -3106,7 +3250,9 @@ const ownerName = (r) => {
 };
 const csFeats = csParts.map((r, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
 const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q, false);
-const csLo = topoFor(csFeats, LO_KM, LO_Q, false);
+// The coarse level leaves out pieces of land under 50 km² that pieceSpans added: at the zooms it is
+// drawn at, the page's coast fill covers them.
+const csLo = topoFor(csFeats.map((f, i) => (csParts[i].noLabel && csParts[i].piece ? { ...f, geometry: { type: "MultiPolygon", coordinates: f.geometry.coordinates.filter((q) => polyKm2(q) >= 50) } } : f)), LO_KM, LO_Q, false);
 const labelMemo = new Map();
 const csRows = csParts.map((r, i) => {
   const g = csHi.objects.p.geometries[i];

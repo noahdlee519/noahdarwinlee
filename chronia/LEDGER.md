@@ -16,6 +16,42 @@ Each entry:
 ```
 
 ---
+## 1886–2019 | world | land that no state's shape covers
+
+- What changed: land in Natural Earth that no span from 1886 ever covers, the strips between CShapes' coarse coasts and the real ones and the islands CShapes leaves out, was drawn as paper wherever the page's coast fill (about 20 km, and no more than 40 px) did not reach: Anholt, Fehmarn, Föhr, Amrum, Pellworm, and Borkum among many. Each such piece now goes, for each stretch of time, to the span nearest it on average then (a strip of coast, within 25 km) or nearest its closest point (an island, within 60 km). Natural Earth's present owner wins where its state, or one in its lineage, is no more than 20 km further than the nearest, and for a strip only when it touches it. Land that some span covers at another date (unclaimed interiors around 1890, Svalbard before 1925) is left alone. In the build, 3,948 strips of coast and 1,330 islands (185,611 km²) went to states, 187 of them to Natural Earth's owner over a nearer span; 25,985 strips under 1 km wide and 50 km² are left to the coast fill, which covers them.
+- Tables: `ADOPT` in `tools/adopt-land.mjs`; `NE_ADMIN` in `tools/build-eras.mjs`.
+- Sources: (1) Natural Earth's land at UCHRONIA's finest detail (`provinces-detail.json`). (2) Natural Earth's admin-1 states and provinces, for the present owner of each piece.
+- Confidence: high for strips of coast; medium for islands far from their owner's coast, where the nearest state can be the wrong one at dates when Natural Earth's owner did not hold them.
+- Alternatives: joining the pieces to the states' own shapes (not taken: over an hour, failing for many, and three times the file when added to every record of a state); widening the page's coast fill (not taken: it cannot reach islands 40 km out, and it would spread states over blank land before 1900).
+- Left out: before 1886; islands more than 60 km from any state; strips under 1 km wide and 50 km², and pieces under 0.3 km², which the coast fill covers.
+
+## 1920 | Schleswig | North Schleswig Danish from 15 June 1920
+
+- What changed: North Schleswig (Zone I) passed from Germany to Denmark on 10 February 1920, the day of its plebiscite. It now passes on 15 June 1920, when it was handed over to Denmark.
+- Tables: `CS_REDATE` in `tools/build-eras.mjs`.
+- Sources: (1) English Wikipedia, "1920 Schleswig plebiscites": Zone I voted on 10 February 1920, Zone II on 14 March 1920, and "On 15 June 1920, North Schleswig officially returned to Danish rule."
+- Confidence: high.
+- Alternatives: drawing the two plebiscite zones under the international commission (CIS) from 10 January to 15 June 1920 (not taken: no source at hand gives Zone II's southern line exactly).
+- Left out: the commission's months; Zone II, which stayed German.
+
+## 1945–1956 | Germany | the occupation zones, the Saar Protectorate, and the founding of East Germany
+
+- What changed: CShapes draws western Germany from 8 May 1945 to 20 September 1949 as one territory occupied by the United States, so Schleswig-Holstein, Hamburg, and Lower Saxony were in the United States' colour. They are now the British, American, and French zones, made from Natural Earth's present states, each in a colour of its own (in the United Kingdom's, the British zone would share Denmark's colour, and Denmark would have changed colour for four years): British, Schleswig-Holstein, Hamburg, Lower Saxony, North Rhine-Westphalia, and Bremen until 31 December 1946; American, Bavaria, Hesse, northern Baden-Württemberg (Württemberg-Baden), and Bremen from 1 January 1947; French, the Rhineland-Palatinate, southern Baden-Württemberg, the district of Lindau, and the Saar until 15 February 1946. The Saar Protectorate, under France, is added from 16 February 1946 to 31 December 1956, cut out of the Federal Republic from 1949. The Soviet zone is named the Soviet occupation zone, not East Germany, takes East Germany's colour, and has no capital (CShapes gave it East Berlin, and the western zones Bonn), and East Germany begins on 7 October 1949, not 5 October. West Germany's first-level divisions are drawn from 21 September 1949, Baden-Württemberg from 25 April 1952.
+- Tables: `CS_ZONES`, `ZONE_LINE`, `LINDAU`, `CS_REDATE`, and `CS_NAMES` in `tools/build-eras.mjs`; the "de" region in `tools/build-divisions.mjs`.
+- Sources: (1) English Wikipedia, "Allied-occupied Germany": the states of each zone, the Bremen enclave from 1947, Lindau French, the Saar detached on 16 February 1946 and joined to the Federal Republic on 1 January 1957. (2) English Wikipedia, "Foundation of East Germany": founded on 7 October 1949.
+- Confidence: high for the zones and dates; medium for the line between Württemberg-Baden and the French zone, drawn by hand south of Karlsruhe, Pforzheim, Stuttgart, and Ulm.
+- Alternatives: the lines of contact of May and June 1945, before the British and Americans withdrew from western Mecklenburg, Thuringia, and Saxony on 1 July 1945 (not drawn: no outline at hand); the Bizone and Trizone (economic, not borders).
+- Left out: Berlin's four sectors; the Saar's border changes of 1946 to 1949 (drawn at its later border); the occupations of the Second World War, such as Denmark's from 9 April 1940 to 5 May 1945 and the Soviet occupation of Bornholm from 9 May 1945 to 5 April 1946 (see Known limits).
+
+## 1850–2026 | Denmark and southern Sweden | towns' populations; Schwerin
+
+- What changed: Helsingborg, Halmstad, and Växjö appeared in 1904, 1925, and 1932, and Esbjerg in 1919, from estimates; they now appear when census figures put them past 5,000 (Helsingborg 1856, Halmstad 1868, Växjö 1869, Esbjerg 1892), and Jönköping (1833) and Borås (1881) likewise. Horsens, Randers, and Kolding, with no figures in any source, had a typical size of 200,000 today; they now have the censuses of 1880 to 1911 and Statistics Denmark's 2026 figures. Aarhus, Odense, Aalborg, and Malmö keep their figures without the estimate for 1950, which had them shrink by half or more after 1900. The source's "Meckenbeuren" at Schwerin is named Schwerin.
+- Tables: `CITY_POP` and `REBA_FIX` in `tools/city-tables.mjs`; `build-cities.mjs` makes no estimates for a city the table gives figures from 1850.
+- Sources: (1) The Statesman's Year-Book, 1899 and 1913 (Denmark, censuses of 1890 and 1911). (2) Encyclopaedia Britannica, 1911: Esbjerg (13 in 1868, 13,355 in 1901), Kolding (12,516 in 1901), Borås (4,723 in 1880). (3) *Sweden: Its People and Its Industry* (1904), table 11 (1805, 1850, 1900). (4) English Wikipedia: Randers (13,457 in 1880), Esbjerg (1,529 in 1880, 4,211 in 1890), and the urban populations of Horsens, Randers, and Kolding on 1 January 2026. (5) Kulturparken Småland: Växjö, 7,365 at the turn of the century.
+- Confidence: high for the figures; the appearance year is interpolated between them.
+- Alternatives: a different estimate for 1950 for every European city (see Known limits).
+- Left out: other towns of the region the sources lack (Lund, Landskrona, Kristianstad, Helsingør, Fredericia, Wismar, Greifswald); the 1950 estimates of Rostock, Flensburg, Schwerin, and Stralsund, still well under their real size.
+
 ## 1861–2026 | world | zones of control by month (US Civil War, WWII, recent wars, Mexican cartels)
 
 - Claimed by the 1886 session, 28 October 2026: a Control layer over the map, hatching the land each side held month by month, with front lines, for the US Civil War, the Second World War, wars since 1990, and the presence of Mexican cartels by municipality and year. New files under `data/control/`, a new builder, and the layer in `app.js`; the borders and the yearly data are untouched.
