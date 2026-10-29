@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1861–2026 | world | zones of control by month (US Civil War, WWII, recent wars, Mexican cartels)
+
+- Claimed by the 1886 session, 28 October 2026: a Control layer over the map, hatching the land each side held month by month, with front lines, for the US Civil War, the Second World War, wars since 1990, and the presence of Mexican cartels by municipality and year. New files under `data/control/`, a new builder, and the layer in `app.js`; the borders and the yearly data are untouched.
+
 ## 1500–1885 and 1886–2019 | North America | the United States, British North America, and Canada; Saint-Domingue; Greenland
 
 - What changed:
