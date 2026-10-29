@@ -2008,36 +2008,100 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
-const AHCB_FROM = 1784, AHCB_TO = 1885, AHCB_DAY = "-07-01";
+const US_FROM = 1784, US_TO = 1885;
 const NA_KEEP = new Set(["Confederate States of America"]);
-const NA_DISPUTES = [
-  { unit: "Oregon Country", first: 1819, last: 1845, name: "Oregon Country", claims: ["United States", "United Kingdom"] },
-  { unit: "Texas Republic", first: 1836, last: 1845, minus: "Republic of Texas", claims: ["Republic of Texas", null] },
-];
-const NA_UNITS = [{ unit: "Vermont Republic", name: "Vermont Republic", first: 1784, last: 1790 }];
+// The Continental Divide from 49° N to 42° N, north to south, from the passes along it (Marias, MacDonald, Chief Joseph, Lemhi, Monida, Targhee, Togwotee, Union, South Pass): the western limit of the Louisiana Purchase.
+const DIVIDE = [[-114.07, 49], [-113.75, 48.75], [-113.36, 48.32], [-112.85, 47.75], [-112.55, 47.3], [-112.38, 46.9], [-112.31, 46.56], [-112.47, 46.15], [-112.33, 45.87], [-112.95, 45.75], [-113.5, 45.95], [-113.94, 45.68], [-113.7, 45.25], [-113.44, 44.97], [-113.27, 44.82], [-112.8, 44.45], [-112.3, 44.56], [-111.47, 44.71], [-111.27, 44.67], [-111.05, 44.5], [-110.73, 44.44], [-110.5, 44.05], [-110.07, 43.75], [-109.86, 43.47], [-109.6, 43.2], [-109.2, 42.8], [-108.88, 42.36], [-108.7, 42]];
+// The basin of the Red River of the North and the Souris south of 49° N, which the Convention of 1818 gave to the United States.
+const RED_BASIN = [[-95.15, 49], [-95.3, 48.5], [-95.7, 47.6], [-96, 46.9], [-96.4, 46], [-96.6, 45.6], [-97, 45.8], [-97.6, 46.2], [-98.3, 46.8], [-99.2, 47.4], [-100.2, 47.9], [-101.2, 48], [-102.3, 48.1], [-103.2, 48.4], [-103.8, 48.9], [-103.8, 49]];
+// South of this line, east of the Mississippi in Louisiana, is the Isle of Orleans (with the Louisiana Purchase); north of it are the Florida parishes of West Florida.
+const ORLEANS_NORTH = [[-91.3, 30.36], [-90.85, 30.3], [-90.45, 30.22], [-90.1, 30.18], [-89.75, 30.17], [-89.5, 30.15], [-88.9, 30.1]];
+const usAcquisitions = () => {
+  const usa = neAll.filter((f) => f.properties.adm0_a3 === "USA"), st = (code) => { const f = usa.find((x) => x.properties.iso_3166_2 === "US-" + code); if (!f) throw new Error("united states: Natural Earth has no " + code); return rewind(polysOf(f.geometry)); };
+  const riversPath = resolve(dirname(nePath), "ne_10m_rivers_lake_centerlines.geojson");
+  if (!existsSync(riversPath)) return null;
+  const rivers = JSON.parse(readFileSync(riversPath, "utf8")).features;
+  const U = (...sets) => { const all = sets.filter((s) => s.length); return all.length <= 1 ? all[0] || [] : rewind(tryClip(clip.union, ...all) || all.flat()); };
+  const I = (a, b) => rewind(tryClip(clip.intersection, a, b) || []);
+  const D = (a, ...b) => subtract(a, b.filter((x) => x.length));
+  const ring = (pts) => { const r = pts.slice(); if (r[0][0] !== r[r.length - 1][0] || r[0][1] !== r[r.length - 1][1]) r.push(r[0]); return rewind(tryClip(clip.union, [[r]]) || [[r]]); };
+  // A river as one line, from the end nearest `from`, joining its pieces end to end across gaps of up to 0.5°.
+  const river = (name, box, from) => {
+    const segs = [];
+    for (const f of rivers) {
+      if ((f.properties.name || "") !== name || !f.geometry) continue;
+      for (const line of f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.coordinates) if (line.every((p) => p[0] >= box[0] && p[0] <= box[2] && p[1] >= box[1] && p[1] <= box[3])) segs.push(line);
+    }
+    if (!segs.length) throw new Error("united states: Natural Earth has no " + name);
+    const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+    let best = 0, rev = false, dist = Infinity;
+    segs.forEach((s, i) => { if (d(s[0], from) < dist) { dist = d(s[0], from); best = i; rev = false; } if (d(s[s.length - 1], from) < dist) { dist = d(s[s.length - 1], from); best = i; rev = true; } });
+    let line = rev ? segs[best].slice().reverse() : segs[best].slice();
+    segs.splice(best, 1);
+    for (;;) {
+      const end = line[line.length - 1];
+      let k = -1, r = false, g = 0.5;
+      segs.forEach((s, i) => { if (d(s[0], end) < g) { g = d(s[0], end); k = i; r = false; } if (d(s[s.length - 1], end) < g) { g = d(s[s.length - 1], end); k = i; r = true; } });
+      if (k < 0) break;
+      line = line.concat(r ? segs[k].slice().reverse() : segs[k]);
+      segs.splice(k, 1);
+    }
+    return line;
+  };
+  const run = (line, test) => { let best = [], cur = []; for (const p of line) { if (test(p)) cur.push(p); else { if (cur.length > best.length) best = cur; cur = []; } } return cur.length > best.length ? cur : best; };
+  const mississippi = river("Mississippi", [-96, 28, -88, 48], [-95.21, 47.24]);
+  const arkansas = run(river("Arkansas", [-107, 33, -90, 40], [-106.3, 39.25]), (p) => p[0] <= -100);
+  const rioGrande = run(river("Rio Grande", [-108, 25, -97, 38], [-107.5, 37.8]), (p) => p[1] >= 31.75 && p[0] <= -106.3);
+  const gila = river("Gila", [-115, 32, -108, 34], [-114.6, 32.73]);
+  const land = U(...usa.filter((f) => !/^US-(HI)$/.test(f.properties.iso_3166_2)).map((f) => rewind(polysOf(f.geometry))));
+  const TX = st("TX"), FL = st("FL"), LA = st("LA"), VT = st("VT"), AK = st("AK");
+  const west = ring([[-95.21, 50], ...mississippi, [-89, 20], [-130, 20], [-130, 50]]);
+  // The Spanish side of the Adams–Onís line (Texas, then west of 100° W south of the Arkansas, and west of 106.3° W south of 42° N).
+  const spanish = U(TX, ring([[-100, 34.56], [-100, arkansas[arkansas.length - 1][1]], ...arkansas.slice().reverse(), [-106.3, 42], [-130, 42], [-130, 20], [-100, 20]]));
+  const oregon = I(ring([...DIVIDE, [-130, 42], [-130, 49], [-114.07, 49]]), land);
+  const redBasin = I(ring([...RED_BASIN, [-95.15, 49]]), land);
+  const gadsden = I(ring([...gila, [gila[gila.length - 1][0], 32.37], [-106.85, 32.37], [-106.55, 31.78], [-106.5, 31], [-115.5, 31], [-115.5, 32.73]]), land);
+  const txClaim = I(U(TX, ring([[-100, 34.56], [-100, arkansas[arkansas.length - 1][1]], ...arkansas.slice().reverse(), [-106.3, 42], [-107.5, 42], ...rioGrande, [-103, 31.8], [-100, 31.8]])), land);
+  const east = D(land, west, AK);
+  const orleans = I(D(I(east, LA), ring([...ORLEANS_NORTH, [-88.9, 31.5], [-91.3, 31.5]])), LA);
+  const floridaParishes = D(I(east, LA), orleans);
+  const south31 = ring([[-91, 31], [-87.2, 31], [-87.2, 29], [-91, 29]]);
+  const mobileMS = I(I(east, st("MS")), south31), mobileAL = I(I(east, st("AL")), ring([[-88.5, 31], [-87.45, 31], [-87.45, 29], [-88.5, 29]]));
+  const treaty1783 = D(east, FL, LA, mobileMS, mobileAL);
+  const louisiana = U(D(I(land, west), spanish, oregon, redBasin, AK), orleans);
+  const cession = D(I(land, spanish), TX, gadsden);
+  // Each piece with the year it counts from: in force on 1 July, as elsewhere in the builder.
+  const pieces = [
+    { key: "Treaty of Paris", from: 1784, polys: D(treaty1783, VT) }, { key: "Vermont", from: 1791, polys: VT },
+    { key: "Louisiana Purchase", from: 1804, polys: louisiana }, { key: "West Florida (Baton Rouge)", from: 1811, polys: floridaParishes },
+    { key: "West Florida (Mississippi)", from: 1812, polys: mobileMS }, { key: "West Florida (Mobile)", from: 1813, polys: mobileAL },
+    { key: "Red River basin", from: 1819, polys: redBasin }, { key: "Florida", from: 1821, polys: FL }, { key: "Texas", from: 1846, polys: TX },
+    { key: "Oregon", from: 1846, polys: oregon }, { key: "Mexican Cession", from: 1848, polys: cession }, { key: "Gadsden Purchase", from: 1854, polys: gadsden },
+    { key: "Alaska", from: 1868, polys: AK },
+  ];
+  return { pieces, VT, oregon, txClaim, TX, sized: Object.fromEntries(pieces.map((p) => [p.key, Math.round(km2Of(p.polys) / 1000)])) };
+};
 const northAmerica = (list) => {
-  const p = resolve(dirname(nePath), "histstates.geojson");
-  if (!existsSync(p)) { console.log("north america: no histstates.geojson beside the Natural Earth file, so the United States keeps its source shapes"); return list; }
-  const feats = JSON.parse(readFileSync(p, "utf8")).features.filter((f) => f.geometry);
-  const P = (f) => f.properties, polyU = (fs) => rewind(fs.length === 1 ? polysOf(fs[0].geometry) : tryClip(clip.union, polysOf(fs[0].geometry), ...fs.slice(1).map((f) => polysOf(f.geometry))) || []);
-  const inForce = (f, y) => P(f).START_DATE.slice(0, 10) <= y + AHCB_DAY && P(f).END_DATE.slice(0, 10) >= y + AHCB_DAY;
-  const unit = (name, y) => feats.filter((f) => P(f).NAME === name && inForce(f, y));
-  const periods = [];
-  for (let y = AHCB_FROM; y <= AHCB_TO; y++) {
-    const fs = feats.filter((f) => P(f).TERR_TYPE !== "Other" && inForce(f, y)), key = fs.map((f) => P(f).ID_NUM).sort((a, b) => a - b).join();
-    const last = periods[periods.length - 1];
-    if (!fs.length) continue;
-    if (last && last.key === key && last.last === y - 1) last.last = y; else periods.push({ first: y, last: y, key, fs });
-  }
-  periods.forEach((pd) => { pd.polys = polyU(pd.fs); pd.box = boxOf(pd.polys); });
+  const acq = usAcquisitions();
+  if (!acq) { console.log("north america: no ne_10m_rivers_lake_centerlines.geojson beside the Natural Earth file, so the United States keeps its source shapes"); return list; }
+  const bc = neAll.find((f) => f.properties.iso_3166_2 === "CA-BC"), bcSouth = bc ? rewind(tryClip(clip.intersection, rewind(polysOf(bc.geometry)), [[[[-140, 40], [-110, 40], [-110, 54.67], [-140, 54.67], [-140, 40]]]]) || []) : [];
+  const years = [...new Set([US_FROM, ...acq.pieces.map((p) => p.from)])].filter((y) => y <= US_TO).sort((a, b) => a - b);
+  const periods = years.map((first, i) => {
+    const polys = rewind(tryClip(clip.union, ...acq.pieces.filter((p) => p.from <= first).map((p) => p.polys)) || []);
+    return { first, last: i + 1 < years.length ? years[i + 1] - 1 : US_TO, polys, box: boxOf(polys) };
+  });
+  const disputes = [
+    { name: "Oregon Country", first: 1819, last: 1845, polys: rewind(tryClip(clip.union, acq.oregon, bcSouth) || acq.oregon), claims: ["United States", "United Kingdom"] },
+    { first: 1836, last: 1845, polys: acq.txClaim, minus: "Republic of Texas", claims: ["Republic of Texas", null] },
+    { first: 1846, last: 1847, polys: subtract(acq.txClaim, [acq.TX]), claims: ["United States", null] },
+  ];
   const isUS = (s) => (s.name === "United States" || s.name === "United States of America") && !s.claims;
   const template = list.find((s) => isUS(s)) || { name: "United States", ruler: "", part: "", people: 0, b: 3, status: 0, wiki: "United States" };
-  const inRange = (s) => s.last >= AHCB_FROM && s.first <= AHCB_TO;
   let out = [];
   for (const s of list) {
-    if (!inRange(s) || !(isUS(s) || s.ruler === "United States")) { out.push(s); continue; }
-    if (s.first < AHCB_FROM) out.push({ ...s, last: AHCB_FROM - 1, uid: uidNext++ });
-    if (s.last > AHCB_TO) out.push({ ...s, first: AHCB_TO + 1, uid: uidNext++ });
+    if (s.last < US_FROM || s.first > US_TO || !(isUS(s) || s.ruler === "United States")) { out.push(s); continue; }
+    if (s.first < US_FROM) out.push({ ...s, last: US_FROM - 1, uid: uidNext++ });
+    if (s.last > US_TO) out.push({ ...s, first: US_TO + 1, uid: uidNext++ });
   }
   const added = [], cuts = [];
   for (const pd of periods) {
@@ -2048,34 +2112,27 @@ const northAmerica = (list) => {
     for (let i = 0; i + 1 < b.length; i++) {
       const first = b[i], last = b[i + 1] - 1, here = keep.filter((k) => k.first <= first && last <= k.last);
       const polys = here.length ? subtract(pd.polys, here.map((k) => k.polys)) : pd.polys;
-      added.push(withBox({ ...template, name: "United States", ruler: "", part: "", people: 0, status: 0, claims: undefined, b: 3, first, last, polys, src: "ahcb" }));
+      added.push(withBox({ ...template, name: "United States", ruler: "", part: "", people: 0, status: 0, claims: undefined, b: 3, first, last, polys, src: "acq" }));
       cuts.push({ first, last, polys, box: boxOf(polys), skip: (s) => NA_KEEP.has(s.name) || s.people });
     }
   }
-  for (const u of NA_UNITS) {
-    const fs = unit(u.unit, u.first);
-    if (!fs.length) { console.log("north america: no " + u.unit + " in the atlas"); continue; }
-    const polys = polyU(fs);
-    out = out.filter((s) => !(s.name === u.name && s.first >= u.first && s.last <= u.last));
-    added.push(withBox({ ...template, name: u.name, ruler: "", part: "", people: 0, status: 0, claims: undefined, b: 3, first: u.first, last: u.last, polys, wiki: u.name, src: "ahcb" }));
-    cuts.push({ first: u.first, last: u.last, polys, box: boxOf(polys), skip: (s) => s.people });
-  }
-  for (const d of NA_DISPUTES) {
-    const fs = unit(d.unit, d.first);
-    if (!fs.length) { console.log("north america: no " + d.unit + " in the atlas"); continue; }
-    let polys = polyU(fs);
+  out = out.filter((s) => !(s.name === "Vermont Republic" && s.first >= US_FROM && s.last <= 1790));
+  added.push(withBox({ ...template, name: "Vermont Republic", ruler: "", part: "", people: 0, status: 0, claims: undefined, b: 3, first: US_FROM, last: 1790, polys: acq.VT, wiki: "Vermont Republic", src: "acq" }));
+  cuts.push({ first: US_FROM, last: 1790, polys: acq.VT, box: boxOf(acq.VT), skip: (s) => s.people });
+  for (const d of disputes) {
+    let polys = d.polys;
     if (d.minus) {
       const held = out.filter((s) => s.name === d.minus && s.first <= d.last && s.last >= d.first);
       if (held.length) polys = subtract(polys, held.map((s) => s.polys));
     }
     let claims = d.claims.slice();
     if (claims.includes(null)) {
-      const box = boxOf(polys), cand = out.filter((s) => !s.people && !s.claims && s.first <= d.first && d.first <= s.last && s.name !== d.minus && boxHit(s.box, box));
+      const box = boxOf(polys), cand = out.filter((s) => !s.people && !s.claims && s.first <= d.first && d.first <= s.last && s.name !== d.minus && !claims.includes(s.name) && boxHit(s.box, box));
       let best = null, area = 0;
       for (const s of cand) { const x = tryClip(clip.intersection, s.polys, polys); const a = x ? km2Of(x) : 0; if (a > area) { area = a; best = s.name; } }
       claims = claims.map((c) => c === null ? best : c).filter(Boolean);
     }
-    added.push(withBox({ name: d.name || "Disputed land", ruler: "", part: "", people: 0, b: 1, status: 6, claims: claims.sort(), first: d.first, last: d.last, polys, wiki: d.name || "", src: "ahcb", noLabel: !d.name }));
+    added.push(withBox({ name: d.name || "Disputed land", ruler: "", part: "", people: 0, b: 1, status: 6, claims: claims.sort(), first: d.first, last: d.last, polys, wiki: d.name || "", src: "acq", noLabel: !d.name }));
     cuts.push({ first: d.first, last: d.last, polys, box: boxOf(polys), skip: () => false });
   }
   const edits = [];
@@ -2084,7 +2141,7 @@ const northAmerica = (list) => {
     edits.push({ base: s, first: Math.max(s.first, c.first), last: Math.min(s.last, c.last), polys: c.polys, add: false });
   }
   const result = reshape(out, edits, false).concat(added);
-  console.log("north america: the United States from the Atlas of Historical County Boundaries in " + periods.length + " periods from " + AHCB_FROM + " to " + AHCB_TO + ", " + edits.length + " cuts, " + NA_DISPUTES.length + " disputes");
+  console.log("north america: the United States from its acquisitions (thousand km²: " + Object.entries(acq.sized).map(([k, v]) => k + " " + v).join(", ") + ") in " + periods.length + " periods from " + US_FROM + " to " + US_TO + ", " + edits.length + " cuts, " + disputes.length + " disputes");
   return result;
 };
 const CANADA_FROM = 1763, CANADA_TO = 1885, RL_FROM = 1670, RL_TO = 1870;
@@ -2151,11 +2208,11 @@ const canada = (list) => {
   add("British Columbia", "Colony of British Columbia (1858–1866)", BCm, 1858, 1866, 1);
   add("British Columbia", "Colony of British Columbia (1866–1871)", BC, 1867, 1871, 1);
   const dom = U(core, NS, NB);
-  add("Canada", "Canada", dom, 1867, 1870, 0);
-  add("Canada", "Canada", U(dom, RL, NWT), 1871, 1871, 0);
-  add("Canada", "Canada", U(dom, RL, NWT, BC), 1872, 1872, 0);
-  add("Canada", "Canada", U(dom, RL, NWT, BC, PE), 1873, 1880, 0);
-  add("Canada", "Canada", U(dom, RL, NWT, BC, PE, islands), 1881, CANADA_TO, 0);
+  add("Canada", "Canada", dom, 1867, 1870, 5);
+  add("Canada", "Canada", U(dom, RL, NWT), 1871, 1871, 5);
+  add("Canada", "Canada", U(dom, RL, NWT, BC), 1872, 1872, 5);
+  add("Canada", "Canada", U(dom, RL, NWT, BC, PE), 1873, 1880, 5);
+  add("Canada", "Canada", U(dom, RL, NWT, BC, PE, islands), 1881, CANADA_TO, 5);
   // Rupert's Land from the sources is replaced outright; everything else that is not a people loses the land of Canada from 1763.
   const parts = [core, NS, NB, RL, NWT, BC, PE, islands, NL], land = U(...parts), landBox = boxOf(land);
   let out = [];
@@ -2166,7 +2223,7 @@ const canada = (list) => {
   }
   const edits = [];
   for (const s of out) {
-    if (s.people || s.src === "ahcb" || s.last < CANADA_FROM || s.first > CANADA_TO || !boxHit(s.box, landBox)) continue;
+    if (s.people || s.src === "acq" || s.last < CANADA_FROM || s.first > CANADA_TO || !boxHit(s.box, landBox)) continue;
     for (const polys of parts) edits.push({ base: s, first: Math.max(s.first, CANADA_FROM), last: Math.min(s.last, CANADA_TO), polys, add: false });
   }
   // A cut can fail on a source shape that polygon-clipping can't take; a span still mostly on Canada's land in these years is then dropped.
@@ -2177,14 +2234,14 @@ const canada = (list) => {
   const onShore = (p) => { const cs = cellsOf([p]); if (!cs.size) return nearLand.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (nearLand.has(c)) n++; return n > 0.5 * cs.size; };
   let shorn = 0;
   const result = reshape(out, edits, false).map((s) => {
-    if (s.people || s.src === "ahcb" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox) || !(BRITISH.test(s.ruler || "") || BRITISH_NAME.test(s.name))) return s;
+    if (s.people || s.src === "acq" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox) || !(BRITISH.test(s.ruler || "") || BRITISH_NAME.test(s.name))) return s;
     const polys = s.polys.filter((p) => !onShore(p));
     if (polys.length === s.polys.length) return s;
     shorn++;
     return polys.length ? withBox({ ...s, polys }) : null;
   }).filter((s) => {
     if (!s) return false;
-    if (s.people || s.src === "ahcb" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox)) return true;
+    if (s.people || s.src === "acq" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox)) return true;
     const cells = cellsOf(s.polys);
     let inside = 0;
     for (const c of cells) if (landCells.has(c)) inside++;
@@ -2856,6 +2913,8 @@ const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides"]);
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
+// CShapes, following Gleditsch and Ward, counts Canada as independent from 1867; it was a dominion under the United Kingdom until the Statute of Westminster of 11 December 1931.
+const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"]];
 const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
 const csWithExtras = (rows) => {
   const cowPath = cshapesPath.replace(/_gw\.topojson$/, "_cow.topojson");
@@ -2874,6 +2933,16 @@ const csWithExtras = (rows) => {
     for (const r of cow) {
       if (String(r.p.gwcode) !== code || r.p.end < a || r.p.start > b) continue;
       next.push({ p: { ...r.p, start: r.p.start < a ? a : r.p.start, end: r.p.end > b ? b : r.p.end }, geometry: r.geometry });
+    }
+    list = next;
+  }
+  for (const [code, a, b, owner] of CS_DEPENDENT) {
+    const next = [];
+    for (const r of list) {
+      if (String(r.p.gwcode) !== code || r.p.end < a || r.p.start > b) { next.push(r); continue; }
+      if (r.p.start < a) next.push({ p: { ...r.p, end: isoAdd(a, -1) }, geometry: r.geometry });
+      next.push({ p: { ...r.p, start: r.p.start < a ? a : r.p.start, end: r.p.end > b ? b : r.p.end, status: "dependency", owner }, geometry: r.geometry });
+      if (r.p.end > b) next.push({ p: { ...r.p, start: isoAdd(b, 1) }, geometry: r.geometry });
     }
     list = next;
   }
