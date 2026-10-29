@@ -2297,7 +2297,11 @@
       var top = 0, keep = null;
       ranked.forEach(function (r) { top = Math.max(top, r.f); if (r.same) keep = r; });
       ranked.sort(function (a, b) { return b.s - a.s; });
-      if (keep && keep.f * 1.25 >= top) ranked = [keep].concat(ranked.filter(function (r) { return r !== keep; }));
+      // While the map moves, a name keeps its form unless another would be a quarter larger, so it
+      // doesn't jump about. At rest the forms are ranked as they are (the current one still has its
+      // 12% bonus): zoomed in, every form reaches the largest size, and a name placed from further out
+      // would otherwise stay where it was put for the wider view (South West Africa under the Angolan border).
+      if (keep && keep.f * 1.25 >= top && (moving || rangeActive)) ranked = [keep].concat(ranked.filter(function (r) { return r !== keep; }));
       for (var t = 0; t < Math.min(4, ranked.length); t++) {
         var rk = ranked[t];
         if (rk.f < thr) continue;
