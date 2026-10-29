@@ -52,11 +52,15 @@
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     sizeRelief();
     var phone = phoneQuery.matches;
+    // On phones the date sits in the year bar, between the backward and forward play buttons; elsewhere at the top.
+    var yb = $("year-box"), timeBar = $("time"), topRow = $("top");
+    if (phone && yb.parentNode !== timeBar) timeBar.insertBefore(yb, $("track"));
+    else if (!phone && yb.parentNode !== topRow) topRow.insertBefore(yb, topRow.firstChild);
     var timeH = $("time").getBoundingClientRect().height || 80;
     document.documentElement.style.setProperty("--ch-time-h", Math.round(timeH) + "px");
     var cardH = phone && !$("card").hidden ? $("card").getBoundingClientRect().height : 0;
     // The date sits under the top row on narrower screens, so the map starts below it there.
-    var yb = $("year-box"), ybBottom = yb ? $("top").offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
+    var ybBottom = yb.parentNode === topRow ? topRow.offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
     freeT = Math.max(phone ? 58 : 76, ybBottom);
     freeB = H - timeH - cardH;
     cx = W / 2;
@@ -4513,6 +4517,8 @@
     c.setTransform(k, 0, 0, k, 0, 0);
     var box = $("year-box"), r = box.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), bs = getComputedStyle(box), ys = getComputedStyle(yearInput);
     var x = r.left - cr.left, y = r.top - cr.top, w = r.width, h = r.height;
+    // On a phone the date is in the year bar, which the frame leaves out, so it goes at the top in the middle.
+    if (box.parentNode !== $("top")) { x = (W - w) / 2; y = 8; }
     if (w > 0 && h > 0) {
       var bg = cs.getPropertyValue("--bg").trim() || bs.backgroundColor, rule = cs.getPropertyValue("--rule").trim() || "#3a2a1a", faint = cs.getPropertyValue("--ch-faint").trim() || rule;
       c.fillStyle = bg; c.fillRect(x, y, w, h);

@@ -1458,7 +1458,7 @@ select.ch-save-input {
   .ch-time {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "back . fwd" "track track track";
+    grid-template-areas: "back date fwd" "track track track";
     align-items: center;
     gap: 2px 8px;
     padding: 8px calc(14px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
@@ -1470,6 +1470,19 @@ select.ch-save-input {
 
   .ch-when-fwd {
     grid-area: fwd;
+  }
+
+  .ch-time > .ch-year-box {
+    grid-area: date;
+    display: flex;
+    align-items: center;
+    justify-self: center;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 200px;
+    min-width: 0;
+    height: 40px;
+    padding: 0 8px;
   }
 
   .ch-track {
