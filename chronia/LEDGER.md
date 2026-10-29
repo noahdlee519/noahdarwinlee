@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1839–1870 | the Low Countries, Denmark, and northern Germany | the Netherlands, Belgium, Luxembourg, Denmark, Schleswig-Holstein, Hanover, Hesse-Kassel, Nassau, and Frankfurt
+
+- Claimed by the 1886 session, 29 October 2026: the Netherlands, Belgium, and Luxembourg from 1839, and Denmark from 1865, drawn with their borders of 1886 (unchanged in between), so the hole east of Arnhem, the lines across the Netherlands, the slivers south of Zeeland, and Belgium's province of Luxembourg drawn as a second Luxembourg go; Schleswig, Holstein, and Lauenburg held jointly by Austria and Prussia in 1865 and 1866 and Prussian from 1867, instead of unclaimed; and Hanover, Hesse-Kassel, Nassau, and Frankfurt ending with their annexation by Prussia in 1866. Changes `tools/build-eras.mjs` and rebuilds `data/dated/` and `data/eras.json`.
+
 ## 1800–1885 | world | the date by the month, and changes dated to the day
 
 - What changed: from 1800 the date is shown by the month, as from 1886, and play, the keys, and dragging move by months. The changes of borders from 1801 to 1885 that a real event explains are dated to the day the land changed hands, the state began, or it ended, instead of 1 January of Cliopatria's year: 267 events, from the Acts of Union (1 January 1801) to the fall of Mandalay (28 November 1885), with 1,214 shapes taking their days. Changes no event explains stay on 1 January. The states and territories of the United States, already dated to the day, now change on their day from 1800 (Ohio on 1 March 1803). Cliopatria's shape of 1859 at Saigon, named "New Caledonia", is French Cochinchina.
