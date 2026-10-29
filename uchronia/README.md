@@ -56,16 +56,14 @@ of `/greatercircle/`.
     fetched and prepared in the background the first time it is needed.
     On a device too slow to keep up while the map moves, it draws one level
     coarser while it moves and the full level again once it settles (it
-    used to stay coarse until the page was reloaded). When frames come more
-    than 24 ms apart four times running while the map moves, it also draws
-    at half resolution (and no finer region lines) while it moves, for the
-    rest of the visit, and sharp again as soon as it stops; on a sharp
-    (2x) screen that is a quarter of the pixels. The satellite picture's
-    canvas changes resolution with it (it used to stay at full size, so
-    the satellite globe was drawn at half scale in its top-left corner, a
-    second, smaller globe beside the map while it moved).
+    used to stay coarse until the page was reloaded). It is always drawn at
+    the screen's full resolution: it used to drop to half resolution (a
+    quarter of the pixels on a 2x screen, and no finer region lines) while
+    it moved once frames came slowly, which pixelated the map and the
+    terrain on every drag and gained little, since CHRONIA draws at full
+    resolution and keeps up.
   - **Turning the whole globe**, as Google Earth does it: while the globe is
-    zoomed out (to 1.7), the map is not drawn afresh each frame. It is
+    small, the map is not drawn afresh each frame. It is
     painted once, when the map is still, onto a flat 4096 by 2048 image of
     the whole world (equirectangular: the flat map's own drawing, with the
     sea, fills, terrain, bands, lines, rivers, and borders, but no names),
@@ -82,7 +80,13 @@ of `/greatercircle/`.
     terrain is drawn at the image's size (it used to be drawn at the
     screen's, so the terrain for the whole world landed in a corner of the
     image and slid over the globe as a second, misplaced skin while it
-    turned).
+    turned). The image has about 11 pixels to a degree, so it is used only
+    while one of its pixels covers no more than one of the screen's at the
+    globe's centre (`texSharp()`); it used to be used up to zoom 1.7, where
+    on a 2x screen it was stretched to about twice its size, so the turning
+    globe was blurred and sharpened when it stopped. On a 2x screen that
+    leaves it for a globe smaller than the opening one, so there the map is
+    drawn afresh each frame, as CHRONIA's is.
     Shapes so large that they wrap behind the globe and enclose the point
     opposite the view are drawn through d3-geo's clipping instead, so they
     don't flood the whole disc. Line segments along the date line and the
@@ -607,9 +611,9 @@ of `/greatercircle/`.
   default, lays shaded relief over the land, like an atlas, sharper as the
   map zooms in; it is left off under the satellite view. The relief is
   drawn by WebGL on a canvas of its own at half the screen's resolution,
-  and at a quarter while the map moves, then laid over each country's fill;
-  copying it to the map is the costliest step of a frame, so the smaller
-  canvas roughly halves the time a frame takes while dragging. What is
+  moving or still, then laid over each country's fill. It used to drop to a
+  quarter while the map moved, to save time copying it to the map, which
+  made the terrain blocky on every drag and sharp again when it stopped. What is
   selected shows in the bar's second row, and a hint for the tool at the
   bottom of the map.
 - **The tutorial** is a tour of fourteen short cards that a first-time visitor
