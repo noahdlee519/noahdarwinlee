@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## AD 100–599 and 960–1260 | the Southeast of North America, and Greenland | the Miller Culture; Greenland outside Norway
+
+- What changed: "Miller" on the snapshot maps of AD 100 to 500, the Miller culture of the upper Tombigbee (southwestern Tennessee, northeastern Mississippi, and west-central Alabama), was drawn as a state in a state's colour and linked to Wikipedia's article on millers; it is now the Miller Culture, a people, linked to the Miller culture's section of "Hopewell tradition". Copena is linked to "Copena culture" and Porter, which has no article, to "Hopewell tradition". Cliopatria's Kingdom of Norway (and Norway-Denmark, 1046 to 1055) took in all of Greenland, 2.2 million km², from 960; Greenland is no longer in them before 1261, so the Norse settlements of the snapshot maps are what is left there.
+- Tables: `NAME_FIX` rows for Miller, Copena, Porter, Kingdom of Norway, and Norway-Denmark (the last two with a box round Greenland and `drop`).
+- Sources: (1) the English Wikipedia article "Hopewell tradition", its sections on the Miller and Copena cultures; (2) the English Wikipedia articles "Norse colonization of North America" (Erik the Red's settlement of about 985) and "Greenland" (the Norse Greenlanders accepted Norway's rule in 1261).
+- Confidence: high.
+- Alternatives: keeping Greenland in Norway as a claim (rejected: there was no Norse presence before 985 and no Norwegian rule before 1261).
+- Left out: Kalmar Union's Greenland from 1397, which follows Norway's claim of 1261; whether to draw all of Greenland or only the settlements under it is left as it is.
+
 ## 1801–2019 | world | first-level divisions of 77 countries, and the history of the 14 already drawn
 
 - What changed: first-level divisions are drawn for 63 more countries, from Natural Earth's units, for the days those units held: in Eurasia Russia, Kazakhstan, Mongolia, Iran, Saudi Arabia, Turkey, Ukraine, Pakistan, Afghanistan, Uzbekistan, Turkmenistan, Iraq, Yemen, Oman, Sweden, Norway, Finland, and Poland; in Africa 26 countries (not Libya); in the Americas Peru, Colombia, Bolivia, Venezuela, Chile, Paraguay, Ecuador, and Uruguay; and Indonesia, Myanmar, Thailand, Vietnam, Malaysia, the Philippines, Papua New Guinea, Greenland, New Zealand, the United Kingdom (its four countries, with all of Ireland until 1922), and Italy (its 20 regions from 1948). The countries already drawn go back further where earlier divisions are unions or renames of today's: India to 1 November 1966, China to 1 July 1979, Spain's provinces to 1852, France's regions to 1960, Argentina to 28 June 1955, and West Germany to 1949 (from the other session). Corrections: Jervis Bay is not in New South Wales after 1915, and is its own territory from 1989; Santa Cruz and Tierra del Fuego were one province, Patagonia, in 1955 and 1956; Mexico's arrangement starts on 16 January 1935, the day of publication; Spain's last statutes came into force from 27 February to 2 March 1983, and Ceuta's and Melilla's on 15 March 1995.

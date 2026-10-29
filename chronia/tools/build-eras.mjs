@@ -969,6 +969,13 @@ const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ire
 const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
 const NAME_FIX = [
   ["Egypt", "Naqada culture", -3400, -3001, { people: 1, wiki: "Naqada culture" }],
+  // Middle Woodland cultures of the Southeast on the snapshots of AD 100 to 500; "Miller" was drawn as a state and linked to the occupation.
+  ["Miller", "Miller Culture", -150, 599, { people: 1, wiki: "Miller culture" }],
+  ["Copena", "Copena", -150, 599, { people: 1, wiki: "Copena culture" }],
+  ["Porter", "Porter", -150, 599, { people: 1, wiki: "Hopewell tradition" }],
+  // Cliopatria draws all of Greenland in Norway from 960, before the Norse settled it (985) and long before it accepted Norway's rule (1261).
+  ["Kingdom of Norway", "Kingdom of Norway", 800, 1260, { box: [-75, 58, -10, 84], drop: true }],
+  ["Norway-Denmark", "Norway-Denmark", 800, 1260, { box: [-75, 58, -10, 84], drop: true }],
   ["Ur", "", -3400, -2113, { drop: 1 }],
   ["Ur", "Third Dynasty of Ur", -2112, -2004, { wiki: "Third Dynasty of Ur" }],
   ["Ur", "", -2003, -1751, { drop: 1 }],
