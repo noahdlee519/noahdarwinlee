@@ -956,6 +956,17 @@ select.ch-save-input {
   visibility: hidden;
 }
 
+/* On touch screens the bar is swiped and the marker dragged by app.js, not by the range input. */
+@media (hover: none) and (pointer: coarse) {
+  .ch-range {
+    pointer-events: none;
+  }
+
+  .ch-track {
+    touch-action: none;
+  }
+}
+
 .ch-range:focus {
   outline: none;
 }

@@ -3671,10 +3671,67 @@
     if (!d) return;
     e.preventDefault();
     setWindow(tl.start + d / tl.ppy);
+    markerInWindow();
+  }, { passive: false });
+  function markerInWindow() {
     var p = posOf(now);
     range.value = String(Math.round(Math.max(0, Math.min(1, p)) * RANGE_MAX));
     range.classList.toggle("is-off", p < 0 || p > 1);
-  }, { passive: false });
+  }
+  // On touch screens the bar is swiped: a finger that moves sideways scrolls the window of years, and
+  // lets it glide on when it lifts; a finger put on the marker drags it, as a mouse does; a tap sets the
+  // date at that point. The range input takes no touches there (pointer-events: none in app.css), so
+  // these come to the track.
+  var swipe = null, glide = 0, SWIPE_SLOP = 8, MARKER_REACH = 24;
+  function trackFrac(x) { var r = $("ticks").getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)); }
+  $("track").addEventListener("pointerdown", function (e) {
+    if (getComputedStyle(range).pointerEvents !== "none" || (e.pointerType === "mouse" && e.button !== 0)) return;
+    cancelAnimationFrame(glide);
+    var r = $("ticks").getBoundingClientRect(), p = posOf(now), mx = r.left + p * r.width;
+    try { this.setPointerCapture(e.pointerId); } catch (err) {}
+    swipe = { id: e.pointerId, x0: e.clientX, start0: tl.start, mode: p >= 0 && p <= 1 && Math.abs(e.clientX - mx) <= MARKER_REACH ? "marker" : "wait", hist: [[performance.now(), e.clientX]] };
+    if (swipe.mode === "marker") {
+      stopPlay();
+      if (drag) cancelAnimationFrame(drag.raf);
+      drag = { x: e.clientX, t: null, held: 0, last: 0, raf: 0 };
+      drag.raf = requestAnimationFrame(edgeScroll);
+      rangeActive = true;
+    }
+  });
+  $("track").addEventListener("pointermove", function (e) {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    var dx = e.clientX - swipe.x0;
+    swipe.hist.push([performance.now(), e.clientX]);
+    if (swipe.hist.length > 8) swipe.hist.shift();
+    if (swipe.mode === "wait" && Math.abs(dx) > SWIPE_SLOP) { swipe.mode = "pan"; swipe.x0 = e.clientX; dx = 0; }
+    if (swipe.mode === "pan") { setWindow(swipe.start0 - dx / tl.ppy); markerInWindow(); }
+    else if (swipe.mode === "marker" && drag) {
+      var f = trackFrac(e.clientX);
+      range.value = String(Math.round(f * RANGE_MAX));
+      showDrag(snapTime(yearAt(f)));
+    }
+  });
+  function endSwipe(e) {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    var sw = swipe;
+    swipe = null;
+    if (sw.mode === "wait" && e.type === "pointerup") { stopPlay(); setTime(snapTime(yearAt(trackFrac(e.clientX)))); return; }
+    if (sw.mode !== "pan") return;
+    var h = sw.hist, a = h[0], b = h[h.length - 1], now0 = performance.now();
+    if (now0 - b[0] > 80 || b[0] - a[0] < 10) return;
+    var v = (b[1] - a[1]) / (b[0] - a[0]), last = now0;
+    // The window glides on at the finger's speed, slowing by about 5% a frame.
+    glide = requestAnimationFrame(function step(ts) {
+      var dt = Math.min(50, ts - last);
+      last = ts;
+      setWindow(tl.start - v * dt / tl.ppy);
+      markerInWindow();
+      v *= Math.pow(0.95, dt / 16.7);
+      if (Math.abs(v) > 0.02 && tl.start > FIRST_T && tl.start + tl.span < lastT()) glide = requestAnimationFrame(step);
+    });
+  }
+  $("track").addEventListener("pointerup", endSwipe);
+  $("track").addEventListener("pointercancel", endSwipe);
   range.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
