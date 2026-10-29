@@ -4,6 +4,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { adoptLand } from "./adopt-land.mjs";
+import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -972,6 +973,8 @@ const NAME_FIX = [
   // Middle Woodland cultures of the Southeast on the snapshots of AD 100 to 500; "Miller" was drawn as a state and linked to the occupation.
   ["Miller", "Miller Culture", -150, 599, { people: 1, wiki: "Miller culture" }],
   ["Copena", "Copena", -150, 599, { people: 1, wiki: "Copena culture" }],
+  // Cliopatria's row for 1859 named "New Caledonia" is the French foothold at Saigon, taken on 17 February 1859.
+  ["New Caledonia", "French Cochinchina", 1859, 1859, { box: [100, 5, 112, 16], ruler: "Second French Empire", wiki: "French Cochinchina" }],
   ["Porter", "Porter", -150, 599, { people: 1, wiki: "Hopewell tradition" }],
   // Cliopatria draws all of Greenland in Norway from 960, before the Norse settled it (985) and long before it accepted Norway's rule (1261).
   ["Kingdom of Norway", "Kingdom of Norway", 800, 1260, { box: [-75, 58, -10, 84], drop: true }],
@@ -2669,11 +2672,25 @@ dated = resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO + ", aft
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
+// The days of the changes from 1801 (see tools/dated-days.mjs), and every change day from 1800.
+const daysPath = resolve(here, "dated-days.json");
+let datedDays = [];
 for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
   const cEnd = Math.min(c + CHUNK - 1, DATED_TO);
   const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
   const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
   const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
+  let dayRows = null;
+  if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
+    const geo = spans.map((s, i) => {
+      const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
+      return { i, first: s.first, last: s.last, names: [s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates };
+    });
+    const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
+    dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
+    datedDays = res.days;
+    console.log("days: " + res.report.length + " changes dated, " + dayRows.length + " spans with days, " + res.days.length + " change days from 1800" + (res.unused.length ? "; entries naming no span: " + res.unused.map((e) => e.date + " " + e.what).join("; ") : ""));
+  }
   const rows = spans.map((s, i) => {
     if (!s.geoHash) s.geoHash = createHash("md5").update(JSON.stringify(s.polys)).digest("hex");
     let label = datedLabel.get(s.geoHash);
@@ -2714,7 +2731,11 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
   hi.objects.p.geometries.forEach((g) => { delete g.properties; });
   lo.objects.p.geometries.forEach((g) => { delete g.properties; });
   const file = "dated/" + (c < 0 ? "bc" + -c : c) + ".json";
-  writeFileSync(resolve(out, file), JSON.stringify(groups.length ? { from: c, to: cEnd, rows, groups, hi, lo } : { from: c, to: cEnd, rows, hi, lo }));
+  const body = { from: c, to: cEnd, rows };
+  if (groups.length) body.groups = groups;
+  if (dayRows) body.days = dayRows;
+  body.hi = hi; body.lo = lo;
+  writeFileSync(resolve(out, file), JSON.stringify(body));
   datedChunks.push({ from: c, to: cEnd, file, rows, lo, spans });
 }
 const datedChanges = [...new Set(dated.map((s) => s.first).concat(dated.filter((s) => s.last < DATED_TO).map((s) => s.last + 1)))].filter((y) => y >= DATED_FROM && y <= DATED_TO).sort((a, b) => a - b);
@@ -3658,7 +3679,7 @@ const entries = catalogue.map((e, id) => {
   return row;
 });
 writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), hi: csHi, lo: csLo }));
-writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges }, polities: entries }));
+writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
 let polys = landGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);

@@ -10,7 +10,7 @@
   var STORE_FLAT = "chronia-flat";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
-  var START_YEAR = 1815;
+  var START_YEAR = 1815, MONTHLY_FROM = 1800;
   // The timeline runs to the present month by the viewer's clock (never before October 2026), so months
   // that have not happened yet are not on it.
   var LAST_YM = Math.max(2026 * 12 + 9, new Date().getFullYear() * 12 + new Date().getMonth());
@@ -402,6 +402,10 @@
   }
   function isModern(t) { return !!modern && t >= modern.fromTime; }
   function isDated(t) { return !!dated && !isModern(t) && t >= dated.from - 0.5; }
+  // From 1800 (MONTHLY_FROM) the date is a day, shown by the month, as from 1886; before, a year.
+  function monthlyFrom() { return dated ? MONTHLY_FROM : 1886; }
+  function isMonthly(t) { return isModern(t) || (!!dated && t >= MONTHLY_FROM); }
+  function yearOf(t) { return isMonthly(t) ? dateOfDay(dayOfTime(t))[0] : Math.round(t); }
 
   var DISPUTED = 6;
   function apart(cols) {
@@ -519,20 +523,34 @@
     if (!c) return Promise.reject(new Error("no chunk " + k));
     if (c.data) return Promise.resolve(c);
     if (!c.loading) {
-      c.loading = fetchJSON(c.file).then(function (d) { c.data = d; return c; }).catch(function (e) { c.loading = null; throw e; });
+      c.loading = fetchJSON(c.file).then(function (d) { c.data = d; prepDays(d); return c; }).catch(function (e) { c.loading = null; throw e; });
     }
     return c.loading;
   }
-  function datedSnap(k, y) {
+  // A row's first and last day: the days the chunk gives for changes dated within the year (from 1800),
+  // or else 1 January of its first year and 31 December of its last.
+  function prepDays(d) {
+    if (d.to < MONTHLY_FROM) return;
+    var n = d.rows.length;
+    d.dayFrom = new Array(n); d.dayTo = new Array(n); d.dayKnown = new Array(n);
+    for (var i = 0; i < n; i++) { d.dayFrom[i] = d.rows[i][2] < 1000 ? -1e9 : dayFromDate(d.rows[i][2], 1, 1); d.dayTo[i] = dayFromDate(d.rows[i][3], 12, 31); d.dayKnown[i] = 0; }
+    (d.days || []).forEach(function (x) {
+      if (x[1] !== null) { d.dayFrom[x[0]] = x[1]; d.dayKnown[x[0]] |= 1; }
+      if (x[2] !== null) { d.dayTo[x[0]] = x[2]; d.dayKnown[x[0]] |= 2; }
+    });
+  }
+  function datedSnap(k, t) {
     var c = dated.chunks[k], rows = c.data.rows, idx = [], soft = false;
+    var monthly = isMonthly(t), day = monthly ? dayOfTime(t) : 0, y = monthly ? yearOf(t) : t;
     var groupIds = new Set((c.data.groups || []).map(function (g) { return g[0]; }));
-    for (var i = 0; i < rows.length; i++) if (rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
+    if (monthly && !c.data.dayFrom) prepDays(c.data);
+    for (var i = 0; i < rows.length; i++) if (monthly ? c.data.dayFrom[i] <= day && day <= c.data.dayTo[i] : rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
     var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y);
     var snap = datedSnaps.get(key);
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3] };
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, topo: { hi: c.data.hi, lo: c.data.lo },
@@ -554,7 +572,7 @@
     return snap;
   }
   function datedChangeBefore(y) {
-    var c = dated.changes, lo = 0, hi = c.length - 1, k = -1;
+    var c = dated.times, lo = 0, hi = c.length - 1, k = -1;
     while (lo <= hi) { var mid = (lo + hi) >> 1; if (c[mid] <= y) { k = mid; lo = mid + 1; } else hi = mid - 1; }
     return k;
   }
@@ -2673,7 +2691,7 @@
   function divDay() {
     if (current && current.modern) return Math.min(dayOfTime(now), modern.toDay);
     if (now < DIV_FIRST_YEAR) return null;
-    return dayOfTime(Math.floor(now) + 0.5);
+    return isMonthly(now) ? dayOfTime(now) : dayOfTime(Math.floor(now) + 0.5);
   }
   function divBoxCap(b) {
     var X = [], Y = [], Z = [], sx = 0, sy = 0, sz = 0;
@@ -2772,9 +2790,10 @@
     return w.load;
   }
   var ctlMonth = 0;
-  function ctlDay() { return isModern(now) ? dayOfTime(now) : dayFromDate(Math.round(now), ctlMonth || 7, MID_DAY); }
+  // From 1800 the date is a day; before, a war's months are stepped through within the year (ctlMonth).
+  function ctlDay() { return isMonthly(now) ? dayOfTime(now) : dayFromDate(Math.round(now), ctlMonth || 7, MID_DAY); }
   function ctlFineYear(y) {
-    if (!layers.control || !ctlIndex || y >= 1886) return false;
+    if (!layers.control || !ctlIndex || y >= monthlyFrom()) return false;
     var a = dayFromDate(y, 1, 1), b = dayFromDate(y, 12, 31);
     return ctlIndex.some(function (w) { return w.first < 0 && w.first <= b && w.last >= a; });
   }
@@ -3327,7 +3346,7 @@
   function fmtDate(day) { var d = dateOfDay(day); return MONTHS[d[1] - 1] + " " + d[2] + ", " + d[0]; }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
-    if (!isModern(t)) return (ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " : "") + fmtYear(Math.round(t));
+    if (!isMonthly(t)) return (ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " : "") + fmtYear(Math.round(t));
     var d = dateOfDay(dayOfTime(t));
     return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
   }
@@ -3343,7 +3362,7 @@
     return 0;
   }
   function modernTime(y, m, d) {
-    if (!modern || y < 1886) return null;
+    if (!(modern || dated) || y < monthlyFrom()) return null;
     if (!m) return monthTime(y, 7);
     if (m > 12 || (d && d > new Date(Date.UTC(y, m, 0)).getUTCDate())) return null;
     return timeOfDay(dayFromDate(y, m, d || MID_DAY));
@@ -3390,7 +3409,7 @@
   function buildPoints() {
     points = maps.map(function (m) { return m.y; });
     if (modern) modern.changes.forEach(function (d) { points.push(timeOfDay(d)); });
-    if (dated) dated.changes.forEach(function (y) { points.push(y); });
+    if (dated) dated.times.forEach(function (y) { points.push(y); });
     points.sort(function (a, b) { return a - b; });
   }
   function sizeWindow() {
@@ -3444,7 +3463,7 @@
     }
     maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });
     changeTicks = modern ? modern.changes.map(function (d) { return add(timeOfDay(d), "is-change"); }) : [];
-    datedTicks = dated ? dated.changes.map(function (y) { return add(y, "is-change"); }) : [];
+    datedTicks = dated ? dated.times.map(function (y) { return add(y, "is-change"); }) : [];
     nowTick = null;
     setWindow(tl.start);
     follow(drag ? drag.t : now);
@@ -3454,7 +3473,7 @@
   var changeTicks = [], nowTick = null, datedTicks = [];
   function markCurrentTick() {
     maps.forEach(function (m) { if (m.tick) m.tick.classList.toggle("is-now", !!current && m.snap === current); });
-    var t = current && current.modern ? changeTicks[changeBefore(Math.min(dayOfTime(now), modern.toDay))] || null : current && current.dated ? datedTicks[datedChangeBefore(Math.round(now))] || null : null;
+    var t = current && current.modern ? changeTicks[changeBefore(Math.min(dayOfTime(now), modern.toDay))] || null : current && current.dated ? datedTicks[datedChangeBefore(now)] || null : null;
     if (t === nowTick) return;
     if (nowTick) nowTick.classList.remove("is-now");
     if (t) t.classList.add("is-now");
@@ -3471,8 +3490,8 @@
       else if (day > modern.toDay) asof.textContent = "The latest borders, of " + dateOfDay(modern.toDay)[0];
       else asof.textContent = "Borders since " + fmtDay(since);
     } else if (isDated(now)) {
-      var dc = dated.changes[datedChangeBefore(Math.round(now))];
-      asof.textContent = !current || !current.dated || wantKey !== "e" + Math.round(now) ? "Loading the borders" : "Borders since " + fmtYear(dc);
+      var dc = dated.times[datedChangeBefore(now)];
+      asof.textContent = !current || !current.dated || wantKey !== "e" + now ? "Loading the borders" : "Borders since " + (dc >= MONTHLY_FROM ? fmtDay(dayOfTime(dc)) : fmtYear(dc));
     } else if (maps.length) {
       var m = maps[mapIndexFor(now)];
       asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : "Borders from the map of " + fmtYear(m.y);
@@ -3491,8 +3510,8 @@
   function setTime(t, fromRange) {
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
-    if (!isModern(t)) { t = Math.round(t); if (t === 0) t = 1; }
-    if (isModern(t) || fromRange || t !== Math.round(now)) ctlMonth = 0;
+    if (!isMonthly(t)) { t = Math.round(t); if (t === 0) t = 1; }
+    if (isMonthly(t) || fromRange || t !== Math.round(now)) ctlMonth = 0;
     // A card describes one date, so changing the date closes it.
     if (t !== now && (selected >= 0 || selCity) && !card.hidden) closeCard();
     now = t;
@@ -3552,10 +3571,11 @@
     } else if (k + 1 < points.length) setTime(points[k + 1]);
   }
   function stepUnit(dir) {
-    if (isModern(now)) {
+    var mf = monthlyFrom();
+    if (isMonthly(now)) {
       var d = dateOfDay(dayOfTime(now)), y = d[0], m = d[1] + dir;
       if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
-      if (y < 1886) setTime(1885);
+      if (y < mf) setTime(mf - 1);
       else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
       return;
     }
@@ -3574,7 +3594,7 @@
     }
     var next = yr + dir;
     if (next === 0) next = dir;
-    setTime(modern && next >= 1886 ? monthTime(1886, 1) : next);
+    setTime((modern || dated) && next >= mf ? monthTime(mf, 1) : next);
     if (ctlFineYear(next) && Math.round(now) === next) {
       ctlMonth = dir > 0 ? 1 : 12;
       syncTime();
@@ -3587,8 +3607,9 @@
   var drag = null;
   function snapTime(y) {
     y = Math.max(FIRST_T, Math.min(lastT() - 1e-6, y));
-    if (modern && y >= 1885.5) {
-      var yr = Math.floor(Math.max(y, 1886)), mo = Math.min(12, Math.floor((Math.max(y, 1886) - yr) * 12) + 1);
+    var mf = monthlyFrom();
+    if ((modern || dated) && y >= mf - 0.5) {
+      var yr = Math.floor(Math.max(y, mf)), mo = Math.min(12, Math.floor((Math.max(y, mf) - yr) * 12) + 1);
       return yr * 12 + mo > LAST_YEAR * 12 + LAST_MONTH ? monthTime(LAST_YEAR, LAST_MONTH) : monthTime(yr, mo);
     }
     y = Math.round(y);
@@ -3686,7 +3707,7 @@
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
   function playEnd() { return modern ? lastTime() : dated ? dated.to : maps[maps.length - 1].y; }
   function playNext(t) {
-    if (isModern(t)) {
+    if (isMonthly(t)) {
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
       return monthTime(y, m);
@@ -3699,16 +3720,16 @@
       var mi = mapIndexFor(t);
       return mi < maps.length - 1 ? Math.min(maps[mi + 1].y, PLAY.yearlyFrom) : PLAY.yearlyFrom;
     }
-    var next = Math.round(t) + 1;
-    return modern && next >= 1886 ? monthTime(1886, 1) : next;
+    var next = Math.round(t) + 1, mf = monthlyFrom();
+    return (modern || dated) && next >= mf ? monthTime(mf, 1) : next;
   }
-  // The time before t when playing backwards: a month back from 1886, a year back to 1200, and the
+  // The time before t when playing backwards: a month back from 1800, a year back to 1200, and the
   // previous change before that, the steps forward play takes.
   function playPrev(t) {
-    if (isModern(t)) {
-      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1;
+    if (isMonthly(t)) {
+      var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1, mf = monthlyFrom();
       if (m < 1) { m = 12; y--; }
-      return y < 1886 ? 1885 : monthTime(y, m);
+      return y < mf ? mf - 1 : monthTime(y, m);
     }
     if (t <= PLAY.yearlyFrom) {
       for (var p = points.length - 1; p >= 0; p--) if (points[p] < t - 1e-6) return points[p];
@@ -3724,11 +3745,11 @@
   }
   function playWait(from, to) {
     var changed = changedBetween(Math.min(from, to), Math.max(from, to));
-    if (isModern(to)) return changed ? PLAY.monthChange : PLAY.month;
+    if (isMonthly(to)) return changed ? PLAY.monthChange : PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return changed ? PLAY.yearChange : PLAY.year;
   }
-  function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + Math.round(now) : !!maps.length && maps[mapIndexFor(now)].snap === current); }
+  function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + now : !!maps.length && maps[mapIndexFor(now)].snap === current); }
   function playStep() {
     if (!playLoaded()) return PLAY.load;
     var back = playBack(), from = now, to = back ? playPrev(now) : playNext(now);
@@ -3760,7 +3781,7 @@
       var wait = playStep();
       if (wait < 0) stopPlay(); else playTimer = setTimeout(tick, playDelay(wait));
     };
-    playTimer = setTimeout(tick, playDelay(isModern(now) ? PLAY.monthChange : now < PLAY.yearlyFrom ? (isDated(now) ? PLAY.early : PLAY.map) : PLAY.yearChange));
+    playTimer = setTimeout(tick, playDelay(isMonthly(now) ? PLAY.monthChange : now < PLAY.yearlyFrom ? (isDated(now) ? PLAY.early : PLAY.map) : PLAY.yearChange));
   }
   function stopPlay() {
     if (!playTimer) return;
@@ -3832,7 +3853,7 @@
     return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + "-" + (d[2] < 10 ? "0" : "") + d[2];
   }
   function askYear() {
-    return Math.max(KNOTS[0][0], Math.min(LAST_YEAR, isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now) || 1));
+    return Math.max(KNOTS[0][0], Math.min(LAST_YEAR, yearOf(now) || 1));
   }
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
@@ -3842,7 +3863,7 @@
     return { lon: at[1], lat: at[2], modern: at[0], names: null, since: null, of: r.of, kind: l.kind };
   }
   function cityFacts(c) {
-    var modernNow = !!(current && current.modern), day = modernNow ? Math.min(dayOfTime(now), modern.toDay) : Math.round(now);
+    var modernNow = !!(current && current.modern), day = modernNow ? Math.min(dayOfTime(now), modern.toDay) : yearOf(now);
     return { name: namedAt(c.names, c.modern, now), modern: c.modern, day: day, modernNow: modernNow, early: c.since != null && now < c.since };
   }
   function cityState(c) {
@@ -3872,8 +3893,8 @@
   }
   function renderCityCard(click) {
     var c = selCity, f = cityFacts(c), p = cityState(c);
-    var datedNow = !!(current && current.dated), on = datedNow ? " in " : " on ";
-    var when = f.modernNow ? fmtDay(f.day) : datedNow ? fmtYear(Math.round(now)) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
+    var datedNow = !!(current && current.dated), byDay = f.modernNow || isMonthly(now), on = datedNow && !byDay ? " in " : " on ";
+    var when = f.modernNow ? fmtDay(f.day) : datedNow ? (byDay ? fmtDay(dayOfTime(now)) : fmtYear(Math.round(now))) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
     var capAt = p ? capitalNow(p.cap) : null, isCap = !!(capAt && Math.abs(capAt[1] - c.lon) < 0.05 && Math.abs(capAt[2] - c.lat) < 0.05);
     $("card-kind").textContent = isCap ? "Capital" : c.place ? "Place" : c.kind === "town" ? "Town" : "City";
     $("card-name").textContent = f.name;
@@ -3900,8 +3921,9 @@
     if (selected < 0 || !catalogue[selected]) return;
     var e = catalogue[selected], p = current ? current.byId.get(selected) : null;
     var modernNow = !!(current && current.modern), datedNow = !!(current && current.dated);
-    var when = modernNow ? fmtDay(Math.min(dayOfTime(now), modern.toDay)) : datedNow ? fmtYear(Math.round(now)) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
-    var whenYear = modernNow ? dateOfDay(dayOfTime(now))[0] : datedNow ? Math.round(now) : current ? current.year : Math.round(now);
+    var byDay = datedNow && isMonthly(now);
+    var when = modernNow ? fmtDay(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDay(dayOfTime(now)) : datedNow ? fmtYear(Math.round(now)) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
+    var whenYear = modernNow ? dateOfDay(dayOfTime(now))[0] : datedNow ? yearOf(now) : current ? current.year : Math.round(now);
     $("card-kind").textContent = e[4] ? "People or culture" : p && p.status > 0 ? STATUS[p.status] : p && p.ruler >= 0 ? "Dependency" : "State";
     $("card-name").textContent = e[0];
     var facts = $("card-facts"), factsAt = ++factsAsk;
@@ -3936,13 +3958,14 @@
         textLine("Borders from", fmtDate(p.start));
         if (p.end >= 0) textLine("Borders until", fmtDate(p.end));
       } else if (datedNow) {
-        if (p.start === p.end) textLine("Borders", fmtYear(p.start));
-        else { textLine("Borders from", fmtYear(p.start)); textLine("Borders until", fmtYear(p.end)); }
+        var from = p.startDay !== null ? fmtDate(p.startDay) : fmtYear(p.start), until = p.endDay !== null ? fmtDate(p.endDay) : fmtYear(p.end);
+        if (from === until) textLine("Borders", from);
+        else { textLine("Borders from", from); textLine("Borders until", until); }
       }
       if (p.band) line("").textContent = "Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.";
       else if (p.b <= 1 && !p.people) line("").textContent = "Its borders here are approximate.";
     } else {
-      line("").textContent = "Not on the map " + (modernNow ? "on " : datedNow ? "in " : "of ") + (modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : when) : current ? fmtYear(current.year) : fmtNow(now)) + ".";
+      line("").textContent = "Not on the map " + (modernNow || byDay ? "on " : datedNow ? "in " : "of ") + (modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDate(dayOfTime(now)) : when) : current ? fmtYear(current.year) : fmtNow(now)) + ".";
     }
     var title = wikiTitle(selected, whenYear), y = askYear();
     loadWiki(e[0], title, {
@@ -3959,7 +3982,7 @@
       label: e[0], when: fmtYear(y), click: click
     });
     if (flagLine) {
-      var at = modernNow ? dayYear(Math.min(dayOfTime(now), modern.toDay)) : whenYear + 0.5, job = wikiCache.get(title);
+      var at = modernNow ? dayYear(Math.min(dayOfTime(now), modern.toDay)) : byDay ? dayYear(dayOfTime(now)) : whenYear + 0.5, job = wikiCache.get(title);
       var chosen = title !== e[0];
       if (job) job.then(function (d) { return d && d.wikibase_item ? wdFacts(d.wikibase_item, at, chosen) : null; }).then(function (f) {
         if (!f || factsAt !== factsAsk) return;
@@ -4375,7 +4398,7 @@
       if (!layersPanel.hidden) setLayersOpen(false, false);
       if (about.classList.contains("is-open")) setAbout(false);
       if (!tlFrom.value) {
-        var y = isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now);
+        var y = yearOf(now);
         tlFrom.value = fmtYear(Math.max(FIRST_T, y - 100 === 0 ? -1 : y - 100));
         tlTo.value = fmtYear(y);
       }
@@ -4410,7 +4433,7 @@
     }
     var v = parseTime(t);
     if (v === null) return null;
-    if (!isModern(v)) return { y: Math.round(v) || 1, m: last ? 12 : 1, bare: true };
+    if (!isMonthly(v)) return { y: Math.round(v) || 1, m: last ? 12 : 1, bare: true };
     var d = dateOfDay(dayOfTime(v));
     return { y: d[0], m: d[1], bare: false };
   }
@@ -4430,7 +4453,7 @@
     var frames = [], y, mo, mid = a.bare ? 7 : a.m;
     if (!monthly) {
       for (y = a.y; y <= b.y; y = nextYear(y)) {
-        if (modern && y >= 1886) {
+        if ((modern || dated) && y >= monthlyFrom()) {
           if (y === endY && mid > endM) { frames.push({ t: monthTime(y, endM), label: fmtNow(monthTime(y, endM)) }); continue; }
           var mt = monthTime(y, mid);
           frames.push({ t: mt, label: a.bare ? String(y) : fmtNow(mt) });
@@ -4438,7 +4461,7 @@
       }
     } else {
       for (y = a.y; y <= b.y; y = nextYear(y)) {
-        if (!modern || y < 1886) { frames.push({ t: y, label: fmtYear(y) }); continue; }
+        if (!(modern || dated) || y < monthlyFrom()) { frames.push({ t: y, label: fmtYear(y) }); continue; }
         var m0 = y === a.y ? a.m : 1, m1 = y === b.y ? b.m : 12;
         for (mo = m0; mo <= m1; mo++) { var t = monthTime(y, mo); frames.push({ t: t, label: fmtNow(t) }); }
       }
@@ -4913,7 +4936,7 @@
     }, 250);
   }
   function hashTime() {
-    if (!isModern(now)) return String(Math.round(now)) + (ctlMonth && layers.control ? "-" + (ctlMonth < 10 ? "0" : "") + ctlMonth : "");
+    if (!isMonthly(now)) return String(Math.round(now)) + (ctlMonth && layers.control ? "-" + (ctlMonth < 10 ? "0" : "") + ctlMonth : "");
     var d = dateOfDay(dayOfTime(now));
     return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
   }
@@ -5072,19 +5095,21 @@
       modern = { rows: md.rows, hi: md.hi, lo: md.lo, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
       modern.fromTime = timeOfDay(dayFromDate(from[0], from[1], from[2])) - 0.5 / 365;
       if (idx.dated) {
-        dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) }; PLAY.yearlyFrom = Math.max(dated.from, PLAY.yearlyFrom);
+        // The change points: the years until 1799, then the days of the changes from 1800.
+        dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, days: idx.dated.days || [], chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) }; PLAY.yearlyFrom = Math.max(dated.from, PLAY.yearlyFrom);
+        dated.times = dated.changes.filter(function (y) { return !dated.days.length || y < MONTHLY_FROM; }).concat(dated.days.map(timeOfDay));
       }
       cities = r[2] ? { ranks: r[2].ranks, rows: prepCities(r[2], false), minorLoad: null } : null;
       buildPoints();
       var fine = h.y ? /^(\d{4})-(\d{2})$/.exec(h.y) : null;
-      if (fine && +fine[1] < 1886 && +fine[2] >= 1 && +fine[2] <= 12) { ctlMonth = +fine[2]; h.y = fine[1]; }
+      if (fine && +fine[1] < monthlyFrom() && +fine[2] >= 1 && +fine[2] <= 12) { ctlMonth = +fine[2]; h.y = fine[1]; }
       var t0 = h.y ? parseTime(h.y) : null;
-      now = Math.max(KNOTS[0][0], t0 !== null ? t0 : START_YEAR);
+      now = Math.max(KNOTS[0][0], t0 !== null ? t0 : parseTime(String(START_YEAR)));
       land = { hi: prepLand(r[1].hi), lo: prepLand(r[1].lo) };
       buildCoastGrid(land.lo);
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
       layout();
-      if (isDated(now)) now = Math.round(now);
+      if (isDated(now) && !isMonthly(now)) now = Math.round(now);
       var first = isModern(now) ? Promise.resolve(modernSnap(Math.min(dayOfTime(now), modern.toDay))) : isDated(now) ? loadChunk(chunkIndexFor(now)).then(function () { return datedSnap(chunkIndexFor(now), now); }) : loadMap(mapIndexFor(now));
       return first.then(function (snap) {
         current = snap;
@@ -5122,7 +5147,7 @@
     keyOpen: function () { return !keyList.hidden; },
     keyRows: function () { return Array.prototype.filter.call(keyList.children, function (li) { return !li.hidden; }).map(function (li) { return li.getAttribute("data-key"); }); },
     setKeyOpen: function (on) { setKeyOpen(on, true); },
-    date: function () { return isModern(now) ? hashTime() : null; },
+    date: function () { return isMonthly(now) ? hashTime() : null; },
     mapYear: function () { return current ? (current.modern ? "modern" : current.dated ? "dated" : current.year) : null; },
     changes: function () { return points.slice(); },
     maps: function () { return maps.map(function (m) { return m.y; }); },
