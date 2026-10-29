@@ -515,14 +515,14 @@ CHRONIA first used d3's own path with clipping for everything. It took about 190
    - a band has no border: an edge between a band and a band, or a band and blank land, is not drawn, and an edge between a band and a state is drawn in the state's style.
    - Where a state's edge meets no other shape on land, as in the interior of Arabia or the central Sahara around 1890, the edge is drawn as a border too, in that state's style, with its band.
    - Lines get slightly heavier as the map zooms in, from a scale of about 700 px to 4,000 px: solid borders from 1.15 to 1.7 px, the coastline from 0.75 to 1.1 px, and the dots of soft borders from 1.6 to 2.1 px.
-8. **Finishing:** the aged paper (seams, vignette, and highlight on the globe; darkened top and bottom on the flat map), and the double rim. The seams run along every 30° of longitude, so they are drawn only when the lines of latitude and longitude are on.
+8. **Finishing:** the aged paper (seams, vignette, and highlight on the globe; darkened top and bottom on the flat map, clipped to its frame so the page around it isn't banded), and the double rim. The seams run along every 30° of longitude, so they are drawn only when the lines of latitude and longitude are on.
 9. **Labels:**
    - **States and peoples** first, largest first, but names shown in the last frame go before names that were not, so a name that is showing keeps its place against a newcomer (see [Names of states and peoples](#names-of-states-and-peoples)).
    - **Seas** (the same list and scales as UCHRONIA).
    - **Capitals and cities** (see [Cities](#cities)). They come after the names of states and keep clear of them: a capital's mark gives way to a state's name, not the reverse. A name goes to the right of its mark, or else to the left, above, or below, wherever it doesn't collide.
    - **First-level divisions**, last, so they never cover the others.
 
-   Labels never overlap one another or the page's panels.
+   Labels never overlap one another or the page's panels, and on the flat map, when its whole width fits on the screen, a label that would cross the frame's sides is not placed (`insideMap`), as one crossing its top or bottom never was.
 
 The `hi` level is used when the globe's radius is at least 900 px and the map is still, or at 2,600 px and over. Otherwise `lo` is used.
 

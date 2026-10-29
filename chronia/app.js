@@ -1095,7 +1095,9 @@
   function drawAging(S) {
     var amt = clamp01((6000 - S) / 3500);
     ctx.save();
-    if (!flat) { ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.clip(); }
+    ctx.beginPath();
+    if (flat) traceOutline(ctx); else ctx.arc(cx, cy, B.r, 0, TAU);
+    ctx.clip();
     ctx.globalCompositeOperation = "multiply";
     if (flat) {
       var k = FB.k, y0 = cy + k * FB.yc, top = y0 - k * HALF_PI, h = k * Math.PI, e = h * 0.07;
@@ -1546,7 +1548,9 @@
   function insideMap(b) {
     if (flat) {
       var k = FB.k, y0 = cy + k * FB.yc;
-      return b.y > y0 - k * HALF_PI + 3 && b.y + b.h < y0 + k * HALF_PI - 3;
+      if (b.y <= y0 - k * HALF_PI + 3 || b.y + b.h >= y0 + k * HALF_PI - 3) return false;
+      var x0 = cx - k * FB.xc;
+      return FB.wrap || (b.x > x0 - k * Math.PI + 3 && b.x + b.w < x0 + k * Math.PI - 3);
     }
     var corners = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]];
     for (var i = 0; i < 4; i++) if (Math.hypot(corners[i][0] - cx, corners[i][1] - cy) > B.r - 2) return false;
