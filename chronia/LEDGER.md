@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 1564–1821 | North America | the colonies: British America one by one, New France, Louisiana, New Netherland, New Sweden, and the Spanish borderlands
+
+- Claimed by the session of 29 October 2026 (Claude, for Noah): the colonies from the founding of each, British America as one colour with its colonies inside, the Native nations kept outside them, and New Spain in one piece from 1811 to 1821.
+
 ## 1936–1939 | Spain | the Spanish Civil War: zones of control
 
 - What changed: the Control layer has a new war, the Spanish Civil War, from the rising of 17 July 1936 to 1 April 1939: the Republic's land and the Nationalists', twice a month (daily in the last days of March 1939), with the front between them, on mainland Spain, the Balearics, the Canaries, Ceuta, and Melilla. It is drawn from 844 towns' dates of capture, split into Voronoi cells, as the Second World War is: the insurgent pockets of July 1936 and the Oviedo siege, the Army of Africa's advance, Gipuzkoa, the Mallorca landing and Republican Ibiza, Málaga, the Madrid front with Jarama, Guadalajara, and Brunete, the north in 1937, Belchite, Teruel, the Aragon offensive and the split at Vinaròs, the Bielsa pocket, the Levante offensive, the Ebro, La Serena, Catalonia, Menorca, and the final offensive.
