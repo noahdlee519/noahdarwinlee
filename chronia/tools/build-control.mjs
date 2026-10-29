@@ -56,6 +56,7 @@ const WARS = [
   {
     key: "syria",
     name: "Syrian civil war",
+    credit: "Wikipedia's town maps",
     region: (p) => p.adm0_a3 === "SYR",
     rules: [
       [/transitional government/i, "syNew"],
@@ -75,6 +76,7 @@ const WARS = [
   {
     key: "ukraine",
     name: "Russian invasion of Ukraine",
+    credit: "Wikipedia's town maps",
     region: (p) => p.adm0_a3 === "UKR" || ["Crimea", "Sevastopol", "Kursk", "Belgorod", "Bryansk"].includes(p.name),
     rules: [
       [/Russia/i, "russia"],
@@ -208,6 +210,7 @@ for (const war of WARS) {
     key: war.key,
     name: war.name,
     source: src.source,
+    credit: war.credit,
     sides: sideKeys.map((k) => [k, SIDES[k][0], SIDES[k][1]]),
     rows: rows.map((r) => [sideKeys.indexOf(r[0]), r[1], r[2], r[3]]),
     topo
@@ -252,7 +255,7 @@ function buildMexico() {
   }
   const sideKeys = [...new Set(rows.map((r) => r[0]))];
   const topo = server.topology({ c: { type: "FeatureCollection", features: shapes } }, Q);
-  const data = { key: "mexico", name: "Mexican cartels", kind: "presence", source: "OCVED 2.0 (Osorio and Beltrán, 2020; MIT licence): the cartel named in most violent events in a municipality in a year, at least " + PRESENCE_MIN + "; municipalities from INEGI via CONABIO and PhantomInsights/mexico-geojson (2020)", sides: sideKeys.map((k) => [k, SIDES[k][0], SIDES[k][1]]), rows: rows.map((r) => [sideKeys.indexOf(r[0]), r[1], r[2], r[3]]), topo };
+  const data = { key: "mexico", name: "Mexican cartels", kind: "presence", credit: "OCVED", source: "OCVED 2.0 (Osorio and Beltrán, 2020; MIT licence): the cartel named in most violent events in a municipality in a year, at least " + PRESENCE_MIN + "; municipalities from INEGI via CONABIO and PhantomInsights/mexico-geojson (2020)", sides: sideKeys.map((k) => [k, SIDES[k][0], SIDES[k][1]]), rows: rows.map((r) => [sideKeys.indexOf(r[0]), r[1], r[2], r[3]]), topo };
   writeFileSync(resolve(out, "mexico.json"), JSON.stringify(data));
   index.wars = index.wars.filter((w) => w[0] !== "mexico").concat([["mexico", "Mexican cartels", rows[0][1], rows[rows.length - 1][2], bbox.map((v) => +v.toFixed(2)), "control/mexico.json"]]).sort((a, b) => a[2] - b[2]);
   console.log("mexico: " + years.length + " years, " + rows.length + " shapes of " + sideKeys.length + " groups, " + missing.size + " municipalities not found, " + Math.round(JSON.stringify(data).length / 1024) + " KB");

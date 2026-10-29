@@ -2757,7 +2757,7 @@
   }
   function ctlLoad(w) {
     if (!w.load) w.load = fetchJSON(w.file).then(function (d) {
-      w.data = { kind: d.kind || "control", sides: d.sides, source: d.source, rows: d.rows, topo: d.topo, geoms: d.topo.objects.c.geometries, feats: [], arcs: [], states: new Map() };
+      w.data = { kind: d.kind || "control", credit: d.credit || "", sides: d.sides, source: d.source, rows: d.rows, topo: d.topo, geoms: d.topo.objects.c.geometries, feats: [], arcs: [], states: new Map() };
       scheduleRender();
       return w;
     }).catch(function (e) { w.load = null; console.warn("control", w.key, e); });
@@ -2855,7 +2855,7 @@
       var w = wars[k], D = w.data, st = ctlState(w, day);
       for (var i = 0; i < st.rows.length; i++) {
         var r = D.rows[st.rows[i]];
-        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return (D.kind === "presence" ? "presence of " : "held by ") + D.sides[r[0]][1];
+        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return (D.kind === "presence" ? "presence of " : "held by ") + D.sides[r[0]][1] + (D.credit ? ", per " + D.credit : "");
       }
     }
     return null;

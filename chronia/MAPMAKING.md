@@ -46,7 +46,7 @@ Capitals from 1400 to 1885 come from Wikidata (see step 11 of the README's [From
    - Europe: Magocsi's *Historical Atlas of Central Europe*, and Euratlas's maps by century.
    - The whole world, as a check: *The Times Atlas of World History*.
 3. **Specialist scholarship.** Peer-reviewed work on a particular polity or period, where the atlases are silent or out of date. The *Cambridge Ancient History*, the *Cambridge History of China*, and the *Cambridge History of Inner Asia* are examples.
-4. **Wikipedia**, only as a pointer. It is good for conventional names and dates, and for leads to sources. It is never the sole source for a border. Its "maximum extent" maps are drawn for a state's peak and are often maximalist.
+4. **Wikipedia**, only as a pointer. It is good for conventional names and dates, and for leads to sources. It is never the sole source for a border. Its "maximum extent" maps are drawn for a state's peak and are often maximalist. The one exception is the Zones of control layer for wars since 1990, where Wikipedia's town-by-town maps, sourced town by town by their editors, are the only open record: they may be its sole source, with medium confidence, named in the tooltip and the ledger (Noah's decision, 29 October 2026).
 
 Never use maps from nationalist or irredentist sites, game maps, uncredited images, or anything written by a model. That includes this project's own notes: they are generated text, not evidence.
 
