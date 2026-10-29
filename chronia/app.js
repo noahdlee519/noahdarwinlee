@@ -28,11 +28,14 @@
     return [c * Math.cos(l), c * Math.sin(l), Math.sin(p)];
   }
   function normalize(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+  // jsonLoading counts the data files on their way, so a saved video can wait for each date's map to be complete.
+  var jsonLoading = 0;
   function fetchJSON(url) {
+    jsonLoading++;
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error(url + " " + r.status);
       return r.json();
-    });
+    }).finally(function () { jsonLoading--; });
   }
 
   var view = { lon: 15, lat: 32, zoom: 1 };
@@ -4356,6 +4359,328 @@
   layersPanel.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || /^[pPmM+=_−-]$/.test(e.key)) e.stopPropagation();
   });
+  // Saving: a picture of the view as it is, and a timelapse video of it over a range of dates, framed as
+  // the screen is. Each frame is the map drawn for one date, once everything that date needs has loaded,
+  // with the date in a frame at the top as the page shows it, and the name in the corner. The video is
+  // H.264 in an MP4 file, encoded by the browser (WebCodecs) and packed into the file by mp4Pack below.
+  var saveBtn = $("save-btn"), savePanel = $("save"), saveNote = $("tl-note"), saveMake = $("tl-make"), saveProg = $("tl-prog"), saveBar = $("tl-bar"), saveCount = $("tl-count");
+  var tlFrom = $("tl-from"), tlTo = $("tl-to"), tlStep = $("tl-step"), tlFps = $("tl-fps");
+  var exporting = null, TL_MAX_YEARS = 500, VIDEO_MAX_W = 4096, VIDEO_MAX_H = 2304, VIDEO_MAX_AREA = 4096 * 2160, HOLD_S = 1;
+  var canVideo = typeof window.VideoEncoder === "function" && typeof window.VideoFrame === "function";
+  function setSaveOpen(open, focusBtn) {
+    if (!open && exporting) return;
+    savePanel.hidden = !open;
+    saveBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      if (!layersPanel.hidden) setLayersOpen(false, false);
+      if (about.classList.contains("is-open")) setAbout(false);
+      if (!tlFrom.value) {
+        var y = isModern(now) ? dateOfDay(dayOfTime(now))[0] : Math.round(now);
+        tlFrom.value = fmtYear(Math.max(FIRST_T, y - 100 === 0 ? -1 : y - 100));
+        tlTo.value = fmtYear(y);
+      }
+      checkTimelapse();
+      $("save-image").focus();
+    } else if (focusBtn) saveBtn.focus();
+  }
+  saveBtn.addEventListener("click", function () { setSaveOpen(savePanel.hidden, false); });
+  document.addEventListener("pointerdown", function (e) {
+    if (!savePanel.hidden && !exporting && !savePanel.contains(e.target) && !saveBtn.contains(e.target)) setSaveOpen(false, false);
+  });
+  savePanel.addEventListener("focusout", function (e) {
+    if (!savePanel.hidden && !exporting && e.relatedTarget && !savePanel.contains(e.relatedTarget) && e.relatedTarget !== saveBtn) setSaveOpen(false, false);
+  });
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || savePanel.hidden) return;
+    e.stopPropagation();
+    if (exporting) exporting.cancel = true; else setSaveOpen(false, true);
+  }, true);
+  savePanel.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || /^[pPoOmM+=_−/-]$/.test(e.key)) e.stopPropagation();
+  });
+
+  // A date typed for the range: a bare year means the whole year (January to December by the month).
+  function rangeEnd(s, last) {
+    var t = String(s || "").trim(), m = /^(\d{1,4})(?:\s*(BC|BCE|AD|CE))?$/i.exec(t) || /^(?:AD|CE)\s*(\d{1,4})$/i.exec(t);
+    if (m) {
+      var y = +m[1];
+      if (m[2] && /^BC/i.test(m[2])) y = -y;
+      if (y === 0) y = 1;
+      return { y: y, m: last ? 12 : 1, bare: true };
+    }
+    var v = parseTime(t);
+    if (v === null) return null;
+    if (!isModern(v)) return { y: Math.round(v) || 1, m: last ? 12 : 1, bare: true };
+    var d = dateOfDay(dayOfTime(v));
+    return { y: d[0], m: d[1], bare: false };
+  }
+  function nextYear(y) { return y === -1 ? 1 : y + 1; }
+  function yearsBetween(a, b) { return b - a - (a < 0 && b > 0 ? 1 : 0); }
+  // The dates of the frames, or a reason there are none.
+  function timelapsePlan() {
+    var a = rangeEnd(tlFrom.value, false), b = rangeEnd(tlTo.value, true), monthly = tlStep.value === "month";
+    if (!a) return { why: "Type the first date as a year (1648, 500 BC) or a month (June 1914)." };
+    if (!b) return { why: "Type the last date as a year (1648, 500 BC) or a month (June 1914)." };
+    var endY = LAST_YEAR, endM = LAST_MONTH;
+    if (a.y < Math.round(FIRST_T)) return { why: "The map begins in " + fmtYear(Math.round(FIRST_T)) + "." };
+    if (b.y > endY || (b.y === endY && !b.bare && b.m > endM)) { b = { y: endY, m: endM, bare: b.bare }; }
+    if (b.y === endY && b.bare) b.m = endM;
+    if (a.y * 12 + a.m >= b.y * 12 + b.m || a.y > b.y) return { why: "The last date must come after the first." };
+    if (yearsBetween(a.y, b.y) > TL_MAX_YEARS) return { why: "At most " + TL_MAX_YEARS + " years at a time." };
+    var frames = [], y, mo, mid = a.bare ? 7 : a.m;
+    if (!monthly) {
+      for (y = a.y; y <= b.y; y = nextYear(y)) {
+        if (modern && y >= 1886) {
+          if (y === endY && mid > endM) { frames.push({ t: monthTime(y, endM), label: fmtNow(monthTime(y, endM)) }); continue; }
+          var mt = monthTime(y, mid);
+          frames.push({ t: mt, label: a.bare ? String(y) : fmtNow(mt) });
+        } else frames.push({ t: y, label: fmtYear(y) });
+      }
+    } else {
+      for (y = a.y; y <= b.y; y = nextYear(y)) {
+        if (!modern || y < 1886) { frames.push({ t: y, label: fmtYear(y) }); continue; }
+        var m0 = y === a.y ? a.m : 1, m1 = y === b.y ? b.m : 12;
+        for (mo = m0; mo <= m1; mo++) { var t = monthTime(y, mo); frames.push({ t: t, label: fmtNow(t) }); }
+      }
+    }
+    if (frames.length < 2) return { why: "That range has only one frame." };
+    return { frames: frames, fps: +tlFps.value || 4 };
+  }
+  function fmtLength(s) {
+    s = Math.round(s);
+    if (s < 60) return s + (s === 1 ? " second" : " seconds");
+    var m = Math.floor(s / 60), r = s % 60;
+    return m + (m === 1 ? " minute" : " minutes") + (r ? " " + r + (r === 1 ? " second" : " seconds") : "");
+  }
+  function checkTimelapse() {
+    if (exporting) return null;
+    if (!canVideo) {
+      saveNote.textContent = "This browser can't make videos. Recent Chrome, Edge, Safari, and Firefox can.";
+      saveMake.disabled = true;
+      return null;
+    }
+    var plan = timelapsePlan();
+    if (plan.why) { saveNote.textContent = plan.why; saveMake.disabled = true; return null; }
+    var n = plan.frames.length, sz = videoSize();
+    saveNote.textContent = n.toLocaleString("en-US") + " frames | " + fmtLength(n / plan.fps + HOLD_S) + " | " + sz.w + " by " + sz.h;
+    saveMake.disabled = false;
+    return plan;
+  }
+  [tlFrom, tlTo].forEach(function (el) { el.addEventListener("input", checkTimelapse); });
+  [tlStep, tlFps].forEach(function (el) { el.addEventListener("change", checkTimelapse); });
+  [tlFrom, tlTo].forEach(function (el) { el.addEventListener("keydown", function (e) { if (e.key === "Enter" && !saveMake.disabled) { e.preventDefault(); makeTimelapse(); } }); });
+
+  // The size of the video: the screen's, at most 4096 by 2304 (H.264's limit at level 5.1), and even.
+  function videoSize() {
+    var w = canvas.width, h = canvas.height, s = Math.min(1, VIDEO_MAX_W / w, VIDEO_MAX_H / h, Math.sqrt(VIDEO_MAX_AREA / (w * h)));
+    return { w: Math.max(2, Math.floor(w * s / 2) * 2), h: Math.max(2, Math.floor(h * s / 2) * 2) };
+  }
+  // The frame: the page's background, the map, the date in its frame where the page shows it, and the name.
+  function composeFrame(out, label) {
+    var c = out.getContext("2d"), k = out.width / W, cs = getComputedStyle(document.documentElement);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.save();
+    c.translate(out.width * 0.5, out.height * 0.45);
+    c.scale(out.width * 0.5 * Math.SQRT2, out.height * 0.55 * Math.SQRT2);
+    var g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, "#f5ecd5"); g.addColorStop(0.6, "#ecdfc0"); g.addColorStop(1, "#dcc79d");
+    c.fillStyle = g; c.fillRect(-2, -2, 4, 4);
+    c.restore();
+    c.drawImage(canvas, 0, 0, out.width, out.height);
+    c.setTransform(k, 0, 0, k, 0, 0);
+    var box = $("year-box"), r = box.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), bs = getComputedStyle(box), ys = getComputedStyle(yearInput);
+    var x = r.left - cr.left, y = r.top - cr.top, w = r.width, h = r.height;
+    if (w > 0 && h > 0) {
+      var bg = cs.getPropertyValue("--bg").trim() || bs.backgroundColor, rule = cs.getPropertyValue("--rule").trim() || "#3a2a1a", faint = cs.getPropertyValue("--ch-faint").trim() || rule;
+      c.fillStyle = bg; c.fillRect(x, y, w, h);
+      c.lineWidth = 1; c.strokeStyle = rule; c.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      c.strokeStyle = faint; c.strokeRect(x + 3.5, y + 3.5, w - 7, h - 7);
+      c.fillStyle = ys.color; c.textAlign = "center"; c.textBaseline = "middle";
+      c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
+      c.fillText(label, x + w / 2, y + h / 2 + 0.5, w - 16);
+    }
+    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", fs = 12, sp = fs * 0.3;
+    c.font = "400 " + fs + "px " + ts.fontFamily;
+    c.textAlign = "left"; c.textBaseline = "alphabetic";
+    var tw = 0, i;
+    for (i = 0; i < name.length; i++) tw += c.measureText(name[i]).width + (i < name.length - 1 ? sp : 0);
+    var nx = W - 16 - tw, ny = H - 14;
+    c.globalAlpha = 0.72; c.fillStyle = ys.color;
+    for (i = 0; i < name.length; i++) { c.fillText(name[i], nx, ny); nx += c.measureText(name[i]).width + sp; }
+    c.globalAlpha = 1;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  function download(blob, name) {
+    var a = document.createElement("a"), url = URL.createObjectURL(blob);
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+  function fileDate(t) { return fmtNow(t).replace(/\s+/g, "-").toLowerCase(); }
+  $("save-image").addEventListener("click", function () {
+    if (exporting || !ready || !current) return;
+    draw();
+    var out = document.createElement("canvas");
+    out.width = canvas.width; out.height = canvas.height;
+    composeFrame(out, fmtNow(now));
+    out.toBlob(function (blob) { if (blob) download(blob, "chronia-" + fileDate(now) + ".png"); }, "image/png");
+  });
+
+  // Waits until the map for date t is shown and nothing it needs (borders, divisions, zones) is still loading,
+  // then draws it with every name in place at once.
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function drawSettled(t) {
+    setTime(t);
+    var p = isModern(t) ? Promise.resolve() : isDated(t) ? loadChunk(chunkIndexFor(t)) : loadMap(mapIndexFor(t));
+    var tries = 0;
+    function settle() {
+      return sleep(0).then(function () {
+        if (exporting && exporting.cancel) return;
+        draw();
+        if (jsonLoading === 0 || tries++ > 300) return sleep(0).then(function () { if (jsonLoading === 0) draw(); });
+        return sleep(50).then(settle);
+      });
+    }
+    return p.then(settle, settle);
+  }
+  function pickCodec(w, h, fps) {
+    var bitrate = Math.round(Math.min(24e6, Math.max(3e6, w * h * Math.min(fps, 12) * 0.12)));
+    var list = ["avc1.640033", "avc1.640034", "avc1.4d0033", "avc1.42e033"];
+    return list.reduce(function (p, codec) {
+      return p.then(function (got) {
+        if (got) return got;
+        var cfg = { codec: codec, width: w, height: h, bitrate: bitrate, framerate: fps, avc: { format: "avc" } };
+        return VideoEncoder.isConfigSupported(cfg).then(function (r) { return r && r.supported ? cfg : null; }, function () { return null; });
+      });
+    }, Promise.resolve(null));
+  }
+  function makeTimelapse() {
+    var plan = checkTimelapse();
+    if (!plan || exporting) return;
+    var job = exporting = { cancel: false }, frames = plan.frames, fps = plan.fps, sz = videoSize();
+    var keep = { t: now, motion: reduceMotion };
+    stopPlay();
+    if (!card.hidden) closeCard();
+    document.documentElement.classList.add("ch-exporting");
+    saveMake.hidden = true; saveProg.hidden = false; saveBar.value = 0;
+    [tlFrom, tlTo, tlStep, tlFps, $("save-image")].forEach(function (el) { el.disabled = true; });
+    saveNote.textContent = "Getting ready";
+    $("tl-cancel").focus();
+    var out = document.createElement("canvas"), samples = [], desc = null, failed = null, encoder = null;
+    out.width = sz.w; out.height = sz.h;
+    reduceMotion = true;
+    function finish(msg) {
+      reduceMotion = keep.motion;
+      if (encoder && encoder.state !== "closed") { try { encoder.close(); } catch (e) {} }
+      exporting = null;
+      document.documentElement.classList.remove("ch-exporting");
+      saveMake.hidden = false; saveProg.hidden = true;
+      [tlFrom, tlTo, tlStep, tlFps, $("save-image")].forEach(function (el) { el.disabled = false; });
+      setTime(keep.t);
+      checkTimelapse();
+      if (msg) saveNote.textContent = msg;
+      saveMake.focus();
+    }
+    pickCodec(sz.w, sz.h, fps).then(function (cfg) {
+      if (!cfg) throw new Error("no codec");
+      encoder = new VideoEncoder({
+        output: function (chunk, meta) {
+          var data = new Uint8Array(chunk.byteLength);
+          chunk.copyTo(data);
+          samples.push({ data: data, key: chunk.type === "key" });
+          var d = meta && meta.decoderConfig && meta.decoderConfig.description;
+          if (d && !desc) desc = ArrayBuffer.isView(d) ? new Uint8Array(d.buffer, d.byteOffset, d.byteLength).slice() : new Uint8Array(d).slice();
+        },
+        error: function (e) { failed = e; }
+      });
+      encoder.configure(cfg);
+      var i = 0;
+      function step() {
+        if (job.cancel) return Promise.resolve("cancel");
+        if (failed) return Promise.reject(failed);
+        if (i >= frames.length) return Promise.resolve("done");
+        var f = frames[i];
+        return drawSettled(f.t).then(function () {
+          if (job.cancel) return "cancel";
+          composeFrame(out, f.label);
+          var vf = new VideoFrame(out, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
+          encoder.encode(vf, { keyFrame: i % Math.max(1, fps * 2) === 0 });
+          vf.close();
+          i++;
+          saveBar.value = i / frames.length;
+          saveCount.textContent = "Frame " + i.toLocaleString("en-US") + " of " + frames.length.toLocaleString("en-US");
+          saveNote.textContent = f.label;
+          var wait = function () { return encoder.encodeQueueSize > 3 ? sleep(10).then(wait) : null; };
+          return Promise.resolve(wait()).then(step);
+        });
+      }
+      return step();
+    }).then(function (how) {
+      if (how === "cancel") { finish("Stopped."); return; }
+      saveNote.textContent = "Finishing the file";
+      return encoder.flush().then(function () {
+        if (failed) throw failed;
+        if (!desc || samples.length !== frames.length) throw new Error("encoder gave " + samples.length + " of " + frames.length);
+        var blob = mp4Pack(samples, desc, sz.w, sz.h, fps, HOLD_S);
+        var a = frames[0].label, b = frames[frames.length - 1].label;
+        download(blob, ("chronia-" + a + "-to-" + b).replace(/\s+/g, "-").toLowerCase() + ".mp4");
+        finish("Saved | " + (blob.size / 1048576).toFixed(1) + " MB");
+      });
+    }).catch(function (e) {
+      console.warn("timelapse", e);
+      finish(String(e && e.message) === "no codec" ? "This browser can't make a video this size. Make the window smaller and try again." : "The video could not be made.");
+    });
+  }
+  saveMake.addEventListener("click", makeTimelapse);
+  $("tl-cancel").addEventListener("click", function () { if (exporting) exporting.cancel = true; });
+  checkTimelapse();
+
+  // An MP4 file of one H.264 track (ISO/IEC 14496-12 and -15): the file type, the samples in one 'mdat',
+  // then the 'moov' that indexes them. Each frame lasts 1/fps of a second, the last also hold seconds more.
+  function mp4Pack(samples, avcC, w, h, fps, hold) {
+    var TS = fps * 1000, unit = 1000, n = samples.length, total = 0, i;
+    for (i = 0; i < n; i++) total += samples[i].data.length;
+    var durTs = n * unit + hold * TS, durMv = Math.round(durTs / TS * 1000);
+    function u8(v) { return [v & 255]; }
+    function u16(v) { return [(v >>> 8) & 255, v & 255]; }
+    function u32(v) { return [(v >>> 24) & 255, (v >>> 16) & 255, (v >>> 8) & 255, v & 255]; }
+    function u64(v) { var hi = Math.floor(v / 4294967296); return u32(hi).concat(u32(v >>> 0)); }
+    function str(s) { var a = []; for (var j = 0; j < s.length; j++) a.push(s.charCodeAt(j)); return a; }
+    function box(type) {
+      var body = [], k;
+      for (k = 1; k < arguments.length; k++) { var p = arguments[k]; if (p instanceof Uint8Array) p = Array.from(p); body = body.concat(p); }
+      return u32(body.length + 8).concat(str(type), body);
+    }
+    function full(type, ver, flags) { var rest = Array.prototype.slice.call(arguments, 3); return box.apply(null, [type, [ver], u32(flags).slice(1)].concat(rest)); }
+    var matrix = [].concat(u32(0x10000), u32(0), u32(0), u32(0), u32(0x10000), u32(0), u32(0), u32(0), u32(0x40000000));
+    var ftyp = box("ftyp", str("isom"), u32(512), str("isomiso2avc1mp41"));
+    var big = total + 8 > 4294967295;
+    var mdatHead = big ? u32(1).concat(str("mdat"), u64(total + 16)) : u32(total + 8).concat(str("mdat"));
+    var dataAt = ftyp.length + mdatHead.length;
+    var stts = [[n - 1, unit], [1, unit + hold * TS]].filter(function (e) { return e[0] > 0; });
+    var sync = []; for (i = 0; i < n; i++) if (samples[i].key) sync.push(i + 1);
+    var sizes = []; for (i = 0; i < n; i++) sizes.push.apply(sizes, u32(samples[i].data.length));
+    var avc1 = box("avc1", [0, 0, 0, 0, 0, 0], u16(1), u16(0), u16(0), u32(0), u32(0), u32(0), u16(w), u16(h), u32(0x480000), u32(0x480000), u32(0), u16(1),
+      new Array(32).fill(0), u16(0x18), u16(0xffff), box("avcC", avcC));
+    var stbl = box("stbl",
+      full("stsd", 0, 0, u32(1), avc1),
+      full("stts", 0, 0, u32(stts.length), [].concat.apply([], stts.map(function (e) { return u32(e[0]).concat(u32(e[1])); }))),
+      full("stss", 0, 0, u32(sync.length), [].concat.apply([], sync.map(u32))),
+      full("stsc", 0, 0, u32(1), u32(1), u32(n), u32(1)),
+      full("stsz", 0, 0, u32(0), u32(n), sizes),
+      big ? full("co64", 0, 0, u32(1), u64(dataAt)) : full("stco", 0, 0, u32(1), u32(dataAt)));
+    var minf = box("minf", full("vmhd", 0, 1, u16(0), u16(0), u16(0), u16(0)), box("dinf", full("dref", 0, 0, u32(1), full("url ", 0, 1))), stbl);
+    var mdia = box("mdia",
+      full("mdhd", 0, 0, u32(0), u32(0), u32(TS), u32(durTs), u16(0x55c4), u16(0)),
+      full("hdlr", 0, 0, u32(0), str("vide"), u32(0), u32(0), u32(0), str("CHRONIA"), u8(0)),
+      minf);
+    var trak = box("trak", full("tkhd", 0, 3, u32(0), u32(0), u32(1), u32(0), u32(durMv), u32(0), u32(0), u16(0), u16(0), u16(0), u16(0), matrix, u32(w * 65536), u32(h * 65536)), mdia);
+    var moov = box("moov", full("mvhd", 0, 0, u32(0), u32(0), u32(1000), u32(durMv), u32(0x10000), u16(0x100), u16(0), u32(0), u32(0), matrix, new Array(24).fill(0), u32(2)), trak);
+    var parts = [new Uint8Array(ftyp), new Uint8Array(mdatHead)];
+    for (i = 0; i < n; i++) parts.push(samples[i].data);
+    parts.push(new Uint8Array(moov));
+    return new Blob(parts, { type: "video/mp4" });
+  }
   var searchBtn = $("search-btn"), searchPanel = $("search"), searchInput = $("search-input"), searchList = $("search-list"), searchNone = $("search-none");
   var searchHits = [], searchAt = -1, flyRaf = 0, SEARCH_MAX = 8;
   var SEARCH_ORDER = { State: 0, City: 1, Ocean: 2, Sea: 2, Town: 3, Lake: 4, Marsh: 4, People: 5, Band: 5 };
@@ -4495,7 +4820,7 @@
   });
   document.addEventListener("keydown", function (e) {
     var t = e.target, typing = t && ((t.tagName === "INPUT" && t.type === "text") || t.tagName === "TEXTAREA");
-    if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (typing || exporting || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === "/") { e.preventDefault(); setSearchOpen(true, false); }
   });
   syncSearch();
@@ -4568,7 +4893,7 @@
       if (!card.hidden) closeCard();
       return;
     }
-    if (typing || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
+    if (typing || exporting || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
     if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(-1); else stepMap(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(1); else stepMap(1); }
     else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
@@ -4784,6 +5109,8 @@
   }
 
   window.__chronia = {
+    timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
+    loadingJSON: function () { return jsonLoading; },
     search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
     searchOpen: function () { return !searchPanel.hidden; },
     ready: function () { return ready && !!current; },

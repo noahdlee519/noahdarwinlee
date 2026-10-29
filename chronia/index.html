@@ -122,11 +122,37 @@
         <button type="button" class="ch-ctl" id="layers-btn" aria-expanded="false" aria-controls="layers" aria-label="Layers" data-tip="Layers">
           <svg class="ch-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5.2 27.4 11 16 16.8 4.6 11z" /><path class="h" d="M11.4 8.6l9.2 4.8M8.5 10.1l9.3 4.7M14.3 7.1l9.2 4.7" /><path d="M7.8 14.6 4.6 16.2 16 22l11.4-5.8-3.2-1.6" /><path d="M7.8 19.8 4.6 21.4 16 27.2l11.4-5.8-3.2-1.6" /><path class="h" d="M7.6 17.8 16 22.1M7.6 23 16 27.3" /></svg>
         </button>
+        <button type="button" class="ch-ctl" id="save-btn" aria-expanded="false" aria-controls="save" aria-label="Save an image or a timelapse" data-tip="Save">
+          <svg class="ch-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 6.6h15.2l3.6 3.6v15.2H6.6z" /><path d="M10.6 6.6v5.8h9.6V6.6" /><path d="M17.4 8.2v2.6" /><path d="M10 25.4v-7.6h12v7.6" /><path class="h" d="M12.4 20.4h7.2M12.4 22.8h7.2" /></svg>
+        </button>
         <div class="ch-search" id="search" role="search" hidden>
           <label class="ch-layers-title" for="search-input">Find on this map</label>
           <input type="text" class="ch-search-input" id="search-input" autocomplete="off" spellcheck="false" placeholder="Search" role="combobox" aria-expanded="false" aria-controls="search-list" aria-autocomplete="list" />
           <ul class="ch-search-list" id="search-list" role="listbox" aria-label="Places found"></ul>
           <p class="ch-search-none" id="search-none" hidden>Nothing by that name on this map.</p>
+        </div>
+        <div class="ch-layers ch-save" id="save" role="group" aria-labelledby="save-title" hidden>
+          <p class="ch-layers-title" id="save-title">Save</p>
+          <button type="button" class="ch-save-btn" id="save-image">Image of this view</button>
+          <fieldset class="ch-layer-set ch-save-set">
+            <legend>Timelapse video</legend>
+            <div class="ch-save-row"><label for="tl-from">From</label><input type="text" class="ch-save-input" id="tl-from" autocomplete="off" spellcheck="false" /></div>
+            <div class="ch-save-row"><label for="tl-to">To</label><input type="text" class="ch-save-input" id="tl-to" autocomplete="off" spellcheck="false" /></div>
+            <div class="ch-save-row">
+              <label for="tl-step">A frame for</label>
+              <select class="ch-save-input" id="tl-step"><option value="year">Each year</option><option value="month">Each month (from 1886)</option></select>
+            </div>
+            <div class="ch-save-row">
+              <label for="tl-fps">Frames</label>
+              <select class="ch-save-input" id="tl-fps"><option value="1">1 a second</option><option value="2">2 a second</option><option value="4" selected>4 a second</option><option value="8">8 a second</option><option value="12">12 a second</option><option value="24">24 a second</option></select>
+            </div>
+            <p class="ch-save-note" id="tl-note" aria-live="polite"></p>
+            <button type="button" class="ch-save-btn" id="tl-make">Make the video</button>
+            <div class="ch-save-prog" id="tl-prog" hidden>
+              <progress id="tl-bar" max="1" value="0"></progress>
+              <div class="ch-save-progrow"><span id="tl-count"></span><button type="button" class="ch-save-cancel" id="tl-cancel">Stop</button></div>
+            </div>
+          </fieldset>
         </div>
         <div class="ch-layers" id="layers" role="group" aria-labelledby="layers-title" hidden>
           <p class="ch-layers-title" id="layers-title">Layers</p>

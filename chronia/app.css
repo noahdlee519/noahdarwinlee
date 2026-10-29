@@ -569,6 +569,156 @@ body.ch-page {
   outline-offset: 2px;
 }
 
+.ch-save {
+  width: 276px;
+  max-width: calc(100vw - 2 * var(--ch-gap));
+}
+
+.ch-save-btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 7px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bg) 70%, #fff), inset 0 0 0 2.6px var(--ch-faint);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.ch-save-btn:hover:not(:disabled) {
+  background: var(--ch-paper);
+}
+
+.ch-save-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.ch-save-btn:focus-visible,
+.ch-save-input:focus-visible,
+.ch-save-cancel:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-save-set {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+}
+
+.ch-save-row {
+  clear: both;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  color: var(--ink);
+}
+
+.ch-save-row label {
+  font-size: 13.5px;
+}
+
+.ch-save-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 7px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+}
+
+select.ch-save-input {
+  padding-right: 4px;
+}
+
+.ch-save-input:disabled {
+  opacity: 0.55;
+}
+
+.ch-save-note {
+  clear: both;
+  min-height: 1.3em;
+  margin: 6px 0 0;
+  color: var(--ch-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.ch-save-prog {
+  margin: 8px 0 2px;
+}
+
+.ch-save-prog[hidden] {
+  display: none;
+}
+
+.ch-save-prog progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ch-save-prog progress::-webkit-progress-bar {
+  background: color-mix(in srgb, var(--bg) 70%, #fff);
+}
+
+.ch-save-prog progress::-webkit-progress-value {
+  background: var(--ink);
+}
+
+.ch-save-prog progress::-moz-progress-bar {
+  background: var(--ink);
+}
+
+.ch-save-progrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 5px;
+  color: var(--ch-muted);
+  font-size: 12.5px;
+}
+
+.ch-save-cancel {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* While a video is being made, the map and the timeline are left alone, so every frame is framed the same. */
+:root.ch-exporting .ch-globe,
+:root.ch-exporting .ch-time,
+:root.ch-exporting .ch-year-box,
+:root.ch-exporting #search-btn,
+:root.ch-exporting #flat-btn,
+:root.ch-exporting #layers-btn,
+:root.ch-exporting .ch-head {
+  pointer-events: none;
+}
+
 .ch-layer:hover span {
   text-decoration: underline;
   text-decoration-thickness: 1px;
