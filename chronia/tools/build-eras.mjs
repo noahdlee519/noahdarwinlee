@@ -3158,7 +3158,108 @@ const csZones = (rows) => {
   console.log("CS_ZONES: the western zones of 1945 to 1949 and the Saar until " + z.saarUntil + ": " + z.zones.map((x) => x.name + " " + x.periods.map(([, , ks]) => Math.round(km2Of(rewind(clip.union(...ks.map((k) => occParts[k]))))) + " km²").join(", ")).join("; "));
   return out;
 };
-for (const r of csZones(csRedraw(csWithExtras(csRaw)))) {
+// CShapes draws the states of a war at their lawful borders, so the land held by an enemy is drawn as
+// its own state's. tools/occupations.json gives the occupations of the First World War: zones, each
+// held by one state (`by`) over the land of others (`of`), for periods whose area is a polygon of the
+// occupier's side of the front (`areas`, with the towns its points stand for). For each day a zone
+// holds, the occupied state's CShapes span is cut by the area: the part inside becomes a span of the
+// zone, under its name, occupied by `by`, and the rest stays the state's. Zones are cut in the order
+// given, each from what the earlier ones leave. A span's capital goes with the part that holds it;
+// the other part has the zone's own seat (`cap`) or none.
+const OCC_PATH = resolve(here, "occupations.json");
+const OCC = existsSync(OCC_PATH) ? JSON.parse(readFileSync(OCC_PATH, "utf8")) : { zones: [], areas: {} };
+for (const z of OCC.zones) if (z.wiki) CS_WIKI[z.name] = z.wiki;
+const csOccupy = (rows) => {
+  const areaPolys = new Map();
+  const area = (key) => {
+    if (areaPolys.has(key)) return areaPolys.get(key);
+    const a = OCC.areas[key];
+    if (!a) throw new Error("occupations.json: no area " + key);
+    // An area is a ring, rings, or polygons with holes ([outer, hole, ...]), as [longitude, latitude, place].
+    const closed = (ring) => {
+      const pts = ring.map((p) => [p[0], p[1]]);
+      if (pts[0][0] !== pts[pts.length - 1][0] || pts[0][1] !== pts[pts.length - 1][1]) pts.push(pts[0]);
+      return pts;
+    };
+    const parts = a.polys ? a.polys.map((poly) => poly.map(closed)) : (a.rings || [a.ring]).map((ring) => [closed(ring)]);
+    const polys = rewind(clip.union(...parts));
+    areaPolys.set(key, polys);
+    return polys;
+  };
+  const codes = new Set(OCC.zones.flatMap((z) => z.of));
+  const out = rows.filter((r) => !codes.has(String(r.p.gwcode)));
+  const inPolys = (polys, pt) => d3.geoContains({ type: "MultiPolygon", coordinates: polys }, pt);
+  let made = 0;
+  for (const r of rows) {
+    const code = String(r.p.gwcode);
+    if (!codes.has(code)) continue;
+    const periods = [];
+    OCC.zones.forEach((z, zi) => { if (z.of.includes(code)) for (const p of z.periods) if (p.to >= r.p.start && p.from <= r.p.end) periods.push({ z, zi, ...p }); });
+    if (!periods.length && !(OCC.rest || []).some((x) => x.of === code && x.to >= r.p.start && x.from <= r.p.end)) { out.push(r); continue; }
+    // The span's days, cut at every day a period starts or ends.
+    const cuts = new Set([r.p.start]);
+    for (const p of periods.concat((OCC.rest || []).filter((x) => x.of === code))) { if (p.from > r.p.start && p.from <= r.p.end) cuts.add(p.from); const after = isoAdd(p.to, 1); if (after > r.p.start && after <= r.p.end) cuts.add(after); }
+    const starts = [...cuts].sort();
+    starts.forEach((a, k) => {
+      const b = k + 1 < starts.length ? isoAdd(starts[k + 1], -1) : r.p.end;
+      let rest = rewind(polysOf(r.geometry));
+      const pieces = [];
+      for (const p of periods.filter((p) => p.from <= a && b <= p.to).sort((x, y) => x.zi - y.zi)) {
+        // Pieces under the zone's minimum (100 km² unless it says) are slivers where a front follows a border.
+        const ar = area(p.area), part = rewind(clip.intersection(rest, ar)).filter((q) => polyKm2(q) >= (p.z.min_km2 ?? 100));
+        if (!part.length) continue;
+        rest = rewind(clip.difference(rest, part)).filter((q) => polyKm2(q) >= 1);
+        pieces.push({ z: p.z, polys: part });
+      }
+      // When all the state has left is slivers along the lines (Serbia from November 1915), they go to its largest zone.
+      if (pieces.length && rest.length && km2Of(rest) < 100) {
+        const big = pieces.reduce((x, y) => (km2Of(y.polys) > km2Of(x.polys) ? y : x));
+        try { big.polys = rewind(clip.union(big.polys, rest)); rest = []; } catch (e) {}
+      }
+      const capHere = r.p.capname && r.p.caplong != null && inPolys(rest, [r.p.caplong, r.p.caplat]);
+      for (const { z, polys } of pieces) {
+        const holdsCap = r.p.capname && r.p.caplong != null && inPolys(polys, [r.p.caplong, r.p.caplat]);
+        const cap = z.cap ? { capname: z.cap[0], caplong: z.cap[1], caplat: z.cap[2] } : holdsCap ? {} : { capname: null };
+        out.push({ p: { ...r.p, ...cap, gwcode: code + ":" + z.key, country_name: z.name, status: "occupied", owner: z.by, start: a, end: b }, geometry: { type: "MultiPolygon", coordinates: polys } });
+        made++;
+      }
+      // `rest` gives the state's own status for the land no zone holds, where CShapes counts the whole
+      // state occupied (Serbia and Montenegro), for the days it lists.
+      const own = (OCC.rest || []).find((x) => x.of === code && x.from <= a && b <= x.to);
+      const status = own ? { status: own.status, owner: own.owner } : {};
+      if (rest.length) out.push({ p: { ...r.p, ...status, ...(capHere || !pieces.length ? {} : { capname: null }), start: a, end: b }, geometry: pieces.length ? { type: "MultiPolygon", coordinates: rest } : r.geometry });
+    });
+  }
+  // A zone's span is cut wherever any zone of the same state changes, and wherever the state's CShapes
+  // span does, so the card's "Borders from" and "until" would give days on which the zone did not change
+  // (the Rhineland on 15 June 1920, when North Schleswig went to Denmark). Following spans of a zone whose
+  // details are the same and whose shapes differ by under 1 km² are joined.
+  const same = (x, y) => {
+    const kx = Object.keys(x.p).filter((k) => k !== "start" && k !== "end");
+    if (kx.length !== Object.keys(y.p).length - 2 || kx.some((k) => x.p[k] !== y.p[k])) return false;
+    try { return km2Of(rewind(clip.xor(x.geometry.coordinates, y.geometry.coordinates))) < 1; } catch (e) { return false; }
+  };
+  const zoneRows = new Map(), kept = [];
+  for (const r of out) {
+    if (!String(r.p.gwcode).includes(":")) { kept.push(r); continue; }
+    if (!zoneRows.has(r.p.gwcode)) zoneRows.set(r.p.gwcode, []);
+    zoneRows.get(r.p.gwcode).push(r);
+  }
+  let joined = 0;
+  for (const list of zoneRows.values()) {
+    list.sort((x, y) => (x.p.start < y.p.start ? -1 : 1));
+    let cur = list[0];
+    for (const r of list.slice(1)) {
+      if (isoAdd(cur.p.end, 1) === r.p.start && same(cur, r)) { cur = { ...cur, p: { ...cur.p, end: r.p.end } }; joined++; continue; }
+      kept.push(cur);
+      cur = r;
+    }
+    kept.push(cur);
+  }
+  console.log("occupations: " + OCC.zones.length + " zones, " + (made - joined) + " spans of occupied land (" + joined + " joined to the span before, unchanged)");
+  return kept;
+};
+for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
   const p = r.p, start = dayOf(p.start), end = p.end >= CS_TO ? -1 : dayOf(p.end);
   const cuts = (CS_NAMES[p.country_name] || []).map(([d]) => dayOf(d)).filter((d) => d > start && (end < 0 || d <= end));
   const bounds = [start, ...cuts];
