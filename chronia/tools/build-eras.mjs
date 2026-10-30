@@ -957,7 +957,7 @@ const WELLINGTON = [174.78, -41.29], BUENOS_AIRES = [-58.38, -34.6], WASHINGTON 
 const LONDON = [-0.12, 51.5], LISBON = [-9.14, 38.72], COPENHAGEN = [12.57, 55.68], BERGEN = [5.32, 60.39], OSLO = [10.75, 59.91];
 const TOKYO = [139.7, 35.7], BERLIN = [13.4, 52.52], TURIN = [7.68, 45.07], PARIS = [2.35, 48.86], ISTANBUL = [28.98, 41.01];
 const UMBRELLA = /confederation|holy roman empire|\bunion\b|confederacy|\bleague\b|haudenosaunee/i, UMBRELLA_YEARS = 15, TWIN_YEARS = 60;
-const HB_STALE = { "Sui Empire": 618, "Tang Empire": 907, "Nanyue": -111, "Minyue": -111, "Maurya Empire": -232, "Koguryo": 668, "Huari Empire": 1000, "Tiahuanaco Empire": 1100, "Seleucid Kingdom": -141, "Sasanian Empire": 651, "Sasanian dependencies": 628, "Kingdom of Lysimachus": -281, "Khazaria": 979, "Armenia": 1064, "Avar Khaganate": 805, "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
+const HB_STALE = { "Hanover": 1866, "Electoral Hesse": 1866, "Nassau": 1866, "Holstein": 1864, "Schleswig": 1864, "Sui Empire": 618, "Tang Empire": 907, "Nanyue": -111, "Minyue": -111, "Maurya Empire": -232, "Koguryo": 668, "Huari Empire": 1000, "Tiahuanaco Empire": 1100, "Seleucid Kingdom": -141, "Sasanian Empire": 651, "Sasanian dependencies": 628, "Kingdom of Lysimachus": -281, "Khazaria": 979, "Armenia": 1064, "Avar Khaganate": 805, "New Amsterdam": 1664, "Dutch Brazil": 1654, "Dutch Formosa": 1662, "Post-Ming Warlords": 1681, "Guanches": 1496, "Greece": 1831 };
 const REGIMES = {
   france: { from: 1200, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
   britain: { from: 1200, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
@@ -981,6 +981,8 @@ const NAME_FIX = [
   ["Porter", "Porter", -150, 599, { people: 1, wiki: "Hopewell tradition" }],
   // Cliopatria draws all of Greenland in Norway from 960, before the Norse settled it (985) and long before it accepted Norway's rule (1261).
   ["Kingdom of Norway", "Kingdom of Norway", 800, 1260, { box: [-75, 58, -10, 84], drop: true }],
+  ["Kingdom of Greece", "Kingdom of Greece", 1832, 1885, { box: [-10, 42, 20, 60], drop: true }],
+  ["First Hellenic Republic", "First Hellenic Republic", 1822, 1885, { box: [-10, 42, 20, 60], drop: true }],
   ["Norway-Denmark", "Norway-Denmark", 800, 1260, { box: [-75, 58, -10, 84], drop: true }],
   ["Ur", "", -3400, -2113, { drop: 1 }],
   ["Ur", "Third Dynasty of Ur", -2112, -2004, { wiki: "Third Dynasty of Ur" }],
@@ -2308,7 +2310,104 @@ const canada = (list) => {
   console.log("canada: Rupert's Land " + sized(RL) + ", North-Western Territory " + sized(NWT) + ", Arctic islands " + sized(islands) + ", the Canadas " + sized(core) + "; " + added.length + " spans, " + edits.length + " cuts, " + shorn + " British spans cleared of slivers, " + dropped + " spans left mostly on Canada's land dropped");
   return result.concat(added);
 };
-dated = fillSmallGaps(resolveOverlaps(canada(northAmerica(dated)), "from " + DATED_FROM + " to " + DATED_TO));
+const REDRAW_1886 = [
+  { name: "Netherlands", gw: 210, first: 1839, last: 1885, box: [2.5, 50.6, 7.5, 53.9] },
+  { name: "Kingdom of Belgium", gw: 211, first: 1839, last: 1885, box: [2.3, 49.4, 6.5, 51.6] },
+  { name: "Luxembourg", gw: 212, first: 1839, last: 1885, box: [5.6, 49.4, 6.6, 50.3] },
+  { name: "Kingdom of Denmark", gw: 390, first: 1864, last: 1885, box: [7.5, 54.4, 15.5, 58] }
+];
+const REDRAW_KM = 0.3, REDRAW_OWN = 0.2;
+const SH_JOINT = [1864, 1866], SH_PRUSSIAN = [1867, 1870], SH_CLAIMS = ["Austrian Empire", "Kingdom of Prussia"], SH_MINUS = ["Free City of Lübeck", "Free City of Hamburg"], SH_ISLAND_KM2 = 3;
+const SH_NORTH = [7.5, 54.15, 11.5, 55.6], SH_HOLDERS = ["North German Confederation", "Kingdom of Prussia"];
+let shPlan = null;
+const redraw1886 = (list) => {
+  const raw = JSON.parse(readFileSync(cshapesPath, "utf8"));
+  const topo = simplify.simplify(simplify.presimplify(raw, simplify.sphericalTriangleArea), weightFor(REDRAW_KM));
+  const geoms = Object.values(topo.objects)[0].geometries;
+  const cs = (gw) => { const g = geoms.find((x) => x.properties.gwcode === gw && x.properties.start <= "1886-01-01" && "1886-01-01" <= x.properties.end); return g ? rewind(polysOf(client.feature(topo, g).geometry)) : null; };
+  const boxPoly = (b) => rewind([[[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]]]);
+  const I = (x, y) => rewind(tryClip(clip.intersection, x, y) || []);
+  let out = list.slice();
+  const targets = [];
+  for (const r of REDRAW_1886) {
+    const shape = cs(r.gw);
+    if (!shape) { console.log("redraw: no CShapes shape for " + r.name); continue; }
+    const area = boxPoly(r.box), target = I(shape, area), tKm2 = km2Of(target);
+    const mine = out.filter((s) => s.name === r.name && !s.people && !s.claims && s.last >= r.first && s.first <= r.last && boxHit(s.box, r.box));
+    const own = mine.filter((s) => { const x = I(s.polys, target); return x.length && km2Of(x) >= REDRAW_OWN * Math.min(tKm2, km2Of(s.polys)); });
+    if (!own.length) { console.log("redraw: no " + r.name + " from " + r.first + " to " + r.last); continue; }
+    const next = out.filter((s) => !own.includes(s));
+    const covered = new Set();
+    for (const s of own) {
+      if (s.first < r.first) next.push(withBox({ ...s, last: r.first - 1 }));
+      if (s.last > r.last) next.push(withBox({ ...s, first: r.last + 1 }));
+      const first = Math.max(s.first, r.first), last = Math.min(s.last, r.last);
+      for (let y = first; y <= last; y++) covered.add(y);
+      const rest = subtract(s.polys, [area]);
+      const polys = rest.length ? unionSafe(rest, [target]) : target;
+      const span = withBox({ ...s, first, last, polys, redrawn: r.name });
+      delete span.km2; delete span.pole; delete span.geoHash;
+      next.push(span);
+    }
+    const near = (y) => own.reduce((b, s) => (!b || Math.abs((s.first + s.last) / 2 - y) < Math.abs((b.first + b.last) / 2 - y) ? s : b), null);
+    for (let y = r.first; y <= r.last; y++) {
+      if (covered.has(y)) continue;
+      let z = y;
+      while (z + 1 <= r.last && !covered.has(z + 1)) z++;
+      const t = near(y);
+      const span = withBox({ ...t, first: y, last: z, polys: target, redrawn: r.name });
+      delete span.km2; delete span.pole; delete span.geoHash;
+      next.push(span);
+      for (let k = y; k <= z; k++) covered.add(k);
+    }
+    out = next;
+    targets.push({ name: r.name, first: r.first, last: r.last, polys: target, box: boxOf(target) });
+  }
+  const shape255 = cs(255), ne = neAll.find((f) => f.properties.name === "Schleswig-Holstein" && f.properties.adm0_a3 === "DEU");
+  if (shape255 && ne) {
+    let region = unionSafe(rewind(polysOf(ne.geometry)), [I(shape255, boxPoly(SH_NORTH))]);
+    region = region.filter((q) => polyKm2(q) >= SH_ISLAND_KM2);
+    const at = (y) => {
+      const minus = out.filter((s) => SH_MINUS.includes(s.name) && s.first <= y && y <= s.last).map((s) => s.polys);
+      return minus.length ? subtract(region, minus) : region;
+    };
+    const joint = at(SH_JOINT[0]);
+    shPlan = { region, joint, late: at(SH_PRUSSIAN[0]) };
+    const template = { name: "Schleswig-Holstein", ruler: "", part: "", people: 0, b: 3, status: 6, wiki: "Schleswig-Holstein question", src: "redraw" };
+    out.push(withBox({ ...template, claims: SH_CLAIMS.slice().sort(), first: SH_JOINT[0], last: SH_JOINT[1], polys: joint }));
+    targets.push({ name: "Schleswig-Holstein", first: SH_JOINT[0], last: SH_JOINT[1], polys: joint, box: boxOf(joint) });
+    const late = at(SH_PRUSSIAN[0]), lateBox = boxOf(late), adds = [];
+    for (let y = SH_PRUSSIAN[0]; y <= SH_PRUSSIAN[1]; y++) {
+      let best = null, area = 0;
+      for (const name of SH_HOLDERS) {
+        if (best) break;
+        for (const s of out) {
+          if (s.name !== name || s.people || s.claims || s.first > y || s.last < y) continue;
+          const a = km2Of(s.polys);
+          if (a > area) { area = a; best = s; }
+        }
+      }
+      if (!best) for (const s of out) {
+        if (s.people || s.claims || SH_MINUS.includes(s.name) || s.first > y || s.last < y || !boxHit(s.box, lateBox)) continue;
+        const x = I(s.polys, late), a = x.length ? km2Of(x) : 0;
+        if (a > area) { area = a; best = s; }
+      }
+      if (best) { best.shHolder = true; adds.push({ base: best, first: y, last: y, polys: late, add: true }); }
+    }
+    out = reshape(out, adds, false);
+    targets.push({ name: null, first: SH_PRUSSIAN[0], last: SH_PRUSSIAN[1], polys: late, box: lateBox, keep: (s) => adds.some((e) => e.base.name === s.name) });
+  } else console.log("redraw: no Schleswig-Holstein in Natural Earth or no Germany in CShapes");
+  const edits = [];
+  for (const t of targets) for (const s of out) {
+    if (s.last < t.first || s.first > t.last || (t.name && s.redrawn === t.name) || (t.keep && t.keep(s)) || (t.name === "Schleswig-Holstein" && SH_MINUS.includes(s.name)) || !boxHit(s.box, t.box)) continue;
+    if (t.name === "Schleswig-Holstein" && s.src === "redraw") continue;
+    edits.push({ base: s, first: Math.max(s.first, t.first), last: Math.min(s.last, t.last), polys: t.polys, add: false });
+  }
+  const result = reshape(out, edits, false);
+  console.log("redraw: " + targets.map((t) => (t.name || "Schleswig-Holstein in its holder") + " " + t.first + "–" + t.last).join(", ") + " from the lines of 1886, " + edits.length + " cuts");
+  return result;
+};
+dated = fillSmallGaps(resolveOverlaps(canada(northAmerica(redraw1886(dated))), "from " + DATED_FROM + " to " + DATED_TO));
 const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
 const SNAPPED = Symbol("snapped");
 function clipRect(polys, b) {
@@ -2672,6 +2771,22 @@ const PROVINCE_SETS = [{ name: "Roman Empire", file: "roman-provinces.json" }];
   console.log("provinces: " + made + " spans of provinces, " + rests + " remainders, " + joinedBits + " slivers joined to the province beside them");
 }
 dated = resolveOverlaps(dated, "from " + DATED_FROM + " to " + DATED_TO + ", after the groups and provinces, overlaps under " + OVERLAP_KM2 + " km²", true);
+const reimposeSH = (list) => {
+  if (!shPlan) return list;
+  const box = boxOf(shPlan.region), edits = [];
+  const zone = unionSafe(shPlan.region, [rewind([[[[SH_NORTH[0], SH_NORTH[1]], [SH_NORTH[2], SH_NORTH[1]], [SH_NORTH[2], SH_NORTH[3]], [SH_NORTH[0], SH_NORTH[3]], [SH_NORTH[0], SH_NORTH[1]]]]])]);
+  for (const s of list) {
+    if (s.people || SH_MINUS.includes(s.name) || s.last < SH_JOINT[0] || s.first > SH_PRUSSIAN[1] || !boxHit(s.box || (s.box = boxOf(s.polys)), box)) continue;
+    const first = Math.max(s.first, SH_JOINT[0]), last = Math.min(s.last, SH_PRUSSIAN[1]);
+    if (s.src === "redraw" && s.name === "Schleswig-Holstein") { edits.push({ base: s, first, last, polys: shPlan.joint, add: true }); continue; }
+    if (s.shHolder) { edits.push({ base: s, first: Math.max(first, SH_PRUSSIAN[0]), last, polys: shPlan.late, add: true }); if (first < SH_PRUSSIAN[0]) edits.push({ base: s, first, last: SH_PRUSSIAN[0] - 1, polys: shPlan.joint, add: false }); continue; }
+    edits.push({ base: s, first, last, polys: s.name === "Kingdom of Denmark" ? shPlan.region : zone, add: false });
+  }
+  const out = reshape(list, edits, false);
+  console.log("schleswig-holstein: imposed again after the overlaps, " + edits.length + " edits");
+  return out;
+};
+dated = reimposeSH(dated);
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
