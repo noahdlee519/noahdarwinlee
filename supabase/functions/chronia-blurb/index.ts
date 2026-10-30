@@ -108,7 +108,7 @@ function bucket(y: number, kind: "state" | "city" | "division") {
 
 function periodName(from: number, to: number) {
   if (from === to) return fmtYear(from);
-  if (from >= 1000 && to - from === 9) return "the " + from + "s";
+  if (from >= 1000 && to - from === 9 && from % 100 !== 0) return "the " + from + "s";
   if (to < 0) return "from " + -from + " to " + -to + " BC";
   return "from " + fmtYear(from) + " to " + to;
 }
