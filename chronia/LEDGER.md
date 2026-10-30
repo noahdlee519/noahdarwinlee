@@ -16,6 +16,10 @@ Each entry:
 ```
 
 ---
+## 500 BC–AD 500 | the world | changes moved from Cliopatria's round years to the years they happened
+
+- Claimed by the North Sea session (session_01EGk2UfDZQKLi1E5U6q6xbp), 30 October 2026, at Noah's request: Cliopatria dates most changes before AD 500 to round years (450, 400, 350 BC), so a conquest or a fall shows up to fifty years from when it happened. Each such change is to be moved to its year, from two sources, by a new table in `tools/build-eras.mjs`; no shapes are redrawn. Rebuilds `data/dated/` and `data/eras.json`.
+
 ## 1836–1845 and 1783–1896 | Texas and the United States | the Republic of Texas's edges; land two states claimed
 
 - What changed: the Republic of Texas was historical-basemaps' shape, coarser than Natural Earth's Texas, so a thin strip of its claim to the Rio Grande ran between it and the United States along the Red River and the Sabine; it is now Natural Earth's Texas east of the line where its governed land met its claim, and meets the United States on the state's own lines. On the first-level divisions, the Newberry atlas drew Greer County in both Texas and the Indian Territory (then Oklahoma Territory) until 1896, so no line divided them west of the North Fork of the Red River; land two divisions claimed at once now goes to one of them on those days, a state before a territory, and of two states the older, which also settles the Toledo Strip, the Western Reserve, the Honey Lands, and 17 other pairs.
