@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1836–1845 and 1783–1896 | Texas and the United States | the Republic of Texas's edges; land two states claimed
+
+- What changed: the Republic of Texas was historical-basemaps' shape, coarser than Natural Earth's Texas, so a thin strip of its claim to the Rio Grande ran between it and the United States along the Red River and the Sabine; it is now Natural Earth's Texas east of the line where its governed land met its claim, and meets the United States on the state's own lines. On the first-level divisions, the Newberry atlas drew Greer County in both Texas and the Indian Territory (then Oklahoma Territory) until 1896, so no line divided them west of the North Fork of the Red River; land two divisions claimed at once now goes to one of them on those days, a state before a territory, and of two states the older, which also settles the Toledo Strip, the Western Reserve, the Honey Lands, and 17 other pairs.
+- Tables: `RT_WEST` and the Republic of Texas in `northAmerica` in `tools/build-eras.mjs`; `ahcbOverlaps` in `tools/build-divisions.mjs`; `data/divisions/us.json`.
+- Sources: (1) historical-basemaps' Republic of Texas of 1836, for the western line; (2) the Newberry Library's Atlas of Historical County Boundaries, for the claims and their dates.
+- Confidence: medium for the western line, which is the source's; high for the divisions' dates.
+- Alternatives: drawing Greer County as disputed between Texas and the United States (not taken: the first-level divisions have no disputed land, and Texas governed it as its own county until the Supreme Court gave it to Oklahoma Territory in 1896).
+- Left out: the Toledo Strip's de facto government by Michigan until 1836, which the rule gives to Ohio.
+
 ## 1870–1885 | France and Germany | France's borders from the Franco-Prussian War to 1886
 
 - Claimed by the session of 29 October 2026 (the months-from-1800, World War I, and Spanish Civil War session's), 30 October 2026: Cliopatria draws northern France, Paris included, in the North German Confederation and the German Empire from 1870 to 1872. France is to keep its borders, with Alsace-Lorraine until the Treaty of Frankfurt (10 May 1871) and with its lines of 1886 after, by `REDRAW_1886` in `tools/build-eras.mjs` and an entry in `tools/dated-days.json`; rebuilds `data/dated/` and `data/eras.json`.

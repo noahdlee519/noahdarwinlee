@@ -2163,6 +2163,10 @@ const DIVIDE = [[-114.07, 49], [-113.75, 48.75], [-113.36, 48.32], [-112.85, 47.
 // The basin of the Red River of the North and the Souris south of 49° N, which the Convention of 1818 gave to the United States.
 const RED_BASIN = [[-95.15, 49], [-95.3, 48.5], [-95.7, 47.6], [-96, 46.9], [-96.4, 46], [-96.6, 45.6], [-97, 45.8], [-97.6, 46.2], [-98.3, 46.8], [-99.2, 47.4], [-100.2, 47.9], [-101.2, 48], [-102.3, 48.1], [-103.2, 48.4], [-103.8, 48.9], [-103.8, 49]];
 // South of this line, east of the Mississippi in Louisiana, is the Isle of Orleans (with the Louisiana Purchase); north of it are the Florida parishes of West Florida.
+// The Republic of Texas's western edge, north to south, where its settled and governed land met the land it claimed to the Rio Grande (the
+// line historical-basemaps draws, from the Red River near Wichita Falls to Corpus Christi Bay), so that it meets the United States on the
+// state lines of Texas, as the claim does.
+const RT_WEST = [[-98.72, 34.14], [-99.29, 33.91], [-100.17, 33.26], [-101.1, 32.56], [-102.5, 31.46], [-100.37, 30.05], [-98.94, 28.96], [-97.2, 28.09], [-96.0, 27.5]];
 const ORLEANS_NORTH = [[-91.3, 30.36], [-90.85, 30.3], [-90.45, 30.22], [-90.1, 30.18], [-89.75, 30.17], [-89.5, 30.15], [-88.9, 30.1]];
 const usAcquisitions = () => {
   const usa = neAll.filter((f) => f.properties.adm0_a3 === "USA"), st = (code) => { const f = usa.find((x) => x.properties.iso_3166_2 === "US-" + code); if (!f) throw new Error("united states: Natural Earth has no " + code); return rewind(polysOf(f.geometry)); };
@@ -2227,7 +2231,8 @@ const usAcquisitions = () => {
     { key: "Oregon", from: 1846, polys: oregon }, { key: "Mexican Cession", from: 1848, polys: cession }, { key: "Gadsden Purchase", from: 1854, polys: gadsden },
     { key: "Alaska", from: 1868, polys: AK },
   ];
-  return { pieces, VT, oregon, txClaim, TX, sized: Object.fromEntries(pieces.map((p) => [p.key, Math.round(km2Of(p.polys) / 1000)])) };
+  const rtCore = I(TX, ring([[RT_WEST[0][0], 80], ...RT_WEST, [RT_WEST[RT_WEST.length - 1][0], 0], [-20, 0], [-20, 80]]));
+  return { pieces, VT, oregon, txClaim, TX, rtCore, sized: Object.fromEntries(pieces.map((p) => [p.key, Math.round(km2Of(p.polys) / 1000)])) };
 };
 const northAmerica = (list) => {
   const acq = usAcquisitions();
@@ -2251,7 +2256,12 @@ const northAmerica = (list) => {
     if (s.first < US_FROM) out.push({ ...s, last: US_FROM - 1, uid: uidNext++ });
     if (s.last > US_TO) out.push({ ...s, first: US_TO + 1, uid: uidNext++ });
   }
+  // The Republic of Texas on Texas's own lines (its source shape left slivers of the claim between it and the United States along the Red River
+  // and the Sabine), and whatever else lay on that land given way to it.
+  let rt = 0;
+  out = out.map((s) => (s.name === "Republic of Texas" && !s.people && !s.claims && s.first >= 1836 && s.last <= 1845 ? (rt++, withBox({ ...s, polys: acq.rtCore, geoHash: undefined })) : s));
   const added = [], cuts = [];
+  if (rt) cuts.push({ first: 1836, last: 1845, polys: acq.rtCore, box: boxOf(acq.rtCore), skip: (s) => s.name === "Republic of Texas" || s.people });
   for (const pd of periods) {
     const keep = out.filter((s) => NA_KEEP.has(s.name) && s.last >= pd.first && s.first <= pd.last && boxHit(s.box, pd.box));
     const bounds = new Set([pd.first, pd.last + 1]);
