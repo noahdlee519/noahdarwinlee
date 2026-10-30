@@ -459,10 +459,59 @@ function ahcb() {
   for (const f of src.features) {
     const p = f.properties;
     if (!keep.has(p.TERR_TYPE)) { dropped.push(p.FULL_NAME); continue; }
-    entries.push({ name: p.FULL_NAME, first: p.START_DATE, last: p.END_DATE.slice(0, 10) === AHCB_END ? null : p.END_DATE, geo: rewind(f.geometry) });
+    entries.push({ name: p.FULL_NAME, type: p.TERR_TYPE, first: p.START_DATE.slice(0, 10), last: p.END_DATE.slice(0, 10) === AHCB_END ? null : p.END_DATE.slice(0, 10), geo: rewind(f.geometry) });
   }
   console.log("AHCB: " + entries.length + " kept, left out: " + [...new Set(dropped)].join(", "));
-  return writeRegion("us", ["United States", "United States of America"], entries);
+  return writeRegion("us", ["United States", "United States of America"], ahcbOverlaps(entries));
+}
+
+// The AHCB draws land that two divisions claimed at once in both of them: Greer County in Texas and in the Indian Territory, then Oklahoma
+// Territory, until 1896; the Toledo Strip in Ohio and in the Indiana and Michigan Territories until 1837; the Western Reserve in Connecticut and
+// the Northwest Territory until 1800; the Honey Lands in Missouri and Iowa until 1849; Texas's claim to the upper Rio Grande and Utah Territory in
+// 1850; and a few strips along state lines. Drawn twice, such land has no line between the two divisions, since only the edges two divisions share
+// are kept as lines. So on the days both claim it, it goes to one: a state before a territory, and of two states, the older.
+const OVERLAP_KM2 = 1;
+function ahcbOverlaps(entries) {
+  const ISO = (day) => new Date(DAY0 + day * 86400000).toISOString().slice(0, 10);
+  const END = dayOf(AHCB_END);
+  const list = entries.map((e) => {
+    const polys = polysOf(e.geo);
+    const b = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const p of polys) for (const q of p[0]) { b[0] = Math.min(b[0], q[0]); b[1] = Math.min(b[1], q[1]); b[2] = Math.max(b[2], q[0]); b[3] = Math.max(b[3], q[1]); }
+    return { ...e, a: dayOf(e.first), z: e.last ? dayOf(e.last) : END, polys, box: b };
+  });
+  const km2 = (polys) => polys.reduce((t, p) => t + d3.geoArea({ type: "Polygon", coordinates: p.map((r) => r.slice().reverse()) }), 0) * R_KM * R_KM;
+  const wins = (A, B) => (A.type === "State") !== (B.type === "State") ? A.type === "State" : A.a < B.a;
+  const cuts = new Map();
+  let pairs = 0;
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+    const A = list[i], B = list[j];
+    if (A.z < B.a || B.z < A.a || A.box[0] > B.box[2] || B.box[0] > A.box[2] || A.box[1] > B.box[3] || B.box[1] > A.box[3]) continue;
+    let x;
+    try { x = clip.intersection(A.polys, B.polys); } catch (e) { continue; }
+    if (!x.length || Math.min(km2(x), 4 * Math.PI * R_KM * R_KM - km2(x)) < OVERLAP_KM2) continue;
+    const [win, lose] = wins(A, B) ? [A, B] : [B, A];
+    if (!cuts.has(lose)) cuts.set(lose, []);
+    cuts.get(lose).push({ a: Math.max(A.a, B.a), z: Math.min(A.z, B.z), polys: win.polys, name: win.name });
+    pairs++;
+  }
+  const out = [];
+  for (const e of list) {
+    const mine = cuts.get(e);
+    const plain = (x) => ({ name: x.name, first: x.first, last: x.last, geo: x.geo });
+    if (!mine) { out.push(plain(e)); continue; }
+    const bounds = [...new Set([e.a, e.z + 1, ...mine.flatMap((c) => [c.a, c.z + 1])])].filter((t) => t >= e.a && t <= e.z + 1).sort((x, y) => x - y);
+    for (let k = 0; k + 1 < bounds.length; k++) {
+      const a = bounds[k], z = bounds[k + 1] - 1, now = mine.filter((c) => c.a <= a && z <= c.z);
+      let geo = e.geo;
+      if (now.length) {
+        try { geo = rewind({ type: "MultiPolygon", coordinates: clip.difference(e.polys, ...now.map((c) => c.polys)) }); } catch (err) { console.log("AHCB: could not cut " + e.name + " by " + now.map((c) => c.name).join(", ")); }
+      }
+      out.push({ name: e.name, first: ISO(a), last: z === END && !e.last ? null : ISO(z), geo });
+    }
+  }
+  console.log("AHCB: " + pairs + " pairs of divisions claiming the same land, each given to one of them on the days both claimed it");
+  return out;
 }
 
 function naturalEarth() {
