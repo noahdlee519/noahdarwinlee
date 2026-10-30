@@ -422,6 +422,8 @@
     return out;
   }
   function polityName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
+  // "in the Holy Roman Empire", but "in British America": a group named for a place takes no article.
+  function inGroup(id) { var n = polityName(id); return /^British America$/.test(n) ? "in " + n : "in the " + n; }
   var colourDays = [], colourYears = [];
   function colourMarks() {
     var d = new Set(), y = new Set();
@@ -3333,7 +3335,7 @@
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
     setTip(dv ? "region" : p.people ? null : "flag", dv ? dv + ", " + polityName(p.id) : polityName(p.id));
-    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) + (p.member >= 0 && p.member !== p.id ? ", in the " + polityName(p.member) : "") : p.member >= 0 && p.member !== p.id ? "in the " + polityName(p.member) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
+    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) + (p.member >= 0 && p.member !== p.id ? ", " + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
     var held = controlAt(lonLatAt(x, y));
     if (held) sub = (sub ? sub + " | " : "") + held;
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
@@ -4806,7 +4808,7 @@
       seen.add(p.id);
       var name = polityName(p.id);
       if (!name || !p.label) return;
-      var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.member >= 0 && p.member !== p.id ? "in the " + polityName(p.member) : "";
+      var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
       out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
     });
     if (cities) cityRanked(now).forEach(function (x) {

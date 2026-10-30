@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { adoptLand } from "./adopt-land.mjs";
 import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
+import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -2066,6 +2067,95 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
+// North America's colonies from 1564 to 1821 (`tools/na-colonies.mjs`): their spans replace the sources' colonial shapes on the land of the
+// United States (to 1821) and of eastern Canada (to 1762); the Native nations the sources draw as states keep their land outside the colonies;
+// the peoples of historical-basemaps' map of 1715, which its map of 1783 drops, are kept to 1821 wherever no colony or state takes their land;
+// and New Spain is one piece from 1811 to 1821, the insurgents and the Viceroyalty's own shape folded into the Spanish Empire.
+let colonialNorthwest = null;
+const colonies = (list) => {
+  const riversPath = resolve(dirname(nePath), "ne_10m_rivers_lake_centerlines.geojson");
+  if (!existsSync(riversPath)) { console.log("colonies: no ne_10m_rivers_lake_centerlines.geojson beside the Natural Earth file, so North America's colonies keep their source shapes"); return list; }
+  const t0 = Date.now();
+  const C = buildColonies({ neAll, clip, tryClip, rewind, polysOf, subtract, km2Of, turfBuf, rivers: JSON.parse(readFileSync(riversPath, "utf8")).features });
+  colonialNorthwest = C.northwest;
+  const NA_BOX = [-170, 14, -50, 75], MEXICO_CITY = [-99.13, 19.43], LANDS = [-130, 24, -55, 56];
+  const hasPoint = (b, p) => b[0] <= p[0] && p[0] <= b[2] && b[1] <= p[1] && p[1] <= b[3];
+  // The Aaniiih (Gros Ventre) are a people, not a state under another.
+  let peopleFix = 0;
+  list = list.map((s) => ((s.name === "Aaniiih" || s.name === "Gros Ventre") && !s.people && boxHit(s.box, NA_BOX) ? (peopleFix++, { ...s, ruler: "", part: "", status: 0, people: 1 }) : s));
+  // New Spain in one piece: Cliopatria's "Mexicans" (the insurgents, 1811–1819) and historical-basemaps' "Viceroyalty of New Spain" of 1815 join the
+  // Spanish Empire's span that holds Mexico City in those years, or take its name where there is none.
+  const inside = (polys, p) => polys.some((poly) => { let k = false; for (const ring of poly) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) if ((ring[i][1] > p[1]) !== (ring[j][1] > p[1]) && p[0] < ring[i][0] + ((p[1] - ring[i][1]) * (ring[j][0] - ring[i][0])) / (ring[j][1] - ring[i][1])) k = !k; return k; });
+  const FOLD = new Set(["Mexicans", "Viceroyalty of New Spain"]), spanish = (s) => s.name === "Spanish Empire" && !s.people && !s.claims && hasPoint(s.box, MEXICO_CITY) && inside(s.polys, MEXICO_CITY);
+  const fold = [], renamed = [];
+  for (const s of list) {
+    if (!FOLD.has(s.name) || !boxHit(s.box, [-118, 14, -86, 33])) continue;
+    const hosts = list.filter((h) => spanish(h) && h.last >= s.first && h.first <= s.last);
+    for (const h of hosts) fold.push({ base: h, first: Math.max(s.first, h.first), last: Math.min(s.last, h.last), polys: s.polys, add: true });
+    for (let y = s.first; y <= s.last; y++) if (!hosts.some((h) => h.first <= y && y <= h.last)) { const r = renamed[renamed.length - 1]; if (r && r.from === s && r.last === y - 1) r.last = y; else renamed.push({ from: s, first: y, last: y }); }
+  }
+  list = reshape(list.filter((s) => !(FOLD.has(s.name) && boxHit(s.box, [-118, 14, -86, 33]))), fold, false)
+    .concat(renamed.map((r) => withBox({ ...r.from, name: "Spanish Empire", ruler: "Kingdom of Spain", part: "", status: 5, wiki: "New Spain", first: r.first, last: r.last, from: undefined })));
+  // The peoples historical-basemaps draws in 1715 but not in 1783 stay until another span of theirs begins, or to 1821
+  // (before the cuts, so the land in dispute is cut from them too).
+  let kept = 0;
+  for (const s of list) {
+    if (!s.people || s.last !== 1748 || !boxHit(s.box, LANDS)) continue;
+    const next = list.filter((o) => o.name === s.name && o.first > s.last).reduce((m, o) => Math.min(m, o.first), COLONIES_TO + 1);
+    if (next - 1 > s.last) { s.last = next - 1; kept++; }
+  }
+  // The sources' colonies give way to these, on the land they cover; the Native nations drawn as states give way to the colonies themselves.
+  const spans = C.spans.map((s) => withBox({ ...s, people: 0, src: "colony" }));
+  const masks = C.masks.map((m) => ({ ...m, box: boxOf(m.polys), tiles: m.tiles.map((t) => ({ polys: t, box: boxOf(t) })), near: dilate(dilate(cellsOf(m.polys))) }));
+  // The sources' British colonies on Hudson Bay's shore are Rupert's Land's, which `canada` draws.
+  const HUDSON_BAY = [-100, 50, -70, 66], BRITISH_SOURCE = /^(British America|English Colonial Empire|British Colonial Empire|British Empire)$/;
+  let bay = 0;
+  list = list.map((s) => {
+    if (!BRITISH_SOURCE.test(s.name) || s.people || !boxHit(s.box, HUDSON_BAY) || s.first > 1870) return s;
+    const polys = s.polys.filter((p) => { const b = boxOf([p]); return !hasPoint(HUDSON_BAY, [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2]); });
+    if (polys.length === s.polys.length) return s;
+    bay++;
+    return polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
+  }).filter(Boolean);
+  const edits = [];
+  for (const s of list) {
+    if (/^(Rupert's Land|Bermuda|Bahamas)$/.test(s.name) || !boxHit(s.box, NA_BOX)) continue;
+    const native = NATIVE_KEEP.has(s.name);
+    for (const c of spans) if ((c.claims || (native && !s.people)) && c.last >= s.first && c.first <= s.last && boxHit(c.box, s.box)) edits.push({ base: s, first: Math.max(s.first, c.first), last: Math.min(s.last, c.last), polys: c.polys, add: false });
+    if (s.people || native) continue;
+    for (const m of masks) if (s.last >= m.first && s.first <= m.last && boxHit(s.box, m.box)) {
+      s.masked = true;
+      for (const t of m.tiles) if (boxHit(s.box, t.box)) edits.push({ base: s, first: Math.max(s.first, m.first), last: Math.min(s.last, m.last), polys: t.polys, add: false });
+    }
+  }
+  list = reshape(list, edits, false);
+  // What a cut leaves of a source's shape along the coast (its coarser shore against Natural Earth's), or inside the land where a cut failed,
+  // is dropped piece by piece: a piece mostly on or beside the mask's land in the mask's years.
+  let shorn = 0;
+  list = list.map((s) => {
+    if (!s.masked) return s;
+    const ms = masks.filter((m) => s.first >= m.first && s.last <= m.last && boxHit(s.box, m.box));
+    const polys = ms.length ? s.polys.filter((p) => { const cs = cellsOf([p]); return !ms.some((m) => { if (!cs.size) return m.near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (m.near.has(c)) n++; return n > 0.5 * cs.size; }); }) : s.polys;
+    const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
+    if (polys.length !== s.polys.length) shorn++;
+    if (out) delete out.masked;
+    return out;
+  }).filter(Boolean);
+  // New Spain's frontier in today's United States joins the Spanish Empire's span.
+  const frontier = [];
+  for (const f of C.frontier) for (const h of list) if (spanish(h) && h.last >= f.first && h.first <= f.last) frontier.push({ base: h, first: Math.max(f.first, h.first), last: Math.min(f.last, h.last), polys: f.polys, add: true });
+  list = reshape(list, frontier, false);
+  console.log("colonies: " + spans.length + " spans of " + new Set(spans.map((s) => s.name)).size + " colonies, " + spans.filter((s) => s.part).length + " of them in British America; " + edits.length + " cuts, " + fold.length + " pieces of New Spain folded and " + renamed.length + " renamed, " + frontier.length + " frontier pieces, " + bay + " British spans cleared of Hudson Bay's shore, " + shorn + " spans cleared of pieces on the colonies' land, " + kept + " peoples kept to 1821, " + peopleFix + " spans of the Aaniiih made a people, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(spans);
+};
+// The colonies that were British America's after 1763 come from `canada` as well; they are in it to the Treaty of Paris.
+const BA_LATE = new Set(["Province of Quebec", "Nova Scotia", "Newfoundland", "St. John's Island"]);
+const britishAmerica = (list) => list.flatMap((s) => {
+  if (!BA_LATE.has(s.name) || s.src !== "nrcan" || s.first > 1783 || s.part) return [s];
+  if (s.last <= 1783) return [{ ...s, part: BRITISH_AMERICA }];
+  return [{ ...s, last: 1783, part: BRITISH_AMERICA }, { ...s, first: 1784, uid: uidNext++ }];
+});
+
 const US_FROM = 1784, US_TO = 1885;
 const NA_KEEP = new Set(["Confederate States of America"]);
 // The Continental Divide from 49° N to 42° N, north to south, from the passes along it (Marias, MacDonald, Chief Joseph, Lemhi, Monida, Targhee, Togwotee, Union, South Pass): the western limit of the Louisiana Purchase.
@@ -2240,8 +2330,10 @@ const canada = (list) => {
     }
   };
   add("Rupert's Land", "Rupert's Land", RL, RL_FROM, RL_TO, 5);
-  add("Province of Quebec", "Province of Quebec (1763–1791)", coreQC, 1763, 1773, 1);
-  add("Province of Quebec", "Province of Quebec (1763–1791)", U(coreQC, coreON, LAB), 1774, 1791, 1);
+  add("Province of Quebec", "Province of Quebec (1763–1791)", coreQC, 1763, 1774, 1);
+  // The Quebec Act, in force from 1 May 1775, gave the province Labrador and the lands north of the Ohio (these to the Treaty of Paris).
+  add("Province of Quebec", "Province of Quebec (1763–1791)", U(coreQC, coreON, LAB, colonialNorthwest || []), 1775, 1783, 1);
+  add("Province of Quebec", "Province of Quebec (1763–1791)", U(coreQC, coreON, LAB), 1784, 1791, 1);
   add("Upper Canada", "Upper Canada", coreON, 1792, 1840, 1);
   add("Lower Canada", "Lower Canada", U(coreQC, LAB), 1792, 1808, 1);
   add("Lower Canada", "Lower Canada", coreQC, 1809, 1840, 1);
@@ -2254,8 +2346,8 @@ const canada = (list) => {
   add("New Brunswick", "New Brunswick", NB, 1784, 1866, 1);
   add("St. John's Island", "Prince Edward Island", PE, 1769, 1798, 1);
   add("Prince Edward Island", "Prince Edward Island", PE, 1799, 1872, 1);
-  add("Newfoundland", "Newfoundland Colony", U(NFI, LAB), 1763, 1773, 1);
-  add("Newfoundland", "Newfoundland Colony", NFI, 1774, 1808, 1);
+  add("Newfoundland", "Newfoundland Colony", U(NFI, LAB), 1763, 1774, 1);
+  add("Newfoundland", "Newfoundland Colony", NFI, 1775, 1808, 1);
   add("Newfoundland", "Newfoundland Colony", U(NFI, LAB), 1809, CANADA_TO, 1);
   add("North-Western Territory", "North-Western Territory", U(NWT, islands), 1821, 1870, 5);
   add("British Arctic Territories", "British Arctic Territories", islands, 1871, 1880, 5);
@@ -2407,7 +2499,7 @@ const redraw1886 = (list) => {
   console.log("redraw: " + targets.map((t) => (t.name || "Schleswig-Holstein in its holder") + " " + t.first + "–" + t.last).join(", ") + " from the lines of 1886, " + edits.length + " cuts");
   return result;
 };
-dated = fillSmallGaps(resolveOverlaps(canada(northAmerica(redraw1886(dated))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(britishAmerica(canada(northAmerica(colonies(redraw1886(dated))))), "from " + DATED_FROM + " to " + DATED_TO));
 const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
 const SNAPPED = Symbol("snapped");
 function clipRect(polys, b) {
@@ -2668,11 +2760,12 @@ const GROUPS = [{
   name: "Holy Roman Empire",
   maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, 1491, ["1400"]], [1492, 1499, ["1492"]], [1500, 1529, ["1500"]], [1530, 1599, ["1530"]], [1600, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
   never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
-}];
+}, { name: BRITISH_AMERICA }];
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
   for (const G of GROUPS) {
+    if (!G.maps) continue;
     const outlines = G.maps.map(([a, b, ys]) => {
       const polys = ys.flatMap((y) => JSON.parse(readFileSync(resolve(source, "world_" + y + ".geojson"), "utf8")).features.filter((f) => f.properties.NAME === G.name).flatMap((f) => polysOf(f.geometry)));
       const u = rewind(tryClip(clip.union, polys) || polys);
@@ -3586,6 +3679,13 @@ const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
       }
     }
   }
+}
+// Umbrellas drawn in the colour of the crown they belong to: British America in Britain's.
+const COLOUR_LINK = [[BRITISH_AMERICA, "Kingdom of Great Britain"]];
+for (const [a, b] of COLOUR_LINK) {
+  if (!idOf.has(a) || !idOf.has(b)) continue;
+  const x = findKey(rawKey(idOf.get(a))), y = findKey(rawKey(idOf.get(b)));
+  if (x !== y) { keyLink.set(x, y); links++; }
 }
 const edges = new Map(), weight = new Map();
 const touch = new Set();
