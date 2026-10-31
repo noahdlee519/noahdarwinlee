@@ -2552,7 +2552,86 @@ const redraw1886 = (list) => {
   console.log("redraw: " + targets.map((t) => (t.name || "Schleswig-Holstein in its holder") + " " + t.first + "–" + t.last).join(", ") + " from the lines of 1886, " + edits.length + " cuts");
   return result;
 };
-dated = fillSmallGaps(resolveOverlaps(britishAmerica(canada(northAmerica(colonies(redraw1886(dated))))), "from " + DATED_FROM + " to " + DATED_TO));
+const STAGES = [
+  {
+    episode: "Alexander's conquests", gainer: "Macedonian Empire", loser: "Achaemenid Empire", first: -334, last: -324, loserLast: -330, b: 1,
+    replace: ["Kingdom of Macedonia", "Ptolemaic Kingdom"],
+    home: ["Macedonian Empire", -335], envelope: [["Achaemenid Empire", -335], ["Macedonian Empire", -325, ["PAK", "IND", "AFG", "TJK", "UZB", "TKM", "IRN"]]],
+    after: [["Cappadocia", -323], ["Kingdom of Armenia", -326]],
+    steps: [
+      [-334, ["TUR:Çanakkale", "TUR:Balikesir", "TUR:Bursa", "TUR:Yalova", "TUR:Izmir", "TUR:Manisa", "TUR:Aydin", "TUR:Mugla", "TUR:Denizli", "TUR:Usak", "TUR:Antalya", "TUR:Istanbul", "TUR:Edirne", "TUR:Kirklareli", "TUR:Tekirdag", "GRC", "BGR", "MKD", "ALB", "ROU"]],
+      [-333, ["TUR:Kütahya", "TUR:Afyonkarahisar", "TUR:Eskisehir", "TUR:Bilecik", "TUR:Sakarya", "TUR:Kocaeli", "TUR:Düzce", "TUR:Bolu", "TUR:Ankara", "TUR:Konya", "TUR:Isparta", "TUR:Burdur", "TUR:Karaman", "TUR:Mersin", "TUR:Adana", "TUR:Osmaniye", "TUR:Kastamonu", "TUR:Çankiri", "TUR:Karabük", "TUR:Bartın", "TUR:Zinguldak", "TUR:Sinop"]],
+      [-332, ["SYR", "LBN", "ISR", "PSX", "JOR", "EGY", "CYP", "CYN", "TUR:Hatay", "TUR:Kilis", "TUR:Gaziantep", "TUR:K. Maras"]],
+      [-331, ["IRQ", "KWT", "LBY", "TUR:Sanliurfa", "TUR:Adiyaman", "TUR:Mardin", "TUR:Diyarbakir", "TUR:Batman", "TUR:Sirnak", "TUR:Siirt", "IRN:Khuzestan"]],
+      [-330, ["IRN:Fars", "IRN:Kohgiluyeh and Buyer Ahmad", "IRN:Bushehr", "IRN:Chahar Mahall and Bakhtiari", "IRN:Esfahan", "IRN:Lorestan", "IRN:Ilam", "IRN:Kermanshah", "IRN:Hamadan", "IRN:Markazi", "IRN:Qom", "IRN:Tehran", "IRN:Alborz", "IRN:Qazvin", "IRN:Zanjan", "IRN:Kordestan", "IRN:Semnan", "IRN:Mazandaran", "IRN:Golestan", "IRN:Gilan", "IRN:North Khorasan", "IRN:Razavi Khorasan", "IRN:South Khorasan", "IRN:Yazd", "TKM:Ahal", "TKM:Balkan", "AFG:Hirat", "AFG:Badghis", "AFG:Ghor", "AFG:Farah", "AFG:Nimroz", "AFG:Hilmand", "AFG:Kandahar", "AFG:Zabul", "AFG:Uruzgan", "IRN:Kerman", "IRN:Hormozgan", "IRN:East Azarbaijan", "IRN:West Azarbaijan", "IRN:Ardebil"]],
+      [-329, ["AFG:Ghazni", "AFG:Wardak", "AFG:Logar", "AFG:Kabul", "AFG:Parwan", "AFG:Kapisa", "AFG:Bamyan", "AFG:Paktya", "AFG:Paktika", "AFG:Khost", "AFG:Balkh", "AFG:Samangan", "AFG:Jawzjan", "AFG:Faryab", "AFG:Sari Pul", "AFG:Kunduz", "AFG:Baghlan", "AFG:Takhar", "AFG:Badakhshan", "UZB:Surkhandarya", "TJK:Khatlon", "TJK:Dushanbe"]],
+      [-328, ["TKM:Mary", "TKM:Chardzhou"]],
+      [-327, ["UZB:Samarkand", "UZB:Kashkadarya", "UZB:Bukhoro", "UZB:Navoi", "UZB:Jizzakh", "UZB:Sirdaryo", "UZB:Tashkent", "UZB:Ferghana", "UZB:Namangan", "UZB:Andijon", "TJK:Leninabad", "TJK:Tadzhikistan Territories", "AFG:Nangarhar", "AFG:Laghman", "AFG:Kunar", "AFG:Nuristan", "PAK:K.P.", "PAK:F.A.T.A."]],
+      [-326, ["PAK:Punjab", "PAK:F.C.T."]],
+      [-325, ["PAK:Sind", "PAK:Baluchistan", "IRN:Sistan and Baluchestan"]]
+    ]
+  }
+];
+
+const stages = (list) => {
+  let out = list.slice();
+  const I = (x, y) => rewind(tryClip(clip.intersection, x, y) || []);
+  const at = (name, y) => out.filter((s) => s.name === name && !s.people && !s.claims && s.first <= y && y <= s.last).sort((a, b) => km2Of(b.polys) - km2Of(a.polys))[0];
+  const region = (keys) => {
+    const parts = [], miss = [];
+    for (const k of keys) {
+      const [a3, unit] = k.split(":");
+      const fs = neAll.filter((f) => f.properties.adm0_a3 === a3 && (!unit || f.properties.name === unit));
+      if (!fs.length) { miss.push(k); continue; }
+      for (const f of fs) parts.push(rewind(polysOf(f.geometry)));
+    }
+    if (miss.length) console.log("stages: no Natural Earth unit for " + miss.join(", "));
+    return parts.length ? unionSafe(parts[0], parts.slice(1)) : [];
+  };
+  for (const e of STAGES) {
+    const home = at(e.home[0], e.home[1]), env = e.envelope.map(([n, y]) => at(n, y)), reach = e.envelope.map(([, , keys]) => (keys ? region(keys) : null));
+    if (!home || env.some((s) => !s)) { console.log("stages: " + e.episode + " is missing a home or an envelope span"); continue; }
+    const loserT = env[0], gainerT = at(e.gainer, e.last) || home;
+    const envelope = unionSafe(env[0].polys, env.slice(1).map((s, i) => (reach[i + 1] ? I(s.polys, reach[i + 1]) : s.polys)));
+    const mine = new Set([e.gainer, e.loser, ...e.replace]);
+    const hit = out.filter((s) => mine.has(s.name) && !s.people && s.first <= e.last && s.last >= e.first && boxHit(s.box, boxOf(envelope)));
+    const next = out.filter((s) => !hit.includes(s));
+    for (const s of hit) {
+      if (s.first < e.first) next.push(withBox({ ...s, last: e.first - 1 }));
+      if (s.last > e.last) next.push(withBox({ ...s, first: e.last + 1 }));
+    }
+    const afterT = e.after.map(([n, y]) => at(n, y)).filter(Boolean);
+    let taken = [], made = 0;
+    const regions = e.steps.map(([y, keys]) => [y, region(keys)]);
+    const others = (y) => next.filter((s) => s.first <= y && y <= s.last && !mine.has(s.name) && boxHit(s.box, boxOf(envelope))).map((s) => s.polys);
+    const fresh = (s) => { const t = withBox(s); delete t.km2; delete t.pole; delete t.geoHash; return t; };
+    for (let y = e.first; y <= e.last; y++) {
+      for (const [sy, r] of regions) if (sy === y) taken = taken.length ? unionSafe(taken, [r]) : r;
+      const blocked = others(y);
+      let gain = taken.length ? I(envelope, taken) : [];
+      if (blocked.length && gain.length) gain = subtract(gain, blocked);
+      const gPolys = unionSafe(home.polys, [gain]).filter((q) => polyKm2(q) >= 1);
+      next.push(fresh({ ...gainerT, name: e.gainer, first: y, last: y, polys: gPolys, b: e.b, src: "stage", staged: e.episode }));
+      made++;
+      let rest = subtract(envelope, [gPolys, ...blocked]).filter((q) => polyKm2(q) >= 300);
+      if (y <= e.loserLast) {
+        const lPolys = I(loserT.polys, rest).filter((q) => polyKm2(q) >= 300);
+        if (lPolys.length) { next.push(fresh({ ...loserT, name: e.loser, first: y, last: y, polys: lPolys, b: e.b, src: "stage", staged: e.episode })); made++; }
+      } else {
+        for (const t of afterT) {
+          if (next.some((s) => s.name === t.name && s.first <= y && y <= s.last)) continue;
+          const p = I(t.polys, rest).filter((q) => polyKm2(q) >= 300);
+          if (p.length) { next.push(fresh({ ...t, first: y, last: y, polys: p, src: "stage", staged: e.episode })); rest = subtract(rest, [p]); made++; }
+        }
+      }
+    }
+    out = next;
+    console.log("stages: " + e.episode + ", " + e.gainer + " and " + e.loser + " year by year from " + e.first + " to " + e.last + ", " + hit.length + " spans replaced by " + made);
+  }
+  return out;
+};
+
+dated = fillSmallGaps(resolveOverlaps(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated)))))), "from " + DATED_FROM + " to " + DATED_TO));
 const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
 const SNAPPED = Symbol("snapped");
 function clipRect(polys, b) {

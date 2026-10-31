@@ -274,8 +274,8 @@ What the builder does with Cliopatria:
     - `CAP_NAME` gives the city's own name where Wikidata's label is for a district, a heritage site, or a later spelling (Coop of Brussels, Historic City of Ayutthaya, Toledo city, Kolkata as Calcutta, Ahilyanagar as Ahmednagar). On the page, a capital also takes the names by date of the city at its place, as from 1886.
 
     This gives a capital to 4,622 spans. A span's capitals are written in the same form as from 1886 (see [From 1886](#from-1886)): the capital of its last years, with the earlier ones as a list ending on 31 December of their last year.
-12. **Files:** the spans, 26,594 in all, are written as one TopoJSON per century, `data/dated/bc3400.json` to `1800.json`, 53 files, at the same two levels of detail as the snapshots. A span that crosses into the next century is in both files. Labels are computed per span, as for the snapshots, and spans with the same shape share one.
-13. **Changes:** every year a span starts, or the year after one ends, is a change: 656 years from 3400 BC to 1885, 363 of them before 1200. From 1801 the changes are also dated to the day (see [Days from 1801](#days-from-1801)).
+12. **Files:** the spans, 27,004 in all, are written as one TopoJSON per century, `data/dated/bc3400.json` to `1800.json`, 53 files, at the same two levels of detail as the snapshots. A span that crosses into the next century is in both files. Labels are computed per span, as for the snapshots, and spans with the same shape share one.
+13. **Changes:** every year a span starts, or the year after one ends, is a change: 705 years from 3400 BC to 1885, 371 of them before 1200. From 1801 the changes are also dated to the day (see [Days from 1801](#days-from-1801)).
 
 A row in a file in `data/dated/` is `[id, ruler id, first year, last year, status, capital, label, people, part-of id, precision]`, where the capital is `null` or as in `modern.json` (see [From 1886](#from-1886)), with a name of `null` for years with no capital, and the status is 0 for a state, 1 for a colony, 2 for a protectorate, 4 for an occupied territory, and 5 for another dependency. The file of the 1800s also has `days`, a list of `[row, first day, last day]` for the rows whose start or end is dated to the day (see below), each day counted from 1 January 1886 as in `modern.json` and `null` where the year stands.
 
@@ -327,6 +327,17 @@ From AD 106 to 117 the Roman Empire is drawn like the Holy Roman Empire: one col
 - **On the page:** as for the Holy Roman Empire (see above): the provinces take the Empire's colour, its name is laid out over the whole, the provinces' names are smaller, and the hover names a province's place ("in the Roman Empire").
 
 The provinces before 106 and after 117 are not drawn, since no open source maps them by date. The Ancient World Mapping Center's open data has the provincial boundaries of about AD 200 and after Diocletian as unnamed lines only, and was not used.
+
+### Stages of conquest
+
+Cliopatria draws some conquests in one step, years after they began: it kept the Persian Empire until 326 BC, eight years after Alexander crossed into Asia, and drew Egypt and the Levant as "the Ptolemaic Kingdom" from 331 BC, before Ptolemy ruled them. `STAGES` in the builder redraws such an episode year by year, before the overlaps are settled (`stages`).
+
+- **An episode:** the gainer (the Macedonian Empire), the loser (the Achaemenid Empire), the years (334 to 324 BC), the loser's last year (330 BC, the year Darius III was killed), and the stages: for each year, the land taken that year, as Natural Earth's first-level units (today's provinces, standing in for the satrapies) or whole countries.
+- **The shapes:** the gainer is its homeland (its span of 335 BC) with the land taken so far, cut to the loser's span of 335 BC, and in India and Central Asia also to the gainer's span of 325 BC; the loser is the rest of its span of 335 BC. Every other state or people in those years keeps its land, so the Greek cities, Bithynia, Cyprus, and Cyrenaica are as they were. Each year is a span of its own, with precision 1 (dotted), since today's provinces only approximate the satrapies.
+- **After the loser:** from the year after its last, land it held that the gainer has not taken goes to the states named for it (`after`: Cappadocia under Ariarathes, from its span of 323 BC, and Armenia under the Orontids, from its span of 326 BC), or is left blank, as Sogdiana is in 329 and 328 BC, during Spitamenes' revolt, and Gedrosia until 325 BC.
+- **Alexander's stages:** 334 BC, western Asia Minor (the Troad, Hellespontine Phrygia, Lydia, Ionia, Caria, and Lycia); 333, Phrygia, Paphlagonia, Pisidia, Pamphylia, and Cilicia; 332, Syria, Phoenicia, Palestine, Cyprus, and Egypt; 331, Mesopotamia, Babylonia, the east of Libya, and Susiana; 330, Persis, Media with Atropatene, Hyrcania, Parthia, Carmania, Aria, Drangiana, and Arachosia; 329, the Paropamisadae and Bactria; 328, Margiana; 327, Sogdiana and the Kabul and Swat valleys; 326, Taxila and the Punjab; 325, the lower Indus and Gedrosia. From 323 BC the map is Cliopatria's again, with the Successors' satrapies.
+
+The build reports how many spans an episode replaced (`stages:`).
 
 ### Names fixed
 

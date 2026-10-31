@@ -16,9 +16,18 @@ Each entry:
 ```
 
 ---
-## 500 BC–AD 500 | the world | changes moved from Cliopatria's round years to the years they happened
+## 500 BC–AD 500 | the world | stages of the Classical period's conquests
 
-- Claimed by the North Sea session (session_01EGk2UfDZQKLi1E5U6q6xbp), 30 October 2026, at Noah's request: Cliopatria dates most changes before AD 500 to round years (450, 400, 350 BC), so a conquest or a fall shows up to fifty years from when it happened. Each such change is to be moved to its year, from two sources, by a new table in `tools/build-eras.mjs`; no shapes are redrawn. Rebuilds `data/dated/` and `data/eras.json`.
+- Claimed by the North Sea session (session_01EGk2UfDZQKLi1E5U6q6xbp), 30 October 2026, at Noah's request: Cliopatria draws some conquests of the Classical period in one step, years after they began. Each is to be redrawn year by year by `STAGES` in `tools/build-eras.mjs` (see the README's [Stages of conquest](README.md#stages-of-conquest)), one episode a commit. Done: Alexander's conquests (below). Moving changes from round years to their real years was looked at first and dropped for this period: only 8 of its 175 change years are round.
+
+## 334–324 BC | the Near East, Egypt, Central Asia, and the Indus | Alexander's conquests year by year
+
+- What changed: the Achaemenid Empire loses its land to the Macedonian Empire year by year from 334 BC, as Alexander took it, and ends in 330 BC, the year Darius III was killed. Cliopatria kept it whole to 334 BC, cut it in two steps (333 and 331 BC), ended it only in 326 BC, and drew Egypt and the Levant as "the Ptolemaic Kingdom" from 331 BC. Cappadocia (Ariarathes) and Armenia (the Orontids), which Alexander never took, are drawn from 329 BC; Sogdiana is blank in 329 and 328 BC, during Spitamenes' revolt, and Gedrosia from 329 to 326 BC. The stages by year are listed in the README.
+- Tables: `STAGES` and `stages` in `tools/build-eras.mjs`.
+- Sources: (1) Wikipedia, "Chronology of the expedition of Alexander the Great into Asia" (each satrapy by month); (2) Jona Lendering, "Alexander the Great", Livius.org (by year). They agree on the year of every stage but one: the lower Indus, December 326 BC in (1) and 325 BC in (2); the later is taken. Media Atropatene is from Wikipedia, "Atropates" (surrendered in 330 BC, after Darius's death), and Carmania from Wikipedia, "Carmania (satrapy)" (its satrap Aspastes kept his office under Alexander, tied to the conquest of Persia in 330 BC), each a single source for its year and so weak.
+- Confidence: medium; the years are well attested (Arrian), but today's provinces stand in for the satrapies, so the lines are approximate (precision 1).
+- Alternatives: Sogdiana from 329 BC, when Maracanda was taken, rather than 327 BC, when the revolt ended; Carmania from 325 BC, when Alexander first went there; the Achaemenid Empire to 329 BC, while Bessus claimed its throne as Artaxerxes V.
+- Left out: Porus's and Taxiles' kingdoms as Alexander's clients (drawn as his land); the eastern Aegean islands, retaken by the Persian fleet in 333 BC and lost again in 332; Cappadocia's south, under Alexander's satrap Sabictas from 333 BC.
 
 ## 1822–1847, 1836–1845, and 1783–1896 | Mexico, Texas, and the United States | Mexico's northern border; the Republic of Texas's edges; land two states claimed
 
