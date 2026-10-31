@@ -3521,8 +3521,15 @@ const csOccupy = (rows) => {
       if (pts[0][0] !== pts[pts.length - 1][0] || pts[0][1] !== pts[pts.length - 1][1]) pts.push(pts[0]);
       return pts;
     };
-    const parts = a.polys ? a.polys.map((poly) => poly.map(closed)) : (a.rings || [a.ring]).map((ring) => [closed(ring)]);
-    const polys = rewind(clip.union(...parts));
+    // `ne` adds Natural Earth's divisions ({adm0, units}), and `minus` takes a ring away.
+    const parts = a.polys ? a.polys.map((poly) => poly.map(closed)) : a.rings || a.ring ? (a.rings || [a.ring]).map((ring) => [closed(ring)]) : [];
+    if (a.ne) {
+      const units = neAll.filter((f) => f.properties.adm0_a3 === a.ne.adm0 && a.ne.units.includes(f.properties.name));
+      if (units.length !== a.ne.units.length) throw new Error("occupations.json: area " + key + " has " + units.length + " of " + a.ne.units.length + " Natural Earth units");
+      for (const f of units) parts.push(...rewind(polysOf(f.geometry)));
+    }
+    let polys = rewind(clip.union(...parts));
+    if (a.minus) polys = rewind(clip.difference(polys, [[closed(a.minus)]]));
     areaPolys.set(key, polys);
     return polys;
   };
@@ -3560,7 +3567,7 @@ const csOccupy = (rows) => {
       for (const { z, polys } of pieces) {
         const holdsCap = r.p.capname && r.p.caplong != null && inPolys(polys, [r.p.caplong, r.p.caplat]);
         const cap = z.cap ? { capname: z.cap[0], caplong: z.cap[1], caplat: z.cap[2] } : holdsCap ? {} : { capname: null };
-        out.push({ p: { ...r.p, ...cap, gwcode: code + ":" + z.key, country_name: z.name, status: "occupied", owner: z.by, start: a, end: b }, geometry: { type: "MultiPolygon", coordinates: polys } });
+        out.push({ p: { ...r.p, ...cap, gwcode: code + ":" + z.key, country_name: z.name, status: z.status || "occupied", owner: z.by || "", start: a, end: b }, geometry: { type: "MultiPolygon", coordinates: polys } });
         made++;
       }
       // `rest` gives the state's own status for the land no zone holds, where CShapes counts the whole
