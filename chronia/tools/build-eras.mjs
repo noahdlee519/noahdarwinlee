@@ -223,6 +223,15 @@ const BANDS = /hunter|gatherer|forager|fisher|fichers/i;
 const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya", "Rupert's Land", "Louisiana", "Spanish Louisiana", "Sokoto Caliphate", "Sultanate of Darfur", "Wadai Empire", "Emirate of Diriyah", "Emirate of Nejd", "Emirate of Jabal Shammar", "Xiongnu", "Xianbei", "Rouran Khaganate", "Göktürk Khaganate", "Eastern Göktürks", "Western Göktürks", "Second Turkic Khaganate", "Uyghur Khaganate", "White Huns", "Kidarites", "Xionites", "Oghuz Turks", "Qarlugs", "Wusun", "Yuezhi", "Southern Xiongnu", "Kara-Khitans", "Tibetan Empire", "Goguryeo", "Balhae", "Tarim Basin oasis states"]);
 const kindOf = (name) => (BANDS.test(name) ? 2 : 1);
 const WIKI = {
+  // North America's peoples in historical-basemaps whose names are also a state, a city, a river, or a word, so that their own articles open.
+  "Delaware": "Lenape", "Illinois": "Illinois Confederation", "Iowa": "Iowa people", "Alabama": "Alabama people", "Missouri": "Missouria", "Omaha": "Omaha people",
+  "Biloxi": "Biloxi people", "Erie": "Erie people", "Huron": "Wyandot people", "Crow": "Crow people", "Fox": "Meskwaki", "Chesapeake": "Chesepian",
+  "Natchez": "Natchez people", "Houma": "Houma people", "Miami": "Miami people", "Pawnee": "Pawnee people", "Kansa": "Kaw people", "Ute": "Ute people",
+  "Osage": "Osage Nation", "Oto": "Otoe", "Teton": "Lakota people", "Santee": "Santee Dakota", "Yankton": "Yankton Sioux Tribe", "Wichita": "Wichita people",
+  "Tunica": "Tunica people", "Zuni": "Zuni people", "Susquehanna": "Susquehannock", "Catawba": "Catawba people", "Modoc": "Modoc people",
+  "Spokane": "Spokane people", "Cayuse": "Cayuse people", "Umatilla": "Umatilla people", "Yuma": "Quechan", "Peoria": "Peoria people", "Conoy": "Piscataway people",
+  "Blackfoot": "Blackfoot Confederacy", "Flathead": "Bitterroot Salish", "Kaskaskia": "Illinois Confederation", "Pima": "Akimel O'odham", "Yakima": "Yakama",
+  "Navaho": "Navajo", "Shoshoni": "Shoshone", "Lipan": "Lipan Apache", "Mescalero": "Mescalero Apache", "Jicarilla": "Jicarilla Apache", "Wappynger": "Wappinger",
   "Han": "Han dynasty", "Han Empire": "Han dynasty", "Jin": "Jin dynasty (266–420)", "Sui Empire": "Sui dynasty",
   "Tang Empire": "Tang dynasty", "Song Empire": "Song dynasty", "Ming Empire": "Ming dynasty", "Ming Chinese Empire": "Ming dynasty",
   "Manchu Empire": "Qing dynasty", "Qing Empire": "Qing dynasty", "Great Khanate": "Yuan dynasty", "Zhou states": "Zhou dynasty",
@@ -976,6 +985,8 @@ const NAME_FIX = [
   ["Egypt", "Naqada culture", -3400, -3001, { people: 1, wiki: "Naqada culture" }],
   // Middle Woodland cultures of the Southeast on the snapshots of AD 100 to 500; "Miller" was drawn as a state and linked to the occupation.
   ["Miller", "Miller Culture", -150, 599, { people: 1, wiki: "Miller culture" }],
+  // historical-basemaps names the Montaukett of eastern Long Island "Montana", and its card opened the state's article.
+  ["Montana", "Montaukett", 1400, 1800, { people: 1, wiki: "Montaukett" }],
   ["Copena", "Copena", -150, 599, { people: 1, wiki: "Copena culture" }],
   // Cliopatria's row for 1859 named "New Caledonia" is the French foothold at Saigon, taken on 17 February 1859.
   ["New Caledonia", "French Cochinchina", 1859, 1859, { box: [100, 5, 112, 16], ruler: "Second French Empire", wiki: "French Cochinchina" }],

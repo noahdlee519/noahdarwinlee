@@ -16,6 +16,14 @@ Each entry:
 ```
 
 ---
+## 1400–1800 | North America | the Montaukett, and the articles of peoples named like places
+
+- What changed: historical-basemaps names the Montaukett of eastern Long Island "Montana", so the map called them Montana and their card opened the state's article; they are now the Montaukett. Some 45 other peoples whose names are also a state, a city, a river, or a word (Delaware, Illinois, Iowa, Missouri, Miami, Omaha, Crow, Fox, Susquehanna, and others) opened those articles; they now open the people's own (the Lenape, the Illinois Confederation, the Iowa people, the Missouria, and so on).
+- Tables: the Montaukett row of `NAME_FIX` and the peoples at the head of `WIKI` in `tools/build-eras.mjs`.
+- Sources: (1) the English Wikipedia articles named.
+- Confidence: high.
+- Alternatives: none.
+- Left out: the peoples whose names open a page that is about them already.
 ## 1400–1862 | Wallachia | its capital
 
 - What changed: Wikidata gives Wallachia one capital, Câmpulung, its first seat around 1300, so the map put the capital there in every year to 1862. Now it is Curtea de Argeș to 1417, Târgoviște from 1418, and Bucharest from 1659.
