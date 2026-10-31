@@ -2416,8 +2416,25 @@ const REDRAW_1886 = [
   { name: "Netherlands", gw: 210, first: 1839, last: 1885, box: [2.5, 50.6, 7.5, 53.9] },
   { name: "Kingdom of Belgium", gw: 211, first: 1839, last: 1885, box: [2.3, 49.4, 6.5, 51.6] },
   { name: "Luxembourg", gw: 212, first: 1839, last: 1885, box: [5.6, 49.4, 6.6, 50.3] },
-  { name: "Kingdom of Denmark", gw: 390, first: 1864, last: 1885, box: [7.5, 54.4, 15.5, 58] }
+  { name: "Kingdom of Denmark", gw: 390, first: 1864, last: 1885, box: [7.5, 54.4, 15.5, 58] },
+  // Cliopatria puts northern France, Paris included, in the North German Confederation and the German Empire
+  // from 1870 to 1872. France has its lines of 1886 with Alsace-Lorraine (`plus`) until the Treaty of
+  // Frankfurt, and without it after: the Second Empire's span of 1870 (to 3 September), the Third Republic's
+  // span of 1871 (from 4 September 1870 to 9 May 1871), and its spans from 1872 (from 10 May 1871, by
+  // dated-days.json).
+  { name: "Second French Empire", gw: 220, first: 1870, last: 1870, box: [-5.3, 41.3, 9.7, 51.2], plus: "alsace-lorraine" },
+  { name: "French Third Republic", gw: 220, first: 1871, last: 1871, box: [-5.3, 41.3, 9.7, 51.2], plus: "alsace-lorraine" },
+  { name: "French Third Republic", gw: 220, first: 1872, last: 1885, box: [-5.3, 41.3, 9.7, 51.2] },
+  // Cliopatria's German Empire stops short of the lines of 1886 along the Netherlands, Belgium, Luxembourg, and
+  // France, leaving blank strips and slivers. Its borders did not change from the Treaty of Frankfurt to 1886,
+  // so it has them throughout, without Alsace-Lorraine (`minus`) in its span of 1871 (to 9 May 1871).
+  { name: "German Empire", gw: 255, first: 1871, last: 1871, box: [5.8, 47.2, 23.0, 55.2], minus: "alsace-lorraine" },
+  { name: "German Empire", gw: 255, first: 1872, last: 1885, box: [5.8, 47.2, 23.0, 55.2] }
 ];
+// Land added to (`plus`) or taken from (`minus`) a redrawn state's lines of 1886: Alsace-Lorraine, the part of
+// CShapes' Germany of 1886 in Natural Earth's départements of Moselle, Bas-Rhin, and Haut-Rhin (so its border
+// with France is CShapes').
+const REDRAW_PLUS = { "alsace-lorraine": { gw: 255, units: ["Moselle", "Bas-Rhin", "Haute-Rhin"], adm0: "FRA" } };
 const REDRAW_KM = 0.3, REDRAW_OWN = 0.2;
 const SH_JOINT = [1864, 1866], SH_PRUSSIAN = [1867, 1870], SH_CLAIMS = ["Austrian Empire", "Kingdom of Prussia"], SH_MINUS = ["Free City of Lübeck", "Free City of Hamburg"], SH_ISLAND_KM2 = 3;
 const SH_NORTH = [7.5, 54.15, 11.5, 55.6], SH_HOLDERS = ["North German Confederation", "Kingdom of Prussia"];
@@ -2434,7 +2451,16 @@ const redraw1886 = (list) => {
   for (const r of REDRAW_1886) {
     const shape = cs(r.gw);
     if (!shape) { console.log("redraw: no CShapes shape for " + r.name); continue; }
-    const area = boxPoly(r.box), target = I(shape, area), tKm2 = km2Of(target);
+    const area = boxPoly(r.box);
+    let target = I(shape, area);
+    for (const key of [r.plus, r.minus]) {
+      if (!key) continue;
+      const p = REDRAW_PLUS[key], units = neAll.filter((f) => f.properties.adm0_a3 === p.adm0 && p.units.includes(f.properties.name));
+      const from = cs(p.gw), piece = units.length === p.units.length && from ? I(from, unionSafe(rewind(polysOf(units[0].geometry)), units.slice(1).map((f) => rewind(polysOf(f.geometry))))).filter((q) => polyKm2(q) >= 1) : [];
+      if (!piece.length) { console.log("redraw: no " + key + " for " + r.name); continue; }
+      target = key === r.plus ? unionSafe(target, [piece]) : subtract(target, [piece]).filter((q) => polyKm2(q) >= 1);
+    }
+    const tKm2 = km2Of(target);
     const mine = out.filter((s) => s.name === r.name && !s.people && !s.claims && s.last >= r.first && s.first <= r.last && boxHit(s.box, r.box));
     const own = mine.filter((s) => { const x = I(s.polys, target); return x.length && km2Of(x) >= REDRAW_OWN * Math.min(tKm2, km2Of(s.polys)); });
     if (!own.length) { console.log("redraw: no " + r.name + " from " + r.first + " to " + r.last); continue; }
