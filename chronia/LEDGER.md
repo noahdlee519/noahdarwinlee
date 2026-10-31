@@ -24,6 +24,7 @@ Each entry:
 - Confidence: high.
 - Alternatives: none.
 - Left out: the peoples whose names open a page that is about them already.
+
 ## 1400–1862 | Wallachia | its capital
 
 - What changed: Wikidata gives Wallachia one capital, Câmpulung, its first seat around 1300, so the map put the capital there in every year to 1862. Now it is Curtea de Argeș to 1417, Târgoviște from 1418, and Bucharest from 1659.
