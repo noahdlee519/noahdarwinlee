@@ -2822,6 +2822,12 @@ const CAP_NAME = {
   "Old City of Taiz": "Taiz", "Old Delhi": "Delhi", "Quebec City": "Quebec", "Sri Jayawardenepura Kotte": "Kotte", "Thiruvananthapuram": "Trivandrum",
   "Thonburi Province": "Thonburi", "Toledo city": "Toledo", "Trowulan Temple": "Trowulan", "Valladolid city": "Valladolid", "Vijayapura": "Bijapur", "Zanzibar City": "Zanzibar"
 };
+// Capitals set by hand where Wikidata gives only the first or a wrong one, in its rows' form: [name, lon, lat, from, to, preferred, founded].
+const CAP_SET = {
+  // Wikidata gives only Câmpulung, the first seat (c. 1300). Târgoviște from 1418 and Bucharest from 1659 (Wikipedia's Târgoviște;
+  // bucharest.ro); rulers went back and forth between the two until Brâncoveanu, and the year Bucharest was named is taken.
+  "Wallachia": [["Curtea de Argeș", 24.679, 45.139, 1330, 1417, 0, null], ["Târgoviște", 25.456, 44.925, 1418, 1658, 0, null], ["Bucharest", 26.098, 44.413, 1659, 1862, 0, null]]
+};
 const capsPath = resolve(here, "capitals-wikidata.json");
 const capData = existsSync(capsPath) ? JSON.parse(readFileSync(capsPath, "utf8")) : null;
 const capLive = new Set(capData ? capData.live : []), capSince = capData ? capData.since : {};
@@ -2866,7 +2872,7 @@ const capFor = (s) => {
   const qid = capData.titles[title];
   if (CAP_SKIP.has(title) || !qid || !capData.caps[qid]) return null;
   const drop = new Set(CAP_DROP.filter((d) => d[0] === title).map((d) => d[1]));
-  const rows = capData.caps[qid].filter((r) => !/^Q\d+$/.test(r[0]) && !drop.has(r[0]));
+  const rows = (CAP_SET[title] || capData.caps[qid]).filter((r) => !/^Q\d+$/.test(r[0]) && !drop.has(r[0]));
   const runs = [], seen = new Map();
   for (let y = s.first; y <= s.last; y++) {
     let r = y < CAP_FROM ? null : capitalIn(qid, rows, y);

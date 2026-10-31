@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1400–1862 | Wallachia | its capital
+
+- What changed: Wikidata gives Wallachia one capital, Câmpulung, its first seat around 1300, so the map put the capital there in every year to 1862. Now it is Curtea de Argeș to 1417, Târgoviște from 1418, and Bucharest from 1659.
+- Tables: `CAP_SET` (Wallachia) in `tools/build-eras.mjs`, which takes the place of Wikidata's rows for a state.
+- Sources: (1) the English Wikipedia article on Târgoviște, for its years as the capital, 1418 to 1659; (2) "Why Bucharest was chosen as the capital of Wallachia in 1659" (bucharest.ro), for 1659.
+- Confidence: medium. The order of the capitals is well known; the years of the moves are not sharp, since rulers went back and forth between Târgoviște and Bucharest from 1565 until Constantin Brâncoveanu (1688–1714).
+- Alternatives: Bucharest from Brâncoveanu's reign, when the move became final (not taken: 1659 is the year the capital was named, and Bucharest held it most years after).
+- Left out: the years a ruler sat at Târgoviște after 1659, and Câmpulung itself, which comes before 1400, the first year the map shows capitals.
+
 ## 1918–1935 | Alsace-Lorraine, the Saar, and the Rhineland | the occupied zones' edges, and the Territory of the Saar Basin
 
 - What changed: French-occupied Alsace-Lorraine (from the Armistice to the Treaty of Versailles) was cut from Natural Earth's départements, whose line differs from CShapes' German border of 1871 by up to a few kilometres, so strips of the German Empire showed inside it and along the Luxembourg and Swiss borders; the zone now takes the slivers between the two lines. The occupied Rhineland left out the Saar, so the Saar showed as unoccupied Germany from 1918 to 1920, and nothing drew the Territory of the Saar Basin from 1920 to 1935; now the Saar is occupied with the Palatinate until 10 January 1920, and the Territory of the Saar Basin, governed for the League of Nations, has its own shape from then to 28 February 1935, returning to Germany on 1 March 1935. The Rhineland's western edge also stopped short of the Our and the Sauer, leaving some 240 km² of the Eifel unoccupied by Luxembourg; it now reaches the border.
