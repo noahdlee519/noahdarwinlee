@@ -2232,7 +2232,8 @@ const usAcquisitions = () => {
     { key: "Alaska", from: 1868, polys: AK },
   ];
   const rtCore = I(TX, ring([[RT_WEST[0][0], 80], ...RT_WEST, [RT_WEST[RT_WEST.length - 1][0], 0], [-20, 0], [-20, 80]]));
-  return { pieces, VT, oregon, txClaim, TX, rtCore, sized: Object.fromEntries(pieces.map((p) => [p.key, Math.round(km2Of(p.polys) / 1000)])) };
+  const mexLand = I(land, spanish), mexStates = ["CA", "NV", "UT", "AZ", "NM", "CO", "WY", "KS", "OK", "TX", "LA", "AR", "OR", "ID", "NE", "MO"].map(st);
+  return { pieces, VT, oregon, txClaim, TX, rtCore, mexLand, mexStates, sized: Object.fromEntries(pieces.map((p) => [p.key, Math.round(km2Of(p.polys) / 1000)])) };
 };
 const northAmerica = (list) => {
   const acq = usAcquisitions();
@@ -2260,6 +2261,22 @@ const northAmerica = (list) => {
   // and the Sabine), and whatever else lay on that land given way to it.
   let rt = 0;
   out = out.map((s) => (s.name === "Republic of Texas" && !s.people && !s.claims && s.first >= 1836 && s.last <= 1845 ? (rt++, withBox({ ...s, polys: acq.rtCore, geoHash: undefined })) : s));
+  // Mexico from independence to the Mexican Cession on the Adams–Onís line of 1819, as the United States is: its sources' coarser shapes
+  // left blank strips and blocks along the Sabine, the Red River, the 100th meridian, the Arkansas, and the Continental Divide. Its land in
+  // today's United States is cut away, then the whole of its side of the line is given to the span that holds Mexico City; Texas's claim and
+  // the Republic of Texas are cut from it below, as they are from every span.
+  const MEXICO = /^(First Mexican Empire|Federated Republic of Mexico|Centralist Mexico|Mexico)$/, MX_FROM = 1822, MX_TO = 1847, MEXICO_CITY = [-99.13, 19.43];
+  const holds = (polys, p) => polys.some((poly) => { let k = false; for (const r of poly) for (let i = 0, j = r.length - 1; i < r.length; j = i++) if ((r[i][1] > p[1]) !== (r[j][1] > p[1]) && p[0] < r[i][0] + ((p[1] - r[i][1]) * (r[j][0] - r[i][0])) / (r[j][1] - r[i][1])) k = !k; return k; });
+  const mexBox = boxOf(acq.mexLand), mexCut = [];
+  for (const s of out) {
+    if (!MEXICO.test(s.name) || s.people || s.claims || s.last < MX_FROM || s.first > MX_TO || !boxHit(s.box, mexBox)) continue;
+    for (const polys of acq.mexStates) mexCut.push({ base: s, first: Math.max(s.first, MX_FROM), last: Math.min(s.last, MX_TO), polys, add: false });
+  }
+  out = reshape(out, mexCut, false);
+  const mexAdd = [];
+  for (const s of out) if (MEXICO.test(s.name) && !s.people && !s.claims && s.last >= MX_FROM && s.first <= MX_TO && holds(s.polys, MEXICO_CITY)) mexAdd.push({ base: s, first: Math.max(s.first, MX_FROM), last: Math.min(s.last, MX_TO), polys: acq.mexLand, add: true });
+  out = reshape(out, mexAdd, false);
+  console.log("north america: Mexico on the Adams–Onís line from " + MX_FROM + " to " + MX_TO + ", " + mexCut.length + " cuts and " + mexAdd.length + " spans given its land in today's United States");
   const added = [], cuts = [];
   if (rt) cuts.push({ first: 1836, last: 1845, polys: acq.rtCore, box: boxOf(acq.rtCore), skip: (s) => s.name === "Republic of Texas" || s.people });
   for (const pd of periods) {
