@@ -374,6 +374,9 @@ of `/greatercircle/`.
   JSON). Under "Copy link", "Post to r/uchronia" opens the map's subreddit,
   [r/uchronia](https://www.reddit.com/r/uchronia/), in a new tab, where a
   copied link can be posted.
+  - CHRONIA, the historical atlas at `/chronia/`, makes links of the same
+    kind from its save panel ("Open in UCHRONIA"), so any date of its map
+    opens here as a map to redraw (see CHRONIA's README, *Saving*).
   - Opening a link or a file, and "Start over", are steps that can be undone.
   - Opening a link keeps your own map one click away ("Back to mine"), even
     across several links.

@@ -4641,6 +4641,289 @@
     out.toBlob(function (blob) { if (blob) download(blob, "chronia-" + fileDate(now) + ".png"); }, "image/png");
   });
 
+  // Opens the map on screen in UCHRONIA as a map of one's own: UCHRONIA's map is its regions (Natural Earth's states and provinces), each
+  // with an owner, so each region goes to the state that holds most of it here (sampled on a grid of up to 7 by 7 points inside it); a
+  // state too small to hold any region whole is drawn as UCHRONIA's drawn land instead; dependencies keep their rulers, disputed land its
+  // claimants, and the cities are this date's, under their names of the date, in place of today's. The map goes to UCHRONIA in a link,
+  // as its own "Copy link" makes one, or as a file to open there if it is too big for a link.
+  var UC_ALIAS = {
+    "Czech Republic": "Czechia", "Bosnia-Herzegovina": "Bosnia and Herzegovina", "Côte d'Ivoire": "Ivory Coast", "East Timor": "Timor-Leste",
+    "New Caledonia and Dependencies": "New Caledonia", "Saint Kitts": "Saint Kitts and Nevis", "Saint Vincent": "Saint Vincent and the Grenadines",
+    "Commonwealth of Dominica": "Dominica", "Saint Barthelemy": "Saint Barthélemy", "Wallis and Futuna Islands": "Wallis and Futuna",
+    "Kerguelen Islands": "French Southern and Antarctic Lands"
+  };
+  var UC_GRID = 7, UC_UNIT_GRID = 4, UC_WHOLE = 0.9, UC_CELL = 2, UC_LINK_MAX = 300000, UC_MAX_PIECES = 280, UC_MAX_POINTS = 55000, UC_MAX_CITIES = 2500, UC_PALETTE = 10;
+  var ucTopo = null, ucBusy = false, ucNote = $("uc-note"), ucNoteText = ucNote.textContent;
+  function ucLoad() {
+    if (ucTopo) return Promise.resolve(ucTopo);
+    return fetch("../uchronia/data/provinces.json").then(function (r) { if (!r.ok) throw new Error("provinces " + r.status); return r.json(); }).then(function (t) { ucTopo = t; return t; });
+  }
+  function geoPolys(g) { return !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []; }
+  function ringBox(r, b) { for (var i = 0; i < r.length; i++) { var x = r[i][0], y = r[i][1]; if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y; } return b; }
+  function inRings(rings, x, y) {
+    var k = false;
+    for (var a = 0; a < rings.length; a++) {
+      var r = rings[a];
+      for (var i = 0, j = r.length - 1; i < r.length; j = i++) if ((r[i][1] > y) !== (r[j][1] > y) && x < r[i][0] + ((y - r[i][1]) * (r[j][0] - r[i][0])) / (r[j][1] - r[i][1])) k = !k;
+    }
+    return k;
+  }
+  function polyKm2(poly) {
+    var s = 0;
+    poly.forEach(function (r, k) {
+      var a = 0, lat = 0;
+      for (var i = 0, j = r.length - 1; i < r.length; j = i++) { a += (r[j][0] - r[i][0]) * (r[j][1] + r[i][1]); lat += r[i][1]; }
+      a = Math.abs(a / 2) * 111.2 * 111.2 * Math.cos((lat / r.length) * Math.PI / 180);
+      s += k ? -a : a;
+    });
+    return Math.max(0, s);
+  }
+  // Douglas–Peucker on a closed ring, in degrees; null if fewer than three points are left.
+  function thinRing(r, tol) {
+    var n = r.length - 1;
+    if (n < 3) return null;
+    var keep = new Uint8Array(n + 1), stack = [[0, n]];
+    keep[0] = keep[n] = 1;
+    while (stack.length) {
+      var se = stack.pop(), a = se[0], b = se[1], ax = r[a][0], ay = r[a][1], bx = r[b][0], by = r[b][1], dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy, far = -1, at = -1;
+      for (var i = a + 1; i < b; i++) {
+        var px = r[i][0] - ax, py = r[i][1] - ay, d;
+        if (L === 0) d = px * px + py * py; else { var u = Math.max(0, Math.min(1, (px * dx + py * dy) / L)); d = Math.pow(px - u * dx, 2) + Math.pow(py - u * dy, 2); }
+        if (d > far) { far = d; at = i; }
+      }
+      if (at >= 0 && far > tol * tol) { keep[at] = 1; stack.push([a, at], [at, b]); }
+    }
+    if (n >= 4 && keep.reduce(function (t, v) { return t + v; }, 0) < 4) keep[Math.floor(n / 2)] = keep[Math.floor(n / 4)] = 1;
+    var out = [];
+    for (i = 0; i < n; i++) if (keep[i]) out.push(r[i]);
+    return out.length >= 3 ? out : null;
+  }
+  function ucEncode(polys) {
+    return polys.map(function (poly) {
+      return poly.map(function (ring) {
+        var out = [], px = 0, py = 0;
+        for (var i = 0; i < ring.length; i++) { var x = Math.round(ring[i][0] * 1e4), y = Math.round(ring[i][1] * 1e4); out.push(x - px, y - py); px = x; py = y; }
+        return out;
+      });
+    });
+  }
+  function ucMap(topo, units, snap, t) {
+    var feats = topojson.feature(topo, topo.objects.provinces).features, nb = topo.countries.length;
+    var baseIndex = new Map(), codeIndex = new Map();
+    topo.countries.forEach(function (c, i) { baseIndex.set(c.n, i); codeIndex.set(c.c, i); });
+    // The states on the map, each as polygons with boxes, in a grid of UC_CELL degrees.
+    var items = [], grid = new Map();
+    snap.polys.forEach(function (p) {
+      if (!p || p.people || !snap.geoms.hi[p.i]) return;
+      var g = topojson.feature(snap.topo.hi, snap.geoms.hi[p.i]).geometry, key = p.claims ? "d" + p.claims.join(",") : "p" + p.id;
+      geoPolys(g).forEach(function (poly) {
+        if (!poly.length || poly[0].length < 4) return;
+        var it = { p: p, key: key, rings: poly, box: ringBox(poly[0], [Infinity, Infinity, -Infinity, -Infinity]), km2: polyKm2(poly) };
+        items.push(it);
+        for (var cx = Math.floor(it.box[0] / UC_CELL); cx <= Math.floor(it.box[2] / UC_CELL); cx++) for (var cy = Math.floor(it.box[1] / UC_CELL); cy <= Math.floor(it.box[3] / UC_CELL); cy++) {
+          var k = cx + ":" + cy;
+          if (!grid.has(k)) grid.set(k, []);
+          grid.get(k).push(it);
+        }
+      });
+    });
+    function stateAt(x, y) {
+      var list = grid.get(Math.floor(x / UC_CELL) + ":" + Math.floor(y / UC_CELL));
+      if (list) for (var i = 0; i < list.length; i++) { var it = list[i], b = it.box; if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3] && inRings(it.rings, x, y)) return it; }
+      return null;
+    }
+    // Each region's votes: the state under each sample point, or nobody.
+    function vote(f, grid1) {
+      var polys = geoPolys(f.geometry), b = [Infinity, Infinity, -Infinity, -Infinity], v = new Map(), n = 0;
+      polys.forEach(function (poly) { ringBox(poly[0], b); });
+      var sx = (b[2] - b[0]) / grid1, sy = (b[3] - b[1]) / grid1;
+      for (var i = 0; i < grid1; i++) for (var j = 0; j < grid1; j++) {
+        var x = b[0] + (i + 0.5) * sx, y = b[1] + (j + 0.5) * sy;
+        if (!polys.some(function (poly) { return inRings(poly, x, y); })) continue;
+        var it = stateAt(x, y), k = it ? it.key : "";
+        v.set(k, (v.get(k) || 0) + 1);
+        if (it) v.set("@" + k, it);
+        n++;
+      }
+      if (!n && polys.length && polys[0][0].length) {
+        var r = polys[0][0], mx = 0, my = 0;
+        r.forEach(function (q) { mx += q[0] / r.length; my += q[1] / r.length; });
+        var it0 = stateAt(mx, my), k0 = it0 ? it0.key : "";
+        v.set(k0, 1);
+        if (it0) v.set("@" + k0, it0);
+      }
+      return v;
+    }
+    var votes = feats.map(function (f) { return vote(f, UC_GRID); });
+    var share = votes.map(function (v) { var n = 0, most = 0; v.forEach(function (c, k) { if (k.charAt(0) !== "@") { n += c; if (c > most) most = c; } }); return n ? most / n : 1; });
+    // A group of small regions that UCHRONIA moves as one goes to one owner.
+    var byGroup = new Map();
+    feats.forEach(function (f, p) { var g = f.properties.g; if (g >= 0) { if (!byGroup.has(g)) byGroup.set(g, []); byGroup.get(g).push(p); } });
+    byGroup.forEach(function (ps) {
+      var sum = new Map();
+      ps.forEach(function (p) { votes[p].forEach(function (n, k) { if (k.charAt(0) === "@") sum.set(k, n); else sum.set(k, (sum.get(k) || 0) + n); }); });
+      ps.forEach(function (p) { votes[p] = sum; });
+    });
+    // Countries: a state whose name is one of UCHRONIA's countries is that country; any other is a new one.
+    var countryOf = new Map(), rows = new Map(), next = nb, usedBase = new Set();
+    function countryFor(it) {
+      if (countryOf.has(it.key)) return countryOf.get(it.key);
+      var p = it.p, name = p.claims ? (polityName(p.id) === "Disputed land" ? "Disputed by " + claimNames(p.claims) : polityName(p.id)) : polityName(p.id);
+      var base = p.claims ? undefined : baseIndex.get(UC_ALIAS[name] || name), i;
+      if (base !== undefined && !usedBase.has(base)) { i = base; usedBase.add(base); } else i = next++;
+      var color = p.claims ? (p.claimColors ? p.claimColors[0] : 0) : p.color;
+      rows.set(i, { i: i, name: i < nb ? null : name.slice(0, 60), color: color >= 0 && color < UC_PALETTE ? color : 0, p: p });
+      countryOf.set(it.key, i);
+      return i;
+    }
+    var owners = votes.map(function (v) {
+      var best = "", most = -1;
+      v.forEach(function (n, k) { if (k.charAt(0) !== "@" && n > most) { most = n; best = k; } });
+      return best ? countryFor(v.get("@" + best)) : -1;
+    });
+    // A region split between states is given unit by unit (its counties, districts, or prefectures), in UCHRONIA's smaller subdivisions.
+    var uRows = [];
+    if (units) {
+      var ufeats = topojson.feature(units, units.objects.units).features, unitsOf = new Map();
+      ufeats.forEach(function (f, u) { var p = f.properties.p; if (!unitsOf.has(p)) unitsOf.set(p, []); unitsOf.get(p).push(f); });
+      feats.forEach(function (f, p) {
+        var us = unitsOf.get(p);
+        if (!us || us.length < 2 || f.properties.g >= 0 || share[p] >= UC_WHOLE) return;
+        var row = [p], mixed = false;
+        us.forEach(function (uf) {
+          var v = vote(uf, UC_UNIT_GRID), best = "", most = -1;
+          v.forEach(function (n, k) { if (k.charAt(0) !== "@" && n > most) { most = n; best = k; } });
+          var o = most < 0 ? owners[p] : best ? countryFor(v.get("@" + best)) : -1;
+          if (o !== owners[p]) mixed = true;
+          row.push(o);
+        });
+        if (mixed) uRows.push(row);
+      });
+    }
+    var split = new Set(uRows.map(function (row) { return row[0]; }));
+    var held = new Set(owners);
+    uRows.forEach(function (row) { row.slice(1).forEach(function (o) { held.add(o); }); });
+    // States that hold no region whole are drawn, the largest first, as far as UCHRONIA's limits allow.
+    var byKey = new Map();
+    items.forEach(function (it) { if (!byKey.has(it.key)) byKey.set(it.key, []); byKey.get(it.key).push(it); });
+    var small = [];
+    byKey.forEach(function (its, key) {
+      if (countryOf.has(key) && held.has(countryOf.get(key))) return;
+      small.push({ its: its, km2: its.reduce(function (s, it) { return s + it.km2; }, 0) });
+    });
+    small.sort(function (a, b) { return b.km2 - a.km2; });
+    var pieces = [], points = 0;
+    small.forEach(function (sm) {
+      if (pieces.length >= UC_MAX_PIECES || sm.km2 < 30) return;
+      var tol = Math.min(0.05, Math.max(0.005, Math.sqrt(sm.km2) / 111 / 40)), polys = [];
+      sm.its.slice().sort(function (a, b) { return b.km2 - a.km2; }).slice(0, 400).forEach(function (it) {
+        if (it.km2 < 5) return;
+        var rings = [];
+        it.rings.slice(0, 200).forEach(function (r, k) { var th = thinRing(r, tol); if (th && th.length <= 5000) rings.push(th); else if (!k) rings = null; });
+        if (rings && rings.length) polys.push(rings);
+      });
+      var n = polys.reduce(function (s, poly) { return s + poly.reduce(function (t2, r) { return t2 + r.length; }, 0); }, 0);
+      if (!polys.length || points + n > UC_MAX_POINTS) return;
+      points += n;
+      pieces.push([countryFor(sm.its[0]), ucEncode(polys)]);
+    });
+    var d = {}, o = [];
+    feats.forEach(function (f, p) {
+      var b = codeIndex.has(f.properties.c) ? codeIndex.get(f.properties.c) : -1;
+      if (!split.has(p) && owners[p] !== b) o.push(p, owners[p]);
+    });
+    if (o.length) d.o = o;
+    if (uRows.length) d.u = uRows;
+    if (pieces.length) d.h = pieces;
+    var alive = new Set(Array.from(held).filter(function (x) { return x >= 0; }));
+    pieces.forEach(function (pc) { alive.add(pc[0]); });
+    var c = [], r = [], ds = [];
+    rows.forEach(function (row) {
+      if (!alive.has(row.i)) return;
+      c.push([row.i, row.name, row.color]);
+      var p = row.p, ruler = p.ruler >= 0 && countryOf.has("p" + p.ruler) && alive.has(countryOf.get("p" + p.ruler)) ? countryOf.get("p" + p.ruler) : -1;
+      if (ruler !== row.i) r.push([row.i, ruler]);
+      if (p.claims && row.i >= nb) {
+        var cl = p.claims.map(function (id) { return countryOf.get("p" + id); }).filter(function (x) { return x !== undefined && alive.has(x); });
+        if (cl.length) ds.push([row.i, cl]);
+      }
+    });
+    if (c.length) d.c = c;
+    if (r.length) d.r = r;
+    if (ds.length) d.d = ds;
+    // Today's cities give way to this date's, the largest first, with the states' capitals.
+    if (ucCities) d.x = ucCities.map(function (row, i) { return i; });
+    var caps = [];
+    snap.polys.forEach(function (p) { var cp = p && !p.people && !p.claims && p.cap ? capitalNow(p.cap) : null; if (cp) caps.push(cp); });
+    var a = [], seq = 0, placed = [];
+    function near(lon, lat) { for (var i = 0; i < placed.length; i++) if (Math.abs(placed[i][0] - lon) < 0.05 && Math.abs(placed[i][1] - lat) < 0.05) return i; return -1; }
+    if (cities) cityRanked(t).slice(0, UC_MAX_CITIES).forEach(function (e) {
+      var cc = e.c, cap = caps.some(function (k) { return Math.abs(k[1] - cc.lon) < 0.15 && Math.abs(k[2] - cc.lat) < 0.15; }) ? 1 : 0;
+      a.push([namedAt(cc.steps, cc.name, t).slice(0, 60), Math.round(cc.lon * 1e4) / 1e4, Math.round(cc.lat * 1e4) / 1e4, e.tier, cap, "u" + (++seq)]);
+      placed.push([cc.lon, cc.lat]);
+    });
+    caps.forEach(function (k) {
+      if (near(k[1], k[2]) >= 0 || caps.indexOf(k) < 0) return;
+      a.push([String(k[0]).slice(0, 60), Math.round(k[1] * 1e4) / 1e4, Math.round(k[2] * 1e4) / 1e4, 3, 1, "u" + (++seq)]);
+      placed.push([k[1], k[2]]);
+    });
+    if (a.length) d.a = a;
+    return { map: d, regions: o.length / 2 + uRows.length, countries: c.length, drawn: pieces.length };
+  }
+  var ucUnits = null;
+  function ucLoadUnits() {
+    if (ucUnits) return Promise.resolve(ucUnits);
+    return fetch("../uchronia/data/units.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (u) { ucUnits = u && u.objects && u.objects.units ? u : null; return ucUnits; }).catch(function () { return null; });
+  }
+  var ucCities = null;
+  function ucLoadCities() {
+    if (ucCities) return Promise.resolve(ucCities);
+    return fetch("../uchronia/data/cities.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (c) { ucCities = Array.isArray(c) ? c : null; return ucCities; }).catch(function () { return null; });
+  }
+  function ucCode(d) {
+    var bytes = new TextEncoder().encode(JSON.stringify(d));
+    var b64 = function (u) { var s = ""; for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+    if (window.CompressionStream) {
+      try {
+        var cs = new CompressionStream("deflate-raw"), w = cs.writable.getWriter();
+        w.write(bytes).catch(function () { }); w.close().catch(function () { });
+        return new Response(cs.readable).arrayBuffer().then(function (z) { return "z" + b64(new Uint8Array(z)); });
+      } catch (e) { }
+    }
+    return Promise.resolve("j" + b64(bytes));
+  }
+  $("uc-open").addEventListener("click", function () {
+    if (ucBusy || exporting || !ready || !current) return;
+    var snap = current, t = now, when = fmtNow(now);
+    var tab = window.open("", "_blank");
+    ucBusy = true;
+    $("uc-open").disabled = true;
+    ucNote.textContent = "Fitting the map of " + when + " to UCHRONIA's regions…";
+    Promise.all([ucLoad(), ucLoadCities(), ucLoadUnits()]).then(function (got) {
+      return new Promise(function (res) { setTimeout(res, 30); }).then(function () { return ucMap(got[0], got[2], snap, t); });
+    }).then(function (res) {
+      return ucCode(res.map).then(function (code) {
+        var url = new URL("../uchronia/#m=" + code, location.href).href;
+        if (code.length <= UC_LINK_MAX) {
+          if (tab) tab.location.href = url; else location.href = url;
+          ucNote.textContent = "Opened " + when + " in UCHRONIA: " + res.countries + " countries, " + res.regions + " regions moved, " + res.drawn + " drawn.";
+        } else {
+          if (tab) tab.close();
+          download(new Blob([JSON.stringify({ format: "uchronia", v: 2, saved: new Date().toISOString(), map: res.map })], { type: "application/json" }), "chronia-" + fileDate(t) + "-uchronia.json");
+          ucNote.textContent = "Too big for a link, so it was saved as a file: open it in UCHRONIA with File | Open file.";
+        }
+      });
+    }).catch(function (e) {
+      console.warn("uchronia", e);
+      if (tab) tab.close();
+      ucNote.textContent = "The map could not be made for UCHRONIA. Try again.";
+    }).then(function () {
+      ucBusy = false;
+      $("uc-open").disabled = false;
+      setTimeout(function () { if (!ucBusy) ucNote.textContent = ucNoteText; }, 15000);
+    });
+  });
+
   // Waits until the map for date t is shown and nothing it needs (borders, divisions, zones) is still loading,
   // then draws it with every name in place at once.
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
