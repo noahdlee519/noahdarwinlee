@@ -26,7 +26,7 @@ const turfBuf = (() => { const m = require("@turf/buffer"); return m.default || 
 
 const FIRST = -3400;
 const DATED_FROM = -3400, DATED_TO = 1885, CHUNK = 100;
-const CS_FROM = "1886-01-01", CS_TO = "2019-12-31";
+const CS_FROM = "1886-01-01", CS_DATA_TO = "2019-12-31", CS_TO = "2026-10-31";
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
 const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
@@ -1545,49 +1545,49 @@ const noteRename = (from, to) => { if (!renamedFrom.has(to)) renamedFrom.set(to,
 const SMR_CORE = ["San Marino", "Borgo Maggiore", "Acquaviva", "Chiesanuova", "Domagnano"];
 const HK_ISLAND = ["Central and Western", "Wan Chai", "Eastern", "Southern"], HK_KOWLOON = ["Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong"];
 const SMALL = [
-  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, periods: [["1719-01-23", "2019-12-31", "state"]] },
-  { name: "Monaco", shape: { c: "MCO" }, periods: [["1419-01-01", "1792-12-31", "state"], ["1814-05-30", "1860-12-31", "protectorate", TURIN], ["1861-01-01", "2019-12-31", "state"]] },
+  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, periods: [["1719-01-23", CS_TO, "state"]] },
+  { name: "Monaco", shape: { c: "MCO" }, periods: [["1419-01-01", "1792-12-31", "state"], ["1814-05-30", "1860-12-31", "protectorate", TURIN], ["1861-01-01", CS_TO, "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
-  { name: "San Marino", gapKm: 4, shape: { c: "SMR" }, periods: [["1464-01-01", "2019-12-31", "state"]] },
-  { name: "Andorra", shape: { c: "AND" }, gapKm: 4, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", "2019-12-31", "state"]] },
-  { name: "Vatican City", shape: { c: "VAT" }, periods: [["1929-06-07", "2019-12-31", "state"]] },
-  { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", "2019-12-31", "dependency", LONDON]] },
-  { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-07", "occupied", BERLIN], ["1945-05-08", "2019-12-31", "dependency", LONDON]] },
-  { name: "Guernsey", shape: { c: "GGY" }, wiki: "Bailiwick of Guernsey", periods: [["1400-01-01", "1940-06-29", "dependency", LONDON], ["1940-06-30", "1945-05-07", "occupied", BERLIN], ["1945-05-08", "2019-12-31", "dependency", LONDON]] },
+  { name: "San Marino", gapKm: 4, shape: { c: "SMR" }, periods: [["1464-01-01", CS_TO, "state"]] },
+  { name: "Andorra", shape: { c: "AND" }, gapKm: 4, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", CS_TO, "state"]] },
+  { name: "Vatican City", shape: { c: "VAT" }, periods: [["1929-06-07", CS_TO, "state"]] },
+  { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", CS_TO, "dependency", LONDON]] },
+  { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-07", "occupied", BERLIN], ["1945-05-08", CS_TO, "dependency", LONDON]] },
+  { name: "Guernsey", shape: { c: "GGY" }, wiki: "Bailiwick of Guernsey", periods: [["1400-01-01", "1940-06-29", "dependency", LONDON], ["1940-06-30", "1945-05-07", "occupied", BERLIN], ["1945-05-08", CS_TO, "dependency", LONDON]] },
   // Natural Earth's Gibraltar is six points that stop 1.5 km short of the border with Spain, leaving the north of the town and the isthmus in Spain; this outline follows the border fence (36.156° N), the airport, the harbour moles, and the coast round Europa Point.
-  { name: "Gibraltar", shape: { c: "GIB", ring: [[-5.359, 36.1557], [-5.35, 36.156], [-5.3425, 36.1548], [-5.342, 36.148], [-5.342, 36.1425], [-5.3405, 36.1327], [-5.3398, 36.125], [-5.3415, 36.116], [-5.3455, 36.1095], [-5.349, 36.111], [-5.353, 36.117], [-5.3555, 36.1215], [-5.359, 36.129], [-5.3615, 36.135], [-5.363, 36.142], [-5.3645, 36.146], [-5.364, 36.1515], [-5.359, 36.1557]] }, periods: [["1704-08-04", "2019-12-31", "colony", LONDON]] },
+  { name: "Gibraltar", shape: { c: "GIB", ring: [[-5.359, 36.1557], [-5.35, 36.156], [-5.3425, 36.1548], [-5.342, 36.148], [-5.342, 36.1425], [-5.3405, 36.1327], [-5.3398, 36.125], [-5.3415, 36.116], [-5.3455, 36.1095], [-5.349, 36.111], [-5.353, 36.117], [-5.3555, 36.1215], [-5.359, 36.129], [-5.3615, 36.135], [-5.363, 36.142], [-5.3645, 36.146], [-5.364, 36.1515], [-5.359, 36.1557]] }, periods: [["1704-08-04", CS_TO, "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND }, wiki: "British Hong Kong", periods: [["1841-01-26", "1860-10-23", "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG", n: HK_ISLAND.concat(HK_KOWLOON) }, wiki: "British Hong Kong", periods: [["1860-10-24", "1898-06-30", "colony", LONDON]] },
   { name: "Hong Kong", shape: { c: "HKG" }, wiki: "British Hong Kong", periods: [["1898-07-01", "1941-12-24", "colony", LONDON], ["1941-12-25", "1945-08-29", "occupied", TOKYO], ["1945-08-30", "1997-06-30", "colony", LONDON]] },
   { name: "Macau", shape: { c: "MAC" }, wiki: "Portuguese Macau", periods: [["1557-01-01", "1999-12-19", "colony", LISBON]] },
   { name: "Portuguese India", shape: { n: ["Goa"] }, periods: [["1510-11-25", "1961-12-18", "colony", LISBON]] },
-  { name: "Faroe Islands", shape: { c: "FRO" }, periods: [["1400-01-01", "1814-01-13", "dependency", BERGEN], ["1814-01-14", "1940-04-11", "dependency", COPENHAGEN], ["1940-04-12", "1945-09-16", "occupied", LONDON], ["1945-09-17", "2019-12-31", "dependency", COPENHAGEN]] },
+  { name: "Faroe Islands", shape: { c: "FRO" }, periods: [["1400-01-01", "1814-01-13", "dependency", BERGEN], ["1814-01-14", "1940-04-11", "dependency", COPENHAGEN], ["1940-04-12", "1945-09-16", "occupied", LONDON], ["1945-09-17", CS_TO, "dependency", COPENHAGEN]] },
   { name: "Bahrain", shape: { c: "BHR" }, wiki: "History of Bahrain (1783–1971)", periods: [["1886-01-01", "1971-08-14", "protectorate", LONDON, "fill"]] },
   { name: "Kuwait", shape: { c: "KWT" }, wiki: "Sheikhdom of Kuwait", periods: [["1899-01-23", "1961-06-18", "protectorate", LONDON, "fill"]] },
   { name: "Qatar", shape: { c: "QAT" }, wiki: "Qatar under Ottoman rule", periods: [["1886-01-01", "1915-12-31", "dependency", ISTANBUL, "fill"]] },
-  { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", "2019-12-31", "dependency", COPENHAGEN, "fill"]] },
-  { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", "2019-12-31", "dependency", OSLO, "fill"]] },
-  { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", "2019-12-31", "colony", LONDON, "fill"]] },
-  { name: "Samoa", shape: { c: "WSM" }, periods: [["1886-01-01", "1900-02-28", "state", null, "fill"], ["1962-01-01", "2019-12-31", "state", null, "fill"]] },
+  { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", CS_TO, "dependency", COPENHAGEN, "fill"]] },
+  { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", CS_TO, "dependency", OSLO, "fill"]] },
+  { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Samoa", shape: { c: "WSM" }, periods: [["1886-01-01", "1900-02-28", "state", null, "fill"], ["1962-01-01", CS_TO, "state", null, "fill"]] },
   { name: "Samoa", shape: { c: "ASM" }, periods: [["1886-01-01", "1900-04-16", "state", null, "fill"]] },
-  { name: "American Samoa", shape: { c: "ASM" }, periods: [["1900-04-17", "2019-12-31", "dependency", WASHINGTON, "fill"]] },
+  { name: "American Samoa", shape: { c: "ASM" }, periods: [["1900-04-17", CS_TO, "dependency", WASHINGTON, "fill"]] },
   { name: "Ottoman Empire", shape: { c: "SAU", n: ["Tabuk", "Al Madinah", "Makkah", "Al Bahah"] }, periods: [["1886-01-01", "1916-06-09", "state", null, "fill"]] },
   { name: "Kingdom of Hejaz", shape: { c: "SAU", n: ["Tabuk", "Al Madinah", "Makkah", "Al Bahah"] }, periods: [["1916-06-10", "1925-12-19", "state", null, "fill"]] },
   { name: "German Samoa", shape: { c: "WSM" }, periods: [["1900-03-01", "1914-08-29", "colony", BERLIN, "fill"]] },
   { name: "Western Samoa", shape: { c: "WSM" }, wiki: "Western Samoa Trust Territory", periods: [["1914-08-30", "1961-12-31", "mandate", WELLINGTON, "fill"]] },
-  { name: "Tonga", shape: { c: "TON" }, periods: [["1886-01-01", "1900-05-17", "state", null, "fill"], ["1900-05-18", "1970-06-03", "protectorate", LONDON, "fill"], ["1970-06-04", "2019-12-31", "state", null, "fill"]] },
+  { name: "Tonga", shape: { c: "TON" }, periods: [["1886-01-01", "1900-05-17", "state", null, "fill"], ["1900-05-18", "1970-06-03", "protectorate", LONDON, "fill"], ["1970-06-04", CS_TO, "state", null, "fill"]] },
   { name: "New Hebrides", shape: { c: "VUT" }, periods: [["1906-10-20", "1980-07-29", "dependency", LONDON, "fill"]] },
-  { name: "Vanuatu", shape: { c: "VUT" }, periods: [["1980-07-30", "2019-12-31", "state", null, "fill"]] },
-  { name: "Kerguelen Islands", shape: { c: "ATF", n: ["Archipel des Kerguelen"] }, periods: [["1893-01-01", "2019-12-31", "colony", PARIS, "fill"]] },
-  { name: "Falkland Islands", shape: { c: "FLK" }, periods: [["1886-01-01", "1982-04-01", "colony", LONDON, "fill"], ["1982-04-02", "1982-06-14", "occupied", BUENOS_AIRES, "fill"], ["1982-06-15", "2019-12-31", "colony", LONDON, "fill"]] },
-  { name: "South Georgia", shape: { c: "SGS" }, wiki: "South Georgia and the South Sandwich Islands", periods: [["1886-01-01", "1982-04-02", "colony", LONDON, "fill"], ["1982-04-03", "1982-04-25", "occupied", BUENOS_AIRES, "fill"], ["1982-04-26", "2019-12-31", "colony", LONDON, "fill"]] },
+  { name: "Vanuatu", shape: { c: "VUT" }, periods: [["1980-07-30", CS_TO, "state", null, "fill"]] },
+  { name: "Kerguelen Islands", shape: { c: "ATF", n: ["Archipel des Kerguelen"] }, periods: [["1893-01-01", CS_TO, "colony", PARIS, "fill"]] },
+  { name: "Falkland Islands", shape: { c: "FLK" }, periods: [["1886-01-01", "1982-04-01", "colony", LONDON, "fill"], ["1982-04-02", "1982-06-14", "occupied", BUENOS_AIRES, "fill"], ["1982-06-15", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "South Georgia", shape: { c: "SGS" }, wiki: "South Georgia and the South Sandwich Islands", periods: [["1886-01-01", "1982-04-02", "colony", LONDON, "fill"], ["1982-04-03", "1982-04-25", "occupied", BUENOS_AIRES, "fill"], ["1982-04-26", CS_TO, "colony", LONDON, "fill"]] },
   { name: "German New Guinea", shape: { c: "PNG", n: ["North Solomons"] }, periods: [["1886-01-01", "1914-11-10", "colony", BERLIN, "fill"]] },
   { name: "Soviet Union", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1926-04-15", "1991-12-25", "state", null, "fill"]] },
-  { name: "Russia", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1991-12-26", "2019-12-31", "state", null, "fill"]] },
+  { name: "Russia", shape: { c: "RUS", n: ["Arkhangel'sk", "Krasnoyarsk"], box: [[35, 79.4, 70, 82.5], [88, 77.8, 108, 81.5]] }, periods: [["1991-12-26", CS_TO, "state", null, "fill"]] },
   { name: "Japan", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1886-01-01", "1945-09-04", "state", null, "fill"]] },
   { name: "Soviet Union", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1945-09-05", "1991-12-25", "state", null, "fill"]] },
-  { name: "Russia", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1991-12-26", "2019-12-31", "state", null, "fill"]] }
+  { name: "Russia", shape: { c: "RUS", n: ["Sakhalin"], box: [[145.3, 43.2, 157, 51]] }, wiki: "Kuril Islands", periods: [["1991-12-26", CS_TO, "state", null, "fill"]] }
 ];
 const SMALL_KEEP_KM2 = 3000;
 const SMALL_STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
@@ -1674,44 +1674,91 @@ function addSmall(list, timeOf, nameOf) {
 }
 
 const DISPUTES = [
-  { name: "Jammu and Kashmir", units: ["Jammu and Kashmir"], periods: [["1947-10-27", "2019-12-31", "India", ["India", "Pakistan"]]] },
-  { name: "Azad Kashmir", units: ["Azad Kashmir"], periods: [["1947-10-27", "2019-12-31", "Pakistan", ["Pakistan", "India"]]] },
-  { name: "Gilgit-Baltistan", units: ["Gilgit-Baltistan"], periods: [["1947-11-16", "2019-12-31", "Pakistan", ["Pakistan", "India"]]] },
-  { name: "Siachen Glacier", units: ["Siachen Glacier"], periods: [["1984-04-13", "2019-12-31", "India", ["India", "Pakistan"]]] },
-  { name: "Aksai Chin", units: ["Aksai Chin"], periods: [["1959-01-23", "2019-12-31", "China", ["China", "India"]]] },
-  { name: "Shaksam Valley", units: ["Shaksam Valley"], periods: [["1963-03-02", "2019-12-31", "China", ["China", "India"]]] },
+  { name: "Jammu and Kashmir", units: ["Jammu and Kashmir"], periods: [["1947-10-27", CS_TO, "India", ["India", "Pakistan"]]] },
+  { name: "Azad Kashmir", units: ["Azad Kashmir"], periods: [["1947-10-27", CS_TO, "Pakistan", ["Pakistan", "India"]]] },
+  { name: "Gilgit-Baltistan", units: ["Gilgit-Baltistan"], periods: [["1947-11-16", CS_TO, "Pakistan", ["Pakistan", "India"]]] },
+  { name: "Siachen Glacier", units: ["Siachen Glacier"], periods: [["1984-04-13", CS_TO, "India", ["India", "Pakistan"]]] },
+  { name: "Aksai Chin", units: ["Aksai Chin"], periods: [["1959-01-23", CS_TO, "China", ["China", "India"]]] },
+  { name: "Shaksam Valley", units: ["Shaksam Valley"], periods: [["1963-03-02", CS_TO, "China", ["China", "India"]]] },
   { name: "North-East Frontier Agency", units: ["Arunachal Pradesh"], wiki: "North-East Frontier Agency", periods: [["1959-01-23", "1972-01-20", "India", ["India", "China"]]] },
-  { name: "Arunachal Pradesh", units: ["Arunachal Pradesh"], periods: [["1972-01-21", "2019-12-31", "India", ["India", "China"]]] },
-  { name: "Western Sahara", units: ["W. Sahara"], periods: [["1976-02-27", "1979-08-04", "", ["Morocco", "Mauritania", "Sahrawi Republic"]], ["1979-08-05", "2019-12-31", "", ["Morocco", "Sahrawi Republic"]]] },
-  { name: "Somaliland", units: ["Somaliland"], periods: [["1991-05-18", "2019-12-31", "", ["Somaliland", "Somalia"]]] },
-  { name: "Guayana Esequiba", units: ["West of Essequibo River"], periods: [["1966-05-26", "2019-12-31", "Guyana", ["Guyana", "Venezuela"]]] },
-  { name: "Crimea", units: ["Crimea"], wiki: "Annexation of Crimea by the Russian Federation", periods: [["2014-03-18", "2019-12-31", "Russia", ["Russia", "Ukraine"]]] },
-  { name: "Donetsk People's Republic", units: ["Donetsk People's Republic"], periods: [["2014-05-11", "2019-12-31", "", ["Donetsk People's Republic", "Ukraine"]]] },
-  { name: "Luhansk People's Republic", units: ["Luhansk People's Republic"], periods: [["2014-05-11", "2019-12-31", "", ["Luhansk People's Republic", "Ukraine"]]] },
-  { name: "Golan Heights", units: ["Golan Heights"], periods: [["1967-06-10", "2019-12-31", "Israel", ["Israel", "Syria"]]] },
-  { name: "West Bank", units: ["West Bank"], wiki: "Israeli-occupied territories", periods: [["1967-06-10", "1988-07-30", "Israel", ["Israel", "Jordan"]], ["1988-07-31", "2019-12-31", "Israel", ["Israel", "Palestine"]]] },
-  { name: "Halaib Triangle", units: ["Halayib Triangle"], periods: [["1958-02-01", "2019-12-31", "", ["Egypt", "Sudan"]]] },
-  { name: "Southern Kuril Islands", units: ["Kuril Is."], wiki: "Kuril Islands dispute", periods: [["1945-09-05", "1991-12-25", "Soviet Union", ["Soviet Union", "Japan"]], ["1991-12-26", "2019-12-31", "Russia", ["Russia", "Japan"]]] },
-  { name: "Abyei", units: ["Abyei"], periods: [["2011-07-09", "2019-12-31", "", ["Sudan", "South Sudan"]]] },
-  { name: "Ilemi Triangle", units: ["Ilemi Triangle"], periods: [["1963-12-12", "2011-07-08", "Kenya", ["Kenya", "Sudan"]], ["2011-07-09", "2019-12-31", "Kenya", ["Kenya", "South Sudan"]]] },
-  { name: "Northern Cyprus", units: ["N. Cyprus"], periods: [["1974-08-16", "2019-12-31", "", ["Northern Cyprus", "Cyprus"]]] },
-  { name: "Abkhazia", units: ["Abkhazia"], periods: [["1993-09-30", "2019-12-31", "", ["Abkhazia", "Georgia"]]] },
-  { name: "South Ossetia", units: ["South Ossetia"], periods: [["1992-06-24", "2019-12-31", "", ["South Ossetia", "Georgia"]]] },
-  { name: "Transnistria", units: ["Transnistria"], periods: [["1992-07-21", "2019-12-31", "", ["Transnistria", "Moldova"]]] },
-  { name: "Kosovo", units: ["Kosovo"], periods: [["2008-02-17", "2019-12-31", "Kosovo", ["Kosovo", "Serbia"]]] }
+  { name: "Arunachal Pradesh", units: ["Arunachal Pradesh"], periods: [["1972-01-21", CS_TO, "India", ["India", "China"]]] },
+  { name: "Western Sahara", units: ["W. Sahara"], periods: [["1976-02-27", "1979-08-04", "", ["Morocco", "Mauritania", "Sahrawi Republic"]], ["1979-08-05", CS_TO, "", ["Morocco", "Sahrawi Republic"]]] },
+  { name: "Somaliland", units: ["Somaliland"], periods: [["1991-05-18", CS_TO, "", ["Somaliland", "Somalia"]]] },
+  { name: "Guayana Esequiba", units: ["West of Essequibo River"], periods: [["1966-05-26", CS_TO, "Guyana", ["Guyana", "Venezuela"]]] },
+  { name: "Donetsk Oblast", units: ["Donetsk People's Republic"], ne: { adm0: "UKR", within: "369", units: ["Donets'k"] }, wiki: "Russian annexation of Donetsk, Kherson, Luhansk and Zaporizhzhia oblasts", periods: [["2022-09-30", CS_TO, "", ["Russia", "Ukraine"]]] },
+  { name: "Luhansk Oblast", units: ["Luhansk People's Republic"], ne: { adm0: "UKR", within: "369", units: ["Luhans'k"] }, wiki: "Russian annexation of Donetsk, Kherson, Luhansk and Zaporizhzhia oblasts", periods: [["2022-09-30", CS_TO, "", ["Russia", "Ukraine"]]] },
+  { name: "Zaporizhzhia Oblast", units: [], ne: { adm0: "UKR", within: "369", units: ["Zaporizhzhya"] }, wiki: "Russian annexation of Donetsk, Kherson, Luhansk and Zaporizhzhia oblasts", periods: [["2022-09-30", CS_TO, "", ["Russia", "Ukraine"]]] },
+  { name: "Kherson Oblast", units: [], ne: { adm0: "UKR", within: "369", units: ["Kherson"] }, wiki: "Russian annexation of Donetsk, Kherson, Luhansk and Zaporizhzhia oblasts", periods: [["2022-09-30", CS_TO, "", ["Russia", "Ukraine"]]] },
+  { name: "Crimea", units: ["Crimea"], wiki: "Annexation of Crimea by the Russian Federation", periods: [["2014-03-18", CS_TO, "Russia", ["Russia", "Ukraine"]]] },
+  { name: "Donetsk People's Republic", units: ["Donetsk People's Republic"], periods: [["2014-05-11", "2022-09-29", "", ["Donetsk People's Republic", "Ukraine"]]] },
+  { name: "Luhansk People's Republic", units: ["Luhansk People's Republic"], periods: [["2014-05-11", "2022-09-29", "", ["Luhansk People's Republic", "Ukraine"]]] },
+  { name: "Artsakh", units: ["Artsakh"], ne: { adm0: "AZE", within: "373", units: [] }, wiki: "Republic of Artsakh", periods: [["2020-11-10", "2023-09-19", "", ["Artsakh", "Azerbaijan"]], ["2023-09-20", "2023-12-31", "Azerbaijan", ["Azerbaijan", "Artsakh"]]] },
+  { name: "Golan Heights", units: ["Golan Heights"], periods: [["1967-06-10", CS_TO, "Israel", ["Israel", "Syria"]]] },
+  { name: "West Bank", units: ["West Bank"], wiki: "Israeli-occupied territories", periods: [["1967-06-10", "1988-07-30", "Israel", ["Israel", "Jordan"]], ["1988-07-31", CS_TO, "Israel", ["Israel", "Palestine"]]] },
+  { name: "Halaib Triangle", units: ["Halayib Triangle"], periods: [["1958-02-01", CS_TO, "", ["Egypt", "Sudan"]]] },
+  { name: "Southern Kuril Islands", units: ["Kuril Is."], wiki: "Kuril Islands dispute", periods: [["1945-09-05", "1991-12-25", "Soviet Union", ["Soviet Union", "Japan"]], ["1991-12-26", CS_TO, "Russia", ["Russia", "Japan"]]] },
+  { name: "Abyei", units: ["Abyei"], periods: [["2011-07-09", CS_TO, "", ["Sudan", "South Sudan"]]] },
+  { name: "Ilemi Triangle", units: ["Ilemi Triangle"], periods: [["1963-12-12", "2011-07-08", "Kenya", ["Kenya", "Sudan"]], ["2011-07-09", CS_TO, "Kenya", ["Kenya", "South Sudan"]]] },
+  { name: "Northern Cyprus", units: ["N. Cyprus"], periods: [["1974-08-16", CS_TO, "", ["Northern Cyprus", "Cyprus"]]] },
+  { name: "Abkhazia", units: ["Abkhazia"], periods: [["1993-09-30", CS_TO, "", ["Abkhazia", "Georgia"]]] },
+  { name: "South Ossetia", units: ["South Ossetia"], periods: [["1992-06-24", CS_TO, "", ["South Ossetia", "Georgia"]]] },
+  { name: "Transnistria", units: ["Transnistria"], periods: [["1992-07-21", CS_TO, "", ["Transnistria", "Moldova"]]] },
+  { name: "Kosovo", units: ["Kosovo"], periods: [["2008-02-17", CS_TO, "Kosovo", ["Kosovo", "Serbia"]]] }
 ];
 const disputedPath = resolve(dirname(nePath), "ne_10m_admin_0_disputed_areas.geojson");
 const disputedUnits = existsSync(disputedPath) ? JSON.parse(readFileSync(disputedPath, "utf8")).features : null;
 if (!disputedUnits) console.warn("Natural Earth's disputed areas not found beside the states and provinces, so DISPUTES is not applied: " + disputedPath);
+function withinHost(d, shape, a, list) {
+  const host = list.filter((x) => x.cs && String(x.cs.p.gwcode) === d.ne.within && x.first <= a && a <= x.last);
+  if (!host.length) throw new Error("DISPUTES: no span of " + d.ne.within + " on the first day of " + d.name);
+  const land = rewind(clip.union(...host.map((x) => x.polys)));
+  const units = neAll.filter((f) => f.properties.adm0_a3 === d.ne.adm0).map((f) => ({ mine: d.ne.units.includes(f.properties.name), polys: rewind(polysOf(f.geometry)) }));
+  const tryBoth = (op, ...args) => { try { return op(...args); } catch (e) { return op(...args.map(snapPolys)); } };
+  const inside = rewind(tryBoth(clip.intersection, land, shape));
+  let rest = [];
+  try { rest = rewind(tryBoth(clip.difference, land, tryBoth(clip.union, ...units.map((u) => u.polys)), shape)); } catch (e) { console.warn("DISPUTES " + d.name + ": the land outside Natural Earth's units could not be found (" + e.message.slice(0, 80) + "), so only the land within them is drawn"); }
+  const box = boxOf(shape), pts = units.map((u) => u.polys.flatMap((poly) => poly[0]));
+  const STEP = 0.05, cells = [];
+  for (const q of rest) {
+    const qb = boxOf([q]);
+    if (qb[2] < box[0] - 0.5 || qb[0] > box[2] + 0.5 || qb[3] < box[1] - 0.5 || qb[1] > box[3] + 0.5) continue;
+    if (qb[2] - qb[0] <= STEP && qb[3] - qb[1] <= STEP) { cells.push(q); continue; }
+    for (let x = Math.floor(qb[0] / STEP) * STEP; x < qb[2]; x += STEP) for (let y = Math.floor(qb[1] / STEP) * STEP; y < qb[3]; y += STEP) {
+      try { cells.push(...clip.intersection([q], [[[[x, y], [x + STEP, y], [x + STEP, y + STEP], [x, y + STEP], [x, y]]]])); } catch (e) {}
+    }
+  }
+  const added = rewind(cells).filter((q) => {
+    const ring = q[0], c = [ring.reduce((t, v) => t + v[0], 0) / ring.length, ring.reduce((t, v) => t + v[1], 0) / ring.length];
+    if (c[0] < box[0] - 0.5 || c[0] > box[2] + 0.5 || c[1] < box[1] - 0.5 || c[1] > box[3] + 0.5) return false;
+    const kx = Math.cos((c[1] * Math.PI) / 180);
+    let best = -1, bd = Infinity;
+    pts.forEach((list, i) => { for (const v of list) { const dd = ((v[0] - c[0]) * kx) ** 2 + (v[1] - c[1]) ** 2; if (dd < bd) { bd = dd; best = i; } } });
+    return best >= 0 && units[best].mine;
+  });
+  const polys = added.length ? rewind(tryBoth(clip.union, inside, added)) : inside;
+  console.log("DISPUTES " + d.name + ": " + Math.round(km2Of(inside)) + " km² of " + d.ne.within + "'s span within Natural Earth's units, " + added.length + " pieces (" + Math.round(km2Of(added)) + " km²) of its land outside every unit added as nearest to them");
+  return polys;
+}
 function addDisputes(list) {
   if (!disputedUnits) return list;
+  const hosted = new Map();
+  for (const d of DISPUTES) {
+    if (!d.ne || !d.ne.within) continue;
+    const feats = disputedUnits.filter((f) => d.units.includes(String(f.properties.BRK_NAME).replace(/^\uFEFF/, "")));
+    const neFeats = neAll.filter((f) => f.properties.adm0_a3 === d.ne.adm0 && d.ne.units.includes(f.properties.name));
+    const shape = rewind(clip.union(...feats.concat(neFeats).map((f) => polysOf(f.geometry))));
+    for (const [from] of d.periods) hosted.set(d.name + "|" + from, withinHost(d, shape, Math.max(0, dayOf(from)), list));
+  }
   for (const d of DISPUTES) {
     const feats = disputedUnits.filter((f) => d.units.includes(String(f.properties.BRK_NAME).replace(/^\uFEFF/, "")));
-    if (!feats.length) throw new Error("DISPUTES: Natural Earth disputed area missing for " + d.name);
-    const polys = rewind(clip.union(...feats.map((f) => polysOf(f.geometry))));
+    const neFeats = d.ne ? neAll.filter((f) => f.properties.adm0_a3 === d.ne.adm0 && d.ne.units.includes(f.properties.name)) : [];
+    if (d.ne && neFeats.length !== d.ne.units.length) throw new Error("DISPUTES: Natural Earth units missing for " + d.name);
+    if (!feats.length && !neFeats.length) throw new Error("DISPUTES: Natural Earth disputed area missing for " + d.name);
+    const shape = rewind(clip.union(...feats.concat(neFeats).map((f) => polysOf(f.geometry))));
     for (const [from, to, admin, claims] of d.periods) {
       const a = Math.max(0, dayOf(from)), b = Math.min(dayOf(CS_TO), dayOf(to));
       if (b < a) continue;
+      const polys = hosted.get(d.name + "|" + from) || shape;
       const sm = withBox({ name: d.name, ruler: admin, part: "", people: 0, b: 3, status: 6, claims, first: a, last: b, polys, wiki: d.wiki || d.name, src: "dispute", small: true, keep: km2Of(polys) < SMALL_KEEP_KM2 });
       list = carve(list, sm);
       list.push(sm);
@@ -3322,7 +3369,22 @@ const capitalOf = (raw, lon, lat) => {
 };
 const csTopo = JSON.parse(readFileSync(cshapesPath, "utf8"));
 const csObj = Object.values(csTopo.objects)[0];
-const csRaw = csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry }));
+const CS_AFTER = [
+  { gw: "411", from: "2026-01-02", cap: ["Ciudad de la Paz", 10.8225, 1.5889] }
+];
+const csAfter = (rows) => {
+  let list = rows.map((r) => (r.p.end === CS_DATA_TO ? { ...r, p: { ...r.p, end: CS_TO } } : r));
+  for (const a of CS_AFTER) {
+    const hit = list.filter((r) => String(r.p.gwcode) === a.gw && r.p.start < a.from && r.p.end >= a.from);
+    if (hit.length !== 1) throw new Error("CS_AFTER: expected one span of " + a.gw + " on " + a.from);
+    const r = hit[0];
+    list = list.filter((x) => x !== r);
+    list.push({ p: { ...r.p, end: new Date(Date.UTC(...a.from.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) - 86400000).toISOString().slice(0, 10) }, geometry: r.geometry });
+    list.push({ p: { ...r.p, start: a.from, ...(a.cap ? { capname: a.cap[0], caplong: a.cap[1], caplat: a.cap[2] } : {}) }, geometry: r.geometry });
+  }
+  return list;
+};
+const csRaw = csAfter(csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry })));
 const CLIO_TWIN = { "First Hellenic Republic": "Greece" };
 const CS_REDRAW = [
   { a: "265", b: "260", from: "1945-05-08", to: "1990-10-02", country: "DEU", reachKm: 25,
@@ -3638,10 +3700,11 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
   const csOnly = list.slice();
   const fills = [], csNames = new Set(csOnly.map((x) => x.name));
   let twins = 0;
+  const clioEnd = clioSpans.reduce((m, s) => Math.max(m, s.last), -Infinity);
   for (const s of clioSpans) {
     const twin = CLIO_TWIN[s.name] || null;
     if (s.last < 1886 || CLIO_MODERN_DROP.has(s.name) || (!twin && lineageNames(s.name).some((n) => csNames.has(n)))) continue;
-    const first = s.first >= 1886 ? dayOf(s.first + "-01-01") : 0, last = Math.min(endDay, dayOf(s.last + "-12-31"));
+    const first = s.first >= 1886 ? dayOf(s.first + "-01-01") : 0, last = s.last >= clioEnd ? endDay : Math.min(endDay, dayOf(s.last + "-12-31"));
     if (last < first) continue;
     const whole = km2Of(s.polys), box = boxOf(s.polys);
     for (const r of cutOver(s.polys, box, first, last, csOnly, cellOpt(s.polys, 0.75))) {
@@ -3679,7 +3742,7 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
   const hbEdits = [], hbFills = [], skipCuts = HB_MODERN_SKIP.map((s) => dayOf(s.until) + 1);
   const inBox = (poly, b) => poly[0].every((q) => q[0] >= b[0] && q[0] <= b[2] && q[1] >= b[1] && q[1] <= b[3]);
   hbFiles.forEach(({ f, y }, k) => {
-    const y0 = k ? Math.ceil((hbFiles[k - 1].y + y) / 2) : 1886, y1 = k + 1 < hbFiles.length ? Math.ceil((y + hbFiles[k + 1].y) / 2) - 1 : 2019;
+    const y0 = k ? Math.ceil((hbFiles[k - 1].y + y) / 2) : 1886, y1 = k + 1 < hbFiles.length ? Math.ceil((y + hbFiles[k + 1].y) / 2) - 1 : +CS_TO.slice(0, 4);
     const a = Math.max(0, dayOf(y0 + "-01-01")), b = Math.min(endDay, dayOf(y1 + "-12-31"));
     if (b < a) return;
     console.log("filling from the map of " + y + " (" + y0 + " to " + y1 + "), " + Math.round(process.uptime()) + " s");
@@ -3775,7 +3838,7 @@ const csRows = csParts.map((r, i) => {
   }
   const id = catId(r.name), owner = ownerName(r);
   const entry = catalogue[id];
-  const y0 = yearOfDay(r.start), y1 = r.end < 0 ? 2019 : yearOfDay(r.end);
+  const y0 = yearOfDay(r.start), y1 = r.end < 0 ? +CS_TO.slice(0, 4) : yearOfDay(r.end);
   entry.cs = entry.cs ? [Math.min(entry.cs[0], y0), Math.max(entry.cs[1], y1)] : [y0, y1];
   entry.wiki.set(y0, r.wiki || csWiki(r.name, y0));
   const cap = r.p.capname ? capitalOf(String(r.p.capname), +r.p.caplong, +r.p.caplat) : null;
@@ -3814,7 +3877,7 @@ const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
   for (const s of dated) if (!s.small && !s.people) note(s.name, s.first, s.last + 1, s.polys, !!s.ruler);
   csParts.forEach((r) => note(r.name, 1886 + r.start / 365.2425, 1886 + ((r.end < 0 ? dayOf(CS_TO) : r.end) + 1) / 365.2425, polysOf(r.geometry), !!(r.p && r.p.status && r.p.status !== "independent")));
   const all = [...life.entries()];
-  const ends = all.filter(([, e]) => e.z < 2019.9), starts = all.filter(([, e]) => e.a > DATED_FROM);
+  const ends = all.filter(([, e]) => e.z < 1886 + (dayOf(CS_TO) + 1) / 365.2425 - 0.1), starts = all.filter(([, e]) => e.a > DATED_FROM);
   const cells = new Map();
   const cellsFor = (key, polys) => { if (!cells.has(key)) { const c = cellsOf(polys); cells.set(key, { c, w: cellSum(c) }); } return cells.get(key); };
   for (const [an, A] of ends) {

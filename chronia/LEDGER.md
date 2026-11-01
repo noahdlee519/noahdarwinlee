@@ -16,6 +16,42 @@ Each entry:
 ```
 
 ---
+## 2020–October 2026 | the world | the borders carried on past 2019
+
+- What changed: CShapes ends on 31 December 2019, and the map stopped there while the timeline ran on to the present month. The data now runs to 31 October 2026 (`CS_TO`; `CS_DATA_TO` keeps CShapes' own last day): every span that ran to the end of 2019 runs on to then, and the changes since are added on top (the entries below). The first-level divisions follow, so the reforms after 2019 already in `tools/divisions-ne.json` (Vietnam's 34 provinces of 1 July 2025, among others) now show. This is the first of the monthly updates; each later one adds its month. For October 2026 itself the sources show no change of sovereignty, no new or dissolved state, no change of capital, and no first-level reform that took effect: the UK–Mauritius treaty on the Chagos Archipelago, signed on 22 May 2025, had not entered into force by 2 October 2026; Papua New Guinea's parliament had put off its vote on Bougainville's independence (31 August 2026); the agreement of September 2026 between the United States and Denmark leaves Greenland's sovereignty as it was; and Alberta voted on 19 October 2026 against moving towards independence. The zones of control were already fetched to October 2026 (revisions of 7 to 14 October) on 29 October.
+- Tables: `CS_TO`, `CS_DATA_TO`, and `CS_AFTER` (new) in `tools/build-eras.mjs`, and the end of every open period in `SMALL` and `DISPUTES`. A Cliopatria span that runs to Cliopatria's last year (2024) now runs to the end of the data, so the small states it fills (Saint Kitts, Saint Lucia, Palau, and others) do not end on 31 December 2024.
+- Sources: (1) CShapes 2.0 (Schvitz et al., 2022), for the spans of 31 December 2019; (2) English Wikipedia, "List of sovereign states" and "List of national capitals"; (3) Al Jazeera, "UK-Mauritius Chagos sovereignty deal stalls amid fears of further delays", 2 October 2026; (4) National Indigenous Times, "PNG parliament delays vote for Bougainville independence", 31 August 2026; (5) Arctic Today (from Reuters), "Denmark says Greenland sovereignty safe under Trump's deal", 20 September 2026; (6) NPR, "Alberta voters reject a move toward independence in referendum backing Canadian unity", 19 October 2026, and Al Jazeera, "Alberta rejects separation referendum: What's next for Canadian province?", 20 October 2026.
+- Confidence: high for the states and borders carried on, which no recognised change has touched since 2019.
+- Alternatives: Turkey as "Türkiye", the form the United Nations took up in June 2022 at Turkey's request (not taken: the map uses the English names in common use, as it keeps the Czech Republic rather than Czechia); Israel's West Bank as annexed (not taken: it is drawn as disputed, held by Israel, either way).
+- Left out: small changes of a border by treaty, below what CShapes' lines show: the border treaty of Kyrgyzstan and Tajikistan (2025), Kyrgyzstan and Uzbekistan's (2023), the four villages of Tavush returned to Azerbaijan by Armenia (2024), and Hans Island, divided between Canada and Denmark's Greenland (2022).
+
+## 2020–2023 | the South Caucasus | Artsakh
+
+- What changed: Artsakh, what was left of the Nagorno-Karabakh Republic after the war of 2020, is disputed land claimed by itself and by Azerbaijan from the ceasefire of 10 November 2020; from 20 September 2023, after Azerbaijan's offensive of 19 and 20 September, it is held by Azerbaijan, still claimed by both; and from 1 January 2024, when the decree of 28 September 2023 dissolving the republic took effect, it is Azerbaijan's.
+- Tables: the Artsakh row of `DISPUTES` in `tools/build-eras.mjs`, on Natural Earth's disputed area "Artsakh", kept within Azerbaijan's CShapes span (`ne.within`).
+- Sources: (1) English Wikipedia, "2020 Nagorno-Karabakh ceasefire agreement" and "Republic of Artsakh"; (2) Dawn (from Reuters and AFP), "Armenia, Azerbaijan and Russia sign agreement to end fight in Nagorno-Karabakh", 10 November 2020; (3) RFE/RL and Meduza, "President of Nagorno-Karabakh Republic signs decree ending unrecognized state's existence as of January 1, 2024", 28 September 2023.
+- Confidence: high for the dates; medium for the shape, which is Natural Earth's for the land under the republic and the Russian peacekeepers after the ceasefire.
+- Alternatives: Azerbaijan's from the end of September 2023, when the republic's forces disarmed and most of its people left (not taken: the republic was dissolved on 1 January 2024, and the map draws a claim until it is given up); Artsakh at its extent of 1994 to 2020 (not taken: no open source has that shape, so the map shows Azerbaijan there before 10 November 2020, as it did for 1994 to 2019).
+- Left out: the districts handed back to Azerbaijan on 20 November, 25 November, and 1 December 2020, and the Lachin corridor as its own shape.
+
+## 2022–October 2026 | Ukraine | the annexation Russia claims of four oblasts
+
+- What changed: on 30 September 2022 Russia signed treaties annexing the Donetsk, Luhansk, Zaporizhzhia, and Kherson oblasts of Ukraine, whole, though it held only part of them. From that day each oblast is drawn whole as disputed land claimed by Russia and Ukraine, with no single holder, beside Crimea, which is disputed from 2014; the Donetsk and Luhansk People's Republics, disputed since 2014 within their lines of 2015, end on 29 September 2022. The ground held is in the Zones of control (Ukraine from 2022, month by month).
+- Tables: the rows Donetsk Oblast, Luhansk Oblast, Zaporizhzhia Oblast, and Kherson Oblast of `DISPUTES` in `tools/build-eras.mjs`, from Natural Earth's provinces of Ukraine (Donets'k, Luhans'k, Zaporizhzhya, Kherson) joined to its disputed areas of the two People's Republics, with a dispute's new key `ne`, and kept within Ukraine's CShapes span (`ne.within`, `withinHost`), the bits of that span outside every province (the Dnipro, the old Kakhovka reservoir, and the coasts) going to the nearest province; the ends of the two People's Republics' periods.
+- Sources: (1) English Wikipedia, "Russian annexation of Donetsk, Kherson, Luhansk and Zaporizhzhia oblasts"; (2) AP, "Putin signs treaties annexing Ukrainian regions", 30 September 2022; (3) Meduza, "Putin signs treaty to annex partially occupied Ukrainian territories", 30 September 2022; (4) United Nations General Assembly resolution ES-11/4, 12 October 2022, which calls the annexation invalid.
+- Confidence: high for the date and the claim; the oblasts' borders are Natural Earth's.
+- Alternatives: only the land Russia holds as disputed, and the rest as Ukraine (not taken: the claim is to the whole oblasts, and the line held moves month by month, which the zones of control show); the oblasts held by Russia (not taken: disputed land is drawn as disputed, never as settled).
+- Left out: Russia's recognition of the two People's Republics on 21 February 2022 (the map already draws them as disputed); the land held in other oblasts.
+
+## 2026 | Equatorial Guinea | its capital
+
+- What changed: the capital is Ciudad de la Paz from 2 January 2026, the day President Obiang's decree moved it from Malabo; the government's offices are to follow within a year.
+- Tables: `CS_AFTER` in `tools/build-eras.mjs` (new; see the README's [From 1886](README.md#from-1886), step 0).
+- Sources: (1) English Wikipedia, "Ciudad de la Paz" (the decree of 2 January 2026; 1°35′20″ N, 10°49′21″ E); (2) AllAfrica (from Ahora EG), "Guinée Equatoriale - Djibloho devient officiellement la nouvelle capitale politique", 4 January 2026; (3) Africanews, "Equatorial Guinea relocates capital", 5 January 2026.
+- Confidence: medium. The decree is clear, but the move of the ministries is not complete, and Malabo is still the seat of much of the government.
+- Alternatives: Malabo until the government has moved (not taken: the map gives the capital in law, as it does for Abuja and Dodoma).
+- Left out: none.
+
 ## 1400–1800 | North America | the Montaukett, and the articles of peoples named like places
 
 - What changed: historical-basemaps names the Montaukett of eastern Long Island "Montana", so the map called them Montana and their card opened the state's article; they are now the Montaukett. Some 45 other peoples whose names are also a state, a city, a river, or a word (Delaware, Illinois, Iowa, Missouri, Miami, Omaha, Crow, Fox, Susquehanna, and others) opened those articles; they now open the people's own (the Lenape, the Illinois Confederation, the Iowa people, the Missouria, and so on).
