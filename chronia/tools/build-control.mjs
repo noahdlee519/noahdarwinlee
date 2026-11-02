@@ -4,6 +4,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildWW2 } from "./ww2-control.mjs";
 import { buildSpain } from "./spain-control.mjs";
+import { buildWW1 } from "./ww1-control.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -309,7 +310,8 @@ function buildCivilWar() {
 }
 if (!only.length || only.includes("mexico")) buildMexico();
 if (!only.length || only.includes("civilwar")) buildCivilWar();
-const env = { ne, server, client, simplify, clip, Delaunay, input, out, index, dayOf, areaKm2, clockwise, weightFor, writeFileSync, readFileSync, existsSync, resolve, only };
+const env = { here, ne, server, client, simplify, clip, Delaunay, input, out, index, dayOf, areaKm2, clockwise, weightFor, writeFileSync, readFileSync, existsSync, resolve, only };
+buildWW1(env);
 buildWW2(env);
 buildSpain(env);
 writeFileSync(resolve(out, "../control.json"), JSON.stringify(index));
