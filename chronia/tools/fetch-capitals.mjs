@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const eras = JSON.parse(readFileSync(resolve(here, "../data/eras.json"), "utf8"));
-const FROM = 1400, TO = 1885;
+
 const sparql = async (query) => {
   const res = await fetch("https://query.wikidata.org/sparql", { method: "POST", body: new URLSearchParams({ query, format: "json" }), headers: { Accept: "application/sparql-results+json", "User-Agent": "CHRONIA capitals (noahdarwinlee.com)" } });
   return (await res.json()).results.bindings;
@@ -14,12 +14,11 @@ const year = (t) => { const m = t && String(t).match(/^(-?\d+)/); return m ? par
 
 const titles = new Set();
 for (const r of eras.polities) {
-  const d = r[6];
-  if (!d || d[1] < FROM || d[0] > TO || r[4]) continue;
+  if (r[4]) continue;
   if (Array.isArray(r[3])) r[3].forEach((s) => titles.add(s[1]));
-  else titles.add(r[3]);
+  else if (r[3]) titles.add(r[3]);
 }
-const all = [...titles].sort(), qid = {};
+const all = [...titles].filter((t) => t && t !== "?").sort(), qid = {}, resolved = {};
 for (let i = 0; i < all.length; i += 50) {
   const part = all.slice(i, i + 50);
   const url = "https://en.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=pageprops&ppprop=wikibase_item&titles=" + encodeURIComponent(part.join("|"));
@@ -28,7 +27,7 @@ for (let i = 0; i < all.length; i += 50) {
   (q.normalized || []).forEach((n) => { norm[n.from] = n.to; });
   (q.redirects || []).forEach((n) => { red[n.from] = n.to; });
   Object.values(q.pages || {}).forEach((p) => { if (p.pageprops && p.pageprops.wikibase_item) byTitle[p.title] = p.pageprops.wikibase_item; });
-  for (const t of part) { let k = norm[t] || t; k = red[k] || k; if (byTitle[k]) qid[t] = byTitle[k]; }
+  for (const t of part) { let k = norm[t] || t; k = red[k] || k; if (Object.values(q.pages || {}).some((p) => p.title === k && p.missing === undefined)) resolved[t] = k; if (byTitle[k]) qid[t] = byTitle[k]; }
 }
 
 const items = [...new Set(Object.values(qid))], rows = [];
@@ -71,10 +70,70 @@ for (const r of rows) {
   seen.add(k);
   (caps[r.item] = caps[r.item] || []).push(row);
 }
+// Wikipedia's infobox capitals, for the states Wikidata has none for and to choose among undated ones: the links in the infobox's
+// "capital" (or "seat") field, in order, each with the years written after it, if any, and whether it is marked ceremonial, a summer
+// capital, or the like; and the coordinates of the linked pages.
+const field = (txt, name) => { const m = new RegExp("\\n\\s*\\|\\s*" + name + "\\s*=([\\s\\S]*?)(?=\\n\\s*\\|\\s*[A-Za-z_0-9 ]+\\s*=|\\n\\}\\})").exec(txt); return m ? m[1].trim() : null; };
+const clean = (s) => s.replace(/<ref[^>]*\/>/gi, "").replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/\{\{\s*(?:circa|c\.|ca)\s*\|(?:[^{}|]*\|)*\s*([^{}|]*)\}\}/gi, "$1").replace(/&nbsp;/g, " ").replace(/\{\{\s*(?:nowrap|small)\s*\|([^{}]*)\}\}/gi, "$1");
+const span = (seg) => {
+  const m = /(\d{1,4})\s*(BCE?|AD|CE)?\s*[–\-—]\s*(?:AD\s*|CE\s*)?(\d{1,4})\s*(BCE?|AD|CE)?/.exec(seg);
+  if (m) {
+    let a = +m[1], b = +m[3];
+    const ab = /BC/.test(m[2] || ""), bb = /BC/.test(m[4] || "");
+    if (bb) { b = -b; if (!m[2]) a = -a; }
+    if (ab) a = -a;
+    if (a > b && a > 0 && b > 0 && String(b).length < String(a).length) b = +(String(a).slice(0, String(a).length - String(b).length) + String(b));
+    return [a, b];
+  }
+  const f = /(?:after|from|since)\s+(\d{1,4})\s*(BCE?)?/i.exec(seg);
+  if (f) return [f[2] ? -f[1] : +f[1], null];
+  const u = /(?:until|to|before)\s+(\d{1,4})\s*(BCE?)?/i.exec(seg);
+  if (u) return [null, u[2] ? -u[1] : +u[1]];
+  return [null, null];
+};
+const pages = [...new Set(Object.values(resolved))].sort(), boxes = {};
+for (let i = 0; i < pages.length; i += 20) {
+  const r = await (await fetch("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=content&rvslots=main&rvsection=0&titles=" + encodeURIComponent(pages.slice(i, i + 20).join("|")))).json();
+  for (const p of (r.query && r.query.pages) || []) {
+    if (!p.revisions) continue;
+    const txt = p.revisions[0].slots.main.content;
+    let v = field(txt, "capital"), seat = 0;
+    if (!v || !/\[\[/.test(v)) { const s = field(txt, "seat") || field(txt, "capital_city"); if (s) { v = s; seat = 1; } }
+    if (!v) continue;
+    v = clean(v);
+    const links = [], re = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]/g;
+    let m, last = null;
+    while ((m = re.exec(v))) { if (last) last.after = v.slice(last.end, m.index); last = { target: m[1].trim(), text: (m[2] || m[1]).trim(), end: re.lastIndex }; links.push(last); }
+    if (last) last.after = v.slice(last.end);
+    const items = links.filter((l) => !/^(File|Image|Category|wikt|:)/i.test(l.target)).map((l) => {
+      const seg = (l.after || "").split(/<br\s*\/?>|\n|\|\s*\[\[/i)[0], y = span(seg);
+      return [l.text.replace(/\s*\([^)]*\)$/, ""), l.target, y[0], y[1], /ceremonial|religious|summer|winter|exile|de facto|administrative/i.test(seg) ? 1 : 0, seat];
+    });
+    if (items.length) boxes[p.title] = items;
+  }
+}
+const targets = [...new Set(Object.values(boxes).flatMap((b) => b.map((x) => x[1])))], coords = {};
+for (let i = 0; i < targets.length; i += 50) {
+  const part = targets.slice(i, i + 50), norm = {}, red = {}, at = {};
+  let cont = {};
+  do {
+    const j = await (await fetch("https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&redirects=1&prop=coordinates&coprimary=primary&colimit=max&titles=" + encodeURIComponent(part.join("|")) + Object.entries(cont).map(([k, v]) => "&" + k + "=" + encodeURIComponent(v)).join(""))).json(), q = j.query || {};
+    (q.normalized || []).forEach((n) => { norm[n.from] = n.to; });
+    (q.redirects || []).forEach((n) => { red[n.from] = n.to; });
+    (q.pages || []).forEach((p) => { if (p.coordinates && p.coordinates[0]) at[p.title] = [+p.coordinates[0].lon.toFixed(3), +p.coordinates[0].lat.toFixed(3)]; });
+    cont = j.continue || null;
+  } while (cont);
+  for (const t of part) { let k = norm[t] || t; k = red[k] || k; if (at[k]) coords[t] = at[k]; }
+}
 const byName = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 Object.values(caps).forEach((c) => c.sort((a, b) => (a[3] ?? -1e9) - (b[3] ?? -1e9) || (a[4] ?? 1e9) - (b[4] ?? 1e9) || byName(a[0], b[0])));
 const used = Object.keys(caps).sort(byName);
-const out = { titles: {}, live: used.filter((k) => !dissolved.has(k)), since: {}, caps: {} };
+const out = { titles: {}, live: used.filter((k) => !dissolved.has(k)), since: {}, caps: {}, infobox: {} };
+all.forEach((t) => {
+  const b = resolved[t] && boxes[resolved[t]];
+  const rows = b ? b.filter((x) => coords[x[1]]).map((x) => [x[0], coords[x[1]][0], coords[x[1]][1], x[2], x[3], x[4], x[5]]) : [];
+  if (rows.length) out.infobox[t] = rows;
+});
 out.live.filter((k) => since[k] !== undefined).sort(byName).forEach((k) => { out.since[k] = since[k]; });
 Object.keys(qid).sort(byName).forEach((t) => { if (caps[qid[t]]) out.titles[t] = qid[t]; });
 used.forEach((k) => { out.caps[k] = caps[k]; });
@@ -84,6 +143,9 @@ const t = Object.entries(out.titles), c = Object.entries(out.caps);
 t.forEach(([k, v], i) => lines.push(J(k) + ": " + J(v) + (i < t.length - 1 ? "," : "")));
 lines.push("},", '"live": ' + J(out.live) + ",", '"since": ' + J(out.since) + ",", '"caps": {');
 c.forEach(([k, v], i) => lines.push(J(k) + ": " + J(v) + (i < c.length - 1 ? "," : "")));
+lines.push("},", '"infobox": {');
+const ib = Object.entries(out.infobox);
+ib.forEach(([k, v], i) => lines.push(J(k) + ": " + J(v) + (i < ib.length - 1 ? "," : "")));
 lines.push("}", "}");
 writeFileSync(resolve(here, "capitals-wikidata.json"), lines.join("\n") + "\n");
-console.log(t.length + " titles, " + c.length + " polities with capitals");
+console.log(t.length + " titles, " + c.length + " polities with capitals, " + ib.length + " titles with infobox capitals");

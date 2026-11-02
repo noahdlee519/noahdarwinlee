@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 3400 BC–2026 | the world | capitals
+
+- What changed: capitals were drawn only from 1400, only for the states whose titles were fetched from Wikidata in October (596 of 2,268), and only where Wikidata had one capital or dated ones, so most states had none: none at all before 1400, about half from 1400 to 1885, and the small territories and dependencies CShapes leaves without a capital from 1886 (Monaco, Gibraltar, Bermuda, the Leeward Islands). Capitals are now fetched for every state of every period, from Wikidata and, as a second source, the capitals in the states' Wikipedia infoboxes, with the years written beside them; where a state has several undated capitals, the one that was the largest city in the year is taken; and a capital outside the state's land gives way to the next source rather than to none. About 11,600 dated spans now have a capital (4,622 before), among the states over 100,000 km² about two in three in each period from 500 BC on, and from 1886 only microstates and a few territories still lack one (Vatican City, Tonga, the Turks and Caicos Islands).
+- Tables: `tools/capitals-wikidata.json` (refetched, with `infobox`); `tools/fetch-capitals.mjs` (every title, and the infoboxes); `capPicker`, `capInfobox`, `capPopular`, `capCities`, and new rows of `CAP_NAME`, `CAP_DROP`, and `CAP_SET` (the Kingdom of Kush) in `tools/build-eras.mjs`, and the fallback for CShapes' shapes with no capital.
+- Sources: (1) Wikidata's capital statements (P36), fetched 1 November 2026; (2) the capital fields of the English Wikipedia articles' infoboxes, fetched the same day; (3) the cities' populations in `data/cities-dated.json` (Reba, Reitsma, and Seto; Chandler; Modelski; the UN), to choose among undated capitals.
+- Confidence: medium. Each capital rests on Wikidata or on the infobox, usually not both checked against each other; a state whose infobox lists its capitals in order without dates takes the largest city among them, or the first, for its whole span (the Kingdom of Kush is set by hand).
+- Alternatives: checking each capital against a second source by hand (not taken: there are some 1,800 states).
+- Left out: the Holy Roman Empire (its statements are the seats of its institutions); states whose articles name no capital or only a region (the Greek city-states, the Hausa States, the Shan States); and capitals whose pages have no coordinates (Danyang and Ying for Chu).
+
 ## 1914–1918 | Europe and the Middle East | the First World War in the zones of control
 
 - What changed: the First World War was drawn only on the main map, as occupied land cut from the states (see the README's "Occupations of the First World War"), and was missing from the zones of control. It is now there too, as one war from 28 July 1914 to 11 November 1918, with two sides, the Allies and the Central Powers: each belligerent's land is hatched in its side's colour from the day it entered the war to the day it left, and the land the other side held, from the same occupation areas the main map uses, in the occupier's side's colour, with the front between them.

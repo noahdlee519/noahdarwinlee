@@ -2870,21 +2870,28 @@ function snapTo1886(list) {
 }
 dated = snapTo1886(dated);
 
-const CAP_FROM = 1400, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
+const CAP_FROM = DATED_FROM, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
 const CAP_SKIP = new Set(["Holy Roman Empire"]);
-const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"]];
+const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"], ["Wu (state)", "Jiangsu province"]];
 const CAP_NAME = {
   "Ahilyanagar": "Ahmednagar", "Antalya Province": "Antalya", "Bengaluru": "Bangalore", "Bintan Island": "Bintan", "Coop of Brussels": "Brussels",
   "Hanseongbu": "Hanseong", "Historic City of Ayutthaya": "Ayutthaya", "Kalaburagi": "Gulbarga", "Kolkata": "Calcutta", "Lutherstadt Wittenberg": "Wittenberg",
   "Madrid city": "Madrid", "Mbarara City": "Mbarara", "Menteşe district": "Menteşe", "Mukim Kota Batu": "Kota Batu", "Municipality of Macau": "Macau",
   "Old City of Taiz": "Taiz", "Old Delhi": "Delhi", "Quebec City": "Quebec", "Sri Jayawardenepura Kotte": "Kotte", "Thiruvananthapuram": "Trivandrum",
-  "Thonburi Province": "Thonburi", "Toledo city": "Toledo", "Trowulan Temple": "Trowulan", "Valladolid city": "Valladolid", "Vijayapura": "Bijapur", "Zanzibar City": "Zanzibar"
+  "Thonburi Province": "Thonburi", "Toledo city": "Toledo", "Trowulan Temple": "Trowulan", "Valladolid city": "Valladolid", "Vijayapura": "Bijapur", "Zanzibar City": "Zanzibar",
+  "Shangyi County": "Shangyi", "Thingvellir National Park": "Þingvellir", "Hoa Lư Ancient Capital": "Hoa Lư", "Lin'an Prefecture": "Lin'an", "Ganghwa Island": "Ganghwa",
+  "Sukhothai Historical Park": "Sukhothai", "Port-Royal National Historic Site": "Port-Royal", "Yarkant County": "Yarkand", "Pingcheng District": "Pingcheng",
+  "Jiangling County": "Jiangling", "Chang'an, Tang Empire": "Chang'an", "Site of the Middle Capital of the Balhae Kingdom": "Zhongjing", "Daming County": "Daming",
+  "Suiyang District": "Suiyang", "Western Zhou Yan State Capital Museum": "Ji", "Veligard or Veligrad {{nowrap|(German: ''Michelenburg'')}}": "Veligrad"
 };
 // Capitals set by hand where Wikidata gives only the first or a wrong one, in its rows' form: [name, lon, lat, from, to, preferred, founded].
 const CAP_SET = {
   // Wikidata gives only Câmpulung, the first seat (c. 1300). Târgoviște from 1418 and Bucharest from 1659 (Wikipedia's Târgoviște;
   // bucharest.ro); rulers went back and forth between the two until Brâncoveanu, and the year Bucharest was named is taken.
-  "Wallachia": [["Curtea de Argeș", 24.679, 45.139, 1330, 1417, 0, null], ["Târgoviște", 25.456, 44.925, 1418, 1658, 0, null], ["Bucharest", 26.098, 44.413, 1659, 1862, 0, null]]
+  "Wallachia": [["Curtea de Argeș", 24.679, 45.139, 1330, 1417, 0, null], ["Târgoviște", 25.456, 44.925, 1418, 1658, 0, null], ["Bucharest", 26.098, 44.413, 1659, 1862, 0, null]],
+  // The infobox lists Kerma, Napata, and Meroë undated; Kerma was the capital of the earlier Kerma culture, Napata of Kush from its rise about
+  // 1070 BC, and Meroë from about 590 BC (Wikipedia's Kingdom of Kush and Meroë).
+  "Kingdom of Kush": [["Napata", 31.84, 18.53, -1070, -591, 0, null], ["Meroë", 33.726, 16.933, -590, 350, 0, null]]
 };
 const capsPath = resolve(here, "capitals-wikidata.json");
 const capData = existsSync(capsPath) ? JSON.parse(readFileSync(capsPath, "utf8")) : null;
@@ -2923,21 +2930,85 @@ const inRing = (x, y, ring) => {
 };
 const inPolys = (x, y, polys) => polys.some((p) => inRing(x, y, p[0]) && !p.slice(1).some((h) => inRing(x, y, h)));
 const capOnLand = (r, polys) => [[0, 0], [CAP_NEAR_DEG, 0], [-CAP_NEAR_DEG, 0], [0, CAP_NEAR_DEG], [0, -CAP_NEAR_DEG]].some(([dx, dy]) => inPolys(r[1] + dx, r[2] + dy, polys));
-const capStats = { spans: 0, outside: 0 };
+const capStats = { spans: 0, outside: 0, wikidata: 0, infobox: 0, popular: 0 };
+// Where a state has several capitals with no dates (Nantes and Rennes for Brittany, Madrid and Valladolid for Castile), the one that was the
+// largest city that year, by the cities' populations (data/cities-dated.json, written by build-cities.mjs), if the cities know any of them.
+const capCities = (() => {
+  const grid = new Map(), add = (f) => {
+    if (!existsSync(f)) return;
+    for (const r of JSON.parse(readFileSync(f, "utf8")).rows) {
+      const ys = [], ps = [];
+      for (let i = 0; i < r[6].length; i += 2) { ys.push(r[6][i]); ps.push(r[6][i + 1]); }
+      const c = { lon: r[2], lat: r[3], since: r[4], until: r[5] === null ? Infinity : r[5], ys, ps }, k = Math.floor(r[2]) + ":" + Math.floor(r[3]);
+      if (!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(c);
+    }
+  };
+  add(resolve(out, "cities-dated.json"));
+  add(resolve(out, "cities-dated-minor.json"));
+  return grid;
+})();
+const capPop = (r, y) => {
+  let best = 0;
+  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (const c of capCities.get((Math.floor(r[1]) + dx) + ":" + (Math.floor(r[2]) + dy)) || []) {
+    if (c.since > y || y >= c.until || capKm([0, c.lon, c.lat], r) > CAP_SAME_KM) continue;
+    const { ys, ps } = c, n = ys.length;
+    let p = ps[n - 1];
+    if (y <= ys[0]) p = ps[0];
+    else for (let i = 1; i < n; i++) if (y <= ys[i]) { p = ps[i - 1] * Math.pow(ps[i] / ps[i - 1], (y - ys[i - 1]) / (ys[i] - ys[i - 1])); break; }
+    if (p > best) best = p;
+  }
+  return best;
+};
+const capPopular = (pool, y) => {
+  let best = null, most = 0;
+  for (const r of pool) { const p = capPop(r, y); if (p > most) { most = p; best = r; } }
+  return best;
+};
+// Wikipedia's infobox capitals (`infobox` in capitals-wikidata.json: [name, lon, lat, from, to, minor, seat], in the infobox's order), for a
+// state Wikidata has no capital for, or none it can pick in a year: the capital whose years take in the year, or else the first undated one
+// that is not ceremonial, a summer capital, or the like, or of several the largest city that year.
+const capInfobox = (rows, y) => {
+  const dated = rows.filter((r) => (r[3] !== null || r[4] !== null) && (r[3] === null || r[3] <= y) && (r[4] === null || y <= r[4]));
+  if (dated.length) return dated.reduce((a, b) => ((b[3] ?? -Infinity) > (a[3] ?? -Infinity) ? b : a));
+  const undated = rows.filter((r) => r[3] === null && r[4] === null);
+  if (!undated.length) return null;
+  const main = undated.filter((r) => !r[5]), pool = main.length ? main : undated;
+  if (pool.length === 1 || pool.every((r) => capKm(r, pool[0]) <= CAP_SAME_KM)) return pool[0];
+  return capPopular(pool, y) || pool[0];
+};
+// The capital of a state with Wikipedia title `title` in year y, among the capitals on its land (polys): Wikidata's dated or single capital,
+// else the largest of Wikidata's undated ones, else the infobox's.
+const capPicker = (title, polys) => {
+  const qid = capData.titles[title];
+  if (CAP_SKIP.has(title)) return null;
+  const drop = new Set(CAP_DROP.filter((d) => d[0] === title).map((d) => d[1]));
+  const wd = (CAP_SET[title] || (qid && capData.caps[qid]) || []).filter((r) => !/^Q\d+$/.test(r[0]) && !drop.has(r[0]));
+  const ib = ((capData.infobox || {})[title] || []).filter((r) => !drop.has(r[0]));
+  if (!wd.length && !ib.length) return null;
+  const land = new Map(), on = (r) => { if (!land.has(r)) land.set(r, capOnLand(r, polys)); return land.get(r); };
+  const wdLand = wd.filter(on), ibLand = ib.filter(on);
+  if (!wdLand.length && !ibLand.length) { capStats.outside++; return () => null; }
+  return (y) => {
+    let r = wdLand.length ? capitalIn(qid, wdLand, y) : null;
+    if (r) { capStats.wikidata++; return r; }
+    if (wdLand.length) {
+      const undated = wdLand.filter((x) => x[3] === null && x[4] === null && capUsable(qid, x, y));
+      r = undated.length > 1 ? capPopular(undated, y) : null;
+      if (r) { capStats.popular++; return r; }
+    }
+    r = ibLand.length ? capInfobox(ibLand, y) : null;
+    if (r) capStats.infobox++;
+    return r;
+  };
+};
 const capFor = (s) => {
   if (!capData || s.people || s.last < CAP_FROM) return null;
-  const title = s.wiki || s.name;
-  const qid = capData.titles[title];
-  if (CAP_SKIP.has(title) || !qid || !capData.caps[qid]) return null;
-  const drop = new Set(CAP_DROP.filter((d) => d[0] === title).map((d) => d[1]));
-  const rows = (CAP_SET[title] || capData.caps[qid]).filter((r) => !/^Q\d+$/.test(r[0]) && !drop.has(r[0]));
-  const runs = [], seen = new Map();
+  const pick = capPicker(s.wiki || s.name, s.polys);
+  if (!pick) return null;
+  const runs = [];
   for (let y = s.first; y <= s.last; y++) {
-    let r = y < CAP_FROM ? null : capitalIn(qid, rows, y);
-    if (r) {
-      if (!seen.has(r)) seen.set(r, capOnLand(r, s.polys));
-      if (!seen.get(r)) { capStats.outside++; r = null; }
-    }
+    const r = y < CAP_FROM ? null : pick(y);
     const key = r ? r[0] + "|" + r[1] + "|" + r[2] : "";
     const prev = runs[runs.length - 1];
     if (prev && prev.key === key) prev.last = y;
@@ -2951,7 +3022,7 @@ const capFor = (s) => {
   return cap;
 };
 dated.forEach((s) => { s.cap = capFor(s); });
-console.log("capitals from Wikidata: " + capStats.spans + " dated spans with a capital from " + CAP_FROM + ", " + capStats.outside + " years where the capital lies outside the span and is left out");
+console.log("capitals: " + capStats.spans + " dated spans with a capital, in span-years " + capStats.wikidata + " from Wikidata, " + capStats.popular + " the largest of its undated capitals, " + capStats.infobox + " from the infobox; " + capStats.outside + " spans whose capitals all lie outside them");
 const GROUPS = [{
   name: "Holy Roman Empire",
   maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, 1491, ["1400"]], [1492, 1499, ["1492"]], [1500, 1529, ["1500"]], [1530, 1599, ["1530"]], [1600, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
@@ -3823,6 +3894,7 @@ const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q, false);
 // drawn at, the page's coast fill covers them.
 const csLo = topoFor(csFeats.map((f, i) => (csParts[i].noLabel && csParts[i].piece ? { ...f, geometry: { type: "MultiPolygon", coordinates: f.geometry.coordinates.filter((q) => polyKm2(q) >= 50) } } : f)), LO_KM, LO_Q, false);
 const labelMemo = new Map();
+let csCapsAdded = 0;
 const csRows = csParts.map((r, i) => {
   const g = csHi.objects.p.geometries[i];
   const memoKey = (r.noLabel ? "n" : "") + JSON.stringify(g.arcs || g.coordinates || null);
@@ -3841,9 +3913,16 @@ const csRows = csParts.map((r, i) => {
   const y0 = yearOfDay(r.start), y1 = r.end < 0 ? +CS_TO.slice(0, 4) : yearOfDay(r.end);
   entry.cs = entry.cs ? [Math.min(entry.cs[0], y0), Math.max(entry.cs[1], y1)] : [y0, y1];
   entry.wiki.set(y0, r.wiki || csWiki(r.name, y0));
-  const cap = r.p.capname ? capitalOf(String(r.p.capname), +r.p.caplong, +r.p.caplat) : null;
+  let cap = r.p.capname ? capitalOf(String(r.p.capname), +r.p.caplong, +r.p.caplat) : null;
+  // CShapes gives no capital for the shapes it doesn't draw (the small territories, the dependencies the builder adds) and for a state's
+  // exclaves: such a shape takes its state's capital from Wikidata or Wikipedia, as before 1886, if the capital lies on the shape.
+  if (!cap && capData && !r.claims && !r.noLabel) {
+    const pick = capPicker(r.wiki || csWiki(r.name, y0), polysOf(r.geometry)), c = pick && pick(y0);
+    if (c) { cap = capitalOf(CAP_NAME[c[0]] || c[0], c[1], c[2]); csCapsAdded++; }
+  }
   return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode), r.claims ? r.claims.map(catId) : null];
 });
+console.log("capitals from 1886: " + csCapsAdded + " shapes CShapes gives no capital took one from Wikidata or Wikipedia");
 csHi.objects.p.geometries.forEach((g) => { delete g.properties; });
 csLo.objects.p.geometries.forEach((g) => { delete g.properties; });
 const csChanges = [...new Set(csRows.map((r) => r[2]).concat(csRows.filter((r) => r[3] >= 0).map((r) => r[3] + 1)))].sort((a, b) => a - b);
