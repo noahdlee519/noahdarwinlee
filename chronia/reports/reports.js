@@ -38,7 +38,10 @@
   function span(r) { return r.date_from === r.date_to ? r.date_from : r.date_from + " to " + r.date_to; }
   function item(r) {
     var li = el("li", "rp-item");
-    li.appendChild(el("p", "rp-head", "#" + r.id + " | " + span(r)));
+    var head = el("p", "rp-head"), num = el("span", "cp-n", String(r.id));
+    head.appendChild(num);
+    head.appendChild(document.createTextNode(span(r)));
+    li.appendChild(head);
     li.appendChild(el("p", "rp-meta", [r.place || "No state", Math.abs(r.lat).toFixed(2) + "° " + (r.lat < 0 ? "S" : "N") + ", " + Math.abs(r.lon).toFixed(2) + "° " + (r.lon < 0 ? "W" : "E"), "from " + r.reporter, when(r.created_at), r.status === "open" ? "open" : r.status + (r.closed_at ? " " + when(r.closed_at) : "")].join(" | ")));
     li.appendChild(el("p", "rp-text", r.note));
     var id = "reply-" + r.id, lab = el("label", "", "Reply or what was done");

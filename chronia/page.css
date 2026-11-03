@@ -1,0 +1,203 @@
+/* CHRONIA's own pages (team, reports, privacy, terms): the atlas's parchment, frames, and type. */
+:root {
+  color-scheme: light;
+  --bg: #f1e7cf;
+  --paper: #f3ead3;
+  --ink: #3a2a1b;
+  --muted: rgba(58, 42, 27, 0.74);
+  --faint: rgba(58, 42, 27, 0.3);
+  --hair: rgba(58, 42, 27, 0.16);
+  --red: #8c2a1a;
+  --corner: rgba(58, 42, 27, 0.72);
+  --serif: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
+  --num: "Old Standard TT", Georgia, "Times New Roman", serif;
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 0.34 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --globe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' fill='none' stroke='%23543c26' stroke-opacity='0.16' stroke-width='1.2'><circle cx='500' cy='500' r='480'/><ellipse cx='500' cy='500' rx='124' ry='480'/><ellipse cx='500' cy='500' rx='240' ry='480'/><ellipse cx='500' cy='500' rx='339' ry='480'/><ellipse cx='500' cy='500' rx='416' ry='480'/><ellipse cx='500' cy='500' rx='464' ry='480'/><path d='M500 20V980'/><path d='M376 964H624'/><path d='M260 916H740'/><path d='M161 839H839'/><path d='M84 740H916'/><path d='M36 624H964'/><path d='M20 500H980'/><path d='M36 376H964'/><path d='M84 260H916'/><path d='M161 161H839'/><path d='M260 84H740'/><path d='M376 36H624'/></svg>");
+  --lift: 0 1px 2px rgba(58, 42, 27, 0.14), 0 4px 12px -5px rgba(58, 42, 27, 0.3);
+}
+
+html {
+  background: #dcc79d;
+}
+
+body.cp {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    var(--globe) no-repeat calc(100% + 18vmin) calc(100% + 22vmin) / 92vmin 92vmin fixed,
+    radial-gradient(ellipse at 50% 30%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%) fixed;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.58;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.cp-frame {
+  border: 1px solid var(--ink);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 3.6px 3.6px, var(--corner) 0.95px, transparent 1.35px),
+    radial-gradient(circle at calc(100% - 3.6px) 3.6px, var(--corner) 0.95px, transparent 1.35px),
+    radial-gradient(circle at 3.6px calc(100% - 3.6px), var(--corner) 0.95px, transparent 1.35px),
+    radial-gradient(circle at calc(100% - 3.6px) calc(100% - 3.6px), var(--corner) 0.95px, transparent 1.35px),
+    var(--grain);
+  background-size: auto, auto, auto, auto, 260px 260px;
+  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--faint), var(--lift);
+}
+
+.cp-top {
+  padding: 10px;
+}
+
+.cp-mark {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 54px;
+  padding: 0 22px 0 calc(22px + 0.34em);
+  color: var(--ink);
+  font-size: 25px;
+  letter-spacing: 0.34em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.cp-mark:hover {
+  background-color: var(--paper);
+}
+
+.cp-sheet {
+  box-sizing: border-box;
+  width: min(46rem, calc(100% - 20px));
+  margin: 26px auto 64px;
+  padding: 44px 56px 30px;
+}
+
+.cp-sheet h1 {
+  margin: 0 0 6px;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.cp-lede,
+.cp-sheet .privacy-lede {
+  margin: 0 0 6px;
+  font-size: 21px;
+  line-height: 1.5;
+}
+
+.cp-meta,
+.cp-sheet .privacy-meta {
+  margin: 0 0 30px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.cp-sheet section {
+  padding-top: 22px;
+  margin-top: 22px;
+  border-top: 1px solid var(--hair);
+}
+
+.cp-sheet h2 {
+  margin: 0 0 10px;
+  font-size: 25px;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.25;
+}
+
+.cp-n {
+  display: inline-block;
+  min-width: 1.6em;
+  font-family: var(--num);
+  font-style: normal;
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+.cp-sheet p {
+  margin: 0 0 14px;
+  max-width: 38em;
+}
+
+.cp-sheet b {
+  font-weight: 400;
+  font-style: italic;
+}
+
+.cp-sheet a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--faint);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.cp-sheet a:hover {
+  color: var(--red);
+  text-decoration-color: currentColor;
+}
+
+.cp a:focus-visible,
+.cp button:focus-visible,
+.cp input:focus-visible,
+.cp textarea:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.cp-foot {
+  margin-top: 34px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hair);
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.cp-foot a[aria-current="page"] {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.cp-names {
+  list-style: none;
+  margin: 26px 0 8px;
+  padding: 0;
+}
+
+.cp-names li {
+  padding: 12px 0;
+  border-top: 1px solid var(--hair);
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.cp-names span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 16px;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  body.cp {
+    font-size: 18px;
+  }
+  .cp-mark {
+    height: 46px;
+    font-size: 21px;
+    padding: 0 16px 0 calc(16px + 0.34em);
+  }
+  .cp-sheet {
+    margin: 12px auto 40px;
+    padding: 28px 22px 22px;
+  }
+  .cp-sheet h1 {
+    font-size: 32px;
+  }
+}

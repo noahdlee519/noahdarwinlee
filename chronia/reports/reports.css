@@ -1,74 +1,83 @@
-.reports-page main {
-  max-width: 760px;
-}
 .rp-lock {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 16rem) auto;
   align-items: center;
-  gap: 8px 12px;
-  margin: 24px 0;
+  gap: 10px 14px;
+  margin: 28px 0 8px;
 }
 .rp-lock[hidden],
 #board[hidden] {
   display: none;
 }
+.rp-lock label {
+  font-style: italic;
+}
 .rp-lock input,
 .rp-item textarea {
   box-sizing: border-box;
-  padding: 6px 8px;
-  border: 1px solid var(--rule);
+  width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--ink);
   border-radius: 0;
-  background: transparent;
+  background: var(--paper);
   color: var(--ink);
   font: inherit;
+  font-size: 17px;
+}
+.rp-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 2.6px var(--faint);
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+}
+.rp-btn:hover {
+  background: var(--bg);
+}
+.rp-note {
+  grid-column: 1 / -1;
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--muted);
   font-size: 16px;
 }
-.rp-lock input {
-  width: 220px;
-  max-width: 100%;
+.rp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 26px 0 0;
+  padding-bottom: 12px;
+  color: var(--muted);
 }
-.reports-page button {
+.rp-bar button,
+.rp-acts button {
   padding: 0;
   border: 0;
   background: none;
   color: var(--ink);
   font: inherit;
   text-decoration: underline;
+  text-decoration-color: var(--faint);
   text-underline-offset: 3px;
   cursor: pointer;
 }
-.reports-page button:disabled {
-  opacity: 0.5;
-  cursor: default;
+.rp-bar button:hover,
+.rp-acts button:hover {
+  color: var(--red);
+  text-decoration-color: currentColor;
 }
-.reports-page button[aria-pressed="true"] {
+.rp-bar button[aria-pressed="true"] {
   text-decoration: none;
-  font-weight: 700;
-}
-.reports-page button:focus-visible,
-.rp-lock input:focus-visible,
-.rp-item textarea:focus-visible {
-  outline: 1.5px solid var(--ink);
-  outline-offset: 2px;
-}
-.rp-note {
-  flex-basis: 100%;
-  min-height: 1.3em;
-  margin: 0;
-  font-size: 14px;
-}
-.rp-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  margin: 24px 0 8px;
-  font-size: 16px;
+  font-style: italic;
 }
 .rp-count {
-  margin-left: 12px;
-  opacity: 0.75;
-  font-size: 14px;
+  margin-left: 10px;
+  font-size: 16px;
+  font-style: italic;
 }
 .rp-out {
   margin-left: auto;
@@ -78,45 +87,66 @@
   margin: 0;
   padding: 0;
 }
-.rp-item {
-  margin: 0;
-  padding: 18px 0;
-  border-top: 1px solid var(--rule);
+.rp-item,
+.rp-empty {
+  padding: 20px 0 18px;
+  border-top: 1px solid var(--hair);
 }
-.rp-head {
-  margin: 0 0 4px;
-  font-size: 18px;
-  font-weight: 700;
+.rp-empty {
+  font-style: italic;
+  color: var(--muted);
 }
-.privacy-page main p.rp-meta {
+.cp-sheet .rp-head {
+  margin: 0 0 2px;
+  font-size: 24px;
+  line-height: 1.25;
+}
+.rp-head .cp-n {
+  min-width: 0;
+  margin-right: 12px;
+  color: var(--red);
+  font-size: 0.8em;
+}
+.cp-sheet .rp-meta {
   margin: 0 0 10px;
-  font-size: 14px;
-  opacity: 0.8;
+  color: var(--muted);
+  font-size: 16px;
+  font-style: italic;
 }
-.privacy-page main p.rp-text {
-  margin: 0 0 12px;
+.cp-sheet .rp-text {
+  margin: 0 0 14px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.rp-item label {
+  display: block;
+  color: var(--muted);
+  font-size: 16px;
+  font-style: italic;
+}
 .rp-item textarea {
   display: block;
-  width: 100%;
-  min-height: 60px;
-  margin: 4px 0 8px;
-  font-size: 15px;
+  min-height: 64px;
+  margin: 4px 0 10px;
+  font-size: 16px;
   resize: vertical;
-}
-.rp-item label {
-  font-size: 14px;
 }
 .rp-acts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 4px 10px;
   align-items: baseline;
-  font-size: 15px;
+  color: var(--muted);
+  font-size: 17px;
 }
-.rp-empty {
-  padding: 18px 0;
-  border-top: 1px solid var(--rule);
+.cp-sheet .rp-acts a {
+  color: var(--ink);
+}
+.rp-acts .rp-note {
+  font-style: italic;
+}
+@media (max-width: 640px) {
+  .rp-lock {
+    grid-template-columns: 1fr;
+  }
 }

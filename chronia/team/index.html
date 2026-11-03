@@ -4,85 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Team | CHRONIA</title>
-    <meta name="description" content="The team behind CHRONIA: Noah Lee, Jai Shah, and Nikolas Polsinelli." />
+    <meta name="description" content="The people who make CHRONIA, an atlas of the world's borders from 3000 BC to today." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CHRONIA" />
+    <meta property="og:title" content="Team | CHRONIA" />
+    <meta property="og:description" content="The people who make CHRONIA, an atlas of the world's borders from 3000 BC to today." />
+    <meta property="og:url" content="https://chroniaatlas.com/team/" />
     <link rel="canonical" href="https://chroniaatlas.com/team/" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Noah Darwin Lee" />
-    <meta property="og:title" content="Team | CHRONIA" />
-    <meta property="og:description" content="The team behind CHRONIA: Noah Lee, Jai Shah, and Nikolas Polsinelli." />
-    <meta property="og:url" content="https://chroniaatlas.com/team/" />
-    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
-
-    <link rel="stylesheet" href="/styles.css" />
-    <style>
-      .team-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-      .team-list li {
-        font-size: 24px;
-        font-weight: 400;
-        line-height: 1.3;
-        margin: 0 0 0.45em;
-      }
-    </style>
-    <script>
-      (function () {
-        var t = null;
-        try {
-          t = localStorage.getItem("ndl-theme");
-        } catch (e) {}
-        if (t !== "dark" && t !== "light" && t !== "white") {
-          t =
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light";
-        }
-        document.documentElement.setAttribute("data-theme", t);
-      })();
-    </script>
+    <link rel="stylesheet" href="../page.css" />
     <script src="/visit.js" defer></script>
   </head>
-  <body class="cv-page privacy-page" data-fade-distance="90">
-    <h1 class="sr-only">CHRONIA team</h1>
-    <a class="name" href="/"
-      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
-      <span class="name-word-lee">Lee</span></a
-    >
-    <a class="back-link" href="../">back</a>
-    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="/favicon.png" alt="" width="30" height="30" />
-    </button>
-
-    <main>
-      <p class="privacy-lede">The people who make <a href="../">CHRONIA</a>.</p>
-      <p class="privacy-meta">See also the <a href="/privacy/">privacy policy</a> and the <a href="/terms/">terms</a>.</p>
-
-      <section>
-        <h2>Team</h2>
-        <ul class="team-list">
-          <li>Noah Lee</li>
-          <li>Jai Shah</li>
-          <li>Nikolas Polsinelli</li>
-        </ul>
-      </section>
+  <body class="cp">
+    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
+    <main class="cp-sheet cp-frame">
+      <h1>Team</h1>
+      <p class="cp-lede">The people who make <a href="../">CHRONIA</a>, an atlas of the world&rsquo;s borders from 3000 BC to today.</p>
+      <ul class="cp-names">
+        <li>Noah Lee</li>
+        <li>Jai Shah</li>
+        <li>Nikolas Polsinelli</li>
+      </ul>
+      <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/" aria-current="page">Team</a> | <a href="/privacy/">Privacy</a> | <a href="/terms/">Terms</a></footer>
     </main>
-
-    <script src="/to-top-btn.js" defer></script>
-    <script src="/header.js" defer></script>
-    <script src="/theme.js" defer></script>
   </body>
 </html>

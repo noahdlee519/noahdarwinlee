@@ -4,58 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reports | CHRONIA</title>
-    <meta name="robots" content="noindex, nofollow" />
     <meta name="description" content="The fact checkers' reports on CHRONIA, for review." />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="canonical" href="https://chroniaatlas.com/reports/" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
-
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="../page.css" />
     <link rel="stylesheet" href="reports.css" />
-    <script>
-      (function () {
-        var t = null;
-        try {
-          t = localStorage.getItem("ndl-theme");
-        } catch (e) {}
-        if (t !== "dark" && t !== "light" && t !== "white") {
-          t =
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light";
-        }
-        document.documentElement.setAttribute("data-theme", t);
-      })();
-    </script>
-    <script src="/visit.js" defer></script>
   </head>
-  <body class="cv-page privacy-page reports-page" data-fade-distance="90">
-    <h1 class="sr-only">CHRONIA reports</h1>
-    <a class="name" href="/"
-      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
-      <span class="name-word-lee">Lee</span></a
-    >
-    <a class="back-link" href="../">back</a>
-    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="/favicon.png" alt="" width="30" height="30" />
-    </button>
-
-    <main>
-      <p class="privacy-lede">The fact checkers' reports on <a href="../">CHRONIA</a>.</p>
+  <body class="cp">
+    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
+    <main class="cp-sheet cp-frame rp">
+      <h1>Reports</h1>
+      <p class="cp-lede">What the fact checkers have sent about errors on the map, newest first.</p>
 
       <form class="rp-lock" id="lock">
         <label for="pass">Review password</label>
         <input type="password" id="pass" autocomplete="current-password" required />
-        <button type="submit" id="unlock">Open</button>
+        <button type="submit" class="rp-btn" id="unlock">Open the reports</button>
         <p class="rp-note" id="lock-note" aria-live="polite"></p>
       </form>
 
       <section id="board" hidden>
-        <div class="rp-bar" role="group" aria-label="Show">
+        <div class="rp-bar" role="group" aria-label="Which reports to show">
           <button type="button" data-status="open" aria-pressed="true">Open</button> |
           <button type="button" data-status="fixed" aria-pressed="false">Fixed</button> |
           <button type="button" data-status="declined" aria-pressed="false">Declined</button> |
@@ -65,11 +40,9 @@
         </div>
         <ol class="rp-list" id="list"></ol>
       </section>
+      <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/">Team</a> | <a href="/privacy/">Privacy</a> | <a href="/terms/">Terms</a></footer>
     </main>
 
     <script src="reports.js" defer></script>
-    <script src="/to-top-btn.js" defer></script>
-    <script src="/header.js" defer></script>
-    <script src="/theme.js" defer></script>
   </body>
 </html>
