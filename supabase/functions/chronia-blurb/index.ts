@@ -1,4 +1,5 @@
 const ORIGINS = [
+  /^https:\/\/(www\.)?chroniaatlas\.com$/,
   /^https:\/\/(www\.)?noahdarwinlee\.com$/,
   /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
@@ -288,7 +289,7 @@ function userText(ask: Ask) {
 }
 
 async function writeDeepSeek(ask: Ask, key: string, viaRouter: boolean): Promise<Made> {
-  const out = await post(viaRouter ? OPENROUTER_API : DEEPSEEK_API, viaRouter ? { Authorization: "Bearer " + key, "HTTP-Referer": "https://noahdarwinlee.com/chronia/", "X-Title": "CHRONIA" } : { Authorization: "Bearer " + key }, {
+  const out = await post(viaRouter ? OPENROUTER_API : DEEPSEEK_API, viaRouter ? { Authorization: "Bearer " + key, "HTTP-Referer": "https://chroniaatlas.com/", "X-Title": "CHRONIA" } : { Authorization: "Bearer " + key }, {
     model: viaRouter ? OPENROUTER_MODEL : DEEPSEEK_MODEL,
     max_tokens: MAX_TOKENS,
     temperature: 0.6,

@@ -33,7 +33,7 @@
     return isNaN(d) ? "" : d.toLocaleString("en-GB", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
   function mapLink(r) {
-    return "/chronia/#y=" + encodeURIComponent(r.at_time) + "&v=" + r.lon.toFixed(2) + "," + r.lat.toFixed(2) + "," + Math.max(3, +r.zoom || 0).toFixed(2);
+    return "../#y=" + encodeURIComponent(r.at_time) + "&v=" + r.lon.toFixed(2) + "," + r.lat.toFixed(2) + "," + Math.max(3, +r.zoom || 0).toFixed(2);
   }
   function span(r) { return r.date_from === r.date_to ? r.date_from : r.date_from + " to " + r.date_to; }
   function item(r) {

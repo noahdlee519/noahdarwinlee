@@ -7,6 +7,7 @@
   var R_KM = 6371.0088, D2R = Math.PI / 180, TAU = 2 * Math.PI, HALF_PI = Math.PI / 2;
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
   var UC = "../uchronia/";
+  var UC_APP = "https://noahdarwinlee.com/uchronia/";
   var STORE_FLAT = "chronia-flat";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
@@ -5027,7 +5028,7 @@
       return new Promise(function (res) { setTimeout(res, 30); }).then(function () { return ucMap(got[0], got[2], snap, t); });
     }).then(function (res) {
       return ucCode(res.map).then(function (code) {
-        var url = new URL("../uchronia/#m=" + code, location.href).href;
+        var url = UC_APP + "#m=" + code;
         if (code.length <= UC_LINK_MAX) {
           if (tab) tab.location.href = url; else location.href = url;
           ucNote.textContent = "Opened " + when + " in UCHRONIA: " + res.countries + " countries, " + res.regions + " regions moved, " + res.drawn + " drawn.";

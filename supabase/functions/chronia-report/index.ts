@@ -7,6 +7,7 @@
 // and close reports. Twenty wrong passwords in a day shut a visitor out until the next day.
 
 const ORIGINS = [
+  /^https:\/\/(www\.)?chroniaatlas\.com$/,
   /^https:\/\/(www\.)?noahdarwinlee\.com$/,
   /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,

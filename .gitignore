@@ -45,3 +45,6 @@ _compare.png
 # The pictures you work from. art/build-web.sh turns these into the sizes the
 # site serves in art/web, and only those are committed.
 art/originals/
+
+# The built chroniaatlas.com (tools/build-chronia-site.mjs); Vercel builds it on every push.
+chronia-site/
