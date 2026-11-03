@@ -880,7 +880,7 @@ CHRONIA has its own site, [chroniaatlas.com](https://chroniaatlas.com/), on Verc
 
 The edge functions `chronia-blurb` and `chronia-report` accept requests from chroniaatlas.com as well as noahdarwinlee.com.
 
-To set it up in Vercel, once: add a project from the GitHub repository `noahdlee519/noahdarwinlee`, with the root directory left as the repository's root (the framework, the build command, and the output folder come from `vercel.json`), then add `chroniaatlas.com` and `www.chroniaatlas.com` under the project's Domains, with `www` redirecting to `chroniaatlas.com`. Once the site answers there, `noahdarwinlee.com/chronia/` is switched to send its visitors on to the same page of chroniaatlas.com, with the date and view in the link (not yet done: a redirect before the new site is live would send them nowhere).
+To set it up in Vercel, once: add a project from the GitHub repository `noahdlee519/noahdarwinlee`, with the root directory left as the repository's root (the framework, the build command, and the output folder come from `vercel.json`), then add `chroniaatlas.com` and `www.chroniaatlas.com` under the project's Domains, with `www` redirecting to `chroniaatlas.com`. Since 3 November 2026, `noahdarwinlee.com/chronia/` and its team and reports pages send their visitors on to the same page of chroniaatlas.com, with the date and view in the link: GitHub Pages cannot redirect, so `go.js`, the first script on each page, does it on noahdarwinlee.com and its github.io address, and does nothing anywhere else (chroniaatlas.com, or a local copy). The rest of the site, the portfolio, and the CV link to chroniaatlas.com.
 
 ### Fact checkers' reports
 
