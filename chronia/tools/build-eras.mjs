@@ -3696,7 +3696,8 @@ const csOccupy = (rows) => {
     areaPolys.set(key, polys);
     return polys;
   };
-  const codes = new Set(OCC_MAP.flatMap((z) => z.of));
+  // `rest` applies to a state with no zone on the main map too (Serbia and Montenegro, whose zones are only in the zones of control).
+  const codes = new Set(OCC_MAP.flatMap((z) => z.of).concat((OCC.rest || []).map((x) => x.of)));
   const out = rows.filter((r) => !codes.has(String(r.p.gwcode)));
   const inPolys = (polys, pt) => d3.geoContains({ type: "MultiPolygon", coordinates: polys }, pt);
   let made = 0;
