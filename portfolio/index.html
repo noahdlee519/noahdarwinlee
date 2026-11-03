@@ -316,6 +316,11 @@
         transform: none;
       }
 
+      .is-returning .card,
+      .is-returning .work-head {
+        transition: none !important;
+      }
+
       .card:nth-of-type(even) {
         transition-delay: 120ms;
       }
@@ -889,6 +894,42 @@
         var $ = function (s, r) { return (r || document).querySelector(s); };
         var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
         var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+
+        // Back from a project's page ("All work"): the scroll goes back where it was when the page was left, at once, with the
+        // cards already in (no smooth scroll, no fade); without a saved place, to the project's card. See return.js.
+        var back = null, left = null;
+        try {
+          back = sessionStorage.getItem("portfolio-back");
+          left = JSON.parse(sessionStorage.getItem("portfolio-left") || "null");
+          sessionStorage.removeItem("portfolio-back");
+        } catch (e) {}
+        var backCard = back && document.getElementById(back);
+        if (backCard) {
+          if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+          var root = document.documentElement;
+          root.classList.add("is-returning");
+          root.style.scrollBehavior = "auto";
+          $$(".card, .work-head").forEach(function (el) { el.classList.add("is-in"); });
+          var place = function () {
+            if (left && left.slug === back && left.w === innerWidth && Date.now() - left.t < 6 * 3600e3) window.scrollTo(0, left.y);
+            else window.scrollTo(0, backCard.getBoundingClientRect().top + window.scrollY - 24);
+          };
+          place();
+          if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+          requestAnimationFrame(function () {
+            place();
+            requestAnimationFrame(function () { root.classList.remove("is-returning"); root.style.scrollBehavior = ""; });
+          });
+        }
+        $$(".card").forEach(function (c) {
+          c.addEventListener("click", function () {
+            try { sessionStorage.setItem("portfolio-left", JSON.stringify({ y: window.scrollY, w: innerWidth, t: Date.now(), slug: c.id })); } catch (e) {}
+          }, true);
+        });
+        // A page brought back whole from the browser's cache is already in place.
+        window.addEventListener("pageshow", function (e) {
+          if (e.persisted) try { sessionStorage.removeItem("portfolio-back"); } catch (err) {}
+        });
 
         $$("[data-split]").forEach(function (el) {
           var words = el.textContent.trim().split(/\s+/);
