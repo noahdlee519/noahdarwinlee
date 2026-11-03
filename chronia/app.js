@@ -5361,13 +5361,12 @@
     town: function () { return layers.cities && !!cities && cityTier(localScale()) >= 2; },
     border: function (s) { return s.polys.some(function (p) { return p && !p.soft; }); },
     soft: function (s) { return s.polys.some(function (p) { return p && p.soft; }); },
-    dependency: function (s) { return s.polys.some(function (p) { return p && p.ruler >= 0 && !p.claims; }); },
     people: function (s) { return s.polys.some(function (p) { return p && p.people && !p.band; }); },
     band: function (s) { return s.polys.some(function (p) { return p && p.band; }); },
     disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
-    division: function () { return divDrawn; },
+    // The lines between members of a larger state (the Holy Roman Empire, the Roman provinces) are its first-level divisions.
+    division: function (s) { return divDrawn || s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
     control: function () { return ctlDrawn; },
-    member: function (s) { return s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
     marsh: function () { return marshDrawn; }
   };
   function syncKey() {
