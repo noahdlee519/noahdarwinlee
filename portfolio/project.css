@@ -148,9 +148,9 @@ a {
 }
 
 .shots {
-  /* Each screenshot is a window of its own, narrower than the page, and the strip of them runs past the
-     page's margins to the window's edges: the first shows the next one's edge on the right, the ones after
-     show both neighbours' edges, and the last the one before it on the left. */
+  /* Each screenshot is a window of its own, narrower than the page and centred in it, and the strip of them
+     runs past the page's margins to the window's edges, showing the edges of the screenshots on either side
+     (only the next one's for the first, and the one before's for the last). */
   --peek: clamp(28px, 8vw, 150px);
   --gap: clamp(12px, 1.6vw, 24px);
   --slide-w: calc(100vw - 2 * var(--gutter) - 2 * var(--peek));
@@ -190,8 +190,7 @@ a {
   position: relative;
   display: flex;
   gap: var(--gap);
-  padding: 4px var(--gutter);
-  scroll-padding-inline: var(--gutter);
+  padding: 4px calc(var(--gutter) + var(--peek));
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
@@ -259,6 +258,7 @@ a {
 }
 
 .shots-foot {
+  margin-inline: var(--peek);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;

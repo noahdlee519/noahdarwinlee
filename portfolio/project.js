@@ -18,7 +18,7 @@
   }
 
   // Slides are narrower than the strip and snap to its middle, so a slide's place is where its middle
-  // meets the strip's (held at the strip's ends, which is how the first and last line up with the margins).
+  // meets the strip's; the strip's padding lets the first and last reach the middle too.
   function leftOf(i) {
     var s = slides[i];
     return Math.max(0, Math.min(track.scrollWidth - track.clientWidth, s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2));
