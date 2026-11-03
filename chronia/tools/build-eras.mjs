@@ -8,6 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
+import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -2290,6 +2291,55 @@ const napoleonic = (list) => {
   return list.concat(spans);
 };
 
+// Australia's colonies from 1788 to 1885 (`tools/australia.mjs`): the sources' colonies are dropped in those years, and every
+// other span, the Aboriginal nations among them, loses the land the colonies held in each year; what the cut leaves of a span
+// off the land (a source's coarser shore against Natural Earth's) is dropped.
+const AUS_NAMES = new Set([...AUS_COLONIES.map((c) => c[0]), ...AUSTRALIA_OLD]);
+const australia = (list) => {
+  const t0 = Date.now();
+  const A = buildAustralia({ neAll, clip, rewind, polysOf, tryClip, unionSafe, polyKm2 });
+  const ab = AUSTRALIA_BOX, inAus = (b) => b[0] >= ab[0] && b[2] <= ab[2] && b[1] >= ab[1] && b[3] <= ab[3];
+  const spans = [];
+  for (const s of A.spans) for (const [a, b] of [[s.first, Math.min(s.last, 1800)], [Math.max(s.first, 1801), s.last]]) {
+    if (a > b) continue;
+    spans.push(withBox({ name: s.name, ruler: britainAt(a), part: "", people: 0, b: 3, status: 1, first: a, last: b, polys: s.polys, wiki: s.wiki, src: "australia",
+      ...(a === s.first ? { dayFrom: [a, dayOf(s.from)] } : {}), ...(b === s.last && s.to < AUSTRALIA_TO + "-12-31" ? { dayTo: [b, dayOf(s.to)] } : {}) }));
+  }
+  let dropped = 0;
+  const out = [];
+  for (const s of list) {
+    if (!AUS_NAMES.has(s.name) || s.people || s.last < AUSTRALIA_FROM || s.first > AUSTRALIA_TO || !boxHit(s.box, ab)) { out.push(s); continue; }
+    dropped++;
+    if (s.first < AUSTRALIA_FROM) out.push(withBox({ ...s, last: AUSTRALIA_FROM - 1 }));
+    if (s.last > AUSTRALIA_TO) out.push(withBox({ ...s, first: AUSTRALIA_TO + 1 }));
+  }
+  const edits = [], masks = A.mask.map(([a, b, polys]) => ({ a, b, polys, box: boxOf(polys) }));
+  for (const s of out) {
+    if (s.small || s.last < AUSTRALIA_FROM || s.first > AUSTRALIA_TO || !boxHit(s.box, ab)) continue;
+    let hit = false;
+    for (const m of masks) if (s.first <= m.b && m.a <= s.last && boxHit(s.box, m.box)) { hit = true; edits.push({ base: s, first: Math.max(s.first, m.a), last: Math.min(s.last, m.b), polys: m.polys, add: false }); }
+    if (hit) s.ausMasked = true;
+  }
+  const memo = new Map();
+  const onLand = (p) => {
+    const b = boxOf([p]), local = clipRect(A.land, [b[0] - 0.05, b[1] - 0.05, b[2] + 0.05, b[3] + 0.05]);
+    const x = local.length ? tryClip(clip.intersection, [p], local) : [];
+    return (x ? km2Of(x) : polyKm2(p)) >= 0.5 * polyKm2(p);
+  };
+  let shorn = 0;
+  const result = reshape(out, edits, false).map((s) => {
+    if (!s.ausMasked) return s;
+    const inside = s.first >= AUSTRALIA_FROM && s.last <= AUSTRALIA_TO;
+    const polys = inside ? s.polys.filter((p) => { const b = boxOf([p]); if (!inAus(b)) return true; if (!memo.has(p)) memo.set(p, onLand(p)); return memo.get(p); }) : s.polys;
+    const o = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
+    if (polys.length !== s.polys.length) shorn++;
+    if (o) delete o.ausMasked;
+    return o;
+  }).filter(Boolean);
+  console.log("australia: " + spans.length + " spans of " + new Set(spans.map((s) => s.name)).size + " colonies, " + dropped + " source spans of the colonies dropped, " + edits.length + " cuts, " + shorn + " spans cleared of pieces off the land, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return result.concat(spans);
+};
+
 const US_FROM = 1784, US_TO = 1885;
 const NA_KEEP = new Set(["Confederate States of America"]);
 // The Continental Divide from 49° N to 42° N, north to south, from the passes along it (Marias, MacDonald, Chief Joseph, Lemhi, Monida, Targhee, Togwotee, Union, South Pass): the western limit of the Louisiana Purchase.
@@ -2766,7 +2816,7 @@ const stages = (list) => {
   return out;
 };
 
-dated = fillSmallGaps(resolveOverlaps(napoleonic(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated))))))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated)))))))), "from " + DATED_FROM + " to " + DATED_TO));
 // From 1870 to 1885, the steps in blank land within about 50 km of Germany's and Switzerland's lines of 1886 (CShapes' gwcodes
 // 255 and 225) are taken too: the land Cliopatria's German Empire and France held beyond those lines, which `redraw1886` takes
 // from them, and the strips Cliopatria leaves between Switzerland and its neighbours.
@@ -2859,7 +2909,7 @@ function snapTo1886(list) {
   };
   const owners = [];
   for (const s of list) {
-    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic") continue;
+    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "australia") continue;
     const got = gainOf(s);
     let gain = got.gain;
     if (!gain.length) continue;
@@ -2892,7 +2942,7 @@ function snapTo1886(list) {
     for (const j of order) {
       const t = list[j];
       if (t.box[0] > g.box[2]) break;
-      if (mine.has(t) || t.src === "napoleonic" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
+      if (mine.has(t) || t.src === "napoleonic" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
       const near = g.gain.filter((q) => boxHit(boxOf([q]), t.box));
       if (!near.length) continue;
       const nb = boxOf(near), local = clipRect(snapOf(t), [nb[0] - 0.05, nb[1] - 0.05, nb[2] + 0.05, nb[3] + 0.05]);
