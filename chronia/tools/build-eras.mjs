@@ -2583,9 +2583,10 @@ const REDRAW_1886 = [
   { name: "German Empire", gw: 255, first: 1872, last: 1885, box: [5.8, 47.2, 23.0, 55.2] }
 ];
 // Land added to (`plus`) or taken from (`minus`) a redrawn state's lines of 1886: Alsace-Lorraine, the part of
-// CShapes' Germany of 1886 in Natural Earth's départements of Moselle, Bas-Rhin, and Haut-Rhin (so its border
-// with France is CShapes').
-const REDRAW_PLUS = { "alsace-lorraine": { gw: 255, units: ["Moselle", "Bas-Rhin", "Haute-Rhin"], adm0: "FRA" } };
+// CShapes' Germany of 1886 in Natural Earth's départements of Moselle, Bas-Rhin, and Haut-Rhin, and in their
+// French neighbours, Meurthe-et-Moselle, Vosges, and the Territoire de Belfort, where CShapes' line runs west of
+// Natural Earth's (so its border with France is CShapes', with no strip of neither between them).
+const REDRAW_PLUS = { "alsace-lorraine": { gw: 255, units: ["Moselle", "Bas-Rhin", "Haute-Rhin", "Meurthe-et-Moselle", "Vosges", "Territoire de Belfort"], adm0: "FRA" } };
 const REDRAW_KM = 0.3, REDRAW_OWN = 0.2;
 const SH_JOINT = [1864, 1866], SH_PRUSSIAN = [1867, 1870], SH_CLAIMS = ["Austrian Empire", "Kingdom of Prussia"], SH_MINUS = ["Free City of Lübeck", "Free City of Hamburg"], SH_ISLAND_KM2 = 3;
 const SH_NORTH = [7.5, 54.15, 11.5, 55.6], SH_HOLDERS = ["North German Confederation", "Kingdom of Prussia"];
@@ -2766,6 +2767,10 @@ const stages = (list) => {
 };
 
 dated = fillSmallGaps(resolveOverlaps(napoleonic(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated))))))), "from " + DATED_FROM + " to " + DATED_TO));
+// From 1870 to 1885, the steps in blank land within about 50 km of Germany's and Switzerland's lines of 1886 (CShapes' gwcodes
+// 255 and 225) are taken too: the land Cliopatria's German Empire and France held beyond those lines, which `redraw1886` takes
+// from them, and the strips Cliopatria leaves between Switzerland and its neighbours.
+const SNAP_FILL = { gw: [255, 225], first: 1870, last: 1885 };
 const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
 const SNAPPED = Symbol("snapped");
 function clipRect(polys, b) {
@@ -2821,7 +2826,7 @@ function snapTo1886(list) {
     for (const poly of polysOf(client.feature(topo, g).geometry)) {
       const q = snapPolys(rewind([poly]));
       if (polyKm2(q[0]) < 1) continue;
-      pieces.push({ polys: q, box: boxOf(q), cells: cellsOf(q) });
+      pieces.push({ polys: q, box: boxOf(q), cells: cellsOf(q), gw: p.gwcode });
     }
   }
   const thin = (q) => { const a = polyKm2(q); return a < SNAP_SMALL_KM2 || (2 * a) / ringKm(q[0]) < SNAP_THIN_KM; };
@@ -2902,9 +2907,16 @@ function snapTo1886(list) {
     }
   }
   const grown = new Map();
+  const fillCells = dilate(dilate(new Set(pieces.filter((P) => SNAP_FILL.gw.includes(P.gw)).flatMap((P) => [...P.cells]))));
+  const fillable = (q) => { const cs = cellsOf([q]); if (!cs.size) return fillCells.has(cellAt(q[0][0])); for (const c of cs) if (fillCells.has(c)) return true; return false; };
+  let filled = 0, filledKm2 = 0;
   for (const g of groups) {
-    if (!g.held.length) continue;
-    const spare = snapPolys(subtract(g.gain, g.held)).filter((q) => (2 * polyKm2(q)) / ringKm(q[0]) >= SNAP_HAIR_KM);
+    let spare = g.gain.length ? snapPolys(g.held.length ? subtract(g.gain, g.held) : g.gain).filter((q) => (2 * polyKm2(q)) / ringKm(q[0]) >= SNAP_HAIR_KM) : [];
+    if (g.first >= SNAP_FILL.first && g.last <= SNAP_FILL.last) {
+      const fill = spare.filter(fillable);
+      if (fill.length) { spare = spare.filter((q) => !fill.includes(q)); filled++; filledKm2 += km2Of(fill); }
+      else if (!g.held.length) continue;
+    } else if (!g.held.length) continue;
     const kept = km2Of(g.gain) - km2Of(spare);
     if (kept < 0.01) continue;
     for (const o of g.owners) {
@@ -2941,7 +2953,7 @@ function snapTo1886(list) {
     t.cells = cellsOf(kept);
     return true;
   });
-  console.log("snapped to CShapes' lines of 1886: " + took + " spans of " + new Set([...grown.keys()].map((o) => o.name)).size + " states took the thin pieces of their 1886 land that a neighbour held, " + Math.round(km2 / took || 0) + " km² a span on average, " + trimmed + " trims of neighbours, " + spared + " neighbours spared, " + hairs + " hairline pieces dropped, " + Math.round((Date.now() - t0) / 1000) + " s; " + list.length + " spans to " + out.length);
+  console.log("snapped to CShapes' lines of 1886: " + took + " spans of " + new Set([...grown.keys()].map((o) => o.name)).size + " states took the thin pieces of their 1886 land that a neighbour held, " + Math.round(km2 / took || 0) + " km² a span on average, " + trimmed + " trims of neighbours, " + spared + " neighbours spared, " + hairs + " hairline pieces dropped, " + filled + " groups of spans from " + SNAP_FILL.first + " to " + SNAP_FILL.last + " took " + Math.round(filledKm2) + " km² of blank steps near Germany and Switzerland, " + Math.round((Date.now() - t0) / 1000) + " s; " + list.length + " spans to " + out.length);
   return out;
 }
 dated = snapTo1886(dated);
