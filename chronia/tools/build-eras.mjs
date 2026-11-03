@@ -3659,6 +3659,19 @@ const csZones = (rows) => {
 const OCC_PATH = resolve(here, "occupations.json");
 const OCC = existsSync(OCC_PATH) ? JSON.parse(readFileSync(OCC_PATH, "utf8")) : { zones: [], areas: {} };
 for (const z of OCC.zones) if (z.wiki) CS_WIKI[z.name] = z.wiki;
+// The wartime occupations are drawn in the zones of control (tools/ww1-control.mjs), not on the main map,
+// which keeps the states at their lawful borders until the armistices. Only the occupations that went on
+// after them are cut here, from the day given (null for the whole zone): Mesopotamia and the Occupied Enemy
+// Territory Administration from the armistice of Mudros, Italy's and France's hold on Albania from the day
+// after Compiègne, and the zones that began after the war.
+const OCC_ON_MAP = {
+  "mesopotamia": "1918-10-31", "oeta": "1918-10-31", "oeta-west": "1918-10-31", "albania-it": "1918-11-12", "albania-fr": "1918-11-12",
+  "italy-1918": null, "dalmatia": null, "constantinople": null, "alsace-lorraine": null, "rhineland": null, "saar": null
+};
+const OCC_MAP = OCC.zones.filter((z) => z.key in OCC_ON_MAP).map((z) => {
+  const from = OCC_ON_MAP[z.key];
+  return { ...z, periods: z.periods.filter((p) => !from || p.to >= from).map((p) => (from && p.from < from ? { ...p, from } : p)) };
+}).filter((z) => z.periods.length);
 const csOccupy = (rows) => {
   const areaPolys = new Map();
   const area = (key) => {
@@ -3683,7 +3696,7 @@ const csOccupy = (rows) => {
     areaPolys.set(key, polys);
     return polys;
   };
-  const codes = new Set(OCC.zones.flatMap((z) => z.of));
+  const codes = new Set(OCC_MAP.flatMap((z) => z.of));
   const out = rows.filter((r) => !codes.has(String(r.p.gwcode)));
   const inPolys = (polys, pt) => d3.geoContains({ type: "MultiPolygon", coordinates: polys }, pt);
   let made = 0;
@@ -3691,7 +3704,7 @@ const csOccupy = (rows) => {
     const code = String(r.p.gwcode);
     if (!codes.has(code)) continue;
     const periods = [];
-    OCC.zones.forEach((z, zi) => { if (z.of.includes(code)) for (const p of z.periods) if (p.to >= r.p.start && p.from <= r.p.end) periods.push({ z, zi, ...p }); });
+    OCC_MAP.forEach((z, zi) => { if (z.of.includes(code)) for (const p of z.periods) if (p.to >= r.p.start && p.from <= r.p.end) periods.push({ z, zi, ...p }); });
     if (!periods.length && !(OCC.rest || []).some((x) => x.of === code && x.to >= r.p.start && x.from <= r.p.end)) { out.push(r); continue; }
     // The span's days, cut at every day a period starts or ends.
     const cuts = new Set([r.p.start]);
@@ -3753,7 +3766,7 @@ const csOccupy = (rows) => {
     }
     kept.push(cur);
   }
-  console.log("occupations: " + OCC.zones.length + " zones, " + (made - joined) + " spans of occupied land (" + joined + " joined to the span before, unchanged)");
+  console.log("occupations: " + OCC_MAP.length + " zones, " + (made - joined) + " spans of occupied land (" + joined + " joined to the span before, unchanged)");
   return kept;
 };
 for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {

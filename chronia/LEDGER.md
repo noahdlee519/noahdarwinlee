@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1914–1918 | Europe and the Middle East | the wartime occupations off the main map
+
+- What changed: the occupations of the First World War, cut from the states on the main map since 29 October 2026, are now shown only in the zones of control (the entry below), so the main map draws the belligerents at their lawful borders until the armistices: Belgium, northern France, Luxembourg, Poland, Lithuania, Serbia, Montenegro, Romania, Albania, and the rest are their own states' again during the war, and Germany, Austria-Hungary, and the Ottoman Empire no longer lose East Prussia, Galicia, Upper Alsace, Sinai, or Western Armenia for the months the other side held them. The occupations that went on after the war stay: British-occupied Mesopotamia and the Occupied Enemy Territory Administration from the armistice of Mudros (31 October 1918), Italy's and France's hold on Albania from 12 November 1918, Alsace-Lorraine, Trentino and Venezia Giulia, Dalmatia, the Rhineland, Constantinople, and the Saar.
+- Tables: `OCC_ON_MAP` in `tools/build-eras.mjs`, the zones of `tools/occupations.json` the main map takes and the day each starts there; the file itself is unchanged, and the zones of control still read all of it.
+- Sources: as for the occupations (see the README's "Occupations of the First World War").
+- Confidence: high: the main map follows CShapes during the war, and the zones kept are those of the armistices and after.
+- Alternatives: the occupations on both the main map and the zones of control, as the Second World War is drawn (not taken, at the user's choice); the zones that ran on after the armistice (Mesopotamia, Palestine and Syria, Albania) left off the main map altogether (not taken: they were the land's government until the mandates and Albania's settlement).
+- Left out: the German withdrawals after the armistice (Belgium and France to 22 November, Ober Ost to 9 December, and Ukraine to 14 December 1918), which are in neither layer, since the zones of control end on 11 November 1918.
+
 ## 3400 BC–2026 | the world | capitals
 
 - What changed: capitals were drawn only from 1400, only for the states whose titles were fetched from Wikidata in October (596 of 2,268), and only where Wikidata had one capital or dated ones, so most states had none: none at all before 1400, about half from 1400 to 1885, and the small territories and dependencies CShapes leaves without a capital from 1886 (Monaco, Gibraltar, Bermuda, the Leeward Islands). Capitals are now fetched for every state of every period, from Wikidata and, as a second source, the capitals in the states' Wikipedia infoboxes, with the years written beside them; where a state has several undated capitals, the one that was the largest city in the year is taken; and a capital outside the state's land gives way to the next source rather than to none. About 11,600 dated spans now have a capital (4,622 before), among the states over 100,000 km² about two in three in each period from 500 BC on, and from 1886 only microstates and a few territories still lack one (Vatican City, Tonga, the Turks and Caicos Islands).
@@ -31,7 +40,7 @@ Each entry:
 - Tables: `BELLIGERENTS` and `WW1_SIDES` in `tools/ww1-control.mjs` (new), run by `tools/build-control.mjs` with the key `ww1`; `data/control/ww1.json` and its row in `data/control.json`.
 - Sources: (1) the occupation areas and dates of `tools/occupations.json` and their sources; (2) CShapes 2.0 (Schvitz et al., 2022), for the states' land; (3) English Wikipedia, "Declarations of war during World War I", "Armistice of Mudros", "Armistice of Salonica", "Treaty of Brest-Litovsk", and "Treaty of Bucharest (1918)", for the days each state entered and left the war.
 - Confidence: medium, as for the occupation lines it is drawn from (about 5 to 10 km), and high for the days the states entered and left the war.
-- Alternatives: the occupations on the conflicts layer only, and the main map at the states' lawful borders throughout the war (not taken for now; the Second World War is drawn on both, and the choice is the user's); the Russian Empire's whole land hatched (not taken: only west of 60° east, as the Second World War's Soviet Union).
+- Alternatives: the Russian Empire's whole land hatched (not taken: only west of 60° east, as the Second World War's Soviet Union).
 - Left out: the Salonika front before Greece entered the war in June 1917, Persia, the Arab Revolt, the German colonies, and the war in East Asia and the Pacific.
 
 ## 2020–October 2026 | the world | the borders carried on past 2019
