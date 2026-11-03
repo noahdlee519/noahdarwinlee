@@ -158,6 +158,9 @@ a {
 .frame {
   position: relative;
   margin: 0 calc(-1 * var(--gutter));
+  /* What runs past the page's margins fades out toward the window's edges. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--gutter), #000 calc(100% - var(--gutter)), transparent);
 }
 
 .frame-bar {

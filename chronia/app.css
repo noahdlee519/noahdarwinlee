@@ -1538,6 +1538,54 @@ select.ch-save-input {
 }
 
 @media (max-width: 640px) {
+  /* The wars panel keeps to a corner on a phone: narrower, a shorter list that scrolls, and smaller
+     names and flags, so the map stays in view. */
+  .ch-wars {
+    max-width: min(250px, calc(100vw - 2 * var(--ch-gap)));
+  }
+
+  .ch-wars-btn {
+    padding: 5px 10px 5px 11px;
+    font-size: 12px;
+  }
+
+  .ch-wars-btn .ch-wars-ico {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ch-wars-list {
+    max-height: min(34vh, calc(100vh - var(--ch-time-h) - 2 * var(--ch-bar) - 6 * var(--ch-gap)));
+    padding: 0 8px 6px 7px;
+  }
+
+  .ch-wars-row {
+    padding: 5px 0 3px;
+  }
+
+  .ch-wars-name,
+  .ch-wars-none {
+    margin-bottom: 4px;
+    font-size: 12px;
+  }
+
+  .ch-wars-sides {
+    gap: 4px 5px;
+  }
+
+  .ch-wars-side {
+    gap: 3px;
+  }
+
+  .ch-wars-vs {
+    font-size: 11px;
+  }
+
+  .ch-wars-flag svg {
+    width: 16px;
+    height: 10.67px;
+  }
+
   .ch-top > .ch-year-box {
     width: 200px;
     height: 40px;
