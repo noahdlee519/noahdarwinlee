@@ -5597,13 +5597,13 @@
       [P("ru", "Russia", MOSCOW)]
     ]
   };
-  var isoDay = function (iso) { var a = iso.split("-"); return dayFromDate(+a[0], +a[1], +a[2]); };
+  var warDay = function (iso) { var a = iso.split("-"); return dayFromDate(+a[0], +a[1], +a[2]); };
   function warParties(w, day) {
     var groups = WAR_PARTIES[w.key] || [], D = w.data, out = [];
     groups.forEach(function (g) {
       var list = g.filter(function (p) {
-        if (p.from && day < isoDay(p.from)) return false;
-        if (p.to && day > isoDay(p.to)) return false;
+        if (p.from && day < warDay(p.from)) return false;
+        if (p.to && day > warDay(p.to)) return false;
         if (!p.side) return true;
         if (!D) return false;
         var k = -1;
