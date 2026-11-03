@@ -5,8 +5,8 @@
 //   { source, fetched, wars: [[name, wiki title, first year, first day | null, last year, last day | null, weight, [lon, lat] | null, sides]] }
 // where a side is a list of members [name, lon, lat, flag] (lon and lat null where no place is known, flag -1 where it has none in
 // data/flags.webp), years count AD 1 as 1 and 1 BC as -1, and days count from 1 January 1886 as the zones of control do, given only
-// for wars from 1800 dated to the month or day. data/flags.webp holds the 420 flags most used by the wars' parties, 30 by 20 each,
-// 20 to a row, from Wikidata's flag images (P41) and Wikimedia Commons (tools/wars/flags-wikidata.json lists them and each party's).
+// for wars from 1800 dated to the month or day. data/flags.webp holds every flag the wars' parties fly (938), most used first, 30 by 20
+// each, 20 to a row, from Wikidata's flag images (P41) and Wikimedia Commons (tools/wars/flags-wikidata.json lists them and each party's).
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,14 +21,21 @@ const DROP = new Set(["Cold War", "Arab Spring", "Crusades", "Reconquista", "Pun
   "Pacific War", "Western Front (World War I)", "Western Front (World War II)", "Eastern Front (World War I)", "Mediterranean and Middle East theatre of World War II",
   "European theatre of World War II", "Asiatic-Pacific Theater", "Mexican Revolution and the United States", "French Revolutionary and Napoleonic Wars",
   // Not wars between people, or not wars at all.
-  "Ngogo Chimpanzee War", "Gombe Chimpanzee War", "Nuclear warfare"]);
+  "Ngogo Chimpanzee War", "Gombe Chimpanzee War", "Nuclear warfare",
+  // An umbrella over the wars in Afghanistan since 1978, which are listed themselves, and a title that leads to the war of 2001 to 2021.
+  "Afghan conflict", "War in Afghanistan (2015–2021)"]);
 // Wars the zones of control already list with their own flags (WAR_PARTIES in app.js), by Wikipedia title.
 const CONTROLLED = new Set(["World War I", "World War II", "American Civil War", "Spanish Civil War", "Syrian civil war", "Russo-Ukrainian war (2022–present)", "Mexican drug war", "Gaza war"]);
 // Dates mended where Wikidata's run into a war listed separately.
 const ENDS = { "Russo-Ukrainian war": "2022-02-23" };
 const MAX_SIDE = 6;
 const FLAGS = JSON.parse(readFileSync(resolve(here, "wars/flags-wikidata.json"), "utf8"));
-const FLAG_AT = new Map(FLAGS.files.map((f, i) => [f, i]));
+const FLAG_AT = new Map(FLAGS.files.map((f, i) => [f, i]).filter(([f]) => f));
+// Sides for wars whose infobox the first fetch could not read (its combatants in a template of their own, as for the War in
+// Afghanistan), read from the rendered infobox's Belligerents row, with the places of the parties new to them.
+const EXTRA = (() => { try { return JSON.parse(readFileSync(resolve(here, "wars/infobox-sides.json"), "utf8")); } catch (e) { return { sides: {}, geo: {} }; } })();
+for (const w of src.wars) if (w.sides.length < 2 && EXTRA.sides[w.t]) w.sides = EXTRA.sides[w.t];
+for (const [q, rows] of Object.entries(EXTRA.geo)) if (!src.geo[q]) src.geo[q] = rows;
 
 // Wikidata's years are astronomical (0 is 1 BC); CHRONIA's have no year 0.
 function when(v, prec, end) {
