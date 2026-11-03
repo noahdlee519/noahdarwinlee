@@ -1671,6 +1671,7 @@ select.ch-save-input {
 
 /* Fact checkers' reports. */
 .ch-ctl[hidden],
+.ch-save-btn[hidden],
 .ch-report-lock[hidden],
 .ch-report-form[hidden] {
   display: none;
@@ -1739,4 +1740,21 @@ select.ch-save-input {
 
 .ch-report-who {
   margin-top: 8px;
+}
+
+.ch-report-gsi {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 4px;
+}
+
+.ch-report-gsi:empty {
+  display: none;
+}
+
+.ch-about-tip .ch-copy {
+  margin-top: 2px;
+  padding-top: 0;
+  border-top: 0;
+  opacity: 0.8;
 }

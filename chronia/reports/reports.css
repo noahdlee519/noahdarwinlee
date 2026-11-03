@@ -150,3 +150,10 @@
     grid-template-columns: 1fr;
   }
 }
+.cp-sheet .rp-reply {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--faint);
+  color: var(--muted);
+  font-style: italic;
+}

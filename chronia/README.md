@@ -40,7 +40,7 @@ A static page, no build step, like the rest of the site. The data files are made
 | `tools/adopt-land.mjs` | Gives the land no state's shape covers from 1886, strips of coast and islands, to the nearest state (see step 10 of [From 1886](#from-1886)). |
 | `tools/build-cities.mjs` | Builds the two city files (see [Cities](#cities)). |
 | `tools/city-tables.mjs` | CHRONIA's own tables for the cities: founding and end dates, names by date, corrections to the sources, and a few cities the sources lack. |
-| `reports/` | The review page for the fact checkers' reports (see [Fact checkers' reports](#fact-checkers-reports)). |
+| `reports/` | The review page for the fact checkers' reports (see [Reports of errors](#reports-of-errors)). |
 | `tools/build-divisions.mjs` | The builder of the first-level divisions (see [First-level divisions](#first-level-divisions)). |
 | `tools/build-geography.mjs` | The builder of the dated geography. |
 | `tools/roman-provinces.json` | The provinces of the Roman Empire under Trajan, from the Digital Atlas of the Roman Empire (see [The Roman provinces](#the-roman-provinces)). |
@@ -882,23 +882,23 @@ The edge functions `chronia-blurb` and `chronia-report` accept requests from chr
 
 To set it up in Vercel, once: add a project from the GitHub repository `noahdlee519/noahdarwinlee`, with the root directory left as the repository's root (the framework, the build command, and the output folder come from `vercel.json`), then add `chroniaatlas.com` and `www.chroniaatlas.com` under the project's Domains, with `www` redirecting to `chroniaatlas.com`. Since 3 November 2026, `noahdarwinlee.com/chronia/` and its team and reports pages send their visitors on to the same page of chroniaatlas.com, with the date and view in the link: GitHub Pages cannot redirect, so `go.js`, the first script on each page, does it on noahdarwinlee.com and its github.io address, and does nothing anywhere else (chroniaatlas.com, or a local copy). The rest of the site, the portfolio, and the CV link to chroniaatlas.com.
 
-### Fact checkers' reports
+### Reports of errors
 
-CHRONIA's fact checkers report errors from the map. "Fact checkers" in the about note's last line opens the panel; once someone has signed in with the team's shared password and their name, a flag in the map controls opens it from then on (the name and password are kept in that browser, under `chronia-checker`, until "Sign out"). A report is a place, chosen by clicking the map ("Choose a place on the map"; the click picks the place instead of opening the card), with the state under it on the map of the day; a first and last date, as the date box writes them, both set to the map's date at first; and a note on what is wrong and how the checker knows. The panel checks the dates as the timelapse's range does, and sends the report with the map's layers and the view's zoom.
+Anyone can report an error on the map. The flag in the map controls opens the panel; a reader signs in with Google there (Google's own button, from the same client as UCHRONIA's historian, whose ID token `chronia-report` trades with Supabase for a session kept in the browser under `chronia-auth`; where Google's script can't load, a button goes to Supabase's sign-in page, which comes back with the session in the address, the map's date and view kept in the tab meanwhile). A report is a place, chosen by clicking the map ("Choose a place on the map"; the click picks the place instead of opening the card), with the state under it on the map of the day; a first and last date, as the date box writes them, both set to the map's date at first; and a note on what is wrong and how the reader knows. The panel checks the dates as the timelapse's range does, and sends the report with the map's layers and the view's zoom. The account's name and email go with it, from Google, and each account can send 50 a day (UTC), counted from its reports (`DAY_CAP`); the panel shows how many are left. Until 3 November 2026 only the fact checkers could report, with a shared password and a name they typed.
 
-The reports go to the edge function `chronia-report` (`REPORT_URL` in `app.js`), which checks the password and writes them to `chronia_reports` with the project's secret key; the page never touches the table, and the table grants nothing to `anon` or `authenticated`. The team's password (`CHRONIA_REPORT_PASSWORD`) can only send. Noah's (`CHRONIA_REVIEW_PASSWORD`) opens [the review page](reports/) (`chronia/reports/`, not indexed), which lists the reports, newest first, each with a link to the atlas at its place and first date, a reply, and "Mark fixed", "Decline", and "Open again". Twenty wrong passwords in a day from one address (a salted hash of it, new each day, in `chronia_report_strikes`) shut that address out until the next day. To change a password, set the secret again; checkers whose stored password no longer works are asked to sign in again, and the report they were writing is kept.
+The reports go to the edge function `chronia-report` (`REPORT_URL` in `app.js`), which checks the session and writes them to `chronia_reports` with the project's secret key; the page never touches the table, and the table grants nothing to `anon` or `authenticated`. [The reports page](reports/) (`chronia/reports/`, not indexed, and linked only from the full stop at the end of the team page's first sentence) lists them, newest first, each with a link to the atlas at its place and first date. The team's password (`CHRONIA_REPORT_PASSWORD`, for the fact checkers) opens it to read, without the reporters' email addresses; Noah's (`CHRONIA_REVIEW_PASSWORD`) opens it to answer as well, with a reply, and "Mark fixed", "Decline", and "Open again". Twenty wrong passwords in a day from one address (a salted hash of it, new each day, in `chronia_report_strikes`) shut that address out until the next day.
 
 To switch it on, in the Supabase project `kigvciyyjlgjcgnwgrwf`:
 
 1. Apply `supabase/migrations/20261103_chronia_reports.sql` (the SQL editor, `supabase db push`, or the MCP's `apply_migration` with the name `20261103_chronia_reports`). It only creates new objects, and is safe to run twice.
-2. Set the two secrets under Edge Functions, Secrets: `CHRONIA_REPORT_PASSWORD`, the team's, and `CHRONIA_REVIEW_PASSWORD`, Noah's, which must differ. Until both are set, the function answers 503 and the panel says that reports are not switched on yet.
+2. Apply `supabase/migrations/202611031200_chronia_reports_google.sql`, which adds each report's account. Set the two secrets under Edge Functions, Secrets: `CHRONIA_REPORT_PASSWORD`, the team's, and `CHRONIA_REVIEW_PASSWORD`, Noah's, which must differ. Until both are set, the reports page answers that reports are not switched on yet. For signing in on chroniaatlas.com, `https://chroniaatlas.com` must be an authorised JavaScript origin of the Google client in Google Cloud, and `https://chroniaatlas.com/**` a redirect URL under Supabase's Authentication, URL Configuration.
 3. Deploy the function with JWT verification off, since the page sends no Supabase key and the function checks the origin and the password itself:
 
    ```
    supabase functions deploy chronia-report --no-verify-jwt --project-ref kigvciyyjlgjcgnwgrwf
    ```
 
-4. Check it: this should answer `{"role":"reporter"}`.
+4. Check it: this should answer `{"role":"viewer"}`.
 
    ```
    curl -s -X POST https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report \

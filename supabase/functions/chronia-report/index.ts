@@ -1,10 +1,14 @@
-// CHRONIA's fact checkers' reports. The page posts JSON with an `action`:
-//   check  { password }                                  -> { role: "reporter" | "reviewer" }
-//   send   { password, reporter, lon, lat, zoom, place, from, to, at, layers, note } -> { id }
-//   list   { password (Noah's), status: "open" | "fixed" | "declined" | "all" } -> { reports }
-//   set    { password (Noah's), id, status, reply }       -> { report }
-// The team's password (CHRONIA_REPORT_PASSWORD) may send; Noah's (CHRONIA_REVIEW_PASSWORD) may also list
-// and close reports. Twenty wrong passwords in a day shut a visitor out until the next day.
+// CHRONIA's reports of errors on the map. The page posts JSON with an `action`:
+//   google  { id_token, nonce }        -> a Supabase session, from Google's sign-in button on the page
+//   refresh { refresh_token }          -> a fresh session
+//   me      (signed in)                -> { name, left }: the account's name and its reports left today
+//   send    (signed in) { lon, lat, zoom, place, from, to, at, layers, note } -> { id, left }
+//   check   { password }               -> { role: "viewer" | "reviewer" }
+//   list    { password, status }       -> { role, reports }
+//   set     { password (Noah's), id, status, reply } -> { report }
+// Anyone signed in with Google may send, up to 50 reports a day (UTC). The team's password
+// (CHRONIA_REPORT_PASSWORD) may list the reports; Noah's (CHRONIA_REVIEW_PASSWORD) may also close them.
+// Twenty wrong passwords in a day shut a visitor out until the next day.
 
 const ORIGINS = [
   /^https:\/\/(www\.)?chroniaatlas\.com$/,
@@ -14,6 +18,7 @@ const ORIGINS = [
 ];
 const MAX_BODY = 8000;
 const MAX_STRIKES = 20;
+const DAY_CAP = 50;
 const STATUSES = ["open", "fixed", "declined"];
 const TIME_RE = /^-?\d{1,4}(-\d{2}(-\d{2})?)?$/;
 
@@ -33,7 +38,7 @@ function cors(origin: string) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "content-type",
+    "Access-Control-Allow-Headers": "content-type, authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
@@ -108,8 +113,44 @@ function num(v: unknown, field: string, lo: number, hi: number) {
 
 async function role(password: string) {
   if (await same(password, Deno.env.get("CHRONIA_REVIEW_PASSWORD") || "")) return "reviewer";
-  if (await same(password, Deno.env.get("CHRONIA_REPORT_PASSWORD") || "")) return "reporter";
+  if (await same(password, Deno.env.get("CHRONIA_REPORT_PASSWORD") || "")) return "viewer";
   return null;
+}
+
+async function session(path: string, body: Record<string, unknown>) {
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/token?grant_type=" + path, {
+    method: "POST",
+    headers: { apikey: dbKey().apikey, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    console.error("chronia-report " + path, res.status, (await res.text()).slice(0, 300));
+    return null;
+  }
+  const s = await res.json();
+  return s && typeof s.access_token === "string" && typeof s.refresh_token === "string" ? { access_token: s.access_token, refresh_token: s.refresh_token } : null;
+}
+
+type Account = { id: string; email: string; name: string };
+
+async function account(req: Request): Promise<Account | null> {
+  const m = /^Bearer\s+(\S{20,4000})$/.exec(req.headers.get("authorization") || "");
+  if (!m) return null;
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/user", { headers: { apikey: dbKey().apikey, Authorization: "Bearer " + m[1] } });
+  if (!res.ok) return null;
+  const u = await res.json();
+  if (!u || typeof u.id !== "string") return null;
+  const meta = u.user_metadata || {};
+  const name = String(meta.full_name || meta.name || (typeof u.email === "string" ? u.email.split("@")[0] : "") || "Someone").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 80) || "Someone";
+  return { id: u.id, email: typeof u.email === "string" ? u.email.slice(0, 320) : "", name };
+}
+
+async function sentToday(id: string) {
+  const since = new Date().toISOString().slice(0, 10) + "T00:00:00Z";
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/rest/v1/chronia_reports?select=id&user_id=eq." + id + "&created_at=gte." + encodeURIComponent(since), { method: "HEAD", headers: { ...dbKey(), Prefer: "count=exact" } });
+  if (!res.ok) throw new Error("count " + res.status);
+  const n = Number((res.headers.get("content-range") || "").split("/")[1]);
+  return isFinite(n) ? n : 0;
 }
 
 export async function handle(req: Request): Promise<Response> {
@@ -118,7 +159,6 @@ export async function handle(req: Request): Promise<Response> {
   const o = origin as string;
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(o) });
   if (req.method !== "POST") return json(405, { error: "method" }, o);
-  if (!Deno.env.get("CHRONIA_REPORT_PASSWORD") || !Deno.env.get("CHRONIA_REVIEW_PASSWORD")) return json(503, { error: "unset" }, o);
 
   let body: Record<string, unknown>;
   try {
@@ -130,6 +170,54 @@ export async function handle(req: Request): Promise<Response> {
     return json(400, { error: "body" }, o);
   }
 
+  const action = body.action;
+  if (action === "google") {
+    const idToken = typeof body.id_token === "string" ? body.id_token.slice(0, 4000) : "", nonce = typeof body.nonce === "string" ? body.nonce.slice(0, 200) : "";
+    const fresh = idToken ? await session("id_token", { provider: "google", id_token: idToken, nonce }).catch((e) => { console.error(e); return null; }) : null;
+    return fresh ? json(200, fresh, o) : json(401, { error: "signin" }, o);
+  }
+  if (action === "refresh") {
+    const token = typeof body.refresh_token === "string" ? body.refresh_token.slice(0, 400) : "";
+    const fresh = token ? await session("refresh_token", { refresh_token: token }).catch((e) => { console.error(e); return null; }) : null;
+    return fresh ? json(200, fresh, o) : json(401, { error: "signin" }, o);
+  }
+  if (action === "me" || action === "send") {
+    let me: Account | null = null;
+    try {
+      me = await account(req);
+    } catch (e) {
+      console.error(e);
+      return json(500, { error: "auth" }, o);
+    }
+    if (!me) return json(401, { error: "signin" }, o);
+    try {
+      const n = await sentToday(me.id);
+      if (action === "me") return json(200, { name: me.name, left: Math.max(0, DAY_CAP - n), cap: DAY_CAP }, o);
+      if (n >= DAY_CAP) return json(429, { error: "limit", cap: DAY_CAP }, o);
+      const row = {
+        user_id: me.id,
+        email: me.email,
+        reporter: me.name,
+        lon: num(body.lon, "lon", -180, 180),
+        lat: num(body.lat, "lat", -90, 90),
+        zoom: num(body.zoom, "zoom", 0.01, 999),
+        place: text(body.place, "place", 200, false),
+        date_from: text(body.from, "from", 40),
+        date_to: text(body.to, "to", 40),
+        at_time: text(body.at, "at", 20),
+        layers: text(body.layers, "layers", 200, false),
+        note: text(body.note, "note", 2000),
+      };
+      if (!TIME_RE.test(row.at_time)) throw new Bad("at");
+      const out = await db("chronia_reports?select=id", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) });
+      return json(200, { id: out && out[0] ? out[0].id : null, left: Math.max(0, DAY_CAP - n - 1), cap: DAY_CAP }, o);
+    } catch (e) {
+      if (e instanceof Bad) return json(400, { error: "field", field: e.field }, o);
+      console.error(e);
+      return json(500, { error: "store" }, o);
+    }
+  }
+
   const who = await visitor(req);
   try {
     if ((await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: false }) })) >= MAX_STRIKES) return json(429, { error: "locked" }, o);
@@ -137,6 +225,7 @@ export async function handle(req: Request): Promise<Response> {
     console.error(e);
     return json(500, { error: "store" }, o);
   }
+  if (!Deno.env.get("CHRONIA_REPORT_PASSWORD") || !Deno.env.get("CHRONIA_REVIEW_PASSWORD")) return json(503, { error: "unset" }, o);
   const password = typeof body.password === "string" ? body.password : "";
   const as = password ? await role(password) : null;
   if (!as) {
@@ -150,33 +239,16 @@ export async function handle(req: Request): Promise<Response> {
   }
 
   try {
-    const action = body.action;
     if (action === "check") return json(200, { role: as }, o);
-    if (action === "send") {
-      const row = {
-        reporter: text(body.reporter, "reporter", 80),
-        lon: num(body.lon, "lon", -180, 180),
-        lat: num(body.lat, "lat", -90, 90),
-        zoom: num(body.zoom, "zoom", 0.01, 999),
-        place: text(body.place, "place", 200, false),
-        date_from: text(body.from, "from", 40),
-        date_to: text(body.to, "to", 40),
-        at_time: text(body.at, "at", 20),
-        layers: text(body.layers, "layers", 200, false),
-        note: text(body.note, "note", 2000),
-      };
-      if (!TIME_RE.test(row.at_time)) throw new Bad("at");
-      const out = await db("chronia_reports?select=id", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) });
-      return json(200, { id: out && out[0] ? out[0].id : null }, o);
-    }
-    if (as !== "reviewer") return json(403, { error: "review" }, o);
     if (action === "list") {
       const status = body.status === undefined ? "open" : body.status;
       if (status !== "all" && !STATUSES.includes(status as string)) throw new Bad("status");
       const rows = await db("chronia_reports?select=*&order=created_at.desc&limit=1000" + (status === "all" ? "" : "&status=eq." + status));
-      return json(200, { reports: rows }, o);
+      const shown = as === "reviewer" ? rows : (rows || []).map((r: Record<string, unknown>) => { const { email: _e, user_id: _u, ...rest } = r; return rest; });
+      return json(200, { role: as, reports: shown }, o);
     }
     if (action === "set") {
+      if (as !== "reviewer") return json(403, { error: "review" }, o);
       const id = num(body.id, "id", 1, Number.MAX_SAFE_INTEGER);
       if (!Number.isInteger(id)) throw new Bad("id");
       const status = body.status;

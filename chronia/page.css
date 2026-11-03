@@ -150,6 +150,13 @@ body.cp {
   outline-offset: 2px;
 }
 
+.cp-sheet a.cp-quiet,
+.cp-sheet a.cp-quiet:hover {
+  color: inherit;
+  text-decoration: none;
+  cursor: text;
+}
+
 .cp-foot {
   margin-top: 34px;
   padding-top: 14px;

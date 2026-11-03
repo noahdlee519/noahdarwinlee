@@ -1,11 +1,12 @@
-// The review page for CHRONIA's fact checkers' reports. Noah's review password opens it; it is kept for this
-// tab only (sessionStorage). Each report links to the atlas at its place and first date, and can be marked
-// fixed or declined, with a reply, or opened again.
+// The page of CHRONIA's reports of errors on the map. The team's password opens it to read; Noah's opens it
+// to answer as well. The password is kept for this tab only (sessionStorage). Each report links to the atlas
+// at its place and first date; with Noah's password it can be marked fixed or declined, with a reply, or
+// opened again.
 (function () {
   var URL_ = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", STORE = "chronia-review";
   var $ = function (id) { return document.getElementById(id); };
   var lock = $("lock"), pass = $("pass"), lockNote = $("lock-note"), board = $("board"), list = $("list"), count = $("count");
-  var pw = "", status = "open", busy = false;
+  var pw = "", status = "open", busy = false, role = "";
   try { pw = sessionStorage.getItem(STORE) || ""; } catch (e) {}
 
   function call(body) {
@@ -17,7 +18,7 @@
   function trouble(r) {
     if (r.status === 0) return "The reports server could not be reached.";
     if (r.status === 401) return "That password is not right.";
-    if (r.status === 403) return "That is the team's password, which can send reports but not review them.";
+    if (r.status === 403) return "Only Noah's password can answer reports.";
     if (r.status === 429) return "Too many wrong passwords from here today. Try again tomorrow.";
     if (r.status === 503) return "Reports are not switched on yet: the passwords are not set in Supabase.";
     return "Something went wrong on the server (" + r.status + ").";
@@ -42,8 +43,18 @@
     head.appendChild(num);
     head.appendChild(document.createTextNode(span(r)));
     li.appendChild(head);
-    li.appendChild(el("p", "rp-meta", [r.place || "No state", Math.abs(r.lat).toFixed(2) + "° " + (r.lat < 0 ? "S" : "N") + ", " + Math.abs(r.lon).toFixed(2) + "° " + (r.lon < 0 ? "W" : "E"), "from " + r.reporter, when(r.created_at), r.status === "open" ? "open" : r.status + (r.closed_at ? " " + when(r.closed_at) : "")].join(" | ")));
+    li.appendChild(el("p", "rp-meta", [r.place || "No state", Math.abs(r.lat).toFixed(2) + "° " + (r.lat < 0 ? "S" : "N") + ", " + Math.abs(r.lon).toFixed(2) + "° " + (r.lon < 0 ? "W" : "E"), "from " + r.reporter + (r.email ? " (" + r.email + ")" : ""), when(r.created_at), r.status === "open" ? "open" : r.status + (r.closed_at ? " " + when(r.closed_at) : "")].join(" | ")));
     li.appendChild(el("p", "rp-text", r.note));
+    if (role !== "reviewer") {
+      if (r.reply) li.appendChild(el("p", "rp-reply", "Reply: " + r.reply));
+      var only = el("div", "rp-acts"), go = el("a", "", "Open on the map");
+      go.href = mapLink(r);
+      go.target = "_blank";
+      go.rel = "noopener";
+      only.appendChild(go);
+      li.appendChild(only);
+      return li;
+    }
     var id = "reply-" + r.id, lab = el("label", "", "Reply or what was done");
     lab.htmlFor = id;
     var reply = el("textarea");
@@ -83,6 +94,7 @@
     count.textContent = "Loading…";
     return call({ action: "list", status: status }).then(function (r) {
       if (r.status !== 200) { shut(trouble(r)); return; }
+      role = r.body.role || "viewer";
       var rows = r.body.reports || [];
       list.textContent = "";
       if (!rows.length) list.appendChild(el("li", "rp-empty", status === "open" ? "No open reports." : "None."));
@@ -113,8 +125,8 @@
     lockNote.textContent = "Checking…";
     call({ action: "check" }).then(function (r) {
       busy = false;
-      if (r.status === 200 && r.body.role === "reviewer") { pass.value = ""; open(); }
-      else shut(r.status === 200 ? trouble({ status: 403 }) : trouble(r));
+      if (r.status === 200) { role = r.body.role; pass.value = ""; open(); }
+      else shut(trouble(r));
     });
   });
   board.querySelectorAll("[data-status]").forEach(function (b) {

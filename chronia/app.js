@@ -4520,28 +4520,128 @@
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || /^[pPoOmM+=_−/-]$/.test(e.key)) e.stopPropagation();
   });
 
-  // Fact checkers' reports: a place chosen on the map, a stretch of time, and a note, sent to the
-  // chronia-report function with the team's shared password, which checks it. The name and password are kept
-  // in this browser once they work, so the flag in the controls shows from then on.
-  var REPORT_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", REPORT_STORE = "chronia-checker";
+  // Reports of errors on the map, from anyone signed in with Google: a place chosen on the map, a stretch of
+  // time, and a note, sent to the chronia-report function, which keeps up to 50 a day from each account.
+  // Signing in uses Google's own button on the page (an ID token the function trades with Supabase for a
+  // session), or, where Google's script can't load, Supabase's sign-in page, which comes back here with the
+  // session in the address; the map's date and view are kept in the tab while it goes.
+  var REPORT_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", REPORT_AUTH = "https://kigvciyyjlgjcgnwgrwf.supabase.co/auth/v1";
+  var REPORT_STORE = "chronia-auth", REPORT_BACK = "chronia-auth-back", GOOGLE_CLIENT = "925004414037-rc7f9m47jivrobj48p33vmkdfpvuva7t.apps.googleusercontent.com";
   var reportBtn = $("report-btn"), reportPanel = $("report"), reportLock = $("report-lock"), reportForm = $("report-form");
-  var reportName = $("report-name"), reportPass = $("report-pass"), reportLockNote = $("report-lock-note"), reportUnlock = $("report-unlock");
+  var reportLockNote = $("report-lock-note"), reportGoogle = $("report-google"), reportGsi = $("report-gsi");
   var reportWhere = $("report-where"), reportPick = $("report-pick"), reportFrom = $("report-from"), reportTo = $("report-to");
   var reportNote = $("report-note"), reportLine = $("report-note-line"), reportSend = $("report-send"), reportWho = $("report-who");
-  var reportPicking = false, reportPlace = null, reportBusy = false, checker = null;
-  try { checker = JSON.parse(localStorage.getItem(REPORT_STORE) || "null"); } catch (e) {}
-  if (!checker || typeof checker.name !== "string" || typeof checker.pw !== "string") checker = null;
-  function keepChecker(c) {
-    checker = c;
-    try { if (c) localStorage.setItem(REPORT_STORE, JSON.stringify(c)); else localStorage.removeItem(REPORT_STORE); } catch (e) {}
-    reportBtn.hidden = !c;
+  var reportPicking = false, reportPlace = null, reportBusy = false, reportSession = null, reportMe = null, reportRefreshing = null, gsiState = 0, gsiNonce = "", reportBackOpen = false;
+  try { reportSession = JSON.parse(localStorage.getItem(REPORT_STORE) || "null"); } catch (e) {}
+  if (!reportSession || typeof reportSession.a !== "string" || typeof reportSession.r !== "string") reportSession = null;
+  function claimsOf(token) {
+    try {
+      var p = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p), function (ch) { return ch.charCodeAt(0); }))) || {};
+    } catch (e) { return {}; }
+  }
+  function keepReportSession(a, r) {
+    reportSession = a ? { a: a, r: r, e: (+claimsOf(a).exp || 0) * 1000 } : null;
+    if (!a) reportMe = null;
+    try { if (reportSession) localStorage.setItem(REPORT_STORE, JSON.stringify(reportSession)); else localStorage.removeItem(REPORT_STORE); } catch (e) {}
     syncReport();
   }
-  function syncReport() {
-    reportLock.hidden = !!checker;
-    reportForm.hidden = !checker;
-    if (checker) reportWho.textContent = "Signed in as " + checker.name;
+  (function takeSignIn() {
+    var h = location.hash;
+    if (!/^#(.*&)?(access_token|error_description)=/.test(h)) return;
+    var q = new URLSearchParams(h.slice(1)), back = "";
+    try { back = sessionStorage.getItem(REPORT_BACK) || ""; sessionStorage.removeItem(REPORT_BACK); } catch (e) {}
+    try { history.replaceState(null, "", location.pathname + back); } catch (e) {}
+    reportBackOpen = true;
+    if (q.get("access_token") && q.get("refresh_token")) keepReportSession(q.get("access_token"), q.get("refresh_token"));
+    else setTimeout(function () { reportLockNote.textContent = "Signing in did not work: " + (q.get("error_description") || "try again") + "."; }, 0);
+  })();
+  function reportPost(body, token) {
+    var headers = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = "Bearer " + token;
+    return fetch(REPORT_URL, { method: "POST", headers: headers, body: JSON.stringify(body) }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, body: j }; });
+    });
   }
+  function reportToken() {
+    var s = reportSession;
+    if (!s) return Promise.resolve(null);
+    if (s.e - Date.now() > 60000) return Promise.resolve(s.a);
+    if (reportRefreshing) return reportRefreshing;
+    reportRefreshing = reportPost({ action: "refresh", refresh_token: s.r }).then(function (r) {
+      if (r.status === 401) { keepReportSession(null); return null; }
+      if (r.status !== 200) throw new Error("refresh " + r.status);
+      keepReportSession(r.body.access_token, r.body.refresh_token);
+      return r.body.access_token;
+    });
+    reportRefreshing.then(function () { reportRefreshing = null; }, function () { reportRefreshing = null; });
+    return reportRefreshing;
+  }
+  function reportAsk(body) {
+    return reportToken().then(function (t) {
+      if (!t) return { status: 401, body: { error: "signin" } };
+      return reportPost(body, t);
+    }).then(function (r) { if (r.status === 401) keepReportSession(null); return r; });
+  }
+  function showWho() {
+    if (!reportMe) { reportWho.textContent = "Signed in"; return; }
+    reportWho.textContent = "Signed in as " + reportMe.name + " | " + (reportMe.left === 1 ? "1 report" : reportMe.left + " reports") + " left today";
+  }
+  function loadMe() {
+    reportAsk({ action: "me" }).then(function (r) {
+      if (r.status === 200) { reportMe = { name: r.body.name, left: r.body.left }; showWho(); }
+    }, function () {});
+  }
+  function syncReport() {
+    reportLock.hidden = !!reportSession;
+    reportForm.hidden = !reportSession;
+    if (reportSession) { showWho(); if (!reportMe && !reportPanel.hidden) loadMe(); }
+    else startGoogle();
+  }
+  function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join(""); }
+  // Google's button, drawn in the panel once its script loads; until then, or if it can't, the panel's own
+  // button goes to Supabase's sign-in page instead.
+  function startGoogle() {
+    if (gsiState || reportPanel.hidden || !window.crypto || !crypto.subtle) return;
+    gsiState = 1;
+    var sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true;
+    sc.onerror = function () { gsiState = -1; };
+    sc.onload = function () {
+      gsiNonce = randomHex(32);
+      crypto.subtle.digest("SHA-256", new TextEncoder().encode(gsiNonce)).then(function (buf) {
+        var hashed = Array.from(new Uint8Array(buf), function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join("");
+        try {
+          google.accounts.id.initialize({ client_id: GOOGLE_CLIENT, callback: googleSignedIn, nonce: hashed, ux_mode: "popup", context: "signin", itp_support: true, use_fedcm_for_prompt: true });
+          google.accounts.id.renderButton(reportGsi, { type: "standard", theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 248 });
+          gsiState = 2;
+          reportGoogle.hidden = true;
+        } catch (e) { console.warn("google sign-in", e); gsiState = -1; }
+      });
+    };
+    document.head.appendChild(sc);
+  }
+  function googleSignedIn(resp) {
+    if (!resp || !resp.credential) return;
+    reportLockNote.textContent = "Signing in…";
+    reportPost({ action: "google", id_token: resp.credential, nonce: gsiNonce }).then(function (r) {
+      if (r.status !== 200) throw new Error("google " + r.status);
+      reportLockNote.textContent = "";
+      keepReportSession(r.body.access_token, r.body.refresh_token);
+      if (!reportFrom.value) reportNow();
+      loadMe();
+      reportPick.focus();
+    }).catch(function (e) {
+      console.warn("google sign-in", e);
+      reportLockNote.textContent = "Signing in did not work. Try the other way:";
+      reportGoogle.hidden = false;
+    });
+  }
+  reportGoogle.addEventListener("click", function () {
+    try { sessionStorage.setItem(REPORT_BACK, location.hash); } catch (e) {}
+    location.href = REPORT_AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname);
+  });
   function setReportPicking(on) {
     reportPicking = on;
     reportPick.setAttribute("aria-pressed", on ? "true" : "false");
@@ -4551,13 +4651,13 @@
   function setReportOpen(open, focusBtn) {
     reportPanel.hidden = !open;
     reportBtn.setAttribute("aria-expanded", open ? "true" : "false");
-    if (!open) { setReportPicking(false); if (focusBtn && !reportBtn.hidden) reportBtn.focus(); return; }
+    if (!open) { setReportPicking(false); if (focusBtn) reportBtn.focus(); return; }
     if (!layersPanel.hidden) setLayersOpen(false, false);
     if (!savePanel.hidden) setSaveOpen(false, false);
     if (about.classList.contains("is-open")) setAbout(false);
     syncReport();
-    if (checker && !reportFrom.value) reportNow();
-    (checker ? reportPick : reportName.value ? reportPass : reportName).focus();
+    if (reportSession && !reportFrom.value) reportNow();
+    if (reportSession) reportPick.focus();
   }
   function reportNow() { reportFrom.value = reportTo.value = yearInput.value; }
   function timeKey(t) {
@@ -4575,34 +4675,15 @@
     reportLine.textContent = "";
     reportNote.focus();
   }
-  function reportCall(body) {
-    return fetch(REPORT_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, body: j }; });
-    });
-  }
   function reportTrouble(r) {
     if (!r) return "The reports server could not be reached. Check the connection and try again.";
-    if (r.status === 401) return "That password is not right.";
-    if (r.status === 429) return "Too many wrong passwords from here today. Try again tomorrow.";
-    if (r.status === 503) return "Reports are not switched on yet.";
+    if (r.status === 429) return "That is 50 reports today, the most for one account. Send the rest tomorrow; this one is kept here.";
     if (r.status === 400 && r.body && r.body.field) return "The server did not accept the " + r.body.field + ".";
     return "Something went wrong on the server (" + r.status + "). Try again in a minute.";
   }
-  reportLock.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var name = reportName.value.replace(/\s+/g, " ").trim(), pw = reportPass.value;
-    if (!name) { reportLockNote.textContent = "Enter your name, so Noah knows who sent each report."; reportName.focus(); return; }
-    if (!pw || reportBusy) return;
-    reportBusy = true; reportUnlock.disabled = true;
-    reportLockNote.textContent = "Checking…";
-    reportCall({ action: "check", password: pw }).then(function (r) {
-      if (r.status === 200) { reportPass.value = ""; reportLockNote.textContent = ""; keepChecker({ name: name, pw: pw }); reportNow(); reportPick.focus(); }
-      else { reportLockNote.textContent = reportTrouble(r); reportPass.select(); }
-    }, function () { reportLockNote.textContent = reportTrouble(null); }).then(function () { reportBusy = false; reportUnlock.disabled = false; });
-  });
   reportForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    if (reportBusy || !checker) return;
+    if (reportBusy || !reportSession) return;
     var from = reportFrom.value.trim(), to = reportTo.value.trim(), note = reportNote.value.trim();
     var a = rangeEnd(from, false), b = rangeEnd(to, true), t = parseTime(from);
     var say = function (msg, el) { reportLine.textContent = msg; if (el) el.focus(); };
@@ -4614,25 +4695,26 @@
     var on = Object.keys(layers).filter(function (k) { return layers[k]; }).join(", ") + (flat ? " | flat map" : " | globe");
     reportBusy = true; reportSend.disabled = true;
     say("Sending…");
-    reportCall({ action: "send", password: checker.pw, reporter: checker.name, lon: reportPlace.lon, lat: reportPlace.lat, zoom: reportPlace.zoom, place: reportPlace.place, from: from, to: to, at: timeKey(t), layers: on, note: note }).then(function (r) {
+    reportAsk({ action: "send", lon: reportPlace.lon, lat: reportPlace.lat, zoom: reportPlace.zoom, place: reportPlace.place, from: from, to: to, at: timeKey(t), layers: on, note: note }).then(function (r) {
       if (r.status === 200) {
         reportNote.value = "";
         reportPlace = null;
         reportWhere.textContent = "None yet";
         setReportPicking(false);
+        if (reportMe) { reportMe.left = r.body.left; showWho(); }
         say("Sent" + (r.body && r.body.id ? " as report " + r.body.id : "") + ". Thank you.");
       } else if (r.status === 401) {
-        keepChecker(null);
-        reportLockNote.textContent = "The team's password has changed. Sign in again; your report is kept.";
-        reportPass.focus();
+        reportLockNote.textContent = "Your sign-in has run out. Sign in again; your report is kept.";
       } else say(reportTrouble(r));
     }, function () { say(reportTrouble(null)); }).then(function () { reportBusy = false; reportSend.disabled = false; });
   });
   reportPick.addEventListener("click", function () { setReportPicking(!reportPicking); });
   $("report-now").addEventListener("click", reportNow);
-  $("report-out").addEventListener("click", function () { reportName.value = checker ? checker.name : ""; keepChecker(null); reportPass.focus(); });
+  $("report-out").addEventListener("click", function () {
+    keepReportSession(null);
+    try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
+  });
   reportBtn.addEventListener("click", function () { setReportOpen(reportPanel.hidden, false); });
-  $("report-link").addEventListener("click", function () { setReportOpen(true, false); });
   [layersBtn, saveBtn, $("search-btn")].forEach(function (b) { b.addEventListener("click", function () { if (!reportPanel.hidden) setReportOpen(false, false); }); });
   window.addEventListener("keydown", function (e) {
     if (e.key !== "Escape" || reportPanel.hidden) return;
@@ -4640,8 +4722,8 @@
     if (reportPicking) setReportPicking(false); else setReportOpen(false, true);
   }, true);
   reportPanel.addEventListener("keydown", function (e) { if (e.key !== "Escape") e.stopPropagation(); });
-  if (checker) { reportBtn.hidden = false; reportName.value = checker.name; }
   syncReport();
+  if (reportBackOpen) setTimeout(function () { setReportOpen(true, false); }, 0);
 
   // A date typed for the range: a bare year means the whole year (January to December by the month).
   function rangeEnd(s, last) {
