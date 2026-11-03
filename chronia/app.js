@@ -2790,10 +2790,14 @@
     for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && reg.names.indexOf(polityName(p.id)) >= 0) out.push(i); }
     return out;
   }
-  var ctlIndex = null, ctlIndexLoad = null;
+  var ctlIndex = null, ctlIndexLoad = null, ctlEnd = -Infinity;
+  // A war whose file runs to the last month any war's file has (one still going on when the files were last
+  // made) stays on the map after it, at its last month, as the borders stay at the data's last day.
+  function ctlOn(w, day) { return day >= w.first && (day <= w.last || w.last === ctlEnd); }
   function ctlLoadIndex() {
     if (!ctlIndexLoad) ctlIndexLoad = fetchJSON("data/control.json").then(function (d) {
       ctlIndex = d.wars.map(function (w) { return { key: w[0], name: w[1], first: w[2], last: w[3], cap: divBoxCap(w[4]), file: "data/" + w[5], data: null, load: null }; });
+      ctlEnd = ctlIndex.reduce(function (m, w) { return Math.max(m, w.last); }, -Infinity);
       scheduleRender();
     }).catch(function (e) { console.warn("control", e); });
     return ctlIndexLoad;
@@ -2819,7 +2823,7 @@
     var out = [];
     for (var i = 0; i < ctlIndex.length; i++) {
       var w = ctlIndex[i];
-      if (day < w.first || day > w.last) continue;
+      if (!ctlOn(w, day)) continue;
       if (needView && !divInView(w.cap)) continue;
       if (!w.data) { ctlLoad(w); continue; }
       out.push(w);
@@ -2828,6 +2832,7 @@
   }
   function ctlState(w, day) {
     var D = w.data, idx = [];
+    day = Math.min(day, w.last);
     for (var i = 0; i < D.rows.length; i++) { var r = D.rows[i]; if (r[1] <= day && day <= r[2]) idx.push(i); }
     var key = idx.join(","), st = D.states.get(key);
     if (st) return st;
@@ -5602,6 +5607,7 @@
   var warDay = function (iso) { var a = iso.split("-"); return dayFromDate(+a[0], +a[1], +a[2]); };
   function warParties(w, day) {
     var groups = WAR_PARTIES[w.key] || [], D = w.data, out = [];
+    day = Math.min(day, w.last);
     groups.forEach(function (g) {
       var list = g.filter(function (p) {
         if (p.from && day < warDay(p.from)) return false;
@@ -5671,7 +5677,7 @@
     if (!ctlIndex) { ctlLoadIndex(); return; }
     var day = ctlDay(), rows = [];
     ctlIndex.forEach(function (w) {
-      if (day < w.first || day > w.last) return;
+      if (!ctlOn(w, day)) return;
       if (!w.data) ctlLoad(w);
       var groups = warParties(w, day);
       if (groups.length) rows.push({ w: w, name: w.name, groups: groups });
