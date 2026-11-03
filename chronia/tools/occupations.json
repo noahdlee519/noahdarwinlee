@@ -1344,6 +1344,19 @@
    "of": [
     "640"
    ],
+   "seat": [
+    {
+     "from": "1918-11-13",
+     "to": "1920-04-22",
+     "note": "the Sultan's government stayed in occupied Constantinople"
+    },
+    {
+     "from": "1920-04-23",
+     "to": "1923-10-04",
+     "cap": ["Ankara", 32.854, 39.92],
+     "note": "the Grand National Assembly sat in Angora from 23 April 1920 and governed the land the occupation left"
+    }
+   ],
    "periods": [
     {
      "from": "1918-11-13",

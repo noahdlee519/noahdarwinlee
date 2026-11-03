@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1918–1923 | Anatolia | the Ottoman Empire's capital during the occupation of Constantinople
+
+- What changed: with Constantinople cut out as an Allied-occupied zone from 13 November 1918 to 4 October 1923, the rest of the Ottoman Empire lost CShapes' capital and fell back on Wikipedia's infobox, which named Brusa (Bursa), the capital of the 1330s to 1360s. It now keeps Constantinople to 22 April 1920 and has Angora (Ankara) from 23 April 1920.
+- Tables: `seat` on the `constantinople` zone of `tools/occupations.json`, read where `tools/build-eras.mjs` cuts the occupations. Data to follow with the next build.
+- Sources: Wikipedia's Occupation of Constantinople and Grand National Assembly of Turkey.
+- Confidence: high: the Sultan's government sat in occupied Constantinople until the Assembly's government in Angora took over Anatolia, and the Sultanate was abolished in November 1922.
+- Alternatives: no capital for the occupation's years (not taken: the card would say nothing where the history is clear); renaming the state for 1920 to 1923 (left for now: the map follows CShapes' name).
+- Left out: the state's name, which stays the Ottoman Empire to October 1923.
+
 ## 1939–1945 | the British Isles and other islands | the Second World War's zones of control across the sea
 
 - What changed: the zones of control split each month's land into the towns' Voronoi cells across the sea, so French and Dutch towns' cells held the Isle of Wight and strips of Kent, Sussex, and Norfolk for the Axis from 1940 to 1944, and Elba went with Corsica. Each landmass is now split among its own towns only, and a landmass without towns goes with the nearest one that has some.

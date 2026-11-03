@@ -3737,7 +3737,11 @@ const csOccupy = (rows) => {
       // state occupied (Serbia and Montenegro), for the days it lists.
       const own = (OCC.rest || []).find((x) => x.of === code && x.from <= a && b <= x.to);
       const status = own ? { status: own.status, owner: own.owner } : {};
-      if (rest.length) out.push({ p: { ...r.p, ...status, ...(capHere || !pieces.length ? {} : { capname: null }), start: a, end: b }, geometry: pieces.length ? { type: "MultiPolygon", coordinates: rest } : r.geometry });
+      // A zone that took the capital may say where the state's seat was meanwhile (`seat`: the occupied capital itself, where the
+      // government stayed, or another town); otherwise the land left has no capital from CShapes.
+      const seat = !capHere && pieces.length ? pieces.flatMap(({ z }) => z.seat || []).find((x) => x.from <= a && a <= x.to) : null;
+      const restCap = capHere || !pieces.length ? {} : seat ? (seat.cap ? { capname: seat.cap[0], caplong: seat.cap[1], caplat: seat.cap[2] } : {}) : { capname: null };
+      if (rest.length) out.push({ p: { ...r.p, ...status, ...restCap, start: a, end: b }, geometry: pieces.length ? { type: "MultiPolygon", coordinates: rest } : r.geometry });
     });
   }
   // A zone's span is cut wherever any zone of the same state changes, and wherever the state's CShapes
