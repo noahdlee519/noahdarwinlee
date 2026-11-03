@@ -3223,6 +3223,7 @@
     if (pointers.size) return;
     var clickLike = downAt && !downAt.moved && e.timeStamp - downAt.t < 600 && e.type === "pointerup";
     if (clickLike) {
+      if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
       var town = cityAt(e.clientX, e.clientY, e.pointerType !== "mouse");
       divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       var p = town ? null : polityAt(e.clientX, e.clientY);
@@ -4511,6 +4512,129 @@
   savePanel.addEventListener("keydown", function (e) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || /^[pPoOmM+=_−/-]$/.test(e.key)) e.stopPropagation();
   });
+
+  // Fact checkers' reports: a place chosen on the map, a stretch of time, and a note, sent to the
+  // chronia-report function with the team's shared password, which checks it. The name and password are kept
+  // in this browser once they work, so the flag in the controls shows from then on.
+  var REPORT_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", REPORT_STORE = "chronia-checker";
+  var reportBtn = $("report-btn"), reportPanel = $("report"), reportLock = $("report-lock"), reportForm = $("report-form");
+  var reportName = $("report-name"), reportPass = $("report-pass"), reportLockNote = $("report-lock-note"), reportUnlock = $("report-unlock");
+  var reportWhere = $("report-where"), reportPick = $("report-pick"), reportFrom = $("report-from"), reportTo = $("report-to");
+  var reportNote = $("report-note"), reportLine = $("report-note-line"), reportSend = $("report-send"), reportWho = $("report-who");
+  var reportPicking = false, reportPlace = null, reportBusy = false, checker = null;
+  try { checker = JSON.parse(localStorage.getItem(REPORT_STORE) || "null"); } catch (e) {}
+  if (!checker || typeof checker.name !== "string" || typeof checker.pw !== "string") checker = null;
+  function keepChecker(c) {
+    checker = c;
+    try { if (c) localStorage.setItem(REPORT_STORE, JSON.stringify(c)); else localStorage.removeItem(REPORT_STORE); } catch (e) {}
+    reportBtn.hidden = !c;
+    syncReport();
+  }
+  function syncReport() {
+    reportLock.hidden = !!checker;
+    reportForm.hidden = !checker;
+    if (checker) reportWho.textContent = "Signed in as " + checker.name;
+  }
+  function setReportPicking(on) {
+    reportPicking = on;
+    reportPick.setAttribute("aria-pressed", on ? "true" : "false");
+    reportPick.textContent = on ? "Click the place on the map" : reportPlace ? "Choose another place" : "Choose a place on the map";
+    document.body.classList.toggle("is-picking", on);
+  }
+  function setReportOpen(open, focusBtn) {
+    reportPanel.hidden = !open;
+    reportBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (!open) { setReportPicking(false); if (focusBtn && !reportBtn.hidden) reportBtn.focus(); return; }
+    if (!layersPanel.hidden) setLayersOpen(false, false);
+    if (!savePanel.hidden) setSaveOpen(false, false);
+    if (about.classList.contains("is-open")) setAbout(false);
+    syncReport();
+    if (checker && !reportFrom.value) reportNow();
+    (checker ? reportPick : reportName.value ? reportPass : reportName).focus();
+  }
+  function reportNow() { reportFrom.value = reportTo.value = yearInput.value; }
+  function timeKey(t) {
+    if (!isMonthly(t)) return String(Math.round(t));
+    var d = dateOfDay(dayOfTime(t));
+    return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
+  }
+  function pickReport(x, y) {
+    var ll = lonLatAt(x, y);
+    if (!ll) return;
+    var p = polityAt(x, y), name = p ? polityName(p.id) : "";
+    reportPlace = { lon: +ll[0].toFixed(4), lat: +ll[1].toFixed(4), zoom: +view.zoom.toFixed(2), place: (name || "No state") + " on the map of " + yearInput.value };
+    reportWhere.textContent = (name || "No state here") + " | " + Math.abs(reportPlace.lat).toFixed(2) + "° " + (reportPlace.lat < 0 ? "S" : "N") + ", " + Math.abs(reportPlace.lon).toFixed(2) + "° " + (reportPlace.lon < 0 ? "W" : "E");
+    setReportPicking(false);
+    reportLine.textContent = "";
+    reportNote.focus();
+  }
+  function reportCall(body) {
+    return fetch(REPORT_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, body: j }; });
+    });
+  }
+  function reportTrouble(r) {
+    if (!r) return "The reports server could not be reached. Check the connection and try again.";
+    if (r.status === 401) return "That password is not right.";
+    if (r.status === 429) return "Too many wrong passwords from here today. Try again tomorrow.";
+    if (r.status === 503) return "Reports are not switched on yet.";
+    if (r.status === 400 && r.body && r.body.field) return "The server did not accept the " + r.body.field + ".";
+    return "Something went wrong on the server (" + r.status + "). Try again in a minute.";
+  }
+  reportLock.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = reportName.value.replace(/\s+/g, " ").trim(), pw = reportPass.value;
+    if (!name) { reportLockNote.textContent = "Enter your name, so Noah knows who sent each report."; reportName.focus(); return; }
+    if (!pw || reportBusy) return;
+    reportBusy = true; reportUnlock.disabled = true;
+    reportLockNote.textContent = "Checking…";
+    reportCall({ action: "check", password: pw }).then(function (r) {
+      if (r.status === 200) { reportPass.value = ""; reportLockNote.textContent = ""; keepChecker({ name: name, pw: pw }); reportNow(); reportPick.focus(); }
+      else { reportLockNote.textContent = reportTrouble(r); reportPass.select(); }
+    }, function () { reportLockNote.textContent = reportTrouble(null); }).then(function () { reportBusy = false; reportUnlock.disabled = false; });
+  });
+  reportForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (reportBusy || !checker) return;
+    var from = reportFrom.value.trim(), to = reportTo.value.trim(), note = reportNote.value.trim();
+    var a = rangeEnd(from, false), b = rangeEnd(to, true), t = parseTime(from);
+    var say = function (msg, el) { reportLine.textContent = msg; if (el) el.focus(); };
+    if (!reportPlace) return say("Choose the place on the map first.", reportPick);
+    if (!a || t === null) return say("The first date isn't one the atlas can read. Write it as the date box does: 1815, 500 BC, June 1941, or 22 June 1941.", reportFrom);
+    if (!b) return say("The last date isn't one the atlas can read. Write it as the date box does: 1815, 500 BC, June 1941, or 22 June 1941.", reportTo);
+    if (b.y * 12 + b.m < a.y * 12 + a.m) return say("The last date comes before the first.", reportTo);
+    if (!note) return say("Say what is wrong there, and how you know.", reportNote);
+    var on = Object.keys(layers).filter(function (k) { return layers[k]; }).join(", ") + (flat ? " | flat map" : " | globe");
+    reportBusy = true; reportSend.disabled = true;
+    say("Sending…");
+    reportCall({ action: "send", password: checker.pw, reporter: checker.name, lon: reportPlace.lon, lat: reportPlace.lat, zoom: reportPlace.zoom, place: reportPlace.place, from: from, to: to, at: timeKey(t), layers: on, note: note }).then(function (r) {
+      if (r.status === 200) {
+        reportNote.value = "";
+        reportPlace = null;
+        reportWhere.textContent = "None yet";
+        setReportPicking(false);
+        say("Sent" + (r.body && r.body.id ? " as report " + r.body.id : "") + ". Thank you.");
+      } else if (r.status === 401) {
+        keepChecker(null);
+        reportLockNote.textContent = "The team's password has changed. Sign in again; your report is kept.";
+        reportPass.focus();
+      } else say(reportTrouble(r));
+    }, function () { say(reportTrouble(null)); }).then(function () { reportBusy = false; reportSend.disabled = false; });
+  });
+  reportPick.addEventListener("click", function () { setReportPicking(!reportPicking); });
+  $("report-now").addEventListener("click", reportNow);
+  $("report-out").addEventListener("click", function () { reportName.value = checker ? checker.name : ""; keepChecker(null); reportPass.focus(); });
+  reportBtn.addEventListener("click", function () { setReportOpen(reportPanel.hidden, false); });
+  $("report-link").addEventListener("click", function () { setReportOpen(true, false); });
+  [layersBtn, saveBtn, $("search-btn")].forEach(function (b) { b.addEventListener("click", function () { if (!reportPanel.hidden) setReportOpen(false, false); }); });
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || reportPanel.hidden) return;
+    e.stopPropagation();
+    if (reportPicking) setReportPicking(false); else setReportOpen(false, true);
+  }, true);
+  reportPanel.addEventListener("keydown", function (e) { if (e.key !== "Escape") e.stopPropagation(); });
+  if (checker) { reportBtn.hidden = false; reportName.value = checker.name; }
+  syncReport();
 
   // A date typed for the range: a bare year means the whole year (January to December by the month).
   function rangeEnd(s, last) {

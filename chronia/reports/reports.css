@@ -1,0 +1,122 @@
+.reports-page main {
+  max-width: 760px;
+}
+.rp-lock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 24px 0;
+}
+.rp-lock[hidden],
+#board[hidden] {
+  display: none;
+}
+.rp-lock input,
+.rp-item textarea {
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.rp-lock input {
+  width: 220px;
+  max-width: 100%;
+}
+.reports-page button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.reports-page button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.reports-page button[aria-pressed="true"] {
+  text-decoration: none;
+  font-weight: 700;
+}
+.reports-page button:focus-visible,
+.rp-lock input:focus-visible,
+.rp-item textarea:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+.rp-note {
+  flex-basis: 100%;
+  min-height: 1.3em;
+  margin: 0;
+  font-size: 14px;
+}
+.rp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 24px 0 8px;
+  font-size: 16px;
+}
+.rp-count {
+  margin-left: 12px;
+  opacity: 0.75;
+  font-size: 14px;
+}
+.rp-out {
+  margin-left: auto;
+}
+.rp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rp-item {
+  margin: 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+.rp-head {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.privacy-page main p.rp-meta {
+  margin: 0 0 10px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+.privacy-page main p.rp-text {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rp-item textarea {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+  margin: 4px 0 8px;
+  font-size: 15px;
+  resize: vertical;
+}
+.rp-item label {
+  font-size: 14px;
+}
+.rp-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-size: 15px;
+}
+.rp-empty {
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}

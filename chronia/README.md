@@ -40,6 +40,7 @@ A static page, no build step, like the rest of the site. The data files are made
 | `tools/adopt-land.mjs` | Gives the land no state's shape covers from 1886, strips of coast and islands, to the nearest state (see step 10 of [From 1886](#from-1886)). |
 | `tools/build-cities.mjs` | Builds the two city files (see [Cities](#cities)). |
 | `tools/city-tables.mjs` | CHRONIA's own tables for the cities: founding and end dates, names by date, corrections to the sources, and a few cities the sources lack. |
+| `reports/` | The review page for the fact checkers' reports (see [Fact checkers' reports](#fact-checkers-reports)). |
 | `tools/build-divisions.mjs` | The builder of the first-level divisions (see [First-level divisions](#first-level-divisions)). |
 | `tools/build-geography.mjs` | The builder of the dated geography. |
 | `tools/roman-provinces.json` | The provinces of the Roman Empire under Trajan, from the Digital Atlas of the Roman Empire (see [The Roman provinces](#the-roman-provinces)). |
@@ -873,6 +874,32 @@ The notes are not live until the function is deployed to the Supabase project `k
    ```
 
    It should answer `{"text":null,"period":"the 1810s","cached":false}`. The same without `"peek":true` writes the first note (well under a tenth of a cent) and answers `cached: false`; again, `cached: true`. The usage line in the function's logs gives the tokens. Then open CHRONIA, click a state and a city, and check the note and the line under it, which names the model that wrote it.
+
+### Fact checkers' reports
+
+CHRONIA's fact checkers report errors from the map. "Fact checkers" in the about note's last line opens the panel; once someone has signed in with the team's shared password and their name, a flag in the map controls opens it from then on (the name and password are kept in that browser, under `chronia-checker`, until "Sign out"). A report is a place, chosen by clicking the map ("Choose a place on the map"; the click picks the place instead of opening the card), with the state under it on the map of the day; a first and last date, as the date box writes them, both set to the map's date at first; and a note on what is wrong and how the checker knows. The panel checks the dates as the timelapse's range does, and sends the report with the map's layers and the view's zoom.
+
+The reports go to the edge function `chronia-report` (`REPORT_URL` in `app.js`), which checks the password and writes them to `chronia_reports` with the project's secret key; the page never touches the table, and the table grants nothing to `anon` or `authenticated`. The team's password (`CHRONIA_REPORT_PASSWORD`) can only send. Noah's (`CHRONIA_REVIEW_PASSWORD`) opens [the review page](reports/) (`chronia/reports/`, not indexed), which lists the reports, newest first, each with a link to the atlas at its place and first date, a reply, and "Mark fixed", "Decline", and "Open again". Twenty wrong passwords in a day from one address (a salted hash of it, new each day, in `chronia_report_strikes`) shut that address out until the next day. To change a password, set the secret again; checkers whose stored password no longer works are asked to sign in again, and the report they were writing is kept.
+
+To switch it on, in the Supabase project `kigvciyyjlgjcgnwgrwf`:
+
+1. Apply `supabase/migrations/20261103_chronia_reports.sql` (the SQL editor, `supabase db push`, or the MCP's `apply_migration` with the name `20261103_chronia_reports`). It only creates new objects, and is safe to run twice.
+2. Set the two secrets under Edge Functions, Secrets: `CHRONIA_REPORT_PASSWORD`, the team's, and `CHRONIA_REVIEW_PASSWORD`, Noah's, which must differ. Until both are set, the function answers 503 and the panel says that reports are not switched on yet.
+3. Deploy the function with JWT verification off, since the page sends no Supabase key and the function checks the origin and the password itself:
+
+   ```
+   supabase functions deploy chronia-report --no-verify-jwt --project-ref kigvciyyjlgjcgnwgrwf
+   ```
+
+4. Check it: this should answer `{"role":"reporter"}`.
+
+   ```
+   curl -s -X POST https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report \
+     -H 'origin: https://noahdarwinlee.com' -H 'content-type: application/json' \
+     -d '{"action":"check","password":"THE TEAM PASSWORD"}'
+   ```
+
+The function and the page were tested with Deno against a small stand-in for Supabase's REST API, and the migration against PostgreSQL 16: wrong passwords, the lockout, the team's password on the review page, a report sent, listed, replied to, marked fixed, and opened again, at a desktop and a phone width.
 
 ## Testing
 

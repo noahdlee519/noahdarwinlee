@@ -1651,3 +1651,75 @@ select.ch-save-input {
     display: none;
   }
 }
+
+/* Fact checkers' reports. */
+.ch-ctl[hidden],
+.ch-report-lock[hidden],
+.ch-report-form[hidden] {
+  display: none;
+}
+
+.ch-report {
+  width: 300px;
+}
+
+.ch-linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ch-linkbtn:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-report-label {
+  display: block;
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.ch-report-place {
+  align-items: start;
+}
+
+.ch-report-where {
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ch-report-now {
+  display: block;
+  margin: 2px 0 8px auto;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+
+.ch-report-text {
+  display: block;
+  margin-top: 4px;
+  resize: vertical;
+  min-height: 92px;
+  line-height: 1.35;
+}
+
+.ch-page.is-picking canvas {
+  cursor: crosshair;
+}
+
+#report-pick[aria-pressed="true"] {
+  background: var(--ch-paper);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+
+.ch-report-who {
+  margin-top: 8px;
+}

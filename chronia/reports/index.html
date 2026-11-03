@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports | CHRONIA</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="The fact checkers' reports on CHRONIA, for review." />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="reports.css" />
+    <script>
+      (function () {
+        var t = null;
+        try {
+          t = localStorage.getItem("ndl-theme");
+        } catch (e) {}
+        if (t !== "dark" && t !== "light" && t !== "white") {
+          t =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <script src="/visit.js" defer></script>
+  </head>
+  <body class="cv-page privacy-page reports-page" data-fade-distance="90">
+    <h1 class="sr-only">CHRONIA reports</h1>
+    <a class="name" href="/"
+      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
+      <span class="name-word-lee">Lee</span></a
+    >
+    <a class="back-link" href="/chronia/">back</a>
+    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
+      <img src="/favicon.png" alt="" width="30" height="30" />
+    </button>
+
+    <main>
+      <p class="privacy-lede">The fact checkers' reports on <a href="/chronia/">CHRONIA</a>.</p>
+
+      <form class="rp-lock" id="lock">
+        <label for="pass">Review password</label>
+        <input type="password" id="pass" autocomplete="current-password" required />
+        <button type="submit" id="unlock">Open</button>
+        <p class="rp-note" id="lock-note" aria-live="polite"></p>
+      </form>
+
+      <section id="board" hidden>
+        <div class="rp-bar" role="group" aria-label="Show">
+          <button type="button" data-status="open" aria-pressed="true">Open</button> |
+          <button type="button" data-status="fixed" aria-pressed="false">Fixed</button> |
+          <button type="button" data-status="declined" aria-pressed="false">Declined</button> |
+          <button type="button" data-status="all" aria-pressed="false">All</button>
+          <span class="rp-count" id="count" aria-live="polite"></span>
+          <button type="button" class="rp-out" id="out">Lock</button>
+        </div>
+        <ol class="rp-list" id="list"></ol>
+      </section>
+    </main>
+
+    <script src="reports.js" defer></script>
+    <script src="/to-top-btn.js" defer></script>
+    <script src="/header.js" defer></script>
+    <script src="/theme.js" defer></script>
+  </body>
+</html>
