@@ -2279,7 +2279,14 @@ const napoleonic = (list) => {
     s.dayTo = [s.last, best && most >= 0.5 * all ? best.dayFrom[1] - 1 : dayOf(s.last + "-12-31")];
     ended++;
   }
-  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + Math.round((Date.now() - t0) / 1000) + " s");
+  // What the cut leaves of a state the table also draws (Portugal's islands, say) carries no name of its own in those years.
+  let quiet = 0;
+  for (const s of list) {
+    if (s.noLabel || s.first < NAPOLEONIC_FROM || s.last > NAPOLEONIC_TO) continue;
+    const size = cellSum(s.cells || cellsOf(s.polys));
+    if (spans.some((t) => t.name === s.name && t.first <= s.last && s.first <= t.last && cellSum(t.cells) > size)) { s.noLabel = true; quiet++; }
+  }
+  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + Math.round((Date.now() - t0) / 1000) + " s");
   return list.concat(spans);
 };
 
@@ -3232,7 +3239,7 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
       return { i, first: s.first, last: s.last, names: [s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
-        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined };
+        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
     dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
