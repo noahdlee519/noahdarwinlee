@@ -1714,34 +1714,53 @@ select.ch-save-input {
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(3) { --ch-i: 2; }
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(4) { --ch-i: 3; }
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(5) { --ch-i: 4; }
+  /* The map inks in behind the roller: a feathered mask follows it across, and the last of the fade
+     finishes once the roller has gone. */
+  :root.ch-intro .ch-globe {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--ch-reveal) - 34vw), rgba(0, 0, 0, 0.62) calc(var(--ch-reveal) - 16vw), rgba(0, 0, 0, 0.2) calc(var(--ch-reveal) - 4vw), transparent var(--ch-reveal));
+    mask-image: linear-gradient(90deg, #000 calc(var(--ch-reveal) - 34vw), rgba(0, 0, 0, 0.62) calc(var(--ch-reveal) - 16vw), rgba(0, 0, 0, 0.2) calc(var(--ch-reveal) - 4vw), transparent var(--ch-reveal));
+    animation:
+      ch-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both,
+      ch-ink 900ms cubic-bezier(0.2, 0.6, 0.35, 1) 1450ms forwards;
+  }
   .ch-roll {
     position: fixed;
-    inset: 0;
-    z-index: 19;
-    pointer-events: none;
-    background: inherit;
-    will-change: translate;
-    animation: ch-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both;
-  }
-  .ch-roll::before {
-    content: "";
-    position: absolute;
     top: 0;
     bottom: 0;
-    left: -22px;
+    left: 0;
+    z-index: 19;
     width: 44px;
+    margin-left: -22px;
+    pointer-events: none;
     border-radius: 22px / 10px;
     background:
       linear-gradient(90deg, rgba(58, 42, 27, 0.55), rgba(58, 42, 27, 0) 18%, rgba(255, 250, 235, 0.55) 42%, rgba(58, 42, 27, 0) 62%, rgba(58, 42, 27, 0.6)),
       #e6d5ad;
     box-shadow: 10px 0 18px -6px rgba(58, 42, 27, 0.45), -2px 0 6px rgba(58, 42, 27, 0.25);
+    animation: ch-roll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both;
   }
 }
 
+@property --ch-reveal {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
 @keyframes ch-unroll {
-  0% { translate: 0 0; }
+  from { --ch-reveal: 0%; }
+  to { --ch-reveal: 100%; }
+}
+
+@keyframes ch-ink {
+  from { --ch-reveal: 100%; }
+  to { --ch-reveal: calc(100% + 36vw); }
+}
+
+@keyframes ch-roll {
+  0% { left: 0; width: 52px; margin-left: -26px; opacity: 1; }
   88% { opacity: 1; }
-  100% { translate: 100% 0; opacity: 0; }
+  100% { left: 100%; width: 26px; margin-left: -13px; opacity: 0; }
 }
 
 @keyframes ch-dropin {

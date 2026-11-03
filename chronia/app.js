@@ -5772,9 +5772,32 @@
       document.body.appendChild(roll);
       root.classList.add("ch-intro");
       setTimeout(function () { root.classList.remove("ch-intro"); roll.remove(); }, 3000);
+      introTurn();
     }
     root.classList.add("ch-ready");
     return play;
+  }
+  // The globe turns with the roller and settles back a little, coming to rest on the view it opened at.
+  // A drag or a scroll during it stops it where it is.
+  function introTurn() {
+    var to = { lon: view.lon, lat: view.lat, zoom: view.zoom };
+    view.lon = to.lon + (flat ? 18 : 34);
+    view.zoom = Math.min(zoomRange()[1], to.zoom * 1.12);
+    applyView();
+    var a = { lon: view.lon, zoom: view.zoom }, t0 = performance.now(), dur = 2300;
+    var stop = function () { cancelAnimationFrame(flyRaf); off(); };
+    var off = function () { canvas.removeEventListener("pointerdown", stop); canvas.removeEventListener("wheel", stop); };
+    canvas.addEventListener("pointerdown", stop);
+    canvas.addEventListener("wheel", stop, { passive: true });
+    cancelAnimationFrame(flyRaf);
+    var step = function (t) {
+      var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      view.lon = a.lon + (to.lon - a.lon) * e; view.lat = to.lat;
+      view.zoom = a.zoom * Math.pow(to.zoom / a.zoom, e);
+      applyView(); nudge();
+      if (k < 1) flyRaf = requestAnimationFrame(step); else off();
+    };
+    flyRaf = requestAnimationFrame(step);
   }
   function prepLand(topo) {
     var f = topojson.feature(topo, topo.objects.land);
