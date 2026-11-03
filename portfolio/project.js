@@ -11,9 +11,25 @@
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var at = 0;
 
+  slides[0].classList.add("is-current");
   if (slides.length < 2) {
     box.querySelector(".shots-nav").hidden = true;
     return;
+  }
+
+  // Slides are narrower than the strip and snap to its middle, so a slide's place is where its middle
+  // meets the strip's (held at the strip's ends, which is how the first and last line up with the margins).
+  function leftOf(i) {
+    var s = slides[i];
+    return Math.max(0, Math.min(track.scrollWidth - track.clientWidth, s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2));
+  }
+  function nearest() {
+    var best = 0, d = Infinity;
+    for (var k = 0; k < slides.length; k++) {
+      var e = Math.abs(leftOf(k) - track.scrollLeft);
+      if (e < d) { d = e; best = k; }
+    }
+    return best;
   }
 
   function show(i) {
@@ -27,6 +43,7 @@
         if (p && p.catch) p.catch(function () {});
       }
     });
+    slides.forEach(function (s, k) { s.classList.toggle("is-current", k === i); });
     count.textContent = i + 1 + " / " + slides.length;
     cap.textContent = slides[i].getAttribute("data-cap");
     prev.disabled = i === 0;
@@ -35,7 +52,7 @@
 
   function go(i) {
     i = Math.max(0, Math.min(slides.length - 1, i));
-    track.scrollTo({ left: i * track.clientWidth, behavior: reduce ? "auto" : "smooth" });
+    track.scrollTo({ left: leftOf(i), behavior: reduce ? "auto" : "smooth" });
     show(i);
   }
 
@@ -45,7 +62,7 @@
     function () {
       clearTimeout(t);
       t = setTimeout(function () {
-        var i = Math.round(track.scrollLeft / track.clientWidth);
+        var i = nearest();
         if (i !== at) show(i);
       }, 60);
     },
@@ -92,8 +109,8 @@
     var d = drag;
     drag = null;
     if (!d.moved) return;
-    var w = track.clientWidth, dx = d.lastX - d.x, fast = performance.now() - d.lastT < 120 ? d.vx : 0, i = d.start;
-    if (Math.abs(dx) > w) i = Math.round(track.scrollLeft / w);
+    var w = slides[0].offsetWidth, dx = d.lastX - d.x, fast = performance.now() - d.lastT < 120 ? d.vx : 0, i = d.start;
+    if (Math.abs(dx) > w) i = nearest();
     else if (dx < -w * 0.15 || fast < -0.5) i = d.start + 1;
     else if (dx > w * 0.15 || fast > 0.5) i = d.start - 1;
     swallow = true;
@@ -109,9 +126,17 @@
     e.stopPropagation();
   }, true);
   track.addEventListener("dragstart", function (e) { e.preventDefault(); });
+  // A click on a neighbour's edge brings it forward.
+  slides.forEach(function (s, k) {
+    s.addEventListener("click", function (e) {
+      if (k === at || swallow) return;
+      e.preventDefault();
+      go(k);
+    });
+  });
 
   addEventListener("resize", function () {
-    track.scrollTo({ left: at * track.clientWidth, behavior: "auto" });
+    track.scrollTo({ left: leftOf(at), behavior: "auto" });
   });
 
   addEventListener("load", function () {
