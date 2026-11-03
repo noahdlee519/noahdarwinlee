@@ -1,7 +1,7 @@
 // Builds chroniaatlas.com: CHRONIA at the root of its own site, with what it borrows from the rest of
-// noahdarwinlee.com (UCHRONIA's data and scripts, the fonts, the site's stylesheet and scripts for the
-// team, reports, privacy, and terms pages, and the icons). Vercel runs it on every push (vercel.json);
-// it can be run by hand too: node tools/build-chronia-site.mjs [output folder, default chronia-site].
+// noahdarwinlee.com (UCHRONIA's data and scripts, the fonts, the site's stylesheet and scripts, and the
+// icons); its own pages (team, reports, privacy, and terms) are in chronia/ with it. Vercel runs it on every
+// push (vercel.json); it can be run by hand too: node tools/build-chronia-site.mjs [output folder, default chronia-site].
 //
 // The pages are copied as they are, then their links are fixed for the new site: a link into /chronia/
 // loses that prefix, the canonical and og:url addresses move to chroniaatlas.com, and a link to a page
@@ -22,50 +22,9 @@ const copy = (from, to = from) => {
   cpSync(src, join(out, to), { recursive: true });
 };
 
-for (const f of ["index.html", "app.js", "app.css", "page.css", "go.js", "data", "team", "reports"]) copy("chronia/" + f, f);
+for (const f of ["index.html", "app.js", "app.css", "page.css", "go.js", "data", "team", "reports", "privacy", "terms"]) copy("chronia/" + f, f);
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "fonts"]) copy(f);
 for (const f of ["styles.css", "visit.js", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
-
-// The privacy policy and the terms are the site's own (privacy/ and terms/), which cover chroniaatlas.com
-// too: their text is set in CHRONIA's pages, like the team page, with the section numbers in the atlas's
-// figures.
-const esc = (t) => t.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-for (const [dir, title, heading] of [["privacy", "Privacy", "Privacy policy"], ["terms", "Terms", "Terms of use"]]) {
-  const src = readFileSync(join(root, dir, "index.html"), "utf8");
-  const main = /<main>([\s\S]*?)<\/main>/.exec(src);
-  const desc = /<meta\s+name="description"\s+content="([^"]*)"/.exec(src);
-  if (!main || !desc) throw new Error(dir + ": no <main> or description");
-  const body = main[1].replace(/<h2>(\d+)\.\s*/g, '<h2><span class="cp-n">$1</span>');
-  const nav = [["../", "The atlas"], ["../team/", "Team"], ["../privacy/", "Privacy"], ["../terms/", "Terms"]].map(([h, t]) => '<a href="' + h + '"' + (t === title ? ' aria-current="page"' : "") + ">" + t + "</a>").join(" | ");
-  mkdirSync(join(out, dir), { recursive: true });
-  writeFileSync(join(out, dir, "index.html"), `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${title} | CHRONIA</title>
-    <meta name="description" content="${desc[1]}" />
-    <link rel="canonical" href="${SITE}/${dir}/" />
-    <link rel="icon" href="/favicon.png" type="image/png" />
-    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#f1e7cf" />
-    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/fonts/fonts.css" />
-    <link rel="stylesheet" href="../page.css" />
-    <script src="/visit.js" defer></script>
-  </head>
-  <body class="cp">
-    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
-    <main class="cp-sheet cp-frame">
-      <h1>${esc(heading)}</h1>
-${body}
-      <footer class="cp-foot">${nav}</footer>
-    </main>
-  </body>
-</html>
-`);
-}
 
 writeFileSync(join(out, "manifest.json"), JSON.stringify({
   name: "CHRONIA",

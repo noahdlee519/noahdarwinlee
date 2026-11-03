@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="../go.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy | CHRONIA</title>
+    <meta name="description" content="What CHRONIA collects, why, and what you can do about it." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CHRONIA" />
+    <meta property="og:title" content="Privacy | CHRONIA" />
+    <meta property="og:description" content="What CHRONIA collects, why, and what you can do about it." />
+    <meta property="og:url" content="https://chroniaatlas.com/privacy/" />
+    <link rel="canonical" href="https://chroniaatlas.com/privacy/" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="../page.css" />
+    <script src="/visit.js" defer></script>
+  </head>
+  <body class="cp">
+    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
+    <main class="cp-sheet cp-frame">
+      <h1>Privacy policy</h1>
+      <p class="cp-lede">CHRONIA is an atlas run by one person. Nothing in it is sold, nothing is advertised, and nothing here measures you for anyone else. This policy sets out everything the atlas collects, why, and what you can do about it.</p>
+      <p class="cp-meta">Effective 3 November 2026. See also the <a href="../terms/">terms of use</a>.</p>
+      <section>
+        <h2><span class="cp-n">1</span>The short version</h2>
+        <p>
+          Looking at the atlas collects nothing about you: it adds one to a running count of visits for the day, and that count holds no address, name, or page. Opening a card for a state, a people, or a city may ask an AI model to write a short note about it, which sends only what the atlas shows about that subject, never anything about you. Reporting an error on the map needs a Google sign-in, and the report keeps the name and email address of that account. The map layers you turn on and off are remembered in your own browser. Ask, and I will delete anything the atlas holds about you.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">2</span>Who is responsible</h2>
+        <p>
+          In this policy, &ldquo;I&rdquo; and &ldquo;me&rdquo; mean Noah Darwin Lee, who runs CHRONIA at chroniaatlas.com and every page under it (the &ldquo;atlas&rdquo;), and who decides what the atlas collects and why. Where data protection law uses the term, I am the controller of the information described here. CHRONIA is a personal project, not a company; the people on the <a href="../team/">team page</a> help me check the map. You can reach me about anything on this page at <a href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">3</span>Looking at the atlas</h2>
+        <p>
+          The atlas sets no cookies, runs no analytics, and shows no advertising. Its one measure is a count of visits. When a page opens and your browser has not opened one here in the last thirty minutes, it asks the atlas&rsquo;s database to add one to the day&rsquo;s total. The database keeps only the date and that number: not your address, the page, where you came from, or anything else about the visit. To tell a new visit from the next page of the same one, your browser keeps the time it last opened a page here (see section 8).
+        </p>
+        <p>
+          To show you the atlas, a few services necessarily receive the ordinary request your browser makes, which includes your IP address and the kind of browser you use: Vercel, which hosts the atlas and its typefaces; Wikipedia and Wikimedia, from which a card loads the opening of an article and its picture; Wikidata, from which a card loads a flag and the languages spoken; and Amazon Web Services, which hosts the open Terrain Tiles behind the shaded relief. None of them is asked to identify you, and none of them reports anything back to me. Each handles those requests under its own privacy policy.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">4</span>The notes on the cards</h2>
+        <p>
+          When you open the card for a state, a people, or a city, the atlas may ask an AI model to write a short note about it as it was at that date. The request carries only what the atlas shows about the subject: its name, the date, and facts such as its ruler, its capital, and its neighbours, or, for a city, where it is on the map. It goes to a small program of mine on Supabase, which passes it to DeepSeek, a model made by the Chinese company DeepSeek, or, when DeepSeek can&rsquo;t answer, to Claude, a model made by Anthropic. DeepSeek and Anthropic each receive it as a request from my program, under their own privacy policies, not from you; Anthropic&rsquo;s <a href="https://www.anthropic.com/legal/commercial-terms">commercial terms</a> do not let it train its models on what it is sent. The program keeps the note that comes back and shows that same note to anyone who opens the same card later. Nothing about you is stored with it, and no sign-in is needed.
+        </p>
+        <p>
+          <b>The daily count.</b> To keep the notes within a daily budget, the program counts how many new notes each visitor asks for in a day, under a code made from your IP address, the date, and a secret, which cannot be turned back into the address. Each count is a date, that code, and a number. Your IP address itself is not stored, and each day&rsquo;s counts are deleted the first time a note is written on a later day.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">5</span>Reporting an error</h2>
+        <p>
+          Anyone can report an error on the map after signing in with Google. The sign-in button and its window are Google&rsquo;s own, loaded from Google when you open the report panel while signed out, and the account itself is kept by Supabase, the service that runs the atlas&rsquo;s database. When you sign in, Google passes the atlas your name, email address, profile picture, and Google account identifier.
+        </p>
+        <p>
+          A report keeps the name and email address of the account it came from, the place and dates you chose, what the map showed there, the map layers that were on, your note, my reply, and when it was sent and closed. I can read all of it; the people who help me check the map can read the reports and replies, but not the email addresses. Nobody else sees a report. To keep the reports within reason, each account can send up to 50 a day, counted from the reports themselves.
+        </p>
+        <p>
+          The page that lists the reports is opened with a password. Wrong passwords are counted for a day under a code made from the IP address, the date, and a secret, as for the notes, and deleted after two days.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">6</span>Opening a map in UCHRONIA</h2>
+        <p>
+          The save panel can open the map you are looking at in UCHRONIA, a separate map maker of mine. The atlas draws that map in your browser and puts the whole of it in the link, after the # sign, a part of an address that browsers never send to a server. Nothing about it passes through the atlas. UCHRONIA runs under its own privacy policy, which applies once it opens.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">7</span>Donations</h2>
+        <p>
+          The donate link opens my page on <a href="https://ko-fi.com/noahdarwinlee">Ko-fi</a>. If you give, Ko-fi and the payment service you choose there, Stripe or PayPal, take your payment and your details under their own privacy policies; the atlas never sees your card or account. Ko-fi shows me the name you give, your email address, and any message you leave, and I use them only to keep track of donations and to thank you.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">8</span>What stays in your browser</h2>
+        <p>
+          Some things are kept in your own browser&rsquo;s storage so the atlas remembers them next time: which map layers you turned on or off, whether the key and the wars panel are open, and whether you chose the flat map; the time you last opened a page, for the visit count; and, if you have signed in to report an error, the token that keeps you signed in, with the place on the map to come back to after Google&rsquo;s sign-in.
+        </p>
+        <p>
+          This information stays on your device. It is not sent to me or to anyone else, and clearing your browser&rsquo;s data for chroniaatlas.com removes all of it. The sign-in token is the one exception in kind: your browser presents it to Supabase to prove it is you, which is all it is for.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">9</span>Why this is allowed</h2>
+        <p>
+          Where the law asks for a legal basis, these are mine. Your account and your reports are kept because you chose to sign in and send them; that choice is your consent, and you can withdraw it at any time by asking me to delete them. The daily counts for the notes and the passwords rest on my legitimate interest in keeping the atlas within its budget and safe from abuse, and the visit count on my interest in knowing, roughly, how many people use the atlas.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">10</span>Who else is involved</h2>
+        <p>
+          Besides the services in section 3, four more take part. Supabase runs the database, the sign-in, and the programs that write and keep the notes. Google handles the sign-in itself. DeepSeek and Anthropic write the notes, as section 4 describes. These services may store and process information on servers outside your country, including in the United States and, for DeepSeek, in China; what goes to DeepSeek is never about you.
+        </p>
+        <p>
+          I do not share, rent, or sell anything the atlas collects. There are no advertising networks, no tracking pixels, no third-party analytics, and no mailing list. I would disclose information only if the law required me to.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">11</span>How long things are kept</h2>
+        <p>
+          The daily visit totals are kept as a running count of how the atlas is used. The notes are kept for as long as CHRONIA exists; they hold nothing about anyone who asked for them. The daily counts for the notes are deleted soon after their day ends, and the counts of wrong passwords after two days. Reports, and the account they came from, are kept as a record of the map&rsquo;s corrections for as long as CHRONIA exists, or until you ask me to delete them; when an account is deleted, everything tied to it is deleted with it.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">12</span>Your choices and rights</h2>
+        <p>
+          You can sign out at any time. Beyond that, you may ask me to:
+        </p>
+        <p>
+          <b>See it.</b> Send you a copy of everything the atlas holds about you.<br />
+          <b>Fix it.</b> Correct anything that is wrong.<br />
+          <b>Delete it.</b> Remove your account and every report attached to it.
+        </p>
+        <p>
+          Write to <a href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a> from the email address you signed in with, so I know the request is yours. I will act on it as soon as I read it, and in any case within thirty days. These rights are yours wherever you live; if you are in a place whose law grants them formally, such as the United Kingdom, the European Union, or California, this is how to exercise them, and you also have the right to complain to your local data protection authority.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">13</span>Security</h2>
+        <p>
+          The atlas is served over HTTPS. Its database lets a browser add to the visit count but never read it back. Reports reach it only through a program of mine that checks who is signed in, no browser can read them directly, and email addresses are shown to no one but me. No system is perfectly secure; if something went wrong that affected your information, I would tell you.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">14</span>Children</h2>
+        <p>
+          The atlas is not directed at children under 13, and I do not knowingly keep information about anyone under 13. If you believe a child has signed in, write to me and I will delete the account.
+        </p>
+      </section>
+      <section>
+        <h2><span class="cp-n">15</span>Changes to this policy</h2>
+        <p>
+          If what the atlas collects changes, this policy changes with it and the date at the top moves. There is never a version of this page that is quietly broader than the one you are reading.
+        </p>
+      </section>
+      <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/">Team</a> | <a href="../privacy/" aria-current="page">Privacy</a> | <a href="../terms/">Terms</a></footer>
+    </main>
+  </body>
+</html>
