@@ -3,8 +3,10 @@
 // tools/wars/wars-wikidata.json is the fetch (made in a browser, since Wikidata and Wikipedia are out of the build machine's reach);
 // this writes data/wars.json:
 //   { source, fetched, wars: [[name, wiki title, first year, first day | null, last year, last day | null, weight, [lon, lat] | null, sides]] }
-// where a side is a list of members [name, lon, lat] (or [name] where no place is known), years count AD 1 as 1 and 1 BC as -1, and
-// days count from 1 January 1886 as the zones of control do, given only for wars from 1800 dated to the month or day.
+// where a side is a list of members [name, lon, lat, flag] (lon and lat null where no place is known, flag -1 where it has none in
+// data/flags.webp), years count AD 1 as 1 and 1 BC as -1, and days count from 1 January 1886 as the zones of control do, given only
+// for wars from 1800 dated to the month or day. data/flags.webp holds the 420 flags most used by the wars' parties, 30 by 20 each,
+// 20 to a row, from Wikidata's flag images (P41) and Wikimedia Commons (tools/wars/flags-wikidata.json lists them and each party's).
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +25,8 @@ const CONTROLLED = new Set(["World War I", "World War II", "American Civil War",
 // Dates mended where Wikidata's run into a war listed separately.
 const ENDS = { "Russo-Ukrainian war": "2022-02-23" };
 const MAX_SIDE = 6;
+const FLAGS = JSON.parse(readFileSync(resolve(here, "wars/flags-wikidata.json"), "utf8"));
+const FLAG_AT = new Map(FLAGS.files.map((f, i) => [f, i]));
 
 // Wikidata's years are astronomical (0 is 1 BC); CHRONIA's have no year 0.
 function when(v, prec, end) {
@@ -49,6 +53,15 @@ function placeOf(rows, y) {
     || rows.find((r) => r[0] === "own") || rows.find((r) => r[0] === "hq") || caps[0] || rows.find((r) => r[0] === "via");
   return pick ? [pick[1], pick[2]] : null;
 }
+// A party's flag in the war's first year: the one dated to that year (preferred first), else, if none of its flags is dated, its preferred
+// or only one; a party whose flags are all dated to other years has none.
+function flagOf(rows, y) {
+  if (!rows || !rows.length) return -1;
+  const dated = rows.filter((r) => (r[1] || r[2]) && (() => { const [a, b] = yearsOf([0, 0, 0, r[1], r[2]]); return a <= y && y <= b; })());
+  const undated = rows.filter((r) => !r[1] && !r[2]);
+  const pick = dated.find((r) => r[3] === "P") || dated[0] || (rows.some((r) => r[1] || r[2]) ? null : undated.find((r) => r[3] === "P") || undated[0]);
+  return pick && FLAG_AT.has(pick[0]) ? FLAG_AT.get(pick[0]) : -1;
+}
 const clean = (label, title) => {
   let s = String(label || "").replace(/\{\{[^}]*\}\}?/g, "").replace(/<[^>]*>/g, "").replace(/'''|''/g, "").replace(/\s+/g, " ").trim();
   if (!s || /[{}|=\[\]]/.test(s) || /^[\d(]/.test(s) || s.length > 60) s = String(title || "").replace(/\s*\([^)]*\)$/, "");
@@ -56,7 +69,7 @@ const clean = (label, title) => {
 };
 
 const out = [];
-let dropped = 0, controlled = 0, noSides = 0;
+let dropped = 0, controlled = 0, noSides = 0, flagged = 0;
 for (const w of src.wars) {
   if (DROP.has(w.t)) { dropped++; continue; }
   if (CONTROLLED.has(w.t)) { controlled++; continue; }
@@ -71,7 +84,7 @@ for (const w of src.wars) {
     || /^(List of|Battle of|Siege of)\b/.test(w.t) || /, \d{3,4}[–-]\d{3,4}$/.test(w.t) || b[0] - a[0] > 120) { dropped++; continue; }
   const seen = new Set();
   const sides = w.sides.map((side) => side.filter((m) => !/^(and )?(other|others|various|several|many)\b/i.test(clean(m[0], m[1]))).filter((m) => { const k = m[2] || m[1]; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, MAX_SIDE)
-    .map((m) => { const name = clean(m[0], m[1]), p = m[2] ? placeOf(src.geo[m[2]], a[0]) : null; return p ? [name, p[0], p[1]] : [name]; })).filter((s) => s.length);
+    .map((m) => { const name = clean(m[0], m[1]), p = m[2] ? placeOf(src.geo[m[2]], a[0]) : null, f = m[2] ? flagOf(FLAGS.flags[m[2]], a[0]) : -1; if (f >= 0) flagged++; return [name, p ? p[0] : null, p ? p[1] : null, f]; })).filter((s) => s.length);
   if (sides.length < 2) noSides++;
   const loc = w.c ? (/Point\(([-\d.eE]+) ([-\d.eE]+)\)/.exec(w.c) || []).slice(1).map((x) => +(+x).toFixed(3)) : null;
   out.push([w.t, w.t, a[0], a[1], b[0], b[1], w.sl, loc && loc.length === 2 ? loc : null, sides.length >= 2 ? sides : []]);
@@ -79,4 +92,4 @@ for (const w of src.wars) {
 out.sort((x, y) => x[2] - y[2] || y[6] - x[6]);
 const data = { source: src.source, fetched: src.fetched.slice(0, 10), wars: out };
 writeFileSync(resolve(here, "../data/wars.json"), JSON.stringify(data));
-console.log("wars: " + out.length + " (" + dropped + " umbrella names and theatres left out, " + controlled + " listed by the zones of control), " + noSides + " without two sides from the infobox, " + JSON.stringify(data).length + " bytes");
+console.log("wars: " + out.length + " (" + dropped + " umbrella names and theatres left out, " + controlled + " listed by the zones of control), " + noSides + " without two sides from the infobox, " + flagged + " parties with a flag, " + JSON.stringify(data).length + " bytes");

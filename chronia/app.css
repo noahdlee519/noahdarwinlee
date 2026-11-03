@@ -1142,6 +1142,14 @@ select.ch-save-input {
   outline-color: var(--ink);
 }
 
+.ch-wars-sprite {
+  display: block;
+  width: 21px;
+  height: 14px;
+  background: url("data/flags.webp") no-repeat;
+  background-size: 420px 294px;
+}
+
 .ch-wars-flag.is-nowhere {
   cursor: default;
 }

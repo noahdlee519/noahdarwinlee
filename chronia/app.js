@@ -5642,8 +5642,8 @@
     }).sort(function (a, b) { return b[6] - a[6]; }).slice(0, WARS_MAX).map(function (w) {
       return { name: w[0], loc: w[7], groups: w[8].map(function (side) {
         return side.map(function (m) {
-          var ll = m.length > 1 ? [m[1], m[2]] : null;
-          return { name: m[0], ll: ll, colour: memberColour(ll) };
+          var ll = m[1] !== null && m[1] !== undefined ? [m[1], m[2]] : null, f = m.length > 3 ? m[3] : -1;
+          return { name: m[0], ll: ll, sprite: f, colour: f >= 0 ? "" : memberColour(ll) };
         });
       }) };
     });
@@ -5676,7 +5676,7 @@
       if (groups.length) rows.push({ w: w, name: w.name, groups: groups });
     });
     warsAtDate().forEach(function (r) { rows.push(r); });
-    var state = rows.map(function (r) { return r.name + ":" + r.groups.map(function (g) { return g.map(function (p) { return p.name + p.ll + (p.colour || ""); }).join(","); }).join("|"); }).join(";");
+    var state = rows.map(function (r) { return r.name + ":" + r.groups.map(function (g) { return g.map(function (p) { return p.name + p.ll + (p.colour || "") + (p.sprite >= 0 ? p.sprite : ""); }).join(","); }).join("|"); }).join(";");
     if (state === warsState) return;
     warsState = state;
     warsList.textContent = "";
@@ -5699,11 +5699,14 @@
           b.type = "button";
           b.className = "ch-wars-flag";
           b.setAttribute("aria-label", p.ll ? p.name + ", go to its capital" : p.name);
-          if (!p.flag && !p.side) b.classList.add("is-chip");
+          if (!p.flag && !p.side && !(p.sprite >= 0)) b.classList.add("is-chip");
           if (!p.ll) b.classList.add("is-nowhere");
-          b.innerHTML = p.flag
+          b.innerHTML = p.sprite >= 0
+            ? '<span class="ch-wars-sprite" aria-hidden="true"></span>'
+            : p.flag
             ? '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false">' + FLAGS[p.flag] + "</svg>"
             : '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="' + (r.w ? sideColour(r.w, p.side) : p.colour || pal.paper) + '"/></svg>';
+          if (p.sprite >= 0) b.firstChild.style.backgroundPosition = (-21 * (p.sprite % 20)) + "px " + (-14 * Math.floor(p.sprite / 20)) + "px";
           if (canHover) {
             b.addEventListener("mouseenter", function () { warsTip(b, p.name); });
             b.addEventListener("mouseleave", function () { hoverTip.classList.remove("is-on"); });
