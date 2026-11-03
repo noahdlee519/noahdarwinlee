@@ -7,6 +7,7 @@ import { adoptLand } from "./adopt-land.mjs";
 import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
+import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -2214,6 +2215,74 @@ const britishAmerica = (list) => list.flatMap((s) => {
   return [{ ...s, last: 1783, part: BRITISH_AMERICA }, { ...s, first: 1784, uid: uidNext++ }];
 });
 
+// Europe from 1803 to 1815 (`tools/napoleonic.mjs`): its spans replace every other span on the land the table covers in those
+// years, and what a cut leaves along the coast (a source's coarser shore against the units') is dropped. Russia's and the
+// Ottoman Empire's blocks are spans of their own, with no name, beside the sources' spans of those states, which run on outside
+// Europe. Small territories keep their land.
+const napoleonic = (list) => {
+  const unitsPath = resolve(dirname(provincesPath), "units.json");
+  if (!existsSync(unitsPath)) { console.log("napoleonic: no units.json beside UCHRONIA's provinces, so Europe from " + NAPOLEONIC_FROM + " to " + NAPOLEONIC_TO + " keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const topo = JSON.parse(readFileSync(unitsPath, "utf8"));
+  const provinces = JSON.parse(readFileSync(provincesPath, "utf8")).objects.provinces.geometries.map((g) => g.properties);
+  const notes = [];
+  const N = buildNapoleonic({ topo, provinces, client, clip, neAll, rewind, polysOf, log: (m) => notes.push(m) });
+  notes.forEach((m) => console.log("napoleonic: " + m));
+  const box = (w, s, e, n) => [[[[w, s], [e, s], [e, n], [w, n], [w, s]]]];
+  const mb = boxOf(N.mask), tiles = [];
+  for (let x = Math.floor(mb[0] / 3) * 3; x < mb[2]; x += 3) for (let y = Math.floor(mb[1] / 3) * 3; y < mb[3]; y += 3) {
+    const t = rewind(tryClip(clip.intersection, N.mask, box(x, y, x + 3, y + 3)) || []);
+    if (t.length) tiles.push({ polys: t, box: boxOf(t) });
+  }
+  const near = dilate(dilate(cellsOf(N.mask)));
+  const edits = [];
+  for (const s of list) {
+    if (s.small || s.last < NAPOLEONIC_FROM || s.first > NAPOLEONIC_TO || !boxHit(s.box, mb)) continue;
+    let hit = false;
+    for (const t of tiles) if (boxHit(s.box, t.box)) { hit = true; edits.push({ base: s, first: Math.max(s.first, NAPOLEONIC_FROM), last: Math.min(s.last, NAPOLEONIC_TO), polys: t.polys, add: false }); }
+    if (hit) s.napMasked = true;
+  }
+  list = reshape(list, edits, false);
+  let shorn = 0;
+  list = list.map((s) => {
+    if (!s.napMasked) return s;
+    const inside = s.first >= NAPOLEONIC_FROM && s.last <= NAPOLEONIC_TO;
+    const polys = inside ? s.polys.filter((p) => { const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
+    if (polys.length !== s.polys.length) shorn++;
+    const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
+    if (out) delete out.napMasked;
+    return out;
+  }).filter(Boolean);
+  // The table's first spans start on 1 January 1803, or on the day of an entry of 1803 that names them and falls in 1802 (the
+  // Italian Republic, the French annexation of Piedmont); the sources' spans of 1802 that lie mostly on the table's land end
+  // the day before the table's span that covers most of them begins, rather than on the days the dated table gives the
+  // changes of 1803 it draws from its first day.
+  const early = new Map();
+  const table = resolve(here, "dated-days.json");
+  if (existsSync(table)) for (const e of JSON.parse(readFileSync(table, "utf8")).changes) if (e.y === NAPOLEONIC_FROM && e.date < NAPOLEONIC_FROM + "-01-01") for (const n of e.names) early.set(n, Math.min(early.get(n) ?? Infinity, dayOf(e.date)));
+  const spans = N.spans.map(({ host, from, to, ...s }) => withBox({ ...s, ...(s.dayFrom ? {} : { dayFrom: [s.first, early.get(s.name) ?? dayOf(s.first + "-01-01")] }), people: 0, src: "napoleonic", ...(host ? { noLabel: true } : {}) }));
+  const firsts = spans.filter((t) => t.first === NAPOLEONIC_FROM), maskCells = cellsOf(N.mask);
+  let ended = 0;
+  for (const s of list) {
+    if (s.last !== NAPOLEONIC_FROM - 1 || s.small || !boxHit(s.box, mb)) continue;
+    const cs = s.cells || cellsOf(s.polys), all = cellSum(cs);
+    let w = 0;
+    for (const i of cs) if (maskCells.has(i)) w += cellW(i);
+    if (w < 0.5 * all) continue;
+    let best = null, most = 0;
+    for (const t of firsts) {
+      if (!boxHit(t.box, s.box)) continue;
+      let k = 0;
+      for (const i of cs) if (t.cells.has(i)) k += cellW(i);
+      if (k > most) { most = k; best = t; }
+    }
+    s.dayTo = [s.last, best && most >= 0.5 * all ? best.dayFrom[1] - 1 : dayOf(s.last + "-12-31")];
+    ended++;
+  }
+  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(spans);
+};
+
 const US_FROM = 1784, US_TO = 1885;
 const NA_KEEP = new Set(["Confederate States of America"]);
 // The Continental Divide from 49° N to 42° N, north to south, from the passes along it (Marias, MacDonald, Chief Joseph, Lemhi, Monida, Targhee, Togwotee, Union, South Pass): the western limit of the Louisiana Purchase.
@@ -2689,7 +2758,7 @@ const stages = (list) => {
   return out;
 };
 
-dated = fillSmallGaps(resolveOverlaps(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated)))))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(napoleonic(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const SNAP_DAY = "1886-01-01", SNAP_FROM = 1500, SNAP_OWN = 0.5, SNAP_THIN_KM = 15, SNAP_SMALL_KM2 = 800, SNAP_KM = 0.3, SNAP_HAIR_KM = 0.05, SNAP_HAIR_KM2 = 1, SNAP_SPARE = 0.2;
 const SNAPPED = Symbol("snapped");
 function clipRect(polys, b) {
@@ -2778,7 +2847,7 @@ function snapTo1886(list) {
   };
   const owners = [];
   for (const s of list) {
-    if (s.claims || s.people || s.small || s.last < SNAP_FROM) continue;
+    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic") continue;
     const got = gainOf(s);
     let gain = got.gain;
     if (!gain.length) continue;
@@ -2811,7 +2880,7 @@ function snapTo1886(list) {
     for (const j of order) {
       const t = list[j];
       if (t.box[0] > g.box[2]) break;
-      if (mine.has(t) || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
+      if (mine.has(t) || t.src === "napoleonic" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
       const near = g.gain.filter((q) => boxHit(boxOf([q]), t.box));
       if (!near.length) continue;
       const nb = boxOf(near), local = clipRect(snapOf(t), [nb[0] - 0.05, nb[1] - 0.05, nb[2] + 0.05, nb[3] + 0.05]);
@@ -3162,7 +3231,8 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
   if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
-      return { i, first: s.first, last: s.last, names: [s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates };
+      return { i, first: s.first, last: s.last, names: [s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
+        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
     dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
@@ -3973,6 +4043,11 @@ const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
   };
   for (const s of dated) if (!s.small && !s.people) note(s.name, s.first, s.last + 1, s.polys, !!s.ruler);
   csParts.forEach((r) => note(r.name, 1886 + r.start / 365.2425, 1886 + ((r.end < 0 ? dayOf(CS_TO) : r.end) + 1) / 365.2425, polysOf(r.geometry), !!(r.p && r.p.status && r.p.status !== "independent")));
+  // A succession inside Europe's table of 1803 to 1815 between two states that had different colours before doesn't link them,
+  // so the table leaves their colours as they were (the Electorate and the Kingdom of Hanover, say).
+  let earlier = new Map();
+  try { earlier = new Map(JSON.parse(readFileSync(resolve(out, "eras.json"), "utf8")).polities.filter((p) => p[1] >= 0).map((p) => [p[0], p[1]])); } catch (e) { /* no earlier build */ }
+  const keepApart = (an, A, bn) => A.z >= NAPOLEONIC_FROM && A.z <= NAPOLEONIC_TO + 1 && earlier.has(an) && earlier.has(bn) && earlier.get(an) !== earlier.get(bn);
   const all = [...life.entries()];
   const ends = all.filter(([, e]) => e.z < 1886 + (dayOf(CS_TO) + 1) / 365.2425 - 0.1), starts = all.filter(([, e]) => e.a > DATED_FROM);
   const cells = new Map();
@@ -3984,7 +4059,7 @@ const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
     const ca = cellsFor("z" + an, A.last);
     if (!ca.w) continue;
     for (const [bn, B] of cands) {
-      if (NO_LINK.has(an + "|" + bn)) continue;
+      if (NO_LINK.has(an + "|" + bn) || keepApart(an, A, bn)) continue;
       const cb = cellsFor("a" + bn, B.first);
       if (!cb.w) continue;
       let both = 0;
@@ -3996,8 +4071,9 @@ const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
     }
   }
 }
-// Umbrellas drawn in the colour of the crown they belong to: British America in Britain's.
-const COLOUR_LINK = [[BRITISH_AMERICA, "Kingdom of Great Britain"]];
+// Umbrellas drawn in the colour of the crown they belong to: British America in Britain's; and Joseph Bonaparte's Spain, a claimant
+// with no land of its own, in the colour of the French Empire, whose client it was.
+const COLOUR_LINK = [[BRITISH_AMERICA, "Kingdom of Great Britain"], ["Spain under Joseph Bonaparte", "First French Empire"]];
 for (const [a, b] of COLOUR_LINK) {
   if (!idOf.has(a) || !idOf.has(b)) continue;
   const x = findKey(rawKey(idOf.get(a))), y = findKey(rawKey(idOf.get(b)));
@@ -4045,7 +4121,11 @@ for (const [y, file] of index) {
     else if (inSpread(A[1], A[2]) && inSpread(B[1], B[2]) && km < A[3] + B[3] + SPREAD_KM) addEdge(A[0], B[0], SPREAD_W);
   }
 }
-const touchYears = new Map();
+// Years two states touch, and the years they touch outside Europe's table of 1803 to 1815: a pair that touches only in those
+// years does not hold either to another colour in the greedy pass or the repair (the colours while touching settle it for those
+// years), so the table leaves the colours of the states it shares with other years as they were.
+const touchYears = new Map(), touchOutside = new Map();
+const outsideTable = (a, b) => Math.max(0, Math.min(b, NAPOLEONIC_FROM - 1) - a + 1) + Math.max(0, b - Math.max(a, NAPOLEONIC_TO + 1) + 1);
 for (const ch of datedChunks) {
   const rows = ch.rows;
   const hueOf = (i) => (rows[i][7] || rows[i][10] ? null : keyOf(rows[i][1] >= 0 ? rows[i][1] : rows[i][0]));
@@ -4063,6 +4143,8 @@ for (const ch of datedChunks) {
       if (!a || !b || a === b) return;
       const k = a < b ? a + "|" + b : b + "|" + a;
       touchYears.set(k, (touchYears.get(k) || 0) + together(rows[i], rows[j]));
+      const a0 = Math.max(rows[i][2], rows[j][2], ch.from), b0 = Math.min(rows[i][3], rows[j][3], ch.to);
+      touchOutside.set(k, (touchOutside.get(k) || 0) + outsideTable(a0, b0));
     });
   });
   const labs = rows.map((r, i) => (hueOf(i) && r[6] && inSpread(r[6][0], r[6][1]) ? [hueOf(i), r[6][0], r[6][1], Math.sqrt(r[6][5]), r] : null)).filter(Boolean);
@@ -4072,7 +4154,7 @@ for (const ch of datedChunks) {
     if (d3.geoDistance([A[1], A[2]], [B[1], B[2]]) * R_KM < A[3] + B[3] + SPREAD_KM) addEdge(A[0], B[0], SPREAD_W);
   }
 }
-for (const [k, y] of touchYears) { const [a, b] = k.split("|"); addEdge(a, b, Math.min(1, y / TOUCH_YEARS)); addTouch(a, b); }
+for (const [k, y] of touchYears) { const [a, b] = k.split("|"); addEdge(a, b, Math.min(1, y / TOUCH_YEARS)); if (touchOutside.get(k)) addTouch(a, b); }
 {
   const geoms = csLo.objects.p.geometries;
   const hueOf = (i) => keyOf(csRows[i][1] >= 0 ? csRows[i][1] : csRows[i][0]);

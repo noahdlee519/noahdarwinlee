@@ -89,6 +89,14 @@ export function dateChanges(spans, table, clip, log = () => {}) {
     // Named spans take their entry's day; of two entries naming one span, the later in the table.
     const day = new Map(), why = new Map();
     for (const s of all) for (const e of entries) if (s.names.some((n) => e.names.includes(n)) && inBox(e, s)) { day.set(s, e.day); why.set(s, e); }
+    // A span that brings its own day (fixFrom, fixTo: Europe from 1803 to 1815) keeps it, as if an entry
+    // named it, but does not pass it on.
+    const own = new Set();
+    for (const s of all) {
+      const d = isStart.has(s) ? s.fixFrom : s.fixTo === undefined ? undefined : s.fixTo + 1;
+      if (d === undefined) continue;
+      day.set(s, d); why.set(s, { date: isoOfDay(d), what: "a day of its own", names: s.names, used: 0 }); own.add(s);
+    }
     if (!day.size) continue;
     // The rest take the day of a named span they overlap, or of their own state's other shape in the
     // change (its old shape when the new one is dated, and the other way round, or its shape under a new
@@ -110,7 +118,7 @@ export function dateChanges(spans, table, clip, log = () => {}) {
       return out;
     };
     const cost = new Map([...day.keys()].map((s) => [s, 0]));
-    let front = [...day.keys()];
+    let front = [...day.keys()].filter((s) => !own.has(s));
     while (front.length) {
       const next = new Map();
       for (const s of front) for (const [o, k, same] of linksOf(s)) {
