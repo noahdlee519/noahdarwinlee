@@ -4196,7 +4196,7 @@ const BASE_COLOURS = {
   "Bangladesh": 5, "Barbados": 9, "Belarus": 5, "Belgium": 0, "Belize": 0, "Benin": 5, "Bhutan": 6,
   "Bolivia": 5, "Bosnia-Herzegovina": 7, "Botswana": 9, "Brazil": 8, "Brunei": 8, "Bulgaria": 9,
   "Burkina Faso": 2, "Burundi": 6, "Cambodia": 4, "Cameroon": 4, "Canada": 9, "Cape Verde": 7,
-  "Central African Republic": 8, "Chad": 3, "Chile": 3, "China": 3, "Colombia": 4,
+  "Central African Republic": 8, "Chad": 3, "Chile": 3, "China": 9, "Colombia": 4,
   "Commonwealth of Dominica": 5, "Comoros": 3, "Congo": 1, "Costa Rica": 5, "Croatia": 5, "Cuba": 2,
   "Cyprus": 9, "Czech Republic": 0, "Côte d'Ivoire": 9, "Denmark": 3, "Djibouti": 3, "Dominican Republic": 4,
   "DR Congo": 2, "East Timor": 9, "Ecuador": 1, "Egypt": 0, "El Salvador": 3, "Equatorial Guinea": 6,
@@ -4209,7 +4209,7 @@ const BASE_COLOURS = {
   "Liechtenstein": 6, "Lithuania": 1, "Luxembourg": 8, "Madagascar": 6, "Malawi": 7, "Malaysia": 2,
   "Maldives": 5, "Mali": 6, "Malta": 4, "Mauritania": 8, "Mauritius": 0, "Mexico": 4, "Moldova": 3,
   "Monaco": 2, "Mongolia": 0, "Montenegro": 4, "Morocco": 7, "Mozambique": 8, "Myanmar": 8, "Namibia": 2,
-  "Nepal": 0, "Netherlands": 1, "New Zealand": 4, "Nicaragua": 1, "Niger": 7, "Nigeria": 0, "Niue": 4,
+  "Nepal": 6, "Netherlands": 1, "New Zealand": 4, "Nicaragua": 1, "Niger": 7, "Nigeria": 0, "Niue": 4,
   "North Korea": 7, "North Macedonia": 0, "Norway": 6, "Oman": 0, "Pakistan": 8, "Palau": 9, "Panama": 8,
   "Papua New Guinea": 1, "Paraguay": 0, "Peru": 9, "Philippines": 9, "Poland": 4, "Portugal": 6, "Qatar": 8,
   "Romania": 0, "Russia": 8, "Rwanda": 9, "Saint Barthelemy": 7, "Saint Kitts": 8, "Saint Kitts and Nevis": 8,
@@ -4355,8 +4355,7 @@ function windowColours(units, pairs, fixed, gap) {
     const sameAt = (t) => { const ca = colourAt(A.hue, t); return ca >= 0 && ca === colourAt(B.hue, t); };
     const at = [a, Math.floor((a + b) / 2), b].filter(sameAt);
     if (!at.length) continue;
-    const can = [A, B].filter((u) => size.get(u.hue) <= WINDOW_MAX_KM2);
-    if (!can.length) continue;
+    const under = [A, B].filter((u) => size.get(u.hue) <= WINDOW_MAX_KM2), can = under.length ? under : [A, B];
     const side = can.length === 1 ? can[0] : A.free && !B.free ? A : B.free && !A.free ? B : size.get(A.hue) <= size.get(B.hue) ? A : B;
     if (!over.has(side.hue)) over.set(side.hue, []);
     const mine = over.get(side.hue), near = mine.find((w) => w[0] - gap <= b && a <= w[1] + gap);
