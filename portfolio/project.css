@@ -202,16 +202,21 @@ a {
   display: none;
 }
 
+/* Only the screenshots themselves are grabbed, not the empty strip beside the first and last. */
 @media (hover: hover) and (pointer: fine) {
-  .track {
+  .slide {
     cursor: grab;
   }
 }
 
 .track.is-dragging {
   scroll-snap-type: none;
-  cursor: grabbing;
   user-select: none;
+}
+
+.track.is-grabbing,
+.track.is-grabbing .slide {
+  cursor: grabbing;
 }
 
 .slide {

@@ -83,7 +83,8 @@
   var drag = null, swallow = false, settle = 0;
   track.addEventListener("pointerdown", function (e) {
     if (e.pointerType === "touch" || e.button !== 0) return;
-    var v = e.target.closest && e.target.closest("video");
+    if (!(e.target.closest && e.target.closest(".slide"))) return;
+    var v = e.target.closest("video");
     if (v && e.clientY > v.getBoundingClientRect().bottom - 56) return;
     var now = performance.now();
     drag = { id: e.pointerId, x: e.clientX, left: track.scrollLeft, start: at, moved: false, lastX: e.clientX, lastT: now, vx: 0 };
@@ -95,7 +96,7 @@
       if (Math.abs(dx) < 6) return;
       drag.moved = true;
       clearTimeout(settle);
-      track.classList.add("is-dragging");
+      track.classList.add("is-dragging", "is-grabbing");
       try { track.setPointerCapture(drag.id); } catch (err) {}
     }
     var now = performance.now();
@@ -109,6 +110,7 @@
     var d = drag;
     drag = null;
     if (!d.moved) return;
+    track.classList.remove("is-grabbing");
     var w = slides[0].offsetWidth, dx = d.lastX - d.x, fast = performance.now() - d.lastT < 120 ? d.vx : 0, i = d.start;
     if (Math.abs(dx) > w) i = nearest();
     else if (dx < -w * 0.15 || fast < -0.5) i = d.start + 1;
