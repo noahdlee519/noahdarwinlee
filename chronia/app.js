@@ -3111,8 +3111,10 @@
   var landGeo = null;
   function polityAt(x, y) {
     if (!current) return null;
-    var ll = lonLatAt(x, y);
-    if (!ll) return null;
+    return polityAtLL(lonLatAt(x, y));
+  }
+  function polityAtLL(ll) {
+    if (!current || !ll) return null;
     var lg = landGeoAt();
     if (lg && !d3.geoContains(lg, ll)) return null;
     var L = level(current, "hi"), best = null, bestA = Infinity;
@@ -5486,7 +5488,7 @@
   // side in the war's file]. A party with a side shows only while the file gives that side ground; a party
   // without a flag is drawn as a swatch of its side's colour. Clicking a party flies to its capital or seat.
   var STORE_WARS = "chronia-wars";
-  var warsBox = $("wars"), warsBtn = $("wars-btn"), warsList = $("wars-list"), warsState = "";
+  var warsBox = $("wars"), warsBtn = $("wars-btn"), warsList = $("wars-list"), warsState = null;
   var fH = function (cs) { var h = 20 / cs.length; return cs.map(function (c, i) { return '<rect y="' + (i * h).toFixed(2) + '" width="30" height="' + (h + 0.05).toFixed(2) + '" fill="' + c + '"/>'; }).join(""); };
   var fV = function (cs) { var w = 30 / cs.length; return cs.map(function (c, i) { return '<rect x="' + (i * w).toFixed(2) + '" width="' + (w + 0.05).toFixed(2) + '" height="20" fill="' + c + '"/>'; }).join(""); };
   var fStar = function (cx, cy, r, fill, n) {
@@ -5614,6 +5616,40 @@
     });
     return out;
   }
+  // Every notable war of the date (data/wars.json, from Wikidata and the Wikipedia infoboxes; see tools/build-wars.mjs), after the wars
+  // the zones of control draw. A side's member shows in the colour of the state at its capital on the map that date.
+  var WARS_MAX = 30, allWars = null, allWarsLoad = null, allWarsMemo = { key: "", rows: [] };
+  function loadAllWars() {
+    if (!allWarsLoad) allWarsLoad = fetchJSON("data/wars.json").then(function (d) { allWars = d.wars; warsState = null; scheduleRender(); })
+      .catch(function (e) { allWarsLoad = null; console.warn("wars", e); });
+  }
+  function memberColour(ll) {
+    var p = ll ? polityAtLL(ll) : null;
+    if (!p) return null;
+    if (p.claims) return pal.colors[p.claimColors ? p.claimColors[0] : 0];
+    return p.people ? pal["people-fill"] : pal.colors[p.color];
+  }
+  function warsAtDate() {
+    if (!allWars) { loadAllWars(); return []; }
+    var monthly = isMonthly(now), day = monthly ? dayOfTime(now) : null, y = yearOf(now);
+    var key = (monthly ? "d" + day : "y" + y) + "|" + (current ? current.key || current.year || "" : "") + "|" + (current && current.polys ? current.polys.length : 0) + "|" + (pal.colors || []).join("");
+    if (key === allWarsMemo.key) return allWarsMemo.rows;
+    var rows = allWars.filter(function (w) {
+      if (y < w[2] || y > w[4]) return false;
+      if (monthly && w[3] !== null && day < w[3]) return false;
+      if (monthly && w[5] !== null && day > w[5]) return false;
+      return true;
+    }).sort(function (a, b) { return b[6] - a[6]; }).slice(0, WARS_MAX).map(function (w) {
+      return { name: w[0], loc: w[7], groups: w[8].map(function (side) {
+        return side.map(function (m) {
+          var ll = m.length > 1 ? [m[1], m[2]] : null;
+          return { name: m[0], ll: ll, colour: memberColour(ll) };
+        });
+      }) };
+    });
+    allWarsMemo = { key: key, rows: rows };
+    return rows;
+  }
   function sideColour(w, key) {
     var c = "#888";
     if (w.data) w.data.sides.forEach(function (s) { if (s[0] === key) c = s[2]; });
@@ -5637,22 +5673,23 @@
       if (day < w.first || day > w.last) return;
       if (!w.data) ctlLoad(w);
       var groups = warParties(w, day);
-      if (groups.length) rows.push({ w: w, groups: groups });
+      if (groups.length) rows.push({ w: w, name: w.name, groups: groups });
     });
-    var state = rows.map(function (r) { return r.w.key + ":" + r.groups.map(function (g) { return g.map(function (p) { return p.name + p.ll; }).join(","); }).join("|"); }).join(";");
+    warsAtDate().forEach(function (r) { rows.push(r); });
+    var state = rows.map(function (r) { return r.name + ":" + r.groups.map(function (g) { return g.map(function (p) { return p.name + p.ll + (p.colour || ""); }).join(","); }).join("|"); }).join(";");
     if (state === warsState) return;
     warsState = state;
     warsList.textContent = "";
     if (!rows.length) {
       var none = document.createElement("p");
       none.className = "ch-wars-none";
-      none.textContent = "No war in the zones of control at this date";
+      none.textContent = allWars ? "No notable wars on this date" : "Looking up the wars of this date";
       warsList.appendChild(none);
     }
     rows.forEach(function (r) {
       var row = document.createElement("div"), name = document.createElement("p"), sides = document.createElement("div");
       row.className = "ch-wars-row"; name.className = "ch-wars-name"; sides.className = "ch-wars-sides";
-      name.textContent = r.w.name;
+      name.textContent = r.name;
       r.groups.forEach(function (g, gi) {
         if (gi) { var vs = document.createElement("span"); vs.className = "ch-wars-vs"; vs.textContent = "vs"; sides.appendChild(vs); }
         var grp = document.createElement("span");
@@ -5661,17 +5698,19 @@
           var b = document.createElement("button");
           b.type = "button";
           b.className = "ch-wars-flag";
-          b.setAttribute("aria-label", p.name + ", go to its capital");
+          b.setAttribute("aria-label", p.ll ? p.name + ", go to its capital" : p.name);
+          if (!p.flag && !p.side) b.classList.add("is-chip");
+          if (!p.ll) b.classList.add("is-nowhere");
           b.innerHTML = p.flag
             ? '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false">' + FLAGS[p.flag] + "</svg>"
-            : '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="' + sideColour(r.w, p.side) + '"/></svg>';
+            : '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="' + (r.w ? sideColour(r.w, p.side) : p.colour || pal.paper) + '"/></svg>';
           if (canHover) {
             b.addEventListener("mouseenter", function () { warsTip(b, p.name); });
             b.addEventListener("mouseleave", function () { hoverTip.classList.remove("is-on"); });
           }
           b.addEventListener("focus", function () { warsTip(b, p.name); });
           b.addEventListener("blur", function () { hoverTip.classList.remove("is-on"); });
-          b.addEventListener("click", function () { hoverTip.classList.remove("is-on"); flyTo(p.ll[0], p.ll[1], Math.max(localScale(), 1800)); });
+          b.addEventListener("click", function () { hoverTip.classList.remove("is-on"); if (p.ll) flyTo(p.ll[0], p.ll[1], Math.max(localScale(), 1800)); });
           grp.appendChild(b);
         });
         sides.appendChild(grp);
@@ -5961,6 +6000,7 @@
   window.__chronia = {
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
     loadingJSON: function () { return jsonLoading; },
+    wars: function () { return warsAtDate().map(function (r) { return r.name; }); },
     search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
     searchOpen: function () { return !searchPanel.hidden; },
     ready: function () { return ready && !!current; },

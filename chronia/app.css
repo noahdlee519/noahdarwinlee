@@ -1142,6 +1142,14 @@ select.ch-save-input {
   outline-color: var(--ink);
 }
 
+.ch-wars-flag.is-nowhere {
+  cursor: default;
+}
+
+.ch-wars-flag.is-nowhere svg rect {
+  fill-opacity: 0.35;
+}
+
 .ch-wars-flag:focus-visible {
   outline: 1.5px solid var(--ink);
   outline-offset: 1px;
