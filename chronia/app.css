@@ -1143,11 +1143,13 @@ select.ch-save-input {
 }
 
 .ch-wars-sprite {
+  --fw: 21px;
   display: block;
-  width: 21px;
-  height: 14px;
+  width: var(--fw);
+  height: calc(var(--fw) * 2 / 3);
   background: url("data/flags.webp") no-repeat;
-  background-size: 420px 294px;
+  background-size: calc(var(--fw) * 20) auto;
+  background-position: calc(var(--fx, 0) * -1 * var(--fw)) calc(var(--fy, 0) * -2 / 3 * var(--fw));
 }
 
 .ch-wars-flag.is-nowhere {
@@ -1584,6 +1586,10 @@ select.ch-save-input {
   .ch-wars-flag svg {
     width: 16px;
     height: 10.67px;
+  }
+
+  .ch-wars-sprite {
+    --fw: 16px;
   }
 
   .ch-top > .ch-year-box {

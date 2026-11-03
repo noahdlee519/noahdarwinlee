@@ -5655,6 +5655,7 @@
     if (w.data) w.data.sides.forEach(function (s) { if (s[0] === key) c = s[2]; });
     return c;
   }
+  var warsTipTimer = 0;
   function warsTip(el, text) {
     hoverTip.textContent = text;
     var r = el.getBoundingClientRect();
@@ -5706,14 +5707,20 @@
             : p.flag
             ? '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false">' + FLAGS[p.flag] + "</svg>"
             : '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="' + (r.w ? sideColour(r.w, p.side) : p.colour || pal.paper) + '"/></svg>';
-          if (p.sprite >= 0) b.firstChild.style.backgroundPosition = (-21 * (p.sprite % 20)) + "px " + (-14 * Math.floor(p.sprite / 20)) + "px";
+          if (p.sprite >= 0) { b.firstChild.style.setProperty("--fx", p.sprite % 20); b.firstChild.style.setProperty("--fy", Math.floor(p.sprite / 20)); }
           if (canHover) {
             b.addEventListener("mouseenter", function () { warsTip(b, p.name); });
             b.addEventListener("mouseleave", function () { hoverTip.classList.remove("is-on"); });
           }
           b.addEventListener("focus", function () { warsTip(b, p.name); });
           b.addEventListener("blur", function () { hoverTip.classList.remove("is-on"); });
-          b.addEventListener("click", function () { hoverTip.classList.remove("is-on"); if (p.ll) flyTo(p.ll[0], p.ll[1], Math.max(localScale(), 1800)); });
+          // Without hover, a tap names the party for a few seconds as well as flying to it.
+          b.addEventListener("click", function () {
+            clearTimeout(warsTipTimer);
+            if (canHover) hoverTip.classList.remove("is-on");
+            else { warsTip(b, p.name); warsTipTimer = setTimeout(function () { hoverTip.classList.remove("is-on"); }, 2600); }
+            if (p.ll) flyTo(p.ll[0], p.ll[1], Math.max(localScale(), 1800));
+          });
           grp.appendChild(b);
         });
         sides.appendChild(grp);

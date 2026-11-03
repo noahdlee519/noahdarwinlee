@@ -19,7 +19,9 @@ const dayOf = (y, m, d) => Math.round((Date.UTC(y, m - 1, d) - DAY0) / DAY_MS);
 // Left out: umbrella names for many wars or centuries of them, and the theatres of a war listed on its own.
 const DROP = new Set(["Cold War", "Arab Spring", "Crusades", "Reconquista", "Punic Wars", "War on terror", "Eastern Front (World War II)",
   "Pacific War", "Western Front (World War I)", "Western Front (World War II)", "Eastern Front (World War I)", "Mediterranean and Middle East theatre of World War II",
-  "European theatre of World War II", "Asiatic-Pacific Theater", "Mexican Revolution and the United States", "French Revolutionary and Napoleonic Wars"]);
+  "European theatre of World War II", "Asiatic-Pacific Theater", "Mexican Revolution and the United States", "French Revolutionary and Napoleonic Wars",
+  // Not wars between people, or not wars at all.
+  "Ngogo Chimpanzee War", "Gombe Chimpanzee War", "Nuclear warfare"]);
 // Wars the zones of control already list with their own flags (WAR_PARTIES in app.js), by Wikipedia title.
 const CONTROLLED = new Set(["World War I", "World War II", "American Civil War", "Spanish Civil War", "Syrian civil war", "Russo-Ukrainian war (2022–present)", "Mexican drug war", "Gaza war"]);
 // Dates mended where Wikidata's run into a war listed separately.
