@@ -5549,7 +5549,11 @@
     syRev: fH(["#007a3d", "#fff", "#000"]) + fStar(9, 10, 1.8, "#ce1126") + fStar(15, 10, 1.8, "#ce1126") + fStar(21, 10, 1.8, "#ce1126"),
     ir: fH(["#239f40", "#fff", "#da0000"]) + '<path d="M15 7.9v4.2M13.7 8.6c-0.9 1 -0.6 2.6 0.8 3.2M16.3 8.6c0.9 1 0.6 2.6 -0.8 3.2" fill="none" stroke="#da0000" stroke-width="0.6"/>',
     il: '<rect width="30" height="20" fill="#fff"/><rect y="2" width="30" height="3" fill="#0038b8"/><rect y="15" width="30" height="3" fill="#0038b8"/><path d="M15 6.6l3 5.1h-6zM15 13.4l3-5.1h-6z" fill="none" stroke="#0038b8" stroke-width="0.8"/>',
-    ua: fH(["#0057b7", "#ffd700"])
+    ua: fH(["#0057b7", "#ffd700"]),
+    ye: fH(["#ce1126", "#fff", "#000"]),
+    yeSouth: fH(["#ce1126", "#fff", "#000"]) + '<path d="M0 0L12 10L0 20z" fill="#3e5eb9"/>' + fStar(4.2, 10, 2.4, "#ce1126"),
+    sa: '<rect width="30" height="20" fill="#006c35"/><path d="M9 7.5h12M10 9.2h10" stroke="#fff" stroke-width="1.1"/><path d="M8.5 13.2h12.5l1.5-0.8" fill="none" stroke="#fff" stroke-width="0.9"/>',
+    ae: fH(["#00732f", "#fff", "#000"]) + '<rect width="8" height="20" fill="#ff0000"/>'
   };
   var WASH = [-77.04, 38.9], LONDON = [-0.13, 51.51], PARIS = [2.35, 48.86], MOSCOW = [37.62, 55.75], TOKYO = [139.69, 35.69], ROME = [12.5, 41.9], BERLIN = [13.4, 52.52];
   var P = function (flag, name, ll, from, to, side) { return { flag: flag, name: name, ll: ll, from: from || null, to: to || null, side: side || null }; };
@@ -5602,6 +5606,15 @@
     ukraine: [
       [P("ua", "Ukraine", [30.52, 50.45])],
       [P("ru", "Russia", MOSCOW)]
+    ],
+    // The government's seat is Sanaa until the Houthis took it, then Aden.
+    yemen: [
+      [P("ye", "Yemeni government", [44.21, 15.35], null, "2015-02-05"), P("ye", "Yemeni government", [45.03, 12.78], "2015-02-06"),
+        P("sa", "Saudi Arabia", [46.72, 24.63], "2015-03-26"), P("ae", "United Arab Emirates", [54.37, 24.47], "2015-03-26")],
+      [P(null, "Houthis (Ansar Allah)", [44.21, 15.35], null, null, "yeHouthi")],
+      [P("yeSouth", "Southern Transitional Council", [45.03, 12.78], "2017-05-11", null, "yeStc")],
+      [P(null, "al-Qaeda in the Arabian Peninsula", [48.78, 14.54], null, null, "yeAqap")],
+      [P(null, "Islamic State", [45.03, 12.78], null, null, "isis")]
     ]
   };
   var warDay = function (iso) { var a = iso.split("-"); return dayFromDate(+a[0], +a[1], +a[2]); };

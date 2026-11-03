@@ -9,7 +9,8 @@ const UA = "CHRONIA zones of control (noahdarwinlee.com)";
 const WARS = [
   { key: "syria", from: "2014-09", modules: ["Module:Syrian Civil War detailed map"], marks: ["Module:Middle East conflicts map marks"] },
   { key: "ukraine", from: "2022-03", modules: ["Module:Russo-Ukrainian war detailed map", "Module:Russo-Ukrainian war overview map"], marks: [] },
-  { key: "israel", from: "2016-01", modules: ["Module:Israeli-Palestinian conflict detailed map"], marks: [] }
+  { key: "israel", from: "2016-01", modules: ["Module:Israeli-Palestinian conflict detailed map"], marks: [] },
+  { key: "yemen", from: "2014-11", modules: ["Module:Yemeni Civil War detailed map"], marks: [] }
 ];
 const only = process.argv.slice(2);
 

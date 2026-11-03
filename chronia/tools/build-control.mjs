@@ -50,7 +50,12 @@ const SIDES = {
   fuel: ["fuel-theft gangs (huachicoleros)", "#7d6a52"],
   pa: ["Palestinian Authority", "#2f8a4a"],
   hamas: ["Hamas", "#c0562a"],
-  popular: ["Popular Forces", "#c9a227"]
+  popular: ["Popular Forces", "#c9a227"],
+  yeGov: ["Yemeni government and the Saudi-led coalition", "#a8322a"],
+  yeHouthi: ["Houthis (Ansar Allah) and allies", "#3d8a3a"],
+  yeStc: ["Southern separatists (the Southern Movement, then the Southern Transitional Council)", "#3a64b0"],
+  yeAqap: ["al-Qaeda in the Arabian Peninsula and allies", "#5b6466"],
+  yeTribe: ["Tribal forces", "#c9a227"]
 };
 const OCVED_GROUPS = {
   "Cartel de Sinaloa": "sinaloa", "Los Zetas": "zetas", "Cartel del Golfo": "golfo", "La Familia Michoacana": "familia", "Beltran Leyva": "beltran", "La Barbie": "barbie",
@@ -107,6 +112,26 @@ const WARS = [
       [/Israel/i, "israel"]
     ],
     fallback: { blue: "israel", green0d0: "pa", lime: "hamas", yellow: "popular" }
+  },
+  {
+    key: "yemen",
+    name: "Yemeni civil war",
+    credit: "Wikipedia's town maps",
+    region: (p) => p.adm0_a3 === "YEM",
+    // The captions' words change over the years; the order matters, since the government's caption of 2016 names the
+    // Southern Movement among its groups and the jihadists' of 2018 names ISIL among theirs.
+    rules: [
+      [/al-Qaeda|AQAP|Ansar al-Sharia|jihadist/i, "yeAqap"],
+      [/Islamic State|ISIL|ISIS/i, "isis"],
+      [/^Saleh-affiliated/i, null],
+      [/Houthi|Ansar ?Allah|Ansarullah|Supreme Political/i, "yeHouthi"],
+      [/Southern Transitional|STC|Sep[ae]ratist|South Yemen Movement|Security Belt/i, "yeStc"],
+      [/government|Hadi|coalition|Presidential Leadership|Saudi/i, "yeGov"],
+      [/Tribal|tribes|non-aligned|unaffiliated/i, "yeTribe"]
+    ],
+    fallback: { red: "yeGov", green0d0: "yeHouthi", lime: "yeHouthi", grey: "yeAqap", black: "isis", blue: "yeTribe", yellow: "yeStc" },
+    // Until February 2015 the map marked the Houthis' towns (Sanaa, Saada, Amran) yellow, which its caption left out.
+    overrides: [["2014-11", "2015-01", "yellow", "yeHouthi"]]
   }
 ];
 

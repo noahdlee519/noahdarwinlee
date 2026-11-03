@@ -25,7 +25,7 @@ const DROP = new Set(["Cold War", "Arab Spring", "Crusades", "Reconquista", "Pun
   // An umbrella over the wars in Afghanistan since 1978, which are listed themselves, and a title that leads to the war of 2001 to 2021.
   "Afghan conflict", "War in Afghanistan (2015–2021)"]);
 // Wars the zones of control already list with their own flags (WAR_PARTIES in app.js), by Wikipedia title.
-const CONTROLLED = new Set(["World War I", "World War II", "American Civil War", "Spanish Civil War", "Syrian civil war", "Russo-Ukrainian war (2022–present)", "Mexican drug war", "Gaza war"]);
+const CONTROLLED = new Set(["World War I", "World War II", "American Civil War", "Spanish Civil War", "Syrian civil war", "Russo-Ukrainian war (2022–present)", "Mexican drug war", "Gaza war", "Yemeni civil war (2014–present)"]);
 // Dates mended where Wikidata's run into a war listed separately.
 const ENDS = { "Russo-Ukrainian war": "2022-02-23" };
 const MAX_SIDE = 6;
