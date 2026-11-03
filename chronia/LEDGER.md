@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1939–1945 | the British Isles and other islands | the Second World War's zones of control across the sea
+
+- What changed: the zones of control split each month's land into the towns' Voronoi cells across the sea, so French and Dutch towns' cells held the Isle of Wight and strips of Kent, Sussex, and Norfolk for the Axis from 1940 to 1944, and Elba went with Corsica. Each landmass is now split among its own towns only, and a landmass without towns goes with the nearest one that has some.
+- Tables: `landGroups` in `tools/ww2-control.mjs`; `tools/control/ww2-towns.json` and `tools/control/ww2-axis.json` are unchanged, so the main map is too.
+- Sources: as for the Second World War's zones of control.
+- Confidence: high for Britain, which no Axis force landed on beyond the Channel Islands; the islands without towns follow their nearest town-bearing landmass, which is right where an island shared its mainland's fate.
+- Alternatives: more towns on Britain's south and east coasts (not taken: the cells would still cross the Channel wherever towns were sparse).
+- Left out: the Aegean islands, which follow their nearest town-bearing island or mainland whatever their own history.
+
 ## 1914–1918 | Europe and the Middle East | the wartime occupations off the main map
 
 - What changed: the occupations of the First World War, cut from the states on the main map since 29 October 2026, are now shown only in the zones of control (the entry below), so the main map draws the belligerents at their lawful borders until the armistices: Belgium, northern France, Luxembourg, Poland, Lithuania, Serbia, Montenegro, Romania, Albania, and the rest are their own states' again during the war, and Germany, Austria-Hungary, and the Ottoman Empire no longer lose East Prussia, Galicia, Upper Alsace, Sinai, or Western Armenia for the months the other side held them. The occupations that went on after the war stay: British-occupied Mesopotamia and the Occupied Enemy Territory Administration from the armistice of Mudros (31 October 1918), Italy's and France's hold on Albania from 12 November 1918, Alsace-Lorraine, Trentino and Venezia Giulia, Dalmatia, the Rhineland, Constantinople, and the Saar.

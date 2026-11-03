@@ -113,6 +113,56 @@ export function buildWW2(env) {
     const [y0, m0] = war.from.split("-").map(Number), [y1, m1] = war.to.split("-").map(Number);
     const bbox = war.box, lat0 = (bbox[1] + bbox[3]) / 2, kx = Math.cos(lat0 * Math.PI / 180);
     const frame = [(bbox[0] - 1) * kx, bbox[1] - 1, (bbox[2] + 1) * kx, bbox[3] + 1];
+    // The region's landmasses, each with the towns on it (a town goes to the landmass it stands on, or the
+    // nearest one, as coastal towns can fall just off the simplified coast); landmasses without towns join
+    // the nearest landmass that has some.
+    const inRing = (r, x, y) => {
+      let c = false;
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+        const [xi, yi] = r[i], [xj, yj] = r[j];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    const inPoly = (poly, x, y) => inRing(poly[0], x, y) && !poly.slice(1).some((h) => inRing(h, x, y));
+    const groupMemo = new Map();
+    const landGroups = (reg, pts) => {
+      const key = reg.key + "|" + pts.length + "|" + pts.reduce((t, p) => (t * 31 + Math.round(p[0] * 100) * 7 + Math.round(p[1] * 100)) % 1e9, 7);
+      if (groupMemo.has(key)) return groupMemo.get(key);
+      const land = reg.polys, boxes = land.map((poly) => {
+        let b = [Infinity, Infinity, -Infinity, -Infinity];
+        for (const [x, y] of poly[0]) b = [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)];
+        return b;
+      });
+      const verts = [], owner = [];
+      land.forEach((poly, L) => { for (const [x, y] of poly[0]) { verts.push([x * kx, y]); owner.push(L); } });
+      const vd = verts.length ? Delaunay.from(verts) : null;
+      const townsOn = land.map(() => []);
+      pts.forEach(([x, y], k) => {
+        let L = boxes.findIndex((b, i) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3] && inPoly(land[i], x, y));
+        if (L < 0 && vd) L = owner[vd.find(x * kx, y)];
+        if (L >= 0) townsOn[L].push(k);
+      });
+      const withTowns = land.map((p, L) => L).filter((L) => townsOn[L].length);
+      const tv = [], towner = [];
+      for (const L of withTowns) for (const [x, y] of land[L][0]) { tv.push([x * kx, y]); towner.push(L); }
+      const td = tv.length ? Delaunay.from(tv) : null;
+      const joined = new Map(withTowns.map((L) => [L, [land[L]]]));
+      land.forEach((poly, L) => {
+        if (townsOn[L].length || !td) return;
+        const ring = poly[0], step = Math.max(1, Math.floor(ring.length / 200));
+        let best = Infinity, to = -1;
+        for (let i = 0; i < ring.length; i += step) {
+          const q = [ring[i][0] * kx, ring[i][1]], n = td.find(q[0], q[1]);
+          const dd = (tv[n][0] - q[0]) ** 2 + (tv[n][1] - q[1]) ** 2;
+          if (dd < best) { best = dd; to = towner[n]; }
+        }
+        joined.get(to).push(poly);
+      });
+      const groups = withTowns.map((L) => ({ towns: townsOn[L], polys: joined.get(L) }));
+      groupMemo.set(key, groups);
+      return groups;
+    };
     const shapes = [], rows = [], open = new Map(), axisMonths = [];
     let prevSig = "", prev = null, distinct = 0;
     const finish = (s, last) => { const r = open.get(s); if (r) { r[2] = last; open.delete(s); } };
@@ -139,11 +189,35 @@ export function buildWW2(env) {
         const topo = server.topology({ c: { type: "GeometryCollection", geometries: geoms } });
         byside = new Map(); axis = [];
         for (const [s, list] of groups) {
+          if (s !== "axis") continue;
           const merged = client.merge(topo, list.map((k) => topo.objects.c.geometries[k])).coordinates;
-          if (s === "axis") axis = merged.map((poly) => poly.map((r) => r.map(([x, yy]) => [+x.toFixed(3), +yy.toFixed(3)])));
-          if (!region.length) continue;
-          const polys = clip.intersection(merged, region).filter((p) => areaKm2(p) >= 2);
-          if (polys.length) byside.set(s, polys);
+          axis = merged.map((poly) => poly.map((r) => r.map(([x, yy]) => [+x.toFixed(3), +yy.toFixed(3)])));
+        }
+        // The cells don't cross the sea: each landmass is split among its own towns only, so a town in
+        // France never holds a stretch of the English coast. A landmass without towns of its own (the
+        // Isle of Wight, the Hebrides, the Channel Islands) goes with the nearest landmass that has some.
+        for (const g of landGroups(reg, pts)) {
+          const own = new Set(g.towns.map((k) => sides[k]));
+          if (own.size === 1) {
+            const s = [...own][0], polys = g.polys.filter((p) => areaKm2(p) >= 2);
+            if (polys.length) byside.set(s, (byside.get(s) || []).concat(polys));
+            continue;
+          }
+          const gd = Delaunay.from(g.towns, (k) => pts[k][0] * kx, (k) => pts[k][1]), gv = gd.voronoi(frame);
+          const cells = [], bySide = new Map();
+          g.towns.forEach((k, j) => {
+            const c = gv.cellPolygon(j);
+            if (!c) return;
+            if (!bySide.has(sides[k])) bySide.set(sides[k], []);
+            bySide.get(sides[k]).push(cells.length);
+            cells.push({ type: "Polygon", coordinates: [c.map((q) => [q[0] / kx, q[1]])] });
+          });
+          const gt = server.topology({ c: { type: "GeometryCollection", geometries: cells } });
+          for (const [s, list] of bySide) {
+            const merged = client.merge(gt, list.map((k) => gt.objects.c.geometries[k])).coordinates;
+            const polys = clip.intersection(merged, g.polys).filter((p) => areaKm2(p) >= 2);
+            if (polys.length) byside.set(s, (byside.get(s) || []).concat(polys));
+          }
         }
         prevSig = sig; prev = { byside, axis }; distinct++;
       }
