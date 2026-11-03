@@ -608,9 +608,14 @@ of `/greatercircle/`.
   most eight seconds, then fades away to the map. In the Antique style the
   opening then plays as the cover lifts: the map unrolls from the left like
   a sheet, inking in through a soft fade that trails the roller and finishes
-  just after it has gone, while the globe turns with the roller and settles
-  back a little to rest where the map was left; then the header comes down
-  with its rule, and the controls appear.
+  just after it has gone, while the globe settles from a touch larger; then
+  the header comes down with its rule, and the controls appear. The fade is
+  a sheet of parchment feathered on its left edge (`.uc-veil`) that slides
+  off to the right while its parchment slides the other way inside it, so it
+  stays put on the screen; everything in the opening moves by `translate`,
+  `scale`, and `opacity` alone, which the browser animates off the main
+  thread, and the texture the globe turns on while dragged is not built
+  until the opening is over, so nothing stalls it.
   On a phone the bottom sheet rises in place of the header.
   With nothing selected the bar's second row closes; it opens when something
   is selected, animated where the browser can, and the map does not move. **Terrain**, on by

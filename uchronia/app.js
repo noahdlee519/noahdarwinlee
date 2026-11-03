@@ -288,7 +288,8 @@
     if (mapTex.failed || flat || satOn() || !texSharp(1.4) || mapTex.key === texKey()) return;
     clearTimeout(mapTex.timer);
     mapTex.timer = setTimeout(function () {
-      if (interacting > 0 || stroke || flat) return scheduleTexture();
+      // Not during the opening, whose animation it would stall.
+      if (interacting > 0 || stroke || flat || document.documentElement.classList.contains("uc-intro")) return scheduleTexture();
       try { buildTexture(); } catch (e) { mapTex.failed = true; console.warn("map texture", e); }
     }, 900);
   }
@@ -4006,19 +4007,19 @@
   function hideTip() { tip.hidden = true; }
 
   var fly = null;
-  function flyTo(lon, lat, zoom, ms, easeOut) {
+  function flyTo(lon, lat, zoom) {
     stopInertia();
     var zr = zoomRange();
     var toZoom = zoom == null ? view.zoom : Math.max(zr[0], Math.min(zr[1], zoom));
     if (reduceMotion) { view.lon = lon; view.lat = lat; view.zoom = toZoom; applyView(); scheduleRender(); return; }
     var dAngle = d3.geoDistance([view.lon, view.lat], [lon, lat]);
-    ms = ms || Math.min(1400, 450 + dAngle * 350);
+    var ms = Math.min(1400, 450 + dAngle * 350);
     if (flat) {
-      fly = { t0: performance.now(), ms: ms, out: easeOut, flat: true, lon0: view.lon, dlon: lon - view.lon, lat0: view.lat, lat1: lat, z0: view.zoom, z1: toZoom };
+      fly = { t0: performance.now(), ms: ms, flat: true, lon0: view.lon, dlon: lon - view.lon, lat0: view.lat, lat1: lat, z0: view.zoom, z1: toZoom };
     } else {
       var from = versorFromAngles([-view.lon, -view.lat, 0]);
       var to = versorFromAngles([-lon, -lat, 0]);
-      fly = { t0: performance.now(), ms: ms, out: easeOut, interp: versorInterpolate(from, to), z0: view.zoom, z1: toZoom };
+      fly = { t0: performance.now(), ms: ms, interp: versorInterpolate(from, to), z0: view.zoom, z1: toZoom };
     }
     interacting = 1;
     requestAnimationFrame(flyStep);
@@ -4026,7 +4027,7 @@
   function flyStep() {
     if (!fly) return;
     var t = Math.min(1, (performance.now() - fly.t0) / fly.ms);
-    var e = fly.out ? 1 - Math.pow(1 - t, 3) : t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     if (fly.flat) {
       view.lon = fly.lon0 + fly.dlon * e;
       view.lat = fly.lat0 + (fly.lat1 - fly.lat0) * e;
@@ -8317,19 +8318,13 @@
     var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var play = pal.antique && !still;
     if (play) {
-      var roll = document.createElement("div");
-      roll.className = "uc-roll";
-      roll.setAttribute("aria-hidden", "true");
-      document.body.appendChild(roll);
+      var veil = document.createElement("div");
+      veil.className = "uc-veil";
+      veil.setAttribute("aria-hidden", "true");
+      veil.innerHTML = '<div class="uc-veil-paper"></div><div class="uc-roll"></div>';
+      document.body.appendChild(veil);
       root.classList.add("uc-intro");
-      setTimeout(function () { root.classList.remove("uc-intro"); roll.remove(); }, 3000);
-      // The globe turns with the roller and settles back a little, so the
-      // world comes to rest where the map was left.
-      var lon = view.lon, lat = view.lat, zoom = view.zoom;
-      view.lon = lon + (flat ? 18 : 34);
-      view.zoom = Math.min(zoomRange()[1], zoom * 1.12);
-      applyView();
-      if (view.lon !== lon || view.zoom !== zoom) flyTo(lon, lat, zoom, 2300, true);
+      setTimeout(function () { root.classList.remove("uc-intro"); veil.remove(); }, 3000);
     }
     root.classList.add("uc-ready");
     return play;

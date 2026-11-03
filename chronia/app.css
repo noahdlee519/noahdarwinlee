@@ -1778,53 +1778,66 @@ select.ch-save-input {
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(3) { --ch-i: 2; }
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(4) { --ch-i: 3; }
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(5) { --ch-i: 4; }
-  /* The map inks in behind the roller: a feathered mask follows it across, and the last of the fade
-     finishes once the roller has gone. */
-  :root.ch-intro .ch-globe {
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--ch-reveal) - 34vw), rgba(0, 0, 0, 0.62) calc(var(--ch-reveal) - 16vw), rgba(0, 0, 0, 0.2) calc(var(--ch-reveal) - 4vw), transparent var(--ch-reveal));
-    mask-image: linear-gradient(90deg, #000 calc(var(--ch-reveal) - 34vw), rgba(0, 0, 0, 0.62) calc(var(--ch-reveal) - 16vw), rgba(0, 0, 0, 0.2) calc(var(--ch-reveal) - 4vw), transparent var(--ch-reveal));
-    animation:
-      ch-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both,
-      ch-ink 900ms cubic-bezier(0.2, 0.6, 0.35, 1) 1450ms forwards;
-  }
-  .ch-roll {
+  /* The opening is drawn on the compositor, so it stays smooth while the page is still busy: everything
+     in it moves by translate, scale, and opacity alone. A veil of parchment, feathered on its left edge,
+     slides off to the right with the paper roll at the start of its feather, so the map inks in behind
+     the roll; the veil's parchment slides the other way inside it, so it stays put on the screen and
+     matches the page. The globe settles from a touch larger as it appears. */
+  .ch-veil {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: 0;
+    left: calc(-1 * var(--ch-feather));
     z-index: 19;
+    width: calc(100vw + var(--ch-feather));
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.2) calc(var(--ch-feather) * 0.3), rgba(0, 0, 0, 0.62) calc(var(--ch-feather) * 0.62), #000 var(--ch-feather));
+    mask-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.2) calc(var(--ch-feather) * 0.3), rgba(0, 0, 0, 0.62) calc(var(--ch-feather) * 0.62), #000 var(--ch-feather));
+    will-change: transform;
+    animation: ch-veil 2400ms cubic-bezier(0.45, 0.05, 0.3, 1) 150ms both;
+    --ch-feather: 34vw;
+  }
+  .ch-veil-paper {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--ch-feather);
+    width: 100vw;
+    background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%);
+    will-change: transform;
+    animation: ch-veil-paper 2400ms cubic-bezier(0.45, 0.05, 0.3, 1) 150ms both;
+  }
+  .ch-roll {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--ch-feather);
     width: 44px;
     margin-left: -22px;
-    pointer-events: none;
     border-radius: 22px / 10px;
     background:
       linear-gradient(90deg, rgba(58, 42, 27, 0.55), rgba(58, 42, 27, 0) 18%, rgba(255, 250, 235, 0.55) 42%, rgba(58, 42, 27, 0) 62%, rgba(58, 42, 27, 0.6)),
       #e6d5ad;
     box-shadow: 10px 0 18px -6px rgba(58, 42, 27, 0.45), -2px 0 6px rgba(58, 42, 27, 0.25);
-    animation: ch-roll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both;
+  }
+  :root.ch-intro .ch-globe {
+    animation: ch-settle 2100ms cubic-bezier(0.2, 0.6, 0.3, 1) 150ms both;
   }
 }
 
-@property --ch-reveal {
-  syntax: "<length-percentage>";
-  inherits: false;
-  initial-value: 0%;
+@keyframes ch-veil {
+  from { translate: 0 0; }
+  to { translate: calc(100vw + 34vw + 30px) 0; }
 }
 
-@keyframes ch-unroll {
-  from { --ch-reveal: 0%; }
-  to { --ch-reveal: 100%; }
+@keyframes ch-veil-paper {
+  from { translate: 0 0; }
+  to { translate: calc(-100vw - 34vw - 30px) 0; }
 }
 
-@keyframes ch-ink {
-  from { --ch-reveal: 100%; }
-  to { --ch-reveal: calc(100% + 36vw); }
-}
-
-@keyframes ch-roll {
-  0% { left: 0; width: 52px; margin-left: -26px; opacity: 1; }
-  88% { opacity: 1; }
-  100% { left: 100%; width: 26px; margin-left: -13px; opacity: 0; }
+@keyframes ch-settle {
+  from { scale: 1.06; }
+  to { scale: 1; }
 }
 
 @keyframes ch-dropin {

@@ -379,7 +379,7 @@
   function frame() {
     renderQueued = false;
     try { draw(); } catch (e) { console.error(e); }
-    if (!moving && relief) { try { maybeRelief(); } catch (e) { console.warn("terrain", e); rd.off = true; } }
+    if (!moving && relief && introOver) { try { maybeRelief(); } catch (e) { console.warn("terrain", e); rd.off = true; } }
   }
   function nudge() {
     moving = true;
@@ -5797,49 +5797,46 @@
   window.addEventListener("resize", function () { layout(); scheduleRender(); });
   if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", function () { layout(); scheduleRender(); });
 
+  // The first map is drawn before the opening starts, and what can wait (the sharper land, the seas'
+  // depths, the rivers and lakes) is fetched and prepared one piece at a time after it has played, so the
+  // opening runs on a quiet page. afterIntro(f) runs f once that time has come, in the order asked.
+  var introQueue = [], introOver = false;
+  function afterIntro(f) { if (introOver) f(); else introQueue.push(f); }
+  function endIntro() {
+    introOver = true;
+    scheduleRender();
+    var next = function () {
+      var f = introQueue.shift();
+      if (!f) return;
+      try { f(); } catch (e) { console.error(e); }
+      setTimeout(next, 250);
+    };
+    next();
+  }
   function reveal() {
     ready = true;
+    try { draw(); } catch (e) { console.error(e); }
     $("load").classList.add("is-gone");
-    playIntro();
-    scheduleRender();
+    requestAnimationFrame(function () {
+      setTimeout(endIntro, playIntro() ? 2700 : 0);
+      scheduleRender();
+    });
   }
   function playIntro() {
     var root = document.documentElement;
     if (root.classList.contains("ch-ready")) return false;
     var play = !reduceMotion;
     if (play) {
-      var roll = document.createElement("div");
-      roll.className = "ch-roll";
-      roll.setAttribute("aria-hidden", "true");
-      document.body.appendChild(roll);
+      var veil = document.createElement("div");
+      veil.className = "ch-veil";
+      veil.setAttribute("aria-hidden", "true");
+      veil.innerHTML = '<div class="ch-veil-paper"></div><div class="ch-roll"></div>';
+      document.body.appendChild(veil);
       root.classList.add("ch-intro");
-      setTimeout(function () { root.classList.remove("ch-intro"); roll.remove(); }, 3000);
-      introTurn();
+      setTimeout(function () { root.classList.remove("ch-intro"); veil.remove(); }, 3000);
     }
     root.classList.add("ch-ready");
     return play;
-  }
-  // The globe turns with the roller and settles back a little, coming to rest on the view it opened at.
-  // A drag or a scroll during it stops it where it is.
-  function introTurn() {
-    var to = { lon: view.lon, lat: view.lat, zoom: view.zoom };
-    view.lon = to.lon + (flat ? 18 : 34);
-    view.zoom = Math.min(zoomRange()[1], to.zoom * 1.12);
-    applyView();
-    var a = { lon: view.lon, zoom: view.zoom }, t0 = performance.now(), dur = 2300;
-    var stop = function () { cancelAnimationFrame(flyRaf); off(); };
-    var off = function () { canvas.removeEventListener("pointerdown", stop); canvas.removeEventListener("wheel", stop); };
-    canvas.addEventListener("pointerdown", stop);
-    canvas.addEventListener("wheel", stop, { passive: true });
-    cancelAnimationFrame(flyRaf);
-    var step = function (t) {
-      var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-      view.lon = a.lon + (to.lon - a.lon) * e; view.lat = to.lat;
-      view.zoom = a.zoom * Math.pow(to.zoom / a.zoom, e);
-      applyView(); nudge();
-      if (k < 1) flyRaf = requestAnimationFrame(step); else off();
-    };
-    flyRaf = requestAnimationFrame(step);
   }
   function prepLand(topo) {
     var f = topojson.feature(topo, topo.objects.land);
@@ -5980,15 +5977,18 @@
       var first = isModern(now) ? Promise.resolve(modernSnap(Math.min(dayOfTime(now), modern.toDay))) : isDated(now) ? loadChunk(chunkIndexFor(now)).then(function () { return datedSnap(chunkIndexFor(now), now); }) : loadMap(mapIndexFor(now));
       return first.then(function (snap) {
         current = snap;
-        reveal();
         setTime(now);
-        setTimeout(function () { if (gridBase === "lo") { hiGridMs = upgradeGrid("hi"); scheduleRender(); } }, 400);
-        fetchJSON(UC + "data/sea.json").then(function (t) {
-          var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(function (f) { return prepare(densify(f)); }); };
-          sea = { high: prep(t.high), low: prep(t.low) };
-          scheduleRender();
-        }).catch(function (e) { console.warn("sea", e); });
-        loadGeography();
+        reveal();
+        afterIntro(function () { if (gridBase === "lo") { hiGridMs = upgradeGrid("hi"); scheduleRender(); } });
+        var seaData = fetchJSON(UC + "data/sea.json");
+        afterIntro(function () {
+          seaData.then(function (t) {
+            var prep = function (topo) { return topojson.feature(topo, topo.objects.deep).features.map(function (f) { return prepare(densify(f)); }); };
+            sea = { high: prep(t.high), low: prep(t.low) };
+            scheduleRender();
+          }).catch(function (e) { console.warn("sea", e); });
+        });
+        afterIntro(loadGeography);
       });
     }).catch(function (e) {
       console.error(e);
