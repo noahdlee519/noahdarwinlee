@@ -31,7 +31,11 @@
   function normalize(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
   // jsonLoading counts the data files on their way, so a saved video can wait for each date's map to be complete.
   var jsonLoading = 0;
+  // The site's build stamps DATA_V with a hash of data/, so a page gets all its data files from the same build: they are
+  // cached for an hour or more, and the polity numbers in eras.json must match those in modern.json and the dated files.
+  var DATA_V = "";
   function fetchJSON(url) {
+    if (DATA_V && url.indexOf("data/") === 0) url += "?v=" + DATA_V;
     jsonLoading++;
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error(url + " " + r.status);

@@ -8,6 +8,7 @@
 // of noahdarwinlee.com that is not on this site (UCHRONIA, the game, the front page) goes there.
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -26,6 +27,17 @@ for (const f of ["index.html", "app.js", "app.css", "page.css", "go.js", "data",
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "fonts"]) copy(f);
 for (const f of ["styles.css", "visit.js", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 
+// Every data file the page fetches carries a hash of the whole data folder, so a cached file from an older build is never
+// read with a newer one (the polity numbers change between builds).
+{
+  const h = createHash("sha256"), files = [];
+  const list = (dir) => { for (const n of readdirSync(dir).sort()) { const f = join(dir, n); if (statSync(f).isDirectory()) list(f); else files.push(f); } };
+  list(join(out, "data"));
+  for (const f of files) h.update(relative(out, f)).update(readFileSync(f));
+  const app = join(out, "app.js"), src = readFileSync(app, "utf8"), stamp = 'var DATA_V = "";';
+  if (!src.includes(stamp)) throw new Error("app.js has no " + stamp);
+  writeFileSync(app, src.replace(stamp, 'var DATA_V = "' + h.digest("hex").slice(0, 12) + '";'));
+}
 writeFileSync(join(out, "manifest.json"), JSON.stringify({
   name: "CHRONIA",
   short_name: "CHRONIA",
