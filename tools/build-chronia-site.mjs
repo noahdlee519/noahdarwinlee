@@ -22,7 +22,7 @@ const copy = (from, to = from) => {
   cpSync(src, join(out, to), { recursive: true });
 };
 
-for (const f of ["index.html", "app.js", "app.css", "page.css", "go.js", "data", "team", "reports", "privacy", "terms"]) copy("chronia/" + f, f);
+for (const f of ["index.html", "app.js", "app.css", "page.css", "go.js", "data", "team", "reports", "privacy", "terms", "art"]) copy("chronia/" + f, f);
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "fonts"]) copy(f);
 for (const f of ["styles.css", "visit.js", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 

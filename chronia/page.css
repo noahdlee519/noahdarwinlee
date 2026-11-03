@@ -12,7 +12,6 @@
   --serif: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
   --num: "Old Standard TT", Georgia, "Times New Roman", serif;
   --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 0.34 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  --globe: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' fill='none' stroke='%23543c26' stroke-opacity='0.16' stroke-width='1.2'><circle cx='500' cy='500' r='480'/><ellipse cx='500' cy='500' rx='124' ry='480'/><ellipse cx='500' cy='500' rx='240' ry='480'/><ellipse cx='500' cy='500' rx='339' ry='480'/><ellipse cx='500' cy='500' rx='416' ry='480'/><ellipse cx='500' cy='500' rx='464' ry='480'/><path d='M500 20V980'/><path d='M376 964H624'/><path d='M260 916H740'/><path d='M161 839H839'/><path d='M84 740H916'/><path d='M36 624H964'/><path d='M20 500H980'/><path d='M36 376H964'/><path d='M84 260H916'/><path d='M161 161H839'/><path d='M260 84H740'/><path d='M376 36H624'/></svg>");
   --lift: 0 1px 2px rgba(58, 42, 27, 0.14), 0 4px 12px -5px rgba(58, 42, 27, 0.3);
 }
 
@@ -24,8 +23,10 @@ body.cp {
   display: flow-root;
   margin: 0;
   min-height: 100vh;
+  /* Engraved instruments (drawn with Higgsfield, inked in sepia by tools/chronia-art.py) down both margins.
+     They scroll with the page, over parchment that stays put. */
   background:
-    var(--globe) no-repeat calc(100% + 18vmin) calc(100% + 22vmin) / 92vmin 92vmin fixed,
+    url("art/instruments.webp") repeat center top / min(1400px, 112vw) auto,
     radial-gradient(ellipse at 50% 30%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%) fixed;
   color: var(--ink);
   font-family: var(--serif);
