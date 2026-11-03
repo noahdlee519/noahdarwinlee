@@ -628,7 +628,21 @@ of `/greatercircle/`.
   returning from Google sign-in, or while the historian is open. Each card
   names a part of the page and what it does: the map controls, Select, Give
   land, *New country*, *New city*, undo, Historian, Check, File, and View,
-  between a welcome and a closing card. Two more after Historian open its
+  between a welcome and a closing card. From the second card on, the map
+  shows the tools at work on a country picked at random from the map as it
+  stands: a medium-sized one (150,000 to 1,500,000 km²) where there is one,
+  with a neighbour to take land from. The globe turns and zooms to it;
+  Select selects it; Give land gives it two of a neighbour's regions, one
+  after the other; *New country* founds a country and gives it the largest
+  of the first country's border regions; *New city* founds a city in its
+  largest region without one; and Undo gives the land, then takes it back
+  with the toast an undo shows. No region with a capital in it changes
+  hands, and no neighbour loses more than two fifths of its land. These
+  changes are not edits: they stay off the undo list and out of the saved
+  map, each card takes back the last card's before making its own, and
+  all of them are taken back when the tour ends, or as soon as the visitor
+  clicks or types anywhere but on the card, with the tool and selection as
+  they were. Only the turn of the globe is left. Two more after Historian open its
   panel: one rings the turning point's details, the other *Saved* (for
   asking more, the historian's edits, and saved histories); the panel closes
   again when the tour moves on or ends, and on a wide screen those cards sit
@@ -1031,7 +1045,10 @@ in the repo. They covered:
 - the tutorial: shown once on a first visit, after the Antique opening and
   without it, every card's ring and placement in the three styles and on a
   phone (with the sheet opening and scrolling), Escape, the arrow keys,
-  focus coming back, and opening it again from the File menu.
+  focus coming back, and opening it again from the File menu; the
+  demonstration on each card, going back a card, a click on the map or
+  Ctrl+Z partway through, and the map, the tool, and the saved map being
+  as they were once the tour ends.
 
 ## Credits
 

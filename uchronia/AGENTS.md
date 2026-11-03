@@ -110,7 +110,10 @@ Search for these by name; line numbers drift.
 - `timeRender()` and `profile()`, for timing.
 - `tour(i)` opens the tutorial at card `i`, `tourStep()` gives the card shown
   (`-1` when closed), and `tourBox()` the card's and the ring's boxes where
-  they come to rest (they glide there over a few hundred milliseconds). The
+  they come to rest (they glide there over a few hundred milliseconds).
+  `tourDemo()` gives the country the tour is demonstrating on, how many of
+  its demonstration changes are in force, the tool, and the selected
+  country (`null` when the tour is closed). The
   tutorial opens by itself on a first visit, so a test that doesn't want it
   sets `localStorage["uchronia-tour"] = "done"` in its init script.
 

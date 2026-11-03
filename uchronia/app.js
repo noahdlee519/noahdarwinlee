@@ -5526,6 +5526,7 @@
   }
   function save() {
     saveTimer = 0;
+    if (demo && demo.ops.length) return;
     try {
       var d = makeDiff();
       if (isEmpty(d)) localStorage.removeItem(STORE);
@@ -7896,12 +7897,12 @@
   var STORE_TOUR = "uchronia-tour";
   var TOUR = [
     { title: "Welcome to UCHRONIA", text: "Redraw the world as it might have been: give land to other countries, found new ones, and place their cities. This tour takes a minute, and the File menu opens it again." },
-    { target: ".uc-controls", title: "Moving the map", text: "Drag the globe to turn it, and scroll or pinch to zoom. These buttons zoom, switch to the flat map (M) or the satellite view (S), and hide the interface (H)." },
-    { target: "[data-tool=\"select\"]", title: "Select", text: "Select (V): click a country to rename or recolour it, make it a subject of another, or dissolve it. Click a city to rename it, change its size, or drag it somewhere else." },
-    { target: "[data-tool=\"land\"]", title: "Give land", text: "Give land (B): choose a country, then click or drag over states and provinces to give them to it. Whole countries go in one click, the lasso (D) draws round land freehand, and Disputed stripes land between its claimants." },
-    { target: "#new-country", title: "New country", text: "Founds a country with a name and a colour of its own. Give it land next." },
-    { target: "[data-tool=\"city\"]", title: "New city", text: "New city (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
-    { target: "#undo", title: "Undo", text: "Every change is one step. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
+    { target: ".uc-controls", demo: "look", title: "Moving the map", text: "Drag the globe to turn it, and scroll or pinch to zoom. These buttons zoom, switch to the flat map (M) or the satellite view (S), and hide the interface (H)." },
+    { target: "[data-tool=\"select\"]", demo: "select", title: "Select", text: "Select (V): click a country to rename or recolour it, make it a subject of another, or dissolve it. Click a city to rename it, change its size, or drag it somewhere else." },
+    { target: "[data-tool=\"land\"]", demo: "land", title: "Give land", text: "Give land (B): choose a country, then click or drag over states and provinces to give them to it. Whole countries go in one click, the lasso (D) draws round land freehand, and Disputed stripes land between its claimants." },
+    { target: "#new-country", demo: "found", title: "New country", text: "Founds a country with a name and a colour of its own. Give it land next." },
+    { target: "[data-tool=\"city\"]", demo: "city", title: "New city", text: "New city (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
+    { target: "#undo", demo: "undo", title: "Undo", text: "Every change is one step. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
     { target: "#history-btn", title: "Historian", text: "A historian of your world, played by Claude. It writes how your map came to be: where this world parted from ours and what followed, era by era, with every place it names linked to the map. It needs a Google sign-in, and each account can ask five times a day." },
     { target: "#history-turn-fields|#history", history: "turn", title: "Redraw from a turning point", text: "Or give it a what-if, such as “What if Rome never fell?”, and it redraws the world itself. The details are optional: when history parts from ours, the year to show, where to focus, what to leave alone, and how far to take it. While it works, it shows each step it is on." },
     { target: "#history-saved-btn|#history", history: "map", title: "Ask more, and keep it", text: "Under each history you can ask the historian more, or ask it to change the map; its edits are one undo step. Every history is kept under Saved, in this browser, with its map and your questions." },
@@ -8024,10 +8025,157 @@
       showHistory(false);
     }
   }
+  var demo = null;
+  function demoPlan() {
+    if (!feats || !unitNeighbors) return null;
+    freshGroups();
+    var caps = new Set(), held = new Set(), pool = [], rest = [];
+    cities.forEach(function (x) { var u = cityUnit(x); if (u < 0) return; held.add(u); if (x.cap) caps.add(u); });
+    countries.forEach(function (co, c) {
+      if (!co.alive || co.claims || isDispute(c) || !co.label || !unitsOf[c] || unitsOf[c].length < 3) return;
+      var a = countryArea(c);
+      if (a < 60000) return;
+      var plan = demoFor(c, a, caps, held);
+      if (plan) (a >= 150000 && a <= 1500000 ? pool : rest).push(plan);
+    });
+    var list = pool.length ? pool : rest;
+    return list.length ? list[Math.floor(Math.random() * list.length)] : null;
+  }
+  function demoFor(c, area, caps, held) {
+    var mine = unitsOf[c], byN = new Map(), edge = [];
+    mine.forEach(function (u) {
+      var out = false;
+      (unitNeighbors[u] || []).forEach(function (q) {
+        var o = owner[q];
+        if (o === c) return;
+        out = true;
+        if (o < 0 || isDispute(o) || !countries[o] || !countries[o].alive || countries[o].claims) return;
+        if (!byN.has(o)) byN.set(o, []);
+        byN.get(o).push(q);
+      });
+      if (out) edge.push(u);
+    });
+    var give = null, best = 0;
+    byN.forEach(function (qs, n) {
+      var na = countryArea(n), seen = new Set(), regions = [], took = 0;
+      for (var i = 0; i < qs.length && regions.length < 2; i++) {
+        if (seen.has(qs[i])) continue;
+        var list = regionUnits(qs[i]).filter(function (q) { return owner[q] === n; });
+        list.forEach(function (q) { seen.add(q); });
+        if (!list.length || list.some(function (q) { return caps.has(q); })) continue;
+        var a = 0;
+        list.forEach(function (q) { a += unitArea[q]; });
+        if (took + a > na * 0.4 || a > area * 0.6) continue;
+        regions.push(list); took += a;
+      }
+      if (regions.length && (!give || regions.length > give.length || (regions.length === give.length && na > best))) { give = regions; best = na; }
+    });
+    if (!give) return null;
+    var found = null, foundKm2 = 0, tried = new Set();
+    for (var i = 0; i < edge.length; i++) {
+      if (tried.has(edge[i])) continue;
+      var list = regionUnits(edge[i]).filter(function (q) { return owner[q] === c; }), a = 0;
+      list.forEach(function (q) { a += unitArea[q]; tried.add(q); });
+      if (list.length && a < area * 0.35 && a > foundKm2 && !list.some(function (q) { return caps.has(q); })) { found = list; foundKm2 = a; }
+    }
+    if (!found) return null;
+    var big = mine.filter(function (u) { return !held.has(u) && found.indexOf(u) < 0; }).sort(function (a, b) { return unitArea[b] - unitArea[a]; });
+    for (var j = 0; j < big.length && j < 12; j++) {
+      var p = d3.geoCentroid(geoFull[big[j]]);
+      if (unitOfPoint(p[0], p[1], true) === big[j]) return { c: c, give: give, found: found, spot: p };
+    }
+    return null;
+  }
+  function demoBegin() {
+    demo = null;
+    var plan = demoPlan();
+    if (!plan) return;
+    demo = { plan: plan, ops: [], timers: [], dirty: false, lastLand: lastLand,
+      ui: { tool: ui.tool, country: ui.country, region: ui.region, piece: ui.piece, city: ui.city, erase: ui.erase, dispute: ui.dispute, whole: ui.whole } };
+  }
+  function demoShow() { mapGen++; renderPanel(); scheduleRender(); }
+  function demoDo(op) { applyOp(op, false); demo.ops.push(op); demoShow(); }
+  function demoOwn(list, to) {
+    return { t: "own", ps: list.slice(), from: list.map(function (u) { return owner[u]; }), to: list.map(function () { return to; }), g: geomGen };
+  }
+  function demoLater(ms, fn) { demo.timers.push(setTimeout(function () { if (demo && tourAt >= 0) fn(); }, ms)); }
+  function demoUndo() {
+    for (var i = demo.ops.length - 1; i >= 0; i--) applyOp(demo.ops[i], true);
+    demo.ops = [];
+  }
+  function demoUi(tool, c) {
+    if (stroke) endStroke();
+    cancelLasso();
+    ui.tool = tool;
+    if (tool === "paint" || tool === "draw") lastLand = tool;
+    ui.country = c; ui.region = -1; ui.piece = null; ui.city = null;
+    ui.erase = false; ui.dispute = false; ui.whole = false;
+    demo.dirty = true;
+  }
+  function demoReset(keepUi) {
+    if (!demo) return;
+    demo.timers.forEach(clearTimeout);
+    demo.timers = [];
+    demoUndo();
+    if (!keepUi) {
+      var s = demo.ui;
+      ui.tool = s.tool; ui.country = s.country; ui.region = s.region; ui.piece = s.piece; ui.city = s.city;
+      ui.erase = s.erase; ui.dispute = s.dispute; ui.whole = s.whole;
+      lastLand = demo.lastLand;
+      demo.dirty = false;
+    }
+    if (ui.city && cityIndex.get(ui.city.id) !== ui.city) ui.city = null;
+    if (ui.country >= 0 && !(countries[ui.country] && countries[ui.country].alive)) ui.country = -1;
+    demoShow();
+  }
+  function demoStep(kind) {
+    if (!demo) return;
+    demoReset(!!kind);
+    if (!kind) return;
+    var p = demo.plan, c = p.c, wait = reduceMotion ? 400 : 1100;
+    flyToCountry(c);
+    if (kind === "look") { demo.dirty = true; return; }
+    if (kind === "select") demoUi("select", c);
+    else if (kind === "land") {
+      demoUi("paint", c);
+      p.give.forEach(function (list, i) { demoLater(wait + i * 700, function () { demoDo(demoOwn(list, c)); }); });
+    } else if (kind === "found") {
+      demoUi("select", c);
+      demoLater(wait, function () {
+        var i = countries.length;
+        demoDo({ t: "country", c: i, from: null, to: { name: uniqueName("New country"), color: freeColor(neighbourCountries(p.found), closeCountries(p.found)) } });
+        demoUi("paint", i);
+        demoShow();
+        demoLater(800, function () { demoDo(demoOwn(p.found, i)); });
+      });
+    } else if (kind === "city") {
+      demoUi("city", -1);
+      demoLater(wait, function () {
+        var id = "u" + (++citySeq);
+        demoDo({ t: "city", id: id, from: null, to: { name: "New city", lon: p.spot[0], lat: p.spot[1], tier: 3, cap: 0 } });
+        ui.city = cityById(id);
+        demoShow();
+      });
+    } else if (kind === "undo") {
+      demoUi("paint", c);
+      p.give.forEach(function (list) { demoDo(demoOwn(list, c)); });
+      demoLater(wait + 500, function () { demoUndo(); demoShow(); toast("Undone: painting"); });
+    }
+    renderPanel();
+  }
+  function demoEnd() {
+    if (!demo) return;
+    demoReset(false);
+    demo = null;
+  }
+  window.addEventListener("pointerdown", function (e) {
+    if (demo && demo.dirty && tourAt >= 0 && !$("tour-card").contains(e.target)) demoReset(false);
+  }, true);
   function showTourStep(i) {
     tourAt = Math.max(0, Math.min(TOUR.length - 1, i));
     var step = TOUR[tourAt], last = tourAt === TOUR.length - 1;
     tourHistory(step.history);
+    demoStep(step.demo);
     $("tour-count").textContent = (tourAt + 1) + " of " + TOUR.length;
     $("tour-title").textContent = step.title;
     $("tour-text").textContent = step.text;
@@ -8049,6 +8197,8 @@
     tourBack = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
     tourNow = null; tourT = 0;
     $("tour").hidden = false;
+    demoEnd();
+    demoBegin();
     showTourStep(i || 0);
     $("tour-next").focus({ preventScroll: true });
     if (!tourRaf) tourRaf = requestAnimationFrame(tourFrame);
@@ -8057,6 +8207,7 @@
     if (tourAt < 0) return;
     tourAt = -1;
     tourDone();
+    demoEnd();
     tourHistory(null);
     $("tour").hidden = true;
     if (tourRaf) { cancelAnimationFrame(tourRaf); tourRaf = 0; }
@@ -8079,6 +8230,7 @@
   $("tutorial").addEventListener("click", function () { setTimeout(function () { openTour(0); }, 0); });
   window.addEventListener("keydown", function (e) {
     if (tourAt < 0) return;
+    if (demo && demo.dirty && e.key !== "Escape" && !($("tour-card").contains(e.target) && !e.ctrlKey && !e.metaKey && !e.altKey && /^(ArrowRight|ArrowLeft|Enter| |Tab|Shift)$/.test(e.key))) demoReset(false);
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
     if (!$("tour-card").contains(e.target)) return;
     if (e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); $("tour-next").click(); }
@@ -8088,6 +8240,7 @@
   window.__uchronia = {
     tour: function (i) { openTour(i || 0); },
     tourStep: function () { return tourAt; },
+    tourDemo: function () { return demo ? { country: countries[demo.plan.c].name, ops: demo.ops.length, tool: ui.tool, selected: ui.country } : null; },
     tourBox: function () {
       var card = $("tour-card"), c = card.getBoundingClientRect(), g = tourGo, free = $("tour").classList.contains("is-free");
       if (!g || $("tour").hidden) return { card: [c.left, c.top, c.width, c.height], ring: null };
