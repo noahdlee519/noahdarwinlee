@@ -607,7 +607,10 @@ of `/greatercircle/`.
   terrain, any finer regions, and the satellite view (when on) are in, at
   most eight seconds, then fades away to the map. In the Antique style the
   opening then plays as the cover lifts: the map unrolls from the left like
-  a sheet, the header comes down with its rule, and the controls appear.
+  a sheet, inking in through a soft fade that trails the roller and finishes
+  just after it has gone, while the globe turns with the roller and settles
+  back a little to rest where the map was left; then the header comes down
+  with its rule, and the controls appear.
   On a phone the bottom sheet rises in place of the header.
   With nothing selected the bar's second row closes; it opens when something
   is selected, animated where the browser can, and the map does not move. **Terrain**, on by
@@ -631,7 +634,11 @@ of `/greatercircle/`.
   again when the tour moves on or ends, and on a wide screen those cards sit
   to the left of the panel. The part in question is ringed in
   the selection colour, and the rest of the page is dimmed but stays usable;
-  a card with nothing to ring sits in the middle of the window. The card
+  a card with nothing to ring sits in the middle of the window, and the
+  undimmed spotlight shrinks to the card itself. Between cards the spotlight
+  and the card glide to their new places rather than jumping, and the
+  card's words fade in; the tour fades in when it opens. With reduced
+  motion asked for, they move at once. The card
   goes below the part it describes, or above or beside it where there is no
   room. On a phone it sits at the top of the screen, and the sheet opens
   and scrolls so that the part shows below it, going back to how it was when

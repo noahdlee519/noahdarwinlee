@@ -1728,13 +1728,48 @@ a.uc-menu-item {
   box-shadow: 0 0 0 9999px var(--uc-tour-dim);
   pointer-events: none;
 }
-.uc-tour.is-free::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 49;
-  background: var(--uc-tour-dim);
-  pointer-events: none;
+.uc-tour.is-free .uc-tour-ring {
+  border-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .uc-tour-ring {
+    transition: border-color 300ms ease;
+  }
+  .uc-tour:not([hidden]) .uc-tour-ring {
+    animation: uc-tour-dim 450ms ease both;
+  }
+  .uc-tour:not([hidden]) .uc-tour-card {
+    animation: uc-tour-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+  .uc-tour-card.is-turning .uc-tour-count,
+  .uc-tour-card.is-turning .uc-tour-title,
+  .uc-tour-card.is-turning .uc-tour-text {
+    animation: uc-tour-turn 340ms ease-out both;
+  }
+  .uc-tour-card.is-turning .uc-tour-title {
+    animation-delay: 30ms;
+  }
+  .uc-tour-card.is-turning .uc-tour-text {
+    animation-delay: 60ms;
+  }
+}
+@keyframes uc-tour-dim {
+  from {
+    box-shadow: 0 0 0 9999px transparent;
+    opacity: 0;
+  }
+}
+@keyframes uc-tour-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@keyframes uc-tour-turn {
+  from {
+    opacity: 0;
+    translate: 0 5px;
+  }
 }
 .uc-tour-card {
   position: fixed;
@@ -2614,8 +2649,15 @@ a.uc-menu-item {
       animation: uc-pullup 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
     }
   }
+  /* The map inks in behind the roller: a feathered mask follows it across,
+     and the last of the fade finishes once the roller has gone. */
   :root.uc-intro[data-uc-style="antique"] .uc-globe {
-    animation: uc-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both;
+    clip-path: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--uc-reveal) - 34vw), rgba(0, 0, 0, 0.62) calc(var(--uc-reveal) - 16vw), rgba(0, 0, 0, 0.2) calc(var(--uc-reveal) - 4vw), transparent var(--uc-reveal));
+    mask-image: linear-gradient(90deg, #000 calc(var(--uc-reveal) - 34vw), rgba(0, 0, 0, 0.62) calc(var(--uc-reveal) - 16vw), rgba(0, 0, 0, 0.2) calc(var(--uc-reveal) - 4vw), transparent var(--uc-reveal));
+    animation:
+      uc-unroll 1300ms cubic-bezier(0.5, 0.05, 0.25, 1) 150ms both,
+      uc-ink 900ms cubic-bezier(0.2, 0.6, 0.35, 1) 1450ms forwards;
   }
   :root.uc-intro[data-uc-style="antique"] .uc-ctl {
     animation: uc-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
@@ -2691,12 +2733,27 @@ a.uc-menu-item {
   }
 }
 
+@property --uc-reveal {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
 @keyframes uc-unroll {
   from {
-    clip-path: inset(0 100% 0 0);
+    --uc-reveal: 0%;
   }
   to {
-    clip-path: inset(0 0 0 0);
+    --uc-reveal: 100%;
+  }
+}
+
+@keyframes uc-ink {
+  from {
+    --uc-reveal: 100%;
+  }
+  to {
+    --uc-reveal: calc(100% + 36vw);
   }
 }
 

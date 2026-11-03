@@ -109,7 +109,8 @@ Search for these by name; line numbers drift.
 - `view`, `ui`, `makeDiff()`, `applyPlan(plan)`, `loadFine()`.
 - `timeRender()` and `profile()`, for timing.
 - `tour(i)` opens the tutorial at card `i`, `tourStep()` gives the card shown
-  (`-1` when closed), and `tourBox()` the card's and the ring's boxes. The
+  (`-1` when closed), and `tourBox()` the card's and the ring's boxes where
+  they come to rest (they glide there over a few hundred milliseconds). The
   tutorial opens by itself on a first visit, so a test that doesn't want it
   sets `localStorage["uchronia-tour"] = "done"` in its init script.
 

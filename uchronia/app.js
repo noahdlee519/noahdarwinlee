@@ -4006,19 +4006,19 @@
   function hideTip() { tip.hidden = true; }
 
   var fly = null;
-  function flyTo(lon, lat, zoom) {
+  function flyTo(lon, lat, zoom, ms, easeOut) {
     stopInertia();
     var zr = zoomRange();
     var toZoom = zoom == null ? view.zoom : Math.max(zr[0], Math.min(zr[1], zoom));
     if (reduceMotion) { view.lon = lon; view.lat = lat; view.zoom = toZoom; applyView(); scheduleRender(); return; }
     var dAngle = d3.geoDistance([view.lon, view.lat], [lon, lat]);
-    var ms = Math.min(1400, 450 + dAngle * 350);
+    ms = ms || Math.min(1400, 450 + dAngle * 350);
     if (flat) {
-      fly = { t0: performance.now(), ms: ms, flat: true, lon0: view.lon, dlon: lon - view.lon, lat0: view.lat, lat1: lat, z0: view.zoom, z1: toZoom };
+      fly = { t0: performance.now(), ms: ms, out: easeOut, flat: true, lon0: view.lon, dlon: lon - view.lon, lat0: view.lat, lat1: lat, z0: view.zoom, z1: toZoom };
     } else {
       var from = versorFromAngles([-view.lon, -view.lat, 0]);
       var to = versorFromAngles([-lon, -lat, 0]);
-      fly = { t0: performance.now(), ms: ms, interp: versorInterpolate(from, to), z0: view.zoom, z1: toZoom };
+      fly = { t0: performance.now(), ms: ms, out: easeOut, interp: versorInterpolate(from, to), z0: view.zoom, z1: toZoom };
     }
     interacting = 1;
     requestAnimationFrame(flyStep);
@@ -4026,7 +4026,7 @@
   function flyStep() {
     if (!fly) return;
     var t = Math.min(1, (performance.now() - fly.t0) / fly.ms);
-    var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    var e = fly.out ? 1 - Math.pow(1 - t, 3) : t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     if (fly.flat) {
       view.lon = fly.lon0 + fly.dlon * e;
       view.lat = fly.lat0 + (fly.lat1 - fly.lat0) * e;
@@ -7945,46 +7945,72 @@
       tourRect = "";
     }, 320);
   }
+  // The spotlight and the card glide from one step to the next: placeTour
+  // works out where they belong, and each frame moves them part of the way
+  // there. A step with nothing to point at rings the card itself.
+  var tourGo = null, tourNow = null, tourT = 0;
   function placeTour() {
     if (tourAt < 0) return;
-    var step = TOUR[tourAt], r = tourTarget(step), ring = $("tour-ring"), card = $("tour-card");
-    var key = r ? [r.left, r.top, r.width, r.height, window.innerWidth, window.innerHeight].map(Math.round).join() : "none" + window.innerWidth + "x" + window.innerHeight;
+    var step = TOUR[tourAt], r = tourTarget(step), card = $("tour-card");
+    var vw = window.innerWidth, vh = window.innerHeight, pad = 6;
+    var cw = card.offsetWidth, ch = card.offsetHeight;
+    var key = (r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : "none") + "|" + vw + "x" + vh + "|" + cw + "x" + ch;
     if (key === tourRect) return;
     tourRect = key;
-    var vw = window.innerWidth, vh = window.innerHeight, pad = 6;
     $("tour").classList.toggle("is-free", !r);
-    if (r) {
-      ring.hidden = false;
-      ring.style.left = Math.round(r.left - pad) + "px";
-      ring.style.top = Math.round(r.top - pad) + "px";
-      ring.style.width = Math.round(r.width + pad * 2) + "px";
-      ring.style.height = Math.round(r.height + pad * 2) + "px";
-    } else ring.hidden = true;
-    card.style.left = card.style.top = "";
-    if (!r || phoneQuery.matches) return;
-    var cw = card.offsetWidth, ch = card.offsetHeight, gap = 14;
-    if (step.history && !$("history").hidden) {
-      var hp = $("history").getBoundingClientRect();
-      if (hp.left - cw - gap * 2 >= 12) {
-        card.style.left = Math.round(hp.left - cw - gap * 2) + "px";
-        card.style.top = Math.round(Math.max(12, Math.min(vh - ch - 12, r.top + r.height / 2 - ch / 2))) + "px";
-        return;
+    var x = (vw - cw) / 2, y = (vh - ch) / 2, placed = false;
+    if (r && !phoneQuery.matches) {
+      var gap = 14;
+      if (step.history && !$("history").hidden) {
+        var hp = $("history").getBoundingClientRect();
+        if (hp.left - cw - gap * 2 >= 12) {
+          x = hp.left - cw - gap * 2;
+          y = Math.max(12, Math.min(vh - ch - 12, r.top + r.height / 2 - ch / 2));
+          placed = true;
+        }
+      }
+      if (!placed) {
+        x = Math.max(12, Math.min(vw - cw - 12, r.left + r.width / 2 - cw / 2));
+        y = r.bottom + pad + gap;
+        if (y + ch > vh - 12) y = r.top - pad - gap - ch;
+        if (y < 12) {
+          y = Math.max(12, Math.min(vh - ch - 12, r.top + r.height / 2 - ch / 2));
+          x = r.left - pad - gap - cw >= 12 ? r.left - pad - gap - cw : Math.min(vw - cw - 12, r.right + pad + gap);
+        }
       }
     }
-    var x = Math.max(12, Math.min(vw - cw - 12, r.left + r.width / 2 - cw / 2));
-    var y = r.bottom + pad + gap;
-    if (y + ch > vh - 12) y = r.top - pad - gap - ch;
-    if (y < 12) {
-      y = Math.max(12, Math.min(vh - ch - 12, r.top + r.height / 2 - ch / 2));
-      x = r.left - pad - gap - cw >= 12 ? r.left - pad - gap - cw : Math.min(vw - cw - 12, r.right + pad + gap);
-    }
-    card.style.left = Math.round(x) + "px";
-    card.style.top = Math.round(y) + "px";
+    var ringAt;
+    if (r) ringAt = [r.left - pad, r.top - pad, r.width + pad * 2, r.height + pad * 2];
+    else if (phoneQuery.matches) { var c = card.getBoundingClientRect(); ringAt = [c.left, c.top, c.width, c.height]; }
+    else ringAt = [x, y, cw, ch];
+    tourGo = ringAt.concat([x, y]);
+    if (!tourNow || reduceMotion) { tourNow = tourGo.slice(); drawTour(); }
   }
-  function tourFrame() {
+  function drawTour() {
+    var ring = $("tour-ring"), card = $("tour-card"), n = tourNow;
+    ring.hidden = false;
+    ring.style.left = n[0].toFixed(1) + "px";
+    ring.style.top = n[1].toFixed(1) + "px";
+    ring.style.width = n[2].toFixed(1) + "px";
+    ring.style.height = n[3].toFixed(1) + "px";
+    card.style.left = n[4].toFixed(1) + "px";
+    card.style.top = n[5].toFixed(1) + "px";
+  }
+  function tourFrame(now) {
     tourRaf = 0;
     if (tourAt < 0) return;
     placeTour();
+    var dt = tourT ? Math.min(64, now - tourT) : 16;
+    tourT = now;
+    if (tourGo && tourNow) {
+      var k = 1 - Math.exp(-dt / 95), moved = false;
+      for (var i = 0; i < 6; i++) {
+        var d = tourGo[i] - tourNow[i];
+        if (Math.abs(d) > 0.25) { tourNow[i] += d * k; moved = true; } else tourNow[i] = tourGo[i];
+      }
+      if (moved || tourNow.moved) drawTour();
+      tourNow.moved = moved;
+    }
     tourRaf = requestAnimationFrame(tourFrame);
   }
   // Steps about the historian open its panel (and close it again after).
@@ -8009,6 +8035,10 @@
     $("tour-skip").hidden = last;
     $("tour-next").textContent = last ? "Start" : tourAt === 0 ? "Show me" : "Next";
     tourRect = "";
+    var card = $("tour-card");
+    card.classList.remove("is-turning");
+    void card.offsetWidth;
+    card.classList.add("is-turning");
     placeTour();
     tourSheetFor(step);
   }
@@ -8017,6 +8047,7 @@
     if (!$("history").hidden) showHistory(false);
     hideHint();
     tourBack = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
+    tourNow = null; tourT = 0;
     $("tour").hidden = false;
     showTourStep(i || 0);
     $("tour-next").focus({ preventScroll: true });
@@ -8057,7 +8088,11 @@
   window.__uchronia = {
     tour: function (i) { openTour(i || 0); },
     tourStep: function () { return tourAt; },
-    tourBox: function () { var c = $("tour-card").getBoundingClientRect(), r = $("tour-ring"); return { card: [c.left, c.top, c.width, c.height], ring: r.hidden ? null : [r.offsetLeft, r.offsetTop, r.offsetWidth, r.offsetHeight] }; },
+    tourBox: function () {
+      var card = $("tour-card"), c = card.getBoundingClientRect(), g = tourGo, free = $("tour").classList.contains("is-free");
+      if (!g || $("tour").hidden) return { card: [c.left, c.top, c.width, c.height], ring: null };
+      return { card: phoneQuery.matches ? [c.left, c.top, c.width, c.height] : [g[4], g[5], card.offsetWidth, card.offsetHeight], ring: free ? null : g.slice(0, 4) };
+    },
     ready: function () { var r = document.documentElement.classList; return !!feats && r.contains("uc-ready") && !r.contains("uc-intro"); },
     ui: ui, view: view,
     countries: function () { return countries; },
@@ -8135,6 +8170,13 @@
       document.body.appendChild(roll);
       root.classList.add("uc-intro");
       setTimeout(function () { root.classList.remove("uc-intro"); roll.remove(); }, 3000);
+      // The globe turns with the roller and settles back a little, so the
+      // world comes to rest where the map was left.
+      var lon = view.lon, lat = view.lat, zoom = view.zoom;
+      view.lon = lon + (flat ? 18 : 34);
+      view.zoom = Math.min(zoomRange()[1], zoom * 1.12);
+      applyView();
+      if (view.lon !== lon || view.zoom !== zoom) flyTo(lon, lat, zoom, 2300, true);
     }
     root.classList.add("uc-ready");
     return play;
