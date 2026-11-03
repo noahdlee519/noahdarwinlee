@@ -2,7 +2,9 @@
 // Wars, drawn from UCHRONIA's second-level units (Germany's districts, Poland's powiats, Austria's and Czechia's districts,
 // Ukraine's raions) and its provinces (Natural Earth's first-level units elsewhere). The main map shows what treaties and
 // decrees made (the law on the map): annexations, client states and personal unions under their ruler, and formal military
-// occupations under an occupying administration as occupied (status 4). Land two rival governments both claimed is disputed
+// occupations under an occupying administration as occupied (status 4) once the war that brought them had ended in a peace or an
+// armistice. The occupations made in the wars themselves (WAR_OCC) are drawn in the zones of control (tools/napoleonic-control.mjs)
+// and leave the land its lawful owner's on the main map, as the First World War's do. Land two rival governments both claimed is disputed
 // (status 6): Spain between Joseph Bonaparte and the patriot government, Catalonia between the French Empire and the patriots,
 // Norway in 1814, and Serbia between the rebels and the Ottomans. Armies on the march are not drawn.
 //
@@ -144,6 +146,48 @@ const O = {
   SERd: [[W, { name: "Sanjak of Smederevo", wiki: "First Serbian Uprising", status: 6, claims: ["Revolutionary Serbia", "Ottoman Empire"] }], ["1815-04-23", { wiki: "Second Serbian Uprising" }]],
   MNE: [[W, { name: "Prince-Bishopric of Montenegro" }]]
 };
+
+// The occupations made in the wars themselves, which the zones of control draw (tools/napoleonic-control.mjs) and the main map
+// leaves out: while the war that brought one went on, the land is its lawful owner's on the main map (the owner before the
+// occupation in LAND, or the owner's attributes before it in O), and only what ran on after the peace or the armistice is drawn
+// there as occupied, as the First World War's occupations after the armistices are. Each: [owner, first day, last day, units the
+// occupier took later ([selector, day it fell, or null if it never did])]. The owner is occupied (status 4) on those days, and its
+// ruler is the occupier. The wars end at the Treaty of Tilsit (9 July 1807) for Prussia and its neighbours, at the Treaty of Paris
+// (6 January 1810) for Sweden, at the Treaty of Bucharest (28 May 1812) for Russia and the Ottomans, and at the armistice of
+// 23 April 1814 for the Sixth Coalition.
+const TILSIT_EVE = "1807-07-08", ARMISTICE_EVE = "1814-04-22";
+export const WAR_OCC = [
+  // Hanover, occupied by France from the Convention of Artlenburg (Britain was at war with France) to Prussia's annexation.
+  ["HANo", "1803-06-04", "1806-03-31"],
+  // Prussia after Jena: its west at once; Breslau from 7 January 1807, Danzig from 24 May, Königsberg and East Prussia from
+  // 16 June (after Friedland), Neisse and Upper Silesia from 16 June; Memel, the court's refuge, never.
+  ["PR", JENA, TILSIT_EVE, [["POL:Lower Silesian Voivodeship/*", "1807-01-07"], ["POL/Gdańsk", "1807-05-24"], ["POL:Warmian-Masurian Voivodeship/*", "1807-06-16"],
+    ["RUS:Kaliningrad/*", "1807-06-16"], ["POL:Opole Voivodeship/*", "1807-06-16"], ["LTU/Klaipėda", null]]],
+  ["PRg", JENA, TILSIT_EVE],
+  // Hanover again, Prussian since April 1806, and Brunswick, Hesse-Kassel, and Fulda.
+  ["HANo", HESSE_OCC, TILSIT_EVE],
+  ["BRU", JENA, TILSIT_EVE],
+  ["HKo", HESSE_OCC, TILSIT_EVE],
+  ["FUL", JENA, TILSIT_EVE],
+  // Swedish Pomerania, from the fall of Rügen to the Treaty of Paris, and from the French invasion of January 1812 to the French
+  // withdrawal of March 1813, when no treaty made it France's.
+  ["SWPo", "1807-09-07", "1810-01-05"],
+  ["SWPo", "1812-01-01", "1813-02-28"],
+  // Moldavia and Wallachia, held by Russia through the Russo-Turkish War of 1806 to 1812.
+  ["MOL", "1806-12-13", "1812-05-27"],
+  ["WAL2", "1806-12-13", "1812-05-27"],
+  // The campaigns of 1813 and 1814.
+  ["WAR", "1813-02-08", ARMISTICE_EVE],
+  ["SAX", "1813-10-19", ARMISTICE_EVE],
+  ["BERGo", "1813-11-10", ARMISTICE_EVE],
+  ["LUC", "1814-03-15", ARMISTICE_EVE],
+  // The Ionian Islands Britain took from France: Zante, Cephalonia, Ithaca, and Cerigo from October 1809, Santa Maura from
+  // April 1810 (Corfu was handed over after the peace).
+  ["IONb", "1809-10-04", ARMISTICE_EVE]
+];
+// The occupiers' sides in the zones of control, by the ruler of the occupied owner.
+export const WAR_OCC_SIDES = { fr: ["France", "#2f62b0"], ru: ["Russian Empire", "#2e7d4f"], pr: ["Kingdom of Prussia", "#3b3b3b"], at: ["Austrian Empire", "#c9a227"], uk: ["United Kingdom", "#b23a30"] };
+const SIDE_OF = { "French Consulate": "fr", [FFE]: "fr", "Russian Empire": "ru", "Kingdom of Prussia": "pr", "Austrian Empire": "at", "United Kingdom": "uk" };
 
 // Unit selectors: "DEU:Hesse/Kassel" is a unit of a province, "DEU/Kassel" a unit anywhere in the country, "DEU:Hesse/*" every
 // unit of a province, "FRA/*" every unit of the country in Europe, "SVN@Gorenjska" every unit of a Natural Earth region,
@@ -512,10 +556,65 @@ export function buildNapoleonic(env) {
   const last = new Map();
   rows.forEach((r) => r.items.forEach(([i, , key]) => { last.set(key, r); last.set(String(i), r); }));
   rows.forEach((r) => { r.items = r.items.filter(([i, f, key]) => last.get(key) === r && (f || last.get(String(i)) === r)); });
+  // The occupations of the wars (WAR_OCC): their land day by day for the zones of control, then the main map's timelines without
+  // them. A dedicated owner (occupied from its first day, as HANo) gives way in LAND to the owner before it; an owner occupied by
+  // a change of its attributes (as Prussia) has that change put off to the day after the war, with the rest of the change too if
+  // the days between take in no 1 July (when the change could not be drawn on its own).
+  const endDay = toDay(END);
+  const rawAttr = (key, d) => { let a = {}; for (const [from, ch] of O[key]) if (toDay(from) <= d) a = { ...a, ...ch }; return a; };
+  const dedicated = (key) => O[key][0][1].status === 4;
+  const OW = { ...O }, pieces = [];
+  for (const [key, from, to, later = []] of WAR_OCC) {
+    if (!O[key]) throw new Error("napoleonic: WAR_OCC names no owner " + key);
+    const f = toDay(from), t = toDay(to), late = new Map();
+    for (const [sel, day] of later) for (const [i] of resolve(sel)) late.set(i, day === null ? Infinity : toDay(day));
+    let hit = 0;
+    for (const r of rows) r.tl.forEach(([d, o], k) => {
+      if (o !== key) return;
+      const a = Math.max(f, toDay(d)), b = Math.min(t, k + 1 < r.tl.length ? toDay(r.tl[k + 1][0]) - 1 : endDay);
+      if (a > b) return;
+      const at = rawAttr(key, a);
+      if (at.status !== 4) throw new Error("napoleonic: " + key + " is not occupied on " + isoOf(a));
+      const side = SIDE_OF[at.ruler === "@FR" ? rawAttr("FR", a).name : at.ruler];
+      if (!side) throw new Error("napoleonic: no side for " + at.ruler);
+      for (const it of r.items) { const s = Math.max(a, late.has(it[0]) ? late.get(it[0]) : a); if (s <= b) { pieces.push({ item: it, a: s, b, side }); hit++; } }
+    });
+    if (!hit) throw new Error("napoleonic: WAR_OCC " + key + " from " + from + " has no land");
+    if (dedicated(key)) {
+      for (const r of rows) {
+        const tl = [];
+        r.tl.forEach(([d, o], k) => {
+          const a = toDay(d), b = k + 1 < r.tl.length ? toDay(r.tl[k + 1][0]) - 1 : endDay;
+          if (o !== key || b < f || a > t) { tl.push([d, o]); return; }
+          if (!k) throw new Error("napoleonic: " + key + " has no owner before it");
+          if (a < f) tl.push([d, o]);
+          tl.push([isoOf(Math.max(a, f)), r.tl[k - 1][1]]);
+          if (b > t) tl.push([isoOf(t + 1), o]);
+        });
+        r.tl = tl.filter((e, k) => !k || e[1] !== tl[k - 1][1]);
+      }
+    } else {
+      const tl = OW[key].slice(), k = tl.findIndex(([d, ch]) => toDay(d) >= f && toDay(d) <= t && ch.status === 4);
+      if (k < 0) throw new Error("napoleonic: " + key + " has no occupation from " + from);
+      const [d, ch] = tl[k], next = k + 1 < tl.length ? toDay(tl[k + 1][0]) : endDay + 1, after = t + 1;
+      const rest = { ...ch };
+      delete rest.ruler; delete rest.status;
+      const [y0, y1] = yearsOf(toDay(d), t), keep = Object.keys(rest).length > 0 && y0 <= y1;
+      const moved = keep ? { ruler: ch.ruler, status: 4 } : ch;
+      tl.splice(k, 1, ...(keep ? [[d, rest]] : []));
+      if (after < next) {
+        const at = tl.findIndex(([x]) => toDay(x) >= after);
+        if (at >= 0 && toDay(tl[at][0]) === after) tl[at] = [tl[at][0], { ...moved, ...tl[at][1] }];
+        else tl.splice(at < 0 ? tl.length : at, 0, [isoOf(after), moved]);
+      }
+      OW[key] = tl;
+    }
+  }
+  if (errors.length) throw new Error("napoleonic: " + errors.join("; "));
   const blocks = rows.filter((r) => r.items.length).map((r) => ({ items: r.items, per: periods(r.tl, log, "land row " + r.k + " (" + r.tl.map((t) => t.join(" ")).join(", ") + ")") }));
   // Each owner's attributes, period by period.
   const attrs = {};
-  for (const [key, tl] of Object.entries(O)) {
+  for (const [key, tl] of Object.entries(OW)) {
     let prev = {};
     attrs[key] = periods(tl.map(([from, ch]) => { prev = { ...prev, ...ch }; return [from, prev]; }), log, "owner " + key);
   }
@@ -583,5 +682,21 @@ export function buildNapoleonic(env) {
   const len = (s) => toDay(s.to) - toDay(s.from) + 1, shared = (s, t) => Math.min(toDay(s.to), toDay(t.to)) - Math.max(toDay(s.from), toDay(t.from)) + 1;
   for (const s of out) if (out.some((t) => t !== s && t.name === s.name && t.size > s.size && shared(s, t) >= 0.5 * len(s))) s.noLabel = true;
   out.forEach((s) => { delete s.size; });
-  return { spans: out, mask: shapeOf(blocks.flatMap((b) => b.items)), units: blocks.reduce((n, b) => n + b.items.length, 0) };
+  // The occupations of the wars as each side's land from day to day: a row for every stretch of days on which a side held the
+  // same land, days counted from 1 January 1886.
+  const days = [...new Set(pieces.flatMap((p) => [p.a, p.b + 1]))].sort((x, y) => x - y), open = new Map(), war = [];
+  for (let n = 0; n + 1 < days.length; n++) {
+    const a = days[n], b = days[n + 1] - 1, bySide = new Map();
+    for (const p of pieces) if (p.a <= a && b <= p.b) { if (!bySide.has(p.side)) bySide.set(p.side, new Map()); bySide.get(p.side).set(p.item[2], p.item); }
+    for (const side of [...open.keys()]) if (!bySide.has(side)) open.delete(side);
+    for (const [side, items] of bySide) {
+      const sig = [...items.keys()].sort().join(","), r = open.get(side);
+      if (r && r.sig === sig) { r.b = b; continue; }
+      const row = { side, a, b, sig, items: [...items.values()] };
+      war.push(row);
+      open.set(side, row);
+    }
+  }
+  const warRows = war.map((r) => ({ side: r.side, from: isoOf(r.a), to: isoOf(r.b), first: r.a - DAY_1886, last: r.b - DAY_1886, polys: shapeOf(r.items) }));
+  return { spans: out, mask: shapeOf(blocks.flatMap((b) => b.items)), units: blocks.reduce((n, b) => n + b.items.length, 0), war: warRows };
 }

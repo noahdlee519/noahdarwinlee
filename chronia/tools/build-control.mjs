@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { buildWW2 } from "./ww2-control.mjs";
 import { buildSpain } from "./spain-control.mjs";
 import { buildWW1 } from "./ww1-control.mjs";
+import { buildNapoleonicControl } from "./napoleonic-control.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -339,4 +340,5 @@ const env = { here, ne, server, client, simplify, clip, Delaunay, input, out, in
 buildWW1(env);
 buildWW2(env);
 buildSpain(env);
+buildNapoleonicControl(env);
 writeFileSync(resolve(out, "../control.json"), JSON.stringify(index));
