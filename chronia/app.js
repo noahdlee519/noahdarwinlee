@@ -3457,6 +3457,11 @@
     tl.start = clampStart(s);
     var x = "translateX(" + (-(tl.start - FIRST_T) * tl.ppy).toFixed(1) + "px)";
     ["ticks-strip", "eras-strip"].forEach(function (id) { var el = $(id); if (el) el.style.transform = x; });
+    var eras = $("eras");
+    if (eras) {
+      eras.classList.toggle("at-start", tl.start <= FIRST_T + 1e-6);
+      eras.classList.toggle("at-end", tl.start + tl.span >= lastT() - 1e-6);
+    }
   }
   // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it.
   function follow(t) {
@@ -3492,6 +3497,7 @@
       var lab = document.createElement("span");
       lab.textContent = y === 0 ? "AD 1" : y < 0 ? fmtYear(y) : String(y);
       lab.style.left = at(y === 0 ? 1 : y);
+      if (y <= FIRST_T) lab.className = "is-first";
       es.appendChild(lab);
     }
     maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });

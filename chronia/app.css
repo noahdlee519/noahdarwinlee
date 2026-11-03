@@ -886,6 +886,25 @@ select.ch-save-input {
   mask-image: linear-gradient(to right, transparent, #000 22px, #000 calc(100% - 22px), transparent);
 }
 
+.ch-eras.at-start {
+  -webkit-mask-image: linear-gradient(to right, #000, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(to right, #000, #000 calc(100% - 22px), transparent);
+}
+
+.ch-eras.at-end {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 22px, #000);
+  mask-image: linear-gradient(to right, transparent, #000 22px, #000);
+}
+
+.ch-eras.at-start.at-end {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.ch-eras span.is-first {
+  translate: 0 0;
+}
+
 .ch-strip {
   position: absolute;
   left: 0;

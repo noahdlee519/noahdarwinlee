@@ -70,7 +70,7 @@ ${body}
 writeFileSync(join(out, "manifest.json"), JSON.stringify({
   name: "CHRONIA",
   short_name: "CHRONIA",
-  description: "An atlas of the world's borders from 3000 BC to today.",
+  description: "An atlas of the world's borders from 3400 BC to today.",
   start_url: "/",
   display: "browser",
   background_color: "#f1e7cf",
