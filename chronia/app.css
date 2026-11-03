@@ -115,7 +115,8 @@ body.ch-page {
 .ch-load,
 .ch-about-tip,
 .ch-layers,
-.ch-key {
+.ch-key,
+.ch-wars {
   background-color: var(--bg);
   background-image: var(--ch-grain);
   background-size: 260px 260px;
@@ -125,7 +126,8 @@ body.ch-page {
 .ch-card,
 .ch-about-tip,
 .ch-layers,
-.ch-key {
+.ch-key,
+.ch-wars {
   border: 1px solid var(--rule);
   box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), var(--ch-lift);
 }
@@ -1043,6 +1045,108 @@ select.ch-save-input {
   outline-offset: -4px;
 }
 
+.ch-wars {
+  position: fixed;
+  z-index: 21;
+  right: calc(var(--ch-gap) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--ch-time-h) + var(--ch-gap));
+  box-sizing: border-box;
+  max-width: min(320px, calc(100vw - 2 * var(--ch-gap)));
+  color: var(--ink);
+}
+
+.ch-wars[hidden],
+.ch-wars-list[hidden] {
+  display: none;
+}
+
+.ch-wars-btn .ch-wars-ico {
+  margin-left: -2px;
+  transition: none;
+}
+
+.ch-wars-btn .ch-wars-chev {
+  margin-left: auto;
+}
+
+.ch-wars-btn[aria-expanded="true"] .ch-wars-ico {
+  rotate: none;
+}
+
+.ch-wars-list {
+  max-height: calc(100vh - var(--ch-time-h) - 2 * var(--ch-bar) - 6 * var(--ch-gap));
+  margin: 0 4px;
+  padding: 2px 10px 8px 9px;
+  overflow-y: auto;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+}
+
+.ch-wars-row {
+  padding: 6px 0 4px;
+}
+
+.ch-wars-row + .ch-wars-row {
+  border-top: 1px solid color-mix(in srgb, var(--rule) 18%, transparent);
+}
+
+.ch-wars-name,
+.ch-wars-none {
+  margin: 0 0 5px;
+  font-size: 13.5px;
+  line-height: 1.25;
+}
+
+.ch-wars-none {
+  margin: 4px 0 0;
+  font-style: italic;
+  color: var(--ch-muted);
+}
+
+.ch-wars-sides {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 7px;
+}
+
+.ch-wars-side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ch-wars-vs {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ch-muted);
+}
+
+.ch-wars-flag {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+  outline: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  outline-offset: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ch-wars-flag svg {
+  display: block;
+}
+
+.ch-wars-flag:hover {
+  outline-color: var(--ink);
+}
+
+.ch-wars-flag:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 1px;
+}
+
 .ch-key-list {
   margin: 0 4px;
   padding: 1px 10px 9px 8px;
@@ -1522,7 +1626,8 @@ select.ch-save-input {
     font-size: 12px;
   }
 
-  .ch-card:not([hidden]) ~ .ch-key {
+  .ch-card:not([hidden]) ~ .ch-key,
+  .ch-card:not([hidden]) ~ .ch-wars {
     display: none;
   }
 
@@ -1587,6 +1692,7 @@ select.ch-save-input {
     translate: 0 105%;
   }
   :root.ch:not(.ch-ready) .ch-key,
+  :root.ch:not(.ch-ready) .ch-wars,
   :root.ch:not(.ch-ready) .ch-load {
     opacity: 0;
   }
@@ -1596,7 +1702,8 @@ select.ch-save-input {
   :root.ch-intro .ch-time {
     animation: ch-pullup 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
   }
-  :root.ch-intro .ch-key {
+  :root.ch-intro .ch-key,
+  :root.ch-intro .ch-wars {
     animation: ch-fade 600ms ease 2300ms both;
   }
   :root.ch-intro .ch-ctl {

@@ -1066,6 +1066,7 @@
     drawDivisionLines(snap, L, landPath, S);
     drawControl(landPath, S);
     syncKey();
+    syncWars();
     var lw = lineWeight(S);
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     ctx.beginPath(); traceCoast(ctx, landList, nLand); ctx.strokeStyle = pal.border; ctx.lineWidth = 0.75 + 0.35 * lw; ctx.stroke();
@@ -1564,7 +1565,7 @@
   }
   function fixedBoxes() {
     var out = [];
-    [$("head"), $("ctls"), $("card"), $("time"), $("key")].forEach(function (el) {
+    [$("head"), $("ctls"), $("card"), $("time"), $("key"), $("wars")].forEach(function (el) {
       if (!el || el.hidden) return;
       var r = el.getBoundingClientRect();
       if (r.width) out.push({ x: r.left - 4, y: r.top - 4, w: r.width + 8, h: r.height + 8, ui: true });
@@ -3537,6 +3538,7 @@
     }
     markCurrentTick();
     syncKey();
+    syncWars();
   }
   function useSnap(snap) {
     if (current === snap) return;
@@ -4449,6 +4451,7 @@
     syncLayerInputs();
     try { localStorage.setItem(STORE_LAYERS, JSON.stringify(layers)); } catch (e) {}
     syncKey();
+    syncWars();
     seaKey = ""; reliefKey = "";
     scheduleRender();
     return true;
@@ -5477,6 +5480,218 @@
   keyBtn.addEventListener("click", function () { setKeyOpen(keyList.hidden, true); });
 
   var hoverTip = $("hover-tip"), tipTimer = 0;
+
+  // The wars on the map at the date, with their sides' flags, while the zones of control are on (#wars).
+  // Each war's sides are lists of parties: [flag, name, capital's longitude, latitude, first day, last day,
+  // side in the war's file]. A party with a side shows only while the file gives that side ground; a party
+  // without a flag is drawn as a swatch of its side's colour. Clicking a party flies to its capital or seat.
+  var STORE_WARS = "chronia-wars";
+  var warsBox = $("wars"), warsBtn = $("wars-btn"), warsList = $("wars-list"), warsState = "";
+  var fH = function (cs) { var h = 20 / cs.length; return cs.map(function (c, i) { return '<rect y="' + (i * h).toFixed(2) + '" width="30" height="' + (h + 0.05).toFixed(2) + '" fill="' + c + '"/>'; }).join(""); };
+  var fV = function (cs) { var w = 30 / cs.length; return cs.map(function (c, i) { return '<rect x="' + (i * w).toFixed(2) + '" width="' + (w + 0.05).toFixed(2) + '" height="20" fill="' + c + '"/>'; }).join(""); };
+  var fStar = function (cx, cy, r, fill, n) {
+    n = n || 5; var pts = [];
+    for (var i = 0; i < 2 * n; i++) { var a = -Math.PI / 2 + i * Math.PI / n, rr = i % 2 ? r * 0.42 : r; pts.push((cx + rr * Math.cos(a)).toFixed(2) + "," + (cy + rr * Math.sin(a)).toFixed(2)); }
+    return '<polygon points="' + pts.join(" ") + '" fill="' + fill + '"/>';
+  };
+  var fCross = function (bg, c, x, w, inner, wi) {
+    var s = '<rect width="30" height="20" fill="' + bg + '"/><rect x="' + x + '" width="' + w + '" height="20" fill="' + c + '"/><rect y="' + (10 - w / 2) + '" width="30" height="' + w + '" fill="' + c + '"/>';
+    if (inner) s += '<rect x="' + (x + (w - wi) / 2) + '" width="' + wi + '" height="20" fill="' + inner + '"/><rect y="' + (10 - wi / 2) + '" width="30" height="' + wi + '" fill="' + inner + '"/>';
+    return s;
+  };
+  var fUnion = '<rect width="30" height="20" fill="#012169"/><path d="M0 0L30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#c8102e" stroke-width="1.4"/><path d="M15 0v20M0 10h30" stroke="#fff" stroke-width="6"/><path d="M15 0v20M0 10h30" stroke="#c8102e" stroke-width="3.4"/>';
+  var fUS = function () {
+    var s = fH(["#b22234", "#fff", "#b22234", "#fff", "#b22234", "#fff", "#b22234", "#fff", "#b22234", "#fff", "#b22234", "#fff", "#b22234"]) + '<rect width="12" height="10.77" fill="#3c3b6e"/>';
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) s += '<circle cx="' + (1.6 + c * 2.9 + (r % 2) * 1.2).toFixed(2) + '" cy="' + (1.5 + r * 2.6).toFixed(2) + '" r="0.55" fill="#fff"/>';
+    return s;
+  };
+  var fCrescent = function (bg) { return '<rect width="30" height="20" fill="' + bg + '"/><circle cx="12" cy="10" r="5" fill="#fff"/><circle cx="13.4" cy="10" r="4" fill="' + bg + '"/>' + fStar(18.6, 10, 2.2, "#fff"); };
+  var FLAGS = {
+    us: fUS(),
+    csa: fH(["#bf0a30", "#fff", "#bf0a30"]) + '<rect width="12" height="13.33" fill="#002868"/>' + [0, 1, 2, 3, 4, 5, 6].map(function (i) { var a = -Math.PI / 2 + i * 2 * Math.PI / 7; return '<circle cx="' + (6 + 3.6 * Math.cos(a)).toFixed(2) + '" cy="' + (6.67 + 3.6 * Math.sin(a)).toFixed(2) + '" r="0.75" fill="#fff"/>'; }).join(""),
+    uk: fUnion,
+    fr: fV(["#0055a4", "#fff", "#ef4135"]),
+    be: fV(["#000", "#fdda24", "#ef3340"]),
+    ru: fH(["#fff", "#0039a6", "#d52b1e"]),
+    rs: fH(["#c6363c", "#0c4076", "#fff"]),
+    it: fV(["#009246", "#fff", "#ce2b37"]) + '<path d="M13 7.5h4v3.6c0 1.6-2 2.4-2 2.4s-2-0.8-2-2.4z" fill="#c8102e" stroke="#2b5fb3" stroke-width="0.5"/><path d="M15 7.9v5M13.3 10h3.4" stroke="#fff" stroke-width="0.8"/>',
+    pt: '<rect width="12" height="20" fill="#046a38"/><rect x="12" width="18" height="20" fill="#da291c"/><circle cx="12" cy="10" r="3.6" fill="none" stroke="#ffe900" stroke-width="1"/><path d="M10.6 8.6h2.8v2.4c0 1.1-1.4 1.6-1.4 1.6s-1.4-0.5-1.4-1.6z" fill="#fff" stroke="#da291c" stroke-width="0.4"/>',
+    ro: fV(["#002b7f", "#fcd116", "#ce1126"]),
+    gr: fH(["#0d5eaf", "#fff", "#0d5eaf", "#fff", "#0d5eaf", "#fff", "#0d5eaf", "#fff", "#0d5eaf"]) + '<rect width="11.11" height="11.11" fill="#0d5eaf"/><rect x="4.44" width="2.22" height="11.11" fill="#fff"/><rect y="4.44" width="11.11" height="2.22" fill="#fff"/>',
+    jp: '<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="6" fill="#bc002d"/>',
+    ah: '<rect width="15" height="20" fill="#c8102e"/><rect y="6.67" width="15" height="6.67" fill="#fff"/><rect x="15" width="15" height="6.67" fill="#ce2939"/><rect x="15" y="6.67" width="15" height="6.67" fill="#fff"/><rect x="15" y="13.33" width="15" height="6.67" fill="#477050"/>',
+    de1871: fH(["#000", "#fff", "#dd0000"]),
+    de1935: '<rect width="30" height="20" fill="#dd0000"/><circle cx="15" cy="10" r="6" fill="#fff"/><g transform="rotate(45 15 10)"><path d="M15 6.4v7.2M11.4 10h7.2M15 6.4h3.1M18.6 10v3.1M15 13.6h-3.1M11.4 10v-3.1" fill="none" stroke="#000" stroke-width="1.35"/></g>',
+    ot: fCrescent("#e30a17"),
+    tr: fCrescent("#e30a17"),
+    bg: fH(["#fff", "#00966e", "#d62612"]),
+    pl: fH(["#fff", "#dc143c"]),
+    no: fCross("#ba0c2f", "#fff", 8.5, 4.4, "#00205b", 2.2),
+    fi: fCross("#fff", "#002f6c", 8.5, 4.4),
+    nl: fH(["#ae1c28", "#fff", "#21468b"]),
+    yu: fH(["#0c4076", "#fff", "#c6363c"]),
+    hu: fH(["#ce2939", "#fff", "#477050"]),
+    su: '<rect width="30" height="20" fill="#cc0000"/><path d="M6.2 1.6l0.42 1.3h1.37l-1.1 0.8 0.42 1.3-1.1-0.8-1.1 0.8 0.42-1.3-1.1-0.8h1.37z" fill="none" stroke="#ffd900" stroke-width="0.35"/><path d="M3.9 8.9a2.7 2.7 0 1 0 3.6-3.4" fill="none" stroke="#ffd900" stroke-width="0.8"/><path d="M4.5 6.2l3.4 3.4M4 6.7l1-1" fill="none" stroke="#ffd900" stroke-width="0.8"/>',
+    cn: '<rect width="30" height="20" fill="#fe0000"/><rect width="15" height="10" fill="#000095"/>' + fStar(7.5, 5, 3.4, "#fff", 12) + '<circle cx="7.5" cy="5" r="1.9" fill="#000095"/><circle cx="7.5" cy="5" r="1.55" fill="#fff"/>',
+    au: '<rect width="30" height="20" fill="#012169"/><g transform="scale(0.5)">' + fUnion + '</g>' + fStar(7.5, 15, 2.2, "#fff", 7) + fStar(22.5, 5, 1, "#fff", 7) + fStar(20, 9.5, 1, "#fff", 7) + fStar(25.5, 8.5, 1, "#fff", 7) + fStar(22.5, 16, 1, "#fff", 7),
+    th: '<rect width="30" height="20" fill="#a51931"/><rect y="3.33" width="30" height="13.33" fill="#f4f5f8"/><rect y="6.67" width="30" height="6.67" fill="#2d2a4a"/>',
+    esRep: fH(["#c60b1e", "#ffc400", "#6a2e86"]),
+    esNat: '<rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/>',
+    mx: fV(["#006847", "#fff", "#ce1126"]) + '<circle cx="15" cy="10" r="2.3" fill="#8c5a2b"/>',
+    syGov: fH(["#ce1126", "#fff", "#000"]) + fStar(11, 10, 2, "#007a3d") + fStar(19, 10, 2, "#007a3d"),
+    syRev: fH(["#007a3d", "#fff", "#000"]) + fStar(9, 10, 1.8, "#ce1126") + fStar(15, 10, 1.8, "#ce1126") + fStar(21, 10, 1.8, "#ce1126"),
+    ir: fH(["#239f40", "#fff", "#da0000"]) + '<path d="M15 7.9v4.2M13.7 8.6c-0.9 1 -0.6 2.6 0.8 3.2M16.3 8.6c0.9 1 0.6 2.6 -0.8 3.2" fill="none" stroke="#da0000" stroke-width="0.6"/>',
+    il: '<rect width="30" height="20" fill="#fff"/><rect y="2" width="30" height="3" fill="#0038b8"/><rect y="15" width="30" height="3" fill="#0038b8"/><path d="M15 6.6l3 5.1h-6zM15 13.4l3-5.1h-6z" fill="none" stroke="#0038b8" stroke-width="0.8"/>',
+    ua: fH(["#0057b7", "#ffd700"])
+  };
+  var WASH = [-77.04, 38.9], LONDON = [-0.13, 51.51], PARIS = [2.35, 48.86], MOSCOW = [37.62, 55.75], TOKYO = [139.69, 35.69], ROME = [12.5, 41.9], BERLIN = [13.4, 52.52];
+  var P = function (flag, name, ll, from, to, side) { return { flag: flag, name: name, ll: ll, from: from || null, to: to || null, side: side || null }; };
+  var WAR_PARTIES = {
+    civilwar: [
+      [P("us", "United States", WASH)],
+      [P("csa", "Confederate States", [-86.3, 32.38], null, "1861-05-28"), P("csa", "Confederate States", [-77.44, 37.54], "1861-05-29")]
+    ],
+    ww1: [
+      [P("rs", "Serbia", [20.46, 44.82]), P("ru", "Russian Empire", [30.32, 59.94], null, "1918-03-03"), P("fr", "France", PARIS), P("be", "Belgium", [4.35, 50.85]), P("uk", "United Kingdom", LONDON),
+        P("rs", "Montenegro", [18.92, 42.39], "1914-08-06"), P("jp", "Japan", TOKYO, "1914-08-23"), P("it", "Italy", ROME, "1915-05-23"), P("pt", "Portugal", [-9.14, 38.72], "1916-03-09"),
+        P("ro", "Romania", [26.1, 44.43], "1916-08-27", "1918-05-07"), P("ro", "Romania", [26.1, 44.43], "1918-11-10"), P("us", "United States", WASH, "1917-04-06"), P("gr", "Greece", [23.73, 37.98], "1917-06-30")],
+      [P("ah", "Austria-Hungary", [16.37, 48.21], null, "1918-11-03"), P("de1871", "German Empire", BERLIN), P("ot", "Ottoman Empire", [28.98, 41.01], "1914-10-29", "1918-10-30"), P("bg", "Bulgaria", [23.32, 42.7], "1915-10-14", "1918-09-29")]
+    ],
+    ww2europe: [
+      [P("pl", "Poland", [21.01, 52.23]), P("uk", "United Kingdom", LONDON, "1939-09-03"), P("fr", "France", PARIS, "1939-09-03"), P("no", "Norway", [10.75, 59.91], "1940-04-09"),
+        P("nl", "Netherlands", [4.9, 52.37], "1940-05-10"), P("be", "Belgium", [4.35, 50.85], "1940-05-10"), P("gr", "Greece", [23.73, 37.98], "1940-10-28"), P("yu", "Yugoslavia", [20.46, 44.82], "1941-04-06"),
+        P("su", "Soviet Union", MOSCOW, "1941-06-22"), P("us", "United States", WASH, "1941-12-11"), P("it", "Italy", ROME, "1943-10-13"), P("ro", "Romania", [26.1, 44.43], "1944-08-24"), P("bg", "Bulgaria", [23.32, 42.7], "1944-09-08")],
+      [P("de1935", "Germany", BERLIN, null, "1945-05-08"), P("it", "Italy", ROME, "1940-06-10", "1943-09-08"), P("bg", "Bulgaria", [23.32, 42.7], "1941-03-01", "1944-09-07"), P("ro", "Romania", [26.1, 44.43], "1941-06-22", "1944-08-23"),
+        P("fi", "Finland", [24.94, 60.17], "1941-06-25", "1944-09-19"), P("hu", "Hungary", [19.04, 47.5], "1941-06-27", "1945-05-08")]
+    ],
+    ww2asia: [
+      [P("cn", "China", [118.8, 32.06], null, "1937-11-19"), P("cn", "China", [106.55, 29.56], "1937-11-20"), P("us", "United States", WASH, "1941-12-08"), P("uk", "United Kingdom", LONDON, "1941-12-08"),
+        P("nl", "Netherlands", [4.9, 52.37], "1941-12-08"), P("au", "Australia", [149.13, -35.28], "1941-12-08"), P("su", "Soviet Union", MOSCOW, "1945-08-09")],
+      [P("jp", "Japan", TOKYO), P("th", "Thailand", [100.5, 13.75], "1942-01-25", "1945-08-16")]
+    ],
+    spain: [
+      [P("esRep", "Spanish Republic", [-3.7, 40.42], null, "1936-11-06"), P("esRep", "Spanish Republic", [-0.38, 39.47], "1936-11-07", "1937-10-30"), P("esRep", "Spanish Republic", [2.17, 41.39], "1937-10-31", "1939-01-25"), P("esRep", "Spanish Republic", [-3.7, 40.42], "1939-01-26")],
+      [P("esNat", "Nationalists", [-3.7, 42.34])]
+    ],
+    mexico: [
+      [P("mx", "Mexico", [-99.13, 19.43], "2006-12-11")],
+      [P(null, "Sinaloa Cartel", [-107.39, 24.8], null, null, "sinaloa"), P(null, "Los Zetas", [-99.51, 27.48], null, null, "zetas"), P(null, "Gulf Cartel", [-97.5, 25.87], null, null, "golfo"),
+        P(null, "La Familia Michoacana", [-101.19, 19.7], null, null, "familia"), P(null, "Beltrán Leyva Organization", [-99.23, 18.92], null, null, "beltran"), P(null, "La Barbie's faction", [-99.88, 16.85], null, null, "barbie"),
+        P(null, "Jalisco New Generation Cartel", [-103.35, 20.67], null, null, "cjng"), P(null, "Juárez Cartel", [-106.42, 31.69], null, null, "juarez"), P(null, "Tijuana Cartel", [-117.04, 32.51], null, null, "tijuana"),
+        P(null, "Fuel-theft gangs", [-97.53, 18.84], null, null, "fuel")]
+    ],
+    syria: [
+      [P("syGov", "Syrian government", [36.29, 33.51], null, "2024-12-07"), P("ru", "Russia", MOSCOW, "2015-09-30", "2024-12-07"), P("ir", "Iran", [51.39, 35.69], null, "2024-12-07")],
+      [P("syRev", "Syrian opposition", [37.05, 36.59], null, "2024-12-07"), P("syRev", "Syrian transitional government", [36.29, 33.51], "2024-12-08"), P("tr", "Turkey", [32.85, 39.93], "2016-08-24")],
+      [P(null, "Tahrir al-Sham", [36.63, 35.93], null, "2024-12-07", "syHts")],
+      [P(null, "Kurdish-led forces (SDF)", [41.23, 37.05], null, null, "syKurd"), P("us", "United States", WASH, "2014-09-22")],
+      [P(null, "Islamic State", [38.99, 35.95], null, null, "isis")],
+      [P(null, "Druze militias", [36.57, 32.71], null, null, "druze"), P("il", "Israel", [35.21, 31.77], null, null, "israel")]
+    ],
+    israel: [
+      [P("il", "Israel", [35.21, 31.77])],
+      [P(null, "Hamas", [34.45, 31.5], null, null, "hamas")]
+    ],
+    ukraine: [
+      [P("ua", "Ukraine", [30.52, 50.45])],
+      [P("ru", "Russia", MOSCOW)]
+    ]
+  };
+  var isoDay = function (iso) { var a = iso.split("-"); return dayFromDate(+a[0], +a[1], +a[2]); };
+  function warParties(w, day) {
+    var groups = WAR_PARTIES[w.key] || [], D = w.data, out = [];
+    groups.forEach(function (g) {
+      var list = g.filter(function (p) {
+        if (p.from && day < isoDay(p.from)) return false;
+        if (p.to && day > isoDay(p.to)) return false;
+        if (!p.side) return true;
+        if (!D) return false;
+        var k = -1;
+        D.sides.forEach(function (s, i) { if (s[0] === p.side) k = i; });
+        return k >= 0 && D.rows.some(function (r) { return r[0] === k && r[1] <= day && day <= r[2]; });
+      });
+      if (list.length) out.push(list);
+    });
+    return out;
+  }
+  function sideColour(w, key) {
+    var c = "#888";
+    if (w.data) w.data.sides.forEach(function (s) { if (s[0] === key) c = s[2]; });
+    return c;
+  }
+  function warsTip(el, text) {
+    hoverTip.textContent = text;
+    var r = el.getBoundingClientRect();
+    hoverTip.classList.add("is-on");
+    var w = hoverTip.offsetWidth, h = hoverTip.offsetHeight;
+    hoverTip.style.transform = "translate(" + Math.round(Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2))) + "px," + Math.round(r.top - h - 8) + "px)";
+  }
+  function syncWars() {
+    if (!warsBox) return;
+    var on = !!layers.control;
+    if (warsBox.hidden === on) { warsBox.hidden = !on; scheduleRender(); }
+    if (!on) return;
+    if (!ctlIndex) { ctlLoadIndex(); return; }
+    var day = ctlDay(), rows = [];
+    ctlIndex.forEach(function (w) {
+      if (day < w.first || day > w.last) return;
+      if (!w.data) ctlLoad(w);
+      var groups = warParties(w, day);
+      if (groups.length) rows.push({ w: w, groups: groups });
+    });
+    var state = rows.map(function (r) { return r.w.key + ":" + r.groups.map(function (g) { return g.map(function (p) { return p.name + p.ll; }).join(","); }).join("|"); }).join(";");
+    if (state === warsState) return;
+    warsState = state;
+    warsList.textContent = "";
+    if (!rows.length) {
+      var none = document.createElement("p");
+      none.className = "ch-wars-none";
+      none.textContent = "No war in the zones of control at this date";
+      warsList.appendChild(none);
+    }
+    rows.forEach(function (r) {
+      var row = document.createElement("div"), name = document.createElement("p"), sides = document.createElement("div");
+      row.className = "ch-wars-row"; name.className = "ch-wars-name"; sides.className = "ch-wars-sides";
+      name.textContent = r.w.name;
+      r.groups.forEach(function (g, gi) {
+        if (gi) { var vs = document.createElement("span"); vs.className = "ch-wars-vs"; vs.textContent = "vs"; sides.appendChild(vs); }
+        var grp = document.createElement("span");
+        grp.className = "ch-wars-side";
+        g.forEach(function (p) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "ch-wars-flag";
+          b.setAttribute("aria-label", p.name + ", go to its capital");
+          b.innerHTML = p.flag
+            ? '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false">' + FLAGS[p.flag] + "</svg>"
+            : '<svg width="21" height="14" viewBox="0 0 30 20" aria-hidden="true" focusable="false"><rect width="30" height="20" fill="' + sideColour(r.w, p.side) + '"/></svg>';
+          if (canHover) {
+            b.addEventListener("mouseenter", function () { warsTip(b, p.name); });
+            b.addEventListener("mouseleave", function () { hoverTip.classList.remove("is-on"); });
+          }
+          b.addEventListener("focus", function () { warsTip(b, p.name); });
+          b.addEventListener("blur", function () { hoverTip.classList.remove("is-on"); });
+          b.addEventListener("click", function () { hoverTip.classList.remove("is-on"); flyTo(p.ll[0], p.ll[1], Math.max(localScale(), 1800)); });
+          grp.appendChild(b);
+        });
+        sides.appendChild(grp);
+      });
+      row.appendChild(name); row.appendChild(sides);
+      warsList.appendChild(row);
+    });
+  }
+  function setWarsOpen(open, keep) {
+    warsList.hidden = !open;
+    warsBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    warsBtn.setAttribute("aria-label", open ? "Hide the wars at this date" : "Show the wars at this date");
+    if (keep) try { localStorage.setItem(STORE_WARS, open ? "1" : "0"); } catch (e) {}
+    scheduleRender();
+  }
+  var warsOpen = false;
+  try { warsOpen = localStorage.getItem(STORE_WARS) === "1"; } catch (e) {}
+  setWarsOpen(warsOpen, false);
+  warsBtn.addEventListener("click", function () { setWarsOpen(warsList.hidden, true); });
+  syncWars();
   if (canHover) {
     document.querySelectorAll("[data-tip]").forEach(function (el) {
       el.addEventListener("mouseenter", function () {
