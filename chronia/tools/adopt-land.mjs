@@ -266,3 +266,99 @@ export function adoptLand({ list, land, clip, endDay, units = [], same = () => f
   log("adopting land: " + stats.strips + " strips of coast and " + stats.islands + " islands given to the spans nearest them (" + Math.round(stats.km2) + " km²), " + stats.thin + " thin strips left to the coast fill, " + stats.wide + " wide pieces and " + stats.far + " distant ones left blank, " + stats.ne + " times Natural Earth's owner over a nearer span, " + edits.length + " edits, " + Math.round((Date.now() - t0) / 1000) + " s");
   return { edits, pieces, stats };
 }
+
+export const ISLANDS = { MAX_KM2: 25000, MIN_KM2: 4, KM: 60, NE_SLACK_KM: 20, NE_NEAR_KM: 5, SOUTH: -60, TILE: 1 };
+
+export function adoptIslands({ list, land, from, to, units = [], same = () => false, log = console.log }) {
+  const I = ISLANDS, t0 = Date.now(), T = I.TILE;
+  const tk = (x, y) => Math.floor((x + 180) / T) * 1000 + Math.floor((y + 90) / T);
+  const islands = [], byTile = new Map();
+  for (const poly of land) {
+    const b = boxOf([poly]), a = polyKm2(poly);
+    if (b[3] < I.SOUTH || a < I.MIN_KM2 || a > I.MAX_KM2) continue;
+    const lat = (b[1] + b[3]) / 2, kx = Math.cos(lat * RAD), reach = I.KM / KM;
+    const isl = { k: islands.length, poly, a, box: b, mid: middle(poly), pts: samples(poly, 48), kx, near: [b[0] - reach / Math.max(0.2, kx), b[1] - reach, b[2] + reach / Math.max(0.2, kx), b[3] + reach] };
+    islands.push(isl);
+    for (let x = Math.floor((isl.near[0] + 180) / T); x <= Math.floor((isl.near[2] + 180) / T); x++) for (let y = Math.floor((isl.near[1] + 90) / T); y <= Math.floor((isl.near[3] + 90) / T); y++) {
+      const key = x * 1000 + y;
+      if (!byTile.has(key)) byTile.set(key, []);
+      byTile.get(key).push(isl);
+    }
+  }
+  const shapes = new Map();
+  for (const s of list) {
+    if (!s.polys || !s.polys.length || s.last < from || s.first > to) continue;
+    if (!shapes.has(s.polys)) shapes.set(s.polys, []);
+    shapes.get(s.polys).push(s);
+  }
+  const per = islands.map(() => []);
+  for (const [polys] of shapes) {
+    const best = new Map(), covered = new Set();
+    for (const poly of polys) {
+      const pb = boxOf([poly]);
+      for (let ri = 0; ri < poly.length; ri++) {
+        const ring = poly[ri];
+        for (let i = 1; i < ring.length; i++) {
+          const p = ring[i - 1], q = ring[i];
+          const seen = new Set();
+          for (let x = Math.floor((Math.min(p[0], q[0]) + 180) / T); x <= Math.floor((Math.max(p[0], q[0]) + 180) / T); x++) for (let y = Math.floor((Math.min(p[1], q[1]) + 90) / T); y <= Math.floor((Math.max(p[1], q[1]) + 90) / T); y++) {
+            const list2 = byTile.get(x * 1000 + y);
+            if (!list2) continue;
+            for (const isl of list2) {
+              if (seen.has(isl.k)) continue;
+              seen.add(isl.k);
+              const n = isl.near;
+              if (Math.max(p[0], q[0]) < n[0] || Math.min(p[0], q[0]) > n[2] || Math.max(p[1], q[1]) < n[1] || Math.min(p[1], q[1]) > n[3]) continue;
+              const seg = [p[0], p[1], q[0], q[1]];
+              let d = best.get(isl.k) ?? Infinity;
+              for (const pt of isl.pts) { const v = distTo(pt, seg, isl.kx); if (v < d) d = v; }
+              best.set(isl.k, d);
+            }
+          }
+        }
+      }
+      for (let x = Math.floor((pb[0] + 180) / T); x <= Math.floor((pb[2] + 180) / T); x++) for (let y = Math.floor((pb[1] + 90) / T); y <= Math.floor((pb[3] + 90) / T); y++) {
+        const list2 = byTile.get(x * 1000 + y);
+        if (list2) for (const isl of list2) {
+          if (covered.has(isl.k)) continue;
+          const m = isl.mid;
+          if (m[0] < pb[0] || m[0] > pb[2] || m[1] < pb[1] || m[1] > pb[3]) continue;
+          if (inside(m, [poly])) covered.add(isl.k);
+        }
+      }
+    }
+    for (const k of covered) per[k].push({ polys, covers: true, min: 0 });
+    for (const [k, d] of best) if (!covered.has(k) && d <= I.KM) per[k].push({ polys, covers: false, min: d });
+  }
+  const edits = [], stats = { islands: 0, stretches: 0, km2: 0, ne: 0 };
+  for (const isl of islands) {
+    const cands = per[isl.k].flatMap((c) => shapes.get(c.polys).map((s) => ({ s, covers: c.covers, min: c.min })));
+    if (!cands.length || cands.every((c) => c.covers && c.s.first <= from && c.s.last >= to)) continue;
+    const owner = units.length ? unitAt(isl.mid, units, I.NE_NEAR_KM) : null;
+    const cuts = new Set([from]);
+    for (const c of cands) { if (c.s.first > from) cuts.add(c.s.first); if (c.s.last + 1 <= to) cuts.add(c.s.last + 1); }
+    const bounds = [...cuts].sort((a, b) => a - b);
+    let used = false;
+    bounds.forEach((s0, k) => {
+      const e0 = k + 1 < bounds.length ? bounds[k + 1] - 1 : to;
+      const now = cands.filter((c) => c.s.first <= s0 && s0 <= c.s.last);
+      if (!now.length || now.some((c) => c.covers)) return;
+      let best = null, mine = null;
+      for (const c of now) {
+        if (c.s.people) continue;
+        if (!best || c.min < best.min) best = c;
+        if (owner && same(owner, c.s.name) && (!mine || c.min < mine.min)) mine = c;
+      }
+      if (!best) return;
+      if (mine && mine.min <= best.min + I.NE_SLACK_KM) { if (mine !== best) stats.ne++; best = mine; }
+      const last = edits[edits.length - 1];
+      if (last && last.base === best.s && last.polys[0] === isl.poly && last.last + 1 === s0) { last.last = Math.min(e0, best.s.last); return; }
+      edits.push({ base: best.s, first: s0, last: Math.min(e0, best.s.last), polys: [isl.poly], add: true });
+      stats.stretches++;
+      used = true;
+    });
+    if (used) { stats.islands++; stats.km2 += isl.a; }
+  }
+  log("adopting islands: " + stats.islands + " of " + islands.length + " islands blank at some time from " + from + " to " + to + " given to the spans nearest them in " + stats.stretches + " stretches (" + Math.round(stats.km2) + " km²), " + stats.ne + " times Natural Earth's owner over a nearer span, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return { edits, stats };
+}

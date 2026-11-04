@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, copyFi
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
-import { adoptLand } from "./adopt-land.mjs";
+import { adoptLand, adoptIslands } from "./adopt-land.mjs";
 import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
@@ -1300,6 +1300,8 @@ const NAME_FIX = [
   ["Río de la Plata", "Viceroyalty of the Río de la Plata", 1776, 1810, { ruler: "@spain", wiki: "Viceroyalty of the Río de la Plata" }],
   ["Río de la Plata", "United Provinces of the Río de la Plata", 1811, 1833, { wiki: "United Provinces of the Río de la Plata" }],
   ["New Granada", "Viceroyalty of New Granada", 1752, 1810, { ruler: "@spain", wiki: "Viceroyalty of New Granada" }],
+  ["New Granada", "United Provinces of New Granada", 1811, 1815, { self: 1, wiki: "United Provinces of New Granada" }],
+  ["New Granada", "Viceroyalty of New Granada", 1811, 1819, { ruler: "@spain", wiki: "Viceroyalty of New Granada" }],
   ["Jesuit Reducciones", "Jesuit Reductions", 1595, 1768, { ruler: "@spain", wiki: "Jesuit Reductions" }],
   ["Tuʻi Tonga Empire", "", 450, 949, { drop: 1 }],
   ["Tuʻi Tonga Empire", "Tongan and Fijian chiefdoms", 1500, 1846, { people: 1, wiki: "History of Tonga" }],
@@ -1980,7 +1982,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
     const fixAt = (s, y, c) => {
       let name = s.name, ruler = s.ruler || "", part = s.part || "", people = s.people ? 1 : 0, wiki = s.wiki, status = s.status;
       for (const [, to, a, b, o = {}] of fixesOf.get(name) || []) {
-        if (y < a || y > b || (o.box && !inBox(c, o.box))) continue;
+        if (y < a || y > b || (o.box && !inBox(c, o.box)) || (o.self && s.ruler)) continue;
         const n = to.startsWith("@") ? regimeAt(to.slice(1), y) || name : to;
         if (n !== name) { name = n; wiki = o.wiki || REGIME_WIKI[n] || n; } else if (o.wiki) wiki = o.wiki;
         if (o.ruler !== undefined) ruler = o.ruler.startsWith("@") ? regimeAt(o.ruler.slice(1), y) || "" : o.ruler;
@@ -2236,6 +2238,26 @@ const napoleonic = (list) => {
     if (t.length) tiles.push({ polys: t, box: boxOf(t) });
   }
   const near = dilate(dilate(cellsOf(N.mask)));
+  const maskSegs = new Map();
+  for (const poly of N.mask) for (const ring of poly) for (let i = 1; i < ring.length; i++) {
+    const p = ring[i - 1], q = ring[i];
+    for (let r = Math.floor((90 - Math.max(p[1], q[1])) * RGK); r <= Math.floor((90 - Math.min(p[1], q[1])) * RGK); r++) for (let c = Math.floor((Math.min(p[0], q[0]) + 180) * RGK); c <= Math.floor((Math.max(p[0], q[0]) + 180) * RGK); c++) {
+      const k = r * RG + c;
+      if (!maskSegs.has(k)) maskSegs.set(k, []);
+      maskSegs.get(k).push(p, q);
+    }
+  }
+  const onMask = (v) => {
+    const segs = maskSegs.get(cellAt(v));
+    if (!segs) return false;
+    for (let i = 0; i < segs.length; i += 2) {
+      const a = segs[i], b = segs[i + 1], dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
+      const t = L ? Math.max(0, Math.min(1, ((v[0] - a[0]) * dx + (v[1] - a[1]) * dy) / L)) : 0;
+      if ((a[0] + t * dx - v[0]) ** 2 + (a[1] + t * dy - v[1]) ** 2 < 1e-12) return true;
+    }
+    return false;
+  };
+  const touchesMask = (p) => p.some((ring) => ring.some(onMask));
   const edits = [];
   for (const s of list) {
     if (s.small || s.last < NAPOLEONIC_FROM || s.first > NAPOLEONIC_TO || !boxHit(s.box, mb)) continue;
@@ -2248,7 +2270,7 @@ const napoleonic = (list) => {
   list = list.map((s) => {
     if (!s.napMasked) return s;
     const inside = s.first >= NAPOLEONIC_FROM && s.last <= NAPOLEONIC_TO;
-    const polys = inside ? s.polys.filter((p) => { const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
+    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p)) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
     if (polys.length !== s.polys.length) shorn++;
     const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
     if (out) delete out.napMasked;
@@ -2287,8 +2309,14 @@ const napoleonic = (list) => {
     const size = cellSum(s.cells || cellsOf(s.polys));
     if (spans.some((t) => t.name === s.name && t.first <= s.last && s.first <= t.last && cellSum(t.cells) > size)) { s.noLabel = true; quiet++; }
   }
-  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + Math.round((Date.now() - t0) / 1000) + " s");
-  return list.concat(spans);
+  const keepSmall = [];
+  for (const sm of list) {
+    if (!sm.small || sm.last < NAPOLEONIC_FROM || sm.first > NAPOLEONIC_TO || !boxHit(sm.box, mb)) continue;
+    for (const t of spans) if (t.first <= sm.last && sm.first <= t.last && boxHit(t.box, sm.box)) keepSmall.push({ base: t, first: Math.max(t.first, sm.first), last: Math.min(t.last, sm.last), polys: sm.polys, add: false });
+  }
+  const cutSpans = reshape(spans, keepSmall, false);
+  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + keepSmall.length + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(cutSpans);
 };
 
 // Australia's colonies from 1788 to 1885 (`tools/australia.mjs`): the sources' colonies are dropped in those years, and every
@@ -2817,6 +2845,17 @@ const stages = (list) => {
 };
 
 dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated)))))))), "from " + DATED_FROM + " to " + DATED_TO));
+const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
+{
+  const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
+  const detail = existsSync(detailPath) ? JSON.parse(readFileSync(detailPath, "utf8")) : null;
+  const geom = detail ? client.merge({ ...prov, arcs: detail.arcs, transform: detail.transform }, prov.objects.provinces.geometries) : client.merge(prov, prov.objects.provinces.geometries);
+  const units = [];
+  for (const f of neAll) for (const poly of polysOf(f.geometry)) units.push({ name: f.properties.admin, polys: [poly], box: boxOf([poly]) });
+  const { edits } = adoptIslands({ list: dated, land: geom.coordinates, from: DATED_FROM, to: DATED_TO, units, same: (unit, name) => lineageNames(NE_ADMIN[unit] || unit).includes(name) });
+  dated = pieceSpans(dated, edits).map((s) => (s.piece ? { ...s, noLabel: true, cap: null } : s));
+  console.log("adopting islands: " + pieceSpanCount + " spans of islands before 1886");
+}
 // From 1870 to 1885, the steps in blank land within about 50 km of Germany's and Switzerland's lines of 1886 (CShapes' gwcodes
 // 255 and 225) are taken too: the land Cliopatria's German Empire and France held beyond those lines, which `redraw1886` takes
 // from them, and the strips Cliopatria leaves between Switzerland and its neighbours.
@@ -3649,7 +3688,6 @@ const CS_ZONES = {
 };
 // Natural Earth's names for states whose names differ here, for giving land no span covers to
 // the state Natural Earth gives it to (see adopt-land.mjs).
-const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 const isoAdd = (iso, n) => new Date(Date.UTC(...iso.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) + n * 86400000).toISOString().slice(0, 10);
 const csWithExtras = (rows) => {
   const cowPath = cshapesPath.replace(/_gw\.topojson$/, "_cow.topojson");
@@ -4368,10 +4406,11 @@ for (const [name, from, like] of COLOUR_FROM) colourFrom.set(catId(name), [[dayO
 const stepAt = (steps, t, base) => { let c = base; if (steps) for (const [a, k] of steps) if (t >= a) c = k; return c; };
 const wheelCost = (a, b) => { const d = Math.min((a - b + PALETTE) % PALETTE, (b - a + PALETTE) % PALETTE); return d === 0 ? 100 : d === 1 ? 6 : d === 2 ? 1 : 0; };
 const WINDOW_MAX_KM2 = 3e6;
+const winAt = (wins, t) => { let w = null; for (const x of wins) if (t >= x[0] && t <= x[1] && (!w || x[0] >= w[0])) w = x; return w; };
 function windowColours(units, pairs, fixed, gap) {
   const over = new Map(), size = new Map();
   units.forEach((u) => { if (u) size.set(u.hue, Math.max(size.get(u.hue) || 0, u.w)); });
-  const colourAt = (hue, t) => { const l = over.get(hue); if (l) for (const [a, b, c] of l) if (t >= a && t <= b) return c; return fixed(hue, t); };
+  const colourAt = (hue, t) => { const w = winAt(over.get(hue) || [], t); return w ? w[2] : fixed(hue, t); };
   const adj = new Map(), byHue = new Map();
   for (const [i, j] of pairs) {
     if (!units[i] || !units[j]) continue;
@@ -4421,10 +4460,17 @@ function windowColours(units, pairs, fixed, gap) {
     const side = can.length === 1 ? can[0] : A.free && !B.free ? A : B.free && !A.free ? B : size.get(A.hue) <= size.get(B.hue) ? A : B;
     if (!over.has(side.hue)) over.set(side.hue, []);
     const mine = over.get(side.hue), near = mine.find((w) => w[0] - gap <= b && a <= w[1] + gap);
+    const was = near && near.slice();
     if (near) {
       near[0] = Math.min(near[0], a); near[1] = Math.max(near[1], b);
       near[2] = -1; near[2] = pick(side.hue, near[0], near[1]);
-    } else {
+    }
+    if (near && at.some(sameAt)) {
+      near[0] = was[0]; near[1] = was[1]; near[2] = was[2];
+      const w = [a, b, -1];
+      mine.push(w);
+      w[2] = pick(side.hue, a, b);
+    } else if (!near) {
       const w = [a, b, -1];
       mine.push(w);
       w[2] = pick(side.hue, a, b);
@@ -4434,13 +4480,8 @@ function windowColours(units, pairs, fixed, gap) {
   return { over, count: fixedCount };
 }
 const toSteps = (wins, base, first) => {
-  const steps = first ? first.slice() : [];
-  for (const [a, b, c] of wins.slice().sort((x, y) => x[0] - y[0])) {
-    const after = stepAt(steps, b + 1, base);
-    steps.push([a, c], [b + 1, after]);
-    steps.sort((x, y) => x[0] - y[0]);
-  }
-  return steps;
+  const ts = [...new Set((first || []).map((x) => x[0]).concat(wins.flatMap((w) => [w[0], w[1] + 1])))].sort((x, y) => x - y);
+  return ts.map((t) => { const w = winAt(wins, t); return [t, w ? w[2] : stepAt(first, t, base)]; });
 };
 const modernWins = (() => {
   const units = csRows.map((r) => (r[8] ? null : { hue: r[1] >= 0 ? r[1] : r[0], first: r[2], last: r[3] < 0 ? dayOf(CS_TO) : r[3], free: r[1] < 0, w: r[6] ? r[6][5] : 0 }));

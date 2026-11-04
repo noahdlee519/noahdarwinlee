@@ -513,8 +513,12 @@ export function buildNapoleonic(env) {
     if (!polys.length) return null;
     const big = polys.reduce((m, p) => (p[0].length > m[0].length ? p : m));
     const pt = big[0].reduce((s, q) => [s[0] + q[0] / big[0].length, s[1] + q[1] / big[0].length], [0, 0]);
-    const f = neAll.find((x) => x.properties.adm0_a3 === c && x.properties.region && rewind(polysOf(x.geometry)).some((poly) => inRing(poly[0], pt)));
-    return f ? f.properties.region : null;
+    const mine = neAll.filter((x) => x.properties.adm0_a3 === c && x.properties.region);
+    const f = mine.find((x) => rewind(polysOf(x.geometry)).some((poly) => inRing(poly[0], pt)));
+    if (f) return f.properties.region;
+    const k = Math.cos((pt[1] * Math.PI) / 180), gap = (x) => Math.min(...polysOf(x.geometry).flatMap((poly) => poly[0].map((q) => ((q[0] - pt[0]) * k) ** 2 + (q[1] - pt[1]) ** 2)));
+    const near = mine.reduce((m, x) => { const d = gap(x); return !m || d < m.d ? { x, d } : m; }, null);
+    return near ? near.x.properties.region : null;
   };
   const byCountry = new Map();
   geoms.forEach((g, i) => {

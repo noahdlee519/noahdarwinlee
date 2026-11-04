@@ -16,6 +16,51 @@ Each entry:
 ```
 
 ---
+## 3400 BC–1885 | World | islands the sources leave out
+
+- What changed: an island that no span covers in some years, from 4 to 25,000 km², goes for those years to the span nearest its shore, within 60 km, or to the span of the state Natural Earth gives it to today (or one of its lineage) if that is no more than 20 km further. About 200 islands in Europe were paper in July 1815, among them Anholt, Fehmarn, Møn, Gozo, Brač, and Hvar.
+- Tables: `adoptIslands` and `ISLANDS` in `tools/adopt-land.mjs` (new), run after the overlaps and small territories in `tools/build-eras.mjs`; `NE_ADMIN` moved above it.
+- Sources: the nearest state of the time; Natural Earth's admin-1 units for today's owner.
+- Confidence: medium: an island near two states goes to the nearer, or to today's owner when that is about as near, which can be wrong where an island changed hands apart from the coast beside it.
+- Alternatives: islands only in the table's years, 1803 to 1815 (not taken: they were paper in every year before 1886).
+- Left out: islands over 25,000 km² or more than 60 km from any state, and the uncovered part of an island a source covers in part.
+
+## 1803–1815 | Europe | islands near the table's land
+
+- What changed: the cut of the table's years dropped every piece of the sources' spans within about 50 km of the table's land, to clear the strips a source's coarser shore leaves along the units' coast; that took islands no unit draws, such as Lesbos and Imbros, which were paper from 1803 to 1815. A piece is now dropped only if it touches the table's land.
+- Tables: `napoleonic` in `tools/build-eras.mjs`.
+- Sources: no border changes.
+- Confidence: high.
+- Alternatives: none.
+- Left out: none.
+
+## 1811–1819 | South America | New Granada's republic and viceroyalty named apart
+
+- What changed: Cliopatria's New Granada of 1811 to 1819 is both the royalist land (ruled from Spain, in Spain's colour) and the patriots' republic (in its own colour) under one name, so the map showed one "New Granada" in two colours. The republic is now the United Provinces of New Granada to 1815, and the royalist land the Viceroyalty of New Granada, as before 1811; from 1816 the republic's land is the viceroyalty's too, ended on 5 May 1816, the day before the royalists took Bogotá. Cliopatria kept it independent to 1819.
+- Tables: `NAME_FIX` in `tools/build-eras.mjs` (two entries, and a `self` option: an entry that applies only to a span with no ruler); `tools/dated-days.json` (the reconquest of Bogotá, 6 May 1816, new; the names of the entries of 1811 and 1820).
+- Sources: (1) Wikipedia, "Spanish reconquest of New Granada" (Bogotá taken on 6 May 1816; the last stronghold on 29 June 1816). (2) Wikipedia, "Reconquista (Spanish America)" (the reconquest complete with Bogotá, 6 May 1816; royalist rule to August 1819).
+- Confidence: high for the names and the day; the shapes are Cliopatria's.
+- Alternatives: ending the republic on 29 June 1816, after Cuchilla del Tambo (not taken: the capital's fall is the usual date, and both fall before 1 July).
+- Left out: Cartagena's fall on 6 December 1815, and the republic of 1811 before the Act of Federation of 27 November 1811, which takes the later name.
+
+## 1803–1815 | Europe | Andorra in the table's years
+
+- What changed: the table's spans of France and Spain drew UCHRONIA's coarse Andorra over the small territory's own shape, so Andorra had two outlines, one over the other. The table's spans now lose the small territories' land in the years they hold it, and the gaps between the two shapes join Andorra as in other years.
+- Tables: `napoleonic` in `tools/build-eras.mjs`.
+- Sources: no border changes; the shapes are Natural Earth's (Andorra) and UCHRONIA's units.
+- Confidence: high.
+- Alternatives: none.
+- Left out: none.
+
+## 1803–1815 | Europe | Zavrč and Bistrica ob Sotli
+
+- What changed: two Slovenian municipalities on the Croatian border were in no row of the table, since the centre of each lies outside Natural Earth's coarser outline of every Slovenian region, so they were blank. A unit outside every region now takes the nearest region's: Zavrč Podravska's and Bistrica ob Sotli Savinjska's, both Austrian, like their neighbours.
+- Tables: `regionOf` in `tools/napoleonic.mjs`.
+- Sources: no border changes.
+- Confidence: high.
+- Alternatives: naming the two units in the table by name (not taken: the rule catches any other unit like them).
+- Left out: none.
+
 ## 1788–1885 | Australia | the colonies as the law drew them
 
 - What changed: Australia's colonies are drawn from `tools/australia.mjs`, on Natural Earth's first-level units cut along the meridians and parallels the instruments named, in place of the sources' shapes. Before, from 1788 to 1807 only the land round Sydney was British, and New South Wales took the land east of 135° E only from 1808 and kept that line, with the Aboriginal nations west of it, until 1846 (to 129° E only from 1847); Tasmania was blank in 1830 and "Australian colonies" (Cliopatria's "British Colonial Empire") from 1836; a strip along 128.5–129° E between Western Australia and South Australia and the Northern Territory was "Australian colonies" from 1870 to 1885; South Australia's borders with Queensland (26° S and 141° E) and with Victoria (141° E), and Queensland's with New South Wales (29° S), were drawn twice, by two sources whose lines met nowhere, and so as thick inland edges; North Australia (1846) was missing; and the Northern Territory was a colony of its own from 1863, though it was South Australia's. Now: New South Wales east of 135° E with Van Diemen's Land from 7 February 1788; to 129° E, and Van Diemen's Land a colony, from 3 December 1825; the Swan River Colony west of 129° E from 2 May 1829, Western Australia from 6 February 1832; South Australia between 132° and 141° E south of 26° S from 19 February 1836; North Australia, New South Wales north of 26° S, from 17 February to 10 December 1846; Victoria from 1 July 1851; Tasmania from 1 January 1856; Queensland east of 141° E from 6 June 1859; South Australia to 129° E and Queensland to 138° E from 13 March 1862; the Northern Territory in South Australia from 6 July 1863; the Torres Strait's islands within sixty miles of Queensland's coast in Queensland from 30 May 1872, and the rest from 21 July 1879. All are colonies (status 1) of the Kingdom of Great Britain, then the United Kingdom, with precision 3. The Aboriginal nations keep the land no colony claimed (west of 135° E to 1825, west of 129° E to 1829), and give way to the colonies, on the colonies' days, as before.
