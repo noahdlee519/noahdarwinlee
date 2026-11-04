@@ -2258,6 +2258,21 @@ const napoleonic = (list) => {
     return false;
   };
   const touchesMask = (p) => p.some((ring) => ring.some(onMask));
+  // A span wholly in the table's years that lies nine-tenths on its land is dropped at once rather than cut, which would leave only
+  // slivers along the coast for the step below to drop (since the table runs to 1885 there are many of them, and cutting each from
+  // the mask's tiles took more memory than the build has).
+  const maskCells = cellsOf(N.mask);
+  let dropped = 0;
+  list = list.filter((s) => {
+    if (s.small || s.first < NAPOLEONIC_FROM || s.last > NAPOLEONIC_TO || !boxHit(s.box, mb)) return true;
+    const cs = s.cells || cellsOf(s.polys), all = cellSum(cs);
+    if (!all) return true;
+    let w = 0;
+    for (const i of cs) if (maskCells.has(i)) w += cellW(i);
+    if (w < 0.9 * all) return true;
+    dropped++;
+    return false;
+  });
   const edits = [];
   for (const s of list) {
     if (s.small || s.last < NAPOLEONIC_FROM || s.first > NAPOLEONIC_TO || !boxHit(s.box, mb)) continue;
@@ -2284,7 +2299,7 @@ const napoleonic = (list) => {
   const table = resolve(here, "dated-days.json");
   if (existsSync(table)) for (const e of JSON.parse(readFileSync(table, "utf8")).changes) if (e.y === NAPOLEONIC_FROM && e.date < NAPOLEONIC_FROM + "-01-01") for (const n of e.names) early.set(n, Math.min(early.get(n) ?? Infinity, dayOf(e.date)));
   const spans = N.spans.map(({ host, from, to, ...s }) => withBox({ ...s, ...(s.dayFrom ? {} : { dayFrom: [s.first, early.get(s.name) ?? dayOf(s.first + "-01-01")] }), people: 0, src: "napoleonic", ...(host ? { noLabel: true } : {}) }));
-  const firsts = spans.filter((t) => t.first === NAPOLEONIC_FROM), maskCells = cellsOf(N.mask);
+  const firsts = spans.filter((t) => t.first === NAPOLEONIC_FROM);
   let ended = 0;
   for (const s of list) {
     if (s.last !== NAPOLEONIC_FROM - 1 || s.small || !boxHit(s.box, mb)) continue;
@@ -2315,7 +2330,7 @@ const napoleonic = (list) => {
     for (const t of spans) if (t.first <= sm.last && sm.first <= t.last && boxHit(t.box, sm.box)) keepSmall.push({ base: t, first: Math.max(t.first, sm.first), last: Math.min(t.last, sm.last), polys: sm.polys, add: false });
   }
   const cutSpans = reshape(spans, keepSmall, false);
-  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + keepSmall.length + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
+  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + keepSmall.length + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
   return list.concat(cutSpans);
 };
 
