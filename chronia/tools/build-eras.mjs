@@ -2740,7 +2740,11 @@ const redraw1886 = (list) => {
     targets.push({ name: r.name, first: r.first, last: r.last, polys: target, box: boxOf(target) });
   }
   const shape255 = cs(255), ne = neAll.find((f) => f.properties.name === "Schleswig-Holstein" && f.properties.adm0_a3 === "DEU");
-  if (shape255 && ne) {
+  // The table of Europe draws Schleswig, Holstein, and Lauenburg from 1864 to 1870 itself (the joint rule of Austria and Prussia,
+  // Gastein, and Prussia's annexation), so they are redrawn here, and imposed again after the overlaps, only without it.
+  const shByTable = NAPOLEONIC_TO >= SH_PRUSSIAN[1] && existsSync(resolve(dirname(provincesPath), "units.json"));
+  if (shByTable) console.log("redraw: Schleswig-Holstein from 1864 to 1870 left to the table of Europe");
+  else if (shape255 && ne) {
     let region = unionSafe(rewind(polysOf(ne.geometry)), [I(shape255, boxPoly(SH_NORTH))]);
     region = region.filter((q) => polyKm2(q) >= SH_ISLAND_KM2);
     const at = (y) => {
