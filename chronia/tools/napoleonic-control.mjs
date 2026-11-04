@@ -1,7 +1,7 @@
 // The occupations of the Napoleonic Wars in the zones of control: the land each occupier held in the wars themselves, day by day,
-// from the dated table of 1803 to 1815 (tools/napoleonic.mjs, WAR_OCC), on the same UCHRONIA units the main map draws those years
+// from the dated table of 1803 to 1885 (tools/napoleonic.mjs, WAR_OCC), on the same UCHRONIA units the main map draws those years
 // with. The main map leaves these occupations out and keeps the land its lawful owner's until the peace or the armistice that ended
-// each war; what ran on after it is drawn there (see the README's "Europe from 1803 to 1815").
+// each war; what ran on after it is drawn there (see the README's "Europe from 1803 to 1885").
 import { buildNapoleonic, WAR_OCC_SIDES } from "./napoleonic.mjs";
 
 export const NAPOLEONIC_WAR = { key: "napoleonic", name: "Occupations of the Napoleonic Wars" };
@@ -33,7 +33,7 @@ export function buildNapoleonicControl(env) {
   bbox = bbox.map((v) => +v.toFixed(2));
   const data = {
     key: NAPOLEONIC_WAR.key, name: NAPOLEONIC_WAR.name, credit: "CHRONIA's table of 1803 to 1815",
-    source: "The occupations of the Napoleonic Wars in CHRONIA's dated table of Europe from 1803 to 1815 (tools/napoleonic.mjs), from the English Wikipedia articles on each state, treaty, and siege; the land from UCHRONIA's districts and provinces",
+    source: "The occupations of the Napoleonic Wars in CHRONIA's dated table of Europe from 1803 to 1885 (tools/napoleonic.mjs), from the English Wikipedia articles on each state, treaty, and siege; the land from UCHRONIA's districts and provinces",
     sides: sideKeys.map((k) => [k, WAR_OCC_SIDES[k][0], WAR_OCC_SIDES[k][1]]), rows, topo: topoOut
   };
   writeFileSync(resolve(out, NAPOLEONIC_WAR.key + ".json"), JSON.stringify(data));

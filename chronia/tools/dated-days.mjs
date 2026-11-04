@@ -89,7 +89,7 @@ export function dateChanges(spans, table, clip, log = () => {}) {
     // Named spans take their entry's day; of two entries naming one span, the later in the table.
     const day = new Map(), why = new Map();
     for (const s of all) for (const e of entries) if (s.names.some((n) => e.names.includes(n)) && inBox(e, s)) { day.set(s, e.day); why.set(s, e); }
-    // A span that brings its own day (fixFrom, fixTo: Europe from 1803 to 1815) keeps it, as if an entry
+    // A span that brings its own day (fixFrom, fixTo: Europe from 1803 to 1885) keeps it, as if an entry
     // named it; a quiet one (the table's own) does not pass it on.
     const own = new Set();
     for (const s of all) {

@@ -2218,7 +2218,7 @@ const britishAmerica = (list) => list.flatMap((s) => {
   return [{ ...s, last: 1783, part: BRITISH_AMERICA }, { ...s, first: 1784, uid: uidNext++ }];
 });
 
-// Europe from 1803 to 1815 (`tools/napoleonic.mjs`): its spans replace every other span on the land the table covers in those
+// Europe from 1803 to 1885 (`tools/napoleonic.mjs`): its spans replace every other span on the land the table covers in those
 // years, and what a cut leaves along the coast (a source's coarser shore against the units') is dropped. Russia's and the
 // Ottoman Empire's blocks are spans of their own, with no name, beside the sources' spans of those states, which run on outside
 // Europe. Small territories keep their land.
@@ -4150,7 +4150,7 @@ const COLOUR_FROM = [["Czechoslovakia", "1945-05-08", "Czech Republic"]];
   };
   for (const s of dated) if (!s.small && !s.people) note(s.name, s.first, s.last + 1, s.polys, !!s.ruler);
   csParts.forEach((r) => note(r.name, 1886 + r.start / 365.2425, 1886 + ((r.end < 0 ? dayOf(CS_TO) : r.end) + 1) / 365.2425, polysOf(r.geometry), !!(r.p && r.p.status && r.p.status !== "independent")));
-  // A succession inside Europe's table of 1803 to 1815 between two states that had different colours before doesn't link them,
+  // A succession inside Europe's table of 1803 to 1885 between two states that had different colours before doesn't link them,
   // so the table leaves their colours as they were (the Electorate and the Kingdom of Hanover, say).
   let earlier = new Map();
   try { earlier = new Map(JSON.parse(readFileSync(resolve(out, "eras.json"), "utf8")).polities.filter((p) => p[1] >= 0).map((p) => [p[0], p[1]])); } catch (e) { /* no earlier build */ }
@@ -4228,7 +4228,7 @@ for (const [y, file] of index) {
     else if (inSpread(A[1], A[2]) && inSpread(B[1], B[2]) && km < A[3] + B[3] + SPREAD_KM) addEdge(A[0], B[0], SPREAD_W);
   }
 }
-// Years two states touch, and the years they touch outside Europe's table of 1803 to 1815: a pair that touches only in those
+// Years two states touch, and the years they touch outside Europe's table of 1803 to 1885: a pair that touches only in those
 // years does not hold either to another colour in the greedy pass or the repair (the colours while touching settle it for those
 // years), so the table leaves the colours of the states it shares with other years as they were.
 const touchYears = new Map(), touchOutside = new Map();
