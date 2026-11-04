@@ -498,6 +498,18 @@
     });
   }
   var modernSnaps = new Map();
+  // The spans from 1886 (modern.json, the largest file) load when a date from 1886 is first shown, or once the page is idle.
+  function loadModern() {
+    if (!modern.load) modern.load = fetchJSON("data/modern.json").then(function (md) {
+      modern.rows = md.rows; modern.hi = md.hi; modern.lo = md.lo;
+      return modern;
+    }, function (e) { modern.load = null; throw e; });
+    return modern.load;
+  }
+  // Loads that can wait run after the opening and when the browser is idle, so they don't compete with the first map.
+  function whenIdle(f) {
+    afterIntro(function () { (window.requestIdleCallback || function (cb) { return setTimeout(cb, 1500); })(f, { timeout: 5000 }); });
+  }
   function activeRows(day) {
     var out = [], rows = modern.rows;
     for (var i = 0; i < rows.length; i++) { var r = rows[i]; if (r[2] <= day && (r[3] < 0 || day <= r[3])) out.push(i); }
@@ -3571,6 +3583,21 @@
     if (isModern(t)) {
       var day = Math.min(dayOfTime(t), modern.toDay);
       wantKey = "d" + day;
+      if (!modern.rows) {
+        syncTime();
+        loadModern().then(function () {
+          if (wantKey !== "d" + day) return;
+          useSnap(modernSnap(day));
+          syncTime();
+          writeHash();
+          scheduleRender();
+        }).catch(function (e) {
+          console.warn("modern", e);
+          asof.textContent = "The borders of " + fmtNow(t) + " could not be loaded";
+        });
+        scheduleRender();
+        return;
+      }
       useSnap(modernSnap(day));
       syncTime();
       writeHash();
@@ -3587,8 +3614,10 @@
         syncTime();
         writeHash();
         scheduleRender();
-        if (ck > 0) loadChunk(ck - 1).catch(function () {});
-        if (ck < dated.chunks.length - 1) loadChunk(ck + 1).catch(function () {});
+        whenIdle(function () {
+          if (ck > 0) loadChunk(ck - 1).catch(function () {});
+          if (ck < dated.chunks.length - 1) loadChunk(ck + 1).catch(function () {});
+        });
       }).catch(function (e) {
         console.warn("dated", e);
         asof.textContent = "The borders of " + fmtYear(t) + " could not be loaded";
@@ -5156,7 +5185,7 @@
   function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function drawSettled(t) {
     setTime(t);
-    var p = isModern(t) ? Promise.resolve() : isDated(t) ? loadChunk(chunkIndexFor(t)) : loadMap(mapIndexFor(t));
+    var p = isModern(t) ? loadModern() : isDated(t) ? loadChunk(chunkIndexFor(t)) : loadMap(mapIndexFor(t));
     var tries = 0;
     function settle() {
       return sleep(0).then(function () {
@@ -5978,15 +6007,14 @@
     if (flat) { $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").setAttribute("data-tip", "Globe (M)"); }
     layout();
     Promise.all([
-      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; }),
-      fetchJSON("data/modern.json")
+      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; })
     ]).then(function (r) {
       var idx = r[0];
       catalogue = idx.polities;
       colourMarks();
       maps = idx.maps.map(function (m) { return { y: m[0], file: "data/" + m[1], snap: null, loading: null }; });
-      var md = r[3], from = idx.modern.from.split("-").map(Number), to = idx.modern.to.split("-").map(Number);
-      modern = { rows: md.rows, hi: md.hi, lo: md.lo, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
+      var from = idx.modern.from.split("-").map(Number), to = idx.modern.to.split("-").map(Number);
+      modern = { rows: null, hi: null, lo: null, load: null, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
       modern.fromTime = timeOfDay(dayFromDate(from[0], from[1], from[2])) - 0.5 / 365;
       if (idx.dated) {
         // The change points: the years until 1799, then the days of the changes from 1800.
@@ -6004,7 +6032,7 @@
       landGeo = topojson.feature(r[1].lo, r[1].lo.objects.land);
       layout();
       if (isDated(now) && !isMonthly(now)) now = Math.round(now);
-      var first = isModern(now) ? Promise.resolve(modernSnap(Math.min(dayOfTime(now), modern.toDay))) : isDated(now) ? loadChunk(chunkIndexFor(now)).then(function () { return datedSnap(chunkIndexFor(now), now); }) : loadMap(mapIndexFor(now));
+      var first = isModern(now) ? loadModern().then(function () { return modernSnap(Math.min(dayOfTime(now), modern.toDay)); }) : isDated(now) ? loadChunk(chunkIndexFor(now)).then(function () { return datedSnap(chunkIndexFor(now), now); }) : loadMap(mapIndexFor(now));
       return first.then(function (snap) {
         current = snap;
         setTime(now);
@@ -6019,6 +6047,7 @@
           }).catch(function (e) { console.warn("sea", e); });
         });
         afterIntro(loadGeography);
+        whenIdle(function () { loadModern().catch(function () {}); });
       });
     }).catch(function (e) {
       console.error(e);
