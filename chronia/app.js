@@ -3787,7 +3787,7 @@
       e.preventDefault();
       stopPlay();
       var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
-      if (e.shiftKey) stepUnit(dir); else stepMap(dir);
+      if (e.shiftKey) stepMap(dir); else stepUnit(dir);
     } else if (e.key === "Home") { e.preventDefault(); setTime(FIRST_T); }
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
@@ -5791,8 +5791,8 @@
       return;
     }
     if (typing || exporting || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
-    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(-1); else stepMap(-1); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepUnit(1); else stepMap(1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(-1); else stepUnit(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
     else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
     else if (e.key === "o" || e.key === "O") togglePlay(e.shiftKey, true);
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
