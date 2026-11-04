@@ -16,6 +16,15 @@ Each entry:
 ```
 
 ---
+## 1967–2026 | Middle East | the Gaza Strip apart and disputed; the data to November 2026
+
+- What changed: CShapes draws the Gaza Strip in Israel from 1967, so the main map showed it as Israel to now. It is now its own disputed land (`DISPUTES`), claimed by Israel and Palestine: held by Israel from 10 June 1967 to the end of the disengagement (11 September 2005), and with no administering state from 12 September 2005. `CS_TO` moves to 30 November 2026, so every present border runs through November. The zones of control for Syria, Ukraine, and Israel run to November 2026: Wikipedia's Syrian and Russo-Ukrainian maps have had no edit since 7 and 14 October, so November repeats October; the Israeli–Palestinian map's revision of 3 November adds eleven West Bank settlements and a Lebanese village. Yemen already ran to November.
+- Tables: `DISPUTES` and `CS_TO` in `tools/build-eras.mjs`; `tools/control/israel-towns.json`, `syria-towns.json`, and `ukraine-towns.json` (the month 2026-11), and `data/control/` rebuilt with `build-control.mjs`.
+- Sources: (1) Natural Earth's disputed areas ("Gaza"); (2) English Wikipedia, Gaza Strip and Israeli disengagement from Gaza; (3) Module:Israeli-Palestinian conflict detailed map, revision 1383583460 (3 November 2026), read in a browser, since the build machine can't reach Wikipedia.
+- Confidence: high for the dates; the ground held in Gaza is as Wikipedia's map gives it.
+- Alternatives: Gaza under Israel until 2005 drawn as Israeli land, as CShapes does (not taken: Israel never annexed it, and the West Bank is drawn as disputed from 1967); Hamas as Gaza's administrator from 2007 (not taken: Hamas is not a state on the map).
+- Left out: Egypt's administration of Gaza from 1948 to 1967 is unchanged (CShapes's).
+
 ## 1816–1885 | Europe | the table of 1803 to 1815 runs on to 1885
 
 - What changed: from 1816 to 1885 Europe was drawn from the sources' shapes again, coarse and often wrong (Naples blank, Moldavia and Wallachia Russian in 1850, Warsaw Russian from 1819, Plovdiv in the Principality of Bulgaria, Montenegro without Podgorica in 1880, and Schleswig without North Schleswig). The dated table of 1803 to 1815 now runs to 31 December 1885, with the Congress settlement, the German Confederation's states and their changes, Belgium and the Limburg and Luxembourg question, the unification of Italy, the Schleswig-Holstein question, Prussia's annexations of 1866, the North German Confederation and the German Empire (each one state, as CShapes draws Germany from 1886), Alsace-Lorraine, Kraków, Austria-Hungary, Serbia, Montenegro, Greece, the Ionian Islands, Romania, Bulgaria, Eastern Rumelia, Bosnia and Herzegovina, and the names of France's regimes. Heligoland is British from 1814, and North Schleswig part of Schleswig throughout.

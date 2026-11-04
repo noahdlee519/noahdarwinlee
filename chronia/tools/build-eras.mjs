@@ -28,7 +28,7 @@ const turfBuf = (() => { const m = require("@turf/buffer"); return m.default || 
 
 const FIRST = -3400;
 const DATED_FROM = -3400, DATED_TO = 1885, CHUNK = 100;
-const CS_FROM = "1886-01-01", CS_DATA_TO = "2019-12-31", CS_TO = "2026-10-31";
+const CS_FROM = "1886-01-01", CS_DATA_TO = "2019-12-31", CS_TO = "2026-11-30";
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
 const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
@@ -1699,6 +1699,9 @@ const DISPUTES = [
   { name: "Artsakh", units: ["Artsakh"], ne: { adm0: "AZE", within: "373", units: [] }, wiki: "Republic of Artsakh", periods: [["2020-11-10", "2023-09-19", "", ["Artsakh", "Azerbaijan"]], ["2023-09-20", "2023-12-31", "Azerbaijan", ["Azerbaijan", "Artsakh"]]] },
   { name: "Golan Heights", units: ["Golan Heights"], periods: [["1967-06-10", CS_TO, "Israel", ["Israel", "Syria"]]] },
   { name: "West Bank", units: ["West Bank"], wiki: "Israeli-occupied territories", periods: [["1967-06-10", "1988-07-30", "Israel", ["Israel", "Jordan"]], ["1988-07-31", CS_TO, "Israel", ["Israel", "Palestine"]]] },
+  // Gaza, apart from Israel (CShapes draws it in Israel from 1967): held by Israel from the Six-Day War to the end of its
+  // disengagement, then governed by the Palestinians (the Palestinian Authority, Hamas from June 2007), and disputed throughout.
+  { name: "Gaza Strip", units: ["Gaza"], periods: [["1967-06-10", "2005-09-11", "Israel", ["Israel", "Palestine"]], ["2005-09-12", CS_TO, "", ["Palestine", "Israel"]]] },
   { name: "Halaib Triangle", units: ["Halayib Triangle"], periods: [["1958-02-01", CS_TO, "", ["Egypt", "Sudan"]]] },
   { name: "Southern Kuril Islands", units: ["Kuril Is."], wiki: "Kuril Islands dispute", periods: [["1945-09-05", "1991-12-25", "Soviet Union", ["Soviet Union", "Japan"]], ["1991-12-26", CS_TO, "Russia", ["Russia", "Japan"]]] },
   { name: "Abyei", units: ["Abyei"], periods: [["2011-07-09", CS_TO, "", ["Sudan", "South Sudan"]]] },
