@@ -162,6 +162,35 @@ await run("city", async () => {
   await page.close();
 });
 
+await run("label", async () => {
+  const { page, errors } = await open("#y=1815-07&v=2.35,46.50,6.00");
+  await settle(page, 2500);
+  const N = "BOURBON KINGDOM OF FRANCE", T = "Bourbon Kingdom of France";
+  const set = async (l) => { await page.evaluate((l) => window.__chronia.setEdits(l), l); await settle(page, 900); };
+  const box = () => page.evaluate((n) => window.__chronia.labelBox(n), T);
+  const proj = (lon, lat) => page.evaluate(([a, b]) => window.__chronia.project(a, b), [lon, lat]);
+  await set([E(1, "label", T, "1815", "1815", { lon: 0, lat: 45, size: 20, angle: null })]);
+  const b = await box(), q = await proj(0, 45);
+  ok(b && Math.hypot(b[0] - q[0], b[1] - q[1]) < 12, "a pinned name sits at its point: " + (b && b.slice(0, 2).map(Math.round)) + " vs " + q.slice(0, 2).map(Math.round));
+  const others = await page.evaluate(() => window.__chronia.labels());
+  const mine = others.find((l) => l.name === "Bourbon Kingdom of France");
+  const hit = mine && others.some((l) => l !== mine && l.box && !(l.box.x > mine.box.x + mine.box.w || l.box.x + l.box.w < mine.box.x || l.box.y > mine.box.y + mine.box.h || l.box.y + l.box.h < mine.box.y) && l.kind === "polity");
+  ok(mine && !hit, "no other country's name overlaps it");
+  ok(mine && Math.abs(mine.size - 20) < 0.01, "at the size the edit gives: " + (mine && mine.size));
+  await set([E(1, "label", T, "1815", "1815", { lon: 0, lat: 45, size: 20, angle: 30 })]);
+  await page.screenshot({ path: process.env.SHOT || "/dev/null", clip: { x: 380, y: 280, width: 460, height: 330 } }).catch(() => {});
+  const tilted = (await page.evaluate(() => window.__chronia.labels())).find((l) => l.name === "Bourbon Kingdom of France");
+  ok(tilted && Math.abs(tilted.ang - Math.PI / 6) < 0.01, "and at its angle: " + (tilted && tilted.ang));
+  await set([E(1, "label", T, "1815", "1815", { lon: 120, lat: 45, size: null, angle: null })]);
+  const behind = await box();
+  const home = await proj(2.5, 46.5);
+  ok(behind && Math.hypot(behind[0] - home[0], behind[1] - home[1]) < 200, "a pin behind the globe falls back to the usual place in France: " + (behind && behind.slice(0, 2).map(Math.round)));
+  await set([E(1, "label", "German Empire", "1815", "1815", { lon: 10, lat: 51, size: 20, angle: null })]);
+  ok(!(await page.evaluate(() => window.__chronia.labels().some((l) => /German Empire/i.test(l.name)))), "a pin for a country not on the map draws nothing");
+  ok(!errors.length, "no page errors: " + errors);
+  await page.close();
+});
+
 await browser.close();
 console.log(failed ? failed + " failed" : "all passed");
 process.exit(failed ? 1 : 0);

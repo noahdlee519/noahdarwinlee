@@ -505,6 +505,8 @@
     });
     return out;
   }
+  // The name in the data, whatever a country-name edit shows (the edits are keyed by it).
+  function polityOwnName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
   function polityName(id) {
     if (!(id >= 0 && catalogue[id])) return "";
     var v = edits.nameN ? editAt("country-name", catalogue[id][0], now) : null;
@@ -2520,6 +2522,26 @@
     boxes.forEach(function (b) { x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); });
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
+  // A pinned name (a label edit): straight, at the edit's point, at its size and angle or the layout's usual
+  // ones. Nothing when the point is behind the globe or off the screen.
+  function pinnedItem(p, v, kp, placed) {
+    var q = projectLL(v.lon, v.lat);
+    if (!q || (!flat && q[2] < 0.25)) return null;
+    var name = polityName(p.id);
+    if (!name) return null;
+    var side = Math.sqrt(p.label[5]) * kp, people = !!p.people;
+    var f = v.size || Math.max(people ? 8.5 : 7.5, Math.min(people ? 15 : 26, labelTarget(side, people, people ? 8.5 : 7.5, people ? 15 : 26)));
+    var opts = labelOptions(name, people), o = opts[0];
+    for (var k = 0; k < opts.length; k++) { o = opts[k]; if (o.w * f <= 260) break; }
+    var a = (v.angle || 0) * D2R, ca = Math.cos(a), sa = Math.sin(a), spx = o.space * f;
+    var lines = o.lines.map(function (text, i) {
+      var off = (i - (o.lines.length - 1) / 2) * f * LINE_H;
+      return { text: text, spx: spx, straight: true, mx: q[0] - sa * off, my: q[1] + ca * off, tx: ca, ty: sa, nx: sa, ny: -ca };
+    });
+    var box = mkBox(q[0], q[1], o.w * f / 2 + 2, o.h * f / 2 + 1, a);
+    if (!insideView(box)) return null;
+    return { id: p.id, name: name, people: people, band: !!p.band, f: f, pinned: true, geo: { lines: lines, boxes: [box], x: q[0], y: q[1], ang: a } };
+  }
   function layoutPolities(snap, placed, kp) {
     var lv = useLevel(), L = level(snap, lv), items = [], small = [], shapes = new Map(), S = localScale(), i;
     // While the map moves, new names get LABEL_QUICK_MS of each frame; the rest are laid out when it stops.
@@ -2527,6 +2549,15 @@
     var first = [], rest = [];
     for (i = 0; i < snap.order.length; i++) (labelState.has(snap.order[i].id) ? first : rest).push(snap.order[i]);
     var order = (snap.groups || []).concat(first, rest), seen = new Set();
+    // Names pinned by a label edit go first, where the edit puts them, and the others are laid out round them.
+    if (edits.labelN) for (i = 0; i < order.length; i++) {
+      var pp = order[i], pv = !seen.has(pp.id) && pp.label ? editAt("label", polityOwnName(pp.id), now) : null;
+      var pin = pv ? pinnedItem(pp, pv, kp, placed) : null;
+      if (!pin) continue;
+      seen.add(pp.id);
+      for (var pb = 0; pb < pin.geo.boxes.length; pb++) placed.push(pin.geo.boxes[pb]);
+      items.push(pin);
+    }
     for (i = 0; i < order.length; i++) {
       var p = order[i], lab = p.label;
       if (!lab || lab[2] * kp < 0.5 || seen.has(p.id)) continue;
@@ -6272,6 +6303,7 @@
     edits.colourN = edits.list.filter(function (e) { return e.kind === "country-colour"; }).length;
     edits.nameN = edits.list.filter(function (e) { return e.kind === "country-name"; }).length;
     edits.cityN = edits.list.filter(function (e) { return /^city-/.test(e.kind); }).length;
+    edits.labelN = edits.list.filter(function (e) { return e.kind === "label"; }).length;
     edits.tag++;
     editsChanged();
     scheduleRender();
@@ -6387,6 +6419,10 @@
     timeOf: function (s) { return parseTime(s); },
     editTime: function (s, end) { return editTime(s, end); },
     editsFailed: function () { return edits.failed; },
+    labelBox: function (n) {
+      for (var i = 0; i < placedLabels.length; i++) { var l = placedLabels[i]; if (l.name === n && l.kind !== "city" && l.kind !== "capital" && l.kind !== "town") return [l.x, l.y, l.box, l.boxes]; }
+      return null;
+    },
     cities: function () { return cities ? cityRanked(now).map(function (x) { return { id: x.c.id, name: cityShownName(x.c, now), tier: x.tier }; }) : []; },
     fillAt: function (lon, lat) {
       var q = projectLL(lon, lat);
