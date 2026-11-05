@@ -202,6 +202,12 @@
   function inView(f) { return flat ? featureInFlat(f) : featureInFront(f); }
 
   var EDGE = 24;
+  // Points are snapped to a grid of 1/SNAP of a pixel (a finer one when the map stands still), and a point
+  // in the same cell as the one before is skipped: at a world view most of the borders' points fall
+  // within a pixel of each other. Snapping both ways round gives the same points, so the shapes on either
+  // side of a border still meet exactly.
+  var SNAP = 4;
+  function snapNow() { SNAP = moving ? 2 : 4; }
   function outcode(px, py) {
     return (px < -EDGE ? 1 : px > W + EDGE ? 2 : 0) | (py < -EDGE ? 4 : py > H + EDGE ? 8 : 0);
   }
@@ -211,13 +217,17 @@
     var any = false;
     for (var k = 0; k < n; k++) { if (X[k] * vx + Y[k] * vy + Z[k] * vz > 0) { any = true; break; } }
     if (!any) return;
-    var side = 0, lx = 0, ly = 0, held = false;
+    // A ring ends with a line back to its first point rather than closePath(): Chromium's closePath()
+    // takes longer the more rings a path already holds, so a world of borders took most of a frame.
+    var side = 0, lx = 0, ly = 0, held = false, q = SNAP, qx = NaN, qy = NaN, fx = 0, fy = 0;
     for (k = 0; k < n; k++) {
       var x = X[k], y = Y[k], z = Z[k];
       var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz, sz = x * vx + y * vy + z * vz;
       if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
-      var px = cx + r * sx, py = cy - r * sy;
-      if (k === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      var px = Math.round((cx + r * sx) * q) / q, py = Math.round((cy - r * sy) * q) / q;
+      if (px === qx && py === qy) continue;
+      qx = px; qy = py;
+      if (k === 0) { c.moveTo(px, py); fx = px; fy = py; side = outcode(px, py); held = false; continue; }
       var oc = outcode(px, py);
       if (oc & side) { lx = px; ly = py; held = true; side = oc & side; continue; }
       if (held) { c.lineTo(lx, ly); held = false; }
@@ -225,19 +235,22 @@
       side = oc;
     }
     if (held) c.lineTo(lx, ly);
-    c.closePath();
+    c.lineTo(fx, fy);
   }
   function traceLine(c, L) {
     if (L.radius < HALF_PI && !featureInFront(L)) return;
     var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
-    var X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false, side = 0;
+    var X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false, side = 0, q = SNAP, qx = NaN, qy = NaN;
     for (var k = 0; k < n; k++) {
       var x = X[k], y = Y[k], z = Z[k];
       var sz = x * vx + y * vy + z * vz;
-      if (sz < -0.002) { pen = false; continue; }
+      if (sz < -0.002) { pen = false; qx = NaN; continue; }
       var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz;
       if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
-      var px = cx + r * sx, py = cy - r * sy, oc = outcode(px, py);
+      var px = Math.round((cx + r * sx) * q) / q, py = Math.round((cy - r * sy) * q) / q;
+      if (pen && px === qx && py === qy && k < n - 1) continue;
+      qx = px; qy = py;
+      var oc = outcode(px, py);
       if (!pen) { c.moveTo(px, py); pen = true; side = oc; continue; }
       if (oc & side) { c.moveTo(px, py); side = oc & side; continue; }
       c.lineTo(px, py);
@@ -284,10 +297,12 @@
   }
   function emitFlat(c, rg, n, sh, closed, wind, pole) {
     var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc, P = rg.P;
-    var side = 0, lx = 0, ly = 0, held = false;
+    var side = 0, lx = 0, ly = 0, held = false, q = SNAP, qx = NaN, qy = NaN, fx = 0, fy = 0;
     for (var i = 0; i < n; i++) {
-      var px = x0 + k * (scratch[i] + sh), py = y0 - k * P[i];
-      if (i === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      var px = Math.round((x0 + k * (scratch[i] + sh)) * q) / q, py = Math.round((y0 - k * P[i]) * q) / q;
+      if (px === qx && py === qy && (closed || i < n - 1)) continue;
+      qx = px; qy = py;
+      if (i === 0) { c.moveTo(px, py); fx = px; fy = py; side = outcode(px, py); held = false; continue; }
       var oc = outcode(px, py);
       if (oc & side) {
         if (closed) { lx = px; ly = py; held = true; }
@@ -307,7 +322,7 @@
       c.lineTo(end, y0 - k * pole * HALF_PI);
       c.lineTo(start, y0 - k * pole * HALF_PI);
     }
-    c.closePath();
+    c.lineTo(fx, fy);
   }
   function traceOutline(c, d) {
     var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc;
@@ -319,7 +334,7 @@
     if (flat) traceOutline(c, d);
     else c.arc(cx, cy, B.r + (d || 0), 0, TAU);
   }
-  var geoPath = d3.geoPath(projection, ctx);
+  var geoPath = d3.geoPath(projection, ctx), geoPathCtx = ctx;
   function traceFeature(c, f) {
     if (flat) {
       if (!featureInFlat(f)) return;
@@ -328,6 +343,7 @@
     }
     if (!featureInFront(f)) return;
     if (f.radius > Math.PI / 4 && f.geo && -(f.cx * B.cx + f.cy * B.cy + f.cz * B.cz) >= Math.cos(f.radius) - 1e-9) {
+      if (c === ctx && c !== geoPathCtx) { geoPathCtx = ctx; geoPath = d3.geoPath(projection, ctx); }
       if (c !== ctx) d3.geoPath(projection, c)(f.geo); else geoPath(f.geo);
       return;
     }
@@ -380,9 +396,38 @@
   function scheduleRender() {
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
   }
-  function frame() {
+  // While the map moves, a device that can't keep up draws it at a lower resolution and stretches it to
+  // the screen; the full drawing comes back when the map stops. moveRes steps down (1, 0.7, then 0.5 of
+  // the screen's pixels) whenever the frames while moving come more than MOVE_SLOW_MS apart on average.
+  var mainCtx = ctx, lowCanvas = null, lowCtx = null, moveRes = 1, moveGaps = [], lastMoveFrame = 0, MOVE_SLOW_MS = 26;
+  function frame(ts) {
     renderQueued = false;
-    try { draw(); } catch (e) { console.error(e); }
+    if (moving) {
+      if (lastMoveFrame && ts - lastMoveFrame < 250) {
+        moveGaps.push(ts - lastMoveFrame);
+        if (moveGaps.length >= 8) {
+          var avg = moveGaps.reduce(function (a, b) { return a + b; }, 0) / moveGaps.length;
+          if (avg > MOVE_SLOW_MS && moveRes > 0.5) moveRes = moveRes > 0.7 ? 0.7 : 0.5;
+          moveGaps = [];
+        }
+      }
+      lastMoveFrame = ts;
+    } else lastMoveFrame = 0;
+    var ld = moving && moveRes < 1 ? Math.max(0.5, dpr * moveRes) : dpr;
+    if (ld < dpr) {
+      if (!lowCanvas) { lowCanvas = document.createElement("canvas"); lowCtx = lowCanvas.getContext("2d"); }
+      var lw = Math.max(1, Math.round(W * ld)), lh = Math.max(1, Math.round(H * ld));
+      if (lowCanvas.width !== lw || lowCanvas.height !== lh) { lowCanvas.width = lw; lowCanvas.height = lh; }
+      var fullDpr = dpr;
+      ctx = lowCtx; dpr = ld;
+      try { draw(); } catch (e) { console.error(e); } finally { ctx = mainCtx; dpr = fullDpr; }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(lowCanvas, 0, 0, canvas.width, canvas.height);
+    } else {
+      try { draw(); } catch (e) { console.error(e); }
+    }
     if (!moving && relief && introOver) { try { maybeRelief(); } catch (e) { console.warn("terrain", e); rd.off = true; } }
   }
   function nudge() {
@@ -712,7 +757,7 @@
     return (!moving && S >= 900) || S >= 2600 ? "hi" : "lo";
   }
 
-  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.3, reliefRes = RELIEF_RES, reliefKey = "";
+  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.5, reliefRes = RELIEF_RES, reliefKey = "";
   function sizeRelief(res) {
     reliefRes = res || RELIEF_RES;
     reliefCanvas.width = Math.max(1, Math.round(W * dpr * reliefRes));
@@ -887,7 +932,7 @@
     if (key !== bandKey) paintCoastBand(paintFills, peopleBleed, peoplePath, unnamedPath, bleed, res);
     bandKey = key;
     ctx.save();
-    var k = canvas.width / bandCanvas.width;
+    var k = ctx.canvas.width / bandCanvas.width;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.globalAlpha = alpha;
     ctx.fillStyle = bandFill;
@@ -948,22 +993,17 @@
 
   var seaCanvas = document.createElement("canvas"), seaCtx = seaCanvas.getContext("2d"), seaKey = "";
   function drawSea(coast, S) {
+    // While moving, every frame is new, so the sea is drawn straight onto the map rather than kept.
+    if (moving) { seaKey = ""; ctx.save(); paintSea(coast, S); ctx.restore(); return; }
     var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : coast === land.fine ? 2 : 0, landTag].join();
     if (key !== seaKey) {
       seaKey = key;
-      if (seaCanvas.width !== canvas.width || seaCanvas.height !== canvas.height) { seaCanvas.width = canvas.width; seaCanvas.height = canvas.height; }
+      if (seaCanvas.width !== ctx.canvas.width || seaCanvas.height !== ctx.canvas.height) { seaCanvas.width = ctx.canvas.width; seaCanvas.height = ctx.canvas.height; }
       var main = ctx;
       ctx = seaCtx;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      ctx.lineJoin = "round";
-      ctx.beginPath(); traceSphere(ctx); ctx.fillStyle = pal.ocean; ctx.fill();
-      ctx.save();
-      ctx.beginPath(); traceSphere(ctx); ctx.clip();
-      if (sea) { ctx.beginPath(); traceAll(ctx, S < 900 ? sea.low : sea.high); ctx.fillStyle = pal["ocean-deep"]; ctx.fill(); }
-      if (layers.grid) { ctx.beginPath(); traceArcs(ctx, graticule); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke(); }
-      drawWaterLines(coast, S);
-      ctx.restore();
+      paintSea(coast, S);
       ctx = main;
     }
     ctx.save();
@@ -972,9 +1012,20 @@
     ctx.restore();
   }
 
+  function paintSea(coast, S) {
+    ctx.lineJoin = "round";
+    ctx.beginPath(); traceSphere(ctx); ctx.fillStyle = pal.ocean; ctx.fill();
+    ctx.save();
+    ctx.beginPath(); traceSphere(ctx); ctx.clip();
+    if (sea) { ctx.beginPath(); traceAll(ctx, S < 900 ? sea.low : sea.high); ctx.fillStyle = pal["ocean-deep"]; ctx.fill(); }
+    if (layers.grid) { ctx.beginPath(); traceArcs(ctx, graticule); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke(); }
+    drawWaterLines(coast, S);
+    ctx.restore();
+  }
   var placedLabels = [];
   function draw() {
     if (!ready || !current) return;
+    snapNow();
     applyView();
     anchorStripes(false);
     var S = localScale(), kp = kmPx(), key = useLevel();
@@ -1431,11 +1482,11 @@
     l.coords.forEach(function (poly) {
       poly.forEach(function (ring) {
         ring.forEach(function (v, i) { var x = (v[0] + 180) * k - gx, y = (90 - v[1]) * k - gy; if (i) path.lineTo(x, y); else path.moveTo(x, y); });
-        path.closePath();
+        if (ring.length) path.lineTo((ring[0][0] + 180) * k - gx, (90 - ring[0][1]) * k - gy);
       });
     });
     g.fillStyle = "#000"; g.fill(path, "evenodd");
-    g.lineJoin = "round"; g.lineWidth = 2 * r; g.strokeStyle = "#000"; g.stroke(path);
+    g.lineJoin = "round"; g.lineCap = "round"; g.lineWidth = 2 * r; g.strokeStyle = "#000"; g.stroke(path);
     var px = g.getImageData(0, 0, gw, gh).data;
     for (var yy = 0; yy < gh; yy++) for (var xx = 0; xx < gw; xx++) if (px[(yy * gw + xx) * 4 + 3] > 127) coastGrid.a[(gy + yy) * GRID_W + gx + xx] = 0;
   }
@@ -2307,16 +2358,32 @@
     out.pref = main.y1 - main.y0 > main.x1 - main.x0 ? [3, 2, 0, 1, 5, 4, 7, 6] : [0, 1, 3, 2, 5, 4, 7, 6];
     return out;
   }
-  function boxOnLand(L, b, cache) {
+  // The shapes in view, found once per layout (in cache.vis) rather than for every box: [index, circles], where a
+  // circle is [x, y, radius] on the screen, or null for a shape that may be anywhere.
+  function shapesInView(L, cache) {
+    if (cache.vis) return cache.vis;
+    var vis = [];
     for (var i = 0; i < L.feats.length; i++) {
-      var feats = L.feats[i], near = false;
-      for (var j = 0; j < feats.length && !near; j++) {
+      var feats = L.feats[i], circles = null;
+      for (var j = 0; j < feats.length; j++) {
         var f = feats[j];
         if (!inView(f)) continue;
-        if (flat) { near = true; break; }
-        var px = cx + B.r * (f.cx * B.ex + f.cy * B.ey + f.cz * B.ez), py = cy - B.r * (f.cx * B.nx + f.cy * B.ny + f.cz * B.nz);
-        var rad = B.r * Math.sin(Math.min(f.radius, HALF_PI)) + 4;
-        near = f.radius >= HALF_PI || (px + rad > b.x && px - rad < b.x + b.w && py + rad > b.y && py - rad < b.y + b.h);
+        if (!circles) circles = [];
+        if (flat || f.radius >= HALF_PI) { circles.push(null); continue; }
+        circles.push([cx + B.r * (f.cx * B.ex + f.cy * B.ey + f.cz * B.ez), cy - B.r * (f.cx * B.nx + f.cy * B.ny + f.cz * B.nz), B.r * Math.sin(Math.min(f.radius, HALF_PI)) + 4]);
+      }
+      if (circles) vis.push([i, circles]);
+    }
+    cache.vis = vis;
+    return vis;
+  }
+  function boxOnLand(L, b, cache) {
+    var vis = shapesInView(L, cache);
+    for (var v = 0; v < vis.length; v++) {
+      var i = vis[v][0], circles = vis[v][1], feats = L.feats[i], near = false;
+      for (var j = 0; j < circles.length && !near; j++) {
+        var c = circles[j];
+        near = !c || (c[0] + c[2] > b.x && c[0] - c[2] < b.x + b.w && c[1] + c[2] > b.y && c[1] - c[2] < b.y + b.h);
       }
       if (!near) continue;
       var s = cache.get(i);
@@ -2327,7 +2394,7 @@
     }
     return false;
   }
-  var settleLabels = 0;
+  var settleLabels = 0, LABEL_QUICK_MS = 8;
   function labelTarget(side, people, minF, cap) {
     return Math.max(minF, Math.min(cap, (5 + 3.6 * Math.log2(Math.max(1, side) / 10)) * (people ? 0.85 : 1)));
   }
@@ -2390,7 +2457,8 @@
   }
   function layoutPolities(snap, placed, kp) {
     var lv = useLevel(), L = level(snap, lv), items = [], small = [], shapes = new Map(), S = localScale(), i;
-    var quick = moving || rangeActive, t0 = performance.now(), scale = (flat ? FB.k : B.r) / GU, fk = flat ? "f" : "g";
+    // While the map moves, new names get LABEL_QUICK_MS of each frame; the rest are laid out when it stops.
+    var quick = moving || rangeActive, t0 = performance.now(), scale = (flat ? FB.k : B.r) / GU, fk = flat ? "f" : "g", budget = quick ? LABEL_QUICK_MS : 16;
     var first = [], rest = [];
     for (i = 0; i < snap.order.length; i++) (labelState.has(snap.order[i].id) ? first : rest).push(snap.order[i]);
     var order = (snap.groups || []).concat(first, rest), seen = new Set();
@@ -2404,10 +2472,10 @@
       if (!any) continue;
       var side = Math.sqrt(lab[5]) * kp, wh = Infinity;
       labelOptions(name, p.people).forEach(function (o) { wh = Math.min(wh, o.w * o.h); });
-      var G = 1.1 * side / Math.sqrt(wh) < (p.people ? 8 : 7) ? null : groundLayout(snap, p, name, !quick || performance.now() - t0 < 16);
+      var G = 1.1 * side / Math.sqrt(wh) < (p.people ? 8 : 7) ? null : groundLayout(snap, p, name, !quick || performance.now() - t0 < budget);
       if (G) lastGround.set(fk + p.id, G); else G = lastGround.get(fk + p.id);
       var it = G ? placeGround(p, name, G, side, placed, scale) : null;
-      for (var tries = 0; !it && G && G.more && side > 60 && tries < 3 && (!quick || performance.now() - t0 < 16) && G.more.grow([W * 0.08, H * 0.12, W * 0.92, H * 0.88]); tries++) it = placeGround(p, name, G, side, placed, scale);
+      for (var tries = 0; !it && G && G.more && side > 60 && tries < 3 && (!quick || performance.now() - t0 < budget) && G.more.grow([W * 0.08, H * 0.12, W * 0.92, H * 0.88]); tries++) it = placeGround(p, name, G, side, placed, scale);
       if (it) {
         seen.add(p.id);
         for (j = 0; j < it.geo.boxes.length; j++) placed.push(it.geo.boxes[j]);
@@ -6029,7 +6097,7 @@
             var x = (ring[i][0] + 180) * k, y = (90 - ring[i][1]) * k;
             if (i === 0) path.moveTo(x, y); else path.lineTo(x, y);
           }
-          path.closePath();
+          if (ring.length) path.lineTo((ring[0][0] + 180) * k, (90 - ring[0][1]) * k);
         });
       });
       g.fillStyle = "#000"; g.fill(path, "evenodd");

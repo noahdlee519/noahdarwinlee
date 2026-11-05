@@ -650,11 +650,23 @@ The projection and tracing come from UCHRONIA's `app.js`: `prepare`, `traceRing`
 
 CHRONIA first used d3's own path with clipping for everything. It took about 190 ms a frame in headless Chromium, against about 35 ms now.
 
+### Speed
+
+Measured in headless Chromium on its GPU drawing path (SwiftShader), a frame while the map moves took 54 to 60 ms of the page's own time before 5 November 2026, and takes 22 to 29 ms now, at the whole globe, the flat map, and zoomed in on either.
+
+- **No `closePath()`:** each ring ends with a line back to its first point instead (`traceRing`, `emitFlat`, and the coast grids). In Chromium, `closePath()` takes longer the more rings a path already holds (4,000 rings took 55 ms, 8,000 took 215 ms, against 1 ms without it), and the land, each colour's fill, and the coast hold thousands. A fill closes every ring anyway.
+- **Snapped points:** the projected points are rounded to a quarter of a pixel (half a pixel while moving, `SNAP`), and a point that rounds to the one before is skipped. Both sides of a border round alike, so neighbouring shapes still meet exactly.
+- **While moving:**
+  - The sea is drawn straight onto the map rather than into its offscreen canvas first.
+  - The relief keeps one size (`RELIEF_MOVING` equals `RELIEF_RES`), since resizing its WebGL canvas at the start and end of every drag made the browser wait for the graphics card.
+  - Names are laid out for at most 8 ms of each frame (`LABEL_QUICK_MS`, 16 ms at rest); the rest follow when the map stops. `boxOnLand`, which keeps the names of small states off the land, finds the shapes in view once per layout (`shapesInView`) rather than once for every place a name might go.
+  - When frames come more than 26 ms apart on average (`MOVE_SLOW_MS`, over 8 frames), the map is drawn at 0.7, then 0.5, of the screen's resolution into a canvas of its own and stretched to the screen (`moveRes`, `frame`), so a slow device or a large, sharp screen keeps up. The full drawing comes back when the map stops.
+
 ### The order of a frame
 
 1. **The sea:** ocean, deep water, the graticule, and the ripple lines along the coast.
    - UCHRONIA's deep water comes in tiles whose edges are long straight runs along meridians and parallels, which the globe would draw as chords, leaving a sliver of shallow water along 180°. `densify` adds a point every degree along them (`SEA_STEP`) before they are prepared.
-   - These are kept in an offscreen canvas and redrawn only when the view or the dated land changes. Scrubbing through the years therefore seldom redraws them.
+   - These are kept in an offscreen canvas and redrawn only when the view or the dated land changes. Scrubbing through the years therefore seldom redraws them. While the map moves, they are drawn straight onto the map (`paintSea`).
    - While the map moves, one ripple is drawn instead of up to four.
    - The ripples scale with the island: an island gets one ripple for every 9 px of its size, up to the usual four, and islands under 9 px get none.
 2. **The land:**
