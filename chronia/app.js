@@ -669,6 +669,7 @@
     var geo = cached.map(function (c) { return c.geo; });
     var feats = cached.map(function (c) { return c.prep; });
     var colOf = function (g) { var p = polys[ix.get(g)]; return p && !p.people && !p.claims ? p.color : -1; };
+    var hueOf = function (g) { var p = polys[ix.get(g)]; return p ? p.hue : -1; };
     var groups = [];
     for (var c = 0; c < PALETTE; c++) groups.push([]);
     var peoples = [], unnamed = [], disputes = new Map();
@@ -706,8 +707,12 @@
       bleed: edges.bleed.map(arcsOf), peopleBleed: arcsOf(edges.peopleBleed),
       bands: groups.map(function (list, c) {
         if (!list.length) return null;
+        // A band runs where the colour changes, and also between two neighbours that share a colour but not
+        // a hue (two separate states, such as the Netherlands and Hanover in 1815), so they don't read as one.
         return mesh(function (a, b) {
-          return a !== b && (colOf(a) === c) !== (colOf(b) === c);
+          if (a === b) return false;
+          var ca = colOf(a) === c, cb = colOf(b) === c;
+          return ca !== cb || (ca && cb && hueOf(a) !== hueOf(b));
         }).concat(arcsOf(edges.inner[c]));
       })
     };
