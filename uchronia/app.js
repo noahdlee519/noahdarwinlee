@@ -554,13 +554,15 @@
     var any = false;
     for (var k = 0; k < n; k++) { if (X[k] * vx + Y[k] * vy + Z[k] * vz > 0) { any = true; break; } }
     if (!any) return;
-    var side = 0, lx = 0, ly = 0, held = false;
+    // A ring ends with a line back to its first point rather than closePath(): Chromium's closePath()
+    // takes longer the more rings a path already holds, so a world of borders took most of a frame.
+    var side = 0, lx = 0, ly = 0, held = false, fx = 0, fy = 0;
     for (k = 0; k < n; k++) {
       var x = X[k], y = Y[k], z = Z[k];
       var sx = x * ex + y * ey + z * ez, sy = x * nx + y * ny + z * nz, sz = x * vx + y * vy + z * vz;
       if (sz < 0) { var l = Math.hypot(sx, sy) || 1; sx /= l; sy /= l; }
       var px = cx + r * sx, py = cy - r * sy;
-      if (k === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      if (k === 0) { c.moveTo(px, py); fx = px; fy = py; side = outcode(px, py); held = false; continue; }
       var oc = outcode(px, py);
       if (oc & side) { lx = px; ly = py; held = true; side = oc & side; continue; }
       if (held) { c.lineTo(lx, ly); held = false; }
@@ -568,7 +570,7 @@
       side = oc;
     }
     if (held) c.lineTo(lx, ly);
-    c.closePath();
+    c.lineTo(fx, fy);
   }
   function traceLine(c, L) {
     if (L.radius < Math.PI / 2 && !featureInFront(L)) return;
@@ -628,10 +630,10 @@
   }
   function emitFlat(c, rg, n, sh, closed, wind, pole) {
     var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc, P = rg.P;
-    var side = 0, lx = 0, ly = 0, held = false;
+    var side = 0, lx = 0, ly = 0, held = false, fx = 0, fy = 0;
     for (var i = 0; i < n; i++) {
       var px = x0 + k * (scratch[i] + sh), py = y0 - k * P[i];
-      if (i === 0) { c.moveTo(px, py); side = outcode(px, py); held = false; continue; }
+      if (i === 0) { c.moveTo(px, py); fx = px; fy = py; side = outcode(px, py); held = false; continue; }
       var oc = outcode(px, py);
       if (oc & side) {
         if (closed) { lx = px; ly = py; held = true; }
@@ -651,7 +653,7 @@
       c.lineTo(end, y0 - k * pole * HALF_PI);
       c.lineTo(start, y0 - k * pole * HALF_PI);
     }
-    c.closePath();
+    c.lineTo(fx, fy);
   }
   function traceOutline(c, d) {
     var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc;
@@ -1339,7 +1341,7 @@
         (!g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates).forEach(function (poly) {
           poly.forEach(function (ring) {
             ring.forEach(function (pt, k) { if (k) path.lineTo(pt[0] * D2R, pt[1] * D2R); else path.moveTo(pt[0] * D2R, pt[1] * D2R); });
-            path.closePath();
+            if (ring.length) path.lineTo(ring[0][0] * D2R, ring[0][1] * D2R);
           });
         });
       });
