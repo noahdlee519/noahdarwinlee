@@ -151,7 +151,8 @@ const DATED = [
   ["South Aral Sea", 3392, at(2014, 8, 1), null, "after the eastern basin dried in August 2014"],
   ["Barsakelmes Lake", 376, at(2014, 8, 1), null, "after the eastern basin dried in August 2014"],
   ["Lago de Texcoco", 55, at(1900), null, "the remnant after the Gran Canal del Desagüe opened in 1900"],
-  ["IJsselmeer", 1962, at(1968, 5, 29), null, "today's IJsselmeer and Markermeer, from the draining of Southern Flevoland"]
+  ["IJsselmeer", 1962, at(1968, 5, 29), null, "today's IJsselmeer and Markermeer, from the draining of Southern Flevoland"],
+  ["Lake Hammar", 929, null, at(1994), "dried by the drains of 1991 to 1993; drawn again from the reflooding of 2003 (see the marshes)"]
 ];
 
 const lakeOnly = [];
@@ -233,6 +234,13 @@ addLake("Lake Fucino", null, at(1875), [wet.fucino], 0.0008, r4);
 addLake("Lake Copais", null, at(1886), [wet.copais], 0.0008, r4);
 addLake("Tulare Lake", null, at(1899), [wet.tulare], 0.0015, r4);
 addMarsh("Lake Hula and its marshes", null, at(1958), [wet.hula]);
+// The Mesopotamian Marshes: the extent before the draining of 1958 from the University of Basra's map, until 1994, when
+// the drains of 1991 to 1993 had dried them; al-Hawizeh's eastern part, fed from Iran, until the dykes were opened in
+// April and May 2003; then the reflooded marshes, as the map's permanent ones with al-Hawizeh (see the README).
+addMarsh("Mesopotamian Marshes", null, at(1994), wet.mesopotamia);
+addMarsh("Mesopotamian Marshes", at(1994), at(2003, 5, 1), wet.mesopotamia_1994);
+addMarsh("Mesopotamian Marshes", at(2003, 5, 1), null, wet.mesopotamia_2003);
+addLake("Lake Hammar", at(2003, 5, 1), null, lakeRow("Lake Hammar", 929)[4], 0.002);
 // The Fens are water joined to the Wash until they were drained, part of the coastline rather than a marsh
 // over the land. The shore is the outline traced from elevation, closed by 1.5 km and opened by 1 km so it
 // runs smooth. The islands of firmer ground are the outline's own holes of 4 km² or more (the Isle of Ely,
