@@ -6169,7 +6169,67 @@
     });
   }
 
+  // Noah's edits from the developer tools (see dev.js and supabase/functions/chronia-edits): each changes a country's
+  // colour, name, or name placement, or a city's size or name, or hides a city, from one date to another. They are
+  // a layer applied while drawing; the data files are never changed. The page fetches the list at the start without
+  // waiting for it, so the first map is drawn without edits and drawn again when they arrive.
+  var EDITS_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-edits";
+  var edits = { list: [], byKey: new Map(), tag: 0, failed: false, loaded: false };
+  function editUTC(y, m, d) { var x = new Date(0); x.setUTCFullYear(y, m - 1, d); x.setUTCHours(0, 0, 0, 0); return x.getTime(); }
+  // A stored date ("1815", "1815-07", "1815-07-03", "-500") as a time on the timeline's scale: the start of
+  // its year, month, or day, or (with end) the start of the next, so a span holds t when start <= t < end.
+  function editTime(s, end) {
+    var m = /^(-?\d{1,4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(String(s || ""));
+    if (!m) return null;
+    var y = +m[1], mo = m[2] ? +m[2] : 0, d = m[3] ? +m[3] : 0;
+    if (!mo) return end ? y + 1 : y;
+    var y0 = editUTC(y, 1, 1), len = (editUTC(y + 1, 1, 1) - y0) / DAY_MS;
+    var at = d ? editUTC(y, mo, d + (end ? 1 : 0)) : editUTC(y, mo + (end ? 1 : 0), 1);
+    return y + (at - y0) / DAY_MS / len;
+  }
+  function setEdits(list) {
+    edits.list = (list || []).filter(function (e) { return e && e.kind && e.target; }).map(function (e) {
+      return { id: e.id, kind: e.kind, target: String(e.target), from: e.from, to: e.to, value: e.value || {}, note: e.note || "", updated_at: e.updated_at || "", t0: editTime(e.from, false), t1: editTime(e.to, true) };
+    }).filter(function (e) { return e.t0 !== null && e.t1 !== null; });
+    edits.list.sort(function (a, b) { return a.updated_at < b.updated_at ? -1 : a.updated_at > b.updated_at ? 1 : (a.id || 0) - (b.id || 0); });
+    edits.byKey = new Map();
+    edits.list.forEach(function (e) { var k = e.kind + "|" + e.target, l = edits.byKey.get(k); if (l) l.push(e); else edits.byKey.set(k, [e]); });
+    edits.tag++;
+    editsChanged();
+    scheduleRender();
+  }
+  // The value of the latest-saved edit of this kind and target whose span holds t, or null.
+  function editAt(kind, target, t) {
+    var l = edits.byKey.get(kind + "|" + target);
+    if (!l) return null;
+    for (var i = l.length - 1; i >= 0; i--) if (l[i].t0 <= t && t < l[i].t1) return l[i].value;
+    return null;
+  }
+  // The edits whose country or city isn't in the data (renamed in a rebuild, or mistyped).
+  function editsNotFound() {
+    var names = null, ids = null;
+    return edits.list.filter(function (e) {
+      if (/^city-/.test(e.kind)) {
+        if (!cities) return false;
+        if (!ids) { ids = new Set(); cities.rows.forEach(function (c) { ids.add(c.id); }); }
+        return !ids.has(e.target);
+      }
+      if (!catalogue) return false;
+      if (!names) { names = new Set(); catalogue.forEach(function (c) { names.add(c[0]); }); }
+      return !names.has(e.target);
+    });
+  }
+  // Called whenever the edits change, to drop what was worked out from the old ones.
+  function editsChanged() {}
+  function loadEdits() {
+    return fetch(EDITS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "list" }) }).then(function (r) {
+      if (!r.ok) throw new Error("edits " + r.status);
+      return r.json();
+    }).then(function (b) { edits.loaded = true; edits.failed = false; setEdits(b.edits); }, function (e) { edits.failed = true; console.warn("edits", e); });
+  }
+
   function start() {
+    loadEdits();
     readPalette();
     var h = readHash();
     try { flat = localStorage.getItem(STORE_FLAT) === "1"; } catch (e) {}
@@ -6239,6 +6299,12 @@
   }
 
   window.__chronia = {
+    setEdits: function (l) { setEdits(l); },
+    editAt: function (k, t, at) { return editAt(k, t, at); },
+    notFound: function () { return editsNotFound().map(function (e) { return e.kind + "|" + e.target; }); },
+    timeOf: function (s) { return parseTime(s); },
+    editTime: function (s, end) { return editTime(s, end); },
+    editsFailed: function () { return edits.failed; },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
     loadingJSON: function () { return jsonLoading; },
     wars: function () { return warsAtDate().map(function (r) { return r.name; }); },
