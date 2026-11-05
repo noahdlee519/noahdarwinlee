@@ -142,10 +142,10 @@
   --uc-prov: rgba(69, 48, 31, 0.5);
   --uc-label: #3a2a1b;
   --uc-label-halo: rgba(243, 234, 211, 0.78);
-  --uc-city: #3a2a1b;
+  --uc-city: #4a3322;
   --uc-city-ring: #f3ead3;
-  --uc-city-label: #3a2a1b;
-  --uc-city-halo: rgba(243, 234, 211, 0.95);
+  --uc-city-label: #4a3322;
+  --uc-city-halo: rgba(243, 234, 211, 0.62);
   --uc-select: #8c2a1a;
   --uc-select-fill: rgba(140, 42, 26, 0.12);
   --uc-hover: rgba(58, 42, 27, 0.1);

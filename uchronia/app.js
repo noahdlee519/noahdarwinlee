@@ -2537,7 +2537,7 @@
     var f = pal.antique ? 10 : 9.5, sp = f * (pal.antique ? 0.22 : 0.12);
     ctx.font = (pal.antique ? "400 " : "500 ") + f + "px " + (pal.antique ? SERIF : FONT);
     ctx.letterSpacing = sp.toFixed(2) + "px";
-    ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
+    ctx.lineWidth = Math.max(2, f * 0.22); ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal.label;
     list.forEach(function (it) {
       var w = 0;
       it.lines.forEach(function (l) { w = Math.max(w, ctx.measureText(l).width); });
@@ -2799,7 +2799,7 @@
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
       if (!c.w) { ctx.font = cityFont(c); c.w = ctx.measureText(c.name).width; }
       if (!ui.cityNames && !must && ui.tool !== "city") continue;
-      var mr = markSize(c, dot), off = mr + (c.cap ? 4.5 : 4), named = true, mbox = mkBox(px, py, mr + 1.5, mr + 1.5, 0);
+      var mr = markSize(c, dot), off = mr + 3, named = true, mbox = mkBox(px, py, mr + 1.5, mr + 1.5, 0);
       if (!must && !c.cap && collides(placed, mbox)) continue;
       var box = named ? mkBox(px + off - pad + c.w / 2 + pad, py, c.w / 2 + pad, pal.antique ? 7.5 : 7, 0) : mkBox(px, py, mr + 3, mr + 3, 0);
       var tx = px + off, ty = py, align = "left";
@@ -2835,7 +2835,7 @@
       }
     }
     ctx.textBaseline = "middle"; ctx.textAlign = "left";
-    ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 4 : 3;
+    ctx.lineJoin = "round"; ctx.lineWidth = pal.antique ? 2.3 : 2.5;
     ctx.strokeStyle = pal["city-halo"];
     var lastFont = "";
     for (i = shown.length - 1; i >= 0; i--) {
@@ -2892,7 +2892,7 @@
     if (!ui.cityNames || !ui.towns || min === Infinity) return;
     if (!townsLoad) loadTowns();
     if (!towns) return;
-    var font = pal.antique ? "400 10.5px " + SERIF : "400 9.5px " + FONT, r = dot * 0.6 + 0.6, shown = [];
+    var font = pal.antique ? "400 10.8px " + SERIF : "400 9.5px " + FONT, r = 1.4 * markScale(dot), shown = [];
     ctx.font = font;
     var order = townOrder(), n = order ? order.length : towns.length;
     for (var i = 0; i < n; i++) {
@@ -2903,50 +2903,46 @@
       if (!p || (!flat && p[2] <= 0.05)) continue;
       if (p[0] < -10 || p[1] < -10 || p[0] > W + 10 || p[1] > H + 10) continue;
       if (!t.w) t.w = ctx.measureText(t.name).width;
-      var off = r + 3.5, box = mkBox(p[0] + off + t.w / 2, p[1], t.w / 2 + 2, pal.antique ? 6.5 : 6, 0), mb = mkBox(p[0], p[1], r + 1.5, r + 1.5, 0);
+      var off = r + 4, box = mkBox(p[0] + off + t.w / 2, p[1], t.w / 2 + 2, pal.antique ? 6.5 : 6, 0), mb = mkBox(p[0], p[1], r + 1.5, r + 1.5, 0);
       if (collides(placed, mb) || collides(placed, box)) continue;
       placed.push(mb, box);
       shown.push(p[0], p[1], t);
     }
     if (!shown.length) return;
-    ctx.lineWidth = 1;
-    ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
-    ctx.beginPath();
+    ctx.fillStyle = pal["city-halo"]; ctx.beginPath();
+    for (i = 0; i < shown.length; i += 3) { ctx.moveTo(shown[i] + r + 1, shown[i + 1]); ctx.arc(shown[i], shown[i + 1], r + 1, 0, TAU); }
+    ctx.fill();
+    ctx.fillStyle = pal.city; ctx.beginPath();
     for (i = 0; i < shown.length; i += 3) { ctx.moveTo(shown[i] + r, shown[i + 1]); ctx.arc(shown[i], shown[i + 1], r, 0, TAU); }
-    ctx.fill(); ctx.stroke();
+    ctx.fill();
     ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.lineJoin = "round";
-    ctx.lineWidth = pal.antique ? 3.5 : 3; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal["city-label"];
+    ctx.lineWidth = pal.antique ? 2 : 2.5; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal["city-label"];
     ctx.globalAlpha = pal.antique ? 0.92 : 0.75;
-    for (i = 0; i < shown.length; i += 3) { ctx.strokeText(shown[i + 2].name, shown[i] + r + 3.5, shown[i + 1]); ctx.fillText(shown[i + 2].name, shown[i] + r + 3.5, shown[i + 1]); }
+    for (i = 0; i < shown.length; i += 3) { ctx.strokeText(shown[i + 2].name, shown[i] + r + 4, shown[i + 1]); ctx.fillText(shown[i + 2].name, shown[i] + r + 4, shown[i + 1]); }
     ctx.globalAlpha = 1;
   }
   function isTown(c) { return !c.cap && c.tier >= 4; }
   function isSmall(c) { return !c.cap && c.tier >= 5; }
+  // The Antique names are set as CHRONIA's: regular weight, the capital 12.4px, a city 11.2px, a town 10.8px.
   function cityFont(c) {
-    if (pal.antique) return (c.cap ? "700 13px " : isSmall(c) ? "400 10.5px " : isTown(c) ? "400 11.5px " : "400 12.5px ") + SERIF;
+    if (pal.antique) return (c.cap ? "400 12.4px " : isTown(c) ? "400 10.8px " : "400 11.2px ") + SERIF;
     return (c.cap ? "500 12px " : isSmall(c) ? "400 9.5px " : isTown(c) ? "400 10px " : "400 11px ") + FONT;
   }
-  function markSize(c, dot) { return c.cap ? dot + 3.8 : isSmall(c) ? dot * 0.6 + 0.6 : isTown(c) ? dot * 0.8 + 0.8 : dot + 0.9; }
+  // CHRONIA's marks: a capital is a ring round a dot on a pale disc, a city a dot, and a town a smaller dot, each with a narrow
+  // pale halo; they grow by 15% when the view is close (k).
+  function markScale(dot) { return dot > 1.7 ? 1.15 : 1; }
+  function markSize(c, dot) { var k = markScale(dot); return c.cap ? 4.3 * k : isTown(c) ? 1.4 * k + 1 : 1.85 * k + 1; }
+  function drawDot(x, y, r) {
+    ctx.fillStyle = pal["city-halo"]; ctx.beginPath(); ctx.arc(x, y, r + 1, 0, TAU); ctx.fill();
+    ctx.fillStyle = pal.city; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  }
   function drawCityMark(c, x, y, dot) {
-    var r = markSize(c, dot);
-    ctx.lineWidth = 1.1;
+    var k = markScale(dot);
     if (c.cap) {
-      ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = pal.city;
-      ctx.beginPath();
-      for (var k = 0; k < 10; k++) {
-        var a = -HALF_PI + k * Math.PI / 5, q = k % 2 ? r * 0.34 : r * 0.8;
-        if (k) ctx.lineTo(x + q * Math.cos(a), y + q * Math.sin(a)); else ctx.moveTo(x + q * Math.cos(a), y + q * Math.sin(a));
-      }
-      ctx.closePath(); ctx.fill();
-    } else if (isTown(c)) {
-      ctx.fillStyle = pal["city-ring"]; ctx.strokeStyle = pal.city;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
-    } else {
-      ctx.fillStyle = pal.city; ctx.strokeStyle = pal["city-ring"];
-      ctx.beginPath(); ctx.rect(x - r, y - r, r * 2, r * 2); ctx.fill(); ctx.stroke();
-    }
+      ctx.fillStyle = pal["city-halo"]; ctx.beginPath(); ctx.arc(x, y, 4.3 * k, 0, TAU); ctx.fill();
+      ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85; ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.stroke();
+      ctx.fillStyle = pal.city; ctx.beginPath(); ctx.arc(x, y, 1.35 * k, 0, TAU); ctx.fill();
+    } else drawDot(x, y, (isTown(c) ? 1.4 : 1.85) * k);
   }
   function cityAt(x, y, touch) {
     var best = null, bestD = touch ? 18 : 9;

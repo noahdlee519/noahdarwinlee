@@ -266,10 +266,14 @@ of `/greatercircle/`.
   farthest zoom, its cities of 1.5 million or more a step later and of
   800,000 a step after that (`tools/retier-africa.mjs`, from GeoNames'
   populations), so the continent is not left bare beside the others.
-- **Cities.** A capital is a star in a circle, a city a square, and a town a
-  white circle, in every style, each with its own size of name; in Antique
-  the names are a size larger, on a heavier halo, to read clearly over the
-  coloured map. Where a capital's name has no room, its mark is still drawn,
+- **Cities.** The marks and names are CHRONIA's (from 4 November 2026; before,
+  a capital was a star in a circle, a city a square, and a town a white
+  circle): a capital is a ring round a dot on a pale disc, a city a dot, and a
+  town and a small town a smaller dot, each with a narrow pale halo, in every
+  style, 15% larger when the view is close. In Antique the names are in
+  regular weight (the capital 12.4px, a city 11.2px, a town 10.8px) on a thin,
+  light halo (2.3px, at 62%), as CHRONIA's are; the other styles keep their
+  type on a 2.5px halo. Where a capital's name has no room, its mark is still drawn,
   and with *New city* on, a click on a city that is not drawn picks it
   rather than founding another on top of it.
 - **Small towns.** Hidden unless **View → Small towns** is shown: past the zoom
