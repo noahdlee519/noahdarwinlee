@@ -3560,6 +3560,7 @@
     range.setAttribute("aria-valuetext", fmtNow(now));
     if (document.activeElement !== yearInput) yearInput.value = fitDate(fmtNow(now));
     syncSpin();
+    if (markPart) showMark(markPart);
     if (isModern(now)) {
       var day = dayOfTime(now), since = modern.changes[changeBefore(Math.min(day, modern.toDay))];
       if (!current || !current.modern) asof.textContent = "Loading the borders";
@@ -3879,15 +3880,34 @@
   });
   yearInput.addEventListener("blur", commitYearInput);
   // The buttons beside the date: the year on the left, the month on the right, forward above and back below.
-  [["year-up", function () { stepYear(1); }], ["year-down", function () { stepYear(-1); }],
-   ["month-up", function () { stepUnit(1); }], ["month-down", function () { stepUnit(-1); }]].forEach(function (b) {
+  // Hovering a button underlines what it moves: the year (with its era) or the month's name, in a copy of the date laid
+  // over the field (an input cannot underline part of its text).
+  var yearMark = $("year-mark"), markPart = "";
+  function showMark(part) {
+    markPart = part;
+    var v = yearInput.value, m = /^(.*?)((?:AD )?\d+(?: BC)?)$/.exec(v);
+    if (!part || document.activeElement === yearInput || !m) { yearMark.classList.remove("is-on"); return; }
+    var head = m[1], year = m[2], mm = /^(\d+ )?([A-Za-z]+)( )$/.exec(head);
+    if (part === "month" && (!mm || $("month-up").getAttribute("aria-disabled") === "true")) { yearMark.classList.remove("is-on"); return; }
+    var esc = function (t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;"); };
+    yearMark.innerHTML = part === "year" ? esc(head) + "<u>" + esc(year) + "</u>" : esc(mm[1] || "") + "<u>" + esc(mm[2]) + "</u>" + " " + esc(year);
+    yearMark.style.left = yearInput.offsetLeft + "px";
+    yearMark.style.width = yearInput.offsetWidth + "px";
+    yearMark.classList.add("is-on");
+  }
+  [["year-up", function () { stepYear(1); }, "year"], ["year-down", function () { stepYear(-1); }, "year"],
+   ["month-up", function () { stepUnit(1); }, "month"], ["month-down", function () { stepUnit(-1); }, "month"]].forEach(function (b) {
     var el = $(b[0]);
     el.addEventListener("click", function () {
       if (el.getAttribute("aria-disabled") === "true") return;
       stopPlay();
       b[1]();
+      if (markPart) showMark(el.matches(":hover") ? b[2] : "");
     });
+    el.addEventListener("mouseenter", function () { if (canHover) showMark(b[2]); });
+    el.addEventListener("mouseleave", function () { showMark(""); });
   });
+  yearInput.addEventListener("focus", function () { yearMark.classList.remove("is-on"); });
   yearInput.addEventListener("focus", function () { yearInput.select(); });
 
   var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };

@@ -825,6 +825,43 @@ select.ch-save-input {
   outline-offset: -2px;
 }
 
+/* While a button beside the date is hovered, the year or the month it moves is underlined: a copy of the date in clear
+   ink laid over the field, with only that part's underline showing. */
+.ch-year-box {
+  position: relative;
+}
+
+.ch-year-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 2px;
+  border-bottom: 1px solid transparent;
+  color: transparent;
+  font-family: var(--ch-num);
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: oldstyle-nums;
+  white-space: pre;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ch-year-mark.is-on {
+  display: flex;
+}
+
+.ch-year-mark u {
+  text-decoration: underline;
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
 .ch-spin-btn.is-off {
   opacity: 0.32;
   cursor: default;
@@ -1760,6 +1797,10 @@ select.ch-save-input {
   .ch-step {
     width: 40px;
     height: 40px;
+  }
+
+  .ch-year-mark {
+    font-size: 18px;
   }
 
   .ch-year {
