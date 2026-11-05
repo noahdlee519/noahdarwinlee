@@ -3422,6 +3422,7 @@
     stripeNow = fixed ? [0, 0] : stripeT;
     stripeCache.forEach(setStripeT);
   }
+  var STRIPE_LINE = 0.35;
   function stripes(cols) {
     var key = cols.join("|") + "|" + pal.colors.join(","), p = stripeCache.get(key);
     if (p) return p;
@@ -3429,6 +3430,10 @@
     cv.width = B * cols.length; cv.height = 2;
     var g = cv.getContext("2d");
     cols.forEach(function (col, i) { g.fillStyle = pal.colors[col]; g.fillRect(i * B, 0, B, 2); });
+    // A fine dark line between the stripes, so they show however alike the claimants' colours look
+    // (to colour-blind eyes, many pairs of the ten colours look the same).
+    g.globalAlpha = STRIPE_LINE; g.fillStyle = pal.border;
+    cols.forEach(function (col, i) { g.fillRect(i * B, 0, 2, 2); });
     p = ctx.createPattern(cv, "repeat");
     setStripeT(p);
     stripeCache.set(key, p);

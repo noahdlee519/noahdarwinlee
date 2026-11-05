@@ -1309,6 +1309,7 @@ select.ch-save-input {
 .ch-key-sample .k-town { fill: var(--ch-town); }
 .ch-key-sample .k-c1 { fill: var(--ch-c1); }
 .ch-key-sample .k-stripes { fill: url(#k-stripes); }
+.ch-key-sample .k-stripe-line { fill: var(--ch-border); fill-opacity: 0.35; }
 .ch-key-sample .k-hatch { fill: url(#k-hatch); }
 .ch-key-sample .k-hatch-line { fill: #3d8a3a; fill-opacity: 0.75; }
 .ch-key-sample .k-front { fill: none; stroke: var(--ch-front); stroke-width: 1.4; }
