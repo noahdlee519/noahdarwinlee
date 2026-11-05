@@ -82,7 +82,7 @@ The date sits at the top, in the middle of the page, in a frame like the title's
 - the names of states and peoples: `drawPolityLabels`;
 - the names of seas: `drawSeaLabels`;
 - rivers and lakes: `drawLakes` and `drawRivers`;
-- relief: the relief overlay in `draw`, left out while the map moves (`moving`), so dragging stays smooth, and drawn again when it stops;
+- relief: the relief overlay in `draw`, which moves with the map on a computer and is left out while the map moves on a phone or touch screen (`touchMap`), so dragging stays smooth there, and drawn again when it stops. Its canvas is sized for the resolution the map is drawn at in that frame: a slow device draws a moving map at a lower resolution, and until 4 November 2026 the terrain kept the full size's canvas then, so it drifted away from the map while it moved (it was hidden while moving on every screen for a few minutes that evening);
 - latitude and longitude: the graticule in `drawSea`;
 - first-level divisions: `drawDivisionLines` and `drawDivisionLabels`, and the line on the card from `syncCardDivision`;
 - zones of control: `drawControl`, after the division lines, and the line "held by" or "presence of" in the tooltip from `controlAt`.

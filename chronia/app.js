@@ -18,6 +18,8 @@
   var LAST_YEAR = Math.floor(LAST_YM / 12), LAST_MONTH = LAST_YM % 12 + 1;
   var KEEP_MAPS = 8;
   var phoneQuery = window.matchMedia("(max-width: 640px)");
+  var coarseQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
+  function touchMap() { return phoneQuery.matches || coarseQuery.matches; }
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canHover = window.matchMedia("(hover: hover)").matches;
 
@@ -775,9 +777,11 @@
     }
     return !!relief && relief.ready();
   }
+  // The terrain's canvas is sized for the pixels the map is drawn at now: while the map moves on a slow device it is drawn at a
+  // lower resolution (dpr drops in frame()), and a canvas left at the full size put the terrain in the wrong place.
   function renderRelief() {
     var res = moving ? RELIEF_MOVING : RELIEF_RES;
-    if (res !== reliefRes) sizeRelief(res);
+    if (res !== reliefRes || reliefCanvas.width !== Math.max(1, Math.round(W * dpr * res)) || reliefCanvas.height !== Math.max(1, Math.round(H * dpr * res))) sizeRelief(res);
     var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
     if (key === reliefKey) return;
     reliefKey = key;
@@ -1081,8 +1085,9 @@
       ctx.fillStyle = pal.paper; ctx.fill(held);
       outside = new Path2D(); outside.rect(-10, -10, W + 20, H + 20); outside.addPath(held);
     }
-    // The terrain is left out while the map moves, which keeps dragging smooth, and comes back when it stops.
-    if (layers.relief && reliefReady() && !moving) {
+    // On a phone or a touch screen the terrain is left out while the map moves, which keeps dragging smooth, and comes back
+    // when it stops; on a computer it moves with the map.
+    if (layers.relief && reliefReady() && !(moving && touchMap())) {
       renderRelief();
       ctx.save();
       ctx.globalCompositeOperation = "overlay";
