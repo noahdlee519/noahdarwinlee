@@ -18,8 +18,6 @@
   var LAST_YEAR = Math.floor(LAST_YM / 12), LAST_MONTH = LAST_YM % 12 + 1;
   var KEEP_MAPS = 8;
   var phoneQuery = window.matchMedia("(max-width: 640px)");
-  var coarseQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
-  function touchMap() { return phoneQuery.matches || coarseQuery.matches; }
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canHover = window.matchMedia("(hover: hover)").matches;
 
@@ -1083,9 +1081,8 @@
       ctx.fillStyle = pal.paper; ctx.fill(held);
       outside = new Path2D(); outside.rect(-10, -10, W + 20, H + 20); outside.addPath(held);
     }
-    // On a phone or a touch screen the terrain is left out while the map moves, which keeps dragging smooth, and comes
-    // back when it stops.
-    if (layers.relief && reliefReady() && !(moving && touchMap())) {
+    // The terrain is left out while the map moves, which keeps dragging smooth, and comes back when it stops.
+    if (layers.relief && reliefReady() && !moving) {
       renderRelief();
       ctx.save();
       ctx.globalCompositeOperation = "overlay";
