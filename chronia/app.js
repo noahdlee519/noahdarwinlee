@@ -6106,7 +6106,11 @@
       layout();
       if (isDated(now) && !isMonthly(now)) now = Math.round(now);
       var first = isModern(now) ? loadModern().then(function () { return modernSnap(Math.min(dayOfTime(now), modern.toDay)); }) : isDated(now) ? loadChunk(chunkIndexFor(now)).then(function () { return datedSnap(chunkIndexFor(now), now); }) : loadMap(mapIndexFor(now));
-      return first.then(function (snap) {
+      // The coasts and lakes of the past (the Zuiderzee before its polders, the Fens before their draining) come with
+      // the first map, so the land of today never shows in their place while they load.
+      loadGeography();
+      return Promise.all([first, geogLoad]).then(function (r) {
+        var snap = r[0];
         current = snap;
         setTime(now);
         reveal();
@@ -6119,7 +6123,6 @@
             scheduleRender();
           }).catch(function (e) { console.warn("sea", e); });
         });
-        afterIntro(loadGeography);
         whenIdle(function () { loadModern().catch(function () {}); });
       });
     }).catch(function (e) {
