@@ -5659,8 +5659,7 @@
     disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
     // The lines between members of a larger state (the Holy Roman Empire, the Roman provinces) are its first-level divisions.
     division: function (s) { return divDrawn || s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
-    control: function () { return ctlDrawn; },
-    marsh: function () { return marshDrawn; }
+    control: function () { return ctlDrawn; }
   };
   function syncKey() {
     if (!current) return;

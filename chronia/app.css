@@ -1326,8 +1326,6 @@ select.ch-save-input {
 .ch-key-sample .k-band-name { fill: var(--ch-people); font-family: var(--ch-serif); font-size: 11px; font-style: italic; text-anchor: middle; opacity: 0.72; }
 .ch-key-sample .k-division { fill: none; stroke: var(--ch-division); stroke-width: 0.8; stroke-dasharray: 3.4 2.1; }
 .ch-key-sample .k-paper { fill: var(--ch-paper); }
-.ch-key-sample .k-marsh-wash { fill: var(--ch-ocean); opacity: 0.4; }
-.ch-key-sample .k-marsh { fill: none; stroke: var(--ch-river); stroke-width: 0.75; stroke-linecap: round; }
 
 .ch-card {
   position: fixed;
