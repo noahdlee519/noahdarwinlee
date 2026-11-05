@@ -2636,16 +2636,36 @@
   }
   function cityTier(S) { return S < 330 ? 0 : S < 480 ? 1 : S < 800 ? 2 : S < 1400 ? 3 : 4; }
   function markSize(S) { return S < 900 ? 1 : 1.15; }
+  // A state drawn in several pieces can carry a capital on each, picked from the capitals on that piece's land (the Ottoman
+  // Empire's Anatolia took Bursa, and its Thrace Edirne, while Constantinople was the capital). A state has one capital at a
+  // time, so of its pieces' capitals the one in the largest city is the state's, on the map and on its card.
+  var capPicked = { snap: null, t: NaN, n: -1, map: null };
+  function polityCapAt(p) {
+    if (!p || !current) return null;
+    var n = cities ? cities.rows.length : 0;
+    if (capPicked.snap !== current || capPicked.t !== now || capPicked.n !== n) {
+      var map = new Map();
+      current.order.forEach(function (q) {
+        var c = q.cap ? capitalNow(q.cap) : null;
+        if (!c) return;
+        var city = cityNear(c[1], c[2], c[0]), pop = city ? popAt(city, now) : 0, was = map.get(q.id);
+        if (!was || pop > was.pop) map.set(q.id, { p: q, c: c, city: city, pop: pop });
+      });
+      capPicked = { snap: current, t: now, n: n, map: map };
+    }
+    return capPicked.map.get(p.id) || null;
+  }
+  function polityCap(p) { var b = polityCapAt(p); return b ? b.c : p && p.cap ? capitalNow(p.cap) : null; }
   function capitalList(snap, S) {
     var out = [];
     if (!(snap.modern || snap.dated) || S < 230) return out;
     var seen = new Set();
     for (var i = 0; i < snap.order.length; i++) {
-      var p = snap.order[i], c = capitalNow(p.cap);
-      if (!c || seen.has(p.id + "|" + c[1] + "|" + c[2])) continue;
-      seen.add(p.id + "|" + c[1] + "|" + c[2]);
+      var p = snap.order[i], b = snap === current ? polityCapAt(p) : null, c = b ? b.c : capitalNow(p.cap);
+      if (!c || seen.has(p.id)) continue;
+      seen.add(p.id);
       var pt = projectLL(c[1], c[2]);
-      if (pt && pt[2] >= 0.25) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: p.cap, city: cityNear(c[1], c[2], c[0]) });
+      if (pt && pt[2] >= 0.25) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]) });
     }
     return out;
   }
@@ -4078,7 +4098,7 @@
     if (!current) return null;
     if (c.of >= 0 && current.byId.has(c.of)) {
       var own = current.byId.get(c.of);
-      var at = capitalNow(own.cap);
+      var at = polityCap(own);
       if (at && Math.abs(at[1] - c.lon) < 0.05 && Math.abs(at[2] - c.lat) < 0.05) return own;
     }
     var pt = projectLL(c.lon, c.lat);
@@ -4103,7 +4123,7 @@
     var c = selCity, f = cityFacts(c), p = cityState(c);
     var datedNow = !!(current && current.dated), byDay = f.modernNow || isMonthly(now), on = datedNow && !byDay ? " in " : " on ";
     var when = f.modernNow ? fmtDay(f.day) : datedNow ? (byDay ? fmtDay(dayOfTime(now)) : fmtYear(Math.round(now))) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
-    var capAt = p ? capitalNow(p.cap) : null, isCap = !!(capAt && Math.abs(capAt[1] - c.lon) < 0.05 && Math.abs(capAt[2] - c.lat) < 0.05);
+    var capAt = p ? polityCap(p) : null, isCap = !!(capAt && Math.abs(capAt[1] - c.lon) < 0.05 && Math.abs(capAt[2] - c.lat) < 0.05);
     $("card-kind").textContent = isCap ? "Capital" : c.place ? "Place" : c.kind === "town" ? "Town" : "City";
     $("card-name").textContent = f.name;
     var facts = $("card-facts");
@@ -4153,7 +4173,7 @@
       }
       if (p.ruler >= 0) addPolity(line("Held by"), p.ruler);
       if (p.part >= 0 && p.part !== p.ruler) addPolity(line("Part of"), p.part);
-      var capNow = capitalNow(p.cap);
+      var capNow = polityCap(p);
       if (capNow) textLine("Capital", capitalName(capNow));
       var big = !e[4] && !p.people ? largestCity(p) : null;
       if (big) textLine("Largest city", namedAt(big.steps, big.name, now));
