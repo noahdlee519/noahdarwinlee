@@ -54,8 +54,16 @@
 
     <div class="ch-top" id="top">
       <div class="ch-year-box ch-frame" id="year-box">
+        <div class="ch-spin ch-spin-year" role="group" aria-label="Year">
+          <button type="button" class="ch-spin-btn" id="year-up" aria-label="Forward a year" data-tip="Forward a year (↑)"><svg class="ch-ico" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5 6 4l3.5 3.5" /></svg></button>
+          <button type="button" class="ch-spin-btn" id="year-down" aria-label="Back a year" data-tip="Back a year (↓)"><svg class="ch-ico" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>
+        </div>
         <label class="sr-only" for="year-input">Year</label>
         <input class="ch-year" id="year-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="1815" />
+        <div class="ch-spin ch-spin-month" role="group" aria-label="Month">
+          <button type="button" class="ch-spin-btn" id="month-up" aria-label="Forward a month" data-tip="Forward a month (→)"><svg class="ch-ico" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5 6 4l3.5 3.5" /></svg></button>
+          <button type="button" class="ch-spin-btn" id="month-down" aria-label="Back a month" data-tip="Back a month (←)"><svg class="ch-ico" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>
+        </div>
       </div>
       <header class="ch-head ch-frame" id="head">
         <div class="ch-head-text">
@@ -83,7 +91,8 @@
             <div class="ch-keys">
               <p class="ch-keys-head">Keys</p>
               <dl>
-                <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward a month (by year before 1800 CE)</dd>
+                <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward a month (by year before 1648 CE)</dd>
+                <dt><kbd>↓</kbd> <kbd>↑</kbd></dt><dd>Back or forward a year</dd>
                 <dt><kbd>Shift</kbd> <kbd>←</kbd> <kbd>→</kbd></dt><dd>Previous or next change on the map</dd>
                 <dt><kbd>P</kbd></dt><dd>Play or pause</dd>
                 <dt><kbd>Shift</kbd> <kbd>P</kbd></dt><dd>Play at double speed</dd>
@@ -146,7 +155,7 @@
             <div class="ch-save-row"><label for="tl-to">To</label><input type="text" class="ch-save-input" id="tl-to" autocomplete="off" spellcheck="false" /></div>
             <div class="ch-save-row">
               <label for="tl-step">A frame for</label>
-              <select class="ch-save-input" id="tl-step"><option value="year">Each year</option><option value="month">Each month (from 1800)</option></select>
+              <select class="ch-save-input" id="tl-step"><option value="year">Each year</option><option value="month">Each month (from 1648)</option></select>
             </div>
             <div class="ch-save-row">
               <label for="tl-fps">Frames</label>
@@ -269,11 +278,11 @@
         </li>
         <li class="ch-key-row" data-key="people">
           <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><rect class="k-people" x="0" y="0" width="30" height="18" /><text class="k-people-name" x="15" y="12.6">Aa</text></svg>
-          <span class="ch-key-it">People or culture</span>
+          <span>People or culture</span>
         </li>
         <li class="ch-key-row" data-key="band">
           <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><rect class="k-people" x="0" y="0" width="30" height="18" /><text class="k-band-name" x="15" y="12.6">Aa</text></svg>
-          <span class="ch-key-it">Bands, no fixed border</span>
+          <span>Bands, no fixed border</span>
         </li>
         <li class="ch-key-row" data-key="marsh" hidden>
           <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><rect class="k-paper" x="0" y="0" width="30" height="18" /><rect class="k-marsh-wash" x="0" y="0" width="30" height="18" /><path class="k-marsh" d="M4.8 7.5h6.4M8 7.5v-2.8M6.6 7.5l-1 -2.1M9.4 7.5l1 -2.1M18.8 13.5h6.4M22 13.5v-2.8M20.6 13.5l-1 -2.1M23.4 13.5l1 -2.1" /></svg>

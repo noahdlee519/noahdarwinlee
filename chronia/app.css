@@ -529,10 +529,11 @@ body.ch-page {
 .ch-layer-set legend {
   float: left;
   width: 100%;
-  margin: 0 0 3px;
+  margin: 0 0 4px;
   padding: 0;
-  font-size: 13px;
-  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--ch-muted);
 }
 
@@ -770,13 +771,76 @@ select.ch-save-input {
   translate: -50% 0;
   display: flex;
   align-items: center;
-  width: 210px;
-  padding: 0 12px;
+  width: 262px;
+  padding: 0 4px;
+}
+
+/* Beside the date, the year's buttons on the left and the month's on the right, forward above and back below, in
+   segments ruled like the title's. */
+.ch-spin {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  width: 30px;
+  margin: 4px 0;
+}
+
+.ch-spin-year {
+  border-right: 1px solid var(--ch-faint);
+}
+
+.ch-spin-month {
+  border-left: 1px solid var(--ch-faint);
+}
+
+.ch-spin-btn {
+  flex: 1 1 0;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ch-spin-btn + .ch-spin-btn {
+  border-top: 1px solid var(--ch-faint);
+}
+
+.ch-spin-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.ch-spin-btn:active {
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+}
+
+.ch-spin-btn:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: -2px;
+}
+
+.ch-spin-btn.is-off {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.ch-spin-btn.is-off:hover,
+.ch-spin-btn.is-off:active {
+  color: var(--ch-muted);
+  background: none;
 }
 
 .ch-year {
   display: block;
+  flex: 1 1 auto;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   margin: 0;
   padding: 0 2px;
@@ -1098,7 +1162,6 @@ select.ch-save-input {
 
 .ch-wars-none {
   margin: 4px 0 0;
-  font-style: italic;
   color: var(--ch-muted);
 }
 
@@ -1117,7 +1180,6 @@ select.ch-save-input {
 
 .ch-wars-vs {
   font-size: 12px;
-  font-style: italic;
   color: var(--ch-muted);
 }
 
@@ -1191,13 +1253,8 @@ select.ch-save-input {
   max-width: 200px;
   margin-top: 1px;
   font-size: 11.5px;
-  font-style: italic;
   line-height: 1.25;
   color: var(--ch-muted);
-}
-
-.ch-key-it {
-  font-style: italic;
 }
 
 .ch-key-sample {
@@ -1289,7 +1346,6 @@ select.ch-save-input {
 .ch-card-div {
   margin: 6px 0 0;
   font-size: 14.5px;
-  font-style: italic;
   line-height: 1.4;
   color: var(--ch-muted);
 }
@@ -1385,7 +1441,6 @@ select.ch-save-input {
 
 .ch-wiki-text.is-quiet {
   font-size: 14px;
-  font-style: italic;
   color: var(--ch-muted);
 }
 
@@ -1411,7 +1466,6 @@ select.ch-save-input {
 .ch-wiki-by {
   margin: 8px 0 0;
   font-size: 13px;
-  font-style: italic;
   color: var(--ch-muted);
 }
 
@@ -1421,7 +1475,6 @@ select.ch-save-input {
   background: none;
   color: var(--ink);
   font: inherit;
-  font-style: italic;
   text-align: left;
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -1479,7 +1532,6 @@ select.ch-save-input {
 .ch-tip small {
   display: block;
   font-size: 12.5px;
-  font-style: italic;
   color: var(--ch-muted);
 }
 
@@ -1508,7 +1560,6 @@ select.ch-save-input {
   display: grid;
   place-items: center;
   font-size: 17px;
-  font-style: italic;
   pointer-events: none;
 }
 
@@ -1593,7 +1644,7 @@ select.ch-save-input {
   }
 
   .ch-top > .ch-year-box {
-    width: 200px;
+    width: 248px;
     height: 40px;
   }
 
@@ -1681,10 +1732,15 @@ select.ch-save-input {
     justify-self: center;
     box-sizing: border-box;
     width: 100%;
-    max-width: 200px;
+    max-width: 248px;
     min-width: 0;
     height: 40px;
-    padding: 0 8px;
+    padding: 0 3px;
+  }
+
+  .ch-spin {
+    width: 24px;
+    margin: 3px 0;
   }
 
   .ch-track {

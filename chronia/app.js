@@ -11,7 +11,7 @@
   var STORE_FLAT = "chronia-flat";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
-  var START_YEAR = 1815, MONTHLY_FROM = 1800;
+  var START_YEAR = 1815, MONTHLY_FROM = 1648, DAYS_FROM = 1800;
   // The timeline runs to the present month by the viewer's clock (never before October 2026), so months
   // that have not happened yet are not on it.
   var LAST_YM = Math.max(2026 * 12 + 9, new Date().getFullYear() * 12 + new Date().getMonth());
@@ -411,7 +411,8 @@
   }
   function isModern(t) { return !!modern && t >= modern.fromTime; }
   function isDated(t) { return !!dated && !isModern(t) && t >= dated.from - 0.5; }
-  // From 1800 (MONTHLY_FROM) the date is a day, shown by the month, as from 1886; before, a year.
+  // From 1648 (MONTHLY_FROM) the date is a day, shown by the month, as from 1886; before, a year. The changes have their
+  // days from 1800 (DAYS_FROM); from 1648 to 1799 a change of a year takes effect on 1 January.
   function monthlyFrom() { return dated ? MONTHLY_FROM : 1886; }
   function isMonthly(t) { return isModern(t) || (!!dated && t >= MONTHLY_FROM); }
   function yearOf(t) { return isMonthly(t) ? dateOfDay(dayOfTime(t))[0] : Math.round(t); }
@@ -2827,7 +2828,7 @@
     return w.load;
   }
   var ctlMonth = 0;
-  // From 1800 the date is a day; before, a war's months are stepped through within the year (ctlMonth).
+  // From 1648 the date is a day; before, a war's months are stepped through within the year (ctlMonth).
   function ctlDay() { return isMonthly(now) ? dayOfTime(now) : dayFromDate(Math.round(now), ctlMonth || 7, MID_DAY); }
   function ctlFineYear(y) {
     if (!layers.control || !ctlIndex || y >= monthlyFrom()) return false;
@@ -3407,6 +3408,17 @@
     var d = dateOfDay(dayOfTime(t));
     return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
   }
+  // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
+  var fitCtx = null;
+  function fitDate(text) {
+    var m = /^(\d+ )?([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
+    if (!m || m[2].length <= 3 || !el || !el.clientWidth) return text;
+    var st = getComputedStyle(el);
+    fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
+    fitCtx.font = st.fontStyle + " " + st.fontWeight + " " + st.fontSize + " " + st.fontFamily;
+    var room = el.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - 2;
+    return fitCtx.measureText(text).width * 1.04 <= room ? text : (m[1] || "") + m[2].slice(0, 3) + m[3];
+  }
   function monthTime(y, m) { return timeOfDay(dayFromDate(y, m, MID_DAY)); }
   function changeBefore(day) {
     var c = modern.changes, lo = 0, hi = c.length - 1, k = -1;
@@ -3546,7 +3558,8 @@
   function syncTime() {
     if (!drag) { follow(now); range.value = String(Math.round(posOf(now) * RANGE_MAX)); range.classList.remove("is-off"); }
     range.setAttribute("aria-valuetext", fmtNow(now));
-    if (document.activeElement !== yearInput) yearInput.value = fmtNow(now);
+    if (document.activeElement !== yearInput) yearInput.value = fitDate(fmtNow(now));
+    syncSpin();
     if (isModern(now)) {
       var day = dayOfTime(now), since = modern.changes[changeBefore(Math.min(day, modern.toDay))];
       if (!current || !current.modern) asof.textContent = "Loading the borders";
@@ -3554,7 +3567,7 @@
       else asof.textContent = "Borders since " + fmtDay(since);
     } else if (isDated(now)) {
       var dc = dated.times[datedChangeBefore(now)];
-      asof.textContent = !current || !current.dated || wantKey !== "e" + now ? "Loading the borders" : "Borders since " + (dc >= MONTHLY_FROM ? fmtDay(dayOfTime(dc)) : fmtYear(dc));
+      asof.textContent = !current || !current.dated || wantKey !== "e" + now ? "Loading the borders" : "Borders since " + (dc >= DAYS_FROM ? fmtDay(dayOfTime(dc)) : fmtYear(Math.floor(dc)));
     } else if (maps.length) {
       var m = maps[mapIndexFor(now)];
       asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : "Borders from the map of " + fmtYear(m.y);
@@ -3683,6 +3696,31 @@
       scheduleRender();
     }
   }
+  // A year back or forward, in the same month from 1648 (a year that steps back past 1648 is shown by the year, and one that
+  // steps forward into it opens in July, the month the years before it stand for).
+  function stepYear(dir) {
+    var mf = monthlyFrom();
+    if (isMonthly(now)) {
+      var d = dateOfDay(dayOfTime(now)), y = d[0] + dir, m = d[1];
+      if (y < mf) setTime(y === 0 ? -1 : y);
+      else setTime(y * 12 + m > LAST_YEAR * 12 + LAST_MONTH ? monthTime(LAST_YEAR, LAST_MONTH) : monthTime(y, m));
+      return;
+    }
+    var yr = Math.round(now), next = yr + dir, mo = ctlMonth;
+    if (next === 0) next = dir;
+    setTime((modern || dated) && next >= mf ? monthTime(next, 7) : next);
+    if (mo && ctlFineYear(next) && Math.round(now) === next) { ctlMonth = mo; syncTime(); writeHash(); scheduleRender(); }
+  }
+  // The month buttons step by the month from 1648, and before that only through a war's months.
+  function syncSpin() {
+    var fine = isMonthly(now) || ctlFineYear(Math.round(now)), tip = fine ? "" : "By the month from 1648 CE";
+    ["month-up", "month-down"].forEach(function (id) {
+      var b = $(id);
+      b.classList.toggle("is-off", !fine);
+      b.setAttribute("aria-disabled", fine ? "false" : "true");
+      b.setAttribute("data-tip", tip || (id === "month-up" ? "Forward a month (→)" : "Back a month (←)"));
+    });
+  }
   // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
   // (drag.t is the date it points at).
   var drag = null;
@@ -3700,7 +3738,7 @@
     drag.t = t;
     rangeActive = true;
     if (Math.abs(t - now) > 1e-9) setTime(t, true);
-    yearInput.value = fmtNow(t);
+    yearInput.value = fitDate(fmtNow(t));
     range.setAttribute("aria-valuetext", yearInput.value);
   }
   function endDrag() {
@@ -3831,15 +3869,25 @@
       scheduleRender();
       return;
     }
-    if (t === null) { yearInput.value = fmtNow(now); return; }
+    if (t === null) { yearInput.value = fitDate(fmtNow(now)); return; }
     stopPlay();
-    if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fmtNow(now);
+    if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
   }
   yearInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); yearInput.blur(); }
-    else if (e.key === "Escape") { yearInput.value = fmtNow(now); yearInput.blur(); }
+    else if (e.key === "Escape") { yearInput.value = fitDate(fmtNow(now)); yearInput.blur(); }
   });
   yearInput.addEventListener("blur", commitYearInput);
+  // The buttons beside the date: the year on the left, the month on the right, forward above and back below.
+  [["year-up", function () { stepYear(1); }], ["year-down", function () { stepYear(-1); }],
+   ["month-up", function () { stepUnit(1); }], ["month-down", function () { stepUnit(-1); }]].forEach(function (b) {
+    var el = $(b[0]);
+    el.addEventListener("click", function () {
+      if (el.getAttribute("aria-disabled") === "true") return;
+      stopPlay();
+      b[1]();
+    });
+  });
   yearInput.addEventListener("focus", function () { yearInput.select(); });
 
   var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
@@ -3863,7 +3911,7 @@
     var next = Math.round(t) + 1, mf = monthlyFrom();
     return (modern || dated) && next >= mf ? monthTime(mf, 1) : next;
   }
-  // The time before t when playing backwards: a month back from 1800, a year back to 1200, and the
+  // The time before t when playing backwards: a month back from 1648, a year back to 1200, and the
   // previous change before that, the steps forward play takes.
   function playPrev(t) {
     if (isMonthly(t)) {
@@ -5821,6 +5869,8 @@
     }
     if (typing || exporting || e.metaKey || e.ctrlKey || e.altKey || t === range) return;
     if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(-1); else stepUnit(-1); }
+    else if (e.key === "ArrowUp" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(1); }
+    else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
     else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
     else if (e.key === "o" || e.key === "O") togglePlay(e.shiftKey, true);
@@ -5853,7 +5903,9 @@
     return out;
   }
 
-  window.addEventListener("resize", function () { layout(); scheduleRender(); });
+  function refitDate() { if (document.activeElement !== yearInput && ready) yearInput.value = fitDate(fmtNow(now)); }
+  window.addEventListener("resize", function () { layout(); scheduleRender(); refitDate(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refitDate);
   if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", function () { layout(); scheduleRender(); });
 
   // The first map is drawn before the opening starts, and what can wait (the sharper land, the seas'
@@ -6017,9 +6069,10 @@
       modern = { rows: null, hi: null, lo: null, load: null, changes: idx.modern.changes, toDay: dayFromDate(to[0], to[1], to[2]) };
       modern.fromTime = timeOfDay(dayFromDate(from[0], from[1], from[2])) - 0.5 / 365;
       if (idx.dated) {
-        // The change points: the years until 1799, then the days of the changes from 1800.
+        // The change points: the years until 1647, 1 January of the years of change from 1648 to 1799, then the days of
+        // the changes from 1800.
         dated = { from: idx.dated.from, to: idx.dated.to, changes: idx.dated.changes, days: idx.dated.days || [], chunks: idx.dated.chunks.map(function (c) { return { from: c[0], file: "data/" + c[1], data: null, loading: null }; }) }; PLAY.yearlyFrom = Math.max(dated.from, PLAY.yearlyFrom);
-        dated.times = dated.changes.filter(function (y) { return !dated.days.length || y < MONTHLY_FROM; }).concat(dated.days.map(timeOfDay));
+        dated.times = dated.changes.filter(function (y) { return !dated.days.length || y < DAYS_FROM; }).map(function (y) { return y < MONTHLY_FROM ? y : timeOfDay(dayFromDate(y, 1, 1)); }).concat(dated.days.map(timeOfDay));
       }
       cities = r[2] ? { ranks: r[2].ranks, rows: prepCities(r[2], false), minorLoad: null } : null;
       buildPoints();

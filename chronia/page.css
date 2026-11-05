@@ -108,7 +108,6 @@ body.cp {
   margin: 0 0 10px;
   font-size: 25px;
   font-weight: 400;
-  font-style: italic;
   line-height: 1.25;
 }
 
@@ -127,8 +126,7 @@ body.cp {
 }
 
 .cp-sheet b {
-  font-weight: 400;
-  font-style: italic;
+  font-weight: 600;
 }
 
 .cp-sheet a {
@@ -190,7 +188,6 @@ body.cp {
   margin-top: 2px;
   color: var(--muted);
   font-size: 16px;
-  font-style: italic;
 }
 
 @media (max-width: 640px) {
