@@ -2950,12 +2950,17 @@
       ctx.fillStyle = pal.city; ctx.beginPath(); ctx.arc(x, y, 1.35 * k, 0, TAU); ctx.fill();
     } else drawDot(x, y, (isTown(c) ? 1.4 : 1.85) * k);
   }
+  // A city is picked by its mark or, as in CHRONIA, by its name; the nearest mark wins.
   function cityAt(x, y, touch) {
-    var best = null, bestD = touch ? 18 : 9;
+    var best = null, bestD = touch ? 18 : 9, pad = touch ? 6 : 2, byName = null, nameD = Infinity;
     for (var i = 0; i < cityScreen.length; i++) {
-      var d = Math.hypot(cityScreen[i].x - x, cityScreen[i].y - y);
-      if (d < bestD) { bestD = d; best = cityScreen[i].c; }
+      var s = cityScreen[i], d = Math.hypot(s.x - x, s.y - y);
+      if (d < bestD) { bestD = d; best = s.c; }
+      if (!s.named || d >= nameD) continue;
+      var w = s.c.w, x0 = s.align === "left" ? s.tx : s.align === "right" ? s.tx - w : s.tx - w / 2;
+      if (x >= x0 - pad && x <= x0 + w + pad && Math.abs(y - s.ty) <= 7 + pad) { nameD = d; byName = s.c; }
     }
+    best = best || byName;
     if (best || ui.tool !== "city") return best;
     var show = tierFor(localScale()) + 1;
     bestD = 9;
@@ -4698,6 +4703,11 @@
     pushStep("Resizing a city", [{ t: "city", id: c.id, from: before, to: citySnapshot(c) }]);
     changed();
   }
+  // The country a city stands in, or -1 for unclaimed or disputed land.
+  function cityCountry(c) {
+    var o = cityOwner(c);
+    return o === null || o === undefined || o < 0 || isDispute(o) || !countries[o] ? -1 : o;
+  }
   function citySize(c) { return c.cap ? "capital" : c.tier >= 5 ? "small" : c.tier >= 4 ? "town" : "city"; }
 
   var lastLand = "paint";
@@ -4845,7 +4855,12 @@
     if (showCity) {
       var cin = $("city-name");
       if (document.activeElement !== cin) cin.value = ui.city.name;
-      var size = citySize(ui.city);
+      var size = citySize(ui.city), within = cityCountry(ui.city);
+      $("city-in").hidden = within < 0;
+      if (within >= 0) {
+        $("city-in-name").textContent = countries[within].name;
+        setTip($("city-in"), "Open " + countries[within].name);
+      }
       document.querySelectorAll("#city-size button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.size === size)); });
     }
     $("undo").disabled = !undoStack.length;
@@ -5053,6 +5068,14 @@
     b.addEventListener("click", function () { if (ui.city && citySize(ui.city) !== b.dataset.size) setCitySize(ui.city, b.dataset.size); });
   });
   $("city-delete").addEventListener("click", function () { deleteCity(ui.city); });
+  // "in [country]" beside the city's name opens that country's pane.
+  $("city-in").addEventListener("click", function () {
+    var o = ui.city ? cityCountry(ui.city) : -1;
+    if (o < 0) return;
+    if (ui.tool !== "select") setTool("select");
+    ui.city = null; ui.country = o; ui.region = -1; ui.piece = null;
+    hideTip(); renderPanel(); scheduleRender();
+  });
   $("undo").addEventListener("click", undo);
   $("redo").addEventListener("click", redo);
 

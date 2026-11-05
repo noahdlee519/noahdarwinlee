@@ -950,8 +950,9 @@ of `/greatercircle/`.
   painted, named, and counted by its finer regions even with *Smaller
   subdivisions* off, and one with Tier 2 hidden by its first-level regions; the tiers
   also apply inside land drawn for the country. Give it
-  land or dissolve it; click a city to rename it, change its size, or delete
-  it, and once it is picked, drag it to move it. A country founded on the
+  land or dissolve it; click a city, by its mark or its name, to rename it,
+  change its size, or delete it, and once it is picked, drag it to move it;
+  *in [country]* beside its name opens the country it stands in. A country founded on the
   map, by hand or by the historian, has *Delete* in place of *Dissolve*:
   its land is left unclaimed and it leaves the lists, and undo brings it
   back. The *Choose a country* list, and the lists for a subject's ruler

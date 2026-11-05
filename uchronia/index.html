@@ -206,7 +206,10 @@
           <p class="uc-region" id="region-line" hidden><span id="region-name"></span> <button type="button" class="uc-linkbtn" id="remove-piece" hidden>Remove</button></p>
 
           <section class="uc-pane" id="city-pane" hidden>
-            <input id="city-name" class="uc-name" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="City name" />
+            <div class="uc-city-head">
+              <input id="city-name" class="uc-name" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="City name" />
+              <button type="button" class="uc-city-in" id="city-in" hidden>in <span id="city-in-name"></span></button>
+            </div>
             <div class="uc-seg" id="city-size" role="group" aria-label="Size">
               <button type="button" data-size="capital" aria-pressed="false">Capital</button>
               <button type="button" data-size="city" aria-pressed="false">City</button>
