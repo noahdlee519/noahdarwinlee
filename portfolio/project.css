@@ -227,16 +227,12 @@ a {
   background: var(--paper);
   scroll-snap-align: center;
   scroll-snap-stop: always;
-  transition: opacity 400ms var(--ease-out);
-}
-
-.slide:not(.is-current) {
-  opacity: 0.5;
+  opacity: calc(1 - 0.5 * var(--off, 0));
 }
 
 @media (hover: hover) and (pointer: fine) {
   .slide:not(.is-current):hover {
-    opacity: 0.75;
+    opacity: max(0.75, calc(1 - 0.5 * var(--off, 0)));
   }
 }
 

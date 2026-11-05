@@ -56,18 +56,30 @@
     show(i);
   }
 
-  var t;
+  // The screenshots on either side are dimmed by how far they are from the middle, frame by frame as the strip
+  // moves, so the next one is at full strength by the time it has come halfway, not after it lands.
+  function fade() {
+    var mid = track.scrollLeft + track.clientWidth / 2;
+    slides.forEach(function (s) {
+      var d = Math.abs(s.offsetLeft + s.offsetWidth / 2 - mid) / (s.offsetWidth * 0.5);
+      s.style.setProperty("--off", Math.min(1, d).toFixed(3));
+    });
+  }
+  var frame = 0;
   track.addEventListener(
     "scroll",
     function () {
-      clearTimeout(t);
-      t = setTimeout(function () {
+      if (frame) return;
+      frame = requestAnimationFrame(function () {
+        frame = 0;
+        fade();
         var i = nearest();
         if (i !== at) show(i);
-      }, 60);
+      });
     },
     { passive: true }
   );
+  fade();
 
   prev.addEventListener("click", function () { go(at - 1); });
   next.addEventListener("click", function () { go(at + 1); });
@@ -139,6 +151,7 @@
 
   addEventListener("resize", function () {
     track.scrollTo({ left: leftOf(at), behavior: "auto" });
+    fade();
   });
 
   addEventListener("load", function () {
