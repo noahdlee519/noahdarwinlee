@@ -27,6 +27,9 @@ const WESTPHALIA_1648 = "1648-10-24", CATALONIA_1652 = "1652-10-13", PEREYASLAV 
 const PYRENEES = "1659-11-07", COPENHAGEN_1660 = "1660-05-27", VINCENNES = "1661-02-28", ANDRUSOVO = "1667-01-30", AACHEN_1668 = "1668-05-02";
 const LORRAINE_1670 = "1670-08-26", CANDIA = "1669-09-27", BUCZACZ = "1672-10-18", NIJMEGEN = "1678-09-17", NIJMEGEN_EMP = "1679-02-05";
 const STRASBOURG = "1681-09-30", RATISBON = "1684-08-15", ETERNAL_PEACE = "1686-05-06", RYSWICK = "1697-10-30", KARLOWITZ = "1699-01-26";
+// Milan fell to the Habsburgs after Turin (1706), Naples in 1707, and the island of Sardinia in 1708; Spain took Sardinia
+// back in 1717 (the island was its by November). Mulhouse, a republic allied to the Swiss, joined France in 1798.
+const MILAN_1706 = "1706-09-24", NAPLES_1707 = "1707-07-07", SARDINIA_1708 = "1708-08-13", SARDINIA_1717 = "1717-11-01", MULHOUSE_1798 = "1798-03-15";
 const PRUSSIA_KINGDOM = "1701-01-18", SUCCESSION_EAST = "1705-10-09", ALMANSA = "1707-04-25", MANTUA_1708 = "1708-06-30", UTRECHT = "1713-04-11";
 const RASTATT = "1714-03-07", BARCELONA_1714 = "1714-09-11", MALLORCA_1715 = "1715-07-02", PASSAROWITZ = "1718-07-21", STOCKHOLM_1719 = "1719-11-20";
 const STOCKHOLM_1720 = "1720-01-21", FREDERIKSBORG = "1720-07-03", SARDINIA_1720 = "1720-08-08", NYSTAD = "1721-09-10", RUSSIA_EMPIRE = "1721-11-02";
@@ -97,7 +100,7 @@ const O = {
   PAR: [[EARLY, { name: "Duchy of Parma and Piacenza" }], [VIENNA_1735, { ruler: "Habsburg Monarchy", status: 5 }], [AACHEN_1748, { ruler: "", status: 0 }]],
   MOD: [[W, { name: "Duchy of Modena and Reggio" }]],
   PAP: [[W, { name: "Papal States" }]],
-  NAP: [[EARLY, { name: "Kingdom of Naples", ruler: "Kingdom of Spain", status: 5 }], [RASTATT, { ruler: "Habsburg Monarchy" }], [VIENNA_1735, { ruler: "", status: 0 }], ["1806-02-14", { ruler: FFE, status: 5 }], ["1814-01-11", { ruler: "", status: 0 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
+  NAP: [[EARLY, { name: "Kingdom of Naples", ruler: "Kingdom of Spain", status: 5 }], [NAPLES_1707, { ruler: "Habsburg Monarchy" }], [VIENNA_1735, { ruler: "", status: 0 }], ["1806-02-14", { ruler: FFE, status: 5 }], ["1814-01-11", { ruler: "", status: 0 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
   NAPo: [[W, { name: "Papal States", wiki: "Papal States", ruler: "Kingdom of Naples", status: 4 }]],
   SIC: [[EARLY, { name: "Kingdom of Sicily", ruler: "Kingdom of Spain", status: 5, b: 2 }], [UTRECHT, { ruler: "Duchy of Savoy" }], [SARDINIA_1720, { ruler: "Habsburg Monarchy" }],
     [VIENNA_1735, { ruler: "", status: 0 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
@@ -237,11 +240,13 @@ const O = {
   // Switzerland's allies and neighbours.
   GRB: [[EARLY, { name: "Three Leagues", wiki: "Three Leagues", b: 2 }]],
   GENV: [[EARLY, { name: "Republic of Geneva", wiki: "Republic of Geneva", b: 2 }]],
+  MULH: [[EARLY, { name: "Republic of Mulhouse", wiki: "Republic of Mulhouse" }]],
   VALz: [[EARLY, { name: "Republic of the Seven Zenden", wiki: "Republic of the Seven Zenden", b: 2 }]],
   BAS: [[EARLY, { name: "Prince-Bishopric of Basel", wiki: "Prince-Bishopric of Basel" }]],
   // Italy.
-  SARs: [[EARLY, { name: "Kingdom of Sardinia", wiki: "Kingdom of Sardinia", ruler: "Kingdom of Spain", status: 5, b: 2 }], [RASTATT, { ruler: "Habsburg Monarchy" }]],
-  MIL: [[EARLY, { name: "Duchy of Milan", wiki: "Duchy of Milan", ruler: "Kingdom of Spain", status: 5 }], [RASTATT, { ruler: "Habsburg Monarchy" }]],
+  SARs: [[EARLY, { name: "Kingdom of Sardinia", wiki: "Kingdom of Sardinia", ruler: "Kingdom of Spain", status: 5, b: 2 }], [SARDINIA_1708, { ruler: "Habsburg Monarchy" }],
+    [SARDINIA_1717, { ruler: "Kingdom of Spain" }]],
+  MIL: [[EARLY, { name: "Duchy of Milan", wiki: "Duchy of Milan", ruler: "Kingdom of Spain", status: 5 }], [MILAN_1706, { ruler: "Habsburg Monarchy" }]],
   MAN: [[EARLY, { name: "Duchy of Mantua", wiki: "Duchy of Mantua" }]],
   VEN: [[EARLY, { name: "Republic of Venice", wiki: "Republic of Venice" }]],
   GENr: [[EARLY, { name: "Republic of Genoa", wiki: "Republic of Genoa" }]],
@@ -354,6 +359,7 @@ const CUTS = {
   // Eupen-Malmedy, Prussian from 1815 and Belgian from 1920: the east of the province of Liège, roughly, without Moresnet.
   eupen: [[[6.03, 50.76], [6.6, 50.76], [6.6, 50.1], [6.1, 50.1], [6.02, 50.2], [6.01, 50.3], [5.99, 50.38], [5.98, 50.44], [6.0, 50.5], [5.99, 50.56], [5.99, 50.62], [6.0, 50.66], [6.02, 50.7], [6.03, 50.76]]],
   // Before 1803: the Nord's west (Lille, Douai, and Dunkirk, French from 1668) and the Moselle's west (Metz and Thionville).
+  mulh: [[[7.29, 47.79], [7.38, 47.79], [7.4, 47.75], [7.38, 47.72], [7.29, 47.72], [7.27, 47.75], [7.29, 47.79]]],
   nordw: [[[2.0, 50.3], [3.3, 50.3], [3.3, 51.2], [2.0, 51.2], [2.0, 50.3]]],
   moselw: [[[5.8, 48.85], [6.45, 48.85], [6.45, 49.6], [5.8, 49.6], [5.8, 48.85]]],
   peene: [[[12.8, 54.6], [12.8, 53.944], [12.852, 53.944], [12.9, 53.928], [13.248, 53.966], [13.555, 53.827], [13.764, 53.877], [14.0, 53.877], [14.0, 54.6], [12.8, 54.6]]],
@@ -720,7 +726,8 @@ pre(["FRA/Nord{nordw}"], [[EARLY, "SNL"], [AACHEN_1668, "FR"]], { rough: true })
 pre(["FRA/Nord{!nordw}"], [[EARLY, "SNL"], [NIJMEGEN, "FR"]], { rough: true });
 pre(["FRA/Pyrénées-Orientales"], [[EARLY, "SPA"], [PYRENEES, "FR"]]);
 pre(["FRA/Doubs", "FRA/Jura", "FRA/Haute-Saône"], [[EARLY, "FC"], [NIJMEGEN, "FR"]]);
-pre(["FRA/Haut-Rhin", "FRA/Territoire de Belfort"], [[EARLY, "AUSg"], [WESTPHALIA_1648, "FR"]], { rough: true });
+pre(["FRA/Haut-Rhin{!mulh}", "FRA/Territoire de Belfort"], [[EARLY, "AUSg"], [WESTPHALIA_1648, "FR"]], { rough: true });
+pre(["FRA/Haut-Rhin{mulh}"], [[EARLY, "MULH"], [MULHOUSE_1798, "FR"]], { rough: true });
 pre(["FRA/Bas-Rhin"], [[EARLY, "HRE"], [STRASBOURG, "FR"]], { rough: true });
 pre(["FRA/Moselle{moselw}"], [[EARLY, "FR"]], { rough: true });
 pre(["FRA/Moselle{!moselw}", "FRA/Meurthe-et-Moselle", "FRA/Vosges", "FRA/Meuse"], [[EARLY, "LOR"], [LORRAINE_1766, "FR"]], { rough: true });
