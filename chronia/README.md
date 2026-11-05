@@ -82,7 +82,7 @@ The date sits at the top, in the middle of the page, in a frame like the title's
 - the names of states and peoples: `drawPolityLabels`;
 - the names of seas: `drawSeaLabels`;
 - rivers and lakes: `drawLakes` and `drawRivers`;
-- relief: the relief overlay in `draw`;
+- relief: the relief overlay in `draw`, left out on a phone or a touch screen while the map moves (`touchMap`), so dragging stays smooth, and drawn again when it stops;
 - latitude and longitude: the graticule in `drawSea`;
 - first-level divisions: `drawDivisionLines` and `drawDivisionLabels`, and the line on the card from `syncCardDivision`;
 - zones of control: `drawControl`, after the division lines, and the line "held by" or "presence of" in the tooltip from `controlAt`.
