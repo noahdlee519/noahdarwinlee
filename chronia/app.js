@@ -4648,12 +4648,18 @@
   });
 
   var STORE_LAYERS = "chronia-layers";
-  var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true, subdivisions: true, control: false };
+  var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true, subdivisions: true, control: false, safe: false };
   var layersBtn = $("layers-btn"), layersPanel = $("layers");
   try {
     var savedLayers = JSON.parse(localStorage.getItem(STORE_LAYERS) || "{}");
     Object.keys(layers).forEach(function (k) { if (typeof savedLayers[k] === "boolean") layers[k] = savedLayers[k]; });
   } catch (e) {}
+  // The colour-blind safe colours are a second set of the ten in app.css, under data-ch-palette="safe".
+  function applyPaletteChoice() {
+    if (layers.safe) document.documentElement.setAttribute("data-ch-palette", "safe");
+    else document.documentElement.removeAttribute("data-ch-palette");
+  }
+  applyPaletteChoice();
   function syncLayerInputs() {
     layersPanel.querySelectorAll("input[data-layer]").forEach(function (el) { el.checked = !!layers[el.getAttribute("data-layer")]; });
   }
@@ -4662,6 +4668,7 @@
     layers[name] = !!on;
     syncLayerInputs();
     try { localStorage.setItem(STORE_LAYERS, JSON.stringify(layers)); } catch (e) {}
+    if (name === "safe") { applyPaletteChoice(); readPalette(); bandKey = ""; }
     syncKey();
     syncWars();
     seaKey = ""; reliefKey = "";

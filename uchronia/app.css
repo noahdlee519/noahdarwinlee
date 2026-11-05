@@ -159,6 +159,69 @@
   --uc-river: rgba(38, 88, 138, 0.9);
   --uc-river-label: #2a557e;
   --uc-grid-label: rgba(38, 58, 66, 0.95);
+  --uc-c0: #f1e2ae;
+  --uc-c1: #f0d5ae;
+  --uc-c2: #e7d6b9;
+  --uc-c3: #f0cbb9;
+  --uc-c4: #eed0d8;
+  --uc-c5: #e0d5e7;
+  --uc-c6: #d4ddea;
+  --uc-c7: #c9c3e3;
+  --uc-c8: #d6e4ce;
+  --uc-c9: #e5e8bf;
+  --uc-b0: #c39a2e;
+  --uc-b1: #c47a3c;
+  --uc-b2: #957049;
+  --uc-b3: #bd5a43;
+  --uc-b4: #b45f7f;
+  --uc-b5: #8768a6;
+  --uc-b6: #5f7db0;
+  --uc-b7: #5b5aa0;
+  --uc-b8: #5f945a;
+  --uc-b9: #8f9c3a;
+  --uc-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 0.34 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+/* The colour-blind safe colours (View, Colours): in each style, every pair of the ten stays at least 5 CAM02-UCS
+   units apart in simulations of all three kinds of colour blindness, and from the unclaimed land's colour. */
+:root[data-uc-palette="safe"] {
+  --uc-c0: #fcfa88;
+  --uc-c1: #f2db89;
+  --uc-c2: #dfc188;
+  --uc-c3: #f2aaa4;
+  --uc-c4: #e1c6dd;
+  --uc-c5: #c8b4da;
+  --uc-c6: #dbe3fe;
+  --uc-c7: #a8d3fb;
+  --uc-c8: #baddd1;
+  --uc-c9: #d9e0b4;
+}
+:root[data-theme="dark"][data-uc-palette="safe"] {
+  --uc-c0: #746b17;
+  --uc-c1: #704d14;
+  --uc-c2: #54453c;
+  --uc-c3: #672d1e;
+  --uc-c4: #582e45;
+  --uc-c5: #44325d;
+  --uc-c6: #3b4682;
+  --uc-c7: #2a6286;
+  --uc-c8: #425c57;
+  --uc-c9: #54633d;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme])[data-uc-palette="safe"] {
+    --uc-c0: #746b17;
+    --uc-c1: #704d14;
+    --uc-c2: #54453c;
+    --uc-c3: #672d1e;
+    --uc-c4: #582e45;
+    --uc-c5: #44325d;
+    --uc-c6: #3b4682;
+    --uc-c7: #2a6286;
+    --uc-c8: #425c57;
+    --uc-c9: #54633d;
+  }
+}
+:root[data-uc-style="antique"][data-uc-palette="safe"] {
   --uc-c0: #f7d99c;
   --uc-c1: #e0c893;
   --uc-c2: #d3d5ad;
@@ -179,7 +242,6 @@
   --uc-b7: #5a4da5;
   --uc-b8: #6a9575;
   --uc-b9: #7d924e;
-  --uc-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 0.34 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 :root[data-uc-style="antique"] body.uc-page {
   background: radial-gradient(ellipse at 50% 45%, #f5ecd5 0%, #ecdfc0 60%, #dcc79d 100%);

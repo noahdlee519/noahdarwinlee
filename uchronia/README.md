@@ -116,6 +116,14 @@ of `/greatercircle/`.
     as they are, even where two neighbours share a colour, so the map opens
     exactly as he saved it; a country without one is coloured as before.
     CHRONIA's states take the same colours.
+  - **Colour-blind safe.** At the bottom of the View menu, under *Colours*, a
+    switch swaps the ten country colours of the style shown for a set tuned
+    for colour-blind eyes (`data-uc-palette="safe"` on the page, and a block
+    for each style in `app.css`). In simulations of the three kinds of colour
+    blindness, the closest pair of colours went from 1.2 to 7.3 apart in
+    *Light*, from 0.5 to 8.7 in *Dark*, and from 0.8 to 5.0 in *Antique*
+    (CAM02-UCS), each colour moving only a little from its usual shade. The
+    choice is kept in the browser (`uchronia-safe-colours`).
   - **Styles.** *Light* is black on white and *Dark* white on black; both
     follow the site's theme, which they also set (the site's orange and white
     themes both open *Light*). *Antique*,

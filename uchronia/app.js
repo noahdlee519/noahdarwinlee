@@ -18,7 +18,7 @@
   var TAU = 2 * Math.PI;
   var PALETTE = 10;
   var UNCLAIMED = -1, NEW_DISPUTE = -3;
-  var STORE = "uchronia-map", STORE_PREV = "uchronia-map-previous", STORE_SAT = "uchronia-satellite", STORE_FLAT = "uchronia-flat", STORE_FINE = "uchronia-fine", STORE_NAMES = "uchronia-names", STORE_STYLE = "uchronia-style";
+  var STORE = "uchronia-map", STORE_PREV = "uchronia-map-previous", STORE_SAT = "uchronia-satellite", STORE_FLAT = "uchronia-flat", STORE_FINE = "uchronia-fine", STORE_NAMES = "uchronia-names", STORE_STYLE = "uchronia-style", STORE_SAFE = "uchronia-safe-colours";
   var FONT = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
   var NAME_MAX = 60;
@@ -6462,7 +6462,19 @@
   document.querySelectorAll("#style-seg button").forEach(function (b) {
     b.addEventListener("click", function () { if (b.dataset.style !== currentStyle()) setStyle(b.dataset.style); });
   });
-  window.addEventListener("storage", function (e) { if (e.key === "ndl-theme" || e.key === STORE_STYLE) syncStyle(); });
+  window.addEventListener("storage", function (e) { if (e.key === "ndl-theme" || e.key === STORE_STYLE) syncStyle(); if (e.key === STORE_SAFE) applySafe(e.newValue === "1"); });
+  // The colour-blind safe colours are a second set of the ten for each style in app.css, under data-uc-palette="safe".
+  function applySafe(on) {
+    if (on) document.documentElement.setAttribute("data-uc-palette", "safe");
+    else document.documentElement.removeAttribute("data-uc-palette");
+    $("safe-colours").checked = !!on;
+  }
+  try { applySafe(localStorage.getItem(STORE_SAFE) === "1"); } catch (e) { applySafe(false); }
+  $("safe-colours").addEventListener("change", function () {
+    var on = $("safe-colours").checked;
+    applySafe(on);
+    try { localStorage.setItem(STORE_SAFE, on ? "1" : "0"); } catch (e) { }
+  });
   window.addEventListener("pageshow", syncStyle);
   if (darkMedia && darkMedia.addEventListener) darkMedia.addEventListener("change", syncStyle);
 
@@ -6482,7 +6494,7 @@
   window.addEventListener("resize", function () { layout(); scheduleRender(); });
   window.addEventListener("hashchange", openSharedFromHash);
   new MutationObserver(function () { refreshPalette(); styleChanged(); renderPanel(); scheduleRender(); })
-    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-uc-style"] });
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-uc-style", "data-uc-palette"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {
     widthCache.clear(); glyphCache.clear(); if (paintWidths) paintWidths.clear();
     cities.forEach(function (c) { c.w = 0; });
