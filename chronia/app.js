@@ -392,6 +392,37 @@
       pal.colors.push(cs.getPropertyValue("--ch-c" + i).trim() || "#e7d6b9");
       pal.bands.push(cs.getPropertyValue("--ch-b" + i).trim() || "#957049");
     }
+    customHex.forEach(function (h) { pal.colors.push(h); pal.bands.push(bandFor(h)); });
+  }
+  // Colours the developer tools set outside the ten: each takes a slot after them (PALETTE + its index here).
+  var customHex = [];
+  function nColors() { return PALETTE + customHex.length; }
+  function customSlot(hex) {
+    hex = String(hex).toLowerCase();
+    var k = customHex.indexOf(hex);
+    if (k < 0) { k = customHex.length; customHex.push(hex); if (pal.colors) { pal.colors.push(hex); pal.bands.push(bandFor(hex)); } }
+    return PALETTE + k;
+  }
+  function hexHsl(h) {
+    var r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn, hh = 0, ss = 0;
+    if (d) {
+      ss = d / (1 - Math.abs(2 * l - 1));
+      hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      hh = (hh * 60 + 360) % 360;
+    }
+    return [hh, ss, l];
+  }
+  // A custom colour's coastal band: its own hue, at the saturation and lightness of the band of the palette
+  // colour nearest it in hue, so it sits with the others.
+  function bandFor(hex) {
+    var h = hexHsl(hex), best = 0, bd = Infinity;
+    for (var i = 0; i < PALETTE; i++) {
+      var f = hexHsl(pal.colors && pal.colors[i] ? pal.colors[i] : "#e7d6b9"), dd = Math.min(Math.abs(f[0] - h[0]), 360 - Math.abs(f[0] - h[0]));
+      if (dd < bd) { bd = dd; best = i; }
+    }
+    var b = hexHsl(pal.bands && pal.bands[best] ? pal.bands[best] : "#957049");
+    return "hsl(" + h[0].toFixed(1) + "," + (100 * (h[1] < 0.05 ? h[1] : b[1])).toFixed(1) + "%," + (100 * b[2]).toFixed(1) + "%)";
   }
 
   var renderQueued = false, moving = false, settleTimer = 0;
@@ -474,7 +505,11 @@
     });
     return out;
   }
-  function polityName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
+  function polityName(id) {
+    if (!(id >= 0 && catalogue[id])) return "";
+    var v = edits.nameN ? editAt("country-name", catalogue[id][0], now) : null;
+    return v ? v.name : catalogue[id][0];
+  }
   // "in the Holy Roman Empire", but "in British America": a group named for a place takes no article.
   function inGroup(id) { var n = polityName(id); return /^British America$/.test(n) ? "in " + n : "in the " + n; }
   var colourDays = [], colourYears = [];
@@ -485,7 +520,24 @@
     colourYears = Array.from(y).sort(function (a, b) { return a - b; });
   }
   function marksBefore(list, t) { var n = 0; while (n < list.length && list[n] <= t) n++; return n; }
-  function polityColor(id, day, year) {
+  // The colour slot a country-colour edit gives this polity at time `at`, or -1.
+  function editedColour(id, at) {
+    var e = catalogue[id];
+    if (!e || at === undefined || !edits.colourN) return -1;
+    var v = editAt("country-colour", e[0], at);
+    if (!v) return -1;
+    return v.hex ? customSlot(v.hex) : v.c;
+  }
+  // Which colour edits hold at `at`, for the snapshots' keys, so a snapshot is rebuilt when they change.
+  function colourEditKey(at) {
+    if (!edits.colourN) return "";
+    var out = [];
+    edits.list.forEach(function (e) { if (e.kind === "country-colour" && e.t0 <= at && at < e.t1) out.push(e.id); });
+    return out.length ? "|c" + out.join(".") + "@" + edits.tag : "";
+  }
+  function polityColor(id, day, year, at) {
+    var ed = editedColour(id, at);
+    if (ed >= 0) return ed;
     var e = catalogue[id];
     if (!e) return 0;
     var steps = day !== undefined ? e[7] : year !== undefined ? e[8] : null, t = day !== undefined ? day : year;
@@ -563,13 +615,15 @@
     for (var i = 0; i < rows.length; i++) { var r = rows[i]; if (r[2] <= day && (r[3] < 0 || day <= r[3])) out.push(i); }
     return out;
   }
+  // A polity's own colour edit comes first, so a member of a group (whose hue is the group's) can be recoloured too.
+  function ownColour(id, at, otherwise) { var ed = editedColour(id, at); return ed >= 0 ? ed : otherwise(); }
   function modernSnap(day) {
-    var idx = activeRows(day), key = "m" + idx.join(",") + "|" + marksBefore(colourDays, day);
+    var at = timeOfDay(day), idx = activeRows(day), key = "m" + idx.join(",") + "|" + marksBefore(colourDays, day) + colourEditKey(at);
     var snap = modernSnaps.get(key);
     if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = modern.rows[ri], hue = r[1] >= 0 ? r[1] : r[0], claims = r[4] === DISPUTED && r[7] ? r[7] : null;
-      return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: 3, people: false, label: r[6], hue: hue, color: claims ? -1 : polityColor(hue, day), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, day); })) : null, soft: !!claims, status: r[4], cap: claims ? null : r[5], start: r[2], end: r[3] };
+      return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: 3, people: false, label: r[6], hue: hue, color: claims ? -1 : ownColour(r[0], at, function () { return polityColor(hue, day, undefined, at); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, day, undefined, at); })) : null, soft: !!claims, status: r[4], cap: claims ? null : r[5], start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, modern: true, polys: polys, topo: { hi: modern.hi, lo: modern.lo },
@@ -616,12 +670,12 @@
     var groupIds = new Set((c.data.groups || []).map(function (g) { return g[0]; }));
     if (monthly && !c.data.dayFrom) prepDays(c.data);
     for (var i = 0; i < rows.length; i++) if (monthly ? c.data.dayFrom[i] <= day && day <= c.data.dayTo[i] : rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
-    var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y);
+    var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y) + colourEditKey(t);
     var snap = datedSnaps.get(key);
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : polityColor(hue, undefined, y), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || r[9] <= 1 || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, topo: { hi: c.data.hi, lo: c.data.lo },
@@ -660,7 +714,7 @@
   }
   function level(snap, key) {
     syncGrid();
-    var lk = key + gridTag, L = snap.levels[lk];
+    var lk = key + gridTag + "|" + nColors(), L = snap.levels[lk];
     if (L) return L;
     var topo = snap.topo[key], geoms = snap.geoms[key], polys = snap.polys;
     var ix = new Map();
@@ -671,7 +725,7 @@
     var colOf = function (g) { var p = polys[ix.get(g)]; return p && !p.people && !p.claims ? p.color : -1; };
     var hueOf = function (g) { var p = polys[ix.get(g)]; return p ? p.hue : -1; };
     var groups = [];
-    for (var c = 0; c < PALETTE; c++) groups.push([]);
+    for (var c = 0; c < nColors(); c++) groups.push([]);
     var peoples = [], unnamed = [], disputes = new Map();
     polys.forEach(function (p, i) {
       var dk = p && p.claims ? p.claimColors.join(",") : null;
@@ -742,7 +796,7 @@
       (buckets[b] = buckets[b] || []).push([i]);
     });
     var out = { hard: [], soft: [], peopleBleed: [], bleed: [], inner: [] };
-    for (var c = 0; c < PALETTE; c++) { out.bleed.push([]); out.inner.push([]); }
+    for (var c = 0; c < nColors(); c++) { out.bleed.push([]); out.inner.push([]); }
     Object.keys(buckets).forEach(function (b) {
       var lines = topojson.feature(topo, { type: "MultiLineString", arcs: buckets[b] }).geometry.coordinates.filter(function (l) {
         for (var k = 1; k < l.length; k++) if (l[k][0] !== l[0][0] || l[k][1] !== l[0][1]) return true;
@@ -1060,7 +1114,7 @@
     ctx.clip(landPath);
     ctx.fillStyle = pal.paper; ctx.fillRect(0, 0, W, H);
     var groupPaths = [], bleedPaths = [], c;
-    for (c = 0; c < PALETTE; c++) {
+    for (c = 0; c < nColors(); c++) {
       if (!L.groups[c].length) { groupPaths.push(null); bleedPaths.push(null); continue; }
       var gp = new Path2D(); traceAll(gp, L.groups[c]); groupPaths.push(gp);
       var bp = new Path2D(); traceArcs(bp, L.bleed[c]); bleedPaths.push(bp);
@@ -1073,9 +1127,9 @@
       g.lineJoin = "round"; g.lineCap = "round";
       if (bleed > 0.6) {
         g.lineWidth = bleed;
-        for (c = 0; c < PALETTE; c++) if (bleedPaths[c]) { g.strokeStyle = colors[c]; g.stroke(bleedPaths[c]); }
+        for (c = 0; c < nColors(); c++) if (bleedPaths[c]) { g.strokeStyle = colors[c]; g.stroke(bleedPaths[c]); }
       }
-      for (c = 0; c < PALETTE; c++) if (groupPaths[c]) { g.fillStyle = colors[c]; g.fill(groupPaths[c]); }
+      for (c = 0; c < nColors(); c++) if (groupPaths[c]) { g.fillStyle = colors[c]; g.fill(groupPaths[c]); }
     };
     paintFills(ctx, pal.colors);
     L.disputes.forEach(function (d) {
@@ -1103,7 +1157,7 @@
     var bw = bandWidth(S), softMap = !!snap.soft || (snap.year !== null && snap.year < SOFT_BEFORE);
     var bandAlpha = softMap ? 0.4 : 0.6, bandLine = bw * (softMap ? 3 : 2);
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
-    for (c = 0; c < PALETTE; c++) {
+    for (c = 0; c < nColors(); c++) {
       if (!groupPaths[c] || !L.bands[c]) continue;
       ctx.save();
       ctx.clip(groupPaths[c]);
@@ -1120,7 +1174,7 @@
         if (!unheld) {
           unheld = new Path2D();
           unheld.rect(-10, -10, W + 20, H + 20);
-          for (c = 0; c < PALETTE; c++) if (groupPaths[c]) unheld.addPath(groupPaths[c]);
+          for (c = 0; c < nColors(); c++) if (groupPaths[c]) unheld.addPath(groupPaths[c]);
           unheld.addPath(peoplePath); unheld.addPath(unnamedPath);
         }
         ctx.save();
@@ -6201,6 +6255,8 @@
     edits.list.sort(function (a, b) { return a.updated_at < b.updated_at ? -1 : a.updated_at > b.updated_at ? 1 : (a.id || 0) - (b.id || 0); });
     edits.byKey = new Map();
     edits.list.forEach(function (e) { var k = e.kind + "|" + e.target, l = edits.byKey.get(k); if (l) l.push(e); else edits.byKey.set(k, [e]); });
+    edits.colourN = edits.list.filter(function (e) { return e.kind === "country-colour"; }).length;
+    edits.nameN = edits.list.filter(function (e) { return e.kind === "country-name"; }).length;
     edits.tag++;
     editsChanged();
     scheduleRender();
@@ -6227,7 +6283,11 @@
     });
   }
   // Called whenever the edits change, to drop what was worked out from the old ones.
-  function editsChanged() {}
+  function editsChanged() {
+    if (!ready || !current) return;
+    labelCache.clear();
+    setTime(now);
+  }
   function loadEdits() {
     return fetch(EDITS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "list" }) }).then(function (r) {
       if (!r.ok) throw new Error("edits " + r.status);
@@ -6312,6 +6372,14 @@
     timeOf: function (s) { return parseTime(s); },
     editTime: function (s, end) { return editTime(s, end); },
     editsFailed: function () { return edits.failed; },
+    fillAt: function (lon, lat) {
+      var q = projectLL(lon, lat);
+      if (!q) return null;
+      draw();
+      var d = ctx.getImageData(Math.round(q[0] * dpr) - 3, Math.round(q[1] * dpr) - 3, 7, 7).data, ch = [[], [], []];
+      for (var i = 0; i < d.length; i += 4) for (var k = 0; k < 3; k++) ch[k].push(d[i + k]);
+      return ch.map(function (a) { a.sort(function (x, y) { return x - y; }); return a[a.length >> 1]; });
+    },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
     loadingJSON: function () { return jsonLoading; },
     wars: function () { return warsAtDate().map(function (r) { return r.name; }); },

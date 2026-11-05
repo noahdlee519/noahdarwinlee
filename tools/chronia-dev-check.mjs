@@ -87,6 +87,53 @@ await run("no waiting", async () => {
   await slow.page.close();
 });
 
+await run("country", async () => {
+  const { page, errors } = await open("#y=1815-07&v=2.35,46.50,8.00");
+  await settle(page, 2500);
+  const at = [0.9, 44.2];
+  const base = await page.evaluate(([lon, lat]) => window.__chronia.fillAt(lon, lat), at);
+  const name0 = await page.evaluate(([lon, lat]) => { const q = window.__chronia.project(lon, lat); return window.__chronia.hitAt(q[0], q[1]); }, at);
+  ok(name0 === "Bourbon Kingdom of France", "the test point is in France: " + name0);
+  const set = (l) => page.evaluate((l) => window.__chronia.setEdits(l), l);
+  const fill = () => page.evaluate(([lon, lat]) => window.__chronia.fillAt(lon, lat), at);
+  const nameAt = () => page.evaluate(([lon, lat]) => { const q = window.__chronia.project(lon, lat); return window.__chronia.hitAt(q[0], q[1]); }, at);
+  await set([E(1, "country-colour", "Bourbon Kingdom of France", "1815", "1815", { c: 6 })]); await settle(page);
+  const blue = await fill();
+  ok(Math.abs(blue[0] - 0xd4) + Math.abs(blue[1] - 0xdd) + Math.abs(blue[2] - 0xea) < 12 && Math.abs(blue[1] - base[1]) > 15, "a palette colour edit recolours France in colour 6 (#d4ddea): " + base + " -> " + blue);
+  await set([E(1, "country-colour", "Bourbon Kingdom of France", "1815", "1815", { hex: "#c0392b" })]); await settle(page);
+  const red = await fill();
+  ok(red[0] - red[1] >= 60, "a custom colour edit recolours France red: " + red);
+  await set([E(1, "country-name", "Bourbon Kingdom of France", "1815", "1815", { name: "Kingdom of France" })]); await settle(page);
+  ok((await nameAt()) === "Kingdom of France", "a name edit renames France: " + (await nameAt()));
+  const hits = await page.evaluate(() => window.__chronia.search("Kingdom of France"));
+  ok(hits.some((h) => /Kingdom of France/.test(h)), "search finds the edited name: " + hits.slice(0, 3));
+  await set([]); await settle(page);
+  const back = await fill();
+  ok(Math.abs(back[0] - base[0]) + Math.abs(back[1] - base[1]) + Math.abs(back[2] - base[2]) < 12 && (await nameAt()) === "Bourbon Kingdom of France", "deleting the edits puts France back: " + back);
+  await set([E(1, "country-colour", "Bourbon Kingdom of France", "1816", "1817", { hex: "#c0392b" }), E(2, "country-name", "Bourbon Kingdom of France", "1816", "1817", { name: "X" })]); await settle(page);
+  const later = await fill();
+  ok(Math.abs(later[0] - base[0]) < 12 && (await nameAt()) === "Bourbon Kingdom of France", "edits for other years don't show: " + later);
+  await page.evaluate(() => { const i = document.querySelector('input[data-layer="safe"]'); i.click(); });
+  await set([E(1, "country-colour", "Bourbon Kingdom of France", "1815", "1815", { hex: "#c0392b" })]); await settle(page);
+  ok((await fill())[0] - (await fill())[1] >= 60, "a custom colour survives the colour-blind safe palette");
+  await page.evaluate(() => { const i = document.querySelector('input[data-layer="safe"]'); i.click(); });
+  ok(!errors.length, "no page errors: " + errors);
+  await page.close();
+});
+
+await run("modern country", async () => {
+  const { page, errors } = await open("#y=2000-06&v=2.35,46.50,8.00");
+  await settle(page, 2500);
+  const at = [0.9, 44.2];
+  const name = await page.evaluate(([lon, lat]) => { const q = window.__chronia.project(lon, lat); return window.__chronia.hitAt(q[0], q[1]); }, at);
+  await page.evaluate((n) => window.__chronia.setEdits([{ id: 9, kind: "country-colour", target: n, from: "1999-01-01", to: "2000-12-31", value: { hex: "#c0392b" }, updated_at: "x" }]), name);
+  await settle(page);
+  const red = await page.evaluate(([lon, lat]) => window.__chronia.fillAt(lon, lat), at);
+  ok(red[0] - red[1] >= 60, "from 1886 too, a colour edit recolours " + name + ": " + red);
+  ok(!errors.length, "no page errors: " + errors);
+  await page.close();
+});
+
 await browser.close();
 console.log(failed ? failed + " failed" : "all passed");
 process.exit(failed ? 1 : 0);
