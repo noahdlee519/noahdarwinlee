@@ -995,6 +995,21 @@
           else done();
         });
       })();
+      // The projects' screenshots load ahead of the scroll, two screens early, so the next row is ready before it
+      // comes into view; once the page has loaded, the rest follow while the browser is idle.
+      (function () {
+        var shots = Array.prototype.slice.call(document.querySelectorAll('.shot img[loading="lazy"]'));
+        var load = function (img) { img.loading = "eager"; };
+        if (!("IntersectionObserver" in window)) { shots.forEach(load); return; }
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) { load(e.target); io.unobserve(e.target); } });
+        }, { rootMargin: "0px 0px 200% 0px" });
+        shots.forEach(function (img) { io.observe(img); });
+        addEventListener("load", function () {
+          var later = window.requestIdleCallback || function (f) { setTimeout(f, 1200); };
+          later(function () { shots.forEach(load); io.disconnect(); });
+        });
+      })();
     </script>
     <script src="../trail.js" defer></script>
     <script src="../portrait.js" defer></script>
