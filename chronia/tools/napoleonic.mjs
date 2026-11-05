@@ -16,9 +16,32 @@
 // land stays with the owner before), and a span that begins on the window's first day keeps the days the dated table gives it.
 // Russia and the Ottoman Empire are hosts: their blocks join their spans from the sources, which run on outside Europe.
 
-export const NAPOLEONIC_FROM = 1803, NAPOLEONIC_TO = 1885;
-export const HOSTS = new Set(["Russian Empire", "Ottoman Empire"]);
+export const NAPOLEONIC_FROM = 1648, NAPOLEONIC_TO = 1885;
+export const HOSTS = new Set(["Tsardom of Russia", "Russian Empire", "Ottoman Empire"]);
 const W = "1803-01-01", END = "1885-12-31";
+// The table begins on 1 January 1648 (EARLY), the year of the Peace of Westphalia; W, 1 January 1803, is where its rows first
+// stood, and each row's history before it comes from PRE (below).
+const EARLY = "1648-01-01";
+// Dates before 1803.
+const WESTPHALIA_1648 = "1648-10-24", CATALONIA_1652 = "1652-10-13", PEREYASLAV = "1654-01-18", WEHLAU = "1657-09-19", ROSKILDE = "1658-02-26";
+const PYRENEES = "1659-11-07", COPENHAGEN_1660 = "1660-05-27", VINCENNES = "1661-02-28", ANDRUSOVO = "1667-01-30", AACHEN_1668 = "1668-05-02";
+const LORRAINE_1670 = "1670-08-26", CANDIA = "1669-09-27", BUCZACZ = "1672-10-18", NIJMEGEN = "1678-09-17", NIJMEGEN_EMP = "1679-02-05";
+const STRASBOURG = "1681-09-30", RATISBON = "1684-08-15", ETERNAL_PEACE = "1686-05-06", RYSWICK = "1697-10-30", KARLOWITZ = "1699-01-26";
+const PRUSSIA_KINGDOM = "1701-01-18", SUCCESSION_EAST = "1705-10-09", ALMANSA = "1707-04-25", MANTUA_1708 = "1708-06-30", UTRECHT = "1713-04-11";
+const RASTATT = "1714-03-07", BARCELONA_1714 = "1714-09-11", MALLORCA_1715 = "1715-07-02", PASSAROWITZ = "1718-07-21", STOCKHOLM_1719 = "1719-11-20";
+const STOCKHOLM_1720 = "1720-01-21", FREDERIKSBORG = "1720-07-03", SARDINIA_1720 = "1720-08-08", NYSTAD = "1721-09-10", RUSSIA_EMPIRE = "1721-11-02";
+const VIENNA_1735 = "1735-10-03", HANAU_1736 = "1736-03-28", STANISLAS = "1737-03-21", VIENNA_1738 = "1738-11-18", BELGRADE_1739 = "1739-09-18";
+const BERLIN_1742 = "1742-07-28", EAST_FRISIA = "1744-05-25", AACHEN_1748 = "1748-10-18", CORSICA_1755 = "1755-07-14", HETMANATE_END = "1764-11-21";
+const LORRAINE_1766 = "1766-02-23", CORSICA_1768 = "1768-05-15", BAYREUTH_1769 = "1769-01-20", BADEN_1771 = "1771-10-21", PARTITION_1 = "1772-08-05";
+const GOTTORP = "1773-11-16", OLDENBURG_1773 = "1773-12-14", KAINARJI = "1774-07-21", SICH_END = "1775-08-14", BUKOVINA = "1775-05-07";
+const PALATINATE_BAVARIA = "1777-12-30", TESCHEN = "1779-05-13", CRIMEA_1783 = "1783-04-19", MINORCA_1783 = "1783-09-03";
+const UNITED_BELGIAN = "1790-01-11", UNITED_BELGIAN_END = "1790-12-02", AVIGNON = "1791-09-14", JASSY = "1792-01-09", ANSBACH_PRUSSIA = "1792-01-28";
+const REPUBLIC_1792 = "1792-09-21", SAVOY_1792 = "1792-11-27", PARTITION_2 = "1793-01-23", NICE_1793 = "1793-01-31", BASEL_1793 = "1793-03-23";
+const ANGLO_CORSICA = "1794-06-19", ANGLO_CORSICA_END = "1796-10-19", BATAVIA = "1795-01-19", PARTITION_3 = "1795-10-24", ANNEX_BELGIUM = "1795-10-01";
+const DIRECTORY = "1795-11-02", CISPADANE = "1797-03-19", LIGURIA = "1797-06-14", CISALPINE = "1797-06-29", CISALPINE_UNION = "1797-07-09";
+const CAMPO_FORMIO = "1797-10-17", LEFT_BANK = "1798-01-23", ROMAN_REPUBLIC = "1798-02-15", HELVETIC = "1798-04-12", GENEVA_1798 = "1798-04-26";
+const ROMAN_REPUBLIC_END = "1799-09-30", CONSULATE = "1799-11-10", SEPTINSULAR = "1800-03-21", ETRURIA = "1801-08-02", ITALIAN_REPUBLIC = "1802-01-26";
+const INDEMNITIES = "1802-08-03", ELECTORS_1803 = "1803-04-27", MEDIATION = "1803-03-10";
 
 // Dates.
 const PRESSBURG = "1805-12-26", RHINE = "1806-07-12", HRE_END = "1806-08-06", JENA = "1806-10-27", HESSE_OCC = "1806-11-01";
@@ -36,7 +59,8 @@ const SAXE_1826 = "1826-11-12", POLAND_END = "1867-01-01", VENETIA = "1866-10-19
 // "@FR" as a ruler is France under its regime of the day.
 const FFE = "First French Empire";
 const O = {
-  FR: [[W, { name: "French Consulate", b: 1 }], ["1804-05-18", { name: FFE }], [PARIS, { name: "Bourbon Kingdom of France", wiki: "Bourbon Restoration in France" }], [PARIS2, { b: 2 }],
+  FR: [[EARLY, { name: "Kingdom of France", wiki: "Kingdom of France", b: 2 }], [REPUBLIC_1792, { name: "French First Republic", wiki: "French First Republic", b: 1 }],
+    [DIRECTORY, { name: "French Directory", wiki: "French Directory" }], [CONSULATE, { name: "French Consulate", wiki: "French Consulate" }], ["1804-05-18", { name: FFE, wiki: FFE }], [PARIS, { name: "Bourbon Kingdom of France", wiki: "Bourbon Restoration in France" }], [PARIS2, { b: 2 }],
     ["1830-08-09", { name: "Kingdom of the French", wiki: "July Monarchy" }], ["1848-02-24", { name: "French Second Republic", wiki: "French Second Republic" }],
     ["1852-12-02", { name: "Second French Empire", wiki: "Second French Empire" }], ["1870-09-04", { name: "French Third Republic", wiki: "French Third Republic" }]],
   ILL: [[W, { name: "Illyrian Provinces", ruler: FFE, status: 5 }]],
@@ -46,7 +70,7 @@ const O = {
   SPAd: [[W, { name: "Spain", wiki: "Spain under Joseph Bonaparte", status: 6, claims: ["Kingdom of Spain", "Spain under Joseph Bonaparte"], b: 2 }]],
   CATd: [[W, { name: "Catalonia", wiki: "French departments of Catalonia", status: 6, claims: [FFE, "Kingdom of Spain"], b: 2 }]],
   // The Low Countries.
-  BAT: [[W, { name: "Batavian Republic" }], ["1806-06-05", { name: "Kingdom of Holland", ruler: FFE, status: 5 }], ["1813-12-02", { name: "Sovereign Principality of the United Netherlands", ruler: "", status: 0 }], ["1815-03-16", { name: "Netherlands", wiki: "United Kingdom of the Netherlands" }], [VIENNA, { b: 2 }]],
+  BAT: [[EARLY, { name: "Dutch Republic", wiki: "Dutch Republic", b: 2 }], [BATAVIA, { name: "Batavian Republic", wiki: "Batavian Republic", b: 1 }], ["1806-06-05", { name: "Kingdom of Holland", ruler: FFE, status: 5 }], ["1813-12-02", { name: "Sovereign Principality of the United Netherlands", ruler: "", status: 0 }], ["1815-03-16", { name: "Netherlands", wiki: "United Kingdom of the Netherlands" }], [VIENNA, { b: 2 }]],
   BEL: [[W, { name: "Southern Netherlands", wiki: "United Kingdom of the Netherlands", ruler: "Sovereign Principality of the United Netherlands", status: 4 }]],
   LUX: [[W, { name: "Luxembourg", wiki: "Grand Duchy of Luxembourg", ruler: "Netherlands", status: 5, part: "German Confederation", b: 2 }]],
   BELG: [[W, { name: "Kingdom of Belgium", wiki: "Belgium", b: 2 }]],
@@ -56,25 +80,27 @@ const O = {
   LUXd: [[W, { name: "Luxembourg", wiki: "Belgian Revolution", status: 6, claims: ["Kingdom of Belgium", "Luxembourg"] }]],
   LIMB: [[W, { name: "Duchy of Limburg", wiki: "Duchy of Limburg (1839–1867)", ruler: "Netherlands", status: 5, part: "German Confederation" }]],
   // Switzerland and its neighbours.
-  SWI: [[W, { name: "Swiss Confederation" }], [VIENNA, { b: 2 }]],
+  SWI: [[EARLY, { name: "Swiss Confederation", wiki: "Old Swiss Confederacy", b: 2 }], [HELVETIC, { name: "Helvetic Republic", wiki: "Helvetic Republic", b: 1 }],
+    [MEDIATION, { name: "Swiss Confederation", wiki: "Swiss Confederation (1803–1815)" }], [VIENNA, { b: 2 }]],
   VAL: [[W, { name: "Rhodanic Republic" }]],
-  NEU: [[W, { name: "Principality of Neuchâtel", ruler: "Kingdom of Prussia", status: 5 }], ["1806-03-30", { ruler: FFE }], ["1814-06-03", { ruler: "Kingdom of Prussia" }]],
+  NEU: [[EARLY, { name: "Principality of Neuchâtel" }], ["1707-11-03", { ruler: "Kingdom of Prussia", status: 5 }], ["1806-03-30", { ruler: FFE }], ["1814-06-03", { ruler: "Kingdom of Prussia" }]],
   // Italy.
-  ITR: [[W, { name: "Italian Republic", wiki: "Italian Republic (1802–1805)", ruler: "@FR", status: 5 }], ["1805-03-17", { name: "Kingdom of Italy", wiki: "Kingdom of Italy (Napoleonic)", ruler: FFE }]],
-  LIG: [[W, { name: "Ligurian Republic" }]],
+  ITR: [[EARLY, { name: "Cisalpine Republic", wiki: "Cisalpine Republic", ruler: "@FR", status: 5 }], [ITALIAN_REPUBLIC, { name: "Italian Republic", wiki: "Italian Republic (1802–1805)" }], ["1805-03-17", { name: "Kingdom of Italy", wiki: "Kingdom of Italy (Napoleonic)", ruler: FFE }]],
+  LIG: [[W, { name: "Ligurian Republic", wiki: "Ligurian Republic" }]],
   GEN: [[W, { name: "Republic of Genoa", wiki: "Republic of Genoa (1814)" }]],
-  SAR: [[W, { name: "Kingdom of Sardinia", b: 2 }], [ZURICH, { b: 1 }], [ITALY, { name: "Kingdom of Italy", wiki: "Kingdom of Italy", b: 2 }]],
+  SAR: [[EARLY, { name: "Duchy of Savoy", wiki: "Duchy of Savoy", b: 2 }], [SARDINIA_1720, { name: "Kingdom of Sardinia", wiki: "Kingdom of Sardinia" }], [ZURICH, { b: 1 }], [ITALY, { name: "Kingdom of Italy", wiki: "Kingdom of Italy", b: 2 }]],
   ETR: [[W, { name: "Kingdom of Etruria" }]],
   TUS: [[W, { name: "Grand Duchy of Tuscany" }]],
   LUC: [[W, { name: "Republic of Lucca" }], ["1805-06-23", { name: "Principality of Lucca and Piombino", ruler: FFE, status: 5 }], ["1814-03-15", { name: "Lucca", wiki: "Duchy of Lucca", ruler: "Austrian Empire", status: 4 }], [VIENNA, { name: "Duchy of Lucca", ruler: "", status: 0 }]],
   MAS: [[W, { name: "Duchy of Massa and Carrara" }]],
   ELB: [[W, { name: "Principality of Elba" }]],
-  PAR: [[W, { name: "Duchy of Parma and Piacenza" }]],
+  PAR: [[EARLY, { name: "Duchy of Parma and Piacenza" }], [VIENNA_1735, { ruler: "Habsburg Monarchy", status: 5 }], [AACHEN_1748, { ruler: "", status: 0 }]],
   MOD: [[W, { name: "Duchy of Modena and Reggio" }]],
   PAP: [[W, { name: "Papal States" }]],
-  NAP: [[W, { name: "Kingdom of Naples" }], ["1806-02-14", { ruler: FFE, status: 5 }], ["1814-01-11", { ruler: "", status: 0 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
+  NAP: [[EARLY, { name: "Kingdom of Naples", ruler: "Kingdom of Spain", status: 5 }], [RASTATT, { ruler: "Habsburg Monarchy" }], [VIENNA_1735, { ruler: "", status: 0 }], ["1806-02-14", { ruler: FFE, status: 5 }], ["1814-01-11", { ruler: "", status: 0 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
   NAPo: [[W, { name: "Papal States", wiki: "Papal States", ruler: "Kingdom of Naples", status: 4 }]],
-  SIC: [[W, { name: "Kingdom of Sicily", b: 2 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
+  SIC: [[EARLY, { name: "Kingdom of Sicily", ruler: "Kingdom of Spain", status: 5, b: 2 }], [UTRECHT, { ruler: "Duchy of Savoy" }], [SARDINIA_1720, { ruler: "Habsburg Monarchy" }],
+    [VIENNA_1735, { ruler: "", status: 0 }], ["1816-12-08", { name: "Kingdom of the Two Sicilies" }]],
   // The Italian states between their rulers and the revolution: the duchies and the Legations from their rulers' flight to the
   // decrees of annexation of March 1860 (the United Provinces of Central Italy governed them), and the Two Sicilies from
   // Garibaldi's taking of Palermo and of Naples to the decree of December 1860.
@@ -94,18 +120,19 @@ const O = {
   AUS: [[W, { name: "Habsburg Monarchy" }], ["1804-08-11", { name: "Austrian Empire" }], [VIENNA, { b: 2 }], ["1867-03-30", { name: "Austria-Hungary" }]],
   AUSg: [[W, { name: "Habsburg Monarchy" }], ["1804-08-11", { name: "Austrian Empire" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }], ["1867-03-30", { name: "Austria-Hungary" }]],
   BOSo: [[W, { name: "Bosnia and Herzegovina", wiki: "Bosnia and Herzegovina under Austro-Hungarian rule", ruler: "Austria-Hungary", status: 4 }]],
-  SALZ: [[W, { name: "Electorate of Salzburg" }]],
+  SALZ: [[EARLY, { name: "Prince-Archbishopric of Salzburg", wiki: "Prince-Archbishopric of Salzburg" }], ["1803-02-25", { name: "Electorate of Salzburg", wiki: "Electorate of Salzburg" }]],
   // Germany.
-  PR: [[W, { name: "Kingdom of Prussia" }], [JENA, { ruler: FFE, status: 4 }], [PRUSSIA_FREE, { ruler: "", status: 0 }], [VIENNA, { b: 2 }]],
-  PRg: [[W, { name: "Kingdom of Prussia" }], [JENA, { ruler: FFE, status: 4 }], [PRUSSIA_FREE, { ruler: "", status: 0 }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
+  PR: [[EARLY, { name: "Brandenburg-Prussia", wiki: "Brandenburg-Prussia" }], [PRUSSIA_KINGDOM, { name: "Kingdom of Prussia", wiki: "Kingdom of Prussia" }], [JENA, { ruler: FFE, status: 4 }], [PRUSSIA_FREE, { ruler: "", status: 0 }], [VIENNA, { b: 2 }]],
+  PRg: [[EARLY, { name: "Brandenburg-Prussia", wiki: "Brandenburg-Prussia" }], [PRUSSIA_KINGDOM, { name: "Kingdom of Prussia", wiki: "Kingdom of Prussia" }], [JENA, { ruler: FFE, status: 4 }], [PRUSSIA_FREE, { ruler: "", status: 0 }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
   BAV: [[W, { name: "Electorate of Bavaria" }], ["1806-01-01", { name: "Kingdom of Bavaria" }], [RHINE, { part: "Confederation of the Rhine" }], ["1813-10-08", { part: "" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
   BERGb: [[W, { name: "Duchy of Berg", ruler: "Electorate of Bavaria", status: 5 }]],
-  WUR: [[W, { name: "Electorate of Württemberg" }], ["1806-01-01", { name: "Kingdom of Württemberg" }], [RHINE, { part: "Confederation of the Rhine" }], [RHINE_END, { part: "" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
-  BAD: [[W, { name: "Electorate of Baden" }], [RHINE, { name: "Grand Duchy of Baden", part: "Confederation of the Rhine" }], [RHINE_END, { part: "" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
+  WUR: [[EARLY, { name: "Duchy of Württemberg", wiki: "Duchy of Württemberg" }], [ELECTORS_1803, { name: "Electorate of Württemberg", wiki: "Electorate of Württemberg" }], ["1806-01-01", { name: "Kingdom of Württemberg" }], [RHINE, { part: "Confederation of the Rhine" }], [RHINE_END, { part: "" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
+  BAD: [[EARLY, { name: "Margraviate of Baden-Durlach", wiki: "Margraviate of Baden-Durlach" }], [BADEN_1771, { name: "Margraviate of Baden", wiki: "Margraviate of Baden" }],
+    [ELECTORS_1803, { name: "Electorate of Baden", wiki: "Electorate of Baden" }], [RHINE, { name: "Grand Duchy of Baden", part: "Confederation of the Rhine" }], [RHINE_END, { part: "" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
   HD: [[W, { name: "Landgraviate of Hesse-Darmstadt" }], [RHINE, { part: "Confederation of the Rhine" }], ["1806-08-13", { name: "Grand Duchy of Hesse" }], [RHINE_END, { part: "" }], [CONFEDERATION, { part: "German Confederation" }]],
-  HK: [[W, { name: "Electorate of Hesse" }], [CONFEDERATION, { part: "German Confederation" }]],
+  HK: [[EARLY, { name: "Landgraviate of Hesse-Kassel", wiki: "Landgraviate of Hesse-Kassel" }], [ELECTORS_1803, { name: "Electorate of Hesse", wiki: "Electorate of Hesse" }], [CONFEDERATION, { part: "German Confederation" }]],
   HKo: [[W, { name: "Electorate of Hesse", ruler: FFE, status: 4 }]],
-  HAN: [[W, { name: "Electorate of Hanover" }], ["1814-10-12", { name: "Kingdom of Hanover" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
+  HAN: [[EARLY, { name: "Principality of Calenberg", wiki: "Principality of Calenberg" }], ["1692-12-19", { name: "Electorate of Hanover", wiki: "Electorate of Hanover" }], ["1814-10-12", { name: "Kingdom of Hanover" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
   HANo: [[W, { name: "Electorate of Hanover", ruler: "@FR", status: 4 }]],
   SAX: [[W, { name: "Electorate of Saxony" }], ["1806-12-20", { name: "Kingdom of Saxony", part: "Confederation of the Rhine" }], ["1813-10-19", { part: "", ruler: "Russian Empire", status: 4 }], ["1814-11-10", { ruler: "Kingdom of Prussia" }], ["1815-06-07", { ruler: "", status: 0, part: "German Confederation" }]],
   WEST: [[W, { name: "Kingdom of Westphalia", ruler: FFE, status: 5 }], ["1807-11-15", { part: "Confederation of the Rhine" }]],
@@ -165,8 +192,8 @@ const O = {
   HOLSa: [[W, { name: "Duchy of Holstein", ruler: "Austrian Empire", status: 5, part: "German Confederation", b: 2 }]],
   HEL: [[W, { name: "Heligoland", ruler: "United Kingdom", status: 5 }]],
   NORd: [[W, { name: "Norway", wiki: "Norway in 1814", status: 6, claims: ["Kingdom of Norway", "Kingdom of Sweden"], b: 2 }]],
-  SW: [[W, { name: "Kingdom of Sweden", b: 2 }], ["1814-11-04", { name: "United Kingdoms of Sweden and Norway" }]],
-  SWP: [[W, { name: "Swedish Pomerania", ruler: "Kingdom of Sweden", status: 5 }], ["1814-11-04", { ruler: "United Kingdoms of Sweden and Norway" }]],
+  SW: [[EARLY, { name: "Swedish Empire", wiki: "Swedish Empire", b: 2 }], [NYSTAD, { name: "Kingdom of Sweden", wiki: "Kingdom of Sweden" }], ["1814-11-04", { name: "United Kingdoms of Sweden and Norway" }]],
+  SWP: [[EARLY, { name: "Swedish Pomerania", ruler: "Swedish Empire", status: 5 }], [NYSTAD, { ruler: "Kingdom of Sweden" }], ["1814-11-04", { ruler: "United Kingdoms of Sweden and Norway" }]],
   SWPo: [[W, { name: "Swedish Pomerania", ruler: FFE, status: 4 }]],
   FIN: [[W, { name: "Grand Duchy of Finland", ruler: "Russian Empire", status: 5, b: 2 }]],
   // Poland.
@@ -175,7 +202,7 @@ const O = {
   KRA: [[W, { name: "Free City of Krakow", wiki: "Free City of Kraków" }]],
   CPL: [[W, { name: "Congress Poland", ruler: "Russian Empire", status: 5 }]],
   // The east and the Balkans.
-  RUS: [[W, { name: "Russian Empire", host: true }]],
+  RUS: [[EARLY, { name: "Tsardom of Russia", wiki: "Tsardom of Russia", host: true }], [RUSSIA_EMPIRE, { name: "Russian Empire", wiki: "Russian Empire" }]],
   OTT: [[W, { name: "Ottoman Empire", host: true }]],
   MOL: [[W, { name: "Principality of Moldavia", ruler: "Ottoman Empire", status: 5 }], ["1806-12-13", { ruler: "Russian Empire", status: 4 }], ["1812-05-28", { ruler: "Ottoman Empire", status: 5 }], ["1859-02-05", { name: "United Principalities of Moldavia and Wallachia", wiki: "United Principalities" }],
     ["1862-02-05", { name: "Principality of Romania", wiki: "Principality of Romania" }], [BERLIN, { ruler: "", status: 0 }], ["1881-03-26", { name: "Kingdom of Romania", wiki: "Kingdom of Romania" }]],
@@ -187,8 +214,81 @@ const O = {
   BUL: [[W, { name: "Principality of Bulgaria", ruler: "Ottoman Empire", status: 5 }]],
   ERU: [[W, { name: "Eastern Rumelia", ruler: "Ottoman Empire", status: 5 }]],
   GRCd: [[W, { name: "Greece", wiki: "Greek War of Independence", status: 6, claims: ["First Hellenic Republic", "Ottoman Empire"] }]],
-  GRE: [[W, { name: "First Hellenic Republic", wiki: "First Hellenic Republic" }], ["1832-05-07", { name: "Kingdom of Greece", wiki: "Kingdom of Greece" }]]
+  GRE: [[W, { name: "First Hellenic Republic", wiki: "First Hellenic Republic" }], ["1832-05-07", { name: "Kingdom of Greece", wiki: "Kingdom of Greece" }]],
+
+  // Owners of the years before 1803.
+  // Iberia: Catalonia in its revolt under French protection, the Crown of Aragon for the Archduke Charles in the War of the Spanish
+  // Succession, and British Minorca.
+  CATd1: [[EARLY, { name: "Catalonia", wiki: "Reapers' War", status: 6, claims: ["Kingdom of France", "Kingdom of Spain"], b: 2 }]],
+  ARAd: [[EARLY, { name: "Crown of Aragon", wiki: "War of the Spanish Succession", status: 6, claims: ["Habsburg Monarchy", "Kingdom of Spain"], b: 2 }]],
+  MIN: [[EARLY, { name: "Minorca", wiki: "British rule in Minorca", ruler: "Kingdom of Great Britain", status: 5, b: 2 }]],
+  // The Low Countries: the Spanish, then Austrian, Netherlands (Luxembourg kept apart, since it stayed out of the United Belgian
+  // States of 1790), and Liège.
+  SNL: [[EARLY, { name: "Spanish Netherlands", wiki: "Spanish Netherlands", ruler: "Kingdom of Spain", status: 5, b: 2 }], [RASTATT, { name: "Austrian Netherlands", wiki: "Austrian Netherlands", ruler: "Habsburg Monarchy" }],
+    [UNITED_BELGIAN, { name: "United Belgian States", wiki: "United Belgian States", ruler: "", status: 0 }], [UNITED_BELGIAN_END, { name: "Austrian Netherlands", wiki: "Austrian Netherlands", ruler: "Habsburg Monarchy", status: 5 }]],
+  SNLx: [[EARLY, { name: "Spanish Netherlands", wiki: "Spanish Netherlands", ruler: "Kingdom of Spain", status: 5, b: 2 }], [RASTATT, { name: "Austrian Netherlands", wiki: "Austrian Netherlands", ruler: "Habsburg Monarchy" }]],
+  LIE: [[EARLY, { name: "Prince-Bishopric of Liège", wiki: "Prince-Bishopric of Liège" }]],
+  // France's neighbours: Franche-Comté, Lorraine (occupied by France until the Treaty of Vincennes and again from 1670 to the Peace of
+  // Ryswick, and Stanislas's from 1737), and the Pope's Comtat Venaissin with Avignon.
+  FC: [[EARLY, { name: "Franche-Comté", wiki: "Franche-Comté", ruler: "Kingdom of Spain", status: 5 }]],
+  LOR: [[EARLY, { name: "Duchy of Lorraine", wiki: "Duchy of Lorraine", ruler: "Kingdom of France", status: 4 }], [VINCENNES, { ruler: "", status: 0 }], [LORRAINE_1670, { ruler: "Kingdom of France", status: 4 }],
+    [RYSWICK, { ruler: "", status: 0 }], [STANISLAS, { ruler: "Kingdom of France", status: 5 }]],
+  AVI: [[EARLY, { name: "Comtat Venaissin", wiki: "Comtat Venaissin", ruler: "Papal States", status: 5 }]],
+  // Switzerland's allies and neighbours.
+  GRB: [[EARLY, { name: "Three Leagues", wiki: "Three Leagues", b: 2 }]],
+  GENV: [[EARLY, { name: "Republic of Geneva", wiki: "Republic of Geneva", b: 2 }]],
+  VALz: [[EARLY, { name: "Republic of the Seven Zenden", wiki: "Republic of the Seven Zenden", b: 2 }]],
+  BAS: [[EARLY, { name: "Prince-Bishopric of Basel", wiki: "Prince-Bishopric of Basel" }]],
+  // Italy.
+  SARs: [[EARLY, { name: "Kingdom of Sardinia", wiki: "Kingdom of Sardinia", ruler: "Kingdom of Spain", status: 5, b: 2 }], [RASTATT, { ruler: "Habsburg Monarchy" }]],
+  MIL: [[EARLY, { name: "Duchy of Milan", wiki: "Duchy of Milan", ruler: "Kingdom of Spain", status: 5 }], [RASTATT, { ruler: "Habsburg Monarchy" }]],
+  MAN: [[EARLY, { name: "Duchy of Mantua", wiki: "Duchy of Mantua" }]],
+  VEN: [[EARLY, { name: "Republic of Venice", wiki: "Republic of Venice" }]],
+  GENr: [[EARLY, { name: "Republic of Genoa", wiki: "Republic of Genoa" }]],
+  COR: [[EARLY, { name: "Corsican Republic", wiki: "Corsican Republic" }]],
+  ACK: [[EARLY, { name: "Anglo-Corsican Kingdom", wiki: "Anglo-Corsican Kingdom", ruler: "Kingdom of Great Britain", status: 5 }]],
+  CISP: [[EARLY, { name: "Cispadane Republic", wiki: "Cispadane Republic", ruler: "@FR", status: 5 }]],
+  ROMR: [[EARLY, { name: "Roman Republic", wiki: "Roman Republic (1798–1799)", ruler: "@FR", status: 5 }]],
+  TRE: [[EARLY, { name: "Prince-Bishopric of Trent", wiki: "Prince-Bishopric of Trent" }]],
+  // Germany. The many small states, the free cities, and the lesser bishoprics and abbeys are drawn as the Empire itself (HRE),
+  // as the sources draw them; the larger ones each have an owner.
+  HRE: [[EARLY, { name: "Holy Roman Empire", wiki: "Holy Roman Empire" }]],
+  DPR: [[EARLY, { name: "Duchy of Prussia", wiki: "Duchy of Prussia", ruler: "Polish-Lithuanian Commonwealth", status: 5 }]],
+  BREV: [[EARLY, { name: "Bremen-Verden", wiki: "Swedish Bremen-Verden", ruler: "Swedish Empire", status: 5 }]],
+  CEL: [[EARLY, { name: "Principality of Lüneburg", wiki: "Principality of Lüneburg" }]],
+  SLA: [[EARLY, { name: "Duchy of Saxe-Lauenburg", wiki: "Duchy of Saxe-Lauenburg" }]],
+  MGU: [[EARLY, { name: "Duchy of Mecklenburg-Güstrow", wiki: "Duchy of Mecklenburg-Güstrow" }]],
+  HGOT: [[EARLY, { name: "Duchy of Holstein-Gottorp", wiki: "Duchy of Holstein-Gottorp" }]],
+  OLDc: [[EARLY, { name: "County of Oldenburg", wiki: "County of Oldenburg" }], ["1667-06-19", { ruler: "Denmark-Norway", status: 5 }]],
+  EFR: [[EARLY, { name: "East Frisia", wiki: "East Frisia" }]],
+  MUN: [[EARLY, { name: "Prince-Bishopric of Münster", wiki: "Prince-Bishopric of Münster" }]],
+  PAD: [[EARLY, { name: "Prince-Bishopric of Paderborn", wiki: "Prince-Bishopric of Paderborn" }]],
+  OSN: [[EARLY, { name: "Prince-Bishopric of Osnabrück", wiki: "Prince-Bishopric of Osnabrück" }]],
+  HIL: [[EARLY, { name: "Prince-Bishopric of Hildesheim", wiki: "Prince-Bishopric of Hildesheim" }]],
+  KOL: [[EARLY, { name: "Electorate of Cologne", wiki: "Electorate of Cologne" }]],
+  TRI: [[EARLY, { name: "Electorate of Trier", wiki: "Electorate of Trier" }]],
+  MAI: [[EARLY, { name: "Electorate of Mainz", wiki: "Electorate of Mainz" }]],
+  PAL: [[EARLY, { name: "Electorate of the Palatinate", wiki: "Electoral Palatinate" }]],
+  PNE: [[EARLY, { name: "Palatinate-Neuburg", wiki: "Palatinate-Neuburg" }]],
+  JUL: [[EARLY, { name: "Jülich-Berg", wiki: "Jülich-Berg", ruler: "Palatinate-Neuburg", status: 5 }], ["1685-05-26", { ruler: "Electorate of the Palatinate" }], [PALATINATE_BAVARIA, { ruler: "Electorate of Bavaria" }]],
+  ZWE: [[EARLY, { name: "Palatinate-Zweibrücken", wiki: "Palatinate-Zweibrücken" }]],
+  HAU: [[EARLY, { name: "County of Hanau", wiki: "County of Hanau-Münzenberg" }]],
+  FULb: [[EARLY, { name: "Prince-Abbey of Fulda", wiki: "Prince-Bishopric of Fulda" }], ["1752-10-05", { name: "Prince-Bishopric of Fulda" }]],
+  BBA: [[EARLY, { name: "Margraviate of Baden-Baden", wiki: "Margraviate of Baden-Baden" }]],
+  BAM: [[EARLY, { name: "Prince-Bishopric of Bamberg", wiki: "Prince-Bishopric of Bamberg" }]],
+  WZBb: [[EARLY, { name: "Prince-Bishopric of Würzburg", wiki: "Prince-Bishopric of Würzburg" }]],
+  ANS: [[EARLY, { name: "Principality of Ansbach", wiki: "Principality of Ansbach" }], [BAYREUTH_1769, { name: "Principality of Ansbach-Bayreuth", wiki: "Principality of Ansbach" }]],
+  BAYR: [[EARLY, { name: "Principality of Bayreuth", wiki: "Principality of Bayreuth" }]],
+  // The east: Transylvania, Poland-Lithuania and Courland, the Crimean Khanate, and the Cossacks.
+  TRA: [[EARLY, { name: "Principality of Transylvania", wiki: "Principality of Transylvania (1570–1711)", ruler: "Ottoman Empire", status: 5 }]],
+  PLC: [[EARLY, { name: "Polish-Lithuanian Commonwealth", wiki: "Polish–Lithuanian Commonwealth" }]],
+  CUR: [[EARLY, { name: "Duchy of Courland", wiki: "Duchy of Courland and Semigallia", ruler: "Polish-Lithuanian Commonwealth", status: 5 }]],
+  CRI: [[EARLY, { name: "Crimean Khanate", wiki: "Crimean Khanate", ruler: "Ottoman Empire", status: 5 }], [KAINARJI, { ruler: "", status: 0 }]],
+  HET: [[EARLY, { name: "Cossack Hetmanate", wiki: "Cossack Hetmanate", ruler: "Tsardom of Russia", status: 5 }], [RUSSIA_EMPIRE, { ruler: "Russian Empire" }]],
+  ZAP: [[EARLY, { name: "Zaporozhian Cossacks", wiki: "Zaporozhian Sich", ruler: "Polish-Lithuanian Commonwealth", status: 5 }], [ETERNAL_PEACE, { ruler: "Tsardom of Russia" }], [RUSSIA_EMPIRE, { ruler: "Russian Empire" }]]
 };
+// An owner whose timeline begins in 1803 stands for the years before as it was then, where a row gives it land before 1803.
+for (const tl of Object.values(O)) if (tl[0][0] === W) tl[0][0] = EARLY;
 
 // The German Confederation's members leave it at its dissolution.
 for (const tl of Object.values(O)) if (tl.some(([, ch]) => ch.part === "German Confederation")) tl.push([GC_END, { part: "" }]);
@@ -253,6 +353,9 @@ const units = (country, list) => list.map((u) => country + "/" + u);
 const CUTS = {
   // Eupen-Malmedy, Prussian from 1815 and Belgian from 1920: the east of the province of Liège, roughly, without Moresnet.
   eupen: [[[6.03, 50.76], [6.6, 50.76], [6.6, 50.1], [6.1, 50.1], [6.02, 50.2], [6.01, 50.3], [5.99, 50.38], [5.98, 50.44], [6.0, 50.5], [5.99, 50.56], [5.99, 50.62], [6.0, 50.66], [6.02, 50.7], [6.03, 50.76]]],
+  // Before 1803: the Nord's west (Lille, Douai, and Dunkirk, French from 1668) and the Moselle's west (Metz and Thionville).
+  nordw: [[[2.0, 50.3], [3.3, 50.3], [3.3, 51.2], [2.0, 51.2], [2.0, 50.3]]],
+  moselw: [[[5.8, 48.85], [6.45, 48.85], [6.45, 49.6], [5.8, 49.6], [5.8, 48.85]]],
   peene: [[[12.8, 54.6], [12.8, 53.944], [12.852, 53.944], [12.9, 53.928], [13.248, 53.966], [13.555, 53.827], [13.764, 53.877], [14.0, 53.877], [14.0, 54.6], [12.8, 54.6]]],
   nschl: [[[7.9, 54.7], [7.9, 55.47], [8.66, 55.47], [9.0, 55.44], [9.25, 55.42], [9.48, 55.49], [9.62, 55.42], [9.66, 55.2], [9.95, 55.1], [10.08, 55.0], [10.08, 54.7], [7.9, 54.7]]]
 };
@@ -597,6 +700,240 @@ add(units("ITA", ["Naples", "Avellino", "Benevento", "Caserta", "Salerno", "Cata
   [[W, "NAP"], ["1860-09-07", "NAPd"], [ANNEX_SOUTH, "SAR"]]);
 add(units("ITA", ["Agrigento", "Caltanissetta", "Catania", "Enna", "Messina", "Palermo", "Ragusa", "Syracuse", "Trapani"]), [[W, "SIC"], ["1860-05-27", "SICd"], [ANNEX_SOUTH, "SAR"]]);
 
+// PRE: the owners before 1803, each row [selectors, [[from, owner], ...] from EARLY to before W, options], matched to LAND's units
+// (see buildNapoleonic). PRE rows are added in the section "Before 1803" below.
+const PRE = [];
+const pre = (sel, tl, opt) => PRE.push([[].concat(sel), tl, opt || {}]);
+
+// ---- Before 1803 ----
+// The owners from 1648 to 1802 of the units LAND gives from 1803. Changes are dated by the treaty or the act that made them (the
+// law on the map, as after 1803), and the occupations of the wars are left out. The units are today's, so many of these lines are
+// pieced together (marked rough where a unit straddles the old border). A unit no row names keeps its owner of 1803.
+
+// France and its frontiers: Artois (the Peace of the Pyrenees; Saint-Omer stayed Spanish to 1678), Lille and Douai (Aachen, 1668)
+// and Valenciennes and Cambrai (Nijmegen, 1678), Roussillon, Franche-Comté, Upper Alsace (Westphalia), Strasbourg and Lower
+// Alsace (taken by 1681), Lorraine (French in 1766; Metz and Thionville French throughout, Thionville from 1659), the Comtat
+// Venaissin (1791), Savoy and Nice (1792 and 1793), and Corsica (Genoese, its own republic from 1755, French from the Treaty of
+// Versailles of 1768, and the Anglo-Corsican Kingdom from 1794 to 1796).
+pre(["FRA/Pas-de-Calais"], [[EARLY, "SNL"], [PYRENEES, "FR"]], { rough: true });
+pre(["FRA/Nord{nordw}"], [[EARLY, "SNL"], [AACHEN_1668, "FR"]], { rough: true });
+pre(["FRA/Nord{!nordw}"], [[EARLY, "SNL"], [NIJMEGEN, "FR"]], { rough: true });
+pre(["FRA/Pyrénées-Orientales"], [[EARLY, "SPA"], [PYRENEES, "FR"]]);
+pre(["FRA/Doubs", "FRA/Jura", "FRA/Haute-Saône"], [[EARLY, "FC"], [NIJMEGEN, "FR"]]);
+pre(["FRA/Haut-Rhin", "FRA/Territoire de Belfort"], [[EARLY, "AUSg"], [WESTPHALIA_1648, "FR"]], { rough: true });
+pre(["FRA/Bas-Rhin"], [[EARLY, "HRE"], [STRASBOURG, "FR"]], { rough: true });
+pre(["FRA/Moselle{moselw}"], [[EARLY, "FR"]], { rough: true });
+pre(["FRA/Moselle{!moselw}", "FRA/Meurthe-et-Moselle", "FRA/Vosges", "FRA/Meuse"], [[EARLY, "LOR"], [LORRAINE_1766, "FR"]], { rough: true });
+pre(["FRA/Vaucluse"], [[EARLY, "AVI"], [AVIGNON, "FR"]], { rough: true });
+pre(["FRA/Savoie", "FRA/Haute-Savoie"], [[EARLY, "SAR"], [SAVOY_1792, "FR"]]);
+pre(["FRA/Alpes-Maritimes"], [[EARLY, "SAR"], [NICE_1793, "FR"]], { rough: true });
+pre(["FRA/Haute-Corse", "FRA/Corse-du-Sud"], [[EARLY, "GENr"], [CORSICA_1755, "COR"], [CORSICA_1768, "FR"], [ANGLO_CORSICA, "ACK"], [ANGLO_CORSICA_END, "FR"]]);
+
+// The Low Countries: the Spanish Netherlands, Austrian from the Treaty of Rastatt, the United Belgian States of 1790, and French
+// from the annexation of 1795; Liège and its County of Loon; Luxembourg, French from the Truce of Ratisbon to the Peace of
+// Ryswick; and Upper Guelders and the lands of the Meuse (today's Dutch Limburg).
+pre(["BEL/*"], [[EARLY, "SNL"], [ANNEX_BELGIUM, "FR"]]);
+pre(["BEL/Liège{!eupen}", "BEL/Limburg"], [[EARLY, "LIE"], [ANNEX_BELGIUM, "FR"]], { rough: true });
+pre(["BEL/Liège{eupen}", "NLD/Limburg"], [[EARLY, "SNL"], [ANNEX_BELGIUM, "FR"]], { rough: true });
+pre(["BEL/Luxembourg", "LUX/Luxembourg", "LUX/Diekirch", "LUX/Grevenmacher"], [[EARLY, "SNLx"], [RATISBON, "FR"], [RYSWICK, "SNLx"], [ANNEX_BELGIUM, "FR"]]);
+
+// Switzerland: the Confederacy's allies (Geneva, French from 1798; the Valais, in the Helvetic Republic from 1798 and the Rhodanic
+// Republic from 1802; the Three Leagues, Helvetic from 1799, and their Valtellina, Cisalpine from 1797), and the Prince-Bishopric
+// of Basel, French from 1793.
+pre(["CHE/Geneva"], [[EARLY, "GENV"], [GENEVA_1798, "FR"]]);
+pre(["CHE/Valais"], [[EARLY, "VALz"], ["1798-05-01", "SWI"], ["1802-08-30", "VAL"]]);
+pre(["CHE/Jura"], [[EARLY, "BAS"], [BASEL_1793, "FR"]]);
+pre(["CHE/Grisons"], [[EARLY, "GRB"], ["1799-04-21", "SWI"]]);
+pre(["ITA/Sondrio"], [[EARLY, "GRB"], ["1797-10-22", "ITR"]]);
+
+// Iberia: Catalonia in its revolt to the fall of Barcelona in 1652, and the Crown of Aragon for the Archduke Charles in the War of
+// the Spanish Succession (Aragon and Valencia to Almansa, Catalonia to 1714, Majorca to 1715); Minorca British from Utrecht to its
+// cession to Spain in 1783.
+pre(["ESP/Barcelona", "ESP/Girona", "ESP/Lleida", "ESP/Tarragona"], [[EARLY, "CATd1"], [CATALONIA_1652, "SPA"], [SUCCESSION_EAST, "ARAd"], [BARCELONA_1714, "SPA"]]);
+pre(["ESP/Huesca", "ESP/Zaragoza", "ESP/Teruel", "ESP/Castellón", "ESP/Valencia", "ESP/Alicante"], [[EARLY, "SPA"], [SUCCESSION_EAST, "ARAd"], [ALMANSA, "SPA"]]);
+pre(["ESP/Balearic Islands[!3.75,39.75,4.4,40.1]"], [[EARLY, "SPA"], [SUCCESSION_EAST, "ARAd"], [MALLORCA_1715, "SPA"]]);
+pre(["ESP/Balearic Islands[3.75,39.75,4.4,40.1]"], [[EARLY, "SPA"], [SUCCESSION_EAST, "ARAd"], ["1713-07-13", "MIN"], [MINORCA_1783, "SPA"]]);
+
+// Italy. Piedmont: Savoy's (Alessandria from Milan by Utrecht, Novara by the Treaty of Vienna of 1738, the Upper Novarese by
+// Aachen), French from 1802. Lombardy: Spain's Duchy of Milan, Austrian from Rastatt; Mantua Austrian from 1708; the Cisalpine
+// Republic from 1797, with Venice's Bergamo, Brescia, and Polesine and the Valtellina. Venice, Austrian from Campo Formio.
+// Emilia: Parma (Austrian from 1735 to 1748, French from 1802), Modena and the Legations (the Cispadane Republic, then
+// Cisalpine). The Papal States, the Roman Republic in 1798 and 1799. Tuscany, Etruria from 1801. Genoa, the Ligurian Republic
+// from 1797. Sardinia: Spanish, Austrian from Rastatt, Savoy's from 1720.
+pre(["ITA/Turin", "ITA/Cuneo", "ITA/Asti", "ITA/Vercelli", "ITA/Biella", "ITA/Aosta"], [[EARLY, "SAR"], ["1802-09-11", "FR"]]);
+pre(["ITA/Alessandria"], [[EARLY, "MIL"], [UTRECHT, "SAR"], ["1802-09-11", "FR"]], { rough: true });
+pre(["ITA/Novara"], [[EARLY, "MIL"], [VIENNA_1738, "SAR"], ["1801-02-09", "ITR"]], { rough: true });
+pre(["ITA/Verbano-Cusio-Ossola"], [[EARLY, "MIL"], [AACHEN_1748, "SAR"], ["1801-02-09", "ITR"]], { rough: true });
+pre(["ITA/Milan", "ITA/Monza and Brianza", "ITA/Lodi", "ITA/Varese", "ITA/Como", "ITA/Lecco", "ITA/Pavia", "ITA/Cremona"], [[EARLY, "MIL"], [CISALPINE, "ITR"]]);
+pre(["ITA/Bergamo", "ITA/Brescia"], [[EARLY, "VEN"], [CAMPO_FORMIO, "ITR"]]);
+pre(["ITA/Mantua"], [[EARLY, "MAN"], [MANTUA_1708, "MIL"], [CAMPO_FORMIO, "ITR"]]);
+pre(["ITA/Rovigo"], [[EARLY, "VEN"], [CAMPO_FORMIO, "ITR"]]);
+pre(["ITA/Venice", "ITA/Padua", "ITA/Vicenza", "ITA/Verona", "ITA/Treviso", "ITA/Pordenone", "ITA/Belluno", "ITA/Udine"], [[EARLY, "VEN"], [CAMPO_FORMIO, "AUS"]]);
+pre(["SVN@Obalno-kraška", "HRV/Istria"], [[EARLY, "VEN"], [CAMPO_FORMIO, "AUSg"]], { rough: true });
+pre(["ITA/Trentino"], [[EARLY, "TRE"]]);
+pre(["ITA/Parma", "ITA/Piacenza"], [[EARLY, "PAR"], ["1802-10-09", "FR"]]);
+pre(["ITA/Modena", "ITA/Reggio Emilia"], [[EARLY, "MOD"], [CISPADANE, "CISP"], [CISALPINE_UNION, "ITR"]]);
+pre(["ITA/Bologna", "ITA/Ferrara", "ITA/Ravenna", "ITA/Forlì-Cesena", "ITA/Rimini"], [[EARLY, "PAP"], ["1797-02-19", "CISP"], [CISALPINE_UNION, "ITR"]]);
+pre(["ITA/Massa-Carrara"], [[EARLY, "MAS"], [CISALPINE_UNION, "ITR"]]);
+pre(["ITA/Rome", "ITA/Viterbo", "ITA/Frosinone", "ITA/Latina", "ITA/Rieti", "ITA/Perugia", "ITA/Terni", "ITA/Ancona", "ITA/Macerata", "ITA/Fermo", "ITA/Ascoli Piceno", "ITA/Pesaro and Urbino"],
+  [[EARLY, "PAP"], [ROMAN_REPUBLIC, "ROMR"], [ROMAN_REPUBLIC_END, "PAP"]]);
+pre(["ITA/Florence", "ITA/Prato", "ITA/Pistoia", "ITA/Pisa", "ITA/Siena", "ITA/Arezzo", "ITA/Grosseto", "ITA/Livorno[!10.0,42.6,10.5,42.9]"], [[EARLY, "TUS"], [ETRURIA, "ETR"]]);
+pre(["ITA/Livorno[10.0,42.6,10.5,42.9]"], [[EARLY, "TUS"], ["1802-08-26", "FR"]]);
+pre(["ITA/Liguria", "ITA/Savona", "ITA/Imperia", "ITA/La Spezia"], [[EARLY, "GENr"], [LIGURIA, "LIG"]]);
+pre(units("ITA", ["Cagliari", "Sassari", "Nuoro", "Oristano", "Ogliastra", "Olbia-Tempio", "Carbonia-Iglesias", "Medio Campidano"]), [[EARLY, "SARs"], [SARDINIA_1720, "SAR"]]);
+
+// Germany, west: the bishoprics, abbeys, and cities secularized and mediatized for the indemnities of 1802 and 1803 (taken over
+// in August 1802), the left bank of the Rhine (French from its departments of January 1798), the Palatinate (Bavaria's from 1777),
+// Jülich-Berg, Swedish Bremen-Verden (Hanover's from the Treaty of Stockholm of 1719), Lüneburg (joined to Hanover in 1705), East
+// Frisia (Prussian from 1744), and Oldenburg (Danish from 1667 to 1773).
+pre(units("DEU", ["Osnabrück", "Landkreis Osnabrück"]), [[EARLY, "OSN"], [INDEMNITIES, "HAN"]]);
+pre(units("DEU", ["Celle", "Gifhorn", "Heidekreis", "Harburg", "Landkreis Lüneburg", "Lüchow-Dannenberg", "Uelzen", "Nienburg (Weser)", "Diepholz"]), [[EARLY, "CEL"], ["1705-08-28", "HAN"]]);
+pre(units("DEU", ["Stade", "Cuxhaven", "Rotenburg (Wümme)", "Verden", "Osterholz", "Bremerhaven"]), [[EARLY, "BREV"], [STOCKHOLM_1719, "HAN"]]);
+pre(["DEU/Herzogtum Lauenburg"], [[EARLY, "SLA"], ["1689-09-30", "CEL"], ["1705-08-28", "HAN"]]);
+pre(["DEU/Grafschaft Bentheim"], [[EARLY, "HRE"], ["1753-01-01", "HAN"]]);
+pre(units("DEU", ["Hildesheim", "Peine", "Goslar"]), [[EARLY, "HIL"], [INDEMNITIES, "PRg"]]);
+pre(units("DEU", ["Magdeburg", "Börde", "Salzlandkreis", "Halle (Saale)", "Jerichower Land"]), [[EARLY, "HRE"], ["1680-06-04", "PRg"]]);
+pre(units("DEU", ["Harz", "Minden-Lübbecke"]), [[EARLY, "HRE"], [WESTPHALIA_1648, "PRg"]]);
+pre(units("DEU", ["Paderborn", "Höxter"]), [[EARLY, "PAD"], [INDEMNITIES, "PRg"]]);
+pre(["DEU/Eichsfeld"], [[EARLY, "MAI"], [INDEMNITIES, "PRg"]]);
+pre(units("DEU", ["Nordhausen", "Unstrut-Hainich-Kreis"]), [[EARLY, "HRE"], [INDEMNITIES, "PRg"]]);
+pre(units("DEU", ["Erfurt", "Sömmerda"]), [[EARLY, "MAI"], [INDEMNITIES, "PRg"]]);
+pre(["DEU/Vorpommern-Greifswald[13.8,53.8,14.3,54.3]", "DEU/Vorpommern-Greifswald[!13.8,53.8,14.3,54.3]{!peene}"], [[EARLY, "SWP"], [STOCKHOLM_1720, "PRg"]]);
+pre(units("DEU", ["Rostock", "Landkreis Rostock"]), [[EARLY, "MGU"], ["1695-10-26", "MS"]], { rough: true });
+pre(["DEU/Mecklenburgische Seenplatte"], [[EARLY, "MGU"], ["1695-10-26", "MS"], ["1701-03-08", "MST"]]);
+pre(units("DEU", ["Schleswig-Flensburg", "Nordfriesland", "Rendsburg-Eckernförde"]), [[EARLY, "HGOT"], [FREDERIKSBORG, "SCHL"]], { rough: true });
+pre(units("DEU", ["Kiel", "Neumünster", "Dithmarschen", "Ostholstein"]), [[EARLY, "HGOT"], [GOTTORP, "HOLS"]], { rough: true });
+pre(units("DEU", ["Ammerland", "Oldenburg (Oldenburg)", "Landkreis Oldenburg", "Delmenhorst", "Wesermarsch", "Friesland", "Wilhelmshaven"]), [[EARLY, "OLDc"], [OLDENBURG_1773, "OLD"]]);
+pre(units("DEU", ["Cloppenburg", "Vechta", "Borken", "Emsland"]), [[EARLY, "MUN"]], { rough: true });
+pre(units("DEU", ["Aurich", "Leer", "Emden", "Wittmund"]), [[EARLY, "EFR"], [EAST_FRISIA, "PRg"]]);
+pre(["DEU/Recklinghausen"], [[EARLY, "KOL"]]);
+pre(units("DEU", ["Münster", "Coesfeld", "Steinfurt", "Warendorf"]), [[EARLY, "MUN"], [INDEMNITIES, "PRg"]]);
+pre(["DEU/Essen"], [[EARLY, "HRE"], [INDEMNITIES, "PRg"]]);
+pre(units("DEU", ["Dortmund", "Siegen-Wittgenstein", "Lahn-Dill-Kreis"]), [[EARLY, "HRE"]]);
+pre(["DEU/Fulda"], [[EARLY, "FULb"]]);
+pre(units("DEU", ["Düsseldorf", "Mettmann", "Solingen", "Remscheid", "Wuppertal", "Rheinisch-Bergischer Kreis", "Oberbergischer Kreis", "Leverkusen", "Rhein-Sieg-Kreis", "Mülheim an der Ruhr", "Oberhausen"]), [[EARLY, "JUL"]]);
+pre(["DEU/Kleve"], [[EARLY, "PRg"], [LEFT_BANK, "FR"]]);
+pre(["DEU/Krefeld"], [[EARLY, "HRE"], ["1702-03-19", "PRg"], [LEFT_BANK, "FR"]]);
+pre(units("DEU", ["Viersen", "Mönchengladbach", "Städteregion Aachen", "Düren", "Heinsberg", "Euskirchen"]), [[EARLY, "JUL"], [LEFT_BANK, "FR"]], { rough: true });
+pre(units("DEU", ["Rhein-Kreis Neuss", "Köln", "Rhein-Erft-Kreis", "Bonn", "Ahrweiler"]), [[EARLY, "KOL"], [LEFT_BANK, "FR"]]);
+pre(units("DEU", ["Mayen-Koblenz", "Koblenz", "Vulkaneifel", "Trier", "Trier-Saarburg", "Bernkastel-Wittlich", "Cochem-Zell", "Merzig-Wadern", "St. Wendel"]), [[EARLY, "TRI"], [LEFT_BANK, "FR"]], { rough: true });
+pre(["DEU/Eifelkreis Bitburg-Prüm"], [[EARLY, "SNLx"], [RATISBON, "FR"], [RYSWICK, "SNLx"], [ANNEX_BELGIUM, "FR"]], { rough: true });
+pre(units("DEU", ["Rhein-Hunsrück-Kreis", "Bad Kreuznach", "Alzey-Worms", "Donnersbergkreis", "Kaiserslautern", "Landkreis Kaiserslautern", "Bad Dürkheim", "Ludwigshafen am Rhein",
+  "Rhein-Pfalz-Kreis", "Frankenthal (Pfalz)", "Neustadt an der Weinstraße", "Germersheim", "Südliche Weinstraße"]), [[EARLY, "PAL"], [PALATINATE_BAVARIA, "BAV"], [LEFT_BANK, "FR"]], { rough: true });
+pre(units("DEU", ["Kusel", "Zweibrücken", "Südwestpfalz", "Pirmasens", "Saarpfalz-Kreis"]), [[EARLY, "ZWE"], [LEFT_BANK, "FR"]], { rough: true });
+pre(units("DEU", ["Neunkirchen", "Regionalverband Saarbrücken", "Birkenfeld", "Speyer", "Worms"]), [[EARLY, "HRE"], [LEFT_BANK, "FR"]], { rough: true });
+pre(["DEU/Saarlouis"], [[EARLY, "LOR"], ["1680-01-01", "FR"]], { rough: true });
+pre(["DEU/Landau in der Pfalz"], [[EARLY, "HRE"], ["1680-01-01", "FR"]]);
+pre(units("DEU", ["Mainz", "Mainz-Bingen"]), [[EARLY, "MAI"], [LEFT_BANK, "FR"]]);
+pre(units("DEU", ["Bergstraße", "Aschaffenburg", "Landkreis Aschaffenburg", "Miltenberg", "Main-Taunus-Kreis", "Rheingau-Taunus-Kreis"]), [[EARLY, "MAI"]], { rough: true });
+pre(units("DEU", ["Odenwaldkreis", "Offenbach am Main", "Landkreis Offenbach", "Wetteraukreis"]), [[EARLY, "HRE"]]);
+pre(units("DEU", ["Hochsauerlandkreis", "Olpe"]), [[EARLY, "KOL"]]);
+pre(["DEU/Main-Kinzig-Kreis"], [[EARLY, "HAU"], [HANAU_1736, "HK"]]);
+// Germany, south: Bavaria with the bishoprics of Freising, Passau, Bamberg, and Würzburg and the Swabian lands it gained in 1802 and
+// 1803; the Innviertel, Austrian from the Treaty of Teschen; Palatinate-Neuburg (the Elector Palatine's from 1685) and Sulzbach;
+// Ansbach and Bayreuth, joined in 1769 and Prussian from 1792; Baden-Baden, joined to Baden-Durlach in 1771; the Palatinate's right
+// bank; Freiburg, French from Nijmegen to Ryswick; and the free cities and lesser states of Swabia and Franconia.
+pre(units("DEU", ["Freising", "Garmisch-Partenkirchen", "Landkreis Augsburg", "Dillingen a.d. Donau", "Neu-Ulm", "Donau-Ries", "Unterallgäu", "Memmingen", "Ostallgäu", "Kaufbeuren",
+  "Kempten (Allgäu)", "Oberallgäu"]), [[EARLY, "HRE"], [INDEMNITIES, "BAV"]]);
+pre(units("DEU", ["Passau", "Landkreis Passau", "Lindau (Bodensee)", "Regensburg", "Eichstätt", "Berchtesgadener Land"]), [[EARLY, "HRE"]]);
+pre(["DEU/Mühldorf a. Inn"], [[EARLY, "SALZ"], [INDEMNITIES, "BAV"]], { rough: true });
+pre(units("DEU", ["Bamberg", "Landkreis Bamberg", "Forchheim", "Lichtenfels", "Kronach"]), [[EARLY, "BAM"], [INDEMNITIES, "BAV"]]);
+pre(units("DEU", ["Würzburg", "Landkreis Würzburg", "Kitzingen", "Main-Spessart", "Bad Kissingen", "Rhön-Grabfeld", "Haßberge", "Schweinfurt", "Landkreis Schweinfurt"]), [[EARLY, "WZBb"], [INDEMNITIES, "BAV"]]);
+pre(["DEU/Neuburg-Schrobenhausen"], [[EARLY, "PNE"], ["1685-05-26", "PAL"], [PALATINATE_BAVARIA, "BAV"]]);
+pre(["DEU/Amberg-Sulzbach"], [[EARLY, "HRE"], [PALATINATE_BAVARIA, "BAV"]], { rough: true });
+pre(units("DEU", ["Ansbach", "Landkreis Ansbach", "Fürth", "Landkreis Fürth", "Roth", "Schwabach", "Weißenburg-Gunzenhausen"]), [[EARLY, "ANS"], [ANSBACH_PRUSSIA, "PRg"]]);
+pre(units("DEU", ["Bayreuth", "Landkreis Bayreuth", "Kulmbach", "Hof", "Landkreis Hof", "Wunsiedel i. Fichtelgebirge", "Erlangen", "Erlangen-Höchstadt", "Neustadt a.d. Aisch-Bad Windsheim"]),
+  [[EARLY, "BAYR"], [BAYREUTH_1769, "ANS"], [ANSBACH_PRUSSIA, "PRg"]]);
+pre(units("DEU", ["Baden-Baden", "Rastatt"]), [[EARLY, "BBA"], [BADEN_1771, "BAD"]]);
+pre(units("DEU", ["Heidelberg", "Mannheim", "Rhein-Neckar-Kreis", "Neckar-Odenwald-Kreis"]), [[EARLY, "PAL"], [PALATINATE_BAVARIA, "BAV"]]);
+pre(["DEU/Ortenaukreis"], [[EARLY, "AUS"]], { rough: true });
+pre(units("DEU", ["Schwarzwald-Baar-Kreis", "Main-Tauber-Kreis", "Heilbronn", "Rottweil", "Ostalbkreis", "Schwäbisch Hall", "Hohenlohekreis", "Biberach", "Ulm"]), [[EARLY, "HRE"]]);
+pre(["DEU/Freiburg im Breisgau"], [[EARLY, "AUS"], [NIJMEGEN_EMP, "FR"], [RYSWICK, "AUS"]]);
+pre(units("AUT", ["Braunau am Inn", "Ried im Innkreis", "Schärding"]), [[EARLY, "BAV"], [TESCHEN, "AUSg"]]);
+
+// Prussia's growth in the east: Farther Pomerania (Westphalia), Stettin and the land east of the Peene (the Treaty of Stockholm of
+// 1720), Lauenburg and Bütow (Wehlau, 1657), Ducal Prussia (Polish until Wehlau), Silesia and Glatz (the Treaty of Berlin of 1742),
+// and the partitions of Poland: Royal Prussia, Warmia, and the Netze District in 1772, Danzig, Thorn, and Greater Poland in 1793,
+// and Warsaw, Masovia, Podlachia, and New Silesia in 1795.
+pre(["POL:West Pomeranian Voivodeship/*"], [[EARLY, "PR"]]);
+pre(units("POL", ["Szczecin", "Powiat policki", "Powiat goleniowski", "Powiat kamieński", "Świnoujście"]), [[EARLY, "SWP"], [STOCKHOLM_1720, "PR"]], { rough: true });
+pre(["POL/Powiat wałecki"], [[EARLY, "PLC"], [PARTITION_1, "PR"]]);
+pre(["POL:Warmian-Masurian Voivodeship/*", "RUS:Kaliningrad/*", "LTU/Klaipėda"], [[EARLY, "DPR"], [WEHLAU, "PR"]]);
+pre(units("POL", ["Olsztyn", "Powiat olsztyński", "Powiat lidzbarski", "Powiat braniewski", "Elbląg", "Powiat elbląski", "Powiat nowomiejski"]), [[EARLY, "PLC"], [PARTITION_1, "PR"]], { rough: true });
+pre(["POL:Pomeranian Voivodeship/*", "POL:Kuyavian-Pomeranian Voivodeship/*", "POL:Greater Poland Voivodeship/*", "POL:Łódź Voivodeship/*", "POL:Lubusz Voivodeship/Powiat międzyrzecki",
+  "POL:Lubusz Voivodeship/Powiat wschowski"], [[EARLY, "PLC"], [PARTITION_2, "PR"]]);
+pre(units("POL", ["Słupsk", "Powiat słupski", "Powiat lęborski", "Powiat bytowski"]), [[EARLY, "PR"]]);
+pre(["POL:Pomeranian Voivodeship/Powiat kwidzyński"], [[EARLY, "DPR"], [WEHLAU, "PR"]]);
+pre(units("POL", ["Gdynia", "Sopot", "Powiat kartuski", "Powiat kościerski", "Powiat pucki", "Powiat wejherowski", "Powiat starogardzki", "Powiat tczewski", "Powiat malborski",
+  "Powiat sztumski", "Powiat chojnicki", "Powiat człuchowski", "Powiat gdański", "Grudziądz", "Powiat grudziądzki", "Powiat świecki", "Powiat tucholski", "Powiat złotowski",
+  "Bydgoszcz", "Powiat bydgoski", "Powiat inowrocławski", "Powiat mogileński", "Powiat żniński", "Powiat nakielski", "Powiat sępoleński", "Powiat chodzieski", "Powiat pilski",
+  "Powiat czarnkowsko-trzcianecki", "Powiat wągrowiecki", "Powiat chełmiński", "Powiat wąbrzeski", "Powiat brodnicki", "Powiat golubsko-dobrzyński"]).concat(["POL:Pomeranian Voivodeship/Powiat nowodworski"]),
+  [[EARLY, "PLC"], [PARTITION_1, "PR"]], { rough: true });
+pre(["POL:Masovian Voivodeship/*", "POL:Podlaskie Voivodeship/*"].concat(units("POL", ["Powiat myszkowski", "Powiat zawierciański", "Powiat będziński", "Sosnowiec", "Dąbrowa Górnicza", "Jaworzno"])),
+  [[EARLY, "PLC"], [PARTITION_3, "PR"]]);
+pre(units("POL", ["Płock", "Powiat płocki", "Powiat gostyniński", "Powiat sierpecki", "Powiat żuromiński", "Powiat płoński", "Powiat mławski", "Powiat sochaczewski", "Powiat żyrardowski",
+  "Częstochowa", "Powiat częstochowski", "Powiat kłobucki"]), [[EARLY, "PLC"], [PARTITION_2, "PR"]], { rough: true });
+pre(["POL:Lower Silesian Voivodeship/*", "POL:Opole Voivodeship/*"].concat(units("POL", ["Bytom", "Chorzów", "Gliwice", "Jastrzębie-Zdrój", "Katowice", "Mysłowice", "Piekary Śląskie",
+  "Powiat bieruńsko-lędziński", "Powiat gliwicki", "Powiat lubliniecki", "Powiat mikołowski", "Powiat pszczyński", "Powiat raciborski", "Powiat rybnicki", "Powiat tarnogórski",
+  "Powiat wodzisławski", "Ruda Śląska", "Rybnik", "Siemianowice Śląskie", "Świętochłowice", "Tychy", "Zabrze", "Żory", "Powiat zielonogórski", "Zielona Góra", "Powiat nowosolski",
+  "Powiat żagański", "Powiat świebodziński"])), [[EARLY, "AUSg"], [BERLIN_1742, "PR"]]);
+// Austria's share: Galicia (1772), West Galicia with Kraków and Lublin (1795), and Bukovina (1775); the Ottoman Podolia of 1672 to
+// 1699.
+pre(["POL:Podkarpackie Voivodeship/*", "UKR:Lviv/*", "UKR:Ivano-Frankivsk/*", "UKR:Ternopil/*"].concat(units("POL", ["Nowy Sącz", "Tarnów", "Powiat bocheński", "Powiat dąbrowski",
+  "Powiat gorlicki", "Powiat limanowski", "Powiat myślenicki", "Powiat nowosądecki", "Powiat nowotarski", "Powiat oświęcimski", "Powiat suski", "Powiat tarnowski", "Powiat tatrzański",
+  "Powiat wadowicki", "Powiat wielicki", "Powiat żywiecki"]), ["POL:Lesser Poland Voivodeship/Powiat brzeski"]), [[EARLY, "PLC"], [PARTITION_1, "AUS"]]);
+pre(units("UKR:Ternopil", ["Borshchiv", "Buchach", "Chortkiv", "Husiatyn", "Zalishchyky"]), [[EARLY, "PLC"], [BUCZACZ, "OTT"], [KARLOWITZ, "PLC"], [PARTITION_1, "AUS"]], { rough: true });
+pre(["POL/Kraków", "POL:Lesser Poland Voivodeship/Powiat krakowski", "POL/Powiat chrzanowski", "POL:Lublin Voivodeship/*", "POL:Świętokrzyskie Voivodeship/*", "POL/Powiat siemiatycki"].concat(units("POL", ["Powiat miechowski",
+  "Powiat olkuski", "Powiat proszowicki", "Radom", "Powiat radomski", "Powiat przysuski", "Powiat szydłowiecki", "Powiat zwoleński", "Powiat lipski", "Powiat kozienicki", "Powiat białobrzeski",
+  "Powiat garwoliński", "Powiat otwocki", "Powiat miński", "Siedlce", "Powiat siedlecki", "Powiat łosicki", "Powiat sokołowski", "Powiat węgrowski", "Powiat opoczyński"])), [[EARLY, "PLC"], [PARTITION_3, "AUS"]]);
+pre(["UKR:Chernivtsi/*", "ROU/Suceava"], [[EARLY, "MOL"], [BUKOVINA, "AUS"]]);
+pre(units("UKR:Chernivtsi", ["Kelmentsi", "Khotyn", "Novoselytsia", "Sokyriany"]), [[EARLY, "MOL"], ["1713-01-01", "OTT"]], { rough: true });
+
+// Hungary and the Balkans: Ottoman Hungary, Slavonia, Bačka, and Syrmia to the Peace of Karlowitz; Transylvania, an Ottoman
+// vassal until then; the Banat to Passarowitz; Oltenia and northern Serbia Austrian from Passarowitz to the Treaty of Belgrade;
+// Venice's Dalmatia, Istria, and Bay of Kotor, Austrian from Campo Formio; the Morea, Venetian from Karlowitz to Passarowitz;
+// Crete, Venetian until 1669; and the Ionian Islands, Venetian, French from Campo Formio, the Septinsular Republic from 1800.
+pre(units("HUN", ["Budapest", "Pest", "Érd", "Fejér", "Székesfehérvár", "Dunaújváros", "Tolna", "Szekszárd", "Baranya", "Pécs", "Somogy", "Kaposvár", "Bács-Kiskun", "Kecskemét",
+  "Csongrád-Csanád", "Szeged", "Hódmezővásárhely", "Békés", "Békéscsaba", "Jász-Nagykun-Szolnok", "Szolnok", "Heves", "Eger", "Nagykanizsa"]), [[EARLY, "OTT"], [KARLOWITZ, "AUS"]], { rough: true });
+pre(units("HUN", ["Hajdú-Bihar", "Debrecen"]).concat(units("ROU", ["Alba", "Bistrița-Năsăud", "Brașov", "Cluj", "Covasna", "Harghita", "Hunedoara", "Mureș", "Sibiu", "Sălaj", "Maramureș", "Satu Mare"])),
+  [[EARLY, "TRA"], [KARLOWITZ, "AUS"]], { rough: true });
+pre(["ROU/Bihor"], [[EARLY, "TRA"], ["1664-08-10", "OTT"], [KARLOWITZ, "AUS"]], { rough: true });
+pre(["ROU/Arad"].concat(units("SRB", ["South Bačka", "North Bačka", "West Bačka", "Srem"]), units("HRV", ["Brod-Posavina", "Osijek-Baranja", "Požega-Slavonia", "Virovitica-Podravina",
+  "Vukovar-Syrmia", "Lika-Senj"])), [[EARLY, "OTT"], [KARLOWITZ, "AUS"]], { rough: true });
+pre(units("ROU", ["Timiș", "Caraș-Severin"]).concat(units("SRB", ["South Banat", "North Banat", "Central Banat"])), [[EARLY, "OTT"], [PASSAROWITZ, "AUS"]]);
+pre(units("ROU", ["Dolj", "Gorj", "Mehedinți", "Vâlcea", "Olt"]), [[EARLY, "WAL2"], [PASSAROWITZ, "AUS"], [BELGRADE_1739, "WAL2"]], { rough: true });
+pre(units("SRB", ["Belgrade", "Šumadija", "Podunavlje", "Braničevo", "Pomoravski", "Kolubara", "Mačva"]), [[EARLY, "OTT"], [PASSAROWITZ, "AUS"], [BELGRADE_1739, "OTT"]], { rough: true });
+pre(units("HRV", ["Zadar", "Šibenik-Knin", "Split-Dalmatia"]).concat(units("MNE", ["Kotor", "Tivat", "Herceg Novi", "Budva"])), [[EARLY, "VEN"], [CAMPO_FORMIO, "AUS"]], { rough: true });
+pre(["GRC/Peloponnese"], [[EARLY, "OTT"], [KARLOWITZ, "VEN"], [PASSAROWITZ, "OTT"]]);
+pre(["GRC/Crete"], [[EARLY, "VEN"], [CANDIA, "OTT"]]);
+pre(["GRC/Ionian Islands[!19.5,39.1,20.3,39.9;20.5,38.55,20.8,38.9]", "GRC/Ionian Islands[19.5,39.1,20.3,39.9]"], [[EARLY, "VEN"], [CAMPO_FORMIO, "FR"], [SEPTINSULAR, "ION"]]);
+pre(["GRC/Ionian Islands[20.5,38.55,20.8,38.9]"], [[EARLY, "OTT"], [KARLOWITZ, "VEN"], [CAMPO_FORMIO, "FR"], [SEPTINSULAR, "ION"]]);
+
+// Poland-Lithuania, Sweden's Baltic provinces, and the Cossack and Tatar lands, Russian by stages: Smolensk and the Left Bank by
+// Andrusovo (the Hetmanate under the Tsar from Pereyaslav, absorbed in 1764), Ingria, Estonia, and Livonia by the Treaty of Nystad,
+// the Zaporozhian lands at the end of the Sich (1775), the steppe by Küçük Kaynarca and Crimea from 1783, Yedisan by the Treaty
+// of Jassy, and the partitions of 1772, 1793, and 1795 (Courland in March 1795).
+pre(["LTU/*", "BLR:Grodno/*", "BLR:Brest/*", "UKR:Volyn/*", "UKR:Rivne/*"].concat(units("UKR:Ternopil", ["Kremenets", "Lanivtsi", "Shumsk"])), [[EARLY, "PLC"], [PARTITION_3, "RUS"]]);
+pre(["LTU/Klaipėda"], [[EARLY, "DPR"], [WEHLAU, "PR"]]);
+pre(["BLR:Minsk/*", "UKR:Zhytomyr/*", "UKR:Vinnytsia/*", "UKR:Kyiv/*", "UKR:Cherkasy/*", "MDA:Camenca/*"], [[EARLY, "PLC"], [PARTITION_2, "RUS"]], { rough: true });
+pre(["UKR:Khmelnytskyi/*"], [[EARLY, "PLC"], [BUCZACZ, "OTT"], [KARLOWITZ, "PLC"], [PARTITION_2, "RUS"]], { rough: true });
+pre(["BLR:Vitebsk/*", "BLR:Mahilioŭ/*", "BLR:Gomel/*", "LVA@Latgale"], [[EARLY, "PLC"], [PARTITION_1, "RUS"]], { rough: true });
+pre(["LVA@Kurzeme", "LVA@Zemgale"], [[EARLY, "CUR"], ["1795-03-28", "RUS"]]);
+pre(["LVA@Vidzeme", "LVA@Riga", "EST/*", "RUS:Leningrad/*", "RUS:Saint Petersburg/*", "FIN/South Karelia"], [[EARLY, "SW"], [NYSTAD, "RUS"]], { rough: true });
+pre(["RUS:Smolensk/*"], [[EARLY, "PLC"], [ANDRUSOVO, "RUS"]]);
+pre(["UKR/Kyiv"], [[EARLY, "PLC"], [PEREYASLAV, "HET"], [ANDRUSOVO, "RUS"]]);
+pre(["UKR:Chernihiv/*", "UKR:Poltava/*"], [[EARLY, "PLC"], [PEREYASLAV, "HET"], [HETMANATE_END, "RUS"]], { rough: true });
+pre(["UKR:Dnipropetrovsk/*", "UKR:Zaporizhzhia/*", "UKR:Kirovohrad/*"], [[EARLY, "ZAP"], [SICH_END, "RUS"]], { rough: true });
+pre(["UKR:Kherson/*", "UKR:Mykolaiv/*"], [[EARLY, "CRI"], [KAINARJI, "RUS"]], { rough: true });
+pre(["RUS:Autonomous Republic of Crimea/*", "RUS:Sevastopol/*"], [[EARLY, "CRI"], [CRIMEA_1783, "RUS"]]);
+pre(["MDA:Transnistria/*", "MDA:Grigoriopol/*"].concat(units("UKR:Odessa", ["Ananiv", "Balta", "Berezivka", "Biliaivka", "Ivanivka", "Kodyma", "Liubashivka", "Lyman", "Mykolaivka", "Okny",
+  "Ovidiopol", "Podilsk", "Rozdilna", "Savran", "Shyriaieve", "Velyka Mykhailivka", "Zakharivka"])), [[EARLY, "OTT"], [JASSY, "RUS"]], { rough: true });
+
+// Scandinavia: Scania, Blekinge, and Bohuslän's south Swedish from the Treaty of Roskilde (Halland Swedish since 1645), and
+// Trøndelag Swedish from Roskilde to the Treaty of Copenhagen.
+pre(["SWE/Skåne", "SWE/Blekinge"], [[EARLY, "DN"], [ROSKILDE, "SW"]]);
+pre(["NOR/Nord-Trøndelag", "NOR/Sør-Trøndelag"], [[EARLY, "DN"], [ROSKILDE, "SW"], [COPENHAGEN_1660, "DN"]]);
+
 // The German states that went to Prussia in 1866, the North German Confederation's members from 1867, and the south's from
 // the Empire: each row whose owner on the day is one of them goes on to the new owner then.
 const fold = (date, keys, to) => {
@@ -627,7 +964,7 @@ const yearsOf = (a, b) => { const ya = +isoOf(a).slice(0, 4), yb = +isoOf(b).sli
 // runs on in its place.
 function periods(tl, log, what) {
   const end = toDay(END);
-  if (tl[0][0] !== W) throw new Error("napoleonic: " + what + " does not start on " + W);
+  if (tl[0][0] !== EARLY) throw new Error("napoleonic: " + what + " does not start on " + EARLY);
   const list = tl.map(([from, x]) => ({ a: toDay(from), x }));
   list.forEach((p, i) => { if (i && p.a <= list[i - 1].a) throw new Error("napoleonic: " + what + " has its dates out of order at " + isoOf(p.a)); p.b = i + 1 < list.length ? list[i + 1].a - 1 : end; });
   for (;;) {
@@ -665,6 +1002,7 @@ export function buildNapoleonic(env) {
     if (!byCountry.has(pr.c)) byCountry.set(pr.c, []);
     byCountry.get(pr.c).push({ i, n: g.properties.n, prov: pr.n });
   });
+  const unitCountry = (i) => provinces[geoms[i].properties.p].c;
   const centre = (poly) => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const q of poly[0]) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); } return [(x0 + x1) / 2, (y0 + y1) / 2]; };
   const polysAt = (i) => { const g = client.feature(topo, geoms[i]).geometry; return g ? rewind(polysOf(g)) : []; };
   const inEurope = (i) => { const p = polysAt(i); if (!p.length) return false; const c = centre(p[0]); return c[0] > -32 && c[0] < 50 && c[1] > 26 && c[1] < 72; };
@@ -699,6 +1037,47 @@ export function buildNapoleonic(env) {
   const last = new Map();
   rows.forEach((r) => r.items.forEach(([i, , key]) => { last.set(key, r); last.set(String(i), r); }));
   rows.forEach((r) => { r.items = r.items.filter(([i, f, key]) => last.get(key) === r && (f || last.get(String(i)) === r)); });
+  // Before 1803: each unit (or cut or box of one) takes the history of the last PRE row that names it, and the row is parted
+  // among its units' histories. A whole unit PRE parts by cuts is parted the same way. A unit no PRE row names keeps its owner
+  // of 1803 back to 1648 (counted by country, for checking).
+  {
+    const preKey = new Map(), prePieces = new Map();
+    PRE.forEach(([sels, tl, opt], k) => {
+      for (const [, o] of tl) if (!O[o]) throw new Error("napoleonic: no owner " + o + " (PRE)");
+      if (tl[0][0] !== EARLY) throw new Error("napoleonic: PRE row " + sels[0] + " does not start on " + EARLY);
+      if (tl.some(([d]) => d >= W)) throw new Error("napoleonic: PRE row " + sels[0] + " runs past " + W);
+      const pr = { k, tl, rough: !!(opt && opt.rough) };
+      for (const it of sels.flatMap(resolve)) {
+        preKey.set(it[2], pr);
+        if (!it[1]) { preKey.set(String(it[0]), pr); prePieces.delete(it[0]); }
+        else { if (!prePieces.has(it[0])) prePieces.set(it[0], new Map()); prePieces.get(it[0]).set(it[2], [it, pr]); }
+      }
+    });
+    if (errors.length) throw new Error("napoleonic: " + errors.join("; "));
+    const composed = [], bare = new Map();
+    for (const r of rows) {
+      const parts = new Map();
+      const put = (pr, it) => { if (!parts.has(pr)) parts.set(pr, []); parts.get(pr).push(it); };
+      for (const it of r.items) {
+        const [i, f, key] = it;
+        if (preKey.has(key)) put(preKey.get(key), it);
+        else if (!f && prePieces.has(i)) for (const [pit, pr] of prePieces.get(i).values()) put(pr, pit);
+        else if (preKey.has(String(i))) put(preKey.get(String(i)), it);
+        else { put(null, it); const c = unitCountry(i) + ":" + r.tl[0][1]; bare.set(c, (bare.get(c) || 0) + 1); }
+      }
+      for (const [pr, items] of parts) {
+        let tl;
+        if (!pr) tl = [[EARLY, r.tl[0][1]]].concat(r.tl.slice(1));
+        else {
+          const head = pr.tl.slice();
+          tl = head.concat(head[head.length - 1][1] === r.tl[0][1] && !pr.rough ? r.tl.slice(1) : r.tl);
+        }
+        composed.push({ k: r.k + (pr ? "/" + pr.k : ""), items, tl, roughUntil: r.rough ? Infinity : pr && pr.rough ? toDay(W) : -Infinity });
+      }
+    }
+    rows.splice(0, rows.length, ...composed);
+    log("before 1803, units no PRE row names (they keep their owner of 1803): " + [...bare].map(([c, n]) => c + " " + n).join(", "));
+  }
   // The occupations of the wars (WAR_OCC): their land day by day for the zones of control, then the main map's timelines without
   // them. A dedicated owner (occupied from its first day, as HANo) gives way in LAND to the owner before it; an owner occupied by
   // a change of its attributes (as Prussia) has that change put off to the day after the war, with the rest of the change too if
@@ -754,7 +1133,7 @@ export function buildNapoleonic(env) {
     }
   }
   if (errors.length) throw new Error("napoleonic: " + errors.join("; "));
-  const blocks = rows.filter((r) => r.items.length).map((r) => ({ items: r.items, rough: r.rough, per: periods(r.tl, log, "land row " + r.k + " (" + r.tl.map((t) => t.join(" ")).join(", ") + ")") }));
+  const blocks = rows.filter((r) => r.items.length).map((r) => ({ items: r.items, roughUntil: r.roughUntil, per: periods(r.tl, log, "land row " + r.k + " (" + r.tl.map((t) => t.join(" ")).join(", ") + ")") }));
   // Each owner's attributes, period by period.
   const attrs = {};
   for (const [key, tl] of Object.entries(OW)) {
@@ -768,8 +1147,9 @@ export function buildNapoleonic(env) {
   // on the page, and a piece carries the name unless a larger one of the same name is on the map for at least half its days.
   const groups = new Map();
   for (const blk of blocks) for (const p of blk.per) {
-    const k = p.x + "|" + p.a + "|" + p.b + (blk.rough ? "|rough" : "");
-    if (!groups.has(k)) groups.set(k, { owner: p.x, a: p.a, b: p.b, rough: blk.rough, items: [] });
+    const rough = p.a < blk.roughUntil;
+    const k = p.x + "|" + p.a + "|" + p.b + (rough ? "|rough" : "");
+    if (!groups.has(k)) groups.set(k, { owner: p.x, a: p.a, b: p.b, rough, items: [] });
     groups.get(k).items.push(...blk.items);
   }
   const end = toDay(END), spans = [];
@@ -818,7 +1198,7 @@ export function buildNapoleonic(env) {
     const polys = shapeOf(s.items);
     if (!polys.length) continue;
     out.push({ name: s.name, wiki: s.wiki, ruler: s.ruler, status: s.status, part: s.part, b: s.b, ...(s.claims ? { claims: s.claims.slice().sort(), noLabel: false } : {}), host: s.host,
-      first, last: lastY, dayFrom: s.da > toDay(W) ? [first, s.da - DAY_1886] : null, dayTo: s.db < end ? [lastY, s.db - DAY_1886] : null, from: isoOf(s.da), to: isoOf(s.db), polys });
+      first, last: lastY, dayFrom: s.da > toDay(EARLY) ? [first, s.da - DAY_1886] : null, dayTo: s.db < end ? [lastY, s.db - DAY_1886] : null, from: isoOf(s.da), to: isoOf(s.db), polys });
   }
   const size = (polys) => polys.reduce((t, poly) => { let s = 0; const r = poly[0]; for (let i = 0; i + 1 < r.length; i++) s += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; return t + Math.abs(s) * Math.cos((r[0][1] * Math.PI) / 180); }, 0);
   out.forEach((s) => { s.size = size(s.polys); });
