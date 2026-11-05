@@ -1,6 +1,6 @@
 # CHRONIA developer tools: design
 
-5 November 2026. Approved in conversation with Noah; this is the written spec for his review.
+5 November 2026. Approved by Noah, and built the same day (see the *Developer tools* section of `chronia/README.md`).
 
 ## Purpose
 

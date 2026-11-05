@@ -1000,6 +1000,19 @@ To switch it on, in the Supabase project `kigvciyyjlgjcgnwgrwf`:
 
 The function and the page were tested with Deno against a small stand-in for Supabase's REST API, and the migration against PostgreSQL 16: wrong passwords, the lockout, the team's password on the review page, a report sent, listed, replied to, marked fixed, and opened again, at a desktop and a phone width.
 
+## Developer tools
+
+Noah's own edits to the map, made on the page and shown to every visitor, without touching the data files (the design: `docs/superpowers/specs/2026-11-05-chronia-dev-tools-design.md`).
+
+- **Opening them:** add `&dev` (or `#dev`) to the address, or press Shift+D, and enter the reviewer password (`CHRONIA_REVIEW_PASSWORD`, set in Supabase; the fact checkers' password doesn't open them). The password is kept for the tab (`sessionStorage`, `chronia-dev`), and `&dev` stays in the address while the tools are open. `dev.js` is loaded only then, so visitors download nothing more than the list of edits.
+- **The tools:** *Country* (click a country: its colour, one of the ten or any other, or the name shown on the map, its card, and in search), *City* (click a city: its size, from *Largest* to *Smallest*, which replaces the size its population gives it; its name; or hide it, capitals too), and *Move name* (drag a country's name to where it should sit; the form then takes a size in pixels and an angle in degrees, both optional). A click with *Country* or *City* on goes to the tools, not the card.
+- **Dates:** each edit holds from one date to another, both included, typed as the date box takes them (1815, July 1815, 3 July 1815, 500 BC) and stored as the reports store them (`1815`, `1815-07`, `1815-07-03`, `-500`). They start as the stretch the borders shown hold for, from their change to the day before the next (`devStretch`). Where two edits of one kind for one country or city overlap, the one saved last wins.
+- **The list:** *In force on* lists the edits that hold at the date shown, each with Edit and Delete; *Not found* lists those whose country or city the data no longer has (a country renamed in a rebuild), which change nothing on the map until fixed.
+- **Saving:** the map shows a change at once and goes back if the save is refused; a refused password asks for it again.
+- **Storage:** the table `chronia_edits` (`supabase/migrations/20261105_chronia_edits.sql`), read and written only by the edge function `chronia-edits`, which anyone may ask to `list` (cached for 30 seconds) and only the password may ask to `save` or `delete`; wrong passwords count against the reports' daily strikes. Countries are named as in `eras.json` (unique among its polities, and kept across rebuilds, unlike their numbers), cities by their keys (`london`).
+- **On the page:** `loadEdits` fetches the list at the start without holding up the first map; `editAt(kind, target, t)` gives the value in force. A colour edit goes in through `polityColor` and `ownColour` (so a ruler's new colour reaches its dependencies, and a member of a group can be recoloured on its own), with the colour edits in force in each snapshot's key; a colour outside the ten takes a slot after them (`customSlot`), with a band colour worked out from the nearest of the ten (`bandFor`). A name edit goes in through `polityName`, a city's through `cityShownName` and `cityRanked`, and a pinned name is laid out before the others (`pinnedItem`), which keep clear of it.
+- **Checks:** `tools/chronia-dev-check.mjs` (with the function stubbed) and `tools/chronia-edits-api-check.mjs` (against the deployed function, or a local copy run with a stand-in database and `CHRONIA_EDITS_PASSWORD`).
+
 ## Testing
 
 As with UCHRONIA, test on a local copy, never the live site.
