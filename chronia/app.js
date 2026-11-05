@@ -2550,8 +2550,8 @@
     for (i = 0; i < snap.order.length; i++) (labelState.has(snap.order[i].id) ? first : rest).push(snap.order[i]);
     var order = (snap.groups || []).concat(first, rest), seen = new Set();
     // Names pinned by a label edit go first, where the edit puts them, and the others are laid out round them.
-    if (edits.labelN) for (i = 0; i < order.length; i++) {
-      var pp = order[i], pv = !seen.has(pp.id) && pp.label ? editAt("label", polityOwnName(pp.id), now) : null;
+    if (edits.labelN || devGhost) for (i = 0; i < order.length; i++) {
+      var pp = order[i], pv = !seen.has(pp.id) && pp.label ? (devGhost && devGhost.target === polityOwnName(pp.id) ? devGhost : editAt("label", polityOwnName(pp.id), now)) : null;
       var pin = pv ? pinnedItem(pp, pv, kp, placed) : null;
       if (!pin) continue;
       seen.add(pp.id);
@@ -3400,6 +3400,10 @@
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     hideTip();
+    if (devMode === "label" && pointers.size === 1) {
+      var lab = devLabelAt(e.clientX, e.clientY);
+      if (lab) { devDrag = lab; drag = null; downAt = null; return; }
+    }
     if (pointers.size === 1) {
       drag = { x: e.clientX, y: e.clientY, samples: [[e.timeStamp, e.clientX, e.clientY]] };
       downAt = { x: e.clientX, y: e.clientY, t: e.timeStamp, moved: false };
@@ -3416,6 +3420,11 @@
       return;
     }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (devDrag) {
+      var ll = lonLatAt(e.clientX + devDrag.dx, e.clientY + devDrag.dy);
+      if (ll) { devGhost = { target: devDrag.target, lon: ll[0], lat: ll[1], size: devDrag.size, angle: devDrag.angle }; labelCache.delete("layout"); scheduleRender(); }
+      return;
+    }
     if (pinch && pointers.size >= 2) {
       var pts = Array.from(pointers.values());
       var d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), mx = (pts[0].x + pts[1].x) / 2, my = (pts[0].y + pts[1].y) / 2;
@@ -3438,6 +3447,12 @@
     if (!pointers.has(e.pointerId)) return;
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = null;
+    if (devDrag) {
+      var dd = devDrag;
+      devDrag = null;
+      if (devGhost && dev && dev.ui) dev.ui.onPick("label", { name: dd.target, shown: dd.shown, lon: devGhost.lon, lat: devGhost.lat, size: dd.size, angle: dd.angle });
+      return;
+    }
     if (pointers.size === 1) {
       var rest = Array.from(pointers.values())[0];
       drag = { x: rest.x, y: rest.y, samples: [] };
@@ -3447,6 +3462,7 @@
     var clickLike = downAt && !downAt.moved && e.timeStamp - downAt.t < 600 && e.type === "pointerup";
     if (clickLike) {
       if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
+      if (devMode && devMode !== "label" && devClick(e.clientX, e.clientY)) { drag = null; downAt = null; return; }
       var town = cityAt(e.clientX, e.clientY, e.pointerType !== "mouse");
       divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       var p = town ? null : polityAt(e.clientX, e.clientY);
@@ -6101,6 +6117,7 @@
     else if (e.key === "ArrowUp" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(1); }
     else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
+    else if (e.key === "D" && e.shiftKey) openDev();
     else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
     else if (e.key === "o" || e.key === "O") togglePlay(e.shiftKey, true);
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
@@ -6113,7 +6130,7 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "");
+      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "");
       if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
     }, 250);
   }
@@ -6342,6 +6359,89 @@
     }).then(function (b) { edits.loaded = true; edits.failed = false; setEdits(b.edits); }, function (e) { edits.failed = true; console.warn("edits", e); });
   }
 
+  // The developer tools (dev.js) are loaded only when opened, with #dev in the address or Shift+D. They talk to the
+  // page through window.CHRONIA_DEV; dev.js adds its own part to it as CHRONIA_DEV.ui.
+  var dev = null, devMode = null, devDrag = null, devGhost = null;
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  // A time on the timeline as a stored date: a year before 1800, a day from then.
+  function storedDate(t) {
+    if (t < MONTHLY_FROM) return String(Math.floor(t + 1e-9));
+    var d = dateOfDay(dayOfTime(t));
+    return d[0] + "-" + pad2(d[1]) + "-" + pad2(d[2]);
+  }
+  // The stretch of the timeline the borders shown hold for: from the change before the date to the day (or year)
+  // before the next, as stored dates.
+  function devStretch() {
+    var i = -1, k;
+    for (k = 0; k < points.length; k++) if (points[k] <= now + 1e-7) i = k;
+    var from = i >= 0 ? storedDate(points[i]) : storedDate(FIRST_T), next = i + 1 < points.length ? points[i + 1] : null, to;
+    if (next === null) to = storedDate(lastT());
+    else if (next < MONTHLY_FROM) to = String(Math.round(next) - 1);
+    else { var d = dateOfDay(dayOfTime(next) - 1); to = d[0] + "-" + pad2(d[1]) + "-" + pad2(d[2]); }
+    return [from, to];
+  }
+  function devLabelAt(x, y) {
+    for (var i = placedLabels.length - 1; i >= 0; i--) {
+      var l = placedLabels[i];
+      if ((l.kind !== "polity" && l.kind !== "people") || l.sea || !l.box) continue;
+      var b = l.box;
+      if (x < b.x || x > b.x + b.w || y < b.y || y > b.y + b.h) continue;
+      var target = polityOwnName(l.id), v = editAt("label", target, now);
+      return { target: target, shown: l.name, dx: l.x - x, dy: l.y - y, size: v ? v.size : null, angle: v ? v.angle : null, id: l.id };
+    }
+    return null;
+  }
+  function devCityAt(x, y) {
+    var best = null, bd = 400;
+    for (var i = 0; i < placedLabels.length; i++) {
+      var l = placedLabels[i];
+      if (l.kind !== "capital" && l.kind !== "city" && l.kind !== "town") continue;
+      var b = l.box, inBox = b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h, d = (l.x - x) * (l.x - x) + (l.y - y) * (l.y - y);
+      if (inBox) d = Math.min(d, 1);
+      if (d < bd) { bd = d; best = l; }
+    }
+    if (!best) return null;
+    var c = best.id && cities ? cities.rows.find(function (r) { return r.id === best.id; }) : null;
+    return c ? { id: c.id, name: cityShownName(c, now), own: namedAt(c.steps, c.name, now) } : null;
+  }
+  // A click on the map while the Country or City tool is on goes to the tools instead of opening the card.
+  function devClick(x, y) {
+    if (!dev || !dev.ui) return false;
+    if (devMode === "country") {
+      var p = polityAt(x, y);
+      dev.ui.onPick("country", p ? { name: polityOwnName(p.id), shown: polityName(p.id) } : null);
+      return true;
+    }
+    if (devMode === "city") { dev.ui.onPick("city", devCityAt(x, y)); return true; }
+    return false;
+  }
+  function openDev() {
+    if (dev) { if (dev.ui) dev.ui.show(); return; }
+    dev = window.CHRONIA_DEV = {
+      url: EDITS_URL,
+      now: function () { return now; },
+      fmt: function (t) { return fmtNow(t === undefined ? now : t); },
+      stretch: devStretch,
+      stored: storedDate,
+      palette: function () { return pal.colors.slice(0, PALETTE); },
+      edits: function () { return edits.list.map(function (e) { return { id: e.id, kind: e.kind, target: e.target, from: e.from, to: e.to, value: e.value, note: e.note, updated_at: e.updated_at, t0: e.t0, t1: e.t1 }; }); },
+      setEdits: setEdits,
+      notFound: editsNotFound,
+      failed: function () { return edits.failed; },
+      pick: function (mode) { devMode = mode || null; canvas.classList.toggle("is-dev-pick", !!devMode); },
+      ghost: function (g) { devGhost = g || null; labelCache.delete("layout"); scheduleRender(); },
+      opened: function (on) { devOpen = !!on; writeHash(); },
+      ui: null
+    };
+    var sc = document.createElement("script");
+    sc.src = "dev.js" + (DATA_V ? "?v=" + DATA_V : "");
+    sc.onerror = function () { console.warn("dev.js could not be loaded"); dev = null; };
+    document.head.appendChild(sc);
+  }
+  var devOpen = false;
+  window.addEventListener("hashchange", function () { if (devInHash() && !devOpen) openDev(); });
+  function devInHash() { return /(^|&)dev(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
+
   function start() {
     loadEdits();
     readPalette();
@@ -6401,6 +6501,7 @@
           }).catch(function (e) { console.warn("sea", e); });
         });
         whenIdle(function () { loadModern().catch(function () {}); });
+        if (devInHash()) openDev();
       });
     }).catch(function (e) {
       console.error(e);

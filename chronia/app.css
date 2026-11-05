@@ -2087,3 +2087,216 @@ select.ch-save-input {
   border-top: 0;
   opacity: 0.8;
 }
+
+/* The developer tools (dev.js), shown only to Noah. */
+.ch-globe.is-dev-pick {
+  cursor: crosshair;
+}
+.ch-dev {
+  position: fixed;
+  top: calc(var(--ch-bar) + 3 * var(--ch-gap) + 10px);
+  right: var(--ch-gap);
+  z-index: 9;
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 2 * var(--ch-gap)));
+  max-height: calc(100vh - var(--ch-bar) - var(--ch-time-h) - 6 * var(--ch-gap) - 10px);
+  overflow: auto;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--rule);
+  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), var(--ch-lift);
+  background-color: var(--bg);
+  background-image: var(--ch-grain);
+  background-size: 260px 260px;
+  color: var(--ink);
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.ch-dev[hidden] {
+  display: none;
+}
+.ch-dev-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ch-dev p {
+  margin: 0;
+}
+.ch-dev-tools {
+  display: flex;
+  border: 1px solid var(--ch-faint);
+}
+.ch-dev-tool {
+  flex: 1 1 0;
+  padding: 5px 6px;
+  border: 0;
+  border-left: 1px solid var(--ch-faint);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.ch-dev-tool:first-child {
+  border-left: 0;
+}
+.ch-dev-tool[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+.ch-dev-kinds {
+  margin: 8px 0 4px;
+}
+.ch-dev-hint,
+.ch-dev-none,
+.ch-dev-count,
+.ch-dev-note {
+  margin: 6px 0 0;
+  color: var(--ch-muted);
+  font-size: 13px;
+}
+.ch-dev-h {
+  margin: 14px 0 4px !important;
+  padding-top: 8px;
+  border-top: 1px solid var(--ch-faint);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ch-muted);
+}
+.ch-dev-form {
+  margin-top: 10px;
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--ch-faint);
+}
+.ch-dev-target {
+  font-size: 16px;
+}
+.ch-dev-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--ch-muted);
+}
+.ch-dev-field[hidden],
+.ch-dev-colour[hidden],
+.ch-dev-labelset[hidden],
+.ch-dev-hint[hidden] {
+  display: none;
+}
+.ch-dev-field input,
+.ch-dev-field select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--ch-faint);
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+.ch-dev-field input[type="color"] {
+  width: 64px;
+  height: 28px;
+  padding: 1px 2px;
+}
+.ch-dev-custom.is-on {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.ch-dev-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+.ch-dev-swatches {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+.ch-dev-swatch-btn {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--ch-faint);
+  cursor: pointer;
+}
+.ch-dev-swatch-btn[aria-pressed="true"] {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.ch-dev-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border: 1px solid var(--ch-faint);
+  vertical-align: -1px;
+}
+.ch-dev-acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ch-dev-row .ch-dev-acts {
+  margin-top: 2px;
+  gap: 12px;
+}
+.ch-dev-row {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--ch-faint);
+}
+.ch-dev-row-text {
+  overflow-wrap: anywhere;
+}
+.ch-dev-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.ch-dev-btn.is-main {
+  background: var(--ink);
+  color: var(--bg);
+}
+.ch-dev-btn:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+.ch-dev-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.ch-dev-login {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ch-dev-login .ch-dev-field {
+  flex: 1;
+  margin: 0;
+}
+.ch-dev-status {
+  min-height: 1em;
+  margin-top: 8px !important;
+  font-size: 13px;
+  color: var(--ch-muted);
+}
+.ch-dev-status.is-bad {
+  color: var(--ch-select);
+}

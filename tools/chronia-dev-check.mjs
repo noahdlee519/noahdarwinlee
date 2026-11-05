@@ -191,6 +191,137 @@ await run("label", async () => {
   await page.close();
 });
 
+// A stand-in for the function's password and saving: test-pass is the only password; saves are echoed back
+// with an id after `saveDelay` ms, or refused with 401 when `refuse` is set.
+function server(opts = {}) {
+  let next = 100;
+  return {
+    edits: opts.edits || [],
+    answer: async (action, body) => {
+      if (body.password !== "test-pass" || opts.refuse) return [401, { error: "password" }];
+      if (action === "check") return [200, { ok: true }];
+      if (action === "delete") return [200, { ok: true }];
+      if (opts.saveDelay) await new Promise((r) => setTimeout(r, opts.saveDelay));
+      return [200, { edit: { ...body.edit, id: body.edit.id || next++, note: body.edit.note || "", updated_at: new Date().toISOString() } }];
+    },
+  };
+}
+
+await run("editor", async () => {
+  const plain = await open("#y=1815-07&v=2.35,46.50,8.00", { edits: [] });
+  await settle(plain.page, 1500);
+  ok(!plain.requests.some((u) => /\/dev\.js/.test(u)), "dev.js isn't loaded for visitors");
+  await plain.page.close();
+
+  const srv = server({ saveDelay: 1500, edits: [E(50, "city-hide", "no-such-city", "1815", "1815", {})] });
+  const { page, errors, calls, requests } = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv);
+  await page.waitForSelector("#dev-password", { timeout: 15000 });
+  ok(requests.some((u) => /\/dev\.js/.test(u)), "#dev in the address loads the tools and asks for the password");
+  await page.fill("#dev-password", "wrong");
+  await page.click(".ch-dev-login button[type=submit]");
+  await page.waitForFunction(() => /isn't right/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 5000 });
+  ok(!(await page.$(".ch-dev-tool")), "a wrong password opens nothing and says so");
+  await page.fill("#dev-password", "test-pass");
+  await page.click(".ch-dev-login button[type=submit]");
+  await page.waitForSelector(".ch-dev-tool", { timeout: 5000 });
+  ok(true, "the right password opens the tools");
+  ok(/Not found/.test(await page.textContent(".ch-dev-list")) && /no-such-city/.test(await page.textContent(".ch-dev-list")), "edits for missing targets are listed under Not found");
+
+  // Country tool: recolour France.
+  await page.click('.ch-dev-tool[data-tool="country"]');
+  await settle(page, 300);
+  const at = [0.9, 44.2];
+  const base = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
+  const q = await page.evaluate(([a, b]) => window.__chronia.project(a, b), at);
+  await page.mouse.click(q[0], q[1]);
+  await page.waitForSelector(".ch-dev-form", { timeout: 5000 });
+  ok(/Bourbon Kingdom of France/.test(await page.textContent(".ch-dev-target")), "clicking France opens its form: " + (await page.textContent(".ch-dev-target")));
+  const dates = await page.$$eval(".ch-dev-dates input", (els) => els.map((e) => e.value));
+  ok(dates.length === 2 && dates[0] && dates[1], "the dates default to the borders' stretch: " + dates.join(" to "));
+  ok(await page.evaluate(() => document.getElementById("card").hidden), "the country's card doesn't open");
+  await page.click('.ch-dev-swatch-btn[data-c="6"]');
+  if (process.env.SHOT2) await page.locator("#dev").screenshot({ path: process.env.SHOT2 });
+  await page.click(".ch-dev-form button[type=submit]");
+  await settle(page, 500);
+  const mid = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
+  ok(Math.abs(mid[1] - base[1]) > 15, "the map changes before the server answers: " + base + " -> " + mid);
+  await page.waitForFunction(() => /Saved/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 8000 });
+  const sent = calls.filter((c) => c.action === "save").pop();
+  ok(sent && sent.edit.kind === "country-colour" && sent.edit.target === "Bourbon Kingdom of France" && sent.edit.value.c === 6 && sent.password === "test-pass", "the save sends the edit: " + JSON.stringify(sent && sent.edit));
+  if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
+  const rowText = await page.textContent(".ch-dev-row");
+  ok(/Bourbon Kingdom of France \| Colour 7 \| .* to /.test(rowText), "the edit is listed with | between its parts: " + rowText);
+
+  // Delete it.
+  page.once("dialog", (d) => d.accept());
+  await page.click('.ch-dev-row:not([data-id="50"]) .ch-dev-link:text("Delete")');
+  await settle(page, 800);
+  const del = calls.filter((c) => c.action === "delete").pop();
+  ok(del && del.id === 100, "Delete sends the edit's id: " + JSON.stringify(del));
+  const after = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
+  ok(Math.abs(after[1] - base[1]) < 8, "and France is back: " + after);
+
+  // A name typed with HTML in it stays text.
+  await page.mouse.click(q[0], q[1]);
+  await page.waitForSelector(".ch-dev-form");
+  await page.click('.ch-dev-form [data-kind="country-name"]');
+  await page.fill(".ch-dev-form .ch-dev-field:not([hidden]) input[type=text]", "<b>x</b>");
+  await page.click(".ch-dev-form button[type=submit]");
+  await page.waitForFunction(() => /Saved/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 8000 });
+  ok(/Name: <b>x<\/b>/.test(await page.textContent(".ch-dev-list")) && !(await page.$(".ch-dev-list b")), "a name with HTML in it shows as text");
+
+  // Reload: the password is remembered for the tab.
+  await page.reload();
+  await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
+  await page.waitForSelector(".ch-dev-tool", { timeout: 15000 });
+  ok(!(await page.$("#dev-password")), "a reload doesn't ask for the password again");
+
+  // Move name: drag France's name 80 px right.
+  await page.click('.ch-dev-tool[data-tool="label"]');
+  await settle(page, 600);
+  const lb = await page.evaluate(() => window.__chronia.labelBox("Bourbon Kingdom of France") || window.__chronia.labelBox("<b>x</b>"));
+  await page.mouse.move(lb[0], lb[1]);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(lb[0] + i * 10, lb[1]);
+  await page.mouse.up();
+  await page.waitForSelector(".ch-dev-labelset:not([hidden])", { timeout: 5000 });
+  const whereText = await page.textContent(".ch-dev-labelset .ch-dev-hint");
+  const lon = +(/([\d.]+)° ([EW])$/.exec(whereText) || [0, "NaN"])[1] * (/W$/.test(whereText) ? -1 : 1);
+  const lb2 = await page.evaluate(() => window.__chronia.labelBox("<b>x</b>") || window.__chronia.labelBox("Bourbon Kingdom of France"));
+  ok(lb2 && lb2[0] > lb[0] + 60, "dragging the name moves it on the map: " + Math.round(lb[0]) + " -> " + (lb2 && Math.round(lb2[0])));
+  ok(isFinite(lon) && lon > 2, "and the form has the new place: " + whereText);
+  await page.click(".ch-dev-form button[type=submit]");
+  await page.waitForFunction(() => /Saved/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 8000 });
+  const lab = calls.filter((c) => c.action === "save").pop();
+  ok(lab && lab.edit.kind === "label" && lab.edit.value.lon > 2, "the save sends the name's place: " + JSON.stringify(lab && lab.edit.value));
+  ok(!errors.length, "no page errors: " + errors);
+  await page.close();
+});
+
+await run("refused", async () => {
+  const srv = server();
+  const { page, errors } = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv);
+  await page.waitForSelector("#dev-password", { timeout: 15000 });
+  await page.fill("#dev-password", "test-pass");
+  await page.click(".ch-dev-login button[type=submit]");
+  await page.waitForSelector(".ch-dev-tool");
+  await page.click('.ch-dev-tool[data-tool="country"]');
+  const at = [0.9, 44.2];
+  const base = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
+  const q = await page.evaluate(([a, b]) => window.__chronia.project(a, b), at);
+  await page.mouse.click(q[0], q[1]);
+  await page.waitForSelector(".ch-dev-form");
+  await page.click('.ch-dev-swatch-btn[data-c="6"]');
+  srv.answer = async () => [401, { error: "password" }];
+  await page.click(".ch-dev-form button[type=submit]");
+  await page.waitForSelector("#dev-password", { timeout: 8000 });
+  ok(/refused/.test(await page.textContent(".ch-dev-status")), "a refused save asks for the password again: " + (await page.textContent(".ch-dev-status")));
+  const back = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
+  ok(Math.abs(back[1] - base[1]) < 8, "and the map goes back: " + back);
+  ok(!errors.length, "no page errors: " + errors);
+  await page.close();
+});
+
 await browser.close();
 console.log(failed ? failed + " failed" : "all passed");
 process.exit(failed ? 1 : 0);
