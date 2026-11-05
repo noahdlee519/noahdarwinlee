@@ -134,6 +134,34 @@ await run("modern country", async () => {
   await page.close();
 });
 
+await run("city", async () => {
+  const { page, errors } = await open("#y=1815-07&v=-0.13,51.51,20.00");
+  await settle(page, 2000);
+  const london = () => page.evaluate(() => window.__chronia.cities().find((c) => c.id === "london") || null);
+  const set = (l) => page.evaluate((l) => window.__chronia.setEdits(l), l);
+  const before = await london();
+  ok(before && before.tier === 1 && before.name === "London", "London is a tier-1 city in 1815: " + JSON.stringify(before));
+  await set([E(1, "city-size", "london", "1815", "1815", { tier: 4 })]); await settle(page);
+  ok((await london()).tier === 4, "a size edit makes it tier 4: " + JSON.stringify(await london()));
+  await set([E(1, "city-name", "london", "1815", "1815", { name: "Lundenwic" })]); await settle(page);
+  ok((await london()).name === "Lundenwic", "a name edit renames it: " + (await london()).name);
+  const drawn = await page.evaluate(() => window.__chronia.labels().some((l) => l.text === "Lundenwic" || l.name === "Lundenwic"));
+  ok(drawn, "the map draws the new name");
+  const hits = await page.evaluate(() => window.__chronia.search("Lundenwic"));
+  ok(hits.some((h) => /Lundenwic/.test(h)), "search finds it under its new name: " + hits.slice(0, 2));
+  const old = await page.evaluate(() => window.__chronia.search("London"));
+  ok(old.some((h) => /Lundenwic/.test(h)), "and under its own: " + old.slice(0, 2));
+  await set([E(1, "city-hide", "london", "1815", "1815", {})]); await settle(page);
+  ok((await london()) === null, "a hide edit hides it");
+  const drawnHidden = await page.evaluate(() => window.__chronia.labels().some((l) => /^London|Lundenwic/.test(l.text || l.name || "")));
+  ok(!drawnHidden, "and the map doesn't draw it, even as a capital");
+  await set([E(1, "city-hide", "london", "1816", "1817", {}), E(2, "city-name", "london", "1700", "1700", { name: "X" })]); await settle(page);
+  const back = await london();
+  ok(back && back.tier === 1 && back.name === "London", "edits for other years don't show: " + JSON.stringify(back));
+  ok(!errors.length, "no page errors: " + errors);
+  await page.close();
+});
+
 await browser.close();
 console.log(failed ? failed + " failed" : "all passed");
 process.exit(failed ? 1 : 0);

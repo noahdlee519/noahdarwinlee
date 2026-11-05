@@ -2723,18 +2723,30 @@
     for (var i = 1; i < n; i++) if (t <= ys[i]) return ps[i - 1] * Math.pow(ps[i] / ps[i - 1], (t - ys[i - 1]) / (ys[i] - ys[i - 1]));
     return ps[n - 1];
   }
-  var cityRank = { t: NaN, n: 0, list: [] };
+  var cityRank = { t: NaN, n: 0, tag: -1, list: [] };
+  // The cities alive at t, largest first, each with its tier (1, the largest marks, to 4): by population, or as a
+  // city-size edit sets it; a city with a city-hide edit is left out.
   function cityRanked(t) {
-    if (cityRank.t === t && cityRank.n === cities.rows.length) return cityRank.list;
-    var list = [], rows = cities.rows, ranks = cities.ranks;
+    if (cityRank.t === t && cityRank.n === cities.rows.length && cityRank.tag === edits.tag) return cityRank.list;
+    var list = [], rows = cities.rows, ranks = cities.ranks, cityEdits = edits.cityN > 0;
     for (var i = 0; i < rows.length; i++) {
       var c = rows[i];
-      if (c.since <= t && t < c.until) list.push({ c: c, pop: popAt(c, t), tier: 4 });
+      if (c.since <= t && t < c.until && !(cityEdits && editAt("city-hide", c.id, t))) list.push({ c: c, pop: popAt(c, t), tier: 4 });
     }
     list.sort(function (a, b) { return b.pop - a.pop; });
     for (i = 0; i < list.length; i++) list[i].tier = i < ranks[0] ? 1 : i < ranks[1] ? 2 : i < ranks[2] ? 3 : 4;
-    cityRank = { t: t, n: rows.length, list: list };
+    if (cityEdits) {
+      list.forEach(function (x) { var v = editAt("city-size", x.c.id, t); if (v) x.tier = v.tier; });
+      list.sort(function (a, b) { return a.tier - b.tier || b.pop - a.pop; });
+    }
+    cityRank = { t: t, n: rows.length, tag: edits.tag, list: list };
     return list;
+  }
+  function cityHidden(c, t) { return !!(c && edits.cityN && editAt("city-hide", c.id, t)); }
+  // A city's name at t: a city-name edit's, or its own of the time.
+  function cityShownName(c, t) {
+    var v = edits.cityN ? editAt("city-name", c.id, t) : null;
+    return v ? v.name : namedAt(c.steps, c.name, t);
   }
   function loadMinorCities() {
     if (cities.minorLoad) return;
@@ -2764,7 +2776,8 @@
     return best;
   }
   function capitalName(c) {
-    var city = cityNear(c[1], c[2], c[0]);
+    var city = cityNear(c[1], c[2], c[0]), v = city && edits.cityN ? editAt("city-name", city.id, now) : null;
+    if (v) return v.name;
     return city && city.steps ? namedAt(city.steps, c[0], now) : c[0];
   }
   function cityTier(S) { return S < 330 ? 0 : S < 480 ? 1 : S < 800 ? 2 : S < 1400 ? 3 : 4; }
@@ -2798,7 +2811,7 @@
       if (!c || seen.has(p.id)) continue;
       seen.add(p.id);
       var pt = projectLL(c[1], c[2]);
-      if (pt && pt[2] >= 0.25) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]) });
+      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]) });
     }
     return out;
   }
@@ -2866,7 +2879,7 @@
         var c = list[i].c;
         if (capCity.has(c)) continue;
         var p = projectLL(c.lon, c.lat);
-        if (p && p[2] >= 0.25) placeOne(placed, p, namedAt(c.steps, c.name, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
+        if (p && p[2] >= 0.25) placeOne(placed, p, cityShownName(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
       }
     }
     ctx.letterSpacing = "0px";
@@ -4224,13 +4237,14 @@
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
     var at = r.cap ? capitalNow(r.cap) || (city ? null : capitalAt(r.cap, Math.min(dayOfTime(now), modern.toDay))) : null;
-    if (!at) return { lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, of: -1, kind: l.kind };
-    if (city) return { lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, of: r.of, kind: l.kind };
+    if (!at) return { id: city.id, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, of: -1, kind: l.kind };
+    if (city) return { id: city.id, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, of: r.of, kind: l.kind };
     return { lon: at[1], lat: at[2], modern: at[0], names: null, since: null, of: r.of, kind: l.kind };
   }
   function cityFacts(c) {
     var modernNow = !!(current && current.modern), day = modernNow ? Math.min(dayOfTime(now), modern.toDay) : yearOf(now);
-    return { name: namedAt(c.names, c.modern, now), modern: c.modern, day: day, modernNow: modernNow, early: c.since != null && now < c.since };
+    var ed = c.id && edits.cityN ? editAt("city-name", c.id, now) : null;
+    return { name: ed ? ed.name : namedAt(c.names, c.modern, now), modern: c.modern, day: day, modernNow: modernNow, early: c.since != null && now < c.since };
   }
   function cityState(c) {
     if (!current) return null;
@@ -5348,7 +5362,7 @@
     function near(lon, lat) { for (var i = 0; i < placed.length; i++) if (Math.abs(placed[i][0] - lon) < 0.05 && Math.abs(placed[i][1] - lat) < 0.05) return i; return -1; }
     if (cities) cityRanked(t).slice(0, UC_MAX_CITIES).forEach(function (e) {
       var cc = e.c, cap = caps.some(function (k) { return Math.abs(k[1] - cc.lon) < 0.15 && Math.abs(k[2] - cc.lat) < 0.15; }) ? 1 : 0;
-      a.push([namedAt(cc.steps, cc.name, t).slice(0, 60), Math.round(cc.lon * 1e4) / 1e4, Math.round(cc.lat * 1e4) / 1e4, e.tier, cap, "u" + (++seq)]);
+      a.push([cityShownName(cc, t).slice(0, 60), Math.round(cc.lon * 1e4) / 1e4, Math.round(cc.lat * 1e4) / 1e4, e.tier, cap, "u" + (++seq)]);
       placed.push([cc.lon, cc.lat]);
     });
     caps.forEach(function (k) {
@@ -5584,7 +5598,7 @@
       out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
     });
     if (cities) cityRanked(now).forEach(function (x) {
-      var c = x.c, nm = namedAt(c.steps, c.name, now);
+      var c = x.c, nm = cityShownName(c, now);
       out.push({ kind: x.tier <= 2 ? "City" : "Town", name: nm, alt: nm !== c.name ? c.name : "", sub: nm !== c.name ? "now " + c.name : "", w: x.pop, city: c, tier: x.tier, ll: [c.lon, c.lat] });
     });
     SEAS.forEach(function (sl) { out.push({ kind: /Ocean/.test(sl.name) ? "Ocean" : "Sea", name: sl.name, ll: [sl.lon, sl.lat], w: 4 - sl.tier, sea: sl.tier }); });
@@ -6257,6 +6271,7 @@
     edits.list.forEach(function (e) { var k = e.kind + "|" + e.target, l = edits.byKey.get(k); if (l) l.push(e); else edits.byKey.set(k, [e]); });
     edits.colourN = edits.list.filter(function (e) { return e.kind === "country-colour"; }).length;
     edits.nameN = edits.list.filter(function (e) { return e.kind === "country-name"; }).length;
+    edits.cityN = edits.list.filter(function (e) { return /^city-/.test(e.kind); }).length;
     edits.tag++;
     editsChanged();
     scheduleRender();
@@ -6372,6 +6387,7 @@
     timeOf: function (s) { return parseTime(s); },
     editTime: function (s, end) { return editTime(s, end); },
     editsFailed: function () { return edits.failed; },
+    cities: function () { return cities ? cityRanked(now).map(function (x) { return { id: x.c.id, name: cityShownName(x.c, now), tier: x.tier }; }) : []; },
     fillAt: function (lon, lat) {
       var q = projectLL(lon, lat);
       if (!q) return null;
