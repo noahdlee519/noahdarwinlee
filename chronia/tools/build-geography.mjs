@@ -228,6 +228,11 @@ const addMarsh = (name, from, to, mp) => {
 };
 const boxPoly = (x0, y0, x1, y1) => [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]];
 addMarsh("Pontine Marshes", null, at(1935), [wet.pontine]);
+// Lakes drained in the 19th century, traced from elevation at the level of their old shore (see the README's Lakes).
+addLake("Lake Fucino", null, at(1875), [wet.fucino], 0.0008, r4);
+addLake("Lake Copais", null, at(1886), [wet.copais], 0.0008, r4);
+addLake("Tulare Lake", null, at(1899), [wet.tulare], 0.0015, r4);
+addMarsh("Lake Hula and its marshes", null, at(1958), [wet.hula]);
 // The Fens are water joined to the Wash until they were drained, part of the coastline rather than a marsh
 // over the land. The shore is the outline traced from elevation, closed by 1.5 km and opened by 1 km so it
 // runs smooth. The islands of firmer ground are the outline's own holes of 4 km² or more (the Isle of Ely,
