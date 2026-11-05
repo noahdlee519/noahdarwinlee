@@ -87,6 +87,8 @@ export const REBA_FIX = {
 };
 
 export const CITY_POP = {
+  // Chandler gives Iznik 125,000 in 1800, Smyrna's figure for that year; the town of Iznik had a few thousand.
+  "Iznik": { drop: [1790, 1810], pts: [] },
   "Zanzibar": { drop: [-9999, 1849], pts: [[1700, 3], [1800, 10]] },
   "Gauda": { drop: [1576, 9999], pts: [[1575, 20]] },
   "Hormuz": { pts: [[1622, 13]] },
