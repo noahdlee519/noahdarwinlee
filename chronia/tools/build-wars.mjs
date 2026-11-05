@@ -5,7 +5,7 @@
 //   { source, fetched, wars: [[name, wiki title, first year, first day | null, last year, last day | null, weight, [lon, lat] | null, sides]] }
 // where a side is a list of members [name, lon, lat, flag] (lon and lat null where no place is known, flag -1 where it has none in
 // data/flags.webp), years count AD 1 as 1 and 1 BC as -1, and days count from 1 January 1886 as the zones of control do, given only
-// for wars from 1800 dated to the month or day. data/flags.webp holds every flag the wars' parties fly (938), most used first, 30 by 20
+// for wars from 1800 dated to the month or day. data/flags.webp holds every flag the wars' parties fly (974), most used first, 30 by 20
 // each, 20 to a row, from Wikidata's flag images (P41) and Wikimedia Commons (tools/wars/flags-wikidata.json lists them and each party's).
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -94,11 +94,12 @@ for (const w of src.wars) {
   const seen = new Set();
   const sides = w.sides.map((side) => side.filter((m) => !/^(and )?(other|others|various|several|many)\b/i.test(clean(m[0], m[1]))).filter((m) => { const k = m[2] || m[1]; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, MAX_SIDE)
     .map((m) => { const name = clean(m[0], m[1]), p = m[2] ? placeOf(src.geo[m[2]], a[0]) : null, f = m[2] ? flagOf(FLAGS.flags[m[2]], a[0]) : -1; if (f >= 0) flagged++; return [name, p ? p[0] : null, p ? p[1] : null, f]; })).filter((s) => s.length);
-  if (sides.length < 2) noSides++;
+  // A war whose sides no infobox gives is left out of the list, which shows each war with its sides.
+  if (sides.length < 2) { noSides++; continue; }
   const loc = w.c ? (/Point\(([-\d.eE]+) ([-\d.eE]+)\)/.exec(w.c) || []).slice(1).map((x) => +(+x).toFixed(3)) : null;
-  out.push([w.t, w.t, a[0], a[1], b[0], b[1], w.sl, loc && loc.length === 2 ? loc : null, sides.length >= 2 ? sides : []]);
+  out.push([w.t, w.t, a[0], a[1], b[0], b[1], w.sl, loc && loc.length === 2 ? loc : null, sides]);
 }
 out.sort((x, y) => x[2] - y[2] || y[6] - x[6]);
 const data = { source: src.source, fetched: src.fetched.slice(0, 10), wars: out };
 writeFileSync(resolve(here, "../data/wars.json"), JSON.stringify(data));
-console.log("wars: " + out.length + " (" + dropped + " umbrella names and theatres left out, " + controlled + " listed by the zones of control), " + noSides + " without two sides from the infobox, " + flagged + " parties with a flag, " + JSON.stringify(data).length + " bytes");
+console.log("wars: " + out.length + " (" + dropped + " umbrella names and theatres left out, " + controlled + " listed by the zones of control), " + noSides + " left out with no two sides in the infobox, " + flagged + " parties with a flag, " + JSON.stringify(data).length + " bytes");
