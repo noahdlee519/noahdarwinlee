@@ -2933,16 +2933,20 @@
   // CHRONIA's marks: a capital is a ring round a dot on a pale disc, a city a dot, and a town a smaller dot, each with a narrow
   // pale halo; they grow by 15% when the view is close (k).
   function markScale(dot) { return dot > 1.7 ? 1.15 : 1; }
-  function markSize(c, dot) { var k = markScale(dot); return c.cap ? 4.3 * k : isTown(c) ? 1.4 * k + 1 : 1.85 * k + 1; }
+  // Capitals, cities, and towns are drawn 30% larger than CHRONIA's (MARK_BIG); small towns keep its town size.
+  var MARK_BIG = 1.3;
+  function markSize(c, dot) { var k = markScale(dot), b = k * MARK_BIG; return c.cap ? 4.3 * b : isSmall(c) ? 1.4 * k + 1 : isTown(c) ? 1.4 * b + 1 : 1.85 * b + 1; }
   function drawDot(x, y, r) {
     ctx.fillStyle = pal["city-halo"]; ctx.beginPath(); ctx.arc(x, y, r + 1, 0, TAU); ctx.fill();
     ctx.fillStyle = pal.city; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
   }
   function drawCityMark(c, x, y, dot) {
     var k = markScale(dot);
+    if (isSmall(c)) { drawDot(x, y, 1.4 * k); return; }
+    k *= MARK_BIG;
     if (c.cap) {
       ctx.fillStyle = pal["city-halo"]; ctx.beginPath(); ctx.arc(x, y, 4.3 * k, 0, TAU); ctx.fill();
-      ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85; ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85 * MARK_BIG; ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.stroke();
       ctx.fillStyle = pal.city; ctx.beginPath(); ctx.arc(x, y, 1.35 * k, 0, TAU); ctx.fill();
     } else drawDot(x, y, (isTown(c) ? 1.4 : 1.85) * k);
   }

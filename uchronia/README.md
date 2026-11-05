@@ -270,7 +270,9 @@ of `/greatercircle/`.
   a capital was a star in a circle, a city a square, and a town a white
   circle): a capital is a ring round a dot on a pale disc, a city a dot, and a
   town and a small town a smaller dot, each with a narrow pale halo, in every
-  style, 15% larger when the view is close. In Antique the names are in
+  style, 15% larger when the view is close. Capitals, cities, and towns are
+  drawn 30% larger than CHRONIA's (`MARK_BIG`); small towns, and the small towns
+  of **View → Small towns**, keep CHRONIA's town size. In Antique the names are in
   regular weight (the capital 12.4px, a city 11.2px, a town 10.8px) on a thin,
   light halo (2.3px, at 62%), as CHRONIA's are; the other styles keep their
   type on a 2.5px halo. Where a capital's name has no room, its mark is still drawn,
