@@ -38,6 +38,17 @@ for (const f of ["styles.css", "visit.js", "favicon.png", "favicon-32.png", "fav
   if (!src.includes(stamp)) throw new Error("app.js has no " + stamp);
   writeFileSync(app, src.replace(stamp, 'var DATA_V = "' + h.digest("hex").slice(0, 12) + '";'));
 }
+{
+  const MINIFY = ["app.js", "dev.js"], NOTICE = "/*! \u00a9 2026 Noah Darwin Lee. All rights reserved. https://chroniaatlas.com/terms/ */";
+  let terser = null;
+  try { terser = await import("terser"); } catch (e) { if (process.env.VERCEL) throw new Error("terser is not installed (npm ci installs it)"); }
+  if (terser) {
+    for (const f of MINIFY) {
+      const p = join(out, f), r = await terser.minify(readFileSync(p, "utf8"), { ecma: 2020, compress: { passes: 2 }, mangle: true, format: { comments: false, preamble: NOTICE } });
+      writeFileSync(p, r.code + "\n");
+    }
+  } else console.log("terser is not installed, so " + MINIFY.join(" and ") + " are copied as they are");
+}
 writeFileSync(join(out, "manifest.json"), JSON.stringify({
   name: "CHRONIA",
   short_name: "CHRONIA",
@@ -51,7 +62,8 @@ writeFileSync(join(out, "manifest.json"), JSON.stringify({
     { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
   ],
 }, null, 2) + "\n");
-writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /reports/\n\nSitemap: " + SITE + "/sitemap.xml\n");
+const AI_BOTS = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-Web", "anthropic-ai", "Google-Extended", "Applebot-Extended", "meta-externalagent", "CCBot", "PerplexityBot", "Perplexity-User", "Bytespider", "Amazonbot", "DuckAssistBot", "Diffbot"];
+writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /reports/\n\n" + AI_BOTS.map((b) => "User-agent: " + b + "\nDisallow: /\n\n").join("") + "Sitemap: " + SITE + "/sitemap.xml\n");
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(join(out, "sitemap.xml"), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   [["/", "1.0"], ["/team/", "0.4"], ["/privacy/", "0.2"], ["/terms/", "0.2"]].map(([p, w]) => "  <url><loc>" + SITE + p + "</loc><lastmod>" + today + "</lastmod><priority>" + w + "</priority></url>\n").join("") + "</urlset>\n");

@@ -6,6 +6,7 @@
     "@resvg/resvg-js": "2.6.2",
     "@vercel/functions": "3.10.1",
     "d3-geo": "3.1.1",
+    "terser": "5.51.2",
     "topojson-client": "3.1.0"
   }
 }

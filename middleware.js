@@ -3,7 +3,7 @@ import { WHEN_RE, readWhen } from "./api/_lib/when.mjs";
 
 export const config = { matcher: "/" };
 
-const PREVIEWERS = /facebookexternalhit|facebot|twitterbot|slackbot|discordbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|applebot|skypeuripreview|vkshare|mastodon|bluesky|cardyb|iframely|tumblr|snapchat|viber|kakaotalk|googlebot|google-inspectiontool|bingbot|duckduckbot|yandex|petalbot|chatgpt|gptbot|claudebot|perplexity/i;
+const PREVIEWERS = /facebookexternalhit|facebot|twitterbot|slackbot|discordbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|applebot|skypeuripreview|vkshare|mastodon|bluesky|cardyb|iframely|tumblr|snapchat|viber|kakaotalk|googlebot|google-inspectiontool|bingbot|duckduckbot|yandex|petalbot/i;
 
 const attr = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

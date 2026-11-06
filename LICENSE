@@ -1,0 +1,11 @@
+Copyright © 2026 Noah Darwin Lee. All rights reserved.
+
+This repository holds the code, writing, pictures, and data of noahdarwinlee.com and its projects, among them CHRONIA (chroniaatlas.com) and UCHRONIA. It is published so that it can be read and the sites built from it. No licence is granted to copy, modify, publish, or distribute any part of it, or to use it to train machine-learning models, without written permission from Noah Darwin Lee.
+
+The exceptions are the work of others included here, which keeps its own licence:
+
+- the fonts in fonts/ and api/fonts/, under the SIL Open Font License (see the OFL files beside them);
+- the map data drawn from historical-basemaps, Cliopatria, CShapes, Natural Earth, and the other sources credited in chronia/README.md (see its Credits), where a source's licence lets its data, or work built from it, be reused on the same terms;
+- the libraries in uchronia/vendor/ and elsewhere, under their own licences.
+
+To ask about using any of it, get in touch through noahdarwinlee.com.
