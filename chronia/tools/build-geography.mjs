@@ -296,6 +296,8 @@ const landGroups = [
     { from: at(1653), to: at(1818), cut: clip.intersection(fens, [WELLAND_NORTH]) }
   ] },
   ...deltaGroups,
+  // Land reclaimed since the first Landsat pictures (tools/reclaimed.json; see the README).
+  ...Object.entries(readJSON(resolve(here, "reclaimed.json"))).map(([name, d]) => ({ name, win: d.win || d.bbox, autoWin: true, levels: ["fine"], states: d.states.map((s) => ({ from: s.from && at(s.from), to: s.to && at(s.to), cut: s.cut, plus: s.plus })) })),
   // North Frisia's Strand: land before the floods of 1362 and 1634 (tools/strand.json; see the README).
   { name: "Strand", win: [8.45, 54.38, 9.2, 54.7], states: [
     { from: null, to: at(1362, 1, 16), cut: [], plus: STRAND.pre1362 },
@@ -385,6 +387,7 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
   const boxes = mp.map((p) => bboxOf([p]));
   const patches = [];
   landGroups.forEach((g) => g.states.forEach((s) => {
+    if (g.levels && !g.levels.includes(level)) return;
     if (s.replaceAt) {
       const i = mp.findIndex((p, k) => s.replaceAt[0] >= boxes[k][0] && s.replaceAt[0] <= boxes[k][2] && s.replaceAt[1] >= boxes[k][1] && s.replaceAt[1] <= boxes[k][3] && planarKm2(p) < 2000);
       if (i < 0) { console.log(level, g.name, "not in this level"); return; }
@@ -471,12 +474,24 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
         patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), d: 1, a: res, b: bboxOf([poly, ...res]).map(r3) });
         return;
       }
-      const r = windowSplice(poly, s.cut, w, tol, mine);
+      // A group marked autoWin tries windows a little larger or smaller on each side until the coast
+      // crosses one only once (the coarser levels' coasts wander in and out of a fixed one).
+      let r = null, wu = w;
+      if (!g.autoWin) r = windowSplice(poly, s.cut, w, tol, mine);
+      else {
+        const steps = [0, 0.04, -0.04, 0.1, -0.1, 0.2];
+        let done = false, lastErr = null;
+        for (const a of steps) { for (const b of steps) { for (const c of steps) { for (const d of steps) {
+          const ww = [w[0] - a, w[1] - b, w[2] + c, w[3] + d];
+          try { r = windowSplice(poly, s.cut, ww, tol, mine.map((m) => clip.intersection([m], [[[ww[0], ww[1]], [ww[2], ww[1]], [ww[2], ww[3]], [ww[0], ww[3]], [ww[0], ww[1]]]]).flat()).filter((m) => m.length)); wu = ww; done = true; } catch (e) { lastErr = e; }
+          if (done) break; } if (done) break; } if (done) break; } if (done) break; }
+        if (!done) { console.log(level, g.name, "no window works:", String(lastErr).slice(0, 120)); return; }
+      }
       if (!r) return;
       const sign = Math.sign(signed(poly[0]));
       const holes = r.holes.filter((h) => planarKm2([h]) >= 0.5).map((h) => orient(h, -sign).map(([x, y]) => [r4(x), r4(y)]));
       const add = (g.noAdds ? [] : r.add).map((d) => d.map((ring, ri) => orient(ring, ri ? -sign : sign).map(([x, y]) => [r4(x), r4(y)])));
-      patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), s: [r.splice], h: holes, a: add, b: w });
+      patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), s: [r.splice], h: holes, a: add, b: wu });
       console.log(level, g.name, "to", s.to, "parent", i, "ring", poly[0].length, "replaces", r.splice[1], "with", r.splice[2].length, "adds", add.map((d) => planarKm2(d).toFixed(1)).join(" "), "holes", holes.map((h) => planarKm2([h]).toFixed(1)).join(" "), "cut km2", Math.round(r.cutKm2));
     });
   }));
