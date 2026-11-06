@@ -1,24 +1,48 @@
-// The page of CHRONIA's reports of errors on the map. The team's password opens it to read; Noah's opens it
-// to answer as well. The password is kept for this tab only (sessionStorage). Each report links to the atlas
-// at its place and first date; with Noah's password it can be marked fixed or declined, with a reply, or
-// opened again.
+// The page of CHRONIA's reports of errors on the map. CHRONIA's team is a list of Google accounts (the table
+// chronia_team): someone on it who has signed in with Google on the atlas (the report panel's session, kept
+// under chronia-auth in this site's storage) gets in at once, to read, or, as a reviewer (Noah), to answer
+// as well and see the reporters' emails. Until the fact checkers' accounts are on the list, the team's
+// password still opens the page to read; it is kept for this tab only (sessionStorage). Each report links to
+// the atlas at its place and first date; a reviewer can mark it fixed or declined, with a reply, or open it
+// again. Until 6 November 2026 Noah's own password opened the page to answer.
 (function () {
-  var URL_ = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", STORE = "chronia-review";
+  var URL_ = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", STORE = "chronia-review", AUTH = "chronia-auth";
   var $ = function (id) { return document.getElementById(id); };
   var lock = $("lock"), pass = $("pass"), lockNote = $("lock-note"), board = $("board"), list = $("list"), count = $("count");
-  var pw = "", status = "open", busy = false, role = "";
+  var pw = "", status = "open", busy = false, role = "", session = null, viaGoogle = false;
   try { pw = sessionStorage.getItem(STORE) || ""; } catch (e) {}
+  try { session = JSON.parse(localStorage.getItem(AUTH) || "null"); } catch (e) {}
+  if (!session || typeof session.a !== "string" || typeof session.r !== "string") session = null;
 
-  function call(body) {
-    body.password = pw;
-    return fetch(URL_, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(function (res) {
+  function post(body, token) {
+    var headers = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = "Bearer " + token;
+    return fetch(URL_, { method: "POST", headers: headers, body: JSON.stringify(body) }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, body: j }; });
     }, function () { return { status: 0, body: {} }; });
   }
+  function expiry(token) {
+    try { return (JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).exp || 0) * 1000; } catch (e) { return 0; }
+  }
+  // The atlas's Google session, refreshed (and kept again for the atlas) when it is near its end.
+  function token() {
+    if (!session) return Promise.resolve(null);
+    if ((session.e || 0) - Date.now() > 60000) return Promise.resolve(session.a);
+    return post({ action: "refresh", refresh_token: session.r }).then(function (r) {
+      if (r.status !== 200) { session = null; return null; }
+      session = { a: r.body.access_token, r: r.body.refresh_token, e: expiry(r.body.access_token) };
+      try { localStorage.setItem(AUTH, JSON.stringify(session)); } catch (e) {}
+      return session.a;
+    });
+  }
+  function call(body) {
+    if (!viaGoogle) { body.password = pw; return post(body); }
+    return token().then(function (t) { return t ? post(body, t) : { status: 401, body: { error: "signin" } }; });
+  }
   function trouble(r) {
     if (r.status === 0) return "The reports server could not be reached.";
-    if (r.status === 401) return "That password is not right.";
-    if (r.status === 403) return "Only Noah's password can answer reports.";
+    if (r.status === 401) return viaGoogle ? "Your Google sign-in has run out. Sign in again on the atlas." : "That password is not right.";
+    if (r.status === 403) return r.body && r.body.error === "team" ? "That Google account isn't on CHRONIA's team." : "Only Noah can answer reports.";
     if (r.status === 429) return "Too many wrong passwords from here today. Try again tomorrow.";
     if (r.status === 503) return "Reports are not switched on yet: the passwords are not set in Supabase.";
     return "Something went wrong on the server (" + r.status + ").";
@@ -104,6 +128,7 @@
   }
   function shut(msg) {
     pw = "";
+    viaGoogle = false;
     try { sessionStorage.removeItem(STORE); } catch (e) {}
     board.hidden = true;
     lock.hidden = false;
@@ -111,7 +136,7 @@
     pass.focus();
   }
   function open() {
-    try { sessionStorage.setItem(STORE, pw); } catch (e) {}
+    if (!viaGoogle) try { sessionStorage.setItem(STORE, pw); } catch (e) {}
     lock.hidden = true;
     board.hidden = false;
     lockNote.textContent = "";
@@ -137,5 +162,14 @@
     });
   });
   $("out").addEventListener("click", function () { shut(""); });
-  if (pw) open(); else pass.focus();
+  if (session) {
+    viaGoogle = true;
+    lockNote.textContent = "Checking your Google account…";
+    call({ action: "check" }).then(function (r) {
+      if (r.status === 200) { role = r.body.role; open(); return; }
+      var why = trouble(r);
+      viaGoogle = false;
+      if (pw) open(); else { lockNote.textContent = why; pass.focus(); }
+    });
+  } else if (pw) open(); else pass.focus();
 })();

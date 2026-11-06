@@ -1,21 +1,20 @@
 // CHRONIA's developer tools: Noah's edits to the map. The page posts JSON with an `action`:
 //   list                                   -> { edits }: every edit (anyone may ask)
-//   check  { password }                    -> { ok: true }
-//   save   { password, edit: { id?, kind, target, from, to, value, note? } } -> { edit }
-//   delete { password, id }                -> { ok: true }
-// Only Noah's password (CHRONIA_REVIEW_PASSWORD) may check, save, or delete; the fact checkers' password
-// may not. Wrong passwords count against the same daily strikes as the reports (twenty, then shut out
-// until the next day). An edit's dates are as the reports store them (1815, 1815-07, or 1815-07-03,
-// with - for BC), and its span includes both ends.
+//   check  (signed in)                     -> { ok: true }
+//   save   (signed in) { edit: { id?, kind, target, from, to, value, note? } } -> { edit }
+//   delete (signed in) { id }              -> { ok: true }
+// Only a reviewer on CHRONIA's team (the table chronia_team, by Google account: Noah) may check, save, or
+// delete, signed in with Google on the atlas (the session the report panel keeps, sent as a Bearer token).
+// Until 6 November 2026 it was Noah's password. An edit's dates are as the reports store them (1815,
+// 1815-07, or 1815-07-03, with - for BC), and its span includes both ends.
 
 // CHRONIA runs only at chroniaatlas.com (noahdarwinlee.com/chronia/ sends its visitors there), so only it,
-// and a local copy for testing, may ask. The origin is not a password: the passwords and the strikes are.
+// and a local copy for testing, may ask. The origin is not a password: the Google session is.
 const ORIGINS = [
   /^https:\/\/(www\.)?chroniaatlas\.com$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
 const MAX_BODY = 6000;
-const MAX_STRIKES = 20;
 const TIME_RE = /^-?\d{1,4}(-\d{2}(-\d{2})?)?$/;
 const KINDS = ["country-colour", "country-name", "label", "city-size", "city-name", "city-hide"];
 const COLUMNS = "id,kind,target,date_from,date_to,value,note,updated_at";
@@ -67,44 +66,18 @@ async function db(path: string, init: RequestInit = {}) {
   return res.status === 204 ? null : await res.json();
 }
 
-function hex(buf: ArrayBuffer, n: number) {
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, n);
-}
-
-async function digest(s: string) {
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
-}
-
-async function same(given: string, secret: string) {
-  if (!secret) return false;
-  const a = await digest("chronia-report|" + given), b = await digest("chronia-report|" + secret);
-  let d = 0;
-  for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
-  return d === 0;
-}
-
-// An IPv6 address by its /48, the block one customer is usually given, so that moving between the many
-// addresses of one connection doesn't buy more tries. (Supabase's proxy sets x-forwarded-for itself, putting
-// the caller's address first and dropping any the caller sent, as tested on 6 November 2026.)
-function v6block(ip: string) {
-  const [head, tail] = ip.split("::");
-  const a = head ? head.split(":") : [], b = tail !== undefined && tail ? tail.split(":") : [];
-  const groups = tail === undefined ? a : [...a, ...Array(Math.max(0, 8 - a.length - b.length)).fill("0"), ...b];
-  return groups.slice(0, 3).map((g) => g.toLowerCase().replace(/^0+(?=.)/, "")).join(":") + "::/48";
-}
-
-function clientIp(req: Request) {
-  const raw = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || (req.headers.get("x-real-ip") || "").trim();
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(raw)) return raw;
-  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(":")) return v6block(raw);
-  return "unknown";
-}
-
-// The same visitor hash as chronia-report's, so wrong passwords on either count together.
-async function visitor(req: Request) {
-  const salt = Deno.env.get("CHRONIA_SALT") || dbKey().apikey || "chronia";
-  const today = new Date().toISOString().slice(0, 10);
-  return "r" + hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + "|report|" + today + "|" + clientIp(req))), 16);
+// The signed-in account's standing: "out" (no usable Google session), "no" (signed in, not a reviewer), or "yes".
+async function reviewer(req: Request) {
+  const m = /^Bearer\s+(\S{20,4000})$/.exec(req.headers.get("authorization") || "");
+  if (!m) return "out";
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/user", { headers: { apikey: dbKey().apikey, Authorization: "Bearer " + m[1] } });
+  if (!res.ok) return "out";
+  const u = await res.json();
+  if (!u || typeof u.id !== "string") return "out";
+  const providers = [u.app_metadata && u.app_metadata.provider].concat((u.app_metadata && u.app_metadata.providers) || []);
+  if (!providers.includes("google")) return "out";
+  const rows = await db("chronia_team?select=role&user_id=eq." + encodeURIComponent(u.id));
+  return Array.isArray(rows) && rows.length > 0 && rows[0].role === "reviewer" ? "yes" : "no";
 }
 
 function text(v: unknown, field: string, max: number, need = true) {
@@ -210,25 +183,15 @@ export async function handle(req: Request): Promise<Response> {
   }
   if (action !== "check" && action !== "save" && action !== "delete") return json(400, { error: "action" }, o);
 
-  const who = await visitor(req);
+  let standing = "out";
   try {
-    if ((await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: false }) })) >= MAX_STRIKES) return json(429, { error: "locked" }, o);
+    standing = await reviewer(req);
   } catch (e) {
     console.error(e);
-    return json(500, { error: "store" }, o);
+    return json(500, { error: "auth" }, o);
   }
-  const secret = Deno.env.get("CHRONIA_REVIEW_PASSWORD") || "";
-  if (!secret) return json(503, { error: "unset" }, o);
-  const password = typeof body.password === "string" ? body.password : "";
-  if (!password || !(await same(password, secret))) {
-    try {
-      await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: true }) });
-    } catch (e) {
-      console.error(e);
-    }
-    await new Promise((r) => setTimeout(r, 700));
-    return json(401, { error: "password" }, o);
-  }
+  if (standing === "out") return json(401, { error: "signin" }, o);
+  if (standing !== "yes") return json(403, { error: "team" }, o);
 
   try {
     if (action === "check") return json(200, { ok: true }, o);

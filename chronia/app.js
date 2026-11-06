@@ -6885,6 +6885,11 @@
       pick: function (mode) { devMode = mode || null; canvas.classList.toggle("is-dev-pick", !!devMode); },
       ghost: function (g) { devGhost = g || null; labelCache.delete("layout"); scheduleRender(); },
       opened: function (on) { devOpen = !!on; writeHash(); },
+      // The Google session the report panel keeps: token() gives its access token (refreshed when near its
+      // end), or null when no one is signed in; signIn() opens the report panel, where the button is.
+      token: function () { return reportToken().catch(function () { return null; }); },
+      signedOut: function () { keepReportSession(null); },
+      signIn: function () { setReportOpen(true); },
       ui: null
     };
     var sc = document.createElement("script");

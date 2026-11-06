@@ -3,15 +3,18 @@
 //   refresh { refresh_token }          -> a fresh session
 //   me      (signed in)                -> { name, left }: the account's name and its reports left today
 //   send    (signed in) { lon, lat, zoom, place, from, to, at, layers, note } -> { id, left }
-//   check   { password }               -> { role: "viewer" | "reviewer" }
-//   list    { password, status }       -> { role, reports }
-//   set     { password (Noah's), id, status, reply } -> { report }
-// Anyone signed in with Google may send, up to 50 reports a day (UTC). The team's password
-// (CHRONIA_REPORT_PASSWORD) may list the reports; Noah's (CHRONIA_REVIEW_PASSWORD) may also close them.
-// Twenty wrong passwords in a day shut a visitor out until the next day.
+//   check   (on the team) or { password } -> { role: "viewer" | "reviewer" }
+//   list    (on the team) or { password, status } -> { role, reports }
+//   set     (a reviewer) { id, status, reply } -> { report }
+// Anyone signed in with Google may send, up to 50 reports a day (UTC). The team is a list of Google accounts
+// (the table chronia_team): a viewer may list the reports, and a reviewer (Noah) may also answer them and sees
+// the reporters' emails. Until the fact checkers' accounts are on the list, the team's password
+// (CHRONIA_REPORT_PASSWORD) still opens the list to read, as a viewer; twenty wrong passwords in a day shut a
+// visitor out until the next day. Noah's password (CHRONIA_REVIEW_PASSWORD) no longer opens anything, since
+// 6 November 2026.
 
 // CHRONIA runs only at chroniaatlas.com (noahdarwinlee.com/chronia/ sends its visitors there), so only it,
-// and a local copy for testing, may ask. The origin is not a password: the passwords and the strikes are.
+// and a local copy for testing, may ask. The origin is not a password: the Google session and the strikes are.
 const ORIGINS = [
   /^https:\/\/(www\.)?chroniaatlas\.com$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
@@ -121,10 +124,9 @@ function num(v: unknown, field: string, lo: number, hi: number) {
   return v;
 }
 
-async function role(password: string) {
-  if (await same(password, Deno.env.get("CHRONIA_REVIEW_PASSWORD") || "")) return "reviewer";
-  if (await same(password, Deno.env.get("CHRONIA_REPORT_PASSWORD") || "")) return "viewer";
-  return null;
+async function teamRole(id: string): Promise<string | null> {
+  const rows = await db("chronia_team?select=role&user_id=eq." + encodeURIComponent(id));
+  return Array.isArray(rows) && rows.length && (rows[0].role === "viewer" || rows[0].role === "reviewer") ? rows[0].role : null;
 }
 
 async function session(path: string, body: Record<string, unknown>) {
@@ -209,6 +211,8 @@ export async function handle(req: Request): Promise<Response> {
       const n = await sentToday(me.id);
       if (action === "me") return json(200, { name: me.name, left: Math.max(0, DAY_CAP - n), cap: DAY_CAP }, o);
       if (n >= DAY_CAP) return json(429, { error: "limit", cap: DAY_CAP }, o);
+      // The count above is for the answer; chronia_report_send counts again and adds the report in one step,
+      // under a lock on the account, so reports sent at the same moment can't pass the cap between the two.
       const row = {
         user_id: me.id,
         email: me.email,
@@ -224,8 +228,9 @@ export async function handle(req: Request): Promise<Response> {
         note: text(body.note, "note", 2000),
       };
       if (!TIME_RE.test(row.at_time)) throw new Bad("at");
-      const out = await db("chronia_reports?select=id", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(row) });
-      return json(200, { id: out && out[0] ? out[0].id : null, left: Math.max(0, DAY_CAP - n - 1), cap: DAY_CAP }, o);
+      const out = await db("rpc/chronia_report_send", { method: "POST", body: JSON.stringify({ p_row: row, p_cap: DAY_CAP }) });
+      if (!out || out.id === null || out.id === undefined) return json(429, { error: "limit", cap: DAY_CAP }, o);
+      return json(200, { id: out.id, left: Math.max(0, DAY_CAP - (Number(out.sent) || n + 1)), cap: DAY_CAP }, o);
     } catch (e) {
       if (e instanceof Bad) return json(400, { error: "field", field: e.field }, o);
       console.error(e);
@@ -233,24 +238,40 @@ export async function handle(req: Request): Promise<Response> {
     }
   }
 
-  const who = await visitor(req);
-  try {
-    if ((await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: false }) })) >= MAX_STRIKES) return json(429, { error: "locked" }, o);
-  } catch (e) {
-    console.error(e);
-    return json(500, { error: "store" }, o);
-  }
-  if (!Deno.env.get("CHRONIA_REPORT_PASSWORD") || !Deno.env.get("CHRONIA_REVIEW_PASSWORD")) return json(503, { error: "unset" }, o);
-  const password = typeof body.password === "string" ? body.password : "";
-  const as = password ? await role(password) : null;
-  if (!as) {
+  if (action !== "check" && action !== "list" && action !== "set") return json(400, { error: "action" }, o);
+  let as: string | null = null;
+  if (req.headers.get("authorization")) {
+    // Signed in: the account's place on the team, if it has one.
     try {
-      await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: true }) });
+      const me = await account(req);
+      if (!me) return json(401, { error: "signin" }, o);
+      as = await teamRole(me.id);
     } catch (e) {
       console.error(e);
+      return json(500, { error: "auth" }, o);
     }
-    await new Promise((r) => setTimeout(r, 700));
-    return json(401, { error: "password" }, o);
+    if (!as) return json(403, { error: "team" }, o);
+  } else {
+    // The team's password, for reading only, until the fact checkers' accounts are on the team.
+    const who = await visitor(req);
+    try {
+      if ((await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: false }) })) >= MAX_STRIKES) return json(429, { error: "locked" }, o);
+    } catch (e) {
+      console.error(e);
+      return json(500, { error: "store" }, o);
+    }
+    const secret = Deno.env.get("CHRONIA_REPORT_PASSWORD") || "";
+    const password = typeof body.password === "string" ? body.password : "";
+    if (secret && password && (await same(password, secret))) as = "viewer";
+    else {
+      try {
+        await db("rpc/chronia_report_strike", { method: "POST", body: JSON.stringify({ p_who: who, p_add: true }) });
+      } catch (e) {
+        console.error(e);
+      }
+      await new Promise((r) => setTimeout(r, 700));
+      return json(401, { error: "password" }, o);
+    }
   }
 
   try {

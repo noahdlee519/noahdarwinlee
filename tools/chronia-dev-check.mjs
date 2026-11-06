@@ -14,8 +14,10 @@ const browser = await chromium.launch();
 
 // Opens CHRONIA at a hash with the edits function answering `list` from `stub` ({ status, edits, delay }), and
 // `check`, `save`, and `delete` from `stub.answer(action, body)` when given. Returns { page, errors, calls }.
-async function open(hash, stub = {}) {
+// `token` signs the page in as the report panel would (a session kept under chronia-auth) with that access token.
+async function open(hash, stub = {}, token = "") {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  if (token) await page.addInitScript((t) => { try { localStorage.setItem("chronia-auth", JSON.stringify({ a: t, r: "refresh", e: Date.now() + 36e5 })); } catch (e) {} }, token);
   const errors = [], calls = [], requests = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => requests.push(r.url()));
@@ -28,7 +30,7 @@ async function open(hash, stub = {}) {
       if (stub.delay) await new Promise((res) => setTimeout(res, stub.delay));
       return r.fulfill({ status: stub.status || 200, headers: cors, body: JSON.stringify({ edits: stub.edits || [] }) });
     }
-    const [status, out] = stub.answer ? await stub.answer(body.action, body) : [401, { error: "password" }];
+    const [status, out] = stub.answer ? await stub.answer(body.action, body, r.request().headers()) : [401, { error: "signin" }];
     return r.fulfill({ status, headers: cors, body: JSON.stringify(out) });
   });
   await page.route(/supabase\.co\/(?!functions\/v1\/chronia-edits)/, (r) => r.fulfill({ status: 404, body: "" }));
@@ -191,14 +193,17 @@ await run("label", async () => {
   await page.close();
 });
 
-// A stand-in for the function's password and saving: test-pass is the only password; saves are echoed back
-// with an id after `saveDelay` ms, or refused with 401 when `refuse` is set.
+// A stand-in for the function's check of the Google session: the token "noah" is a reviewer, "other" is signed
+// in but not on the team; saves are echoed back with an id after `saveDelay` ms, or refused with 401 when
+// `refuse` is set.
 function server(opts = {}) {
   let next = 100;
   return {
     edits: opts.edits || [],
-    answer: async (action, body) => {
-      if (body.password !== "test-pass" || opts.refuse) return [401, { error: "password" }];
+    answer: async (action, body, headers = {}) => {
+      const auth = headers.authorization || "";
+      if (!auth || opts.refuse) return [401, { error: "signin" }];
+      if (auth !== "Bearer noah") return [403, { error: "team" }];
       if (action === "check") return [200, { ok: true }];
       if (action === "delete") return [200, { ok: true }];
       if (opts.saveDelay) await new Promise((r) => setTimeout(r, opts.saveDelay));
@@ -214,17 +219,19 @@ await run("editor", async () => {
   await plain.page.close();
 
   const srv = server({ saveDelay: 1500, edits: [E(50, "city-hide", "no-such-city", "1815", "1815", {})] });
-  const { page, errors, calls, requests } = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv);
-  await page.waitForSelector("#dev-password", { timeout: 15000 });
-  ok(requests.some((u) => /\/dev\.js/.test(u)), "#dev in the address loads the tools and asks for the password");
-  await page.fill("#dev-password", "wrong");
-  await page.click(".ch-dev-login button[type=submit]");
-  await page.waitForFunction(() => /isn't right/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 5000 });
-  ok(!(await page.$(".ch-dev-tool")), "a wrong password opens nothing and says so");
-  await page.fill("#dev-password", "test-pass");
-  await page.click(".ch-dev-login button[type=submit]");
-  await page.waitForSelector(".ch-dev-tool", { timeout: 5000 });
-  ok(true, "the right password opens the tools");
+  const out = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv);
+  await out.page.waitForSelector(".ch-dev-login", { timeout: 15000 });
+  ok(out.requests.some((u) => /\/dev\.js/.test(u)), "#dev in the address loads the tools");
+  await out.page.waitForFunction(() => /Sign in with Google/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 5000 });
+  ok(!(await out.page.$(".ch-dev-tool")), "signed out, they open nothing and ask for Google: " + (await out.page.textContent(".ch-dev-status")));
+  await out.page.close();
+  const other = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv, "other");
+  await other.page.waitForFunction(() => /can't edit/.test((document.querySelector(".ch-dev-status") || {}).textContent || ""), null, { timeout: 15000 });
+  ok(!(await other.page.$(".ch-dev-tool")), "an account not on the team opens nothing and says so");
+  await other.page.close();
+  const { page, errors, calls, requests } = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv, "noah");
+  await page.waitForSelector(".ch-dev-tool", { timeout: 15000 });
+  ok(true, "Noah's account opens the tools");
   ok(/Not found/.test(await page.textContent(".ch-dev-list")) && /no-such-city/.test(await page.textContent(".ch-dev-list")), "edits for missing targets are listed under Not found");
 
   // Country tool: recolour France.
@@ -247,7 +254,7 @@ await run("editor", async () => {
   ok(Math.abs(mid[1] - base[1]) > 15, "the map changes before the server answers: " + base + " -> " + mid);
   await page.waitForFunction(() => /Saved/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 8000 });
   const sent = calls.filter((c) => c.action === "save").pop();
-  ok(sent && sent.edit.kind === "country-colour" && sent.edit.target === "Bourbon Kingdom of France" && sent.edit.value.c === 6 && sent.password === "test-pass", "the save sends the edit: " + JSON.stringify(sent && sent.edit));
+  ok(sent && sent.edit.kind === "country-colour" && sent.edit.target === "Bourbon Kingdom of France" && sent.edit.value.c === 6 && !("password" in sent), "the save sends the edit: " + JSON.stringify(sent && sent.edit));
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
   const rowText = await page.textContent(".ch-dev-row");
   ok(/Bourbon Kingdom of France \| Colour 7 \| .* to /.test(rowText), "the edit is listed with | between its parts: " + rowText);
@@ -270,11 +277,11 @@ await run("editor", async () => {
   await page.waitForFunction(() => /Saved/.test(document.querySelector(".ch-dev-status").textContent), null, { timeout: 8000 });
   ok(/Name: <b>x<\/b>/.test(await page.textContent(".ch-dev-list")) && !(await page.$(".ch-dev-list b")), "a name with HTML in it shows as text");
 
-  // Reload: the password is remembered for the tab.
+  // Reload: still signed in.
   await page.reload();
   await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
   await page.waitForSelector(".ch-dev-tool", { timeout: 15000 });
-  ok(!(await page.$("#dev-password")), "a reload doesn't ask for the password again");
+  ok(!(await page.$(".ch-dev-login")), "a reload opens the tools again");
 
   // Move name: drag France's name 80 px right.
   await page.click('.ch-dev-tool[data-tool="label"]');
@@ -300,11 +307,8 @@ await run("editor", async () => {
 
 await run("refused", async () => {
   const srv = server();
-  const { page, errors } = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv);
-  await page.waitForSelector("#dev-password", { timeout: 15000 });
-  await page.fill("#dev-password", "test-pass");
-  await page.click(".ch-dev-login button[type=submit]");
-  await page.waitForSelector(".ch-dev-tool");
+  const { page, errors } = await open("#y=1815-07&v=2.35,46.50,8.00&dev", srv, "noah");
+  await page.waitForSelector(".ch-dev-tool", { timeout: 15000 });
   await page.click('.ch-dev-tool[data-tool="country"]');
   const at = [0.9, 44.2];
   const base = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
@@ -312,10 +316,10 @@ await run("refused", async () => {
   await page.mouse.click(q[0], q[1]);
   await page.waitForSelector(".ch-dev-form");
   await page.click('.ch-dev-swatch-btn[data-c="6"]');
-  srv.answer = async () => [401, { error: "password" }];
+  srv.answer = async () => [403, { error: "team" }];
   await page.click(".ch-dev-form button[type=submit]");
-  await page.waitForSelector("#dev-password", { timeout: 8000 });
-  ok(/refused/.test(await page.textContent(".ch-dev-status")), "a refused save asks for the password again: " + (await page.textContent(".ch-dev-status")));
+  await page.waitForSelector(".ch-dev-login", { timeout: 8000 });
+  ok(/can't edit/.test(await page.textContent(".ch-dev-status")), "a refused save closes the tools and says why: " + (await page.textContent(".ch-dev-status")));
   const back = await page.evaluate(([a, b]) => window.__chronia.fillAt(a, b), at);
   ok(Math.abs(back[1] - base[1]) < 8, "and the map goes back: " + back);
   ok(!errors.length, "no page errors: " + errors);

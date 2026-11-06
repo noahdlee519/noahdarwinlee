@@ -1,37 +1,39 @@
-// Checks the deployed chronia-edits function from outside, without Noah's password:
+// Checks the deployed chronia-edits function from outside, without Noah's Google session:
 // node tools/chronia-edits-api-check.mjs [function URL]
-// Saving and deleting need the password: against the deployed function Noah tries those himself in the
-// developer tools; against a local copy (deno run, with a stand-in database), set CHRONIA_EDITS_PASSWORD to
-// the password it was started with and they are checked too.
+// Saving and deleting need a reviewer's session: against the deployed function Noah tries those himself in
+// the developer tools; against a local copy (deno run, with a stand-in for Supabase's auth and database), set
+// CHRONIA_EDITS_TOKEN to an access token the stand-in takes for a reviewer and they are checked too.
 const URL_ = process.argv[2] || "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-edits";
 const ORIGIN = "https://chroniaatlas.com";
 let failed = 0;
 const ok = (good, what) => { console.log((good ? "ok   " : "FAIL ") + what); if (!good) failed++; };
-const post = (body, origin = ORIGIN) => fetch(URL_, { method: "POST", headers: { "Content-Type": "application/json", Origin: origin }, body: JSON.stringify(body) });
+const post = (body, token = "", origin = ORIGIN) => fetch(URL_, { method: "POST", headers: { "Content-Type": "application/json", Origin: origin, ...(token ? { Authorization: "Bearer " + token } : {}) }, body: JSON.stringify(body) });
 
 const list = await post({ action: "list" });
 const lb = await list.json().catch(() => ({}));
-ok(list.status === 200 && Array.isArray(lb.edits), "list without a password: " + list.status);
+ok(list.status === 200 && Array.isArray(lb.edits), "list without signing in: " + list.status);
 ok((list.headers.get("cache-control") || "").includes("max-age=30"), "list may be cached for 30 seconds: " + list.headers.get("cache-control"));
 
-const wrong = "wrong-" + Date.now();
-const check = await post({ action: "check", password: wrong });
-ok(check.status === 401, "check with a wrong password is refused: " + check.status);
-const save = await post({ action: "save", password: wrong, edit: { kind: "city-hide", target: "london", from: "1815", to: "1815", value: {} } });
-ok(save.status === 401, "save with a wrong password is refused: " + save.status);
-const bad = await post({ action: "save", password: wrong, edit: { kind: "nope" } });
-ok(bad.status === 401, "the password is checked before the fields: " + bad.status);
-const del = await post({ action: "delete", password: wrong, id: 1 });
-ok(del.status === 401, "delete with a wrong password is refused: " + del.status);
+const wrong = "not-a-session-" + Date.now() + "-xxxxxxxxxxxx";
+const check = await post({ action: "check", password: "anything" });
+ok(check.status === 401, "check without a session is refused, password or not: " + check.status);
+const save = await post({ action: "save", edit: { kind: "city-hide", target: "london", from: "1815", to: "1815", value: {} } }, wrong);
+ok(save.status === 401, "save with a false session is refused: " + save.status);
+const bad = await post({ action: "save", edit: { kind: "nope" } }, wrong);
+ok(bad.status === 401, "the session is checked before the fields: " + bad.status);
+const del = await post({ action: "delete", id: 1 }, wrong);
+ok(del.status === 401, "delete with a false session is refused: " + del.status);
+const old = await post({ action: "list" }, "", "https://noahdarwinlee.com");
+ok(old.status === 403, "noahdarwinlee.com is no longer answered: " + old.status);
 
 const evil = await fetch(URL_, { method: "OPTIONS", headers: { Origin: "https://evil.example", "Access-Control-Request-Method": "POST" } });
 ok(evil.headers.get("access-control-allow-origin") !== "https://evil.example", "another site gets no CORS answer: " + evil.status);
 
-const PASS = process.env.CHRONIA_EDITS_PASSWORD;
-if (PASS) {
-  const call = async (body) => { const r = await post({ ...body, password: PASS }); return [r.status, await r.json().catch(() => ({}))]; };
+const TOKEN = process.env.CHRONIA_EDITS_TOKEN;
+if (TOKEN) {
+  const call = async (body) => { const r = await post(body, TOKEN); return [r.status, await r.json().catch(() => ({}))]; };
   let [st, b] = await call({ action: "check" });
-  ok(st === 200 && b.ok === true, "check with the password: " + st);
+  ok(st === 200 && b.ok === true, "check with a reviewer's session: " + st);
   [st, b] = await call({ action: "save", edit: { kind: "country-colour", target: "Bourbon Kingdom of France", from: "1815", to: "1830-06", value: { c: 6 }, note: "test" } });
   ok(st === 200 && b.edit && b.edit.id && b.edit.from === "1815" && b.edit.value.c === 6, "save a new edit: " + st + " " + JSON.stringify(b));
   const id = b.edit && b.edit.id;

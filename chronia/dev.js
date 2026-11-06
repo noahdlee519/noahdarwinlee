@@ -6,13 +6,14 @@
   "use strict";
   var api = window.CHRONIA_DEV;
   if (!api) return;
-  var STORE_PASS = "chronia-dev";
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   var KIND_NAMES = { "country-colour": "Colour", "country-name": "Name", label: "Name placement", "city-size": "Size", "city-name": "Name", "city-hide": "Hidden" };
   var SIZES = [[1, "Largest"], [2, "Large"], [3, "Small"], [4, "Smallest"]];
 
-  var password = "";
-  try { password = sessionStorage.getItem(STORE_PASS) || ""; } catch (e) {}
+  // Only Noah's Google account (a reviewer in the table chronia_team) may save; the tools use the session the
+  // report panel keeps, so signing in there signs in here. Until 6 November 2026 they took Noah's password.
+  try { sessionStorage.removeItem("chronia-dev"); } catch (e) {}
+  var allowed = false;
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -64,18 +65,21 @@
   }
 
   function call(action, body) {
-    var b = Object.assign({ action: action, password: password }, body || {});
-    return fetch(api.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }).then(function (r) {
+    var b = Object.assign({ action: action }, body || {});
+    return api.token().then(function (t) {
+      if (!t) throw { status: 401, error: "signin" };
+      return fetch(api.url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t }, body: JSON.stringify(b) });
+    }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) throw { status: r.status, error: j.error || "", field: j.field || "" };
         return j;
       });
-    }, function () { throw { status: 0, error: "network" }; });
+    }, function (err) { throw err && err.status ? err : { status: 0, error: "network" }; });
   }
   function reason(err) {
     if (!err) return "Something went wrong.";
-    if (err.status === 401) return "The password was refused.";
-    if (err.status === 429) return "Too many wrong passwords today. Try again tomorrow.";
+    if (err.status === 401) return "Sign in with Google to save edits.";
+    if (err.status === 403) return "This Google account can't edit the map.";
     if (err.status === 0) return "The edits could not be reached. Check the connection and try again.";
     if (err.error === "field") return err.field === "from" || err.field === "to" ? "Check the dates: the first must come no later than the last." : "Check the " + (err.field === "value" ? "value" : err.field) + ".";
     return "The edit could not be saved (" + (err.error || err.status) + ").";
@@ -103,7 +107,7 @@
   function show() {
     root.hidden = false;
     api.opened(true);
-    if (password) render(); else login("");
+    if (allowed) render(); else login("");
     clearInterval(timer);
     timer = setInterval(function () { if (!form && api.now() !== lastNow) renderList(); }, 500);
   }
@@ -118,37 +122,26 @@
   function login(message) {
     api.pick(null);
     body.textContent = "";
-    var f = el("form", "ch-dev-login");
-    var lab = el("label", "ch-dev-field");
-    lab.appendChild(el("span", null, "Password"));
-    var input = el("input");
-    input.type = "password";
-    input.id = "dev-password";
-    input.autocomplete = "current-password";
-    lab.appendChild(input);
-    f.appendChild(lab);
-    var go = button("Open", "ch-dev-btn is-main");
-    go.type = "submit";
-    f.appendChild(go);
-    f.addEventListener("submit", function (e) {
-      e.preventDefault();
-      password = input.value;
+    var f = el("div", "ch-dev-login");
+    f.appendChild(el("p", null, "The tools are for Noah's Google account. Sign in with Google in the report panel (the flag), then open them again."));
+    var go = button("Check again", "ch-dev-btn is-main", function () {
       go.disabled = true;
       say("Checking…");
       call("check").then(function () {
-        try { sessionStorage.setItem(STORE_PASS, password); } catch (er) {}
+        allowed = true;
         say("");
         render();
       }, function (err) {
-        password = "";
         go.disabled = false;
-        say(err.status === 401 ? "That password isn't right." : reason(err), true);
-        input.select();
+        say(reason(err), true);
       });
     });
+    f.appendChild(go);
+    f.appendChild(document.createTextNode(" "));
+    f.appendChild(button("Sign in", "ch-dev-btn", function () { api.signIn(); }));
     body.appendChild(f);
     say(message, !!message);
-    setTimeout(function () { input.focus(); }, 0);
+    if (!message) go.click();
   }
 
   function render() {
@@ -375,7 +368,7 @@
     }, function (err) {
       api.setEdits(before);
       if (btn) btn.disabled = false;
-      if (err.status === 401) { forget(); login("The password was refused. Enter it again."); return; }
+      if (err.status === 401 || err.status === 403) { forget(); login(reason(err)); return; }
       say(reason(err), true);
     });
   }
@@ -388,11 +381,11 @@
     call("delete", { id: e.id }).then(function () { say("Deleted."); }, function (err) {
       api.setEdits(before);
       renderList();
-      if (err.status === 401) { forget(); login("The password was refused. Enter it again."); return; }
+      if (err.status === 401 || err.status === 403) { forget(); login(reason(err)); return; }
       say(reason(err), true);
     });
   }
-  function forget() { password = ""; try { sessionStorage.removeItem(STORE_PASS); } catch (e) {} }
+  function forget() { allowed = false; }
 
   root.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); hide(); } });
 
