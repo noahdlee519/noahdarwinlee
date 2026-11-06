@@ -3619,7 +3619,8 @@
     return String(y);
   }
   function fmtDay(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
-  function fmtDate(day) { var d = dateOfDay(day); return MONTHS[d[1] - 1] + " " + d[2] + ", " + d[0]; }
+  // Day, month, year, as the date's frame writes it.
+  function fmtDate(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
     if (!isMonthly(t)) return (ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " : "") + fmtYear(Math.round(t));
@@ -4088,16 +4089,31 @@
       scheduleRender();
       return;
     }
-    if (t === null) { yearInput.value = fitDate(fmtNow(now)); return; }
+    if (t === null) {
+      var typed = String(yearInput.value).trim();
+      yearInput.value = fitDate(fmtNow(now));
+      if (typed && typed !== yearInput.value) yearHint("No date in “" + (typed.length > 24 ? typed.slice(0, 23) + "…" : typed) + "”. Try 1815, July 1815, 15 July 1815, or 500 BC.");
+      return;
+    }
     stopPlay();
     if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
   }
+  // A date that cannot be read is put back, and a line under the frame says what the field takes.
+  var hintTimer = 0;
+  function yearHint(text) {
+    var h = $("year-hint");
+    clearTimeout(hintTimer);
+    h.textContent = text;
+    h.hidden = !text;
+    if (text) hintTimer = setTimeout(function () { yearHint(""); }, 6000);
+  }
+  yearInput.addEventListener("focus", function () { yearHint(""); });
   yearInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); yearInput.blur(); }
     else if (e.key === "Escape") { yearInput.value = fitDate(fmtNow(now)); yearInput.blur(); }
   });
   yearInput.addEventListener("blur", commitYearInput);
-  // The buttons beside the date: the year on the left, the month on the right, forward above and back below.
+  // The buttons beside the date: back a year and back a month on its left, forward a month and forward a year on its right.
   // Hovering a button underlines what it moves: the year (with its era) or the month's name, in a copy of the date laid
   // over the field (an input cannot underline part of its text).
   var yearMark = $("year-mark"), markPart = "";
@@ -4663,7 +4679,15 @@
       } else { img.hidden = true; more.hidden = true; }
       if (mode === "ai" || mode === "done") return;
       if (wikiState === 0) quiet("Looking it up on Wikipedia");
-      else if (wikiState === 2) quiet("Wikipedia could not be reached.");
+      else if (wikiState === 2) {
+        quiet("Wikipedia could not be reached. ");
+        var again = document.createElement("button");
+        again.type = "button";
+        again.className = "ch-wiki-again";
+        again.textContent = "Try again";
+        again.addEventListener("click", function () { if (ask === wikiAsk) loadWiki(name, title, blurb, at); });
+        text.appendChild(again);
+      }
       else if (!wiki) quiet(at ? "Wikipedia has no article on this place." : "Wikipedia has no article under this name.");
       else { text.className = "ch-wiki-text"; text.textContent = wiki.extract; }
     };
@@ -5154,8 +5178,12 @@
     var box = $("year-box"), r = box.getBoundingClientRect(), cr = canvas.getBoundingClientRect(), bs = getComputedStyle(box), ys = getComputedStyle(yearInput);
     var x = r.left - cr.left, y = r.top - cr.top, w = r.width, h = r.height;
     // On a phone the date is in the year bar, which the frame leaves out, so it goes at the top in the middle.
-    if (box.parentNode !== $("top")) { x = (W - w) / 2; y = 8; }
+    if (box.parentNode !== $("top")) { x = (W - w) / 2; y = 8; h = Math.min(h, 54); }
     if (w > 0 && h > 0) {
+      // The saved frame holds the date alone, without the buttons beside it, so it is cut to the date's width.
+      c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
+      var fw = Math.min(w, Math.ceil(c.measureText(label).width) + 72);
+      x += (w - fw) / 2; w = fw;
       var bg = cs.getPropertyValue("--bg").trim() || bs.backgroundColor, rule = cs.getPropertyValue("--rule").trim() || "#3a2a1a", faint = cs.getPropertyValue("--ch-faint").trim() || rule;
       c.fillStyle = bg; c.fillRect(x, y, w, h);
       c.lineWidth = 1; c.strokeStyle = rule; c.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
@@ -5164,7 +5192,7 @@
       c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
       c.fillText(label, x + w / 2, y + h / 2 + 0.5, w - 16);
     }
-    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", fs = 12, sp = fs * 0.3;
+    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", fs = 12, sp = fs * 0.16;
     c.font = "400 " + fs + "px " + ts.fontFamily;
     c.textAlign = "left"; c.textBaseline = "alphabetic";
     var tw = 0, i;
@@ -6086,24 +6114,29 @@
   setWarsOpen(warsOpen, false);
   warsBtn.addEventListener("click", function () { setWarsOpen(warsList.hidden, true); });
   syncWars();
-  if (canHover) {
-    document.querySelectorAll("[data-tip]").forEach(function (el) {
-      el.addEventListener("mouseenter", function () {
-        clearTimeout(tipTimer);
-        tipTimer = setTimeout(function () {
-          hoverTip.textContent = el.getAttribute("data-tip");
-          var r = el.getBoundingClientRect(), top = !!el.closest(".ch-top");
-          hoverTip.classList.add("is-on");
-          var w = hoverTip.offsetWidth, h = hoverTip.offsetHeight;
-          var x = Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2));
-          var y = top ? el.closest(".ch-frame").getBoundingClientRect().bottom + 8 : r.top - h - 8;
-          hoverTip.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
-        }, 380);
-      });
-      el.addEventListener("mouseleave", function () { clearTimeout(tipTimer); hoverTip.classList.remove("is-on"); });
-      el.addEventListener("click", function () { clearTimeout(tipTimer); hoverTip.classList.remove("is-on"); });
-    });
+  // A button's hint shows on hover and, for the keyboard, when the button takes focus.
+  function showHint(el, wait) {
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(function () {
+      hoverTip.textContent = el.getAttribute("data-tip");
+      var r = el.getBoundingClientRect(), top = !!el.closest(".ch-top");
+      hoverTip.classList.add("is-on");
+      var w = hoverTip.offsetWidth, h = hoverTip.offsetHeight;
+      var x = Math.max(6, Math.min(W - w - 6, r.left + r.width / 2 - w / 2));
+      var y = top ? el.closest(".ch-frame").getBoundingClientRect().bottom + 8 : r.top - h - 8;
+      hoverTip.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+    }, wait);
   }
+  function hideHint() { clearTimeout(tipTimer); hoverTip.classList.remove("is-on"); }
+  document.querySelectorAll("[data-tip]").forEach(function (el) {
+    if (canHover) {
+      el.addEventListener("mouseenter", function () { showHint(el, 380); });
+      el.addEventListener("mouseleave", hideHint);
+    }
+    el.addEventListener("focus", function () { if (el.matches(":focus-visible")) showHint(el, 120); });
+    el.addEventListener("blur", hideHint);
+    el.addEventListener("click", hideHint);
+  });
 
   document.addEventListener("keydown", function (e) {
     var t = e.target, typing = t && ((t.tagName === "INPUT" && t.type === "text") || t.tagName === "TEXTAREA");
@@ -6182,7 +6215,10 @@
   function playIntro() {
     var root = document.documentElement;
     if (root.classList.contains("ch-ready")) return false;
-    var play = !reduceMotion;
+    // The paper roll opens the atlas once a visit: a reader coming back in the same tab finds the map already laid out.
+    var seen = false;
+    try { seen = sessionStorage.getItem("chronia-opened") === "1"; sessionStorage.setItem("chronia-opened", "1"); } catch (e) {}
+    var play = !reduceMotion && !seen;
     if (play) {
       var veil = document.createElement("div");
       veil.className = "ch-veil";

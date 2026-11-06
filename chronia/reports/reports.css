@@ -10,7 +10,6 @@
   display: none;
 }
 .rp-lock label {
-  font-style: italic;
 }
 .rp-lock input,
 .rp-item textarea {
@@ -72,12 +71,10 @@
 }
 .rp-bar button[aria-pressed="true"] {
   text-decoration: none;
-  font-style: italic;
 }
 .rp-count {
   margin-left: 10px;
   font-size: 16px;
-  font-style: italic;
 }
 .rp-out {
   margin-left: auto;
@@ -93,7 +90,6 @@
   border-top: 1px solid var(--hair);
 }
 .rp-empty {
-  font-style: italic;
   color: var(--muted);
 }
 .cp-sheet .rp-head {
@@ -111,7 +107,6 @@
   margin: 0 0 10px;
   color: var(--muted);
   font-size: 16px;
-  font-style: italic;
 }
 .cp-sheet .rp-text {
   margin: 0 0 14px;
@@ -122,7 +117,6 @@
   display: block;
   color: var(--muted);
   font-size: 16px;
-  font-style: italic;
 }
 .rp-item textarea {
   display: block;
@@ -143,7 +137,6 @@
   color: var(--ink);
 }
 .rp-acts .rp-note {
-  font-style: italic;
 }
 @media (max-width: 640px) {
   .rp-lock {
@@ -155,5 +148,4 @@
   padding-left: 12px;
   border-left: 2px solid var(--faint);
   color: var(--muted);
-  font-style: italic;
 }

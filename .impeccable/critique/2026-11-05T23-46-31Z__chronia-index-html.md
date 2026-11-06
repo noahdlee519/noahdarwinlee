@@ -10,6 +10,7 @@ target_fingerprint: "sha256:64e958c7f12c9ade986167fc8dc44104e97d5954a0bdec582181
 target_path: /home/claude/noahdarwinlee/chronia/index.html
 timestamp: 2026-11-05T23-46-31Z
 slug: chronia-index-html
+closed: true
 ---
 Method: dual-agent (A: design review, B: detector + browser)
 

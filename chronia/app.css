@@ -11,6 +11,7 @@
   --ch-btn-hover: rgba(58, 42, 27, 0.08);
   --ch-serif: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
   --ch-num: "Old Standard TT", Georgia, "Times New Roman", serif;
+  --ch-sc: "IM Fell English SC", "IM Fell English", Georgia, serif;
   --ch-ocean: #b4c8c4;
   --ch-ocean-deep: #9db6b6;
   --ch-grat: rgba(84, 60, 38, 0.3);
@@ -55,7 +56,6 @@
   --ch-b8: #5f945a;
   --ch-b9: #8f9c3a;
   --ch-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.32 0 0 0 0 0.2 0 0 0 0.34 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  --ch-corner: rgba(58, 42, 27, 0.72);
   --ch-lift: 0 1px 2px rgba(58, 42, 27, 0.14), 0 4px 12px -5px rgba(58, 42, 27, 0.3);
   --ch-gap: 10px;
   --ch-bar: 54px;
@@ -128,14 +128,13 @@ body.ch-page {
 }
 
 .ch-globe:focus-visible {
-  outline: none;
+  outline: 2px solid var(--ink);
+  outline-offset: -6px;
 }
 
 .ch-frame,
 .ch-card,
 .ch-time,
-.ch-tip,
-.ch-hover-tip,
 .ch-load,
 .ch-about-tip,
 .ch-layers,
@@ -146,6 +145,13 @@ body.ch-page {
   background-size: 260px 260px;
 }
 
+.ch-tip,
+.ch-hover-tip {
+  background-color: var(--bg);
+}
+
+/* Two ranks of frame. The date, the one thing the page changes, and the card, the one thing it says, are ruled twice
+   like an atlas plate's neatline; the rest of the furniture takes a single rule and gives way to them. */
 .ch-frame,
 .ch-card,
 .ch-about-tip,
@@ -153,7 +159,20 @@ body.ch-page {
 .ch-key,
 .ch-wars {
   border: 1px solid var(--rule);
+  box-shadow: var(--ch-lift);
+}
+
+.ch-year-box,
+.ch-card {
   box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), var(--ch-lift);
+}
+
+.ch-head,
+.ch-ctls,
+.ch-key,
+.ch-wars {
+  border-color: color-mix(in srgb, var(--rule) 55%, transparent);
+  box-shadow: 0 1px 2px rgba(58, 42, 27, 0.1);
 }
 
 .ch-top {
@@ -192,7 +211,7 @@ body.ch-page {
   flex-direction: column;
   justify-content: center;
   min-width: 0;
-  padding: 0 24px 1px 28px;
+  padding: 0 20px 1px 22px;
   text-align: center;
 }
 
@@ -200,9 +219,9 @@ body.ch-page {
   margin: 0;
   font-size: 25px;
   font-weight: 400;
-  letter-spacing: 0.34em;
+  letter-spacing: 0.16em;
   line-height: 1;
-  padding-left: 0.34em;
+  padding-left: 0.16em;
 }
 
 .ch-about {
@@ -249,14 +268,8 @@ body.ch-page {
   width: 34px;
   height: 34px;
   border: 1px solid var(--rule);
+  border-color: color-mix(in srgb, var(--rule) 55%, transparent);
   background-color: var(--bg);
-  background-image:
-    radial-gradient(circle at 3.6px 3.6px, var(--ch-corner) 0.95px, transparent 1.35px),
-    radial-gradient(circle at calc(100% - 3.6px) 3.6px, var(--ch-corner) 0.95px, transparent 1.35px),
-    radial-gradient(circle at 3.6px calc(100% - 3.6px), var(--ch-corner) 0.95px, transparent 1.35px),
-    radial-gradient(circle at calc(100% - 3.6px) calc(100% - 3.6px), var(--ch-corner) 0.95px, transparent 1.35px),
-    var(--ch-grain);
-  background-size: auto, auto, auto, auto, 260px 260px;
 }
 
 .ch-ctl svg,
@@ -312,6 +325,10 @@ body.ch-page {
   color: var(--ch-faint);
   cursor: default;
   box-shadow: none;
+}
+
+.ch-ctl-label {
+  display: none;
 }
 
 .ch-ctl[aria-pressed="true"] .ch-icon-flat,
@@ -378,9 +395,9 @@ body.ch-page {
 
 .ch-about-tip .ch-keys-head {
   margin: 0 0 5px;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--ch-sc);
+  font-size: 14px;
+  letter-spacing: 0.02em;
   color: var(--ch-muted);
 }
 
@@ -410,22 +427,6 @@ body.ch-page {
   font-size: 11px;
   line-height: 1.5;
   text-align: center;
-}
-
-.ch-about-tip .ch-donate {
-  display: inline-block;
-  padding: 0 6px;
-  border: 1px solid var(--ink);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  line-height: 1.6;
-  text-decoration: none;
-}
-
-.ch-about-tip .ch-donate:hover,
-.ch-about-tip .ch-donate:focus-visible {
-  background: var(--ink);
-  color: var(--bg);
 }
 
 .ch-about:hover .ch-about-tip,
@@ -532,10 +533,10 @@ body.ch-page {
 
 .ch-layers-title {
   margin: 0 0 2px;
-  font-size: 12.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ch-muted);
+  font-family: var(--ch-sc);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
 }
 
 .ch-layer-set {
@@ -555,9 +556,9 @@ body.ch-page {
   width: 100%;
   margin: 0 0 4px;
   padding: 0;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--ch-sc);
+  font-size: 14px;
+  letter-spacing: 0.02em;
   color: var(--ch-muted);
 }
 
@@ -666,7 +667,13 @@ body.ch-page {
 }
 
 select.ch-save-input {
-  padding-right: 4px;
+  padding-right: 24px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%233a2a1b' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 4.5 6 8l3.5-3.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  cursor: pointer;
 }
 
 .ch-save-input:disabled {
@@ -768,7 +775,7 @@ select.ch-save-input {
   box-sizing: border-box;
   padding: 12px calc(20px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--rule);
-  box-shadow: inset 0 3px 0 var(--bg), inset 0 4px 0 var(--ch-faint), 0 -4px 12px -6px rgba(58, 42, 27, 0.3);
+  box-shadow: 0 -2px 10px -6px rgba(58, 42, 27, 0.3);
 }
 
 .ch-when {
@@ -795,34 +802,32 @@ select.ch-save-input {
   translate: -50% 0;
   display: flex;
   align-items: center;
-  width: 262px;
+  width: 336px;
   padding: 0 4px;
 }
 
-/* Beside the date, the year's buttons on the left and the month's on the right, forward above and back below, in
-   segments ruled like the title's. */
+/* The date reads along one line, as the timeline does: back a year and back a month on its left, forward a month and
+   forward a year on its right, in segments ruled like the toolbar's. */
 .ch-spin {
   flex: 0 0 auto;
   align-self: stretch;
   display: flex;
-  flex-direction: column;
-  width: 30px;
   margin: 4px 0;
 }
 
-.ch-spin-year {
+.ch-spin-back {
   border-right: 1px solid var(--ch-faint);
 }
 
-.ch-spin-month {
+.ch-spin-fwd {
   border-left: 1px solid var(--ch-faint);
 }
 
 .ch-spin-btn {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  min-height: 0;
+  width: 34px;
   padding: 0;
   border: 0;
   background: none;
@@ -832,7 +837,7 @@ select.ch-save-input {
 }
 
 .ch-spin-btn + .ch-spin-btn {
-  border-top: 1px solid var(--ch-faint);
+  border-left: 1px solid var(--ch-faint);
 }
 
 .ch-spin-btn:hover {
@@ -884,6 +889,33 @@ select.ch-save-input {
   text-decoration-color: var(--ink);
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
+}
+
+.ch-year-hint {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 2;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  background-color: var(--bg);
+  box-shadow: var(--ch-lift);
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.ch-year-hint[hidden] {
+  display: none;
+}
+
+.ch-time > .ch-year-box .ch-year-hint {
+  top: auto;
+  bottom: calc(100% + 8px);
 }
 
 .ch-spin-btn.is-off {
@@ -1009,18 +1041,18 @@ select.ch-save-input {
 }
 
 .ch-eras {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 22px, #000 calc(100% - 22px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 46px, #000 calc(100% - 46px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 46px, #000 calc(100% - 46px), transparent);
 }
 
 .ch-eras.at-start {
-  -webkit-mask-image: linear-gradient(to right, #000, #000 calc(100% - 22px), transparent);
-  mask-image: linear-gradient(to right, #000, #000 calc(100% - 22px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000, #000 calc(100% - 46px), transparent);
+  mask-image: linear-gradient(to right, #000, #000 calc(100% - 46px), transparent);
 }
 
 .ch-eras.at-end {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 22px, #000);
-  mask-image: linear-gradient(to right, transparent, #000 22px, #000);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 46px, #000);
+  mask-image: linear-gradient(to right, transparent, #000 46px, #000);
 }
 
 .ch-eras.at-start.at-end {
@@ -1141,11 +1173,11 @@ select.ch-save-input {
   padding: 6px 12px 6px 13px;
   border: 0;
   background: none;
-  color: var(--ch-muted);
+  color: var(--ink);
   font: inherit;
-  font-size: 12.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--ch-sc);
+  font-size: 15px;
+  letter-spacing: 0.02em;
   line-height: 1.2;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1290,7 +1322,7 @@ select.ch-save-input {
 
 .ch-key-list {
   margin: 0 4px;
-  padding: 1px 10px 9px 8px;
+  padding: 6px 10px 9px 8px;
   list-style: none;
   border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
 }
@@ -1305,16 +1337,16 @@ select.ch-save-input {
   align-items: center;
   gap: 9px;
   padding: 3px 0 2px;
-  font-size: 13.5px;
-  line-height: 1.2;
+  font-size: 14px;
+  line-height: 1.3;
 }
 
 .ch-key-row small {
   display: block;
   max-width: 200px;
   margin-top: 1px;
-  font-size: 11.5px;
-  line-height: 1.25;
+  font-size: 12.5px;
+  line-height: 1.35;
   color: var(--ch-muted);
 }
 
@@ -1385,9 +1417,9 @@ select.ch-save-input {
 
 .ch-card-kind {
   margin: 2px 32px 0 0;
-  font-size: 12.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--ch-sc);
+  font-size: 15px;
+  letter-spacing: 0.02em;
   color: var(--ch-muted);
 }
 
@@ -1484,13 +1516,29 @@ select.ch-save-input {
   display: none;
 }
 
+.ch-wiki-again {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ch-wiki-again:hover {
+  text-decoration-thickness: 2px;
+}
+
 .ch-wiki-img {
   float: right;
   max-width: 108px;
   max-height: 130px;
   margin: 3px 0 8px 14px;
   border: 1px solid var(--ch-faint);
-  filter: sepia(0.55) saturate(0.8) contrast(0.95);
+  filter: sepia(0.18) saturate(0.92);
 }
 
 .ch-wiki-text {
@@ -1635,8 +1683,8 @@ select.ch-save-input {
 
   .ch-title {
     font-size: 21px;
-    letter-spacing: 0.3em;
-    padding-left: 0.3em;
+    letter-spacing: 0.14em;
+    padding-left: 0.14em;
   }
 
   .ch-head-text {
@@ -1659,7 +1707,7 @@ select.ch-save-input {
 
   .ch-wars-btn {
     padding: 5px 10px 5px 11px;
-    font-size: 12px;
+    font-size: 14.5px;
   }
 
   .ch-wars-btn .ch-wars-ico {
@@ -1711,8 +1759,36 @@ select.ch-save-input {
   :root.ch,
   :root.ch[data-theme] {
     --ch-gap: 8px;
-    --ch-bar: 44px;
-    --ch-seg: 40px;
+    --ch-bar: 52px;
+    --ch-seg: 44px;
+  }
+
+  /* On a phone nothing can be hovered, so each tool is named under its icon. */
+  .ch-ctls .ch-ctl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .ch-ctls .ch-ctl svg {
+    width: 21px;
+    height: 21px;
+    margin: 0;
+  }
+
+  .ch-ctl-label {
+    display: block;
+    font-family: var(--ch-sc);
+    font-size: 12px;
+    line-height: 1;
+    color: var(--ch-muted);
+  }
+
+  .ch-ctl[aria-pressed="true"] .ch-ctl-label.ch-icon-flat,
+  .ch-ctl[aria-pressed="false"] .ch-ctl-label.ch-icon-globe {
+    display: none;
   }
 
   .ch-top {
@@ -1730,9 +1806,9 @@ select.ch-save-input {
   }
 
   .ch-title {
-    font-size: 14.5px;
-    letter-spacing: 0.12em;
-    padding-left: 0.12em;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    padding-left: 0.08em;
   }
 
   .ch-head .ch-ctl {
@@ -1771,9 +1847,9 @@ select.ch-save-input {
   .ch-time {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "back date fwd" "track track track";
+    grid-template-areas: "date date date" "back track fwd";
     align-items: center;
-    gap: 2px 8px;
+    gap: 6px 6px;
     padding: 8px calc(14px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
   }
 
@@ -1792,15 +1868,22 @@ select.ch-save-input {
     justify-self: center;
     box-sizing: border-box;
     width: 100%;
-    max-width: 248px;
+    max-width: 340px;
     min-width: 0;
-    height: 40px;
+    height: 44px;
     padding: 0 3px;
   }
 
   .ch-spin {
-    width: 24px;
     margin: 3px 0;
+  }
+
+  .ch-spin-btn {
+    width: 44px;
+  }
+
+  .ch-when {
+    gap: 4px;
   }
 
   .ch-track {
@@ -1809,7 +1892,7 @@ select.ch-save-input {
 
   .ch-key-btn {
     padding: 5px 10px 5px 11px;
-    font-size: 12px;
+    font-size: 14.5px;
   }
 
   .ch-card:not([hidden]) ~ .ch-key,
@@ -1818,8 +1901,29 @@ select.ch-save-input {
   }
 
   .ch-step {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 38px;
+  }
+
+  /* The timeline is short here, so its labels fade over a shorter edge. */
+  .ch-eras {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  }
+
+  .ch-eras.at-start {
+    -webkit-mask-image: linear-gradient(to right, #000, #000 calc(100% - 18px), transparent);
+    mask-image: linear-gradient(to right, #000, #000 calc(100% - 18px), transparent);
+  }
+
+  .ch-eras.at-end {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 18px, #000);
+    mask-image: linear-gradient(to right, transparent, #000 18px, #000);
+  }
+
+  .ch-eras.at-start.at-end {
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .ch-year-mark {
@@ -1847,7 +1951,7 @@ select.ch-save-input {
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
-    box-shadow: inset 0 3px 0 var(--bg), inset 0 4px 0 var(--ch-faint), 0 -4px 12px -6px rgba(58, 42, 27, 0.3);
+    box-shadow: 0 -2px 10px -6px rgba(58, 42, 27, 0.3);
   }
 
   .ch-card-name {
@@ -1865,9 +1969,9 @@ select.ch-save-input {
 
 @media (max-width: 369px) {
   .ch-title {
-    font-size: 12.5px;
-    letter-spacing: 0.08em;
-    padding-left: 0.08em;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding-left: 0.05em;
   }
 }
 
@@ -1887,18 +1991,18 @@ select.ch-save-input {
     opacity: 0;
   }
   :root.ch-intro .ch-top {
-    animation: ch-dropin 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
+    animation: ch-dropin 700ms cubic-bezier(0.16, 1, 0.3, 1) 1350ms both;
   }
   :root.ch-intro .ch-time {
-    animation: ch-pullup 1000ms cubic-bezier(0.3, 0.7, 0.4, 1) 1350ms both;
+    animation: ch-pullup 700ms cubic-bezier(0.16, 1, 0.3, 1) 1350ms both;
   }
   :root.ch-intro .ch-key,
   :root.ch-intro .ch-wars {
     animation: ch-fade 600ms ease 2300ms both;
   }
   :root.ch-intro .ch-ctl {
-    animation: ch-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
-    animation-delay: calc(2250ms + var(--ch-i, 0) * 90ms);
+    animation: ch-fade 360ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation-delay: calc(2250ms + var(--ch-i, 0) * 60ms);
   }
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(2) { --ch-i: 1; }
   :root.ch-intro .ch-ctls .ch-ctl:nth-child(3) { --ch-i: 2; }
@@ -1967,24 +2071,13 @@ select.ch-save-input {
 }
 
 @keyframes ch-dropin {
-  0% { translate: 0 calc(-100% - 20px); }
-  55% { translate: 0 6px; }
-  72% { translate: 0 -3px; }
-  86% { translate: 0 1px; }
-  100% { translate: 0 0; }
+  from { translate: 0 calc(-100% - 20px); }
+  to { translate: 0 0; }
 }
 
 @keyframes ch-pullup {
-  0% { translate: 0 105%; }
-  55% { translate: 0 -4%; }
-  72% { translate: 0 2%; }
-  86% { translate: 0 -0.8%; }
-  100% { translate: 0 0; }
-}
-
-@keyframes ch-pop {
-  from { opacity: 0; scale: 0.6; translate: 0 8px; }
-  to { opacity: 1; scale: 1; translate: 0 0; }
+  from { translate: 0 105%; }
+  to { translate: 0 0; }
 }
 
 @keyframes ch-fade {
@@ -2162,9 +2255,9 @@ select.ch-save-input {
   margin: 14px 0 4px !important;
   padding-top: 8px;
   border-top: 1px solid var(--ch-faint);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: var(--ch-sc);
+  font-size: 14px;
+  letter-spacing: 0.02em;
   color: var(--ch-muted);
 }
 .ch-dev-form {
