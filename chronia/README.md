@@ -1077,7 +1077,7 @@ Done the same day, at Noah's word:
 - **The team by Google account:** the reports page and the developer tools now take a Google account on the team (`chronia_team`) in place of the two shared passwords; Noah's password opens nothing, and the team's still opens the reports to read until the fact checkers' accounts are added (see [Reports of errors](#reports-of-errors)).
 - **The 50 a day can't be outrun:** `chronia_report_send` counts an account's reports and adds the new one in one step, under a lock on the account; before, a burst sent at once could pass the cap by a few, since the count and the insert were two steps.
 - **Stray grants:** the same database's other tables (the game's daily scores, its events, and the profiles) gave `anon` and `authenticated` the `TRUNCATE`, `REFERENCES`, and `TRIGGER` privileges, which the REST API can't use and row-level security doesn't govern; they were revoked (`supabase/migrations/202611060710_revoke_stray_client_grants.sql`).
-- **Leftover functions:** `chronia-audit-probe` (the probe of the address test, retired to a 410) and `swift-responder` (Supabase's sample function) are to be deleted in the dashboard, since the tools here can't delete a function.
+- **Leftover functions:** `chronia-audit-probe` (the probe of the address test) and `swift-responder` (Supabase's sample function, used by nothing) were both replaced by a stub that answers 410 and only behind a Supabase key; the tools here can't delete a function, so they are left for the dashboard (Edge Functions, each function, Delete).
 
 ## Analytics
 
