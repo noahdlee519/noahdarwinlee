@@ -248,6 +248,8 @@ addLake("Lake Fucino", null, at(1875), [wet.fucino], 0.0008, r4);
 addLake("Lake Copais", null, at(1886), [wet.copais], 0.0008, r4);
 addLake("Tulare Lake", null, at(1899), [wet.tulare], 0.0015, r4);
 addMarsh("Lake Hula and its marshes", null, at(1958), [wet.hula]);
+addMarsh("The Oderbruch", null, at(1753), [wet.oderbruch]);
+addMarsh("The Great Black Swamp", null, at(1870), [wet.blackswamp]);
 // The Mesopotamian Marshes: the extent before the draining of 1958 from the University of Basra's map, until 1994, when
 // the drains of 1991 to 1993 had dried them; al-Hawizeh's eastern part, fed from Iran, until the dykes were opened in
 // April and May 2003; then the reflooded marshes, as the map's permanent ones with al-Hawizeh (see the README).
