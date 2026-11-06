@@ -332,9 +332,23 @@
     if (FB.wrap) { c.rect(-20, y0 - k * HALF_PI - d, W + 40, k * Math.PI + 2 * d); return; }
     c.rect(x0 - k * Math.PI - d, y0 - k * HALF_PI - d, k * TAU + 2 * d, k * Math.PI + 2 * d);
   }
+  // Whether a circle of radius `rad` round the globe's centre covers the whole window. Zoomed in, the globe's
+  // disc is far larger than the screen (5,600 device pixels across at 7x on a 2x screen), and filling or
+  // clipping to it made the graphics card work out its smooth edge every time, though none of it showed:
+  // on an M2 (6 November 2026) the aged-paper stage took 38 ms of each frame on the globe against 0.4 ms on
+  // the flat map. Where the disc covers the window, a rectangle the size of the window draws the same pixels.
+  function discCovers(rad) {
+    if (flat) return false;
+    var dx = Math.max(cx, W - cx) + 2, dy = Math.max(cy, H - cy) + 2;
+    return dx * dx + dy * dy < rad * rad;
+  }
+  function traceDisc(c, rad) {
+    if (discCovers(rad)) c.rect(-2, -2, W + 4, H + 4);
+    else c.arc(cx, cy, rad, 0, TAU);
+  }
   function traceSphere(c, d) {
     if (flat) traceOutline(c, d);
-    else c.arc(cx, cy, B.r + (d || 0), 0, TAU);
+    else traceDisc(c, B.r + (d || 0));
   }
   var geoPath = d3.geoPath(projection, ctx), geoPathCtx = ctx;
   function traceFeature(c, f) {
@@ -1191,7 +1205,7 @@
     ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = "round";
 
-    if (!flat && B.r * 1.07 < Math.hypot(W, H)) {
+    if (!flat && B.r * 1.07 < Math.hypot(W, H) && !discCovers(B.r)) {
       var glow = ctx.createRadialGradient(cx, cy, B.r, cx, cy, B.r * 1.07);
       glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = glow;
@@ -1327,8 +1341,10 @@
       ctx.beginPath(); traceOutline(ctx, 0); ctx.lineWidth = 1; ctx.stroke();
       ctx.beginPath(); traceOutline(ctx, 5); ctx.lineWidth = 2.4; ctx.stroke();
     } else {
-      ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.lineWidth = 1.6; ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx, cy, B.r + 5, 0, TAU); ctx.lineWidth = 0.8; ctx.stroke();
+      if (!discCovers(B.r - 2)) {
+        ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, B.r + 5, 0, TAU); ctx.lineWidth = 0.8; ctx.stroke();
+      }
     }
 
     if (perf) pmark("finish");
@@ -1377,7 +1393,7 @@
     outside.addPath(shape);
     ctx.save();
     ctx.beginPath();
-    if (flat) traceOutline(ctx); else ctx.arc(cx, cy, B.r, 0, TAU);
+    if (flat) traceOutline(ctx); else traceDisc(ctx, B.r);
     ctx.clip();
     ctx.clip(outside, "evenodd");
     ctx.strokeStyle = pal.select; ctx.lineWidth = 3.6; ctx.lineJoin = "round";
@@ -1392,8 +1408,8 @@
     var amt = clamp01((6000 - S) / 3500);
     ctx.save();
     ctx.beginPath();
-    if (flat) traceOutline(ctx); else ctx.arc(cx, cy, B.r, 0, TAU);
-    ctx.clip();
+    if (flat) traceOutline(ctx); else if (!discCovers(B.r)) ctx.arc(cx, cy, B.r, 0, TAU); else ctx.rect(-2, -2, W + 4, H + 4);
+    if (flat || !discCovers(B.r)) ctx.clip();
     ctx.globalCompositeOperation = "multiply";
     if (flat) {
       var k = FB.k, y0 = cy + k * FB.yc, top = y0 - k * HALF_PI, h = k * Math.PI, e = h * 0.07;
@@ -1408,12 +1424,12 @@
       var vg = ctx.createRadialGradient(cx - r * 0.22, cy - r * 0.26, r * 0.15, cx, cy, r * 1.02);
       vg.addColorStop(0, "rgba(255,255,255,0)"); vg.addColorStop(0.62, "rgba(214,176,112,0.12)"); vg.addColorStop(1, "rgba(150,104,48,0.38)");
       ctx.fillStyle = vg;
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      ctx.beginPath(); traceDisc(ctx, r); ctx.fill();
       ctx.globalCompositeOperation = "screen";
       var hl = ctx.createRadialGradient(cx - r * 0.38, cy - r * 0.42, 0, cx - r * 0.38, cy - r * 0.42, r * 0.55);
       hl.addColorStop(0, "rgba(255,248,226,0.2)"); hl.addColorStop(1, "rgba(255,248,226,0)");
       ctx.fillStyle = hl;
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      ctx.beginPath(); traceDisc(ctx, r); ctx.fill();
     }
     ctx.restore();
   }
