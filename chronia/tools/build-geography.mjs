@@ -213,6 +213,15 @@ addLake("IJsselmeer", at(1932, 5, 28), at(1942, 9, 9), lakeWith([P.NOP, P.EF, P.
 addLake("IJsselmeer", at(1942, 9, 9), at(1957, 6, 29), lakeWith([P.EF, P.SF], [P.W, P.NOP]), 0.0008, r4);
 addLake("IJsselmeer", at(1957, 6, 29), at(1968, 5, 29), lakeWith([P.SF], [P.W, P.NOP, P.EF]), 0.0008, r4);
 addLake("Haarlemmermeer", at(1647), at(1852, 7, 1), cbs("Haarlemmermeer"), 0.0008, r4);
+// The lakes of North Holland before they were drained, from the maps of 1250 and 1500 (tools/lowlands.json).
+{
+  const L = readJSON(resolve(here, "lowlands.json")).lakes;
+  const DRY = { Beemster: at(1612), Purmer: at(1622), Wormer: at(1626), Schermer: at(1635), Haarlemmermeer: at(1647) };
+  Object.entries(DRY).forEach(([name, dry]) => {
+    if (L[name]["1250"]) addLake(name, at(1170, 11, 1), at(1421, 11, 19), L[name]["1250"], 0.001, r4);
+    addLake(name, at(1421, 11, 19), dry, L[name]["1500"], 0.001, r4);
+  });
+}
 const ellipse = (lon, lat, aKm, bKm, n) => {
   const ring = [];
   for (let i = 0; i < n; i++) { const t = (i / n) * 2 * Math.PI; ring.push([lon + (aKm * Math.cos(t)) / (111.32 * Math.cos(lat * Math.PI / 180)), lat + (bKm * Math.sin(t)) / 110.57]); }
@@ -259,9 +268,17 @@ const fens = (() => {
 const WELLAND_NORTH = [[[-1, 52.653], [-0.479, 52.653], [-0.318, 52.677], [-0.29, 52.672], [-0.17, 52.675], [-0.13, 52.74], [-0.153, 52.787], [-0.04, 52.875], [0.05, 52.9], [0.5, 52.97], [1, 52.97], [1, 53.4], [-1, 53.4], [-1, 52.653]]];
 const FEN_WIN = [-0.75, 52.05, 0.9, 53.32];
 
+// The Low Countries' coast in the Middle Ages, from the Atlas van Nederland in het Holoceen (tools/lowlands.json;
+// see the README): the sea of each map that is land today is cut, and its land that is sea today added.
+const LOW = readJSON(resolve(here, "lowlands.json"));
 const landGroups = [
+  { name: "The Low Countries", win: [3.25, 50.75, 7.5, 53.65], states: [
+    { from: null, to: at(1170, 11, 1), cut: LOW["800"].cut, plus: LOW["800"].plus },
+    { from: at(1170, 11, 1), to: at(1421, 11, 19), cut: LOW["1250"].cut, plus: LOW["1250"].plus },
+    { from: at(1421, 11, 19), to: at(1650), cut: LOW["1500"].cut, plus: LOW["1500"].plus }
+  ] },
   { name: "Zuiderzee", win: [4.8, 52.2, 6.05, 53.15], states: [
-    { from: null, to: at(1930, 8, 31), cut: zuiderzee([P.W, P.NOP, P.EF, P.SF], []) },
+    { from: at(1650), to: at(1930, 8, 31), cut: zuiderzee([P.W, P.NOP, P.EF, P.SF], []) },
     { from: at(1930, 8, 31), to: at(1932, 5, 28), cut: zuiderzee([P.NOP, P.EF, P.SF], [P.W]) }
   ] },
   { name: "The Fens", win: FEN_WIN, states: [
@@ -288,12 +305,12 @@ const boxHit = (a, b, w) => {
   }
   return [t0, t1];
 };
-const windowSplice = (poly, cut, w, tol) => {
+const windowSplice = (poly, cut, w, tol, plus = []) => {
   const p = poly[0].slice(0, -1), n = p.length;
   const ins = p.map((v) => inBox(v, w));
   const runs = [];
   for (let i = 0; i < n; i++) if (ins[i] && !ins[(i + n - 1) % n]) { let j = i; while (ins[(j + 1) % n]) j = (j + 1) % n; runs.push([i, j]); }
-  if (runs.length !== 1) throw new Error("ring enters the window " + runs.length + " times");
+  if (runs.length !== 1) throw new Error("ring enters the window " + runs.length + " times: " + JSON.stringify(runs.map(([a, b]) => [p[a], p[b], b - a + 1])));
   const [i0, i1] = runs[0];
   if (i1 < i0) throw new Error("window run wraps the ring start");
   const prev = p[(i0 - 1 + n) % n], next = p[(i1 + 1) % n];
@@ -325,8 +342,9 @@ const windowSplice = (poly, cut, w, tol) => {
   if (!local) throw new Error("no local polygon " + JSON.stringify([A, B, p.slice(i0, i1 + 1), walk(B, A, 1), walk(B, A, -1), bboxOf([poly])]));
   const cutW = clip.intersection(cut, [[[w[0], w[1]], [w[2], w[1]], [w[2], w[3]], [w[0], w[3]], [w[0], w[1]]]]);
   const cutKm2 = clip.intersection([local.concat([local[0]])], cutW).reduce((t, c) => t + planarKm2(c), 0);
-  if (cutKm2 < 0.5) return null;
-  const diff = clip.difference([[local.concat([local[0]])]], cutW).filter((d) => planarKm2(d) >= 0.5);
+  if (cutKm2 < 0.5 && !plus.length) return null;
+  const src = plus.length ? clip.union([[local.concat([local[0]])]], ...plus) : [[local.concat([local[0]])]];
+  const diff = clip.difference(src, cutW).filter((d) => planarKm2(d) >= 0.5);
   const key = (v) => v[0] + "," + v[1];
   const main = diff.find((d) => d[0].some((v) => same(v, A)) && d[0].some((v) => same(v, B)));
   if (!main) throw new Error("the coast ends are cut");
@@ -376,15 +394,40 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
       });
       return;
     }
-    const w = g.win;
+    const w = g.win, tol = level === "fine" ? 0.001 : level === "hi" ? 0.002 : 0.006;
+    // Land that was there and is sea today (s.plus) is joined to the polygon it meets, or to the largest
+    // one that crosses the window if it meets none. A polygon wholly inside the window is replaced.
+    const plus = s.plus || [], winRect = [[[w[0], w[1]], [w[2], w[1]], [w[2], w[3]], [w[0], w[3]], [w[0], w[1]]]];
+    const inWin = mp.map((poly, i) => hits(boxes[i], w) && poly[0].some((v) => inBox(v, w)));
+    const whole = mp.map((poly, i) => inWin[i] && poly[0].every((v) => inBox(v, w)));
+    let main = -1;
+    mp.forEach((poly, i) => { if (inWin[i] && !whole[i] && (main < 0 || planarKm2(poly) > planarKm2(mp[main]))) main = i; });
+    const clipped = new Map();
+    const owner = plus.map((c) => {
+      const cb = bboxOf([c]);
+      for (let i = 0; i < mp.length; i++) {
+        if (!inWin[i] || !hits(boxes[i], cb)) continue;
+        if (!clipped.has(i)) clipped.set(i, clip.intersection([mp[i]], winRect));
+        if (clip.intersection(clipped.get(i), [c]).length) return i;
+      }
+      return main;
+    });
     mp.forEach((poly, i) => {
       if (!hits(boxes[i], w)) return;
       if (!poly[0].some((v) => inBox(v, w))) {
         if (clip.intersection([poly], s.cut).length) throw new Error(g.name + ": a polygon without vertices in the window meets the cut");
         return;
       }
-      if (!clip.intersection([poly], s.cut).some((c) => planarKm2(c) >= 0.5)) return;
-      const r = windowSplice(poly, s.cut, w, level === "fine" ? 0.001 : level === "hi" ? 0.002 : 0.006);
+      const mine = plus.filter((c, k) => owner[k] === i);
+      if (!clip.intersection([poly], s.cut).some((c) => planarKm2(c) >= 0.5) && !mine.length) return;
+      if (whole[i]) {
+        const sign = Math.sign(signed(poly[0]));
+        const res = clip.difference(mine.length ? clip.union([poly], ...mine) : [poly], s.cut).filter((d) => planarKm2(d) >= 0.5)
+          .map((d) => d.map((ring, ri) => orient(simplifyRing(ring, tol), ri ? -sign : sign).map(([x, y]) => [r4(x), r4(y)])));
+        patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), d: 1, a: res, b: bboxOf([poly, ...res]).map(r3) });
+        return;
+      }
+      const r = windowSplice(poly, s.cut, w, tol, mine);
       if (!r) return;
       const sign = Math.sign(signed(poly[0]));
       const holes = r.holes.filter((h) => planarKm2([h]) >= 0.5).map((h) => orient(h, -sign).map(([x, y]) => [r4(x), r4(y)]));
