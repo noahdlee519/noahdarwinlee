@@ -2393,3 +2393,34 @@ select.ch-save-input {
 .ch-dev-status.is-bad {
   color: var(--ch-select);
 }
+
+/* The frame-rate readout (&fps in the address), for measuring on a real device. */
+.ch-perf {
+  position: fixed;
+  left: var(--ch-gap);
+  top: calc(var(--ch-bar) + 3 * var(--ch-gap) + 10px);
+  z-index: 10;
+  max-width: min(560px, calc(100vw - 2 * var(--ch-gap)));
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  box-shadow: var(--ch-lift);
+  color: var(--ink);
+  font-size: 12px;
+}
+.ch-perf pre {
+  margin: 0 0 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.ch-perf button {
+  margin-right: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}

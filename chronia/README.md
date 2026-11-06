@@ -1020,6 +1020,8 @@ Noah's own edits to the map, made on the page and shown to every visitor, withou
 
 ## Testing
 
+**Frame rate on a real device:** add `&fps` to the address (`chroniaatlas.com/#y=1815-07&fps`) and a readout appears at the top left: the frames a second while the map moves and the gaps between them (which take in the graphics card's share of each frame), the page's own time in `draw()` and in each of its stages (`pmark`), the resolution step (`moveRes`), and the screen. *Copy* adds the date, the view, the graphics chip (`WEBGL_debug_renderer_info`), and the browser, to paste into a report; *Reset* starts the counts again. Without `&fps` the marks cost nothing.
+
 As with UCHRONIA, test on a local copy, never the live site.
 
 1. Serve the repository root with `python3 -m http.server`. CHRONIA needs `../uchronia/`, `/fonts/`, and `../styles.css` beside it.

@@ -435,6 +435,7 @@
   var mainCtx = ctx, lowCanvas = null, lowCtx = null, moveRes = 1, moveGaps = [], lastMoveFrame = 0, MOVE_SLOW_MS = 26;
   function frame(ts) {
     renderQueued = false;
+    var f0 = perf ? performance.now() : 0;
     if (moving) {
       if (lastMoveFrame && ts - lastMoveFrame < 250) {
         moveGaps.push(ts - lastMoveFrame);
@@ -461,8 +462,80 @@
     } else {
       try { draw(); } catch (e) { console.error(e); }
     }
+    if (perf) perfFrame(ts, performance.now() - f0, ld < dpr ? ld / dpr : 1);
     if (!moving && relief && introOver) { try { maybeRelief(); } catch (e) { console.warn("terrain", e); rd.off = true; } }
   }
+
+  // A frame-rate readout for measuring on a real device, shown only with &fps in the address. It counts the
+  // frames drawn while the map moves and the gaps between them (which take in the graphics card's share,
+  // since a frame can't start until the last is on the screen), and times draw()'s stages in the page's own
+  // time. Copy puts the numbers, the browser, the screen, and the graphics chip on the clipboard.
+  var perf = null;
+  function perfInHash() { return /(^|&)fps(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
+  function perfStart() {
+    if (perf) return;
+    perf = { gaps: [], draws: [], stages: {}, cur: null, last: 0, res: 1, el: null, txt: null, moved: 0, timer: 0 };
+    var el = perf.el = document.createElement("div");
+    el.className = "ch-perf";
+    var txt = perf.txt = document.createElement("pre");
+    el.appendChild(txt);
+    var row = document.createElement("div");
+    var copy = document.createElement("button"), reset = document.createElement("button");
+    copy.type = reset.type = "button";
+    copy.textContent = "Copy"; reset.textContent = "Reset";
+    copy.addEventListener("click", function () {
+      var t = perfText(true);
+      (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy"; }, 1500); }, function () { window.prompt("Copy these numbers:", t); });
+    });
+    reset.addEventListener("click", function () { perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; perfShow(); });
+    row.appendChild(copy); row.appendChild(reset);
+    el.appendChild(row);
+    document.body.appendChild(el);
+    perf.timer = setInterval(perfShow, 500);
+    perfShow();
+  }
+  // Marks the end of a stage of draw(); the time since the last mark goes to that stage.
+  function pmark(name) {
+    var t = performance.now();
+    if (perf.cur) { var a = perf.stages[name] || (perf.stages[name] = []); a.push(t - perf.cur); if (a.length > 120) a.shift(); }
+    perf.cur = t;
+  }
+  function perfFrame(ts, ms, res) {
+    if (moving) {
+      if (perf.last && ts - perf.last < 250) { perf.gaps.push(ts - perf.last); if (perf.gaps.length > 240) perf.gaps.shift(); }
+      perf.last = ts;
+      perf.draws.push(ms); if (perf.draws.length > 240) perf.draws.shift();
+      perf.moved++;
+      perf.res = res;
+    } else perf.last = 0;
+  }
+  function pctl(a, q) { if (!a.length) return 0; var b = a.slice().sort(function (x, y) { return x - y; }); return b[Math.min(b.length - 1, Math.floor(q * b.length))]; }
+  function avgOf(a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : 0; }
+  var perfGpu = null;
+  function gpuName() {
+    if (perfGpu !== null) return perfGpu;
+    try {
+      var gl = document.createElement("canvas").getContext("webgl"), x = gl && gl.getExtension("WEBGL_debug_renderer_info");
+      perfGpu = gl ? (x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)) : "no WebGL";
+    } catch (e) { perfGpu = "unknown"; }
+    return perfGpu;
+  }
+  function perfText(full) {
+    var g = perf.gaps, fps = g.length ? 1000 / avgOf(g) : 0, lines = [];
+    lines.push("Moving: " + (g.length ? fps.toFixed(0) + " fps" : "drag the map") + (g.length ? " | gap median " + pctl(g, 0.5).toFixed(0) + " ms, slowest 10% " + pctl(g, 0.9).toFixed(0) + " ms" : ""));
+    lines.push("Draw (page time): " + avgOf(perf.draws).toFixed(1) + " ms | resolution " + (perf.res < 1 ? Math.round(perf.res * 100) + "%" : "full") + " | " + (flat ? "flat" : "globe") + ", zoom " + view.zoom.toFixed(2));
+    var names = ["sea", "land", "relief", "bands", "coast band", "water", "borders", "finish", "labels"];
+    lines.push(names.filter(function (n) { return perf.stages[n]; }).map(function (n) { return n + " " + avgOf(perf.stages[n]).toFixed(1); }).join(" | "));
+    lines.push(perf.moved + " frames moving | screen " + W + "x" + H + " at " + dpr + "x");
+    if (full) {
+      lines.push("Date shown: " + fmtNow(now) + " | view " + view.lon.toFixed(2) + ", " + view.lat.toFixed(2));
+      lines.push("Graphics: " + gpuName());
+      lines.push("Browser: " + navigator.userAgent);
+    }
+    return lines.join("\n");
+  }
+  function perfShow() { if (perf) perf.txt.textContent = perfText(false); }
+
   function nudge() {
     moving = true;
     clearTimeout(settleTimer);
@@ -1090,6 +1163,7 @@
   var placedLabels = [];
   function draw() {
     if (!ready || !current) return;
+    if (perf) perf.cur = performance.now();
     snapNow();
     applyView();
     anchorStripes(false);
@@ -1107,6 +1181,7 @@
       ctx.beginPath(); ctx.arc(cx, cy, B.r * 1.07, 0, TAU); ctx.arc(cx, cy, B.r, 0, TAU, true); ctx.fill();
     }
     drawSea(landList, S);
+    if (perf) pmark("sea");
 
     if (flat) { ctx.save(); ctx.beginPath(); traceOutline(ctx); ctx.clip(); }
     var nLand = landCount(landList, kp, ISLAND_PX);
@@ -1134,6 +1209,7 @@
       for (c = 0; c < nColors(); c++) if (groupPaths[c]) { g.fillStyle = colors[c]; g.fill(groupPaths[c]); }
     };
     paintFills(ctx, pal.colors);
+    if (perf) pmark("land");
     L.disputes.forEach(function (d) {
       var dp = new Path2D(); traceAll(dp, d.feats);
       ctx.fillStyle = stripes(d.cols); ctx.fill(dp);
@@ -1156,6 +1232,7 @@
       ctx.drawImage(reliefCanvas, 0, 0, W, H);
       ctx.restore();
     }
+    if (perf) pmark("relief");
     var bw = bandWidth(S), softMap = !!snap.soft || (snap.year !== null && snap.year < SOFT_BEFORE);
     var bandAlpha = softMap ? 0.4 : 0.6, bandLine = bw * (softMap ? 3 : 2);
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
@@ -1191,13 +1268,16 @@
     if (sp) tint(sp.id, "rgba(140,42,26,0.12)");
     ctx.restore();
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
+    if (perf) pmark("bands");
     drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
     if (outside) ctx.restore();
 
+    if (perf) pmark("coast band");
     drawMarshes(kp, landPath);
     drawRivers(S, landPath);
     drawLakes(kp);
 
+    if (perf) pmark("water");
     drawDivisionLines(snap, L, landPath, S);
     drawControl(landPath, S);
     syncKey();
@@ -1223,6 +1303,7 @@
     ctx.restore();
     if (flat) ctx.restore();
 
+    if (perf) pmark("borders");
     drawAging(S);
     ctx.strokeStyle = pal.limb;
     if (flat) {
@@ -1233,12 +1314,14 @@
       ctx.beginPath(); ctx.arc(cx, cy, B.r + 5, 0, TAU); ctx.lineWidth = 0.8; ctx.stroke();
     }
 
+    if (perf) pmark("finish");
     placedLabels = [];
     var placed = fixedBoxes();
     drawPolityLabels(snap, placed, kp);
     drawSeaLabels(placed, S);
     drawPlaces(placed, S);
     drawDivisionLabels(placed, S);
+    if (perf) pmark("labels");
     syncCardDivision();
   }
   function coastOf(L, id) {
@@ -6163,7 +6246,7 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "");
+      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" : "");
       if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
     }, 250);
   }
@@ -6475,7 +6558,7 @@
     document.head.appendChild(sc);
   }
   var devOpen = false;
-  window.addEventListener("hashchange", function () { if (devInHash() && !devOpen) openDev(); });
+  window.addEventListener("hashchange", function () { if (devInHash() && !devOpen) openDev(); if (perfInHash()) perfStart(); });
   function devInHash() { return /(^|&)dev(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
 
   function start() {
@@ -6538,6 +6621,7 @@
         });
         whenIdle(function () { loadModern().catch(function () {}); });
         if (devInHash()) openDev();
+        if (perfInHash()) perfStart();
       });
     }).catch(function (e) {
       console.error(e);
