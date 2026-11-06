@@ -488,7 +488,7 @@
   function perfInHash() { return /(^|&)fps(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
   function perfStart() {
     if (perf) return;
-    perf = { gaps: [], draws: [], stages: {}, cur: null, last: 0, res: 1, el: null, txt: null, moved: 0, timer: 0 };
+    perf = { gaps: [], draws: [], stages: {}, cur: null, last: 0, res: 1, el: null, txt: null, moved: 0, timer: 0, gpu: /(^|[#&])gpu(&|$)/.test(String(location.hash || "")) };
     var el = perf.el = document.createElement("div");
     el.className = "ch-perf";
     var txt = perf.txt = document.createElement("pre");
@@ -508,8 +508,11 @@
     perf.timer = setInterval(perfShow, 500);
     perfShow();
   }
-  // Marks the end of a stage of draw(); the time since the last mark goes to that stage.
+  // Marks the end of a stage of draw(); the time since the last mark goes to that stage. With &gpu in the
+  // address, it first reads back a pixel, which makes the browser finish the stage on the graphics card, so
+  // each stage's time takes in the card's share (and the map is slower while measuring).
   function pmark(name) {
+    if (perf.gpu) try { ctx.getImageData(0, 0, 1, 1); } catch (e) {}
     var t = performance.now();
     if (perf.cur) { var a = perf.stages[name] || (perf.stages[name] = []); a.push(t - perf.cur); if (a.length > 120) a.shift(); }
     perf.cur = t;
@@ -537,7 +540,7 @@
   function perfText(full) {
     var g = perf.gaps, fps = g.length ? 1000 / avgOf(g) : 0, lines = [];
     lines.push("Moving: " + (g.length ? fps.toFixed(0) + " fps" : "drag the map") + (g.length ? " | gap median " + pctl(g, 0.5).toFixed(0) + " ms, slowest 10% " + pctl(g, 0.9).toFixed(0) + " ms" : ""));
-    lines.push("Draw (page time): " + avgOf(perf.draws).toFixed(1) + " ms | resolution " + (perf.res < 1 ? Math.round(perf.res * 100) + "%" : "full") + " | " + (flat ? "flat" : "globe") + ", zoom " + view.zoom.toFixed(2));
+    lines.push("Draw (" + (perf.gpu ? "page and graphics card" : "page time") + "): " + avgOf(perf.draws).toFixed(1) + " ms | resolution " + (perf.res < 1 ? Math.round(perf.res * 100) + "%" : "full") + " | " + (flat ? "flat" : "globe") + ", zoom " + view.zoom.toFixed(2));
     var names = ["sea", "land", "relief", "bands", "coast band", "water", "borders", "finish", "labels", "stretch"];
     lines.push(names.filter(function (n) { return perf.stages[n]; }).map(function (n) { return n + " " + avgOf(perf.stages[n]).toFixed(1); }).join(" | "));
     lines.push(perf.moved + " frames moving | screen " + W + "x" + H + " at " + dpr + "x | lowest resolution allowed " + Math.round(moveFloor * 100) + "%" + (Object.keys(gapAt).length ? " | gaps by resolution: " + Object.keys(gapAt).sort().reverse().map(function (k) { return Math.round(k * 100) + "% " + gapAt[k].toFixed(0) + " ms"; }).join(", ") : ""));
@@ -1177,7 +1180,7 @@
   var placedLabels = [];
   function draw() {
     if (!ready || !current) return;
-    if (perf) perf.cur = performance.now();
+    if (perf) { if (perf.gpu) try { ctx.getImageData(0, 0, 1, 1); } catch (e) {} perf.cur = performance.now(); }
     snapNow();
     applyView();
     anchorStripes(false);
@@ -6282,7 +6285,7 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" : "") + (moveFloor === 1 && /(^|[#&])full(&|$)/.test(String(location.hash || "")) ? "&full" : "");
+      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" + (perf.gpu ? "&gpu" : "") : "") + (moveFloor === 1 && /(^|[#&])full(&|$)/.test(String(location.hash || "")) ? "&full" : "");
       if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
     }, 250);
   }
