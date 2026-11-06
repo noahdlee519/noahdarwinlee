@@ -273,6 +273,7 @@ const FEN_WIN = [-0.75, 52.05, 0.9, 53.32];
 const LOW = readJSON(resolve(here, "lowlands.json"));
 // Coasts that have grown since: the sea of each stage that is land today (tools/deltas.json; see the README).
 const DELTAS = readJSON(resolve(here, "deltas.json"));
+const STRAND = readJSON(resolve(here, "strand.json"));
 const deltaGroups = Object.entries(DELTAS).map(([name, d]) => ({ name, win: d.win, states: d.states.map((s) => ({ from: s.from, to: s.to, cut: s.cut })) }));
 const landGroups = [
   { name: "The Low Countries", win: [3.25, 50.75, 7.5, 53.65], states: [
@@ -289,6 +290,11 @@ const landGroups = [
     { from: at(1653), to: at(1818), cut: clip.intersection(fens, [WELLAND_NORTH]) }
   ] },
   ...deltaGroups,
+  // North Frisia's Strand: land before the floods of 1362 and 1634 (tools/strand.json; see the README).
+  { name: "Strand", win: [8.45, 54.38, 9.2, 54.7], states: [
+    { from: null, to: at(1362, 1, 16), cut: [], plus: STRAND.pre1362 },
+    { from: at(1362, 1, 16), to: at(1634, 10, 11), cut: [], plus: STRAND.strand }
+  ] },
   { name: "Caofeidian", states: [{ from: null, to: at(2003), dropAt: [118.55, 39.0] }] },
   { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] },
   // Singapore's coast at each stage of its reclamation, from Landsat (tools/singapore.json; see the README).
@@ -409,6 +415,10 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
     const clipped = new Map();
     const owner = plus.map((c) => {
       const cb = bboxOf([c]);
+      if (main >= 0) {
+        if (!clipped.has(main)) clipped.set(main, clip.intersection([mp[main]], winRect));
+        if (clip.intersection(clipped.get(main), [c]).length) return main;
+      }
       for (let i = 0; i < mp.length; i++) {
         if (!inWin[i] || !hits(boxes[i], cb)) continue;
         if (!clipped.has(i)) clipped.set(i, clip.intersection([mp[i]], winRect));
@@ -423,6 +433,11 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
         return;
       }
       const mine = plus.filter((c, k) => owner[k] === i);
+      // An island inside land of the past that another polygon takes in is dropped, so its coast is not drawn inland.
+      if (whole[i] && !mine.length && plus.length && hits(boxes[i], bboxOf(plus)) && clip.difference([poly], ...plus.map((c) => [c])).every((d) => planarKm2(d) < 0.5)) {
+        patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), d: 1, a: [], b: boxes[i].map(r3) });
+        return;
+      }
       if (!clip.intersection([poly], s.cut).some((c) => planarKm2(c) >= 0.5) && !mine.length) return;
       if (whole[i]) {
         const sign = Math.sign(signed(poly[0]));
