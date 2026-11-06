@@ -709,6 +709,13 @@ const dissolveFeat = (ft) => {
   return out;
 };
 const DISPUTE_KM2 = 10000, DISPUTE_SHARE = 0.1, NEST_SHARE = 0.8, OVERLAP_KM2 = 50, SMALL_OVERLAP_KM2 = 0.01, NEAR_CELLS = 40;
+// Two spans that share a year but not a day (Alsace-Lorraine under the Third Republic to 9 May 1871, and under the German
+// Empire from 10 May) are not over each other: the map shows them on different days.
+const daysApart = (A, B) => {
+  if (!A.dayFrom && !A.dayTo && !B.dayFrom && !B.dayTo) return false;
+  const from = (s) => (s.dayFrom ? s.dayFrom[1] : dayOf(s.first + "-01-01")), to = (s) => (s.dayTo ? s.dayTo[1] : dayOf(s.last + "-12-31"));
+  return to(A) < from(B) || to(B) < from(A);
+};
 function resolveOverlaps(list, label, onlySmall = false) {
   const order = list.map((s, i) => i).sort((a, b) => list[a].box[0] - list[b].box[0]);
   const edits = [], disputes = [], count = { same: 0, people: 0, ruler: 0, nested: 0, vague: 0, sliver: 0, disputed: 0 };
@@ -719,7 +726,7 @@ function resolveOverlaps(list, label, onlySmall = false) {
     for (let y = x + 1; y < order.length; y++) {
       const B = list[order[y]];
       if (B.box[0] > A.box[2]) break;
-      if (B.claims || B.last < A.first || A.last < B.first || !boxHit(A.box, B.box)) continue;
+      if (B.claims || B.last < A.first || A.last < B.first || !boxHit(A.box, B.box) || daysApart(A, B)) continue;
       {
         if (!A.cells) A.cells = cellsOf(A.polys);
         if (!B.cells) B.cells = cellsOf(B.polys);
