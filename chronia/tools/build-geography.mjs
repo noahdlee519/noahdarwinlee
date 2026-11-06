@@ -269,7 +269,10 @@ const landGroups = [
     { from: at(1653), to: at(1818), cut: clip.intersection(fens, [WELLAND_NORTH]) }
   ] },
   { name: "Caofeidian", states: [{ from: null, to: at(2003), dropAt: [118.55, 39.0] }] },
-  { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] }
+  { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] },
+  // Singapore's coast at each stage of its reclamation, from Landsat (tools/singapore.json; see the README).
+  // Each stage replaces the base map's island, which is too coarse to show the work, with the whole country.
+  { name: "Singapore", states: readJSON(resolve(here, "singapore.json")).map((s) => ({ from: s.from && at(...s.from), to: s.to && at(...s.to), replaceAt: [103.82, 1.35], polys: s.polys })) }
 ];
 const keyOf = (ring) => [ring.length, ring[0][0], ring[0][1]];
 const same = (a, b) => a[0] === b[0] && a[1] === b[1];
@@ -346,6 +349,17 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
   const boxes = mp.map((p) => bboxOf([p]));
   const patches = [];
   landGroups.forEach((g) => g.states.forEach((s) => {
+    if (s.replaceAt) {
+      const i = mp.findIndex((p, k) => s.replaceAt[0] >= boxes[k][0] && s.replaceAt[0] <= boxes[k][2] && s.replaceAt[1] >= boxes[k][1] && s.replaceAt[1] <= boxes[k][3] && planarKm2(p) < 2000);
+      if (i < 0) { console.log(level, g.name, "not in this level"); return; }
+      const tol = level === "fine" ? 0.0012 : level === "hi" ? 0.006 : 0.02, minKm2 = level === "fine" ? 1 : level === "hi" ? 4 : 30;
+      const sign = Math.sign(signed(mp[i][0]));
+      const add = simplePolys(s.polys, tol, level === "fine" ? r4 : r3, minKm2).map((p) => p.map((ring, ri) => orient(ring, ri ? -sign : sign)));
+      const last = patches[patches.length - 1];
+      if (last && last.g === g.name && last.t === s.from && JSON.stringify(last.a) === JSON.stringify(add)) { last.t = s.to; return; }
+      patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(mp[i][0]), d: 1, a: add, b: bboxOf(add).map(r3) });
+      return;
+    }
     if (s.dropAt) {
       const i = mp.findIndex((p, k) => s.dropAt[0] >= boxes[k][0] && s.dropAt[0] <= boxes[k][2] && s.dropAt[1] >= boxes[k][1] && s.dropAt[1] <= boxes[k][3] && planarKm2(p) < 500);
       if (i < 0) { console.log(level, g.name, "not in this level"); return; }
@@ -458,6 +472,9 @@ lakeOnly.forEach(([name, km2, from]) => {
   });
 });
 
+// The finest level's patches go with the finest coastline, which loads only when the map is zoomed in.
+writeFileSync(resolve(here, "../data/geography-fine.json"), JSON.stringify({ land: { fine: land.fine || [] } }));
+delete land.fine;
 const out = {
   land,
   lakes: { only: lakeOnly, add: lakeAdd },

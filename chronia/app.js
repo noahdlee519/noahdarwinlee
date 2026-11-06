@@ -1513,10 +1513,11 @@
       scheduleRender();
     }).catch(function (e) { console.warn("geography", e); });
   }
+  var fineRaw = null;
   function patchesFor(key, g) {
     var byKey = new Map();
     land[key].forEach(function (p) { var r = p.geo.coordinates[0]; byKey.set(r.length + "," + r[0][0] + "," + r[0][1], p); });
-    return (g.land[key] || []).map(function (q, i) {
+    return ((key === "fine" ? fineRaw : g.land[key]) || []).map(function (q, i) {
       q.id = key + i; q.base = byKey.get(q.k.join()) || null;
       return q;
     }).filter(function (q) { return q.base; });
@@ -1531,7 +1532,10 @@
   }
   function loadFine() {
     if (fineLoad) return;
-    fineLoad = fetchJSON("data/land-detail.json").then(function (t) {
+    var patches = fetchJSON("data/geography-fine.json").catch(function (e) { console.warn("fine geography", e); return null; });
+    fineLoad = Promise.all([fetchJSON("data/land-detail.json"), patches]).then(function (r) {
+      var t = r[0];
+      fineRaw = r[1] && r[1].land ? r[1].land.fine : [];
       land.fine = prepLand(t);
       if (geog && geogRaw) geog.land.fine = patchesFor("fine", geogRaw);
       landCache.clear();
