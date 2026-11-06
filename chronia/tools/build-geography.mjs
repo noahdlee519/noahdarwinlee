@@ -152,7 +152,8 @@ const DATED = [
   ["Barsakelmes Lake", 376, at(2014, 8, 1), null, "after the eastern basin dried in August 2014"],
   ["Lago de Texcoco", 55, at(1900), null, "the remnant after the Gran Canal del Desagüe opened in 1900"],
   ["IJsselmeer", 1962, at(1968, 5, 29), null, "today's IJsselmeer and Markermeer, from the draining of Southern Flevoland"],
-  ["Lake Hammar", 929, null, at(1994), "dried by the drains of 1991 to 1993; drawn again from the reflooding of 2003 (see the marshes)"]
+  ["Lake Hammar", 929, null, at(1994), "dried by the drains of 1991 to 1993; drawn again from the reflooding of 2003 (see the marshes)"],
+  ["Lake Urmia", 4322, null, at(2003), "shrank from the late 1990s; drawn from Landsat after (see tools/lakes-landsat.json)"]
 ];
 
 const lakeOnly = [];
@@ -213,6 +214,10 @@ addLake("IJsselmeer", at(1932, 5, 28), at(1942, 9, 9), lakeWith([P.NOP, P.EF, P.
 addLake("IJsselmeer", at(1942, 9, 9), at(1957, 6, 29), lakeWith([P.EF, P.SF], [P.W, P.NOP]), 0.0008, r4);
 addLake("IJsselmeer", at(1957, 6, 29), at(1968, 5, 29), lakeWith([P.SF], [P.W, P.NOP, P.EF]), 0.0008, r4);
 addLake("Haarlemmermeer", at(1647), at(1852, 7, 1), cbs("Haarlemmermeer"), 0.0008, r4);
+// Lakes whose shrinking Landsat follows, stage by stage (tools/lakes-landsat.json; see the README).
+Object.entries(readJSON(resolve(here, "lakes-landsat.json"))).forEach(([name, stages]) => stages.forEach((st) => {
+  if (st.polys.length) addLake(name, st.from === null ? null : at(Math.floor(st.from), st.from % 1 ? 7 : 1), st.to === null ? null : at(Math.floor(st.to), st.to % 1 ? 7 : 1), st.polys, 0.002, r4);
+}));
 // The lakes of North Holland before they were drained, from the maps of 1250 and 1500 (tools/lowlands.json).
 {
   const L = readJSON(resolve(here, "lowlands.json")).lakes;
@@ -296,6 +301,8 @@ const landGroups = [
     { from: null, to: at(1362, 1, 16), cut: [], plus: STRAND.pre1362 },
     { from: at(1362, 1, 16), to: at(1634, 10, 11), cut: [], plus: STRAND.strand }
   ] },
+  // The Kara-Bogaz-Gol, dammed off from the Caspian in March 1980, was dry by 1984; the dam was breached in June 1992.
+  { name: "Kara-Bogaz-Gol", states: [{ from: at(1983), to: at(1993), fillPart: [53.6, 41.3], cutAt: [52.905, 41.07], cutAtLo: [52.84, 41.2], r: 0.035 }] },
   { name: "Caofeidian", states: [{ from: null, to: at(2003), dropAt: [118.55, 39.0] }] },
   { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] },
   // Singapore's coast at each stage of its reclamation, from Landsat (tools/singapore.json; see the README).
@@ -387,6 +394,23 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
       const last = patches[patches.length - 1];
       if (last && last.g === g.name && last.t === s.from && JSON.stringify(last.a) === JSON.stringify(add)) { last.t = s.to; return; }
       patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(mp[i][0]), d: 1, a: add, b: bboxOf(add).map(r3) });
+      return;
+    }
+    if (s.fillPart) {
+      // The part of a hole of the land (a sea within it) beyond a narrows, turned to land: a disc of radius s.r
+      // at s.cutAt cuts the hole, and the piece that holds s.fillPart is added.
+      const ringIn = (ring, v) => { let odd = false; for (let a = 0, b = ring.length - 1; a < ring.length; b = a++) { const [xa, ya] = ring[a], [xb, yb] = ring[b]; if ((ya > v[1]) !== (yb > v[1]) && v[0] < ((xb - xa) * (v[1] - ya)) / (yb - ya) + xa) odd = !odd; } return odd; };
+      const c0 = level === "lo" && s.cutAtLo ? s.cutAtLo : s.cutAt, rr = s.r * (level === "lo" ? 7 : 1), disc = [Array.from({ length: 25 }, (_, k) => [c0[0] + rr * Math.cos(k / 12 * Math.PI) / Math.cos(c0[1] * Math.PI / 180), c0[1] + rr * Math.sin(k / 12 * Math.PI)])];
+      const tol = level === "fine" ? 0.002 : level === "hi" ? 0.004 : 0.01;
+      mp.forEach((poly, i) => poly.forEach((ring, ri) => {
+        if (!ri || !ringIn(ring, s.fillPart)) return;
+        const part = clip.difference([ring], disc).find((p) => ringIn(p[0], s.fillPart));
+        if (!part) { console.log(level, g.name, "no part"); return; }
+        const sign = Math.sign(signed(poly[0]));
+        const add = [part.map((r, k) => orient(simplifyRing(r, tol), k ? -sign : sign).map(([x, y]) => [r4(x), r4(y)]))];
+        patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), s: [], h: [], a: add, b: bboxOf(add).map(r3) });
+        console.log(level, g.name, "fills", Math.round(planarKm2(part)), "km2 of hole", ri, "of parent", i);
+      }));
       return;
     }
     if (s.dropAt) {
