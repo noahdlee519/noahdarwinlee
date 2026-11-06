@@ -1059,6 +1059,13 @@ Checked and sound: every CHRONIA table has row-level security with no grants to 
 
 Left as they are, for Noah to decide: the team's and Noah's access rest on two shared passwords, which could be replaced by a list of Google accounts now that readers sign in with Google; a burst of reports sent at once by one account can pass its 50 by a few, since the count and the insert are two steps; and the same database's other tables (the game's and City Layout Guessr's) give `anon` the `TRUNCATE`, `REFERENCES`, and `TRIGGER` privileges, which the REST API can't use but which are better revoked.
 
+## Analytics
+
+Two counts, both described on the privacy page (section 3):
+
+- **The daily visit count** (`/visit.js`, shared with noahdarwinlee.com): one is added to the day's total in Supabase (`site_visits`, through `count_visit`) when a page opens and the browser hasn't opened one in the last thirty minutes.
+- **Vercel Web Analytics** (since 6 November 2026), turned on in the Vercel project's *Analytics* tab and loaded by `va.js` on the atlas, the team page, the privacy page, and the terms (not the reports). `va.js` loads Vercel's `/_vercel/insights/script.js` only on chroniaatlas.com (the same files serve noahdarwinlee.com/chronia/, which only redirects), never for automated browsers (`navigator.webdriver`), and never in a browser with `va-disable` in its storage, which leaves Noah's own visits out (`localStorage.setItem("va-disable", "1")` in the console on chroniaatlas.com). Its `beforeSend` sends the page's address without anything after the path, so the date and view in the `#` part never leave the browser. The numbers are in the Vercel dashboard, under the project's *Analytics*.
+
 ## Developer tools
 
 Noah's own edits to the map, made on the page and shown to every visitor, without touching the data files (the design: `docs/superpowers/specs/2026-11-05-chronia-dev-tools-design.md`).
