@@ -8,10 +8,10 @@
 // until the next day). An edit's dates are as the reports store them (1815, 1815-07, or 1815-07-03,
 // with - for BC), and its span includes both ends.
 
+// CHRONIA runs only at chroniaatlas.com (noahdarwinlee.com/chronia/ sends its visitors there), so only it,
+// and a local copy for testing, may ask. The origin is not a password: the passwords and the strikes are.
 const ORIGINS = [
   /^https:\/\/(www\.)?chroniaatlas\.com$/,
-  /^https:\/\/(www\.)?noahdarwinlee\.com$/,
-  /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
 const MAX_BODY = 6000;
@@ -83,10 +83,20 @@ async function same(given: string, secret: string) {
   return d === 0;
 }
 
+// An IPv6 address by its /48, the block one customer is usually given, so that moving between the many
+// addresses of one connection doesn't buy more tries. (Supabase's proxy sets x-forwarded-for itself, putting
+// the caller's address first and dropping any the caller sent, as tested on 6 November 2026.)
+function v6block(ip: string) {
+  const [head, tail] = ip.split("::");
+  const a = head ? head.split(":") : [], b = tail !== undefined && tail ? tail.split(":") : [];
+  const groups = tail === undefined ? a : [...a, ...Array(Math.max(0, 8 - a.length - b.length)).fill("0"), ...b];
+  return groups.slice(0, 3).map((g) => g.toLowerCase().replace(/^0+(?=.)/, "")).join(":") + "::/48";
+}
+
 function clientIp(req: Request) {
   const raw = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || (req.headers.get("x-real-ip") || "").trim();
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(raw)) return raw;
-  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(":")) return raw.split(":").slice(0, 4).join(":");
+  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(":")) return v6block(raw);
   return "unknown";
 }
 

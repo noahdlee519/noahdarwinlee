@@ -3508,7 +3508,7 @@
         out.classList.remove("is-writing");
         if (t) { out.textContent = t; return; }
         out.hidden = true;
-        by.textContent = "The note could not be written just now.";
+        by.textContent = blurbStopText() || "The note could not be written just now.";
         by.hidden = false;
       });
     };
@@ -4459,6 +4459,16 @@
   var card = $("card"), wikiCache = new Map(), wikiAsk = 0;
   var BLURB_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
   var blurbCache = new Map(), blurbTimer = 0, selCity = null, cardClick = false;
+  // Set when the note's function says no more new notes may be written today: "limit" when this visitor has had
+  // their 100 (the function's WHO_CAP, sent back as `cap`), "cap" when the whole site has had its 2,000. Notes
+  // already written are still shown; the card says why a new one isn't.
+  var blurbStop = null;
+  function blurbStopText() {
+    if (!blurbStop) return "";
+    return blurbStop.error === "cap"
+      ? "CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow."
+      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow.";
+  }
   var factsAsk = 0;
   function select(id) {
     if (id < 0) { closeCard(); return; }
@@ -4814,7 +4824,10 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
       signal: ctl ? ctl.signal : undefined
-    }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    }).then(function (r) {
+      if (r.status === 429) return r.json().then(function (d) { if (d && (d.error === "limit" || d.error === "cap")) blurbStop = { error: d.error, cap: d.cap }; return null; }, function () { return null; });
+      return r.ok ? r.json() : null;
+    }).then(function (d) {
       return d && typeof d.text === "string" && d.text ? d.text : null;
     }).catch(function () { return null; }).then(function (t) {
       clearTimeout(timer);
@@ -4909,7 +4922,11 @@
           text.textContent = t;
           by.textContent = "";
           by.hidden = true;
-        } else mode = "wiki";
+        } else {
+          mode = "wiki";
+          by.textContent = blurbStopText();
+          by.hidden = !blurbStop;
+        }
         paint();
       });
     };

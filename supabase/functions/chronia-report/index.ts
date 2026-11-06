@@ -10,10 +10,10 @@
 // (CHRONIA_REPORT_PASSWORD) may list the reports; Noah's (CHRONIA_REVIEW_PASSWORD) may also close them.
 // Twenty wrong passwords in a day shut a visitor out until the next day.
 
+// CHRONIA runs only at chroniaatlas.com (noahdarwinlee.com/chronia/ sends its visitors there), so only it,
+// and a local copy for testing, may ask. The origin is not a password: the passwords and the strikes are.
 const ORIGINS = [
   /^https:\/\/(www\.)?chroniaatlas\.com$/,
-  /^https:\/\/(www\.)?noahdarwinlee\.com$/,
-  /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
 const MAX_BODY = 8000;
@@ -85,10 +85,20 @@ async function same(given: string, secret: string) {
   return d === 0;
 }
 
+// An IPv6 address by its /48, the block one customer is usually given, so that moving between the many
+// addresses of one connection doesn't buy more tries. (Supabase's proxy sets x-forwarded-for itself, putting
+// the caller's address first and dropping any the caller sent, as tested on 6 November 2026.)
+function v6block(ip: string) {
+  const [head, tail] = ip.split("::");
+  const a = head ? head.split(":") : [], b = tail !== undefined && tail ? tail.split(":") : [];
+  const groups = tail === undefined ? a : [...a, ...Array(Math.max(0, 8 - a.length - b.length)).fill("0"), ...b];
+  return groups.slice(0, 3).map((g) => g.toLowerCase().replace(/^0+(?=.)/, "")).join(":") + "::/48";
+}
+
 function clientIp(req: Request) {
   const raw = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || (req.headers.get("x-real-ip") || "").trim();
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(raw)) return raw;
-  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(":")) return raw.split(":").slice(0, 4).join(":");
+  if (/^[0-9a-f:]{2,39}$/i.test(raw) && raw.includes(":")) return v6block(raw);
   return "unknown";
 }
 
@@ -140,6 +150,11 @@ async function account(req: Request): Promise<Account | null> {
   if (!res.ok) return null;
   const u = await res.json();
   if (!u || typeof u.id !== "string") return null;
+  // Only Google accounts may send reports. The project also allows sign-up by email for the site's other
+  // pages, and such an account, made with any address that can take a confirmation mail, would otherwise
+  // pass here too.
+  const providers = [u.app_metadata && u.app_metadata.provider].concat((u.app_metadata && u.app_metadata.providers) || []);
+  if (!providers.includes("google")) return null;
   const meta = u.user_metadata || {};
   const name = String(meta.full_name || meta.name || (typeof u.email === "string" ? u.email.split("@")[0] : "") || "Someone").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 80) || "Someone";
   return { id: u.id, email: typeof u.email === "string" ? u.email.slice(0, 320) : "", name };

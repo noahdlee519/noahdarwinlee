@@ -1,7 +1,8 @@
+// CHRONIA runs only at chroniaatlas.com (noahdarwinlee.com/chronia/ sends its visitors there), so only it,
+// and a local copy for testing, may ask. The origin is not a password, since anything but a browser can
+// send any origin: it keeps other sites' pages from spending the notes, and the caps below do the rest.
 const ORIGINS = [
   /^https:\/\/(www\.)?chroniaatlas\.com$/,
-  /^https:\/\/(www\.)?noahdarwinlee\.com$/,
-  /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
 const DEEPSEEK_API = "https://api.deepseek.com/chat/completions";
@@ -13,7 +14,7 @@ const CLAUDE_MODEL = Deno.env.get("CHRONIA_CLAUDE_MODEL") || "claude-haiku-5-5";
 const PROMPT_VERSION = 2;
 const MAX_NEIGHBOURS = 10;
 const ALL_CAP = 2000;
-const WHO_CAP = 200;
+const WHO_CAP = 100;
 const MAX_BODY = 4000;
 const MAX_NAME = 80;
 const MAX_TITLE = 120;
@@ -161,10 +162,21 @@ function slug(s: string) {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 40) || "x";
 }
 
-export async function cacheKey(ask: Ask) {
-  const canon = JSON.stringify([PROMPT_VERSION].concat(Object.keys(ask.facts).filter((k) => k !== "neighbours").sort().map((k) => [k, ask.facts[k]]) as any));
-  const h = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canon)), 8);
+// The key covers every fact the model sees, the neighbours too (sorted), so a request whose facts were
+// altered, or whose neighbours carry words of the asker's own, writes a note under a key of its own that
+// no honest request asks for. Until 6 November 2026 the neighbours were left out of the key, so the first
+// request for a state and period could choose them for everyone; `legacy` is that older key, which is
+// still read (the 2,296 notes kept under it were checked and are sound) but never written.
+async function keyOf(ask: Ask, facts: [string, unknown][]) {
+  const h = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([PROMPT_VERSION].concat(facts as any)))), 8);
   return (ask.kind === "state" ? "s:" : ask.kind === "division" ? "d:" : "c:") + slug(ask.name) + ":" + ask.from + ":" + h;
+}
+
+export async function cacheKey(ask: Ask) {
+  const facts = Object.keys(ask.facts).sort().map((k) => [k, k === "neighbours" ? [...(ask.facts[k] as string[])].sort() : ask.facts[k]] as [string, unknown]);
+  const key = await keyOf(ask, facts);
+  const legacy = ask.facts.neighbours ? await keyOf(ask, facts.filter(([k]) => k !== "neighbours")) : key;
+  return { key, legacy };
 }
 
 export function tidy(raw: string) {
@@ -361,9 +373,9 @@ export async function handle(req: Request): Promise<Response> {
     return json(400, { error: "body" }, o);
   }
 
-  const key = await cacheKey(ask);
+  const { key, legacy } = await cacheKey(ask);
   try {
-    const hit = await cached(key);
+    const hit = (await cached(key)) || (legacy !== key ? await cached(legacy) : null);
     if (hit) return json(200, { text: hit.text, model: hit.model, period: hit.period, cached: true }, o);
   } catch (e) {
     console.error(e);
@@ -394,7 +406,7 @@ async function generate(req: Request, ask: Ask, key: string, keys: Keys, o: stri
     console.error(e);
     return json(500, { error: "count" }, o);
   }
-  if (took !== "ok") return json(429, { error: took === "cap" ? "cap" : "limit" }, o);
+  if (took !== "ok") return json(429, took === "cap" ? { error: "cap" } : { error: "limit", cap: WHO_CAP }, o);
   const giveBack = () => rpc("chronia_blurb_give_back", { p_who: who }).catch((e) => console.error(e));
 
   let made: Made;
