@@ -1313,8 +1313,8 @@
     var dot = S < 500 ? 1.3 : 1.6 + 0.5 * lw;
     ctx.setLineDash([0.1, dot * 2.1]); ctx.lineWidth = dot; ctx.stroke();
     ctx.setLineDash([]);
-    if (sp) { ctx.beginPath(); tracePolity(snap, L, sp.id); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.8; ctx.stroke(); }
     ctx.restore();
+    if (sp) drawSelected(snap, L, sp.id);
     if (flat) ctx.restore();
 
     if (perf) pmark("borders");
@@ -1362,6 +1362,24 @@
     hit = coastal.map(prepareArc);
     L.coastOf.set(id, hit);
     return hit;
+  }
+  // The selected state is ruled along its outside edge only, just beyond its border, so the seams between its pieces
+  // (where its borders are exact and where they are approximate, or where a stretch of it ends sooner) do not cut it into
+  // regions of their own.
+  function drawSelected(snap, L, id) {
+    var shape = new Path2D();
+    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && p.id === id) traceAll(shape, L.feats[i]); }
+    var outside = new Path2D();
+    outside.rect(-10, -10, W + 20, H + 20);
+    outside.addPath(shape);
+    ctx.save();
+    ctx.beginPath();
+    if (flat) traceOutline(ctx); else ctx.arc(cx, cy, B.r, 0, TAU);
+    ctx.clip();
+    ctx.clip(outside, "evenodd");
+    ctx.strokeStyle = pal.select; ctx.lineWidth = 3.6; ctx.lineJoin = "round";
+    ctx.stroke(shape);
+    ctx.restore();
   }
   function tracePolity(snap, L, id) {
     for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && p.id === id) traceAll(ctx, L.feats[i]); }
