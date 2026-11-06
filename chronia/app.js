@@ -54,7 +54,7 @@
   var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
 
   function layout() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 2, benchDpr || 99);
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     sizeRelief();
@@ -512,10 +512,10 @@
     copy.type = reset.type = "button";
     copy.textContent = "Copy"; reset.textContent = "Reset";
     copy.addEventListener("click", function () {
-      var t = perfText(true);
+      var t = perf.benchText || perfText(true);
       (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy"; }, 1500); }, function () { window.prompt("Copy these numbers:", t); });
     });
-    reset.addEventListener("click", function () { perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; gapAt = {}; moveRes = 1; if (!/(^|[#&])full(&|$)/.test(String(location.hash || ""))) moveFloor = 0.5; perfShow(); });
+    reset.addEventListener("click", function () { perf.benchText = null; perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; gapAt = {}; moveRes = 1; if (!/(^|[#&])full(&|$)/.test(String(location.hash || ""))) moveFloor = 0.5; perfShow(); });
     row.appendChild(copy); row.appendChild(reset);
     el.appendChild(row);
     document.body.appendChild(el);
@@ -565,7 +565,69 @@
     }
     return lines.join("\n");
   }
-  function perfShow() { if (perf) perf.txt.textContent = perfText(false); }
+  function perfShow() { if (perf && !bench && !perf.benchText) perf.txt.textContent = perfText(false); }
+
+  // &bench: turns the globe by itself for BENCH_MS in each of a list of setups, one layer off at a time, and
+  // shows the gap between frames in each, so one run on a real device shows what each layer costs there.
+  var skip = {}, bench = null, benchDpr = 0, BENCH_MS = 3000;
+  var BENCH = [
+    ["all layers", {}], ["no terrain", { relief: 1 }], ["no aged paper", { aging: 1 }], ["no coastal band", { coastband: 1 }],
+    ["no colour bands", { bands: 1 }], ["no names", { labels: 1 }], ["no rivers and lakes", { water: 1 }], ["no sea ripples", { ripples: 1 }],
+    ["1x pixels", { dpr1: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
+  ];
+  function benchStart() {
+    if (bench || !perf) return;
+    var wasFlat = flat, z0 = view.zoom, lat0 = view.lat;
+    bench = { i: -1, rows: [], t0: 0, lon: view.lon, wasFlat: wasFlat, floor: moveFloor };
+    moveFloor = 1; moveRes = 1;
+    perf.txt.textContent = "Measuring: the globe turns by itself for about " + Math.round(BENCH.length * BENCH_MS / 1000) + " seconds. Keep this tab in front.";
+    var next = function () {
+      if (bench.i >= 0) {
+        var g = perf.gaps;
+        bench.rows.push([BENCH[bench.i][0], g.length ? pctl(g, 0.5) : 0, g.length ? 1000 / avgOf(g) : 0, avgOf(perf.draws)]);
+      }
+      bench.i++;
+      skip = {};
+      if (bench.i >= BENCH.length) return benchEnd();
+      var cfg = BENCH[bench.i][1];
+      Object.keys(cfg).forEach(function (k) { skip[k] = 1; });
+      var wantDpr = cfg.dpr1 ? 1 : 0;
+      if (wantDpr !== benchDpr) { benchDpr = wantDpr; layout(); }
+      if (!!cfg.flat !== flat) setFlat(!!cfg.flat);
+      if (!cfg.flat) { view.zoom = z0; view.lat = lat0; }
+      perf.gaps = []; perf.draws = []; perf.last = 0;
+      bench.t0 = performance.now() + 400;
+      perf.txt.textContent = "Measuring " + (bench.i + 1) + " of " + BENCH.length + ": " + BENCH[bench.i][0] + "…";
+    };
+    var step = function () {
+      if (!bench) return;
+      bench.lon += flat ? 0.25 : 0.35;
+      view.lon = wrap180(bench.lon);
+      applyView();
+      nudge();
+      if (performance.now() < bench.t0) { perf.gaps = []; perf.draws = []; }
+      if (performance.now() > bench.t0 + BENCH_MS) next();
+      if (bench) requestAnimationFrame(step);
+    };
+    next();
+    requestAnimationFrame(step);
+  }
+  function benchEnd() {
+    var rows = bench.rows, base = rows[0][1];
+    skip = {};
+    if (benchDpr) { benchDpr = 0; layout(); }
+    if (flat !== bench.wasFlat) setFlat(bench.wasFlat);
+    moveFloor = bench.floor;
+    var lines = ["Benchmark: gap between frames while turning (lower is better)"];
+    rows.forEach(function (r) { lines.push((r[0] + ":                    ").slice(0, 22) + r[1].toFixed(0) + " ms (" + r[2].toFixed(0) + " fps), page " + r[3].toFixed(1) + " ms" + (r[0] !== "all layers" && base ? ", " + (r[1] - base >= 0 ? "+" : "") + (r[1] - base).toFixed(0) + " ms" : "")); });
+    lines.push("Screen " + W + "x" + H + " at " + dpr + "x | zoom " + view.zoom.toFixed(2));
+    lines.push("Graphics: " + gpuName());
+    lines.push("Browser: " + navigator.userAgent);
+    bench = null;
+    perf.benchText = lines.join("\n");
+    perf.txt.textContent = perf.benchText;
+    scheduleRender();
+  }
 
   function nudge() {
     moving = true;
@@ -1188,7 +1250,7 @@
     ctx.beginPath(); traceSphere(ctx); ctx.clip();
     if (sea) { ctx.beginPath(); traceAll(ctx, S < 900 ? sea.low : sea.high); ctx.fillStyle = pal["ocean-deep"]; ctx.fill(); }
     if (layers.grid) { ctx.beginPath(); traceArcs(ctx, graticule); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke(); }
-    drawWaterLines(coast, S);
+    if (!skip.ripples) drawWaterLines(coast, S);
     ctx.restore();
   }
   var placedLabels = [];
@@ -1255,7 +1317,7 @@
     }
     // On a phone or a touch screen the terrain is left out while the map moves, which keeps dragging smooth, and comes back
     // when it stops; on a computer it moves with the map.
-    if (layers.relief && reliefReady() && !(moving && touchMap())) {
+    if (layers.relief && reliefReady() && !(moving && touchMap()) && !skip.relief) {
       renderRelief();
       ctx.save();
       ctx.globalCompositeOperation = "overlay";
@@ -1268,7 +1330,7 @@
     var bandAlpha = softMap ? 0.4 : 0.6, bandLine = bw * (softMap ? 3 : 2);
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     for (c = 0; c < nColors(); c++) {
-      if (!groupPaths[c] || !L.bands[c]) continue;
+      if (!groupPaths[c] || !L.bands[c] || skip.bands) continue;
       ctx.save();
       ctx.clip(groupPaths[c]);
       ctx.beginPath(); traceArcs(ctx, L.bands[c]);
@@ -1300,13 +1362,15 @@
     ctx.restore();
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     if (perf) pmark("bands");
-    drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
+    if (!skip.coastband) drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
     if (outside) ctx.restore();
 
     if (perf) pmark("coast band");
-    drawMarshes(kp, landPath);
-    drawRivers(S, landPath);
-    drawLakes(kp);
+    if (!skip.water) {
+      drawMarshes(kp, landPath);
+      drawRivers(S, landPath);
+      drawLakes(kp);
+    }
 
     if (perf) pmark("water");
     drawDivisionLines(snap, L, landPath, S);
@@ -1335,7 +1399,7 @@
     if (flat) ctx.restore();
 
     if (perf) pmark("borders");
-    drawAging(S);
+    if (!skip.aging) drawAging(S);
     ctx.strokeStyle = pal.limb;
     if (flat) {
       ctx.beginPath(); traceOutline(ctx, 0); ctx.lineWidth = 1; ctx.stroke();
@@ -1350,10 +1414,12 @@
     if (perf) pmark("finish");
     placedLabels = [];
     var placed = fixedBoxes();
-    drawPolityLabels(snap, placed, kp);
-    drawSeaLabels(placed, S);
-    drawPlaces(placed, S);
-    drawDivisionLabels(placed, S);
+    if (!skip.labels) {
+      drawPolityLabels(snap, placed, kp);
+      drawSeaLabels(placed, S);
+      drawPlaces(placed, S);
+      drawDivisionLabels(placed, S);
+    }
     if (perf) pmark("labels");
     syncCardDivision();
   }
@@ -6613,7 +6679,12 @@
     document.head.appendChild(sc);
   }
   var devOpen = false;
-  window.addEventListener("hashchange", function () { if (devInHash() && !devOpen) openDev(); if (perfInHash()) perfStart(); });
+  window.addEventListener("hashchange", function () {
+    if (devInHash() && !devOpen) openDev();
+    var b = /(^|[#&])bench(&|$)/.test(String(location.hash || ""));
+    if (perfInHash() || b) perfStart();
+    if (b && ready) { perf.benchText = null; benchStart(); }
+  });
   function devInHash() { return /(^|&)dev(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
 
   function start() {
@@ -6676,7 +6747,8 @@
         });
         whenIdle(function () { loadModern().catch(function () {}); });
         if (devInHash()) openDev();
-        if (perfInHash()) perfStart();
+        if (perfInHash() || /(^|[#&])bench(&|$)/.test(String(location.hash || ""))) perfStart();
+        if (/(^|[#&])bench(&|$)/.test(String(location.hash || ""))) setTimeout(benchStart, 2500);
       });
     }).catch(function (e) {
       console.error(e);
