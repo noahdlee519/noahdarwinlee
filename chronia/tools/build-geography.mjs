@@ -305,6 +305,20 @@ const landGroups = [
   ] },
   // The Kara-Bogaz-Gol, dammed off from the Caspian in March 1980, was dry by 1984; the dam was breached in June 1992.
   { name: "Kara-Bogaz-Gol", states: [{ from: at(1983), to: at(1993), fillPart: [53.6, 41.3], cutAt: [52.905, 41.07], cutAtLo: [52.84, 41.2], r: 0.035 }] },
+  // Krakatau before and after the eruption of 27 August 1883, and Thera before the Minoan eruption
+  // (tools/islands.json; see the README).
+  ...(() => {
+    const I = readJSON(resolve(here, "islands.json")), K = I.krakatau;
+    return [
+      { name: "Krakatau", states: [
+        { from: null, to: at(1883, 8, 27), addTo: [106.2, -6.4], polys: [K.pre1883, K.sertung, K.panjang] },
+        { from: at(1883, 8, 27), to: at(1930), addTo: [106.2, -6.4], polys: [K.rakata, K.sertung, K.panjang] },
+        { from: at(1930), to: null, addTo: [106.2, -6.4], polys: [K.rakata, K.sertung, K.panjang, K.anak] }
+      ] },
+      { name: "Surtsey", states: [{ from: at(1963, 11, 14), to: null, addTo: [-19, 64.6], polys: [I.surtsey] }] },
+      { name: "Thera", states: [{ from: null, to: -1610, replaceAt: [25.43, 36.40], polys: I.thera }] }
+    ];
+  })(),
   { name: "Caofeidian", states: [{ from: null, to: at(2003), dropAt: [118.55, 39.0] }] },
   { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] },
   // Singapore's coast at each stage of its reclamation, from Landsat (tools/singapore.json; see the README).
@@ -394,9 +408,20 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
       const tol = level === "fine" ? 0.0012 : level === "hi" ? 0.006 : 0.02, minKm2 = level === "fine" ? 1 : level === "hi" ? 4 : 30;
       const sign = Math.sign(signed(mp[i][0]));
       const add = simplePolys(s.polys, tol, level === "fine" ? r4 : r3, minKm2).map((p) => p.map((ring, ri) => orient(ring, ri ? -sign : sign)));
+      if (!add.length && s.keepIfEmpty === undefined) return;
       const last = patches[patches.length - 1];
       if (last && last.g === g.name && last.t === s.from && JSON.stringify(last.a) === JSON.stringify(add)) { last.t = s.to; return; }
       patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(mp[i][0]), d: 1, a: add, b: bboxOf(add).map(r3) });
+      return;
+    }
+    if (s.addTo) {
+      // Islands the base map lacks, added beside the polygon whose box holds s.addTo.
+      const i = mp.findIndex((p, k) => s.addTo[0] >= boxes[k][0] && s.addTo[0] <= boxes[k][2] && s.addTo[1] >= boxes[k][1] && s.addTo[1] <= boxes[k][3] && planarKm2(p) > 1000);
+      if (i < 0) { console.log(level, g.name, "no polygon to add to"); return; }
+      const tol = level === "fine" ? 0.0005 : level === "hi" ? 0.002 : 0.006, minKm2 = level === "fine" ? 0.4 : level === "hi" ? 3 : 20;
+      const sign = Math.sign(signed(mp[i][0]));
+      const add = simplePolys(s.polys, tol, r4, minKm2).map((p) => p.map((ring, ri) => orient(ring, ri ? -sign : sign)));
+      if (add.length) patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(mp[i][0]), s: [], h: [], a: add, b: bboxOf(add).map(r3) });
       return;
     }
     if (s.fillPart) {
