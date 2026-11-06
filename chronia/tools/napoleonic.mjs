@@ -969,13 +969,19 @@ const yearsOf = (a, b) => { const ya = +isoOf(a).slice(0, 4), yb = +isoOf(b).sli
 
 // A timeline [[from, x], ...] as periods {a, b, x} in days; a period that takes in no 1 July is dropped, and the one before it
 // runs on in its place.
+// From 1800 the map changes by the day, so a stretch that takes in no 1 July is kept there (France's last months in
+// Alsace-Lorraine, from the Republic of 4 September 1870 to the Treaty of Frankfurt; Prussia's annexations of 1866 before
+// the North German Confederation), if it lasts a week or more; before 1800, where the map changes by the year, or for a day or
+// two between two acts (the German Federal Act of 8 June 1815 and the Final Act of Vienna the next day), it is dropped.
+const BY_DAY = "1800-01-01", BY_DAY_MIN = 7;
+const keepShort = (a, b) => a >= toDay(BY_DAY) && b - a + 1 >= BY_DAY_MIN;
 function periods(tl, log, what) {
   const end = toDay(END);
   if (tl[0][0] !== EARLY) throw new Error("napoleonic: " + what + " does not start on " + EARLY);
   const list = tl.map(([from, x]) => ({ a: toDay(from), x }));
   list.forEach((p, i) => { if (i && p.a <= list[i - 1].a) throw new Error("napoleonic: " + what + " has its dates out of order at " + isoOf(p.a)); p.b = i + 1 < list.length ? list[i + 1].a - 1 : end; });
   for (;;) {
-    const k = list.findIndex((p) => { const [f, l] = yearsOf(p.a, p.b); return f > l; });
+    const k = list.findIndex((p) => { const [f, l] = yearsOf(p.a, p.b); return f > l && !keepShort(p.a, p.b); });
     if (k < 0) return list;
     const p = list[k];
     log(what + ": " + isoOf(p.a) + " to " + isoOf(p.b) + " takes in no 1 July, so it is dropped");
@@ -1163,9 +1169,10 @@ export function buildNapoleonic(env) {
   for (const g of groups.values()) {
     const fr = attrs[g.owner].some((p) => p.x.ruler === "@FR");
     const cuts = [...new Set([g.a, ...attrs[g.owner].concat(fr ? attrs.FR : []).map((p) => p.a).concat([toDay(HRE_END)]).filter((d) => d > g.a && d <= g.b)])].sort((x, y) => x - y).map((a) => ({ a, at: a }));
-    // A stretch that takes in no 1 July takes the attributes of the stretch after it (or, at the end, of the one before it).
+    // Before 1800, a stretch that takes in no 1 July takes the attributes of the stretch after it (or, at the end, of the one
+    // before it); from 1800 it is kept, as the map changes by the day.
     for (;;) {
-      const k = cuts.findIndex((c, n) => { const [f, l] = yearsOf(c.a, n + 1 < cuts.length ? cuts[n + 1].a - 1 : g.b); return f > l; });
+      const k = cuts.findIndex((c, n) => { const [f, l] = yearsOf(c.a, n + 1 < cuts.length ? cuts[n + 1].a - 1 : g.b); return f > l && !keepShort(c.a, n + 1 < cuts.length ? cuts[n + 1].a - 1 : g.b); });
       if (k < 0 || cuts.length < 2) break;
       if (k + 1 < cuts.length) { cuts[k].at = cuts[k + 1].at; cuts.splice(k + 1, 1); } else cuts.splice(k, 1);
     }
@@ -1195,12 +1202,19 @@ export function buildNapoleonic(env) {
       if (f.cut && p.length) p = rewind((f.cutOut ? clip.difference : clip.intersection)(p, [f.cut]));
       polys = polys.concat(p);
     }
+    // A unit cut in two (Mulhouse from the Haut-Rhin, the Saar's line of 1815 through the Moselle) is joined back to the land
+    // around it, so the state has no seam where the cut ran.
+    if (polys.length > 1 && items.some(([, f]) => f && f.cut)) {
+      try { polys = rewind(clip.union(polys)); } catch (e) { log("shape " + key.slice(0, 60) + ": the cut pieces could not be joined (" + e.message + ")"); }
+    }
     shapes.set(key, polys);
     return polys;
   };
   const out = [];
   for (const s of spans) {
-    const [first, lastY] = yearsOf(s.da, s.db);
+    let [first, lastY] = yearsOf(s.da, s.db);
+    // A stretch from 1800 that takes in no 1 July is filed under the year of the 1 July after it starts, and is shown by its days.
+    if (first > lastY && keepShort(s.da, s.db)) lastY = first;
     if (first > lastY) { log("span " + s.name + " " + isoOf(s.da) + " to " + isoOf(s.db) + " takes in no 1 July, so it is left out"); continue; }
     const polys = shapeOf(s.items);
     if (!polys.length) continue;
