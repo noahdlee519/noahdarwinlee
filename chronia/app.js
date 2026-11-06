@@ -1905,7 +1905,7 @@
   }
   function fixedBoxes() {
     var out = [];
-    [$("head"), $("ctls"), $("card"), $("time"), $("key"), $("wars")].forEach(function (el) {
+    [$("head"), $("ctls"), $("card"), $("time"), $("key"), $("wars"), $("changes")].forEach(function (el) {
       if (!el || el.hidden) return;
       var r = el.getBoundingClientRect();
       if (r.width) out.push({ x: r.left - 4, y: r.top - 4, w: r.width + 8, h: r.height + 8, ui: true });
@@ -4000,6 +4000,7 @@
     markCurrentTick();
     syncKey();
     syncWars();
+    syncChanges();
   }
   function useSnap(snap) {
     if (current === snap) return;
@@ -6335,6 +6336,201 @@
   try { warsOpen = localStorage.getItem(STORE_WARS) === "1"; } catch (e) {}
   setWarsOpen(warsOpen, false);
   warsBtn.addEventListener("click", function () { setWarsOpen(warsList.hidden, true); });
+
+  var STORE_CHANGES = "chronia-changes";
+  var changesBox = $("changes"), changesBtn = $("changes-btn"), changesBody = $("changes-body"), changesDate = $("changes-date"), changesList = $("changes-list");
+  var changesPrev = $("changes-prev"), changesNext = $("changes-next"), changesKey = "", changesTimer = 0, changesEvents = null, changesBounds = new WeakMap(), CHANGES_MAX = 12;
+  function changeIndex(t) {
+    var k = -1;
+    for (var i = 0; i < points.length; i++) if (points[i] <= t + 1e-6) k = i;
+    return k;
+  }
+  function timeBefore(p) {
+    if (!isMonthly(p)) return Math.round(p) === 1 ? -1 : Math.round(p) - 1;
+    var tb = timeOfDay(dayOfTime(p) - 1);
+    return isMonthly(tb) ? tb : Math.floor(tb);
+  }
+  function changeDate(p) { return p < DAYS_FROM ? fmtYear(yearOf(p)) : fmtDay(dayOfTime(p)); }
+  function snapFor(t) {
+    if (isModern(t)) return loadModern().then(function () { return modernSnap(Math.min(dayOfTime(t), modern.toDay)); });
+    if (isDated(t)) { var k = chunkIndexFor(t); return loadChunk(k).then(function () { return datedSnap(k, isMonthly(t) ? t : Math.round(t)); }); }
+    return Promise.resolve(null);
+  }
+  function changesEventsLoad() {
+    if (!changesEvents) changesEvents = fetchJSON("data/events.json").catch(function () { return []; });
+    return changesEvents;
+  }
+  function polityTotals(snap) {
+    var m = new Map();
+    snap.polys.forEach(function (p, i) {
+      if (!p || p.people || p.claims || !p.label) return;
+      var s = m.get(p.id);
+      if (!s) { s = { id: p.id, km2: 0, big: -1, ll: null, ruler: -1 }; m.set(p.id, s); }
+      s.km2 += p.label[5];
+      if (p.label[5] > s.big) { s.big = p.label[5]; s.ll = [p.label[0], p.label[1]]; s.ruler = p.ruler >= 0 && p.ruler !== p.id ? p.ruler : -1; }
+    });
+    return m;
+  }
+  function holderAt(snap, ll) {
+    for (var i = 0; i < snap.polys.length; i++) {
+      var p = snap.polys[i];
+      if (!p || p.people || p.claims) continue;
+      var g = snap.geoms.lo[i], b = changesBounds.get(g);
+      if (!b) { b = d3.geoBounds(featOf(snap.topo.lo, "lo", g).geo); changesBounds.set(g, b); }
+      var lon = ll[0], inLon = b[0][0] <= b[1][0] ? lon >= b[0][0] && lon <= b[1][0] : lon >= b[0][0] || lon <= b[1][0];
+      if (!inLon || ll[1] < b[0][1] || ll[1] > b[1][1]) continue;
+      if (d3.geoContains(featOf(snap.topo.lo, "lo", g).geo, ll)) return p.id;
+    }
+    return -1;
+  }
+  function changeLines(before, after) {
+    var A = polityTotals(before), B = polityTotals(after), out = [], used = new Set(), gained = new Set(), gone = [], added = [];
+    var big = function (x, y) { return y.km2 - x.km2; };
+    A.forEach(function (s, id) { if (!B.has(id)) gone.push(s); });
+    B.forEach(function (s, id) { if (!A.has(id)) added.push(s); });
+    gone.sort(big); added.sort(big);
+    gone.forEach(function (g) { g.to = g.ll ? holderAt(after, g.ll) : -1; });
+    added.forEach(function (a) {
+      var from = gone.filter(function (g) { return g.to === a.id; });
+      from.forEach(function (g) { used.add(g.id); });
+      if (!from.length) out.push({ kind: "new", a: a });
+      else if (from.length === 1 && Math.abs(from[0].km2 - a.km2) <= 0.05 * Math.max(a.km2, from[0].km2)) out.push({ kind: "renamed", g: from[0], a: a });
+      else out.push({ kind: "formed", a: a, from: from });
+    });
+    gone.forEach(function (g) {
+      if (used.has(g.id)) return;
+      if (g.to >= 0 && B.has(g.to)) { out.push({ kind: "joined", g: g, a: B.get(g.to) }); gained.add(g.to); }
+      else out.push({ kind: "ended", g: g });
+    });
+    var moved = [];
+    B.forEach(function (s, id) {
+      var p = A.get(id);
+      if (!p) return;
+      var who = function (r) { return B.get(r) || A.get(r) || { id: r, ll: null, km2: 0 }; };
+      if (p.ruler !== s.ruler) out.push(s.ruler >= 0 ? { kind: "under", a: s, r: who(s.ruler) } : { kind: "free", a: s, r: who(p.ruler) });
+      var d = s.km2 - p.km2;
+      if (!gained.has(id) && Math.abs(d) >= Math.max(1500, 0.02 * p.km2)) moved.push({ s: s, d: Math.abs(d) });
+    });
+    moved.sort(function (x, y) { return y.d - x.d; });
+    if (moved.length) out.push({ kind: "moved", list: moved.map(function (m) { return m.s; }) });
+    return out;
+  }
+  function changeName(s, here) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "ch-changes-name";
+    b.textContent = polityName(s.id) || "a state";
+    b.addEventListener("click", function () {
+      if (!s.ll) return;
+      if (here && current && current.byId && current.byId.has(s.id)) goSearch({ id: s.id, ll: s.ll, km2: s.km2 });
+      else flyTo(s.ll[0], s.ll[1], scaleFor(s.km2, 200, 6000));
+    });
+    return b;
+  }
+  var THE_FIRST = /^(Kingdoms?|Empire|Republic|Duch(y|ies)|Grand Duchy|Archduchy|Principalit(y|ies)|County|Margraviate|Electorate|Landgraviate|Sultanate|Khanate|Emirate|Caliphate|Regency|Beylik|Free City|Commonwealth|Confederation|Federation|Union|United|Viceroyalty|Captaincy|Colony|Territory|Protectorate|Prince-Bishopric|Bishopric|Archbishopric|Lordship|Despotate|Imamate|Shogunate|Tsardom|Grand Principality|Khedivate|Dominion|Holy|Papal|Joint|State of)\b/;
+  var THE_LAST = /(Empire|Confederation|Republic|[Dd]ynasty|Kingdom|kingdoms|Union|Caliphate|Sultanate|Khanate|Emirate|Islands|States|states|city-states|chiefdoms|Coalition|Horde|Raj|Netherlands|Philippines|Bahamas|Gambia|Commonwealth|Federation|Shogunate|Republics|Provinces|Territories|Isles|Emirates|Free State|Consulate|Directory|Mandate|Colony|Company|Territory|Protectorate|Dominion|Province|Governorate|Viceroyalty)$/;
+  var PLURAL = /(Islands|States|states|kingdoms|city-states|chiefdoms|Provinces|Territories|Isles|Emirates|Netherlands|Philippines|Bahamas|Republics)$/;
+  function verb(s, one, many) { return PLURAL.test(polityName(s.id) || "") ? many : one; }
+  function named(s, here, first) {
+    var n = polityName(s.id) || "";
+    return THE_FIRST.test(n) || THE_LAST.test(n) ? [first ? "The " : "the ", changeName(s, here)] : [changeName(s, here)];
+  }
+  function changeLine(parts, cls) {
+    var p = document.createElement("p");
+    p.className = "ch-changes-line" + (cls ? " " + cls : "");
+    parts.forEach(function (x) { p.appendChild(typeof x === "string" ? document.createTextNode(x) : x); });
+    return p;
+  }
+  function listOf(items, more) {
+    var out = [];
+    items.forEach(function (n, i) {
+      if (i) out.push(more ? ", " : items.length === 2 ? " and " : i === items.length - 1 ? ", and " : ", ");
+      out = out.concat(n);
+    });
+    if (more) out.push(", and " + more + " more");
+    return out;
+  }
+  function renderChanges(p, lines, events, seam) {
+    changesList.textContent = "";
+    events.forEach(function (e) {
+      var parts = [e[1].replace(/\.?$/, ".")];
+      if (/^https:\/\//.test(e[2])) {
+        var a = document.createElement("a");
+        a.className = "ch-changes-src";
+        a.href = e[2]; a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.textContent = "Source";
+        parts.push(a);
+      }
+      changesList.appendChild(changeLine(parts, "ch-changes-event"));
+    });
+    if (seam) changesList.appendChild(changeLine([seam], "ch-changes-none"));
+    var shown = 0;
+    lines.forEach(function (l) {
+      if (shown >= CHANGES_MAX) return;
+      shown++;
+      var row, six = function (list, here) { return list.slice(0, 6).map(function (x) { return named(x, here, false); }); };
+      if (l.kind === "new") row = named(l.a, true, true).concat(verb(l.a, " appears", " appear") + " on the map.");
+      else if (l.kind === "renamed") row = named(l.g, false, true).concat(verb(l.g, " becomes ", " become "), named(l.a, true, false), ".");
+      else if (l.kind === "formed") row = named(l.a, true, true).concat(verb(l.a, " is", " are") + " formed from ", listOf(six(l.from, false), Math.max(0, l.from.length - 6)), ".");
+      else if (l.kind === "joined") row = named(l.g, false, true).concat(verb(l.g, " passes", " pass") + " to ", named(l.a, true, false), ".");
+      else if (l.kind === "ended") row = named(l.g, false, true).concat(verb(l.g, " leaves", " leave") + " the map.");
+      else if (l.kind === "under") row = named(l.a, true, true).concat(verb(l.a, " comes", " come") + " under ", named(l.r, true, false), ".");
+      else if (l.kind === "free") row = named(l.a, true, true).concat(verb(l.a, " is", " are") + " no longer under ", named(l.r, false, false), ".");
+      else if (l.kind === "moved") row = [lines.length > 1 ? "Borders also move for " : "Borders move for "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
+      changesList.appendChild(changeLine(row));
+    });
+    if (lines.length > CHANGES_MAX) changesList.appendChild(changeLine(["And " + (lines.length - CHANGES_MAX) + (lines.length - CHANGES_MAX === 1 ? " more change." : " more changes.")], "ch-changes-none"));
+    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine(["The borders shift a little on this date, with no state gained or lost."], "ch-changes-none"));
+    scheduleRender();
+  }
+  function showChanges(k, key) {
+    var p = points[k];
+    changesDate.textContent = changeDate(p);
+    changesPrev.disabled = k <= 0;
+    changesNext.disabled = k >= points.length - 1;
+    if (k === 0) { renderChanges(p, [], [], "The atlas begins here."); return; }
+    var tb = timeBefore(p), seam = isModern(p) && !isModern(tb) ? "From this day the borders come from CShapes 2.0 rather than Cliopatria, so many names and lines change here because the source does." : "";
+    changesList.textContent = "";
+    changesList.appendChild(changeLine(["Looking up the changes"], "ch-changes-none"));
+    var day = p >= DAYS_FROM ? storedDate(p) : null;
+    Promise.all([seam ? null : snapFor(tb), seam ? null : snapFor(p), changesEventsLoad()]).then(function (r) {
+      if (changesKey !== key) return;
+      var events = day ? r[2].filter(function (e) { return e[0] === day; }) : [];
+      renderChanges(p, r[0] && r[1] ? changeLines(r[0], r[1]) : [], events, seam);
+    }).catch(function (e) {
+      console.warn("changes", e);
+      if (changesKey !== key) return;
+      changesList.textContent = "";
+      changesList.appendChild(changeLine(["The changes of this date could not be loaded."], "ch-changes-none"));
+    });
+  }
+  function syncChanges() {
+    if (!changesBox || changesBody.hidden || !ready || !points.length) return;
+    var k = changeIndex(now), key = k >= 0 ? String(points[k]) : "none";
+    if (key === changesKey) return;
+    changesKey = key;
+    clearTimeout(changesTimer);
+    if (k < 0) { changesDate.textContent = ""; changesList.textContent = ""; return; }
+    changesTimer = setTimeout(function () { if (changesKey === key) showChanges(k, key); }, playMode ? 0 : 120);
+  }
+  function setChangesOpen(open, keep) {
+    changesBody.hidden = !open;
+    changesBox.classList.toggle("is-open", open);
+    changesBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    changesBtn.setAttribute("aria-label", open ? "Hide what changed at this date" : "Show what changed at this date");
+    if (keep) try { localStorage.setItem(STORE_CHANGES, open ? "1" : "0"); } catch (e) {}
+    changesKey = "";
+    if (open) syncChanges();
+    scheduleRender();
+  }
+  if (changesBox) {
+    var changesOpen = false;
+    try { changesOpen = localStorage.getItem(STORE_CHANGES) === "1"; } catch (e) {}
+    setChangesOpen(changesOpen, false);
+    changesBtn.addEventListener("click", function () { setChangesOpen(changesBody.hidden, true); });
+    changesPrev.addEventListener("click", function () { var k = changeIndex(now); stopPlay(); if (k > 0) setTime(points[k - 1]); });
+    changesNext.addEventListener("click", function () { var k = changeIndex(now); stopPlay(); if (k + 1 < points.length) setTime(points[k + 1]); });
+  }
   syncWars();
   // A button's hint shows on hover and, for the keyboard, when the button takes focus.
   function showHint(el, wait) {
@@ -6801,6 +6997,8 @@
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
     loadingJSON: function () { return jsonLoading; },
     wars: function () { return warsAtDate().map(function (r) { return r.name; }); },
+    changesText: function () { return changesBody.hidden ? null : changesDate.textContent + " | " + changesList.textContent; },
+    openChanges: function (open) { setChangesOpen(open !== false, false); },
     search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
     searchOpen: function () { return !searchPanel.hidden; },
     ready: function () { return ready && !!current; },

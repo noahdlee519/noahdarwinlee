@@ -303,6 +303,23 @@
       </ul>
     </section>
 
+    <div class="ch-side" id="side">
+    <section class="ch-changes" id="changes" aria-label="What changed at this date">
+      <button type="button" class="ch-key-btn ch-changes-btn" id="changes-btn" aria-expanded="false" aria-controls="changes-body">
+        <svg class="ch-ico ch-changes-ico" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h14M9 27h14" /><path d="M10.5 5c0 6.5 11 7.6 11 11s-11 4.5-11 11M21.5 5c0 6.5-11 7.6-11 11s11 4.5 11 11" /><path d="M12.6 25.2c1.2-2.4 5.6-2.4 6.8 0z" fill="currentColor" fill-opacity="0.18" /></svg>
+        <span>Changes</span>
+        <svg class="ch-ico ch-changes-chev" width="14" height="14" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20l8-8 8 8" /></svg>
+      </button>
+      <div class="ch-changes-body" id="changes-body" hidden>
+        <div class="ch-changes-head">
+          <button type="button" class="ch-changes-step" id="changes-prev" aria-label="The change before" data-tip="The change before (Shift ←)"><svg class="ch-ico" width="14" height="12" viewBox="0 0 14 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 2.5 5 6l3.5 3.5" /></svg></button>
+          <p class="ch-changes-date" id="changes-date" aria-live="polite"></p>
+          <button type="button" class="ch-changes-step" id="changes-next" aria-label="The next change" data-tip="The next change (Shift →)"><svg class="ch-ico" width="14" height="12" viewBox="0 0 14 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 2.5 9 6l-3.5 3.5" /></svg></button>
+        </div>
+        <div class="ch-changes-list" id="changes-list"></div>
+      </div>
+    </section>
+
     <section class="ch-wars" id="wars" aria-label="Wars at this date" hidden>
       <button type="button" class="ch-key-btn ch-wars-btn" id="wars-btn" aria-expanded="false" aria-controls="wars-list">
         <svg class="ch-ico ch-wars-ico" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M27 4.2l-0.7 3.3L12.4 21.4l-1.8-1.8L23.7 4.9z" fill="currentColor" fill-opacity="0.18"/><path d="M8.6 18.4l5 5M11.1 20.9l-3.6 3.6"/><circle cx="6.4" cy="25.6" r="1.4"/><path d="M 5 4.2 l 0.7 3.3 L 19.6 21.4 l 1.8 -1.8 L 8.3 4.9 z" fill="currentColor" fill-opacity="0.18"/><path d="M23.4 18.4l-5 5M20.9 20.9l3.6 3.6"/><circle cx="25.6" cy="25.6" r="1.4"/></svg>
@@ -311,6 +328,7 @@
       </button>
       <div class="ch-wars-list" id="wars-list" hidden></div>
     </section>
+    </div>
 
     <section class="ch-time" id="time" aria-label="Year">
       <div class="ch-when ch-when-back">
