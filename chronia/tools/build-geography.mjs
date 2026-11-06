@@ -274,7 +274,8 @@ const LOW = readJSON(resolve(here, "lowlands.json"));
 // Coasts that have grown since: the sea of each stage that is land today (tools/deltas.json; see the README).
 const DELTAS = readJSON(resolve(here, "deltas.json"));
 const STRAND = readJSON(resolve(here, "strand.json"));
-const deltaGroups = Object.entries(DELTAS).map(([name, d]) => ({ name, win: d.win, states: d.states.map((s) => ({ from: s.from, to: s.to, cut: s.cut })) }));
+// Pieces a stage's cut leaves offshore come from the coarser coasts of the levels, so they are dropped.
+const deltaGroups = Object.entries(DELTAS).map(([name, d]) => ({ name, win: d.win, noAdds: true, states: d.states.map((s) => ({ from: s.from, to: s.to, cut: s.cut, plus: s.plus })) }));
 const landGroups = [
   { name: "The Low Countries", win: [3.25, 50.75, 7.5, 53.65], states: [
     { from: null, to: at(1170, 11, 1), cut: LOW["800"].cut, plus: LOW["800"].plus },
@@ -450,7 +451,7 @@ for (const level of ["hi", "lo"].concat(landTopo.fine ? ["fine"] : [])) {
       if (!r) return;
       const sign = Math.sign(signed(poly[0]));
       const holes = r.holes.filter((h) => planarKm2([h]) >= 0.5).map((h) => orient(h, -sign).map(([x, y]) => [r4(x), r4(y)]));
-      const add = r.add.map((d) => d.map((ring, ri) => orient(ring, ri ? -sign : sign).map(([x, y]) => [r4(x), r4(y)])));
+      const add = (g.noAdds ? [] : r.add).map((d) => d.map((ring, ri) => orient(ring, ri ? -sign : sign).map(([x, y]) => [r4(x), r4(y)])));
       patches.push({ g: g.name, f: s.from, t: s.to, k: keyOf(poly[0]), s: [r.splice], h: holes, a: add, b: w });
       console.log(level, g.name, "to", s.to, "parent", i, "ring", poly[0].length, "replaces", r.splice[1], "with", r.splice[2].length, "adds", add.map((d) => planarKm2(d).toFixed(1)).join(" "), "holes", holes.map((h) => planarKm2([h]).toFixed(1)).join(" "), "cut km2", Math.round(r.cutKm2));
     });
