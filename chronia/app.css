@@ -1990,6 +1990,7 @@ select.ch-save-input {
   }
   :root.ch:not(.ch-ready) .ch-key,
   :root.ch:not(.ch-ready) .ch-wars,
+  :root.ch:not(.ch-ready) .ch-changes,
   :root.ch:not(.ch-ready) .ch-load {
     opacity: 0;
   }
@@ -2000,7 +2001,8 @@ select.ch-save-input {
     animation: ch-pullup 700ms cubic-bezier(0.16, 1, 0.3, 1) 1350ms both;
   }
   :root.ch-intro .ch-key,
-  :root.ch-intro .ch-wars {
+  :root.ch-intro .ch-wars,
+  :root.ch-intro .ch-changes {
     animation: ch-fade 600ms ease 2300ms both;
   }
   :root.ch-intro .ch-ctl {
