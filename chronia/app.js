@@ -431,17 +431,29 @@
   }
   // While the map moves, a device that can't keep up draws it at a lower resolution and stretches it to
   // the screen; the full drawing comes back when the map stops. moveRes steps down (1, 0.7, then 0.5 of
-  // the screen's pixels) whenever the frames while moving come more than MOVE_SLOW_MS apart on average.
+  // the screen's pixels) when the frames while moving come more than MOVE_SLOW_MS apart on average, over
+  // MOVE_RUN frames, and back up when they come under MOVE_FAST_MS. Each step down is kept only if it pays:
+  // the gap at the lower resolution must be under MOVE_GAIN of the gap above it, or the map goes back up and
+  // stays there (moveFloor). On a fast machine (an M2, measured on 6 November 2026) the stretch itself, which
+  // makes the browser finish the small canvas at once, cost more than the pixels it saved. &full in the
+  // address keeps the full resolution throughout.
   var mainCtx = ctx, lowCanvas = null, lowCtx = null, moveRes = 1, moveGaps = [], lastMoveFrame = 0, MOVE_SLOW_MS = 26;
+  var MOVE_FAST_MS = 15, MOVE_RUN = 12, MOVE_GAIN = 0.85, moveFloor = /(^|[#&])full(&|$)/.test(String(location.hash || "")) ? 1 : 0.5, gapAt = {};
+  function moveStep(avg) {
+    var up = moveRes < 0.6 ? 0.7 : 1, down = moveRes > 0.8 ? 0.7 : 0.5;
+    gapAt[moveRes] = avg;
+    if (moveRes < 1 && gapAt[up] && avg > gapAt[up] * MOVE_GAIN) { moveFloor = up; moveRes = up; return; }
+    if (avg > MOVE_SLOW_MS && moveRes > moveFloor) { moveRes = Math.max(moveFloor, down); return; }
+    if (avg < MOVE_FAST_MS && moveRes < 1) moveRes = up;
+  }
   function frame(ts) {
     renderQueued = false;
     var f0 = perf ? performance.now() : 0;
     if (moving) {
       if (lastMoveFrame && ts - lastMoveFrame < 250) {
         moveGaps.push(ts - lastMoveFrame);
-        if (moveGaps.length >= 8) {
-          var avg = moveGaps.reduce(function (a, b) { return a + b; }, 0) / moveGaps.length;
-          if (avg > MOVE_SLOW_MS && moveRes > 0.5) moveRes = moveRes > 0.7 ? 0.7 : 0.5;
+        if (moveGaps.length >= MOVE_RUN) {
+          moveStep(moveGaps.reduce(function (a, b) { return a + b; }, 0) / moveGaps.length);
           moveGaps = [];
         }
       }
@@ -455,10 +467,12 @@
       var fullDpr = dpr;
       ctx = lowCtx; dpr = ld;
       try { draw(); } catch (e) { console.error(e); } finally { ctx = mainCtx; dpr = fullDpr; }
+      if (perf) perf.cur = performance.now();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(lowCanvas, 0, 0, canvas.width, canvas.height);
+      if (perf) pmark("stretch");
     } else {
       try { draw(); } catch (e) { console.error(e); }
     }
@@ -487,7 +501,7 @@
       var t = perfText(true);
       (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy"; }, 1500); }, function () { window.prompt("Copy these numbers:", t); });
     });
-    reset.addEventListener("click", function () { perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; perfShow(); });
+    reset.addEventListener("click", function () { perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; gapAt = {}; moveRes = 1; if (!/(^|[#&])full(&|$)/.test(String(location.hash || ""))) moveFloor = 0.5; perfShow(); });
     row.appendChild(copy); row.appendChild(reset);
     el.appendChild(row);
     document.body.appendChild(el);
@@ -524,9 +538,9 @@
     var g = perf.gaps, fps = g.length ? 1000 / avgOf(g) : 0, lines = [];
     lines.push("Moving: " + (g.length ? fps.toFixed(0) + " fps" : "drag the map") + (g.length ? " | gap median " + pctl(g, 0.5).toFixed(0) + " ms, slowest 10% " + pctl(g, 0.9).toFixed(0) + " ms" : ""));
     lines.push("Draw (page time): " + avgOf(perf.draws).toFixed(1) + " ms | resolution " + (perf.res < 1 ? Math.round(perf.res * 100) + "%" : "full") + " | " + (flat ? "flat" : "globe") + ", zoom " + view.zoom.toFixed(2));
-    var names = ["sea", "land", "relief", "bands", "coast band", "water", "borders", "finish", "labels"];
+    var names = ["sea", "land", "relief", "bands", "coast band", "water", "borders", "finish", "labels", "stretch"];
     lines.push(names.filter(function (n) { return perf.stages[n]; }).map(function (n) { return n + " " + avgOf(perf.stages[n]).toFixed(1); }).join(" | "));
-    lines.push(perf.moved + " frames moving | screen " + W + "x" + H + " at " + dpr + "x");
+    lines.push(perf.moved + " frames moving | screen " + W + "x" + H + " at " + dpr + "x | lowest resolution allowed " + Math.round(moveFloor * 100) + "%" + (Object.keys(gapAt).length ? " | gaps by resolution: " + Object.keys(gapAt).sort().reverse().map(function (k) { return Math.round(k * 100) + "% " + gapAt[k].toFixed(0) + " ms"; }).join(", ") : ""));
     if (full) {
       lines.push("Date shown: " + fmtNow(now) + " | view " + view.lon.toFixed(2) + ", " + view.lat.toFixed(2));
       lines.push("Graphics: " + gpuName());
@@ -6246,7 +6260,7 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" : "");
+      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" : "") + (moveFloor === 1 && /(^|[#&])full(&|$)/.test(String(location.hash || "")) ? "&full" : "");
       if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
     }, 250);
   }
