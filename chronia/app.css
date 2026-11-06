@@ -1043,6 +1043,66 @@ select.ch-save-input {
   clip-path: inset(-12px 0 -12px 0);
 }
 
+/* Events in history, in small type above the line (placeEvents in app.js). The bar is taller by their row. */
+.ch-time {
+  padding-top: 38px;
+}
+.ch-events {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: -29px;
+  height: 30px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 46px, #000 calc(100% - 46px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 46px, #000 calc(100% - 46px), transparent);
+}
+.ch-events.at-start {
+  -webkit-mask-image: linear-gradient(to right, #000, #000 calc(100% - 46px), transparent);
+  mask-image: linear-gradient(to right, #000, #000 calc(100% - 46px), transparent);
+}
+.ch-events.at-end {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 46px, #000);
+  mask-image: linear-gradient(to right, transparent, #000 46px, #000);
+}
+.ch-events.at-start.at-end {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.ch-ev {
+  position: absolute;
+  top: 13px;
+  font-family: var(--ch-serif, "IM Fell English", Georgia, serif);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ch-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ch-ev-row1 {
+  top: 0;
+}
+.ch-ev-1 {
+  color: var(--ink);
+}
+/* The tick under a name, at its date: short from the lower row, longer from the upper. */
+.ch-ev i {
+  position: absolute;
+  top: 14px;
+  width: 1px;
+  height: 3px;
+  margin-left: -0.5px;
+  background: currentColor;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.ch-ev-row1 i {
+  height: 16px;
+}
+.ch-ev:hover {
+  color: var(--ch-select);
+}
+
 .ch-eras {
   -webkit-mask-image: linear-gradient(to right, transparent, #000 46px, #000 calc(100% - 46px), transparent);
   mask-image: linear-gradient(to right, transparent, #000 46px, #000 calc(100% - 46px), transparent);
@@ -2637,5 +2697,12 @@ select.ch-save-input {
   .ch-changes-line {
     margin-top: 5px;
     font-size: 12px;
+  }
+}
+
+/* On a phone the date has a row of its own in the bar, so the events are left out there. */
+@media (max-width: 640px) {
+  .ch-events {
+    display: none;
   }
 }

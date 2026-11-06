@@ -3916,12 +3916,13 @@
   function setWindow(s) {
     tl.start = clampStart(s);
     var x = "translateX(" + (-(tl.start - FIRST_T) * tl.ppy).toFixed(1) + "px)";
-    ["ticks-strip", "eras-strip"].forEach(function (id) { var el = $(id); if (el) el.style.transform = x; });
-    var eras = $("eras");
-    if (eras) {
-      eras.classList.toggle("at-start", tl.start <= FIRST_T + 1e-6);
-      eras.classList.toggle("at-end", tl.start + tl.span >= lastT() - 1e-6);
-    }
+    ["ticks-strip", "eras-strip", "events-strip"].forEach(function (id) { var el = $(id); if (el) el.style.transform = x; });
+    ["eras", "tl-events"].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.classList.toggle("at-start", tl.start <= FIRST_T + 1e-6);
+      el.classList.toggle("at-end", tl.start + tl.span >= lastT() - 1e-6);
+    });
   }
   // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it.
   function follow(t) {
@@ -3960,6 +3961,7 @@
       if (y <= FIRST_T) lab.className = "is-first";
       es.appendChild(lab);
     }
+    placeEvents();
     maps.forEach(function (m) { m.tick = add(m.y, "is-map"); });
     changeTicks = modern ? modern.changes.map(function (d) { return add(timeOfDay(d), "is-change"); }) : [];
     datedTicks = dated ? dated.times.map(function (y) { return add(y, "is-change"); }) : [];
@@ -3970,6 +3972,67 @@
     markCurrentTick();
   }
   var changeTicks = [], nowTick = null, datedTicks = [];
+  // Events in history named above the timeline (data/timeline-events.json): each at its date, in small type, on
+  // one strip that moves with the ticks. Where two names would overlap, the one of lower rank (1 is the most
+  // important), then the earlier, is shown and the other left out, so the row never crowds; a name says its date
+  // when hovered, and a click goes to that date.
+  var tlEvents = null, tlEventsLoad = null, evMeasure = null;
+  function eventTime(d) {
+    if (typeof d === "number") return d;
+    var m = /^(-?\d+)-(\d+)-(\d+)$/.exec(String(d));
+    return m ? timeOfDay(dayFromDate(+m[1], +m[2], +m[3])) : null;
+  }
+  function eventDate(d, t) {
+    if (typeof d === "number") return fmtYear(d);
+    var x = dateOfDay(dayOfTime(t));
+    return x[2] + " " + MONTHS[x[1] - 1] + " " + x[0];
+  }
+  function loadEvents() {
+    if (tlEventsLoad) return;
+    tlEventsLoad = fetchJSON("data/timeline-events.json").then(function (d) {
+      tlEvents = (d.events || []).map(function (e) { var t = eventTime(e[0]); return { d: e[0], t: t, name: String(e[1]), rank: +e[2] || 3 }; })
+        .filter(function (e) { return e.t !== null && e.t >= FIRST_T && e.t <= lastT(); });
+      placeEvents();
+    }).catch(function (e) { console.warn("timeline events", e); });
+  }
+  function placeEvents() {
+    var box = $("tl-events");
+    if (!box || !tlEvents || !tl.ppy) return;
+    box.textContent = "";
+    var strip = document.createElement("div"), ppy = tl.ppy, width = (lastT() - FIRST_T) * ppy;
+    strip.id = "events-strip";
+    strip.className = "ch-strip";
+    strip.style.width = width.toFixed(0) + "px";
+    if (!evMeasure) evMeasure = document.createElement("canvas").getContext("2d");
+    evMeasure.font = "11px " + SERIF;
+    // Two rows: a name goes on the lower row if it fits there, else on the upper one, else it is left out.
+    // A tick under each name marks its date on the line.
+    // An upper name's tick runs down past the lower row, so it may only pass through a gap there: a lower name
+    // can't cover an upper tick, and an upper name can't take a place whose tick would cross a lower name.
+    var rows = [[], []], upTicks = [], GAP = 12, CLEAR = 4;
+    var fits = function (row, a, b) { for (var i = 0; i < row.length; i++) if (a < row[i][1] + GAP && b > row[i][0] - GAP) return false; return true; };
+    var lowFits = function (a, b) { if (!fits(rows[0], a, b)) return false; for (var i = 0; i < upTicks.length; i++) if (upTicks[i] > a - CLEAR && upTicks[i] < b + CLEAR) return false; return true; };
+    var upFits = function (a, b, x) { if (!fits(rows[1], a, b)) return false; for (var i = 0; i < rows[0].length; i++) if (x > rows[0][i][0] - CLEAR && x < rows[0][i][1] + CLEAR) return false; return true; };
+    tlEvents.slice().sort(function (a, b) { return a.rank - b.rank || a.t - b.t; }).forEach(function (e) {
+      var x = (e.t - FIRST_T) * ppy, w = evMeasure.measureText(e.name).width + 2;
+      var a = Math.max(0, Math.min(width - w, x - w / 2)), b = a + w, r = lowFits(a, b) ? 0 : upFits(a, b, x) ? 1 : -1;
+      if (r < 0) return;
+      rows[r].push([a, b]);
+      if (r === 1) upTicks.push(x);
+      var s = document.createElement("span");
+      s.className = "ch-ev ch-ev-" + e.rank + " ch-ev-row" + r;
+      s.textContent = e.name;
+      s.style.left = a.toFixed(1) + "px";
+      var tick = document.createElement("i");
+      tick.style.left = (x - a).toFixed(1) + "px";
+      s.appendChild(tick);
+      s.title = e.name + ", " + eventDate(e.d, e.t);
+      s.addEventListener("click", function () { stopPlay(); setTime(Math.max(FIRST_T, Math.min(lastT(), e.t))); });
+      strip.appendChild(s);
+    });
+    box.appendChild(strip);
+    setWindow(tl.start);
+  }
   function markCurrentTick() {
     maps.forEach(function (m) { if (m.tick) m.tick.classList.toggle("is-now", !!current && m.snap === current); });
     var t = current && current.modern ? changeTicks[changeBefore(Math.min(dayOfTime(now), modern.toDay))] || null : current && current.dated ? datedTicks[datedChangeBefore(now)] || null : null;
@@ -6602,7 +6665,7 @@
 
   function refitDate() { if (document.activeElement !== yearInput && ready) yearInput.value = fitDate(fmtNow(now)); }
   window.addEventListener("resize", function () { layout(); scheduleRender(); refitDate(); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refitDate);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { refitDate(); placeEvents(); });
   if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", function () { layout(); scheduleRender(); });
 
   // The first map is drawn before the opening starts, and what can wait (the sharper land, the seas'
@@ -6965,6 +7028,7 @@
           }).catch(function (e) { console.warn("sea", e); });
         });
         whenIdle(function () { loadModern().catch(function () {}); });
+        loadEvents();
         if (devInHash()) openDev();
         if (perfInHash() || addrHas("bench")) perfStart();
         if (addrHas("bench")) setTimeout(benchStart, 2500);
