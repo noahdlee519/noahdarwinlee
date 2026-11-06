@@ -452,7 +452,8 @@
   // makes the browser finish the small canvas at once, cost more than the pixels it saved. &full in the
   // address keeps the full resolution throughout.
   var mainCtx = ctx, lowCanvas = null, lowCtx = null, moveRes = 1, moveGaps = [], lastMoveFrame = 0, MOVE_SLOW_MS = 26;
-  var MOVE_FAST_MS = 15, MOVE_RUN = 12, MOVE_GAIN = 0.85, moveFloor = /(^|[#&])full(&|$)/.test(String(location.hash || "")) ? 1 : 0.5, gapAt = {};
+  function addrHas(flag) { var re = new RegExp("(^|[#?&])" + flag + "(&|$)"); return re.test(String(location.search || "")) || re.test(String(location.hash || "")); }
+  var MOVE_FAST_MS = 15, MOVE_RUN = 12, MOVE_GAIN = 0.85, moveFloor = addrHas("full") ? 1 : 0.5, gapAt = {};
   function moveStep(avg) {
     var up = moveRes < 0.6 ? 0.7 : 1, down = moveRes > 0.8 ? 0.7 : 0.5;
     gapAt[moveRes] = avg;
@@ -499,10 +500,10 @@
   // since a frame can't start until the last is on the screen), and times draw()'s stages in the page's own
   // time. Copy puts the numbers, the browser, the screen, and the graphics chip on the clipboard.
   var perf = null;
-  function perfInHash() { return /(^|&)fps(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
+  function perfInHash() { return addrHas("fps"); }
   function perfStart() {
     if (perf) return;
-    perf = { gaps: [], draws: [], stages: {}, cur: null, last: 0, res: 1, el: null, txt: null, moved: 0, timer: 0, gpu: /(^|[#&])gpu(&|$)/.test(String(location.hash || "")) };
+    perf = { gaps: [], draws: [], stages: {}, cur: null, last: 0, res: 1, el: null, txt: null, moved: 0, timer: 0, gpu: addrHas("gpu") };
     var el = perf.el = document.createElement("div");
     el.className = "ch-perf";
     var txt = perf.txt = document.createElement("pre");
@@ -515,7 +516,7 @@
       var t = perf.benchText || perfText(true);
       (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { copy.textContent = "Copied"; setTimeout(function () { copy.textContent = "Copy"; }, 1500); }, function () { window.prompt("Copy these numbers:", t); });
     });
-    reset.addEventListener("click", function () { perf.benchText = null; perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; gapAt = {}; moveRes = 1; if (!/(^|[#&])full(&|$)/.test(String(location.hash || ""))) moveFloor = 0.5; perfShow(); });
+    reset.addEventListener("click", function () { perf.benchText = null; perf.gaps = []; perf.draws = []; perf.stages = {}; perf.moved = 0; gapAt = {}; moveRes = 1; if (!addrHas("full")) moveFloor = 0.5; perfShow(); });
     row.appendChild(copy); row.appendChild(reset);
     el.appendChild(row);
     document.body.appendChild(el);
@@ -5204,7 +5205,7 @@
     });
   }
   reportGoogle.addEventListener("click", function () {
-    try { sessionStorage.setItem(REPORT_BACK, location.hash); } catch (e) {}
+    try { sessionStorage.setItem(REPORT_BACK, location.search + location.hash); } catch (e) {}
     location.href = REPORT_AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname);
   });
   function setReportPicking(on) {
@@ -6367,8 +6368,8 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "#y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" + (perf.gpu ? "&gpu" : "") : "") + (moveFloor === 1 && /(^|[#&])full(&|$)/.test(String(location.hash || "")) ? "&full" : "");
-      if (location.hash !== h) try { history.replaceState(null, "", h); } catch (e) {}
+      var h = "?y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" + (perf.gpu ? "&gpu" : "") : "") + (moveFloor === 1 && addrHas("full") ? "&full" : "");
+      if (location.search + location.hash !== h) try { history.replaceState(null, "", location.pathname + h); } catch (e) {}
     }, 250);
   }
   function hashTime() {
@@ -6378,7 +6379,7 @@
   }
   function readHash() {
     var out = {};
-    String(location.hash || "").replace(/^#/, "").split("&").forEach(function (kv) {
+    [location.hash, location.search].map(function (s) { return String(s || "").replace(/^[#?]/, ""); }).join("&").split("&").forEach(function (kv) {
       var i = kv.indexOf("=");
       if (i > 0) out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
       else if (/^-?\d+(-\d+){0,2}$/.test(kv)) out.y = kv;
@@ -6681,11 +6682,11 @@
   var devOpen = false;
   window.addEventListener("hashchange", function () {
     if (devInHash() && !devOpen) openDev();
-    var b = /(^|[#&])bench(&|$)/.test(String(location.hash || ""));
+    var b = addrHas("bench");
     if (perfInHash() || b) perfStart();
     if (b && ready) { perf.benchText = null; benchStart(); }
   });
-  function devInHash() { return /(^|&)dev(&|$)/.test(String(location.hash || "").replace(/^#/, "")); }
+  function devInHash() { return addrHas("dev"); }
 
   function start() {
     loadEdits();
@@ -6747,8 +6748,8 @@
         });
         whenIdle(function () { loadModern().catch(function () {}); });
         if (devInHash()) openDev();
-        if (perfInHash() || /(^|[#&])bench(&|$)/.test(String(location.hash || ""))) perfStart();
-        if (/(^|[#&])bench(&|$)/.test(String(location.hash || ""))) setTimeout(benchStart, 2500);
+        if (perfInHash() || addrHas("bench")) perfStart();
+        if (addrHas("bench")) setTimeout(benchStart, 2500);
       });
     }).catch(function (e) {
       console.error(e);

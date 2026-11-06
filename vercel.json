@@ -1,9 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "",
+  "installCommand": "npm ci --no-audit --no-fund",
   "buildCommand": "node tools/build-chronia-site.mjs",
   "outputDirectory": "chronia-site",
+  "functions": {
+    "api/og.mjs": {
+      "maxDuration": 30,
+      "includeFiles": "{chronia/data/**,chronia/app.css,uchronia/data/sea.json,api/fonts/**,api/_lib/widths.json}"
+    }
+  },
   "redirects": [
     { "source": "/chronia", "destination": "/", "permanent": true },
     { "source": "/chronia/:path*", "destination": "/:path*", "permanent": true }

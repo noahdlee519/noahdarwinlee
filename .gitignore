@@ -48,3 +48,6 @@ art/originals/
 
 # The built chroniaatlas.com (tools/build-chronia-site.mjs); Vercel builds it on every push.
 chronia-site/
+
+# The packages of chroniaatlas.com's link previews (package.json); Vercel installs them on every build.
+node_modules/
