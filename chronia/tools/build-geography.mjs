@@ -271,6 +271,9 @@ const FEN_WIN = [-0.75, 52.05, 0.9, 53.32];
 // The Low Countries' coast in the Middle Ages, from the Atlas van Nederland in het Holoceen (tools/lowlands.json;
 // see the README): the sea of each map that is land today is cut, and its land that is sea today added.
 const LOW = readJSON(resolve(here, "lowlands.json"));
+// Coasts that have grown since: the sea of each stage that is land today (tools/deltas.json; see the README).
+const DELTAS = readJSON(resolve(here, "deltas.json"));
+const deltaGroups = Object.entries(DELTAS).map(([name, d]) => ({ name, win: d.win, states: d.states.map((s) => ({ from: s.from, to: s.to, cut: s.cut })) }));
 const landGroups = [
   { name: "The Low Countries", win: [3.25, 50.75, 7.5, 53.65], states: [
     { from: null, to: at(1170, 11, 1), cut: LOW["800"].cut, plus: LOW["800"].plus },
@@ -285,6 +288,7 @@ const landGroups = [
     { from: null, to: at(1653), cut: fens },
     { from: at(1653), to: at(1818), cut: clip.intersection(fens, [WELLAND_NORTH]) }
   ] },
+  ...deltaGroups,
   { name: "Caofeidian", states: [{ from: null, to: at(2003), dropAt: [118.55, 39.0] }] },
   { name: "Aral Sea", states: [{ from: null, to: at(2014, 8, 1), fillAt: [[60.7, 46.45], [58.55, 45.1]] }] },
   // Singapore's coast at each stage of its reclamation, from Landsat (tools/singapore.json; see the README).
