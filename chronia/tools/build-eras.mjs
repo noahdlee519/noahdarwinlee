@@ -1561,7 +1561,9 @@ const SMALL = [
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR" }, periods: [["1464-01-01", CS_TO, "state"]] },
-  { name: "Andorra", shape: { c: "AND" }, gapKm: 4, periods: [["1400-01-01", "1811-12-31", "state"], ["1814-01-01", CS_TO, "state"]] },
+  // Andorra throughout: Napoleon's decree of 26 January 1812 putting it in France's département of the Sègre is drawn in the zones
+  // of control (tools/napoleonic.mjs), not on the main map, as no treaty confirmed it.
+  { name: "Andorra", shape: { c: "AND" }, gapKm: 4, periods: [["1400-01-01", CS_TO, "state"]] },
   { name: "Vatican City", shape: { c: "VAT" }, periods: [["1929-06-07", CS_TO, "state"]] },
   { name: "Isle of Man", shape: { c: "IMN" }, periods: [["1400-01-01", CS_TO, "dependency", LONDON]] },
   { name: "Jersey", shape: { c: "JEY" }, periods: [["1400-01-01", "1460-12-31", "dependency", LONDON], ["1461-01-01", "1467-12-31", "occupied", PARIS], ["1468-01-01", "1940-06-30", "dependency", LONDON], ["1940-07-01", "1945-05-07", "occupied", BERLIN], ["1945-05-08", CS_TO, "dependency", LONDON]] },

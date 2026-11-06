@@ -1,10 +1,12 @@
 // Europe from 1803 to 1885, for the dated maps: the states, client kingdoms, annexations, and occupations of the Napoleonic
 // Wars, and the Europe of the Congress of Vienna that followed, to the eve of CShapes's first year (1886), drawn from UCHRONIA's second-level units (Germany's districts, Poland's powiats, Austria's and Czechia's districts,
 // Ukraine's raions) and its provinces (Natural Earth's first-level units elsewhere). The main map shows what treaties and
-// decrees made (the law on the map): annexations, client states and personal unions under their ruler, and formal military
-// occupations under an occupying administration as occupied (status 4) once the war that brought them had ended in a peace or an
-// armistice. The occupations made in the wars themselves (WAR_OCC) are drawn in the zones of control (tools/napoleonic-control.mjs)
-// and leave the land its lawful owner's on the main map, as the First World War's do. Land two rival governments both claimed is disputed
+// changes recognized made (the law on the map): annexations by treaty, client states and personal unions under their ruler, and
+// the allied administrations of the land France gave up at Fontainebleau and Paris in 1814 (the Rhineland, Berg, Lucca, the
+// Southern Netherlands, the Legations, the Ionian Islands) as occupied (status 4) until the Congress of Vienna assigned it. The
+// occupations made in the wars themselves, Napoleon's annexations by decree that no treaty confirmed, and the occupations after
+// the armistice of land whose sovereign never gave it up (WAR_OCC) are drawn in the zones of control
+// (tools/napoleonic-control.mjs) and leave the land its lawful owner's on the main map, as the First World War's do. Land two rival governments both claimed is disputed
 // (status 6): Spain between Joseph Bonaparte and the patriot government, Catalonia between the French Empire and the patriots,
 // Norway in 1814, Serbia between the rebels and the Ottomans, Greece in its War of Independence, Limburg and Luxembourg between
 // Belgium and the Netherlands from 1830 to 1839, the duchies Austria and Prussia held together from 1864, and the Italian states
@@ -116,6 +118,19 @@ const O = {
   LV: [[W, { name: "Kingdom of Lombardy–Venetia", ruler: "Austrian Empire", status: 5 }]],
   AUSo: [[W, { name: "Papal States", ruler: "Austrian Empire", status: 4 }]],
   RAG: [[W, { name: "Republic of Ragusa" }]],
+  // Napoleon's annexations by decree, which no treaty confirmed: held by France in the zones of control (WAR_OCC), their lawful
+  // owner's on the main map.
+  RAGf: [[W, { name: "Republic of Ragusa", ruler: FFE, status: 4 }]],
+  PAPi: [[W, { name: "Papal States", wiki: "Papal States", ruler: FFE, status: 4 }]],
+  PAPf: [[W, { name: "Papal States", wiki: "Papal States", ruler: FFE, status: 4 }]],
+  BATf: [[W, { name: "Kingdom of Holland", wiki: "Kingdom of Holland", ruler: FFE, status: 4 }]],
+  VALf: [[W, { name: "Rhodanic Republic", wiki: "Rhodanic Republic", ruler: FFE, status: 4 }]],
+  LUBf: [[W, { name: "Free City of Lübeck", ruler: FFE, status: 4 }]],
+  HAMf: [[W, { name: "Free City of Hamburg", ruler: FFE, status: 4 }]],
+  BREf: [[W, { name: "Free City of Bremen", ruler: FFE, status: 4 }]],
+  OLDf: [[W, { name: "Duchy of Oldenburg", ruler: FFE, status: 4 }]],
+  ARBf: [[W, { name: "Duchy of Arenberg", ruler: FFE, status: 4 }]],
+  SALMf: [[W, { name: "Principality of Salm", ruler: FFE, status: 4 }]],
   ION: [[W, { name: "Septinsular Republic", ruler: "Ottoman Empire", status: 5 }]],
   IONb: [[W, { name: "Ionian Islands", wiki: "United States of the Ionian Islands", ruler: "United Kingdom", status: 4 }]],
   IONp: [[W, { name: "United States of the Ionian Islands", ruler: "United Kingdom", status: 5 }]],
@@ -137,7 +152,7 @@ const O = {
   HKo: [[W, { name: "Electorate of Hesse", ruler: FFE, status: 4 }]],
   HAN: [[EARLY, { name: "Principality of Calenberg", wiki: "Principality of Calenberg" }], ["1692-12-19", { name: "Electorate of Hanover", wiki: "Electorate of Hanover" }], ["1814-10-12", { name: "Kingdom of Hanover" }], [CONFEDERATION, { part: "German Confederation" }], [VIENNA, { b: 2 }]],
   HANo: [[W, { name: "Electorate of Hanover", ruler: "@FR", status: 4 }]],
-  SAX: [[W, { name: "Electorate of Saxony" }], ["1806-12-20", { name: "Kingdom of Saxony", part: "Confederation of the Rhine" }], ["1813-10-19", { part: "", ruler: "Russian Empire", status: 4 }], ["1814-11-10", { ruler: "Kingdom of Prussia" }], ["1815-06-07", { ruler: "", status: 0, part: "German Confederation" }]],
+  SAX: [[W, { name: "Electorate of Saxony" }], ["1806-12-20", { name: "Kingdom of Saxony", part: "Confederation of the Rhine" }], ["1813-10-19", { part: "", ruler: "Russian Empire", status: 4 }], ["1814-11-10", { ruler: "Kingdom of Prussia", status: 4 }], ["1815-06-07", { ruler: "", status: 0, part: "German Confederation" }]],
   WEST: [[W, { name: "Kingdom of Westphalia", ruler: FFE, status: 5 }], ["1807-11-15", { part: "Confederation of the Rhine" }]],
   BERG: [[W, { name: "Grand Duchy of Berg", ruler: FFE, status: 5 }], [RHINE, { part: "Confederation of the Rhine" }]],
   BERGo: [[W, { name: "Grand Duchy of Berg", ruler: "Kingdom of Prussia", status: 4 }]],
@@ -311,6 +326,7 @@ for (const tl of Object.values(O)) tl.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > 
 // (6 January 1810) for Sweden, at the Treaty of Bucharest (28 May 1812) for Russia and the Ottomans, and at the armistice of
 // 23 April 1814 for the Sixth Coalition.
 const TILSIT_EVE = "1807-07-08", ARMISTICE_EVE = "1814-04-22";
+const ANDORRA_FROM = "1812-01-26", ANDORRA_TO = "1814-03-09";
 export const WAR_OCC = [
   // Hanover, occupied by France from the Convention of Artlenburg (Britain was at war with France) to Prussia's annexation.
   ["HANo", "1803-06-04", "1806-03-31"],
@@ -331,9 +347,27 @@ export const WAR_OCC = [
   // Moldavia and Wallachia, held by Russia through the Russo-Turkish War of 1806 to 1812.
   ["MOL", "1806-12-13", "1812-05-27"],
   ["WAL2", "1806-12-13", "1812-05-27"],
-  // The campaigns of 1813 and 1814.
-  ["WAR", "1813-02-08", ARMISTICE_EVE],
-  ["SAX", "1813-10-19", ARMISTICE_EVE],
+  // Napoleon's annexations by decree, which no treaty confirmed (the Pope never gave up Rome or the Marches, nor the Dutch, the
+  // Hanseatic cities, Oldenburg, Arenberg, Salm, the Valais, or Ragusa their states): France's in the zones of control, their
+  // lawful owner's on the main map, until the land was freed or, for Ragusa, until the Treaty of Paris.
+  ["RAGf", "1808-01-31", "1814-05-29"],
+  ["PAPi", "1808-04-02", "1814-04-27"],
+  ["PAPf", "1809-05-17", "1814-05-23"],
+  ["BATf", HOLLAND, "1813-12-01"],
+  ["VALf", "1810-11-12", "1813-12-30"],
+  ["LUBf", HANSE, "1813-12-04"],
+  ["HAMf", HANSE, "1814-05-30"],
+  ["BREf", HANSE, "1813-11-05"],
+  ["OLDf", HANSE, "1813-11-26"],
+  ["ARBf", HANSE, "1813-11-16"],
+  ["SALMf", HANSE, "1813-11-16"],
+  // The campaigns of 1813 and 1814, and, after the armistice, the occupations of land whose sovereign never gave it up, to the
+  // Congress of Vienna: the Duchy of Warsaw (the King of Saxony's) under Russia to the Kingdom of Poland of 20 June 1815, Saxony
+  // under Russia and then Prussia to its king's return, and the Marches under Naples (the Pope's).
+  ["WAR", "1813-02-08", "1815-06-19"],
+  ["SAX", "1813-10-19", "1814-11-09"],
+  ["SAX", "1814-11-10", "1815-06-06"],
+  ["NAPo", "1814-04-28", "1815-06-08"],
   ["BERGo", "1813-11-10", ARMISTICE_EVE],
   ["LUC", "1814-03-15", ARMISTICE_EVE],
   // The Ionian Islands Britain took from France: Zante, Cephalonia, Ithaca, and Cerigo from October 1809, Santa Maura from
@@ -341,8 +375,8 @@ export const WAR_OCC = [
   ["IONb", "1809-10-04", ARMISTICE_EVE]
 ];
 // The occupiers' sides in the zones of control, by the ruler of the occupied owner.
-export const WAR_OCC_SIDES = { fr: ["France", "#2f62b0"], ru: ["Russian Empire", "#2e7d4f"], pr: ["Kingdom of Prussia", "#3b3b3b"], at: ["Austrian Empire", "#c9a227"], uk: ["United Kingdom", "#b23a30"] };
-const SIDE_OF = { "French Consulate": "fr", [FFE]: "fr", "Russian Empire": "ru", "Kingdom of Prussia": "pr", "Austrian Empire": "at", "United Kingdom": "uk" };
+export const WAR_OCC_SIDES = { fr: ["France", "#2f62b0"], ru: ["Russian Empire", "#2e7d4f"], pr: ["Kingdom of Prussia", "#3b3b3b"], at: ["Austrian Empire", "#c9a227"], uk: ["United Kingdom", "#b23a30"], na: ["Kingdom of Naples", "#7b4b94"] };
+const SIDE_OF = { "French Consulate": "fr", [FFE]: "fr", "Russian Empire": "ru", "Kingdom of Prussia": "pr", "Austrian Empire": "at", "United Kingdom": "uk", "Kingdom of Naples": "na" };
 
 // Unit selectors: "DEU:Hesse/Kassel" is a unit of a province, "DEU/Kassel" a unit anywhere in the country, "DEU:Hesse/*" every
 // unit of a province, "FRA/*" every unit of the country in Europe, "SVN@Gorenjska" every unit of a Natural Earth region,
@@ -418,19 +452,19 @@ add(units("DEU", ["Kiel", "Neumünster", "Plön", "Ostholstein", "Segeberg", "St
   [[W, "HOLS"], [VIENNA_1864, "SHd"], [GASTEIN, "HOLSa"], [PRAGUE, "PRg"]]);
 // Heligoland, British from the Treaty of Kiel.
 add(["DEU/Pinneberg[7.7,54.1,8.0,54.25]"], [[W, "HOLS"], ["1814-01-14", "HEL"]]);
-add(["DEU/Lübeck"], [[W, "LUB"], [HANSE, "FR"], ["1813-12-05", "LUB"]]);
-add(["DEU/Hamburg"], [[W, "HAM"], [HANSE, "FR"], ["1814-05-31", "HAM"]]);
-add(["DEU/Bremen"], [[W, "BRE"], [HANSE, "FR"], ["1813-11-06", "BRE"]]);
+add(["DEU/Lübeck"], [[W, "LUB"], [HANSE, "LUBf"], ["1813-12-05", "LUB"]]);
+add(["DEU/Hamburg"], [[W, "HAM"], [HANSE, "HAMf"], ["1814-05-31", "HAM"]]);
+add(["DEU/Bremen"], [[W, "BRE"], [HANSE, "BREf"], ["1813-11-06", "BRE"]]);
 // Oldenburg, with the Münster lands it gained in 1803.
-add(units("DEU", ["Ammerland", "Oldenburg (Oldenburg)", "Landkreis Oldenburg", "Delmenhorst", "Wesermarsch", "Friesland", "Cloppenburg", "Vechta"]), [[W, "OLD"], [HANSE, "FR"], ["1813-11-27", "OLD"]]);
+add(units("DEU", ["Ammerland", "Oldenburg (Oldenburg)", "Landkreis Oldenburg", "Delmenhorst", "Wesermarsch", "Friesland", "Cloppenburg", "Vechta"]), [[W, "OLD"], [HANSE, "OLDf"], ["1813-11-27", "OLD"]]);
 // The Jade, sold to Prussia for its naval harbour (Wilhelmshaven).
-add(["DEU/Wilhelmshaven"], [[W, "OLD"], [HANSE, "FR"], ["1813-11-27", "OLD"], ["1854-11-23", "PRg"]]);
+add(["DEU/Wilhelmshaven"], [[W, "OLD"], [HANSE, "OLDf"], ["1813-11-27", "OLD"], ["1854-11-23", "PRg"]]);
 // East Frisia: Prussian, Dutch from the Treaty of Fontainebleau, French with Holland.
-add(units("DEU", ["Aurich", "Leer", "Emden", "Wittmund"]), [[W, "PRg"], ["1807-11-11", "BAT"], [HOLLAND, "FR"], ["1813-11-17", "PRg"], [HANOVER_PRUSSIA, "HAN"]]);
+add(units("DEU", ["Aurich", "Leer", "Emden", "Wittmund"]), [[W, "PRg"], ["1807-11-11", "BAT"], [HOLLAND, "BATf"], ["1813-11-17", "PRg"], [HANOVER_PRUSSIA, "HAN"]]);
 // Arenberg's Meppen and Recklinghausen, and Salm's Bocholt.
-add(["DEU/Emsland"], [[W, "ARB"], [HANSE, "FR"], ["1813-11-17", "PRg"], [HANOVER_PRUSSIA, "HAN"]]);
+add(["DEU/Emsland"], [[W, "ARB"], [HANSE, "ARBf"], ["1813-11-17", "PRg"], [HANOVER_PRUSSIA, "HAN"]]);
 add(["DEU/Recklinghausen"], [[W, "ARB"], [HANSE, "BERG"], ["1813-11-10", "BERGo"], [RHINELAND, "PRg"]]);
-add(["DEU/Borken"], [[W, "SALM"], [HANSE, "FR"], ["1813-11-17", "PRg"]]);
+add(["DEU/Borken"], [[W, "SALM"], [HANSE, "SALMf"], ["1813-11-17", "PRg"]]);
 // Prussia's Münster, Tecklenburg, Lingen, and Mark, to Berg in 1808, Münster and Tecklenburg on to France in 1810.
 add(units("DEU", ["Münster", "Coesfeld", "Steinfurt", "Warendorf"]), [[W, "PRg"], ["1808-03-03", "BERG"], [HANSE, "FR"], ["1813-11-17", "PRg"]]);
 add(units("DEU", ["Hamm", "Unna", "Hagen", "Märkischer Kreis", "Ennepe-Ruhr-Kreis", "Bochum", "Herne", "Gelsenkirchen", "Soest", "Bottrop"]), [[W, "PRg"], ["1808-03-03", "BERG"], ["1813-11-10", "BERGo"], [RHINELAND, "PRg"]]);
@@ -543,7 +577,7 @@ add(["HRV:Zagreb/*"].concat(units("HRV", ["Bjelovar-Bilogora", "Brod-Posavina", 
 add(["HRV/Karlovac", "HRV/Primorje-Gorski", "HRV/Lika-Senj"], [[W, "AUS"], [SCHONBRUNN, "ILL"], [PARIS, "AUS"]]);
 add(["HRV/Istria", "HRV/Zadar", "HRV/Šibenik-Knin", "HRV/Split-Dalmatia", "MNE/Kotor", "MNE/Tivat", "MNE/Herceg Novi", "MNE/Budva"],
   [[W, "AUS"], ["1806-05-01", "ITR"], ["1810-06-10", "ILL"], [PARIS, "AUS"]]);
-add(["HRV/Dubrovnik-Neretva"], [[W, "RAG"], ["1808-01-31", "ITR"], ["1810-06-10", "ILL"], [PARIS, "AUS"]]);
+add(["HRV/Dubrovnik-Neretva"], [[W, "RAG"], ["1808-01-31", "RAGf"], [PARIS, "AUS"]]);
 // Galicia, West Galicia (to the Duchy of Warsaw in 1809), Tarnopol (Russian from 1809 to 1815), and Bukovina.
 add(["POL:Podkarpackie Voivodeship/*", "UKR:Lviv/*", "UKR:Ivano-Frankivsk/*"].concat(units("POL", ["Nowy Sącz", "Tarnów", "Powiat bocheński", "Powiat dąbrowski",
   "Powiat gorlicki", "Powiat limanowski", "Powiat myślenicki", "Powiat nowosądecki", "Powiat nowotarski", "Powiat oświęcimski", "Powiat suski", "Powiat tarnowski", "Powiat tatrzański",
@@ -646,7 +680,7 @@ add(["NOR/*"], [[W, "DN"], ["1814-01-14", "NORd"], ["1814-11-04", "SW"]]);
 add(["SWE/*"], [[W, "SW"]]);
 
 // The Low Countries and Luxembourg.
-add(["NLD/*"], [[W, "BAT"], [HOLLAND, "FR"], ["1813-12-02", "BAT"]]);
+add(["NLD/*"], [[W, "BAT"], [HOLLAND, "BATf"], ["1813-12-02", "BAT"]]);
 add(["NLD/North Brabant", "NLD/Zeeland"], [[W, "BAT"], ["1810-03-16", "FR"], ["1813-12-02", "BAT"]]);
 add(["NLD/Limburg"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "BAT"], [BELGIUM, "LIMd"], [LONDON, "LIMB"], ["1867-05-11", "BAT"]]);
 add(["BEL/*"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "BAT"], [BELGIUM, "BELG"]]);
@@ -666,7 +700,7 @@ add(["FRA/Alpes-Maritimes"], [[W, "FR"], [PARIS, "SAR"], [NICE, "FR"]], { rough:
 // Alsace and Moselle (the annexed part of Lorraine), German from the Treaty of Frankfurt; Belfort stayed French.
 add(["FRA/Bas-Rhin", "FRA/Haut-Rhin", "FRA/Moselle"], [[W, "FR"], [FRANKFURT_1871, "GER"]]);
 add(["CHE/*"], [[W, "SWI"]]);
-add(["CHE/Valais"], [[W, "VAL"], ["1810-11-12", "FR"], ["1813-12-31", "SWI"]]);
+add(["CHE/Valais"], [[W, "VAL"], ["1810-11-12", "VALf"], ["1813-12-31", "SWI"]]);
 add(["CHE/Geneva", "CHE/Jura"], [[W, "FR"], ["1813-12-31", "SWI"]]);
 add(["CHE/Neuchâtel"], [[W, "NEU"], [VIENNA, "SWI"]]);
 add(["PRT/*"], [[W, "POR"]]);
@@ -693,9 +727,9 @@ add(["ITA/Belluno", "ITA/Udine"], [[W, "AUS"], ["1806-05-01", "ITR"], ["1814-04-
 add(["ITA/Trentino", "ITA/Trentino-South Tyrol"], [[W, "AUSg"], [PRESSBURG, "BAV"], ["1810-06-10", "ITR"], ["1814-04-28", "AUSg"]]);
 add(["ITA/Modena", "ITA/Reggio Emilia"], [[W, "ITR"], ["1814-04-28", "MOD"], ["1859-06-11", "MODd"], [EMILIA, "SAR"]]);
 add(["ITA/Bologna", "ITA/Ferrara", "ITA/Ravenna", "ITA/Forlì-Cesena", "ITA/Rimini"], [[W, "ITR"], ["1814-04-28", "AUSo"], [VIENNA, "PAP"], ["1859-06-12", "LEGd"], [EMILIA, "SAR"]]);
-add(["ITA/Ancona", "ITA/Macerata", "ITA/Fermo", "ITA/Ascoli Piceno", "ITA/Pesaro and Urbino"], [[W, "PAP"], ["1808-04-02", "ITR"], ["1814-04-28", "NAPo"], [VIENNA, "PAP"], [ANNEX_SOUTH, "SAR"]]);
-add(["ITA/Rieti", "ITA/Perugia", "ITA/Terni"], [[W, "PAP"], ["1809-05-17", "FR"], ["1814-05-24", "PAP"], [ANNEX_SOUTH, "SAR"]]);
-add(["ITA/Rome", "ITA/Viterbo", "ITA/Frosinone", "ITA/Latina"], [[W, "PAP"], ["1809-05-17", "FR"], ["1814-05-24", "PAP"], [ROME, "SAR"]]);
+add(["ITA/Ancona", "ITA/Macerata", "ITA/Fermo", "ITA/Ascoli Piceno", "ITA/Pesaro and Urbino"], [[W, "PAP"], ["1808-04-02", "PAPi"], ["1814-04-28", "NAPo"], [VIENNA, "PAP"], [ANNEX_SOUTH, "SAR"]]);
+add(["ITA/Rieti", "ITA/Perugia", "ITA/Terni"], [[W, "PAP"], ["1809-05-17", "PAPf"], ["1814-05-24", "PAP"], [ANNEX_SOUTH, "SAR"]]);
+add(["ITA/Rome", "ITA/Viterbo", "ITA/Frosinone", "ITA/Latina"], [[W, "PAP"], ["1809-05-17", "PAPf"], ["1814-05-24", "PAP"], [ROME, "SAR"]]);
 const TUSCANY_1859 = [["1859-04-27", "TUSd"], [TUSCANY_SAR, "SAR"]];
 add(["ITA/Florence", "ITA/Prato", "ITA/Pistoia", "ITA/Pisa", "ITA/Siena", "ITA/Arezzo", "ITA/Grosseto", "ITA/Livorno[!10.0,42.6,10.5,42.9]"], [[W, "ETR"], ["1807-12-10", "FR"], ["1814-05-01", "TUS"]].concat(TUSCANY_1859));
 add(["ITA/Livorno[10.0,42.6,10.5,42.9]"], [[W, "FR"], ["1814-05-04", "ELB"], ["1815-02-26", "TUS"]].concat(TUSCANY_1859));
@@ -1242,5 +1276,15 @@ export function buildNapoleonic(env) {
     }
   }
   const warRows = war.map((r) => ({ side: r.side, from: isoOf(r.a), to: isoOf(r.b), first: r.a - DAY_1886, last: r.b - DAY_1886, polys: shapeOf(r.items) }));
+  // Andorra, which the decree of 26 January 1812 put in France's département of the Sègre with Catalonia, held by France to the
+  // French withdrawal from Catalonia. It is a small territory outside the table's units, so it is drawn from Natural Earth's
+  // parishes.
+  const andorra = (neAll || []).filter((f) => f.properties.adm0_a3 === "AND").flatMap((f) => rewind(polysOf(f.geometry)));
+  if (andorra.length) {
+    const a = toDay(ANDORRA_FROM), b = toDay(ANDORRA_TO);
+    let polys = andorra;
+    try { polys = rewind(clip.union(andorra)); } catch (e) { log("Andorra's parishes could not be joined (" + e.message + ")"); }
+    warRows.push({ side: "fr", from: ANDORRA_FROM, to: ANDORRA_TO, first: a - DAY_1886, last: b - DAY_1886, polys });
+  } else log("no Andorra in Natural Earth's first-level divisions, so the zones of control leave it out");
   return { spans: out, mask: shapeOf(blocks.flatMap((b) => b.items)), units: blocks.reduce((n, b) => n + b.items.length, 0), war: warRows };
 }

@@ -1,10 +1,11 @@
-// The occupations of the Napoleonic Wars in the zones of control: the land each occupier held in the wars themselves, day by day,
-// from the dated table of 1803 to 1885 (tools/napoleonic.mjs, WAR_OCC), on the same UCHRONIA units the main map draws those years
-// with. The main map leaves these occupations out and keeps the land its lawful owner's until the peace or the armistice that ended
-// each war; what ran on after it is drawn there (see the README's "Europe from 1803 to 1885").
+// The occupations and annexations of the Napoleonic Wars in the zones of control: the land each occupier held in the wars
+// themselves, Napoleon's annexations by decree that no treaty confirmed, and the occupations after the armistice of land whose
+// sovereign never gave it up, day by day, from the dated table of 1803 to 1885 (tools/napoleonic.mjs, WAR_OCC), on the same
+// UCHRONIA units the main map draws those years with (and Andorra from Natural Earth). The main map leaves these out and keeps
+// the land its lawful owner's (see the README's "Europe from 1648 to 1885").
 import { buildNapoleonic, WAR_OCC_SIDES } from "./napoleonic.mjs";
 
-export const NAPOLEONIC_WAR = { key: "napoleonic", name: "Occupations of the Napoleonic Wars" };
+export const NAPOLEONIC_WAR = { key: "napoleonic", name: "Occupations and annexations of the Napoleonic Wars" };
 
 const planar = (ring) => { let s = 0; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) s += ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1]; return s / 2; };
 const polysOf = (g) => (!g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []);
