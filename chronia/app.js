@@ -4526,7 +4526,7 @@
   var BLURB_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
   var blurbCache = new Map(), blurbTimer = 0, selCity = null, cardClick = false;
   // Set when the note's function says no more new notes may be written today: "limit" when this visitor has had
-  // their 100 (the function's WHO_CAP, sent back as `cap`), "cap" when the whole site has had its 2,000. Notes
+  // their 100 (the function's WHO_CAP, sent back as `cap`), "cap" when the whole site has had its 10,000. Notes
   // already written are still shown; the card says why a new one isn't.
   var blurbStop = null;
   function blurbStopText() {
