@@ -4512,13 +4512,15 @@
     view.zoom = S / (flat ? baseK : baseR);
     reliefKey = "";
     applyView();
-    $("flat-btn").setAttribute("aria-pressed", flat ? "true" : "false");
-    $("flat-btn").setAttribute("aria-label", flat ? "Globe" : "Flat map");
-    $("flat-btn").setAttribute("data-tip", flat ? "Globe (M)" : "Flat map (M)");
+    syncProjection();
     try { localStorage.setItem(STORE_FLAT, flat ? "1" : "0"); } catch (e) {}
     nudge();
   }
-  $("flat-btn").addEventListener("click", function () { setFlat(!flat); });
+  // The globe or the flat map, chosen in the View panel (or with M).
+  function syncProjection() { $("view-globe").checked = !flat; $("view-flat").checked = flat; }
+  ["view-globe", "view-flat"].forEach(function (id) {
+    $(id).addEventListener("change", function () { if ($(id).checked) setFlat(id === "view-flat"); });
+  });
 
   var card = $("card"), wikiCache = new Map(), wikiAsk = 0;
   var BLURB_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
@@ -5243,52 +5245,73 @@
     reportLock.hidden = !!reportSession;
     reportForm.hidden = !reportSession;
     if (reportSession) { showWho(); if (!reportMe && !reportPanel.hidden) loadMe(); }
-    else startGoogle();
+    else if (!reportPanel.hidden) startGoogle(reportGsi, reportGoogle);
+    if (typeof syncAccount === "function") syncAccount();
   }
   function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join(""); }
-  // Google's button, drawn in the panel once its script loads; until then, or if it can't, the panel's own
-  // button goes to Supabase's sign-in page instead.
-  function startGoogle() {
-    if (gsiState || reportPanel.hidden || !window.crypto || !crypto.subtle) return;
+  // Google's own button, drawn wherever sign-in is offered (the report panel, the account panel, and the
+  // invitation) once Google's script loads; where it can't load, the place's own button (alt) goes to Supabase's
+  // sign-in page instead. The script is loaded only when a place asks for it.
+  var gsiWaiting = [];
+  function gsiDraw(box, alt) {
+    if (box.getAttribute("data-drawn")) return;
+    try {
+      google.accounts.id.renderButton(box, { type: "standard", theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 248 });
+      box.setAttribute("data-drawn", "1");
+      alt.hidden = true;
+    } catch (e) { console.warn("google sign-in", e); alt.hidden = false; }
+  }
+  function startGoogle(box, alt) {
+    if (!window.crypto || !crypto.subtle || gsiState === -1) { alt.hidden = false; return; }
+    if (gsiState === 2) { gsiDraw(box, alt); return; }
+    if (!gsiWaiting.some(function (w) { return w[0] === box; })) gsiWaiting.push([box, alt]);
+    if (gsiState === 1) return;
     gsiState = 1;
+    var failed = function () { gsiState = -1; gsiWaiting.forEach(function (w) { w[1].hidden = false; }); gsiWaiting = []; };
     var sc = document.createElement("script");
     sc.src = "https://accounts.google.com/gsi/client";
     sc.async = true;
-    sc.onerror = function () { gsiState = -1; };
+    sc.onerror = failed;
     sc.onload = function () {
       gsiNonce = randomHex(32);
       crypto.subtle.digest("SHA-256", new TextEncoder().encode(gsiNonce)).then(function (buf) {
         var hashed = Array.from(new Uint8Array(buf), function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join("");
         try {
           google.accounts.id.initialize({ client_id: GOOGLE_CLIENT, callback: googleSignedIn, nonce: hashed, ux_mode: "popup", context: "signin", itp_support: true, use_fedcm_for_prompt: true });
-          google.accounts.id.renderButton(reportGsi, { type: "standard", theme: "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 248 });
           gsiState = 2;
-          reportGoogle.hidden = true;
-        } catch (e) { console.warn("google sign-in", e); gsiState = -1; }
+          gsiWaiting.forEach(function (w) { gsiDraw(w[0], w[1]); });
+          gsiWaiting = [];
+        } catch (e) { console.warn("google sign-in", e); failed(); }
       });
     };
     document.head.appendChild(sc);
   }
+  function signInNotes(text) { [reportLockNote, $("account-note")].forEach(function (n) { if (n) n.textContent = text; }); }
   function googleSignedIn(resp) {
     if (!resp || !resp.credential) return;
-    reportLockNote.textContent = "Signing in…";
+    signInNotes("Signing in…");
     reportPost({ action: "google", id_token: resp.credential, nonce: gsiNonce }).then(function (r) {
       if (r.status !== 200) throw new Error("google " + r.status);
-      reportLockNote.textContent = "";
+      signInNotes("");
       keepReportSession(r.body.access_token, r.body.refresh_token);
-      if (!reportFrom.value) reportNow();
-      loadMe();
-      reportPick.focus();
+      hideInvite(false);
+      if (!reportPanel.hidden) {
+        if (!reportFrom.value) reportNow();
+        loadMe();
+        reportPick.focus();
+      }
     }).catch(function (e) {
       console.warn("google sign-in", e);
-      reportLockNote.textContent = "Signing in did not work. Try the other way:";
-      reportGoogle.hidden = false;
+      signInNotes("Signing in did not work. Try the other way:");
+      [reportGoogle, $("account-google"), $("invite-google")].forEach(function (b) { b.hidden = false; });
     });
   }
-  reportGoogle.addEventListener("click", function () {
+  // The other way in: Supabase's own Google sign-in page, which comes back here (see takeSignIn).
+  function signInByPage() {
     try { sessionStorage.setItem(REPORT_BACK, location.search + location.hash); } catch (e) {}
     location.href = REPORT_AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname);
-  });
+  }
+  [reportGoogle, $("account-google"), $("invite-google")].forEach(function (b) { b.addEventListener("click", signInByPage); });
   function setReportPicking(on) {
     reportPicking = on;
     reportPick.setAttribute("aria-pressed", on ? "true" : "false");
@@ -5357,10 +5380,95 @@
   });
   reportPick.addEventListener("click", function () { setReportPicking(!reportPicking); });
   $("report-now").addEventListener("click", reportNow);
-  $("report-out").addEventListener("click", function () {
+  function signOut() {
     keepReportSession(null);
     try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
+  }
+  $("report-out").addEventListener("click", signOut);
+
+  // The account, at the top right: a figure while signed out, the first letter of the name once signed in. Its
+  // panel offers Google's sign-in, or shows the name and email address from the sign-in itself (the token's own
+  // claims; nothing more is fetched), with Report an error and Sign out.
+  var accountBtn = $("account-btn"), accountPanel = $("account");
+  function accountInfo() {
+    if (!reportSession) return null;
+    var c = claimsOf(reportSession.a), m = c.user_metadata || {}, email = typeof c.email === "string" ? c.email : "";
+    return { name: String(m.full_name || m.name || email.split("@")[0] || "Signed in").slice(0, 80), email: email.slice(0, 200) };
+  }
+  function syncAccount() {
+    if (!accountBtn) return;
+    var me = accountInfo(), ini = $("account-initial");
+    $("account-out").hidden = !!me;
+    $("account-in").hidden = !me;
+    accountBtn.classList.toggle("is-in", !!me);
+    ini.hidden = !me;
+    if (me) {
+      ini.textContent = (me.name.trim().charAt(0) || "?").toUpperCase();
+      $("account-name").textContent = me.name;
+      $("account-email").textContent = me.email;
+      accountBtn.setAttribute("aria-label", "Account: " + me.name);
+      accountBtn.setAttribute("data-tip", me.name);
+    } else {
+      accountBtn.setAttribute("aria-label", "Sign in");
+      accountBtn.setAttribute("data-tip", "Sign in");
+      if (!accountPanel.hidden) startGoogle($("account-gsi"), $("account-google"));
+    }
+  }
+  function setAccountOpen(open, focusBtn) {
+    accountPanel.hidden = !open;
+    accountBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (!open) { if (focusBtn) accountBtn.focus(); return; }
+    if (!layersPanel.hidden) setLayersOpen(false, false);
+    if (!savePanel.hidden) setSaveOpen(false, false);
+    if (!reportPanel.hidden) setReportOpen(false, false);
+    if (about.classList.contains("is-open")) setAbout(false);
+    hideInvite(false);
+    $("account-note").textContent = "";
+    syncAccount();
+  }
+  accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
+  [layersBtn, saveBtn, $("search-btn"), reportBtn].forEach(function (b) { b.addEventListener("click", function () { if (!accountPanel.hidden) setAccountOpen(false, false); }); });
+  $("account-report").addEventListener("click", function () { setAccountOpen(false, false); setReportOpen(true, false); });
+  $("account-out-btn").addEventListener("click", function () { signOut(); setAccountOpen(false, true); });
+  document.addEventListener("pointerdown", function (e) {
+    if (!accountPanel.hidden && !accountPanel.contains(e.target) && !accountBtn.contains(e.target)) setAccountOpen(false, false);
   });
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!accountPanel.hidden) { e.stopPropagation(); setAccountOpen(false, true); }
+    else if (!$("invite").hidden) { e.stopPropagation(); hideInvite(true); }
+  }, true);
+
+  // After a minute with the atlas open, in front, and in use, a small card under the account button offers to
+  // sign in: Google's own button, what it is for and what is kept, a link to the privacy notice, and Not now.
+  // It never blocks the map. It is not shown to anyone signed in, during a video export, or to the developer
+  // tools or the frame-rate readout; Not now (or Esc) keeps it away for INVITE_AGAIN_DAYS, and it shows at most
+  // once a visit.
+  var INVITE_STORE = "chronia-signin-later", INVITE_AFTER_S = 60, INVITE_AGAIN_DAYS = 30, inviteSeconds = 0, inviteDone = false;
+  function inviteWanted() {
+    if (reportSession || dev || perf) return false;
+    try { if (Date.now() - (+localStorage.getItem(INVITE_STORE) || 0) < INVITE_AGAIN_DAYS * DAY_MS) return false; } catch (e) {}
+    return true;
+  }
+  function panelOpen() { return !layersPanel.hidden || !savePanel.hidden || !reportPanel.hidden || !accountPanel.hidden || !$("search").hidden || about.classList.contains("is-open"); }
+  function showInvite() {
+    inviteDone = true;
+    $("invite").hidden = false;
+    startGoogle($("invite-gsi"), $("invite-google"));
+  }
+  function hideInvite(later) {
+    if ($("invite").hidden) return;
+    $("invite").hidden = true;
+    if (later) try { localStorage.setItem(INVITE_STORE, String(Date.now())); } catch (e) {}
+  }
+  $("invite-later").addEventListener("click", function () { hideInvite(true); });
+  setInterval(function () {
+    if (inviteDone || !ready || document.visibilityState !== "visible" || !document.hasFocus()) return;
+    if (++inviteSeconds < INVITE_AFTER_S) return;
+    if (!inviteWanted()) { inviteDone = true; return; }
+    if (exporting || panelOpen() || drag || pointers.size) return;
+    showInvite();
+  }, 1000);
   reportBtn.addEventListener("click", function () { setReportOpen(reportPanel.hidden, false); });
   [layersBtn, saveBtn, $("search-btn")].forEach(function (b) { b.addEventListener("click", function () { if (!reportPanel.hidden) setReportOpen(false, false); }); });
   window.addEventListener("keydown", function (e) {
@@ -6979,8 +7087,7 @@
       var v = h.v.split(",").map(Number);
       if (v.length === 3 && v.every(isFinite)) { view.lon = v[0]; view.lat = v[1]; view.zoom = v[2]; }
     }
-    $("flat-btn").setAttribute("aria-pressed", flat ? "true" : "false");
-    if (flat) { $("flat-btn").setAttribute("aria-label", "Globe"); $("flat-btn").setAttribute("data-tip", "Globe (M)"); }
+    syncProjection();
     layout();
     Promise.all([
       fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; })

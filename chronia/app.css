@@ -595,6 +595,14 @@ body.ch-page {
   box-shadow: none;
 }
 
+/* Globe or flat map: one of two, so round, with a dot for the one chosen. */
+.ch-layer input[type="radio"] {
+  border-radius: 50%;
+}
+.ch-layer input[type="radio"]:checked {
+  background: radial-gradient(circle, var(--ink) 0 3.2px, var(--ch-paper) 3.8px);
+}
+
 .ch-layer input:focus-visible {
   outline: 1.5px solid var(--ink);
   outline-offset: 2px;
@@ -750,7 +758,7 @@ select.ch-save-input {
 :root.ch-exporting .ch-time,
 :root.ch-exporting .ch-year-box,
 :root.ch-exporting #search-btn,
-:root.ch-exporting #flat-btn,
+:root.ch-exporting #account-btn,
 :root.ch-exporting #layers-btn,
 :root.ch-exporting .ch-head {
   pointer-events: none;
@@ -2704,5 +2712,114 @@ select.ch-save-input {
 @media (max-width: 640px) {
   .ch-events {
     display: none;
+  }
+}
+
+
+/* The account at the top right (app.js, syncAccount) and the invitation to sign in (showInvite). */
+.ch-account-btn {
+  position: relative;
+}
+.ch-account-btn.is-in .ch-account-ico {
+  visibility: hidden;
+}
+.ch-account-initial {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--ch-paper, #f3ead3);
+  color: var(--ink);
+  font-family: var(--ch-sc);
+  font-size: 15px;
+  line-height: 1;
+}
+@media (max-width: 640px) {
+  .ch-account-initial {
+    top: calc(50% - 8px);
+  }
+}
+.ch-account,
+.ch-invite {
+  width: 284px;
+  max-width: calc(100vw - 2 * var(--ch-gap));
+  padding: 12px 16px 12px;
+  font-size: 14.5px;
+  line-height: 1.38;
+  color: var(--ink);
+}
+.ch-account p,
+.ch-invite p {
+  margin: 0 0 8px;
+}
+.ch-account-text,
+.ch-invite-text {
+  color: var(--ink);
+}
+.ch-account-gsi {
+  min-height: 44px;
+  margin: 10px 0 6px;
+}
+.ch-account-gsi:empty {
+  display: none;
+}
+.ch-account-alt,
+.ch-invite-later {
+  padding: 4px 12px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ch-account-alt:hover,
+.ch-invite-later:hover {
+  background: rgba(58, 42, 27, 0.07);
+}
+.ch-account-alt[hidden] {
+  display: none;
+}
+.ch-account-note:empty {
+  display: none;
+}
+.ch-account-note,
+.ch-account-small,
+.ch-account-email {
+  font-size: 13px;
+  color: var(--ch-muted);
+}
+.ch-account a,
+.ch-invite a {
+  color: var(--ink);
+  text-underline-offset: 2px;
+}
+.ch-account-name {
+  font-size: 16px;
+  margin-bottom: 0 !important;
+}
+.ch-account-acts,
+.ch-invite-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.ch-invite-title {
+  font-family: var(--ch-sc);
+  font-size: 16px;
+}
+.ch-invite[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ch-invite:not([hidden]) {
+    animation: ch-fade 400ms ease both;
   }
 }
