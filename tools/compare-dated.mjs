@@ -21,7 +21,9 @@ const load = (dir) => {
 const chunkOf = (D, y) => {
   const c = D.eras.dated.chunks.filter(([from]) => from <= y).pop();
   if (!D.files.has(c[1])) {
-    const f = JSON.parse(readFileSync(resolve(D === A ? oldDir : newDir, "data", c[1]), "utf8"));
+    const p = resolve(D === A ? oldDir : newDir, "data", c[1]), f = JSON.parse(readFileSync(p, "utf8"));
+    // The detailed lines are in a file beside it ("1800-hi.json"), since November 2026.
+    if (!f.hi) f.hi = JSON.parse(readFileSync(p.replace(/\.json$/, "-hi.json"), "utf8")).hi;
     const days = new Map((f.days || []).map(([i, a, b]) => [i, [a, b]]));
     const feats = f.hi.objects.p.geometries.map((g) => client.feature(f.hi, g));
     f.boxes = feats.map((g) => (g.geometry ? d3.geoBounds(g) : null));

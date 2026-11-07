@@ -2,6 +2,8 @@
 // node tools/whatat-dated.mjs <node_modules> <chronia dir> <YYYY-MM-DD> <lon,lat[,label]> [more places]
 // Prints each place's spans on that day: name, ruler, status, and the span's years and days.
 import { readFileSync } from "node:fs";
+// The detailed lines of a data file are in a file beside it ("modern-hi.json"), since November 2026.
+const withHi = (p, d) => { if (!d.hi) { try { d.hi = JSON.parse(readFileSync(p.replace(/\.json$/, "-hi.json"), "utf8")).hi; } catch (e) {} } return d; };
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
@@ -13,7 +15,7 @@ const names = eras.polities.map((p) => p[0]);
 const [y, m, dd] = date.split("-").map(Number);
 const day = Math.round((Date.UTC(y, m - 1, dd) - Date.UTC(1886, 0, 1)) / 86400000);
 const chunk = eras.dated.chunks.filter(([from]) => from <= y).pop();
-const f = JSON.parse(readFileSync(resolve(dir, "data", chunk[1]), "utf8"));
+const f = withHi(resolve(dir, "data", chunk[1]), JSON.parse(readFileSync(resolve(dir, "data", chunk[1]), "utf8")));
 const days = new Map((f.days || []).map(([i, a, b]) => [i, [a, b]]));
 const geoms = f.hi.objects.p.geometries;
 const STATUS = ["state", "colony", "protectorate", "mandate", "occupied", "other", "disputed"];

@@ -770,15 +770,31 @@
   // The spans from 1886 (modern.json, the largest file) load when a date from 1886 is first shown, or once the page is idle.
   function loadModern() {
     if (!modern.load) modern.load = fetchJSON("data/modern.json").then(function (md) {
-      modern.rows = md.rows; modern.hi = md.hi; modern.lo = md.lo;
+      modern.rows = md.rows; modern.lo = md.lo; modern.hi = md.hi || md.lo;
+      if (!md.hi) loadHi("data/modern-hi.json", function (hi) {
+        modern.hi = hi;
+        modernSnaps.clear();
+        if (current && current.modern) { useSnap(modernSnap(Math.min(dayOfTime(now), modern.toDay))); scheduleRender(); }
+      });
       return modern;
     }, function (e) { modern.load = null; throw e; });
     return modern.load;
   }
-  // Loads that can wait run after the opening and when the browser is idle, so they don't compete with the first map.
-  function whenIdle(f) {
-    afterIntro(function () { (window.requestIdleCallback || function (cb) { return setTimeout(cb, 1500); })(f, { timeout: 5000 }); });
+  // The detailed lines of a data file are in a file beside it (written by the build since November 2026), fetched once the
+  // simplified lines have drawn the first map; until they come, the simplified lines stand in for them. The swap is counted
+  // as a load, so a saved video waits for it.
+  function loadHi(file, use) {
+    jsonLoading++;
+    fetchJSON(file).then(function (d) { use(d.hi); }).catch(function (e) { console.warn("detail", file, e); }).finally(function () { jsonLoading--; });
   }
+  // Loads that can wait run after the opening and when the browser is idle, so they don't compete with the first map.
+  // No deadline: a load forced in while the map is being dragged parses for a tenth of a second or more and drops frames.
+  function whenIdle(f) {
+    afterIntro(function () { (window.requestIdleCallback || function (cb) { return setTimeout(cb, 4000); })(f); });
+  }
+  // The files beside the date's are fetched ahead only when the date is near them: within a decade of its file's edge, or
+  // while the timeline plays. modern.json (from 1886, the largest file) is fetched ahead from 1860.
+  var NEAR_EDGE = 10, MODERN_AHEAD = 1860;
   function activeRows(day) {
     var out = [], rows = modern.rows;
     for (var i = 0; i < rows.length; i++) { var r = rows[i]; if (r[2] <= day && (r[3] < 0 || day <= r[3])) out.push(i); }
@@ -817,7 +833,19 @@
     if (!c) return Promise.reject(new Error("no chunk " + k));
     if (c.data) return Promise.resolve(c);
     if (!c.loading) {
-      c.loading = fetchJSON(c.file).then(function (d) { c.data = d; prepDays(d); return c; }).catch(function (e) { c.loading = null; throw e; });
+      c.loading = fetchJSON(c.file).then(function (d) {
+        c.data = d; prepDays(d);
+        if (!d.hi) {
+          d.hi = d.lo;
+          loadHi(c.file.replace(/\.json$/, "-hi.json"), function (hi) {
+            d.hi = hi;
+            var pre = "e" + k;
+            datedSnaps.forEach(function (snap, key) { if (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0) datedSnaps.delete(key); });
+            if (current && current.dated && isDated(now) && chunkIndexFor(now) === k) { useSnap(datedSnap(k, now)); scheduleRender(); }
+          });
+        }
+        return c;
+      }).catch(function (e) { c.loading = null; throw e; });
     }
     return c.loading;
   }
@@ -1363,7 +1391,9 @@
     ctx.restore();
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     if (perf) pmark("bands");
-    if (!skip.coastband) drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
+    // The coastal band is left out while the map moves and comes back when it stops: it is painted in two layers the size of
+    // the screen and laid over the map, which on a 2x screen made frames miss the screen's refresh while dragging.
+    if (!skip.coastband && !moving) drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
     if (outside) ctx.restore();
 
     if (perf) pmark("coast band");
@@ -4117,8 +4147,10 @@
         writeHash();
         scheduleRender();
         whenIdle(function () {
-          if (ck > 0) loadChunk(ck - 1).catch(function () {});
-          if (ck < dated.chunks.length - 1) loadChunk(ck + 1).catch(function () {});
+          var y = yearOf(t), next = dated.chunks[ck + 1], to = next ? next.from - 1 : dated.to;
+          if (ck > 0 && (playTimer || y - dated.chunks[ck].from < NEAR_EDGE)) loadChunk(ck - 1).catch(function () {});
+          if (next && (playTimer || to - y < NEAR_EDGE)) loadChunk(ck + 1).catch(function () {});
+          if (!next && to - y < NEAR_EDGE) loadModern().catch(function () {});
         });
       }).catch(function (e) {
         console.warn("dated", e);
@@ -7134,7 +7166,7 @@
             scheduleRender();
           }).catch(function (e) { console.warn("sea", e); });
         });
-        whenIdle(function () { loadModern().catch(function () {}); });
+        whenIdle(function () { if (isModern(now) || yearOf(now) >= MODERN_AHEAD) loadModern().catch(function () {}); });
         loadEvents();
         if (devInHash()) openDev();
         if (perfInHash() || addrHas("bench")) perfStart();

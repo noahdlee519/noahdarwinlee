@@ -2,6 +2,8 @@
 // node tools/whatat.mjs <node_modules> <chronia dir> <lon> <lat> <YYYY-MM-DD> [more dates]
 // Prints, for each date, the spans whose shape holds the point: name, status, owner, claimants, capital.
 import { readFileSync } from "node:fs";
+// The detailed lines of a data file are in a file beside it ("modern-hi.json"), since November 2026.
+const withHi = (p, d) => { if (!d.hi) { try { d.hi = JSON.parse(readFileSync(p.replace(/\.json$/, "-hi.json"), "utf8")).hi; } catch (e) {} } return d; };
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
@@ -9,7 +11,7 @@ const [mods, dir, lon, lat, ...dates] = process.argv.slice(2);
 const require = createRequire(resolve(mods, "x.js"));
 const client = require("topojson-client"), d3 = require("d3-geo");
 const eras = JSON.parse(readFileSync(resolve(dir, "data/eras.json"), "utf8"));
-const modern = JSON.parse(readFileSync(resolve(dir, "data/modern.json"), "utf8"));
+const modern = withHi(resolve(dir, "data/modern.json"), JSON.parse(readFileSync(resolve(dir, "data/modern.json"), "utf8")));
 const names = eras.polities.map((p) => p[0]);
 const day0 = Date.UTC(1886, 0, 1), toDay = (Date.UTC(...modern.to.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) - day0) / 86400000;
 const geoms = modern.hi.objects.p.geometries;

@@ -2,6 +2,8 @@
 // node tools/compare-modern.mjs <node_modules> <old chronia data dir> <new chronia data dir> <date> [more dates]
 // Prints, for each date, the share of 5,000 sample points (a fixed grid) whose state, status, owner, or claimants differ.
 import { readFileSync } from "node:fs";
+// The detailed lines of a data file are in a file beside it ("modern-hi.json"), since November 2026.
+const withHi = (p, d) => { if (!d.hi) { try { d.hi = JSON.parse(readFileSync(p.replace(/\.json$/, "-hi.json"), "utf8")).hi; } catch (e) {} } return d; };
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
@@ -9,7 +11,7 @@ const [mods, oldDir, newDir, ...dates] = process.argv.slice(2);
 const require = createRequire(resolve(mods, "x.js"));
 const client = require("topojson-client"), d3 = require("d3-geo");
 const load = (dir) => {
-  const eras = JSON.parse(readFileSync(resolve(dir, "eras.json"), "utf8")), modern = JSON.parse(readFileSync(resolve(dir, "modern.json"), "utf8"));
+  const eras = JSON.parse(readFileSync(resolve(dir, "eras.json"), "utf8")), modern = withHi(resolve(dir, "modern.json"), JSON.parse(readFileSync(resolve(dir, "modern.json"), "utf8")));
   const day0 = Date.UTC(1886, 0, 1), toDay = (Date.UTC(...modern.to.split("-").map((x, i) => (i === 1 ? x - 1 : +x))) - day0) / 86400000;
   const names = eras.polities.map((p) => p[0]);
   const feats = modern.hi.objects.p.geometries.map((g) => client.feature(modern.hi, g));

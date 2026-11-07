@@ -23,13 +23,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const eras = () => once("eras", () => readJSON("chronia/data/eras.json"));
 const land = () => once("land", () => readJSON("chronia/data/land.json"));
 const sea = () => once("sea", () => readJSON("uchronia/data/sea.json"));
-const modern = () => once("modern", () => readJSON("chronia/data/modern.json"));
+// The detailed lines of a data file are in a file beside it ("modern-hi.json"), since November 2026.
+const withHi = (p, d) => { if (!d.hi) d.hi = readJSON(p.replace(/\.json$/, "-hi.json")).hi; return d; };
+const modern = () => once("modern", () => withHi("chronia/data/modern.json", readJSON("chronia/data/modern.json")));
 const widths = () => once("widths", () => JSON.parse(readFileSync(join(HERE, "widths.json"), "utf8")));
 const chunks = new Map();
 function chunk(file) {
   let c = chunks.get(file);
   if (!c) {
-    c = readJSON("chronia/data/" + file);
+    c = withHi("chronia/data/" + file, readJSON("chronia/data/" + file));
     chunks.set(file, c);
     while (chunks.size > 3) chunks.delete(chunks.keys().next().value);
   }

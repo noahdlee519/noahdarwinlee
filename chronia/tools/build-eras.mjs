@@ -28,6 +28,17 @@ const turfBuf = (() => { const m = require("@turf/buffer"); return m.default || 
 
 const FIRST = -3400;
 const DATED_FROM = -3400, DATED_TO = 1885, CHUNK = 100;
+// The dated files are a century each to 1500, where the map changes little, and shorter after it, where the spans crowd (half a
+// century to 1800, thirty years after), so a date's first map downloads less (CHUNK_FROM). Each file's detailed lines are in a
+// file beside it ("1800-hi.json"), which the page fetches after its first map, drawn from the simplified lines.
+const CHUNK_STARTS = (() => {
+  const out = [];
+  for (let c = DATED_FROM; c < 1500; c += CHUNK) out.push(c);
+  for (let c = 1500; c < 1800; c += 50) out.push(c);
+  for (let c = 1800; c <= DATED_TO; c += 30) out.push(c);
+  return out;
+})();
+const hiFile = (file) => file.replace(/\.json$/, "-hi.json");
 const CS_FROM = "1886-01-01", CS_DATA_TO = "2019-12-31", CS_TO = "2026-11-30";
 const DAY0 = Date.UTC(1886, 0, 1);
 const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - DAY0) / 86400000); };
@@ -3361,8 +3372,8 @@ const datedLabel = new Map();
 // The days of the changes from 1801 (see tools/dated-days.mjs), and every change day from 1800.
 const daysPath = resolve(here, "dated-days.json");
 let datedDays = [];
-for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
-  const cEnd = Math.min(c + CHUNK - 1, DATED_TO);
+for (let n = 0; n < CHUNK_STARTS.length; n++) {
+  const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
   const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
   const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
   const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
@@ -3375,7 +3386,7 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
     dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
-    datedDays = res.days;
+    datedDays = [...new Set(datedDays.concat(res.days))].sort((a, b) => a - b);
     console.log("days: " + res.report.length + " changes dated, " + dayRows.length + " spans with days, " + res.days.length + " change days from 1800" + (res.unused.length ? "; entries naming no span: " + res.unused.map((e) => e.date + " " + e.what).join("; ") : ""));
   }
   const rows = spans.map((s, i) => {
@@ -3421,8 +3432,9 @@ for (let c = DATED_FROM; c <= DATED_TO; c += CHUNK) {
   const body = { from: c, to: cEnd, rows };
   if (groups.length) body.groups = groups;
   if (dayRows) body.days = dayRows;
-  body.hi = hi; body.lo = lo;
+  body.lo = lo;
   writeFileSync(resolve(out, file), JSON.stringify(body));
+  writeFileSync(resolve(out, hiFile(file)), JSON.stringify({ hi }));
   datedChunks.push({ from: c, to: cEnd, file, rows, lo, spans });
 }
 const datedChanges = [...new Set(dated.map((s) => s.first).concat(dated.filter((s) => s.last < DATED_TO).map((s) => s.last + 1)))].filter((y) => y >= DATED_FROM && y <= DATED_TO).sort((a, b) => a - b);
@@ -4543,7 +4555,8 @@ const entries = catalogue.map((e, id) => {
   if (years) row.push(years);
   return row;
 });
-writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), hi: csHi, lo: csLo }));
+writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), lo: csLo }));
+writeFileSync(resolve(out, "modern-hi.json"), JSON.stringify({ hi: csHi }));
 writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
