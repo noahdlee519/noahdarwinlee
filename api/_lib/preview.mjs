@@ -12,7 +12,7 @@ const FONTS = join(HERE, "..", "fonts");
 export const W = 1200, H = 630;
 const PALETTE = 10, DISPUTED = 6, R_KM = 6371, TAU = 2 * Math.PI, HALF_PI = Math.PI / 2, D2R = Math.PI / 180;
 const LINE_H = 1.18, CAP_H = 0.92, SPACE = 0.22, PEOPLE_SPACE = 0.05, BLEED_KM = 20;
-const EDITS_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-edits";
+const EDITS_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-edits";
 
 const memo = new Map();
 const once = (k, f) => { if (!memo.has(k)) memo.set(k, f()); return memo.get(k); };

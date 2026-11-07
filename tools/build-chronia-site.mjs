@@ -23,9 +23,9 @@ const copy = (from, to = from) => {
   cpSync(src, join(out, to), { recursive: true });
 };
 
-for (const f of ["index.html", "app.js", "dev.js", "va.js", "app.css", "page.css", "go.js", "data", "team", "reports", "privacy", "terms", "art"]) copy("chronia/" + f, f);
+for (const f of ["index.html", "app.js", "dev.js", "va.js", "app.css", "page.css", "go.js", "visit.js", "data", "team", "reports", "privacy", "terms", "art"]) copy("chronia/" + f, f);
 for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "fonts"]) copy(f);
-for (const f of ["styles.css", "visit.js", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
+for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 
 // Every data file the page fetches carries a hash of the whole data folder, so a cached file from an older build is never
 // read with a newer one (the polity numbers change between builds).

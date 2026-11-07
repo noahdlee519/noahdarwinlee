@@ -3,7 +3,7 @@
 // Saving and deleting need a reviewer's session: against the deployed function Noah tries those himself in
 // the developer tools; against a local copy (deno run, with a stand-in for Supabase's auth and database), set
 // CHRONIA_EDITS_TOKEN to an access token the stand-in takes for a reviewer and they are checked too.
-const URL_ = process.argv[2] || "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-edits";
+const URL_ = process.argv[2] || "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-edits";
 const ORIGIN = "https://chroniaatlas.com";
 let failed = 0;
 const ok = (good, what) => { console.log((good ? "ok   " : "FAIL ") + what); if (!good) failed++; };

@@ -6,7 +6,7 @@
 // the atlas at its place and first date; a reviewer can mark it fixed or declined, with a reply, or open it
 // again. Until 6 November 2026 Noah's own password opened the page to answer.
 (function () {
-  var URL_ = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", STORE = "chronia-review", AUTH = "chronia-auth";
+  var URL_ = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-report", STORE = "chronia-review", AUTH = "chronia-auth";
   var $ = function (id) { return document.getElementById(id); };
   var lock = $("lock"), pass = $("pass"), lockNote = $("lock-note"), board = $("board"), list = $("list"), count = $("count");
   var pw = "", status = "open", busy = false, role = "", session = null, viaGoogle = false;

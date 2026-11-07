@@ -4553,7 +4553,7 @@
   });
 
   var card = $("card"), wikiCache = new Map(), wikiAsk = 0;
-  var BLURB_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
+  var BLURB_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-blurb", BLURB_WAIT = 28000, BLURB_PEEK = 700;
   var blurbCache = new Map(), blurbTimer = 0, selCity = null, cardClick = false;
   // Set when the note's function says no more new notes may be written today: "limit" when this visitor has had
   // their 100 (the function's WHO_CAP, sent back as `cap`), "cap" when the whole site has had its 10,000. Notes
@@ -5204,7 +5204,7 @@
   // Signing in uses Google's own button on the page (an ID token the function trades with Supabase for a
   // session), or, where Google's script can't load, Supabase's sign-in page, which comes back here with the
   // session in the address; the map's date and view are kept in the tab while it goes.
-  var REPORT_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report", REPORT_AUTH = "https://kigvciyyjlgjcgnwgrwf.supabase.co/auth/v1";
+  var REPORT_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-report", REPORT_AUTH = "https://jvcmeuqlyygpwelmvxuv.supabase.co/auth/v1";
   var REPORT_STORE = "chronia-auth", REPORT_BACK = "chronia-auth-back", GOOGLE_CLIENT = "925004414037-rc7f9m47jivrobj48p33vmkdfpvuva7t.apps.googleusercontent.com";
   var reportBtn = $("report-btn"), reportPanel = $("report"), reportLock = $("report-lock"), reportForm = $("report-form");
   var reportLockNote = $("report-lock-note"), reportGoogle = $("report-google"), reportGsi = $("report-gsi");
@@ -6951,7 +6951,7 @@
   // colour, name, or name placement, or a city's size or name, or hides a city, from one date to another. They are
   // a layer applied while drawing; the data files are never changed. The page fetches the list at the start without
   // waiting for it, so the first map is drawn without edits and drawn again when they arrive.
-  var EDITS_URL = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-edits";
+  var EDITS_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-edits";
   var edits = { list: [], byKey: new Map(), tag: 0, failed: false, loaded: false };
   function editUTC(y, m, d) { var x = new Date(0); x.setUTCFullYear(y, m - 1, d); x.setUTCHours(0, 0, 0, 0); return x.getTime(); }
   // A stored date ("1815", "1815-07", "1815-07-03", "-500") as a time on the timeline's scale: the start of
