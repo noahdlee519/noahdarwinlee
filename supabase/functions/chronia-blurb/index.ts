@@ -242,11 +242,12 @@ async function rpc(name: string, args: Record<string, unknown>) {
   return res.status === 204 ? null : await res.json();
 }
 
-async function cached(key: string) {
-  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/rest/v1/chronia_blurbs?select=text,model,period&key=eq." + encodeURIComponent(key), { headers: dbKey() });
-  if (!res.ok) throw new Error("cached " + res.status);
-  const rows = await res.json();
-  return Array.isArray(rows) && rows.length && typeof rows[0].text === "string" ? rows[0] : null;
+// The kept note under the first of these keys that has one. chronia_blurb_get also marks it seen (at most
+// once a day), since a note nobody has been shown for 30 days is deleted (see chronia_blurb_save).
+async function cached(keys: string[]) {
+  const rows = await rpc("chronia_blurb_get", { p_keys: keys });
+  const r = Array.isArray(rows) && rows.length ? rows[0] : null;
+  return r && typeof r.note === "string" ? { text: r.note, model: r.note_model, period: r.note_period } : null;
 }
 
 function v6prefix(ip: string) {
@@ -375,7 +376,7 @@ export async function handle(req: Request): Promise<Response> {
 
   const { key, legacy } = await cacheKey(ask);
   try {
-    const hit = (await cached(key)) || (legacy !== key ? await cached(legacy) : null);
+    const hit = await cached(legacy !== key ? [key, legacy] : [key]);
     if (hit) return json(200, { text: hit.text, model: hit.model, period: hit.period, cached: true }, o);
   } catch (e) {
     console.error(e);
