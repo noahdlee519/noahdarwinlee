@@ -39,7 +39,7 @@ A static page, no build step, like the rest of the site. The data files are made
 
 | Path | What it holds |
 | --- | --- |
-| `index.html` | The page. Its CSP allows no inline script and no inline style. `connect-src` adds `https://en.wikipedia.org` and `https://www.wikidata.org`, for the card, and `https://kigvciyyjlgjcgnwgrwf.supabase.co`, for the visit counter and the card's notes. `img-src` adds `https://upload.wikimedia.org` and `https://thumb.wikimedia.org`, for the card. |
+| `index.html` | The page. Its CSP allows no inline script and no inline style. `connect-src` adds `https://en.wikipedia.org` and `https://www.wikidata.org`, for the card, and `https://jvcmeuqlyygpwelmvxuv.supabase.co`, for the visit counter and the card's notes. `img-src` adds `https://upload.wikimedia.org` and `https://thumb.wikimedia.org`, for the card. |
 | `app.js` | The whole app in one function scope: projection and tracing, the map loader, drawing, labels, cities, first-level divisions, the dated geography, the year control, the key, the card, and input. |
 | `app.css` | All styling. CHRONIA has one style, Antique, set by `class="ch"` and `data-theme="light"` on `<html>`, so it ignores the site's theme toggle. |
 | `tools/build-eras.mjs` | The builder of the borders, the catalogue of states, and the land. |
@@ -996,21 +996,21 @@ These requests go from the visitor's browser to Wikipedia and to the site's Supa
 
 ### Deploying the notes
 
-The notes are not live until the function is deployed to the Supabase project `kigvciyyjlgjcgnwgrwf`, the one Historian uses. Until then the card falls back to the Wikipedia summary.
+The notes are not live until the function is deployed to the Supabase project `jvcmeuqlyygpwelmvxuv` ("chronia", in the Chronia organisation). Until then the card falls back to the Wikipedia summary.
 
 1. **The migration:** apply `supabase/migrations/20261026_chronia_blurbs.sql` (named `20261026_chronia_blurbs`), then `supabase/migrations/20261028_chronia_blurbs_divisions.sql`, which lets the table hold notes on divisions, with `supabase db push`, the SQL editor, or the Supabase MCP's `apply_migration`. It only creates new objects and touches nothing of Historian's, and it is safe to run twice.
 2. **The function:** deploy `supabase/functions/chronia-blurb` with JWT verification off, since the page sends no Authorization header and no Supabase key, and the function checks the origin, the fields, and its own caps:
 
    ```
-   supabase functions deploy chronia-blurb --no-verify-jwt --project-ref kigvciyyjlgjcgnwgrwf
+   supabase functions deploy chronia-blurb --no-verify-jwt --project-ref jvcmeuqlyygpwelmvxuv
    ```
 
-   or the MCP's `deploy_edge_function` with `name: "chronia-blurb"`, `verify_jwt: false`, and the file as `index.ts`. The page calls `https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb` (`BLURB_URL` in `app.js`); if the function ends up under another slug, change `BLURB_URL` to match. The CSP needs no change, since the host is already in `connect-src`.
+   or the MCP's `deploy_edge_function` with `name: "chronia-blurb"`, `verify_jwt: false`, and the file as `index.ts`. The page calls `https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-blurb` (`BLURB_URL` in `app.js`); if the function ends up under another slug, change `BLURB_URL` to match. The CSP needs no change, since the host is already in `connect-src`.
 3. **The secrets:** `ANTHROPIC_API_KEY` is already set for Historian, and function secrets are project-wide, so Claude can write the notes at once. For DeepSeek, create a key at platform.deepseek.com and add it as `DEEPSEEK_API_KEY` under Edge Functions, Secrets (or `supabase secrets set DEEPSEEK_API_KEY=…`); until then every note is written by Claude. `CHRONIA_SALT` is optional but recommended, any long random string (`supabase secrets set CHRONIA_SALT=$(openssl rand -hex 32)`); without it the function salts the visitor counter with the service key, which also works. `SUPABASE_URL` and the service key are given to every function by Supabase.
 4. **A check:** a peek costs nothing and writes nothing:
 
    ```
-   curl -s -X POST https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-blurb \
+   curl -s -X POST https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-blurb \
      -H 'origin: https://chroniaatlas.com' -H 'content-type: application/json' \
      -d '{"kind":"state","name":"Prussia","wiki":"Kingdom of Prussia","status":"state","capital":"Berlin","year":1815,"peek":true}'
    ```
@@ -1050,20 +1050,20 @@ Anyone can report an error on the map. The flag in the map controls opens the pa
 
 The reports go to the edge function `chronia-report` (`REPORT_URL` in `app.js`), which checks the session and writes them to `chronia_reports` with the project's secret key; the page never touches the table, and the table grants nothing to `anon` or `authenticated`. The project does not give `service_role` rights on new tables by itself, so `202611030630_chronia_reports_grants.sql` grants it select, insert, and update on the table; without it, the reports page opened and then failed with a 500. [The reports page](reports/) (`chronia/reports/`, not indexed, and linked only from the full stop at the end of the team page's first sentence) lists them, newest first, each with a link to the atlas at its place and first date. The team is a list of Google accounts, the table `chronia_team` (`supabase/migrations/202611060700_chronia_team.sql`), each a `viewer` or a `reviewer`: someone on it who has signed in with Google on the atlas (the report panel's session, which the reports page reads from the site's storage, `chronia-auth`) gets in at once, a viewer to read, without the reporters' email addresses, and a reviewer (Noah) to answer as well, with a reply, and "Mark fixed", "Decline", and "Open again". To add someone, once they have signed in on the atlas: `insert into public.chronia_team (user_id, role, note) select id, 'viewer', 'fact checker' from auth.users where lower(email) = lower('someone@gmail.com');`. Until the fact checkers' accounts are on the list, the team's password (`CHRONIA_REPORT_PASSWORD`) still opens the page to read, as a viewer; twenty wrong passwords in a day from one address (a salted hash of it, new each day, in `chronia_report_strikes`) shut that address out until the next day. Once they are on it, unset that secret and the password stops working. Until 6 November 2026 Noah's own password (`CHRONIA_REVIEW_PASSWORD`) opened the page to answer; it opens nothing now, and the secret can be deleted. An account's reports are counted and added in one step (`chronia_report_send`, holding a lock on the account), so a burst sent at once can't pass the 50.
 
-To switch it on, in the Supabase project `kigvciyyjlgjcgnwgrwf`:
+To switch it on, in the Supabase project `jvcmeuqlyygpwelmvxuv`:
 
 1. Apply `supabase/migrations/20261103_chronia_reports.sql` (the SQL editor, `supabase db push`, or the MCP's `apply_migration` with the name `20261103_chronia_reports`). It only creates new objects, and is safe to run twice.
 2. Apply `supabase/migrations/202611031200_chronia_reports_google.sql`, which adds each report's account. Apply `supabase/migrations/202611060700_chronia_team.sql`, which adds the team and the one-step count, and put Noah's account on the team as a `reviewer` (as in the insert above). `CHRONIA_REPORT_PASSWORD`, the team's password under Edge Functions, Secrets, is optional, and only for reading. For signing in on chroniaatlas.com, `https://chroniaatlas.com` must be an authorised JavaScript origin of the Google client in Google Cloud, and `https://chroniaatlas.com/**` a redirect URL under Supabase's Authentication, URL Configuration.
 3. Deploy the function with JWT verification off, since the page sends no Supabase key and the function checks the origin and the password itself:
 
    ```
-   supabase functions deploy chronia-report --no-verify-jwt --project-ref kigvciyyjlgjcgnwgrwf
+   supabase functions deploy chronia-report --no-verify-jwt --project-ref jvcmeuqlyygpwelmvxuv
    ```
 
 4. Check it: this should answer `{"role":"viewer"}`.
 
    ```
-   curl -s -X POST https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/chronia-report \
+   curl -s -X POST https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-report \
      -H 'origin: https://chroniaatlas.com' -H 'content-type: application/json' \
      -d '{"action":"check","password":"THE TEAM PASSWORD"}'
    ```
