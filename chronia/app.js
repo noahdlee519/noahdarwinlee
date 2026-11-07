@@ -1391,9 +1391,7 @@
     ctx.restore();
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     if (perf) pmark("bands");
-    // The coastal band is left out while the map moves and comes back when it stops: it is painted in two layers the size of
-    // the screen and laid over the map, which on a 2x screen made frames miss the screen's refresh while dragging.
-    if (!skip.coastband && !moving) drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
+    if (!skip.coastband) drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
     if (outside) ctx.restore();
 
     if (perf) pmark("coast band");
