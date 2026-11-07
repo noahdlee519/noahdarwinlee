@@ -5205,7 +5205,7 @@
   // session), or, where Google's script can't load, Supabase's sign-in page, which comes back here with the
   // session in the address; the map's date and view are kept in the tab while it goes.
   var REPORT_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-report", REPORT_AUTH = "https://jvcmeuqlyygpwelmvxuv.supabase.co/auth/v1";
-  var REPORT_STORE = "chronia-auth", REPORT_BACK = "chronia-auth-back", GOOGLE_CLIENT = "925004414037-rc7f9m47jivrobj48p33vmkdfpvuva7t.apps.googleusercontent.com";
+  var REPORT_STORE = "chronia-auth", REPORT_BACK = "chronia-auth-back", GOOGLE_CLIENT = "396377978550-hnmvoi4lkdovg00o0vat20ckslml6l1m.apps.googleusercontent.com";
   var reportBtn = $("report-btn"), reportPanel = $("report"), reportLock = $("report-lock"), reportForm = $("report-form");
   var reportLockNote = $("report-lock-note"), reportGoogle = $("report-google"), reportGsi = $("report-gsi");
   var reportWhere = $("report-where"), reportPick = $("report-pick"), reportFrom = $("report-from"), reportTo = $("report-to");
