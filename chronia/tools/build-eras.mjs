@@ -8,6 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
+import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO } from "./medieval.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -2245,24 +2246,18 @@ const britishAmerica = (list) => list.flatMap((s) => {
 // years, and what a cut leaves along the coast (a source's coarser shore against the units') is dropped. Russia's and the
 // Ottoman Empire's blocks are spans of their own, with no name, beside the sources' spans of those states, which run on outside
 // Europe. Small territories keep their land.
-const napoleonic = (list) => {
-  const unitsPath = resolve(dirname(provincesPath), "units.json");
-  if (!existsSync(unitsPath)) { console.log("napoleonic: no units.json beside UCHRONIA's provinces, so Europe from " + NAPOLEONIC_FROM + " to " + NAPOLEONIC_TO + " keeps its source shapes"); return list; }
-  const t0 = Date.now();
-  const topo = JSON.parse(readFileSync(unitsPath, "utf8"));
-  const provinces = JSON.parse(readFileSync(provincesPath, "utf8")).objects.provinces.geometries.map((g) => g.properties);
-  const notes = [];
-  const N = buildNapoleonic({ topo, provinces, client, clip, neAll, rewind, polysOf, log: (m) => notes.push(m) });
-  notes.forEach((m) => console.log("napoleonic: " + m));
+// The land a dated table covers (its mask) is cut out of every other span in the table's years, FROM to TO, and what a cut leaves
+// along the coast (a source's coarser shore against the units') is dropped. Used by the tables of 476 to 961 and 1648 to 1885.
+const maskOut = (list, mask, FROM, TO) => {
   const box = (w, s, e, n) => [[[[w, s], [e, s], [e, n], [w, n], [w, s]]]];
-  const mb = boxOf(N.mask), tiles = [];
+  const mb = boxOf(mask), tiles = [];
   for (let x = Math.floor(mb[0] / 3) * 3; x < mb[2]; x += 3) for (let y = Math.floor(mb[1] / 3) * 3; y < mb[3]; y += 3) {
-    const t = rewind(tryClip(clip.intersection, N.mask, box(x, y, x + 3, y + 3)) || []);
+    const t = rewind(tryClip(clip.intersection, mask, box(x, y, x + 3, y + 3)) || []);
     if (t.length) tiles.push({ polys: t, box: boxOf(t) });
   }
-  const near = dilate(dilate(cellsOf(N.mask)));
+  const near = dilate(dilate(cellsOf(mask)));
   const maskSegs = new Map();
-  for (const poly of N.mask) for (const ring of poly) for (let i = 1; i < ring.length; i++) {
+  for (const poly of mask) for (const ring of poly) for (let i = 1; i < ring.length; i++) {
     const p = ring[i - 1], q = ring[i];
     for (let r = Math.floor((90 - Math.max(p[1], q[1])) * RGK); r <= Math.floor((90 - Math.min(p[1], q[1])) * RGK); r++) for (let c = Math.floor((Math.min(p[0], q[0]) + 180) * RGK); c <= Math.floor((Math.max(p[0], q[0]) + 180) * RGK); c++) {
       const k = r * RG + c;
@@ -2282,12 +2277,12 @@ const napoleonic = (list) => {
   };
   const touchesMask = (p) => p.some((ring) => ring.some(onMask));
   // A span wholly in the table's years that lies nine-tenths on its land is dropped at once rather than cut, which would leave only
-  // slivers along the coast for the step below to drop (since the table runs to 1885 there are many of them, and cutting each from
-  // the mask's tiles took more memory than the build has).
-  const maskCells = cellsOf(N.mask);
+  // slivers along the coast for the step below to drop (the tables run for centuries, so there are many of them, and cutting each
+  // from the mask's tiles took more memory than the build has).
+  const maskCells = cellsOf(mask);
   let dropped = 0;
   list = list.filter((s) => {
-    if (s.small || s.first < NAPOLEONIC_FROM || s.last > NAPOLEONIC_TO || !boxHit(s.box, mb)) return true;
+    if (s.small || s.first < FROM || s.last > TO || !boxHit(s.box, mb)) return true;
     const cs = s.cells || cellsOf(s.polys), all = cellSum(cs);
     if (!all) return true;
     let w = 0;
@@ -2298,22 +2293,52 @@ const napoleonic = (list) => {
   });
   const edits = [];
   for (const s of list) {
-    if (s.small || s.last < NAPOLEONIC_FROM || s.first > NAPOLEONIC_TO || !boxHit(s.box, mb)) continue;
+    if (s.small || s.last < FROM || s.first > TO || !boxHit(s.box, mb)) continue;
     let hit = false;
-    for (const t of tiles) if (boxHit(s.box, t.box)) { hit = true; edits.push({ base: s, first: Math.max(s.first, NAPOLEONIC_FROM), last: Math.min(s.last, NAPOLEONIC_TO), polys: t.polys, add: false }); }
-    if (hit) s.napMasked = true;
+    for (const t of tiles) if (boxHit(s.box, t.box)) { hit = true; edits.push({ base: s, first: Math.max(s.first, FROM), last: Math.min(s.last, TO), polys: t.polys, add: false }); }
+    if (hit) s.tableMasked = true;
   }
   list = reshape(list, edits, false);
   let shorn = 0;
   list = list.map((s) => {
-    if (!s.napMasked) return s;
-    const inside = s.first >= NAPOLEONIC_FROM && s.last <= NAPOLEONIC_TO;
+    if (!s.tableMasked) return s;
+    const inside = s.first >= FROM && s.last <= TO;
     const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p)) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
     if (polys.length !== s.polys.length) shorn++;
     const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
-    if (out) delete out.napMasked;
+    if (out) delete out.tableMasked;
     return out;
   }).filter(Boolean);
+  return { list, mb, maskCells, dropped, cuts: edits.length, shorn };
+};
+// After the cut: what is left of a state the table also draws (Portugal's islands, say) carries no name of its own in those years,
+// and the small territories keep their land, cut out of the table's spans.
+const tableJoin = (list, spans, FROM, TO, mb) => {
+  let quiet = 0;
+  for (const s of list) {
+    if (s.noLabel || s.first < FROM || s.last > TO) continue;
+    const size = cellSum(s.cells || cellsOf(s.polys));
+    if (spans.some((t) => t.name === s.name && t.first <= s.last && s.first <= t.last && cellSum(t.cells) > size)) { s.noLabel = true; quiet++; }
+  }
+  const keepSmall = [];
+  for (const sm of list) {
+    if (!sm.small || sm.last < FROM || sm.first > TO || !boxHit(sm.box, mb)) continue;
+    for (const t of spans) if (t.first <= sm.last && sm.first <= t.last && boxHit(t.box, sm.box)) keepSmall.push({ base: t, first: Math.max(t.first, sm.first), last: Math.min(t.last, sm.last), polys: sm.polys, add: false });
+  }
+  return { cutSpans: reshape(spans, keepSmall, false), quiet, kept: keepSmall.length };
+};
+
+const napoleonic = (list) => {
+  const unitsPath = resolve(dirname(provincesPath), "units.json");
+  if (!existsSync(unitsPath)) { console.log("napoleonic: no units.json beside UCHRONIA's provinces, so Europe from " + NAPOLEONIC_FROM + " to " + NAPOLEONIC_TO + " keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const topo = JSON.parse(readFileSync(unitsPath, "utf8"));
+  const provinces = JSON.parse(readFileSync(provincesPath, "utf8")).objects.provinces.geometries.map((g) => g.properties);
+  const notes = [];
+  const N = buildNapoleonic({ topo, provinces, client, clip, neAll, rewind, polysOf, log: (m) => notes.push(m) });
+  notes.forEach((m) => console.log("napoleonic: " + m));
+  let { list: cut, mb, maskCells, dropped, cuts, shorn } = maskOut(list, N.mask, NAPOLEONIC_FROM, NAPOLEONIC_TO);
+  list = cut;
   // The table's first spans start on 1 January 1803, or on the day of an entry of 1803 that names them and falls in 1802 (the
   // Italian Republic, the French annexation of Piedmont); the sources' spans of 1802 that lie mostly on the table's land end
   // the day before the table's span that covers most of them begins, rather than on the days the dated table gives the
@@ -2340,20 +2365,35 @@ const napoleonic = (list) => {
     s.dayTo = [s.last, best && most >= 0.5 * all ? best.dayFrom[1] - 1 : dayOf(s.last + "-12-31")];
     ended++;
   }
-  // What the cut leaves of a state the table also draws (Portugal's islands, say) carries no name of its own in those years.
-  let quiet = 0;
-  for (const s of list) {
-    if (s.noLabel || s.first < NAPOLEONIC_FROM || s.last > NAPOLEONIC_TO) continue;
-    const size = cellSum(s.cells || cellsOf(s.polys));
-    if (spans.some((t) => t.name === s.name && t.first <= s.last && s.first <= t.last && cellSum(t.cells) > size)) { s.noLabel = true; quiet++; }
+  const { cutSpans, quiet, kept } = tableJoin(list, spans, NAPOLEONIC_FROM, NAPOLEONIC_TO, mb);
+  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + kept + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(cutSpans);
+};
+
+// Europe from 476 to 961 (`tools/medieval.mjs`): its spans replace every other span on the land the table covers in those years,
+// as the Napoleonic table's do. A table span that shares its name with a larger span the sources draw outside the frame in the
+// same years (the Eastern Roman Empire in Egypt, the Caliphates, Khazaria) carries no name of its own, so the state is named once.
+const medieval = (list) => {
+  const unitsPath = resolve(dirname(provincesPath), "units.json");
+  if (!existsSync(unitsPath)) { console.log("medieval: no units.json beside UCHRONIA's provinces, so Europe from " + MEDIEVAL_FROM + " to " + MEDIEVAL_TO + " keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const topo = JSON.parse(readFileSync(unitsPath, "utf8"));
+  const provinces = JSON.parse(readFileSync(provincesPath, "utf8")).objects.provinces.geometries.map((g) => g.properties);
+  const notes = [];
+  const T = buildMedieval({ topo, provinces, client, clip, rewind, polysOf, log: (m) => notes.push(m) });
+  notes.forEach((m) => console.log("medieval: " + m));
+  let { list: cut, mb, dropped, cuts, shorn } = maskOut(list, T.mask, MEDIEVAL_FROM, MEDIEVAL_TO);
+  list = cut;
+  const spans = T.spans.map(({ host, size, ...s }) => withBox({ ...s, src: "medieval", host }));
+  let hosted = 0;
+  for (const t of spans) {
+    if (!t.host || t.noLabel) continue;
+    const size = cellSum(t.cells);
+    if (list.some((s) => s.name === t.name && s.first <= t.last && t.first <= s.last && cellSum(s.cells || cellsOf(s.polys)) > size)) { t.noLabel = true; hosted++; }
   }
-  const keepSmall = [];
-  for (const sm of list) {
-    if (!sm.small || sm.last < NAPOLEONIC_FROM || sm.first > NAPOLEONIC_TO || !boxHit(sm.box, mb)) continue;
-    for (const t of spans) if (t.first <= sm.last && sm.first <= t.last && boxHit(t.box, sm.box)) keepSmall.push({ base: t, first: Math.max(t.first, sm.first), last: Math.min(t.last, sm.last), polys: sm.polys, add: false });
-  }
-  const cutSpans = reshape(spans, keepSmall, false);
-  console.log("napoleonic: " + spans.length + " spans on " + N.units + " units, " + edits.length + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + ended + " spans of " + (NAPOLEONIC_FROM - 1) + " ended on the table's first days, " + quiet + " left with no name beside the table's, " + keepSmall.length + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
+  spans.forEach((t) => { delete t.host; });
+  const { cutSpans, quiet, kept } = tableJoin(list, spans, MEDIEVAL_FROM, MEDIEVAL_TO, mb);
+  console.log("medieval: " + spans.length + " spans on " + T.units + " pieces of units, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " table spans with no name beside the sources', " + kept + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
   return list.concat(cutSpans);
 };
 
@@ -2886,7 +2926,7 @@ const stages = (list) => {
   return out;
 };
 
-dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated)))))))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(medieval(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -3246,7 +3286,9 @@ const GROUPS = [{
   name: "Holy Roman Empire",
   maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, 1491, ["1400"]], [1492, 1499, ["1492"]], [1500, 1529, ["1500"]], [1530, 1599, ["1530"]], [1600, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
   never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
-}, { name: BRITISH_AMERICA }];
+}, { name: BRITISH_AMERICA },
+// The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
+{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" }];
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;

@@ -6,6 +6,7 @@ import { buildWW2 } from "./ww2-control.mjs";
 import { buildSpain } from "./spain-control.mjs";
 import { buildWW1 } from "./ww1-control.mjs";
 import { buildNapoleonicControl } from "./napoleonic-control.mjs";
+import { buildMedievalWars } from "./medieval-control.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -341,4 +342,5 @@ buildWW1(env);
 buildWW2(env);
 buildSpain(env);
 buildNapoleonicControl(env);
+buildMedievalWars(env);
 writeFileSync(resolve(out, "../control.json"), JSON.stringify(index));
