@@ -81,7 +81,15 @@ const LINEAGE = [
   ["First Hellenic Republic", "Kingdom of Greece", "Greece"],
   ["Revolutionary Serbia", "Principality of Serbia", "Kingdom of Serbia", "Serbia"],
   ["United Principalities of Moldavia and Wallachia", "Principality of Romania", "Kingdom of Romania", "Romania"],
-  ["Prince-Bishopric of Montenegro", "Principality of Montenegro", "Montenegro"],
+  ["Prince-Bishopric of Montenegro", "Principality of Montenegro", "Kingdom of Montenegro", "Montenegro"],
+  ["Principality of Bulgaria", "Bulgaria"],
+  ["Joseon", "Korean Empire", "Korea"],
+  ["British India", "British Raj"],
+  ["South African Republic", "Transvaal", "Transvaal Colony"],
+  ["Orange Free State", "Orange River Colony"],
+  ["Danish Greenland", "Greenland"],
+  ["Bornu Empire", "Kanem-Bornu"],
+  ["Toucouleur Empire", "Tukular Caliphate"],
   ["Egypt", "Khedivate of Egypt"],
   ["Durrani Empire", "Emirate of Afghanistan", "Afghanistan"],
   ["Khanate of Bukhara", "Emirate of Bukhara", "Bukhara"],
@@ -243,6 +251,73 @@ const APPROX_EARLY = new Map([
   "Dacia", "Odrysian Kingdom", "Thracian Kingdom", "Illyrian Kingdom", "Dardania", "Kingdom of Tylis", "Mauretania", "Kingdom of Numidia", "Kingdom of Syphax",
   "Kingdom of Gala", "Nabataean Kingdom", "Zhangzhung Kingdom", "Arakan", "Indo-Scythians", "Dayuan", "Maurya Empire", "Parthian Empire", "Indian kingdoms and republics",
   "Magadha", "Mahajanapadas", "Kalinga", "Satavahana dynasty", "Early Cheras", "Early Cholas", "Early Pandyas", "Simhala", "Colchis"].map((n) => [n, n === "Xia" || n === "Dacia" ? 0 : 600]));
+// A border is drawn solid only where a line had been agreed at the time and the map's drawing follows it. Before
+// 1886 that is so between two spans drawn exactly (precision 3: the lines drawn by hand from treaties and surveys, Europe's
+// table where its units follow the line, and states redrawn from CShapes' lines of 1886), and along the treaty borders
+// in FIRM; every other border before 1886 is dotted. From 1886 CShapes' borders are solid, except the ones in VAGUE,
+// which stayed unsettled, the claims, and the lines drawn by hand (precision 1). A span's precision on the map:
+// 1 approximate, 2 drawn from a source's general outline, 3 drawn exactly.
+const PRECISE_SRC = new Set(["napoleonic", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
+const precisionOf = (s) => {
+  if (APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity)) return Math.min(1, s.b ?? 2);
+  if ((s.b ?? 2) <= 1) return 1;
+  return PRECISE_SRC.has(s.src) || s.redrawn ? 3 : 2;
+};
+// Borders before 1886 agreed by treaty, and solid where both sides are drawn at least from a source's outline (precision
+// 2), through the treaties that later moved them: [one side's names, the other's, first year, last year].
+const RUSSIA = ["Tsardom of Russia", "Russian Empire", "Congress Poland"], QING = ["Qing dynasty"], OTTOMAN = ["Ottoman Empire"];
+const HABSBURG = ["Habsburg Monarchy", "Austrian Empire", "Austria-Hungary"], PRUSSIA = ["Brandenburg-Prussia", "Kingdom of Prussia"];
+const SWEDEN = ["Swedish Empire", "Kingdom of Sweden", "United Kingdoms of Sweden and Norway"], SPAIN = ["Kingdom of Spain", "Spain", "First Spanish Republic"];
+const FRANCE = ["Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "Kingdom of the French", "French Second Republic", "Second French Empire", "French Third Republic"];
+const MEXICO = ["First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexican Monarchists", "Mexico"];
+const BRITISH_INDIA = ["British India", "British Raj"];
+const FIRM = [
+  [RUSSIA, QING, 1727, 1885], // Kyakhta (1727), then Aigun (1858), Peking (1860), and Saint Petersburg (1881)
+  [["Joseon"], QING, 1712, 1885], // the Yalu and the Tumen, marked by the stele on Mount Paektu (1712)
+  [HABSBURG, OTTOMAN, 1699, 1885], // Karlowitz (1699), Passarowitz (1718), Belgrade (1739), Sistova (1791), Berlin (1878)
+  [RUSSIA, OTTOMAN, 1792, 1885], // Jassy (1792), Bucharest (1812), Adrianople (1829), Paris (1856), Berlin (1878)
+  [RUSSIA, SWEDEN, 1721, 1885], // Nystad (1721), Åbo (1743), Värälä (1790), Fredrikshamn (1809)
+  [RUSSIA, ["Qajar Iran"], 1828, 1885], // Turkmenchay (1828), Akhal-Khorasan (1881)
+  [RUSSIA, PRUSSIA, 1795, 1885], [RUSSIA, HABSBURG, 1795, 1885], [PRUSSIA, HABSBURG, 1742, 1866], // the partitions of Poland; Breslau (1742)
+  [["Polish-Lithuanian Commonwealth"], RUSSIA.concat(PRUSSIA, HABSBURG), 1772, 1795], // the first and second partitions (1772, 1793)
+  [SPAIN, ["Kingdom of Portugal"], 1297, 1885], // Alcañices (1297)
+  [SPAIN, FRANCE, 1660, 1885], // the Pyrenees (1659), fixed in Llívia (1660)
+  [["United States"], ["Spanish Empire", "Spanish Florida", "Spanish Louisiana", "Spanish Texas"], 1796, 1821], // San Lorenzo (1795), Adams–Onís (1819)
+  [["United States"], MEXICO, 1821, 1885], // Adams–Onís (in force 1821), Guadalupe Hidalgo (1848), Gadsden (1854)
+  [MEXICO, ["Guatemala"], 1882, 1885], // the treaty of 27 September 1882
+  [["Republic of Chile"], ["Argentina"], 1881, 1885], // the treaty of 23 July 1881
+  [["Empire of Brazil"], ["Oriental Republic of Uruguay"], 1851, 1885], // the treaty of 12 October 1851
+  [["Empire of Brazil"], ["Republic of Peru"], 1851, 1885], // the convention of 23 October 1851
+  [["Empire of Brazil"], ["Venezuela"], 1859, 1885], // the treaty of 5 May 1859
+  [["Empire of Brazil"], ["Bolivia"], 1867, 1885], // Ayacucho (1867)
+  [["Empire of Brazil"], ["Paraguay"], 1872, 1885], // Loizaga–Cotegipe (1872)
+  [["Paraguay"], ["Argentina"], 1876, 1885], // Machaín–Irigoyen (1876)
+  [BRITISH_INDIA, ["Kingdom of Nepal"], 1816, 1885], // Sugauli (1816)
+  [BRITISH_INDIA, ["Burma"], 1826, 1885], // Yandabo (1826)
+  [BRITISH_INDIA, ["Siam"], 1868, 1885] // the treaty of 1868 with Burma's Tenasserim
+];
+// Borders from 1886 that no treaty or award had yet settled, dotted until it did: [one side's names, the other's, from, to].
+const NEJD = ["Emirate of Nejd", "Emirate of Jabal Shammar", "Sultanate of Nejd", "Kingdom of Hejaz and Nejd", "Saudi Arabia"];
+const VAGUE = [
+  [NEJD, ["North Yemen", "Yemen", "Aden Protectorate", "South Yemen"], "1886-01-01", "2000-06-11"], // Jeddah (12 June 2000)
+  [NEJD, ["Oman"], "1886-01-01", "1990-03-20"], // the agreement of 21 March 1990
+  [NEJD, ["Trucial States", "United Arab Emirates"], "1886-01-01", "1974-08-20"], // Jeddah (21 August 1974)
+  [NEJD, ["Qatar"], "1886-01-01", "1965-12-03"], // the agreement of 4 December 1965
+  [["Ethiopian Empire", "Ethiopia"], ["Italian Somaliland", "Somalia"], "1886-01-01", CS_TO], // never settled
+  [["Bolivia"], ["Paraguay"], "1886-01-01", "1938-07-20"], // the Chaco peace treaty (21 July 1938)
+  [["Peru"], ["Ecuador"], "1886-01-01", "1942-01-28"], // the Rio Protocol (29 January 1942)
+  [["Venezuela"], ["British Guiana"], "1886-01-01", "1899-10-02"], // the Paris award (3 October 1899)
+  [["Empire of Brazil", "Brazil"], ["British Guiana"], "1886-01-01", "1904-06-05"], // the Italian king's award (6 June 1904)
+  [["Empire of Brazil", "Brazil"], ["French Guiana"], "1886-01-01", "1900-11-30"], // the Swiss award (1 December 1900)
+  [["Empire of Brazil", "Brazil"], ["Bolivia"], "1886-01-01", "1903-11-16"], // Petrópolis (17 November 1903), for Acre
+  [["Emirate of Afghanistan"], ["British Raj"], "1886-01-01", "1893-11-11"], // the Durand Line (12 November 1893)
+  [["Emirate of Afghanistan"], ["Russian Empire", "Bukhara"], "1886-01-01", "1895-03-10"], // the Pamir agreement (11 March 1895)
+  [["Qing dynasty", "China"], ["British Raj", "India", "Bhutan"], "1886-01-01", CS_TO], // never settled
+  [["Tibet"], ["British Raj", "India", "China"], "1912-01-01", "1951-05-22"], // Tibet's lines while it ruled itself
+  [["China"], ["Burma"], "1937-04-01", "1960-09-30"], // the treaty of 1 October 1960
+  [["China"], ["Pakistan"], "1947-08-15", "1963-03-01"], // the agreement of 2 March 1963
+  [["Qajar Iran"], OTTOMAN, "1886-01-01", "1913-11-16"] // the Constantinople Protocol (17 November 1913)
+];
 const kindOf = (name) => (BANDS.test(name) ? 2 : 1);
 const WIKI = {
   // North America's peoples in historical-basemaps whose names are also a state, a city, a river, or a word, so that their own articles open.
@@ -3011,7 +3086,18 @@ const REDRAW_1886 = [
   // France, leaving blank strips and slivers. Its borders did not change from the Treaty of Frankfurt to 1886,
   // so it has them throughout, without Alsace-Lorraine (`minus`) in its span of 1871 (to 9 May 1871).
   { name: "German Empire", gw: 255, first: 1871, last: 1871, box: [5.8, 47.2, 23.0, 55.2], minus: "alsace-lorraine" },
-  { name: "German Empire", gw: 255, first: 1872, last: 1885, box: [5.8, 47.2, 23.0, 55.2] }
+  { name: "German Empire", gw: 255, first: 1872, last: 1885, box: [5.8, 47.2, 23.0, 55.2] },
+  // The southern cone, where Cliopatria's lines of 1885 are not those agreed by then. Chile and Argentina divided
+  // Patagonia and Tierra del Fuego by the treaty of 23 July 1881, and the War of the Pacific's settlement, the Treaty
+  // of Ancón (20 October 1883) and the truce of Valparaíso (4 April 1884), gave Chile Tarapacá and the coast of the
+  // Atacama to hold, with Tacna and Arica. Each region's states all have their lines of 1886 there, in one box, so
+  // the land one gives up is the other's.
+  { name: "Republic of Chile", gw: 155, first: 1881, last: 1885, box: [-76.5, -56.5, -63, -36] },
+  { name: "Argentina", gw: 160, first: 1881, last: 1885, box: [-76.5, -56.5, -63, -36] },
+  { name: "Republic of Chile", gw: 155, first: 1884, last: 1885, box: [-71.6, -27.6, -66, -17] },
+  { name: "Bolivia", gw: 145, first: 1884, last: 1885, box: [-71.6, -27.6, -66, -17] },
+  { name: "Republic of Peru", gw: 135, first: 1884, last: 1885, box: [-71.6, -27.6, -66, -17] },
+  { name: "Argentina", gw: 160, first: 1884, last: 1885, box: [-71.6, -27.6, -66, -17] }
 ];
 // Land added to (`plus`) or taken from (`minus`) a redrawn state's lines of 1886: Alsace-Lorraine, the part of
 // CShapes' Germany of 1886 in Natural Earth's départements of Moselle, Bas-Rhin, and Haut-Rhin, and in their
@@ -3723,7 +3809,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     entry.dated = entry.dated ? [Math.min(entry.dated[0], s.first), Math.max(entry.dated[1], s.last)] : [s.first, s.last];
     if (!entry.wiki.has(s.first)) entry.wiki.set(s.first, s.wiki || s.name);
     if (s.people) entry.kind = kindOf(s.name);
-    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, s.cap || null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity) ? Math.min(1, s.b ?? 2) : s.b];
+    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, s.cap || null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, precisionOf(s)];
     if (s.claims) row.push(s.claims.map(catId));
     return row;
   });
@@ -3845,16 +3931,80 @@ const CS_WIKI = {
   "Vietnam": "Vietnam", "Macedonia": "North Macedonia", "Afars and Issas": "French Territory of the Afars and the Issas"
 };
 const CS_WIKI_BY_YEAR = [
-  ["Korea", 1886, 1910, "Joseon"], ["Taiwan", 1950, 9999, "Taiwan"], ["Hawaii", 1886, 1898, "Hawaiian Kingdom"],
-  ["Vietnam", 1886, 1945, "French Indochina"], ["Serbia", 1886, 1918, "Kingdom of Serbia"], ["Italy", 1886, 1946, "Kingdom of Italy"],
-  ["Persia", 1925, 1936, "Pahlavi Iran"], ["Persia", 1886, 1925, "Qajar Iran"], ["China", 1886, 1912, "Qing dynasty"], ["China", 1912, 1949, "Republic of China (1912–1949)"],
-  ["Japan", 1886, 1947, "Empire of Japan"], ["Ethiopia", 1886, 1974, "Ethiopian Empire"],
-  ["Egypt", 1886, 1914, "Khedivate of Egypt"], ["Egypt", 1914, 1922, "Sultanate of Egypt"], ["Egypt", 1922, 1953, "Kingdom of Egypt"],
+  ["Taiwan", 1950, 9999, "Taiwan"], ["Hawaii", 1886, 1898, "Hawaiian Kingdom"],
+  ["Vietnam", 1886, 1945, "French Indochina"],
+  ["Persia", 1925, 1936, "Pahlavi Iran"], ["China", 1912, 1949, "Republic of China (1912–1949)"],
+  ["Egypt", 1914, 1922, "Sultanate of Egypt"], ["Egypt", 1922, 1953, "Kingdom of Egypt"],
   ["Libya", 1912, 1943, "Italian Libya"], ["Libya", 1943, 1951, "Allied administration of Libya"],
   ["Algeria", 1886, 1962, "French Algeria"], ["Tunisia", 1886, 1956, "French protectorate of Tunisia"], ["Morocco", 1912, 1956, "French protectorate in Morocco"],
   ["Eritrea", 1886, 1941, "Italian Eritrea"], ["Eritrea", 1941, 1952, "British Military Administration (Eritrea)"],
   ["Lebanon", 1920, 1943, "Greater Lebanon"], ["Syria", 1920, 1946, "Mandate for Syria and the Lebanon"], ["Iraq", 1921, 1932, "Mandatory Iraq"]
 ];
+// Before 1886 the map names a state as it was then (the Empire of Brazil, the Qing dynasty); from 1886 the builder names it
+// as CShapes does, by its present short name. CARRY keeps the older name from 1886 until the day it changed, so a name
+// changes when the state did and not at the seam between the sources: [name the builder gives from 1886, [[from, name], ...]].
+// The steps apply to every span of the name (CShapes', historical-basemaps' fills, the wars', and the rulers and claims of
+// all of them), cut at those days, after the second world war's borders are laid, which match by the short names.
+const CARRY = {
+  "China": [["1886-01-01", "Qing dynasty"], ["1912-01-01", "China"]],
+  "Brazil": [["1886-01-01", "Empire of Brazil"], ["1889-11-15", "Brazil"]],
+  "British India": [["1886-01-01", "British Raj"]],
+  "Persia": [["1886-01-01", "Qajar Iran"], ["1925-12-15", "Persia"]],
+  "Egypt": [["1886-01-01", "Khedivate of Egypt"], ["1914-12-18", "Egypt"]],
+  "Afghanistan": [["1886-01-01", "Emirate of Afghanistan"], ["1926-06-09", "Afghanistan"]],
+  "Sweden": [["1886-01-01", "United Kingdoms of Sweden and Norway"], ["1905-08-26", "Sweden"]],
+  "France": [["1886-01-01", "French Third Republic"], ["1940-07-10", "France"]],
+  "Spain": [["1886-01-01", "Kingdom of Spain"], ["1931-04-14", "Spain"]],
+  "Portugal": [["1886-01-01", "Kingdom of Portugal"], ["1910-10-05", "Portugal"]],
+  "Italy": [["1886-01-01", "Kingdom of Italy"], ["1946-06-02", "Italy"]],
+  "Greece": [["1886-01-01", "Kingdom of Greece"], ["1924-03-25", "Greece"]],
+  "Serbia": [["1886-01-01", "Kingdom of Serbia"], ["1918-12-01", "Serbia"]],
+  "Montenegro": [["1886-01-01", "Principality of Montenegro"], ["1910-08-28", "Kingdom of Montenegro"], ["1918-11-26", "Montenegro"]],
+  "Bulgaria": [["1886-01-01", "Principality of Bulgaria"], ["1908-10-05", "Bulgaria"]],
+  "Romania": [["1886-01-01", "Kingdom of Romania"], ["1947-12-30", "Romania"]],
+  "Japan": [["1886-01-01", "Empire of Japan"], ["1947-05-03", "Japan"]],
+  "Korea": [["1886-01-01", "Joseon"], ["1897-10-13", "Korean Empire"], ["1910-08-23", "Korea"]],
+  "Nepal": [["1886-01-01", "Kingdom of Nepal"], ["2008-05-28", "Nepal"]],
+  "Ethiopia": [["1886-01-01", "Ethiopian Empire"], ["1974-09-12", "Ethiopia"]],
+  "Transvaal": [["1886-01-01", "South African Republic"], ["1902-05-31", "Transvaal Colony"]],
+  "Orange Free State": [["1886-01-01", "Orange Free State"], ["1902-05-31", "Orange River Colony"]],
+  "Greenland": [["1886-01-01", "Danish Greenland"], ["1953-06-05", "Greenland"]],
+  "Kanem-Bornu": [["1886-01-01", "Bornu Empire"]],
+  "Tukular Caliphate": [["1886-01-01", "Toucouleur Empire"]]
+};
+const carryAt = (name, day) => {
+  const steps = name ? CARRY[name] : null;
+  if (!steps) return name;
+  let out = steps[0][1];
+  for (const [d, n] of steps) if (dayOf(d) <= day) out = n;
+  return out;
+};
+const carryCuts = (name) => (name && CARRY[name] ? CARRY[name].slice(1).map(([d]) => dayOf(d)) : []);
+const carryNames = (list) => {
+  const gwName = new Map();
+  for (const x of list) if (x.cs && CARRY[x.name]) gwName.set(String(x.cs.p.gwcode), x.name);
+  const out = [];
+  let cut = 0, kept = 0;
+  for (const x of list) {
+    const owner = x.cs && String(x.cs.p.owner) !== String(x.cs.p.gwcode) ? gwName.get(String(x.cs.p.owner)) : undefined;
+    const names = [x.name, x.ruler, owner, ...(x.claims || [])].filter((n) => n && CARRY[n]);
+    if (!names.length) { out.push(x); continue; }
+    const cuts = [...new Set(names.flatMap(carryCuts))].filter((d) => d > x.first && d <= x.last).sort((a, b) => a - b);
+    const bounds = [x.first, ...cuts];
+    bounds.forEach((a, k) => {
+      const name = carryAt(x.name, a);
+      const y = { ...x, first: a, last: k + 1 < bounds.length ? bounds[k + 1] - 1 : x.last, name };
+      if (x.ruler) y.ruler = carryAt(x.ruler, a);
+      if (x.claims) y.claims = x.claims.map((n) => carryAt(n, a));
+      if (x.cs) y.cs = { ...x.cs, name };
+      out.push(y);
+    });
+    cut += bounds.length - 1;
+    kept++;
+  }
+  console.log("names kept from before 1886: " + kept + " spans renamed, " + cut + " cut where the name changed");
+  return out;
+};
 const cleanCs = (n) => n.replace(/\s*\([^)]*\)/g, "").trim();
 const csNameAt = (csName, day) => {
   const steps = CS_NAMES[csName];
@@ -4018,7 +4168,9 @@ const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
 // CShapes, following Gleditsch and Ward, counts Canada as independent from 1867; it was a dominion under the United Kingdom until the Statute of Westminster of 11 December 1931.
-const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"]];
+// The South African Republic (the Transvaal) and the Orange Free State, which CShapes counts as independent until the Union
+// of South Africa, were British colonies from the Treaty of Vereeniging, 31 May 1902. [code, from, to, owner, status].
+const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"], ["563", "1902-05-31", "1910-05-29", "200", "colony"], ["564", "1902-05-31", "1910-05-29", "200", "colony"]];
 // Changes CShapes dates to a day other than the one it gives, for every span of the country that
 // starts on that day (and the span before it, which then ends the day before): [code, CShapes day, day].
 const CS_REDATE = [
@@ -4080,12 +4232,12 @@ const csWithExtras = (rows) => {
     }
     list = next;
   }
-  for (const [code, a, b, owner] of CS_DEPENDENT) {
+  for (const [code, a, b, owner, status = "dependency"] of CS_DEPENDENT) {
     const next = [];
     for (const r of list) {
       if (String(r.p.gwcode) !== code || r.p.end < a || r.p.start > b) { next.push(r); continue; }
       if (r.p.start < a) next.push({ p: { ...r.p, end: isoAdd(a, -1) }, geometry: r.geometry });
-      next.push({ p: { ...r.p, start: r.p.start < a ? a : r.p.start, end: r.p.end > b ? b : r.p.end, status: "dependency", owner }, geometry: r.geometry });
+      next.push({ p: { ...r.p, start: r.p.start < a ? a : r.p.start, end: r.p.end > b ? b : r.p.end, status, owner }, geometry: r.geometry });
       if (r.p.end > b) next.push({ p: { ...r.p, start: isoAdd(b, 1) }, geometry: r.geometry });
     }
     list = next;
@@ -4407,6 +4559,7 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
       console.log("WW2 done, " + Math.round(process.uptime()) + " s");
     }
   }
+  list = carryNames(list);
   const activeName = (name, day) => list.some((x) => x.name === name && x.first <= day && day <= x.last);
   const rulerFor = (name, day) => (!name || activeName(name, day) ? name : lineageNames(name).find((n) => activeName(n, day)) || name);
   list = fillSmallGaps(addDisputes(resolveOverlaps(list, "from 1886")));
@@ -4429,7 +4582,7 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
     if (x.cs) { csParts.push({ ...x.cs, noLabel: !!x.piece, piece: !!x.piece, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
     const claims = x.claims ? x.claims.map((n) => rulerFor(n, x.first)) : null;
-    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
   }
   console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
@@ -4476,7 +4629,7 @@ const csRows = csParts.map((r, i) => {
     const pick = capPicker(r.wiki || csWiki(r.name, y0), polysOf(r.geometry)), c = pick && pick(y0);
     if (c) { cap = capitalOf(CAP_NAME[c[0]] || c[0], c[1], c[2]); csCapsAdded++; }
   }
-  return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode), r.claims ? r.claims.map(catId) : null];
+  return [id, owner ? catId(owner) : -1, r.start, r.end, CS_STATUS[r.p.status] ?? 0, cap, label, String(r.p.gwcode), r.claims ? r.claims.map(catId) : null, r.b !== undefined && r.b <= 1 ? 1 : 0];
 });
 console.log("capitals from 1886: " + csCapsAdded + " shapes CShapes gives no capital took one from Wikidata or Wikipedia");
 csHi.objects.p.geometries.forEach((g) => { delete g.properties; });
@@ -4873,9 +5026,14 @@ const entries = catalogue.map((e, id) => {
   if (years) row.push(years);
   return row;
 });
-writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), lo: csLo }));
+writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[9] ? r.slice(0, 7).concat([r[8] || 0, 1]) : r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), lo: csLo }));
 writeFileSync(resolve(out, "modern-hi.json"), JSON.stringify({ hi: csHi }));
-writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
+// The treaty borders before 1886 and the unsettled ones after, by polity number (see FIRM and VAGUE).
+const pairIds = (names, what) => names.map((n) => { const i = idOf.get(n); if (i === undefined) console.warn(what + ": no polity named " + n); return i; }).filter((i) => i !== undefined);
+const firmPairs = FIRM.map(([a, b, y0, y1]) => [pairIds(a, "FIRM"), pairIds(b, "FIRM"), y0, y1]).filter(([a, b]) => a.length && b.length);
+const vaguePairs = VAGUE.map(([a, b, d0, d1]) => [pairIds(a, "VAGUE"), pairIds(b, "VAGUE"), dayOf(d0), dayOf(d1)]).filter(([a, b]) => a.length && b.length);
+console.log("borders: " + firmPairs.length + " treaty borders before 1886, " + vaguePairs.length + " unsettled ones after");
+writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, borders: { firm: firmPairs, vague: vaguePairs }, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
 let polys = landGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);
