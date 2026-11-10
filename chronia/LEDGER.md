@@ -17,6 +17,10 @@ Each entry:
 
 ---
 
+## 3400 BC–1 BC | the world | peoples, cultures, bands, cities, and the kinds of border
+
+- Claimed by Claude (session of 10 November 2026), on 10 November 2026: the BC years everywhere. Peoples missing from blank land, peoples drawn as the wrong kind (state, people, or band) or under names out of their time, precision of the BC states, and the BC cities (anachronistic names and dates, misdated figures, duplicates, and missing sites).
+
 ## 1648–1802 | Europe | the table begins in 1648
 
 - What changed: from 1648 to 1802 Europe was the sources' shapes, simplified, drawn as exact, and wrong in particular years: Corsica Genoese to 1793 (French from 1768), Franche-Comté Spanish to about 1714 (French from 1678), Strasbourg French in 1650 (a free city to 1681), Mulhouse French throughout (allied to the Swiss to 1798), Sicily Spanish from 1720 to 1734 (Austrian), Naples and Sicily called the Kingdom of Spain from 1735 to 1759, Mantua called Modena in 1705, and Belgrade Austrian in 1740 (Ottoman from 1739). The table of Europe now begins on 1 January 1648, with the history of each unit before 1803 in `PRE`; the larger states each have an owner, and the many small states of the Empire are drawn as the Empire, as the sources draw them. The treaties and acts are listed in the README (From 1648 to 1802). Separately, from 1815 the states whose borders follow today's lines are drawn exact (solid), and Eupen-Malmedy is Prussian from 1815 rather than Belgian.
