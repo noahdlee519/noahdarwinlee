@@ -4513,7 +4513,9 @@
 
   // Play keeps an even pace (since 10 November 2026; before, it held on a date whose borders changed): every step of the
   // same kind takes the same time, divided by the speed slider's.
-  var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, month: 60, load: 100 };
+  // Before 1200 it goes year by year as well, at `early` a year (about four and a half minutes from 3400 BC); before
+  // 10 November 2026 it jumped from one change to the next there, 0.8 seconds each, however many years lay between.
+  var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, load: 100 };
   var playTimer = 0, playMode = "";
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
   function playEnd() { return modern ? lastTime() : dated ? dated.to : maps[maps.length - 1].y; }
@@ -4524,8 +4526,8 @@
       return monthTime(y, m);
     }
     if (t < PLAY.yearlyFrom && isDated(t)) {
-      for (var p = 0; p < points.length; p++) if (points[p] > t + 1e-6) return Math.min(points[p], PLAY.yearlyFrom);
-      return PLAY.yearlyFrom;
+      var ny = Math.floor(t + 1e-6) + 1;
+      return Math.min(ny === 0 ? 1 : ny, PLAY.yearlyFrom);
     }
     if (t < PLAY.yearlyFrom) {
       var mi = mapIndexFor(t);
@@ -4541,6 +4543,10 @@
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] - 1, mf = monthlyFrom();
       if (m < 1) { m = 12; y--; }
       return y < mf ? mf - 1 : monthTime(y, m);
+    }
+    if (t <= PLAY.yearlyFrom && dated && t - 1 >= dated.from - 1e-6) {
+      var py = Math.ceil(t - 1e-6) - 1;
+      return Math.max(py === 0 ? -1 : py, FIRST_T);
     }
     if (t <= PLAY.yearlyFrom) {
       for (var p = points.length - 1; p >= 0; p--) if (points[p] < t - 1e-6) return points[p];
