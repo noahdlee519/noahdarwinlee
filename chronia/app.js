@@ -8,7 +8,7 @@
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
   var UC = "../uchronia/";
   var UC_APP = "https://noahdarwinlee.com/uchronia/";
-  var STORE_FLAT = "chronia-flat";
+  var STORE_FLAT = "chronia-flat", STORE_SPEED = "chronia-speed";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
   var START_YEAR = 1815, MONTHLY_FROM = 1648, DAYS_FROM = 1800;
@@ -45,10 +45,11 @@
     }).finally(function () { jsonLoading--; });
   }
 
-  var view = { lon: 15, lat: 32, zoom: 1 };
+  // roll: how far the globe is turned on the screen, in degrees clockwise (0 has north up). The flat map is always north up.
+  var view = { lon: 15, lat: 32, zoom: 1, roll: 0 };
   var flat = false;
   var dpr = 1, W = 0, H = 0, cx = 0, cy = 0, baseR = 0, baseK = 0, freeT = 0, freeB = 0;
-  var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
+  var projection = d3.geoOrthographic().clipAngle(90).precision(0.35), ROLL_SIGN = -1;
   var MIN_ZOOM = 0.6, MAX_ZOOM = 40;
   var FB = { k: 1, xc: 0, yc: 0, wrap: false, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
   var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
@@ -102,11 +103,14 @@
     } else {
       view.lon = wrap180(view.lon);
       view.lat = Math.max(-89.5, Math.min(89.5, view.lat));
-      projection.rotate([-view.lon, -view.lat, 0]).scale(baseR * view.zoom).translate([cx, cy]);
+      view.roll = wrap180(view.roll || 0);
+      projection.rotate([-view.lon, -view.lat, ROLL_SIGN * view.roll]).scale(baseR * view.zoom).translate([cx, cy]);
       var lon = view.lon * D2R, lat = view.lat * D2R;
       var sl = Math.sin(lon), cl = Math.cos(lon), sp = Math.sin(lat), cp = Math.cos(lat);
-      B.ex = -sl; B.ey = cl; B.ez = 0;
-      B.nx = -sp * cl; B.ny = -sp * sl; B.nz = cp;
+      // The screen's right and up, east and north at the centre turned by the roll.
+      var ex = -sl, ey = cl, ez = 0, nx = -sp * cl, ny = -sp * sl, nz = cp, rc = Math.cos(view.roll * D2R), rs = Math.sin(view.roll * D2R);
+      B.ex = rc * ex + rs * nx; B.ey = rc * ey + rs * ny; B.ez = rc * ez + rs * nz;
+      B.nx = rc * nx - rs * ex; B.ny = rc * ny - rs * ey; B.nz = rc * nz - rs * ez;
       B.cx = cp * cl; B.cy = cp * sl; B.cz = sp;
       B.r = baseR * view.zoom;
     }
@@ -1038,7 +1042,7 @@
   function renderRelief() {
     var res = moving ? RELIEF_MOVING : RELIEF_RES;
     if (res !== reliefRes || reliefCanvas.width !== Math.max(1, Math.round(W * dpr * res)) || reliefCanvas.height !== Math.max(1, Math.round(H * dpr * res))) sizeRelief(res);
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
     if (key === reliefKey) return;
     reliefKey = key;
     var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
@@ -1077,7 +1081,7 @@
   }
   function maybeRelief() {
     if (rd.off || !relief || !layers.relief || !relief.ready()) return;
-    var key = [flat ? 1 : 0, view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), W, H].join();
+    var key = [flat ? 1 : 0, view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), view.roll.toFixed(3), W, H].join();
     if (key === rd.key) return;
     rd.key = key;
     var want = reliefWanted();
@@ -1185,7 +1189,7 @@
     var n = landCount(list, kp, line * BAND_ISLAND), m = landCount(list, kp, ISLAND_PX);
     if (!m) return;
     var res = moving ? Math.max(0.5, dpr * BAND_MOVING) : Math.max(1, dpr * BAND_RES);
-    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, res, line, n, m, list === land.hi ? 1 : list === land.fine ? 2 : 0, landTag].join();
+    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, res, line, n, m, list === land.hi ? 1 : list === land.fine ? 2 : 0, landTag].join();
     if (vkey !== maskKey) paintCoastMask(list, landPath, n, m, line, res);
     maskKey = vkey;
     var key = id + "|" + vkey;
@@ -1255,7 +1259,7 @@
   function drawSea(coast, S) {
     // While moving, every frame is new, so the sea is drawn straight onto the map rather than kept.
     if (moving) { seaKey = ""; ctx.save(); paintSea(coast, S); ctx.restore(); return; }
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : coast === land.fine ? 2 : 0, landTag].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : coast === land.fine ? 2 : 0, landTag].join();
     if (key !== seaKey) {
       seaKey = key;
       if (seaCanvas.width !== ctx.canvas.width || seaCanvas.height !== ctx.canvas.height) { seaCanvas.width = ctx.canvas.width; seaCanvas.height = ctx.canvas.height; }
@@ -2883,7 +2887,7 @@
   function drawPolityLabels(snap, placed, kp) {
     if (!layers.states) return;
     var quick = moving || rangeActive;
-    var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), flat ? 1 : 0, W, H, quick ? 1 : 0,
+    var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, quick ? 1 : 0,
       placed.map(function (b) { return Math.round(b.x) + ":" + Math.round(b.y) + ":" + Math.round(b.w) + ":" + Math.round(b.h); }).join(",")].join("|");
     var memo = labelCache.get("layout");
     if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
@@ -3461,7 +3465,7 @@
     if (day === null) return;
     var regs = divRegions(day, true), sig = 0;
     for (var i = 0; i < placed.length; i++) sig = (sig * 31 + Math.round(placed[i].x * 7 + placed[i].y * 13 + placed[i].w)) % 1000000007;
-    var key = [current.key, day, regs.map(function (r) { return r.key; }).join(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), flat ? 1 : 0, W, H, placed.length, sig].join("|");
+    var key = [current.key, day, regs.map(function (r) { return r.key; }).join(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, placed.length, sig].join("|");
     if (key !== divLayout.key) divLayout = { key: key, items: layoutDivisionLabels(regs, day, placed.slice(), kmPx()) };
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     ctx.lineWidth = 2.2; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal["division-label"];
@@ -3597,10 +3601,24 @@
   }
 
   function degPerPx() { return 180 / (Math.PI * (flat ? FB.k : B.r)); }
+  // A move on the screen as a move east and south at the centre, undoing the globe's roll.
+  function unroll(dx, dy) {
+    if (flat || !view.roll) return [dx, dy];
+    var c = Math.cos(view.roll * D2R), s = Math.sin(view.roll * D2R);
+    return [c * dx + s * dy, -s * dx + c * dy];
+  }
   function panBy(dx, dy) {
-    var s = degPerPx();
-    view.lon -= dx * s; view.lat += dy * s;
+    var s = degPerPx(), d = unroll(dx, dy);
+    view.lon -= d[0] * s; view.lat += d[1] * s;
     applyView();
+    nudge();
+  }
+  // Turns the globe by `deg` degrees clockwise about the centre of the screen.
+  function rollBy(deg) {
+    if (flat || !deg) return;
+    view.roll = wrap180(view.roll + deg);
+    applyView();
+    syncCompass();
     nudge();
   }
   function zoomAt(z, x, y) {
@@ -3616,9 +3634,9 @@
         for (var i = 0; i < 2; i++) {
           var after = projection(before);
           if (!after) break;
-          var s = degPerPx();
-          view.lon -= (x - after[0]) * s;
-          view.lat += (y - after[1]) * s;
+          var s = degPerPx(), d = unroll(x - after[0], y - after[1]);
+          view.lon -= d[0] * s;
+          view.lat += d[1] * s;
           applyView();
         }
       }
@@ -3638,11 +3656,11 @@
       if (lab) { devDrag = lab; drag = null; downAt = null; return; }
     }
     if (pointers.size === 1) {
-      drag = { x: e.clientX, y: e.clientY, samples: [[e.timeStamp, e.clientX, e.clientY]] };
+      drag = { x: e.clientX, y: e.clientY, samples: [[e.timeStamp, e.clientX, e.clientY]], spin: !flat && (e.shiftKey || e.button === 2) ? Math.atan2(e.clientY - cy, e.clientX - cx) : null };
       downAt = { x: e.clientX, y: e.clientY, t: e.timeStamp, moved: false };
     } else if (pointers.size === 2) {
       var pts = Array.from(pointers.values());
-      pinch = { d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), z: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2 };
+      pinch = { d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), z: view.zoom, mx: (pts[0].x + pts[1].x) / 2, my: (pts[0].y + pts[1].y) / 2, a: Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x), twist: 0, turning: false };
       drag = null;
       if (downAt) downAt.moved = true;
     }
@@ -3664,10 +3682,28 @@
       zoomAt(pinch.z * d / Math.max(1, pinch.d), mx, my);
       panBy(mx - pinch.mx, my - pinch.my);
       pinch.mx = mx; pinch.my = my;
+      // Twisting two fingers turns the globe, once the twist passes TWIST_FROM degrees, so a pinch doesn't turn it by chance.
+      var a = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x), da = wrap180((a - pinch.a) / D2R);
+      pinch.a = a;
+      if (!flat) {
+        pinch.twist += da;
+        if (pinch.turning) rollBy(da);
+        else if (Math.abs(pinch.twist) > TWIST_FROM) { pinch.turning = true; rollBy(pinch.twist); }
+      }
       return;
     }
     if (!drag) return;
     if (downAt && !downAt.moved && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 5) downAt.moved = true;
+    if (drag.spin !== null && drag.spin !== undefined) {
+      // With Shift held, or the right button, a drag turns the globe about the centre of the screen.
+      if (!downAt || downAt.moved) {
+        var sa = Math.atan2(e.clientY - cy, e.clientX - cx);
+        if (Math.hypot(e.clientX - cx, e.clientY - cy) > 12) rollBy(wrap180((sa - drag.spin) / D2R));
+        drag.spin = sa;
+        setHover(-1);
+      }
+      return;
+    }
     if (!downAt || downAt.moved) {
       panBy(e.clientX - drag.x, e.clientY - drag.y);
       drag.x = e.clientX; drag.y = e.clientY;
@@ -3700,7 +3736,7 @@
       divClick = town ? null : lonLatAt(e.clientX, e.clientY);
       var p = town ? null : polityAt(e.clientX, e.clientY);
       if (town) openCity(town); else select(p ? p.id : -1);
-    } else if (drag && drag.samples.length >= 2 && !reduceMotion) {
+    } else if (drag && drag.spin === null && drag.samples.length >= 2 && !reduceMotion) {
       var s = drag.samples, a = s[0], b = s[s.length - 1];
       for (var i = s.length - 1; i > 0; i--) if (b[0] - s[i][0] > 80) { a = s[i]; break; }
       var dt = Math.max(8, b[0] - a[0]);
@@ -3730,6 +3766,38 @@
     zoomAt(view.zoom * Math.exp(-dy * 0.0016), e.clientX, e.clientY);
   }, { passive: false });
   canvas.addEventListener("dblclick", function (e) { zoomAt(view.zoom * 2, e.clientX, e.clientY); });
+  // The right button turns the globe, so the canvas keeps its own menu to itself.
+  canvas.addEventListener("contextmenu", function (e) { if (!flat) e.preventDefault(); });
+
+  // Turning: the buttons under Globe in the View panel and the keys [ and ] turn the globe TURN_STEP degrees, and N, the
+  // compass, or the third button turns it back north up, over TURN_MS (at once when motion is reduced).
+  var TWIST_FROM = 12, TURN_STEP = 15, TURN_MS = 380, turnAnim = 0;
+  function turnTo(target) {
+    if (flat) return;
+    cancelAnimationFrame(turnAnim);
+    var from = view.roll, d = wrap180(target - from);
+    if (!d) return;
+    if (reduceMotion) { rollBy(d); return; }
+    var t0 = performance.now();
+    var step = function (t) {
+      var k = Math.min(1, (t - t0) / TURN_MS), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      view.roll = wrap180(from + d * e);
+      applyView(); syncCompass(); nudge();
+      if (k < 1) turnAnim = requestAnimationFrame(step); else writeHash();
+    };
+    turnAnim = requestAnimationFrame(step);
+  }
+  function syncCompass() {
+    var turned = !flat && Math.abs(view.roll) >= 0.05;
+    $("compass").hidden = !turned;
+    if (turned) $("compass-needle").setAttribute("transform", "rotate(" + view.roll.toFixed(2) + " 16 16)");
+    ["turn-left", "turn-right"].forEach(function (id) { $(id).disabled = flat; });
+    $("turn-north").disabled = !turned;
+  }
+  $("turn-left").addEventListener("click", function () { turnTo(Math.round((view.roll - TURN_STEP) / TURN_STEP) * TURN_STEP); });
+  $("turn-right").addEventListener("click", function () { turnTo(Math.round((view.roll + TURN_STEP) / TURN_STEP) * TURN_STEP); });
+  $("turn-north").addEventListener("click", function () { turnTo(0); });
+  $("compass").addEventListener("click", function () { turnTo(0); });
 
   var hoverRaf = 0, hoverXY = null;
   function hoverAt(x, y) {
@@ -4496,20 +4564,80 @@
     var back = playBack(), from = now, to = back ? playPrev(now) : playNext(now);
     if (back ? from <= FIRST_T + 1e-9 || to < FIRST_T - 1e-9 : to > playEnd() + 1e-9) return -1;
     setTime(to);
+    prepareAhead(to);
     return playWait(from, to);
+  }
+  // While the timeline plays, the next PLAY_AHEAD frames are built in the pause after each one is drawn: the snapshot of
+  // the borders and its level (the shapes and border lines at the zoom shown), which took 150 to 300 ms of a new date's
+  // first drawing, against about 15 ms for a date already built, and made the play judder. One frame is built per task,
+  // so drawing is never held up for long, and a step that comes first cancels the rest. A file the frames need that
+  // hasn't come yet is asked for, and they are built next time.
+  var PLAY_AHEAD = 2, aheadTimer = 0, aheadRaf = 0;
+  function snapIfLoaded(t) {
+    if (isModern(t)) return modern && modern.rows ? modernSnap(Math.min(dayOfTime(t), modern.toDay)) : null;
+    if (isDated(t)) {
+      var ck = chunkIndexFor(t), c = dated.chunks[ck];
+      if (!c.data) { loadChunk(ck).catch(function () {}); return null; }
+      return datedSnap(ck, t);
+    }
+    var mi = mapIndexFor(t);
+    if (maps[mi] && !maps[mi].snap) loadMap(mi).catch(function () {});
+    return maps[mi] ? maps[mi].snap : null;
+  }
+  function prepareFrame(t) {
+    var snap = snapIfLoaded(t);
+    if (snap) level(snap, useLevel());
+    return !!snap;
+  }
+  function prepareAhead(t) {
+    clearTimeout(aheadTimer); cancelAnimationFrame(aheadRaf);
+    var back = playBack(), k = 0, at = t;
+    var next = function () {
+      if (!playTimer || k++ >= PLAY_AHEAD) return;
+      at = back ? playPrev(at) : playNext(at);
+      if (back ? at < FIRST_T - 1e-9 : at > playEnd() + 1e-9) return;
+      prepareFrame(at);
+      aheadTimer = setTimeout(next, 0);
+    };
+    aheadRaf = requestAnimationFrame(function () { aheadTimer = setTimeout(next, 0); });
   }
   // playMode is "normal", "fast", "back", or "back-fast".
   function playBack() { return playMode.indexOf("back") === 0; }
-  function playDelay(ms) { return /fast$/.test(playMode) ? ms / 2 : ms; }
-  var PLAY_BUTTONS = [["play", "normal", "Play through time"], ["play-fast", "fast", "Play at double speed"], ["play-back", "back", "Play backwards"], ["play-back-fast", "back-fast", "Play backwards at double speed"]];
-  function syncPlayButtons() {
-    syncSearch();
+  // Played slowly (chosen in the View panel, and remembered), every pause is SLOW_PLAY times as long, so a change of borders
+  // stays on the map long enough to watch; the double-speed buttons then play at twice the slow pace.
+  var SLOW_PLAY = 2.5, playSlow = false;
+  try { playSlow = localStorage.getItem(STORE_SPEED) === "slow"; } catch (e) {}
+  function playDelay(ms) { return (/fast$/.test(playMode) ? ms / 2 : ms) * (playSlow ? SLOW_PLAY : 1); }
+  // Each button: its id, its mode, then its name and tip at the usual pace and played slowly.
+  var PLAY_BUTTONS = [
+    ["play", "normal", "Play through time", "Play (P)", "Play slowly through time", "Play slowly (P)"],
+    ["play-fast", "fast", "Play at double speed", "Play at double speed (Shift P)", "Play at twice the slow pace", "Play at twice the slow pace (Shift P)"],
+    ["play-back", "back", "Play backwards", "Play backwards (O)", "Play slowly backwards", "Play slowly backwards (O)"],
+    ["play-back-fast", "back-fast", "Play backwards at double speed", "Play backwards at double speed (Shift O)", "Play backwards at twice the slow pace", "Play backwards at twice the slow pace (Shift O)"]
+  ];
+  function syncPlayTips() {
     PLAY_BUTTONS.forEach(function (b) {
       var on = playMode === b[1];
       $(b[0]).setAttribute("aria-pressed", on ? "true" : "false");
-      $(b[0]).setAttribute("aria-label", on ? "Pause" : b[2]);
+      $(b[0]).setAttribute("aria-label", on ? "Pause" : playSlow ? b[4] : b[2]);
+      $(b[0]).setAttribute("data-tip", playSlow ? b[5] : b[3]);
     });
   }
+  function syncPlayButtons() {
+    syncSearch();
+    syncPlayTips();
+  }
+  function setPlaySlow(on) {
+    playSlow = !!on;
+    $("speed-slow").checked = playSlow; $("speed-normal").checked = !playSlow;
+    try { localStorage.setItem(STORE_SPEED, playSlow ? "slow" : "normal"); } catch (e) {}
+    syncPlayTips();
+  }
+  ["speed-slow", "speed-normal"].forEach(function (id) {
+    $(id).addEventListener("change", function () { if ($(id).checked) setPlaySlow(id === "speed-slow"); });
+  });
+  $("speed-slow").checked = playSlow; $("speed-normal").checked = !playSlow;
+  syncPlayTips();
   function playModeOf(fast, back) { return (back ? "back" : "") + (back && fast ? "-fast" : fast ? "fast" : back ? "" : "normal"); }
   function startPlay(fast, back) {
     var mode = playModeOf(fast, back);
@@ -4518,6 +4646,7 @@
     else if (now >= playEnd() - 1e-9) setTime(FIRST_T);
     playMode = mode;
     syncPlayButtons();
+    prepareAhead(now);
     var tick = function () {
       var wait = playStep();
       if (wait < 0) stopPlay(); else playTimer = setTimeout(tick, playDelay(wait));
@@ -4543,6 +4672,7 @@
     reliefKey = "";
     applyView();
     syncProjection();
+    syncCompass();
     try { localStorage.setItem(STORE_FLAT, flat ? "1" : "0"); } catch (e) {}
     nudge();
   }
@@ -4577,6 +4707,7 @@
     scheduleRender();
   }
   function closeCard() {
+    closePicture();
     selected = -1;
     selCity = null;
     clearTimeout(blurbTimer);
@@ -4879,6 +5010,68 @@
   }
   // Wikimedia serves thumbnails from thumb.wikimedia.org and originals from upload.wikimedia.org.
   var WM_IMG = /^https:\/\/(upload|thumb)\.wikimedia\.org\//;
+
+  // The note's picture, opened large (the lightbox): Wikipedia's original when it is at most LIGHTBOX_W wide, or else its
+  // thumbnail at that width (one of Wikimedia's standard sizes), shown over the small one already loaded until it comes.
+  // The caption links to the picture's own page on Wikipedia, which gives its author, source, and licence.
+  var LIGHTBOX_W = 1280, picture = null, lightbox = $("lightbox"), lightImg = $("lightbox-img"), lightBack = null;
+  function largePicture(p) {
+    var o = p.original;
+    if (o && o.source && WM_IMG.test(o.source) && (!o.width || o.width <= LIGHTBOX_W)) return o.source;
+    var m = /\/(\d+)px-[^/]+$/.exec(p.thumb);
+    if (m && +m[1] < LIGHTBOX_W) return p.thumb.replace(/\/\d+px-([^/]+)$/, "/" + LIGHTBOX_W + "px-$1");
+    return o && o.source && WM_IMG.test(o.source) ? o.source : p.thumb;
+  }
+  function pictureFile(p) {
+    var src = p.original && p.original.source || p.thumb;
+    var m = /\/thumb\/[0-9a-f]\/[0-9a-f]{2}\/([^/]+)\/[^/]+$/.exec(src) || /\/[0-9a-f]\/[0-9a-f]{2}\/([^/]+)$/.exec(src);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function openPicture() {
+    if (!picture) return;
+    var p = picture, big = largePicture(p), file = pictureFile(p), src = $("lightbox-src");
+    lightBack = document.activeElement;
+    lightImg.onerror = null;
+    lightImg.src = p.thumb;
+    lightImg.alt = p.title;
+    if (big !== p.thumb) {
+      var pre = new Image();
+      pre.onload = function () { if (picture === p && !lightbox.hidden) lightImg.src = big; };
+      pre.onerror = function () {
+        var o = p.original && p.original.source;
+        if (o && o !== big && WM_IMG.test(o) && picture === p && !lightbox.hidden) lightImg.src = o;
+      };
+      pre.src = big;
+    }
+    $("lightbox-cap").textContent = p.title;
+    if (file) { src.href = "https://en.wikipedia.org/wiki/File:" + encodeURIComponent(file.replace(/ /g, "_")); src.hidden = false; }
+    else src.hidden = true;
+    lightbox.hidden = false;
+    $("lightbox-close").focus();
+  }
+  function closePicture() {
+    if (!lightbox || lightbox.hidden) return false;
+    lightbox.hidden = true;
+    lightImg.removeAttribute("src");
+    if (lightBack && lightBack.focus && document.contains(lightBack)) lightBack.focus();
+    lightBack = null;
+    return true;
+  }
+  $("wiki-zoom").addEventListener("click", openPicture);
+  $("lightbox-close").addEventListener("click", closePicture);
+  lightbox.addEventListener("click", function (e) { if (e.target === lightbox) closePicture(); });
+  // Esc closes the picture before anything else; Tab stays between the link and the close button.
+  lightbox.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closePicture(); return; }
+    if (e.key === "Tab") {
+      var stops = [$("lightbox-src"), $("lightbox-close")].filter(function (el) { return !el.hidden; });
+      var i = stops.indexOf(document.activeElement);
+      e.preventDefault();
+      stops[(i + (e.shiftKey ? stops.length - 1 : 1)) % stops.length].focus();
+      return;
+    }
+    e.stopPropagation();
+  });
   var flagCache = new Map();
   function flagThumb(file) {
     if (flagCache.has(file)) return flagCache.get(file);
@@ -4975,22 +5168,23 @@
     });
   }
   function loadWiki(name, title, blurb, at) {
-    var ask = ++wikiAsk, text = $("wiki-text"), img = $("wiki-img"), more = $("wiki-more"), by = $("wiki-by");
+    var ask = ++wikiAsk, text = $("wiki-text"), img = $("wiki-img"), zoom = $("wiki-zoom"), more = $("wiki-more"), by = $("wiki-by");
     var wiki = null, wikiState = 0, mode = blurb ? "ai" : "wiki";
     var quiet = function (t) { text.className = "ch-wiki-text is-quiet"; text.textContent = t; };
     var paint = function () {
       if (ask !== wikiAsk) return;
       if (wiki) {
         if (wiki.thumbnail && wiki.thumbnail.source && WM_IMG.test(wiki.thumbnail.source)) {
-          img.src = wiki.thumbnail.source; img.hidden = false;
-        } else img.hidden = true;
+          img.src = wiki.thumbnail.source; zoom.hidden = false;
+          picture = { thumb: wiki.thumbnail.source, original: wiki.originalimage, title: wiki.title || name };
+        } else { zoom.hidden = true; picture = null; }
         var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
         if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) {
           $("wiki-link").href = href;
           $("wiki-link").textContent = wiki.title && wiki.title !== name ? "Read “" + wiki.title + "” on Wikipedia" : "Read more on Wikipedia";
           more.hidden = false;
         } else more.hidden = true;
-      } else { img.hidden = true; more.hidden = true; }
+      } else { zoom.hidden = true; more.hidden = true; picture = null; }
       if (mode === "ai" || mode === "done") return;
       if (wikiState === 0) quiet("Looking it up on Wikipedia");
       else if (wikiState === 2) {
@@ -5038,7 +5232,7 @@
       by.hidden = false;
     };
     clearTimeout(blurbTimer);
-    img.hidden = true; more.hidden = true; by.hidden = true;
+    zoom.hidden = true; more.hidden = true; by.hidden = true; picture = null;
     var key = at ? title + "@" + at[0].toFixed(2) + "," + at[1].toFixed(2) : title, job = wikiCache.get(key);
     if (!job) {
       if (at) job = wikiSummary(title).then(function (d) { return nearPage(d, at) || (title !== name ? wikiSummary(name).then(function (e) { return nearPage(e, at); }) : null); }).then(function (d) { return d || wikiSearchNear(name, at); });
@@ -6773,6 +6967,9 @@
     else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
     else if (e.key === "o" || e.key === "O") togglePlay(e.shiftKey, true);
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
+    else if (e.key === "[") $("turn-left").click();
+    else if (e.key === "]") $("turn-right").click();
+    else if (e.key === "n" || e.key === "N") turnTo(0);
     else if (e.key === "+" || e.key === "=") zoomAt(view.zoom * 1.6, cx, cy);
     else if (e.key === "-" || e.key === "_" || e.key === "−") zoomAt(view.zoom / 1.6, cx, cy);
   });
@@ -6782,7 +6979,7 @@
     clearTimeout(hashTimer);
     hashTimer = setTimeout(function () {
       if (!ready) return;
-      var h = "?y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" + (perf.gpu ? "&gpu" : "") : "") + (moveFloor === 1 && addrHas("full") ? "&full" : "");
+      var h = "?y=" + hashTime() + "&v=" + view.lon.toFixed(2) + "," + view.lat.toFixed(2) + "," + view.zoom.toFixed(2) + (!flat && Math.abs(view.roll) >= 0.05 ? "," + view.roll.toFixed(1) : "") + (flat ? "&flat=1" : "") + (devOpen ? "&dev" : "") + (perf ? "&fps" + (perf.gpu ? "&gpu" : "") : "") + (moveFloor === 1 && addrHas("full") ? "&full" : "");
       if (location.search + location.hash !== h) try { history.replaceState(null, "", location.pathname + h); } catch (e) {}
     }, 250);
   }
@@ -7115,9 +7312,10 @@
     if (h.flat === "1") flat = true;
     if (h.v) {
       var v = h.v.split(",").map(Number);
-      if (v.length === 3 && v.every(isFinite)) { view.lon = v[0]; view.lat = v[1]; view.zoom = v[2]; }
+      if ((v.length === 3 || v.length === 4) && v.every(isFinite)) { view.lon = v[0]; view.lat = v[1]; view.zoom = v[2]; view.roll = v.length === 4 ? wrap180(v[3]) : 0; }
     }
     syncProjection();
+    syncCompass();
     layout();
     Promise.all([
       fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; })
@@ -7201,6 +7399,21 @@
       return ch.map(function (a) { a.sort(function (x, y) { return x - y; }); return a[a.length >> 1]; });
     },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
+    // How far d3's projection (used for the largest shapes and to find the place under the pointer) lands from CHRONIA's own
+    // at a spread of points on the near side, in pixels, so the roll is checked to turn both the same way.
+    projGap: function () {
+      var worst = 0;
+      for (var a = -60; a <= 60; a += 20) for (var b = -60; b <= 60; b += 20) {
+        var ll = [view.lon + a, Math.max(-85, Math.min(85, view.lat + b))], q = projectLL(ll[0], ll[1]), r = projection(ll);
+        if (q && q[2] > 0.15 && r) worst = Math.max(worst, Math.hypot(q[0] - r[0], q[1] - r[1]));
+      }
+      return worst;
+    },
+    turn: function (deg) { rollBy(deg); writeHash(); },
+    roll: function () { return view.roll; },
+    lonLatAt: function (x, y) { return lonLatAt(x, y); },
+    project: function (lon, lat) { return projectLL(lon, lat); },
+    prepareFrame: function (t) { var t0 = performance.now(), ok = prepareFrame(t); return ok ? performance.now() - t0 : -1; },
     loadingJSON: function () { return jsonLoading; },
     wars: function () { return warsAtDate().map(function (r) { return r.name; }); },
     changesText: function () { return changesBody.hidden ? null : changesDate.textContent + " | " + changesList.textContent; },

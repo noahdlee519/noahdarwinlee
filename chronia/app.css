@@ -1603,13 +1603,123 @@ select.ch-save-input {
   text-decoration-thickness: 2px;
 }
 
-.ch-wiki-img {
+/* The note's picture opens larger (the lightbox, below). */
+.ch-wiki-zoom {
   float: right;
+  margin: 3px 0 8px 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.ch-wiki-zoom[hidden] {
+  display: none;
+}
+
+.ch-wiki-zoom:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-wiki-img {
+  display: block;
   max-width: 108px;
   max-height: 130px;
-  margin: 3px 0 8px 14px;
   border: 1px solid var(--ch-faint);
   filter: sepia(0.18) saturate(0.92);
+  transition: border-color 0.15s;
+}
+
+.ch-wiki-zoom:hover .ch-wiki-img {
+  border-color: var(--ink);
+}
+
+/* A picture from a note, as large as the window allows, on a plate of the page's paper over the dimmed map. */
+.ch-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(40, 28, 16, 0.74);
+  cursor: zoom-out;
+}
+
+.ch-lightbox[hidden] {
+  display: none;
+}
+
+.ch-lightbox-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 12px 12px 10px;
+  box-sizing: border-box;
+  background-color: var(--bg);
+  background-image: var(--ch-grain);
+  background-size: 260px 260px;
+  border: 1px solid var(--rule);
+  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), 0 18px 50px rgba(20, 12, 4, 0.45);
+  cursor: default;
+}
+
+.ch-lightbox-img {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  max-width: min(1280px, calc(100vw - 58px));
+  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
+  object-fit: contain;
+  border: 1px solid var(--ch-faint);
+  background: var(--ch-paper);
+}
+
+.ch-lightbox-cap {
+  max-width: min(640px, calc(100vw - 58px));
+  margin: 9px 4px 0;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ch-muted);
+}
+
+.ch-lightbox-cap span {
+  color: var(--ink);
+}
+
+.ch-lightbox-cap a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.ch-lightbox-close {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ch-lightbox-close svg {
+  display: block;
+}
+
+.ch-lightbox-close:focus-visible,
+.ch-lightbox-cap a:focus-visible {
+  outline: 2px solid var(--bg);
+  outline-offset: 2px;
 }
 
 .ch-wiki-text {
@@ -2822,4 +2932,97 @@ select.ch-save-input {
   .ch-invite:not([hidden]) {
     animation: ch-fade 400ms ease both;
   }
+}
+
+/* Turning the globe: three buttons under Globe in the View panel, and, while the globe is turned, a compass over the
+   Changes button whose needle points north and which turns it back north up. */
+.ch-turn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+}
+
+.ch-turn-label {
+  flex: 1 1 auto;
+  color: var(--ink);
+}
+
+.ch-turn-btn {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ch-faint);
+  background: none;
+  color: var(--ink);
+  font-family: var(--ch-sc);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.ch-turn-btn:hover:not(:disabled) {
+  background: var(--ch-btn-hover);
+}
+
+.ch-turn-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ch-turn-btn:focus-visible,
+.ch-compass:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.ch-turn-how {
+  margin: 4px 0 2px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ch-muted);
+}
+
+.ch-compass {
+  width: 42px;
+  height: 42px;
+  padding: 5px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  border-radius: 50%;
+  background-color: var(--bg);
+  background-image: var(--ch-grain);
+  background-size: 260px 260px;
+  box-shadow: 0 1px 2px rgba(58, 42, 27, 0.1);
+  cursor: pointer;
+}
+
+.ch-compass[hidden] {
+  display: none;
+}
+
+.ch-compass svg {
+  display: block;
+}
+
+.ch-compass .n {
+  fill: var(--ch-select);
+}
+
+.ch-compass .s {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}
+
+.ch-compass circle {
+  fill: var(--ink);
+}
+
+
+.ch-side > .ch-compass:not([hidden]) {
+  display: grid;
 }
