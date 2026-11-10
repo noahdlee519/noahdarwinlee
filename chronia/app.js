@@ -4511,7 +4511,9 @@
   yearInput.addEventListener("focus", function () { yearMark.classList.remove("is-on"); });
   yearInput.addEventListener("focus", function () { yearInput.select(); });
 
-  var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, yearChange: 700, month: 60, monthChange: 400, load: 100 };
+  // Play keeps an even pace (since 10 November 2026; before, it held on a date whose borders changed): every step of the
+  // same kind takes the same time, divided by the speed slider's.
+  var PLAY = { yearlyFrom: 1200, map: 1400, early: 800, year: 250, month: 60, load: 100 };
   var playTimer = 0, playMode = "";
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
   function playEnd() { return modern ? lastTime() : dated ? dated.to : maps[maps.length - 1].y; }
@@ -4547,16 +4549,30 @@
     var prev = Math.round(t) - 1;
     return prev === 0 ? -1 : prev;
   }
-  function changedBetween(a, b) {
-    if (isModern(a) !== isModern(b)) return true;
-    for (var i = 0; i < points.length; i++) if (points[i] > a + 1e-6 && points[i] <= b + 1e-6) return true;
-    return false;
-  }
   function playWait(from, to) {
-    var changed = changedBetween(Math.min(from, to), Math.max(from, to));
-    if (isMonthly(to)) return changed ? PLAY.monthChange : PLAY.month;
+    if (isMonthly(to)) return PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
-    return changed ? PLAY.yearChange : PLAY.year;
+    return PLAY.year;
+  }
+  // While the timeline plays, the next PLAY_FILES files in its direction are asked for as soon as each step is taken, not
+  // when the browser is next idle (which, while it plays, may be seconds away), so play seldom waits for one: from 1200
+  // the files hold 50 to 100 years, and 1,500 to 2,000 years before that, and each comes as its rough lines and then its
+  // fine ones. Going forward from the last of them, the file from 1886 on (modern.json) is asked for too.
+  var PLAY_FILES = 2;
+  function prefetchPlay(t) {
+    if (!playTimer || !dated) return;
+    var back = playBack(), noop = function () {};
+    if (isModern(t)) {
+      if (back) for (var b = 1; b <= PLAY_FILES; b++) if (dated.chunks[dated.chunks.length - b]) loadChunk(dated.chunks.length - b).catch(noop);
+      return;
+    }
+    if (!isDated(t)) return;
+    var ck = chunkIndexFor(t);
+    for (var k = 1; k <= PLAY_FILES; k++) {
+      var i = back ? ck - k : ck + k;
+      if (dated.chunks[i]) loadChunk(i).catch(noop);
+      else if (!back && i === dated.chunks.length && modern) loadModern().catch(noop);
+    }
   }
   function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + now : !!maps.length && maps[mapIndexFor(now)].snap === current); }
   function playStep() {
@@ -4564,6 +4580,7 @@
     var back = playBack(), from = now, to = back ? playPrev(now) : playNext(now);
     if (back ? from <= FIRST_T + 1e-9 || to < FIRST_T - 1e-9 : to > playEnd() + 1e-9) return -1;
     setTime(to);
+    prefetchPlay(to);
     prepareAhead(to);
     return playWait(from, to);
   }
@@ -4660,7 +4677,8 @@
       var wait = playStep();
       if (wait < 0) stopPlay(); else playTimer = setTimeout(tick, playDelay(wait));
     };
-    playTimer = setTimeout(tick, playDelay(isMonthly(now) ? PLAY.monthChange : now < PLAY.yearlyFrom ? (isDated(now) ? PLAY.early : PLAY.map) : PLAY.yearChange));
+    playTimer = setTimeout(tick, playDelay(playWait(now, now)));
+    prefetchPlay(now);
   }
   function stopPlay() {
     if (!playTimer) return;
