@@ -3924,7 +3924,7 @@
   function fmtDate(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
-    if (!isMonthly(t)) return (ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " : "") + fmtYear(Math.round(t));
+    if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " + (ry > 0 ? ry : fmtYear(ry)) : fmtYear(ry); }
     var d = dateOfDay(dayOfTime(t));
     return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
   }
@@ -4446,7 +4446,7 @@
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
   function commitYearInput() {
-    var t = parseTime(yearInput.value), fine = /^([A-Za-z]+) (\d{4})$/.exec(String(yearInput.value).trim());
+    var t = parseTime(yearInput.value), fine = /^([A-Za-z]+) (?:AD )?(\d{1,4})$/i.exec(String(yearInput.value).trim());
     if (t === null && fine && monthIndex(fine[1]) && ctlFineYear(+fine[2])) {
       stopPlay();
       setTime(+fine[2]);
@@ -7368,7 +7368,7 @@
       }
       cities = r[2] ? { ranks: r[2].ranks, rows: prepCities(r[2], false), minorLoad: null } : null;
       buildPoints();
-      var fine = h.y ? /^(\d{4})-(\d{2})$/.exec(h.y) : null;
+      var fine = h.y ? /^(\d{1,4})-(\d{2})$/.exec(h.y) : null;
       if (fine && +fine[1] < monthlyFrom() && +fine[2] >= 1 && +fine[2] <= 12) { ctlMonth = +fine[2]; h.y = fine[1]; }
       var t0 = h.y ? parseTime(h.y) : null;
       now = Math.max(KNOTS[0][0], t0 !== null ? t0 : parseTime(String(START_YEAR)));
