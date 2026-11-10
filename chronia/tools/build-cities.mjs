@@ -337,7 +337,10 @@ for (const e of ents) {
     since = toT(e.tSince);
     if (e.real && !fromHanson && firstReal - LEAD > since) { const v = Math.min(pts[0][1] / 4, EARLY_CAP); pts.unshift([since, v], [firstReal - LEAD, v]); }
   }
-  else if (dated.length) since = Math.min(...dated, firstReal ?? Infinity);
+  else if (dated.length) {
+    since = Math.min(...dated, firstReal ?? Infinity);
+    if (e.real && !fromHanson && firstReal - LEAD > since) { const v = Math.min(pts[0][1] / 4, EARLY_CAP); pts.unshift([since, v], [firstReal - LEAD, v]); }
+  }
   else if (e.us && firstReal >= e.us.pts[0][0] - 5) { since = prominentFrom(pts, e.us.pts[0][0] - 10); if (since < pts[0][0]) pts.unshift([since, pts[0][1] / 2]); }
   else if (e.real && firstReal < 1850) { since = firstReal - LEAD; pts.unshift([since, pts[0][1] / 4]); }
   else {

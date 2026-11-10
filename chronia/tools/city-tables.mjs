@@ -51,7 +51,13 @@ export const CITY_SINCE = {
   "Paderborn": 777, "Münster": 793, "Osnabrück": 780, "Frankfurt am Main": 794, "Worms": 1, "Maastricht": 1, "Liège": 705, "Ghent": 630,
   "Regensburg": 179, "Southampton": 700, "Ipswich": 700, "Oxford": 912, "Worcester|0": 680, "Derby": 873, "Nottingham": 868, "Norwich": 900,
   "Waterford": 914, "Szczecin": 750, "Brandenburg": 700, "Poznań": 940, "Płock": 950, "Kalisz": 900, "Opole": 900, "Nitra": 828,
-  "Smolensk": 863, "Pskov": 903, "Chernihiv": 907, "Oviedo": 761, "León|-10": 856, "Monza": 595, "Murcia": 825, "Badajoz": 875, "Mahdia": 916
+  "Smolensk": 863, "Pskov": 903, "Chernihiv": 907, "Oviedo": 761, "León|-10": 856, "Monza": 595, "Murcia": 825, "Badajoz": 875, "Mahdia": 916,
+  "Plovdiv": -342, "Larissa": -600, "Faiyum": -2600, "Argos": -2000, "Byblos": -3000, "Athens": -1400, "Beirut": -1400, "Genoa": -500,
+  "Aleppo": -2400, "Niš": -250, "Sidon": -3000, "Homs": -150, "Kirkuk": -2200, "Ankara": -800, "Balkh": -600, "Vienna": 50, "Tlemcen": 200,
+  "Varanasi": -1000, "Aomori": 1624, "Luoyang": -1036, "Bo": -1600, "Anyang": 493, "Kaifeng": -364, "Teotihuacan": -100, "Tikal": -600,
+  "Caracol": -600, "Tiahuanaco": -600, "Tollan": 650, "London": 47, "Lyon": -43, "Murzuk": 1310, "Ghat": 1000, "Manastır": 1000,
+  "Cádiz": -1100, "Damascus": -1500, "Carthage": -814, "Merv": -500, "Xi'an": -202, "Ujjain": -700, "Ephesus": -1000, "Seleucia|40": -305,
+  "Medina": -600, "Thebes|30": -2150, "Luxor": 200, "Troy": -1700, "Nineveh": -2500, "Aswan": -1600, "Duhuang": -111
 };
 
 export const CITY_UNTIL = {
@@ -59,14 +65,14 @@ export const CITY_UNTIL = {
   "Seleucia": 300, "Persepolis": -330, "Nineveh": -612, "Carthage": 698, "Pompeii": 79, "Tiahuanaco": 1000, 
   "Memphis|30": 900, "Karakorum": 1388, "Sarai": 1502, "Mayapan": 1450, "Gauda": 1576, "Hormuz": 1622, "Fatehpur Sikri": 1610, "Chanchan": 1470, "Tollan": 1150,
   "Mohenjodaro": -1900, "Ayutthaya": 1767, "Xianyang": -206, "Palmyra": 1400, "Petra": 700, "Bagan": 1369, "Zimbabwe": 1450,
-  "Mapungubwe": 1290, "Kilwa": 1600, "Niani": 1600, "Koumbi Saleh": 1240
+  "Mapungubwe": 1290, "Kilwa": 1600, "Niani": 1600, "Koumbi Saleh": 1240,
+  "Namazga-Tepe": -1000, "Akkad": -2000, "Assur": -614, "Carchemish": -605, "Yin": -1046, "Bo": -1300
 };
 
 export const CITY_ADD = [
   ["Sultaniyeh", 48.797, 36.434, 1302, 1500, [[1302, 5], [1320, 50], [1340, 30], [1384, 15], [1400, 8], [1500, 3]]],
   ["Mrauk U", 93.19, 20.59, 1430, 1785, [[1430, 5], [1550, 30], [1600, 50], [1785, 20]]],
   ["Fatehpur Sikri", 77.66, 27.09, 1571, 1610],
-  ["Nineveh", 43.15, 36.36, -2500, -612],
   ["Persepolis", 52.89, 29.93, -515, -330],
   ["Mapungubwe", 29.24, -22.19, 1075, 1290],
   ["Koumbi Saleh", -7.98, 15.77, 700, 1240],
@@ -152,7 +158,30 @@ export const CITY_ADD = [
   ["Murom", 42.04, 55.58, 862, null, [[862, 1], [1000, 2], [1800, 8], [2020, 110]]],
   ["Pereyaslav", 31.45, 50.07, 907, null, [[907, 1], [1000, 2], [1800, 8], [2020, 27]]],
   ["Itil", 47.9, 46.4, 750, 969, [[750, 5], [900, 10], [965, 5], [969, 0.5]]],
-  ["Tamatarcha", 36.73, 45.21, 700, 1100, [[700, 2], [900, 3], [1000, 4], [1100, 1]]]
+  ["Tamatarcha", 36.73, 45.21, 700, 1100, [[700, 2], [900, 3], [1000, 4], [1100, 1]]],
+  ["Kerma", 30.4, 19.6, -2500, -1500, [[-2500, 2], [-1700, 10], [-1500, 2]]],
+  ["Napata", 31.83, 18.54, -1450, -23, [[-1450, 2], [-750, 10], [-590, 5], [-23, 2]]],
+  ["Meroë", 33.75, 16.94, -590, 350, [[-590, 5], [-300, 20], [1, 20], [350, 5]]],
+  ["Lothal", 72.25, 22.52, -2200, -1900, [[-2200, 2], [-1900, 2]]],
+  ["Panlongcheng", 114.27, 30.68, -1500, -1300, [[-1500, 3], [-1300, 3]]],
+  ["Fenghao", 108.75, 34.23, -1046, -771, [[-1046, 20], [-900, 50], [-771, 10]]],
+  ["Gordion", 31.99, 39.65, -900, -189, [[-900, 2], [-750, 10], [-676, 3], [-189, 2]]],
+  ["Tushpa", 43.33, 38.5, -830, -590, [[-830, 3], [-700, 10], [-590, 3]]],
+  ["Pasargadae", 53.17, 30.2, -546, -330, [[-546, 5], [-330, 5]]],
+  ["Shabwa", 47.01, 15.37, -800, 300, [[-800, 2], [-300, 10], [300, 3]]],
+  ["Kaushambi", 81.38, 25.34, -600, 600, [[-600, 5], [-400, 20], [300, 10], [600, 2]]],
+  ["Shravasti", 82.05, 27.52, -600, 600, [[-600, 5], [-400, 20], [400, 5], [600, 2]]],
+  ["Olynthus", 23.35, 40.3, -432, -348, [[-432, 10], [-348, 10]]],
+  ["Ai-Khanoum", 69.42, 37.17, -280, -145, [[-280, 5], [-200, 10], [-145, 5]]],
+  ["Garama", 12.98, 26.54, -500, 700, [[-500, 2], [100, 4], [700, 1]]],
+  ["San Lorenzo", -94.75, 17.75, -1400, -900, [[-1400, 2], [-1200, 8], [-900, 2]]],
+  ["La Venta", -94.04, 18.1, -1100, -400, [[-1100, 2], [-800, 10], [-400, 2]]],
+  ["Monte Albán", -96.77, 17.04, -500, 850, [[-500, 5], [-200, 15], [100, 20], [500, 25], [750, 15], [850, 3]]],
+  ["El Mirador", -89.92, 17.75, -600, 150, [[-600, 2], [-300, 20], [-100, 30], [150, 3]]],
+  ["Kaminaljuyu", -90.55, 14.63, -800, 900, [[-800, 2], [-300, 10], [300, 10], [900, 2]]],
+  ["Cuicuilco", -99.18, 19.3, -800, 250, [[-800, 2], [-300, 20], [1, 5], [250, 2]]],
+  ["Jenne-Jeno", -4.56, 13.89, -250, 1400, [[-250, 1], [400, 5], [800, 20], [1400, 3]]],
+  ["Sannai-Maruyama", 140.7, 40.81, -3900, -2200, [[-3900, 0.5], [-3000, 1], [-2200, 0.5]]]
 ];
 
 export const REBA_FIX = {
@@ -172,10 +201,24 @@ export const REBA_FIX = {
   "Ruhr": { drop: true },
   "Liaotung": { drop: true },
   "Prambanan": { drop: true },
-  "Meckenbeuren": { move: [11.413, 53.629, "Schwerin"] }
+  "Meckenbeuren": { move: [11.413, 53.629, "Schwerin"] },
+  "Perspolis": { drop: true },
+  "Ecbatana": { drop: true }
 };
 
 export const CITY_POP = {
+  "Teotihuacan": { drop: [-1100, 700], pts: [[-100, 5], [1, 40], [100, 80], [250, 100], [450, 125], [550, 90], [650, 25]] },
+  "Tikal": { drop: [-1100, 950], pts: [[-600, 1], [-400, 2], [-200, 8], [-100, 15], [100, 20], [300, 30], [500, 40], [700, 60], [830, 45], [900, 5]] },
+  "Caracol": { drop: [-1100, 950], pts: [[-600, 1], [-400, 2], [-200, 3], [-100, 5], [100, 10], [300, 15], [500, 40], [650, 100], [800, 60], [900, 10]] },
+  "Tiahuanaco": { drop: [-1100, 1100], pts: [[-600, 1], [-400, 2], [-200, 3], [-100, 5], [100, 10], [300, 15], [500, 25], [600, 30], [800, 40], [1000, 10]] },
+  "Tollan": { drop: [-500, 1200], pts: [[650, 5], [900, 40], [1100, 30], [1150, 10]] },
+  "Athens": { pts: [[-1300, 3], [-1100, 2], [-900, 3], [-800, 5], [-600, 15], [-500, 30]] },
+  "Sidon": { pts: [[-1500, 5], [-1300, 6], [-1100, 8], [-900, 15], [-750, 20], [-600, 20]] },
+  "Assur": { pts: [[-800, 15], [-700, 15], [-614, 5]] },
+  "Carchemish": { pts: [[-1000, 10], [-750, 15], [-605, 5]] },
+  "Damascus": { pts: [[-900, 15], [-732, 10]] },
+  "Carthage": { pts: [[-750, 10], [-650, 40]] },
+  "Hamadan": { pts: [[-600, 25], [-500, 100], [-400, 100], [-300, 25]] },
   // Chandler gives Iznik 125,000 in 1800, Smyrna's figure for that year; the town of Iznik had a few thousand.
   "Iznik": { drop: [1790, 1810], pts: [] },
   "Zanzibar": { drop: [-9999, 1849], pts: [[1700, 3], [1800, 10]] },
@@ -257,7 +300,7 @@ export const CITY_POP = {
   "Mahdia": { pts: [[916, 5], [1000, 10]] }
 };
 
-export const PLACE_DROP = new Set(["Calusa", "Levisa", "Cumbe Mayo", "Ōyu site"]);
+export const PLACE_DROP = new Set(["Calusa", "Levisa", "Cumbe Mayo", "Ōyu site", "Jätinkirkko"]);
 export const PLACE_EDIT = {
   "Göbekli Tepe": { until: -8000 },
   "Çatal Höyük": { until: -5950 },
@@ -267,7 +310,7 @@ export const PLACE_EDIT = {
   "Kaneš": { until: -1400 },
   "Ur": { until: -500 },
   "Uruk": { until: 700 },
-  "Taxila": { until: 500 },
+  "Taxila": { since: -1000, until: 500 },
   "Siga": { until: 400 },
   "Lambaesa": { until: 700 },
   "Xanadu": { since: 1256, until: 1369 },
@@ -341,7 +384,7 @@ export const CITY_NAMES = {
   "Dhaka": [[1608, "Dacca"], ["1982-01-01", "Dhaka"]],
   "Beijing": [[-9999, "Ji"], [938, "Yanjing"], [1153, "Zhongdu"], [1215, "Yanjing"], [1267, "Khanbaliq"], [1368, "Beiping"], [1403, "Peking"], ["1928-06-28", "Peiping"], ["1949-09-27", "Peking"], [PIN, "Beijing"]],
   "Nanjing": [[-9999, "Jinling"], [229, "Jianye"], [317, "Jiankang"], [589, "Jiangning"], [1129, "Jiankang"], [1275, "Jiqing"], [1368, "Yingtian"], [1421, "Nanjing"], [1800, "Nanking"], [PIN, "Nanjing"]],
-  "Xi'an": [[-9999, "Hao"], [-202, "Chang'an"], [904, "Jingzhao"], [1369, "Xi'an"], [1800, "Sian"], [PIN, "Xi'an"]],
+  "Xi'an": [[-9999, "Chang'an"], [904, "Jingzhao"], [1369, "Xi'an"], [1800, "Sian"], [PIN, "Xi'an"]],
   "Hangzhou": [[-9999, "Hangzhou"], [1138, "Lin'an"], [1276, "Hangzhou"], [1800, "Hangchow"], [PIN, "Hangzhou"]],
   "Kaifeng": [[-9999, "Daliang"], [-225, "Kaifeng"], [960, "Bianjing"], [1127, "Kaifeng"]],
   "Guangzhou": china("Guangzhou", "Canton", "Guangzhou", 1700),
@@ -367,7 +410,7 @@ export const CITY_NAMES = {
   "Yantai": [[1800, "Chefoo"], [PIN, "Yantai"]],
   "Guiyang": china("Guiyang", "Kweiyang", "Guiyang"),
   "Baotou": china("Baotou", "Paotow", "Baotou"),
-  "Zhengzhou": china("Zhengzhou", "Chengchow", "Zhengzhou"),
+  "Zhengzhou": [[-9999, "Ao"], [583, "Zhengzhou"], [1800, "Chengchow"], [PIN, "Zhengzhou"]],
   "Taiyuan": china("Jinyang", "Taiyuan", "Taiyuan", 982),
   "Shenyang": [[-9999, "Shenyang"], [1634, "Mukden"], ["1945-08-20", "Shenyang"]],
   "Zhangjiakou": [[1429, "Kalgan"], ["1949-01-01", "Zhangjiakou"]],
@@ -494,8 +537,14 @@ export const CITY_NAMES = {
   "Amman": [[-9999, "Rabbath Ammon"], [-250, "Philadelphia"], [640, "Amman"]],
   "Cairo": [[641, "Fustat"], [969, "Cairo"]],
   "Luxor": [[-9999, "Thebes"], [700, "Luxor"]],
+  "Thebes|30": [[-9999, "Thebes"]],
+  "Hamadan": [[-9999, "Ecbatana"], [700, "Hamadan"]],
+  "Kirkuk": [[-9999, "Arrapha"], [600, "Kirkuk"]],
+  "Troy": [[-9999, "Troy"], [-700, "Ilium"]],
+  "Navarino": [[-9999, "Pylos"]],
+  "Duhuang": [[-9999, "Dunhuang"]],
   "Aswan": [[-9999, "Syene"], [640, "Aswan"]],
-  "Faiyum": [[-9999, "Crocodilopolis"], [-250, "Arsinoe"], [640, "Faiyum"]],
+  "Faiyum": [[-9999, "Shedet"], [-300, "Crocodilopolis"], [-250, "Arsinoe"], [640, "Faiyum"]],
   "Beirut": [[-9999, "Berytus"], [640, "Beirut"]],
   "Tyre": [[-9999, "Tyre"]],
   "Homs": [[-9999, "Emesa"], [640, "Homs"]],
@@ -546,7 +595,7 @@ export const CITY_NAMES = {
   "Zaragoza": [[-9999, "Caesaraugusta"], [714, "Saraqusta"], [1118, "Zaragoza"]],
   "Barcelona": [[-9999, "Barcino"], [500, "Barcelona"], [718, "Barshaluna"], [801, "Barcelona"]],
   "Tarragona": [[-9999, "Tarraco"], [500, "Tarragona"], [714, "Tarrakuna"], [1129, "Tarragona"]],
-  "Cádiz": [[-9999, "Gades"], [500, "Cádiz"], [711, "Qadis"], [1262, "Cádiz"]],
+  "Cádiz": [[-9999, "Gadir"], [-206, "Gades"], [500, "Cádiz"], [711, "Qadis"], [1262, "Cádiz"]],
   "Valencia": [[-9999, "Valentia"], [714, "Balansiya"], [1238, "Valencia"]],
   "Granada": [[-9999, "Iliberis"], [1013, "Gharnata"], [1492, "Granada"]],
   "Naples": [[-9999, "Neapolis"], [500, "Naples"]],
