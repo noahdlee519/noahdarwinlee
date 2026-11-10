@@ -17,7 +17,8 @@ export const CITY_SINCE = {
   "Surgut": "1965-01-01", "Nizhnevartovsk": "1972-01-01", "Baghdad": 762, "Cairo": 641, "Kyoto": 794, "Nara-shi": 710, "St. Petersburg|30": 1703, "Mexico City": 1325,
   "Moscow": 1147, "Kairouan": 670, "Fez": 789, "Marrakesh": 1070, "Rabat": 1150, "Venice": 421, "Amsterdam": 1275, "Berlin": 1237,
   "Esztergom": 972, "Székesfehérvár": 972, "Veszprém": 1000, "Olomouc": 1055, "Brno": 1091, "Bamberg": 1007, "Roskilde": 980, "Trondheim": 997,
-  "Kutaisi": 800, "Ganja": 859, "Vidin": 900,
+  "Kutaisi": 800, "Ganja": 859, "Vidin": 900, "Freiburg": 1120, "Bern": 1191, "Stralsund": 1234, "Rostock": 1218, "Elbląg": 1237, "Toruń": 1233,
+  "Tartu": 1030, "Kostroma": 1152, "Innsbruck": 1180, "Graz": 1128,
   "Stockholm": 1252, "Madrid": 865, "Warsaw": 1300, "Riga": 1201, "Tallinn": 1219, "Vilnius": 1323, "Kaliningrad": 1255, "Lübeck": 1143,
   "Munich": 1158, "Dresden": 1206, "Leipzig": 1165, "Hamburg": 810, "Bremen": 787, "Copenhagen": 1167, "Edinburgh": 600, "Dublin": 841,
   "Oslo": 1048, "Bergen": 1070, "Helsinki": 1550, "Turku": 1229, "Gothenburg": 1621, "Kraków": 900, "Prague": 880, "Wrocław": 900,
@@ -206,7 +207,20 @@ export const CITY_ADD = [
   ["Mértola", -7.66, 37.64, 712, null, [[712, 1], [1033, 3], [1250, 1], [1800, 1], [2020, 7]]],
   ["Melfi", 15.66, 41.0, 1018, null, [[1018, 1], [1100, 3], [1800, 8], [2020, 17]]],
   ["Aversa", 14.21, 40.97, 1030, null, [[1030, 1], [1100, 4], [1800, 15], [2020, 52]]],
-  ["Bressanone", 11.66, 46.72, 901, null, [[901, 0.5], [1100, 1.5], [1800, 3], [2020, 22]]]
+  ["Bressanone", 11.66, 46.72, 901, null, [[901, 0.5], [1100, 1.5], [1800, 3], [2020, 22]]],
+  // From 1101 to 1250: the new towns of the German east and the Baltic crusades, the Reconquista's frontier, the Crusaders'
+  // castles, and the princes' seats.
+  ["Halych", 24.73, 49.12, 1140, null, [[1140, 2], [1200, 5], [1241, 3], [1400, 1], [1800, 2], [2020, 6]]],
+  ["Alanya", 32.0, 36.54, 1100, null, [[1100, 1], [1221, 5], [1300, 8], [1800, 3], [2020, 110]]],
+  ["Chełmno", 18.43, 53.35, 1065, null, [[1065, 0.5], [1233, 2], [1800, 3], [2020, 20]]],
+  ["Wismar", 11.45, 53.89, 1229, null, [[1229, 1], [1300, 6], [1800, 6], [2020, 43]]],
+  ["Fribourg", 7.15, 46.8, 1157, null, [[1157, 1], [1300, 5], [1800, 6], [2020, 38]]],
+  ["Lüneburg", 10.41, 53.25, 956, null, [[956, 0.5], [1200, 3], [1400, 10], [1800, 10], [2020, 75]]],
+  ["Stendal", 11.86, 52.61, 1160, null, [[1160, 1], [1300, 6], [1800, 6], [2020, 40]]],
+  ["Landshut", 12.16, 48.53, 1204, null, [[1204, 1], [1300, 5], [1800, 8], [2020, 73]]],
+  ["Teruel", -1.11, 40.35, 1171, null, [[1171, 1], [1300, 4], [1800, 8], [2020, 36]]],
+  ["Plasencia", -6.09, 40.03, 1186, null, [[1186, 1], [1300, 4], [1800, 6], [2020, 40]]],
+  ["Kerak", 35.7, 31.19, 1142, null, [[1142, 1], [1300, 3], [1800, 2], [2020, 30]]]
 ];
 
 export const REBA_FIX = {
@@ -233,6 +247,16 @@ export const REBA_FIX = {
   "Kutaisi": { pts: [[800, 3], [1000, 10], [1122, 10], [1500, 5]] },
   "Ganja": { pts: [[859, 5], [1000, 20], [1139, 20], [1500, 10]] },
   "Vidin": { pts: [[900, 3], [1003, 3], [1300, 4]] },
+  "Freiburg": { pts: [[1120, 1], [1300, 8], [1500, 8]] },
+  "Bern": { pts: [[1191, 1], [1300, 4], [1500, 5]] },
+  "Stralsund": { pts: [[1234, 1], [1300, 10], [1500, 10]] },
+  "Rostock": { pts: [[1218, 1], [1300, 10], [1500, 12]] },
+  "Elbląg": { pts: [[1237, 1], [1300, 8], [1500, 8]] },
+  "Toruń": { pts: [[1233, 1], [1300, 8], [1500, 8]] },
+  "Tartu": { pts: [[1030, 1], [1224, 3], [1300, 5], [1500, 5]] },
+  "Kostroma": { pts: [[1152, 1], [1300, 5], [1500, 5]] },
+  "Innsbruck": { pts: [[1180, 1], [1300, 3]] },
+  "Graz": { pts: [[1128, 1], [1300, 4]] },
   "Gelibolu": { before: 1400 },
   "Ruhr": { drop: true },
   "Liaotung": { drop: true },
@@ -815,6 +839,9 @@ export const CITY_NAMES = {
   "Huesca": [[500, "Osca"], [714, "Washqa"], [1096, "Huesca"]],
   "Bressanone": [[901, "Brixen"], [1923, "Bressanone"]],
   "Silves": [[713, "Shilb"], [1249, "Silves"]],
+  "Alanya": [[1100, "Kalonoros"], [1221, "Alaiye"], [1935, "Alanya"]],
+  "Chełmno": [[1065, "Chełmno"], [1233, "Kulm"], [1466, "Chełmno"], [1772, "Kulm"], ["1920-01-18", "Chełmno"]],
+  "Elbląg": [[1237, "Elbing"], [1945, "Elbląg"]],
   "Mértola": [[712, "Martulah"], [1238, "Mértola"]],
   "Tortosa": [[500, "Dertosa"], [714, "Turtusha"], [1148, "Tortosa"]],
   "Girona": [[500, "Girona"], [718, "Jarunda"], [785, "Girona"]],

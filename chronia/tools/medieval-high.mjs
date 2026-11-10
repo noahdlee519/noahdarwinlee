@@ -583,4 +583,541 @@ export function high(h) {
     "Gadabay", "Dashkasan"), "962 SHAD; 1075 SEL");
   add(AZ("Shamakhi", "Ismayilli", "Agsu", "Gobustan", "Kurdamir", "Hajigabul", "Absheron", "Baku", "Sumqayit", "Khizi", "Siyazan", "Shabran", "Quba", "Qusar", "Khachmaz", "Goychay",
     "Ujar", "Agdash", "Zardab", "Salyan", "Neftchala", "Şirvan", "Sabirabad", "Saatly", "Imishli", "Bilasuvar", "Masally", "Lankaran", "Astara", "Lerik", "Yardimli", "Jalilabad"), "962 SHIR");
+
+  // ——————————————— 1101 to 1250 ———————————————
+  const ANGV = "Angevin Empire", CROA = "Crown of Aragon", CROCN = "Crown of Castile", ALMON = "Almohad Caliphate";
+
+  // ——— Britain and Ireland, 1101 to 1250 ———
+  // Henry II's Angevin Empire (1154 to the loss of Normandy in 1204): England, Normandy, Anjou with Maine and Touraine,
+  // Aquitaine (Eleanor's, from 1152), Brittany (Geoffrey's, from 1166), and Ireland, drawn as one realm with its lands as
+  // members, though the continental ones were fiefs of the French crown; after 1204 Gascony and Ireland are the English
+  // king's. The Scots held Cumbria and Northumberland from 1136 and 1139 to 1157; Galloway was a Scottish lordship from
+  // Fergus (about 1120) until its partition (1235). Wales: Gruffydd ap Cynan's and Owain Gwynedd's Gwynedd, which took
+  // Ceredigion (1136, to the Lord Rhys in 1153) and the Perfeddwlad (1167), Powys parted at Madog ap Maredudd's death (1160),
+  // Llywelyn the Great's rule over Powys Wenwynwyn (1208 to 1241), and the Perfeddwlad ceded to the Crown (1241). Ireland:
+  // Munster parted into Thomond and Desmond (1118); the English from Bannow (1169): Waterford and Dublin (1170), Leinster and
+  // Meath (1171 and 1172), Ulster (de Courcy, 1177), Ormond (1185), Limerick (1197), Cork (about 1210), and Connacht's west
+  // (de Burgh, 1235).
+  later("WES", [["1154-12-19", { part: ANGV }], ["1204-06-24", { part: "" }]]);
+  later("NMD", [["1154-12-19", { part: ANGV }]]);
+  later("ANJ", [["1154-12-19", { part: ANGV }], ["1204-06-24", { part: FRANCE }]]);
+  later("AQD", [["1154-12-19", { part: ANGV }], ["1204-06-24", { part: "", ruler: ENGLAND, status: 5 }]]);
+  later("BRE", [["1166-01-01", { part: ANGV }], ["1203-01-01", { part: FRANCE }]]);
+  later("GAL", [["1120-01-01", { name: "Lordship of Galloway", wiki: "Lordship of Galloway", ruler: "Kingdom of Scotland", status: 5 }]]);
+  later("SUN", [["1101-01-01", { name: "Kingdom of Meath", wiki: "Kingdom of Meath" }]]);
+  own("LIRE", "Lordship of Ireland", { part: ANGV }, [["1204-06-24", { part: "", ruler: ENGLAND, status: 5 }]]);
+  own("THOM", "Kingdom of Thomond");
+  own("DESM", "Kingdom of Desmond");
+  own("PFAD", "Kingdom of Powys Fadog");
+  own("PWEN", "Kingdom of Powys Wenwynwyn");
+  add(h.CUMBRIA, "+ 1136 ALB; 1157 WES");
+  add(G("GBR", "Northumberland"), "+ 1139 ALB; 1157 WES");
+  add(G("GBR", "Dumfries and Galloway"), "+ 1235 ALB");
+  add(h.CEREDIGION, "+ 1110 WMAR; 1136 GWY; 1153 DEH");
+  add(G("GBR", "Carmarthenshire"), "+ 1155 DEH");
+  add(G("GBR", "Conwy", "Denbighshire"), "+ 1241 WMAR");
+  add(G("GBR", "Flintshire"), "+ 1167 GWY; 1241 WMAR");
+  add(G("GBR", "Wrexham"), "+ 1160 PFAD");
+  add(G("GBR", "Powys"), "+ 1160 PWEN; 1208 GWY; 1241 PWEN");
+  add(G("IRL", "Dublin"), "+ 1170 LIRE");
+  add(G("IRL", "Meath", "Westmeath", "Fingal"), "+ 1172 LIRE");
+  add(G("IRL", "Louth"), "+ 1185 LIRE");
+  add(G("IRL", "Kildare", "Wicklow", "Carlow", "Wexford", "Laois", "Dún Laoghaire–Rathdown", "South Dublin", "Kilkenny"), "+ 1171 LIRE");
+  add(["IRL:Waterford/*"], "+ 1170 LIRE");
+  add(["IRL#waterford-city"], "+ 1170 LIRE");
+  add(["IRL:Clare/*"], "+ 1118 THOM");
+  add(["IRL:Limerick/*"], "+ 1118 THOM; 1197 LIRE");
+  add(["IRL#limerick-city"], "+ 1118 THOM; 1197 LIRE");
+  add(["IRL:Tipperary/*"], "+ 1118 THOM; 1185 LIRE");
+  add(["IRL:Kerry/*"], "+ 1118 DESM");
+  add(["IRL:Cork/*"], "+ 1118 DESM; 1210 LIRE");
+  add(G("GBR", "Down", "Newry and Mourne", "Banbridge", "Ards", "North Down", "Castlereagh", "Belfast", "Lisburn", "Craigavon", "Antrim", "Newtownabbey", "Carrickfergus", "Larne", "Ballymena", "Moyle", "Ballymoney"),
+    "+ 1177 LIRE");
+  add(G("IRL", "Galway", "Mayo", "Sligo").map((s) => s.replace("IRL/", "IRL:" + s.slice(4) + "/")), "+ 1235 LIRE");
+  add(["JEY/*", "GGY/*"], "+ 1204 WES");
+
+  // ——— France, 1101 to 1250 ———
+  // The royal demesne grows: Bourges (1101), the Vermandois and Amiénois (Boves, 1185), Artois (Isabella of Hainaut's dowry,
+  // 1191), Normandy, Maine, Anjou, and Touraine (1204 and 1205), the Auvergne (1213), Poitou (1224) and La Rochelle (1224),
+  // Saintonge (1242), and Languedoc's east after the Albigensian Crusade (the Treaty of Paris, 1229); the Agenais goes to
+  // Toulouse as Joan of England's dowry (1196); the appanages are members: Artois (Robert, 1237), Poitou and the Auvergne
+  // (Alphonse, 1241), and Anjou and Maine (Charles, 1246). The Albigensian Crusade's Languedoc is disputed from 1209 (the
+  // Trencavel viscounties) and Toulouse from Simon de Montfort's taking of it (1215) to his death (1218). Maine is Anjou's from
+  // 1110; Champagne holds Meaux and Provins from the union with Blois (1125); Roussillon passes to Barcelona (1172).
+  own("ART", "County of Artois", { part: FRANCE });
+  own("POIT", "County of Poitou", { part: FRANCE });
+  own("ANGO", "County of Angoulême", { part: FRANCE });
+  own("ALBd", "Languedoc", { wiki: "Albigensian Crusade", claims: ["County of Toulouse", FRANCE] });
+  add(F("Indre", "Cher"), "+ 1101 WFR");
+  add(F("Aisne"), "+ 1185 WFR");
+  add(F("Pas-de-Calais"), "+ 1191 WFR; 1237 ART");
+  add(F("Seine-et-Marne"), "+ 1125 CHA");
+  add(F("Seine-Maritime", "Eure", "Calvados", "Orne", "Manche"), "+ 1204 WFR");
+  add(F("Sarthe", "Mayenne"), "+ 1110 ANJ; 1204 WFR; 1246 ANJ");
+  add(F("Maine-et-Loire"), "+ 1205 WFR; 1246 ANJ");
+  add(F("Indre-et-Loire"), "+ 1205 WFR");
+  add(F("Puy-de-Dôme", "Cantal", "Haute-Loire"), "+ 1213 WFR; 1241 POIT");
+  add(F("Vienne", "Deux-Sèvres", "Vendée"), "+ 1224 WFR; 1241 POIT");
+  add(F("Charente-Maritime"), "+ 1242 WFR");
+  add(F("Charente"), "+ 1204 ANGO");
+  add(F("Haute-Vienne", "Corrèze", "Creuse", "Dordogne"), "+ 1224 WFR");
+  add(F("Lot-et-Garonne"), "+ 1196 TOU");
+  add(F("Pyrénées-Orientales"), "+ 1172 BCN");
+  add(F("Aude", "Hérault"), "+ 1209 ALBd; 1229 WFR");
+  add(F("Gard"), "+ 1229 WFR");
+  add(F("Haute-Garonne", "Tarn", "Tarn-et-Garonne"), "+ 1215 ALBd; 1218 TOU");
+
+  // ——— Iberia, 1101 to 1250 ———
+  // The Almoravids take Valencia (1102), Santarém (1111), Zaragoza (1110), and the Balearics (1116); Alfonso the Battler takes
+  // Zaragoza (December 1118) and the Ebro; Portugal's counts become kings (São Mamede 1128, Ourique 1139) and take Santarém
+  // and Lisbon (1147); Barcelona and Aragon join as the Crown of Aragon (1137), take Tortosa (1148) and Lleida (1149), and
+  // Teruel (1171); Castile takes Cuenca (1177), Almería for a decade (1147 to 1157), and La Mancha after Las Navas (1212);
+  // Castile and León are one crown from Ferdinand III (1230). The Almohads hold al-Andalus from 1147 to 1172 against Ibn
+  // Mardanish's Murcia, and after Las Navas the third taifas rise: Ibn Hud's Murcia (1228), Zayyan's Valencia, Niebla, and
+  // the Nasrids' Granada (1238). Then the great advance: Majorca (1229), Cáceres and Badajoz (1229 and 1230), Córdoba
+  // (29 June 1236), Valencia (28 September 1238), Murcia a Castilian protectorate (1243), Jaén (1246), Seville (23 November
+  // 1248), and Faro (1249); its months are on the zones of control.
+  later("PORC", [["1128-06-24", { ruler: "", status: 0 }], ["1139-07-25", { name: "Kingdom of Portugal", wiki: "Kingdom of Portugal" }]]);
+  later("ARA", [["1137-08-11", { part: CROA }]]);
+  later("BCN", [["1137-08-11", { part: CROA }]]);
+  later("PAM", [["1162-01-01", { name: "Kingdom of Navarre", wiki: "Kingdom of Navarre" }]]);
+  later("CAS", [["1230-09-24", { name: CROCN, wiki: CROCN }]]);
+  later("AST", [["1230-09-24", { name: CROCN, wiki: CROCN }]]);
+  later("TMUR", [["1243-04-01", { ruler: CROCN, status: 5 }]]);
+  own("ALMO", ALMON, { host: true });
+  own("GHAN", "Banu Ghaniya");
+  own("GRAN", "Emirate of Granada");
+  own("TNIE", "Taifa of Niebla");
+  own("VALK", "Kingdom of Valencia", { part: CROA });
+  own("MAJK", "Kingdom of Majorca", { part: CROA });
+  own("MARS", "Marinid Sultanate", { host: true });
+  own("HAFS", "Hafsid dynasty", { host: true });
+  own("ZAYY", "Zayyanid dynasty", { host: true });
+  add(P("Santarém"), "+ 1111 ALM; 1147 PORC");
+  add(P("Lisbon"), "+ 1147-10-25 PORC");
+  add(P("Leiria"), "+ 1135 PORC");
+  add(P("Castelo Branco"), "+ 1165 PORC");
+  add(P("Portalegre"), "+ 1166 PORC");
+  add(P("Évora"), "+ 1150 ALMO; 1165 PORC");
+  add(P("Setúbal"), "+ 1150 ALMO; 1217 PORC");
+  add(P("Beja"), "+ 1150 ALMO; 1234 PORC");
+  add(P("Faro"), "+ 1150 ALMO; 1249 PORC");
+  add(P("Guarda"), "+ 1199 PORC");
+  add(E("Araba / Álava", "Gipuzkoa"), "+ 1123 PAM; 1200 CAS");
+  add(E("La Rioja"), "+ 1109 ARA; 1134 CAS");
+  add(E("Zaragoza"), "+ 1110 ALM; 1119 ARA");
+  add(E("Teruel"), "+ 1104 ALM; 1171 ARA");
+  add(E("Lleida"), "+ 1149-10-24 BCN");
+  add(E("Tarragona"), "+ 1110 ALM; 1148-12-30 BCN");
+  add(E("Castellón"), "+ 1102 ALM; 1147 TMUR; 1172 ALMO; 1229 TVAL; 1234 VALK");
+  add(E("Valencia"), "+ 1102 ALM; 1147 TMUR; 1172 ALMO; 1229 TVAL; 1238-09-28 VALK");
+  add(E("Alicante"), "+ 1147 TMUR; 1172 ALMO; 1228 TMUR; 1245 VALK");
+  add(E("Murcia"), "+ 1147 TMUR; 1172 ALMO; 1228 TMUR");
+  add(E("Albacete"), "+ 1147 TMUR; 1172 ALMO; 1213 CAS");
+  add(E("Cuenca"), "+ 1108 ALM; 1147 TMUR; 1177 CAS");
+  add(E("Ciudad Real"), "+ 1147 CAS; 1195 ALMO; 1212 CAS");
+  add(E("Almería"), "+ 1147-10-17 CAS; 1157 ALMO; 1228 TMUR; 1238 GRAN");
+  add(E("Granada"), "+ 1155 ALMO; 1228 TMUR; 1238 GRAN");
+  add(E("Málaga"), "+ 1153 ALMO; 1228 TMUR; 1239 GRAN");
+  add(E("Jaén"), "+ 1148 ALMO; 1228 TMUR; 1232 GRAN; 1246 CAS");
+  add(E("Córdoba"), "+ 1148 ALMO; 1228 TMUR; 1236-06-29 CAS");
+  add(E("Seville"), "+ 1147 ALMO; 1229 TMUR; 1234 TSEV; 1248-11-23 CAS");
+  add(E("Huelva"), "+ 1147 ALMO; 1234 TNIE");
+  add(E("Cádiz").concat(["GIB/*"]), "+ 1147 ALMO; 1228 TMUR; 1238 GRAN");
+  add(E("Cáceres"), "+ 1150 ALMO; 1229 AST");
+  add(E("Badajoz"), "+ 1150 ALMO; 1230 AST");
+  add(E("Balearic Islands"), "+ 1116 ALM; 1146 GHAN; 1203 ALMO; 1230 MAJK");
+  add(["ESP/Ceuta"], "+ 1148 ALMO");
+  add(["ESP/Melilla"], "+ 1147 ALMO");
+
+  // ——— North Africa, 1101 to 1250 ———
+  // The Almohads take Morocco (Marrakesh, 1147), the Hammadids (1152), and Ifriqiya (1159 and 1160), where Roger II's
+  // Kingdom of Sicily had held the coast from Tripoli (1146) to Mahdia (1148); the Hafsids hold Ifriqiya from 1229, the
+  // Zayyanids Tlemcen from 1235, and the Marinids take Meknès (1244) and Fez (1248).
+  add(T("Sousse", "Monastir", "Mahdia", "Sfax", "Gabès"), "+ 1148 SICK; 1160 ALMO; 1229 HAFS");
+  add(T("Tunis", "Ben Arous", "Manouba", "Bizerte", "Nabeul", "Zaghouan", "Beja", "Jendouba", "Kef", "Siliana", "Kairouan", "Kasserine", "Sidi Bouzid", "Gafsa", "Tozeur", "Kebili"), "+ 1159 ALMO; 1229 HAFS");
+  add(L("Tripoli District", "Jafara", "Zawiya", "Nuqat al Khams", "Murqub", "Misrata"), "+ 1146 SICK; 1158 ALMO; 1186 GHAN; 1235 HAFS");
+  add(Z("El Tarf", "Annaba", "Skikda", "Guelma", "Souk Ahras", "Constantine", "Mila", "Jijel", "Sétif", "Batna", "Khenchela", "Oum El Bouaghi", "Biskra", "M'Sila", "Bordj Bou Arréridj",
+    "Béjaïa", "Tizi Ouzou", "Bouïra", "Boumerdès", "Tébessa"), "+ 1152 ALMO; 1230 HAFS");
+  add(Z("Algiers", "Blida", "Tipasa", "Médéa", "Chlef", "Aïn Defla", "Tissemsilt", "Tiaret", "Relizane", "Mascara", "Mostaganem", "Saïda"), "+ 1152 ALMO");
+  add(Z("Tlemcen", "Aïn Témouchent", "Oran", "Sidi Bel Abbès", "Naama").concat(M("Oriental")), "+ 1145 ALMO; 1235 ZAYY");
+  add(M("Tangier-Tetouan", "Gharb-Chrarda-Béni Hssen", "Rabat-Salé-Zemmour-Zaër", "Grand Casablanca", "Chaouia-Ouardigha", "Doukkala Abda", "Marrakesh-Tensift-El Haouz", "Tadla-Azilal", "Suss-Massa-Draa", "Taza-Al Hoceïma-Taounate"),
+    "+ 1147 ALMO");
+  add(M("Fès-méknas-boulmane"), "+ 1146 ALMO; 1248 MARS");
+  add(M("Meknès-Tafilalet"), "+ 1146 ALMO; 1244 MARS");
+
+  // ——— The Empire, 1101 to 1250 ———
+  // The Empire's members multiply as the lords' and bishops' lands become territories: the ecclesiastical principalities from
+  // the years their temporal lordship is attested (Cologne, Mainz, Trier, Bremen, Magdeburg, Münster, Paderborn, Osnabrück,
+  // Minden, Bamberg, Fulda, Würzburg with its ducal rights in Franconia from 1168, Salzburg from 1213, Passau from 1217), the
+  // counties of the north-west (Holstein 1111, Oldenburg 1108, Berg, Cleves, Jülich, Mark about 1160, Ravensberg 1140, Lippe
+  // 1123), and the new marches and duchies: Brandenburg (Albert the Bear's Northern March from 1134, Brandenburg itself from
+  // 11 June 1157, the Prignitz from the Wendish Crusade of 1147, Teltow and Barnim about 1230, the Uckermark from Landin in
+  // 1250), Austria a duchy (Privilegium Minus, 1156), Styria free of Carinthia (1122) and a duchy (1180), Pomerania (Wartislaw
+  // I, 1121, Poland's client to 1138, the Empire's from 1181, Denmark's from 1185 to Bornhöved in 1227), Mecklenburg and
+  // Schwerin (1167), Rügen (Denmark's from 1168), Bohemia a kingdom (1198) with Moravia a margraviate (1182), Anhalt (1212),
+  // and Brunswick-Lüneburg (1235). At Gelnhausen (1180) Henry the Lion's Saxony is parted: Westphalia to Cologne and the rest
+  // to the Ascanians (Lauenburg and Wittenberg); Bavaria goes to the Wittelsbachs, with the County Palatine of the Rhine from
+  // 1214. In the south-west, the Zähringer hold the Breisgau and the Burgundian rectorate to their end (1218); Baden (1112),
+  // Württemberg (1143), and Habsburg are counties. Thuringia is a landgraviate (1131) with Hesse (1137) until its succession
+  // war (1247), and Austria and Styria are disputed after the last Babenberg falls (1246). Denmark held Holstein, Hamburg, and
+  // Lübeck from 1201 to 1227; Lübeck is a free city from 1226.
+  const HRE2 = (k, n, w, more = []) => hre(k, n, w ? { wiki: w } : {}, more);
+  HRE2("COLE", "Archbishopric of Cologne", "Electorate of Cologne");
+  HRE2("MAINZ", "Archbishopric of Mainz", "Electorate of Mainz");
+  HRE2("TRIER", "Archbishopric of Trier", "Electorate of Trier");
+  HRE2("BREB", "Archbishopric of Bremen", "Prince-Archbishopric of Bremen");
+  HRE2("MAGB", "Archbishopric of Magdeburg", "Archbishopric of Magdeburg");
+  HRE2("MUNB", "Prince-Bishopric of Münster");
+  HRE2("PADB", "Prince-Bishopric of Paderborn");
+  HRE2("OSNB", "Prince-Bishopric of Osnabrück");
+  HRE2("MINB", "Prince-Bishopric of Minden");
+  HRE2("BAMB", "Prince-Bishopric of Bamberg");
+  HRE2("WURB", "Prince-Bishopric of Würzburg");
+  HRE2("FULD", "Princely Abbey of Fulda");
+  HRE2("SALZ", "Archbishopric of Salzburg", "Prince-Archbishopric of Salzburg");
+  HRE2("PASB", "Prince-Bishopric of Passau");
+  HRE2("WESTF", "Duchy of Westphalia");
+  HRE2("HOLS", "County of Holstein", "Holstein", [["1201-01-01", { part: "", ruler: DENMARK, status: 5 }], ["1227-07-22", { part: HRE, ruler: "", status: 0 }]]);
+  HRE2("OLDC", "County of Oldenburg");
+  HRE2("BERG", "County of Berg");
+  HRE2("CLEV", "County of Cleves", "Duchy of Cleves");
+  HRE2("JUL", "County of Jülich", "Duchy of Jülich");
+  HRE2("MARK", "County of Mark");
+  HRE2("RAVB", "County of Ravensberg");
+  HRE2("LIPPE", "Lordship of Lippe", "Lippe");
+  HRE2("FRIF", "Frisian lands", "Frisian freedom");
+  HRE2("BRAND", "Margraviate of Brandenburg");
+  HRE2("ANH", "County of Anhalt", "Anhalt");
+  HRE2("BRUL", "Duchy of Brunswick-Lüneburg");
+  HRE2("THUR", "Landgraviate of Thuringia");
+  HRE2("STYR", "March of Styria", "Duchy of Styria", [["1180-01-01", { name: "Duchy of Styria" }]]);
+  HRE2("TYRO", "County of Tyrol");
+  HRE2("MERA", "Duchy of Merania");
+  HRE2("MORM", "Margraviate of Moravia");
+  HRE2("ZAHR", "Duchy of Zähringen", "House of Zähringen");
+  HRE2("BADM", "Margraviate of Baden");
+  HRE2("WURT", "County of Württemberg", "Duchy of Württemberg");
+  HRE2("HABS", "County of Habsburg", "House of Habsburg");
+  HRE2("KYB", "County of Kyburg", "House of Kyburg");
+  HRE2("PALA", "County Palatine of the Rhine", "Electoral Palatinate");
+  HRE2("SPON", "County of Sponheim");
+  HRE2("NASS", "County of Nassau", "House of Nassau");
+  HRE2("SAAR", "County of Saarbrücken");
+  HRE2("BAR", "County of Bar", "Duchy of Bar");
+  HRE2("METZ", "Prince-Bishopric of Metz");
+  HRE2("LUB", "Free City of Lübeck", "Free City of Lübeck");
+  own("MECK", "Lordship of Mecklenburg", { wiki: "Mecklenburg", ruler: "Duchy of Saxony", status: 5 }, [["1180-01-01", { ruler: "", status: 0, part: HRE }], ["1201-01-01", { part: "", ruler: DENMARK, status: 5 }],
+    ["1227-07-22", { part: HRE, ruler: "", status: 0 }]]);
+  own("SCHW", "County of Schwerin", { ruler: "Duchy of Saxony", status: 5 }, [["1180-01-01", { ruler: "", status: 0, part: HRE }], ["1201-01-01", { part: "", ruler: DENMARK, status: 5 }],
+    ["1227-07-22", { part: HRE, ruler: "", status: 0 }]]);
+  own("POMD", "Duchy of Pomerania", { ruler: "Kingdom of Poland", status: 5 }, [["1138-10-28", { ruler: "", status: 0 }], ["1181-01-01", { part: HRE }], ["1185-01-01", { part: "", ruler: DENMARK, status: 5 }],
+    ["1227-07-22", { part: HRE, ruler: "", status: 0 }]]);
+  own("RUGEN", "Principality of Rügen", { ruler: DENMARK, status: 5 });
+  own("HESd", "Hesse", { wiki: "War of the Thuringian Succession", claims: ["Margraviate of Meissen", "Duchy of Brabant"] });
+  own("AUSd", "Austria", { wiki: "Babenberg succession", claims: ["Kingdom of Bohemia", "Kingdom of Hungary"] });
+  later("AUSM", [["1156-09-17", { name: "Duchy of Austria", wiki: "Duchy of Austria" }]]);
+  later("BOH", [["1198-01-01", { name: "Kingdom of Bohemia", wiki: "Kingdom of Bohemia" }]]);
+  later("LOU", [["1085-01-01", { name: "Landgraviate of Brabant", wiki: "Landgraviate of Brabant" }], ["1183-01-01", { name: "Duchy of Brabant", wiki: "Duchy of Brabant" }]]);
+  // The north-west.
+  add(DE("North Rhine-Westphalia", "Köln", "Bonn", "Rhein-Erft-Kreis", "Rhein-Kreis Neuss", "Euskirchen", "Recklinghausen").concat(DE("Rhineland-Palatinate", "Ahrweiler")), "+ 1101 COLE");
+  add(DE("North Rhine-Westphalia", "Hochsauerlandkreis", "Soest", "Olpe"), "+ 1180 WESTF");
+  add(DE("North Rhine-Westphalia", "Münster", "Coesfeld", "Borken", "Warendorf", "Steinfurt"), "+ 1101 MUNB");
+  add(DE("North Rhine-Westphalia", "Paderborn", "Höxter"), "+ 1101 PADB");
+  add(DE("Lower Saxony", "Osnabrück", "Landkreis Osnabrück", "Grafschaft Bentheim", "Emsland"), "+ 1101 OSNB");
+  add(DE("North Rhine-Westphalia", "Minden-Lübbecke").concat(DE("Lower Saxony", "Schaumburg", "Nienburg (Weser)")), "+ 1101 MINB");
+  add(DE("North Rhine-Westphalia", "Bielefeld", "Herford", "Gütersloh"), "+ 1140 RAVB");
+  add(DE("North Rhine-Westphalia", "Lippe"), "+ 1123 LIPPE");
+  add(DE("North Rhine-Westphalia", "Märkischer Kreis", "Hagen", "Dortmund", "Unna", "Hamm", "Bochum", "Ennepe-Ruhr-Kreis", "Herne", "Gelsenkirchen"), "+ 1160 MARK");
+  add(DE("North Rhine-Westphalia", "Remscheid", "Solingen", "Wuppertal", "Mettmann", "Rheinisch-Bergischer Kreis", "Oberbergischer Kreis", "Düsseldorf", "Leverkusen", "Rhein-Sieg-Kreis"), "+ 1101 BERG");
+  add(DE("North Rhine-Westphalia", "Kleve", "Wesel", "Duisburg", "Oberhausen", "Mülheim an der Ruhr", "Essen", "Bottrop"), "+ 1101 CLEV");
+  add(DE("North Rhine-Westphalia", "Düren", "Heinsberg", "Städteregion Aachen", "Mönchengladbach", "Viersen", "Krefeld"), "+ 1101 JUL");
+  add(DE("Lower Saxony", "Oldenburg (Oldenburg)", "Landkreis Oldenburg", "Ammerland", "Wesermarsch", "Delmenhorst", "Vechta", "Cloppenburg"), "+ 1108 OLDC");
+  add(DE("Lower Saxony", "Aurich", "Leer", "Emden", "Wittmund", "Friesland", "Wilhelmshaven").concat(N("Friesland")), "+ 1101 FRIF");
+  add(DE("Lower Saxony", "Stade", "Cuxhaven", "Rotenburg (Wümme)", "Osterholz", "Verden").concat(DE("Free Hanseatic Bremen", "Bremen", "Bremerhaven"), DE("Schleswig-Holstein", "Dithmarschen")), "+ 1101 BREB");
+  add(DE("Schleswig-Holstein", "Steinburg", "Pinneberg", "Rendsburg-Eckernförde", "Neumünster", "Kiel", "Segeberg", "Stormarn").concat(DE("Hamburg", "Hamburg")), "+ 1111 HOLS");
+  add(DE("Schleswig-Holstein", "Ostholstein", "Plön"), "+ 1127 OBO; 1143 HOLS");
+  add(DE("Schleswig-Holstein", "Lübeck"), "+ 1127 OBO; 1143 HOLS; 1158 SAXD; 1201 HOLS; 1226 LUB");
+  add(DE("Schleswig-Holstein", "Herzogtum Lauenburg"), "+ 1127 OBO; 1143 SAXD");
+  add(DE("Mecklenburg-Western Pomerania", "Nordwestmecklenburg", "Rostock", "Landkreis Rostock", "Ludwigslust-Parchim"), "+ 1127 OBO; 1160 SAXD; 1167 MECK");
+  add(DE("Mecklenburg-Western Pomerania", "Schwerin"), "+ 1127 OBO; 1160 SAXD; 1167 SCHW");
+  add(DE("Mecklenburg-Western Pomerania", "Vorpommern-Rügen"), "+ 1168 RUGEN");
+  add(DE("Mecklenburg-Western Pomerania", "Vorpommern-Greifswald").concat(PL("West Pomeranian")), "+ 1121 POMD");
+  add(DE("Mecklenburg-Western Pomerania", "Mecklenburgische Seenplatte"), "+ 1121 POMD; 1236 BRAND");
+  add(DE("Brandenburg", "Uckermark"), "+ 1121 POMD; 1250 BRAND");
+  add(DE("Saxony-Anhalt", "Stendal", "Altmarkkreis Salzwedel"), "+ 1134 BRAND");
+  add(DE("Brandenburg", "Havelland", "Brandenburg an der Havel", "Potsdam", "Potsdam-Mittelmark"), "+ 1157-06-11 BRAND");
+  add(DE("Brandenburg", "Prignitz", "Ostprignitz-Ruppin"), "+ 1147 BRAND");
+  add(DE("Brandenburg", "Oberhavel", "Barnim").concat(DE("Berlin", "Berlin")), "+ 1230 BRAND");
+  add(DE("Brandenburg", "Frankfurt (Oder)", "Märkisch-Oderland", "Oder-Spree"), "+ 1138-10-28 GPOL; 1201 SILD; 1249 BRAND");
+  add(DE("Saxony-Anhalt", "Magdeburg", "Börde", "Jerichower Land", "Salzlandkreis"), "+ 1101 MAGB");
+  add(DE("Saxony-Anhalt", "Anhalt-Bitterfeld", "Dessau-Roßlau", "Harz"), "+ 1212 ANH");
+  add(DE("Lower Saxony", "Braunschweig", "Wolfenbüttel", "Salzgitter", "Gifhorn", "Wolfsburg", "Helmstedt", "Celle", "Landkreis Lüneburg", "Uelzen", "Harburg", "Heidekreis", "Lüchow-Dannenberg",
+    "Region Hannover", "Göttingen", "Northeim"), "+ 1235 BRUL");
+  // Thuringia, Hesse, the Rhineland, and Franconia.
+  add("DEU#thuringia", "+ 1131 THUR");
+  add(DE("Hesse", "Kassel", "Landkreis Kassel", "Schwalm-Eder-Kreis", "Werra-Meißner-Kreis", "Marburg-Biedenkopf", "Landkreis Gießen", "Waldeck-Frankenberg"), "+ 1137 THUR; 1247 HESd");
+  add(DE("Rhineland-Palatinate", "Mainz", "Mainz-Bingen").concat(DE("Hesse", "Rheingau-Taunus-Kreis"), DE("Bavaria", "Aschaffenburg", "Landkreis Aschaffenburg"), DE("Thuringia", "Eichsfeld", "Erfurt")), "+ 1101 MAINZ");
+  add(DE("Hesse", "Fulda"), "+ 1101 FULD");
+  add(DE("Rhineland-Palatinate", "Trier", "Trier-Saarburg", "Bernkastel-Wittlich", "Cochem-Zell", "Mayen-Koblenz", "Koblenz", "Vulkaneifel", "Eifelkreis Bitburg-Prüm"), "+ 1101 TRIER");
+  add(DE("Rhineland-Palatinate", "Bad Kreuznach", "Birkenfeld", "Rhein-Hunsrück-Kreis", "Kusel"), "+ 1101 SPON");
+  add(DE("Rhineland-Palatinate", "Rhein-Lahn-Kreis", "Westerwaldkreis").concat(DE("Hesse", "Limburg-Weilburg", "Lahn-Dill-Kreis")), "+ 1160 NASS");
+  add(DE("Saarland", "Merzig-Wadern", "Neunkirchen", "Regionalverband Saarbrücken", "Saarlouis", "Saarpfalz-Kreis", "St. Wendel"), "+ 1101 SAAR");
+  add(DE("Rhineland-Palatinate", "Rhein-Pfalz-Kreis", "Ludwigshafen am Rhein", "Frankenthal (Pfalz)", "Neustadt an der Weinstraße", "Bad Dürkheim", "Alzey-Worms", "Kaiserslautern", "Landkreis Kaiserslautern",
+    "Donnersbergkreis").concat(DE("Baden-Württemberg", "Heidelberg", "Rhein-Neckar-Kreis", "Mannheim")), "+ 1156 PALA");
+  add(DE("Bavaria", "Würzburg", "Landkreis Würzburg", "Kitzingen", "Main-Spessart", "Schweinfurt", "Landkreis Schweinfurt", "Haßberge", "Bad Kissingen", "Rhön-Grabfeld"), "+ 1168 WURB");
+  add(DE("Bavaria", "Bamberg", "Landkreis Bamberg", "Forchheim", "Lichtenfels", "Kronach"), "+ 1101 BAMB");
+  add(DE("Bavaria", "Bayreuth", "Landkreis Bayreuth", "Kulmbach"), "+ 1180 MERA");
+  add(F("Meuse"), "+ 1101 BAR");
+  add(F("Moselle"), "+ 1101 METZ");
+  // The Low Countries.
+  add(B("Antwerp"), "+ 1106 LOU");
+  add(N("North Brabant"), "+ 1185 LOU");
+  add(["NLD:Limburg/*"], "+ 1106 GEL");
+  // Swabia, Switzerland, and Bavaria.
+  add(DE("Baden-Württemberg", "Karlsruhe", "Landkreis Karlsruhe", "Pforzheim", "Rastatt", "Baden-Baden", "Enzkreis"), "+ 1112 BADM");
+  add(DE("Baden-Württemberg", "Stuttgart", "Esslingen", "Rems-Murr-Kreis", "Ludwigsburg", "Göppingen", "Böblingen"), "+ 1143 WURT");
+  add(DE("Baden-Württemberg", "Breisgau-Hochschwarzwald", "Freiburg im Breisgau", "Emmendingen", "Schwarzwald-Baar-Kreis"), "+ 1101 ZAHR; 1218 SWA");
+  add(G("CHE", "Bern", "Solothurn", "Fribourg"), "+ 1127 ZAHR; 1218 KYB");
+  add(G("CHE", "Zürich", "Thurgau", "Schaffhausen"), "+ 1173 KYB");
+  add(G("CHE", "Aargau", "Lucerne", "Zug"), "+ 1108 HABS");
+  add(F("Haut-Rhin"), "+ 1135 HABS");
+  add(["AUT:Upper Austria/*"], "+ 1156 AUSM; 1247 AUSd");
+  add(["AUT:Styria/*"], "+ 1122 STYR; 1247 AUSd");
+  add(["AUT:Lower Austria/*", "AUT:Vienna/Vienna"], "+ 1247 AUSd");
+  add(["AUT:Lower Austria/Wiener Neustadt", "AUT:Lower Austria/Wiener Neustadt-Land", "AUT:Lower Austria/Neunkirchen"], "+ 1158 STYR; 1247 AUSd");
+  add(["AUT:Salzburg/*"], "+ 1213 SALZ");
+  add(DE("Bavaria", "Passau", "Landkreis Passau"), "+ 1217 PASB");
+  add(["AUT:Tyrol/*"], "+ 1180 MERA; 1248 TYRO");
+  add(["CZE:South Moravian/*", "CZE:Zlín/*", "CZE:Olomouc/*", "CZE:Moravian-Silesian/*", "CZE:Vysočina/*"], "+ 1182 MORM");
+
+  // ——— Italy, 1101 to 1250 ———
+  // Roger II's Kingdom of Sicily (crowned 25 December 1130) joins Apulia, Calabria, and Sicily, with Capua (1135), Naples
+  // (1137), and the Abruzzi (1140), and holds the African coast from 1146 to 1160; the Hohenstaufen held it from 1194, apart
+  // from the Empire. Matilda's death (1115) ends the March of Tuscany as a power: Florence (1115), Siena (1125), and Lucca
+  // (about 1160) govern themselves, and what is left is the Kingdom of Italy's, as are the Lombard communes. Innocent III
+  // recovers Spoleto and the March of Ancona for the Papal States (1198). Ezzelino da Romano rules Verona, Vicenza, Padua,
+  // and Treviso from 1236; Saluzzo is a march from 1142. Venice takes Crete (1211) and holds the Duchy of the Archipelago
+  // (1207) as a client after the Fourth Crusade.
+  own("SICK", "Kingdom of Sicily");
+  hre("FLOR", "Republic of Florence");
+  hre("SIEN", "Republic of Siena");
+  hre("LUCC", "Republic of Lucca");
+  hre("SALU", "March of Saluzzo", { wiki: "Marquisate of Saluzzo" });
+  hre("EZZ", "Lordship of Ezzelino da Romano", { wiki: "Ezzelino III da Romano" });
+  add(I("Salerno", "Potenza", "Avellino", "Campobasso", "Isernia", "Foggia", "Barletta-Andria-Trani", "Bari", "Taranto", "Brindisi", "Matera", "Lecce", "Cosenza", "Crotone", "Catanzaro",
+    "Vibo Valentia", "Reggio Calabria", "Chieti", "Pescara", "Messina", "Catania", "Palermo", "Trapani", "Syracuse", "Caltanissetta", "Agrigento", "Enna", "Ragusa").concat(["MLT/*"]), "+ 1130-12-25 SICK");
+  add(I("Caserta", "Latina"), "+ 1135 SICK");
+  add(I("Naples"), "+ 1137 SICK");
+  add(I("L'Aquila", "Teramo"), "+ 1140 SICK");
+  add(I("Terni", "Rieti", "Macerata", "Fermo", "Ascoli Piceno"), "+ 1198 PAP");
+  add(I("Florence", "Prato", "Pistoia"), "+ 1115 FLOR");
+  add(I("Siena", "Grosseto"), "+ 1125 SIEN");
+  add(I("Lucca"), "+ 1160 LUCC");
+  add(I("Arezzo", "Massa-Carrara"), "+ 1115 ITK");
+  add(I("Livorno"), "+ 1115 PISA");
+  add(I("Reggio Emilia", "Modena", "Mantua", "Ferrara"), "+ 1115 ITK");
+  add(I("Cuneo"), "+ 1142 SALU");
+  add(I("Verona", "Vicenza", "Padua", "Treviso"), "+ 1101 ITK; 1236 EZZ");
+  add(I("Belluno"), "+ 1101 ITK");
+  add(GR("Crete"), "+ 1211 VEN");
+  add(RU("Sevastopol"), "+ 1204 TREB");
+
+  // ——— The Balkans, Greece, and Byzantium, 1101 to 1250 ———
+  // Croatia in personal union with Hungary (1102); Bosnia a banate (1154), free under Kulin (1180); Serbia under Stefan
+  // Nemanja (Zeta 1186, Kosovo by 1208) and a kingdom (1217); Arbanon (1190). The Second Bulgarian Empire from the Asen
+  // brothers' rising (1185), taking Sofia (1195), Vidin, Varna (1201), and Thrace and Macedonia after Klokotnitsa (1230). The
+  // Fourth Crusade (Constantinople, 12 April 1204) and its successors: the Latin Empire, the Kingdom of Thessalonica (to 1224),
+  // Achaea, Athens, Epirus (which took Thessalonica in 1224), Nicaea (which took it in 1246), and Trebizond; Cyprus under
+  // Isaac Komnenos (1184) and the Lusignans (1192); the Armenian Principality of Cilicia, a kingdom from 1198.
+  later("CRO", [["1102-01-01", { ruler: "Kingdom of Hungary", status: 5 }]]);
+  later("BOS", [["1154-01-01", { name: "Banate of Bosnia", wiki: "Banate of Bosnia", ruler: "Kingdom of Hungary", status: 5 }], ["1180-01-01", { ruler: "", status: 0 }]]);
+  later("SRB", [["1217-01-01", { name: "Kingdom of Serbia", wiki: "Kingdom of Serbia (medieval)" }]]);
+  own("SBE", "Second Bulgarian Empire");
+  own("ARBA", "Principality of Arbanon");
+  own("LATE", "Latin Empire");
+  own("NICA", "Nicaean Empire", { wiki: "Empire of Nicaea" });
+  own("TREB", "Empire of Trebizond");
+  own("EPIR", "Despotate of Epirus");
+  own("THES", "Kingdom of Thessalonica");
+  own("ACHA", "Principality of Achaea");
+  own("ATHE", "Duchy of Athens");
+  own("NAXO", "Duchy of the Archipelago", { ruler: "Republic of Venice", status: 5 });
+  own("CEPH", "County palatine of Cephalonia and Zakynthos");
+  own("ISAC", "Cyprus under Isaac Komnenos", { wiki: "Isaac Komnenos of Cyprus" });
+  own("CYPK", "Kingdom of Cyprus");
+  own("ARMK", "Armenian Principality of Cilicia", {}, [["1198-01-06", { name: "Armenian Kingdom of Cilicia", wiki: "Armenian Kingdom of Cilicia" }]]);
+  add(HR("Karlovac", "Primorje-Gorski", "Lika-Senj", "Zadar", "Šibenik-Knin", "Split-Dalmatia"), "+ 1102 CRO");
+  add(["BIH:Una-Sana Canton/*", "BIH:Banja Luka/*", "BIH:Livno/*", "BIH:West Herzegovina Canton/*", "BIH:Central Bosnia Canton/*"], "+ 1102 CRO");
+  add("MNE/*", "+ 1186 SRB");
+  add(G("MNE", "Podgorica", "Bar", "Ulcinj", "Budva", "Cetinje", "Danilovgrad", "Nikšić", "Kotor", "Tivat", "Herceg Novi").concat(G("ALB", "Shkodër", "Lezhë")), "+ 1186 SRB");
+  add(["BIH:Herzegovina-Neretva Canton/*", "BIH:Trebinje/*"], "+ 1186 SRB");
+  add("KOS/*", "+ 1208 SRB");
+  add(SR("Belgrade", "Podunavlje", "Braničevo"), "+ 1203 SBE; 1232 HUNG");
+  add(SR("Pomoravski", "Bor", "Zaječar", "Nišava", "Pirot", "Jablanica", "Pčinja"), "+ 1203 SBE");
+  add("MKD/*", "+ 1203 SBE; 1246 NICA");
+  add(G("ALB", "Tirana", "Elbasan", "Kukës", "Dibër"), "+ 1190 ARBA");
+  add(G("ALB", "Durrës"), "+ 1205 VEN; 1213 EPIR");
+  add(G("ALB", "Vlorë", "Fier", "Berat", "Gjirokastër", "Korçë"), "+ 1205 EPIR");
+  add(BG("Veliko Tarnovo", "Gabrovo", "Lovech", "Pleven", "Ruse", "Razgrad", "Targovishte", "Shumen", "Silistra", "Dobrich").concat(RO("Constanța", "Tulcea")), "+ 1186 SBE");
+  add(BG("Varna"), "+ 1201 SBE");
+  add(BG("Vidin", "Montana", "Vratsa"), "+ 1190 SBE");
+  add(BG("Sofia", "Pernik", "Kyustendil", "Blagoevgrad"), "+ 1195 SBE");
+  add(BG("Burgas", "Yambol", "Sliven", "Stara Zagora"), "+ 1205 SBE");
+  add(BG("Plovdiv", "Pazardzhik"), "+ 1204 LATE; 1230 SBE");
+  add(BG("Haskovo", "Kardzhali", "Smolyan"), "+ 1230 SBE; 1246 NICA");
+  add(TR("Edirne"), "+ 1204 LATE; 1225 EPIR; 1230 SBE; 1246 NICA");
+  add(TR("Kırklareli", "Tekirdağ"), "+ 1204 LATE; 1246 NICA");
+  add(TR("Istanbul"), "+ 1204-04-12 LATE");
+  add(GR("Centre Macedonia", "Mount Athos"), "+ 1204 THES; 1224 EPIR; 1246 NICA");
+  add(GR("East Macedonia and Thrace"), "+ 1204 THES; 1224 EPIR; 1230 SBE; 1246 NICA");
+  add(GR("Thessalia"), "+ 1204 THES; 1222 EPIR");
+  add(GR("West Macedonia"), "+ 1215 EPIR; 1230 SBE; 1246 NICA");
+  add(GR("Epirus"), "+ 1205 EPIR");
+  add(GR("Central Greece", "Attica"), "+ 1205 ATHE");
+  add(GR("Peloponnese", "West Greece"), "+ 1205 ACHA");
+  add(GR("Ionian Islands"), "+ 1185 CEPH");
+  add(GR("North Aegean"), "+ 1204 LATE; 1225 NICA");
+  add(GR("South Aegean"), "+ 1207 NAXO");
+  add(["CYP/*", "CYN/*"], "+ 1184 ISAC; 1191 CYPK");
+
+  // ——— Anatolia, the Levant, and the Caucasus, 1101 to 1250 ———
+  // Anatolia: the Komnenoi hold the west and the coasts; the Sultanate of Rum takes Malatya and the Danishmendids' land (1178),
+  // Erzurum (1202), Antalya (1207), Sinop (1214), and the Mengujekids (1228), and becomes the Mongols' client after Köse Dağ
+  // (1243). The Crusader states: Jerusalem's coast (Acre 1104, Beirut and Sidon 1110, Tyre 1124, Ascalon 1153) and
+  // Oultrejordain (1115), Tripoli (12 July 1109), Antioch's east to the 1130s, and Edessa to Zengi's taking of it (24 December
+  // 1144). Then the Zengids (Aleppo 1128, Damascus 1154), the Ayyubids (Damascus 1174, Aleppo 1183, Hattin and Jerusalem 1187),
+  // the Third Crusade's coast (Acre, July 1191), Jerusalem by treaty (1229 to the Khwarazmians' sack of 1244), and the Artuqids
+  // of Mardin and Hasankeyf. The Caucasus: David IV's Georgia (Kakheti 1104, Tbilisi 1122), the Zakarid Armenia of Queen
+  // Tamar's reign (1199), the Eldiguzid atabegs of Azerbaijan (1136), the Khwarazmians (1225), and the Mongols (1231 to 1243).
+  own("BURI", "Burid dynasty");
+  own("ZENG", "Zengid dynasty");
+  own("AYY", "Ayyubid Sultanate", { host: true });
+  own("ARTQ", "Artuqids");
+  own("TRIP", "County of Tripoli");
+  own("ELDG", "Eldiguzids");
+  own("KHWA", "Khwarazmian Empire", { host: true });
+  own("MONG", "Mongol Empire", { host: true });
+  own("ZAKA", "Zakarid Armenia", { ruler: "Kingdom of Georgia", status: 5 }, [["1236-01-01", { ruler: "Mongol Empire" }]]);
+  later("GEOK", [["1243-01-01", { ruler: "Mongol Empire", status: 5 }]]);
+  later("SHIR", [["1123-01-01", { ruler: "Kingdom of Georgia" }], ["1225-01-01", { ruler: "" , status: 0 }], ["1239-01-01", { ruler: "Mongol Empire", status: 5 }]]);
+  later("RUM", [["1243-06-26", { ruler: "Mongol Empire", status: 5 }]]);
+  later("ANTI", [["1137-01-01", { ruler: BYZN, status: 5 }], ["1180-01-01", { ruler: "", status: 0 }]]);
+  add(TR("Kocaeli", "Yalova", "Balıkesir", "Çanakkale"), "+ 1204 LATE; 1224 NICA");
+  add(TR("Bursa", "Bilecik", "Sakarya", "İzmir", "Manisa", "Aydın", "Muğla", "Uşak", "Bolu", "Düzce", "Zonguldak", "Bartın"), "+ 1204 NICA");
+  add(TR("Denizli"), "+ 1207 RUM");
+  add(TR("Antalya"), "+ 1207 RUM");
+  add(TR("Trabzon", "Giresun", "Ordu", "Gümüşhane", "Rize"), "+ 1204 TREB");
+  add(TR("Sinop"), "+ 1204 TREB; 1214 RUM");
+  add(TR("Kayseri", "Niğde", "Nevşehir", "Kırşehir", "Kırıkkale", "Ankara", "Çankırı", "Yozgat", "Çorum", "Amasya", "Tokat", "Sivas", "Kastamonu", "Karabük", "Samsun"), "+ 1178 RUM");
+  add(TR("Malatya"), "+ 1103 DNM; 1178 RUM");
+  add(TR("Erzincan", "Tunceli"), "+ 1228 RUM");
+  add(TR("Erzurum", "Bayburt"), "+ 1202 RUM");
+  add(TR("Elazığ"), "+ 1101 ARTQ; 1234 RUM");
+  add(TR("Kahramanmaraş"), "+ 1104 EDE; 1149 RUM");
+  add(TR("Osmaniye", "Adana", "Mersin"), "+ 1101 ANTI; 1104 BYZ; 1135 ARMK; 1137 BYZ; 1145 ARMK");
+  add(TR("Şanlıurfa"), "+ 1144-12-24 ZENG; 1182 AYY");
+  add(TR("Gaziantep", "Kilis", "Adıyaman"), "+ 1151 ZENG; 1183 AYY");
+  add(TR("Mardin"), "+ 1104 ARTQ");
+  add(TR("Diyarbakır", "Batman", "Siirt", "Bingöl"), "+ 1102 ARTQ; 1232 AYY");
+  add(TR("Şırnak"), "+ 1127 ZENG; 1182 AYY");
+  add(TR("Bitlis"), "+ 1207 AYY; 1230 RUM");
+  add(TR("Muş", "Van", "Hakkâri", "Ağrı"), "+ 1110 SHAR; 1207 AYY; 1230 RUM");
+  add(TR("Kars"), "+ 1100 SALT; 1206 GEOK");
+  add(TR("Iğdır").concat(AM("Aragatsotn", "Armavir", "Ararat", "Yerevan", "Kotayk", "Gegharkunik")), "+ 1105 SHAD; 1199 ZAKA");
+  add(AM("Shirak"), "+ 1199 ZAKA");
+  add(AM("Tavush", "Lori"), "+ 1118 GEOK");
+  add(GE("Kakheti").concat(AZ("Shaki", "Sheki", "Qakh", "Zaqatala", "Balakan", "Oghuz", "Qabala")), "+ 1104 GEOK");
+  add(GE("Kvemo Kartli", "Tbilisi"), "+ 1122 GEOK");
+  add(AZ("Ganja", "Goygol", "Shamkir", "Samukh", "Goranboy", "Naftalan", "Barda", "Agdam", "Aghjabadi", "Beylagan", "Fuzuli", "Yevlakh", "Mingachevir", "Tovuz", "Qazax", "Agstafa",
+    "Gadabay", "Dashkasan", "Sharur", "Sadarak", "Kangarli", "Babek", "Shahbuz", "Julfa", "Ordubad", "Nakhchivan"), "+ 1136 ELDG; 1225 KHWA; 1235 MONG");
+  add(SY("Aleppo"), "+ 1118 ARTQ; 1128 ZENG; 1183 AYY");
+  add(SY("Idlib"), "+ 1100 ANTI; 1135 ZENG; 1183 AYY");
+  add(SY("Hama"), "+ 1130 ZENG; 1174 AYY");
+  add(SY("Homs"), "+ 1104 BURI; 1149 ZENG; 1174 AYY");
+  add(SY("Latakia"), "+ 1103 ANTI; 1188 AYY");
+  add(SY("Tartus"), "+ 1102 TRIP");
+  add(SY("Al-Raqqah", "Deir ez-Zor", "Al-Hasakah"), "+ 1127 ZENG; 1182 AYY");
+  add(SY("Damascus", "Rif Dimashq", "Quneitra", "Daraa", "As-Suwayda", "Western al-Samadania").concat(LB("Beqaa"), JO("Irbid", "Ajloun", "Jerash", "Balqa", "Amman", "Zarqa", "Mafraq")),
+    "+ 1104 BURI; 1154 ZENG; 1174-11-28 AYY");
+  add(JO("Madaba", "Karak", "Tafilah", "Ma'an", "Aqaba"), "+ 1115 KOJ; 1188 AYY");
+  add(LB("North"), "+ 1109-07-12 TRIP");
+  add(LB("Beirut", "Mount Lebanon"), "+ 1110 KOJ; 1187 AYY; 1198 KOJ");
+  add(LB("South"), "+ 1110 KOJ");
+  add(LB("Nabatieh"), "+ 1139 KOJ; 1190 AYY");
+  add(IL("Jerusalem"), "+ 1187-10-02 AYY; 1229-02-18 KOJ; 1244-08-23 AYY");
+  add(["PSX/West Bank"], "+ 1187-10-02 AYY");
+  add(IL("Central"), "+ 1187-07-05 AYY; 1192 KOJ");
+  add(IL("Tel Aviv"), "+ 1187-07-05 AYY; 1191 KOJ");
+  add(IL("Haifa"), "+ 1101 KOJ; 1187-07-05 AYY; 1191 KOJ");
+  add(IL("Northern"), "+ 1187-07-05 AYY; 1191-07-12 KOJ");
+  add(IL("Southern"), "+ 1153 KOJ; 1187 AYY");
+  add(["PSX/Gaza"], "+ 1150 KOJ; 1187 AYY");
+
+  // ——— Poland, the Baltic, Scandinavia, and Rus', 1101 to 1250 ———
+  // Poland parted by Bolesław III's testament (28 October 1138) into the duchies of Silesia, Greater Poland, Masovia,
+  // Sandomierz, and the senior's Kraków, drawn as members of Poland; Pomerelia under its Samborid dukes (1155, free from 1227).
+  // The Baltic crusades: the Sword Brothers (1202) take the Livonians (1206), the Selonians (1208), the Latgalians (1214), and
+  // southern and western Estonia (1224 and 1227), and become the Livonian Order (1237); Denmark takes northern Estonia (1219);
+  // the Teutonic Order fights the Prussians from 1233; Mindaugas unites Lithuania (about 1240). Sweden takes Finland Proper
+  // and Tavastia (by Birger Jarl's crusade, 1249); Norway takes Jämtland (1178). Rus': Halych (1141) and Galicia-Volhynia
+  // (Roman, 1199), Novgorod a republic (1136), Vladimir-Suzdal (1157), and Ryazan (1129); then Batu's conquest (Ryazan December
+  // 1237, Vladimir February 1238, Pereyaslavl and Chernigov 1239, Kiev 6 December 1240), after which the principalities are
+  // the Golden Horde's clients (1242), as are Volga Bulgaria (1236) and the steppe.
+  const POLAND = "Poland", GHN = "Golden Horde";
+  const rusEnd = (k, d) => later(k, [[d, { part: "", ruler: "Mongol Empire", status: 5 }], ["1242-01-01", { ruler: GHN }]]);
+  own("GPOL", "Duchy of Greater Poland", { part: POLAND });
+  own("SILD", "Duchy of Silesia", { part: POLAND });
+  own("MAZD", "Duchy of Masovia", { part: POLAND });
+  own("SAND", "Duchy of Sandomierz", { part: POLAND });
+  own("KRAK", "Duchy of Kraków", { wiki: "Seniorate Province", part: POLAND });
+  own("POMR", "Duchy of Pomerelia", { part: POLAND }, [["1227-01-01", { part: "" }]]);
+  own("SWORD", "Livonian Brothers of the Sword");
+  own("LIVOR", "Livonian Order");
+  own("DENE", "Danish Estonia", { ruler: DENMARK, status: 5 });
+  own("PRUd", "Prussia", { wiki: "Prussian Crusade", claims: ["Teutonic Order", "Old Prussians"] });
+  own("TEUT", "Teutonic Order", { host: true });
+  own("LITG", "Grand Duchy of Lithuania");
+  own("GH", GHN, { host: true });
+  rus("GALI", "Principality of Halych");
+  rus("GALV", "Principality of Galicia-Volhynia");
+  rus("RYAZ", "Principality of Ryazan");
+  later("NOVG", [["1136-01-01", { name: "Novgorod Republic", wiki: "Novgorod Republic" }], ["1240-12-06", { part: "" }]]);
+  later("ROST", [["1157-01-01", { name: "Principality of Vladimir-Suzdal", wiki: "Vladimir-Suzdal" }]]);
+  rusEnd("RYAZ", "1237-12-21"); rusEnd("ROST", "1238-02-08"); rusEnd("PERE", "1239-03-03"); rusEnd("CHER", "1239-10-18"); rusEnd("KIEV", "1240-12-06");
+  later("GALV", [["1240-12-06", { part: "" }], ["1245-01-01", { ruler: GHN, status: 5 }]]);
+  later("SMOL", [["1240-12-06", { part: "" }]]);
+  later("POLO", [["1240-12-06", { part: "" }]]);
+  add(PL("Greater Poland"), "+ 1138-10-28 GPOL");
+  add(PL("Lubusz"), "+ 1138-10-28 GPOL; 1201 SILD");
+  add(PL("Silesian", "Opole", "Lower Silesian"), "+ 1138-10-28 SILD");
+  add(PL("Masovian", "Kuyavian-Pomeranian"), "+ 1138-10-28 MAZD");
+  add(PL("Świętokrzyskie", "Lublin"), "+ 1138-10-28 SAND");
+  add(PL("Lesser Poland", "Łódź"), "+ 1138-10-28 KRAK");
+  add(PL("Pomeranian"), "+ 1116 POLD; 1138-10-28 POMR");
+  add(PL("Warmian-Masurian").concat(RU("Kaliningrad")), "+ 1233 PRUd");
+  add(["LTU:Panevėžys/*", "LTU:Utena/*", "LTU:Vilnius/*", "LTU:Kaunas/*", "LTU:Alytus/*"], "+ 1240 LITG");
+  add(BY("Grodno"), "+ 1248 LITG");
+  add("LVA/*", "+ 1214 SWORD; 1237 LIVOR");
+  add("LVA#curonians", "+ 1214 CUR");
+  add("LVA#semigallians", "+ 1214 SEMI");
+  add("LVA#selonians", "+ 1208 SWORD; 1237 LIVOR");
+  add("LVA#livonians", "+ 1206 SWORD; 1237 LIVOR");
+  add(G("EST", "Harju", "Lääne-Viru", "Ida-Viru", "Rapla"), "+ 1219 DENE; 1227 SWORD; 1238 DENE");
+  add(G("EST", "Tartu", "Valga", "Võru", "Põlva", "Viljandi", "Jõgeva", "Pärnu", "Järva"), "+ 1224 SWORD; 1237 LIVOR");
+  add(G("EST", "Lääne", "Hiiu", "Saare"), "+ 1227 SWORD; 1237 LIVOR");
+  add(G("FIN", "Finland Proper", "Tavastia Proper", "Päijänne Tavastia"), "+ 1249 SWE");
+  add(G("SWE", "Jämtland"), "+ 1178 NWY");
+  add(UA("Lviv", "Ivano-Frankivsk", "Chernivtsi", "Ternopil").concat(PL("Podkarpackie")), "+ 1141 GALI; 1199 GALV");
+  add(UA("Volyn", "Rivne").concat(BY("Brest")), "+ 1199 GALV");
+  add(RU("Ryazan"), "+ 1129 RYAZ");
+  add(RU("Nizhny Novgorod"), "+ 1221 ROST");
+  add(RU("Chuvash Republic", "Ulyanovsk"), "+ 1236 MONG; 1242 GH");
+  add(RU("Penza", "Republic of Mordovia", "Tambov", "Lipetsk"), "+ 1237 MONG; 1242 GH");
+  add(UA("Odessa", "Mykolaiv", "Kherson", "Kirovohrad", "Donetsk", "Luhansk", "Kharkiv", "Dnipropetrovsk", "Zaporizhzhia").concat(RU("Rostov", "Voronezh", "Belgorod", "Volgograd",
+    "Republic of Kalmykia", "Astrakhan", "Saratov")), "+ 1238 MONG; 1242 GH");
+  add(RU("Autonomous Republic of Crimea", "Stavropol Krai", "Chechen Republic", "Karachay-Cherkess Republic", "Kabardino-Balkaria", "Republic of North Ossetia-Alania", "Republic of Ingushetia"),
+    "+ 1239 MONG; 1242 GH");
+  add(RO("Suceava", "Botoșani", "Iași", "Neamț", "Bacău", "Vaslui", "Vrancea", "Galați").concat(["MDA/*"], RO("Mehedinți", "Dolj", "Gorj", "Vâlcea", "Olt", "Argeș", "Teleorman", "Giurgiu",
+    "Dâmbovița", "Prahova", "Ilfov", "Bucharest", "Ialomița", "Călărași", "Buzău", "Brăila")), "+ 1241 MONG; 1242 GH");
 }

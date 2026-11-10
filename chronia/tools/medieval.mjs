@@ -24,7 +24,7 @@
 
 import { high } from "./medieval-high.mjs";
 
-export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 1100;
+export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 1250;
 const START = "476-01-01";
 // From 962 the table also covers Anatolia east of 40° E, the Levant, and the Caucasus (EXT), for the Seljuks, the Crusader
 // states, Georgia, and Armenia; before 962 the sources keep that land.
