@@ -22,14 +22,21 @@
 // Owners marked host share their name with a state the sources draw outside the frame (the Eastern Roman Empire in Egypt and
 // Syria, the Sasanian Empire, the Caliphates, Khazaria), so both parts are one state on the page.
 
-export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 961;
+import { high } from "./medieval-high.mjs";
+
+export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 1100;
 const START = "476-01-01";
+// From 962 the table also covers Anatolia east of 40° E, the Levant, and the Caucasus (EXT), for the Seljuks, the Crusader
+// states, Georgia, and Armenia; before 962 the sources keep that land.
+export const EXT_FROM = 962;
 
 // The land covered: these countries' units whose middle lies in the box (with Russia's to 50° E, and the Maghreb's north of 29° N).
 const FRAME = new Set(("PRT ESP AND GIB FRA MCO BEL NLD LUX DEU CHE AUT LIE ITA SMR VAT MLT SVN HRV BIH SRB MNE KOS ALB MKD GRC BGR ROU MDA " +
   "UKR BLR POL CZE SVK HUN LTU LVA EST FIN ALA SWE NOR DNK FRO ISL IRL GBR IMN JEY GGY RUS TUR CYP CYN MAR DZA TUN LBY").split(" "));
 // Turkey only west of 40° E: Armenia, Upper Mesopotamia, and the Caucasus keep the sources.
 const FRAME_BOX = [-32, 29, 50, 72], FRAME_EAST = { TUR: 40 };
+const EXT = new Set(["TUR", "SYR", "LBN", "ISR", "PSX", "JOR", "GEO", "ARM", "AZE"]);
+const EXT_BOX = [34, 29, 50.5, 44];
 
 // Owners: [[from, attributes], ...], each entry adding to or replacing what came before. b is 1 (an approximate border) unless
 // given; people: 1 a people or culture with no state.
@@ -39,6 +46,15 @@ const own = (key, name, attrs = {}, later = []) => {
   O[key] = [[START, { name, wiki: name, b: 1, ...attrs }], ...later.map(([d, a]) => [d, a])];
 };
 const people = (key, name, attrs = {}, later = []) => own(key, name, { people: 1, ...attrs }, later);
+// Further entries for an owner made earlier, after its last.
+const later = (key, entries) => {
+  if (!O[key]) throw new Error("medieval: no owner " + key + " to extend");
+  for (const [d, a] of entries) {
+    const pad = (x) => x.padStart(10, "0");
+    if (pad(d) <= pad(O[key][O[key].length - 1][0])) throw new Error("medieval: " + key + " extended out of order at " + d);
+    O[key].push([d, a]);
+  }
+};
 
 // Named polygons ([lon, lat] rings): "#name" in a selector takes the units whose middle lies inside one, "{name}" cuts a unit by one
 // ("{!name}" keeps what lies outside it).
@@ -47,7 +63,9 @@ const poly = (name, ring) => { if (R[name]) throw new Error("medieval: polygon "
 
 // Land rows: [selectors, timeline, options]. A timeline is written "476 KEN; 825 WES", each entry a year (1 January) or a day
 // (YYYY-MM-DD) and an owner. Rows resolve in order, and a unit (or the part of one a cut names) a later row names leaves the rows
-// before it, so a country's "*" can be refined.
+// before it, so a country's "*" can be refined. A timeline that begins with "+" ("+ 1035 ARAK") starts later and keeps the
+// owners of the rows before it until its first entry, so a block can be parted without writing its history again. A timeline
+// for land of the eastern frame alone begins in 962.
 const LAND = [];
 const add = (sel, tl) => LAND.push([[].concat(sel), tl]);
 const G = (c, ...names) => names.map((n) => c + "/" + n);
@@ -891,19 +909,29 @@ add(TR("Kahramanmaraş"), "476 BYZ; 613 SAS; 628 BYZ; 637 RAS; 661 UMA; 750 ABB;
 add(TR("Malatya", "Elazığ"), "476 BYZ; 613 SAS; 628 BYZ; 656 UMA; 750 MELI; 934 BYZ");
 add(["CYP/*", "CYN/*"], "476 BYZ; 688 CYPd");
 
+// From 962 to 1100: tools/medieval-high.mjs.
+high({ own, people, later, add, poly, G, F, I, E, P, B, N, SR, BG, HR, RO, GR, TR, UA, BY, RU, PL, Z, T, L, M,
+  PARIS, ORLEANS, MAINE_ANJOU, TOURS_BLOIS, LORRAINE, BURGUNDY, COMTE, LYONNAIS, VIENNOIS, SAVOY, PROVENCE, VAR, TOULOUSE, ROUERGUE,
+  AQUITAINE, BERRY, GASCONY, FLANDERS, MEUSE_BE, HOLLAND, SAXON_NL, FRANK_NL, SWISS_BURGUNDY, FRIULI, VENETO, LOMBARDY, PIEDMONT, LIGURIA,
+  TUSCANY, EMILIA_W, SPOLETO, BENEVENTO, CALABRIA, GWYNEDD, POWYS, DYFED, CEREDIGION, GLYWYSING, ALT_CLUT, CUMBRIA, LOTHIAN,
+  FRANCE_NAMES: { WFRANCIA, EFRANCIA, GERMANY, ITALY, ENGLAND, CORDOBA, BULGARIA } });
+
 // ENGINE_BELOW
 const DAY_MS = 86400000;
 const dayOf = (iso) => { const [y, m = 1, d = 1] = iso.split("-").map(Number); const t = new Date(0); t.setUTCFullYear(y, m - 1, d); return Math.round(t.getTime() / DAY_MS); };
-const parseTl = (s, what) => {
+const parseTl = (s0, what) => {
+  const inherit = s0.trim().startsWith("+"), s = inherit ? s0.trim().slice(1) : s0;
   const tl = s.split(";").map((e) => e.trim()).filter(Boolean).map((e) => {
     const [d, k] = e.split(/\s+/);
     if (!/^\d{3,4}(-\d\d-\d\d)?$/.test(d) || !k) throw new Error("medieval: bad entry '" + e + "' in " + what);
     return [d.includes("-") ? d.padStart(10, "0") : d.padStart(4, "0") + "-01-01", k];
   });
-  if (!tl.length || +tl[0][0].slice(0, 4) !== MEDIEVAL_FROM) throw new Error("medieval: " + what + " does not start in " + MEDIEVAL_FROM);
+  if (!tl.length || (!inherit && +tl[0][0].slice(0, 4) !== MEDIEVAL_FROM && +tl[0][0].slice(0, 4) !== EXT_FROM)) throw new Error("medieval: " + what + " does not start in " + MEDIEVAL_FROM + " or " + EXT_FROM);
   for (let i = 1; i < tl.length; i++) if (tl[i][0] <= tl[i - 1][0]) throw new Error("medieval: " + what + " is out of order at " + tl[i][0]);
   for (const [, k] of tl) if (k !== "-" && !O[k]) throw new Error("medieval: no owner " + k + " in " + what);
-  return tl.map(([d, k]) => [dayOf(d), k]);
+  const out = tl.map(([d, k]) => [dayOf(d), k]);
+  out.inherit = inherit;
+  return out;
 };
 
 export function buildMedieval(env) {
@@ -915,13 +943,15 @@ export function buildMedieval(env) {
   const units = [];
   geoms.forEach((g, i) => {
     const pr = provinces[g.properties.p];
-    if (!FRAME.has(pr.c)) return;
+    if (!FRAME.has(pr.c) && !EXT.has(pr.c)) return;
     const p = polysAt(i);
     if (!p.length) return;
     const big = p.reduce((m, q) => (q[0].length > m[0].length ? q : m));
     const mid = big[0].reduce((s, q) => [s[0] + q[0] / big[0].length, s[1] + q[1] / big[0].length], [0, 0]);
-    if (mid[0] < FRAME_BOX[0] || mid[0] > (FRAME_EAST[pr.c] ?? FRAME_BOX[2]) || mid[1] < FRAME_BOX[1] || mid[1] > FRAME_BOX[3]) return;
-    units.push({ i, c: pr.c, prov: pr.n, n: g.properties.n, mid });
+    const inMain = FRAME.has(pr.c) && !(mid[0] < FRAME_BOX[0] || mid[0] > (FRAME_EAST[pr.c] ?? FRAME_BOX[2]) || mid[1] < FRAME_BOX[1] || mid[1] > FRAME_BOX[3]);
+    const inExt = !inMain && MEDIEVAL_TO >= EXT_FROM && EXT.has(pr.c) && !(mid[0] < EXT_BOX[0] || mid[0] > EXT_BOX[2] || mid[1] < EXT_BOX[1] || mid[1] > EXT_BOX[3]);
+    if (!inMain && !inExt) return;
+    units.push({ i, c: pr.c, prov: pr.n, n: g.properties.n, mid, ext: inExt });
   });
   const errors = [];
   const resolve = (sel) => {
@@ -947,11 +977,18 @@ export function buildMedieval(env) {
     if (!hits.length) { errors.push("no unit for " + sel); return []; }
     return hits.map((u) => ({ i: u.i, cut }));
   };
-  // Pieces of each unit: a cut row takes the part of each earlier piece inside (or outside) its polygon.
+  // Pieces of each unit: a cut row takes the part of each earlier piece inside (or outside) its polygon. A row that inherits
+  // stands on the row it replaces (under) for the days before its first entry.
   const pieces = new Map();
   LAND.forEach(([sels, tlStr], k) => {
     const row = { k, tl: parseTl(tlStr, "land row " + k + " (" + sels[0] + ")"), what: sels[0] };
     for (const it of sels.flatMap(resolve)) {
+      if (!it.cut && row.tl.inherit) {
+        const before = pieces.get(it.i);
+        if (!before) { errors.push("land row " + k + " (" + sels[0] + ") inherits, but no row before it names " + it.i); continue; }
+        pieces.set(it.i, before.map((p) => ({ cons: p.cons, row: p.row ? { ...row, under: p.row } : row })));
+        continue;
+      }
       if (!it.cut) { pieces.set(it.i, [{ cons: [], row }]); continue; }
       const before = pieces.get(it.i) || [{ cons: [], row: null }], next = [];
       for (const p of before) {
@@ -965,17 +1002,21 @@ export function buildMedieval(env) {
   const missing = new Map();
   for (const u of units) if (!pieces.has(u.i)) missing.set(u.c, (missing.get(u.c) || []).concat(u.n));
   if (missing.size) log("units no row names (the sources keep them): " + [...missing].map(([c, l]) => c + " " + l.length + " (" + l.slice(0, 6).join(", ") + (l.length > 6 ? ", …" : "") + ")").join("; "));
-  const all = [];
-  for (const [i, ps] of pieces) for (const p of ps) if (p.row) all.push({ i, cons: p.cons, row: p.row, key: i + p.cons.map(([a, o]) => (o ? "!" : "") + a).sort().join("") });
+  const all = [], extUnits = new Set(units.filter((u) => u.ext).map((u) => u.i));
+  for (const [i, ps] of pieces) for (const p of ps) if (p.row) all.push({ i, cons: p.cons, row: p.row, ext: extUnits.has(i), key: i + p.cons.map(([a, o]) => (o ? "!" : "") + a).sort().join("") });
   // Each owner's attributes on a day.
   const attrAt = (key, d) => { let a = {}; for (const [from, ch] of O[key]) if (dayOf(from) <= d) a = { ...a, ...ch }; return a; };
   const ownerAt = (tl, d) => { let o = null; for (const [from, k] of tl) if (from <= d) o = k; return o; };
+  const ownerOf = (row, d) => { const o = ownerAt(row.tl, d); return o !== null || !row.under ? o : ownerOf(row.under, d); };
+  const late = [];
+  for (const p of all) { const first = p.ext ? EXT_FROM : MEDIEVAL_FROM; if (ownerOf(p.row, dayOf(first + "-01-01")) === null) late.push(p.row.what); }
+  if (late.length) throw new Error("medieval: rows with no owner on their land's first day: " + [...new Set(late)].slice(0, 12).join(", "));
   // Year by year (the state on 1 July), each owner's pieces; a run of years with the same owner, attributes, and pieces is a span.
   const open = new Map(), runs = [];
   for (let y = MEDIEVAL_FROM; y <= MEDIEVAL_TO; y++) {
     const d = dayOf(y + "-07-01"), byOwner = new Map();
     for (const p of all) {
-      const o = ownerAt(p.row.tl, d);
+      const o = ownerOf(p.row, d);
       if (!o || o === "-") continue;
       if (!byOwner.has(o)) byOwner.set(o, []);
       byOwner.get(o).push(p);
@@ -1025,7 +1066,8 @@ export function buildMedieval(env) {
   const strange = new Set();
   for (const s of out) for (const n of [s.ruler, s.part, ...(s.claims || [])]) if (n && !names.has(n)) strange.add(n);
   if (strange.size) log("rulers, parts, or claimants that are no owner's name: " + [...strange].join(", "));
-  return { spans: out, mask: shapeOf(all), units: all.length };
+  const mainPs = all.filter((p) => !p.ext), extPs = all.filter((p) => p.ext);
+  return { spans: out, mask: shapeOf(mainPs), maskExt: extPs.length ? shapeOf(extPs) : [], units: all.length };
 }
 
 // The owners' names, for checks.

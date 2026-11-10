@@ -8,7 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
-import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO } from "./medieval.mjs";
+import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM } from "./medieval.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -2645,8 +2645,8 @@ const napoleonic = (list) => {
   return list.concat(cutSpans);
 };
 
-// Europe from 476 to 961 (`tools/medieval.mjs`): its spans replace every other span on the land the table covers in those years,
-// as the Napoleonic table's do. A table span that shares its name with a larger span the sources draw outside the frame in the
+// Europe from 476 (`tools/medieval.mjs`; Anatolia's east, the Levant, and the Caucasus from 962): its spans replace every
+// other span on the land the table covers in those years, as the Napoleonic table's do. A table span that shares its name with a larger span the sources draw outside the frame in the
 // same years (the Eastern Roman Empire in Egypt, the Caliphates, Khazaria) carries no name of its own, so the state is named once.
 const medieval = (list) => {
   const unitsPath = resolve(dirname(provincesPath), "units.json");
@@ -2659,6 +2659,12 @@ const medieval = (list) => {
   notes.forEach((m) => console.log("medieval: " + m));
   let { list: cut, mb, dropped, cuts, shorn } = maskOut(list, T.mask, MEDIEVAL_FROM, MEDIEVAL_TO);
   list = cut;
+  if (T.maskExt.length) {
+    const e = maskOut(list, T.maskExt, EXT_FROM, MEDIEVAL_TO);
+    list = e.list;
+    mb = [Math.min(mb[0], e.mb[0]), Math.min(mb[1], e.mb[1]), Math.max(mb[2], e.mb[2]), Math.max(mb[3], e.mb[3])];
+    dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
+  }
   const spans = T.spans.map(({ host, size, ...s }) => withBox({ ...s, src: "medieval", host }));
   let hosted = 0;
   for (const t of spans) {
@@ -3564,7 +3570,9 @@ const GROUPS = [{
   never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
 }, { name: BRITISH_AMERICA },
 // The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
-{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" }];
+{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" },
+// From 962: the Kingdom of France's great fiefs (987), Cnut's North Sea Empire (1017 to 1035), and Kievan Rus' principalities (1054).
+{ name: "Kingdom of France", from: 987, to: MEDIEVAL_TO }, { name: "North Sea Empire", from: 1017, to: 1035 }, { name: "Kievan Rus'", from: 1054, to: MEDIEVAL_TO }];
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
@@ -3579,6 +3587,7 @@ const GROUPS = [{
     for (const s of dated) {
       const hit = outlines.filter((o) => s.last >= o.a && s.first <= o.b);
       const free = s.part === G.name && s.name !== G.name ? { ...s, part: "" } : s;
+      if (s.src === "medieval") { next.push(s); continue; }
       if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length ? free : s); continue; }
       const area = km2Of(s.polys), segs = [];
       if (s.first < hit[0].a) segs.push({ a: s.first, b: hit[0].a - 1, kind: "out" });
@@ -3732,6 +3741,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     const gid = catId(G.name);
     let prev = null;
     for (let y = c; y <= cEnd; y++) {
+      if ((G.from != null && y < G.from) || (G.to != null && y > G.to)) { prev = null; continue; }
       const ix = [];
       spans.forEach((s, i) => { if (s.first <= y && y <= s.last && (s.part === G.name || s.name === G.name)) ix.push(i); });
       const key = ix.join(",");
