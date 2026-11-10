@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="../go.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sources and method | CHRONIA</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Where CHRONIA's borders, cities, divisions, wars, and geography come from, and how they are put together." />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="../page.css" />
+    <style>
+      .mi .cp-sheet { width: min(52rem, calc(100% - 20px)); }
+      .mi h3 { margin: 22px 0 6px; font-size: 20px; font-weight: 400; font-style: italic; line-height: 1.3; }
+      .mi ul { margin: 0 0 14px; padding-left: 1.1em; max-width: 38em; }
+      .mi li { margin: 0 0 8px; }
+      .mi li::marker { content: "| "; color: var(--faint); }
+      .mi-toc { columns: 2; column-gap: 32px; margin: 0 0 6px; padding: 0; list-style: none; font-size: 17px; }
+      .mi-toc li { margin: 0 0 4px; break-inside: avoid; }
+      .mi-toc li::marker { content: none; }
+      .mi-wide { overflow-x: auto; margin: 6px 0 18px; }
+      .mi-strip { position: relative; min-width: 600px; font-size: 14px; line-height: 1.25; }
+      .mi-axis { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--ink); color: var(--muted); font-family: var(--num); font-size: 12px; }
+      .mi-axis span { padding: 0 4px 4px; border-left: 1px solid var(--hair); }
+      .mi-row { position: relative; height: 30px; border-bottom: 1px solid var(--hair); background: repeating-linear-gradient(90deg, transparent 0 calc(100% / 7 - 1px), var(--hair) calc(100% / 7 - 1px) calc(100% / 7)); }
+      .mi-bar { position: absolute; top: 5px; height: 20px; box-sizing: border-box; padding: 2px 6px; overflow: hidden; white-space: nowrap; border: 1px solid var(--ink); background: #e6d6ad; }
+      .mi-bar.f { background: repeating-linear-gradient(45deg, #efe3c4 0 4px, #e3d0a2 4px 8px); }
+      .mi-bar.t { background: #d9c08c; }
+      .mi-bar.n { padding: 0; background: var(--red); border-color: var(--red); }
+      .mi-tag { position: absolute; top: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; }
+      .mi-keyline { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+      .mi-keyline i { display: inline-block; width: 22px; height: 11px; margin: 0 5px -1px 0; border: 1px solid var(--ink); }
+      .mi table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 16px; line-height: 1.4; }
+      .mi th { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--ink); font-weight: 400; font-style: italic; text-align: left; vertical-align: bottom; }
+      .mi td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+      .mi td:first-child { width: 30%; }
+      .mi td.y { width: 16%; font-family: var(--num); font-size: 14px; white-space: nowrap; }
+      .mi-count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 4px 0 16px; border-top: 1px solid var(--hair); }
+      .mi-count div { padding: 10px 10px 8px 0; border-bottom: 1px solid var(--hair); }
+      .mi-count b { display: block; font-family: var(--num); font-size: 26px; font-weight: 400; line-height: 1.1; }
+      .mi-count span { color: var(--muted); font-size: 14px; }
+      @media (max-width: 640px) {
+        .mi-toc { columns: 1; }
+        .mi-count { grid-template-columns: repeat(2, 1fr); }
+        .mi table, .mi tbody, .mi tr, .mi td { display: block; width: auto; min-width: 0; }
+        .mi thead { display: none; }
+        .mi tr { padding: 8px 0; border-bottom: 1px solid var(--hair); }
+        .mi td { padding: 0; border: 0; }
+        .mi td:first-child { width: auto; font-weight: 600; }
+        .mi td.y { width: auto; color: var(--muted); }
+      }
+    </style>
+    <script src="/visit.js" defer></script>
+    <script src="/chronia/va.js" defer></script>
+  </head>
+  <body class="cp mi">
+    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
+    <main class="cp-sheet cp-frame">
+      <h1>Sources and method</h1>
+      <p class="cp-lede">Where every border, name, city, war, and coastline on CHRONIA comes from, and how the pieces are put together into one map that runs from 3400 BC to today.</p>
+      <p class="cp-meta">As of 10 November 2026.</p>
+
+      <ol class="mi-toc">
+        <li><a href="#short"><span class="cp-n">1</span>The short version</a></li>
+        <li><a href="#strip"><span class="cp-n">2</span>Which source draws which years</a></li>
+        <li><a href="#borders"><span class="cp-n">3</span>The borders, period by period</a></li>
+        <li><a href="#signs"><span class="cp-n">4</span>What the map&rsquo;s signs mean</a></li>
+        <li><a href="#capitals"><span class="cp-n">5</span>Capitals</a></li>
+        <li><a href="#cities"><span class="cp-n">6</span>Cities and their names</a></li>
+        <li><a href="#divisions"><span class="cp-n">7</span>First-level divisions</a></li>
+        <li><a href="#control"><span class="cp-n">8</span>Zones of control</a></li>
+        <li><a href="#geography"><span class="cp-n">9</span>Geography over time</a></li>
+        <li><a href="#notes"><span class="cp-n">10</span>The notes on the cards</a></li>
+        <li><a href="#rules"><span class="cp-n">11</span>The rules and the ledger</a></li>
+        <li><a href="#limits"><span class="cp-n">12</span>What it still gets wrong</a></li>
+        <li><a href="#licences"><span class="cp-n">13</span>Licences</a></li>
+      </ol>
+
+      <section id="short">
+        <h2><span class="cp-n">1</span>The short version</h2>
+        <p>
+          CHRONIA is built from published research datasets, not drawn by hand. Three datasets carry the borders: <b>Cliopatria</b> (the Seshat Global History Databank) for every year from 3400 BC to 1885, <b>historical-basemaps</b> (André Ourednik) to fill the land Cliopatria leaves blank, mostly with peoples and cultures, and <b>CShapes 2.0</b> (ETH Zurich and others) for every day from 1886 to 2019. Where those sources are coarse or wrong, CHRONIA replaces them with dated tables written for the purpose (Europe from 476 to 961 and from 1648 to 1885, North America, and Australia, among others), built on the shapes of today&rsquo;s provinces and districts rather than lines typed in by hand.
+        </p>
+        <p>
+          The cities come from historians&rsquo; population estimates (Chandler, Modelski, and Hanson), census figures, and Wikidata, ranked by their size at each date and named as they were then. The land, lakes, and rivers are Natural Earth&rsquo;s, with a list of well-dated changes. The wars on the zones of control layer are rebuilt month by month from the dates each town was taken. Every change to the maps is recorded in a ledger, with its sources, how confident it is, and what other readings were possible.
+        </p>
+        <div class="mi-count">
+          <div><b>4,044</b><span>states and peoples</span></div>
+          <div><b>5,108</b><span>cities and towns</span></div>
+          <div><b>17</b><span>wars on the zones layer</span></div>
+          <div><b>92</b><span>entries in the ledger</span></div>
+        </div>
+      </section>
+
+      <section id="strip">
+        <h2><span class="cp-n">2</span>Which source draws which years</h2>
+        <p>The columns are periods, not equal stretches of time. Where two bars overlap, the lower, narrower table replaces the dataset above it for its region and years.</p>
+        <div class="mi-wide">
+          <div class="mi-strip" role="img" aria-label="A chart of which source draws the borders in each period, from 3400 BC to 2026.">
+            <div class="mi-axis"><span>3400&ndash;1 BC</span><span>AD 1&ndash;475</span><span>476&ndash;961</span><span>962&ndash;1647</span><span>1648&ndash;1885</span><span>1886&ndash;2019</span><span>2020&ndash;now</span></div>
+            <div class="mi-row"><div class="mi-bar" style="left: 0; width: 71.43%">Cliopatria (Seshat): the states, year by year</div></div>
+            <div class="mi-row"><div class="mi-bar f" style="left: 0; width: 71.43%">historical-basemaps: 39 snapshot maps fill the blank land, with peoples</div></div>
+            <div class="mi-row"><div class="mi-bar t" style="left: 0; width: 14.29%">Cultures added</div><div class="mi-bar n" style="left: 17.44%; width: 1.2%"></div><span class="mi-tag" style="left: 19.4%">Roman provinces, 106&ndash;117 (DARE)</span></div>
+            <div class="mi-row"><div class="mi-bar t" style="left: 28.57%; width: 14.29%">Europe, 476&ndash;961</div></div>
+            <div class="mi-row"><span class="mi-tag" style="right: 43.6%">Europe, 1648&ndash;1885</span><div class="mi-bar t" style="left: 57.14%; width: 14.29%"></div></div>
+            <div class="mi-row"><span class="mi-tag" style="right: 45.4%">North America, 1564&ndash;1885</span><div class="mi-bar t" style="left: 55.39%; width: 16.03%"></div></div>
+            <div class="mi-row"><span class="mi-tag" style="right: 35.2%">Australia, 1788&ndash;1885</span><div class="mi-bar t" style="left: 65.55%; width: 5.88%"></div></div>
+            <div class="mi-row"><span class="mi-tag" style="right: 29.4%">CShapes 2.0, every day from 1886</span><div class="mi-bar" style="left: 71.43%; width: 14.29%"></div></div>
+            <div class="mi-row"><span class="mi-tag" style="right: 15.1%">Carried on by hand, month by month</span><div class="mi-bar f" style="left: 85.71%; width: 14.29%"></div></div>
+          </div>
+        </div>
+        <p class="mi-keyline"><i style="background: #e6d6ad"></i>a dataset &nbsp; <i style="background: repeating-linear-gradient(45deg, #efe3c4 0 4px, #e3d0a2 4px 8px)"></i>a fill or a continuation &nbsp; <i style="background: #d9c08c"></i>a table written for CHRONIA</p>
+      </section>
+
+      <section id="borders">
+        <h2><span class="cp-n">3</span>The borders, period by period</h2>
+
+        <h3>From 3400 BC to 1885: Cliopatria</h3>
+        <p>
+          The backbone of every year before 1886 is <a href="https://github.com/Seshat-Global-History-Databank/cliopatria">Cliopatria</a>, version 0.2.1 (Bennett and others, <i>Scientific Data</i>, 2025): about 14,000 rows, each a polity&rsquo;s shape for a span of years, with its name, its Wikipedia and Wikidata titles, and the larger realm it belonged to. From 1200 it records a change somewhere on Earth every two and a half years on average. It thins out the further back it goes: a handful of states in Egypt, Mesopotamia, Elam, and the Indus valley in 3000 BC, about 60 in 500 BC, and several hundred after 1200. It records states only, never peoples.
+        </p>
+        <p>
+          CHRONIA corrects its names (&ldquo;Kingdom of Monaco&rdquo; is the Principality, &ldquo;Hashemite Arab Federation&rdquo; in 1415 is Arab Iraq), turns its groups into rule (the colonies of &ldquo;(Spanish Empire)&rdquo; are held by the Kingdom of Spain and take its colour), and settles its overlaps: where two shapes cover the same land, the smaller keeps it, so the Duchy of Lorraine is not swallowed by France.
+        </p>
+
+        <h3>The fill: historical-basemaps</h3>
+        <p>
+          Cliopatria leaves much of the world blank, in 1700 more than half of the land outside Antarctica. Each of the 39 snapshot maps of <a href="https://github.com/aourednik/historical-basemaps">historical-basemaps</a> (André Ourednik and contributors), from 3000 BC to 1880, fills that blank land for the years nearest to it, after every Cliopatria shape is cut out of it. That is where the map&rsquo;s peoples come from: the Siberian peoples, the Plains bison hunters, the Aboriginal nations, and the cultures of the steppe. Where a snapshot draws a state inside a larger Cliopatria shape (Prussia, Hanover, and Saxony inside the German Confederation of 1815), the state is drawn out of it and shown on its own. In all, the fill adds about 9,300 spans and joins about 2,500 pieces to Cliopatria&rsquo;s states.
+        </p>
+
+        <h3>Before 1 BC</h3>
+        <p>
+          The record is thinnest here. Sixty archaeological cultures and peoples that neither source draws (Funnelbeaker, Corded Ware, Bell Beaker, El Argar, Únětice, the Nuragic civilisation, and many outside Europe), and two states, Dʿmt and the Garamantes, are placed on the modern regions that hold most of their sites. They are drawn uncoloured and dotted, because no source draws a line for them. Sixty-nine states of antiquity whose borders no source fixes are marked approximate. The dates follow the conventional chronologies: the Middle Chronology for Mesopotamia (Kuhrt, <i>The Ancient Near East</i>) and Shaw&rsquo;s <i>Oxford History of Ancient Egypt</i> for Egypt, with Harding, Anthony, Liu and Chen, Phillipson, Higham, Possehl, Potts, and the <i>Cambridge Ancient History</i> for the cultures.
+        </p>
+        <p>
+          Some conquests the sources draw in one step are redrawn year by year: Alexander&rsquo;s, from 334 to 324 BC, take the Achaemenid Empire&rsquo;s land province by province, on today&rsquo;s first-level units standing in for the satrapies.
+        </p>
+
+        <h3>AD 106 to 117: the Roman provinces</h3>
+        <p>
+          For Trajan&rsquo;s last years the Roman Empire is drawn with its provinces inside it, from the <a href="https://dare.ht.lu.se/">Digital Atlas of the Roman Empire</a> (DARE, Johan Åhlfeldt, Lund University), through <a href="https://github.com/klokantech/roman-empire">klokantech/roman-empire</a>. Its map has Dacia and Arabia, annexed in 106, and Armenia and Mesopotamia, held from 114 to 117, so it is shown for those years only.
+        </p>
+
+        <h3>476 to 961: Europe from a dated table</h3>
+        <p>
+          From the deposition of Romulus Augustulus to the eve of Otto I&rsquo;s coronation, Europe, Anatolia west of 40° E, and the Maghreb are drawn from a table written for CHRONIA, in which every block of today&rsquo;s provinces and districts has an owner from date to date. The sources had left most of eastern Europe, Ireland, Scotland, and Scandinavia blank before about 650, and had errors such as a Western Roman Empire in Britain in 550. The table has 261 owners, 76 of them peoples, and shows disputed land (Italy in the Gothic War, Saxony in Charlemagne&rsquo;s wars, the Duero valley between Asturias and Córdoba), clients and vassals, and the Frankish kingdoms as members of one realm.
+        </p>
+        <p>
+          The dates come from the chronicles: Procopius and Agathias for Italy and Africa, Gregory of Tours for Clovis, Bede and the <i>Anglo-Saxon Chronicle</i> for England, Paul the Deacon for the Lombards, the <i>Royal Frankish Annals</i> and Einhard for the Carolingians, the <i>Chronicle of 754</i> for Spain, and the <i>Primary Chronicle</i> for the Rus. The extents follow the usual atlases: McEvedy&rsquo;s <i>New Penguin Atlas of Medieval History</i>, Shepherd&rsquo;s <i>Historical Atlas</i>, Magocsi&rsquo;s <i>Historical Atlas of Central Europe</i>, Hill&rsquo;s <i>Atlas of Anglo-Saxon England</i>, and Euratlas. Because today&rsquo;s units stand in for the counties of the time, nearly every line in these years is drawn dotted, as approximate.
+        </p>
+
+        <h3>1648 to 1885: Europe from a dated table</h3>
+        <p>
+          From the Peace of Westphalia to the eve of CShapes&rsquo;s first year, Europe is drawn from another table, dated to the day from 1803. Its rule is that the main map shows the law: annexations, client states, personal unions, and protectorates as treaties made them, while the armies&rsquo; occupations go on the zones of control layer. It replaced source shapes that put Moscow and Vilnius in the French Empire in 1812, Corsica in Genoa until 1793, and Warsaw in Russia from 1819. The treaties and their dates (Westphalia, Utrecht, the partitions of Poland, Vienna, Frankfurt, Berlin, and dozens more) are each checked against their articles.
+        </p>
+        <p>
+          The shapes are UCHRONIA&rsquo;s units: Natural Earth&rsquo;s provinces, and, for the countries cut finer, Germany&rsquo;s districts (© GeoBasis-DE / BKG), Austria&rsquo;s (BEV), Poland&rsquo;s and Russia&rsquo;s (OpenStreetMap), Belarus&rsquo;s (CIESIN), and Czechia&rsquo;s and Ukraine&rsquo;s (Wikimedia Commons), all through geoBoundaries.
+        </p>
+
+        <h3>North America and Australia</h3>
+        <ul>
+          <li><b>The colonies, 1564 to 1821:</b> British America is drawn as one realm with each colony inside it from its founding, with New France, Spanish Florida and Texas, and the rest, in place of the sources&rsquo; coastal strip and Plains-wide Louisiana.</li>
+          <li><b>The United States, 1784 to 1885:</b> each territorial acquisition (the Treaty of Paris lands, the Louisiana Purchase, Florida, Texas, Oregon, the Mexican Cession, the Gadsden Purchase, and Alaska) built on Natural Earth&rsquo;s states and rivers, with the Continental Divide traced through its named passes. The pieces come within a few per cent of the published areas. The Oregon Country and the Republic of Texas&rsquo;s claim are drawn as disputed.</li>
+          <li><b>British North America and Canada, 1763 to 1885:</b> Rupert&rsquo;s Land is the outline on Natural Resources Canada&rsquo;s <i>Territorial Evolution</i> map of 1867, and each province joins Canada in the year it did.</li>
+          <li><b>Australia, 1788 to 1885:</b> the colonies as the law drew them, on Natural Earth&rsquo;s units, cut where a colony&rsquo;s legal border was a meridian or a parallel.</li>
+        </ul>
+
+        <h3>Days from 1801</h3>
+        <p>
+          Cliopatria counts in whole years, so a table of 241 real events, each with its day and a page that gives it, dates the changes from 1801 to 1885: a handover, an annexation, a declaration that took effect, or a treaty&rsquo;s coming into force. The Louisiana Purchase changes hands on 20 December 1803, not on 1 January.
+        </p>
+
+        <h3>From 1886: CShapes 2.0</h3>
+        <p>
+          <a href="https://icr.ethz.ch/data/cshapes/">CShapes 2.0</a> (Schvitz, Girardin, Rüegger, Weidmann, Cederman, and Gleditsch, <i>Journal of Conflict Resolution</i>, 2022) records every independent state and dependent territory from 1 January 1886 to 31 December 2019 as dated spans, each with its shape, status (independent, colony, protectorate, mandate, or occupied), owner, and capital. CHRONIA reads its Gleditsch and Ward edition, with a few corrections from the Correlates of War edition. On top of it:
+        </p>
+        <ul>
+          <li><b>The First World War:</b> the occupations that outlasted the armistices (Mesopotamia, the Occupied Enemy Territory Administration, the Rhineland, Constantinople, and the Saar) are on the main map; the wartime fronts are on the zones layer.</li>
+          <li><b>The Second World War:</b> CShapes draws the legal borders through the war, so from 1931 to 1945 the wartime borders are laid over them: the Julian March, the Dodecanese, Manchukuo, Vichy France, the Independent State of Croatia, and the rest, from the period&rsquo;s maps and Natural Earth&rsquo;s units.</li>
+          <li><b>Disputed land:</b> Kashmir, Western Sahara, Crimea and the four oblasts Russia claims, Artsakh, the Gaza Strip, and others are striped in their claimants&rsquo; colours.</li>
+          <li><b>Since 2020:</b> CShapes stops at the end of 2019, so the changes since are carried on by hand, from news reports and reference lists, and the map is brought up to date each month.</li>
+        </ul>
+
+        <h3>Small territories and islands</h3>
+        <p>
+          The microstates, crown dependencies, and small colonies the sources leave out or merge (Liechtenstein, Monaco, San Marino, Andorra, the Isle of Man, Gibraltar, and the like) come from Natural Earth&rsquo;s states and provinces, each with its status by date from its own article. Small islands no source covers go to the nearest state across the water, within 60 km, or to the state that holds them today when it is nearly as near.
+        </p>
+      </section>
+
+      <section id="signs">
+        <h2><span class="cp-n">4</span>What the map&rsquo;s signs mean</h2>
+        <ul>
+          <li><b>A solid border</b> is one the sources fix.</li>
+          <li><b>A dotted border</b> is approximate: a state of antiquity, a steppe khanate, the early Middle Ages, or anywhere the sources only guess.</li>
+          <li><b>Stripes in two colours</b> are land two or more states claimed and fought over.</li>
+          <li><b>An uncoloured land with an italic name</b> is a people or a culture, not a state; its edge is dotted because it had none. A faint name with no edge at all is a band of hunters, gatherers, or fishers, who ranged over land rather than holding it.</li>
+          <li><b>A state in another&rsquo;s colour</b> is a dependency: a colony, a client, or a vassal, shown in its ruler&rsquo;s colour with its own name.</li>
+          <li><b>A fine broken line</b> parts the members of a larger realm (the states of the Holy Roman Empire, the provinces of Rome, the colonies of British America, the Frankish kingdoms) or a country&rsquo;s first-level divisions.</li>
+          <li><b>Blank paper</b> is land no source fills. CHRONIA leaves it blank rather than invent a state for it.</li>
+        </ul>
+        <p>
+          The colours are never chosen by hand. Each state keeps one of ten colours across every year; a line of states (England to the United Kingdom, Muscovy to the Russian Federation) shares one; and the 196 states of 2019 take the colours of a reference map Noah coloured in UCHRONIA. Where two neighbours would meet in one colour, one of them changes colour for just those years.
+        </p>
+      </section>
+
+      <section id="capitals">
+        <h2><span class="cp-n">5</span>Capitals</h2>
+        <p>
+          Until 1885, each state&rsquo;s capital comes from <a href="https://www.wikidata.org/">Wikidata</a>&rsquo;s capital statements, with their start and end dates, and, where Wikidata has none, from the capital in the state&rsquo;s English Wikipedia infobox, with the years written beside it. Both were fetched on 1 November 2026 for 2,268 titles. Where several undated capitals are given, the one that was the largest city that year is taken; a capital more than about 30 km outside the state&rsquo;s land (London for British North America) is dropped. About 11,600 spans have a capital. From 1886 the capital is CShapes&rsquo;s, corrected where it moved within a span.
+        </p>
+      </section>
+
+      <section id="cities">
+        <h2><span class="cp-n">6</span>Cities and their names</h2>
+        <p>
+          At every date the map shows the cities that existed then, ranked by their population at that date, so Babylon, Chang&rsquo;an, and Córdoba lead in their centuries, and a city of today appears only from its founding. A city&rsquo;s population between two figures is interpolated geometrically. The sources, in the order they are combined:
+        </p>
+        <ul>
+          <li><b>Reba, Reitsma, and Seto (2016),</b> <i>Scientific Data</i>: Tertius Chandler&rsquo;s and George Modelski&rsquo;s estimates of city populations from 3700 BC to 1975, geocoded (1,597 cities and 154 cities), from NASA SEDAC. Figures four times off both their neighbours are dropped as misprints.</li>
+          <li><b>J. W. Hanson&rsquo;s Cities Database</b> (Oxford, 2016): 1,388 cities of the Greek and Roman world with their founding dates, and population estimates from their areas by the SDAM project at Aarhus University.</li>
+          <li><b>Today&rsquo;s cities:</b> GeoNames, through UCHRONIA, and Natural Earth&rsquo;s populated places, with the UN&rsquo;s <i>World Urbanization Prospects</i> figures from 1950.</li>
+          <li><b>The United States census, 1790 to 2010,</b> through Erik Steiner&rsquo;s <i>Historical U.S. City Populations</i> (Stanford CESTA).</li>
+          <li><b>Wikidata,</b> for founding years and early populations of cities the others know only from 1890.</li>
+          <li><b>historical-basemaps&rsquo; dated places,</b> such as Ur, Harappa, and Great Zimbabwe, with their end years.</li>
+          <li><b>CHRONIA&rsquo;s own tables:</b> cities the sources lack (Karakorum, Persepolis, Mapungubwe, and about 80 places of early medieval Europe, such as Hedeby, Birka, Dorestad, Lindisfarne, and Old Uppsala), founding and end dates (Baghdad 762, Angkor abandoned 1431), and population points for sacks and plagues the sources&rsquo; decade-apart figures smooth over (the Mongol sacks, the Black Death). Archaeologists&rsquo; estimates replace Modelski&rsquo;s for Teotihuacan (Cowgill), Tikal (Culbert and Rice), Caracol (Chase and Chase), Tiwanaku (Kolata), and Tula (Healan).</li>
+        </ul>
+        <p>
+          <b>Names by date.</b> Cities are named as an English-language atlas of the time would print them: the English name where English had one in common use (Constantinople, Peking, Bombay), otherwise the local name of the time (Lutetia, Eboracum, Edo, Danzig, Pressburg). For the Greek and Roman world this follows the Barrington Atlas, through Hanson: Latin in the West, Greek in the East. Chinese cities are in pinyin before 1800, in the postal forms of English atlases from 1800, and in pinyin again from 1979. A name changes on the date it was officially changed. Early medieval towns carry their Old English, Norse, and Arabic names (York is Eoforwic from 600 and Jórvík from 866, and Toledo is Tulaytula from 712). About 580 cities have names by date.
+        </p>
+      </section>
+
+      <section id="divisions">
+        <h2><span class="cp-n">7</span>First-level divisions</h2>
+        <ul>
+          <li><b>The United States, from 3 September 1783:</b> the Newberry Library&rsquo;s <a href="https://publications.newberry.org/ahcb/">Atlas of Historical County Boundaries</a>, which dates every change to a state&rsquo;s or territory&rsquo;s boundary to the day, through the rOpenSci USAboundariesData package.</li>
+          <li><b>Canada, Australia, Mexico, Germany, Austria, China, and India,</b> from the dates their present boundaries have held: Natural Earth&rsquo;s states and provinces, under the names of their time.</li>
+        </ul>
+        <p>The province lines inside the Holy Roman Empire, Rome, British America, and the Frankish realm are the members&rsquo; own borders, from the border sources above.</p>
+      </section>
+
+      <section id="control">
+        <h2><span class="cp-n">8</span>Zones of control</h2>
+        <p>
+          A layer, off at first, that hatches who actually held the ground in a war, as opposed to who held it in law. Most wars are rebuilt from towns: for each month, every town listed has a holder, the land is split into each town&rsquo;s nearest ground (its Voronoi cell), and each side&rsquo;s cells are joined. So a front is as good as the towns on either side of it, about 10 to 20 km apart in the best-covered wars.
+        </p>
+        <div class="mi-wide">
+          <table>
+            <thead><tr><th>War</th><th>Years</th><th>Built from</th></tr></thead>
+            <tbody>
+              <tr><td>Gothic War in Italy</td><td class="y">535&ndash;554</td><td>71 towns; Procopius, <i>History of the Wars</i> V&ndash;VIII; Agathias</td></tr>
+              <tr><td>Lombard conquest of Italy</td><td class="y">568&ndash;605</td><td>55 towns; Paul the Deacon, <i>History of the Lombards</i></td></tr>
+              <tr><td>Umayyad conquest of Hispania</td><td class="y">711&ndash;720</td><td>43 towns; the <i>Chronicle of 754</i>, Ibn Abd al-Hakam, al-Maqqari, the treaty of Tudmir</td></tr>
+              <tr><td>Saxon Wars</td><td class="y">772&ndash;804</td><td>36 towns; the <i>Royal Frankish Annals</i>; Einhard</td></tr>
+              <tr><td>Muslim conquest of Sicily</td><td class="y">827&ndash;902</td><td>32 towns; Ibn al-Athir, the <i>Cambridge Chronicle</i>, Theophanes Continuatus</td></tr>
+              <tr><td>Great Heathen Army in England</td><td class="y">865&ndash;878</td><td>38 towns; the <i>Anglo-Saxon Chronicle</i>; Asser</td></tr>
+              <tr><td>Napoleonic Wars</td><td class="y">1803&ndash;1815</td><td>The occupations, and Napoleon&rsquo;s annexations by decree that no treaty confirmed, on the Europe table&rsquo;s units, day by day</td></tr>
+              <tr><td>American Civil War</td><td class="y">1861&ndash;1865</td><td>The U.S. Coast Survey&rsquo;s <i>Historical sketch of the rebellion</i> (1862 and 1864, Library of Congress), read from the scans, and the Army&rsquo;s <i>American Military History</i>, by county</td></tr>
+              <tr><td>First World War</td><td class="y">1914&ndash;1918</td><td>The occupation areas and their dates, with each state&rsquo;s day of entering and leaving the war</td></tr>
+              <tr><td>Second World War in Asia and the Pacific</td><td class="y">1931&ndash;1945</td><td>1,493 towns with the days they were taken or liberated, from English, Japanese, and Russian Wikipedia and campaign timelines</td></tr>
+              <tr><td>Second World War in Europe, Africa, and the Middle East</td><td class="y">1939&ndash;1945</td><td>The same 1,493 towns</td></tr>
+              <tr><td>Spanish Civil War</td><td class="y">1936&ndash;1939</td><td>844 towns, from the English and Spanish Wikipedia articles on each campaign and battle, and regional histories</td></tr>
+              <tr><td>Mexican cartels</td><td class="y">2000&ndash;2018</td><td>OCVED 2.0 (Osorio and Beltrán, 2020): the group named in violent events, by municipality and year</td></tr>
+              <tr><td>Syrian civil war</td><td class="y">2014&ndash;now</td><td>Wikipedia&rsquo;s detailed control map, read month by month from their history, each month&rsquo;s colours read from that month&rsquo;s caption</td></tr>
+              <tr><td>Yemeni civil war</td><td class="y">2014&ndash;now</td><td>The same, from its own Wikipedia map</td></tr>
+              <tr><td>Israel, the West Bank, and Gaza</td><td class="y">2016&ndash;now</td><td>The same, from its own Wikipedia map</td></tr>
+              <tr><td>Russian invasion of Ukraine</td><td class="y">2022&ndash;now</td><td>The same, from its own Wikipedia map and its overview map</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          For the early medieval wars most dates are known only to the year or the season, and each town&rsquo;s note says what its dates rest on; a date worked out from the towns around it is marked approximate.
+        </p>
+      </section>
+
+      <section id="geography">
+        <h2><span class="cp-n">9</span>Geography over time</h2>
+        <p>
+          The land, lakes, rivers, and coastlines are today&rsquo;s, from <a href="https://www.naturalearthdata.com/">Natural Earth</a>, at every date, except for changes large enough to see and well enough dated to place. They follow the date shown, so in 1150 the Yellow River runs south to the Yellow Sea.
+        </p>
+        <ul>
+          <li><b>The Low Countries:</b> the medieval coast in three stages, broken by the floods of 1170 and 1421, from the palaeogeographic maps of Vos and de Vries (Deltares) in the <i>Atlas van Nederland in het Holoceen</i> (Rijksdienst voor het Cultureel Erfgoed).</li>
+          <li><b>The Zuiderzee and the polders:</b> open sea until 1930, closed by the Afsluitdijk in 1932, and the polders dry on their days, from Statistics Netherlands&rsquo; municipal and neighbourhood maps. The Haarlemmermeer is a lake until 1852.</li>
+          <li><b>Lakes and reservoirs:</b> about 280 reservoirs appear in the year their dam was finished (Lake Mead 1936, Lake Nasser 1970). The Aral Sea, Lake Chad, Lop Nur, and Lake Texcoco are drawn at their earlier extents from Natural Earth&rsquo;s historic lakes. The Kakhovka Reservoir is gone from 6 June 2023.</li>
+          <li><b>Marshes:</b> the Fens, the Pontine Marshes, the Hula, and Lakes Fucino, Copais, and Tulare until they were drained, contoured from elevation tiles.</li>
+          <li><b>Rivers and canals:</b> the Yellow River&rsquo;s southern course from 1128 to 1855; the Suez Canal from 1869 and the Panama Canal from 1914.</li>
+          <li><b>Coasts that moved:</b> the silting of Miletus, Ephesus, and the Po delta (from published reconstructions on Wikimedia Commons, with Landsat for the Po); Thera before the Minoan eruption (Druitt and Francaviglia); and Singapore&rsquo;s reclamations, read year by year from Landsat pictures.</li>
+          <li><b>Terrain:</b> the relief shading is from the Terrain Tiles on the Registry of Open Data on AWS.</li>
+        </ul>
+      </section>
+
+      <section id="notes">
+        <h2><span class="cp-n">10</span>The notes on the cards</h2>
+        <p>
+          Clicking a state, a people, or a city opens a card. Its facts (ruler, capital, status, dates, and neighbours) come from the data above. Its short note is written by a language model (DeepSeek V4.1 Flash, or Claude Haiku 5.5 when DeepSeek is unavailable), given only those facts and the date, and kept for everyone who opens the same card after. The notes are the one part of CHRONIA not drawn from a cited source, so they can be wrong, especially for peoples and early periods; the card always links to the Wikipedia article, and its fallback text and pictures are Wikipedia&rsquo;s.
+        </p>
+      </section>
+
+      <section id="rules">
+        <h2><span class="cp-n">11</span>The rules and the ledger</h2>
+        <p>Every change to the maps follows a written set of rules, and is recorded in a ledger with its sources, its confidence, the readings not taken, and what was left out. The main rules:</p>
+        <ul>
+          <li><b>Faithful to the year:</b> a state is drawn as it stood that year, not at its height.</li>
+          <li><b>Rule, not reach:</b> land a state governed, taxed, or garrisoned, not land it raided or merely claimed.</li>
+          <li><b>Honest about doubt:</b> thin or disputed evidence is shown as a dotted line or a disputed stripe, and land no one can place stays blank.</li>
+          <li><b>Two sources:</b> a departure from the datasets needs two independent sources; with only one, it is marked weak and drawn as approximate.</li>
+          <li><b>No coordinates from memory:</b> lines are built from existing geometry (provinces, districts, rivers, and treaty lines), never typed in by hand.</li>
+          <li><b>Even across the world:</b> Africa, the Americas, Inner Asia, and Oceania get the same care as the Mediterranean, and Wikipedia is a pointer to sources, never the only source for a border.</li>
+          <li><b>Neutral names:</b> the names of the standard English-language scholarship, with no modern state projected back onto an ancient people.</li>
+        </ul>
+      </section>
+
+      <section id="limits">
+        <h2><span class="cp-n">12</span>What it still gets wrong</h2>
+        <ul>
+          <li>Before 1200, where Cliopatria has no state, the land comes from the nearest snapshot map, which can be centuries away, so it changes only halfway between two maps.</li>
+          <li>Cliopatria&rsquo;s borders follow a grid in steps 7 to 20 km wide, and its spans are years, often five or ten years long before 1800, so a change can show a few years early or late.</li>
+          <li>From 476 to 961, today&rsquo;s units stand in for old ones, so most lines are approximate to a unit&rsquo;s width, and many dates are known only to the year or the generation.</li>
+          <li>Capitals are only as good as Wikidata; many states have none before 1886.</li>
+          <li>City populations are estimates, often one figure a century, and smaller cities come and go with the data.</li>
+          <li>The coastline is today&rsquo;s outside the listed changes, so the growth of most deltas and many reclamations are not shown.</li>
+          <li>The notes on the cards are written by a model and can be wrong.</li>
+        </ul>
+      </section>
+
+      <section id="licences">
+        <h2><span class="cp-n">13</span>Licences</h2>
+        <div class="mi-wide">
+          <table>
+            <thead><tr><th>Source</th><th>Licence</th><th>What it gives</th></tr></thead>
+            <tbody>
+              <tr><td>Cliopatria (Seshat)</td><td>CC BY 4.0</td><td>States, 3400 BC to 1885</td></tr>
+              <tr><td>historical-basemaps</td><td>GPL-3.0</td><td>Snapshot maps and dated places; so the yearly files are GPL-3.0</td></tr>
+              <tr><td>CShapes 2.0</td><td>CC BY-NC-SA 4.0</td><td>States from 1886; not for commercial use</td></tr>
+              <tr><td>Atlas of Historical County Boundaries</td><td>CC BY-NC-SA 2.5</td><td>United States divisions and the Civil War counties</td></tr>
+              <tr><td>Natural Earth</td><td>Public domain</td><td>Land, lakes, rivers, provinces, and small territories</td></tr>
+              <tr><td>DARE (Åhlfeldt)</td><td>CC BY</td><td>The Roman provinces</td></tr>
+              <tr><td>Reba, Reitsma, and Seto; NASA SEDAC</td><td>Open, with citation</td><td>City populations from 3700 BC</td></tr>
+              <tr><td>Hanson; SDAM, Aarhus</td><td>CC BY-SA 4.0</td><td>Greek and Roman cities</td></tr>
+              <tr><td>Historical U.S. City Populations</td><td>Public domain</td><td>The census, 1790 to 2010</td></tr>
+              <tr><td>Wikidata</td><td>CC0</td><td>Capitals, founding years, and early populations</td></tr>
+              <tr><td>GeoNames</td><td>CC BY 4.0</td><td>Today&rsquo;s cities</td></tr>
+              <tr><td>Wikipedia</td><td>CC BY-SA 4.0</td><td>Control maps of current wars, town dates, and the cards&rsquo; fallback text</td></tr>
+              <tr><td>OCVED 2.0</td><td>MIT</td><td>Mexico&rsquo;s cartels</td></tr>
+              <tr><td>Natural Resources Canada</td><td>Open Government Licence &ndash; Canada</td><td>Rupert&rsquo;s Land in 1867</td></tr>
+              <tr><td>Deltares and RCE; Statistics Netherlands</td><td>CC BY 4.0</td><td>The Low Countries&rsquo; medieval coasts and the polders</td></tr>
+              <tr><td>Landsat (USGS)</td><td>Public domain</td><td>Singapore&rsquo;s coasts and the Po delta</td></tr>
+              <tr><td>German, Austrian, Polish, Russian, and other districts</td><td>dl-de/by-2-0, CC BY-SA 2.0, ODbL, CC BY 3.0</td><td>The finer units of the Europe tables, through geoBoundaries</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The type is IM Fell English and Old Standard TT (SIL Open Font License), and the map is drawn with d3-geo and topojson.</p>
+      </section>
+
+      <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/">Team</a> | <a href="../privacy/">Privacy</a> | <a href="../terms/">Terms</a></footer>
+    </main>
+  </body>
+</html>
