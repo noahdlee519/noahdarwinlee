@@ -8,7 +8,7 @@
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
   var UC = "../uchronia/";
   var UC_APP = "https://noahdarwinlee.com/uchronia/";
-  var STORE_FLAT = "chronia-flat", STORE_SPEED = "chronia-speed";
+  var STORE_FLAT = "chronia-flat", STORE_SPEED = "chronia-play-speed";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
   var START_YEAR = 1815, MONTHLY_FROM = 1648, DAYS_FROM = 1800;
@@ -4603,44 +4603,53 @@
   }
   // playMode is "normal", "fast", "back", or "back-fast".
   function playBack() { return playMode.indexOf("back") === 0; }
-  // Played slowly (chosen in the View panel, and remembered), every pause is SLOW_PLAY times as long, so a change of borders
-  // stays on the map long enough to watch; the double-speed buttons then play at twice the slow pace.
-  var SLOW_PLAY = 2.5, playSlow = false;
-  try { playSlow = localStorage.getItem(STORE_SPEED) === "slow"; } catch (e) {}
-  function playDelay(ms) { return (/fast$/.test(playMode) ? ms / 2 : ms) * (playSlow ? SLOW_PLAY : 1); }
-  // Each button: its id, its mode, then its name and tip at the usual pace and played slowly.
-  var PLAY_BUTTONS = [
-    ["play", "normal", "Play through time", "Play (P)", "Play slowly through time", "Play slowly (P)"],
-    ["play-fast", "fast", "Play at double speed", "Play at double speed (Shift P)", "Play at twice the slow pace", "Play at twice the slow pace (Shift P)"],
-    ["play-back", "back", "Play backwards", "Play backwards (O)", "Play slowly backwards", "Play slowly backwards (O)"],
-    ["play-back-fast", "back-fast", "Play backwards at double speed", "Play backwards at double speed (Shift O)", "Play backwards at twice the slow pace", "Play backwards at twice the slow pace (Shift O)"]
-  ];
+  // The speed of play, set with the slider under the play buttons (or , and .) and remembered: its value v is a power of
+  // two, from a quarter of the usual speed to four times it, and every pause is divided by 2^v.
+  var SPEED_MIN = -2, SPEED_MAX = 2, SPEED_STEP = 0.25, playSpeed = 0, speedInput = $("speed");
+  try { var sv = parseFloat(localStorage.getItem(STORE_SPEED)); if (isFinite(sv)) playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, sv)); } catch (e) {}
+  function playDelay(ms) { return ms / Math.pow(2, playSpeed); }
+  function speedText(v) {
+    var x = Math.pow(2, v);
+    if (Math.abs(v) < 1e-9) return "1×";
+    if (Math.abs(x - 0.5) < 1e-9) return "½×";
+    if (Math.abs(x - 0.25) < 1e-9) return "¼×";
+    return (x < 1 ? x.toFixed(2).replace(/^0/, "") : x.toFixed(x < 2 ? 2 : 1).replace(/\.?0+$/, "")) + "×";
+  }
+  function setPlaySpeed(v, keep) {
+    playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, Math.round(v / SPEED_STEP) * SPEED_STEP));
+    speedInput.value = String(playSpeed);
+    var t = speedText(playSpeed);
+    speedInput.setAttribute("aria-valuetext", playSpeed === 0 ? "Usual speed" : t.replace("×", " times") + " the usual speed");
+    $("speed-box").setAttribute("data-tip", "Speed: " + t);
+    speedInput.style.setProperty("--ch-speed-at", ((playSpeed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN) * 100).toFixed(1) + "%");
+    if (keep === false) return;
+    try { localStorage.setItem(STORE_SPEED, String(playSpeed)); } catch (e) {}
+    // The speed shows in the slider's tip while it changes, and for a moment after.
+    showHint($("speed-box"), 0);
+    clearTimeout(speedTipTimer);
+    speedTipTimer = setTimeout(hideHint, 1200);
+  }
+  var speedTipTimer = 0;
+  speedInput.addEventListener("input", function () { setPlaySpeed(parseFloat(speedInput.value)); });
+  // A double-click on the slider puts it back at the usual speed.
+  speedInput.addEventListener("dblclick", function () { setPlaySpeed(0); });
+  setPlaySpeed(playSpeed, false);
+  var PLAY_BUTTONS = [["play", "normal", "Play through time"], ["play-back", "back", "Play backwards"]];
   function syncPlayTips() {
     PLAY_BUTTONS.forEach(function (b) {
       var on = playMode === b[1];
       $(b[0]).setAttribute("aria-pressed", on ? "true" : "false");
-      $(b[0]).setAttribute("aria-label", on ? "Pause" : playSlow ? b[4] : b[2]);
-      $(b[0]).setAttribute("data-tip", playSlow ? b[5] : b[3]);
+      $(b[0]).setAttribute("aria-label", on ? "Pause" : b[2]);
     });
   }
   function syncPlayButtons() {
     syncSearch();
     syncPlayTips();
   }
-  function setPlaySlow(on) {
-    playSlow = !!on;
-    $("speed-slow").checked = playSlow; $("speed-normal").checked = !playSlow;
-    try { localStorage.setItem(STORE_SPEED, playSlow ? "slow" : "normal"); } catch (e) {}
-    syncPlayTips();
-  }
-  ["speed-slow", "speed-normal"].forEach(function (id) {
-    $(id).addEventListener("change", function () { if ($(id).checked) setPlaySlow(id === "speed-slow"); });
-  });
-  $("speed-slow").checked = playSlow; $("speed-normal").checked = !playSlow;
-  syncPlayTips();
-  function playModeOf(fast, back) { return (back ? "back" : "") + (back && fast ? "-fast" : fast ? "fast" : back ? "" : "normal"); }
-  function startPlay(fast, back) {
-    var mode = playModeOf(fast, back);
+  // playMode is "normal" or "back" ("" when stopped).
+  function playModeOf(back) { return back ? "back" : "normal"; }
+  function startPlay(back) {
+    var mode = playModeOf(back);
     if (playTimer) { playMode = mode; syncPlayButtons(); return; }
     if (back) { if (now <= FIRST_T + 1e-9 || now > playEnd() + 1e-9) setTime(playEnd()); }
     else if (now >= playEnd() - 1e-9) setTime(FIRST_T);
@@ -4658,11 +4667,9 @@
     clearTimeout(playTimer); playTimer = 0; playMode = "";
     syncPlayButtons();
   }
-  function togglePlay(fast, back) { if (playMode === playModeOf(fast, back)) stopPlay(); else startPlay(fast, back); }
-  $("play").addEventListener("click", function () { togglePlay(false, false); });
-  $("play-fast").addEventListener("click", function () { togglePlay(true, false); });
-  $("play-back").addEventListener("click", function () { togglePlay(false, true); });
-  $("play-back-fast").addEventListener("click", function () { togglePlay(true, true); });
+  function togglePlay(back) { if (playMode === playModeOf(back)) stopPlay(); else startPlay(back); }
+  $("play").addEventListener("click", function () { togglePlay(false); });
+  $("play-back").addEventListener("click", function () { togglePlay(true); });
 
   function setFlat(on) {
     if (on === flat) return;
@@ -6964,8 +6971,10 @@
     else if (e.key === "ArrowDown" && !e.shiftKey) { e.preventDefault(); stopPlay(); stepYear(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); if (e.shiftKey) stepMap(1); else stepUnit(1); }
     else if (e.key === "D" && e.shiftKey) openDev();
-    else if (e.key === "p" || e.key === "P") togglePlay(e.shiftKey, false);
-    else if (e.key === "o" || e.key === "O") togglePlay(e.shiftKey, true);
+    else if (e.key === "p" || e.key === "P") togglePlay(false);
+    else if (e.key === "o" || e.key === "O") togglePlay(true);
+    else if (e.key === "," || e.key === "<") setPlaySpeed(playSpeed - SPEED_STEP * 2);
+    else if (e.key === "." || e.key === ">") setPlaySpeed(playSpeed + SPEED_STEP * 2);
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
     else if (e.key === "[") $("turn-left").click();
     else if (e.key === "]") $("turn-right").click();
@@ -7425,7 +7434,8 @@
     shown: function () { return yearInput.value; },
     asof: function () { return asof.textContent; },
     playing: function () { return playTimer ? playMode : false; },
-    play: function (on, fast, back) { if (on) startPlay(!!fast, !!back); else stopPlay(); },
+    play: function (on, back) { if (on) startPlay(!!back); else stopPlay(); },
+    speed: function (v) { if (v !== undefined) setPlaySpeed(v); return playSpeed; },
     keyOpen: function () { return !keyList.hidden; },
     keyRows: function () { return Array.prototype.filter.call(keyList.children, function (li) { return !li.hidden; }).map(function (li) { return li.getAttribute("data-key"); }); },
     setKeyOpen: function (on) { setKeyOpen(on, true); },

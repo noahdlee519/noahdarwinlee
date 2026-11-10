@@ -95,13 +95,12 @@
             <div class="ch-keys">
               <p class="ch-keys-head">Keys</p>
               <dl>
-                <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward a month (by year before 1648 CE)</dd>
+                <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward in smallest intervals</dd>
                 <dt><kbd>↓</kbd> <kbd>↑</kbd></dt><dd>Back or forward a year</dd>
                 <dt><kbd>Shift</kbd> <kbd>←</kbd> <kbd>→</kbd></dt><dd>Previous or next change on the map</dd>
                 <dt><kbd>P</kbd></dt><dd>Play or pause</dd>
-                <dt><kbd>Shift</kbd> <kbd>P</kbd></dt><dd>Play at double speed</dd>
                 <dt><kbd>O</kbd></dt><dd>Play backwards or pause</dd>
-                <dt><kbd>Shift</kbd> <kbd>O</kbd></dt><dd>Play backwards at double speed</dd>
+                <dt><kbd>,</kbd> <kbd>.</kbd></dt><dd>Play slower or faster</dd>
                 <dt><kbd>M</kbd></dt><dd>Switch between the globe and the flat map</dd>
                 <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Turn the globe anticlockwise or clockwise</dd>
                 <dt><kbd>N</kbd></dt><dd>Turn the globe north up</dd>
@@ -248,11 +247,6 @@
             <p class="ch-turn-how" id="turn-how">Or drag with Shift held, or the right button, or twist two fingers.</p>
           </fieldset>
           <fieldset class="ch-layer-set">
-            <legend>Playing through time</legend>
-            <label class="ch-layer"><input type="radio" name="speed" value="slow" id="speed-slow" /> <span>Slowly</span></label>
-            <label class="ch-layer"><input type="radio" name="speed" value="normal" id="speed-normal" checked /> <span>At the usual pace</span></label>
-          </fieldset>
-          <fieldset class="ch-layer-set">
             <legend>Names</legend>
             <label class="ch-layer"><input type="checkbox" data-layer="states" checked /> <span>States and peoples</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="control" /> <span>Zones of control</span></label>
@@ -382,16 +376,6 @@
     </div>
 
     <section class="ch-time" id="time" aria-label="Year">
-      <div class="ch-when ch-when-back">
-        <button type="button" class="ch-step ch-play ch-play-fast ch-play-back" id="play-back-fast" aria-pressed="false" aria-label="Play backwards at double speed" data-tip="Play backwards at double speed (Shift O)">
-          <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 8v16L16 16zM16 8v16l11.4-8z" /><path class="h" d="M6.8 11.2v9.6M9 12.8v6.4M11.2 14.4v3.2M18.2 11.2v9.6M20.4 12.8v6.4M22.6 14.4v3.2" /></svg>
-          <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
-        </button>
-        <button type="button" class="ch-step ch-play ch-play-back" id="play-back" aria-pressed="false" aria-label="Play backwards" data-tip="Play backwards (O)">
-          <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.8v18.4L25 16z" /><path class="h" d="M12.6 10.6v10.8M15.2 12.2v7.6M17.8 13.8v4.4" /></svg>
-          <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
-        </button>
-      </div>
       <div class="ch-track" id="track">
         <div class="ch-events" id="tl-events" aria-label="Events in history"></div>
         <div class="ch-ticks" id="ticks" aria-hidden="true"></div>
@@ -399,14 +383,20 @@
         <div class="ch-eras" id="eras" aria-hidden="true"></div>
       </div>
       <div class="ch-when ch-when-fwd">
-        <button type="button" class="ch-step ch-play" id="play" aria-pressed="false" aria-label="Play through time" data-tip="Play (P)">
-          <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.8v18.4L25 16z" /><path class="h" d="M12.6 10.6v10.8M15.2 12.2v7.6M17.8 13.8v4.4" /></svg>
-          <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
-        </button>
-        <button type="button" class="ch-step ch-play ch-play-fast" id="play-fast" aria-pressed="false" aria-label="Play at double speed" data-tip="Play at double speed (Shift P)">
-          <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 8v16L16 16zM16 8v16l11.4-8z" /><path class="h" d="M6.8 11.2v9.6M9 12.8v6.4M11.2 14.4v3.2M18.2 11.2v9.6M20.4 12.8v6.4M22.6 14.4v3.2" /></svg>
-          <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
-        </button>
+        <div class="ch-plays">
+          <button type="button" class="ch-step ch-play ch-play-back" id="play-back" aria-pressed="false" aria-label="Play backwards" data-tip="Play backwards (O)">
+            <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.8v18.4L25 16z" /><path class="h" d="M12.6 10.6v10.8M15.2 12.2v7.6M17.8 13.8v4.4" /></svg>
+            <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
+          </button>
+          <button type="button" class="ch-step ch-play" id="play" aria-pressed="false" aria-label="Play through time" data-tip="Play (P)">
+            <svg class="ch-ico ch-icon-play" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6.8v18.4L25 16z" /><path class="h" d="M12.6 10.6v10.8M15.2 12.2v7.6M17.8 13.8v4.4" /></svg>
+            <svg class="ch-ico ch-icon-pause" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 7h4.4v18H9.4zM18.2 7h4.4v18h-4.4z" /><path class="h" d="M11.6 9v14M20.4 9v14" /></svg>
+          </button>
+        </div>
+        <label class="ch-speed" data-tip="Speed: 1×" id="speed-box">
+          <span class="sr-only">Speed of play</span>
+          <input class="ch-speed-range" id="speed" type="range" min="-2" max="2" step="0.25" value="0" aria-valuetext="Usual speed" />
+        </label>
       </div>
     </section>
 

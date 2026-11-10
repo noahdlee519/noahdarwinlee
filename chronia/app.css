@@ -805,6 +805,91 @@ select.ch-save-input {
   transform: scaleX(-1);
 }
 
+/* Play backwards and forwards side by side at the right of the timeline, and under them the speed of play: a slider from
+   a quarter of the usual speed to four times it, with a notch at the usual speed in the middle. */
+.ch-when-fwd {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+
+.ch-plays {
+  display: flex;
+  gap: 8px;
+}
+
+.ch-speed {
+  position: relative;
+  display: block;
+  height: 16px;
+  cursor: pointer;
+}
+
+.ch-speed::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: var(--ch-faint);
+  pointer-events: none;
+}
+
+.ch-speed-range {
+  --ch-speed-at: 50%;
+  position: relative;
+  display: block;
+  /* As wide as the buttons above, not the browser's own width for a slider. */
+  width: 0;
+  min-width: 100%;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ch-speed-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--ink) 0 var(--ch-speed-at), var(--ch-faint) var(--ch-speed-at) 100%);
+}
+
+.ch-speed-range::-moz-range-track {
+  height: 2px;
+  background: var(--ch-faint);
+}
+
+.ch-speed-range::-moz-range-progress {
+  height: 2px;
+  background: var(--ink);
+}
+
+.ch-speed-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.ch-speed-range::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.ch-speed-range:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
 /* The date sits at the top, in the middle of the page, in a frame like the title's. */
 .ch-top > .ch-year-box {
   position: absolute;
@@ -2027,15 +2112,11 @@ select.ch-save-input {
 
   .ch-time {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "date date date" "back track fwd";
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "date date" "track fwd";
     align-items: center;
     gap: 6px 6px;
     padding: 8px calc(14px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
-  }
-
-  .ch-when-back {
-    grid-area: back;
   }
 
   .ch-when-fwd {
