@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 3400 BC–AD 476 | the world | the early cultures' edges softened
+
+- What changed: the 62 shapes of `EARLY`, made of today's countries, provinces, and boxes, ran along modern borders and straight lines (the Ezero culture was Bulgaria, the Jeulmun culture the two Koreas, Hongshan a rectangle). Their edges on land are now rounded at a scale that grows with the culture and drawn with a gentle wave, so they show a region, not a border; their coasts are kept, and no shape crosses the sea to other land.
+- Tables: `tools/soften.mjs` (new), `tools/build-eras.mjs` (the loop over `EARLY`).
+- Sources: (1) the units, Natural Earth's admin-1 (10m), as before; (2) the extents themselves are unchanged in what they name: each is still the region where the culture's sites are found, per the articles `EARLY` names.
+- Confidence: low, as before, for every edge on land: these are approximate regions, drawn dotted.
+- Alternatives: hand-drawn outlines from the archaeological literature, culture by culture.
+- Left out: the shapes from historical-basemaps and Cliopatria, which are drawn by hand already; the medieval engine's units (see the frontiers above).
+
 ## 1815–1839 | the Netherlands | Amsterdam as the United Kingdom of the Netherlands' capital
 
 - What changed: the United Kingdom of the Netherlands had no capital, since Wikidata has none under its title; Amsterdam is now its capital, as for the Netherlands before and after.

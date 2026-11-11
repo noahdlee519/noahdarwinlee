@@ -9,6 +9,7 @@ import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM } from "./medieval.mjs";
+import { makeSoften } from "./soften.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -2437,8 +2438,13 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
       const all = clip.union(...feats.map((f) => polysOf(f.geometry)));
       return sp.box ? clip.intersection(all, clip.union(...sp.box.map(boxPoly))) : all;
     })));
+    // Each culture's inland edges are softened (soften.mjs), so they don't run along today's borders; cultures drawn on
+    // the same units share one shape.
+    const soften = makeSoften({ clip, turfBuf, landFeats: neAll }), softened = new Map();
     for (const [name, first, last, wiki, specs, o = {}] of EARLY) {
-      const polys = earlyShape(specs);
+      const key = JSON.stringify(specs);
+      if (!softened.has(key)) softened.set(key, rewind(soften(earlyShape(specs), key)));
+      const polys = softened.get(key);
       if (o.over) {
         const sm = { first, last, polys, box: boxOf(polys) }, people = fills.filter((f) => f.people), rest = fills.filter((f) => !f.people), had = new Set(people);
         const cut = carve(people, sm).map((f) => (had.has(f) ? f : withBox(f)));
