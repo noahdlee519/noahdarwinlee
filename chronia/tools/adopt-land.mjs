@@ -26,6 +26,7 @@ export const ADOPT = {
   STRIP_MIN_KM: 1, // a strip narrower than this and smaller than STRIP_SMALL_KM2 is left to the page's
   STRIP_SMALL_KM2: 50, // coast fill, which covers it at every zoom (about 25,000 strips, three quarters of the points)
   ISLAND_KM: 60, // an island goes to a span this close to its nearest point, at most
+  NE_ISLAND_KM: 200, // or to the span of the state Natural Earth gives it to, this close (San Nicolas Island, 100 km out)
   NE_SLACK_KM: 20, // the state Natural Earth gives a piece to wins if it is no more than this further than the nearest
   NE_NEAR_KM: 5, // a piece outside every Natural Earth unit takes the unit within this distance
   SOUTH: -60, // Antarctica is left alone
@@ -185,6 +186,32 @@ export function adoptLand({ list, land, clip, endDay, units = [], same = () => f
       spanTiles.get(k).set(JSON.stringify(part).length + ":" + part[0][0][0].join(), part);
     }
   }
+  // Natural Earth's units by tile, to cut a piece that crosses a border between states (the marsh
+  // strip of North Frisia that runs from Tønder to Niebüll) into one piece for each state.
+  const unitTiles = new Map();
+  for (const u of units) for (const [i, j] of tilesOf(u.box)) {
+    const k = tileKey(i, j);
+    if (!unitTiles.has(k)) unitTiles.set(k, []);
+    unitTiles.get(k).push(u);
+  }
+  let split = 0;
+  const byState = (poly, k) => {
+    const b = boxOf([poly]), states = new Map();
+    for (const u of unitTiles.get(k) || []) {
+      if (u.box[0] > b[2] || u.box[2] < b[0] || u.box[1] > b[3] || u.box[3] < b[1]) continue;
+      if (!states.has(u.name)) states.set(u.name, []);
+      states.get(u.name).push(...u.polys);
+    }
+    if (states.size < 2) return [poly];
+    try {
+      const out = [];
+      for (const ps of states.values()) for (const q of ps) out.push(...clip.intersection([poly], q));
+      const all = [...states.values()].flat();
+      out.push(...clip.difference([poly], ...all));
+      if (out.length > 1) split++;
+      return out;
+    } catch (e) { return [poly]; }
+  };
   // Land no span ever covers.
   const pieces = [];
   let failed = 0;
@@ -203,13 +230,14 @@ export function adoptLand({ list, land, clip, endDay, units = [], same = () => f
         if (!done) failed++;
       }
     }
-    for (const poly of rest) {
+    for (const poly of rest.flatMap((q) => byState(q, k))) {
       const a = polyKm2(poly);
       if (a < A.MIN_KM2) continue;
       pieces.push({ poly, a, w: (2 * a) / ringKm(poly[0]), box: boxOf([poly]) });
     }
   }
   landTiles.clear(); spanTiles.clear(); // the tiles are large and no longer needed
+  log("adopting land: " + split + " pieces cut at Natural Earth's borders between states");
   log("adopting land: " + pieces.length + " pieces of land no span from 1886 covers, " + Math.round(pieces.reduce((t, p) => t + p.a, 0)) + " km², " + Math.round((Date.now() - t0) / 1000) + " s" + (failed ? ", " + failed + " clips failed" : ""));
 
   // Spans near each piece, and how far each is.
@@ -217,31 +245,36 @@ export function adoptLand({ list, land, clip, endDay, units = [], same = () => f
   const edits = [], stats = { strips: 0, islands: 0, wide: 0, far: 0, thin: 0, km2: 0, ne: 0 };
   const memo = new Map();
   for (const pc of pieces) {
-    const lat = (pc.box[1] + pc.box[3]) / 2, kx = Math.cos(lat * RAD), reach = A.ISLAND_KM / KM;
-    const near = [pc.box[0] - reach / Math.max(0.2, kx), pc.box[1] - reach, pc.box[2] + reach / Math.max(0.2, kx), pc.box[3] + reach];
+    const lat = (pc.box[1] + pc.box[3]) / 2, kx = Math.cos(lat * RAD);
     const pts = samples(pc.poly, A.SAMPLE);
-    const cands = [];
-    for (const s of byBox) {
-      const b = s.box || boxOf(s.polys);
-      if (b[0] > near[2]) break;
-      if (!hit(b, near) || s.last < 0 || s.first > endDay) continue;
-      let d = memo.get(s.polys);
-      if (!d || d.pc !== pc) {
-        const segs = segsIn(s.polys, near);
-        const ds = segs.length ? pts.map((p) => (inside(p, s.polys) ? 0 : distTo(p, segs, kx))) : null;
-        d = { pc, min: ds ? Math.min(...ds) : Infinity, mean: ds ? ds.reduce((t, v) => t + v, 0) / ds.length : Infinity };
-        memo.set(s.polys, d);
+    const gather = (km, keep) => {
+      const reach = km / KM, out = [];
+      const near = [pc.box[0] - reach / Math.max(0.2, kx), pc.box[1] - reach, pc.box[2] + reach / Math.max(0.2, kx), pc.box[3] + reach];
+      for (const s of byBox) {
+        const b = s.box || boxOf(s.polys);
+        if (b[0] > near[2]) break;
+        if (!hit(b, near) || s.last < 0 || s.first > endDay || !keep(s)) continue;
+        let d = memo.get(s.polys);
+        if (!d || d.pc !== pc || d.km !== km) {
+          const segs = segsIn(s.polys, near);
+          const ds = segs.length ? pts.map((p) => (inside(p, s.polys) ? 0 : distTo(p, segs, kx))) : null;
+          d = { pc, km, min: ds ? Math.min(...ds) : Infinity, mean: ds ? ds.reduce((t, v) => t + v, 0) / ds.length : Infinity };
+          memo.set(s.polys, d);
+        }
+        if (d.min <= km) out.push({ s, min: d.min, mean: d.mean });
       }
-      if (d.min <= A.ISLAND_KM) cands.push({ s, min: d.min, mean: d.mean });
-    }
+      return out;
+    };
+    let cands = gather(A.ISLAND_KM, () => true);
+    const owner = units.length ? unitAt(middle(pc.poly), units, A.NE_NEAR_KM) : null;
+    if (!cands.length && owner) cands = gather(A.NE_ISLAND_KM, (s) => same(owner, s.name));
     if (!cands.length) { stats.far++; continue; }
     const touching = cands.some((c) => c.min <= A.TOUCH_KM);
     if (touching && pc.w > A.STRIP_KM && pc.a > A.STRIP_KM2) { stats.wide++; continue; }
     if (touching && pc.w < A.STRIP_MIN_KM && pc.a < A.STRIP_SMALL_KM2) { stats.thin++; continue; }
-    const ok = (c) => (touching ? c.mean <= A.STRIP_REACH_KM : c.min <= A.ISLAND_KM);
     const score = (c) => (touching ? c.mean : c.min + 0.01 * c.mean);
-    const owner = units.length ? unitAt(middle(pc.poly), units, A.NE_NEAR_KM) : null;
     const theirs = owner ? (c) => same(owner, c.s.name) && (touching ? c.min <= A.TOUCH_KM : true) : () => false;
+    const ok = (c) => (touching ? c.mean <= A.STRIP_REACH_KM : c.min <= A.ISLAND_KM || theirs(c));
     const cuts = new Set([0]);
     for (const c of cands) { if (c.s.first > 0) cuts.add(c.s.first); if (c.s.last + 1 <= endDay) cuts.add(c.s.last + 1); }
     const bounds = [...cuts].sort((a, b) => a - b);
@@ -254,7 +287,7 @@ export function adoptLand({ list, land, clip, endDay, units = [], same = () => f
         if (!best || score(c) < score(best)) best = c;
         if (theirs(c) && (!mine || score(c) < score(mine))) mine = c;
       }
-      if (mine && (touching || mine.min <= best.min + A.NE_SLACK_KM)) { if (mine !== best) stats.ne++; best = mine; }
+      if (mine && (touching || mine.min <= best.min + A.NE_SLACK_KM || best.min > A.ISLAND_KM)) { if (mine !== best) stats.ne++; best = mine; }
       if (!best) return;
       const last = edits[edits.length - 1];
       if (last && last.base === best.s && last.polys[0] === pc.poly && last.last + 1 === s0) { last.last = Math.min(e0, best.s.last); return; }

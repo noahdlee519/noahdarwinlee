@@ -8,7 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
-import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO } from "./medieval.mjs";
+import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM } from "./medieval.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -46,6 +46,7 @@ const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Ma
 const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
 const R_KM = 6371.0088;
 const HI_KM = 1.6, LO_KM = 12;
+const GEN_SRC = new Set(["medieval", "early", "stage"]);
 const HI_Q = 2e5, LO_Q = 2e4;
 const CS_HI_KM = 0.5, CS_HI_Q = 5e5, FINE_KM = 0.15, FINE_Q = 1e6;
 const weightFor = (km) => (km / R_KM) ** 2;
@@ -655,8 +656,66 @@ function nodeFeats(feats, q) {
   });
   return copy;
 }
+// Borders built from today's units (the medieval table, the early cultures, and the stages of conquest) follow the lines of
+// today's provinces and districts, which the borders of the time did not. Where a span with gen set meets another span, the line
+// between them is generalized: Douglas-Peucker at GEN_DEG (at most GEN_SHARE of the line's own extent, so small units keep a
+// shape), then rounded by GEN_PASSES of Chaikin's corner cutting, its ends kept so that the topology still closes. Coasts and
+// small territories (keep) are left as they are.
+const GEN_DEG = 0.12, GEN_SHARE = 0.15, GEN_PASSES = 3;
+let genArcs = 0;
+function generalizeArc(arc) {
+  const n = arc.length;
+  if (n < 3) return arc;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of arc) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+  const kx = Math.cos(((y0 + y1) / 2) * Math.PI / 180), tol = Math.min(GEN_DEG, GEN_SHARE * Math.hypot((x1 - x0) * kx, y1 - y0));
+  const closed = arc[0][0] === arc[n - 1][0] && arc[0][1] === arc[n - 1][1];
+  let P = arc;
+  if (!closed && tol > 0) {
+    const keep = new Uint8Array(n);
+    keep[0] = keep[n - 1] = 1;
+    const stack = [[0, n - 1]];
+    while (stack.length) {
+      const [a, b] = stack.pop();
+      const ax = arc[a][0] * kx, ay = arc[a][1], dx = arc[b][0] * kx - ax, dy = arc[b][1] - ay, L = Math.hypot(dx, dy);
+      let far = -1, fd = 0;
+      for (let i = a + 1; i < b; i++) {
+        const px = arc[i][0] * kx - ax, py = arc[i][1] - ay, d = L ? Math.abs(px * dy - py * dx) / L : Math.hypot(px, py);
+        if (d > fd) { fd = d; far = i; }
+      }
+      if (far >= 0 && fd > tol) { keep[far] = 1; stack.push([a, far], [far, b]); }
+    }
+    P = arc.filter((p, i) => keep[i]);
+  }
+  for (let it = 0; it < GEN_PASSES && P.length > 2; it++) {
+    const Q = [P[0]];
+    for (let i = 0; i + 1 < P.length; i++) {
+      const a = P[i], b = P[i + 1];
+      Q.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+    }
+    Q.push(P[P.length - 1]);
+    P = Q;
+  }
+  genArcs++;
+  return P;
+}
+function generalizeTopo(topo) {
+  const gen = new Set(), fixed = new Set(), pos = new Set(), neg = new Set();
+  const walk = (a, f) => { if (typeof a === "number") f(a); else if (a) a.forEach((x) => walk(x, f)); };
+  for (const g of topo.objects.p.geometries) {
+    const pr = g.properties || {};
+    walk(g.arcs, (a) => {
+      const j = a < 0 ? ~a : a;
+      (a < 0 ? neg : pos).add(j);
+      if (pr.gen) gen.add(j);
+      if (pr.keep) fixed.add(j);
+    });
+  }
+  for (const j of gen) if (pos.has(j) && neg.has(j) && !fixed.has(j)) topo.arcs[j] = generalizeArc(topo.arcs[j]);
+  return topo;
+}
 function topoFor(feats, km, q, smooth = true) {
-  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) } }, q), topo = smooth ? smoothTopo(raw) : raw;
+  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) } }, q), topo = smooth ? generalizeTopo(smoothTopo(raw)) : raw;
   const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
   const kept = new Set();
   const walk = (a) => { if (typeof a === "number") kept.add(a < 0 ? ~a : a); else if (a) a.forEach(walk); };
@@ -2724,8 +2783,8 @@ const napoleonic = (list) => {
   return list.concat(cutSpans);
 };
 
-// Europe from 476 to 961 (`tools/medieval.mjs`): its spans replace every other span on the land the table covers in those years,
-// as the Napoleonic table's do. A table span that shares its name with a larger span the sources draw outside the frame in the
+// Europe from 476 (`tools/medieval.mjs`; Anatolia's east, the Levant, and the Caucasus from 962): its spans replace every
+// other span on the land the table covers in those years, as the Napoleonic table's do. A table span that shares its name with a larger span the sources draw outside the frame in the
 // same years (the Eastern Roman Empire in Egypt, the Caliphates, Khazaria) carries no name of its own, so the state is named once.
 const medieval = (list) => {
   const unitsPath = resolve(dirname(provincesPath), "units.json");
@@ -2738,6 +2797,12 @@ const medieval = (list) => {
   notes.forEach((m) => console.log("medieval: " + m));
   let { list: cut, mb, dropped, cuts, shorn } = maskOut(list, T.mask, MEDIEVAL_FROM, MEDIEVAL_TO);
   list = cut;
+  if (T.maskExt.length) {
+    const e = maskOut(list, T.maskExt, EXT_FROM, MEDIEVAL_TO);
+    list = e.list;
+    mb = [Math.min(mb[0], e.mb[0]), Math.min(mb[1], e.mb[1]), Math.max(mb[2], e.mb[2]), Math.max(mb[3], e.mb[3])];
+    dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
+  }
   const spans = T.spans.map(({ host, size, ...s }) => withBox({ ...s, src: "medieval", host }));
   let hosted = 0;
   for (const t of spans) {
@@ -3496,7 +3561,7 @@ dated = snapTo1886(dated);
 
 const CAP_FROM = DATED_FROM, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
 const CAP_SKIP = new Set(["Holy Roman Empire"]);
-const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"], ["Wu (state)", "Jiangsu province"]];
+const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"], ["Wu (state)", "Jiangsu province"], ["Jersey", "Government House"], ["Jersey", "Saint Saviour"]];
 const CAP_NAME = {
   "Ahilyanagar": "Ahmednagar", "Anshan Persia": "Anshan", "Antalya Province": "Antalya", "Bengaluru": "Bangalore", "Bintan Island": "Bintan", "Coop of Brussels": "Brussels",
   "Hanseongbu": "Hanseong", "Historic City of Ayutthaya": "Ayutthaya", "Kalaburagi": "Gulbarga", "Kolkata": "Calcutta", "Lutherstadt Wittenberg": "Wittenberg",
@@ -3654,7 +3719,13 @@ const GROUPS = [{
   never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
 }, { name: BRITISH_AMERICA },
 // The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
-{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" }];
+{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" },
+// From 962: the Kingdom of France's great fiefs (987), Cnut's North Sea Empire (1017 to 1035), and Kievan Rus' principalities (1054 to 1240).
+{ name: "Kingdom of France", from: 987, to: MEDIEVAL_TO }, { name: "North Sea Empire", from: 1017, to: 1035 }, { name: "Kievan Rus'", from: 1054, to: 1240 },
+// From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138 to 1319).
+{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: MEDIEVAL_TO }, { name: "Poland", from: 1138, to: 1319 },
+// From 1251: the Burgundian State (1384) and the Kalmar Union (1397).
+{ name: "Burgundian State", from: 1384, to: MEDIEVAL_TO }, { name: "Kalmar Union", from: 1397, to: MEDIEVAL_TO }];
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
@@ -3669,6 +3740,7 @@ const GROUPS = [{
     for (const s of dated) {
       const hit = outlines.filter((o) => s.last >= o.a && s.first <= o.b);
       const free = s.part === G.name && s.name !== G.name ? { ...s, part: "" } : s;
+      if (s.src === "medieval") { next.push(s); continue; }
       if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length ? free : s); continue; }
       const area = km2Of(s.polys), segs = [];
       if (s.first < hit[0].a) segs.push({ a: s.first, b: hit[0].a - 1, kind: "out" });
@@ -3783,7 +3855,7 @@ let datedDays = [];
 for (let n = 0; n < CHUNK_STARTS.length; n++) {
   const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
   const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
-  const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
+  const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep, gen: GEN_SRC.has(s.src) }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
   const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
   let dayRows = null;
   if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
@@ -3822,6 +3894,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     const gid = catId(G.name);
     let prev = null;
     for (let y = c; y <= cEnd; y++) {
+      if ((G.from != null && y < G.from) || (G.to != null && y > G.to)) { prev = null; continue; }
       const ix = [];
       spans.forEach((s, i) => { if (s.first <= y && y <= s.last && (s.part === G.name || s.name === G.name)) ix.push(i); });
       const key = ix.join(",");
@@ -5096,7 +5169,7 @@ if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-
 else console.warn("historical-basemaps LICENSE not found beside " + source + "; data/COPYING-historical-basemaps.txt not written");
 
 console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
-console.log("smoothed " + stairArcs + " stair-stepped arcs");
+console.log("smoothed " + stairArcs + " stair-stepped arcs, generalized " + genArcs + " arcs of borders built from today's units");
 console.log("noded " + nodesAdded + " points into edges that another shape's point lay on");
 console.log("small territories: " + Math.round(smallGaps) + " km² of gaps beside Liechtenstein, Andorra, and San Marino joined to them");
 console.log(index.length + " snapshot maps shown, " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");

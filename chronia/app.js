@@ -1360,9 +1360,8 @@
     if (bleed > 0.6) { ctx.strokeStyle = pal["people-fill"]; ctx.lineWidth = bleed; ctx.stroke(peopleBleed); }
     ctx.fillStyle = pal["people-fill"]; ctx.fill(peoplePath);
     ctx.fillStyle = pal.paper; ctx.fill(unnamedPath);
-    var held = heldPath(), outside = null;
+    var held = paintHeld(snap, L), outside = null;
     if (held) {
-      ctx.fillStyle = pal.paper; ctx.fill(held);
       outside = new Path2D(); outside.rect(-10, -10, W + 20, H + 20); outside.addPath(held);
     }
     // On a phone or a touch screen the terrain is left out while the map moves, which keeps dragging smooth, and comes back
@@ -2910,7 +2909,7 @@
     if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
     if (quick && !settleLabels) settleLabels = setTimeout(function wait() { settleLabels = moving || rangeActive ? setTimeout(wait, 200) : 0; if (!settleLabels) scheduleRender(); }, 200);
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
-    var time = performance.now(), live = false, k, it;
+    var time = performance.now(), live = false, k, it, warring = atWarIds();
     for (k = 0; k < memo.items.length; k++) {
       it = memo.items[k];
       var a = Math.min(1, Math.max(0, (time - it.t0) / FADE_MS));
@@ -2919,6 +2918,7 @@
       placedLabels.push({ name: it.name, x: it.geo.x, y: it.geo.y, size: it.f, kind: it.people ? "people" : "polity", id: it.id, ang: it.geo.ang, lines: it.geo.lines.length,
         box: boundsOf(it.geo.boxes), boxes: it.geo.boxes, sea: !!it.sea });
       drawLabelItem(it, it.geo, a);
+      if (warring && warring.has(it.id)) { var sb = drawSword(it, it.geo, a); if (sb) placed.push(sb); }
     }
     var scale = (flat ? FB.k : B.r) / GU;
     labelFading = labelFading.filter(function (x) {
@@ -3329,17 +3329,47 @@
     if (!f) { var geo = topojson.feature(D.topo, D.geoms[g]); f = D.feats[g] = { geo: geo, shape: prepare(geo) }; }
     return f;
   }
-  function hatch(colour) {
-    var key = "ctl|" + colour, p = stripeCache.get(key);
-    if (p) return p;
-    var cv = document.createElement("canvas");
-    cv.width = 14; cv.height = 2;
-    var g = cv.getContext("2d");
-    g.fillStyle = colour; g.fillRect(0, 0, 5, 2);
-    p = ctx.createPattern(cv, "repeat");
-    setStripeT(p);
-    stripeCache.set(key, p);
-    return p;
+  function seatOn(r, day) { return (!r[2] || day >= warDay(r[2])) && (!r[3] || day <= warDay(r[3])); }
+  var seatMemo = new Map();
+  function warSeats(w, day) {
+    var key = w.key + "|" + day + "|" + (current ? current.key : "") + "|" + (pal.colors || []).join("");
+    var hit = seatMemo.get(key);
+    if (hit) return hit;
+    var D = w.data, table = SEATS[w.key] || {}, groups = SIDE_GROUPS[w.key] || [], parties = WAR_PARTIES[w.key] || [];
+    var sides = D.sides.map(function (s) {
+      var list = (table[s[0]] || []).filter(function (r) { return seatOn(r, day); }).map(function (r) { return { ll: [r[0], r[1]], firm: true }; });
+      var gi = groups.indexOf(s[0]);
+      if (gi >= 0 && parties[gi]) parties[gi].forEach(function (p) {
+        if (!p.flag || p.side || (p.from && day < warDay(p.from)) || (p.to && day > warDay(p.to))) return;
+        list.push({ ll: p.ll, firm: false });
+      });
+      var seats = [];
+      list.forEach(function (x) {
+        var q = polityAtLL(x.ll);
+        if (q && !q.people && !q.claims) seats.push({ id: q.id, ll: x.ll, firm: x.firm, colour: pal.colors[q.color] });
+      });
+      return seats;
+    });
+    var firm = new Map(), loose = new Map();
+    sides.forEach(function (seats, si) {
+      seats.forEach(function (x) {
+        var m = x.firm ? firm : loose;
+        if (!m.has(x.id)) m.set(x.id, new Set());
+        m.get(x.id).add(si);
+      });
+    });
+    hit = sides.map(function (seats, si) {
+      var keep = seats.filter(function (x) {
+        var a = firm.get(x.id), b = loose.get(x.id);
+        if (x.firm) return a.size === 1;
+        return !a && b.size === 1;
+      }), ids = [];
+      keep.forEach(function (x) { if (ids.indexOf(x.id) < 0) ids.push(x.id); });
+      return { ids: ids, seats: keep, all: seats };
+    });
+    if (seatMemo.size > 64) seatMemo.clear();
+    seatMemo.set(key, hit);
+    return hit;
   }
   var ctlDrawn = false;
   function drawControl(landPath, S) {
@@ -3355,21 +3385,21 @@
     ctx.clip(landPath);
     for (var k = 0; k < wars.length; k++) {
       var w = wars[k], D = w.data, st = ctlState(w, day);
-      for (var i = 0; i < st.rows.length; i++) {
-        var r = D.rows[st.rows[i]], side = D.sides[r[0]];
-        ctx.beginPath(); traceFeature(ctx, ctlFeat(w, r[3]).shape);
-        var presence = D.kind === "presence";
-        ctx.globalAlpha = presence ? 0.1 : 0.16; ctx.fillStyle = side[2]; ctx.fill();
-        ctx.globalAlpha = presence ? 0.45 : 0.62; ctx.fillStyle = hatch(side[2]); ctx.fill();
+      if (D.kind === "presence") {
+        for (var i = 0; i < st.rows.length; i++) {
+          var r = D.rows[st.rows[i]];
+          ctx.beginPath(); traceFeature(ctx, ctlFeat(w, r[3]).shape);
+          ctx.globalAlpha = 0.2; ctx.fillStyle = D.sides[r[0]][2]; ctx.fill();
+        }
+        continue;
       }
-      if (D.kind === "presence") continue;
       ctx.globalAlpha = 0.9;
       ctx.beginPath(); traceArcs(ctx, st.lines);
       ctx.strokeStyle = pal.front; ctx.lineWidth = 1.1 + 0.5 * lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
     }
     ctx.restore();
   }
-  function heldPath() {
+  function paintHeld(snap, L) {
     if (!layers.control) return null;
     var day = ctlDay();
     if (day === null) return null;
@@ -3377,13 +3407,69 @@
     for (var k = 0; k < wars.length; k++) {
       var w = wars[k], D = w.data;
       if (D.kind === "presence") continue;
-      var st = ctlState(w, day);
+      var st = ctlState(w, day), own = warSeats(w, day);
       for (var i = 0; i < st.rows.length; i++) {
+        var r = D.rows[st.rows[i]], f = ctlFeat(w, r[3]), side = own[r[0]], zone = new Path2D();
+        traceFeature(zone, f.shape);
         if (!path) path = new Path2D();
-        traceFeature(path, ctlFeat(w, D.rows[st.rows[i]][3]).shape);
+        path.addPath(zone);
+        ctx.save();
+        ctx.clip(zone);
+        if (side.seats.length) {
+          if (!f.mid) f.mid = d3.geoCentroid(f.geo);
+          var near = side.seats[0], best = Infinity;
+          side.seats.forEach(function (x) { var dd = d3.geoDistance(x.ll, f.mid); if (dd < best) { best = dd; near = x; } });
+          var keep = new Path2D();
+          keep.rect(-10, -10, W + 20, H + 20);
+          for (var j = 0; j < snap.polys.length; j++) { var q = snap.polys[j]; if (q && side.ids.indexOf(q.id) >= 0) traceAll(keep, L.feats[j]); }
+          ctx.clip(keep, "evenodd");
+          ctx.fillStyle = near.colour; ctx.fillRect(-10, -10, W + 20, H + 20);
+        } else {
+          ctx.fillStyle = pal.paper; ctx.fillRect(-10, -10, W + 20, H + 20);
+          ctx.globalAlpha = 0.36; ctx.fillStyle = D.sides[r[0]][2]; ctx.fillRect(-10, -10, W + 20, H + 20);
+        }
+        ctx.restore();
       }
     }
     return path;
+  }
+  var warIdMemo = { key: "", ids: null };
+  function atWarIds() {
+    if (!layers.control || !current) return null;
+    var day = ctlDay();
+    if (day === null) return null;
+    var wars = ctlWars(day, false), rows = warsAtDate();
+    var key = day + "|" + current.key + "|" + wars.map(function (w) { return w.key; }).join(",") + "|" + rows.length;
+    if (warIdMemo.key === key) return warIdMemo.ids;
+    var ids = new Set();
+    wars.forEach(function (w) {
+      var st = ctlState(w, day), held = new Set(st.rows.map(function (i) { return w.data.rows[i][0]; }));
+      warSeats(w, day).forEach(function (s, si) { if (held.has(si)) s.all.forEach(function (x) { ids.add(x.id); }); });
+    });
+    rows.forEach(function (r) {
+      r.groups.forEach(function (g) { g.forEach(function (m) { var q = m.ll ? polityAtLL(m.ll) : null; if (q) ids.add(q.id); }); });
+    });
+    warIdMemo = { key: key, ids: ids };
+    return ids;
+  }
+  var SWORD = typeof Path2D === "function" ? new Path2D("M6 0L7.9 2.8V14.4H4.1V2.8Z M0.8 14.4H11.2V16.9H0.8Z M4.9 16.9H7.1V20.6H4.9Z M7.8 22.2A1.8 1.8 0 1 1 4.2 22.2A1.8 1.8 0 1 1 7.8 22.2Z") : null;
+  function drawSword(it, geo, alpha) {
+    var ln = geo.lines[0];
+    if (!ln || !SWORD) return null;
+    var o = ln.straight ? { x: ln.mx, y: ln.my, tx: ln.tx, ty: ln.ty, nx: ln.nx, ny: ln.ny } : ln.gl[Math.floor(ln.gl.length / 2)];
+    if (!o) return null;
+    var s = Math.max(0.55, Math.min(1.05, it.f * 0.065)), d = it.f * 0.62 + 12 * s;
+    ctx.setTransform(dpr * o.tx, dpr * o.ty, -dpr * o.nx, -dpr * o.ny, dpr * o.x, dpr * o.y);
+    ctx.translate(0, -d);
+    ctx.scale(s, s);
+    ctx.translate(-6, -11.8);
+    ctx.globalAlpha = alpha;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 3.6; ctx.strokeStyle = pal["label-halo"]; ctx.stroke(SWORD);
+    ctx.fillStyle = it.people ? pal.people : pal.label; ctx.fill(SWORD);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = 1;
+    return mkBox(o.x + o.nx * d, o.y + o.ny * d, 7 * s, 12.5 * s, Math.atan2(o.ty, o.tx));
   }
   function controlAt(ll) {
     if (!layers.control || !ll) return null;
@@ -6642,6 +6728,30 @@
       [P(null, "al-Qaeda in the Arabian Peninsula", [48.78, 14.54], null, null, "yeAqap")],
       [P(null, "Islamic State", [45.03, 12.78], null, null, "isis")]
     ]
+  };
+  var SIDE_GROUPS = { civilwar: ["union", "csa"], ww1: ["allies", "central"], ww2europe: ["allies", "axis"], ww2asia: ["allies", "axis"], spain: ["rep", "nat"] };
+  var ISTANBUL = [28.95, 41.01], TOLEDO = [-4.03, 39.86], SEVILLE = [-5.97, 37.38], LEON = [-5.57, 42.6], PAVIA = [9.16, 45.18], DAMASCUS = [36.29, 33.51];
+  var SEAT = function (ll, from, to) { return [ll[0], ll[1], from || null, to || null]; };
+  var SEATS = {
+    gothicwar: { goth: [SEAT([12.2, 44.42], null, "540-05-31"), SEAT(PAVIA, "540-06-01")], rom: [SEAT(ISTANBUL)] },
+    lombards: { rom: [SEAT(ISTANBUL)], lom: [SEAT(PAVIA)] },
+    hispania: { vis: [SEAT(TOLEDO)], uma: [SEAT(DAMASCUS)], ast: [SEAT([-5.84, 43.36])] },
+    saxonwars: { fra: [SEAT([6.08, 50.78])] },
+    sicily: { rom: [SEAT(ISTANBUL)], ara: [SEAT([10.1, 35.68])] },
+    heathenarmy: { eng: [SEAT([-1.31, 51.06])] },
+    normanconquest: { eng: [SEAT(LONDON, null, "1066-12-24")], nor: [SEAT([1.1, 49.44])] },
+    toledo: { tol: [SEAT(TOLEDO)], bad: [SEAT([-6.97, 38.88])], cas: [SEAT(LEON)], zar: [SEAT([-0.88, 41.66])], sev: [SEAT(SEVILLE)], val: [SEAT([-0.38, 39.47])], alm: [SEAT([-8.0, 31.63])] },
+    firstcrusade: { byz: [SEAT(ISTANBUL)], fat: [SEAT([31.25, 30.06])] },
+    reconquista: { mus: [SEAT(SEVILLE, null, "1248-11-22")], cas: [SEAT(TOLEDO)], ara: [SEAT([-0.88, 41.66])], por: [SEAT([-8.42, 40.21])], leo: [SEAT(LEON, null, "1230-09-23")], gra: [SEAT([-3.61, 37.19])] },
+    mongolinvasion: { vbu: [SEAT([49.07, 54.95])], rus: [SEAT([40.4, 56.14])], pol: [SEAT([19.94, 50.06])], boh: [SEAT([14.42, 50.09])], hun: [SEAT([18.74, 47.79])], mon: [SEAT([102.85, 47.21])] },
+    hundredyears: { eng: [SEAT(LONDON)], fra: [SEAT(PARIS, null, "1418-05-28"), SEAT([2.4, 47.08], "1418-05-29", "1436-04-12"), SEAT(PARIS, "1436-04-13")], bur: [SEAT([5.02, 47.32])] },
+    napoleonic: { fr: [SEAT(PARIS)], ru: [SEAT([30.31, 59.94])], pr: [SEAT(BERLIN)], at: [SEAT([16.37, 48.21])], uk: [SEAT(LONDON)], na: [SEAT([14.27, 40.85])] },
+    ww2europe: { soviet: [SEAT(MOSCOW)], vichy: [SEAT([3.42, 46.12], "1940-07-10")] },
+    ww2asia: { soviet: [SEAT(MOSCOW)], vichy: [SEAT([3.42, 46.12], "1940-07-10")] },
+    syria: { syGov: [SEAT(DAMASCUS, null, "2024-12-07")], syNew: [SEAT(DAMASCUS, "2024-12-08")], usa: [SEAT(WASH)], israel: [SEAT([35.21, 31.77])] },
+    yemen: { yeGov: [SEAT([44.21, 15.35], null, "2015-02-05"), SEAT([45.03, 12.78], "2015-02-06")] },
+    israel: { israel: [SEAT([35.21, 31.77])], pa: [SEAT([35.21, 31.9])] },
+    ukraine: { ukraine: [SEAT([30.52, 50.45])], russia: [SEAT(MOSCOW)] }
   };
   var warDay = function (iso) { var a = iso.split("-"); return dayFromDate(+a[0], +a[1], +a[2]); };
   function warParties(w, day) {
