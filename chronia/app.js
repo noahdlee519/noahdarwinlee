@@ -680,7 +680,9 @@
   function polityOwnName(id) { return id >= 0 && catalogue[id] ? catalogue[id][0] : ""; }
   // The borders before 1886 that a treaty fixed and those after that stayed unsettled ([one side's polities, the other's,
   // from, to], in years before 1886 and in days after; see FIRM and VAGUE in the builder), as a set of "a|b" for a date.
-  var borderPairs = { firm: [], vague: [] };
+  // bordersKnown: eras.json lists the treaty and unsettled borders (built from 10 November 2026). Data built before
+  // that has no list and dots only borders with a side of precision 1, as it did then.
+  var borderPairs = { firm: [], vague: [] }, bordersKnown = false;
   function pairsAt(list, t) {
     var out = new Set();
     list.forEach(function (e) {
@@ -887,7 +889,7 @@
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || !(r[9] >= 3) || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
+      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || (bordersKnown ? !(r[9] >= 3) : r[9] <= 1) || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, soft: soft, polys: polys, firm: pairsAt(borderPairs.firm, y), topo: { hi: c.data.hi, lo: c.data.lo },
@@ -4983,7 +4985,7 @@
       }
       if (p.band) line("").textContent = "Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.";
       else if (p.b <= 1 && !p.people) line("").textContent = "Its borders here are approximate.";
-      else if (datedNow && p.b === 2 && !p.people && !p.claims) line("").textContent = "Its borders are dotted, except where a treaty had fixed the line.";
+      else if (datedNow && bordersKnown && p.b === 2 && !p.people && !p.claims) line("").textContent = "Its borders are dotted, except where a treaty had fixed the line.";
       else if (modernNow && current && current.vague && !p.claims) {
         var unsettled = [];
         current.vague.forEach(function (k) { var ab = k.split("|"); if (+ab[0] === p.id && current.byId.has(+ab[1]) && unsettled.indexOf(+ab[1]) < 0) unsettled.push(+ab[1]); });
@@ -7488,7 +7490,7 @@
     ]).then(function (r) {
       var idx = r[0];
       catalogue = idx.polities;
-      if (idx.borders) borderPairs = idx.borders;
+      if (idx.borders) { borderPairs = idx.borders; bordersKnown = true; }
       colourMarks();
       maps = idx.maps.map(function (m) { return { y: m[0], file: "data/" + m[1], snap: null, loading: null }; });
       var from = idx.modern.from.split("-").map(Number), to = idx.modern.to.split("-").map(Number);
