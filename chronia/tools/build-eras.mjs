@@ -3741,7 +3741,8 @@ const capInfobox = (rows, y) => {
   return capPopular(pool, y) || pool[0];
 };
 // The capital of a state with Wikipedia title `title` in year y, among the capitals on its land (polys): Wikidata's dated or single capital,
-// else the largest of Wikidata's undated ones, else the infobox's.
+// else the largest of Wikidata's undated ones, else the infobox's. CAP_SET's capitals are checked by hand and kept even where Natural Earth's coarse
+// coast leaves them offshore, as it does St Helier.
 const capPicker = (title, polys) => {
   const qid = capData.titles[title];
   if (CAP_SKIP.has(title)) return null;
@@ -3750,7 +3751,7 @@ const capPicker = (title, polys) => {
   const ib = ((capData.infobox || {})[title] || []).filter((r) => !drop.has(r[0]));
   if (!wd.length && !ib.length) return null;
   const land = new Map(), on = (r) => { if (!land.has(r)) land.set(r, capOnLand(r, polys)); return land.get(r); };
-  const wdLand = wd.filter(on), ibLand = ib.filter(on);
+  const wdLand = CAP_SET[title] ? wd : wd.filter(on), ibLand = ib.filter(on);
   if (!wdLand.length && !ibLand.length) { capStats.outside++; return () => null; }
   return (y) => {
     let r = wdLand.length ? capitalIn(qid, wdLand, y) : null;
