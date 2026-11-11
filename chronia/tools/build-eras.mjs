@@ -242,8 +242,15 @@ const APPROX_EARLY = new Map([
   "Samnites", "Sabines", "Kingdom of Saba", "Hadhramaut", "Qataban", "Minaeans", "Kush", "Kingdom of Kush", "Dʿmt", "Proto-Aksumite kingdoms", "Garamantes",
   "Maya chiefdoms and states", "Mayan City-States", "Zapotec Civilization", "Monte Albán", "Teotihuacan", "Gojoseon", "Jinhan", "Byeonhan", "Mahan", "Dongye", "Buyeo",
   "Dacia", "Odrysian Kingdom", "Thracian Kingdom", "Illyrian Kingdom", "Dardania", "Kingdom of Tylis", "Mauretania", "Kingdom of Numidia", "Kingdom of Syphax",
-  "Kingdom of Gala", "Nabataean Kingdom", "Zhangzhung Kingdom", "Arakan", "Indo-Scythians", "Dayuan", "Maurya Empire", "Parthian Empire", "Indian kingdoms and republics",
+  "Kingdom of Gala", "Nabataean Kingdom", "Zhangzhung Kingdom", "Arakan", "Indo-Scythians", "Dayuan", "Maurya Empire", "Indian kingdoms and republics",
+  "Kushan Empire", "Eastern Kushans", "Western Kushans", "Kushan Principalities", "Western Satraps", "Indo-Parthians", "Saka Kingdom", "Kingdom of Aksum", "Himyarite Kingdom",
+  "Sabaeans", "Funan", "Champa", "Pyu City-States", "Tarumanagara", "Baekje", "Silla", "Gaya", "Yamato", "Huns", "Tuyuhun", "Protectorate of the Western Regions",
+  "Gupta Empire", "Vakataka Kingdom", "Kalabhra dynasty", "Kamarupa Kingdom", "Late Pallava Empire", "Satavahanihara", "Kadamba Empire", "Lakhmid Kingdom", "Kingdom of Maroboduus",
+  "Alemanni", "Kingdom of the Thuringii", "Rugiland", "Visigothic Kingdom", "Kingdom of the Burgundians", "Kingdom of the Suebi", "Vandal Kingdom", "Kingdom of the Franks", "Armorica", "Nobatia", "Kidarites", "Xionites", "White Huns", "Yueban", "Southern Xiongnu", "Xianbei", "Ruanruan",
   "Magadha", "Mahajanapadas", "Kalinga", "Satavahana dynasty", "Early Cheras", "Early Cholas", "Early Pandyas", "Simhala", "Colchis"].map((n) => [n, n === "Xia" || n === "Dacia" ? 0 : 600]));
+const PRECISE_EARLY = new Set(["Roman Empire", "Western Roman Empire", "Eastern Roman Empire", "Parthian Empire", "Sasanian Empire", "Han dynasty", "Xin dynasty", "Cao Wei", "Shu Han",
+  "Eastern Wu", "Western Jin", "Eastern Jin", "Liu Song dynasty", "Northern Wei", "Kingdom of Armenia", "Caucasian Iberia", "Lazica", "Caucasian Albania", "Kingdom of Osroene",
+  "Bosporan Kingdom", "Judea", "Kingdom of Commagene", "Kingdom of Pontus", "Kingdom of Cappadocia"]);
 const kindOf = (name) => (BANDS.test(name) ? 2 : 1);
 const WIKI = {
   // North America's peoples in historical-basemaps whose names are also a state, a city, a river, or a word, so that their own articles open.
@@ -1070,6 +1077,9 @@ const CONGO_FOREST = [{ c: "COD", n: ["Équateur", "Bandundu", "Kinshasa City", 
   { c: "CAF", n: ["Lobaye", "Sangha-Mbaéré", "Mambéré-Kadéï", "Ombella-M'Poko", "Bangui", "Basse-Kotto", "Mbomou", "Haut-Mbomou"] }, { c: "CMR", n: ["Sud", "Est", "Centre", "Littoral", "Sud-Ouest"] }];
 const GREAT_LAKES = [{ c: "UGA" }, { c: "RWA" }, { c: "BDI" }];
 const UMM_AN_NAR = [{ c: "ARE" }, { c: "OMN", n: ["Al Batnah North", "Al Batnah South", "Al Buraymi", "Al Dhahira", "Ad Dakhliyah", "Muscat", "Ash Sharqiyah North", "Ash Sharqiyah South", "Musandam"] }];
+const SCOTLAND = [{ c: "GBR", box: [[-8, 55.4, -0.5, 61]] }];
+const IRELAND = [{ c: "IRL" }, { c: "GBR", box: [[-8.2, 54, -5.4, 55.4]] }];
+const JAPAN = [{ c: "JPN", not: ["Hokkaidō", "Aomori", "Iwate", "Akita", "Okinawa"] }];
 const EARLY = [
   ["Los Millares culture", -3200, -2301, "Los Millares", [{ c: "ESP", n: ["Almería", "Granada", "Murcia"] }]],
   ["El Argar culture", -2200, -1551, "El Argar", [{ c: "ESP", n: ["Almería", "Murcia", "Granada", "Jaén", "Alicante"] }], { over: 1 }],
@@ -1105,7 +1115,7 @@ const EARLY = [
   ["Wessex culture", -2000, -1401, "Wessex culture", [{ c: "GBR", box: [[-5.8, 50, 1.8, 51.9]] }], { over: 1 }],
   ["British and Irish Bronze Age", -1800, -1301, "Bronze Age Britain", [{ c: "GBR" }, { c: "IRL" }], { over: 1 }],
   ["Atlantic Bronze Age", -1300, -701, "Atlantic Bronze Age", [{ c: "GBR" }, { c: "IRL" }, { c: "FRA", n: ["Finistère", "Côtes-d'Armor", "Morbihan", "Ille-et-Vilaine", "Manche", "Loire-Atlantique"] }, { c: "PRT", box: [[-10, 36.8, -6, 42.2]] }], { over: 1 }],
-  ["Celtic Britons", -700, -1, "Celtic Britons", [{ c: "GBR", box: [[-6, 49.8, 1.8, 55.9]] }], { over: 1 }],
+  ["Celtic Britons", -700, 83, "Celtic Britons", [{ c: "GBR", box: [[-6, 49.8, 1.8, 55.9]] }], { over: 1 }],
   ["Maykop culture", -3400, -3001, "Maykop culture", [{ c: "RUS", n: ["Adygey", "Karachay-Cherkess", "Kabardin-Balkar"] }, { c: "RUS", n: ["Krasnodar"], box: [[38, 43.5, 41.5, 45.5]] }, { c: "RUS", n: ["Stavropol'"], box: [[41, 43.5, 45, 45.5]] }]],
   ["Kura–Araxes culture", -3400, -2001, "Kura–Araxes culture", [{ c: "ARM" }, { c: "GEO" }, { c: "AZE" }, { c: "TUR", n: ["Ardahan", "Artvin", "Kars", "Iğdir", "Agri", "Erzurum", "Van", "Bayburt", "Erzincan", "Gümüshane"] },
     { c: "IRN", n: ["West Azarbaijan", "East Azarbaijan", "Ardebil", "Zanjan"] }, { c: "RUS", n: ["Dagestan", "Chechnya", "Ingush", "North Ossetia"] }]],
@@ -1135,24 +1145,39 @@ const EARLY = [
   ["Ochre Coloured Pottery culture", -2000, -1501, "Ochre Coloured Pottery culture", [{ c: "IND", n: ["Haryana", "Delhi", "Uttarakhand"] }, { c: "IND", n: ["Uttar Pradesh"], box: [[77, 25, 80.5, 30.5]] }]],
   ["Central African forest foragers", -3400, -1001, "African Pygmies", CONGO_FOREST, { over: 1 }],
   ["Great Lakes hunter-gatherers", -3400, -501, "Great Lakes region (Africa)", GREAT_LAKES, { over: 1 }],
-  ["Bantu-speaking farmers", -1000, 49, "Bantu expansion", CONGO_FOREST, { over: 1 }],
-  ["Urewe culture", -500, 49, "Urewe", GREAT_LAKES.concat([{ c: "TZA", n: ["Kagera", "Mwanza", "Geita", "Mara", "Kigoma"] }, { c: "KEN", n: ["Nyanza", "Western"] }]), { over: 1 }],
-  ["Savanna Pastoral Neolithic", -3000, 49, "Savanna Pastoral Neolithic", [{ c: "KEN", n: ["Rift Valley", "Central", "Nairobi"] }, { c: "TZA", n: ["Arusha", "Manyara", "Kilimanjaro"] }], { over: 1 }],
-  ["Cushitic-speaking pastoralists", -1750, 49, "Cushitic peoples", [{ c: "SOM" }, { c: "DJI" }, { c: "KEN", n: ["North-Eastern"] }, { c: "ETH", n: ["Somali"] }], { over: 1 }],
+  ["Bantu-speaking farmers", -1000, 476, "Bantu expansion", CONGO_FOREST, { over: 1 }],
+  ["Urewe culture", -500, 476, "Urewe", GREAT_LAKES.concat([{ c: "TZA", n: ["Kagera", "Mwanza", "Geita", "Mara", "Kigoma"] }, { c: "KEN", n: ["Nyanza", "Western"] }]), { over: 1 }],
+  ["Savanna Pastoral Neolithic", -3000, 476, "Savanna Pastoral Neolithic", [{ c: "KEN", n: ["Rift Valley", "Central", "Nairobi"] }, { c: "TZA", n: ["Arusha", "Manyara", "Kilimanjaro"] }], { over: 1 }],
+  ["Cushitic-speaking pastoralists", -1750, 476, "Cushitic peoples", [{ c: "SOM" }, { c: "DJI" }, { c: "KEN", n: ["North-Eastern"] }, { c: "ETH", n: ["Somali"] }], { over: 1 }],
   ["Kintampo complex", -2500, -1401, "Kintampo complex", [{ c: "GHA", n: ["Brong Ahafo", "Ashanti", "Northern", "Eastern", "Volta"] }], { over: 1 }],
   ["West African hunter-gatherers", -3400, -1751, "Prehistoric West Africa", [{ c: "GIN" }, { c: "SLE" }, { c: "LBR" }, { c: "CIV" }, { c: "GHA" }, { c: "TGO" }, { c: "BEN" }, { c: "NGA", box: [[2.5, 4, 15, 11]] }, { c: "SEN" }, { c: "GMB" }, { c: "GNB" },
     { c: "CMR", n: ["Nord-Ouest", "Ouest", "Adamaoua"] }], { over: 1 }],
   ["Nok culture", -1000, 49, "Nok culture", [{ c: "NGA", n: ["Kaduna", "Plateau", "Nassarawa", "Federal Capital Territory", "Niger", "Kogi"] }], { over: 1 }],
   ["Dʿmt", -980, -401, "Dʿmt", [{ c: "ERI", n: ["Debub", "Maekel", "Anseba", "Semenawi Keyih Bahri"] }, { c: "ETH", n: ["Tigray"] }], { over: 1, state: 1 }],
-  ["Garamantes", -500, 49, "Garamantes", [{ c: "LBY", n: ["Murzuq", "Wadi al Hayaa", "Sabha", "Ghat", "Ash Shati'"] }], { over: 1, state: 1 }]
+  ["Caledonians", 84, 299, "Caledonians", SCOTLAND, { over: 1 }],
+  ["Picts", 300, 475, "Picts", SCOTLAND, { over: 1 }],
+  ["Iron Age Ireland", -700, -1, "Prehistoric Ireland", IRELAND, { over: 1 }],
+  ["Gaelic Ireland", 1, 475, "Gaelic Ireland", IRELAND, { over: 1 }],
+  ["Wielbark culture", 1, 375, "Wielbark culture", [{ c: "POL", n: ["Pomeranian", "Kuyavian-Pomeranian", "Warmian-Masurian", "Podlachian"] }]],
+  ["Przeworsk culture", 1, 450, "Przeworsk culture", [{ c: "POL", n: ["Greater Poland", "Lower Silesian", "Opole", "Silesian", "Lesser Poland", "Świętokrzyskie", "Łódź", "Masovian", "Lublin", "Subcarpathian"] }]],
+  ["Zarubintsy culture", 1, 199, "Zarubintsy culture", [{ c: "UKR", n: ["Kiev", "Kiev City", "Chernihiv", "Zhytomyr", "Cherkasy"] }, { c: "BLR", n: ["Gomel", "Brest"] }]],
+  ["Chernyakhov culture", 200, 375, "Chernyakhov culture", [{ c: "UKR", n: ["Vinnytsya", "Khmel'nyts'kyy", "Ternopil'", "Chernivtsi", "Ivano-Frankivs'k", "Kirovohrad", "Cherkasy", "Mykolayiv", "Odessa", "Kiev", "Kiev City", "Poltava", "Dnipropetrovs'k"] },
+    { c: "MDA" }, { c: "ROU", n: ["Botosani", "Iasi", "Vaslui", "Suceava", "Neamt", "Bacau", "Galati", "Vrancea", "Buzau", "Braila"] }]],
+  ["Germanic peoples", 1, 475, "Germanic peoples", [{ c: "DEU" }, { c: "NLD", box: [[4.5, 52.2, 7.3, 53.7]] }, { c: "DNK" }, { c: "POL", n: ["West Pomeranian", "Lubusz"] }, { c: "CZE" }, { c: "AUT", n: ["Niederösterreich"] }, { c: "SVK", n: ["Bratislavský", "Trnavský", "Nitriansky"] }]],
+  ["Balts", 150, 475, "Balts", [{ c: "LTU" }, { c: "LVA" }, { c: "RUS", n: ["Kaliningrad"] }, { c: "BLR", n: ["Vitebsk", "Grodno", "Minsk", "City of Minsk"] }]],
+  ["Huns", 454, 475, "Huns", [{ c: "UKR", n: ["Odessa", "Mykolayiv", "Kherson", "Zaporizhzhya", "Donets'k", "Luhans'k", "Dnipropetrovs'k"] }, { c: "RUS", n: ["Rostov", "Volgograd", "Kalmyk", "Astrakhan'", "Stavropol'"] }]],
+  ["Kiev culture", 200, 475, "Kiev culture", [{ c: "UKR", n: ["Chernihiv", "Sumy"] }, { c: "BLR", n: ["Gomel", "Mogilev"] }, { c: "RUS", n: ["Bryansk", "Kursk"] }]],
+  ["Kofun culture", 250, 449, "Kofun period", JAPAN],
+  ["Bantu-speaking farmers", 200, 476, "Bantu expansion", [{ c: "ZMB" }, { c: "MWI" }, { c: "MOZ" }, { c: "ZWE" }, { c: "TZA" }, { c: "AGO", box: [[11, -13, 24.2, -4]] }, { c: "KEN", n: ["Coast"] }], { over: 1 }],
+  ["Garamantes", -500, 475, "Garamantes", [{ c: "LBY", n: ["Murzuq", "Wadi al Hayaa", "Sabha", "Ghat", "Ash Shati'"] }], { over: 1, state: 1 }]
 ];
 const PEOPLE_CARRY = [
-  ["Saharan pastoral nomads", -3400, -2501], ["Papuan neolithic farmers", -3400, -1751], ["Papuan neolithic farmers", -361, 49], ["Austronesians", -361, 49],
-  ["Austro-Asiatic rice cultures", -361, 49], ["Tai-Kadai peoples", -150, 49], ["Yayoi culture", -361, 49], ["Germanic tribes", -361, -1], ["Proto-Tibetan cultures", -361, 49],
-  ["Donghu tribes", -361, -207], ["Iron Age megalith cultures", -450, -292], ["Arabian pastoral nomads", -600, 49], ["Berbers", -600, 49], ["Ethiopian highland farmers", -311, 49],
-  ["Celts", -50, 49], ["Iranian pastoralists", -600, -451], ["Korean peoples", -600, -451], ["Hallstatt culture", -361, -51], ["Proto-Thai cultures", -361, -251]
+  ["Saharan pastoral nomads", -3400, -2501], ["Papuan neolithic farmers", -3400, -1751], ["Papuan neolithic farmers", -361, 476], ["Austronesians", -361, 476],
+  ["Austro-Asiatic rice cultures", -361, 476], ["Tai-Kadai peoples", -150, 476], ["Yayoi culture", -361, 249], ["Germanic tribes", -361, 475], ["Proto-Tibetan cultures", -361, 476],
+  ["Donghu tribes", -361, -207], ["Iron Age megalith cultures", -450, -292], ["Arabian pastoral nomads", -600, 476], ["Berbers", -600, 476], ["Ethiopian highland farmers", -311, 49],
+  ["Celts", -50, 49], ["Iranian pastoralists", -600, -451], ["Korean peoples", -600, -451], ["Hallstatt culture", -361, -51], ["Proto-Thai cultures", -361, -251], ["Sarmates", 50, 375]
 ];
-const EXTEND = [["Kingdom of Judah", -700, -640, "Neo-Assyrian Empire"], ["Kingdom of Judah", -639, -587, ""]];
+const EXTEND = [["Kingdom of Judah", -700, -640, "Neo-Assyrian Empire"], ["Kingdom of Judah", -639, -587, ""], ["Gepids", 426, 453, "Huns"], ["Gepids", 454, 475, "", "Kingdom of the Gepids"]];
 const REGIMES = {
   france: { from: 1200, names: ["France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic", "French Republic", "French Empire"], rulers: ["New France", "First French colonial empire"], eras: [[1791, "Kingdom of France"], [1795, "French First Republic"], [1799, "French Directory"], [1804, "French Consulate"], [1814, "First French Empire"], [1847, "Bourbon Kingdom of France"], [1852, "French Second Republic"], [1870, "Second French Empire"], [9999, "French Third Republic"]] },
   britain: { from: 1200, names: ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland"], rulers: ["UK", "GB", "British Colonial Empire", "British Empire", "British Cape Colony", "English Colonial Empire"], eras: [[1648, "Kingdom of England"], [1659, "Commonwealth of England"], [1706, "Kingdom of England"], [1800, "Kingdom of Great Britain"], [9999, "United Kingdom"]] },
@@ -1233,26 +1258,27 @@ const NAME_FIX = [
   ["Indus Valley Civilization", "Late Harappan culture", -1900, -1701, { people: 1, wiki: "Indus Valley Civilisation" }],
   ["Afanasievo culture", "Okunevo culture", -2500, -1751, { people: 1, wiki: "Okunevo culture" }],
   ["Ainu", "Jōmon culture", -3400, -301, { people: 1, wiki: "Jōmon period" }],
-  ["Ainu", "Epi-Jōmon culture", -300, 49, { people: 1, wiki: "Epi-Jōmon period" }],
+  ["Ainu", "Epi-Jōmon culture", -300, 699, { people: 1, wiki: "Epi-Jōmon period" }],
   ["Dakapeng culture", "Austronesians", -2500, -1751, { people: 1, wiki: "Austronesian peoples" }],
   ["Bantu", "", -3400, -1751, { drop: 1 }],
   ["Hunters-gatherers", "Hunter-gatherers", -3400, -1751, { people: 1, wiki: "Hunter-gatherer" }],
   ["Semites", "Arabian pastoralists", -3400, -1751, { people: 1, wiki: "Pre-Islamic Arabia" }],
-  ["Arabian pastoral nomads", "Arabian pastoralists", -1750, 49, { people: 1, wiki: "Pre-Islamic Arabia" }],
+  ["Arabian pastoral nomads", "Arabian pastoralists", -1750, -1, { people: 1, wiki: "Pre-Islamic Arabia" }],
+  ["Arabian pastoral nomads", "Arabs", 1, 1199, { people: 1, wiki: "Arabs" }],
   ["Dravidians", "Southern Neolithic", -3400, -1751, { people: 1, wiki: "Southern Neolithic" }],
   ["Dravidians", "Chalcolithic cultures of India", -1750, -1201, { people: 1, wiki: "Chalcolithic" }],
   ["Dravidians", "Iron Age megalith cultures", -1200, -601, { people: 1, wiki: "South Indian Iron Age" }],
   ["Aboriginal tribes", "Aboriginal Australian hunter-gatherers", -3400, -2501, { people: 1, wiki: "Aboriginal Australians" }],
-  ["Australian aboriginal hunter-gatherers", "Aboriginal Australian hunter-gatherers", -3400, 49, { people: 1, wiki: "Aboriginal Australians" }],
+  ["Australian aboriginal hunter-gatherers", "Aboriginal Australian hunter-gatherers", -3400, 1885, { people: 1, wiki: "Aboriginal Australians" }],
   ["Aboriginal Tasmanians", "Aboriginal Tasmanian hunter-gatherers", -3400, -2501, { people: 1, wiki: "Aboriginal Tasmanians" }],
-  ["Tasmanian hunter-gatherers", "Aboriginal Tasmanian hunter-gatherers", -3400, 49, { people: 1, wiki: "Aboriginal Tasmanians" }],
+  ["Tasmanian hunter-gatherers", "Aboriginal Tasmanian hunter-gatherers", -3400, 1885, { people: 1, wiki: "Aboriginal Tasmanians" }],
   ["Canaan", "Canaanite city-states", -2500, -1701, { wiki: "Canaan" }],
   ["Sintashta culture", "", -2500, -2101, { drop: 1 }],
   ["Sintashta culture", "", -1800, -1751, { drop: 1 }],
   ["Andronovo culture", "", -2500, -2001, { drop: 1 }],
   ["Catacomb culture", "Multi-cordoned ware culture", -2200, -1751, { people: 1, wiki: "Multi-cordoned ware culture" }],
   ["Chinchorro culture", "", -1500, -451, { drop: 1 }],
-  ["Mesoamerican hunter-gatherers and maïze farmers", "Mesoamerican hunter-gatherers and maize farmers", -3400, -1751, { people: 1 }],
+  ["Mesoamerican hunter-gatherers and maïze farmers", "Mesoamerican hunter-gatherers and maize farmers", -3400, 1885, { people: 1 }],
   ["Anatolian tribes", "Hattians and Luwians", -2500, -2001, { people: 1, wiki: "Hattians" }],
   ["Anatolian tribes", "Anatolian city-states", -2000, -1751, { people: 0, wiki: "Kültepe" }],
   ["Korean peoples", "Jeulmun pottery culture", -3400, -1501, { people: 1, wiki: "Jeulmun pottery period" }],
@@ -1267,13 +1293,13 @@ const NAME_FIX = [
   ["El Paraiso", "Chavín culture", -900, -451, { people: 1, wiki: "Chavín culture" }],
   ["Chorrera culture", "Machalilla culture", -1750, -1301, { people: 1, wiki: "Machalilla culture" }],
   ["Chorrera culture", "Bahía culture", -300, -51, { people: 1, wiki: "Bahía culture" }],
-  ["Plain bison hunters", "Plains bison hunters", -1750, 49, { people: 1, wiki: "Plains Indians" }],
-  ["Plateau fichers and hunter gatherers", "Plateau fishers and hunter-gatherers", -1750, 49, { people: 1, wiki: "Plateau Indians" }],
-  ["Pampas cultures", "Pampas hunter-gatherers", -1750, 49, { people: 1, wiki: "Pampas" }],
+  ["Plain bison hunters", "Plains bison hunters", -1750, 1885, { people: 1, wiki: "Plains Indians" }],
+  ["Plateau fichers and hunter gatherers", "Plateau fishers and hunter-gatherers", -1750, 1885, { people: 1, wiki: "Plateau Indians" }],
+  ["Pampas cultures", "Pampas hunter-gatherers", -1750, 1499, { people: 1, wiki: "Pampas" }],
   ["Poverty point culture", "Poverty Point culture", -1750, -1251, { people: 1, wiki: "Poverty Point" }],
   ["Celtiberians", "Iberian Bronze Age cultures", -1750, -801, { people: 1, wiki: "Prehistoric Iberia" }],
   ["Celtiberians", "Pre-Roman peoples of Iberia", -800, -601, { people: 1, wiki: "Pre-Roman peoples of the Iberian Peninsula" }],
-  ["Berbers", "Ancient Libyans", -1750, 49, { people: 1, wiki: "Ancient Libya" }],
+  ["Berbers", "Ancient Libyans", -1750, -1, { people: 1, wiki: "Ancient Libya" }],
   ["Proto-Altaic pastoralists", "Eastern steppe pastoralists", -1750, -362, { people: 1, wiki: "Deer stone" }],
   ["Cimerians", "Srubnaya culture", -1750, -1201, { people: 1, wiki: "Srubnaya culture" }],
   ["Cimerians", "Cimmerians", -1200, -601, { people: 1, wiki: "Cimmerians" }],
@@ -1313,17 +1339,17 @@ const NAME_FIX = [
   ["Boii", "Boii", -600, -324, { people: 1, wiki: "Boii" }],
   ["Blemmyes", "Blemmyes", -600, 649, { people: 1, wiki: "Blemmyes" }],
   ["Curonians", "Balts", -600, 199, { people: 1, wiki: "Balts" }],
-  ["Hindu kingdoms", "Iron Age chieftainships", -600, 49, { box: [73, 7, 81, 15], people: 1, wiki: "South Indian Iron Age" }],
-  ["Hindu kingdoms", "Indian kingdoms and republics", -600, 49, { wiki: "Mahajanapadas" }],
+  ["Hindu kingdoms", "Iron Age chieftainships", -600, 476, { box: [73, 7, 81, 15], people: 1, wiki: "South Indian Iron Age" }],
+  ["Hindu kingdoms", "Indian kingdoms and republics", -600, 476, { wiki: "Mahajanapadas" }],
   ["Hindu kingdoms and republics", "Indian kingdoms and republics", -600, 49, { wiki: "Mahajanapadas" }],
   ["Iron Age chieftainships", "Iron Age chieftainships", -600, 49, { people: 1, wiki: "South Indian Iron Age" }],
-  ["Germanic tribes", "Germanic peoples", -600, 49, { people: 1, wiki: "Germanic peoples" }],
+  ["Germanic tribes", "Germanic peoples", -600, 475, { people: 1, wiki: "Germanic peoples" }],
   ["Norsemen", "Germanic peoples", -600, -1, { people: 1, wiki: "Germanic peoples" }],
   ["Donghu tribes", "Donghu", -600, -151, { people: 1, wiki: "Donghu people" }],
   ["Turcik tribes", "Dingling", -600, -1, { people: 1, wiki: "Dingling" }],
   ["Tungus", "Sushen", -600, -1, { people: 1, wiki: "Sushen" }],
   ["Saces", "Saka", -600, -1, { people: 1, wiki: "Saka" }],
-  ["Sarmates", "Sarmatians", -600, 49, { people: 1, wiki: "Sarmatians" }],
+  ["Sarmates", "Sarmatians", -600, 375, { people: 1, wiki: "Sarmatians" }],
   ["Sacred Band of Thebes", "Boeotian League", -366, -351, { wiki: "Boeotian League" }],
   ["Thebans", "Boeotian League", -350, -338, { wiki: "Boeotian League" }],
   ["?", "Kingdom of Tylis", -250, -213, { wiki: "Tylis" }],
@@ -1336,9 +1362,51 @@ const NAME_FIX = [
   ["Koguryo", "Buyeo", -50, -38, { wiki: "Buyeo" }],
   ["Hainan", "Hlai people", -50, 5, { people: 1, wiki: "Hlai people" }],
   ["Italian City-States", "Italic allies", -91, -88, { wiki: "Social War (91–87 BC)" }],
-  ["Moche", "Salinar culture", -50, 49, { people: 1, wiki: "Salinar culture" }],
+  ["Moche", "Salinar culture", -50, 99, { people: 1, wiki: "Salinar culture" }],
   ["Dumonii", "Dumnonii", -50, 49, { people: 1, wiki: "Dumnonii" }],
   ["Teotihuacan", "Central Mexican chiefdoms", -361, -101, { people: 1, wiki: "Cuicuilco" }],
+  ["Goths", "Goths", 1, 206, { people: 1, wiki: "Goths" }],
+  ["Gothia", "Goths", 207, 382, { people: 1, wiki: "Goths" }],
+  ["Burgundians", "Burgundians", 1, 410, { people: 1, wiki: "Burgundians" }],
+  ["Heruli", "Heruli", 1, 475, { people: 1, wiki: "Heruli" }],
+  ["Norse", "Germanic peoples", 1, 475, { people: 1, wiki: "Germanic peoples" }],
+  ["Saxons", "Saxons", 1, 475, { people: 1, wiki: "Saxons" }],
+  ["Angles", "Angles", 1, 475, { people: 1, wiki: "Angles" }],
+  ["Anglo-Saxon England", "Saxons", 441, 475, { people: 1, wiki: "Anglo-Saxon settlement of Britain" }],
+  ["Alamans", "Alemanni", 1, 461, { people: 1, wiki: "Alemanni" }],
+  ["Kingdom of Alamannia", "Alemanni", 462, 475, { wiki: "Alemanni" }],
+  ["Ripuarian Franks", "Ripuarian Franks", 1, 475, { people: 1, wiki: "Ripuarian Franks" }],
+  ["Salian Franks", "Salian Franks", 1, 475, { people: 1, wiki: "Salian Franks" }],
+  ["Vandals", "Vandals", 1, 428, { people: 1, wiki: "Vandals" }],
+  ["Visigoths", "", 412, 475, { box: [15, 34, 45, 50], drop: 1 }],
+  ["Visigoths", "Visigoths", 1, 417, { people: 1, wiki: "Visigoths" }],
+  ["Visigoths", "Visigothic Kingdom", 418, 475, { wiki: "Visigothic Kingdom" }],
+  ["Ostrogoths", "Ostrogoths", 1, 475, { self: 1, people: 1, wiki: "Ostrogoths" }],
+  ["Huns", "Huns", 1, 369, { people: 1, wiki: "Huns" }],
+  ["Huns", "Huns", 454, 475, { people: 1, wiki: "Huns" }],
+  ["Hunnic Empire", "", 350, 369, { drop: 1 }],
+  ["Hunnic Empire", "Huns", 454, 475, { people: 1, wiki: "Huns" }],
+  ["Hunnic Empire", "Huns", 370, 453, { wiki: "Huns" }],
+  ["Caucasian Alans", "Alans", 350, 370, { ruler: "" }],
+  ["Dumonii", "Dumnonii", 1, 49, { people: 1, wiki: "Dumnonii" }],
+  ["Dumonii", "Roman Empire", 50, 394, { people: 0, wiki: "Roman Empire" }],
+  ["Dumonii", "Western Roman Empire", 395, 409, { people: 0, wiki: "Western Roman Empire" }],
+  ["Dumonii", "Britons", 410, 475, { people: 1, wiki: "Sub-Roman Britain" }],
+  ["Brythons", "Britons", 410, 475, { people: 1, wiki: "Sub-Roman Britain" }],
+  ["Boihaenum", "Kingdom of Maroboduus", -14, 18, { wiki: "Maroboduus" }],
+  ["Boihaenum", "Marcomanni", 19, 260, { people: 1, wiki: "Marcomanni" }],
+  ["Hainan", "Hlai people", 30, 425, { people: 1, wiki: "Hlai people" }],
+  ["Trưng sisters", "", 44, 50, { drop: 1 }],
+  ["Greek city-states", "", 1, 83, { drop: 1 }],
+  ["Saami", "Sámi", -1750, 1885, { people: 1, wiki: "Sámi" }],
+  ["Makuria", "Noba", 347, 549, { people: 1, wiki: "Nobatia" }],
+  ["Alodia", "Noba", 347, 549, { people: 1, wiki: "Nobatia" }],
+  ["Nobatia", "Noba", 347, 399, { people: 1, wiki: "Nobatia" }],
+  ["Poverty point culture", "Marksville Culture", 1, 399, { people: 1, wiki: "Marksville culture" }],
+  ["Poverty point culture", "Troyville culture", 400, 749, { people: 1, wiki: "Troyville culture" }],
+  ["Turingians", "Kingdom of the Thuringii", 450, 468, { wiki: "Thuringii" }],
+  ["Thuringian states", "Kingdom of the Thuringii", 469, 475, { wiki: "Thuringii" }],
+  ["Burgundian Kingdom", "Kingdom of the Burgundians", 411, 475, { wiki: "Kingdom of the Burgundians" }],
   ["Kush", "", 351, 1199, { drop: 1 }],
   ["Sasanian dependencies", "", 652, 1199, { drop: 1 }],
   ["Mongol Empire", "Mongols", 1200, 1205, { people: 1, wiki: "Mongols" }],
@@ -2299,7 +2367,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
       }
       place(polys, first, last, { name, ruler: "", part: "", people: o.state ? 0 : 1, b: 1, status: 0, wiki, src: "early" }, o.over, "early");
     }
-    const bcSnaps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => s.y <= -1);
+    const bcSnaps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => s.y <= 500);
     for (const [name, first, last] of PEOPLE_CARRY) {
       const gap = (y) => (y < first ? first - y : y > last ? y - last : 0);
       const src = hbSnaps.filter((t) => t.feats.some((f) => f.properties.name === name)).sort((a, b) => gap(a.y) - gap(b.y))[0];
@@ -2316,10 +2384,10 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
         }
       }
     }
-    for (const [name, first, last, ruler] of EXTEND) {
-      const bases = clioOnly.concat(extra).filter((c) => c.name === name && c.last === first - 1);
+    for (const [name, first, last, ruler, as] of EXTEND) {
+      const bases = clioOnly.concat(fills, extra).filter((c) => (c.name === name || c.extendOf === name) && c.last === first - 1);
       if (!bases.length) console.log("extend: no " + name + " in " + (first - 1));
-      for (const base of bases) { extra.push(withBox({ ...base, first, last, ruler, status: ruler ? 5 : 0, src: "extend" })); made.extend++; }
+      for (const base of bases) { extra.push(withBox({ ...base, name: as || base.name, extendOf: name, wiki: as ? as : base.wiki, first, last, ruler, status: ruler ? 5 : 0, people: 0, src: "extend" })); made.extend++; }
     }
     fills.push(...extra);
     console.log("before 1 BC: " + made.early + " spans of the early peoples and states, " + made.people + " of peoples carried to the years next to their map, " + made.bands + " of bands carried to the other maps' years, " + made.extend + " spans extended");
@@ -3795,7 +3863,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     entry.dated = entry.dated ? [Math.min(entry.dated[0], s.first), Math.max(entry.dated[1], s.last)] : [s.first, s.last];
     if (!entry.wiki.has(s.first)) entry.wiki.set(s.first, s.wiki || s.name);
     if (s.people) entry.kind = kindOf(s.name);
-    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, s.cap || null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity) ? Math.min(1, s.b ?? 2) : s.b];
+    const row = [id, s.ruler ? catId(s.ruler) : -1, s.first, s.last, s.status, s.cap || null, s.noLabel ? null : label, s.people ? kindOf(s.name) : 0, s.part ? catId(s.part) : -1, APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity) ? Math.min(1, s.b ?? 2) : PRECISE_EARLY.has(s.name) && s.first <= 476 ? Math.max(2, s.b ?? 2) : s.b];
     if (s.claims) row.push(s.claims.map(catId));
     return row;
   });
