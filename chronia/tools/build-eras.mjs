@@ -3652,8 +3652,9 @@ const CAP_SET = {
   // 1070 BC, and Meroë from about 590 BC (Wikipedia's Kingdom of Kush and Meroë).
   "Kingdom of Kush": [["Napata", 31.84, 18.53, -1070, -591, 0, null], ["Meroë", 33.726, 16.933, -590, 350, 0, null]],
   // Wikidata and the infobox give Government House and Saint Saviour, the Lieutenant Governor's residence and its parish; the seat is St Helier
-  // (Wikipedia's St Helier; time-ok.com and the towns data give 49.188, -2.105).
-  "Jersey": [["Saint Helier", -2.105, 49.188, null, null, 0, null]],
+  // (Wikipedia's St Helier; time-ok.com and the towns data give 49.188, -2.105). Dated from 1329, since Wikidata's capital starts in 1651: the Island
+  // Wiki's Royal Square has a court house there from 1329, and Britannica's Saint Helier has the king's courts meeting there from the 13th century.
+  "Jersey": [["Saint Helier", -2.105, 49.188, 1329, null, 0, null]],
   "Shang dynasty": [["Zhengzhou", 113.684, 34.764, -1600, -1301, 0, null], ["Yin", 114.319, 36.123, -1300, -1046, 0, null]]
 };
 const capsPath = resolve(here, "capitals-wikidata.json");
@@ -3692,6 +3693,8 @@ const inRing = (x, y, ring) => {
   return inside;
 };
 const inPolys = (x, y, polys) => polys.some((p) => inRing(x, y, p[0]) && !p.slice(1).some((h) => inRing(x, y, h)));
+const CAP_COAST_DEG = 0.02;
+const capNearLand = (r, polys) => [[CAP_COAST_DEG, 0], [-CAP_COAST_DEG, 0], [0, CAP_COAST_DEG], [0, -CAP_COAST_DEG]].some(([dx, dy]) => inPolys(r[1] + dx, r[2] + dy, polys));
 const capOnLand = (r, polys) => [[0, 0], [CAP_NEAR_DEG, 0], [-CAP_NEAR_DEG, 0], [0, CAP_NEAR_DEG], [0, -CAP_NEAR_DEG]].some(([dx, dy]) => inPolys(r[1] + dx, r[2] + dy, polys));
 const capStats = { spans: 0, outside: 0, wikidata: 0, infobox: 0, popular: 0 };
 // Where a state has several capitals with no dates (Nantes and Rennes for Brittany, Madrid and Valladolid for Castile), the one that was the
@@ -3741,8 +3744,8 @@ const capInfobox = (rows, y) => {
   return capPopular(pool, y) || pool[0];
 };
 // The capital of a state with Wikipedia title `title` in year y, among the capitals on its land (polys): Wikidata's dated or single capital,
-// else the largest of Wikidata's undated ones, else the infobox's. CAP_SET's capitals are checked by hand and kept even where Natural Earth's coarse
-// coast leaves them offshore, as it does St Helier.
+// else the largest of Wikidata's undated ones, else the infobox's. CAP_SET's capitals, checked by hand, are kept within CAP_COAST_DEG of the land,
+// where Natural Earth's coarse coast leaves them offshore, as it does St Helier.
 const capPicker = (title, polys) => {
   const qid = capData.titles[title];
   if (CAP_SKIP.has(title)) return null;
@@ -3751,7 +3754,7 @@ const capPicker = (title, polys) => {
   const ib = ((capData.infobox || {})[title] || []).filter((r) => !drop.has(r[0]));
   if (!wd.length && !ib.length) return null;
   const land = new Map(), on = (r) => { if (!land.has(r)) land.set(r, capOnLand(r, polys)); return land.get(r); };
-  const wdLand = CAP_SET[title] ? wd : wd.filter(on), ibLand = ib.filter(on);
+  const wdLand = wd.filter((r) => on(r) || (CAP_SET[title] && capNearLand(r, polys))), ibLand = ib.filter(on);
   if (!wdLand.length && !ibLand.length) { capStats.outside++; return () => null; }
   return (y) => {
     let r = wdLand.length ? capitalIn(qid, wdLand, y) : null;
