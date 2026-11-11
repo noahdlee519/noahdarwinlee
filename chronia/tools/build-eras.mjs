@@ -1443,6 +1443,12 @@ const NAME_FIX = [
   ["Moche", "Salinar culture", -50, 99, { people: 1, wiki: "Salinar culture" }],
   ["Dumonii", "Dumnonii", -50, 49, { people: 1, wiki: "Dumnonii" }],
   ["Teotihuacan", "Central Mexican chiefdoms", -361, -101, { people: 1, wiki: "Cuicuilco" }],
+  ["Kingdom of Luang Phrabang", "Kingdom of Luang Phrabang", 1779, 1885, { ruler: "Siam" }],
+  ["Kingdom of Champasak", "Kingdom of Champasak", 1779, 1885, { ruler: "Siam" }],
+  ["Sultanate of Kedah", "Sultanate of Kedah", 1843, 1885, { ruler: "Siam" }],
+  ["Kedah-Perlis District", "Kedah-Perlis District", 1843, 1885, { ruler: "Siam" }],
+  ["Kelantan", "Kelantan", 1812, 1885, { ruler: "Siam" }],
+  ["Sultanate of Terengganu", "Sultanate of Terengganu", 1782, 1885, { ruler: "Siam" }],
   ["Goths", "Goths", 1, 206, { people: 1, wiki: "Goths" }],
   ["Gothia", "Goths", 207, 382, { people: 1, wiki: "Goths" }],
   ["Burgundians", "Burgundians", 1, 410, { people: 1, wiki: "Burgundians" }],
@@ -3633,6 +3639,49 @@ function snapTo1886(list) {
   console.log("snapped to CShapes' lines of 1886: " + took + " spans of " + new Set([...grown.keys()].map((o) => o.name)).size + " states took the thin pieces of their 1886 land that a neighbour held, " + Math.round(km2 / took || 0) + " km² a span on average, " + trimmed + " trims of neighbours, " + spared + " neighbours spared, " + hairs + " hairline pieces dropped, " + filled + " groups of spans from " + SNAP_FILL.first + " to " + SNAP_FILL.last + " took " + Math.round(filledKm2) + " km² of blank steps near Germany and Switzerland, " + Math.round((Date.now() - t0) / 1000) + " s; " + list.length + " spans to " + out.length);
   return out;
 }
+const BACKDATE = [
+  ["Congo Free State", 1885, "Kingdom of Belgium", 5], ["Mahdist State", 1885, "", 0], ["Kamerun", 1885, "German Empire", 1], ["South West Africa", 1885, "German Empire", 1],
+  ["German New Guinea", 1885, "German Empire", 1], ["British Somaliland", 1885, "United Kingdom", 1], ["Bechuanaland", 1885, "United Kingdom", 2],
+  ["British Bechuanaland", 1885, "United Kingdom", 1], ["Spanish West Africa", 1885, "Kingdom of Spain", 2], ["Eritrea", 1885, "Kingdom of Italy", 1],
+  ["Oil Rivers Protectorate", 1885, "United Kingdom", 2], ["French Congo", 1885, "French Third Republic", 1], ["Gabon", 1885, "French Third Republic", 1], ["Tunisia", 1881, "French Third Republic", 2], ["Bukhara", 1873, "Russian Empire", 2, ["Emirate of Bukhara"], "Russian Empire"],
+  ["Khiva", 1873, "Russian Empire", 2, ["Khanate of Khiva"], "Russian Empire"], ["Cambodia", 1871, "French Third Republic", 1], ["Oman", 1861, "", 0, ["Sultanate of Oman"]],
+  ["Emirate of Nejd", 1871, "", 0, ["Emirate of Nejd"]], ["Emirate of Afghanistan", 1881, "", 0, ["Emirate of Afghanistan"]]
+];
+const backdate = (list) => {
+  const mPath = resolve(out, "modern.json"), hPath = resolve(out, "modern-hi.json");
+  if (!existsSync(mPath) || !existsSync(hPath)) { console.log("backdate: no earlier build of 1886 to read, left out"); return list; }
+  const m = JSON.parse(readFileSync(mPath, "utf8")), hi = JSON.parse(readFileSync(hPath, "utf8")).hi, names = JSON.parse(readFileSync(resolve(out, "eras.json"), "utf8")).polities.map((p) => (Array.isArray(p) ? p[0] : p.n));
+  const geoms = client.feature(hi, hi.objects.p).features;
+  let made = 0, cut = 0;
+  for (const [name, first, ruler, status, replaces = [], giveTo] of BACKDATE) {
+    const polys = [];
+    m.rows.forEach((r, i) => { if (names[r[0]] === name && r[2] <= 0 && (r[3] >= 0 || r[3] === -1) && geoms[i].geometry) polys.push(...rewind(polysOf(geoms[i].geometry))); });
+    if (!polys.length) { console.log("backdate: no " + name + " on 1 January 1886"); continue; }
+    const shape = rewind(clip.union(...polys.map((q) => [q]))), sm = { first, last: DATED_TO, polys: shape, box: boxOf(shape) };
+    const given = [];
+    list = list.flatMap((s) => {
+      if (!replaces.includes(s.name) || s.last < first) return [s];
+      const rest = tryClip(clip.difference, s.polys, shape);
+      if (giveTo && rest && rest.length) given.push({ first: Math.max(first, s.first), last: s.last, polys: rewind(rest) });
+      return s.first < first ? [{ ...s, last: first - 1 }] : [];
+    });
+    const edits = [];
+    for (const g of given) for (const t of list) {
+      if (t.name !== giveTo || t.last < g.first || t.first > g.last) continue;
+      edits.push({ base: t, first: Math.max(g.first, t.first), last: Math.min(g.last, t.last), polys: g.polys, add: true });
+    }
+    if (edits.length) list = reshape(list, edits, true).map((s) => (s.box ? s : withBox(s)));
+    const before = list.length;
+    const had = new Set(list);
+    list = carve(list, sm).map((s) => (had.has(s) ? s : withBox(s)));
+    cut += list.length - before;
+    list.push(withBox({ name, ruler, part: "", people: 0, b: 2, status, first, last: DATED_TO, polys: shape, wiki: name, src: "backdate" }));
+    made++;
+  }
+  console.log("backdate: " + made + " states given their shape of 1886 from the year they began, " + cut + " pieces cut from the spans they cover");
+  return list;
+};
+dated = backdate(dated);
 dated = snapTo1886(dated);
 
 const CAP_FROM = DATED_FROM, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
@@ -3664,6 +3713,7 @@ const CAP_SET = {
   // Wikidata has no capital under this title. "Capital of the Netherlands" has Amsterdam the capital since 1814, as Wikidata has it for the
   // Netherlands before and after; its infobox gives The Hague and Brussels, between which the government moved.
   "United Kingdom of the Netherlands": [["Amsterdam", 4.894, 52.373, null, null, 0, null]],
+  "Duchy of Holstein": [["Glückstadt", 9.422, 53.792, 1649, 1833, 0, null]],
   "Shang dynasty": [["Zhengzhou", 113.684, 34.764, -1600, -1301, 0, null], ["Yin", 114.319, 36.123, -1300, -1046, 0, null]]
 };
 const capsPath = resolve(here, "capitals-wikidata.json");
@@ -3760,7 +3810,7 @@ const capPicker = (title, polys) => {
   if (CAP_SKIP.has(title)) return null;
   const drop = new Set(CAP_DROP.filter((d) => d[0] === title).map((d) => d[1]));
   const wd = (CAP_SET[title] || (qid && capData.caps[qid]) || []).filter((r) => !/^Q\d+$/.test(r[0]) && !drop.has(r[0]));
-  const ib = ((capData.infobox || {})[title] || []).filter((r) => !drop.has(r[0]));
+  const ib = CAP_SET[title] ? [] : ((capData.infobox || {})[title] || []).filter((r) => !drop.has(r[0]));
   if (!wd.length && !ib.length) return null;
   const land = new Map(), on = (r) => { if (!land.has(r)) land.set(r, capOnLand(r, polys)); return land.get(r); };
   const wdLand = wd.filter((r) => on(r) || (CAP_SET[title] && capNearLand(r, polys))), ibLand = ib.filter(on);
