@@ -19,6 +19,7 @@ export const CITY_SINCE = {
   "Esztergom": 972, "Székesfehérvár": 972, "Veszprém": 1000, "Olomouc": 1055, "Brno": 1091, "Bamberg": 1007, "Roskilde": 980, "Trondheim": 997,
   "Kutaisi": 800, "Ganja": 859, "Vidin": 900, "Freiburg": 1120, "Bern": 1191, "Stralsund": 1234, "Rostock": 1218, "Elbląg": 1237, "Toruń": 1233,
   "Tartu": 1030, "Kostroma": 1152, "Innsbruck": 1180, "Graz": 1128,
+  "Klaipėda": 1252, "Lviv": 1256, "Kaunas": 1361, "Famagusta": 1291, "Smederevo": 1430, "Kruševac": 1371, "Iași": 1408, "Suceava": 1388,
   "Stockholm": 1252, "Madrid": 865, "Warsaw": 1300, "Riga": 1201, "Tallinn": 1219, "Vilnius": 1323, "Kaliningrad": 1255, "Lübeck": 1143,
   "Munich": 1158, "Dresden": 1206, "Leipzig": 1165, "Hamburg": 810, "Bremen": 787, "Copenhagen": 1167, "Edinburgh": 600, "Dublin": 841,
   "Oslo": 1048, "Bergen": 1070, "Helsinki": 1550, "Turku": 1229, "Gothenburg": 1621, "Kraków": 900, "Prague": 880, "Wrocław": 900,
@@ -220,7 +221,15 @@ export const CITY_ADD = [
   ["Landshut", 12.16, 48.53, 1204, null, [[1204, 1], [1300, 5], [1800, 8], [2020, 73]]],
   ["Teruel", -1.11, 40.35, 1171, null, [[1171, 1], [1300, 4], [1800, 8], [2020, 36]]],
   ["Plasencia", -6.09, 40.03, 1186, null, [[1186, 1], [1300, 4], [1800, 6], [2020, 40]]],
-  ["Kerak", 35.7, 31.19, 1142, null, [[1142, 1], [1300, 3], [1800, 2], [2020, 30]]]
+  ["Kerak", 35.7, 31.19, 1142, null, [[1142, 1], [1300, 3], [1800, 2], [2020, 30]]],
+  // From 1251 to 1444: the Teutonic Order's and the Hanse's towns, the Black Sea's trading posts, and the new princes' seats.
+  ["Malbork", 19.03, 54.04, 1274, null, [[1274, 1], [1400, 3], [1800, 3], [2020, 38]]],
+  ["Kalmar", 16.37, 56.67, 1250, null, [[1250, 1], [1400, 3], [1800, 5], [2020, 41]]],
+  ["Vyborg", 28.75, 60.7, 1293, null, [[1293, 1], [1400, 2], [1800, 3], [2020, 76]]],
+  ["Azov", 39.42, 47.11, 1316, null, [[1316, 2], [1395, 1], [1500, 3], [1800, 2], [2020, 80]]],
+  ["Novo Brdo", 21.43, 42.62, 1319, null, [[1319, 1], [1400, 10], [1455, 2], [1800, 0.5], [2020, 7]]],
+  ["Târgoviște", 25.46, 44.94, 1396, null, [[1396, 2], [1500, 6], [1800, 5], [2020, 73]]],
+  ["Bilhorod-Dnistrovskyi", 30.35, 46.2, 1300, null, [[1300, 2], [1450, 8], [1800, 5], [2020, 50]]]
 ];
 
 export const REBA_FIX = {
@@ -257,6 +266,14 @@ export const REBA_FIX = {
   "Kostroma": { pts: [[1152, 1], [1300, 5], [1500, 5]] },
   "Innsbruck": { pts: [[1180, 1], [1300, 3]] },
   "Graz": { pts: [[1128, 1], [1300, 4]] },
+  "Klaipėda": { pts: [[1252, 1], [1500, 2]] },
+  "Lviv": { pts: [[1256, 2], [1400, 6], [1500, 8]] },
+  "Kaunas": { pts: [[1361, 1], [1500, 4]] },
+  "Famagusta": { pts: [[1291, 6], [1400, 10], [1600, 3]] },
+  "Smederevo": { pts: [[1430, 4], [1600, 3]] },
+  "Kruševac": { pts: [[1371, 3], [1500, 2]] },
+  "Iași": { pts: [[1408, 2], [1600, 5]] },
+  "Suceava": { pts: [[1388, 3]] },
   "Gelibolu": { before: 1400 },
   "Ruhr": { drop: true },
   "Liaotung": { drop: true },
@@ -842,6 +859,10 @@ export const CITY_NAMES = {
   "Alanya": [[1100, "Kalonoros"], [1221, "Alaiye"], [1935, "Alanya"]],
   "Chełmno": [[1065, "Chełmno"], [1233, "Kulm"], [1466, "Chełmno"], [1772, "Kulm"], ["1920-01-18", "Chełmno"]],
   "Elbląg": [[1237, "Elbing"], [1945, "Elbląg"]],
+  "Klaipėda": [[1252, "Memel"], [1923, "Klaipėda"]],
+  "Malbork": [[1274, "Marienburg"], [1945, "Malbork"]],
+  "Azov": [[1316, "Tana"], [1475, "Azov"]],
+  "Bilhorod-Dnistrovskyi": [[1300, "Moncastro"], [1484, "Akkerman"], [1944, "Bilhorod-Dnistrovskyi"]],
   "Mértola": [[712, "Martulah"], [1238, "Mértola"]],
   "Tortosa": [[500, "Dertosa"], [714, "Turtusha"], [1148, "Tortosa"]],
   "Girona": [[500, "Girona"], [718, "Jarunda"], [785, "Girona"]],

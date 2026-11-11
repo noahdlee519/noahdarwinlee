@@ -1120,4 +1120,526 @@ export function high(h) {
     "+ 1239 MONG; 1242 GH");
   add(RO("Suceava", "Botoșani", "Iași", "Neamț", "Bacău", "Vaslui", "Vrancea", "Galați").concat(["MDA/*"], RO("Mehedinți", "Dolj", "Gorj", "Vâlcea", "Olt", "Argeș", "Teleorman", "Giurgiu",
     "Dâmbovița", "Prahova", "Ilfov", "Bucharest", "Ialomița", "Călărași", "Buzău", "Brăila")), "+ 1241 MONG; 1242 GH");
+
+  // ——————————————— 1251 to 1444 ———————————————
+  const BURG = "Burgundian State", FR = { name: FRANCE, wiki: FRANCE, part: "" };
+
+  // ——— Britain and Ireland, 1251 to 1444 ———
+  // Wales: Llywelyn ap Gruffudd recovers the Perfeddwlad (1256) and Powys Wenwynwyn (1257), is the Deheubarth princes'
+  // overlord (1258), and Prince of Wales by the Treaty of Montgomery (29 September 1267); Aberconwy (9 November 1277) gives the
+  // Perfeddwlad and Ceredigion back to the Crown and Powys to Gruffydd ap Gwenwynwyn; Llywelyn falls (11 December 1282) and
+  // Dafydd is taken (22 June 1283), and the Statute of Rhuddlan (3 March 1284) makes the Principality of Wales of the Crown's
+  // lands, the rest the Marches. Owain Glyndŵr's rising holds much of Wales from 1403 to the fall of Harlech (1409). Scotland
+  // takes the Isles and Man by the Treaty of Perth (2 July 1266); the MacDonalds' Lordship of the Isles is the Scots' vassal from
+  // 1336; Man is the English crown's from 1333. Scotland is fought over from Balliol's abdication (10 July 1296) to Inverurie in
+  // the north (23 May 1308) and Bannockburn in the south (24 June 1314), and the south again from the Treaty of Newcastle (12 June
+  // 1334) to the taking of Edinburgh (17 April 1341). Ireland: Thomond's O'Briens take Clare back at Dysert O'Dea (10 May 1318);
+  // Edward Bruce fights for Ulster (26 May 1315 to Faughart, 14 October 1318); after the Brown Earl's murder (6 June 1333) inner
+  // Ulster passes to the Clandeboye O'Neills and Iveagh's Magennises, and Connacht to the Burkes of Clanricarde and Mac William
+  // Íochtar; Art MacMurrough Kavanagh is King of Leinster from 1375.
+  later("GWY", [["1267-09-29", { name: "Principality of Wales", wiki: "Principality of Wales" }]]);
+  later("DEH", [["1258-01-01", { ruler: "Kingdom of Gwynedd", status: 5 }], ["1267-09-29", { ruler: "Principality of Wales" }], ["1277-11-09", { ruler: ENGLAND }]]);
+  own("PWAL", "Principality of Wales", { ruler: ENGLAND, status: 5 });
+  own("GLYd", "Wales", { wiki: "Glyndŵr rising", claims: ["Owain Glyndŵr", ENGLAND] });
+  own("SCWI", "Scotland", { wiki: "First War of Scottish Independence", claims: ["Kingdom of Scotland", ENGLAND] });
+  own("SCW2", "Scotland", { wiki: "Second War of Scottish Independence", claims: ["Kingdom of Scotland", ENGLAND] });
+  own("LISL", "Lordship of the Isles", { ruler: "Kingdom of Scotland", status: 5 });
+  own("MANN", "Lordship of Mann", { wiki: "Isle of Man", ruler: ENGLAND, status: 5 });
+  own("BRUd", "Ulster", { wiki: "Bruce campaign in Ireland", claims: ["Edward Bruce", "Lordship of Ireland"] });
+  own("CLAB", "Clandeboye");
+  own("IVEA", "Iveagh");
+  own("CLAN", "Clanricarde");
+  own("MWI", "Mac William Íochtar");
+  add(G("GBR", "Gwynedd", "Anglesey"), "+ 1283-06-22 PWAL; 1403-07-01 GLYd; 1409-02-01 PWAL");
+  add(G("GBR", "Conwy"), "+ 1256 GWY; 1283-06-22 PWAL; 1403-07-01 GLYd; 1409-02-01 PWAL");
+  add(G("GBR", "Denbighshire"), "+ 1256 GWY; 1277-11-09 WMAR; 1403-07-01 GLYd; 1409-02-01 WMAR");
+  add(G("GBR", "Flintshire"), "+ 1256 GWY; 1277-11-09 WES; 1284-03-03 PWAL");
+  add(G("GBR", "Powys"), "+ 1257 GWY; 1277-11-09 PWEN; 1283-06-22 WMAR; 1403-07-01 GLYd; 1409-02-01 WMAR");
+  add(G("GBR", "Wrexham"), "+ 1282-12-11 WMAR");
+  add(h.CEREDIGION, "+ 1277-11-09 WES; 1284-03-03 PWAL; 1403-07-01 GLYd; 1408-09-01 PWAL");
+  add(G("GBR", "Carmarthenshire"), "+ 1284-03-03 PWAL; 1403-07-01 GLYd; 1409-02-01 PWAL");
+  add(G("GBR", "Outer Hebrides"), "+ 1266-07-02 ALB; 1336 LISL");
+  add("IMN/*", "+ 1266-07-02 ALB; 1333 MANN");
+  add(G("GBR", "Fife", "Perth and Kinross", "Angus", "Dundee", "Aberdeen", "Aberdeenshire", "Moray", "Highland", "Argyll and Bute"), "+ 1296-07-10 SCWI; 1308-05-23 ALB");
+  add(G("GBR", "Falkirk", "Stirling", "Clackmannanshire", "North Lanarkshire", "South Lanarkshire", "Glasgow", "East Dunbartonshire", "West Dunbartonshire", "Renfrewshire",
+    "East Renfrewshire", "Inverclyde", "North Ayrshire", "East Ayrshire", "South Ayrshire"), "+ 1296-07-10 SCWI; 1314-06-24 ALB");
+  add(G("GBR", "Scottish Borders", "Dumfries and Galloway", "East Lothian", "Midlothian", "Edinburgh", "West Lothian"), "+ 1296-07-10 SCWI; 1314-06-24 ALB; 1334-06-12 SCW2; 1341-04-17 ALB");
+  add(["IRL:Clare/*"], "+ 1276 LIRE; 1318-05-10 THOM");
+  add(G("GBR", "Antrim", "Ballymena", "Ballymoney", "Moyle", "Larne", "Newtownabbey", "Belfast", "Lisburn", "Castlereagh"), "+ 1315-05-26 BRUd; 1318-10-14 LIRE; 1333-06-06 CLAB");
+  add(G("GBR", "Newry and Mourne", "Banbridge", "Craigavon"), "+ 1315-05-26 BRUd; 1318-10-14 LIRE; 1333-06-06 IVEA");
+  add(G("GBR", "Down", "Ards", "North Down", "Carrickfergus"), "+ 1315-05-26 BRUd; 1318-10-14 LIRE");
+  add(["IRL:Galway/*"], "+ 1333-06-06 CLAN");
+  add(["IRL:Mayo/*"], "+ 1333-06-06 MWI");
+  add(["IRL:Sligo/*"], "+ 1333-06-06 CON");
+  add(G("IRL", "Wicklow", "Carlow"), "+ 1375 LEI");
+
+  // ——— France and the Burgundian State, 1251 to 1444 ———
+  // The crown takes Toulouse and Poitou with the Auvergne at Alphonse's death (21 August 1271), Angoulême (1308), Champagne with
+  // Louis X (1314), Anjou with Philip VI (1328, an appanage again from 1360), and Lille and Douai (1312, Flanders' again from
+  // 1369); it holds Flanders from 1300 to Courtrai (11 July 1302). Gascony is England's under the French crown: the Agenais from
+  // the Treaty of Amiens (23 May 1279) to the War of Saint-Sardos (1324), Gascony confiscated from 1294 to 1303, and by the
+  // Treaty of Brétigny (24 October 1360) a sovereign Aquitaine of Poitou, Saintonge, Angoumois, Limousin, Périgord, Quercy,
+  // Rouergue, and the Agenais, the Black Prince's principality from 1362, which Charles V takes back from 1369 (Quercy and
+  // Rouergue 1369, the Agenais 1370, Poitiers and La Rochelle 1372, Limousin 1374, Périgord 1377). The appanages: Bourbon
+  // (1327), Berry and the Auvergne (Jean, 1360 to 1416), Orléans (1344 to 1375, again from 1392, with Blois from 1397); Armagnac
+  // turns from the English (30 June 1368); Foix holds Béarn (1290) and Bigorre (1425). Brittany is fought over from Duke John
+  // III's death (30 April 1341) to Auray (29 September 1364). Henry V's Normandy (lower Normandy 1418, Rouen 19 January 1419), the
+  // Lancastrian France of the Treaty of Troyes (21 May 1420) with Maine (1425), until Charles VII's coronation campaign (Troyes
+  // and Reims, July 1429), Chartres (1432), and Paris (13 April 1436). The Burgundian State from Louis of Male's death (30 January
+  // 1384), which brought Flanders, Artois, and the County of Burgundy to Philip the Bold: Namur (1429), Brabant (1430), Holland
+  // and Hainaut (1433), the Somme towns and the Auxerrois by the Treaty of Arras (21 September 1435), and Luxembourg (1443).
+  own("BOUR", "Duchy of Bourbon", { part: FRANCE });
+  own("BERY", "Duchy of Berry", { part: FRANCE });
+  own("ORLd", "Duchy of Orléans", { wiki: "Duke of Orléans", part: FRANCE });
+  own("ARMG", "County of Armagnac", { part: FRANCE });
+  own("BREd", "Brittany", { wiki: "War of the Breton Succession", claims: ["House of Montfort", "House of Blois"] });
+  own("LNMD", "Duchy of Normandy", { wiki: "Lancastrian Normandy", ruler: ENGLAND, status: 5 });
+  own("LANC", "Lancastrian France", { wiki: "Dual monarchy of England and France" });
+  own("SOMT", "Somme towns", { wiki: "Treaty of Arras (1435)", part: BURG });
+  later("TOU", [["1271-08-21", FR]]);
+  later("POIT", [["1271-08-21", FR]]);
+  later("ANGO", [["1308-01-01", FR]]);
+  later("CHA", [["1314-11-29", FR]]);
+  later("ANJ", [["1328-04-01", FR], ["1360-10-25", { name: "Duchy of Anjou", wiki: "Duchy of Anjou", part: FRANCE }]]);
+  later("BLO", [["1397-05-22", { name: "Duchy of Orléans", wiki: "Duke of Orléans" }]]);
+  later("AQD", [["1360-10-24", { status: 5 }], ["1362-07-19", { name: "Principality of Aquitaine", wiki: "Principality of Aquitaine" }], ["1372-10-05", { name: "Duchy of Aquitaine", wiki: "Duchy of Aquitaine" }]]);
+  later("BURD", [["1361-11-21", FR], ["1363-09-06", { name: "Duchy of Burgundy", wiki: "Duchy of Burgundy", part: FRANCE }], ["1384-01-30", { part: BURG }]]);
+  for (const k of ["FLA", "ART", "FCB"]) later(k, [["1384-01-30", { part: BURG }]]);
+  later("NAM", [["1429-03-01", { part: BURG }]]);
+  later("LOU", [["1430-08-04", { part: BURG }]]);
+  later("HOL", [["1433-04-12", { part: BURG }]]);
+  later("HAI", [["1433-04-12", { part: BURG }]]);
+  add(F("Nord"), "+ 1300-05-01 WFR; 1302-07-11 FLA; 1312-07-11 WFR; 1369-06-19 FLA");
+  add(B("West Flanders", "East Flanders"), "+ 1300-05-01 WFR; 1302-07-11 FLA");
+  add(F("Lot-et-Garonne"), "+ 1271-08-21 WFR; 1279-05-23 AQD; 1324-09-22 WFR; 1360-10-24 AQD; 1370 WFR");
+  add(F("Gironde", "Landes"), "+ 1294-06-01 WFR; 1303-05-20 AQD");
+  add(F("Vienne", "Deux-Sèvres", "Vendée"), "+ 1360-10-24 AQD; 1372-08-07 BERY; 1416-06-15 WFR");
+  add(F("Charente-Maritime"), "+ 1360-10-24 AQD; 1372-09-08 WFR");
+  add(F("Charente"), "+ 1360-10-24 AQD; 1372-09-08 WFR");
+  add(F("Haute-Vienne", "Corrèze"), "+ 1360-10-24 AQD; 1374 WFR");
+  add(F("Dordogne"), "+ 1360-10-24 AQD; 1377 WFR");
+  add(F("Lot", "Aveyron"), "+ 1360-10-24 AQD; 1369 WFR");
+  add(F("Hautes-Pyrénées"), "+ 1406 WFR; 1425 FOIX");
+  add(F("Gers"), "+ 1368-06-30 ARMG");
+  add(F("Pyrenees-Atlantics"), "+ 1290-04-26 FOIX");
+  add(F("Allier"), "+ 1327-12-27 BOUR");
+  add(F("Indre", "Cher"), "+ 1360-10-24 BERY; 1416-06-15 WFR");
+  add(F("Puy-de-Dôme", "Cantal"), "+ 1360-10-24 BERY; 1416-06-15 BOUR");
+  add(F("Loiret"), "+ 1344 ORLd; 1375 WFR; 1392-06-04 ORLd");
+  add(F("Loir-et-Cher"), "+ 1397-05-22 ORLd");
+  add(F("Finistère", "Morbihan", "Côtes-d'Armor", "Ille-et-Vilaine", "Loire-Atlantique"), "+ 1341-04-30 BREd; 1364-09-29 BRE");
+  add(F("Calvados", "Orne", "Manche"), "+ 1418-02-16 LNMD");
+  add(F("Seine-Maritime", "Eure"), "+ 1419-01-19 LNMD");
+  add(F("Paris", "Hauts-de-Seine", "Seine-Saint-Denis", "Val-de-Marne", "Val-d'Oise", "Yvelines", "Essonne", "Seine-et-Marne"), "+ 1420-05-21 LANC; 1436-04-13 WFR");
+  add(F("Eure-et-Loir"), "+ 1420-05-21 LANC; 1432-04-12 WFR");
+  add(F("Marne", "Aube"), "+ 1420-05-21 LANC; 1429-07-10 WFR");
+  add(F("Oise", "Aisne"), "+ 1420-05-21 LANC; 1429-08-18 WFR");
+  add(F("Sarthe", "Mayenne"), "+ 1425-08-10 LANC");
+  add(F("Somme"), "+ 1420-05-21 LANC; 1435-09-21 SOMT");
+  add(F("Yonne"), "+ 1435-09-21 BURD");
+
+  // ——— Iberia and the Maghreb, 1251 to 1444 ———
+  // Castile takes Niebla (1262), Cádiz and Jerez (1262 and 1264), and Murcia after the Mudéjar revolt (1266), which Aragon holds
+  // from 1296 to the Treaty of Torrellas (8 August 1304); Gibraltar is Castile's from 1309 to the Marinids' taking of it (17 June
+  // 1333) and Granada's from 1374. The Kingdom of Majorca stands apart under James II from his father's death (27 July 1276) with
+  // Roussillon, until Peter IV takes it back (1344). Ceuta is the Azafids' from 1249, Granada's from 1306, the Marinids' from 1309,
+  // and Portugal's from 21 August 1415. The Marinids end the Almohads at Marrakesh (8 September 1269), and hold Tlemcen and the
+  // Zayyanids' land twice (1337 to 1348 and 1352 to 1359); the Hafsids hold Algiers from 1235 and the Zayyanids the land to the
+  // Chelif from 1236.
+  own("AZAF", "Azafid dynasty");
+  later("MAJK", [["1276-07-27", { part: "" }], ["1344-07-15", { part: CROA }]]);
+  add(F("Pyrénées-Orientales"), "+ 1276-07-27 MAJK");
+  add(E("Huelva"), "+ 1262 CAS");
+  add(E("Cádiz"), "+ 1264 CAS");
+  add(["GIB/*"], "+ 1309-09-12 CAS; 1333-06-17 MARS; 1374 GRAN");
+  add(E("Murcia"), "+ 1266-02-01 CAS; 1296-04-01 VALK; 1304-08-08 CAS");
+  add(["ESP/Ceuta"], "+ 1249 AZAF; 1306 GRAN; 1309 MARS; 1415-08-21 PORC");
+  add(["ESP/Melilla"], "+ 1269-09-08 MARS");
+  add(M("Tangier-Tetouan", "Gharb-Chrarda-Béni Hssen", "Rabat-Salé-Zemmour-Zaër", "Grand Casablanca", "Chaouia-Ouardigha", "Doukkala Abda", "Marrakesh-Tensift-El Haouz", "Tadla-Azilal",
+    "Suss-Massa-Draa", "Taza-Al Hoceïma-Taounate"), "+ 1269-09-08 MARS");
+  add(Z("Algiers", "Blida", "Tipasa", "Médéa"), "+ 1235 HAFS");
+  add(Z("Chlef", "Aïn Defla", "Tissemsilt", "Tiaret", "Relizane", "Mascara", "Mostaganem", "Saïda"), "+ 1236 ZAYY; 1337-05-01 MARS; 1348 ZAYY; 1352-06-01 MARS; 1359-02-01 ZAYY");
+  add(Z("Tlemcen", "Aïn Témouchent", "Oran", "Sidi Bel Abbès", "Naama").concat(M("Oriental")), "+ 1337-05-01 MARS; 1348 ZAYY; 1352-06-01 MARS; 1359-02-01 ZAYY");
+
+  // ——— The Empire, Bohemia, and Poland, 1251 to 1444 ———
+  // Ottokar II of Bohemia holds Austria (1251), Styria (Hungary's from 1254 to Kressenbrunn, 12 July 1260), and Carinthia
+  // (1269) until the Treaty of Vienna (21 November 1276); the Habsburgs hold Austria and Styria from 1282, and their Swabian
+  // lands, with Kyburg's (1264), are Further Austria. The Duchy of Swabia ends with Conradin (29 October 1268), and its land is
+  // the Empire's own but for its counts' and cities'; Württemberg takes Urach (1265), Tübingen (1342), and Calw (1345). The Swiss
+  // Confederacy from the Federal Charter (1 August 1291): Lucerne (1332), Zürich (1351), Glarus and Zug (1352), Bern (1353), and the
+  // Aargau (1415). Bavaria is parted into Upper and Lower Bavaria (28 March 1255), whole again under Louis IV (1340), parted again
+  // (1349), and in three from 1392 (Munich, Landshut, Ingolstadt); the Upper Palatinate goes to the Palatine line by the Treaty of
+  // Pavia (4 August 1329). The burgraves of Nuremberg hold Bayreuth (1260) and Ansbach (1331). Saxony is parted into Lauenburg and
+  // Wittenberg (1296), Wittenberg's dukes are electors by the Golden Bull (25 December 1356), and its electorate passes to the
+  // Wettin margraves of Meissen (6 January 1423). The Thuringian succession war ends with Hesse a landgraviate (1264). Brunswick
+  // and Lüneburg part (31 March 1269). Mecklenburg is a duchy (8 July 1348) and buys Schwerin (1358); Rügen passes to Pomerania
+  // (1325); Upper Lusatia is Brandenburg's from 1253 and Bohemia's from 1319, Lower Lusatia Brandenburg's from 1304 and Bohemia's
+  // from 1367. Schleswig is a duchy under the Danish crown from 1232. In the west, Lyon goes to France (10 April 1312), the
+  // Dauphiné to the French king's heir (16 July 1349), the Comtat Venaissin to the pope (1274), Bresse (1272), Vaud (1260), the
+  // Genevois (1401), and Nice (28 September 1388) to Savoy, a duchy from 19 February 1416. Bohemia is fought over in the Hussite
+  // Wars, from 1420 to Sigismund's acceptance (14 August 1436). Poland is a kingdom again from Władysław I's coronation (20 January
+  // 1320), with Masovia apart and Silesia's duchies Bohemia's vassals (Trentschin, 24 August 1335); it takes Galicia (Lviv, 1349),
+  // which Hungary holds from Louis's accession in Poland (17 November 1370) to 1387. The Teutonic Order completes the conquest of
+  // Prussia (1283), takes Pomerelia (Danzig, 13 November 1308), buys Danish Estonia (29 August 1346), holds Gotland (1398 to 1408)
+  // and Samogitia (Raciąż, 22 May 1404, to its rising of 26 May 1409); the Livonian Order takes Curonia (1267) and Semigallia
+  // (1290).
+  own("SWIS", "Old Swiss Confederacy", { part: HRE });
+  own("UBAV", "Duchy of Upper Bavaria", { part: HRE });
+  own("LBAV", "Duchy of Lower Bavaria", { part: HRE });
+  own("BMUN", "Duchy of Bavaria-Munich", { part: HRE });
+  own("BLAN", "Duchy of Bavaria-Landshut", { part: HRE });
+  own("BING", "Duchy of Bavaria-Ingolstadt", { part: HRE });
+  own("NURB", "Burgraviate of Nuremberg", { part: HRE });
+  own("SXWB", "Duchy of Saxe-Wittenberg", { part: HRE }, [["1356-12-25", { name: "Electorate of Saxony", wiki: "Electorate of Saxony" }]]);
+  own("HESL", "Landgraviate of Hesse", { part: HRE });
+  own("LUNE", "Principality of Lüneburg", { part: HRE });
+  own("SCHL", "Duchy of Schleswig", { ruler: DENMARK, status: 5 });
+  own("DAUF", "Dauphiné", { part: FRANCE });
+  own("HUSd", "Bohemia", { wiki: "Hussite Wars", claims: ["Hussites", "Kingdom of Bohemia"] });
+  own("POLK", "Kingdom of Poland", { wiki: "Kingdom of Poland (1320–1385)" });
+  own("GVWd", "Galicia", { wiki: "Galicia–Volhynia Wars", claims: ["Kingdom of Poland", "Grand Duchy of Lithuania"] });
+  later("AUSM", [["1251-01-01", { ruler: "Kingdom of Bohemia", status: 5 }], ["1276-11-21", { ruler: "", status: 0 }]]);
+  later("STYR", [["1254-01-01", { part: "", ruler: "Kingdom of Hungary", status: 5 }], ["1260-07-12", { ruler: "Kingdom of Bohemia" }], ["1276-11-21", { part: HRE, ruler: "", status: 0 }]]);
+  later("CARD", [["1269-10-27", { ruler: "Kingdom of Bohemia", status: 5 }], ["1276-11-21", { ruler: "", status: 0 }]]);
+  later("SWA", [["1268-10-29", { name: HRE, wiki: HRE, part: "" }]]);
+  later("KYB", [["1264-11-27", { name: "County of Habsburg", wiki: "House of Habsburg" }], ["1282-12-27", { name: "Further Austria", wiki: "Further Austria" }]]);
+  later("HABS", [["1282-12-27", { name: "Further Austria", wiki: "Further Austria" }]]);
+  later("SAXD", [["1296-01-01", { name: "Duchy of Saxe-Lauenburg", wiki: "Saxe-Lauenburg" }]]);
+  later("MEIS", [["1423-01-06", { name: "Electorate of Saxony", wiki: "Electorate of Saxony" }]]);
+  later("BRUL", [["1269-03-31", { name: "Principality of Brunswick-Wolfenbüttel", wiki: "Principality of Brunswick-Wolfenbüttel" }]]);
+  later("MECK", [["1348-07-08", { name: "Duchy of Mecklenburg", wiki: "Duchy of Mecklenburg" }]]);
+  later("SCHW", [["1358-12-07", { name: "Duchy of Mecklenburg", wiki: "Duchy of Mecklenburg" }]]);
+  later("RUGEN", [["1325-11-08", { name: "Duchy of Pomerania", wiki: "Duchy of Pomerania", ruler: "", status: 0, part: HRE }]]);
+  later("SAVC", [["1416-02-19", { name: "Duchy of Savoy", wiki: "Duchy of Savoy" }]]);
+  later("GEL", [["1339-03-19", { name: "Duchy of Guelders", wiki: "Duchy of Guelders" }]]);
+  later("LUXC", [["1354-03-13", { name: "Duchy of Luxembourg", wiki: "Duchy of Luxembourg" }], ["1443-11-22", { part: BURG }]]);
+  later("BAR", [["1354-01-01", { name: "Duchy of Bar", wiki: "Duchy of Bar" }]]);
+  later("JUL", [["1356-01-01", { name: "Duchy of Jülich", wiki: "Duchy of Jülich" }]]);
+  later("BERG", [["1380-05-24", { name: "Duchy of Berg", wiki: "Duchy of Berg" }]]);
+  later("CLEV", [["1417-04-28", { name: "Duchy of Cleves", wiki: "Duchy of Cleves" }]]);
+  later("SILD", [["1320-01-20", { part: "" }], ["1335-08-24", { ruler: "Kingdom of Bohemia", status: 5 }]]);
+  later("MAZD", [["1320-01-20", { part: "" }], ["1351-12-01", { ruler: "Kingdom of Poland", status: 5 }]]);
+  later("DENE", [["1346-08-29", { ruler: "", status: 0 }]]);
+  add(["AUT:Upper Austria/*", "AUT:Lower Austria/*", "AUT:Vienna/Vienna"], "+ 1251 BOH; 1276-11-21 AUSM");
+  add(["AUT:Styria/*"], "+ 1254 STYR");
+  add(G("CHE", "Uri", "Schwyz", "Nidwalden", "Obwalden"), "+ 1291-08-01 SWIS");
+  add(G("CHE", "Lucerne"), "+ 1332-11-07 SWIS");
+  add(G("CHE", "Zürich"), "+ 1218 EFR; 1351-05-01 SWIS");
+  add(G("CHE", "Glarus"), "+ 1352-06-04 SWIS");
+  add(G("CHE", "Zug"), "+ 1352-06-27 SWIS");
+  add(G("CHE", "Bern"), "+ 1218 EFR; 1353-03-06 SWIS");
+  add(G("CHE", "Solothurn"), "+ 1218 EFR");
+  add(G("CHE", "Aargau"), "+ 1415-04-30 SWIS");
+  add(G("CHE", "Vaud"), "+ 1260 SAVC");
+  add(DE("Baden-Württemberg", "Reutlingen"), "+ 1265 WURT");
+  add(DE("Baden-Württemberg", "Landkreis Tübingen"), "+ 1342 WURT");
+  add(DE("Baden-Württemberg", "Calw"), "+ 1345 WURT");
+  add(DE("Baden-Württemberg", "Breisgau-Hochschwarzwald", "Freiburg im Breisgau"), "+ 1368 HABS");
+  add(DE("Bavaria", "Landshut", "Landkreis Landshut", "Dingolfing-Landau", "Rottal-Inn", "Altötting", "Mühldorf a. Inn", "Straubing", "Straubing-Bogen", "Deggendorf", "Regen",
+    "Freyung-Grafenau", "Kelheim"), "+ 1255-03-28 LBAV; 1340-12-20 BAV; 1349-09-13 LBAV; 1392-11-19 BLAN");
+  add(DE("Bavaria", "München", "Landkreis München", "Freising", "Erding", "Dachau", "Fürstenfeldbruck", "Starnberg", "Ebersberg", "Rosenheim", "Landkreis Rosenheim", "Miesbach",
+    "Bad Tölz-Wolfratshausen", "Weilheim-Schongau", "Garmisch-Partenkirchen", "Landsberg am Lech"), "+ 1255-03-28 UBAV; 1340-12-20 BAV; 1349-09-13 UBAV; 1392-11-19 BMUN");
+  add(DE("Bavaria", "Ingolstadt", "Pfaffenhofen a.d. Ilm", "Neuburg-Schrobenhausen", "Aichach-Friedberg"), "+ 1255-03-28 UBAV; 1340-12-20 BAV; 1349-09-13 UBAV; 1392-11-19 BING");
+  add(DE("Bavaria", "Amberg", "Amberg-Sulzbach", "Schwandorf", "Neumarkt i.d. OPf.", "Neustadt a.d. Waldnaab", "Weiden i.d. Opf", "Tirschenreuth", "Cham"),
+    "+ 1255-03-28 UBAV; 1329-08-04 PALA");
+  add(DE("Bavaria", "Bayreuth", "Landkreis Bayreuth", "Kulmbach", "Hof", "Landkreis Hof", "Wunsiedel i. Fichtelgebirge"), "+ 1260 NURB");
+  add(DE("Bavaria", "Ansbach", "Landkreis Ansbach"), "+ 1331 NURB");
+  add(DE("Saxony-Anhalt", "Wittenberg"), "+ 1296 SXWB; 1423-01-06 MEIS");
+  add(DE("Hesse", "Kassel", "Landkreis Kassel", "Schwalm-Eder-Kreis", "Werra-Meißner-Kreis", "Marburg-Biedenkopf", "Landkreis Gießen", "Waldeck-Frankenberg"), "+ 1264 HESL");
+  add(DE("Lower Saxony", "Celle", "Landkreis Lüneburg", "Uelzen", "Harburg", "Heidekreis", "Lüchow-Dannenberg", "Gifhorn"), "+ 1269-03-31 LUNE");
+  add(DE("Saxony", "Bautzen", "Görlitz"), "+ 1253 BRAND; 1319 BOH");
+  add(DE("Brandenburg", "Spree-Neiße", "Cottbus", "Oberspreewald-Lausitz", "Dahme-Spreewald"), "+ 1304 BRAND; 1367 BOH");
+  add("DEU#schleswig", "+ 1232 SCHL");
+  add(F("Rhône"), "+ 1312-04-10 WFR");
+  add(F("Isère", "Drôme", "Hautes-Alpes"), "+ 1349-07-16 DAUF");
+  add(F("Vaucluse"), "+ 1274 PAP");
+  add(F("Ain"), "+ 1272 SAVC");
+  add(F("Haute-Savoie"), "+ 1401-08-05 SAVC");
+  add(F("Alpes-Maritimes"), "+ 1388-09-28 SAVC");
+  add(["CZE:Prague/*", "CZE:Central Bohemian/*", "CZE:South Bohemian/*", "CZE:Plzeň-/*", "CZE:Karlovy Vary/*", "CZE:Ústí nad Labem/*", "CZE:Liberec/*", "CZE:Hradec Králové/*",
+    "CZE:Pardubice/*"], "+ 1420-03-01 HUSd; 1436-08-14 BOH");
+  add(PL("Greater Poland", "Lesser Poland", "Łódź", "Świętokrzyskie", "Lublin", "Kuyavian-Pomeranian"), "+ 1320-01-20 POLK");
+  add(PL("Pomeranian"), "+ 1294-12-25 GPOL; 1308-11-13 TEUT");
+  add(PL("Warmian-Masurian").concat(RU("Kaliningrad")), "+ 1283 TEUT");
+  add(UA("Lviv", "Ivano-Frankivsk", "Ternopil").concat(PL("Podkarpackie")), "+ 1340-04-07 GVWd; 1349 POLK; 1370-11-17 HUNG; 1387 POLK");
+  add(["LTU:Klaipėda/*"], "+ 1252 LIVOR; 1328 TEUT");
+  add(["LTU:Marijampolė/*"], "+ 1283 TEUT; 1422-09-27 LITG");
+  add(["LTU:Telšiai/*", "LTU:Šiauliai/*", "LTU:Tauragė/*"], "+ 1404-05-22 TEUT; 1409-05-26 LITG");
+  add(G("SWE", "Gotland"), "+ 1361-07-27 DAN; 1398 TEUT; 1408 DAN");
+  add(G("EST", "Harju", "Lääne-Viru", "Ida-Viru", "Rapla"), "+ 1346-08-29 LIVOR");
+  add("LVA#curonians", "+ 1267 LIVOR");
+  add("LVA#semigallians", "+ 1290 LIVOR");
+
+  // ——— Italy, 1251 to 1444 ———
+  // Charles of Anjou takes the Kingdom of Sicily at Benevento (26 February 1266); the Sicilian Vespers (30 March 1282) part the
+  // island, the Aragonese Kingdom of Sicily (one with the Crown of Aragon from 25 July 1409, and with Malta from 1283), from the
+  // Angevin mainland, the Kingdom of Naples, which Alfonso V takes (12 June 1442). Aragon conquers Pisan Sardinia (Iglesias, 7
+  // February 1324) and, after Arborea's long war, takes Oristano (17 August 1420); Genoa takes Corsica after Meloria (6 August
+  // 1284). In the north the communes become lordships: the Visconti's Milan (Desio, 21 January 1277, a duchy from 11 May 1395),
+  // which takes Novara and Bergamo (1332), Cremona (1334), Vercelli and the Valtellina (1335), Piacenza (1336), Brescia (1337),
+  // Ticino (1340), Asti (1342, Orléans's from 1387), Parma (1346), Alessandria (1348), Bologna (1350 to 1360), Pavia (1359), and
+  // Verona and Vicenza from the Scaligeri (1387); the Scaligeri's Verona (1262), with Vicenza (1311) and for a time Padua (1328
+  // to 1337) and Treviso (1329 to 1339); the Carraresi's Padua (a commune from Ezzelino's fall in 1256); the Este's Ferrara (1264),
+  // Modena (1288), and Reggio (1409); the Bonacolsi's and Gonzagas' Mantua (1272, a march from 1433). Venice takes the terraferma:
+  // Treviso (1339, Austria's 1381 and Padua's 1384 to 1388), Vicenza and Belluno (1404), Verona (1405), Padua (22 November 1405),
+  // Friuli (Udine, 7 June 1420), Brescia (1426), Bergamo (1428), and Ravenna (1441); Florence takes Arezzo (1384), Pisa (9 October
+  // 1406), and Livorno (1421). Genoa is France's (1396 to 1409) and Milan's (1421 to 1435). The Romagna is the pope's by Rudolf's
+  // cession (1278). Savoy holds Turin from 1280.
+  const OTTN = "Ottoman Empire", SICA_N = "Kingdom of Sicily";
+  own("SICA", SICA_N, { wiki: "Kingdom of Sicily" }, [["1409-07-25", { part: CROA }]]);
+  own("SARK", "Kingdom of Sardinia", { part: CROA });
+  hre("MILn", "Lordship of Milan", { wiki: "Visconti of Milan" }, [["1395-05-11", { name: "Duchy of Milan", wiki: "Duchy of Milan" }]]);
+  hre("SCAL", "Lordship of Verona", { wiki: "Scaliger" });
+  hre("PADU", "Commune of Padua", { wiki: "Padua" }, [["1318-07-25", { name: "Lordship of Padua", wiki: "Carraresi" }]]);
+  hre("ESTE", "Lordship of Ferrara", { wiki: "House of Este" });
+  hre("MANT", "Lordship of Mantua", { wiki: "Mantua" }, [["1433-09-22", { name: "March of Mantua", wiki: "Marquisate of Mantua" }]]);
+  later("SICK", [["1282-03-30", { name: "Kingdom of Naples", wiki: "Kingdom of Naples" }], ["1442-06-12", { part: CROA }]]);
+  later("GEN", [["1396-11-27", { ruler: FRANCE, status: 5 }], ["1409-09-03", { ruler: "", status: 0 }], ["1421-11-02", { ruler: "Duchy of Milan", status: 5 }], ["1435-12-27", { ruler: "", status: 0 }]]);
+  add(I("Messina", "Catania", "Palermo", "Trapani", "Syracuse", "Caltanissetta", "Agrigento", "Enna", "Ragusa"), "+ 1282-03-30 SICA");
+  add(["MLT/*"], "+ 1283-07-08 SICA");
+  add(I("Cagliari", "Carbonia-Iglesias"), "+ 1258 PISA; 1324-02-07 SARK");
+  add(I("Olbia-Tempio"), "+ 1288 PISA; 1324-02-07 SARK; 1368 ARBO; 1409-06-30 SARK");
+  add(I("Sassari"), "+ 1259 GEN; 1323 SARK; 1368 ARBO; 1420-08-17 SARK");
+  add(I("Oristano", "Medio Campidano", "Nuoro", "Ogliastra"), "+ 1259 ARBO; 1420-08-17 SARK");
+  add(F("Haute-Corse", "Corse-du-Sud"), "+ 1284-08-06 GEN");
+  add(I("Milan", "Monza and Brianza", "Lodi", "Como", "Lecco", "Varese"), "+ 1277-01-21 MILn");
+  add(I("Novara", "Verbano-Cusio-Ossola"), "+ 1332 MILn");
+  add(I("Bergamo"), "+ 1332 MILn; 1428-04-19 VEN");
+  add(I("Cremona"), "+ 1334 MILn");
+  add(I("Vercelli", "Sondrio"), "+ 1335 MILn");
+  add(I("Piacenza"), "+ 1336 MILn");
+  add(I("Brescia"), "+ 1337 MILn; 1426-11-20 VEN");
+  add(G("CHE", "Ticino"), "+ 1340 MILn");
+  add(I("Asti"), "+ 1342 MILn; 1387 ORLd");
+  add(I("Parma"), "+ 1346 MILn");
+  add(I("Alessandria"), "+ 1348 MILn");
+  add(I("Pavia"), "+ 1359-11-13 MILn");
+  add(I("Bologna"), "+ 1278 PAP; 1350-10-23 MILn; 1360-04-01 PAP");
+  add(I("Forlì-Cesena", "Rimini"), "+ 1278 PAP");
+  add(I("Ravenna"), "+ 1278 PAP; 1441-02-24 VEN");
+  add(I("Verona"), "+ 1259-10-01 ITK; 1262 SCAL; 1387-10-18 MILn; 1405-06-22 VEN");
+  add(I("Vicenza"), "+ 1259-10-01 ITK; 1266 PADU; 1311 SCAL; 1387-10-18 MILn; 1404-04-28 VEN");
+  add(I("Padua"), "+ 1256-06-20 PADU; 1328-09-10 SCAL; 1337-08-03 PADU; 1388-11-24 MILn; 1390-06-19 PADU; 1405-11-22 VEN");
+  add(I("Treviso"), "+ 1259-10-01 ITK; 1329-07-18 SCAL; 1339-01-24 VEN; 1381-05-02 AUSM; 1384-02-04 PADU; 1388-12-14 VEN");
+  add(I("Belluno"), "+ 1404 VEN");
+  add(I("Ferrara", "Rovigo"), "+ 1264 ESTE");
+  add(I("Modena"), "+ 1288 ESTE");
+  add(I("Reggio Emilia"), "+ 1409 ESTE");
+  add(I("Mantua"), "+ 1272 MANT");
+  add(I("Udine", "Pordenone"), "+ 1420-06-07 VEN");
+  add(I("Turin"), "+ 1280 SAVC");
+  add(I("Arezzo"), "+ 1384-11-18 FLOR");
+  add(I("Pisa"), "+ 1406-10-09 FLOR");
+  add(I("Livorno"), "+ 1407 GEN; 1421-06-27 FLOR");
+
+  // ——— The Balkans, Greece, and Byzantium, 1251 to 1444 ———
+  // Michael VIII retakes Constantinople (25 July 1261), and Nicaea is the Byzantine Empire again; the Byzantines take Mystras
+  // (1262) and the Peloponnese's centre by 1320, the Morea a despotate from 1349, Patras and the rest of Achaea from 1430; Thessaly
+  // stands apart from Epirus (1268) until Andronikos III takes it (1335) and Epirus (1337). Serbia takes Skopje (1282) and the
+  // Morava (1291), is an empire from Dušan's coronation (16 April 1346), and takes Serres (25 September 1345), Albania, Epirus, and
+  // Thessaly (1348); after Uroš V (4 December 1371) Lazar's Moravian Serbia, the Ottomans' vassal after Kosovo (15 June 1389), the
+  // Despotate (1402), whose land the Ottomans hold from Smederevo (27 August 1439) to the Peace of Szeged (August 1444); Zeta under
+  // the Balšići (1356), Serbia's again from 1421; Marko's Prilep (1371 to Rovine, 17 May 1395). Charles of Anjou's Kingdom of Albania
+  // (21 February 1272), the Thopias' principality (1358), and the Ottomans from 1415. Bulgaria takes the Rhodopes (1344), parts with
+  // Vidin (1356, Hungary's from 1365 to 1369) and Dobruja (1354, Wallachia's from 1390), and falls to the Ottomans: Plovdiv (1364),
+  // Thrace and Edirne (1369), Stara Zagora (1372), Sofia (1385), Tarnovo (17 July 1393), Vidin (1396), and Dobruja (1417). Serres is
+  // Ottoman from 19 September 1383, Thessaloniki from 1387 to 1403, Venice's from 14 September 1423, and Ottoman from 29 March 1430;
+  // Thessaly from 1393, Ioannina from 9 October 1430. The Catalan Company takes Athens at Halmyros (15 March 1311) under Sicily's
+  // kings, the Acciaioli in 1388; the Gattilusi hold Lesbos (1355), Genoa Famagusta (1373), and Cyprus pays the Mamluks tribute
+  // after Khirokitia (7 July 1426). Wallachia stands from Posada (November 1330), the Ottomans' tributary from 1417; Moldavia from
+  // Bogdan (1359). Bosnia takes Hum (1326) and is a kingdom (26 October 1377); Ragusa is a republic under Hungary (18 February
+  // 1358); Venice buys Dalmatia (Zadar, 1409) and takes Split (1420), Durrës (1392), and Shkodër (1396).
+  own("OTT", OTTN);
+  own("THSY", "Thessaly", { wiki: "Thessaly in the Middle Ages" });
+  own("MORE", "Despotate of the Morea", { ruler: BYZN, status: 5 });
+  own("ZETA", "Zeta", { wiki: "Zeta under the Balšići" });
+  own("PRIL", "Kingdom of Prilep", { wiki: "Prince Marko", ruler: OTTN, status: 5 });
+  own("ALBK", "Kingdom of Albania", { wiki: "Kingdom of Albania (medieval)", ruler: "Kingdom of Naples", status: 5 });
+  own("THOP", "Principality of Albania", { wiki: "Principality of Albania (medieval)" });
+  own("VALO", "Principality of Valona");
+  own("VIDT", "Tsardom of Vidin");
+  own("DOBR", "Despotate of Dobruja");
+  own("GATT", "Lordship of Lesbos", { wiki: "Gattilusio", ruler: BYZN, status: 5 });
+  own("WALL", "Wallachia", {}, [["1417-01-01", { ruler: OTTN, status: 5 }]]);
+  own("MOLD", "Moldavia");
+  own("RAGU", "Republic of Ragusa", { ruler: "Kingdom of Hungary", status: 5 });
+  later("NICA", [["1261-07-25", { name: BYZN, wiki: BYZN }]]);
+  later("SRB", [["1346-04-16", { name: "Serbian Empire", wiki: "Serbian Empire" }], ["1371-12-04", { name: "Moravian Serbia", wiki: "Moravian Serbia" }], ["1389-06-15", { ruler: OTTN, status: 5 }],
+    ["1402-07-28", { name: "Serbian Despotate", wiki: "Serbian Despotate" }], ["1404-01-01", { ruler: "Kingdom of Hungary" }]]);
+  later("BOS", [["1377-10-26", { name: "Kingdom of Bosnia", wiki: "Kingdom of Bosnia" }]]);
+  later("ATHE", [["1311-03-15", { ruler: SICA_N, status: 5 }], ["1388-05-02", { ruler: "", status: 0 }], ["1394-01-01", { ruler: OTTN, status: 5 }]]);
+  later("CYPK", [["1426-07-07", { ruler: "Mamluk Sultanate", status: 5 }]]);
+  add(TR("Istanbul"), "+ 1261-07-25 NICA");
+  add(GR("Peloponnese"), "+ 1320 NICA; 1349 MORE");
+  add(GR("West Greece"), "+ 1430 MORE");
+  add(GR("Thessalia"), "+ 1268 THSY; 1335 NICA; 1348 SRB; 1359 THSY; 1393 OTT");
+  add(GR("Epirus"), "+ 1337 NICA; 1348 SRB; 1359 EPIR; 1430-10-09 OTT");
+  add(GR("Centre Macedonia", "Mount Athos"), "+ 1387-04-09 OTT; 1403 NICA; 1423-09-14 VEN; 1430-03-29 OTT");
+  add(GR("East Macedonia and Thrace"), "+ 1345-09-25 SRB; 1371-11-01 NICA; 1383-09-19 OTT");
+  add(GR("West Macedonia"), "+ 1345 SRB; 1385 OTT");
+  add(GR("North Aegean"), "+ 1355-07-17 GATT");
+  add(["CYP:Famagusta/*"], "+ 1373-10-01 GEN");
+  add("MKD/*", "+ 1282 SRB; 1371-09-26 PRIL; 1395-05-17 OTT");
+  add(G("ALB", "Durrës"), "+ 1272-02-21 ALBK; 1392 VEN");
+  add(G("ALB", "Tirana", "Elbasan"), "+ 1257 EPIR; 1272-02-21 ALBK; 1343 SRB; 1358 THOP; 1415 OTT");
+  add(G("ALB", "Kukës", "Dibër"), "+ 1257 EPIR; 1282 SRB; 1415 OTT");
+  add(G("ALB", "Vlorë", "Fier", "Berat"), "+ 1281 NICA; 1345 SRB; 1355 VALO; 1417 OTT");
+  add(G("ALB", "Gjirokastër", "Korçë"), "+ 1345 SRB; 1418 OTT");
+  add(G("ALB", "Shkodër", "Lezhë"), "+ 1356 ZETA; 1396 VEN");
+  add(G("MNE", "Podgorica", "Bar", "Ulcinj", "Budva", "Cetinje", "Danilovgrad", "Nikšić", "Kotor", "Tivat", "Herceg Novi"), "+ 1356 ZETA; 1421 SRB");
+  add(SR("Pomoravski", "Bor", "Zaječar", "Braničevo"), "+ 1291 SRB");
+  add(SR("Nišava", "Pirot", "Jablanica", "Pčinja"), "+ 1282 SRB; 1386 OTT");
+  add(SR("Belgrade", "Podunavlje"), "+ 1284 SRB; 1319 HUNG; 1403 SRB; 1427 HUNG");
+  add(SR("Šumadija", "Kolubara", "Moravica", "Raška", "Rasina", "Toplica", "Zlatibor", "Mačva", "Pomoravski", "Braničevo").concat(["KOS/*"]), "+ 1439-08-27 OTT; 1444-08-15 SRB");
+  add(BG("Veliko Tarnovo", "Gabrovo", "Lovech", "Pleven", "Ruse", "Razgrad", "Targovishte", "Shumen"), "+ 1393-07-17 OTT");
+  add(BG("Silistra", "Dobrich").concat(RO("Constanța", "Tulcea")), "+ 1354 DOBR; 1390 WALL; 1417 OTT");
+  add(BG("Varna"), "+ 1354 DOBR; 1389 OTT");
+  add(BG("Vidin", "Montana", "Vratsa"), "+ 1356 VIDT; 1365 HUNG; 1369 VIDT; 1396-09-25 OTT");
+  add(BG("Sofia", "Pernik"), "+ 1385 OTT");
+  add(BG("Kyustendil", "Blagoevgrad"), "+ 1395-05-17 OTT");
+  add(BG("Burgas", "Yambol", "Sliven", "Stara Zagora"), "+ 1372 OTT");
+  add(BG("Plovdiv", "Pazardzhik"), "+ 1364 OTT");
+  add(BG("Haskovo", "Kardzhali", "Smolyan"), "+ 1344 SBE; 1371-09-26 OTT");
+  add(TR("Edirne", "Kırklareli", "Tekirdağ"), "+ 1369 OTT");
+  add(HR("Zadar"), "+ 1409-07-31 VEN");
+  add(HR("Split-Dalmatia"), "+ 1420 VEN");
+  add(HR("Dubrovnik-Neretva"), "+ 1205 VEN; 1358-02-18 RAGU");
+  add(["BIH:Herzegovina-Neretva Canton/*", "BIH:Trebinje/*"], "+ 1326 BOS");
+  add(RO("Mehedinți", "Dolj", "Gorj", "Vâlcea", "Olt", "Argeș", "Teleorman", "Giurgiu", "Dâmbovița", "Prahova", "Ilfov", "Bucharest", "Ialomița", "Călărași", "Buzău", "Brăila"), "+ 1330-11-12 WALL");
+  add(RO("Suceava", "Botoșani", "Iași", "Neamț", "Bacău", "Vaslui", "Vrancea", "Galați").concat(["MDA/*"], UA("Chernivtsi")), "+ 1359 MOLD");
+
+  // ——— Anatolia, the Levant, and the Caucasus, 1251 to 1444 ———
+  // Hülegü's Ilkhanate (1256) holds the Sultanate of Rum, Georgia, Armenia, Shirvan, and Azerbaijan as its clients; Rum ends
+  // (1308) and its land is the Ilkhans' until the last Ilkhan's death (30 November 1335), then the Eretnids', Kadi Burhan
+  // al-Din's (1381), and the Ottomans' (1398). The beyliks: Karaman (1256, Konya from 1308), Menteshe (about 1280), Hamid (about
+  // 1280), Candar (1292, Sinop 1322), Karesi (1297), Germiyan (about 1300), Aydın (1308), Saruhan (1313), and Teke (1321). The
+  // Ottomans: Söğüt (about 1289), Bilecik (1299), Bursa (6 April 1326), Nicomedia (1337), Karesi (1345), Ankara (1354), Kütahya
+  // (1381), and Bayezid's conquests of 1390 to 1398, undone at Ankara (20 July 1402), when Timur gives the beyliks back; the
+  // Ottomans take them again: Saruhan (1410), Teke and Hamid (1423), Menteshe (1424), Aydın (1425), and Germiyan by bequest (1429).
+  // The Mamluks: Syria after Ain Jalut (3 September 1260, the Mongols having held Aleppo and Damascus since January and March),
+  // Kerak (1263), Caesarea and Arsuf (1265), Jaffa (7 March 1268), Antioch (18 May 1268), Tripoli (26 April 1289), Acre (18 May
+  // 1291) and the coast, Malatya (1315), and Cilicia (Sis, 13 April 1375), with the Ayyubids of Hama (to 1341), the Dulkadirids
+  // (1337), and the Ramadanids as their clients. The Caucasus: western Georgia under David VI (1259) until George V reunites it
+  // and throws off the Ilkhans (1327 to 1330); Shirvan's shahs free from 1335; Azerbaijan the Chobanids' (1338), the Jalayirids'
+  // (1357), Timur's (1386), and the Qara Qoyunlu's (1406), who take Armenia, Erzurum, and Erzincan (1410) and Mardin (1409); the Aq
+  // Qoyunlu hold Diyarbakır from 1402.
+  const ILKN = "Ilkhanate", MAMN = "Mamluk Sultanate";
+  own("ILKH", ILKN, { host: true });
+  own("MAML", MAMN, { host: true });
+  own("CHOB", "Chobanids", { host: true });
+  own("JALA", "Jalayirid Sultanate", { host: true });
+  own("TIMU", "Timurid Empire", { host: true });
+  own("QARA", "Qara Qoyunlu", { host: true });
+  own("AQQO", "Aq Qoyunlu", { host: true });
+  own("KARA", "Karamanids");
+  own("GERM", "Germiyanids");
+  own("AYDN", "Aydinids");
+  own("SARU", "Saruhanids");
+  own("MENT", "Menteshe");
+  own("KARE", "Karasids");
+  own("HAMI", "Hamidids");
+  own("TEKE", "Teke", { wiki: "Teke (beylik)" });
+  own("CAND", "Isfendiyarids");
+  own("DULK", "Dulkadirids", { ruler: MAMN, status: 5 });
+  own("RAMA", "Ramadanids", { ruler: MAMN, status: 5 });
+  own("HAMA", "Ayyubids of Hama", { wiki: "Ayyubid dynasty", ruler: MAMN, status: 5 });
+  own("HASK", "Ayyubids of Hasankeyf", { wiki: "Ayyubid dynasty" });
+  own("IMER", "Kingdom of Imereti");
+  later("RUM", [["1256-01-01", { ruler: ILKN }], ["1308-01-01", { name: ILKN, wiki: ILKN, ruler: "", status: 0 }], ["1335-11-30", { name: "Eretnids", wiki: "Eretnids" }],
+    ["1381-01-01", { name: "Kadi Burhan al-Din", wiki: "Kadi Burhan al-Din" }], ["1398-07-01", { name: OTTN, wiki: OTTN }]]);
+  later("GEOK", [["1256-01-01", { ruler: ILKN }], ["1327-01-01", { ruler: "", status: 0 }]]);
+  later("ZAKA", [["1256-01-01", { ruler: ILKN }]]);
+  later("SHIR", [["1256-01-01", { ruler: ILKN }], ["1335-11-30", { ruler: "", status: 0 }]]);
+  later("ARTQ", [["1260-01-01", { ruler: ILKN, status: 5 }], ["1335-11-30", { ruler: "", status: 0 }]]);
+  later("ARMK", [["1266-08-24", { ruler: ILKN, status: 5 }], ["1335-11-30", { ruler: "", status: 0 }]]);
+  add(TR("Konya"), "+ 1308 KARA; 1397 OTT; 1402-07-20 KARA");
+  add(TR("Karaman"), "+ 1256 KARA; 1397 OTT; 1402-07-20 KARA");
+  add(TR("Kütahya"), "+ 1300 GERM; 1381 OTT; 1402-07-20 GERM; 1429 OTT");
+  add(TR("Uşak", "Afyonkarahisar", "Denizli"), "+ 1300 GERM; 1390 OTT; 1402-07-20 GERM; 1429 OTT");
+  add(TR("İzmir", "Aydın"), "+ 1308 AYDN; 1390 OTT; 1402-07-20 AYDN; 1425 OTT");
+  add(TR("Manisa"), "+ 1313 SARU; 1390 OTT; 1402-07-20 SARU; 1410 OTT");
+  add(TR("Muğla"), "+ 1280 MENT; 1390 OTT; 1402-07-20 MENT; 1424 OTT");
+  add(TR("Balıkesir", "Çanakkale"), "+ 1297 KARE; 1345 OTT");
+  add(TR("Isparta", "Burdur"), "+ 1280 HAMI; 1391 OTT; 1402-07-20 HAMI; 1423 OTT");
+  add(TR("Antalya"), "+ 1321 TEKE; 1390 OTT; 1402-07-20 TEKE; 1423 OTT");
+  add(TR("Kastamonu", "Çankırı", "Karabük"), "+ 1292 CAND; 1392 OTT; 1402-07-20 CAND");
+  add(TR("Sinop"), "+ 1322 CAND");
+  add(TR("Eskişehir"), "+ 1289 OTT");
+  add(TR("Bilecik"), "+ 1299 OTT");
+  add(TR("Bursa"), "+ 1326-04-06 OTT");
+  add(TR("Sakarya", "Bolu", "Düzce"), "+ 1330 OTT");
+  add(TR("Kocaeli", "Yalova"), "+ 1337 OTT");
+  add(TR("Ankara"), "+ 1354 OTT");
+  add(TR("Malatya"), "+ 1315 MAML");
+  add(TR("Kahramanmaraş"), "+ 1337 DULK");
+  add(TR("Osmaniye", "Adana", "Mersin"), "+ 1375-04-13 RAMA");
+  add(TR("Erzincan", "Tunceli", "Erzurum", "Bayburt", "Kars"), "+ 1410 QARA");
+  add(TR("Muş", "Van", "Hakkâri", "Ağrı", "Bitlis"), "+ 1338 CHOB; 1357 JALA; 1375 QARA");
+  add(TR("Mardin"), "+ 1409 QARA");
+  add(TR("Diyarbakır", "Bingöl"), "+ 1260 ILKH; 1335-11-30 ARTQ; 1402 AQQO");
+  add(TR("Siirt", "Batman"), "+ 1260 HASK");
+  add(TR("Şırnak").concat(SY("Al-Hasakah")), "+ 1260 ILKH; 1336 JALA; 1409 QARA");
+  add(TR("Şanlıurfa"), "+ 1260 ILKH; 1335-11-30 MAML");
+  add(TR("Gaziantep", "Kilis", "Adıyaman").concat(SY("Aleppo", "Idlib", "Al-Raqqah", "Deir ez-Zor")), "+ 1260-01-24 ILKH; 1260-09-03 MAML");
+  add(TR("Hatay"), "+ 1268-05-18 MAML");
+  add(SY("Hama"), "+ 1260-01-24 ILKH; 1260-09-03 HAMA; 1341 MAML");
+  add(SY("Homs", "Latakia", "Damascus", "Rif Dimashq", "Quneitra", "Daraa", "As-Suwayda", "Western al-Samadania").concat(LB("Beqaa", "Nabatieh"), JO("Irbid", "Ajloun", "Jerash", "Balqa", "Amman",
+    "Zarqa", "Mafraq")), "+ 1260-03-01 ILKH; 1260-09-03 MAML");
+  add(JO("Madaba", "Karak", "Tafilah", "Ma'an", "Aqaba"), "+ 1263 MAML");
+  add(IL("Jerusalem", "Southern").concat(["PSX/West Bank", "PSX/Gaza"]), "+ 1260-09-03 MAML");
+  add(IL("Central"), "+ 1265 MAML");
+  add(IL("Tel Aviv"), "+ 1268-03-07 MAML");
+  add(LB("North"), "+ 1289-04-26 MAML");
+  add(IL("Northern", "Haifa").concat(LB("South")), "+ 1291-05-18 MAML");
+  add(LB("Beirut", "Mount Lebanon").concat(SY("Tartus")), "+ 1291-07-31 MAML");
+  add(GE("Imereti", "Racha-Lechkhumi and Kvemo Svaneti", "Guria", "Samegrelo-Zemo Svaneti", "Adjara"), "+ 1259 IMER; 1330 GEOK");
+  add(AZ("Ganja", "Goygol", "Shamkir", "Samukh", "Goranboy", "Naftalan", "Barda", "Agdam", "Aghjabadi", "Beylagan", "Fuzuli", "Yevlakh", "Mingachevir", "Tovuz", "Qazax", "Agstafa",
+    "Gadabay", "Dashkasan", "Sharur", "Sadarak", "Kangarli", "Babek", "Shahbuz", "Julfa", "Ordubad", "Nakhchivan"), "+ 1256 ILKH; 1338 CHOB; 1357 JALA; 1386 TIMU; 1406 QARA");
+  add(TR("Iğdır").concat(AM("Aragatsotn", "Armavir", "Ararat", "Yerevan", "Kotayk", "Gegharkunik", "Shirak")), "+ 1338 CHOB; 1357 JALA; 1386 TIMU; 1410 QARA");
+
+  // ——— Scandinavia, Lithuania, Rus', and the Horde, 1251 to 1444 ———
+  // Iceland accepts Norway's king (the Old Covenant, 1262); Sweden takes Uusimaa and Satakunta, Vyborg's Karelia (1293), and
+  // Savonia by the Treaty of Nöteborg (12 August 1323), and holds Scania and Blekinge from 1332 to 1360; Denmark, Norway, and
+  // Sweden are one in the Kalmar Union (17 June 1397). Lithuania takes Polotsk and Minsk (1307), Brest (1320), Volhynia (1340),
+  // Bryansk and Chernigov's lands (1356, the Upper Oka princes its clients), Kiev, Pereyaslavl, and the Kursk land after Blue
+  // Waters (1362), Podolia (1363, its west Poland's from 1434), Podlachia (1283), Smolensk (1404), and the steppe to the Black
+  // Sea (about 1415). In the north-east: Tver (1247), Moscow under Daniel (1263), a grand principality from 1328, which takes
+  // Vladimir (1363) and Nizhny Novgorod (1392); Suzdal-Nizhny Novgorod (1341); Yaroslavl; and Pskov free of Novgorod (Bolotovo,
+  // 1348), all the Horde's tributaries. The Horde loses Kazan (1438) and the Crimea (Hacı Giray, 1441); Theodoro holds the
+  // Crimea's south-west from the 1350s.
+  const KALM = "Kalmar Union";
+  own("TVER", "Principality of Tver", { ruler: GHN, status: 5 });
+  own("MOSC", "Principality of Moscow", { ruler: GHN, status: 5 }, [["1328-01-01", { name: "Grand Duchy of Moscow", wiki: "Grand Duchy of Moscow" }]]);
+  own("SUZN", "Principality of Nizhny Novgorod-Suzdal", { ruler: GHN, status: 5 });
+  own("YARO", "Principality of Yaroslavl", { ruler: GHN, status: 5 });
+  own("PSKV", "Pskov Republic");
+  own("KAZN", "Khanate of Kazan", { host: true });
+  own("CRIM", "Crimean Khanate", { host: true });
+  own("THEO", "Principality of Theodoro");
+  for (const k of ["DAN", "NWY", "SWE"]) later(k, [["1397-06-17", { part: KALM }]]);
+  later("CHER", [["1356-01-01", { name: "Upper Oka Principalities", wiki: "Upper Oka Principalities", ruler: "Grand Duchy of Lithuania" }]]);
+  add("ISL/*", "+ 1262 NWY");
+  add(G("FIN", "Uusimaa", "Satakunta", "Pirkanmaa"), "+ 1300 SWE");
+  add(G("FIN", "Kymenlaakso", "South Karelia"), "+ 1293 SWE");
+  add(G("FIN", "Southern Savonia", "Northern Savonia"), "+ 1323-08-12 SWE");
+  add(G("SWE", "Skåne", "Blekinge"), "+ 1332 SWE; 1360 DAN");
+  add(BY("Vitebsk", "Minsk"), "+ 1307 LITG");
+  add(BY("Brest"), "+ 1320 LITG");
+  add(UA("Volyn", "Rivne"), "+ 1340-04-07 LITG");
+  add(UA("Chernihiv", "Sumy").concat(BY("Gomel"), RU("Bryansk")), "+ 1356 LITG");
+  add(UA("Kyiv", "Zhytomyr", "Cherkasy", "Poltava").concat(RU("Kursk", "Oryol")), "+ 1362 LITG");
+  add(UA("Vinnytsia"), "+ 1363 LITG");
+  add(UA("Khmelnytskyi"), "+ 1363 LITG; 1434 POLK");
+  add(PL("Podlaskie"), "+ 1283 LITG");
+  add(RU("Smolensk").concat(BY("Mahilioŭ")), "+ 1404 LITG");
+  add(UA("Odessa", "Mykolaiv", "Kirovohrad"), "+ 1415 LITG");
+  add(RU("Tver"), "+ 1247 TVER");
+  add(RU("Moscow"), "+ 1263 MOSC");
+  add(RU("Vladimir", "Ivanovo"), "+ 1363 MOSC");
+  add(RU("Nizhny Novgorod"), "+ 1341 SUZN; 1392 MOSC");
+  add(RU("Yaroslavl"), "+ 1238 YARO");
+  add(RU("Pskov"), "+ 1348 PSKV");
+  add(RU("Chuvash Republic", "Mari El Republic"), "+ 1438 KAZN");
+  add(RU("Autonomous Republic of Crimea"), "+ 1441 CRIM");
+  add(RU("Sevastopol"), "+ 1357 THEO");
 }

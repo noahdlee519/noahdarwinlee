@@ -3573,8 +3573,10 @@ const GROUPS = [{
 { name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" },
 // From 962: the Kingdom of France's great fiefs (987), Cnut's North Sea Empire (1017 to 1035), and Kievan Rus' principalities (1054 to 1240).
 { name: "Kingdom of France", from: 987, to: MEDIEVAL_TO }, { name: "North Sea Empire", from: 1017, to: 1035 }, { name: "Kievan Rus'", from: 1054, to: 1240 },
-// From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138).
-{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: MEDIEVAL_TO }, { name: "Poland", from: 1138, to: MEDIEVAL_TO }];
+// From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138 to 1319).
+{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: MEDIEVAL_TO }, { name: "Poland", from: 1138, to: 1319 },
+// From 1251: the Burgundian State (1384) and the Kalmar Union (1397).
+{ name: "Burgundian State", from: 1384, to: MEDIEVAL_TO }, { name: "Kalmar Union", from: 1397, to: MEDIEVAL_TO }];
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
