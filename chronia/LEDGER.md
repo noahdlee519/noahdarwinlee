@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1800 BC–AD 2026 | Israel | Jaffa and Tel Aviv, and the founding of Netanya, Nahariya, and Modi'in
+
+- What changed: Jaffa, which no source of cities had, is added from the 18th century BC to its union with Tel Aviv on 16 June 1950, named Joppa until the Arab conquest of 636. Tel Aviv still begins on 11 April 1909, but at about 300 people, not the sources' 160,000, which is its size decades later; it now grows through the census figures to 166,660 in 1945. Netanya, Nahariya, and Modi'in-Maccabim-Re'ut, all founded in the 20th century, began in 1850 as estimated towns of 5,000; they now begin at their founding, at about a hundred people.
+- Tables: `tools/city-tables.mjs` (`CITY_ADD`, `CITY_UNTIL`, and `CITY_NAMES` for Jaffa; `CITY_POP` for Tel Aviv, Netanya, Nahariya, and Modi'in; `CITY_SINCE` for Netanya, Nahariya, and Modi'in).
+- Sources: (1) Jaffa's place: GeoNames, 32.0504, 34.7522, and the NGA gazetteer, 32.0469, 34.7592; (2) Jaffa's dates and people: Wikipedia's "Jaffa" (settlement from the 18th century BC, ruins from 1432 to the 1590s, resettled in the early 19th century, 5,000 in 1867, 47,799 in 1922, 51,866 in 1931, 94,310 in 1945, 40,000 before the union, which took effect on 16 June 1950) and "Timeline of Jaffa" (the Arab conquest in 636, 14,000 in 1887, 50,000 in 1913); (3) Tel Aviv's people: Wikipedia's "Tel Aviv" (66 families in 1909, 2,679 in 1915, 15,185 in 1922, about 34,000 in 1925, 46,101 in 1931, 160,000 in 1939, 166,660 in 1945); (4) the foundings: Wikipedia's "Netanya" (18 February 1929), Nahariya's own history (10 February 1935), and Wikipedia's "List of cities in Israel" and "Modi'in-Maccabim-Re'ut" (Maccabim, 1985).
+- Confidence: high for the dates; low for Jaffa's figures before 1867, which are rough.
+- Alternatives: Modi'in from 1996, when the city proper opened to residents.
+- Left out: at the closest zoom Tel Aviv's dot lies about 6 pixels from Jaffa's, so until Tel Aviv outgrows Jaffa in about 1932 Jaffa's name covers it; other cities of the region whose dates are off (Hebron and Nazareth, which begin only in the 19th century; Ramallah and Beersheba, which begin in 1958 and 1941; Acre, which ends in 1900; and Tiberias, which ends in 640).
+
 ## 1200–2026 | the world | agreed and unsettled borders, names across 1886, and the southern cone's lines
 
 - What changed:

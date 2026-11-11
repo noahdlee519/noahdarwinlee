@@ -9,6 +9,7 @@ export const REGION_SWITCH = [
 export const CITY_SINCE = {
   "Brasília": "1960-04-21", "Lelystad": "1967-01-01", "Canberra": "1913-03-12", "Islamabad": "1961-01-01", "Naypyidaw": "2005-11-06", "Abuja": "1976-02-03",
   "Chandigarh": "1952-01-01", "Belmopan": "1970-08-01", "Gaborone": "1964-01-01", "Nouakchott": "1958-01-01", "Tel Aviv": "1909-04-11",
+  "Netanya": "1929-02-18", "Nahariyya": "1935-02-10", "Modi‘in Makkabbim Re‘ut": 1985,
   "Shenzhen": "1979-03-05", "Ciudad Guayana": "1961-07-02", "Brazzaville": 1880, "Lilongwe": "1904-01-01", "Kampala": 1890, "Nairobi": "1899-05-30",
   "Johannesburg": "1886-09-08", "Las Vegas": "1905-05-15", "Miami": "1896-07-28", "Vancouver": "1886-04-06", "Anchorage": "1914-01-01",
   "Ashdod": "1956-01-01", "Magnitogorsk": "1929-01-01",
@@ -69,7 +70,7 @@ export const CITY_UNTIL = {
   "Seleucia": 300, "Persepolis": -330, "Nineveh": -612, "Carthage": 698, "Pompeii": 79, "Tiahuanaco": 1000, 
   "Memphis|30": 900, "Karakorum": 1388, "Sarai": 1502, "Mayapan": 1450, "Gauda": 1576, "Hormuz": 1622, "Fatehpur Sikri": 1610, "Chanchan": 1470, "Tollan": 1150,
   "Mohenjodaro": -1900, "Ayutthaya": 1767, "Xianyang": -206, "Palmyra": 1400, "Petra": 700, "Bagan": 1369, "Zimbabwe": 1450,
-  "Mapungubwe": 1290, "Kilwa": 1600, "Niani": 1600, "Koumbi Saleh": 1240,
+  "Mapungubwe": 1290, "Kilwa": 1600, "Niani": 1600, "Koumbi Saleh": 1240, "Jaffa": 1950.4547,
   "Namazga-Tepe": -1000, "Akkad": -2000, "Assur": -614, "Carchemish": -605, "Yin": -1046, "Bo": -1300
 };
 
@@ -229,7 +230,12 @@ export const CITY_ADD = [
   ["Azov", 39.42, 47.11, 1316, null, [[1316, 2], [1395, 1], [1500, 3], [1800, 2], [2020, 80]]],
   ["Novo Brdo", 21.43, 42.62, 1319, null, [[1319, 1], [1400, 10], [1455, 2], [1800, 0.5], [2020, 7]]],
   ["Târgoviște", 25.46, 44.94, 1396, null, [[1396, 2], [1500, 6], [1800, 5], [2020, 73]]],
-  ["Bilhorod-Dnistrovskyi", 30.35, 46.2, 1300, null, [[1300, 2], [1450, 8], [1800, 5], [2020, 50]]]
+  ["Bilhorod-Dnistrovskyi", 30.35, 46.2, 1300, null, [[1300, 2], [1450, 8], [1800, 5], [2020, 50]]],
+  // Jaffa, which no source of cities has: GeoNames gives 32.0504, 34.7522 and the NGA gazetteer 32.0469, 34.7592. Wikipedia's Jaffa dates its first
+  // settlement to the 18th century BC and gives 5,000 people in 1867, 47,799 in 1922, 51,866 in 1931, 94,310 in 1945, and 40,000 before it joined
+  // Tel Aviv; its timeline gives 14,000 in 1887 and 50,000 in 1913. Travellers found it in ruins from 1432 to the 1590s, and it was resettled in the
+  // early 19th century. Figures before 1867 are rough.
+  ["Jaffa", 34.752, 32.05, -1800, null, [[-1800, 1], [-500, 3], [1, 5], [636, 4], [1268, 3], [1432, 0.1], [1598, 0.1], [1800, 2], [1867, 5], [1887, 14], [1913, 50], [1922, 47.8], [1931, 51.9], [1945, 94.3], [1949, 40]]]
 ];
 
 export const REBA_FIX = {
@@ -284,6 +290,12 @@ export const REBA_FIX = {
 };
 
 export const CITY_POP = {
+  // Wikipedia's Tel Aviv: 66 families in 1909, 2,679 in 1915, 15,185 in 1922, about 34,000 in 1925, 46,101 in 1931, 160,000 in 1939, and 166,660 in
+  // 1945; the sources' 160,000 in 1909 is the city's size decades later.
+  "Tel Aviv": { pts: [[1909.2739, 0.3], [1915, 2.7], [1922, 15.2], [1925, 34], [1931, 46.1], [1939, 160], [1945, 166.7]] },
+  // Netanya (Wikipedia: founded 18 February 1929), Nahariya (the city's own history: 10 February 1935), and Modi'in-Maccabim-Re'ut (Wikipedia's
+  // list of cities in Israel: Maccabim, 1985) begin as settlements of about a hundred, not at the estimate for a town of 1850.
+  "Netanya": { pts: [[1929.1342, 0.1]] }, "Nahariyya": { pts: [[1935.1096, 0.1]] }, "Modi‘in Makkabbim Re‘ut": { pts: [[1985, 0.1]] },
   "Teotihuacan": { drop: [-1100, 700], pts: [[-100, 5], [1, 40], [100, 80], [250, 100], [450, 125], [550, 90], [650, 25]] },
   "Tikal": { drop: [-1100, 950], pts: [[-600, 1], [-400, 2], [-200, 8], [-100, 15], [100, 20], [300, 30], [500, 40], [700, 60], [830, 45], [900, 5]] },
   "Caracol": { drop: [-1100, 950], pts: [[-600, 1], [-400, 2], [-200, 3], [-100, 5], [100, 10], [300, 15], [500, 40], [650, 100], [800, 60], [900, 10]] },
@@ -611,6 +623,7 @@ export const CITY_NAMES = {
   "Osaka": [[-9999, "Naniwa"], [1496, "Osaka"]],
   "Medina": [[-9999, "Yathrib"], [622, "Medina"]],
   "Jerusalem": [[-9999, "Jerusalem"], [135, "Aelia Capitolina"], [325, "Jerusalem"]],
+  "Jaffa": [[-9999, "Joppa"], [636, "Jaffa"]],
   "Amman": [[-9999, "Rabbath Ammon"], [-250, "Philadelphia"], [640, "Amman"]],
   "Cairo": [[641, "Fustat"], [969, "Cairo"]],
   "Luxor": [[-9999, "Thebes"], [700, "Luxor"]],
