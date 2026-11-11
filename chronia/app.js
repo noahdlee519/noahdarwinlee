@@ -4759,7 +4759,7 @@
   }
   function speedText(v) {
     var x = Math.pow(2, v);
-    return ({ 0.25: "¼", 0.5: "½", 0.75: "¾" }[x] || String(+x.toFixed(2))) + "×";
+    return String(+x.toFixed(2)) + "×";
   }
   function setPlaySpeed(v, keep) {
     var i = speedIndex(Math.max(SPEED_MIN, Math.min(SPEED_MAX, v)));
