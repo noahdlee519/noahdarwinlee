@@ -421,6 +421,13 @@ add("DEU#sorbs", "476 THU; 531 -; 590 SORB; 929 EFR; 937 GERO");
 add("AUT/*", "476 RUG; 489 LOMP; 568 AVR; 796 FRK; 817 BAVK; 843-08-10 EFR; 907 HUNG");
 add("AUT#bavaria", "476 ODO; 493 OST; 537 FRK; 555 BAV; 788 FRK; 817 BAVK; 843-08-10 EFR; 911 BAV");
 add("AUT#carantania", "476 ODO; 493 OST; 537 FRK; 568 AVR; 658 CAR; 828 FRK; 843-08-10 EFR; 911 BAV");
+// Vorarlberg lies west of the Bavaria polygon: Bregenz and Dornbirn were Alemannic, Feldkirch and Bludenz in Raetia Curiensis.
+add(["AUT:Vorarlberg/Bregenz", "AUT:Vorarlberg/Dornbirn"], "476 ALE; 746 FRK; 843-08-10 EFR; 915 SWA");
+add(["AUT:Vorarlberg/Feldkirch", "AUT:Vorarlberg/Bludenz"], "476 ODO; 493 RAE; 806 FRK; 843-08-10 EFR; 915 SWA");
+// The Mühlviertel, north of the Danube: Urfahr was Bavarian; the Riedmark (Perg, Freistadt), east of the Enns's mouth, was the Avars' and
+// the Magyars' until Lechfeld.
+add(["AUT:Upper Austria/Urfahr-Umgebung"], "476 ODO; 493 OST; 537 FRK; 555 BAV; 788 FRK; 817 BAVK; 843-08-10 EFR; 911 BAV");
+add(["AUT:Upper Austria/Freistadt", "AUT:Upper Austria/Perg"], "476 RUG; 489 LOMP; 568 AVR; 796 FRK; 817 BAVK; 843-08-10 EFR; 907 HUNG; 955-08-10 BAV");
 add("CHE/*", "476 ALE; 746 FRK; 843-08-10 EFR; 915 SWA");
 add(SWISS_BURGUNDY.concat(G("CHE", "Bern", "Solothurn")), "476 BUR; 534 FRK; 561 BURF; 613 FRK; 623 NEU; 679 FRK; 843-08-10 MFR; 870 EFR; 888 UBU");
 add(G("CHE", "Grisons").concat(G("LIE", "*")), "476 ODO; 493 RAE; 806 FRK; 843-08-10 EFR; 915 SWA");

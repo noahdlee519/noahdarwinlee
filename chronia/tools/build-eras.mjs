@@ -3412,7 +3412,7 @@ dated = snapTo1886(dated);
 
 const CAP_FROM = DATED_FROM, CAP_NEAR_DEG = 0.3, CAP_SAME_KM = 25;
 const CAP_SKIP = new Set(["Holy Roman Empire"]);
-const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"], ["Wu (state)", "Jiangsu province"]];
+const CAP_DROP = [["Kingdom of Hungary", "Székesfehérvár"], ["Morocco", "Rabat"], ["Montserrat", "Brades"], ["Wu (state)", "Jiangsu province"], ["Jersey", "Government House"], ["Jersey", "Saint Saviour"]];
 const CAP_NAME = {
   "Ahilyanagar": "Ahmednagar", "Anshan Persia": "Anshan", "Antalya Province": "Antalya", "Bengaluru": "Bangalore", "Bintan Island": "Bintan", "Coop of Brussels": "Brussels",
   "Hanseongbu": "Hanseong", "Historic City of Ayutthaya": "Ayutthaya", "Kalaburagi": "Gulbarga", "Kolkata": "Calcutta", "Lutherstadt Wittenberg": "Wittenberg",

@@ -1335,6 +1335,8 @@ export function high(h) {
   add(DE("Baden-Württemberg", "Landkreis Tübingen"), "+ 1342 WURT");
   add(DE("Baden-Württemberg", "Calw"), "+ 1345 WURT");
   add(DE("Baden-Württemberg", "Breisgau-Hochschwarzwald", "Freiburg im Breisgau"), "+ 1368 HABS");
+  add(["AUT:Vorarlberg/Feldkirch"], "+ 1379 HABS");
+  add(["AUT:Vorarlberg/Bludenz"], "+ 1420 HABS");
   add(DE("Bavaria", "Landshut", "Landkreis Landshut", "Dingolfing-Landau", "Rottal-Inn", "Altötting", "Mühldorf a. Inn", "Straubing", "Straubing-Bogen", "Deggendorf", "Regen",
     "Freyung-Grafenau", "Kelheim"), "+ 1255-03-28 LBAV; 1340-12-20 BAV; 1349-09-13 LBAV; 1392-11-19 BLAN");
   add(DE("Bavaria", "München", "Landkreis München", "Freising", "Erding", "Dachau", "Fürstenfeldbruck", "Starnberg", "Ebersberg", "Rosenheim", "Landkreis Rosenheim", "Miesbach",
