@@ -808,23 +808,25 @@ select.ch-save-input {
 .ch-when-fwd {
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: 5px;
+  width: 100px;
   margin-top: -14px;
 }
 
 .ch-plays {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
 }
 
 .ch-speed {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   height: 20px;
 }
 
 .ch-speed-step {
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   width: 20px;
@@ -853,6 +855,8 @@ select.ch-save-input {
 
 .ch-speed-now {
   flex: 1;
+  min-width: 0;
+  white-space: nowrap;
   font-family: var(--ch-num);
   font-size: 13px;
   line-height: 20px;
@@ -860,6 +864,30 @@ select.ch-save-input {
   color: var(--ink);
   cursor: default;
   user-select: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .ch-when-fwd {
+    width: 124px;
+  }
+
+  .ch-speed {
+    height: 30px;
+  }
+
+  .ch-speed-step {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ch-speed-step svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ch-speed-now {
+    font-size: 14px;
+  }
 }
 
 /* The date sits at the top, in the middle of the page, in a frame like the title's. */
