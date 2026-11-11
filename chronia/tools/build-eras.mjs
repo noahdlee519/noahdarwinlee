@@ -2099,6 +2099,9 @@ const sameAs = (name) => {
   return (other) => kin.has(other) || (core.size > 0 && (within(core, coreWords(other)) || within(coreWords(other), core)));
 };
 let dated = clioSpans.filter((s) => s.last >= DATED_FROM && s.first <= DATED_TO).map((s) => withBox({ ...s, first: Math.max(s.first, DATED_FROM), last: Math.min(s.last, DATED_TO) }));
+// From here on only the spans that reach 1886 are read from Cliopatria (for the years from 1886), so the
+// rest are let go: the build holds every span from 3400 BC, and the memory they keep runs it out of room.
+for (let i = 0, k = 0; i <= clioSpans.length; i++) { if (i === clioSpans.length) { clioSpans.length = k; break; } if (clioSpans[i].last >= 1886) clioSpans[k++] = clioSpans[i]; }
 // Turns land no span covers (see adopt-land.mjs) into spans of their own, one per state and
 // stretch of time, rather than joining each piece to every span of its state: joining thousands of
 // strips of coast to large states takes hours, and adding them to each span separately repeats
@@ -2500,6 +2503,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
     console.log("names: joined touching spans of one state with one name in " + joined + " stretches of years, " + drop.size + " spans to " + add.length);
   }
   dated.forEach((s) => { delete s.cells; });
+  snapshots.length = 0; // nothing reads historical-basemaps' maps after this
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
@@ -3841,6 +3845,22 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
   writeFileSync(resolve(out, hiFile(file)), JSON.stringify({ hi }));
   datedChunks.push({ from: c, to: cEnd, file, rows, lo, spans });
 }
+// Of the dated spans' shapes only each state's first and last are read again (for the colours that pass on
+// from one state to the next), so the others are let go before the years from 1886, the costliest in memory.
+{
+  const ends = new Map();
+  for (const s of dated) {
+    if (s.small || s.people) continue;
+    const e = ends.get(s.name);
+    if (!e) { ends.set(s.name, { a: s.first, z: s.last + 1, f: s, l: s }); continue; }
+    if (s.first < e.a) { e.a = s.first; e.f = s; }
+    if (s.last + 1 > e.z) { e.z = s.last + 1; e.l = s; }
+  }
+  const need = new Set([...ends.values()].flatMap((e) => [e.f, e.l]));
+  for (const s of dated) if (!need.has(s)) s.polys = null;
+  for (const ch of datedChunks) delete ch.spans;
+}
+console.log("dated files written, " + Math.round(process.memoryUsage().rss / 1e6) + " MB in use, " + Math.round(process.uptime()) + " s");
 const datedChanges = [...new Set(dated.map((s) => s.first).concat(dated.filter((s) => s.last < DATED_TO).map((s) => s.last + 1)))].filter((y) => y >= DATED_FROM && y <= DATED_TO).sort((a, b) => a - b);
 
 const CS_STATUS = { independent: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5, disputed: 6 };
@@ -4556,7 +4576,7 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
     if (!existsSync(axisPath)) console.warn("WW2: no " + axisPath + " (run build-control.mjs first), so the wartime borders are left out");
     else {
       list = applyWW2({ list, clip, csRaw, neAll, carve, withBox, rewind, polysOf, km2Of, polyKm2, boxOf, dayOf, turfBuf, endDay, axisFile: JSON.parse(readFileSync(axisPath, "utf8")) });
-      console.log("WW2 done, " + Math.round(process.uptime()) + " s");
+      console.log("WW2 done, " + Math.round(process.memoryUsage().rss / 1e6) + " MB in use, " + Math.round(process.uptime()) + " s");
     }
   }
   list = carryNames(list);
