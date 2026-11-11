@@ -46,6 +46,7 @@ const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Ma
 const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
 const R_KM = 6371.0088;
 const HI_KM = 1.6, LO_KM = 12;
+const GEN_SRC = new Set(["medieval", "early", "stage"]);
 const HI_Q = 2e5, LO_Q = 2e4;
 const CS_HI_KM = 0.5, CS_HI_Q = 5e5, FINE_KM = 0.15, FINE_Q = 1e6;
 const weightFor = (km) => (km / R_KM) ** 2;
@@ -580,8 +581,66 @@ function nodeFeats(feats, q) {
   });
   return copy;
 }
+// Borders built from today's units (the medieval table, the early cultures, and the stages of conquest) follow the lines of
+// today's provinces and districts, which the borders of the time did not. Where a span with gen set meets another span, the line
+// between them is generalized: Douglas-Peucker at GEN_DEG (at most GEN_SHARE of the line's own extent, so small units keep a
+// shape), then rounded by GEN_PASSES of Chaikin's corner cutting, its ends kept so that the topology still closes. Coasts and
+// small territories (keep) are left as they are.
+const GEN_DEG = 0.12, GEN_SHARE = 0.15, GEN_PASSES = 3;
+let genArcs = 0;
+function generalizeArc(arc) {
+  const n = arc.length;
+  if (n < 3) return arc;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of arc) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+  const kx = Math.cos(((y0 + y1) / 2) * Math.PI / 180), tol = Math.min(GEN_DEG, GEN_SHARE * Math.hypot((x1 - x0) * kx, y1 - y0));
+  const closed = arc[0][0] === arc[n - 1][0] && arc[0][1] === arc[n - 1][1];
+  let P = arc;
+  if (!closed && tol > 0) {
+    const keep = new Uint8Array(n);
+    keep[0] = keep[n - 1] = 1;
+    const stack = [[0, n - 1]];
+    while (stack.length) {
+      const [a, b] = stack.pop();
+      const ax = arc[a][0] * kx, ay = arc[a][1], dx = arc[b][0] * kx - ax, dy = arc[b][1] - ay, L = Math.hypot(dx, dy);
+      let far = -1, fd = 0;
+      for (let i = a + 1; i < b; i++) {
+        const px = arc[i][0] * kx - ax, py = arc[i][1] - ay, d = L ? Math.abs(px * dy - py * dx) / L : Math.hypot(px, py);
+        if (d > fd) { fd = d; far = i; }
+      }
+      if (far >= 0 && fd > tol) { keep[far] = 1; stack.push([a, far], [far, b]); }
+    }
+    P = arc.filter((p, i) => keep[i]);
+  }
+  for (let it = 0; it < GEN_PASSES && P.length > 2; it++) {
+    const Q = [P[0]];
+    for (let i = 0; i + 1 < P.length; i++) {
+      const a = P[i], b = P[i + 1];
+      Q.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+    }
+    Q.push(P[P.length - 1]);
+    P = Q;
+  }
+  genArcs++;
+  return P;
+}
+function generalizeTopo(topo) {
+  const gen = new Set(), fixed = new Set(), pos = new Set(), neg = new Set();
+  const walk = (a, f) => { if (typeof a === "number") f(a); else if (a) a.forEach((x) => walk(x, f)); };
+  for (const g of topo.objects.p.geometries) {
+    const pr = g.properties || {};
+    walk(g.arcs, (a) => {
+      const j = a < 0 ? ~a : a;
+      (a < 0 ? neg : pos).add(j);
+      if (pr.gen) gen.add(j);
+      if (pr.keep) fixed.add(j);
+    });
+  }
+  for (const j of gen) if (pos.has(j) && neg.has(j) && !fixed.has(j)) topo.arcs[j] = generalizeArc(topo.arcs[j]);
+  return topo;
+}
 function topoFor(feats, km, q, smooth = true) {
-  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) } }, q), topo = smooth ? smoothTopo(raw) : raw;
+  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) } }, q), topo = smooth ? generalizeTopo(smoothTopo(raw)) : raw;
   const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
   const kept = new Set();
   const walk = (a) => { if (typeof a === "number") kept.add(a < 0 ? ~a : a); else if (a) a.forEach(walk); };
@@ -3706,7 +3765,7 @@ let datedDays = [];
 for (let n = 0; n < CHUNK_STARTS.length; n++) {
   const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
   const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
-  const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
+  const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep, gen: GEN_SRC.has(s.src) }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
   const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
   let dayRows = null;
   if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
@@ -4932,7 +4991,7 @@ if (existsSync(licence)) copyFileSync(licence, resolve(out, "COPYING-historical-
 else console.warn("historical-basemaps LICENSE not found beside " + source + "; data/COPYING-historical-basemaps.txt not written");
 
 console.log(dissolved + " spans had pieces over each other and were dissolved, " + unionDropped + " pieces could not be joined and were left out");
-console.log("smoothed " + stairArcs + " stair-stepped arcs");
+console.log("smoothed " + stairArcs + " stair-stepped arcs, generalized " + genArcs + " arcs of borders built from today's units");
 console.log("noded " + nodesAdded + " points into edges that another shape's point lay on");
 console.log("small territories: " + Math.round(smallGaps) + " km² of gaps beside Liechtenstein, Andorra, and San Marino joined to them");
 console.log(index.length + " snapshot maps shown, " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");
