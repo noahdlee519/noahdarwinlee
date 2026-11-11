@@ -805,12 +805,11 @@ select.ch-save-input {
   transform: scaleX(-1);
 }
 
-/* Play backwards and forwards side by side at the right of the timeline, and under them the speed of play: a slider from
-   a quarter of the usual speed to four times it, with a notch at the usual speed in the middle. */
 .ch-when-fwd {
   flex-direction: column;
   align-items: stretch;
-  gap: 5px;
+  gap: 4px;
+  margin-top: -14px;
 }
 
 .ch-plays {
@@ -819,75 +818,48 @@ select.ch-save-input {
 }
 
 .ch-speed {
-  position: relative;
-  display: block;
-  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+}
+
+.ch-speed-step {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--ink);
   cursor: pointer;
 }
 
-.ch-speed::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 2px;
-  bottom: 2px;
-  width: 1px;
-  background: var(--ch-faint);
-  pointer-events: none;
+.ch-speed-step:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1.5px #ebdfc2, inset 0 0 0 2.2px rgba(58, 42, 27, 0.75);
 }
 
-.ch-speed-range {
-  --ch-speed-at: 50%;
-  position: relative;
-  display: block;
-  /* As wide as the buttons above, not the browser's own width for a slider. */
-  width: 0;
-  min-width: 100%;
-  height: 16px;
-  margin: 0;
-  background: transparent;
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
+.ch-speed-step:disabled {
+  color: var(--ch-faint);
+  cursor: default;
 }
 
-.ch-speed-range::-webkit-slider-runnable-track {
-  height: 2px;
-  background: linear-gradient(to right, var(--ink) 0 var(--ch-speed-at), var(--ch-faint) var(--ch-speed-at) 100%);
-}
-
-.ch-speed-range::-moz-range-track {
-  height: 2px;
-  background: var(--ch-faint);
-}
-
-.ch-speed-range::-moz-range-progress {
-  height: 2px;
-  background: var(--ink);
-}
-
-.ch-speed-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  margin-top: -5px;
-  border: 1px solid var(--ink);
-  border-radius: 50%;
-  background: var(--bg);
-}
-
-.ch-speed-range::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border: 1px solid var(--ink);
-  border-radius: 50%;
-  background: var(--bg);
-}
-
-.ch-speed-range:focus-visible {
+.ch-speed-step:focus-visible {
   outline: 1.5px solid var(--ink);
   outline-offset: 2px;
+}
+
+.ch-speed-now {
+  flex: 1;
+  font-family: var(--ch-num);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--ink);
+  cursor: default;
+  user-select: none;
 }
 
 /* The date sits at the top, in the middle of the page, in a frame like the title's. */
@@ -2120,6 +2092,7 @@ select.ch-save-input {
 
   .ch-when-fwd {
     grid-area: fwd;
+    margin-top: 0;
   }
 
   .ch-time > .ch-year-box {

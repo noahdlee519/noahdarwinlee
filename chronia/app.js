@@ -4749,36 +4749,32 @@
   }
   // playMode is "normal", "fast", "back", or "back-fast".
   function playBack() { return playMode.indexOf("back") === 0; }
-  // The speed of play, set with the slider under the play buttons (or , and .) and remembered: its value v is a power of
-  // two, from a quarter of the usual speed to four times it, and every pause is divided by 2^v.
-  var SPEED_MIN = -2, SPEED_MAX = 2, SPEED_STEP = 0.25, playSpeed = 0, speedInput = $("speed");
+  var SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4], SPEED_MIN = -2, SPEED_MAX = 2, playSpeed = 0, speedOut = $("speed");
   try { var sv = parseFloat(localStorage.getItem(STORE_SPEED)); if (isFinite(sv)) playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, sv)); } catch (e) {}
   function playDelay(ms) { return ms / Math.pow(2, playSpeed); }
+  function speedIndex(v) {
+    var x = Math.pow(2, v), best = 0;
+    for (var i = 1; i < SPEEDS.length; i++) if (Math.abs(Math.log(SPEEDS[i] / x)) < Math.abs(Math.log(SPEEDS[best] / x))) best = i;
+    return best;
+  }
   function speedText(v) {
     var x = Math.pow(2, v);
-    if (Math.abs(v) < 1e-9) return "1×";
-    if (Math.abs(x - 0.5) < 1e-9) return "½×";
-    if (Math.abs(x - 0.25) < 1e-9) return "¼×";
-    return (x < 1 ? x.toFixed(2).replace(/^0/, "") : x.toFixed(x < 2 ? 2 : 1).replace(/\.?0+$/, "")) + "×";
+    return ({ 0.25: "¼", 0.5: "½", 0.75: "¾" }[x] || String(+x.toFixed(2))) + "×";
   }
   function setPlaySpeed(v, keep) {
-    playSpeed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, Math.round(v / SPEED_STEP) * SPEED_STEP));
-    speedInput.value = String(playSpeed);
-    var t = speedText(playSpeed);
-    speedInput.setAttribute("aria-valuetext", playSpeed === 0 ? "Usual speed" : t.replace("×", " times") + " the usual speed");
-    $("speed-box").setAttribute("data-tip", "Speed: " + t);
-    speedInput.style.setProperty("--ch-speed-at", ((playSpeed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN) * 100).toFixed(1) + "%");
+    var i = speedIndex(Math.max(SPEED_MIN, Math.min(SPEED_MAX, v)));
+    playSpeed = Math.log2(SPEEDS[i]);
+    speedOut.textContent = speedText(playSpeed);
+    speedOut.setAttribute("aria-label", "Speed of play: " + (playSpeed === 0 ? "usual speed" : speedText(playSpeed).replace("×", " times the usual speed")));
+    $("speed-down").disabled = i === 0;
+    $("speed-up").disabled = i === SPEEDS.length - 1;
     if (keep === false) return;
     try { localStorage.setItem(STORE_SPEED, String(playSpeed)); } catch (e) {}
-    // The speed shows in the slider's tip while it changes, and for a moment after.
-    showHint($("speed-box"), 0);
-    clearTimeout(speedTipTimer);
-    speedTipTimer = setTimeout(hideHint, 1200);
   }
-  var speedTipTimer = 0;
-  speedInput.addEventListener("input", function () { setPlaySpeed(parseFloat(speedInput.value)); });
-  // A double-click on the slider puts it back at the usual speed.
-  speedInput.addEventListener("dblclick", function () { setPlaySpeed(0); });
+  function stepPlaySpeed(d) { setPlaySpeed(Math.log2(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, speedIndex(playSpeed) + d))])); }
+  $("speed-down").addEventListener("click", function () { stepPlaySpeed(-1); });
+  $("speed-up").addEventListener("click", function () { stepPlaySpeed(1); });
+  speedOut.addEventListener("dblclick", function () { setPlaySpeed(0); });
   setPlaySpeed(playSpeed, false);
   var PLAY_BUTTONS = [["play", "normal", "Play through time"], ["play-back", "back", "Play backwards"]];
   function syncPlayTips() {
@@ -7157,8 +7153,8 @@
     else if (e.key === "D" && e.shiftKey) openDev();
     else if (e.key === "p" || e.key === "P") togglePlay(false);
     else if (e.key === "o" || e.key === "O") togglePlay(true);
-    else if (e.key === "," || e.key === "<") setPlaySpeed(playSpeed - SPEED_STEP * 2);
-    else if (e.key === "." || e.key === ">") setPlaySpeed(playSpeed + SPEED_STEP * 2);
+    else if (e.key === "," || e.key === "<") stepPlaySpeed(-1);
+    else if (e.key === "." || e.key === ">") stepPlaySpeed(1);
     else if (e.key === "m" || e.key === "M") setFlat(!flat);
     else if (e.key === "[") $("turn-left").click();
     else if (e.key === "]") $("turn-right").click();
