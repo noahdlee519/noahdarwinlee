@@ -3559,6 +3559,9 @@ const CAP_SET = {
   // The infobox lists Kerma, Napata, and Meroë undated; Kerma was the capital of the earlier Kerma culture, Napata of Kush from its rise about
   // 1070 BC, and Meroë from about 590 BC (Wikipedia's Kingdom of Kush and Meroë).
   "Kingdom of Kush": [["Napata", 31.84, 18.53, -1070, -591, 0, null], ["Meroë", 33.726, 16.933, -590, 350, 0, null]],
+  // Wikidata and the infobox give Government House and Saint Saviour, the Lieutenant Governor's residence and its parish; the seat is St Helier
+  // (Wikipedia's St Helier; time-ok.com and the towns data give 49.188, -2.105).
+  "Jersey": [["Saint Helier", -2.105, 49.188, null, null, 0, null]],
   "Shang dynasty": [["Zhengzhou", 113.684, 34.764, -1600, -1301, 0, null], ["Yin", 114.319, 36.123, -1300, -1046, 0, null]]
 };
 const capsPath = resolve(here, "capitals-wikidata.json");
