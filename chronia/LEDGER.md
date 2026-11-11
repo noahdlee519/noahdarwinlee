@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1815–1839 | the Netherlands | Amsterdam as the United Kingdom of the Netherlands' capital
+
+- What changed: the United Kingdom of the Netherlands had no capital, since Wikidata has none under its title; Amsterdam is now its capital, as for the Netherlands before and after.
+- Tables: `tools/build-eras.mjs` (`CAP_SET`).
+- Sources: (1) Wikipedia, "Capital of the Netherlands": Amsterdam "has been recognized as the capital since 1814"; (2) Wikidata's capital of the Netherlands (Q55), Amsterdam, which the builder already uses before 1815 and after 1839.
+- Confidence: medium, because the kingdom's government sat in The Hague and Brussels by turns.
+- Alternatives: The Hague and Brussels, which Wikipedia's "United Kingdom of the Netherlands" gives as its capitals in its infobox; the map shows one capital, and two cities 140 km apart would show none.
+- Left out: the Batavian Republic and the Kingdom of Holland, whose capitals are unchanged.
+
 ## 1800 BC–AD 2026 | Israel | Jaffa and Tel Aviv, and the founding of Netanya, Nahariya, and Modi'in
 
 - What changed: Jaffa, which no source of cities had, is added from the 18th century BC to its union with Tel Aviv on 16 June 1950, named Joppa until the Arab conquest of 636. Tel Aviv still begins on 11 April 1909, but at about 300 people, not the sources' 160,000, which is its size decades later; it now grows through the census figures to 166,660 in 1945. Netanya, Nahariya, and Modi'in-Maccabim-Re'ut, all founded in the 20th century, began in 1850 as estimated towns of 5,000; they now begin at their founding, at about a hundred people.
@@ -24,7 +33,7 @@ Each entry:
 - Sources: (1) Jaffa's place: GeoNames, 32.0504, 34.7522, and the NGA gazetteer, 32.0469, 34.7592; (2) Jaffa's dates and people: Wikipedia's "Jaffa" (settlement from the 18th century BC, ruins from 1432 to the 1590s, resettled in the early 19th century, 5,000 in 1867, 47,799 in 1922, 51,866 in 1931, 94,310 in 1945, 40,000 before the union, which took effect on 16 June 1950) and "Timeline of Jaffa" (the Arab conquest in 636, 14,000 in 1887, 50,000 in 1913); (3) Tel Aviv's people: Wikipedia's "Tel Aviv" (66 families in 1909, 2,679 in 1915, 15,185 in 1922, about 34,000 in 1925, 46,101 in 1931, 160,000 in 1939, 166,660 in 1945); (4) the foundings: Wikipedia's "Netanya" (18 February 1929), Nahariya's own history (10 February 1935), and Wikipedia's "List of cities in Israel" and "Modi'in-Maccabim-Re'ut" (Maccabim, 1985).
 - Confidence: high for the dates; low for Jaffa's figures before 1867, which are rough.
 - Alternatives: Modi'in from 1996, when the city proper opened to residents.
-- Left out: at the closest zoom Tel Aviv's dot lies about 6 pixels from Jaffa's, so until Tel Aviv outgrows Jaffa in about 1932 Jaffa's name covers it; other cities of the region whose dates are off (Hebron and Nazareth, which begin only in the 19th century; Ramallah and Beersheba, which begin in 1958 and 1941; Acre, which ends in 1900; and Tiberias, which ends in 640).
+- Left out: until Tel Aviv outgrows Jaffa in about 1932, the two show side by side only zoomed in close, at the closest zoom; other cities of the region whose dates are off (Hebron and Nazareth, which begin only in the 19th century; Ramallah and Beersheba, which begin in 1958 and 1941; Acre, which ends in 1900; and Tiberias, which ends in 640).
 
 ## 1200–2026 | the world | agreed and unsettled borders, names across 1886, and the southern cone's lines
 

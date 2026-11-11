@@ -3655,6 +3655,9 @@ const CAP_SET = {
   // (Wikipedia's St Helier; time-ok.com and the towns data give 49.188, -2.105). Dated from 1329, since Wikidata's capital starts in 1651: the Island
   // Wiki's Royal Square has a court house there from 1329, and Britannica's Saint Helier has the king's courts meeting there from the 13th century.
   "Jersey": [["Saint Helier", -2.105, 49.188, 1329, null, 0, null]],
+  // Wikidata has no capital under this title. "Capital of the Netherlands" has Amsterdam the capital since 1814, as Wikidata has it for the
+  // Netherlands before and after; its infobox gives The Hague and Brussels, between which the government moved.
+  "United Kingdom of the Netherlands": [["Amsterdam", 4.894, 52.373, null, null, 0, null]],
   "Shang dynasty": [["Zhengzhou", 113.684, 34.764, -1600, -1301, 0, null], ["Yin", 114.319, 36.123, -1300, -1046, 0, null]]
 };
 const capsPath = resolve(here, "capitals-wikidata.json");

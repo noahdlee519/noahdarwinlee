@@ -50,7 +50,7 @@
   var flat = false;
   var dpr = 1, W = 0, H = 0, cx = 0, cy = 0, baseR = 0, baseK = 0, freeT = 0, freeB = 0;
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35), ROLL_SIGN = -1;
-  var MIN_ZOOM = 0.6, MAX_ZOOM = 40;
+  var MIN_ZOOM = 0.6, MAX_ZOOM = 80;
   var FB = { k: 1, xc: 0, yc: 0, wrap: false, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
   var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
 
@@ -1466,8 +1466,10 @@
     placedLabels = [];
     var placed = fixedBoxes();
     if (!skip.labels) {
+      reserveMarks(placed, S);
       drawPolityLabels(snap, placed, kp);
       drawSeaLabels(placed, S);
+      for (var ri = placed.length - 1; ri >= 0; ri--) if (placed[ri].res) placed.splice(ri, 1);
       drawPlaces(placed, S);
       drawDivisionLabels(placed, S);
     }
@@ -3145,6 +3147,22 @@
       return true;
     }
     return false;
+  }
+  function reserveMarks(placed, S) {
+    if (S < 230) return;
+    var k = markSize(S), i, pt;
+    var add = function (q, r) { placed.push({ x: q[0] - r, y: q[1] - r, w: 2 * r, h: 2 * r, res: true }); };
+    if (current && layers.capitals) {
+      var caps = capitalList(current, S);
+      for (i = 0; i < caps.length; i++) add(caps[i].pt, 4.3 * k + 1);
+    }
+    if (cities && layers.cities) {
+      var list = cityRanked(now);
+      for (i = 0; i < list.length && list[i].tier <= 1; i++) {
+        pt = projectLL(list[i].c.lon, list[i].c.lat);
+        if (pt && pt[2] >= 0.25) add(pt, 2.85 * k + 1);
+      }
+    }
   }
   function drawPlaces(placed, S) {
     if (S < 230) return;
@@ -4958,6 +4976,13 @@
       return el;
     };
     var textLine = function (label, t) { var el = line(label); el.appendChild(document.createTextNode(t)); return el; };
+    var placeLine = function (label, name, lon, lat) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = name;
+      b.addEventListener("click", function () { flyTo(lon, lat, Math.max(localScale(), 1500)); });
+      line(label).appendChild(b);
+    };
     var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityName(id))); };
     if (p) {
       if (p.claims) {
@@ -4967,9 +4992,9 @@
       if (p.ruler >= 0) addPolity(line("Held by"), p.ruler);
       if (p.part >= 0 && p.part !== p.ruler) addPolity(line("Part of"), p.part);
       var capNow = polityCap(p);
-      if (capNow) textLine("Capital", capitalName(capNow));
+      if (capNow) placeLine("Capital", capitalName(capNow), capNow[1], capNow[2]);
       var big = !e[4] && !p.people ? largestCity(p) : null;
-      if (big) textLine("Largest city", namedAt(big.steps, big.name, now));
+      if (big) placeLine("Largest city", cityShownName(big, now), big.lon, big.lat);
       var flagLine = null, langLine = null;
       if (!e[4] && !p.people && !p.claims) {
         flagLine = line("Flag"); flagLine.hidden = true;
