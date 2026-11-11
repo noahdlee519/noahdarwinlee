@@ -3644,6 +3644,17 @@
     el.hidden = !text;
     divNote(name);
   }
+  function loadingDots(el, live) {
+    var dots = 3;
+    el.textContent = "Loading...";
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return 0;
+    var tick = setInterval(function () {
+      if (!live()) { clearInterval(tick); return; }
+      dots = dots % 3 + 1;
+      el.textContent = "Loading" + ".".repeat(dots);
+    }, 450);
+    return tick;
+  }
   var divNoteAsk = 0, divNoteTimer = 0;
   function divNote(name) {
     var box = $("card-divnote"), out = $("divnote-text"), by = $("divnote-by"), ask = ++divNoteAsk;
@@ -3657,10 +3668,12 @@
     var show = function (job) {
       by.hidden = true;
       out.hidden = false;
-      out.classList.add("is-writing");
+      out.classList.add("is-writing", "is-quiet");
+      var tick = loadingDots(out, function () { return ask === divNoteAsk && out.classList.contains("is-writing"); });
       job.then(function (t) {
+        clearInterval(tick);
         if (ask !== divNoteAsk) return;
-        out.classList.remove("is-writing");
+        out.classList.remove("is-writing", "is-quiet");
         if (t) { out.textContent = t; return; }
         out.hidden = true;
         by.textContent = blurbStopText() || "The note could not be written just now.";
@@ -5367,7 +5380,9 @@
       by.hidden = true;
       quiet("");
       text.classList.add("is-writing");
+      var tick = loadingDots(text, function () { return ask === wikiAsk && mode === "ai"; });
       job.then(function (t) {
+        clearInterval(tick);
         if (ask !== wikiAsk) return;
         if (t) {
           mode = "done";

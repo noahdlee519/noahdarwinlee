@@ -1789,24 +1789,6 @@ select.ch-save-input {
   color: var(--ch-muted);
 }
 
-.ch-wiki-text.is-writing {
-  animation: ch-writing 1.6s ease-in-out infinite alternate;
-}
-
-@keyframes ch-writing {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.55;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ch-wiki-text.is-writing {
-    animation: none;
-  }
-}
 
 .ch-wiki-by {
   margin: 8px 0 0;
