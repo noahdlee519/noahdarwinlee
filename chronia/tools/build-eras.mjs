@@ -8,7 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
-import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM } from "./medieval.mjs";
+import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
 import { makeSoften } from "./soften.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
@@ -1270,6 +1270,11 @@ const REGIMES = {
 const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ireland", "Kingdom of Denmark": "Denmark", "Netherlands": "Netherlands" };
 const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
 const NAME_FIX = [
+  // Cliopatria names the Crimea "Blue Horde" from 1445 to 1449, before its Crimean Khanate begins in 1450 (the khanate dates from
+  // 1441, as the medieval table draws it to 1444), and the steppe north of the Caucasus "Blue Horde" in 1445, the Golden Horde's in
+  // the medieval table to 1444 and in Cliopatria from 1446; the Blue Horde was the Horde's eastern wing in the 14th century.
+  ["Blue Horde", "Crimean Khanate", 1445, 1449, { box: [32, 44, 37.6, 47.5], wiki: "Crimean Khanate" }],
+  ["Blue Horde", "Golden Horde", 1445, 1445, { box: [37.6, 40, 60, 52], wiki: "Golden Horde" }],
   ["Egypt", "Naqada culture", -3400, -3001, { people: 1, wiki: "Naqada culture" }],
   // Middle Woodland cultures of the Southeast on the snapshots of AD 100 to 500; "Miller" was drawn as a state and linked to the occupation.
   ["Miller", "Miller Culture", -150, 599, { people: 1, wiki: "Miller culture" }],
@@ -2743,7 +2748,10 @@ const britishAmerica = (list) => list.flatMap((s) => {
 // Europe. Small territories keep their land.
 // The land a dated table covers (its mask) is cut out of every other span in the table's years, FROM to TO, and what a cut leaves
 // along the coast (a source's coarser shore against the units') is dropped. Used by the tables of 476 to 961 and 1648 to 1885.
-const maskOut = (list, mask, FROM, TO) => {
+// opts.whole: the share of a span's cells on the mask's at which it is dropped whole (0.9); opts.keepKm2: a piece left beside the mask
+// at least this large is kept even when it lies mostly within two cells of it (the bridge's edge runs between states, not along a coast).
+const maskOut = (list, mask, FROM, TO, opts = {}) => {
+  const WHOLE = opts.whole ?? 0.9, KEEP_KM2 = opts.keepKm2 ?? Infinity;
   const box = (w, s, e, n) => [[[[w, s], [e, s], [e, n], [w, n], [w, s]]]];
   const mb = boxOf(mask), tiles = [];
   for (let x = Math.floor(mb[0] / 3) * 3; x < mb[2]; x += 3) for (let y = Math.floor(mb[1] / 3) * 3; y < mb[3]; y += 3) {
@@ -2782,7 +2790,7 @@ const maskOut = (list, mask, FROM, TO) => {
     if (!all) return true;
     let w = 0;
     for (const i of cs) if (maskCells.has(i)) w += cellW(i);
-    if (w < 0.9 * all) return true;
+    if (w < WHOLE * all) return true;
     dropped++;
     return false;
   });
@@ -2798,7 +2806,7 @@ const maskOut = (list, mask, FROM, TO) => {
   list = list.map((s) => {
     if (!s.tableMasked) return s;
     const inside = s.first >= FROM && s.last <= TO;
-    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p)) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
+    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p) || km2Of([p]) >= KEEP_KM2) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
     if (polys.length !== s.polys.length) shorn++;
     const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
     if (out) delete out.tableMasked;
@@ -2885,6 +2893,14 @@ const medieval = (list) => {
     mb = [Math.min(mb[0], e.mb[0]), Math.min(mb[1], e.mb[1]), Math.max(mb[2], e.mb[2]), Math.max(mb[3], e.mb[3])];
     dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
   }
+  if (T.maskBridge.length) {
+    // The bridge's edge runs through the middle of Europe, between interleaved states (Venice's mainland among Milan, Mantua, Ferrara,
+    // Trent, and Friuli), so its spans are cut, never dropped whole, and the large pieces they leave beside it are kept.
+    const e = maskOut(list, T.maskBridge, MEDIEVAL_TO + 1, BRIDGE_TO, { whole: 2, keepKm2: 1500 });
+    list = e.list;
+    mb = [Math.min(mb[0], e.mb[0]), Math.min(mb[1], e.mb[1]), Math.max(mb[2], e.mb[2]), Math.max(mb[3], e.mb[3])];
+    dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
+  }
   const spans = T.spans.map(({ host, size, ...s }) => withBox({ ...s, src: "medieval", host }));
   let hosted = 0;
   for (const t of spans) {
@@ -2893,7 +2909,7 @@ const medieval = (list) => {
     if (list.some((s) => s.name === t.name && s.first <= t.last && t.first <= s.last && cellSum(s.cells || cellsOf(s.polys)) > size)) { t.noLabel = true; hosted++; }
   }
   spans.forEach((t) => { delete t.host; });
-  const { cutSpans, quiet, kept } = tableJoin(list, spans, MEDIEVAL_FROM, MEDIEVAL_TO, mb);
+  const { cutSpans, quiet, kept } = tableJoin(list, spans, MEDIEVAL_FROM, BRIDGE_TO, mb);
   console.log("medieval: " + spans.length + " spans on " + T.units + " pieces of units, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " table spans with no name beside the sources', " + kept + " cuts of small territories out of the table's spans, " + Math.round((Date.now() - t0) / 1000) + " s");
   return list.concat(cutSpans);
 };
@@ -3851,7 +3867,9 @@ dated.forEach((s) => { s.cap = capFor(s); });
 console.log("capitals: " + capStats.spans + " dated spans with a capital, in span-years " + capStats.wikidata + " from Wikidata, " + capStats.popular + " the largest of its undated capitals, " + capStats.infobox + " from the infobox; " + capStats.outside + " spans whose capitals all lie outside them");
 const GROUPS = [{
   name: "Holy Roman Empire",
-  maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, 1491, ["1400"]], [1492, 1499, ["1492"]], [1500, 1529, ["1500"]], [1530, 1599, ["1530"]], [1600, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
+  // From 1445 to 1647 the medieval table's bridge draws the Empire and its members (tools/medieval-bridge.mjs), so the outline is empty
+  // then: no source span becomes a member, and one Cliopatria marks as a member is freed, so no slivers of it lie between the bridge's.
+  maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, MEDIEVAL_TO, ["1400"]], [MEDIEVAL_TO + 1, BRIDGE_TO, []], [BRIDGE_TO + 1, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
   never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
 }, { name: BRITISH_AMERICA },
 // The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
@@ -3861,7 +3879,7 @@ const GROUPS = [{
 // From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138 to 1319).
 { name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: MEDIEVAL_TO }, { name: "Poland", from: 1138, to: 1319 },
 // From 1251: the Burgundian State (1384) and the Kalmar Union (1397).
-{ name: "Burgundian State", from: 1384, to: MEDIEVAL_TO }, { name: "Kalmar Union", from: 1397, to: MEDIEVAL_TO }];
+{ name: "Burgundian State", from: 1384, to: 1481 }, { name: "Habsburg Netherlands", from: 1482, to: 1548 }, { name: "Kalmar Union", from: 1397, to: MEDIEVAL_TO }];
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
@@ -5200,7 +5218,10 @@ function windowColours(units, pairs, fixed, gap) {
     const at = [a, Math.floor((a + b) / 2), b].filter(sameAt);
     if (!at.length) continue;
     const under = [A, B].filter((u) => size.get(u.hue) <= WINDOW_MAX_KM2), can = under.length ? under : [A, B];
-    const side = can.length === 1 ? can[0] : A.free && !B.free ? A : B.free && !A.free ? B : size.get(A.hue) <= size.get(B.hue) ? A : B;
+    // A side whose window of another colour runs up to the clash's first year keeps it, so the two don't swap colours where a
+    // source hands over to another (Poland and Lithuania at 1444/1445, where the medieval table hands Europe to Cliopatria).
+    const goesOn = can.filter((u) => (over.get(u.hue) || []).some((w) => w[2] >= 0 && w[1] >= a - 1 && w[0] < a));
+    const side = goesOn.length === 1 ? goesOn[0] : can.length === 1 ? can[0] : A.free && !B.free ? A : B.free && !A.free ? B : size.get(A.hue) <= size.get(B.hue) ? A : B;
     if (!over.has(side.hue)) over.set(side.hue, []);
     const mine = over.get(side.hue), near = mine.find((w) => w[0] - gap <= b && a <= w[1] + gap);
     const was = near && near.slice();

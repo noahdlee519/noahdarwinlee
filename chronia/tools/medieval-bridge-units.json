@@ -1,0 +1,1492 @@
+{
+ "AIR|-": [
+  "GBR:Armagh/Armagh",
+  "GBR:Dungannon and South Tyrone/Dungannon and South Tyrone",
+  "GBR:Fermanagh/Fermanagh",
+  "GBR:Mid Ulster/Mid Ulster",
+  "IRL:Monaghan/Monaghan"
+ ],
+ "ANH|Electorate of Saxony": [
+  "DEU:Saxony-Anhalt/Saalekreis"
+ ],
+ "ANH|Holy Roman Empire": [
+  "DEU:Saxony-Anhalt/Harz",
+  "DEU:Saxony-Anhalt/Salzlandkreis"
+ ],
+ "ANH|Principality of Anhalt-Dessau": [
+  "DEU:Saxony-Anhalt/Dessau-Roßlau"
+ ],
+ "ANH|Principality of Anhalt-Köthen": [
+  "DEU:Saxony-Anhalt/Anhalt-Bitterfeld"
+ ],
+ "AQU|Habsburg Monarchy": [
+  "ITA:Gorizia/Gorizia",
+  "ITA:Trieste/Trieste",
+  "SVN:Ajdovščina/Ajdovščina",
+  "SVN:Bovec/Bovec",
+  "SVN:Brda/Brda",
+  "SVN:Kanal ob Soči/Kanal ob Soči",
+  "SVN:Kobarid/Kobarid",
+  "SVN:Kranjska Gora/Kranjska Gora",
+  "SVN:Miren–Kostanjevica/Miren–Kostanjevica",
+  "SVN:Nova Gorica/Nova Gorica",
+  "SVN:Tolmin/Tolmin",
+  "SVN:Šempeter–Vrtojba/Šempeter–Vrtojba"
+ ],
+ "AQU|Republic of Venice": [
+  "SVN:Izola/Izola",
+  "SVN:Komen/Komen",
+  "SVN:Koper/Koper",
+  "SVN:Piran/Piran",
+  "SVN:Sežana/Sežana"
+ ],
+ "ART|Spanish Netherlands": [
+  "FRA:Pas-de-Calais/Pas-de-Calais"
+ ],
+ "AUSM|Electorate of Bavaria": [
+  "AUT:Upper Austria/Braunau am Inn",
+  "AUT:Upper Austria/Ried im Innkreis",
+  "AUT:Upper Austria/Schärding"
+ ],
+ "AUSM|Habsburg Monarchy": [
+  "AUT:Lower Austria/Amstetten",
+  "AUT:Lower Austria/Baden",
+  "AUT:Lower Austria/Bruck an der Leitha",
+  "AUT:Lower Austria/Gmünd",
+  "AUT:Lower Austria/Gänserndorf",
+  "AUT:Lower Austria/Hollabrunn",
+  "AUT:Lower Austria/Horn",
+  "AUT:Lower Austria/Korneuburg",
+  "AUT:Lower Austria/Krems an der Donau",
+  "AUT:Lower Austria/Krems-Land",
+  "AUT:Lower Austria/Lilienfeld",
+  "AUT:Lower Austria/Melk",
+  "AUT:Lower Austria/Mistelbach",
+  "AUT:Lower Austria/Mödling",
+  "AUT:Lower Austria/Neunkirchen",
+  "AUT:Lower Austria/Sankt Pölten",
+  "AUT:Lower Austria/Sankt Pölten-Land",
+  "AUT:Lower Austria/Scheibbs",
+  "AUT:Lower Austria/Tulln",
+  "AUT:Lower Austria/Waidhofen an der Thaya",
+  "AUT:Lower Austria/Waidhofen an der Ybbs",
+  "AUT:Lower Austria/Wiener Neustadt",
+  "AUT:Lower Austria/Wiener Neustadt-Land",
+  "AUT:Lower Austria/Zwettl",
+  "AUT:Upper Austria/Eferding",
+  "AUT:Upper Austria/Freistadt",
+  "AUT:Upper Austria/Gmunden",
+  "AUT:Upper Austria/Grieskirchen",
+  "AUT:Upper Austria/Kirchdorf an der Krems",
+  "AUT:Upper Austria/Linz",
+  "AUT:Upper Austria/Linz-Land",
+  "AUT:Upper Austria/Perg",
+  "AUT:Upper Austria/Rohrbach",
+  "AUT:Upper Austria/Steyr",
+  "AUT:Upper Austria/Steyr-Land",
+  "AUT:Upper Austria/Urfahr-Umgebung",
+  "AUT:Upper Austria/Vöcklabruck",
+  "AUT:Upper Austria/Wels",
+  "AUT:Upper Austria/Wels-Land",
+  "AUT:Vienna/Vienna"
+ ],
+ "BADM|Margraviate of Baden-Baden": [
+  "DEU:Baden-Württemberg/Baden-Baden",
+  "DEU:Baden-Württemberg/Rastatt"
+ ],
+ "BADM|Margraviate of Baden-Durlach": [
+  "DEU:Baden-Württemberg/Enzkreis",
+  "DEU:Baden-Württemberg/Karlsruhe",
+  "DEU:Baden-Württemberg/Landkreis Karlsruhe",
+  "DEU:Baden-Württemberg/Pforzheim"
+ ],
+ "BAMB|Prince-Bishopric of Bamberg": [
+  "DEU:Bavaria/Bamberg",
+  "DEU:Bavaria/Forchheim",
+  "DEU:Bavaria/Kronach",
+  "DEU:Bavaria/Landkreis Bamberg",
+  "DEU:Bavaria/Lichtenfels"
+ ],
+ "BAR|Duchy of Lorraine": [
+  "FRA:Meuse/Meuse"
+ ],
+ "BAV|Electorate of Bavaria": [
+  "DEU:Bavaria/Landkreis Regensburg",
+  "DEU:Bavaria/Traunstein"
+ ],
+ "BAV|Holy Roman Empire": [
+  "DEU:Bavaria/Berchtesgadener Land",
+  "DEU:Bavaria/Eichstätt",
+  "DEU:Bavaria/Regensburg"
+ ],
+ "BERG|Jülich-Berg": [
+  "DEU:North Rhine-Westphalia/Düsseldorf",
+  "DEU:North Rhine-Westphalia/Leverkusen",
+  "DEU:North Rhine-Westphalia/Mettmann",
+  "DEU:North Rhine-Westphalia/Oberbergischer Kreis",
+  "DEU:North Rhine-Westphalia/Remscheid",
+  "DEU:North Rhine-Westphalia/Rhein-Sieg-Kreis",
+  "DEU:North Rhine-Westphalia/Rheinisch-Bergischer Kreis",
+  "DEU:North Rhine-Westphalia/Solingen",
+  "DEU:North Rhine-Westphalia/Wuppertal"
+ ],
+ "BING|Electorate of Bavaria": [
+  "DEU:Bavaria/Aichach-Friedberg",
+  "DEU:Bavaria/Ingolstadt",
+  "DEU:Bavaria/Pfaffenhofen a.d. Ilm"
+ ],
+ "BING|Palatinate-Neuburg": [
+  "DEU:Bavaria/Neuburg-Schrobenhausen"
+ ],
+ "BLAN|Electorate of Bavaria": [
+  "DEU:Bavaria/Altötting",
+  "DEU:Bavaria/Deggendorf",
+  "DEU:Bavaria/Dingolfing-Landau",
+  "DEU:Bavaria/Freyung-Grafenau",
+  "DEU:Bavaria/Kelheim",
+  "DEU:Bavaria/Landkreis Landshut",
+  "DEU:Bavaria/Landshut",
+  "DEU:Bavaria/Regen",
+  "DEU:Bavaria/Rottal-Inn",
+  "DEU:Bavaria/Straubing",
+  "DEU:Bavaria/Straubing-Bogen"
+ ],
+ "BLAN|Prince-Archbishopric of Salzburg": [
+  "DEU:Bavaria/Mühldorf a. Inn"
+ ],
+ "BMUN|Electorate of Bavaria": [
+  "DEU:Bavaria/Bad Tölz-Wolfratshausen",
+  "DEU:Bavaria/Dachau",
+  "DEU:Bavaria/Ebersberg",
+  "DEU:Bavaria/Erding",
+  "DEU:Bavaria/Fürstenfeldbruck",
+  "DEU:Bavaria/Landkreis München",
+  "DEU:Bavaria/Landkreis Rosenheim",
+  "DEU:Bavaria/Landsberg am Lech",
+  "DEU:Bavaria/Miesbach",
+  "DEU:Bavaria/München",
+  "DEU:Bavaria/Rosenheim",
+  "DEU:Bavaria/Starnberg",
+  "DEU:Bavaria/Weilheim-Schongau"
+ ],
+ "BMUN|Holy Roman Empire": [
+  "DEU:Bavaria/Freising",
+  "DEU:Bavaria/Garmisch-Partenkirchen"
+ ],
+ "BOH|Brandenburg-Prussia": [
+  "DEU:Brandenburg/Cottbus"
+ ],
+ "BOH|Electorate of Saxony": [
+  "DEU:Brandenburg/Dahme-Spreewald",
+  "DEU:Brandenburg/Oberspreewald-Lausitz",
+  "DEU:Brandenburg/Spree-Neiße",
+  "DEU:Saxony/Bautzen",
+  "DEU:Saxony/Görlitz"
+ ],
+ "BOH|Habsburg Monarchy": [
+  "CZE:Central Bohemian/Benešov",
+  "CZE:Central Bohemian/Beroun",
+  "CZE:Central Bohemian/Kladno",
+  "CZE:Central Bohemian/Kolín",
+  "CZE:Central Bohemian/Kutná Hora",
+  "CZE:Central Bohemian/Mladá Boleslav",
+  "CZE:Central Bohemian/Mělník",
+  "CZE:Central Bohemian/Nymburk",
+  "CZE:Central Bohemian/Praha-východ",
+  "CZE:Central Bohemian/Praha-západ",
+  "CZE:Central Bohemian/Příbram",
+  "CZE:Central Bohemian/Rakovník",
+  "CZE:Hradec Králové/Hradec Králové",
+  "CZE:Hradec Králové/Jičín",
+  "CZE:Hradec Králové/Náchod",
+  "CZE:Hradec Králové/Rychnov nad Kněžnou",
+  "CZE:Hradec Králové/Trutnov",
+  "CZE:Karlovy Vary/Cheb",
+  "CZE:Karlovy Vary/Karlovy Vary",
+  "CZE:Karlovy Vary/Sokolov",
+  "CZE:Liberec/Jablonec nad Nisou",
+  "CZE:Liberec/Liberec",
+  "CZE:Liberec/Semily",
+  "CZE:Liberec/Česká Lípa",
+  "CZE:Pardubice/Chrudim",
+  "CZE:Pardubice/Pardubice",
+  "CZE:Pardubice/Svitavy",
+  "CZE:Pardubice/Ústí nad Orlicí",
+  "CZE:Plzeň-/Domažlice",
+  "CZE:Plzeň-/Klatovy",
+  "CZE:Plzeň-/Plzeň-jih",
+  "CZE:Plzeň-/Plzeň-město",
+  "CZE:Plzeň-/Plzeň-sever",
+  "CZE:Plzeň-/Rokycany",
+  "CZE:Plzeň-/Tachov",
+  "CZE:Prague/Prague",
+  "CZE:South Bohemian/Jindřichův Hradec",
+  "CZE:South Bohemian/Prachatice",
+  "CZE:South Bohemian/Písek",
+  "CZE:South Bohemian/Strakonice",
+  "CZE:South Bohemian/Tábor",
+  "CZE:South Bohemian/České Budějovice",
+  "CZE:South Bohemian/Český Krumlov",
+  "CZE:Ústí nad Labem/Chomutov",
+  "CZE:Ústí nad Labem/Děčín",
+  "CZE:Ústí nad Labem/Litoměřice",
+  "CZE:Ústí nad Labem/Louny",
+  "CZE:Ústí nad Labem/Most",
+  "CZE:Ústí nad Labem/Teplice",
+  "CZE:Ústí nad Labem/Ústí nad Labem"
+ ],
+ "BRAND|Brandenburg-Prussia": [
+  "DEU:Berlin/Berlin",
+  "DEU:Brandenburg/Barnim",
+  "DEU:Brandenburg/Brandenburg an der Havel",
+  "DEU:Brandenburg/Frankfurt (Oder)",
+  "DEU:Brandenburg/Havelland",
+  "DEU:Brandenburg/Märkisch-Oderland",
+  "DEU:Brandenburg/Oberhavel",
+  "DEU:Brandenburg/Oder-Spree",
+  "DEU:Brandenburg/Ostprignitz-Ruppin",
+  "DEU:Brandenburg/Potsdam",
+  "DEU:Brandenburg/Potsdam-Mittelmark",
+  "DEU:Brandenburg/Prignitz",
+  "DEU:Brandenburg/Uckermark",
+  "DEU:Saxony-Anhalt/Altmarkkreis Salzwedel",
+  "DEU:Saxony-Anhalt/Stendal"
+ ],
+ "BRAND|Duchy of Mecklenburg-Güstrow": [
+  "DEU:Mecklenburg-Western Pomerania/Mecklenburgische Seenplatte"
+ ],
+ "BRAND|Principality of Lüneburg": [
+  "DEU:Lower Saxony/Lüchow-Dannenberg"
+ ],
+ "BREB|Bremen-Verden": [
+  "DEU:Free Hanseatic Bremen/Bremerhaven",
+  "DEU:Lower Saxony/Cuxhaven",
+  "DEU:Lower Saxony/Osterholz",
+  "DEU:Lower Saxony/Rotenburg (Wümme)",
+  "DEU:Lower Saxony/Stade",
+  "DEU:Lower Saxony/Verden"
+ ],
+ "BREB|Duchy of Holstein-Gottorp": [
+  "DEU:Schleswig-Holstein/Dithmarschen"
+ ],
+ "BREB|Free City of Bremen": [
+  "DEU:Free Hanseatic Bremen/Bremen"
+ ],
+ "BRF|-": [
+  "IRL:Cavan/Cavan",
+  "IRL:Leitrim/Leitrim"
+ ],
+ "BRIX|Habsburg Monarchy": [
+  "ITA:Trentino-South Tyrol/Trentino-South Tyrol"
+ ],
+ "BRUL|Duchy of Brunswick": [
+  "DEU:Lower Saxony/Braunschweig",
+  "DEU:Lower Saxony/Helmstedt",
+  "DEU:Lower Saxony/Salzgitter",
+  "DEU:Lower Saxony/Wolfenbüttel",
+  "DEU:Lower Saxony/Wolfsburg"
+ ],
+ "BRUL|Principality of Calenberg": [
+  "DEU:Lower Saxony/Göttingen",
+  "DEU:Lower Saxony/Northeim",
+  "DEU:Lower Saxony/Region Hannover"
+ ],
+ "CARD|Habsburg Monarchy": [
+  "AUT:Burgenland/Jennersdorf",
+  "AUT:Carinthia/Feldkirchen",
+  "AUT:Carinthia/Hermagor",
+  "AUT:Carinthia/Klagenfurt",
+  "AUT:Carinthia/Klagenfurt-Land",
+  "AUT:Carinthia/Sankt Veit an der Glan",
+  "AUT:Carinthia/Spittal an der Drau",
+  "AUT:Carinthia/Villach",
+  "AUT:Carinthia/Villach-Land",
+  "AUT:Carinthia/Völkermarkt",
+  "AUT:Carinthia/Wolfsberg",
+  "SVN:Apače/Apače",
+  "SVN:Beltinci/Beltinci",
+  "SVN:Benedikt/Benedikt",
+  "SVN:Bistrica ob Sotli/Bistrica ob Sotli",
+  "SVN:Bled/Bled",
+  "SVN:Bloke/Bloke",
+  "SVN:Bohinj/Bohinj",
+  "SVN:Borovnica/Borovnica",
+  "SVN:Braslovče/Braslovče",
+  "SVN:Brezovica/Brezovica",
+  "SVN:Brežice/Brežice",
+  "SVN:Cankova/Cankova",
+  "SVN:Celje/Celje",
+  "SVN:Cerklje na Gorenjskem/Cerklje na Gorenjskem",
+  "SVN:Cerknica/Cerknica",
+  "SVN:Cerkno/Cerkno",
+  "SVN:Cerkvenjak/Cerkvenjak",
+  "SVN:Destrnik/Destrnik",
+  "SVN:Dobje/Dobje",
+  "SVN:Dobrepolje/Dobrepolje",
+  "SVN:Dobrna/Dobrna",
+  "SVN:Dobrova–Polhov Gradec/Dobrova–Polhov Gradec",
+  "SVN:Dobrovnik/Dobrovnik",
+  "SVN:Dol pri Ljubljani/Dol pri Ljubljani",
+  "SVN:Dolenjske Toplice/Dolenjske Toplice",
+  "SVN:Domžale/Domžale",
+  "SVN:Dornava/Dornava",
+  "SVN:Dravograd/Dravograd",
+  "SVN:Duplek/Duplek",
+  "SVN:Gorišnica/Gorišnica",
+  "SVN:Gornja Radgona/Gornja Radgona",
+  "SVN:Gornji Grad/Gornji Grad",
+  "SVN:Gornji Petrovci/Gornji Petrovci",
+  "SVN:Grad/Grad",
+  "SVN:Grosuplje/Grosuplje",
+  "SVN:Hajdina/Hajdina",
+  "SVN:Hodoš/Hodoš",
+  "SVN:Horjul/Horjul",
+  "SVN:Hoče-Slivnica/Hoče-Slivnica",
+  "SVN:Hrastnik/Hrastnik",
+  "SVN:Idrija/Idrija",
+  "SVN:Ig/Ig",
+  "SVN:Ilirska Bistrica/Ilirska Bistrica",
+  "SVN:Ivančna Gorica/Ivančna Gorica",
+  "SVN:Jesenice/Jesenice",
+  "SVN:Jezersko/Jezersko",
+  "SVN:Juršinci/Juršinci",
+  "SVN:Kamnik/Kamnik",
+  "SVN:Kidričevo/Kidričevo",
+  "SVN:Kobilje/Kobilje",
+  "SVN:Komenda/Komenda",
+  "SVN:Kostel/Kostel",
+  "SVN:Kozje/Kozje",
+  "SVN:Kočevje/Kočevje",
+  "SVN:Kranj/Kranj",
+  "SVN:Križevci/Križevci",
+  "SVN:Krsko/Krsko",
+  "SVN:Krško/Krško",
+  "SVN:Kungota/Kungota",
+  "SVN:Kuzma/Kuzma",
+  "SVN:Laško/Laško",
+  "SVN:Lenart/Lenart",
+  "SVN:Lendava/Lendava",
+  "SVN:Litija/Litija",
+  "SVN:Ljubljana/Ljubljana",
+  "SVN:Ljubno/Ljubno",
+  "SVN:Ljutomer/Ljutomer",
+  "SVN:Logatec/Logatec",
+  "SVN:Lovrenc na Pohorju/Lovrenc na Pohorju",
+  "SVN:Loška Dolina/Loška Dolina",
+  "SVN:Loški Potok/Loški Potok",
+  "SVN:Lukovica/Lukovica",
+  "SVN:Luče/Luče",
+  "SVN:Majšperk/Majšperk",
+  "SVN:Maribor/Maribor",
+  "SVN:Markovci/Markovci",
+  "SVN:Medvode/Medvode",
+  "SVN:Mengeš/Mengeš",
+  "SVN:Metlika/Metlika",
+  "SVN:Mežica/Mežica",
+  "SVN:Miklavž na Dravskem Polju/Miklavž na Dravskem Polju",
+  "SVN:Mirna Peč/Mirna Peč",
+  "SVN:Mislinja/Mislinja",
+  "SVN:Moravske Toplice/Moravske Toplice",
+  "SVN:Moravče/Moravče",
+  "SVN:Mozirje/Mozirje",
+  "SVN:Murska Sobota/Murska Sobota",
+  "SVN:Muta/Muta",
+  "SVN:Naklo/Naklo",
+  "SVN:Nazarje/Nazarje",
+  "SVN:Novo Mesto/Novo Mesto",
+  "SVN:Občina Gorenja vas-Poljane/Občina Gorenja vas-Poljane",
+  "SVN:Odranci/Odranci",
+  "SVN:Oplotnica/Oplotnica",
+  "SVN:Ormož/Ormož",
+  "SVN:Pesnica/Pesnica",
+  "SVN:Pivka/Pivka",
+  "SVN:Podlehnik/Podlehnik",
+  "SVN:Podvelka/Podvelka",
+  "SVN:Podčetrtek/Podčetrtek",
+  "SVN:Polzela/Polzela",
+  "SVN:Postojna/Postojna",
+  "SVN:Prebold/Prebold",
+  "SVN:Preddvor/Preddvor",
+  "SVN:Prevalje/Prevalje",
+  "SVN:Ptuj/Ptuj",
+  "SVN:Puconci/Puconci",
+  "SVN:Radenci/Radenci",
+  "SVN:Radeče/Radeče",
+  "SVN:Radlje ob Dravi/Radlje ob Dravi",
+  "SVN:Radovljica/Radovljica",
+  "SVN:Ravne na Koroškem/Ravne na Koroškem",
+  "SVN:Razkrižje/Razkrižje",
+  "SVN:Rače–Fram/Rače–Fram",
+  "SVN:Ribnica na Pohorju/Ribnica na Pohorju",
+  "SVN:Ribnica/Ribnica",
+  "SVN:Rogatec/Rogatec",
+  "SVN:Rogaška Slatina/Rogaška Slatina",
+  "SVN:Rogašovci/Rogašovci",
+  "SVN:Ruše/Ruše",
+  "SVN:Selnica ob Dravi/Selnica ob Dravi",
+  "SVN:Semič/Semič",
+  "SVN:Sevnica/Sevnica",
+  "SVN:Slovenj Gradec/Slovenj Gradec",
+  "SVN:Slovenska Bistrica/Slovenska Bistrica",
+  "SVN:Slovenske Konjice/Slovenske Konjice",
+  "SVN:Sodražica/Sodražica",
+  "SVN:Solčava/Solčava",
+  "SVN:Starše/Starše",
+  "SVN:Sveta Ana/Sveta Ana",
+  "SVN:Sveti Andraž v Slovenskih Goricah/Sveti Andraž v Slovenskih Goricah",
+  "SVN:Sveti Jurij ob Ščavnici/Sveti Jurij ob Ščavnici",
+  "SVN:Tabor/Tabor",
+  "SVN:Trbovlje/Trbovlje",
+  "SVN:Trebnje/Trebnje",
+  "SVN:Trnovska Vas/Trnovska Vas",
+  "SVN:Trzin/Trzin",
+  "SVN:Tržič/Tržič",
+  "SVN:Turnišče/Turnišče",
+  "SVN:Velenje/Velenje",
+  "SVN:Velika Polana/Velika Polana",
+  "SVN:Velike Lašče/Velike Lašče",
+  "SVN:Veržej/Veržej",
+  "SVN:Videm/Videm",
+  "SVN:Vipava/Vipava",
+  "SVN:Vitanje/Vitanje",
+  "SVN:Vodice/Vodice",
+  "SVN:Vojnik/Vojnik",
+  "SVN:Vransko/Vransko",
+  "SVN:Vrhnika/Vrhnika",
+  "SVN:Vuzenica/Vuzenica",
+  "SVN:Zagorje ob Savi/Zagorje ob Savi",
+  "SVN:Zavrč/Zavrč",
+  "SVN:Zreče/Zreče",
+  "SVN:Črenšovci/Črenšovci",
+  "SVN:Črna na Koroškem/Črna na Koroškem",
+  "SVN:Črnomelj/Črnomelj",
+  "SVN:Šalovci/Šalovci",
+  "SVN:Šentilj/Šentilj",
+  "SVN:Šentjernej/Šentjernej",
+  "SVN:Šentjur/Šentjur",
+  "SVN:Šenčur/Šenčur",
+  "SVN:Škocjan/Škocjan",
+  "SVN:Škofja Loka/Škofja Loka",
+  "SVN:Škofljica/Škofljica",
+  "SVN:Šmarje pri Jelšah/Šmarje pri Jelšah",
+  "SVN:Šmartno ob Paki/Šmartno ob Paki",
+  "SVN:Šmartno pri Litiji/Šmartno pri Litiji",
+  "SVN:Šoštanj/Šoštanj",
+  "SVN:Štore/Štore",
+  "SVN:Žalec/Žalec",
+  "SVN:Železniki/Železniki",
+  "SVN:Žetale/Žetale",
+  "SVN:Žiri/Žiri",
+  "SVN:Žirovnica/Žirovnica",
+  "SVN:Žužemberk/Žužemberk"
+ ],
+ "CARD|Republic of Venice": [
+  "SVN:Divača/Divača",
+  "SVN:Hrpelje-Kozina/Hrpelje-Kozina"
+ ],
+ "CLAB|-": [
+  "GBR:Antrim/Antrim",
+  "GBR:Ballymena/Ballymena",
+  "GBR:Ballymoney/Ballymoney",
+  "GBR:Belfast/Belfast",
+  "GBR:Castlereagh/Castlereagh",
+  "GBR:Larne/Larne",
+  "GBR:Lisburn/Lisburn",
+  "GBR:Moyle/Moyle",
+  "GBR:Newtownabbey/Newtownabbey"
+ ],
+ "CLAN|-": [
+  "IRL:Galway/Galway"
+ ],
+ "CLEV|Brandenburg-Prussia": [
+  "DEU:North Rhine-Westphalia/Bottrop",
+  "DEU:North Rhine-Westphalia/Duisburg",
+  "DEU:North Rhine-Westphalia/Kleve",
+  "DEU:North Rhine-Westphalia/Wesel"
+ ],
+ "CLEV|Holy Roman Empire": [
+  "DEU:North Rhine-Westphalia/Essen"
+ ],
+ "CLEV|Jülich-Berg": [
+  "DEU:North Rhine-Westphalia/Mülheim an der Ruhr",
+  "DEU:North Rhine-Westphalia/Oberhausen"
+ ],
+ "COLE|Electorate of Cologne": [
+  "DEU:North Rhine-Westphalia/Bonn",
+  "DEU:North Rhine-Westphalia/Köln",
+  "DEU:North Rhine-Westphalia/Recklinghausen",
+  "DEU:North Rhine-Westphalia/Rhein-Erft-Kreis",
+  "DEU:North Rhine-Westphalia/Rhein-Kreis Neuss",
+  "DEU:Rhineland-Palatinate/Ahrweiler"
+ ],
+ "COLE|Jülich-Berg": [
+  "DEU:North Rhine-Westphalia/Euskirchen"
+ ],
+ "CON|-": [
+  "IRL:Roscommon/Roscommon",
+  "IRL:Sligo/Sligo"
+ ],
+ "DESM|-": [
+  "IRL:Kerry/Kerry"
+ ],
+ "EFR|Swiss Confederation": [
+  "CHE:Solothurn/Solothurn"
+ ],
+ "ESTE|Duchy of Modena and Reggio": [
+  "ITA:Modena/Modena",
+  "ITA:Reggio Emilia/Reggio Emilia"
+ ],
+ "ESTE|Papal States": [
+  "ITA:Ferrara/Ferrara"
+ ],
+ "ESTE|Republic of Venice": [
+  "ITA:Rovigo/Rovigo"
+ ],
+ "FCB|Franche-Comté": [
+  "FRA:Doubs/Doubs",
+  "FRA:Haute-Saône/Haute-Saône",
+  "FRA:Jura/Jura"
+ ],
+ "FLA|Dutch Republic": [
+  "NLD:Zeeland/Zeeland"
+ ],
+ "FLA|Spanish Netherlands": [
+  "BEL:East Flanders/East Flanders",
+  "BEL:West Flanders/West Flanders",
+  "FRA:Nord/Nord"
+ ],
+ "FLOR|Grand Duchy of Tuscany": [
+  "ITA:Arezzo/Arezzo",
+  "ITA:Florence/Florence",
+  "ITA:Livorno/Livorno",
+  "ITA:Pisa/Pisa",
+  "ITA:Pistoia/Pistoia",
+  "ITA:Prato/Prato"
+ ],
+ "FRAD|County of Hanau": [
+  "DEU:Hesse/Main-Kinzig-Kreis"
+ ],
+ "FRAD|Duchy of Württemberg": [
+  "DEU:Baden-Württemberg/Landkreis Heilbronn"
+ ],
+ "FRAD|Electorate of Mainz": [
+  "DEU:Bavaria/Miltenberg",
+  "DEU:Hesse/Bergstraße",
+  "DEU:Hesse/Main-Taunus-Kreis"
+ ],
+ "FRAD|Electorate of the Palatinate": [
+  "DEU:Baden-Württemberg/Neckar-Odenwald-Kreis",
+  "DEU:Rhineland-Palatinate/Germersheim",
+  "DEU:Rhineland-Palatinate/Südliche Weinstraße"
+ ],
+ "FRAD|Free City of Frankfurt": [
+  "DEU:Hesse/Frankfurt am Main"
+ ],
+ "FRAD|Free Imperial City of Nuremberg": [
+  "DEU:Bavaria/Nürnberg",
+  "DEU:Bavaria/Nürnberger Land"
+ ],
+ "FRAD|Holy Roman Empire": [
+  "DEU:Baden-Württemberg/Heilbronn",
+  "DEU:Baden-Württemberg/Hohenlohekreis",
+  "DEU:Baden-Württemberg/Main-Tauber-Kreis",
+  "DEU:Baden-Württemberg/Schwäbisch Hall",
+  "DEU:Hesse/Landkreis Offenbach",
+  "DEU:Hesse/Odenwaldkreis",
+  "DEU:Hesse/Offenbach am Main",
+  "DEU:Hesse/Wetteraukreis",
+  "DEU:North Rhine-Westphalia/Siegen-Wittgenstein",
+  "DEU:Rhineland-Palatinate/Landau in der Pfalz",
+  "DEU:Rhineland-Palatinate/Speyer",
+  "DEU:Rhineland-Palatinate/Worms"
+ ],
+ "FRAD|Landgraviate of Hesse-Darmstadt": [
+  "DEU:Hesse/Darmstadt",
+  "DEU:Hesse/Darmstadt-Dieburg",
+  "DEU:Hesse/Groß-Gerau",
+  "DEU:Hesse/Vogelsbergkreis"
+ ],
+ "FRAD|Landgraviate of Hesse-Kassel": [
+  "DEU:Hesse/Hersfeld-Rotenburg"
+ ],
+ "FRAD|Palatinate-Zweibrücken": [
+  "DEU:Rhineland-Palatinate/Pirmasens",
+  "DEU:Rhineland-Palatinate/Südwestpfalz",
+  "DEU:Rhineland-Palatinate/Zweibrücken"
+ ],
+ "FRAD|Principality of Ansbach": [
+  "DEU:Bavaria/Fürth",
+  "DEU:Bavaria/Landkreis Fürth",
+  "DEU:Bavaria/Roth",
+  "DEU:Bavaria/Schwabach",
+  "DEU:Bavaria/Weißenburg-Gunzenhausen"
+ ],
+ "FRAD|Principality of Bayreuth": [
+  "DEU:Bavaria/Erlangen",
+  "DEU:Bavaria/Erlangen-Höchstadt",
+  "DEU:Bavaria/Neustadt a.d. Aisch-Bad Windsheim"
+ ],
+ "FRAD|Principality of Nassau-Usingen": [
+  "DEU:Hesse/Hochtaunuskreis",
+  "DEU:Hesse/Wiesbaden",
+  "DEU:Rhineland-Palatinate/Altenkirchen (Westerwald)"
+ ],
+ "FRAD|Principality of Nassau-Weilburg": [
+  "DEU:Rhineland-Palatinate/Neuwied"
+ ],
+ "FRIF|County of Oldenburg": [
+  "DEU:Lower Saxony/Friesland",
+  "DEU:Lower Saxony/Wilhelmshaven"
+ ],
+ "FRIF|Dutch Republic": [
+  "NLD:Friesland/Friesland"
+ ],
+ "FRIF|East Frisia": [
+  "DEU:Lower Saxony/Aurich",
+  "DEU:Lower Saxony/Emden",
+  "DEU:Lower Saxony/Leer",
+  "DEU:Lower Saxony/Wittmund"
+ ],
+ "FULD|Prince-Abbey of Fulda": [
+  "DEU:Hesse/Fulda"
+ ],
+ "GEL|Dutch Republic": [
+  "NLD:Gelderland/Gelderland"
+ ],
+ "GEL|Spanish Netherlands": [
+  "NLD:Limburg/Limburg"
+ ],
+ "GEN|-": [
+  "CYP:Famagusta/Famagusta"
+ ],
+ "GEN|Republic of Genoa": [
+  "FRA:Corse-du-Sud/Corse-du-Sud",
+  "FRA:Haute-Corse/Haute-Corse",
+  "ITA:Liguria/Liguria"
+ ],
+ "HABS|Habsburg Monarchy": [
+  "AUT:Vorarlberg/Bludenz",
+  "AUT:Vorarlberg/Feldkirch",
+  "DEU:Baden-Württemberg/Breisgau-Hochschwarzwald",
+  "DEU:Baden-Württemberg/Freiburg im Breisgau",
+  "FRA:Haut-Rhin/Haut-Rhin"
+ ],
+ "HAI|Spanish Netherlands": [
+  "BEL:Hainaut/Hainaut"
+ ],
+ "HESL|Landgraviate of Hesse-Darmstadt": [
+  "DEU:Hesse/Landkreis Gießen"
+ ],
+ "HESL|Landgraviate of Hesse-Kassel": [
+  "DEU:Hesse/Kassel",
+  "DEU:Hesse/Landkreis Kassel",
+  "DEU:Hesse/Marburg-Biedenkopf",
+  "DEU:Hesse/Schwalm-Eder-Kreis",
+  "DEU:Hesse/Werra-Meißner-Kreis"
+ ],
+ "HESL|Principality of Waldeck and Pyrmont": [
+  "DEU:Hesse/Waldeck-Frankenberg"
+ ],
+ "HOLS|Duchy of Holstein": [
+  "DEU:Schleswig-Holstein/Pinneberg",
+  "DEU:Schleswig-Holstein/Plön",
+  "DEU:Schleswig-Holstein/Segeberg",
+  "DEU:Schleswig-Holstein/Steinburg",
+  "DEU:Schleswig-Holstein/Stormarn"
+ ],
+ "HOLS|Duchy of Holstein-Gottorp": [
+  "DEU:Schleswig-Holstein/Neumünster",
+  "DEU:Schleswig-Holstein/Ostholstein",
+  "DEU:Schleswig-Holstein/Rendsburg-Eckernförde"
+ ],
+ "HOLS|Free City of Hamburg": [
+  "DEU:Hamburg/Hamburg"
+ ],
+ "HOL|Dutch Republic": [
+  "NLD:Flevoland/Flevoland",
+  "NLD:North Holland/North Holland",
+  "NLD:South Holland/South Holland"
+ ],
+ "ISTM|Republic of Venice": [
+  "HRV:Istria/Istria"
+ ],
+ "ITK|Duchy of Massa and Carrara": [
+  "ITA:Massa-Carrara/Massa-Carrara"
+ ],
+ "ITK|Duchy of Savoy": [
+  "ITA:Biella/Biella"
+ ],
+ "ITK|Republic of Genoa": [
+  "ITA:Imperia/Imperia",
+  "ITA:La Spezia/La Spezia",
+  "ITA:Savona/Savona"
+ ],
+ "JUL|Holy Roman Empire": [
+  "DEU:North Rhine-Westphalia/Krefeld"
+ ],
+ "JUL|Jülich-Berg": [
+  "DEU:North Rhine-Westphalia/Düren",
+  "DEU:North Rhine-Westphalia/Heinsberg",
+  "DEU:North Rhine-Westphalia/Mönchengladbach",
+  "DEU:North Rhine-Westphalia/Städteregion Aachen",
+  "DEU:North Rhine-Westphalia/Viersen"
+ ],
+ "KYB|Swiss Confederation": [
+  "CHE:Fribourg/Fribourg",
+  "CHE:Schaffhausen/Schaffhausen",
+  "CHE:Thurgau/Thurgau"
+ ],
+ "LEI|-": [
+  "IRL:Carlow/Carlow",
+  "IRL:Wicklow/Wicklow"
+ ],
+ "LIE|Prince-Bishopric of Liège": [
+  "BEL:Limburg/Limburg",
+  "BEL:Liège/Liège"
+ ],
+ "LIE|Spanish Netherlands": [
+  "BEL:Luxembourg/Luxembourg"
+ ],
+ "LIPPE|Principality of Lippe": [
+  "DEU:North Rhine-Westphalia/Lippe"
+ ],
+ "LIRE|-": [
+  "GBR:Ards/Ards",
+  "GBR:Carrickfergus/Carrickfergus",
+  "GBR:Down/Down",
+  "GBR:North Down/North Down",
+  "IRL:Cork/Cork",
+  "IRL:Dublin/Dublin",
+  "IRL:Dún Laoghaire–Rathdown/Dún Laoghaire–Rathdown",
+  "IRL:Fingal/Fingal",
+  "IRL:Kildare/Kildare",
+  "IRL:Kilkenny/Kilkenny",
+  "IRL:Laois/Laois",
+  "IRL:Limerick/Limerick",
+  "IRL:Louth/Louth",
+  "IRL:Meath/Meath",
+  "IRL:South Dublin/South Dublin",
+  "IRL:Tipperary/Tipperary",
+  "IRL:Waterford/Waterford",
+  "IRL:Westmeath/Westmeath",
+  "IRL:Wexford/Wexford"
+ ],
+ "LISL|-": [
+  "GBR:Outer Hebrides/Outer Hebrides"
+ ],
+ "LOU|Dutch Republic": [
+  "NLD:North Brabant/North Brabant"
+ ],
+ "LOU|Spanish Netherlands": [
+  "BEL:Antwerp/Antwerp",
+  "BEL:Brussels Capital/Brussels Capital",
+  "BEL:Flemish Brabant/Flemish Brabant",
+  "BEL:Walloon Brabant/Walloon Brabant"
+ ],
+ "LUB|Free City of Lübeck": [
+  "DEU:Schleswig-Holstein/Lübeck"
+ ],
+ "LUCC|Republic of Lucca": [
+  "ITA:Lucca/Lucca"
+ ],
+ "LUNE|Principality of Lüneburg": [
+  "DEU:Lower Saxony/Celle",
+  "DEU:Lower Saxony/Gifhorn",
+  "DEU:Lower Saxony/Harburg",
+  "DEU:Lower Saxony/Heidekreis",
+  "DEU:Lower Saxony/Landkreis Lüneburg",
+  "DEU:Lower Saxony/Uelzen"
+ ],
+ "LUSM|Brandenburg-Prussia": [
+  "DEU:Brandenburg/Teltow-Fläming"
+ ],
+ "LUSM|Electorate of Saxony": [
+  "DEU:Brandenburg/Elbe-Elster"
+ ],
+ "LUXC|Spanish Netherlands": [
+  "LUX:Diekirch/Diekirch",
+  "LUX:Grevenmacher/Grevenmacher",
+  "LUX:Luxembourg/Luxembourg"
+ ],
+ "MAGB|Holy Roman Empire": [
+  "DEU:Saxony-Anhalt/Börde",
+  "DEU:Saxony-Anhalt/Jerichower Land",
+  "DEU:Saxony-Anhalt/Magdeburg"
+ ],
+ "MAINZ|Electorate of Mainz": [
+  "DEU:Bavaria/Aschaffenburg",
+  "DEU:Bavaria/Landkreis Aschaffenburg",
+  "DEU:Hesse/Rheingau-Taunus-Kreis",
+  "DEU:Rhineland-Palatinate/Mainz",
+  "DEU:Rhineland-Palatinate/Mainz-Bingen",
+  "DEU:Thuringia/Eichsfeld",
+  "DEU:Thuringia/Erfurt"
+ ],
+ "MANT|Duchy of Mantua": [
+  "ITA:Mantua/Mantua"
+ ],
+ "MARK|Brandenburg-Prussia": [
+  "DEU:North Rhine-Westphalia/Bochum",
+  "DEU:North Rhine-Westphalia/Ennepe-Ruhr-Kreis",
+  "DEU:North Rhine-Westphalia/Gelsenkirchen",
+  "DEU:North Rhine-Westphalia/Hagen",
+  "DEU:North Rhine-Westphalia/Hamm",
+  "DEU:North Rhine-Westphalia/Herne",
+  "DEU:North Rhine-Westphalia/Märkischer Kreis",
+  "DEU:North Rhine-Westphalia/Unna"
+ ],
+ "MARK|Holy Roman Empire": [
+  "DEU:North Rhine-Westphalia/Dortmund"
+ ],
+ "MECK|Duchy of Mecklenburg-Güstrow": [
+  "DEU:Mecklenburg-Western Pomerania/Landkreis Rostock",
+  "DEU:Mecklenburg-Western Pomerania/Rostock"
+ ],
+ "MECK|Duchy of Mecklenburg-Schwerin": [
+  "DEU:Mecklenburg-Western Pomerania/Ludwigslust-Parchim",
+  "DEU:Mecklenburg-Western Pomerania/Nordwestmecklenburg"
+ ],
+ "MEIS|Duchy of Saxe-Gotha-Altenburg": [
+  "DEU:Thuringia/Altenburger Land"
+ ],
+ "MEIS|Duchy of Saxe-Weimar-Eisenach": [
+  "DEU:Thuringia/Jena"
+ ],
+ "MEIS|Electorate of Saxony": [
+  "DEU:Saxony-Anhalt/Wittenberg",
+  "DEU:Saxony/Chemnitz",
+  "DEU:Saxony/Dresden",
+  "DEU:Saxony/Erzgebirgskreis",
+  "DEU:Saxony/Leipzig",
+  "DEU:Saxony/Meißen",
+  "DEU:Saxony/Mittelsachsen",
+  "DEU:Saxony/Nordsachsen",
+  "DEU:Saxony/Sächsische Schweiz-Osterzgebirge",
+  "DEU:Saxony/Vogtlandkreis",
+  "DEU:Saxony/Zwickau"
+ ],
+ "MEIS|Principality of Reuss-Gera": [
+  "DEU:Thuringia/Gera",
+  "DEU:Thuringia/Saale-Orla-Kreis"
+ ],
+ "MEIS|Principality of Reuss-Greiz": [
+  "DEU:Thuringia/Greiz"
+ ],
+ "MEIS|Principality of Schwarzburg-Rudolstadt": [
+  "DEU:Thuringia/Saalfeld-Rudolstadt"
+ ],
+ "METZ|Kingdom of France": [
+  "FRA:Moselle/Moselle"
+ ],
+ "MILn|Duchy of Milan": [
+  "ITA:Alessandria/Alessandria",
+  "ITA:Como/Como",
+  "ITA:Cremona/Cremona",
+  "ITA:Lecco/Lecco",
+  "ITA:Lodi/Lodi",
+  "ITA:Milan/Milan",
+  "ITA:Monza and Brianza/Monza and Brianza",
+  "ITA:Novara/Novara",
+  "ITA:Pavia/Pavia",
+  "ITA:Varese/Varese",
+  "ITA:Verbano-Cusio-Ossola/Verbano-Cusio-Ossola"
+ ],
+ "MILn|Duchy of Parma and Piacenza": [
+  "ITA:Parma/Parma",
+  "ITA:Piacenza/Piacenza"
+ ],
+ "MILn|Duchy of Savoy": [
+  "ITA:Vercelli/Vercelli"
+ ],
+ "MILn|Swiss Confederation": [
+  "CHE:Ticino/Ticino"
+ ],
+ "MILn|Three Leagues": [
+  "ITA:Sondrio/Sondrio"
+ ],
+ "MINB|Holy Roman Empire": [
+  "DEU:North Rhine-Westphalia/Minden-Lübbecke"
+ ],
+ "MINB|Principality of Lüneburg": [
+  "DEU:Lower Saxony/Nienburg (Weser)"
+ ],
+ "MINB|Principality of Schaumburg-Lippe": [
+  "DEU:Lower Saxony/Schaumburg"
+ ],
+ "MORM|Habsburg Monarchy": [
+  "CZE:Moravian-Silesian/Bruntál",
+  "CZE:Moravian-Silesian/Frýdek-Místek",
+  "CZE:Moravian-Silesian/Karviná",
+  "CZE:Moravian-Silesian/Nový Jičín",
+  "CZE:Moravian-Silesian/Opava",
+  "CZE:Moravian-Silesian/Ostrava-město",
+  "CZE:Olomouc/Jeseník",
+  "CZE:Olomouc/Olomouc",
+  "CZE:Olomouc/Prostějov",
+  "CZE:Olomouc/Přerov",
+  "CZE:Olomouc/Šumperk",
+  "CZE:South Moravian/Blansko",
+  "CZE:South Moravian/Brno-město",
+  "CZE:South Moravian/Brno-venkov",
+  "CZE:South Moravian/Břeclav",
+  "CZE:South Moravian/Hodonín",
+  "CZE:South Moravian/Vyškov",
+  "CZE:South Moravian/Znojmo",
+  "CZE:Vysočina/Havlíčkův Brod",
+  "CZE:Vysočina/Jihlava",
+  "CZE:Vysočina/Pelhřimov",
+  "CZE:Vysočina/Třebíč",
+  "CZE:Vysočina/Žďár nad Sázavou",
+  "CZE:Zlín/Kroměříž",
+  "CZE:Zlín/Uherské Hradiště",
+  "CZE:Zlín/Vsetín",
+  "CZE:Zlín/Zlín"
+ ],
+ "MUNB|Prince-Bishopric of Münster": [
+  "DEU:North Rhine-Westphalia/Borken",
+  "DEU:North Rhine-Westphalia/Coesfeld",
+  "DEU:North Rhine-Westphalia/Münster",
+  "DEU:North Rhine-Westphalia/Steinfurt",
+  "DEU:North Rhine-Westphalia/Warendorf"
+ ],
+ "MWI|-": [
+  "IRL:Mayo/Mayo"
+ ],
+ "NAM|Spanish Netherlands": [
+  "BEL:Namur/Namur"
+ ],
+ "NASS|Holy Roman Empire": [
+  "DEU:Hesse/Lahn-Dill-Kreis"
+ ],
+ "NASS|Principality of Nassau-Usingen": [
+  "DEU:Rhineland-Palatinate/Rhein-Lahn-Kreis"
+ ],
+ "NASS|Principality of Nassau-Weilburg": [
+  "DEU:Hesse/Limburg-Weilburg",
+  "DEU:Rhineland-Palatinate/Westerwaldkreis"
+ ],
+ "NUN|-": [
+  "GBR:Coleraine/Coleraine",
+  "GBR:Derry/Derry",
+  "GBR:Limavady/Limavady",
+  "GBR:Magherafelt/Magherafelt",
+  "GBR:Omagh/Omagh",
+  "GBR:Strabane/Strabane",
+  "IRL:Donegal/Donegal"
+ ],
+ "NURB|Principality of Ansbach": [
+  "DEU:Bavaria/Ansbach",
+  "DEU:Bavaria/Landkreis Ansbach"
+ ],
+ "NURB|Principality of Bayreuth": [
+  "DEU:Bavaria/Bayreuth",
+  "DEU:Bavaria/Hof",
+  "DEU:Bavaria/Kulmbach",
+  "DEU:Bavaria/Landkreis Bayreuth",
+  "DEU:Bavaria/Landkreis Hof",
+  "DEU:Bavaria/Wunsiedel i. Fichtelgebirge"
+ ],
+ "OLDC|County of Oldenburg": [
+  "DEU:Lower Saxony/Ammerland",
+  "DEU:Lower Saxony/Delmenhorst",
+  "DEU:Lower Saxony/Landkreis Oldenburg",
+  "DEU:Lower Saxony/Oldenburg (Oldenburg)",
+  "DEU:Lower Saxony/Wesermarsch"
+ ],
+ "OLDC|Prince-Bishopric of Münster": [
+  "DEU:Lower Saxony/Cloppenburg",
+  "DEU:Lower Saxony/Vechta"
+ ],
+ "ORK|-": [
+  "GBR:Orkney Islands/Orkney Islands",
+  "GBR:Shetland Islands/Shetland Islands"
+ ],
+ "OSNB|Holy Roman Empire": [
+  "DEU:Lower Saxony/Grafschaft Bentheim"
+ ],
+ "OSNB|Prince-Bishopric of Münster": [
+  "DEU:Lower Saxony/Emsland"
+ ],
+ "OSNB|Prince-Bishopric of Osnabrück": [
+  "DEU:Lower Saxony/Landkreis Osnabrück",
+  "DEU:Lower Saxony/Osnabrück"
+ ],
+ "PADB|Prince-Bishopric of Paderborn": [
+  "DEU:North Rhine-Westphalia/Höxter",
+  "DEU:North Rhine-Westphalia/Paderborn"
+ ],
+ "PALA|Electorate of Bavaria": [
+  "DEU:Bavaria/Amberg",
+  "DEU:Bavaria/Cham",
+  "DEU:Bavaria/Neumarkt i.d. OPf.",
+  "DEU:Bavaria/Neustadt a.d. Waldnaab",
+  "DEU:Bavaria/Schwandorf",
+  "DEU:Bavaria/Tirschenreuth",
+  "DEU:Bavaria/Weiden i.d. Opf"
+ ],
+ "PALA|Electorate of the Palatinate": [
+  "DEU:Baden-Württemberg/Heidelberg",
+  "DEU:Baden-Württemberg/Mannheim",
+  "DEU:Baden-Württemberg/Rhein-Neckar-Kreis",
+  "DEU:Rhineland-Palatinate/Alzey-Worms",
+  "DEU:Rhineland-Palatinate/Bad Dürkheim",
+  "DEU:Rhineland-Palatinate/Donnersbergkreis",
+  "DEU:Rhineland-Palatinate/Frankenthal (Pfalz)",
+  "DEU:Rhineland-Palatinate/Kaiserslautern",
+  "DEU:Rhineland-Palatinate/Landkreis Kaiserslautern",
+  "DEU:Rhineland-Palatinate/Ludwigshafen am Rhein",
+  "DEU:Rhineland-Palatinate/Neustadt an der Weinstraße",
+  "DEU:Rhineland-Palatinate/Rhein-Pfalz-Kreis"
+ ],
+ "PALA|Holy Roman Empire": [
+  "DEU:Bavaria/Amberg-Sulzbach"
+ ],
+ "PASB|Holy Roman Empire": [
+  "DEU:Bavaria/Landkreis Passau",
+  "DEU:Bavaria/Passau"
+ ],
+ "POMD|Brandenburg-Prussia": [
+  "POL:West Pomeranian Voivodeship/Koszalin",
+  "POL:West Pomeranian Voivodeship/Powiat białogardzki",
+  "POL:West Pomeranian Voivodeship/Powiat choszczeński",
+  "POL:West Pomeranian Voivodeship/Powiat drawski",
+  "POL:West Pomeranian Voivodeship/Powiat gryficki",
+  "POL:West Pomeranian Voivodeship/Powiat gryfiński",
+  "POL:West Pomeranian Voivodeship/Powiat koszaliński",
+  "POL:West Pomeranian Voivodeship/Powiat kołobrzeski",
+  "POL:West Pomeranian Voivodeship/Powiat myśliborski",
+  "POL:West Pomeranian Voivodeship/Powiat pyrzycki",
+  "POL:West Pomeranian Voivodeship/Powiat stargardzki",
+  "POL:West Pomeranian Voivodeship/Powiat szczecinecki",
+  "POL:West Pomeranian Voivodeship/Powiat sławieński",
+  "POL:West Pomeranian Voivodeship/Powiat łobeski",
+  "POL:West Pomeranian Voivodeship/Powiat świdwiński"
+ ],
+ "POMD|Polish-Lithuanian Commonwealth": [
+  "POL:West Pomeranian Voivodeship/Powiat wałecki"
+ ],
+ "POMD|Swedish Pomerania": [
+  "DEU:Mecklenburg-Western Pomerania/Vorpommern-Greifswald",
+  "POL:West Pomeranian Voivodeship/Powiat goleniowski",
+  "POL:West Pomeranian Voivodeship/Powiat kamieński",
+  "POL:West Pomeranian Voivodeship/Powiat policki",
+  "POL:West Pomeranian Voivodeship/Szczecin",
+  "POL:West Pomeranian Voivodeship/Świnoujście"
+ ],
+ "PROV|-": [
+  "MCO:Monaco/Monaco"
+ ],
+ "PROV|Kingdom of France": [
+  "FRA:Alpes-de-Haute-Provence/Alpes-de-Haute-Provence",
+  "FRA:Bouches-du-Rhône/Bouches-du-Rhône",
+  "FRA:Var/Var"
+ ],
+ "RAVB|Brandenburg-Prussia": [
+  "DEU:North Rhine-Westphalia/Bielefeld",
+  "DEU:North Rhine-Westphalia/Gütersloh",
+  "DEU:North Rhine-Westphalia/Herford"
+ ],
+ "RUGEN|Swedish Pomerania": [
+  "DEU:Mecklenburg-Western Pomerania/Vorpommern-Rügen"
+ ],
+ "SAAR|Duchy of Lorraine": [
+  "DEU:Saarland/Saarlouis"
+ ],
+ "SAAR|Electorate of Trier": [
+  "DEU:Saarland/Merzig-Wadern",
+  "DEU:Saarland/St. Wendel"
+ ],
+ "SAAR|Holy Roman Empire": [
+  "DEU:Saarland/Neunkirchen",
+  "DEU:Saarland/Regionalverband Saarbrücken"
+ ],
+ "SAAR|Palatinate-Zweibrücken": [
+  "DEU:Saarland/Saarpfalz-Kreis"
+ ],
+ "SALU|Duchy of Savoy": [
+  "ITA:Cuneo/Cuneo"
+ ],
+ "SALZ|Prince-Archbishopric of Salzburg": [
+  "AUT:Salzburg/Hallein",
+  "AUT:Salzburg/Salzburg",
+  "AUT:Salzburg/Salzburg-Umgebung",
+  "AUT:Salzburg/Sankt Johann im Pongau",
+  "AUT:Salzburg/Tamsweg",
+  "AUT:Salzburg/Zell am See"
+ ],
+ "SAVC|Duchy of Savoy": [
+  "FRA:Alpes-Maritimes/Alpes-Maritimes",
+  "FRA:Haute-Savoie/Haute-Savoie",
+  "FRA:Savoie/Savoie",
+  "ITA:Aosta/Aosta",
+  "ITA:Turin/Turin"
+ ],
+ "SAVC|Kingdom of France": [
+  "FRA:Ain/Ain"
+ ],
+ "SAVC|Swiss Confederation": [
+  "CHE:Vaud/Vaud"
+ ],
+ "SAXD|Duchy of Brunswick": [
+  "DEU:Lower Saxony/Holzminden"
+ ],
+ "SAXD|Duchy of Saxe-Coburg-Saalfeld": [
+  "DEU:Bavaria/Coburg",
+  "DEU:Bavaria/Landkreis Coburg"
+ ],
+ "SAXD|Duchy of Saxe-Lauenburg": [
+  "DEU:Schleswig-Holstein/Herzogtum Lauenburg"
+ ],
+ "SAXD|Electorate of Saxony": [
+  "DEU:Saxony-Anhalt/Mansfeld-Südharz"
+ ],
+ "SAXD|Holy Roman Empire": [
+  "DEU:Saxony-Anhalt/Halle (Saale)",
+  "DEU:Thuringia/Nordhausen"
+ ],
+ "SAXD|Prince-Bishopric of Hildesheim": [
+  "DEU:Lower Saxony/Goslar",
+  "DEU:Lower Saxony/Hildesheim",
+  "DEU:Lower Saxony/Peine"
+ ],
+ "SAXD|Principality of Calenberg": [
+  "DEU:Lower Saxony/Hameln-Pyrmont"
+ ],
+ "SAXD|Principality of Lüneburg": [
+  "DEU:Lower Saxony/Diepholz"
+ ],
+ "SCHW|Duchy of Mecklenburg-Schwerin": [
+  "DEU:Mecklenburg-Western Pomerania/Schwerin"
+ ],
+ "SIEN|Grand Duchy of Tuscany": [
+  "ITA:Grosseto/Grosseto",
+  "ITA:Siena/Siena"
+ ],
+ "SILD|Brandenburg-Prussia": [
+  "POL:Lubusz Voivodeship/Gorzów Wielkopolski",
+  "POL:Lubusz Voivodeship/Powiat gorzowski",
+  "POL:Lubusz Voivodeship/Powiat krośnieński",
+  "POL:Lubusz Voivodeship/Powiat strzelecko-drezdenecki",
+  "POL:Lubusz Voivodeship/Powiat sulęciński",
+  "POL:Lubusz Voivodeship/Powiat słubicki"
+ ],
+ "SILD|Electorate of Saxony": [
+  "POL:Lubusz Voivodeship/Powiat żarski"
+ ],
+ "SILD|Habsburg Monarchy": [
+  "POL:Lower Silesian Voivodeship/Jelenia Góra",
+  "POL:Lower Silesian Voivodeship/Legnica",
+  "POL:Lower Silesian Voivodeship/Powiat bolesławiecki",
+  "POL:Lower Silesian Voivodeship/Powiat dzierżoniowski",
+  "POL:Lower Silesian Voivodeship/Powiat górowski",
+  "POL:Lower Silesian Voivodeship/Powiat głogowski",
+  "POL:Lower Silesian Voivodeship/Powiat jaworski",
+  "POL:Lower Silesian Voivodeship/Powiat jeleniogórski",
+  "POL:Lower Silesian Voivodeship/Powiat kamiennogórski",
+  "POL:Lower Silesian Voivodeship/Powiat kłodzki",
+  "POL:Lower Silesian Voivodeship/Powiat legnicki",
+  "POL:Lower Silesian Voivodeship/Powiat lubański",
+  "POL:Lower Silesian Voivodeship/Powiat lubiński",
+  "POL:Lower Silesian Voivodeship/Powiat lwówecki",
+  "POL:Lower Silesian Voivodeship/Powiat milicki",
+  "POL:Lower Silesian Voivodeship/Powiat oleśnicki",
+  "POL:Lower Silesian Voivodeship/Powiat oławski",
+  "POL:Lower Silesian Voivodeship/Powiat polkowicki",
+  "POL:Lower Silesian Voivodeship/Powiat strzeliński",
+  "POL:Lower Silesian Voivodeship/Powiat trzebnicki",
+  "POL:Lower Silesian Voivodeship/Powiat wałbrzyski",
+  "POL:Lower Silesian Voivodeship/Powiat wołowski",
+  "POL:Lower Silesian Voivodeship/Powiat wrocławski",
+  "POL:Lower Silesian Voivodeship/Powiat zgorzelecki",
+  "POL:Lower Silesian Voivodeship/Powiat ząbkowicki",
+  "POL:Lower Silesian Voivodeship/Powiat złotoryjski",
+  "POL:Lower Silesian Voivodeship/Powiat średzki",
+  "POL:Lower Silesian Voivodeship/Powiat świdnicki",
+  "POL:Lower Silesian Voivodeship/Wałbrzych",
+  "POL:Lower Silesian Voivodeship/Wrocław",
+  "POL:Lubusz Voivodeship/Powiat nowosolski",
+  "POL:Lubusz Voivodeship/Powiat zielonogórski",
+  "POL:Lubusz Voivodeship/Powiat świebodziński",
+  "POL:Lubusz Voivodeship/Powiat żagański",
+  "POL:Lubusz Voivodeship/Zielona Góra",
+  "POL:Opole Voivodeship/Opole",
+  "POL:Opole Voivodeship/Powiat brzeski",
+  "POL:Opole Voivodeship/Powiat głubczycki",
+  "POL:Opole Voivodeship/Powiat kluczborski",
+  "POL:Opole Voivodeship/Powiat krapkowicki",
+  "POL:Opole Voivodeship/Powiat kędzierzyńsko-kozielski",
+  "POL:Opole Voivodeship/Powiat namysłowski",
+  "POL:Opole Voivodeship/Powiat nyski",
+  "POL:Opole Voivodeship/Powiat oleski",
+  "POL:Opole Voivodeship/Powiat opolski",
+  "POL:Opole Voivodeship/Powiat prudnicki",
+  "POL:Opole Voivodeship/Powiat strzelecki",
+  "POL:Silesian Voivodeship/Bielsko-Biała",
+  "POL:Silesian Voivodeship/Bytom",
+  "POL:Silesian Voivodeship/Chorzów",
+  "POL:Silesian Voivodeship/Gliwice",
+  "POL:Silesian Voivodeship/Jastrzębie-Zdrój",
+  "POL:Silesian Voivodeship/Katowice",
+  "POL:Silesian Voivodeship/Mysłowice",
+  "POL:Silesian Voivodeship/Piekary Śląskie",
+  "POL:Silesian Voivodeship/Powiat bielski",
+  "POL:Silesian Voivodeship/Powiat bieruńsko-lędziński",
+  "POL:Silesian Voivodeship/Powiat cieszyński",
+  "POL:Silesian Voivodeship/Powiat gliwicki",
+  "POL:Silesian Voivodeship/Powiat lubliniecki",
+  "POL:Silesian Voivodeship/Powiat mikołowski",
+  "POL:Silesian Voivodeship/Powiat pszczyński",
+  "POL:Silesian Voivodeship/Powiat raciborski",
+  "POL:Silesian Voivodeship/Powiat rybnicki",
+  "POL:Silesian Voivodeship/Powiat tarnogórski",
+  "POL:Silesian Voivodeship/Powiat wodzisławski",
+  "POL:Silesian Voivodeship/Ruda Śląska",
+  "POL:Silesian Voivodeship/Rybnik",
+  "POL:Silesian Voivodeship/Siemianowice Śląskie",
+  "POL:Silesian Voivodeship/Tychy",
+  "POL:Silesian Voivodeship/Zabrze",
+  "POL:Silesian Voivodeship/Świętochłowice",
+  "POL:Silesian Voivodeship/Żory"
+ ],
+ "SILD|Polish-Lithuanian Commonwealth": [
+  "POL:Lubusz Voivodeship/Powiat międzyrzecki",
+  "POL:Lubusz Voivodeship/Powiat wschowski",
+  "POL:Silesian Voivodeship/Częstochowa",
+  "POL:Silesian Voivodeship/Dąbrowa Górnicza",
+  "POL:Silesian Voivodeship/Jaworzno",
+  "POL:Silesian Voivodeship/Powiat będziński",
+  "POL:Silesian Voivodeship/Powiat częstochowski",
+  "POL:Silesian Voivodeship/Powiat kłobucki",
+  "POL:Silesian Voivodeship/Powiat myszkowski",
+  "POL:Silesian Voivodeship/Powiat zawierciański",
+  "POL:Silesian Voivodeship/Powiat żywiecki",
+  "POL:Silesian Voivodeship/Sosnowiec"
+ ],
+ "SPON|Electorate of the Palatinate": [
+  "DEU:Rhineland-Palatinate/Bad Kreuznach",
+  "DEU:Rhineland-Palatinate/Rhein-Hunsrück-Kreis"
+ ],
+ "SPON|Holy Roman Empire": [
+  "DEU:Rhineland-Palatinate/Birkenfeld"
+ ],
+ "SPON|Palatinate-Zweibrücken": [
+  "DEU:Rhineland-Palatinate/Kusel"
+ ],
+ "STYR|Habsburg Monarchy": [
+  "AUT:Styria/Bruck-Mürzzuschlag",
+  "AUT:Styria/Deutschlandsberg",
+  "AUT:Styria/Graz",
+  "AUT:Styria/Graz-Umgebung",
+  "AUT:Styria/Hartberg-Fürstenfeld",
+  "AUT:Styria/Leibnitz",
+  "AUT:Styria/Leoben",
+  "AUT:Styria/Liezen",
+  "AUT:Styria/Murau",
+  "AUT:Styria/Murtal",
+  "AUT:Styria/Südoststeiermark",
+  "AUT:Styria/Voitsberg",
+  "AUT:Styria/Weiz"
+ ],
+ "SUN|-": [
+  "IRL:Longford/Longford",
+  "IRL:Offaly/Offaly"
+ ],
+ "SWA|-": [
+  "LIE:Balzers/Balzers",
+  "LIE:Eschen/Eschen",
+  "LIE:Gamprin/Gamprin",
+  "LIE:Mauren/Mauren",
+  "LIE:Planken/Planken",
+  "LIE:Ruggell/Ruggell",
+  "LIE:Schaan/Schaan",
+  "LIE:Schellenberg/Schellenberg",
+  "LIE:Triesen/Triesen",
+  "LIE:Triesenberg/Triesenberg",
+  "LIE:Vaduz/Vaduz"
+ ],
+ "SWA|Duchy of Württemberg": [
+  "DEU:Baden-Württemberg/Freudenstadt",
+  "DEU:Baden-Württemberg/Heidenheim",
+  "DEU:Baden-Württemberg/Tuttlingen",
+  "DEU:Baden-Württemberg/Zollernalbkreis"
+ ],
+ "SWA|Free Imperial City of Augsburg": [
+  "DEU:Bavaria/Augsburg"
+ ],
+ "SWA|Habsburg Monarchy": [
+  "AUT:Vorarlberg/Bregenz",
+  "AUT:Vorarlberg/Dornbirn",
+  "DEU:Baden-Württemberg/Alb-Donau-Kreis",
+  "DEU:Baden-Württemberg/Bodenseekreis",
+  "DEU:Baden-Württemberg/Konstanz",
+  "DEU:Baden-Württemberg/Ortenaukreis",
+  "DEU:Baden-Württemberg/Ravensburg",
+  "DEU:Baden-Württemberg/Waldshut",
+  "DEU:Bavaria/Günzburg",
+  "FRA:Territoire de Belfort/Territoire de Belfort"
+ ],
+ "SWA|Holy Roman Empire": [
+  "DEU:Baden-Württemberg/Biberach",
+  "DEU:Baden-Württemberg/Ostalbkreis",
+  "DEU:Baden-Württemberg/Rottweil",
+  "DEU:Baden-Württemberg/Schwarzwald-Baar-Kreis",
+  "DEU:Baden-Württemberg/Ulm",
+  "DEU:Bavaria/Dillingen a.d. Donau",
+  "DEU:Bavaria/Donau-Ries",
+  "DEU:Bavaria/Kaufbeuren",
+  "DEU:Bavaria/Kempten (Allgäu)",
+  "DEU:Bavaria/Landkreis Augsburg",
+  "DEU:Bavaria/Lindau (Bodensee)",
+  "DEU:Bavaria/Memmingen",
+  "DEU:Bavaria/Neu-Ulm",
+  "DEU:Bavaria/Oberallgäu",
+  "DEU:Bavaria/Ostallgäu",
+  "DEU:Bavaria/Unterallgäu",
+  "FRA:Bas-Rhin/Bas-Rhin"
+ ],
+ "SWA|Margraviate of Baden-Durlach": [
+  "DEU:Baden-Württemberg/Emmendingen",
+  "DEU:Baden-Württemberg/Lörrach"
+ ],
+ "SWA|Principality of Hohenzollern-Sigmaringen": [
+  "DEU:Baden-Württemberg/Sigmaringen"
+ ],
+ "SWA|Swiss Confederation": [
+  "CHE:Appenzell Ausserrhoden/Appenzell Ausserrhoden",
+  "CHE:Appenzell Innerrhoden/Appenzell Innerrhoden",
+  "CHE:Basel-Landschaft/Basel-Landschaft",
+  "CHE:Basel-Stadt/Basel-Stadt",
+  "CHE:St. Gallen/St. Gallen"
+ ],
+ "SWA|Three Leagues": [
+  "CHE:Grisons/Grisons"
+ ],
+ "SWIS|Swiss Confederation": [
+  "CHE:Aargau/Aargau",
+  "CHE:Bern/Bern",
+  "CHE:Glarus/Glarus",
+  "CHE:Lucerne/Lucerne",
+  "CHE:Nidwalden/Nidwalden",
+  "CHE:Obwalden/Obwalden",
+  "CHE:Schwyz/Schwyz",
+  "CHE:Uri/Uri",
+  "CHE:Zug/Zug",
+  "CHE:Zürich/Zürich"
+ ],
+ "THOM|-": [
+  "IRL:Clare/Clare"
+ ],
+ "THUR|Duchy of Saxe-Coburg-Saalfeld": [
+  "DEU:Thuringia/Sonneberg"
+ ],
+ "THUR|Duchy of Saxe-Gotha-Altenburg": [
+  "DEU:Thuringia/Gotha",
+  "DEU:Thuringia/Saale-Holzland-Kreis"
+ ],
+ "THUR|Duchy of Saxe-Hildburghausen": [
+  "DEU:Thuringia/Hildburghausen"
+ ],
+ "THUR|Duchy of Saxe-Meiningen": [
+  "DEU:Thuringia/Schmalkalden-Meiningen"
+ ],
+ "THUR|Duchy of Saxe-Weimar-Eisenach": [
+  "DEU:Thuringia/Eisenach",
+  "DEU:Thuringia/Wartburgkreis",
+  "DEU:Thuringia/Weimar",
+  "DEU:Thuringia/Weimarer Land"
+ ],
+ "THUR|Electorate of Mainz": [
+  "DEU:Thuringia/Sömmerda"
+ ],
+ "THUR|Electorate of Saxony": [
+  "DEU:Saxony-Anhalt/Burgenlandkreis",
+  "DEU:Thuringia/Suhl"
+ ],
+ "THUR|Holy Roman Empire": [
+  "DEU:Thuringia/Unstrut-Hainich-Kreis"
+ ],
+ "THUR|Principality of Schwarzburg-Sondershausen": [
+  "DEU:Thuringia/Ilm-Kreis",
+  "DEU:Thuringia/Kyffhäuserkreis"
+ ],
+ "TRENT|Prince-Bishopric of Trent": [
+  "ITA:Trentino/Trentino"
+ ],
+ "TRIER|Electorate of Trier": [
+  "DEU:Rhineland-Palatinate/Bernkastel-Wittlich",
+  "DEU:Rhineland-Palatinate/Cochem-Zell",
+  "DEU:Rhineland-Palatinate/Koblenz",
+  "DEU:Rhineland-Palatinate/Mayen-Koblenz",
+  "DEU:Rhineland-Palatinate/Trier",
+  "DEU:Rhineland-Palatinate/Trier-Saarburg",
+  "DEU:Rhineland-Palatinate/Vulkaneifel"
+ ],
+ "TRIER|Spanish Netherlands": [
+  "DEU:Rhineland-Palatinate/Eifelkreis Bitburg-Prüm"
+ ],
+ "TYRO|Habsburg Monarchy": [
+  "AUT:Tyrol/Imst",
+  "AUT:Tyrol/Innsbruck",
+  "AUT:Tyrol/Innsbruck-Land",
+  "AUT:Tyrol/Kitzbühel",
+  "AUT:Tyrol/Kufstein",
+  "AUT:Tyrol/Landeck",
+  "AUT:Tyrol/Lienz",
+  "AUT:Tyrol/Reutte",
+  "AUT:Tyrol/Schwaz"
+ ],
+ "UBU|Kingdom of France": [
+  "FRA:Loire/Loire"
+ ],
+ "UBU|Prince-Bishopric of Basel": [
+  "CHE:Jura/Jura"
+ ],
+ "UBU|Principality of Neuchâtel": [
+  "CHE:Neuchâtel/Neuchâtel"
+ ],
+ "UBU|Republic of Geneva": [
+  "CHE:Geneva/Geneva"
+ ],
+ "UBU|Republic of the Seven Zenden": [
+  "CHE:Valais/Valais"
+ ],
+ "ULOR|Duchy of Lorraine": [
+  "FRA:Meurthe-et-Moselle/Meurthe-et-Moselle",
+  "FRA:Vosges/Vosges"
+ ],
+ "UTRB|Dutch Republic": [
+  "NLD:Drenthe/Drenthe",
+  "NLD:Groningen/Groningen",
+  "NLD:Overijssel/Overijssel",
+  "NLD:Utrecht/Utrecht"
+ ],
+ "WESTF|Brandenburg-Prussia": [
+  "DEU:North Rhine-Westphalia/Soest"
+ ],
+ "WESTF|Electorate of Cologne": [
+  "DEU:North Rhine-Westphalia/Hochsauerlandkreis",
+  "DEU:North Rhine-Westphalia/Olpe"
+ ],
+ "WURB|Prince-Bishopric of Würzburg": [
+  "DEU:Bavaria/Bad Kissingen",
+  "DEU:Bavaria/Haßberge",
+  "DEU:Bavaria/Kitzingen",
+  "DEU:Bavaria/Landkreis Schweinfurt",
+  "DEU:Bavaria/Landkreis Würzburg",
+  "DEU:Bavaria/Main-Spessart",
+  "DEU:Bavaria/Rhön-Grabfeld",
+  "DEU:Bavaria/Schweinfurt",
+  "DEU:Bavaria/Würzburg"
+ ],
+ "WURT|Duchy of Württemberg": [
+  "DEU:Baden-Württemberg/Böblingen",
+  "DEU:Baden-Württemberg/Calw",
+  "DEU:Baden-Württemberg/Esslingen",
+  "DEU:Baden-Württemberg/Göppingen",
+  "DEU:Baden-Württemberg/Landkreis Tübingen",
+  "DEU:Baden-Württemberg/Ludwigsburg",
+  "DEU:Baden-Württemberg/Rems-Murr-Kreis",
+  "DEU:Baden-Württemberg/Reutlingen",
+  "DEU:Baden-Württemberg/Stuttgart"
+ ]
+}

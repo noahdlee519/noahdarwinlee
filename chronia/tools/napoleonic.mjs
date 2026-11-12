@@ -1286,5 +1286,14 @@ export function buildNapoleonic(env) {
     try { polys = rewind(clip.union(andorra)); } catch (e) { log("Andorra's parishes could not be joined (" + e.message + ")"); }
     warRows.push({ side: "fr", from: ANDORRA_FROM, to: ANDORRA_TO, first: a - DAY_1886, last: b - DAY_1886, polys });
   } else log("no Andorra in Natural Earth's first-level divisions, so the zones of control leave it out");
-  return { spans: out, mask: shapeOf(blocks.flatMap((b) => b.items)), units: blocks.reduce((n, b) => n + b.items.length, 0), war: warRows };
+  // Each unit's owner on a day, for the bridge from the medieval table and for checks.
+  const ownersOn = (iso) => {
+    const d = toDay(iso), m = new Map();
+    for (const blk of blocks) {
+      const p = blk.per.find((q) => q.a <= d && d <= q.b);
+      if (p) for (const it of blk.items) if (!m.has(it[0])) m.set(it[0], { key: p.x, ...attrAt(p.x, d) });
+    }
+    return m;
+  };
+  return { spans: out, mask: shapeOf(blocks.flatMap((b) => b.items)), units: blocks.reduce((n, b) => n + b.items.length, 0), war: warRows, ownersOn };
 }

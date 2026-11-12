@@ -23,8 +23,18 @@
 // Syria, the Sasanian Empire, the Caliphates, Khazaria), so both parts are one state on the page.
 
 import { high } from "./medieval-high.mjs";
+import { bridge } from "./medieval-bridge.mjs";
 
 export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 1444;
+// The bridge: from 1445 to 1647, the year before the table of 1648 (napoleonic.mjs) begins, the table goes on for the land the Holy
+// Roman Empire held on 1 July 1444, its members' and its own, so the Empire's members are drawn unit by unit from one table to
+// the other; elsewhere the sources take over in 1445.
+export const BRIDGE_TO = 1647;
+// The Burgundian Low Countries and Franche-Comté, and Silesia (a land of the Bohemian crown): not members on the map in 1444, but carried
+// by the bridge with the Empire, so that they pass with it to the Habsburgs, Spain, and the Dutch Republic. Ireland's lordships, Orkney,
+// and the Lordship of the Isles too, which the sources fold into England and Scotland from 1445, so they end at their own dates.
+const BRIDGE_ALSO = new Set(["FLA", "ART", "LOU", "HOL", "HAI", "NAM", "LUXC", "FCB", "SILD",
+  "LIRE", "CLAB", "AIR", "NUN", "SUN", "CLAN", "MWI", "CON", "BRF", "LEI", "DESM", "THOM", "ORK", "LISL"]);
 const START = "476-01-01";
 // From 962 the table also covers Anatolia east of 40° E, the Levant, and the Caucasus (EXT), for the Seljuks, the Crusader
 // states, Georgia, and Armenia; before 962 the sources keep that land.
@@ -951,6 +961,9 @@ frontier("tagus-south", E("Toledo", "Cáceres").concat(P("Castelo Branco", "Port
 poly("loire-south", [[-2.5, 47.05], [-2.1606, 47.2712], [-2.1517, 47.2797], [-2.1277, 47.2868], [-2.0356, 47.2933], [-2.0287, 47.2969], [-2.022, 47.2993], [-2.0146, 47.3001], [-2.0066, 47.2933], [-1.9991, 47.2886], [-1.9479, 47.2794], [-1.9325, 47.2797], [-1.9394, 47.2864], [-1.9278, 47.2863], [-1.9171, 47.2842], [-1.9073, 47.2799], [-1.8984, 47.2734], [-1.9189, 47.2734], [-1.9189, 47.266], [-1.8778, 47.2455], [-1.8363, 47.2399], [-1.8261, 47.2353], [-1.8039, 47.219], [-1.781, 47.212], [-1.727, 47.2108], [-1.7121, 47.2105], [-1.6514, 47.1971], [-1.63, 47.1961], [-1.5883, 47.1997], [-1.5694, 47.2045], [-1.5483, 47.2158], [-1.5421, 47.2182], [-1.5319, 47.2188], [-1.5107, 47.2171], [-1.5006, 47.2182], [-1.4879, 47.2262], [-1.4605, 47.2533], [-1.3043, 47.3409], [-1.2862, 47.3458], [-1.2439, 47.3479], [-1.2232, 47.3511], [-1.1648, 47.3758], [-1.1287, 47.3815], [-1.0009, 47.3832], [-0.8817, 47.4003], [-0.8364, 47.3963], [-0.7313, 47.371], [-0.7169, 47.3699], [-0.6872, 47.3721], [-0.6719, 47.3758], [-0.6362, 47.3911], [-0.6177, 47.4025], [-0.6099, 47.4134], [-0.5347, 47.4237], [-0.513, 47.4237], [-0.456, 47.4168], [-0.3995, 47.4239], [-0.3771, 47.4237], [-0.3135, 47.4129], [-0.2986, 47.4063], [-0.2913, 47.4001], [-0.2742, 47.3891], [-0.2672, 47.3832], [-0.2497, 47.3623], [-0.1809, 47.3243], [-0.1611, 47.3206], [-0.144, 47.3146], [-0.0891, 47.2734], [-0.0718, 47.2646], [-0.053, 47.2577], [-0.0325, 47.2532], [-0.0102, 47.2517], [0.01, 47.2477], [0.0754, 47.2182], [0.0964, 47.23], [0.1227, 47.2361], [0.2109, 47.2425], [0.3731, 47.3032], [0.3941, 47.3175], [0.4087, 47.324], [0.4426, 47.3259], [0.4556, 47.3315], [0.479, 47.3519], [0.4932, 47.3616], [0.5073, 47.369], [0.5452, 47.3814], [0.7078, 47.4086], [0.7859, 47.4085], [0.8228, 47.4025], [0.9055, 47.4007], [1.2013, 47.4894], [1.2232, 47.4919], [1.2424, 47.4981], [1.2581, 47.5131], [1.282, 47.5465], [1.3095, 47.5724], [1.439, 47.6514], [1.4592, 47.6603], [1.5042, 47.6668], [1.5247, 47.6746], [1.5796, 47.7077], [1.5824, 47.7143], [1.5832, 47.7284], [1.5886, 47.7325], [1.6118, 47.7386], [1.6172, 47.7427], [1.6377, 47.7799], [1.647, 47.7869], [1.6552, 47.7886], [1.6633, 47.7894], [1.6725, 47.7936], [1.7144, 47.8362], [1.7202, 47.8451], [1.7302, 47.8531], [1.8351, 47.8806], [1.853, 47.8889], [1.8676, 47.9], [1.8836, 47.9056], [1.9756, 47.9013], [2.0058, 47.8919], [2.0247, 47.8898], [2.0309, 47.8861], [2.0361, 47.8684], [2.0418, 47.8624], [2.051, 47.8621], [2.0588, 47.8663], [2.0668, 47.8717], [2.0759, 47.8755], [2.0995, 47.876], [2.1413, 47.8653], [2.2327, 47.8598], [2.2478, 47.855], [2.249, 47.837], [2.2983, 47.8203], [2.2888, 47.8072], [2.2888, 47.8011], [2.2946, 47.7967], [2.3013, 47.7945], [2.3198, 47.7936], [2.332, 47.7908], [2.3394, 47.7844], [2.3445, 47.7774], [2.3503, 47.7731], [2.3682, 47.7705], [2.426, 47.7731], [2.459, 47.7659], [2.7068, 47.6575], [2.7107, 47.6539], [2.7171, 47.6464], [2.7207, 47.6436], [2.7331, 47.6376], [2.7376, 47.6365], [2.7416, 47.635], [2.7415, 47.6311], [2.7402, 47.6263], [2.7412, 47.6223], [2.7546, 47.6094], [2.7656, 47.6025], [2.7966, 47.5881], [2.8374, 47.5527], [2.8437, 47.5434], [2.8779, 47.5198], [2.9216, 47.4671], [2.9299, 47.4534], [2.9331, 47.4339], [2.9292, 47.4199], [2.8859, 47.359], [2.8787, 47.3458], [2.8806, 47.3332], [2.8953, 47.3175], [2.904, 47.3121], [2.9331, 47.3001], [2.9609, 47.2796], [2.9717, 47.2692], [2.9802, 47.2562], [2.9858, 47.2403], [2.9877, 47.2216], [2.9926, 47.2034], [3.0111, 47.174], [3.01, 45.9], [-2.5, 45.9]]);
 frontier("loire-south", F("Loire-Atlantique", "Maine-et-Loire", "Indre-et-Loire", "Loir-et-Cher", "Loiret"), "507");
 
+// The bridge to 1647 (medieval-bridge.mjs), after every other row, since its rows stand on those of 1444.
+bridge({ own, later, add });
+
 // ENGINE_BELOW
 const DAY_MS = 86400000;
 const dayOf = (iso) => { const [y, m = 1, d = 1] = iso.split("-").map(Number); const t = new Date(0); t.setUTCFullYear(y, m - 1, d); return Math.round(t.getTime() / DAY_MS); };
@@ -1082,14 +1095,20 @@ export function buildMedieval(env) {
     const o = ownerAt(row.tl, d);
     return o !== null || !row.under ? o : ownerOf(row.under, d);
   };
+  const d1444 = dayOf(MEDIEVAL_TO + "-07-01");
+  for (const p of all) {
+    const o = p.ext ? null : ownerOf(p.row, d1444), a = o && o !== "-" ? attrAt(o, d1444) : null;
+    p.bridge = !!a && (a.part === "Holy Roman Empire" || a.name === "Holy Roman Empire" || BRIDGE_ALSO.has(o));
+  }
   const late = [];
   for (const p of all) { const first = p.ext ? EXT_FROM : MEDIEVAL_FROM; if (ownerOf(p.row, dayOf(first + "-01-01")) === null) late.push(p.row.what); }
   if (late.length) throw new Error("medieval: rows with no owner on their land's first day: " + [...new Set(late)].slice(0, 12).join(", "));
   // Year by year (the state on 1 July), each owner's pieces; a run of years with the same owner, attributes, and pieces is a span.
   const open = new Map(), runs = [];
-  for (let y = MEDIEVAL_FROM; y <= MEDIEVAL_TO; y++) {
+  for (let y = MEDIEVAL_FROM; y <= BRIDGE_TO; y++) {
     const d = dayOf(y + "-07-01"), byOwner = new Map();
     for (const p of all) {
+      if (y > MEDIEVAL_TO && !p.bridge) continue;
       const o = ownerOf(p.row, d);
       if (!o || o === "-") continue;
       if (!byOwner.has(o)) byOwner.set(o, []);
@@ -1140,8 +1159,20 @@ export function buildMedieval(env) {
   const strange = new Set();
   for (const s of out) for (const n of [s.ruler, s.part, ...(s.claims || [])]) if (n && !names.has(n)) strange.add(n);
   if (strange.size) log("rulers, parts, or claimants that are no owner's name: " + [...strange].join(", "));
-  const mainPs = all.filter((p) => !p.ext), extPs = all.filter((p) => p.ext);
-  return { spans: out, mask: shapeOf(mainPs), maskExt: extPs.length ? shapeOf(extPs) : [], units: all.length };
+  const mainPs = all.filter((p) => !p.ext), extPs = all.filter((p) => p.ext), bridgePs = all.filter((p) => p.bridge);
+  // Each unit's owner on a day (of its uncut piece, or its first), for the bridge to the table of 1648 and for checks.
+  const ownersOn = (iso) => {
+    const d = dayOf(iso), m = new Map();
+    for (const [i, ps] of pieces) {
+      const p = ps.find((q) => !q.cons.length) || ps[0];
+      const k = p && p.row ? ownerOf(p.row, d) : null;
+      if (k !== null && k !== undefined) m.set(i, { key: k, ...attrAt(k, d) });
+    }
+    return m;
+  };
+  const bridgeKeys = new Map();
+  for (const p of all) if (p.bridge) { const o = ownerOf(p.row, d1444); bridgeKeys.set(p.i, o); }
+  return { bridgeKeys, spans: out, mask: shapeOf(mainPs), maskExt: extPs.length ? shapeOf(extPs) : [], maskBridge: shapeOf(bridgePs), bridgeUnits: bridgePs.length, units: all.length, ownersOn };
 }
 
 // The owners' names, for checks.
