@@ -17,6 +17,10 @@ Each entry:
 
 ---
 
+## 27 BC–AD 476 | the Roman Empire | the provinces before 106 and after 193
+
+- Claimed by the 1886 session (session_012Avzuib4tb8ZJHvk13M4TH), 12 November 2026, at Noah's request: the provinces from Augustus's settlement (27 BC) to 105, from DARE's lines joined where provinces were not yet parted, and the Severan provinces (194 to about 284) and Diocletian's (from 293, in the West to 476) from the Ancient World Mapping Center's boundary lines, cut out of the Empire's outline and named by their capitals. `tools/roman-provinces.json` and `PROVINCE_SETS` in `tools/build-eras.mjs`, then the full build.
+
 ## 1445–1647 | the Holy Roman Empire and Burgundy | the stem duchies parted, and Burgundy to 1477
 
 - What changed: the medieval table's stem duchies, owners to 1444 (Franconia, Saxony, and the Kingdoms of Burgundy and Italy), went on in the bridge to 1647; they are parted into the territories of 1648 at the Imperial Circles' making (2 July 1500), with Hesse's Katzenelnbogen Hesse-Darmstadt's from 1567, Coburg Ernestine from 1547, and Geneva a republic from 1536. The Duchy of Burgundy, drawn in France's colour from 1445, is the Burgundian State's to Charles the Bold's death (5 January 1477) and France's after.
