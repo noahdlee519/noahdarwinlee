@@ -14,8 +14,8 @@ Every licence below was read on the dataset's own page or its repository's recor
 | 4 | **ISTAT, *Confini delle unità amministrative*, historical series** | Italy's municipal boundaries for 1861, 1871, 1881, 1901, 1911, 1921, 1923, 1925, 1927, 1931, 1936, 1951, 1961, 1971, and 1981, and provinces from 1931; provinces and regions before 1931 can be made by joining the municipalities | CC BY 3.0 (ISTAT's licence for its open data) | [ISTAT](https://www.istat.it/notizia/confini-statistico-amministrativi-analisi-storica/), [licence](https://www.istat.it/en/press-and-products/open-data/) |
 | 5 | **IBGE, *Evolução da divisão territorial do Brasil 1872–2010*** | Brazil's states and municipalities by census year from 1872 (Stanford holds the state files for 1933, 1940, and 1950, and municipalities for 1900, among others) | Public domain (Stanford's record of the 1940 states: "no restrictions on use") | [Stanford, states 1940](https://purl.stanford.edu/dm443sj2820), [the collection](https://purl.stanford.edu/pk905gn2555) |
 | 6 | **Natural Resources Canada, *Territorial Evolution*** | Canada's provinces and territories on 23 dated maps: 1867, 1870, 1871, 1873, 1874, 1876, 1880, 1881, 1882, 1886, 1889, 1895, 1897, 1898, 1901, 1905, 1912, 1920, 1927, 1949, 1999, 2001, and 2003 | Open Government Licence – Canada | [map service](https://geoappext.nrcan.gc.ca/arcgis/rest/services/FGP/TE/MapServer) (lists GeoJSON among its query formats), [open.canada.ca](https://open.canada.ca/data/en/dataset/cb568551-8893-11e0-a3fc-6cf049291510) (PDF and JPG only) |
-| 7 | **Riksarkivet's historical GIS maps, through `histmaps`** | Sweden's counties (län) and parishes, 1600 to 1990 (only those two checked by the package's author) | Source data CC0; the package MIT | [junkka/histmaps](https://github.com/junkka/histmaps) |
-| 8 | **Transcultural Empire** (Heidelberg; Sablin and others, 2015) | The provinces of the Russian Empire at the census of 1897 and of the Soviet Union at that of 1926 | Open access; the records seen name no licence | [doi:10.11588/data/10064](https://doi.org/10.11588/data/10064) (heiDATA) |
+| 7 | **Riksarkivet's historical GIS maps, through `histmaps` and its successor `swehist`** | Sweden's counties (län) and parishes, 1600 to 1990 (only those two checked by the package's author) | Source data CC0; `swehist`'s data CC BY 4.0 | [junkka/histmaps](https://github.com/junkka/histmaps), [junkka/swehist](https://github.com/junkka/swehist) |
+| 8 | **Transcultural Empire** (Heidelberg; Sablin and others, 2015) | The provinces of the Russian Empire at the census of 1897 and of the Soviet Union at that of 1926 | CC BY 4.0 (heiDATA's terms for the dataset) | [doi:10.11588/data/10064](https://doi.org/10.11588/data/10064) (heiDATA) |
 | 9 | **HGIS de las Indias** (Stangl) | Spanish America's territorial organisation 1701 to 1808 in 11 levels (viceroyalties, audiencias, governorships, intendancies, and smaller), as a territorial gazetteer | CC BY 4.0 (World Historical Gazetteer's terms for its public datasets) | [Yale Dataverse](https://dataverse.yale.edu/dataverse/indias-hgis), [WHG](https://whgazetteer.org/datasets/8) |
 | 10 | **MLIT, National Land Numerical Information, N03** | Japan's municipalities from 1920, with the prefecture of each, so prefectures can be made by joining | Free download; the product specification states no licence | [specification](https://nlftp.mlit.go.jp/ksj/gml/product_spec/KS-PS-N03-v2_4.pdf) |
 
@@ -33,26 +33,28 @@ Every licence below was read on the dataset's own page or its repository's recor
 
 ## Countries and what would extend them
 
-The start date is when CHRONIA's divisions begin now.
+The start date is when CHRONIA's divisions began before this work; "Now" is what `tools/divisions-hist.mjs` adds (see the README's "First-level divisions").
 
-| Country | Starts now | Could run back to | From |
-|---------|-----------|-------------------|------|
-| France | 1960 (regions) | 1870, as départements | TRF-GIS |
-| Germany | 1949 | about 1815 | HistoGIS; OpenHistoricalMap |
-| Austria | 1958 | 1815, as crown lands | HistoGIS |
-| Italy | 1948 | 1861 | ISTAT |
-| Brazil | 1975 | 1872 | IBGE |
-| Canada | 1912 | 1867 | NRCan |
-| Sweden | 1998 | before 1886 (to 1600 in the data) | Riksarkivet via `histmaps` |
-| Russia | 2008 | 1897 and 1926 (two dates), the 1950s to 1991 | Transcultural Empire; OpenHistoricalMap |
-| Mexico, Central America, and much of South America | 1935 (Mexico), 1884 to 1992 (others) | varies | OpenHistoricalMap; HGIS de las Indias before 1808 |
-| Poland | 1999 | varies | OpenHistoricalMap |
-| China | 1979 | 1911 and earlier (non-commercial) | CHGIS; nothing open found for 1912 to 1949 |
+| Country | Started | Now | From |
+|---------|---------|-----|------|
+| Canada | 1912 | **1867** | NRCan |
+| Austria | 1958 | **1815 to 1918**, as the crown lands of the Austrian Empire and Austria-Hungary | HistoGIS |
+| Prussia | none | **1815 to 1870**, its provinces | HistoGIS |
+| Germany | 1949 | **1867 to 1945**, the states | OpenHistoricalMap |
+| Italy | 1948 | **1861**, as compartimenti | ISTAT |
+| Sweden | 1998 | **1720** | Riksarkivet via `swehist` |
+| Mexico | 1935 | **1821** | OpenHistoricalMap |
+| Brazil | 1975 | **1822** | OpenHistoricalMap (IBGE once `stacks.stanford.edu` or `geoftp.ibge.gov.br` is reachable) |
+| France | 1960 (regions) | not yet: 1870, as départements, once `dvn-cloud-iqss.s3.amazonaws.com` is reachable | TRF-GIS |
+| Russia | 2008 | not yet: OpenHistoricalMap has fewer than half the governorates of 1900, and the Transcultural Empire's map is of the census of 1897 only, so its days would need dating from the decrees | Transcultural Empire; OpenHistoricalMap |
+| Central and South America | 1884 to 1992 | not yet | OpenHistoricalMap; HGIS de las Indias before 1808 |
+| Poland | 1999 | not yet | OpenHistoricalMap |
+| China | 1979 | not yet: 1911 and earlier (non-commercial) | CHGIS; nothing open found for 1912 to 1949 |
 | Japan | 1893 | about the same (prefectures barely changed after 1893) | MLIT N03 only refines |
 | India | 1966 | nothing usable found | |
 
 ## What it would take
 
-1. **Reaching the data.** This workspace reaches GitHub and the package registries only, so of these only `histmaps` can be fetched here today. The rest need their hosts allowed on claude.ai (Settings > Capabilities): `overpass-api.openhistoricalmap.org` or `planet.openhistoricalmap.org`, `histogis.acdh.oeaw.ac.at` and `arche.acdh.oeaw.ac.at`, `dataverse.harvard.edu`, `www.istat.it`, `stacks.stanford.edu`, `geoappext.nrcan.gc.ca`, `heidata.uni-heidelberg.de`, and `nlftp.mlit.go.jp`. Otherwise the files can be downloaded by hand and attached.
+1. **Reaching the data.** Since 12 November 2026 this workspace reaches OpenHistoricalMap's Overpass API, HistoGIS, Harvard Dataverse, ISTAT, NRCan, heiDATA, and MLIT, besides GitHub and the package registries. Harvard Dataverse hands its files to `dvn-cloud-iqss.s3.amazonaws.com`, and Stanford's (`stacks.stanford.edu`, `purl.stanford.edu`) and IBGE's (`geoftp.ibge.gov.br`) servers are still refused, so France's départements and IBGE's Brazil wait on those hosts being allowed on claude.ai (Settings > Capabilities).
 2. **Fitting them to the map.** These shapes don't share Natural Earth's arcs, so each set has to be clipped to the country's own shape on each date and generalised to the detail of `data/divisions/`, and its outer edge dropped, since only internal lines are drawn.
 3. **Dating them.** Where a source gives only census years (ISTAT, IBGE, the Transcultural Empire), each change between them has to be dated from the law or decree that made it, as `tools/divisions-ne.json` does now; HistoGIS, TRF-GIS, NRCan, and OpenHistoricalMap give dates or years already.
