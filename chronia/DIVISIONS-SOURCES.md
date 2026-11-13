@@ -45,7 +45,7 @@ The start date is when CHRONIA's divisions began before this work; "Now" is what
 | Sweden | 1998 | **1720** | Riksarkivet via `swehist` |
 | Mexico | 1935 | **1821** | OpenHistoricalMap |
 | Brazil | 1975 | **1822** | OpenHistoricalMap (IBGE once `stacks.stanford.edu` or `geoftp.ibge.gov.br` is reachable) |
-| France | 1960 (regions) | not yet: 1870, as départements, once `dvn-cloud-iqss.s3.amazonaws.com` is reachable | TRF-GIS |
+| France | 1960 (regions) | **1860**, as départements | TRF-GIS |
 | Russia | 2008 | not yet: OpenHistoricalMap has fewer than half the governorates of 1900, and the Transcultural Empire's map is of the census of 1897 only, so its days would need dating from the decrees | Transcultural Empire; OpenHistoricalMap |
 | Central and South America | 1884 to 1992 | not yet | OpenHistoricalMap; HGIS de las Indias before 1808 |
 | Poland | 1999 | not yet | OpenHistoricalMap |
@@ -55,6 +55,6 @@ The start date is when CHRONIA's divisions began before this work; "Now" is what
 
 ## What it would take
 
-1. **Reaching the data.** Since 12 November 2026 this workspace reaches OpenHistoricalMap's Overpass API, HistoGIS, Harvard Dataverse, ISTAT, NRCan, heiDATA, and MLIT, besides GitHub and the package registries. Harvard Dataverse hands its files to `dvn-cloud-iqss.s3.amazonaws.com`, and Stanford's (`stacks.stanford.edu`, `purl.stanford.edu`) and IBGE's (`geoftp.ibge.gov.br`) servers are still refused, so France's départements and IBGE's Brazil wait on those hosts being allowed on claude.ai (Settings > Capabilities).
+1. **Reaching the data.** Since 12 November 2026 this workspace reaches OpenHistoricalMap's Overpass API, HistoGIS, Harvard Dataverse (whose files come from `dvn-cloud-iqss.s3.amazonaws.com`), ISTAT, NRCan, heiDATA, and MLIT, besides GitHub and the package registries. Stanford's (`stacks.stanford.edu`, `purl.stanford.edu`) and IBGE's (`geoftp.ibge.gov.br`) servers are still refused, so IBGE's Brazil waits on those hosts being allowed on claude.ai (Settings > Capabilities).
 2. **Fitting them to the map.** These shapes don't share Natural Earth's arcs, so each set has to be clipped to the country's own shape on each date and generalised to the detail of `data/divisions/`, and its outer edge dropped, since only internal lines are drawn.
 3. **Dating them.** Where a source gives only census years (ISTAT, IBGE, the Transcultural Empire), each change between them has to be dated from the law or decree that made it, as `tools/divisions-ne.json` does now; HistoGIS, TRF-GIS, NRCan, and OpenHistoricalMap give dates or years already.

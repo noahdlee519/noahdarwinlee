@@ -365,7 +365,51 @@ const germany = () => ohm({
   names: ["North German Confederation", "German Empire", "Germany"]
 });
 
-const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico, br: brazil, de: germany };
+// France's départements, from TRF-GIS (Victor Gay, Harvard Dataverse; CC BY 4.0), whose yearly maps of 1870 to 1940
+// have three different sets of lines: 1870, with Meurthe, Moselle, and the two Rhins whole; 1871 to 1918, after the
+// Treaty of Frankfurt (10 May 1871), with Meurthe-et-Moselle and the Territoire de Belfort; and 1919 to 1940, with the
+// Rhins and Moselle back. The map of 1870 is drawn from the annexation of Savoy and Nice (14 June 1860), when
+// Alpes-Maritimes, Savoie, and Haute-Savoie were made; that of 1919 from 1 January 1919, TRF-GIS's year, to the day
+// before the regions from Natural Earth begin (2 June 1960), as no département changed in between. The maps are in
+// Lambert-93, and give the names in capitals without accents.
+const FR_FILES = [[1870, 4083538, "1860-06-14"], [1871, 4083420, "1871-05-10"], [1919, 4083231, "1919-01-01"]];
+const FR_END = "1960-06-01";
+const FR_WORDS = { ARDECHE: "Ardèche", ARIEGE: "Ariège", PYRENEES: "Pyrénées", RHONE: "Rhône", INFERIEURE: "Inférieure", CORREZE: "Corrèze", COTE: "Côte", COTES: "Côtes", SEVRES: "Sèvres", DROME: "Drôme", FINISTERE: "Finistère", SAONE: "Saône", HERAULT: "Hérault", ISERE: "Isère", LOZERE: "Lozère", NIEVRE: "Nièvre", DOME: "Dôme", VENDEE: "Vendée" };
+const frName = (n) => n.split("-").map((w, i) => {
+  if (i && ["DE", "DU", "ET"].includes(w)) return w.toLowerCase();
+  if (w === "D'OR") return "d’Or";
+  return FR_WORDS[w] || w.charAt(0) + w.slice(1).toLowerCase();
+}).join("-");
+async function france() {
+  const dir = resolve(cache, "fr");
+  mkdirSync(dir, { recursive: true });
+  const shp = require("shapefile"), proj4 = require("proj4");
+  const l93 = proj4("+proj=lcc +lat_0=46.5 +lon_0=3 +lat_1=49 +lat_2=44 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", "WGS84");
+  const un = (c) => typeof c[0] === "number" ? l93.forward(c).map((x) => Math.round(x * 1e6) / 1e6) : c.map(un);
+  const spans = [];
+  for (let i = 0; i < FR_FILES.length; i++) {
+    const [year, id, first] = FR_FILES[i], last = i + 1 < FR_FILES.length ? dayBefore(FR_FILES[i + 1][2]) : FR_END;
+    const zip = resolve(dir, "DEP_" + year + ".zip"), out = resolve(dir, "x" + year);
+    if (!existsSync(zip)) {
+      const r = await fetch("https://dataverse.harvard.edu/api/access/datafile/" + id);
+      if (!r.ok) throw new Error(r.status + " TRF-GIS " + year);
+      writeFileSync(zip, Buffer.from(await r.arrayBuffer()));
+    }
+    if (!existsSync(out)) execFileSync("unzip", ["-oq", zip, "-d", out]);
+    const base = resolve(out, "DEPARTEMENTS_" + year);
+    const src = await shp.open(base + ".shp", base + ".dbf", { encoding: "utf-8" });
+    const groups = new Map();
+    for (let r = await src.read(); !r.done; r = await src.read()) {
+      const n = frName(r.value.properties.dep_name);
+      if (!groups.has(n)) groups.set(n, []);
+      groups.get(n).push({ type: "Feature", properties: {}, geometry: { type: r.value.geometry.type, coordinates: un(r.value.geometry.coordinates) } });
+    }
+    spans.push({ year, first, last, groups });
+  }
+  return { key: "fr", names: ["Second French Empire", "French Third Republic", "France", "Vichy France", "French Fourth Republic"], source: "TRF-GIS, the départements of 1870, 1871, and 1919", licence: "CC BY 4.0", feats: spans.flatMap(mapFeatures), maps: spans.length };
+}
+
+const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico, br: brazil, de: germany, fr: france };
 
 // One map's shapes, joined by name, as features; each map is put into a topology of its own first, so that shapes the
 // source draws side by side are joined along their shared lines.
