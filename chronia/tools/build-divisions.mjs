@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -514,6 +514,25 @@ function ahcbOverlaps(entries) {
   return out;
 }
 
+// Older divisions from tools/divisions-hist/<key>.json (written by divisions-hist.mjs from historical datasets; see
+// DIVISIONS-SOURCES.md), put before the country's spans from Natural Earth: those that begin on or after the first of
+// those are left out, and those that run into it end the day before.
+const HIST_DIR = resolve(here, "divisions-hist");
+function withHistory(key, names, entries) {
+  const file = resolve(HIST_DIR, key + ".json");
+  if (!existsSync(file)) return [names, entries];
+  const h = JSON.parse(readFileSync(file, "utf8"));
+  const start = entries.reduce((m, e) => (e.first < m ? e.first : m), "9999-12-31");
+  const older = [];
+  for (const g of h.topo.objects.d.geometries) {
+    const p = g.properties;
+    if (p.first >= start) continue;
+    older.push({ name: p.name, first: p.first, last: p.last && p.last < start ? p.last : dayBefore(start), geo: rewind(client.feature(h.topo, g).geometry) });
+  }
+  console.log(key + ": " + older.length + " older spans from " + h.source + ", from " + older.reduce((m, e) => (e.first < m ? e.first : m), start));
+  return [[...new Set([...names, ...h.names])], older.concat(entries)];
+}
+
 function naturalEarth() {
   const topo = JSON.parse(readFileSync(provincesPath, "utf8"));
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -590,12 +609,18 @@ function naturalEarth() {
     if (cuts.length) entries.forEach((en, i) => { if (!R.parts[i].cut && !R.parts[i].ne.some((n) => /\[lat/.test(n))) en.geo = splitAt(en.geo, cuts); });
     const unused = [...byName.keys()].filter((n) => !used.has(n));
     if (unused.length) console.log(R.key + ": Natural Earth pieces not used: " + unused.join(", "));
-    out.push(writeRegion(R.key, R.names, entries));
+    out.push(writeRegion(R.key, ...withHistory(R.key, R.names, entries)));
   }
   return out;
 }
 
 mkdirSync(resolve(out, "divisions"), { recursive: true });
 const regions = [ahcb(), ...naturalEarth()];
+// A country with older divisions only (Prussia, say), with no entry of its own in Natural Earth.
+for (const f of existsSync(HIST_DIR) ? readdirSync(HIST_DIR).filter((x) => x.endsWith(".json")) : []) {
+  const key = f.replace(/\.json$/, "");
+  if (regions.some((r) => r[0] === key)) continue;
+  regions.push(writeRegion(key, ...withHistory(key, [], [])));
+}
 writeFileSync(resolve(out, "divisions.json"), JSON.stringify({ regions }));
 console.log("divisions.json: " + regions.length + " regions");

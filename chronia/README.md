@@ -50,6 +50,7 @@ A static page, no build step, like the rest of the site. The data files are made
 | `tools/city-tables.mjs` | CHRONIA's own tables for the cities: founding and end dates, names by date, corrections to the sources, and a few cities the sources lack. |
 | `reports/` | The review page for the fact checkers' reports (see [Reports of errors](#reports-of-errors)). |
 | `tools/build-divisions.mjs` | The builder of the first-level divisions (see [First-level divisions](#first-level-divisions)). |
+| `tools/divisions-hist.mjs` | Fetches and prepares older first-level divisions from historical datasets into `tools/divisions-hist/` (see [First-level divisions](#first-level-divisions)). |
 | `DIVISIONS-SOURCES.md` | Datasets of older first-level divisions, with their coverage and licences, for running divisions back before today's units. |
 | `tools/build-geography.mjs` | The builder of the dated geography. |
 | `tools/roman-provinces.json` | The provinces of the Roman Empire under Trajan, from the Digital Atlas of the Roman Empire (see [The Roman provinces](#the-roman-provinces)). |
@@ -704,6 +705,19 @@ The internal first-level divisions of some countries, such as the states and ter
 git clone --depth 1 https://github.com/ropensci/USAboundariesData.git
 node chronia/tools/build-divisions.mjs node_modules USAboundariesData/data-raw/historical/histstates.geojson
 ```
+
+Older divisions, from before a country's units of today, come from historical datasets (listed with their licences in [DIVISIONS-SOURCES.md](DIVISIONS-SOURCES.md)). `tools/divisions-hist.mjs` fetches them into a cache folder, dates them, keeps only the divisions that belonged to the country on each date, joins those drawn below the first level, simplifies them together, and writes `tools/divisions-hist/<key>.json`; `build-divisions.mjs` puts their spans before the country's spans from Natural Earth (ending the day before those begin), and writes a country that has only older divisions (Prussia) as a region of its own. Behind a proxy, Node's `fetch` needs `NODE_USE_ENV_PROXY=1`:
+
+```
+NODE_USE_ENV_PROXY=1 node chronia/tools/divisions-hist.mjs node_modules divisions-hist-cache [key ...]
+```
+
+It needs the npm modules `shapefile` and `proj4` besides those of the other builders, and `unzip`. So far:
+
+- **Canada** (`ca`), 1 July 1867 to 14 May 1912, from Natural Resources Canada's *Territorial Evolution* maps (1867 to 1905), each dated to its change by the article "Territorial evolution of Canada". The districts of the territories (Assiniboia, Athabaska, and the others) are joined into the territories; Keewatin, under Manitoba's lieutenant governor from 1876 to 1905, is drawn on its own, and so is the land Ontario and Manitoba disputed from 1881 to 1889.
+- **The Austrian Empire and Austria-Hungary** (`at`), 9 June 1815 to 31 October 1918, the crown lands from HistoGIS, dated to the day by HistoGIS. Austria's divisions then stop until 1958, where Natural Earth's begin.
+- **The Kingdom of Prussia** (`prussia`), 9 June 1815 to 31 December 1870, its provinces from HistoGIS. From 1867 Prussia is drawn within the North German Confederation, so its provinces show only until then.
+- **Italy** (`it`), 17 March 1861 to 31 December 1947, the compartimenti on ISTAT's historical maps of 1861 to 1927. They were the statistical regions out of which the regions of 1948 were made (the provinces were the first level of administration), and are drawn so that the divisions run on into the regions. A change between two of ISTAT's maps, which are of census years, shows from the census that first records it; ISTAT's map of 1925 leaves out Basilicata and Calabria, so it isn't used.
 
 What it does:
 
