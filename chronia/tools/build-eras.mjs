@@ -52,64 +52,69 @@ const HI_Q = 2e5, LO_Q = 2e4;
 const CS_HI_KM = 0.5, CS_HI_Q = 5e5, FINE_KM = 0.15, FINE_Q = 1e6;
 const weightFor = (km) => (km / R_KM) ** 2;
 
-const LINEAGE = [
-  ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland"],
-  ["Kingdom of France", "France", "Vichy France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"],
-  ["Grand Duchy of Moscow", "Grand Principality of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"],
-  ["Han", "Han Empire", "Jin", "Sui Empire", "Tang Empire", "Song Empire", "Ming Empire", "Ming Chinese Empire", "Ming dynasty", "Manchu Empire", "Qing Empire", "Qing dynasty", "China"],
-  ["United States of America", "United States"],
-  ["Slovak Republic", "Slovakia"],
-  ["Independent State of Croatia", "Croatia"],
-  ["Castile", "Crown of Castile", "Spain", "Kingdom of Spain", "Spanish Habsburg", "Habsburg Spain", "First Spanish Republic"],
-  ["Portugal", "Kingdom of Portugal"],
-  ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"],
-  ["Brandenburg", "Margraviate of Brandenburg", "Electorate of Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "North German Confederation", "German Empire", "Germany", "West Germany"],
-  ["Duchy of Austria", "Archduchy of Austria", "Habsburg Monarchy", "House of Habsburg", "Austrian Empire", "Austro-Hungarian Empire", "Austria-Hungary", "Austria"],
-  ["Ottoman Empire", "Turkey"],
-  ["Swiss Confederation", "Switzerland"],
-  ["Asante", "Ashanti Empire"],
-  ["Alwa", "Alodia"],
-  ["Safavid Empire", "Safavid dynasty", "Safavid Iran", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Qajar Iran", "Persia", "Iran"],
-  ["Imperial Japan (Fujiwara)", "Ashikaga Shogunate", "Warring States Japan", "Tokugawa shogunate", "Tokugawa Shogunate", "Japan", "Empire of Japan"],
-  ["Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"],
-  ["County of Savoy", "House of Savoy", "Duchy of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"],
-  ["Colonial Brazil", "Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"],
-  ["Ayutthaya", "Ayutthaya Kingdom", "Thonburi Kingdom", "Rattanakosin Kingdom", "Siam", "Thailand"],
-  ["Abyssinia", "Ethiopian Empire", "Ethiopia"],
-  ["Kingdom of Poland", "Poland-Lithuania", "Polish-Lithuanian Commonwealth", "Poland"],
-  ["Kingdom of Denmark", "Denmark-Norway", "Denmark"],
-  ["Kingdom of Sweden", "Swedish Empire", "Sweden", "United Kingdoms of Sweden and Norway", "Sweden–Norway"],
-  ["Mughal Empire", "India"],
-  ["First Hellenic Republic", "Kingdom of Greece", "Greece"],
-  ["Revolutionary Serbia", "Principality of Serbia", "Kingdom of Serbia", "Serbia"],
-  ["United Principalities of Moldavia and Wallachia", "Principality of Romania", "Kingdom of Romania", "Romania"],
-  ["Prince-Bishopric of Montenegro", "Principality of Montenegro", "Kingdom of Montenegro", "Montenegro"],
-  ["Principality of Bulgaria", "Bulgaria"],
-  ["Joseon", "Korean Empire", "Korea"],
-  ["British India", "British Raj"],
-  ["South African Republic", "Transvaal", "Transvaal Colony"],
-  ["Orange Free State", "Orange River Colony"],
-  ["Danish Greenland", "Greenland"],
-  ["Bornu Empire", "Kanem-Bornu"],
-  ["Toucouleur Empire", "Tukular Caliphate"],
-  ["Egypt", "Khedivate of Egypt"],
-  ["Durrani Empire", "Emirate of Afghanistan", "Afghanistan"],
-  ["Khanate of Bukhara", "Emirate of Bukhara", "Bukhara"],
-  ["Republic of Haiti", "Empire of Haiti", "Haiti"],
-  ["Argentine Confederation", "Argentina"],
-  ["Gorkha Kingdom", "Kingdom of Nepal", "Nepal"],
-  ["Sikh Confederacy", "Sikh Empire"],
-  ["Viceroyalty of New Spain", "First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"],
-  ["Ceylon", "Sri Lanka"],
-  ["First Toungoo Empire", "Konbaung dynasty", "Burma", "Myanmar"],
-  ["Dahomey", "Benin"],
-  ["Upper Volta", "Burkina Faso"],
-  ["Gold Coast", "Ghana"],
-  ["Nyasaland", "Malawi"],
-  ["Northern Rhodesia", "Zambia"],
-  ["Southern Rhodesia", "Rhodesia", "Zimbabwe"],
-  ["Congo Free State", "Belgian Congo", "Congo-Léopoldville", "Zaire", "DR Congo"]
+// Country tags: a country keeps its tag under all its names (France as the Kingdom of France, the French Empire, or the Third
+// Republic), and with it its colours: the first its own, the next two the shades it takes, in that order, where a neighbour has its
+// colour. The shades were the palette's two nearest the first as seen (see SHADES) when the tags were written, in November 2026,
+// and may be set by hand. A state with no tag has the colour of its own name, and SHADES's shades.
+const TAGS = [
+  ["Britain", [3, 2, 1], ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland"]],
+  ["France", [7, 5, 6], ["West Francia", "French Fourth Republic", "Kingdom of France", "France", "Vichy France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"]],
+  ["Russia", [8, 9, 2], ["Principality of Vladimir-Suzdal", "Grand Duchy of Moscow", "Grand Principality of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"]],
+  ["China", [9, 0, 2], ["Han", "Han Empire", "Han dynasty", "Jin", "Sui Empire", "Sui dynasty", "Tang Empire", "Tang dynasty", "Song Empire", "Northern Song", "Southern Song", "Yuan dynasty", "Ming Empire", "Ming Chinese Empire", "Ming dynasty", "Manchu Empire", "Qing Empire", "Qing dynasty", "China"]],
+  ["United States", [6, 7, 4], ["United States of America", "United States"]],
+  ["Slovakia", [7, 5, 6], ["Slovak Republic", "Slovakia"]],
+  ["Croatia", [5, 4, 7], ["Independent State of Croatia", "Croatia"]],
+  ["Spain", [0, 1, 9], ["County of Castile", "Kingdom of Castile", "Castile", "Crown of Castile", "Spain", "Kingdom of Spain", "Spanish Habsburg", "Habsburg Spain", "First Spanish Republic"]],
+  ["Portugal", [6, 7, 4], ["County of Portugal", "Portugal", "Kingdom of Portugal"]],
+  ["Netherlands", [1, 0, 3], ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"]],
+  ["Germany", [9, 0, 2], ["Duchy of Prussia", "Brandenburg", "Margraviate of Brandenburg", "Electorate of Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "North German Confederation", "German Empire", "Germany", "West Germany"]],
+  ["Austria", [2, 3, 9], ["Margraviate of Austria", "Duchy of Austria", "Archduchy of Austria", "Habsburg Monarchy", "House of Habsburg", "Austrian Empire", "Austro-Hungarian Empire", "Austria-Hungary", "Austria"]],
+  ["Turkey", [1, 0, 3], ["Ottoman Empire", "Turkey"]],
+  ["Switzerland", [3, 2, 1], ["Swiss Confederation", "Switzerland"]],
+  ["Asante", [4, 5, 3], ["Asante", "Ashanti Empire"]],
+  ["Alodia", [2, 3, 9], ["Alwa", "Alodia"]],
+  ["Iran", [9, 0, 2], ["Safavid Empire", "Safavid dynasty", "Safavid Iran", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Qajar Iran", "Persia", "Iran"]],
+  ["Japan", [5, 4, 7], ["Asuka Japan", "Nara Japan", "Heian Japan", "Kamakura Shogunate", "Imperial Japan (Fujiwara)", "Ashikaga Shogunate", "Warring States Japan", "Tokugawa shogunate", "Tokugawa Shogunate", "Japan", "Empire of Japan"]],
+  ["Rome", [9, 0, 2], ["Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"]],
+  ["Italy", [8, 9, 2], ["County of Savoy", "House of Savoy", "Duchy of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"]],
+  ["Brazil", [8, 9, 2], ["Colonial Brazil", "Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"]],
+  ["Thailand", [0, 1, 9], ["Ayutthaya", "Ayutthaya Kingdom", "Thonburi Kingdom", "Rattanakosin Kingdom", "Siam", "Thailand"]],
+  ["Ethiopia", [5, 4, 7], ["Abyssinia", "Ethiopian Empire", "Ethiopia"]],
+  ["Poland", [4, 5, 3], ["Duchy of Poland", "Kingdom of Poland", "Poland-Lithuania", "Polish-Lithuanian Commonwealth", "Poland"]],
+  ["Denmark", [3, 2, 1], ["Kingdom of Denmark", "Denmark-Norway", "Denmark"]],
+  ["Sweden", [7, 5, 6], ["Kingdom of Sweden", "Swedish Empire", "Sweden", "United Kingdoms of Sweden and Norway", "Sweden–Norway"]],
+  ["India", [1, 0, 3], ["Mughal Empire", "India"]],
+  ["Greece", [6, 7, 4], ["First Hellenic Republic", "Kingdom of Greece", "Greece"]],
+  ["Serbia", [2, 3, 9], ["Revolutionary Serbia", "Principality of Serbia", "Kingdom of Serbia", "Serbia"]],
+  ["Romania", [0, 1, 9], ["United Principalities of Moldavia and Wallachia", "Principality of Romania", "Kingdom of Romania", "Romania"]],
+  ["Montenegro", [4, 5, 3], ["Prince-Bishopric of Montenegro", "Principality of Montenegro", "Kingdom of Montenegro", "Montenegro"]],
+  ["Bulgaria", [9, 0, 2], ["Principality of Bulgaria", "Bulgaria"]],
+  ["Korea", [7, 5, 6], ["Joseon", "Korean Empire", "Korea"]],
+  ["British India", [1, 0, 3], ["British India", "British Raj"]],
+  ["Transvaal", [5, 4, 7], ["South African Republic", "Transvaal", "Transvaal Colony"]],
+  ["Orange Free State", [2, 3, 9], ["Orange Free State", "Orange River Colony"]],
+  ["Greenland", [3, 2, 1], ["Danish Greenland", "Greenland"]],
+  ["Bornu", [2, 3, 9], ["Bornu Empire", "Kanem-Bornu"]],
+  ["Toucouleur", [4, 5, 3], ["Toucouleur Empire", "Tukular Caliphate"]],
+  ["Egypt", [0, 1, 9], ["Early Dynastic Period of Egypt", "Old Kingdom of Egypt", "Middle Kingdom of Egypt", "New Kingdom of Egypt", "Twenty-first Dynasty of Egypt", "Twenty-second Dynasty of Egypt", "Twenty-sixth Dynasty of Egypt", "Thirtieth Dynasty of Egypt", "Egypt", "Khedivate of Egypt"]],
+  ["Afghanistan", [6, 7, 4], ["Durrani Empire", "Emirate of Afghanistan", "Afghanistan"]],
+  ["Bukhara", [2, 3, 9], ["Khanate of Bukhara", "Emirate of Bukhara", "Bukhara"]],
+  ["Haiti", [9, 0, 2], ["Republic of Haiti", "Empire of Haiti", "Haiti"]],
+  ["Argentina", [6, 7, 4], ["Argentine Confederation", "Argentina"]],
+  ["Nepal", [6, 7, 4], ["Gorkha Kingdom", "Kingdom of Nepal", "Nepal"]],
+  ["Sikh Empire", [8, 9, 2], ["Sikh Confederacy", "Sikh Empire"]],
+  ["Mexico", [4, 5, 3], ["Viceroyalty of New Spain", "First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"]],
+  ["Sri Lanka", [4, 5, 3], ["Ceylon", "Sri Lanka"]],
+  ["Burma", [8, 9, 2], ["First Toungoo Empire", "Konbaung dynasty", "Burma", "Myanmar"]],
+  ["Benin", [5, 4, 7], ["Dahomey", "Benin"]],
+  ["Burkina Faso", [2, 3, 9], ["Upper Volta", "Burkina Faso"]],
+  ["Ghana", [4, 5, 3], ["Gold Coast", "Ghana"]],
+  ["Malawi", [7, 5, 6], ["Nyasaland", "Malawi"]],
+  ["Zambia", [0, 1, 9], ["Northern Rhodesia", "Zambia"]],
+  ["Zimbabwe", [4, 5, 3], ["Southern Rhodesia", "Rhodesia", "Zimbabwe"]],
+  ["Congo", [2, 3, 9], ["Congo Free State", "Belgian Congo", "Congo-Léopoldville", "Zaire", "DR Congo"]],
 ];
+const LINEAGE = TAGS.map((t) => t[2]);
 const RULER_ALIAS = {
   "United Kingdom": "United Kingdom of Great Britain and Ireland",
   "Russia": "Russian Empire",
@@ -5092,6 +5097,8 @@ try {
 } catch (e) { console.warn("No earlier eras.json, so colours are chosen afresh"); }
 const seeded = new Set();
 catalogue.forEach((e, id) => { if (e.cs && Object.hasOwn(BASE_COLOURS, e.n)) { const k = keyOf(id); prevColor.set(k, BASE_COLOURS[e.n]); seeded.add(k); } });
+// A tagged country's own colour is its tag's first, under all its names.
+TAGS.forEach(([, cols], i) => { const k = findKey("L" + i); prevColor.set(k, cols[0]); seeded.add(k); });
 const stable = (k) => prevColor.has(k);
 const order = [...weight.keys()].sort((a, b) => seeded.has(b) - seeded.has(a) || stable(b) - stable(a) || weight.get(b) - weight.get(a));
 const color = new Map();
@@ -5167,6 +5174,29 @@ for (const [name, from, like] of COLOUR_FROM) colourFrom.set(catId(name), [[dayO
 const stepAt = (steps, t, base) => { let c = base; if (steps) for (const [a, k] of steps) if (t >= a) c = k; return c; };
 const wheelCost = (a, b) => { const d = Math.min((a - b + PALETTE) % PALETTE, (b - a + PALETTE) % PALETTE); return d === 0 ? 100 : d === 1 ? 6 : d === 2 ? 1 : 0; };
 const WINDOW_MAX_KM2 = 3e6;
+// Each state's colours: its own, then two shades, which a state that has to give way to a neighbour of its colour takes in turn, the
+// same one each time; any other colour only when both are taken round it (Noah asked on 12 November 2026 for each country to keep a
+// tag and two or three colours of its own). A tagged country's shades are its tag's (TAGS); another state's are the palette's two
+// colours nearest its own as seen (CIE Lab, from app.css's ten) that are still SHADE_MIN_DE apart from it.
+const SHADE_MIN_DE = 8;
+const SHADES = (() => {
+  const css = readFileSync(resolve(here, "../app.css"), "utf8");
+  const lab = (h) => {
+    const lin = (c) => (c > 0.04045 ? ((c + 0.055) / 1.055) ** 2.4 : c / 12.92);
+    const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(h.slice(i, i + 2), 16) / 255));
+    const F = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const x = F((r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047), y = F(r * 0.2126 + g * 0.7152 + b * 0.0722), z = F((r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883);
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+  };
+  const L = [...Array(PALETTE).keys()].map((i) => lab(css.match(new RegExp("--ch-c" + i + ": (#[0-9a-f]{6})"))[1]));
+  return L.map((a, i) => L.map((b, j) => [j, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])]).filter(([j, d]) => j !== i && d >= SHADE_MIN_DE).sort((p, q) => p[1] - q[1]).slice(0, 2).map(([j]) => j));
+})();
+// A state's shades: its tag's second and third colours, or else SHADES's for its colour.
+const shadesFor = (hue, base) => {
+  const m = /^L(\d+)$/.exec(keyOf(hue));
+  return m ? TAGS[+m[1]][1].filter((c) => c !== base) : base >= 0 && base < PALETTE ? SHADES[base] : [];
+};
+console.log("colours: shades " + SHADES.map((s, i) => i + "→" + s.join("/")).join(" "));
 const winAt = (wins, t) => { let w = null; for (const x of wins) if (t >= x[0] && t <= x[1] && (!w || x[0] >= w[0])) w = x; return w; };
 function windowColours(units, pairs, fixed, gap) {
   const over = new Map(), size = new Map();
@@ -5202,6 +5232,7 @@ function windowColours(units, pairs, fixed, gap) {
       }
     }
     const base = fixed(hue, a);
+    for (const c of shadesFor(hue, base)) if (!taken.has(c)) return c;
     let best = -1, bestCost = Infinity;
     for (let c = 0; c < PALETTE; c++) {
       if (c === base) continue;

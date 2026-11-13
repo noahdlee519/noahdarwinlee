@@ -30,10 +30,10 @@ export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 1444;
 // Roman Empire held on 1 July 1444, its members' and its own, so the Empire's members are drawn unit by unit from one table to
 // the other; elsewhere the sources take over in 1445.
 export const BRIDGE_TO = 1647;
-// The Burgundian Low Countries and Franche-Comté, and Silesia (a land of the Bohemian crown): not members on the map in 1444, but carried
+// The Burgundian Low Countries, Franche-Comté, and the Duchy of Burgundy (to 1477), and Silesia (a land of the Bohemian crown): not members on the map in 1444, but carried
 // by the bridge with the Empire, so that they pass with it to the Habsburgs, Spain, and the Dutch Republic. Ireland's lordships, Orkney,
 // and the Lordship of the Isles too, which the sources fold into England and Scotland from 1445, so they end at their own dates.
-const BRIDGE_ALSO = new Set(["FLA", "ART", "LOU", "HOL", "HAI", "NAM", "LUXC", "FCB", "SILD",
+const BRIDGE_ALSO = new Set(["FLA", "ART", "LOU", "HOL", "HAI", "NAM", "LUXC", "FCB", "BURD", "SILD",
   "LIRE", "CLAB", "AIR", "NUN", "SUN", "CLAN", "MWI", "CON", "BRF", "LEI", "DESM", "THOM", "ORK", "LISL"]);
 const START = "476-01-01";
 // From 962 the table also covers Anatolia east of 40° E, the Levant, and the Caucasus (EXT), for the Seljuks, the Crusader

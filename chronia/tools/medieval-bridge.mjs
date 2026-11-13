@@ -22,6 +22,9 @@ export function bridge(h) {
   if (globalThis.CHRONIA_BRIDGE_PAIRS) return;
   const { own, later, add } = h;
   const HRE = "Holy Roman Empire";
+  // The Imperial Circles, made at the Diet of Augsburg (2 July 1500): from then the table parts the stem duchies it draws to 1444 as
+  // owners (Franconia, Saxony, and the Kingdoms of Burgundy and Italy) into the territories they stood for.
+  const CIRCLES = "1500-07-02";
   // A pair's units, all or those whose name is in names (the unit, after the province).
   const units = (pair, names) => {
     const l = UNITS[pair];
@@ -65,6 +68,19 @@ export function bridge(h) {
   own("TLGS", "Three Leagues");
   own("PARM", "Duchy of Parma and Piacenza");
   own("MODR", "Duchy of Modena and Reggio");
+  own("HANAU", "County of Hanau", { part: HRE });
+  own("FRANK", "Free City of Frankfurt", { part: HRE });
+  own("NUREM", "Free Imperial City of Nuremberg", { part: HRE });
+  own("PZWEI", "Palatinate-Zweibrücken", { part: HRE });
+  own("SAXL", "Duchy of Saxe-Lauenburg", { part: HRE });
+  own("HILD", "Prince-Bishopric of Hildesheim", { part: HRE });
+  own("REUSS", "Lordship of Reuss", { wiki: "House of Reuss", part: HRE });
+  own("SCHWB", "County of Schwarzburg", { part: HRE });
+  own("BASB", "Prince-Bishopric of Basel", { part: HRE });
+  own("NEUC", "County of Neuchâtel", { wiki: "Principality of Neuchâtel", part: HRE });
+  own("GENV", "Prince-Bishopric of Geneva", { wiki: "Prince-Bishopric of Geneva", part: HRE }, [["1536-05-21", { name: "Republic of Geneva", wiki: "Republic of Geneva", part: "" }]]);
+  own("VALS", "Republic of the Seven Zenden", { part: "" });
+  own("MASS", "Marquisate of Massa", { wiki: "Duchy of Massa and Carrara" }, [["1568-01-01", { name: "Duchy of Massa and Carrara" }]]);
 
   // ——— Renamed or changed owners ———
   later("AUSM", [["1453-01-06", { name: "Archduchy of Austria", wiki: "Archduchy of Austria" }]]);
@@ -114,7 +130,8 @@ export function bridge(h) {
   // ——— Saxony and Thuringia ———
   row("MEIS|Electorate of Saxony", "1485-08-26 ALBS; 1547-05-19 MEIS");
   for (const p of ["THUR|Duchy of Saxe-Weimar-Eisenach", "THUR|Duchy of Saxe-Gotha-Altenburg", "THUR|Duchy of Saxe-Coburg-Saalfeld", "THUR|Duchy of Saxe-Hildburghausen", "THUR|Duchy of Saxe-Meiningen",
-    "THUR|Principality of Schwarzburg-Sondershausen", "THUR|Holy Roman Empire"]) row(p, "1482-09-17 MEIS; 1547-05-19 ERNS");
+    "THUR|Holy Roman Empire"]) row(p, "1482-09-17 MEIS; 1547-05-19 ERNS");
+  row("THUR|Principality of Schwarzburg-Sondershausen", "1482-09-17 MEIS; " + CIRCLES + " SCHWB");
   row("THUR|Electorate of Saxony", "1482-09-17 MEIS; 1485-08-26 ALBS; 1547-05-19 MEIS");
   row("THUR|Electorate of Mainz", "1482-09-17 MAINZ");
   for (const p of ["MEIS|Duchy of Saxe-Weimar-Eisenach", "MEIS|Duchy of Saxe-Gotha-Altenburg"]) row(p, "1547-05-19 ERNS");
@@ -184,6 +201,45 @@ export function bridge(h) {
   for (const p of ["NUN|-", "AIR|-", "CLAB|-", "BRF|-", "LEI|-"]) row(p, "1603-03-30 LIRE");
   row("ORK|-", "1472-02-20 ALB");
   row("LISL|-", "1493-01-01 ALB");
+
+  // ——— The stem duchies parted at the Imperial Circles (1500) ———
+  const part = (pair, key, names) => row(pair, CIRCLES + " " + key, names);
+  part("FRAD|County of Hanau", "HANAU");
+  part("FRAD|Duchy of Württemberg", "WURT");
+  part("FRAD|Electorate of Mainz", "MAINZ");
+  part("FRAD|Electorate of the Palatinate", "PALA");
+  part("FRAD|Free City of Frankfurt", "FRANK");
+  part("FRAD|Free Imperial City of Nuremberg", "NUREM");
+  part("FRAD|Holy Roman Empire", "SWA");
+  row("FRAD|Landgraviate of Hesse-Darmstadt", CIRCLES + " HESL; 1567-03-31 HESD");
+  part("FRAD|Landgraviate of Hesse-Kassel", "HESL");
+  part("FRAD|Palatinate-Zweibrücken", "PZWEI");
+  part("FRAD|Principality of Nassau-Usingen", "NASS");
+  part("FRAD|Principality of Nassau-Weilburg", "NASS");
+  part("SAXD|Duchy of Brunswick", "BRUL");
+  part("SAXD|Principality of Calenberg", "BRUL");
+  part("SAXD|Principality of Lüneburg", "LUNE");
+  row("SAXD|Duchy of Saxe-Coburg-Saalfeld", CIRCLES + " MEIS; 1547-05-19 ERNS");
+  part("SAXD|Duchy of Saxe-Lauenburg", "SAXL");
+  part("SAXD|Prince-Bishopric of Hildesheim", "HILD");
+  part("SAXD|Electorate of Saxony", "MEIS");
+  part("SAXD|Holy Roman Empire", "MAGB", ["Halle (Saale)"]);
+  part("SAXD|Holy Roman Empire", "SWA", ["Nordhausen"]);
+  part("MEIS|Principality of Reuss-Gera", "REUSS");
+  part("MEIS|Principality of Reuss-Greiz", "REUSS");
+  part("MEIS|Principality of Schwarzburg-Rudolstadt", "SCHWB");
+  part("UBU|Kingdom of France", "WFR");
+  part("UBU|Prince-Bishopric of Basel", "BASB");
+  part("UBU|Principality of Neuchâtel", "NEUC");
+  part("UBU|Republic of Geneva", "GENV");
+  part("UBU|Republic of the Seven Zenden", "VALS");
+  part("ITK|Republic of Genoa", "GEN");
+  part("ITK|Duchy of Savoy", "SAVC");
+  part("ITK|Duchy of Massa and Carrara", "MASS");
+
+  // ——— Burgundy ———
+  // The Duchy of Burgundy seized by Louis XI at Charles the Bold's death at Nancy (5 January 1477), confirmed by the Treaty of Arras (1482).
+  row("BURD|Kingdom of France", "1477-01-05 WFR");
 
   // ——— Italy ———
   row("MILn|Duchy of Parma and Piacenza", "1512-07-01 PAP; 1545-08-26 PARM");

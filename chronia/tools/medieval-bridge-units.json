@@ -291,6 +291,13 @@
   "DEU:Lower Saxony/Northeim",
   "DEU:Lower Saxony/Region Hannover"
  ],
+ "BURD|Kingdom of France": [
+  "FRA:Côte-d’Or/Côte-d’Or",
+  "FRA:Haute-Marne/Haute-Marne",
+  "FRA:Nièvre/Nièvre",
+  "FRA:Saône-et-Loire/Saône-et-Loire",
+  "FRA:Yonne/Yonne"
+ ],
  "CARD|Habsburg Monarchy": [
   "AUT:Burgenland/Jennersdorf",
   "AUT:Carinthia/Feldkirchen",

@@ -17,6 +17,24 @@ Each entry:
 
 ---
 
+## 1445–1647 | the Holy Roman Empire and Burgundy | the stem duchies parted, and Burgundy to 1477
+
+- What changed: the medieval table's stem duchies, owners to 1444 (Franconia, Saxony, and the Kingdoms of Burgundy and Italy), went on in the bridge to 1647; they are parted into the territories of 1648 at the Imperial Circles' making (2 July 1500), with Hesse's Katzenelnbogen Hesse-Darmstadt's from 1567, Coburg Ernestine from 1547, and Geneva a republic from 1536. The Duchy of Burgundy, drawn in France's colour from 1445, is the Burgundian State's to Charles the Bold's death (5 January 1477) and France's after.
+- Tables: `tools/medieval-bridge.mjs`, `tools/medieval.mjs` (`BRIDGE_ALSO`), `tools/medieval-bridge-units.json`.
+- Sources: Wikipedia's "Imperial Circle" (the Diet of Augsburg, 2 July 1500), "Charles the Bold" and "Treaty of Arras (1482)", "Republic of Geneva" (21 May 1536), "County of Katzenelnbogen" (1479).
+- Confidence: medium; 1500 is a date for the table's simplification, not for a change on the ground, since most of these lords held their land long before.
+- Alternatives: the stem duchies parted in the medieval table itself, from the 13th century.
+- Left out: the stem duchies before 1500.
+
+## -3400–2026 | the world | colours: country tags, each with three colours
+
+- What changed: the lineages are now country tags (`TAGS`), each with a name, its names, and three colours: its own and two shades. A state that gives way to a neighbour of its colour took the palette's colour least like its neighbours', any of the ten; it now takes its first shade that no neighbour has (its tag's, or the two colours nearest its own as seen), and the same one each time. More names joined their countries' tags: West Francia and the French Fourth Republic France's, Vladimir-Suzdal Russia's, the County and Kingdom of Castile Spain's, the Han, Sui, Tang, Northern and Southern Song, and Yuan dynasties China's, early Japan's periods Japan's, the Duchy of Poland, the County of Portugal, the Margraviate of Austria, and Ducal Prussia theirs, and Egypt's unified dynasties Egypt's.
+- Tables: `tools/build-eras.mjs` (`TAGS`, `SHADES`, `SHADE_MIN_DE`, `windowColours`).
+- Sources: the palette in `app.css`; Noah's request of 12 November 2026.
+- Confidence: high.
+- Alternatives: a hand-set list of two or three colours for each country.
+- Left out: Hungary, whose kingdom and republic keep different colours, since the kingdom in Hungary's colour of today would share the Ottomans' for centuries.
+
 ## 1720–1997 | Canada, Austria(-Hungary), Prussia, Germany, France, Italy, Sweden, Mexico, and Brazil | older first-level divisions
 
 - What changed: the first-level divisions, which began only with each country's units of today (Natural Earth's), now run back through their changes: Canada from 1 July 1867, the crown lands of the Austrian Empire and Austria-Hungary from 9 June 1815 to 31 October 1918, Prussia's provinces from 9 June 1815 to 31 December 1870, Germany's states from 1 July 1867 to 8 May 1945, France's départements from 14 June 1860, Italy's compartimenti from 17 March 1861, Sweden's counties from 1 January 1720, Mexico's states from 27 September 1821, and Brazil's provinces and states from 7 September 1822.
