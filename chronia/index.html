@@ -92,6 +92,9 @@
             <p>
               To redraw history instead, try <a href="https://noahdarwinlee.com/uchronia/">UCHRONIA</a>.
             </p>
+            <p>
+              <button type="button" class="ch-linkbtn" id="tour-again">Take the tour</button>
+            </p>
             <div class="ch-keys">
               <p class="ch-keys-head">Keys</p>
               <dl>
@@ -415,6 +418,21 @@
       </button>
     </div>
 
+    <div class="ch-tour" id="tour" hidden>
+      <div class="ch-tour-spot" id="tour-spot"></div>
+      <div class="ch-layers ch-invite ch-tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-text">
+        <p class="ch-tour-count" id="tour-count"></p>
+        <p class="ch-invite-title" id="tour-title"></p>
+        <p class="ch-invite-text" id="tour-text"></p>
+        <div class="ch-invite-foot ch-tour-foot">
+          <button type="button" class="ch-linkbtn ch-tour-skip" id="tour-skip">Skip the tour</button>
+          <span class="ch-tour-nav">
+            <button type="button" class="ch-invite-later" id="tour-back">Back</button>
+            <button type="button" class="ch-invite-later ch-tour-next" id="tour-next">Next</button>
+          </span>
+        </div>
+      </div>
+    </div>
     <div class="ch-tip" id="tip" hidden></div>
     <div class="ch-hover-tip" id="hover-tip" role="tooltip"></div>
     <div class="ch-load" id="load" role="status">Opening the atlas</div>

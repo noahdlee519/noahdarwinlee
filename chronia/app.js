@@ -5852,7 +5852,7 @@
     try { if (Date.now() - (+localStorage.getItem(INVITE_STORE) || 0) < INVITE_AGAIN_DAYS * DAY_MS) return false; } catch (e) {}
     return true;
   }
-  function panelOpen() { return !layersPanel.hidden || !savePanel.hidden || !reportPanel.hidden || !accountPanel.hidden || !$("search").hidden || about.classList.contains("is-open"); }
+  function panelOpen() { return !layersPanel.hidden || !savePanel.hidden || !reportPanel.hidden || !accountPanel.hidden || !$("search").hidden || about.classList.contains("is-open") || !$("tour").hidden; }
   function showInvite() {
     inviteDone = true;
     $("invite").hidden = false;
@@ -5871,6 +5871,109 @@
     if (exporting || panelOpen() || drag || pointers.size) return;
     showInvite();
   }, 1000);
+  var TOUR_STORE = "chronia-tour", tourAt = -1, tourFrom = null, tourAsk = addrHas("tour=1") ? 1 : addrHas("tour=0") ? 0 : -1;
+  var TOUR = [
+    { title: "Welcome to CHRONIA", text: "An atlas of the world’s states from 3400 BC to today. This short tour shows you around it in nine steps.", next: "Show me" },
+    { at: "#top", title: "The date", text: "The map shows the world on this day. Type a year here to go straight to it, or step a month or a year at a time with the arrows." },
+    { at: "#track", title: "The timeline", text: "Drag along it to move through the centuries. The events marked above it can be clicked, and take you to their date." },
+    { at: ".ch-when-fwd", title: "Play", text: "Play runs the years forward, or backward, and the minus and plus set how fast they go." },
+    { at: "#globe", title: "The map", text: "Drag to move it, scroll or pinch to zoom, and click a state to read about it. Its capital and largest city are links that take you there." },
+    { at: "#search-btn", title: "Search", text: "Find a state, a city, or a people, and the map goes to it." },
+    { at: "#layers-btn", title: "View", text: "Choose the globe or a flat map, and show or hide zones of control, cities, rivers, terrain, first-level divisions, and more." },
+    { at: "#changes-btn", title: "Changes", text: "What changed on the map at this date, with buttons to step to the change before and the next one." },
+    { at: "#about-btn", title: "About", text: "The atlas, its sources, and how it was made. You can take this tour again from here.", next: "Done" }
+  ];
+  function tourSeen() { try { return localStorage.getItem(TOUR_STORE) === "1"; } catch (e) { return false; } }
+  function tourTarget(step) {
+    var el = step.at && document.querySelector(step.at);
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return null;
+    if (getComputedStyle(el).visibility === "hidden") return null;
+    return r;
+  }
+  function placeTour() {
+    if (tourAt < 0) return;
+    var spot = $("tour-spot"), card = $("tour-card"), r = tourTarget(TOUR[tourAt]), pad = 6, gap = 12, m = 12;
+    var W = innerWidth, H = innerHeight, cw = Math.min(310, W - 2 * m);
+    card.style.width = cw + "px";
+    var ch = card.offsetHeight, x, y;
+    if (r) {
+      var sl = Math.max(2, r.left - pad), st = Math.max(2, r.top - pad), sr = Math.min(W - 2, r.right + pad), sb = Math.min(H - 2, r.bottom + pad);
+      spot.classList.remove("is-none");
+      spot.style.left = sl + "px";
+      spot.style.top = st + "px";
+      spot.style.width = sr - sl + "px";
+      spot.style.height = sb - st + "px";
+      x = Math.max(m, Math.min(W - cw - m, (sl + sr) / 2 - cw / 2));
+      if (sb + gap + ch <= H - m) y = sb + gap;
+      else if (st - gap - ch >= m) y = st - gap - ch;
+      else { x = (W - cw) / 2; y = (H - ch) / 2; }
+    } else {
+      spot.classList.add("is-none");
+      spot.style.left = W / 2 + "px";
+      spot.style.top = H / 2 + "px";
+      spot.style.width = spot.style.height = "0px";
+      x = (W - cw) / 2;
+      y = (H - ch) / 2;
+    }
+    card.style.left = Math.round(x) + "px";
+    card.style.top = Math.round(Math.max(m, y)) + "px";
+  }
+  function showTourStep(i) {
+    tourAt = Math.max(0, Math.min(TOUR.length - 1, i));
+    var step = TOUR[tourAt];
+    $("tour-count").textContent = (tourAt + 1) + " | " + TOUR.length;
+    $("tour-title").textContent = step.title;
+    $("tour-text").textContent = step.text;
+    $("tour-back").hidden = tourAt === 0;
+    $("tour-next").textContent = step.next || "Next";
+    placeTour();
+    try { $("tour-next").focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openTour() {
+    if (!$("tour").hidden) return;
+    hideInvite(false);
+    setAbout(false);
+    tourFrom = document.activeElement;
+    $("tour").hidden = false;
+    showTourStep(0);
+  }
+  function closeTour() {
+    if ($("tour").hidden) return;
+    $("tour").hidden = true;
+    tourAt = -1;
+    inviteSeconds = 0;
+    try { localStorage.setItem(TOUR_STORE, "1"); } catch (e) {}
+    if (tourFrom && tourFrom.focus && document.contains(tourFrom) && tourFrom !== document.body) try { tourFrom.focus({ preventScroll: true }); } catch (e) {}
+    tourFrom = null;
+  }
+  function maybeTour() {
+    if (dev || perf || exporting || reportSession) return;
+    if (tourAsk === 0 || (tourAsk < 0 && tourSeen())) return;
+    if (panelOpen()) return;
+    openTour();
+  }
+  $("tour-next").addEventListener("click", function () { if (tourAt >= TOUR.length - 1) closeTour(); else showTourStep(tourAt + 1); });
+  $("tour-back").addEventListener("click", function () { showTourStep(tourAt - 1); });
+  $("tour-skip").addEventListener("click", closeTour);
+  $("tour-again").addEventListener("click", function () { setAbout(false); openTour(); });
+  window.addEventListener("keydown", function (e) {
+    if ($("tour").hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
+    if (e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); $("tour-next").click(); return; }
+    if (e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); if (tourAt > 0) showTourStep(tourAt - 1); return; }
+    if (e.key === "Tab") {
+      var f = Array.prototype.filter.call($("tour-card").querySelectorAll("button"), function (b) { return !b.hidden; });
+      var i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      e.stopPropagation();
+      f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+      return;
+    }
+    if (!$("tour-card").contains(e.target) || (e.key !== "Enter" && e.key !== " ")) e.stopPropagation();
+  }, true);
+  window.addEventListener("resize", function () { if (tourAt >= 0) placeTour(); });
   reportBtn.addEventListener("click", function () { setReportOpen(reportPanel.hidden, false); });
   [layersBtn, saveBtn, $("search-btn")].forEach(function (b) { b.addEventListener("click", function () { if (!reportPanel.hidden) setReportOpen(false, false); }); });
   window.addEventListener("keydown", function (e) {
@@ -7228,7 +7331,9 @@
     try { draw(); } catch (e) { console.error(e); }
     $("load").classList.add("is-gone");
     requestAnimationFrame(function () {
-      setTimeout(endIntro, playIntro() ? 2700 : 0);
+      var introMs = playIntro() ? 2700 : 0;
+      setTimeout(endIntro, introMs);
+      setTimeout(maybeTour, introMs + 600);
       scheduleRender();
     });
   }

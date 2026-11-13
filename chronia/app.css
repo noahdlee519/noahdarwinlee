@@ -3089,3 +3089,82 @@ select.ch-save-input {
 .ch-side > .ch-compass:not([hidden]) {
   display: grid;
 }
+
+.ch-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  touch-action: none;
+}
+
+.ch-tour[hidden] {
+  display: none;
+}
+
+.ch-tour-spot {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 2px solid var(--ink);
+  box-shadow: 0 0 0 200vmax rgba(40, 28, 16, 0.4);
+  pointer-events: none;
+  transition: left 0.28s ease, top 0.28s ease, width 0.28s ease, height 0.28s ease, border-color 0.28s ease;
+}
+
+.ch-tour-spot.is-none {
+  border-color: transparent;
+}
+
+.ch-tour-card {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 310px;
+  pointer-events: auto;
+  box-shadow: 0 6px 22px rgba(40, 28, 16, 0.22);
+  transition: left 0.28s ease, top 0.28s ease;
+}
+
+.ch-tour-count {
+  margin: 0 0 4px;
+  font-family: var(--ch-num);
+  font-size: 12.5px;
+  color: var(--ch-muted);
+  letter-spacing: 0.04em;
+}
+
+.ch-tour-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ch-tour-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.ch-tour-next {
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+.ch-tour-skip {
+  font-size: 13.5px;
+  color: var(--ch-muted);
+}
+
+.ch-tour [hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-tour-spot,
+  .ch-tour-card {
+    transition: none;
+  }
+}
