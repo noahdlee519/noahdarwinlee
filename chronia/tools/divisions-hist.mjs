@@ -26,6 +26,7 @@ const simplify = require("topojson-simplify");
 const d3 = require("d3-geo");
 
 const R_KM = 6371.0088, KEEP_KM = 0.5, Q = 2e5;
+const dayAfter = (iso) => new Date(Date.parse(iso + "T00:00:00Z") + 86400000).toISOString().slice(0, 10);
 const dayBefore = (iso) => new Date(Date.parse(iso + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
 
 async function fetchTo(file, url, check) {
@@ -298,7 +299,7 @@ async function ohm(cfg) {
   const box = "(" + [s, w, n, e].join(",") + ")";
   const countries = (await ohmQuery(resolve(dir, cfg.key + "-2.json"), "[out:json][timeout:600];rel[\"boundary\"=\"administrative\"][\"admin_level\"=\"2\"][\"name\"~\"" + cfg.country.source + "\"]" + box + ";out geom;")).elements
     .filter((r) => cfg.country.test(r.tags.name || "")).map((r) => ({ first: ohmDay(r.tags.start_date), end: ohmDay(r.tags.end_date), geo: ohmGeometry(r) })).filter((c) => c.first && c.geo);
-  const units = (await ohmQuery(resolve(dir, cfg.key + "-" + level + ".json"), "[out:json][timeout:600];rel[\"boundary\"=\"administrative\"][\"admin_level\"=\"" + level + "\"]" + box + ";out geom;")).elements;
+  const units = (await ohmQuery(resolve(dir, cfg.key + "-" + level + ".json"), "[out:json][timeout:600];rel[\"boundary\"=\"administrative\"][\"admin_level\"=\"" + level + "\"]" + (cfg.filter || "") + box + ";out geom;")).elements;
   const feats = [];
   let outside = 0;
   for (const r of units) {
@@ -316,10 +317,24 @@ async function ohm(cfg) {
     const last = [end ? dayBefore(end) : cfg.until, hostEnd].sort()[0];
     if (a > last) continue;
     const name = r.tags["name:en"] || r.tags.name;
-    feats.push({ type: "Feature", properties: { name: (cfg.rename && cfg.rename[name]) || name, first: a, last }, geometry: dropSmall(geo) });
+    const shown = (cfg.rename && cfg.rename[name]) || (cfg.group && cfg.group[0].test(name) ? cfg.group[1] : name);
+    feats.push({ type: "Feature", properties: { name: shown, first: a, last }, geometry: dropSmall(geo) });
   }
   console.log(cfg.key + ": " + feats.length + " divisions from OpenHistoricalMap, " + outside + " outside " + cfg.label);
-  return { key: cfg.key, names: cfg.names, source: "OpenHistoricalMap, " + cfg.label + "'s first-level divisions", licence: "CC0", feats, maps: units.length };
+  // The divisions in force between one change and the next are drawn as one map, so that pieces with the same name
+  // (Prussia's provinces, for one) are joined into one division.
+  const cuts = [...new Set(feats.flatMap((f) => [f.properties.first, dayAfter(f.properties.last)]))].sort();
+  const spans = [];
+  for (let i = 0; i + 1 < cuts.length; i++) {
+    const first = cuts[i], last = dayBefore(cuts[i + 1]), groups = new Map();
+    for (const f of feats) {
+      if (f.properties.first > first || f.properties.last < last) continue;
+      if (!groups.has(f.properties.name)) groups.set(f.properties.name, []);
+      groups.get(f.properties.name).push(f);
+    }
+    if (groups.size) spans.push({ first, last, groups });
+  }
+  return { key: cfg.key, names: cfg.names, source: "OpenHistoricalMap, " + cfg.label + "'s first-level divisions", licence: "CC0", feats: spans.flatMap(mapFeatures), maps: units.length };
 }
 // Mexico's states and territories, from independence (27 September 1821) until 1935 (Natural Earth's from then).
 // San Marcos, a department of Guatemala, falls inside OHM's outline of Mexico from 1866, so it is left out.
@@ -339,7 +354,18 @@ const brazil = () => ohm({
   names: ["Colonial Brazil", "Vice-Royalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"]
 });
 
-const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico, br: brazil };
+// The German Empire's states (and Germany's until 1945), from the North German Confederation (1 July 1867) to
+// 8 May 1945. OpenHistoricalMap draws Prussia's provinces at the first level, beside the other states; they are
+// joined into Prussia, the state they belonged to. The districts of the General Government, inside OpenHistoricalMap's
+// outline of the Reich from 1939, are left out.
+const germany = () => ohm({
+  key: "de", label: "Germany", bbox: [47, 5.5, 55.5, 23], filter: '["start_date"~"^(0|1[0-8]|19[0-3]|194[0-4])"]', country: /^(Norddeutscher Bund|Deutsches Reich)$/, from: "1867-07-01", until: "2026-12-31",
+  group: [/^(Province of |Rhine Province$|Hohenzollern Lands$|Hanover$|Frontier March of Posen|March of Brandenburg$|Berlin$)/, "Prussia"],
+  drop: ["Distrikt Krakau", "Distrikt Radom", "Distrikt Warschau", "Distrikt Lublin", "Distrikt Galizien"],
+  names: ["North German Confederation", "German Empire", "Germany"]
+});
+
+const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico, br: brazil, de: germany };
 
 // One map's shapes, joined by name, as features; each map is put into a topology of its own first, so that shapes the
 // source draws side by side are joined along their shared lines.
