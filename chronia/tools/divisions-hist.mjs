@@ -231,7 +231,104 @@ async function sweden() {
   return { key: "se", names: ["Kingdom of Sweden", "Swedish Empire", "United Kingdoms of Sweden and Norway", "Sweden"], source: "swehist, from the Swedish National Archives' historical GIS maps (counties 1720 to 1990)", licence: "CC BY 4.0", feats, maps: list.length };
 }
 
-const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden };
+// From OpenHistoricalMap (CC0): a country's dated first-level divisions (`admin_level` 4 by default), and its own
+// dated outlines (`admin_level` 2, by the names in `country`), from the Overpass API. A division is kept for the days
+// a country outline of the same days holds a point inside it, so that a neighbour's divisions are left out. OHM's
+// `end_date` is the day the next shape begins, so a span ends the day before it; a date given only as a year or a
+// month begins on its first day. The English name is used where OHM gives one.
+const OHM_API = "https://overpass-api.openhistoricalmap.org/api/interpreter";
+const ohmDay = (d) => !d ? null : /^\d{4}$/.test(d) ? d + "-01-01" : /^\d{4}-\d{2}$/.test(d) ? d + "-01" : /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+async function ohmQuery(file, q) {
+  if (existsSync(file)) return JSON.parse(readFileSync(file, "utf8"));
+  for (let t = 0; t < 4; t++) {
+    const r = await fetch(OHM_API, { method: "POST", body: new URLSearchParams({ data: q }) });
+    if (r.ok) { const body = await r.text(); writeFileSync(file, body); return JSON.parse(body); }
+    await new Promise((ok) => setTimeout(ok, 15000 * (t + 1)));
+  }
+  throw new Error("OpenHistoricalMap would not answer: " + q);
+}
+// A relation's rings, joined from its ways end to end; inner rings go into the outer ring that holds them.
+function ohmGeometry(rel) {
+  const pts = (w) => w.geometry.filter(Boolean).map((p) => [Math.round(p.lon * 1e7) / 1e7, Math.round(p.lat * 1e7) / 1e7]);
+  const rings = (role) => {
+    const open = rel.members.filter((m) => m.type === "way" && m.geometry && (role === "inner" ? m.role === "inner" : m.role !== "inner")).map(pts).filter((l) => l.length > 1);
+    const out = [], key = (p) => p[0] + "," + p[1];
+    while (open.length) {
+      let ring = open.pop();
+      for (let grew = true; grew && key(ring[0]) !== key(ring[ring.length - 1]);) {
+        grew = false;
+        for (let i = 0; i < open.length; i++) {
+          const w = open[i], end = key(ring[ring.length - 1]);
+          if (key(w[0]) === end) ring = ring.concat(w.slice(1));
+          else if (key(w[w.length - 1]) === end) ring = ring.concat(w.slice().reverse().slice(1));
+          else if (key(w[w.length - 1]) === key(ring[0])) ring = w.concat(ring.slice(1));
+          else if (key(w[0]) === key(ring[0])) ring = w.slice().reverse().concat(ring.slice(1));
+          else continue;
+          open.splice(i, 1); grew = true; break;
+        }
+      }
+      if (ring.length > 3 && key(ring[0]) === key(ring[ring.length - 1])) out.push(ring);
+    }
+    return out;
+  };
+  const wind = (ring, outer) => { const a = d3.geoArea({ type: "Polygon", coordinates: [ring] }); return (a > 2 * Math.PI) === outer ? ring.slice().reverse() : ring; };
+  const polys = rings("outer").map((r) => [wind(r, true)]);
+  for (const r of rings("inner")) {
+    const host = polys.find((p) => d3.geoContains({ type: "Polygon", coordinates: [p[0]] }, r[0]));
+    if (host) host.push(wind(r, false));
+  }
+  return polys.length ? { type: "MultiPolygon", coordinates: polys } : null;
+}
+// A point inside a shape: the middle of the widest crossing of its largest piece at the latitude of that piece's
+// centre.
+function insidePoint(geo) {
+  let best = null, bestA = -1;
+  for (const p of geo.coordinates) { const a = d3.geoArea({ type: "Polygon", coordinates: p }); if (a > bestA) { bestA = a; best = p; } }
+  const y = d3.geoCentroid({ type: "Polygon", coordinates: best })[1], xs = [];
+  for (const r of best) for (let i = 1; i < r.length; i++) { const a = r[i - 1], b = r[i]; if ((a[1] > y) !== (b[1] > y)) xs.push(a[0] + (y - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
+  xs.sort((a, b) => a - b);
+  let pt = null, w = -1;
+  for (let i = 0; i + 1 < xs.length; i += 2) if (xs[i + 1] - xs[i] > w) { w = xs[i + 1] - xs[i]; pt = [(xs[i] + xs[i + 1]) / 2, y]; }
+  return pt || best[0][0];
+}
+async function ohm(cfg) {
+  const dir = resolve(cache, "ohm");
+  mkdirSync(dir, { recursive: true });
+  const [s, w, n, e] = cfg.bbox, level = cfg.level || "4";
+  const box = "(" + [s, w, n, e].join(",") + ")";
+  const countries = (await ohmQuery(resolve(dir, cfg.key + "-2.json"), "[out:json][timeout:600];rel[\"boundary\"=\"administrative\"][\"admin_level\"=\"2\"][\"name\"~\"" + cfg.country.source + "\"]" + box + ";out geom;")).elements
+    .filter((r) => cfg.country.test(r.tags.name || "")).map((r) => ({ first: ohmDay(r.tags.start_date), end: ohmDay(r.tags.end_date), geo: ohmGeometry(r) })).filter((c) => c.first && c.geo);
+  const units = (await ohmQuery(resolve(dir, cfg.key + "-" + level + ".json"), "[out:json][timeout:600];rel[\"boundary\"=\"administrative\"][\"admin_level\"=\"" + level + "\"]" + box + ";out geom;")).elements;
+  const feats = [];
+  let outside = 0;
+  for (const r of units) {
+    const first = ohmDay(r.tags.start_date), end = ohmDay(r.tags.end_date);
+    if (!first || (cfg.from && end && end <= cfg.from) || (cfg.drop && cfg.drop.includes(r.tags.name))) continue;
+    const geo = ohmGeometry(r);
+    if (!geo) continue;
+    const pt = insidePoint(geo);
+    const hosts = countries.filter((c) => (!c.end || first < c.end) && (!end || c.first < end) && d3.geoContains(c.geo, pt));
+    if (!hosts.length) { outside++; continue; }
+    // A span begins no earlier than the first of the country's outlines that hold it, nor than `from`.
+    const a = [first, cfg.from || first, hosts.reduce((m, c) => (c.first < m ? c.first : m), "9999")].sort().pop();
+    const last = end ? dayBefore(end) : cfg.until;
+    if (a > last) continue;
+    const name = r.tags["name:en"] || r.tags.name;
+    feats.push({ type: "Feature", properties: { name: (cfg.rename && cfg.rename[name]) || name, first: a, last }, geometry: dropSmall(geo) });
+  }
+  console.log(cfg.key + ": " + feats.length + " divisions from OpenHistoricalMap, " + outside + " outside " + cfg.label);
+  return { key: cfg.key, names: cfg.names, source: "OpenHistoricalMap, " + cfg.label + "'s first-level divisions", licence: "CC0", feats, maps: units.length };
+}
+// Mexico's states and territories, from independence (27 September 1821) until 1935 (Natural Earth's from then).
+// San Marcos, a department of Guatemala, falls inside OHM's outline of Mexico from 1866, so it is left out.
+const mexico = () => ohm({
+  key: "mx", label: "Mexico", bbox: [14, -118, 42, -86], country: /^(México|Imperio Mexicano|Supremo Poder Ejecutivo)$/, from: "1821-09-27", until: "2026-12-31",
+  drop: ["San Marcos"],
+  rename: { "Michoacán State": "Michoacán", "Tabasco State": "Tabasco", "Yucatán State": "Yucatán", "Federal District of Mexico": "Federal District", "Mexico State": "State of Mexico", "Tlaxcala Territory": "Territory of Tlaxcala" },
+  names: ["First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"]
+});
+
+const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico };
 
 // One map's shapes, joined by name, as features; each map is put into a topology of its own first, so that shapes the
 // source draws side by side are joined along their shared lines.
