@@ -1098,7 +1098,31 @@ const clioWiki = (name, raw) => {
 
 const clioRaw = existsSync(clioPath) ? JSON.parse(readFileSync(clioPath, "utf8")).features.filter((f) => f.geometry && f.properties.ToYear >= DATED_FROM) : null;
 if (!clioRaw) throw new Error("Cliopatria not found: " + clioPath);
-const clioRows = clioRaw.map((f) => ({ ...f.properties, geometry: f.geometry }));
+const CLIO_REDATE = [
+  ["Roman Empire", 117, 126, [[117, 117]]], ["Roman Empire", 127, 153, [[118, 153]]], ["Parthian Empire", 117, 126, [[117, 117]]], ["Parthian Empire", 127, 153, [[118, 153]]], ["Kingdom of Osroene", 127, 160, [[118, 160]]],
+  ["Goryeo", 1227, 1259, [[1227, 1362]]],
+  ["Yuan Dynasty", 1363, 1374, [[1363, 1367]]], ["Ming Dynasty", 1375, 1384, [[1368, 1384]]], ["Northern Yuan", 1375, 1401, [[1368, 1401]]],
+  ["Warring States Japan", 1588, 1594, [[1588, 1599]]], ["Warring States Japan", 1595, 1599, []], ["Joseon", 1572, 1594, [[1572, 1599]]], ["Joseon", 1595, 1599, []],
+  ["Kingdom of Scotland", 1602, 1608, [[1602, 1652], [1660, 1706]]],
+  ["Republic of Peru", 1825, 1827, [[1825, 1825]]], ["Republic of Peru", 1828, 1833, [[1826, 1833]]]
+];
+const CLIO_CUT = [["Spanish Empire", 1824, 1852, [-78, -13, -76, -11], 1826]];
+const clioRedated = clioRaw.flatMap((f) => {
+  const p = f.properties, r = CLIO_REDATE.find(([n, a, b]) => n === p.Name && a === p.FromYear && b === p.ToYear);
+  let out = r ? r[3].map(([a, b]) => ({ ...f, properties: { ...p, FromYear: a, ToYear: b } })) : [f];
+  for (const [n, a, b, box, from] of CLIO_CUT) {
+    if (n !== p.Name || a !== p.FromYear || b !== p.ToYear) continue;
+    const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    const kept = polys.filter((poly) => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const c of poly[0]) { if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0]; if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1]; } const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; return !(cx >= box[0] && cx <= box[2] && cy >= box[1] && cy <= box[3]); });
+    if (kept.length === polys.length) { console.log("CLIO_CUT: nothing of " + n + " " + a + " in the box"); continue; }
+    out = out.flatMap((g) => g.properties.ToYear < from || g.properties.FromYear >= from
+      ? [g.properties.FromYear >= from ? { ...g, geometry: { type: "MultiPolygon", coordinates: kept } } : g]
+      : [{ ...g, properties: { ...g.properties, ToYear: from - 1 } }, { ...g, properties: { ...g.properties, FromYear: from }, geometry: { type: "MultiPolygon", coordinates: kept } }]);
+  }
+  return out;
+});
+for (const [n, a, b] of CLIO_REDATE) if (!clioRaw.some((f) => f.properties.Name === n && f.properties.FromYear === a && f.properties.ToYear === b)) console.log("CLIO_REDATE: no " + n + " " + a + " to " + b);
+const clioRows = clioRedated.map((f) => ({ ...f.properties, geometry: f.geometry }));
 clioRaw.length = 0;
 const clioHeadAt = (group, y) => {
   if (CLIO_PART.has(group)) return null;
@@ -1709,6 +1733,8 @@ const NAME_FIX = [
   ["Southern Ming", "Three Feudatories", 1673, 1681, { wiki: "Revolt of the Three Feudatories" }],
   ["Southern Ming", "Qing dynasty", 1663, 1885],
   ["Mughal Empire", "Timurid Empire", 1400, 1525],
+  ["Mughal Empire", "Rajputana", 1818, 1857, { box: [72, 25, 76, 29], ruler: "@britain", wiki: "Rajputana Agency" }],
+  ["Mughal Empire", "Mughal Empire", 1811, 1857, { box: [77, 28.3, 77.6, 29], ruler: "@britain" }],
   ["Mughal Empire", "British Raj", 1858, 1885, { ruler: "@britain" }],
   ["Lodi dynasty", "Mughal Empire", 1527, 1885],
   ["Sur Empire", "Mughal Empire", 1557, 1885],
@@ -1999,6 +2025,12 @@ const NAME_FIX = [
   ["M?ori", "Māori", 1400, 1840, { people: 1, wiki: "Māori people" }],
   ["M?ori", "New Zealand", 1841, 1885, { ruler: "@britain", people: 0, wiki: "Colony of New Zealand" }],
   ["minor Hindu and Buddhist kingdoms", "Minor Hindu and Buddhist kingdoms", 1400, 1885],
+  ["central Asian khanates", "Siberians", 1400, 1885, { box: [55, 52, 180, 80], people: 1, wiki: "Indigenous peoples of Siberia" }],
+  ["Central Asian khanates", "Siberians", 1400, 1885, { box: [55, 52, 180, 80], people: 1, wiki: "Indigenous peoples of Siberia" }],
+  ["Māori", "New Zealand", 1841, 1885, { ruler: "@britain", people: 0, wiki: "Colony of New Zealand" }],
+  ["Achaemenid Empire", "Greek city-states", -337, -335, { box: [21, 36.5, 25, 39.5], wiki: "League of Corinth" }],
+  ["Goryeo", "Goryeo", 1260, 1293, { ruler: "Mongol Empire", wiki: "Goryeo under Mongol rule" }],
+  ["Goryeo", "Goryeo", 1294, 1355, { ruler: "Yuan dynasty", wiki: "Goryeo under Mongol rule" }],
   ["central Asian khanates", "Central Asian khanates", 1400, 1885]
 ];
 const RULER_DROP = { "Mongol Empire": 1368 };
@@ -2161,6 +2193,7 @@ const DISPUTES = [
   { name: "Luhansk People's Republic", units: ["Luhansk People's Republic"], periods: [["2014-05-11", "2022-09-29", "", ["Luhansk People's Republic", "Ukraine"]]] },
   { name: "Artsakh", units: ["Artsakh"], ne: { adm0: "AZE", within: "373", units: [] }, wiki: "Republic of Artsakh", periods: [["2020-11-10", "2023-09-19", "", ["Artsakh", "Azerbaijan"]], ["2023-09-20", "2023-12-31", "Azerbaijan", ["Azerbaijan", "Artsakh"]]] },
   { name: "Golan Heights", units: ["Golan Heights"], periods: [["1967-06-10", CS_TO, "Israel", ["Israel", "Syria"]]] },
+  { name: "Sinai Peninsula", units: [], ne: { adm0: "EGY", within: "666", gained: true, units: ["Shamal Sina'", "Janub Sina'", "As Suways", "Al Isma`iliyah", "Bur Sa`id"] }, wiki: "Israeli occupation of the Sinai Peninsula", periods: [["1967-06-10", "1979-05-25", "Israel", ["Israel", "Egypt"]]] },
   { name: "West Bank", units: ["West Bank"], wiki: "Israeli-occupied territories", periods: [["1967-06-10", "1988-07-30", "Israel", ["Israel", "Jordan"]], ["1988-07-31", CS_TO, "Israel", ["Israel", "Palestine"]]] },
   // Gaza, apart from Israel (CShapes draws it in Israel from 1967): held by Israel from the Six-Day War to the end of its
   // disengagement, then governed by the Palestinians (the Palestinian Authority, Hamas from June 2007), and disputed throughout.
@@ -2181,7 +2214,11 @@ if (!disputedUnits) console.warn("Natural Earth's disputed areas not found besid
 function withinHost(d, shape, a, list) {
   const host = list.filter((x) => x.cs && String(x.cs.p.gwcode) === d.ne.within && x.first <= a && a <= x.last);
   if (!host.length) throw new Error("DISPUTES: no span of " + d.ne.within + " on the first day of " + d.name);
-  const land = rewind(clip.union(...host.map((x) => x.polys)));
+  let land = rewind(clip.union(...host.map((x) => x.polys)));
+  if (d.ne.gained) {
+    const before = list.filter((x) => x.cs && String(x.cs.p.gwcode) === d.ne.within && x.first <= a - 1 && a - 1 <= x.last);
+    if (before.length) land = rewind(clip.difference(land, clip.union(...before.map((x) => x.polys))));
+  }
   const units = neAll.filter((f) => f.properties.adm0_a3 === d.ne.adm0).map((f) => ({ mine: d.ne.units.includes(f.properties.name), polys: rewind(polysOf(f.geometry)) }));
   const tryBoth = (op, ...args) => { try { return op(...args); } catch (e) { return op(...args.map(snapPolys)); } };
   const inside = rewind(tryBoth(clip.intersection, land, shape));
@@ -3723,6 +3760,7 @@ const CAP_NAME = {
 const CAP_SET = {
   // Wikidata gives only Câmpulung, the first seat (c. 1300). Târgoviște from 1418 and Bucharest from 1659 (Wikipedia's Târgoviște;
   // bucharest.ro); rulers went back and forth between the two until Brâncoveanu, and the year Bucharest was named is taken.
+  "Ottoman Empire": [["Söğüt", 30.181, 40.019, 1299, 1325, 0, null], ["Bursa", 29.062, 40.197, 1326, 1362, 0, null], ["Edirne", 26.556, 41.677, 1363, 1452, 0, null], ["Constantinople", 28.98, 41.013, 1453, 1922, 0, null]],
   "Wallachia": [["Curtea de Argeș", 24.679, 45.139, 1330, 1417, 0, null], ["Târgoviște", 25.456, 44.925, 1418, 1658, 0, null], ["Bucharest", 26.098, 44.413, 1659, 1862, 0, null]],
   // The infobox lists Kerma, Napata, and Meroë undated; Kerma was the capital of the earlier Kerma culture, Napata of Kush from its rise about
   // 1070 BC, and Meroë from about 590 BC (Wikipedia's Kingdom of Kush and Meroë).
@@ -4429,7 +4467,7 @@ const CS_CARVE = [["291", "1939-08-31", "255"]];
 // CShapes, following Gleditsch and Ward, counts Canada as independent from 1867; it was a dominion under the United Kingdom until the Statute of Westminster of 11 December 1931.
 // The South African Republic (the Transvaal) and the Orange Free State, which CShapes counts as independent until the Union
 // of South Africa, were British colonies from the Treaty of Vereeniging, 31 May 1902. [code, from, to, owner, status].
-const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"], ["563", "1902-05-31", "1910-05-29", "200", "colony"], ["564", "1902-05-31", "1910-05-29", "200", "colony"]];
+const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"], ["815", "1886-01-01", "1893-01-01", "220", "protectorate"], ["563", "1902-05-31", "1910-05-29", "200", "colony"], ["564", "1902-05-31", "1910-05-29", "200", "colony"]];
 // Changes CShapes dates to a day other than the one it gives, for every span of the country that
 // starts on that day (and the span before it, which then ends the day before): [code, CShapes day, day].
 const CS_REDATE = [

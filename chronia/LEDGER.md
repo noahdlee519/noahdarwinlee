@@ -17,6 +17,27 @@ Each entry:
 
 ---
 
+## 337 BC–1982 | the world | the most pressing wrong owners from the review of 12 November 2026
+
+- What changed, by years:
+  - 337–335 BC, Attica and Boeotia: the piece drawn as the Achaemenid Empire is the Greek city-states (the League of Corinth's members, under Macedon's lead).
+  - 118–126, Mesopotamia, Osroene, and Armenia: the Roman Empire keeps Trajan's conquests only in 117; from 118 it, the Parthian Empire, and Osroene take their shapes of 127.
+  - 1260–1362, Korea: Goryeo is carried on at its shape of 1259, under the Mongol Empire to 1293 and the Yuan dynasty to 1355, and on its own from 1356.
+  - 1368–1374, China: the Yuan dynasty ends in 1367; the Ming dynasty and the Northern Yuan begin in 1368 at their shapes of 1375.
+  - 1595–1599, Korea: Japan and Joseon keep their shapes of 1594.
+  - 1609–1652 and 1660–1706, Scotland: the Kingdom of Scotland is carried on at its shape of 1608 (the source draws it inside England from 1609). From 1653 to 1659 it stays in the Commonwealth, as the source has it.
+  - 1515–1686, Siberia: the fill named "Central Asian khanates" north of 52°N is the Siberians, a people, as before 1515.
+  - 1826–1852, Lima and Callao: out of the Spanish Empire; the Republic of Peru takes its shape of 1828 from 1826.
+  - 1818–1857, Rajputana: no longer the Mughal Empire but Rajputana, under Britain; the Mughal piece at Delhi is under Britain from 1811.
+  - 1841–1885, New Zealand: the fill named "Māori" from 1879 is the colony, as before 1879.
+  - 1886–1893, Vietnam: a French protectorate from the first day, not independent.
+  - 1967–1979, Sinai: disputed land held by Israel and claimed by Egypt, like the Golan Heights, not part of Israel.
+  - 1299–1922, the Ottoman Empire's capital: Söğüt, Bursa from 1326, Edirne from 1363, and Constantinople from 1453, so the Asian part no longer shows Bursa ("Prousa") after 1453.
+- Tables: `CLIO_REDATE` and `CLIO_CUT` (new), `NAME_FIX`, `CS_DEPENDENT`, `DISPUTES`, `CAP_SET`.
+- Sources: the dates are the conventional ones, as Wikipedia's articles give them, used as a pointer only: "Roman–Parthian War of 115–117" and "Hadrian"; "Goryeo under Mongol rule"; "Ming dynasty" and "Northern Yuan"; "Japanese invasions of Korea (1592–1598)"; "Kingdom of Scotland" and "Tender of Union"; "Siege of Callao (1826)"; "Rajputana Agency" and "Delhi Territory"; "Colony of New Zealand"; "French Indochina", "Treaty of Huế (1884)", and "French Cochinchina"; "Israeli occupation of the Sinai Peninsula"; "League of Corinth"; "Ottoman Empire" (capitals, with the coordinates of its infobox). The shapes are the datasets' own: Cliopatria's rows of the neighbouring years, and Natural Earth's governorates for Sinai. No second, independent source was read for any of these.
+- Confidence: medium. The dates are textbook ones, but each shape is borrowed from another year of the same source, and no atlas was checked.
+- Alternatives: the Ming and Northern Yuan of 1368 at their shapes of 1375 overstate the Ming's first years (Sichuan fell in 1371 and Yunnan in 1382). Goryeo's north-east was under direct Mongol rule (Ssangseong) and is drawn as Goryeo's. Rajputana could be drawn state by state; the source has one shape. Sinai is ended on CShapes' day, 25 May 1979, though the withdrawal ran in stages to 25 April 1982.
+- Left out: West Berlin (no open shape of its boroughs is among the datasets), the Kingdom of Armenia from 118 to 153, the staged return of Sinai, Scotland's union with the Commonwealth as a status, and the rest of the review's list, which is in the project's notes.
 ## 27 BC–AD 476 | the Roman Empire | the provinces before 106 and after 193
 
 - What changed: the Roman Empire is drawn with its provinces from Augustus's settlement (27 BC) to 394, and the Western and Eastern Roman Empires with theirs from 395 to 476 (they were drawn from 106 to 193 only). To 193, DARE's units, each from the year it became a province, joined where a province was not yet parted (Italia to 8 BC, Illyricum to AD 8, Gallia Belgica with the Germanies to 84, Moesia to 85, Pannonia to 102, Syria with Cilicia to 71, Africa with Numidia to 38, Galatia with Pamphylia to 42, and "Galatia and Cappadocia" from 17 to 71). Epirus parted from Achaia from 117, and the Severan East from 194 (Syria Coele, Syria Phoenice, Arabia, Mesopotamia from 198, and Osroene from 214), along AWMC's lines of about 200. From 293, about 95 provinces of the Verona List, cut along AWMC's lines after Diocletian; where no line parts provinces, one piece named for all of them (The Britains, and ten others listed in the README).

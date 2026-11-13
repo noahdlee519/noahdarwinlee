@@ -28,6 +28,9 @@ const DROP = new Set(["Cold War", "Arab Spring", "Crusades", "Reconquista", "Pun
 const CONTROLLED = new Set(["World War I", "World War II", "American Civil War", "Spanish Civil War", "Syrian civil war", "Russo-Ukrainian war (2022–present)", "Mexican drug war", "Gaza war", "Yemeni civil war (2014–present)"]);
 // Dates mended where Wikidata's run into a war listed separately.
 const ENDS = { "Russo-Ukrainian war": "2022-02-23" };
+// Dates Wikidata has wrong, from the date line of the article's own infobox: [start, end], each a year or a day; null keeps Wikidata's.
+const DATES = { "Illyrian Wars": [-229, -168], "Gojoseon–Yan War": [-300, -300], "Mexican War of Independence": ["1810-09-16", null], "Chilean War of Independence": [1812, 1827], "Rif War": [1921, 1926] };
+const fixed = (v) => { if (typeof v === "number") return [v, null]; const [y, mo, d] = v.split("-").map(Number); return [y, dayOf(y, mo, d)]; };
 const MAX_SIDE = 6;
 const FLAGS = JSON.parse(readFileSync(resolve(here, "wars/flags-wikidata.json"), "utf8"));
 const FLAG_AT = new Map(FLAGS.files.map((f, i) => [f, i]).filter(([f]) => f));
@@ -82,9 +85,10 @@ let dropped = 0, controlled = 0, noSides = 0, flagged = 0;
 for (const w of src.wars) {
   if (DROP.has(w.t)) { dropped++; continue; }
   if (CONTROLLED.has(w.t)) { controlled++; continue; }
-  const a = when(w.s, w.sp, false);
+  const fix = DATES[w.t] || [];
+  const a = fix[0] != null ? fixed(fix[0]) : when(w.s, w.sp, false);
   if (!a) continue;
-  let b = w.e ? when(w.e, w.ep, true) : null;
+  let b = fix[1] != null ? fixed(fix[1]) : w.e ? when(w.e, w.ep, true) : null;
   if (ENDS[w.t]) { const [y, mo, d] = ENDS[w.t].split("-").map(Number); b = [y, dayOf(y, mo, d)]; }
   if (!b) b = /present|ongoing/i.test(w.date || "") ? [LAST_YEAR, null] : [a[0], a[1]];
   if (b[0] < a[0]) b = [a[0], a[1]];
