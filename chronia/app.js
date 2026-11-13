@@ -926,6 +926,19 @@
     }
     return c;
   }
+  // A date's detailed shapes with their bounds and areas, which finding the state at a point needs. This is not the
+  // whole detailed level: pointing at the map used to build that (its border lines too, a third of a second on a
+  // laptop) though the map was drawn from the simplified one.
+  function shapesOf(snap) {
+    if (snap.shapes) return snap.shapes;
+    var topo = snap.topo.hi, cached = snap.geoms.hi.map(function (g) { return featOf(topo, "hi", g); });
+    snap.shapes = {
+      geo: cached.map(function (c) { return c.geo; }),
+      bounds: cached.map(function (c) { if (!c.bounds) c.bounds = d3.geoBounds(c.geo); return c.bounds; }),
+      area: cached.map(function (c) { if (c.area === undefined) c.area = d3.geoArea(c.geo); return c.area; })
+    };
+    return snap.shapes;
+  }
   function level(snap, key) {
     syncGrid();
     var lk = key + gridTag + "|" + nColors(), L = snap.levels[lk];
@@ -964,74 +977,242 @@
       if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
       return soft ? 2 : 1;
     };
-    var collection = { type: "GeometryCollection", geometries: geoms };
-    var mesh = function (fn) { return prepareLines(topojson.mesh(topo, collection, fn)); };
-    var edges = outerEdges(topo, geoms, function (g) {
-      var p = polys[ix.get(g)];
+    // Each arc is sorted once into the kinds of line it belongs to (the shapes on its two sides decide), rather than
+    // once for each kind of line, and the lines are joined from the arcs' points kept by arcVec.
+    var store = arcStore(topo), use = arcUse(topo, geoms);
+    var hardA = [], softA = [], kinA = [], memberA = [], bandA = groups.map(function () { return []; });
+    for (var j = 0; j < use.n; j++) {
+      var ia = use.first[j], ib = use.last[j];
+      if (ia < 0 || ia === ib) continue;
+      var ga = geoms[ia], gb = geoms[ib], sa = use.sign[j], kd = kind(ga, gb);
+      if (kd === 1) hardA.push(sa); else if (kd === 2) softA.push(sa); else if (kd === 3) kinA.push(sa); else if (kd === 4) memberA.push(sa);
+      // A band runs where the colour changes, and also between two neighbours that share a colour but not
+      // a hue (two separate states, such as the Netherlands and Hanover in 1815), so they don't read as one.
+      var ca = colOf(ga), cb = colOf(gb);
+      if (ca !== cb) { if (ca >= 0) bandA[ca].push(sa); if (cb >= 0) bandA[cb].push(sa); }
+      else if (ca >= 0 && hueOf(ga) !== hueOf(gb)) bandA[ca].push(sa);
+    }
+    var mesh = function (arcs) { return arcRuns(topo, arcs).map(function (run) { return prepareRun(topo, store, run); }).filter(Boolean); };
+    var edges = outerEdges(topo, store, use, function (i) {
+      var p = polys[i];
       return !p ? null : p.claims ? "d" : p.band ? "b" : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
     });
-    var arcsOf = function (lines) { return lines.map(prepareArc); };
     L = {
       topo: topo, geoms: geoms, polys: polys,
       geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed, disputes: Array.from(disputes.values()),
-      hard: mesh(function (a, b) { return a !== b && kind(a, b) === 1; }).concat(arcsOf(edges.hard)),
-      soft: mesh(function (a, b) { return a !== b && kind(a, b) === 2; }).concat(arcsOf(edges.soft)),
-      kin: mesh(function (a, b) { return a !== b && kind(a, b) === 3; }),
-      member: mesh(function (a, b) { return a !== b && kind(a, b) === 4; }),
-      bleed: edges.bleed.map(arcsOf), peopleBleed: arcsOf(edges.peopleBleed),
-      bands: groups.map(function (list, c) {
-        if (!list.length) return null;
-        // A band runs where the colour changes, and also between two neighbours that share a colour but not
-        // a hue (two separate states, such as the Netherlands and Hanover in 1815), so they don't read as one.
-        return mesh(function (a, b) {
-          if (a === b) return false;
-          var ca = colOf(a) === c, cb = colOf(b) === c;
-          return ca !== cb || (ca && cb && hueOf(a) !== hueOf(b));
-        }).concat(arcsOf(edges.inner[c]));
-      })
+      hard: mesh(hardA).concat(edges.hard),
+      soft: mesh(softA).concat(edges.soft),
+      kin: mesh(kinA),
+      member: mesh(memberA),
+      bleed: edges.bleed, peopleBleed: edges.peopleBleed,
+      bands: groups.map(function (list, c) { return list.length ? mesh(bandA[c]).concat(edges.inner[c]) : null; })
     };
-    if (key === "hi") {
-      L.bounds = cached.map(function (c) { if (!c.bounds) c.bounds = d3.geoBounds(c.geo); return c.bounds; });
-      L.area = cached.map(function (c) { if (c.area === undefined) c.area = d3.geoArea(c.geo); return c.area; });
-    }
+    if (key === "hi") { var sh = shapesOf(snap); L.bounds = sh.bounds; L.area = sh.area; }
     snap.levels[lk] = L;
     return L;
   }
-  function outerEdges(topo, geoms, bucketOf) {
-    var owner = new Map(), twice = new Set();
-    var walk = function (g, a) {
-      if (typeof a === "number") {
-        var i = a < 0 ? ~a : a, o = owner.get(i);
-        if (o === undefined) owner.set(i, g); else if (o !== g) owner.set(i, null); else twice.add(i);
-        return;
-      }
-      for (var k = 0; k < a.length; k++) walk(g, a[k]);
-    };
-    geoms.forEach(function (g) { if (g.arcs) walk(g, g.arcs); });
+  // The arcs that only one shape uses, once (the outside edges), sorted by what that shape is and split into the stretches
+  // along the coast and the stretches inland. bucketOf takes the shape's place in the snapshot.
+  function outerEdges(topo, store, use, bucketOf) {
     var buckets = {};
-    owner.forEach(function (g, i) {
-      if (!g || twice.has(i)) return;
-      var b = bucketOf(g);
-      if (b === null) return;
-      (buckets[b] = buckets[b] || []).push([i]);
-    });
+    for (var k = 0; k < use.seen.length; k++) {
+      var i = use.seen[k];
+      if (use.count[i] !== 1) continue;
+      var b = bucketOf(use.first[i]);
+      if (b === null) continue;
+      (buckets[b] = buckets[b] || []).push(i);
+    }
     var out = { hard: [], soft: [], peopleBleed: [], bleed: [], inner: [] };
     for (var c = 0; c < nColors(); c++) { out.bleed.push([]); out.inner.push([]); }
+    var add = function (to, from) { for (var q = 0; q < from.length; q++) to.push(from[q]); };
     Object.keys(buckets).forEach(function (b) {
-      var lines = topojson.feature(topo, { type: "MultiLineString", arcs: buckets[b] }).geometry.coordinates.filter(function (l) {
-        for (var k = 1; k < l.length; k++) if (l[k][0] !== l[0][0] || l[k][1] !== l[0][1]) return true;
-        return false;
-      });
       var coastal = [], inner = [];
-      splitCoast(lines, coastal, inner);
-      if (b === "p" || b === "b") { out.peopleBleed = out.peopleBleed.concat(coastal); if (b === "p") out.soft = out.soft.concat(inner); return; }
-      if (b === "d") { out.soft = out.soft.concat(inner); return; }
+      buckets[b].forEach(function (i) { var sp = arcSplit(topo, store, i); add(coastal, sp.coastal); add(inner, sp.inner); });
+      if (b === "p" || b === "b") { add(out.peopleBleed, coastal); if (b === "p") add(out.soft, inner); return; }
+      if (b === "d") { add(out.soft, inner); return; }
       var col = +b.slice(1);
-      out.bleed[col] = out.bleed[col].concat(coastal);
-      out.inner[col] = out.inner[col].concat(inner);
-      if (b[0] === "s") out.soft = out.soft.concat(inner); else out.hard = out.hard.concat(inner);
+      add(out.bleed[col], coastal);
+      add(out.inner[col], inner);
+      add(b[0] === "s" ? out.soft : out.hard, inner);
     });
     return out;
+  }
+  // What a date's border lines are built from, kept for each file's arcs (the lines of the topology) so that a new date
+  // joins them rather than working them out again: a date's lines are runs of whole arcs, and going from one date to the
+  // next changes which runs, not the arcs. Before this (measured 12 November 2026) every new date decoded each arc and
+  // turned its points into vectors once for every kind of line and colour, a quarter of a second or more a step.
+  //   vec: the arc's points as unit vectors, and whether it runs along the antimeridian or the pole (seam);
+  //   one, rev: the arc alone as a line, forwards and backwards;
+  //   split: an outside arc's stretches along the coast and inland, good for as long as the coast grid stands.
+  var arcStores = new WeakMap();
+  function arcStore(topo) {
+    var st = arcStores.get(topo);
+    if (!st) { var n = topo.arcs.length; st = { vec: new Array(n), one: new Array(n), rev: new Array(n), split: [], grid: null, base: "", tag: "", use: null }; arcStores.set(topo, st); }
+    return st;
+  }
+  function arcPoints(topo, i) { return topojson.feature(topo, { type: "LineString", arcs: [i] }).geometry.coordinates; }
+  function seamStep(a, b) { return (Math.abs(a[0]) > 179.9999 && Math.abs(b[0]) > 179.9999) || (a[1] < -89.9999 && b[1] < -89.9999); }
+  function arcVec(topo, st, i) {
+    var a = st.vec[i];
+    if (a) return a;
+    var pts = arcPoints(topo, i), n = pts.length, X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n), seam = false;
+    for (var k = 0; k < n; k++) {
+      var v = toVec(pts[k][0], pts[k][1]);
+      X[k] = v[0]; Y[k] = v[1]; Z[k] = v[2];
+      if (k && seamStep(pts[k - 1], pts[k])) seam = true;
+    }
+    return (st.vec[i] = { x: X, y: Y, z: Z, n: n, seam: seam });
+  }
+  // A line from vectors already worked out, as prepareLine() makes one from coordinates.
+  function lineOf(X, Y, Z, n) {
+    var sx = 0, sy = 0, sz = 0;
+    for (var k = 0; k < n; k++) { sx += X[k]; sy += Y[k]; sz += Z[k]; }
+    var cap = capOf(X, Y, Z, n, sx, sy, sz);
+    cap.x = X; cap.y = Y; cap.z = Z; cap.n = n;
+    return cap;
+  }
+  // A run of arcs (as topojson joins them: each arc's first point takes the place of the last point before it, and a
+  // negative arc runs backwards) as one line, the same as prepareArc() makes from the run's coordinates.
+  function prepareRun(topo, st, run) {
+    var m = run.length, n = 0, seam = false, k, a, v, i;
+    if (m === 1) { var kept = run[0] < 0 ? st.rev[~run[0]] : st.one[run[0]]; if (kept) return kept; }
+    for (k = 0; k < m; k++) { a = run[k]; v = arcVec(topo, st, a < 0 ? ~a : a); n += v.n - (k ? 1 : 0); if (v.seam) seam = true; }
+    var line;
+    if (seam) {
+      var pts = [];
+      for (k = 0; k < m; k++) {
+        a = run[k];
+        var ap = arcPoints(topo, a < 0 ? ~a : a);
+        if (pts.length) pts.pop();
+        if (a < 0) ap.reverse();
+        for (i = 0; i < ap.length; i++) pts.push(ap[i]);
+      }
+      line = pts.length >= 2 ? prepareArc(pts) : null;
+    } else if (n < 2) line = null;
+    else {
+      var X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n), at = 0;
+      for (k = 0; k < m; k++) {
+        a = run[k]; v = st.vec[a < 0 ? ~a : a];
+        if (k) at--;
+        if (a < 0) { for (i = v.n - 1; i >= 0; i--, at++) { X[at] = v.x[i]; Y[at] = v.y[i]; Z[at] = v.z[i]; } }
+        else { X.set(v.x, at); Y.set(v.y, at); Z.set(v.z, at); at += v.n; }
+      }
+      line = lineOf(X, Y, Z, n);
+    }
+    if (m === 1 && line) { if (run[0] < 0) st.rev[~run[0]] = line; else st.one[run[0]] = line; }
+    return line;
+  }
+  // The arcs given, joined end to end into runs where they meet, as topojson.mesh() joins them (arcs in the order of their
+  // numbers, each turned the way it was first met).
+  // This is topojson's own joining (stitch, in topojson-client 3), step for step, so the runs and their order are the same,
+  // but with each arc's two ends looked up as numbers worked out once for the file: topojson adds up every point of
+  // every arc to find its end and keys the ends by their text, which was most of what a new date still cost.
+  function arcRuns(topo, arcs) {
+    if (!arcs.length) return [];
+    var st = arcStore(topo), E = st.ends === undefined ? (st.ends = arcEnds(topo)) : st.ends;
+    if (!E) return topojson.meshArcs(topo, { type: "LineString", arcs: arcs }).arcs;
+    arcs = arcs.slice();
+    var byStart = new Map(), byEnd = new Map(), runs = [], done = new Set(), empty = -1, j, i, t, f, g;
+    for (j = 0; j < arcs.length; j++) {
+      i = arcs[j];
+      if (E.empty[i < 0 ? ~i : i]) { t = arcs[++empty]; arcs[empty] = i; arcs[j] = t; }
+    }
+    for (j = 0; j < arcs.length; j++) {
+      i = arcs[j];
+      var start = i < 0 ? E.b[~i] : E.a[i], end = i < 0 ? E.a[~i] : E.b[i];
+      if ((f = byEnd.get(start))) {
+        byEnd.delete(f.end);
+        f.push(i);
+        f.end = end;
+        if ((g = byStart.get(end))) {
+          byStart.delete(g.start);
+          var fg = g === f ? f : f.concat(g);
+          fg.start = f.start; fg.end = g.end;
+          byEnd.set(fg.end, fg); byStart.set(fg.start, fg);
+        } else { byEnd.set(f.end, f); byStart.set(f.start, f); }
+      } else if ((f = byStart.get(end))) {
+        byStart.delete(f.start);
+        f.unshift(i);
+        f.start = start;
+        if ((g = byEnd.get(start))) {
+          byEnd.delete(g.end);
+          var gf = g === f ? f : g.concat(f);
+          gf.start = g.start; gf.end = f.end;
+          byEnd.set(gf.end, gf); byStart.set(gf.start, gf);
+        } else { byEnd.set(f.end, f); byStart.set(f.start, f); }
+      } else {
+        f = [i];
+        f.start = start; f.end = end;
+        byEnd.set(end, f); byStart.set(start, f);
+      }
+    }
+    var flush = function (from, other) {
+      from.forEach(function (f) {
+        other.delete(f.start);
+        delete f.start; delete f.end;
+        for (var q = 0; q < f.length; q++) done.add(f[q] < 0 ? ~f[q] : f[q]);
+        runs.push(f);
+      });
+    };
+    flush(byEnd, byStart);
+    flush(byStart, byEnd);
+    for (j = 0; j < arcs.length; j++) if (!done.has(arcs[j] < 0 ? ~arcs[j] : arcs[j])) runs.push([arcs[j]]);
+    return runs;
+  }
+  // Each arc's first and last point as one number each (the file's points are whole numbers on a grid), and whether the
+  // arc is empty as topojson counts it; null for a file whose points are not on such a grid, which topojson then joins.
+  function arcEnds(topo) {
+    if (!topo.transform) return null;
+    var n = topo.arcs.length, a = new Float64Array(n), b = new Float64Array(n), empty = new Uint8Array(n), M = 4194304;
+    for (var i = 0; i < n; i++) {
+      var arc = topo.arcs[i], x = 0, y = 0;
+      if (!arc.length) return null;
+      for (var k = 0; k < arc.length; k++) { x += arc[k][0]; y += arc[k][1]; }
+      var x0 = arc[0][0], y0 = arc[0][1];
+      if (!(x0 >= 0 && x0 < M && y0 >= 0 && y0 < M && x >= 0 && x < M && y >= 0 && y < M) || x0 % 1 || y0 % 1 || x % 1 || y % 1) return null;
+      a[i] = x0 * M + y0; b[i] = x * M + y;
+      empty[i] = arc.length < 3 && arc.length > 1 && !arc[1][0] && !arc[1][1] ? 1 : 0;
+    }
+    return { a: a, b: b, empty: empty };
+  }
+  // How a date's shapes use the file's arcs: for each arc, the first and the last shape that has it (by their place in the
+  // snapshot, -1 where no shape has it), the way round it was first met, and how many times it is met in all; and the arcs
+  // in the order they were first met. The arrays belong to the file and are filled again for each date, so what is
+  // returned is good only until the next call for the same file.
+  function arcUse(topo, geoms) {
+    var st = arcStore(topo), u = st.use;
+    if (!u) { var n = topo.arcs.length; u = st.use = { n: n, first: new Int32Array(n), last: new Int32Array(n), sign: new Int32Array(n), count: new Uint16Array(n), seen: [] }; }
+    var first = u.first, last = u.last, sign = u.sign, count = u.count, seen = u.seen, gi = 0;
+    first.fill(-1); last.fill(-1); count.fill(0); seen.length = 0;
+    var walk = function (a) {
+      if (typeof a === "number") {
+        var i = a < 0 ? ~a : a;
+        if (first[i] < 0) { first[i] = gi; sign[i] = a; seen.push(i); }
+        last[i] = gi;
+        if (count[i] < 65535) count[i]++;
+        return;
+      }
+      for (var k = 0; k < a.length; k++) walk(a[k]);
+    };
+    for (; gi < geoms.length; gi++) { var g = geoms[gi]; if (g && g.arcs && (g.type === "Polygon" || g.type === "MultiPolygon")) walk(g.arcs); }
+    return u;
+  }
+  // An outside arc's stretches along the coast and inland, as lines. They hold until the coast grid is next rebuilt.
+  function arcSplit(topo, st, i) {
+    if (st.grid !== coastGrid || st.base !== gridBase || st.tag !== gridTag) { st.split = []; st.grid = coastGrid; st.base = gridBase; st.tag = gridTag; }
+    var sp = st.split[i];
+    if (sp) return sp;
+    sp = st.split[i] = { coastal: [], inner: [] };
+    var pts = arcPoints(topo, i), same = true;
+    for (var k = 1; k < pts.length && same; k++) if (pts[k][0] !== pts[0][0] || pts[k][1] !== pts[0][1]) same = false;
+    if (same) return sp;
+    var v = arcVec(topo, st, i);
+    var piece = function (a, b) {
+      if (v.seam) return prepareArc(pts.slice(a, b));
+      return lineOf(v.x.slice(a, b), v.y.slice(a, b), v.z.slice(a, b), b - a);
+    };
+    coastSpans(pts, function (a, b) { sp.inner.push(piece(a, b)); }, function (a, b) { sp.coastal.push(piece(a, b)); });
+    return sp;
   }
   function useLevel() {
     var S = localScale();
@@ -1680,11 +1861,16 @@
   }
   var FINE_S = 5000, fineLoad = null, geogRaw = null, fineGridMs = -1;
   function coastKey() { return gridBase; }
-  function upgradeGrid(k) {
-    var t0 = performance.now();
-    buildCoastGrid(datedLand(k).list);
-    gridBase = k; gridTag = k;
-    return Math.round(performance.now() - t0);
+  // The grid is rebuilt from the land of the date shown when the rebuild starts, patches and all, so its tag names those
+  // patches: syncGrid() then redoes only what has changed since. The map is drawn from the grid before until it is ready.
+  function upgradeGrid(k, then) {
+    var t0 = performance.now(), land0 = datedLand(k);
+    buildCoastGridSlowly(land0.list, function (grid) {
+      if (!grid) return;
+      coastGrid = grid;
+      gridBase = k; gridTag = k + "," + land0.tag;
+      then(Math.round(performance.now() - t0));
+    });
   }
   function loadFine() {
     if (fineLoad) return;
@@ -1696,8 +1882,7 @@
       if (geog && geogRaw) geog.land.fine = patchesFor("fine", geogRaw);
       landCache.clear();
       setTimeout(function () {
-        fineGridMs = upgradeGrid(land.fine && (!geog || geog.land.fine) ? "fine" : "hi");
-        scheduleRender();
+        upgradeGrid(land.fine && (!geog || geog.land.fine) ? "fine" : "hi", function (ms) { fineGridMs = ms; scheduleRender(); });
       }, 0);
       scheduleRender();
     }).catch(function (e) { console.warn("land detail", e); });
@@ -1791,7 +1976,9 @@
         return p.bb[0] <= b[2] + m && b[0] - m <= p.bb[2] && p.bb[1] <= b[3] + m && b[1] - m <= p.bb[3];
       });
     };
-    geog.land[ck].forEach(function (q) { if (act.indexOf(q) >= 0 || was.indexOf(q.id) >= 0) buildCoastGrid(near(q.b), q.b); });
+    // Only the patches that have come or gone since the grid was last brought up to date are redone: each is worked out
+    // afresh from all the land near it, so the patches that stand as they were are already right.
+    geog.land[ck].forEach(function (q) { if ((act.indexOf(q) >= 0) !== (was.indexOf(q.id) >= 0)) buildCoastGrid(near(q.b), q.b); });
     geog.lakeAdd.forEach(function (l) { if (was.indexOf(l.id) >= 0 && wet.indexOf(l) < 0) buildCoastGrid(near(l.b), l.b); });
     wet.forEach(wetGrid);
     gridTag = tag;
@@ -3531,7 +3718,7 @@
   function divInsideCountry(reg, st, ri, lab) {
     var hit = st.inside.get(ri + "|" + current.key);
     if (hit !== undefined) return hit;
-    var L = level(current, "hi"), own = divCountry(reg, current), ll = [lab[0], lab[1]];
+    var L = shapesOf(current), own = divCountry(reg, current), ll = [lab[0], lab[1]];
     hit = false;
     for (var i = 0; i < own.length && !hit; i++) hit = inBounds(L.bounds[own[i]], ll) && d3.geoContains(L.geo[own[i]], ll);
     st.inside.set(ri + "|" + current.key, hit);
@@ -3609,7 +3796,7 @@
   function divisionAt(ll, id) {
     var day = divDay();
     if (!ll || id < 0 || day === null || !current) return null;
-    var name = polityName(id), L = level(current, "hi"), inside = false;
+    var name = polityName(id), L = shapesOf(current), inside = false;
     for (var i = 0; i < current.polys.length && !inside; i++) {
       var p = current.polys[i];
       if (p && p.id === id) inside = inBounds(L.bounds[i], ll) && d3.geoContains(L.geo[i], ll);
@@ -3709,7 +3896,7 @@
     if (!current || !ll) return null;
     var lg = landGeoAt();
     if (lg && !d3.geoContains(lg, ll)) return null;
-    var L = level(current, "hi"), best = null, bestA = Infinity;
+    var L = shapesOf(current), best = null, bestA = Infinity;
     for (var i = 0; i < current.polys.length; i++) {
       var p = current.polys[i];
       if (!p || !inBounds(L.bounds[i], ll)) continue;
@@ -4065,15 +4252,33 @@
     return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
-  var fitCtx = null;
+  var fitCtx = null, fitBox = null, fitWatch = false;
   function fitDate(text) {
     var m = /^(\d+ )?([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
-    if (!m || m[2].length <= 3 || !el || !el.clientWidth) return text;
-    var st = getComputedStyle(el);
-    fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
-    fitCtx.font = st.fontStyle + " " + st.fontWeight + " " + st.fontSize + " " + st.fontFamily;
-    var room = el.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - 2;
-    return fitCtx.measureText(text).width * 1.04 <= room ? text : (m[1] || "") + m[2].slice(0, 3) + m[3];
+    if (!m || m[2].length <= 3 || !el) return text;
+    // The box's font and room are read once and again when its size changes, not at each date: reading them makes the
+    // browser lay the page out there and then, twice for every date the marker is dragged through.
+    if (!fitBox) {
+      if (!el.clientWidth) return text;
+      var st = getComputedStyle(el);
+      fitBox = { font: st.fontStyle + " " + st.fontWeight + " " + st.fontSize + " " + st.fontFamily, room: el.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - 2, fits: new Map() };
+      if (!fitWatch) {
+        fitWatch = true;
+        var forget = function () { fitBox = null; };
+        if (window.ResizeObserver) new ResizeObserver(forget).observe(el);
+        window.addEventListener("resize", forget);
+        if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", forget);
+      }
+    }
+    var fit = fitBox.fits.get(text);
+    if (fit === undefined) {
+      fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
+      fitCtx.font = fitBox.font;
+      fit = fitCtx.measureText(text).width * 1.04 <= fitBox.room;
+      if (fitBox.fits.size > 4000) fitBox.fits.clear();
+      fitBox.fits.set(text, fit);
+    }
+    return fit ? text : (m[1] || "") + m[2].slice(0, 3) + m[3];
   }
   function monthTime(y, m) { return timeOfDay(dayFromDate(y, m, MID_DAY)); }
   function changeBefore(day) {
@@ -5067,7 +5272,7 @@
     var key = current.key + "|" + p.id + "|" + now;
     if (bigCache.has(key)) return bigCache.get(key);
     if (bigCache.size > 200) bigCache.clear();
-    var L = level(current, "hi"), own = [], out = null;
+    var L = shapesOf(current), own = [], out = null;
     current.polys.forEach(function (q, i) { if (q && q.id === p.id) own.push(i); });
     var inside = function (list, ll) {
       for (var j = 0; j < list.length; j++) if (inBounds(L.bounds[list[j]], ll) && d3.geoContains(L.geo[list[j]], ll)) return true;
@@ -7378,48 +7583,93 @@
     for (var i = 0; i < n; i++) { var p = list[i]; if (inView(p)) traceArcs(c, p.coast); }
   }
   var coastGrid = null, COAST_KM = 32, GRID_W = 2880, GRID_H = 1440;
+  // A stretch of the grid, gw by gh cells from (gx, gy), marked into a from the land in list.
+  function markCoastGrid(list, a, gx, gy, gw, gh, fillPath) {
+    var cv = document.createElement("canvas"), k = GRID_W / 360;
+    cv.width = gw; cv.height = gh;
+    var g = cv.getContext("2d", { willReadFrequently: true });
+    g.translate(-gx, -gy);
+    g.fillStyle = "#000"; g.fill(fillPath || coastFill(list), "evenodd");
+    g.globalCompositeOperation = "destination-out";
+    g.lineJoin = "round"; g.lineCap = "round";
+    g.lineWidth = 2 * COAST_KM * k / 111.195;
+    // A patch of the grid is redone from the land near it, which may be a whole continent: the stretches of its coast
+    // too far from the patch to mark it (wholly to one side of it, by more than the line's reach) are left out, as
+    // stroking all of them took most of the half second a far-off date's patches cost (12 November 2026). Each
+    // line's place on the grid is kept (gx, gy).
+    var far = g.lineWidth / 2 + 2, x0 = gx - far, x1 = gx + gw + far, y0 = gy - far, y1 = gy + gh + far;
+    list.forEach(function (p) {
+      p.coast.forEach(function (L) {
+        (L.parts || [L]).forEach(function (q) {
+          var i;
+          if (!q.gx) {
+            q.gx = new Float64Array(q.n); q.gy = new Float64Array(q.n);
+            for (i = 0; i < q.n; i++) {
+              var lon = Math.atan2(q.y[i], q.x[i]) / D2R, lat = Math.asin(Math.max(-1, Math.min(1, q.z[i]))) / D2R;
+              q.gx[i] = (lon + 180) * k; q.gy[i] = (90 - lat) * k;
+            }
+          }
+          var X = q.gx, Y = q.gy, pen = false, was = 0, any = false;
+          g.beginPath();
+          for (i = 0; i < q.n; i++) {
+            var x = X[i], y = Y[i], side = (x < x0 ? 1 : x > x1 ? 2 : 0) | (y < y0 ? 4 : y > y1 ? 8 : 0);
+            if (i && !(side & was)) {
+              if (!pen) g.moveTo(X[i - 1], Y[i - 1]);
+              g.lineTo(x, y);
+              pen = any = true;
+            } else pen = false;
+            was = side;
+          }
+          if (any) g.stroke();
+        });
+      });
+    });
+    var px = g.getImageData(0, 0, gw, gh).data;
+    for (var yy = 0; yy < gh; yy++) for (var xx = 0; xx < gw; xx++) a[(gy + yy) * GRID_W + gx + xx] = px[(yy * gw + xx) * 4 + 3] > 127 ? 1 : 0;
+  }
+  function coastFill(list) {
+    var k = GRID_W / 360, path = new Path2D();
+    list.forEach(function (p) {
+      p.geo.coordinates.forEach(function (ring) {
+        for (var i = 0; i < ring.length; i++) {
+          var x = (ring[i][0] + 180) * k, y = (90 - ring[i][1]) * k;
+          if (i === 0) path.moveTo(x, y); else path.lineTo(x, y);
+        }
+        if (ring.length) path.lineTo((ring[0][0] + 180) * k, (90 - ring[0][1]) * k);
+      });
+    });
+    return path;
+  }
   function buildCoastGrid(list, box) {
     try {
-      var cv = document.createElement("canvas"), k = GRID_W / 360, gx = 0, gy = 0, gw = GRID_W, gh = GRID_H;
+      var k = GRID_W / 360, gx = 0, gy = 0, gw = GRID_W, gh = GRID_H;
       if (box) {
         var mg = Math.ceil(2 * COAST_KM * k / 111.195) + 2;
         gx = Math.max(0, Math.floor((box[0] + 180) * k) - mg); gy = Math.max(0, Math.floor((90 - box[3]) * k) - mg);
         gw = Math.min(GRID_W, Math.ceil((box[2] + 180) * k) + mg) - gx; gh = Math.min(GRID_H, Math.ceil((90 - box[1]) * k) + mg) - gy;
       }
-      cv.width = gw; cv.height = gh;
-      var g = cv.getContext("2d", { willReadFrequently: true });
-      g.translate(-gx, -gy);
-      var path = new Path2D();
-      list.forEach(function (p) {
-        p.geo.coordinates.forEach(function (ring) {
-          for (var i = 0; i < ring.length; i++) {
-            var x = (ring[i][0] + 180) * k, y = (90 - ring[i][1]) * k;
-            if (i === 0) path.moveTo(x, y); else path.lineTo(x, y);
-          }
-          if (ring.length) path.lineTo((ring[0][0] + 180) * k, (90 - ring[0][1]) * k);
-        });
-      });
-      g.fillStyle = "#000"; g.fill(path, "evenodd");
-      g.globalCompositeOperation = "destination-out";
-      g.lineJoin = "round"; g.lineCap = "round";
-      g.lineWidth = 2 * COAST_KM * k / 111.195;
-      list.forEach(function (p) {
-        p.coast.forEach(function (L) {
-          (L.parts || [L]).forEach(function (q) {
-            g.beginPath();
-            for (var i = 0; i < q.n; i++) {
-              var lon = Math.atan2(q.y[i], q.x[i]) / D2R, lat = Math.asin(Math.max(-1, Math.min(1, q.z[i]))) / D2R;
-              var x = (lon + 180) * k, y = (90 - lat) * k;
-              if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
-            }
-            g.stroke();
-          });
-        });
-      });
-      var px = g.getImageData(0, 0, gw, gh).data, a = box && coastGrid ? coastGrid.a : new Uint8Array(GRID_W * GRID_H);
-      for (var yy = 0; yy < gh; yy++) for (var xx = 0; xx < gw; xx++) a[(gy + yy) * GRID_W + gx + xx] = px[(yy * gw + xx) * 4 + 3] > 127 ? 1 : 0;
+      var a = box && coastGrid ? coastGrid.a : new Uint8Array(GRID_W * GRID_H);
+      markCoastGrid(list, a, gx, gy, gw, gh);
       coastGrid = { a: a, k: k, r: COAST_KM * k / 111.195 };
     } catch (e) { coastGrid = null; }
+  }
+  // The whole grid afresh, a band of rows at a time with the page free to draw between them: all at once it held the
+  // page for a third of a second on a laptop (12 November 2026), in the middle of the zoom that called for the finer
+  // coast. then() is given the grid, or nothing if a later rebuild has overtaken this one.
+  var GRID_BAND = 120, gridJob = 0;
+  function buildCoastGridSlowly(list, then) {
+    var job = ++gridJob, a = new Uint8Array(GRID_W * GRID_H), k = GRID_W / 360, y = 0, path = null;
+    var band = function () {
+      if (job !== gridJob) { then(null); return; }
+      try {
+        path = path || coastFill(list);
+        var h = Math.min(GRID_BAND, GRID_H - y);
+        markCoastGrid(list, a, 0, y, GRID_W, h, path);
+        y += h;
+      } catch (e) { then(null); return; }
+      if (y < GRID_H) setTimeout(band, 0); else then({ a: a, k: k, r: COAST_KM * k / 111.195 });
+    };
+    setTimeout(band, 0);
   }
   function inland(lon, lat) {
     if (!coastGrid) return false;
@@ -7430,26 +7680,31 @@
     for (var d = -w; d <= w; d++) if (!G.a[y * GRID_W + ((x + d) % GRID_W + GRID_W) % GRID_W]) return false;
     return true;
   }
-  function splitCoast(lines, coastal, inner) {
+  // The stretches of a line that run inland (and a little way on at each end) and the stretches along the coast, each given
+  // to its callback as the first point's index and the index after the last.
+  function coastSpans(ln, onInner, onCoastal) {
     var reach = (gridBase === "lo" ? 1.4 : 0.12) * COAST_KM / 111.195;
     var step = function (a, b) { var dx = (a[0] - b[0]) * Math.cos(a[1] * D2R); return Math.sqrt(dx * dx + (a[1] - b[1]) * (a[1] - b[1])); };
+    var n = ln.length, m = new Uint8Array(n), k, s, e;
+    for (k = 0; k < n; k++) m[k] = inland(ln[k][0], ln[k][1]) ? 1 : 0;
+    var used = new Uint8Array(n);
+    for (s = 0; s < n; s = e) {
+      for (e = s + 1; e < n && m[e] === m[s]; e++);
+      if (!m[s]) continue;
+      var a = s, b = e - 1;
+      for (var d = 0; a > 0 && d < reach; a--) d += step(ln[a], ln[a - 1]);
+      for (d = 0; b < n - 1 && d < reach; b++) d += step(ln[b], ln[b + 1]);
+      for (k = a; k <= b; k++) used[k] = 1;
+      if (b > a) onInner(a, b + 1);
+    }
+    for (s = 0; s < n; s = e) {
+      for (e = s + 1; e < n && used[e] === used[s]; e++);
+      if (!used[s] && e - s >= 2) onCoastal(s, e);
+    }
+  }
+  function splitCoast(lines, coastal, inner) {
     lines.forEach(function (ln) {
-      var n = ln.length, m = new Uint8Array(n), k, s, e;
-      for (k = 0; k < n; k++) m[k] = inland(ln[k][0], ln[k][1]) ? 1 : 0;
-      var used = new Uint8Array(n);
-      for (s = 0; s < n; s = e) {
-        for (e = s + 1; e < n && m[e] === m[s]; e++);
-        if (!m[s]) continue;
-        var a = s, b = e - 1;
-        for (var d = 0; a > 0 && d < reach; a--) d += step(ln[a], ln[a - 1]);
-        for (d = 0; b < n - 1 && d < reach; b++) d += step(ln[b], ln[b + 1]);
-        for (k = a; k <= b; k++) used[k] = 1;
-        if (b > a) inner.push(ln.slice(a, b + 1));
-      }
-      for (s = 0; s < n; s = e) {
-        for (e = s + 1; e < n && used[e] === used[s]; e++);
-        if (!used[s] && e - s >= 2) coastal.push(ln.slice(s, e));
-      }
+      coastSpans(ln, function (a, b) { inner.push(ln.slice(a, b)); }, function (a, b) { coastal.push(ln.slice(a, b)); });
     });
   }
 
@@ -7663,7 +7918,7 @@
         current = snap;
         setTime(now);
         reveal();
-        afterIntro(function () { if (gridBase === "lo") { hiGridMs = upgradeGrid("hi"); scheduleRender(); } });
+        afterIntro(function () { if (gridBase === "lo") upgradeGrid("hi", function (ms) { hiGridMs = ms; scheduleRender(); }); });
         var seaData = fetchJSON(UC + "data/sea.json");
         afterIntro(function () {
           seaData.then(function (t) {
