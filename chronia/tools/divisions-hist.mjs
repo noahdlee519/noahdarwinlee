@@ -198,7 +198,40 @@ async function italy() {
   return { key: "it", names: ["Kingdom of Italy", "Italy", "Italian Social Republic"], source: "ISTAT, the compartimenti on its historical boundaries (1861 to 1927)", licence: "CC BY 3.0", feats: spans.flatMap(mapFeatures), maps: spans.length };
 }
 
-const SOURCES = { ca: canada, at: austria, prussia, it: italy };
+// Sweden's counties (län), from swehist (Johan Junkka, from the Swedish National Archives' historical GIS maps; data
+// CC BY 4.0), which swehist-counties.py writes to <cache>/se/counties.json in SWEREF99 TM. They are dated by year,
+// so a span runs from 1 January of its first year to 31 December of its last, as Sweden's county reforms took effect on
+// 1 January. They begin in 1720, when the data first has every county, and end in 1990; no county changed from 1991
+// to 1996, so those of 1990 run on to the end of 1996, and in 1997 Kristianstad and Malmöhus are Skåne and Kopparberg
+// is Dalarna, until Natural Earth's divisions begin (1 January 1998).
+const SE_NAMES = { "Blekinge län": "Blekinge", "Gotlands län": "Gotland", "Gävleborgs län": "Gävleborg", "Hallands län": "Halland", "Jämtlands län": "Jämtland", "Jönköpings län": "Jönköping", "Kalmar län": "Kalmar", "Kopparbergs län": "Kopparberg", "Kristianstads län": "Kristianstad", "Kronobergs län": "Kronoberg", "Malmöhus län": "Malmöhus", "Norrbottens län": "Norrbotten", "Skaraborgs län": "Skaraborg", "Stockholms län": "Stockholm", "Södermanlands län": "Södermanland", "Uppsala län": "Uppsala", "Värmlands län": "Värmland", "Västerbottens län": "Västerbotten", "Västernorrlands län": "Västernorrland", "Västmanlands län": "Västmanland", "Älvsborgs län": "Älvsborg", "Örebro län": "Örebro", "Östergötlands län": "Östergötland", "Göteborgs o Bohus län": "Göteborg and Bohus", "Närke och Värmlands län": "Närke and Värmland" };
+async function sweden() {
+  const file = resolve(cache, "se", "counties.json");
+  if (!existsSync(file)) throw new Error("run swehist-counties.py first, to write " + file);
+  const proj4 = require("proj4");
+  const sweref = proj4("+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", "WGS84");
+  const un = (c) => typeof c[0] === "number" ? sweref.forward(c).map((x) => Math.round(x * 1e6) / 1e6) : c.map(un);
+  const list = JSON.parse(readFileSync(file, "utf8"));
+  const feats = [], last1990 = [];
+  for (const r of list) {
+    const name = SE_NAMES[r.name];
+    if (!name) throw new Error("swehist: no name for " + r.name);
+    if (r.end < 1720) continue;
+    const geo = { type: "MultiPolygon", coordinates: un(r.polys) };
+    feats.push({ type: "Feature", properties: { name, first: Math.max(r.start, 1720) + "-01-01", last: r.end === 1990 ? "1996-12-31" : r.end + "-12-31" }, geometry: dropSmall(geo) });
+    if (r.end === 1990) last1990.push({ name, geo });
+  }
+  const groups = new Map();
+  for (const u of last1990) {
+    const n = u.name === "Kristianstad" || u.name === "Malmöhus" ? "Skåne" : u.name === "Kopparberg" ? "Dalarna" : u.name;
+    if (!groups.has(n)) groups.set(n, []);
+    groups.get(n).push({ type: "Feature", properties: {}, geometry: u.geo });
+  }
+  feats.push(...mapFeatures({ first: "1997-01-01", last: "1997-12-31", groups }));
+  return { key: "se", names: ["Kingdom of Sweden", "Swedish Empire", "United Kingdoms of Sweden and Norway", "Sweden"], source: "swehist, from the Swedish National Archives' historical GIS maps (counties 1720 to 1990)", licence: "CC BY 4.0", feats, maps: list.length };
+}
+
+const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden };
 
 // One map's shapes, joined by name, as features; each map is put into a topology of its own first, so that shapes the
 // source draws side by side are joined along their shared lines.
