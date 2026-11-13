@@ -3934,11 +3934,18 @@ const GROUPS = [{
   }
   console.log("groups: " + whole + " spans inside the Holy Roman Empire, " + parted + " parted at its border, " + Math.round((Date.now() - t0) / 1000) + " s");
 }
-const PROVINCE_SETS = [{ name: "Roman Empire", file: "roman-provinces.json" }];
+// The empires cut into provinces, each over the years it is drawn with them (from and to, inclusive).
+const PROVINCE_SETS = [
+  { name: "Roman Empire", file: "roman-provinces.json", to: 394 },
+  { name: "Western Roman Empire", file: "roman-provinces.json", from: 395, to: 476 },
+  { name: "Eastern Roman Empire", file: "roman-provinces.json", from: 395, to: 476 }
+];
 {
   let made = 0, rests = 0, joinedBits = 0;
   for (const P of PROVINCE_SETS) {
-    const provs = JSON.parse(readFileSync(resolve(here, P.file), "utf8")).provinces.map(([name, wiki, a, b, polys]) => ({ name, wiki, a, b, polys: rewind(polys) }));
+    const lo = P.from != null ? P.from : -Infinity, hi = P.to != null ? P.to : Infinity;
+    const provs = JSON.parse(readFileSync(resolve(here, P.file), "utf8")).provinces.filter(([, , a, b]) => b >= lo && a <= hi)
+      .map(([name, wiki, a, b, polys]) => ({ name, wiki, a: Math.max(a, lo), b: Math.min(b, hi), polys: rewind(polys) }));
     provs.forEach((p) => { p.box = boxOf(p.polys); });
     P.a = Math.min(...provs.map((p) => p.a));
     P.b = Math.max(...provs.map((p) => p.b));
