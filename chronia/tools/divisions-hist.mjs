@@ -303,15 +303,17 @@ async function ohm(cfg) {
   let outside = 0;
   for (const r of units) {
     const first = ohmDay(r.tags.start_date), end = ohmDay(r.tags.end_date);
-    if (!first || (cfg.from && end && end <= cfg.from) || (cfg.drop && cfg.drop.includes(r.tags.name))) continue;
+    // Land in dispute, or neutral, is not a division.
+    if (!first || (cfg.from && end && end <= cfg.from) || (cfg.drop && cfg.drop.includes(r.tags.name)) || /disput|neutral territory|claimed/i.test(r.tags["name:en"] || r.tags.name)) continue;
     const geo = ohmGeometry(r);
     if (!geo) continue;
     const pt = insidePoint(geo);
     const hosts = countries.filter((c) => (!c.end || first < c.end) && (!end || c.first < end) && d3.geoContains(c.geo, pt));
     if (!hosts.length) { outside++; continue; }
-    // A span begins no earlier than the first of the country's outlines that hold it, nor than `from`.
+    // A span runs only while the country's outlines that hold it run, and not before `from`.
     const a = [first, cfg.from || first, hosts.reduce((m, c) => (c.first < m ? c.first : m), "9999")].sort().pop();
-    const last = end ? dayBefore(end) : cfg.until;
+    const hostEnd = hosts.some((c) => !c.end) ? cfg.until : dayBefore(hosts.map((c) => c.end).sort().pop());
+    const last = [end ? dayBefore(end) : cfg.until, hostEnd].sort()[0];
     if (a > last) continue;
     const name = r.tags["name:en"] || r.tags.name;
     feats.push({ type: "Feature", properties: { name: (cfg.rename && cfg.rename[name]) || name, first: a, last }, geometry: dropSmall(geo) });
@@ -328,7 +330,16 @@ const mexico = () => ohm({
   names: ["First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"]
 });
 
-const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico };
+// Brazil's provinces, states, and territories, from independence (7 September 1822) until 1975. OpenHistoricalMap's
+// captaincies before then are too few to draw. Uruguay's departments, inside Brazil's outline while it held the
+// Cisplatine Province (to 1828), are left out; the province is drawn whole.
+const brazil = () => ohm({
+  key: "br", label: "Brazil", bbox: [-34, -74, 6, -34], country: /^(Império do Brasil|Brasil)$/, from: "1822-09-07",
+  drop: ["Colonia", "Soriano", "San José", "Paysandú", "Cerro Largo", "Maldonado", "Durazno", "Montevideo", "Canelones"], until: "2026-12-31",
+  names: ["Colonial Brazil", "Vice-Royalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"]
+});
+
+const SOURCES = { ca: canada, at: austria, prussia, it: italy, se: sweden, mx: mexico, br: brazil };
 
 // One map's shapes, joined by name, as features; each map is put into a topology of its own first, so that shapes the
 // source draws side by side are joined along their shared lines.
