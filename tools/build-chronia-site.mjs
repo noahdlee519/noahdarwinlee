@@ -36,7 +36,13 @@ for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.p
   for (const f of files) h.update(relative(out, f)).update(readFileSync(f));
   const app = join(out, "app.js"), src = readFileSync(app, "utf8"), stamp = 'var DATA_V = "";';
   if (!src.includes(stamp)) throw new Error("app.js has no " + stamp);
-  writeFileSync(app, src.replace(stamp, 'var DATA_V = "' + h.digest("hex").slice(0, 12) + '";'));
+  const v = h.digest("hex").slice(0, 12);
+  writeFileSync(app, src.replace(stamp, 'var DATA_V = "' + v + '";'));
+  // The data files the page always needs are preloaded from its head, so they download beside the scripts; their links
+  // carry the same stamp, or the browser would fetch each twice.
+  const page = join(out, "index.html"), head = readFileSync(page, "utf8"), pre = /(<link rel="preload" as="fetch" crossorigin href="data\/[^"?]+)"/g;
+  if (!pre.test(head)) throw new Error("index.html has no data preloads");
+  writeFileSync(page, head.replace(pre, '$1?v=' + v + '"'));
 }
 {
   const MINIFY = ["app.js", "dev.js"], NOTICE = "/*! \u00a9 2026 Noah Darwin Lee. All rights reserved. https://chroniaatlas.com/terms/ */";

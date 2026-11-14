@@ -17,6 +17,8 @@
   var LAST_YM = Math.max(2026 * 12 + 9, new Date().getFullYear() * 12 + new Date().getMonth());
   var LAST_YEAR = Math.floor(LAST_YM / 12), LAST_MONTH = LAST_YM % 12 + 1;
   var KEEP_MAPS = 8;
+  var PLAIN = addrHas("plain"), LOW_MEM = (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4) || !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  var CHUNK_KEEP = PLAIN ? 1e9 : LOW_MEM ? 3 : 5, CHUNK_HOLD_MS = 15000, CHUNK_IDLE_MS = 60000, SNAP_KEEP = PLAIN ? 24 : LOW_MEM ? 6 : 12, MODERN_DROP_BEFORE = 1800, MODERN_HOLD_MS = 30000, REST_MS = 300, FINE_ALWAYS_S = 2600;
   var phoneQuery = window.matchMedia("(max-width: 640px)");
   var coarseQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
   function touchMap() { return phoneQuery.matches || coarseQuery.matches; }
@@ -444,7 +446,8 @@
   }
 
   var renderQueued = false, moving = false, settleTimer = 0;
-  function scheduleRender() {
+  function scheduleRender(soft) {
+    if (!soft) baseEpoch++;
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
   }
   // While the map moves, a device that can't keep up draws it at a lower resolution and stretches it to
@@ -467,6 +470,7 @@
   }
   function frame(ts) {
     renderQueued = false;
+    armRest();
     var f0 = perf ? performance.now() : 0;
     if (moving) {
       if (lastMoveFrame && ts - lastMoveFrame < 250) {
@@ -739,7 +743,7 @@
     return k;
   }
 
-  var loadedOrder = [];
+  var loadedOrder = [], snapCount = 0, swept = true;
   function loadMap(i) {
     var m = maps[i];
     if (!m) return Promise.reject(new Error("no map " + i));
@@ -766,6 +770,7 @@
     snap.byId = new Map();
     snap.order.forEach(function (p) { if (!snap.byId.has(p.id)) snap.byId.set(p.id, p); });
     snap.levels = {};
+    snap.n = ++snapCount;
     return snap;
   }
   function buildSnap(d) {
@@ -786,23 +791,78 @@
   var modernSnaps = new Map();
   // The spans from 1886 (modern.json, the largest file) load when a date from 1886 is first shown, or once the page is idle.
   function loadModern() {
+    modern.used = performance.now();
     if (!modern.load) modern.load = fetchJSON("data/modern.json").then(function (md) {
       modern.rows = md.rows; modern.lo = md.lo; modern.hi = md.hi || md.lo;
-      if (!md.hi) loadHi("data/modern-hi.json", function (hi) {
-        modern.hi = hi;
-        modernSnaps.clear();
-        if (current && current.modern) { useSnap(modernSnap(Math.min(dayOfTime(now), modern.toDay))); scheduleRender(); }
-      });
+      modern.used = performance.now();
+      modern.fine = md.hi ? 2 : 0;
+      if (!md.hi && (PLAIN || (isModern(now) && (fineNow() || !introOver)))) loadModernFine();
       return modern;
     }, function (e) { modern.load = null; throw e; });
     return modern.load;
   }
+  function loadModernFine() {
+    var lo = modern.lo;
+    if (!modern.rows || modern.fine) return;
+    modern.fine = 1;
+    loadHi("data/modern-hi.json", function (hi) {
+      if (modern.lo !== lo) return;
+      modern.hi = hi; modern.fine = 2;
+      modernSnaps.clear();
+      if (current && current.modern) { useSnap(modernSnap(Math.min(dayOfTime(now), modern.toDay))); scheduleRender(); }
+    }, function () { if (modern.lo === lo) modern.fine = 0; });
+  }
+  function dropModern() {
+    modern.rows = null; modern.lo = null; modern.hi = null; modern.load = null; modern.fine = 0;
+    modernSnaps.clear();
+    sweepFeats();
+  }
+  function fineNow() { return PLAIN || !!exporting || localScale() >= FINE_ALWAYS_S; }
+  function fineWanted() { return fineNow() || (!playTimer && !rangeActive); }
+  function wantFine() {
+    if (!current) return;
+    if (isModern(now)) { if (current.modern) loadModernFine(); }
+    else if (isDated(now) && dated) loadChunkFine(chunkIndexFor(now));
+  }
+  function trimData() {
+    if (PLAIN) return;
+    var t = performance.now(), later = false;
+    if (dated) {
+      var live = [], keep = current && current.dated ? current.chunk : -1, at = isDated(now) ? chunkIndexFor(now) : -1;
+      dated.chunks.forEach(function (c, k) { if (c.data) live.push(k); });
+      live.sort(function (a, b) { return dated.chunks[b].used - dated.chunks[a].used; });
+      for (var i = 0; i < live.length; i++) {
+        var k = live[i];
+        if (k === keep || k === at) continue;
+        if (t - dated.chunks[k].used >= (i < CHUNK_KEEP ? CHUNK_IDLE_MS : CHUNK_HOLD_MS)) dropChunk(k); else later = true;
+      }
+    }
+    if (modern && modern.rows && !(current && current.modern) && !isModern(now) && yearOf(now) < MODERN_DROP_BEFORE) {
+      if (t - modern.used >= MODERN_HOLD_MS) dropModern(); else later = true;
+    }
+    clearTimeout(trimTimer);
+    if (later) trimTimer = setTimeout(trimData, 5000);
+  }
+  function dropChunk(k) {
+    var c = dated.chunks[k], pre = "e" + k;
+    c.data = null; c.loading = null; c.fine = 0;
+    datedSnaps.forEach(function (snap, key) { if (snap !== current && (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0)) datedSnaps.delete(key); });
+    sweepFeats();
+  }
+  var restTimer = 0, trimTimer = 0;
+  function armRest() { clearTimeout(restTimer); restTimer = setTimeout(atRest, REST_MS); }
+  function atRest() {
+    if (!ready || !current) return;
+    if (fineWanted()) wantFine();
+    trimData();
+    restBase();
+  }
   // The detailed lines of a data file are in a file beside it (written by the build since November 2026), fetched once the
   // simplified lines have drawn the first map; until they come, the simplified lines stand in for them. The swap is counted
   // as a load, so a saved video waits for it.
-  function loadHi(file, use) {
+  function loadHi(file, use, fail) {
     jsonLoading++;
-    fetchJSON(file).then(function (d) { use(d.hi); }).catch(function (e) { console.warn("detail", file, e); }).finally(function () { jsonLoading--; });
+    fetchJSON(file).then(function (d) { use(d.hi); }).catch(function (e) { console.warn("detail", file, e); if (fail) fail(); }).finally(function () { jsonLoading--; });
   }
   // Loads that can wait run after the opening and when the browser is idle, so they don't compete with the first map.
   // No deadline: a load forced in while the map is being dragged parses for a tenth of a second or more and drops frames.
@@ -820,6 +880,7 @@
   // A polity's own colour edit comes first, so a member of a group (whose hue is the group's) can be recoloured too.
   function ownColour(id, at, otherwise) { var ed = editedColour(id, at); return ed >= 0 ? ed : otherwise(); }
   function modernSnap(day) {
+    modern.used = performance.now();
     var at = timeOfDay(day), idx = activeRows(day), key = "m" + idx.join(",") + "|" + marksBefore(colourDays, day) + colourEditKey(at);
     var snap = modernSnaps.get(key);
     if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); return snap; }
@@ -832,11 +893,13 @@
       geoms: { hi: idx.map(function (i) { return modern.hi.objects.p.geometries[i]; }), lo: idx.map(function (i) { return modern.lo.objects.p.geometries[i]; }) }
     });
     modernSnaps.set(key, snap);
-    while (modernSnaps.size > 24) {
+    while (modernSnaps.size > SNAP_KEEP) {
       var oldest = modernSnaps.keys().next().value;
       if (modernSnaps.get(oldest) === current) { var keep = modernSnaps.get(oldest); modernSnaps.delete(oldest); modernSnaps.set(oldest, keep); break; }
       modernSnaps.delete(oldest);
+      swept = false;
     }
+    if (!swept) { swept = true; sweepFeats(); }
     return snap;
   }
 
@@ -848,23 +911,33 @@
   function loadChunk(k) {
     var c = dated.chunks[k];
     if (!c) return Promise.reject(new Error("no chunk " + k));
+    c.used = performance.now();
     if (c.data) return Promise.resolve(c);
     if (!c.loading) {
       c.loading = fetchJSON(c.file).then(function (d) {
-        c.data = d; prepDays(d);
-        if (!d.hi) {
-          d.hi = d.lo;
-          loadHi(c.file.replace(/\.json$/, "-hi.json"), function (hi) {
-            d.hi = hi;
-            var pre = "e" + k;
-            datedSnaps.forEach(function (snap, key) { if (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0) datedSnaps.delete(key); });
-            if (current && current.dated && isDated(now) && chunkIndexFor(now) === k) { useSnap(datedSnap(k, now)); scheduleRender(); }
-          });
+        c.data = d; c.used = performance.now(); prepDays(d);
+        if (d.hi) c.fine = 2;
+        else {
+          d.hi = d.lo; c.fine = 0;
+          if (PLAIN || (isDated(now) && chunkIndexFor(now) === k && (fineNow() || !introOver))) loadChunkFine(k);
         }
+        trimData();
         return c;
       }).catch(function (e) { c.loading = null; throw e; });
     }
     return c.loading;
+  }
+  function loadChunkFine(k) {
+    var c = dated.chunks[k], d = c && c.data;
+    if (!d || c.fine) return;
+    c.fine = 1;
+    loadHi(c.file.replace(/\.json$/, "-hi.json"), function (hi) {
+      if (c.data !== d) return;
+      d.hi = hi; c.fine = 2;
+      var pre = "e" + k;
+      datedSnaps.forEach(function (snap, key) { if (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0) datedSnaps.delete(key); });
+      if (current && current.dated && isDated(now) && chunkIndexFor(now) === k) { useSnap(datedSnap(k, now)); scheduleRender(); }
+    }, function () { if (c.data === d) c.fine = 0; });
   }
   // A row's first and last day: the days the chunk gives for changes dated within the year (from 1800),
   // or else 1 January of its first year and 31 December of its last.
@@ -880,6 +953,7 @@
   }
   function datedSnap(k, t) {
     var c = dated.chunks[k], rows = c.data.rows, idx = [], soft = false;
+    c.used = performance.now();
     var monthly = isMonthly(t), day = monthly ? dayOfTime(t) : 0, y = monthly ? yearOf(t) : t;
     var groupIds = new Set((c.data.groups || []).map(function (g) { return g[0]; }));
     if (monthly && !c.data.dayFrom) prepDays(c.data);
@@ -892,7 +966,7 @@
       return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || (bordersKnown ? !(r[9] >= 3) : r[9] <= 1) || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
     });
     snap = finishSnap({
-      year: null, key: key, dated: true, soft: soft, polys: polys, firm: pairsAt(borderPairs.firm, y), topo: { hi: c.data.hi, lo: c.data.lo },
+      year: null, key: key, dated: true, chunk: k, soft: soft, polys: polys, firm: pairsAt(borderPairs.firm, y), topo: { hi: c.data.hi, lo: c.data.lo },
       geoms: { hi: idx.map(function (i) { return c.data.hi.objects.p.geometries[i]; }), lo: idx.map(function (i) { return c.data.lo.objects.p.geometries[i]; }) }
     });
     snap.groups = (c.data.groups || []).filter(function (g) { return g[1] <= y && y <= g[2] && g[4]; }).map(function (g) {
@@ -903,11 +977,13 @@
         geoHi: topojson.mergeArcs(c.data.hi, mem.map(function (ri) { return c.data.hi.objects.p.geometries[ri]; })) };
     }).filter(Boolean);
     datedSnaps.set(key, snap);
-    while (datedSnaps.size > 24) {
+    while (datedSnaps.size > SNAP_KEEP) {
       var oldest = datedSnaps.keys().next().value;
       if (datedSnaps.get(oldest) === current) { var keep = datedSnaps.get(oldest); datedSnaps.delete(oldest); datedSnaps.set(oldest, keep); break; }
       datedSnaps.delete(oldest);
+      swept = false;
     }
+    if (!swept) { swept = true; sweepFeats(); }
     return snap;
   }
   function datedChangeBefore(y) {
@@ -916,7 +992,20 @@
     return k;
   }
 
-  var featCache = { hi: new WeakMap(), lo: new WeakMap() };
+  var featCache = PLAIN ? { hi: new WeakMap(), lo: new WeakMap() } : { hi: new Map(), lo: new Map() };
+  function sweepFeats() {
+    if (PLAIN) return;
+    var live = { hi: new Set(), lo: new Set() };
+    var add = function (snap) {
+      if (!snap || !snap.geoms) return;
+      snap.geoms.hi.forEach(function (g) { live.hi.add(g); });
+      snap.geoms.lo.forEach(function (g) { live.lo.add(g); });
+      (snap.groups || []).forEach(function (g) { live.hi.add(g.geoHi); live.lo.add(g.geoLo); });
+    };
+    datedSnaps.forEach(add); modernSnaps.forEach(add); add(current);
+    maps.forEach(function (m) { add(m.snap); });
+    ["hi", "lo"].forEach(function (k) { featCache[k].forEach(function (c, g) { if (!live[k].has(g)) featCache[k].delete(g); }); });
+  }
   function featOf(topo, key, g) {
     var c = featCache[key].get(g);
     if (!c) {
@@ -1496,6 +1585,78 @@
     var S = localScale(), kp = kmPx(), key = useLevel();
     var snap = current, L = level(snap, key);
     var landList = landAt(landKey(key));
+    var sig = baseSigNow(snap, L, landList, S);
+    if (sig && sameBase(sig, baseSig)) pasteBase();
+    else { drawBase(snap, L, key, S, kp, landList); keepBase(sig); }
+    if (perf) pmark("finish");
+    placedLabels = [];
+    var placed = fixedBoxes();
+    if (!skip.labels) {
+      reserveMarks(placed, S);
+      drawPolityLabels(snap, placed, kp);
+      drawSeaLabels(placed, S);
+      for (var ri = placed.length - 1; ri >= 0; ri--) if (placed[ri].res) placed.splice(ri, 1);
+      drawPlaces(placed, S);
+      drawDivisionLabels(placed, S);
+    }
+    if (perf) pmark("labels");
+    syncCardDivision();
+  }
+  var baseCanvas = null, baseCtx = null, baseSig = null, baseState = null, baseEpoch = 0, baseMode = 0, baseStats = { hits: 0, misses: 0 };
+  var BASE_STATE = ["globalAlpha", "lineWidth", "lineCap", "lineJoin", "miterLimit", "strokeStyle", "fillStyle", "font", "textAlign", "textBaseline", "letterSpacing", "lineDashOffset"];
+  function baseOn() { return !PLAIN && baseMode >= 0 && !exporting && !moving && ctx === mainCtx && (baseMode > 0 || !!playTimer || rangeActive || !!lapse); }
+  function baseSigNow(snap, L, landList, S) {
+    if (!baseOn()) return null;
+    if (layers.control) { var cd = ctlDay(); if (cd !== null && ctlWars(cd, true).length) return null; }
+    var div = null;
+    if (layers.subdivisions && S >= DIV_FROM) { var dd = divDay(); if (dd !== null) div = divRegions(dd, true).map(function (r) { return divState(r, dd); }); }
+    return {
+      e: baseEpoch, snap: snap, L: L, land: landList, lakes: lakes ? lakesAt() : null, rivers: rivers, riverAt: geog ? stateOf(geog.riverTimes) : -1,
+      marsh: geog ? geog.marshes.map(function (m) { return inSpan(m.from, m.to) ? 1 : 0; }).join("") : "", div: div, hover: hoverId, sel: selected, lapse: lapse ? lapse.f : null,
+      view: [view.lon, view.lat, view.zoom, view.roll, flat ? 1 : 0, canvas.width, canvas.height, dpr].join()
+    };
+  }
+  function sameBase(a, b) {
+    if (!b || a.e !== b.e || a.snap !== b.snap || a.L !== b.L || a.land !== b.land || a.lakes !== b.lakes || a.rivers !== b.rivers || a.riverAt !== b.riverAt || a.marsh !== b.marsh) return false;
+    if (a.hover !== b.hover || a.sel !== b.sel || a.lapse !== b.lapse || a.view !== b.view) return false;
+    if (!a.div !== !b.div) return false;
+    if (a.div) {
+      if (a.div.length !== b.div.length) return false;
+      for (var i = 0; i < a.div.length; i++) if (a.div[i] !== b.div[i]) return false;
+    }
+    return true;
+  }
+  function keepBase(sig) {
+    baseSig = null;
+    if (!sig) return;
+    baseStats.misses++;
+    if (!baseCanvas) { baseCanvas = document.createElement("canvas"); baseCtx = baseCanvas.getContext("2d"); }
+    if (baseCanvas.width !== canvas.width || baseCanvas.height !== canvas.height) { baseCanvas.width = canvas.width; baseCanvas.height = canvas.height; }
+    baseCtx.globalCompositeOperation = "copy";
+    baseCtx.drawImage(canvas, 0, 0);
+    baseState = BASE_STATE.map(function (k) { return ctx[k]; });
+    baseState.push(ctx.getLineDash());
+    baseSig = sig;
+  }
+  function pasteBase() {
+    baseStats.hits++;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "copy";
+    ctx.drawImage(baseCanvas, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    BASE_STATE.forEach(function (k, i) { ctx[k] = baseState[i]; });
+    ctx.setLineDash(baseState[BASE_STATE.length]);
+    syncKey();
+    syncWars();
+  }
+  function restBase() {
+    if (!baseCanvas || baseOn()) return;
+    baseSig = null;
+    if (baseCanvas.width > 1) { baseCanvas.width = 1; baseCanvas.height = 1; }
+  }
+  function drawBase(snap, L, key, S, kp, landList) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.lineJoin = "round";
@@ -1594,7 +1755,7 @@
     ctx.restore();
     if (outside) { ctx.save(); ctx.clip(outside, "evenodd"); }
     if (perf) pmark("bands");
-    if (!skip.coastband) drawCoastBand(snap.key + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
+    if (!skip.coastband) drawCoastBand(snap.n + "|" + key, paintFills, landList, landPath, kp, bandLine, bandAlpha, peopleBleed, peoplePath, unnamedPath, bleed);
     if (outside) ctx.restore();
 
     if (perf) pmark("coast band");
@@ -1644,19 +1805,6 @@
       }
     }
 
-    if (perf) pmark("finish");
-    placedLabels = [];
-    var placed = fixedBoxes();
-    if (!skip.labels) {
-      reserveMarks(placed, S);
-      drawPolityLabels(snap, placed, kp);
-      drawSeaLabels(placed, S);
-      for (var ri = placed.length - 1; ri >= 0; ri--) if (placed[ri].res) placed.splice(ri, 1);
-      drawPlaces(placed, S);
-      drawDivisionLabels(placed, S);
-    }
-    if (perf) pmark("labels");
-    syncCardDivision();
   }
   function coastOf(L, id) {
     if (!L.coastOf) L.coastOf = new Map();
@@ -3099,7 +3247,7 @@
       placed.map(function (b) { return Math.round(b.x) + ":" + Math.round(b.y) + ":" + Math.round(b.w) + ":" + Math.round(b.h); }).join(",")].join("|");
     var memo = labelCache.get("layout");
     if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
-    if (quick && !settleLabels) settleLabels = setTimeout(function wait() { settleLabels = moving || rangeActive ? setTimeout(wait, 200) : 0; if (!settleLabels) scheduleRender(); }, 200);
+    if (quick && !settleLabels) settleLabels = setTimeout(function wait() { settleLabels = moving || rangeActive ? setTimeout(wait, 200) : 0; if (!settleLabels) scheduleRender(true); }, 200);
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     var time = performance.now(), live = false, k, it, warring = atWarIds();
     for (k = 0; k < memo.items.length; k++) {
@@ -3123,7 +3271,7 @@
       return true;
     });
     ctx.letterSpacing = "0px";
-    if (live) scheduleRender();
+    if (live) scheduleRender(true);
   }
 
   var SEAS = [
@@ -4509,6 +4657,7 @@
   function useSnap(snap) {
     if (current === snap) return;
     current = snap;
+    if (fineNow()) wantFine();
     if (selected >= 0 || selCity) renderCard();
     hideTip();
     hoverId = -1;
@@ -4533,18 +4682,18 @@
           useSnap(modernSnap(day));
           syncTime();
           writeHash();
-          scheduleRender();
+          scheduleRender(true);
         }).catch(function (e) {
           console.warn("modern", e);
           asof.textContent = "The borders of " + fmtNow(t) + " could not be loaded";
         });
-        scheduleRender();
+        scheduleRender(true);
         return;
       }
       useSnap(modernSnap(day));
       syncTime();
       writeHash();
-      scheduleRender();
+      scheduleRender(true);
       return;
     }
     if (isDated(t)) {
@@ -4556,7 +4705,7 @@
         useSnap(datedSnap(ck, t));
         syncTime();
         writeHash();
-        scheduleRender();
+        scheduleRender(true);
         whenIdle(function () {
           var y = yearOf(t), next = dated.chunks[ck + 1], to = next ? next.from - 1 : dated.to;
           if (ck > 0 && (playTimer || y - dated.chunks[ck].from < NEAR_EDGE)) loadChunk(ck - 1).catch(function () {});
@@ -4567,7 +4716,7 @@
         console.warn("dated", e);
         asof.textContent = "The borders of " + fmtYear(t) + " could not be loaded";
       });
-      scheduleRender();
+      scheduleRender(true);
       return;
     }
     var mi = mapIndexFor(t);
@@ -4578,14 +4727,14 @@
       useSnap(snap);
       syncTime();
       writeHash();
-      scheduleRender();
+      scheduleRender(true);
       if (mi > 0) loadMap(mi - 1).catch(function () {});
       if (mi < maps.length - 1) loadMap(mi + 1).catch(function () {});
     }).catch(function (e) {
       console.warn("map", e);
       asof.textContent = "The map of " + fmtYear(maps[mi].y) + " could not be loaded";
     });
-    scheduleRender();
+    scheduleRender(true);
   }
   function stepMap(dir) {
     if (!points.length) return;
@@ -8182,6 +8331,11 @@
       for (var i = 0; i < d.length; i += 4) for (var k = 0; k < 3; k++) ch[k].push(d[i + k]);
       return ch.map(function (a) { a.sort(function (x, y) { return x - y; }); return a[a.length >> 1]; });
     },
+    perfState: function () {
+      return { plain: PLAIN, lowMem: LOW_MEM, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
+        fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine === 2; }).length : 0, modern: modern && modern.rows ? (modern.fine === 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size };
+    },
+    baseCache: function (mode) { baseMode = mode; baseSig = null; scheduleRender(); },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
     // How far d3's projection (used for the largest shapes and to find the place under the pointer) lands from CHRONIA's own
     // at a spread of points on the near side, in pixels, so the roll is checked to turn both the same way.
