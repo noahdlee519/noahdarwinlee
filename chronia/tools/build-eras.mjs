@@ -12,6 +12,7 @@ import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
+import { buildItaly, ITALY_FROM, ITALY_TO, LATIN_LEAGUE, LEAGUE_FROM, LEAGUE_TO } from "./italy-early.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modules = resolve(process.argv[2] || "node_modules");
@@ -48,7 +49,7 @@ const dayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Ma
 const yearOfDay = (day) => new Date(DAY0 + day * 86400000).getUTCFullYear();
 const R_KM = 6371.0088;
 const HI_KM = 1.6, LO_KM = 12;
-const GEN_SRC = new Set(["medieval", "early", "stage"]);
+const GEN_SRC = new Set(["medieval", "early", "stage", "italy"]);
 const HI_Q = 2e5, LO_Q = 2e4;
 const CS_HI_KM = 0.5, CS_HI_Q = 5e5, FINE_KM = 0.15, FINE_Q = 1e6;
 const weightFor = (km) => (km / R_KM) ** 2;
@@ -3042,6 +3043,18 @@ const medieval = (list) => {
   return list.concat(cutSpans);
 };
 
+const italy = (list) => {
+  const zonesPath = resolve(here, "italy-zones.json");
+  if (!existsSync(zonesPath)) { console.log("italy: no tools/italy-zones.json, so Italy from " + ITALY_FROM + " to " + ITALY_TO + " keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const I = buildItaly({ topo: JSON.parse(readFileSync(zonesPath, "utf8")), client, rewind });
+  const { list: cut, mb, dropped, cuts, shorn } = maskOut(list, I.mask, ITALY_FROM, ITALY_TO);
+  const spans = I.spans.map((s) => withBox({ ...s, src: "italy" }));
+  const { cutSpans, quiet, kept } = tableJoin(cut, spans, ITALY_FROM, ITALY_TO, mb);
+  console.log("italy: " + spans.length + " spans on " + I.zones + " zones, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + kept + " small territories kept, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return cut.concat(cutSpans);
+};
+
 // Australia's colonies from 1788 to 1885 (`tools/australia.mjs`): the sources' colonies are dropped in those years, and every
 // other span, the Aboriginal nations among them, loses the land the colonies held in each year; what the cut leaves of a span
 // off the land (a source's coarser shore against Natural Earth's) is dropped.
@@ -3582,7 +3595,7 @@ const stages = (list) => {
   return out;
 };
 
-dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(medieval(britishAmerica(canada(northAmerica(colonies(redraw1886(stages(dated))))))))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(medieval(britishAmerica(canada(northAmerica(colonies(redraw1886(italy(stages(dated)))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -4008,7 +4021,7 @@ const GROUPS = [{
     ring: [[9.4, 47.9], [9.4, 46.8], [10.45, 46.6], [10.45, 45.6], [12.0, 45.6], [13.3, 45.2], [15.0, 45.2], [15.0, 47.9], [9.4, 47.9]] }
 }, { name: BRITISH_AMERICA },
 // The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
-{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" },
+{ name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" }, { name: LATIN_LEAGUE, from: LEAGUE_FROM, to: LEAGUE_TO },
 // From 962: the Kingdom of France's great fiefs (987), Cnut's North Sea Empire (1017 to 1035), and Kievan Rus' principalities (1054 to 1240).
 { name: "Kingdom of France", from: 987, to: BRIDGE_TO }, { name: "North Sea Empire", from: 1017, to: 1035 }, { name: "Kievan Rus'", from: 1054, to: 1240 },
 // From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138 to 1319).
