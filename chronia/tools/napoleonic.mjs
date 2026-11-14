@@ -268,7 +268,7 @@ const O = {
   COR: [[EARLY, { name: "Corsican Republic", wiki: "Corsican Republic" }]],
   ACK: [[EARLY, { name: "Anglo-Corsican Kingdom", wiki: "Anglo-Corsican Kingdom", ruler: "Kingdom of Great Britain", status: 5 }]],
   CISP: [[EARLY, { name: "Cispadane Republic", wiki: "Cispadane Republic", ruler: "@FR", status: 5 }]],
-  ROMR: [[EARLY, { name: "Roman Republic", wiki: "Roman Republic (1798–1799)", ruler: "@FR", status: 5 }]],
+  ROMR: [[EARLY, { name: "Roman Republic (1798–1799)", wiki: "Roman Republic (1798–1799)", ruler: "@FR", status: 5 }]],
   TRE: [[EARLY, { name: "Prince-Bishopric of Trent", wiki: "Prince-Bishopric of Trent" }]],
   // Germany. The many small states, the free cities, and the lesser bishoprics and abbeys are drawn as the Empire itself (HRE),
   // as the sources draw them; the larger ones each have an owner.

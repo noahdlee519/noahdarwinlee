@@ -1100,7 +1100,7 @@ export function buildMedieval(env) {
   const d1444 = dayOf(MEDIEVAL_TO + "-07-01");
   for (const p of all) {
     const o = p.ext ? null : ownerOf(p.row, d1444), a = o && o !== "-" ? attrAt(o, d1444) : null;
-    p.bridge = !!a;
+    p.bridge = !p.ext && o !== null;
   }
   const late = [];
   for (const p of all) { const first = p.ext ? EXT_FROM : MEDIEVAL_FROM; if (ownerOf(p.row, dayOf(first + "-01-01")) === null) late.push(p.row.what); }

@@ -556,6 +556,9 @@ function smoothTopo(topo) {
   topo.arcs = topo.arcs.map(smoothArc);
   return topo;
 }
+const WORLD_BOX = [-180, -90, 180, 90];
+const NODES = new Map();
+let nodesReady = false;
 let nodesAdded = 0;
 function nodeFeats(feats, q) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -567,6 +570,7 @@ function nodeFeats(feats, q) {
     return { ...f, geometry: { type: "MultiPolygon", coordinates: polys } };
   });
   if (x0 === Infinity) return feats;
+  [x0, y0, x1, y1] = WORLD_BOX;
   const kx = x1 - x0 ? (x1 - x0) / (q - 1) : 1, ky = y1 - y0 ? (y1 - y0) / (q - 1) : 1;
   const rings = [];
   for (const f of copy) if (f.geometry && f.geometry.type === "MultiPolygon") for (const poly of f.geometry.coordinates) for (const ring of poly) rings.push(ring);
@@ -577,6 +581,12 @@ function nodeFeats(feats, q) {
     let b = hash.get(k);
     if (!b) hash.set(k, (b = new Map()));
     b.set(p[0] * 4194304 + p[1], p);
+  }
+  if (nodesReady && NODES.has(q)) for (const key of NODES.get(q)) {
+    const p = [Math.floor(key / 4194304), key % 4194304], k = (p[0] >> 6) * 1e6 + (p[1] >> 6);
+    let b = hash.get(k);
+    if (!b) hash.set(k, (b = new Map()));
+    if (!b.has(key)) b.set(key, p);
   }
   rings.forEach((ring, ri) => {
     const r = grid[ri], out = [ring[0]];
@@ -669,14 +679,140 @@ function generalizeTopo(topo) {
   for (const j of gen) if (pos.has(j) && neg.has(j) && !fixed.has(j)) topo.arcs[j] = generalizeArc(topo.arcs[j]);
   return topo;
 }
+// The meeting points a file's lines are cut at: those of the files before and after it (its own are its arcs' ends already).
+const useNodes = (n) => {
+  for (const [q, l] of NODES_BY_FILE) {
+    const set = new Set();
+    for (const m of [n - 1, n + 1]) if (l[m]) for (const k of l[m]) set.add(k);
+    NODES.set(q, set);
+  }
+};
+function rawTopo(feats, q) {
+  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) }, b: { type: "MultiPoint", coordinates: [[WORLD_BOX[0], WORLD_BOX[1]], [WORLD_BOX[2], WORLD_BOX[3]]] } }, q);
+  delete raw.objects.b;
+  return raw;
+}
+const NODES_BY_FILE = new Map();
+function noteNodes(feats, q, n) {
+  if (!NODES_BY_FILE.has(q)) NODES_BY_FILE.set(q, []);
+  const set = (NODES_BY_FILE.get(q)[n] = new Set());
+  for (const arc of rawTopo(feats, q).arcs) {
+    let x = 0, y = 0;
+    arc.forEach((p, i) => { x += p[0]; y += p[1]; if (i === 0 || i === arc.length - 1) set.add(x * 4194304 + y); });
+  }
+}
+function splitAtNodes(topo, q) {
+  const set = NODES.get(q);
+  if (!set || !set.size) return topo;
+  const parts = new Map(), arcs = topo.arcs.slice();
+  let made = 0;
+  topo.arcs.forEach((arc, k) => {
+    let x = 0, y = 0;
+    const abs = arc.map((p) => { x += p[0]; y += p[1]; return [x, y]; }), cuts = [];
+    for (let i = 1; i + 1 < abs.length; i++) if (set.has(abs[i][0] * 4194304 + abs[i][1])) cuts.push(i);
+    if (!cuts.length) return;
+    const ids = [];
+    let from = 0;
+    for (const c of cuts.concat([abs.length - 1])) {
+      const piece = abs.slice(from, c + 1).map((pt, i, l) => (i ? [pt[0] - l[i - 1][0], pt[1] - l[i - 1][1]] : pt));
+      if (!ids.length) { arcs[k] = piece; ids.push(k); } else { arcs.push(piece); ids.push(arcs.length - 1); made++; }
+      from = c;
+    }
+    parts.set(k, ids);
+  });
+  if (!parts.size) return topo;
+  const ring = (r) => r.flatMap((a) => { const k = a < 0 ? ~a : a, ids = parts.get(k); return !ids ? [a] : a < 0 ? ids.slice().reverse().map((i) => ~i) : ids; });
+  for (const g of topo.objects.p.geometries) {
+    if (g.type === "Polygon") g.arcs = g.arcs.map(ring);
+    else if (g.type === "MultiPolygon") g.arcs = g.arcs.map((poly) => poly.map(ring));
+  }
+  topo.arcs = arcs;
+  arcsSplit += made;
+  return topo;
+}
+let arcsSplit = 0, twinsMerged = 0;
+function mergeTwinArcs(topo) {
+  const seen = new Map(), to = new Map();
+  topo.arcs.forEach((arc, k) => {
+    let x = 0, y = 0;
+    const pts = arc.map((p) => { x += p[0]; y += p[1]; return x + "," + y; });
+    if (pts.length > 3) return;
+    const f = pts.join(";"), r = pts.slice().reverse().join(";");
+    if (seen.has(f)) to.set(k, seen.get(f));
+    else if (seen.has(r)) to.set(k, ~seen.get(r));
+    else seen.set(f, k);
+  });
+  if (!to.size) return topo;
+  const ref = (a) => { const k = a < 0 ? ~a : a; if (!to.has(k)) return a; const t = to.get(k); return a < 0 ? ~t : t; };
+  for (const g of topo.objects.p.geometries) {
+    if (g.type === "Polygon") g.arcs = g.arcs.map((r) => r.map(ref));
+    else if (g.type === "MultiPolygon") g.arcs = g.arcs.map((poly) => poly.map((r) => r.map(ref)));
+  }
+  twinsMerged += to.size;
+  return topo;
+}
+// Needles: closed loops of arcs with land on one side only that enclose next to nothing (under NEEDLE_KM2, and thin), where two
+// borders that should be one line run a hair apart (a unit cut along a river against its neighbour's own bank). The page draws a
+// state's edge against ownerless land as a border with its band, so each would show as a stray stroke: they are listed in the
+// topology (needles) and the page leaves them undrawn.
+const NEEDLE_KM2 = 5, NEEDLE_ROUND = 0.05, NEEDLE_ARCS = 60;
+let needlesMarked = 0;
+function markNeedles(topo) {
+  const n = topo.arcs.length, pos = new Uint8Array(n), neg = new Uint8Array(n);
+  const walk = (a) => { if (typeof a === "number") { if (a < 0) neg[~a] = 1; else pos[a] = 1; } else if (a) a.forEach(walk); };
+  for (const g of topo.objects.p.geometries) walk(g.arcs);
+  const t = topo.transform, pts = new Map(), ends = new Map(), parent = new Map();
+  const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+  for (let k = 0; k < n; k++) {
+    if (pos[k] + neg[k] !== 1) continue;
+    let x = 0, y = 0;
+    const abs = topo.arcs[k].map((p) => { x += p[0]; y += p[1]; return [x, y]; });
+    pts.set(k, abs);
+    parent.set(k, k);
+    for (const e of [abs[0], abs[abs.length - 1]]) { const key = e[0] * 4194304 + e[1]; if (!ends.has(key)) ends.set(key, []); ends.get(key).push(k); }
+  }
+  for (const l of ends.values()) for (let i = 1; i < l.length; i++) parent.set(find(l[i]), find(l[0]));
+  const comps = new Map();
+  for (const k of pts.keys()) { const r = find(k); if (!comps.has(r)) comps.set(r, []); comps.get(r).push(k); }
+  const out = [];
+  for (const arcs of comps.values()) {
+    if (arcs.length < 2 || arcs.length > NEEDLE_ARCS) continue;
+    const key = (p) => p[0] * 4194304 + p[1], set = new Set(arcs);
+    if (arcs.some((k) => { const a = pts.get(k); return [a[0], a[a.length - 1]].some((e) => ends.get(key(e)).filter((j) => set.has(j)).length !== 2) || key(a[0]) === key(a[a.length - 1]); })) continue;
+    const ring = [], left = new Set(arcs);
+    let cur = arcs[0], line = pts.get(cur);
+    left.delete(cur);
+    ring.push(...line);
+    while (left.size) {
+      const end = ring[ring.length - 1], next = [...left].find((j) => { const a = pts.get(j); return key(a[0]) === key(end) || key(a[a.length - 1]) === key(end); });
+      if (next === undefined) break;
+      const a = pts.get(next);
+      ring.push(...(key(a[0]) === key(end) ? a : a.slice().reverse()).slice(1));
+      left.delete(next);
+    }
+    if (left.size || key(ring[0]) !== key(ring[ring.length - 1])) continue;
+    const ll = ring.map((p) => [p[0] * t.scale[0] + t.translate[0], p[1] * t.scale[1] + t.translate[1]]), kx = 111.32 * Math.cos((ll[0][1] * Math.PI) / 180);
+    let area = 0, per = 0;
+    for (let i = 0; i + 1 < ll.length; i++) {
+      const ax = ll[i][0] * kx, ay = ll[i][1] * 110.57, bx = ll[i + 1][0] * kx, by = ll[i + 1][1] * 110.57;
+      area += ax * by - bx * ay; per += Math.hypot(bx - ax, by - ay);
+    }
+    area = Math.abs(area) / 2;
+    if (area < NEEDLE_KM2 && per > 0 && (4 * Math.PI * area) / (per * per) < NEEDLE_ROUND) out.push(...arcs);
+  }
+  if (out.length) { topo.needles = out.sort((a, b) => a - b); needlesMarked += out.length; }
+  return topo;
+}
 function topoFor(feats, km, q, smooth = true) {
-  const raw = server.topology({ p: { type: "FeatureCollection", features: nodeFeats(feats, q) } }, q), topo = smooth ? generalizeTopo(smoothTopo(raw)) : raw;
+  const raw = splitAtNodes(rawTopo(feats, q), q), topo = smooth ? generalizeTopo(smoothTopo(raw)) : raw;
   const pre = simplify.presimplify(topo, simplify.sphericalTriangleArea);
   const kept = new Set();
   const walk = (a) => { if (typeof a === "number") kept.add(a < 0 ? ~a : a); else if (a) a.forEach(walk); };
   pre.objects.p.geometries.forEach((g) => { if (g.properties && g.properties.keep) walk(g.arcs); });
   kept.forEach((i) => pre.arcs[i].forEach((p) => { p[2] = Infinity; }));
-  return outward(client.quantize(stripZ(simplify.simplify(pre, weightFor(km))), q));
+  const done = stripZ(simplify.simplify(pre, weightFor(km)));
+  if (!done.transform) done.bbox = WORLD_BOX.slice();
+  return outward(markNeedles(mergeTwinArcs(done.transform ? done : client.quantize(done, q))));
 }
 function outward(topo) {
   const flip = (poly) => {
@@ -1982,7 +2118,13 @@ const noteRename = (from, to) => { if (!renamedFrom.has(to)) renamedFrom.set(to,
 const SMR_CORE = ["San Marino", "Borgo Maggiore", "Acquaviva", "Chiesanuova", "Domagnano"];
 const HK_ISLAND = ["Central and Western", "Wan Chai", "Eastern", "Southern"], HK_KOWLOON = ["Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong"];
 const SMALL = [
-  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, periods: [["1719-01-23", CS_TO, "state"]] },
+  // Before Liechtenstein: the County of Vaduz (today's Oberland) and the Lordship of Schellenberg (the Unterland), both held by the
+  // counts of Hohenems from 1613, Schellenberg sold to Prince Johann Adam Andreas of Liechtenstein on 18 January 1699 and Vaduz on
+  // 22 February 1712, and the two united as the Principality of Liechtenstein by Charles VI on 23 January 1719. From 1648, when
+  // the medieval bridge (which draws them as members of the Empire) ends. All three are members of the Holy Roman Empire to 1806.
+  { name: "County of Vaduz", shape: { c: "LIE", n: ["Vaduz", "Balzers", "Planken", "Schaan", "Triesen", "Triesenberg"] }, gapKm: 4, part: { name: "Holy Roman Empire", to: 1806 }, periods: [["1648-01-01", "1719-01-22", "state"]] },
+  { name: "Lordship of Schellenberg", shape: { c: "LIE", n: ["Eschen", "Gamprin", "Mauren", "Ruggell", "Schellenberg"] }, gapKm: 4, part: { name: "Holy Roman Empire", to: 1806 }, periods: [["1648-01-01", "1719-01-22", "state"]] },
+  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, part: { name: "Holy Roman Empire", to: 1806 }, wiki: "Liechtenstein", periods: [["1719-01-23", CS_TO, "state"]] },
   { name: "Monaco", shape: { c: "MCO" }, periods: [["1419-01-01", "1792-12-31", "state"], ["1814-05-30", "1860-12-31", "protectorate", TURIN], ["1861-01-01", CS_TO, "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
@@ -2098,9 +2240,14 @@ function addSmall(list, timeOf, nameOf) {
   for (const x of carves) {
     const parts = rulerSplit(x.ref, x.first, x.last, list, nameOf);
     for (const p of parts) {
-      const sm = piece(x, p.first, p.last, p.ruler, x.polys);
-      list = carve(list, sm);
-      list.push(sm);
+      // A member of a larger body (the Holy Roman Empire) over its years: the span parted where the membership ends.
+      const pt = x.s.part, cuts = pt && p.first <= pt.to && p.last > pt.to ? [[p.first, pt.to], [pt.to + 1, p.last]] : [[p.first, p.last]];
+      for (const [a, b] of cuts) {
+        const sm = piece(x, a, b, p.ruler, x.polys);
+        if (pt && b <= pt.to) sm.part = pt.name;
+        list = carve(list, sm);
+        list.push(sm);
+      }
     }
   }
   for (const x of fills) {
@@ -2876,9 +3023,8 @@ const medieval = (list) => {
     dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
   }
   if (T.maskBridge.length) {
-    // The bridge's edge runs through the middle of Europe, between interleaved states (Venice's mainland among Milan, Mantua, Ferrara,
-    // Trent, and Friuli), so its spans are cut, never dropped whole, and the large pieces they leave beside it are kept.
-    const e = maskOut(list, T.maskBridge, MEDIEVAL_TO + 1, BRIDGE_TO, { whole: 2, keepKm2: 1500 });
+    // Since 14 November 2026 the bridge covers the table's whole main frame, so the sources are masked over it as over the table before 1445.
+    const e = maskOut(list, T.maskBridge, MEDIEVAL_TO + 1, BRIDGE_TO);
     list = e.list;
     mb = [Math.min(mb[0], e.mb[0]), Math.min(mb[1], e.mb[1]), Math.max(mb[2], e.mb[2]), Math.max(mb[3], e.mb[3])];
     dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
@@ -3853,16 +3999,36 @@ const GROUPS = [{
   // From 1445 to 1647 the medieval table's bridge draws the Empire and its members (tools/medieval-bridge.mjs), so the outline is empty
   // then: no source span becomes a member, and one Cliopatria marks as a member is freed, so no slivers of it lie between the bridge's.
   maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, MEDIEVAL_TO, ["1400"]], [MEDIEVAL_TO + 1, BRIDGE_TO, []], [BRIDGE_TO + 1, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
-  never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
+  never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/,
+  // historical-basemaps' Empire of 1650 and 1700 stops at the northern edge of a Venice drawn far into the Alps (to about 47° N), so
+  // the Habsburgs' Tyrol, Carinthia, and Gorizia south of it fell outside the Empire. They were in it (the Austrian Circle), so in
+  // these years a Habsburg or Tyrolean bishop's span is in the Empire wherever it lies in the eastern Alps, short of Venice's land
+  // of 1796 (which the Habsburgs held from 1797, outside the Empire) and of Lombardy.
+  add: { from: BRIDGE_TO + 1, names: /^(Habsburg Monarchy|County of Tyrol|Duchy of Carinthia|Prince-Bishopric of Trent|Prince-Bishopric of Brixen|(Prince-)?Archbishopric of Salzburg|Electorate of Salzburg)$/, minus: /^Republic of Venice$/, minusYear: 1796,
+    ring: [[9.4, 47.9], [9.4, 46.8], [10.45, 46.6], [10.45, 45.6], [12.0, 45.6], [13.3, 45.2], [15.0, 45.2], [15.0, 47.9], [9.4, 47.9]] }
 }, { name: BRITISH_AMERICA },
 // The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
 { name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" },
 // From 962: the Kingdom of France's great fiefs (987), Cnut's North Sea Empire (1017 to 1035), and Kievan Rus' principalities (1054 to 1240).
 { name: "Kingdom of France", from: 987, to: BRIDGE_TO }, { name: "North Sea Empire", from: 1017, to: 1035 }, { name: "Kievan Rus'", from: 1054, to: 1240 },
 // From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138 to 1319).
-{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: BRIDGE_TO }, { name: "Poland", from: 1138, to: 1319 },
+{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: 1515 }, { name: "Poland", from: 1138, to: 1319 },
 // From 1251: the Burgundian State (1384) and the Kalmar Union (1397).
-{ name: "Burgundian State", from: 1384, to: 1481 }, { name: "Habsburg Netherlands", from: 1482, to: 1548 }, { name: "Kalmar Union", from: 1397, to: BRIDGE_TO }];
+{ name: "Burgundian State", from: 1384, to: 1481 }, { name: "Habsburg Netherlands", from: 1482, to: 1548 }, { name: "Kalmar Union", from: 1397, to: 1522 }];
+// The outline a span of the group is measured against: the map's, with the group's addition (G.add) where the span is one it names.
+const addArea = new Map();
+function outlineFor(G, o, s) {
+  const A = G.add;
+  if (!A || o.b < A.from || !A.names.test(s.name)) return o.polys;
+  if (!addArea.has(G)) {
+    const ven = dated.filter((d) => A.minus.test(d.name) && d.first <= A.minusYear && d.last >= A.minusYear).flatMap((d) => d.polys);
+    const area = rewind(ven.length ? tryClip(clip.difference, [[A.ring]], ven) || [[A.ring]] : [[A.ring]]);
+    console.log("groups: " + G.name + "'s addition " + Math.round(km2Of(area)) + " km², less " + Math.round(km2Of(ven)) + " km² of " + A.minusYear);
+    addArea.set(G, area);
+  }
+  const extra = tryClip(clip.intersection, s.polys, addArea.get(G));
+  return extra && extra.length ? rewind(tryClip(clip.union, o.polys, extra) || o.polys) : o.polys;
+}
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
@@ -3878,16 +4044,17 @@ const GROUPS = [{
       const hit = outlines.filter((o) => s.last >= o.a && s.first <= o.b);
       const free = s.part === G.name && s.name !== G.name ? { ...s, part: "" } : s;
       if (s.src === "medieval") { next.push(s); continue; }
-      if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length ? free : s); continue; }
+      if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length && !s.small ? free : s); continue; }
       const area = km2Of(s.polys), segs = [];
       if (s.first < hit[0].a) segs.push({ a: s.first, b: hit[0].a - 1, kind: "out" });
       for (const o of hit) {
         const a = Math.max(s.first, o.a), b = Math.min(s.last, o.b);
-        const inter = boxHit(o.box, s.box) ? tryClip(clip.intersection, s.polys, o.polys) : [];
+        const op = outlineFor(G, o, s);
+        const inter = boxHit(o.box, s.box) || op !== o.polys ? tryClip(clip.intersection, s.polys, op) : [];
         const share = inter ? km2Of(inter) / area : 0;
         if (share >= 0.8) segs.push({ a, b, kind: "in" });
         else if (inter && (km2Of(inter) >= 3000 || (share >= 0.1 && km2Of(inter) >= 500))) {
-          const rest = tryClip(clip.difference, s.polys, o.polys);
+          const rest = tryClip(clip.difference, s.polys, op);
           if (rest) segs.push({ a, b, kind: "split", inside: rewind(inter), rest: rewind(rest) });
           else segs.push({ a, b, kind: "out" });
         } else segs.push({ a, b, kind: "out" });
@@ -3996,10 +4163,22 @@ const datedLabel = new Map();
 // The days of the changes from 1801 (see tools/dated-days.mjs), and every change day from 1800.
 const daysPath = resolve(here, "dated-days.json");
 let datedDays = [];
+{
+  const t0 = Date.now();
+  for (let n = 0; n < CHUNK_STARTS.length; n++) {
+    const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
+    const feats = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid).map((s, i) => dissolveFeat({ type: "Feature", properties: { i }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
+    noteNodes(feats, HI_Q, n); noteNodes(feats, LO_Q, n);
+  }
+  nodesReady = true;
+  const total = (q) => NODES_BY_FILE.get(q).reduce((t, x) => t + x.size, 0);
+  console.log("nodes: " + total(HI_Q) + " meeting points of borders in the dated files at the detailed grid, " + total(LO_Q) + " at the coarse, " + Math.round((Date.now() - t0) / 1000) + " s");
+}
 for (let n = 0; n < CHUNK_STARTS.length; n++) {
   const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
   const spans = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid);
   const feats = spans.map((s, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!s.keep, gen: GEN_SRC.has(s.src) }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
+  useNodes(n);
   const hi = topoFor(feats, HI_KM, HI_Q), lo = topoFor(feats, LO_KM, LO_Q);
   let dayRows = null;
   if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
@@ -4835,6 +5014,9 @@ const ownerName = (r) => {
   return hit ? hit.name : "";
 };
 const csFeats = csParts.map((r, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
+NODES.clear();
+nodesReady = false;
+console.log("lines: " + arcsSplit + " arcs cut at the meeting points of the files beside each, " + twinsMerged + " twin arcs joined, " + needlesMarked + " arcs of needles listed");
 const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q, false);
 // The coarse level leaves out pieces of land under 50 km² that pieceSpans added: at the zooms it is
 // drawn at, the page's coast fill covers them.
