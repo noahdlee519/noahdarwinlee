@@ -17,6 +17,20 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const UNITS = globalThis.CHRONIA_BRIDGE_PAIRS ? {} : JSON.parse(readFileSync(resolve(here, "medieval-bridge-units.json"), "utf8"));
 
+// The helpers of a bridge file: units(pair, names) gives a pair's units, all or those named (the unit, after the province), and
+// row(pair, timeline, names) dates their changes, as a row that inherits the owners before it.
+export function bridgeRows(add) {
+  const units = (pair, names) => {
+    const l = UNITS[pair];
+    if (!l) throw new Error("bridge: no pair " + pair + " (run bridge-pairs.mjs)");
+    if (!names) return l;
+    const out = l.filter((s) => names.includes(s.slice(s.indexOf("/") + 1)) || names.includes(s.slice(s.indexOf(":") + 1, s.indexOf("/"))) || names.includes(s.slice(0, s.indexOf(":"))));
+    if (!out.length) throw new Error("bridge: " + pair + " has none of " + names.join(", "));
+    return out;
+  };
+  return { units, row: (pair, tl, names) => add(units(pair, names), "+ " + tl), pairs: () => Object.keys(UNITS) };
+}
+
 export function bridge(h) {
   // bridge-pairs.mjs reads the table of 1444 without the bridge, whose rows all begin after it.
   if (globalThis.CHRONIA_BRIDGE_PAIRS) return;
@@ -81,6 +95,10 @@ export function bridge(h) {
   own("GENV", "Prince-Bishopric of Geneva", { wiki: "Prince-Bishopric of Geneva", part: HRE }, [["1536-05-21", { name: "Republic of Geneva", wiki: "Republic of Geneva", part: "" }]]);
   own("VALS", "Republic of the Seven Zenden", { part: "" });
   own("MASS", "Marquisate of Massa", { wiki: "Duchy of Massa and Carrara" }, [["1568-01-01", { name: "Duchy of Massa and Carrara" }]]);
+
+  // Owners the regions' bridge files share.
+  own("SPAIN", "Kingdom of Spain", { wiki: "Habsburg Spain" });
+  own("ZAPO", "Zaporozhian Cossacks", { wiki: "Zaporozhian Sich", ruler: "Grand Duchy of Lithuania", status: 5 }, [["1569-07-01", { ruler: "Polish-Lithuanian Commonwealth" }]]);
 
   // ——— Renamed or changed owners ———
   later("AUSM", [["1453-01-06", { name: "Archduchy of Austria", wiki: "Archduchy of Austria" }]]);
