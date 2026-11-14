@@ -21,6 +21,10 @@ Each entry:
 
 - Claimed by the 1886 session (session_012Avzuib4tb8ZJHvk13M4TH), 14 November 2026, at Noah's request: the County of Vaduz and the Lordship of Schellenberg from 1648 to 1719 (blank until now), Liechtenstein as a member of the Holy Roman Empire to 1806, and the Habsburgs' Tyrol, Carinthia, and Gorizia, which fell outside the Empire's outline from 1648 to 1806, put inside it.
 
+## 1445–1647 | Europe, the Maghreb, and western Anatolia | the bridge carried over the whole table
+
+- Claimed by the review session (session_012Avzuihkj455vpXDy6biTG), 14 November 2026, at Noah's request ("improve 1445–1648 … borders, depth, detail, accuracy, and ownership"): every unit of the medieval table outside the eastern frame is carried from its owner of 1444 to its owner of 1648, with the changes between dated in `tools/medieval-bridge-west.mjs`, `-south.mjs`, `-balkans.mjs`, `-north.mjs`, and `-east.mjs`. The tables are pushed; the data's rebuild is running. Please leave `medieval-bridge-units.json` and these five files to this session until the entry is finished.
+
 ## 337 BC–1982 | the world | the most pressing wrong owners from the review of 12 November 2026
 
 - What changed, by years:

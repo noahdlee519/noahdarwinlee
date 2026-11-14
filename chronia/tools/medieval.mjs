@@ -24,17 +24,17 @@
 
 import { high } from "./medieval-high.mjs";
 import { bridge } from "./medieval-bridge.mjs";
+import { bridgeWest } from "./medieval-bridge-west.mjs";
+import { bridgeSouth } from "./medieval-bridge-south.mjs";
+import { bridgeBalkans } from "./medieval-bridge-balkans.mjs";
+import { bridgeNorth } from "./medieval-bridge-north.mjs";
+import { bridgeEast } from "./medieval-bridge-east.mjs";
 
 export const MEDIEVAL_FROM = 476, MEDIEVAL_TO = 1444;
-// The bridge: from 1445 to 1647, the year before the table of 1648 (napoleonic.mjs) begins, the table goes on for the land the Holy
-// Roman Empire held on 1 July 1444, its members' and its own, so the Empire's members are drawn unit by unit from one table to
-// the other; elsewhere the sources take over in 1445.
+// The bridge: from 1445 to 1647, the year before the table of 1648 (napoleonic.mjs) begins, the table goes on for all its land but
+// the eastern frame (EXT), each unit from its owner of 1444 to its owner of 1648, with the changes between dated in medieval-bridge.mjs
+// (the Empire, the Low Countries, and Ireland) and the regions' files beside it.
 export const BRIDGE_TO = 1647;
-// The Burgundian Low Countries, Franche-Comté, and the Duchy of Burgundy (to 1477), and Silesia (a land of the Bohemian crown): not members on the map in 1444, but carried
-// by the bridge with the Empire, so that they pass with it to the Habsburgs, Spain, and the Dutch Republic. Ireland's lordships, Orkney,
-// and the Lordship of the Isles too, which the sources fold into England and Scotland from 1445, so they end at their own dates.
-const BRIDGE_ALSO = new Set(["FLA", "ART", "LOU", "HOL", "HAI", "NAM", "LUXC", "FCB", "BURD", "SILD",
-  "LIRE", "CLAB", "AIR", "NUN", "SUN", "CLAN", "MWI", "CON", "BRF", "LEI", "DESM", "THOM", "ORK", "LISL"]);
 const START = "476-01-01";
 // From 962 the table also covers Anatolia east of 40° E, the Levant, and the Caucasus (EXT), for the Seljuks, the Crusader
 // states, Georgia, and Armenia; before 962 the sources keep that land.
@@ -963,6 +963,8 @@ frontier("loire-south", F("Loire-Atlantique", "Maine-et-Loire", "Indre-et-Loire"
 
 // The bridge to 1647 (medieval-bridge.mjs), after every other row, since its rows stand on those of 1444.
 bridge({ own, later, add });
+for (const f of [bridgeWest, bridgeSouth, bridgeBalkans, bridgeNorth, bridgeEast]) f({ own, later, add, has: (k) => !!O[k] });
+if (!globalThis.CHRONIA_BRIDGE_PAIRS) later("OTT", [["1516-08-24", { host: true }]]);
 
 // ENGINE_BELOW
 const DAY_MS = 86400000;
@@ -1098,7 +1100,7 @@ export function buildMedieval(env) {
   const d1444 = dayOf(MEDIEVAL_TO + "-07-01");
   for (const p of all) {
     const o = p.ext ? null : ownerOf(p.row, d1444), a = o && o !== "-" ? attrAt(o, d1444) : null;
-    p.bridge = !!a && (a.part === "Holy Roman Empire" || a.name === "Holy Roman Empire" || BRIDGE_ALSO.has(o));
+    p.bridge = !!a;
   }
   const late = [];
   for (const p of all) { const first = p.ext ? EXT_FROM : MEDIEVAL_FROM; if (ownerOf(p.row, dayOf(first + "-01-01")) === null) late.push(p.row.what); }
@@ -1166,7 +1168,7 @@ export function buildMedieval(env) {
     for (const [i, ps] of pieces) {
       const p = ps.find((q) => !q.cons.length) || ps[0];
       const k = p && p.row ? ownerOf(p.row, d) : null;
-      if (k !== null && k !== undefined) m.set(i, { key: k, ...attrAt(k, d) });
+      if (k !== null && k !== undefined && k !== "-") m.set(i, { key: k, ...attrAt(k, d) });
     }
     return m;
   };
