@@ -1144,6 +1144,8 @@
     for (var k = 0; k < use.seen.length; k++) {
       var i = use.seen[k];
       if (use.count[i] !== 1) continue;
+      // A needle (the builder's markNeedles): two borders a hair apart, not a state's edge against ownerless land.
+      if (topo.needles) { if (!store.needle) { store.needle = new Uint8Array(topo.arcs.length); for (var q = 0; q < topo.needles.length; q++) store.needle[topo.needles[q]] = 1; } if (store.needle[i]) continue; }
       var b = bucketOf(use.first[i]);
       if (b === null) continue;
       (buckets[b] = buckets[b] || []).push(i);
