@@ -17,6 +17,10 @@ Each entry:
 
 ---
 
+## 1939–1945 | Europe | the wartime borders against the zones of control
+
+- Claimed by the 1886 session (session_012Avzuib4tb8ZJHvk13M4TH), 14 November 2026, at Noah's request: the slivers ("ghost lines") the wartime borders leave in Germany and its neighbours, Poland's partition (strips of Poland left between the General Government and the Soviet line), the political map kept apart from the front (no month-by-month Voronoi cuts on it), and the zones of control's Vichy zone and German–Soviet line.
+
 ## 1798–1799 | Rome | the Roman Republic of 1798 apart from ancient Rome's
 
 - What changed: the sister republic France set up in Rome in 1798 was a state named "Roman Republic", as ancient Rome's republic is, so the two were one polity from 500 BC to 1799 (one colour key, one card, and one tag, Rome's). It is now the Roman Republic (1798–1799), a state of its own; ancient Rome's runs to 32 BC as before, and only it keeps Rome's tag, so following Rome through time ends with the Byzantine Empire in 1453.
