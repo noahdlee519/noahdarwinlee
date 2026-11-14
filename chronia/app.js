@@ -5187,7 +5187,7 @@
   function togglePlay(back) { if (playMode === playModeOf(back)) stopPlay(); else startPlay(back); }
   $("play").addEventListener("click", function () { togglePlay(false); });
   $("play-back").addEventListener("click", function () { togglePlay(true); });
-  var lapseTagOf = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000, LAPSE_FLY = 1300, LAPSE_PAUSE = 400, LAPSE_SETTLE_MAX = 8000;
+  var lapseTagOf = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000, LAPSE_FLY = 1300, LAPSE_PAUSE = 400, LAPSE_SETTLE_MAX = 8000, LAPSE_MONTH = 50;
   function loadLapseTags() {
     fetchJSON("data/tags.json").then(function (d) {
       var byName = new Map();
@@ -5225,13 +5225,21 @@
     if (y === 0) y = first ? 1 : -1;
     return y >= MONTHLY_FROM ? monthTime(y, first ? 12 : 1) : y;
   }
+  // A month a step where the map changes by the month (from 1648), landing on the last date; a year a step before, and
+  // five years while none of its states is on the map.
   function lapseNext(t) {
+    if (!lapse.gap && isMonthly(t)) {
+      var d = dateOfDay(dayOfTime(t)), ny = d[0], nm = d[1] + 1;
+      if (nm > 12) { nm = 1; ny++; }
+      var n = monthTime(ny, nm);
+      return n > lapse.endT && t < lapse.endT - 1e-9 ? lapse.endT : n;
+    }
     var y = yearOf(t) + (lapse.gap ? 5 : 1);
     if (y > yearOf(lapse.endT)) y = Math.max(yearOf(t) + 1, yearOf(lapse.endT));
     if (y === 0) y = 1;
     return y >= MONTHLY_FROM ? monthTime(y, 1) : y;
   }
-  function lapseWait() { return lapse.gap ? lapse.pace / 2 : lapse.pace; }
+  function lapseWait() { return lapse.gap ? lapse.pace / 2 : isMonthly(now) ? LAPSE_MONTH : lapse.pace; }
   function lapseOwn(p) { var ids = lapse.f.ids; return ids.has(p.id) || (p.member >= 0 && ids.has(p.member)); }
   function lapseHas(p) { var ids = lapse.f.ids; return lapseOwn(p) || (p.ruler >= 0 && ids.has(p.ruler)) || (p.part >= 0 && ids.has(p.part)); }
   function lapseLabelAlpha(id, a) { return lapse && !(lapse.f.ids.has(id) || (lapse.shown && lapse.shown.has(id))) ? a * LAPSE_LABEL : a; }
