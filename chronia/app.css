@@ -3168,3 +3168,86 @@ select.ch-save-input {
     transition: none;
   }
 }
+
+.ch-card-follow {
+  margin: 12px 0 0;
+}
+
+.ch-card-follow[hidden] {
+  display: none;
+}
+
+.ch-follow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 5px 13px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.ch-follow-btn:hover {
+  background: var(--ch-btn-hover);
+}
+
+.ch-follow {
+  position: fixed;
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: 120px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: auto;
+  max-width: calc(100vw - 2 * var(--ch-gap));
+  padding: 7px 8px 7px 16px;
+  color: var(--ink);
+  transform: translateX(-50%);
+  box-shadow: 0 4px 16px rgba(40, 28, 16, 0.18);
+}
+
+.ch-follow[hidden] {
+  display: none;
+}
+
+.ch-follow-line {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 15px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ch-follow-tag {
+  font-family: var(--ch-sc);
+  letter-spacing: 0.03em;
+}
+
+.ch-follow-sep {
+  margin: 0 9px;
+  color: var(--ch-faint);
+}
+
+.ch-follow-name {
+  color: var(--ch-muted);
+}
+
+.ch-follow-stop {
+  flex: none;
+  min-height: 32px;
+}
+
+@media (pointer: coarse) {
+  .ch-follow-btn,
+  .ch-follow-stop {
+    min-height: 40px;
+  }
+}

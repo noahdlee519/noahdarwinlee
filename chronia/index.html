@@ -291,6 +291,12 @@
         <p class="ch-wiki-by" id="divnote-by"></p>
       </div>
       <p class="ch-card-facts" id="card-facts"></p>
+      <p class="ch-card-follow" id="card-follow" hidden>
+        <button type="button" class="ch-follow-btn" id="card-follow-btn">
+          <svg class="ch-ico" width="12" height="12" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="currentColor"><path d="M8 4v24l20-12z" /></svg>
+          <span id="card-follow-text"></span>
+        </button>
+      </p>
       <div class="ch-wiki" id="wiki" aria-live="polite">
         <button type="button" class="ch-wiki-zoom" id="wiki-zoom" aria-label="See the picture larger" data-tip="See it larger" hidden><img class="ch-wiki-img" id="wiki-img" alt="" /></button>
         <p class="ch-wiki-text" id="wiki-text"></p>
@@ -418,6 +424,10 @@
       </button>
     </div>
 
+    <div class="ch-layers ch-follow" id="follow" aria-label="Following a country through time" hidden>
+      <p class="ch-follow-line"><span class="ch-follow-tag" id="follow-tag"></span><span class="ch-follow-sep" aria-hidden="true">|</span><span class="ch-follow-name" id="follow-name"></span></p>
+      <button type="button" class="ch-invite-later ch-follow-stop" id="follow-stop">Stop</button>
+    </div>
     <div class="ch-tour" id="tour" hidden>
       <div class="ch-tour-spot" id="tour-spot"></div>
       <div class="ch-layers ch-invite ch-tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-text">

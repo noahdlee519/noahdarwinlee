@@ -10,6 +10,7 @@ import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-c
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
 import { makeSoften } from "./soften.mjs";
+import { TAGS, tagsJSON } from "./country-tags.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -52,68 +53,7 @@ const HI_Q = 2e5, LO_Q = 2e4;
 const CS_HI_KM = 0.5, CS_HI_Q = 5e5, FINE_KM = 0.15, FINE_Q = 1e6;
 const weightFor = (km) => (km / R_KM) ** 2;
 
-// Country tags: a country keeps its tag under all its names (France as the Kingdom of France, the French Empire, or the Third
-// Republic), and with it its colours: the first its own, the next two the shades it takes, in that order, where a neighbour has its
-// colour. The shades were the palette's two nearest the first as seen (see SHADES) when the tags were written, in November 2026,
-// and may be set by hand. A state with no tag has the colour of its own name, and SHADES's shades.
-const TAGS = [
-  ["Britain", [3, 2, 1], ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland"]],
-  ["France", [7, 5, 6], ["West Francia", "French Fourth Republic", "Kingdom of France", "France", "Vichy France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"]],
-  ["Russia", [8, 9, 2], ["Principality of Vladimir-Suzdal", "Grand Duchy of Moscow", "Grand Principality of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"]],
-  ["China", [9, 0, 2], ["Han", "Han Empire", "Han dynasty", "Jin", "Sui Empire", "Sui dynasty", "Tang Empire", "Tang dynasty", "Song Empire", "Northern Song", "Southern Song", "Yuan dynasty", "Ming Empire", "Ming Chinese Empire", "Ming dynasty", "Manchu Empire", "Qing Empire", "Qing dynasty", "China"]],
-  ["United States", [6, 7, 4], ["United States of America", "United States"]],
-  ["Slovakia", [7, 5, 6], ["Slovak Republic", "Slovakia"]],
-  ["Croatia", [5, 4, 7], ["Independent State of Croatia", "Croatia"]],
-  ["Spain", [0, 1, 9], ["County of Castile", "Kingdom of Castile", "Castile", "Crown of Castile", "Spain", "Kingdom of Spain", "Spanish Habsburg", "Habsburg Spain", "First Spanish Republic"]],
-  ["Portugal", [6, 7, 4], ["County of Portugal", "Portugal", "Kingdom of Portugal"]],
-  ["Netherlands", [1, 0, 3], ["Dutch Republic", "United Provinces", "Batavian Republic", "Kingdom of Holland", "Sovereign Principality of the United Netherlands", "United Kingdom of Netherlands", "Netherlands"]],
-  ["Germany", [9, 0, 2], ["Duchy of Prussia", "Brandenburg", "Margraviate of Brandenburg", "Electorate of Brandenburg", "Brandenburg-Prussia", "Prussia", "Kingdom of Prussia", "North German Confederation", "German Empire", "Germany", "West Germany"]],
-  ["Austria", [2, 3, 9], ["Margraviate of Austria", "Duchy of Austria", "Archduchy of Austria", "Habsburg Monarchy", "House of Habsburg", "Austrian Empire", "Austro-Hungarian Empire", "Austria-Hungary", "Austria"]],
-  ["Turkey", [1, 0, 3], ["Ottoman Empire", "Turkey"]],
-  ["Switzerland", [3, 2, 1], ["Swiss Confederation", "Switzerland"]],
-  ["Asante", [4, 5, 3], ["Asante", "Ashanti Empire"]],
-  ["Alodia", [2, 3, 9], ["Alwa", "Alodia"]],
-  ["Iran", [9, 0, 2], ["Safavid Empire", "Safavid dynasty", "Safavid Iran", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Qajar Iran", "Persia", "Iran"]],
-  ["Japan", [5, 4, 7], ["Asuka Japan", "Nara Japan", "Heian Japan", "Kamakura Shogunate", "Imperial Japan (Fujiwara)", "Ashikaga Shogunate", "Warring States Japan", "Tokugawa shogunate", "Tokugawa Shogunate", "Japan", "Empire of Japan"]],
-  ["Rome", [9, 0, 2], ["Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"]],
-  ["Italy", [8, 9, 2], ["County of Savoy", "House of Savoy", "Duchy of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"]],
-  ["Brazil", [8, 9, 2], ["Colonial Brazil", "Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"]],
-  ["Thailand", [0, 1, 9], ["Ayutthaya", "Ayutthaya Kingdom", "Thonburi Kingdom", "Rattanakosin Kingdom", "Siam", "Thailand"]],
-  ["Ethiopia", [5, 4, 7], ["Abyssinia", "Ethiopian Empire", "Ethiopia"]],
-  ["Poland", [4, 5, 3], ["Duchy of Poland", "Kingdom of Poland", "Poland-Lithuania", "Polish-Lithuanian Commonwealth", "Poland"]],
-  ["Denmark", [3, 2, 1], ["Kingdom of Denmark", "Denmark-Norway", "Denmark"]],
-  ["Sweden", [7, 5, 6], ["Kingdom of Sweden", "Swedish Empire", "Sweden", "United Kingdoms of Sweden and Norway", "Sweden–Norway"]],
-  ["India", [1, 0, 3], ["Mughal Empire", "India"]],
-  ["Greece", [6, 7, 4], ["First Hellenic Republic", "Kingdom of Greece", "Greece"]],
-  ["Serbia", [2, 3, 9], ["Revolutionary Serbia", "Principality of Serbia", "Kingdom of Serbia", "Serbia"]],
-  ["Romania", [0, 1, 9], ["United Principalities of Moldavia and Wallachia", "Principality of Romania", "Kingdom of Romania", "Romania"]],
-  ["Montenegro", [4, 5, 3], ["Prince-Bishopric of Montenegro", "Principality of Montenegro", "Kingdom of Montenegro", "Montenegro"]],
-  ["Bulgaria", [9, 0, 2], ["Principality of Bulgaria", "Bulgaria"]],
-  ["Korea", [7, 5, 6], ["Joseon", "Korean Empire", "Korea"]],
-  ["British India", [1, 0, 3], ["British India", "British Raj"]],
-  ["Transvaal", [5, 4, 7], ["South African Republic", "Transvaal", "Transvaal Colony"]],
-  ["Orange Free State", [2, 3, 9], ["Orange Free State", "Orange River Colony"]],
-  ["Greenland", [3, 2, 1], ["Danish Greenland", "Greenland"]],
-  ["Bornu", [2, 3, 9], ["Bornu Empire", "Kanem-Bornu"]],
-  ["Toucouleur", [4, 5, 3], ["Toucouleur Empire", "Tukular Caliphate"]],
-  ["Egypt", [0, 1, 9], ["Early Dynastic Period of Egypt", "Old Kingdom of Egypt", "Middle Kingdom of Egypt", "New Kingdom of Egypt", "Twenty-first Dynasty of Egypt", "Twenty-second Dynasty of Egypt", "Twenty-sixth Dynasty of Egypt", "Thirtieth Dynasty of Egypt", "Egypt", "Khedivate of Egypt"]],
-  ["Afghanistan", [6, 7, 4], ["Durrani Empire", "Emirate of Afghanistan", "Afghanistan"]],
-  ["Bukhara", [2, 3, 9], ["Khanate of Bukhara", "Emirate of Bukhara", "Bukhara"]],
-  ["Haiti", [9, 0, 2], ["Republic of Haiti", "Empire of Haiti", "Haiti"]],
-  ["Argentina", [6, 7, 4], ["Argentine Confederation", "Argentina"]],
-  ["Nepal", [6, 7, 4], ["Gorkha Kingdom", "Kingdom of Nepal", "Nepal"]],
-  ["Sikh Empire", [8, 9, 2], ["Sikh Confederacy", "Sikh Empire"]],
-  ["Mexico", [4, 5, 3], ["Viceroyalty of New Spain", "First Mexican Empire", "Federated Republic of Mexico", "Centralist Mexico", "Second Mexican Empire", "Mexico"]],
-  ["Sri Lanka", [4, 5, 3], ["Ceylon", "Sri Lanka"]],
-  ["Burma", [8, 9, 2], ["First Toungoo Empire", "Konbaung dynasty", "Burma", "Myanmar"]],
-  ["Benin", [5, 4, 7], ["Dahomey", "Benin"]],
-  ["Burkina Faso", [2, 3, 9], ["Upper Volta", "Burkina Faso"]],
-  ["Ghana", [4, 5, 3], ["Gold Coast", "Ghana"]],
-  ["Malawi", [7, 5, 6], ["Nyasaland", "Malawi"]],
-  ["Zambia", [0, 1, 9], ["Northern Rhodesia", "Zambia"]],
-  ["Zimbabwe", [4, 5, 3], ["Southern Rhodesia", "Rhodesia", "Zimbabwe"]],
-  ["Congo", [2, 3, 9], ["Congo Free State", "Belgian Congo", "Congo-Léopoldville", "Zaire", "DR Congo"]],
-];
+// Country tags (TAGS, in country-tags.mjs): a country keeps its tag, and its colours, under all its names.
 const LINEAGE = TAGS.map((t) => t[2]);
 const RULER_ALIAS = {
   "United Kingdom": "United Kingdom of Great Britain and Ireland",
@@ -5360,6 +5300,7 @@ const firmPairs = FIRM.map(([a, b, y0, y1]) => [pairIds(a, "FIRM"), pairIds(b, "
 const vaguePairs = VAGUE.map(([a, b, d0, d1]) => [pairIds(a, "VAGUE"), pairIds(b, "VAGUE"), dayOf(d0), dayOf(d1)]).filter(([a, b]) => a.length && b.length);
 console.log("borders: " + firmPairs.length + " treaty borders before 1886, " + vaguePairs.length + " unsettled ones after");
 writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, borders: { firm: firmPairs, vague: vaguePairs }, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
+writeFileSync(resolve(out, "tags.json"), tagsJSON() + "\n");
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);
 let polys = landGeom.coordinates.filter((poly) => d3.geoArea({ type: "Polygon", coordinates: poly }) * R_KM * R_KM > 4);

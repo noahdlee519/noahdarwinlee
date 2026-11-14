@@ -1628,6 +1628,7 @@
     ctx.setLineDash([]);
     ctx.restore();
     if (sp) drawSelected(snap, L, sp.id);
+    if (lapse) drawLapseWash(snap, L, landPath);
     if (flat) ctx.restore();
 
     if (perf) pmark("borders");
@@ -3108,8 +3109,9 @@
       for (var j = 0; j < it.geo.boxes.length; j++) placed.push(it.geo.boxes[j]);
       placedLabels.push({ name: it.name, x: it.geo.x, y: it.geo.y, size: it.f, kind: it.people ? "people" : "polity", id: it.id, ang: it.geo.ang, lines: it.geo.lines.length,
         box: boundsOf(it.geo.boxes), boxes: it.geo.boxes, sea: !!it.sea });
-      drawLabelItem(it, it.geo, a);
-      if (warring && warring.has(it.id)) { var sb = drawSword(it, it.geo, a); if (sb) placed.push(sb); }
+      var la = lapseLabelAlpha(it.id, a);
+      drawLabelItem(it, it.geo, la);
+      if (warring && warring.has(it.id)) { var sb = drawSword(it, it.geo, la); if (sb) placed.push(sb); }
     }
     var scale = (flat ? FB.k : B.r) / GU;
     labelFading = labelFading.filter(function (x) {
@@ -3971,6 +3973,7 @@
   function stopInertia() { if (inertia) { cancelAnimationFrame(inertia.raf); inertia = null; } }
   canvas.addEventListener("pointerdown", function (e) {
     stopInertia();
+    lapseHold();
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     hideTip();
@@ -4085,6 +4088,7 @@
   canvas.addEventListener("wheel", function (e) {
     e.preventDefault();
     stopInertia();
+    lapseHold();
     var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     zoomAt(view.zoom * Math.exp(-dy * 0.0016), e.clientX, e.clientY);
   }, { passive: false });
@@ -4859,8 +4863,10 @@
   var PLAY = { yearlyFrom: 1200, map: 1400, early: 60, year: 250, month: 60, load: 100 };
   var playTimer = 0, playMode = "";
   // Play runs to the present month, the end of the timeline (after 2019 the map is the last day of the data, while the date runs on).
-  function playEnd() { return modern ? lastTime() : dated ? dated.to : maps[maps.length - 1].y; }
+  function playEnd() { return lapse ? lapse.endT : dataEnd(); }
+  function dataEnd() { return modern ? lastTime() : dated ? dated.to : maps[maps.length - 1].y; }
   function playNext(t) {
+    if (lapse) return lapseNext(t);
     if (isMonthly(t)) {
       var d = dateOfDay(dayOfTime(t)), y = d[0], m = d[1] + 1;
       if (m > 12) { m = 1; y++; }
@@ -4897,6 +4903,7 @@
     return prev === 0 ? -1 : prev;
   }
   function playWait(from, to) {
+    if (lapse) return lapseWait();
     if (isMonthly(to)) return PLAY.month;
     if (to <= PLAY.yearlyFrom) return isDated(to) ? PLAY.early : PLAY.map;
     return PLAY.year;
@@ -5012,13 +5019,13 @@
     var mode = playModeOf(back);
     if (playTimer) { playMode = mode; syncPlayButtons(); return; }
     if (back) { if (now <= FIRST_T + 1e-9 || now > playEnd() + 1e-9) setTime(playEnd()); }
-    else if (now >= playEnd() - 1e-9) setTime(FIRST_T);
+    else if (now >= playEnd() - 1e-9 || (lapse && now < lapse.startT - 1e-9)) setTime(lapse ? lapse.startT : FIRST_T);
     playMode = mode;
     syncPlayButtons();
     prepareAhead(now);
     var tick = function () {
       var wait = playStep();
-      if (wait < 0) stopPlay(); else playTimer = setTimeout(tick, playDelay(wait));
+      if (wait < 0) { stopPlay(); lapseDone(); } else playTimer = setTimeout(tick, playDelay(wait));
     };
     playTimer = setTimeout(tick, playDelay(playWait(now, now)));
     prefetchPlay(now);
@@ -5031,6 +5038,206 @@
   function togglePlay(back) { if (playMode === playModeOf(back)) stopPlay(); else startPlay(back); }
   $("play").addEventListener("click", function () { togglePlay(false); });
   $("play-back").addEventListener("click", function () { togglePlay(true); });
+  var lapseTagOf = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000;
+  function loadLapseTags() {
+    fetchJSON("data/tags.json").then(function (d) {
+      var byName = new Map();
+      catalogue.forEach(function (e, id) { if (!byName.has(e[0])) byName.set(e[0], []); byName.get(e[0]).push(id); });
+      lapseTagOf = new Map();
+      d.forEach(function (t) {
+        var ids = [];
+        t[1].forEach(function (n) { (byName.get(n) || []).forEach(function (id) { ids.push(id); }); });
+        var tag = { name: t[0], ids: ids };
+        ids.forEach(function (id) { lapseTagOf.set(id, tag); });
+      });
+      syncLapseBtn();
+    }).catch(function () {});
+  }
+  function spanOf(id) {
+    var e = catalogue[id], lo = Infinity, hi = -Infinity;
+    [e[6], e[5]].forEach(function (s) { if (s) { lo = Math.min(lo, s[0]); hi = Math.max(hi, s[1]); } });
+    return lo <= hi ? [lo, hi] : null;
+  }
+  function lapseFor(id) {
+    var e = catalogue[id];
+    if (!e || e[4]) return null;
+    var tag = lapseTagOf ? lapseTagOf.get(id) : null, ids = tag ? tag.ids : [id], lo = Infinity, hi = -Infinity;
+    ids.forEach(function (i) { var s = spanOf(i); if (s) { lo = Math.min(lo, s[0]); hi = Math.max(hi, s[1]); } });
+    if (!(hi - lo >= LAPSE_MIN_YEARS)) return null;
+    return { tag: tag ? tag.name : "", id: id, ids: new Set(ids), from: lo, to: hi };
+  }
+  function syncLapseBtn() {
+    var f = selected >= 0 && !selCity && !card.hidden ? lapseFor(selected) : null;
+    $("card-follow").hidden = !f;
+    if (f) $("card-follow-text").textContent = f.tag ? "Follow " + f.tag + " through time" : "Follow it through time";
+  }
+  $("card-follow-btn").addEventListener("click", function () { if (selected >= 0) startLapse(selected); });
+  function lapseTime(y, first) {
+    if (y === 0) y = first ? 1 : -1;
+    return y >= MONTHLY_FROM ? monthTime(y, first ? 12 : 1) : y;
+  }
+  function lapseNext(t) {
+    var y = yearOf(t) + (lapse.gap ? 5 : 1);
+    if (y > yearOf(lapse.endT)) y = Math.max(yearOf(t) + 1, yearOf(lapse.endT));
+    if (y === 0) y = 1;
+    return y >= MONTHLY_FROM ? monthTime(y, 1) : y;
+  }
+  function lapseWait() { return lapse.gap ? lapse.pace / 2 : lapse.pace; }
+  function lapseHas(p) { return lapse.f.ids.has(p.id) || (p.member >= 0 && lapse.f.ids.has(p.member)); }
+  function lapseLabelAlpha(id, a) { return lapse && !lapse.f.ids.has(id) ? a * LAPSE_LABEL : a; }
+  function lapseHold() { if (lapse) { lapse.holdUntil = performance.now() + LAPSE_HOLD; lapse.v = { lon: 0, lat: 0, z: 0 }; } }
+  function lapseFree() {
+    var top = 0, bottom = H;
+    ["top", "time", "follow"].forEach(function (id) {
+      var el = $(id);
+      if (!el || el.hidden) return;
+      var r = el.getBoundingClientRect();
+      if (!r.height) return;
+      if ((r.top + r.bottom) / 2 < H / 2) top = Math.max(top, r.bottom); else bottom = Math.min(bottom, r.top);
+    });
+    return bottom - top > H / 4 ? { top: top, bottom: bottom } : { top: 0, bottom: H };
+  }
+  function lapseBox(snap) {
+    var pieces = [], tot = 0, areaBy = new Map();
+    snap.polys.forEach(function (p, i) {
+      if (!p || !lapseHas(p)) return;
+      var g = featOf(snap.topo.lo, "lo", snap.geoms.lo[i]).geo.geometry;
+      if (!g) return;
+      var shapes = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+      shapes.forEach(function (c) {
+        var f = { type: "Polygon", coordinates: c }, a = d3.geoArea(f);
+        if (a > TAU) { f = { type: "Polygon", coordinates: c.map(function (r) { return r.slice().reverse(); }) }; a = 2 * TAU - a; }
+        pieces.push({ f: f, a: a });
+        tot += a;
+        var own = lapse.f.ids.has(p.id) ? p.id : p.member;
+        areaBy.set(own, (areaBy.get(own) || 0) + a);
+      });
+    });
+    if (!pieces.length || !(tot > 0)) return null;
+    pieces.sort(function (x, y) { return y.a - x.a; });
+    var kept = [], sum = 0;
+    for (var k = 0; k < pieces.length && (k === 0 || sum < 0.9 * tot); k++) { kept.push(pieces[k].f); sum += pieces[k].a; }
+    var b = d3.geoBounds({ type: "GeometryCollection", geometries: kept }), w = b[0][0], s = b[0][1], e = b[1][0], n = b[1][1];
+    if (e < w) e += 360;
+    var big = -1, bigA = -1;
+    areaBy.forEach(function (a, id) { if (a > bigA) { bigA = a; big = id; } });
+    var wide = s < 0 && n > 0 ? 1 : Math.max(Math.cos(s * D2R), Math.cos(n * D2R));
+    return { lon: wrap180((w + e) / 2), lat: (s + n) / 2, wKm: Math.max(150, (e - w) * 111.32 * wide), hKm: Math.max(150, (n - s) * 110.57), id: big };
+  }
+  function lapseAim(snap) {
+    var box = lapseBox(snap);
+    lapse.gap = !box;
+    var name = box ? polityName(box.id) : "Not on the map";
+    if (name !== lapse.name) { lapse.name = name; $("follow-name").textContent = name; }
+    if (!box) return;
+    lapse.lastId = box.id;
+    var fr = lapseFree(), m = 36, zr = zoomRange(), base = flat ? baseK : baseR;
+    var S = R_KM * 0.88 * Math.min((W - 2 * m) / box.wKm, (fr.bottom - fr.top - 2 * m) / box.hKm);
+    S = Math.max(zr[0] * base, Math.min(Math.min(LAPSE_MAX_S, zr[1] * base), S));
+    var dy = (fr.top + fr.bottom) / 2 - H / 2;
+    lapse.target = { lon: box.lon, lat: Math.max(-80, Math.min(80, box.lat + dy / (S / R_KM) / 110.57)), zoom: S / base, S: S };
+  }
+  function lapseLoop(ts) {
+    if (!lapse) return;
+    lapse.raf = requestAnimationFrame(lapseLoop);
+    var dt = lapse.last ? Math.min(0.1, (ts - lapse.last) / 1000) : 0;
+    lapse.last = ts;
+    if (current && current.key !== lapse.key && playLoaded()) { lapse.key = current.key; lapseAim(current); }
+    if (lapse.fly) {
+      if (!lapse.target) {
+        if (lapse.key && ts - lapse.t0 > 3000) { lapse.fly = false; lapse.playAt = ts; }
+        return;
+      }
+      lapse.fly = false;
+      flyTo(lapse.target.lon, lapse.target.lat, lapse.target.S);
+      lapse.holdUntil = ts + (reduceMotion ? 0 : 1400);
+      lapse.playAt = ts + (reduceMotion ? 600 : 1900);
+      return;
+    }
+    if (lapse.playAt && ts >= lapse.playAt) { lapse.playAt = 0; startPlay(false); }
+    var t = lapse.target;
+    if (!t || ts < lapse.holdUntil || pointers.size) return;
+    var ex = wrap180(t.lon - view.lon), ey = t.lat - view.lat, ez = Math.log(t.zoom / view.zoom), v = lapse.v;
+    if (reduceMotion) {
+      if (Math.abs(ex) + Math.abs(ey) + Math.abs(ez) < 1e-6) return;
+      view.lon = t.lon; view.lat = t.lat; view.zoom = t.zoom;
+      applyView(); nudge();
+      return;
+    }
+    if (Math.abs(ex) < 0.005 && Math.abs(ey) < 0.005 && Math.abs(ez) < 0.001 && Math.abs(v.lon) + Math.abs(v.lat) < 0.01 && Math.abs(v.z) < 0.002) return;
+    var w = LAPSE_SPRING;
+    v.lon += (w * w * ex - 2 * w * v.lon) * dt;
+    v.lat += (w * w * ey - 2 * w * v.lat) * dt;
+    v.z += (w * w * ez - 2 * w * v.z) * dt;
+    view.lon = wrap180(view.lon + v.lon * dt);
+    view.lat = Math.max(-85, Math.min(85, view.lat + v.lat * dt));
+    view.zoom *= Math.exp(v.z * dt);
+    applyView(); nudge();
+  }
+  function placeLapseBar() {
+    var bar = $("follow");
+    if (bar.hidden) return;
+    var low = innerHeight, me = bar.getBoundingClientRect();
+    ["top", "time", "key", "changes", "wars"].forEach(function (id) {
+      var el = $(id), r = el && !el.hidden ? el.getBoundingClientRect() : null;
+      if (!r || !r.height || (r.top + r.bottom) / 2 < innerHeight / 2) return;
+      if (id !== "top" && id !== "time" && (r.right < me.left || r.left > me.right)) return;
+      low = Math.min(low, r.top);
+    });
+    bar.style.bottom = Math.round(innerHeight - low + 10) + "px";
+  }
+  function startLapse(id) {
+    var f = lapseFor(id);
+    if (!f) return;
+    endLapse();
+    stopPlay();
+    closeCard();
+    lapse = { f: f, startT: lapseTime(f.from, true), endT: Math.min(lapseTime(f.to, false), dataEnd()), pace: Math.max(40, Math.min(400, LAPSE_SECONDS * 1000 / (f.to - f.from + 1))),
+      key: "", target: null, gap: false, name: "", lastId: id, fly: true, playAt: 0, holdUntil: 0, v: { lon: 0, lat: 0, z: 0 }, last: 0, t0: performance.now(), raf: 0, timer: 0 };
+    $("follow-tag").textContent = f.tag || polityName(id);
+    $("follow-name").textContent = "";
+    $("follow").hidden = false;
+    placeLapseBar();
+    setTime(lapse.startT);
+    lapse.raf = requestAnimationFrame(lapseLoop);
+    scheduleRender();
+    try { $("follow-stop").focus({ preventScroll: true }); } catch (e) {}
+  }
+  function endLapse() {
+    if (!lapse) return;
+    cancelAnimationFrame(lapse.raf);
+    clearTimeout(lapse.timer);
+    lapse = null;
+    stopPlay();
+    $("follow").hidden = true;
+    scheduleRender();
+  }
+  function lapseDone() {
+    var was = lapse;
+    if (!was) return;
+    was.timer = setTimeout(function () {
+      if (lapse !== was) return;
+      var id = was.lastId;
+      endLapse();
+      if (id >= 0 && current && current.byId.has(id)) select(id);
+    }, 1200);
+  }
+  function drawLapseWash(snap, L, landPath) {
+    var shape = new Path2D(), any = false;
+    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && lapseHas(p)) { traceAll(shape, L.feats[i]); any = true; } }
+    ctx.save();
+    ctx.clip(landPath);
+    if (any) { var out = new Path2D(); out.rect(-10, -10, W + 20, H + 20); out.addPath(shape); ctx.clip(out, "evenodd"); }
+    ctx.globalAlpha = LAPSE_WASH;
+    ctx.fillStyle = pal.paper;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+  $("follow-stop").addEventListener("click", endLapse);
+  window.addEventListener("keydown", function (e) {
+    if (lapse && e.key === "Escape" && !panelsOpen()) { e.preventDefault(); endLapse(); }
+  }, true);
+  window.addEventListener("resize", function () { if (lapse) { placeLapseBar(); lapse.key = ""; } });
 
   function setFlat(on) {
     if (on === flat) return;
@@ -5170,6 +5377,7 @@
   function renderCard() {
     var click = cardClick;
     cardClick = false;
+    syncLapseBtn();
     if (selCity) { renderCityCard(click); return; }
     if (selected < 0 || !catalogue[selected]) return;
     var e = catalogue[selected], p = current ? current.byId.get(selected) : null;
@@ -6057,7 +6265,8 @@
     try { if (Date.now() - (+localStorage.getItem(INVITE_STORE) || 0) < INVITE_AGAIN_DAYS * DAY_MS) return false; } catch (e) {}
     return true;
   }
-  function panelOpen() { return !layersPanel.hidden || !savePanel.hidden || !reportPanel.hidden || !accountPanel.hidden || !$("search").hidden || about.classList.contains("is-open") || !$("tour").hidden; }
+  function panelOpen() { return panelsOpen() || !!lapse; }
+  function panelsOpen() { return !layersPanel.hidden || !savePanel.hidden || !reportPanel.hidden || !accountPanel.hidden || !$("search").hidden || about.classList.contains("is-open") || !$("tour").hidden; }
   function showInvite() {
     inviteDone = true;
     $("invite").hidden = false;
@@ -7886,6 +8095,7 @@
     ]).then(function (r) {
       var idx = r[0];
       catalogue = idx.polities;
+      loadLapseTags();
       if (idx.borders) { borderPairs = idx.borders; bordersKnown = true; }
       colourMarks();
       maps = idx.maps.map(function (m) { return { y: m[0], file: "data/" + m[1], snap: null, loading: null }; });
