@@ -946,9 +946,14 @@
     var n = d.rows.length;
     d.dayFrom = new Array(n); d.dayTo = new Array(n); d.dayKnown = new Array(n);
     for (var i = 0; i < n; i++) { d.dayFrom[i] = d.rows[i][2] < 1000 ? -1e9 : dayFromDate(d.rows[i][2], 1, 1); d.dayTo[i] = dayFromDate(d.rows[i][3], 12, 31); d.dayKnown[i] = 0; }
+    // A span that ends in the file's last year, or begins in its first, changes hands with one in the neighbouring file, which this
+    // date never loads: its day there is left at the year's end or beginning, so no land lies ownerless between the two (Piedmont
+    // from 10 November to 31 December 1859, when the spans to the Treaty of Zurich had ended and those after it lay in the file of 1860).
+    var first = dayFromDate(d.from, 1, 1), last = dayFromDate(d.to, 12, 31);
     (d.days || []).forEach(function (x) {
-      if (x[1] !== null) { d.dayFrom[x[0]] = x[1]; d.dayKnown[x[0]] |= 1; }
-      if (x[2] !== null) { d.dayTo[x[0]] = x[2]; d.dayKnown[x[0]] |= 2; }
+      var r = d.rows[x[0]];
+      if (x[1] !== null && !(r[2] === d.from && x[1] > first)) { d.dayFrom[x[0]] = x[1]; d.dayKnown[x[0]] |= 1; }
+      if (x[2] !== null && !(r[3] === d.to && x[2] < last)) { d.dayTo[x[0]] = x[2]; d.dayKnown[x[0]] |= 2; }
     });
   }
   function datedSnap(k, t) {
