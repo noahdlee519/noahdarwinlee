@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1798–1799 | Rome | the Roman Republic of 1798 apart from ancient Rome's
+
+- What changed: the sister republic France set up in Rome in 1798 was a state named "Roman Republic", as ancient Rome's republic is, so the two were one polity from 500 BC to 1799 (one colour key, one card, and one tag, Rome's). It is now the Roman Republic (1798–1799), a state of its own; ancient Rome's runs to 32 BC as before, and only it keeps Rome's tag, so following Rome through time ends with the Byzantine Empire in 1453.
+- Tables: `tools/napoleonic.mjs` (`ROMR`'s name); the data's one row of it (in `data/dated/1750.json`) and its polity in `data/eras.json` were split by hand to match, which the next build does itself.
+- Sources: (1) Wikipedia, "Roman Republic (1798–1799)", the article the polity already linked to; (2) Wikidata, Q175881 (Roman Republic, 1798–1799) as apart from Q17167 (the ancient republic), as in `tools/capitals-wikidata.json`.
+- Confidence: high; a naming fix, with no change of land.
+- Alternatives: "Roman Republic" for both on the map, kept apart by a key that isn't shown, which the page's lookups by name (tags, colours, edits) don't yet allow.
+- Left out: the Roman Republic of 1849, which the table doesn't draw.
+
 ## 1648–1806 | the Alps | Vaduz, Schellenberg, and Liechtenstein; the Empire's border in Tyrol and Carinthia
 
 - Claimed by the 1886 session (session_012Avzuib4tb8ZJHvk13M4TH), 14 November 2026, at Noah's request: the County of Vaduz and the Lordship of Schellenberg from 1648 to 1719 (blank until now), Liechtenstein as a member of the Holy Roman Empire to 1806, and the Habsburgs' Tyrol, Carinthia, and Gorizia, which fell outside the Empire's outline from 1648 to 1806, put inside it.

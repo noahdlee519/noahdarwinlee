@@ -5038,7 +5038,7 @@
   function togglePlay(back) { if (playMode === playModeOf(back)) stopPlay(); else startPlay(back); }
   $("play").addEventListener("click", function () { togglePlay(false); });
   $("play-back").addEventListener("click", function () { togglePlay(true); });
-  var lapseTagOf = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000;
+  var lapseTagOf = null, lapse = null, LAPSE_MIN_YEARS = 30, LAPSE_SECONDS = 75, LAPSE_WASH = 0.6, LAPSE_LABEL = 0.4, LAPSE_SPRING = 2.4, LAPSE_MAX_S = 6000, LAPSE_HOLD = 4000, LAPSE_FLY = 1300, LAPSE_PAUSE = 400, LAPSE_SETTLE_MAX = 8000;
   function loadLapseTags() {
     fetchJSON("data/tags.json").then(function (d) {
       var byName = new Map();
@@ -5083,8 +5083,9 @@
     return y >= MONTHLY_FROM ? monthTime(y, 1) : y;
   }
   function lapseWait() { return lapse.gap ? lapse.pace / 2 : lapse.pace; }
-  function lapseHas(p) { return lapse.f.ids.has(p.id) || (p.member >= 0 && lapse.f.ids.has(p.member)); }
-  function lapseLabelAlpha(id, a) { return lapse && !lapse.f.ids.has(id) ? a * LAPSE_LABEL : a; }
+  function lapseOwn(p) { var ids = lapse.f.ids; return ids.has(p.id) || (p.member >= 0 && ids.has(p.member)); }
+  function lapseHas(p) { var ids = lapse.f.ids; return lapseOwn(p) || (p.ruler >= 0 && ids.has(p.ruler)) || (p.part >= 0 && ids.has(p.part)); }
+  function lapseLabelAlpha(id, a) { return lapse && !(lapse.f.ids.has(id) || (lapse.shown && lapse.shown.has(id))) ? a * LAPSE_LABEL : a; }
   function lapseHold() { if (lapse) { lapse.holdUntil = performance.now() + LAPSE_HOLD; lapse.v = { lon: 0, lat: 0, z: 0 }; } }
   function lapseFree() {
     var top = 0, bottom = H;
@@ -5100,7 +5101,7 @@
   function lapseBox(snap) {
     var pieces = [], tot = 0, areaBy = new Map();
     snap.polys.forEach(function (p, i) {
-      if (!p || !lapseHas(p)) return;
+      if (!p || !lapseOwn(p)) return;
       var g = featOf(snap.topo.lo, "lo", snap.geoms.lo[i]).geo.geometry;
       if (!g) return;
       var shapes = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
@@ -5150,14 +5151,17 @@
       }
       lapse.fly = false;
       flyTo(lapse.target.lon, lapse.target.lat, lapse.target.S);
-      lapse.holdUntil = ts + (reduceMotion ? 0 : 1400);
-      lapse.playAt = ts + (reduceMotion ? 600 : 1900);
+      lapse.holdUntil = ts + (reduceMotion ? 0 : LAPSE_FLY);
+      lapse.settling = ts;
       return;
     }
     if (lapse.playAt && ts >= lapse.playAt) { lapse.playAt = 0; startPlay(false); }
+    if (lapse.settling && ts - lapse.settling > LAPSE_SETTLE_MAX) lapseSettled(ts);
     var t = lapse.target;
     if (!t || ts < lapse.holdUntil || pointers.size) return;
     var ex = wrap180(t.lon - view.lon), ey = t.lat - view.lat, ez = Math.log(t.zoom / view.zoom), v = lapse.v;
+    var still = Math.abs(v.lon) + Math.abs(v.lat) < 0.05 && Math.abs(v.z) < 0.01;
+    if (lapse.settling && still && Math.abs(ex) < 0.03 && Math.abs(ey) < 0.03 && Math.abs(ez) < 0.006) lapseSettled(ts);
     if (reduceMotion) {
       if (Math.abs(ex) + Math.abs(ey) + Math.abs(ez) < 1e-6) return;
       view.lon = t.lon; view.lat = t.lat; view.zoom = t.zoom;
@@ -5173,6 +5177,10 @@
     view.lat = Math.max(-85, Math.min(85, view.lat + v.lat * dt));
     view.zoom *= Math.exp(v.z * dt);
     applyView(); nudge();
+  }
+  function lapseSettled(ts) {
+    lapse.settling = 0;
+    lapse.playAt = ts + LAPSE_PAUSE;
   }
   function placeLapseBar() {
     var bar = $("follow");
@@ -5193,7 +5201,7 @@
     stopPlay();
     closeCard();
     lapse = { f: f, startT: lapseTime(f.from, true), endT: Math.min(lapseTime(f.to, false), dataEnd()), pace: Math.max(40, Math.min(400, LAPSE_SECONDS * 1000 / (f.to - f.from + 1))),
-      key: "", target: null, gap: false, name: "", lastId: id, fly: true, playAt: 0, holdUntil: 0, v: { lon: 0, lat: 0, z: 0 }, last: 0, t0: performance.now(), raf: 0, timer: 0 };
+      key: "", target: null, gap: false, name: "", lastId: id, fly: true, settling: 0, playAt: 0, holdUntil: 0, v: { lon: 0, lat: 0, z: 0 }, last: 0, t0: performance.now(), raf: 0, timer: 0 };
     $("follow-tag").textContent = f.tag || polityName(id);
     $("follow-name").textContent = "";
     $("follow").hidden = false;
@@ -5224,7 +5232,8 @@
   }
   function drawLapseWash(snap, L, landPath) {
     var shape = new Path2D(), any = false;
-    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && lapseHas(p)) { traceAll(shape, L.feats[i]); any = true; } }
+    lapse.shown = new Set();
+    for (var i = 0; i < snap.polys.length; i++) { var p = snap.polys[i]; if (p && lapseHas(p)) { traceAll(shape, L.feats[i]); any = true; lapse.shown.add(p.id); } }
     ctx.save();
     ctx.clip(landPath);
     if (any) { var out = new Path2D(); out.rect(-10, -10, W + 20, H + 20); out.addPath(shape); ctx.clip(out, "evenodd"); }
