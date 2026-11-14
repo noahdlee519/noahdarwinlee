@@ -5,6 +5,10 @@ One entry per change to the maps, newest first, as [MAPMAKING.md](MAPMAKING.md#t
 Each entry:
 
 ```
+## 1648–1806 | the Alps | Vaduz, Schellenberg, and Liechtenstein; the Empire's border in Tyrol and Carinthia
+
+- Claimed by the 1886 session (session_012Avzuib4tb8ZJHvk13M4TH), 14 November 2026, at Noah's request: the County of Vaduz and the Lordship of Schellenberg from 1648 to 1719 (blank until now), Liechtenstein as a member of the Holy Roman Empire to 1806, and the Habsburgs' Tyrol, Carinthia, and Gorizia, which fell outside the Empire's outline from 1648 to 1806, put inside it.
+
 ## <years> | <region> | <polity or subject>
 
 - What changed: …
