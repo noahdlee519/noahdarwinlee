@@ -2887,9 +2887,8 @@ const medieval = (list) => {
     dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
   }
   if (T.maskBridge.length) {
-    // The bridge's edge runs through the middle of Europe, between interleaved states (Venice's mainland among Milan, Mantua, Ferrara,
-    // Trent, and Friuli), so its spans are cut, never dropped whole, and the large pieces they leave beside it are kept.
-    const e = maskOut(list, T.maskBridge, MEDIEVAL_TO + 1, BRIDGE_TO, { whole: 2, keepKm2: 1500 });
+    // Since 14 November 2026 the bridge covers the table's whole main frame, so the sources are masked over it as over the table before 1445.
+    const e = maskOut(list, T.maskBridge, MEDIEVAL_TO + 1, BRIDGE_TO);
     list = e.list;
     mb = [Math.min(mb[0], e.mb[0]), Math.min(mb[1], e.mb[1]), Math.max(mb[2], e.mb[2]), Math.max(mb[3], e.mb[3])];
     dropped += e.dropped; cuts += e.cuts; shorn += e.shorn;
@@ -3877,9 +3876,9 @@ const GROUPS = [{
 // From 962: the Kingdom of France's great fiefs (987), Cnut's North Sea Empire (1017 to 1035), and Kievan Rus' principalities (1054 to 1240).
 { name: "Kingdom of France", from: 987, to: BRIDGE_TO }, { name: "North Sea Empire", from: 1017, to: 1035 }, { name: "Kievan Rus'", from: 1054, to: 1240 },
 // From 1101: the Angevin Empire (1154 to 1204), the Crown of Aragon (1137), and the duchies of Poland (1138 to 1319).
-{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: BRIDGE_TO }, { name: "Poland", from: 1138, to: 1319 },
+{ name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: 1515 }, { name: "Poland", from: 1138, to: 1319 },
 // From 1251: the Burgundian State (1384) and the Kalmar Union (1397).
-{ name: "Burgundian State", from: 1384, to: 1481 }, { name: "Habsburg Netherlands", from: 1482, to: 1548 }, { name: "Kalmar Union", from: 1397, to: BRIDGE_TO }];
+{ name: "Burgundian State", from: 1384, to: 1481 }, { name: "Habsburg Netherlands", from: 1482, to: 1548 }, { name: "Kalmar Union", from: 1397, to: 1522 }];
 // The outline a span of the group is measured against: the map's, with the group's addition (G.add) where the span is one it names.
 const addArea = new Map();
 function outlineFor(G, o, s) {
