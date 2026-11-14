@@ -18,7 +18,7 @@
   var LAST_YEAR = Math.floor(LAST_YM / 12), LAST_MONTH = LAST_YM % 12 + 1;
   var KEEP_MAPS = 8;
   var PLAIN = addrHas("plain"), LOW_MEM = (navigator.deviceMemory > 0 && navigator.deviceMemory <= 4) || !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
-  var CHUNK_KEEP = PLAIN ? 1e9 : LOW_MEM ? 3 : 5, CHUNK_HOLD_MS = 15000, CHUNK_IDLE_MS = 60000, SNAP_KEEP = PLAIN ? 24 : LOW_MEM ? 6 : 12, MODERN_DROP_BEFORE = 1800, MODERN_HOLD_MS = 30000, REST_MS = 300, FINE_ALWAYS_S = 2600;
+  var CHUNK_KEEP = PLAIN ? 1e9 : LOW_MEM ? 3 : 5, CHUNK_HOLD_MS = 5000, CHUNK_IDLE_MS = 60000, FINE_IDLE_MS = 20000, HIDDEN_MS = 20000, BASE_HOLD_MS = 5000, SNAP_KEEP = PLAIN ? 24 : LOW_MEM ? 6 : 12, RELIEF_KEEP = PLAIN ? 200 : LOW_MEM ? 48 : 96, RELIEF_IDLE_MS = 60000, MODERN_DROP_BEFORE = 1800, MODERN_HOLD_MS = 30000, REST_MS = 300, FINE_ALWAYS_S = 2600;
   var phoneQuery = window.matchMedia("(max-width: 640px)");
   var coarseQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
   function touchMap() { return phoneQuery.matches || coarseQuery.matches; }
@@ -77,6 +77,7 @@
     cy = (freeT + freeB) / 2;
     baseR = Math.max(80, Math.min(W - 20, freeB - freeT) / 2 - 14);
     baseK = Math.max(20, Math.min((W - 24) / TAU, (freeB - freeT - 16) / Math.PI));
+    baseEpoch++;
     applyView();
     placeTicks();
   }
@@ -743,7 +744,7 @@
     return k;
   }
 
-  var loadedOrder = [], snapCount = 0, swept = true;
+  var loadedOrder = [], snapCount = 0;
   function loadMap(i) {
     var m = maps[i];
     if (!m) return Promise.reject(new Error("no map " + i));
@@ -795,7 +796,7 @@
     if (!modern.load) modern.load = fetchJSON("data/modern.json").then(function (md) {
       modern.rows = md.rows; modern.lo = md.lo; modern.hi = md.hi || md.lo;
       modern.used = performance.now();
-      modern.fine = md.hi ? 2 : 0;
+      modern.fine = md.hi ? 3 : 0;
       if (!md.hi && (PLAIN || (isModern(now) && (fineNow() || !introOver)))) loadModernFine();
       return modern;
     }, function (e) { modern.load = null; throw e; });
@@ -824,38 +825,79 @@
     if (isModern(now)) { if (current.modern) loadModernFine(); }
     else if (isDated(now) && dated) loadChunkFine(chunkIndexFor(now));
   }
-  function trimData() {
+  function trimData(force) {
     if (PLAIN) return;
-    var t = performance.now(), later = false;
+    force = force === true;
+    var t = performance.now(), later = false, awayModern = modern && modern.rows && !(current && current.modern) && !isModern(now);
     if (dated) {
       var live = [], keep = current && current.dated ? current.chunk : -1, at = isDated(now) ? chunkIndexFor(now) : -1;
       dated.chunks.forEach(function (c, k) { if (c.data) live.push(k); });
       live.sort(function (a, b) { return dated.chunks[b].used - dated.chunks[a].used; });
       for (var i = 0; i < live.length; i++) {
-        var k = live[i];
+        var k = live[i], c = dated.chunks[k], idle = t - c.used;
         if (k === keep || k === at) continue;
-        if (t - dated.chunks[k].used >= (i < CHUNK_KEEP ? CHUNK_IDLE_MS : CHUNK_HOLD_MS)) dropChunk(k); else later = true;
+        if (force || idle >= (i < CHUNK_KEEP ? CHUNK_IDLE_MS : CHUNK_HOLD_MS)) dropChunk(k);
+        else { later = true; if (c.fine === 2 && idle >= FINE_IDLE_MS) dropChunkFine(k); }
       }
     }
-    if (modern && modern.rows && !(current && current.modern) && !isModern(now) && yearOf(now) < MODERN_DROP_BEFORE) {
-      if (t - modern.used >= MODERN_HOLD_MS) dropModern(); else later = true;
+    if (awayModern) {
+      if (force || (yearOf(now) < MODERN_DROP_BEFORE && t - modern.used >= MODERN_HOLD_MS)) dropModern();
+      else { later = true; if (modern.fine === 2 && t - modern.used >= FINE_IDLE_MS) dropModernFine(); }
     }
+    if (rd.cache.size && !rd.rect) { if (force || t - rd.used >= RELIEF_IDLE_MS) rd.cache.clear(); else later = true; }
+    if (force) trimSnaps(null, true);
     clearTimeout(trimTimer);
     if (later) trimTimer = setTimeout(trimData, 5000);
   }
+  function dropChunkFine(k) {
+    var c = dated.chunks[k], pre = "e" + k;
+    c.data.hi = c.data.lo; c.fine = 0;
+    datedSnaps.forEach(function (snap, key) { if (snap !== current && (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0)) datedSnaps.delete(key); });
+    sweepFeats();
+  }
+  function dropModernFine() {
+    modern.hi = modern.lo; modern.fine = 0;
+    modernSnaps.clear();
+    sweepFeats();
+  }
+  function trimSnaps(own, all) {
+    if (PLAIN) {
+      while (own && own.size > SNAP_KEEP) {
+        var first = own.keys().next().value, held = own.get(first);
+        own.delete(first);
+        if (held === current) { own.set(first, held); break; }
+      }
+      return;
+    }
+    var dropped = false, both = [datedSnaps, modernSnaps];
+    for (;;) {
+      if (!all && datedSnaps.size + modernSnaps.size <= SNAP_KEEP) break;
+      var old = null, from = null, at = null;
+      both.forEach(function (m) { m.forEach(function (snap, key) { if (snap !== current && (!old || snap.used < old.used)) { old = snap; from = m; at = key; } }); });
+      if (!old) break;
+      from.delete(at);
+      dropped = true;
+    }
+    if (dropped) sweepFeats();
+  }
+  var hiddenTimer = 0;
+  document.addEventListener("visibilitychange", function () {
+    clearTimeout(hiddenTimer);
+    if (document.hidden) hiddenTimer = setTimeout(function () { if (document.hidden && ready && !playTimer && !exporting && !lapse) { trimData(true); restBase(); } }, HIDDEN_MS);
+  });
   function dropChunk(k) {
     var c = dated.chunks[k], pre = "e" + k;
     c.data = null; c.loading = null; c.fine = 0;
     datedSnaps.forEach(function (snap, key) { if (snap !== current && (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0)) datedSnaps.delete(key); });
     sweepFeats();
   }
-  var restTimer = 0, trimTimer = 0;
-  function armRest() { clearTimeout(restTimer); restTimer = setTimeout(atRest, REST_MS); }
+  var restTimer = 0, trimTimer = 0, baseTimer = 0;
+  function armRest() { clearTimeout(restTimer); clearTimeout(baseTimer); restTimer = setTimeout(atRest, REST_MS); }
   function atRest() {
     if (!ready || !current) return;
     if (fineWanted()) wantFine();
     trimData();
-    restBase();
+    baseTimer = setTimeout(restBase, BASE_HOLD_MS);
   }
   // The detailed lines of a data file are in a file beside it (written by the build since November 2026), fetched once the
   // simplified lines have drawn the first map; until they come, the simplified lines stand in for them. The swap is counted
@@ -883,7 +925,7 @@
     modern.used = performance.now();
     var at = timeOfDay(day), idx = activeRows(day), key = "m" + idx.join(",") + "|" + marksBefore(colourDays, day) + colourEditKey(at);
     var snap = modernSnaps.get(key);
-    if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); return snap; }
+    if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); snap.used = performance.now(); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = modern.rows[ri], hue = r[1] >= 0 ? r[1] : r[0], claims = r[4] === DISPUTED && r[7] ? r[7] : null;
       return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: r[8] === 1 ? 1 : 3, soft: !!claims || r[8] === 1, people: false, label: r[6], hue: hue, color: claims ? -1 : ownColour(r[0], at, function () { return polityColor(hue, day, undefined, at); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, day, undefined, at); })) : null, status: r[4], cap: claims ? null : r[5], start: r[2], end: r[3] };
@@ -892,14 +934,9 @@
       year: null, key: key, modern: true, polys: polys, vague: pairsAt(borderPairs.vague, day), topo: { hi: modern.hi, lo: modern.lo },
       geoms: { hi: idx.map(function (i) { return modern.hi.objects.p.geometries[i]; }), lo: idx.map(function (i) { return modern.lo.objects.p.geometries[i]; }) }
     });
+    snap.used = performance.now();
     modernSnaps.set(key, snap);
-    while (modernSnaps.size > SNAP_KEEP) {
-      var oldest = modernSnaps.keys().next().value;
-      if (modernSnaps.get(oldest) === current) { var keep = modernSnaps.get(oldest); modernSnaps.delete(oldest); modernSnaps.set(oldest, keep); break; }
-      modernSnaps.delete(oldest);
-      swept = false;
-    }
-    if (!swept) { swept = true; sweepFeats(); }
+    trimSnaps(modernSnaps);
     return snap;
   }
 
@@ -916,7 +953,7 @@
     if (!c.loading) {
       c.loading = fetchJSON(c.file).then(function (d) {
         c.data = d; c.used = performance.now(); prepDays(d);
-        if (d.hi) c.fine = 2;
+        if (d.hi) c.fine = 3;
         else {
           d.hi = d.lo; c.fine = 0;
           if (PLAIN || (isDated(now) && chunkIndexFor(now) === k && (fineNow() || !introOver))) loadChunkFine(k);
@@ -965,7 +1002,7 @@
     for (var i = 0; i < rows.length; i++) if (monthly ? c.data.dayFrom[i] <= day && day <= c.data.dayTo[i] : rows[i][2] <= y && y <= rows[i][3]) idx.push(i);
     var key = "e" + k + (soft ? "s" : "") + ":" + idx.join(",") + "|" + marksBefore(colourYears, y) + colourEditKey(t);
     var snap = datedSnaps.get(key);
-    if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); return snap; }
+    if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); snap.used = performance.now(); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
       return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || (bordersKnown ? !(r[9] >= 3) : r[9] <= 1) || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
@@ -981,14 +1018,9 @@
         geoLo: topojson.mergeArcs(c.data.lo, mem.map(function (ri) { return c.data.lo.objects.p.geometries[ri]; })),
         geoHi: topojson.mergeArcs(c.data.hi, mem.map(function (ri) { return c.data.hi.objects.p.geometries[ri]; })) };
     }).filter(Boolean);
+    snap.used = performance.now();
     datedSnaps.set(key, snap);
-    while (datedSnaps.size > SNAP_KEEP) {
-      var oldest = datedSnaps.keys().next().value;
-      if (datedSnaps.get(oldest) === current) { var keep = datedSnaps.get(oldest); datedSnaps.delete(oldest); datedSnaps.set(oldest, keep); break; }
-      datedSnaps.delete(oldest);
-      swept = false;
-    }
-    if (!swept) { swept = true; sweepFeats(); }
+    trimSnaps(datedSnaps);
     return snap;
   }
   function datedChangeBefore(y) {
@@ -1344,7 +1376,7 @@
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     relief.draw(o);
   }
-  var rd = { key: "", rect: null, cache: new Map(), gen: 0, put: new Set(), off: false, failed: 0, ok: 0 };
+  var rd = { key: "", rect: null, cache: new Map(), gen: 0, put: new Set(), off: false, failed: 0, ok: 0, used: 0 };
   var RELIEF_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png", RELIEF_MAX_Z = 11, RELIEF_MAX_TILES = 40;
   function mercY(lat) { var p = lat * D2R; return (1 - Math.log(Math.tan(Math.PI / 4 + p / 2)) / Math.PI) / 2; }
   function reliefWanted() {
@@ -1396,7 +1428,8 @@
       if (t && t.canvas) { if (relief.putTile(t.canvas, i, j)) { rd.put.add(k); any = true; } continue; }
       if (!t) reliefTile(want.z, x, y, k, gen);
     }
-    if (rd.cache.size > 200) { var it = rd.cache.keys(); while (rd.cache.size > 160) { var nk = it.next(); if (nk.done) break; if (!rd.put.has(nk.value)) rd.cache.delete(nk.value); else break; } }
+    rd.used = performance.now();
+    if (rd.cache.size > RELIEF_KEEP) { var it = rd.cache.keys(); while (rd.cache.size > RELIEF_KEEP * 0.8) { var nk = it.next(); if (nk.done) break; if (!rd.put.has(nk.value)) rd.cache.delete(nk.value); else break; } }
     if (any) scheduleRender();
   }
   function reliefTile(z, x, y, key, gen) {
@@ -1609,7 +1642,7 @@
   }
   var baseCanvas = null, baseCtx = null, baseSig = null, baseState = null, baseEpoch = 0, baseMode = 0, baseStats = { hits: 0, misses: 0 };
   var BASE_STATE = ["globalAlpha", "lineWidth", "lineCap", "lineJoin", "miterLimit", "strokeStyle", "fillStyle", "font", "textAlign", "textBaseline", "letterSpacing", "lineDashOffset"];
-  function baseOn() { return !PLAIN && baseMode >= 0 && !exporting && !moving && ctx === mainCtx && (baseMode > 0 || !!playTimer || rangeActive || !!lapse); }
+  function baseOn() { return !PLAIN && baseMode >= 0 && !exporting && !moving && ctx === mainCtx; }
   function baseSigNow(snap, L, landList, S) {
     if (!baseOn()) return null;
     if (layers.control) { var cd = ctlDay(); if (cd !== null && ctlWars(cd, true).length) return null; }
@@ -1618,7 +1651,7 @@
     return {
       e: baseEpoch, snap: snap, L: L, land: landList, lakes: lakes ? lakesAt() : null, rivers: rivers, riverAt: geog ? stateOf(geog.riverTimes) : -1,
       marsh: geog ? geog.marshes.map(function (m) { return inSpan(m.from, m.to) ? 1 : 0; }).join("") : "", div: div, hover: hoverId, sel: selected, lapse: lapse ? lapse.f : null,
-      view: [view.lon, view.lat, view.zoom, view.roll, flat ? 1 : 0, canvas.width, canvas.height, dpr].join()
+      view: [view.lon, view.lat, view.zoom, view.roll, flat ? 1 : 0, canvas.width, canvas.height, dpr, W, H, cx, cy, baseR, baseK, freeT, freeB].join()
     };
   }
   function sameBase(a, b) {
@@ -1657,14 +1690,14 @@
     syncWars();
   }
   function restBase() {
-    if (!baseCanvas || baseOn()) return;
+    if (!baseCanvas || playTimer || rangeActive || lapse) return;
     baseSig = null;
     if (baseCanvas.width > 1) { baseCanvas.width = 1; baseCanvas.height = 1; }
   }
   function drawBase(snap, L, key, S, kp, landList) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    ctx.lineJoin = "round";
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
 
     if (!flat && B.r * 1.07 < Math.hypot(W, H) && !discCovers(B.r)) {
       var glow = ctx.createRadialGradient(cx, cy, B.r, cx, cy, B.r * 1.07);
@@ -8346,7 +8379,7 @@
     },
     perfState: function () {
       return { plain: PLAIN, lowMem: LOW_MEM, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
-        fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine === 2; }).length : 0, modern: modern && modern.rows ? (modern.fine === 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size };
+        fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine >= 2; }).length : 0, modern: modern && modern.rows ? (modern.fine >= 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size, tiles: rd.cache.size };
     },
     baseCache: function (mode) { baseMode = mode; baseSig = null; scheduleRender(); },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
