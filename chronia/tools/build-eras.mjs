@@ -1982,7 +1982,13 @@ const noteRename = (from, to) => { if (!renamedFrom.has(to)) renamedFrom.set(to,
 const SMR_CORE = ["San Marino", "Borgo Maggiore", "Acquaviva", "Chiesanuova", "Domagnano"];
 const HK_ISLAND = ["Central and Western", "Wan Chai", "Eastern", "Southern"], HK_KOWLOON = ["Yau Tsim Mong", "Sham Shui Po", "Kowloon City", "Wong Tai Sin", "Kwun Tong"];
 const SMALL = [
-  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, periods: [["1719-01-23", CS_TO, "state"]] },
+  // Before Liechtenstein: the County of Vaduz (today's Oberland) and the Lordship of Schellenberg (the Unterland), both held by the
+  // counts of Hohenems from 1613, Schellenberg sold to Prince Johann Adam Andreas of Liechtenstein on 18 January 1699 and Vaduz on
+  // 22 February 1712, and the two united as the Principality of Liechtenstein by Charles VI on 23 January 1719. From 1648, when
+  // the medieval bridge (which draws them as members of the Empire) ends. All three are members of the Holy Roman Empire to 1806.
+  { name: "County of Vaduz", shape: { c: "LIE", n: ["Vaduz", "Balzers", "Planken", "Schaan", "Triesen", "Triesenberg"] }, gapKm: 4, part: { name: "Holy Roman Empire", to: 1806 }, periods: [["1648-01-01", "1719-01-22", "state"]] },
+  { name: "Lordship of Schellenberg", shape: { c: "LIE", n: ["Eschen", "Gamprin", "Mauren", "Ruggell", "Schellenberg"] }, gapKm: 4, part: { name: "Holy Roman Empire", to: 1806 }, periods: [["1648-01-01", "1719-01-22", "state"]] },
+  { name: "Liechtenstein", shape: { c: "LIE" }, gapKm: 4, part: { name: "Holy Roman Empire", to: 1806 }, wiki: "Liechtenstein", periods: [["1719-01-23", CS_TO, "state"]] },
   { name: "Monaco", shape: { c: "MCO" }, periods: [["1419-01-01", "1792-12-31", "state"], ["1814-05-30", "1860-12-31", "protectorate", TURIN], ["1861-01-01", CS_TO, "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE }, periods: [["1400-01-01", "1462-12-31", "state"]] },
   { name: "San Marino", gapKm: 4, shape: { c: "SMR", n: SMR_CORE.concat(["Fiorentino", "Montegiardino", "Serravalle"]) }, periods: [["1463-01-01", "1463-12-31", "state"]] },
@@ -2098,9 +2104,14 @@ function addSmall(list, timeOf, nameOf) {
   for (const x of carves) {
     const parts = rulerSplit(x.ref, x.first, x.last, list, nameOf);
     for (const p of parts) {
-      const sm = piece(x, p.first, p.last, p.ruler, x.polys);
-      list = carve(list, sm);
-      list.push(sm);
+      // A member of a larger body (the Holy Roman Empire) over its years: the span parted where the membership ends.
+      const pt = x.s.part, cuts = pt && p.first <= pt.to && p.last > pt.to ? [[p.first, pt.to], [pt.to + 1, p.last]] : [[p.first, p.last]];
+      for (const [a, b] of cuts) {
+        const sm = piece(x, a, b, p.ruler, x.polys);
+        if (pt && b <= pt.to) sm.part = pt.name;
+        list = carve(list, sm);
+        list.push(sm);
+      }
     }
   }
   for (const x of fills) {
@@ -3853,7 +3864,13 @@ const GROUPS = [{
   // From 1445 to 1647 the medieval table's bridge draws the Empire and its members (tools/medieval-bridge.mjs), so the outline is empty
   // then: no source span becomes a member, and one Cliopatria marks as a member is freed, so no slivers of it lie between the bridge's.
   maps: [[1200, 1299, ["1279"]], [1300, 1399, ["1300"]], [1400, MEDIEVAL_TO, ["1400"]], [MEDIEVAL_TO + 1, BRIDGE_TO, []], [BRIDGE_TO + 1, 1649, ["1600"]], [1650, 1699, ["1650"]], [1700, 1806, ["1650", "1700"]]],
-  never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/
+  never: /France|French|Venice|Venetian|Papal|Hungary|Hungarian|Poland|Polish|Lithuania|Ottoman|Teutonic|Holy Roman Empire/,
+  // historical-basemaps' Empire of 1650 and 1700 stops at the northern edge of a Venice drawn far into the Alps (to about 47° N), so
+  // the Habsburgs' Tyrol, Carinthia, and Gorizia south of it fell outside the Empire. They were in it (the Austrian Circle), so in
+  // these years a Habsburg or Tyrolean bishop's span is in the Empire wherever it lies in the eastern Alps, short of Venice's land
+  // of 1796 (which the Habsburgs held from 1797, outside the Empire) and of Lombardy.
+  add: { from: BRIDGE_TO + 1, names: /^(Habsburg Monarchy|County of Tyrol|Duchy of Carinthia|Prince-Bishopric of Trent|Prince-Bishopric of Brixen|(Prince-)?Archbishopric of Salzburg|Electorate of Salzburg)$/, minus: /^Republic of Venice$/, minusYear: 1796,
+    ring: [[9.4, 47.9], [9.4, 46.8], [10.45, 46.6], [10.45, 45.6], [12.0, 45.6], [13.3, 45.2], [15.0, 45.2], [15.0, 47.9], [9.4, 47.9]] }
 }, { name: BRITISH_AMERICA },
 // The realms of the early medieval table (tools/medieval.mjs) whose kingdoms, subkingdoms, fiefs, or duchies are drawn as members.
 { name: "Kingdom of the Franks" }, { name: "Carolingian Empire" }, { name: "West Francia" }, { name: "East Francia" }, { name: "Kingdom of Germany" }, { name: "Kingdom of the Lombards" },
@@ -3863,6 +3880,20 @@ const GROUPS = [{
 { name: "Angevin Empire", from: 1154, to: 1204 }, { name: "Crown of Aragon", from: 1137, to: BRIDGE_TO }, { name: "Poland", from: 1138, to: 1319 },
 // From 1251: the Burgundian State (1384) and the Kalmar Union (1397).
 { name: "Burgundian State", from: 1384, to: 1481 }, { name: "Habsburg Netherlands", from: 1482, to: 1548 }, { name: "Kalmar Union", from: 1397, to: BRIDGE_TO }];
+// The outline a span of the group is measured against: the map's, with the group's addition (G.add) where the span is one it names.
+const addArea = new Map();
+function outlineFor(G, o, s) {
+  const A = G.add;
+  if (!A || o.b < A.from || !A.names.test(s.name)) return o.polys;
+  if (!addArea.has(G)) {
+    const ven = dated.filter((d) => A.minus.test(d.name) && d.first <= A.minusYear && d.last >= A.minusYear).flatMap((d) => d.polys);
+    const area = rewind(ven.length ? tryClip(clip.difference, [[A.ring]], ven) || [[A.ring]] : [[A.ring]]);
+    console.log("groups: " + G.name + "'s addition " + Math.round(km2Of(area)) + " km², less " + Math.round(km2Of(ven)) + " km² of " + A.minusYear);
+    addArea.set(G, area);
+  }
+  const extra = tryClip(clip.intersection, s.polys, addArea.get(G));
+  return extra && extra.length ? rewind(tryClip(clip.union, o.polys, extra) || o.polys) : o.polys;
+}
 {
   const t0 = Date.now();
   let whole = 0, parted = 0;
@@ -3878,16 +3909,17 @@ const GROUPS = [{
       const hit = outlines.filter((o) => s.last >= o.a && s.first <= o.b);
       const free = s.part === G.name && s.name !== G.name ? { ...s, part: "" } : s;
       if (s.src === "medieval") { next.push(s); continue; }
-      if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length ? free : s); continue; }
+      if (!hit.length || s.small || s.people || s.claims || G.never.test(s.name) || !hit.some((o) => boxHit(o.box, s.box || (s.box = boxOf(s.polys))))) { next.push(hit.length && !s.small ? free : s); continue; }
       const area = km2Of(s.polys), segs = [];
       if (s.first < hit[0].a) segs.push({ a: s.first, b: hit[0].a - 1, kind: "out" });
       for (const o of hit) {
         const a = Math.max(s.first, o.a), b = Math.min(s.last, o.b);
-        const inter = boxHit(o.box, s.box) ? tryClip(clip.intersection, s.polys, o.polys) : [];
+        const op = outlineFor(G, o, s);
+        const inter = boxHit(o.box, s.box) || op !== o.polys ? tryClip(clip.intersection, s.polys, op) : [];
         const share = inter ? km2Of(inter) / area : 0;
         if (share >= 0.8) segs.push({ a, b, kind: "in" });
         else if (inter && (km2Of(inter) >= 3000 || (share >= 0.1 && km2Of(inter) >= 500))) {
-          const rest = tryClip(clip.difference, s.polys, o.polys);
+          const rest = tryClip(clip.difference, s.polys, op);
           if (rest) segs.push({ a, b, kind: "split", inside: rewind(inter), rest: rewind(rest) });
           else segs.push({ a, b, kind: "out" });
         } else segs.push({ a, b, kind: "out" });
