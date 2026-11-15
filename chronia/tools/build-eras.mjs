@@ -8,6 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
+import { healNodes } from "./heal-nodes.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
@@ -679,11 +680,12 @@ function generalizeTopo(topo) {
   for (const j of gen) if (pos.has(j) && neg.has(j) && !fixed.has(j)) topo.arcs[j] = generalizeArc(topo.arcs[j]);
   return topo;
 }
-// The meeting points a file's lines are cut at: those of the files before and after it (its own are its arcs' ends already).
-const useNodes = (n) => {
+// The meeting points a file's lines are cut at: every file's (healNodes joins the cuts again where nothing meets in this file).
+const useNodes = () => {
+  if (NODES.size) return;
   for (const [q, l] of NODES_BY_FILE) {
     const set = new Set();
-    for (const m of [n - 1, n + 1]) if (l[m]) for (const k of l[m]) set.add(k);
+    for (const f of l) if (f) for (const k of f) set.add(k);
     NODES.set(q, set);
   }
 };
@@ -730,7 +732,7 @@ function splitAtNodes(topo, q) {
   arcsSplit += made;
   return topo;
 }
-let arcsSplit = 0, twinsMerged = 0;
+let arcsSplit = 0, twinsMerged = 0, arcsHealed = 0, pointsDropped = 0;
 function mergeTwinArcs(topo) {
   const seen = new Map(), to = new Map();
   topo.arcs.forEach((arc, k) => {
@@ -812,7 +814,9 @@ function topoFor(feats, km, q, smooth = true) {
   kept.forEach((i) => pre.arcs[i].forEach((p) => { p[2] = Infinity; }));
   const done = stripZ(simplify.simplify(pre, weightFor(km)));
   if (!done.transform) done.bbox = WORLD_BOX.slice();
-  return outward(markNeedles(mergeTwinArcs(done.transform ? done : client.quantize(done, q))));
+  const quantized = mergeTwinArcs(done.transform ? done : client.quantize(done, q));
+  if (nodesReady && NODES.has(q)) { const h = healNodes(quantized, km * km); arcsHealed += h.joined; pointsDropped += h.dropped; }
+  return outward(markNeedles(quantized));
 }
 function outward(topo) {
   const flip = (poly) => {
@@ -4168,11 +4172,11 @@ let datedDays = [];
   for (let n = 0; n < CHUNK_STARTS.length; n++) {
     const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
     const feats = dated.filter((s) => s.last >= c && s.first <= cEnd).sort((a, b) => a.first - b.first || a.uid - b.uid).map((s, i) => dissolveFeat({ type: "Feature", properties: { i }, geometry: { type: "MultiPolygon", coordinates: s.polys } }));
-    noteNodes(feats, HI_Q, n); noteNodes(feats, LO_Q, n);
+    noteNodes(feats, HI_Q, n);
   }
   nodesReady = true;
   const total = (q) => NODES_BY_FILE.get(q).reduce((t, x) => t + x.size, 0);
-  console.log("nodes: " + total(HI_Q) + " meeting points of borders in the dated files at the detailed grid, " + total(LO_Q) + " at the coarse, " + Math.round((Date.now() - t0) / 1000) + " s");
+  console.log("nodes: " + total(HI_Q) + " meeting points of borders in the dated files at the detailed grid, " + Math.round((Date.now() - t0) / 1000) + " s");
 }
 for (let n = 0; n < CHUNK_STARTS.length; n++) {
   const c = CHUNK_STARTS[n], cEnd = n + 1 < CHUNK_STARTS.length ? CHUNK_STARTS[n + 1] - 1 : DATED_TO;
@@ -5016,7 +5020,7 @@ const ownerName = (r) => {
 const csFeats = csParts.map((r, i) => dissolveFeat({ type: "Feature", properties: { i, keep: !!r.keep }, geometry: r.geometry }));
 NODES.clear();
 nodesReady = false;
-console.log("lines: " + arcsSplit + " arcs cut at the meeting points of the files beside each, " + twinsMerged + " twin arcs joined, " + needlesMarked + " arcs of needles listed");
+console.log("lines: " + arcsSplit + " arcs cut at the meeting points of all the files, " + arcsHealed + " joined again where nothing met, " + pointsDropped + " of those points dropped, " + twinsMerged + " twin arcs joined, " + needlesMarked + " arcs of needles listed");
 const csHi = topoFor(csFeats, CS_HI_KM, CS_HI_Q, false);
 // The coarse level leaves out pieces of land under 50 km² that pieceSpans added: at the zooms it is
 // drawn at, the page's coast fill covers them.
