@@ -4406,6 +4406,23 @@
     tip.style.top = y + "px";
   }
   function hideTip() { tip.hidden = true; }
+  // With Shift held, the coordinates under the cursor, beside it (Noah's request, 15 November 2026).
+  var coords = $("coords"), mouseAt = null;
+  function syncCoords(shift) {
+    var ll = shift && mouseAt ? lonLatAt(mouseAt[0], mouseAt[1]) : null;
+    if (!ll) { coords.hidden = true; return; }
+    var part = function (v, pos, neg) { return Math.abs(v).toFixed(2) + "° " + (v < 0 ? neg : pos); };
+    coords.textContent = part(ll[1], "N", "S") + ", " + part(ll[0], "E", "W");
+    coords.hidden = false;
+    var w = coords.offsetWidth;
+    coords.style.left = (mouseAt[0] + 14 + w > W - 8 ? mouseAt[0] - w - 28 : mouseAt[0]) + "px";
+    coords.style.top = Math.max(48, mouseAt[1]) + "px";
+  }
+  canvas.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouseAt = [e.clientX, e.clientY]; syncCoords(e.shiftKey); } });
+  canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { mouseAt = null; syncCoords(false); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Shift") syncCoords(true); });
+  document.addEventListener("keyup", function (e) { if (e.key === "Shift") syncCoords(false); });
+  window.addEventListener("blur", function () { syncCoords(false); });
   function cityAt(x, y, touch) {
     var best = null, bestD = Infinity, pad = touch ? 8 : 3;
     for (var i = 0; i < placedLabels.length; i++) {

@@ -1868,6 +1868,12 @@ select.ch-save-input {
   transform: translate(14px, -50%);
 }
 
+/* The cursor's coordinates, shown while Shift is held: above the hover tip, so both can be read. */
+.ch-coords {
+  transform: translate(14px, calc(-50% - 32px));
+  font-variant-numeric: tabular-nums;
+}
+
 .ch-tip-ico {
   width: 15px;
   height: 15px;
