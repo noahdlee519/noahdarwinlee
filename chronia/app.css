@@ -1220,6 +1220,10 @@ select.ch-save-input {
   translate: 0 0;
 }
 
+.ch-eras span.is-last {
+  translate: -100% 0;
+}
+
 .ch-strip {
   position: absolute;
   left: 0;

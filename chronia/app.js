@@ -4576,9 +4576,10 @@
       ts.appendChild(s);
       return s;
     };
-    // Labels every so many years, with at least 70 px between them, and five minor ticks to a label.
-    var steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000], step = steps[steps.length - 1];
-    for (var i = 0; i < steps.length; i++) if (steps[i] * ppy >= 70) { step = steps[i]; break; }
+    // Labels every so many years, with at least 70 px between them (44 px on a phone's short timeline, so the years
+    // nearest today, 2020 among them, still have a label), and five minor ticks to a label.
+    var steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000], step = steps[steps.length - 1], gap = tl.w < 400 ? 44 : 70;
+    for (var i = 0; i < steps.length; i++) if (steps[i] * ppy >= gap) { step = steps[i]; break; }
     var minor = step / 5;
     for (var y = Math.ceil(FIRST_T / minor) * minor; y <= lastT(); y += minor) {
       var major = y % step === 0;
@@ -4588,6 +4589,8 @@
       lab.textContent = y === 0 ? "AD 1" : y < 0 ? fmtYear(y) : String(y);
       lab.style.left = at(y === 0 ? 1 : y);
       if (y <= FIRST_T) lab.className = "is-first";
+      // A label too near the end of the timeline to be centred on its tick ends at the tick instead.
+      else if ((lastT() - y) * ppy < 18) lab.className = "is-last";
       es.appendChild(lab);
     }
     placeEvents();
