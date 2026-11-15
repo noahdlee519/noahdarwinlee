@@ -533,6 +533,24 @@ function withHistory(key, names, entries) {
   return [[...new Set([...names, ...h.names])], older.concat(entries)];
 }
 
+// Later divisions from tools/divisions-now/<key>.json (written by divisions-now.mjs from geoBoundaries), put after the country's
+// spans from Natural Earth where those end on a reform's day: only spans that begin after the last of them are taken.
+const NOW_DIR = resolve(here, "divisions-now");
+function withLater(key, names, entries) {
+  const file = resolve(NOW_DIR, key + ".json");
+  if (!existsSync(file)) return [names, entries];
+  if (entries.some((e) => !e.last)) { console.log(key + ": later divisions left out, since some from Natural Earth still stand"); return [names, entries]; }
+  const h = JSON.parse(readFileSync(file, "utf8")), end = entries.reduce((m, e) => (e.last > m ? e.last : m), "0000-01-01");
+  const later = [];
+  for (const g of h.topo.objects.d.geometries) {
+    const p = g.properties;
+    if (p.first <= end) throw new Error(key + ": later division " + p.name + " begins " + p.first + ", before Natural Earth's end " + end);
+    later.push({ name: p.name, first: p.first, last: p.last || null, geo: rewind(client.feature(h.topo, g).geometry) });
+  }
+  console.log(key + ": " + later.length + " later spans from " + h.source + ", from " + later[0].first);
+  return [names, entries.concat(later)];
+}
+
 function naturalEarth() {
   const topo = JSON.parse(readFileSync(provincesPath, "utf8"));
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -609,7 +627,7 @@ function naturalEarth() {
     if (cuts.length) entries.forEach((en, i) => { if (!R.parts[i].cut && !R.parts[i].ne.some((n) => /\[lat/.test(n))) en.geo = splitAt(en.geo, cuts); });
     const unused = [...byName.keys()].filter((n) => !used.has(n));
     if (unused.length) console.log(R.key + ": Natural Earth pieces not used: " + unused.join(", "));
-    out.push(writeRegion(R.key, ...withHistory(R.key, R.names, entries)));
+    out.push(writeRegion(R.key, ...withLater(R.key, ...withHistory(R.key, R.names, entries))));
   }
   return out;
 }
