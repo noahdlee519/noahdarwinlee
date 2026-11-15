@@ -4421,6 +4421,11 @@
   canvas.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouseAt = [e.clientX, e.clientY]; syncCoords(e.shiftKey); } });
   canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { mouseAt = null; syncCoords(false); } });
   document.addEventListener("keydown", function (e) { if (e.key === "Shift") syncCoords(true); });
+  // The globe's focus ring is for those who reach it with Tab. Browsers count the arrow keys as keyboard use, so a click
+  // on the globe after stepping the year drew the ring round the whole screen; it now shows only after Tab, until the
+  // next click or tap.
+  document.addEventListener("keydown", function (e) { if (e.key === "Tab") document.documentElement.classList.add("ch-tabbing"); }, true);
+  document.addEventListener("pointerdown", function () { document.documentElement.classList.remove("ch-tabbing"); }, true);
   document.addEventListener("keyup", function (e) { if (e.key === "Shift") syncCoords(false); });
   window.addEventListener("blur", function () { syncCoords(false); });
   function cityAt(x, y, touch) {
