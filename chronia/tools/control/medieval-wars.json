@@ -9712,24 +9712,50 @@
 "FRA",
 "BEL"
 ],
-"within": [
-[
--2.5,
-42.8
-],
-[
-6.0,
-42.8
-],
-[
-6.0,
-51.2
-],
-[
--2.5,
-51.2
+"units": {
+"BEL": [
+"West Flanders",
+"East Flanders"
 ]
+},
+"exclude": {
+"FRA": [
+"French Guiana",
+"Martinique",
+"Guadeloupe",
+"Réunion",
+"Mayotte",
+"Haute-Corse",
+"Corse-du-Sud",
+"Pyrénées-Orientales",
+"Moselle",
+"Meurthe-et-Moselle",
+"Vosges",
+"Bas-Rhin",
+"Haut-Rhin",
+"Territoire de Belfort",
+"Doubs",
+"Jura",
+"Haute-Saône",
+"Ain",
+"Savoie",
+"Haute-Savoie",
+"Isère",
+"Drôme",
+"Hautes-Alpes",
+"Alpes-de-Haute-Provence",
+"Alpes-Maritimes",
+"Var",
+"Bouches-du-Rhône",
+"Vaucluse",
+"Finistère",
+"Côtes-d'Armor",
+"Morbihan",
+"Ille-et-Vilaine",
+"Loire-Atlantique"
 ]
+},
+"note": "The Kingdom of France as it then stood: today's France west of the Empire's lands (Lorraine, Alsace, Franche-Comté, Bresse, Savoy, Dauphiné, Provence, and the Comtat Venaissin), without Corsica and Roussillon, and the county of Flanders (West and East Flanders), a French fief; without Brittany, a duchy that changed sides and has no towns here, which the political map shows"
 },
 "towns": [
 [
@@ -11093,7 +11119,8 @@
 "Approx."
 ]
 ],
-"source": "Froissart's Chronicles; Jean de Waurin; Enguerrand de Monstrelet; the Journal d'un bourgeois de Paris; Sumption, The Hundred Years War I–V (1990–2023); Curry, The Hundred Years War (2003)"
+"source": "Froissart's Chronicles; Jean de Waurin; Enguerrand de Monstrelet; the Journal d'un bourgeois de Paris; Sumption, The Hundred Years War I–V (1990–2023); Curry, The Hundred Years War (2003)",
+"snap": 0.8
 }
 ]
 }

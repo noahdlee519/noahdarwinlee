@@ -24,6 +24,7 @@ export function buildMedievalWars(env) {
       if (R.units && R.units[p.adm0_a3] && !R.units[p.adm0_a3].includes(p.name_en || p.name) && !R.units[p.adm0_a3].includes(p.name)) return false;
       if (R.geounits && !R.geounits.includes(p.geonunit)) return false;
       if (R.regions && R.regions[p.adm0_a3] && !R.regions[p.adm0_a3].includes(p.region)) return false;
+      if (R.exclude && R.exclude[p.adm0_a3] && (R.exclude[p.adm0_a3].includes(p.name_en || p.name) || R.exclude[p.adm0_a3].includes(p.name))) return false;
       return true;
     }).map((f) => ({ type: "Feature", properties: {}, geometry: f.geometry }));
     if (!feats.length) { console.warn(W.key + ": no land for its region"); continue; }
@@ -73,6 +74,32 @@ export function buildMedievalWars(env) {
           const merged = client.merge(topo, list.map((i) => topo.objects.c.geometries[i])).coordinates;
           const polys = clip.intersection(merged, region).filter((p) => areaKm2(p) >= 2);
           if (polys.length) byside.set(s, polys);
+        }
+        // With W.snap (a share, such as 0.8), a unit of the region that one side holds that much of goes to it whole, so
+        // a settled front runs along the units' borders rather than the cells' straight edges; a unit the sides share
+        // more evenly (Calais in the Pas-de-Calais) keeps its cells.
+        if (W.snap) {
+          const whole = new Map();
+          topoU.objects.u.geometries.forEach((g, ui) => {
+            const unit = client.merge(topoU, [g]).coordinates, a = unit.reduce((t, p) => t + areaKm2(p), 0);
+            if (!a) return;
+            for (const [s, polys] of byside) {
+              const got = clip.intersection(unit, polys).reduce((t, p) => t + areaKm2(p), 0);
+              if (got >= W.snap * a) { if (!whole.has(s)) whole.set(s, []); whole.get(s).push(ui); break; }
+            }
+          });
+          if (whole.size) {
+            const units = new Map([...whole].map(([s, list]) => [s, client.merge(topoU, list.map((i) => topoU.objects.u.geometries[i])).coordinates]));
+            const all = [].concat(...units.values());
+            const next = new Map();
+            for (const [s, polys] of byside) {
+              let p = clip.difference(polys, all);
+              if (units.has(s)) p = clip.union(p, units.get(s));
+              p = p.filter((q) => areaKm2(q) >= 2);
+              if (p.length) next.set(s, p);
+            }
+            byside = next;
+          }
         }
         prevSig = sig; prev = byside; distinct++;
       }
