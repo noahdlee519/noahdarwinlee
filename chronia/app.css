@@ -2227,9 +2227,23 @@ select.ch-save-input {
 
 @media (max-width: 369px) {
   .ch-title {
-    font-size: 13px;
-    letter-spacing: 0.05em;
-    padding-left: 0.05em;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding-left: 0.03em;
+  }
+
+  /* On the narrowest phones (an iPhone SE) the five tools' names left the title 19 px, under the info button (they are narrower too), and a
+     date such as "Sep 23, 1866" ran past its field: the tools keep their icons only, and the date is set smaller. */
+  .ch-ctl-label {
+    display: none;
+  }
+
+  .ch-ctls .ch-ctl {
+    width: 37px;
+  }
+
+  .ch-year {
+    font-size: 16px;
   }
 }
 

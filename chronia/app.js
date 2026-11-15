@@ -4456,20 +4456,21 @@
     if (y < 1000) return "AD " + y;
     return String(y);
   }
-  function fmtDay(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
-  // Day, month, year, as the date's frame writes it.
-  function fmtDate(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
+  // Month, day, year ("August 23, 1815"), as the date's frame writes it.
+  function fmtMDY(y, m, d) { return MONTHS[m - 1] + " " + d + ", " + (y > 0 ? y : fmtYear(y)); }
+  function fmtDay(day) { var d = dateOfDay(day); return fmtMDY(d[0], d[1], d[2]); }
+  function fmtDate(day) { return fmtDay(day); }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
     if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " + (ry > 0 ? ry : fmtYear(ry)) : fmtYear(ry); }
     var d = dateOfDay(dayOfTime(t));
-    return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
+    return d[2] === MID_DAY ? MONTHS[d[1] - 1] + " " + d[0] : fmtMDY(d[0], d[1], d[2]);
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
   var fitCtx = null, fitBox = null, fitWatch = false;
   function fitDate(text) {
-    var m = /^(\d+ )?([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
-    if (!m || m[2].length <= 3 || !el) return text;
+    var m = /^([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
+    if (!m || m[1].length <= 3 || !el) return text;
     // The box's font and room are read once and again when its size changes, not at each date: reading them makes the
     // browser lay the page out there and then, twice for every date the marker is dragged through.
     if (!fitBox) {
@@ -4484,15 +4485,21 @@
         if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", forget);
       }
     }
-    var fit = fitBox.fits.get(text);
-    if (fit === undefined) {
-      fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
-      fitCtx.font = fitBox.font;
-      fit = fitCtx.measureText(text).width * 1.04 <= fitBox.room;
-      if (fitBox.fits.size > 4000) fitBox.fits.clear();
-      fitBox.fits.set(text, fit);
-    }
-    return fit ? text : (m[1] || "") + m[2].slice(0, 3) + m[3];
+    var fits = function (t) {
+      var fit = fitBox.fits.get(t);
+      if (fit === undefined) {
+        fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
+        fitCtx.font = fitBox.font;
+        fit = fitCtx.measureText(t).width * 1.04 <= fitBox.room;
+        if (fitBox.fits.size > 4000) fitBox.fits.clear();
+        fitBox.fits.set(t, fit);
+      }
+      return fit;
+    };
+    if (fits(text)) return text;
+    // Three letters for the month, and on the narrowest phones no comma either ("Sep 23 1866").
+    var short = m[1].slice(0, 3) + m[2];
+    return fits(short) ? short : short.replace(",", "");
   }
   function monthTime(y, m) { return timeOfDay(dayFromDate(y, m, MID_DAY)); }
   function changeBefore(day) {
@@ -4639,7 +4646,7 @@
   function eventDate(d, t) {
     if (typeof d === "number") return fmtYear(d);
     var x = dateOfDay(dayOfTime(t));
-    return x[2] + " " + MONTHS[x[1] - 1] + " " + x[0];
+    return fmtMDY(x[0], x[1], x[2]);
   }
   function loadEvents() {
     if (tlEventsLoad) return;
@@ -5655,13 +5662,12 @@
         flagLine = line("Flag"); flagLine.hidden = true;
         langLine = line("Language"); langLine.hidden = true;
       }
-      if (modernNow) {
-        textLine("Borders from", fmtDate(p.start));
-        if (p.end >= 0) textLine("Borders until", fmtDate(p.end));
-      } else if (datedNow) {
+      // One line for the span of its borders: "June 9, 1815 to August 23, 1866".
+      if (modernNow) textLine("Borders from", fmtDate(p.start) + (p.end >= 0 ? " to " + fmtDate(p.end) : ""));
+      else if (datedNow) {
         var from = p.startDay !== null ? fmtDate(p.startDay) : fmtYear(p.start), until = p.endDay !== null ? fmtDate(p.endDay) : fmtYear(p.end);
         if (from === until) textLine("Borders", from);
-        else { textLine("Borders from", from); textLine("Borders until", until); }
+        else textLine("Borders from", from + " to " + until);
       }
       if (p.band) line("").textContent = "Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.";
       else if (p.b <= 1 && !p.people) line("").textContent = "Its borders here are approximate.";

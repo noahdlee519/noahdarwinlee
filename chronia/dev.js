@@ -53,7 +53,7 @@
     if (!m) return String(s || "");
     var y = +m[1], ys = y < 0 ? -y + " BC" : String(y);
     if (!m[2]) return ys;
-    return (m[3] ? +m[3] + " " : "") + MONTHS[+m[2] - 1] + " " + ys;
+    return MONTHS[+m[2] - 1] + (m[3] ? " " + +m[3] + "," : "") + " " + ys;
   }
   function describe(e) {
     var v = e.value || {};
