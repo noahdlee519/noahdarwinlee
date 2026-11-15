@@ -4824,7 +4824,8 @@
     if (isMonthly(now)) {
       var d = dateOfDay(dayOfTime(now)), y = d[0] + dir, m = d[1];
       if (y < mf) setTime(y === 0 ? -1 : y);
-      else setTime(y * 12 + m > LAST_YEAR * 12 + LAST_MONTH ? monthTime(LAST_YEAR, LAST_MONTH) : monthTime(y, m));
+      // A year on that would pass the last month stays put: going to the last month would be a step of months, not of a year.
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
       return;
     }
     var yr = Math.round(now), next = yr + dir, mo = ctlMonth;
@@ -4974,8 +4975,9 @@
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       stopPlay();
-      var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
-      if (e.shiftKey) stepMap(dir); else stepUnit(dir);
+      var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1, vertical = e.key === "ArrowUp" || e.key === "ArrowDown";
+      // Up and down go by the year here too, as everywhere else on the page: with the slider focused (after a drag) they went by the month from 1648.
+      if (vertical) { if (!e.shiftKey) stepYear(dir); } else if (e.shiftKey) stepMap(dir); else stepUnit(dir);
     } else if (e.key === "Home") { e.preventDefault(); setTime(FIRST_T); }
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
