@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1830–1848 | France | the Kingdom of the French in France's tag
+
+- What changed: the July Monarchy, named "Kingdom of the French" in the data, was missing from France's country tag, so following France through time skipped 1830 to 1848 and the kingdom could take a colour of its own. It is now in the tag, between the Bourbon Kingdom of France and the Second Republic.
+- Tables: `tools/country-tags.mjs` (France's names).
+- Sources: no new source; the name is the data's own.
+- Confidence: high.
+- Alternatives: none.
+- Left out: none.
+
 ## 1821–1870 | Canada | ghost borders inside British North America and along the 49th parallel
 
 - What changed: two kinds of stray piece are gone from the British lands of 1763 to 1885. (1) Hairline strips of the North-Western Territory along the 49th parallel, between Rupert's Land's outline (simplified to about 10 km) and the border, drew a second, broken border beside the United States (in 1863, 14 strips from 0 to 255 km² between 114° W and 97° W); they now go to Rupert's Land, as those east of 102° W already did, and so do the specks of it south of 56° N along British Columbia's border in the Rockies; specks of Rupert's Land cut off inside Quebec near Labrador (7 pieces, 680 km² in all) go to the Canadas. (2) Pieces of the sources' British spans left on lakes and bays inside Canada (Baker Lake, Labrador's reservoirs, British Columbia's lakes, and lakes on the Arctic islands; in 1863, about 1,900 km² of historical-basemaps' "British North America") drew red halos and short lines there; they are now dropped like the shore slivers: the test for pieces along Canada's land counts its lakes as land, and any piece of a British source span under 5,000 km² whose centre lies within Canada's bounding box is dropped (the Bahamas, Bermuda, and the Caribbean lie outside it).

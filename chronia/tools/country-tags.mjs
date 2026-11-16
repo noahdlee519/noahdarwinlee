@@ -5,7 +5,7 @@
 // and may be set by hand. A state with no tag has the colour of its own name, and SHADES's shades.
 export const TAGS = [
   ["Britain", [3, 2, 1], ["England", "Kingdom of England", "Commonwealth of England", "Great Britain", "Kingdom of Great Britain", "United Kingdom", "United Kingdom of Great Britain and Ireland", "United Kingdom of Great Britain and Northern Ireland"]],
-  ["France", [7, 5, 6], ["West Francia", "French Fourth Republic", "Kingdom of France", "France", "Vichy France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "French Second Republic", "Second French Empire", "French Third Republic"]],
+  ["France", [7, 5, 6], ["West Francia", "French Fourth Republic", "Kingdom of France", "France", "Vichy France", "French Empire", "French Republic", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France", "Kingdom of the French", "French Second Republic", "Second French Empire", "French Third Republic"]],
   ["Russia", [8, 9, 2], ["Principality of Vladimir-Suzdal", "Grand Duchy of Moscow", "Grand Principality of Moscow", "Tsardom of Muscovy", "Tsardom of Russia", "Russian Empire", "Soviet Russia", "Soviet Union", "USSR", "Russia", "Russian Federation"]],
   ["China", [9, 0, 2], ["Qin dynasty", "Han", "Han Empire", "Han dynasty", "Western Jin", "Eastern Jin", "Sui Empire", "Sui dynasty", "Tang Empire", "Tang dynasty", "Song Empire", "Northern Song", "Southern Song", "Yuan dynasty", "Ming Empire", "Ming Chinese Empire", "Ming dynasty", "Manchu Empire", "Qing Empire", "Qing dynasty", "China"]],
   ["United States", [6, 7, 4], ["United States of America", "United States"]],
