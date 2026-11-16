@@ -5663,7 +5663,8 @@
         langLine = line("Language"); langLine.hidden = true;
       }
       // One line for the span of its borders: "June 9, 1815 to August 23, 1866".
-      if (modernNow) textLine("Borders from", fmtDate(p.start) + (p.end >= 0 ? " to " + fmtDate(p.end) : ""));
+      // "Borders since" while they still stand.
+      if (modernNow) { if (p.end >= 0) textLine("Borders from", fmtDate(p.start) + " to " + fmtDate(p.end)); else textLine("Borders since", fmtDate(p.start)); }
       else if (datedNow) {
         var from = p.startDay !== null ? fmtDate(p.startDay) : fmtYear(p.start), until = p.endDay !== null ? fmtDate(p.endDay) : fmtYear(p.end);
         if (from === until) textLine("Borders", from);
