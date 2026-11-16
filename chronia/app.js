@@ -2860,15 +2860,24 @@
     return forms;
   }
   function centred(sp, win, name, people, fm, ctr, wall) {
-    var o = labelOptions(name, people, fm.sp)[fm.oi], dmax = fm.d, F = null, pole = fm;
+    var o = labelOptions(name, people, fm.sp)[fm.oi], dmax = fm.d, F = null, pole = fm, clear = null;
     if (wall) {
       F = prepFit(sp, wall, o.w / 2, o.h / 2, fm.ang, win);
       var r = poleOf(F, [[fm.u, fm.v], [ctr[0], ctr[1]], [0, 0]], 80, Infinity);
-      if (r && r.d >= 0.85 * fm.d) { dmax = r.d; pole = { u: r.x, v: r.y, d: r.d }; } else F = null;
+      if (r && r.d >= 0.85 * fm.d) { dmax = r.d; pole = { u: r.x, v: r.y, d: r.d }; }
+      else {
+        // The name loses more than 15% of its size by keeping clear of the capital's name, so the larger form ignores it. But
+        // on the screen a name is capped at its largest size, where the two are the same size and the larger form lies across
+        // the capital: it was then refused, and the name fell back to a small spot at the land's edge (Mongolia on the flat map,
+        // whose shape the projection widens). The form that keeps clear is offered too, first, so it wins a tie.
+        if (r && r.d >= 0.4 * fm.d) { var ac = nearCentre(F, ctr[0], ctr[1], CENTRE_KEEP * r.d, 260) || { x: r.x, y: r.y, d: r.d }; clear = { oi: fm.oi, sp: fm.sp, ang: fm.ang, u: ac.x, v: ac.y, d: ac.d, dmax: r.d, tight: fm.tight }; }
+        F = null;
+      }
     }
     if (!F) F = prepFit(sp, [], o.w / 2, o.h / 2, fm.ang, win);
     var at = nearCentre(F, ctr[0], ctr[1], CENTRE_KEEP * dmax, 260) || { x: pole.u, y: pole.v, d: pole.d };
     var out = [{ oi: fm.oi, sp: fm.sp, ang: fm.ang, u: at.x, v: at.y, d: at.d, dmax: dmax, tight: fm.tight }];
+    if (clear) out.unshift(clear);
     if (at.d < 0.97 * pole.d) out.push({ oi: fm.oi, sp: fm.sp, ang: fm.ang, u: pole.u, v: pole.v, d: pole.d, dmax: pole.d, tight: fm.tight, pole: true });
     return out;
   }
@@ -3137,7 +3146,7 @@
       // 12% bonus): zoomed in, every form reaches the largest size, and a name placed from further out
       // would otherwise stay where it was put for the wider view (South West Africa under the Angolan border).
       if (keep && keep.f * 1.25 >= top && (moving || rangeActive)) ranked = [keep].concat(ranked.filter(function (r) { return r !== keep; }));
-      for (var t = 0; t < Math.min(4, ranked.length); t++) {
+      for (var t = 0; t < Math.min(6, ranked.length); t++) {
         var rk = ranked[t];
         if (rk.f < thr) continue;
         var fmk = forms[rk.k], o = labelOptions(name, people, fmk.sp)[fmk.oi], geo = glyphLayout(c.fr, fmk, o, rk.f, people, scale);
