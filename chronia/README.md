@@ -722,6 +722,8 @@ git clone --depth 1 https://github.com/ropensci/USAboundariesData.git
 node chronia/tools/build-divisions.mjs node_modules USAboundariesData/data-raw/historical/histstates.geojson
 ```
 
+Norway's counties run back to the union with Sweden (4 November 1814; until 16 November 2026 they began on 1 January 1972, so Norway lay undivided beside Sweden's counties through the 19th century): Natural Earth's counties of 1972 to 2017 under their names of the time (`divisions-ne.json`, `no`), the amts to 1 January 1919 (Smaalenene, Hedemarken, Kristians, Jarlsberg og Larvik, Bratsberg, Nedenes, Lister og Mandal, Stavanger, Søndre and Nordre Bergenhus, Romsdal, Søndre and Nordre Trondhjem, Tromsø, and Finmarken), with Tromsø part of Finmarken until 1 October 1866 and Kristiania part of Akershus until 1842, Møre to 1936, and Kristiania to 1925; Svalbard only from 14 August 1925. The region answers to "United Kingdoms of Sweden and Norway" as well as "Norway". Left out: Bergen as a county of its own until 1972, Oslo's growth of 1948 (it is drawn at its later extent from 1842), Jarlsberg and Larvik apart before 1821, and the older spellings (Christiania, Christians, Opland).
+
 Later divisions (15 November 2026): for thirty countries Natural Earth's units are the layout before a reform, so `divisions-ne.json` ends them on the reform's day, and until now nothing was drawn after it (Kenya's provinces to 26 March 2013, and no counties). `tools/divisions-now.mjs` takes the layout that followed from geoBoundaries' open release (gbOpen), where it has it, and `build-divisions.mjs` puts those spans after Natural Earth's (`withLater`):
 
 ```

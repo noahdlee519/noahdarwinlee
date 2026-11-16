@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1814–1971 | Norway | the counties under the union with Sweden and after
+
+- What changed: Norway's first-level divisions began on 1 January 1972, so it had none beside Sweden's counties in the 19th century. They now run from the union (4 November 1814) under their names of the time: the amts to 1 January 1919, Tromsø split from Finmarken on 1 October 1866, Kristiania out of Akershus in 1842, Møre to 1936, Kristiania to 1925, and Svalbard from 14 August 1925.
+- Tables: `tools/divisions-ne.json` (`no`: `from`, `names`, `events`, `only_from`).
+- Sources: (1) statoids.com/uno.html (Counties of Norway: the split of 1866, the renamings of 1 January 1919, Kristiania from Akershus in 1842, Bergen merged into Hordaland on 1 January 1972); (2) lokalhistoriewiki.no/wiki/Amt (amts called fylker from 1 January 1919); (3) English Wikipedia, "Møre og Romsdal" (the name of 1936, Romsdal before 1919).
+- Confidence: medium. The lines are the counties' of 1972 to 2017, which the amts' followed but for the towns' growth; 1842 and 1936 are known by the year only.
+- Alternatives: beginning in 1671 or 1763, under Denmark-Norway, which the amts would allow.
+- Left out: Bergen, a county of its own until 1 January 1972; Oslo's annexation of Aker (1 January 1948); Jarlsberg and Larvik as two counties before 1821; the spellings Christiania and Christians (to 1877) and Opland (to about 1950); Norway under Denmark before 1814.
+
 ## 1814–1910 | the world | the same states on both sides of 1 January 1886
 
 - What changed: the map's two sources meet on 1 January 1886 (Cliopatria and the hand tables before, CShapes from then), and about a tenth of the world's land changed its look that day with nothing happening. What is the same state or colony on both sides now stays the same.
