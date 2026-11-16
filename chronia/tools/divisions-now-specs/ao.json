@@ -1,0 +1,104 @@
+{
+ "key": "ao",
+ "c": "AGO",
+ "sources": [
+  "https://en.wikipedia.org/wiki/Provinces_of_Angola (Lei n.º 14/24 de 5 de Setembro, Diário da República n.º 171; approved by the National Assembly on 14 August 2024; 'went into effect with its publication in the official gazette' on 5 September 2024; Icolo e Bengo out of Luanda, Cuando Cubango divided into Cuando and Cubango, Moxico Leste out of Moxico; published areas)",
+  "https://angolex.com/paginas/decreto-presidencial/classificacao-dos-municipios-270a-24a.html (Decreto Presidencial 270/24: the municipalities of every province under the new division, including Icolo e Bengo = Catete, Calumbo, Sequele, Bom Jesus, Quiçama, Cabo Ledo, Cabiri; Cuando = Mavinga, Cuito Cuanavale, Dirico, Rivungo, Luiana, Mucusso, Xipundo, Dima, Luengue; Cubango includes Longa; Moxico Leste = Cazombo, Luau, Cameia, Luacano, Lago Dilolo, Nana Candundo, Caianda, Macondo, Lóvua do Zambeze)",
+  "https://en.wikipedia.org/wiki/Icolo_e_Bengo_Province , https://en.wikipedia.org/wiki/Cuando_Province , https://en.wikipedia.org/wiki/Cubango_Province , https://en.wikipedia.org/wiki/Moxico_Leste_Province (municipalities; Moxico Leste from the old municipalities of Alto Zambeze, Cameia, Luacano, and Luau)",
+  "https://wiki.krisyotam.com/content/wikipedia_en_all_nopic_2026-03/Baixo_Longa and https://en.wikipedia.org/wiki/Lupire (Baixo Longa is in Longa municipality, Cubango; Lupire stays in Cuito Cuanavale, Cuando)",
+  "https://fr.allafrica.com/stories/202408160537.html (the Luanda / Icolo e Bengo line: the EN100 and the Fidel Castro expressway; Zango, Sequele, Funda, Calumbo, and Kifangondo go to Icolo e Bengo)",
+  "https://www.verangola.net/va/pt/092024/Politica/41463/Divis%C3%A3o-do-pa%C3%ADs-em-21-prov%C3%ADncias-projecta-%E2%80%9Cequil%C3%ADbrio-populacional%E2%80%9D.htm and https://lex.ao/docs/presidente-da-republica/2024/decreto-presidencial-n-o-268-24-de-29-de-novembro/ (the authorities said the division 'deve entrar em vigor a partir de Janeiro de 2025'; the old bodies stay in office until the new ones are installed; action plan of 29 November 2024)"
+ ],
+ "notes": "BUILT-IN SPAN: the built-in entry for ao (18 provinces from 31 October 2011) must get \"last\": \"2024-09-04\"; this layout begins 2024-09-05. DATE: taken as the law's own day, 5 September 2024 (Lei n.º 14/24, in force on publication according to Wikipedia's reading of the law). The law's PDF (lex.ao, mpla.ao) could not be opened in this session, so the entry-into-force article was not read directly. The other date in circulation is January 2025: the government said the division would apply from January 2025, the first governors of the new provinces were appointed in December 2024, and the budget of 2025 was the first for 21 provinces; if the working start is preferred, use 2025-01-01 (and 2024-12-31 for the built-in entry). BUILD: geoBoundaries ADM1 with the new provinces cut out along ADM3 communes (ADM2, of 2006, does not line up with ADM1; the communes do). Icolo e Bengo = the communes of the old municipalities of Icolo e Bengo (Catete, Bom Jesus, Cabiri, Calomboloca, Caculo Cahango) and Quiçama (Muxima, Cabo Ledo, Demba Chio, Mumbondo, Kixinge), plus Calumbo, Funda, and Zango. APPROXIMATE: the real line near Luanda follows the EN100 and the expressway through the old communes of Viana and Cacuaco; whole communes (Calumbo, Zango, and Funda, the last standing in for Sequele and Kifangondo) stand in for it. Built 17,872 km² against 17,150 to 17,223 published (about 4% over); Luanda 1,946 against 1,655. Cuando = the communes of old Mavinga (Mavinga, Cunjamba-Dima, Cutuile, Luengue), Rivungo (Rivungo, Nerinquinha, Chipundo, Luiana), Dirico (Dirico, Mucusso, Chamavera), and Cuito Cuanavale and Lupire; the communes of Longa and Baixo Longa of old Cuito Cuanavale stay in Cubango (Longa is a municipality of Cubango). Built: Cuando 108,202 / 109,346 km² published; Cubango 91,867 / 91,466. Moxico Leste = the communes of old Alto Zambeze (Cazombo, Caianda, Calunda, Cavungo, Lóvua, Macondo, Caquengue), Cameia, Luacano (Luacano, Lago-Dilolo), and Luau: 72,293 / 73,141 km². The remainder of Cuando Cubango is renamed Cubango.",
+ "layouts": [
+  {
+   "first": "2024-09-05",
+   "last": null,
+   "base": "ADM1",
+   "rename": {
+    "Cuando Cubango": "Cubango"
+   },
+   "carve": [
+    {
+     "name": "Icolo e Bengo",
+     "from": [
+      "Luanda"
+     ],
+     "level": "ADM3",
+     "units": [
+      "Catete",
+      "Bom Jesus",
+      "Cabiri",
+      "Calomboloca",
+      "Caculo Cahango",
+      "Muxima",
+      "Cabo Ledo",
+      "Demba Chio",
+      "Mumbondo",
+      "Kixinge",
+      "Calumbo",
+      "Funda",
+      "Zango"
+     ]
+    },
+    {
+     "name": "Cuando",
+     "from": [
+      "Cubango"
+     ],
+     "level": "ADM3",
+     "units": [
+      "Cuito Cuanavale",
+      "Lupire",
+      "Mavinga",
+      "Cunjamba-Dima",
+      "Cutuile",
+      "Luengue",
+      "Rivungo",
+      "Nerinquinha",
+      "Chipundo",
+      "Luiana",
+      "Dirico",
+      "Mucusso",
+      "Chamavera"
+     ]
+    },
+    {
+     "name": "Moxico Leste",
+     "from": [
+      "Moxico"
+     ],
+     "level": "ADM3",
+     "units": [
+      "Cazombo (Alto Zambeze)",
+      "Caianda",
+      "Calunda",
+      "Cavungo",
+      "Macondo",
+      "Caquengue",
+      "Cameia",
+      "Luacano",
+      "Lago-Dilolo",
+      "Luau"
+     ]
+    },
+    {
+     "name": "Moxico Leste",
+     "from": [
+      "Moxico"
+     ],
+     "level": "ADM3",
+     "units": [
+      "Lóvua"
+     ],
+     "box": [
+      22,
+      -13,
+      25,
+      -10
+     ]
+    }
+   ]
+  }
+ ]
+}

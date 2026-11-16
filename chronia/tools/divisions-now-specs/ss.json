@@ -1,0 +1,335 @@
+{
+ "key": "ss",
+ "c": "SSD",
+ "sources": [
+  "https://www.radiotamazuj.org/en/news/article/full-list-of-kiir-s-proposed-new-28-states-in-s-sudan (Radio Tamazuj, 3 October 2015: Establishment Order 36/2015, the 28 states with the counties of each)",
+  "https://sudantribune.com/?p=55856 (Sudan Tribune, 24 December 2015: the governors of the 28 states appointed by a Republican Order in effect from 24 December 2015)",
+  "https://paanluelwel.com/2017/01/22/the-32-federal-states-of-the-republic-of-south-sudan/?amp=1 (the 32 states of the decree of 14 January 2017 with the counties of each)",
+  "https://sudantribune.com/?p=59623 (Sudan Tribune, 15 January 2017: Eastern Nile divided into Northern Upper Nile and Central Upper Nile; Maiwut out of Latjor; Tumbura out of Gbudwe)",
+  "https://radiotamazuj.org/en/news/article/new-states-in-south-sudan-including-abyei-administrative-area (the 32 states as of 14 January 2017, with Akobo, Bieh, and Fashoda)",
+  "https://en.wikipedia.org/wiki/States_of_South_Sudan (the return to 10 states, two administrative areas, and one area with special status on 22 February 2020)",
+  "https://en.wikipedia.org/wiki/Ruweng_Administrative_Area (Ruweng State until 22 February 2020, then the administrative area)"
+ ],
+ "notes": "THREE LAYOUTS. (1) 24 December 2015 to 13 January 2017, the 28 states; (2) 14 January 2017 to 21 February 2020, the 32 states; (3) from 22 February 2020, the ten states with the Ruweng and Greater Pibor administrative areas cut out: THIS THIRD LAYOUT REPLACES THE BUILT-IN ENTRY for ss (ten states from 22 February 2020), which must be removed or the two overlap. Every state of both layouts is a whole set of the source's 78 counties (geoBoundaries ADM2, OCHA 2020): the Establishment Order lists the states by county, and all 78 counties are used exactly once. Not exact: the order also names counties the source does not have: Akoka (inside the source's Baliet, same state), Bagari (the source's Wau county), Anzara (Nzara), Jemeza, Tali, Tigor, and Gwor (inside Terekeka), and Koma, which the order of 2015 puts in Eastern Nile and the decree of 2017 in Maiwut, and which the source does not separate from Maiwut and Longochuk, so in 2015 to 2017 Koma is drawn in Latjor instead of Eastern Nile. Canal/Pigi (in Jonglei in the source) belongs to Eastern Nile and then Central Upper Nile. Panyikang is in Western Nile in 2015 and in Central Upper Nile from 2017 (PaanLuel Wël's list; English Wikipedia lists it under both Central Upper Nile and Fashoda); Malakal county is taken as Eastern Nile's and then Central Upper Nile's, of which it was the capital. The states' borders were never demarcated on the ground and several were contested (Malakal, Ruweng, Raga); county lines are OCHA's. Names: layout 1 uses the names of the order (Namorunyang, Western Nile, Western Bieh, Eastern Bieh); layout 2 the later names (Kapoeta, Fashoda, Fangak, Bieh): those renamings came on various days in 2016 and are folded into 14 January 2017. Latjor is spelled the same in both. Dates: the order is of 2 October 2015; 24 December 2015 is the day the 28 governors were appointed and the day after the map's own last day. Layout 3: Ruweng = Pariang + Abiemnhom (out of Unity), Greater Pibor = Pibor + Pochalla (out of Jonglei), the same counties as the former Ruweng and Boma states; Abyei is not in the source (it is the map's own disputed land). No source listing the counties of the two areas as of 2020 could be opened (Radio Tamazuj's article of February 2020 was blocked); the composition rests on the states they continue.",
+ "layouts": [
+  {
+   "first": "2015-12-24",
+   "last": "2017-01-13",
+   "base": "ADM2",
+   "merge": {
+    "Imatong": [
+     "Torit",
+     "Ikotos",
+     "Lafon",
+     "Magwi"
+    ],
+    "Namorunyang": [
+     "Kapoeta South",
+     "Kapoeta North",
+     "Kapoeta East",
+     "Budi"
+    ],
+    "Maridi": [
+     "Maridi",
+     "Ibba"
+    ],
+    "Amadi": [
+     "Mundri West",
+     "Mundri East",
+     "Mvolo"
+    ],
+    "Gbudwe": [
+     "Yambio",
+     "Nzara",
+     "Ezo",
+     "Tambura",
+     "Nagero"
+    ],
+    "Jubek": [
+     "Juba"
+    ],
+    "Terekeka": [
+     "Terekeka"
+    ],
+    "Yei River": [
+     "Yei",
+     "Kajo-keji",
+     "Morobo",
+     "Lainya"
+    ],
+    "Wau": [
+     "Wau",
+     "Jur River"
+    ],
+    "Aweil": [
+     "Aweil South",
+     "Aweil Centre"
+    ],
+    "Lol": [
+     "Aweil West",
+     "Aweil North",
+     "Raga"
+    ],
+    "Aweil East": [
+     "Aweil East"
+    ],
+    "Twic": [
+     "Twic"
+    ],
+    "Gogrial": [
+     "Gogrial East",
+     "Gogrial West"
+    ],
+    "Tonj": [
+     "Tonj North",
+     "Tonj East",
+     "Tonj South"
+    ],
+    "Eastern Lakes": [
+     "Yirol West",
+     "Yirol East",
+     "Awerial"
+    ],
+    "Western Lakes": [
+     "Rumbek East",
+     "Rumbek North",
+     "Rumbek Centre",
+     "Wulu"
+    ],
+    "Gok": [
+     "Cueibet"
+    ],
+    "Northern Liech": [
+     "Rubkona",
+     "Guit",
+     "Koch",
+     "Mayom"
+    ],
+    "Southern Liech": [
+     "Leer",
+     "Mayendit",
+     "Panyijiar"
+    ],
+    "Ruweng": [
+     "Pariang",
+     "Abiemnhom"
+    ],
+    "Eastern Nile": [
+     "Malakal",
+     "Renk",
+     "Maban",
+     "Melut",
+     "Baliet",
+     "Canal/Pigi"
+    ],
+    "Jonglei": [
+     "Bor South",
+     "Duk",
+     "Twic East"
+    ],
+    "Western Nile": [
+     "Panyikang",
+     "Fashoda",
+     "Manyo"
+    ],
+    "Western Bieh": [
+     "Fangak",
+     "Ayod"
+    ],
+    "Eastern Bieh": [
+     "Akobo",
+     "Nyirol",
+     "Uror"
+    ],
+    "Latjor": [
+     "Luakpiny/Nasir",
+     "Ulang",
+     "Maiwut",
+     "Longochuk"
+    ],
+    "Boma": [
+     "Pibor",
+     "Pochalla"
+    ]
+   }
+  },
+  {
+   "first": "2017-01-14",
+   "last": "2020-02-21",
+   "base": "ADM2",
+   "merge": {
+    "Imatong": [
+     "Torit",
+     "Ikotos",
+     "Lafon",
+     "Magwi"
+    ],
+    "Kapoeta": [
+     "Kapoeta South",
+     "Kapoeta North",
+     "Kapoeta East",
+     "Budi"
+    ],
+    "Maridi": [
+     "Maridi",
+     "Ibba"
+    ],
+    "Amadi": [
+     "Mundri West",
+     "Mundri East",
+     "Mvolo"
+    ],
+    "Gbudwe": [
+     "Yambio",
+     "Nzara",
+     "Ezo"
+    ],
+    "Tambura": [
+     "Tambura",
+     "Nagero"
+    ],
+    "Jubek": [
+     "Juba"
+    ],
+    "Terekeka": [
+     "Terekeka"
+    ],
+    "Yei River": [
+     "Yei",
+     "Kajo-keji",
+     "Morobo",
+     "Lainya"
+    ],
+    "Wau": [
+     "Wau",
+     "Jur River"
+    ],
+    "Aweil": [
+     "Aweil South",
+     "Aweil Centre"
+    ],
+    "Lol": [
+     "Aweil West",
+     "Aweil North",
+     "Raga"
+    ],
+    "Aweil East": [
+     "Aweil East"
+    ],
+    "Twic": [
+     "Twic"
+    ],
+    "Gogrial": [
+     "Gogrial East",
+     "Gogrial West"
+    ],
+    "Tonj": [
+     "Tonj North",
+     "Tonj East",
+     "Tonj South"
+    ],
+    "Eastern Lakes": [
+     "Yirol West",
+     "Yirol East",
+     "Awerial"
+    ],
+    "Western Lakes": [
+     "Rumbek East",
+     "Rumbek North",
+     "Rumbek Centre",
+     "Wulu"
+    ],
+    "Gok": [
+     "Cueibet"
+    ],
+    "Northern Liech": [
+     "Rubkona",
+     "Guit",
+     "Koch",
+     "Mayom"
+    ],
+    "Southern Liech": [
+     "Leer",
+     "Mayendit",
+     "Panyijiar"
+    ],
+    "Ruweng": [
+     "Pariang",
+     "Abiemnhom"
+    ],
+    "Northern Upper Nile": [
+     "Renk",
+     "Maban",
+     "Melut"
+    ],
+    "Central Upper Nile": [
+     "Malakal",
+     "Baliet",
+     "Canal/Pigi",
+     "Panyikang"
+    ],
+    "Fashoda": [
+     "Fashoda",
+     "Manyo"
+    ],
+    "Jonglei": [
+     "Bor South",
+     "Duk",
+     "Twic East"
+    ],
+    "Fangak": [
+     "Fangak",
+     "Ayod"
+    ],
+    "Bieh": [
+     "Nyirol",
+     "Uror"
+    ],
+    "Akobo": [
+     "Akobo"
+    ],
+    "Latjor": [
+     "Luakpiny/Nasir",
+     "Ulang"
+    ],
+    "Maiwut": [
+     "Maiwut",
+     "Longochuk"
+    ],
+    "Boma": [
+     "Pibor",
+     "Pochalla"
+    ]
+   }
+  },
+  {
+   "first": "2020-02-22",
+   "last": null,
+   "base": "ADM1",
+   "carve": [
+    {
+     "name": "Ruweng",
+     "from": [
+      "Unity"
+     ],
+     "level": "ADM2",
+     "units": [
+      "Pariang",
+      "Abiemnhom"
+     ]
+    },
+    {
+     "name": "Greater Pibor",
+     "from": [
+      "Jonglei"
+     ],
+     "level": "ADM2",
+     "units": [
+      "Pibor",
+      "Pochalla"
+     ]
+    }
+   ]
+  }
+ ]
+}

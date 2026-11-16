@@ -1,0 +1,23 @@
+{
+  "key": "ml", "c": "MLI",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Taoud%C3%A9nit_Region (created by law in 2012 from the northern part of Timbuktu Cercle; implementation began on 19 January 2016 with the appointment of the governor; 292,000 km²; six cercles)",
+    "https://en.wikipedia.org/wiki/M%C3%A9naka_Region (created by loi n° 2012-017 of 2 March 2012 from Ménaka Cercle of Gao Region; implementation began on 19 January 2016; 81,040 km²)",
+    "https://statoids.com/uml.html (2016-01-19: Taoudéni split from Timbuktu and Ménaka split from Gao, governors appointed that day; notes that the effective date is in doubt)",
+    "https://en.wikipedia.org/wiki/Regions_of_Mali (loi n° 2012-017 of 2 March 2012, 19 regions on paper; lois n° 2023-005, 2023-006, and 2023-007 of 13 March 2023, 19 regions and the district of Bamako)",
+    "https://en.wikipedia.org/wiki/San_Region (loi n° 2023-006 of 13 March 2023; seven cercles and 42 communes, more than the old cercles of San and Tominian held)",
+    "https://en.wikipedia.org/wiki/Douentza_Region (loi n° 2023-006 of 13 March 2023; six cercles and 24 communes)"
+  ],
+  "notes": "One layout, 19 January 2016 to 12 March 2023: the eight old regions and Bamako of geoBoundaries ADM1, with Ménaka carved out as the whole cercle of Ménaka (ADM2; 78,180 km² built against 81,040 published) and Taoudénit as the commune of Salam (ADM3), the northern part of the cercle of Tombouctou. Taoudénit is an approximation: no source opened gives the region's southern limit by commune, and Salam was chosen because it is the cercle's whole northern part and its area (293,400 km²) is within one percent of the region's published 292,000 km². The regions were created on paper by loi n° 2012-017 of 2 March 2012; 19 January 2016 is the day their governors were appointed. The layout ends the day before loi n° 2023-006 of 13 March 2023 (19 regions and Bamako). That later layout is left out: the law's own lists could not be opened (matd.gouv.ml and the draft bill on malinewstv.com were blocked, and the Journal officiel issues n° 6 and n° 17 of 2023 do not carry it), and the new regions are not whole cercles of the source (San has 42 communes against 37 in the old cercles of San and Tominian, with a cercle of Yangasso taken from Bla; Douentza has 24 communes against 15, the communes themselves having been redrawn). The other nine regions of the 2012 law were given governors piecemeal before 2023; those days were not established, so they are not shown before 13 March 2023.",
+  "layouts": [
+    {
+      "first": "2016-01-19", "last": "2023-03-12",
+      "base": "ADM1",
+      "rename": { "Koulikouro": "Koulikoro", "Segou": "Ségou", "Tombouctou": "Tombouctou (Timbuktu)" },
+      "carve": [
+        { "name": "Ménaka", "from": ["Gao"], "level": "ADM2", "units": ["Menaka"] },
+        { "name": "Taoudénit", "from": ["Tombouctou (Timbuktu)"], "level": "ADM3", "units": ["Salam"] }
+      ]
+    }
+  ]
+}

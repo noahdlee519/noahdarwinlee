@@ -1,0 +1,90 @@
+{
+  "key": "mr",
+  "c": "MRT",
+  "sources": [
+    "https://finances.gov.mr/Recueil_des_textes_relatifs_a_la_mission_du_Ministere/Textes/TXT%20GL/D%C3%A9cret%202014-182%203%20Wilayas.pdf (décret n° 2014-182 bis of 2 December 2014 creating the wilayas of Nouakchott: Nouakchott Sud = Riyad, El Mina, and Arafat; Nouakchott Ouest = Sebkha, Tevragh-Zeina, and Ksar; Nouakchott Nord = Dar Naim, Teyarett, and Toujounine)",
+    "https://en.wikipedia.org/wiki/Nouakchott-Nord_region (gives 25 November 2014 as the day Nouakchott was split into three regions; departments Dar-Naim, Teyarett, and Toujounine)",
+    "https://en.wikipedia.org/wiki/Regions_of_Mauritania (the three regions and their capitals)"
+  ],
+  "notes": "Fifteen wilayas from 2 December 2014: geoBoundaries ADM1 with Nouakchott divided into three by its nine moughataas (ADM2), exactly as the decree lists them. The date is the decree's own (n° 2014-182 bis, 2 December 2014; the text gives no separate day of entry into force); English Wikipedia gives 25 November 2014. So that no gap shows, a first layout carries the old thirteen wilayas from 25 November to 1 December 2014. geoBoundaries' two levels disagree on the capital's outer limit: ADM1 draws Nouakchott as a 1,500 km² rectangle, while the nine moughataas of ADM2 cover only its inner 320 km² (the rest lying in Trarza at that level). Both layouts follow the moughataas, so the surrounding ring is drawn as Trarza and Nouakchott is smaller than on the map before 25 November 2014; the three wilayas come out at about 95, 98, and 124 km², well under their official extents, which include empty land around the city.",
+  "layouts": [
+    {
+      "first": "2014-11-25",
+      "last": "2014-12-01",
+      "base": "ADM1",
+      "rename": {
+        "Hodh ech Chargui": "Hodh Ech Chargui",
+        "Hodh el Gharbi": "Hodh El Gharbi",
+        "Nouakchott": "Trarza"
+      },
+      "carve": [
+        {
+          "name": "Nouakchott",
+          "from": [
+            "Trarza"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Dar Naim",
+            "Teyarett",
+            "Toujounine",
+            "Tevragh Zein",
+            "Ksar",
+            "Sebkha",
+            "Arafat",
+            "El Mina",
+            "Riyadh"
+          ]
+        }
+      ]
+    },
+    {
+      "first": "2014-12-02",
+      "last": null,
+      "base": "ADM1",
+      "rename": {
+        "Hodh ech Chargui": "Hodh Ech Chargui",
+        "Hodh el Gharbi": "Hodh El Gharbi",
+        "Nouakchott": "Trarza"
+      },
+      "carve": [
+        {
+          "name": "Nouakchott-Nord",
+          "from": [
+            "Trarza"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Dar Naim",
+            "Teyarett",
+            "Toujounine"
+          ]
+        },
+        {
+          "name": "Nouakchott-Ouest",
+          "from": [
+            "Trarza"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Tevragh Zein",
+            "Ksar",
+            "Sebkha"
+          ]
+        },
+        {
+          "name": "Nouakchott-Sud",
+          "from": [
+            "Trarza"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Arafat",
+            "El Mina",
+            "Riyadh"
+          ]
+        }
+      ]
+    }
+  ]
+}

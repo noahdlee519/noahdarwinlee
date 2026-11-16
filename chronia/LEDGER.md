@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 2006–2026 | sixteen countries | first-level divisions built from lower units
+
+- What changed: where no dataset to hand has a country's first-level divisions after a reform, they are built from geoBoundaries' districts, communes, zones, or townships, as the law lists them: Kazakhstan (2022), Algeria (2019, 2021), Mali (2016 to 2023), Ethiopia (2020, 2021, 2023), Mauritania (2014), Tanzania (2016), Namibia (2013), Zambia (2021), the Central African Republic (2021), Myanmar (2011), Angola (2024), Madagascar (2021), Norway (2024), Indonesia (2022, twice), the Philippines (2006, 2008, 2022), and South Sudan (2015, 2017, 2020).
+- Tables: `tools/divisions-now-specs/` (new; one file a country, with its sources and notes), `tools/divisions-now.mjs` (layouts, `merge`, `carve`).
+- Sources: each spec lists them. Among them: Kazakhstan's decree 887 of 3 May 2022; Algeria's loi 19-12 (Journal officiel 78 of 18 December 2019) and ordonnance 21-03; Mauritania's décret 2014-182 bis; Namibia's Proclamation 25 of 2013; Zambia's Statutory Instrument 114 of 2021; Indonesia's laws 14 to 16 and 29 of 2022; the Philippines' Republic Act 11550 and *Sema v. COMELEC*; the Congo's laws 25 to 27 of 2024; and, for dates and lists where the law could not be opened, Wikipedia, citypopulation.de, statoids.com, and news reports.
+- Confidence: medium for the days and the lists taken from the laws; low where the day rests on Wikipedia alone (Ethiopia's 2021 and 2023, Tanzania's, Myanmar's) and where a new division's line cuts through the lowest units to hand.
+- Alternatives: Zambia from the instrument's own day (31 December 2021) in place of the announcement's (17 November); the Central African Republic from the Assembly's vote (10 December 2020) in place of the promulgation (21 January 2021); Angola from 1 January 2025; Mauritania from 25 November 2014; Madagascar from 16 June 2021.
+- Left out: Iraq's Halabja Governorate, the Congo's Congo-Oubangui, Nkéni-Alima, and Djoué-Léfini, Mali's regions of 2023, and Egypt's Helwan and 6th of October governorates, none of which the units to hand can make; Kazakhstan's Baikonur (joined to Kyzylorda) and Shymkent's full extent; Abyei in South Sudan; Davao de Oro's name before 2022.
+
 ## 2006–2026 | eighteen countries | first-level divisions after a reform
 
 - What changed: the first-level divisions of eighteen countries no longer stop on the day of a reform. Natural Earth has their layout from before it, and the layout after comes from geoBoundaries: Kenya, Norway (2020 to 2023), Finland, the Democratic Republic of the Congo, Sudan, South Sudan (from 2020), Chad, Angola, Egypt (from 2011), Madagascar, Botswana, Morocco, Côte d'Ivoire, Indonesia (to 24 July 2022), Papua New Guinea, Greenland, Iran, and the Philippines (2013 to 2022).

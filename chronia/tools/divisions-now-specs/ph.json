@@ -1,0 +1,153 @@
+{
+  "key": "ph",
+  "c": "PHL",
+  "sources": [
+    "https://lawphil.net/statutes/repacts/ra2021/ra_11550_2021.html (Republic Act 11550, section 3: the 12 municipalities of Maguindanao del Norte and the 24 of Maguindanao del Sur; section 9: Cotabato City with Maguindanao del Norte's legislative district)",
+    "https://en.wikipedia.org/wiki/2022_Maguindanao_division_plebiscite (plebiscite 17 September 2022, result announced 18 September 2022)",
+    "https://en.wikipedia.org/wiki/2006_Dinagat_Islands_creation_plebiscite (Dinagat Islands: plebiscite 2 December 2006, Republic Act 9355)",
+    "https://en.wikipedia.org/wiki/Shariff_Kabunsuan (plebiscite 28 October 2006; its municipalities; Cotabato City grouped with it for representation; not Talitay)",
+    "https://lawphil.net/judjuris/juri2008/jul2008/gr_177597_2008.html (Sema v. COMELEC, 16 July 2008: the act that created Shariff Kabunsuan void)",
+    "https://en.wikipedia.org/wiki/2019_Compostela_Valley_renaming_plebiscite (Republic Act 11297; plebiscite 7 December 2019, result approved 8 December 2019)"
+  ],
+  "notes": "Five spans with the built-in one: 29 October to 1 December 2006 (81: Dinagat Islands still in Surigao del Norte), 2 December 2006 to 15 July 2008 (82), 16 July 2008 to 27 October 2013 (81), the built-in 28 October 2013 to 16 September 2022 (82), and from 17 September 2022 (83). Davao Occidental is part of Davao del Sur before 28 October 2013. Shariff Kabunsuan (plebiscite 28 October 2006, the day the map's earlier layout ends; void by the Supreme Court's decision of 16 July 2008, which Wikipedia dates 17 July) IS DRAWN in the first two layouts, from whole municipalities: Barira, Buldon, Datu Blah T. Sinsuat, Datu Odin Sinsuat, Kabuntalan, Northern Kabuntalan (made out of Kabuntalan in December 2006), Matanog, Parang, Sultan Kudarat, Sultan Mastura, and Upi; to leave it out, delete the 'carve' and the 'rename' of those two layouts. Dinagat Islands began on 2 December 2006; the Supreme Court annulled its charter in 2010 and reversed itself in 2011, and it is drawn without a break. Maguindanao del Norte is the same eleven municipalities with Talitay, the rest is Maguindanao del Sur, from the plebiscite's day (17 September 2022; the result was announced on the 18th). Cotabato City is an independent component city, in neither province; the built-in entry joins it to Maguindanao, and here it is joined to Maguindanao del Norte (and to Shariff Kabunsuan in 2006 to 2008), which surrounds it and whose legislative district it shares. Compostela Valley became Davao de Oro by the plebiscite of 7 December 2019: the name is changed only from 17 September 2022 here, because 2019 falls inside the built-in span (28 October 2013 to 16 September 2022), which would have to be split at 8 December 2019 with the rename from then. The source's Maguindanao is about 5,000 km², far below the official 9,700 km² (a known disagreement over that figure), so areas were checked by shape, not against the published ones.",
+  "layouts": [
+    {
+      "first": "2006-10-29",
+      "last": "2006-12-01",
+      "base": "ADM2",
+      "rename": {
+        "Cotabato City": "Shariff Kabunsuan"
+      },
+      "merge": {
+        "Davao del Sur": [
+          "Davao del Sur",
+          "Davao Occidental"
+        ],
+        "Surigao del Norte": [
+          "Surigao del Norte",
+          "Dinagat Islands"
+        ]
+      },
+      "carve": [
+        {
+          "name": "Shariff Kabunsuan",
+          "from": [
+            "Maguindanao"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Barira",
+            "Buldon",
+            "Datu Blah T. Sinsuat",
+            "Datu Odin Sinsuat",
+            "Kabuntalan",
+            "Matanog",
+            "Northern Kabuntalan",
+            "Parang",
+            "Sultan Kudarat",
+            "Sultan Mastura",
+            "Upi"
+          ],
+          "box": [
+            123.9,
+            6.7,
+            124.6,
+            7.6
+          ]
+        }
+      ]
+    },
+    {
+      "first": "2006-12-02",
+      "last": "2008-07-15",
+      "base": "ADM2",
+      "rename": {
+        "Cotabato City": "Shariff Kabunsuan"
+      },
+      "merge": {
+        "Davao del Sur": [
+          "Davao del Sur",
+          "Davao Occidental"
+        ]
+      },
+      "carve": [
+        {
+          "name": "Shariff Kabunsuan",
+          "from": [
+            "Maguindanao"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Barira",
+            "Buldon",
+            "Datu Blah T. Sinsuat",
+            "Datu Odin Sinsuat",
+            "Kabuntalan",
+            "Matanog",
+            "Northern Kabuntalan",
+            "Parang",
+            "Sultan Kudarat",
+            "Sultan Mastura",
+            "Upi"
+          ],
+          "box": [
+            123.9,
+            6.7,
+            124.6,
+            7.6
+          ]
+        }
+      ]
+    },
+    {
+      "first": "2008-07-16",
+      "last": "2013-10-27",
+      "base": "ADM2",
+      "merge": {
+        "Davao del Sur": [
+          "Davao del Sur",
+          "Davao Occidental"
+        ]
+      }
+    },
+    {
+      "first": "2022-09-17",
+      "last": null,
+      "base": "ADM2",
+      "rename": {
+        "Maguindanao": "Maguindanao del Sur",
+        "Cotabato City": "Maguindanao del Norte",
+        "Compostela Valley": "Davao de Oro"
+      },
+      "carve": [
+        {
+          "name": "Maguindanao del Norte",
+          "from": [
+            "Maguindanao del Sur"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Barira",
+            "Buldon",
+            "Datu Blah T. Sinsuat",
+            "Datu Odin Sinsuat",
+            "Kabuntalan",
+            "Matanog",
+            "Northern Kabuntalan",
+            "Parang",
+            "Sultan Kudarat",
+            "Sultan Mastura",
+            "Upi",
+            "Talitay"
+          ],
+          "box": [
+            123.9,
+            6.7,
+            124.6,
+            7.6
+          ]
+        }
+      ]
+    }
+  ]
+}

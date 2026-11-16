@@ -1,0 +1,158 @@
+{
+  "key": "id",
+  "c": "IDN",
+  "sources": [
+    "https://news.detik.com/berita/d-6205617/jokowi-teken-uu-pembentukan-3-provinsi-baru-papua (Laws 14, 15, and 16 of 2022, signed 25 July 2022, with the regencies of South Papua, Central Papua, and Highland Papua)",
+    "https://setkab.go.id/pembentukan-tiga-provinsi-baru-di-papua/ (the three laws, 25 July 2022, and the capitals)",
+    "https://www.cnnindonesia.com/nasional/20221111132231-20-872514/profil-3-provinsi-baru-papua-selatan-papua-tengah-papua-pegunungan (the same regency lists; the provinces inaugurated 11 November 2022)",
+    "https://news.ddtc.co.id/berita/nasional/44086/pemerintah-undangkan-uu-pembentukan-provinsi-papua-barat-daya (Law 29 of 2022, promulgated and in force 8 December 2022: Sorong, South Sorong, Raja Ampat, Tambrauw, and Maybrat regencies and the city of Sorong)"
+  ],
+  "notes": "All four provinces are whole regencies of the source. The dates are the laws' own (25 July and 8 December 2022); the first three were inaugurated later, on 11 November 2022. Drawn against published areas: South Papua 118,500 against 117,800 km², Central Papua 60,800 against 61,100, Highland Papua 54,200 against 51,200, Papua 83,600 against 82,700, West Papua 60,500 against 60,300, and Southwest Papua 35,500 against 39,100 (the source's regencies there are smaller than the official figures). The source's provinces and regencies come from different surveys and disagree at the neck of the Bird's Head: about 2,500 km² that the province layer gives to Papua lies in the regency layer's Teluk Wondama and Kaimana; it is joined to Central Papua (the second 'Central Papua' carve), as the land next to Nabire.",
+  "layouts": [
+    {
+      "first": "2022-07-25",
+      "last": "2022-12-07",
+      "base": "ADM1",
+      "carve": [
+        {
+          "name": "South Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Merauke",
+            "Boven Digoel",
+            "Mappi",
+            "Asmat"
+          ]
+        },
+        {
+          "name": "Central Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Nabire",
+            "Puncak Jaya",
+            "Paniai",
+            "Mimika",
+            "Puncak",
+            "Dogiyai",
+            "Intan Jaya",
+            "Deiyai"
+          ]
+        },
+        {
+          "name": "Central Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Teluk Wondama",
+            "Kaimana"
+          ]
+        },
+        {
+          "name": "Highland Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Jayawijaya",
+            "Pegunungan Bintang",
+            "Yahukimo",
+            "Tolikara",
+            "Mamberamo Tengah",
+            "Yalimo",
+            "Lanny Jaya",
+            "Nduga"
+          ]
+        }
+      ]
+    },
+    {
+      "first": "2022-12-08",
+      "last": null,
+      "base": "ADM1",
+      "carve": [
+        {
+          "name": "South Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Merauke",
+            "Boven Digoel",
+            "Mappi",
+            "Asmat"
+          ]
+        },
+        {
+          "name": "Central Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Nabire",
+            "Puncak Jaya",
+            "Paniai",
+            "Mimika",
+            "Puncak",
+            "Dogiyai",
+            "Intan Jaya",
+            "Deiyai"
+          ]
+        },
+        {
+          "name": "Central Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Teluk Wondama",
+            "Kaimana"
+          ]
+        },
+        {
+          "name": "Highland Papua",
+          "from": [
+            "Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Jayawijaya",
+            "Pegunungan Bintang",
+            "Yahukimo",
+            "Tolikara",
+            "Mamberamo Tengah",
+            "Yalimo",
+            "Lanny Jaya",
+            "Nduga"
+          ]
+        },
+        {
+          "name": "Southwest Papua",
+          "from": [
+            "West Papua"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Sorong",
+            "Sorong Selatan",
+            "Raja Ampat",
+            "Tambrauw",
+            "Maybrat",
+            "Kota Sorong"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "key": "mg",
+  "c": "MDG",
+  "sources": [
+    "https://lexpress.mg/11/08/2021/creation-de-la-23eme-region/ (ceremony of 11 August 2021 for the signing of the decree promulgating the law that creates the 23rd region by dividing Vatovavy-Fitovinany in two)",
+    "https://geo.fyi/2023/03/22/administrative-geography-of-madagascar/ (11 August 2021; Vatovavy: Mananjary, Nosy Varika, and Ifanadiana; Fitovinany: Manakara, Vohipeno, and Ikongo)",
+    "https://en.wikipedia.org/wiki/Vatovavy (three districts: Ifanadiana, Mananjary, and Nosy Varika; gives 16 June 2021)",
+    "https://en.wikipedia.org/wiki/Regions_of_Madagascar (Loi 2021-012; Vatovavy 11,662 km², Fitovinany 7,943 km²)"
+  ],
+  "notes": "BUILT-IN SPAN: the built-in 22-region entry must end on 2021-08-10. Date: 11 August 2021 is the promulgation of Loi 2021-012 (ceremony reported by L'Express that day); Wikipedia's Vatovavy article gives 16 June 2021, which is the vote in parliament. The law's PDF on the National Assembly's site could not be opened from here, so the districts are from geo.fyi and Wikipedia: Vatovavy is Ifanadiana, Mananjary, and Nosy Varika; Fitovinany is Manakara, Vohipeno, and Ikongo. Built by renaming the source's Vatovavy-Fitovinany to Vatovavy and carving Fitovinany (Ikongo, Manakara Atsimo, and Vohipeno) out of it; Vohibato, Ambalavao, Ivohibe, and Vondrozo in the first carve only fill edge strips inside the old region. BORDER SHIFT: the source's ADM1 (and so the built-in layout) puts most of Vohipeno district (about 1,050 km²) in Atsimo-Atsinanana, which is wrong; the second carve takes it into Fitovinany, so Fitovinany's southern border moves south on 11 August 2021 and Atsimo-Atsinanana shrinks from 18,368 to 17,237 km². Remove the second carve to keep the built-in border instead. Areas built: Vatovavy 13,307 km² and Fitovinany 7,681 (Wikipedia: 11,662 and 7,943; the districts' own published areas sum to about 13,100 and 7,500). One 38 km² strip on the Ikongo and Ifanadiana edge is dropped by the sliver threshold.",
+  "layouts": [
+    {
+      "first": "2021-08-11",
+      "last": null,
+      "base": "ADM1",
+      "rename": {
+        "Vatovavy-Fitovinany": "Vatovavy"
+      },
+      "carve": [
+        {
+          "name": "Fitovinany",
+          "from": [
+            "Vatovavy"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Ikongo",
+            "Manakara Atsimo",
+            "Vohipeno",
+            "Vohibato",
+            "Ambalavao",
+            "Ivohibe",
+            "Vondrozo"
+          ],
+          "sliver": 50
+        },
+        {
+          "name": "Fitovinany",
+          "from": [
+            "Atsimo-Atsinanana"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Ikongo",
+            "Manakara Atsimo",
+            "Vohipeno"
+          ]
+        }
+      ]
+    }
+  ]
+}

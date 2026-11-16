@@ -1,0 +1,103 @@
+{
+ "key": "cf",
+ "c": "CAF",
+ "sources": [
+  "http://french.xinhuanet.com/2021-01/22/c_139689009.htm (Xinhua, 22 January 2021: the law raising the prefectures from 16 to 20, adopted by the National Assembly in December 2020, was promulgated by presidential decree on Thursday 21 January 2021; new prefectures Mambéré (Carnot), Lim-Pendé (Paoua), and Ouham-Fafa (Batangafo); Bangui becomes a prefecture and takes in Bimbo and Bégoua from Ombella-M'Poko; sub-prefectures 72 to 84)",
+  "https://www.citypopulation.de/en/centralafrica/admin/ (from ICASEES: sub-prefectures of each of the 20 prefectures: Lim-Pendé = Kodi, Ngaoundaye, Paoua; Ouham-Fafa = Batangafo, Bouca, Kabo, Sido; Mambéré = Amada-Gaza, Carnot, Gadzi, Senkpa-Mbaéré; Mambéré-Kadéï keeps its name with Berbérati, Dédé-Makouba, Gamboula, Sosso-Nakombo; Bangui = city, Bégoua, Bimbo)",
+  "https://en.wikipedia.org/wiki/Prefectures_of_the_Central_African_Republic (gives 10 December 2020 as the day of the reform, the National Assembly's vote; areas: Lim-Pendé 13,210 km², Ouham-Fafa 32,530, Mambéré 15,740, Bangui 3,260)",
+  "https://en.wikipedia.org/wiki/Mamb%C3%A9r%C3%A9 (Mambéré's sub-prefectures, all formerly of Mambéré-Kadéï)",
+  "https://en.wikipedia.org/wiki/Bangui_(prefecture) (Bégoua and Bimbo transferred from Ombella-M'Poko)"
+ ],
+ "notes": "DATE: sources disagree. Wikipedia dates the 20 prefectures from 10 December 2020 (the National Assembly's adoption, and the day after the map's last day); Xinhua reports the law was promulgated on 21 January 2021, which is taken here as the day of legal effect. So the first layout (10 December 2020 to 20 January 2021) simply repeats the map's own 17 units unchanged (Natural Earth base, names as the map shows them), and the 20 prefectures begin on 21 January 2021; if the map's own last day is moved to 20 January 2021 instead, drop the first layout. The text of the law itself (and the Oubangui Médias article of 11 December 2020 that Wikipedia cites) could not be opened. BUILD: Natural Earth's prefectures (so the 13 unchanged ones keep their shapes) with the new ones cut out along geoBoundaries' sub-prefectures of 2015: Lim-Pendé = Paoua + Ngaoundaye (Kodi is a new sub-prefecture inside them); Ouham-Fafa = Batangafo + Bouca + Kabo (Sido is new, out of Kabo); Mambéré = Carnot + Gadzi + Amada-Gaza (Senkpa-Mbaéré is new, inside them); Bangui takes the whole Bimbo sub-prefecture (which held the communes of Bimbo and Bégoua). Areas built against published: Lim-Pendé 13,032 / 13,210 km²; Ouham-Fafa 32,529 / 32,530; Mambéré 15,607 / 15,740; Bangui 2,982 / 3,260. Mambéré-Kadéï keeps its name for the remainder (Berbérati, Gamboula, Dédé-Mokouba, Sosso-Nakombo). The inner lines come from a different source than the outer ones, so they meet the Natural Earth outline with small kinks.",
+ "layouts": [
+  {
+   "first": "2020-12-10",
+   "last": "2021-01-20",
+   "base": "NE",
+   "rename": {
+    "Bamingui-Bangoran Prefecture": "Bamingui-Bangoran",
+    "Basse-Kotto Prefecture": "Basse-Kotto",
+    "Haut-Mbomou Prefecture": "Haut-Mbomou",
+    "Haute-Kotto Prefecture": "Haute-Kotto",
+    "Kémo Prefecture": "Kémo",
+    "Lobaye Prefecture": "Lobaye",
+    "Mbomou Prefecture": "Mbomou",
+    "Nana-Mambéré Prefecture": "Nana-Mambéré",
+    "Ombella-M'Poko Prefecture": "Ombella-M'Poko",
+    "Ouaka Prefecture": "Ouaka",
+    "Ouham Prefecture": "Ouham",
+    "Ouham-Pendé Prefecture": "Ouham-Pendé",
+    "Vakaga Prefecture": "Vakaga",
+    "Nana-Grébizi Economic Prefecture": "Nana-Grébizi"
+   }
+  },
+  {
+   "first": "2021-01-21",
+   "last": null,
+   "base": "NE",
+   "carve": [
+    {
+     "name": "Lim-Pendé",
+     "from": [
+      "Ouham-Pendé"
+     ],
+     "level": "ADM2",
+     "units": [
+      "Paoua",
+      "Ngaoundaye"
+     ]
+    },
+    {
+     "name": "Ouham-Fafa",
+     "from": [
+      "Ouham"
+     ],
+     "level": "ADM2",
+     "units": [
+      "Batangafo",
+      "Bouca",
+      "Kabo"
+     ]
+    },
+    {
+     "name": "Mambéré",
+     "from": [
+      "Mambéré-Kadéï"
+     ],
+     "level": "ADM2",
+     "units": [
+      "Carnot",
+      "Gadzi",
+      "Amada-Gaza"
+     ]
+    },
+    {
+     "name": "Bangui",
+     "from": [
+      "Ombella-M'Poko"
+     ],
+     "level": "ADM2",
+     "units": [
+      "Bimbo"
+     ]
+    }
+   ],
+   "rename": {
+    "Bamingui-Bangoran Prefecture": "Bamingui-Bangoran",
+    "Basse-Kotto Prefecture": "Basse-Kotto",
+    "Haut-Mbomou Prefecture": "Haut-Mbomou",
+    "Haute-Kotto Prefecture": "Haute-Kotto",
+    "Kémo Prefecture": "Kémo",
+    "Lobaye Prefecture": "Lobaye",
+    "Mbomou Prefecture": "Mbomou",
+    "Nana-Mambéré Prefecture": "Nana-Mambéré",
+    "Ombella-M'Poko Prefecture": "Ombella-M'Poko",
+    "Ouaka Prefecture": "Ouaka",
+    "Ouham Prefecture": "Ouham",
+    "Ouham-Pendé Prefecture": "Ouham-Pendé",
+    "Vakaga Prefecture": "Vakaga",
+    "Nana-Grébizi Economic Prefecture": "Nana-Grébizi"
+   }
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+{
+  "key": "tz",
+  "c": "TZA",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Songwe_Region (created on 29 January 2016 from the western half of Mbeya Region; the town of Tunduma and the districts of Ileje, Mbozi, Momba, and Songwe; 27,656 km²)"
+  ],
+  "notes": "Date 29 January 2016 is from Wikipedia only; the Government Notice was not opened. Built the other way round to keep Lake Rukwa's waters in Songwe: the source's Mbeya is renamed Songwe and today's Mbeya (Chunya, Kyela, Mbarali, Mbeya, Mbeya Urban, and Rungwe districts) is carved out of it; the seven districts of neighbouring regions in the list (Makete, Wanging'ombe, Ludewa, Mufindi, Iringa, Manyoni, and Sikonge) only fill the strips where the 2015 region outline overlaps them on Mbeya's side, and add no land outside the old Mbeya. Songwe comes out at 23,791 km² against a published 27,656, and Mbeya at 37,880 against 35,954: the 2021 district shapes put the Songwe and Chunya district boundary further west than the published areas imply, so the Songwe and Mbeya line may be off by up to 4,000 km² in Chunya's west. North Pemba, South Pemba, and Zanzibar South & Central are renamed to the map's names.",
+  "layouts": [
+    {
+      "first": "2016-01-29",
+      "last": null,
+      "base": "ADM1",
+      "rename": {
+        "North Pemba": "Pemba North",
+        "South Pemba": "Pemba South",
+        "Zanzibar South & Central": "Zanzibar South and Central",
+        "Mbeya": "Songwe"
+      },
+      "carve": [
+        {
+          "name": "Mbeya",
+          "from": [
+            "Songwe"
+          ],
+          "level": "ADM2",
+          "sliver": 500,
+          "units": [
+            "Chunya",
+            "Kyela",
+            "Mbarali",
+            "Mbeya",
+            "Mbeya Urban",
+            "Rungwe",
+            "Makete",
+            "Wanging'ombe",
+            "Ludewa",
+            "Mufindi",
+            "Iringa",
+            "Manyoni",
+            "Sikonge"
+          ]
+        }
+      ]
+    }
+  ]
+}

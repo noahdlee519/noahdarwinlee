@@ -1,0 +1,13 @@
+{
+  "key": "eg", "c": "EGY",
+  "sources": [
+    "https://manshurat.org/node/36472 (presidential decree n° 114 of 2008, issued and published on 17 April 2008: division and change of the limits of some governorates and creation of the governorates of Helwan and 6th of October; later repealed; only the record was readable, not the text with the districts)",
+    "https://en.wikipedia.org/wiki/6th_of_October_Governorate (created 17 April 2008 out of Giza, dissolved 14 April 2011)",
+    "https://en.wikipedia.org/wiki/Helwan_Governorate (split from Cairo in April 2008, abolished in April 2011 and returned to Cairo)",
+    "https://crwflags.com/FotW/flags/eg-g-hil.html (Helwan: decree 114/2008, dissolved 14 April 2011, 7,500 km²)",
+    "https://en.wikipedia.org/wiki/Atfih (Atfih was in Helwan Governorate from April 2008 to April 2011, then back in Giza)",
+    "https://en.wikipedia.org/wiki/Luxor_Governorate (a governorate since 7 December 2009, separated from Qena)"
+  ],
+  "notes": "No layout added: 17 April 2008 to 13 April 2011 stays undrawn. The dates are established (decree n° 114 of 17 April 2008 created Helwan out of Cairo and 6th of October out of Giza; both were dissolved on 14 April 2011; Luxor became a governorate on 7 December 2009), but the composition is not. No source that could be opened lists the aqsam and marakiz of the two governorates (the decree's text is a PDF behind manshurat.org's record; Arabic Wikipedia was blocked), and the lowest level available cannot carry the split in any case: geoBoundaries ADM2 puts each governorate's desert in a single unit named Zemam Out (Giza's is one 35,000 km² unit covering both the Western Desert, which went to 6th of October, and the east bank behind Atfih and El Saff, which went to Helwan; Cairo's is 1,500 km²), so Helwan's 7,500 km² cannot be assembled from whole units. Because a layout is the whole country, the change at Luxor on 7 December 2009 cannot be shown on its own either.",
+  "layouts": []
+}
