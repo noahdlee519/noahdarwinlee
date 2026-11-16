@@ -811,7 +811,7 @@
       modern.hi = hi; modern.fine = 2;
       modernSnaps.clear();
       if (current && current.modern) { useSnap(modernSnap(Math.min(dayOfTime(now), modern.toDay))); scheduleRender(); }
-    }, function () { if (modern.lo === lo) modern.fine = 0; });
+    }, function () { if (modern.lo === lo) { modern.fine = 0; modern.fineFailed = true; } });
   }
   function dropModern() {
     modern.rows = null; modern.lo = null; modern.hi = null; modern.load = null; modern.fine = 0;
@@ -974,7 +974,7 @@
       var pre = "e" + k;
       datedSnaps.forEach(function (snap, key) { if (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0) datedSnaps.delete(key); });
       if (current && current.dated && isDated(now) && chunkIndexFor(now) === k) { useSnap(datedSnap(k, now)); scheduleRender(); }
-    }, function () { if (c.data === d) c.fine = 0; });
+    }, function () { if (c.data === d) { c.fine = 0; c.fineFailed = true; } });
   }
   // A row's first and last day: the days the chunk gives for changes dated within the year (from 1800),
   // or else 1 January of its first year and 31 December of its last.
@@ -5140,20 +5140,45 @@
   // when the browser is next idle (which, while it plays, may be seconds away), so play seldom waits for one: from 1200
   // the files hold 50 to 100 years, and 1,500 to 2,000 years before that, and each comes as its rough lines and then its
   // fine ones. Going forward from the last of them, the file from 1886 on (modern.json) is asked for too.
-  var PLAY_FILES = 2;
+  // Play keeps the detail it started with: when the map shows a file's fine lines (at rest they come within a moment, and
+  // close in they always do), the next file's fine lines are asked for with its rough ones, and a step into a file whose
+  // fine lines are still on their way waits for them (up to PLAY_FINE_WAIT ms), so the borders don't drop to the rough
+  // lines for a moment at each file's edge and come back.
+  var PLAY_FILES = 2, PLAY_FINE_WAIT = 2500, fineHold = 0;
+  function playWantsFine() {
+    if (fineNow()) return true;
+    if (!current) return false;
+    if (current.modern) return !!modern && modern.fine >= 2;
+    return !!current.dated && !!dated && !!dated.chunks[current.chunk] && dated.chunks[current.chunk].fine >= 2;
+  }
+  // Whether the date's file has the detail play wants (or never will: a file not yet come is play's ordinary wait).
+  function fineReady(t, fine) {
+    if (!fine) return true;
+    if (isModern(t)) {
+      if (!modern || !modern.rows || modern.fineFailed) return true;
+      if (!modern.fine) loadModernFine();
+      return modern.fine !== 1 && modern.fine !== 0;
+    }
+    if (!isDated(t) || !dated) return true;
+    var k = chunkIndexFor(t), c = dated.chunks[k];
+    if (!c || !c.data || c.fineFailed) return true;
+    if (!c.fine) loadChunkFine(k);
+    return c.fine !== 1 && c.fine !== 0;
+  }
   function prefetchPlay(t) {
     if (!playTimer || !dated) return;
-    var back = playBack(), noop = function () {};
+    var back = playBack(), noop = function () {}, fine = playWantsFine();
+    var get = function (i, n) { loadChunk(i).then(function () { if (fine && n === 1) loadChunkFine(i); }).catch(noop); };
     if (isModern(t)) {
-      if (back) for (var b = 1; b <= PLAY_FILES; b++) if (dated.chunks[dated.chunks.length - b]) loadChunk(dated.chunks.length - b).catch(noop);
+      if (back) for (var b = 1; b <= PLAY_FILES; b++) if (dated.chunks[dated.chunks.length - b]) get(dated.chunks.length - b, b);
       return;
     }
     if (!isDated(t)) return;
     var ck = chunkIndexFor(t);
     for (var k = 1; k <= PLAY_FILES; k++) {
       var i = back ? ck - k : ck + k;
-      if (dated.chunks[i]) loadChunk(i).catch(noop);
-      else if (!back && i === dated.chunks.length && modern) loadModern().catch(noop);
+      if (dated.chunks[i]) get(i, k);
+      else if (!back && i === dated.chunks.length && modern) loadModern().then(function () { if (fine) loadModernFine(); }).catch(noop);
     }
   }
   function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + now : !!maps.length && maps[mapIndexFor(now)].snap === current); }
@@ -5161,6 +5186,11 @@
     if (!playLoaded()) return PLAY.load;
     var back = playBack(), from = now, to = back ? playPrev(now) : playNext(now);
     if (back ? from <= FIRST_T + 1e-9 || to < FIRST_T - 1e-9 : to > playEnd() + 1e-9) return -1;
+    if (!fineReady(to, playWantsFine())) {
+      if (!fineHold) fineHold = performance.now();
+      if (performance.now() - fineHold < PLAY_FINE_WAIT) return PLAY.load;
+    }
+    fineHold = 0;
     setTime(to);
     prefetchPlay(to);
     prepareAhead(to);
