@@ -4583,7 +4583,9 @@ const CS_BACK = [
 ];
 const HB_MODERN_FROM = 1880;
 const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"]];
-const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides"]);
+// Cliopatria's Greenland, the south-western coast alone, is left out too: the small territories' table draws the whole island as
+// Denmark's colony, and the coast beside it came out as a second, rulerless Danish Greenland.
+const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland"]);
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];

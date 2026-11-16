@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1886–1953 | Greenland | one Danish Greenland
+
+- What changed: from 1 January 1886 to 4 June 1953 Greenland was drawn twice: the whole island as Denmark's colony, from the small territories' table, and the south-western coast round Godthåb as a second "Danish Greenland" with no ruler and a colour of its own, filled in from Cliopatria, whose Greenland is that coast alone. Cliopatria's Greenland is now left out from 1886 (`CLIO_MODERN_DROP`), as historical-basemaps' already was, and until the next full build the published rows of that coast are given Denmark as their ruler by hand, so the island is one Danish colony until the constitution of 5 June 1953 made it part of Denmark.
+- Tables: `CLIO_MODERN_DROP` in `tools/build-eras.mjs`; nine rows of `data/modern.json`, patched by hand (ruler and status).
+- Sources: (1) the small territories' table (`SMALL`), which has Greenland a Danish colony from 3 July 1721 to 4 June 1953; (2) Cliopatria, whose polygon covers only the colonised coast and gives it no ruler.
+- Confidence: high: a doubled shape, not a judgement.
+- Alternatives: drawing only the colonised coast as Danish before 1921, when Denmark declared its sovereignty over the whole island (not taken: the table draws the whole island from 1721, and the choice belongs with a review of that table).
+- Left out: Erik the Red's Land (Norway's claim to East Greenland, 1931 to 1933).
+
 ## 2006–2026 | sixteen countries | first-level divisions built from lower units
 
 - What changed: where no dataset to hand has a country's first-level divisions after a reform, they are built from geoBoundaries' districts, communes, zones, or townships, as the law lists them: Kazakhstan (2022), Algeria (2019, 2021), Mali (2016 to 2023), Ethiopia (2020, 2021, 2023), Mauritania (2014), Tanzania (2016), Namibia (2013), Zambia (2021), the Central African Republic (2021), Myanmar (2011), Angola (2024), Madagascar (2021), Norway (2024), Indonesia (2022, twice), the Philippines (2006, 2008, 2022), and South Sudan (2015, 2017, 2020).

@@ -2933,10 +2933,14 @@
     return out;
   }
 
+  function groundKey(snap, p, name) {
+    var cap = (snap.modern || snap.dated) && p.cap ? capitalNow(p.cap) : null;
+    return (flat ? "f" : "g") + (p.group ? "G" : "") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : "");
+  }
   function groundLayout(snap, p, name, allow) {
     labelEpoch();
     var g = p.group ? p.geoLo : snap.geoms.lo[p.i], cap = (snap.modern || snap.dated) && p.cap ? capitalNow(p.cap) : null;
-    var key = (flat ? "f" : "g") + (p.group ? "G" : "") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : ""), hit = groundCache.get(key);
+    var key = groundKey(snap, p, name), hit = groundCache.get(key);
     if (hit) { groundCache.delete(key); groundCache.set(key, hit); }
     if (hit || !allow) return hit;
     if (groundCache.size > 2000) groundCache.delete(groundCache.keys().next().value);
@@ -2952,7 +2956,7 @@
     };
     var cen = centreOf(featOf(snap.topo.lo, "lo", g).geo);
     for (i = 0; i < spots.length && cands.length < 6; i++) add(groundCand(p, name, feats, spots[i][0], spots[i][1], capLL, i ? GROUND_WIN / GU : 0, false, i ? null : cen));
-    hit = { cands: cands, more: cands.length && span > 0.12 ? { pts: null, grow: function (lim) {
+    hit = { key: key, cands: cands, more: cands.length && span > 0.12 ? { pts: null, grow: function (lim) {
       var m = hit.more;
       if (!m.pts) {
         var fr = groundFrame(lab[0], lab[1]), sp = planeShape(feats, fr, 3.2), F = sp && prepFit(sp, [], 1, 1, 0, null), step = gap * GU;
@@ -3201,8 +3205,9 @@
       if (!any) continue;
       var side = Math.sqrt(lab[5]) * kp, wh = Infinity;
       labelOptions(name, p.people).forEach(function (o) { wh = Math.min(wh, o.w * o.h); });
-      var G = 1.1 * side / Math.sqrt(wh) < (p.people ? 8 : 7) ? null : groundLayout(snap, p, name, !quick || performance.now() - t0 < budget);
-      if (G) lastGround.set(fk + p.id, G); else G = lastGround.get(fk + p.id);
+      var tiny = 1.1 * side / Math.sqrt(wh) < (p.people ? 8 : 7), G = tiny ? null : groundLayout(snap, p, name, !quick || performance.now() - t0 < budget);
+      if (G) lastGround.set(fk + p.id, G);
+      else { G = lastGround.get(fk + p.id); if (G && tiny && G.key !== groundKey(snap, p, name)) G = null; }
       var it = G ? placeGround(p, name, G, side, placed, scale) : null;
       for (var tries = 0; !it && G && G.more && side > 60 && tries < 3 && (!quick || performance.now() - t0 < budget) && G.more.grow([W * 0.08, H * 0.12, W * 0.92, H * 0.88]); tries++) it = placeGround(p, name, G, side, placed, scale);
       if (it) {
