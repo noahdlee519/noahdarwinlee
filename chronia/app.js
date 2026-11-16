@@ -4018,7 +4018,8 @@
     if (key === divCardKey) return;
     divCardKey = key;
     var name = !card.hidden && layers.subdivisions ? divisionAt(divClick, selected) : null;
-    var text = name ? "The place clicked is in " + name + "." : "";
+    var country = ($("card-name") || {}).textContent || "";
+    var text = name ? "You clicked on " + name + (country && country !== name ? " within " + country : "") + "." : "";
     var shown = text + "|" + (name ? askYear() + "|" + selected : "");
     if (shown === divShown) return;
     divShown = shown;
