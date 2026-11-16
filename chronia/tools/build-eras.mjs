@@ -3297,9 +3297,10 @@ const canada = (list) => {
   const rest = U(prov("CA-MB"), prov("CA-SK"), prov("CA-AB"), prov("CA-YT"), [nuMain], [ntMain]);
   const toRL = [];
   const coreOf = (land) => subtract(land, [zone]).filter((p) => { const [x, y] = centre(p); if (y > 54 || (y > 51 && x < -76)) { toRL.push(p); return false; } return true; });
-  const coreON = coreOf(ON), coreQC = coreOf(QC);
-  const nwtAll = subtract(rest, [zone]), shore = (p) => polyKm2(p) < 3000 && centre(p)[0] > -102, NWT = nwtAll.filter((p) => !shore(p));
-  const RL = U(I(U(rest, ON, QC), zone), toRL, nwtAll.filter(shore));
+  const coreON = coreOf(ON), coreQC0 = coreOf(QC);
+  const nwtAll = subtract(rest, [zone]), shore = (p) => polyKm2(p) < 3000 && (centre(p)[0] > -102 || centre(p)[1] < 56), NWT = nwtAll.filter((p) => !shore(p));
+  const RL0 = U(I(U(rest, ON, QC), zone), toRL, nwtAll.filter(shore)), inland = (p) => polyKm2(p) < 3000 && centre(p)[0] > -76 && centre(p)[1] < 54;
+  const RL = RL0.filter((p) => !inland(p)), coreQC = U(coreQC0, RL0.filter(inland));
   const core = U(coreON, coreQC);
   const added = [];
   const add = (name, wiki, polys, first, last, status) => {
@@ -3360,12 +3361,13 @@ const canada = (list) => {
   let dropped = 0;
   // What is left of a British span there is slivers between its coarse coast and Natural Earth's, which would draw its colour and name along the shore.
   const BRITISH = /Great Britain|United Kingdom|England/, BRITISH_NAME = /British|Canada|Quebec|Rupert|Nova Scotia|Newfoundland|Brunswick|Hudson/;
-  const landCells = cellsOf(land), nearLand = dilate(landCells);
+  const landCells = cellsOf(land.map((p) => [p[0]])), nearLand = dilate(landCells);
+  const STRAY_KM2 = 5000;
   const onShore = (p) => { const cs = cellsOf([p]); if (!cs.size) return nearLand.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (nearLand.has(c)) n++; return n > 0.5 * cs.size; };
   let shorn = 0;
   const result = reshape(out, edits, false).map((s) => {
     if (s.people || s.src === "acq" || s.first < CANADA_FROM || s.last > CANADA_TO || !boxHit(s.box, landBox) || !(BRITISH.test(s.ruler || "") || BRITISH_NAME.test(s.name))) return s;
-    const polys = s.polys.filter((p) => !onShore(p));
+    const polys = s.polys.filter((p) => !onShore(p) && !(polyKm2(p) < STRAY_KM2 && inBox(p, landBox)));
     if (polys.length === s.polys.length) return s;
     shorn++;
     return polys.length ? withBox({ ...s, polys }) : null;
