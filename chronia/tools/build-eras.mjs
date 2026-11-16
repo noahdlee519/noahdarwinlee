@@ -4177,13 +4177,21 @@ const LAST_NAME = [
   ["Republic of Costa Rica", "Costa Rica"], ["Republic of Liberia", "Liberia"],
   ["Republic of Haiti", "Haiti", 1859], // after the Second Empire of Haiti fell (15 January 1859)
   ["French Senegal", "Senegal"], ["British Gold Coast", "Gold Coast"], ["Colony of Natal", "Natal"], ["Colony of Fiji", "Fiji"],
-  ["Belize", "British Honduras", 1862] // the settlement was declared the colony of British Honduras in 1862
+  ["Belize", "British Honduras", 1862], // the settlement was declared the colony of British Honduras in 1862
+  ["British Cape Colony", "Cape Colony"],
+  // Tripolitania, an Ottoman province under direct rule from 1835, which Cliopatria draws as a state of its own from 1840 and CShapes
+  // as part of the Empire: a fourth item is the Wikipedia title of a span that joins another state (it loses its capital too).
+  ["Ottoman Tripolitania", "Ottoman Empire", null, "Ottoman Empire"]
 ];
 // A ruler the stages above left out, for a span of the name with none that lies within the years: [name, first year, last year,
 // ruler, status]. The Faroes stayed Danish at Kiel (the small territories' table says so, but found no Denmark at Copenhagen from
 // 1814); the others are colonies from 1886 in CShapes, or in BACKDATE or CS_DEPENDENT, whose land a source drew without its ruler.
 const LAST_RULER = [
   ["Faroe Islands", 1814, 1885, "Denmark", 5], ["Canada", 1867, 1885, "United Kingdom", 5], ["Lagos", 1862, 1885, "United Kingdom", 1],
+  // The Kingdom of Ireland, a dependency of England in the table to 1647 and of Great Britain in 1800, which Cliopatria draws from
+  // 1709 with no ruler: it had its own parliament, but the Crown's ministers in London named its government, and the British
+  // Parliament claimed the right to legislate for it by the Declaratory Act of 1719, repealed in 1782.
+  ["Kingdom of Ireland", 1707, 1800, "Kingdom of Great Britain", 5],
   ["Spanish Guinea", 1875, 1885, "Kingdom of Spain", 1], ["Gabon", 1871, 1885, "French Third Republic", 1]
 ];
 // Land that CShapes draws from 1886 as a territory of its own, which the sources before 1886 draw as part of its ruler: the whole
@@ -4191,12 +4199,16 @@ const LAST_RULER = [
 // dependency of that name: [holder, first year, last year, boxes, name, Wikipedia title]. Iceland and the Faroes from Kiel, Alaska
 // from its purchase (1867).
 const LAST_PART = [
+  // Ireland from the Restoration to 1708, which Cliopatria draws as plain land of England, then of Great Britain: the kingdom it is
+  // before 1648 and from 1709 (LAST_RULER).
+  ["Kingdom of England", 1660, 1706, [[-11, 51.2, -5.3, 55.5]], "Kingdom of Ireland", "Kingdom of Ireland"],
+  ["Kingdom of Great Britain", 1707, 1708, [[-11, 51.2, -5.3, 55.5]], "Kingdom of Ireland", "Kingdom of Ireland"],
   ["Denmark", 1814, 1885, [[-25, 63, -13, 67]], "Iceland", "Iceland"],
   ["Denmark", 1814, 1885, [[-8, 61.2, -6, 62.5]], "Faroe Islands", "Faroe Islands"],
   ["United States", 1867, 1885, [[-180, 50, -129, 72], [170, 50, 180, 56]], "Alaska", "Department of Alaska"]
 ];
 const lastWord = (list) => {
-  const names = new Map(LAST_NAME.map(([a, b, y]) => [a, [b, y ?? -Infinity]]));
+  const names = new Map(LAST_NAME.map(([a, b, y, w]) => [a, [b, y ?? -Infinity, w]]));
   const to = (n, y) => { const r = n ? names.get(n) : null; return r && y >= r[1] ? r[0] : n; };
   let renamed = 0, cut = 0, ruled = 0, parted = 0;
   let out = [];
@@ -4208,7 +4220,8 @@ const lastWord = (list) => {
       let s = cuts.length ? { ...s0, first: a, last: k + 1 < bounds.length ? bounds[k + 1] - 1 : s0.last, uid: k ? uidNext++ : s0.uid } : s0;
       const name = to(s.name, a), ruler = to(s.ruler, a), part = to(s.part, a), claims = s.claims ? s.claims.map((n) => to(n, a)) : s.claims;
       if (name !== s.name || ruler !== s.ruler || part !== s.part || (claims && claims.some((n, i) => n !== s.claims[i]))) {
-        s = { ...s, name, ruler, part, claims, name0: s.name0 || s.name, wiki: s.wiki || s.name };
+        const joins = names.has(s.name) && name !== s.name ? names.get(s.name)[2] : null;
+        s = { ...s, name, ruler, part, claims, name0: s.name0 || s.name, wiki: joins || s.wiki || s.name, ...(joins ? { cap: null } : {}) };
         renamed++;
       }
       out.push(s);
@@ -4238,7 +4251,154 @@ const lastWord = (list) => {
   console.log("last word before 1886: " + renamed + " spans renamed, " + cut + " cuts where a name changed, " + ruled + " spans given their ruler, " + parted + " territories parted from their rulers' spans");
   return res;
 };
-dated = lastWord(dated);
+// The shapes, names, and rulers of 1 January 1886 in the build before this one (as BACKDATE reads them): each row of that day, with
+// its Wikipedia title of 1886. The shapes of 1886 don't depend on the years before, so reading them a build late changes nothing.
+const prev1886 = (() => {
+  let memo;
+  return () => {
+    if (memo !== undefined) return memo;
+    const mPath = resolve(out, "modern.json"), hPath = resolve(out, "modern-hi.json"), ePath = resolve(out, "eras.json");
+    if (!existsSync(mPath) || !existsSync(hPath) || !existsSync(ePath)) return (memo = null);
+    const m = JSON.parse(readFileSync(mPath, "utf8")), hi = JSON.parse(readFileSync(hPath, "utf8")).hi, pol = JSON.parse(readFileSync(ePath, "utf8")).polities;
+    const geoms = client.feature(hi, hi.objects.p).features;
+    const wikiOf = (id) => { const w = pol[id][3]; if (!Array.isArray(w)) return w || pol[id][0]; let t = w[0][1]; for (const [y, x] of w) if (y <= 1886) t = x; return t; };
+    memo = [];
+    m.rows.forEach((r, i) => {
+      if (!(r[2] <= 0 && (r[3] >= 0 || r[3] === -1)) || r[4] === 6 || !geoms[i].geometry) return;
+      const polys = rewind(polysOf(geoms[i].geometry)), ruled = r[4] && r[1] >= 0;
+      if (polys.length) memo.push({ name: pol[r[0]][0], ruler: ruled ? pol[r[1]][0] : "", status: ruled ? r[4] : 0, cap: r[5] ? r[5].slice(0, 3) : null, soft: r[8] === 1, label: !!r[6], wiki: wikiOf(r[0]), polys, box: boxOf(polys) });
+    });
+    return memo;
+  };
+})();
+const ringHas = (ring, x, y) => { let h = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const a = ring[i], b = ring[j]; if ((a[1] > y) !== (b[1] > y) && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) h = !h; } return h; };
+const polyHas = (poly, pt) => ringHas(poly[0], pt[0], pt[1]) && !poly.slice(1).some((r) => ringHas(r, pt[0], pt[1]));
+// A point inside a polygon: the middle of its widest stretch along the parallel halfway up it.
+const innerPoint = (poly) => {
+  let y0 = Infinity, y1 = -Infinity;
+  for (const q of poly[0]) { if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
+  const y = (y0 + y1) / 2 + 1e-7, xs = [];
+  for (const ring of poly) for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const a = ring[i], b = ring[j]; if ((a[1] > y) !== (b[1] > y)) xs.push(a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0])); }
+  xs.sort((p, q) => p - q);
+  let best = null, w = -1;
+  for (let i = 0; i + 1 < xs.length; i += 2) if (xs[i + 1] - xs[i] > w) { w = xs[i + 1] - xs[i]; best = (xs[i] + xs[i + 1]) / 2; }
+  return best === null ? null : [best, y];
+};
+// The sources before 1886 draw many colonies under an umbrella ("British Colonial Empire", "Spanish Empire", "French Indochina" for
+// New Caledonia) or as plain land of the home country (Portugal's Angola), and CShapes names each from 1886. A whole piece of a
+// holder's span, in any year, whose inner point lies in the territory's shape of 1 January 1886 (prev1886) takes the territory's
+// name, with the holder's ruler (or the holder) as its ruler and the status it has in 1886: [territory, holders]. A holder is named
+// as LAST_NAME leaves it.
+const LAST_PIECE = [
+  ["Cuba", ["Spanish Empire"]], ["Puerto Rico", ["Spanish Empire"]],
+  ["Angola", ["Kingdom of Portugal"]], ["Mozambique", ["Kingdom of Portugal"]], ["Portuguese Guinea", ["Kingdom of Portugal"]], ["Cape Verde", ["Kingdom of Portugal"]],
+  ["East Timor", ["Portuguese Colonies"]], ["Portuguese India", ["Portuguese Colonies"]],
+  ["Papua", ["British Colonial Empire"]], ["British Guiana", ["British Colonial Empire"]], ["Perak", ["British Colonial Empire"]], ["Unfederated Malay States", ["British Colonial Empire"]],
+  ["Falkland Islands", ["British Colonial Empire"]], ["South Georgia", ["British Colonial Empire"]], ["New Zealand", ["British Colonial Empire"]], ["Mauritius", ["British Colonial Empire"]],
+  ["Jamaica", ["British Colonial Empire"]], ["Trinidad and Tobago", ["British Colonial Empire"]], ["Dominica", ["British Colonial Empire"]], ["Barbados", ["British Colonial Empire"]],
+  ["Bahamas", ["British Colonial Empire", "British North America", "United Kingdom"]], ["Newfoundland", ["British North America"]], ["Aden Protectorate", ["United Kingdom"]],
+  ["Sierra Leone", ["Cape Colony"]],
+  ["Vietnam", ["French Indochina"]], ["New Caledonia and Dependencies", ["French Indochina"]], ["Réunion", ["French Indochina"]],
+  ["Gabon", ["French Africa"]], ["Senegal", ["French Africa"]], ["French Congo", ["French Africa"]],
+  ["German Solomon Islands", ["German Empire", "German New Guinea"]], ["German New Guinea", ["German Empire"]]
+];
+const lastPieces = (list) => {
+  const rows = prev1886();
+  if (!rows) { console.log("pieces before 1886: no earlier build of 1886 to read, left out"); return list; }
+  const byHolder = new Map();
+  for (const [target, holders] of LAST_PIECE) {
+    const shapes = rows.filter((r) => r.name === target);
+    if (!shapes.length) { console.warn("LAST_PIECE: no " + target + " on 1 January 1886"); continue; }
+    const rule = { target, shapes, status: shapes[0].status || 5, wiki: shapes[0].wiki, cap: (shapes.find((r) => r.cap) || {}).cap || null };
+    for (const h of holders) { if (!byHolder.has(h)) byHolder.set(h, []); byHolder.get(h).push(rule); }
+  }
+  const inShape = (rule, pt) => rule.shapes.some((r) => pt[0] >= r.box[0] && pt[0] <= r.box[2] && pt[1] >= r.box[1] && pt[1] <= r.box[3] && r.polys.some((poly) => polyHas(poly, pt)));
+  const res = [], tally = new Map();
+  for (const s of list) {
+    const rules = s.people || s.claims || !s.polys ? null : byHolder.get(s.name);
+    if (!rules) { res.push(s); continue; }
+    const took = new Map(), rest = [];
+    for (const poly of s.polys) {
+      const pt = innerPoint(poly), rule = pt ? rules.find((r) => inShape(r, pt)) : null;
+      if (!rule) { rest.push(poly); continue; }
+      if (!took.has(rule)) took.set(rule, []);
+      took.get(rule).push(poly);
+    }
+    if (!took.size) { res.push(s); continue; }
+    for (const [rule, polys] of took) {
+      res.push(withBox({ ...s, name: rule.target, ruler: s.ruler || s.name, part: "", status: rule.status, wiki: rule.wiki, cap: s.first >= 1870 && !s.noLabel ? rule.cap : null, polys, name0: s.name0 || s.name, geoHash: undefined }));
+      const t = tally.get(rule.target) || [0, Infinity];
+      tally.set(rule.target, [t[0] + 1, Math.min(t[1], s.first)]);
+    }
+    if (rest.length) res.push({ ...s, polys: rest, box: boxOf(rest), cells: cellsOf(rest), geoHash: undefined });
+  }
+  console.log("pieces before 1886: " + [...tally.values()].reduce((t, x) => t + x[0], 0) + " spans named for the territory of 1886 they lie in: " + [...tally].map(([n, [k, y]]) => n + " " + k + " from " + y).join(", "));
+  return res;
+};
+// Africa from the Berlin Conference. Cliopatria draws who held the land, with one more wave of claims in 1885 (its last year here),
+// and CShapes the colonies as claimed, so Africa changed twice with nothing happening: on 1 January 1885 and on 1 January 1886,
+// and Portugal's Angola of 1885 was larger than either neighbour's year. Inside AFRICA (a ring through open sea, the Suez Canal, and
+// the Gulf of Suez, with Madagascar and the islands close inshore; the Canaries, Madeira, Cape Verde, Socotra, and the Mascarenes
+// outside) the year 1885 is drawn as 1 January 1886 is (prev1886): every span's land inside the ring is cut away for 1885, and each
+// row of 1886 gives a span of 1885 for its land inside. The spans that end with 1884 inside the ring, and the new ones, also answer
+// to the name BERLIN_1885, which tools/dated-days.json dates to the Conference's General Act (26 February 1885), unless a later entry
+// there names them: so Africa changes once, on that day or on the day of a state's own event.
+const AFRICA = [[-5.95, 35.93], [-5.3, 35.97], [-2.0, 36.1], [2.0, 37.6], [8.5, 37.9], [11.3, 37.6], [11.55, 36.4], [12.2, 35.2], [12.5, 34.0], [19.0, 33.6], [24.0, 33.4], [30.0, 32.2],
+  [32.2, 31.7], [32.31, 31.27], [32.33, 30.6], [32.56, 29.95], [32.75, 29.4], [33.2, 28.6], [33.75, 27.75], [34.3, 27.2], [35.5, 26.0], [37.0, 23.5], [38.5, 20.5], [40.0, 18.0], [41.0, 16.4],
+  [42.2, 14.3], [42.35, 13.6], [43.0, 12.9], [43.36, 12.56], [45.0, 11.9], [48.0, 12.4], [51.7, 12.3], [51.8, 10.5], [52.0, 5.0], [51.5, -5.0], [51.5, -26.0], [45.0, -30.0], [33.0, -36.0],
+  [16.0, -36.0], [10.0, -25.0], [4.0, -5.0], [4.0, 2.5], [0.0, 3.0], [-9.0, 3.0], [-14.0, 7.0], [-17.8, 11.0], [-18.2, 15.0], [-18.0, 20.5], [-17.6, 22.0], [-16.5, 23.5], [-15.2, 26.0], [-14.0, 27.0],
+  [-13.35, 27.9], [-13.0, 28.6], [-12.5, 29.5], [-11.5, 31.5], [-10.5, 34.0], [-7.0, 35.6], [-5.95, 35.93]];
+const BERLIN_1885 = "Africa at the Berlin Conference";
+const africa1885 = (list) => {
+  const rows = prev1886();
+  if (!rows) { console.log("africa 1885: no earlier build of 1886 to read, left out"); return list; }
+  const mask = [[AFRICA]], mbox = boxOf(mask), has = (q) => ringHas(AFRICA, q[0], q[1]);
+  // Of a shape's pieces: those wholly inside the ring, those wholly outside, and the parts of those that cross it.
+  const split = (polys) => {
+    const inside = [], outside = [];
+    let failed = 0;
+    for (const poly of polys) {
+      if (!boxHit(boxOf([poly]), mbox)) { outside.push(poly); continue; }
+      let n = 0;
+      for (const q of poly[0]) if (has(q)) n++;
+      if (n === 0) { outside.push(poly); continue; }
+      if (n === poly[0].length) { inside.push(poly); continue; }
+      const a = tryClip(clip.intersection, [poly], mask), b = tryClip(clip.difference, [poly], mask);
+      if (!a || !b) { failed++; (2 * n >= poly[0].length ? inside : outside).push(poly); continue; }
+      inside.push(...rewind(a).filter((q) => polyKm2(q) >= 0.5));
+      outside.push(...rewind(b).filter((q) => polyKm2(q) >= 0.5));
+    }
+    return { inside, outside, failed };
+  };
+  const res = [];
+  let cut = 0, gone = 0, failed = 0, ended = 0;
+  for (const s of list) {
+    if (s.last < 1885 || !s.polys || !boxHit(s.box || boxOf(s.polys), mbox)) { res.push(s); continue; }
+    const sp = split(s.polys);
+    failed += sp.failed;
+    if (!sp.inside.length) { res.push(s); continue; }
+    if (s.first < 1885) res.push({ ...s, last: 1884 });
+    if (sp.outside.length) { res.push(withBox({ ...s, first: 1885, polys: sp.outside, geoHash: undefined })); cut++; } else gone++;
+  }
+  for (let i = 0; i < res.length; i++) {
+    const s = res[i];
+    if (s.last !== 1884 || !s.polys) continue;
+    const b = s.box || boxOf(s.polys);
+    if (has([(b[0] + b[2]) / 2, (b[1] + b[3]) / 2])) { res[i] = { ...s, also: [BERLIN_1885] }; ended++; }
+  }
+  let added = 0;
+  for (const r of rows) {
+    if (!boxHit(r.box, mbox)) continue;
+    const sp = split(r.polys);
+    failed += sp.failed;
+    if (!sp.inside.length) continue;
+    res.push(withBox({ name: r.name, ruler: r.ruler, part: "", people: 0, b: r.soft ? 1 : 2, redrawn: !r.soft, status: r.status, first: 1885, last: 1885, polys: sp.inside, wiki: r.wiki, cap: r.cap, noLabel: !r.label, src: "seam", also: [BERLIN_1885] }));
+    added++;
+  }
+  console.log("africa 1885: " + added + " spans of 1885 from the rows of 1 January 1886 inside the ring, " + gone + " spans of 1885 replaced whole and " + cut + " cut to their land outside it, " + ended + " spans that end with 1884 dated with them" + (failed ? ", " + failed + " pieces that could not be cut and went whole to the side most of their points lie on" : ""));
+  return res;
+};
+dated = africa1885(lastPieces(lastWord(dated)));
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -4266,7 +4426,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
   if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
-      return { i, first: s.first, last: s.last, names: [s.name0 || s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
+      return { i, first: s.first, last: s.last, names: [s.name0 || s.name].concat(s.also || []), polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
         fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
@@ -4352,6 +4512,7 @@ const CS_NAMES = {
   "German Democratic Republic": [["1886-01-01", "Soviet occupation zone"], ["1949-10-07", "East Germany"]],
   "Italy/Sardinia": [["1886-01-01", "Italy"]],
   "Rumania": [["1886-01-01", "Romania"]],
+  "Finland": [["1886-01-01", "Grand Duchy of Finland"], ["1917-12-06", "Finland"]],
   "Thailand": [["1886-01-01", "Siam"], ["1939-06-24", "Thailand"]],
   "Sri Lanka (Ceylon)": [["1886-01-01", "Ceylon"], ["1972-05-22", "Sri Lanka"]],
   "Myanmar (Burma)": [["1886-01-01", "Burma"], ["1989-06-18", "Myanmar"]],
@@ -4673,6 +4834,12 @@ const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland"]
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
+// A state that CShapes begins late, drawn before that as a dependency inside the state that held it: its first shape is cut out of
+// the holder's spans, from the first day given to the day before CShapes' first, less the land it gained later (the part of the first
+// shape, inside the box, that its shape of the day given no longer has). The Grand Duchy of Finland, Russia's from 1809 to its
+// independence on 6 December 1917, as the map draws it to 1885: CShapes' Finland of 1917 has Petsamo, Finland's only from the
+// Treaty of Tartu (14 October 1920), and its Finland of 12 March 1940 no longer has it, so the Grand Duchy is drawn without.
+const CS_EARLIER = [{ gw: "375", from: "1886-01-01", of: "365", status: "dependency", less: { on: "1940-03-12", box: [27, 67.9, 34, 71] } }];
 // CShapes, following Gleditsch and Ward, counts Canada as independent from 1867; it was a dominion under the United Kingdom until the Statute of Westminster of 11 December 1931.
 // The South African Republic (the Transvaal) and the Orange Free State, which CShapes counts as independent until the Union
 // of South Africa, were British colonies from the Treaty of Vereeniging, 31 May 1902. [code, from, to, owner, status].
@@ -4750,6 +4917,27 @@ const csWithExtras = (rows) => {
       next.push({ p: { ...r.p, start: r.p.start < a ? a : r.p.start, end: r.p.end > b ? b : r.p.end, status, owner }, geometry: r.geometry });
       if (r.p.end > b) next.push({ p: { ...r.p, start: isoAdd(b, 1) }, geometry: r.geometry });
     }
+    list = next;
+  }
+  for (const { gw, from, of, status, less } of CS_EARLIER) {
+    const own = list.filter((r) => String(r.p.gwcode) === gw).sort((a, b) => (a.p.start < b.p.start ? -1 : 1));
+    if (!own.length) throw new Error("CS_EARLIER: no span of " + gw);
+    const me = own[0], until = isoAdd(me.p.start, -1);
+    let shape = polysOf(me.geometry);
+    if (less) {
+      const later = own.find((r) => r.p.start <= less.on && less.on <= r.p.end);
+      if (!later) throw new Error("CS_EARLIER: no span of " + gw + " on " + less.on);
+      const [x0, y0, x1, y1] = less.box;
+      shape = clip.difference(shape, clip.intersection(clip.difference(shape, polysOf(later.geometry)), [[[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]]));
+    }
+    const next = [];
+    for (const r of list) {
+      if (String(r.p.gwcode) !== of || r.p.end < from || r.p.start > until) { next.push(r); continue; }
+      if (r.p.start < from) next.push({ p: { ...r.p, end: isoAdd(from, -1) }, geometry: r.geometry });
+      next.push({ p: { ...r.p, start: r.p.start < from ? from : r.p.start, end: r.p.end > until ? until : r.p.end }, geometry: { type: "MultiPolygon", coordinates: clip.difference(polysOf(r.geometry), shape) } });
+      if (r.p.end > until) next.push({ p: { ...r.p, start: me.p.start }, geometry: r.geometry });
+    }
+    next.push({ p: { ...me.p, start: from, end: until, status, owner: of }, geometry: { type: "MultiPolygon", coordinates: shape } });
     list = next;
   }
   for (const [code, end, from] of CS_CARVE) {
