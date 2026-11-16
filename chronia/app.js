@@ -4754,14 +4754,15 @@
   // several kilometres off, so the borders seemed to change and change back. Now a step near a file's edge asks for the
   // neighbouring file's fine lines ahead (stepFine), and a step into a file whose fine lines are on their way keeps the map
   // as it is until they come, for up to STEP_FINE_WAIT ms (whenFine). Dragging the slider and play are left as they were.
-  var STEP_FINE_WAIT = 2500;
+  var STEP_FINE_WAIT = 2500, holdKey = "";
   function stepFine() { return !playTimer && !rangeActive; }
   function whenFine(t, key, fromRange, show) {
     if (fromRange || playTimer || !current || !playWantsFine() || fineReady(t, true)) { show(); return; }
     var t0 = performance.now();
+    holdKey = key;
     (function wait() {
-      if (wantKey !== key) return;
-      if (fineReady(t, true) || performance.now() - t0 > STEP_FINE_WAIT) { show(); return; }
+      if (wantKey !== key) { if (holdKey === key) holdKey = ""; return; }
+      if (fineReady(t, true) || performance.now() - t0 > STEP_FINE_WAIT) { holdKey = ""; show(); return; }
       setTimeout(wait, 40);
     })();
   }
@@ -8514,7 +8515,8 @@
     openChanges: function (open) { setChangesOpen(open !== false, false); },
     search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
     searchOpen: function () { return !searchPanel.hidden; },
-    ready: function () { return ready && !!current; },
+    // Not while a step waits for a file's fine lines: the map still shows the date before.
+    ready: function () { return ready && !!current && !holdKey; },
     year: function () { return now; },
     shown: function () { return yearInput.value; },
     asof: function () { return asof.textContent; },
