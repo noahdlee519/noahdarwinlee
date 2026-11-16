@@ -85,7 +85,7 @@ const O = {
   // London, which the Netherlands refused until then.
   LIMd: [[W, { name: "Limburg", wiki: "Belgian Revolution", status: 6, claims: ["Kingdom of Belgium", "Netherlands"] }]],
   LUXd: [[W, { name: "Luxembourg", wiki: "Belgian Revolution", status: 6, claims: ["Kingdom of Belgium", "Luxembourg"] }]],
-  LIMB: [[W, { name: "Duchy of Limburg", wiki: "Duchy of Limburg (1839–1867)", ruler: "Netherlands", status: 5, part: "German Confederation" }]],
+  LIMB: [[W, { name: "Duchy of Limburg", wiki: "Duchy of Limburg (1839–1867)", ruler: "Netherlands", status: 5, part: "German Confederation", b: 2 }]],
   // Switzerland and its neighbours.
   SWI: [[EARLY, { name: "Swiss Confederation", wiki: "Old Swiss Confederacy", b: 2 }], [HELVETIC, { name: "Helvetic Republic", wiki: "Helvetic Republic", b: 1 }],
     [MEDIATION, { name: "Swiss Confederation", wiki: "Swiss Confederation (1803–1815)" }], [VIENNA, { b: 2 }]],
@@ -392,8 +392,10 @@ const units = (country, list) => list.map((u) => country + "/" + u);
 // North Schleswig, the part of the Duchy of Schleswig in today's Denmark: south of the Kongeå and of Kolding, with Als and without
 // Funen and Ærø (Ærø went to Denmark in 1864).
 const CUTS = {
-  // Eupen-Malmedy, Prussian from 1815 and Belgian from 1920: the east of the province of Liège, roughly, without Moresnet.
-  eupen: [[[6.03, 50.76], [6.6, 50.76], [6.6, 50.1], [6.1, 50.1], [6.02, 50.2], [6.01, 50.3], [5.99, 50.38], [5.98, 50.44], [6.0, 50.5], [5.99, 50.56], [5.99, 50.62], [6.0, 50.66], [6.02, 50.7], [6.03, 50.76]]],
+  // Eupen-Malmedy, Prussian from 1815 and Belgian from 1920: the east of the province of Liège without Moresnet (Kelmis), its
+  // west edge the line of today's communes (geoBoundaries gbOpen BEL ADM4, from Statistics Belgium, CC BY 4.0), which keep the
+  // border of 1815, simplified to about 150 m.
+  eupen: [[[5.955, 50.685], [5.977, 50.663], [6.004, 50.647], [6.002, 50.639], [6.006, 50.632], [6.002, 50.625], [6.014, 50.615], [6.04, 50.615], [6.057, 50.599], [6.099, 50.597], [6.116, 50.584], [6.119, 50.57], [6.133, 50.559], [6.138, 50.547], [6.124, 50.53], [6.115, 50.526], [6.063, 50.52], [6.004, 50.497], [6.013, 50.484], [6.012, 50.467], [6.02, 50.458], [6.017, 50.449], [5.969, 50.441], [5.988, 50.413], [5.976, 50.391], [5.985, 50.386], [5.998, 50.388], [6.002, 50.382], [6.028, 50.37], [6.02, 50.344], [6.003, 50.342], [5.995, 50.337], [6, 50.335], [5.998, 50.331], [5.979, 50.33], [5.982, 50.322], [6.011, 50.312], [6.015, 50.301], [6.011, 50.279], [6.015, 50.253], [6.008, 50.239], [6.011, 50.207], [6.032, 50.206], [6.02, 50.192], [6.024, 50.183], [5.997, 50.176], [6.003, 50.159], [6.018, 50.147], [6.05, 50.137], [6.084, 50.141], [6.092, 50.125], [6.121, 50.114], [6.146, 50.114], [6.17, 50.126], [6.178, 50.135], [6.18, 50.15], [6.176, 50.16], [6.203, 50.165], [6.215, 50.175], [6.214, 50.207], [6.204, 50.221], [6.215, 50.225], [6.229, 50.24], [6.299, 50.256], [6.315, 50.27], [6.315, 50.288], [6.329, 50.3], [6.347, 50.291], [6.366, 50.289], [6.398, 50.305], [6.416, 50.308], [6.43, 50.318], [6.434, 50.327], [6.43, 50.345], [6.421, 50.356], [6.392, 50.371], [6.38, 50.383], [6.395, 50.403], [6.395, 50.418], [6.403, 50.43], [6.401, 50.457], [6.392, 50.467], [6.368, 50.474], [6.375, 50.483], [6.374, 50.496], [6.359, 50.506], [6.31, 50.519], [6.238, 50.52], [6.224, 50.533], [6.22, 50.545], [6.209, 50.552], [6.239, 50.571], [6.263, 50.578], [6.275, 50.596], [6.294, 50.612], [6.295, 50.631], [6.286, 50.64], [6.27, 50.646], [6.239, 50.645], [6.21, 50.65], [6.205, 50.662], [6.169, 50.691], [6.145, 50.726], [6.131, 50.737], [6.111, 50.742], [6.068, 50.741], [6.063, 50.755], [6.049, 50.764], [6.024, 50.773], [6.007, 50.771], [5.998, 50.767], [5.989, 50.754], [6.02, 50.755], [5.996, 50.71], [5.967, 50.697], [5.955, 50.685]]],
   // Before 1803: the Nord's west (Lille, Douai, and Dunkirk, French from 1668) and the Moselle's west (Metz and Thionville).
   mulh: [[[7.29, 47.79], [7.38, 47.79], [7.4, 47.75], [7.38, 47.72], [7.29, 47.72], [7.27, 47.75], [7.29, 47.79]]],
   nordw: [[[2.0, 50.3], [3.3, 50.3], [3.3, 51.2], [2.0, 51.2], [2.0, 50.3]]],
@@ -687,8 +689,8 @@ add(["NLD/North Brabant", "NLD/Zeeland"], [[W, "BAT"], ["1810-03-16", "FR"], ["1
 add(["NLD/Limburg"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "BAT"], [BELGIUM, "LIMd"], [LONDON, "LIMB"], ["1867-05-11", "BAT"]]);
 add(["BEL/*"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "BAT"], [BELGIUM, "BELG"]]);
 add(["BEL/Liège{!eupen}"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "BAT"], [BELGIUM, "BELG"]]);
-// Eupen-Malmedy, Prussian from the Congress of Vienna (to Belgium in 1920), its line drawn by hand.
-add(["BEL/Liège{eupen}"], [[W, "FR"], [PARIS, "RHIo"], [RHINELAND, "PRg"]], { rough: true });
+// Eupen-Malmedy, Prussian from the Congress of Vienna (to Belgium in 1920), its line from today's communes.
+add(["BEL/Liège{eupen}"], [[W, "FR"], [PARIS, "RHIo"], [RHINELAND, "PRg"]]);
 add(["BEL/Limburg"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "BAT"], [BELGIUM, "LIMd"], [LONDON, "BELG"]]);
 add(["LUX/Luxembourg"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "LUX"]]);
 add(["LUX/Diekirch", "LUX/Grevenmacher"], [[W, "FR"], [PARIS, "BEL"], ["1815-03-16", "LUX"], [BELGIUM, "LUXd"], [LONDON, "LUX"]]);
@@ -1195,11 +1197,18 @@ export function buildNapoleonic(env) {
   // a state that changed shape several times in a year changes on each of those days. Pieces of one state meet with no border
   // on the page, and a piece carries the name unless a larger one of the same name is on the map for at least half its days.
   const groups = new Map();
-  for (const blk of blocks) for (const p of blk.per) {
-    const rough = p.a < blk.roughUntil;
-    const k = p.x + "|" + p.a + "|" + p.b + (rough ? "|rough" : "");
-    if (!groups.has(k)) groups.set(k, { owner: p.x, a: p.a, b: p.b, rough, items: [] });
+  // A row rough only before the table (a PRE row's) is split on the table's first day, so an owner held from before it (France
+  // in Lorraine, Alsace, and the Nord) is not dotted through to 1885; until 16 November 2026 it was.
+  const put = (blk, x, a, b, rough) => {
+    const k = x + "|" + a + "|" + b + (rough ? "|rough" : "");
+    if (!groups.has(k)) groups.set(k, { owner: x, a, b, rough, items: [] });
     groups.get(k).items.push(...blk.items);
+  };
+  for (const blk of blocks) for (const p of blk.per) {
+    if (p.a < blk.roughUntil && p.b >= blk.roughUntil && blk.roughUntil !== Infinity) {
+      put(blk, p.x, p.a, blk.roughUntil - 1, true);
+      put(blk, p.x, blk.roughUntil, p.b, false);
+    } else put(blk, p.x, p.a, p.b, p.a < blk.roughUntil);
   }
   const end = toDay(END), spans = [];
   for (const g of groups.values()) {

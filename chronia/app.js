@@ -1100,7 +1100,9 @@
         else if (!soft && snap.vague && snap.vague.has(pa.id + "|" + pb.id)) soft = true;
       }
       if (pa && pb && pa.member >= 0 && pa.member === pb.member) return 4;
-      if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
+      // Kin (one ruler) only within one group: a land in personal union that sits in another confederation, as Luxembourg and
+      // Limburg in the German Confederation beside the Netherlands, or Holstein beside Schleswig, keeps a full border.
+      if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue && pa.part === pb.part) return 3;
       return soft ? 2 : 1;
     };
     // Each arc is sorted once into the kinds of line it belongs to (the shapes on its two sides decide), rather than
