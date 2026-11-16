@@ -242,9 +242,9 @@ const FIRM = [
   [["United States"], ["Spanish Empire", "Spanish Florida", "Spanish Louisiana", "Spanish Texas"], 1796, 1821], // San Lorenzo (1795), Adams–Onís (1819)
   [["United States"], MEXICO, 1821, 1885], // Adams–Onís (in force 1821), Guadalupe Hidalgo (1848), Gadsden (1854)
   [MEXICO, ["Guatemala"], 1882, 1885], // the treaty of 27 September 1882
-  [["Republic of Chile"], ["Argentina"], 1881, 1885], // the treaty of 23 July 1881
-  [["Empire of Brazil"], ["Oriental Republic of Uruguay"], 1851, 1885], // the treaty of 12 October 1851
-  [["Empire of Brazil"], ["Republic of Peru"], 1851, 1885], // the convention of 23 October 1851
+  [["Chile"], ["Argentina"], 1881, 1885], // the treaty of 23 July 1881
+  [["Empire of Brazil"], ["Uruguay"], 1851, 1885], // the treaty of 12 October 1851
+  [["Empire of Brazil"], ["Peru"], 1851, 1885], // the convention of 23 October 1851
   [["Empire of Brazil"], ["Venezuela"], 1859, 1885], // the treaty of 5 May 1859
   [["Empire of Brazil"], ["Bolivia"], 1867, 1885], // Ayacucho (1867)
   [["Empire of Brazil"], ["Paraguay"], 1872, 1885], // Loizaga–Cotegipe (1872)
@@ -4161,6 +4161,83 @@ const reimposeSH = (list) => {
   return out;
 };
 dated = reimposeSH(dated);
+// The last word on names and rulers before 1886, after every stage above. From 1 January 1886 the builder names a state as CShapes
+// does, so a state or colony that both sources draw took another name where they meet (the Republic of Peru became Peru overnight).
+// LAST_NAME gives it the later name from the year it began, or from the year of the event that made it the state CShapes draws, so
+// that the name changes when the state did: [name, new name, first year]. A span that crosses the first year is cut there. CARRY
+// does the same from the other side, for a name that lasted beyond 1885. A renamed span keeps its Wikipedia title, and the name it
+// had (name0), which the days of the changes (tools/dated-days.json) find it by.
+const LAST_NAME = [
+  ["Kingdom of Denmark", "Denmark", 1814], // the Treaty of Kiel (14 January 1814), which ended Denmark-Norway
+  ["Swiss Confederation", "Switzerland", 1815], // the Federal Treaty of 7 August 1815, with Valais, Neuchâtel, and Geneva
+  ["Kingdom of Belgium", "Belgium"], ["Kingdom of Bhutan", "Bhutan"], ["Kingdom of Tonga", "Tonga"],
+  ["Republic of Peru", "Peru"], ["Republic of Colombia", "Colombia"], ["Republic of Chile", "Chile"], ["Republic of Ecuador", "Ecuador"],
+  ["Oriental Republic of Uruguay", "Uruguay"], ["Republic of El Salvador", "El Salvador"], ["Republic of Nicaragua", "Nicaragua"],
+  ["Republic of Costa Rica", "Costa Rica"], ["Republic of Liberia", "Liberia"],
+  ["Republic of Haiti", "Haiti", 1859], // after the Second Empire of Haiti fell (15 January 1859)
+  ["French Senegal", "Senegal"], ["British Gold Coast", "Gold Coast"], ["Colony of Natal", "Natal"], ["Colony of Fiji", "Fiji"],
+  ["Belize", "British Honduras", 1862] // the settlement was declared the colony of British Honduras in 1862
+];
+// A ruler the stages above left out, for a span of the name with none that lies within the years: [name, first year, last year,
+// ruler, status]. The Faroes stayed Danish at Kiel (the small territories' table says so, but found no Denmark at Copenhagen from
+// 1814); the others are colonies from 1886 in CShapes, or in BACKDATE or CS_DEPENDENT, whose land a source drew without its ruler.
+const LAST_RULER = [
+  ["Faroe Islands", 1814, 1885, "Denmark", 5], ["Canada", 1867, 1885, "United Kingdom", 5], ["Lagos", 1862, 1885, "United Kingdom", 1],
+  ["Spanish Guinea", 1875, 1885, "Kingdom of Spain", 1], ["Gabon", 1871, 1885, "French Third Republic", 1]
+];
+// Land that CShapes draws from 1886 as a territory of its own, which the sources before 1886 draw as part of its ruler: the whole
+// pieces (islands, or a mainland apart) of the holder's own spans within the years whose centres lie in the boxes become a
+// dependency of that name: [holder, first year, last year, boxes, name, Wikipedia title]. Iceland and the Faroes from Kiel, Alaska
+// from its purchase (1867).
+const LAST_PART = [
+  ["Denmark", 1814, 1885, [[-25, 63, -13, 67]], "Iceland", "Iceland"],
+  ["Denmark", 1814, 1885, [[-8, 61.2, -6, 62.5]], "Faroe Islands", "Faroe Islands"],
+  ["United States", 1867, 1885, [[-180, 50, -129, 72], [170, 50, 180, 56]], "Alaska", "Department of Alaska"]
+];
+const lastWord = (list) => {
+  const names = new Map(LAST_NAME.map(([a, b, y]) => [a, [b, y ?? -Infinity]]));
+  const to = (n, y) => { const r = n ? names.get(n) : null; return r && y >= r[1] ? r[0] : n; };
+  let renamed = 0, cut = 0, ruled = 0, parted = 0;
+  let out = [];
+  for (const s0 of list) {
+    const cuts = [...new Set([s0.name, s0.ruler, s0.part, ...(s0.claims || [])].map((n) => (n && names.has(n) ? names.get(n)[1] : null)).filter((y) => y !== null && y > s0.first && y <= s0.last))].sort((a, b) => a - b);
+    const bounds = [s0.first, ...cuts];
+    cut += cuts.length;
+    bounds.forEach((a, k) => {
+      let s = cuts.length ? { ...s0, first: a, last: k + 1 < bounds.length ? bounds[k + 1] - 1 : s0.last, uid: k ? uidNext++ : s0.uid } : s0;
+      const name = to(s.name, a), ruler = to(s.ruler, a), part = to(s.part, a), claims = s.claims ? s.claims.map((n) => to(n, a)) : s.claims;
+      if (name !== s.name || ruler !== s.ruler || part !== s.part || (claims && claims.some((n, i) => n !== s.claims[i]))) {
+        s = { ...s, name, ruler, part, claims, name0: s.name0 || s.name, wiki: s.wiki || s.name };
+        renamed++;
+      }
+      out.push(s);
+    });
+  }
+  for (const [name, y0, y1, ruler, status] of LAST_RULER) out = out.map((s) => {
+    if (s.name !== name || s.ruler || s.people || s.claims || s.first < y0 || s.last > y1) return s;
+    ruled++;
+    return { ...s, ruler, status };
+  });
+  const centre = (poly) => { const b = boxOf([poly]); return [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2]; };
+  const within = (c, b) => c[0] >= b[0] && c[0] <= b[2] && c[1] >= b[1] && c[1] <= b[3];
+  const res = [];
+  for (const s of out) {
+    const rules = s.ruler || s.people || s.claims || !s.polys ? [] : LAST_PART.filter(([holder, y0, y1]) => s.name === holder && s.first >= y0 && s.last <= y1);
+    let rest = s.polys;
+    for (const [, , , boxes, name, wiki] of rules) {
+      const take = rest.filter((poly) => boxes.some((b) => within(centre(poly), b)));
+      if (!take.length) continue;
+      rest = rest.filter((poly) => !take.includes(poly));
+      res.push(withBox({ ...s, name, ruler: s.name, part: "", status: 5, wiki, cap: null, polys: take, name0: s.name0 || s.name, geoHash: undefined }));
+      parted++;
+    }
+    if (rest === s.polys) res.push(s);
+    else if (rest.length) res.push({ ...s, polys: rest, box: boxOf(rest), cells: cellsOf(rest), geoHash: undefined });
+  }
+  console.log("last word before 1886: " + renamed + " spans renamed, " + cut + " cuts where a name changed, " + ruled + " spans given their ruler, " + parted + " territories parted from their rulers' spans");
+  return res;
+};
+dated = lastWord(dated);
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -4188,7 +4265,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
   if (cEnd >= DAYS_FROM && existsSync(daysPath)) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
-      return { i, first: s.first, last: s.last, names: [s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
+      return { i, first: s.first, last: s.last, names: [s.name0 || s.name], polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
         fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
@@ -4297,7 +4374,9 @@ const CS_NAMES = {
   "Vietnam (Annam/Cochin China/Tonkin)": [["1886-01-01", "Vietnam"]],
   "Kyrgyz Republic": [["1886-01-01", "Kyrgyzstan"]],
   "Cote D'Ivoire": [["1886-01-01", "Côte d'Ivoire"]],
-  "Surinam": [["1886-01-01", "Suriname"]],
+  "Surinam": [["1886-01-01", "Surinam"], ["1975-11-25", "Suriname"]],
+  "Bosnia": [["1886-01-01", "Bosnia and Herzegovina"]],
+  "Herzegovina": [["1886-01-01", "Bosnia and Herzegovina"]],
   "French Guyana": [["1886-01-01", "French Guiana"]],
   "British Somaliland (Somaliland Republic)": [["1886-01-01", "British Somaliland"]],
   "Sabah (North Borneo)": [["1886-01-01", "North Borneo"], ["1963-09-16", "Sabah"]],
@@ -4353,6 +4432,7 @@ const CS_WIKI = {
 const CS_WIKI_BY_YEAR = [
   ["Taiwan", 1950, 9999, "Taiwan"], ["Hawaii", 1886, 1898, "Hawaiian Kingdom"],
   ["Vietnam", 1886, 1945, "French Indochina"],
+  ["Surinam", 1886, 1975, "Surinam (Dutch colony)"], ["Bosnia and Herzegovina", 1886, 1909, "Bosnia and Herzegovina under Austro-Hungarian rule"],
   ["Persia", 1925, 1936, "Pahlavi Iran"], ["China", 1912, 1949, "Republic of China (1912–1949)"],
   ["Egypt", 1914, 1922, "Sultanate of Egypt"], ["Egypt", 1922, 1953, "Kingdom of Egypt"],
   ["Libya", 1912, 1943, "Italian Libya"], ["Libya", 1943, 1951, "Allied administration of Libya"],
@@ -4389,6 +4469,9 @@ const CARRY = {
   "Transvaal": [["1886-01-01", "South African Republic"], ["1902-05-31", "Transvaal Colony"]],
   "Orange Free State": [["1886-01-01", "Orange Free State"], ["1902-05-31", "Orange River Colony"]],
   "Greenland": [["1886-01-01", "Danish Greenland"], ["1953-06-05", "Greenland"]],
+  "Madagascar": [["1886-01-01", "Merina Kingdom"], ["1896-08-06", "Madagascar"]],
+  "Algeria": [["1886-01-01", "French Algeria"], ["1962-07-05", "Algeria"]],
+  "Netherlands Antilles": [["1886-01-01", "Curaçao and Dependencies"], ["1954-12-15", "Netherlands Antilles"]],
   "Kanem-Bornu": [["1886-01-01", "Bornu Empire"]],
   "Tukular Caliphate": [["1886-01-01", "Toucouleur Empire"]]
 };
@@ -4592,7 +4675,11 @@ const CS_CARVE = [["291", "1939-08-31", "255"]];
 // CShapes, following Gleditsch and Ward, counts Canada as independent from 1867; it was a dominion under the United Kingdom until the Statute of Westminster of 11 December 1931.
 // The South African Republic (the Transvaal) and the Orange Free State, which CShapes counts as independent until the Union
 // of South Africa, were British colonies from the Treaty of Vereeniging, 31 May 1902. [code, from, to, owner, status].
-const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"], ["815", "1886-01-01", "1893-01-01", "220", "protectorate"], ["563", "1902-05-31", "1910-05-29", "200", "colony"], ["564", "1902-05-31", "1910-05-29", "200", "colony"]];
+// The Principality of Bulgaria, which CShapes counts as independent from 1878, stayed under the Sultan's suzerainty (Berlin, 1878,
+// Article 1) until it declared independence on 5 October 1908, as the map draws it before 1886. Bhutan, a British protectorate in
+// CShapes from 1886, handed its foreign relations to Britain only by the Treaty of Punakha (8 January 1910): independent until then.
+const CS_DEPENDENT = [["20", "1886-01-01", "1931-12-10", "200"], ["815", "1886-01-01", "1893-01-01", "220", "protectorate"], ["563", "1902-05-31", "1910-05-29", "200", "colony"], ["564", "1902-05-31", "1910-05-29", "200", "colony"],
+  ["355", "1886-01-01", "1908-10-04", "640"], ["760", "1886-01-01", "1910-01-07", "760", "independent"]];
 // Changes CShapes dates to a day other than the one it gives, for every span of the country that
 // starts on that day (and the span before it, which then ends the day before): [code, CShapes day, day].
 const CS_REDATE = [
@@ -4912,7 +4999,7 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
       const kept = keepRemnant(r.polys, whole, 0.5);
       if (!kept.length) continue;
       if (twin) twins++;
-      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler, part: "", people: 0, b: 2, status: twin ? 0 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
+      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler, part: "", people: 0, b: 2, loose: !twin && !s.ruler, status: twin ? 0 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
     }
   }
   list = list.concat(fills);
@@ -4965,7 +5052,7 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
           continue;
         }
         const kept = keepRemnant(pieces, whole, 1, widthOf(polys));
-        if (kept.length) hbFills.push(withBox({ name: p.name, ruler: p.ruler, part: p.part, people: 0, b: p.b, status: p.ruler ? 5 : 0, first: r.first, last: r.last, polys: kept, wiki: wikiFor(p.name, y), src: "hb" }));
+        if (kept.length) hbFills.push(withBox({ name: p.name, ruler: p.ruler, part: p.part, people: 0, b: p.b, loose: !p.ruler, status: p.ruler ? 5 : 0, first: r.first, last: r.last, polys: kept, wiki: wikiFor(p.name, y), src: "hb" }));
       }
     }
   });
@@ -5004,7 +5091,9 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
     if (x.cs) { csParts.push({ ...x.cs, noLabel: !!x.piece, piece: !!x.piece, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
     const claims = x.claims ? x.claims.map((n) => rulerFor(n, x.first)) : null;
-    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+    // A state with no ruler that Cliopatria or historical-basemaps draws on land CShapes leaves blank (loose) has borders no treaty
+    // had settled: dotted, as before 1886, where the same sources' outlines are dotted.
+    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.loose && !owner && !claims ? 1 : x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
   }
   console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
@@ -5371,7 +5460,7 @@ const shadesFor = (hue, base) => {
 };
 console.log("colours: shades " + SHADES.map((s, i) => i + "→" + s.join("/")).join(" "));
 const winAt = (wins, t) => { let w = null; for (const x of wins) if (t >= x[0] && t <= x[1] && (!w || x[0] >= w[0])) w = x; return w; };
-function windowColours(units, pairs, fixed, gap) {
+function windowColours(units, pairs, fixed, gap, prior) {
   const over = new Map(), size = new Map();
   units.forEach((u) => { if (u) size.set(u.hue, Math.max(size.get(u.hue) || 0, u.w)); });
   const colourAt = (hue, t) => { const w = winAt(over.get(hue) || [], t); return w ? w[2] : fixed(hue, t); };
@@ -5445,18 +5534,40 @@ function windowColours(units, pairs, fixed, gap) {
     }
     fixedCount++;
   }
-  return { over, count: fixedCount };
+  // Where one source hands over to the other (1 January 1886), a state that has to take another colour from the first day keeps the
+  // one it had just before (prior) for as long as no neighbour has it, so that it changes colour when its neighbours change and not
+  // at the seam: the stretch is cut on the first day a neighbour has that colour, if that is at least a gap away.
+  let carried = 0;
+  if (prior) try {
+    for (const [hue, wins] of over) {
+      const w = wins.find((x) => x[0] <= 0 && x[2] >= 0), c = prior(hue);
+      if (!w || c < 0 || c === w[2]) continue;
+      let from = Infinity;
+      for (const m of byHue.get(hue) || []) {
+        const me = units[m];
+        if (me.last < w[0] || me.first > w[1]) continue;
+        for (const o of adj.get(m) || []) {
+          const other = units[o];
+          if (other.hue === hue) continue;
+          const s0 = Math.max(me.first, other.first, w[0]), e0 = Math.min(me.last, other.last, w[1]);
+          if (s0 > e0) continue;
+          const ts = [...new Set([s0, Math.floor((s0 + e0) / 2), e0].concat((over.get(other.hue) || []).flatMap((x) => [x[0], x[1] + 1]).filter((t) => t > s0 && t <= e0)))].sort((p, q) => p - q);
+          for (let k = 0; k < ts.length; k++) if (colourAt(other.hue, ts[k]) === c) { from = Math.min(from, k ? ts[k - 1] + 1 : s0); break; }
+        }
+      }
+      if (from - w[0] < gap) continue;
+      if (from <= w[1]) wins.push([from, w[1], w[2]]);
+      w[1] = Math.min(w[1], from - 1);
+      w[2] = c;
+      carried++;
+    }
+  } catch (e) { console.warn("colours carried over the seam: left out, " + e.message); }
+  return { over, count: fixedCount, carried };
 }
 const toSteps = (wins, base, first) => {
   const ts = [...new Set((first || []).map((x) => x[0]).concat(wins.flatMap((w) => [w[0], w[1] + 1])))].sort((x, y) => x - y);
   return ts.map((t) => { const w = winAt(wins, t); return [t, w ? w[2] : stepAt(first, t, base)]; });
 };
-const modernWins = (() => {
-  const units = csRows.map((r) => (r[8] ? null : { hue: r[1] >= 0 ? r[1] : r[0], first: r[2], last: r[3] < 0 ? dayOf(CS_TO) : r[3], free: r[1] < 0, w: r[6] ? r[6][5] : 0 }));
-  const pairs = [];
-  client.neighbors(csLo.objects.p.geometries).forEach((list, i) => list.forEach((j) => { if (j > i) pairs.push([i, j]); }));
-  return windowColours(units, pairs, (hue, t) => stepAt(colourFrom.get(hue), t, baseColour(hue)), 3650);
-})();
 const datedWins = (() => {
   const units = [], pairs = [];
   for (const ch of datedChunks) {
@@ -5466,7 +5577,13 @@ const datedWins = (() => {
   }
   return windowColours(units, pairs, (hue) => baseColour(hue), 10);
 })();
-console.log("colours by date: " + modernWins.count + " stretches from 1886 and " + datedWins.count + " from 1400 to 1885 where a state takes another colour while it touches a neighbour of its own colour");
+const modernWins = (() => {
+  const units = csRows.map((r) => (r[8] ? null : { hue: r[1] >= 0 ? r[1] : r[0], first: r[2], last: r[3] < 0 ? dayOf(CS_TO) : r[3], free: r[1] < 0, w: r[6] ? r[6][5] : 0 }));
+  const pairs = [];
+  client.neighbors(csLo.objects.p.geometries).forEach((list, i) => list.forEach((j) => { if (j > i) pairs.push([i, j]); }));
+  return windowColours(units, pairs, (hue, t) => stepAt(colourFrom.get(hue), t, baseColour(hue)), 3650, (hue) => { const w = winAt(datedWins.over.get(hue) || [], DATED_TO); return w ? w[2] : -1; });
+})();
+console.log("colours by date: " + modernWins.count + " stretches from 1886 and " + datedWins.count + " from 1400 to 1885 where a state takes another colour while it touches a neighbour of its own colour; " + modernWins.carried + " states keep their colour of 1885 past 1 January 1886");
 const entries = catalogue.map((e, id) => {
   const k = keyOf(id);
   const wikis = [...new Set(e.wiki.values())];

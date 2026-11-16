@@ -77,7 +77,9 @@ const O = {
   // The Low Countries.
   BAT: [[EARLY, { name: "Dutch Republic", wiki: "Dutch Republic", b: 2 }], [BATAVIA, { name: "Batavian Republic", wiki: "Batavian Republic", b: 1 }], ["1806-06-05", { name: "Kingdom of Holland", ruler: FFE, status: 5 }], ["1813-12-02", { name: "Sovereign Principality of the United Netherlands", ruler: "", status: 0 }], ["1815-03-16", { name: "Netherlands", wiki: "United Kingdom of the Netherlands" }], [VIENNA, { b: 2 }]],
   BEL: [[W, { name: "Southern Netherlands", wiki: "United Kingdom of the Netherlands", ruler: "Sovereign Principality of the United Netherlands", status: 4 }]],
-  LUX: [[W, { name: "Luxembourg", wiki: "Grand Duchy of Luxembourg", ruler: "Netherlands", status: 5, part: "German Confederation", b: 2 }]],
+  // The Treaty of London (11 May 1867) declared the Grand Duchy independent and neutral: its own state from then, in a personal
+  // union with the Netherlands until 1890, as CShapes draws it from 1886.
+  LUX: [[W, { name: "Luxembourg", wiki: "Grand Duchy of Luxembourg", ruler: "Netherlands", status: 5, part: "German Confederation", b: 2 }], ["1867-05-11", { ruler: "", status: 0 }]],
   BELG: [[W, { name: "Kingdom of Belgium", wiki: "Belgium", b: 2 }]],
   // Limburg and Luxembourg outside their fortresses (Maastricht and Luxembourg), held by Belgium from its revolution to the Treaty of
   // London, which the Netherlands refused until then.
