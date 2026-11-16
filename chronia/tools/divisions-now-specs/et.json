@@ -1,0 +1,312 @@
+{
+  "key": "et",
+  "c": "ETH",
+  "sources": [
+    "https://www.aa.com.tr/en/africa/ethiopia-10th-regional-govt-goes-official/1882023 (Sidama officially became the tenth regional state on Thursday, 18 June 2020)",
+    "https://en.wikipedia.org/wiki/Sidama_Region (formed on 18 June 2020; 6,538 km²; includes Hawassa)",
+    "https://en.wikipedia.org/wiki/South_West_Ethiopia_Peoples%27_Region (split from the SNNPR on 23 November 2021; zones Keffa, Sheka, Bench Sheko, Dawro, West Omo, and Konta; 39,400 km²)",
+    "https://www.thereporterethiopia.com/10214/ (the five zones and one special woreda that chose to form the South West region)",
+    "https://en.wikipedia.org/wiki/Central_Ethiopia_Regional_State (established 19 August 2023; East Gurage, Gurage, Hadiya, Halaba, Kembata, Silt'e, and Yem zones, and Kebena, Mareko, and Tembaro special woredas; 15,099 km²)",
+    "https://en.wikipedia.org/wiki/South_Ethiopia_Regional_State (established 19 August 2023; Wolayita, Gamo, Gofa, Gedeo, South Omo, Ari, Konso, Gardula, Burji, Koore, Basketo, and Ale zones; 45,209 km²)"
+  ],
+  "notes": "Built from the 74 zones of geoBoundaries ADM2 (2016 names) merged into regions, not carved from ADM1, because the clipper fails on the Sidama zone's edge; the merged regions match ADM1's areas to within 10 km². Zones standing in for later ones: Bench Maji for Bench Sheko and West Omo; KT for Kembata and the Tembaro special woreda; Gurage for Gurage, East Gurage, and the Kebena and Mareko special woredas; Gamo Gofa for Gamo and Gofa; South Omo for South Omo and Ari; Segen Peoples' for Konso, Burji, Koore (Amaro), Gardula (Derashe), and Ale. Every later unit is a whole part of one 2016 zone, so nothing is approximate in composition. Sidama zone (6,909 km²) includes Hawassa. Areas built: South West 38,850 km² (published 39,400), Central 15,271 (15,099), South 48,381 (45,209; includes the Gedeo exclave). The source leaves Lake Tana as a hole in Amhara. Dates: Sidama 18 June 2020 (handover of power), South West 23 November 2021, and Central and South Ethiopia 19 August 2023; the last two rest on Wikipedia and were not checked against a proclamation.",
+  "layouts": [
+    {
+      "first": "2020-06-18",
+      "last": "2021-11-22",
+      "base": "ADM2",
+      "rename": {
+        "Region 14": "Addis Ababa",
+        "Hareri": "Harari"
+      },
+      "merge": {
+        "Amhara": [
+          "Awi/Agew",
+          "East Gojam",
+          "North Gonder",
+          "North Shewa(R3)",
+          "North Wollo",
+          "Oromia",
+          "South Gonder",
+          "South Wollo",
+          "Special Woreda",
+          "Wag Himra",
+          "West Gojam"
+        ],
+        "Afar": [
+          "Zone 1",
+          "Zone 2",
+          "Zone 3",
+          "Zone 4",
+          "Zone 5"
+        ],
+        "Benishangul-Gumuz": [
+          "Asosa",
+          "Kemashi",
+          "Metekel"
+        ],
+        "Gambela": [
+          "Agnuak",
+          "Majang",
+          "Nuer"
+        ],
+        "Somali": [
+          "Afder",
+          "Doolo",
+          "Fafan",
+          "Jarar",
+          "Korahe",
+          "Liben",
+          "Nogob",
+          "Shabelle",
+          "Siti"
+        ],
+        "Tigray": [
+          "Central",
+          "Eastern\n",
+          "North Western",
+          "Southern",
+          "Western"
+        ],
+        "Oromia": [
+          "Arsi",
+          "Bale",
+          "Borena",
+          "East Harerge",
+          "East Shewa",
+          "East Wellega",
+          "Guji",
+          "Horo Guduru",
+          "Ilubabor",
+          "Jimma",
+          "Kelem Wellega",
+          "North Shewa(R4)",
+          "South West Shewa",
+          "West Arsi",
+          "West Harerge",
+          "West Shewa",
+          "West Wellega"
+        ],
+        "Southern Nations, Nationalities, and Peoples' Region": [
+          "Alaba",
+          "Basketo",
+          "Bench Maji",
+          "Dawro",
+          "Gamo Gofa",
+          "Gedio",
+          "Gurage",
+          "Hadiya",
+          "Keffa",
+          "Konta",
+          "KT",
+          "Segen Peoples'",
+          "Selti",
+          "Sheka",
+          "South Omo",
+          "Wolayita",
+          "Yem"
+        ]
+      }
+    },
+    {
+      "first": "2021-11-23",
+      "last": "2023-08-18",
+      "base": "ADM2",
+      "rename": {
+        "Region 14": "Addis Ababa",
+        "Hareri": "Harari"
+      },
+      "merge": {
+        "Amhara": [
+          "Awi/Agew",
+          "East Gojam",
+          "North Gonder",
+          "North Shewa(R3)",
+          "North Wollo",
+          "Oromia",
+          "South Gonder",
+          "South Wollo",
+          "Special Woreda",
+          "Wag Himra",
+          "West Gojam"
+        ],
+        "Afar": [
+          "Zone 1",
+          "Zone 2",
+          "Zone 3",
+          "Zone 4",
+          "Zone 5"
+        ],
+        "Benishangul-Gumuz": [
+          "Asosa",
+          "Kemashi",
+          "Metekel"
+        ],
+        "Gambela": [
+          "Agnuak",
+          "Majang",
+          "Nuer"
+        ],
+        "Somali": [
+          "Afder",
+          "Doolo",
+          "Fafan",
+          "Jarar",
+          "Korahe",
+          "Liben",
+          "Nogob",
+          "Shabelle",
+          "Siti"
+        ],
+        "Tigray": [
+          "Central",
+          "Eastern\n",
+          "North Western",
+          "Southern",
+          "Western"
+        ],
+        "Oromia": [
+          "Arsi",
+          "Bale",
+          "Borena",
+          "East Harerge",
+          "East Shewa",
+          "East Wellega",
+          "Guji",
+          "Horo Guduru",
+          "Ilubabor",
+          "Jimma",
+          "Kelem Wellega",
+          "North Shewa(R4)",
+          "South West Shewa",
+          "West Arsi",
+          "West Harerge",
+          "West Shewa",
+          "West Wellega"
+        ],
+        "Southern Nations, Nationalities, and Peoples' Region": [
+          "Gurage",
+          "Hadiya",
+          "KT",
+          "Selti",
+          "Alaba",
+          "Yem",
+          "Wolayita",
+          "Gamo Gofa",
+          "Gedio",
+          "South Omo",
+          "Segen Peoples'",
+          "Basketo"
+        ],
+        "South West Ethiopia Peoples' Region": [
+          "Keffa",
+          "Sheka",
+          "Bench Maji",
+          "Dawro",
+          "Konta"
+        ]
+      }
+    },
+    {
+      "first": "2023-08-19",
+      "last": null,
+      "base": "ADM2",
+      "rename": {
+        "Region 14": "Addis Ababa",
+        "Hareri": "Harari"
+      },
+      "merge": {
+        "Amhara": [
+          "Awi/Agew",
+          "East Gojam",
+          "North Gonder",
+          "North Shewa(R3)",
+          "North Wollo",
+          "Oromia",
+          "South Gonder",
+          "South Wollo",
+          "Special Woreda",
+          "Wag Himra",
+          "West Gojam"
+        ],
+        "Afar": [
+          "Zone 1",
+          "Zone 2",
+          "Zone 3",
+          "Zone 4",
+          "Zone 5"
+        ],
+        "Benishangul-Gumuz": [
+          "Asosa",
+          "Kemashi",
+          "Metekel"
+        ],
+        "Gambela": [
+          "Agnuak",
+          "Majang",
+          "Nuer"
+        ],
+        "Somali": [
+          "Afder",
+          "Doolo",
+          "Fafan",
+          "Jarar",
+          "Korahe",
+          "Liben",
+          "Nogob",
+          "Shabelle",
+          "Siti"
+        ],
+        "Tigray": [
+          "Central",
+          "Eastern\n",
+          "North Western",
+          "Southern",
+          "Western"
+        ],
+        "Oromia": [
+          "Arsi",
+          "Bale",
+          "Borena",
+          "East Harerge",
+          "East Shewa",
+          "East Wellega",
+          "Guji",
+          "Horo Guduru",
+          "Ilubabor",
+          "Jimma",
+          "Kelem Wellega",
+          "North Shewa(R4)",
+          "South West Shewa",
+          "West Arsi",
+          "West Harerge",
+          "West Shewa",
+          "West Wellega"
+        ],
+        "South Ethiopia": [
+          "Wolayita",
+          "Gamo Gofa",
+          "Gedio",
+          "South Omo",
+          "Segen Peoples'",
+          "Basketo"
+        ],
+        "Central Ethiopia": [
+          "Gurage",
+          "Hadiya",
+          "KT",
+          "Selti",
+          "Alaba",
+          "Yem"
+        ],
+        "South West Ethiopia Peoples' Region": [
+          "Keffa",
+          "Sheka",
+          "Bench Maji",
+          "Dawro",
+          "Konta"
+        ]
+      }
+    }
+  ]
+}

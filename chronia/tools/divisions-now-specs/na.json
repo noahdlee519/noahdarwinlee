@@ -1,0 +1,55 @@
+{
+  "key": "na",
+  "c": "NAM",
+  "sources": [
+    "https://namiblii.org/akn/na/act/p/2013/25/eng@2013-08-09/source (Proclamation 25 of 2013, signed 6 August 2013, Government Gazette 5261 of 9 August 2013: Kavango divided into Kavango East and Kavango West with boundary descriptions and constituencies, Caprivi renamed Zambezi, and Karas renamed !Karas)",
+    "https://statoids.com/una.html (change dated 8 August 2013)",
+    "https://en.wikipedia.org/wiki/List_of_constituencies_of_Namibia (Rundu Rural West renamed Ncuncuni and placed in Kavango West; constituencies of each Kavango)",
+    "https://en.wikipedia.org/wiki/Kavango_West (area 24,591 km²)"
+  ],
+  "notes": "Base is Natural Earth (13 clean regions; geoBoundaries ADM1 has a stray Cunene). Proclamation 25 of 2013 was signed on 6 August and gazetted on 9 August 2013 with no commencement clause; 8 August 2013 (the public announcement, used by Statoids and Wikipedia) is kept so the layout follows the map's last day without a gap. The proclamation writes !Karas; ǁKaras is the spelling in use. geoBoundaries ADM2's names are scrambled for Namibia (the shapes are right, the labels are not), so units were picked by position: in Kavango, 'Luderitz' at 18.26,-18.05 is Mpungu, 'Rehoboth West' is Kahenge, 'Berseba' is Kapako, 'Luderitz' at 19.77,-18.17 is Rundu Rural, 'Tsumeb' is Mashare, 'Grootfontein' is Ndiyona, and 'Arandis' is Mukwe. Kavango West is Mpungu, Kahenge, and Kapako (the base Kavango renamed, with Kavango East carved out). Approximate: the true line follows the Omatako omuramba through the Rundu Rural unit (2,673 km²), whose north-western part became Ncuncuni in Kavango West; the whole unit is left in Kavango East so that Rundu is not cut off, which makes Kavango West about 5% too small (23,460 km² against 24,591). Three strips under 100 km² along the Kavango river east of Rundu are dropped by the sliver threshold. Natural Earth's Kavango stops short in the east (it gives Mukwe's Bwabwata part to Zambezi), so Kavango East is 19,802 km² against 23,983 and Zambezi is too large; that is the base's border from before, left as it is.",
+  "layouts": [
+    {
+      "first": "2013-08-08",
+      "last": null,
+      "base": "NE",
+      "rename": {
+        "Karas": "ǁKaras",
+        "Kavango": "Kavango West"
+      },
+      "carve": [
+        {
+          "name": "Kavango East",
+          "from": [
+            "Kavango West"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Rundu Urban",
+            "Tsumeb",
+            "Grootfontein",
+            "Arandis"
+          ],
+          "sliver": 100
+        },
+        {
+          "name": "Kavango East",
+          "from": [
+            "Kavango West"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Luderitz"
+          ],
+          "box": [
+            19.5,
+            -18.5,
+            20.0,
+            -18.0
+          ],
+          "sliver": 100
+        }
+      ]
+    }
+  ]
+}

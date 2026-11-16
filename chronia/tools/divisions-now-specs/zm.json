@@ -1,0 +1,50 @@
+{
+  "key": "zm",
+  "c": "ZMB",
+  "sources": [
+    "https://zambialii.org/akn/zm/act/si/2021/114/eng@2021-12-31/source (Statutory Instrument 114 of 2021, the Provincial and District Boundaries (Division) (Amendment) (No. 2) Order, 2021, dated 31 December 2021: Chama from Muchinga to Eastern, Chirundu from Lusaka to Southern, and Itezhi-tezhi from Central to Southern)",
+    "https://www.lusakatimes.com/2021/11/18/president-hichilema-to-give-back-chirundu-and-itezhi-districts-to-southern-province/ (the President's announcement, reported 18 November 2021)",
+    "https://en.wikipedia.org/wiki/Chirundu_District (announcement dated 17 November 2021)",
+    "https://en.wikipedia.org/wiki/Provinces_of_Zambia (districts per province after the change: Central 11, Eastern 15, Lusaka 6, Muchinga 8, and Southern 15)"
+  ],
+  "notes": "What changed: Statutory Instrument 114 of 2021 moved Chama from Muchinga to Eastern, Chirundu from Lusaka to Southern, and Itezhi-tezhi from Central to Southern. Shibuyunji was not moved and stays in Central. DATE: the President announced the change on 17 November 2021 (the day the map's layout ends), but the instrument itself is dated and gazetted 31 December 2021 and has no commencement clause. The layout starts on 17 November 2021 to follow the map without a gap; by the instrument's own date it should start on 31 December 2021, with the earlier layout running to 30 December 2021. Built from geoBoundaries ADM1 (2020) with the three districts carved across; whole districts, nothing approximate.",
+  "layouts": [
+    {
+      "first": "2021-11-17",
+      "last": null,
+      "base": "ADM1",
+      "carve": [
+        {
+          "name": "Eastern",
+          "from": [
+            "Muchinga"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Chama"
+          ]
+        },
+        {
+          "name": "Southern",
+          "from": [
+            "Lusaka"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Chirundu"
+          ]
+        },
+        {
+          "name": "Southern",
+          "from": [
+            "Central"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Itezhi-Tezhi"
+          ]
+        }
+      ]
+    }
+  ]
+}

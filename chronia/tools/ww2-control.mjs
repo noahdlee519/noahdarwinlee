@@ -6,6 +6,8 @@
 // side's cells, not cut to the land, are also written to tools/control/ww2-axis.json, which
 // build-eras.mjs reads to cut the wartime regimes to the ground the Axis held each month.
 
+import { VICHY, SOVIET_WIDE, OHM } from "./ww2-borders.mjs";
+
 export const WW2_SIDES = {
   axis: ["Axis (Germany, Italy, Japan, and their allies)", "#3b3b3b"],
   allies: ["Allies", "#2f62b0"],
@@ -60,6 +62,16 @@ export const WW2_WARS = [
   { key: "ww2europe", name: "Second World War in Europe, Africa, and the Middle East", theatres: ["europe"], from: "1939-09", to: "1945-05", box: [-11, 1, 61, 72], units: EUROPE_UNITS },
   { key: "ww2asia", name: "Second World War in Asia and the Pacific", theatres: ["asia"], from: "1931-09", to: "1945-09", box: [88, -12, 180, 56], units: ASIA_UNITS }
 ];
+// Where a line between two sides was no front but a line agreed between them, the side holds the land up to that line
+// rather than to the towns' cells: [side, from, to, the countries' units it is drawn within, the shape (rings), a note].
+// The demarcation line in France, the same as the main map's (see VICHY in ww2-borders.mjs), and the German–Soviet line
+// of 28 September 1939 to the invasion of 22 June 1941, from OpenHistoricalMap's units (see ww2-ohm.mjs).
+const ring = (r) => [[r]];
+const FIXED = [
+  ["vichy", "1940-06-25", "1942-11-10", ["FRA"], () => ring(VICHY), "the unoccupied zone, to the demarcation line"],
+  ["soviet", "1939-09-28", "1941-06-21", ["POL", "BLR", "UKR"], (clip) => OHM ? clip.difference(ring(SOVIET_WIDE), OHM.reich39.polys, OHM.gg39.polys, OHM.lithuania39.polys) : null, "Poland east of the German–Soviet line"],
+  ["axis", "1939-09-28", "1941-06-21", ["POL", "LTU"], (clip) => OHM ? clip.union(OHM.reich39.polys, OHM.gg39.polys) : null, "Poland west of the German–Soviet line"]
+];
 // The Aleutians only, not the rest of Alaska.
 const ALEUTIANS = [172, 51, 180, 53.5];
 
@@ -79,7 +91,7 @@ export function buildWW2(env) {
     if (only.length && !only.includes(war.key) && !only.includes("ww2")) continue;
     const t0 = Date.now();
     // The war's units, in one topology (simplified to about 0.5 km), so the land of any set of them is merged exactly.
-    const feats = [], unitFrom = [];
+    const feats = [], unitFrom = [], unitA3 = [];
     ne.features.forEach((f) => {
       const p = f.properties, c = centre(f);
       const spans = [];
@@ -98,6 +110,7 @@ export function buildWW2(env) {
       }
       feats.push({ type: "Feature", properties: {}, geometry: geom });
       unitFrom.push(spans);
+      unitA3.push(p.adm0_a3);
     });
     const rawTopo = server.topology({ u: { type: "FeatureCollection", features: feats } }, 1e6);
     const topoU = simplify.simplify(simplify.presimplify(rawTopo, simplify.sphericalTriangleArea), weightFor(0.5));
@@ -109,6 +122,28 @@ export function buildWW2(env) {
       return regionMemo.get(key);
     };
     const towns = src.towns.filter((t) => war.theatres.includes(t[4]));
+    // polygon-clipping fails now and then on shapes from different sources; rounding the coordinates gets it through.
+    const snapAt = (polys, k) => polys.map((poly) => poly.map((r) => {
+      const o = [];
+      for (const q of r) { const v = [Math.round(q[0] * k) / k, Math.round(q[1] * k) / k], l = o[o.length - 1]; if (!l || l[0] !== v[0] || l[1] !== v[1]) o.push(v); }
+      return o;
+    }).filter((r) => r.length >= 4)).filter((poly) => poly.length);
+    const safe = (op, a, ...bs) => {
+      let err;
+      for (const k of [0, 1e6, 1e5, 1e4, 1e3]) { try { return k ? op(snapAt(a, k), ...bs.map((b) => snapAt(b, k))) : op(a, ...bs); } catch (e) { err = e; } }
+      throw err;
+    };
+    // The fixed zones of this war, each cut to its countries' units.
+    const fixed = [];
+    for (const [side, from, to, a3s, shape, note] of FIXED) {
+      const rings = shape({ union: (...a) => safe(clip.union, ...a), difference: (...a) => safe(clip.difference, ...a) });
+      if (!rings || !rings.length) continue;
+      const ids = []; unitA3.forEach((a, i) => { if (a3s.includes(a)) ids.push(i); });
+      if (!ids.length) continue;
+      const land = client.merge(topoU, ids.map((i) => topoU.objects.u.geometries[i])).coordinates;
+      const polys = safe(clip.intersection, land, rings);
+      if (polys.length) fixed.push({ side, from, to, polys, note });
+    }
     const holderAt = (t, iso) => { let h = null; for (const [d, s] of t[3]) { if (d <= iso) h = s; else break; } return h; };
     const [y0, m0] = war.from.split("-").map(Number), [y1, m1] = war.to.split("-").map(Number);
     const bbox = war.box, lat0 = (bbox[1] + bbox[3]) / 2, kx = Math.cos(lat0 * Math.PI / 180);
@@ -172,7 +207,8 @@ export function buildWW2(env) {
       const pts = [], sides = [];
       towns.forEach((t, i) => { const s = holderAt(t, iso); if (s && WW2_SIDES[s]) { pts.push([t[0], t[1]]); sides.push(s); } });
       const reg = regionAt(iso), region = reg.polys;
-      const sig = reg.key + "|" + pts.length + "|" + sides.join("");
+      const fixNow = fixed.filter((f) => f.from <= iso && iso <= f.to);
+      const sig = reg.key + "|" + pts.length + "|" + sides.join("") + "|" + fixNow.map((f) => f.side + f.from).join(",");
       let byside, axis;
       if (sig === prevSig && prev) ({ byside, axis } = prev);
       else {
@@ -219,6 +255,13 @@ export function buildWW2(env) {
             if (polys.length) byside.set(s, (byside.get(s) || []).concat(polys));
           }
         }
+        // The fixed zones: the side holds the zone's land, and no other side holds any of it.
+        for (const f of fixNow) {
+          for (const [s, polys] of [...byside]) if (s !== f.side) { const rest = safe(clip.difference, polys, f.polys).filter((p) => areaKm2(p) >= 2); if (rest.length) byside.set(s, rest); else byside.delete(s); }
+          const live = safe(clip.intersection, f.polys, region);
+          if (live.length) byside.set(f.side, byside.has(f.side) ? safe(clip.union, byside.get(f.side), live) : live);
+          axis = f.side === "axis" ? safe(clip.union, axis, f.polys) : safe(clip.difference, axis, f.polys);
+        }
         prevSig = sig; prev = { byside, axis }; distinct++;
       }
       for (const s of [...open.keys()]) if (!byside.has(s)) finish(s, first - 1);
@@ -249,5 +292,11 @@ export function buildWW2(env) {
     axisOut.theatres.push({ key: war.key, box: bbox, first: firstDay, last: lastDay, months: axisMonths.map(([a, b, p]) => [a, b, p]) });
     console.log(war.key + ": " + towns.length + " towns, " + distinct + " distinct months, " + rows.length + " shapes of " + sideKeys.length + " sides, " + Math.round(JSON.stringify(data).length / 1024) + " KB, " + Math.round((Date.now() - t0) / 1000) + " s");
   }
-  if (axisOut.theatres.length) writeFileSync(resolve(input, "ww2-axis.json"), JSON.stringify(axisOut));
+  // A theatre not built this time keeps the ground it had.
+  const axisPath = resolve(input, "ww2-axis.json");
+  if (axisOut.theatres.length && existsSync(axisPath)) {
+    const done = new Set(axisOut.theatres.map((t) => t.key));
+    axisOut.theatres = JSON.parse(readFileSync(axisPath, "utf8")).theatres.filter((t) => !done.has(t.key)).concat(axisOut.theatres);
+  }
+  if (axisOut.theatres.length) writeFileSync(axisPath, JSON.stringify(axisOut));
 }

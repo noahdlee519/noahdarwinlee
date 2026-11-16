@@ -811,7 +811,7 @@
       modern.hi = hi; modern.fine = 2;
       modernSnaps.clear();
       if (current && current.modern) { useSnap(modernSnap(Math.min(dayOfTime(now), modern.toDay))); scheduleRender(); }
-    }, function () { if (modern.lo === lo) modern.fine = 0; });
+    }, function () { if (modern.lo === lo) { modern.fine = 0; modern.fineFailed = true; } });
   }
   function dropModern() {
     modern.rows = null; modern.lo = null; modern.hi = null; modern.load = null; modern.fine = 0;
@@ -974,7 +974,7 @@
       var pre = "e" + k;
       datedSnaps.forEach(function (snap, key) { if (key.indexOf(pre + ":") === 0 || key.indexOf(pre + "s:") === 0) datedSnaps.delete(key); });
       if (current && current.dated && isDated(now) && chunkIndexFor(now) === k) { useSnap(datedSnap(k, now)); scheduleRender(); }
-    }, function () { if (c.data === d) c.fine = 0; });
+    }, function () { if (c.data === d) { c.fine = 0; c.fineFailed = true; } });
   }
   // A row's first and last day: the days the chunk gives for changes dated within the year (from 1800),
   // or else 1 January of its first year and 31 December of its last.
@@ -2933,10 +2933,14 @@
     return out;
   }
 
+  function groundKey(snap, p, name) {
+    var cap = (snap.modern || snap.dated) && p.cap ? capitalNow(p.cap) : null;
+    return (flat ? "f" : "g") + (p.group ? "G" : "") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : "");
+  }
   function groundLayout(snap, p, name, allow) {
     labelEpoch();
     var g = p.group ? p.geoLo : snap.geoms.lo[p.i], cap = (snap.modern || snap.dated) && p.cap ? capitalNow(p.cap) : null;
-    var key = (flat ? "f" : "g") + (p.group ? "G" : "") + name + "|" + p.label.slice(0, 6).join() + (cap ? "|" + cap[1] + "," + cap[2] : ""), hit = groundCache.get(key);
+    var key = groundKey(snap, p, name), hit = groundCache.get(key);
     if (hit) { groundCache.delete(key); groundCache.set(key, hit); }
     if (hit || !allow) return hit;
     if (groundCache.size > 2000) groundCache.delete(groundCache.keys().next().value);
@@ -2952,7 +2956,7 @@
     };
     var cen = centreOf(featOf(snap.topo.lo, "lo", g).geo);
     for (i = 0; i < spots.length && cands.length < 6; i++) add(groundCand(p, name, feats, spots[i][0], spots[i][1], capLL, i ? GROUND_WIN / GU : 0, false, i ? null : cen));
-    hit = { cands: cands, more: cands.length && span > 0.12 ? { pts: null, grow: function (lim) {
+    hit = { key: key, cands: cands, more: cands.length && span > 0.12 ? { pts: null, grow: function (lim) {
       var m = hit.more;
       if (!m.pts) {
         var fr = groundFrame(lab[0], lab[1]), sp = planeShape(feats, fr, 3.2), F = sp && prepFit(sp, [], 1, 1, 0, null), step = gap * GU;
@@ -3201,8 +3205,9 @@
       if (!any) continue;
       var side = Math.sqrt(lab[5]) * kp, wh = Infinity;
       labelOptions(name, p.people).forEach(function (o) { wh = Math.min(wh, o.w * o.h); });
-      var G = 1.1 * side / Math.sqrt(wh) < (p.people ? 8 : 7) ? null : groundLayout(snap, p, name, !quick || performance.now() - t0 < budget);
-      if (G) lastGround.set(fk + p.id, G); else G = lastGround.get(fk + p.id);
+      var tiny = 1.1 * side / Math.sqrt(wh) < (p.people ? 8 : 7), G = tiny ? null : groundLayout(snap, p, name, !quick || performance.now() - t0 < budget);
+      if (G) lastGround.set(fk + p.id, G);
+      else { G = lastGround.get(fk + p.id); if (G && tiny && G.key !== groundKey(snap, p, name)) G = null; }
       var it = G ? placeGround(p, name, G, side, placed, scale) : null;
       for (var tries = 0; !it && G && G.more && side > 60 && tries < 3 && (!quick || performance.now() - t0 < budget) && G.more.grow([W * 0.08, H * 0.12, W * 0.92, H * 0.88]); tries++) it = placeGround(p, name, G, side, placed, scale);
       if (it) {
@@ -4406,6 +4411,28 @@
     tip.style.top = y + "px";
   }
   function hideTip() { tip.hidden = true; }
+  // With Shift held, the coordinates under the cursor, beside it (Noah's request, 15 November 2026).
+  var coords = $("coords"), mouseAt = null;
+  function syncCoords(shift) {
+    var ll = shift && mouseAt ? lonLatAt(mouseAt[0], mouseAt[1]) : null;
+    if (!ll) { coords.hidden = true; return; }
+    var part = function (v, pos, neg) { return Math.abs(v).toFixed(2) + "° " + (v < 0 ? neg : pos); };
+    coords.textContent = part(ll[1], "N", "S") + ", " + part(ll[0], "E", "W");
+    coords.hidden = false;
+    var w = coords.offsetWidth;
+    coords.style.left = (mouseAt[0] + 14 + w > W - 8 ? mouseAt[0] - w - 28 : mouseAt[0]) + "px";
+    coords.style.top = Math.max(48, mouseAt[1]) + "px";
+  }
+  canvas.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouseAt = [e.clientX, e.clientY]; syncCoords(e.shiftKey); } });
+  canvas.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { mouseAt = null; syncCoords(false); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Shift") syncCoords(true); });
+  // The globe's focus ring is for those who reach it with Tab. Browsers count the arrow keys as keyboard use, so a click
+  // on the globe after stepping the year drew the ring round the whole screen; it now shows only after Tab, until the
+  // next click or tap.
+  document.addEventListener("keydown", function (e) { if (e.key === "Tab") document.documentElement.classList.add("ch-tabbing"); }, true);
+  document.addEventListener("pointerdown", function () { document.documentElement.classList.remove("ch-tabbing"); }, true);
+  document.addEventListener("keyup", function (e) { if (e.key === "Shift") syncCoords(false); });
+  window.addEventListener("blur", function () { syncCoords(false); });
   function cityAt(x, y, touch) {
     var best = null, bestD = Infinity, pad = touch ? 8 : 3;
     for (var i = 0; i < placedLabels.length; i++) {
@@ -4434,20 +4461,21 @@
     if (y < 1000) return "AD " + y;
     return String(y);
   }
-  function fmtDay(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
-  // Day, month, year, as the date's frame writes it.
-  function fmtDate(day) { var d = dateOfDay(day); return d[2] + " " + MONTHS[d[1] - 1] + " " + d[0]; }
+  // Month, day, year ("August 23, 1815"), as the date's frame writes it.
+  function fmtMDY(y, m, d) { return MONTHS[m - 1] + " " + d + ", " + (y > 0 ? y : fmtYear(y)); }
+  function fmtDay(day) { var d = dateOfDay(day); return fmtMDY(d[0], d[1], d[2]); }
+  function fmtDate(day) { return fmtDay(day); }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
     if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " + (ry > 0 ? ry : fmtYear(ry)) : fmtYear(ry); }
     var d = dateOfDay(dayOfTime(t));
-    return (d[2] === MID_DAY ? "" : d[2] + " ") + MONTHS[d[1] - 1] + " " + d[0];
+    return d[2] === MID_DAY ? MONTHS[d[1] - 1] + " " + d[0] : fmtMDY(d[0], d[1], d[2]);
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
   var fitCtx = null, fitBox = null, fitWatch = false;
   function fitDate(text) {
-    var m = /^(\d+ )?([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
-    if (!m || m[2].length <= 3 || !el) return text;
+    var m = /^([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
+    if (!m || m[1].length <= 3 || !el) return text;
     // The box's font and room are read once and again when its size changes, not at each date: reading them makes the
     // browser lay the page out there and then, twice for every date the marker is dragged through.
     if (!fitBox) {
@@ -4462,15 +4490,21 @@
         if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", forget);
       }
     }
-    var fit = fitBox.fits.get(text);
-    if (fit === undefined) {
-      fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
-      fitCtx.font = fitBox.font;
-      fit = fitCtx.measureText(text).width * 1.04 <= fitBox.room;
-      if (fitBox.fits.size > 4000) fitBox.fits.clear();
-      fitBox.fits.set(text, fit);
-    }
-    return fit ? text : (m[1] || "") + m[2].slice(0, 3) + m[3];
+    var fits = function (t) {
+      var fit = fitBox.fits.get(t);
+      if (fit === undefined) {
+        fitCtx = fitCtx || document.createElement("canvas").getContext("2d");
+        fitCtx.font = fitBox.font;
+        fit = fitCtx.measureText(t).width * 1.04 <= fitBox.room;
+        if (fitBox.fits.size > 4000) fitBox.fits.clear();
+        fitBox.fits.set(t, fit);
+      }
+      return fit;
+    };
+    if (fits(text)) return text;
+    // Three letters for the month, and on the narrowest phones no comma either ("Sep 23 1866").
+    var short = m[1].slice(0, 3) + m[2];
+    return fits(short) ? short : short.replace(",", "");
   }
   function monthTime(y, m) { return timeOfDay(dayFromDate(y, m, MID_DAY)); }
   function changeBefore(day) {
@@ -4576,9 +4610,10 @@
       ts.appendChild(s);
       return s;
     };
-    // Labels every so many years, with at least 70 px between them, and five minor ticks to a label.
-    var steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000], step = steps[steps.length - 1];
-    for (var i = 0; i < steps.length; i++) if (steps[i] * ppy >= 70) { step = steps[i]; break; }
+    // Labels every so many years, with at least 70 px between them (44 px on a phone's short timeline, so the years
+    // nearest today, 2020 among them, still have a label), and five minor ticks to a label.
+    var steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000], step = steps[steps.length - 1], gap = tl.w < 400 ? 44 : 70;
+    for (var i = 0; i < steps.length; i++) if (steps[i] * ppy >= gap) { step = steps[i]; break; }
     var minor = step / 5;
     for (var y = Math.ceil(FIRST_T / minor) * minor; y <= lastT(); y += minor) {
       var major = y % step === 0;
@@ -4588,6 +4623,8 @@
       lab.textContent = y === 0 ? "AD 1" : y < 0 ? fmtYear(y) : String(y);
       lab.style.left = at(y === 0 ? 1 : y);
       if (y <= FIRST_T) lab.className = "is-first";
+      // A label too near the end of the timeline to be centred on its tick ends at the tick instead.
+      else if ((lastT() - y) * ppy < 18) lab.className = "is-last";
       es.appendChild(lab);
     }
     placeEvents();
@@ -4614,7 +4651,7 @@
   function eventDate(d, t) {
     if (typeof d === "number") return fmtYear(d);
     var x = dateOfDay(dayOfTime(t));
-    return x[2] + " " + MONTHS[x[1] - 1] + " " + x[0];
+    return fmtMDY(x[0], x[1], x[2]);
   }
   function loadEvents() {
     if (tlEventsLoad) return;
@@ -4703,6 +4740,22 @@
     hoverId = -1;
     canvas.classList.remove("is-over");
   }
+  // A step by hand keeps the detail the map shows, as play does (prefetchPlay, playStep). Each stretch of years comes as its
+  // rough lines and then its fine ones, and a step into a file whose fine lines had not come drew the rough ones for a moment,
+  // several kilometres off, so the borders seemed to change and change back. Now a step near a file's edge asks for the
+  // neighbouring file's fine lines ahead (stepFine), and a step into a file whose fine lines are on their way keeps the map
+  // as it is until they come, for up to STEP_FINE_WAIT ms (whenFine). Dragging the slider and play are left as they were.
+  var STEP_FINE_WAIT = 2500;
+  function stepFine() { return !playTimer && !rangeActive; }
+  function whenFine(t, key, fromRange, show) {
+    if (fromRange || playTimer || !current || !playWantsFine() || fineReady(t, true)) { show(); return; }
+    var t0 = performance.now();
+    (function wait() {
+      if (wantKey !== key) return;
+      if (fineReady(t, true) || performance.now() - t0 > STEP_FINE_WAIT) { show(); return; }
+      setTimeout(wait, 40);
+    })();
+  }
   function setTime(t, fromRange) {
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
@@ -4719,10 +4772,12 @@
         syncTime();
         loadModern().then(function () {
           if (wantKey !== "d" + day) return;
-          useSnap(modernSnap(day));
-          syncTime();
-          writeHash();
-          scheduleRender(true);
+          whenFine(t, "d" + day, fromRange, function () {
+            useSnap(modernSnap(day));
+            syncTime();
+            writeHash();
+            scheduleRender(true);
+          });
         }).catch(function (e) {
           console.warn("modern", e);
           asof.textContent = "The borders of " + fmtNow(t) + " could not be loaded";
@@ -4730,10 +4785,17 @@
         scheduleRender(true);
         return;
       }
-      useSnap(modernSnap(day));
-      syncTime();
-      writeHash();
-      scheduleRender(true);
+      whenFine(t, "d" + day, fromRange, function () {
+        useSnap(modernSnap(day));
+        syncTime();
+        writeHash();
+        scheduleRender(true);
+        // Close to 1886, the last file before it is asked for, with its fine lines when the map shows them.
+        if (dated && yearOf(t) - yearOf(modern.fromTime) < NEAR_EDGE) whenIdle(function () {
+          var last = dated.chunks.length - 1, fine = stepFine();
+          loadChunk(last).then(function () { if (fine) loadChunkFine(last); }).catch(function () {});
+        });
+      });
       return;
     }
     if (isDated(t)) {
@@ -4742,15 +4804,18 @@
       syncTime();
       loadChunk(ck).then(function () {
         if (wantKey !== "e" + t) return;
-        useSnap(datedSnap(ck, t));
-        syncTime();
-        writeHash();
-        scheduleRender(true);
-        whenIdle(function () {
-          var y = yearOf(t), next = dated.chunks[ck + 1], to = next ? next.from - 1 : dated.to;
-          if (ck > 0 && (playTimer || y - dated.chunks[ck].from < NEAR_EDGE)) loadChunk(ck - 1).catch(function () {});
-          if (next && (playTimer || to - y < NEAR_EDGE)) loadChunk(ck + 1).catch(function () {});
-          if (!next && to - y < NEAR_EDGE) loadModern().catch(function () {});
+        whenFine(t, "e" + t, fromRange, function () {
+          useSnap(datedSnap(ck, t));
+          syncTime();
+          writeHash();
+          scheduleRender(true);
+          whenIdle(function () {
+            var y = yearOf(t), next = dated.chunks[ck + 1], to = next ? next.from - 1 : dated.to, fine = stepFine();
+            var get = function (k) { loadChunk(k).then(function () { if (fine) loadChunkFine(k); }).catch(function () {}); };
+            if (ck > 0 && (playTimer || y - dated.chunks[ck].from < NEAR_EDGE)) get(ck - 1);
+            if (next && (playTimer || to - y < NEAR_EDGE)) get(ck + 1);
+            if (!next && to - y < NEAR_EDGE) loadModern().then(function () { if (fine) loadModernFine(); }).catch(function () {});
+          });
         });
       }).catch(function (e) {
         console.warn("dated", e);
@@ -4824,7 +4889,8 @@
     if (isMonthly(now)) {
       var d = dateOfDay(dayOfTime(now)), y = d[0] + dir, m = d[1];
       if (y < mf) setTime(y === 0 ? -1 : y);
-      else setTime(y * 12 + m > LAST_YEAR * 12 + LAST_MONTH ? monthTime(LAST_YEAR, LAST_MONTH) : monthTime(y, m));
+      // A year on that would pass the last month stays put: going to the last month would be a step of months, not of a year.
+      else if (y * 12 + m <= LAST_YEAR * 12 + LAST_MONTH) setTime(monthTime(y, m));
       return;
     }
     var yr = Math.round(now), next = yr + dir, mo = ctlMonth;
@@ -4974,8 +5040,9 @@
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       stopPlay();
-      var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1;
-      if (e.shiftKey) stepMap(dir); else stepUnit(dir);
+      var dir = e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 1, vertical = e.key === "ArrowUp" || e.key === "ArrowDown";
+      // Up and down go by the year here too, as everywhere else on the page: with the slider focused (after a drag) they went by the month from 1648.
+      if (vertical) { if (!e.shiftKey) stepYear(dir); } else if (e.shiftKey) stepMap(dir); else stepUnit(dir);
     } else if (e.key === "Home") { e.preventDefault(); setTime(FIRST_T); }
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
@@ -5101,20 +5168,45 @@
   // when the browser is next idle (which, while it plays, may be seconds away), so play seldom waits for one: from 1200
   // the files hold 50 to 100 years, and 1,500 to 2,000 years before that, and each comes as its rough lines and then its
   // fine ones. Going forward from the last of them, the file from 1886 on (modern.json) is asked for too.
-  var PLAY_FILES = 2;
+  // Play keeps the detail it started with: when the map shows a file's fine lines (at rest they come within a moment, and
+  // close in they always do), the next file's fine lines are asked for with its rough ones, and a step into a file whose
+  // fine lines are still on their way waits for them (up to PLAY_FINE_WAIT ms), so the borders don't drop to the rough
+  // lines for a moment at each file's edge and come back.
+  var PLAY_FILES = 2, PLAY_FINE_WAIT = 2500, fineHold = 0;
+  function playWantsFine() {
+    if (fineNow()) return true;
+    if (!current) return false;
+    if (current.modern) return !!modern && modern.fine >= 2;
+    return !!current.dated && !!dated && !!dated.chunks[current.chunk] && dated.chunks[current.chunk].fine >= 2;
+  }
+  // Whether the date's file has the detail play wants (or never will: a file not yet come is play's ordinary wait).
+  function fineReady(t, fine) {
+    if (!fine) return true;
+    if (isModern(t)) {
+      if (!modern || !modern.rows || modern.fineFailed) return true;
+      if (!modern.fine) loadModernFine();
+      return modern.fine !== 1 && modern.fine !== 0;
+    }
+    if (!isDated(t) || !dated) return true;
+    var k = chunkIndexFor(t), c = dated.chunks[k];
+    if (!c || !c.data || c.fineFailed) return true;
+    if (!c.fine) loadChunkFine(k);
+    return c.fine !== 1 && c.fine !== 0;
+  }
   function prefetchPlay(t) {
     if (!playTimer || !dated) return;
-    var back = playBack(), noop = function () {};
+    var back = playBack(), noop = function () {}, fine = playWantsFine();
+    var get = function (i, n) { loadChunk(i).then(function () { if (fine && n === 1) loadChunkFine(i); }).catch(noop); };
     if (isModern(t)) {
-      if (back) for (var b = 1; b <= PLAY_FILES; b++) if (dated.chunks[dated.chunks.length - b]) loadChunk(dated.chunks.length - b).catch(noop);
+      if (back) for (var b = 1; b <= PLAY_FILES; b++) if (dated.chunks[dated.chunks.length - b]) get(dated.chunks.length - b, b);
       return;
     }
     if (!isDated(t)) return;
     var ck = chunkIndexFor(t);
     for (var k = 1; k <= PLAY_FILES; k++) {
       var i = back ? ck - k : ck + k;
-      if (dated.chunks[i]) loadChunk(i).catch(noop);
-      else if (!back && i === dated.chunks.length && modern) loadModern().catch(noop);
+      if (dated.chunks[i]) get(i, k);
+      else if (!back && i === dated.chunks.length && modern) loadModern().then(function () { if (fine) loadModernFine(); }).catch(noop);
     }
   }
   function playLoaded() { return isModern(now) || (isDated(now) ? !!current && !!current.dated && wantKey === "e" + now : !!maps.length && maps[mapIndexFor(now)].snap === current); }
@@ -5122,6 +5214,11 @@
     if (!playLoaded()) return PLAY.load;
     var back = playBack(), from = now, to = back ? playPrev(now) : playNext(now);
     if (back ? from <= FIRST_T + 1e-9 || to < FIRST_T - 1e-9 : to > playEnd() + 1e-9) return -1;
+    if (!fineReady(to, playWantsFine())) {
+      if (!fineHold) fineHold = performance.now();
+      if (performance.now() - fineHold < PLAY_FINE_WAIT) return PLAY.load;
+    }
+    fineHold = 0;
     setTime(to);
     prefetchPlay(to);
     prepareAhead(to);
@@ -5628,13 +5725,13 @@
         flagLine = line("Flag"); flagLine.hidden = true;
         langLine = line("Language"); langLine.hidden = true;
       }
-      if (modernNow) {
-        textLine("Borders from", fmtDate(p.start));
-        if (p.end >= 0) textLine("Borders until", fmtDate(p.end));
-      } else if (datedNow) {
+      // One line for the span of its borders: "June 9, 1815 to August 23, 1866".
+      // "Borders since" while they still stand.
+      if (modernNow) { if (p.end >= 0) textLine("Borders from", fmtDate(p.start) + " to " + fmtDate(p.end)); else textLine("Borders since", fmtDate(p.start)); }
+      else if (datedNow) {
         var from = p.startDay !== null ? fmtDate(p.startDay) : fmtYear(p.start), until = p.endDay !== null ? fmtDate(p.endDay) : fmtYear(p.end);
         if (from === until) textLine("Borders", from);
-        else { textLine("Borders from", from); textLine("Borders until", until); }
+        else textLine("Borders from", from + " to " + until);
       }
       if (p.band) line("").textContent = "Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.";
       else if (p.b <= 1 && !p.people) line("").textContent = "Its borders here are approximate.";
@@ -8360,6 +8457,8 @@
   }
 
   window.__chronia = {
+    // Whether the map shown is drawn from a file's rough lines alone (its fine ones not yet come).
+    rough: function () { return !!current && !!current.topo && current.topo.hi === current.topo.lo; },
     setEdits: function (l) { setEdits(l); },
     editAt: function (k, t, at) { return editAt(k, t, at); },
     notFound: function () { return editsNotFound().map(function (e) { return e.kind + "|" + e.target; }); },

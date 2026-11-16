@@ -1,0 +1,472 @@
+{
+  "key": "dz",
+  "c": "DZA",
+  "sources": [
+    "https://www.joradp.dz/FTP/JO-FRANCAIS/2019/F2019078.pdf (Journal officiel n° 78 of 18 December 2019: loi n° 19-12 of 11 December 2019 amending loi n° 84-09, with the commune lists of the ten new wilayas and of the eight reduced ones; it lists El Borma as the 14th commune of Touggourt and gives Ouargla 7 communes)",
+    "https://www.joradp.dz/FTP/JO-FRANCAIS/2021/F2021022.pdf (Journal officiel n° 22 of 25 March 2021: ordonnance n° 21-03 of 25 March 2021, Ouargla 8 communes with El Borma, Touggourt 13 communes; décret présidentiel n° 21-117 on the names and seats of the new wilayas)",
+    "https://faolex.fao.org/docs/pdf/alg162422.pdf (décret présidentiel n° 15-140 of 27 May 2015: the ten circonscriptions administratives and their daïras and communes)",
+    "https://algerie-eco.com/?p=74987 (16 December 2019: residents of El Borma and El Hadjira protest the new division)",
+    "https://en.wikipedia.org/wiki/Timimoun_Province (communes and area, as a cross-check)",
+    "https://fr.wikipedia.org/wiki/Wilaya_d%27El_Meniaa (three communes: El Menia, Hassi Gara, and Hassi Fehal; 62,215 km²)"
+  ],
+  "notes": "58 wilayas, built from the 48 of geoBoundaries ADM1 with the ten new wilayas carved out as whole communes (ADM3), exactly as loi n° 19-12 lists them. The date is the law's publication in the Journal officiel (18 December 2019; the law itself is dated 11 December and has no separate clause on entry into force; the cabinet adopted the bill on 26 November 2019, the date English Wikipedia gives). The new wilayas were only fitted out with walis and codes in 2021. The 2019 law put the commune of El Borma in Touggourt (14 communes), detached from the rest of it; ordonnance n° 21-03 of 25 March 2021 returned it to Ouargla, hence the second layout. Mansoura stays in Ghardaïa in both texts. The tenth wilaya is named El Menia as English Wikipedia titles it (the law writes El Meniaâ). Two of the carves are written the other way round (the ADM1 units of Adrar and Ghardaïa are first renamed Bordj Badji Mokhtar and El Menia, and the communes that stay are carved out under the old names): carving the new wilaya directly left zero-area threads along the outer border, which the tool does not filter and which a spherical renderer fills as the whole globe. The result is the same land. Thirty-one communes of the north have no name in geoBoundaries ADM3; none is needed here. Commune names follow geoBoundaries' spellings (Bani Abbas, Al Wata, Tinzaouten, Magarine, and so on); the commune outlines are geoBoundaries' and the built areas differ from the published ones by up to about a tenth (Bordj Badji Mokhtar 135,700 km² against 120,026).",
+  "layouts": [
+    {
+      "first": "2019-12-18",
+      "last": "2021-03-24",
+      "base": "ADM1",
+      "rename": {
+        "Adrar": "Bordj Badji Mokhtar",
+        "Bordj Bou Arreridj‎": "Bordj Bou Arréridj",
+        "Ghardaia": "El Menia",
+        "Tipaza": "Tipasa",
+        "Naâma": "Naama",
+        "Bejaia": "Béjaïa",
+        "Bouira": "Bouïra"
+      },
+      "carve": [
+        {
+          "name": "Timimoun",
+          "from": [
+            "Bordj Badji Mokhtar"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Timimoun",
+            "Ouled Said",
+            "Aougrout",
+            "Deldoul",
+            "Metarfa",
+            "Tinerkouk",
+            "Ksar Kaddour",
+            "Charouine",
+            "Talmine",
+            "Ouled Aissa"
+          ],
+          "box": [
+            -3,
+            26,
+            4,
+            32
+          ]
+        },
+        {
+          "name": "Adrar",
+          "from": [
+            "Bordj Badji Mokhtar"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Adrar",
+            "Fenoughil",
+            "Tamast",
+            "Reggane",
+            "Sali",
+            "In Zghmir",
+            "Akabli",
+            "Tit",
+            "Ouled Ahmed Tammi",
+            "Tsabit",
+            "Bouda",
+            "Zaouiet Kounta",
+            "Aoulef",
+            "Sebaa",
+            "Timokten",
+            "Tamantit"
+          ],
+          "box": [
+            -6,
+            19,
+            4,
+            32
+          ]
+        },
+        {
+          "name": "Ouled Djellal",
+          "from": [
+            "Biskra"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Ouled Djellal",
+            "Sidi Khaled",
+            "Ras El Miaad",
+            "Besbes",
+            "Ech Chaïba",
+            "Doucen"
+          ],
+          "box": [
+            4,
+            33,
+            6,
+            35.5
+          ]
+        },
+        {
+          "name": "Béni Abbès",
+          "from": [
+            "Béchar"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Bani Abbas",
+            "Tamtert",
+            "Kerzaz",
+            "Timmoudi",
+            "Beni Ikhlef",
+            "Al Wata",
+            "Tabelbala",
+            "Ouled Khoudir",
+            "Ksabi",
+            "Igli"
+          ],
+          "box": [
+            -6,
+            27,
+            0,
+            32
+          ]
+        },
+        {
+          "name": "In Salah",
+          "from": [
+            "Tamanrasset"
+          ],
+          "level": "ADM3",
+          "units": [
+            "In Salah",
+            "Foggaret Ezzaouia",
+            "In Ghar"
+          ]
+        },
+        {
+          "name": "In Guezzam",
+          "from": [
+            "Tamanrasset"
+          ],
+          "level": "ADM3",
+          "units": [
+            "In Guezzam",
+            "Tinzaouten"
+          ]
+        },
+        {
+          "name": "Touggourt",
+          "from": [
+            "Ouargla"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Touggourt",
+            "Nezla",
+            "Tebesbest",
+            "Zaouia El Abidia",
+            "Tamacine",
+            "Blidet Amor",
+            "Magarine",
+            "M'Naguer",
+            "Taibet",
+            "Benaceur",
+            "Sidi Slimane",
+            "El Hadjira",
+            "El Allia",
+            "El Borma"
+          ],
+          "box": [
+            4,
+            30,
+            9,
+            34
+          ]
+        },
+        {
+          "name": "Djanet",
+          "from": [
+            "Illizi"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Djanet",
+            "Bordj El Haouas"
+          ]
+        },
+        {
+          "name": "El M'Ghair",
+          "from": [
+            "El Oued"
+          ],
+          "level": "ADM3",
+          "units": [
+            "El M'Ghair",
+            "Oum Touyour",
+            "Still",
+            "Sidi Khellil",
+            "Djamaa",
+            "Sidi Amrane",
+            "Tendla",
+            "M'Rara"
+          ],
+          "box": [
+            4,
+            32,
+            8,
+            35
+          ]
+        },
+        {
+          "name": "Ghardaïa",
+          "from": [
+            "El Menia"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Ghardaia",
+            "Zelfana",
+            "Dhayet Bendhahoua",
+            "Sebseb",
+            "Berriane",
+            "Bounoura",
+            "Metlili",
+            "El Guerrara",
+            "El Atteuf",
+            "Mansoura"
+          ],
+          "box": [
+            2,
+            30,
+            6,
+            34
+          ]
+        }
+      ]
+    },
+    {
+      "first": "2021-03-25",
+      "last": null,
+      "base": "ADM1",
+      "rename": {
+        "Adrar": "Bordj Badji Mokhtar",
+        "Bordj Bou Arreridj‎": "Bordj Bou Arréridj",
+        "Ghardaia": "El Menia",
+        "Tipaza": "Tipasa",
+        "Naâma": "Naama",
+        "Bejaia": "Béjaïa",
+        "Bouira": "Bouïra"
+      },
+      "carve": [
+        {
+          "name": "Timimoun",
+          "from": [
+            "Bordj Badji Mokhtar"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Timimoun",
+            "Ouled Said",
+            "Aougrout",
+            "Deldoul",
+            "Metarfa",
+            "Tinerkouk",
+            "Ksar Kaddour",
+            "Charouine",
+            "Talmine",
+            "Ouled Aissa"
+          ],
+          "box": [
+            -3,
+            26,
+            4,
+            32
+          ]
+        },
+        {
+          "name": "Adrar",
+          "from": [
+            "Bordj Badji Mokhtar"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Adrar",
+            "Fenoughil",
+            "Tamast",
+            "Reggane",
+            "Sali",
+            "In Zghmir",
+            "Akabli",
+            "Tit",
+            "Ouled Ahmed Tammi",
+            "Tsabit",
+            "Bouda",
+            "Zaouiet Kounta",
+            "Aoulef",
+            "Sebaa",
+            "Timokten",
+            "Tamantit"
+          ],
+          "box": [
+            -6,
+            19,
+            4,
+            32
+          ]
+        },
+        {
+          "name": "Ouled Djellal",
+          "from": [
+            "Biskra"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Ouled Djellal",
+            "Sidi Khaled",
+            "Ras El Miaad",
+            "Besbes",
+            "Ech Chaïba",
+            "Doucen"
+          ],
+          "box": [
+            4,
+            33,
+            6,
+            35.5
+          ]
+        },
+        {
+          "name": "Béni Abbès",
+          "from": [
+            "Béchar"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Bani Abbas",
+            "Tamtert",
+            "Kerzaz",
+            "Timmoudi",
+            "Beni Ikhlef",
+            "Al Wata",
+            "Tabelbala",
+            "Ouled Khoudir",
+            "Ksabi",
+            "Igli"
+          ],
+          "box": [
+            -6,
+            27,
+            0,
+            32
+          ]
+        },
+        {
+          "name": "In Salah",
+          "from": [
+            "Tamanrasset"
+          ],
+          "level": "ADM3",
+          "units": [
+            "In Salah",
+            "Foggaret Ezzaouia",
+            "In Ghar"
+          ]
+        },
+        {
+          "name": "In Guezzam",
+          "from": [
+            "Tamanrasset"
+          ],
+          "level": "ADM3",
+          "units": [
+            "In Guezzam",
+            "Tinzaouten"
+          ]
+        },
+        {
+          "name": "Touggourt",
+          "from": [
+            "Ouargla"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Touggourt",
+            "Nezla",
+            "Tebesbest",
+            "Zaouia El Abidia",
+            "Tamacine",
+            "Blidet Amor",
+            "Magarine",
+            "M'Naguer",
+            "Taibet",
+            "Benaceur",
+            "Sidi Slimane",
+            "El Hadjira",
+            "El Allia"
+          ],
+          "box": [
+            4,
+            30,
+            9,
+            34
+          ]
+        },
+        {
+          "name": "Djanet",
+          "from": [
+            "Illizi"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Djanet",
+            "Bordj El Haouas"
+          ]
+        },
+        {
+          "name": "El M'Ghair",
+          "from": [
+            "El Oued"
+          ],
+          "level": "ADM3",
+          "units": [
+            "El M'Ghair",
+            "Oum Touyour",
+            "Still",
+            "Sidi Khellil",
+            "Djamaa",
+            "Sidi Amrane",
+            "Tendla",
+            "M'Rara"
+          ],
+          "box": [
+            4,
+            32,
+            8,
+            35
+          ]
+        },
+        {
+          "name": "Ghardaïa",
+          "from": [
+            "El Menia"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Ghardaia",
+            "Zelfana",
+            "Dhayet Bendhahoua",
+            "Sebseb",
+            "Berriane",
+            "Bounoura",
+            "Metlili",
+            "El Guerrara",
+            "El Atteuf",
+            "Mansoura"
+          ],
+          "box": [
+            2,
+            30,
+            6,
+            34
+          ]
+        }
+      ]
+    }
+  ]
+}

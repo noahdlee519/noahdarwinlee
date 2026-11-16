@@ -2281,9 +2281,10 @@
    "key": "no",
    "c": "NOR",
    "names": [
-    "Norway"
+    "Norway",
+    "United Kingdoms of Sweden and Norway"
    ],
-   "from": "1972-01-01",
+   "from": "1814-11-04",
    "to": "2019-12-31",
    "rename": {},
    "drop": [
@@ -2317,8 +2318,163 @@
      ],
      "what": "Sør-Trøndelag and Nord-Trøndelag merged into Trøndelag",
      "source": "https://en.wikipedia.org/wiki/Trøndelag"
+    },
+    {
+     "date": "1936-01-01",
+     "before": [
+      {
+       "name": "Møre",
+       "ne": [
+        "Møre og Romsdal"
+       ]
+      }
+     ],
+     "what": "Møre renamed Møre og Romsdal (YEAR ONLY)",
+     "source": "https://en.wikipedia.org/wiki/M%C3%B8re_og_Romsdal"
+    },
+    {
+     "date": "1925-01-01",
+     "before": [
+      {
+       "name": "Kristiania",
+       "ne": [
+        "Oslo"
+       ]
+      }
+     ],
+     "what": "Kristiania renamed Oslo",
+     "source": "https://statoids.com/uno.html"
+    },
+    {
+     "date": "1919-01-01",
+     "before": [
+      {
+       "name": "Smaalenene",
+       "ne": [
+        "Østfold"
+       ]
+      },
+      {
+       "name": "Hedemarken",
+       "ne": [
+        "Hedmark"
+       ]
+      },
+      {
+       "name": "Kristians",
+       "ne": [
+        "Oppland"
+       ]
+      },
+      {
+       "name": "Jarlsberg og Larvik",
+       "ne": [
+        "Vestfold"
+       ]
+      },
+      {
+       "name": "Bratsberg",
+       "ne": [
+        "Telemark"
+       ]
+      },
+      {
+       "name": "Nedenes",
+       "ne": [
+        "Aust-Agder"
+       ]
+      },
+      {
+       "name": "Lister og Mandal",
+       "ne": [
+        "Vest-Agder"
+       ]
+      },
+      {
+       "name": "Stavanger",
+       "ne": [
+        "Rogaland"
+       ]
+      },
+      {
+       "name": "Søndre Bergenhus",
+       "ne": [
+        "Hordaland"
+       ]
+      },
+      {
+       "name": "Nordre Bergenhus",
+       "ne": [
+        "Sogn og Fjordane"
+       ]
+      },
+      {
+       "name": "Romsdal",
+       "ne": [
+        "Møre og Romsdal"
+       ]
+      },
+      {
+       "name": "Søndre Trondhjem",
+       "ne": [
+        "Sør-Trøndelag"
+       ]
+      },
+      {
+       "name": "Nordre Trondhjem",
+       "ne": [
+        "Nord-Trøndelag"
+       ]
+      },
+      {
+       "name": "Tromsø",
+       "ne": [
+        "Troms"
+       ]
+      },
+      {
+       "name": "Finmarken",
+       "ne": [
+        "Finnmark"
+       ]
+      }
+     ],
+     "what": "The amts became fylker, fifteen of them under new names",
+     "source": "https://statoids.com/uno.html"
+    },
+    {
+     "date": "1866-10-01",
+     "before": [
+      {
+       "name": "Finmarken",
+       "ne": [
+        "Troms",
+        "Finnmark"
+       ]
+      }
+     ],
+     "what": "Tromsø amt split from Finmarken",
+     "source": "https://statoids.com/uno.html"
+    },
+    {
+     "date": "1842-01-01",
+     "before": [
+      {
+       "name": "Akershus",
+       "ne": [
+        "Akershus",
+        "Oslo"
+       ]
+      }
+     ],
+     "what": "Christiania made an amt of its own, out of Akershus (YEAR ONLY)",
+     "source": "https://statoids.com/uno.html"
     }
-   ]
+   ],
+   "only_from": {
+    "Svalbard": "1925-08-14"
+   },
+   "note": "Before 1972 the counties are Natural Earth's of 1972 to 2017 under their names of the time. Left out: Bergen, a county of its own until 1 January 1972 (no shape for the city of the time); Oslo's growth on 1 January 1948 (it is drawn at its later extent from 1842); Jarlsberg and Larvik as two counties before 1821; the spellings Christiania and Christians before 1877, and Opland before about 1950."
   },
   {
    "key": "fi",

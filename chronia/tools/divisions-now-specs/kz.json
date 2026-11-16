@@ -1,0 +1,103 @@
+{
+  "key": "kz",
+  "c": "KAZ",
+  "sources": [
+    "https://zakon.uchet.kz/rus/docs/U2200000887 (Decree of the President No. 887 of 3 May 2022: Abai, Jetisu, and Ulytau regions, the districts and cities of each, in force from 8 June 2022)",
+    "https://bizmedia.kz/2022/05/05/novaya-karta-kazahstana-kak-podelil-oblasti/ (the same lists; the separate decree, in force from 7 June 2022, that made Aksuat district out of Tarbagatay and Samar district out of Kokpekti)",
+    "https://tengrinews.kz/kazakhstan_news/kak-podelyat-vko-i-novuyu-abayskuyu-oblast-465819/ (Aksuat and Kokpekti to Abai, Tarbagatay and Samar to East Kazakhstan; Abai about 185,500 km², East Kazakhstan about 97,800 km²)",
+    "https://en.wikipedia.org/wiki/Abai_Region (8 June 2022; 185,500 km²)",
+    "https://en.wikipedia.org/wiki/Aksuat_District (13,600 km²)"
+  ],
+  "notes": "Jetisu (Aksu, Alakol, Eskeldi, Karatal, Kerbulak, Koksu, Panfilov, and Sarkand districts, with Taldykorgan and Tekeli) and Ulytau (Ulytau and Zhanaarka districts, with Jezkazgan, Satbayev, and Karazhal) are whole units of the source and come out within 3 percent of their published areas (118,500 and 188,900 km²); the source draws Eskeldi and Tekeli inside its 'Taldyqorghan' unit and the three cities inside the two districts. ABAI IS APPROXIMATE, BEYOND A FEW PERCENT: the source's districts are those of 2017, before the decree of May 2022 that cut Aksuat district (to Abai, about 13,600 km²) out of Tarbagatay and Samar district (stayed in East Kazakhstan) out of Kokpekti. Here Abai has all of old Kokpekti (so Samar, wrongly) and none of old Tarbagatay (so it lacks Aksuat): about 173,900 km² drawn against 185,500 km² published (6 percent short), and East Kazakhstan about 107,300 km² against 97,800 km². The source has no level below districts for Kazakhstan, so this cannot be done better from it; drop this layout if that error is not acceptable. The map's last layout (to 7 June 2022) has South Kazakhstan undivided: it lacks Shymkent as a city of republican significance and the region's renaming to Turkistan (both 19 June 2018); earlier years are left alone, and this layout shows 'Turkistan' and 'Shymkent' from 8 June 2022, so the two appear four years late. Shymkent is the source's city unit of 332 km²; the city has been about 1,170 km² since its enlargement, so it is drawn too small. Baikonur, which the map draws as its own unit until 7 June 2022, is not in the source and is part of Kyzylorda here. Astana keeps the map's name (it was Nur-Sultan until 17 September 2022).",
+  "layouts": [
+    {
+      "first": "2022-06-08",
+      "last": null,
+      "base": "ADM1",
+      "rename": {
+        "Akmola Region": "Akmola",
+        "Aktobe Region": "Aktobe",
+        "Atyrau Region": "Atyrau",
+        "East Kazakhstan Region": "East Kazakhstan",
+        "Jambyl Region": "Jambyl",
+        "Karaganda Region": "Karaganda",
+        "Kostanay Region": "Kostanay",
+        "Kyzylorda Region": "Kyzylorda",
+        "Mangystau Region": "Mangystau",
+        "North Kazakhstan Region": "North Kazakhstan",
+        "Pavlodar Region": "Pavlodar",
+        "South Kazakhstan Region": "Turkistan",
+        "West Kazakhstan Region": "West Kazakhstan"
+      },
+      "carve": [
+        {
+          "name": "Abai",
+          "from": [
+            "East Kazakhstan"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Abayskiy",
+            "Ayagozskiy",
+            "Beskaragayskiy",
+            "Borodulikhinskiy",
+            "Semipalatinskiy",
+            "Urdzharskiy",
+            "Zharminskiy",
+            "Kokpektinskiy"
+          ],
+          "box": [
+            77,
+            46,
+            84,
+            52
+          ]
+        },
+        {
+          "name": "Jetisu",
+          "from": [
+            "Almaty Region"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Aksuskiy",
+            "Alakolskiy",
+            "Karatal`skiy",
+            "Kerbulakskiy",
+            "Koksuskiy",
+            "Panfilovskiy",
+            "Sarkandskiy",
+            "Taldyqorghan"
+          ],
+          "box": [
+            76,
+            43.5,
+            83,
+            47.5
+          ]
+        },
+        {
+          "name": "Ulytau",
+          "from": [
+            "Karaganda"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Ulytauskiy",
+            "Zhanaarkinskiy"
+          ]
+        },
+        {
+          "name": "Shymkent",
+          "from": [
+            "Turkistan"
+          ],
+          "level": "ADM2",
+          "units": [
+            "Shymkent"
+          ]
+        }
+      ]
+    }
+  ]
+}

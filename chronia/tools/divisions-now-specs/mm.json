@@ -1,0 +1,47 @@
+{
+  "key": "mm",
+  "c": "MMR",
+  "sources": [
+    "https://en.wikipedia.org/wiki/2008_Constitution_of_Myanmar (in force 31 January 2011; section 49: seven regions, seven states, and union territories; section 50: Nay Pyi Taw a union territory)",
+    "https://en.wikipedia.org/wiki/Naypyidaw_Union_Territory (7,054 km²; its eight townships: Zeyathiri, Pobbathiri, Ottarathiri, Zabuthiri, Dekkhinathiri, Pyinmana, Lewe, and Tatkon)",
+    "https://en.wikipedia.org/wiki/Pyinmana_District (Pyinmana, Lewe, and Tatkon townships of Mandalay Division; the five Thiri townships made out of them in 2009; separated from Mandalay Region in 2011)"
+  ],
+  "notes": "Naypyidaw is its eight townships, whole units of the source (7,080 km² drawn against 7,054 km² published), all cut out of Mandalay. The names are the map's own on its last day: plain names for the seven regions (the divisions until this day) and '… State' for the seven states; no spelling changes on this day. The self-administered zones and division of the constitution lie inside Shan State and Sagaing and are not first-level units.",
+  "layouts": [
+    {
+      "first": "2011-01-31",
+      "last": null,
+      "base": "ADM1",
+      "rename": {
+        "Chin": "Chin State",
+        "Kachin": "Kachin State",
+        "Kayah": "Kayah State",
+        "Kayin": "Kayin State",
+        "Mon": "Mon State",
+        "Rakhine": "Rakhine State",
+        "Shan": "Shan State",
+        "Saigang": "Sagaing",
+        "Tanitharyi": "Tanintharyi"
+      },
+      "carve": [
+        {
+          "name": "Naypyidaw",
+          "from": [
+            "Mandalay"
+          ],
+          "level": "ADM3",
+          "units": [
+            "Zay Yar Thi Ri",
+            "Poke Ba Thi Ri",
+            "Oke Ta Ra Thi Ri",
+            "Za Bu Thi Ri",
+            "Det Khi Na Thi Ri",
+            "Pyinmana",
+            "Lewe",
+            "Tatkon"
+          ]
+        }
+      ]
+    }
+  ]
+}

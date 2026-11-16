@@ -19,6 +19,11 @@ Every licence below was read on the dataset's own page or its repository's recor
 | 9 | **HGIS de las Indias** (Stangl) | Spanish America's territorial organisation 1701 to 1808 in 11 levels (viceroyalties, audiencias, governorships, intendancies, and smaller), as a territorial gazetteer | CC BY 4.0 (World Historical Gazetteer's terms for its public datasets) | [Yale Dataverse](https://dataverse.yale.edu/dataverse/indias-hgis), [WHG](https://whgazetteer.org/datasets/8) |
 | 10 | **MLIT, National Land Numerical Information, N03** | Japan's municipalities from 1920, with the prefecture of each, so prefectures can be made by joining | Free download; the product specification states no licence | [specification](https://nlftp.mlit.go.jp/ksj/gml/product_spec/KS-PS-N03-v2_4.pdf) |
 
+## Later layouts
+
+- **geoBoundaries** (gbOpen; https://www.geoboundaries.org, files on GitHub under `wmgeolab/geoBoundaries`, fetched from `media.githubusercontent.com`): one current first-level layout per country, each under its own source's licence (ODbL, CC BY, CC BY-SA, CC BY IGO, or public domain). Used since 15 November 2026 by `tools/divisions-now.mjs` for the eighteen countries whose layout after the reform it has (see the README's First-level divisions). For twelve it has the old layout too (Kazakhstan, Iraq, Algeria, Mali, Ethiopia, Mauritania, Tanzania, Namibia, Zambia, the Central African Republic, the Congo, and Myanmar). Its humanitarian and authoritative releases were not found at the same paths.
+- **OpenStreetMap** (ODbL): has today's layout for all of them, but `overpass-api.de` and its mirrors are out of this workspace's reach (only OpenHistoricalMap's Overpass is).
+
 ## Useful but limited
 
 - **Great Britain Historical Database** (Southall and others): England and Wales's administrative counties at each census, 1911 to 1971, and the registration counties 1851 to 1911. CC BY-SA 4.0, from the UK Data Service ([record](https://b2find.eudat.eu/dataset/9f0130bf-c38c-5226-b7cd-ef57c8f28ef5)). Britain's divisions already start in 1801, so this would only refine them.
