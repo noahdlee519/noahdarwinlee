@@ -9,6 +9,7 @@ import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
 import { healNodes } from "./heal-nodes.mjs";
+import { closeSlivers } from "./zip-slivers.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
@@ -5597,6 +5598,13 @@ const entries = catalogue.map((e, id) => {
   if (years) row.push(years);
   return row;
 });
+// The file from 1886 holds the wartime pieces, cut from one source and laid beside states drawn from another: the hairline
+// faces between two drawings of one border are closed (zip-slivers.mjs), last of all, so the labels, the capitals, and the
+// colours above are worked out from the shapes as they were.
+{
+  const zh = closeSlivers(csHi, CS_HI_KM), zl = closeSlivers(csLo, LO_KM);
+  console.log("slivers from 1886: " + zh.cut + " lines cut where they crossed and " + zh.closed + " faces closed (" + zh.km2 + " km²) in the detailed lines, " + zl.cut + " and " + zl.closed + " (" + zl.km2 + " km²) in the simplified ones; " + (zh.dropped + zl.dropped) + " rings wound backwards dropped, " + (zh.turned + zl.turned) + " turned round");
+}
 writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[9] ? r.slice(0, 7).concat([r[8] || 0, 1]) : r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), lo: csLo }));
 writeFileSync(resolve(out, "modern-hi.json"), JSON.stringify({ hi: csHi }));
 // The treaty borders before 1886 and the unsettled ones after, by polity number (see FIRM and VAGUE).

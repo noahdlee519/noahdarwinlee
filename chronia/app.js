@@ -4740,6 +4740,22 @@
     hoverId = -1;
     canvas.classList.remove("is-over");
   }
+  // A step by hand keeps the detail the map shows, as play does (prefetchPlay, playStep). Each stretch of years comes as its
+  // rough lines and then its fine ones, and a step into a file whose fine lines had not come drew the rough ones for a moment,
+  // several kilometres off, so the borders seemed to change and change back. Now a step near a file's edge asks for the
+  // neighbouring file's fine lines ahead (stepFine), and a step into a file whose fine lines are on their way keeps the map
+  // as it is until they come, for up to STEP_FINE_WAIT ms (whenFine). Dragging the slider and play are left as they were.
+  var STEP_FINE_WAIT = 2500;
+  function stepFine() { return !playTimer && !rangeActive; }
+  function whenFine(t, key, fromRange, show) {
+    if (fromRange || playTimer || !current || !playWantsFine() || fineReady(t, true)) { show(); return; }
+    var t0 = performance.now();
+    (function wait() {
+      if (wantKey !== key) return;
+      if (fineReady(t, true) || performance.now() - t0 > STEP_FINE_WAIT) { show(); return; }
+      setTimeout(wait, 40);
+    })();
+  }
   function setTime(t, fromRange) {
     if (!maps.length && !dated) return;
     t = t >= lastT() ? lastTime() : Math.max(FIRST_T, t);
@@ -4756,10 +4772,12 @@
         syncTime();
         loadModern().then(function () {
           if (wantKey !== "d" + day) return;
-          useSnap(modernSnap(day));
-          syncTime();
-          writeHash();
-          scheduleRender(true);
+          whenFine(t, "d" + day, fromRange, function () {
+            useSnap(modernSnap(day));
+            syncTime();
+            writeHash();
+            scheduleRender(true);
+          });
         }).catch(function (e) {
           console.warn("modern", e);
           asof.textContent = "The borders of " + fmtNow(t) + " could not be loaded";
@@ -4767,10 +4785,17 @@
         scheduleRender(true);
         return;
       }
-      useSnap(modernSnap(day));
-      syncTime();
-      writeHash();
-      scheduleRender(true);
+      whenFine(t, "d" + day, fromRange, function () {
+        useSnap(modernSnap(day));
+        syncTime();
+        writeHash();
+        scheduleRender(true);
+        // Close to 1886, the last file before it is asked for, with its fine lines when the map shows them.
+        if (dated && yearOf(t) - yearOf(modern.fromTime) < NEAR_EDGE) whenIdle(function () {
+          var last = dated.chunks.length - 1, fine = stepFine();
+          loadChunk(last).then(function () { if (fine) loadChunkFine(last); }).catch(function () {});
+        });
+      });
       return;
     }
     if (isDated(t)) {
@@ -4779,15 +4804,18 @@
       syncTime();
       loadChunk(ck).then(function () {
         if (wantKey !== "e" + t) return;
-        useSnap(datedSnap(ck, t));
-        syncTime();
-        writeHash();
-        scheduleRender(true);
-        whenIdle(function () {
-          var y = yearOf(t), next = dated.chunks[ck + 1], to = next ? next.from - 1 : dated.to;
-          if (ck > 0 && (playTimer || y - dated.chunks[ck].from < NEAR_EDGE)) loadChunk(ck - 1).catch(function () {});
-          if (next && (playTimer || to - y < NEAR_EDGE)) loadChunk(ck + 1).catch(function () {});
-          if (!next && to - y < NEAR_EDGE) loadModern().catch(function () {});
+        whenFine(t, "e" + t, fromRange, function () {
+          useSnap(datedSnap(ck, t));
+          syncTime();
+          writeHash();
+          scheduleRender(true);
+          whenIdle(function () {
+            var y = yearOf(t), next = dated.chunks[ck + 1], to = next ? next.from - 1 : dated.to, fine = stepFine();
+            var get = function (k) { loadChunk(k).then(function () { if (fine) loadChunkFine(k); }).catch(function () {}); };
+            if (ck > 0 && (playTimer || y - dated.chunks[ck].from < NEAR_EDGE)) get(ck - 1);
+            if (next && (playTimer || to - y < NEAR_EDGE)) get(ck + 1);
+            if (!next && to - y < NEAR_EDGE) loadModern().then(function () { if (fine) loadModernFine(); }).catch(function () {});
+          });
         });
       }).catch(function (e) {
         console.warn("dated", e);
@@ -8429,6 +8457,8 @@
   }
 
   window.__chronia = {
+    // Whether the map shown is drawn from a file's rough lines alone (its fine ones not yet come).
+    rough: function () { return !!current && !!current.topo && current.topo.hi === current.topo.lo; },
     setEdits: function (l) { setEdits(l); },
     editAt: function (k, t, at) { return editAt(k, t, at); },
     notFound: function () { return editsNotFound().map(function (e) { return e.kind + "|" + e.target; }); },

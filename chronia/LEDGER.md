@@ -17,6 +17,15 @@ Each entry:
 
 ---
 
+## 1886–2026 | the world | hairline faces between two drawings of one border closed
+
+- What changed: stray strokes and blobs of border inside countries, and borders drawn double, are gone from the file from 1886 (seen in Germany, Hungary, Romania, Bulgaria, and the Reichskommissariats in March 1943). They were thin faces between two drawings of one border: a wartime piece cut from one source beside a state drawn from another, or one point rounded to two steps of the grid. The lines are now cut where they cross and each such face is closed onto one line. No border moves by more than the width of the face closed (under 0.15 km in the detailed lines, under 2.5 km in the simplified ones, or 3 km for a gap nothing covers).
+- Tables: none; `tools/zip-slivers.mjs` (`closeSlivers`, with `ROUND`, `AREA_PER_KM`, `CELLS`, `GAP_KM2`, `GAP_KM`, `W_SHARE`, `W_MAX`), run last in `tools/build-eras.mjs` on both levels of the file from 1886. The data of this entry was made by running that step on the built files, as the builder now does.
+- Sources: none; the shapes are the same.
+- Confidence: high; a state's area changes by under 0.05% in the detailed lines (the largest, the Ottoman Empire's Libya, by 378 km² of 3 million), and the page's checks pass.
+- Alternatives: snapping points to their neighbours before the topology is built (tried: no gain, the two drawings differ by more than a step); leaving the lines and having the page skip them (not taken: a border between two different states would then be drawn twice or not at all).
+- Left out: the dated files before 1886 (their lines of different dates cross everywhere, and a trial moved whole provinces); overlaps and gaps of a few square kilometres that a shape covers at another date (west of Blagoevgrad, Bulgaria, 2.7 km²).
+
 ## 1814–1971 | Norway | the counties under the union with Sweden and after
 
 - What changed: Norway's first-level divisions began on 1 January 1972, so it had none beside Sweden's counties in the 19th century. They now run from the union (4 November 1814) under their names of the time: the amts to 1 January 1919, Tromsø split from Finmarken on 1 October 1866, Kristiania out of Akershus in 1842, Møre to 1936, Kristiania to 1925, and Svalbard from 14 August 1925.
