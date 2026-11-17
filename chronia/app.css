@@ -1860,6 +1860,79 @@ select.ch-save-input {
   color: var(--ink);
 }
 
+/* The Sources section at the end of a state's card: closed until asked for. */
+.ch-src {
+  clear: both;
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.ch-src[hidden] {
+  display: none;
+}
+
+.ch-src summary {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.ch-src summary:focus-visible,
+.ch-src-report:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+.ch-src-body {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.ch-src-line,
+.ch-src-quiet,
+.ch-src-note-title {
+  margin: 5px 0 0;
+}
+
+.ch-src-line[hidden] {
+  display: none;
+}
+
+.ch-src-quiet {
+  color: var(--ch-muted);
+}
+
+.ch-src-notes-head {
+  margin-top: 9px;
+}
+
+.ch-src-notes ol {
+  margin: 3px 0 0;
+  padding-left: 20px;
+  color: var(--ch-muted);
+}
+
+.ch-src-notes li + li {
+  margin-top: 3px;
+}
+
+.ch-src a {
+  color: var(--ink);
+}
+
+.ch-src-report {
+  margin: 9px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .ch-tip {
   position: fixed;
   z-index: 25;

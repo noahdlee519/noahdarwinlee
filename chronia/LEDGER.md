@@ -18,6 +18,16 @@ Each entry:
 
 ---
 
+## 3400 BC–2026 | the world | sources on the card
+
+- What changed: a state's or a people's card ends with a closed "Sources" section: where its borders, its dates, its name, and the card's text come from at the date shown, and the sources of each ledger entry that applies to it. Every span carries its origin through the build into the data (a code per row); the ledger's entries gained an "Applies to" line, naming the polities and years each backs, which `tools/build-sources.mjs` reads into `data/sources.json`. Where the answer is the editors' judgement, the card says "Editors' discretion".
+- Applies to: none
+- Tables: `tools/sources.json` (new), `tools/build-sources.mjs` (new), `srcOf` and `checkSrc` in `tools/build-eras.mjs`; `renderSources` in `app.js`.
+- Sources: the repository's own records: the origin tags in the builder, and this ledger.
+- Confidence: high for the borders line, which is the builder's own tag; medium for the name and dates lines, which follow rules (a span a table renamed or divided is marked so, but a table that only trims a shape is not); medium for the notes' reach, since 55 entries apply to no polity and the broad review entries are attached to every polity their text names.
+- Alternatives: a separate hand-written citations file (not taken: it would drift from the ledger); working the source out in the page from the date and the line's precision (not taken: wrong for every hand-made span).
+- Left out: sources on the cards of cities, divisions, and waters; a citation for each entry of the hand-made tables, which is ledger work still to do; which of two neighbours' sources a shared line follows.
+
 ## 1792–2026 | the Caribbean | small territories under their rulers
 
 - What changed: territories that historical-basemaps draws from 1886 under their own names, with no owner, stood on the map as independent states. They take their rulers:

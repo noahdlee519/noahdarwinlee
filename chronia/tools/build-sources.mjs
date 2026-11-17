@@ -25,9 +25,10 @@ export function parseYears(text) {
   return from <= to ? [from, to] : null;
 }
 
-// Markdown to the plain text the card shows: no backticks, a link as its text, single spaces.
+// Markdown to the plain text the card shows: no backticks, a link as its text, single spaces, and curly quotes.
+const unmark = (text) => String(text).replace(/`/g, "").replace(/\[([^\]]+)\]\((?:[^()]|\([^()]*\))*\)/g, "$1").replace(/\*\*?([^*]+)\*\*?/g, "$1").replace(/\s+/g, " ").trim();
 export function plain(text) {
-  return String(text).replace(/`/g, "").replace(/\[([^\]]+)\]\((?:[^()]|\([^()]*\))*\)/g, "$1").replace(/\*\*?([^*]+)\*\*?/g, "$1").replace(/\s+/g, " ").trim();
+  return unmark(text).replace(/(^|[\s(\[])"/g, "$1“").replace(/"/g, "”").replace(/'/g, "’");
 }
 
 // The ledger's entries as notes. An entry that applies to "none" is left out; one with no "Applies to" line, no
@@ -47,7 +48,7 @@ export function parseLedger(markdown) {
     for (const line of e.applies) {
       if (/^none\.?$/i.test(line)) continue;
       const cut = line.lastIndexOf(" | ");
-      const items = (cut < 0 ? line : line.slice(0, cut)).split(";").map((s) => plain(s)).filter(Boolean);
+      const items = (cut < 0 ? line : line.slice(0, cut)).split(";").map((s) => unmark(s)).filter(Boolean);
       // "tag:medieval" stands for every span whose borders come from that table (a key of tools/sources.json's borders).
       const names = items.filter((s) => !/^tag:/.test(s)), tags = items.filter((s) => /^tag:/.test(s)).map((s) => s.slice(4).trim());
       const years = parseYears(cut < 0 ? e.title.split(" | ")[0] : line.slice(cut + 3));
@@ -103,6 +104,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   writeFileSync(resolve(here, "../data/sources.json"), JSON.stringify({ notes }) + "\n");
   console.log("sources: " + notes.length + " notes written" + (skipped.length ? ", " + skipped.length + " entries skipped:" : ", none skipped"));
   skipped.forEach((t) => console.log("  skipped: " + t));
+  // The registry goes into eras.json too, so a phrase can be reworded without the long build. The keys the data uses must stay.
+  const erasPath = resolve(here, "../data/eras.json"), eras = JSON.parse(readFileSync(erasPath, "utf8"));
+  if (Array.isArray(eras.srcKeys)) {
+    eras.sources = JSON.parse(readFileSync(resolve(here, "sources.json"), "utf8"));
+    writeFileSync(erasPath, JSON.stringify(eras));
+  }
   if (process.argv.includes("--check")) {
     const { problems, count } = checkCodes(resolve(here, "../data"));
     if (problems.length) { problems.slice(0, 20).forEach((p) => console.log("  " + p)); console.log("codes: " + problems.length + " problems"); process.exit(1); }

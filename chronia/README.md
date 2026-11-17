@@ -60,6 +60,8 @@ A static page, no build step, like the rest of the site. The data files are made
 | `tools/roman-provinces.json` | The provinces of the Roman Empire, 27 BC to AD 476, written by `tools/roman-provinces.mjs` (see [The Roman provinces](#the-roman-provinces)). |
 | `tools/roman-provinces.mjs` | Writes the provinces from DARE's units (`tools/roman-dare.json`), the provinces after Diocletian and their seats (`tools/roman-late.mjs`), and AWMC's lines, cut into pieces of land by `tools/partition.mjs`. |
 | `tools/dated-days.json` | The days of the changes from 1801 to 1885, with their sources (see [Days from 1801](#days-from-1801)). |
+| `tools/sources.json` | The registry behind the card's Sources section: every source, and a phrase for each origin of a span's borders, name, and dates (see [Sources on the card](#sources-on-the-card)). |
+| `tools/build-sources.mjs` | Builds `data/sources.json` from `LEDGER.md`, copies the registry into `data/eras.json`, and with `--check` verifies the source codes in the data. Its tests are in `tools/build-sources.test.mjs`. |
 | `tools/dated-days.mjs` | Dates those changes in the file of the 1800s, for the builder or on its own. |
 | `tools/deltas.json` | The sea of each stage at coasts that have grown since: Miletus's gulf, Ephesus's harbour, the Po delta, the coast of Jiangsu, and the Yellow River's delta on the Bohai Sea (see [Land](#land)). |
 | `tools/lakes-landsat.json` | Lake Urmia's stages from Landsat, 2006 to 2025 (see [Lakes](#lakes)). |
@@ -70,6 +72,7 @@ A static page, no build step, like the rest of the site. The data files are made
 | `tools/singapore.json` | Singapore's coast in twelve stages of its reclamation, from Landsat (see [Singapore's stages](#singapores-stages)). |
 | `tools/wetlands.json` | The outlines of the Fens, the Pontine Marshes, the Hula, the Oderbruch, and Lakes Fucino, Copais, and Tulare, traced from elevation, and of the Mesopotamian Marshes in three stages and the Great Black Swamp, traced from maps (see [Marshes](#marshes)). |
 | `data/eras.json` | The list of snapshot maps shown as maps (none since 27 October 2026), the years of the changes until 1885 and their files, the days of the changes from 1800 to 1885, the dates of the changes from 1886, and the catalogue of every state and people named on them. |
+| `data/sources.json` | The ledger's notes for the card's Sources section: each entry's heading, the polities and years it applies to, and its sources (see [Sources on the card](#sources-on-the-card)). About 70 KB, fetched when the section is first opened. |
 | `data/dated/*.json` | The states and peoples from 3400 BC to 1885, each a span of years with one shape, as one TopoJSON per century: `bc3400.json` to `bc100.json`, then `0.json` to `1800.json` (the last runs to 1885, with the days of its dated changes). |
 | `data/modern.json` | Every state and dependency from 1886, each a span of days with one shape, as one TopoJSON, with the land CShapes leaves blank filled from Cliopatria, and the small territories (see [Small territories](#small-territories)). |
 | `data/land.json` | Natural Earth land, merged from UCHRONIA's provinces, with the land of the small territories that they leave out. |
@@ -1177,6 +1180,33 @@ All text from the function and from Wikipedia goes into the page as text, never 
 
 These requests go from the visitor's browser to Wikipedia and to the site's Supabase project when a state or a city is clicked. The function counts new notes per visitor under a salted hash of the visitor's address and the day, and deletes the counts each day. Section 4 of CHRONIA's [privacy policy](privacy/) describes both, and section 3 the requests to Wikipedia.
 
+### Sources on the card
+
+A state's or a people's card ends with a closed "Sources" section (since 16 November 2026). Opened, it says where the card's claims come from at the date shown:
+
+- **Borders** (**Extent** for a people): the origin of the span's shape, such as "Cliopatria", "CShapes 2.0", or "Natural Earth units, assembled by the editors".
+- **Dates:** the source's own, or the editors' discretion, or the source's years as the editors' tables divide them.
+- **Name:** the source's own, or the editors' discretion (", matching Wikipedia's article title" once Wikipedia has answered with an article of the same name).
+- **Text:** Wikipedia's article, or a note a language model wrote from the card's facts.
+- **Editors' notes:** the heading and the sources of each [ledger](LEDGER.md) entry that applies to the polity at that date.
+- **Report a problem:** opens the report form with the polity's place and the date filled in (see [Reports of errors](#reports-of-errors)).
+
+Nothing is shown that the repository doesn't record, and work by the editors is never shown as a dataset's.
+
+**How the data carries it.** The builder tags every span with its origin (`src`: `clio`, `hb`, `member`, `napoleonic`, `medieval`, `colony`, `acq`, `small`, `seam`, `ww2`, and so on; `cs` for a CShapes span). `srcOf` in `build-eras.mjs` turns a span into a key, "borders|name|dates":
+
+- **borders** is the tag;
+- **name** is `source` for a span named by Cliopatria, historical-basemaps, or CShapes, and `editors` for one from a hand-made table or renamed by one (`NAME_FIX`, `CLIO_NAME`, the regimes, `CARRY`);
+- **dates** is `source` for a Cliopatria span until 1885 or a CShapes span from 1886, `days` when the days table set its first or last day, `split` when a table divided its years (the naming step, or `reshape` cutting it where a neighbour changes), `map` for a span drawn from historical-basemaps' dated maps, and `editors` otherwise.
+
+Each data file has `src`, one number per row, an index into `srcKeys` in `eras.json`, which also holds the registry (`sources`, a copy of `tools/sources.json`). The build stops if a span has no tag or a tag the registry lacks, before the long steps (`checkSrc`) and again at the writers. To add an origin, tag its spans and give the tag a phrase in `tools/sources.json`.
+
+**The ledger's notes.** Each ledger entry has an "Applies to" line (see [MAPMAKING.md](MAPMAKING.md#the-ledger)): the polities it backs, by the names the card shows, and the years if they differ from the heading's; `tag:<borders tag>` for every span from one table (`tag:medieval | 476–961`); `none` for an entry about the whole map. An entry may have several such lines. `node tools/build-sources.mjs` parses the ledger into `data/sources.json` and copies the registry into `eras.json`, so neither a new ledger entry nor a reworded phrase needs the long build; it lists any entry it had to skip (no "Applies to" line, no sources, or years it can't read). The page matches a note to a card by the polity's name or its borders tag, and the year shown.
+
+**On the page** (`renderSources`, `srcText`, `fillNotes`, and `notesFor` in `app.js`): the lines are built from the registry's phrases, with a source's name linked where the registry has an address; the notes file is fetched the first time the section is opened, and if it can't be, the lines above it still show. Whether the section is open is kept until the page is left. A card whose data has no codes has no section. All of it is set as text, never as HTML.
+
+**Limits.** The borders line names the principal source of a shape. Where a neighbour is drawn from another source, the line between them may follow the neighbour's, as the section says. A broad ledger entry (a review of names across a continent) is shown on every polity its text names, with all its sources. Cards for cities, divisions, and waters have no section.
+
 ### The note's server function
 
 `supabase/functions/chronia-blurb/index.ts` is a Supabase edge function (Deno), built like UCHRONIA's Historian: it answers only CHRONIA's origins (`https://chroniaatlas.com` and `https://www.chroniaatlas.com`, and `http://localhost` or `http://127.0.0.1` on any port for testing; noahdarwinlee.com and its GitHub Pages address were dropped on 6 November 2026, since `go.js` sends CHRONIA's visitors there on to chroniaatlas.com), checks every field, and calls DeepSeek's chat completions API with the `DEEPSEEK_API_KEY` secret, or, if that is unset or the call fails, Anthropic's Messages API with the `ANTHROPIC_API_KEY` secret. It is one file with no imports. Its table and counters are set up by `supabase/migrations/20261026_chronia_blurbs.sql`.
@@ -1315,6 +1345,8 @@ Noah's own edits to the map, made on the page and shown to every visitor, withou
 **Frame rate on a real device:** add `&fps` to the address (`chroniaatlas.com/#y=1815-07&fps`) and a readout appears at the top left: the frames a second while the map moves and the gaps between them (which take in the graphics card's share of each frame), the page's own time in `draw()` and in each of its stages (`pmark`), the resolution step (`moveRes`), and the screen. *Copy* adds the date, the view, the graphics chip (`WEBGL_debug_renderer_info`), and the browser, to paste into a report; *Reset* starts the counts again. Without `&fps` the marks cost nothing. `&gpu` makes each mark wait for the graphics card first (`getImageData`), so the stages take in its share; it moves the card's queued work about, so read it with care. `&full` keeps the full resolution while moving. `&bench` (added to the address at any time) turns the map by itself for 3 seconds in each of a list of setups (`BENCH`): all layers, then without the terrain, the aged paper, the coastal band, the colour bands, the names, the rivers and lakes, and the sea's ripples, at 1x pixels, with all of these off, on the flat map, and all layers again to show how much the numbers wander, at full resolution throughout, and shows the gap between frames in each (`skip` turns a layer off).
 
 As with UCHRONIA, test on a local copy, never the live site.
+
+The checks that run without a browser: `node --test chronia/tools/build-sources.test.mjs` (the ledger parser) and `node chronia/tools/build-sources.mjs --check` (every row of the data has a source code the registry knows). `node tools/chronia-sources-check.mjs <base URL>` checks the card's Sources section in a browser: its lines for a hand-made, a Cliopatria, and a CShapes state, the ledger's note by date, the notes file unreachable, data without codes, and a 320 px screen.
 
 1. Serve the repository root with `python3 -m http.server`. CHRONIA needs `../uchronia/`, `/fonts/`, and `../styles.css` beside it.
 2. Drive it with Playwright (headless Chromium). Wait for `__chronia.ready()`.

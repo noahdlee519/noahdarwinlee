@@ -14,7 +14,7 @@ test("plain", () => assert.equal(plain("`tools/x.mjs` and [East Cantons](https:/
 test("parseLedger reads names, years, and numbered sources", () => {
   const md = "# L\n\n## 1815–1866 | the Low Countries | Luxembourg\n\n- What changed: x\n- Applies to: Luxembourg; Duchy of Limburg | 1839–1866\n- Sources: (1) A `b`; (2) C, \"D\".\n- Confidence: high\n";
   const { notes, skipped } = parseLedger(md);
-  assert.deepEqual(notes, [{ title: "1815–1866 | the Low Countries | Luxembourg", names: ["Luxembourg", "Duchy of Limburg"], tags: [], from: 1839, to: 1866, sources: ["A b", "C, \"D\"."] }]);
+  assert.deepEqual(notes, [{ title: "1815–1866 | the Low Countries | Luxembourg", names: ["Luxembourg", "Duchy of Limburg"], tags: [], from: 1839, to: 1866, sources: ["A b", "C, “D”."] }]);
   assert.deepEqual(skipped, []);
 });
 test("parseLedger: heading years when the line gives none, none is left out, a missing line is skipped", () => {
@@ -49,4 +49,11 @@ test("parseLedger: sources as a list of indented bullets, and none with no sourc
 test("parseLedger: a year in brackets is not a source number", () => {
   const { notes } = parseLedger("## 1918–1935 | A | B\n- Applies to: B\n- Sources: (1) the Treaty (1919) in force; (2) a map (1871) and more\n");
   assert.deepEqual(notes[0].sources, ["the Treaty (1919) in force", "a map (1871) and more"]);
+});
+test("plain: straight quotes become the page's curly ones", () => {
+  assert.equal(plain('the articles "Treaty of London (1839)" and ("Vienna"), the editors\' own'), "the articles “Treaty of London (1839)” and (“Vienna”), the editors’ own");
+});
+test("parseLedger: a polity's name keeps its own apostrophe, so it still matches the card's", () => {
+  const { notes } = parseLedger("## 1803–1856 | A | B\n- Applies to: Van Diemen's Land; Kievan Rus'\n- Sources: the editors' own\n");
+  assert.deepEqual([notes[0].names, notes[0].sources], [["Van Diemen's Land", "Kievan Rus'"], ["the editors’ own"]]);
 });

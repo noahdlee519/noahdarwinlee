@@ -548,7 +548,7 @@ export function landTest(land) {
 // SPLIT_KM2, as mendFaces reports them (opt.handovers), the older row is split in time: it ends the day before the newcomer
 // begins, and a copy of it runs from that day to its old end. mendFaces then takes the newcomer's land from the copy
 // (opt.cut). No date of either state changes, and nothing is left without an owner. The copy is added at the end of the
-// file's rows, of both levels' shapes, and of the groups the row belongs to. Returns the pairs to cut.
+// file's rows, of its source codes (src), of both levels' shapes, and of the groups the row belongs to. Returns the pairs to cut.
 export const SPLIT_KM2 = 1000;
 export function splitRows(file, hi, modern, handovers) {
   const info = mendInfo(file, modern), byRow = new Map(), cut = [];
@@ -560,6 +560,7 @@ export function splitRows(file, hi, modern, handovers) {
       // the row before ends the day before; the copy runs from s to the next start, or to the old end
       const row = file.rows.length, last = k + 1 === starts.length, to = last ? end : starts[k + 1] - 1;
       file.rows.push(file.rows[a].slice());
+      if (file.src) file.src.push(file.src[a]); // the copy has its row's sources (the card's Sources section)
       if (modern && !isFinite(to)) file.rows[row][3] = -1;
       for (const t of [file.lo, hi.hi]) t.objects.p.geometries.push(JSON.parse(JSON.stringify(t.objects.p.geometries[a])));
       for (const g of file.groups || []) if (g[3].includes(a)) g[3].push(row);

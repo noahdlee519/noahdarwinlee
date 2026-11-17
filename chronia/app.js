@@ -646,6 +646,7 @@
     scheduleRender();
   }
 
+  var srcKeys = null, srcInfo = null;
   var catalogue = null, maps = [], land = null, sea = null, rivers = null, riversLoad = null, lakes = null, lakesLoad = null;
   var current = null, now = START_YEAR, wantKey = "", modern = null, cities = null;
   var dated = null, datedSnaps = new Map();
@@ -794,7 +795,7 @@
   function loadModern() {
     modern.used = performance.now();
     if (!modern.load) modern.load = fetchJSON("data/modern.json").then(function (md) {
-      modern.rows = md.rows; modern.lo = md.lo; modern.hi = md.hi || md.lo;
+      modern.rows = md.rows; modern.lo = md.lo; modern.hi = md.hi || md.lo; modern.src = md.src || null;
       modern.used = performance.now();
       modern.fine = md.hi ? 3 : 0;
       if (!md.hi && (PLAIN || (isModern(now) && (fineNow() || !introOver)))) loadModernFine();
@@ -928,7 +929,7 @@
     if (snap) { modernSnaps.delete(key); modernSnaps.set(key, snap); snap.used = performance.now(); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = modern.rows[ri], hue = r[1] >= 0 ? r[1] : r[0], claims = r[4] === DISPUTED && r[7] ? r[7] : null;
-      return { i: i, row: ri, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: r[8] === 1 ? 1 : 3, soft: !!claims || r[8] === 1, people: false, label: r[6], hue: hue, color: claims ? -1 : ownColour(r[0], at, function () { return polityColor(hue, day, undefined, at); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, day, undefined, at); })) : null, status: r[4], cap: claims ? null : r[5], start: r[2], end: r[3] };
+      return { i: i, row: ri, sk: modern.src ? modern.src[ri] : -1, id: r[0], ruler: r[4] ? r[1] : -1, part: -1, b: r[8] === 1 ? 1 : 3, soft: !!claims || r[8] === 1, people: false, label: r[6], hue: hue, color: claims ? -1 : ownColour(r[0], at, function () { return polityColor(hue, day, undefined, at); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, day, undefined, at); })) : null, status: r[4], cap: claims ? null : r[5], start: r[2], end: r[3] };
     });
     snap = finishSnap({
       year: null, key: key, modern: true, polys: polys, vague: pairsAt(borderPairs.vague, day), topo: { hi: modern.hi, lo: modern.lo },
@@ -1005,7 +1006,7 @@
     if (snap) { datedSnaps.delete(key); datedSnaps.set(key, snap); snap.used = performance.now(); return snap; }
     var polys = idx.map(function (ri, i) {
       var r = rows[ri], people = !!r[7], member = groupIds.has(r[0]) ? r[0] : groupIds.has(r[8]) && !people ? r[8] : -1, hue = member >= 0 ? member : r[1] >= 0 && !people ? r[1] : r[0], claims = r[4] === DISPUTED && r[10] ? r[10] : null;
-      return { i: i, row: ri, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || (bordersKnown ? !(r[9] >= 3) : r[9] <= 1) || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
+      return { i: i, row: ri, sk: c.data.src ? c.data.src[ri] : -1, id: r[0], ruler: people || claims ? -1 : r[1], part: r[8], member: member, b: r[9], people: people, band: r[7] === 2, label: r[6], hue: hue, color: people || claims ? -1 : ownColour(r[0], t, function () { return polityColor(hue, undefined, y, t); }), claims: claims, claimColors: claims ? apart(claims.map(function (c) { return polityColor(c, undefined, y, t); })) : null, soft: soft || (bordersKnown ? !(r[9] >= 3) : r[9] <= 1) || people || !!claims, status: r[4], cap: people || claims ? null : r[5], start: r[2], end: r[3], startDay: monthly && c.data.dayKnown[ri] & 1 ? c.data.dayFrom[ri] : null, endDay: monthly && c.data.dayKnown[ri] & 2 ? c.data.dayTo[ri] : null };
     });
     snap = finishSnap({
       year: null, key: key, dated: true, chunk: k, soft: soft, polys: polys, firm: pairsAt(borderPairs.firm, y), topo: { hi: c.data.hi, lo: c.data.lo },
@@ -5699,6 +5700,7 @@
       addText(on + when + ".");
     } else addText("In no state" + on + when + ".");
     var y = askYear();
+    renderSources(null);
     loadWiki(f.modern || f.name, f.modern && f.modern !== f.name ? f.name : f.modern || f.name, {
       ask: { kind: "city", name: f.name, modern: f.modern || "", lon: c.lon, lat: c.lat, state: p ? polityName(p.id) : "", capital: isCap, year: y },
       label: f.name, when: fmtYear(y), click: click
@@ -5772,6 +5774,7 @@
       line("").textContent = "Not on the map " + (modernNow || byDay ? "on " : datedNow ? "in " : "of ") + (modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDate(dayOfTime(now)) : when) : current ? fmtYear(current.year) : fmtNow(now)) + ".";
     }
     var title = wikiTitle(selected, whenYear), y = askYear();
+    renderSources(p, e[0], whenYear);
     loadWiki(e[0], title, {
       ask: {
         kind: "state", name: e[0], wiki: title,
@@ -6086,12 +6089,132 @@
       return next();
     });
   }
+  // The Sources section at the end of a state's or a people's card (see the README's "Sources on the card"): where its borders,
+  // its dates, its name, and the card's text come from, and the ledger's notes on it. Each row of the data has a code for a
+  // key "borders|name|dates" (eras.json's srcKeys), and eras.json's sources gives each part its phrase and its sources. The
+  // ledger's notes are in data/sources.json, fetched the first time the section is opened. Everything is set as text, never
+  // as HTML. A card whose data has no codes (an older file) has no section.
+  var srcNotes = null, srcNotesLoad = null, srcNotesFailed = false, srcOpen = false, srcCtx = null;
+  function polySrc(p) {
+    var k = p && srcKeys && srcInfo && p.sk >= 0 && srcKeys[p.sk] ? srcKeys[p.sk].split("|") : null;
+    return k && srcInfo.borders[k[0]] && srcInfo.name[k[1]] && srcInfo.dates[k[2]] ? k : null;
+  }
+  // The notes that name the polity, or the table its borders come from, and whose years hold the year.
+  function notesFor(name, tag, year, notes) {
+    return notes.filter(function (n) { return n.from <= year && year <= n.to && (n.names.indexOf(name) >= 0 || (n.tags || []).indexOf(tag) >= 0); });
+  }
+  function srcLink(href, text) {
+    var a = document.createElement("a");
+    a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = text;
+    return a;
+  }
+  // Text with each of the sources' names that has a link made into one.
+  function srcPhrase(el, text, ids) {
+    var marks = (ids || []).map(function (id) { return srcInfo.sources[id]; }).filter(function (x) { return x && x.url && /^https:\/\//.test(x.url) && text.indexOf(x.label) >= 0; });
+    var rest = text;
+    while (rest) {
+      var first = null, at = -1;
+      marks.forEach(function (m) { var i = rest.indexOf(m.label); if (i >= 0 && (at < 0 || i < at)) { at = i; first = m; } });
+      if (!first) break;
+      if (at) el.appendChild(document.createTextNode(rest.slice(0, at)));
+      el.appendChild(srcLink(first.url, first.label));
+      rest = rest.slice(at + first.label.length);
+    }
+    if (rest) el.appendChild(document.createTextNode(rest));
+  }
+  // Text with its web addresses made into links.
+  function srcPlain(el, text) {
+    String(text).split(/(https:\/\/[^\s<>"]*[^\s<>".,;:)\]])/).forEach(function (part, i) {
+      if (!part) return;
+      if (i % 2) el.appendChild(srcLink(part, part)); else el.appendChild(document.createTextNode(part));
+    });
+  }
+  function srcLine(label, cls) {
+    var el = document.createElement("p"), b = document.createElement("span");
+    el.className = "ch-src-line" + (cls ? " " + cls : "");
+    b.className = "ch-fact-label"; b.textContent = label + ": ";
+    el.appendChild(b);
+    return el;
+  }
+  function renderSources(p, name, year) {
+    var box = $("src"), body = $("src-body"), k = polySrc(p);
+    srcCtx = null;
+    body.textContent = "";
+    if (!k) { box.hidden = true; return; }
+    var B = srcInfo.borders[k[0]], N = srcInfo.name[k[1]], D = srcInfo.dates[k[2]];
+    // "The source's own name" names the source: "Cliopatria's own name".
+    var first = srcInfo.sources[B.ids[0]], owner = first ? first.label + (/s$/.test(first.label) ? "’" : "’s") : "The source’s";
+    var own = function (t) { return t.replace(/^The source’s/, owner); };
+    var borders = srcLine(p.people ? "Extent" : "Borders");
+    srcPhrase(borders, B.text, B.ids);
+    var dates = srcLine("Dates");
+    srcPhrase(dates, own(D.text), B.ids.concat(D.ids));
+    var nm = srcLine("Name");
+    srcPhrase(nm, own(N.text), k[1] === "source" ? B.ids : N.ids);
+    // Filled in by srcText once Wikipedia has answered with an article of the same name: never from the guess at its title.
+    var same = document.createElement("span");
+    if (k[1] === "editors") nm.appendChild(same);
+    var text = srcLine("Text");
+    text.hidden = true;
+    var quiet = document.createElement("p");
+    quiet.className = "ch-src-quiet";
+    quiet.textContent = "Where a neighbour is drawn from another source, the line between them may follow the neighbour’s.";
+    var notes = document.createElement("div");
+    notes.className = "ch-src-notes";
+    var report = document.createElement("button");
+    report.type = "button"; report.className = "ch-src-report"; report.textContent = "Report a problem";
+    var at = p.label ? [p.label[0], p.label[1]] : [view.lon, view.lat];
+    report.addEventListener("click", function () { reportAbout(name, at[0], at[1]); });
+    [borders, dates, nm, text, quiet, notes, report].forEach(function (el) { body.appendChild(el); });
+    srcCtx = { name: name, tag: k[0], year: year, text: text, notes: notes, same: same };
+    box.hidden = false;
+    box.open = srcOpen;
+    if (srcOpen) fillNotes();
+  }
+  // The Text line, set when the card's text is: Wikipedia's extract, or a note a language model wrote.
+  function srcText(mode, wiki) {
+    if (!srcCtx) return;
+    var el = srcCtx.text, label = el.firstChild;
+    srcCtx.same.textContent = wiki && wiki.title === srcCtx.name ? ", matching Wikipedia’s article title" : "";
+    el.textContent = ""; el.appendChild(label);
+    if (mode === "done") el.appendChild(document.createTextNode("A note written by a language model from the card’s facts and the date; it can be wrong."));
+    else if (mode !== "ai" && wiki && wiki.extract) {
+      var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
+      el.appendChild(document.createTextNode("Wikipedia, “"));
+      if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) el.appendChild(srcLink(href, wiki.title || srcCtx.name)); else el.appendChild(document.createTextNode(wiki.title || srcCtx.name));
+      el.appendChild(document.createTextNode("”"));
+    } else { el.hidden = true; return; }
+    el.hidden = false;
+  }
+  function fillNotes() {
+    var ctx = srcCtx;
+    if (!ctx) return;
+    var say = function (t) { ctx.notes.textContent = ""; var q = document.createElement("p"); q.className = "ch-src-quiet"; q.textContent = t; ctx.notes.appendChild(q); };
+    if (srcNotesFailed) { say("The editors’ notes could not be loaded."); return; }
+    if (!srcNotes) {
+      say("Looking up the editors’ notes");
+      if (!srcNotesLoad) srcNotesLoad = fetchJSON("data/sources.json").then(function (d) { srcNotes = d && Array.isArray(d.notes) ? d.notes : []; }, function () { srcNotesFailed = true; }).then(function () { if (srcCtx && $("src").open) fillNotes(); });
+      return;
+    }
+    var mine = notesFor(ctx.name, ctx.tag, ctx.year, srcNotes);
+    if (!mine.length) { say("The editors’ ledger has no note on it at this date."); return; }
+    ctx.notes.textContent = "";
+    ctx.notes.appendChild(srcLine("Editors’ notes", "ch-src-notes-head"));
+    mine.forEach(function (n) {
+      var t = document.createElement("p"), ol = document.createElement("ol");
+      t.className = "ch-src-note-title"; t.textContent = n.title;
+      n.sources.forEach(function (x) { var li = document.createElement("li"); srcPlain(li, x); ol.appendChild(li); });
+      ctx.notes.appendChild(t); ctx.notes.appendChild(ol);
+    });
+  }
+  $("src").addEventListener("toggle", function () { srcOpen = $("src").open; if (srcOpen) fillNotes(); });
   function loadWiki(name, title, blurb, at) {
     var ask = ++wikiAsk, text = $("wiki-text"), img = $("wiki-img"), zoom = $("wiki-zoom"), more = $("wiki-more"), by = $("wiki-by");
     var wiki = null, wikiState = 0, mode = blurb ? "ai" : "wiki";
     var quiet = function (t) { text.className = "ch-wiki-text is-quiet"; text.textContent = t; };
     var paint = function () {
       if (ask !== wikiAsk) return;
+      srcText(mode, wiki);
       if (wiki) {
         if (wiki.thumbnail && wiki.thumbnail.source && WM_IMG.test(wiki.thumbnail.source)) {
           img.src = wiki.thumbnail.source; zoom.hidden = false;
@@ -6479,6 +6602,14 @@
     if (!isMonthly(t)) return String(Math.round(t));
     var d = dateOfDay(dayOfTime(t));
     return d[0] + "-" + (d[1] < 10 ? "0" : "") + d[1] + (d[2] === MID_DAY ? "" : "-" + (d[2] < 10 ? "0" : "") + d[2]);
+  }
+  // The report form opened on a polity from its card's Sources section, with its place and the date shown filled in.
+  function reportAbout(name, lon, lat) {
+    reportPlace = { lon: +lon.toFixed(4), lat: +lat.toFixed(4), zoom: +view.zoom.toFixed(2), place: name + " on the map of " + yearInput.value };
+    reportWhere.textContent = name + " | " + Math.abs(reportPlace.lat).toFixed(2) + "° " + (reportPlace.lat < 0 ? "S" : "N") + ", " + Math.abs(reportPlace.lon).toFixed(2) + "° " + (reportPlace.lon < 0 ? "W" : "E");
+    reportLine.textContent = "";
+    reportNow();
+    setReportOpen(true, false);
   }
   function pickReport(x, y) {
     var ll = lonLatAt(x, y);
@@ -8425,6 +8556,7 @@
     ]).then(function (r) {
       var idx = r[0];
       catalogue = idx.polities;
+      srcKeys = idx.srcKeys || null; srcInfo = idx.sources || null;
       loadLapseTags();
       if (idx.borders) { borderPairs = idx.borders; bordersKnown = true; }
       colourMarks();
