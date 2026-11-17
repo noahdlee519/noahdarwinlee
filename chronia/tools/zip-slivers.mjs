@@ -445,7 +445,7 @@ export function closeSlivers(topo, km, outward, mend) {
       cutAll();
     }
     const wide = Math.min(MEND_MAX, Math.max(MEND_MIN, MEND_SHARE * km));
-    mended = mendFaces(topo, mend.spans, mend.people, { from: mend.from, to: mend.to, step: mend.step || 1, soft: mend.soft, id: mend.id, named: mend.named, holes: mend.holes, timeFixes: mend.timeFixes, overWide: OVER_WIDE, overSmall: 3 * OVER_WIDE * OVER_WIDE, overBig: MEND_BIG * OVER_WIDE, log: mend.log, logOver: mend.logOver, name: mend.name, verify: mend.verify, near: mend.near, wide, small: 3 * wide * wide, big: MEND_BIG * wide });
+    mended = mendFaces(topo, mend.spans, mend.people, { from: mend.from, to: mend.to, step: mend.step || 1, soft: mend.soft, id: mend.id, named: mend.named, holes: mend.holes, specks: mend.specks, timeFixes: mend.timeFixes, overWide: OVER_WIDE, overSmall: 3 * OVER_WIDE * OVER_WIDE, overBig: MEND_BIG * OVER_WIDE, log: mend.log, logOver: mend.logOver, name: mend.name, verify: mend.verify, near: mend.near, wide, small: 3 * wide * wide, big: MEND_BIG * wide });
   }
   if (outward && (st.closed || (mended && mended.shapes))) outward(topo);
   return { long, cut, same, closed: st.closed, km2: Math.round(st.km2), dropped: st.dropped, turned: st.turned, apart: st.apart, mouths, mended };

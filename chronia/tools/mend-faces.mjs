@@ -351,6 +351,19 @@ export function mendFaces(topo, spans, people, opt) {
     if (opt.log) opt.log('kept row ' + r + ' fail=' + fail + ' before=' + before.toFixed(0) + ' moved=' + moved.toFixed(1) + ' rings=' + out.length);
     stats.kept++;
   }
+  // For a report (opt.specks): slim faces one state holds with other states all round and none of its own land beside it.
+  if (opt.specks) {
+    for (const c of faces) {
+      if (-area[c] > GAP.small || (-4 * area[c]) / per[c] > GAP.wide / 2 || (-4 * Math.PI * area[c]) / (per[c] * per[c]) > 0.25) continue;
+      for (const r of cover(c)) {
+        const [a, b] = clip(spans[r]);
+        if (a > b || countAt(c, a, -1) !== 1) continue;
+        let alone = true, shut = true;
+        for (const h of cyc[c]) { const g = cycleOf[h ^ 1]; const l = liveAt(g, a); if (!l.length) shut = false; if (l.some((x) => opt.id[x] === opt.id[r])) alone = false; }
+        if (alone && shut) { const p = arcs[cyc[c][0] >> 1][0]; opt.specks.push({ row: r, km2: -area[c], at: [p[0] * t.scale[0] + t.translate[0], p[1] * t.scale[1] + t.translate[1]], from: a, to: b }); }
+      }
+    }
+  }
   // Lines inside a state: where two rows of one state lie over each other and cannot be parted (each holds the land at a time
   // the other does not), the edge of the one runs across the other's land. Such a line is listed with the rows that cover both
   // its sides (topo.inside, by line), and the page leaves it undrawn while one of them, of the same state, is shown.
