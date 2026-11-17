@@ -18,7 +18,7 @@
     "carry": { "text": "historical-basemaps: an extent from its nearest map, carried to these years by the editors", "ids": ["hb", "editors"] },
     "extend": { "text": "The shape of the years before, from Cliopatria or historical-basemaps, carried on by the editors", "ids": ["cliopatria", "hb", "editors"] },
     "stage": { "text": "Cliopatria, redrawn year by year by the editors", "ids": ["cliopatria", "editors"] },
-    "overlap": { "text": "Land two Cliopatria shapes both cover, marked as disputed by the editors", "ids": ["cliopatria", "editors"] },
+    "overlap": { "text": "Land that two shapes from the sources both cover, marked as disputed by the editors", "ids": ["editors"] },
     "early": { "text": "Editors' discretion: an approximate extent built from Natural Earth units", "ids": ["editors", "ne"] },
     "medieval": { "text": "Natural Earth and national mapping agencies' units, assembled by the editors", "ids": ["units", "editors"] },
     "napoleonic": { "text": "Natural Earth and national mapping agencies' units, assembled by the editors", "ids": ["units", "editors"] },
@@ -40,6 +40,8 @@
   },
   "dates": {
     "source": { "text": "The source's own years", "ids": [] },
+    "split": { "text": "The source's own years, divided by the editors where the name or ruler changes", "ids": ["editors"] },
+    "map": { "text": "The years around the source's dated maps, set by the editors", "ids": ["editors"] },
     "days": { "text": "The source's own years, with the day set by the editors", "ids": ["editors"] },
     "editors": { "text": "Editors' discretion", "ids": ["editors"] }
   }

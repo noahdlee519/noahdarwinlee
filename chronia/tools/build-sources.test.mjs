@@ -14,7 +14,7 @@ test("plain", () => assert.equal(plain("`tools/x.mjs` and [East Cantons](https:/
 test("parseLedger reads names, years, and numbered sources", () => {
   const md = "# L\n\n## 1815–1866 | the Low Countries | Luxembourg\n\n- What changed: x\n- Applies to: Luxembourg; Duchy of Limburg | 1839–1866\n- Sources: (1) A `b`; (2) C, \"D\".\n- Confidence: high\n";
   const { notes, skipped } = parseLedger(md);
-  assert.deepEqual(notes, [{ title: "1815–1866 | the Low Countries | Luxembourg", names: ["Luxembourg", "Duchy of Limburg"], from: 1839, to: 1866, sources: ["A b", "C, \"D\"."] }]);
+  assert.deepEqual(notes, [{ title: "1815–1866 | the Low Countries | Luxembourg", names: ["Luxembourg", "Duchy of Limburg"], tags: [], from: 1839, to: 1866, sources: ["A b", "C, \"D\"."] }]);
   assert.deepEqual(skipped, []);
 });
 test("parseLedger: heading years when the line gives none, none is left out, a missing line is skipped", () => {
@@ -28,4 +28,25 @@ test("parseLedger: the template inside a code fence is not an entry", () => {
   const md = "Each entry:\n\n```\n## <years> | <region> | <polity or subject>\n\n- Applies to: …\n- Sources: (1) …\n```\n\n## 1920 | A | B\n- Applies to: B\n- Sources: s\n";
   const { notes, skipped } = parseLedger(md);
   assert.deepEqual([notes.length, skipped], [1, []]);
+});
+test("parseLedger: tag:<borders tag> applies to every span drawn from that table", () => {
+  const md = "## 476–961 | Europe | the early medieval table\n- Applies to: tag:medieval; Kingdom of the Gepids\n- Sources: (1) a (2) b\n";
+  const { notes } = parseLedger(md);
+  assert.deepEqual([notes[0].names, notes[0].tags, notes[0].from, notes[0].to], [["Kingdom of the Gepids"], ["medieval"], 476, 961]);
+});
+test("parseLedger: an entry with two Applies to lines gives two notes under one title", () => {
+  const md = "## AD 100–599 and 960–1260 | A | B\n- Applies to: Miller Culture | 100–599\n- Applies to: Greenland | 960–1260\n- Sources: s\n";
+  const { notes, skipped } = parseLedger(md);
+  assert.deepEqual(notes.map((n) => [n.title, n.names, n.from, n.to]), [["AD 100–599 and 960–1260 | A | B", ["Miller Culture"], 100, 599], ["AD 100–599 and 960–1260 | A | B", ["Greenland"], 960, 1260]]);
+  assert.deepEqual(skipped, []);
+});
+test("parseLedger: sources as a list of indented bullets, and none with no sources is not reported", () => {
+  const md = "## 1792–2026 | C | S\n- Applies to: Bahamas\n- Sources:\n  - First, *a book* (1999).\n  - Second (2) thing.\n- Confidence: high.\n\n## 1861–2026 | world | zones\n- Applies to: none\n- Claimed by x\n";
+  const { notes, skipped } = parseLedger(md);
+  assert.deepEqual(notes.map((n) => n.sources), [["First, a book (1999).", "Second (2) thing."]]);
+  assert.deepEqual(skipped, []);
+});
+test("parseLedger: a year in brackets is not a source number", () => {
+  const { notes } = parseLedger("## 1918–1935 | A | B\n- Applies to: B\n- Sources: (1) the Treaty (1919) in force; (2) a map (1871) and more\n");
+  assert.deepEqual(notes[0].sources, ["the Treaty (1919) in force", "a map (1871) and more"]);
 });
