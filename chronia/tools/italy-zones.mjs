@@ -69,6 +69,8 @@ const centre = (polys) => {
   for (const poly of polys) { const r = poly[0]; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const f = r[j][0] * r[i][1] - r[i][0] * r[j][1]; aa += f; ax += (r[j][0] + r[i][0]) * f; ay += (r[j][1] + r[i][1]) * f; } }
   return aa ? [ax / (3 * aa), ay / (3 * aa)] : polys[0][0][0];
 };
+const signed = (r) => { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += r[j][0] * r[i][1] - r[i][0] * r[j][1]; return a; };
+const orient = (polys) => polys.map((poly) => poly.map((r, i) => ((i === 0) === (signed(r) > 0) ? r.slice().reverse() : r)));
 const pieces = [];
 let split = 0;
 for (const u of units) {
@@ -85,7 +87,7 @@ for (const u of units) {
   for (const s of seeds) { const e = sq(c, s.p); if (e < d) { d = e; best = s; } }
   pieces.push({ k: best.k, polys: u.polys });
 }
-const topo = server.topology({ c: { type: "FeatureCollection", features: pieces.map((p) => ({ type: "Feature", properties: { k: p.k }, geometry: { type: "MultiPolygon", coordinates: p.polys } })) } }, 1e6);
+const topo = server.topology({ c: { type: "FeatureCollection", features: pieces.map((p) => ({ type: "Feature", properties: { k: p.k }, geometry: { type: "MultiPolygon", coordinates: orient(p.polys) } })) } }, 1e6);
 const simple = simplify.simplify(simplify.presimplify(topo), MIN_WEIGHT);
 const zones = seeds.map((s) => {
   const g = client.mergeArcs(simple, simple.objects.c.geometries.filter((x) => x.properties.k === s.k));

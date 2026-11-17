@@ -22,7 +22,7 @@ export const TAGS = [
   ["Alodia", [2, 3, 9], ["Alwa", "Alodia"]],
   ["Iran", [9, 0, 2], ["Safavid Empire", "Safavid dynasty", "Safavid Iran", "Afsharid Iran", "Zand dynasty", "Qajar dynasty", "Qajar Iran", "Persia", "Iran"]],
   ["Japan", [5, 4, 7], ["Asuka Japan", "Nara Japan", "Heian Japan", "Kamakura Shogunate", "Imperial Japan (Fujiwara)", "Ashikaga Shogunate", "Warring States Japan", "Tokugawa shogunate", "Tokugawa Shogunate", "Japan", "Empire of Japan"]],
-  ["Rome", [9, 0, 2], ["Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"]],
+  ["Rome", [9, 0, 2], ["Roman Kingdom", "Roman Republic", "Roman Empire", "Eastern Roman Empire", "Byzantine Empire"]],
   ["Italy", [8, 9, 2], ["County of Savoy", "House of Savoy", "Duchy of Savoy", "Kingdom of Sardinia", "Kingdom of Italy", "Italy"]],
   ["Brazil", [8, 9, 2], ["Colonial Brazil", "Viceroyalty of Brazil", "Kingdom of Brazil", "Empire of Brazil", "Brazil"]],
   ["Thailand", [0, 1, 9], ["Ayutthaya", "Ayutthaya Kingdom", "Thonburi Kingdom", "Rattanakosin Kingdom", "Siam", "Thailand"]],
