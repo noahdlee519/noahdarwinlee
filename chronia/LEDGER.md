@@ -18,6 +18,16 @@ Each entry:
 
 ---
 
+## 1850–1983 | the Netherlands | Almere Stad from 1984
+
+- What changed: Almere Stad, one of the cities with no known founding that the city build starts in 1850, stood on the map from 1850 on land that was still under the Zuiderzee until the Southern Flevoland polder fell dry in 1968. It now begins on 1 January 1984, when Almere became a municipality (the first house in Almere Haven was finished in 1976, and building began at Almere Stad in 1980). Its size from 1984 follows the old curve. `CITY_SINCE` has the date for the next run of `tools/build-cities.mjs`, whose sources are not in this build, so `data/cities-dated-minor.json` is set by hand to match.
+- Applies to: Almere Stad
+- Tables: `CITY_SINCE` in `tools/city-tables.mjs`.
+- Sources: (1) https://en.wikipedia.org/wiki/Almere (the first house in 1976, the municipality in 1984, the first council installed on 2 January 1984); (2) https://en.wikipedia.org/wiki/Flevoland (Almere and Zeewolde municipalities on 1 January 1984; the polder reclaimed from 1959 to 1968).
+- Confidence: high.
+- Alternatives: 1976, the first house (not taken: that was Almere Haven, and the point is Almere Stad, begun in 1980).
+- Left out: Almere Haven and the city's other districts, which are not on the map.
+
 ## 3400 BC–1970 | Quebec | the two lakes under the Manicouagan Reservoir
 
 - What changed: before the Manicouagan Reservoir (the ring round René-Levasseur Island) the map drew no water there at all, though two long lakes lay in the ring: Lac Manicouagan on the east side and Lac Mouchalagane on the west. Both are now drawn until 1970. The reservoir appears from 1970, when the Daniel-Johnson dam was commissioned, not from 1960 (Natural Earth's year). The lakes are a reconstruction, not a trace: each is a band 2.5 km wide and 60 km long along the middle of today's ring, centred due east and due west of the island.
