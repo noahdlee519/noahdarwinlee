@@ -17,6 +17,28 @@ import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO,
 import { buildItaly, ITALY_FROM, ITALY_TO, LATIN_LEAGUE, LEAGUE_FROM, LEAGUE_TO } from "./italy-early.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
+// The sources behind each span, for the card's Sources section (see the README's "Sources on the card"): tools/sources.json
+// names every source and gives a phrase for each origin tag (a span's `src`). Each row is written with a code for a key
+// "borders|name|dates", listed in eras.json's srcKeys. A span with no tag, or a tag the registry lacks, stops the build.
+const SOURCES = JSON.parse(readFileSync(resolve(here, "sources.json"), "utf8"));
+const SRC_KEYS = [], srcKeyIx = new Map();
+const NAME_OWN = new Set(["clio", "hb", "member", "carry", "cs"]), DATES_MAP = new Set(["hb", "member"]);
+// modern: a span from 1886, where only CShapes' own spans keep the source's dates.
+const srcOf = (s, hasDay, modern) => {
+  const b = s.cs ? "cs" : s.src;
+  if (!b || !SOURCES.borders[b]) throw new Error("sources: " + (b ? "the tag " + b + " is not in tools/sources.json" : "no src") + " on the span " + s.name + " (" + s.first + " to " + s.last + ")");
+  const n = s.nameSrc || (NAME_OWN.has(b) ? "source" : "editors");
+  const d = b === "cs" || (b === "clio" && !modern) ? (s.dateSplit ? "split" : hasDay ? "days" : "source") : DATES_MAP.has(b) && !modern ? "map" : "editors";
+  const key = b + "|" + n + "|" + d;
+  if (!SOURCES.name[n] || !SOURCES.dates[d]) throw new Error("sources: the key " + key + " is not in tools/sources.json");
+  if (!srcKeyIx.has(key)) { srcKeyIx.set(key, SRC_KEYS.length); SRC_KEYS.push(key); }
+  return srcKeyIx.get(key);
+};
+// Run over a finished list before the long steps that follow, so a missing tag stops the build early, naming every such span.
+const checkSrc = (list, where) => {
+  const bad = list.filter((s) => !(s.cs ? "cs" : s.src) || !SOURCES.borders[s.cs ? "cs" : s.src]);
+  if (bad.length) throw new Error("sources: " + bad.length + " spans " + where + " with no src, or one not in tools/sources.json: " + [...new Set(bad.map((s) => s.name + " [" + (s.src || "none") + "]"))].slice(0, 40).join("; "));
+};
 const modules = resolve(process.argv[2] || "node_modules");
 const source = resolve(process.argv[3] || "historical-basemaps/geojson");
 const provincesPath = resolve(process.argv[4] || resolve(here, "../../uchronia/data/provinces.json"));
@@ -1240,7 +1262,7 @@ const clioSpans = [];
     bounds.forEach((a, k) => {
       const b = k + 1 < bounds.length ? bounds[k + 1] - 1 : r.ToYear;
       const name = clioName(r.Name, a);
-      const span = { name, ruler: ruler ? clioName(ruler, a) : "", part: part && part !== name ? part : "", people: 0, b: 2, status: ruler ? 5 : 0, first: a, last: b, polys: rewind(polysOf(r.geometry)), wiki: clioWiki(name, r.Wikipedia), src: "clio", geoKey };
+      const span = { name, ruler: ruler ? clioName(ruler, a) : "", part: part && part !== name ? part : "", people: 0, b: 2, status: ruler ? 5 : 0, first: a, last: b, polys: rewind(polysOf(r.geometry)), wiki: clioWiki(name, r.Wikipedia), src: "clio", nameSrc: name !== r.Name.replace(/\s*\([^)]*\)/g, "").trim().replace(/ Dynasty$/, " dynasty") ? "editors" : undefined, geoKey };
       const key = name + "|" + span.ruler + "|" + span.part;
       const prev = byKey.get(key);
       if (prev && prev.last + 1 === a && prev.geoKey === geoKey) { prev.last = b; return; }
@@ -1538,6 +1560,23 @@ const NAME_FIX = [
   ["Boii", "Boii", -600, -324, { people: 1, wiki: "Boii" }],
   ["Blemmyes", "Blemmyes", -600, 649, { people: 1, wiki: "Blemmyes" }],
   ["Curonians", "Balts", -600, 199, { people: 1, wiki: "Balts" }],
+  // The Malabar Coast (a reader's report of 9 November 2026). historical-basemaps' map of 1715 marks its "Hindu kingdoms" of the
+  // west coast as the Netherlands', and its maps of 1783 and 1800 mark Malabar, Cochin, and Travancore so; the Dutch East India
+  // Company held forts and factories there (Dutch Malabar, 1661 to 1795), not the kingdoms. The strip is the kingdoms of Malabar
+  // (Calicut, Cochin, Venad and Travancore, Kolathunadu, and the smaller ones) with no ruler; the pieces left elsewhere keep the
+  // source's name with no ruler. Travancore beat the Company at Colachel in 1741 and was never Dutch; it is the East India
+  // Company's protected ally from the treaty of 1795. Malabar (the Zamorin's Calicut and its neighbours) is Mysore's from Hyder
+  // Ali's conquest of 1766 and the Company's from the Treaty of Seringapatam of 18 March 1792. Cochin, the Dutch Company's ally,
+  // is the East India Company's tributary from the treaty of 6 January 1791. These rows come first: a rule's box parts a span's
+  // pieces in the order of the rules.
+  ["Hindu kingdoms", "Kingdoms of Malabar", 1675, 1756, { box: [75.5, 9.5, 77, 11.2], ruler: "", wiki: "History of Kerala" }],
+  ["Hindu kingdoms", "Hindu kingdoms", 1675, 1756, { ruler: "" }],
+  ["Travancore", "Travancore", 1749, 1794, { ruler: "" }],
+  ["Travancore", "Travancore", 1795, 1885, { ruler: "@britain" }],
+  ["Malabar", "Malabar", 1749, 1765, { ruler: "" }],
+  ["Malabar", "Malabar", 1766, 1791, { ruler: "Kingdom of Mysore" }],
+  ["Malabar", "Malabar", 1792, 1814, { ruler: "@britain" }],
+  ["Cochin", "Cochin", 1791, 1814, { ruler: "@britain" }],
   ["Hindu kingdoms", "Iron Age chieftainships", -600, 476, { box: [73, 7, 81, 15], people: 1, wiki: "South Indian Iron Age" }],
   ["Hindu kingdoms", "Indian kingdoms and republics", -600, 476, { wiki: "Mahajanapadas" }],
   ["Hindu kingdoms and republics", "Indian kingdoms and republics", -600, 49, { wiki: "Mahajanapadas" }],
@@ -2162,6 +2201,23 @@ const SMALL = [
   // Virgin Islands" with no owner, so that they stood as an independent state to 1942: Denmark's until the transfer of 31 March 1917
   // (the treaty of 4 August 1916), the United States' from that day. CARRY keeps the Danish name to the transfer.
   { name: "United States Virgin Islands", shape: { c: "VIR" }, periods: [["1886-01-01", "1917-03-30", "colony", COPENHAGEN], ["1917-03-31", CS_TO, "dependency", WASHINGTON]] },
+  // The British islands of the Lesser Antilles and the other small British territories of the Caribbean, which historical-basemaps
+  // draws on some of its maps only (Saint Lucia, Saint Vincent, and Grenada were blank from 1886 to 1906, and every one of them
+  // from 1953 to 1976, the map of 1960 leaving them out) and the British Virgin Islands and the Caymans on none: the United
+  // Kingdom's colonies from 1886, and states from their independence (Grenada 7 February 1974, Dominica 3 November 1978, Saint
+  // Lucia 22 February 1979, Saint Vincent 27 October 1979, Antigua and Barbuda 1 November 1981, Saint Kitts and Nevis 19 September
+  // 1983). Their years as associated states (1967 or 1969 to independence) are drawn as the colony's.
+  { name: "Saint Lucia", shape: { c: "LCA" }, periods: [["1886-01-01", "1979-02-21", "colony", LONDON, "fill"], ["1979-02-22", CS_TO, "state", null, "fill"]] },
+  { name: "Saint Vincent and the Grenadines", shape: { c: "VCT" }, periods: [["1886-01-01", "1979-10-26", "colony", LONDON, "fill"], ["1979-10-27", CS_TO, "state", null, "fill"]] },
+  { name: "Grenada", shape: { c: "GRD" }, periods: [["1886-01-01", "1974-02-06", "colony", LONDON, "fill"], ["1974-02-07", CS_TO, "state", null, "fill"]] },
+  { name: "Dominica", shape: { c: "DMA" }, periods: [["1886-01-01", "1978-11-02", "colony", LONDON, "fill"], ["1978-11-03", CS_TO, "state", null, "fill"]] },
+  { name: "Antigua and Barbuda", shape: { c: "ATG" }, periods: [["1886-01-01", "1981-10-31", "colony", LONDON, "fill"], ["1981-11-01", CS_TO, "state", null, "fill"]] },
+  { name: "Saint Kitts and Nevis", shape: { c: "KNA" }, periods: [["1886-01-01", "1983-09-18", "colony", LONDON, "fill"], ["1983-09-19", CS_TO, "state", null, "fill"]] },
+  { name: "Montserrat", shape: { c: "MSR" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Anguilla", shape: { c: "AIA" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "British Virgin Islands", shape: { c: "VGB" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Cayman Islands", shape: { c: "CYM" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Turks and Caicos Islands", shape: { c: "TCA" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
   { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", CS_TO, "dependency", COPENHAGEN, "fill"]] },
   { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", CS_TO, "dependency", OSLO, "fill"]] },
   { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", CS_TO, "colony", LONDON, "fill"]] },
@@ -2467,6 +2523,7 @@ function reshape(list, edits, dropSlivers) {
       if (!polys.length) { prev = null; return; }
       const span = withBox({ ...o, first: s0, last: e0, polys });
       delete span.km2; delete span.pole;
+      if (s0 !== o.first || e0 !== o.last) span.dateSplit = true;
       if (polys !== o.polys) delete span.geoHash;
       out.push(span);
       prev = { key, span };
@@ -2700,7 +2757,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
       if (out.length === 1 && key === base && out[0].first === s.first && out[0].last === s.last) return [s];
       changed++;
       split += out.length - 1;
-      out.forEach((o) => { if (o.name !== s.name) noteRename(s.name, o.name); });
+      out.forEach((o) => { if (o.name !== s.name) { noteRename(s.name, o.name); o.nameSrc = "editors"; } if (o.first !== s.first || o.last !== s.last) o.dateSplit = true; });
       return out;
     });
     const CARVE = [
@@ -4423,6 +4480,7 @@ const africa1885 = (list) => {
   return res;
 };
 dated = africa1885(lastPieces(lastWord(dated)));
+checkSrc(dated, "until 1885");
 mkdirSync(resolve(out, "dated"), { recursive: true });
 const datedChunks = [];
 const datedLabel = new Map();
@@ -4478,6 +4536,8 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     if (s.claims) row.push(s.claims.map(catId));
     return row;
   });
+  const dayOfRow = new Set((dayRows || []).map((r) => r[0]));
+  const srcCodes = spans.map((s, i) => srcOf(s, dayOfRow.has(i), false));
   const groups = [];
   for (const G of GROUPS.concat(PROVINCE_SETS)) {
     const gid = catId(G.name);
@@ -4502,6 +4562,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
   const body = { from: c, to: cEnd, rows };
   if (groups.length) body.groups = groups;
   if (dayRows) body.days = dayRows;
+  body.src = srcCodes;
   body.lo = lo;
   writeFileSync(resolve(out, file), JSON.stringify(body));
   writeFileSync(resolve(out, hiFile(file)), JSON.stringify({ hi }));
@@ -4852,10 +4913,13 @@ const CS_BACK = [
   { gw: "696", until: "1892-03-07", names: [["1886-01-01", "Trucial States", 2, "United Kingdom"]] }
 ];
 const HB_MODERN_FROM = 1880;
-const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"], ["United States Virgin Islands"]];
+const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"], ["United States Virgin Islands"],
+  ["Saint Lucia"], ["Saint Vincent and the Grenadines"], ["Grenada"], ["Dominica"], ["Antigua and Barbuda"], ["Saint Kitts and Nevis"], ["Montserrat"], ["Anguilla"], ["Turks and Caicos Islands"]];
 // Cliopatria's Greenland, the south-western coast alone, is left out too: the small territories' table draws the whole island as
 // Denmark's colony, and the coast beside it came out as a second, rulerless Danish Greenland.
-const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland"]);
+// The last six are the islands of the British Lesser Antilles, which Cliopatria begins years off their independence (Antigua and
+// Saint Kitts in 1967, Saint Vincent in 1969, Grenada in 1976); the small territories' table draws them with their days.
+const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland", "Saint Kitts", "Antigua and Barbuda", "Saint Vincent", "Grenada", "Commonwealth of Dominica", "Saint Lucia"]);
 // Cliopatria's polities from 1886 that it draws with no ruler, though they are a state's dependencies: the scattered "British Overseas
 // Territories" of its last map.
 const CLIO_MODERN_RULER = { "British Overseas Territories": "United Kingdom" };
@@ -5304,17 +5368,18 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
     console.log("adopting land: " + pieceSpanCount + " spans of pieces, " + Math.round(process.uptime()) + " s");
   }
   const STATUS_NAME = ["independent", "colony", "protectorate", "mandate", "occupied", "dependency", "disputed"];
+  checkSrc(list, "from 1886");
   csParts.length = 0;
   for (const x of list) {
     const geometry = { type: "MultiPolygon", coordinates: x.polys };
-    if (x.cs) { csParts.push({ ...x.cs, noLabel: !!x.piece, piece: !!x.piece, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry }); continue; }
+    if (x.cs) { csParts.push({ ...x.cs, noLabel: !!x.piece, piece: !!x.piece, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry, srcCode: srcOf({ ...x, nameSrc: x.name !== String(x.cs.p.country_name) ? "editors" : undefined }, false, true) }); continue; }
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
     const claims = x.claims ? x.claims.map((n) => rulerFor(n, x.first)) : null;
     // A state with no ruler that Cliopatria or historical-basemaps draws on land CShapes leaves blank (loose) has borders no treaty
     // had settled: dotted, as before 1886, where the same sources' outlines are dotted. Only a span that ends before 1933 (LOOSE_TO:
     // the Kingdom of Hejaz and Nejd, the last such state, became Saudi Arabia in September 1932): the fills of later maps are
     // island states, or a state of today drawn for the few days between two of CShapes' dates.
-    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.loose && !owner && !claims && x.last < LOOSE_TO ? 1 : x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.loose && !owner && !claims && x.last < LOOSE_TO ? 1 : x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry, srcCode: srcOf(x, false, true) });
   }
   console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
@@ -5818,14 +5883,14 @@ const entries = catalogue.map((e, id) => {
   if (years) row.push(years);
   return row;
 });
-writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[9] ? r.slice(0, 7).concat([r[8] || 0, 1]) : r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), lo: csLo }));
+writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[9] ? r.slice(0, 7).concat([r[8] || 0, 1]) : r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), src: csParts.map((r) => r.srcCode ?? srcOf(r.p && !String(r.p.gwcode).startsWith("x:") ? { cs: r, name: r.name, first: r.start, last: r.end } : { ...r, first: r.start, last: r.end }, false, true)), lo: csLo }));
 writeFileSync(resolve(out, "modern-hi.json"), JSON.stringify({ hi: csHi }));
 // The treaty borders before 1886 and the unsettled ones after, by polity number (see FIRM and VAGUE).
 const pairIds = (names, what) => names.map((n) => { const i = idOf.get(n); if (i === undefined) console.warn(what + ": no polity named " + n); return i; }).filter((i) => i !== undefined);
 const firmPairs = FIRM.map(([a, b, y0, y1]) => [pairIds(a, "FIRM"), pairIds(b, "FIRM"), y0, y1]).filter(([a, b]) => a.length && b.length);
 const vaguePairs = VAGUE.map(([a, b, d0, d1]) => [pairIds(a, "VAGUE"), pairIds(b, "VAGUE"), dayOf(d0), dayOf(d1)]).filter(([a, b]) => a.length && b.length);
 console.log("borders: " + firmPairs.length + " treaty borders before 1886, " + vaguePairs.length + " unsettled ones after");
-writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, borders: { firm: firmPairs, vague: vaguePairs }, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
+writeFileSync(resolve(out, "eras.json"), JSON.stringify({ first: FIRST, srcKeys: SRC_KEYS, sources: SOURCES, borders: { firm: firmPairs, vague: vaguePairs }, maps: index, modern: { file: "modern.json", from: CS_FROM, to: CS_TO, changes: csChanges }, dated: { from: DATED_FROM, to: DATED_TO, chunks: datedChunks.map((c) => [c.from, c.file]), changes: datedChanges, days: datedDays }, polities: entries }));
 writeFileSync(resolve(out, "tags.json"), tagsJSON() + "\n");
 
 const landGeom = client.merge(prov, prov.objects.provinces.geometries);

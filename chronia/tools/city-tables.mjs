@@ -7,7 +7,7 @@ export const REGION_SWITCH = [
 ];
 
 export const CITY_SINCE = {
-  "Brasília": "1960-04-21", "Lelystad": "1967-01-01", "Canberra": "1913-03-12", "Islamabad": "1961-01-01", "Naypyidaw": "2005-11-06", "Abuja": "1976-02-03",
+  "Brasília": "1960-04-21", "Lelystad": "1967-01-01", "Almere Stad": "1984-01-01", "Canberra": "1913-03-12", "Islamabad": "1961-01-01", "Naypyidaw": "2005-11-06", "Abuja": "1976-02-03",
   "Chandigarh": "1952-01-01", "Belmopan": "1970-08-01", "Gaborone": "1964-01-01", "Nouakchott": "1958-01-01", "Tel Aviv": "1909-04-11",
   "Netanya": "1929-02-18", "Nahariyya": "1935-02-10", "Modi‘in Makkabbim Re‘ut": 1985,
   "Shenzhen": "1979-03-05", "Ciudad Guayana": "1961-07-02", "Brazzaville": 1880, "Lilongwe": "1904-01-01", "Kampala": 1890, "Nairobi": "1899-05-30",
