@@ -8,6 +8,9 @@
     "nrcan": { "label": "Natural Resources Canada, Territorial Evolution, 1867 to 1999", "kind": "official", "url": "https://open.canada.ca/data/en/dataset/cb568551-8893-11e0-a3fc-6cf049291510", "licence": "Open Government Licence – Canada" },
     "ohm": { "label": "OpenHistoricalMap", "kind": "dataset" },
     "wikipedia": { "label": "Wikipedia", "kind": "encyclopedia", "url": "https://en.wikipedia.org/" },
+    "istat": { "label": "ISTAT, the comuni of Italy (through openpolis’s geojson-italy)", "kind": "official", "url": "https://github.com/openpolis/geojson-italy", "licence": "CC BY 4.0" },
+    "pleiades": { "label": "Pleiades", "kind": "dataset", "url": "https://pleiades.stoa.org", "licence": "CC BY 3.0" },
+    "awmc": { "label": "Ancient World Mapping Center, regional names", "kind": "dataset", "url": "https://github.com/AWMC/geodata", "licence": "ODbL" },
     "editors": { "label": "Editors’ discretion", "kind": "editors" }
   },
   "borders": {
@@ -24,6 +27,7 @@
     "napoleonic": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
     "colony": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "australia": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
+    "italy": { "text": "ISTAT’s comuni grouped into zones around the places of Pleiades and the Ancient World Mapping Center, assembled by the editors", "ids": ["istat", "pleiades", "awmc", "editors"] },
     "acq": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "small": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "redraw": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
