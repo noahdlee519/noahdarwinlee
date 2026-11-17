@@ -126,7 +126,7 @@ The key is the `#key` section in `index.html`, one `<li data-key="…">` per row
 - approximate border, disputed land, and people: when the current map has any;
 - band: when the current map has a band of hunters, gatherers, or fishers (see step 3 of [Building](#building)).
 - marsh: only when a marsh was drawn in the last frame;
-- first-level division: when division lines were drawn in the last frame, or the current map has a member of a larger state (a state of the Holy Roman Empire or a Roman province), whose lines are drawn the same way.
+- first-level division: when division lines were drawn in the last frame, or, with first-level divisions on, the current map has a member of a larger state (a state of the Holy Roman Empire or a Roman province), whose lines are drawn the same way. The members' lines follow the View list's *First-level divisions* switch as the divisions do: turned off, Rome's provinces, the Empire's states, and the Latin League's cities are drawn as one colour with no lines between them, and the Roman provinces' names are left off too (`PROVINCE_OF`), so the Roman Empire reads as one state; the Holy Roman Empire's members and the Latin League's cities keep their names, being states.
 
 `syncKey()` runs whenever the date or a layer changes, and in each frame just after the division lines are drawn, so the division row follows the zoom and the layer. To add a row, add an `<li>` and a test. The key's box is one of the page's panels in `fixedBoxes()`, so names on the map keep clear of it.
 

@@ -2,6 +2,7 @@
   "use strict";
 
   var $ = function (id) { return document.getElementById(id); };
+  var PROVINCE_OF = /^(Western |Eastern )?Roman Empire$/;
   var canvas = $("globe");
   var ctx = canvas.getContext("2d");
   var R_KM = 6371.0088, D2R = Math.PI / 180, TAU = 2 * Math.PI, HALF_PI = Math.PI / 2;
@@ -1832,7 +1833,7 @@
     ctx.save();
     ctx.clip(landPath);
     ctx.beginPath(); traceArcs(ctx, L.kin); ctx.globalAlpha = 0.55; ctx.strokeStyle = pal.border; ctx.lineWidth = 0.6 + 0.3 * lw; ctx.stroke();
-    if (L.member && L.member.length) {
+    if (layers.subdivisions && L.member && L.member.length) {
       var mw = 0.7 + 0.3 * lw;
       ctx.beginPath(); traceArcs(ctx, L.member); ctx.globalAlpha = 0.7; ctx.lineWidth = mw; ctx.lineCap = "butt";
       ctx.setLineDash([mw * 4.2, mw * 2.6]); ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = "round";
@@ -3223,6 +3224,7 @@
     for (i = 0; i < order.length; i++) {
       var p = order[i], lab = p.label;
       if (!lab || lab[2] * kp < 0.5 || seen.has(p.id)) continue;
+      if (!layers.subdivisions && !p.group && p.member >= 0 && p.member !== p.id && PROVINCE_OF.test(polityName(p.member))) continue;
       var name = polityName(p.id);
       if (!name) continue;
       var feats = p.group ? featOf(snap.topo[lv], lv, lv === "hi" ? p.geoHi : p.geoLo).prep : L.feats[p.i], any = false;
@@ -7462,7 +7464,7 @@
     band: function (s) { return s.polys.some(function (p) { return p && p.band; }); },
     disputed: function (s) { return s.polys.some(function (p) { return p && p.claims; }); },
     // The lines between members of a larger state (the Holy Roman Empire, the Roman provinces) are its first-level divisions.
-    division: function (s) { return divDrawn || s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
+    division: function (s) { return divDrawn || layers.subdivisions && s.polys.some(function (p) { return p && p.member >= 0 && p.id !== p.member; }); },
     control: function () { return ctlDrawn; }
   };
   function syncKey() {
