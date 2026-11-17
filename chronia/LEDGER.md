@@ -37,6 +37,16 @@ Each entry:
 - Corrected (16 November 2026): the zones of comuni cut among their seeds (Rome's, among others) were wound the other way from the rest, so joining zones turned them into holes; Rome itself fell out of the Roman Kingdom and Republic from 650 BC, and other joined spans lost pieces. `tools/italy-zones.mjs` now winds every piece the same way. Rome's country tag now begins with the Roman Kingdom, so following Rome runs from 753 BC.
 - Left out: the Gallic sack (390 or 387 BC); Porsenna; the Tarquins' rule beyond Rome; Syracuse's rule of Rhegium (387 to 351 BC) and the wars of Dionysius and Agathocles; the Campanian legion at Rhegium (280 to 270 BC); Pyrrhus's campaigns (280 to 275 BC) as occupations; the Carni in Friuli; Ancon, Faesulae, and Pisae's ties to Rome before 264 BC, which are not dated; the towns of the Latin League's members that have no zone.
 
+## 3400 BC–1982 | Quebec | the lakes under the Caniapiscau and La Grande reservoirs
+
+- What changed: before the Caniapiscau, La Grande 2, and La Grande 3 reservoirs the map drew no water where they are, though the land was full of lakes, Lac Caniapiscau the largest. The lakes of at least 3 km² that lay under each are now drawn until the reservoir appears (1980, 1979, and 1982), traced from Landsat scenes of 1973 to 1977. La Grande 4 flooded no lake of that size. The Smallwood Reservoir was looked at and left: Landsat's first scenes, of July and August 1972, are from after its filling began in 1971, and already show water over most of the reservoir.
+- Applies to: none
+- Tables: `tools/lakes-before.py` (new), `tools/lakes-before.json` (new), `tools/build-geography.mjs`.
+- Sources: (1) Landsat 1 to 3 Multispectral Scanner, Collection 2 Level 1, band 7 (0.8 to 1.1 µm), U.S. Geological Survey, public domain, read through Microsoft's Planetary Computer (https://planetarycomputer.microsoft.com/dataset/landsat-c2-l1); the scenes for each reservoir are listed in `tools/lakes-before.json`; (2) the reservoirs' years as the map has them, from Natural Earth and `YEAR_ADD`; (3) for Smallwood, The Canadian Encyclopedia, "Churchill Falls" (the first units in service in December 1971), and English Wikipedia, "Lobstick Lake" and "Michikamau Lake" (the lakes merged into the reservoir when the river was impounded).
+- Confidence: high that these lakes were there and for their shapes at 100 m; medium for their edges, which follow one threshold between water and land, and for the smallest, since channels under about 300 m are dropped and a lake of 3 km² may be split or joined by them.
+- Alternatives: every water body, however small (not taken: the map's other lakes are the large ones); the old lakes kept inside the reservoir's outline only (not taken: a lake is kept whole when most of it lies inside).
+- Left out: lakes under 3 km²; the rivers' own width; the stages of each filling; the reservoirs from before Landsat that drowned lakes (Smallwood, Gouin, Pipmuacan, Cabonga, and Outardes 4), which need the old topographic maps, and Manicouagan's true shores (see the entry on its two lakes).
+
 ## 1850–1983 | the Netherlands | Almere Stad from 1984
 
 - What changed: Almere Stad, one of the cities with no known founding that the city build starts in 1850, stood on the map from 1850 on land that was still under the Zuiderzee until the Southern Flevoland polder fell dry in 1968. It now begins on 1 January 1984, when Almere became a municipality (the first house in Almere Haven was finished in 1976, and building began at Almere Stad in 1980). Its size from 1984 follows the old curve. `CITY_SINCE` has the date for the next run of `tools/build-cities.mjs`, whose sources are not in this build, so `data/cities-dated-minor.json` is set by hand to match.
@@ -46,6 +56,7 @@ Each entry:
 - Confidence: high.
 - Alternatives: 1976, the first house (not taken: that was Almere Haven, and the point is Almere Stad, begun in 1980).
 - Left out: Almere Haven and the city's other districts, which are not on the map.
+
 
 ## 3400 BC–1970 | Quebec | the two lakes under the Manicouagan Reservoir
 

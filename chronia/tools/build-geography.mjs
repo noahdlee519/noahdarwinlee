@@ -278,6 +278,13 @@ const MANIC = { km: 60, wide: 2.5, until: 1970 };
   addLake("Lac Manicouagan", null, at(MANIC.until), arc(90), 0.0008, r4);
   addLake("Lac Mouchalagane", null, at(MANIC.until), arc(270), 0.0008, r4);
 }
+// The lakes that lay under reservoirs dammed after Landsat began (tools/lakes-before.json, traced by lakes-before.py from
+// the scenes of the 1970s; see the README), drawn until the year the reservoir appears.
+Object.entries(readJSON(resolve(here, "lakes-before.json"))).forEach(([reservoir, d]) => {
+  const row = lakeOnly.find((r) => r[0] === reservoir);
+  if (!row || !row[2]) throw new Error("lakes-before.json: " + reservoir + " is not a dated reservoir");
+  d.lakes.forEach((l) => addLake(l.name, null, row[2], l.polys, 0.0008, r4));
+});
 
 const wet = readJSON(resolve(here, "wetlands.json"));
 const marshes = [];
