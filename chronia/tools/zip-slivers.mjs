@@ -401,7 +401,7 @@ export function densify(topo) {
     for (let i = 0; i + 1 < abs.length; i++) {
       const a = abs[i], b = abs[i + 1], la = a[0] * t.scale[0] + t.translate[0], pa = a[1] * t.scale[1] + t.translate[1], lb = b[0] * t.scale[0] + t.translate[0], pb = b[1] * t.scale[1] + t.translate[1];
       const edge = (Math.abs(la) > 179.99 && Math.abs(lb) > 179.99) || (Math.abs(pa) > 89.99 && Math.abs(pb) > 89.99) || Math.abs(pa) > 89.99 || Math.abs(pb) > 89.99;
-      if (!edge && (Math.abs(lb - la) > LONG_DEG || Math.abs(pb - pa) > LONG_DEG) && Math.abs(lb - la) < 180) {
+      if (!edge && (Math.abs(lb - la) > LONG_DEG * 1.1 || Math.abs(pb - pa) > LONG_DEG * 1.1) && Math.abs(lb - la) < 180) {
         const va = [Math.cos(pa * D2R) * Math.cos(la * D2R), Math.cos(pa * D2R) * Math.sin(la * D2R), Math.sin(pa * D2R)], vb = [Math.cos(pb * D2R) * Math.cos(lb * D2R), Math.cos(pb * D2R) * Math.sin(lb * D2R), Math.sin(pb * D2R)];
         const w = Math.acos(Math.max(-1, Math.min(1, va[0] * vb[0] + va[1] * vb[1] + va[2] * vb[2]))), n = Math.ceil(Math.max(Math.abs(lb - la), Math.abs(pb - pa)) / LONG_DEG);
         if (w > 1e-9) for (let k = 1; k < n; k++) {
@@ -445,7 +445,7 @@ export function closeSlivers(topo, km, outward, mend) {
       cutAll();
     }
     const wide = Math.min(MEND_MAX, Math.max(MEND_MIN, MEND_SHARE * km));
-    mended = mendFaces(topo, mend.spans, mend.people, { from: mend.from, to: mend.to, step: mend.step || 1, soft: mend.soft, id: mend.id, named: mend.named, holes: mend.holes, specks: mend.specks, timeFixes: mend.timeFixes, overWide: OVER_WIDE, overSmall: 3 * OVER_WIDE * OVER_WIDE, overBig: MEND_BIG * OVER_WIDE, log: mend.log, logOver: mend.logOver, name: mend.name, verify: mend.verify, near: mend.near, wide, small: 3 * wide * wide, big: MEND_BIG * wide });
+    mended = mendFaces(topo, mend.spans, mend.people, { from: mend.from, to: mend.to, step: mend.step || 1, soft: mend.soft, id: mend.id, named: mend.named, holes: mend.holes, handovers: mend.handovers, cut: mend.cut, specks: mend.specks, timeFixes: mend.timeFixes, overWide: OVER_WIDE, overSmall: 3 * OVER_WIDE * OVER_WIDE, overBig: MEND_BIG * OVER_WIDE, log: mend.log, logOver: mend.logOver, name: mend.name, verify: mend.verify, near: mend.near, wide, small: 3 * wide * wide, big: MEND_BIG * wide });
   }
   if (outward && (st.closed || (mended && mended.shapes))) outward(topo);
   return { long, cut, same, closed: st.closed, km2: Math.round(st.km2), dropped: st.dropped, turned: st.turned, apart: st.apart, mouths, mended };

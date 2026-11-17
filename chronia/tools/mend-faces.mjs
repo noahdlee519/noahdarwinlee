@@ -28,7 +28,7 @@ export function mendFaces(topo, spans, people, opt) {
   const t = topo.transform, geoms = topo.objects.p.geometries, nR = geoms.length, T0 = opt.from, T1 = opt.to;
   const arcs = topo.arcs.map((arc) => { let x = 0, y = 0; return arc.map((p) => { x += p[0]; y += p[1]; return [x, y]; }); });
   const n = arcs.length, key = (p) => p[0] * 4194304 + p[1];
-  const stats = { gaps: 0, overlaps: 0, matched: 0, faces: 0, km2: 0, shapes: 0, kept: 0, odd: 0, stuck: 0 };
+  const stats = { gaps: 0, overlaps: 0, matched: 0, handed: 0, faces: 0, km2: 0, shapes: 0, kept: 0, odd: 0, stuck: 0 };
   // Which shapes' rings use each half-edge (2k along arc k, 2k + 1 against it).
   const cnt = new Int32Array(2 * n + 1);
   const rings = (g, f) => { if (g.type === "Polygon") g.arcs.forEach(f); else if (g.type === "MultiPolygon") g.arcs.forEach((poly) => poly.forEach(f)); };
@@ -170,6 +170,20 @@ export function mendFaces(topo, spans, people, opt) {
   const cbox = new Map();
   const boxOf = (c) => { let b = cbox.get(c); if (!b) { b = [Infinity, Infinity, -Infinity, -Infinity]; for (const h of cyc[c]) for (const p of arcs[h >> 1]) { if (p[0] < b[0]) b[0] = p[0]; if (p[0] > b[2]) b[2] = p[0]; if (p[1] < b[1]) b[1] = p[1]; if (p[1] > b[3]) b[3] = p[1]; } cbox.set(c, b); } return b; };
   const within = (c) => { const b = boxOf(c), l = []; for (const [c0, x, y] of islands) if (x > b[0] && x < b[2] && y > b[1] && y < b[3] && find(cyc[c0][0] >> 1) !== find(cyc[c][0] >> 1) && inRing(cyc[c], x, y)) l.push(c0); return l; };
+  // For a report (opt.handovers): land two states both hold for under HOLE_DAYS, the one's row ending after the other's begins.
+  if (opt.handovers) {
+    const agg = new Map();
+    for (let c = 0; c < nC; c++) {
+      if (area[c] >= 0 || bad[c]) continue;
+      const l = cover(c);
+      for (const a of l) for (const b of l) {
+        if (a === b || opt.id[a] === opt.id[b] || !(spans[a][0] < spans[b][0] && spans[b][0] <= spans[a][1] && spans[a][1] < spans[b][1]) || spans[a][1] - spans[b][0] > HOLE_DAYS || spans[a][1] < T0 || spans[b][0] > T1) continue;
+        const k = a + '|' + b, o = agg.get(k) || { a, b, from: spans[b][0], to: spans[a][1], km2: 0 };
+        o.km2 -= area[c]; agg.set(k, o);
+      }
+    }
+    for (const o of agg.values()) opt.handovers.push(o);
+  }
   // For a report (opt.holes): land a state holds, loses, and holds again within a year, with nobody else on it between
   // (a change dated to one day in the row that ends and to another in the row that begins).
   if (opt.holes) {
@@ -227,9 +241,14 @@ export function mendFaces(topo, spans, people, opt) {
   // No shape loses more than LOSE of its land to overlaps mended, or gains more than GAIN by gaps (or a small patch's worth).
   const lost = new Float64Array(nR), gained = new Float64Array(nR);
   const mayLose = (r, c) => lost[r] - area[c] <= Math.max(LOSE * rowArea[r], OVER.small / 10), mayGain = (r, c) => gained[r] - area[c] <= Math.max(GAIN * rowArea[r], GAP.small);
-  const give = (c, r, w) => { const was = W[c * nR + r]; W[c * nR + r] = w; coverCache.delete(c); for (const c0 of within(c)) { W[c0 * nR + r] = w; coverCache.delete(c0); } if (!changed.has(r)) changed.set(r, 0); changed.set(r, changed.get(r) - area[c]); stats.faces++; stats.km2 -= area[c]; if (opt.log && -area[c] > (opt.logOver || 1e9)) { const p = arcs[cyc[c][0] >> 1][0]; opt.log((w ? 'gap ' : 'overlap ') + (-area[c]).toFixed(0) + ' km² wide ' + ((-4 * area[c]) / per[c]).toFixed(1) + ' at ' + (p[0] * t.scale[0] + t.translate[0]).toFixed(2) + ',' + (p[1] * t.scale[1] + t.translate[1]).toFixed(2) + ' row ' + r + ' ' + (opt.name ? opt.name(r) : '')); } return was; };
+  const undo = new Map();
+  const note = (c, r) => { let l = undo.get(r); if (!l) undo.set(r, (l = [])); l.push([c, W[c * nR + r]]); };
+  const give = (c, r, w) => { const was = W[c * nR + r]; note(c, r); W[c * nR + r] = w; coverCache.delete(c); for (const c0 of within(c)) { note(c0, r); W[c0 * nR + r] = w; coverCache.delete(c0); } if (!changed.has(r)) changed.set(r, 0); changed.set(r, changed.get(r) - area[c]); stats.faces++; stats.km2 -= area[c]; if (opt.log && -area[c] > (opt.logOver || 1e9)) { const p = arcs[cyc[c][0] >> 1][0]; opt.log((w ? 'gap ' : 'overlap ') + (-area[c]).toFixed(0) + ' km² wide ' + ((-4 * area[c]) / per[c]).toFixed(1) + ' at ' + (p[0] * t.scale[0] + t.translate[0]).toFixed(2) + ',' + (p[1] * t.scale[1] + t.translate[1]).toFixed(2) + ' row ' + r + ' ' + (opt.name ? opt.name(r) : '')); } return was; };
   const faces = [];
   for (let c = 0; c < nC; c++) if (area[c] < 0 && !bad[c]) faces.push(c);
+  // Handovers (opt.cut, pairs of rows): a row made by splitRows() for the days its state and the next both held the land
+  // gives up every face the newcomer covers, whatever its size.
+  for (const [r, b] of opt.cut || []) for (let c = 0; c < nC; c++) if (area[c] < 0 && !bad[c] && W[c * nR + r] > 0 && W[c * nR + b] > 0) { give(c, r, 0); stats.handed -= area[c]; }
   for (let pass = 0; pass < PASSES; pass++) {
     let did = 0;
     for (const c of faces) {
@@ -309,11 +328,10 @@ export function mendFaces(topo, spans, people, opt) {
   };
   const planarArea = (g) => { let s = 0; rings(g, (ring) => { if (ring.length) s -= signedRing(ring.map(he)); }); return s; };
   const inR = (c, r) => W[c * nR + r] > 0;
-  for (const [r, moved] of changed) {
+  const ringsOf = (r) => {
     const edgeHs = [], isEdge = new Set();
     for (let c = 0; c < nC; c++) if (inR(c, r)) for (const h of cyc[c]) if (!inR(cycleOf[h ^ 1], r)) { edgeHs.push(h); isEdge.add(h); }
     const done = new Set(), out = [];
-    let fail = false;
     for (const h0 of edgeHs) {
       if (done.has(h0)) continue;
       const ring = [];
@@ -322,33 +340,37 @@ export function mendFaces(topo, spans, people, opt) {
         done.add(h); ring.push(h);
         let g = next(h), turns = 0;
         while (!isEdge.has(g) && turns++ < 64) g = next(g ^ 1);
-        if (!isEdge.has(g)) { fail = true; break; }
+        if (!isEdge.has(g)) return null;
         h = g;
       } while (h !== h0 && ring.length < 1e6 && !done.has(h));
-      if (fail || h !== h0) { fail = true; break; }
+      if (h !== h0) return null;
       out.push(ring);
     }
-    const before = planarArea(geoms[r]);
-    if (!fail) {
-      const ext = [], holes = [];
-      for (const ring of out) { const s = signedRing(ring); if (s < 0) ext.push({ ring, a: -s, holes: [] }); else if (s > 0) holes.push(ring); }
-      ext.sort((a, b) => a.a - b.a);
-      for (const hole of holes) {
-        const l = line(hole[0]), dx = l[1][0] - l[0][0], dy = l[1][1] - l[0][1], d = Math.hypot(dx, dy) || 1, x = (l[0][0] + l[1][0]) / 2 + (dy / d) * 0.25, y = (l[0][1] + l[1][1]) / 2 - (dx / d) * 0.25;
-        const home = ext.find((e) => inRing(e.ring, x, y));
-        if (home) home.holes.push(hole); else fail = true;
-      }
-      if (!fail) {
-        const toArcs = (ring) => ring.map((h) => (h & 1 ? ~(h >> 1) : h >> 1));
-        const made = { type: "MultiPolygon", arcs: ext.sort((a, b) => b.a - a.a).map((e) => [toArcs(e.ring)].concat(e.holes.map(toArcs))) };
-        const after = planarArea(made);
-        // The change must be what the faces explain (a shape that lay over itself may lose that much again).
-        if (opt.log && !(Math.abs(after - before) <= Math.abs(moved) * 1.5 + 3 + 1e-5 * before)) opt.log('  area after=' + after.toFixed(0));
-        if (opt.verify) { if (!(Math.abs(after - before) <= Math.abs(moved) * 1.5 + 3 + 1e-5 * before)) { stats.kept++; opt.log('verify row ' + r + ' before ' + before.toFixed(0) + ' after ' + after.toFixed(0) + ' bad=' + (() => { let b = 0, g = 0; for (let c = 0; c < nC; c++) if (inR(c, r)) { if (bad[c]) b++; else g++; } return b + '/' + (b + g); })()); } else stats.shapes++; continue; }
-        if (Math.abs(after - before) <= Math.abs(moved) * 1.5 + 3 + 1e-5 * before) { geoms[r].type = "MultiPolygon"; geoms[r].arcs = made.arcs; stats.shapes++; continue; }
-      }
+    const ext = [], holes = [];
+    for (const ring of out) { const s = signedRing(ring); if (s < 0) ext.push({ ring, a: -s, holes: [] }); else if (s > 0) holes.push(ring); }
+    ext.sort((a, b) => a.a - b.a);
+    for (const hole of holes) {
+      const l = line(hole[0]), dx = l[1][0] - l[0][0], dy = l[1][1] - l[0][1], d = Math.hypot(dx, dy) || 1, x = (l[0][0] + l[1][0]) / 2 + (dy / d) * 0.25, y = (l[0][1] + l[1][1]) / 2 - (dx / d) * 0.25;
+      const home = ext.find((e) => inRing(e.ring, x, y));
+      if (!home) return null;
+      home.holes.push(hole);
     }
-    if (opt.log) opt.log('kept row ' + r + ' fail=' + fail + ' before=' + before.toFixed(0) + ' moved=' + moved.toFixed(1) + ' rings=' + out.length);
+    const toArcs = (ring) => ring.map((h) => (h & 1 ? ~(h >> 1) : h >> 1));
+    const made = { type: "MultiPolygon", arcs: ext.sort((a, b) => b.a - a.a).map((e) => [toArcs(e.ring)].concat(e.holes.map(toArcs))) };
+    return { made, area: planarArea(made) };
+  };
+  for (const [r, moved] of changed) {
+    // The shape is drawn from its faces as they are now and as they were: the two must differ by what the mended faces
+    // explain, and the shape as it was must be the shape the file has (but for land it lay over twice), or it is left alone.
+    const now = ringsOf(r), log = undo.get(r) || [];
+    for (let i = log.length - 1; i >= 0; i--) { const [c, was] = log[i]; log[i][1] = W[c * nR + r]; W[c * nR + r] = was; }
+    const old = opt.verify && !moved ? now : ringsOf(r);
+    for (let i = 0; i < log.length; i++) { const [c, is] = log[i]; W[c * nR + r] = is; }
+    const before = planarArea(geoms[r]);
+    const fine = now && old && Math.abs(now.area - old.area) <= Math.abs(moved) * 1.5 + 3 + 1e-6 * before && Math.abs(old.area - before) <= Math.max(0.005 * before, 60);
+    if (opt.verify && !moved) { if (fine) stats.shapes++; else { stats.kept++; if (opt.log) opt.log('verify row ' + r + ' before ' + before.toFixed(0) + ' drawn again ' + (old ? old.area.toFixed(0) : 'failed')); } continue; }
+    if (fine) { geoms[r].type = "MultiPolygon"; geoms[r].arcs = now.made.arcs; stats.shapes++; continue; }
+    if (opt.log) opt.log('kept row ' + r + ' before=' + before.toFixed(0) + ' as it was=' + (old ? old.area.toFixed(0) : 'failed') + ' now=' + (now ? now.area.toFixed(0) : 'failed') + ' moved=' + moved.toFixed(1));
     stats.kept++;
   }
   // For a report (opt.specks): slim faces one state holds with other states all round and none of its own land beside it.
@@ -518,4 +540,33 @@ export function landTest(land) {
     for (let i = 0; i < l.length; i += 4) { const y0 = l[i + 1], y1 = l[i + 3]; if ((y0 > lat) !== (y1 > lat) && lon < l[i] + ((lat - y0) / (y1 - y0)) * (l[i + 2] - l[i])) odd = !odd; }
     return odd;
   };
+}
+
+// Handovers: land that one state's row still holds for some days or months after another state's row has begun on it (the
+// sources date the change to one day in the row that begins and to a later one in the row that ends: Peru from its
+// independence on 28 July 1821, under a row of the Spanish Empire that runs to 26 September). For each such pair of at least
+// SPLIT_KM2, as mendFaces reports them (opt.handovers), the older row is split in time: it ends the day before the newcomer
+// begins, and a copy of it runs from that day to its old end. mendFaces then takes the newcomer's land from the copy
+// (opt.cut). No date of either state changes, and nothing is left without an owner. The copy is added at the end of the
+// file's rows, of both levels' shapes, and of the groups the row belongs to. Returns the pairs to cut.
+export const SPLIT_KM2 = 1000;
+export function splitRows(file, hi, modern, handovers) {
+  const info = mendInfo(file, modern), byRow = new Map(), cut = [];
+  for (const h of handovers) { if (h.km2 < SPLIT_KM2) continue; if (!byRow.has(h.a)) byRow.set(h.a, []); byRow.get(h.a).push(h); }
+  for (const [a, list] of byRow) {
+    const starts = [...new Set(list.map((h) => info.spans[h.b][0]))].sort((x, y) => x - y), end = info.spans[a][1];
+    let prev = a;
+    starts.forEach((s, k) => {
+      // the row before ends the day before; the copy runs from s to the next start, or to the old end
+      const row = file.rows.length, last = k + 1 === starts.length, to = last ? end : starts[k + 1] - 1;
+      file.rows.push(file.rows[a].slice());
+      if (modern && !isFinite(to)) file.rows[row][3] = -1;
+      for (const t of [file.lo, hi.hi]) t.objects.p.geometries.push(JSON.parse(JSON.stringify(t.objects.p.geometries[a])));
+      for (const g of file.groups || []) if (g[3].includes(a)) g[3].push(row);
+      applyTimeFixes(file, modern, [{ row: prev, to: s - 1 }, isFinite(to) ? { row, from: s, to } : { row, from: s }]);
+      for (const h of list) if (info.spans[h.b][0] <= s) cut.push([row, h.b]);
+      prev = row;
+    });
+  }
+  return cut;
 }
