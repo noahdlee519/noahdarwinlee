@@ -1,0 +1,46 @@
+{
+  "sources": {
+    "cliopatria": { "label": "Cliopatria", "kind": "dataset", "url": "https://doi.org/10.1038/s41597-025-04516-9" },
+    "cshapes": { "label": "CShapes 2.0", "kind": "dataset", "url": "https://icr.ethz.ch/data/cshapes/", "licence": "CC BY-NC-SA 4.0" },
+    "hb": { "label": "historical-basemaps", "kind": "dataset", "url": "https://github.com/aourednik/historical-basemaps", "licence": "GPL-3.0" },
+    "ne": { "label": "Natural Earth", "kind": "dataset", "url": "https://www.naturalearthdata.com/", "licence": "public domain" },
+    "units": { "label": "Natural Earth and national mapping agencies' units", "kind": "dataset" },
+    "nrcan": { "label": "Natural Resources Canada, Territorial Evolution, 1867 to 1999", "kind": "official", "url": "https://open.canada.ca/data/en/dataset/cb568551-8893-11e0-a3fc-6cf049291510", "licence": "Open Government Licence – Canada" },
+    "ohm": { "label": "OpenHistoricalMap", "kind": "dataset" },
+    "wikipedia": { "label": "Wikipedia", "kind": "encyclopedia", "url": "https://en.wikipedia.org/" },
+    "editors": { "label": "Editors' discretion", "kind": "editors" }
+  },
+  "borders": {
+    "clio": { "text": "Cliopatria", "ids": ["cliopatria"] },
+    "cs": { "text": "CShapes 2.0", "ids": ["cshapes"] },
+    "hb": { "text": "historical-basemaps, filling land Cliopatria leaves blank", "ids": ["hb"] },
+    "member": { "text": "historical-basemaps, drawn by the editors inside a larger state from Cliopatria", "ids": ["hb", "cliopatria", "editors"] },
+    "carry": { "text": "historical-basemaps: an extent from its nearest map, carried to these years by the editors", "ids": ["hb", "editors"] },
+    "extend": { "text": "The shape of the years before, from Cliopatria or historical-basemaps, carried on by the editors", "ids": ["cliopatria", "hb", "editors"] },
+    "stage": { "text": "Cliopatria, redrawn year by year by the editors", "ids": ["cliopatria", "editors"] },
+    "overlap": { "text": "Land two Cliopatria shapes both cover, marked as disputed by the editors", "ids": ["cliopatria", "editors"] },
+    "early": { "text": "Editors' discretion: an approximate extent built from Natural Earth units", "ids": ["editors", "ne"] },
+    "medieval": { "text": "Natural Earth and national mapping agencies' units, assembled by the editors", "ids": ["units", "editors"] },
+    "napoleonic": { "text": "Natural Earth and national mapping agencies' units, assembled by the editors", "ids": ["units", "editors"] },
+    "colony": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
+    "australia": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
+    "acq": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
+    "small": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
+    "redraw": { "text": "Natural Earth and national mapping agencies' units, assembled by the editors", "ids": ["units", "editors"] },
+    "dispute": { "text": "Natural Earth's disputed areas, dated by the editors", "ids": ["ne", "editors"] },
+    "nrcan": { "text": "Natural Resources Canada's historical boundaries", "ids": ["nrcan"] },
+    "seam": { "text": "CShapes 2.0's shape of 1886, carried back to 1885 by the editors", "ids": ["cshapes", "editors"] },
+    "backdate": { "text": "CShapes 2.0's shape of 1886, carried back by the editors to the year the state began", "ids": ["cshapes", "editors"] },
+    "back": { "text": "A later CShapes 2.0 shape, carried back by the editors", "ids": ["cshapes", "editors"] },
+    "ww2": { "text": "OpenHistoricalMap and Natural Earth units, assembled by the editors", "ids": ["ohm", "ne", "editors"] }
+  },
+  "name": {
+    "source": { "text": "The source's own name", "ids": [] },
+    "editors": { "text": "Editors' discretion", "ids": ["editors"] }
+  },
+  "dates": {
+    "source": { "text": "The source's own years", "ids": [] },
+    "days": { "text": "The source's own years, with the day set by the editors", "ids": ["editors"] },
+    "editors": { "text": "Editors' discretion", "ids": ["editors"] }
+  }
+}

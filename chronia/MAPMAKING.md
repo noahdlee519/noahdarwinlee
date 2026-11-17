@@ -153,6 +153,7 @@ These follow the rules already used for 1400 to 1885 (see the README's [Names fi
 
 - **When and where:** the map years or year range, and the region.
 - **What changed:** the polity, and the border, name, ruler, or status, with the table entries touched.
+- **Applies to:** the polities whose borders, dates, or names the entry's sources back, spelled as the card shows them and separated by semicolons, then " | " and the years if they differ from the heading's (`Luxembourg; Duchy of Limburg | 1839–1866`); `none` for an entry about the whole map, the page, or the geography. The card's Sources section shows the entry's sources for a polity it names, at a date within those years (see the README's [Sources on the card](README.md#sources-on-the-card)), so a name that is not spelled as the card shows it is not found.
 - **Sources:** at least two, with author, title, year, and page, plate, or URL.
 - **Confidence:** high, medium, or low, with one sentence on why.
 - **Alternatives:** the competing views and why they were not taken.
