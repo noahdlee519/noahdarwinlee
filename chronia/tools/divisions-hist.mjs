@@ -121,7 +121,7 @@ async function histogisUnits(dir, test) {
   for (const u of list.filter(test)) out.push(await fetchTo(resolve(dir, u.id + ".json"), HG_API + "tempspatial/" + u.id + "/?format=json", (j) => j.type === "Feature"));
   return out;
 }
-async function histogis(key, names, test, english, source, until) {
+async function histogis(key, names, test, english, source, until, mend) {
   const dir = resolve(cache, "hg");
   mkdirSync(dir, { recursive: true });
   const units = await histogisUnits(dir, test);
@@ -131,9 +131,29 @@ async function histogis(key, names, test, english, source, until) {
     const last = until && f.properties.end_date > until ? until : f.properties.end_date;
     return { type: "Feature", properties: { name, first: f.properties.start_date, last }, geometry: dropSmall(f.geometry) };
   });
+  if (mend) mend(feats);
   return { key, names, source: "HistoGIS, " + source, licence: "CC BY 4.0", feats, maps: units.length };
 }
-const austria = () => histogis("at", ["Austrian Empire", "Austria-Hungary"], (u) => /^Aust(rian|ro-Hungarian) Empire Crownlands /.test(u.source_name), HG_EN, "the crown lands of the Austrian Empire and Austria-Hungary");
+// HistoGIS draws Slavonia as a second piece of "Freie Stadt Fiume mit Gebiet" (22 December 1867 to 31 October 1918), and its
+// Croatia-Slavonia of those years without it, so Slavonia was named Fiume. The piece east of FIUME_EAST goes to
+// Croatia-Slavonia, whose kingdom it was a half of from the Settlement of 1868, and Fiume keeps its own town and district
+// (the corpus separatum, under Hungary).
+const FIUME_EAST = 15.5;
+function fiumeFix(feats) {
+  const fiume = feats.find((f) => f.properties.name === "Fiume");
+  if (!fiume) return;
+  const east = (poly) => d3.geoCentroid({ type: "Polygon", coordinates: poly })[0] > FIUME_EAST;
+  const slavonia = fiume.geometry.coordinates.filter(east);
+  if (!slavonia.length) return;
+  fiume.geometry = { type: "MultiPolygon", coordinates: fiume.geometry.coordinates.filter((p) => !east(p)) };
+  for (const f of feats) {
+    if (f.properties.name !== "Croatia-Slavonia" || f.properties.first < fiume.properties.first || f.properties.last > fiume.properties.last) continue;
+    const t = server.topology({ d: { type: "FeatureCollection", features: [f, { type: "Feature", properties: {}, geometry: { type: "MultiPolygon", coordinates: slavonia } }] } }, 1e7);
+    f.geometry = client.merge(t, t.objects.d.geometries);
+  }
+  if (!fiume.geometry.coordinates.length) feats.splice(feats.indexOf(fiume), 1);
+}
+const austria = () => histogis("at", ["Austrian Empire", "Austria-Hungary"], (u) => /^Aust(rian|ro-Hungarian) Empire Crownlands /.test(u.source_name), HG_EN, "the crown lands of the Austrian Empire and Austria-Hungary", undefined, fiumeFix);
 
 // The Kingdom of Prussia's provinces, from HistoGIS, from 9 June 1815 until the German Empire (31 December 1870):
 // after that, Prussia is one of the Empire's states, and its provinces are below the first level.
