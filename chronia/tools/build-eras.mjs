@@ -1559,6 +1559,23 @@ const NAME_FIX = [
   ["Boii", "Boii", -600, -324, { people: 1, wiki: "Boii" }],
   ["Blemmyes", "Blemmyes", -600, 649, { people: 1, wiki: "Blemmyes" }],
   ["Curonians", "Balts", -600, 199, { people: 1, wiki: "Balts" }],
+  // The Malabar Coast (a reader's report of 9 November 2026). historical-basemaps' map of 1715 marks its "Hindu kingdoms" of the
+  // west coast as the Netherlands', and its maps of 1783 and 1800 mark Malabar, Cochin, and Travancore so; the Dutch East India
+  // Company held forts and factories there (Dutch Malabar, 1661 to 1795), not the kingdoms. The strip is the kingdoms of Malabar
+  // (Calicut, Cochin, Venad and Travancore, Kolathunadu, and the smaller ones) with no ruler; the pieces left elsewhere keep the
+  // source's name with no ruler. Travancore beat the Company at Colachel in 1741 and was never Dutch; it is the East India
+  // Company's protected ally from the treaty of 1795. Malabar (the Zamorin's Calicut and its neighbours) is Mysore's from Hyder
+  // Ali's conquest of 1766 and the Company's from the Treaty of Seringapatam of 18 March 1792. Cochin, the Dutch Company's ally,
+  // is the East India Company's tributary from the treaty of 6 January 1791. These rows come first: a rule's box parts a span's
+  // pieces in the order of the rules.
+  ["Hindu kingdoms", "Kingdoms of Malabar", 1675, 1756, { box: [75.5, 9.5, 77, 11.2], ruler: "", wiki: "History of Kerala" }],
+  ["Hindu kingdoms", "Hindu kingdoms", 1675, 1756, { ruler: "" }],
+  ["Travancore", "Travancore", 1749, 1794, { ruler: "" }],
+  ["Travancore", "Travancore", 1795, 1885, { ruler: "@britain" }],
+  ["Malabar", "Malabar", 1749, 1765, { ruler: "" }],
+  ["Malabar", "Malabar", 1766, 1791, { ruler: "Kingdom of Mysore" }],
+  ["Malabar", "Malabar", 1792, 1814, { ruler: "@britain" }],
+  ["Cochin", "Cochin", 1791, 1814, { ruler: "@britain" }],
   ["Hindu kingdoms", "Iron Age chieftainships", -600, 476, { box: [73, 7, 81, 15], people: 1, wiki: "South Indian Iron Age" }],
   ["Hindu kingdoms", "Indian kingdoms and republics", -600, 476, { wiki: "Mahajanapadas" }],
   ["Hindu kingdoms and republics", "Indian kingdoms and republics", -600, 49, { wiki: "Mahajanapadas" }],
@@ -2183,6 +2200,23 @@ const SMALL = [
   // Virgin Islands" with no owner, so that they stood as an independent state to 1942: Denmark's until the transfer of 31 March 1917
   // (the treaty of 4 August 1916), the United States' from that day. CARRY keeps the Danish name to the transfer.
   { name: "United States Virgin Islands", shape: { c: "VIR" }, periods: [["1886-01-01", "1917-03-30", "colony", COPENHAGEN], ["1917-03-31", CS_TO, "dependency", WASHINGTON]] },
+  // The British islands of the Lesser Antilles and the other small British territories of the Caribbean, which historical-basemaps
+  // draws on some of its maps only (Saint Lucia, Saint Vincent, and Grenada were blank from 1886 to 1906, and every one of them
+  // from 1953 to 1976, the map of 1960 leaving them out) and the British Virgin Islands and the Caymans on none: the United
+  // Kingdom's colonies from 1886, and states from their independence (Grenada 7 February 1974, Dominica 3 November 1978, Saint
+  // Lucia 22 February 1979, Saint Vincent 27 October 1979, Antigua and Barbuda 1 November 1981, Saint Kitts and Nevis 19 September
+  // 1983). Their years as associated states (1967 or 1969 to independence) are drawn as the colony's.
+  { name: "Saint Lucia", shape: { c: "LCA" }, periods: [["1886-01-01", "1979-02-21", "colony", LONDON, "fill"], ["1979-02-22", CS_TO, "state", null, "fill"]] },
+  { name: "Saint Vincent and the Grenadines", shape: { c: "VCT" }, periods: [["1886-01-01", "1979-10-26", "colony", LONDON, "fill"], ["1979-10-27", CS_TO, "state", null, "fill"]] },
+  { name: "Grenada", shape: { c: "GRD" }, periods: [["1886-01-01", "1974-02-06", "colony", LONDON, "fill"], ["1974-02-07", CS_TO, "state", null, "fill"]] },
+  { name: "Dominica", shape: { c: "DMA" }, periods: [["1886-01-01", "1978-11-02", "colony", LONDON, "fill"], ["1978-11-03", CS_TO, "state", null, "fill"]] },
+  { name: "Antigua and Barbuda", shape: { c: "ATG" }, periods: [["1886-01-01", "1981-10-31", "colony", LONDON, "fill"], ["1981-11-01", CS_TO, "state", null, "fill"]] },
+  { name: "Saint Kitts and Nevis", shape: { c: "KNA" }, periods: [["1886-01-01", "1983-09-18", "colony", LONDON, "fill"], ["1983-09-19", CS_TO, "state", null, "fill"]] },
+  { name: "Montserrat", shape: { c: "MSR" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Anguilla", shape: { c: "AIA" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "British Virgin Islands", shape: { c: "VGB" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Cayman Islands", shape: { c: "CYM" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
+  { name: "Turks and Caicos Islands", shape: { c: "TCA" }, periods: [["1886-01-01", CS_TO, "colony", LONDON, "fill"]] },
   { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", CS_TO, "dependency", COPENHAGEN, "fill"]] },
   { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", CS_TO, "dependency", OSLO, "fill"]] },
   { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", CS_TO, "colony", LONDON, "fill"]] },
@@ -4864,10 +4898,13 @@ const CS_BACK = [
   { gw: "696", until: "1892-03-07", names: [["1886-01-01", "Trucial States", 2, "United Kingdom"]] }
 ];
 const HB_MODERN_FROM = 1880;
-const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"], ["United States Virgin Islands"]];
+const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"], ["United States Virgin Islands"],
+  ["Saint Lucia"], ["Saint Vincent and the Grenadines"], ["Grenada"], ["Dominica"], ["Antigua and Barbuda"], ["Saint Kitts and Nevis"], ["Montserrat"], ["Anguilla"], ["Turks and Caicos Islands"]];
 // Cliopatria's Greenland, the south-western coast alone, is left out too: the small territories' table draws the whole island as
 // Denmark's colony, and the coast beside it came out as a second, rulerless Danish Greenland.
-const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland"]);
+// The last six are the islands of the British Lesser Antilles, which Cliopatria begins years off their independence (Antigua and
+// Saint Kitts in 1967, Saint Vincent in 1969, Grenada in 1976); the small territories' table draws them with their days.
+const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland", "Saint Kitts", "Antigua and Barbuda", "Saint Vincent", "Grenada", "Commonwealth of Dominica", "Saint Lucia"]);
 // Cliopatria's polities from 1886 that it draws with no ruler, though they are a state's dependencies: the scattered "British Overseas
 // Territories" of its last map.
 const CLIO_MODERN_RULER = { "British Overseas Territories": "United Kingdom" };
