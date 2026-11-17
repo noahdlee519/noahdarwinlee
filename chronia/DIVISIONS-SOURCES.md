@@ -43,7 +43,7 @@ The start date is when CHRONIA's divisions began before this work; "Now" is what
 | Country | Started | Now | From |
 |---------|---------|-----|------|
 | Canada | 1912 | **1867** | NRCan |
-| Austria | 1958 | **1815 to 1918**, as the crown lands of the Austrian Empire and Austria-Hungary | HistoGIS |
+| Austria | 1958 | **1815 to 1918**, as the crown lands of the Austrian Empire and Austria-Hungary | HistoGIS HistoGIS draws Slavonia as a second piece of "Freie Stadt Fiume mit Gebiet" (1867 to 1918), so Slavonia was named Fiume; that piece is joined to Croatia-Slavonia (`fiumeFix` in `tools/divisions-hist.mjs`), and Fiume's own district, under 300 km², isn't drawn. |
 | Prussia | none | **1815 to 1870**, its provinces | HistoGIS |
 | Germany | 1949 | **1867 to 1945**, the states | OpenHistoricalMap |
 | Italy | 1948 | **1861**, as compartimenti | ISTAT |
