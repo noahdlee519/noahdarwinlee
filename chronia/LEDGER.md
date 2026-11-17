@@ -18,6 +18,16 @@ Each entry:
 
 ---
 
+## 3400 BC–1970 | Quebec | the two lakes under the Manicouagan Reservoir
+
+- What changed: before the Manicouagan Reservoir (the ring round René-Levasseur Island) the map drew no water there at all, though two long lakes lay in the ring: Lac Manicouagan on the east side and Lac Mouchalagane on the west. Both are now drawn until 1970. The reservoir appears from 1970, when the Daniel-Johnson dam was commissioned, not from 1960 (Natural Earth's year). The lakes are a reconstruction, not a trace: each is a band 2.5 km wide and 60 km long along the middle of today's ring, centred due east and due west of the island.
+- Applies to: none
+- Tables: `tools/build-geography.mjs` (`MANIC`, and `YEAR_FIX` for the reservoir); `tools/geography.test.mjs` (new).
+- Sources: (1) L. Chassiot and others, "The morpho-sedimentary record of impact crater Lake Manicouagan", EGU General Assembly 2023, EGU23-10214, https://doi.org/10.5194/egusphere-egu23-10214 (the dam's completion in 1970 flooded two lakes 60 km long, on the east and west sides of the inner ring, under 135 m of water); (2) Institut nordique du Québec, "Les carottes de Manicouagan", 28 January 2026, https://inq.ulaval.ca/en/Les-carottes-de-Manicouagan (Lake Manicouagan to the east and Lake Mouchalagane to the west, forming a slight arc; Lake Manicouagan 60 km long and 2 to 3 km wide; the dam raised the water 130 m and joined them); (3) Commission de toponymie du Québec, "Réservoir Manicouagan", https://toponymie.gouv.qc.ca/ct/ToposWeb/Fiche.aspx?no_seq=38461 (two bodies of water of about the same size, in arcs facing each other; Lac Mouchalagane's outlet joined the foot of Lac Manicouagan); (4) Hydro-Québec, "Daniel-Johnson dam and Manic-5 generating station" (the reservoir filled from 1964 to 1977; the dam in service since 1970); (5) Encyclopaedia Britannica, "Daniel-Johnson Dam" (the dam finished in 1968; the filling begun in 1963 and ended in 1977).
+- Confidence: high that the two lakes were there, which side each was on, and their length and width; low for their exact line and where their ends lay, which are reconstructed; medium for 1970 as the reservoir's year, since the water rose over thirteen years.
+- Alternatives: the reservoir from 1964, when the filling began, or 1977, when it ended (not taken: 1970 is the dam's commissioning and the year the sources give for the drowning of the lakes); showing the reservoir at every date, as for the lakes a dam only raised (not taken: the ring is the reservoir's, and did not exist).
+- Left out: the lakes' true shores, to be traced from the topographic maps of the 1950s when the build can reach them; the river that joined the two lakes south of the island; the stages of the filling. The same fault at other reservoirs that drowned natural lakes, each needing the old shores: the Smallwood Reservoir (Michikamau Lake), Caniapiscau, Gouin, La Grande 3 and 4, Pipmuacan, Cabonga, and Outardes 4.
+
 ## 1675–1885 | southern India | the Malabar Coast is not Dutch (a reader's report)
 
 - What changed: a reader reported (9 November 2026, at July 1748) that the map showed Dutch rule over a wide stretch of the Malabar Coast, under the vague label "Hindu kingdoms". Both were faults, and the same fault ran on to 1814:

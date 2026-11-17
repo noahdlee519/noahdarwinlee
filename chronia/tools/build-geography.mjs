@@ -117,7 +117,7 @@ const RAISED = new Set([
   "Lake Coleridge", "Lake Monowai", "Paduskoye More", "Lake Péribonca", "Lac Low", "Brantley Lake"
 ]);
 const YEAR_FIX = {
-  "Wheeler Lake": 1936, "Trinity Lake": 1962, "American Falls Reservoir": 1927, "Wyangala Reservoir": 1935, "Embalse de Orellana": 1961
+  "Réservoir Manicouagan": 1970, "Wheeler Lake": 1936, "Trinity Lake": 1962, "American Falls Reservoir": 1927, "Wyangala Reservoir": 1935, "Embalse de Orellana": 1961
 };
 const YEAR_ADD = {
   "Vilyuy Reservoir": 1967, "Réservoir de La Grande 2": 1979, "Repressa de Jupia": 1973, "Embalse de Guri": 1968,
@@ -234,6 +234,50 @@ const ellipse = (lon, lat, aKm, bKm, n) => {
   return [[ring]];
 };
 addLake("Whittlesey Mere", at(1653), at(1851), ellipse(-0.225, 52.49, 1.9, 1.3, 36), 0.0008, r4);
+// Lac Manicouagan and Lac Mouchalagane, the two lakes that the Manicouagan Reservoir drowned (see the README): arcs facing
+// each other across the island, east and west, each about 60 km long and 2 to 3 km wide. Their shores are not in any source
+// the build can read, so each is drawn along the middle of today's ring of water (halfway from the island's shore to the
+// outer shore, or 4 km out where the ring is wider than 8 km, smoothed), MANIC.km long, centred due east and due west of the island's
+// centre, MANIC.wide km wide, and kept inside today's water.
+const MANIC = { km: 60, wide: 2.5, until: 1970 };
+{
+  const res = lakeRow("Réservoir Manicouagan")[4], rings = res.slice().sort((a, b) => b[0].length - a[0].length)[0];
+  const outer = rings[0], island = rings.slice(1).sort((a, b) => b.length - a.length)[0];
+  // the island's centre, by area, in degrees (the island is small enough for the plane)
+  const c = (() => { let a = 0, x = 0, y = 0; for (let i = 1; i < island.length; i++) { const p = island[i - 1], q = island[i], w = p[0] * q[1] - q[0] * p[1]; a += w; x += (p[0] + q[0]) * w; y += (p[1] + q[1]) * w; } return [x / (3 * a), y / (3 * a)]; })();
+  const kx = 111.32 * Math.cos(c[1] * Math.PI / 180), ky = 110.57;
+  const xy = (p) => [(p[0] - c[0]) * kx, (p[1] - c[1]) * ky];
+  // The distances from the centre at which a ray on an azimuth (degrees clockwise from north) crosses a ring, in km.
+  const cross = (ring, az) => {
+    const d = [Math.sin(az * Math.PI / 180), Math.cos(az * Math.PI / 180)], out = [];
+    for (let i = 1; i < ring.length; i++) {
+      const a = xy(ring[i - 1]), b = xy(ring[i]), e = [b[0] - a[0], b[1] - a[1]], den = d[0] * e[1] - d[1] * e[0];
+      if (Math.abs(den) < 1e-12) continue;
+      const t = (a[0] * e[1] - a[1] * e[0]) / den, u = (a[0] * d[1] - a[1] * d[0]) / den;
+      if (t > 0 && u >= 0 && u <= 1) out.push(t);
+    }
+    return out.sort((x, y) => x - y);
+  };
+  const mid = (az) => {
+    const ri = Math.max(...cross(island, az)), ro = cross(outer, az).find((t) => t > ri);
+    return ri + Math.min(ro - ri, 8) / 2;
+  };
+  // The middle line, smoothed round the ring (the median of 25°, then the mean of 11°), so that it does not turn into the
+  // bays that the reservoir cuts into the island.
+  const raw = Array.from({ length: 360 }, (_, az) => mid(az)), wrap = (i) => ((i % 360) + 360) % 360;
+  const med = raw.map((_, az) => { const w = []; for (let k = -12; k <= 12; k++) { const v = raw[wrap(az + k)]; if (isFinite(v)) w.push(v); } w.sort((x, y) => x - y); return w[w.length >> 1]; });
+  const smooth = med.map((_, az) => { let t = 0; for (let k = -5; k <= 5; k++) t += med[wrap(az + k)]; return t / 11; });
+  const point = (az) => { const r = smooth[wrap(Math.round(az))]; return [c[0] + (r * Math.sin(az * Math.PI / 180)) / kx, c[1] + (r * Math.cos(az * Math.PI / 180)) / ky]; };
+  const lineKm = (pts) => pts.slice(1).reduce((t, p, i) => t + Math.hypot(...xy(p).map((v, k) => v - xy(pts[i])[k])), 0);
+  const arc = (centre) => {
+    let half = 20, pts = [];
+    do { half += 1; pts = []; for (let az = centre - half; az <= centre + half; az += 1) pts.push(point(az)); } while (lineKm(pts) < MANIC.km && half < 80);
+    const band = turfBuffer({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: pts } }, MANIC.wide / 2, { units: "kilometers" });
+    return clip.intersection(polysOf(band.geometry), res);
+  };
+  addLake("Lac Manicouagan", null, at(MANIC.until), arc(90), 0.0008, r4);
+  addLake("Lac Mouchalagane", null, at(MANIC.until), arc(270), 0.0008, r4);
+}
 
 const wet = readJSON(resolve(here, "wetlands.json"));
 const marshes = [];
