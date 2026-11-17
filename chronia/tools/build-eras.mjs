@@ -186,9 +186,9 @@ const RULER_FIX = [
   ["Spanish Morocco", 1912, 1956, "Spain"],
   ["Niue", 1901, 1974, "New Zealand"],
   // Territories historical-basemaps draws under their own names with no owner, which so stood as independent states: Saint-Barthélemy
-  // (Sweden's from 1784, France's again from 16 March 1878), the Turks and Caicos Islands, and the map of 2000's "British Overseas
-  // Territories". The Netherlands Antilles were dissolved on 10 October 2010, and their islands stayed in the Kingdom.
-  ["Saint Barthelemy", 1878, 9999, "France"], ["Turks and Caicos Islands", 1799, 9999, "United Kingdom"], ["British Overseas Territories", 1900, 9999, "United Kingdom"],
+  // (Sweden's from 1784, France's again from 16 March 1878) and the Turks and Caicos Islands. The Netherlands Antilles were dissolved
+  // on 10 October 2010, and their islands stayed in the Kingdom.
+  ["Saint Barthelemy", 1878, 9999, "France"], ["Turks and Caicos Islands", 1799, 9999, "United Kingdom"],
   ["Netherlands Antilles", 2010, 9999, "Netherlands"]
 ];
 const PEOPLES = /^norte chico$|^el paraiso$|complex$|^point peninsula$|^oxus civilisation$|^celtiberians$|^arameans$|^norsemen$|^northmen$|^celts$|^illyrians$|^dacians$|^phrygians$|^scythians$|^sarmates$|^saces$|^tupis$|^mandes$|^bedouins$|^azandes$|^anasazi$|^mogollon$|^samoyèdes$|^permians$|^cushites$|^kushites$|^samis?$|^malagasy$|^vazimba$|^finns$|^balts$|^bashkirs$|^kryvichs$|^karelians$|^veps$|^mordvinians$|^innu$|^taino$|^ciboney$|^beja people$|^danes$|^peshemegs$|^karluks$|^khitans$|^bulgars$|^frisians$|hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$|^paleo-inuit$|^beothuk$|^boethuk$|^arawaks$|^guanahatabeyes$|^mixtecs$|^veracruz civilization$|^porter$|^goodall focus$|^copena$|^wankarani$|^paracas$|^nazca$|^moche$|^chavin culture$|^mayas$|^mapuche$|^shuar$|^quechua$|^aymara$|^wari$|^abnaki$|^acaxea$|^algonquin$|^apache$|^apalachee$|^arapaho$|^arikara$|^assiniboin$|^atakapa$|^biloxi$|^blackfoot$|^cahitas$|^cahulia$|^calusa$|^caxcane$|^cayuse$|^chatot$|^cherokee$|^cheyenne$|^chickasaw$|^chiricahua$|^chisos$|^choctaw$|^chtimacha$|^chumash$|^coahuiltec$|^cochim[ií]$|^conoy$|^costanoan$|^cusabo$|^erie$|^eyaq$|^flathead$|^gros ventre$|^guachichiles$|^guachimis$|^guamar|^havasupai$|^hitchiti$|^hopi$|^hopie$|^houma$|^huron$|^irritilas$|^janabres$|^jicarilla$|^kalapuya$|^kalispel$|^kamia$|^kansa$|^karankawa$|^kawahsu$|^kijkitat$|^kiowa$|^knucati$|^kwakwaka|^lagunero$|^lipan$|^luiseno$|^mahican$|^maiou$|^mandan$|^maratines$|^massachusett$|^menomini$|^mescalero$|^mi.kma.ki$|^miwok$|^modoc$|^montagnais innu$|^muskogee$|^naniaho$|^naskapi innu$|^natchez$|^navaho$|^navajo$|^nez perce$|^ninticoy$|^northern paiute$|^obiwa$|^omaha$|^oto$|^otomies$|^papago$|^patwin$|^pawnee$|^pennacook$|^pewa$|^pima$|^pisones$|^pocumtuk$|^pomo$|^ponca$|^potawatomi$|^quapaw$|^sahtu$|^santee$|^saunan$|^serano$|^shawnee$|^shoshoni$|^southern paiute$|^spokane$|^suspiaq$|^susquehanna$|^t.atsaot.ine$|^tamalipueca$|^tancalba$|^tano$|^tecuexe$|^tenimo$|^tepehuane$|^teton$|^timucua$|^tlinoit$|^toboso$|^tonkawa$|^tunica$|^tutelo$|^umatilla$|^ute$|^walapai$|^wappynger$|^wichita$|^winebago$|^xecora$|^yakima$|^yankontai$|^yankton$|^yavapai$|^yokuts$|^yuchi$|^yuma$|^yup.ik & cup.ik$|^zacatecs$|^zuni$/i;
@@ -4190,10 +4190,7 @@ const LAST_NAME = [
   ["British Cape Colony", "Cape Colony"],
   // Tripolitania, an Ottoman province under direct rule from 1835, which Cliopatria draws as a state of its own from 1840 and CShapes
   // as part of the Empire: a fourth item is the Wikipedia title of a span that joins another state (it loses its capital too).
-  ["Ottoman Tripolitania", "Ottoman Empire", null, "Ottoman Empire"],
-  // Taiwan, which a rule of the period table names apart under the Qing from 1847 to 1885 only: part of the Qing dynasty's own
-  // land, as before 1847 and as CShapes has it from 1886 to its cession to Japan in 1895.
-  ["Taiwan", "Qing dynasty", null, "Qing dynasty"]
+  ["Ottoman Tripolitania", "Ottoman Empire", null, "Ottoman Empire"]
 ];
 // A ruler the stages above left out, for a span of the name with none that lies within the years: [name, first year, last year,
 // ruler, status]. The Faroes stayed Danish at Kiel (the small territories' table says so, but found no Denmark at Copenhagen from
@@ -4844,6 +4841,9 @@ const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"
 // Cliopatria's Greenland, the south-western coast alone, is left out too: the small territories' table draws the whole island as
 // Denmark's colony, and the coast beside it came out as a second, rulerless Danish Greenland.
 const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland"]);
+// Cliopatria's polities from 1886 that it draws with no ruler, though they are a state's dependencies: the scattered "British Overseas
+// Territories" of its last map.
+const CLIO_MODERN_RULER = { "British Overseas Territories": "United Kingdom" };
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
@@ -5202,7 +5202,8 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
       const kept = keepRemnant(r.polys, whole, 0.5);
       if (!kept.length) continue;
       if (twin) twins++;
-      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler, part: "", people: 0, b: 2, loose: !twin && !s.ruler, status: twin ? 0 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
+      const owned = !twin && !s.ruler ? CLIO_MODERN_RULER[s.name] || "" : "";
+      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler || owned, part: "", people: 0, b: 2, loose: !twin && !s.ruler && !owned, status: twin ? 0 : owned ? 5 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
     }
   }
   list = list.concat(fills);
