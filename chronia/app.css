@@ -2239,7 +2239,11 @@ select.ch-save-input {
   }
 
   .ch-ctls .ch-ctl {
-    width: 37px;
+    width: 35px;
+  }
+
+  .ch-head-text {
+    padding: 0 2px 1px 4px;
   }
 
   .ch-year {

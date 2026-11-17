@@ -9,7 +9,7 @@ import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
 import { healNodes } from "./heal-nodes.mjs";
-import { closeSlivers } from "./zip-slivers.mjs";
+import { tidyLines } from "./tidy-lines.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
@@ -185,7 +185,12 @@ const RULER_FIX = [
   ["Equatorial Guinea", 1778, 1968, "Spain"],
   ["Rio De Oro", 1884, 1975, "Spain"],
   ["Spanish Morocco", 1912, 1956, "Spain"],
-  ["Niue", 1901, 1974, "New Zealand"]
+  ["Niue", 1901, 1974, "New Zealand"],
+  // Territories historical-basemaps draws under their own names with no owner, which so stood as independent states: Saint-Barthélemy
+  // (Sweden's from 1784, France's again from 16 March 1878) and the Turks and Caicos Islands. The Netherlands Antilles were dissolved
+  // on 10 October 2010, and their islands stayed in the Kingdom.
+  ["Saint Barthelemy", 1878, 9999, "France"], ["Turks and Caicos Islands", 1799, 9999, "United Kingdom"],
+  ["Netherlands Antilles", 2010, 9999, "Netherlands"]
 ];
 const PEOPLES = /^norte chico$|^el paraiso$|complex$|^point peninsula$|^oxus civilisation$|^celtiberians$|^arameans$|^norsemen$|^northmen$|^celts$|^illyrians$|^dacians$|^phrygians$|^scythians$|^sarmates$|^saces$|^tupis$|^mandes$|^bedouins$|^azandes$|^anasazi$|^mogollon$|^samoyèdes$|^permians$|^cushites$|^kushites$|^samis?$|^malagasy$|^vazimba$|^finns$|^balts$|^bashkirs$|^kryvichs$|^karelians$|^veps$|^mordvinians$|^innu$|^taino$|^ciboney$|^beja people$|^danes$|^peshemegs$|^karluks$|^khitans$|^bulgars$|^frisians$|hunter|gatherer|farmer|pastoral|nomad|forager|fisher|fichers|cultures?\b|peoples\b|tribes\b|^proto-|archaeolog|archeolog|neolithic|bronze age|^bantu|^khoisan|^berbers?$|^semites$|^dravidians$|^austronesians$|^papuans$|^saami$|^sámi$|^ainu$|^thule$|^dorset$|^arabs$|^thai$|^sinic$|^tungus$|^siberians$|^cree$|^athabas|^inupiaq$|^chukchi$|^touareg|^tuareg|^polynesians$|^aboriginal|^vedic aryans$|^cimerians$|^iranian pastoralists$|^tibetans$|^mongols$|^oromo$|^xhosa$|^zulu$|^paleo-inuit$|^beothuk$|^boethuk$|^arawaks$|^guanahatabeyes$|^mixtecs$|^veracruz civilization$|^porter$|^goodall focus$|^copena$|^wankarani$|^paracas$|^nazca$|^moche$|^chavin culture$|^mayas$|^mapuche$|^shuar$|^quechua$|^aymara$|^wari$|^abnaki$|^acaxea$|^algonquin$|^apache$|^apalachee$|^arapaho$|^arikara$|^assiniboin$|^atakapa$|^biloxi$|^blackfoot$|^cahitas$|^cahulia$|^calusa$|^caxcane$|^cayuse$|^chatot$|^cherokee$|^cheyenne$|^chickasaw$|^chiricahua$|^chisos$|^choctaw$|^chtimacha$|^chumash$|^coahuiltec$|^cochim[ií]$|^conoy$|^costanoan$|^cusabo$|^erie$|^eyaq$|^flathead$|^gros ventre$|^guachichiles$|^guachimis$|^guamar|^havasupai$|^hitchiti$|^hopi$|^hopie$|^houma$|^huron$|^irritilas$|^janabres$|^jicarilla$|^kalapuya$|^kalispel$|^kamia$|^kansa$|^karankawa$|^kawahsu$|^kijkitat$|^kiowa$|^knucati$|^kwakwaka|^lagunero$|^lipan$|^luiseno$|^mahican$|^maiou$|^mandan$|^maratines$|^massachusett$|^menomini$|^mescalero$|^mi.kma.ki$|^miwok$|^modoc$|^montagnais innu$|^muskogee$|^naniaho$|^naskapi innu$|^natchez$|^navaho$|^navajo$|^nez perce$|^ninticoy$|^northern paiute$|^obiwa$|^omaha$|^oto$|^otomies$|^papago$|^patwin$|^pawnee$|^pennacook$|^pewa$|^pima$|^pisones$|^pocumtuk$|^pomo$|^ponca$|^potawatomi$|^quapaw$|^sahtu$|^santee$|^saunan$|^serano$|^shawnee$|^shoshoni$|^southern paiute$|^spokane$|^suspiaq$|^susquehanna$|^t.atsaot.ine$|^tamalipueca$|^tancalba$|^tano$|^tecuexe$|^tenimo$|^tepehuane$|^teton$|^timucua$|^tlinoit$|^toboso$|^tonkawa$|^tunica$|^tutelo$|^umatilla$|^ute$|^walapai$|^wappynger$|^wichita$|^winebago$|^xecora$|^yakima$|^yankontai$|^yankton$|^yavapai$|^yokuts$|^yuchi$|^yuma$|^yup.ik & cup.ik$|^zacatecs$|^zuni$/i;
 const AUSTRALIA = [112, -45, 155, -9], HISPANIOLA_W = [-75, 17.5, -71.6, 20.2], NORTH_AMERICA = [-170, 24, -50, 75];
@@ -2153,6 +2158,10 @@ const SMALL = [
   { name: "Bahrain", shape: { c: "BHR" }, wiki: "History of Bahrain (1783–1971)", periods: [["1886-01-01", "1971-08-14", "protectorate", LONDON, "fill"]] },
   { name: "Kuwait", shape: { c: "KWT" }, wiki: "Sheikhdom of Kuwait", periods: [["1899-01-23", "1961-06-18", "protectorate", LONDON, "fill"]] },
   { name: "Qatar", shape: { c: "QAT" }, wiki: "Qatar under Ottoman rule", periods: [["1886-01-01", "1915-12-31", "dependency", ISTANBUL, "fill"]] },
+  // The Danish West Indies (Saint Thomas, Saint John, and Saint Croix), which historical-basemaps draws from 1886 as "United States
+  // Virgin Islands" with no owner, so that they stood as an independent state to 1942: Denmark's until the transfer of 31 March 1917
+  // (the treaty of 4 August 1916), the United States' from that day. CARRY keeps the Danish name to the transfer.
+  { name: "United States Virgin Islands", shape: { c: "VIR" }, periods: [["1886-01-01", "1917-03-30", "colony", COPENHAGEN], ["1917-03-31", CS_TO, "dependency", WASHINGTON]] },
   { name: "Greenland", shape: { c: "GRL" }, periods: [["1721-07-03", "1953-06-04", "colony", COPENHAGEN, "fill"], ["1953-06-05", CS_TO, "dependency", COPENHAGEN, "fill"]] },
   { name: "Svalbard", shape: { n: ["Svalbard"] }, periods: [["1925-08-14", CS_TO, "dependency", OSLO, "fill"]] },
   { name: "Bermuda", shape: { c: "BMU" }, periods: [["1612-07-11", CS_TO, "colony", LONDON, "fill"]] },
@@ -4646,6 +4655,7 @@ const CARRY = {
   "Transvaal": [["1886-01-01", "South African Republic"], ["1902-05-31", "Transvaal Colony"]],
   "Orange Free State": [["1886-01-01", "Orange Free State"], ["1902-05-31", "Orange River Colony"]],
   "Greenland": [["1886-01-01", "Danish Greenland"], ["1953-06-05", "Greenland"]],
+  "United States Virgin Islands": [["1886-01-01", "Danish West Indies"], ["1917-03-31", "United States Virgin Islands"]],
   "Madagascar": [["1886-01-01", "Merina Kingdom"], ["1896-08-06", "Madagascar"]],
   "Algeria": [["1886-01-01", "French Algeria"], ["1962-07-05", "Algeria"]],
   "Netherlands Antilles": [["1886-01-01", "Curaçao and Dependencies"], ["1954-12-15", "Netherlands Antilles"]],
@@ -4842,13 +4852,17 @@ const CS_BACK = [
   { gw: "696", until: "1892-03-07", names: [["1886-01-01", "Trucial States", 2, "United Kingdom"]] }
 ];
 const HB_MODERN_FROM = 1880;
-const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"]];
+const HB_MODERN_DROP = [["Arabia"], ["Arabia (Nejd)"], ["Emirate of Bin Shal'an"], ["British Protectorate", [30, 5, 65, 38]], ["Mesopotamia (GB)"], ["American Samoa"], ["New Hebrides"], ["Antarctica"], ["Greenland"], ["United States Virgin Islands"]];
 // Cliopatria's Greenland, the south-western coast alone, is left out too: the small territories' table draws the whole island as
 // Denmark's colony, and the coast beside it came out as a second, rulerless Danish Greenland.
 const CLIO_MODERN_DROP = new Set(["British Africa", "New Hebrides", "Greenland"]);
+// Cliopatria's polities from 1886 that it draws with no ruler, though they are a state's dependencies: the scattered "British Overseas
+// Territories" of its last map.
+const CLIO_MODERN_RULER = { "British Overseas Territories": "United Kingdom" };
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
+const LOOSE_TO = dayOf("1933-01-01");
 // A state that CShapes begins late, drawn before that as a dependency inside the state that held it: its first shape is cut out of
 // the holder's spans, from the first day given to the day before CShapes' first, less the land it gained later (the part of the first
 // shape, inside the box, that its shape of the day given no longer has). The Grand Duchy of Finland, Russia's from 1809 to its
@@ -5203,7 +5217,8 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
       const kept = keepRemnant(r.polys, whole, 0.5);
       if (!kept.length) continue;
       if (twin) twins++;
-      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler, part: "", people: 0, b: 2, loose: !twin && !s.ruler, status: twin ? 0 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
+      const owned = !twin && !s.ruler ? CLIO_MODERN_RULER[s.name] || "" : "";
+      fills.push(withBox({ name: twin || s.name, ruler: twin ? "" : s.ruler || owned, part: "", people: 0, b: 2, loose: !twin && !s.ruler && !owned, status: twin ? 0 : owned ? 5 : s.status, first: r.first, last: r.last, polys: kept, wiki: twin ? csWiki(twin, s.first) : s.wiki, src: "clio" }));
     }
   }
   list = list.concat(fills);
@@ -5296,8 +5311,10 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
     const owner = x.ruler ? rulerFor(x.ruler, x.first) : "";
     const claims = x.claims ? x.claims.map((n) => rulerFor(n, x.first)) : null;
     // A state with no ruler that Cliopatria or historical-basemaps draws on land CShapes leaves blank (loose) has borders no treaty
-    // had settled: dotted, as before 1886, where the same sources' outlines are dotted.
-    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.loose && !owner && !claims ? 1 : x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
+    // had settled: dotted, as before 1886, where the same sources' outlines are dotted. Only a span that ends before 1933 (LOOSE_TO:
+    // the Kingdom of Hejaz and Nejd, the last such state, became Saudi Arabia in September 1932): the fills of later maps are
+    // island states, or a state of today drawn for the few days between two of CShapes' dates.
+    csParts.push({ p: { gwcode: "x:" + x.name, status: claims ? "disputed" : owner ? STATUS_NAME[x.status] : "independent" }, name: x.name, owner, claims, b: x.loose && !owner && !claims && x.last < LOOSE_TO ? 1 : x.b, noLabel: !!x.noLabel || !!x.piece, piece: !!x.piece, wiki: x.wiki, keep: !!x.keep, start: x.first, end: x.last >= endDay ? -1 : x.last, geometry });
   }
   console.log("from 1886: " + Math.round(process.memoryUsage().heapUsed / 1e6) + " MB heap, " + fills.length + " spans filled from Cliopatria (" + twins + " of them under the CShapes name of the same state, from CLIO_TWIN), " + list.filter((x) => x.small).length + " small territories");
 }
@@ -5801,13 +5818,6 @@ const entries = catalogue.map((e, id) => {
   if (years) row.push(years);
   return row;
 });
-// The file from 1886 holds the wartime pieces, cut from one source and laid beside states drawn from another: the hairline
-// faces between two drawings of one border are closed (zip-slivers.mjs), last of all, so the labels, the capitals, and the
-// colours above are worked out from the shapes as they were.
-{
-  const zh = closeSlivers(csHi, CS_HI_KM), zl = closeSlivers(csLo, LO_KM);
-  console.log("slivers from 1886: " + zh.cut + " lines cut where they crossed and " + zh.closed + " faces closed (" + zh.km2 + " km²) in the detailed lines, " + zl.cut + " and " + zl.closed + " (" + zl.km2 + " km²) in the simplified ones; " + (zh.dropped + zl.dropped) + " rings wound backwards dropped, " + (zh.turned + zl.turned) + " turned round");
-}
 writeFileSync(resolve(out, "modern.json"), JSON.stringify({ from: CS_FROM, to: CS_TO, rows: csRows.map((r) => (r[9] ? r.slice(0, 7).concat([r[8] || 0, 1]) : r[8] ? r.slice(0, 7).concat([r[8]]) : r.slice(0, 7))), lo: csLo }));
 writeFileSync(resolve(out, "modern-hi.json"), JSON.stringify({ hi: csHi }));
 // The treaty borders before 1886 and the unsettled ones after, by polity number (see FIRM and VAGUE).
@@ -5863,3 +5873,6 @@ console.log("smoothed " + stairArcs + " stair-stepped arcs, generalized " + genA
 console.log("noded " + nodesAdded + " points into edges that another shape's point lay on");
 console.log("small territories: " + Math.round(smallGaps) + " km² of gaps beside Liechtenstein, Andorra, and San Marino joined to them");
 console.log(index.length + " snapshot maps shown, " + dated.length + " dated spans from " + DATED_FROM + " to " + DATED_TO + " in " + datedChunks.length + " files with " + datedChanges.length + " change years, " + links + " colour links by succession, " + csRows.length + " CShapes records from 1886 with " + csChanges.length + " change dates, " + catalogue.length + " names, " + color.size + " colour keys, " + clash + " touching pairs share a colour");
+
+// Last of all, each file's lines are tidied (tidy-lines.mjs): the slivers, gaps, and overlaps between two drawings of one border.
+tidyLines(out, require, { lo: LO_KM, hi: HI_KM, modernHi: CS_HI_KM });

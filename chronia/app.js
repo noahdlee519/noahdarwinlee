@@ -1100,7 +1100,9 @@
         else if (!soft && snap.vague && snap.vague.has(pa.id + "|" + pb.id)) soft = true;
       }
       if (pa && pb && pa.member >= 0 && pa.member === pb.member) return 4;
-      if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue) return 3;
+      // Kin (one ruler) only within one group: a land in personal union that sits in another confederation, as Luxembourg and
+      // Limburg in the German Confederation beside the Netherlands, or Holstein beside Schleswig, keeps a full border.
+      if (pa && pb && !pa.people && !pb.people && pa.hue === pb.hue && pa.part === pb.part) return 3;
       return soft ? 2 : 1;
     };
     // Each arc is sorted once into the kinds of line it belongs to (the shapes on its two sides decide), rather than
@@ -1122,7 +1124,7 @@
     var edges = outerEdges(topo, store, use, function (i) {
       var p = polys[i];
       return !p ? null : p.claims ? "d" : p.band ? "b" : p.people ? "p" : (p.soft ? "s" : "h") + p.color;
-    });
+    }, withinState(topo, polys));
     L = {
       topo: topo, geoms: geoms, polys: polys,
       geo: geo, feats: feats, groups: groups, peoples: peoples, unnamed: unnamed, disputes: Array.from(disputes.values()),
@@ -1139,13 +1141,27 @@
   }
   // The arcs that only one shape uses, once (the outside edges), sorted by what that shape is and split into the stretches
   // along the coast and the stretches inland. bucketOf takes the shape's place in the snapshot.
-  function outerEdges(topo, store, use, bucketOf) {
+  // Whether a line that one shape alone uses lies inside another shape of the same state on the map (see topo.inside).
+  function withinState(topo, polys) {
+    var inside = topo.inside, rowId = null;
+    if (!inside) return null;
+    return function (i, gi) {
+      var l = inside[i], p = polys[gi];
+      if (!l || !p) return false;
+      if (!rowId) { rowId = new Map(); polys.forEach(function (q) { if (q && q.row !== undefined && !q.group) rowId.set(q.row, q.id); }); }
+      for (var k = 0; k < l.length; k++) if (rowId.get(l[k]) === p.id) return true;
+      return false;
+    };
+  }
+  function outerEdges(topo, store, use, bucketOf, within) {
     var buckets = {};
     for (var k = 0; k < use.seen.length; k++) {
       var i = use.seen[k];
       if (use.count[i] !== 1) continue;
       // A needle (the builder's markNeedles): two borders a hair apart, not a state's edge against ownerless land.
       if (topo.needles) { if (!store.needle) { store.needle = new Uint8Array(topo.arcs.length); for (var q = 0; q < topo.needles.length; q++) store.needle[topo.needles[q]] = 1; } if (store.needle[i]) continue; }
+      // A line inside a state (the builder's topo.inside): one row's edge across another row of the same state, shown now.
+      if (within && within(i, use.first[i])) continue;
       var b = bucketOf(use.first[i]);
       if (b === null) continue;
       (buckets[b] = buckets[b] || []).push(i);
@@ -4755,7 +4771,8 @@
   // several kilometres off, so the borders seemed to change and change back. Now a step near a file's edge asks for the
   // neighbouring file's fine lines ahead (stepFine), and a step into a file whose fine lines are on their way keeps the map
   // as it is until they come, for up to STEP_FINE_WAIT ms (whenFine). Dragging the slider and play are left as they were.
-  var STEP_FINE_WAIT = 2500, holdKey = "";
+  // askedKey is the date asked for until the map shows it (its file may be on its way), for ready().
+  var STEP_FINE_WAIT = 2500, holdKey = "", askedKey = "";
   function stepFine() { return !playTimer && !rangeActive; }
   function whenFine(t, key, fromRange, show) {
     if (fromRange || playTimer || !current || !playWantsFine() || fineReady(t, true)) { show(); return; }
@@ -4778,13 +4795,13 @@
     if (!fromRange) rangeActive = false;
     if (isModern(t)) {
       var day = Math.min(dayOfTime(t), modern.toDay);
-      wantKey = "d" + day;
+      wantKey = "d" + day; askedKey = wantKey;
       if (!modern.rows) {
         syncTime();
         loadModern().then(function () {
           if (wantKey !== "d" + day) return;
           whenFine(t, "d" + day, fromRange, function () {
-            useSnap(modernSnap(day));
+            useSnap(modernSnap(day)); if (askedKey === "d" + day) askedKey = "";
             syncTime();
             writeHash();
             scheduleRender(true);
@@ -4797,7 +4814,7 @@
         return;
       }
       whenFine(t, "d" + day, fromRange, function () {
-        useSnap(modernSnap(day));
+        useSnap(modernSnap(day)); if (askedKey === "d" + day) askedKey = "";
         syncTime();
         writeHash();
         scheduleRender(true);
@@ -4811,12 +4828,12 @@
     }
     if (isDated(t)) {
       var ck = chunkIndexFor(t);
-      wantKey = "e" + t;
+      wantKey = "e" + t; askedKey = wantKey;
       syncTime();
       loadChunk(ck).then(function () {
         if (wantKey !== "e" + t) return;
         whenFine(t, "e" + t, fromRange, function () {
-          useSnap(datedSnap(ck, t));
+          useSnap(datedSnap(ck, t)); if (askedKey === "e" + t) askedKey = "";
           syncTime();
           writeHash();
           scheduleRender(true);
@@ -4836,11 +4853,11 @@
       return;
     }
     var mi = mapIndexFor(t);
-    wantKey = "y" + maps[mi].y;
+    wantKey = "y" + maps[mi].y; askedKey = wantKey;
     syncTime();
     loadMap(mi).then(function (snap) {
       if (wantKey !== "y" + maps[mi].y) return;
-      useSnap(snap);
+      useSnap(snap); if (askedKey === "y" + maps[mi].y) askedKey = "";
       syncTime();
       writeHash();
       scheduleRender(true);
@@ -8467,7 +8484,61 @@
     }
   }
 
+  // For the checks (tools/chronia-strays.mjs): every stretch the page draws as a shape's edge against ownerless land, inland,
+  // at the level the view uses, with what lies on each side of it d0 km off and, where a side is ownerless, how far the
+  // next owned land is (up to 16 × d0). A stretch with owned land close on both sides is a stray line: two drawings of one
+  // border, a gap, or an overlap. A people's land counts as ownerless, as it does when the page draws a state's edge.
+  function strayEdges(d0) {
+    if (!current) return null;
+    var key = useLevel(), L = level(current, key), topo = L.topo, polys = L.polys, store = arcStore(topo), use = arcUse(topo, L.geoms);
+    if (!L.bb) L.bb = L.geo.map(function (g) { var b = d3.geoBounds(g); return b; });
+    var at = function (ll) {
+      var out = [];
+      for (var i = 0; i < polys.length; i++) {
+        if (!polys[i] || polys[i].people || !isFinite(L.bb[i][0][0]) || !inBounds(L.bb[i], ll)) continue;
+        if (d3.geoContains(L.geo[i], ll)) out.push(i);
+      }
+      return out;
+    };
+    var res = [], needle = store.needle, within = withinState(topo, polys);
+    for (var k = 0; k < use.seen.length; k++) {
+      var i = use.seen[k];
+      if (use.count[i] !== 1 || (needle && needle[i])) continue;
+      var own = use.first[i], p = polys[own];
+      if (!p || (within && within(i, own))) continue;
+      var sp = arcSplit(topo, store, i);
+      for (var q = 0; q < sp.inner.length; q++) {
+        var ln = sp.inner[q], pts = [];
+        for (var j = 0; j < ln.n; j++) pts.push([Math.atan2(ln.y[j], ln.x[j]) / D2R, Math.asin(Math.max(-1, Math.min(1, ln.z[j]))) / D2R]);
+        var len = 0, segs = [];
+        for (j = 0; j + 1 < pts.length; j++) { var l = d3.geoDistance(pts[j], pts[j + 1]) * R_KM; len += l; segs.push(l); }
+        if (!(len > 0)) continue;
+        // up to three probes along the stretch, at the middles of its longest segments
+        var order = segs.map(function (l, j) { return j; }).sort(function (a, b) { return segs[b] - segs[a]; }).slice(0, 3), worst = null;
+        for (var o = 0; o < order.length; o++) {
+          var a = pts[order[o]], b = pts[order[o] + 1], mid = d3.geoInterpolate(a, b)(0.5), kx = Math.cos(mid[1] * D2R) || 1e-6;
+          var dx = (b[0] - a[0]) * kx, dy = b[1] - a[1], n = Math.hypot(dx, dy);
+          if (!n) continue;
+          var ox = -dy / n / kx / 111.195, oy = dx / n / 111.195, sides = [];
+          for (var sgn = -1; sgn <= 1; sgn += 2) {
+            var gap = -1, who = [];
+            for (var m = 1; m <= 16; m *= 2) { who = at([mid[0] + sgn * ox * d0 * m, mid[1] + sgn * oy * d0 * m]); if (who.length) { gap = m; break; } }
+            sides.push({ gap: gap, who: who });
+          }
+          // the probe that looks least like a stray decides (a stretch is a stray only if all of it is)
+          var score = Math.max(sides[0].gap < 0 ? 99 : sides[0].gap, sides[1].gap < 0 ? 99 : sides[1].gap);
+          if (!worst || score > worst.score) worst = { score: score, sides: sides, mid: mid };
+        }
+        if (!worst) continue;
+        var names = worst.sides.map(function (sd) { return sd.who.map(function (w) { return polys[w] ? polityName(polys[w].id) : "?"; }).join("+"); });
+        var others = worst.sides.map(function (sd) { return sd.who.filter(function (w) { return w !== own; }).length; });
+        res.push([+worst.mid[0].toFixed(3), +worst.mid[1].toFixed(3), +len.toFixed(1), worst.score, polityName(p.id), names[0], names[1], worst.sides[0].who.length + worst.sides[1].who.length, others[0] + others[1] ? 1 : 0, p.soft ? 1 : 0, p.people ? 1 : 0, p.claims ? 1 : 0]);
+      }
+    }
+    return { level: key, scale: localScale(), strays: res };
+  }
   window.__chronia = {
+    strays: strayEdges,
     // Whether the map shown is drawn from a file's rough lines alone (its fine ones not yet come).
     rough: function () { return !!current && !!current.topo && current.topo.hi === current.topo.lo; },
     setEdits: function (l) { setEdits(l); },
@@ -8517,7 +8588,7 @@
     search: function (q) { setSearchOpen(true, false); searchInput.value = q; runSearch(); return searchHits.map(function (h) { return h.kind + ": " + h.name + (h.sub ? " (" + h.sub + ")" : ""); }); },
     searchOpen: function () { return !searchPanel.hidden; },
     // Not while a step waits for a file's fine lines: the map still shows the date before.
-    ready: function () { return ready && !!current && !holdKey; },
+    ready: function () { return ready && !!current && !holdKey && !askedKey; },
     year: function () { return now; },
     shown: function () { return yearInput.value; },
     asof: function () { return asof.textContent; },
