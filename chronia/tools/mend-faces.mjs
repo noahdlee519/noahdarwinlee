@@ -13,7 +13,7 @@
 //      opt.wide km, and under opt.big km²); an overlap has wider limits (opt.overSmall, opt.overWide, opt.overBig), and two
 //      shapes of one state over each other are parted whatever their size, the land taken from the one that carries no name
 //      (a strip of the state's own coast), or from the larger of two that do, which keeps at least 40% of its land. A gap may open onto land nobody holds by a mouth
-//      or two no wider than a gap.
+//      or two no wider than a gap. A gap up to WIDER times as wide is mended where no people holds the land either.
 //   3. A face of a gap goes to the shape beside it with the longest edge on it, provided nothing else covers the face at any
 //      time in that shape's span (so no overlap is made at another date). A face of an overlap is taken from one of the shapes
 //      over it, provided another covers it for the whole of that shape's span (so no gap is made at another date): from the
@@ -22,7 +22,7 @@
 //   4. The rings of the shapes that changed are drawn again from their faces. A shape whose area would change by more than
 //      its mended faces explain is left as it was.
 // No line moves: faces only change hands, so a border between two shapes becomes the one line both share.
-const PASSES = 6, PATCH_FACES = 400, LOSE = 0.03, ONE_LOSE = 0.6, GAIN = 0.1, HOLE_DAYS = 400, HOLE_KM2 = 100, HOLE_SHARE = 0.2, TIME_CLASH = 0.01, CLASH_KM2 = 2000;
+const PASSES = 6, PATCH_FACES = 400, LOSE = 0.03, ONE_LOSE = 0.6, GAIN = 0.1, WIDER = 2.4, HOLE_DAYS = 400, HOLE_KM2 = 100, HOLE_SHARE = 0.2, TIME_CLASH = 0.01, CLASH_KM2 = 2000;
 
 export function mendFaces(topo, spans, people, opt) {
   const t = topo.transform, geoms = topo.objects.p.geometries, nR = geoms.length, T0 = opt.from, T1 = opt.to;
@@ -140,6 +140,9 @@ export function mendFaces(topo, spans, people, opt) {
   const clip = (sp) => [Math.max(sp[0], T0), Math.min(sp[1], T1)];
   // Limits for gaps, and wider ones for overlaps: land nobody holds may be right, but two states over one piece of land never is.
   const GAP = { small: opt.small, wide: opt.wide, big: opt.big }, OVER = { small: opt.overSmall, wide: opt.overWide, big: opt.overBig };
+  const WIDE = { small: opt.small, wide: WIDER * opt.wide, big: WIDER * opt.big };
+  const folk = new Map();
+  const peopleAt = (c, time) => { let l = folk.get(c); if (!l) { l = []; for (let r = 0; r < nR; r++) if (people[r] && W[c * nR + r] > 0) l.push(r); folk.set(c, l); } return l.some((r) => spans[r][0] <= time && time <= spans[r][1]); };
   const narrowBy = (lim, A, P) => A <= lim.small || (A <= lim.big && P > 0 && (4 * A) / P <= lim.wide);
   const slim = (lim, g) => -area[g] <= lim.small / 4 || (-4 * area[g]) / per[g] <= lim.wide;
   // The patch of neighbouring faces round c that pass the test at a time: null if it runs to the sea or grows too large.
@@ -239,14 +242,16 @@ export function mendFaces(topo, spans, people, opt) {
         const k = countAt(c, time, -1);
         if (opt.near && pass === 0) { const p0 = arcs[cyc[c][0] >> 1][0], lo = p0[0] * t.scale[0] + t.translate[0], la = p0[1] * t.scale[1] + t.translate[1]; if (Math.abs(lo - opt.near[0]) < opt.near[2] && Math.abs(la - opt.near[1]) < opt.near[2]) opt.log('near face ' + c + ' at ' + lo.toFixed(2) + ',' + la.toFixed(2) + ' A ' + (-area[c]).toFixed(1) + ' w ' + ((-4 * area[c]) / per[c]).toFixed(2) + ' time ' + time + ' count ' + k + ' cover ' + cover(c).map((r) => r + '[' + spans[r] + ']').join(' ') + (k >= 2 ? ' patch ' + JSON.stringify((() => { const pt = patch(c, time, (g, tm) => area[g] < 0 && countAt(g, tm, -1) >= 2, OVER); return pt ? [pt.list.length, pt.A.toFixed(0), pt.P.toFixed(0)] : null; })()) : '')); }
         if (k === 0) {
-          if (-area[c] > GAP.big) continue;
-          // The patch takes in the slim ownerless faces beside it, not the open land a gap may run out to.
-          const pt = patch(c, time, (g, tm) => area[g] < 0 && !bad[g] && countAt(g, tm, -1) === 0 && slim(GAP, g), GAP);
+          if (-area[c] > WIDE.big) continue;
+          // The patch takes in the slim ownerless faces beside it, not the open land a gap may run out to. A wider gap is
+          // mended only where no people holds the land either (a people's strip between two states is the people's).
+          let lim = GAP, pt = -area[c] > GAP.big ? null : patch(c, time, (g, tm) => area[g] < 0 && !bad[g] && countAt(g, tm, -1) === 0 && slim(GAP, g), GAP);
+          if (!pt) { lim = WIDE; pt = patch(c, time, (g, tm) => area[g] < 0 && !bad[g] && countAt(g, tm, -1) === 0 && !peopleAt(g, tm) && slim(WIDE, g), WIDE); if (pt && pt.list.some((f) => peopleAt(f, time))) pt = null; }
           if (!pt) continue;
           // Land all round: beyond the patch's edge everything is covered then, but for a mouth or two no wider than a gap.
           let open = 0;
           for (const f of pt.list) for (const h of cyc[f]) { const g = cycleOf[h ^ 1]; if (!mouth[h >> 1] && !pt.inP.has(g) && countAt(g, time, -1) === 0) open += arcLen[h >> 1]; }
-          if (open > Math.min(2.5 * GAP.wide, 0.15 * pt.P)) continue;
+          if (open > Math.min(2.5 * lim.wide, 0.15 * pt.P)) continue;
           let any = false;
           for (const f of pt.list) {
             if (countAt(f, time, -1) !== 0) continue;
