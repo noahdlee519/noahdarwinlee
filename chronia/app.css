@@ -61,6 +61,56 @@
   --ch-bar: 54px;
   --ch-seg: 44px;
   --ch-time-h: 80px;
+  /* The instrument that holds the atlas: brass for its frames and buttons, copper for the timeline's cursor and the
+     gauge's fill, verdigris for a control that is on or in use (the oceans' own green, so it sits with the map; the
+     lighter one is for the dark tray), walnut and a dark enamel for the nameplate, the tool tray, and the tooltips, and
+     ivory for the windows the date, the years, and the speed are read through. The brass is kept well darker and a
+     little greyer than the paper, so the two are never mistaken; what is lettered or drawn on it is in --ch-on-brass,
+     a darker ink than the page's, which is 4.6 to 1 or better on any brass from --ch-brass-hi down to --ch-brass-face.
+     --ch-brass-lo and --ch-brass-deep are for edges only.
+     Nothing in this first block may hold a closing brace: the share preview (api/_lib/preview.mjs) reads the colours
+     from the start of this file up to the first one. */
+  --ch-brass-hi: #f2e3b3;
+  --ch-brass-lt: #d0b472;
+  --ch-brass: #ab8d4d;
+  --ch-brass-face: #a28546;
+  --ch-brass-lo: #7d6129;
+  --ch-on-brass: #2a1c12;
+  --ch-brass-deep: #4a3616;
+  --ch-copper-hi: #e2a77c;
+  --ch-copper: #b5703f;
+  --ch-copper-lo: #7c4524;
+  --ch-verdigris: #3f7466;
+  --ch-verdigris-lt: #8fc0b1;
+  --ch-walnut: #4a3322;
+  --ch-enamel: #2a1c12;
+  --ch-ivory: #f8f1dc;
+  /* The meridian ring round the globe (app.js, drawRing): its body, its lit and shaded edges, and its outline and ticks. */
+  --ch-ring: #ab8d4d;
+  --ch-ring-hi: #f2e3b3;
+  --ch-ring-lo: #7d6129;
+  --ch-ring-edge: #4a3616;
+  /* A brass face, turned like a rod and lit from above: a bright band a third of the way down, a darker core under it
+     (--ch-brass-face, where lettering sits), and a little light thrown back up at its foot. Then the same under the
+     pointer, and the same pressed in, where the light falls on its lower half. */
+  --ch-metal: linear-gradient(180deg, #c8ab68 0%, var(--ch-brass-lt) 12%, var(--ch-brass-hi) 30%, var(--ch-brass) 52%, var(--ch-brass-face) 80%, #b89a58 100%);
+  --ch-metal-lit: linear-gradient(180deg, #d6ba78 0%, #e2c988 12%, #fbf0cc 30%, #bfa160 52%, #b0934f 80%, #c8ab68 100%);
+  --ch-metal-down: linear-gradient(180deg, #8f743a 0%, var(--ch-brass-face) 22%, var(--ch-brass) 60%, var(--ch-brass-lt) 100%);
+  /* A raised button: a lit top edge, a dark lower edge, and a short shadow on the paper. Pressed, the shadow falls inside it. */
+  --ch-raised: inset 0 1px 0 rgba(255, 250, 228, 0.9), inset 0 -2px 1px rgba(79, 58, 23, 0.4), 0 1px 2px rgba(42, 28, 18, 0.4);
+  --ch-sunk: inset 0 2px 3px rgba(42, 28, 18, 0.55), inset 0 -1px 0 rgba(255, 250, 228, 0.45);
+  /* A window in the instrument: ivory behind glass, in shade under its upper edge. */
+  --ch-well: inset 0 1px 2px rgba(42, 28, 18, 0.32);
+  /* The rail along the top of the timeline: five pixels of brass moulding, drawn once. */
+  --ch-rail: linear-gradient(180deg, var(--ch-brass-hi) 0, var(--ch-brass-lt) 1px, var(--ch-brass) 3px, var(--ch-brass-lo) 4px, var(--ch-brass-deep) 4px, var(--ch-brass-deep) 5px);
+  /* The frame of a paper plate (the card, the panels, the key): the same rail along its top, six pixels with its dark
+     upper edge, and the page's ink for the other three sides. It is a border image, sliced 6 1 1 1, so what scrolls
+     inside the plate is cut off under the rail and never runs over it. */
+  --ch-plate: linear-gradient(180deg, var(--ch-brass-deep) 0, var(--ch-brass-hi) 1px, var(--ch-brass-lt) 2px, var(--ch-brass) 4px, var(--ch-brass-lo) 5px, var(--ch-brass-deep) 5px, var(--ch-brass-deep) 6px, var(--rule) 6px);
+  /* The bezel round the title, the date, and the tools, as a border image in nine slices: a mitred brass moulding lit
+     from the top left, a dark rule on its inner edge, and a pin at each corner. --ch-bz is its width. */
+  --ch-bz: 5px;
+  --ch-bezel: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 15 15'><path d='M0 0H15L10 5H5Z' fill='%23dcc380'/><path d='M0 0L5 5V10L0 15Z' fill='%23c5a862'/><path d='M15 0V15L10 10V5Z' fill='%23967938'/><path d='M0 15L5 10H10L15 15Z' fill='%237d6129'/><path d='M.5 .5H14.5V14.5H.5Z' fill='none' stroke='%234f3a17'/><path d='M1.5 13.5V1.5H13.5' fill='none' stroke='%23fdf4d2' stroke-opacity='.9'/><path d='M13.5 2.5V13.5H2.5' fill='none' stroke='%237a5c24' stroke-opacity='.55'/><path d='M4.5 4.5H10.5V10.5H4.5Z' fill='none' stroke='%233a2a1b' stroke-opacity='.85'/><g fill='%23876829' stroke='%234f3a17' stroke-width='.45'><circle cx='2.75' cy='2.75' r='1.15'/><circle cx='12.25' cy='2.75' r='1.15'/><circle cx='2.75' cy='12.25' r='1.15'/><circle cx='12.25' cy='12.25' r='1.15'/></g><g fill='%23fff3c4'><circle cx='2.45' cy='2.45' r='.42'/><circle cx='11.95' cy='2.45' r='.42'/><circle cx='2.45' cy='11.95' r='.42'/><circle cx='11.95' cy='11.95' r='.42'/></g></svg>");
 }
 :root.ch[data-theme][data-ch-palette="safe"] {
   /* The colour-blind safe colours (Layers, Colours): each a little off the usual, so that every pair of fills stays
@@ -100,6 +150,19 @@ body.ch-page {
   font-family: var(--ch-serif);
 }
 
+/* Text picked out on the page is laid on brass, in the page's ink (8 to 1). */
+.ch-page ::selection {
+  background: var(--ch-brass-lt);
+  color: var(--ink);
+}
+
+/* Where the reader's system sets the colours (forced colours), the page's ground is left to it, as it was before the
+   page had any brass: the paper's gradient is an image, and would otherwise stay. */
+@media (forced-colors: active) {
+  body.ch-page {
+    background: Canvas;
+  }
+}
 .ch-page .ch-globe,
 .ch-page .ch-ctl,
 .ch-page .ch-step,
@@ -155,9 +218,15 @@ body.ch-page {
   background-color: var(--bg);
 }
 
-/* Two ranks of frame. The date, the one thing the page changes, and the card, the one thing it says, are ruled twice
-   like an atlas plate's neatline; the rest of the furniture takes a single rule and gives way to them. */
-.ch-frame,
+/* Two kinds of frame, as on an instrument. The title, the date, and the tools sit in brass bezels (--ch-bezel). The
+   card, the panels, the key, the changes, and the wars are plates of the atlas's paper under one ink rule, with a
+   brass rail along the top (--ch-plate). Where border images are not drawn, each keeps a plain border. */
+.ch-frame {
+  border: var(--ch-bz) solid var(--ch-brass);
+  border-image: var(--ch-bezel) 5 / var(--ch-bz);
+  box-shadow: var(--ch-lift);
+}
+
 .ch-card,
 .ch-about-tip,
 .ch-layers,
@@ -165,21 +234,15 @@ body.ch-page {
 .ch-wars,
 .ch-changes {
   border: 1px solid var(--rule);
+  border-top: 6px solid var(--ch-brass);
+  border-image: var(--ch-plate) 6 1 1 1;
   box-shadow: var(--ch-lift);
 }
 
-.ch-year-box,
-.ch-card {
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), var(--ch-lift);
-}
-
-.ch-head,
-.ch-ctls,
 .ch-key,
 .ch-wars,
 .ch-changes {
-  border-color: color-mix(in srgb, var(--rule) 55%, transparent);
-  box-shadow: 0 1px 2px rgba(58, 42, 27, 0.1);
+  box-shadow: 0 1px 2px rgba(58, 42, 27, 0.2);
 }
 
 .ch-top {
@@ -204,13 +267,23 @@ body.ch-page {
   height: var(--ch-bar);
 }
 
+/* The title is the maker's nameplate, and the tools beside it lie in a tray of the same: dark walnut under enamel, with
+   the name in the brass's own light (9 to 1). On the dark the brass buttons are parted from their bezel by a third
+   material, not two, and stand clear of the paper. */
+.ch-head,
+.ch-ctls {
+  background-color: var(--ch-enamel);
+  background-image: linear-gradient(180deg, rgba(255, 236, 190, 0.2), rgba(255, 236, 190, 0.04) 46%, rgba(0, 0, 0, 0.18)), var(--ch-grain);
+  background-size: auto, 260px 260px;
+}
+
 .ch-head {
   grid-column: 1;
   position: relative;
   display: flex;
   align-items: stretch;
   min-width: 0;
-  padding: 0 4px 0 0;
+  padding: 0 2px 0 0;
 }
 
 .ch-head-text {
@@ -229,6 +302,8 @@ body.ch-page {
   letter-spacing: 0.16em;
   line-height: 1;
   padding-left: 0.16em;
+  color: var(--ch-brass-hi);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
 .ch-about {
@@ -236,12 +311,13 @@ body.ch-page {
   display: flex;
 }
 
+/* The bezel is four pixels wider than the old rule, and the padding four narrower, so each tool is as large as it was. */
 .ch-ctls {
   grid-column: 3;
   justify-self: end;
   position: relative;
   display: flex;
-  padding: 4px;
+  padding: 0;
 }
 
 .ch-ctl,
@@ -253,30 +329,30 @@ body.ch-page {
   cursor: pointer;
 }
 
+/* Each tool is a round brass push-button: the button's own box is the whole square cell, so the place to press is as
+   large as it ever was, corners and all, and the brass is a disc drawn under its icon (::after, below). */
 .ch-ctl {
   flex: 0 0 auto;
   width: var(--ch-seg);
   height: 100%;
   border: 0;
   background: none;
-}
-
-.ch-head .ch-ctl,
-.ch-ctl + .ch-ctl {
-  border-left: 1px solid var(--ch-faint);
+  color: var(--ch-on-brass);
+  isolation: isolate;
 }
 
 .ch-head .ch-ctl {
-  margin: 4px 0;
   height: auto;
 }
 
+/* The play buttons are made the same way: a square to press, and a brass disc drawn under the icon (::after). */
 .ch-step {
   width: 34px;
   height: 34px;
-  border: 1px solid var(--rule);
-  border-color: color-mix(in srgb, var(--rule) 55%, transparent);
-  background-color: var(--bg);
+  border: 0;
+  background: none;
+  color: var(--ch-on-brass);
+  isolation: isolate;
 }
 
 .ch-ctl svg,
@@ -289,49 +365,105 @@ body.ch-page {
   stroke-width: 0.8;
 }
 
+/* On brass an icon's lines are drawn a little heavier than on paper, where the ground was lighter. */
+.ch-ctl > .ch-ico,
+.ch-step > .ch-ico {
+  stroke-width: 1.5;
+}
+
+.ch-ctl > .ch-ico .h,
+.ch-step > .ch-ico .h {
+  stroke-width: 0.95;
+}
+
 .ch-ico .f {
   fill: currentColor;
   stroke: none;
 }
 
-.ch-ctl::after {
+/* The brass of a tool: a disc three pixels inside its cell (never wider than 38, so it stays round in a narrow cell),
+   behind the icon. Under the pointer it is brighter; pressed, or while its panel is open, it sits in. A play button's
+   disc fills its square. */
+.ch-ctl::after,
+.ch-step::after {
   content: "";
   position: absolute;
-  inset: 2px;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  box-sizing: border-box;
+  width: min(100% - 6px, 38px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 50%;
+  background: var(--ch-metal);
+  box-shadow: var(--ch-raised);
   pointer-events: none;
 }
 
+.ch-step::after {
+  width: 100%;
+}
+
 .ch-ctl:hover::after,
+.ch-step:hover:not(:disabled)::after {
+  background: var(--ch-metal-lit);
+}
+
+.ch-ctl:active::after,
+.ch-ctl[aria-expanded="true"]::after,
+.ch-about.is-open .ch-ctl::after,
+.ch-step:active:not(:disabled)::after {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
+}
+
+/* A tool whose panel is open wears a ring of verdigris (the lighter one, 7 to 1 on the tray), so it can be told from
+   one only passed over. */
 .ch-ctl[aria-expanded="true"]::after,
 .ch-about.is-open .ch-ctl::after {
-  box-shadow: inset 0 0 0 0.7px rgba(58, 42, 27, 0.75);
-  background: var(--ch-btn-hover);
+  box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-verdigris-lt);
 }
 
-.ch-ctl[aria-expanded="true"]::after,
-.ch-about.is-open .ch-ctl::after {
-  background: rgba(58, 42, 27, 0.13);
+.ch-ctl:active > svg,
+.ch-ctl[aria-expanded="true"] > svg,
+.ch-about.is-open .ch-ctl > svg,
+.ch-step:active:not(:disabled) > svg {
+  translate: 0 1px;
 }
 
-.ch-step:hover {
-  box-shadow: inset 0 0 0 2px #ebdfc2, inset 0 0 0 2.7px rgba(58, 42, 27, 0.75);
-}
-
+/* The focus ring of a round button is drawn round its disc, not its square: ivory on the dark tray (15 to 1), ink on
+   the paper of the timeline. */
 .ch-ctl:focus-visible,
-.ch-step:focus-visible,
-.ch-card-close:focus-visible {
-  outline: 1.5px solid var(--ink);
-  outline-offset: -5px;
+.ch-step:focus-visible {
+  outline: none;
 }
 
-.ch-step:focus-visible {
+.ch-ctl:focus-visible::after {
+  outline: 2px solid var(--ch-ivory);
+  outline-offset: 1px;
+}
+
+.ch-step:focus-visible::after {
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
+.ch-card-close:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+}
+
+
 .ch-step:disabled {
-  color: var(--ch-faint);
+  color: rgba(42, 28, 18, 0.45);
   cursor: default;
-  box-shadow: none;
+}
+
+.ch-step:disabled::after {
+  background: var(--ch-brass);
+  box-shadow: inset 0 0 0 1px rgba(255, 250, 228, 0.25);
 }
 
 .ch-ctl-label {
@@ -345,14 +477,17 @@ body.ch-page {
   display: none;
 }
 
-.ch-play[aria-pressed="true"] {
-  box-shadow: inset 0 0 0 2px #ebdfc2, inset 0 0 0 2.7px rgba(58, 42, 27, 0.75);
+/* While the years are playing, the button that plays them stays in, in its ring of verdigris. */
+.ch-play[aria-pressed="true"]::after,
+.ch-play[aria-pressed="true"]:hover::after {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-verdigris);
 }
 
 .ch-about-tip,
 .ch-layers {
   position: absolute;
-  top: calc(100% + 9px);
+  top: calc(100% + var(--ch-bz) + 8px);
   right: -5px;
   z-index: 7;
   box-sizing: border-box;
@@ -362,7 +497,7 @@ body.ch-page {
 
 .ch-about-tip {
   display: none;
-  left: -1px;
+  left: calc(-1 * var(--ch-bz));
   right: auto;
   width: min(360px, calc(100vw - 48px));
   padding: 13px 16px 9px;
@@ -428,8 +563,11 @@ body.ch-page {
   display: inline-block;
   min-width: 1.5em;
   padding: 0 4px;
-  border: 1px solid color-mix(in srgb, var(--rule) 45%, transparent);
+  border: 1px solid var(--ch-brass-deep);
   border-radius: 3px;
+  background: var(--ch-metal);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 228, 0.9), inset 0 -1px 0 rgba(79, 58, 23, 0.4);
+  color: var(--ch-on-brass);
   font: inherit;
   font-size: 11px;
   line-height: 1.5;
@@ -447,7 +585,7 @@ body.ch-page {
 }
 
 .ch-layers {
-  right: -1px;
+  right: calc(-1 * var(--ch-bz));
   width: 236px;
   padding: 12px 16px 12px;
   font-size: 14.5px;
@@ -460,15 +598,17 @@ body.ch-page {
 
 .ch-search {
   position: absolute;
-  top: calc(100% + 9px);
-  right: -1px;
+  top: calc(100% + var(--ch-bz) + 8px);
+  right: calc(-1 * var(--ch-bz));
   z-index: 7;
   box-sizing: border-box;
   width: 300px;
   max-width: calc(100vw - 2 * var(--ch-gap));
   padding: 12px 14px 10px;
   border: 1px solid var(--rule);
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), var(--ch-lift);
+  border-top: 6px solid var(--ch-brass);
+  border-image: var(--ch-plate) 6 1 1 1;
+  box-shadow: var(--ch-lift);
   background-color: var(--bg);
   background-image: var(--ch-grain);
   background-size: 260px 260px;
@@ -491,17 +631,19 @@ body.ch-page {
   box-sizing: border-box;
   width: 100%;
   padding: 6px 9px;
-  border: 1px solid var(--rule);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 2px;
+  background: var(--ch-ivory);
+  box-shadow: var(--ch-well);
   color: var(--ink);
   font: inherit;
   font-size: 16px;
 }
 
+/* A field being typed in is ringed in verdigris (4.8 to 1 on its ivory), here and on every other field. */
 .ch-search-input:focus-visible {
-  outline: 2px solid var(--ch-select, #8c2a1a);
-  outline-offset: 1px;
+  outline: 2px solid var(--ch-verdigris);
+  outline-offset: 0;
 }
 
 .ch-search-list {
@@ -579,24 +721,27 @@ body.ch-page {
   cursor: pointer;
 }
 
+/* A switch on the panel: an ivory well in a brass collar (darker on its upper side, where the well is in shade), two
+   pixels larger than the old box so the tick is no smaller. The row's height does not change, as its text is taller. */
 .ch-layer input {
   flex: 0 0 auto;
   position: relative;
-  width: 15px;
-  height: 15px;
+  box-sizing: border-box;
+  width: 17px;
+  height: 17px;
   margin: 0;
-  border: 1px solid var(--ink);
-  border-radius: 0;
-  background: var(--ch-paper);
-  box-shadow: inset 0 0 0 2px var(--ch-paper), inset 0 0 0 2.6px var(--ch-faint);
+  border: 2px solid var(--ch-brass);
+  border-color: var(--ch-brass-lo) var(--ch-brass) var(--ch-brass-lt);
+  border-radius: 3px;
+  background: var(--ch-ivory);
+  box-shadow: 0 0 0 1px var(--ch-brass-deep), var(--ch-well);
   -webkit-appearance: none;
   appearance: none;
   cursor: pointer;
 }
 
 .ch-layer input:checked {
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.4 8.4 6.6 11.6 12.8 3.6' fill='none' stroke='%233a2a1b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 13px 13px no-repeat var(--ch-paper);
-  box-shadow: none;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.4 8.4 6.6 11.6 12.8 3.6' fill='none' stroke='%233a2a1b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 13px 13px no-repeat var(--ch-ivory);
 }
 
 /* Globe or flat map: one of two, so round, with a dot for the one chosen. */
@@ -604,12 +749,12 @@ body.ch-page {
   border-radius: 50%;
 }
 .ch-layer input[type="radio"]:checked {
-  background: radial-gradient(circle, var(--ink) 0 3.2px, var(--ch-paper) 3.8px);
+  background: radial-gradient(circle, var(--ink) 0 3.2px, var(--ch-ivory) 3.8px);
 }
 
 .ch-layer input:focus-visible {
-  outline: 1.5px solid var(--ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
 
 .ch-save {
@@ -622,18 +767,23 @@ body.ch-page {
   width: 100%;
   margin: 8px 0 4px;
   padding: 7px 10px;
-  border: 1px solid var(--rule);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--bg) 70%, #fff);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--bg) 70%, #fff), inset 0 0 0 2.6px var(--ch-faint);
-  color: var(--ink);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: var(--ch-metal);
+  box-shadow: var(--ch-raised);
+  color: var(--ch-on-brass);
   font: inherit;
   font-size: 14.5px;
   cursor: pointer;
 }
 
 .ch-save-btn:hover:not(:disabled) {
-  background: var(--ch-paper);
+  background: var(--ch-metal-lit);
+}
+
+.ch-save-btn:active:not(:disabled) {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-save-btn:disabled {
@@ -642,10 +792,31 @@ body.ch-page {
 }
 
 .ch-save-btn:focus-visible,
-.ch-save-input:focus-visible,
 .ch-save-cancel:focus-visible {
-  outline: 1.5px solid var(--ink);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+.ch-save-input:focus-visible {
+  outline: 2px solid var(--ch-verdigris);
+  outline-offset: 0;
+}
+
+/* A panel has one brass button, for the thing it is chiefly for. In Save that is the image; making a video and opening
+   UCHRONIA, in their own sections under it, are ivory keys like the lesser buttons of the other panels. */
+.ch-save-set .ch-save-btn {
+  background: linear-gradient(180deg, var(--ch-ivory), var(--ch-paper));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 1px rgba(42, 28, 18, 0.25);
+  color: var(--ink);
+}
+
+.ch-save-set .ch-save-btn:hover:not(:disabled) {
+  background: var(--ch-ivory);
+}
+
+.ch-save-set .ch-save-btn:active:not(:disabled) {
+  background: var(--ch-paper);
+  box-shadow: var(--ch-well);
 }
 
 .ch-save-set {
@@ -673,9 +844,10 @@ body.ch-page {
   width: 100%;
   min-width: 0;
   padding: 4px 7px;
-  border: 1px solid var(--rule);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 2px;
+  background-color: var(--ch-ivory);
+  box-shadow: var(--ch-well);
   color: var(--ink);
   font: inherit;
   font-size: 14.5px;
@@ -714,25 +886,29 @@ select.ch-save-input {
 
 .ch-save-prog progress {
   display: block;
+  box-sizing: border-box;
   width: 100%;
-  height: 8px;
-  border: 1px solid var(--rule);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 5px;
+  background: var(--ch-ivory);
+  box-shadow: var(--ch-well);
   -webkit-appearance: none;
   appearance: none;
 }
 
+/* The video's progress is a sight glass that fills with copper. */
 .ch-save-prog progress::-webkit-progress-bar {
-  background: color-mix(in srgb, var(--bg) 70%, #fff);
+  background: var(--ch-ivory);
 }
 
 .ch-save-prog progress::-webkit-progress-value {
-  background: var(--ink);
+  background: linear-gradient(180deg, var(--ch-copper-hi), var(--ch-copper) 50%, var(--ch-copper-lo));
 }
 
 .ch-save-prog progress::-moz-progress-bar {
-  background: var(--ink);
+  background: linear-gradient(180deg, var(--ch-copper-hi), var(--ch-copper) 50%, var(--ch-copper-lo));
 }
 
 .ch-save-progrow {
@@ -789,7 +965,11 @@ select.ch-save-input {
   gap: 22px;
   box-sizing: border-box;
   padding: 12px calc(20px + env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
-  border-top: 1px solid var(--rule);
+  /* The bar's upper edge is a brass rail (--ch-rail), drawn in the first five pixels of its padding, over the paper. */
+  border-top: 1px solid var(--ch-brass-deep);
+  background-image: var(--ch-rail), var(--ch-grain);
+  background-size: 100% 5px, 260px 260px;
+  background-repeat: no-repeat, repeat;
   box-shadow: 0 -2px 10px -6px rgba(58, 42, 27, 0.3);
 }
 
@@ -831,39 +1011,74 @@ select.ch-save-input {
 
 .ch-speed-step {
   flex: 0 0 auto;
+  position: relative;
   display: grid;
   place-items: center;
   width: 20px;
   height: 20px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
-  border-radius: 0;
-  background: var(--bg);
-  color: var(--ink);
+  border: 0;
+  background: none;
+  color: var(--ch-on-brass);
   cursor: pointer;
+  isolation: isolate;
 }
 
-.ch-speed-step:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 1.5px #ebdfc2, inset 0 0 0 2.2px rgba(58, 42, 27, 0.75);
+.ch-speed-step::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 50%;
+  background: var(--ch-metal);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 228, 0.9), 0 1px 1px rgba(42, 28, 18, 0.35);
+}
+
+.ch-speed-step:hover:not(:disabled)::after {
+  background: var(--ch-metal-lit);
+}
+
+.ch-speed-step:active:not(:disabled)::after {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-speed-step:disabled {
-  color: var(--ch-faint);
+  color: rgba(42, 28, 18, 0.45);
   cursor: default;
 }
 
+.ch-speed-step:disabled::after {
+  background: var(--ch-brass);
+  box-shadow: none;
+}
+
 .ch-speed-step:focus-visible {
-  outline: 1.5px solid var(--ink);
+  outline: none;
+}
+
+.ch-speed-step:focus-visible::after {
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
+/* The speed is read like a gauge, through a small ivory window between its two buttons. */
 .ch-speed-now {
   flex: 1;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
   min-width: 0;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 999px;
+  background: var(--ch-ivory);
+  box-shadow: var(--ch-well);
   white-space: nowrap;
   font-family: var(--ch-num);
   font-size: 13px;
-  line-height: 20px;
+  line-height: 1;
   text-align: center;
   color: var(--ink);
   cursor: default;
@@ -903,26 +1118,37 @@ select.ch-save-input {
   display: flex;
   align-items: center;
   width: 336px;
-  padding: 0 4px;
+  padding: 0;
 }
 
 /* The date reads along one line, as the timeline does: back a year and back a month on its left, forward a month and
-   forward a year on its right, in segments ruled like the toolbar's. */
+   forward a year on its right. It is a mechanical counter: the keys at either end are brass, and between them the date
+   is read through a window, on an ivory drum that turns away into shade above and below. The field itself is still an
+   ordinary text input laid over the drum, so it is typed in as before. */
+.ch-year-box {
+  position: relative;
+  background-color: var(--ch-ivory);
+  background-image: linear-gradient(180deg, rgba(58, 42, 27, 0.3) 0%, rgba(58, 42, 27, 0.07) 20%, rgba(255, 255, 255, 0.4) 46%, rgba(58, 42, 27, 0.05) 76%, rgba(58, 42, 27, 0.24) 100%);
+  background-size: auto;
+}
+
 .ch-spin {
   flex: 0 0 auto;
   align-self: stretch;
   display: flex;
-  margin: 4px 0;
+  margin: 0;
 }
 
 .ch-spin-back {
-  border-right: 1px solid var(--ch-faint);
+  border-right: 1px solid var(--ch-brass-deep);
 }
 
 .ch-spin-fwd {
-  border-left: 1px solid var(--ch-faint);
+  border-left: 1px solid var(--ch-brass-deep);
 }
 
+/* Each key is its own piece of brass, bevelled on all four sides (lit above and on the left, dark below and on the
+   right), so two together read as two keys and not as one slab; their arrows are cut two pixels wide. */
 .ch-spin-btn {
   flex: 0 0 auto;
   display: grid;
@@ -930,35 +1156,38 @@ select.ch-save-input {
   width: 34px;
   padding: 0;
   border: 0;
-  background: none;
-  color: var(--ch-muted);
+  background: var(--ch-metal);
+  box-shadow: inset 1px 1px 0 rgba(255, 250, 228, 0.8), inset -1px -1px 0 rgba(70, 51, 15, 0.55);
+  color: var(--ch-on-brass);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
+.ch-spin-btn .ch-ico {
+  stroke-width: 2;
+}
+
+/* Two keys side by side are parted by a dark line between their bevels. */
 .ch-spin-btn + .ch-spin-btn {
-  border-left: 1px solid var(--ch-faint);
+  border-left: 1px solid var(--ch-brass-deep);
 }
 
 .ch-spin-btn:hover {
-  color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  background: var(--ch-metal-lit);
 }
 
 .ch-spin-btn:active {
-  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  background: var(--ch-metal-down);
+  box-shadow: inset 0 2px 3px rgba(42, 28, 18, 0.45);
 }
 
 .ch-spin-btn:focus-visible {
-  outline: 1.5px solid var(--ink);
-  outline-offset: -2px;
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
 }
 
 /* While a button beside the date is hovered, the year or the month it moves is underlined: a copy of the date in clear
    ink laid over the field, with only that part's underline showing. */
-.ch-year-box {
-  position: relative;
-}
 
 .ch-year-mark {
   position: absolute;
@@ -1001,7 +1230,7 @@ select.ch-save-input {
   max-width: min(320px, calc(100vw - 32px));
   margin: 0;
   padding: 6px 10px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--ch-brass-deep);
   background-color: var(--bg);
   box-shadow: var(--ch-lift);
   font-size: 14px;
@@ -1025,20 +1254,21 @@ select.ch-save-input {
 
 .ch-spin-btn.is-off:hover,
 .ch-spin-btn.is-off:active {
-  color: var(--ch-muted);
-  background: none;
+  background: var(--ch-metal);
+  box-shadow: inset 1px 1px 0 rgba(255, 250, 228, 0.8), inset -1px -1px 0 rgba(70, 51, 15, 0.55);
 }
 
+/* The field fills the window from top to foot, so its ring when typed in is the window's own edge. */
 .ch-year {
   display: block;
   flex: 1 1 auto;
+  align-self: stretch;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
   margin: 0;
   padding: 0 2px;
   border: 0;
-  border-bottom: 1px dotted transparent;
   background: none;
   color: var(--ink);
   font-family: var(--ch-num);
@@ -1050,12 +1280,13 @@ select.ch-save-input {
 }
 
 .ch-year:hover {
-  border-bottom-color: var(--ch-muted);
+  box-shadow: inset 0 -2px 0 var(--ch-muted);
 }
 
+/* Typed in, the window is ringed in verdigris inside its edge (4.8 to 1 on the ivory), with no rule under the date. */
 .ch-year:focus {
   outline: none;
-  border-bottom: 1px solid var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ch-verdigris);
 }
 
 .ch-track {
@@ -1063,6 +1294,26 @@ select.ch-save-input {
   flex: 1 1 auto;
   min-width: 0;
   height: 56px;
+}
+
+/* The line of years is a slide rule let into the bar: an ivory scale in a brass frame two pixels thick, in shade under
+   its upper edge, with the ticks and the marks of the maps and changes above them in ink on the ivory (11 to 1), where
+   a crowd of them still reads as marks. The years are printed on the paper under it. It is drawn first in the track,
+   so everything else lies over it. */
+.ch-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 5px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 2px solid var(--ch-brass);
+  border-color: var(--ch-brass-lt) var(--ch-brass) var(--ch-brass-lo);
+  border-radius: 2px;
+  background: var(--ch-ivory);
+  box-shadow: 0 0 0 1px var(--ch-brass-deep), inset 0 0 0 1px rgba(70, 51, 15, 0.7), inset 0 2px 3px rgba(42, 28, 18, 0.3);
+  pointer-events: none;
 }
 
 .ch-ticks {
@@ -1130,7 +1381,7 @@ select.ch-save-input {
   position: absolute;
   left: 9px;
   right: 9px;
-  top: 32px;
+  top: 34px;
   height: 18px;
   pointer-events: none;
 }
@@ -1270,14 +1521,17 @@ select.ch-save-input {
   background: none;
 }
 
+/* The marker is the rule's cursor: a copper saddle 14 pixels wide, knurled across its top and foot, with a narrow slot
+   of ivory glass in its middle and one red hairline in the slot at the date. Its box is the size the old marker's
+   was (18 by 30), as app.js places it and takes hold of it by that. */
 .ch-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
   height: 30px;
-  margin-top: 2px;
+  margin-top: 4px;
   border: 0;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'><path d='M9 1v28' stroke='%238c2a1a' stroke-width='1.6'/><path d='M3 4h12L9 13z' fill='%238c2a1a'/></svg>") center / 18px 30px no-repeat;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'><defs><linearGradient id='c' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='%23e2a77c'/><stop offset='.3' stop-color='%23cf8a58'/><stop offset='.62' stop-color='%23b5703f'/><stop offset='1' stop-color='%237c4524'/></linearGradient></defs><rect x='2.5' y='.5' width='13' height='29' rx='2' fill='url(%23c)' stroke='%233a1c0c'/><path d='M3.5 1.5h11' stroke='%23f6cfae' stroke-opacity='.9'/><path d='M4 3.5h10M4 5.5h10M4 7.5h10M4 22.5h10M4 24.5h10M4 26.5h10' stroke='%233a1c0c' stroke-opacity='.6'/><path d='M4 4.5h10M4 6.5h10M4 23.5h10M4 25.5h10' stroke='%23f6cfae' stroke-opacity='.45'/><rect x='6' y='9.5' width='6' height='11' rx='.6' fill='%23f8f1dc' stroke='%233a1c0c' stroke-width='.9'/><path d='M9 10v10' stroke='%237a1408' stroke-width='1.2'/></svg>") center / 18px 30px no-repeat;
   cursor: grab;
 }
 
@@ -1286,7 +1540,7 @@ select.ch-save-input {
   height: 30px;
   border: 0;
   border-radius: 0;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'><path d='M9 1v28' stroke='%238c2a1a' stroke-width='1.6'/><path d='M3 4h12L9 13z' fill='%238c2a1a'/></svg>") center / 18px 30px no-repeat;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'><defs><linearGradient id='c' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='%23e2a77c'/><stop offset='.3' stop-color='%23cf8a58'/><stop offset='.62' stop-color='%23b5703f'/><stop offset='1' stop-color='%237c4524'/></linearGradient></defs><rect x='2.5' y='.5' width='13' height='29' rx='2' fill='url(%23c)' stroke='%233a1c0c'/><path d='M3.5 1.5h11' stroke='%23f6cfae' stroke-opacity='.9'/><path d='M4 3.5h10M4 5.5h10M4 7.5h10M4 22.5h10M4 24.5h10M4 26.5h10' stroke='%233a1c0c' stroke-opacity='.6'/><path d='M4 4.5h10M4 6.5h10M4 23.5h10M4 25.5h10' stroke='%23f6cfae' stroke-opacity='.45'/><rect x='6' y='9.5' width='6' height='11' rx='.6' fill='%23f8f1dc' stroke='%233a1c0c' stroke-width='.9'/><path d='M9 10v10' stroke='%237a1408' stroke-width='1.2'/></svg>") center / 18px 30px no-repeat;
   cursor: grab;
 }
 
@@ -1314,8 +1568,8 @@ select.ch-save-input {
 }
 
 .ch-range:focus-visible {
-  outline: 1px dotted var(--ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
 }
 
 .ch-key {
@@ -1359,10 +1613,15 @@ select.ch-save-input {
 
 .ch-key-btn:hover {
   color: var(--ink);
+  background: var(--ch-btn-hover);
+}
+
+.ch-key-btn:active {
+  background: rgba(58, 42, 27, 0.13);
 }
 
 .ch-key-btn:focus-visible {
-  outline: 1.5px solid var(--ink);
+  outline: 2px solid var(--ink);
   outline-offset: -4px;
 }
 
@@ -1399,7 +1658,6 @@ select.ch-save-input {
   margin: 0 4px;
   padding: 2px 10px 8px 9px;
   overflow-y: auto;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
 }
 
 .ch-wars-row {
@@ -1488,7 +1746,11 @@ select.ch-save-input {
   margin: 0 4px;
   padding: 6px 10px 9px 8px;
   list-style: none;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+}
+
+/* Open, a fixture's name is parted from the list under it by a faint rule. */
+.ch-key-btn[aria-expanded="true"] {
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
 }
 
 .ch-key-list[hidden],
@@ -1572,6 +1834,10 @@ select.ch-save-input {
   background: none;
   color: var(--ink);
   cursor: pointer;
+}
+
+.ch-card-close:hover {
+  background: var(--ch-btn-hover);
 }
 
 .ch-card-close svg {
@@ -1718,7 +1984,8 @@ select.ch-save-input {
   display: block;
   max-width: 108px;
   max-height: 130px;
-  border: 1px solid var(--ch-faint);
+  border: 1px solid var(--ch-brass-deep);
+  box-shadow: 0 0 0 2px var(--ch-ivory), 0 0 0 3px var(--ch-brass-lo);
   filter: sepia(0.18) saturate(0.92);
   transition: border-color 0.15s;
 }
@@ -1757,7 +2024,9 @@ select.ch-save-input {
   background-image: var(--ch-grain);
   background-size: 260px 260px;
   border: 1px solid var(--rule);
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), 0 18px 50px rgba(20, 12, 4, 0.45);
+  border-top: 6px solid var(--ch-brass);
+  border-image: var(--ch-plate) 6 1 1 1;
+  box-shadow: 0 18px 50px rgba(20, 12, 4, 0.45);
   cursor: default;
 }
 
@@ -1798,10 +2067,21 @@ select.ch-save-input {
   width: 42px;
   height: 42px;
   padding: 9px;
-  border: 1px solid var(--rule);
-  background: var(--bg);
-  color: var(--ink);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: var(--ch-metal);
+  box-shadow: var(--ch-raised);
+  color: var(--ch-on-brass);
   cursor: pointer;
+}
+
+.ch-lightbox-close:hover {
+  background: var(--ch-metal-lit);
+}
+
+.ch-lightbox-close:active {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-lightbox-close svg {
@@ -1977,6 +2257,7 @@ select.ch-save-input {
   color: var(--ch-muted);
 }
 
+/* What a control does, on a small enamel label like the nameplate's: ivory on the dark (15 to 1). */
 .ch-hover-tip {
   position: fixed;
   left: 0;
@@ -1984,7 +2265,10 @@ select.ch-save-input {
   z-index: 60;
   max-width: 250px;
   padding: 5px 8px 6px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--ch-brass-lo);
+  border-radius: 2px;
+  background-color: var(--ch-enamel);
+  color: var(--ch-ivory);
   font-size: 12.5px;
   line-height: 1.35;
   pointer-events: none;
@@ -2029,6 +2313,16 @@ select.ch-save-input {
 @media (max-width: 880px) {
   .ch-top > .ch-year-box {
     top: calc(var(--ch-bar) + var(--ch-gap));
+  }
+}
+
+/* Where the date has dropped under the top row (and is not yet in the timeline, as on a phone), the card starts under
+   the date too, and is shorter by as much, so the date no longer lies over the card's name and its close button. */
+@media (min-width: 641px) and (max-width: 880px) {
+  .ch-card {
+    top: calc(2 * var(--ch-bar) + 3 * var(--ch-gap) + env(safe-area-inset-top, 0px));
+    max-height: calc(100vh - 2 * var(--ch-bar) - 4 * var(--ch-gap) - var(--ch-time-h));
+    max-height: calc(100dvh - 2 * var(--ch-bar) - 4 * var(--ch-gap) - var(--ch-time-h));
   }
 }
 
@@ -2090,34 +2384,53 @@ select.ch-save-input {
     height: 40px;
   }
 
+  /* The bezel is a pixel slimmer on a phone (the same drawing, at four fifths), so with no padding inside it each
+     tool is 44 pixels square, and the keys beside the date are as tall as they were. */
   :root.ch,
   :root.ch[data-theme] {
     --ch-gap: 8px;
     --ch-bar: 52px;
     --ch-seg: 44px;
+    --ch-bz: 4px;
   }
 
-  /* On a phone nothing can be hovered, so each tool is named under its icon. */
+  /* On a phone nothing can be hovered, so each tool is named under its icon: the brass is a smaller button at the top
+     of the cell with the icon on it, and the name is on the tray under it, in the nameplate's light (9 to 1), a point
+     smaller than it was so that Report and Account, the two longest, stand apart and clear of the bezel. The whole
+     cell is still what is pressed. */
   .ch-ctls .ch-ctl {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
+    justify-content: flex-start;
+    gap: 5px;
+    padding-top: 6px;
+  }
+
+  .ch-ctls .ch-ctl::after {
+    top: 2px;
+    width: 28px;
+    translate: -50% 0;
+  }
+
+  /* Two pixels of tray at either end, so the last name (Account, the widest) stands three clear of the bezel. */
+  .ch-ctls {
+    padding: 0 2px;
   }
 
   .ch-ctls .ch-ctl svg {
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
     margin: 0;
   }
+
 
   .ch-ctl-label {
     display: block;
     font-family: var(--ch-sc);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
-    color: var(--ch-muted);
+    color: var(--ch-brass-hi);
   }
 
   .ch-ctl[aria-pressed="true"] .ch-ctl-label.ch-icon-flat,
@@ -2184,7 +2497,7 @@ select.ch-save-input {
     grid-template-areas: "date date" "track fwd";
     align-items: center;
     gap: 6px 6px;
-    padding: 8px calc(14px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
+    padding: 9px calc(14px + env(safe-area-inset-right, 0px)) calc(7px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
   }
 
   .ch-when-fwd {
@@ -2202,11 +2515,7 @@ select.ch-save-input {
     max-width: 340px;
     min-width: 0;
     height: 44px;
-    padding: 0 3px;
-  }
-
-  .ch-spin {
-    margin: 3px 0;
+    padding: 0;
   }
 
   .ch-spin-btn {
@@ -2232,7 +2541,7 @@ select.ch-save-input {
   }
 
   .ch-step {
-    width: 36px;
+    width: 38px;
     height: 38px;
   }
 
@@ -2278,10 +2587,10 @@ select.ch-save-input {
     width: auto;
     max-height: 46vh;
     max-height: 46dvh;
-    padding: 12px 16px 14px;
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
+    padding: 10px 16px 14px;
+    /* A sheet across the foot of the screen keeps the plate's brass rail along its top, and has no sides to rule. */
+    border-width: 6px 0 0;
+    border-image: var(--ch-plate) 6 0 0 0;
     box-shadow: 0 -2px 10px -6px rgba(58, 42, 27, 0.3);
   }
 
@@ -2311,8 +2620,20 @@ select.ch-save-input {
     display: none;
   }
 
+  .ch-ctls {
+    padding: 0;
+  }
+
   .ch-ctls .ch-ctl {
     width: 35px;
+    justify-content: center;
+    padding-top: 0;
+  }
+
+  .ch-ctls .ch-ctl::after {
+    top: 50%;
+    width: 31px;
+    translate: -50% -50%;
   }
 
   .ch-head-text {
@@ -2466,7 +2787,7 @@ select.ch-save-input {
 }
 
 .ch-linkbtn:focus-visible {
-  outline: 1.5px solid var(--ink);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -2507,8 +2828,8 @@ select.ch-save-input {
 }
 
 #report-pick[aria-pressed="true"] {
-  background: var(--ch-paper);
-  box-shadow: inset 0 0 0 1.5px var(--ink);
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk), 0 0 0 1.5px var(--ch-verdigris);
 }
 
 .ch-report-who {
@@ -2547,7 +2868,9 @@ select.ch-save-input {
   overflow: auto;
   padding: 12px 14px 10px;
   border: 1px solid var(--rule);
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--ch-faint), var(--ch-lift);
+  border-top: 6px solid var(--ch-brass);
+  border-image: var(--ch-plate) 6 1 1 1;
+  box-shadow: var(--ch-lift);
   background-color: var(--bg);
   background-image: var(--ch-grain);
   background-size: 260px 260px;
@@ -2846,7 +3169,6 @@ select.ch-save-input {
 .ch-changes-body {
   margin: 0 4px;
   padding: 2px 8px 8px;
-  border-top: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
 }
 
 .ch-changes-head {
@@ -2872,26 +3194,32 @@ select.ch-save-input {
   height: 26px;
   margin: 0;
   padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: var(--ch-metal);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 228, 0.9), 0 1px 1px rgba(42, 28, 18, 0.3);
+  color: var(--ch-on-brass);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.ch-changes-step:hover {
-  background: var(--ch-btn-hover);
+.ch-changes-step:hover:not(:disabled) {
+  background: var(--ch-metal-lit);
+}
+
+.ch-changes-step:active:not(:disabled) {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-changes-step:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: default;
-  background: none;
 }
 
 .ch-changes-step:focus-visible {
-  outline: 1.5px solid var(--ink);
-  outline-offset: -2px;
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
 }
 
 .ch-changes-list {
@@ -3010,9 +3338,10 @@ select.ch-save-input {
   place-items: center;
   width: 25px;
   height: 25px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--ch-brass-deep);
   border-radius: 50%;
-  background: var(--ch-paper, #f3ead3);
+  background: var(--ch-ivory, #f8f1dc);
+  box-shadow: var(--ch-well);
   color: var(--ink);
   font-family: var(--ch-sc);
   font-size: 15px;
@@ -3020,7 +3349,12 @@ select.ch-save-input {
 }
 @media (max-width: 640px) {
   .ch-account-initial {
-    top: calc(50% - 8px);
+    top: 16px;
+  }
+}
+@media (max-width: 369px) {
+  .ch-account-initial {
+    top: 50%;
   }
 }
 .ch-account,
@@ -3047,11 +3381,15 @@ select.ch-save-input {
 .ch-account-gsi:empty {
   display: none;
 }
+/* The lesser buttons of a panel (Not now, Back, Sign out, Stop) are ivory keys in a brass-dark edge, so the brass one
+   beside them is plainly the one to press. */
 .ch-account-alt,
 .ch-invite-later {
   padding: 4px 12px;
-  border: 1px solid var(--rule);
-  background: transparent;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--ch-ivory), var(--ch-paper));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 1px rgba(42, 28, 18, 0.25);
   color: var(--ink);
   font: inherit;
   font-size: 14px;
@@ -3059,7 +3397,18 @@ select.ch-save-input {
 }
 .ch-account-alt:hover,
 .ch-invite-later:hover {
-  background: rgba(58, 42, 27, 0.07);
+  background: var(--ch-ivory);
+}
+.ch-account-alt:active,
+.ch-invite-later:active {
+  background: var(--ch-paper);
+  box-shadow: var(--ch-well);
+}
+.ch-account-alt:focus-visible,
+.ch-invite-later:focus-visible,
+.ch-follow-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 .ch-account-alt[hidden] {
   display: none;
@@ -3122,16 +3471,23 @@ select.ch-save-input {
   padding: 0;
   display: grid;
   place-items: center;
-  border: 1px solid var(--ch-faint);
-  background: none;
-  color: var(--ink);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: var(--ch-metal);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 228, 0.9), 0 1px 1px rgba(42, 28, 18, 0.3);
+  color: var(--ch-on-brass);
   font-family: var(--ch-sc);
   font-size: 15px;
   cursor: pointer;
 }
 
 .ch-turn-btn:hover:not(:disabled) {
-  background: var(--ch-btn-hover);
+  background: var(--ch-metal-lit);
+}
+
+.ch-turn-btn:active:not(:disabled) {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-turn-btn:disabled {
@@ -3142,7 +3498,7 @@ select.ch-save-input {
 .ch-turn-btn:focus-visible,
 .ch-compass:focus-visible {
   outline: 2px solid var(--ink);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 .ch-turn-how {
@@ -3158,12 +3514,11 @@ select.ch-save-input {
   padding: 5px;
   display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+  /* A pocket compass: an ivory card in a brass case four pixels thick, with the needle over it. */
+  border: 1px solid var(--ch-brass-deep);
   border-radius: 50%;
-  background-color: var(--bg);
-  background-image: var(--ch-grain);
-  background-size: 260px 260px;
-  box-shadow: 0 1px 2px rgba(58, 42, 27, 0.1);
+  background: radial-gradient(circle closest-side, var(--ch-ivory) 0, var(--ch-ivory) calc(100% - 5px), var(--ch-brass-deep) calc(100% - 4.5px), var(--ch-brass-hi) calc(100% - 3.5px), var(--ch-brass) calc(100% - 1.5px), var(--ch-brass-lo) 100%);
+  box-shadow: 0 1px 2px rgba(42, 28, 18, 0.4);
   cursor: pointer;
 }
 
@@ -3253,9 +3608,31 @@ select.ch-save-input {
   gap: 6px;
 }
 
+/* The way on through the tour is the brass button, and so is signing in with Google where a panel offers nothing else. */
+.ch-tour-next,
+.ch-tour-next:hover,
+#account-google,
+#invite-google {
+  background: var(--ch-metal);
+  box-shadow: var(--ch-raised);
+  color: var(--ch-on-brass);
+}
+
 .ch-tour-next {
-  border-color: var(--ink);
   font-weight: 600;
+}
+
+.ch-tour-next:hover,
+#account-google:hover,
+#invite-google:hover {
+  background: var(--ch-metal-lit);
+}
+
+.ch-tour-next:active,
+#account-google:active,
+#invite-google:active {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-tour-skip {
@@ -3288,16 +3665,23 @@ select.ch-save-input {
   gap: 8px;
   min-height: 34px;
   padding: 5px 13px;
-  border: 1px solid var(--rule);
-  background: transparent;
-  color: var(--ink);
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: var(--ch-metal);
+  box-shadow: var(--ch-raised);
+  color: var(--ch-on-brass);
   font: inherit;
   font-size: 14.5px;
   cursor: pointer;
 }
 
 .ch-follow-btn:hover {
-  background: var(--ch-btn-hover);
+  background: var(--ch-metal-lit);
+}
+
+.ch-follow-btn:active {
+  background: var(--ch-metal-down);
+  box-shadow: var(--ch-sunk);
 }
 
 .ch-follow {

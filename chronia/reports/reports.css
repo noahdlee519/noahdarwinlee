@@ -16,25 +16,33 @@
   box-sizing: border-box;
   width: 100%;
   padding: 6px 9px;
-  border: 1px solid var(--ink);
-  border-radius: 0;
-  background: var(--paper);
+  /* A field is an ivory window in the sheet, in shade under its upper edge, as on the atlas's panels. */
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  background: var(--ivory);
+  box-shadow: var(--well);
   color: var(--ink);
   font: inherit;
   font-size: 17px;
 }
+/* The one button is brass, lettered in the darker ink kept for brass (4.6 to 1 or better), and goes in when pressed. */
 .rp-btn {
   padding: 7px 14px;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 2.6px var(--faint);
-  color: var(--ink);
+  border: 1px solid var(--brass-deep);
+  border-radius: 4px;
+  background: var(--metal);
+  box-shadow: var(--raised);
+  color: var(--on-brass);
   font: inherit;
   font-size: 17px;
   cursor: pointer;
 }
 .rp-btn:hover {
-  background: var(--bg);
+  background: var(--metal-lit);
+}
+.rp-btn:active {
+  background: var(--metal-down);
+  box-shadow: var(--sunk);
 }
 .rp-note {
   grid-column: 1 / -1;
@@ -87,7 +95,7 @@
 .rp-item,
 .rp-empty {
   padding: 20px 0 18px;
-  border-top: 1px solid var(--hair);
+  background: var(--brass-rule) 0 0 / 100% 3px no-repeat;
 }
 .rp-empty {
   color: var(--muted);
@@ -146,6 +154,6 @@
 .cp-sheet .rp-reply {
   margin: 0 0 12px;
   padding-left: 12px;
-  border-left: 2px solid var(--faint);
+  border-left: 3px solid var(--brass);
   color: var(--muted);
 }

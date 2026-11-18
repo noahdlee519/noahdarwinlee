@@ -409,6 +409,8 @@
     });
     ["city-halo", "town"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
     ["division", "division-label", "front"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
+    // The brass of the meridian ring (drawRing); without them the ring falls back to the limb's ink.
+    ["ring", "ring-hi", "ring-lo", "ring-edge"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim() || pal.limb; });
     pal.colors = []; pal.bands = [];
     for (var i = 0; i < PALETTE; i++) {
       pal.colors.push(cs.getPropertyValue("--ch-c" + i).trim() || "#e7d6b9");
@@ -1857,12 +1859,42 @@
       ctx.beginPath(); traceOutline(ctx, 0); ctx.lineWidth = 1; ctx.stroke();
       ctx.beginPath(); traceOutline(ctx, 5); ctx.lineWidth = 2.4; ctx.stroke();
     } else {
-      if (!discCovers(B.r - 2)) {
-        ctx.beginPath(); ctx.arc(cx, cy, B.r, 0, TAU); ctx.lineWidth = 1.6; ctx.stroke();
-        ctx.beginPath(); ctx.arc(cx, cy, B.r + 5, 0, TAU); ctx.lineWidth = 0.8; ctx.stroke();
-      }
+      if (!discCovers(B.r - 2)) drawRing();
     }
 
+  }
+  // The globe is held in a brass meridian ring, as on an armillary: a band between two dark edges, lit along its inner
+  // side and shaded along its outer, with a tick engraved every five degrees (longer at every ten, longest at every
+  // thirty). The ticks are fixed to the ring, not to the globe, so they stay still as the globe turns. The ring lies
+  // in the 14 px the layout already leaves round the globe (baseR, in layout), a little slimmer on a small globe, so the
+  // map is no smaller for it; the flat map keeps its ruled frame. It is part of the map's canvas, so a saved image and
+  // a video carry it. A frame costs six strokes: the band's one gradient and the ticks' one path are kept until the
+  // globe's centre or radius, the ring's colours (a change of palette), or the canvas being drawn on, changes.
+  var ringTicks = null, ringGrad = null, ringKey = "", ringCtx = null;
+  function drawRing() {
+    var r = B.r, w = Math.max(5, Math.min(8, r * 0.022)), r0 = r + 0.6, r1 = r0 + w, key = [cx, cy, r, pal.ring, pal["ring-hi"], pal["ring-lo"]].join();
+    if (key !== ringKey || ctx !== ringCtx) {
+      ringTicks = new Path2D();
+      for (var i = 0; i < 72; i++) {
+        var a = i * TAU / 72, c = Math.cos(a), s = Math.sin(a), ra = r1 - 0.9, rb = ra - w * (i % 6 === 0 ? 0.74 : i % 2 === 0 ? 0.52 : 0.3);
+        ringTicks.moveTo(cx + ra * c, cy + ra * s); ringTicks.lineTo(cx + rb * c, cy + rb * s);
+      }
+      // Lit from the upper left, like the bezels on the page.
+      ringGrad = ctx.createLinearGradient(cx - r1 * 0.7, cy - r1 * 0.7, cx + r1 * 0.7, cy + r1 * 0.7);
+      ringGrad.addColorStop(0, pal["ring-hi"]); ringGrad.addColorStop(0.42, pal.ring); ringGrad.addColorStop(1, pal["ring-lo"]);
+      ringKey = key; ringCtx = ctx;
+    }
+    ctx.lineCap = "butt";
+    ctx.beginPath(); ctx.arc(cx, cy, (r0 + r1) / 2, 0, TAU); ctx.lineWidth = w; ctx.strokeStyle = ringGrad; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r0 + 1.3, 0, TAU); ctx.lineWidth = 1; ctx.strokeStyle = pal["ring-hi"]; ctx.globalAlpha = 0.75; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r1 - 1.1, 0, TAU); ctx.lineWidth = 1.2; ctx.strokeStyle = pal["ring-lo"]; ctx.globalAlpha = 0.6; ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = pal["ring-edge"];
+    ctx.lineWidth = 0.9; ctx.stroke(ringTicks);
+    ctx.beginPath(); ctx.arc(cx, cy, r0, 0, TAU); ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r1, 0, TAU); ctx.lineWidth = 1.1; ctx.stroke();
+    // Left as the limb's two rules left it, for whatever is drawn next.
+    ctx.lineCap = "round"; ctx.strokeStyle = pal.limb; ctx.lineWidth = 0.8;
   }
   function coastOf(L, id) {
     if (!L.coastOf) L.coastOf = new Map();
@@ -6961,10 +6993,12 @@
       c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
       var fw = Math.min(w, Math.ceil(c.measureText(label).width) + 72);
       x += (w - fw) / 2; w = fw;
-      var bg = cs.getPropertyValue("--bg").trim() || bs.backgroundColor, rule = cs.getPropertyValue("--rule").trim() || "#3a2a1a", faint = cs.getPropertyValue("--ch-faint").trim() || rule;
+      // The date's frame, as the page has it: ivory in a brass bezel, lit on its upper and left sides, between two dark rules.
+      var bg = cs.getPropertyValue("--ch-ivory").trim() || cs.getPropertyValue("--bg").trim() || bs.backgroundColor, rule = cs.getPropertyValue("--rule").trim() || "#3a2a1a";
       c.fillStyle = bg; c.fillRect(x, y, w, h);
-      c.lineWidth = 1; c.strokeStyle = rule; c.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-      c.strokeStyle = faint; c.strokeRect(x + 3.5, y + 3.5, w - 7, h - 7);
+      c.lineWidth = 3; c.strokeStyle = pal.ring || rule; c.strokeRect(x + 2.5, y + 2.5, w - 5, h - 5);
+      c.lineWidth = 1; c.strokeStyle = pal["ring-hi"] || rule; c.beginPath(); c.moveTo(x + 1.5, y + h - 1.5); c.lineTo(x + 1.5, y + 1.5); c.lineTo(x + w - 1.5, y + 1.5); c.stroke();
+      c.strokeStyle = pal["ring-edge"] || rule; c.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); c.strokeRect(x + 4.5, y + 4.5, w - 9, h - 9);
       c.fillStyle = ys.color; c.textAlign = "center"; c.textBaseline = "middle";
       c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
       c.fillText(label, x + w / 2, y + h / 2 + 0.5, w - 16);

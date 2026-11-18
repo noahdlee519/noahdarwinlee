@@ -447,8 +447,23 @@ export function previewSVG(when, view, edits) {
     push('<rect x="' + b[0][0].toFixed(1) + '" y="' + b[0][1].toFixed(1) + '" width="' + (b[1][0] - b[0][0]).toFixed(1) + '" height="' + (b[1][1] - b[0][1]).toFixed(1) + '" fill="none" stroke="' + pal.limb + '" stroke-width="1"/>');
     push('<rect x="' + (b[0][0] - 5).toFixed(1) + '" y="' + (b[0][1] - 5).toFixed(1) + '" width="' + (b[1][0] - b[0][0] + 10).toFixed(1) + '" height="' + (b[1][1] - b[0][1] + 10).toFixed(1) + '" fill="none" stroke="' + pal.limb + '" stroke-width="2.4"/>');
   } else {
-    push('<circle cx="' + P.cx + '" cy="' + P.cy + '" r="' + P.r.toFixed(1) + '" fill="none" stroke="' + pal.limb + '" stroke-width="1.6"/>');
-    push('<circle cx="' + P.cx + '" cy="' + P.cy + '" r="' + (P.r + 5).toFixed(1) + '" fill="none" stroke="' + pal.limb + '" stroke-width="0.8"/>');
+    // The brass meridian ring, as the page draws it (drawRing in chronia/app.js): a band between two dark edges, lit along
+    // its inner side and shaded along its outer, with a tick every five degrees. Without the ring's colours in app.css
+    // it is drawn in the limb's ink.
+    const ring = pal.ring || pal.limb, ringHi = pal["ring-hi"] || ring, ringLo = pal["ring-lo"] || ring, ringEdge = pal["ring-edge"] || pal.limb;
+    const rw = Math.max(5, Math.min(8, P.r * 0.022)), r0 = P.r + 0.6, r1 = r0 + rw, circ = (r, rest) => '<circle cx="' + P.cx + '" cy="' + P.cy + '" r="' + r.toFixed(1) + '" fill="none" ' + rest + '/>';
+    let ticks = "";
+    for (let i = 0; i < 72; i++) {
+      const a = i * Math.PI / 36, c = Math.cos(a), s = Math.sin(a), ra = r1 - 0.9, rb = ra - rw * (i % 6 === 0 ? 0.74 : i % 2 === 0 ? 0.52 : 0.3);
+      ticks += "M" + (P.cx + ra * c).toFixed(1) + " " + (P.cy + ra * s).toFixed(1) + "L" + (P.cx + rb * c).toFixed(1) + " " + (P.cy + rb * s).toFixed(1);
+    }
+    push('<defs><linearGradient id="ring" gradientUnits="userSpaceOnUse" x1="' + (P.cx - r1 * 0.7).toFixed(1) + '" y1="' + (P.cy - r1 * 0.7).toFixed(1) + '" x2="' + (P.cx + r1 * 0.7).toFixed(1) + '" y2="' + (P.cy + r1 * 0.7).toFixed(1) + '"><stop offset="0" stop-color="' + ringHi + '"/><stop offset="0.42" stop-color="' + ring + '"/><stop offset="1" stop-color="' + ringLo + '"/></linearGradient></defs>');
+    push(circ((r0 + r1) / 2, 'stroke="url(#ring)" stroke-width="' + rw.toFixed(1) + '"'));
+    push(circ(r0 + 1.3, 'stroke="' + ringHi + '" stroke-opacity="0.75" stroke-width="1"'));
+    push(circ(r1 - 1.1, 'stroke="' + ringLo + '" stroke-opacity="0.6" stroke-width="1.2"'));
+    push('<path d="' + ticks + '" fill="none" stroke="' + ringEdge + '" stroke-width="0.9" stroke-linecap="butt"/>');
+    push(circ(r0, 'stroke="' + ringEdge + '" stroke-width="1.4"'));
+    push(circ(r1, 'stroke="' + ringEdge + '" stroke-width="1.1"'));
   }
 
   const dateF = 30, dateW = textWidth(when.label, dateF, "n", 0), boxW = dateW + 56, boxH = 52, bx = (W - boxW) / 2, by = 14;
