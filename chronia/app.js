@@ -6784,14 +6784,14 @@
   var TOUR_STORE = "chronia-tour", tourAt = -1, tourFrom = null, tourAsk = addrHas("tour=1") ? 1 : addrHas("tour=0") ? 0 : -1;
   var TOUR = [
     { title: "Welcome to CHRONIA", text: "An atlas of the world’s states from 3400 BC to today. This short tour shows you around it in nine steps.", next: "Show me" },
-    { at: "#top", title: "The date", text: "The map shows the world on this day. Type a year here to go straight to it, or step a month or a year at a time with the arrows." },
+    { at: "#year-box", title: "The date", text: "The map shows the world on this day. Type a year here to go straight to it, or step a month or a year at a time with the arrows." },
     { at: "#track", title: "The timeline", text: "Drag along it to move through the centuries. The events marked above it can be clicked, and take you to their date." },
     { at: ".ch-when-fwd", title: "Play", text: "Play runs the years forward, or backward, and the minus and plus set how fast they go." },
     { at: "#globe", title: "The map", text: "Drag to move it, scroll or pinch to zoom, and click a state to read about it. Its capital and largest city are links that take you there." },
-    { at: "#search-btn", title: "Search", text: "Find a state, a city, or a people, and the map goes to it." },
-    { at: "#layers-btn", title: "View", text: "Choose the globe or a flat map, and show or hide zones of control, cities, rivers, terrain, first-level divisions, and more." },
+    { at: "#search-btn", pad: 0, title: "Search", text: "Find a state, a city, or a people, and the map goes to it." },
+    { at: "#layers-btn", pad: 0, title: "View", text: "Choose the globe or a flat map, and show or hide zones of control, cities, rivers, terrain, first-level divisions, and more." },
     { at: "#changes-btn", title: "Changes", text: "What changed on the map at this date, with buttons to step to the change before and the next one." },
-    { at: "#about-btn", title: "About", text: "The atlas, its sources, and how it was made. You can take this tour again from here.", next: "Done" }
+    { at: "#about-btn", pad: 0, title: "About", text: "The atlas, its sources, and how it was made. You can take this tour again from here.", next: "Done" }
   ];
   function tourSeen() { try { return localStorage.getItem(TOUR_STORE) === "1"; } catch (e) { return false; } }
   function tourTarget(step) {
@@ -6804,7 +6804,10 @@
   }
   function placeTour() {
     if (tourAt < 0) return;
-    var spot = $("tour-spot"), card = $("tour-card"), r = tourTarget(TOUR[tourAt]), pad = 6, gap = 12, m = 12;
+    // The box stands the same distance off its part on every side. A round button sits in a tray or plate that is exactly
+    // as tall as its own cell, so its box hugs the cell (pad 0) and stays inside the brass; the date's box is drawn round
+    // the date's own frame, wherever the layout puts it (the top row on a wide screen, the foot on a phone).
+    var spot = $("tour-spot"), card = $("tour-card"), step = TOUR[tourAt], r = tourTarget(step), pad = step.pad != null ? step.pad : 6, gap = 12, m = 12;
     var W = innerWidth, H = innerHeight, cw = Math.min(310, W - 2 * m);
     card.style.width = cw + "px";
     var ch = card.offsetHeight, x, y;

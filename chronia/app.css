@@ -3567,6 +3567,9 @@ select.ch-save-input {
   top: 50%;
   width: 0;
   height: 0;
+  /* The rule is drawn inside the box's own width and height: outside them it added its 4 px to the right and the foot
+     only, and every part sat up and to the left in its box. */
+  box-sizing: border-box;
   border: 2px solid var(--ink);
   box-shadow: 0 0 0 200vmax rgba(40, 28, 16, 0.4);
   pointer-events: none;
