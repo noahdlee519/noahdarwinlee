@@ -29,9 +29,9 @@
   --ivory: #f8f1dc;
   /* A brass face, turned like a rod and lit from above (--on-brass on it is 4.6 to 1 or better), the same under the pointer,
      and the same pressed in. */
-  --metal: linear-gradient(180deg, #c8ab68 0%, var(--brass-lt) 12%, var(--brass-hi) 30%, var(--brass) 52%, var(--brass-face) 80%, #b89a58 100%);
-  --metal-lit: linear-gradient(180deg, #d6ba78 0%, #e2c988 12%, #fbf0cc 30%, #bfa160 52%, #b0934f 80%, #c8ab68 100%);
-  --metal-down: linear-gradient(180deg, #8f743a 0%, var(--brass-face) 22%, var(--brass) 60%, var(--brass-lt) 100%);
+  --metal: linear-gradient(180deg, #c8ab68 0%, var(--brass-lt) 9%, var(--brass-hi) 24%, #ead9a4 48%, #d8bd7c 66%, var(--brass) 84%, #b89a58 100%);
+  --metal-lit: linear-gradient(180deg, #d6ba78 0%, #e2c988 9%, #fbf0cc 24%, #f2e3b4 48%, #dcc283 66%, #bfa160 84%, #c8ab68 100%);
+  --metal-down: linear-gradient(180deg, #8f743a 0%, var(--brass-face) 16%, #b89b5a 40%, var(--brass-lt) 64%, #dcc488 100%);
   --raised: inset 0 1px 0 rgba(255, 250, 228, 0.9), inset 0 -2px 1px rgba(79, 58, 23, 0.4), 0 1px 2px rgba(42, 28, 18, 0.4);
   --sunk: inset 0 2px 3px rgba(42, 28, 18, 0.55), inset 0 -1px 0 rgba(255, 250, 228, 0.45);
   --well: inset 0 1px 2px rgba(42, 28, 18, 0.32);
