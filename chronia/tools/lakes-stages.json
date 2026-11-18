@@ -1,0 +1,9 @@
+{
+  "Great Salt Lake": [{"from": 1983, "to": 1990, "year": 1987}, {"from": 1990, "to": 2002, "year": 2000}, {"from": 2002, "to": 2015, "base": true}, {"from": 2015, "to": null, "year": 2021}],
+  "Mar Chiquita": [{"from": 1978, "to": 1998, "year": 1987}, {"from": 1998, "to": 2009, "year": 2003}, {"from": 2009, "to": 2015, "year": 2012}, {"from": 2015, "to": 2019, "year": 2017}, {"from": 2019, "to": 2023, "year": 2021}, {"from": 2023, "to": null, "year": 2024}],
+  "Lago Poopó": [{"from": 1985, "to": 1991, "year": 1987}, {"from": 1991, "to": 1994, "base": true}, {"from": 1994, "to": 1997, "year": 1995}, {"from": 1997, "to": 2015.5, "base": true}, {"from": 2015.5, "to": 2018, "year": 2016}, {"from": 2018, "to": 2020.5, "base": true}, {"from": 2020.5, "to": 2022, "year": 2021}, {"from": 2022, "to": 2023, "base": true}, {"from": 2023, "to": 2025, "year": 2023}, {"from": 2025, "to": null, "base": true}],
+  "Toshka Lakes": [{"from": 1999, "to": 2001, "year": 2000}, {"from": 2001, "to": 2005, "year": 2002}, {"from": 2005, "to": 2010, "year": 2007}, {"from": 2010, "to": 2013.5, "year": 2011}, {"from": 2020, "to": 2021.5, "year": 2021}, {"from": 2021.5, "to": null, "year": 2024}],
+  "Hamun Lakes": [{"from": null, "to": 1999.5, "year": 1991}, {"from": 2005, "to": 2006, "year": 2005}, {"from": 2007, "to": 2008, "year": 2007}],
+  "Lake Faguibine": [{"from": null, "to": 1984, "year": 1972}],
+  "Dead Sea": [{"from": 1972, "to": 1977, "year": 1973}, {"from": 1977, "to": 1995, "year": 1985}, {"from": 1995, "to": 2010, "year": 2002}, {"from": 2010, "to": null, "year": 2018}]
+}

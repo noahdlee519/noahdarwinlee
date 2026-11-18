@@ -44,3 +44,20 @@ for (const [reservoir, d] of Object.entries(before)) {
     assert.ok(d.km2 < rows.reduce((t, x) => t + x[1], 0), "the lakes are smaller than the reservoir");
   });
 }
+
+// The lakes Landsat follows stage by stage (tools/lakes-landsat.json): each stage drawn for its years, none overlapping, and
+// Natural Earth's own shape hidden from the first stage.
+const staged = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "lakes-landsat.json"), "utf8"));
+const ucLakes = JSON.parse(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../uchronia/data/lakes.json"), "utf8"));
+const yearOf = (v) => (v === null ? null : Math.floor(v) + (v % 1 ? 0.5 : 0));
+for (const [name, stages] of Object.entries(staged)) {
+  test(name + ": its stages follow one another and replace Natural Earth's lake", () => {
+    const rows = geo.lakes.add.filter((x) => x[0] === name);
+    assert.equal(rows.length, stages.filter((s) => s.polys.length).length);
+    for (let i = 1; i < stages.length; i++) assert.ok(stages[i].from >= stages[i - 1].to, "stage " + i + " starts after the one before ends");
+    const first = stages[0].from;
+    const own = ucLakes.filter((x) => x[0] === name), hidden = geo.lakes.only.filter((x) => x[0] === name);
+    assert.equal(hidden.length, own.length, "every one of Natural Earth's shapes of " + name + " is dated");
+    for (const r of hidden) assert.ok(first !== null && r[3] !== null && Math.abs(r[3] - yearOf(first)) < 1, name + "'s own shape ends when the stages begin");
+  });
+}

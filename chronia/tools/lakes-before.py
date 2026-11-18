@@ -41,13 +41,14 @@ def get(url, body=None):
     return urllib.request.urlopen(req, timeout=240).read()
 
 
-def scenes(bbox, before):
-    """The clearest July-to-September scenes over the box: those with ground control first, then those covering most of it."""
-    feats = json.loads(get(STAC, {"collections": ["landsat-c2-l1"], "bbox": bbox, "datetime": "1972-07-01T00:00:00Z/" + before + "T00:00:00Z", "limit": 250, "query": {"eo:cloud_cover": {"lt": 10}, "platform": {"in": ["landsat-1", "landsat-2", "landsat-3"]}}}))["features"]
+def scenes(bbox, before, months=(7, 8, 9)):
+    """The clearest scenes of the dry season over the box: those with ground control first, then those covering most of it.
+    Landsat 4 and 5 carried the same scanner (to 2013), for reservoirs filled after Landsat 3."""
+    feats = json.loads(get(STAC, {"collections": ["landsat-c2-l1"], "bbox": bbox, "datetime": "1972-07-01T00:00:00Z/" + before + "T00:00:00Z", "limit": 250, "query": {"eo:cloud_cover": {"lt": 10}}}))["features"]
     out = []
     for f in feats:
         month = int(f["properties"]["datetime"][5:7])
-        if month < 7 or month > 9:
+        if month not in months:
             continue
         b = f["bbox"]
         cover = max(0, min(b[2], bbox[2]) - max(b[0], bbox[0])) * max(0, min(b[3], bbox[3]) - max(b[1], bbox[1])) / ((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]))
@@ -69,7 +70,7 @@ def trace(name, spec, uc, plot=None):
     w = int((bbox[2] - bbox[0]) * 111320 * math.cos(math.radians(lat)) / PIXEL_M); h = int((bbox[3] - bbox[1]) * 110570 / PIXEL_M)
     px = lambda lon, la: [(lon - bbox[0]) / (bbox[2] - bbox[0]) * w, (bbox[3] - la) / (bbox[3] - bbox[1]) * h]
     stack, used = [], []
-    for item in scenes(bbox, spec["before"]):
+    for item in scenes(bbox, spec["before"], spec.get("months", (7, 8, 9))):
         try:
             img, ok = crop(item, bbox, w, h)
         except Exception as e:  # a scene the server cannot read is passed over

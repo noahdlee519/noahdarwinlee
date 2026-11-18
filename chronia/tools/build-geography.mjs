@@ -153,7 +153,13 @@ const DATED = [
   ["Lago de Texcoco", 55, at(1900), null, "the remnant after the Gran Canal del Desagüe opened in 1900"],
   ["IJsselmeer", 1962, at(1968, 5, 29), null, "today's IJsselmeer and Markermeer, from the draining of Southern Flevoland"],
   ["Lake Hammar", 929, null, at(1994), "dried by the drains of 1991 to 1993; drawn again from the reflooding of 2003 (see the marshes)"],
-  ["Lake Urmia", 4322, null, at(2003), "shrank from the late 1990s; drawn from Landsat after (see tools/lakes-landsat.json)"]
+  ["Lake Urmia", 4322, null, at(2003), "shrank from the late 1990s; drawn from Landsat after (see tools/lakes-landsat.json)"],
+  // drawn from Landsat after (tools/lakes-landsat.json, stages chosen in tools/lakes-stages.json; see the README)
+  ["Great Salt Lake", 4110, null, at(1983), "rose from 1983 to its high of 1986 and 1987"],
+  ["Mar Chiquita", 2102, null, at(1978), "rose after 1977"],
+  ["Lago Poopó", 1558, null, at(1985), "the floods of 1985 and 1986, then its shrinking and drying"],
+  ["Dead Sea", 656, null, at(1972), "Landsat from 1972"],
+  ["Dead Sea", 197, null, at(1972), "Landsat from 1972"]
 ];
 
 const lakeOnly = [];
@@ -214,7 +220,7 @@ addLake("IJsselmeer", at(1932, 5, 28), at(1942, 9, 9), lakeWith([P.NOP, P.EF, P.
 addLake("IJsselmeer", at(1942, 9, 9), at(1957, 6, 29), lakeWith([P.EF, P.SF], [P.W, P.NOP]), 0.0008, r4);
 addLake("IJsselmeer", at(1957, 6, 29), at(1968, 5, 29), lakeWith([P.SF], [P.W, P.NOP, P.EF]), 0.0008, r4);
 addLake("Haarlemmermeer", at(1647), at(1852, 7, 1), cbs("Haarlemmermeer"), 0.0008, r4);
-// Lakes whose shrinking Landsat follows, stage by stage (tools/lakes-landsat.json; see the README).
+// Lakes whose changes Landsat follows, stage by stage (tools/lakes-landsat.json, from tools/lakes-change.py; see the README).
 Object.entries(readJSON(resolve(here, "lakes-landsat.json"))).forEach(([name, stages]) => stages.forEach((st) => {
   if (st.polys.length) addLake(name, st.from === null ? null : at(Math.floor(st.from), st.from % 1 ? 7 : 1), st.to === null ? null : at(Math.floor(st.to), st.to % 1 ? 7 : 1), st.polys, 0.002, r4);
 }));
