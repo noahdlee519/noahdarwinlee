@@ -302,6 +302,10 @@ body.ch-page {
   letter-spacing: 0.16em;
   line-height: 1;
   padding-left: 0.16em;
+  /* Capitals stand high in this face's line box (measured: 15 px of plate above them and 20 below), so the word is
+     let down a tenth of its size to sit midway between the plate's edges, at either size. */
+  position: relative;
+  top: 0.1em;
   color: var(--ch-brass-hi);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
@@ -2456,6 +2460,7 @@ select.ch-save-input {
     font-size: 15px;
     letter-spacing: 0.08em;
     padding-left: 0.08em;
+    top: 1px;
   }
 
   .ch-head .ch-ctl {
@@ -2612,6 +2617,7 @@ select.ch-save-input {
     font-size: 12px;
     letter-spacing: 0.03em;
     padding-left: 0.03em;
+    top: 1px;
   }
 
   /* On the narrowest phones (an iPhone SE) the five tools' names left the title 19 px, under the info button (they are narrower too), and a
@@ -3336,8 +3342,12 @@ select.ch-save-input {
   translate: -50% -50%;
   display: grid;
   place-items: center;
-  width: 25px;
-  height: 25px;
+  /* The same 27 px disc as before, measured over its border now, so that the 2 px of padding can let the letter down
+     a pixel: a capital stands high in its line box, and sat nearer the top of the disc than the foot. */
+  box-sizing: border-box;
+  width: 27px;
+  height: 27px;
+  padding-top: 2px;
   border: 1px solid var(--ch-brass-deep);
   border-radius: 50%;
   background: var(--ch-ivory, #f8f1dc);
