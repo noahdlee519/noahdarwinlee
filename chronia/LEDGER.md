@@ -18,6 +18,16 @@ Each entry:
 
 ---
 
+## 1939–1945 | Europe | fringes of occupied land (a reader's report)
+
+- What changed: a reader reported (18 November 2026, at November 1940) two German enclaves inside Hungary, south of Uzhhorod and north of Satu Mare. They were pieces of "Czechoslovakia, occupied by Germany" of 3 and 19 km², from 1 October 1939 to 30 June 1941: CShapes' outline of Carpathian Ruthenia runs a little past Natural Earth's units there, and until Hungary's units count as the Axis's ground the monthly front cut those units out of the occupied land and left the difference behind. Nothing was occupied there: Hungary held all of Carpathian Ruthenia from 18 March 1939. The same fault left specks of occupied Poland, Yugoslavia, Greece, Belgium, the Netherlands, France, and the Soviet Union along their borders (the Soviet Union's with Turkey and Iran among them). A new step, `giveFringes`, gives each such speck to the state beside it.
+- Applies to: Czechoslovakia; Poland; Yugoslavia; Greece; Belgium; Netherlands; France; Soviet Union
+- Tables: `giveFringes`, `FRINGE_KM`, `FRINGE_SHARE`, and `FRINGE_POINTS` in `tools/ww2-borders.mjs`.
+- Sources: (1) Hungary's occupation of Carpatho-Ukraine, 15 to 18 March 1939: https://en.wikipedia.org/wiki/Carpatho-Ukraine. (2) The Second Vienna Award, 30 August 1940, for the border north of Satu Mare: https://en.wikipedia.org/wiki/Second_Vienna_Award.
+- Confidence: high that the two enclaves and the like are artefacts of two outlines of one border; medium for which neighbour a speck between two states goes to (the nearer on average).
+- Alternatives: dropping the specks and leaving the land to `adoptLand` (it fills only land no span ever covers, so these would lie blank); cutting the occupied land to Natural Earth's units (moves every border of the occupied states off CShapes' line).
+- Left out: the data is not rebuilt in this commit (the build needs CShapes-Europe, which this session could not fetch); the step was run on the built rows instead, where it gives both enclaves to Hungary.
+
 ## 1840–1920 | the Low Countries | one line on both sides of 1886, and Eupen and Malmedy German to 1920
 
 - What changed: the borders of Belgium, the Netherlands, and Luxembourg jumped on 1 January 1886, where the map passes from the table on today's units to CShapes 2.0, though they did not move between the Treaty of London (19 April 1839) and the First World War. Before 1886 Givet, French since 1680, was drawn in Belgium, and Kerkrade, Dutch since 1815, in Prussia; from 1886 CShapes 2.0 draws Belgium with its outline of today, so Eupen, Malmedy, and Sankt Vith were Belgian from 1886, though Germany held them until the Treaty of Versailles came into force on 10 January 1920. From 1840 to 1885 the step of `tools/cshapes-europe.mjs` now moves land between the three states and their neighbours to CShapes' shapes of 1 January 1886, piece by piece down to half a square kilometre, so both sides of the seam draw the same lines. The German land of 1885 that CShapes' Belgium takes (Eupen, Malmedy, Sankt Vith, and Neutral Moresnet with them, about 960 km²) is left out of Belgium's shape there, and from 1886 to 9 January 1920 it is cut out of Belgium and added to Germany (`CS_MOVE`).

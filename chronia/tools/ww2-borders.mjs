@@ -243,6 +243,77 @@ export const WW2_REGIMES = [
 ];
 
 // Applies the three lists to the spans from 1886 and returns the new list.
+// Fringes of occupied land. Where a month's front cuts the units a non-Axis neighbour holds out of a state's occupied land (Hungary's
+// Carpathian Ruthenia, until Hungary joins the Axis's ground in the files), what the state's own outline reaches beyond those units is left
+// as specks of the occupied state inside or beside the neighbour: two drawings of one border, not land anyone occupied. A polygon of
+// occupied land under REST_KM2 with FRINGE_SHARE of its outline within FRINGE_KM of one neighbour's spans (all the spans of one name and
+// ruler together) is given to that neighbour, for the days each of its spans runs (to the state itself, unoccupied, where that is one of them). Only the occupied land of WW2_OCCUPIED is looked at, not the
+// named regimes, and a polygon the state held whole before the war (an island) stays.
+const FRINGE_KM = 2.5, FRINGE_SHARE = 0.8, FRINGE_POINTS = 60;
+export function giveFringes(list, { polyKm2, km2Of, boxOf, withBox, isOccupied, isIsland = () => false, log = console.log }) {
+  const boxHit = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+  // The distance in km from a point to the nearest ring of a span's polygons near it (planar at the point's latitude: these are a few km).
+  const distTo = (pt, c, box) => {
+    const kx = 111.195 * Math.cos(pt[1] * Math.PI / 180), ky = 111.195;
+    let best = Infinity;
+    for (const poly of c.polys) {
+      if (!boxHit(boxOf([poly]), box)) continue;
+      for (const ring of poly) for (let i = 1; i < ring.length; i++) {
+        const ax = (ring[i - 1][0] - pt[0]) * kx, ay = (ring[i - 1][1] - pt[1]) * ky, bx = (ring[i][0] - pt[0]) * kx, by = (ring[i][1] - pt[1]) * ky;
+        if (Math.min(ax, bx) > best || Math.max(ax, bx) < -best || Math.min(ay, by) > best || Math.max(ay, by) < -best) continue;
+        const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+        const d = Math.hypot(ax + t * dx, ay + t * dy);
+        if (d < best) best = d;
+      }
+    }
+    return best;
+  };
+  const big = new Map(), isBig = (c) => { if (!big.has(c)) big.set(c, km2Of(c.polys) >= REST_KM2); return big.get(c); };
+  const out = [], names = new Map();
+  let moved = 0, km2 = 0;
+  for (const s of list) {
+    if (!isOccupied(s) || !s.polys.some((q) => polyKm2(q) < REST_KM2)) { out.push(s); continue; }
+    const keep = [];
+    for (const q of s.polys) {
+      if (polyKm2(q) >= REST_KM2 || isIsland(s, q)) { keep.push(q); continue; }
+      const qb = boxOf([q]), pad = 0.15, box = [qb[0] - pad, qb[1] - pad, qb[2] + pad, qb[3] + pad];
+      const cands = list.filter((c) => c !== s && !c.people && !c.claims && !(c.name === s.name && (c.ruler || "") === (s.ruler || "")) && c.last >= s.first && c.first <= s.last && boxHit(c.box || boxOf(c.polys), box) && isBig(c));
+      const ring = q[0], step = Math.max(1, Math.floor(ring.length / FRINGE_POINTS)), pts = ring.filter((p, i) => i % step === 0);
+      const dist = new Map(cands.map((c) => [c, pts.map((p) => distTo(p, c, box))]));
+      const cuts = new Set([s.first]);
+      for (const c of cands) { if (c.first > s.first) cuts.add(c.first); if (c.last + 1 <= s.last) cuts.add(c.last + 1); }
+      const bounds = [...cuts].sort((a, b) => a - b), runs = [];
+      bounds.forEach((a, k) => {
+        const b = k + 1 < bounds.length ? bounds[k + 1] - 1 : s.last, act = cands.filter((c) => c.first <= a && b <= c.last), groups = new Map();
+        for (const c of act) { const key = c.name + "|" + (c.ruler || ""); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(c); }
+        let to = null, least = Infinity;
+        for (const g of groups.values()) {
+          const d = pts.map((p, i) => Math.min(...g.map((c) => dist.get(c)[i]))), mean = d.reduce((t, x) => t + x, 0) / d.length;
+          if (d.filter((x) => x <= FRINGE_KM).length < FRINGE_SHARE * d.length) continue;
+          // The state itself, unoccupied, comes first: a fringe on its far border (the Soviet Union's with Turkey) is its own land.
+          const own = g[0].name === s.name && !g[0].ruler ? -1 : mean;
+          if (own >= least) continue;
+          least = own;
+          to = g.reduce((m, c) => { const dc = dist.get(c), dm = dist.get(m); return dc.reduce((t, x) => t + x, 0) < dm.reduce((t, x) => t + x, 0) ? c : m; });
+        }
+        const prev = runs[runs.length - 1];
+        if (prev && prev.to === to) prev.last = b; else runs.push({ first: a, last: b, to });
+      });
+      if (runs.every((r) => !r.to)) { keep.push(q); continue; }
+      for (const r of runs) {
+        if (!r.to) { out.push(withBox({ ...s, first: r.first, last: r.last, polys: [q] })); continue; }
+        out.push(withBox({ ...r.to, first: r.first, last: r.last, polys: [q], km2: undefined, pole: undefined, geoHash: undefined }));
+        moved++;
+        km2 += polyKm2(q);
+        names.set(s.name + " to " + r.to.name, (names.get(s.name + " to " + r.to.name) || 0) + 1);
+      }
+    }
+    if (keep.length) out.push(keep.length === s.polys.length ? s : withBox({ ...s, polys: keep }));
+  }
+  log("WW2: " + moved + " fringes of occupied land given to the state beside them (" + Math.round(km2) + " km² over their spans): " + [...names].map(([k, n]) => k + " " + n).join(", "));
+  return out;
+}
+
 export function applyWW2(env) {
   const { clip, csRaw, neAll, carve, withBox, rewind, polysOf, km2Of, polyKm2, boxOf, dayOf, turfBuf, axisFile, endDay } = env;
   let list = env.list;
@@ -476,12 +547,13 @@ export function applyWW2(env) {
   };
   const STATUS = { state: 0, colony: 1, protectorate: 2, mandate: 3, occupied: 4, dependency: 5 };
   let pieces = 0;
-  const lay = (name, wiki, status, ruler, b, first, last, polys0) => {
+  const lay = (name, wiki, status, ruler, b, first, last, polys0, occBase) => {
     const polys = polys0.filter((q) => polyKm2(q) >= 1);
     if (last < first || !polys.length) return;
     // A regime with the name of a state on the map at the time is that state, and shares its article.
     if (!wiki) { const same = list.find((x) => x.name === name && x.first <= last && x.last >= first && x.src !== "ww2"); wiki = same ? same.wiki : name; }
     const sm = withBox({ name, ruler: ruler || "", part: "", people: 0, b, status: ruler ? STATUS[status] : 0, first, last, polys, wiki, src: "ww2" });
+    if (occBase) sm.occBase = occBase;
     const given = [];
     list = carveWW2(list, sm, given);
     // The slivers, by their days, as pieces of the same regime.
@@ -518,7 +590,7 @@ export function applyWW2(env) {
       for (const m of monthly(polys, a, z, t)) occ.push({ name, wiki: s.wiki, occupier, m, base: s });
     }
   }
-  for (const o of occ) lay(o.name, o.wiki, "occupied", o.occupier, 2, o.m.first, o.m.last, o.m.polys);
+  for (const o of occ) lay(o.name, o.wiki, "occupied", o.occupier, 2, o.m.first, o.m.last, o.m.polys, o.base.polys);
   const occPieces = pieces;
   for (const r of WW2_REGIMES) for (const [from, to, shape, cut] of r.periods) {
     const polys = evalShape(shape);
@@ -527,5 +599,8 @@ export function applyWW2(env) {
     for (const m of cut ? monthly(polys, a, z, null, true) : [{ first: a, last: z, polys }]) lay(r.name, r.wiki, r.status, r.ruler, r.b, m.first, m.last, m.polys);
   }
   console.log("WW2: " + WW2_FIXES.length + " fixes, " + occPieces + " pieces before the regimes (" + occ.length + " occupied), " + (pieces - occPieces) + " pieces of " + WW2_REGIMES.length + " regimes, " + theatres.length + " theatres of the Axis's ground, " + cutFailed + " cuts failed, " + slivers + " slivers dropped");
+  const sameBox = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6 && Math.abs(a[2] - b[2]) < 1e-6 && Math.abs(a[3] - b[3]) < 1e-6;
+  list = giveFringes(list, { polyKm2, km2Of, boxOf, withBox, isOccupied: (x) => !!x.occBase, isIsland: (x, q) => { const b = boxOf([q]); return x.occBase.some((o) => sameBox(boxOf([o]), b)); } });
+  for (const x of list) if (x.occBase) delete x.occBase;
   return list;
 }
