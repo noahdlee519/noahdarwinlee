@@ -8,7 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
-import { europeFromCShapes } from "./cshapes-europe.mjs";
+import { europeFromCShapes, CSE_HOLDER } from "./cshapes-europe.mjs";
 import { healNodes } from "./heal-nodes.mjs";
 import { tidyLines } from "./tidy-lines.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
@@ -4574,7 +4574,34 @@ const africa1885 = (list) => {
   const csePath = resolve("cshapes-europe/CShapes-Europe.geojson");
   if (!existsSync(csePath)) console.log("cshapes-europe: no " + csePath + ", so Europe from 1816 to 1885 keeps its own borders");
   else dated = europeFromCShapes(dated, JSON.parse(readFileSync(csePath, "utf8")).features, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log })
-    .map((s) => (s.cse && !s.bsrc ? { ...s, bsrc: "cse", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
+    .map((s) => (s.cse && !s.bsrc ? { ...s, bsrc: s.cse, nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
+}
+// The Low Countries at the seam of 1 January 1886. Their borders did not move from the Treaty of London (1839) to the First World
+// War, but the table drew them on today's units and the map from 1886 on CShapes 2.0's lines, so Givet was Belgian and Kerkrade
+// German until 1886. From 1840 to 1885 the same step moves land between Belgium, the Netherlands, Luxembourg, and their neighbours
+// to CShapes' shapes of 1 January 1886, piece by piece down to half a square kilometre (bsrc "csl"). CShapes draws Belgium with
+// Eupen and Malmedy, Germany's until the Treaty of Versailles came into force on 10 January 1920; the table has them German, so
+// the land Belgium's shape takes from the German Empire's spans of 1885 (EUPEN) is left out of it here, and given back to
+// Germany from 1886 (CS_MOVE).
+let EUPEN = null;
+{
+  const topo = JSON.parse(readFileSync(cshapesPath, "utf8")), obj = Object.values(topo.objects)[0];
+  const first = (gw) => { const g = obj.geometries.find((x) => String(x.properties.gwcode) === gw && x.properties.start === "1886-01-01"); if (!g) throw new Error("seam of 1886: no CShapes shape of " + gw); return rewind(polysOf(client.feature(topo, g).geometry)); };
+  const box = [5.7, 50.1, 6.5, 50.85], boxPoly = [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]];
+  const german = dated.filter((s) => s.first <= 1885 && s.last >= 1885 && (s.name === "German Empire" || s.ruler === "German Empire") && s.polys && boxHit(s.box || boxOf(s.polys), box))
+    .map((s) => tryClip(clip.intersection, s.polys, [boxPoly])).filter((x) => x && x.length);
+  const be = first("211");
+  const g = german.length ? tryClip(clip.union, ...german) : null, eu = g ? tryClip(clip.intersection, be, g) : null;
+  EUPEN = eu ? rewind(eu).filter((q) => polyKm2(q) >= 1) : null;
+  if (!EUPEN || !EUPEN.length) throw new Error("seam of 1886: no German land of 1885 in CShapes' Belgium");
+  const beLess = rewind(tryClip(clip.difference, be, EUPEN));
+  const feats = [["210", "Netherlands", first("210")], ["211", "Belgium", beLess], ["212", "Luxembourg", first("212")], ["220", "France", first("220")], ["255", "Germany", first("255")]]
+    .map(([gw, name, polys]) => ({ properties: { Id: +gw, Holder: +gw, Name: name, From: 1840, To: 1885, Area: 1e9 }, geometry: { type: "MultiPolygon", coordinates: polys } }));
+  const low = new Set([210, 211, 212]);
+  dated = europeFromCShapes(dated, feats, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log }, {
+    from: 1840, to: 1885, holder: { ...CSE_HOLDER, "Luxembourg": 212 }, keep: new Set(), refuse: (a, b) => !low.has(a) && !low.has(b), stay: [],
+    pieceKm2: 0.5, widthKm: 0, minKm2: 0, tag: "csl", label: "seam of 1886 in the Low Countries (Eupen and Malmedy " + Math.round(EUPEN.reduce((t, q) => t + polyKm2(q), 0)) + " km²)"
+  }).map((s) => (s.cse === "csl" && s.bsrc !== "csl" ? { ...s, bsrc: "csl", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
 }
 dated = africa1885(lastPieces(lastWord(dated)));
 checkSrc(dated, "until 1885");
@@ -5023,6 +5050,9 @@ const CLIO_MODERN_RULER = { "British Overseas Territories": "United Kingdom" };
 const HB_MODERN_SKIP = [{ box: [5, 74, 35, 81.5], until: "1925-08-13" }];
 const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", "1945-04-12"]];
 const CS_CARVE = [["291", "1939-08-31", "255"]];
+// Land CShapes gives a state before it held it, given back to the state that did: [code, to the day, code it goes to, shape].
+// Eupen and Malmedy, Germany's until the Treaty of Versailles came into force on 10 January 1920 (EUPEN, from the seam above).
+const CS_MOVE = [["211", "1920-01-09", "255", () => EUPEN]];
 const LOOSE_TO = dayOf("1933-01-01");
 // A state that CShapes begins late, drawn before that as a dependency inside the state that held it: its first shape is cut out of
 // the holder's spans, from the first day given to the day before CShapes' first, less the land it gained later (the part of the first
@@ -5142,6 +5172,21 @@ const csWithExtras = (rows) => {
       if (r.p.start < s) next.push({ p: { ...r.p, end: isoAdd(s, -1) }, geometry: r.geometry });
       next.push({ p: { ...r.p, start: s, end: e }, geometry: { type: "MultiPolygon", coordinates: clip.difference(polysOf(r.geometry), polysOf(me.geometry)) } });
       if (r.p.end > e) next.push({ p: { ...r.p, start: isoAdd(e, 1) }, geometry: r.geometry });
+    }
+    list = next;
+  }
+  for (const [code, until, to, shapeOf] of CS_MOVE) {
+    const shape = shapeOf();
+    if (!shape || !shape.length) throw new Error("CS_MOVE: no shape for " + code);
+    const next = [];
+    for (const r of list) {
+      const g = String(r.p.gwcode);
+      if ((g !== code && g !== to) || r.p.start > until) { next.push(r); continue; }
+      const polys = polysOf(r.geometry), e = r.p.end > until ? until : r.p.end;
+      const moved = g === code ? tryClip(clip.difference, polys, shape) : tryClip(clip.union, polys, shape);
+      if (!moved) throw new Error("CS_MOVE: clip failed for " + g);
+      next.push({ p: { ...r.p, end: e }, geometry: { type: "MultiPolygon", coordinates: moved } });
+      if (r.p.end > until) next.push({ p: { ...r.p, start: isoAdd(until, 1) }, geometry: r.geometry });
     }
     list = next;
   }

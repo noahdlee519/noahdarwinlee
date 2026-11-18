@@ -38,7 +38,8 @@
     "backdate": { "text": "CShapes 2.0’s shape of 1886, carried back by the editors to the year the state began", "ids": ["cshapes", "editors"] },
     "back": { "text": "A later CShapes 2.0 shape, carried back by the editors", "ids": ["cshapes", "editors"] },
     "ww2": { "text": "OpenHistoricalMap and Natural Earth units, assembled by the editors", "ids": ["ohm", "ne", "editors"] },
-    "cse": { "text": "CShapes-Europe for the borders between states, and the editors’ units or the source’s outline for the rest", "ids": ["cshapes-europe", "units", "editors"] }
+    "cse": { "text": "CShapes-Europe for the borders between states, and the editors’ units or the source’s outline for the rest", "ids": ["cshapes-europe", "units", "editors"] },
+    "csl": { "text": "CShapes 2.0’s lines of 1 January 1886 for the borders between states, and the editors’ units for the rest", "ids": ["cshapes", "units", "editors"] }
   },
   "name": {
     "source": { "text": "The source’s own name", "ids": [] },

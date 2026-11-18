@@ -62,8 +62,13 @@ export const CSE_KEEP = new Set(["Luxembourg", "Limburg", "Duchy of Limburg"]);
 const RULED = new Set([1, 2, 3, 5]);
 const SMALL_OK = new Set([273, 275, 10021, 10037, 10022, 10020, 10006, 10010, 10012, 10017, 10034, 10036, 10014, 10015, 10009, 332, 335, 10018, 10019, 341]);
 
-export function europeFromCShapes(list, features, h) {
+// The same step serves the seam at 1 January 1886 (o): the shapes of that day from CShapes 2.0 for a few states, so that their
+// last years before it end on the lines the map draws from it. o sets the years, the states, the smallest piece, the spans
+// kept whole, the moves refused, the land that stays, and the tag the changed spans carry.
+export function europeFromCShapes(list, features, h, o = {}) {
   const { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log } = h;
+  const FROM = o.from ?? CSE_FROM, TO = o.to ?? CSE_TO, HOLDER = o.holder ?? CSE_HOLDER, KEEP = o.keep ?? CSE_KEEP, MIN_KM2 = o.pieceKm2 ?? PIECE_KM2,
+    MIN_WIDTH = o.widthKm ?? PIECE_WIDTH_KM, STAY = o.stay ?? CSE_STAY, TAG = o.tag ?? "cse", LABEL = o.label ?? "cshapes-europe", MIN_AREA = o.minKm2 ?? CSE_MIN_KM2;
   const R = 6371.0088, rad = Math.PI / 180;
   const ringKm = (ring) => {
     let t = 0;
@@ -77,20 +82,20 @@ export function europeFromCShapes(list, features, h) {
   const polysOf = (g) => (!g ? [] : g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []);
   const recs = [];
   for (const f of features) {
-    const p = f.properties, a = Math.max(p.From, CSE_FROM), b = Math.min(p.To, CSE_TO);
-    if (a > b || p.Holder !== p.Id || !(p.Area >= CSE_MIN_KM2 || SMALL_OK.has(p.Id))) continue;
+    const p = f.properties, a = Math.max(p.From, FROM), b = Math.min(p.To, TO);
+    if (a > b || p.Holder !== p.Id || !(p.Area >= MIN_AREA || SMALL_OK.has(p.Id))) continue;
     const polys = rewind(polysOf(f.geometry));
     if (polys.length) recs.push({ h: p.Holder, name: p.Name, first: a, last: b, polys, box: boxOf(polys) });
   }
-  const mapped = new Set(Object.values(CSE_HOLDER));
+  const mapped = new Set(Object.values(HOLDER));
   const sovOf = (s) => {
-    if (s.people || s.claims || !s.polys || CSE_KEEP.has(s.name)) return null;
-    if (s.ruler) return RULED.has(s.status) ? CSE_HOLDER[s.ruler] ?? null : null;
-    return CSE_HOLDER[s.name] ?? null;
+    if (s.people || s.claims || !s.polys || KEEP.has(s.name)) return null;
+    if (s.ruler) return RULED.has(s.status) ? HOLDER[s.ruler] ?? null : null;
+    return HOLDER[s.name] ?? null;
   };
-  const refused = (H1, H2, a, b, box) => CSE_REFUSE.some(([x, y, f, l, bx]) => (((x === H1 && (y === null || y === H2)) || (x === H2 && (y === null || y === H1)))) && f <= b && l >= a &&
-    (!bx || (((box[0] + box[2]) / 2 >= bx[0] && (box[0] + box[2]) / 2 <= bx[2] && (box[1] + box[3]) / 2 >= bx[1] && (box[1] + box[3]) / 2 <= bx[3]))));
-  const inWindow = (s) => s.last >= CSE_FROM && s.first <= CSE_TO;
+  const refused = (H1, H2, a, b, box) => (o.refuse ? o.refuse(H1, H2, a, b, box) : false) || (!o.refuse && CSE_REFUSE.some(([x, y, f, l, bx]) => (((x === H1 && (y === null || y === H2)) || (x === H2 && (y === null || y === H1)))) && f <= b && l >= a &&
+    (!bx || (((box[0] + box[2]) / 2 >= bx[0] && (box[0] + box[2]) / 2 <= bx[2] && (box[1] + box[3]) / 2 >= bx[1] && (box[1] + box[3]) / 2 <= bx[3])))));
+  const inWindow = (s) => s.last >= FROM && s.first <= TO;
   // Candidate spans, and the spans of each state that pieces may join.
   const subjects = [], byHolder = new Map();
   list.forEach((s, i) => {
@@ -102,12 +107,12 @@ export function europeFromCShapes(list, features, h) {
     if (!byHolder.has(H)) byHolder.set(H, []);
     byHolder.get(H).push({ i, s, box });
   });
-  const discs = CSE_STAY.map(([x0, y0, x1, y1]) => rewind([[[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]])[0]);
+  const discs = STAY.map(([x0, y0, x1, y1]) => rewind([[[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]])[0]);
   const keepPiece = (q) => {
     const km2 = polyKm2(q);
-    if (km2 < PIECE_KM2) return false;
+    if (km2 < MIN_KM2) return false;
     const per = q.reduce((t, r) => t + ringKm(r), 0);
-    return per > 0 && (2 * km2) / per >= PIECE_WIDTH_KM;
+    return per > 0 && (2 * km2) / per >= MIN_WIDTH;
   };
   // A grid of a span's vertices, to find the span a piece touches: a piece cut from a span along the border it shares with a
   // neighbour has the neighbour's vertices on that stretch.
@@ -125,7 +130,7 @@ export function europeFromCShapes(list, features, h) {
   const pairs = new Map(), guarded = new Map();
   for (const sub of subjects) {
     const { s, H, box } = sub;
-    const a0 = Math.max(s.first, CSE_FROM), b0 = Math.min(s.last, CSE_TO);
+    const a0 = Math.max(s.first, FROM), b0 = Math.min(s.last, TO);
     const near = recs.filter((r) => r.h !== H && r.last >= a0 && r.first <= b0 && boxHit(r.box, box));
     const own = recs.filter((r) => r.h === H && r.last >= a0 && r.first <= b0);
     if (!near.length) continue;
@@ -188,10 +193,10 @@ export function europeFromCShapes(list, features, h) {
       if (ad.length) { const u = tryClip(clip.union, polys, ...ad.map((q) => [q])); polys = u ? rewind(u) : polys.concat(ad); if (!u) failed++; }
       if (!polys.length) continue;
       pieces++;
-      res.push(withBox({ ...seg, polys, cse: true, geoHash: undefined }));
+      res.push(withBox({ ...seg, polys, cse: TAG, geoHash: undefined }));
     }
   });
-  log("cshapes-europe: " + recs.length + " shapes of " + new Set(recs.map((r) => r.h)).size + " states, " + moved + " pieces (" + Math.round(movedKm2) + " km² in all) moved between states in " +
+  log(LABEL + ": " + recs.length + " shapes of " + new Set(recs.map((r) => r.h)).size + " states, " + moved + " pieces (" + Math.round(movedKm2) + " km² in all) moved between states in " +
     pieces + " spans, " + kept + " left where no span of the other state touched them, " + protectedYears + " span-years kept whole (" + [...guarded].map(([n, y]) => n + " " + y).join(", ") + ")" +
     (failed ? ", " + failed + " clips failed" : "") + "; the largest moves: " + [...pairs].sort((x, y) => y[1] - x[1]).slice(0, 25).map(([n, v]) => n + " " + Math.round(v)).join(", "));
   return res;
