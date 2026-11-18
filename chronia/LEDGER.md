@@ -18,6 +18,16 @@ Each entry:
 
 ---
 
+## 1840–1920 | the Low Countries | one line on both sides of 1886, and Eupen and Malmedy German to 1920
+
+- What changed: the borders of Belgium, the Netherlands, and Luxembourg jumped on 1 January 1886, where the map passes from the table on today's units to CShapes 2.0, though they did not move between the Treaty of London (19 April 1839) and the First World War. Before 1886 Givet, French since 1680, was drawn in Belgium, and Kerkrade, Dutch since 1815, in Prussia; from 1886 CShapes 2.0 draws Belgium with its outline of today, so Eupen, Malmedy, and Sankt Vith were Belgian from 1886, though Germany held them until the Treaty of Versailles came into force on 10 January 1920. From 1840 to 1885 the step of `tools/cshapes-europe.mjs` now moves land between the three states and their neighbours to CShapes' shapes of 1 January 1886, piece by piece down to half a square kilometre, so both sides of the seam draw the same lines. The German land of 1885 that CShapes' Belgium takes (Eupen, Malmedy, Sankt Vith, and Neutral Moresnet with them, about 960 km²) is left out of Belgium's shape there, and from 1886 to 9 January 1920 it is cut out of Belgium and added to Germany (`CS_MOVE`).
+- Applies to: Belgium; Netherlands; Luxembourg; German Empire; French Third Republic
+- Tables: the seam step after the CShapes-Europe step, `EUPEN`, and `CS_MOVE` in `tools/build-eras.mjs`; the source code "csl" in `tools/sources.json`.
+- Sources: (1) Givet French from the Peace of Nijmegen (1678–1680) and on the border of 1815, *Encyclopaedia Britannica*, 11th ed. (1911), "Givet", and https://en.wikipedia.org/wiki/Givet; (2) Kerkrade in the Netherlands from the Treaty of Vienna and the boundary treaty of Aachen (26 June 1816), https://en.wikipedia.org/wiki/Kerkrade; (3) Eupen and Malmedy Prussian from 1815 and Belgian from the Treaty of Versailles (in force 10 January 1920), https://en.wikipedia.org/wiki/Eupen-Malmedy and *Encyclopaedia Britannica*, "Eupen-Malmédy"; (4) CShapes 2.0, https://icr.ethz.ch/data/cshapes/, whose Belgium has one shape from 1886 to 2019.
+- Confidence: high.
+- Alternatives: drawing Eupen and Malmedy Belgian before 1920 on both sides (not taken: wrong).
+- Left out: Givet, still Belgian before 1886 in this build (a piece joins only the neighbour's span of the years it touches, and the step's one period of 1840 to 1885 found none for it); Neutral Moresnet (1816–1920), Belgian before 1886 and after; the Belgian–Dutch enclaves at Baarle; the rest of Europe's border jumps at 1886, which are still to be measured.
+
 ## 1446–1885 | the Americas | the peoples carried forward, and reconciled with the later maps (a reader's request)
 
 - What changed: the peoples of the Americas no longer vanish on 1 January 1496. historical-basemaps' map of 1492 names about 1,200 peoples there and its map of 1500 about 30, as boxes under blankets ("Amazon hunter-gatherers"), so the map lost almost all of them between 1495 and 1496; south of Mexico and in Canada nothing later named them again.
