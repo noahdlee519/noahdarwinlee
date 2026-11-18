@@ -18,6 +18,21 @@ Each entry:
 
 ---
 
+## 1446–1885 | the Americas | the peoples carried forward, and reconciled with the later maps (a reader's request)
+
+- What changed: the peoples of the Americas no longer vanish on 1 January 1496. historical-basemaps' map of 1492 names about 1,200 peoples there and its map of 1500 about 30, as boxes under blankets ("Amazon hunter-gatherers"), so the map lost almost all of them between 1495 and 1496; south of Mexico and in Canada nothing later named them again.
+  - The named peoples of the maps of 1492, 1600, 1700, 1715, and 1800 now stay after their map's years, to 1885, on the land nothing else holds: a state, a colony, or a claim; a people of a later map in that map's years; or a later map's people carried the same way. The later source wins where two name a people for the same land. 1,375 spans are added, 1,206 of them from the map of 1492.
+  - The map of 1500's peoples in the Americas are left out, with its Comanche and Iroquois drawn as states; the peoples of 1492 hold 1496 to 1514.
+  - The blankets keep only the land no named people holds (149 spans cut to 96).
+  - A carried people more than half of whose land later maps' peoples hold is left out for those years (376 pieces), so that no name stands on a far edge of its land.
+  - The map of 1492's nations that began after contact are left out from 1446: those removed to Oklahoma, the reservations and rancherias, and the Métis.
+- Applies to: every people of the Americas on historical-basemaps' maps of 1492 to 1800; Comanche; Iroquois | 1496–1514
+- Tables: `NATIVE_MAPS`, `SKETCH_YEAR`, `SKETCH_STATES`, `BLANKETS`, `NOT_YET`, and `DISPLACED`, and the step `nativeCarry`, in `tools/build-eras.mjs`.
+- Sources: (1) historical-basemaps' maps of 1492, 1530, 1600, 1650, 1700, 1715, 1783, and 1800 (GPL-3.0), already the map's source; no shape is new, only the years each stands for. (2) The Comanche on the southern plains from about 1700: https://en.wikipedia.org/wiki/Comanche. (3) The removals to the Indian Territory from 1830: https://en.wikipedia.org/wiki/Indian_removal. (4) The Métis as a people of the fur trade, from the 18th century: https://en.wikipedia.org/wiki/M%C3%A9tis.
+- Confidence: medium that a people named on its land in 1492 was still there until a state took it, which holds better for the Amazon, Patagonia, and the subarctic than for the plains and the east, where peoples moved and the later maps (which win) record it; low for any single line, since the map of 1492 gives present-day nations in present-day extents.
+- Alternatives: holding the map of 1492 only to 1514 (leaves South America and Canada under blankets for 370 years); the later maps alone (they name no one south of Mexico); drawing peoples under the states that claim their land, with the Royce cessions of 1784 to 1894 to date their loss (a different map: here a claim takes the land from its first year, so the cessions change nothing drawn).
+- Left out: Nimuendajú's ethno-historical map of Brazil (Barsanetti and Ferreira's edition, CC BY 4.0) and Driver's map of North America of 1953 (Perreault's edition, CC BY 4.0), which would date peoples the map of 1492 only places; both are on Zenodo, which the build could not reach. Peoples' migrations between the maps. The peoples' names, which are the sources', so the same people is the "Očhéthi Šakówiŋ" on one map and the "Teton" on another.
+
 ## 1972–2026 | the world | lakes that changed in Landsat's years
 
 - What changed: seven lakes are drawn stage by stage from Landsat, as Lake Urmia is: the Great Salt Lake (its high water of the 1980s and its low of the 2020s), Mar Chiquita (three times larger from the late 1970s to the 2000s), Lago Poopó (the floods of 1986 and the years it dried), the Dead Sea (its two basins parted in the late 1970s), the Toshka Lakes (new in Egypt's desert from 1999, dried, and filled again), and two lakes the map did not have: the Hamun lakes, until their drying of 1999 and in the wet springs of 2005 and 2007, and Lake Faguibine, until 1984. Lake Chad was tried and left, since the index cannot see water under its reeds.

@@ -220,6 +220,24 @@ const AUSTRALIA = [112, -45, 155, -9], HISPANIOLA_W = [-75, 17.5, -71.6, 20.2], 
 const NA_STATES = /^(iroquois|haudenosaunee|comanche|south carolina|louisiana|luisiana|acadian peninsula.*|rupert's land|bahamas|united states.*|canada|russian empire|confederate states.*|republic of texas|texas|vermont.*|mexico.*|new france|quebec|florida.*|nova scotia|newfoundland.*|british.*|spanish.*|french.*|new spain|cuba.*|virginia|massachusetts.*|new netherland|new sweden)$/i;
 const NATIVE_LAND_STATES = /^(inca empire|aztec triple alliance|purépecha empire|chimú empire|chimu empire|chimú|chimu|later mayan city-states|mayan city-states|mixtec empire|zapotec empire|haudenosaunee|iroquois|muisca|muisca confederation|itza mayans|michoacán|tenochtitlan|texcoco|tlaxcala|mexihcah \(triple alliance\)|p.urhépecha)$/i;
 const BANDS = /hunter|gatherer|forager|foraging|fisher|fichers/i;
+// The Americas' peoples are carried forward from the maps of these years (see the block that uses it); the map of 1500 is a sketch there.
+// BLANKETS are the names that stand for whoever lived there, which a named people of any map replaces.
+// NATIVE_MAPS leaves out the maps whose peoples the next map repeats (1530 by 1600, 1650 by 1700) or that name none to carry (1783, 1815).
+const NATIVE_CARRY = [1492, 1815], NATIVE_MAPS = [1492, 1600, 1700, 1715, 1800], SKETCH_YEAR = 1500, SKETCH_STATES = /^(iroquois|haudenosaunee|comanche)$/i;
+const BLANKETS = /hunter|gatherer|forager|foraging|fisher|fichers|^pampas cultures$|^athabas[ck]an$/i;
+// The map of 1492 draws Native Land's present-day nations, and these among them began after contact: the nations removed to Oklahoma in the
+// 1830s and after, the reservations and rancherias, and the Métis. They are left out, and the nations whose land they lie on show instead.
+const NOT_YET = /\(Oklahoma\)|Reservation\)|Rancheria|^Michif Piyii|^Mountain Métis$|^NWT Métis Nation$|Metis Settlement|^Mount Tabor Indian Community$/i;
+// A carried people more than this share of whose land later maps' peoples hold is left out for those years: what is left of it is an edge.
+const DISPLACED = 0.5;
+let nativeSnaps = []; // the maps nativeCarry reads, kept when the rest are let go
+const inAmericas = (polys) => {
+  let big = null, most = -1;
+  for (const p of polys) { const a = polyKm2(p); if (a > most) { most = a; big = p; } }
+  if (!big) return false;
+  const b = boxOf([big]), x = (b[0] + b[2]) / 2, y = (b[1] + b[3]) / 2;
+  return x > AMERICAS[0] && x < AMERICAS[2] && y > AMERICAS[1] && y < AMERICAS[3];
+};
 const APPROX = new Set(["Mongol Empire", "Golden Horde", "Blue Horde", "White Horde", "Great Horde", "Chagatai Khanate", "Moghulistan", "Western Moghulistan", "Northern Yuan", "Oirat Confederation", "Kazakh Khanate", "Small Horde", "Nogai Horde", "Tyumen Khanate", "Khanate of Sibir", "Kalmyk Khanate", "Dzungar Khanate", "Khoshut Khanate", "Qara Khitai", "Cumania", "Kimek-Kipchak confederation", "Yenisei Kyrgyz", "Mali", "Mali Empire", "Songhai Empire", "Empire of Kanem", "Bornu Empire", "Sosso Empire", "Ghana Empire", "Kingdom of Mutapa", "Kingdom of Zimbabwe", "Kingdom of Kongo", "Sultanate of Mogadishu", "Sultanate of Showa", "Ifat Sultanate", "Adal Sultanate", "Funj", "Funj Sultanate", "Aztec Triple Alliance", "Inca Empire", "Kingdom of Cusco", "Purépecha Empire", "Chimú Empire", "Mesoamerican city-states and chiefdoms", "Andean states and chiefdoms", "Aymara kingdoms", "Zapotec city-states", "Mixtec city-states", "Later Mayan City-States", "Tuʻi Tonga Empire", "Māori", "Haudenosaunee", "Comanche", "Iroquois", "Tibet", "Phagmodrupa dynasty", "Dharmasraya", "Rupert's Land", "Louisiana", "Spanish Louisiana", "Sokoto Caliphate", "Sultanate of Darfur", "Wadai Empire", "Emirate of Diriyah", "Emirate of Nejd", "Emirate of Jabal Shammar", "Xiongnu", "Xianbei", "Rouran Khaganate", "Göktürk Khaganate", "Eastern Göktürks", "Western Göktürks", "Second Turkic Khaganate", "Uyghur Khaganate", "White Huns", "Kidarites", "Xionites", "Oghuz Turks", "Qarlugs", "Wusun", "Yuezhi", "Southern Xiongnu", "Kara-Khitans", "Tibetan Empire", "Goguryeo", "Balhae", "Tarim Basin oasis states"]);
 const APPROX_EARLY = new Map([
   "Sumerian City-States", "Syrian city-states", "Elam", "Canaanite city-states", "Anatolian city-states", "Hurrian Kingdoms", "Kerma", "Xia", "Shang dynasty", "Zhou dynasty",
@@ -2575,6 +2593,10 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
       const polys = rewind(polysOf(f.geometry)), whole = km2Of(polys), box = boxOf(polys);
       if (!(whole > 0)) continue;
       const people = isPeople(p.name, p.ruler, s.y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2]) ? 1 : 0;
+      // The map of 1500 sketches the Americas' peoples as a few boxes, the Comanche and the Iroquois among them as states: the peoples of
+      // the map of 1492 are carried over those years instead (NATIVE_CARRY, below).
+      if (s.y === SKETCH_YEAR && (people ? !BLANKETS.test(p.name) : SKETCH_STATES.test(p.name)) && inAmericas(polys)) continue;
+      if (s.y === NATIVE_CARRY[0] && NOT_YET.test(p.name) && inAmericas(polys)) continue;
       const opt = cellOpt(polys, 0.97);
       opt.whole = whole;
       opt.same = sameAs(p.name);
@@ -2851,7 +2873,8 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
     console.log("names: joined touching spans of one state with one name in " + joined + " stretches of years, " + drop.size + " spans to " + add.length);
   }
   dated.forEach((s) => { delete s.cells; });
-  snapshots.length = 0; // nothing reads historical-basemaps' maps after this
+  nativeSnaps = snapshots.filter((s) => s.y >= DATED_FROM).map((s) => ({ y: s.y, feats: NATIVE_MAPS.includes(s.y) ? s.feats : [] }));
+  snapshots.length = 0; // nothing reads historical-basemaps' maps after this, but nativeCarry, from nativeSnaps
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
 
@@ -3669,7 +3692,71 @@ const stages = (list) => {
   return out;
 };
 
-dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(medieval(britishAmerica(canada(northAmerica(colonies(redraw1886(italy(stages(dated)))))))))), "from " + DATED_FROM + " to " + DATED_TO));
+// The Americas' peoples carried forward. The named peoples of each map from 1492 on stay after its years, to DATED_TO, on the land nothing
+// else holds once the colonies are drawn: a state, a colony, or a claim; a people of a later map in that map's years; or a later map's
+// people carried the same way (the latest map goes first, so the later source wins). Of two peoples of one map the larger keeps the land
+// they share, as resolveOverlaps has it. A people most of whose land later maps' peoples hold is left out (DISPLACED). The blankets
+// (BLANKETS: "Amazon hunter-gatherers") then keep only the land no named people holds.
+function nativeCarry(list) {
+  const hbSnaps = nativeSnaps;
+  if (!hbSnaps.some((s) => s.y === NATIVE_CARRY[0])) throw new Error("nativeCarry: no map of " + NATIVE_CARRY[0]);
+  const winLast = (k) => (k + 1 < hbSnaps.length ? Math.ceil((hbSnaps[k].y + hbSnaps[k + 1].y) / 2) - 1 : DATED_TO);
+  const start = winLast(hbSnaps.findIndex((s) => s.y === NATIVE_CARRY[0])) + 1;
+  const isBlanket = (f) => f.people && BLANKETS.test(f.name) && f.first >= start && inAmericas(f.polys);
+  const blankets = list.filter(isBlanket), rest = list.filter((f) => !isBlanket(f));
+  // The spans the peoples give way to, each with its own number: a span cut in time keeps its uid, which cutOver's memo goes by.
+  // Spans with one shape (a span's pieces in time) share a number, so the memo serves them all.
+  let n = 0;
+  const shapeNo = new Map(), noOf = (polys) => { if (!shapeNo.has(polys)) shapeNo.set(polys, n++); return shapeNo.get(polys); };
+  const wrap = (f) => ({ uid: noOf(f.polys), name: f.name, people: f.people, first: f.first, last: f.last, polys: f.polys, box: boxOf(f.polys), cells: cellsOf(f.polys) });
+  const pool = rest.filter((f) => f.last >= start && f.first <= DATED_TO && f.polys.length && (f.box || boxOf(f.polys))[0] < AMERICAS[2]).map(wrap);
+  const carried = [];
+  let out = 0;
+  const maps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => NATIVE_MAPS.includes(s.y)).reverse();
+  for (const { s, k } of maps) {
+    const first = winLast(k) + 1, feats = [], mine = [], mineW = [];
+    for (const f of s.feats) {
+      const p = f.properties;
+      if (!p.name || BLANKETS.test(p.name) || NOT_YET.test(p.name)) continue;
+      const polys = rewind(polysOf(f.geometry)), whole = km2Of(polys), box = boxOf(polys);
+      if (whole > 0 && inAmericas(polys) && isPeople(p.name, p.ruler, s.y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2])) feats.push({ p, polys, whole, box });
+    }
+    feats.sort((a, b) => b.whole - a.whole);
+    const later = pool.filter((c) => c.people);
+    for (const { p, polys, whole, box } of feats) {
+      const width = widthOf(polys), opt = cellOpt(polys);
+      const near = later.filter((c) => c.last >= first && boxHit(c.box, box) && meets(opt.cells, c.cells));
+      // Only the spans on the people's own cells are cut from it (all in its box, for a people too small for a cell): a neighbour's changes
+      // would cut it in time for nothing.
+      const cands = pool.concat(mineW).filter((c) => c.last >= first && boxHit(c.box, box) && (!opt.cells.size || !c.cells.size || meets(opt.cells, c.cells)));
+      for (const r of cutOver(polys, box, first, DATED_TO, cands)) {
+        const kept = keepRemnant(r.polys, whole, 1, width);
+        if (!kept.length) continue;
+        let held = 0;
+        const act = near.filter((c) => c.first <= r.first && r.first <= c.last);
+        if (act.length) for (const i of opt.cells) if (act.some((c) => c.cells.has(i))) held += cellW(i);
+        if (held > DISPLACED * opt.cellsW) { out++; continue; }
+        const span = withBox({ name: p.name, ruler: "", part: "", people: 1, b: p.b, status: 0, wiki: wikiFor(p.name, s.y), src: "carry", first: r.first, last: r.last, polys: kept });
+        mine.push(span);
+        mineW.push(wrap(span));
+      }
+    }
+    carried.push(...mine);
+    pool.push(...mineW);
+    console.log("the Americas' peoples of " + s.y + " carried from " + first + ": " + mine.length + " spans of " + feats.length + " peoples, " + Math.round(process.uptime()) + " s");
+  }
+  const left = [], over = carried.map(wrap);
+  for (const b of blankets) {
+    const whole = km2Of(b.polys), width = widthOf(b.polys);
+    for (const r of cutOver(b.polys, b.box || boxOf(b.polys), b.first, b.last, over, cellOpt(b.polys))) {
+      const kept = keepRemnant(r.polys, whole, 1, width);
+      if (kept.length) left.push(withBox({ ...b, first: r.first, last: r.last, polys: kept, geoHash: undefined }));
+    }
+  }
+  console.log("the Americas' peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
+  return rest.concat(left, carried);
+}
+dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(colonies(redraw1886(italy(stages(dated))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
