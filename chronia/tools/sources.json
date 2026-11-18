@@ -2,6 +2,7 @@
   "sources": {
     "cliopatria": { "label": "Cliopatria", "kind": "dataset", "url": "https://doi.org/10.1038/s41597-025-04516-9" },
     "cshapes": { "label": "CShapes 2.0", "kind": "dataset", "url": "https://icr.ethz.ch/data/cshapes/", "licence": "CC BY-NC-SA 4.0" },
+    "cshapes-europe": { "label": "CShapes-Europe", "kind": "dataset", "url": "https://icr.ethz.ch/data/cshapes/", "licence": "CC BY-NC-SA 4.0" },
     "hb": { "label": "historical-basemaps", "kind": "dataset", "url": "https://github.com/aourednik/historical-basemaps", "licence": "GPL-3.0" },
     "ne": { "label": "Natural Earth", "kind": "dataset", "url": "https://www.naturalearthdata.com/", "licence": "public domain" },
     "units": { "label": "Natural Earth and national mapping agencies’ units", "kind": "dataset" },
@@ -36,7 +37,8 @@
     "seam": { "text": "CShapes 2.0’s shape of 1886, carried back to 1885 by the editors", "ids": ["cshapes", "editors"] },
     "backdate": { "text": "CShapes 2.0’s shape of 1886, carried back by the editors to the year the state began", "ids": ["cshapes", "editors"] },
     "back": { "text": "A later CShapes 2.0 shape, carried back by the editors", "ids": ["cshapes", "editors"] },
-    "ww2": { "text": "OpenHistoricalMap and Natural Earth units, assembled by the editors", "ids": ["ohm", "ne", "editors"] }
+    "ww2": { "text": "OpenHistoricalMap and Natural Earth units, assembled by the editors", "ids": ["ohm", "ne", "editors"] },
+    "cse": { "text": "CShapes-Europe for the borders between states, and the editors’ units or the source’s outline for the rest", "ids": ["cshapes-europe", "units", "editors"] }
   },
   "name": {
     "source": { "text": "The source’s own name", "ids": [] },

@@ -8,6 +8,7 @@ import { dateChanges, DAYS_FROM } from "./dated-days.mjs";
 import { applyWW2 } from "./ww2-borders.mjs";
 import { buildColonies, NATIVE_KEEP, BRITISH_AMERICA, COLONIES_TO } from "./na-colonies.mjs";
 import { buildNapoleonic, NAPOLEONIC_FROM, NAPOLEONIC_TO } from "./napoleonic.mjs";
+import { europeFromCShapes } from "./cshapes-europe.mjs";
 import { healNodes } from "./heal-nodes.mjs";
 import { tidyLines } from "./tidy-lines.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
@@ -25,7 +26,7 @@ const SRC_KEYS = [], srcKeyIx = new Map();
 const NAME_OWN = new Set(["clio", "hb", "member", "carry", "cs"]), DATES_MAP = new Set(["hb", "member"]);
 // modern: a span from 1886, where only CShapes' own spans keep the source's dates.
 const srcOf = (s, hasDay, modern) => {
-  const b = s.cs ? "cs" : s.src;
+  const b = s.cs ? "cs" : s.bsrc || s.src;
   if (!b || !SOURCES.borders[b]) throw new Error("sources: " + (b ? "the tag " + b + " is not in tools/sources.json" : "no src") + " on the span " + s.name + " (" + s.first + " to " + s.last + ")");
   const n = s.nameSrc || (NAME_OWN.has(b) ? "source" : "editors");
   const d = b === "cs" || (b === "clio" && !modern) ? (s.dateSplit ? "split" : hasDay ? "days" : "source") : DATES_MAP.has(b) && !modern ? "map" : "editors";
@@ -36,7 +37,7 @@ const srcOf = (s, hasDay, modern) => {
 };
 // Run over a finished list before the long steps that follow, so a missing tag stops the build early, naming every such span.
 const checkSrc = (list, where) => {
-  const bad = list.filter((s) => !(s.cs ? "cs" : s.src) || !SOURCES.borders[s.cs ? "cs" : s.src]);
+  const bad = list.filter((s) => !(s.cs ? "cs" : s.bsrc || s.src) || !SOURCES.borders[s.cs ? "cs" : s.bsrc || s.src]);
   if (bad.length) throw new Error("sources: " + bad.length + " spans " + where + " with no src, or one not in tools/sources.json: " + [...new Set(bad.map((s) => s.name + " [" + (s.src || "none") + "]"))].slice(0, 40).join("; "));
 };
 const modules = resolve(process.argv[2] || "node_modules");
@@ -4479,6 +4480,15 @@ const africa1885 = (list) => {
   console.log("africa 1885: " + added + " spans of 1885 from the rows of 1 January 1886 inside the ring, " + gone + " spans of 1885 replaced whole and " + cut + " cut to their land outside it, " + ended + " spans that end with 1884 dated with them" + (failed ? ", " + failed + " pieces that could not be cut and went whole to the side most of their points lie on" : ""));
   return res;
 };
+// The borders between Europe's states from 1816 to 1885, where CShapes-Europe and the map disagree (tools/cshapes-europe.mjs).
+// The dataset is read from cshapes-europe/CShapes-Europe.geojson in the working folder. A span whose land it changed keeps its
+// own source for its name and dates, and is credited to the dataset for its borders (bsrc "cse").
+{
+  const csePath = resolve("cshapes-europe/CShapes-Europe.geojson");
+  if (!existsSync(csePath)) console.log("cshapes-europe: no " + csePath + ", so Europe from 1816 to 1885 keeps its own borders");
+  else dated = europeFromCShapes(dated, JSON.parse(readFileSync(csePath, "utf8")).features, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log })
+    .map((s) => (s.cse && !s.bsrc ? { ...s, bsrc: "cse", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
+}
 dated = africa1885(lastPieces(lastWord(dated)));
 checkSrc(dated, "until 1885");
 mkdirSync(resolve(out, "dated"), { recursive: true });
