@@ -3933,7 +3933,12 @@
     ctx.globalAlpha = 1;
     return mkBox(o.x + o.nx * d, o.y + o.ny * d, 7 * s, 12.5 * s, Math.atan2(o.ty, o.tx));
   }
+  // The war and its file at a point, for the hover's "held by" and the card's Sources.
   function controlAt(ll) {
+    var c = controlInfoAt(ll);
+    return c ? c.text : null;
+  }
+  function controlInfoAt(ll) {
     if (!layers.control || !ll) return null;
     var day = ctlDay();
     if (day === null) return null;
@@ -3942,7 +3947,7 @@
       var w = wars[k], D = w.data, st = ctlState(w, day);
       for (var i = 0; i < st.rows.length; i++) {
         var r = D.rows[st.rows[i]];
-        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return (D.kind === "presence" ? "presence of " : "held by ") + D.sides[r[0]][1] + (D.credit ? ", per " + D.credit : "");
+        if (d3.geoContains(ctlFeat(w, r[3]).geo, ll)) return { key: w.key, name: w.name, source: D.source || "", text: (D.kind === "presence" ? "presence of " : "held by ") + D.sides[r[0]][1] + (D.credit ? ", per " + D.credit : "") };
       }
     }
     return null;
@@ -4048,15 +4053,23 @@
     }
     ctx.letterSpacing = "0px";
   }
+  // Whether a point lies in a state's shape on the map shown.
+  function insidePolity(ll, id) {
+    if (!ll || id < 0 || !current) return false;
+    var L = shapesOf(current);
+    for (var i = 0; i < current.polys.length; i++) {
+      var p = current.polys[i];
+      if (p && p.id === id && inBounds(L.bounds[i], ll) && d3.geoContains(L.geo[i], ll)) return true;
+    }
+    return false;
+  }
+  var divAtReg = null;
   function divisionAt(ll, id) {
     var day = divDay();
+    divAtReg = null;
     if (!ll || id < 0 || day === null || !current) return null;
-    var name = polityName(id), L = shapesOf(current), inside = false;
-    for (var i = 0; i < current.polys.length && !inside; i++) {
-      var p = current.polys[i];
-      if (p && p.id === id) inside = inBounds(L.bounds[i], ll) && d3.geoContains(L.geo[i], ll);
-    }
-    if (!inside) return null;
+    var name = polityName(id);
+    if (!insidePolity(ll, id)) return null;
     if (!divIndex) { divLoadIndex(); return null; }
     for (var r = 0; r < divIndex.length; r++) {
       var reg = divIndex[r];
@@ -4065,7 +4078,7 @@
       var D = reg.data, st = divState(reg, day);
       for (var k = 0; k < st.rows.length; k++) {
         var row = D.rows[st.rows[k]], f = divFeat(reg, row[3]);
-        if (inBounds(f.bounds, ll) && d3.geoContains(f.geo, ll)) return row[0];
+        if (inBounds(f.bounds, ll) && d3.geoContains(f.geo, ll)) { divAtReg = reg.key; return row[0]; }
       }
     }
     return null;
@@ -4085,6 +4098,7 @@
     divShown = shown;
     el.textContent = text;
     el.hidden = !text;
+    srcDivision(name ? divAtReg : null);
     divNote(name);
   }
   function loadingDots(el, live) {
@@ -5683,8 +5697,8 @@
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
     var at = r.cap ? capitalNow(r.cap) || (city ? null : capitalAt(r.cap, Math.min(dayOfTime(now), modern.toDay))) : null;
-    if (!at) return { id: city.id, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, of: -1, kind: l.kind };
-    if (city) return { id: city.id, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, of: r.of, kind: l.kind };
+    if (!at) return { id: city.id, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, until: city.until, of: -1, kind: l.kind };
+    if (city) return { id: city.id, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, until: city.until, of: r.of, kind: l.kind };
     return { lon: at[1], lat: at[2], modern: at[0], names: null, since: null, of: r.of, kind: l.kind };
   }
   function cityFacts(c) {
@@ -5735,7 +5749,7 @@
       addText(on + when + ".");
     } else addText("In no state" + on + when + ".");
     var y = askYear();
-    renderSources(null);
+    renderCitySources(c, f, y, f.name);
     loadWiki(f.modern || f.name, f.modern && f.modern !== f.name ? f.name : f.modern || f.name, {
       ask: { kind: "city", name: f.name, modern: f.modern || "", lon: c.lon, lat: c.lat, state: p ? polityName(p.id) : "", capital: isCap, year: y },
       label: f.name, when: fmtYear(y), click: click
@@ -6164,6 +6178,40 @@
       if (i % 2) el.appendChild(srcLink(part, part)); else el.appendChild(document.createTextNode(part));
     });
   }
+  // The sources that the About panel once listed in one paragraph, given instead on the cards they bear on (Noah's request,
+  // 18 November 2026): the land and its relief on every state's card, a division's or a zone of control's source when the
+  // card was opened by a click inside one, and the city sources on a city's card. The full list, with the licences, is on
+  // the More info page, which the About panel links to.
+  var SRC = {
+    ne: ["Natural Earth", "https://www.naturalearthdata.com/"],
+    terrain: ["Terrain Tiles", "https://registry.opendata.aws/terrain-tiles/"],
+    cbs: ["Statistics Netherlands", "https://www.cbs.nl/"],
+    ahcb: ["the Newberry Library’s Atlas of Historical County Boundaries", "https://digital.newberry.org/ahcb/"],
+    geonames: ["GeoNames", "https://www.geonames.org/"],
+    reba: ["Reba, Reitsma, and Seto", "https://doi.org/10.1038/sdata.2016.34"],
+    hanson: ["J. W. Hanson", "https://oxrep.web.ox.ac.uk/cities-database"],
+    hb: ["historical-basemaps", "https://github.com/aourednik/historical-basemaps"]
+  };
+  // A war's own links, beside the source its file names.
+  var SRC_WAR = {
+    syria: [["Wikipedia’s town map of Syria", "https://en.wikipedia.org/wiki/Module:Syrian_Civil_War_detailed_map"]],
+    ukraine: [["Wikipedia’s town map of Ukraine", "https://en.wikipedia.org/wiki/Module:Russo-Ukrainian_war_detailed_map"]],
+    israel: [["Wikipedia’s town map of Israel and Palestine", "https://en.wikipedia.org/wiki/Module:Israeli-Palestinian_conflict_detailed_map"]],
+    mexico: [["OCVED", "https://github.com/javierosorio/OCVED_2.0"]],
+    civilwar: [["the Coast Survey’s sketches of the rebellion", "https://commons.wikimedia.org/wiki/File:Historical_sketch_of_the_rebellion._LOC_99447101.jpg"], ["the Army’s American Military History", "https://archive.org/details/cmh-pub-30-21-nsia"]]
+  };
+  // A line's text from plain strings and [label, address] pairs, the pairs made into links.
+  function srcRich(el, parts) {
+    parts.forEach(function (x) { if (typeof x === "string") el.appendChild(document.createTextNode(x)); else el.appendChild(srcLink(x[1], x[0])); });
+  }
+  // The list's words: "A", "A and B", "A, B, and C".
+  function srcList(items) {
+    var out = [];
+    items.forEach(function (x, i) { if (i) out.push(i === items.length - 1 ? (items.length > 2 ? ", and " : " and ") : ", "); out.push(x); });
+    return out;
+  }
+  // The Low Countries, where the coasts and the polders are drawn from their own sources.
+  function lowCountries(ll) { return !!ll && ll[0] > 2.4 && ll[0] < 7.3 && ll[1] > 50.6 && ll[1] < 53.7; }
   function srcLine(label, cls) {
     var el = document.createElement("p"), b = document.createElement("span");
     el.className = "ch-src-line" + (cls ? " " + cls : "");
@@ -6189,6 +6237,21 @@
     // Filled in by srcText once Wikipedia has answered with an article of the same name: never from the guess at its title.
     var same = document.createElement("span");
     if (k[1] === "editors") nm.appendChild(same);
+    var land = srcLine("Land");
+    srcRich(land, [SRC.ne, "’s coasts, lakes, and rivers, with relief from ", SRC.terrain]);
+    if (lowCountries(divClick && insidePolity(divClick, p.id) ? divClick : p.label ? [p.label[0], p.label[1]] : null)) srcRich(land, ["; the medieval coasts from Deltares and the Rijksdienst voor het Cultureel Erfgoed, and the polders from ", SRC.cbs]);
+    land.appendChild(document.createTextNode("."));
+    // Filled in by srcDivision when the card names the division that was clicked.
+    var division = srcLine("Division");
+    division.hidden = true;
+    // The point last clicked, if it lies in this state: a card opened from search keeps no stale point from before.
+    var zone = null, held = divClick && insidePolity(divClick, p.id) ? controlInfoAt(divClick) : null;
+    if (held) {
+      zone = srcLine("Zone of control");
+      zone.appendChild(document.createTextNode(held.name + ": "));
+      srcPlain(zone, held.source.replace(/\.?$/, "."));
+      if (SRC_WAR[held.key]) { zone.appendChild(document.createTextNode(" See ")); srcRich(zone, srcList(SRC_WAR[held.key])); zone.appendChild(document.createTextNode(".")); }
+    }
     var text = srcLine("Text");
     text.hidden = true;
     var quiet = document.createElement("p");
@@ -6200,11 +6263,64 @@
     report.type = "button"; report.className = "ch-src-report"; report.textContent = "Report a problem";
     var at = p.label ? [p.label[0], p.label[1]] : [view.lon, view.lat];
     report.addEventListener("click", function () { reportAbout(name, at[0], at[1]); });
-    [borders, dates, nm, text, quiet, notes, report].forEach(function (el) { body.appendChild(el); });
-    srcCtx = { name: name, tag: k[0], year: year, text: text, notes: notes, same: same };
+    [borders, dates, nm, land, division, zone, text, quiet, notes, report].forEach(function (el) { if (el) body.appendChild(el); });
+    srcCtx = { name: name, tag: k[0], year: year, text: text, notes: notes, same: same, division: division };
     box.hidden = false;
     box.open = srcOpen;
     if (srcOpen) fillNotes();
+  }
+  // The Division line, for the division the card names: the United States' states and territories from the Newberry
+  // Library's atlas, the others from Natural Earth's states and provinces under the names of their time.
+  function srcDivision(reg) {
+    var el = srcCtx && srcCtx.division;
+    if (!el) return;
+    var label = el.firstChild;
+    el.textContent = ""; el.appendChild(label);
+    el.hidden = !reg;
+    if (!reg) return;
+    if (reg === "us") srcRich(el, [SRC.ahcb, ", which dates every change to a state’s or territory’s boundary to the day."]);
+    else srcRich(el, [SRC.ne, "’s states and provinces, under the names of their time, dated by the editors."]);
+  }
+  // The Sources section on a city's card. The city data does not record which source gave each city, so the lines name
+  // the sources that cover its region and its time: Hanson for the Greek and Roman world before 600, the census for the
+  // United States from 1790, the UN from 1950, and Reba, Reitsma, and Seto's compilation of Chandler and Modelski
+  // throughout.
+  function renderCitySources(c, f, year, name) {
+    var box = $("src"), body = $("src-body");
+    srcCtx = null;
+    body.textContent = "";
+    var classical = c.lon > -10 && c.lon < 45 && c.lat > 22 && c.lat < 56, roman = classical && year < 600;
+    var us = c.lon > -125 && c.lon < -66 && c.lat > 24 && c.lat < 50 && year >= 1790;
+    // A city that is gone (an end year) is known from Hanson, historical-basemaps' dated places, or the editors' tables;
+    // one that stands today is placed by GeoNames and Natural Earth, and named by date from the editors' tables.
+    // A capital that is in no city file is placed by the capitals' table, from Wikidata and the editors.
+    var gone = c.until != null && isFinite(c.until), place = srcLine(gone ? "Where it stood" : "Where it stands"), nm = null;
+    if (c.id == null) place.appendChild(document.createTextNode("The capitals’ table, from Wikidata and the editors."));
+    else if (gone) srcRich(place, (classical && (c.since == null || c.since < 600) ? [SRC.hanson, " (with the Barrington Atlas’s names), "] : []).concat([SRC.hb, "’ dated places, or the editors’ own tables of places the sources lack."]));
+    else {
+      srcRich(place, srcList([SRC.geonames, SRC.ne]).concat(["’s populated places."]));
+      nm = srcLine("Name");
+      if (f.modern && f.name !== f.modern) {
+        if (roman) srcRich(nm, ["The Barrington Atlas’s name, through ", SRC.hanson, "."]);
+        else nm.appendChild(document.createTextNode("The name an English-language atlas of the time would print, from the editors’ table of names by date."));
+      } else srcRich(nm, [SRC.geonames, "."]);
+    }
+    var pop = srcLine("Population"), from = [SRC.reba, " (Chandler’s and Modelski’s estimates)"];
+    if (roman) from.push(", ", SRC.hanson, "’s Cities Database");
+    if (us) from.push(", the United States census through Historical U.S. City Populations");
+    if (year >= 1950) from.push(", the UN’s World Urbanization Prospects");
+    from.push(", and the editors’ tables, by which the map ranks the cities it shows.");
+    srcRich(pop, from);
+    var same = document.createElement("span");
+    var text = srcLine("Text");
+    text.hidden = true;
+    var report = document.createElement("button");
+    report.type = "button"; report.className = "ch-src-report"; report.textContent = "Report a problem";
+    report.addEventListener("click", function () { reportAbout(name, c.lon, c.lat); });
+    [place, nm, pop, text, report].forEach(function (el) { if (el) body.appendChild(el); });
+    srcCtx = { name: name, text: text, notes: null, same: same, division: null };
+    box.hidden = false;
+    box.open = srcOpen;
   }
   // The Text line, set when the card's text is: Wikipedia's extract, or a note a language model wrote.
   function srcText(mode, wiki) {
@@ -6223,7 +6339,7 @@
   }
   function fillNotes() {
     var ctx = srcCtx;
-    if (!ctx) return;
+    if (!ctx || !ctx.notes) return;
     var say = function (t) { ctx.notes.textContent = ""; var q = document.createElement("p"); q.className = "ch-src-quiet"; q.textContent = t; ctx.notes.appendChild(q); };
     if (srcNotesFailed) { say("The editors’ notes could not be loaded."); return; }
     if (!srcNotes) {

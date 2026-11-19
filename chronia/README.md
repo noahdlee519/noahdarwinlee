@@ -1244,9 +1244,16 @@ A state's or a people's card ends with a closed "Sources" section (since 16 Nove
 - **Borders** (**Extent** for a people): the origin of the span's shape, such as "Cliopatria", "CShapes 2.0", or "Natural Earth units, assembled by the editors".
 - **Dates:** the source's own, or the editors' discretion, or the source's years as the editors' tables divide them.
 - **Name:** the source's own, or the editors' discretion (", matching Wikipedia's article title" once Wikipedia has answered with an article of the same name).
+- **Land:** Natural Earth's coasts, lakes, and rivers, with relief from Terrain Tiles; in the Low Countries also the medieval coasts (Deltares and the RCE) and the polders (Statistics Netherlands).
+- **Division** (when the card was opened by a click in a first-level division): the Newberry Library's Atlas of Historical County Boundaries for the United States, Natural Earth's states and provinces elsewhere.
+- **Zone of control** (when the zones are on and the click was inside one): the war's name and the source its file records, with links to Wikipedia's town maps, OCVED, the Coast Survey's sketches, or the Army's history where the war has them.
 - **Text:** Wikipedia's article, or a note a language model wrote from the card's facts.
 - **Editors' notes:** the heading and the sources of each [ledger](LEDGER.md) entry that applies to the polity at that date.
 - **Report a problem:** opens the report form with the polity's place and the date filled in (see [Reports of errors](#reports-of-errors)).
+
+A city's card has the same section (since 18 November 2026): where it stands (GeoNames and Natural Earth) or stood (Hanson, historical-basemaps' dated places, or the editors' tables), its name, and the population sources that cover its region and time (Reba, Reitsma, and Seto throughout; Hanson in the Greek and Roman world before 600; the United States census from 1790; the UN from 1950). The city files do not record which source gave each city, so these lines name the sources for its region and time rather than claiming one.
+
+These lines took the place of the About panel's list of sources (18 November 2026), which now links to the More info page for the full list and the licences.
 
 Nothing is shown that the repository doesn't record, and work by the editors is never shown as a dataset's.
 
