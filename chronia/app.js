@@ -6988,7 +6988,9 @@
   // PREMIUM_LIVE turns the offer on, once chronia-premium is deployed and Stripe's keys are set; until then the
   // page never calls the function.
   var ADS = { client: "ca-pub-8179332869743841", left: "4385958710", right: "3792217290", below: "6931843961" }, PREMIUM_LIVE = true;
-  var AD_SIZES = [[320, 50]], AD_BELOW = [320, 50], AD_GAP = 10;
+  // A side banner is 50 high and as wide as its gap allows, from 160 to 320 (AdSense fills a fixed unit at any width from
+  // 120); only where a gap is narrower than that does a single banner go under the top row.
+  var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
@@ -7052,7 +7054,7 @@
     var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
     if (!adsMode) {
       adsSize = null;
-      for (var i = 0; i < AD_SIZES.length && !adsSize; i++) if (room >= AD_SIZES[i][0] + 2) adsSize = AD_SIZES[i];
+      if (room >= AD_SIDE_W[0] + 2) adsSize = [Math.min(AD_SIDE_W[1], Math.floor(room - 2)), AD_H];
       adsMode = adsSize ? "side" : "below";
     }
     if (adsMode === "side") {
