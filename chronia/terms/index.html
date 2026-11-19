@@ -2,6 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Only the site's own scripts may run here: it keeps the AdSense tag below from loading (see the atlas's page). -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'" />
+    <!-- Google AdSense's site tag, so Google can find it and verify chroniaatlas.com (18 November 2026). It sits after a
+         Content-Security-Policy that does not allow Google's script, so it does not load for anyone: the privacy notice
+         promises no advertising and no cookies until it is changed. To let it run, see "Switching it on" in the README. -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8179332869743841"
+     crossorigin="anonymous"></script>
     <script src="../go.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Terms | CHRONIA</title>
