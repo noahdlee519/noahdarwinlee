@@ -141,6 +141,9 @@ export function dateChanges(spans, table, clip, log = () => {}) {
     for (const e of entries) if (e.used) report.push({ y: Y, date: e.date, what: e.what, spans: [...new Set(all.filter((s) => why.get(s) === e).map((s) => (isStart.has(s) ? "+" : "-") + s.names[0]))] });
     log("  " + Y + ": " + day.size + " of " + all.length + " spans dated by " + entries.filter((e) => e.used).length + " of " + entries.length + " entries");
   }
+  // A span of the last year that brings its own last day (Eastern Rumelia, to 17 September 1885) keeps it: no year after DAYS_TO
+  // is walked to give it.
+  for (const s of spans) if (s.last === DAYS_TO && s.fixTo !== undefined && s.fixTo < dayOf(DAYS_TO, 12, 31)) { s.dayTo = s.fixTo; s.toNamed = true; days.add(s.fixTo + 1); }
   // A span whose first day is the day after its last is never shown (two changes on one day). One whose
   // first day comes later still (two changes a year apart, dated across each other) loses the day it
   // took from a neighbour, or, if an entry named it for both, both days.

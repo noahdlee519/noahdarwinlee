@@ -22,7 +22,7 @@ Each entry:
 
 - What changed: Eastern Rumelia stayed apart from Bulgaria to the end of 1885 and joined it on 1 January 1886, where CShapes begins. It now joins the Principality of Bulgaria on 18 September 1885 (6 September, Old Style), the day of the coup at Plovdiv that united them.
 - Applies to: Eastern Rumelia; Principality of Bulgaria
-- Tables: `UNION_1885` in `tools/napoleonic.mjs`.
+- Tables: `UNION_1885` in `tools/napoleonic.mjs`, which now keeps a stretch after the table's last 1 July under 1885; `tools/dated-days.mjs` keeps a last day a span brings in 1885; `app.js` applies a last day in the last dated file, which has no file after it to hand over to.
 - Sources: (1) the coup of 18 September (6 September, Old Style) 1885, https://en.wikipedia.org/wiki/Bulgarian_unification; (2) Bulgarian News Agency (BTA), "Bulgaria Celebrates Anniversary of Unification", 6 September 2019: 6 September 1885, New Style 18 September, https://bta.bg/en/news/78483-Bulgaria-Celebrates-Anniversary-of-Unification
 - Confidence: high for the date.
 - Alternatives: 5 April 1886, the Tophane Act, by which the Porte accepted the union (Eastern Rumelia stayed in law an Ottoman province under the Prince of Bulgaria as its governor-general); the map draws the union from the day it was made, as CShapes draws it from 1886.

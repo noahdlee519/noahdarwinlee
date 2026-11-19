@@ -1006,7 +1006,7 @@
     (d.days || []).forEach(function (x) {
       var r = d.rows[x[0]];
       if (x[1] !== null && !(r[2] === d.from && x[1] > first)) { d.dayFrom[x[0]] = x[1]; d.dayKnown[x[0]] |= 1; }
-      if (x[2] !== null && !(r[3] === d.to && x[2] < last)) { d.dayTo[x[0]] = x[2]; d.dayKnown[x[0]] |= 2; }
+      if (x[2] !== null && !(r[3] === d.to && d.to < dated.to && x[2] < last)) { d.dayTo[x[0]] = x[2]; d.dayKnown[x[0]] |= 2; }
     });
   }
   function datedSnap(k, t) {
