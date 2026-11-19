@@ -6798,6 +6798,7 @@
     if (reportSession) { showWho(); if (!reportMe && !reportPanel.hidden) loadMe(); }
     else if (!reportPanel.hidden) startGoogle(reportGsi, reportGoogle);
     if (typeof syncAccount === "function") syncAccount();
+    if (typeof checkTimelapse === "function") checkTimelapse();
   }
   function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join(""); }
   // Google's own button, drawn wherever sign-in is offered (the report panel, the account panel, and the
@@ -6854,7 +6855,7 @@
     }).catch(function (e) {
       console.warn("google sign-in", e);
       signInNotes("Signing in did not work. Try the other way:");
-      [reportGoogle, $("account-google"), $("invite-google")].forEach(function (b) { b.hidden = false; });
+      [reportGoogle, $("account-google"), $("invite-google"), $("tl-google")].forEach(function (b) { b.hidden = false; });
     });
   }
   // The other way in: Supabase's own Google sign-in page, which comes back here (see takeSignIn).
@@ -6862,7 +6863,7 @@
     try { sessionStorage.setItem(REPORT_BACK, location.search + location.hash); } catch (e) {}
     location.href = REPORT_AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname);
   }
-  [reportGoogle, $("account-google"), $("invite-google")].forEach(function (b) { b.addEventListener("click", signInByPage); });
+  [reportGoogle, $("account-google"), $("invite-google"), $("tl-google")].forEach(function (b) { b.addEventListener("click", signInByPage); });
   function setReportPicking(on) {
     reportPicking = on;
     reportPick.setAttribute("aria-pressed", on ? "true" : "false");
@@ -7392,17 +7393,24 @@
       saveMake.disabled = true;
       return null;
     }
-    // Timelapse videos are for readers signed in with Google (19 November 2026): signed out, the button offers the sign-in.
+    // Timelapse videos are for readers signed in with Google (19 November 2026). Signed out, the section shows only a line
+    // and Google's own sign-in button, as the report panel does, in place of the video's settings (Noah, 19 November).
     // The video is made in the browser, so this is a door, not a lock.
-    var out = !reportSession;
-    saveMake.textContent = out ? "Sign in to make a video" : "Make the video";
-    if (out) { saveNote.textContent = "Sign in with Google to make a timelapse video. It is free."; saveMake.disabled = false; return null; }
+    if (syncTimelapseLock()) return null;
     var plan = timelapsePlan();
     if (plan.why) { saveNote.textContent = plan.why; saveMake.disabled = true; return null; }
     var n = plan.frames.length, sz = videoSize();
     saveNote.textContent = n.toLocaleString("en-US") + " frames | " + fmtLength(n / plan.fps + HOLD_S) + " | " + sz.w + " by " + sz.h;
     saveMake.disabled = false;
     return plan;
+  }
+  // Shows the sign-in in place of the video's settings when the reader is signed out; true while it does.
+  function syncTimelapseLock() {
+    var out = !reportSession && !exporting;
+    $("tl-lock").hidden = !out;
+    $("tl-body").hidden = out;
+    if (out && !savePanel.hidden) startGoogle($("tl-gsi"), $("tl-google"));
+    return out;
   }
   [tlFrom, tlTo].forEach(function (el) { el.addEventListener("input", checkTimelapse); });
   [tlStep, tlFps].forEach(function (el) { el.addEventListener("change", checkTimelapse); });
