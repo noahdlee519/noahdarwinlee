@@ -7006,7 +7006,7 @@
   var ADS = { client: "ca-pub-8179332869743841", left: "4385958710", right: "3792217290", below: "6931843961" }, PREMIUM_LIVE = true;
   // A side banner is 50 high and as wide as its gap allows, from 160 to 320 (AdSense fills a fixed unit at any width from
   // 120); only where a gap is narrower than that does a single banner go under the top row.
-  var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
+  var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8, adsBelow = null;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
@@ -7064,7 +7064,9 @@
     // By the offsets, not the boxes on the screen: the top row slides in when the page opens, and its boxes move with it.
     var top = $("top"), yb = $("year-box"), head = $("head"), ctls = $("ctls"), inTop = yb.parentNode === top;
     if (!(head.offsetHeight > 0 && ctls.offsetHeight > 0)) return 0;   // the top row is not laid out yet: asked again once it is
-    var headR = head.offsetLeft + head.offsetWidth, ybL = (top.offsetWidth - yb.offsetWidth) / 2, ybR = ybL + yb.offsetWidth;
+    // The date is in the top row's middle column (since 19 November 2026), which is in the page's middle only where the
+    // title and the tools leave room; its own offset says where it is.
+    var headR = head.offsetLeft + head.offsetWidth, ybL = yb.offsetLeft, ybR = ybL + yb.offsetWidth;
     // The date is beside the title only where it is in the top row and on its line.
     var beside = inTop && yb.offsetTop < head.offsetHeight - 4;
     var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
@@ -7086,12 +7088,15 @@
       return 0;
     }
     L.hidden = R.hidden = true;
-    if (W < AD_BELOW[0] + 12 || B.dataset.unfilled) { B.hidden = true; return 0; }
+    if (B.dataset.unfilled) { B.hidden = true; return 0; }
     B.hidden = false;
-    adsFill(B, ADS.below, AD_BELOW);
+    // Under the date, centred on the page; where the page is narrower than the banner and a margin, the banner is made
+    // narrower to fit rather than left off (Noah, 19 November 2026). Its size is settled when it is first filled.
+    if (!B.firstChild) adsBelow = [Math.max(120, Math.min(AD_BELOW[0], W - 2 * AD_GAP - 2)), AD_BELOW[1]];
+    adsFill(B, ADS.below, adsBelow || AD_BELOW);
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
     B.style.top = Math.round(under) + "px";
-    return under + AD_BELOW[1] + 2 + 8;
+    return under + (adsBelow || AD_BELOW)[1] + 2 + 8;
   }
   function syncPremium() {
     var box = $("premium-box"), out = $("premium-out");

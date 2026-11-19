@@ -256,7 +256,10 @@ body.ch-page {
   left: calc(var(--ch-gap) + env(safe-area-inset-left, 0px));
   right: calc(var(--ch-gap) + env(safe-area-inset-right, 0px));
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* The date in the middle column, at most 336 px: the two outer columns share what is left equally, so the date is in
+     the page's middle wherever the title and the tools leave room, and each keeps at least its own width (max-content),
+     so where they do not the date narrows (see .ch-year-box's container rules) rather than dropping below them. */
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, 336px) minmax(max-content, 1fr);
   align-items: start;
   gap: var(--ch-gap);
   pointer-events: none;
@@ -283,6 +286,8 @@ body.ch-page {
 
 .ch-head {
   grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
   position: relative;
   display: flex;
   align-items: stretch;
@@ -322,6 +327,7 @@ body.ch-page {
 /* The bezel is four pixels wider than the old rule, and the padding four narrower, so each tool is as large as it was. */
 .ch-ctls {
   grid-column: 3;
+  grid-row: 1;
   justify-self: end;
   position: relative;
   display: flex;
@@ -400,7 +406,9 @@ body.ch-page {
   top: 50%;
   z-index: -1;
   box-sizing: border-box;
-  width: min(100% - 6px, 38px);
+  /* Never taller than the tray inside its bezel either, less three pixels a side: at 800 px and under the bar is 46 px,
+     and a 38 px disc stood out over the bezel. */
+  width: min(100% - 6px, 38px, var(--ch-bar) - 2 * var(--ch-bz) - 6px);
   aspect-ratio: 1;
   translate: -50% -50%;
   border: 1px solid var(--ch-brass-deep);
@@ -1130,16 +1138,19 @@ select.ch-save-input {
   }
 }
 
-/* The date sits at the top, in the middle of the page, in a frame like the title's. */
+/* The date sits at the top, in the middle column of the top row, in a frame like the title's, at every width above a
+   phone's (Noah, 19 November 2026: it used to drop under the row at 880 px and below). It is as wide as the column, at
+   most 336 px; narrower, its keys and figures narrow with it (the container rules below). */
 .ch-top > .ch-year-box {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  translate: -50% 0;
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   align-items: center;
-  width: 336px;
+  width: 100%;
+  min-width: 150px;
   padding: 0;
+  container-type: inline-size;
 }
 
 /* The date reads along one line, as the timeline does: back a year and back a month on its left, forward a month and
@@ -2331,19 +2342,67 @@ select.ch-save-input {
   }
 }
 
-@media (max-width: 880px) {
-  .ch-top > .ch-year-box {
-    top: calc(var(--ch-bar) + var(--ch-gap));
+/* Between a phone and 880 px the title and the tools give the date room: the name a little smaller and closer set,
+   and each tool's cell four pixels narrower. */
+@media (min-width: 641px) and (max-width: 880px) {
+  :root.ch,
+  :root.ch[data-theme] {
+    --ch-seg: 40px;
+  }
+
+  .ch-title {
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    padding-left: 0.1em;
+  }
+
+  .ch-head-text {
+    padding: 0 10px 1px 14px;
+  }
+
+  /* The title's plate as wide as the tools' tray, so the date between them is in the page's middle. */
+  .ch-head {
+    min-width: calc(5 * var(--ch-seg) + 2 * var(--ch-bz));
+  }
+
+  .ch-head-text {
+    flex: 1 1 auto;
   }
 }
 
-/* Where the date has dropped under the top row (and is not yet in the timeline, as on a phone), the card starts under
-   the date too, and is shorter by as much, so the date no longer lies over the card's name and its close button. */
-@media (min-width: 641px) and (max-width: 880px) {
-  .ch-card {
-    top: calc(2 * var(--ch-bar) + 3 * var(--ch-gap) + env(safe-area-inset-top, 0px));
-    max-height: calc(100vh - 2 * var(--ch-bar) - 4 * var(--ch-gap) - var(--ch-time-h));
-    max-height: calc(100dvh - 2 * var(--ch-bar) - 4 * var(--ch-gap) - var(--ch-time-h));
+/* The date's keys and figures narrow with its frame: under 300 px the keys are 28 px wide; under 250, 24 px and the
+   figures a size smaller; under 205 only the month keys are kept (the year moves by the arrow keys, the timeline, and
+   typing). */
+@container (max-width: 300px) {
+  .ch-spin-btn {
+    width: 28px;
+  }
+}
+
+@container (max-width: 250px) {
+  .ch-spin-btn {
+    width: 24px;
+  }
+
+  .ch-year,
+  .ch-year-mark {
+    font-size: 17px;
+  }
+}
+
+@container (max-width: 205px) {
+  #year-down,
+  #year-up {
+    display: none;
+  }
+
+  .ch-spin-btn {
+    width: 26px;
+  }
+
+  .ch-year,
+  .ch-year-mark {
+    font-size: 16px;
   }
 }
 
@@ -2459,13 +2518,21 @@ select.ch-save-input {
     display: none;
   }
 
+  /* The title takes only its own width and the tools the rest of the row, spaced evenly across it (Noah, 19 November
+     2026: the title's plate was the wider of the two, and the tools were crowded at the right). */
   .ch-top {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: 5px;
   }
 
   .ch-head {
-    grid-column: 1 / 3;
+    grid-column: 1;
+  }
+
+  .ch-ctls {
+    grid-column: 2;
+    justify-self: stretch;
+    justify-content: space-evenly;
   }
 
   .ch-head-text {
