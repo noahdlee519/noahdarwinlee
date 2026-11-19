@@ -6771,7 +6771,9 @@
   }
   function showWho() {
     if (!reportMe) { reportWho.textContent = "Signed in"; return; }
-    reportWho.textContent = "Signed in as " + reportMe.name + " | " + (reportMe.left === 1 ? "1 report" : reportMe.left + " reports") + " left today";
+    // The count of reports left today is not shown (Noah, 19 November 2026); the limit still holds, and the function
+    // says so when it is reached.
+    reportWho.textContent = "Signed in as " + reportMe.name;
   }
   function loadMe() {
     reportAsk({ action: "me" }).then(function (r) {
@@ -6906,7 +6908,7 @@
     if (!a || t === null) return say("The first date isn't one the atlas can read. Write it as the date box does: 1815, 500 BC, June 1941, or 22 June 1941.", reportFrom);
     if (!b) return say("The last date isn't one the atlas can read. Write it as the date box does: 1815, 500 BC, June 1941, or 22 June 1941.", reportTo);
     if (b.y * 12 + b.m < a.y * 12 + a.m) return say("The last date comes before the first.", reportTo);
-    if (!note) return say("Say what is wrong there, and how you know.", reportNote);
+    if (!note) return say("Please describe the issue.", reportNote);
     var on = Object.keys(layers).filter(function (k) { return layers[k]; }).join(", ") + (flat ? " | flat map" : " | globe");
     reportBusy = true; reportSend.disabled = true;
     say("Sending…");
