@@ -32,7 +32,7 @@ Each entry:
 
 - What changed: the Grand Duchy of Finland was drawn on today's Finland, so Vyborg, Sortavala, and Kexholm, the government of Vyborg ("Old Finland", Russian since 1721 and 1743) that Alexander I joined to the Grand Duchy from 1 January 1812, were Russia's until 1886, and on 1 January 1886 about 40,000 km² of the Karelian Isthmus and Ladoga Karelia passed to Finland in a day. From 1812 to 1885 the seam step now moves land between the Grand Duchy, the Russian Empire, and Sweden to the shape the map gives Finland from 1886 (CShapes' first Finland, less Petsamo, as `CS_EARLIER` cuts it), down to half a square kilometre.
 - Applies to: Grand Duchy of Finland; Russian Empire
-- Tables: the Finland pass of the seam step in `tools/build-eras.mjs` (`own` in `tools/cshapes-europe.mjs`, for a dependency drawn on a shape of its own).
+- Tables: the Finland pass of the seam step in `tools/build-eras.mjs` (`own` in `tools/cshapes-europe.mjs`, for a dependency drawn on a shape of its own; `islands`, for islands no span touches). Land moves only into the Grand Duchy. CShapes draws Vyborg Bay, Vyborg's own shore among it, as sea in both states, so the land of the bay it gives to neither goes with Finland.
 - Sources: (1) the government of Vyborg joined to the Grand Duchy by the manifesto of 23 December 1811 (Old Style; in force 1 January 1812), https://en.wikipedia.org/wiki/Vyborg_Governorate and https://en.wikipedia.org/wiki/Old_Finland; (2) *Encyclopaedia Britannica*, 11th ed. (1911), "Finland": the province of Viborg reunited with Finland in 1811; (3) CShapes 2.0, https://icr.ethz.ch/data/cshapes/.
 - Confidence: high.
 - Alternatives: none.

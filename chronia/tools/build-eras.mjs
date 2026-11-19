@@ -4657,6 +4657,11 @@ let EUPEN = null;
   const finFirst = rewind(polysOf(client.feature(topo, fin0[0]).geometry)), fBox = [[[27, 67.9], [34, 67.9], [34, 71], [27, 71], [27, 67.9]]];
   const fin = rewind(tryClip(clip.difference, finFirst, tryClip(clip.intersection, tryClip(clip.difference, finFirst, rewind(polysOf(client.feature(topo, fin1940).geometry))), [fBox])));
   const ru = rewind(tryClip(clip.difference, first("365"), fin));
+  // CShapes leaves Vyborg Bay and the islands of Björkö out of both states as water, where the map's coast has land (Vyborg's
+  // centre among it), so the land of the bay that CShapes gives to neither goes with Finland.
+  const bay = rewind(tryClip(clip.difference, [[[[27.8, 60.3], [29.2, 60.3], [29.2, 60.95], [27.8, 60.95], [27.8, 60.3]]]], first("365")));
+  fin.push(...bay);
+  console.log("seam of 1886 in Finland: " + bay.length + " pieces of Vyborg Bay that CShapes gives to neither state, drawn with Finland");
   const finFeats = [["375", fin], ["365", ru], ["380", first("380")]].map(([gw, polys]) => ({ properties: { Id: +gw, Holder: +gw, Name: gw, From: 1812, To: 1885, Area: 1e9 }, geometry: { type: "MultiPolygon", coordinates: polys } }));
   dated = europeFromCShapes(dated, finFeats, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log }, {
     from: 1812, to: 1885, holder: { ...CSE_HOLDER, "Grand Duchy of Finland": 375, "Kingdom of Sweden": 380 }, own: new Set(["Grand Duchy of Finland"]), keep: new Set(),
