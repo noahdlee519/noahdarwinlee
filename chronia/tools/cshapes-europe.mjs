@@ -18,7 +18,7 @@ export const CSE_FROM = 1816, CSE_TO = 1885;
 export const CSE_MIN_KM2 = 12000, PIECE_KM2 = 40, PIECE_WIDTH_KM = 3, PROTECT_SHARE = 0.4;
 // The map's sovereigns and the dataset's state codes (Gleditsch and Ward's, and its own from 10000 for states they leave out).
 export const CSE_HOLDER = {
-  "United Kingdom": 200, "Netherlands": 210, "Belgium": 211,
+  "United Kingdom": 200, "Netherlands": 210, "Belgium": 211, "Kingdom of Belgium": 211,
   "Bourbon Kingdom of France": 220, "Kingdom of France": 220, "Kingdom of the French": 220, "French Second Republic": 220, "Second French Empire": 220, "French Third Republic": 220,
   "Switzerland": 225, "Kingdom of Spain": 230, "Kingdom of Portugal": 235,
   "Kingdom of Hanover": 240, "Kingdom of Bavaria": 245, "Kingdom of Prussia": 255, "North German Confederation": 255, "German Empire": 255,
@@ -41,12 +41,13 @@ export const CSE_HOLDER = {
 // year, box of the piece's centre or null for the whole border]. Borders that have not moved since, where the map's units lie
 // on the same line, the dataset's grid only blurs: the Pyrenees, Switzerland's borders, Spain and Portugal, France and the
 // Low Countries, France and the German states (the dataset's line of 1871 gives Gérardmer and Briey to Germany and
-// Château-Salins to France), the Ore Mountains, Sweden-Norway and Russia, and Dalmatia and Croatia with Bosnia; and the Alps between
+// Château-Salins to France), the Low Countries' borders with each other and Prussia (it gives Belgium Eupen and Malmedy; the seam
+// step in the builder draws them from CShapes 2.0's lines), the Ore Mountains, Sweden-Norway and Russia, and Dalmatia and Croatia with Bosnia; and the Alps between
 // France and Piedmont above the Var. The Bay of Kotor, Austria's from 1815, which the dataset gives to the Ottomans and from 1879
 // to Montenegro; Pančevo and Zemun, on the Austrian bank of the Danube and the Sava, which it gives to the Ottomans and Serbia; and
 // Vranje, Serbia's from 1878, which it leaves to them; Tende and La Brigue, Italian until 1947.
 export const CSE_REFUSE = [
-  [220, 255, 0, 9999, null], [220, 245, 0, 9999, null], [220, 267, 0, 9999, null],
+  [220, 255, 0, 9999, null], [220, 245, 0, 9999, null], [220, 267, 0, 9999, null], [211, 255, 0, 9999, null], [210, 255, 0, 9999, null], [211, 210, 0, 9999, null], [211, 212, 0, 9999, null],
   [220, 230, 0, 9999, null], [225, null, 0, 9999, null], [230, 235, 0, 9999, null], [220, 210, 0, 9999, null], [220, 211, 0, 9999, null],
   [300, 269, 0, 9999, null], [380, 365, 0, 9999, null], [300, 640, 0, 9999, [15, 42, 19.2, 45.5]],
   [220, 10023, 0, 9999, [5.5, 44.4, 7.8, 46.5]], [220, 325, 0, 9999, [5.5, 43.9, 7.8, 46.5]], [220, 10023, 0, 9999, [7.2, 43.9, 7.8, 44.4]],
@@ -64,7 +65,8 @@ const SMALL_OK = new Set([273, 275, 10021, 10037, 10022, 10020, 10006, 10010, 10
 
 // The same step serves the seam at 1 January 1886 (o): the shapes of that day from CShapes 2.0 for a few states, so that their
 // last years before it end on the lines the map draws from it. o sets the years, the states, the smallest piece, the spans
-// kept whole, the moves refused, the land that stays, and the tag the changed spans carry.
+// kept whole, the moves refused, the land that stays, the tag the changed spans carry, and the dependencies treated as states
+// of their own (own).
 export function europeFromCShapes(list, features, h, o = {}) {
   const { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log } = h;
   const FROM = o.from ?? CSE_FROM, TO = o.to ?? CSE_TO, HOLDER = o.holder ?? CSE_HOLDER, KEEP = o.keep ?? CSE_KEEP, MIN_KM2 = o.pieceKm2 ?? PIECE_KM2,
@@ -90,6 +92,7 @@ export function europeFromCShapes(list, features, h, o = {}) {
   const mapped = new Set(Object.values(HOLDER));
   const sovOf = (s) => {
     if (s.people || s.claims || !s.polys || KEEP.has(s.name)) return null;
+    if (o.own && o.own.has(s.name)) return HOLDER[s.name] ?? null;
     if (s.ruler) return RULED.has(s.status) ? HOLDER[s.ruler] ?? null : null;
     return HOLDER[s.name] ?? null;
   };
@@ -116,14 +119,26 @@ export function europeFromCShapes(list, features, h, o = {}) {
   };
   // A grid of a span's vertices, to find the span a piece touches: a piece cut from a span along the border it shares with a
   // neighbour has the neighbour's vertices on that stretch.
-  const key = (x, y) => Math.round(x * 200) + ":" + Math.round(y * 200);
+  // Vertices count as shared within a cell of a hundredth of a degree or the eight around it, since earlier steps may have
+  // moved a shared border's points apart by a little.
+  const key = (i, j) => i + ":" + j;
   const vertexSets = new Map();
   const vertsOf = (s) => {
     let v = vertexSets.get(s);
-    if (!v) { v = new Set(); for (const poly of s.polys) for (const ring of poly) for (const [x, y] of ring) v.add(key(x, y)); vertexSets.set(s, v); }
+    if (!v) { v = new Set(); for (const poly of s.polys) for (const ring of poly) for (const [x, y] of ring) v.add(key(Math.round(x * 100), Math.round(y * 100))); vertexSets.set(s, v); }
     return v;
   };
-  const touch = (q, t) => { const v = vertsOf(t); let n = 0; for (const ring of q) for (const [x, y] of ring) if (v.has(key(x, y))) n++; return n; };
+  const touch = (q, t) => {
+    const v = vertsOf(t);
+    let n = 0;
+    for (const ring of q) for (const [x, y] of ring) {
+      const i = Math.round(x * 100), j = Math.round(y * 100);
+      let hit = false;
+      for (let di = -1; di <= 1 && !hit; di++) for (let dj = -1; dj <= 1 && !hit; dj++) if (v.has(key(i + di, j + dj))) hit = true;
+      if (hit) n++;
+    }
+    return n;
+  };
   const edits = new Map();
   const editOf = (i) => { let e = edits.get(i); if (!e) edits.set(i, (e = { remove: [], add: [] })); return e; };
   let moved = 0, movedKm2 = 0, kept = 0, protectedYears = 0, failed = 0;
@@ -156,19 +171,36 @@ export function europeFromCShapes(list, features, h, o = {}) {
           pieces.push({ q, H2: r.h, km2 });
         }
       }
-      if (lost > PROTECT_SHARE * area) { protectedYears += b - a + 1; guarded.set(s.name, (guarded.get(s.name) || 0) + b - a + 1); continue; }
+      if (lost > (o.protect ?? PROTECT_SHARE) * area) { protectedYears += b - a + 1; guarded.set(s.name, (guarded.get(s.name) || 0) + b - a + 1); continue; }
       for (const pc of pieces) {
-        const cands = (byHolder.get(pc.H2) || []).filter((t) => t.s.last >= a && t.s.first <= b && boxHit(t.box, boxOf([pc.q])));
-        let best = null, most = 0;
-        for (const t of cands) { const n = touch(pc.q, t.s); if (n > most) { most = n; best = t; } }
-        if (!best) { kept++; continue; }
-        const ya = Math.max(a, best.s.first), yb = Math.min(b, best.s.last);
-        editOf(sub.i).remove.push({ a: ya, b: yb, q: pc.q });
-        editOf(best.i).add.push({ a: ya, b: yb, q: pc.q });
-        moved++; movedKm2 += pc.km2;
-        if (h.onMove) h.onMove({ from: s.name, to: best.s.name, a: ya, b: yb, km2: pc.km2, box: boxOf([pc.q]), q: pc.q });
-        const pk = s.name + " → " + best.s.name;
-        pairs.set(pk, (pairs.get(pk) || 0) + pc.km2);
+        // The piece joins, year by year, the span of the other state it touches most that year, so a period that outlasts one
+        // neighbour's span passes to the next.
+        const bq = boxOf([pc.q]), cands = (byHolder.get(pc.H2) || []).filter((t) => t.s.last >= a && t.s.first <= b && boxHit(t.box, bq))
+          .map((t) => ({ t, n: touch(pc.q, t.s) })).filter((c) => c.n > 0);
+        if (o.debugBox && boxHit(bq, o.debugBox)) log("  " + LABEL + " piece of " + s.name + " (" + a + "–" + b + ", " + Math.round(pc.km2) + " km² at " + bq.map((v) => v.toFixed(2)).join(",") + ") to " + pc.H2 + ": " +
+          ((byHolder.get(pc.H2) || []).filter((t) => t.s.last >= a && t.s.first <= b && boxHit(t.box, bq)).map((t) => t.s.name + " " + t.s.first + "–" + t.s.last + " touch " + touch(pc.q, t.s)).join("; ") || "no span near"));
+        if (!cands.length && o.islands) for (const t of byHolder.get(pc.H2) || []) if (t.s.last >= a && t.s.first <= b && boxHit(t.box, [bq[0] - 0.5, bq[1] - 0.5, bq[2] + 0.5, bq[3] + 0.5]))
+          cands.push({ t, n: t.s.polys.reduce((sum, q) => sum + polyKm2(q), 0) / 1e9 });
+        if (!cands.length) { kept++; continue; }
+        let run = null;
+        const flush = () => {
+          if (!run) return;
+          editOf(sub.i).remove.push({ a: run.a, b: run.b, q: pc.q });
+          editOf(run.t.i).add.push({ a: run.a, b: run.b, q: pc.q });
+          moved++; movedKm2 += pc.km2 * (run.b - run.a + 1);
+          if (h.onMove) h.onMove({ from: s.name, to: run.t.s.name, a: run.a, b: run.b, km2: pc.km2, box: bq, q: pc.q });
+          const pk = s.name + " → " + run.t.s.name;
+          pairs.set(pk, (pairs.get(pk) || 0) + pc.km2);
+          run = null;
+        };
+        for (let y = a; y <= b; y++) {
+          let best = null;
+          for (const c of cands) if (c.t.s.first <= y && c.t.s.last >= y && (!best || c.n > best.n)) best = c;
+          if (run && (!best || best.t !== run.t)) flush();
+          if (best) { if (!run) run = { t: best.t, a: y, b: y }; else run.b = y; }
+          else kept++;
+        }
+        flush();
       }
     }
   }

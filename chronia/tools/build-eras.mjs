@@ -4567,6 +4567,22 @@ const africa1885 = (list) => {
   console.log("africa 1885: " + added + " spans of 1885 from the rows of 1 January 1886 inside the ring, " + gone + " spans of 1885 replaced whole and " + cut + " cut to their land outside it, " + ended + " spans that end with 1884 dated with them" + (failed ? ", " + failed + " pieces that could not be cut and went whole to the side most of their points lie on" : ""));
   return res;
 };
+// Eupen and Malmedy: the German Empire's land of 1885, in the table, inside CShapes' Belgium of 1886 (see the seam below). Taken
+// before any step moves land there.
+let EUPEN = null;
+{
+  const topo = JSON.parse(readFileSync(cshapesPath, "utf8")), obj = Object.values(topo.objects)[0];
+  const g0 = obj.geometries.find((x) => String(x.properties.gwcode) === "211" && x.properties.start === "1886-01-01");
+  if (!g0) throw new Error("Eupen: no CShapes shape of Belgium of 1886");
+  const be = rewind(polysOf(client.feature(topo, g0).geometry));
+  const box = [5.7, 50.1, 6.5, 50.85], boxPoly = [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]];
+  const german = dated.filter((s) => s.first <= 1885 && s.last >= 1885 && (s.name === "German Empire" || s.ruler === "German Empire") && s.polys && boxHit(s.box || boxOf(s.polys), box))
+    .map((s) => tryClip(clip.intersection, s.polys, [boxPoly])).filter((x) => x && x.length);
+  const g = german.length ? tryClip(clip.union, ...german) : null, eu = g ? tryClip(clip.intersection, be, g) : null;
+  EUPEN = eu ? rewind(eu).filter((q) => polyKm2(q) >= 1) : null;
+  if (!EUPEN || !EUPEN.length) throw new Error("Eupen: no German land of 1885 in CShapes' Belgium");
+  console.log("Eupen and Malmedy: " + Math.round(EUPEN.reduce((t, q) => t + polyKm2(q), 0)) + " km² of the German Empire's land of 1885 in CShapes' Belgium");
+}
 // The borders between Europe's states from 1816 to 1885, where CShapes-Europe and the map disagree (tools/cshapes-europe.mjs).
 // The dataset is read from cshapes-europe/CShapes-Europe.geojson in the working folder. A span whose land it changed keeps its
 // own source for its name and dates, and is credited to the dataset for its borders (bsrc "cse").
@@ -4583,24 +4599,40 @@ const africa1885 = (list) => {
 // Eupen and Malmedy, Germany's until the Treaty of Versailles came into force on 10 January 1920; the table has them German, so
 // the land Belgium's shape takes from the German Empire's spans of 1885 (EUPEN) is left out of it here, and given back to
 // Germany from 1886 (CS_MOVE).
-let EUPEN = null;
 {
   const topo = JSON.parse(readFileSync(cshapesPath, "utf8")), obj = Object.values(topo.objects)[0];
   const first = (gw) => { const g = obj.geometries.find((x) => String(x.properties.gwcode) === gw && x.properties.start === "1886-01-01"); if (!g) throw new Error("seam of 1886: no CShapes shape of " + gw); return rewind(polysOf(client.feature(topo, g).geometry)); };
-  const box = [5.7, 50.1, 6.5, 50.85], boxPoly = [[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]];
-  const german = dated.filter((s) => s.first <= 1885 && s.last >= 1885 && (s.name === "German Empire" || s.ruler === "German Empire") && s.polys && boxHit(s.box || boxOf(s.polys), box))
-    .map((s) => tryClip(clip.intersection, s.polys, [boxPoly])).filter((x) => x && x.length);
   const be = first("211");
-  const g = german.length ? tryClip(clip.union, ...german) : null, eu = g ? tryClip(clip.intersection, be, g) : null;
-  EUPEN = eu ? rewind(eu).filter((q) => polyKm2(q) >= 1) : null;
-  if (!EUPEN || !EUPEN.length) throw new Error("seam of 1886: no German land of 1885 in CShapes' Belgium");
   const beLess = rewind(tryClip(clip.difference, be, EUPEN));
   const feats = [["210", "Netherlands", first("210")], ["211", "Belgium", beLess], ["212", "Luxembourg", first("212")], ["220", "France", first("220")], ["255", "Germany", first("255")]]
     .map(([gw, name, polys]) => ({ properties: { Id: +gw, Holder: +gw, Name: name, From: 1840, To: 1885, Area: 1e9 }, geometry: { type: "MultiPolygon", coordinates: polys } }));
   const low = new Set([210, 211, 212]);
+  // From the Congress of Vienna to the Treaty of London (1816 to 1839) the three are drawn as one, the United Kingdom of the
+  // Netherlands, Belgium in revolt from 1830, and the Grand Duchy, whose lines with each other the treaty of 1839 drew: their
+  // outer border, with France and Prussia, is the one of 1886 (Givet French, Eupen and Malmedy Prussian).
+  const whole = rewind(tryClip(clip.union, first("210"), beLess, first("212")));
+  dated = europeFromCShapes(dated, [["210", whole], ["220", first("220")], ["255", first("255")]].map(([gw, polys]) => ({ properties: { Id: +gw, Holder: +gw, Name: gw, From: 1816, To: 1839, Area: 1e9 }, geometry: { type: "MultiPolygon", coordinates: polys } })),
+    { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log }, {
+      from: 1816, to: 1839, holder: { ...CSE_HOLDER, "Belgium": 210, "Kingdom of Belgium": 210, "Luxembourg": 210, "Duchy of Limburg": 210, "Limburg": 210, "United Kingdom of the Netherlands": 210 }, keep: new Set(), refuse: (a, b) => a !== 210 && b !== 210, stay: [],
+      pieceKm2: 0.5, widthKm: 0, minKm2: 0, protect: 2, tag: "csl", label: "seam of 1886 in the Low Countries, 1816 to 1839", debugBox: [4.6, 49.9, 5.1, 50.3]
+    }).map((s) => (s.cse === "csl" && s.bsrc !== "csl" ? { ...s, bsrc: "csl", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
   dated = europeFromCShapes(dated, feats, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log }, {
     from: 1840, to: 1885, holder: { ...CSE_HOLDER, "Luxembourg": 212 }, keep: new Set(), refuse: (a, b) => !low.has(a) && !low.has(b), stay: [],
-    pieceKm2: 0.5, widthKm: 0, minKm2: 0, tag: "csl", label: "seam of 1886 in the Low Countries (Eupen and Malmedy " + Math.round(EUPEN.reduce((t, q) => t + polyKm2(q), 0)) + " km²)"
+    pieceKm2: 0.5, widthKm: 0, minKm2: 0, protect: 2, debugBox: [4.6, 49.9, 5.1, 50.3], tag: "csl", label: "seam of 1886 in the Low Countries (Eupen and Malmedy " + Math.round(EUPEN.reduce((t, q) => t + polyKm2(q), 0)) + " km²)"
+  }).map((s) => (s.cse === "csl" && s.bsrc !== "csl" ? { ...s, bsrc: "csl", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
+  // The Grand Duchy of Finland, from the union of Old Finland (the government of Vyborg) with it on 1 January 1812, on the shape
+  // the map gives it from 1886 (CS_EARLIER: CShapes' first Finland, less Petsamo). The table drew it on today's Finland, so
+  // Vyborg, Sortavala, and Kexholm were Russia's until 1886.
+  const fin0 = obj.geometries.filter((x) => String(x.properties.gwcode) === "375").sort((x, y) => (x.properties.start < y.properties.start ? -1 : 1));
+  const fin1940 = fin0.find((x) => x.properties.start <= "1940-03-12" && "1940-03-12" <= x.properties.end);
+  if (!fin0.length || !fin1940) throw new Error("seam of 1886: no CShapes Finland");
+  const finFirst = rewind(polysOf(client.feature(topo, fin0[0]).geometry)), fBox = [[[27, 67.9], [34, 67.9], [34, 71], [27, 71], [27, 67.9]]];
+  const fin = rewind(tryClip(clip.difference, finFirst, tryClip(clip.intersection, tryClip(clip.difference, finFirst, rewind(polysOf(client.feature(topo, fin1940).geometry))), [fBox])));
+  const ru = rewind(tryClip(clip.difference, first("365"), fin));
+  const finFeats = [["375", fin], ["365", ru], ["380", first("380")]].map(([gw, polys]) => ({ properties: { Id: +gw, Holder: +gw, Name: gw, From: 1812, To: 1885, Area: 1e9 }, geometry: { type: "MultiPolygon", coordinates: polys } }));
+  dated = europeFromCShapes(dated, finFeats, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log }, {
+    from: 1812, to: 1885, holder: { ...CSE_HOLDER, "Grand Duchy of Finland": 375, "Kingdom of Sweden": 380 }, own: new Set(["Grand Duchy of Finland"]), keep: new Set(),
+    refuse: (a, b) => b !== 375, stay: [], islands: true, pieceKm2: 0.5, widthKm: 0, minKm2: 0, protect: 2, debugBox: [28.4, 60.5, 29.0, 60.9], tag: "csl", label: "seam of 1886 in Finland"
   }).map((s) => (s.cse === "csl" && s.bsrc !== "csl" ? { ...s, bsrc: "csl", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
 }
 dated = africa1885(lastPieces(lastWord(dated)));
