@@ -1,5 +1,5 @@
-// CHRONIA Premium: $5 once, through Stripe Checkout, frees an account of the page's advertisements and doubles its
-// daily notes (chronia-blurb reads the same table). One file, no imports, built like chronia-report.
+// CHRONIA Premium: $5 once, through Stripe Checkout, frees an account of the page's advertisements and gives it
+// five times the daily notes (chronia-blurb reads the same table). One file, no imports, built like chronia-report.
 //
 // From the page, a POST of JSON with an `action`:
 //   status   (signed in or not)  -> { open, premium }: whether Premium is on sale here, and whether this account has it
@@ -107,7 +107,7 @@ async function checkout(me: Account, back: string) {
     p.set("line_items[0][price_data][currency]", "usd");
     p.set("line_items[0][price_data][unit_amount]", String(PRICE_CENTS));
     p.set("line_items[0][price_data][product_data][name]", PRODUCT);
-    p.set("line_items[0][price_data][product_data][description]", "No advertisements on chroniaatlas.com, and twice the daily notes, for this account, for good.");
+    p.set("line_items[0][price_data][product_data][description]", "No advertisements on chroniaatlas.com, five times the daily notes, and your reports of errors read first, for this account, for good.");
   }
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
