@@ -279,8 +279,20 @@ export async function handle(req: Request): Promise<Response> {
     if (action === "list") {
       const status = body.status === undefined ? "open" : body.status;
       if (status !== "all" && !STATUSES.includes(status as string)) throw new Bad("status");
-      const rows = await db("chronia_reports?select=*&order=created_at.desc&limit=1000" + (status === "all" ? "" : "&status=eq." + status));
-      const shown = as === "reviewer" ? rows : (rows || []).map((r: Record<string, unknown>) => { const { email: _e, user_id: _u, ...rest } = r; return rest; });
+      const found = await db("chronia_reports?select=*&order=created_at.desc&limit=1000" + (status === "all" ? "" : "&status=eq." + status));
+      // The reports of accounts with CHRONIA Premium come first in the queue (newest first within each part), and are
+      // marked. It goes by the account as it is now, so a report sent before its reader bought Premium moves up too.
+      // If the table can't be read, the list is served in its plain order.
+      let paid = new Set<string>();
+      try {
+        const have = await db("chronia_premium?select=user_id&limit=10000");
+        paid = new Set((have || []).map((p: Record<string, unknown>) => String(p.user_id)));
+      } catch (e) {
+        console.error(e);
+      }
+      const rows = (found || []).map((r: Record<string, unknown>) => ({ ...r, premium: paid.has(String(r.user_id)) }));
+      rows.sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(b.premium) - Number(a.premium));
+      const shown = as === "reviewer" ? rows : rows.map((r: Record<string, unknown>) => { const { email: _e, user_id: _u, ...rest } = r; return rest; });
       return json(200, { role: as, reports: shown }, o);
     }
     if (action === "set") {

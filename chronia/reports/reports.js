@@ -66,6 +66,8 @@
     var head = el("p", "rp-head"), num = el("span", "cp-n", String(r.id));
     head.appendChild(num);
     head.appendChild(document.createTextNode(span(r)));
+    // A report from an account with CHRONIA Premium comes first in the list (the function sorts it), and says so.
+    if (r.premium) head.appendChild(el("span", "rp-premium", "Premium | first in the queue"));
     li.appendChild(head);
     li.appendChild(el("p", "rp-meta", [r.place || "No state", Math.abs(r.lat).toFixed(2) + "° " + (r.lat < 0 ? "S" : "N") + ", " + Math.abs(r.lon).toFixed(2) + "° " + (r.lon < 0 ? "W" : "E"), "from " + r.reporter + (r.email ? " (" + r.email + ")" : ""), when(r.created_at), r.status === "open" ? "open" : r.status + (r.closed_at ? " " + when(r.closed_at) : "")].join(" | ")));
     li.appendChild(el("p", "rp-text", r.note));

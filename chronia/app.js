@@ -7062,8 +7062,8 @@
     out.hidden = !premium.open || premium.on;
     $("premium-buy").hidden = premium.on;
     $("premium-text").textContent = premium.on
-      ? "You have CHRONIA Premium: no advertisements, and twice the daily notes. Thank you."
-      : "CHRONIA Premium takes the advertisements off the page and doubles your daily notes, for $5, paid once, for this account for good.";
+      ? "You have CHRONIA Premium: no advertisements, twice the daily notes, and your reports of errors read first. Thank you."
+      : "CHRONIA Premium takes the advertisements off the page, doubles your daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.";
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.

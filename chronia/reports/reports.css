@@ -157,3 +157,15 @@
   border-left: 3px solid var(--brass);
   color: var(--muted);
 }
+
+/* A report from an account with CHRONIA Premium: a small brass tag after its dates. */
+.cp-sheet .rp-premium {
+  margin-left: 10px;
+  padding: 1px 7px;
+  border: 1px solid #7d6129;
+  border-radius: 3px;
+  background: #f2e3b3;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
