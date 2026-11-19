@@ -54,7 +54,7 @@
   var dpr = 1, W = 0, H = 0, cx = 0, cy = 0, baseR = 0, baseK = 0, freeT = 0, freeB = 0;
   var projection = d3.geoOrthographic().clipAngle(90).precision(0.35), ROLL_SIGN = -1;
   var MIN_ZOOM = 0.6, MAX_ZOOM = 80;
-  var FB = { k: 1, xc: 0, yc: 0, wrap: false, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
+  var FB = { k: 1, xc: 0, yc: 0, wrap: false, spin: false, vmin: -Math.PI, vmax: Math.PI, pmin: -HALF_PI, pmax: HALF_PI };
   var B = { ex: 0, ey: 0, ez: 0, nx: 0, ny: 0, nz: 0, cx: 0, cy: 0, cz: 0, r: 1 };
 
   function layout() {
@@ -99,15 +99,20 @@
       var k = baseK * view.zoom;
       var xc = view.lon * D2R, yc = Math.max(-90, Math.min(90, view.lat)) * D2R;
       var x0 = -Math.PI + cx / k, x1 = Math.PI - (W - cx) / k;
+      // Wider than the window, the world repeats across it (wrap). Narrower, it is one world in its frame, but turned to the
+      // longitude the reader was looking at (spin, 19 November 2026; until then it was put back on the prime meridian, so
+      // zooming all the way out over the Pacific jumped to Europe). Both draw a longitude at wrapPi(lam - xc) from the
+      // centre; spin keeps to the frame's width round the centre.
       FB.wrap = k * TAU > W + 1;
-      xc = FB.wrap ? wrapPi(xc) : x0 > x1 ? 0 : Math.max(x0, Math.min(x1, xc));
+      FB.spin = !FB.wrap;
+      xc = wrapPi(xc);
       var y0 = (freeB - cy) / k - HALF_PI, y1 = HALF_PI - (cy - freeT) / k;
       yc = y0 > y1 ? 0 : Math.max(y0, Math.min(y1, yc));
       view.lon = xc / D2R; view.lat = yc / D2R;
       FB.k = k; FB.xc = xc; FB.yc = yc;
       var margin = 40 / k;
-      FB.vmin = FB.wrap ? xc - cx / k - margin : Math.max(-Math.PI, xc - cx / k - margin);
-      FB.vmax = FB.wrap ? xc + (W - cx) / k + margin : Math.min(Math.PI, xc + (W - cx) / k + margin);
+      FB.vmin = FB.wrap ? xc - cx / k - margin : xc - Math.PI - margin;
+      FB.vmax = FB.wrap ? xc + (W - cx) / k + margin : xc + Math.PI + margin;
       FB.pmin = Math.max(-HALF_PI, yc - (H - cy) / k - margin);
       FB.pmax = Math.min(HALF_PI, yc + cy / k + margin);
     } else {
@@ -344,7 +349,7 @@
     var k = FB.k, x0 = cx - k * FB.xc, y0 = cy + k * FB.yc;
     d = d || 0;
     if (FB.wrap) { c.rect(-20, y0 - k * HALF_PI - d, W + 40, k * Math.PI + 2 * d); return; }
-    c.rect(x0 - k * Math.PI - d, y0 - k * HALF_PI - d, k * TAU + 2 * d, k * Math.PI + 2 * d);
+    c.rect(cx - k * Math.PI - d, y0 - k * HALF_PI - d, k * TAU + 2 * d, k * Math.PI + 2 * d);
   }
   // Whether a circle of radius `rad` round the globe's centre covers the whole window. Zoomed in, the globe's
   // disc is far larger than the screen (5,600 device pixels across at 7x on a 2x screen), and filling or
@@ -389,7 +394,7 @@
   function projectLL(lon, lat) {
     if (flat) {
       var lam = lon * D2R;
-      return [cx + FB.k * (FB.wrap ? wrapPi(lam - FB.xc) : wrapPi(lam) - FB.xc), cy - FB.k * (lat * D2R - FB.yc), 1];
+      return [cx + FB.k * wrapPi(lam - FB.xc), cy - FB.k * (lat * D2R - FB.yc), 1];
     }
     var v = toVec(lon, lat), d = v[0] * B.cx + v[1] * B.cy + v[2] * B.cz;
     if (d <= 0) return null;
@@ -398,7 +403,8 @@
   function lonLatAt(x, y) {
     if (flat) {
       var lam = FB.xc + (x - cx) / FB.k, phi = FB.yc - (y - cy) / FB.k;
-      if (FB.wrap) lam = wrapPi(lam);
+      if (FB.spin && Math.abs(x - cx) > FB.k * Math.PI) return null;
+      lam = wrapPi(lam);
       if (Math.abs(lam) > Math.PI || Math.abs(phi) > HALF_PI) return null;
       return [lam / D2R, phi / D2R];
     }
@@ -1400,7 +1406,7 @@
     if (key === reliefKey) return;
     reliefKey = key;
     var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
-    if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; }
+    if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; o.spin = !!FB.spin; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     relief.draw(o);
   }
@@ -2416,8 +2422,7 @@
     if (flat) {
       var k = FB.k, y0 = cy + k * FB.yc;
       if (b.y <= y0 - k * HALF_PI + 3 || b.y + b.h >= y0 + k * HALF_PI - 3) return false;
-      var x0 = cx - k * FB.xc;
-      return FB.wrap || (b.x > x0 - k * Math.PI + 3 && b.x + b.w < x0 + k * Math.PI - 3);
+      return FB.wrap || (b.x > cx - k * Math.PI + 3 && b.x + b.w < cx + k * Math.PI - 3);
     }
     var corners = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]];
     for (var i = 0; i < 4; i++) if (Math.hypot(corners[i][0] - cx, corners[i][1] - cy) > B.r - 2) return false;
@@ -2461,7 +2466,7 @@
     if (held) { xy[m++] = hx; xy[m++] = hy; }
     return m >= 6 ? packRing(xy, m) : null;
   }
-  function flatRing(rg, tol) {
+  function flatRing(rg, tol, only) {
     flatArrays(rg);
     var n = rg.n, LL = rg.L, P = rg.P, U = new Float64Array(n), l = wrapPi(LL[0]), min = l, max = l, sumY = P[0], k, d;
     U[0] = l;
@@ -2477,6 +2482,7 @@
     if (Math.abs(wind) < Math.PI) wind = 0;
     var sh = 0, over = 0;
     for (var s = -1; s <= 1; s++) {
+      if (only !== undefined && s !== only) continue;
       var o = Math.min(max + s * TAU, FB.vmax) - Math.max(min + s * TAU, FB.vmin);
       if (o > over) { over = o; sh = s * TAU; }
     }
@@ -2509,8 +2515,11 @@
       var f = feats[i];
       if (!inView(f)) continue;
       for (j = 0; j < f.rings.length; j++) {
-        r = flat ? flatRing(f.rings[j], tol) : globeRing(f.rings[j], tol);
-        if (r && r.x1 > 0 && r.x0 < W && r.y1 > 0 && r.y0 < H && r.x1 - r.x0 + r.y1 - r.y0 > minSize) rings.push(r);
+        // A world turned in its frame cuts the shapes across its seam, so each copy that reaches the frame is a ring.
+        for (var sc = flat && FB.spin ? -1 : 0; sc <= (flat && FB.spin ? 1 : 0); sc++) {
+          r = flat ? flatRing(f.rings[j], tol, FB.spin ? sc : undefined) : globeRing(f.rings[j], tol);
+          if (r && r.x1 > 0 && r.x0 < W && r.y1 > 0 && r.y0 < H && r.x1 - r.x0 + r.y1 - r.y0 > minSize) rings.push(r);
+        }
       }
       if (!flat && f.radius > Math.PI / 4 && f.geo && -(f.cx * B.cx + f.cy * B.cy + f.cz * B.cz) >= Math.cos(f.radius) - 1e-9 &&
         d3.geoContains(f.geo, [wrap180(view.lon + 180), -view.lat])) rings.push(rimRing());
@@ -3058,7 +3067,7 @@
   }
   function glyphLayout(fr, fm, o, f, people, scale) {
     var ca = Math.cos(fm.ang), sa = Math.sin(fm.ang), inv = 1 / scale, spx = f * o.space, L = o.lines.length, sh = 0, i, j;
-    if (fr.flat) { var lam = fr.lc + fm.u / GU; sh = FB.wrap ? wrapPi(lam - FB.xc) - (lam - FB.xc) : wrapPi(lam) - lam; }
+    if (fr.flat) { var lam = fr.lc + fm.u / GU; sh = wrapPi(lam - FB.xc) - (lam - FB.xc); }
     var c0 = screenAt(fr, fm.u, fm.v, sh);
     if (c0[2] < 0.25) return null;
     var c1 = screenAt(fr, fm.u + ca * inv, fm.v + sa * inv, sh), lines = [], boxes = [], hh = f * CAP_H / 2;

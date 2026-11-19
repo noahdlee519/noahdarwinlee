@@ -38,7 +38,7 @@
     "  } else {",
     "    lam = uFlat.x + sx;",
     "    phi = uFlat.y + sy;",
-    "    if ((uMode < 1.5 && abs(lam) > PI) || abs(phi) > 0.5 * PI) discard;",
+    "    if ((uMode < 1.5 && abs(lam) > PI) || (uMode > 2.5 && abs(sx) > PI) || abs(phi) > 0.5 * PI) discard;",
     "  }",
     "  float u = fract(lam / (2.0 * PI) + 0.5);",
     "  float v = 0.5 - phi / PI;",
@@ -221,7 +221,8 @@
         gl.bindTexture(gl.TEXTURE_2D, det);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.uniform1f(loc.uMode, o.flat ? (o.wrap ? 2 : 1) : 0);
+        // 3: one world turned to xc, kept to its frame (CHRONIA's flat map zoomed all the way out); 2: repeating; 1: from -180 to 180.
+        gl.uniform1f(loc.uMode, o.flat ? (o.spin ? 3 : o.wrap ? 2 : 1) : 0);
         if (o.flat) {
           gl.uniform3f(loc.uView, o.cx * o.dpr, o.cy * o.dpr, o.k * o.dpr);
           gl.uniform2f(loc.uFlat, o.xc, o.yc);
