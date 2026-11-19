@@ -4704,10 +4704,14 @@
       el.classList.toggle("at-end", tl.start + tl.span >= lastT() - 1e-6);
     });
   }
-  // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it.
+  // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it. On a phone,
+  // while the map plays, the date starts again at the end it is moving away from (the left when playing forward), so the
+  // short bar shows the years ahead rather than the half already passed.
   function follow(t) {
     var p = posOf(t);
-    if (p < 0.04 || p > 0.96) setWindow(t - tl.span / 2);
+    if (!(p < 0.04 || p > 0.96)) return;
+    if (playTimer && phoneQuery.matches && playMode) setWindow(playMode === playModeOf(true) ? t - tl.span * 0.95 : t - tl.span * 0.05);
+    else setWindow(t - tl.span / 2);
   }
   function placeTicks() {
     if (!maps.length && !dated) return;
