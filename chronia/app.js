@@ -72,7 +72,8 @@
     var cardH = phone && !$("card").hidden ? $("card").getBoundingClientRect().height : 0;
     // The date sits under the top row on narrower screens, so the map starts below it there.
     var ybBottom = yb.parentNode === topRow ? topRow.offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
-    freeT = Math.max(phone ? 58 : 76, ybBottom);
+    // A banner under the top row (adsPlace, where the gaps beside the date are too narrow for two) pushes the map down too.
+    freeT = Math.max(phone ? 58 : 76, ybBottom, typeof adsPlace === "function" && typeof ADS === "object" && ADS ? adsPlace() : 0);
     freeB = H - timeH - cardH;
     cx = W / 2;
     cy = (freeT + freeB) / 2;
@@ -4598,21 +4599,63 @@
     if (m > 12 || (d && d > new Date(Date.UTC(y, m, 0)).getUTCDate())) return null;
     return timeOfDay(dayFromDate(y, m, d || MID_DAY));
   }
+  // A typed date as [year, month, day] (0 for none; years BC negative), or null. The order of the parts is free: July 4 1000,
+  // 4 July 1000, the 4th of July, 1000, 1000 July 4, 1000-07-04, 7/4/1000 (with slashes the month comes first unless it
+  // cannot), 4.7.1000 (with dots the day comes first unless it cannot), and any of them with BC, BCE, AD, or CE, or "c." for
+  // circa. Months are named by three letters or more. A day the month does not have is not a date.
+  function parseDate(s) {
+    var t = String(s || "").toLowerCase().trim().replace(/(\d)(b\.?c|a\.?d|c\.?e)\b/g, "$1 $2");
+    var era = /\b(?:b\.?\s*c|a\.?\s*d|c\.?\s*e)\b/.test(t), bc = /\bb\.?\s*c\.?(?:\s*e\.?)?(?=\s|$|\d|,)/.test(t) || /(?:^|\s)b\.?c\.?(?:e\.?)?$/.test(t);
+    t = t.replace(/\bb\.?\s*c\.?(?:\s*e\.?)?(?=\s|$|\d|,)/g, " ").replace(/\b(?:a\.?\s*d|c\.?\s*e)\.?(?=\s|$|\d|,)/g, " ");
+    t = t.replace(/^\s*(?:c\.|ca\.?|circa)\s*/, " ").replace(/\b(?:the|of)\b/g, " ");
+    t = t.replace(/(\d)(?:st|nd|rd|th)\b/g, "$1").replace(/([a-z])\./g, "$1").replace(/,/g, " ").replace(/\s+/g, " ").trim();
+    var m, y, mo = 0, d = 0, neg = false;
+    if ((m = /^(-)?(\d{1,4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(t))) { neg = !!m[1]; y = +m[2]; mo = +m[3]; d = m[4] ? +m[4] : 0; }
+    else if ((m = /^(\d{1,4})\/(\d{1,2})\/(\d{1,2})$/.exec(t)) && m[1].length > 2) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else if ((m = /^(\d{1,2})([\/.])(\d{1,2})\2(-?\d{1,4})$/.exec(t))) {
+      var p = +m[1], q = +m[3], dayFirst = m[2] === "." ? q <= 12 || p > 12 : p > 12 && q <= 12;
+      y = +m[4]; mo = dayFirst ? q : p; d = dayFirst ? p : q;
+      if (y < 0) { neg = true; y = -y; }
+    } else if ((m = /^(\d{1,2})\/(\d{1,4})$/.exec(t)) && m[2].length > 2) { y = +m[2]; mo = +m[1]; }
+    else {
+      var parts = t.split(" ").filter(Boolean), nums = [], names = [];
+      for (var i = 0; i < parts.length; i++) {
+        if (/^-?\d{1,4}$/.test(parts[i])) nums.push(parts[i]);
+        else if (/^[a-z]+$/.test(parts[i]) && monthIndex(parts[i])) names.push(monthIndex(parts[i]));
+        else return null;
+      }
+      if (names.length > 1 || !nums.length || nums.length > 2 || (!names.length && nums.length > 1)) return null;
+      mo = names.length ? names[0] : 0;
+      if (nums.length === 2) {
+        // The day is the number of one or two digits beside the month's name; the other is the year.
+        var first = parts.indexOf(nums[0]), name = parts.findIndex(function (w) { return !/^-?\d/.test(w); });
+        var dayAt = /^\d{1,2}$/.test(nums[0]) && Math.abs(first - name) === 1 ? 0 : 1;
+        if (!/^\d{1,2}$/.test(nums[dayAt])) return null;
+        d = +nums[dayAt]; y = +nums[1 - dayAt];
+        if (y < 0 && dayAt === 0) return null;
+      } else {
+        // "July 4" is a day without a year, not the year 4: a month with a year of one or two digits needs its era.
+        if (mo && /^\d{1,2}$/.test(nums[0]) && !era) return null;
+        y = +nums[0];
+      }
+      if (y < 0) { neg = true; y = -y; }
+    }
+    if (!y || mo > 12 || (d && !mo)) return null;
+    if (d) {
+      var len = [31, (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0 || y < 1582)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+      if (d < 1 || d > len) return null;
+    }
+    if (bc || neg) y = -y;
+    return [y, mo, d];
+  }
+  // A typed date as a time on the map. Before the map goes by the day (1648), a month or day is read but the year is the time.
   function parseTime(s) {
-    var t = String(s || "").trim().replace(/\./g, "").replace(/,/g, " ").replace(/\s+/g, " ");
-    var u = t.toUpperCase(), m;
-    if ((m = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(t))) return modernTime(+m[1], +m[2], m[3] ? +m[3] : 0);
-    if ((m = /^(\d{1,2})\/(\d{4})$/.exec(t))) return modernTime(+m[2], +m[1], 0);
-    if ((m = /^(\d{1,2}) ([A-Za-z]+) (\d{4})$/.exec(t)) && monthIndex(m[2])) return modernTime(+m[3], monthIndex(m[2]), +m[1]);
-    if ((m = /^([A-Za-z]+) (\d{1,2}) (\d{4})$/.exec(t)) && monthIndex(m[1])) return modernTime(+m[3], monthIndex(m[1]), +m[2]);
-    if ((m = /^([A-Za-z]+) (\d{4})$/.exec(t)) && monthIndex(m[1])) return modernTime(+m[2], monthIndex(m[1]), 0);
-    m = /^(AD |CE )?(-)?(\d{1,4})( ?(BC|BCE|AD|CE))?$/.exec(u);
-    if (!m) return null;
-    var n = +m[3];
-    if (m[2] || m[5] === "BC" || m[5] === "BCE") n = -n;
-    if (n === 0) n = 1;
-    var mt = modernTime(n, 0, 0);
-    return mt !== null ? mt : n;
+    var p = parseDate(s);
+    if (!p) return null;
+    var mt = p[0] > 0 ? modernTime(p[0], p[1], p[2]) : null;
+    if (mt !== null) return mt;
+    if (p[1] && p[0] >= monthlyFrom() && (modern || dated)) return null;
+    return p[0];
   }
   function listYears(ys) {
     var t = ys.map(fmtYear);
@@ -4662,10 +4705,14 @@
       el.classList.toggle("at-end", tl.start + tl.span >= lastT() - 1e-6);
     });
   }
-  // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it.
+  // Keeps the date in view: when it is off the window, or within 4% of an end, the window is centred on it. On a phone,
+  // while the map plays, the date starts again at the end it is moving away from (the left when playing forward), so the
+  // short bar shows the years ahead rather than the half already passed.
   function follow(t) {
     var p = posOf(t);
-    if (p < 0.04 || p > 0.96) setWindow(t - tl.span / 2);
+    if (!(p < 0.04 || p > 0.96)) return;
+    if (playTimer && phoneQuery.matches && playMode) setWindow(playMode === playModeOf(true) ? t - tl.span * 0.95 : t - tl.span * 0.05);
+    else setWindow(t - tl.span / 2);
   }
   function placeTicks() {
     if (!maps.length && !dated) return;
@@ -5124,11 +5171,12 @@
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
   function commitYearInput() {
-    var t = parseTime(yearInput.value), fine = /^([A-Za-z]+) (?:AD )?(\d{1,4})$/i.exec(String(yearInput.value).trim());
-    if (t === null && fine && monthIndex(fine[1]) && ctlFineYear(+fine[2])) {
+    var t = parseTime(yearInput.value), p = parseDate(yearInput.value);
+    // Before 1648 a month is kept where a war's months are stepped through (ctlFineYear); otherwise the map goes by the year.
+    if (t !== null && p && p[1] && t === p[0] && ctlFineYear(p[0])) {
       stopPlay();
-      setTime(+fine[2]);
-      ctlMonth = monthIndex(fine[1]);
+      setTime(p[0]);
+      ctlMonth = p[1];
       syncTime();
       writeHash();
       scheduleRender();
@@ -5137,11 +5185,12 @@
     if (t === null) {
       var typed = String(yearInput.value).trim();
       yearInput.value = fitDate(fmtNow(now));
-      if (typed && typed !== yearInput.value) yearHint("No date in “" + (typed.length > 24 ? typed.slice(0, 23) + "…" : typed) + "”. Try 1815, July 1815, 15 July 1815, or 500 BC.");
+      if (typed && typed !== yearInput.value) yearHint("No date in “" + (typed.length > 24 ? typed.slice(0, 23) + "…" : typed) + "”. Try 1815, July 1815, July 4 1815, 4 July 1815, 1815-07-04, or 500 BC.");
       return;
     }
     stopPlay();
     if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
+    if (p && p[1] && t === p[0]) yearHint("Before " + monthlyFrom() + " the map goes by the year, so this is " + fmtYear(p[0]) + ".");
   }
   // A date that cannot be read is put back, and a line under the frame says what the field takes.
   var hintTimer = 0;
@@ -5648,7 +5697,8 @@
     if (!blurbStop) return "";
     return blurbStop.error === "cap"
       ? "CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow."
-      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow.";
+      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow."
+        + (typeof premium === "object" && premium && premium.open && !premium.on ? " CHRONIA Premium doubles the daily notes: see your account, at the top right." : "");
   }
   var factsAsk = 0;
   function select(id) {
@@ -6079,11 +6129,17 @@
     if (have) return have;
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, BLURB_WAIT) : 0;
-    var job = fetch(BLURB_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
-      signal: ctl ? ctl.signal : undefined
+    // An account with Premium sends its session with a note to be written, for its doubled count; a peek counts nothing.
+    var paid = !peek && typeof premium === "object" && premium && premium.on && typeof reportToken === "function";
+    var job = (paid ? reportToken().catch(function () { return null; }) : Promise.resolve(null)).then(function (t) {
+      var headers = { "Content-Type": "application/json" };
+      if (t) headers.Authorization = "Bearer " + t;
+      return fetch(BLURB_URL, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
+        signal: ctl ? ctl.signal : undefined
+      });
     }).then(function (r) {
       if (r.status === 429) return r.json().then(function (d) { if (d && (d.error === "limit" || d.error === "cap")) blurbStop = { error: d.error, cap: d.cap }; return null; }, function () { return null; });
       return r.ok ? r.json() : null;
@@ -6809,6 +6865,7 @@
   $("report-now").addEventListener("click", reportNow);
   function signOut() {
     keepReportSession(null);
+    try { localStorage.removeItem(PREMIUM_STORE); } catch (e) {}
     try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
   }
   $("report-out").addEventListener("click", signOut);
@@ -6824,6 +6881,7 @@
   }
   function syncAccount() {
     if (!accountBtn) return;
+    if (typeof premium === "object" && premium) premiumSeen();
     var me = accountInfo(), ini = $("account-initial");
     $("account-out").hidden = !!me;
     $("account-in").hidden = !me;
@@ -6852,8 +6910,166 @@
     hideInvite(false);
     $("account-note").textContent = "";
     syncAccount();
+    premiumAsk(false);
   }
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
+  // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
+  // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
+  // chronia-premium) sees none, and may have twice the daily notes (chronia-blurb is sent its session for that).
+  // ADS holds AdSense's publisher id ("ca-pub-…") and the three ad units' slot ids; while the client is empty no
+  // advertisement is asked for or shown, and nothing of Google's is loaded. `&ads` in the address draws labelled
+  // boxes in the banners' places, to see the layout without AdSense.
+  var PREMIUM_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-premium", PREMIUM_STORE = "chronia-premium";
+  // PREMIUM_LIVE turns the offer on, once chronia-premium is deployed and Stripe's keys are set; until then the
+  // page never calls the function.
+  var ADS = { client: "", left: "", right: "", below: "" }, PREMIUM_LIVE = false;
+  var AD_SIZES = [[320, 50], [234, 60]], AD_BELOW = [320, 50], AD_GAP = 10;
+  var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
+  var premium = { on: false, open: false, asked: 0, who: "" }, adsShown = false;
+  function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
+  premium.who = accountId();
+  try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
+  function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on; }
+  function adsFill(el, slot, size) {
+    if (el.firstChild) return;
+    el.style.width = size[0] + "px"; el.style.height = size[1] + "px";
+    if (adsDemo || !ADS.client) {
+      var d = document.createElement("div");
+      d.className = "ch-ad-demo";
+      d.textContent = "ADVERTISEMENT | " + size[0] + " × " + size[1];
+      el.appendChild(d);
+      return;
+    }
+    var ins = document.createElement("ins");
+    ins.className = "adsbygoogle";
+    ins.style.display = "inline-block"; ins.style.width = size[0] + "px"; ins.style.height = size[1] + "px";
+    ins.setAttribute("data-ad-client", ADS.client);
+    ins.setAttribute("data-ad-slot", slot);
+    el.appendChild(ins);
+    if (!adsLoaded) {
+      adsLoaded = true;
+      var sc = document.createElement("script");
+      sc.async = true; sc.crossOrigin = "anonymous";
+      sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(ADS.client);
+      document.head.appendChild(sc);
+    }
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  }
+  // Places the banners, and gives the y the map must start below when one sits under the top row (0 otherwise).
+  // The first call that finds advertisements wanted settles where they go, by the room at that moment: a banner
+  // AdSense has filled can't be made another size, so a later, narrower window only hides the ones that no longer fit.
+  function adsPlace() {
+    var L = $("ad-left"), R = $("ad-right"), B = $("ad-below");
+    if (!L) return 0;
+    if (!adsWanted()) { L.hidden = R.hidden = B.hidden = true; return 0; }
+    // By the offsets, not the boxes on the screen: the top row slides in when the page opens, and its boxes move with it.
+    var top = $("top"), yb = $("year-box"), head = $("head"), ctls = $("ctls"), inTop = yb.parentNode === top;
+    if (!(head.offsetHeight > 0 && ctls.offsetHeight > 0)) return 0;   // the top row is not laid out yet: asked again once it is
+    var headR = head.offsetLeft + head.offsetWidth, ybL = (top.offsetWidth - yb.offsetWidth) / 2, ybR = ybL + yb.offsetWidth;
+    // The date is beside the title only where it is in the top row and on its line.
+    var beside = inTop && yb.offsetTop < head.offsetHeight - 4;
+    var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
+    if (!adsMode) {
+      adsSize = null;
+      for (var i = 0; i < AD_SIZES.length && !adsSize; i++) if (room >= AD_SIZES[i][0] + 2) adsSize = AD_SIZES[i];
+      adsMode = adsSize ? "side" : "below";
+    }
+    if (adsMode === "side") {
+      B.hidden = true;
+      var fits = room >= adsSize[0] + 2;
+      L.hidden = R.hidden = !fits;
+      if (!fits) return 0;
+      adsFill(L, ADS.left, adsSize); adsFill(R, ADS.right, adsSize);
+      L.style.top = R.style.top = Math.round((head.offsetHeight - adsSize[1] - 2) / 2) + "px";
+      L.style.left = Math.round(headR + (gapL - adsSize[0] - 2) / 2) + "px";
+      R.style.left = Math.round(ybR + (gapR - adsSize[0] - 2) / 2) + "px";
+      return 0;
+    }
+    L.hidden = R.hidden = true;
+    if (W < AD_BELOW[0] + 12) { B.hidden = true; return 0; }
+    B.hidden = false;
+    adsFill(B, ADS.below, AD_BELOW);
+    var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
+    B.style.top = Math.round(under) + "px";
+    return under + AD_BELOW[1] + 2 + 8;
+  }
+  function syncPremium() {
+    var box = $("premium-box"), out = $("premium-out");
+    if (!box) return;
+    box.hidden = !(premium.on || premium.open);
+    out.hidden = !premium.open || premium.on;
+    $("premium-buy").hidden = premium.on;
+    $("premium-text").textContent = premium.on
+      ? "You have CHRONIA Premium: no advertisements, and twice the daily notes. Thank you."
+      : "CHRONIA Premium takes the advertisements off the page and doubles your daily notes, for $5, paid once, for this account for good.";
+    if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
+  }
+  // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
+  function premiumSeen() {
+    var id = accountId();
+    if (id === premium.who) return;
+    premium.who = id; premium.asked = 0;
+    try { premium.on = !!id && localStorage.getItem(PREMIUM_STORE) === id; } catch (e) { premium.on = false; }
+    syncPremium();
+    if (id) premiumAsk(true);
+  }
+  function premiumPost(body) {
+    return reportToken().catch(function () { return null; }).then(function (t) {
+      var headers = { "Content-Type": "application/json" };
+      if (t) headers.Authorization = "Bearer " + t;
+      return fetch(PREMIUM_URL, { method: "POST", headers: headers, body: JSON.stringify(body) });
+    }).then(function (res) { return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, body: j }; }); });
+  }
+  function premiumAsk(force) {
+    if (!PREMIUM_LIVE && !adsDemo) return Promise.resolve(false);
+    if (!force && Date.now() - premium.asked < 60000) return Promise.resolve(premium.on);
+    premium.asked = Date.now();
+    return premiumPost({ action: "status" }).then(function (r) {
+      if (r.status !== 200) return premium.on;
+      premium.open = !!r.body.open;
+      // Only an answer for a signed-in account settles it: a session that has lapsed keeps what the browser remembers.
+      if (r.body.signedIn || !reportSession) premium.on = !!r.body.premium;
+      try { if (premium.on) localStorage.setItem(PREMIUM_STORE, accountId()); else if (r.body.signedIn) localStorage.removeItem(PREMIUM_STORE); } catch (e) {}
+      syncPremium();
+      return premium.on;
+    }, function () { return premium.on; });
+  }
+  $("premium-buy").addEventListener("click", function () {
+    var btn = $("premium-buy"), note = $("premium-note");
+    btn.disabled = true; note.textContent = "Opening Stripe’s payment page…";
+    premiumPost({ action: "checkout" }).then(function (r) {
+      if (r.status === 200 && typeof r.body.url === "string" && /^https:\/\/checkout\.stripe\.com\//.test(r.body.url)) { location.assign(r.body.url); return; }
+      btn.disabled = false;
+      if (r.status === 409) { note.textContent = ""; premiumAsk(true); return; }
+      note.textContent = r.status === 401 ? "Sign in again to buy Premium." : "The payment page could not be opened just now. Nothing was charged.";
+    }, function () { btn.disabled = false; note.textContent = "The payment page could not be opened just now. Nothing was charged."; });
+  });
+  // Back from Stripe: `?premium=done` or `?premium=no`. Stripe's webhook marks the account a moment after the
+  // payment, so the page asks a few times before giving up.
+  (function premiumBack() {
+    var m = /[?&]premium=(done|no)(&|$)/.exec(location.search || "");
+    if (!m) return;
+    try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])premium=(done|no)(&|$)/, function (all, a, b, c) { return c ? a : ""; }) + location.hash); } catch (e) {}
+    setTimeout(function () {
+      setAccountOpen(true, false);
+      var note = $("premium-note"), box = $("premium-box");
+      box.hidden = false;
+      if (m[1] === "no") { note.textContent = "The payment was not made, and nothing was charged."; premiumAsk(true); return; }
+      note.textContent = "Thank you. Confirming the payment…";
+      var tries = 0;
+      (function again() {
+        premiumAsk(true).then(function (on) {
+          if (on) { note.textContent = ""; return; }
+          if (++tries < 10) setTimeout(again, 2000);
+          else note.textContent = "The payment has not been confirmed yet. It can take a minute: open this panel again shortly.";
+        });
+      })();
+    }, 0);
+  })();
+  if (reportSession) premiumAsk(false);
+  adsShown = adsWanted();
+  if (adsShown) { layout(); window.addEventListener("load", function () { layout(); scheduleRender(); }); setTimeout(function () { layout(); scheduleRender(); }, 1500); }
+
   [layersBtn, saveBtn, $("search-btn"), reportBtn].forEach(function (b) { b.addEventListener("click", function () { if (!accountPanel.hidden) setAccountOpen(false, false); }); });
   $("account-report").addEventListener("click", function () { setAccountOpen(false, false); setReportOpen(true, false); });
   $("account-out-btn").addEventListener("click", function () { signOut(); setAccountOpen(false, true); });
@@ -8832,6 +9048,7 @@
     editAt: function (k, t, at) { return editAt(k, t, at); },
     notFound: function () { return editsNotFound().map(function (e) { return e.kind + "|" + e.target; }); },
     timeOf: function (s) { return parseTime(s); },
+    dateOf: function (s) { return parseDate(s); },
     editTime: function (s, end) { return editTime(s, end); },
     editsFailed: function () { return edits.failed; },
     labelBox: function (n) {
