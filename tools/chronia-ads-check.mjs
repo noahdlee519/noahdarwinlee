@@ -12,7 +12,7 @@ async function run(width) {
   await page.addInitScript(() => { try { localStorage.setItem("chronia-tour", "1"); localStorage.setItem("chronia-key", "0"); } catch (e) {} });
   await page.goto(base + "?ads", { waitUntil: "load" });
   await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(4000);   // past the opening, after which the banner under the top row shows
   const r = await page.evaluate(() => {
     const box = (id) => { const e = document.getElementById(id); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
     return { L: box("ad-left"), R: box("ad-right"), B: box("ad-below"), head: box("head"), yb: box("year-box"), ctls: box("ctls") };
@@ -29,9 +29,34 @@ for (const w of [1288, 1440, 1600]) {
     say(r.L.t < r.yb.b && r.L.b > r.yb.t, w + " wide: the banners level with the date", JSON.stringify(r.L));
   }
 }
-for (const w of [390, 1100]) {
-  const r = await run(w);
-  say(!r.L && !r.R && !!r.B, w + " wide: one banner below, none at the sides", JSON.stringify({ L: !!r.L, R: !!r.R, B: !!r.B }));
+{
+  const r = await run(1100);
+  say(!r.L && !r.R && !!r.B, "1100 wide: one banner below, none at the sides", JSON.stringify({ L: !!r.L, R: !!r.R, B: !!r.B }));
+}
+// On phones: nothing on the loading screen; then one banner from the left of the title to the right of the buttons, right
+// under them, that stays when Google leaves it unfilled.
+for (const w of [360, 390, 430]) {
+  const page = await browser.newPage({ viewport: { width: w, height: 844 }, isMobile: true, hasTouch: true });
+  await page.addInitScript(() => { try { localStorage.setItem("chronia-tour", "1"); localStorage.setItem("chronia-key", "0"); } catch (e) {} });
+  await page.goto(base + "?ads", { waitUntil: "domcontentloaded" });
+  const early = await page.evaluate(() => { const e = document.getElementById("ad-below"); return !!e && !e.hidden && !document.getElementById("load").classList.contains("is-gone"); });
+  say(!early, w + " wide: no banner while the page loads", early);
+  await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
+  await page.waitForTimeout(4000);
+  const box = () => page.evaluate(() => {
+    const g = (id) => { const e = document.getElementById(id); if (!e || e.hidden) return null; const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+    return { B: g("ad-below"), L: g("ad-left"), head: g("head"), ctls: g("ctls") };
+  });
+  const r = await box();
+  say(!!r.B && !r.L, w + " wide: one banner below, none at the sides", JSON.stringify(r.B));
+  if (r.B) {
+    say(Math.abs(r.B.l - r.head.l) <= 1 && Math.abs(r.B.r - r.ctls.r) <= 1, w + " wide: the banner spans the title to the buttons", JSON.stringify([r.B.l, r.B.r, r.head.l, r.ctls.r]));
+    say(r.B.t >= Math.max(r.head.b, r.ctls.b) && r.B.t - Math.max(r.head.b, r.ctls.b) <= 12, w + " wide: the banner right under the top row", JSON.stringify([r.B.t, r.head.b]));
+  }
+  await page.evaluate(() => { const B = document.getElementById("ad-below"); const ins = document.createElement("ins"); B.appendChild(ins); ins.setAttribute("data-ad-status", "unfilled"); window.dispatchEvent(new Event("resize")); });
+  await page.waitForTimeout(800);
+  say(!!(await box()).B, w + " wide: the banner stays when Google leaves it unfilled", "hidden");
+  await page.close();
 }
 await browser.close();
 console.log(bad ? bad + " failed" : "all passed");

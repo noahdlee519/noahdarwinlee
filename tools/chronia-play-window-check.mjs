@@ -15,14 +15,16 @@ async function run(width, back) {
   await page.waitForTimeout(800);
   // the marker's place on the bar (0 to 1) just after each jump of the window
   const jumps = await page.evaluate((back) => new Promise((done) => {
-    const strip = document.getElementById("ticks-strip"), seen = [];
-    let last = strip.style.transform;
+    // The strip is looked up each frame: a layout during play (a banner placed or taken away) builds it anew.
+    const seen = [], strip = () => document.getElementById("ticks-strip");
+    let last = strip().style.transform;
     const tick = () => {
-      if (strip.style.transform !== last && Math.abs(parseFloat(strip.style.transform.slice(11)) - parseFloat(last.slice(11))) > 40) {
+      const st = strip();
+      if (st.style.transform !== last && Math.abs(parseFloat(st.style.transform.slice(11)) - parseFloat(last.slice(11))) > 40) {
         const r = document.getElementById("ticks").getBoundingClientRect(), m = document.getElementById("range");
         seen.push(+m.value / +m.max);
       }
-      last = strip.style.transform;
+      last = st.style.transform;
       if (seen.length >= 2) { window.__chronia.play(false); done(seen); } else requestAnimationFrame(tick);
     };
     window.__chronia.play(true, back);

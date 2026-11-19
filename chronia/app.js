@@ -79,6 +79,11 @@
     cy = (freeT + freeB) / 2;
     baseR = Math.max(80, Math.min(W - 20, freeB - freeT) / 2 - 14);
     baseK = Math.max(20, Math.min((W - 24) / TAU, (freeB - freeT - 16) / Math.PI));
+    // The cached layers (terrain, sea, land, names) are keyed on layoutEpoch, which moves only when the map's frame does: a
+    // banner shown or hidden moves the globe's centre without changing the window's size, and a cache keyed on the size alone
+    // drew the sea and terrain where the globe had been (Noah's phone, 19 November 2026).
+    var frameSig = [W, H, cx, cy, baseR, baseK].join();
+    if (frameSig !== layoutSig) { layoutSig = frameSig; layoutEpoch++; }
     baseEpoch++;
     applyView();
     placeTicks();
@@ -1391,7 +1396,7 @@
   function renderRelief() {
     var res = moving ? RELIEF_MOVING : RELIEF_RES;
     if (res !== reliefRes || reliefCanvas.width !== Math.max(1, Math.round(W * dpr * res)) || reliefCanvas.height !== Math.max(1, Math.round(H * dpr * res))) sizeRelief(res);
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, layoutEpoch, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
     if (key === reliefKey) return;
     reliefKey = key;
     var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
@@ -1430,7 +1435,7 @@
   }
   function maybeRelief() {
     if (rd.off || !relief || !layers.relief || !relief.ready()) return;
-    var key = [flat ? 1 : 0, view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), view.roll.toFixed(3), W, H].join();
+    var key = [flat ? 1 : 0, view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), view.roll.toFixed(3), W, H, layoutEpoch].join();
     if (key === rd.key) return;
     rd.key = key;
     var want = reliefWanted();
@@ -1539,7 +1544,7 @@
     var n = landCount(list, kp, line * BAND_ISLAND), m = landCount(list, kp, ISLAND_PX);
     if (!m) return;
     var res = moving ? Math.max(0.5, dpr * BAND_MOVING) : Math.max(1, dpr * BAND_RES);
-    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, res, line, n, m, list === land.hi ? 1 : list === land.fine ? 2 : 0, landTag].join();
+    var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, layoutEpoch, res, line, n, m, list === land.hi ? 1 : list === land.fine ? 2 : 0, landTag].join();
     if (vkey !== maskKey) paintCoastMask(list, landPath, n, m, line, res);
     maskKey = vkey;
     var key = id + "|" + vkey;
@@ -1609,7 +1614,7 @@
   function drawSea(coast, S) {
     // While moving, every frame is new, so the sea is drawn straight onto the map rather than kept.
     if (moving) { seaKey = ""; ctx.save(); paintSea(coast, S); ctx.restore(); return; }
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : coast === land.fine ? 2 : 0, landTag].join();
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, layoutEpoch, dpr, moving ? 1 : 0, sea ? 1 : 0, coast === land.hi ? 1 : coast === land.fine ? 2 : 0, landTag].join();
     if (key !== seaKey) {
       seaKey = key;
       if (seaCanvas.width !== ctx.canvas.width || seaCanvas.height !== ctx.canvas.height) { seaCanvas.width = ctx.canvas.width; seaCanvas.height = ctx.canvas.height; }
@@ -1663,7 +1668,7 @@
     if (perf) pmark("labels");
     syncCardDivision();
   }
-  var baseCanvas = null, baseCtx = null, baseSig = null, baseState = null, baseEpoch = 0, baseMode = 0, baseStats = { hits: 0, misses: 0 };
+  var layoutEpoch = 0, layoutSig = "", baseCanvas = null, baseCtx = null, baseSig = null, baseState = null, baseEpoch = 0, baseMode = 0, baseStats = { hits: 0, misses: 0 };
   var BASE_STATE = ["globalAlpha", "lineWidth", "lineCap", "lineJoin", "miterLimit", "strokeStyle", "fillStyle", "font", "textAlign", "textBaseline", "letterSpacing", "lineDashOffset"];
   function baseOn() { return !PLAIN && baseMode >= 0 && !exporting && !moving && ctx === mainCtx; }
   function baseSigNow(snap, L, landList, S) {
@@ -3349,7 +3354,7 @@
   function drawPolityLabels(snap, placed, kp) {
     if (!layers.states) return;
     var quick = moving || rangeActive;
-    var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, quick ? 1 : 0,
+    var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, layoutEpoch, quick ? 1 : 0,
       placed.map(function (b) { return Math.round(b.x) + ":" + Math.round(b.y) + ":" + Math.round(b.w) + ":" + Math.round(b.h); }).join(",")].join("|");
     var memo = labelCache.get("layout");
     if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
@@ -4098,7 +4103,7 @@
     if (day === null) return;
     var regs = divRegions(day, true), sig = 0;
     for (var i = 0; i < placed.length; i++) sig = (sig * 31 + Math.round(placed[i].x * 7 + placed[i].y * 13 + placed[i].w)) % 1000000007;
-    var key = [current.key, day, regs.map(function (r) { return r.key; }).join(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, placed.length, sig].join("|");
+    var key = [current.key, day, regs.map(function (r) { return r.key; }).join(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, layoutEpoch, placed.length, sig].join("|");
     if (key !== divLayout.key) divLayout = { key: key, items: layoutDivisionLabels(regs, day, placed.slice(), kmPx()) };
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     ctx.lineWidth = 2.2; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal["division-label"];
@@ -7006,7 +7011,7 @@
   var ADS = { client: "ca-pub-8179332869743841", left: "4385958710", right: "3792217290", below: "6931843961" }, PREMIUM_LIVE = true;
   // A side banner is 50 high and as wide as its gap allows, from 160 to 320 (AdSense fills a fixed unit at any width from
   // 120); only where a gap is narrower than that does a single banner go under the top row.
-  var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8, adsBelow = null;
+  var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
@@ -7016,14 +7021,14 @@
   premium.known = !premium.who || premium.on;
   function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on && premium.known; }
   // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
-  function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
+  function adsGone(el) { if (el.id === "ad-below" && phoneQuery.matches) return; if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
   function adsWatch(el, ins) {
     // Nothing from Google within 12 seconds (its script blocked by an ad blocker, or the network): the banner goes too.
     setTimeout(function () { if (!ins.getAttribute("data-ad-status")) adsGone(el); }, 12000);
     if (typeof MutationObserver !== "function") return;
     new MutationObserver(function () {
       var st = ins.getAttribute("data-ad-status");
-      if (st === "unfilled" && !el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); }
+      if (st === "unfilled" && !el.dataset.unfilled) adsGone(el);
       else if (st === "filled" && el.dataset.unfilled) { delete el.dataset.unfilled; layout(); scheduleRender(); }
     }).observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
   }
@@ -7088,15 +7093,25 @@
       return 0;
     }
     L.hidden = R.hidden = true;
-    if (B.dataset.unfilled) { B.hidden = true; return 0; }
-    B.hidden = false;
-    // Under the date, centred on the page; where the page is narrower than the banner and a margin, the banner is made
-    // narrower to fit rather than left off (Noah, 19 November 2026). Its size is settled when it is first filled.
-    if (!B.firstChild) adsBelow = [Math.max(120, Math.min(AD_BELOW[0], W - 2 * AD_GAP - 2)), AD_BELOW[1]];
-    adsFill(B, ADS.below, adsBelow || AD_BELOW);
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
+    // On a phone the banner runs from the left of the title to the right of the buttons, so it is as wide as the top row on
+    // every phone, and stays, filled or not (Noah, 19 November 2026); elsewhere it is 320 wide, centred, and goes if Google
+    // leaves it unfilled. The room for it is kept from the first layout, and the banner itself shows only once the page has
+    // loaded and opened (endIntro), so it never stands alone on the loading screen and the map never moves when it comes.
+    var phone = phoneQuery.matches, size = AD_BELOW;
+    if (phone) {
+      var x0 = Math.min(head.offsetLeft, ctls.offsetLeft), x1 = Math.max(head.offsetLeft + head.offsetWidth, ctls.offsetLeft + ctls.offsetWidth);
+      size = [Math.max(120, Math.round(x1 - x0) - 2), AD_H];
+      B.style.left = Math.round(top.offsetLeft + x0) + "px"; B.style.translate = "none";
+    } else {
+      if (W < AD_BELOW[0] + 12 || B.dataset.unfilled) { B.hidden = true; return 0; }
+      B.style.left = ""; B.style.translate = "";
+    }
     B.style.top = Math.round(under) + "px";
-    return under + (adsBelow || AD_BELOW)[1] + 2 + 8;
+    B.hidden = !introOver;
+    if (introOver) adsFill(B, ADS.below, size);
+    B.style.width = size[0] + "px";
+    return under + size[1] + 2 + 8;
   }
   function syncPremium() {
     var box = $("premium-box"), out = $("premium-out");
@@ -8685,6 +8700,7 @@
   function afterIntro(f) { if (introOver) f(); else introQueue.push(f); }
   function endIntro() {
     introOver = true;
+    adsPlace();   // the banner under the top row, kept back while the page loads and opens, shows now in the room kept for it
     scheduleRender();
     var next = function () {
       var f = introQueue.shift();
