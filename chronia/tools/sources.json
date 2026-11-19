@@ -30,6 +30,7 @@
     "colony": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "australia": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "italy": { "text": "ISTAT’s comuni grouped into zones around the places of Pleiades and the Ancient World Mapping Center, assembled by the editors", "ids": ["istat", "pleiades", "awmc", "editors"] },
+    "southasia": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
     "acq": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "small": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "redraw": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
