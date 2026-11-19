@@ -6955,6 +6955,7 @@
   }
   function syncAccount() {
     if (!accountBtn) return;
+    if (!savePanel.hidden && typeof checkTimelapse === "function") checkTimelapse();
     if (typeof premium === "object" && premium) premiumSeen();
     var me = accountInfo(), ini = $("account-initial");
     $("account-out").hidden = !!me;
@@ -7389,6 +7390,11 @@
       saveMake.disabled = true;
       return null;
     }
+    // Timelapse videos are for readers signed in with Google (19 November 2026): signed out, the button offers the sign-in.
+    // The video is made in the browser, so this is a door, not a lock.
+    var out = !reportSession;
+    saveMake.textContent = out ? "Sign in to make a video" : "Make the video";
+    if (out) { saveNote.textContent = "Sign in with Google to make a timelapse video. It is free."; saveMake.disabled = false; return null; }
     var plan = timelapsePlan();
     if (plan.why) { saveNote.textContent = plan.why; saveMake.disabled = true; return null; }
     var n = plan.frames.length, sz = videoSize();
@@ -7776,6 +7782,7 @@
     }, Promise.resolve(null));
   }
   function makeTimelapse() {
+    if (!reportSession && !exporting) { setSaveOpen(false, false); setAccountOpen(true, false); return; }
     var plan = checkTimelapse();
     if (!plan || exporting) return;
     var job = exporting = { cancel: false }, frames = plan.frames, fps = plan.fps, sz = videoSize();
