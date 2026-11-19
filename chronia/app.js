@@ -3697,14 +3697,71 @@
       for (var m = 0; m < a.length; m++) walk(g, a[m]);
     };
     idx.forEach(function (i) { var g = D.rows[i][3]; if (D.geoms[g].arcs) walk(g, D.geoms[g].arcs); });
+    var outer = [];
+    owner.forEach(function (o, j) { if (o !== -1) outer.push(j); });
     st = {
+      key: reg.key + ":" + key,
       rows: idx.slice().sort(function (a, b) { return D.labels[D.rows[b][3]][4] - D.labels[D.rows[a][3]][4]; }),
       lines: lines,
+      outer: outer,
       inside: new Map()
     };
     D.states.set(key, st);
     if (D.states.size > 64) D.states.delete(D.states.keys().next().value);
     return st;
+  }
+  // Two files can divide one state: Sweden's and Norway's under one crown (1814 to 1905), and Sudan's and South Sudan's
+  // before 2011. Each file draws only the lines between its own divisions, so the line between the two files' divisions
+  // (the border between the two kingdoms, Finnmarken and Nordland against Norrbotten, Jämtland against Nordre Trondhjem)
+  // was drawn by neither. It is found as the stretches of the first file's outer edge that run along the second's: the
+  // two files are drawn from different sources and share no points, so they are matched by distance, a point against
+  // the other edge's segments through a grid of 0.1 degree cells. A stretch starts where the edges come within about
+  // 5 km (SEAM_DEG) and runs on while they stay within about 15 km (SEAM_WIDE), since in the mountains the two sources
+  // part by up to that much; measured on 1900's files, that finds 1,585 km of the border, all of it (a wider allowance
+  // finds no more), where 5 km alone found 1,273 in nine broken pieces. Kept for each pair of dates.
+  var divSeams = new Map(), SEAM_DEG = 0.05, SEAM_WIDE = 0.15, SEAM_CELL = 0.1;
+  function divSeam(regA, stA, regB, stB) {
+    var key = stA.key + "|" + stB.key, hit = divSeams.get(key);
+    if (hit) return hit;
+    var coordsOf = function (reg, j) { return topojson.feature(reg.data.topo, { type: "LineString", arcs: [j] }).geometry.coordinates; };
+    var grid = new Map(), cell = function (x, y) { return Math.floor(x / SEAM_CELL) + "," + Math.floor(y / SEAM_CELL); };
+    stB.outer.forEach(function (j) {
+      var c = coordsOf(regB, j);
+      for (var k = 1; k < c.length; k++) {
+        var a = c[k - 1], b = c[k], seg = [a, b];
+        for (var x = Math.floor((Math.min(a[0], b[0]) - SEAM_WIDE) / SEAM_CELL); x <= Math.floor((Math.max(a[0], b[0]) + SEAM_WIDE) / SEAM_CELL); x++)
+          for (var y = Math.floor((Math.min(a[1], b[1]) - SEAM_WIDE) / SEAM_CELL); y <= Math.floor((Math.max(a[1], b[1]) + SEAM_WIDE) / SEAM_CELL); y++) {
+            var g = grid.get(x + "," + y);
+            if (!g) grid.set(x + "," + y, g = []);
+            g.push(seg);
+          }
+      }
+    });
+    // How far a point lies from the other edge, in degrees, longitude counted at its true width (past SEAM_WIDE, 1).
+    var far = function (p) {
+      var g = grid.get(cell(p[0], p[1])), m = 1;
+      if (!g) return m;
+      var kx = Math.cos(p[1] * Math.PI / 180);
+      for (var i = 0; i < g.length; i++) {
+        var a = g[i][0], b = g[i][1], ax = (b[0] - a[0]) * kx, ay = b[1] - a[1], px = (p[0] - a[0]) * kx, py = p[1] - a[1];
+        var L2 = ax * ax + ay * ay, t = L2 ? Math.max(0, Math.min(1, (px * ax + py * ay) / L2)) : 0, dx = px - t * ax, dy = py - t * ay;
+        m = Math.min(m, Math.sqrt(dx * dx + dy * dy));
+      }
+      return m;
+    };
+    var lines = [];
+    stA.outer.forEach(function (j) {
+      var c = coordsOf(regA, j), run = [], close = false;
+      for (var k = 0; k <= c.length; k++) {
+        var d = k < c.length ? far(c[k]) : 1;
+        if (d < SEAM_WIDE) { run.push(c[k]); close = close || d < SEAM_DEG; continue; }
+        if (run.length > 1 && close) lines.push(prepareArc(run));
+        run = []; close = false;
+      }
+    });
+    divSeams.set(key, lines);
+    if (divSeams.size > 32) divSeams.delete(divSeams.keys().next().value);
+    return lines;
   }
   function divArc(D, j) {
     var a = D.arcs[j];
@@ -3961,14 +4018,19 @@
     if (day === null) return;
     var regs = divRegions(day, true), w = 0.65 + 0.35 * lineWeight(S), clipped = false;
     for (var r = 0; r < regs.length; r++) {
-      var st = divState(regs[r], day), own = divCountry(regs[r], snap);
-      if (!st.lines.length || !own.length) continue;
+      var st = divState(regs[r], day), own = divCountry(regs[r], snap), lines = st.lines;
+      // A later file dividing the same state as this one: the line between the two files' divisions (see divSeam).
+      for (var q = r + 1; q < regs.length && own.length; q++) {
+        var other = divCountry(regs[q], snap);
+        if (other.some(function (i) { return own.indexOf(i) >= 0; })) lines = lines.concat(divSeam(regs[r], st, regs[q], divState(regs[q], day)));
+      }
+      if (!lines.length || !own.length) continue;
       var shape = new Path2D();
       for (var i = 0; i < own.length; i++) traceAll(shape, L.feats[own[i]]);
       if (!clipped) { ctx.save(); ctx.clip(landPath); clipped = true; }
       ctx.save();
       ctx.clip(shape);
-      ctx.beginPath(); traceArcs(ctx, st.lines);
+      ctx.beginPath(); traceArcs(ctx, lines);
       ctx.setLineDash([w * 4.2, w * 2.6]);
       ctx.lineWidth = w; ctx.lineCap = "butt"; ctx.strokeStyle = pal.division; ctx.stroke();
       divDrawn = true;
