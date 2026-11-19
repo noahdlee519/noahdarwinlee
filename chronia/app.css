@@ -82,6 +82,8 @@
   --ch-copper-lo: #7c4524;
   --ch-verdigris: #3f7466;
   --ch-verdigris-lt: #8fc0b1;
+  /* The ring round whatever is pressed, open, or being typed in: white, everywhere (19 November 2026; verdigris before). */
+  --ch-lit: #fff;
   --ch-walnut: #4a3322;
   --ch-enamel: #2a1c12;
   --ch-ivory: #f8f1dc;
@@ -425,11 +427,11 @@ body.ch-page {
   box-shadow: var(--ch-sunk);
 }
 
-/* A tool whose panel is open wears a ring of verdigris (the lighter one, 7 to 1 on the tray), so it can be told from
+/* A tool whose panel is open wears a white ring (`--ch-lit`), so it can be told from
    one only passed over. */
 .ch-ctl[aria-expanded="true"]::after,
 .ch-about.is-open .ch-ctl::after {
-  box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-verdigris-lt);
+  box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-lit);
 }
 
 .ch-ctl:active > svg,
@@ -447,12 +449,12 @@ body.ch-page {
 }
 
 .ch-ctl:focus-visible::after {
-  outline: 2px solid var(--ch-ivory);
+  outline: 2px solid var(--ch-lit);
   outline-offset: 1px;
 }
 
 .ch-step:focus-visible::after {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--ch-lit);
   outline-offset: 2px;
 }
 
@@ -483,11 +485,11 @@ body.ch-page {
   display: none;
 }
 
-/* While the years are playing, the button that plays them stays in, in its ring of verdigris. */
+/* While the years are playing, the button that plays them stays in, in its white ring. */
 .ch-play[aria-pressed="true"]::after,
 .ch-play[aria-pressed="true"]:hover::after {
   background: var(--ch-metal-down);
-  box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-verdigris);
+  box-shadow: var(--ch-sunk), 0 0 0 2px var(--ch-lit);
 }
 
 .ch-about-tip,
@@ -646,9 +648,9 @@ body.ch-page {
   font-size: 16px;
 }
 
-/* A field being typed in is ringed in verdigris (4.8 to 1 on its ivory), here and on every other field. */
+/* A field being typed in is ringed in white (`--ch-lit`), here and on every other field. */
 .ch-search-input:focus-visible {
-  outline: 2px solid var(--ch-verdigris);
+  outline: 2px solid var(--ch-lit);
   outline-offset: 0;
 }
 
@@ -804,7 +806,7 @@ body.ch-page {
 }
 
 .ch-save-input:focus-visible {
-  outline: 2px solid var(--ch-verdigris);
+  outline: 2px solid var(--ch-lit);
   outline-offset: 0;
 }
 
@@ -1065,7 +1067,7 @@ select.ch-save-input {
 }
 
 .ch-speed-step:focus-visible::after {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--ch-lit);
   outline-offset: 2px;
 }
 
@@ -1188,7 +1190,7 @@ select.ch-save-input {
 }
 
 .ch-spin-btn:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--ch-lit);
   outline-offset: -3px;
 }
 
@@ -1289,10 +1291,10 @@ select.ch-save-input {
   box-shadow: inset 0 -2px 0 var(--ch-muted);
 }
 
-/* Typed in, the window is ringed in verdigris inside its edge (4.8 to 1 on the ivory), with no rule under the date. */
+/* Typed in, the window is ringed in white inside its edge, with a hairline inside that so it shows on the ivory, with no rule under the date. */
 .ch-year:focus {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--ch-verdigris);
+  box-shadow: inset 0 0 0 2px var(--ch-lit), inset 0 0 0 3px rgba(42, 28, 18, 0.28);
 }
 
 .ch-track {
@@ -2832,7 +2834,7 @@ select.ch-save-input {
 
 #report-pick[aria-pressed="true"] {
   background: var(--ch-metal-down);
-  box-shadow: var(--ch-sunk), 0 0 0 1.5px var(--ch-verdigris);
+  box-shadow: var(--ch-sunk), 0 0 0 1.5px var(--ch-lit);
 }
 
 .ch-report-who {
