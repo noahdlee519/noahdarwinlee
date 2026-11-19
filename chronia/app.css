@@ -3451,7 +3451,8 @@ select.ch-save-input {
   border: 0;
   background: none;
   font: inherit;
-  font-style: italic;
+  font-style: normal;
+  font-size: 1.15em;
   color: var(--ink);
   text-decoration: underline;
   text-decoration-color: var(--ch-brass-deep);
