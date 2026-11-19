@@ -4196,7 +4196,7 @@
         out.classList.remove("is-writing", "is-quiet");
         if (t) { out.textContent = t; return; }
         out.hidden = true;
-        by.textContent = blurbStopText() || "The note could not be written just now.";
+        if (blurbStop) blurbStopShow(by); else by.textContent = "The note could not be written just now.";
         by.hidden = false;
       });
     };
@@ -5759,8 +5759,20 @@
     if (!blurbStop) return "";
     return blurbStop.error === "cap"
       ? "CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow."
-      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow."
-        + (typeof premium === "object" && premium && premium.open && !premium.on ? " CHRONIA Premium doubles the daily notes: see your account, at the top right." : "");
+      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow.";
+  }
+  // The same, in a card's line, with a link to Premium after a reader's own limit (not the site's), for a reader
+  // without it: the link opens the account panel, which offers Premium, or a sign-in first.
+  function blurbStopShow(el) {
+    el.textContent = blurbStopText();
+    if (!blurbStop || blurbStop.error !== "limit" || typeof premium !== "object" || !premium || premium.on || !PREMIUM_LIVE) return;
+    var a = document.createElement("button");
+    a.type = "button";
+    a.className = "ch-premium-link";
+    a.textContent = "Get CHRONIA Premium for 5× the daily notes";
+    a.addEventListener("click", function (e) { e.stopPropagation(); setAccountOpen(true, false); });
+    el.appendChild(document.createTextNode(" "));
+    el.appendChild(a);
   }
   var factsAsk = 0;
   function select(id) {
@@ -6527,7 +6539,7 @@
           by.hidden = true;
         } else {
           mode = "wiki";
-          by.textContent = blurbStopText();
+          blurbStopShow(by);
           by.hidden = !blurbStop;
         }
         paint();
@@ -6977,7 +6989,7 @@
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
   // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
-  // chronia-premium) sees none, and may have twice the daily notes (chronia-blurb is sent its session for that).
+  // chronia-premium) sees none, and may have five times the daily notes (chronia-blurb is sent its session for that).
   // ADS holds AdSense's publisher id and the three ad units' slot ids (each a fixed 320 by 50, made on 19 November
   // 2026); with the client empty no advertisement is asked for and nothing of Google's is loaded. Google's script is
   // loaded only here, only once a banner is placed, so a reader with Premium never loads it, and a signed-in reader's
@@ -7084,8 +7096,8 @@
     out.hidden = !premium.open || premium.on;
     $("premium-buy").hidden = premium.on;
     $("premium-text").textContent = premium.on
-      ? "You have CHRONIA Premium: no advertisements, twice the daily notes, and your reports of errors read first. Thank you."
-      : "CHRONIA Premium takes the advertisements off the page, doubles your daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.";
+      ? "You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support."
+      : "CHRONIA Premium takes the advertisements off the page, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.";
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.

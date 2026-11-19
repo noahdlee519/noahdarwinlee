@@ -3444,6 +3444,27 @@ select.ch-save-input {
   padding-top: 8px;
   border-top: 1px solid rgba(42, 28, 18, 0.18);
 }
+/* After the line that says a reader has had the day's notes: a link to Premium, set in the line's own type. */
+.ch-premium-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-style: italic;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ch-brass-deep);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.ch-premium-link:hover {
+  text-decoration-thickness: 2px;
+}
+.ch-premium-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
 .ch-premium-buy {
   margin-top: 6px;
 }
