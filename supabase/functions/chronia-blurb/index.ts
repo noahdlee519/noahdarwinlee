@@ -15,6 +15,7 @@ const PROMPT_VERSION = 2;
 const MAX_NEIGHBOURS = 10;
 const ALL_CAP = 10000;
 const WHO_CAP = 100;
+const PREMIUM_TIMES = 2;
 const MAX_BODY = 4000;
 const MAX_NAME = 80;
 const MAX_TITLE = 120;
@@ -210,7 +211,7 @@ function cors(origin: string) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "content-type",
+    "Access-Control-Allow-Headers": "content-type, authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
@@ -398,16 +399,41 @@ export async function handle(req: Request): Promise<Response> {
   }
 }
 
+// The counter's name for an account with Premium ("p" and a hash of its id), or "" for anyone else: no session, a
+// session that is not valid, or an account that has not paid. A failure here only costs the account its doubling.
+async function premium(req: Request) {
+  const m = /^Bearer\s+(\S{20,4000})$/.exec(req.headers.get("authorization") || "");
+  if (!m) return "";
+  try {
+    const res = await fetch(Deno.env.get("SUPABASE_URL") + "/auth/v1/user", { headers: { apikey: dbKey().apikey, Authorization: "Bearer " + m[1] } });
+    if (!res.ok) return "";
+    const u = await res.json();
+    if (!u || typeof u.id !== "string" || !/^[0-9a-f-]{36}$/i.test(u.id)) return "";
+    const rows = await fetch(Deno.env.get("SUPABASE_URL") + "/rest/v1/chronia_premium?user_id=eq." + u.id + "&select=user_id", { headers: dbKey() });
+    if (!rows.ok) return "";
+    const list = await rows.json();
+    if (!Array.isArray(list) || !list.length) return "";
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("premium|" + u.id)));
+    return "p" + Array.from(h).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+  } catch (e) {
+    console.error(e);
+    return "";
+  }
+}
+
 async function generate(req: Request, ask: Ask, key: string, keys: Keys, o: string) {
-  const who = await visitor(req);
+  // An account with CHRONIA Premium (the page sends its session only then) is counted by itself, not by its network
+  // address, and may have twice the notes.
+  const paid = await premium(req);
+  const who = paid || await visitor(req), cap = paid ? WHO_CAP * PREMIUM_TIMES : WHO_CAP;
   let took: string;
   try {
-    took = await rpc("chronia_blurb_take", { p_who: who, p_all_cap: ALL_CAP, p_who_cap: WHO_CAP });
+    took = await rpc("chronia_blurb_take", { p_who: who, p_all_cap: ALL_CAP, p_who_cap: cap });
   } catch (e) {
     console.error(e);
     return json(500, { error: "count" }, o);
   }
-  if (took !== "ok") return json(429, took === "cap" ? { error: "cap" } : { error: "limit", cap: WHO_CAP }, o);
+  if (took !== "ok") return json(429, took === "cap" ? { error: "cap" } : { error: "limit", cap }, o);
   const giveBack = () => rpc("chronia_blurb_give_back", { p_who: who }).catch((e) => console.error(e));
 
   let made: Made;

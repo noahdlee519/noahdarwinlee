@@ -72,7 +72,8 @@
     var cardH = phone && !$("card").hidden ? $("card").getBoundingClientRect().height : 0;
     // The date sits under the top row on narrower screens, so the map starts below it there.
     var ybBottom = yb.parentNode === topRow ? topRow.offsetTop + yb.offsetTop + yb.offsetHeight + 10 : 0;
-    freeT = Math.max(phone ? 58 : 76, ybBottom);
+    // A banner under the top row (adsPlace, where the gaps beside the date are too narrow for two) pushes the map down too.
+    freeT = Math.max(phone ? 58 : 76, ybBottom, typeof adsPlace === "function" && typeof ADS === "object" && ADS ? adsPlace() : 0);
     freeB = H - timeH - cardH;
     cx = W / 2;
     cy = (freeT + freeB) / 2;
@@ -5696,7 +5697,8 @@
     if (!blurbStop) return "";
     return blurbStop.error === "cap"
       ? "CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow."
-      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow.";
+      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow."
+        + (typeof premium === "object" && premium && premium.open && !premium.on ? " CHRONIA Premium doubles the daily notes: see your account, at the top right." : "");
   }
   var factsAsk = 0;
   function select(id) {
@@ -6127,11 +6129,17 @@
     if (have) return have;
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, BLURB_WAIT) : 0;
-    var job = fetch(BLURB_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
-      signal: ctl ? ctl.signal : undefined
+    // An account with Premium sends its session with a note to be written, for its doubled count; a peek counts nothing.
+    var paid = !peek && typeof premium === "object" && premium && premium.on && typeof reportToken === "function";
+    var job = (paid ? reportToken().catch(function () { return null; }) : Promise.resolve(null)).then(function (t) {
+      var headers = { "Content-Type": "application/json" };
+      if (t) headers.Authorization = "Bearer " + t;
+      return fetch(BLURB_URL, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(peek ? Object.assign({ peek: true }, ask) : ask),
+        signal: ctl ? ctl.signal : undefined
+      });
     }).then(function (r) {
       if (r.status === 429) return r.json().then(function (d) { if (d && (d.error === "limit" || d.error === "cap")) blurbStop = { error: d.error, cap: d.cap }; return null; }, function () { return null; });
       return r.ok ? r.json() : null;
@@ -6857,6 +6865,7 @@
   $("report-now").addEventListener("click", reportNow);
   function signOut() {
     keepReportSession(null);
+    try { localStorage.removeItem(PREMIUM_STORE); } catch (e) {}
     try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
   }
   $("report-out").addEventListener("click", signOut);
@@ -6872,6 +6881,7 @@
   }
   function syncAccount() {
     if (!accountBtn) return;
+    if (typeof premium === "object" && premium) premiumSeen();
     var me = accountInfo(), ini = $("account-initial");
     $("account-out").hidden = !!me;
     $("account-in").hidden = !me;
@@ -6900,8 +6910,166 @@
     hideInvite(false);
     $("account-note").textContent = "";
     syncAccount();
+    premiumAsk(false);
   }
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
+  // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
+  // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
+  // chronia-premium) sees none, and may have twice the daily notes (chronia-blurb is sent its session for that).
+  // ADS holds AdSense's publisher id ("ca-pub-…") and the three ad units' slot ids; while the client is empty no
+  // advertisement is asked for or shown, and nothing of Google's is loaded. `&ads` in the address draws labelled
+  // boxes in the banners' places, to see the layout without AdSense.
+  var PREMIUM_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-premium", PREMIUM_STORE = "chronia-premium";
+  // PREMIUM_LIVE turns the offer on, once chronia-premium is deployed and Stripe's keys are set; until then the
+  // page never calls the function.
+  var ADS = { client: "", left: "", right: "", below: "" }, PREMIUM_LIVE = false;
+  var AD_SIZES = [[320, 50], [234, 60]], AD_BELOW = [320, 50], AD_GAP = 10;
+  var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
+  var premium = { on: false, open: false, asked: 0, who: "" }, adsShown = false;
+  function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
+  premium.who = accountId();
+  try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
+  function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on; }
+  function adsFill(el, slot, size) {
+    if (el.firstChild) return;
+    el.style.width = size[0] + "px"; el.style.height = size[1] + "px";
+    if (adsDemo || !ADS.client) {
+      var d = document.createElement("div");
+      d.className = "ch-ad-demo";
+      d.textContent = "ADVERTISEMENT | " + size[0] + " × " + size[1];
+      el.appendChild(d);
+      return;
+    }
+    var ins = document.createElement("ins");
+    ins.className = "adsbygoogle";
+    ins.style.display = "inline-block"; ins.style.width = size[0] + "px"; ins.style.height = size[1] + "px";
+    ins.setAttribute("data-ad-client", ADS.client);
+    ins.setAttribute("data-ad-slot", slot);
+    el.appendChild(ins);
+    if (!adsLoaded) {
+      adsLoaded = true;
+      var sc = document.createElement("script");
+      sc.async = true; sc.crossOrigin = "anonymous";
+      sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(ADS.client);
+      document.head.appendChild(sc);
+    }
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  }
+  // Places the banners, and gives the y the map must start below when one sits under the top row (0 otherwise).
+  // The first call that finds advertisements wanted settles where they go, by the room at that moment: a banner
+  // AdSense has filled can't be made another size, so a later, narrower window only hides the ones that no longer fit.
+  function adsPlace() {
+    var L = $("ad-left"), R = $("ad-right"), B = $("ad-below");
+    if (!L) return 0;
+    if (!adsWanted()) { L.hidden = R.hidden = B.hidden = true; return 0; }
+    // By the offsets, not the boxes on the screen: the top row slides in when the page opens, and its boxes move with it.
+    var top = $("top"), yb = $("year-box"), head = $("head"), ctls = $("ctls"), inTop = yb.parentNode === top;
+    if (!(head.offsetHeight > 0 && ctls.offsetHeight > 0)) return 0;   // the top row is not laid out yet: asked again once it is
+    var headR = head.offsetLeft + head.offsetWidth, ybL = (top.offsetWidth - yb.offsetWidth) / 2, ybR = ybL + yb.offsetWidth;
+    // The date is beside the title only where it is in the top row and on its line.
+    var beside = inTop && yb.offsetTop < head.offsetHeight - 4;
+    var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
+    if (!adsMode) {
+      adsSize = null;
+      for (var i = 0; i < AD_SIZES.length && !adsSize; i++) if (room >= AD_SIZES[i][0] + 2) adsSize = AD_SIZES[i];
+      adsMode = adsSize ? "side" : "below";
+    }
+    if (adsMode === "side") {
+      B.hidden = true;
+      var fits = room >= adsSize[0] + 2;
+      L.hidden = R.hidden = !fits;
+      if (!fits) return 0;
+      adsFill(L, ADS.left, adsSize); adsFill(R, ADS.right, adsSize);
+      L.style.top = R.style.top = Math.round((head.offsetHeight - adsSize[1] - 2) / 2) + "px";
+      L.style.left = Math.round(headR + (gapL - adsSize[0] - 2) / 2) + "px";
+      R.style.left = Math.round(ybR + (gapR - adsSize[0] - 2) / 2) + "px";
+      return 0;
+    }
+    L.hidden = R.hidden = true;
+    if (W < AD_BELOW[0] + 12) { B.hidden = true; return 0; }
+    B.hidden = false;
+    adsFill(B, ADS.below, AD_BELOW);
+    var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
+    B.style.top = Math.round(under) + "px";
+    return under + AD_BELOW[1] + 2 + 8;
+  }
+  function syncPremium() {
+    var box = $("premium-box"), out = $("premium-out");
+    if (!box) return;
+    box.hidden = !(premium.on || premium.open);
+    out.hidden = !premium.open || premium.on;
+    $("premium-buy").hidden = premium.on;
+    $("premium-text").textContent = premium.on
+      ? "You have CHRONIA Premium: no advertisements, and twice the daily notes. Thank you."
+      : "CHRONIA Premium takes the advertisements off the page and doubles your daily notes, for $5, paid once, for this account for good.";
+    if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
+  }
+  // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
+  function premiumSeen() {
+    var id = accountId();
+    if (id === premium.who) return;
+    premium.who = id; premium.asked = 0;
+    try { premium.on = !!id && localStorage.getItem(PREMIUM_STORE) === id; } catch (e) { premium.on = false; }
+    syncPremium();
+    if (id) premiumAsk(true);
+  }
+  function premiumPost(body) {
+    return reportToken().catch(function () { return null; }).then(function (t) {
+      var headers = { "Content-Type": "application/json" };
+      if (t) headers.Authorization = "Bearer " + t;
+      return fetch(PREMIUM_URL, { method: "POST", headers: headers, body: JSON.stringify(body) });
+    }).then(function (res) { return res.json().catch(function () { return {}; }).then(function (j) { return { status: res.status, body: j }; }); });
+  }
+  function premiumAsk(force) {
+    if (!PREMIUM_LIVE && !adsDemo) return Promise.resolve(false);
+    if (!force && Date.now() - premium.asked < 60000) return Promise.resolve(premium.on);
+    premium.asked = Date.now();
+    return premiumPost({ action: "status" }).then(function (r) {
+      if (r.status !== 200) return premium.on;
+      premium.open = !!r.body.open;
+      // Only an answer for a signed-in account settles it: a session that has lapsed keeps what the browser remembers.
+      if (r.body.signedIn || !reportSession) premium.on = !!r.body.premium;
+      try { if (premium.on) localStorage.setItem(PREMIUM_STORE, accountId()); else if (r.body.signedIn) localStorage.removeItem(PREMIUM_STORE); } catch (e) {}
+      syncPremium();
+      return premium.on;
+    }, function () { return premium.on; });
+  }
+  $("premium-buy").addEventListener("click", function () {
+    var btn = $("premium-buy"), note = $("premium-note");
+    btn.disabled = true; note.textContent = "Opening Stripe’s payment page…";
+    premiumPost({ action: "checkout" }).then(function (r) {
+      if (r.status === 200 && typeof r.body.url === "string" && /^https:\/\/checkout\.stripe\.com\//.test(r.body.url)) { location.assign(r.body.url); return; }
+      btn.disabled = false;
+      if (r.status === 409) { note.textContent = ""; premiumAsk(true); return; }
+      note.textContent = r.status === 401 ? "Sign in again to buy Premium." : "The payment page could not be opened just now. Nothing was charged.";
+    }, function () { btn.disabled = false; note.textContent = "The payment page could not be opened just now. Nothing was charged."; });
+  });
+  // Back from Stripe: `?premium=done` or `?premium=no`. Stripe's webhook marks the account a moment after the
+  // payment, so the page asks a few times before giving up.
+  (function premiumBack() {
+    var m = /[?&]premium=(done|no)(&|$)/.exec(location.search || "");
+    if (!m) return;
+    try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])premium=(done|no)(&|$)/, function (all, a, b, c) { return c ? a : ""; }) + location.hash); } catch (e) {}
+    setTimeout(function () {
+      setAccountOpen(true, false);
+      var note = $("premium-note"), box = $("premium-box");
+      box.hidden = false;
+      if (m[1] === "no") { note.textContent = "The payment was not made, and nothing was charged."; premiumAsk(true); return; }
+      note.textContent = "Thank you. Confirming the payment…";
+      var tries = 0;
+      (function again() {
+        premiumAsk(true).then(function (on) {
+          if (on) { note.textContent = ""; return; }
+          if (++tries < 10) setTimeout(again, 2000);
+          else note.textContent = "The payment has not been confirmed yet. It can take a minute: open this panel again shortly.";
+        });
+      })();
+    }, 0);
+  })();
+  if (reportSession) premiumAsk(false);
+  adsShown = adsWanted();
+  if (adsShown) { layout(); window.addEventListener("load", function () { layout(); scheduleRender(); }); setTimeout(function () { layout(); scheduleRender(); }, 1500); }
+
   [layersBtn, saveBtn, $("search-btn"), reportBtn].forEach(function (b) { b.addEventListener("click", function () { if (!accountPanel.hidden) setAccountOpen(false, false); }); });
   $("account-report").addEventListener("click", function () { setAccountOpen(false, false); setReportOpen(true, false); });
   $("account-out-btn").addEventListener("click", function () { signOut(); setAccountOpen(false, true); });
