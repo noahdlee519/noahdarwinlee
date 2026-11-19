@@ -6978,20 +6978,37 @@
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
   // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
   // chronia-premium) sees none, and may have twice the daily notes (chronia-blurb is sent its session for that).
-  // ADS holds AdSense's publisher id ("ca-pub-…") and the three ad units' slot ids; while the client is empty no
-  // advertisement is asked for or shown, and nothing of Google's is loaded. `&ads` in the address draws labelled
-  // boxes in the banners' places, to see the layout without AdSense.
+  // ADS holds AdSense's publisher id and the three ad units' slot ids (each a fixed 320 by 50, made on 19 November
+  // 2026); with the client empty no advertisement is asked for and nothing of Google's is loaded. Google's script is
+  // loaded only here, only once a banner is placed, so a reader with Premium never loads it, and a signed-in reader's
+  // banners wait until the page knows whether the account has Premium. A banner Google leaves unfilled (as all are until
+  // the site is approved, or where there is no ad to show) is hidden, and the map takes its room back. `&ads` in the
+  // address draws labelled boxes in the banners' places, to see the layout without AdSense.
   var PREMIUM_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-premium", PREMIUM_STORE = "chronia-premium";
   // PREMIUM_LIVE turns the offer on, once chronia-premium is deployed and Stripe's keys are set; until then the
   // page never calls the function.
-  var ADS = { client: "", left: "", right: "", below: "" }, PREMIUM_LIVE = true;
-  var AD_SIZES = [[320, 50], [234, 60]], AD_BELOW = [320, 50], AD_GAP = 10;
+  var ADS = { client: "ca-pub-8179332869743841", left: "4385958710", right: "3792217290", below: "6931843961" }, PREMIUM_LIVE = true;
+  var AD_SIZES = [[320, 50]], AD_BELOW = [320, 50], AD_GAP = 10;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
-  var premium = { on: false, open: false, asked: 0, who: "" }, adsShown = false;
+  var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
   premium.who = accountId();
   try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
-  function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on; }
+  // Signed out, there is nothing to wait for; signed in, the first answer from chronia-premium (or its failure) settles it.
+  premium.known = !premium.who || premium.on;
+  function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on && premium.known; }
+  // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
+  function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
+  function adsWatch(el, ins) {
+    // Nothing from Google within 12 seconds (its script blocked by an ad blocker, or the network): the banner goes too.
+    setTimeout(function () { if (!ins.getAttribute("data-ad-status")) adsGone(el); }, 12000);
+    if (typeof MutationObserver !== "function") return;
+    new MutationObserver(function () {
+      var st = ins.getAttribute("data-ad-status");
+      if (st === "unfilled" && !el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); }
+      else if (st === "filled" && el.dataset.unfilled) { delete el.dataset.unfilled; layout(); scheduleRender(); }
+    }).observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
+  }
   function adsFill(el, slot, size) {
     if (el.firstChild) return;
     el.style.width = size[0] + "px"; el.style.height = size[1] + "px";
@@ -7008,11 +7025,13 @@
     ins.setAttribute("data-ad-client", ADS.client);
     ins.setAttribute("data-ad-slot", slot);
     el.appendChild(ins);
+    adsWatch(el, ins);
     if (!adsLoaded) {
       adsLoaded = true;
       var sc = document.createElement("script");
       sc.async = true; sc.crossOrigin = "anonymous";
       sc.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(ADS.client);
+      sc.onerror = function () { ["ad-left", "ad-right", "ad-below"].forEach(function (id) { var e = $(id); if (e && e.firstChild) adsGone(e); }); };
       document.head.appendChild(sc);
     }
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
@@ -7039,16 +7058,17 @@
     if (adsMode === "side") {
       B.hidden = true;
       var fits = room >= adsSize[0] + 2;
-      L.hidden = R.hidden = !fits;
+      L.hidden = !fits || !!L.dataset.unfilled; R.hidden = !fits || !!R.dataset.unfilled;
       if (!fits) return 0;
-      adsFill(L, ADS.left, adsSize); adsFill(R, ADS.right, adsSize);
+      if (!L.dataset.unfilled) adsFill(L, ADS.left, adsSize);
+      if (!R.dataset.unfilled) adsFill(R, ADS.right, adsSize);
       L.style.top = R.style.top = Math.round((head.offsetHeight - adsSize[1] - 2) / 2) + "px";
       L.style.left = Math.round(headR + (gapL - adsSize[0] - 2) / 2) + "px";
       R.style.left = Math.round(ybR + (gapR - adsSize[0] - 2) / 2) + "px";
       return 0;
     }
     L.hidden = R.hidden = true;
-    if (W < AD_BELOW[0] + 12) { B.hidden = true; return 0; }
+    if (W < AD_BELOW[0] + 12 || B.dataset.unfilled) { B.hidden = true; return 0; }
     B.hidden = false;
     adsFill(B, ADS.below, AD_BELOW);
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
@@ -7072,6 +7092,7 @@
     if (id === premium.who) return;
     premium.who = id; premium.asked = 0;
     try { premium.on = !!id && localStorage.getItem(PREMIUM_STORE) === id; } catch (e) { premium.on = false; }
+    premium.known = !id || premium.on;
     syncPremium();
     if (id) premiumAsk(true);
   }
@@ -7086,15 +7107,17 @@
     if (!PREMIUM_LIVE && !adsDemo) return Promise.resolve(false);
     if (!force && Date.now() - premium.asked < 60000) return Promise.resolve(premium.on);
     premium.asked = Date.now();
+    var settle = function () { if (!premium.known) { premium.known = true; syncPremium(); } return premium.on; };
     return premiumPost({ action: "status" }).then(function (r) {
-      if (r.status !== 200) return premium.on;
+      if (r.status !== 200) return settle();
       premium.open = !!r.body.open;
       // Only an answer for a signed-in account settles it: a session that has lapsed keeps what the browser remembers.
       if (r.body.signedIn || !reportSession) premium.on = !!r.body.premium;
+      premium.known = true;
       try { if (premium.on) localStorage.setItem(PREMIUM_STORE, accountId()); else if (r.body.signedIn) localStorage.removeItem(PREMIUM_STORE); } catch (e) {}
       syncPremium();
       return premium.on;
-    }, function () { return premium.on; });
+    }, settle);
   }
   $("premium-buy").addEventListener("click", function () {
     var btn = $("premium-buy"), note = $("premium-note");

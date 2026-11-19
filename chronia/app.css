@@ -993,6 +993,17 @@ select.ch-save-input {
   height: 34px;
 }
 
+/* The two play buttons fill their column (19 November 2026: 44 px, from 34, with the icon from 22 to 26). */
+.ch-plays .ch-step {
+  width: 44px;
+  height: 44px;
+}
+
+.ch-plays .ch-step svg {
+  width: 26px;
+  height: 26px;
+}
+
 .ch-play-back .ch-icon-play {
   transform: scaleX(-1);
 }
@@ -1080,7 +1091,9 @@ select.ch-save-input {
   box-sizing: border-box;
   min-width: 0;
   border: 1px solid var(--ch-brass-deep);
-  border-radius: 999px;
+  /* Barely rounded: a round end clipped "0.75×" (19 November 2026). */
+  border-radius: 4px;
+  padding: 0 2px;
   background: var(--ch-ivory);
   box-shadow: var(--ch-well);
   white-space: nowrap;
