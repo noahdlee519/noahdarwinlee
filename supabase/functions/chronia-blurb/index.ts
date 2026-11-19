@@ -14,8 +14,8 @@ const CLAUDE_MODEL = Deno.env.get("CHRONIA_CLAUDE_MODEL") || "claude-haiku-5-5";
 const PROMPT_VERSION = 2;
 const MAX_NEIGHBOURS = 10;
 const ALL_CAP = 10000;
-const WHO_CAP = 100;
-const PREMIUM_TIMES = 2;
+const WHO_CAP = 40;
+const PREMIUM_TIMES = 5;
 const MAX_BODY = 4000;
 const MAX_NAME = 80;
 const MAX_TITLE = 120;
@@ -423,7 +423,7 @@ async function premium(req: Request) {
 
 async function generate(req: Request, ask: Ask, key: string, keys: Keys, o: string) {
   // An account with CHRONIA Premium (the page sends its session only then) is counted by itself, not by its network
-  // address, and may have twice the notes.
+  // address, and may have five times the notes (200 a day against 40).
   const paid = await premium(req);
   const who = paid || await visitor(req), cap = paid ? WHO_CAP * PREMIUM_TIMES : WHO_CAP;
   let took: string;

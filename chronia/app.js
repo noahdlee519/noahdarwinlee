@@ -4196,7 +4196,7 @@
         out.classList.remove("is-writing", "is-quiet");
         if (t) { out.textContent = t; return; }
         out.hidden = true;
-        by.textContent = blurbStopText() || "The note could not be written just now.";
+        if (blurbStop) blurbStopShow(by); else by.textContent = "The note could not be written just now.";
         by.hidden = false;
       });
     };
@@ -5759,8 +5759,20 @@
     if (!blurbStop) return "";
     return blurbStop.error === "cap"
       ? "CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow."
-      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow."
-        + (typeof premium === "object" && premium && premium.open && !premium.on ? " CHRONIA Premium doubles the daily notes: see your account, at the top right." : "");
+      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow.";
+  }
+  // The same, in a card's line, with a link to Premium after a reader's own limit (not the site's), for a reader
+  // without it: the link opens the account panel, which offers Premium, or a sign-in first.
+  function blurbStopShow(el) {
+    el.textContent = blurbStopText();
+    if (!blurbStop || blurbStop.error !== "limit" || typeof premium !== "object" || !premium || premium.on || !PREMIUM_LIVE) return;
+    var a = document.createElement("button");
+    a.type = "button";
+    a.className = "ch-premium-link";
+    a.textContent = "Get CHRONIA Premium for 5× the daily notes";
+    a.addEventListener("click", function (e) { e.stopPropagation(); setAccountOpen(true, false); });
+    el.appendChild(document.createTextNode(" "));
+    el.appendChild(a);
   }
   var factsAsk = 0;
   function select(id) {
@@ -6527,7 +6539,7 @@
           by.hidden = true;
         } else {
           mode = "wiki";
-          by.textContent = blurbStopText();
+          blurbStopShow(by);
           by.hidden = !blurbStop;
         }
         paint();
@@ -6945,6 +6957,7 @@
   }
   function syncAccount() {
     if (!accountBtn) return;
+    if (!savePanel.hidden && typeof checkTimelapse === "function") checkTimelapse();
     if (typeof premium === "object" && premium) premiumSeen();
     var me = accountInfo(), ini = $("account-initial");
     $("account-out").hidden = !!me;
@@ -6979,7 +6992,7 @@
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
   // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
-  // chronia-premium) sees none, and may have twice the daily notes (chronia-blurb is sent its session for that).
+  // chronia-premium) sees none, and may have five times the daily notes (chronia-blurb is sent its session for that).
   // ADS holds AdSense's publisher id and the three ad units' slot ids (each a fixed 320 by 50, made on 19 November
   // 2026); with the client empty no advertisement is asked for and nothing of Google's is loaded. Google's script is
   // loaded only here, only once a banner is placed, so a reader with Premium never loads it, and a signed-in reader's
@@ -6990,7 +7003,9 @@
   // PREMIUM_LIVE turns the offer on, once chronia-premium is deployed and Stripe's keys are set; until then the
   // page never calls the function.
   var ADS = { client: "ca-pub-8179332869743841", left: "4385958710", right: "3792217290", below: "6931843961" }, PREMIUM_LIVE = true;
-  var AD_SIZES = [[320, 50]], AD_BELOW = [320, 50], AD_GAP = 10;
+  // A side banner is 50 high and as wide as its gap allows, from 160 to 320 (AdSense fills a fixed unit at any width from
+  // 120); only where a gap is narrower than that does a single banner go under the top row.
+  var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
@@ -7054,7 +7069,7 @@
     var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
     if (!adsMode) {
       adsSize = null;
-      for (var i = 0; i < AD_SIZES.length && !adsSize; i++) if (room >= AD_SIZES[i][0] + 2) adsSize = AD_SIZES[i];
+      if (room >= AD_SIDE_W[0] + 2) adsSize = [Math.min(AD_SIDE_W[1], Math.floor(room - 2)), AD_H];
       adsMode = adsSize ? "side" : "below";
     }
     if (adsMode === "side") {
@@ -7084,8 +7099,8 @@
     out.hidden = !premium.open || premium.on;
     $("premium-buy").hidden = premium.on;
     $("premium-text").textContent = premium.on
-      ? "You have CHRONIA Premium: no advertisements, twice the daily notes, and your reports of errors read first. Thank you."
-      : "CHRONIA Premium takes the advertisements off the page, doubles your daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.";
+      ? "You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support."
+      : "CHRONIA Premium takes the advertisements off the page, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.";
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -7377,6 +7392,11 @@
       saveMake.disabled = true;
       return null;
     }
+    // Timelapse videos are for readers signed in with Google (19 November 2026): signed out, the button offers the sign-in.
+    // The video is made in the browser, so this is a door, not a lock.
+    var out = !reportSession;
+    saveMake.textContent = out ? "Sign in to make a video" : "Make the video";
+    if (out) { saveNote.textContent = "Sign in with Google to make a timelapse video. It is free."; saveMake.disabled = false; return null; }
     var plan = timelapsePlan();
     if (plan.why) { saveNote.textContent = plan.why; saveMake.disabled = true; return null; }
     var n = plan.frames.length, sz = videoSize();
@@ -7764,6 +7784,7 @@
     }, Promise.resolve(null));
   }
   function makeTimelapse() {
+    if (!reportSession && !exporting) { setSaveOpen(false, false); setAccountOpen(true, false); return; }
     var plan = checkTimelapse();
     if (!plan || exporting) return;
     var job = exporting = { cancel: false }, frames = plan.frames, fps = plan.fps, sz = videoSize();

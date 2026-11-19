@@ -14,6 +14,7 @@ import { tidyLines } from "./tidy-lines.mjs";
 import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "./medieval.mjs";
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
+import { buildCaucasus, CAUCASUS_FROM, CAUCASUS_TO } from "./caucasus.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 import { buildItaly, ITALY_FROM, ITALY_TO, LATIN_LEAGUE, LEAGUE_FROM, LEAGUE_TO } from "./italy-early.mjs";
 
@@ -260,7 +261,7 @@ const PRECISE_EARLY = new Set(["Roman Empire", "Western Roman Empire", "Eastern 
 // in FIRM; every other border before 1886 is dotted. From 1886 CShapes' borders are solid, except the ones in VAGUE,
 // which stayed unsettled, the claims, and the lines drawn by hand (precision 1). A span's precision on the map:
 // 1 approximate, 2 drawn from a source's general outline, 3 drawn exactly.
-const PRECISE_SRC = new Set(["napoleonic", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
+const PRECISE_SRC = new Set(["napoleonic", "caucasus", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
 const precisionOf = (s) => {
   if (APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity)) return Math.min(1, s.b ?? 2);
   // The frontiers of antiquity held by garrisons and walls or fixed by treaty (PRECISE_EARLY): solid between two such states.
@@ -3098,6 +3099,33 @@ const napoleonic = (list) => {
   return list.concat(cutSpans);
 };
 
+// The Caucasus from 1445 to 1885 (`tools/caucasus.mjs`): its spans replace every other span on its land in those years, the
+// medieval bridge's in the North Caucasus among them, as the tables of Europe's do. Its pieces of the empires (the Ottoman
+// Empire, Iran, Russia, the hordes) carry no name of their own where the sources draw the same state larger beside them.
+const caucasus = (list) => {
+  const unitsPath = resolve(dirname(provincesPath), "units.json");
+  if (!existsSync(unitsPath)) { console.log("caucasus: no units.json beside UCHRONIA's provinces, so the Caucasus keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const topo = JSON.parse(readFileSync(unitsPath, "utf8"));
+  const provinces = JSON.parse(readFileSync(provincesPath, "utf8")).objects.provinces.geometries.map((g) => g.properties);
+  const notes = [];
+  const C = buildCaucasus({ topo, provinces, client, clip, rewind, polysOf, log: (m) => notes.push(m) });
+  notes.forEach((m) => console.log("caucasus: " + m));
+  const { list: cut, mb, dropped, cuts, shorn } = maskOut(list, C.mask, CAUCASUS_FROM, CAUCASUS_TO);
+  list = cut;
+  const spans = C.spans.map(({ host, from, to, ...s }) => withBox({ ...s, src: "caucasus", host }));
+  let hosted = 0;
+  for (const t of spans) {
+    if (!t.host || t.noLabel) continue;
+    const size = cellSum(t.cells);
+    if (list.some((s) => s.name === t.name && s.first <= t.last && t.first <= s.last && cellSum(s.cells || cellsOf(s.polys)) > size)) { t.noLabel = true; hosted++; }
+  }
+  spans.forEach((t) => { delete t.host; if (!t.dayFrom) delete t.dayFrom; if (!t.dayTo) delete t.dayTo; });
+  const { cutSpans, quiet } = tableJoin(list, spans, CAUCASUS_FROM, CAUCASUS_TO, mb);
+  console.log("caucasus: " + spans.length + " spans on " + C.units + " pieces of units, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " table spans of the empires with no name of their own, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(cutSpans);
+};
+
 // Europe from 476 (`tools/medieval.mjs`; Anatolia's east, the Levant, and the Caucasus from 962): its spans replace every
 // other span on the land the table covers in those years, as the Napoleonic table's do. A table span that shares its name with a larger span the sources draw outside the frame in the
 // same years (the Eastern Roman Empire in Egypt, the Caliphates, Khazaria) carries no name of its own, so the state is named once.
@@ -3756,7 +3784,7 @@ function nativeCarry(list) {
   console.log("the Americas' peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
   return rest.concat(left, carried);
 }
-dated = fillSmallGaps(resolveOverlaps(australia(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(colonies(redraw1886(italy(stages(dated))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(australia(caucasus(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(colonies(redraw1886(italy(stages(dated)))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -3860,7 +3888,7 @@ function snapTo1886(list) {
   };
   const owners = [];
   for (const s of list) {
-    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "australia") continue;
+    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "caucasus" || s.src === "australia") continue;
     const got = gainOf(s);
     let gain = got.gain;
     if (!gain.length) continue;
@@ -3893,7 +3921,7 @@ function snapTo1886(list) {
     for (const j of order) {
       const t = list[j];
       if (t.box[0] > g.box[2]) break;
-      if (mine.has(t) || t.src === "napoleonic" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
+      if (mine.has(t) || t.src === "napoleonic" || t.src === "caucasus" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
       const near = g.gain.filter((q) => boxHit(boxOf([q]), t.box));
       if (!near.length) continue;
       const nb = boxOf(near), local = clipRect(snapOf(t), [nb[0] - 0.05, nb[1] - 0.05, nb[2] + 0.05, nb[3] + 0.05]);
@@ -4665,7 +4693,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
       return { i, first: s.first, last: s.last, names: [s.name0 || s.name].concat(s.also || []), polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
-        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" };
+        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" || s.src === "caucasus" };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
     dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
