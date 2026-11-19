@@ -25,6 +25,7 @@
     "overlap": { "text": "Land that two shapes from the sources both cover, marked as disputed by the editors", "ids": ["editors"] },
     "early": { "text": "Editors’ discretion: an approximate extent built from Natural Earth units", "ids": ["editors", "ne"] },
     "medieval": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
+    "caucasus": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "napoleonic": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
     "colony": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "australia": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
