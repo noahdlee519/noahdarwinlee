@@ -2555,12 +2555,13 @@ select.ch-save-input {
     position: static;
   }
 
+  /* On phones the about note hangs right under the top row (19 November 2026; before, it stood on the year bar). */
   .ch-about-tip {
     position: fixed;
-    top: auto;
+    top: calc(var(--ch-gap) + env(safe-area-inset-top, 0px) + var(--ch-bar) + 8px);
     left: 12px;
     right: 12px;
-    bottom: calc(var(--ch-time-h) + 12px);
+    bottom: auto;
     width: auto;
     max-height: calc(100vh - var(--ch-time-h) - var(--ch-bar) - 40px);
     max-height: calc(100dvh - var(--ch-time-h) - var(--ch-bar) - 40px);
@@ -2910,6 +2911,33 @@ select.ch-save-input {
 
 .ch-page.is-picking canvas {
   cursor: crosshair;
+}
+
+/* Choosing a place for a report on a phone: the panel steps aside for the whole map, and a bar under the top row says
+   what to do and offers Cancel. */
+.ch-page.is-picking-full #report {
+  display: none;
+}
+.ch-pickbar {
+  position: fixed;
+  z-index: 35;
+  top: calc(var(--ch-gap) + env(safe-area-inset-top, 0px) + var(--ch-bar) + 8px);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid var(--ch-brass-deep);
+  border-radius: 4px;
+  background: var(--ch-paper);
+  box-shadow: var(--ch-lift);
+  color: var(--ink);
+  font-size: 15px;
+  white-space: nowrap;
+}
+.ch-pickbar[hidden] {
+  display: none;
 }
 
 /* A map pin before "Choose a place on the map", so the line reads as a button that acts on the map. It is drawn

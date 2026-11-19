@@ -85,7 +85,7 @@
             aria-expanded="false"
             aria-controls="about-tip"
           >
-            <svg class="ch-ico" width="25" height="25" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="11.4" /><circle cx="16" cy="16" r="9.4" class="h" /><circle cx="16" cy="10.4" r="1.35" class="f" /><path d="M16 14.4v8.2M13.9 14.4H16M13.6 22.6h4.8" /><path class="h" d="M8.8 12.6c.9-2.2 2.6-3.9 4.8-4.8" /></svg>
+            <svg class="ch-ico" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="11.4" /><circle cx="16" cy="16" r="9.4" class="h" /><circle cx="16" cy="10.4" r="1.35" class="f" /><path d="M16 14.4v8.2M13.9 14.4H16M13.6 22.6h4.8" /><path class="h" d="M8.8 12.6c.9-2.2 2.6-3.9 4.8-4.8" /></svg>
           </button>
           <div class="ch-about-tip" id="about-tip" role="note">
             <p>
@@ -224,7 +224,6 @@
               <p class="ch-account-note" id="premium-note" role="status"></p>
             </div>
             <div class="ch-account-acts">
-              <button type="button" class="ch-account-alt" id="account-report">Report an error</button>
               <button type="button" class="ch-account-alt" id="account-out-btn">Sign out</button>
             </div>
           </div>
@@ -254,23 +253,17 @@
             <p class="ch-turn-how" id="turn-how">Or drag with Shift held, or the right button, or twist two fingers.</p>
           </fieldset>
           <fieldset class="ch-layer-set">
-            <legend>Names</legend>
+            <legend>On the map</legend>
             <label class="ch-layer"><input type="checkbox" data-layer="states" checked /> <span>States and peoples</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="control" /> <span>Zones of control</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="capitals" checked /> <span>Capitals</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="cities" checked /> <span>Cities and places</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="seas" checked /> <span>Seas and oceans</span></label>
-          </fieldset>
-          <fieldset class="ch-layer-set">
-            <legend>The map</legend>
             <label class="ch-layer"><input type="checkbox" data-layer="water" checked /> <span>Rivers and lakes</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="relief" checked /> <span>Terrain relief</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="grid" checked /> <span>Latitude and longitude</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="subdivisions" checked /> <span>First-level divisions</span></label>
-          </fieldset>
-          <fieldset class="ch-layer-set">
-            <legend>Colours</legend>
-            <label class="ch-layer"><input type="checkbox" data-layer="safe" /> <span>Colour-blind safe</span></label>
+            <label class="ch-layer"><input type="checkbox" data-layer="safe" /> <span>Color-blind safe colors</span></label>
           </fieldset>
         </div>
       </div>
@@ -278,6 +271,10 @@
       <aside class="ch-ad ch-ad-side" id="ad-right" aria-label="Advertisement" hidden></aside>
     </div>
     <aside class="ch-ad ch-ad-below" id="ad-below" aria-label="Advertisement" hidden></aside>
+    <div class="ch-pickbar" id="pick-bar" role="status" hidden>
+      <span>Tap the place on the map</span>
+      <button type="button" class="ch-account-alt" id="pick-exit">Cancel</button>
+    </div>
 
     <canvas
       id="globe"

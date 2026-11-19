@@ -6883,6 +6883,11 @@
     reportPick.setAttribute("aria-pressed", on ? "true" : "false");
     reportPick.textContent = on ? "Click the place on the map" : reportPlace ? "Choose another place" : "Choose a place on the map";
     document.body.classList.toggle("is-picking", on);
+    // On phones the report panel leaves little map to aim at, so choosing a place hides it and gives the whole map,
+    // with a bar to cancel; the panel comes back with the place, or on Cancel (19 November 2026).
+    var full = on && phoneQuery.matches;
+    document.body.classList.toggle("is-picking-full", full);
+    $("pick-bar").hidden = !full;
   }
   function setReportOpen(open, focusBtn) {
     reportPanel.hidden = !open;
@@ -6953,6 +6958,7 @@
     }, function () { say(reportTrouble(null)); }).then(function () { reportBusy = false; reportSend.disabled = false; });
   });
   reportPick.addEventListener("click", function () { setReportPicking(!reportPicking); });
+  $("pick-exit").addEventListener("click", function (e) { e.stopPropagation(); setReportPicking(false); reportPick.focus(); });
   $("report-now").addEventListener("click", reportNow);
   function signOut() {
     keepReportSession(null);
@@ -6963,7 +6969,7 @@
 
   // The account, at the top right: a figure while signed out, the first letter of the name once signed in. Its
   // panel offers Google's sign-in, or shows the name and email address from the sign-in itself (the token's own
-  // claims; nothing more is fetched), with Report an error and Sign out.
+  // claims; nothing more is fetched), with Sign out.
   var accountBtn = $("account-btn"), accountPanel = $("account");
   function accountInfo() {
     if (!reportSession) return null;
@@ -7203,7 +7209,6 @@
   if (adsShown) { layout(); window.addEventListener("load", function () { layout(); scheduleRender(); }); setTimeout(function () { layout(); scheduleRender(); }, 1500); }
 
   [layersBtn, saveBtn, $("search-btn"), reportBtn].forEach(function (b) { b.addEventListener("click", function () { if (!accountPanel.hidden) setAccountOpen(false, false); }); });
-  $("account-report").addEventListener("click", function () { setAccountOpen(false, false); setReportOpen(true, false); });
   $("account-out-btn").addEventListener("click", function () { signOut(); setAccountOpen(false, true); });
   document.addEventListener("pointerdown", function (e) {
     if (!accountPanel.hidden && !accountPanel.contains(e.target) && !accountBtn.contains(e.target)) setAccountOpen(false, false);
