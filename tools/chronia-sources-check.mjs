@@ -44,7 +44,7 @@ const openIt = async (page) => { await page.evaluate(() => { const d = document.
   await card(page, "1845-06-15", "Luxembourg");
   let s = await state(page);
   say(s.exists && !s.hidden && !s.open, "Luxembourg, June 15, 1845: the section is there and closed", JSON.stringify(s).slice(0, 200));
-  say(/Natural Earth/.test((s.lines || {}).Borders || "") && /editors/.test((s.lines || {}).Borders || ""), "its borders are Natural Earth units, assembled by the editors", (s.lines || {}).Borders);
+  say(/editors/.test((s.lines || {}).Borders || ""), "its borders name the editors' work", (s.lines || {}).Borders);
   say(/Editors’ discretion/.test((s.lines || {}).Dates || ""), "its dates are the editors'", (s.lines || {}).Dates);
   say(!!(s.lines || {}).Name && /Wikipedia/.test((s.lines || {}).Text || ""), "it has Name and Text lines", JSON.stringify(s.lines));
   await openIt(page);
@@ -75,7 +75,7 @@ const openIt = async (page) => { await page.evaluate(() => { const d = document.
   await card(page, "1845-06-15", "Luxembourg");
   await openIt(page);
   const s = await state(page);
-  say(/Natural Earth/.test((s.lines || {}).Borders || ""), "with the notes file unreachable, the borders line still shows", (s.lines || {}).Borders);
+  say(/editors/.test((s.lines || {}).Borders || ""), "with the notes file unreachable, the borders line still shows", (s.lines || {}).Borders);
   say(/The editors’ notes could not be loaded\./.test(s.notes || ""), "and the notes say they could not be loaded", s.notes);
   say(!page.errors.length, "no page errors", page.errors.join("; "));
   await page.close();

@@ -4598,21 +4598,63 @@
     if (m > 12 || (d && d > new Date(Date.UTC(y, m, 0)).getUTCDate())) return null;
     return timeOfDay(dayFromDate(y, m, d || MID_DAY));
   }
+  // A typed date as [year, month, day] (0 for none; years BC negative), or null. The order of the parts is free: July 4 1000,
+  // 4 July 1000, the 4th of July, 1000, 1000 July 4, 1000-07-04, 7/4/1000 (with slashes the month comes first unless it
+  // cannot), 4.7.1000 (with dots the day comes first unless it cannot), and any of them with BC, BCE, AD, or CE, or "c." for
+  // circa. Months are named by three letters or more. A day the month does not have is not a date.
+  function parseDate(s) {
+    var t = String(s || "").toLowerCase().trim().replace(/(\d)(b\.?c|a\.?d|c\.?e)\b/g, "$1 $2");
+    var era = /\b(?:b\.?\s*c|a\.?\s*d|c\.?\s*e)\b/.test(t), bc = /\bb\.?\s*c\.?(?:\s*e\.?)?(?=\s|$|\d|,)/.test(t) || /(?:^|\s)b\.?c\.?(?:e\.?)?$/.test(t);
+    t = t.replace(/\bb\.?\s*c\.?(?:\s*e\.?)?(?=\s|$|\d|,)/g, " ").replace(/\b(?:a\.?\s*d|c\.?\s*e)\.?(?=\s|$|\d|,)/g, " ");
+    t = t.replace(/^\s*(?:c\.|ca\.?|circa)\s*/, " ").replace(/\b(?:the|of)\b/g, " ");
+    t = t.replace(/(\d)(?:st|nd|rd|th)\b/g, "$1").replace(/([a-z])\./g, "$1").replace(/,/g, " ").replace(/\s+/g, " ").trim();
+    var m, y, mo = 0, d = 0, neg = false;
+    if ((m = /^(-)?(\d{1,4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(t))) { neg = !!m[1]; y = +m[2]; mo = +m[3]; d = m[4] ? +m[4] : 0; }
+    else if ((m = /^(\d{1,4})\/(\d{1,2})\/(\d{1,2})$/.exec(t)) && m[1].length > 2) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else if ((m = /^(\d{1,2})([\/.])(\d{1,2})\2(-?\d{1,4})$/.exec(t))) {
+      var p = +m[1], q = +m[3], dayFirst = m[2] === "." ? q <= 12 || p > 12 : p > 12 && q <= 12;
+      y = +m[4]; mo = dayFirst ? q : p; d = dayFirst ? p : q;
+      if (y < 0) { neg = true; y = -y; }
+    } else if ((m = /^(\d{1,2})\/(\d{1,4})$/.exec(t)) && m[2].length > 2) { y = +m[2]; mo = +m[1]; }
+    else {
+      var parts = t.split(" ").filter(Boolean), nums = [], names = [];
+      for (var i = 0; i < parts.length; i++) {
+        if (/^-?\d{1,4}$/.test(parts[i])) nums.push(parts[i]);
+        else if (/^[a-z]+$/.test(parts[i]) && monthIndex(parts[i])) names.push(monthIndex(parts[i]));
+        else return null;
+      }
+      if (names.length > 1 || !nums.length || nums.length > 2 || (!names.length && nums.length > 1)) return null;
+      mo = names.length ? names[0] : 0;
+      if (nums.length === 2) {
+        // The day is the number of one or two digits beside the month's name; the other is the year.
+        var first = parts.indexOf(nums[0]), name = parts.findIndex(function (w) { return !/^-?\d/.test(w); });
+        var dayAt = /^\d{1,2}$/.test(nums[0]) && Math.abs(first - name) === 1 ? 0 : 1;
+        if (!/^\d{1,2}$/.test(nums[dayAt])) return null;
+        d = +nums[dayAt]; y = +nums[1 - dayAt];
+        if (y < 0 && dayAt === 0) return null;
+      } else {
+        // "July 4" is a day without a year, not the year 4: a month with a year of one or two digits needs its era.
+        if (mo && /^\d{1,2}$/.test(nums[0]) && !era) return null;
+        y = +nums[0];
+      }
+      if (y < 0) { neg = true; y = -y; }
+    }
+    if (!y || mo > 12 || (d && !mo)) return null;
+    if (d) {
+      var len = [31, (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0 || y < 1582)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+      if (d < 1 || d > len) return null;
+    }
+    if (bc || neg) y = -y;
+    return [y, mo, d];
+  }
+  // A typed date as a time on the map. Before the map goes by the day (1648), a month or day is read but the year is the time.
   function parseTime(s) {
-    var t = String(s || "").trim().replace(/\./g, "").replace(/,/g, " ").replace(/\s+/g, " ");
-    var u = t.toUpperCase(), m;
-    if ((m = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(t))) return modernTime(+m[1], +m[2], m[3] ? +m[3] : 0);
-    if ((m = /^(\d{1,2})\/(\d{4})$/.exec(t))) return modernTime(+m[2], +m[1], 0);
-    if ((m = /^(\d{1,2}) ([A-Za-z]+) (\d{4})$/.exec(t)) && monthIndex(m[2])) return modernTime(+m[3], monthIndex(m[2]), +m[1]);
-    if ((m = /^([A-Za-z]+) (\d{1,2}) (\d{4})$/.exec(t)) && monthIndex(m[1])) return modernTime(+m[3], monthIndex(m[1]), +m[2]);
-    if ((m = /^([A-Za-z]+) (\d{4})$/.exec(t)) && monthIndex(m[1])) return modernTime(+m[2], monthIndex(m[1]), 0);
-    m = /^(AD |CE )?(-)?(\d{1,4})( ?(BC|BCE|AD|CE))?$/.exec(u);
-    if (!m) return null;
-    var n = +m[3];
-    if (m[2] || m[5] === "BC" || m[5] === "BCE") n = -n;
-    if (n === 0) n = 1;
-    var mt = modernTime(n, 0, 0);
-    return mt !== null ? mt : n;
+    var p = parseDate(s);
+    if (!p) return null;
+    var mt = p[0] > 0 ? modernTime(p[0], p[1], p[2]) : null;
+    if (mt !== null) return mt;
+    if (p[1] && p[0] >= monthlyFrom() && (modern || dated)) return null;
+    return p[0];
   }
   function listYears(ys) {
     var t = ys.map(fmtYear);
@@ -5124,11 +5166,12 @@
     else if (e.key === "End") { e.preventDefault(); setTime(lastTime()); }
   });
   function commitYearInput() {
-    var t = parseTime(yearInput.value), fine = /^([A-Za-z]+) (?:AD )?(\d{1,4})$/i.exec(String(yearInput.value).trim());
-    if (t === null && fine && monthIndex(fine[1]) && ctlFineYear(+fine[2])) {
+    var t = parseTime(yearInput.value), p = parseDate(yearInput.value);
+    // Before 1648 a month is kept where a war's months are stepped through (ctlFineYear); otherwise the map goes by the year.
+    if (t !== null && p && p[1] && t === p[0] && ctlFineYear(p[0])) {
       stopPlay();
-      setTime(+fine[2]);
-      ctlMonth = monthIndex(fine[1]);
+      setTime(p[0]);
+      ctlMonth = p[1];
       syncTime();
       writeHash();
       scheduleRender();
@@ -5137,11 +5180,12 @@
     if (t === null) {
       var typed = String(yearInput.value).trim();
       yearInput.value = fitDate(fmtNow(now));
-      if (typed && typed !== yearInput.value) yearHint("No date in “" + (typed.length > 24 ? typed.slice(0, 23) + "…" : typed) + "”. Try 1815, July 1815, 15 July 1815, or 500 BC.");
+      if (typed && typed !== yearInput.value) yearHint("No date in “" + (typed.length > 24 ? typed.slice(0, 23) + "…" : typed) + "”. Try 1815, July 1815, July 4 1815, 4 July 1815, 1815-07-04, or 500 BC.");
       return;
     }
     stopPlay();
     if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
+    if (p && p[1] && t === p[0]) yearHint("Before " + monthlyFrom() + " the map goes by the year, so this is " + fmtYear(p[0]) + ".");
   }
   // A date that cannot be read is put back, and a line under the frame says what the field takes.
   var hintTimer = 0;
@@ -8832,6 +8876,7 @@
     editAt: function (k, t, at) { return editAt(k, t, at); },
     notFound: function () { return editsNotFound().map(function (e) { return e.kind + "|" + e.target; }); },
     timeOf: function (s) { return parseTime(s); },
+    dateOf: function (s) { return parseDate(s); },
     editTime: function (s, end) { return editTime(s, end); },
     editsFailed: function () { return edits.failed; },
     labelBox: function (n) {
