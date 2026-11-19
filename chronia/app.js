@@ -6984,7 +6984,7 @@
   var PREMIUM_URL = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/chronia-premium", PREMIUM_STORE = "chronia-premium";
   // PREMIUM_LIVE turns the offer on, once chronia-premium is deployed and Stripe's keys are set; until then the
   // page never calls the function.
-  var ADS = { client: "", left: "", right: "", below: "" }, PREMIUM_LIVE = false;
+  var ADS = { client: "", left: "", right: "", below: "" }, PREMIUM_LIVE = true;
   var AD_SIZES = [[320, 50], [234, 60]], AD_BELOW = [320, 50], AD_GAP = 10;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "" }, adsShown = false;
