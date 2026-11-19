@@ -903,6 +903,13 @@ a[href="/cv/"]:active {
   max-width: 980px;
 }
 
+/* On the home page the portrait is the last thing before the footer, and the panel's 60 px under it, on top of the
+   footer's own 56 px, left a gap of 116 px below the picture that read as the page having ended twice. The footer's
+   padding alone (56 px) is the gap now. */
+.index-page:not(.art-page) .about-panel {
+  margin-bottom: 0;
+}
+
 .index-page .about-panel > br {
   display: none;
 }
