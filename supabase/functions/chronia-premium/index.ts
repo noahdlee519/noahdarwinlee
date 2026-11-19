@@ -162,8 +162,11 @@ async function hook(req: Request) {
   if (!o) return plain(200, "ignored");
   try {
     if ((ev.type === "checkout.session.completed" || ev.type === "checkout.session.async_payment_succeeded") && o.mode === "payment" && o.payment_status === "paid") {
-      const id = String(o.client_reference_id || (o.metadata && o.metadata.user) || "");
-      if (!UUID.test(id)) return plain(200, "no account");
+      // Only a session this function made: it alone sets metadata.user, and to the same id as client_reference_id. A
+      // Stripe Payment Link takes client_reference_id from its address, so any other link or product on the same Stripe
+      // account (a donation of $1, say) could otherwise be bought with someone's id and grant Premium.
+      const id = String(o.client_reference_id || "");
+      if (!UUID.test(id) || !o.metadata || o.metadata.user !== id) return plain(200, "not ours");
       await db("chronia_premium?on_conflict=user_id", {
         method: "POST",
         headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
