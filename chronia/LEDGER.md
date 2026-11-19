@@ -18,6 +18,26 @@ Each entry:
 
 ---
 
+## 1885 | the Balkans | Eastern Rumelia joins Bulgaria on 18 September 1885
+
+- What changed: Eastern Rumelia stayed apart from Bulgaria to the end of 1885 and joined it on 1 January 1886, where CShapes begins. It now joins the Principality of Bulgaria on 18 September 1885 (6 September, Old Style), the day of the coup at Plovdiv that united them.
+- Applies to: Eastern Rumelia; Principality of Bulgaria
+- Tables: `UNION_1885` in `tools/napoleonic.mjs`.
+- Sources: (1) the coup of 18 September (6 September, Old Style) 1885, https://en.wikipedia.org/wiki/Bulgarian_unification; (2) Bulgarian News Agency (BTA), "Bulgaria Celebrates Anniversary of Unification", 6 September 2019: 6 September 1885, New Style 18 September, https://bta.bg/en/news/78483-Bulgaria-Celebrates-Anniversary-of-Unification
+- Confidence: high for the date.
+- Alternatives: 5 April 1886, the Tophane Act, by which the Porte accepted the union (Eastern Rumelia stayed in law an Ottoman province under the Prince of Bulgaria as its governor-general); the map draws the union from the day it was made, as CShapes draws it from 1886.
+- Left out: none.
+
+## 1648–1920 | Memel and Belgrade | Memel Prussian and Zemun Austrian, on both sides of 1886
+
+- What changed: the table drew the border of Prussia with Lithuania and the Habsburg border at Belgrade on whole units that straddle them, and CShapes 2.0 has both wrong from 1886. Memel (Klaipėda) and the land north of the Neman were Russian from 1807 to 1919, and Kretinga Prussian before 1795; Zemun was Ottoman, then Serbian, until 1918, and Pančevo and Kovin Serbian from 1886. Memel and the Memel Territory are now Prussian, then German, from 1648 (in Brandenburg-Prussia, the Duchy of Prussia, and their heirs) to 9 January 1920, with Kretinga on the Lithuanian side; Zemun and the land north of the Sava and the Danube are Habsburg from 1740 to 2 November 1918, with Belgrade Ottoman, then Serbian.
+- Applies to: Duchy of Prussia; Brandenburg-Prussia; Kingdom of Prussia; North German Confederation; German Empire; Polish-Lithuanian Commonwealth; Russian Empire; Habsburg Monarchy; Austrian Empire; Austria-Hungary; Ottoman Empire; Sanjak of Smederevo; Principality of Serbia; Kingdom of Serbia
+- Tables: `MEMEL`, `NORTH_BANK`, the passes at Memel and Belgrade in the seam step, and `CS_MOVE` in `tools/build-eras.mjs`; `clipBox` in `tools/cshapes-europe.mjs`.
+- Sources: Memel: (1) the Treaty of Melno (1422) and the Prussian–Lithuanian border it drew, unchanged for about 500 years, https://en.wikipedia.org/wiki/Treaty_of_Melno and https://en.wikipedia.org/wiki/Klaip%C4%97da_Region; (2) A. Brazdeikis, "The Memel – Klaipėda Territory: Historical background" (2014): Memel Prussian from 1422, the border unchanged until 1918, https://lithuanianphilately.com/memel-klaipeda/history/; (3) the shape: historical-basemaps, world of 1900. Belgrade: (1) the Treaty of Belgrade of 18 September 1739, which put the Habsburg–Ottoman border on the Sava and the Danube, https://en.wikipedia.org/wiki/Treaty_of_Belgrade, and Zemun Habsburg to 1918, https://en.wikipedia.org/wiki/Zemun; (2) M. Solak, "Border Constraint in the Environments (Zones) of Sava and Tuna River (1741)", Journal of History and Future 6/4 (2020), pp. 1270–1296, https://dergipark.org.tr/en/download/article-file/1368833; (3) the line: Natural Earth's centre lines of the Sava and the Danube.
+- Confidence: high for both borders; medium for the line of the Memel Territory, which historical-basemaps draws coarsely.
+- Alternatives: the Memel Territory under the Allies and the League of Nations from 10 January 1920 to 1923, which CShapes counts as Lithuania's; the Habsburg Kingdom of Serbia, with Belgrade, from 1718 to 1739, and the Habsburg occupation of Belgrade from 1789 to 1791.
+- Left out: Memel German again from March 1939, and Zemun before 1740.
+
 ## 476–961 | the Low Countries, Slovenia, and the eastern Alps | the Franks' edges of the 540s, off today's provinces
 
 - What changed: Noah noticed in November 2026 that the borders of AD 545 looked like today's, and they did, because the table gave whole modern provinces and states to one side. Now: (1) Slovenia was given to the Franks from 537 as far as today's Croatian border. Only Noricum Mediterraneum (Celje and the Drava and Savinja valleys) stays Frankish; the land of Emona and west of Atrans (Trojane), which was Italy, follows the Gothic and imperial dates of Venetia (`svn-italia`), and the Latobici's land (Trebnje, Krško), the Krka, Bela Krajina, and the Sotla, which was Pannonia Savia, is imperial from 535, as Croatia's rows have it (`svn-savia`). (2) East Styria (Hartberg-Fürstenfeld and Südoststeiermark) and Jennersdorf were Pannonia, so they are the Lombards' from 526 rather than the Franks' from 537, with Carantania from 658. (3) The Frisians and the Franks are split down the Old Rhine until c. 650 (a new frontier, `old-rhine-south`), in place of the line between Utrecht and Gelderland: Utrecht south of the river goes with North Brabant, South Holland is Frankish south of it, and both are wholly Frisian from 650 to the Franks' return in 690. (4) Leer, on the lower Ems, is Frisian like the rest of East Frisia, removing a Frankish patch inside it.
@@ -37,8 +57,6 @@ Each entry:
 - Confidence: medium for the owners and dates of the larger states and the Company's cessions; low for the borders, which follow today's district lines (good to perhaps 20 to 50 km), and for the eighteenth-century extents of the Gond kingdoms, the Chhattisgarh and Orissa states, and the hill states.
 - Alternatives: fixing the sources' shapes with name and ruler rules (rejected: the faults were in the shapes as much as the names); drawing the princely states from 1886 only where CShapes has them (it has none); Oudh as a dependency from the Treaty of Allahabad (1765) and the Rajput states as the Marathas' tributaries (rejected for the later date and the looser tie, as MAPMAKING asks).
 - Left out: the Naya Muluk; the Bhutan Duars of Assam; the Gorkha occupation of the Punjab hill states (1803–1815); Tranquebar, Serampore, Dutch Coromandel, and Chandernagore (no unit holds them); Janjira; Cochin as Mysore's tributary; the smaller princely states one by one (drawn in groups); the princely states' accessions between 15 August 1947 and their mergers of 1948 to 1950 (drawn as India's and Pakistan's from Partition, as CShapes does).
-
-## 1840–1920 | the Low Countries | one line on both sides of 1886, and Eupen and Malmedy German to 1920
 
 ## 1445–1885 | Caucasus | Georgia, the khanates, Dagestan, and the North Caucasus, a new table
 

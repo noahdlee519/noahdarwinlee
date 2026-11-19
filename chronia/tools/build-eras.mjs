@@ -4641,6 +4641,34 @@ let EUPEN = null;
   if (!EUPEN || !EUPEN.length) throw new Error("Eupen: no German land of 1885 in CShapes' Belgium");
   console.log("Eupen and Malmedy: " + Math.round(EUPEN.reduce((t, q) => t + polyKm2(q), 0)) + " km² of the German Empire's land of 1885 in CShapes' Belgium");
 }
+// Two errors of CShapes 2.0 from 1886 to the end of the First World War, mended here and in CS_MOVE: it draws Memel and the land
+// north of the Neman (the Memel Territory, Prussian from the Treaty of Melno of 1422 to the Treaty of Versailles) in Russia, and
+// the land north of the Sava and the Danube at Belgrade (Zemun, Pančevo, and Kovin, Habsburg from the Treaty of Belgrade of 1739
+// to 1918) in Serbia. MEMEL is historical-basemaps' German Empire of 1900 north of the Neman, inside CShapes' Russia of 1886;
+// NORTH_BANK is CShapes' Serbia of 1886 north of Natural Earth's lines of the Sava and the Danube.
+let MEMEL = null, NORTH_BANK = null;
+{
+  const topo = JSON.parse(readFileSync(cshapesPath, "utf8")), obj = Object.values(topo.objects)[0];
+  const at1886 = (gw) => { const g = obj.geometries.find((x) => String(x.properties.gwcode) === gw && x.properties.start === "1886-01-01"); if (!g) throw new Error("CShapes: no shape of " + gw + " of 1886"); return rewind(polysOf(client.feature(topo, g).geometry)); };
+  const boxPoly = (b) => [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]];
+  const hb = JSON.parse(readFileSync(resolve(source, "world_1900.geojson"), "utf8")).features.filter((f) => f.properties.NAME === "Germany" && f.geometry);
+  if (!hb.length) throw new Error("Memel: no Germany in historical-basemaps' world of 1900");
+  const de = tryClip(clip.union, ...hb.map((f) => rewind(polysOf(f.geometry))));
+  const m = de && tryClip(clip.intersection, de, [boxPoly([20.9, 55.0, 22.6, 56.4])], at1886("365"));
+  MEMEL = m ? rewind(m).filter((q) => polyKm2(q) >= 1) : null;
+  if (!MEMEL || !MEMEL.length) throw new Error("Memel: no land of the German Empire of 1900 in CShapes' Russia");
+  const rivers = JSON.parse(readFileSync(resolve(dirname(nePath), "ne_10m_rivers_lake_centerlines.geojson"), "utf8")).features;
+  const line = (name) => { const f = rivers.find((x) => x.properties.name === name); if (!f) throw new Error("Belgrade: no " + name + " in Natural Earth's rivers"); const g = f.geometry; return g.type === "LineString" ? g.coordinates : g.coordinates.reduce((a, l) => (l.length > a.length ? l : a)); };
+  const sava = line("Sava"), danube = line("Danube"), W0 = 19.5, E0 = 21.6, TOP = 46;
+  const tail = sava.slice(sava.findIndex((p, i) => sava.slice(i).every((q) => q[0] >= W0)));
+  const end = tail[tail.length - 1], j = danube.reduce((b, p, i) => ((p[0] - end[0]) ** 2 + (p[1] - end[1]) ** 2 < (danube[b][0] - end[0]) ** 2 + (danube[b][1] - end[1]) ** 2 ? i : b), 0);
+  const down = []; for (let i = j; i < danube.length && danube[i][0] <= E0; i++) down.push(danube[i]);
+  const ring = [[tail[0][0], TOP], ...tail, ...down, [down[down.length - 1][0], TOP], [tail[0][0], TOP]];
+  const nb = tryClip(clip.intersection, at1886("340"), rewind([[ring]]));
+  NORTH_BANK = nb ? rewind(nb).filter((q) => polyKm2(q) >= 1) : null;
+  if (!NORTH_BANK || !NORTH_BANK.length) throw new Error("Belgrade: no land of CShapes' Serbia north of the Sava and the Danube");
+  console.log("Memel: " + Math.round(MEMEL.reduce((t, q) => t + polyKm2(q), 0)) + " km² of the German Empire of 1900 in CShapes' Russia; Belgrade: " + Math.round(NORTH_BANK.reduce((t, q) => t + polyKm2(q), 0)) + " km² of CShapes' Serbia north of the Sava and the Danube");
+}
 // The borders between Europe's states from 1816 to 1885, where CShapes-Europe and the map disagree (tools/cshapes-europe.mjs).
 // The dataset is read from cshapes-europe/CShapes-Europe.geojson in the working folder. A span whose land it changed keeps its
 // own source for its name and dates, and is credited to the dataset for its borders (bsrc "cse").
@@ -4697,6 +4725,23 @@ let EUPEN = null;
     from: 1812, to: 1885, holder: { ...CSE_HOLDER, "Grand Duchy of Finland": 375, "Kingdom of Sweden": 380 }, own: new Set(["Grand Duchy of Finland"]), keep: new Set(),
     refuse: (a, b) => b !== 375, stay: [], islands: true, pieceKm2: 0.5, widthKm: 0, minKm2: 0, protect: 2, debugBox: [28.4, 60.5, 29.0, 60.9], tag: "csl", label: "seam of 1886 in Finland"
   }).map((s) => (s.cse === "csl" && s.bsrc !== "csl" ? { ...s, bsrc: "csl", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
+  // Two borders the table draws on whole units that straddle them, on CShapes' line of 1886 as mended above: the border of
+  // Prussia with Lithuania from the Treaty of Melno (1422) to 1920, which leaves Memel (Klaipėda) Prussian and Kretinga
+  // Lithuanian, and the Habsburg border on the Sava and the Danube from the Treaty of Belgrade (1739) to 1918, which leaves
+  // Zemun Austrian and Belgrade Ottoman, then Serbian. Each moves land only inside its box.
+  const inBox = (b, R) => b[0] >= R[0] && b[1] >= R[1] && b[2] <= R[2] && b[3] <= R[3];
+  for (const [label, from, to, sides, holder, own, R] of [
+    ["seam of 1886 at Memel", 1648, 1885, ["255", "365"], { "Duchy of Prussia": 255, "Brandenburg-Prussia": 255, "Kingdom of Prussia": 255, "North German Confederation": 255, "German Empire": 255, "Polish-Lithuanian Commonwealth": 365, "Russian Empire": 365 }, ["Duchy of Prussia"], [20.9, 55.0, 22.6, 56.4]],
+    ["seam of 1886 at Belgrade", 1740, 1885, ["300", "340"], { "Habsburg Monarchy": 300, "Austrian Empire": 300, "Austria-Hungary": 300, "Ottoman Empire": 340, "Sanjak of Smederevo": 340, "Principality of Serbia": 340, "Kingdom of Serbia": 340 }, ["Sanjak of Smederevo", "Principality of Serbia"], [19.9, 44.6, 20.9, 45.1]]
+  ]) {
+    const fix = { 255: (p) => tryClip(clip.union, p, MEMEL), 365: (p) => tryClip(clip.difference, p, MEMEL), 300: (p) => tryClip(clip.union, p, NORTH_BANK), 340: (p) => tryClip(clip.difference, p, NORTH_BANK) };
+    const feats = sides.map((gw) => ({ properties: { Id: +gw, Holder: +gw, Name: gw, From: from, To: to, Area: 1e9 }, geometry: { type: "MultiPolygon", coordinates: rewind(fix[gw](first(gw))) } }));
+    const codes = new Set(sides.map(Number));
+    dated = europeFromCShapes(dated, feats, { clip, tryClip, rewind, polyKm2, boxOf, boxHit, withBox, log: console.log }, {
+      from, to, holder, own: new Set(own), keep: new Set(), refuse: (a, b, f, l, box) => !codes.has(a) || !codes.has(b) || !inBox(box, R), stay: [], islands: true, clipBox: R, withClaims: true,
+      pieceKm2: 0.5, widthKm: 0, minKm2: 0, protect: 2, debugBox: R, tag: "csl", label
+    }).map((s) => (s.cse === "csl" && s.bsrc !== "csl" ? { ...s, bsrc: "csl", nameSrc: s.nameSrc || (NAME_OWN.has(s.src) ? "source" : "editors") } : s));
+  }
 }
 dated = africa1885(lastPieces(lastWord(dated)));
 checkSrc(dated, "until 1885");
@@ -5147,7 +5192,7 @@ const CS_FROM_COW = [["255", "1938-03-14", "1945-04-12"], ["305", "1938-03-14", 
 const CS_CARVE = [["291", "1939-08-31", "255"]];
 // Land CShapes gives a state before it held it, given back to the state that did: [code, to the day, code it goes to, shape].
 // Eupen and Malmedy, Germany's until the Treaty of Versailles came into force on 10 January 1920 (EUPEN, from the seam above).
-const CS_MOVE = [["211", "1920-01-09", "255", () => EUPEN]];
+const CS_MOVE = [["211", "1920-01-09", "255", () => EUPEN], ["365", "1920-01-09", "255", () => MEMEL], ["368", "1920-01-09", "255", () => MEMEL], ["340", "1918-11-02", "300", () => NORTH_BANK]];
 const LOOSE_TO = dayOf("1933-01-01");
 // A state that CShapes begins late, drawn before that as a dependency inside the state that held it: its first shape is cut out of
 // the holder's spans, from the first day given to the day before CShapes' first, less the land it gained later (the part of the first

@@ -56,6 +56,7 @@ const WESTPHALIA_END = "1813-10-26", PARIS = "1814-05-30", MOSELLE = "1814-06-16
 const RHINE_END = "1813-11-04", SAXONY_SPLIT = "1815-05-18", CONFEDERATION = "1815-06-08", VIENNA = "1815-06-09";
 // After 1815.
 const HANOVER_PRUSSIA = "1815-05-29", PARIS2 = "1815-11-20", MUNICH = "1816-04-14", BELGIUM = "1830-10-04", LONDON = "1839-04-19";
+const UNION_1885 = "1885-09-18";
 const ZURICH = "1859-11-10", EMILIA = "1860-03-18", TUSCANY_SAR = "1860-03-22", NICE = "1860-06-14", ANNEX_SOUTH = "1860-12-17", ITALY = "1861-03-17";
 const VIENNA_1864 = "1864-10-30", GASTEIN = "1865-08-14", PRAGUE = "1866-08-23", GC_END = "1866-08-24", ANNEX_1866 = "1866-09-20";
 const SAXE_1826 = "1826-11-12", POLAND_END = "1867-01-01", VENETIA = "1866-10-19", NGC = "1867-07-01", ROME = "1870-10-09", EMPIRE = "1871-01-18", FRANKFURT_1871 = "1871-05-10", BERLIN = "1878-07-13";
@@ -661,11 +662,12 @@ add(units("MNE", ["Nikšić", "Podgorica", "Bar", "Kolašin", "Šavnik", "Žablj
 add(["MNE/Ulcinj"], [[W, "OTT"], ["1880-11-23", "MNE"]]);
 // Bosnia and Herzegovina, occupied and governed by Austria-Hungary under the Treaty of Berlin, still the Sultan's in law.
 add(["BIH/*"], [[W, "OTT"], [BERLIN, "BOSo"]]);
-// Bulgaria and Eastern Rumelia from Berlin (their union of September 1885 the Porte accepted only in 1886); the Rhodopes and
-// Pirin Macedonia stayed Ottoman. Northern Dobruja went to Romania.
+// Bulgaria and Eastern Rumelia from Berlin, united from the coup at Plovdiv of 18 September 1885 (6 September, Old Style),
+// which the Porte accepted in the Tophane Act of 1886; CShapes draws them as one from 1886. The Rhodopes and Pirin Macedonia
+// stayed Ottoman. Northern Dobruja went to Romania.
 add(units("BGR", ["Vidin", "Montana", "Vratsa", "Pleven", "Lovech", "Gabrovo", "Veliko Tarnovo", "Ruse", "Razgrad", "Targovishte", "Shumen", "Silistra", "Dobrich", "Varna", "Pernik", "Kyustendil"]).concat(["BGR:Sofia/*"]),
   [[W, "OTT"], [BERLIN, "BUL"]]);
-add(units("BGR", ["Plovdiv", "Pazardzhik", "Stara Zagora", "Haskovo", "Sliven", "Yambol", "Burgas"]), [[W, "OTT"], [BERLIN, "ERU"]]);
+add(units("BGR", ["Plovdiv", "Pazardzhik", "Stara Zagora", "Haskovo", "Sliven", "Yambol", "Burgas"]), [[W, "OTT"], [BERLIN, "ERU"], [UNION_1885, "BUL"]]);
 add(units("ROU", ["Constanța", "Tulcea"]), [[W, "OTT"], [BERLIN, "WAL2"]]);
 // Greece: disputed from the rising of March 1821 to the London Protocol of 3 February 1830, then the Hellenic State, a kingdom
 // from 1832 (the Peloponnese, Central Greece and Euboea, and the Cyclades); the Ionian Islands from 1864; Thessaly from the
@@ -1258,8 +1260,9 @@ export function buildNapoleonic(env) {
   const out = [];
   for (const s of spans) {
     let [first, lastY] = yearsOf(s.da, s.db);
-    // A stretch from 1800 that takes in no 1 July is filed under the year of the 1 July after it starts, and is shown by its days.
-    if (first > lastY && keepShort(s.da, s.db)) lastY = first;
+    // A stretch from 1800 that takes in no 1 July is filed under the year of the 1 July after it starts (or, after the last 1 July
+    // of the table, under its last year), and is shown by its days.
+    if (first > lastY && keepShort(s.da, s.db)) { first = Math.min(first, NAPOLEONIC_TO); lastY = first; }
     if (first > lastY) { log("span " + s.name + " " + isoOf(s.da) + " to " + isoOf(s.db) + " takes in no 1 July, so it is left out"); continue; }
     const polys = shapeOf(s.items);
     if (!polys.length) continue;

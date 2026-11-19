@@ -91,8 +91,9 @@ export function europeFromCShapes(list, features, h, o = {}) {
   }
   const mapped = new Set(Object.values(HOLDER));
   const sovOf = (s) => {
-    if (s.people || s.claims || !s.polys || KEEP.has(s.name)) return null;
-    if (o.own && o.own.has(s.name)) return HOLDER[s.name] ?? null;
+    if (s.people || !s.polys || KEEP.has(s.name)) return null;
+    if (o.own && o.own.has(s.name) && (!s.claims || o.withClaims)) return HOLDER[s.name] ?? null;
+    if (s.claims) return null;
     if (s.ruler) return RULED.has(s.status) ? HOLDER[s.ruler] ?? null : null;
     return HOLDER[s.name] ?? null;
   };
@@ -153,6 +154,8 @@ export function europeFromCShapes(list, features, h, o = {}) {
     for (const r of near.concat(own)) { if (r.first > a0) cuts.add(r.first); if (r.last < b0) cuts.add(r.last + 1); }
     const at = [...cuts].sort((x, y) => x - y);
     const area = s.polys.reduce((t, q) => t + polyKm2(q), 0);
+    const CB = o.clipBox, mine = CB ? tryClip(clip.intersection, s.polys, [[[CB[0], CB[1]], [CB[2], CB[1]], [CB[2], CB[3]], [CB[0], CB[3]], [CB[0], CB[1]]]]) : s.polys;
+    if (!mine) { failed++; continue; }
     for (let k = 0; k + 1 < at.length; k++) {
       const a = at[k], b = at[k + 1] - 1;
       const others = near.filter((r) => r.first <= a && r.last >= b);
@@ -160,7 +163,7 @@ export function europeFromCShapes(list, features, h, o = {}) {
       const pieces = [];
       let lost = 0;
       for (const r of others) {
-        const x = tryClip(clip.intersection, s.polys, r.polys);
+        const x = tryClip(clip.intersection, mine, r.polys);
         if (!x) { failed++; continue; }
         for (let q of rewind(x)) {
           const km2 = polyKm2(q);
