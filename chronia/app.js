@@ -7051,7 +7051,7 @@
   premium.known = !premium.who || premium.on;
   function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on && premium.known; }
   // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
-  function adsGone(el) { if (el.id === "ad-below" && phoneQuery.matches) return; if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
+  function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
   function adsWatch(el, ins) {
     // Nothing from Google within 12 seconds (its script blocked by an ad blocker, or the network): the banner goes too.
     setTimeout(function () { if (!ins.getAttribute("data-ad-status")) adsGone(el); }, 12000);
@@ -7128,16 +7128,16 @@
     wide(false);
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
     // On a phone the banner runs from the left of the title to the right of the buttons, so it is as wide as the top row on
-    // every phone, and stays, filled or not (Noah, 19 November 2026); elsewhere it is 320 wide, centred, and goes if Google
-    // leaves it unfilled. The room for it is kept from the first layout, and the banner itself shows only once the page has
+    // every phone; elsewhere it is 320 wide, centred. It goes wherever Google leaves it unfilled (Noah, 19 November 2026). The room for it is kept from the first layout, and the banner itself shows only once the page has
     // loaded and opened (endIntro), so it never stands alone on the loading screen and the map never moves when it comes.
     var phone = phoneQuery.matches, size = AD_BELOW;
+    if (B.dataset.unfilled) { B.hidden = true; return 0; }
     if (phone) {
       var x0 = Math.min(head.offsetLeft, ctls.offsetLeft), x1 = Math.max(head.offsetLeft + head.offsetWidth, ctls.offsetLeft + ctls.offsetWidth);
       size = [Math.max(120, Math.round(x1 - x0) - 2), AD_H];
       B.style.left = Math.round(top.offsetLeft + x0) + "px"; B.style.translate = "none";
     } else {
-      if (W < AD_BELOW[0] + 12 || B.dataset.unfilled) { B.hidden = true; return 0; }
+      if (W < AD_BELOW[0] + 12) { B.hidden = true; return 0; }
       B.style.left = ""; B.style.translate = "";
     }
     B.style.top = Math.round(under) + "px";
