@@ -7068,6 +7068,7 @@
     if (typeof MutationObserver !== "function") return;
     new MutationObserver(function () {
       var st = ins.getAttribute("data-ad-status");
+      if (st === "filled") delete el.dataset.waiting;
       if (st === "unfilled" && !el.dataset.unfilled) adsGone(el);
       else if (st === "filled" && el.dataset.unfilled) { delete el.dataset.unfilled; layout(); scheduleRender(); }
     }).observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
@@ -7088,6 +7089,9 @@
     ins.setAttribute("data-ad-client", ADS.client);
     ins.setAttribute("data-ad-slot", slot);
     el.appendChild(ins);
+    // The banner's frame stays invisible until Google says it has an advertisement for it (data-ad-status="filled"):
+    // an unapproved site, a slot with nothing to show, or an ad blocker leaves no empty box (20 November 2026).
+    el.dataset.waiting = "1";
     adsWatch(el, ins);
     if (!adsLoaded) {
       adsLoaded = true;
