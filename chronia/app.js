@@ -7042,7 +7042,7 @@
   // A side banner is 50 high and as wide as its gap allows, from 160 to 320 (AdSense fills a fixed unit at any width from
   // 120); only where a gap is narrower than that does a single banner go under the top row.
   var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
-  var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsSizeR = null, adsLoaded = false;
+  var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
   premium.who = accountId();
@@ -7095,34 +7095,37 @@
   function adsPlace() {
     var L = $("ad-left"), R = $("ad-right"), B = $("ad-below");
     if (!L) return 0;
-    if (!adsWanted()) { L.hidden = R.hidden = B.hidden = true; return 0; }
+    var ctls0 = $("ctls"), wide = function (on) { ctls0.style.minWidth = on ? $("head").offsetWidth + "px" : ""; ctls0.style.justifyContent = on ? "space-evenly" : ""; };
+    if (!adsWanted()) { wide(false); L.hidden = R.hidden = B.hidden = true; return 0; }
     // By the offsets, not the boxes on the screen: the top row slides in when the page opens, and its boxes move with it.
     var top = $("top"), yb = $("year-box"), head = $("head"), ctls = $("ctls"), inTop = yb.parentNode === top;
     if (!(head.offsetHeight > 0 && ctls.offsetHeight > 0)) return 0;   // the top row is not laid out yet: asked again once it is
     // The date is in the top row's middle column (since 19 November 2026), which is in the page's middle only where the
     // title and the tools leave room; its own offset says where it is.
+    wide(inTop && !phoneQuery.matches && adsMode !== "below");
     var headR = head.offsetLeft + head.offsetWidth, ybL = yb.offsetLeft, ybR = ybL + yb.offsetWidth;
     // The date is beside the title only where it is in the top row and on its line.
     var beside = inTop && yb.offsetTop < head.offsetHeight - 4;
-    var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, roomL = gapL - 2 * AD_GAP, roomR = gapR - 2 * AD_GAP;
+    if (!beside) wide(false);
+    var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
     if (!adsMode) {
-      adsSize = adsSizeR = null;
-      if (Math.min(roomL, roomR) >= AD_SIDE_W[0] + 2) { adsSize = [Math.min(AD_SIDE_W[1], Math.floor(roomL - 2)), AD_H]; adsSizeR = [Math.min(AD_SIDE_W[1], Math.floor(roomR - 2)), AD_H]; }
+      adsSize = null;
+      if (room >= AD_SIDE_W[0] + 2) adsSize = [Math.min(AD_SIDE_W[1], Math.floor(room - 2)), AD_H];
       adsMode = adsSize ? "side" : "below";
+      if (!adsSize) wide(false);
     }
-    if (adsMode === "side") {
+    if (adsMode === "side" && room >= adsSize[0] + 2) {
       B.hidden = true;
-      var fits = roomL >= adsSize[0] + 2 && roomR >= adsSizeR[0] + 2;
-      L.hidden = !fits || !!L.dataset.unfilled; R.hidden = !fits || !!R.dataset.unfilled;
-      if (!fits) return 0;
+      L.hidden = !!L.dataset.unfilled; R.hidden = !!R.dataset.unfilled;
       if (!L.dataset.unfilled) adsFill(L, ADS.left, adsSize);
-      if (!R.dataset.unfilled) adsFill(R, ADS.right, adsSizeR);
+      if (!R.dataset.unfilled) adsFill(R, ADS.right, adsSize);
       L.style.top = R.style.top = Math.round((head.offsetHeight - adsSize[1] - 2) / 2) + "px";
       L.style.left = Math.round(headR + (gapL - adsSize[0] - 2) / 2) + "px";
-      R.style.left = Math.round(ybR + (gapR - adsSizeR[0] - 2) / 2) + "px";
+      R.style.left = Math.round(ybR + (gapR - adsSize[0] - 2) / 2) + "px";
       return 0;
     }
     L.hidden = R.hidden = true;
+    wide(false);
     var under = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
     // On a phone the banner runs from the left of the title to the right of the buttons, so it is as wide as the top row on
     // every phone, and stays, filled or not (Noah, 19 November 2026); elsewhere it is 320 wide, centred, and goes if Google
