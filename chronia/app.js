@@ -7143,7 +7143,12 @@
         var shown = [L, R].filter(function (e) { return !e.hidden; }), bw = adsSize[0] + 2, bh = adsSize[1] + 2;
         if (phoneQuery.matches) {
           shown.slice(1).forEach(function (e) { e.hidden = true; });
-          if (shown.length) { var slot = adsRowSlot(top, head, ctls); shown[0].style.left = Math.round(slot[0] - top.offsetLeft) + "px"; shown[0].style.top = Math.round(slot[1] - top.offsetTop) + "px"; }
+          // In the middle of the screen, as far as the room between the title and the menu allows (Noah, 20 November 2026):
+          // a banner Google filled at a wider window keeps its size, so it would otherwise sit against the title.
+          if (shown.length) {
+            var slot = adsRowSlot(top, head, ctls), x = Math.max(slot[0], Math.min((W - bw) / 2, slot[0] + slot[2] + 2 - bw));
+            shown[0].style.left = Math.round(x - top.offsetLeft) + "px"; shown[0].style.top = Math.round(slot[1] - top.offsetTop) + "px";
+          }
           return 0;
         }
         var kb = $("key").getBoundingClientRect(), cb = $("changes").getBoundingClientRect(), span = shown.length * bw + (shown.length - 1) * AD_GAP;
