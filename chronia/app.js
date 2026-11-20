@@ -3557,13 +3557,20 @@
       if (!c || seen.has(p.id)) continue;
       seen.add(p.id);
       var pt = projectLL(c[1], c[2]);
-      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]) });
+      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]), ll: [c[1], c[2]] });
     }
     return out;
   }
-  function drawMark(p, k, kind) {
+  function drawMark(p, k, kind, sel) {
     var x = p[0], y = p[1];
     ctx.fillStyle = pal["city-halo"];
+    if (sel) {
+      var R = (kind === 0 ? 4.3 : kind === 1 ? 3.4 : 3) * k;
+      ctx.beginPath(); ctx.arc(x, y, R + 2.2, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.strokeStyle = pal.select; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, R * 0.45, 0, TAU); ctx.fillStyle = pal.select; ctx.fill();
+      return;
+    }
     if (kind === 0) {
       ctx.beginPath(); ctx.arc(x, y, 4.3 * k, 0, TAU); ctx.fill();
       ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85; ctx.stroke();
@@ -3579,24 +3586,25 @@
     { size: 11.2, font: "400 ", ls: 0.1, ink: "city", halo: 2.2 },
     { size: 10.8, font: "400 ", ls: 0, ink: "town", halo: 2 }
   ];
-  function placeOne(placed, p, name, k, kind, held, ref) {
-    if (!(kind === 0 ? layers.capitals : layers.cities)) return false;
-    var st = CITY_STYLE[kind], size = st.size * (k > 1 ? 1.05 : 1);
-    var rm = kind === 0 ? 4.3 * k : (kind === 1 ? 2.85 : 2.4) * k, h = size * 0.86, gap = rm + 3;
+  function placeOne(placed, p, name, k, kind, held, ref, sel) {
+    if (!sel && !(kind === 0 ? layers.capitals : layers.cities)) return false;
+    var st = CITY_STYLE[kind], size = st.size * (k > 1 ? 1.05 : 1) * (sel ? 1.4 : 1);
+    var rm = (sel ? (kind === 0 ? 4.3 : kind === 1 ? 3.4 : 3) + 2.2 : kind === 0 ? 4.3 : kind === 1 ? 2.85 : 2.4) * k, h = size * 0.86, gap = rm + 3;
     var mark = held ? null : { x: p[0] - rm, y: p[1] - rm, w: 2 * rm, h: 2 * rm };
-    if (mark && (!insideView(mark) || collides(placed, mark))) return false;
-    ctx.font = st.font + size.toFixed(2) + "px " + SERIF;
+    if (mark && !sel && (!insideView(mark) || collides(placed, mark))) return false;
+    ctx.font = (sel ? "600 " : st.font) + size.toFixed(2) + "px " + SERIF;
     ctx.letterSpacing = st.ls + "px";
     var w = ctx.measureText(name).width;
     var spots = [[p[0] + gap, p[1]], [p[0] - gap - w, p[1]], [p[0] - w / 2, p[1] - rm - 2.5 - h / 2], [p[0] - w / 2, p[1] + rm + 2.5 + h / 2]];
-    for (var s = 0; s < spots.length; s++) {
-      var tx = spots[s][0], ty = spots[s][1], box = { x: tx - 1.5, y: ty - h / 2 - 1.5, w: w + 3, h: h + 3 };
-      if (!insideView(box) || collides(placed, box)) continue;
+    var n = spots.length, tries = sel ? 2 * n + 1 : n;
+    for (var s = 0; s < tries; s++) {
+      var spot = spots[s % n], tx = spot[0], ty = spot[1], box = { x: tx - 1.5, y: ty - h / 2 - 1.5, w: w + 3, h: h + 3 };
+      if (s < 2 * n && (!insideView(box) || (s < n && collides(placed, box)))) continue;
       if (mark) placed.push(mark);
       placed.push(box);
-      drawMark(p, k, kind);
+      drawMark(p, k, kind, sel);
       ctx.textAlign = "left";
-      ctx.lineWidth = st.halo; ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = pal[st.ink];
+      ctx.lineWidth = st.halo + (sel ? 1.2 : 0); ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = sel ? pal.select : pal[st.ink];
       ctx.strokeText(name, tx, ty); ctx.fillText(name, tx, ty);
       var lab = { name: name, x: p[0], y: p[1], size: size, kind: ["capital", "city", "town"][kind], box: box, ref: ref || null }, city = ref && ref.city;
       if (city) { lab.id = city.id; lab.qid = city.qid; lab.lon = city.lon; lab.lat = city.lat; }
@@ -3625,10 +3633,16 @@
     if (S < 230) return;
     var k = markSize(S), modernNow = current && current.modern, i;
     ctx.textBaseline = "middle"; ctx.lineJoin = "round";
-    var capCity = new Set();
+    var capCity = new Set(), sc = selCity;
+    var isSel = function (city, q) { return !!sc && (sc.id ? !!city && city.id === sc.id : !!q && Math.abs(q[0] - sc.lon) < 1e-6 && Math.abs(q[1] - sc.lat) < 1e-6); };
+    if (sc) {
+      var sp = projectLL(sc.lon, sc.lat);
+      if (sp && sp[2] >= 0.25) placeOne(placed, sp, cityFacts(sc).name, k, sc.kind === "capital" ? 0 : sc.kind === "city" ? 1 : 2, false, sc.ref || (sc.city ? { city: sc.city } : null), true);
+    }
     if (current) {
       var caps = capitalList(current, S);
       for (i = 0; i < caps.length; i++) {
+        if (isSel(caps[i].city, caps[i].ll)) { if (caps[i].city) capCity.add(caps[i].city); continue; }
         placeOne(placed, caps[i].pt, caps[i].name, k, 0, false, { cap: caps[i].cap, of: caps[i].id, city: caps[i].city });
         if (layers.capitals && caps[i].city) capCity.add(caps[i].city);
       }
@@ -3639,7 +3653,7 @@
       for (i = 0; i < list.length; i++) {
         if (list[i].tier > top) break;
         var c = list[i].c;
-        if (capCity.has(c)) continue;
+        if (capCity.has(c) || isSel(c, null)) continue;
         var p = projectLL(c.lon, c.lat);
         if (p && p[2] >= 0.25) placeOne(placed, p, cityShownName(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
       }
@@ -5863,6 +5877,7 @@
   function openCity(l) {
     selected = -1;
     selCity = cityRef(l);
+    selCity.ref = l.ref;
     cardClick = true;
     card.hidden = false;
     renderCard();
@@ -8045,7 +8060,7 @@
   function goSearch(it) {
     setSearchOpen(false, false);
     var S = localScale();
-    if (it.city) { flyTo(it.ll[0], it.ll[1], Math.max(S, it.tier <= 1 ? 900 : 1500)); openCity({ ref: { city: it.city }, kind: it.tier <= 1 ? "city" : "town" }); return; }
+    if (it.city) { flyTo(it.ll[0], it.ll[1], Math.max(S, it.tier <= 1 ? 14000 : 20000)); openCity({ ref: { city: it.city }, kind: it.tier <= 1 ? "city" : "town" }); return; }
     if (it.id !== undefined) { flyTo(it.ll[0], it.ll[1], scaleFor(it.km2, 200, 6000)); select(it.id); return; }
     if (it.sea) { flyTo(it.ll[0], it.ll[1], it.sea === 1 ? 260 : it.sea === 2 ? 700 : 1700); return; }
     flyTo(it.ll[0], it.ll[1], scaleFor(it.km2, 500, 8000));
