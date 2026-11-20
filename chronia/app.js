@@ -7114,9 +7114,20 @@
       adsMode = adsSize ? "side" : "below";
       if (!adsSize) wide(false);
     }
-    if (adsMode === "side" && room >= adsSize[0] + 2) {
+    if (adsMode === "side") {
       B.hidden = true;
       L.hidden = !!L.dataset.unfilled; R.hidden = !!R.dataset.unfilled;
+      if (room < adsSize[0] + 2) {
+        wide(false);
+        var below = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
+        [L, R].forEach(function (e) { if (!e.firstChild) e.hidden = true; });
+        var shown = [L, R].filter(function (e) { return !e.hidden; }), bw = adsSize[0] + 2, bh = adsSize[1] + 2, row = shown.length * bw + (shown.length - 1) * AD_GAP <= W - 2 * AD_GAP;
+        shown.forEach(function (e, i) {
+          var x = row ? (W - shown.length * bw - (shown.length - 1) * AD_GAP) / 2 + i * (bw + AD_GAP) : (W - bw) / 2, y = below + (row ? 0 : i * (bh + AD_GAP));
+          e.style.left = Math.round(x - top.offsetLeft) + "px"; e.style.top = Math.round(y - top.offsetTop) + "px";
+        });
+        return shown.length ? below + (row ? bh : shown.length * bh + (shown.length - 1) * AD_GAP) + 8 : 0;
+      }
       if (!L.dataset.unfilled) adsFill(L, ADS.left, adsSize);
       if (!R.dataset.unfilled) adsFill(R, ADS.right, adsSize);
       L.style.top = R.style.top = Math.round((head.offsetHeight - adsSize[1] - 2) / 2) + "px";
