@@ -6654,6 +6654,16 @@
 
   var STORE_LAYERS = "chronia-layers";
   var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true, subdivisions: true, control: false, safe: false };
+  var menuBtn = $("menu-btn"), ctlsBox = $("ctls");
+  function setMenu(open) {
+    ctlsBox.classList.toggle("ch-menu-open", open);
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  menuBtn.addEventListener("click", function (e) { e.stopPropagation(); setMenu(!ctlsBox.classList.contains("ch-menu-open")); });
+  $("ctl-set").addEventListener("click", function () { setMenu(false); });
+  document.addEventListener("pointerdown", function (e) { if (ctlsBox.classList.contains("ch-menu-open") && !$("ctl-set").contains(e.target) && !menuBtn.contains(e.target)) setMenu(false); }, true);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ctlsBox.classList.contains("ch-menu-open")) { setMenu(false); menuBtn.focus(); } });
+  phoneQuery.addEventListener("change", function () { setMenu(false); });
   var layersBtn = $("layers-btn"), layersPanel = $("layers");
   try {
     var savedLayers = JSON.parse(localStorage.getItem(STORE_LAYERS) || "{}");
@@ -7092,6 +7102,10 @@
   // Places the banners, and gives the y the map must start below when one sits under the top row (0 otherwise).
   // The first call that finds advertisements wanted settles where they go, by the room at that moment: a banner
   // AdSense has filled can't be made another size, so a later, narrower window only hides the ones that no longer fit.
+  function adsRowSlot(top, head, ctls) {
+    var x0 = top.offsetLeft + head.offsetLeft + head.offsetWidth + 5, x1 = top.offsetLeft + ctls.offsetLeft - 5;
+    return [x0, top.offsetTop + head.offsetTop + Math.round((head.offsetHeight - AD_H - 2) / 2), Math.max(0, Math.round(x1 - x0) - 2)];
+  }
   function adsPlace() {
     var L = $("ad-left"), R = $("ad-right"), B = $("ad-below");
     if (!L) return 0;
@@ -7119,11 +7133,25 @@
       L.hidden = !!L.dataset.unfilled; R.hidden = !!R.dataset.unfilled;
       if (room < adsSize[0] + 2) {
         wide(false);
-        var below = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
         [L, R].forEach(function (e) { if (!e.firstChild) e.hidden = true; });
-        var shown = [L, R].filter(function (e) { return !e.hidden; }), bw = adsSize[0] + 2, bh = adsSize[1] + 2, row = shown.length * bw + (shown.length - 1) * AD_GAP <= W - 2 * AD_GAP;
+        var shown = [L, R].filter(function (e) { return !e.hidden; }), bw = adsSize[0] + 2, bh = adsSize[1] + 2;
+        if (phoneQuery.matches) {
+          shown.slice(1).forEach(function (e) { e.hidden = true; });
+          if (shown.length) { var slot = adsRowSlot(top, head, ctls); shown[0].style.left = Math.round(slot[0] - top.offsetLeft) + "px"; shown[0].style.top = Math.round(slot[1] - top.offsetTop) + "px"; }
+          return 0;
+        }
+        var kb = $("key").getBoundingClientRect(), cb = $("changes").getBoundingClientRect(), span = shown.length * bw + (shown.length - 1) * AD_GAP;
+        if (cb.left - kb.right - 2 * AD_GAP >= span) {
+          shown.forEach(function (e, i) {
+            var x = (kb.right + cb.left - span) / 2 + i * (bw + AD_GAP), y = Math.max(kb.bottom, cb.bottom) - bh;
+            e.style.left = Math.round(x - top.offsetLeft) + "px"; e.style.top = Math.round(y - top.offsetTop) + "px";
+          });
+          return 0;
+        }
+        var below = top.offsetTop + Math.max(head.offsetTop + head.offsetHeight, ctls.offsetTop + ctls.offsetHeight, inTop ? yb.offsetTop + yb.offsetHeight : 0) + 6;
+        var row = span <= W - 2 * AD_GAP;
         shown.forEach(function (e, i) {
-          var x = row ? (W - shown.length * bw - (shown.length - 1) * AD_GAP) / 2 + i * (bw + AD_GAP) : (W - bw) / 2, y = below + (row ? 0 : i * (bh + AD_GAP));
+          var x = row ? (W - span) / 2 + i * (bw + AD_GAP) : (W - bw) / 2, y = below + (row ? 0 : i * (bh + AD_GAP));
           e.style.left = Math.round(x - top.offsetLeft) + "px"; e.style.top = Math.round(y - top.offsetTop) + "px";
         });
         return shown.length ? below + (row ? bh : shown.length * bh + (shown.length - 1) * AD_GAP) + 8 : 0;
@@ -7144,9 +7172,14 @@
     var phone = phoneQuery.matches, size = AD_BELOW;
     if (B.dataset.unfilled) { B.hidden = true; return 0; }
     if (phone) {
-      var x0 = Math.min(head.offsetLeft, ctls.offsetLeft), x1 = Math.max(head.offsetLeft + head.offsetWidth, ctls.offsetLeft + ctls.offsetWidth);
-      size = [Math.max(120, Math.round(x1 - x0) - 2), AD_H];
-      B.style.left = Math.round(top.offsetLeft + x0) + "px"; B.style.translate = "none";
+      var slot = adsRowSlot(top, head, ctls);
+      if (slot[2] < 120) { B.hidden = true; return 0; }
+      size = [slot[2], AD_H];
+      B.style.left = Math.round(slot[0]) + "px"; B.style.top = Math.round(slot[1]) + "px"; B.style.translate = "none";
+      B.hidden = !introOver;
+      if (introOver) adsFill(B, ADS.below, size);
+      B.style.width = size[0] + "px";
+      return 0;
     } else {
       if (W < AD_BELOW[0] + 12) { B.hidden = true; return 0; }
       B.style.left = ""; B.style.translate = "";
@@ -7286,14 +7319,15 @@
     { at: "#track", title: "The timeline", text: "Drag along it to move through the centuries. The events marked above it can be clicked, and take you to their date." },
     { at: ".ch-when-fwd", title: "Play", text: "Play runs the years forward, or backward, and the minus and plus set how fast they go." },
     { at: "#globe", title: "The map", text: "Drag to move it, scroll or pinch to zoom, and click a state to read about it. Its capital and largest city are links that take you there." },
-    { at: "#search-btn", pad: 0, title: "Search", text: "Find a state, a city, or a people, and the map goes to it." },
-    { at: "#layers-btn", pad: 0, title: "View", text: "Choose the globe or a flat map, and show or hide zones of control, cities, rivers, terrain, first-level divisions, and more." },
+    { at: "#search-btn", alt: "#menu-btn", pad: 0, title: "Search", text: "Find a state, a city, or a people, and the map goes to it." },
+    { at: "#layers-btn", alt: "#menu-btn", pad: 0, title: "View", text: "Choose the globe or a flat map, and show or hide zones of control, cities, rivers, terrain, first-level divisions, and more." },
     { at: "#changes-btn", title: "Changes", text: "What changed on the map at this date, with buttons to step to the change before and the next one." },
     { at: "#about-btn", pad: 0, title: "About", text: "The atlas, its sources, and how it was made. You can take this tour again from here.", next: "Done" }
   ];
   function tourSeen() { try { return localStorage.getItem(TOUR_STORE) === "1"; } catch (e) { return false; } }
   function tourTarget(step) {
     var el = step.at && document.querySelector(step.at);
+    if (el && step.alt && el.getBoundingClientRect().width < 2) el = document.querySelector(step.alt);
     if (!el) return null;
     var r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.right < 0 || r.top > innerHeight || r.left > innerWidth) return null;

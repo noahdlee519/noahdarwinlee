@@ -486,6 +486,14 @@ body.ch-page {
   display: none;
 }
 
+.ch-menu-btn {
+  display: none;
+}
+
+.ch-ctl-set {
+  display: contents;
+}
+
 .ch-ctl[aria-pressed="true"] .ch-icon-flat,
 .ch-ctl[aria-pressed="false"] .ch-icon-globe,
 .ch-play[aria-pressed="true"] .ch-icon-play,
@@ -2521,7 +2529,7 @@ select.ch-save-input {
   /* The title takes only its own width and the tools the rest of the row, spaced evenly across it (Noah, 19 November
      2026: the title's plate was the wider of the two, and the tools were crowded at the right). */
   .ch-top {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 5px;
   }
 
@@ -2530,9 +2538,65 @@ select.ch-save-input {
   }
 
   .ch-ctls {
-    grid-column: 2;
-    justify-self: stretch;
-    justify-content: space-evenly;
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .ch-ctls .ch-menu-btn {
+    display: flex;
+    width: 48px;
+  }
+
+  .ch-ctls .ch-menu-btn[aria-expanded="true"]::after {
+    background: var(--ch-metal-down);
+    box-shadow: var(--ch-sunk);
+  }
+
+  .ch-ctl-set {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: calc(-1 * var(--ch-bz));
+    z-index: 8;
+    flex-direction: column;
+    min-width: 168px;
+    padding: 4px 0;
+    border: var(--ch-bz) solid var(--ch-brass-deep);
+    border-radius: 4px;
+    background-color: var(--ch-enamel);
+    background-image: linear-gradient(180deg, rgba(255, 236, 190, 0.2), rgba(255, 236, 190, 0.04) 46%, rgba(0, 0, 0, 0.18)), var(--ch-grain);
+    background-size: auto, 260px 260px;
+    box-shadow: 0 2px 6px rgba(42, 28, 18, 0.35);
+  }
+
+  .ch-ctls.ch-menu-open .ch-ctl-set {
+    display: flex;
+  }
+
+  .ch-ctls .ch-ctl-set .ch-ctl {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    height: 44px;
+    padding: 0 16px 0 14px;
+  }
+
+  .ch-ctls .ch-ctl-set .ch-ctl::after {
+    top: 50%;
+    left: 10px;
+    width: 30px;
+    translate: 0 -50%;
+  }
+
+  .ch-ctls .ch-ctl-set .ch-ctl svg {
+    flex: 0 0 auto;
+  }
+
+  .ch-ctls .ch-ctl-set .ch-ctl-label {
+    display: block;
+    font-size: 14px;
   }
 
   .ch-head-text {
@@ -2715,13 +2779,13 @@ select.ch-save-input {
     padding: 0;
   }
 
-  .ch-ctls .ch-ctl {
-    width: 35px;
+  .ch-ctls .ch-menu-btn {
+    width: 40px;
     justify-content: center;
     padding-top: 0;
   }
 
-  .ch-ctls .ch-ctl::after {
+  .ch-ctls .ch-menu-btn::after {
     top: 50%;
     width: 31px;
     translate: -50% -50%;
