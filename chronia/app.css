@@ -2573,25 +2573,32 @@ select.ch-save-input {
     display: flex;
   }
 
+  /* In the menu the disc, the icon on it, and the account's initial all share one centre, 25 px in from the row's left
+     (Noah, 20 November 2026: the icons sat a pixel off their discs, and the initial, centred on the whole row, landed on
+     the word "Account"); the label starts clear of the disc. */
   .ch-ctls .ch-ctl-set .ch-ctl {
+    --ch-menu-disc: 25px;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 12px;
     width: 100%;
     height: 44px;
-    padding: 0 16px 0 14px;
+    padding: 0 16px 0 48px;
   }
 
   .ch-ctls .ch-ctl-set .ch-ctl::after {
     top: 50%;
-    left: 10px;
+    left: var(--ch-menu-disc);
     width: 30px;
-    translate: 0 -50%;
+    translate: -50% -50%;
   }
 
-  .ch-ctls .ch-ctl-set .ch-ctl svg {
-    flex: 0 0 auto;
+  .ch-ctls .ch-ctl-set .ch-ctl svg,
+  .ch-ctls .ch-ctl-set .ch-account-initial {
+    position: absolute;
+    top: 50%;
+    left: var(--ch-menu-disc);
+    translate: -50% -50%;
   }
 
   .ch-ctls .ch-ctl-set .ch-ctl-label {
