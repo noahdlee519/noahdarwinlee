@@ -7042,7 +7042,7 @@
   // A side banner is 50 high and as wide as its gap allows, from 160 to 320 (AdSense fills a fixed unit at any width from
   // 120); only where a gap is narrower than that does a single banner go under the top row.
   var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
-  var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
+  var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsSizeR = null, adsLoaded = false;
   var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
   premium.who = accountId();
@@ -7104,22 +7104,22 @@
     var headR = head.offsetLeft + head.offsetWidth, ybL = yb.offsetLeft, ybR = ybL + yb.offsetWidth;
     // The date is beside the title only where it is in the top row and on its line.
     var beside = inTop && yb.offsetTop < head.offsetHeight - 4;
-    var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, room = Math.min(gapL, gapR) - 2 * AD_GAP;
+    var gapL = beside ? ybL - headR : 0, gapR = beside ? ctls.offsetLeft - ybR : 0, roomL = gapL - 2 * AD_GAP, roomR = gapR - 2 * AD_GAP;
     if (!adsMode) {
-      adsSize = null;
-      if (room >= AD_SIDE_W[0] + 2) adsSize = [Math.min(AD_SIDE_W[1], Math.floor(room - 2)), AD_H];
+      adsSize = adsSizeR = null;
+      if (Math.min(roomL, roomR) >= AD_SIDE_W[0] + 2) { adsSize = [Math.min(AD_SIDE_W[1], Math.floor(roomL - 2)), AD_H]; adsSizeR = [Math.min(AD_SIDE_W[1], Math.floor(roomR - 2)), AD_H]; }
       adsMode = adsSize ? "side" : "below";
     }
     if (adsMode === "side") {
       B.hidden = true;
-      var fits = room >= adsSize[0] + 2;
+      var fits = roomL >= adsSize[0] + 2 && roomR >= adsSizeR[0] + 2;
       L.hidden = !fits || !!L.dataset.unfilled; R.hidden = !fits || !!R.dataset.unfilled;
       if (!fits) return 0;
       if (!L.dataset.unfilled) adsFill(L, ADS.left, adsSize);
-      if (!R.dataset.unfilled) adsFill(R, ADS.right, adsSize);
+      if (!R.dataset.unfilled) adsFill(R, ADS.right, adsSizeR);
       L.style.top = R.style.top = Math.round((head.offsetHeight - adsSize[1] - 2) / 2) + "px";
       L.style.left = Math.round(headR + (gapL - adsSize[0] - 2) / 2) + "px";
-      R.style.left = Math.round(ybR + (gapR - adsSize[0] - 2) / 2) + "px";
+      R.style.left = Math.round(ybR + (gapR - adsSizeR[0] - 2) / 2) + "px";
       return 0;
     }
     L.hidden = R.hidden = true;
