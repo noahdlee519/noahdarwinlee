@@ -7059,7 +7059,11 @@
   try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
   // Signed out, there is nothing to wait for; signed in, the first answer from chronia-premium (or its failure) settles it.
   premium.known = !premium.who || premium.on;
-  function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on && premium.known; }
+  // ADS_ON waits for Google's approval of chroniaatlas.com (21 November 2026). Before it, AdSense marks a banner
+  // "filled" but draws it blank, so the page showed two empty grey boxes beside the date; with it false, no banner is
+  // placed and none of Google's advertising code loads. Set it true once AdSense shows the site as "Ready".
+  var ADS_ON = false;
+  function adsWanted() { return ((ADS_ON && !!ADS.client) || adsDemo) && !premium.on && premium.known; }
   // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
   function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
   function adsWatch(el, ins) {
