@@ -99,10 +99,31 @@ Twenty, named by surname: Le Guin, Asimov, Butler, Herbert, Bradbury, Clarke, Di
 - **Review:** all twenty are rendered and shown to Noah as contact sheets before the page uses them; any he dislikes is regenerated.
 - **Rotation:** a load shows the next world after the one this visitor last saw (stored in the browser); a first visit starts at a random one. `?world=<name>` opens a given world (used by Share).
 
+## Colours and terrain (Noah's call)
+
+The map uses a web mapping app's colours and its land-cover scheme, not the site's themes. The land is coloured by class, sampled from Noah's screenshots of the reference:
+
+| Class | Colour |
+|---|---|
+| Dense forest | `#a2debe` |
+| Woodland and shrub | `#b3e3cc` |
+| Grassland and farmland | `#c4ead7` |
+| Dry grass and steppe | `#f3efe4` |
+| Desert and bare ground | `#faf7f3` |
+| Rock and high mountain | `#cbcfca` |
+| Snow and ice | `#ffffff` |
+| Water (seas, lakes, rivers) | `#89d1e2`, rivers and coasts in `#4da9bb` |
+| Country borders | `#26262a` solid; province borders `#606266` dashed |
+| Labels | `#26262a`, with a pale halo |
+
+- The classes come from the generator's elevation, moisture, and temperature (latitude), so forests, deserts, steppe, and snow fall where a real world would put them. The land is patchy at class edges, as on the reference, rather than smooth gradients.
+- Noah's orange and blue appear only as accents: the heart and favourite buttons, the selected country's highlight, and small interface accents. The map itself stays in the land-cover palette.
+- The relief image becomes the land-cover image (with at most a faint hillshade); the vectors draw water, borders, rivers, and labels over it.
+- No Night version for now; the page keeps one light map whatever the site's theme.
+
 ## The page shell (builder's calls)
 
 - The site's usual header is hidden on this page; the rail's ≡ button opens the site's existing menu (`menu.js`), which carries the theme switch.
-- The map follows the site's three themes (Orange, White, Night): one neutral relief image per world, tinted in the browser, with the palette in CSS variables per theme.
 - Within the 4× zoom, higher zoom shows towns, minor rivers, and Dealdesk's province names; the relief image is baked at twice the screen's resolution so it stays soft rather than blurry.
 
 ## Constraints
