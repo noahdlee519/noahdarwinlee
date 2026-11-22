@@ -77,13 +77,13 @@ UI text uses the serial comma and `|` separators, never `·` or round bullets (r
 
 ## The projects (countries)
 
-Flagship (large mainland countries): Dealdesk, CHRONIA, LoreTour, UCHRONIA, Fuzhounese Dictionary, Leggio, GREATERCIRCLE.
+Flagship (large mainland countries): CHRONIA, LoreTour, UCHRONIA, Fuzhounese Dictionary, Leggio, GREATERCIRCLE, Dealdesk.
 
-Flagship sizes are ranked in that order (Noah's call): Dealdesk is the largest country, GREATERCIRCLE the smallest flagship.
+Flagship sizes are ranked in that order (Noah's call): CHRONIA is the largest country, Dealdesk the smallest flagship.
 
 Smaller (islands, city-states, small territories): citylayoutguessr, Flash Card Tool, 100 Architects of the Modern Era, Things to Do in New York City, Things to Do in Chicago, and, in place of a single "Miscellaneous" country, each entry on the current Miscellaneous page as its own: Expositions Magazine, Night of Ideas, Substack, UCGEO, Drill the canon, and Dragonfly Agency. That makes 18 countries.
 
-Dealdesk has provinces for its tools (Rollmap, Screener, Closebook, and LBOmatic), drawn with internal borders; search finds them, and clicking one opens Dealdesk's panel at that tool (builder's call, as the tools already have their own screenshots).
+Dealdesk has provinces for its tools (Rollmap, Screener, Closebook, and LBOmatic), drawn with internal borders; search finds them, and clicking one opens Dealdesk's panel at that tool (Noah's call).
 
 The list, each project's tier and rank, blurb, links, and media live in one data file the page reads. Blurbs and links come from the current `portfolio/index.html`, `projects/index.html`, `miscellaneous/index.html`, and `portfolio/<project>/` pages; screenshots from `art/web/materials/`.
 
