@@ -79,19 +79,31 @@ UI text uses the serial comma and `|` separators, never `·` or round bullets (r
 
 Flagship (large mainland countries): Dealdesk, CHRONIA, LoreTour, UCHRONIA, Fuzhounese Dictionary, Leggio, GREATERCIRCLE.
 
-Smaller (islands, city-states, small territories): citylayoutguessr, Flash Card Tool, 100 Architects of the Modern Era, Things to Do in New York City, Things to Do in Chicago, Miscellaneous.
+Flagship sizes are ranked in that order (Noah's call): Dealdesk is the largest country, GREATERCIRCLE the smallest flagship.
 
-The list, each project's tier, blurb, links, and media live in one data file the page reads, so adding a project is one entry. Blurbs and links come from the current `portfolio/index.html`, `projects/index.html`, and `portfolio/<project>/` pages; screenshots from `art/web/materials/`.
+Smaller (islands, city-states, small territories): citylayoutguessr, Flash Card Tool, 100 Architects of the Modern Era, Things to Do in New York City, Things to Do in Chicago, and, in place of a single "Miscellaneous" country, each entry on the current Miscellaneous page as its own: Expositions Magazine, Night of Ideas, Substack, UCGEO, Drill the canon, and Dragonfly Agency. That makes 18 countries.
+
+Dealdesk has provinces for its tools (Rollmap, Screener, Closebook, and LBOmatic), drawn with internal borders; search finds them, and clicking one opens Dealdesk's panel at that tool (builder's call, as the tools already have their own screenshots).
+
+The list, each project's tier and rank, blurb, links, and media live in one data file the page reads. Blurbs and links come from the current `portfolio/index.html`, `projects/index.html`, `miscellaneous/index.html`, and `portfolio/<project>/` pages; screenshots from `art/web/materials/`.
 
 ## The worlds
 
 Twenty, named by surname: Le Guin, Asimov, Butler, Herbert, Bradbury, Clarke, Dick, Heinlein, Gibson, Banks, Lem, Atwood, Jemisin, Delany, Vonnegut, Verne, Wells, Shelley, Tiptree, and Chiang.
 
+- **All land is project land** (Noah's call): no filler countries. Every landmass is divided among the projects, and the worlds are sized so 18 countries make a convincing world (seas, archipelagos, and a few large landmasses), not a crowd of slivers.
+- **Built to grow** (Noah's call): adding a project means adding an entry to the data file and rerunning the generator. Each world keeps a fixed seed and its parameters (land share, number of landmasses, country sizes from tier and rank) are derived from the project list, so the twenty worlds regenerate with the new country in them and keep their character.
 - **Generator:** a Node script in the repo, run by hand. It writes one compact vector file per world (coasts, lakes, rivers, country borders, label positions) and one soft relief image (mountains and forest shading).
 - **Countries:** grouped from small cells, sized and placed by tier. In each world the projects land in different places and shapes.
 - **Labels:** placed by the generator, inside their countries, without overlaps.
 - **Review:** all twenty are rendered and shown to Noah as contact sheets before the page uses them; any he dislikes is regenerated.
 - **Rotation:** a load shows the next world after the one this visitor last saw (stored in the browser); a first visit starts at a random one. `?world=<name>` opens a given world (used by Share).
+
+## The page shell (builder's calls)
+
+- The site's usual header is hidden on this page; the rail's ≡ button opens the site's existing menu (`menu.js`), which carries the theme switch.
+- The map follows the site's three themes (Orange, White, Night): one neutral relief image per world, tinted in the browser, with the palette in CSS variables per theme.
+- Within the 4× zoom, higher zoom shows towns, minor rivers, and Dealdesk's province names; the relief image is baked at twice the screen's resolution so it stays soft rather than blurry.
 
 ## Constraints
 
