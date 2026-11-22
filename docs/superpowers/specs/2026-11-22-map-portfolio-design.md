@@ -71,7 +71,13 @@ Noah's /projects and /portfolio pages become one page: a map of an imaginary wor
   - Clicking the world name moves to the next world without a reload.
   - Terms and Privacy link to `/terms/` and `/privacy/`; Site feedback opens the site's existing feedback form (`feedback.js`).
   - The scale bar updates with zoom, in invented distances.
-- **Phones:** the panel becomes a bottom sheet dragged up over the map, and the rail becomes a row in the sheet's header.
+- **Phones** (modelled on the reference's phone app, from Noah's screenshot of 22 November 2026):
+  - A full-screen map with a rounded search pill floating at the top ("Search projects"), with Noah's mark or portrait at its right end, opening About.
+  - Under it, a row of scrolling chips that highlight groups of countries (e.g. Maps, Language, Finance, Writing, and Clubs; the groups are Noah's to confirm).
+  - A round floating button at the right that switches to the next world (in place of the reference's layers button).
+  - A bottom sheet with a drag handle: collapsed it shows the world's name or the selected project's name; dragged up it shows the project panel.
+  - A bottom tab bar in place of the rail: Explore (the map), Saved, Resume, and About (with contact).
+  - The footer strip's links and scale bar move into the sheet's collapsed view and the map's corner.
 
 UI text uses the serial comma and `|` separators, never `·` or round bullets (repo CLAUDE.md).
 
