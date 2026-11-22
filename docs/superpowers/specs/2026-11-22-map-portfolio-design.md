@@ -73,7 +73,7 @@ Noah's /projects and /portfolio pages become one page: a map of an imaginary wor
   - The scale bar updates with zoom, in invented distances.
 - **Phones** (modelled on the reference's phone app, from Noah's screenshot of 22 November 2026):
   - A full-screen map with a rounded search pill floating at the top ("Search projects"), with Noah's mark or portrait at its right end, opening About.
-  - Under it, a row of scrolling chips that highlight groups of countries (e.g. Maps, Language, Finance, Writing, and Clubs; the groups are Noah's to confirm).
+  - No chips under the search pill (Noah's call).
   - A round floating button at the right that switches to the next world (in place of the reference's layers button).
   - A bottom sheet with a drag handle: collapsed it shows the world's name or the selected project's name; dragged up it shows the project panel.
   - A bottom tab bar in place of the rail: Explore (the map), Saved, Resume, and About (with contact).
