@@ -1,0 +1,31 @@
+[
+  { "id": "chronia", "name": "CHRONIA", "tier": "flagship", "rank": 1 },
+  { "id": "loretour", "name": "LoreTour", "tier": "flagship", "rank": 2 },
+  { "id": "uchronia", "name": "UCHRONIA", "tier": "flagship", "rank": 3 },
+  { "id": "fuzhounese", "name": "Fuzhounese Dictionary", "tier": "flagship", "rank": 4 },
+  { "id": "leggio", "name": "Leggio", "tier": "flagship", "rank": 5 },
+  { "id": "greatercircle", "name": "GREATERCIRCLE", "tier": "flagship", "rank": 6 },
+  {
+    "id": "dealdesk",
+    "name": "Dealdesk",
+    "tier": "flagship",
+    "rank": 7,
+    "provinces": [
+      { "id": "rollmap", "name": "Rollmap" },
+      { "id": "screener", "name": "Screener" },
+      { "id": "closebook", "name": "Closebook" },
+      { "id": "lbomatic", "name": "LBOmatic" }
+    ]
+  },
+  { "id": "citylayoutguessr", "name": "citylayoutguessr", "tier": "small" },
+  { "id": "flashcard", "name": "Flash Card Tool", "tier": "small" },
+  { "id": "architects", "name": "100 Architects of the Modern Era", "tier": "small" },
+  { "id": "nyc", "name": "Things to Do in New York City", "tier": "small" },
+  { "id": "chicago", "name": "Things to Do in Chicago", "tier": "small" },
+  { "id": "expositions", "name": "Expositions Magazine", "tier": "small" },
+  { "id": "night-of-ideas", "name": "Night of Ideas", "tier": "small" },
+  { "id": "substack", "name": "Substack", "tier": "small" },
+  { "id": "ucgeo", "name": "UCGEO", "tier": "small" },
+  { "id": "drill", "name": "Drill the canon", "tier": "small" },
+  { "id": "dragonfly", "name": "Dragonfly Agency", "tier": "small" }
+]
