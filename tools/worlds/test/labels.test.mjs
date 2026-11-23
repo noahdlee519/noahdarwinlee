@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildLand, buildNations, buildLabels } from '../world.mjs';
-import { labelsOverlap, labelRects } from '../labels.mjs';
+import { labelsOverlap, labelRects, waterStructure, enclosure, SEA_ENCLOSURE, WATER_SPACING } from '../labels.mjs';
 
 const projects = JSON.parse(readFileSync(new URL('../../../portfolio-map/projects.json', import.meta.url), 'utf8'));
 const W = 1600;
@@ -41,7 +41,7 @@ test('country labels sit inside their country', () => {
   });
 });
 test('water is named after the countries it touches, and no name repeats', () => {
-  const water = labels.filter((l) => ['ocean', 'sea', 'strait', 'lake', 'river'].includes(l.kind));
+  const water = labels.filter((l) => ['ocean', 'sea', 'gulf', 'bay', 'strait', 'lake', 'river'].includes(l.kind));
   assert.ok(water.some((l) => l.kind === 'river'), 'no river is named');
   const texts = water.map((l) => l.text);
   assert.equal(new Set(texts).size, texts.length, `a name repeats: ${texts.join(', ')}`);
@@ -59,6 +59,56 @@ test('water is named after the countries it touches, and no name repeats', () =>
     assert.ok(l.minZoom >= 2, `${l.text} shows before zoom 2`);
     assert.ok(Array.isArray(l.path) && l.path.length >= 2, `${l.text} has no line to follow`);
   }
-  for (const l of water.filter((x) => x.kind === 'lake')) assert.ok(/^Lake /.test(l.text), l.text);
-  for (const l of water.filter((x) => x.kind === 'ocean')) assert.ok(/ Ocean$/.test(l.text), l.text);
+  const forms = { lake: /^Lake /, ocean: / Ocean$/, sea: /^Sea of | Sea$/, gulf: /^Gulf of /, bay: / Bay$/, strait: / Strait$/ };
+  for (const l of water) if (forms[l.kind]) assert.ok(forms[l.kind].test(l.text), `${l.kind} named ${l.text}`);
+});
+
+// Water named by its shape, as an atlas names it.
+const structure = waterStructure(world.land, W, world.height);
+const seaLabels = labels.filter((l) => ['ocean', 'sea', 'gulf', 'bay', 'strait'].includes(l.kind));
+const pieceAt = (l) => {
+  const c = structure.comp[Math.floor(l.y) * W + Math.floor(l.x)];
+  return c >= 0 ? structure.pieces.find((p) => p.id === c) : null;
+};
+
+test('each ocean has exactly one name, and only a few oceans', () => {
+  const oceans = structure.pieces.filter((p) => p.kind === 'ocean');
+  assert.ok(oceans.length >= 1 && oceans.length <= 3, `${oceans.length} oceans`);
+  for (const p of oceans) {
+    const named = seaLabels.filter((l) => l.kind === 'ocean' && pieceAt(l) === p);
+    assert.equal(named.length, 1, `the ocean round ${p.x},${p.y} has ${named.length} names`);
+  }
+  for (const l of seaLabels.filter((x) => x.kind === 'ocean')) assert.equal(pieceAt(l)?.kind, 'ocean', `${l.text} is not in an ocean's open water`);
+});
+
+test('no other water name sits in an ocean’s open water', () => {
+  for (const l of seaLabels.filter((x) => x.kind !== 'ocean')) {
+    const p = pieceAt(l);
+    assert.ok(!p || p.kind === 'sea', `${l.text} sits in the open water of an ocean`);
+  }
+});
+
+test('seas only where land closes round the water', () => {
+  for (const l of seaLabels.filter((x) => x.kind === 'sea')) {
+    const p = pieceAt(l);
+    if (p) { assert.equal(p.kind, 'sea'); continue; }
+    const d = structure.dist[Math.floor(l.y) * W + Math.floor(l.x)];
+    const enc = enclosure(world.land, W, world.height, l.x, l.y, Math.min(4 * d + 60, 260));
+    assert.ok(enc.share >= SEA_ENCLOSURE, `${l.text} is in water only ${enc.share.toFixed(2)} closed in`);
+  }
+});
+
+test('water names show at their zooms, spaced apart, claiming water no other name claims', () => {
+  const zoom = { ocean: [1, 1], sea: [2, 4], gulf: [2, 4], bay: [3, 4], strait: [3, 4] };
+  for (const l of seaLabels) {
+    assert.ok(l.minZoom >= zoom[l.kind][0] && l.minZoom <= zoom[l.kind][1], `${l.text} (${l.kind}) shows from zoom ${l.minZoom}`);
+  }
+  const gap = (a, b) => { let dx = Math.abs(a.x - b.x); dx = Math.min(dx, W - dx); return Math.hypot(dx, a.y - b.y); };
+  for (let a = 0; a < seaLabels.length; a++) {
+    for (let b = a + 1; b < seaLabels.length; b++) {
+      const A = seaLabels[a], B = seaLabels[b];
+      if (A.kind === B.kind) assert.ok(gap(A, B) >= WATER_SPACING[A.kind], `${A.text} and ${B.text} are ${gap(A, B).toFixed(0)} apart`);
+      assert.ok(gap(A, B) >= (A.waterRadius || 0) + (B.waterRadius || 0), `${A.text} and ${B.text} claim the same water`);
+    }
+  }
 });

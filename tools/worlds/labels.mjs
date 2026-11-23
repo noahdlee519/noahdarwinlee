@@ -182,6 +182,123 @@ export function makeNamer(rng) {
 
 const zoomFor = (size, minPx) => clamp(Math.ceil(minPx / size - 1e-9), 1, 4);
 
+// ------------------------------------------------------- water structure --
+// Water is named as an atlas names it, by its shape: oceans are the great open
+// bodies, seas the basins land nearly closes round, gulfs and bays the coast's
+// indentations, straits the narrow channels. These measures decide which is which.
+
+// Open water lies at least this far (map units, at 1600 wide) from any shore;
+// where land narrows the open water below twice this, one ocean ends and
+// another begins.
+export const OPEN_WATER = 55;
+// A sea's basin: at least this share of the rays from its middle reach land.
+export const SEA_ENCLOSURE = 0.7;
+// A second or third ocean holds at least this share of all the open water.
+export const OCEAN_SHARE = 0.1;
+// The least distance between two water names of one kind (map units, at 1600 wide).
+export const WATER_SPACING = { ocean: 380, sea: 240, gulf: 170, bay: 120, strait: 120 };
+
+// Distance from each sea pixel to the nearest land, with the map wrapping east
+// and west and its top and bottom edges counting as shore (so the strips of
+// sea along them are not open water that joins every ocean to every other).
+export function seaDistance(land, W, H) {
+  const N = W * H, INF = 1e9, d = new Float32Array(N);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    d[i] = land[i] ? 0 : Math.min(INF, y + 1, H - y);
+  }
+  const A = 1, B = Math.SQRT2;
+  for (let pass = 0; pass < 2; pass++) {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (!d[i]) continue;
+      const xl = x > 0 ? x - 1 : W - 1, xr = x < W - 1 ? x + 1 : 0;
+      let v = d[i];
+      v = Math.min(v, d[y * W + xl] + A);
+      if (y > 0) v = Math.min(v, d[(y - 1) * W + x] + A, d[(y - 1) * W + xl] + B, d[(y - 1) * W + xr] + B);
+      d[i] = v;
+    }
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+      const i = y * W + x;
+      if (!d[i]) continue;
+      const xl = x > 0 ? x - 1 : W - 1, xr = x < W - 1 ? x + 1 : 0;
+      let v = d[i];
+      v = Math.min(v, d[y * W + xr] + A);
+      if (y < H - 1) v = Math.min(v, d[(y + 1) * W + x] + A, d[(y + 1) * W + xl] + B, d[(y + 1) * W + xr] + B);
+      d[i] = v;
+    }
+  }
+  return d;
+}
+
+// How closed in by land a point of water is: the share of `rays` rays that
+// meet land within `reach` (the map wraps east and west; past the top or
+// bottom is open), and how many separate openings the open rays make.
+export function enclosure(land, W, H, x, y, reach, rays = 32) {
+  const hit = [];
+  for (let k = 0; k < rays; k++) {
+    const a = (k / rays) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+    let h = 0;
+    for (let t = 2; t <= reach; t += 2) {
+      const qy = Math.floor(y + s * t);
+      if (qy < 0 || qy >= H) break;
+      const qx = ((Math.floor(x + c * t) % W) + W) % W;
+      if (land[qy * W + qx]) { h = 1; break; }
+    }
+    hit.push(h);
+  }
+  const share = hit.reduce((a, b) => a + b, 0) / rays;
+  let openings = 0;
+  for (let k = 0; k < rays; k++) if (!hit[k] && hit[(k + rays - 1) % rays]) openings++;
+  if (share === 0) openings = 1;
+  return { share, openings };
+}
+
+// The open water, in pieces: comp[i] is the piece a pixel of open water belongs
+// to (-1 elsewhere); each piece is an ocean, or a sea when land nearly closes
+// round it and it is not the largest. Pieces too small to be more than a
+// widening of a channel are left out.
+export function waterStructure(land, W, H) {
+  const S = W / 1600, N = W * H;
+  const dist = seaDistance(land, W, H);
+  const open = OPEN_WATER * S;
+  const comp = new Int32Array(N).fill(-1);
+  const stack = new Int32Array(N);
+  const pieces = [];
+  for (let s = 0; s < N; s++) {
+    if (land[s] || dist[s] < open || comp[s] >= 0) continue;
+    const id = pieces.length, px = [];
+    let top = 0, deep = s;
+    stack[top++] = s; comp[s] = id;
+    while (top) {
+      const i = stack[--top], x = i % W, y = (i / W) | 0;
+      px.push(i);
+      if (dist[i] > dist[deep] || (dist[i] === dist[deep] && i < deep)) deep = i;
+      const ns = [y * W + (x > 0 ? x - 1 : W - 1), y * W + (x < W - 1 ? x + 1 : 0), y > 0 ? i - W : -1, y < H - 1 ? i + W : -1];
+      for (const n of ns) if (n >= 0 && !land[n] && dist[n] >= open && comp[n] < 0) { comp[n] = id; stack[top++] = n; }
+    }
+    pieces.push({ id, area: px.length, deep, d: dist[deep], pixels: px });
+  }
+  const minArea = 2500 * S * S;
+  const kept = pieces.filter((p) => p.area >= minArea);
+  const keep = new Set(kept.map((p) => p.id));
+  for (const p of pieces) if (!keep.has(p.id)) for (const i of p.pixels) comp[i] = -1;
+  // An ocean is a large piece: the largest, and any other at least a tenth of
+  // all the open water (three at most). A smaller piece is a sea if land
+  // closes round it; otherwise it is an arm of the ocean beyond, unnamed.
+  let total = 0;
+  for (const p of kept) total += p.area;
+  const bySize = kept.slice().sort((a, b) => b.area - a.area || a.id - b.id);
+  const oceans = new Set(bySize.filter((p, k) => k === 0 || (k < 3 && p.area >= OCEAN_SHARE * total)).map((p) => p.id));
+  const out = kept.map((p) => {
+    const x = p.deep % W, y = (p.deep / W) | 0;
+    const enc = enclosure(land, W, H, x, y, Math.min(4 * p.d + 60 * S, 420 * S), 48);
+    const kind = oceans.has(p.id) && (p === bySize[0] || enc.share < SEA_ENCLOSURE) ? 'ocean' : enc.share >= SEA_ENCLOSURE ? 'sea' : 'arm';
+    return { id: p.id, area: p.area, x, y, d: p.d, pixels: p.pixels, kind, enclosure: enc.share };
+  });
+  return { dist, comp, pieces: out };
+}
+
 // placeLabels({ owner, provinces, projects, width, height, rng, extras })
 //   => [{ id, kind, text, lines, x, y, size, angle, spacing, minZoom, dot? }]
 // extras: { land, lakes, ranges, capitals, towns } for the seas, lakes,
@@ -459,7 +576,6 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     if (name.word) { usedWords.add(name.word); label.theme = name.theme; label.word = name.word; }
   };
   const SEA_FORMS = [(w) => `Sea of ${w}`, (w) => `${w} Sea`];
-  const GULF_FORMS = [(w) => `Gulf of ${w}`, (w) => `${w} Bay`];
 
   // Coast pixels, by owner, for finding whose coast a stretch of water washes.
   const coastPix = [];
@@ -489,63 +605,148 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
   };
   const isSea = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !land[Math.floor(y) * W + Math.floor(x)];
 
-  // ---- Seas and oceans: in open water, largest first. ----
-  let dSea = null;
+  // ---- Water, by its shape. ----
+  // Oceans: one name for each great open body, set large, from zoom 1.
+  // Seas: basins land nearly closes round, from zoom 2. Gulfs and bays: the
+  // coast's indentations, from zoom 2 and 3. Straits: narrow channels, from
+  // zoom 3. No other name sits in an ocean's open water, and no two water
+  // names claim overlapping water.
+  const waterAreas = []; // { x, y, r, kind } discs of water each name claims
+  const claimsClear = (x, y, r) => waterAreas.every((a) => {
+    let dx = Math.abs(a.x - x); dx = Math.min(dx, W - dx);
+    return Math.hypot(dx, a.y - y) >= a.r + r;
+  });
+  const SPACING = {};
+  for (const k in WATER_SPACING) SPACING[k] = WATER_SPACING[k] * S;
+  const spaced = (kind, x, y) => labels.every((l) => {
+    if (l.kind !== kind) return true;
+    let dx = Math.abs(l.x - x); dx = Math.min(dx, W - dx);
+    return Math.hypot(dx, l.y - y) >= SPACING[kind];
+  });
+  let structure = null;
   if (land) {
-    const water = new Int32Array(N);
-    for (let i = 0; i < N; i++) water[i] = land[i] ? 1 : 0;
-    dSea = insideDistance(water, W, H);
-    const spots = [];
-    const step = Math.round(12 * S);
-    for (let y = step; y < H - step; y += step) for (let x = step; x < W - step; x += step) {
-      const i = y * W + x;
-      if (land[i]) continue;
-      // The map's edge is not a shore, but lettering should not hang off it.
-      const d = Math.min(dSea[i], x - 30 * S, W - x - 30 * S, y - 16 * S, H - y - 16 * S);
-      if (d > 20 * S) spots.push({ x, y, d });
-    }
-    spots.sort((a, b) => b.d - a.d || a.y - b.y || a.x - b.x);
-    const taken = [];
-    let oceans = 0, seas = 0;
-    for (const s of spots) {
-      if (oceans + seas >= 9) break;
-      const ocean = s.d > 95 * S && oceans < 3;
-      const minGap = ocean ? 380 * S : 190 * S;
-      if (taken.some((t) => Math.hypot(t.x - s.x, t.y - s.y) < (t.ocean && ocean ? 460 * S : minGap))) continue;
-      // Whose water: the longest coast near it; an ocean takes the largest flagship on its shores.
-      const counts = shoreCounts(s.x, s.y, ocean ? s.d * 2.6 + 80 * S : s.d * 2.2 + 40 * S);
+    structure = waterStructure(land, W, H);
+    const { dist, comp, pieces } = structure;
+    const fitsOnWater = (label, pad) => labelRects(label, pad).every((rc) => samples(rc, 3).every(([px, py]) => isSea(px, py)));
+
+    // Whose coast each piece of open water washes: shores within reach of it.
+    const shoreOf = (piece, reach) => {
+      const counts = new Map();
+      const R = reach;
+      for (const i of coastPix) {
+        const x = i % W, y = (i / W) | 0;
+        // The nearest open water of this piece within reach, by a few probes.
+        let near = false;
+        for (let k = 0; k < 12 && !near; k++) {
+          const a = (k / 12) * Math.PI * 2;
+          for (let t = 4; t <= R; t += 6) {
+            const qy = Math.floor(y + Math.sin(a) * t);
+            if (qy < 0 || qy >= H) break;
+            const qx = ((Math.floor(x + Math.cos(a) * t) % W) + W) % W, q = qy * W + qx;
+            if (land[q]) break;
+            if (comp[q] === piece.id) { near = true; break; }
+          }
+        }
+        if (near) counts.set(owner[i], (counts.get(owner[i]) || 0) + 1);
+      }
+      return counts;
+    };
+
+    // Oceans and enclosed basins with open water of their own: the largest first.
+    const order = pieces.slice().sort((a, b) => b.area - a.area || a.id - b.id);
+    for (const piece of order) {
+      if (piece.kind === 'arm') continue;
+      const ocean = piece.kind === 'ocean';
+      const counts = shoreOf(piece, 90 * S);
       let who = mostShore(counts);
       if (ocean) {
         let best = -1;
-        for (const [o, v] of counts) if (projects[o].tier === 'flagship' && v > 8 * S && (best < 0 || area[o] > area[best])) best = o;
+        for (const [o, v] of counts) if (projects[o].tier === 'flagship' && v > 10 * S && (best < 0 || area[o] > area[best])) best = o;
         if (best >= 0) who = best;
       }
-      // Hemmed in by land: a gulf or a bay; open: a sea.
-      let hits = 0;
-      const reach = s.d * 3 + 50 * S;
-      for (let k = 0; k < 24; k++) {
-        const a = (k / 24) * Math.PI * 2;
-        for (let t = s.d; t <= reach; t += 4 * S) {
-          const qx = Math.floor(s.x + Math.cos(a) * t), qy = Math.floor(s.y + Math.sin(a) * t);
-          if (qx < 0 || qy < 0 || qx >= W || qy >= H) break;
-          if (land[qy * W + qx]) { hits++; break; }
+      const name = waterName(who, 'water', ocean ? [(w) => `${w} Ocean`] : SEA_FORMS);
+      const text = name.text;
+      // Spots inside the piece, deepest first.
+      // (Near the map's east or west edge a name would be cut by the seam, so
+      // those spots fail the fit and the next deepest is tried.)
+      // Deep water first, but away from the seam: the name of an ocean that
+      // runs across the map's edge belongs on the open water seen at the start.
+      const keyOf = (i) => Math.min(dist[i], Math.min(i % W, W - (i % W)) * 0.9);
+      const spots = piece.pixels.filter((i) => (i % W) % 4 === 0 && ((i / W) | 0) % 4 === 0).sort((a, b) => keyOf(b) - keyOf(a) || a - b).slice(0, 5000);
+      for (const i of spots) {
+        const x = (i % W) + 0.5, y = ((i / W) | 0) + 0.5, d = dist[i];
+        const size = ocean ? clamp(d / 6.5, 12 * S, 17 * S) : clamp(d / 4.5, 5.6 * S, 9.5 * S);
+        const spacing = ocean ? 0.3 : 0.14;
+        const options = ocean || lineWidth(text, spacing) * size > d * 1.9 ? [lineBreaks(text)[1] || [text], [text]] : [[text], lineBreaks(text)[1] || [text]];
+        let done = false;
+        for (const lines of options) {
+          const label = { id: `${ocean ? 'ocean' : 'sea'}-${labels.length}`, kind: ocean ? 'ocean' : 'sea', text, lines, x, y, size, angle: 0, spacing, minZoom: ocean ? 1 : Math.max(2, zoomFor(size, 9.8)) };
+          if (!fitsOnWater(label, 3 * S) || !clearOf(labelRects(label, 3 * S))) continue;
+          if (!spaced(label.kind, x, y)) continue;
+          claim(label, name);
+          commit(label, 2 * S);
+          label.waterRadius = ocean ? 0 : Math.round(d * 12) / 10;
+          waterAreas.push({ x, y, r: label.waterRadius, kind: label.kind });
+          done = true;
+          break;
+        }
+        if (done) break;
+      }
+    }
+    // Nothing else is named in an ocean's open water.
+    const inOcean = (x, y) => {
+      const c = comp[Math.floor(y) * W + Math.floor(x)];
+      return c >= 0 && pieces.find((p) => p.id === c).kind !== 'sea';
+    };
+
+    // Seas without open water of their own, gulfs, and bays: points of water
+    // closed in by land, judged at the scale of their distance from the shore.
+    const cands = [];
+    const step = Math.max(3, Math.round(6 * S));
+    for (let y = step; y < H - step; y += step) for (let x = 0; x < W; x += step) {
+      const i = y * W + x;
+      if (land[i] || (lakes && lakes[i]) || comp[i] >= 0) continue;
+      const d = dist[i];
+      if (d < 5 * S) continue;
+      cands.push({ x: x + 0.5, y: y + 0.5, d });
+    }
+    cands.sort((a, b) => b.d - a.d || a.y - b.y || a.x - b.x);
+    let nSea = labels.filter((l) => l.kind === 'sea').length, nGulf = 0, nBay = 0;
+    for (const c of cands) {
+      if (nSea >= 4 && nGulf >= 5 && nBay >= 8) break;
+      let kind = null, r = 0;
+      if (c.d >= 22 * S && nSea < 4) {
+        const enc = enclosure(land, W, H, c.x, c.y, Math.min(4 * c.d + 60 * S, 260 * S));
+        if (enc.share >= SEA_ENCLOSURE + 0.08 && enc.openings <= 3) { kind = 'sea'; r = c.d * 1.2; }
+      }
+      if (!kind && c.d <= 26 * S) {
+        const enc = enclosure(land, W, H, c.x, c.y, 5 * c.d + 30 * S);
+        if (enc.share >= 0.6 && enc.openings === 1) {
+          kind = c.d >= 12 * S ? 'gulf' : 'bay';
+          r = c.d * 1.4;
+          if ((kind === 'gulf' && nGulf >= 5) || (kind === 'bay' && nBay >= 8)) kind = null;
         }
       }
-      const name = waterName(who, 'water', ocean ? [(w) => `${w} Ocean`] : hits >= 16 ? GULF_FORMS : SEA_FORMS);
-      const text = name.text;
-      const size = ocean ? clamp(s.d / 7.5, 12 * S, 17 * S) : clamp(s.d / 5.2, 5.2 * S, 10.5 * S);
-      const spacing = ocean ? 0.3 : 0.12;
-      const options = ocean || lineWidth(text, spacing) * size > s.d * 1.9 ? [lineBreaks(text)[1] || [text], [text]] : [[text], lineBreaks(text)[1] || [text]];
-      for (const lines of options) {
-        const label = { id: `sea-${labels.length}`, kind: ocean ? 'ocean' : 'sea', text, lines, x: s.x, y: s.y, size, angle: 0, spacing, minZoom: zoomFor(size, 9.8) };
-        const rects = labelRects(label, 3 * S);
-        const onWater = rects.every((rc) => samples(rc, 3).every(([px, py]) => isSea(px, py)));
-        if (!onWater || !clearOf(rects)) continue;
-        claim(label, name);
-        commit(label, 2 * S);
-        taken.push({ x: s.x, y: s.y, ocean });
-        if (ocean) oceans++; else seas++;
-        break;
+      if (!kind || inOcean(c.x, c.y) || !claimsClear(c.x, c.y, r) || !spaced(kind, c.x, c.y)) continue;
+      const who = mostShore(shoreCounts(c.x, c.y, c.d * 2.5 + 30 * S));
+      const forms = kind === 'sea' ? SEA_FORMS : kind === 'gulf' ? [(w) => `Gulf of ${w}`] : [(w) => `${w} Bay`];
+      const name = waterName(who, 'water', forms);
+      const base = kind === 'sea' ? clamp(c.d / 4.5, 5.6 * S, 9 * S) : kind === 'gulf' ? 4.9 * S : 3.7 * S;
+      const zoom0 = kind === 'bay' ? 3 : 2;
+      let placed = false;
+      for (const size of [base, base * 0.85]) {
+        for (const lines of [[name.text], lineBreaks(name.text)[1] || [name.text]]) {
+          const label = { id: `${kind}-${labels.length}`, kind, text: name.text, lines, x: c.x, y: c.y, size, angle: 0, spacing: kind === 'bay' ? 0.06 : 0.1, minZoom: Math.max(zoom0, zoomFor(size, 9.8)) };
+          if (!fitsOnWater(label, 1.2 * S) || !clearOf(labelRects(label, 1.5 * S))) continue;
+          claim(label, name);
+          commit(label, 1.5 * S);
+          label.waterRadius = r;
+          waterAreas.push({ x: c.x, y: c.y, r, kind });
+          if (kind === 'sea') nSea++; else if (kind === 'gulf') nGulf++; else nBay++;
+          placed = true;
+          break;
+        }
+        if (placed) break;
       }
     }
 
@@ -560,39 +761,42 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       }
       return Infinity;
     };
-    const cands = [];
+    const straitCands = [];
     const sStep = Math.max(2, Math.round(4 * S));
     for (let y = 20; y < H - 20; y += sStep) for (let x = 30; x < W - 30; x += sStep) {
       const i = y * W + x;
-      if (land[i] || (lakes && lakes[i]) || dSea[i] < 3 * S || dSea[i] > 15 * S) continue;
-      const half = dSea[i];
+      if (land[i] || (lakes && lakes[i]) || dist[i] < 3 * S || dist[i] > 15 * S) continue;
+      const half = dist[i];
       for (let k = 0; k < DIRS / 2; k++) {
         const a = reachLand(x, y, k, half * 2.6 + 4), b = reachLand(x, y, k + DIRS / 2, half * 2.6 + 4);
         if (a === Infinity || b === Infinity) continue;
         const p = (k + DIRS / 4) % DIRS, q = (p + DIRS / 2) % DIRS;
         if (reachLand(x, y, p, 55 * S) !== Infinity || reachLand(x, y, q, 55 * S) !== Infinity) continue;
-        cands.push({ x, y, width: a + b, along: p });
+        straitCands.push({ x, y, width: a + b, along: p });
         break;
       }
     }
-    cands.sort((a, b) => a.width - b.width || a.y - b.y || a.x - b.x);
-    const straits = [];
-    for (const c of cands) {
-      if (straits.length >= 4) break;
-      if (straits.some((t) => Math.hypot(t.x - c.x, t.y - c.y) < 160 * S)) continue;
+    straitCands.sort((a, b) => a.width - b.width || a.y - b.y || a.x - b.x);
+    let nStrait = 0;
+    for (const c of straitCands) {
+      if (nStrait >= 4) break;
+      const cx = c.x + 0.5, cy = c.y + 0.5;
+      if (!spaced('strait', cx, cy) || !claimsClear(cx, cy, c.width / 2)) continue;
       let ang = (Math.atan2(sinD[c.along], cosD[c.along]) * 180) / Math.PI;
       if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
       if (Math.abs(ang) > 75) continue;
       const who = mostShore(shoreCounts(c.x, c.y, 30 * S));
       const name = waterName(who, 'water', [(w) => `${w} Strait`]);
-      for (const size of [4.4 * S, 3.6 * S, 3 * S]) {
-        const label = { id: `strait-${labels.length}`, kind: 'strait', text: name.text, lines: [name.text], x: c.x + 0.5, y: c.y + 0.5, size, angle: Math.round(ang), spacing: 0.1, minZoom: Math.max(2, zoomFor(size, 9.8)) };
+      for (const size of [3.8 * S, 3.3 * S]) {
+        const label = { id: `strait-${labels.length}`, kind: 'strait', text: name.text, lines: [name.text], x: cx, y: cy, size, angle: Math.round(ang), spacing: 0.1, minZoom: Math.max(3, zoomFor(size, 9.8)) };
         const rects = labelRects(label, 0.8 * S);
         if (!rects.every((rc) => samples(rc, 2).every(([px, py]) => isSea(px, py)))) continue;
         if (!clearOf(rects)) continue;
         claim(label, name);
         commit(label, 1.2 * S);
-        straits.push(c);
+        label.waterRadius = c.width / 2;
+        waterAreas.push({ x: cx, y: cy, r: c.width / 2, kind: 'strait' });
+        nStrait++;
         break;
       }
     }

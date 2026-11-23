@@ -45,7 +45,7 @@ export function worldSvg(data, pngBuffer, zoom = 1) {
   for (const l of data.labels) {
     if (l.minZoom > zoom) continue;
     const lines = l.lines || [l.text];
-    const water = l.kind === 'sea' || l.kind === 'ocean' || l.kind === 'lake' || l.kind === 'strait' || l.kind === 'river';
+    const water = ['sea', 'ocean', 'gulf', 'bay', 'lake', 'strait', 'river'].includes(l.kind);
     const fill = water ? '#3c8ea1' : l.kind === 'range' ? '#6b6f72' : l.kind === 'province' ? P.province : P.label;
     const weight = l.kind === 'country' ? 600 : l.kind === 'capital' ? 600 : 500;
     const style = water ? ' font-style="italic"' : '';
@@ -92,9 +92,14 @@ function loadWorld(dir, slug) {
 export function renderWorld(dir, slug, { zoom = 1, cx, cy, widthPx = 1600 } = {}) {
   const { data, png } = loadWorld(dir, slug);
   const vw = data.width / zoom, vh = data.height / zoom;
-  const x0 = Math.min(Math.max(0, (cx ?? data.width / 2) - vw / 2), data.width - vw);
+  // The world wraps east and west, as the page's does: a view across the seam
+  // shows the next copy of the world.
+  const x0 = (cx ?? data.width / 2) - vw / 2;
   const y0 = Math.min(Math.max(0, (cy ?? data.height / 2) - vh / 2), data.height - vh);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${vw} ${vh}" width="${widthPx}" height="${widthPx / 2}">${worldSvg(data, png, zoom)}</svg>`;
+  const inner = worldSvg(data, png, zoom);
+  const copies = [-data.width, 0, data.width].filter((o) => x0 < o + data.width && x0 + vw > o);
+  const body = copies.map((o) => (o ? `<g transform="translate(${o} 0)">${inner}</g>` : inner)).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${vw} ${vh}" width="${widthPx}" height="${widthPx / 2}">${body}</svg>`;
   return renderSvg(svg, widthPx);
 }
 

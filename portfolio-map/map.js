@@ -124,10 +124,10 @@
   // ---------------------------------------------------------------- the map
 
   // Each kind of label's smallest and largest size on screen, in pixels.
-  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, capital: 11.5, province: 11, range: 10.5, lake: 11, strait: 10.5, river: 11, town: 11 };
-  var LABEL_CAP = { country: 34, ocean: 24, sea: 16, capital: 14, province: 15, range: 14, lake: 15, strait: 13, river: 13.5, town: 12.5 };
-  var LABEL_RANK = { ocean: 40, sea: 50, province: 52, capital: 60, range: 70, lake: 75, strait: 80, river: 85, town: 90 };
-  var WATER = { sea: 1, ocean: 1, lake: 1, strait: 1, river: 1 };
+  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, province: 11, range: 10.5, lake: 11, strait: 10.5, river: 11, town: 11 };
+  var LABEL_CAP = { country: 34, ocean: 24, sea: 16, gulf: 14, bay: 13, capital: 14, province: 15, range: 14, lake: 15, strait: 13, river: 13.5, town: 12.5 };
+  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, range: 70, lake: 75, bay: 78, strait: 80, river: 85, town: 90 };
+  var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, river: 1 };
 
   function MapView(host) {
     this.host = host;
