@@ -547,6 +547,16 @@
   }
 
   document.addEventListener("keydown", function (event) {
+    if (event.key === "/" && el.search && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const t = document.activeElement;
+      if (!t || !/^(input|textarea|select)$/i.test(t.tagName) && !t.isContentEditable) {
+        event.preventDefault();
+        if (openId) closePost();
+        el.search.focus();
+        el.search.select();
+        return;
+      }
+    }
     if (event.key !== "Escape") return;
     const typing =
       document.activeElement &&

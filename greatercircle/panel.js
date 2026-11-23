@@ -467,7 +467,17 @@
       layoutSoon();
     }
     document.querySelectorAll(".gc-opt-chip").forEach(function (c) {
-      c.addEventListener("click", function () { setOptions(ui.options.hidden || !c.classList.contains("is-open"), c); });
+      c.addEventListener("click", function () {
+        if (c.dataset.opt === "units") {
+          var order = ["km", "mi", "nmi"], next = order[(order.indexOf(state.units) + 1) % order.length];
+          var radio = ui.options.querySelector("input[name=units][value=" + next + "]");
+          if (radio) { radio.checked = true; radio.dispatchEvent(new Event("change", { bubbles: true })); }
+          c.setAttribute("aria-label", "Units: " + next + ". Click for " + order[(order.indexOf(next) + 1) % order.length]);
+          ui.status.textContent = "Distances in " + ({ km: "kilometres", mi: "miles", nmi: "nautical miles" })[next];
+          return;
+        }
+        setOptions(ui.options.hidden || !c.classList.contains("is-open"), c);
+      });
     });
     $("options-done").addEventListener("click", function (e) { setOptions(false, null, e.detail === 0); });
     ui.options.addEventListener("keydown", function (e) {

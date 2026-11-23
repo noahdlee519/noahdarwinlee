@@ -379,6 +379,58 @@ body.gc-page {
   line-height: 1;
   cursor: pointer;
 }
+.gc-undo {
+  position: fixed;
+  z-index: 30;
+  left: calc(var(--page-left) + 436px + (100vw - var(--page-left) - 436px) / 2);
+  bottom: 76px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  background: var(--gc-card);
+  color: var(--gc-text);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
+  font-size: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.gc-undo.is-shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.gc-undo[hidden] {
+  display: none;
+}
+.gc-undo button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gc-btn-bg);
+  color: var(--gc-btn-ink);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.gc-undo button:focus-visible {
+  outline: 2px solid var(--gc-focus-ring);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .gc-undo {
+    left: 50%;
+    bottom: auto;
+    top: calc(max(12px, env(safe-area-inset-top, 0px) + 6px) + 60px);
+  }
+}
+.gc-example-last {
+  background: var(--gc-sel-bg);
+  color: var(--gc-sel-ink);
+}
 .gc-map-fade {
   position: fixed;
   left: 0;
