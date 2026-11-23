@@ -147,10 +147,11 @@
   function terrain(id) {
     var w = state.world, sh = state.shapes[id], b = sh.box;
     var water = 'style="fill: var(--m-water)"';
-    var pad = Math.max(b.w, b.h) * 0.35 + 12, ratio = 16 / 10;
-    var vw = Math.max(b.w + pad * 2, (b.h + pad * 2) * ratio), vh = vw / ratio;
-    // Framed a little low, clear of the search box that floats over the top of the panel.
-    var x = b.x + b.w / 2 - vw / 2, y = b.y + b.h / 2 - vh * (isPhone() ? 0.5 : 0.62);
+    // The country fills about half the picture's height, with room under it for its name; on a desktop it sits
+    // a little low, clear of the search box that floats over the top of the panel.
+    var ratio = 16 / 10, phone = isPhone();
+    var vw = Math.max(b.w / 0.62, (b.h / (phone ? 0.5 : 0.38)) * ratio, 60), vh = vw / ratio;
+    var x = b.x + b.w / 2 - vw / 2, y = b.y + b.h / 2 - vh * (phone ? 0.42 : 0.55);
     var proj = w.projects.filter(function (p) { return p.id === id; })[0];
     var px = vw / 408;
     return '<svg class="terrain" viewBox="' + [x, y, vw, vh].map(function (n) { return n.toFixed(1); }).join(" ") + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
@@ -162,7 +163,22 @@
       '<path d="M-4800 -2400H6400V3200H-4800Z' + proj.path + '" style="fill: var(--m-halo)" fill-opacity="0.28" fill-rule="evenodd" />' +
       '<path d="' + w.borders + '" style="fill: none; stroke: var(--m-border)" stroke-width="' + (1 * px).toFixed(2) + '" />' +
       '<path d="' + proj.path + '" style="fill: #e68019; stroke: var(--m-sel-ink)" fill-opacity="0.14" stroke-width="' + (1.75 * px).toFixed(2) + '" stroke-linejoin="round" />' +
+      terrainName(id, b, px, x, y, vw, vh) +
       "</svg>";
+  }
+
+  // The country's name, set in the map's lettering across its own land.
+  function terrainName(id, b, px, x, y, vw, vh) {
+    var l = state.world.labels.filter(function (q) { return q.kind === "country" && q.id === id; })[0];
+    var lines = l && l.lines ? l.lines : [state.byId[id].name];
+    var longest = Math.max.apply(null, lines.map(function (s) { return s.length; }));
+    var sizePx = Math.min(22, 330 / (longest * 0.62 + 1));
+    var fs = sizePx * px, spacing = (l && l.spacing ? l.spacing : 0.1) * fs;
+    // Under the country, as a caption on the map; never off the picture.
+    var cx = Math.min(Math.max(b.x + b.w / 2, x + vw * 0.2), x + vw * 0.8);
+    var cy = Math.min(b.y + b.h + fs * (0.9 + (lines.length - 1) * 0.55), y + vh - fs * (0.6 + (lines.length - 1) * 1.1));
+    return '<text class="terrain-name" x="' + cx.toFixed(1) + '" y="' + cy.toFixed(1) + '" font-size="' + fs.toFixed(2) + '" letter-spacing="' + spacing.toFixed(2) + '" stroke-width="' + (fs * 0.22).toFixed(2) + '" text-anchor="middle">' +
+      lines.map(function (s, k) { return '<tspan x="' + cx.toFixed(1) + '" dy="' + (k ? 1.1 * fs : (0.35 - (lines.length - 1) * 0.55) * fs).toFixed(2) + '">' + esc(s) + "</tspan>"; }).join("") + "</text>";
   }
 
   function capitalOf(id) {
@@ -179,28 +195,55 @@
 
   // ------------------------------------------------------------------ the panel's views
 
-  function mediaBlock(media, label, id) {
-    if (!media || !media.length) {
-      return '<div class="hero hero-terrain">' + terrain(id) + "</div>";
-    }
+  // A project's pictures come from its "media" list in projects.json: { src, alt, caption }, or { video, poster,
+  // alt, caption }, with srcset where there are several sizes. The one marked "cover": true (or else the first
+  // still) heads the panel; with more than one, all of them follow in "Photos and videos". A project with none
+  // shows its own piece of the map instead, so adding screenshots later means only filling in that list.
+  function coverOf(media) {
+    return media.filter(function (m) { return m.cover; })[0] || media.filter(function (m) { return !m.video; })[0] || media[0];
+  }
+  function countLabel(media) {
+    var v = media.filter(function (m) { return m.video; }).length, ph = media.length - v, parts = [];
+    if (ph) parts.push(ph + (ph === 1 ? " photo" : " photos"));
+    if (v) parts.push(v + (v === 1 ? " video" : " videos"));
+    return parts.join(" and ");
+  }
+  function topPicture(media, id) {
+    if (!media || !media.length) return '<div class="hero hero-terrain">' + terrain(id) + "</div>";
+    var m = coverOf(media), src = m.video ? m.poster : m.src;
+    var h = '<figure class="hero hero-photo">' +
+      '<img src="' + esc(src) + '"' + (m.srcset && !m.video ? ' srcset="' + esc(m.srcset) + '" sizes="(max-width: 759px) 100vw, 408px"' : "") +
+      ' alt="' + esc(m.alt) + '" decoding="async" fetchpriority="high" />';
+    if (media.length > 1) h += '<button class="hero-more" type="button" data-photos>' + icon("i-photos") + "<span>" + countLabel(media) + "</span></button>";
+    h += "</figure>";
+    if (media.length === 1 && m.caption) h += '<p class="caption">' + esc(m.caption) + "</p>";
+    return h;
+  }
+  function gallery(media, label) {
+    if (!media || media.length < 2) return "";
     var slides = media.map(function (m, i) {
       var inner;
       if (m.video) {
         inner = '<video src="' + esc(m.video) + '" poster="' + esc(m.poster) + '" muted loop playsinline preload="none" aria-label="' + esc(m.alt) + '"></video>';
       } else {
-        inner = '<img src="' + esc(m.src) + '"' + (m.srcset ? ' srcset="' + esc(m.srcset) + '" sizes="(max-width: 759px) 100vw, 408px"' : "") +
-          ' alt="' + esc(m.alt) + '" decoding="async"' + (i ? ' loading="lazy"' : ' fetchpriority="high"') + " />";
+        inner = '<img src="' + esc(m.src) + '"' + (m.srcset ? ' srcset="' + esc(m.srcset) + '" sizes="(max-width: 759px) 100vw, 360px"' : "") +
+          ' alt="' + esc(m.alt) + '" decoding="async" loading="lazy" />';
       }
       return '<figure class="slide" role="group" aria-roledescription="slide" aria-label="' + (i + 1) + " of " + media.length + '" data-cap="' + esc(m.caption || "") + '">' + inner + "</figure>";
     }).join("");
-    var many = media.length > 1;
-    return '<section class="hero' + (many ? " is-many" : "") + '" aria-roledescription="carousel" aria-label="' + esc(label) + '">' +
-      '<div class="track" tabindex="0" aria-label="' + esc(label) + (many ? "; use the arrow keys to move between them" : "") + '">' + slides + "</div>" +
-      (many ? '<button class="hero-arrow hero-prev" type="button" aria-label="Previous picture" disabled>' + icon("i-left") + "</button>" +
-        '<button class="hero-arrow hero-next" type="button" aria-label="Next picture">' + icon("i-right") + "</button>" +
-        '<span class="hero-count" aria-live="polite">1 / ' + media.length + "</span>" : "") +
-      "</section>" +
-      '<p class="caption">' + esc(media[0].caption || "") + "</p>";
+    return '<section class="block photos" id="photos"><h3 class="block-title">Photos and videos</h3>' +
+      '<div class="gallery" aria-roledescription="carousel" aria-label="' + esc(label) + '">' +
+      '<div class="track" tabindex="0" aria-label="' + esc(label) + '; use the arrow keys to move between them">' + slides + "</div>" +
+      '<button class="hero-arrow hero-prev" type="button" aria-label="Previous picture" disabled>' + icon("i-left") + "</button>" +
+      '<button class="hero-arrow hero-next" type="button" aria-label="Next picture">' + icon("i-right") + "</button>" +
+      '<span class="hero-count" aria-live="polite">1 / ' + media.length + "</span></div>" +
+      '<p class="caption">' + esc(media[0].caption || "") + "</p></section>";
+  }
+
+  // A list's row: the name, a line on what the project is, and its address.
+  function rowText(name, tagline, link) {
+    return '<span class="row-text"><b>' + esc(name) + "</b>" + (tagline ? '<span class="row-line">' + esc(tagline) + "</span>" : "") +
+      '<span class="row-link">' + esc(link) + "</span></span>";
   }
 
   function actions(p, province) {
@@ -220,7 +263,7 @@
     var waters = watersOf(p);
     var h = "";
     var media = prov ? prov.media : p.media;
-    h += mediaBlock(media, "Pictures of " + (prov ? prov.name : p.name), id);
+    h += topPicture(media, id);
     h += '<header class="head">';
     if (prov) h += '<button class="crumb" type="button" data-open="' + id + '">' + icon("i-left") + "<span>" + esc(p.name) + "</span></button>";
     h += '<h2 class="title" tabindex="-1">' + esc(prov ? prov.name : p.name) + "</h2>";
@@ -232,9 +275,10 @@
       h += '<section class="block"><h3 class="block-title">Provinces</h3><ul class="rows">' + p.provinces.map(function (v) {
         return '<li><button class="row" type="button" data-open="' + id + '" data-province="' + v.id + '">' +
           '<img class="row-thumb" src="' + esc(v.media[0].src) + '" alt="" loading="lazy" decoding="async" />' +
-          '<span class="row-text"><b>' + esc(v.name) + "</b><span>" + esc(v.blurb) + "</span></span>" + icon("i-right", "row-go") + "</button></li>";
+          rowText(v.name, v.tagline, p.domain) + icon("i-right", "row-go") + "</button></li>";
       }).join("") + "</ul></section>";
     }
+    h += gallery(media, "Photos and videos of " + (prov ? prov.name : p.name));
     if (!prov) (p.sections || []).forEach(function (s) {
       h += '<section class="block"><h3 class="block-title">' + esc(s.title) + "</h3>" + s.paragraphs.map(function (x) { return "<p>" + esc(x) + "</p>"; }).join("") +
         (s.chips ? '<ul class="chips">' + s.chips.map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("") + "</ul>" : "") + "</section>";
@@ -258,7 +302,7 @@
 
   function rowFor(p) {
     return '<li><button class="row" type="button" data-open="' + p.id + '">' + glyph(p.id) +
-      '<span class="row-text"><b>' + esc(p.name) + "</b><span>" + esc(p.domain) + "</span></span>" +
+      rowText(p.name, p.tagline, p.domain) +
       (isSaved(p.id) ? '<span class="row-heart" aria-label="Saved">' + icon("i-heart") + "</span>" : "") + "</button></li>";
   }
 
@@ -383,8 +427,8 @@
   // ------------------------------------------------------------------ the panel's controls
 
   function bindPanel() {
-    var hero = $(".hero.is-many", els.panelBody) || $(".hero:not(.hero-terrain)", els.panelBody);
-    if (hero) carousel(hero);
+    var g = $(".gallery", els.panelBody);
+    if (g) carousel(g);
   }
 
   function carousel(hero) {
@@ -426,8 +470,17 @@
 
   // One listener for everything clickable in the panel, the peek, and the strip.
   document.addEventListener("click", function (e) {
-    var t = e.target.closest("[data-open],[data-save],[data-share],[data-copy],[data-next-world],[data-feedback],[data-close]");
+    var t = e.target.closest("[data-open],[data-save],[data-share],[data-copy],[data-next-world],[data-feedback],[data-close],[data-photos]");
     if (!t) return;
+    if (t.hasAttribute("data-photos")) {
+      var ph = $("#photos");
+      if (!ph) return;
+      if (isPhone() && state.sheet !== "full") setSheet("full");
+      ph.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+      var tr = $(".track", ph);
+      if (tr) tr.focus({ preventScroll: true });
+      return;
+    }
     if (t.hasAttribute("data-open")) {
       open("project", { id: t.getAttribute("data-open"), province: t.getAttribute("data-province"), focus: e.detail === 0 });
     } else if (t.hasAttribute("data-save")) {
@@ -476,9 +529,8 @@
       els.list.innerHTML = '<li class="search-none" role="presentation">No project by that name. Try another word, or browse the map.</li>';
     } else {
       els.list.innerHTML = results.map(function (r, i) {
-        var sub = r.v ? "Province of " + r.p.name : (r.p.tier === "flagship" ? "Country" : "Small state") + " | " + r.p.domain;
         return '<li role="option" id="opt-' + i + '" class="search-opt" aria-selected="' + (i === active) + '" data-i="' + i + '">' + glyph(r.p.id) +
-          '<span class="row-text"><b>' + esc(r.v ? r.v.name : r.p.name) + "</b><span>" + esc(sub) + "</span></span></li>";
+          rowText(r.v ? r.v.name : r.p.name, r.v ? r.v.tagline : r.p.tagline, r.p.domain) + "</li>";
       }).join("");
     }
     els.list.hidden = false;

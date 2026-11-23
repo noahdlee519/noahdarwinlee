@@ -862,9 +862,9 @@ a {
 
 .search-opt {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
-  padding: 7px 18px;
+  padding: 9px 18px 10px;
   cursor: pointer;
 }
 
@@ -923,12 +923,28 @@ a {
   white-space: nowrap;
 }
 
-.row-text span {
+/* A row: the name, a line on what the project is (wrapping as it needs), and the address. */
+.row-line {
+  margin-top: 2px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.38;
+  text-wrap: pretty;
+}
+
+.row-link {
   overflow: hidden;
+  margin-top: 3px;
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: 12.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.search-opt .glyph,
+.row .glyph,
+.row .row-thumb {
+  margin-top: 2px;
 }
 
 /* ---------------------------------------------------------------- panel (desktop) */
@@ -1042,7 +1058,7 @@ body:not(.is-panel) .panel-tab .ic {
   outline: none;
 }
 
-.hero:has(.track:focus-visible)::after {
+.gallery:has(.track:focus-visible)::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1115,12 +1131,12 @@ body:not(.is-panel) .panel-tab .ic {
   stroke-width: 2;
 }
 
-.hero:hover .hero-arrow,
+.gallery:hover .hero-arrow,
 .hero-arrow:focus-visible {
   opacity: 1;
 }
 
-.hero .hero-arrow:disabled {
+.gallery .hero-arrow:disabled {
   opacity: 0;
   pointer-events: none;
 }
@@ -1152,8 +1168,84 @@ body:not(.is-panel) .panel-tab .ic {
   line-height: 1.4;
 }
 
-.hero-terrain + .caption {
-  display: none;
+.hero-photo {
+  margin: 0;
+}
+
+.hero-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+/* On the top picture, the way to all of them, as a mapping app's place panel has it. */
+.hero-more {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px 0 10px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(20, 20, 22, 0.72);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 160ms ease, transform 140ms ease;
+}
+
+.hero-more .ic {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-more:hover {
+  background: rgba(20, 20, 22, 0.86);
+}
+
+.hero-more:active {
+  transform: scale(0.97);
+}
+
+.photos {
+  scroll-margin-top: 64px;
+}
+
+.photos .gallery {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--wash);
+  box-shadow: inset 0 0 0 1px rgba(var(--shadow-rgb), 0.08);
+}
+
+.photos .caption {
+  margin: 10px 0 14px;
+}
+
+.photos .slide img,
+.photos .slide video {
+  object-position: top center;
+}
+
+.terrain-name {
+  fill: var(--m-label);
+  stroke: var(--m-halo);
+  stroke-opacity: 0.9;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  font-family: var(--font);
+  font-weight: 600;
 }
 
 .terrain {
@@ -1498,10 +1590,10 @@ body:not(.is-panel) .panel-tab .ic {
 
 .row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   width: 100%;
-  padding: 7px 24px;
+  padding: 10px 24px;
   border: 0;
   background: none;
   text-align: left;
@@ -1535,11 +1627,9 @@ body:not(.is-panel) .panel-tab .ic {
   background: var(--wash);
 }
 
-.rows .row-text > span {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.row-go,
+.row-heart {
+  align-self: center;
 }
 
 .row-go {

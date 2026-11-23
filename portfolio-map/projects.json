@@ -13,6 +13,7 @@
     "domain": "chroniaatlas.com",
     "brand": "#33616a",
     "blurb": "An atlas of the world’s borders from 3400 BC to today. Move through time and watch empires rise and fall. Click any state, people, or settlement on the map for details. Created by weaving public datasets together by our team of historical researchers.",
+    "tagline": "An atlas of the world’s borders from 3400 BC to today, where you can watch empires rise and fall.",
     "media": [
       {
         "src": "/art/web/materials/shot-chronia-800.webp",
@@ -89,6 +90,7 @@
     "domain": "loretour.com",
     "brand": "#2a44d6",
     "blurb": "Uncover the hidden history of New York City, building by building. Explore an interactive map of all one million structures to pour over fascinating lore, plan your next excursion with a custom AI guide, and immerse yourself in historical photos, facts, and records from old New York. Every building is rendered in immersive, interactive 3D view so you can take a \"tour\" right on your device.",
+    "tagline": "An interactive map of New York City’s buildings, with their history, old photos, and an AI guide.",
     "media": [
       {
         "src": "/art/web/materials/shot-loretour-800.webp",
@@ -175,6 +177,7 @@
     "domain": "noahdarwinlee.com/uchronia",
     "brand": "#7a5230",
     "blurb": "Redraw the world map in any way you see fit. Draw new borders, establish nations, found cities, and more. Be sure to ask the Historian to write the history of the world you crafted. Or, work in reverse by prompting the Historian to generate a map for you.",
+    "tagline": "Redraw the world map, found nations and cities, and have the Historian write the history of your world.",
     "media": [
       {
         "src": "/art/web/materials/shot-uchronia-800.webp",
@@ -251,6 +254,7 @@
     "domain": "fuzhounese.org",
     "brand": "#c5311d",
     "blurb": "Preserving the Fuzhounese dialect. The world’s first collaborative Fuzhounese–English dictionary. With 3,790 entries and growing, we are also gathering native-speaker audio to train a language model to ensure the sound of the language never disappears.",
+    "tagline": "The first collaborative Fuzhounese–English dictionary, gathering native speakers’ audio to preserve the dialect.",
     "media": [
       {
         "src": "/art/web/materials/shot-fuzhounese-800.webp",
@@ -323,6 +327,7 @@
     "domain": "getleggio.com",
     "brand": "#1f4e3d",
     "blurb": "Instant, context-aware translations on Chrome for language learners. Just hold a hotkey and select any foreign word or phrase to see its exact meaning pop up instantly and hassle-free. Leggio analyzes the entire sentence to ensure you get the perfect translation every single time. Supports 34+ languages.",
+    "tagline": "A Chrome extension that translates any word or phrase you select, in context, for language learners.",
     "media": [
       {
         "src": "/art/web/materials/shot-leggio-800.webp",
@@ -393,6 +398,7 @@
     "domain": "noahdarwinlee.com/greatercircle",
     "brand": "#d9741a",
     "blurb": "An interactive globe built for anyone curious about how we really fly. While standard flight maps draw straight lines from point A to point B, this tool calculates the true great-circle distance between any two points, factoring in political geography and user preference. Simply place your points, note the regions or airspace to avoid, and watch the program plot out the optimal route.",
+    "tagline": "An interactive globe that plots the shortest flight route between two places, around the regions you want to avoid.",
     "media": [
       {
         "src": "/art/web/materials/shot-greatercircle-800.webp",
@@ -459,6 +465,7 @@
         "id": "rollmap",
         "name": "Rollmap",
         "blurb": "Rollmap finds acquisition targets for roll-up strategies, mapping every practice by its owner.",
+        "tagline": "Finds acquisition targets for roll-up strategies, mapping every practice by its owner.",
         "media": [
           {
             "src": "/art/web/materials/shot-rollmap-800.webp",
@@ -471,6 +478,7 @@
         "id": "screener",
         "name": "Screener",
         "blurb": "Screener reads a CIM or prospectus and gives back its numbers, its risks, and a clear recommendation.",
+        "tagline": "Reads a CIM or prospectus and gives back its numbers, its risks, and a recommendation.",
         "media": [
           {
             "src": "/art/web/materials/shot-screener-800.webp",
@@ -483,6 +491,7 @@
         "id": "closebook",
         "name": "Closebook",
         "blurb": "Closebook turns messy portfolio company reports into clean, comparable numbers.",
+        "tagline": "Turns messy portfolio company reports into clean, comparable numbers.",
         "media": [
           {
             "src": "/art/web/materials/shot-closebook-800.webp",
@@ -495,6 +504,7 @@
         "id": "lbomatic",
         "name": "LBOmatic",
         "blurb": "LBOmatic models a buyout from entry to exit on one screen, with a sensitivity table, a value creation bridge, and a debt schedule.",
+        "tagline": "Models a buyout from entry to exit on one screen.",
         "media": [
           {
             "src": "/art/web/materials/shot-lbomatic-800.webp",
@@ -513,6 +523,7 @@
     "domain": "dealdesk.noahdarwinlee.com",
     "brand": "#3d6b4a",
     "blurb": "Tools for investors and deal teams. Rollmap finds acquisition targets for roll-up strategies, mapping every practice by its owner. Screener reads a CIM or prospectus and gives back its numbers, its risks, and a clear recommendation. Closebook turns messy portfolio company reports into clean, comparable numbers. LBOmatic models a buyout from entry to exit on one screen, with a sensitivity table, a value creation bridge, and a debt schedule.",
+    "tagline": "Tools for investors and deal teams: finding roll-up targets, reading CIMs, cleaning portfolio reports, and modelling buyouts.",
     "media": [
       {
         "src": "/art/web/materials/shot-dealdesk-800.webp",
@@ -553,6 +564,7 @@
     "url": "/citylayoutguessr/",
     "domain": "noahdarwinlee.com/citylayoutguessr",
     "blurb": "Name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each.",
+    "tagline": "A game: name the city from a satellite image of its street layout.",
     "media": [
       {
         "src": "/art/web/materials/citylayoutguessr-480.webp",
@@ -572,6 +584,7 @@
     "url": "/flashcard/",
     "domain": "noahdarwinlee.com/flashcard",
     "blurb": "A free flash card tool that works offline and handles Czech and other Latin-Extended diacritics.",
+    "tagline": "A free flash card tool that works offline and handles Czech and other diacritics.",
     "media": [
       {
         "src": "/art/web/materials/flashcard-480.webp",
@@ -591,6 +604,7 @@
     "url": "https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing",
     "domain": "A slide deck",
     "blurb": "A slide deck: 100 architects of the modern era you should know.",
+    "tagline": "A slide deck of 100 architects of the modern era you should know.",
     "media": [
       {
         "src": "/art/web/materials/architects-480.webp",
@@ -610,6 +624,7 @@
     "url": "https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing",
     "domain": "A list",
     "blurb": "A list of things to do in New York City, with a map of where they are.",
+    "tagline": "A list of things to do in New York City, with a map of where they are.",
     "media": [
       {
         "src": "/art/web/materials/newyork-480.webp",
@@ -629,6 +644,7 @@
     "url": "https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing",
     "domain": "A list",
     "blurb": "A list of things to do in Chicago, from restaurants on, each with a price and a short note.",
+    "tagline": "A list of things to do in Chicago, each with a price and a short note.",
     "media": [
       {
         "src": "/art/web/materials/chicago-480.webp",
@@ -648,6 +664,7 @@
     "url": "https://cegu.uchicago.edu/expositions/",
     "domain": "cegu.uchicago.edu/expositions",
     "blurb": "Expositions Magazine, at the University of Chicago.",
+    "tagline": "Expositions Magazine, at the University of Chicago.",
     "media": []
   },
   {
@@ -662,6 +679,7 @@
     "url": "https://nightofideas.dev",
     "domain": "nightofideas.dev",
     "blurb": "A University of Chicago club, affiliated with the Philosophy Department, where students give lightning talks on an original idea. I built its website.",
+    "tagline": "A University of Chicago club where students give lightning talks on an original idea, and its website.",
     "media": []
   },
   {
@@ -676,6 +694,7 @@
     "url": "https://substack.com/@noahdarwinlee?r=ish50&utm_campaign=profile&utm_medium=profile-page",
     "domain": "substack.com/@noahdarwinlee",
     "blurb": "My writing, on Substack.",
+    "tagline": "My writing, on Substack.",
     "media": []
   },
   {
@@ -690,6 +709,7 @@
     "url": "https://ucgeo.org",
     "domain": "ucgeo.org",
     "blurb": "UCGEO, at ucgeo.org.",
+    "tagline": "UCGEO, at ucgeo.org.",
     "media": []
   },
   {
@@ -704,6 +724,7 @@
     "url": "/drill/",
     "domain": "noahdarwinlee.com/drill",
     "blurb": "Drills for the canon: key philosophers, authors, poets, composers, architects, and artists, with their works, ideas, and lives.",
+    "tagline": "Drills for the canon: key philosophers, authors, poets, composers, architects, and artists.",
     "media": []
   },
   {
@@ -718,6 +739,7 @@
     "url": "https://la.thedragonflyagency.com/divisions/development/portfolios/noah-lee",
     "domain": "thedragonflyagency.com",
     "blurb": "My portfolio with the Dragonfly Agency’s development division.",
+    "tagline": "My portfolio with the Dragonfly Agency’s development division.",
     "media": []
   }
 ]

@@ -232,6 +232,8 @@ async function interfaceStage(browser) {
   await page.click('#search-input');
   await page.keyboard.type('lore');
   ok(await page.evaluate(() => !document.querySelector('#search-list').hidden && document.querySelectorAll('.search-opt').length >= 1), 'search lists matches as you type');
+  const row = await page.evaluate(() => { const o = document.querySelector('.search-opt'); return { name: o.querySelector('b').textContent, line: (o.querySelector('.row-line') || {}).textContent, link: (o.querySelector('.row-link') || {}).textContent, all: document.querySelector('#search-list').textContent }; });
+  ok(row.name === 'LoreTour' && row.line && row.line.length > 30 && row.link === 'loretour.com' && !/Country|Small state/.test(row.all), `a result reads as the name, a line on the project, and its address ("${row.line}")`);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(1200);
   ok(await panelTitle(page) === 'LoreTour', 'Enter opens the match');
@@ -259,6 +261,17 @@ async function interfaceStage(browser) {
   await page.mouse.click(pt.x, pt.y);
   await page.waitForTimeout(1200);
   ok(await panelTitle(page) === 'CHRONIA', 'clicking a country opens its panel');
+  const pics = await page.evaluate(() => ({
+    top: document.querySelectorAll('#panel-body > .hero').length, topImgs: document.querySelectorAll('#panel-body > .hero img').length,
+    topTrack: !!document.querySelector('#panel-body > .hero .track'), more: (document.querySelector('.hero-more') || {}).textContent,
+    slides: document.querySelectorAll('#photos .slide').length, title: (document.querySelector('#photos .block-title') || {}).textContent,
+  }));
+  ok(pics.top === 1 && pics.topImgs === 1 && !pics.topTrack, 'one photo heads the panel, with no slideshow there');
+  ok(pics.title === 'Photos and videos' && pics.slides === 5 && pics.more === '5 photos', `further down, "Photos and videos" holds all ${pics.slides}, and the top photo's "${pics.more}" leads to them`);
+  await page.click('.hero-next');
+  await page.waitForTimeout(700);
+  ok(await page.evaluate(() => document.querySelector('#photos .hero-count').textContent === '2 / 5' && document.querySelector('#photos .caption').textContent.length > 10), 'the slideshow moves on, with its count and caption');
+  await page.screenshot({ path: '/tmp/portfolio-map-desktop-photos.png' });
 
   // Heart it, and find it in Saved after a reload.
   await page.click('.action-save');
@@ -309,6 +322,14 @@ async function interfaceStage(browser) {
   ok(await page.evaluate(() => { const a = document.querySelector('.rail-about'); return a.tagName === 'A' && a.getAttribute('href') === '/#about' && !a.target; }), "About links to the site's about page, in the same tab");
   ok(await page.evaluate(() => document.querySelector('.rail-btn[data-view="resume"]').getAttribute('href') === '/portfolio/Lee_Noah_Resume.pdf'), 'Resume opens the PDF');
   ok(page.errors.length === 0, `no errors on the page${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
+
+  // A small project without pictures shows its own piece of the map, with its name, and no slideshow.
+  const bare = await open(browser, '?world=le-guin&project=substack');
+  const b = await bare.evaluate(() => ({ terrain: !!document.querySelector('#panel-body > .hero-terrain .terrain'), name: (document.querySelector('.terrain-name') || {}).textContent, photos: !!document.querySelector('#photos'), line: document.querySelector('.row-line') }));
+  ok(b.terrain && b.name === 'Substack' && !b.photos, 'a project without pictures shows its piece of the map with its name, and no "Photos and videos"');
+  await bare.waitForTimeout(1500);
+  await bare.screenshot({ path: '/tmp/portfolio-map-desktop-nophotos.png' });
+  await bare.close();
 
   // Rotation: each load shows the world after the last one this browser saw.
   const rot = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -361,6 +382,11 @@ async function interfaceStage(browser) {
   await page.waitForTimeout(1200);
   ok(await sheet() === 'half' && (await panelTitle(page)) === 'Fuzhounese Dictionary', 'a project opens in the sheet, halfway up');
   await page.screenshot({ path: '/tmp/portfolio-map-phone-project.png' });
+  const bareP = await open(browser, '?world=le-guin&project=night-of-ideas', { context: phone });
+  ok(await bareP.evaluate(() => document.querySelector('.terrain-name').textContent === 'Night of Ideas'), 'on the phone too, a project without pictures shows its piece of the map, named');
+  await bareP.waitForTimeout(1500);
+  await bareP.screenshot({ path: '/tmp/portfolio-map-phone-nophotos.png' });
+  await bareP.close();
   // Drag the grip: up to full, then down to lowered.
   const drag = (from, to) => page.evaluate(async ([a, b]) => {
     const el = document.querySelector('.sheet-grip');
