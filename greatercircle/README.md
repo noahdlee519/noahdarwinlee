@@ -89,9 +89,10 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   2026 (Russia, Ukraine, and Belarus; Iran, Iraq, Syria, Lebanon, Jordan, and
   Yemen), which avoid or release those countries together; they are whole
   countries, where the real closures are often a part of one, so the hint
-  points to Safe Airspace and the FAA for the detail. Winds aloft (`wind=1`)
-  switch the times to the month's typical winds and add the time the other
-  way. A legend in the corner says which line is which, and "Save as an
+  points to Safe Airspace and the FAA for the detail. Winds aloft (`wind=1`,
+  or `wind=jan` and so on for another month, picked from the twelve under
+  Typical) switch the times to that month's typical winds and add the time
+  the other way. A legend in the corner says which line is which, and "Save as an
   image" draws a 1200 by 630 card of the route (the codes, names, distance,
   time, and the flat globe fitted to the route) and shares it where the
   browser can, or downloads it.

@@ -2244,13 +2244,13 @@
       p.push("buf=" + Math.round(state.bufferKm * bu.f) + bu.label);
     }
     if (state.tab && state.a && state.b && (!state.result || currentTab() === state.tab)) p.push("tab=" + state.tab);
-    if (state.wind) p.push("wind=1");
+    if (state.wind) p.push("wind=" + (state.windMonth != null ? ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"][state.windMonth] : "1"));
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false; state.windMonth = null;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -2286,7 +2286,9 @@
       } else if (k === "wp") {
         if (v === "1") state.tab = "plan";
       } else if (k === "wind") {
-        state.wind = v === "1";
+        var wmi = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(v);
+        state.wind = v === "1" || wmi >= 0;
+        state.windMonth = wmi >= 0 && wmi !== new Date().getMonth() ? wmi : null;
       } else if (k === "tab") {
         if (v === "direct" || v === "avoid" || v === "plan") state.tab = v;
       } else if (k === "buf") {

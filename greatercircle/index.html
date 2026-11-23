@@ -333,7 +333,21 @@
           <legend class="gc-label">Winds aloft</legend>
           <div class="gc-seg gc-seg-2" id="wind">
             <label><input type="radio" name="wind" value="0" checked /><span>Calm</span></label>
-            <label><input type="radio" name="wind" value="1" /><span id="wind-month">Typical for this month</span></label>
+            <label><input type="radio" name="wind" value="1" /><span>Typical</span></label>
+          </div>
+          <div class="gc-seg gc-seg-6 gc-months" id="wind-months" role="radiogroup" aria-label="Typical winds for which month" hidden>
+            <label><input type="radio" name="wind-month" value="0" aria-label="January" /><span>Jan</span></label>
+            <label><input type="radio" name="wind-month" value="1" aria-label="February" /><span>Feb</span></label>
+            <label><input type="radio" name="wind-month" value="2" aria-label="March" /><span>Mar</span></label>
+            <label><input type="radio" name="wind-month" value="3" aria-label="April" /><span>Apr</span></label>
+            <label><input type="radio" name="wind-month" value="4" aria-label="May" /><span>May</span></label>
+            <label><input type="radio" name="wind-month" value="5" aria-label="June" /><span>Jun</span></label>
+            <label><input type="radio" name="wind-month" value="6" aria-label="July" /><span>Jul</span></label>
+            <label><input type="radio" name="wind-month" value="7" aria-label="August" /><span>Aug</span></label>
+            <label><input type="radio" name="wind-month" value="8" aria-label="September" /><span>Sep</span></label>
+            <label><input type="radio" name="wind-month" value="9" aria-label="October" /><span>Oct</span></label>
+            <label><input type="radio" name="wind-month" value="10" aria-label="November" /><span>Nov</span></label>
+            <label><input type="radio" name="wind-month" value="11" aria-label="December" /><span>Dec</span></label>
           </div>
           <p class="gc-hint">Flight times at 850 km/h through the air, plus half an hour to climb and descend; with winds, the jet streams of a typical month speed up flights east and slow those west</p>
         </fieldset>

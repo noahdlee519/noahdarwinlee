@@ -132,6 +132,11 @@ test("a closure preset avoids its countries, and winds change the time", { skip 
   await page.waitForFunction((c) => document.getElementById("hero-time").textContent !== c, calm);
   assert.equal(await page.isVisible("#hero-wind"), true);
   assert.match(page.url(), /wind=1/);
+  const nowText = await page.textContent("#hero-time");
+  const other = (new Date().getMonth() + 6) % 12;
+  await page.click(`#wind-months label:has(input[value='${other}'])`);
+  await page.waitForFunction((c) => document.getElementById("hero-time").textContent !== c, nowText);
+  assert.match(page.url(), /wind=(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
   await page.click("#chip-avoid");
   await page.click(".gc-closure[data-ids='643,804,112']");
   await page.waitForFunction(() => ["643", "804", "112"].every((id) => window.__greatercircle.state.avoid.has(id)));
