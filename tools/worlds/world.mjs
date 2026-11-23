@@ -12,6 +12,9 @@ import { buildFields, classifyCover } from './climate.mjs';
 import { buildHydro } from './hydro.mjs';
 import { buildCountries } from './political.mjs';
 import { placeLabels } from './labels.mjs';
+import { buildSettlements, urbanSpots, urbanField } from './settlements.mjs';
+import { buildRoads } from './roads.mjs';
+import { buildParks, buildAdmin, buildStreams, buildReservoirs, placeDetailLabels } from './features.mjs';
 
 export const WIDTH = 1600, HEIGHT = 800;
 export const PICTURE_SCALE = 1.5; // picture pixels per map unit
@@ -77,9 +80,9 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   const { cover, ponds } = classifyCover({ fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes } });
   // The picture: the same land cover drawn finer, and carried a little way
   // out to sea so the vector coast drawn over it never shows a gap.
+  // (The picture itself is drawn in makeWorld, once the towns are known.)
   const coverArgs = { fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2 };
-  const picture = classifyCover({ ...coverArgs, scale: PICTURE_SCALE });
-  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, fields, hydro, cover, ponds, picture, coverArgs };
+  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, fields, hydro, cover, ponds, coverArgs };
 }
 
 // The land divided among the projects.
@@ -91,11 +94,8 @@ export function buildNations(world, projects) {
 // Names on the map: countries, provinces, ranges, seas, lakes, and towns.
 export function buildLabels(world, nations, projects) {
   const { width, height, rng, land, hydro, terrain } = world;
-  const r = rng.fork('towns');
-  // Towns: every capital, then a scatter of places by the coast or on a river.
+  // The capitals; every other place is named with the finer detail.
   const towns = nations.capitals.map((c) => ({ x: c.x, y: c.y, capital: true, id: c.id }));
-  const sites = nations.cells.filter((c) => c.area > 0 && nations.owner[c.seed] >= 0 && c.elev < 0.2 && (c.coast > 3 || hydro.riverClass[c.seed] >= 2));
-  for (const c of r.shuffle(sites).slice(0, 70)) towns.push({ x: (c.seed % width) + 0.5, y: Math.floor(c.seed / width) + 0.5, capital: false });
   return placeLabels({
     owner: nations.owner, provinces: nations.provinces, projects, width, height, rng,
     extras: { land, lakes: hydro.lakes, ranges: terrain.ranges, towns, rivers: hydro.rivers, riverMeta: hydro.riverMeta },
@@ -106,10 +106,22 @@ export function buildLabels(world, nations, projects) {
 export function makeWorld(name, projects, opts) {
   const world = buildLand(name, projects, opts);
   const nations = buildNations(world, projects);
+  const { width, height, rng, land, elev, hydro, cover, fields, terrain, style } = world;
+  const settlements = buildSettlements({ land, elev, temp: fields.temp, cover, hydro, dist: terrain.dist, owner: nations.owner, capitals: nations.capitals, areas: nations.areas, projects, width, height, rng });
+  // Built-up ground round the towns, in the picture and the tiles.
+  world.coverArgs.urban = urbanField(urbanSpots(settlements, width), width, height, rng);
+  const picture = classifyCover({ ...world.coverArgs, scale: PICTURE_SCALE });
   const labels = buildLabels(world, nations, projects);
+  const roads = buildRoads({ land, elev, hydro, owner: nations.owner, settlements, width, height, rng });
+  const parks = buildParks({ land, owner: nations.owner, cover, elev, settlements, projects, areas: nations.areas, width, height, rng, dist: terrain.dist });
+  const admin = buildAdmin({ owner: nations.owner, projects, settlements, areas: nations.areas, width, height, rng });
+  const streams = buildStreams({ land, hydro, width, height, style });
+  const reservoirs = buildReservoirs({ land, elev, hydro, width, height, rng });
+  const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner: nations.owner, settlements, roads, parks, projects, width, height, rng });
   return {
     name, slug: world.slug, width: world.width, height: world.height,
-    cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture: world.picture,
+    cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture,
+    settlements, detail: { roads, parks, admin, streams, reservoirs, labels: detailLabels },
     rivers: world.hydro.rivers, riverMeta: world.hydro.riverMeta,
     owner: nations.owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,
     labels, projects, kmPerUnit: worldParams(name, projects).kmPerUnit,

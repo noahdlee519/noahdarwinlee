@@ -86,9 +86,16 @@
 
   // ---------------------------------------------------------------- night pictures
 
-  // The land-cover classes in the pictures' palette order (forest, woodland, grass, steppe, desert, rock, snow, and
-  // water), by night.
-  var NIGHT_COVER = ["#1d3a33", "#22403a", "#294640", "#30373c", "#353b40", "#3e444a", "#535a61", "#13233a"];
+  // The land-cover classes in the pictures' palette order (forest, woodland, grass, steppe, desert, rock, snow,
+  // water, and built-up ground), by night. The finer tiles repeat the nine twice more, in the hills' shadow and lit.
+  var NIGHT_COVER = ["#1d3a33", "#22403a", "#294640", "#30373c", "#353b40", "#3e444a", "#535a61", "#13233a", "#3b4048"];
+  var NIGHT_SHADE = [1, 0.84, 1.13];
+  function nightColour(i) {
+    var hex = NIGHT_COVER[i % 9], f = NIGHT_SHADE[Math.floor(i / 9)] || 1, k = i % 9;
+    var c = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    if (k === 7 || k === 8) f = 1;
+    return c.map(function (v) { return Math.max(0, Math.min(255, Math.round(v * f))); });
+  }
   var CRC = (function () {
     var t = new Uint32Array(256);
     for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
@@ -106,11 +113,11 @@
       var len = ((out[p] << 24) | (out[p + 1] << 16) | (out[p + 2] << 8) | out[p + 3]) >>> 0;
       var type = String.fromCharCode(out[p + 4], out[p + 5], out[p + 6], out[p + 7]);
       if (type === "PLTE") {
-        for (var i = 0; i < len / 3 && i < NIGHT_COVER.length; i++) {
-          var hex = NIGHT_COVER[i];
-          out[p + 8 + i * 3] = parseInt(hex.slice(1, 3), 16);
-          out[p + 9 + i * 3] = parseInt(hex.slice(3, 5), 16);
-          out[p + 10 + i * 3] = parseInt(hex.slice(5, 7), 16);
+        for (var i = 0; i < len / 3 && i < 27; i++) {
+          var rgb = nightColour(i);
+          out[p + 8 + i * 3] = rgb[0];
+          out[p + 9 + i * 3] = rgb[1];
+          out[p + 10 + i * 3] = rgb[2];
         }
         var c = crc32(out, p + 4, p + 8 + len), q = p + 8 + len;
         out[q] = c >>> 24; out[q + 1] = (c >>> 16) & 255; out[q + 2] = (c >>> 8) & 255; out[q + 3] = c & 255;
@@ -124,9 +131,9 @@
   // ---------------------------------------------------------------- the map
 
   // Each kind of label's smallest and largest size on screen, in pixels.
-  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, province: 11, range: 10.5, lake: 11, strait: 10.5, river: 11, town: 11 };
-  var LABEL_CAP = { country: 34, ocean: 24, sea: 16, gulf: 14, bay: 13, capital: 14, province: 15, range: 14, lake: 15, strait: 13, river: 13.5, town: 12.5 };
-  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, range: 70, lake: 75, bay: 78, strait: 80, river: 85, town: 90 };
+  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, city: 11.5, province: 11, range: 10.5, lake: 11, strait: 10.5, river: 11, town: 11, village: 10, peak: 10, park: 10.5, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
+  var LABEL_CAP = { country: 34, ocean: 24, sea: 16, gulf: 14, bay: 13, capital: 14, city: 13.5, province: 15, range: 14, lake: 15, strait: 13, river: 13.5, town: 12.5, village: 11.5, peak: 12, park: 13, region: 14, island: 13, cape: 12, shield: 11 };
+  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, river: 85, town: 90, cape: 92, village: 96 };
   var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, river: 1 };
 
   function MapView(host) {
@@ -280,8 +287,14 @@
     var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" }, Limg.tpl);
     this.tileHost = svg("g", { class: "map-tiles" }, g);
     this.tiles = new Tiles(this);
-    // Rivers, then the sea and lakes over them, the coast, and the estuaries.
+    // The finer detail (parks, streams, roads, subdivisions, and small places' names) arrives once the map is zoomed
+    // in; its layers wait, empty, in their places in the drawing order.
+    this.detail = null; this.detailAsked = false;
+    this.parkLayer = layer("map-parks", true);
+    // Streams and rivers, then the sea and lakes over them, the coast, and the estuaries.
     var La = layer("map-water", true);
+    this.waterLayer = La;
+    this.streamTpl = svg("g", { class: "map-streams" }, La.tpl);
     var rg = svg("g", { class: "map-rivers" }, La.tpl);
     world.rivers.slice().sort(function (a, b) { return b.width - a.width; }).forEach(function (r) {
       var p = svg("path", { d: r.path }, rg);
@@ -291,14 +304,18 @@
     // The sea: this copy's own strip of the map, less its land, so neighbouring copies meet edge to edge.
     svg("path", { class: "map-sea", d: "M0 " + -H * 3 + "H" + W + "V" + H * 4 + "H0Z" + world.coast, "fill-rule": "evenodd" }, La.tpl);
     if (world.lakes) svg("path", { class: "map-lakes", d: world.lakes }, La.tpl);
+    this.reservoirTpl = svg("g", { class: "map-reservoirs" }, La.tpl);
     svg("path", { class: "map-coast", d: world.coast }, La.tpl);
     if (world.estuaries && world.estuaries.fill) {
       svg("path", { class: "map-estuary", d: world.estuaries.fill }, La.tpl);
       svg("path", { class: "map-coast", d: world.estuaries.edge }, La.tpl);
     }
+    this.roadLayer = layer("map-roads", true);
     // The picked and hovered country's tint, under the borders.
     this.tintLayer = layer("map-tint", true);
     var Lb = layer("map-lines", true);
+    this.lineLayer = Lb;
+    this.adminTpl = svg("g", { class: "map-admin" }, Lb.tpl);
     if (world.provinceBorders) svg("path", { class: "map-provinces", d: world.provinceBorders }, Lb.tpl);
     svg("path", { class: "map-borders", d: world.borders }, Lb.tpl);
     this.outlineLayer = layer("map-outline", true);
@@ -428,11 +445,14 @@
   };
 
   MapView.prototype._labels = function (g) {
-    var self = this;
-    var lg = svg("g", { class: "map-labels" }, g);
-    this.labelLayer = lg;
+    this.labelLayer = svg("g", { class: "map-labels" }, g);
     this.labels = [];
-    this.world.labels.forEach(function (l, n) {
+    this._addLabels(this.world.labels);
+  };
+  MapView.prototype._addLabels = function (list) {
+    var self = this, lg = this.labelLayer, base = this.labels.length;
+    list.forEach(function (l, n0) {
+      var n = base + n0;
       var water = !!WATER[l.kind];
       var kind = l.kind;
       var floor = LABEL_FLOOR[kind] || 11, cap = Math.max(LABEL_CAP[kind] || 14, floor);
@@ -469,17 +489,19 @@
         var inner = svg("g", { transform: "translate(" + (l.x - ox).toFixed(2) + " " + (l.y - oy).toFixed(2) + ") rotate(" + (l.angle || 0) + ")" }, gEl);
         var lines = l.lines || [l.text];
         var nudge = l.spacing ? (l.spacing * l.size) / 2 : 0;
+        if (kind === "shield") {
+          // A route number on a small rounded plate.
+          var sw = (l.text.length * 0.62 + 0.7) * l.size, sh = l.size * 1.35;
+          svg("rect", { class: "lbl-plate" + (l.shield === "e" ? " is-e" : ""), x: (-sw / 2).toFixed(2), y: (-sh / 2).toFixed(2), width: sw.toFixed(2), height: sh.toFixed(2), rx: (sh * 0.28).toFixed(2), "stroke-width": (l.size * 0.09).toFixed(2) }, inner);
+        }
         var t = svg("text", { "font-size": l.size, "text-anchor": "middle", "stroke-width": (l.size * 0.2).toFixed(2) }, inner);
         if (l.spacing) t.setAttribute("letter-spacing", (l.spacing * l.size).toFixed(2));
         lines.forEach(function (line, k) {
           var ts = svg("tspan", { x: nudge.toFixed(2), y: ((k - (lines.length - 1) / 2) * 1.12 * l.size + l.size * 0.355).toFixed(2) }, t);
+          if (kind === "peak" && k > 0) { ts.setAttribute("font-size", (l.size * 0.85).toFixed(2)); ts.setAttribute("class", "lbl-sub"); }
           ts.textContent = line;
         });
-        if (l.dot) {
-          var rad = l.size * (kind === "capital" ? 0.3 : 0.24);
-          svg("circle", { class: "lbl-dot", r: rad.toFixed(2), "stroke-width": (rad * 0.55).toFixed(2) }, gEl);
-          if (kind === "capital") svg("circle", { class: "lbl-dot-in", r: (rad * 0.35).toFixed(2) }, gEl);
-        }
+        if (l.dot) symbolFor(kind, l.size, gEl);
         item.ox = ox; item.oy = oy;
         item.angle = 0;
         if (kind === "country") gEl.setAttribute("data-id", l.id);
@@ -492,14 +514,29 @@
     this.labelsMeasured = false;
   };
 
+  // A place's symbol, in label units round its origin: a white dot in a dark ring for a town (larger for a city,
+  // smaller for a village), a ring with a dark centre for a capital, a small triangle for a peak.
+  var DOT = { capital: 0.34, city: 0.3, town: 0.25, village: 0.22 };
+  function symbolFor(kind, size, parent) {
+    if (kind === "peak") {
+      var a = size * 0.42;
+      svg("path", { class: "lbl-peak", d: "M0 " + (-a).toFixed(2) + "L" + (a * 0.95).toFixed(2) + " " + (a * 0.7).toFixed(2) + "L" + (-a * 0.95).toFixed(2) + " " + (a * 0.7).toFixed(2) + "Z" }, parent);
+      return;
+    }
+    var rad = size * (DOT[kind] || 0.24);
+    svg("circle", { class: "lbl-dot", r: rad.toFixed(2), "stroke-width": (rad * (kind === "village" ? 0.4 : 0.5)).toFixed(2) }, parent);
+    if (kind === "capital") svg("circle", { class: "lbl-dot-in", r: (rad * 0.42).toFixed(2) }, parent);
+  }
+
   MapView.prototype._tier = function (id) { var p = this.projectsById && this.projectsById[id]; return p ? p.tier : "small"; };
   MapView.prototype._rank = function (id) { var p = this.projectsById && this.projectsById[id]; return p && p.rank ? p.rank : 10; };
 
   // Each label's box, in label units, once the fonts are in.
-  MapView.prototype.measureLabels = function () {
+  // onlyNew: measure only labels not yet measured (the finer detail's, as they arrive).
+  MapView.prototype.measureLabels = function (onlyNew) {
     var self = this;
     this.labels.forEach(function (it) {
-      if (it.l.path) return;
+      if (it.l.path || (onlyNew && it.box)) return;
       // getBBox ignores the group's own transform, so this is the box in label units around the label's origin.
       var b = it.el.getBBox();
       it.box = { x: b.x, y: b.y, w: b.width, h: b.height };
@@ -511,7 +548,7 @@
   // Which labels show at this zoom: by rank, never overlapping, never too small.
   MapView.prototype.placeLabels = function () {
     if (!this.labels) return;
-    if (!this.labelsMeasured) this.measureLabels();
+    if (!this.labelsMeasured) this.measureLabels(true);
     // Below zoom 1 (the whole world beside the panel) the first labels still show; collisions thin them.
     var z = Math.max(this.zoom(), 1), s = this.s, Ppx = this.labelScale(), size = this.size();
     var r = this.rect(), ins = this.insets;
@@ -649,12 +686,41 @@
     st.setProperty("--P", this.labelScale().toFixed(4));
     st.setProperty("--inv", (1 / s).toFixed(5));
     st.setProperty("--px", (1 / s).toFixed(5) + "px");
+    this.host.classList.toggle("is-z15", z >= 1.4);
     this.host.classList.toggle("is-z2", z >= 1.9);
     this.host.classList.toggle("is-z3", z >= 2.9);
+    this.host.classList.toggle("is-z35", z >= 3.4);
+    if (z >= 1.3 && !this.detailAsked && !this.anim && !this.interacting) this._loadDetail();
     this.placeLabels();
     if (!this.anim && !this.interacting) this.tiles.update();
     if (this.onDraw) this.onDraw(this);
     this.onView(this);
+  };
+
+  // ------------------------------------------------------------ finer detail
+
+  // The world's finer detail, fetched the first time the map is zoomed in: national parks, streams, roads and
+  // streets, ferries, the larger countries' subdivisions, and the names of small places and features.
+  MapView.prototype._loadDetail = function () {
+    var self = this, w = this.world;
+    this.detailAsked = true;
+    if (!w || !w.detail) return;
+    getJSON(ROOT + "worlds/" + w.detail.src).then(function (d) {
+      if (self.world !== w) return;
+      self.detail = d;
+      var P = self.parkLayer.tpl;
+      d.parks.forEach(function (p) { svg("path", { class: "map-park", d: p.path, "data-park": p.id }, P); });
+      if (d.streams) svg("path", { class: "map-stream", d: d.streams }, self.streamTpl);
+      if (d.reservoirs) svg("path", { class: "map-reservoir", d: d.reservoirs }, self.reservoirTpl);
+      var R = self.roadLayer.tpl;
+      ["street", "local", "main", "highway"].forEach(function (k) { if (d.roads[k]) svg("path", { class: "map-road r-" + k, d: d.roads[k] }, R); });
+      if (d.ferries) svg("path", { class: "map-ferry", d: d.ferries }, R);
+      if (d.admin) svg("path", { class: "map-subdiv", d: d.admin }, self.adminTpl);
+      [self.parkLayer, self.waterLayer, self.roadLayer, self.lineLayer].forEach(function (L) { self._refresh(L); });
+      self._addLabels(d.labels);
+      self.host.classList.add("has-detail");
+      self.render(true);
+    }).catch(function () {});
   };
 
   // ------------------------------------------------------------ finer tiles

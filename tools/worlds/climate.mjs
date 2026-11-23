@@ -14,7 +14,7 @@
 import { makeNoise, fbm, clamp, smoothstep } from './rng.mjs';
 import { latitudeAt, coastDistance } from './terrain.mjs';
 
-export const COVER = { FOREST: 0, WOODLAND: 1, GRASS: 2, STEPPE: 3, DESERT: 4, ROCK: 5, SNOW: 6, WATER: 255 };
+export const COVER = { FOREST: 0, WOODLAND: 1, GRASS: 2, STEPPE: 3, DESERT: 4, ROCK: 5, SNOW: 6, URBAN: 7, WATER: 255 };
 
 // Sea-level temperature in °C at a latitude.
 export function seaLevelTemp(lat) {
@@ -225,7 +225,10 @@ export function classifyCover(opts) {
 
 // prepareCover(same options as classifyCover) => everything the land cover at
 // one scale needs, ready to paint any window of it with renderCover.
-export function prepareCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0 }) {
+// urban (optional): (x, y, elev) => boolean, map units: built-up ground, painted grey.
+// shade (optional): also return a hillshade level per pixel (0 flat, 1 in
+// shadow, 2 lit), from the slope of the land to a light in the north-west.
+export function prepareCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0, urban = null, shade = false }) {
   const W0 = width, H0 = height;
   const W = Math.round(W0 * scale), H = Math.round(H0 * scale);
   const S = W / 1600;
@@ -278,13 +281,21 @@ export function prepareCover({ fields, elev, land, width, height, rng, style = {
     }
   }
 
-  return { W0, H0, W, H, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest };
+  return { W0, H0, W, H, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest, urban, shade };
 }
 
 // renderCover(prep, x0, y0, w, h) => { cover, ponds } for a window of the picture
 // (in its own pixels): a class index per pixel, 255 for the sea.
 export function renderCover(prep, wx0, wy0, w, h) {
-  const { W0, H0, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest } = prep;
+  const { W0, H0, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest, urban } = prep;
+  // Elevation between pixel centres, for the hillshade.
+  const E = (x, y) => {
+    const fx = clamp(x - 0.5, 0, W0 - 1.001), fy = clamp(y - 0.5, 0, H0 - 1.001);
+    const ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, v = fy - iy, k = iy * W0 + ix;
+    const a = Math.max(0, elev[k]), b = Math.max(0, elev[k + 1]), c = Math.max(0, elev[k + W0]), d = Math.max(0, elev[k + W0 + 1]);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  };
+  const shade = prep.shade ? new Uint8Array(w * h) : null;
   const { temp, moist } = fields;
   const N = w * h;
   const broadId = rasterMesh(broad, wx0, wy0, w, h), fineAId = rasterMesh(fineA, wx0, wy0, w, h);
@@ -340,6 +351,16 @@ export function renderCover(prep, wx0, wy0, w, h) {
       if (polar || peak) c = !polar && kf > 0.78 ? COVER.ROCK : COVER.SNOW;
       else if (t < -11 && kf > 0.84) c = jf > 0.6 ? COVER.SNOW : COVER.ROCK;
       cover[i] = c;
+      if (onLand && urban && c !== COVER.SNOW && urban((x + 0.5) / scale, (y + 0.5) / scale, elev[i0])) { cover[i] = COVER.URBAN; continue; }
+      if (shade && onLand) {
+        const mx = (x + 0.5) / scale, my = (y + 0.5) / scale;
+        // The rise toward the south-east, per map unit: land facing the
+        // north-west is lit, land facing the south-east in shadow.
+        const lit = (E(mx + 0.7, my) - E(mx - 0.7, my) + E(mx, my + 0.7) - E(mx, my - 0.7)) / 1.98;
+        const jit = (tinyJ[tinyId[i]] - 0.5) * 0.0016;
+        if (lit + jit < -0.0042) shade[i] = 1;
+        else if (lit + jit > 0.0055) shade[i] = 2;
+      }
 
       // The smallest facets: a scatter of slivers a class up or down, and
       // snow and rock broken up and mottled, so neither lies in solid blocks.
@@ -366,7 +387,7 @@ export function renderCover(prep, wx0, wy0, w, h) {
       if (onLand && tinyJ[tf] < chance && c !== COVER.SNOW && c !== COVER.DESERT) ponds[i] = 1;
     }
   }
-  return { cover, ponds };
+  return shade ? { cover, ponds, shade } : { cover, ponds };
 }
 
 // buildClimate({ elev, land, width, height, rng, style }) => { cover, ponds, temp, rain, moist }

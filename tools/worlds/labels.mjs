@@ -79,7 +79,7 @@ export function labelsOverlap(a, b, pad = 0) {
 }
 
 // Points along a box's edges and its middle line, about `step` apart.
-function samples(r, step) {
+export function samples(r, step) {
   const pts = [];
   const nx = Math.max(2, Math.ceil((2 * r.hw) / step)), ny = Math.max(1, Math.ceil((2 * r.hh) / step));
   for (let i = 0; i <= nx; i++) {
@@ -119,7 +119,7 @@ export function lineBreaks(text) {
 }
 
 // Distance from each pixel to the nearest pixel of another region (chamfer).
-function insideDistance(region, W, H) {
+export function insideDistance(region, W, H) {
   const N = W * H, d = new Float32Array(N);
   const B = Math.SQRT2;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -175,12 +175,12 @@ export function makeNamer(rng) {
     range: () => `${word()} ${rng.pick(['Mountains', 'Mountains', 'Range', 'Highlands', 'Alps'])}`,
     town: () => {
       const w = word();
-      return rng.chance(0.22) ? `${rng.pick(['Port', 'Fort', 'New', 'Saint'])} ${w}` : w;
+      return rng.chance(0.09) ? `${rng.pick(['Port', 'Fort', 'New', 'Saint'])} ${w}` : w;
     },
   };
 }
 
-const zoomFor = (size, minPx) => clamp(Math.ceil(minPx / size - 1e-9), 1, 4);
+export const zoomFor = (size, minPx) => clamp(Math.ceil(minPx / size - 1e-9), 1, 4);
 
 // ------------------------------------------------------- water structure --
 // Water is named as an atlas names it, by its shape: oceans are the great open
@@ -922,7 +922,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     // Beside the dot: right, left, above, below.
     const spots = [[w / 2 + gap, 0], [-w / 2 - gap, 0], [0, -size * 1.05], [0, size * 1.05], [w / 2 + gap * 0.8, -size * 0.8], [w / 2 + gap * 0.8, size * 0.8]];
     for (const [dx, dy] of spots) {
-      const label = { id: `town-${labels.length}`, kind: town.capital ? 'capital' : 'town', text, lines: [text], x: town.x + dx, y: town.y + dy, size, angle: 0, spacing: 0, minZoom: zoomFor(size, 9.8), dot: [Math.round(town.x * 10) / 10, Math.round(town.y * 10) / 10] };
+      const label = { id: `town-${labels.length}`, kind: town.capital ? 'capital' : 'town', text, lines: [text], x: town.x + dx, y: town.y + dy, size, angle: 0, spacing: 0, minZoom: town.capital && projects.find((p) => p.id === town.id)?.tier === 'flagship' ? 1 : zoomFor(size, 9.8), dot: [Math.round(town.x * 10) / 10, Math.round(town.y * 10) / 10] };
       if (town.capital) label.of = town.id;
       const rects = labelRects(label, 0.9 * S);
       if (rects.some((rc) => rc.cx - rc.hw < 2 || rc.cy - rc.hh < 2 || rc.cx + rc.hw > W - 2 || rc.cy + rc.hh > H - 2)) continue;

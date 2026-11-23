@@ -15,11 +15,19 @@ import { TILE_LEVELS } from './world.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
-  rock: '#cbcfca', snow: '#ffffff', water: '#89d1e2', line: '#4da9bb', border: '#26262a',
+  rock: '#cbcfca', snow: '#ffffff', water: '#89d1e2', urban: '#eceef0', line: '#4da9bb', border: '#26262a',
   province: '#606266', label: '#26262a',
 };
-// Palette order in the PNG: the seven land-cover classes by index, then water.
-const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water'];
+// Palette order in the PNG: the seven land-cover classes by index, then
+// water, then built-up ground. The finer tiles add two more copies of these
+// nine, a shade darker (in the hills' shadow) and a shade lighter (lit).
+const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban'];
+export const SHADE = { dark: 0.935, light: 1.045 };
+const mixShade = (rgb, f) => rgb.map((v) => Math.max(0, Math.min(255, Math.round(f > 1 ? v + (255 - v) * (f - 1) * 2.4 : v * f))));
+const BASE_RGB = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
+const TILE_RGB = [...BASE_RGB, ...BASE_RGB.map((c) => mixShade(c, SHADE.dark)), ...BASE_RGB.map((c) => mixShade(c, SHADE.light))];
+// A land-cover class (COVER) and its pond flag as a palette index.
+const coverIndex = (c, pond) => (c === 7 ? 8 : c > 6 || pond ? 7 : c);
 
 // ------------------------------------------------------------- tracing --
 
@@ -274,8 +282,8 @@ export function buildWorldFiles(world) {
   // in it. The sea and lakes are drawn over it from the vectors.
   const pic = world.picture || { width: W, height: H, cover, ponds: world.ponds };
   const indices = new Uint8Array(pic.width * pic.height);
-  for (let i = 0; i < indices.length; i++) indices[i] = pic.cover[i] > 6 || (pic.ponds && pic.ponds[i]) || (!world.picture && lakes[i]) ? 7 : pic.cover[i];
-  const png = encodeIndexedPng(pic.width, pic.height, indices, PNG_COLOURS.map((k) => hexToRgb(PALETTE[k])));
+  for (let i = 0; i < indices.length; i++) indices[i] = coverIndex(pic.cover[i], (pic.ponds && pic.ponds[i]) || (!world.picture && lakes[i]));
+  const png = encodeIndexedPng(pic.width, pic.height, indices, BASE_RGB);
 
   // Regions: project, and province within it.
   const key = new Int32Array(N);
@@ -418,18 +426,76 @@ export function buildWorldFiles(world) {
       }
       return entry;
     }),
-    labels: labels.map((l) => {
-      const out = { id: l.id, kind: l.kind, text: l.text };
-      if (l.lines.length > 1) out.lines = l.lines;
-      Object.assign(out, { x: l.x, y: l.y, size: l.size, angle: l.angle, spacing: l.spacing, minZoom: l.minZoom });
-      if (l.path) out.path = l.path;
-      if (l.dot) out.dot = l.dot;
-      if (l.of) out.of = l.of;
-      if (l.parent) out.parent = l.parent;
-      return out;
-    }),
+    labels: labels.map(labelOut),
   };
-  return { json: JSON.stringify(data), png, data };
+  if (world.detail) data.detail = { src: `detail/${slug}.json` };
+  const detail = world.detail ? buildDetail(world) : null;
+  return { json: JSON.stringify(data), png, data, detail: detail && JSON.stringify(detail) };
+}
+
+function labelOut(l) {
+  const out = { id: l.id, kind: l.kind, text: l.text };
+  if (l.lines.length > 1) out.lines = l.lines;
+  Object.assign(out, { x: l.x, y: l.y, size: l.size, angle: l.angle, spacing: l.spacing, minZoom: l.minZoom });
+  if (l.path) out.path = l.path;
+  if (l.dot) out.dot = l.dot;
+  if (l.of) out.of = l.of;
+  if (l.parent) out.parent = l.parent;
+  if (l.shield) out.shield = l.shield;
+  return out;
+}
+
+// The finer detail, loaded only once the map is zoomed in: roads, streets,
+// ferries, streams, parks, the larger countries' subdivisions, and the names
+// of small places and features.
+const tenthsOf = (p) => [Math.round(p[0] * 5) * 2, Math.round(p[1] * 5) * 2];
+function polylines(list) {
+  const path = new PathText();
+  for (const pts of list) {
+    const line = [];
+    for (const p of pts) {
+      const q = tenthsOf(p), last = line[line.length - 1];
+      if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q);
+    }
+    if (line.length < 2) continue;
+    path.move(line[0]);
+    drawOpen(path, line);
+  }
+  return path.toString();
+}
+function segments(list) {
+  const path = new PathText();
+  for (const pts of list) {
+    const line = pts.map(tenthsOf);
+    if (line.length < 2 || (line[0][0] === line[1][0] && line[0][1] === line[1][1])) continue;
+    path.move(line[0]);
+    for (let k = 1; k < line.length; k++) path.cmd('l', line[k]);
+  }
+  return path.toString();
+}
+export function buildDetail(world) {
+  const { width: W, height: H, detail: D, owner } = world;
+  const N = W * H;
+  const byClass = (cls) => D.roads.roads.filter((r) => r.cls === cls).map((r) => r.pts);
+  // Parks: one ring each, traced from their pixels.
+  const parkArcs = traceArcs(D.parks.mask, W, H, -1);
+  const parkLines = parkArcs.map((arc) => arcLine(arc, 0.6));
+  const parks = D.parks.parks.map((p, id) => ({ id: `park-${id}`, name: p.name, country: world.projects[p.country].id, path: ringsPath(parkArcs, parkLines, (k) => k === id) }));
+  // Subdivisions: the lines between regions of one country.
+  const key = new Int32Array(N);
+  for (let i = 0; i < N; i++) key[i] = owner[i] < 0 ? -1 : D.admin[i] < 0 ? owner[i] * 16 + 15 : owner[i] * 16 + D.admin[i];
+  const adminArcs = traceArcs(key, W, H, -1);
+  const pick = (a) => a.left >= 0 && a.right >= 0 && a.left >> 4 === a.right >> 4 && (a.left & 15) !== 15 && (a.right & 15) !== 15 && a.left !== a.right;
+  const adminLines = adminArcs.map((arc) => (pick(arc) ? arcLine(arc, 0.8) : []));
+  return {
+    roads: { highway: polylines(byClass('highway')), main: polylines(byClass('main')), local: polylines(byClass('local')), street: segments(D.roads.streets) },
+    ferries: segments(D.roads.ferries),
+    streams: polylines(D.streams),
+    reservoirs: (() => { const path = new PathText(); for (const ring of D.reservoirs || []) { const line = ring.map(tenthsOf); if (line.length > 2) drawLoop(path, line); } return path.toString(); })(),
+    parks,
+    admin: linesPath(adminArcs, adminLines, pick),
+    labels: D.labels.map(labelOut),
+  };
 }
 
 // The picture drawn finer, cut into tiles: tiles/<slug>/<scale>/<col>-<row>.png,
@@ -439,25 +505,24 @@ export function buildTiles(world) {
   const files = [], levels = [];
   if (!world.coverArgs) return { files, levels };
   const W = world.width, H = world.height;
-  const palette = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
   for (const { scale, size } of TILE_LEVELS) {
-    const prep = prepareCover({ ...world.coverArgs, scale });
+    const prep = prepareCover({ ...world.coverArgs, scale, shade: true });
     const unit = size / scale, cols = Math.ceil(W / unit), rows = Math.ceil(H / unit);
     const bits = new Uint8Array(cols * rows);
     for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
       const x0 = col * size, y0 = row * size;
       const w = Math.min(size, prep.W - x0), h = Math.min(size, prep.H - y0);
-      const { cover, ponds } = renderCover(prep, x0, y0, w, h);
+      const { cover, ponds, shade } = renderCover(prep, x0, y0, w, h);
       const indices = new Uint8Array(w * h);
       let land = false;
       for (let i = 0; i < indices.length; i++) {
-        const v = cover[i] > 6 || ponds[i] ? 7 : cover[i];
-        indices[i] = v;
+        const v = coverIndex(cover[i], ponds[i]);
+        indices[i] = v === 7 || v === 8 ? v : v + 9 * shade[i];
         if (v !== 7) land = true;
       }
       if (!land) continue;
       bits[row * cols + col] = 1;
-      files.push({ path: `${scale}/${col}-${row}.png`, png: encodeIndexedPng(w, h, indices, palette) });
+      files.push({ path: `${scale}/${col}-${row}.png`, png: encodeIndexedPng(w, h, indices, TILE_RGB) });
     }
     let has = '';
     for (let i = 0; i < bits.length; i += 4) has += ((bits[i] | (bits[i + 1] << 1) | (bits[i + 2] << 2) | (bits[i + 3] << 3)) & 15).toString(16);
@@ -468,7 +533,11 @@ export function buildTiles(world) {
 
 // writeWorld(world, outDir) => { jsonBytes, pngBytes, tileBytes, tileCount }
 export function writeWorld(world, outDir) {
-  const { data, png } = buildWorldFiles(world);
+  const { data, png, detail } = buildWorldFiles(world);
+  if (detail) {
+    mkdirSync(join(outDir, 'detail'), { recursive: true });
+    writeFileSync(join(outDir, 'detail', `${world.slug}.json`), detail);
+  }
   const tiles = buildTiles(world);
   data.tiles = tiles.levels.length ? { src: `tiles/${world.slug}/`, levels: tiles.levels } : undefined;
   const json = JSON.stringify(data);
@@ -485,5 +554,5 @@ export function writeWorld(world, outDir) {
       tileBytes += f.png.length;
     }
   }
-  return { jsonBytes: Buffer.byteLength(json), pngBytes: png.length, tileBytes, tileCount: tiles.files.length };
+  return { jsonBytes: Buffer.byteLength(json), pngBytes: png.length, tileBytes, tileCount: tiles.files.length, detailBytes: detail ? Buffer.byteLength(detail) : 0 };
 }
