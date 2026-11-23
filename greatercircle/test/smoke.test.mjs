@@ -83,9 +83,10 @@ test("the options card opens from a chip, and the buffer changes the route", { s
   const before = await page.textContent("#tab-avoid-km");
   await page.click("#chip-buffer");
   assert.equal(await page.isVisible("#options"), true);
-  await page.click("#buffer label:has(input[value='0'])");
+  await page.evaluate(() => { const r = document.getElementById("buffer"); r.value = "0"; r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForFunction((b) => document.getElementById("tab-avoid-km").textContent !== b && !window.__greatercircle.state.pendingId, before, { timeout: 60000 });
-  assert.match(page.url(), /buf=0mi/);
+  assert.match(page.url(), /buf=0(km|mi|nmi)/);
+  assert.equal(await page.textContent("#buffer-out"), "Off");
   assert.deepEqual(errors, []);
   await page.close();
 });
