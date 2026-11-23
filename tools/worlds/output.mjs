@@ -318,6 +318,72 @@ export function buildWorldFiles(world) {
     path.move(line[0]);
     drawOpen(path, line);
   });
+  // Where a big river meets the sea: in cold country a funnel of an estuary,
+  // in warm country a delta of branching arms.
+  const estFill = new PathText(), estEdge = new PathText();
+  const tenths = (p) => [Math.round(p[0] * 5) * 2, Math.round(p[1] * 5) * 2];
+  const landAt = (x, y) => { const qx = Math.floor(x), qy = Math.floor(y); return qx >= 0 && qy >= 0 && qx < W && qy < H && world.land[qy * W + qx] === 1; };
+  world.rivers.forEach((river, k) => {
+    const meta = world.riverMeta[k];
+    if (meta.ends !== 'sea' || meta.width < 2 || river.length < (meta.width >= 3 ? 24 : 60) || !world.land) return;
+    const n = river.length;
+    const M = river[n - 1];
+    let [dx, dy] = meta.seaDir >= 0 ? DSTEP[meta.seaDir] : [M[0] - river[n - 4][0], M[1] - river[n - 4][1]];
+    let dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+    const t = world.temp ? world.temp[Math.floor(M[1]) * W + Math.floor(M[0])] : 0;
+    // The last stretch of the course, smoothed, from upstream to the mouth.
+    const L = [0, 0, 14, 20, 26][meta.width];
+    const back = river.slice(Math.max(0, n - 1 - L)).map((p, j, a) => {
+      let sx = 0, sy = 0, c = 0;
+      for (let q = Math.max(0, j - 2); q <= Math.min(a.length - 1, j + 2); q++) { sx += a[q][0]; sy += a[q][1]; c++; }
+      return [sx / c, sy / c];
+    });
+    back[back.length - 1] = M;
+    if (t < 6) {
+      const rw = RIVER_WIDTH[meta.width] / 2, top = [0, 0, 2.6, 4.2, 5.6][meta.width];
+      const cl = [...back, [M[0] + dx * 2.5, M[1] + dy * 2.5], [M[0] + dx * 5, M[1] + dy * 5]];
+      const left = [], right = [];
+      cl.forEach((c, j) => {
+        const a = cl[Math.max(0, j - 1)], b = cl[Math.min(cl.length - 1, j + 1)];
+        let tx = b[0] - a[0], ty = b[1] - a[1];
+        const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        const f = Math.min(1, j / (back.length - 1));
+        const hw = rw + (top - rw) * f ** 1.7 + (j >= back.length ? (j - back.length + 1) * 0.6 : 0);
+        left.push([c[0] - ty * hw, c[1] + tx * hw]);
+        right.push([c[0] + ty * hw, c[1] - tx * hw]);
+      });
+      const ring = [...left, ...right.reverse()].map(tenths);
+      estFill.move(ring[0]);
+      for (let j = 1; j < ring.length; j++) estFill.cmd('l', ring[j]);
+      estFill.close();
+      // The banks: drawn as far as the land goes.
+      for (const side of [left, right.reverse()]) {
+        const bank = [];
+        for (const p of side) { if (!landAt(p[0], p[1]) && bank.length > 2) { bank.push(p); break; } bank.push(p); }
+        const line = bank.map(tenths);
+        if (line.length < 2) continue;
+        estEdge.move(line[0]);
+        drawOpen(estEdge, line);
+      }
+    } else {
+      // Arms fanning out from a little way upstream to the sea.
+      const P = back[Math.max(0, back.length - 1 - [0, 0, 9, 15, 20][meta.width])];
+      const nx = -dy, ny = dx;
+      for (const side of [-1, 1, 0.45 * (k % 2 ? 1 : -1)]) {
+        const spread = side * [0, 0, 6, 11, 14][meta.width];
+        let end = [M[0] + dx * 2 + nx * spread, M[1] + dy * 2 + ny * spread];
+        let tries = 0;
+        while (landAt(end[0], end[1]) && tries++ < 8) end = [end[0] + dx, end[1] + dy];
+        if (landAt(end[0], end[1])) continue;
+        const midP = [(P[0] + end[0]) / 2 + nx * spread * 0.18, (P[1] + end[1]) / 2 + ny * spread * 0.18];
+        const line = [P, midP, end, [end[0] + dx * 1.5, end[1] + dy * 1.5]].map(tenths);
+        const arm = byClass[Math.max(1, meta.width - 1)];
+        arm.move(line[0]);
+        drawOpen(arm, line);
+      }
+    }
+  });
+
   const rivers = [];
   for (let c = 1; c <= 4; c++) {
     const path = byClass[c].toString();
@@ -329,11 +395,13 @@ export function buildWorldFiles(world) {
     name, slug, width: W, height: H,
     image: { src: `${slug}.png`, width: pic.width, height: pic.height },
     // Bottom to top. The sea is the map's rectangle less the coast path.
-    order: ['image', 'rivers', 'sea', 'lakes', 'coast', 'provinceBorders', 'borders', 'labels'],
+    order: ['image', 'rivers', 'sea', 'lakes', 'coast', 'estuaries', 'provinceBorders', 'borders', 'labels'],
     palette: PALETTE,
     scale: { kmPerUnit: world.kmPerUnit },
     coast,
     lakes: lakePath,
+    // Estuaries: fill in the water colour, then the banks in the line colour.
+    estuaries: { fill: estFill.toString(), edge: estEdge.toString() },
     rivers,
     borders,
     provinceBorders,

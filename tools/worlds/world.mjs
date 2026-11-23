@@ -108,6 +108,6 @@ export function makeWorld(name, projects, opts) {
     rivers: world.hydro.rivers, riverMeta: world.hydro.riverMeta,
     owner: nations.owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,
     labels, projects, kmPerUnit: worldParams(name, projects).kmPerUnit,
-    land: world.land, elev: world.elev, plan: nations.plan,
+    land: world.land, elev: world.elev, temp: world.fields.temp, plan: nations.plan,
   };
 }

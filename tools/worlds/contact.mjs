@@ -34,6 +34,10 @@ export function worldSvg(data, pngBuffer, zoom = 1) {
   parts.push(`<path d="M0 0H${W}V${H}H0Z${data.coast}" fill="${P.water}" fill-rule="evenodd"/>`);
   if (data.lakes) parts.push(`<path d="${data.lakes}" fill="${P.water}" stroke="${P.line}" stroke-width="${0.45 * px}"/>`);
   parts.push(`<path d="${data.coast}" fill="none" stroke="${P.line}" stroke-width="${0.7 * px}" stroke-linejoin="round"/>`);
+  if (data.estuaries && data.estuaries.fill) {
+    parts.push(`<path d="${data.estuaries.fill}" fill="${P.water}"/>`);
+    parts.push(`<path d="${data.estuaries.edge}" fill="none" stroke="${P.line}" stroke-width="${0.7 * px}" stroke-linejoin="round"/>`);
+  }
   if (data.provinceBorders) parts.push(`<path d="${data.provinceBorders}" fill="none" stroke="${P.province}" stroke-width="${0.8 * px}" stroke-dasharray="${3 * px} ${2.2 * px}" stroke-linejoin="round"/>`);
   if (data.borders) parts.push(`<path d="${data.borders}" fill="none" stroke="${P.border}" stroke-width="${1 * px}" stroke-linejoin="round" stroke-linecap="round"/>`);
 
