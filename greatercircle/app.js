@@ -7,7 +7,9 @@
   var ctx = canvas.getContext("2d");
   var satCanvas = $("sat"), sat = null, satTried = false, satOn = false, satLive = false;
   var panel = $("panel");
-  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var reduceMotion = motionQuery.matches;
+  if (motionQuery.addEventListener) motionQuery.addEventListener("change", function () { reduceMotion = motionQuery.matches; });
   var canHover = window.matchMedia("(hover: hover)").matches;
 
   var state = {
@@ -55,10 +57,12 @@
     var pr = panel.getBoundingClientRect();
     panelRight = phone ? 0 : (pr.right > 0 ? pr.right - 12 : 452);
     var panelW = panelRight;
-    var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 204) : 0;
-    var freeW = W - panelW, freeH = H - sheetH - (phone ? 70 : 40);
+    if (phone && typeof placeSheet === "function") placeSheet();
+    var sheetH = phone ? (typeof sheetVisible === "function" ? sheetVisible(Math.min(sheetMode, SHEET_HALF)) : 220) : 0;
+    var topInset = phone ? 64 : 0;
+    var freeW = W - panelW, freeH = H - sheetH - (phone ? topInset + 8 : 40);
     cx = phone ? W / 2 : panelW + freeW / 2;
-    cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
+    cy = phone ? (topInset + H - sheetH) / 2 : H / 2;
     base = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
     pick.width = W; pick.height = H;
     pickDirty = true;
@@ -265,7 +269,7 @@
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, 2 * Math.PI); ctx.fill();
     }
-    var live = satOn && !!sat && sat.ready();
+    var live = !flatOnly && satOn && !!sat && sat.ready();
     if (live !== satLive) { satLive = live; document.documentElement.classList.toggle("gc-sat-on", live); refreshPalette(); }
     satCanvas.hidden = !live;
     if (live) renderSat();
@@ -345,6 +349,14 @@
     drawRoutes();
     drawMarkers();
     drawDrawing();
+    if (canvas.classList.contains("show-ring") && document.activeElement === canvas) {
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 2 * Math.PI);
+      ctx.moveTo(cx - 20, cy); ctx.lineTo(cx - 6, cy); ctx.moveTo(cx + 6, cy); ctx.lineTo(cx + 20, cy);
+      ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy - 6); ctx.moveTo(cx, cy + 6); ctx.lineTo(cx, cy + 20);
+      ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 4.5; ctx.stroke();
+      ctx.strokeStyle = pal.route; ctx.lineWidth = 1.8; ctx.stroke();
+    }
     ctx.restore();
     mark("end");
   }
@@ -368,6 +380,103 @@
     return lines;
   }
 
+  function densify(coords, n) {
+    var V = coords.map(function (c) { return G.toVec(c[0], c[1]); }), lens = [0], total = 0;
+    for (var i = 1; i < V.length; i++) { total += G.angleBetween(V[i - 1], V[i]); lens.push(total); }
+    var out = [], j = 0;
+    for (var k = 0; k < n; k++) {
+      var at = total * k / (n - 1);
+      while (j < V.length - 2 && lens[j + 1] < at) j++;
+      var seg = lens[j + 1] - lens[j], t = seg > 0 ? (at - lens[j]) / seg : 0;
+      out.push(G.toLonLat(slerp(V[j], V[Math.min(j + 1, V.length - 1)], t)));
+    }
+    return out;
+  }
+  function slerp(a, b, t) {
+    var d = G.angleBetween(a, b);
+    if (d < 1e-9) return a.slice();
+    var s0 = Math.sin((1 - t) * d) / Math.sin(d), s1 = Math.sin(t * d) / Math.sin(d);
+    return G.normalize([s0 * a[0] + s1 * b[0], s0 * a[1] + s1 * b[1], s0 * a[2] + s1 * b[2]]);
+  }
+  var anim = null, ANIM_N = 160;
+  function startAnim(kind, fromCoords, toCoords, ms) {
+    if (reduceMotion || !toCoords) { anim = null; return; }
+    anim = { kind: kind, to: densify(toCoords, ANIM_N), from: fromCoords ? densify(fromCoords, ANIM_N) : null, t0: performance.now(), ms: ms };
+    var tick = function () { if (!anim) return; scheduleRender("full"); if (performance.now() - anim.t0 < anim.ms) requestAnimationFrame(tick); else { anim = null; scheduleRender("full"); } };
+    requestAnimationFrame(tick);
+  }
+  function animatedLine() {
+    if (!anim) return null;
+    var t = Math.min(1, (performance.now() - anim.t0) / anim.ms), e = 1 - Math.pow(1 - t, 3);
+    if (anim.kind === "draw") {
+      var n = Math.max(2, Math.round(e * (ANIM_N - 1)) + 1);
+      return { type: "LineString", coordinates: anim.to.slice(0, n) };
+    }
+    var pts = anim.to.map(function (p, i) { var a = G.toVec(anim.from[i][0], anim.from[i][1]), b = G.toVec(p[0], p[1]); return G.toLonLat(slerp(a, b, e)); });
+    return { type: "LineString", coordinates: pts };
+  }
+  function routeDrawn() {
+    var lines = routeLines(), tab = currentTab();
+    if (!lines) return;
+    var sel = lines[tab] || lines.avoid || lines.direct;
+    startAnim("draw", null, sel.coordinates, 750);
+  }
+  var flatOnly = false;
+  function makeCard(info) {
+    anim = null;
+    stopFly(); stopInertia();
+    var saved = { lon: view.lon, lat: view.lat, zoom: view.zoom }, t = fitTarget();
+    if (t && !t.single) { view.lon = t.lon; view.lat = t.lat; view.zoom = Math.min(t.zoom, 1.6); applyView(); }
+    flatOnly = true;
+    render("full");
+    var Wc = 1200, Hc = 630, out = document.createElement("canvas");
+    out.width = Wc; out.height = Hc;
+    var c = out.getContext("2d"), cs = getComputedStyle(document.documentElement);
+    var v = function (n, f) { return cs.getPropertyValue(n).trim() || f; };
+    var font = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    c.fillStyle = v("--gc-ocean", "#e68019"); c.fillRect(0, 0, Wc, Hc);
+    var r = projection.scale(), side = Math.min(2 * r + 40, W, H);
+    var sx = Math.max(0, Math.min(W - side, cx - side / 2)), sy = Math.max(0, Math.min(H - side, cy - side / 2));
+    var gs = 600;
+    c.drawImage(canvas, sx * dpr, sy * dpr, side * dpr, side * dpr, Wc - gs + 30, (Hc - gs) / 2, gs, gs);
+    flatOnly = false;
+    view.lon = saved.lon; view.lat = saved.lat; view.zoom = saved.zoom; applyView();
+    render("full");
+    var grad = c.createLinearGradient(560, 0, 760, 0);
+    grad.addColorStop(0, v("--gc-card", "#8f4606")); grad.addColorStop(1, "rgba(0,0,0,0)");
+    c.fillStyle = v("--gc-card", "#8f4606"); c.fillRect(0, 0, 560, Hc);
+    c.fillStyle = grad; c.fillRect(560, 0, 200, Hc);
+    var ink = v("--gc-text", "#ffffff"), muted = v("--gc-muted", "#fde3c9"), accent = v("--gc-accent", "#ffe7a3"), word = v("--gc-word", "#e3e3b0");
+    c.textBaseline = "alphabetic";
+    var spaced = function (text, x, y, sp) { for (var i = 0; i < text.length; i++) { c.fillText(text[i], x, y); x += c.measureText(text[i]).width + sp; } return x; };
+    c.font = "500 26px " + font; c.fillStyle = ink;
+    var x = spaced("GREATER", 56, 84, 4); c.fillStyle = word; spaced("CIRCLE", x, 84, 4);
+    c.fillStyle = ink; c.font = "600 92px " + font;
+    var codes = info.from + "  \u2192  " + info.to;
+    while (c.measureText(codes).width > 470 && parseInt(c.font, 10) > 40) c.font = "600 " + (parseInt(c.font.split(" ")[1], 10) - 6) + "px " + font;
+    c.fillText(codes, 56, 214);
+    var fit = function (text, weight, size, min, y, color) {
+      c.font = weight + " " + size + "px " + font;
+      while (c.measureText(text).width > 480 && size > min) { size -= 2; c.font = weight + " " + size + "px " + font; }
+      while (c.measureText(text).width > 480 && text.length > 4) text = text.slice(0, -2) + "…";
+      c.fillStyle = color; c.fillText(text, 56, y);
+    };
+    fit(info.names, "400", 26, 18, 258, muted);
+    fit(info.km, "500", 96, 60, 398, ink);
+    fit(info.line, "400", 30, 20, 452, accent);
+    fit(info.sub, "400", 26, 18, 494, muted);
+    c.font = "400 22px " + font; c.fillStyle = muted;
+    c.fillText("noahdarwinlee.com/greatercircle", 56, 576);
+    return new Promise(function (res) { out.toBlob(function (b) { res(b); }, "image/png"); });
+  }
+  function tabChanged(prev) {
+    var lines = routeLines(), tab = currentTab();
+    if (!lines || prev === tab) return;
+    var from = lines[prev] || lines.avoid || lines.direct, to = lines[tab] || lines.avoid || lines.direct;
+    if (from === to) return;
+    startAnim("morph", from.coordinates, to.coordinates, 320);
+  }
+
   function drawRoutes() {
     var res = state.result;
     beaconScreen = [];
@@ -389,7 +498,7 @@
       ctx.setLineDash([5, 6]); ctx.strokeStyle = pal.faint; ctx.lineWidth = 1.4; ctx.stroke();
       ctx.setLineDash([]);
     });
-    var sel = lines[tab] || lines.avoid || lines.direct;
+    var sel = animatedLine() || lines[tab] || lines.avoid || lines.direct;
     ctx.beginPath(); path(sel);
     ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 6; ctx.stroke();
     ctx.beginPath(); path(sel);
@@ -642,8 +751,8 @@
   var inertia = null;
 
   var focusByPointer = false;
-  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); });
-  canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); });
+  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); scheduleRender("full"); });
+  canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); scheduleRender("full"); });
   function degPerPx() { return 180 / (Math.PI * projection.scale()); }
 
   canvas.addEventListener("pointerdown", function (e) {
@@ -987,6 +1096,20 @@
     else if (e.key === "ArrowDown") view.lat -= step;
     else if (e.key === "+" || e.key === "=") { zoomAt(view.zoom * 1.3, cx, cy); return; }
     else if (e.key === "-" || e.key === "_") { zoomAt(view.zoom / 1.3, cx, cy); return; }
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      if (drawing && drawing.tool !== "polygon") return;
+      if (drawing) { e.stopPropagation(); click(cx, cy, false); return; }
+      var had = { a: state.a, b: state.b, n: state.avoid.size };
+      click(cx, cy, e.shiftKey);
+      if (!pop.hidden) return;
+      var say = "";
+      if (state.avoid.size !== had.n) say = state.avoid.size > had.n ? "Avoiding " + joinNames(Array.from(state.avoid.values())) : "Stopped avoiding a country";
+      else if (state.a !== had.a && state.a) say = "A is " + (state.a.label || fmtLonLat(state.a));
+      else if (state.b !== had.b && state.b) say = "B is " + (state.b.label || fmtLonLat(state.b));
+      if (say) { $("status").textContent = ""; setTimeout(function () { $("status").textContent = say; }, 30); }
+      return;
+    }
     else return;
     e.preventDefault();
     applyView(); moving();
@@ -1124,12 +1247,19 @@
   function stopFly() { if (fly) { fly = null; interacting = 0; } }
 
   function fitRoute(always) {
+    var t = fitTarget();
+    if (!t) return;
+    if (t.single) { flyTo(t.lon, t.lat); return; }
+    if (!always && allVisible(t.all)) return;
+    flyTo(t.lon, t.lat, t.zoom);
+  }
+  function fitTarget() {
     var pts = [];
     if (state.a) pts.push([state.a.lon, state.a.lat]);
     if (state.b) pts.push([state.b.lon, state.b.lat]);
     if (state.result && state.result.status === "done" && state.result.waypoints) pts = state.result.waypoints.slice();
-    if (!pts.length) return;
-    if (pts.length === 1) { flyTo(pts[0][0], pts[0][1]); return; }
+    if (!pts.length) return null;
+    if (pts.length === 1) return { single: true, lon: pts[0][0], lat: pts[0][1] };
     var sx = 0, sy = 0, sz = 0, all = [];
     for (var i = 0; i + 1 < pts.length; i++) {
       var seg = G.sampleArc(G.toVec(pts[i][0], pts[i][1]), G.toVec(pts[i + 1][0], pts[i + 1][1]), 0.03, i === 0);
@@ -1143,11 +1273,10 @@
     var zoom;
     if (far > 1.35) zoom = 1;
     else {
-      var free = Math.min(W - panelRight, H - (W <= 640 ? Math.min(H * 0.5, panel.getBoundingClientRect().height) + 70 : 60)) / 2 - 24;
+      var free = Math.min(W - panelRight, H - (W <= 640 ? sheetVisible(Math.min(sheetMode, SHEET_HALF)) + 72 : 60)) / 2 - 24;
       zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, free / (base * Math.max(Math.sin(far) * 1.12, 0.06))));
     }
-    if (!always && allVisible(all)) return;
-    flyTo(ll[0], ll[1], zoom);
+    return { lon: ll[0], lat: ll[1], zoom: zoom, all: all };
   }
   function allVisible(vecs) {
     var rot = projection.rotate(), c = G.toVec(-rot[0], -rot[1]);
@@ -1962,6 +2091,7 @@
       state.result = m;
       renderPanel();
       announce();
+      if (m.status === "done" && fitPending && !drag) routeDrawn();
       scheduleRender("full");
       if (m.status === "done" && fitPending && !drag && !pinch && !inertia) fitRoute(false);
       fitPending = false;
@@ -2019,481 +2149,17 @@
     return list.slice(0, -1).join(", ") + ", and " + list[list.length - 1];
   }
 
-  function avoiding() { return !!(state.avoid.size || state.regions.length); }
-  function detourOf(res) { return !!(res && res.status === "done" && avoiding() && res.waypoints && res.lengthKm > res.directKm + 0.5); }
-  function availableTabs(res) {
-    if (!res || res.status !== "done") return [];
-    var t = ["direct"];
-    if (detourOf(res)) t.push("avoid");
-    if (!res.antipodal) t.push("plan");
-    return t;
-  }
-  function currentTab() {
-    var t = availableTabs(state.result);
-    if (!t.length) return null;
-    if (state.tab && t.indexOf(state.tab) >= 0) return state.tab;
-    return t.indexOf("avoid") >= 0 ? "avoid" : "direct";
-  }
-  function codeOf(pt, fallback) {
-    var m = pt && pt.label && /\(([A-Z0-9]{3,4})\)/.exec(pt.label);
-    return m ? m[1] : fallback;
-  }
-  function shortName(pt) {
-    if (!pt) return "";
-    if (!pt.label) return fmtLonLat(pt);
-    return pt.label.replace(/\s*\([A-Z0-9]{3,4}\)/, "").split(",")[0].replace(/ (International )?Airport$/, "");
-  }
-  function endName(slot) { var pt = state[slot]; return codeOf(pt, null) || shortName(pt) || slot.toUpperCase(); }
-  function hours(km) {
-    var h = km / 850 + 0.5, hh = Math.floor(h), mm = Math.round((h - hh) * 12) * 5;
-    if (mm === 60) { hh++; mm = 0; }
-    return { text: "≈ " + hh + "h " + (mm < 10 ? "0" : "") + mm + "m", spoken: "about " + hh + (hh === 1 ? " hour" : " hours") + (mm ? " " + mm + " minutes" : "") };
-  }
-  function pctOf(extra, of) { return (100 * extra / of).toFixed(1) + "%"; }
-  function setText(el, s) { if (el.textContent !== s) el.textContent = s; }
-  function avoidLabel() {
-    var n = avoidedNames();
-    if (n.length <= 2) return joinNames(n);
-    return n.length + " places";
-  }
-  function tabKm(tab) {
-    var res = state.result;
-    if (!res || res.status !== "done") return null;
-    if (tab === "direct") return res.directKm;
-    if (tab === "avoid") return res.lengthKm;
-    return state.plan && state.plan.status === "done" ? state.plan.km : null;
-  }
-
-  var ui = {
-    result: $("result"), tabs: $("tabs"), big: $("hero-big"), time: $("hero-time"), delta: $("hero-delta"), note: $("hero-note"),
-    warn: $("warn"), plan: $("plan"), planStatus: $("plan-status"), timeline: $("timeline"), planAll: $("plan-all"), planTitle: $("plan-title"),
-    crosses: $("crosses"), crossTitle: $("crosses-title"), crossList: $("cross-list"), foot: $("foot"), stats: $("stats"), status: $("status"),
-    options: $("options"), optChips: $("opt-chips"), examples: $("examples"), tagline: $("tagline")
-  };
-  var warnActions = [];
-
-  function renderBusy() {
-    if (!state.busy) return;
-    var what = !state.ready ? "Starting the route finder…" : avoiding() ? "Finding the way round " + avoidLabel() + "…" : "Measuring…";
-    ui.result.hidden = false;
-    ui.result.classList.add("is-busy");
-    ui.result.setAttribute("aria-busy", "true");
-    panel.classList.add("has-result");
-    if (!state.result) { setText(ui.big, "…"); setText(ui.time, ""); ui.tabs.hidden = true; }
-    setText(ui.note, what + (state.progress ? " " + state.progress.toLocaleString() + " corners so far" : ""));
-  }
-
-  var warnSet = false;
-  function warning(text, actions) {
-    if (text) warnSet = true;
-    warnActions = actions || [];
-    if (!text) { ui.warn.hidden = true; ui.warn.innerHTML = ""; ui.warn.dataset.key = ""; return; }
-    var key0 = text + "|" + warnActions.map(function (a) { return a.label; }).join("|");
-    if (ui.warn.dataset.key === key0 && !ui.warn.hidden) return;
-    ui.warn.innerHTML = "";
-    ui.warn.hidden = false;
-    var key = text + "|" + warnActions.map(function (a) { return a.label; }).join("|");
-    if (ui.warn.dataset.key === key && !ui.warn.hidden) return;
-    ui.warn.dataset.key = key;
-    var p = document.createElement("p"); p.className = "gc-warn-text"; p.textContent = text; ui.warn.appendChild(p);
-    if (warnActions.length) {
-      var row = document.createElement("div"); row.className = "gc-warn-actions";
-      warnActions.forEach(function (a, i) {
-        var b = document.createElement("button"); b.type = "button"; b.className = "gc-btn " + (i ? "gc-btn-quiet" : "gc-btn-primary"); b.dataset.action = i; b.textContent = a.label;
-        row.appendChild(b);
-      });
-      ui.warn.appendChild(row);
-    }
-  }
-  ui.warn.addEventListener("click", function (e) {
-    var b = e.target.closest && e.target.closest("button[data-action]");
-    if (!b) return;
-    var a = warnActions[+b.dataset.action];
-    if (a) { a.fn(); if (!document.activeElement || document.activeElement === document.body || !document.body.contains(b)) $("tabpanel").focus({ preventScroll: true }); }
-  });
-
-  function insideWarning(res) {
-    var plain = true, actions = [];
-    var where = function (raw, within) {
-      return joinNames(uniqueBase(raw).map(function (id) {
-        var r = regionById(id);
-        if (!r) {
-          if (within.indexOf(id) >= 0 || !(state.bufferKm > 0)) return "in " + names([id])[0];
-          plain = false;
-          return "too close to " + names([id])[0] + " for a " + fmtBuffer(state.bufferKm) + " buffer";
-        }
-        var inBase = raw.some(function (x) { return String(x) === id; });
-        if (!inBase) { plain = false; return "within " + fmtBuffer(state.bufferKm) + " of " + r.name + (r.inverted ? "'s edge" : ""); }
-        if (r.inverted) { plain = false; return "outside " + r.name; }
-        return "in " + r.name;
-      }));
-    };
-    var parts = [];
-    if (res.insideA.length) parts.push(endName("a") + " is " + where(res.insideA, (res.startIn || []).map(String)));
-    if (res.insideB.length) parts.push(endName("b") + " is " + where(res.insideB, (res.endIn || []).map(String)));
-    var nearest = Infinity;
-    [res.nearA, res.nearB].forEach(function (near, k) {
-      var inside = ((k ? res.endIn : res.startIn) || []).map(String);
-      Object.keys(near || {}).forEach(function (id) { if (inside.indexOf(id) < 0) nearest = Math.min(nearest, near[id]); });
-    });
-    if (isFinite(nearest)) {
-      var fits = BUFFER_MI.filter(function (mi) { return mi * MI_KM * 1.035 + 0.1 < nearest && mi * MI_KM < state.bufferKm; });
-      var to = fits.length ? fits[fits.length - 1] : 0;
-      actions.push({ label: to ? "Use a " + to + " mi buffer" : "Turn the buffer off", fn: function () { setBuffer(to); } });
-    }
-    uniqueBase(res.insideA.concat(res.insideB)).forEach(function (id) {
-      var r = regionById(id);
-      actions.push({ label: r ? "Remove " + r.name : "Allow " + names([id])[0], fn: function () { if (r) removeRegion(r); else { state.avoid.delete(id); avoidChanged(); } } });
-    });
-    warning(parts.join("; ") + (plain ? ", which you are avoiding." : "."), actions);
-  }
-
-  function renderPanel() {
-    var res = state.result, tabs = availableTabs(res);
-    if (state.tab && tabs.length && tabs.indexOf(state.tab) < 0) state.tab = null;
-    var tab = currentTab();
-    var hasA = !!state.a, hasB = !!state.b;
-    panel.classList.toggle("is-empty", !hasA && !hasB);
-    ui.examples.hidden = hasA || hasB;
-    ui.tagline.hidden = hasA || hasB;
-    ui.optChips.hidden = !(hasA || hasB || avoiding());
-    setText($("code-a"), codeOf(state.a, "A"));
-    setText($("code-b"), codeOf(state.b, "B"));
-    setText($("sum-a"), endName("a")); setText($("sum-b"), endName("b"));
-    setText($("sum-a-name"), codeOf(state.a, null) ? shortName(state.a) : "");
-    setText($("sum-b-name"), codeOf(state.b, null) ? shortName(state.b) : "");
-    $("fit").hidden = !(hasA && hasB);
-    renderOptionChips();
-    ui.result.classList.remove("is-busy");
-    ui.result.setAttribute("aria-busy", "false");
-    panel.classList.toggle("has-result", !!res);
-    ui.result.hidden = !res;
-    ui.plan.hidden = true;
-    ui.crosses.hidden = true;
-    ui.foot.hidden = !res;
-    if (!res) { warning(null); return; }
-    ui.tabs.hidden = tabs.length < 2;
-    ui.tabs.classList.toggle("is-two", tabs.length === 2);
-    ["direct", "avoid", "plan"].forEach(function (k) {
-      var b = $("tab-" + k), on = k === tab;
-      b.hidden = tabs.indexOf(k) < 0;
-      b.setAttribute("aria-selected", String(on));
-      b.tabIndex = on ? 0 : -1;
-      var km = tabKm(k);
-      setText($("tab-" + k + "-km"), km != null ? fmt(km) : (k === "plan" && state.plan && state.plan.status === "pending" ? "…" : k === "plan" ? "none" : ""));
-    });
-    setText($("tab-avoid-name"), "Avoiding");
-    $("tab-avoid").setAttribute("aria-label", "Avoiding " + avoidLabel() + (tabKm("avoid") != null ? ", " + fmt(tabKm("avoid")) : ""));
-    $("tabpanel").setAttribute("aria-labelledby", "tab-" + (tab || "direct"));
-    var big = "", time = "", delta = "", note = "";
-    warnSet = false;
-    if (res.status === "error") {
-      big = "–";
-      ui.foot.hidden = true;
-      warning("Something went wrong finding the route.", [{ label: "Try again", fn: function () { requestRoute(); } }]);
-    } else if (res.status === "inside") {
-      big = fmt(res.directKm); note = "direct";
-      insideWarning(res);
-    } else if (res.status === "none") {
-      big = fmt(res.directKm); note = "direct";
-      var lastId = Array.from(state.avoid.keys()).pop(), lastR = state.regions[state.regions.length - 1];
-      var acts = [];
-      if (lastR) acts.push({ label: "Remove " + lastR.name, fn: function () { removeRegion(lastR); } });
-      else if (lastId) acts.push({ label: "Allow " + state.avoid.get(lastId), fn: function () { state.avoid.delete(lastId); avoidChanged(); } });
-      warning("There is no way from " + endName("a") + " to " + endName("b") + " that stays out of " + joinNames(avoidedNames()) + ".", acts);
-    } else if (tab === "direct") {
-      big = fmt(res.directKm); time = hours(res.directKm).text;
-      if (res.antipodal) delta = endName("a") + " and " + endName("b") + " are antipodes: every way round is this long";
-      else delta = "The great circle, the shortest way there is";
-      if (avoiding() && !detourOf(res)) note = "Already stays out of " + avoidLabel() + (state.bufferKm > 0 ? " | " + fmtBuffer(state.bufferKm) + " buffer" : "");
-      if (detourOf(res)) {
-        var over = (res.directCrosses || []).map(String).filter(function (id) { return state.avoid.has(id); }).map(function (id) { return state.avoid.get(id); });
-        warning(over.length ? "Flies over " + joinNames(over) + ", which you are avoiding." : "Goes through what you are avoiding.", [{ label: "Go round it", fn: function () { setTab("avoid", true); } }]);
-      }
-    } else if (tab === "avoid") {
-      var ex = res.lengthKm - res.directKm;
-      big = fmt(res.lengthKm); time = hours(res.lengthKm).text;
-      delta = "+" + fmt(ex) + " (" + pctOf(ex, res.directKm) + ") to go round " + avoidLabel();
-      note = "The shortest way round" + (state.bufferKm > 0 ? ", at least " + fmtBuffer(state.bufferKm) + " off" : "") + ", with " + res.bends + (res.bends === 1 ? " bend" : " bends");
-    } else if (tab === "plan") {
-      var pl = state.plan || { status: "pending" };
-      if (pl.status === "done") {
-        big = fmt(pl.km); time = hours(pl.km).text;
-        delta = "+" + fmt(pl.overKm) + " (" + pctOf(pl.overKm, res.lengthKm) + ") over the shortest way" + (detourOf(res) ? " round" : "");
-        note = "From one radio beacon to the next, as a flight plan does";
-      } else if (pl.status === "pending") {
-        big = "…"; note = "Finding radio beacons along the way…";
-      } else if (pl.status === "none") {
-        big = fmt(res.lengthKm);
-        warning("No chain of radio beacons reaches from " + endName("a") + " to " + endName("b") + " here.", [{ label: detourOf(res) ? "Show the way round" : "Show the shortest way", fn: function () { setTab(detourOf(res) ? "avoid" : "direct", true); } }]);
-      } else {
-        big = fmt(res.lengthKm);
-        warning("The radio beacons could not be loaded.", [{ label: "Try again", fn: function () { requestRoute(); } }]);
-      }
-    }
-    if (!warnSet) warning(null);
-    setText(ui.big, big); setText(ui.time, time); setText(ui.delta, delta); setText(ui.note, note);
-    ui.delta.hidden = !delta; ui.note.hidden = !note; ui.time.hidden = !time;
-    if (tab === "plan") renderPlan();
-    renderCrosses(tab);
-    var ms = res.ms, ex2 = res.expanded;
-    if (tab === "plan" && state.plan && state.plan.status === "done") { ms = (ms || 0) + state.plan.ms; ex2 = (ex2 || 0) + state.plan.expanded; }
-    setText(ui.stats, ms != null && ex2 ? "Worked out in " + (ms / 1000).toFixed(ms < 100 ? 2 : 1) + " s | " + ex2.toLocaleString() + (tab === "plan" ? " corners and beacons searched" : " corners searched") : "");
-    layoutSoon();
-  }
-
-  var planBuilt = "";
-  function renderPlan() {
-    var pl = state.plan;
-    ui.plan.hidden = false;
-    if (!pl || pl.status !== "done") {
-      ui.timeline.innerHTML = ""; planBuilt = "";
-      ui.planAll.hidden = true;
-      setText(ui.planTitle, "Flight plan");
-      setText(ui.planStatus, !pl || pl.status === "pending" ? "Finding radio beacons along the way…" : "");
-      ui.planStatus.hidden = !(!pl || pl.status === "pending");
-      ui.plan.hidden = !(!pl || pl.status === "pending");
-      return;
-    }
-    ui.planStatus.hidden = true;
-    var n = pl.points.length - 2;
-    setText(ui.planTitle, "Flight plan | " + n + (n === 1 ? " radio beacon" : " radio beacons"));
-    var LIMIT = 9, limit = state.planAll ? pl.legs.length : Math.min(LIMIT, pl.legs.length);
-    var key = state.shownId + "|" + state.units + "|" + limit;
-    ui.planAll.hidden = limit >= pl.legs.length;
-    setText(ui.planAll, "Show all " + pl.legs.length + " legs");
-    if (planBuilt !== key) {
-      planBuilt = key;
-      var frag = document.createDocumentFragment(), group = null, last = undefined;
-      var addRow = function (pt, legIndex, kind) {
-        var country = pt.country || "Over the sea";
-        if (country !== last) {
-          last = country;
-          var g = document.createElement("li"); g.className = "gc-tl-group";
-          var h = document.createElement("h4"); h.className = "gc-tl-country"; h.textContent = country; g.appendChild(h);
-          group = document.createElement("ol"); group.className = "gc-tl-legs"; g.appendChild(group);
-          frag.appendChild(g);
-        }
-        var li = document.createElement("li");
-        li.className = "gc-tl-row gc-tl-" + kind + (legIndex >= 0 && pl.legs[legIndex].long ? " is-long" : "");
-        if (legIndex >= 0) { li.dataset.leg = legIndex; li.tabIndex = 0; li.setAttribute("aria-pressed", "false"); li.setAttribute("role", "button"); }
-        var icon = document.createElement("span"); icon.className = "gc-tl-icon"; icon.setAttribute("aria-hidden", "true");
-        icon.innerHTML = kind === "end" ? '<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="currentColor"/></svg>'
-          : /^VOR/.test(pt.type) ? '<svg viewBox="0 0 14 14" width="14" height="14"><path d="M7 1.5L12.6 11.5H1.4Z" fill="var(--gc-card)" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
-          : '<svg viewBox="0 0 14 14" width="14" height="14"><circle cx="7" cy="7" r="4.6" fill="var(--gc-card)" stroke="currentColor" stroke-width="1.6"/></svg>';
-        li.appendChild(icon);
-        var txt = document.createElement("span"); txt.className = "gc-tl-text";
-        var id = document.createElement("b"); id.textContent = kind === "end" ? (legIndex < 0 ? endName("a") : endName("b")) : pt.ident;
-        var sub = document.createElement("small");
-        sub.textContent = kind === "end" ? (legIndex < 0 ? shortName(state.a) + ", departure" : shortName(state.b) + ", arrival") : pt.name + " " + pt.type;
-        txt.appendChild(id); txt.appendChild(sub); li.appendChild(txt);
-        var km = document.createElement("span"); km.className = "gc-tl-km";
-        if (legIndex >= 0) {
-          var sr = document.createElement("span"); sr.className = "sr-only"; sr.textContent = "leg "; km.appendChild(sr);
-          km.appendChild(document.createTextNode(fmt(pl.legs[legIndex].km)));
-          if (pl.legs[legIndex].long) { var lg = document.createElement("small"); lg.textContent = "no beacon near"; km.appendChild(lg); }
-        }
-        li.appendChild(km);
-        group.appendChild(li);
-      };
-      addRow(pl.points[0], -1, "end");
-      for (var i = 0; i < limit; i++) addRow(pl.points[i + 1], i, i + 1 === pl.points.length - 1 ? "end" : "beacon");
-      ui.timeline.innerHTML = "";
-      ui.timeline.appendChild(frag);
-    }
-    markLeg();
-  }
-  function markLeg() {
-    var leg = state.pinLeg >= 0 ? state.pinLeg : state.hoverLeg;
-    ui.timeline.querySelectorAll(".gc-tl-row[data-leg]").forEach(function (li) { li.classList.toggle("is-on", +li.dataset.leg === leg); li.classList.toggle("is-pinned", +li.dataset.leg === state.pinLeg); li.setAttribute("aria-pressed", String(+li.dataset.leg === state.pinLeg)); });
-  }
-  ui.timeline.addEventListener("pointerover", function (e) {
-    var li = e.target.closest && e.target.closest(".gc-tl-row[data-leg]");
-    var leg = li ? +li.dataset.leg : -1;
-    if (leg === state.hoverLeg || e.pointerType !== "mouse") return;
-    state.hoverLeg = leg; markLeg(); scheduleRender("full");
-  });
-  ui.timeline.addEventListener("pointerleave", function () { if (state.hoverLeg < 0) return; state.hoverLeg = -1; markLeg(); scheduleRender("full"); });
-  ui.timeline.addEventListener("click", function (e) {
-    var li = e.target.closest && e.target.closest(".gc-tl-row[data-leg]");
-    if (!li) return;
-    var leg = +li.dataset.leg;
-    state.pinLeg = state.pinLeg === leg ? -1 : leg;
-    markLeg(); scheduleRender("full");
-    if (state.pinLeg >= 0 && state.plan && state.plan.points) {
-      var p = state.plan.points[leg + 1];
-      if (!visible([p.lon, p.lat])) flyTo(p.lon, p.lat);
-    }
-  });
-  ui.timeline.addEventListener("keydown", function (e) {
-    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches(".gc-tl-row[data-leg]")) { e.preventDefault(); e.target.click(); }
-  });
-  ui.timeline.addEventListener("focusin", function (e) {
-    var li = e.target.closest && e.target.closest(".gc-tl-row[data-leg]");
-    if (!li || +li.dataset.leg === state.hoverLeg) return;
-    state.hoverLeg = +li.dataset.leg; markLeg(); scheduleRender("full");
-  });
-  ui.planAll.addEventListener("click", function () {
-    state.planAll = true;
-    var n = ui.timeline.querySelectorAll(".gc-tl-row[data-leg]").length;
-    renderPlan();
-    var rows = ui.timeline.querySelectorAll(".gc-tl-row[data-leg]");
-    if (rows[n]) rows[n].focus();
-  });
-
-  function renderCrosses(tab) {
-    var res = state.result;
-    var ids = tab === "plan" ? (state.plan && state.plan.status === "done" ? state.plan.crosses : null) : tab === "avoid" ? res.routeCrosses : res.directCrosses;
-    if (!ids) { ui.crosses.hidden = true; return; }
-    ui.crosses.hidden = false;
-    var ends = (res.startIn || []).concat(res.endIn || []).map(String);
-    var list = ids.map(String).filter(function (id) { return featureById.has(id); });
-    var key = list.join(",") + "|" + Array.from(state.avoid.keys()).join(",") + "|" + ends.join(",");
-    if (ui.crossList.dataset.key === key) return;
-    ui.crossList.dataset.key = key;
-    setText(ui.crossTitle, list.length ? "Crosses " + list.length + (list.length === 1 ? " country" : " countries") : "Crosses nothing: open sea all the way");
-    ui.crossList.innerHTML = "";
-    list.forEach(function (id) {
-      var f = featureById.get(id), li = document.createElement("li");
-      if (!state.avoid.has(id) && id !== ANTARCTICA && ends.indexOf(id) < 0) {
-        var b = document.createElement("button"); b.type = "button"; b.className = "gc-chip gc-chip-add";
-        b.dataset.id = id; b.textContent = f.properties.name; b.title = "Avoid " + f.properties.name; b.setAttribute("aria-label", "Avoid " + f.properties.name);
-        li.appendChild(b);
-      } else {
-        li.className = "gc-chip" + (state.avoid.has(id) ? " is-avoided" : "");
-        li.textContent = f.properties.name;
-      }
-      ui.crossList.appendChild(li);
-    });
-  }
-  ui.crossList.addEventListener("click", function (e) {
-    var b = e.target.closest && e.target.closest("button[data-id]");
-    if (!b) return;
-    var id = b.dataset.id, f = featureById.get(id);
-    state.avoid.set(id, f.properties.name);
-    state.tab = null;
-    avoidChanged();
-    ui.crossTitle.focus();
-  });
-
-  function setTab(tab, focus) {
-    state.tab = tab;
-    state.hoverLeg = -1; state.pinLeg = -1;
-    if (tab === "plan") fitPending = "plan";
-    renderPanel();
-    writeUrl();
-    scheduleRender("full");
-    if (tab === "plan" && state.plan && state.plan.status === "done") { fitPending = false; fitRoute(false); }
-    if (focus) $("tab-" + currentTab()).focus();
-  }
-  ui.tabs.addEventListener("click", function (e) {
-    var b = e.target.closest && e.target.closest("[role=tab]");
-    if (b) setTab(b.dataset.tab, false);
-  });
-  ui.tabs.addEventListener("keydown", function (e) {
-    var list = Array.prototype.filter.call(ui.tabs.querySelectorAll("[role=tab]"), function (b) { return !b.hidden; });
-    var i = list.indexOf(document.activeElement);
-    if (i < 0) return;
-    var j = e.key === "ArrowRight" ? (i + 1) % list.length : e.key === "ArrowLeft" ? (i - 1 + list.length) % list.length : e.key === "Home" ? 0 : e.key === "End" ? list.length - 1 : -1;
-    if (j < 0) return;
-    e.preventDefault();
-    setTab(list[j].dataset.tab, true);
-  });
-
-  function announce() {
-    var res = state.result;
-    if (!res) return;
-    var t = currentTab(), text;
-    if (res.status === "done" && t === "plan" && tabKm("plan") == null) {
-      text = state.plan && state.plan.status === "pending" ? "Flight plan: finding radio beacons along the way." : (ui.warn.querySelector(".gc-warn-text") || {}).textContent || "";
-    } else if (res.status === "done") {
-      var km = tabKm(t);
-      text = (t === "avoid" ? "Avoiding " + avoidLabel() + ": " : t === "plan" ? "Flight plan: " : "Direct: ") + fmt(km) + ", " + hours(km).spoken + ".";
-      if (t === "avoid") text += " " + fmt(res.lengthKm - res.directKm) + " longer than direct.";
-    } else text = (ui.warn.querySelector(".gc-warn-text") || {}).textContent || "";
-    ui.status.textContent = "";
-    setTimeout(function () { ui.status.textContent = text; }, 30);
-  }
-
-  var optOpener = null;
-  function setOptions(open, opener, byKey) {
-    ui.options.hidden = !open;
-    document.querySelectorAll(".gc-opt-chip").forEach(function (c) { c.setAttribute("aria-expanded", String(open && c === opener)); c.classList.toggle("is-open", open && c === opener); });
-    if (open) {
-      optOpener = opener || null;
-      if (W <= 640) setSheet(true);
-      var k = opener && opener.dataset.opt;
-      var target = k === "buffer" ? ui.options.querySelector("input[name=buffer]:checked") : k === "units" ? ui.options.querySelector("input[name=units]:checked") : $("in-avoid");
-      if (target && !(k === "avoid" && !canHover)) target.focus();
-    } else if (optOpener) { if (byKey) optOpener.focus(); else if (ui.options.contains(document.activeElement)) document.activeElement.blur(); optOpener = null; }
-    layoutSoon();
-  }
-  document.querySelectorAll(".gc-opt-chip").forEach(function (c) {
-    c.addEventListener("click", function () { setOptions(ui.options.hidden || !c.classList.contains("is-open"), c); });
-  });
-  $("options-done").addEventListener("click", function (e) { setOptions(false, null, e.detail === 0); });
-  ui.options.addEventListener("keydown", function (e) {
-    if (e.key !== "Escape" || e.defaultPrevented) return;
-    e.preventDefault(); setOptions(false, null, true);
-  });
-  function renderOptionChips() {
-    setText($("chip-avoid"), avoiding() ? "Avoiding " + avoidLabel() : "Avoid a country");
-    $("chip-buffer").hidden = !avoiding();
-    setText($("chip-buffer"), state.bufferKm > 0 ? fmtBuffer(state.bufferKm) + " buffer" : "No buffer");
-    setText($("chip-units"), state.units);
-    $("chip-avoid").classList.toggle("is-set", avoiding());
-    var mi = String(bufferMi(state.bufferKm));
-    ui.options.querySelectorAll("input[name=buffer]").forEach(function (r) { r.checked = r.value === mi; });
-    ui.options.querySelectorAll("input[name=units]").forEach(function (r) { r.checked = r.value === state.units; });
-    $("buffer-row").hidden = !avoiding();
-  }
-  ui.options.querySelectorAll("input[name=units]").forEach(function (r) {
-    r.addEventListener("change", function () {
-      state.units = r.value;
-      try { localStorage.setItem("gc-units", state.units); } catch (e) {}
-      planBuilt = "";
-      renderPanel();
-      scheduleRender("full");
-    });
-  });
-  ui.options.querySelectorAll("input[name=buffer]").forEach(function (r) {
-    r.addEventListener("change", function () { setBuffer(+r.value); });
-  });
-
-  $("share").addEventListener("click", function () {
-    var url = location.href, label = $("share-label");
-    var done = function (text) { label.textContent = text; ui.status.textContent = text; setTimeout(function () { label.textContent = "Share this route"; }, 2000); };
-    if (navigator.share && !canHover) { navigator.share({ title: "GREATERCIRCLE: " + endName("a") + " to " + endName("b"), url: url }).catch(function () {}); return; }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { done("Link copied"); }, function () { done("Copy the address bar to share"); });
-    else done("Copy the address bar to share");
-  });
-
-  var layoutTimer = 0, lastPanelH = 0;
-  function layoutSoon() {
-    if (W > 640) return;
-    cancelAnimationFrame(layoutTimer);
-    layoutTimer = requestAnimationFrame(function () {
-      var h = Math.round(panel.getBoundingClientRect().height);
-      if (h !== lastPanelH) { lastPanelH = h; layout(); scheduleRender("full"); }
-    });
-  }
-
-  var MI_KM = 1.609344, BUFFER_MI = [0, 1, 5, 10, 20, 50, 100], BUFFER_DEFAULT_MI = 50;
-  function bufferMi(km) {
-    var best = BUFFER_MI[0];
-    BUFFER_MI.forEach(function (mi) { if (Math.abs(mi * MI_KM - km) < Math.abs(best * MI_KM - km)) best = mi; });
-    return best;
-  }
-  function fmtBuffer(km) { return bufferMi(km) + " mi"; }
-  function setBuffer(mi) {
-    state.bufferKm = mi * MI_KM;
-    renderOptionChips();
-    requestRoute();
-    writeUrl();
-    scheduleRender("full");
-  }
-
   var ANTARCTICA = "010";
+  var P = GreatCirclePanel({
+    state: state, $: $, panel: panel, fmt: fmt, scheduleRender: scheduleRender, joinNames: joinNames, requestRoute: requestRoute,
+    names: names, featureById: featureById, avoidChanged: avoidChanged, writeUrl: writeUrl, uniqueBase: uniqueBase,
+    removeRegion: removeRegion, regionById: regionById, canHover: canHover, avoidedNames: avoidedNames, visible: visible,
+    setSheet: setSheet, layout: layout, fmtLonLat: fmtLonLat, flyTo: flyTo, fitRoute: fitRoute, ANTARCTICA: ANTARCTICA,
+    W: function () { return W; }, setFitPending: function (v) { fitPending = v; },
+    reduceMotion: function () { return reduceMotion; }, tabChanged: function (prev) { tabChanged(prev); }, makeCard: makeCard
+  });
+  var renderPanel = P.renderPanel, renderBusy = P.renderBusy, announce = P.announce, currentTab = P.currentTab, detourOf = P.detourOf,
+    renderOptionChips = P.renderOptionChips, bufferMi = P.bufferMi, MI_KM = P.MI_KM, BUFFER_DEFAULT_MI = P.BUFFER_DEFAULT_MI;
   function writeUrl() {
     var p = [];
     var pt = function (k, v) { if (v) p.push(k + "=" + v.lat.toFixed(4) + "," + v.lon.toFixed(4) + (v.label ? "," + encodeURIComponent(v.label) : "")); };
@@ -2506,12 +2172,13 @@
     });
     if ((state.avoid.size || state.regions.length) && bufferMi(state.bufferKm) !== BUFFER_DEFAULT_MI) p.push("buf=" + bufferMi(state.bufferKm) + "mi");
     if (state.tab && state.a && state.b && (!state.result || currentTab() === state.tab)) p.push("tab=" + state.tab);
+    if (state.wind) p.push("wind=1");
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -2546,6 +2213,8 @@
         if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; r.inverted = parts[3] === "i"; state.regions.push(r); any = true; }
       } else if (k === "wp") {
         if (v === "1") state.tab = "plan";
+      } else if (k === "wind") {
+        state.wind = v === "1";
       } else if (k === "tab") {
         if (v === "direct" || v === "avoid" || v === "plan") state.tab = v;
       } else if (k === "buf") {
@@ -2576,56 +2245,92 @@
     });
   })();
 
-  var SHEET_HIDDEN = 0, SHEET_PEEK = 1, SHEET_OPEN = 2;
-  var sheetGestureAt = 0;
-  function sheetState() {
-    return panel.classList.contains("is-open") ? SHEET_OPEN : panel.classList.contains("is-hidden") ? SHEET_HIDDEN : SHEET_PEEK;
+  var SHEET_PEEK = 0, SHEET_HALF = 1, SHEET_FULL = 2;
+  var sheetMode = SHEET_PEEK, sheetGestureAt = 0, sheetY = 0;
+  function sheetHeight() { return panel.getBoundingClientRect().height || H; }
+  function peekPx() {
+    var top = panel.getBoundingClientRect().top, end;
+    if (panel.classList.contains("has-result")) {
+      var delta = $("hero-delta");
+      end = delta && !delta.hidden && delta.textContent ? delta : ($("hero-top") || $("result"));
+    } else end = document.querySelector(".gc-route-card");
+    var px = end ? end.getBoundingClientRect().bottom - top + 12 : 220;
+    return Math.max(150, Math.min(px, H * 0.5));
   }
-  function setSheetState(st) {
-    st = Math.max(SHEET_HIDDEN, Math.min(SHEET_OPEN, st));
-    var open = st === SHEET_OPEN;
-    panel.classList.toggle("is-open", open);
-    panel.classList.toggle("is-hidden", st === SHEET_HIDDEN);
-    var controls = document.querySelector(".gc-controls");
-    controls.classList.toggle("is-lifted", open);
-    controls.classList.toggle("is-low", st === SHEET_HIDDEN);
-    $("sheet-handle").setAttribute("aria-expanded", String(open));
-    $("sheet-handle").setAttribute("aria-label", open ? "Show less" : "Show more");
-    if (!open) panel.scrollTop = 0;
-    setTimeout(function () { layout(); scheduleRender("full"); }, 300);
+  function sheetVisible(mode) {
+    var full = sheetHeight(), peek = Math.min(peekPx(), full);
+    if (mode === SHEET_FULL) return full;
+    if (mode === SHEET_HALF) return Math.min(full, Math.max(peek, Math.round(H * 0.56)));
+    return peek;
   }
-  function setSheet(open) { setSheetState(open ? SHEET_OPEN : SHEET_PEEK); }
+  function sheetYFor(mode) { return sheetHeight() - sheetVisible(mode); }
+  function placeSheet() {
+    if (W > 640) { panel.style.removeProperty("--sheet-y"); return; }
+    sheetY = sheetYFor(sheetMode);
+    panel.style.setProperty("--sheet-y", sheetY + "px");
+  }
+  function setSheetMode(mode) {
+    mode = Math.max(SHEET_PEEK, Math.min(SHEET_FULL, mode));
+    sheetMode = mode;
+    var full = mode === SHEET_FULL;
+    panel.classList.toggle("is-open", full);
+    panel.classList.toggle("is-half", mode === SHEET_HALF);
+    document.querySelector(".gc-controls").classList.toggle("is-lifted", full);
+    $("sheet-handle").setAttribute("aria-expanded", String(full));
+    $("sheet-handle").setAttribute("aria-label", full ? "Show less" : "Show more");
+    if (!full) panel.scrollTop = 0;
+    placeSheet();
+    var settle = function () { layout(); scheduleRender("full"); if (state.result && state.result.status === "done" && mode !== SHEET_FULL) fitRoute(false); };
+    if (reduceMotion) settle(); else { clearTimeout(setSheetMode.t); setSheetMode.t = setTimeout(settle, 340); }
+  }
+  function setSheet(open) { setSheetMode(open ? SHEET_FULL : SHEET_HALF); }
   $("sheet-handle").addEventListener("click", function () {
     if (performance.now() - sheetGestureAt < 500) return;
-    var st = sheetState();
-    setSheetState(st === SHEET_OPEN ? SHEET_PEEK : st + 1);
+    setSheetMode(sheetMode === SHEET_FULL ? SHEET_PEEK : sheetMode + 1);
   });
   [inputs.a, inputs.b, $("in-avoid")].forEach(function (inp) {
     inp.addEventListener("focus", function () {
-      if (W <= 640 && !panel.classList.contains("is-open") && performance.now() - sheetGestureAt > 500) setSheet(true);
+      if (W <= 640 && sheetMode !== SHEET_FULL && performance.now() - sheetGestureAt > 500) setSheet(true);
     });
   });
+  if (window.visualViewport) {
+    var kbUpdate = function () {
+      var vv = window.visualViewport;
+      var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      panel.style.setProperty("--kb", (W <= 640 ? kb : 0) + "px");
+      if (W <= 640) placeSheet();
+    };
+    window.visualViewport.addEventListener("resize", kbUpdate);
+    window.visualViewport.addEventListener("scroll", kbUpdate);
+  }
 
   var sheetDrag = null;
   panel.addEventListener("pointerdown", function (e) {
     if (W > 640 || e.pointerType === "mouse") return;
-    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), engaged: false,
-      onHandle: !!(e.target.closest && e.target.closest(".gc-sheet-handle, .gc-head")) };
+    if (e.target.closest && e.target.closest(".gc-opt-chips, input, .gc-suggest")) return;
+    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, y: sheetY, t: performance.now(), v: 0, last: e.clientY, engaged: false,
+      onHandle: !!(e.target.closest && e.target.closest(".gc-sheet-handle")) };
   });
   panel.addEventListener("pointermove", function (e) {
     var d = sheetDrag;
     if (!d || e.pointerId !== d.id) return;
     var dy = e.clientY - d.y0, dx = e.clientX - d.x0;
     if (!d.engaged) {
-      if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
-      if (sheetState() === SHEET_OPEN && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
+      if (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+      if (sheetMode === SHEET_FULL && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
       d.engaged = true;
       try { panel.setPointerCapture(e.pointerId); } catch (err) {}
       panel.classList.add("is-dragging");
       if (document.activeElement && panel.contains(document.activeElement)) document.activeElement.blur();
     }
-    var y = Math.max(0, dy);
-    panel.style.transform = y ? "translateY(" + y + "px)" : "";
+    var now = performance.now();
+    d.v = 0.8 * ((e.clientY - d.last) / Math.max(1, now - d.t)) + 0.2 * d.v;
+    d.last = e.clientY; d.t = now;
+    var y = d.y + dy, lo = sheetYFor(SHEET_FULL), hi = sheetYFor(SHEET_PEEK);
+    if (y < lo) y = lo - (lo - y) * 0.35;
+    if (y > hi) y = hi + (y - hi) * 0.35;
+    panel.style.setProperty("--sheet-y", y + "px");
+    e.preventDefault();
   });
   function endSheetDrag(e) {
     var d = sheetDrag;
@@ -2633,15 +2338,19 @@
     sheetDrag = null;
     if (!d.engaged) return;
     sheetGestureAt = performance.now();
-    var dy = e.clientY - d.y0, v = dy / Math.max(1, performance.now() - d.t0);
     panel.classList.remove("is-dragging");
-    panel.style.transform = "";
-    var st = sheetState();
-    if (dy > 40 || v > 0.4) setSheetState(st - 1);
-    else if (dy < -40 || v < -0.4) setSheetState(st + 1);
+    var y = d.y + (e.clientY - d.y0), aim = y + d.v * 200, best = SHEET_PEEK, bestD = Infinity;
+    [SHEET_PEEK, SHEET_HALF, SHEET_FULL].forEach(function (m) { var dd = Math.abs(sheetYFor(m) - aim); if (dd < bestD) { bestD = dd; best = m; } });
+    setSheetMode(best);
   }
   panel.addEventListener("pointerup", endSheetDrag);
-  panel.addEventListener("pointercancel", endSheetDrag);
+  panel.addEventListener("pointercancel", function (e) {
+    var d = sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    sheetDrag = null;
+    panel.classList.remove("is-dragging");
+    if (d.engaged) setSheetMode(sheetMode);
+  });
 
   function init(topo) {
     topology = topo;
@@ -2684,7 +2393,13 @@
     scheduleRender("full");
   }
 
-  window.addEventListener("resize", function () { layout(); scheduleRender("full"); });
+  var lastW = window.innerWidth;
+  window.addEventListener("resize", function () {
+    var typing = document.activeElement && document.activeElement.tagName === "INPUT" && panel.contains(document.activeElement);
+    if (window.innerWidth <= 640 && typing && window.innerWidth === lastW) { placeSheet(); return; }
+    lastW = window.innerWidth;
+    layout(); scheduleRender("full");
+  });
   new MutationObserver(function () { refreshPalette(); scheduleRender("full"); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { scheduleRender("full"); });

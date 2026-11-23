@@ -474,3 +474,14 @@ test("the worker sends the route first, then the flight plan, and a repeat comes
   assert.deepEqual(again, ["result", "plan"]);
   assert.ok(sent.slice(before).find((m) => m.type === "result").cached);
 });
+
+test("typical winds speed eastbound flights and slow westbound ones, more in winter", () => {
+  const JFK = [-73.78, 40.64], LHR = [-0.46, 51.47];
+  const east = G.flightHours([JFK, LHR], { wind: true, month: 0 }), west = G.flightHours([LHR, JFK], { wind: true, month: 0 });
+  const calm = G.flightHours([JFK, LHR]);
+  assert.ok(east < calm && calm < west, `${east} < ${calm} < ${west}`);
+  assert.ok(west - east > 0.6 && west - east < 1.8, `difference ${west - east} h`);
+  const summer = G.flightHours([LHR, JFK], { wind: true, month: 6 }) - G.flightHours([JFK, LHR], { wind: true, month: 6 });
+  assert.ok(summer < west - east);
+  assert.ok(Math.abs(calm - (G.angleBetween(G.toVec(...JFK), G.toVec(...LHR)) * KM / 850 + 0.5)) < 1e-9);
+});

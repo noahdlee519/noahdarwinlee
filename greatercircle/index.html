@@ -85,7 +85,7 @@
       id="globe"
       class="gc-globe"
       tabindex="0"
-      aria-label="A globe. Drag to turn it, scroll or pinch to zoom, click to place a point, shift-click a country to avoid it. Arrow keys turn it; plus and minus zoom."
+      aria-label="A globe. Drag to turn it, scroll or pinch to zoom, click to place a point, or click a country to avoid it. With the keyboard, arrow keys turn it under the crosshair, plus and minus zoom, Enter puts a point at the crosshair, or offers to avoid the country there once A and B are set, and Shift and Enter avoids that country at once."
     ></canvas>
     <div class="gc-tip" id="tip" hidden></div>
     <div class="gc-zoom-hint" id="zoom-hint" aria-hidden="true">Hold &#8984; or Ctrl and scroll to zoom</div>
@@ -135,6 +135,12 @@
       </button>
     </div>
 
+    <div class="gc-legend" id="legend" aria-hidden="true" hidden>
+      <span class="gc-lg"><svg width="26" height="8" viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg>This route</span>
+      <span class="gc-lg" id="legend-others"><svg width="26" height="8" viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 4" stroke-linecap="round" /></svg><span id="legend-others-text">The other ways</span></span>
+      <span class="gc-lg" id="legend-avoid"><span class="gc-lg-hatch"></span><span id="legend-avoid-text">Avoided, with its buffer</span></span>
+    </div>
+
     <aside class="gc-panel" id="panel" aria-label="Route">
       <button type="button" class="gc-sheet-handle" id="sheet-handle" aria-label="Show more" aria-expanded="false">
         <span></span>
@@ -176,7 +182,8 @@
               flight plan goes from one radio beacon (a VOR or an NDB) to the next, as a flight plan
               does, in legs of at most 300 km, longer only across sea or desert with no beacon near
               the way, and is the shortest such chain round what you avoid. Flight times assume
-              850 km/h and half an hour to climb and descend. Distances are on a sphere of radius
+              850 km/h and half an hour to climb and descend, and with winds on, the month's typical
+              winds at cruising height (an average, not a forecast). Distances are on a sphere of radius
               6,371.0088 km.
             </p>
             <p>
@@ -203,7 +210,7 @@
         <div class="gc-route-sum" id="route-sum">
           <span class="gc-sum-end"><span class="sr-only">From </span><b id="sum-a">A</b><small id="sum-a-name"></small></span>
           <span class="gc-sum-line" aria-hidden="true"></span>
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M1.5 9.2l5-.9 3.2 5 1.4-.4-1.3-5.2 3.8-.8c.9-.2.9-1.4 0-1.6l-3.8-.8 1.3-5.2-1.4-.4-3.2 5-5-.9-.6.8 2.6 1.9-2.6 1.9z" fill="currentColor" transform="rotate(90 8 8)" /></svg>
+          <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path d="M15 8c0-.6-.5-1-1.2-1H10L6.5 2H5l1.8 5H3.5L2.2 5.5H1l.8 2.5-.8 2.5h1.2L3.5 9h3.3L5 14h1.5L10 9h3.8c.7 0 1.2-.4 1.2-1z" fill="currentColor" /></svg>
           <span class="gc-sum-line" aria-hidden="true"></span>
           <span class="gc-sum-end gc-sum-b"><span class="sr-only">To </span><b id="sum-b">B</b><small id="sum-b-name"></small></span>
         </div>
@@ -298,6 +305,18 @@
             </div>
           </div>
           <p class="gc-hint" id="avoid-hint">Or tap a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span></p>
+          <div class="gc-closures" role="group" aria-labelledby="closures-label">
+            <span class="gc-label" id="closures-label">Closed airspace, as of 22 November 2026</span>
+            <button type="button" class="gc-closure" data-ids="643,804,112" aria-pressed="false">
+              <b>Russia, Ukraine, and Belarus</b>
+              <small>Ukraine is closed to all civil flights, Russia to most European and North American airlines since 2022, and Belarus to EU airlines since 2021</small>
+            </button>
+            <button type="button" class="gc-closure" data-ids="364,368,760,422,400,887" aria-pressed="false">
+              <b>Iran, Iraq, Syria, Lebanon, Jordan, and Yemen</b>
+              <small>Where the EU's aviation agency, EASA, advises its airlines not to fly</small>
+            </button>
+            <p class="gc-hint">Whole countries only: real closures often cover part of a country or some altitudes, Yemen's and Lebanon's among them, and the Gulf states and Saudi Arabia, warned of in part, are left out. They change, too: check <a href="https://safeairspace.net/summary/" target="_blank" rel="noopener">Safe Airspace</a> or the <a href="https://www.faa.gov/air_traffic/publications/us_restrictions/index.cfm" target="_blank" rel="noopener">FAA</a> before relying on them.</p>
+          </div>
         </div>
         <fieldset class="gc-opt-group" id="buffer-row">
           <legend class="gc-label">Keep away by</legend>
@@ -311,6 +330,14 @@
             <label><input type="radio" name="buffer" value="100" /><span>100</span></label>
           </div>
           <p class="gc-hint">miles, round everything avoided</p>
+        </fieldset>
+        <fieldset class="gc-opt-group">
+          <legend class="gc-label">Winds aloft</legend>
+          <div class="gc-seg gc-seg-2" id="wind">
+            <label><input type="radio" name="wind" value="0" checked /><span>Calm</span></label>
+            <label><input type="radio" name="wind" value="1" /><span id="wind-month">Typical for this month</span></label>
+          </div>
+          <p class="gc-hint">Flight times at 850 km/h through the air, plus half an hour to climb and descend; with winds, the jet streams of a typical month speed up flights east and slow those west</p>
         </fieldset>
         <fieldset class="gc-opt-group">
           <legend class="gc-label">Units</legend>
@@ -331,12 +358,13 @@
         </div>
         <div id="tabpanel" role="tabpanel" aria-labelledby="tab-direct" tabindex="-1">
           <div class="gc-hero">
-            <div class="gc-hero-top">
+            <div class="gc-hero-top" id="hero-top">
               <span class="gc-big" id="hero-big"></span>
               <span class="gc-time" id="hero-time"></span>
             </div>
             <span class="gc-delta" id="hero-delta"></span>
             <span class="gc-note" id="hero-note"></span>
+            <span class="gc-note gc-wind" id="hero-wind" hidden></span>
           </div>
           <div class="gc-warn" id="warn" hidden></div>
         </div>
@@ -362,6 +390,7 @@
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2M8 2L5 5M8 2l3 3M3 8v5.5h10V8" /></svg>
           <span id="share-label">Share this route</span>
         </button>
+        <button type="button" class="gc-btn gc-btn-quiet gc-share-image" id="share-image">Save as an image</button>
         <p class="gc-stats" id="stats"></p>
       </div>
       <p class="sr-only" role="status" aria-atomic="true" id="status"></p>
@@ -384,6 +413,7 @@
     <script src="engine.js"></script>
     <script src="sat.js"></script>
     <script src="../theme.js" defer></script>
+    <script src="panel.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

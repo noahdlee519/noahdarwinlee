@@ -23,7 +23,14 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   on the country, where great-circle edges are straight lines, so the union is
   exact for those edges. Islands far apart get projections of their own. The
   outline keeps every point within the buffer and lets in nothing more than
-  about 3% beyond it.
+  about 3% beyond it. Flight times (`flightHours`) are the distance at 850
+  km/h plus half an hour, and with winds on, each stretch of the route is
+  flown at 850 km/h plus the wind along it (`windU`): a simple climatology of
+  the westerlies at cruising height, two jets in each hemisphere and an
+  easterly in the tropics, strongest in each hemisphere's winter. It is an
+  average for the month, not a forecast, so it gets the difference between
+  the two directions roughly right (London to New York about an hour longer
+  than the way back in January) and not any one day's flight.
 - **The flight plan** (the third tab; `tab=plan` in the URL, and the old
   `wp=1` still opens it): the route flies from one radio beacon to the next,
   as a flight plan does. Once the shortest way is found, A* runs again over A, B, and the beacons within 300 km of it (then
@@ -41,6 +48,12 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   without waiting; the last eight routes are kept, so going back to one, or
   undoing an avoid, answers both at once. Loaded as a plain script instead when
   the browser will not start a worker, answering through the same messages.
+  With each route it sends which avoided countries it bends round and which
+  countries those bends lie over, for the line under the distance ("Bends 12
+  times round the 50 mi buffer of Russia, over Azerbaijan and China").
+- **panel.js** — the result card, its tabs, the flight plan's timeline, the
+  countries crossed, the warnings, the options card, and Share, given what it
+  needs from app.js when the page starts (`GreatCirclePanel(app)`).
 - **app.js** — the globe (canvas; a direct orthographic projector for land and
   borders at three levels of detail chosen by how big the globe is on screen,
   d3-geo for the route arcs and the exact pointer test, a colour-coded second
@@ -71,6 +84,32 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   the largest buffer that would leave it out. Then the results, and the URL
   hash that holds the state (`buf=` when the buffer is not 50 miles), so a
   route can be shared.
+
+  The options card also has two presets of closed airspace, as of 22 November
+  2026 (Russia, Ukraine, and Belarus; Iran, Iraq, Syria, Lebanon, Jordan, and
+  Yemen), which avoid or release those countries together; they are whole
+  countries, where the real closures are often a part of one, so the hint
+  points to Safe Airspace and the FAA for the detail. Winds aloft (`wind=1`)
+  switch the times to the month's typical winds and add the time the other
+  way. A legend in the corner says which line is which, and "Save as an
+  image" draws a 1200 by 630 card of the route (the codes, names, distance,
+  time, and the flat globe fitted to the route) and shares it where the
+  browser can, or downloads it.
+
+  On a phone the panel is a sheet at three heights: a peek with the codes and
+  the distance, half, and full. Drag it by the handle or the top of its
+  content and it follows the finger, stretches past either end, and settles
+  on the nearest height (or the next one, after a flick); tapping the handle
+  goes up a height, then back down. It rides above the on-screen keyboard.
+  The globe is kept in the space above the sheet.
+
+  Motion: a new route draws itself in from A to B, switching tab morphs the
+  line from one route to the other, and the distance counts up to its new
+  value; none of it happens when the system asks for reduced motion. From
+  the keyboard, the globe has a crosshair at its centre when it has focus:
+  the arrows turn it, + and - zoom, and Enter places A, then B, or a
+  polygon's next corner (on the first corner, it closes the polygon), as a
+  click there would.
 - **data/countries-50m.json** — Natural Earth 1:50m countries (world-atlas),
   with unique ids and display names; **data/places.json** — cities, capitals,
   airports, and countries for the search boxes. Both come from
@@ -117,6 +156,7 @@ the countries you would rather not cross. Served at `/greatercircle/`.
 ## Tests
 
     cd greatercircle && node --test test/engine.test.mjs
+    NODE_PATH=$(npm root -g) node --test test/smoke.test.mjs
 
 The engine against d3-geo (12,000 random points in and out of countries), country
 buffers against the exact distance to the border (inside the buffer within it,
@@ -127,10 +167,15 @@ and both at once from its cache),
 synthetic shapes for the arc test's edge cases (touching, running along, and
 going through corners and straight runs), antipodes, and real routes checked
 for staying outside the avoided countries, being no longer than they must be,
-and coming out the same length in either direction. The page itself was
-driven with Playwright during development (typing, clicking, shift-clicking,
-dragging, zooming, pinching, the phone sheet, both themes); those scripts are
-not in the repo.
+and coming out the same length in either direction, and the winds (London to
+New York faster than calm air, the way back slower, by a plausible amount,
+and less so in summer).
+
+The smoke tests drive the page in Playwright (skipped if it is not
+installed), serving the site themselves: the empty page, an example route
+and its flight plan, the options card and the buffer, the phone sheet at its
+heights, the page without a worker, Enter at the crosshair, a closure preset
+and the winds, and saving the image card, each with no errors on the page.
 
 ## Literature
 

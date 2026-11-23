@@ -1026,6 +1026,38 @@
     return s;
   }
 
+  var CRUISE_KMH = 850, CLIMB_H = 0.5;
+  function jet(lat, peak, at, width) { var d = (lat - at) / width; return peak * Math.exp(-d * d); }
+  function windU(lat, month) {
+    var w = (1 + Math.cos(((month + 0.5) / 12) * 2 * Math.PI)) / 2;
+    var mix = function (winter, summer, s) { return summer + (winter - summer) * s; };
+    var n = w, s = 1 - w;
+    return jet(lat, mix(38, 12, n), mix(30, 40, n), 9) + jet(lat, mix(22, 14, n), mix(50, 55, n), 12)
+      + jet(lat, mix(35, 15, s), mix(-30, -38, s), 9) + jet(lat, mix(20, 18, s), mix(-52, -55, s), 12)
+      - jet(lat, 6, 0, 12);
+  }
+  function flightHours(coords, opts) {
+    opts = opts || {};
+    var tas = opts.kmh || CRUISE_KMH, hours = opts.overhead == null ? CLIMB_H : opts.overhead, step = 50 / EARTH_RADIUS_KM;
+    for (var i = 0; i + 1 < coords.length; i++) {
+      var a = toVec(coords[i][0], coords[i][1]), b = toVec(coords[i + 1][0], coords[i + 1][1]);
+      var L = angleBetween(a, b);
+      if (L < 1e-12) continue;
+      if (!opts.wind) { hours += L * EARTH_RADIUS_KM / tas; continue; }
+      var n = Math.max(1, Math.ceil(L / step)), nrm = normalize(cross(a, b));
+      for (var k = 0; k < n; k++) {
+        var p = sampleAt(a, b, L, (k + 0.5) / n);
+        var t = cross(nrm, p);
+        var lon = Math.atan2(p[1], p[0]);
+        var east = -Math.sin(lon) * t[0] + Math.cos(lon) * t[1];
+        var lat = Math.asin(Math.max(-1, Math.min(1, p[2]))) * RAD;
+        var gs = tas + windU(lat, opts.month) * 3.6 * east;
+        hours += (L / n) * EARTH_RADIUS_KM / Math.max(gs, tas * 0.5);
+      }
+    }
+    return hours;
+  }
+
   function startSearch(obs, a, b) {
     var insideA = featuresContaining(obs, a), insideB = featuresContaining(obs, b);
     if (insideA.length || insideB.length) {
@@ -1266,7 +1298,7 @@
   return {
     EARTH_RADIUS_KM: EARTH_RADIUS_KM,
     bufferRings: bufferRings, bufferOutline: bufferOutline, boundaryDistance: boundaryDistance,
-    BEACON_LEG_KM: BEACON_LEG_KM, beaconIndex: beaconIndex, startBeaconSearch: startBeaconSearch, stepBeaconSearch: stepBeaconSearch,
+    BEACON_LEG_KM: BEACON_LEG_KM, windU: windU, flightHours: flightHours, beaconIndex: beaconIndex, startBeaconSearch: startBeaconSearch, stepBeaconSearch: stepBeaconSearch,
     toVec: toVec, toLonLat: toLonLat, angleBetween: angleBetween, normalize: normalize,
     sampleArc: sampleArc, sphereDistanceKm: sphereDistanceKm, ellipsoidDistanceKm: ellipsoidDistanceKm,
     sphericalSignedArea: sphericalSignedArea,
