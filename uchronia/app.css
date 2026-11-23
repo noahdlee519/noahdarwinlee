@@ -2066,6 +2066,19 @@ a.uc-menu-item {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.uc-lang-select {
+  display: block;
+  width: 100%;
+  margin: 8px 0 2px;
+  padding: 5px 8px;
+  border: 1px solid var(--uc-muted);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
 .uc-adv-note {
   margin: 4px 0 0 26px;
   color: var(--uc-muted);

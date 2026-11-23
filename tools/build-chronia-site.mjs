@@ -25,7 +25,7 @@ const copy = (from, to = from) => {
 
 for (const f of ["index.html", "app.js", "dev.js", "va.js", "app.css", "page.css", "go.js", "lang.js", "lang", "visit.js", "data", "team", "reports", "privacy", "terms", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
 // UCHRONIA moved here from noahdarwinlee.com/uchronia/ on 22 November 2026; its page there (go.js) sends visitors on.
-for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchronia/index.html", "uchronia/app.js", "uchronia/app.css", "uchronia/go.js", "fonts"]) copy(f);
+for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchronia/index.html", "uchronia/app.js", "uchronia/app.css", "uchronia/go.js", "uchronia/lang.js", "uchronia/lang", "fonts"]) copy(f);
 for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 // CHRONIA's own icons (the globe in its brace, 19 November 2026) take the place of noahdarwinlee.com's at the site's root,
 // where every page and the manifest look for them.

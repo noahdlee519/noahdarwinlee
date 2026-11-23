@@ -414,6 +414,18 @@ it there). Built on the bones of `/greatercircle/`.
     renumbered from the first free index. Drawings are capped at 300 and
     60,000 points, and cleaned by polygon-clipping again. Names only ever
     reach the page as text.
+- **Languages.** The interface comes in English and 13 other languages:
+  Spanish, French, German, Dutch, Italian, Portuguese, Czech, Polish,
+  Turkish, Russian, Chinese, Japanese, and Korean. **lang.js** (the same file
+  as CHRONIA's) picks one from `?lang=`, then the choice saved under
+  `localStorage["lang"]` (shared with CHRONIA), then the browser's languages,
+  and loads **lang/xx.js**, which sets `window.CH_L`, a table from each English
+  phrase to its translation. `app.js` passes its text through `T()`, which
+  fills `{name}`-style blanks, and translates the page's own text and its
+  `aria-label`, `data-tip`, `placeholder`, and `title` attributes once at
+  start. Sea names are translated; country, region, and city names, and the
+  historian's own writing, stay in English. **View → Language** changes it
+  and reloads the page.
 - **sat.js**: the satellite view.
   - **A layer of its own.** The imagery is drawn on its own canvas beneath
     the map instead of being copied into the map's canvas every frame. Where
