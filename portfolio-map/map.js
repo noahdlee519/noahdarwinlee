@@ -235,7 +235,12 @@
       img.decoding = "async";
       img.onload = img.onerror = function () {
         image.setAttribute("href", img.src);
-        requestAnimationFrame(function () { image.classList.add("is-in"); resolve(); });
+        requestAnimationFrame(function () {
+          image.classList.add("is-in");
+          // The stand-in land is no longer seen; it need not be painted with every frame.
+          setTimeout(function () { layers.land.style.display = "none"; }, 600);
+          resolve();
+        });
       };
       img.src = ROOT + "worlds/" + world.image.src;
     });
@@ -292,7 +297,7 @@
   };
 
   MapView.prototype._labels = function (g) {
-    var self = this, P = this.world.palette;
+    var self = this;
     var lg = svg("g", { class: "map-labels" }, g);
     this.labelLayer = lg;
     this.labels = [];
@@ -302,10 +307,8 @@
       var floor = LABEL_FLOOR[kind] || 11, cap = Math.max(LABEL_CAP[kind] || 14, floor);
       var item = { l: l, floor: floor, cap: cap, shown: false };
       if (kind === "country") {
-        var proj = self.world.projects.filter(function (p) { return p.id === l.id; })[0];
         item.rank = l.minZoom > 1 ? 30 : (self._tier(l.id) === "flagship" ? self._rank(l.id) : 20 + (40 - l.size));
         item.country = l.id;
-        void proj;
       } else item.rank = LABEL_RANK[kind] || 95;
       var cls = "lbl k-" + kind + (water ? " is-water" : "");
       var gEl;
@@ -352,7 +355,6 @@
       item.water = water;
       self.labels.push(item);
     });
-    void P;
     this.labelsMeasured = false;
   };
 
@@ -511,7 +513,6 @@
 
   MapView.prototype.select = function (id, province, opts) {
     opts = opts || {};
-    var self = this;
     if (this.selected && this.shapes[this.selected]) {
       this.shapes[this.selected].el.classList.remove("is-sel");
       var prov = this.shapes[this.selected].provinces;
@@ -537,9 +538,13 @@
     svg("path", { class: "map-outline-glow", d: d }, this.outline);
     svg("path", { class: "map-outline-line", d: d }, this.outline);
     if (province && sh.provinces[province]) svg("path", { class: "map-outline-prov", d: sh.provinces[province].el.getAttribute("d") }, this.outline);
-    if (opts.fly !== false) this.flyTo(this.viewFor(this.focusBox(target.shape), { maxZoom: province ? 3.2 : 2.8 }), { duration: opts.instant ? 1 : undefined });
+    if (opts.fly !== false) this.flyTo(this.viewOf(id, province), { duration: opts.instant ? 1 : undefined });
     else this.render();
-    void self;
+  };
+  // The view that frames a country, or one of its provinces, beside the panel.
+  MapView.prototype.viewOf = function (id, province) {
+    var sh = this.shapes[id], target = province && sh.provinces[province] ? sh.provinces[province] : sh;
+    return this.viewFor(this.focusBox(target.shape), { maxZoom: province ? 3.2 : 2.8 });
   };
   // The part of a country worth framing: its whole extent, unless far-flung islets make that much larger than its mainland.
   MapView.prototype.focusBox = function (shape) {

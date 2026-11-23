@@ -138,7 +138,8 @@
     var w = state.world, P = w.palette, sh = state.shapes[id], b = sh.box;
     var pad = Math.max(b.w, b.h) * 0.35 + 12, ratio = 16 / 10;
     var vw = Math.max(b.w + pad * 2, (b.h + pad * 2) * ratio), vh = vw / ratio;
-    var x = b.x + b.w / 2 - vw / 2, y = b.y + b.h / 2 - vh / 2;
+    // Framed a little low, clear of the search box that floats over the top of the panel.
+    var x = b.x + b.w / 2 - vw / 2, y = b.y + b.h / 2 - vh * (isPhone() ? 0.5 : 0.62);
     var proj = w.projects.filter(function (p) { return p.id === id; })[0];
     var px = vw / 408;
     return '<svg class="terrain" viewBox="' + [x, y, vw, vh].map(function (n) { return n.toFixed(1); }).join(" ") + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
@@ -147,7 +148,7 @@
       '<path d="M-4800 -2400H6400V3200H-4800Z' + w.coast + '" fill="' + P.water + '" fill-rule="evenodd" />' +
       (w.lakes ? '<path d="' + w.lakes + '" fill="' + P.water + '" />' : "") +
       '<path d="' + w.coast + '" fill="none" stroke="' + P.line + '" stroke-width="' + (0.8 * px).toFixed(2) + '" />' +
-      '<path d="M-4800 -2400H6400V3200H-4800Z' + proj.path + '" fill="#ffffff" fill-opacity="0.45" fill-rule="evenodd" />' +
+      '<path d="M-4800 -2400H6400V3200H-4800Z' + proj.path + '" fill="#ffffff" fill-opacity="0.28" fill-rule="evenodd" />' +
       '<path d="' + w.borders + '" fill="none" stroke="' + P.border + '" stroke-width="' + (1 * px).toFixed(2) + '" />' +
       '<path d="' + proj.path + '" fill="#e68019" fill-opacity="0.14" stroke="#b85d06" stroke-width="' + (1.75 * px).toFixed(2) + '" stroke-linejoin="round" />' +
       "</svg>";
@@ -472,7 +473,7 @@
       els.list.innerHTML = '<li class="search-none" role="presentation">No project by that name. Try another word, or browse the map.</li>';
     } else {
       els.list.innerHTML = results.map(function (r, i) {
-        var sub = r.v ? "Province of " + r.p.name : (r.p.tier === "flagship" ? "Country" : "Island or small state") + " | " + r.p.domain;
+        var sub = r.v ? "Province of " + r.p.name : (r.p.tier === "flagship" ? "Country" : "Small state") + " | " + r.p.domain;
         return '<li role="option" id="opt-' + i + '" class="search-opt" aria-selected="' + (i === active) + '" data-i="' + i + '">' + glyph(r.p.id) +
           '<span class="row-text"><b>' + esc(r.v ? r.v.name : r.p.name) + "</b><span>" + esc(sub) + "</span></span></li>";
       }).join("");
@@ -742,6 +743,17 @@
   }
   els.dialog.addEventListener("click", function (e) { if (e.target === els.dialog) els.dialog.close(); });
 
+  (function menuClick() {
+    var menu = $("#site-menu"), entered = 0;
+    if (!menu) return;
+    menu.addEventListener("mouseenter", function () { entered = performance.now(); });
+    menu.addEventListener("click", function (e) {
+      if (!e.target.closest("#site-menu-btn")) return;
+      // The menu opens on hover; the click that usually follows should not close it again.
+      if (menu.getAttribute("data-open") === "true" && performance.now() - entered < 700) e.stopPropagation();
+    }, true);
+  })();
+
   document.addEventListener("DOMContentLoaded", function () {
     var btn = $("#theme-btn"), slot = $(".site-menu-theme-slot");
     if (!btn || !slot) return;
@@ -813,16 +825,19 @@
     if (isPhone()) state.sheet = p ? "half" : "peek";
     layout();
     renderPeek();
-    if (p) {
-      var prov = askedProvince && (p.provinces || []).some(function (v) { return v.id === askedProvince; }) ? askedProvince : null;
-      open("project", { id: p.id, province: prov, instant: true, sheet: isPhone() ? "half" : undefined });
-    } else {
-      open("about", { sheet: isPhone() ? "peek" : undefined });
-      state.map.set(homeView());
-    }
-    return state.map.imageReady;
+    var prov = p && askedProvince && (p.provinces || []).some(function (v) { return v.id === askedProvince; }) ? askedProvince : null;
+    if (p) open("project", { id: p.id, province: prov, fly: false, sheet: isPhone() ? "half" : undefined });
+    else open("about", { sheet: isPhone() ? "peek" : undefined });
+    // The one entrance: the world arrives a little far off and settles; a shared link then flies to its country.
+    var home = homeView(), m = state.map, r = m.rect();
+    var cx = r.l + r.w / 2, cy = r.t + r.h / 2, k = reduceMotion.matches ? 1 : 0.9;
+    m.set({ s: home.s * k, tx: cx - (cx - home.tx) * k, ty: cy - (cy - home.ty) * k });
+    return m.imageReady.then(function () {
+      els.body.classList.remove("is-loading");
+      var target = p ? m.viewOf(p.id, prov) : home;
+      setTimeout(function () { m.flyTo(target, { duration: p ? 1100 : 1000 }); }, reduceMotion.matches ? 0 : 120);
+    });
   }).then(function () {
-    els.body.classList.remove("is-loading");
     window.__portfolioMap = { ready: true, map: state.map, state: state, open: open, nextWorld: nextWorld, home: homeView };
   }).catch(function (err) {
     els.body.classList.remove("is-loading");
