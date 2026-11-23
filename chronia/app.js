@@ -2,7 +2,7 @@
   "use strict";
 
   var $ = function (id) { return document.getElementById(id); };
-  var LANG = window.CH_LANG || "en", L10N = window.CH_L || {};
+  var LANG = window.CH_LANG || "en", L10N = window.CH_L || {}, PL = {};
   var EN = { "@year": "{y}", "@my": "{month} {y}", "@mdy": "{month} {d}, {y}", "{y} BC": "{y} BC", "AD {y}": "AD {y}" };
   function T(s, o) {
     var t = L10N[s];
@@ -742,7 +742,9 @@
     return v ? v.name : catalogue[id][0];
   }
   // "in the Holy Roman Empire", but "in British America": a group named for a place takes no article.
-  function inGroup(id) { var n = polityName(id); return LANG !== "en" ? T("in {name}", { name: n }) : /^British America$/.test(n) ? "in " + n : "in the " + n; }
+  function polityNameL(id) { var n = polityName(id); return (PL.pol && PL.pol[n]) || n; }
+  function placeNameL(n, qid) { return (qid && PL.q && PL.q[qid + "|" + n]) || (PL.city && PL.city[n]) || n; }
+  function inGroup(id) { var n = polityNameL(id); return LANG !== "en" ? T("in {name}", { name: n }) : /^British America$/.test(n) ? "in " + n : "in the " + n; }
   var colourDays = [], colourYears = [];
   function colourMarks() {
     var d = new Set(), y = new Set();
@@ -2286,6 +2288,8 @@
     if (landGeoState.tag !== r.tag) landGeoState = { tag: r.tag, geo: { type: "MultiPolygon", coordinates: r.list.map(function (p) { return p.geo.coordinates; }) } };
     return landGeoState.geo;
   }
+  function divNameL(k, n) { return (PL.div && PL.div[k + "|" + n]) || n; }
+  function lakeNameL(n) { return (PL.lake && PL.lake[n]) || n; }
   function lakesAt() {
     if (!geog) return lakes;
     var k = stateOf(geog.lakeTimes);
@@ -3273,7 +3277,7 @@
   function pinnedItem(p, v, kp, placed) {
     var q = projectLL(v.lon, v.lat);
     if (!q || (!flat && q[2] < 0.25)) return null;
-    var name = polityName(p.id);
+    var name = polityNameL(p.id);
     if (!name) return null;
     var side = Math.sqrt(p.label[5]) * kp, people = !!p.people;
     var f = v.size || Math.max(people ? 8.5 : 7.5, Math.min(people ? 15 : 26, labelTarget(side, people, people ? 8.5 : 7.5, people ? 15 : 26)));
@@ -3308,7 +3312,7 @@
       var p = order[i], lab = p.label;
       if (!lab || lab[2] * kp < 0.5 || seen.has(p.id)) continue;
       if (!layers.subdivisions && !p.group && p.member >= 0 && p.member !== p.id && PROVINCE_OF.test(polityName(p.member))) continue;
-      var name = polityName(p.id);
+      var name = polityNameL(p.id);
       if (!name) continue;
       var feats = p.group ? featOf(snap.topo[lv], lv, lv === "hi" ? p.geoHi : p.geoLo).prep : L.feats[p.i], any = false;
       for (var j = 0; j < feats.length && !any; j++) any = inView(feats[j]);
@@ -3507,10 +3511,10 @@
       if (!L.name || L.lon === undefined) continue;
       var p = projectLL(L.lon, L.lat);
       if (!p || (!flat && p[2] < 0.3) || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
-      var w = ctx.measureText(L.name).width, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6, 0);
+      var lnm = lakeNameL(L.name), w = ctx.measureText(lnm).width, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6, 0);
       if (!insideView(box) || collides(placed, box)) continue;
       placed.push(box);
-      ctx.strokeText(L.name, p[0], p[1]); ctx.fillText(L.name, p[0], p[1]);
+      ctx.strokeText(lnm, p[0], p[1]); ctx.fillText(lnm, p[0], p[1]);
     }
     ctx.letterSpacing = "0px";
     ctx.restore();
@@ -3699,7 +3703,7 @@
     for (var i = 0; i < list.length && shown < 40; i++) {
       var rv = list[i];
       if (rv.r > top) break;
-      var chars = Array.from(rv.name), sp = f * 0.06, ws = [], tw = 0;
+      var chars = Array.from((PL.river && PL.river[rv.name]) || rv.name), sp = f * 0.06, ws = [], tw = 0;
       for (var j = 0; j < chars.length; j++) { ws.push(charWidth(font, chars[j])); tw += ws[j] + (j ? sp : 0); }
       var spot = riverSpot(rv, ws, sp, tw, f, box, kp, placed);
       if (!spot || !insideMap(spot.box)) continue;
@@ -3766,6 +3770,7 @@
   }
   function cityHidden(c, t) { return !!(c && edits.cityN && editAt("city-hide", c.id, t)); }
   // A city's name at t: a city-name edit's, or its own of the time.
+  function cityShownNameL(c, t) { var n = cityShownName(c, t); return placeNameL(n, n === c.name ? c.qid : null); }
   function cityShownName(c, t) {
     var v = edits.cityN ? editAt("city-name", c.id, t) : null;
     return v ? v.name : namedAt(c.steps, c.name, t);
@@ -3797,6 +3802,7 @@
     cityNearCache.set(key, best);
     return best;
   }
+  function capitalNameL(c) { var city = cityNear(c[1], c[2], c[0]), n = capitalName(c); return placeNameL(n, city && n === city.name ? city.qid : null); }
   function capitalName(c) {
     var city = cityNear(c[1], c[2], c[0]), v = city && edits.cityN ? editAt("city-name", city.id, now) : null;
     if (v) return v.name;
@@ -3833,7 +3839,7 @@
       if (!c || seen.has(p.id)) continue;
       seen.add(p.id);
       var pt = projectLL(c[1], c[2]);
-      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]), ll: [c[1], c[2]] });
+      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalNameL(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]), ll: [c[1], c[2]] });
     }
     return out;
   }
@@ -3935,7 +3941,7 @@
         var c = list[i].c;
         if (capCity.has(c) || isSel(c, null)) continue;
         var p = projectLL(c.lon, c.lat);
-        if (p && p[2] >= 0.25) placeOne(placed, p, cityShownName(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
+        if (p && p[2] >= 0.25) placeOne(placed, p, cityShownNameL(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
       }
     }
     ctx.letterSpacing = "0px";
@@ -4380,7 +4386,7 @@
         var f = Math.round(2 * Math.max(8, Math.min(11, 7 + Math.max(lab[2], lab[6]) * kp / 14))) / 2, sp = f * 0.2, lh = f * 1.15;
         ctx.font = "400 " + f.toFixed(1) + "px " + SERIF;
         ctx.letterSpacing = sp.toFixed(2) + "px";
-        var opts = divText(row[0], f), got = null;
+        var opts = divText(divNameL(reg.key, row[0]), f), got = null;
         for (var c = 0; c < 2 && !got; c++) {
           var lon = c ? lab[5] : lab[0], rad = (c ? lab[6] : lab[2]) * kp, half = (c ? lab[7] : lab[3]) * kp * 0.95;
           for (var q = 0; q < Math.min(2, opts.length) && !got; q++) {
@@ -4788,7 +4794,7 @@
   }
   var tip = $("tip");
   function claimNames(ids) {
-    var n = ids.map(polityName);
+    var n = ids.map(polityNameL);
     return n.length < 3 ? n.join(T(" and ")) : n.slice(0, -1).join(T(", ")) + T(", and ") + n[n.length - 1];
   }
   function addTpl(el, tpl, vals) {
@@ -4853,8 +4859,8 @@
   }
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
-    setTip(dv ? "region" : p.people ? null : "flag", dv ? dv + ", " + polityName(p.id) : polityName(p.id));
-    var sub = p.claims ? T(polityName(p.id) === "Disputed land" ? "between {names}" : "disputed between {names}", { names: claimNames(p.claims) }) + (p.ruler >= 0 ? T(", held by {name}", { name: polityName(p.ruler) }) : "") : p.ruler >= 0 ? T("held by {name}", { name: polityName(p.ruler) }) + (p.member >= 0 && p.member !== p.id ? T(", ") + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? T("bands with no fixed borders") : p.people ? T("a people or culture") : "";
+    setTip(dv ? "region" : p.people ? null : "flag", dv ? divNameL(divAtReg, dv) + T(", ") + polityNameL(p.id) : polityNameL(p.id));
+    var sub = p.claims ? T(polityName(p.id) === "Disputed land" ? "between {names}" : "disputed between {names}", { names: claimNames(p.claims) }) + (p.ruler >= 0 ? T(", held by {name}", { name: polityNameL(p.ruler) }) : "") : p.ruler >= 0 ? T("held by {name}", { name: polityNameL(p.ruler) }) + (p.member >= 0 && p.member !== p.id ? T(", ") + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? T("bands with no fixed borders") : p.people ? T("a people or culture") : "";
     var held = controlAt(lonLatAt(x, y));
     if (held) sub = (sub ? sub + " | " : "") + held;
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
@@ -4900,8 +4906,8 @@
   }
   function showCityTip(x, y, l) {
     var ref = cityRef(l), c = cityFacts(ref), st = cityState(ref);
-    setTip(l.kind === "capital" ? "capital" : "city", st ? c.name + ", " + polityName(st.id) : c.name);
-    var sub = c.modern !== c.name ? T("now {name}", { name: c.modern }) : "";
+    setTip(l.kind === "capital" ? "capital" : "city", st ? placeNameL(c.name, ref.qid) + T(", ") + polityNameL(st.id) : placeNameL(c.name, ref.qid));
+    var sub = c.modern !== c.name ? T("now {name}", { name: placeNameL(c.modern, ref.qid) }) : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
@@ -5939,7 +5945,7 @@
   function lapseAim(snap) {
     var box = lapseBox(snap);
     lapse.gap = !box;
-    var name = box ? polityName(box.id) : T("Not on the map");
+    var name = box ? polityNameL(box.id) : T("Not on the map");
 
     if (name !== lapse.name) { lapse.name = name; $("follow-name").textContent = name; }
     if (!box) return;
@@ -6014,7 +6020,7 @@
     closeCard();
     lapse = { f: f, startT: lapseTime(f.from, true), endT: Math.min(lapseTime(f.to, false), dataEnd()), pace: Math.max(40, Math.min(400, LAPSE_SECONDS * 1000 / (f.to - f.from + 1))),
       key: "", target: null, gap: false, name: "", lastId: id, fly: true, settling: 0, playAt: 0, holdUntil: 0, v: { lon: 0, lat: 0, z: 0 }, last: 0, t0: performance.now(), raf: 0, timer: 0 };
-    $("follow-tag").textContent = f.tag || polityName(id);
+    $("follow-tag").textContent = f.tag || polityNameL(id);
     $("follow-name").textContent = "";
     $("follow").hidden = false;
     placeLapseBar();
@@ -6129,7 +6135,7 @@
   function polityButton(id) {
     var b = document.createElement("button");
     b.type = "button";
-    b.textContent = polityName(id);
+    b.textContent = polityNameL(id);
     b.addEventListener("click", function () { select(id); });
     return b;
   }
@@ -6152,8 +6158,8 @@
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
     var at = r.cap ? capitalNow(r.cap) || (city ? null : capitalAt(r.cap, Math.min(dayOfTime(now), modern.toDay))) : null;
-    if (!at) return { id: city.id, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, until: city.until, of: -1, kind: l.kind };
-    if (city) return { id: city.id, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, until: city.until, of: r.of, kind: l.kind };
+    if (!at) return { id: city.id, qid: city.qid, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, until: city.until, of: -1, kind: l.kind };
+    if (city) return { id: city.id, qid: city.qid, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, until: city.until, of: r.of, kind: l.kind };
     return { lon: at[1], lat: at[2], modern: at[0], names: null, since: null, of: r.of, kind: l.kind };
   }
   function cityFacts(c) {
@@ -6194,11 +6200,11 @@
     var whenP = !f.modernNow && !datedNow && current ? T("on the map of {year}", { year: when }) : datedNow && !byDay ? T("in {date}", { date: when }) : T("on {date}", { date: when });
     var capAt = p ? polityCap(p) : null, isCap = !!(capAt && Math.abs(capAt[1] - c.lon) < 0.05 && Math.abs(capAt[2] - c.lat) < 0.05);
     $("card-kind").textContent = T(isCap ? "Capital" : c.place ? "Place" : c.kind === "town" ? "Town" : "City");
-    $("card-name").textContent = f.name;
+    $("card-name").textContent = placeNameL(f.name, f.name === c.modern ? c.qid : null);
     var facts = $("card-facts");
     facts.textContent = "";
     var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
-    if (f.modern && f.modern !== f.name) addText(T("Now {name}.", { name: f.modern }) + " ");
+    if (f.modern && f.modern !== f.name) addText(T("Now {name}.", { name: placeNameL(f.modern, c.qid) }) + " ");
     if (f.early) addText(T("Not yet founded {when}.", { when: whenP }) + " ");
     else if (p) addTpl(facts, T(isCap ? "Capital of {state} {when}." : "In {state} {when}.", {}), { state: polityButton(p.id), when: whenP });
     else addText(T("In no state {when}.", { when: whenP }));
@@ -6240,7 +6246,7 @@
       b.addEventListener("click", function () { flyTo(lon, lat, Math.max(localScale(), 1500)); });
       line(label).appendChild(b);
     };
-    var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityName(id))); };
+    var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityNameL(id))); };
     if (p) {
       if (p.claims) {
         var dl = line("Disputed between");
@@ -6249,9 +6255,9 @@
       if (p.ruler >= 0) addPolity(line("Held by"), p.ruler);
       if (p.part >= 0 && p.part !== p.ruler) addPolity(line("Part of"), p.part);
       var capNow = polityCap(p);
-      if (capNow) placeLine("Capital", capitalName(capNow), capNow[1], capNow[2]);
+      if (capNow) placeLine("Capital", capitalNameL(capNow), capNow[1], capNow[2]);
       var big = !e[4] && !p.people ? largestCity(p) : null;
-      if (big) placeLine("Largest city", cityShownName(big, now), big.lon, big.lat);
+      if (big) placeLine("Largest city", cityShownNameL(big, now), big.lon, big.lat);
       var flagLine = null, langLine = null;
       if (!e[4] && !p.people && !p.claims) {
         flagLine = line("Flag"); flagLine.hidden = true;
@@ -6523,7 +6529,7 @@
         var q = snap.polys[j];
         if (!q || q.claims || seen.has(q.id) || !polityName(q.id)) return;
         seen.add(q.id);
-        out.push({ name: polityName(q.id), w: q.label ? q.label[5] : 0 });
+        out.push({ name: polityNameL(q.id), w: q.label ? q.label[5] : 0 });
       });
     });
     return out.sort(function (a, b) { return b.w - a.w; }).slice(0, 10).map(function (x) { return x.name; });
@@ -8411,14 +8417,14 @@
     if (current) current.order.forEach(function (p) {
       if (seen.has(p.id) || p.claims) return;
       seen.add(p.id);
-      var name = polityName(p.id);
+      var name = polityNameL(p.id);
       if (!name || !p.label) return;
-      var sub = p.ruler >= 0 ? T("held by {name}", { name: polityName(p.ruler) }) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
-      out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
+      var sub = p.ruler >= 0 ? T("held by {name}", { name: polityNameL(p.ruler) }) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
+      out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, alt2: name !== polityName(p.id) ? polityName(p.id) : "", sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
     });
     if (cities) cityRanked(now).forEach(function (x) {
-      var c = x.c, nm = cityShownName(c, now);
-      out.push({ kind: x.tier <= 2 ? "City" : "Town", name: nm, alt: nm !== c.name ? c.name : "", sub: nm !== c.name ? T("now {name}", { name: c.name }) : "", w: x.pop, city: c, tier: x.tier, ll: [c.lon, c.lat] });
+      var c = x.c, nm = cityShownName(c, now), nmL = placeNameL(nm, nm === c.name ? c.qid : null);
+      out.push({ kind: x.tier <= 2 ? "City" : "Town", name: nmL, alt: nm !== c.name ? c.name : "", alt2: nmL !== nm ? nm : "", sub: nm !== c.name ? T("now {name}", { name: placeNameL(c.name, c.qid) }) : "", w: x.pop, city: c, tier: x.tier, ll: [c.lon, c.lat] });
     });
     SEAS.forEach(function (sl, k) { out.push({ kind: sl.tier === 1 ? "Ocean" : "Sea", name: sl.name,
  ll: [sl.lon, sl.lat], w: 4 - sl.tier, sea: sl.tier }); });
@@ -8428,16 +8434,16 @@
         if (!l.name || l.km2 < 150 || lseen.has(l.name)) return;
         lseen.add(l.name);
         if (!l.ll && l.coords) l.ll = centreOfCoords(l.coords);
-        if (l.ll) out.push({ kind: "Lake", name: l.name, ll: l.ll, w: l.km2, km2: l.km2 });
+        if (l.ll) out.push({ kind: "Lake", name: lakeNameL(l.name), alt2: lakeNameL(l.name) !== l.name ? l.name : "", ll: l.ll, w: l.km2, km2: l.km2 });
       });
     }
     marshesNow().forEach(function (m) { out.push({ kind: "Marsh", name: m.name, ll: [(m.b[0] + m.b[2]) / 2, (m.b[1] + m.b[3]) / 2], w: m.km2, km2: m.km2 }); });
     return out;
   }
   function searchScore(q, it) {
-    var n = fold(it.name), a = it.alt ? fold(it.alt) : "";
-    if (n === q) return 0;
-    if (n.indexOf(q) === 0) return 1;
+    var n = fold(it.name), a = it.alt ? fold(it.alt) : "", a2 = it.alt2 ? fold(it.alt2) : "";
+    if (n === q || a2 === q) return 0;
+    if (n.indexOf(q) === 0 || (a2 && a2.indexOf(q) === 0)) return 1;
     if (a && (a === q || a.indexOf(q) === 0)) return 1.5;
     if ((" " + n).indexOf(" " + q) >= 0) return 2;
     if (a && (" " + a).indexOf(" " + q) >= 0) return 2.5;
@@ -8967,7 +8973,7 @@
     var b = document.createElement("button");
     b.type = "button";
     b.className = "ch-changes-name";
-    b.textContent = polityName(s.id) || "a state";
+    b.textContent = polityNameL(s.id) || "a state";
     b.addEventListener("click", function () {
       if (!s.ll) return;
       if (here && current && current.byId && current.byId.has(s.id)) goSearch({ id: s.id, ll: s.ll, km2: s.km2 });
@@ -9542,8 +9548,10 @@
     syncCompass();
     layout();
     Promise.all([
-      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; })
+      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; }),
+      LANG === "en" ? null : fetchJSON("lang/places-" + LANG + ".json").catch(function () { return null; })
     ]).then(function (r) {
+      PL = r[3] || {};
       var idx = r[0];
       catalogue = idx.polities;
       srcKeys = idx.srcKeys || null; srcInfo = idx.sources || null;
