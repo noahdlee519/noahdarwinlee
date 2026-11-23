@@ -9,9 +9,10 @@
   --ch-muted: rgba(58, 42, 27, 0.74);
   --ch-faint: rgba(58, 42, 27, 0.3);
   --ch-btn-hover: rgba(58, 42, 27, 0.08);
-  --ch-serif: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
-  --ch-num: "Old Standard TT", Georgia, "Times New Roman", serif;
-  --ch-sc: "IM Fell English SC", "IM Fell English", Georgia, serif;
+  --ch-cjk: "Noto Serif CJK SC";
+  --ch-serif: "IM Fell English", "Old Standard TT", Georgia, var(--ch-cjk), "Times New Roman", serif;
+  --ch-num: "Old Standard TT", Georgia, var(--ch-cjk), "Times New Roman", serif;
+  --ch-sc: "IM Fell English SC", "IM Fell English", "Old Standard TT", Georgia, var(--ch-cjk), serif;
   --ch-ocean: #b4c8c4;
   --ch-ocean-deep: #9db6b6;
   --ch-grat: rgba(84, 60, 38, 0.3);
@@ -4014,4 +4015,22 @@ select.ch-save-input {
   .ch-follow-stop {
     min-height: 40px;
   }
+}
+
+:root:lang(zh) {
+  --ch-cjk: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun";
+}
+
+:root:lang(ja) {
+  --ch-cjk: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Source Han Serif JP", "MS Mincho";
+}
+
+:root:lang(ko) {
+  --ch-cjk: "AppleMyungjo", "Nanum Myeongjo", "Noto Serif CJK KR", "Source Han Serif KR", "Batang";
+}
+
+.ch-lang-select {
+  clear: both;
+  display: block;
+  margin: 4px 0 2px;
 }
