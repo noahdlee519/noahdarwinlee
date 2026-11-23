@@ -89,12 +89,20 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   2026 (Russia, Ukraine, and Belarus; Iran, Iraq, Syria, Lebanon, Jordan, and
   Yemen), which avoid or release those countries together; they are whole
   countries, where the real closures are often a part of one, so the hint
-  points to Safe Airspace and the FAA for the detail. Winds aloft (`wind=1`)
-  switch the times to the month's typical winds and add the time the other
-  way. A legend in the corner says which line is which, and "Save as an
+  points to Safe Airspace and the FAA for the detail. Winds aloft (`wind=1`,
+  or `wind=jan` and so on for another month, picked from the twelve under
+  Typical) switch the times to that month's typical winds and add the time
+  the other way. A legend in the corner says which line is which, and "Save as an
   image" draws a 1200 by 630 card of the route (the codes, names, distance,
   time, and the flat globe fitted to the route) and shares it where the
   browser can, or downloads it.
+
+  The buffer is a slider in the options card ("Buffer zone"), 0 to 100 miles
+  in whole units of whatever the distances are shown in, with its value
+  beside it; the route is worked out again when it is let go. An (i) beside
+  the tabs explains Direct, Avoiding, and Flight plan, and what a waypoint
+  is. The globe's buttons explain themselves on hover. Clicking a country
+  with A and B set offers to avoid it or to move A or B there.
 
   On a phone the panel is a sheet at three heights: a peek with the codes and
   the distance, half, and full. Drag it by the handle or the top of its
@@ -103,7 +111,11 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   goes up a height, then back down. It rides above the on-screen keyboard.
   The globe is kept in the space above the sheet.
 
-  Motion: a new route draws itself in from A to B, switching tab morphs the
+  Motion: the other routes' dashes run from A to B, and a dot the width of
+  the line runs along the chosen route from A to B, again and again. The
+  globe under the routes is kept in a second canvas while it does not
+  change, so each of those frames only draws the routes and markers again.
+  A new route draws itself in from A to B, switching tab morphs the
   line from one route to the other, and the distance counts up to its new
   value; none of it happens when the system asks for reduced motion. From
   the keyboard, the globe has a crosshair at its centre when it has focus:

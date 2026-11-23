@@ -83,9 +83,10 @@ test("the options card opens from a chip, and the buffer changes the route", { s
   const before = await page.textContent("#tab-avoid-km");
   await page.click("#chip-buffer");
   assert.equal(await page.isVisible("#options"), true);
-  await page.click("#buffer label:has(input[value='0'])");
+  await page.evaluate(() => { const r = document.getElementById("buffer"); r.value = "0"; r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForFunction((b) => document.getElementById("tab-avoid-km").textContent !== b && !window.__greatercircle.state.pendingId, before, { timeout: 60000 });
-  assert.match(page.url(), /buf=0mi/);
+  assert.match(page.url(), /buf=0(km|mi|nmi)/);
+  assert.equal(await page.textContent("#buffer-out"), "Off");
   assert.deepEqual(errors, []);
   await page.close();
 });
@@ -131,6 +132,11 @@ test("a closure preset avoids its countries, and winds change the time", { skip 
   await page.waitForFunction((c) => document.getElementById("hero-time").textContent !== c, calm);
   assert.equal(await page.isVisible("#hero-wind"), true);
   assert.match(page.url(), /wind=1/);
+  const nowText = await page.textContent("#hero-time");
+  const other = (new Date().getMonth() + 6) % 12;
+  await page.click(`#wind-months label:has(input[value='${other}'])`);
+  await page.waitForFunction((c) => document.getElementById("hero-time").textContent !== c, nowText);
+  assert.match(page.url(), /wind=(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
   await page.click("#chip-avoid");
   await page.click(".gc-closure[data-ids='643,804,112']");
   await page.waitForFunction(() => ["643", "804", "112"].every((id) => window.__greatercircle.state.avoid.has(id)));

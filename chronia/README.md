@@ -627,6 +627,16 @@ historical-basemaps' map of 1492 draws about 1,200 named peoples in the Americas
 
 Later sources looked for and not used: the Royce land cessions of 1784 to 1894 (the United States Forest Service's "Tribal Lands Ceded to the United States") date each cession, but the map already gives a people's land to the state that claims it from the year of the claim, which is earlier than the cession everywhere, so they would change nothing drawn; Nimuendajú's ethno-historical map of Brazil (Barsanetti and Ferreira's georeferenced edition, CC BY 4.0, on Zenodo) and Driver's map of North America's peoples of 1953 (Perreault's edition, CC BY 4.0) would add dated peoples for Brazil and a second opinion for North America, and are the next sources to try.
 
+### Africa's peoples from 1515
+
+historical-basemaps' map of 1500 covers Africa's interior with three broad groups ("Bantu peoples", "West African cereal farmers", "Khoisan"), and its later maps name only a few peoples there (the Oromo from 1530; the Xhosa, Zulu and Somalis on the maps of 1783 and 1815). Until 23 November 2026 those groups vanished on 1 January 1515, and about two thirds of the continent was blank from then to the 1840s.
+
+- **Carried forward:** `africaCarry` (the same step as the Americas', `peopleCarry`, with Africa's settings) carries the peoples of the maps of 1500, 1530, 1715, 1783, and 1815 (`AFRICA_MAPS`) to 1885 on the land nothing else holds, as the Americas' are, with the same rule for displaced peoples. They are drawn hatched, as peoples.
+- **Recast (`AFRICA_RECAST`):** the map of 1500's "Khoisan" east of 26° E (Natal, the Highveld, and the coast to Sofala, where Bantu speakers lived) is given to the "Bantu peoples", and its "West African cereal farmers" are kept west of 16° E.
+- **Left out:** the maps' "Sotho" of 1783 and 1815, which lie on the Kingdom of Benin, not Lesotho (a `NAME_FIX` row gives that shape to Benin).
+- **In numbers:** 128 spans, 117 of them from the map of 1500; one piece left out as displaced. Blank land in the grid of 1° cells falls from about 19 to 9 million km² in 1550 and from 20 to 11 million in 1815; most of what is left is the Sahara. The step takes under a minute.
+- **Not yet:** the states between (Lunda, Luba, Mutapa and the Rozvi, the Great Lakes kingdoms, the Sakalava) still show as "Bantu peoples" where the sources draw nothing; regional tables are to follow (the project's audit, "claude/chronia-africa-audit.md").
+
 ### Small territories
 
 `SMALL` lists territories that the sources leave blank or merge into a neighbour, with their shape from Natural Earth and their status by date, each from the territory's Wikipedia article. For each period it gives the status and a point in the ruler's capital, so the ruler is whoever holds that point at the time: the Isle of Man is held by the Kingdom of England, then Great Britain, then the United Kingdom.

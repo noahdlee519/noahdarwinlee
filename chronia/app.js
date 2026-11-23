@@ -7475,7 +7475,9 @@
   // The first call that finds advertisements wanted settles where they go, by the room at that moment: a banner
   // AdSense has filled can't be made another size, so a later, narrower window only hides the ones that no longer fit.
   function adsRowSlot(top, head, ctls) {
-    var x0 = top.offsetLeft + head.offsetLeft + head.offsetWidth + 5, x1 = top.offsetLeft + ctls.offsetLeft - 5;
+    // A little more room on the menu's side than the title's, so the banner never reads as touching the menu (Noah,
+    // 20 November 2026).
+    var x0 = top.offsetLeft + head.offsetLeft + head.offsetWidth + 5, x1 = top.offsetLeft + ctls.offsetLeft - 10;
     return [x0, top.offsetTop + head.offsetTop + Math.round((head.offsetHeight - AD_H - 2) / 2), Math.max(0, Math.round(x1 - x0) - 2)];
   }
   function adsPlace() {
@@ -7509,7 +7511,12 @@
         var shown = [L, R].filter(function (e) { return !e.hidden; }), bw = adsSize[0] + 2, bh = adsSize[1] + 2;
         if (phoneQuery.matches) {
           shown.slice(1).forEach(function (e) { e.hidden = true; });
-          if (shown.length) { var slot = adsRowSlot(top, head, ctls); shown[0].style.left = Math.round(slot[0] - top.offsetLeft) + "px"; shown[0].style.top = Math.round(slot[1] - top.offsetTop) + "px"; }
+          // In the middle of the screen, as far as the room between the title and the menu allows (Noah, 20 November 2026):
+          // a banner Google filled at a wider window keeps its size, so it would otherwise sit against the title.
+          if (shown.length) {
+            var slot = adsRowSlot(top, head, ctls), x = Math.max(slot[0], Math.min((W - bw) / 2, slot[0] + slot[2] + 2 - bw));
+            shown[0].style.left = Math.round(x - top.offsetLeft) + "px"; shown[0].style.top = Math.round(slot[1] - top.offsetTop) + "px";
+          }
           return 0;
         }
         var kb = $("key").getBoundingClientRect(), cb = $("changes").getBoundingClientRect(), span = shown.length * bw + (shown.length - 1) * AD_GAP;
@@ -9203,7 +9210,19 @@
 
   function refitDate() { if (document.activeElement !== yearInput && ready) yearInput.value = fitDate(fmtNow(now)); }
   window.addEventListener("resize", function () { layout(); scheduleRender(); refitDate(); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { refitDate(); placeEvents(); });
+  // The title and the menu change width when the page's fonts arrive (and with the sign-in state), after the first layout
+  // has placed the banner between them; laid out again then, the banner keeps clear of both instead of keeping the
+  // fallback font's gap (it overlapped the menu on a phone, 20 November 2026).
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layout(); scheduleRender(); refitDate(); placeEvents(); });
+  if (window.ResizeObserver) {
+    var topRowW = "", topRowFrame = 0, topRowRO = new ResizeObserver(function () {
+      var w = $("head").offsetWidth + "|" + $("ctls").offsetWidth;
+      if (w === topRowW || topRowFrame) return;
+      topRowW = w;
+      topRowFrame = requestAnimationFrame(function () { topRowFrame = 0; layout(); scheduleRender(); });
+    });
+    topRowRO.observe($("head")); topRowRO.observe($("ctls"));
+  }
   if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", function () { layout(); scheduleRender(); });
 
   // The first map is drawn before the opening starts, and what can wait (the sharper land, the seas'

@@ -27,6 +27,7 @@
       return pt.label.replace(/\s*\([A-Z0-9]{3,4}\)/, "").split(",")[0].replace(/ (International )?Airport$/, "");
     }
     function endName(slot) { var pt = state[slot]; return codeOf(pt, null) || shortName(pt) || slot.toUpperCase(); }
+    function windMonth() { return state.windMonth != null ? state.windMonth : new Date().getMonth(); }
     var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     function tabCoords(tab) {
       var res = state.result;
@@ -39,7 +40,7 @@
       var c = tabCoords(tab);
       if (!c) return null;
       if (reverse) c = c.slice().reverse();
-      return window.GreatCircle.flightHours(c, { wind: !!state.wind, month: new Date().getMonth() });
+      return window.GreatCircle.flightHours(c, { wind: !!state.wind, month: windMonth() });
     }
     function hours(km) { return hoursText(km / 850 + 0.5); }
     function hoursText(h) {
@@ -137,7 +138,7 @@
       if (isFinite(nearest)) {
         var fits = BUFFER_MI.filter(function (mi) { return mi * MI_KM * 1.035 + 0.1 < nearest && mi * MI_KM < state.bufferKm; });
         var to = fits.length ? fits[fits.length - 1] : 0;
-        actions.push({ label: to ? "Use a " + to + " mi buffer" : "Turn the buffer off", fn: function () { setBuffer(to); } });
+        actions.push({ label: to ? "Use a " + fmtBuffer(to * MI_KM) + " buffer" : "Turn the buffer off", fn: function () { setBuffer(to * MI_KM); } });
       }
       uniqueBase(res.insideA.concat(res.insideB)).forEach(function (id) {
         var r = regionById(id);
@@ -173,8 +174,11 @@
       legend.hidden = !(res && res.status === "done");
       if (res && res.status === "done") {
         var others = tabs.filter(function (k) { return k !== "plan" || (state.plan && state.plan.status === "done"); }).length - 1;
+        var nameOf = function (k) { var el = $("tab-" + k); return el ? el.querySelector(".gc-tab-name").textContent : k; };
+        var cur = currentTab(), rest = tabs.filter(function (k) { return k !== cur && (k !== "plan" || (state.plan && state.plan.status === "done")); }).map(nameOf);
         $("legend-others").hidden = others < 1;
-        setText($("legend-others-text"), others === 1 ? "The other way" : "The other ways");
+        setText($("legend-this-text"), nameOf(cur));
+        setText($("legend-others-text"), rest.join(" and "));
         $("legend-avoid").hidden = !avoiding();
         setText($("legend-avoid-text"), state.bufferKm > 0 ? "Avoided, with its " + fmtBuffer(state.bufferKm) + " buffer" : "Avoided");
       }
@@ -242,7 +246,7 @@
       showBig(bigKm, big); setText(ui.time, time); setText(ui.delta, delta); setText(ui.note, note);
       var windEl = $("hero-wind"), back = time && state.wind ? timeFor(tab, true) : null;
       windEl.hidden = back == null;
-      if (back != null) setText(windEl, endName("b") + " to " + endName("a") + " " + hoursText(back).text + ", with typical " + MONTHS[new Date().getMonth()] + " winds");
+      if (back != null) setText(windEl, endName("b") + " to " + endName("a") + " " + hoursText(back).text + ", with typical " + MONTHS[windMonth()] + " winds");
       ui.delta.hidden = !delta; ui.note.hidden = !note; ui.time.hidden = !time;
       if (tab === "plan") renderPlan();
       renderCrosses(tab);
@@ -442,7 +446,7 @@
         text = state.plan && state.plan.status === "pending" ? "Flight plan: finding radio beacons along the way." : (ui.warn.querySelector(".gc-warn-text") || {}).textContent || "";
       } else if (res.status === "done") {
         var km = tabKm(t);
-        text = (t === "avoid" ? "Avoiding " + avoidLabel() + ": " : t === "plan" ? "Flight plan: " : "Direct: ") + fmt(km) + ", " + hoursText(timeFor(t)).spoken + (state.wind ? " with typical winds" : "") + ".";
+        text = (t === "avoid" ? "Avoiding " + avoidLabel() + ": " : t === "plan" ? "Flight plan: " : "Direct: ") + fmt(km) + ", " + hoursText(timeFor(t)).spoken + (state.wind ? " with typical " + MONTHS[windMonth()] + " winds" : "") + ".";
         if (t === "avoid") text += " " + fmt(res.lengthKm - res.directKm) + " longer than direct.";
       } else text = (ui.warn.querySelector(".gc-warn-text") || {}).textContent || "";
       ui.status.textContent = "";
@@ -457,7 +461,7 @@
         optOpener = opener || null;
         if (app.W() <= 640) setSheet(true);
         var k = opener && opener.dataset.opt;
-        var target = k === "buffer" ? ui.options.querySelector("input[name=buffer]:checked") : k === "units" ? ui.options.querySelector("input[name=units]:checked") : $("in-avoid");
+        var target = k === "buffer" ? $("buffer") : k === "units" ? ui.options.querySelector("input[name=units]:checked") : $("in-avoid");
         if (target && !(k === "avoid" && !canHover)) target.focus();
       } else if (optOpener) { if (byKey) optOpener.focus(); else if (ui.options.contains(document.activeElement)) document.activeElement.blur(); optOpener = null; }
       layoutSoon();
@@ -480,12 +484,20 @@
       });
     });
     document.querySelectorAll("input[name=wind]").forEach(function (r) {
-      r.addEventListener("change", function () { state.wind = r.value === "1"; renderPanel(); writeUrl(); });
+      r.addEventListener("change", function () { state.wind = r.value === "1"; renderOptionChips(); renderPanel(); writeUrl(); });
+    });
+    document.querySelectorAll("input[name=wind-month]").forEach(function (r) {
+      r.addEventListener("change", function () {
+        var m = +r.value;
+        state.windMonth = m === new Date().getMonth() ? null : m;
+        renderOptionChips(); renderPanel(); writeUrl();
+      });
     });
     function renderOptionChips() {
       document.querySelectorAll("input[name=wind]").forEach(function (r) { r.checked = (r.value === "1") === !!state.wind; });
-      var mo = MONTHS[new Date().getMonth()];
-      setText($("wind-month"), "Typical for " + mo);
+      var wm = String(windMonth());
+      $("wind-months").hidden = !state.wind;
+      document.querySelectorAll("input[name=wind-month]").forEach(function (r) { r.checked = r.value === wm; });
       document.querySelectorAll(".gc-closure").forEach(function (b) {
         var ids = b.dataset.ids.split(",");
         b.setAttribute("aria-pressed", String(ids.every(function (id) { return state.avoid.has(id); })));
@@ -495,8 +507,7 @@
       setText($("chip-buffer"), state.bufferKm > 0 ? fmtBuffer(state.bufferKm) + " buffer" : "No buffer");
       setText($("chip-units"), state.units);
       $("chip-avoid").classList.toggle("is-set", avoiding());
-      var mi = String(bufferMi(state.bufferKm));
-      ui.options.querySelectorAll("input[name=buffer]").forEach(function (r) { r.checked = r.value === mi; });
+      syncBuffer();
       ui.options.querySelectorAll("input[name=units]").forEach(function (r) { r.checked = r.value === state.units; });
       $("buffer-row").hidden = !avoiding();
     }
@@ -504,14 +515,32 @@
       r.addEventListener("change", function () {
         state.units = r.value;
         try { localStorage.setItem("gc-units", state.units); } catch (e) {}
+        renderOptionChips();
+        writeUrl();
         planBuilt = "";
         renderPanel();
         scheduleRender("full");
       });
     });
-    ui.options.querySelectorAll("input[name=buffer]").forEach(function (r) {
-      r.addEventListener("change", function () { setBuffer(+r.value); });
+    function unitF() { return { km: 1, mi: 1 / MI_KM, nmi: 1 / 1.852 }[state.units] || 1; }
+    function syncBuffer() {
+      var input = $("buffer"), f = unitF(), max = Math.round(BUFFER_MAX_MI * MI_KM * f);
+      input.max = String(max);
+      input.value = String(Math.min(max, Math.round(state.bufferKm * f)));
+      showBuffer();
+    }
+    function showBuffer() {
+      var input = $("buffer"), v = +input.value;
+      input.style.setProperty("--fill", (100 * v / (+input.max || 1)) + "%");
+      setText($("buffer-out"), v ? v + " " + state.units : "Off");
+      input.setAttribute("aria-valuetext", v ? v + " " + ({ km: "kilometres", mi: "miles", nmi: "nautical miles" })[state.units] : "No buffer");
+    }
+    $("buffer").addEventListener("input", function () {
+      showBuffer();
+      var v = +$("buffer").value;
+      setText($("chip-buffer"), v ? v + " " + state.units + " buffer" : "No buffer");
     });
+    $("buffer").addEventListener("change", function () { setBuffer(+$("buffer").value / unitF()); });
 
     $("share").addEventListener("click", function () {
       var url = location.href, label = $("share-label");
@@ -534,16 +563,21 @@
       app.makeCard({ from: endName("a"), to: endName("b"), names: names.length > 44 ? names.slice(0, 43) + "…" : names, km: fmt(km), line: line, sub: sub }).then(function (blob) {
         if (!blob) return;
         var file = typeof File === "function" ? new File([blob], name, { type: "image/png" }) : null;
+        var btn = $("share-image"), label = btn.textContent;
+        var flash = function (text) { btn.textContent = text; ui.status.textContent = text; setTimeout(function () { btn.textContent = label; }, 2000); };
+        var download = function () {
+          var url = URL.createObjectURL(blob), link = document.createElement("a");
+          link.href = url; link.download = name;
+          document.body.appendChild(link); link.click(); link.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+          flash("Image saved");
+        };
         if (shareFiles && file && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: "GREATERCIRCLE", text: location.href }).catch(function () {});
+          navigator.share({ files: [file], title: "GREATERCIRCLE", text: location.href }).catch(function (err) { if (!err || err.name !== "AbortError") download(); });
           return;
         }
-        var url = URL.createObjectURL(blob), link = document.createElement("a");
-        link.href = url; link.download = name;
-        document.body.appendChild(link); link.click(); link.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-        ui.status.textContent = "Saved " + name;
-      });
+        download();
+      }, function () { $("share-image").textContent = "Could not make the image"; });
     });
 
     var layoutTimer = 0, lastPanelH = 0;
@@ -556,15 +590,11 @@
       });
     }
 
-    var MI_KM = 1.609344, BUFFER_MI = [0, 1, 5, 10, 20, 50, 100], BUFFER_DEFAULT_MI = 50;
-    function bufferMi(km) {
-      var best = BUFFER_MI[0];
-      BUFFER_MI.forEach(function (mi) { if (Math.abs(mi * MI_KM - km) < Math.abs(best * MI_KM - km)) best = mi; });
-      return best;
-    }
-    function fmtBuffer(km) { return bufferMi(km) + " mi"; }
-    function setBuffer(mi) {
-      state.bufferKm = mi * MI_KM;
+    var MI_KM = 1.609344, BUFFER_MI = [0, 1, 5, 10, 20, 50, 100], BUFFER_DEFAULT_MI = 50, BUFFER_MAX_MI = 100;
+    function bufferMi(km) { return Math.max(0, Math.min(BUFFER_MAX_MI, km / MI_KM)); }
+    function fmtBuffer(km) { return fmt(km); }
+    function setBuffer(km) {
+      state.bufferKm = Math.max(0, Math.min(BUFFER_MAX_MI * MI_KM, km));
       renderOptionChips();
       requestRoute();
       writeUrl();

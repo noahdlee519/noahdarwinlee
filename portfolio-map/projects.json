@@ -1,0 +1,751 @@
+[
+  {
+    "id": "chronia",
+    "name": "CHRONIA",
+    "tier": "flagship",
+    "rank": 1,
+    "names": {
+      "water": ["Epochs", "Annals", "Dynasties", "Centuries", "Chronicles"],
+      "river": ["Annal", "Era", "Reign"],
+      "lake": ["Millennium", "Antiquity"]
+    },
+    "url": "https://chroniaatlas.com/",
+    "domain": "chroniaatlas.com",
+    "brand": "#33616a",
+    "blurb": "An atlas of the world’s borders from 3400 BC to today. Move through time and watch empires rise and fall. Click any state, people, or settlement on the map for details. Created by weaving public datasets together by our team of historical researchers.",
+    "tagline": "An atlas of the world’s borders from 3400 BC to today, where you can watch empires rise and fall.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-chronia-800.webp",
+        "srcset": "/art/web/materials/shot-chronia-800.webp 800w, /art/web/materials/shot-chronia-1600.webp 1600w, /art/web/materials/shot-chronia-2400.webp 2400w",
+        "alt": "Europe in June 1812, at the height of Napoleon’s empire",
+        "caption": "Europe in June 1812, at the height of Napoleon’s empire"
+      },
+      {
+        "src": "/art/web/materials/shots/chronia-2-800.webp",
+        "srcset": "/art/web/materials/shots/chronia-2-800.webp 800w, /art/web/materials/shots/chronia-2-1600.webp 1600w, /art/web/materials/shots/chronia-2-2400.webp 2400w",
+        "alt": "The Roman Empire in AD 117, drawn with its provinces",
+        "caption": "The Roman Empire in AD 117, drawn with its provinces"
+      },
+      {
+        "src": "/art/web/materials/shots/chronia-3-800.webp",
+        "srcset": "/art/web/materials/shots/chronia-3-800.webp 800w, /art/web/materials/shots/chronia-3-1600.webp 1600w, /art/web/materials/shots/chronia-3-2400.webp 2400w",
+        "alt": "Europe in June 1918, coloured by the zones of control, with the land the Central Powers held from the Baltic to the Don",
+        "caption": "June 1918 in the zones of control: the Central Powers’ hold from the Baltic to the Don"
+      },
+      {
+        "src": "/art/web/materials/shots/chronia-4-800.webp",
+        "srcset": "/art/web/materials/shots/chronia-4-800.webp 800w, /art/web/materials/shots/chronia-4-1600.webp 1600w, /art/web/materials/shots/chronia-4-2400.webp 2400w",
+        "alt": "Spain in October 1937, coloured by the zones the Republic and the Nationalists held",
+        "caption": "The Spanish Civil War in October 1937, in the zones of control"
+      },
+      {
+        "src": "/art/web/materials/shots/chronia-5-800.webp",
+        "srcset": "/art/web/materials/shots/chronia-5-800.webp 800w, /art/web/materials/shots/chronia-5-1600.webp 1600w, /art/web/materials/shots/chronia-5-2400.webp 2400w",
+        "alt": "East and South Asia in 1700, from the Qing to the Mughals",
+        "caption": "East and South Asia in 1700, from the Qing to the Mughals"
+      }
+    ],
+    "sections": [
+      {
+        "title": "Technical details",
+        "paragraphs": ["Before 1886 the borders come from Cliopatria, the Seshat project’s dataset of polities back to 3400 BC, with its gaps filled from dated snapshot maps. From 1886 they come from CShapes 2.0, dated to the day, and the main changes from 1800 to 1885 are dated to the day as well, from the Acts of Union to the fall of Mandalay. Every change made by hand, from Gibraltar’s outline to the occupations of the First World War, is recorded with its sources in a public ledger.", "The map is drawn on a canvas in UCHRONIA’s Antique style, with relief, rivers, and about 5,000 cities that appear when they became prominent and take the names of their time. A card for any state, people, or city gives what the maps say about it on that date and a short note from a language model, kept and shared with everyone who opens the same card. The zones of control hatch the ground each side held in 23 wars, and where Mexico’s cartels were present."],
+        "chips": ["3400 BC to today", "4,123 states and peoples", "5,000 cities", "Borders to the day", "Canvas"]
+      },
+      {
+        "title": "Inspiration",
+        "paragraphs": ["Historians and geographers have built remarkable datasets of the world’s borders, each covering its own stretch of time or part of the map. I wanted to bring them together into one project, and to build the atlas I had always wanted for myself: one place to watch five thousand years of history move across a map, and to stop on any day and see who held what."]
+      }
+    ],
+    "uses": [
+      {
+        "title": "Teaching and learning",
+        "items": ["Watching a war or a treaty redraw borders, month by month.", "Seeing who ruled a place, and what it was called, on a given date.", "Saving an image or a timelapse video of an era for a lesson."]
+      },
+      {
+        "title": "History enthusiasts",
+        "items": ["Following the fronts of the Spanish Civil War or the Second World War across the map.", "Comparing the world on any two days, five thousand years apart or one.", "Tracing a city through its names and its rulers."]
+      },
+      {
+        "title": "Writers and researchers",
+        "items": ["Checking the borders around a story’s setting on its exact date.", "Finding which empire held a colony or a province in a given year.", "Following a change on the map back to its sources in the ledger."]
+      },
+      {
+        "title": "Worldbuilders",
+        "items": ["Finding the real map of the year an alternate history departs from.", "Seeing how real borders shifted, to make a fictional world’s history believable.", "Borrowing the shape of real empires for a world that never was."]
+      }
+    ]
+  },
+  {
+    "id": "loretour",
+    "name": "LoreTour",
+    "tier": "flagship",
+    "rank": 2,
+    "names": {
+      "water": ["Landmarks", "Cornerstones", "Brownstones", "Facades"],
+      "river": ["Cornice", "Stoop", "Gotham"],
+      "lake": ["Belvedere", "Lore"]
+    },
+    "url": "https://loretour.com",
+    "domain": "loretour.com",
+    "brand": "#2a44d6",
+    "blurb": "Uncover the hidden history of New York City, building by building. Explore an interactive map of all one million structures to pour over fascinating lore, plan your next excursion with a custom AI guide, and immerse yourself in historical photos, facts, and records from old New York. Every building is rendered in immersive, interactive 3D view so you can take a \"tour\" right on your device.",
+    "tagline": "An interactive map of New York City’s buildings, with their history, old photos, and an AI guide.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-loretour-800.webp",
+        "srcset": "/art/web/materials/shot-loretour-800.webp 800w, /art/web/materials/shot-loretour-1600.webp 1600w",
+        "alt": "The front page: a building and one of its stories",
+        "caption": "The front page: a building and one of its stories"
+      },
+      {
+        "video": "/art/web/materials/shots/loretour-video.mp4",
+        "poster": "/art/web/materials/shots/loretour-video-poster.webp",
+        "alt": "LoreTour in 25 seconds: the map, a building’s history, and the guide’s walks",
+        "caption": "LoreTour in 25 seconds: the map, a building’s history, and the guide’s walks"
+      },
+      {
+        "src": "/art/web/materials/shots/loretour-2-800.webp",
+        "srcset": "/art/web/materials/shots/loretour-2-800.webp 800w, /art/web/materials/shots/loretour-2-1600.webp 1600w",
+        "alt": "St. Patrick’s Cathedral: its record and a 3D view, beside the satellite map",
+        "caption": "St. Patrick’s Cathedral: its record and a 3D view, beside the satellite map"
+      },
+      {
+        "src": "/art/web/materials/shots/loretour-3-800.webp",
+        "srcset": "/art/web/materials/shots/loretour-3-800.webp 800w, /art/web/materials/shots/loretour-3-1600.webp 1600w",
+        "alt": "The Metropolitan Station post office in Williamsburg: its timeline, on the plan map at night",
+        "caption": "The Metropolitan Station post office in Williamsburg: its timeline, on the plan map at night"
+      },
+      {
+        "src": "/art/web/materials/shots/loretour-4-800.webp",
+        "srcset": "/art/web/materials/shots/loretour-4-800.webp 800w, /art/web/materials/shots/loretour-4-1600.webp 1600w",
+        "alt": "The guide’s one-hour jazz walk through Greenwich Village",
+        "caption": "The guide’s one-hour jazz walk through Greenwich Village"
+      },
+      {
+        "src": "/art/web/materials/shots/loretour-5-800.webp",
+        "srcset": "/art/web/materials/shots/loretour-5-800.webp 800w, /art/web/materials/shots/loretour-5-1600.webp 1600w",
+        "alt": "The William Cullen Bryant statue in Bryant Park, from NYC Parks’ records",
+        "caption": "The William Cullen Bryant statue in Bryant Park, from NYC Parks’ records"
+      }
+    ],
+    "sections": [
+      {
+        "title": "Technical details",
+        "paragraphs": ["Footprints, roof heights, and years come from NYC Open Data. Satellite and 3D views come from Google’s Photorealistic 3D Tiles, and archive photos open on Urban Archive.", "The record started with researched entries for buildings in every Manhattan neighborhood, drawn from Wikipedia and the city’s building historians. It now covers all five boroughs, and anyone signed in can add to it."],
+        "chips": ["1 million buildings", "NYC Open Data", "3D Tiles", "Cited sources"]
+      },
+      {
+        "title": "Inspiration",
+        "paragraphs": ["Walk past almost any building in New York and there is no way to find out what happened inside it. I wanted a map where every building has a record: what it was, who was there, and what it saw."]
+      }
+    ],
+    "uses": [
+      {
+        "title": "Visitors and locals",
+        "items": ["Walking a neighborhood and opening the history of whatever building you’re standing in front of.", "Planning a themed walk with the guide, such as famous fires, jazz clubs, Gilded Age mansions, or first skyscrapers.", "Tourists who want more than the usual landmarks.", "New Yorkers learning what their own building or block used to be.", "Planning a date or a day out around buildings with good stories."]
+      },
+      {
+        "title": "Housing",
+        "items": ["Apartment hunters checking a building’s age, past, and character before signing a lease.", "Real estate agents using a building’s history in listings.", "Hotels, restaurants, and bars telling the story of their building to guests."]
+      },
+      {
+        "title": "Teaching and research",
+        "items": ["Teachers assigning a “history of your block” project.", "Architecture and urban-history students studying how the city was built, layer by layer.", "Researchers starting from cited sources and archival photos for a building.", "Writers and novelists finding settings and true details for scenes."]
+      },
+      {
+        "title": "Creative and media",
+        "items": ["Tour guides building scripts and routes.", "Filmmakers and photographers scouting locations with a history.", "Podcasts and social posts built on “this building’s story.”"]
+      },
+      {
+        "title": "Community",
+        "items": ["Longtime residents adding memories as crowdsourced notes, so the history isn’t only official history.", "Preservationists making the case for buildings at risk of demolition.", "Genealogists finding where ancestors lived or worked."]
+      }
+    ]
+  },
+  {
+    "id": "uchronia",
+    "name": "UCHRONIA",
+    "tier": "flagship",
+    "rank": 3,
+    "names": {
+      "water": ["What-If", "Divergence", "Counterfactuals"],
+      "river": ["Alternate", "Fork"],
+      "lake": ["Reverie", "Utopia"]
+    },
+    "url": "https://chroniaatlas.com/uchronia/",
+    "domain": "chroniaatlas.com/uchronia",
+    "brand": "#7a5230",
+    "blurb": "Redraw the world map in any way you see fit. Draw new borders, establish nations, found cities, and more. Be sure to ask the Historian to write the history of the world you crafted. Or, work in reverse by prompting the Historian to generate a map for you.",
+    "tagline": "Redraw the world map, found nations and cities, and have the Historian write the history of your world.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-uchronia-800.webp",
+        "srcset": "/art/web/materials/shot-uchronia-800.webp 800w, /art/web/materials/shot-uchronia-1600.webp 1600w, /art/web/materials/shot-uchronia-2400.webp 2400w",
+        "alt": "An East African Federation, and the historian telling how it came to be",
+        "caption": "An East African Federation, and the historian telling how it came to be"
+      },
+      {
+        "src": "/art/web/materials/shots/uchronia-2-800.webp",
+        "srcset": "/art/web/materials/shots/uchronia-2-800.webp 800w, /art/web/materials/shots/uchronia-2-1600.webp 1600w, /art/web/materials/shots/uchronia-2-2400.webp 2400w",
+        "alt": "Giving Peru’s San Martín to a greater Colombia",
+        "caption": "Giving Peru’s San Martín to a greater Colombia"
+      },
+      {
+        "src": "/art/web/materials/shots/uchronia-3-800.webp",
+        "srcset": "/art/web/materials/shots/uchronia-3-800.webp 800w, /art/web/materials/shots/uchronia-3-1600.webp 1600w, /art/web/materials/shots/uchronia-3-2400.webp 2400w",
+        "alt": "Westralia, a Western Australia that left the Commonwealth in 1933",
+        "caption": "Westralia, a Western Australia that left the Commonwealth in 1933"
+      },
+      {
+        "src": "/art/web/materials/shots/uchronia-4-800.webp",
+        "srcset": "/art/web/materials/shots/uchronia-4-800.webp 800w, /art/web/materials/shots/uchronia-4-1600.webp 1600w, /art/web/materials/shots/uchronia-4-2400.webp 2400w",
+        "alt": "Founding New New York on Long Island, over the satellite view",
+        "caption": "Founding New New York on Long Island, over the satellite view"
+      },
+      {
+        "src": "/art/web/materials/shots/uchronia-5-800.webp",
+        "srcset": "/art/web/materials/shots/uchronia-5-800.webp 800w, /art/web/materials/shots/uchronia-5-1600.webp 1600w, /art/web/materials/shots/uchronia-5-2400.webp 2400w",
+        "alt": "A Tajikistan stretched across Central Asia, in the Dark style",
+        "caption": "A Tajikistan stretched across Central Asia, in the Dark style"
+      }
+    ],
+    "sections": [
+      {
+        "title": "Technical details",
+        "paragraphs": ["The globe and the flat map are drawn on a canvas from Natural Earth’s states and provinces, with geoBoundaries’ counties and districts for 40 large countries, so a border can follow a county line. Each country’s name is fitted to its shape and, in the Antique style, bent along it; rivers, lakes, 3,000 cities and 40,000 towns are placed so that nothing collides.", "The historian is Claude, behind a small server function that holds the key. It reads a plain list of how your map differs from ours, and redraws by sending back edits in a fixed shape, regions changing hands, new countries, subjects, and capitals, which the page applies as one step that a single undo takes back. A shared map travels inside its own link, so nothing is stored on a server."],
+        "chips": ["3,699 regions", "18,000 counties", "40,000 towns", "Canvas and WebGL", "Claude"]
+      },
+      {
+        "title": "Inspiration",
+        "paragraphs": ["I have been fond of atlases, world history, alternate history, and cartography for as long as I can remember. I built the tool I had always wanted for making my own maps and fictional worlds. I hope UCHRONIA encourages people to learn more about the world, both the real one and the imagined one."]
+      }
+    ],
+    "uses": [
+      {
+        "title": "Writers and worldbuilders",
+        "items": ["Drawing the map of an alternate-history novel or screenplay, then asking how it came to be.", "Testing a premise, such as a surviving Austria-Hungary, against its consequences on other continents.", "Keeping a world’s map and its history side by side, and sharing both as one link."]
+      },
+      {
+        "title": "Teaching and learning",
+        "items": ["Showing how one war or treaty redrew borders far beyond where it was fought.", "Comparing the world as it is with the world a different decision would have made.", "Learning where the world’s states, provinces, and capitals actually are, by moving them."]
+      },
+      {
+        "title": "History enthusiasts",
+        "items": ["Settling “what if” debates with a map instead of an argument.", "Drawing the borders of a past year, colonies and subjects included, and comparing them with today’s.", "Asking follow-up questions about a world, and getting the map changed when the history demands it."]
+      },
+      {
+        "title": "Games and play",
+        "items": ["Mapping the world of a tabletop campaign or a grand-strategy game run.", "Sketching the end state of a game of Diplomacy or Risk on the real world.", "Making a printable-looking antique map of a world that never was."]
+      }
+    ]
+  },
+  {
+    "id": "fuzhounese",
+    "name": "Fuzhounese Dictionary",
+    "tier": "flagship",
+    "rank": 4,
+    "names": {
+      "water": ["Min", "Banyan", "Lexicon", "Dialects"],
+      "river": ["Min", "Tone"],
+      "lake": ["Glossary", "Banyan"]
+    },
+    "url": "https://fuzhounese.org",
+    "domain": "fuzhounese.org",
+    "brand": "#c5311d",
+    "blurb": "Preserving the Fuzhounese dialect. The world’s first collaborative Fuzhounese–English dictionary. With 3,790 entries and growing, we are also gathering native-speaker audio to train a language model to ensure the sound of the language never disappears.",
+    "tagline": "The first collaborative Fuzhounese–English dictionary, gathering native speakers’ audio to preserve the dialect.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-fuzhounese-800.webp",
+        "srcset": "/art/web/materials/shot-fuzhounese-800.webp 800w, /art/web/materials/shot-fuzhounese-1600.webp 1600w",
+        "alt": "The front page: search, or ask the assistant",
+        "caption": "The front page: search, or ask the AI assistant"
+      },
+      {
+        "src": "/art/web/materials/shots/fuzhounese-2-800.webp",
+        "srcset": "/art/web/materials/shots/fuzhounese-2-800.webp 800w, /art/web/materials/shots/fuzhounese-2-1600.webp 1600w",
+        "alt": "Browsing the dictionary, with recordings where there are some",
+        "caption": "Browse: full-fledged dictionary with audio, characters, romanization, and more"
+      },
+      {
+        "src": "/art/web/materials/shots/fuzhounese-3-800.webp",
+        "srcset": "/art/web/materials/shots/fuzhounese-3-800.webp 800w, /art/web/materials/shots/fuzhounese-3-1600.webp 1600w",
+        "alt": "Learn: the seven tones, each with a word that carries it",
+        "caption": "Learn: lessons in Fuzhounese for language learners"
+      },
+      {
+        "src": "/art/web/materials/shots/fuzhounese-4-800.webp",
+        "srcset": "/art/web/materials/shots/fuzhounese-4-800.webp 800w, /art/web/materials/shots/fuzhounese-4-1600.webp 1600w",
+        "alt": "Contribute: record a word that has no recording yet",
+        "caption": "Contribute: record a word that could use a voice recording"
+      }
+    ],
+    "sections": [
+      {
+        "title": "Technical details",
+        "paragraphs": [
+          "The dictionary has an assistant, powered by Claude, that answers questions based on the content in the dictionary such as: \"translate 'have you eaten?' in Fuzhounese\", \"how many meanings does 'siah' have?\", or \"explain tone sandhi\". Since Fuzhounese varies noticeably from town to town, the dictionary was designed to accommodate variants of words and pronunciations from across the Fuzhounese-speaking world."
+        ],
+        "chips": ["Claude", "Search across 3 scripts", "Native-speaker audio"]
+      },
+      {
+        "title": "Inspiration",
+        "paragraphs": ["Fuzhounese is the dialect my family speaks, and there was no English dictionary of it online—or one that emphasized the geographical diversity of the language. I wanted a place to preserve the words and the way variety of ways native speakers voice them. The goal of the project is to serve Fuzhounese speakers, curious language learners, and linguists alike."]
+      }
+    ],
+    "uses": [
+      {
+        "title": "Families and heritage",
+        "items": ["Children and grandchildren of Fuzhounese speakers learning to talk with their grandparents.", "Recording elderly relatives saying words, so their voices are kept.", "Looking up words remembered from childhood whose spelling no one knows, using the assistant.", "Parents raising children with some Fuzhounese at home.", "Family reunions and holidays, for example finding the right greeting or food name."]
+      },
+      {
+        "title": "Communities",
+        "items": ["Fuzhounese communities in New York, Malaysia, Singapore, and Japan sharing their local variants.", "Chinatown community centers using it for elder outreach or youth programs.", "Churches and associations that serve Fuzhounese speakers."]
+      },
+      {
+        "title": "Practical and professional",
+        "items": ["Healthcare workers, interpreters, and social workers serving Fuzhounese-speaking patients, for example in Sunset Park or the Lower East Side.", "Restaurant staff, since much of New York’s Chinese restaurant workforce is Fuzhounese.", "Lawyers and immigration advocates working with Fuzhounese-speaking clients."]
+      },
+      {
+        "title": "Research",
+        "items": ["Linguists studying Min languages, tone sandhi, or language shift.", "A training set of native-speaker audio for speech recognition or text-to-speech models.", "Teaching how dialects die and how to document them.", "Comparing Fuzhounese with Hokkien, Teochew, and Mandarin."]
+      }
+    ]
+  },
+  {
+    "id": "leggio",
+    "name": "Leggio",
+    "tier": "flagship",
+    "rank": 5,
+    "names": {
+      "water": ["Translation", "Lingua", "Phrases"],
+      "river": ["Idiom", "Hotkey"],
+      "lake": ["Lingo", "Lexis"]
+    },
+    "url": "https://getleggio.com",
+    "domain": "getleggio.com",
+    "brand": "#1f4e3d",
+    "blurb": "Instant, context-aware translations on Chrome for language learners. Just hold a hotkey and select any foreign word or phrase to see its exact meaning pop up instantly and hassle-free. Leggio analyzes the entire sentence to ensure you get the perfect translation every single time. Supports 34+ languages.",
+    "tagline": "A Chrome extension that translates any word or phrase you select, in context, for language learners.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-leggio-800.webp",
+        "srcset": "/art/web/materials/shot-leggio-800.webp 800w, /art/web/materials/shot-leggio-1600.webp 1600w",
+        "alt": "getleggio.com, with a sample page to try it on",
+        "caption": "getleggio.com (homepage)"
+      },
+      {
+        "src": "/art/web/materials/shots/leggio-2-800.webp",
+        "srcset": "/art/web/materials/shots/leggio-2-800.webp 800w, /art/web/materials/shots/leggio-2-1600.webp 1600w",
+        "alt": "A word selected on a web page, translated in place",
+        "caption": "A word selected on a web page and translated"
+      },
+      {
+        "src": "/art/web/materials/shots/leggio-3-800.webp",
+        "srcset": "/art/web/materials/shots/leggio-3-800.webp 800w, /art/web/materials/shots/leggio-3-1600.webp 1600w",
+        "alt": "Reading a PDF, with the words saved from it",
+        "caption": "See your saved words while reading"
+      },
+      {
+        "src": "/art/web/materials/shots/leggio-4-800.webp",
+        "srcset": "/art/web/materials/shots/leggio-4-800.webp 800w, /art/web/materials/shots/leggio-4-1600.webp 1600w",
+        "alt": "Leggio’s own reader, waiting for a PDF",
+        "caption": "Leggio after being installed"
+      }
+    ],
+    "sections": [
+      {
+        "title": "Technical details",
+        "paragraphs": ["Leggio translates with the latest translation models built into Chrome, so the words you select are translated on your own computer, immediately and for free. You can also plug in your own API key if you'd prefer DeepL or Google Cloud translations.", "No data goes to a server, no account required, no analytics tracked, and no ads included. Built-in 'saved words' functionality allows users to build word and phrase lists for better studying and easy export to flash card tools."],
+        "chips": ["Chrome built-in AI", "On-device", "Context-aware", "Web pages + PDFs"]
+      },
+      {
+        "title": "Inspiration",
+        "paragraphs": ["Reading in a language you are learning is one of the best ways to become fluent. Instead of stopping at every word you do not know, switching to an external dictionary, and being unsure if the meaning stays the same in context, Leggio unobtrusively delivers the right meaning as an elegant tooltip within the text, so the reading can go on."]
+      }
+    ],
+    "uses": [
+      {
+        "title": "Learners",
+        "items": ["Reading the news in the language you’re learning, like Le Monde, El País, or NHK Easy, without switching tabs.", "Working through a novel or short story as a PDF, for example Pinocchio in Italian or Borges in Spanish, and building a word list as you go.", "Reading Reddit, forums, or recipe blogs in the language you’re learning, so practice fits into ordinary browsing.", "Exporting saved words to CSV and importing them into Anki or Quizlet for spaced repetition.", "Heritage speakers who understand a language but can’t read it well, catching up on the written form."]
+      },
+      {
+        "title": "Students and academics",
+        "items": ["Graduate students reading sources in a language they read slowly, such as German philosophy, French theory, or Spanish archival documents.", "Getting through reading-knowledge language exams for PhD programs.", "Historians working with scanned foreign-language documents, using OCR on the page.", "Reading architecture or design writing that hasn’t been translated, such as Italian or Japanese journals."]
+      },
+      {
+        "title": "Work and travel",
+        "items": ["Reading foreign-language contracts, reports, or emails with the full context, instead of pasting single lines into a translator.", "Researching a trip on local-language sites, which are often better than the English versions.", "Expats reading forms, school letters, and government sites.", "Reading foreign-language documentation or GitHub issues."]
+      },
+      {
+        "title": "Privacy",
+        "items": ["Anyone who doesn’t want what they read sent to a server, since translation happens on the device."]
+      }
+    ]
+  },
+  {
+    "id": "greatercircle",
+    "name": "GREATERCIRCLE",
+    "tier": "flagship",
+    "rank": 6,
+    "names": {
+      "water": ["Great Circles", "Airways", "Meridians", "Waypoints"],
+      "river": ["Jetstream", "Bearing"],
+      "lake": ["Azimuth", "Layover"]
+    },
+    "url": "https://noahdarwinlee.com/greatercircle/",
+    "domain": "noahdarwinlee.com/greatercircle",
+    "brand": "#d9741a",
+    "blurb": "An interactive globe built for anyone curious about how we really fly. While standard flight maps draw straight lines from point A to point B, this tool calculates the true great-circle distance between any two points, factoring in political geography and user preference. Simply place your points, note the regions or airspace to avoid, and watch the program plot out the optimal route.",
+    "tagline": "An interactive globe that plots the shortest flight route between two places, around the regions you want to avoid.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-greatercircle-800.webp",
+        "srcset": "/art/web/materials/shot-greatercircle-800.webp 800w, /art/web/materials/shot-greatercircle-1600.webp 1600w",
+        "alt": "Seoul to Warsaw, around Russia, Ukraine, North Korea, and Belarus",
+        "caption": "Seoul to Warsaw, around Russia, Ukraine, North Korea, and Belarus"
+      },
+      {
+        "src": "/art/web/materials/shots/greatercircle-2-800.webp",
+        "srcset": "/art/web/materials/shots/greatercircle-2-800.webp 800w, /art/web/materials/shots/greatercircle-2-1600.webp 1600w",
+        "alt": "The globe in the light theme",
+        "caption": "The globe in the light theme"
+      },
+      {
+        "src": "/art/web/materials/shots/greatercircle-3-800.webp",
+        "srcset": "/art/web/materials/shots/greatercircle-3-800.webp 800w, /art/web/materials/shots/greatercircle-3-1600.webp 1600w",
+        "alt": "Dubai to Baku, around Iran",
+        "caption": "Dubai to Baku, around Iran"
+      },
+      {
+        "src": "/art/web/materials/shots/greatercircle-4-800.webp",
+        "srcset": "/art/web/materials/shots/greatercircle-4-800.webp 800w, /art/web/materials/shots/greatercircle-4-1600.webp 1600w",
+        "alt": "Cape Town to Perth, around a region drawn with the pen",
+        "caption": "Cape Town to Perth, around a region drawn with the pen"
+      }
+    ],
+    "sections": [
+      {
+        "title": "Technical details",
+        "paragraphs": ["The route improves on great circle distance pathfinding on a sphere by calculating a chain of great-circle arcs bending only at the avoided regions' convex corners, found by an A* algorithm over their tangent visibility graph, in three-dimensional unit vectors.", "Borders from Natural Earth; places from GeoNames and OurAirports, with Photon for the long tail. Labeled cities come from a modified GaWC index."],
+        "chips": ["Exact shortest paths", "241 countries", "14,500 places", "Web Worker"]
+      },
+      {
+        "title": "Inspiration",
+        "paragraphs": ["I was flying from South Korea to Poland and not long after takeoff, I booted up the seat-back flight map to see that our plane was projected to chart a straight line through four countries with closed off airspaces. As a nervous flier, knowing the accurate flight path would have put me more at ease."]
+      }
+    ],
+    "uses": [
+      {
+        "title": "Flyers",
+        "items": ["Checking whether a route really goes around a conflict zone before booking.", "Finding out why a flight took 2 hours longer than the map suggested.", "Comparing two itineraries to see which one actually flies a shorter path.", "Following along on a flight when the seat-back map is broken or out of date."]
+      },
+      {
+        "title": "Aviation enthusiasts",
+        "items": ["Recreating real reroutes, such as Europe to Asia since Russian airspace closed, or the Gulf around Iran.", "Planning hypothetical routes for flight simulators like MSFS or X-Plane.", "Seeing why polar routes exist, by drawing Asia to North America the short way."]
+      },
+      {
+        "title": "Teaching and journalism",
+        "items": ["Showing in geography class why the shortest line on a globe looks curved on a flat map.", "Showing how airspace closures add distance, fuel, and emissions, for news graphics.", "Explaining how sanctions and geopolitics change a flight.", "Calculating extra distance in km, mi, or nmi for pieces on aviation emissions."]
+      },
+      {
+        "title": "Professional and adjacent",
+        "items": ["Students in aviation and dispatch learning great-circle navigation.", "Sailing routes around storm regions or restricted waters, using the drawn-region tool.", "Shipping and logistics planners avoiding chokepoints.", "Drone or balloon hobbyists avoiding restricted zones.", "Climate researchers estimating the extra CO₂ from detours."]
+      }
+    ]
+  },
+  {
+    "id": "dealdesk",
+    "name": "Dealdesk",
+    "tier": "flagship",
+    "rank": 7,
+    "provinces": [
+      {
+        "id": "rollmap",
+        "name": "Rollmap",
+        "blurb": "Rollmap finds acquisition targets for roll-up strategies, mapping every practice by its owner.",
+        "tagline": "Finds acquisition targets for roll-up strategies, mapping every practice by its owner.",
+        "media": [
+          {
+            "src": "/art/web/materials/shot-rollmap-800.webp",
+            "srcset": "/art/web/materials/shot-rollmap-800.webp 800w, /art/web/materials/shot-rollmap-1100.webp 1100w",
+            "alt": "Rollmap’s globe on the Dealdesk desk"
+          }
+        ]
+      },
+      {
+        "id": "screener",
+        "name": "Screener",
+        "blurb": "Screener reads a CIM or prospectus and gives back its numbers, its risks, and a clear recommendation.",
+        "tagline": "Reads a CIM or prospectus and gives back its numbers, its risks, and a recommendation.",
+        "media": [
+          {
+            "src": "/art/web/materials/shot-screener-800.webp",
+            "srcset": "/art/web/materials/shot-screener-800.webp 800w, /art/web/materials/shot-screener-1200.webp 1200w",
+            "alt": "Screener’s banker’s lamp on the Dealdesk desk"
+          }
+        ]
+      },
+      {
+        "id": "closebook",
+        "name": "Closebook",
+        "blurb": "Closebook turns messy portfolio company reports into clean, comparable numbers.",
+        "tagline": "Turns messy portfolio company reports into clean, comparable numbers.",
+        "media": [
+          {
+            "src": "/art/web/materials/shot-closebook-800.webp",
+            "srcset": "/art/web/materials/shot-closebook-800.webp 800w, /art/web/materials/shot-closebook-936.webp 936w",
+            "alt": "Closebook’s ledger on the Dealdesk desk"
+          }
+        ]
+      },
+      {
+        "id": "lbomatic",
+        "name": "LBOmatic",
+        "blurb": "LBOmatic models a buyout from entry to exit on one screen, with a sensitivity table, a value creation bridge, and a debt schedule.",
+        "tagline": "Models a buyout from entry to exit on one screen.",
+        "media": [
+          {
+            "src": "/art/web/materials/shot-lbomatic-800.webp",
+            "srcset": "/art/web/materials/shot-lbomatic-800.webp 800w, /art/web/materials/shot-lbomatic-876.webp 876w",
+            "alt": "LBOmatic’s adding machine on the Dealdesk desk"
+          }
+        ]
+      }
+    ],
+    "names": {
+      "water": ["Ledgers", "Dividends", "Returns"],
+      "river": ["Cash Flow", "Liquidity"],
+      "lake": ["Equity", "Escrow"]
+    },
+    "url": "https://dealdesk.noahdarwinlee.com/",
+    "domain": "dealdesk.noahdarwinlee.com",
+    "brand": "#3d6b4a",
+    "blurb": "Tools for investors and deal teams. Rollmap finds acquisition targets for roll-up strategies, mapping every practice by its owner. Screener reads a CIM or prospectus and gives back its numbers, its risks, and a clear recommendation. Closebook turns messy portfolio company reports into clean, comparable numbers. LBOmatic models a buyout from entry to exit on one screen, with a sensitivity table, a value creation bridge, and a debt schedule.",
+    "tagline": "Tools for investors and deal teams: finding roll-up targets, reading CIMs, cleaning portfolio reports, and modelling buyouts.",
+    "media": [
+      {
+        "src": "/art/web/materials/shot-dealdesk-800.webp",
+        "srcset": "/art/web/materials/shot-dealdesk-800.webp 800w, /art/web/materials/shot-dealdesk-1600.webp 1600w, /art/web/materials/shot-dealdesk-2400.webp 2400w",
+        "alt": "Dealdesk’s front page: a globe for Rollmap, a banker’s lamp for Screener, a ledger for Closebook, and an adding machine for LBOmatic, on a green leather desk"
+      },
+      {
+        "src": "/art/web/materials/shot-rollmap-800.webp",
+        "srcset": "/art/web/materials/shot-rollmap-800.webp 800w, /art/web/materials/shot-rollmap-1100.webp 1100w",
+        "alt": "Rollmap’s globe on the Dealdesk desk"
+      },
+      {
+        "src": "/art/web/materials/shot-screener-800.webp",
+        "srcset": "/art/web/materials/shot-screener-800.webp 800w, /art/web/materials/shot-screener-1200.webp 1200w",
+        "alt": "Screener’s banker’s lamp on the Dealdesk desk"
+      },
+      {
+        "src": "/art/web/materials/shot-closebook-800.webp",
+        "srcset": "/art/web/materials/shot-closebook-800.webp 800w, /art/web/materials/shot-closebook-936.webp 936w",
+        "alt": "Closebook’s ledger on the Dealdesk desk"
+      },
+      {
+        "src": "/art/web/materials/shot-lbomatic-800.webp",
+        "srcset": "/art/web/materials/shot-lbomatic-800.webp 800w, /art/web/materials/shot-lbomatic-876.webp 876w",
+        "alt": "LBOmatic’s adding machine on the Dealdesk desk"
+      }
+    ]
+  },
+  {
+    "id": "citylayoutguessr",
+    "name": "citylayoutguessr",
+    "tier": "small",
+    "names": {
+      "water": ["Street Grids", "Guesses"],
+      "river": ["Avenue"],
+      "lake": ["Plaza"]
+    },
+    "url": "/citylayoutguessr/",
+    "domain": "noahdarwinlee.com/citylayoutguessr",
+    "blurb": "A daily guessing game of cities, based on their satellite maps.",
+    "tagline": "A daily guessing game of cities, based on their satellite maps.",
+    "media": [
+      {
+        "src": "/art/web/materials/citylayoutguessr-480.webp",
+        "alt": "citylayoutguessr, with a satellite image of a city to name"
+      }
+    ]
+  },
+  {
+    "id": "flashcard",
+    "name": "Flash Card Tool",
+    "tier": "small",
+    "names": {
+      "water": ["Recall"],
+      "river": ["Memory"],
+      "lake": ["Rote"]
+    },
+    "url": "/flashcard/",
+    "domain": "noahdarwinlee.com/flashcard",
+    "blurb": "A free flash card tool for any subject or language. It works offline and handles accents and diacritics.",
+    "tagline": "A free flash card tool for any subject or language, and it works offline.",
+    "media": [
+      {
+        "src": "/art/web/materials/flashcard-480.webp",
+        "alt": "The Flash Card Tool, with a word on a card"
+      }
+    ]
+  },
+  {
+    "id": "architects",
+    "name": "100 Architects of the Modern Era",
+    "tier": "small",
+    "names": {
+      "water": ["Modernists", "Pilotis", "Bauhaus"],
+      "river": ["Curtain Wall"],
+      "lake": ["Brutalist"]
+    },
+    "url": "https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing",
+    "domain": "A slide deck",
+    "blurb": "A slide deck: 100 architects of the modern era you should know.",
+    "tagline": "A slide deck of 100 architects of the modern era you should know.",
+    "media": [
+      {
+        "src": "/art/web/materials/architects-480.webp",
+        "alt": "A slide from 100 Architects of the Modern Era you Should Know"
+      }
+    ]
+  },
+  {
+    "id": "nyc",
+    "name": "Things to Do in New York City",
+    "tier": "small",
+    "names": {
+      "water": ["Boroughs"],
+      "river": ["Broadway"],
+      "lake": ["Bethesda"]
+    },
+    "url": "https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing",
+    "domain": "A list",
+    "blurb": "A list of things to do in New York City, with a map of where they are.",
+    "tagline": "A list of things to do in New York City, with a map of where they are.",
+    "media": [
+      {
+        "src": "/art/web/materials/newyork-480.webp",
+        "alt": "The map from the List of Things to Do in New York City"
+      }
+    ]
+  },
+  {
+    "id": "chicago",
+    "name": "Things to Do in Chicago",
+    "tier": "small",
+    "names": {
+      "water": ["Lakeshore", "Prairie"],
+      "river": ["Loop"],
+      "lake": ["Deep Dish"]
+    },
+    "url": "https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing",
+    "domain": "A list",
+    "blurb": "A list of things to do in Chicago, from restaurants on, each with a price and a short note.",
+    "tagline": "A list of things to do in Chicago, each with a price and a short note.",
+    "media": [
+      {
+        "src": "/art/web/materials/chicago-480.webp",
+        "alt": "The first page of the List of Things to Do in Chicago"
+      }
+    ]
+  },
+  {
+    "id": "expositions",
+    "name": "Expositions Magazine",
+    "tier": "small",
+    "names": {
+      "water": ["Expositions", "Essays"],
+      "river": ["Margin"],
+      "lake": ["Footnote"]
+    },
+    "url": "https://cegu.uchicago.edu/expositions/",
+    "domain": "cegu.uchicago.edu/expositions",
+    "blurb": "Expositions Magazine, at the University of Chicago.",
+    "tagline": "Expositions Magazine, at the University of Chicago.",
+    "media": [
+      { "src": "/art/web/materials/shot-expositions-800.webp", "srcset": "/art/web/materials/shot-expositions-800.webp 800w, /art/web/materials/shot-expositions-1600.webp 1600w", "alt": "Expositions Magazine's issues page at CEGU, with the covers of its Spring 2026, Winter 2026, and Autumn 2025 issues", "caption": "The issues page" }
+    ]
+  },
+  {
+    "id": "night-of-ideas",
+    "name": "Night of Ideas",
+    "tier": "small",
+    "names": {
+      "water": ["Ideas", "Dialogues", "Symposia"],
+      "river": ["Socratic"],
+      "lake": ["Lyceum"]
+    },
+    "url": "https://nightofideas.dev",
+    "domain": "nightofideas.dev",
+    "blurb": "A University of Chicago club, affiliated with the Philosophy Department, where students give lightning talks on an original idea. I built its website.",
+    "tagline": "A University of Chicago club where students give lightning talks on an original idea.",
+    "media": [
+      { "src": "/art/web/materials/shot-night-of-ideas-800.webp", "srcset": "/art/web/materials/shot-night-of-ideas-800.webp 800w, /art/web/materials/shot-night-of-ideas-1600.webp 1600w", "alt": "The Night of Ideas title, with the moon set into the O", "caption": "The front page" }
+    ]
+  },
+  {
+    "id": "substack",
+    "name": "Substack",
+    "tier": "small",
+    "names": {
+      "water": ["Dispatches", "Letters"],
+      "river": ["Newsletter"],
+      "lake": ["Inkwell"]
+    },
+    "url": "https://substack.com/@noahdarwinlee?r=ish50&utm_campaign=profile&utm_medium=profile-page",
+    "domain": "substack.com/@noahdarwinlee",
+    "blurb": "Some of my writings on Substack.",
+    "tagline": "Some of my writings on Substack.",
+    "media": []
+  },
+  {
+    "id": "ucgeo",
+    "name": "UCGEO",
+    "tier": "small",
+    "names": {
+      "water": ["Geographers", "Cartographers"],
+      "river": ["Contour"],
+      "lake": ["Atlas"]
+    },
+    "url": "https://ucgeo.org",
+    "domain": "ucgeo.org",
+    "blurb": "The University of Chicago Geographic Studies Club that I founded.",
+    "tagline": "The University of Chicago Geographic Studies Club that I founded.",
+    "media": [
+      { "src": "/art/web/materials/shot-ucgeo-800.webp", "srcset": "/art/web/materials/shot-ucgeo-800.webp 800w, /art/web/materials/shot-ucgeo-1600.webp 1600w", "alt": "The Geographic Studies Club's front page, over a photo of a full lecture hall", "caption": "The front page" }
+    ]
+  },
+  {
+    "id": "drill",
+    "name": "Drill the canon",
+    "tier": "small",
+    "names": {
+      "water": ["Canon"],
+      "river": ["Rote"],
+      "lake": ["Drill"]
+    },
+    "url": "/drill/",
+    "domain": "noahdarwinlee.com/drill",
+    "blurb": "Drills for the canon: key philosophers, authors, poets, composers, architects, and artists, with their works, ideas, and lives.",
+    "tagline": "Drills for the canon: key philosophers, authors, poets, composers, architects, and artists.",
+    "media": []
+  },
+  {
+    "id": "dragonfly",
+    "name": "Dragonfly Agency",
+    "tier": "small",
+    "names": {
+      "water": ["Dragonflies"],
+      "river": ["Wing"],
+      "lake": ["Nymph"]
+    },
+    "url": "https://la.thedragonflyagency.com/divisions/development/portfolios/noah-lee",
+    "domain": "thedragonflyagency.com",
+    "blurb": "My portfolio with the Dragonfly Agency’s development division.",
+    "tagline": "My portfolio with the Dragonfly Agency’s development division.",
+    "media": []
+  }
+]

@@ -81,7 +81,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     if (!pal["label-halo"]) pal["label-halo"] = pal.ocean;
     var c = document.createElement("canvas");
@@ -94,13 +94,20 @@
 
   var renderQueued = false, interacting = 0, settleTimer = null;
 
+  var under = document.createElement("canvas"), underCtx = under.getContext("2d"), underOk = false, fullWanted = false;
   function scheduleRender(detail) {
     void detail;
+    underOk = false; fullWanted = true;
+    if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
+  }
+  function scheduleFlow() {
     if (!renderQueued) { renderQueued = true; requestAnimationFrame(frame); }
   }
 
   function frame() {
     renderQueued = false;
+    if (!fullWanted && underOk && under.width === canvas.width && under.height === canvas.height) { renderTop(); return; }
+    fullWanted = false;
     var t0 = performance.now();
     render("full");
     if (interacting > 0) noteCost(performance.now() - t0);
@@ -346,6 +353,29 @@
     mark("regions");
     drawCities();
     mark("cities");
+    ctx.restore();
+    if (under.width !== canvas.width || under.height !== canvas.height) { under.width = canvas.width; under.height = canvas.height; }
+    underCtx.clearRect(0, 0, under.width, under.height);
+    underCtx.drawImage(canvas, 0, 0);
+    underOk = !flatOnly;
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    drawTopLayers();
+    ctx.restore();
+    mark("end");
+  }
+  function renderTop() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(under, 0, 0);
+    ctx.restore();
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    drawTopLayers();
+    ctx.restore();
+  }
+  function drawTopLayers() {
     drawRoutes();
     drawMarkers();
     drawDrawing();
@@ -357,8 +387,6 @@
       ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 4.5; ctx.stroke();
       ctx.strokeStyle = pal.route; ctx.lineWidth = 1.8; ctx.stroke();
     }
-    ctx.restore();
-    mark("end");
   }
 
   var lineCache = { key: "", lines: null };
@@ -477,6 +505,40 @@
     startAnim("morph", from.coordinates, to.coordinates, 320);
   }
 
+  var FLOW_DASH_PX = 14, flowRun = null, flowOn = false;
+  function flowing() { return !reduceMotion && !flatOnly; }
+  function flowPath(sel) {
+    if (flowRun && flowRun.line === sel) return flowRun;
+    var V = sel.coordinates.map(function (c) { return G.toVec(c[0], c[1]); }), lens = [0], total = 0;
+    for (var i = 1; i < V.length; i++) { total += G.angleBetween(V[i - 1], V[i]); lens.push(total); }
+    var km = total * 6371.0088;
+    flowRun = { line: sel, V: V, lens: lens, total: total, ms: Math.max(2200, Math.min(6000, 1800 + km * 0.35)), t0: performance.now() };
+    return flowRun;
+  }
+  function drawFlowDot(sel) {
+    var f = flowPath(sel);
+    if (!(f.total > 0)) return;
+    var t = ((performance.now() - f.t0) % f.ms) / f.ms, at = t * f.total, j = 0;
+    while (j < f.V.length - 2 && f.lens[j + 1] < at) j++;
+    var seg = f.lens[j + 1] - f.lens[j], v = slerp(f.V[j], f.V[j + 1], seg > 0 ? (at - f.lens[j]) / seg : 0), ll = G.toLonLat(v);
+    if (!visible(ll)) return;
+    var q = projection(ll);
+    if (!q) return;
+    ctx.beginPath(); ctx.arc(q[0], q[1], 1.2, 0, 2 * Math.PI);
+    ctx.fillStyle = pal.flow || pal.route; ctx.fill();
+  }
+  function flowTick() {
+    var res = state.result;
+    if (!flowing() || !state.a || !state.b || !res || res.status !== "done" || state.stale) { flowOn = false; return; }
+    scheduleFlow();
+    requestAnimationFrame(flowTick);
+  }
+  function startFlow() {
+    if (flowOn || !flowing()) return;
+    flowOn = true;
+    requestAnimationFrame(flowTick);
+  }
+
   function drawRoutes() {
     var res = state.result;
     beaconScreen = [];
@@ -495,14 +557,16 @@
       ctx.beginPath(); path(lines[k]);
       ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 3.4; ctx.stroke();
       ctx.beginPath(); path(lines[k]);
-      ctx.setLineDash([5, 6]); ctx.strokeStyle = pal.faint; ctx.lineWidth = 1.4; ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.setLineDash([5, 6]); ctx.lineDashOffset = flowing() ? -((performance.now() / 1000) * FLOW_DASH_PX) % 11 : 0;
+      ctx.strokeStyle = pal.faint; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.setLineDash([]); ctx.lineDashOffset = 0;
     });
-    var sel = animatedLine() || lines[tab] || lines.avoid || lines.direct;
+    var animated = animatedLine(), sel = animated || lines[tab] || lines.avoid || lines.direct;
     ctx.beginPath(); path(sel);
     ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 6; ctx.stroke();
     ctx.beginPath(); path(sel);
     ctx.strokeStyle = pal.route; ctx.lineWidth = 2.4; ctx.stroke();
+    if (!animated && flowing()) { drawFlowDot(sel); startFlow(); }
     var leg = state.pinLeg >= 0 ? state.pinLeg : state.hoverLeg;
     if (tab === "plan" && lines.legs && leg >= 0 && lines.legs[leg]) {
       ctx.beginPath(); path(lines.legs[leg]);
@@ -954,7 +1018,7 @@
     if (on && !sat) {
       on = false;
       $("sat-btn").disabled = true;
-      $("sat-btn").title = "The satellite view needs WebGL, which this browser does not offer";
+      $("sat-btn").dataset.tip = "The satellite view needs WebGL, which this browser does not offer"; $("sat-btn").dataset.tipSub = "";
     }
     satOn = on;
     detail.key = "";
@@ -1206,6 +1270,7 @@
   }
   var tip = $("tip"), tipAt = null;
   function showTip(x, y, main, sub, note) {
+    if (pop && !pop.hidden) { hideTip(); return; }
     tip.innerHTML = "";
     if (main) { var b = document.createElement("b"); b.textContent = main; b.style.fontWeight = "400"; tip.appendChild(b); }
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
@@ -1350,10 +1415,14 @@
       var av = state.avoid.has(f.id);
       popActions.push({ label: (av ? "Allow " : "Avoid ") + f.properties.name, fn: function () { toggleAvoid(f.id, f.properties.name); } });
     }
-    popActions.push({ label: "Move B here", fn: function () {
-      if (city) setPoint("b", { lon: city.lon, lat: city.lat, label: cityLabel + ", " + ((places && places.countries[city.cc]) || city.cc) });
-      else setPoint("b", { lon: ll[0], lat: ll[1], label: null, country: f ? f.properties.name : null });
-    } });
+    var here = function (slot) {
+      return function () {
+        if (city) setPoint(slot, { lon: city.lon, lat: city.lat, label: cityLabel + ", " + ((places && places.countries[city.cc]) || city.cc) });
+        else setPoint(slot, { lon: ll[0], lat: ll[1], label: null, country: f ? f.properties.name : null });
+      };
+    };
+    popActions.push({ label: "Move A here", fn: here("a") });
+    popActions.push({ label: "Move B here", fn: here("b") });
     var box = $("pop-actions");
     box.innerHTML = "";
     popActions.forEach(function (a, i) {
@@ -1367,16 +1436,16 @@
     pop.style.top = Math.max(8, Math.min(H - hh - 8, y + 12)) + "px";
     box.firstChild.focus({ preventScroll: true });
   }
-  function closePop(back) {
+  function closePop(back, byPointer) {
     if (pop.hidden) return;
     pop.hidden = true;
-    if (back) canvas.focus({ preventScroll: true });
+    if (back) { focusByPointer = !!byPointer; canvas.focus({ preventScroll: true }); focusByPointer = false; }
   }
   pop.addEventListener("click", function (e) {
     var b = e.target.closest && e.target.closest("button[data-action]");
     if (!b) return;
     var a = popActions[+b.dataset.action];
-    closePop(true);
+    closePop(true, e.detail > 0);
     if (a) a.fn();
   });
   document.addEventListener("pointerdown", function (e) { if (!pop.hidden && !pop.contains(e.target)) closePop(false); }, true);
@@ -2170,15 +2239,18 @@
         : "p~" + r.points.map(function (q) { return q[1].toFixed(3) + "," + q[0].toFixed(3); }).join(";");
       p.push("r=" + encodeURIComponent(r.name) + "~" + body + (r.inverted ? "~i" : ""));
     });
-    if ((state.avoid.size || state.regions.length) && bufferMi(state.bufferKm) !== BUFFER_DEFAULT_MI) p.push("buf=" + bufferMi(state.bufferKm) + "mi");
+    if ((state.avoid.size || state.regions.length) && Math.abs(state.bufferKm - BUFFER_DEFAULT_MI * MI_KM) > 0.01) {
+      var bu = UNITS[state.units];
+      p.push("buf=" + Math.round(state.bufferKm * bu.f) + bu.label);
+    }
     if (state.tab && state.a && state.b && (!state.result || currentTab() === state.tab)) p.push("tab=" + state.tab);
-    if (state.wind) p.push("wind=1");
+    if (state.wind) p.push("wind=" + (state.windMonth != null ? ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"][state.windMonth] : "1"));
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false; state.windMonth = null;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -2214,20 +2286,22 @@
       } else if (k === "wp") {
         if (v === "1") state.tab = "plan";
       } else if (k === "wind") {
-        state.wind = v === "1";
+        var wmi = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(v);
+        state.wind = v === "1" || wmi >= 0;
+        state.windMonth = wmi >= 0 && wmi !== new Date().getMonth() ? wmi : null;
       } else if (k === "tab") {
         if (v === "direct" || v === "avoid" || v === "plan") state.tab = v;
       } else if (k === "buf") {
-        var miles = /mi$/.test(v), bk = parseFloat(v);
-        if (isFinite(bk) && bk >= 0) state.bufferKm = bufferMi(miles ? bk * MI_KM : bk) * MI_KM;
+        var bk = parseFloat(v), per = /nmi$/.test(v) ? 1.852 : /mi$/.test(v) ? MI_KM : 1;
+        if (isFinite(bk) && bk >= 0) state.bufferKm = bufferMi(bk * per) * MI_KM;
       }
     });
     return any;
   }
 
-  (function () {
-    var box = $("about"), btn = $("about-btn");
-    if (!box || !btn) return;
+  Array.prototype.forEach.call(document.querySelectorAll(".gc-about"), function (box) {
+    var btn = box.querySelector(".gc-about-btn");
+    if (!btn) return;
     function setOpen(open) {
       box.classList.toggle("is-open", open);
       btn.setAttribute("aria-expanded", String(open));
@@ -2243,6 +2317,37 @@
       setOpen(false);
       if (box.contains(document.activeElement)) document.activeElement.blur();
     });
+  });
+
+  (function () {
+    var tipEl = document.createElement("div"), shown = null;
+    tipEl.className = "gc-ctl-tip"; tipEl.hidden = true; tipEl.setAttribute("aria-hidden", "true");
+    document.body.appendChild(tipEl);
+    var ctls = document.querySelectorAll(".gc-ctl[title]");
+    Array.prototype.forEach.call(ctls, function (el) {
+      if (!el.dataset.tip) el.dataset.tip = el.getAttribute("title");
+      el.removeAttribute("title");
+      el.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") show(el); });
+      el.addEventListener("pointerleave", hide);
+      el.addEventListener("focus", function () { if (el.matches(":focus-visible")) show(el); });
+      el.addEventListener("blur", hide);
+      el.addEventListener("click", function () { if (shown === el) setTimeout(function () { if (shown === el) show(el); }, 0); });
+    });
+    function show(el) {
+      shown = el;
+      var on = el.getAttribute("aria-pressed") === "true" || el.getAttribute("aria-expanded") === "true";
+      var title = on && el.dataset.tipOn ? el.dataset.tipOn : el.dataset.tip, sub = on && el.dataset.tipOn ? "" : (el.dataset.tipSub || "");
+      tipEl.innerHTML = "";
+      var b = document.createElement("b"); b.textContent = title; tipEl.appendChild(b);
+      if (sub) { var s = document.createElement("span"); s.textContent = sub; tipEl.appendChild(s); }
+      tipEl.hidden = false;
+      var r = el.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+      var left = r.left - w - 10;
+      if (left < 8) left = Math.min(window.innerWidth - w - 8, r.right + 10);
+      tipEl.style.left = left + "px";
+      tipEl.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, r.top + r.height / 2 - h / 2)) + "px";
+    }
+    function hide() { shown = null; tipEl.hidden = true; }
   })();
 
   var SHEET_PEEK = 0, SHEET_HALF = 1, SHEET_FULL = 2;
@@ -2343,6 +2448,23 @@
     [SHEET_PEEK, SHEET_HALF, SHEET_FULL].forEach(function (m) { var dd = Math.abs(sheetYFor(m) - aim); if (dd < bestD) { bestD = dd; best = m; } });
     setSheetMode(best);
   }
+  $("ways-btn").addEventListener("click", function () { if (W <= 640 && sheetMode !== SHEET_FULL) setSheetMode(SHEET_FULL); });
+  var fadeQueued = false;
+  function updateFades() {
+    fadeQueued = false;
+    var max = panel.scrollHeight - panel.clientHeight;
+    panel.classList.toggle("is-scrolled", panel.scrollTop > 2);
+    panel.classList.toggle("has-more", panel.scrollTop < max - 2);
+  }
+  function queueFades() { if (!fadeQueued) { fadeQueued = true; requestAnimationFrame(updateFades); } }
+  panel.addEventListener("scroll", queueFades, { passive: true });
+  window.addEventListener("resize", queueFades);
+  if (window.ResizeObserver) {
+    var fadeRo = new ResizeObserver(queueFades);
+    fadeRo.observe(panel);
+    Array.prototype.forEach.call(panel.children, function (el) { fadeRo.observe(el); });
+  }
+  queueFades();
   panel.addEventListener("pointerup", endSheetDrag);
   panel.addEventListener("pointercancel", function (e) {
     var d = sheetDrag;

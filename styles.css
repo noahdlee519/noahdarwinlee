@@ -1302,6 +1302,7 @@ a[href="/cv/"]:active {
   gap: 2px;
   padding: 12px 16px 14px;
   background: var(--bg);
+  z-index: 5;
   visibility: hidden;
   white-space: nowrap;
 }

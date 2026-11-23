@@ -233,7 +233,21 @@ const BLANKETS = /hunter|gatherer|forager|foraging|fisher|fichers|^pampas cultur
 const NOT_YET = /\(Oklahoma\)|Reservation\)|Rancheria|^Michif Piyii|^Mountain Métis$|^NWT Métis Nation$|Metis Settlement|^Mount Tabor Indian Community$/i;
 // A carried people more than this share of whose land later maps' peoples hold is left out for those years: what is left of it is an edge.
 const DISPLACED = 0.5;
-let nativeSnaps = []; // the maps nativeCarry reads, kept when the rest are let go
+let nativeSnaps = []; // the maps nativeCarry and africaCarry read, kept when the rest are let go
+// Africa's peoples carried forward (Noah, 23 November 2026): historical-basemaps names Africa's peoples on its map of 1500 ("Bantu
+// peoples", "Khoisan", "West African cereal farmers") and a few on later maps (the Oromo, Zulu, and Xhosa), and none on the land in
+// between, so from 1515 two thirds of the continent was blank. They are carried as the Americas' are, to 1885, on land no state, colony,
+// or claim holds. AFRICA_RECAST gives the map of 1500's Khoisan east of 26° E (Natal, the Highveld, Sofala, where Bantu speakers lived
+// by then) to the Bantu peoples, and keeps its West African cereal farmers west of 16° E.
+const AFRICA_BOX = [-20, -36, 55, 38], AFRICA_MAPS = [1500, 1530, 1715, 1783, 1815], AFRICA_FROM = 1500;
+const AFRICA_RECAST = { 1500: [["Khoisan", [26, -36, 42, -10], "Bantu peoples"], ["West African cereal farmers", [16, -40, 60, 40], null]] };
+const inAfrica = (polys) => {
+  let big = null, most = -1;
+  for (const p of polys) { const a = polyKm2(p); if (a > most) { most = a; big = p; } }
+  if (!big) return false;
+  const b = boxOf([big]), x = (b[0] + b[2]) / 2, y = (b[1] + b[3]) / 2;
+  return x > AFRICA_BOX[0] && x < AFRICA_BOX[2] && y > AFRICA_BOX[1] && y < AFRICA_BOX[3] && !(x > 34 && y > 29) && !(x > 42.5 && y > 11.5);
+};
 const inAmericas = (polys) => {
   let big = null, most = -1;
   for (const p of polys) { const a = polyKm2(p); if (a > most) { most = a; big = p; } }
@@ -1430,6 +1444,44 @@ const REGIMES = {
 const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ireland", "Kingdom of Denmark": "Denmark", "Netherlands": "Netherlands" };
 const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
 const NAME_FIX = [
+  // Africa, 1500 to 1885 (the audit of 23 November 2026, "claude/chronia-africa-audit.md" in the project; LEDGER "1500–1885 | Africa").
+  // The western Cape is a piece of the Dutch colonial umbrella carried to 1870 as "Dutch East Indies" beside the British colony (British
+  // from 1806, ceded 1814), and a "Dutch Cape Colony" under the Batavian Republic runs beside the British one during the occupation of
+  // 1795 to 1803.
+  ["Dutch East Indies", "British Cape Colony", 1806, 1885, { box: [10, -40, 35, -20], ruler: "@britain", wiki: "Cape Colony" }],
+  ["Dutch Cape Colony", "", 1796, 1802, { box: [10, -40, 35, -20], drop: 1 }],
+  // Saint-Louis du Sénégal falls in Cliopatria's France and New France: French from 1659, British from 1758 (ceded 1763) to the French
+  // recapture of January 1779, British again from 1809 to the French return of 1817.
+  ...["New France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France"].flatMap((n) => [
+    [n, "French Senegal", 1659, 1757, { box: [-18, 12, -11, 17.5], ruler: "@france", wiki: "French conquest of Senegal" }],
+    [n, "British Senegal", 1758, 1778, { box: [-18, 12, -11, 17.5], ruler: "@britain", wiki: "British capture of Senegal" }],
+    [n, "French Senegal", 1779, 1808, { box: [-18, 12, -11, 17.5], ruler: "@france", wiki: "French conquest of Senegal" }],
+    [n, "British Senegal", 1809, 1816, { box: [-18, 12, -11, 17.5], ruler: "@britain", wiki: "British capture of Senegal" }],
+    [n, "French Senegal", 1817, 1885, { box: [-18, 12, -11, 17.5], ruler: "@france", wiki: "French conquest of Senegal" }]
+  ]),
+  // historical-basemaps' map of 1880 draws states that began in the 1870s and 1880s, and its years reach back to 1848: Rabih's (from
+  // 1879), Ngongo Lutete's Utetera (the 1880s), and Samori's Wassoulou (1878).
+  ["Rabih az-Zubayr", "", 1848, 1878, { drop: 1 }], ["Sultanate of Utetera", "", 1848, 1879, { drop: 1 }], ["Wassoulou Empire", "", 1848, 1877, { drop: 1 }],
+  // The map of 1815 names a shape on the Luba lands and Lake Tanganyika "Rwanda" (the kingdom lay north of 2.9° S).
+  ["Rwanda", "", 1808, 1847, { box: [24, -8, 34, -2.9], drop: 1 }],
+  // The maps of 1783 to 1815 name the Kingdom of Benin "Sotho".
+  ["Sotho", "Kingdom of Benin", 1749, 1847, { box: [2, 3, 10, 10], people: 0, wiki: "Kingdom of Benin" }],
+  // The map of 1715's second "Ethiopia" lies on Dongola and the Nile above the Fourth Cataract, under the Funj.
+  ["Ethiopia", "Funj Sultanate", 1708, 1768, { box: [26, 15, 36, 23], wiki: "Funj Sultanate" }],
+  ["Ethiopian Empire", "Funj Sultanate", 1708, 1768, { box: [26, 15, 36, 23], wiki: "Funj Sultanate" }],
+  // Portugal's African colonies are drawn as "Kingdom of Portugal" from 1824.
+  ["Kingdom of Portugal", "Angola", 1824, 1885, { box: [8, -19, 25, -4], ruler: "@portugal", wiki: "Portuguese Angola" }],
+  ["Kingdom of Portugal", "Mozambique", 1824, 1885, { box: [30, -27, 42, -10], ruler: "@portugal", wiki: "Portuguese Mozambique" }],
+  ["Kingdom of Portugal", "Portuguese Guinea", 1824, 1885, { box: [-17.5, 10, -13, 13.5], ruler: "@portugal", wiki: "Portuguese Guinea" }],
+  // Dependencies as the law had them (Noah, 23 November 2026): Egypt and the regencies of Algiers, Tunis, and Tripoli under the Ottomans;
+  // Dahomey under Oyo from 1730 (Agaja's peace) to Ghezo's victory of 1823; Bagirmi under Bornu from Idris Alooma's conquest.
+  ...["Egypt", "Egypt Eyalet"].map((n) => [n, n, 1517, 1866, { box: [24, 21, 37, 32], ruler: "Ottoman Empire" }]),
+  ["Khedivate of Egypt", "Khedivate of Egypt", 1867, 1881, { ruler: "Ottoman Empire" }],
+  ...["Algiers", "Regency of Algiers"].map((n) => [n, n, 1525, 1830, { ruler: "Ottoman Empire" }]),
+  ...["Tunis", "Beylik of Tunis"].map((n) => [n, n, 1574, 1881, { ruler: "Ottoman Empire" }]),
+  ...["Tripolitania", "Karamanli dynasty", "Karamanli Dynasty", "Cyrenaica"].map((n) => [n, n, 1711, 1835, { ruler: "Ottoman Empire" }]),
+  ["Dahomey", "Dahomey", 1730, 1822, { ruler: "Oyo Empire" }],
+  ["Bagirmi", "Bagirmi", 1580, 1805, { ruler: "Bornu Empire" }],
   // Cliopatria names the Crimea "Blue Horde" from 1445 to 1449, before its Crimean Khanate begins in 1450 (the khanate dates from
   // 1441, as the medieval table draws it to 1444), and the steppe north of the Caucasus "Blue Horde" in 1445, the Golden Horde's in
   // the medieval table to 1444 and in Cliopatria from 1446; the Blue Horde was the Horde's eastern wing in the 14th century.
@@ -1835,8 +1887,8 @@ const NAME_FIX = [
   ["Poles", "Congress Poland", 1815, 1867, { ruler: "Russian Empire" }],
   ["Helvetic Republic", "Swiss Confederation", 1400, 1797],
   ["Helvetic Republic", "Swiss Confederation", 1803, 1885],
-  ["Khedivate of Egypt", "Egypt", 1805, 1866, { wiki: "History of Egypt under the Muhammad Ali dynasty" }],
-  ["Muhammad Ali dynasty", "Egypt", 1805, 1821, { wiki: "History of Egypt under the Muhammad Ali dynasty" }],
+  ["Khedivate of Egypt", "Egypt", 1805, 1866, { ruler: "Ottoman Empire", wiki: "History of Egypt under the Muhammad Ali dynasty" }],
+  ["Muhammad Ali dynasty", "Egypt", 1805, 1821, { ruler: "Ottoman Empire", wiki: "History of Egypt under the Muhammad Ali dynasty" }],
   ["Muhammad Ali dynasty", "Egyptian Sudan", 1822, 1866, { ruler: "Egypt", wiki: "Turkiyya" }],
   ["British Africa", "Khedivate of Egypt", 1882, 1885, { box: [20, 5, 40, 33], ruler: "United Kingdom" }],
   ["Harer (Egypt)", "Emirate of Harar", 1647, 1874, { ruler: "" }],
@@ -2876,7 +2928,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
     console.log("names: joined touching spans of one state with one name in " + joined + " stretches of years, " + drop.size + " spans to " + add.length);
   }
   dated.forEach((s) => { delete s.cells; });
-  nativeSnaps = snapshots.filter((s) => s.y >= DATED_FROM).map((s) => ({ y: s.y, feats: NATIVE_MAPS.includes(s.y) ? s.feats : [] }));
+  nativeSnaps = snapshots.filter((s) => s.y >= DATED_FROM).map((s) => ({ y: s.y, feats: NATIVE_MAPS.includes(s.y) || AFRICA_MAPS.includes(s.y) ? s.feats : [] }));
   snapshots.length = 0; // nothing reads historical-basemaps' maps after this, but nativeCarry, from nativeSnaps
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
@@ -3779,29 +3831,41 @@ const stages = (list) => {
 // people carried the same way (the latest map goes first, so the later source wins). Of two peoples of one map the larger keeps the land
 // they share, as resolveOverlaps has it. A people most of whose land later maps' peoples hold is left out (DISPLACED). The blankets
 // (BLANKETS: "Amazon hunter-gatherers") then keep only the land no named people holds.
-function nativeCarry(list) {
+function peopleCarry(list, cfg) {
+  const { region, inRegion, first: carryFrom, maps: carryMaps, blankets: BL, notYet: NY, label, recast = {}, skip = () => false } = cfg;
   const hbSnaps = nativeSnaps;
-  if (!hbSnaps.some((s) => s.y === NATIVE_CARRY[0])) throw new Error("nativeCarry: no map of " + NATIVE_CARRY[0]);
+  if (!hbSnaps.some((s) => s.y === carryFrom)) throw new Error("peopleCarry: no map of " + carryFrom);
   const winLast = (k) => (k + 1 < hbSnaps.length ? Math.ceil((hbSnaps[k].y + hbSnaps[k + 1].y) / 2) - 1 : DATED_TO);
-  const start = winLast(hbSnaps.findIndex((s) => s.y === NATIVE_CARRY[0])) + 1;
-  const isBlanket = (f) => f.people && BLANKETS.test(f.name) && f.first >= start && inAmericas(f.polys);
+  const start = winLast(hbSnaps.findIndex((s) => s.y === carryFrom)) + 1;
+  const isBlanket = (f) => f.people && BL.test(f.name) && f.first >= start && inRegion(f.polys);
   const blankets = list.filter(isBlanket), rest = list.filter((f) => !isBlanket(f));
   // The spans the peoples give way to, each with its own number: a span cut in time keeps its uid, which cutOver's memo goes by.
   // Spans with one shape (a span's pieces in time) share a number, so the memo serves them all.
   let n = 0;
   const shapeNo = new Map(), noOf = (polys) => { if (!shapeNo.has(polys)) shapeNo.set(polys, n++); return shapeNo.get(polys); };
   const wrap = (f) => ({ uid: noOf(f.polys), name: f.name, people: f.people, first: f.first, last: f.last, polys: f.polys, box: boxOf(f.polys), cells: cellsOf(f.polys) });
-  const pool = rest.filter((f) => f.last >= start && f.first <= DATED_TO && f.polys.length && (f.box || boxOf(f.polys))[0] < AMERICAS[2]).map(wrap);
+  const pool = rest.filter((f) => f.last >= start && f.first <= DATED_TO && f.polys.length && boxHit(f.box || boxOf(f.polys), region)).map(wrap);
   const carried = [];
   let out = 0;
-  const maps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => NATIVE_MAPS.includes(s.y)).reverse();
+  const maps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => carryMaps.includes(s.y)).reverse();
   for (const { s, k } of maps) {
     const first = winLast(k) + 1, feats = [], mine = [], mineW = [];
     for (const f of s.feats) {
       const p = f.properties;
-      if (!p.name || BLANKETS.test(p.name) || NOT_YET.test(p.name)) continue;
-      const polys = rewind(polysOf(f.geometry)), whole = km2Of(polys), box = boxOf(polys);
-      if (whole > 0 && inAmericas(polys) && isPeople(p.name, p.ruler, s.y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2])) feats.push({ p, polys, whole, box });
+      if (!p.name || BL.test(p.name) || NY.test(p.name)) continue;
+      const all = rewind(polysOf(f.geometry));
+      if (!inRegion(all)) continue;
+      const allBox = boxOf(all);
+      if (skip(p.name, allBox) || !isPeople(p.name, p.ruler, s.y, [(allBox[0] + allBox[2]) / 2, (allBox[1] + allBox[3]) / 2])) continue;
+      const parts = [[p, all]];
+      for (const [n, b, to] of recast[s.y] || []) {
+        if (n !== p.name) continue;
+        const inside = clipRect(all, b), outside = all.length ? rewind(clip.difference(all, ...inside.map((q) => [q]))) : [];
+        parts.length = 0;
+        if (outside.length) parts.push([p, outside]);
+        if (to && inside.length) parts.push([{ ...p, name: to }, inside]);
+      }
+      for (const [q, polys] of parts) { const whole = km2Of(polys); if (whole > 0) feats.push({ p: q, polys, whole, box: boxOf(polys) }); }
     }
     feats.sort((a, b) => b.whole - a.whole);
     const later = pool.filter((c) => c.people);
@@ -3825,7 +3889,7 @@ function nativeCarry(list) {
     }
     carried.push(...mine);
     pool.push(...mineW);
-    console.log("the Americas' peoples of " + s.y + " carried from " + first + ": " + mine.length + " spans of " + feats.length + " peoples, " + Math.round(process.uptime()) + " s");
+    console.log(label + " peoples of " + s.y + " carried from " + first + ": " + mine.length + " spans of " + feats.length + " peoples, " + Math.round(process.uptime()) + " s");
   }
   const left = [], over = carried.map(wrap);
   for (const b of blankets) {
@@ -3835,10 +3899,12 @@ function nativeCarry(list) {
       if (kept.length) left.push(withBox({ ...b, first: r.first, last: r.last, polys: kept, geoHash: undefined }));
     }
   }
-  console.log("the Americas' peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
+  console.log(label + " peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
   return rest.concat(left, carried);
 }
-dated = fillSmallGaps(resolveOverlaps(australia(centralAsia(caucasus(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(southAsia(colonies(redraw1886(italy(stages(dated)))))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
+const nativeCarry = (list) => peopleCarry(list, { region: AMERICAS, inRegion: inAmericas, first: NATIVE_CARRY[0], maps: NATIVE_MAPS, blankets: BLANKETS, notYet: NOT_YET, label: "the Americas'" });
+const africaCarry = (list) => peopleCarry(list, { region: AFRICA_BOX, inRegion: inAfrica, first: AFRICA_FROM, maps: AFRICA_MAPS, blankets: /^$/, notYet: /^$/, label: "Africa's", recast: AFRICA_RECAST, skip: (name, box) => name === "Sotho" && box[3] > 0 });
+dated = fillSmallGaps(resolveOverlaps(australia(centralAsia(caucasus(napoleonic(medieval(africaCarry(nativeCarry(britishAmerica(canada(northAmerica(southAsia(colonies(redraw1886(italy(stages(dated))))))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
