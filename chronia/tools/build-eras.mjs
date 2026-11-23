@@ -4126,7 +4126,7 @@ const backdate = (list) => {
     const shape = rewind(clip.union(...polys.map((q) => [q]))), sm = { first, last: DATED_TO, polys: shape, box: boxOf(shape) };
     const given = [];
     list = list.flatMap((s) => {
-      if (!replaces.includes(s.name) || s.last < first) return [s];
+      if (!replaces.includes(s.name) || s.last < first || s.src === "centralasia") return [s];
       const rest = tryClip(clip.difference, s.polys, shape);
       if (giveTo && rest && rest.length) given.push({ first: Math.max(first, s.first), last: s.last, polys: rewind(rest) });
       return s.first < first ? [{ ...s, last: first - 1 }] : [];
