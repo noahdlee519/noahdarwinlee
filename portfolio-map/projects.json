@@ -665,7 +665,9 @@
     "domain": "cegu.uchicago.edu/expositions",
     "blurb": "Expositions Magazine, at the University of Chicago.",
     "tagline": "Expositions Magazine, at the University of Chicago.",
-    "media": []
+    "media": [
+      { "src": "/art/web/materials/shot-expositions-800.webp", "srcset": "/art/web/materials/shot-expositions-800.webp 800w, /art/web/materials/shot-expositions-1600.webp 1600w", "alt": "Expositions Magazine's issues page at CEGU, with the covers of its Spring 2026, Winter 2026, and Autumn 2025 issues", "caption": "The issues page" }
+    ]
   },
   {
     "id": "night-of-ideas",
@@ -680,7 +682,9 @@
     "domain": "nightofideas.dev",
     "blurb": "A University of Chicago club, affiliated with the Philosophy Department, where students give lightning talks on an original idea. I built its website.",
     "tagline": "A University of Chicago club where students give lightning talks on an original idea, and its website.",
-    "media": []
+    "media": [
+      { "src": "/art/web/materials/shot-night-of-ideas-800.webp", "srcset": "/art/web/materials/shot-night-of-ideas-800.webp 800w, /art/web/materials/shot-night-of-ideas-1600.webp 1600w", "alt": "The Night of Ideas title, with the moon set into the O", "caption": "The front page" }
+    ]
   },
   {
     "id": "substack",
@@ -710,7 +714,9 @@
     "domain": "ucgeo.org",
     "blurb": "UCGEO, at ucgeo.org.",
     "tagline": "UCGEO, at ucgeo.org.",
-    "media": []
+    "media": [
+      { "src": "/art/web/materials/shot-ucgeo-800.webp", "srcset": "/art/web/materials/shot-ucgeo-800.webp 800w, /art/web/materials/shot-ucgeo-1600.webp 1600w", "alt": "The Geographic Studies Club's front page, over a photo of a full lecture hall", "caption": "The front page" }
+    ]
   },
   {
     "id": "drill",
