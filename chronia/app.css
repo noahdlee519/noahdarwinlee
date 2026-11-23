@@ -9,9 +9,10 @@
   --ch-muted: rgba(58, 42, 27, 0.74);
   --ch-faint: rgba(58, 42, 27, 0.3);
   --ch-btn-hover: rgba(58, 42, 27, 0.08);
-  --ch-serif: "IM Fell English", "Old Standard TT", Georgia, "Times New Roman", serif;
-  --ch-num: "Old Standard TT", Georgia, "Times New Roman", serif;
-  --ch-sc: "IM Fell English SC", "IM Fell English", Georgia, serif;
+  --ch-cjk: "Noto Serif CJK SC";
+  --ch-serif: "IM Fell English", "Old Standard TT", Georgia, var(--ch-cjk), "Times New Roman", serif;
+  --ch-num: "Old Standard TT", Georgia, var(--ch-cjk), "Times New Roman", serif;
+  --ch-sc: "IM Fell English SC", "IM Fell English", "Old Standard TT", Georgia, var(--ch-cjk), serif;
   --ch-ocean: #b4c8c4;
   --ch-ocean-deep: #9db6b6;
   --ch-grat: rgba(84, 60, 38, 0.3);
@@ -35,6 +36,7 @@
   --ch-water: rgba(52, 82, 90, 0.5);
   --ch-sea-label: rgba(38, 58, 66, 0.95);
   --ch-river: rgba(38, 88, 138, 0.9);
+  --ch-river-label: #2a557e;
   --ch-c0: #f1e2ae;
   --ch-c1: #f0d5ae;
   --ch-c2: #e7d6b9;
@@ -4012,5 +4014,30 @@ select.ch-save-input {
   .ch-follow-btn,
   .ch-follow-stop {
     min-height: 40px;
+  }
+}
+
+:root:lang(zh) {
+  --ch-cjk: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun";
+}
+
+:root:lang(ja) {
+  --ch-cjk: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Source Han Serif JP", "MS Mincho";
+}
+
+:root:lang(ko) {
+  --ch-cjk: "AppleMyungjo", "Nanum Myeongjo", "Noto Serif CJK KR", "Source Han Serif KR", "Batang";
+}
+
+.ch-lang-select {
+  clear: both;
+  display: block;
+  margin: 4px 0 2px;
+}
+
+/* Typing on a phone: the year bar rides above the on-screen keyboard (keyboardRoom in app.js sets --ch-kb). */
+@media (max-width: 640px) {
+  .ch-kb-open .ch-time {
+    transform: translateY(calc(-1 * var(--ch-kb, 0px)));
   }
 }
