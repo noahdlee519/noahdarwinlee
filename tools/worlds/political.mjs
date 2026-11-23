@@ -295,7 +295,8 @@ function partition(cells, ids, parts, rng, { effort = 1 } = {}) {
   }
 
   // Trade border cells. Energy: squared area error, plus border length with a
-  // discount where the border lies on a river or a crest.
+  // discount where the border lies on a river or a crest (a discount, not a
+  // free ride: too cheap and countries stretch along rivers into ribbons).
   const wB = 1 / 40;
   let wA = 2600;
   const pinned = new Int32Array(cells.length).fill(-1);
@@ -338,7 +339,7 @@ function partition(cells, ids, parts, rng, { effort = 1 } = {}) {
     for (const [nb, e] of cells[c].nbr) {
       const l = label[nb];
       if (l < 0) continue;
-      const w = e.len - 0.8 * e.bar;
+      const w = e.len - 0.55 * e.bar;
       dB += w * ((l !== b ? 1 : 0) - (l !== a ? 1 : 0));
     }
     const ar = cells[c].areaEff;

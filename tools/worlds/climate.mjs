@@ -63,7 +63,7 @@ export function buildFields({ elev, land, width, height, rng, style = {}, dist }
   const nT = makeNoise(r), nP = makeNoise(r), nZ = makeNoise(r);
   const temp = new Float32Array(N), rain = new Float32Array(N), moist = new Float32Array(N);
   const d = dist || coastDistance(land, W, H);
-  const wet = style.wet ?? 1, warm = style.warm ?? 0;
+  const wet = (style.wet ?? 1) * 1.08, warm = style.warm ?? 0;
 
   // The winds do not blow dead along the rows: each sweep runs on a slant
   // with a slow wave in it, so a dry interior is not a ruled stripe.
@@ -200,12 +200,17 @@ function vegIndex(m) {
 }
 const VEG_CLASS = [COVER.DESERT, COVER.STEPPE, COVER.GRASS, COVER.WOODLAND, COVER.FOREST];
 
-// classifyCover({ fields, elev, land, width, height, rng, style, water })
-//   => { cover, ponds }
+// classifyCover({ fields, elev, land, width, height, rng, style, water, scale, bleed })
+//   => { cover, ponds, width, height }
 // water (optional): { rivers: Uint8Array mask of main rivers, lakes: Uint8Array }
 // greens the banks of rivers that cross dry country.
-export function classifyCover({ fields, elev, land, width, height, rng, style = {}, water }) {
-  const W = width, H = height, N = W * H;
+// scale (optional): draw the same facets on a grid `scale` times finer, for
+// the picture. The facets are geometry, so they come out sharper, not different.
+// bleed (optional, with scale): carry the land cover this many map units out
+// to sea, so a smooth vector coast drawn over the picture never shows a gap.
+export function classifyCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0 }) {
+  const W0 = width, H0 = height;
+  const W = Math.round(W0 * scale), H = Math.round(H0 * scale), N = W * H;
   const S = W / 1600;
   const r = rng.fork ? rng.fork('cover') : rng;
   const { temp, moist } = fields;
@@ -215,7 +220,7 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
   const broad = facetMesh(r, W, H, 23 * S, 1.25, lean + 0.6);
   const fineA = facetMesh(r, W, H, 8.5 * S, 1.45, lean);
   const fineB = facetMesh(r, W, H, 8.5 * S, 1.45, lean + 1.25);
-  const tiny = facetMesh(r, W, H, 4.6 * S, 1.6, lean + 2.2);
+  const tiny = facetMesh(r, W, H, 5 * S, 1.6, lean + 2.2);
   const rand = (n) => { const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = r.next(); return a; };
   const broadJ = rand(broad.count), broadPick = rand(broad.count);
   const fineJA = rand(fineA.count), fineJB = rand(fineB.count);
@@ -225,34 +230,65 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
   // Wet ground near a river, for green banks in dry country.
   let bank = null;
   if (water && water.rivers) {
-    bank = new Float32Array(N);
-    for (let i = 0; i < N; i++) bank[i] = water.rivers[i] || (water.lakes && water.lakes[i]) ? 1 : 0;
-    boxBlur(bank, W, H, Math.max(1, Math.round(3 * S)), 2);
+    const N0 = W0 * H0, S0 = W0 / 1600;
+    bank = new Float32Array(N0);
+    for (let i = 0; i < N0; i++) bank[i] = water.rivers[i] || (water.lakes && water.lakes[i]) ? 1 : 0;
+    boxBlur(bank, W0, H0, Math.max(1, Math.round(3 * S0)), 2);
+  }
+
+  // Where the picture's land runs out past the coast, each sea pixel reads
+  // the climate of the land pixel nearest to it.
+  let nearest = null;
+  if (bleed > 0) {
+    const N0 = W0 * H0;
+    nearest = new Int32Array(N0).fill(-1);
+    let frontier = [];
+    for (let i = 0; i < N0; i++) if (land[i]) nearest[i] = i;
+    for (let i = 0; i < N0; i++) {
+      if (!land[i]) continue;
+      const x = i % W0;
+      if ((x > 0 && !land[i - 1]) || (x < W0 - 1 && !land[i + 1]) || (i >= W0 && !land[i - W0]) || (i < N0 - W0 && !land[i + W0])) frontier.push(i);
+    }
+    for (let ring = 0; ring < Math.ceil(bleed) + 1; ring++) {
+      const next = [];
+      for (const i of frontier) {
+        const x = i % W0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, n = i + dx + dy * W0;
+          if (nx < 0 || nx >= W0 || n < 0 || n >= N0 || nearest[n] >= 0) continue;
+          nearest[n] = nearest[i]; next.push(n);
+        }
+      }
+      frontier = next;
+    }
   }
 
   const cover = new Uint8Array(N).fill(COVER.WATER);
   const ponds = new Uint8Array(N);
   const pondiness = style.ponds ?? 1;
   for (let y = 0; y < H; y++) {
+    const y0 = Math.min(H0 - 1, Math.floor(y / scale));
     for (let x = 0; x < W; x++) {
       const i = y * W + x;
-      if (!land[i]) continue;
+      const i0 = y0 * W0 + Math.min(W0 - 1, Math.floor(x / scale));
+      const onLand = land[i0] === 1;
+      if (!onLand && !(nearest && nearest[i0] >= 0)) continue;
       const b = broad.id[i];
       const useA = broadPick[b] < 0.5;
       const mesh = useA ? fineA : fineB;
       const f = mesh.id[i];
       // The facet's class comes from the climate at its centre, so the whole
       // facet is one colour. A facet centred in the sea reads its own pixel.
-      let s = i;
-      const fx = Math.round(mesh.cx[f]), fy = Math.round(mesh.cy[f]);
-      if (fx >= 0 && fy >= 0 && fx < W && fy < H && land[fy * W + fx]) s = fy * W + fx;
+      let s = onLand ? i0 : nearest[i0];
+      const fx = Math.floor(mesh.cx[f] / scale), fy = Math.floor(mesh.cy[f] / scale);
+      if (fx >= 0 && fy >= 0 && fx < W0 && fy < H0 && land[fy * W0 + fx]) s = fy * W0 + fx;
       const jf = useA ? fineJA[f] : fineJB[f];
       const kf = useA ? fineKA[f] : fineKB[f];
       const t = temp[s], e = elev[s];
       // Jitter: broad patches drift a little; one facet in five jumps a class.
       let j = (broadJ[b] - 0.5) * 0.7;
-      if (jf < 0.1) j -= 0.55 + kf * 0.9;
-      else if (jf > 0.9) j += 0.55 + kf * 0.9;
+      if (jf < 0.09) j -= 0.55 + kf * 0.9;
+      else if (jf > 0.91) j += 0.55 + kf * 0.9;
       else j += (jf - 0.5) * 0.35;
 
       let m = moist[s];
@@ -275,18 +311,18 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       const tf = tiny.id[i];
       if (c < COVER.ROCK) {
         const u = tinyJ[tf];
-        if (u > 0.955) c = VEG_CLASS[Math.min(4, Math.floor(v) + 1)];
-        else if (u > 0.91) c = VEG_CLASS[Math.max(0, Math.floor(v) - 1)];
+        if (u > 0.97) c = VEG_CLASS[Math.min(4, Math.floor(v) + 1)];
+        else if (u > 0.94) c = VEG_CLASS[Math.max(0, Math.floor(v) - 1)];
         cover[i] = c;
       }
 
       // Flecks of water: many on cold wet lowland (a land of lakes), few elsewhere.
       const cool = smoothstep(9, 1, t) * smoothstep(-12, -4, t);
       const chance = (0.004 + 0.06 * cool * smoothstep(0.25, 0.6, moist[s])) * pondiness * smoothstep(0.22, 0.1, e);
-      if (tinyJ[tf] < chance && c !== COVER.SNOW && c !== COVER.DESERT) ponds[i] = 1;
+      if (onLand && tinyJ[tf] < chance && c !== COVER.SNOW && c !== COVER.DESERT) ponds[i] = 1;
     }
   }
-  return { cover, ponds };
+  return { cover, ponds, width: W, height: H };
 }
 
 // buildClimate({ elev, land, width, height, rng, style }) => { cover, ponds, temp, rain, moist }
