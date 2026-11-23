@@ -2243,7 +2243,7 @@
     }
     return w;
   }
-  function labelText(name) { return (name || "").trim().toUpperCase(); }
+  function labelText(name) { return (name || "").trim().toLocaleUpperCase(LANG); }
   function arcOf(L, px, py, w) {
     var b = L.arc[0], e = L.arc[1];
     var pb = projectVec(b.v[0], b.v[1], b.v[2], b.lam, b.phi), pe = projectVec(e.v[0], e.v[1], e.v[2], e.lam, e.phi);
@@ -2660,7 +2660,7 @@
     ["Banda Sea", 127, -5.5, 3], ["Arafura Sea", 135, -10, 3], ["Timor Sea", 126, -11.5, 3], ["Gulf of Aden", 48, 12.6, 3],
     ["Andaman Sea", 96, 11, 3], ["Chukchi Sea", -170, 69, 3], ["Mozambique Channel", 41, -18, 3], ["Great Australian Bight", 130, -35.5, 3]
   ].map(function (r) {
-    var t = T(r[0]), v = toVec(r[1], r[2]), name = r[3] === 1 ? t.toUpperCase() : t, cut = name.lastIndexOf(" ");
+    var t = T(r[0]), v = toVec(r[1], r[2]), name = r[3] === 1 ? t.toLocaleUpperCase(LANG) : t, cut = name.lastIndexOf(" ");
     var lines = t !== r[0] ? name.split("\n") : r[3] === 1 && name.split(" ").length > 2 ? [name.slice(0, cut), name.slice(cut + 1)] : [name];
     return { lines: lines, v: v, lam: r[1] * D2R, phi: r[2] * D2R, tier: r[3] };
   });
@@ -2900,7 +2900,9 @@
   var towns = null, townsLoad = null, townHidden = new Set();
   function townMin(S) { return S >= 12000 ? 5 : S >= 8000 ? 15 : S >= 5000 ? 40 : Infinity; }
   function loadTowns() {
-    townsLoad = fetchJSON("data/towns.json").then(function (rows) {
+    townsLoad = Promise.all([fetchJSON("data/towns.json"), LANG === "en" ? null : fetchJSON("lang/places-" + LANG + "-towns.json").catch(function () { return null; })]).then(function (res) {
+      var rows = res[0];
+      if (res[1] && res[1].town) PL.town = res[1].town;
       towns = rows.map(function (r) { var v = toVec(r[1], r[2]); return { name: PN("town", r[0] + "|" + r[1] + "|" + r[2], r[0]), en: r[0], pop: r[3], x: v[0], y: v[1], z: v[2], lam: r[1] * D2R, phi: r[2] * D2R, w: 0 }; });
       townCells = new Map();
       rows.forEach(function (r, i) {
@@ -6316,7 +6318,9 @@
     if (fineData) return Promise.resolve(true);
     if (!fineLoad) {
       $("fine").disabled = true;
-      fineLoad = fetchJSON("data/units.json").then(function (t) {
+      fineLoad = Promise.all([fetchJSON("data/units.json"), LANG === "en" ? null : fetchJSON("lang/places-" + LANG + "-units.json").catch(function () { return null; })]).then(function (res) {
+        var t = res[0];
+        if (res[1] && res[1].u) PL.u = res[1].u;
         if (!t.objects || !t.objects.units || !Array.isArray(t.provinces) || t.provinces.length !== nProv) throw new Error("units do not match");
         switchToFine(t);
         $("fine").disabled = !ui.regionLines;

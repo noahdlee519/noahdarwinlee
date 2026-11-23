@@ -423,11 +423,15 @@ it there). Built on the bones of `/greatercircle/`.
   phrase to its translation. `app.js` passes its text through `T()`, which
   fills `{name}`-style blanks, and translates the page's own text and its
   `aria-label`, `data-tip`, `placeholder`, and `title` attributes once at
-  start. Sea names are translated; country, region, and city names, and the
-  historian's own writing, stay in English. **View → Language** changes it
-  and reloads the page. Its list draws its own arrow, a chevron 16 px in from
-  the right (`.uc-lang-wrap::after`), not the browser's, which sat at the
-  edge.
+  start. Place names come from **lang/places-xx.json** (countries, provinces,
+  cities, lakes, and rivers, loaded at start), **places-xx-towns.json** (with
+  the towns), and **places-xx-units.json** (with the smaller subdivisions),
+  built by `tools/place-names/`. Countries and cities keep their English name
+  in `.en`; the historian is shown the English names (`inEnglish`), and its
+  plans are matched against either. Its own writing stays in English.
+  **View → Language** changes it and reloads the page. Its list draws its own
+  arrow, a chevron 16 px in from the right (`.uc-lang-wrap::after`), not the
+  browser's, which sat at the edge.
 - **sat.js**: the satellite view.
   - **A layer of its own.** The imagery is drawn on its own canvas beneath
     the map instead of being copied into the map's canvas every frame. Where

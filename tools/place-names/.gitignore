@@ -1,3 +1,6 @@
 ne/
 out/
+wd/
 ne-props.json
+node_modules/
+package*.json

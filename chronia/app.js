@@ -2398,7 +2398,7 @@
     var sp = space === undefined ? (people ? PEOPLE_SPACE : SPACE) : space;
     var key = (people ? "i" : "n") + sp + name, hit = labelCache.get(key);
     if (hit) return hit;
-    var text = people ? name : name.toUpperCase();
+    var text = people ? name : name.toLocaleUpperCase(LANG);
     hit = splits(text).map(function (lines) {
       var w = 0;
       lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people, sp)); });
@@ -4365,7 +4365,7 @@
   function divText(name, f) {
     var key = name + "|" + f.toFixed(1), hit = divMeasure.get(key);
     if (hit) return hit;
-    var text = name.toUpperCase(), opts = [{ lines: [text], w: ctx.measureText(text).width }];
+    var text = name.toLocaleUpperCase(LANG), opts = [{ lines: [text], w: ctx.measureText(text).width }];
     for (var c = text.indexOf(" "); c > 0; c = text.indexOf(" ", c + 1)) {
       var a = text.slice(0, c), b = text.slice(c + 1);
       opts.push({ lines: [a, b], w: Math.max(ctx.measureText(a).width, ctx.measureText(b).width) });

@@ -1,0 +1,22 @@
+const fs = require('fs'), path = require('path');
+
+const topojson = require('topojson-client');
+const d3 = require('d3-geo');
+const U = (process.env.REPO || '../..') + '/uchronia/data/';
+const have = JSON.parse(fs.readFileSync('out/u-ne.json'));
+const out = [];
+const P = JSON.parse(fs.readFileSync(U + 'provinces.json'));
+const pf = topojson.feature(P, P.objects.provinces).features;
+pf.forEach((f) => { const k = 'p|' + f.properties.c + '|' + f.properties.n; if (!have[k]) { const c = d3.geoCentroid(f); out.push([k, f.properties.n, c[0], c[1], 150]); } });
+(P.groups || []).forEach((g, gi) => { const k = 'g|' + g.c + '|' + g.n; if (have[k]) return; const fs2 = pf.filter((f) => f.properties.g === gi); if (!fs2.length) return; const c = d3.geoCentroid({ type: 'FeatureCollection', features: fs2 }); out.push([k, g.n, c[0], c[1], 200]); });
+const Un = JSON.parse(fs.readFileSync(U + 'units.json'));
+const uf = topojson.feature(Un, Un.objects.units).features, seen = new Set();
+uf.forEach((f) => { const pr = Un.provinces[f.properties.p]; if (!pr || !f.properties.n) return; const k = 'u|' + pr.c + '|' + f.properties.n; if (seen.has(k)) return; seen.add(k); const c = d3.geoCentroid(f); out.push([k, f.properties.n, c[0], c[1], 60]); });
+JSON.parse(fs.readFileSync(U + 'towns.json')).forEach((t) => { const k = 'town|' + t[0] + '|' + t[1] + '|' + t[2]; if (!have[k]) out.push([k, t[0], t[1], t[2], 15]); });
+JSON.parse(fs.readFileSync(U + 'cities.json')).forEach((t) => { const k = 'city|' + t[0] + '|' + t[1] + '|' + t[2]; if (!have[k]) out.push([k, t[0], t[1], t[2], 30]); });
+JSON.parse(fs.readFileSync(U + 'lakes.json')).forEach((l) => { const k = 'lake|' + l[0]; if (!(have[k] && have[k].q)) out.push([k, l[0], l[2], l[3], 60]); });
+const R = JSON.parse(fs.readFileSync(U + 'rivers.json')), rs = new Map();
+topojson.feature(R, R.objects.rivers).features.forEach((f) => { const n = f.properties.n; if (!n || rs.has(n)) return; const c = d3.geoCentroid(f); rs.set(n, c); });
+rs.forEach((c, n) => out.push(['river|' + n, n, c[0], c[1], 600]));
+fs.writeFileSync('wd/u-search.json', JSON.stringify(out));
+const by = {}; out.forEach((r) => { const c = r[0].split('|')[0]; by[c] = (by[c] || 0) + 1; }); console.log(by, out.length);
