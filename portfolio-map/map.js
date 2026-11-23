@@ -5,7 +5,7 @@
 
   var NS = "http://www.w3.org/2000/svg";
   var ROOT = "/portfolio-map/";
-  var MAX_ZOOM = 4;
+  var MAX_ZOOM = 6;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   // ---------------------------------------------------------------- helpers
@@ -87,8 +87,9 @@
   // ---------------------------------------------------------------- the map
 
   // Each kind of label's smallest and largest size on screen, in pixels.
-  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, city: 11.5, province: 11, range: 10.5, lake: 11, strait: 10.5, river: 11, town: 11, village: 10, peak: 10, park: 10.5, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
-  var LABEL_CAP = { country: 34, ocean: 24, sea: 16, gulf: 14, bay: 13, capital: 14, city: 13.5, province: 15, range: 14, lake: 15, strait: 13, river: 13.5, town: 12.5, village: 11.5, peak: 12, park: 13, region: 14, island: 13, cape: 12, shield: 11 };
+  // Water names are small, as on the reference: about a town's size, an ocean a little more.
+  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, city: 11.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, river: 10.5, town: 11, village: 10, peak: 10, park: 11, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
+  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 15, city: 14, province: 15, range: 13, lake: 12.5, strait: 12, river: 12, town: 13, village: 12, peak: 12, park: 15, region: 14, island: 13, cape: 12, shield: 11 };
   var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, river: 85, town: 90, cape: 92, village: 96 };
   var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, river: 1 };
 
@@ -274,6 +275,16 @@
     if (world.provinceBorders) svg("path", { class: "map-provinces", d: world.provinceBorders }, Lb.tpl);
     svg("path", { class: "map-borders", d: world.borders }, Lb.tpl);
     this.outlineLayer = layer("map-outline", true);
+    // "You are here": a blue dot with a white ring and a soft pulsing halo, on the island called About. Drawn in
+    // screen pixels whatever the zoom.
+    if (world.here) {
+      var Lh = layer("map-here", true);
+      var hg = svg("g", { class: "here", role: "link", "aria-label": "About Noah" }, Lh.tpl);
+      hg.style.transform = "translate(" + world.here[0] + "px," + world.here[1] + "px) scale(var(--inv))";
+      svg("circle", { class: "here-halo", r: 13 }, hg);
+      svg("circle", { class: "here-ring", r: 7.5 }, hg);
+      svg("circle", { class: "here-dot", r: 5.5 }, hg);
+    }
     this._labels(g);
     // The countries' shapes, never painted: they answer which country lies under a point.
     this.hitLayer = svg("g", { class: "map-hit" }, g);
@@ -362,6 +373,13 @@
   // Which country (or, inside the picked country, which province) lies under a point on the screen, on any copy.
   MapView.prototype.hitAt = function (x, y) {
     var t = document.elementFromPoint(x, y);
+    if (t && t.closest && (t.closest(".here") || t.closest('.lbl[data-here]')) && this.root.contains(t)) return { here: true };
+    if (this.world && this.world.here) {
+      var hr0 = this.host.getBoundingClientRect(), W0 = this.world.width;
+      var hx = (((x - hr0.left - this.tx) / this.s) % W0 + W0) % W0, hy = (y - hr0.top - this.ty) / this.s;
+      // The island itself, about six units across.
+      if (Math.hypot(hx - this.world.here[0], hy - this.world.here[1]) < Math.max(5.5, 14 / this.s)) return { here: true };
+    }
     var lab = t && t.closest && t.closest(".lbl[data-id]");
     if (lab && this.root.contains(lab)) return { id: lab.getAttribute("data-id"), province: lab.getAttribute("data-province") };
     var hr = this.host.getBoundingClientRect(), W = this.world.width;
@@ -373,7 +391,21 @@
     for (id in this.shapes) if (this.shapes[id].el.isPointInFill(pt)) return { id: id, province: null };
     return null;
   };
+  // Fly to the blue dot, zoomed in on the About island, then, after a moment there, on to the site's about page.
+  MapView.prototype.goHere = function (opts) {
+    opts = opts || {};
+    var w = this.world, self = this;
+    var go = opts.go || function () { window.location.href = "/#about"; };
+    if (!w || !w.here) { go(); return; }
+    var target = this.viewFor({ x: w.here[0] - 14, y: w.here[1] - 9, w: 28, h: 18 }, { pad: 1, maxZoom: 4.5 });
+    this.hereFlight = true;
+    this.flyTo(target, { duration: 1100, done: function () {
+      self.host.classList.add("is-here");
+      setTimeout(function () { self.hereFlight = false; go(); }, reduceMotion.matches ? 120 : 650);
+    } });
+  };
   MapView.prototype.setHover = function (h) {
+    if (h && h.here) { this.host.classList.add("is-over"); if (this.hover) { this.hover = null; this._tint(); } return; }
     var a = this.hover, same = (!a && !h) || (a && h && a.id === h.id && a.province === h.province);
     this.host.classList.toggle("is-over", !!h);
     if (same) return;
@@ -429,7 +461,13 @@
         if (kind === "shield") {
           // A route number on a small rounded plate.
           var sw = (l.text.length * 0.62 + 0.7) * l.size, sh = l.size * 1.35;
-          svg("rect", { class: "lbl-plate" + (l.shield === "e" ? " is-e" : ""), x: (-sw / 2).toFixed(2), y: (-sh / 2).toFixed(2), width: sw.toFixed(2), height: sh.toFixed(2), rx: (sh * 0.28).toFixed(2), "stroke-width": (l.size * 0.09).toFixed(2) }, inner);
+          // Each country signs its routes its own way: the plate's colours (and for some, its shape) by style.
+          var sign = l.shield || "yellow";
+          if (sign === "badge" || sign === "interstate") {
+            var bw = sw / 2, bh = sh / 2;
+            svg("path", { class: "lbl-plate sign-" + sign, d: "M" + (-bw) + " " + (-bh) + "H" + bw + "V" + (bh * 0.35) + "Q" + bw + " " + (bh * 1.05) + " 0 " + (bh * 1.3) + "Q" + (-bw) + " " + (bh * 1.05) + " " + (-bw) + " " + (bh * 0.35) + "Z", "stroke-width": (l.size * 0.09).toFixed(2) }, inner);
+          } else svg("rect", { class: "lbl-plate sign-" + sign, x: (-sw / 2).toFixed(2), y: (-sh / 2).toFixed(2), width: sw.toFixed(2), height: sh.toFixed(2), rx: (sh * (sign === "white" ? 0.18 : 0.28)).toFixed(2), "stroke-width": (l.size * 0.09).toFixed(2) }, inner);
+          gEl.classList.add("sign-" + sign);
         }
         var t = svg("text", { "font-size": l.size, "text-anchor": "middle", "stroke-width": (l.size * 0.2).toFixed(2) }, inner);
         if (l.spacing) t.setAttribute("letter-spacing", (l.spacing * l.size).toFixed(2));
@@ -438,10 +476,11 @@
           if (kind === "peak" && k > 0) { ts.setAttribute("font-size", (l.size * 0.85).toFixed(2)); ts.setAttribute("class", "lbl-sub"); }
           ts.textContent = line;
         });
-        if (l.dot) symbolFor(kind, l.size, gEl);
+        if (l.dot) symbolFor(kind, l.size, gEl, l.volcano);
         item.ox = ox; item.oy = oy;
         item.angle = 0;
         if (kind === "country") gEl.setAttribute("data-id", l.id);
+        if (l.id === "about") gEl.setAttribute("data-here", "1");
         if (kind === "province") { gEl.setAttribute("data-id", l.parent); gEl.setAttribute("data-province", l.id); }
       }
       item.el = gEl;
@@ -454,9 +493,14 @@
   // A place's symbol, in label units round its origin: a white dot in a dark ring for a town (larger for a city,
   // smaller for a village), a ring with a dark centre for a capital, a small triangle for a peak.
   var DOT = { capital: 0.34, city: 0.3, town: 0.25, village: 0.22 };
-  function symbolFor(kind, size, parent) {
+  function symbolFor(kind, size, parent, volcano) {
     if (kind === "peak") {
       var a = size * 0.42;
+      if (volcano) {
+        // A cone with its crater cut off the top.
+        svg("path", { class: "lbl-peak is-volcano", d: "M" + (-a * 0.32).toFixed(2) + " " + (-a * 0.7).toFixed(2) + "L" + (a * 0.32).toFixed(2) + " " + (-a * 0.7).toFixed(2) + "L" + (a * 1.0).toFixed(2) + " " + (a * 0.7).toFixed(2) + "L" + (-a * 1.0).toFixed(2) + " " + (a * 0.7).toFixed(2) + "Z" }, parent);
+        return;
+      }
       svg("path", { class: "lbl-peak", d: "M0 " + (-a).toFixed(2) + "L" + (a * 0.95).toFixed(2) + " " + (a * 0.7).toFixed(2) + "L" + (-a * 0.95).toFixed(2) + " " + (a * 0.7).toFixed(2) + "Z" }, parent);
       return;
     }
@@ -629,6 +673,9 @@
     this.host.classList.toggle("is-z2", z >= 1.9);
     this.host.classList.toggle("is-z3", z >= 2.9);
     this.host.classList.toggle("is-z35", z >= 3.4);
+    this.host.classList.toggle("is-z4", z >= 3.9);
+    this.host.classList.toggle("is-z5", z >= 4.9);
+    if (z >= 3.3 && this.detail && !this.anim && !this.interacting) this._loadChunks();
     if (z >= 1.3 && !this.detailAsked && !this.anim && !this.interacting) this._loadDetail();
     this.placeLabels();
     if (!this.anim && !this.interacting) this.tiles.update();
@@ -647,12 +694,16 @@
     getJSON(ROOT + "worlds/" + w.detail.src).then(function (d) {
       if (self.world !== w) return;
       self.detail = d;
+      self.chunksAsked = {};
       var P = self.parkLayer.tpl;
-      d.parks.forEach(function (p) { svg("path", { class: "map-park", d: p.path, "data-park": p.id }, P); });
+      d.parks.forEach(function (p) { svg("path", { class: "map-park is-" + (p.kind || "park"), d: p.path, "data-park": p.id }, P); });
       if (d.streams) svg("path", { class: "map-stream", d: d.streams }, self.streamTpl);
-      if (d.reservoirs) svg("path", { class: "map-reservoir", d: d.reservoirs }, self.reservoirTpl);
+      if (d.lakes) svg("path", { class: "map-small-lakes", d: d.lakes }, self.reservoirTpl);
       var R = self.roadLayer.tpl;
-      ["street", "local", "main", "highway"].forEach(function (k) { if (d.roads[k]) svg("path", { class: "map-road r-" + k, d: d.roads[k] }, R); });
+      // Lowest first: streets (from the chunks, under everything), local and secondary roads, the town arterials and
+      // rings, trunk roads, motorways, and the ferries.
+      self.streetTpl = svg("g", { class: "map-streets" }, R);
+      ["local", "secondary", "arterial", "ring", "trunk", "motorway"].forEach(function (k) { if (d.roads[k]) svg("path", { class: "map-road r-" + k, d: d.roads[k] }, R); });
       if (d.ferries) svg("path", { class: "map-ferry", d: d.ferries }, R);
       if (d.admin) svg("path", { class: "map-subdiv", d: d.admin }, self.adminTpl);
       [self.parkLayer, self.waterLayer, self.roadLayer, self.lineLayer].forEach(function (L) { self._refresh(L); });
@@ -660,6 +711,32 @@
       self.host.classList.add("has-detail");
       self.render(true);
     }).catch(function () {});
+  };
+
+  // The finest detail (streets, lanes, and the smallest lakes), in chunks of the map, fetched for the part in view.
+  MapView.prototype._loadChunks = function () {
+    var self = this, w = this.world, C = w.detail && w.detail.chunks;
+    if (!C || !this.streetTpl) return;
+    var W = w.width, H = w.height, s = this.s, r = this.rect(), M = 40;
+    var x0 = (r.l - this.tx) / s - M, x1 = (r.l + r.w - this.tx) / s + M, y0 = (r.t - this.ty) / s - M, y1 = (r.t + r.h - this.ty) / s + M;
+    var want = [];
+    for (var cy = Math.max(0, Math.floor(y0 / C.size)); cy <= Math.min(C.rows - 1, Math.floor(y1 / C.size)); cy++) {
+      for (var gx = Math.floor(x0 / C.size); gx <= Math.floor(x1 / C.size); gx++) {
+        var cx = ((gx % C.cols) + C.cols) % C.cols, key = cx + "-" + cy;
+        if (!this.chunksAsked[key] && want.indexOf(key) < 0) want.push(key);
+      }
+    }
+    want.forEach(function (key) {
+      self.chunksAsked[key] = true;
+      getJSON(ROOT + "worlds/" + C.src + key + ".json").then(function (c) {
+        if (self.world !== w) return;
+        if (c.minor) svg("path", { class: "map-road r-minor", d: c.minor }, self.streetTpl);
+        if (c.street) svg("path", { class: "map-road r-street", d: c.street }, self.streetTpl);
+        if (c.lakes) svg("path", { class: "map-small-lakes", d: c.lakes }, self.reservoirTpl);
+        self._refresh(self.roadLayer);
+        self._refresh(self.waterLayer);
+      }).catch(function () { self.chunksAsked[key] = false; });
+    });
   };
 
   // ------------------------------------------------------------ finer tiles
@@ -847,7 +924,8 @@
       self.host.classList.remove("is-grabbing");
       if (drag && moved <= 4 && e.type === "pointerup") {
         var hit = self.hitAt(e.clientX, e.clientY);
-        if (hit) self.onSelect(hit.id, hit.province);
+        if (hit && hit.here) self.goHere();
+        else if (hit) self.onSelect(hit.id, hit.province);
         else self.onSelect(null);
         if (!self.anim) self.render();
       } else if (drag && performance.now() - lastMove < 60 && Math.hypot(vel[0], vel[1]) > 0.25 && !reduceMotion.matches) {

@@ -137,7 +137,7 @@ function buildCells({ land, elev, width, height, rng, hydro, masses }) {
 // Decide which landmass hosts which projects, and how large each country is.
 // hosts: [{ mass, area }] largest first. Returns { unit, hosts: [{ mass, area,
 // flagships: [rankIndex], smalls: n, scale }], dropped: [mass] } or throws.
-export function planWorld({ hosts, flagCount, smallCount, rng }) {
+export function planWorld({ hosts, flagCount, smallCount, rng, pairBias = 2.5 }) {
   const weights = flagshipWeights(flagCount);
   const totalW = weights.reduce((s, w) => s + w, 0);
   const land = hosts.reduce((s, h) => s + h.area, 0);
@@ -158,6 +158,8 @@ export function planWorld({ hosts, flagCount, smallCount, rng }) {
       W.fill(0);
       for (let f = 0; f < flagCount; f++) W[assign[f]] += weights[f];
       let score = 6 * Math.log(k) ** 2 + jitter;
+      // CHRONIA and its companion UCHRONIA (the first and third flagships) are neighbours where the land allows.
+      if (flagCount >= 3 && assign[0] !== assign[2]) score += pairBias;
       let ok = true;
       const n = new Int32Array(hosts.length), nMax = new Int32Array(hosts.length), spare = new Float64Array(hosts.length);
       const scale = new Float64Array(hosts.length).fill(1);
@@ -480,6 +482,13 @@ export function buildCountries({ land, elev, width, height, projects, rng, hydro
         if (part.kind === 'flag') {
           score = chosen.length ? Math.min(spread(id), 400 * S) : r.next() * 100;
           score += r.next() * 40 * S;
+          // UCHRONIA's seat is set beside CHRONIA's, about the two countries' radii apart, so they share a border.
+          const mate = part.f === 2 ? parts.find((q) => q.kind === 'flag' && q.f === 0 && q.seed !== undefined) : null;
+          if (mate) {
+            const want = (Math.sqrt(mate.target) + Math.sqrt(part.target)) * 0.5;
+            const d = Math.hypot(cells[id].x - cells[mate.seed].x, cells[id].y - cells[mate.seed].y);
+            score = -Math.abs(d - want) + Math.min(spread(id), want) * 0.3 + r.next() * 6 * S;
+          }
         } else {
           if (!c.coast) continue;
           const reach = Math.sqrt(part.target) * 0.9;

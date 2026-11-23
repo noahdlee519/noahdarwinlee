@@ -14,7 +14,7 @@ const SPACING = [0, 48, 17, 8.5];
 // buildSettlements({ land, elev, temp, cover, hydro, dist, owner, capitals, areas, projects, width, height, rng })
 //   => [{ x, y, rank, country (project index), size }]
 // capitals: the countries' capitals, kept where they are.
-export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, capitals, areas, projects, width, height, rng }) {
+export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, capitals, areas, projects, width, height, rng, blocked = null }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const r = rng.fork('settlements');
   const { riverClass, lakes } = hydro;
@@ -40,7 +40,7 @@ export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, 
 
   const COVER_PULL = { [COVER.FOREST]: 0.75, [COVER.WOODLAND]: 0.95, [COVER.GRASS]: 1, [COVER.STEPPE]: 0.7, [COVER.DESERT]: 0.22, [COVER.ROCK]: 0.08, [COVER.SNOW]: 0 };
   const suit = (i) => {
-    if (!land[i] || lakes[i] || owner[i] < 0) return 0;
+    if (!land[i] || lakes[i] || owner[i] < 0 || (blocked && blocked[i])) return 0;
     const e = elev[i];
     let s = smoothstep(0.42, 0.1, e) * (COVER_PULL[cover[i]] ?? 0.5);
     if (temp[i] < -6) s *= smoothstep(-16, -6, temp[i]) * 0.8 + 0.2;

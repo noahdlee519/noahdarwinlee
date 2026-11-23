@@ -15,19 +15,20 @@ import { TILE_LEVELS } from './world.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
-  rock: '#cbcfca', snow: '#ffffff', water: '#89d1e2', urban: '#eceef0', line: '#4da9bb', border: '#26262a',
+  rock: '#cbcfca', snow: '#ffffff', water: '#86cfe2', urban: '#eceef0', sand: '#f6efdc', line: '#4da9bb', border: '#26262a',
   province: '#606266', label: '#26262a',
 };
 // Palette order in the PNG: the seven land-cover classes by index, then
 // water, then built-up ground. The finer tiles add two more copies of these
 // nine, a shade darker (in the hills' shadow) and a shade lighter (lit).
-const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban'];
+const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban', 'sand'];
+const NC = PNG_COLOURS.length;
 export const SHADE = { dark: 0.935, light: 1.045 };
 const mixShade = (rgb, f) => rgb.map((v) => Math.max(0, Math.min(255, Math.round(f > 1 ? v + (255 - v) * (f - 1) * 2.4 : v * f))));
 const BASE_RGB = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
 const TILE_RGB = [...BASE_RGB, ...BASE_RGB.map((c) => mixShade(c, SHADE.dark)), ...BASE_RGB.map((c) => mixShade(c, SHADE.light))];
 // A land-cover class (COVER) and its pond flag as a palette index.
-const coverIndex = (c, pond) => (c === 7 ? 8 : c > 6 || pond ? 7 : c);
+const coverIndex = (c, pond) => (c === 7 ? 8 : c === 8 ? 9 : c > 8 || pond ? 7 : c);
 
 // ------------------------------------------------------------- tracing --
 
@@ -287,8 +288,11 @@ export function buildWorldFiles(world) {
 
   // Regions: project, and province within it.
   const key = new Int32Array(N);
-  for (let i = 0; i < N; i++) key[i] = owner[i] < 0 ? -1 : owner[i] * 64 + (provinces[i] + 1);
-  const ownerOf = (k) => (k < 0 ? -1 : k >> 6);
+  // Land no project holds (polar ice, the About island) is its own region: part of the coast, in no country.
+  const ICE = 1 << 20;
+  const landAll = world.landAll || world.land;
+  for (let i = 0; i < N; i++) key[i] = owner[i] >= 0 ? owner[i] * 64 + (provinces[i] + 1) : landAll && landAll[i] ? ICE : -1;
+  const ownerOf = (k) => (k < 0 || k === ICE ? -1 : k >> 6);
   const arcs = traceArcs(key, W, H, -1);
   const lines = arcs.map((arc) => {
     const coast = arc.left < 0 || arc.right < 0;
@@ -296,8 +300,8 @@ export function buildWorldFiles(world) {
   });
 
   const coast = ringsPath(arcs, lines, (k) => k >= 0);
-  const borders = linesPath(arcs, lines, (a) => a.left >= 0 && a.right >= 0 && ownerOf(a.left) !== ownerOf(a.right));
-  const provinceBorders = linesPath(arcs, lines, (a) => a.left >= 0 && a.right >= 0 && ownerOf(a.left) === ownerOf(a.right));
+  const borders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) !== ownerOf(a.right));
+  const provinceBorders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) === ownerOf(a.right) && a.left !== a.right);
 
   const lakeArcs = traceArcs(lakes, W, H, 0);
   const lakeLines = lakeArcs.map((arc) => arcLine(arc, 0.5));
@@ -318,7 +322,7 @@ export function buildWorldFiles(world) {
       pts = [...pts, [pts[n - 1][0] + (dx / len) * 1.6, pts[n - 1][1] + (dy / len) * 1.6]];
     }
     const line = [];
-    for (const [x, y] of simplify(pts, 0.75)) {
+    for (const [x, y] of simplify(pts, 0.3)) {
       const q = [Math.round(x * 5) * 2, Math.round(y * 5) * 2];
       const last = line[line.length - 1];
       if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q);
@@ -428,9 +432,11 @@ export function buildWorldFiles(world) {
     }),
     labels: labels.map(labelOut),
   };
-  if (world.detail) data.detail = { src: `detail/${slug}.json` };
+  // The About island's "you are here" dot.
+  if (world.about) data.here = [Math.round(world.about.x * 10) / 10, Math.round(world.about.y * 10) / 10];
   const detail = world.detail ? buildDetail(world) : null;
-  return { json: JSON.stringify(data), png, data, detail: detail && JSON.stringify(detail) };
+  if (detail) data.detail = { src: `detail/${slug}.json`, chunks: detail.chunks.meta };
+  return { json: JSON.stringify(data), png, data, detail: detail && JSON.stringify(detail.coarse), chunks: detail && detail.chunks.files };
 }
 
 function labelOut(l) {
@@ -442,6 +448,7 @@ function labelOut(l) {
   if (l.of) out.of = l.of;
   if (l.parent) out.parent = l.parent;
   if (l.shield) out.shield = l.shield;
+  if (l.volcano) out.volcano = true;
   return out;
 }
 
@@ -473,29 +480,52 @@ function segments(list) {
   }
   return path.toString();
 }
+function rings(list) {
+  const path = new PathText();
+  for (const ring of list) {
+    const line = [];
+    for (const p of ring) { const q = tenthsOf(p), last = line[line.length - 1]; if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q); }
+    if (line.length > 2) drawLoop(path, line);
+  }
+  return path.toString();
+}
+// The finest detail is cut into chunks of the map, loaded only for the part in view at the closest zooms.
+export const CHUNK = 400;
 export function buildDetail(world) {
   const { width: W, height: H, detail: D, owner } = world;
   const N = W * H;
   const byClass = (cls) => D.roads.roads.filter((r) => r.cls === cls).map((r) => r.pts);
-  // Parks: one ring each, traced from their pixels.
+  const streetsOf = (cls) => D.streets.filter((st) => st.cls === cls).map((st) => st.pts);
+  // Parks: one ring each, traced from their pixels (drawn only as a faint edge, close in).
   const parkArcs = traceArcs(D.parks.mask, W, H, -1);
   const parkLines = parkArcs.map((arc) => arcLine(arc, 0.6));
-  const parks = D.parks.parks.map((p, id) => ({ id: `park-${id}`, name: p.name, country: world.projects[p.country].id, path: ringsPath(parkArcs, parkLines, (k) => k === id) }));
-  // Subdivisions: the lines between regions of one country.
+  const parks = D.parks.parks.map((p, id) => ({ id: `park-${id}`, name: p.name, kind: p.kind, country: world.projects[p.country].id, path: ringsPath(parkArcs, parkLines, (k) => k === id) }));
   const key = new Int32Array(N);
   for (let i = 0; i < N; i++) key[i] = owner[i] < 0 ? -1 : D.admin[i] < 0 ? owner[i] * 16 + 15 : owner[i] * 16 + D.admin[i];
   const adminArcs = traceArcs(key, W, H, -1);
   const pick = (a) => a.left >= 0 && a.right >= 0 && a.left >> 4 === a.right >> 4 && (a.left & 15) !== 15 && (a.right & 15) !== 15 && a.left !== a.right;
   const adminLines = adminArcs.map((arc) => (pick(arc) ? arcLine(arc, 0.8) : []));
-  return {
-    roads: { highway: polylines(byClass('highway')), main: polylines(byClass('main')), local: polylines(byClass('local')), street: segments(D.roads.streets) },
+  const lakes = D.smallLakes.lakes;
+  const coarse = {
+    roads: {
+      motorway: polylines(byClass('motorway')), trunk: polylines(byClass('trunk')), secondary: polylines(byClass('secondary')), local: polylines(byClass('local')),
+      arterial: polylines(streetsOf('arterial')), ring: polylines(streetsOf('ring')),
+    },
     ferries: segments(D.roads.ferries),
     streams: polylines(D.streams),
-    reservoirs: (() => { const path = new PathText(); for (const ring of D.reservoirs || []) { const line = ring.map(tenthsOf); if (line.length > 2) drawLoop(path, line); } return path.toString(); })(),
+    lakes: rings(lakes.filter((l) => l.area >= 0.6).map((l) => l.ring)),
     parks,
     admin: linesPath(adminArcs, adminLines, pick),
     labels: D.labels.map(labelOut),
   };
+  // Chunks: streets, minor streets, and the smallest lakes.
+  const cols = Math.ceil(W / CHUNK), rows = Math.ceil(H / CHUNK);
+  const bins = Array.from({ length: cols * rows }, () => ({ street: [], minor: [], lakes: [] }));
+  const binOf = (p) => Math.min(rows - 1, Math.floor(p[1] / CHUNK)) * cols + Math.min(cols - 1, Math.floor(p[0] / CHUNK));
+  for (const st of D.streets) if (st.cls === 'street' || st.cls === 'minor') bins[binOf(st.pts[0])][st.cls].push(st.pts);
+  for (const l of lakes) if (l.area < 0.6) bins[binOf([l.x, l.y])].lakes.push(l.ring);
+  const files = bins.map((b, k) => ({ path: `${k % cols}-${Math.floor(k / cols)}.json`, json: JSON.stringify({ street: segments(b.street), minor: segments(b.minor), lakes: rings(b.lakes) }) }));
+  return { coarse, chunks: { meta: { size: CHUNK, cols, rows, src: `detail/${world.slug}/` }, files } };
 }
 
 // The picture drawn finer, cut into tiles: tiles/<slug>/<scale>/<col>-<row>.png,
@@ -517,7 +547,7 @@ export function buildTiles(world) {
       let land = false;
       for (let i = 0; i < indices.length; i++) {
         const v = coverIndex(cover[i], ponds[i]);
-        indices[i] = v === 7 || v === 8 ? v : v + 9 * shade[i];
+        indices[i] = v === 7 || v === 8 ? v : v + NC * shade[i];
         if (v !== 7) land = true;
       }
       if (!land) continue;
@@ -531,12 +561,15 @@ export function buildTiles(world) {
   return { files, levels };
 }
 
+
 // writeWorld(world, outDir) => { jsonBytes, pngBytes, tileBytes, tileCount }
 export function writeWorld(world, outDir) {
-  const { data, png, detail } = buildWorldFiles(world);
+  const { data, png, detail, chunks } = buildWorldFiles(world);
+  let chunkBytes = 0;
   if (detail) {
-    mkdirSync(join(outDir, 'detail'), { recursive: true });
+    mkdirSync(join(outDir, 'detail', world.slug), { recursive: true });
     writeFileSync(join(outDir, 'detail', `${world.slug}.json`), detail);
+    for (const c of chunks) { writeFileSync(join(outDir, 'detail', world.slug, c.path), c.json); chunkBytes += c.json.length; }
   }
   const tiles = buildTiles(world);
   data.tiles = tiles.levels.length ? { src: `tiles/${world.slug}/`, levels: tiles.levels } : undefined;
@@ -554,5 +587,5 @@ export function writeWorld(world, outDir) {
       tileBytes += f.png.length;
     }
   }
-  return { jsonBytes: Buffer.byteLength(json), pngBytes: png.length, tileBytes, tileCount: tiles.files.length, detailBytes: detail ? Buffer.byteLength(detail) : 0 };
+  return { jsonBytes: Buffer.byteLength(json), pngBytes: png.length, tileBytes, tileCount: tiles.files.length, detailBytes: detail ? Buffer.byteLength(detail) : 0, chunkBytes };
 }

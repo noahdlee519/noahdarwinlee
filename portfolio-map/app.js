@@ -1068,6 +1068,13 @@
       }).map(function (e) { return e.getBoundingClientRect(); });
     };
     applyLayers();
+    // The location button: first to the blue dot on the island called About, then on to the about page.
+    var locate = $(".locate");
+    if (locate) locate.addEventListener("click", function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+      e.preventDefault();
+      state.map.goHere();
+    });
     state.map.onSelect = function (id, province) {
       if (!id) return;
       if (state.view === "project" && state.project === id && !province && state.province) province = null;

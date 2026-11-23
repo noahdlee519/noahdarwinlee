@@ -2,19 +2,19 @@
   --font: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --orange: #e68019;
-  --water: #89d1e2;
+  --water: #86cfe2;
   --shadow-rgb: 38, 38, 42;
   --toast-bg: #2f3034;
 
   /* The day map. */
-  --m-water: #89d1e2;
+  --m-water: #86cfe2;
   --m-line: #4da9bb;
   --m-border: #26262a;
   --m-province: #606266;
   --m-land: #c4ead7;
-  --m-label: #26262a;
+  --m-label: #202124;
   --m-halo: #ffffff;
-  --m-water-label: #357f92;
+  --m-water-label: #34768e;
   --m-range: #6b6f72;
   --m-dot: #ffffff;
   --m-sel-ink: #b85d06;
@@ -301,7 +301,8 @@ textarea {
 }
 
 .k-country text {
-  font-weight: 600;
+  font-weight: 700;
+  fill: #121315;
 }
 
 .k-country.is-on {
@@ -334,12 +335,13 @@ textarea {
   fill: var(--m-range);
 }
 
+/* Water names: upright, untracked, teal, with no halo to speak of (as on the reference). */
 .is-water text,
 text.is-water {
   fill: var(--m-water-label);
   stroke: var(--m-water);
   stroke-opacity: 0.5;
-  font-style: italic;
+  font-weight: 400;
 }
 
 .lbl-path {

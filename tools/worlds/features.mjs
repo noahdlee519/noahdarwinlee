@@ -7,49 +7,71 @@ import { clamp, smoothstep, makeNoise, fbm } from './rng.mjs';
 import { COVER } from './climate.mjs';
 import { RANK } from './settlements.mjs';
 import { landmasses } from './terrain.mjs';
-import { labelRects, rectsOverlap, lineWidth, samples, insideDistance, makeNamer, zoomFor } from './labels.mjs';
+import { labelRects, rectsOverlap, lineWidth, lineBreaks, samples, insideDistance, makeNamer, zoomFor } from './labels.mjs';
 
 // ------------------------------------------------------------------ parks --
 
-// buildParks({ land, owner, cover, elev, settlements, projects, areas, width, height, rng })
-//   => { mask: Int16Array (park index per pixel, -1 none), parks: [{ country, area }] }
-// A few parks a world, in wild country (forest, mountains, wild coasts) away
-// from towns, each inside one country.
-export function buildParks({ land, owner, cover, elev, settlements, projects, areas, width, height, rng, dist }) {
+// buildParks({ land, owner, cover, elev, temp, moist, settlements, projects, areas, width, height, rng, dist, smallLakes })
+//   => { mask: Int16Array (park index per pixel, -1 none), parks: [{ country, area, kind }] }
+// Protected land where real protected land lies: whole ranges of ice and rock
+// (a park and preserve), great forests, wetlands and lake districts (refuges),
+// wild coasts (marine parks and seashores), deserts, and mixed wild country;
+// each inside one country, away from the towns. The page draws only their
+// names, and at the closest zooms a faint edge.
+const PARK_KINDS = ['preserve', 'forest', 'refuge', 'marine', 'desert', 'park', 'park', 'small'];
+export function buildParks({ land, owner, cover, elev, temp, moist, settlements, projects, areas, width, height, rng, dist, smallLakes }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const r = rng.fork('parks');
   const n = makeNoise(r);
-  const WILD = { [COVER.FOREST]: 1, [COVER.WOODLAND]: 0.75, [COVER.GRASS]: 0.4, [COVER.STEPPE]: 0.35, [COVER.DESERT]: 0.4, [COVER.ROCK]: 0.95, [COVER.SNOW]: 0.6 };
-  const wild = new Float32Array(N);
-  for (let i = 0; i < N; i++) if (land[i] && owner[i] >= 0) wild[i] = (WILD[cover[i]] ?? 0.3) + 0.25 * smoothstep(0.25, 0.5, elev[i]) + (dist[i] < 3 * S ? 0.15 : 0);
-  // Away from the towns.
+  const wet = new Float32Array(N);
+  if (smallLakes) for (const l of smallLakes.lakes) { const i = Math.floor(l.y) * W + Math.floor(l.x); if (i >= 0 && i < N) wet[i] += l.area; }
+  const fit = {
+    preserve: (i) => (cover[i] === COVER.SNOW || cover[i] === COVER.ROCK ? 1 : 0) + smoothstep(0.32, 0.5, elev[i]),
+    forest: (i) => (cover[i] === COVER.FOREST ? 1 : cover[i] === COVER.WOODLAND ? 0.5 : 0),
+    refuge: (i) => smoothstep(0.12, 0.03, elev[i]) * smoothstep(0.3, 0.6, moist[i]) + Math.min(1, wet[i] * 2),
+    marine: (i) => (dist[i] <= 3 * S ? 1 : 0) * smoothstep(0.08, 0.01, elev[i]),
+    desert: (i) => (cover[i] === COVER.DESERT || cover[i] === COVER.SAND ? 1 : cover[i] === COVER.STEPPE ? 0.3 : 0),
+    park: (i) => (cover[i] === COVER.FOREST || cover[i] === COVER.ROCK ? 0.8 : cover[i] === COVER.WOODLAND ? 0.6 : 0.3) + 0.3 * smoothstep(0.2, 0.4, elev[i]),
+    small: (i) => (cover[i] === COVER.FOREST || cover[i] === COVER.WOODLAND ? 0.7 : 0.4),
+  };
+  const remote = new Float32Array(N).fill(1);
   for (const s of settlements) {
-    const R = (s.rank === 0 ? 26 : s.rank === 1 ? 18 : s.rank === 2 ? 9 : 4) * S;
+    const R = (s.rank === 0 ? 20 : s.rank === 1 ? 13 : s.rank === 2 ? 6 : 2.5) * S;
     const x0 = Math.max(0, Math.floor(s.x - R)), x1 = Math.min(W - 1, Math.ceil(s.x + R));
     const y0 = Math.max(0, Math.floor(s.y - R)), y1 = Math.min(H - 1, Math.ceil(s.y + R));
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (Math.hypot(x - s.x, y - s.y) < R) wild[y * W + x] = 0;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (Math.hypot(x - s.x, y - s.y) < R) remote[y * W + x] = 0;
   }
+  const ok = (i) => land[i] && owner[i] >= 0 && remote[i] > 0 && cover[i] !== COVER.URBAN;
   const mask = new Int16Array(N).fill(-1);
   const parks = [];
-  // One park in each of the larger countries, the wildest first, up to six.
-  const order = projects.map((p, k) => k).filter((k) => areas[k] > 4000 * S * S).sort((a, b) => areas[b] - areas[a]);
-  const step = Math.max(1, Math.round(3 * S));
-  for (const k of order) {
-    if (parks.length >= 6) break;
-    // The wildest spot: the best average over a window.
+  const perCountry = new Int32Array(projects.length);
+  const centres = [];
+  const kinds = r.shuffle(PARK_KINDS.slice());
+  kinds.unshift(kinds.splice(kinds.indexOf('preserve'), 1)[0]);
+  const want = 6 + r.int(4);
+  const step = Math.max(2, Math.round(3 * S));
+  for (let round = 0; round < 2 && parks.length < want; round++) for (const kind of kinds) {
+    if (parks.length >= want) break;
+    const f = fit[kind];
     let best = -1, bv = 0;
-    for (let y = 12; y < H - 12; y += step) for (let x = 12; x < W - 12; x += step) {
+    const win = kind === 'small' || kind === 'marine' ? 4 : 9;
+    for (let y = 14; y < H - 14; y += step) for (let x = 14; x < W - 14; x += step) {
       const i = y * W + x;
-      if (owner[i] !== k || wild[i] < 0.6) continue;
+      if (!ok(i) || perCountry[owner[i]] >= 2 || areas[owner[i]] < 1200 * S * S) continue;
+      if (centres.some((c) => Math.hypot(c[0] - x, c[1] - y) < 70 * S)) continue;
+      const k = owner[i];
       let sum = 0;
-      for (let dy = -9; dy <= 9; dy += 3) for (let dx = -9; dx <= 9; dx += 3) { const j = (y + dy) * W + x + dx; sum += owner[j] === k ? wild[j] : 0; }
+      for (let dy = -win; dy <= win; dy += 3) for (let dx = -win; dx <= win; dx += 3) { const j = (y + dy) * W + x + dx; if (owner[j] === k && ok(j)) sum += f(j); }
+      sum *= 0.85 + 0.3 * r.next();
       if (sum > bv) { bv = sum; best = i; }
     }
-    if (best < 0 || bv < 30) continue;
-    const target = clamp(areas[k] * 0.05, 450 * S * S, 2400 * S * S);
-    // Grow by priority: wild ground first, with noise so the edge is irregular.
+    const cells = ((2 * win) / 3 + 1) ** 2;
+    if (best < 0 || bv < cells * 0.45) continue;
+    const k = owner[best];
+    const AREA = { preserve: [2600, 5200], forest: [1200, 2600], refuge: [450, 1100], marine: [260, 650], desert: [1000, 2200], park: [900, 2200], small: [120, 320] }[kind];
+    const target = Math.min(r.range(AREA[0], AREA[1]) * S * S, areas[k] * (kind === 'preserve' ? 0.14 : 0.08));
     const id = parks.length;
-    const pri = (i) => wild[i] + 0.35 * fbm(n, (i % W) / (14 * S), Math.floor(i / W) / (14 * S), 3);
+    const pri = (i) => f(i) + 0.35 * fbm(n, (i % W) / (14 * S), Math.floor(i / W) / (14 * S), 3);
     const heap = [[pri(best), best]];
     const seen = new Uint8Array(N);
     seen[best] = 1;
@@ -60,14 +82,13 @@ export function buildParks({ land, owner, cover, elev, settlements, projects, ar
       mask[i] = id; area++;
       const x = i % W;
       for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) {
-        if (j < 0 || j >= N || seen[j] || owner[j] !== k || wild[j] < 0.3 || mask[j] >= 0) continue;
+        if (j < 0 || j >= N || seen[j] || owner[j] !== k || !ok(j) || mask[j] >= 0 || f(j) < 0.2) continue;
         seen[j] = 1;
         heap.push([pri(j), j]);
       }
       if (heap.length > 4000) heap.splice(0, heap.length - 3000);
     }
-    if (area < 250 * S * S) { for (let i = 0; i < N; i++) if (mask[i] === id) mask[i] = -1; continue; }
-    // Smooth the edge: fill notches, shave spurs (never crossing a border).
+    if (area < 100 * S * S) { for (let i = 0; i < N; i++) if (mask[i] === id) mask[i] = -1; continue; }
     for (let pass = 0; pass < 2; pass++) {
       const next = mask.slice();
       for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
@@ -83,7 +104,9 @@ export function buildParks({ land, owner, cover, elev, settlements, projects, ar
     keepLargest(mask, id, W, H);
     let a2 = 0;
     for (let i = 0; i < N; i++) if (mask[i] === id) a2++;
-    parks.push({ country: k, area: a2 });
+    parks.push({ country: k, area: a2, kind });
+    perCountry[k]++;
+    centres.push([best % W, Math.floor(best / W)]);
   }
   return { mask, parks };
 }
@@ -177,10 +200,14 @@ export function buildStreams({ land, hydro, width, height, style = {} }) {
 
 // placeDetailLabels({ labels, world, nations, settlements, roads, parks, projects, rng })
 //   => new labels (each with detail: true), clear of every label given and of each other.
-export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owner, settlements, roads, parks, projects, width, height, rng }) {
+export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes = [], drawnRivers }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const r = rng.fork('detail-names');
   const namer = makeNamer(r);
+  // Names in the language of the country a place lies in (or the nearest invented one at sea).
+  const px0 = (x, y) => clamp(Math.floor(y), 0, H - 1) * W + clamp(Math.floor(x), 0, W - 1);
+  const namerAt = (x, y) => { const k = owner[px0(x, y)]; return k >= 0 && cultures ? cultures[k].namer : namer; };
+  const wordAt = (x, y) => namerAt(x, y).word();
   const placed = labels.map((l) => labelRects(l, 0.5 * S));
   const out = [];
   const clearOf = (rects) => {
@@ -229,10 +256,11 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   const placeRank = (rank) => {
     for (const s of settlements) {
       if (s.rank !== rank) continue;
-      const text = namer.town();
+      const text = s.name || namerAt(s.x, s.y).town();
       const size = SIZE[rank] * S;
-      const ok = beside({ id: `${KIND[rank]}-${out.length}`, kind: KIND[rank], text, lines: [text], size, angle: 0, spacing: 0, minZoom: ZOOM[rank] }, s.x, s.y, size);
-      if (ok) s.name = text;
+      // The smallest villages wait for the closest zoom.
+      const minZoom = rank === RANK.VILLAGE && s.size < 0.55 ? 5 : ZOOM[rank];
+      beside({ id: `${KIND[rank]}-${out.length}`, kind: KIND[rank], text, lines: [text], size, angle: 0, spacing: 0, minZoom }, s.x, s.y, size);
     }
   };
 
@@ -253,7 +281,8 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
     for (const c of cands) {
       if (taken.length >= 14) break;
       if (taken.some((t) => Math.hypot(t.x - c.x, t.y - c.y) < 70 * S)) continue;
-      const name = r.pick([(w) => `Mount ${w}`, (w) => `${w} Peak`, (w) => `Mount ${w}`, (w) => `${w}horn`])(namer.word());
+      if (volcanoes.some((v) => Math.hypot(v.x - c.x, v.y - c.y) < 12 * S)) continue;
+      const name = r.pick([(w) => `Mount ${w}`, (w) => `${w} Peak`, (w) => `Mount ${w}`, (w) => `${w}horn`])(wordAt(c.x, c.y));
       const metres = Math.round(380 + c.e * 5600 + r.next() * 120);
       const height = metres.toLocaleString('en-US') + ' m';
       const size = 3.1 * S;
@@ -274,14 +303,14 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
       const d = insideDistance(region, W, H);
       let best = any;
       for (let i = 0; i < N; i++) if (region[i] && d[i] > d[best]) best = i;
-      const t = themed(p.country);
-      const word = t ? t.word : namer.word();
-      p.name = `${word} National Park`;
-      const size = 3.3 * S;
-      const lines = [`${word}`, 'National Park'];
-      const label = { id: `park-${id}`, kind: 'park', text: p.name, lines, x: (best % W) + 0.5, y: Math.floor(best / W) + 0.5, size, angle: 0, spacing: 0.02, minZoom: 2, park: id };
+      const t = r.chance(0.55) ? themed(p.country) : null;
+      const word = t ? t.word : cultures ? cultures[p.country].namer.word() : namer.word();
+      const custom = cultures ? cultures[p.country].parks : null;
+      p.name = custom ? custom[p.kind](word) : `${word} National Park`;
+      const size = clamp(Math.sqrt(p.area) * 0.075, 3.1, 4.4) * S;
+      const label = { id: `park-${id}`, kind: 'park', text: p.name, lines: lineBreaks(p.name)[Math.min(1, lineBreaks(p.name).length - 1)], x: (best % W) + 0.5, y: Math.floor(best / W) + 0.5, size, angle: 0, spacing: 0, minZoom: p.area > 1400 * S * S ? 2 : 3, park: id };
       if (t) { label.theme = t.theme; label.word = t.word; }
-      if (!tryPut(label)) tryPut({ ...label, lines: [p.name], size: size * 0.9 });
+      if (!tryPut(label)) if (!tryPut({ ...label, lines: lineBreaks(p.name).slice(-1)[0], size: size * 0.85 })) tryPut({ ...label, lines: [p.name], size: size * 0.8 });
     });
   }
 
@@ -318,11 +347,12 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
       }
       return g;
     };
-    const forest = share(COVER.FOREST), desert = share(COVER.DESERT);
+    const forest = share(COVER.FOREST), desert = share(COVER.DESERT), sand = share(COVER.SAND);
+    for (let i = 0; i < N; i++) desert[i] += sand[i];
     const plateau = (i) => land[i] && elev[i] > 0.27 && elev[i] < 0.5 && Math.abs(elev[Math.min(N - 1, i + 3)] - elev[Math.max(0, i - 3)]) + Math.abs(elev[Math.min(N - 1, i + 3 * W)] - elev[Math.max(0, i - 3 * W)]) < 0.025;
     const kinds = [
       { test: (i) => land[i] && forest[i] > 0.55, min: 2600 * S * S, forms: [(w) => `${w} Forest`, (w) => `${w} Woods`], max: 3 },
-      { test: (i) => land[i] && desert[i] > 0.6, min: 2200 * S * S, forms: [(w) => `${w} Desert`], max: 2 },
+      { test: (i) => land[i] && desert[i] > 0.5, min: 900 * S * S, forms: [(w) => `${w} Desert`, (w) => `${w} Desert`, (w) => `${w} Sands`, (w) => `Erg ${w}`], max: 3 },
       { test: plateau, min: 900 * S * S, forms: [(w) => `${w} Plateau`], max: 2 },
     ];
     for (const k of kinds) {
@@ -334,9 +364,10 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
         const d = insideDistance(region, W, H);
         let best = pixels[0];
         for (const i of pixels) if (d[i] > d[best]) best = i;
-        const text = r.pick(k.forms)(namer.word());
+        const bx = (best % W) + 0.5, by = Math.floor(best / W) + 0.5;
+        const text = r.pick(k.forms)(wordAt(bx, by));
         const size = clamp(Math.sqrt(pixels.length) * 0.05, 3.4 * S, 5.2 * S);
-        if (tryPut({ id: `region-${out.length}`, kind: 'region', text, lines: [text], x: (best % W) + 0.5, y: Math.floor(best / W) + 0.5, size, angle: 0, spacing: 0.16, minZoom: 2 })) { n++; regionNames.push(text); }
+        if (tryPut({ id: `region-${out.length}`, kind: 'region', text, lines: [text], x: bx, y: by, size, angle: 0, spacing: 0.1, minZoom: 2 })) { n++; regionNames.push(text); }
       }
     }
   }
@@ -344,13 +375,15 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   };
   const placeDeltas = () => {
   // ---- Deltas: where a big river fans out in warm country. ----
+  let deltas = 0;
   hydro.rivers.forEach((pts, k) => {
     const m = hydro.riverMeta[k];
-    if (m.ends !== 'sea' || m.width < 2 || pts.length < 40) return;
+    if (deltas >= 3 || m.ends !== 'sea' || m.width < 3 || pts.length < 40) return;
+    deltas++;
     const [x, y] = pts[pts.length - 1];
     if (temp[px(x, y)] < 6) return;
     const back = pts[Math.max(0, pts.length - 10)];
-    const text = `${namer.word()} Delta`;
+    const text = `${wordAt(back[0], back[1])} Delta`;
     const size = 3.1 * S;
     tryPut({ id: `delta-${out.length}`, kind: 'region', text, lines: [text], x: back[0], y: back[1] - size * 1.4, size, angle: 0, spacing: 0.08, minZoom: 3 });
   });
@@ -383,7 +416,7 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
     const glist = [...groups.values()].filter((g) => g.length >= 3).sort((a, b) => b.length - a.length);
     for (const g of glist.slice(0, 4)) {
       const x = g.reduce((a, s) => a + s.x, 0) / g.length, y = g.reduce((a, s) => a + s.y, 0) / g.length;
-      const text = `${namer.word()} Islands`;
+      const text = `${wordAt(g[0].x, g[0].y)} Islands`;
       const size = 3.6 * S;
       if (tryPut({ id: `islands-${out.length}`, kind: 'island', text, lines: [text], x, y, size, angle: 0, spacing: 0.12, minZoom: 2 })) for (const s of g) grouped.add(s.m);
     }
@@ -391,7 +424,8 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
     let n = 0;
     for (const s of small.filter((s) => !grouped.has(s.m) && s.n >= 40 * S * S).sort((a, b) => b.n - a.n || a.m - b.m)) {
       if (n >= 10) break;
-      const text = r.chance(0.3) ? `Isle of ${namer.word()}` : `${namer.word()} Island`;
+      const w0 = wordAt(s.x, s.y);
+      const text = r.chance(0.3) ? `Isle of ${w0}` : `${w0} Island`;
       const size = 3 * S;
       const label = { id: `island-${out.length}`, kind: 'island', text, lines: [text], x: s.x, y: s.f.y1 + 1 + size * 0.8, size, angle: 0, spacing: 0.06, minZoom: 3 };
       if (tryPut(label) || tryPut({ ...label, y: s.f.y0 - size * 0.8 })) n++;
@@ -420,7 +454,8 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
     for (const c of cands) {
       if (taken.length >= 8) break;
       if (taken.some((t) => Math.hypot(t.x - c.x, t.y - c.y) < 110 * S)) continue;
-      const text = r.chance(0.65) ? `Cape ${namer.word()}` : `${namer.word()} Point`;
+      const w0 = wordAt(c.x, c.y);
+      const text = r.chance(0.65) ? `Cape ${w0}` : `${w0} Point`;
       const size = 2.9 * S;
       const ol = Math.hypot(c.ox, c.oy) || 1;
       const w = lineWidth(text, 0.04) * size;
@@ -434,74 +469,65 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   // ---- Route shields, on the highways. ----
   for (const sh of roads.shields) {
     const size = 2.7 * S;
-    tryPut({ id: `shield-${out.length}`, kind: 'shield', text: sh.text, lines: [sh.text], x: sh.x, y: sh.y, size, angle: 0, spacing: 0, minZoom: 2, shield: sh.kind }, 0.3 * S);
+    const minZoom = sh.cls === 'motorway' ? 2 : sh.cls === 'trunk' ? 3 : 4;
+    tryPut({ id: `shield-${out.length}`, kind: 'shield', text: sh.text, lines: [sh.text], x: sh.x, y: sh.y, size, angle: 0, spacing: 0, minZoom, shield: sh.sign }, 0.3 * S);
   }
 
   };
+  // ---- Volcanoes: a cone with a crater lake, named and with a height. ----
+  const placeVolcanoes = () => {
+    for (const v of volcanoes) {
+      const name = r.chance(0.5) ? `Mount ${wordAt(v.x, v.y)}` : `${wordAt(v.x, v.y)} Volcano`;
+      const metres = Math.round(600 + v.e * 5200 + r.next() * 100);
+      beside({ id: `volcano-${out.length}`, kind: 'peak', text: name, lines: [name, metres.toLocaleString('en-US') + ' m'], size: 3.1 * S, angle: 0, spacing: 0, minZoom: 3, volcano: true }, v.x, v.y, 3.1 * S, 0.9);
+    }
+  };
+  // ---- The larger small lakes: finger lakes along their length, reservoirs, and the rest. ----
+  const placeLakes = () => {
+    if (!smallLakes) return;
+    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' ? 1.2 : 4) * S * S).sort((a, b) => b.area - a.area);
+    for (const l of list.slice(0, 40)) {
+      const w0 = wordAt(l.x, l.y);
+      const text = l.kind === 'reservoir' ? `${w0} Reservoir` : l.kind === 'crater' ? `Crater Lake ${w0}` : `Lake ${w0}`;
+      // Along the lake's long axis.
+      let cxx = 0, cyy = 0, cxy = 0;
+      for (const [x, y] of l.ring) { cxx += (x - l.x) ** 2; cyy += (y - l.y) ** 2; cxy += (x - l.x) * (y - l.y); }
+      let ang = (0.5 * Math.atan2(2 * cxy, cxx - cyy) * 180) / Math.PI;
+      if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+      ang = Math.abs(ang) > 60 ? 0 : Math.round(ang);
+      tryPut({ id: `lake-${out.length}`, kind: 'lake', text, lines: [text], x: l.x, y: l.y, size: 2.8 * S, angle: ang, spacing: 0, minZoom: l.area > 10 * S * S ? 4 : 5 });
+    }
+  };
+  // ---- Marshes: where ponds crowd a flat wet coast. ----
+  const placeMarshes = () => {
+    if (!smallLakes) return;
+    const marsh = smallLakes.lakes.filter((l) => l.kind === 'marsh');
+    const done = [];
+    for (const l of marsh) {
+      if (done.length >= 3) break;
+      if (done.some((d) => Math.hypot(d[0] - l.x, d[1] - l.y) < 110 * S)) continue;
+      const near = marsh.filter((o) => Math.hypot(o.x - l.x, o.y - l.y) < 12 * S);
+      if (near.length < 6) continue;
+      const x = near.reduce((a, o) => a + o.x, 0) / near.length, y = near.reduce((a, o) => a + o.y, 0) / near.length;
+      const text = `${wordAt(x, y)} ${r.pick(['Marshes', 'Wetlands', 'Fens', 'Marsh'])}`;
+      if (tryPut({ id: `marsh-${out.length}`, kind: 'region', text, lines: [text], x, y, size: 3.2 * S, angle: 0, spacing: 0.06, minZoom: 3 })) done.push([x, y]);
+    }
+  };
+
   // Most important first: each later name must fit round the earlier ones.
   placeRank(RANK.CITY);
   placeParks();
   placeRegions();
   placePeaks();
   placeShields();
+  placeVolcanoes();
   placeIslands();
   placeRank(RANK.TOWN);
+  placeMarshes();
   placeCapes();
   placeDeltas();
+  placeLakes();
   placeRank(RANK.VILLAGE);
 
-  return out;
-}
-
-// ------------------------------------------------------------ reservoirs --
-
-// buildReservoirs({ land, elev, hydro, settlements, width, height, rng }) => [[[x, y], ...]] rings
-// A few long, narrow lakes dammed on rivers in the hills, each a ring that
-// swells along a stretch of the river and narrows at the dam.
-export function buildReservoirs({ land, elev, hydro, width, height, rng }) {
-  const W = width, H = height, S = W / 1600;
-  const r = rng.fork('reservoirs');
-  const out = [];
-  const px = (x, y) => clamp(Math.floor(y), 0, H - 1) * W + clamp(Math.floor(x), 0, W - 1);
-  const cands = [];
-  hydro.rivers.forEach((pts, k) => {
-    const m = hydro.riverMeta[k];
-    if (m.width < 2 || pts.length < 30) return;
-    for (let j = 6; j + 18 < pts.length - 6; j += 9) {
-      const e = elev[px(pts[j][0], pts[j][1])];
-      if (e < 0.12 || e > 0.34) continue;
-      cands.push({ k, j, e, score: e + r.next() * 0.1 });
-    }
-  });
-  cands.sort((a, b) => b.score - a.score || a.k - b.k || a.j - b.j);
-  const taken = [];
-  for (const c of cands) {
-    if (out.length >= 5) break;
-    const pts = hydro.rivers[c.k].slice(c.j, c.j + 16 + r.int(8));
-    const mid = pts[pts.length >> 1];
-    if (taken.some((t) => Math.hypot(t[0] - mid[0], t[1] - mid[1]) < 120 * S)) continue;
-    // Smooth the course, then offset it both ways, widest two thirds of the way down to the dam.
-    const sm = pts.map((p, i) => {
-      let sx = 0, sy = 0, n = 0;
-      for (let q = Math.max(0, i - 2); q <= Math.min(pts.length - 1, i + 2); q++) { sx += pts[q][0]; sy += pts[q][1]; n++; }
-      return [sx / n, sy / n];
-    });
-    const width = (1.1 + r.next() * 0.9) * S;
-    const left = [], right = [];
-    let ok = true;
-    sm.forEach((p, i) => {
-      const a = sm[Math.max(0, i - 1)], b = sm[Math.min(sm.length - 1, i + 1)];
-      let tx = b[0] - a[0], ty = b[1] - a[1];
-      const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-      const t = i / (sm.length - 1);
-      const w = width * Math.sin(Math.PI * Math.min(1, t * 1.15)) ** 0.7 + 0.15 * S;
-      const L = [p[0] - ty * w, p[1] + tx * w], R = [p[0] + ty * w, p[1] - tx * w];
-      if (!land[px(L[0], L[1])] || !land[px(R[0], R[1])] || hydro.lakes[px(L[0], L[1])]) ok = false;
-      left.push(L); right.push(R);
-    });
-    if (!ok) continue;
-    out.push([...left, ...right.reverse()].map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]));
-    taken.push(mid);
-  }
   return out;
 }

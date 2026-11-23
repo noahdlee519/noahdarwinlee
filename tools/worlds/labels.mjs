@@ -173,6 +173,7 @@ export function makeNamer(rng) {
     strait: () => `${word()} ${rng.pick(['Strait', 'Sound', 'Channel'])}`,
     lake: () => `Lake ${word()}`,
     range: () => `${word()} ${rng.pick(['Mountains', 'Mountains', 'Range', 'Highlands', 'Alps'])}`,
+    rangeWord: () => rng.pick(['Mountains', 'Mountains', 'Range', 'Highlands', 'Alps', 'Hills']),
     town: () => {
       const w = word();
       return rng.chance(0.09) ? `${rng.pick(['Port', 'Fort', 'New', 'Saint'])} ${w}` : w;
@@ -468,7 +469,8 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       // Spread a one-line name along the country, as an atlas does: open the
       // tracking as far as still fits at nine tenths of the size.
       const size = Math.max(floor, got.size * 0.9);
-      const tracks = flagship ? (project.name === project.name.toUpperCase() ? [0.26, 0.2, 0.14, 0.08, 0.04] : [0.2, 0.14, 0.08, 0.04]) : [0.1, 0.06, 0.03];
+      // (Set untracked, as the reference sets its country names.)
+      const tracks = [0];
       let done = false;
       for (const t of tracks) {
         const at = got.search(size, got.angle, got.lines, t);
@@ -502,7 +504,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const cap = Math.min(parent ? parent.size * 0.5 : 8 * S, clamp(Math.sqrt(pixels.length) * 0.11, 3 * S, 8 * S));
       const got = fit({ pixels, inside: (i) => owner[i] === index && provinces[i] === k, dist: dSub, text: prov.name, cap, floor: 2.45 * S, tilt: false, avoid: true, track: 0.06 });
       if (!got) return;
-      commit({ id: prov.id, kind: 'province', parent: project.id, text: prov.name, lines: got.lines, x: got.x, y: got.y, size: got.size, angle: 0, spacing: 0.06, minZoom: Math.max(2, zoomFor(got.size, 9.8)) });
+      commit({ id: prov.id, kind: 'province', parent: project.id, text: prov.name, lines: got.lines, x: got.x, y: got.y, size: got.size, angle: 0, spacing: 0, minZoom: Math.max(2, zoomFor(got.size, 9.8)) });
     });
   });
 
@@ -514,8 +516,10 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     let len = 0;
     for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
     if (len < 80 * S) continue;
-    const text = namer.range();
-    const size = clamp(len / 26, 4.6 * S, 7.5 * S), spacing = 0.22;
+    const mid = pts[pts.length >> 1];
+    const w0 = (extras.nameAt && extras.nameAt(mid[0], mid[1])) || namer.word();
+    const text = `${w0} ${namer.rangeWord()}`;
+    const size = clamp(len / 30, 4 * S, 6 * S), spacing = 0.04;
     let done = false;
     for (const t of [0.5, 0.38, 0.62, 0.28, 0.72]) {
       const k = clamp(Math.round(t * (pts.length - 1)), 1, pts.length - 2);
@@ -604,6 +608,46 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     return best;
   };
   const isSea = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !land[Math.floor(y) * W + Math.floor(x)];
+  // A gentle curve for a water name, through the middle of the water along its long axis, read left to right; null
+  // where the water is open all round (the name then sits straight) or the axis is too steep to read.
+  const curveFor = (x, y, text, size) => {
+    const L = lineWidth(text, 0) * size * 1.06 + size * 0.3;
+    const run = (a) => {
+      let len = 0;
+      for (const sg of [1, -1]) for (let t = 0.5; t <= L * 1.6; t += 0.5 * S) { if (!isSea(x + sg * Math.cos(a) * t, y + sg * Math.sin(a) * t)) break; len += 0.5 * S; }
+      return len;
+    };
+    let bestA = 0, bestLen = -1, shortLen = Infinity;
+    for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI, len = run(a); if (len > bestLen) { bestLen = len; bestA = a; } shortLen = Math.min(shortLen, len); }
+    if (shortLen > L * 2.6) return null;
+    let a = bestA;
+    if (Math.cos(a) < 0) a += Math.PI;
+    if (a > Math.PI) a -= 2 * Math.PI;
+    if (Math.abs(a) > 0.95) return null;
+    const ca = Math.cos(a), sa = Math.sin(a), nx = -sa, ny = ca;
+    const R = size * 5;
+    const mids = [];
+    for (let k = -3; k <= 3; k++) {
+      const t = (k / 6) * L, bx = x + ca * t, by = y + sa * t;
+      let dp = R, dn = R;
+      for (let u = 0.3 * S; u < R; u += 0.3 * S) if (!isSea(bx + nx * u, by + ny * u)) { dp = u; break; }
+      for (let u = 0.3 * S; u < R; u += 0.3 * S) if (!isSea(bx - nx * u, by - ny * u)) { dn = u; break; }
+      mids.push([t, clamp((dp - dn) / 2, -size * 1.2, size * 1.2)]);
+    }
+    // A parabola through the means of the outer thirds and the middle, its bow limited.
+    const mean = (arr) => [arr.reduce((q, v) => q + v[0], 0) / arr.length, arr.reduce((q, v) => q + v[1], 0) / arr.length];
+    const [t0, f0] = mean(mids.slice(0, 2)), [t1, f1] = mean(mids.slice(2, 5)), [t2, f2] = mean(mids.slice(5));
+    const c2raw = ((f2 - f1) / (t2 - t1) - (f1 - f0) / (t1 - t0)) / (t2 - t0);
+    const c2 = clamp(c2raw, -0.4 / L, 0.4 / L);
+    const c1 = clamp((f2 - f0) / (t2 - t0), -0.12, 0.12);
+    const c0 = clamp(f1 - c1 * t1 - c2 * t1 * t1, -size * 0.8, size * 0.8);
+    const path = [];
+    for (let k = 0; k <= 8; k++) {
+      const t = -L / 2 + (k / 8) * L, f = c0 + c1 * t + c2 * t * t;
+      path.push([Math.round((x + ca * t + nx * f) * 10) / 10, Math.round((y + sa * t + ny * f) * 10) / 10]);
+    }
+    return path;
+  };
 
   // ---- Water, by its shape. ----
   // Oceans: one name for each great open body, set large, from zoom 1.
@@ -675,12 +719,14 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const spots = piece.pixels.filter((i) => (i % W) % 4 === 0 && ((i / W) | 0) % 4 === 0).sort((a, b) => keyOf(b) - keyOf(a) || a - b).slice(0, 5000);
       for (const i of spots) {
         const x = (i % W) + 0.5, y = ((i / W) | 0) + 0.5, d = dist[i];
-        const size = ocean ? clamp(d / 6.5, 12 * S, 17 * S) : clamp(d / 4.5, 5.6 * S, 9.5 * S);
-        const spacing = ocean ? 0.3 : 0.14;
+        // Small and untracked, as the reference sets its water names; an ocean a little larger.
+        const size = ocean ? clamp(d / 16, 6.5 * S, 8.5 * S) : clamp(d / 14, 4.6 * S, 5.6 * S);
+        const spacing = 0;
         const options = ocean || lineWidth(text, spacing) * size > d * 1.9 ? [lineBreaks(text)[1] || [text], [text]] : [[text], lineBreaks(text)[1] || [text]];
         let done = false;
         for (const lines of options) {
-          const label = { id: `${ocean ? 'ocean' : 'sea'}-${labels.length}`, kind: ocean ? 'ocean' : 'sea', text, lines, x, y, size, angle: 0, spacing, minZoom: ocean ? 1 : Math.max(2, zoomFor(size, 9.8)) };
+          const label = { id: `${ocean ? 'ocean' : 'sea'}-${labels.length}`, kind: ocean ? 'ocean' : 'sea', text, lines, x, y, size, angle: 0, spacing, minZoom: ocean ? 1 : 2 };
+          if (!ocean && lines.length === 1) { const path = curveFor(x, y, text, size); if (path) label.path = path; }
           if (!fitsOnWater(label, 3 * S) || !clearOf(labelRects(label, 3 * S))) continue;
           if (!spaced(label.kind, x, y)) continue;
           claim(label, name);
@@ -731,12 +777,13 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const who = mostShore(shoreCounts(c.x, c.y, c.d * 2.5 + 30 * S));
       const forms = kind === 'sea' ? SEA_FORMS : kind === 'gulf' ? [(w) => `Gulf of ${w}`] : [(w) => `${w} Bay`];
       const name = waterName(who, 'water', forms);
-      const base = kind === 'sea' ? clamp(c.d / 4.5, 5.6 * S, 9 * S) : kind === 'gulf' ? 4.9 * S : 3.7 * S;
+      const base = kind === 'sea' ? clamp(c.d / 14, 4.6 * S, 5.6 * S) : kind === 'gulf' ? 4.2 * S : 3.5 * S;
       const zoom0 = kind === 'bay' ? 3 : 2;
       let placed = false;
       for (const size of [base, base * 0.85]) {
         for (const lines of [[name.text], lineBreaks(name.text)[1] || [name.text]]) {
-          const label = { id: `${kind}-${labels.length}`, kind, text: name.text, lines, x: c.x, y: c.y, size, angle: 0, spacing: kind === 'bay' ? 0.06 : 0.1, minZoom: Math.max(zoom0, zoomFor(size, 9.8)) };
+          const label = { id: `${kind}-${labels.length}`, kind, text: name.text, lines, x: c.x, y: c.y, size, angle: 0, spacing: 0, minZoom: Math.max(zoom0, zoomFor(size, 9.8)) };
+          if (lines.length === 1) { const path = curveFor(c.x, c.y, name.text, size); if (path) label.path = path; }
           if (!fitsOnWater(label, 1.2 * S) || !clearOf(labelRects(label, 1.5 * S))) continue;
           claim(label, name);
           commit(label, 1.5 * S);
@@ -788,7 +835,8 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const who = mostShore(shoreCounts(c.x, c.y, 30 * S));
       const name = waterName(who, 'water', [(w) => `${w} Strait`]);
       for (const size of [3.8 * S, 3.3 * S]) {
-        const label = { id: `strait-${labels.length}`, kind: 'strait', text: name.text, lines: [name.text], x: cx, y: cy, size, angle: Math.round(ang), spacing: 0.1, minZoom: Math.max(3, zoomFor(size, 9.8)) };
+        const label = { id: `strait-${labels.length}`, kind: 'strait', text: name.text, lines: [name.text], x: cx, y: cy, size, angle: Math.round(ang), spacing: 0, minZoom: Math.max(3, zoomFor(size, 9.8)) };
+        { const path = curveFor(cx, cy, name.text, size); if (path) label.path = path; }
         const rects = labelRects(label, 0.8 * S);
         if (!rects.every((rc) => samples(rc, 2).every(([px, py]) => isSea(px, py)))) continue;
         if (!clearOf(rects)) continue;
@@ -832,7 +880,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const name = waterName(mostShore(counts), 'lake', [(w) => `Lake ${w}`]);
       const got = fit({ pixels, inside: (i) => lakes[i] === 1, dist: dLake, text: name.text, cap: clamp(Math.sqrt(pixels.length) * 0.1, 2.6 * S, 6.5 * S), floor: 2.45 * S, avoid: true, track: 0.04 });
       if (!got) continue;
-      const label = { id: `lake-${labels.length}`, kind: 'lake', text: name.text, lines: got.lines, x: got.x, y: got.y, size: got.size, angle: got.angle, spacing: 0.04, minZoom: Math.max(2, zoomFor(got.size, 9.8)) };
+      const label = { id: `lake-${labels.length}`, kind: 'lake', text: name.text, lines: got.lines, x: got.x, y: got.y, size: got.size, angle: got.angle, spacing: 0, minZoom: Math.max(2, zoomFor(got.size, 9.8)) };
       claim(label, name);
       commit(label);
     }
@@ -846,7 +894,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       if (meta.width < 2) return;
       let len = 0;
       for (let j = 1; j < pts.length; j++) len += Math.hypot(pts[j][0] - pts[j - 1][0], pts[j][1] - pts[j - 1][1]);
-      if (len >= 90 * S) list.push({ pts, len, meta, k });
+      if (len >= 55 * S) list.push({ pts, len, meta, k });
     });
     list.sort((a, b) => b.len - a.len || a.k - b.k);
     let named = 0;
@@ -855,7 +903,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       const counts = new Map();
       for (const [x, y] of pts) { const o = owner[Math.floor(y) * W + Math.floor(x)]; if (o >= 0) counts.set(o, (counts.get(o) || 0) + 1); }
       const name = waterName(mostShore(counts), 'river', [(w) => `${w} River`, (w) => `River ${w}`]);
-      const size = (meta.width >= 3 ? 4.9 : 4.2) * S, spacing = 0.06;
+      const size = (meta.width >= 3 ? 4 : 3.5) * S, spacing = 0;
       const textLen = lineWidth(name.text, spacing) * size;
       if (textLen * 1.9 > len) continue;
       // The course, evenly spaced and smoothed, so the lettering bends gently.
@@ -869,7 +917,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
         while (t <= l) { even.push([x0 + ((x1 - x0) * t) / l, y0 + ((y1 - y0) * t) / l]); t += 1; }
         acc = l - (t - 1);
       }
-      const win = Math.max(2, Math.round(size * 1.6));
+      const win = Math.max(2, Math.round(size * 4));
       const smooth = even.map((_, j) => {
         let sx = 0, sy = 0, n = 0;
         for (let q = Math.max(0, j - win); q <= Math.min(even.length - 1, j + win); q++) { sx += even[q][0]; sy += even[q][1]; n++; }
@@ -891,7 +939,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
           let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
           turn += Math.abs(d); worst = Math.max(worst, Math.abs(d));
         }
-        if (turn > 1.1 || worst > 0.45) ok = false;
+        if (turn > 2.3 || worst > 0.7) ok = false;
         if (!ok) continue;
         if (path[path.length - 1][0] < path[0][0]) path.reverse();
         const chord = Math.atan2(path[path.length - 1][1] - path[0][1], path[path.length - 1][0] - path[0][0]);
@@ -916,7 +964,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
   const dots = [];
   for (const town of towns) {
     if (dots.some((d) => Math.hypot(d[0] - town.x, d[1] - town.y) < (town.capital ? 26 : 44) * S)) continue;
-    const text = namer.town();
+    const text = town.name || namer.town();
     const size = (town.capital ? 4.9 : 3.5) * S;
     const w = lineWidth(text, 0) * size, gap = size * 0.75;
     // Beside the dot: right, left, above, below.
