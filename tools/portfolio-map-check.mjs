@@ -382,8 +382,8 @@ async function interfaceStage(browser) {
   await page.waitForTimeout(1200);
   ok(await sheet() === 'half' && (await panelTitle(page)) === 'Fuzhounese Dictionary', 'a project opens in the sheet, halfway up');
   await page.screenshot({ path: '/tmp/portfolio-map-phone-project.png' });
-  const bareP = await open(browser, '?world=le-guin&project=night-of-ideas', { context: phone });
-  ok(await bareP.evaluate(() => document.querySelector('.terrain-name').textContent === 'Night of Ideas'), 'on the phone too, a project without pictures shows its piece of the map, named');
+  const bareP = await open(browser, '?world=le-guin&project=substack', { context: phone });
+  ok(await bareP.evaluate(() => document.querySelector('.terrain-name').textContent === 'Substack'), 'on the phone too, a project without pictures shows its piece of the map, named');
   await bareP.waitForTimeout(1500);
   await bareP.screenshot({ path: '/tmp/portfolio-map-phone-nophotos.png' });
   await bareP.close();
