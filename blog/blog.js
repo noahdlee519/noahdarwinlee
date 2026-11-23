@@ -218,6 +218,7 @@
         label = row.key;
         renderFolders();
         renderList();
+        if (narrow()) setRail(false);
       });
       li.appendChild(btn);
       el.folders.appendChild(li);
@@ -650,6 +651,30 @@
       if (event.key === "ArrowLeft") { event.preventDefault(); setSize(key, w - 16); }
       else if (event.key === "ArrowRight") { event.preventDefault(); setSize(key, w + 16); }
       else if (event.key === "Home" || event.key === "Enter") { event.preventDefault(); resetSize(key); }
+    });
+  }
+
+  const menu = document.getElementById("mail-menu");
+  const narrowQuery = window.matchMedia("(max-width: 900px)");
+  function narrow() { return narrowQuery.matches; }
+  function railShown() { return narrow() ? el.window.classList.contains("is-rail-open") : !el.window.classList.contains("is-rail-closed"); }
+  function setRail(show) {
+    if (narrow()) el.window.classList.toggle("is-rail-open", show);
+    else el.window.classList.toggle("is-rail-closed", !show);
+    if (menu) menu.setAttribute("aria-expanded", String(railShown()));
+  }
+  if (menu) {
+    menu.setAttribute("aria-expanded", String(railShown()));
+    menu.addEventListener("click", function () { setRail(!railShown()); });
+    const sync = function () { el.window.classList.remove("is-rail-open"); menu.setAttribute("aria-expanded", String(railShown())); };
+    if (narrowQuery.addEventListener) narrowQuery.addEventListener("change", sync); else if (narrowQuery.addListener) narrowQuery.addListener(sync);
+    document.addEventListener("pointerdown", function (event) {
+      if (!narrow() || !el.window.classList.contains("is-rail-open")) return;
+      if (el.rail.contains(event.target) || menu.contains(event.target)) return;
+      setRail(false);
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && narrow() && el.window.classList.contains("is-rail-open")) { setRail(false); menu.focus(); }
     });
   }
 
