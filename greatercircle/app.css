@@ -250,6 +250,16 @@ body.gc-page {
   font-size: 12px;
   color: var(--gc-muted);
 }
+.gc-tip .gc-tip-at {
+  margin-top: 3px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+.gc-tip .gc-tip-at:first-child {
+  margin-top: 0;
+}
 
 .gc-controls {
   position: fixed;
@@ -382,6 +392,19 @@ body.gc-page {
 }
 .gc-buffer-opts button[aria-pressed="true"] {
   border-color: var(--ink);
+  color: var(--ink);
+}
+.gc-waypoints {
+  margin: 10px 0 0;
+}
+.gc-beacon-list {
+  margin: 6px 0 0;
+  color: var(--gc-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.gc-beacon-list span {
   color: var(--ink);
 }
 .gc-buffer-opts button:focus-visible {

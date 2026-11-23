@@ -15,6 +15,7 @@
     avoid: new Map(),
     regions: [],
     bufferKm: 50 * 1.609344,
+    beacons: false,
     units: "km",
     result: null,
     pendingId: 0,
@@ -363,7 +364,28 @@
     ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); path(line);
     ctx.strokeStyle = pal.route; ctx.lineWidth = 2; ctx.stroke();
-    if (detour && view.zoom > 1.5) {
+    beaconScreen = [];
+    if (res.beacons) {
+      var labels = view.zoom > 2.2;
+      ctx.font = "500 10px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+      ctx.textBaseline = "middle";
+      res.beacons.forEach(function (bc) {
+        var ll = [bc[2], bc[3]];
+        if (!visible(ll)) return;
+        var q = projection(ll);
+        if (!q) return;
+        beaconScreen.push({ b: bc, x: q[0], y: q[1] });
+        ctx.beginPath();
+        if (/^VOR/.test(bc[1])) { ctx.moveTo(q[0], q[1] - 4); ctx.lineTo(q[0] + 3.6, q[1] + 2.2); ctx.lineTo(q[0] - 3.6, q[1] + 2.2); ctx.closePath(); }
+        else ctx.arc(q[0], q[1], 2.8, 0, 2 * Math.PI);
+        ctx.fillStyle = pal["route-halo"]; ctx.fill();
+        ctx.strokeStyle = pal.route; ctx.lineWidth = 1.3; ctx.stroke();
+        if (labels) {
+          ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.strokeText(bc[0], q[0] + 6, q[1]);
+          ctx.fillStyle = pal.label; ctx.fillText(bc[0], q[0] + 6, q[1]);
+        }
+      });
+    } else if (detour && view.zoom > 1.5) {
       for (var i = 1; i + 1 < res.waypoints.length; i++) {
         var p = projection(res.waypoints[i]);
         if (!p || !visible(res.waypoints[i])) continue;
@@ -371,6 +393,13 @@
         ctx.fillStyle = pal.route; ctx.fill();
       }
     }
+  }
+
+  var beaconScreen = [];
+  function beaconAt(x, y) {
+    var best = null, bestD = 8;
+    beaconScreen.forEach(function (s) { var d = Math.hypot(s.x - x, s.y - y); if (d < bestD) { bestD = d; best = s.b; } });
+    return best;
   }
 
   var ADMIN1_FROM = 1400, ADMIN1_FULL = 2200;
@@ -970,12 +999,21 @@
     if (!canHover || hoverRAF) return;
     hoverRAF = requestAnimationFrame(function () {
       hoverRAF = 0;
+      var here = lonLatAt(x, y);
+      var dp = view.zoom < 6 ? 2 : view.zoom < 30 ? 3 : 4;
+      tipAt = here ? Math.abs(here[1]).toFixed(dp) + "°" + (here[1] >= 0 ? "N" : "S") + " " + Math.abs(here[0]).toFixed(dp) + "°" + (here[0] >= 0 ? "E" : "W") : null;
       var m = markerAt(x, y);
       canvas.classList.toggle("is-over-marker", !!m);
       if (m) {
         setHover(-1);
         var pt = m === "a" ? state.a : state.b;
         showTip(x, y, m.toUpperCase(), pt.label || fmtLonLat(pt), "drag to move");
+        return;
+      }
+      var beacon = beaconAt(x, y);
+      if (beacon) {
+        setHover(-1);
+        showTip(x, y, beacon[0], beacon[4] + " " + beacon[1], null);
         return;
       }
       var city = cityAt(x, y);
@@ -990,8 +1028,9 @@
       canvas.classList.toggle("is-over-country", idx >= 0 && (shift || state.avoidMode));
       if (idx >= 0) {
         var f = features[idx], avoided = state.avoid.has(f.id);
-        showTip(x, y, f.properties.name, null, avoided ? "avoided" + (shift || state.avoidMode ? " · click to allow" : "") : (shift || state.avoidMode ? "click to avoid" : (canHover ? "shift-click to avoid" : "")));
-      } else hideTip();
+        showTip(x, y, f.properties.name, null, avoided ? "avoided" + (shift || state.avoidMode ? " | click to allow" : "") : (shift || state.avoidMode ? "click to avoid" : (canHover ? "shift-click to avoid" : "")));
+      } else if (tipAt) showTip(x, y, null, null, null);
+      else hideTip();
     });
   }
   function setHover(idx) {
@@ -999,12 +1038,13 @@
     state.hover = idx;
     scheduleRender(interacting ? "coarse" : "full");
   }
-  var tip = $("tip");
+  var tip = $("tip"), tipAt = null;
   function showTip(x, y, main, sub, note) {
     tip.innerHTML = "";
-    var b = document.createElement("b"); b.textContent = main; b.style.fontWeight = "400"; tip.appendChild(b);
+    if (main) { var b = document.createElement("b"); b.textContent = main; b.style.fontWeight = "400"; tip.appendChild(b); }
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     if (note) { var n = document.createElement("small"); n.textContent = note; tip.appendChild(n); }
+    if (tipAt) { var c = document.createElement("small"); c.className = "gc-tip-at"; c.textContent = tipAt; tip.appendChild(c); }
     tip.hidden = false;
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W ? x - 14 - w - 14 : x) + "px";
@@ -1845,7 +1885,7 @@
     routeTimer = setTimeout(function () {
       var id = ++seq;
       state.pendingId = id;
-      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()), bufferKm: state.bufferKm,
+      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()), bufferKm: state.bufferKm, beacons: state.beacons,
         regions: state.regions.map(function (r) { return { id: r.id, name: r.name, ring: regionRing(r), inverted: !!r.inverted, bufferKm: state.bufferKm }; }) });
       clearTimeout(busyTimer);
       busyTimer = setTimeout(function () { if (state.pendingId === id) showBusy(null); }, 180);
@@ -1965,7 +2005,22 @@
       var w2 = document.createElement("span"); w2.className = "gc-warn";
       w2.textContent = "There is no way from A to B that stays out of " + joinNames(avoidedNames());
       sum.appendChild(w2);
+    } else if (res.beaconStatus === "done") {
+      var nb = res.beacons.length;
+      big.textContent = fmt(res.lengthKm);
+      big.appendChild(small("via " + nb + (nb === 1 ? " radio beacon" : " radio beacons") + ((state.avoid.size || state.regions.length) ? ", avoiding " + joinNames(avoidedNames()) : "")));
+      sum.appendChild(big);
+      var overIdeal = res.lengthKm - res.idealKm;
+      var bb = document.createElement("b"); bb.textContent = "+" + fmt(overIdeal) + " (" + (100 * overIdeal / res.idealKm).toFixed(1) + "%)";
+      line.appendChild(bb);
+      line.appendChild(document.createTextNode(" over the shortest way" + ((state.avoid.size || state.regions.length) ? " round" : "") + ", " + fmt(res.idealKm)));
+      sum.appendChild(line);
     } else {
+      if (res.beaconStatus === "none" || res.beaconStatus === "unavailable") {
+        var wb = document.createElement("span"); wb.className = "gc-warn";
+        wb.textContent = res.beaconStatus === "none" ? "No chain of radio beacons gets from A to B here, so this is the shortest way instead" : "The radio beacons could not be loaded, so this is the shortest way instead";
+        sum.appendChild(wb);
+      }
       var detour = res.lengthKm > res.directKm + 0.5;
       if ((state.avoid.size || state.regions.length) && !detour) {
         big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
@@ -1990,13 +2045,29 @@
 
     var dl = document.createElement("dl"); dl.className = "gc-rows";
     var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
-    if (detoured) {
+    if (res.beaconStatus === "done") {
+      row(dl, "Shortest way" + ((state.avoid.size || state.regions.length) ? " round" : ""), fmt(res.idealKm));
+      row(dl, "Via radio beacons", fmt(res.lengthKm));
+    } else if (detoured) {
       row(dl, "Avoiding " + joinNames(avoidedNames()), fmt(res.lengthKm));
       row(dl, "Bends", String(res.bends));
     }
-    if (res.ms != null && res.expanded) row(dl, "Worked out in", (res.ms / 1000).toFixed(res.ms < 100 ? 2 : 1) + " s · " + res.expanded.toLocaleString() + " corners searched");
+    if (res.ms != null && res.expanded) row(dl, "Worked out in", (res.ms / 1000).toFixed(res.ms < 100 ? 2 : 1) + " s | " + res.expanded.toLocaleString() + (res.beaconStatus === "done" ? " corners and beacons searched" : " corners searched"));
     if (dl.firstChild) out.appendChild(dl);
 
+    if (res.beaconStatus === "done" && res.beacons.length) {
+      var bx = document.createElement("div"); bx.className = "gc-crosses gc-beacons";
+      var bl = document.createElement("div"); bl.className = "gc-label"; bl.textContent = "Radio beacons on the way";
+      bx.appendChild(bl);
+      var bp = document.createElement("p"); bp.className = "gc-beacon-list";
+      res.beacons.forEach(function (bc, i) {
+        if (i) bp.appendChild(document.createTextNode(" | "));
+        var sp = document.createElement("span"); sp.textContent = bc[0]; sp.title = bc[4] + " " + bc[1];
+        bp.appendChild(sp);
+      });
+      bx.appendChild(bp);
+      out.appendChild(bx);
+    }
     var ends = (res.startIn || []).concat(res.endIn || []).map(String);
     crossesList(out, "The direct way crosses", res.directCrosses, ends);
     if (detoured) crossesList(out, "The way round crosses", res.routeCrosses, ends);
@@ -2057,6 +2128,7 @@
     var mi = bufferMi(state.bufferKm);
     document.querySelectorAll("#buffer button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.dataset.mi === mi)); });
     $("buffer-row").hidden = !(state.avoid.size || state.regions.length);
+    syncBeacons();
   }
   function setBuffer(mi) {
     state.bufferKm = mi * MI_KM;
@@ -2067,6 +2139,20 @@
   }
   document.querySelectorAll("#buffer button").forEach(function (b) {
     b.addEventListener("click", function () { setBuffer(+b.dataset.mi); });
+  });
+  function syncBeacons() {
+    document.querySelectorAll("#waypoints button").forEach(function (b) { b.setAttribute("aria-pressed", String((b.dataset.wp === "1") === state.beacons)); });
+  }
+  document.querySelectorAll("#waypoints button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var on = b.dataset.wp === "1";
+      if (on === state.beacons) return;
+      state.beacons = on;
+      syncBeacons();
+      requestRoute();
+      writeUrl();
+      scheduleRender("full");
+    });
   });
 
   var ANTARCTICA = "010";
@@ -2081,12 +2167,13 @@
       p.push("r=" + encodeURIComponent(r.name) + "~" + body + (r.inverted ? "~i" : ""));
     });
     if ((state.avoid.size || state.regions.length) && bufferMi(state.bufferKm) !== BUFFER_DEFAULT_MI) p.push("buf=" + bufferMi(state.bufferKm) + "mi");
+    if (state.beacons) p.push("wp=1");
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.beacons = false;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -2119,6 +2206,8 @@
           if (pts.length >= 3 && !ringProblem(pts)) r = { kind: "polygon", points: pts };
         }
         if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; r.inverted = parts[3] === "i"; state.regions.push(r); any = true; }
+      } else if (k === "wp") {
+        state.beacons = v === "1";
       } else if (k === "buf") {
         var miles = /mi$/.test(v), bk = parseFloat(v);
         if (isFinite(bk) && bk >= 0) state.bufferKm = bufferMi(miles ? bk * MI_KM : bk) * MI_KM;

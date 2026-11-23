@@ -24,6 +24,16 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   exact for those edges. Islands far apart get projections of their own. The
   outline keeps every point within the buffer and lets in nothing more than
   about 3% beyond it.
+- **Waypoints** (off by default; `wp=1` in the URL): the route flies from one
+  radio beacon to the next, as a flight plan does. Once the shortest way is
+  found, A* runs again over A, B, and the beacons within 300 km of it (then
+  800, then 2,000 if no chain is found): a leg is at most 300 km, or longer only
+  if no beacon lies within 150 km of it away from its ends (open sea, desert),
+  and every leg must be free of what is avoided, buffer included
+  (`startBeaconSearch`, `stepBeaconSearch`). The globe marks the beacons
+  (triangles for VORs, circles for NDBs) and labels them close in; hovering
+  one names it. Hovering anywhere on the globe shows its coordinates at the
+  foot of the tooltip.
 - **worker.js** — runs the search off the main thread in 40 ms slices; a newer
   request supersedes an older one. Loaded as a plain script instead when the
   browser will not start a worker, answering through the same messages.
@@ -64,6 +74,11 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   is one (Italy's regioni, England's regions, Slovenia's statistical
   regions). **data/lakes.json** — Natural Earth 1:50m lakes, drawn in the
   sea's colour; from `tools/build-lakes.mjs`.
+  **data/navaids.json** — OurAirports' radio beacons (VOR, VOR-DME, VORTAC,
+  NDB, and NDB-DME; public domain), ident, type, place, and name, one per
+  site; fetched by the worker only when waypoints are on; from
+  `tools/build-navaids.mjs` and `navaids.csv` from
+  github.com/davidmegginson/ourairports-data.
 - **sat.js** — the satellite view, switched on with the satellite button and
   remembered in the browser. A WebGL canvas under the map, whose fragment
   shader turns each pixel back into a latitude and longitude (the
@@ -88,7 +103,8 @@ the countries you would rather not cross. Served at `/greatercircle/`.
 
 The engine against d3-geo (12,000 random points in and out of countries), country
 buffers against the exact distance to the border (inside the buffer within it,
-outside it beyond 3.5% more),
+outside it beyond 3.5% more), a chain of radio beacons round Russia (free legs,
+long ones only where no beacon is near),
 synthetic shapes for the arc test's edge cases (touching, running along, and
 going through corners and straight runs), antipodes, and real routes checked
 for staying outside the avoided countries, being no longer than they must be,

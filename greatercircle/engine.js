@@ -852,6 +852,180 @@
     return best;
   }
 
+  var BEACON_LEG_KM = 300, BEACON_CLEAR_KM = 150, BEACON_SECTORS = 36, BEACON_CORRIDORS_KM = [300, 800, 2000];
+  function beaconIndex(rows) {
+    var n = rows.length, X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n);
+    for (var i = 0; i < n; i++) { var v = toVec(rows[i][2], rows[i][3]); X[i] = v[0]; Y[i] = v[1]; Z[i] = v[2]; }
+    return { rows: rows, n: n, X: X, Y: Y, Z: Z };
+  }
+  function pointGrid(X, Y, Z, n, cell) {
+    var cells = new Map();
+    for (var i = 0; i < n; i++) {
+      var key = Math.floor(X[i] / cell) + "," + Math.floor(Y[i] / cell) + "," + Math.floor(Z[i] / cell);
+      var list = cells.get(key);
+      if (list) list.push(i); else cells.set(key, [i]);
+    }
+    return { cells: cells, cell: cell };
+  }
+  function gridNear(grid, x, y, z, rad, visit) {
+    var c = grid.cell, k = Math.ceil(rad / c);
+    var ix = Math.floor(x / c), iy = Math.floor(y / c), iz = Math.floor(z / c);
+    for (var dx = -k; dx <= k; dx++) for (var dy = -k; dy <= k; dy++) for (var dz = -k; dz <= k; dz++) {
+      var list = grid.cells.get((ix + dx) + "," + (iy + dy) + "," + (iz + dz));
+      if (!list) continue;
+      for (var j = 0; j < list.length; j++) if (visit(list[j]) === false) return false;
+    }
+    return true;
+  }
+  function tangentBasis(c) {
+    var ref = Math.abs(c[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    var e1 = normalize(cross(c, ref));
+    return [e1, cross(c, e1)];
+  }
+  function stepFrom(c, e, th, d) {
+    var ct = Math.cos(th), st = Math.sin(th), cd = Math.cos(d), sd = Math.sin(d);
+    return [cd * c[0] + sd * (ct * e[0][0] + st * e[1][0]), cd * c[1] + sd * (ct * e[0][1] + st * e[1][1]), cd * c[2] + sd * (ct * e[0][2] + st * e[1][2])];
+  }
+
+  function startBeaconSearch(obs, index, route, a, b) {
+    var s = { obs: obs, index: index, route: route, a: a, b: b, stage: 0, status: "running", expanded: 0 };
+    beaconStage(s);
+    return s;
+  }
+  function beaconStage(s) {
+    var width = BEACON_CORRIDORS_KM[s.stage] / EARTH_RADIUS_KM, ix = s.index, route = s.route;
+    var legs = [];
+    for (var i = 0; i + 1 < route.length; i++) {
+      var p = route[i], q = route[i + 1], m = [p[0] + q[0], p[1] + q[1], p[2] + q[2]];
+      var ml = Math.hypot(m[0], m[1], m[2]);
+      legs.push({ p: p, q: q, mid: ml > 1e-9 ? [m[0] / ml, m[1] / ml, m[2] / ml] : p, half: ml > 1e-9 ? angleBetween(p, q) / 2 : Math.PI });
+    }
+    var X = [s.a[0], s.b[0]], Y = [s.a[1], s.b[1]], Z = [s.a[2], s.b[2]], B = [-1, -1];
+    var checkInside = s.obs.polygons.length > 0;
+    for (i = 0; i < ix.n; i++) {
+      var v = [ix.X[i], ix.Y[i], ix.Z[i]], near = false;
+      for (var k = 0; k < legs.length && !near; k++) {
+        var L = legs[k];
+        if (angleBetween(v, L.mid) <= L.half + width && toArc(v, L.p, L.q) <= width) near = true;
+      }
+      if (!near) continue;
+      if (checkInside && featuresContaining(s.obs, v).length) continue;
+      X.push(v[0]); Y.push(v[1]); Z.push(v[2]); B.push(i);
+    }
+    var n = X.length;
+    s.n = n;
+    s.X = Float64Array.from(X); s.Y = Float64Array.from(Y); s.Z = Float64Array.from(Z); s.B = Int32Array.from(B);
+    s.grid = pointGrid(s.X, s.Y, s.Z, n, BEACON_CLEAR_KM / EARTH_RADIUS_KM);
+    s.g = new Float64Array(n).fill(Infinity);
+    s.parent = new Int32Array(n).fill(-1);
+    s.closed = new Uint8Array(n);
+    s.heapF = []; s.heapI = [];
+    s.g[0] = 0;
+    beaconPush(s, angleBetween(s.a, s.b), 0);
+  }
+  function beaconPush(s, f, i) {
+    var F = s.heapF, I = s.heapI, k = F.length;
+    F.push(f); I.push(i);
+    while (k > 0) {
+      var p = (k - 1) >> 1;
+      if (F[p] <= F[k]) break;
+      var tf = F[p]; F[p] = F[k]; F[k] = tf;
+      var ti = I[p]; I[p] = I[k]; I[k] = ti;
+      k = p;
+    }
+  }
+  function beaconPop(s) {
+    var F = s.heapF, I = s.heapI, top = I[0], lf = F.pop(), li = I.pop();
+    if (F.length) {
+      F[0] = lf; I[0] = li;
+      var k = 0, n = F.length;
+      for (;;) {
+        var l = 2 * k + 1, r = l + 1, m = k;
+        if (l < n && F[l] < F[m]) m = l;
+        if (r < n && F[r] < F[m]) m = r;
+        if (m === k) break;
+        var tf = F[m]; F[m] = F[k]; F[k] = tf;
+        var ti = I[m]; I[m] = I[k]; I[k] = ti;
+        k = m;
+      }
+    }
+    return top;
+  }
+  function beaconVec(s, i) { return [s.X[i], s.Y[i], s.Z[i]]; }
+  function beaconRelax(s, u, v, d) {
+    var ng = s.g[u] + d;
+    if (ng >= s.g[v]) return;
+    if (!arcIsFree(s.obs, beaconVec(s, u), beaconVec(s, v), -1, -1)) return;
+    s.g[v] = ng; s.parent[v] = u;
+    beaconPush(s, ng + angleBetween(beaconVec(s, v), s.b), v);
+  }
+  function beaconClear(s, p, skipA, skipB) {
+    var clear = BEACON_CLEAR_KM / EARTH_RADIUS_KM, cc = Math.cos(clear);
+    return gridNear(s.grid, p[0], p[1], p[2], clear, function (w) {
+      if (w === skipA || w === skipB || w < 2) return true;
+      return s.X[w] * p[0] + s.Y[w] * p[1] + s.Z[w] * p[2] <= cc;
+    });
+  }
+  function beaconExpand(s, u) {
+    var leg = BEACON_LEG_KM / EARTH_RADIUS_KM, half = leg / 2, clear = BEACON_CLEAR_KM / EARTH_RADIUS_KM;
+    var uv = beaconVec(s, u);
+    gridNear(s.grid, uv[0], uv[1], uv[2], leg, function (v) {
+      if (v === u || s.closed[v]) return;
+      var d = angleBetween(uv, beaconVec(s, v));
+      if (d <= leg) beaconRelax(s, u, v, d);
+    });
+    var e = tangentBasis(uv), open = [], any = false, sector = (2 * Math.PI) / BEACON_SECTORS;
+    for (var k = 0; k < BEACON_SECTORS; k++) {
+      open.push(beaconClear(s, stepFrom(uv, e, k * sector, half), u, -1));
+      if (open[k]) any = true;
+    }
+    if (!any) return;
+    for (var v = 0; v < s.n; v++) {
+      if (v === u || s.closed[v]) continue;
+      var vv = beaconVec(s, v), d = angleBetween(uv, vv);
+      if (d <= leg || s.g[u] + d >= s.g[v]) continue;
+      var dot = vv[0] * uv[0] + vv[1] * uv[1] + vv[2] * uv[2];
+      var t = [vv[0] - dot * uv[0], vv[1] - dot * uv[1], vv[2] - dot * uv[2]];
+      var th = Math.atan2(t[0] * e[1][0] + t[1] * e[1][1] + t[2] * e[1][2], t[0] * e[0][0] + t[1] * e[0][1] + t[2] * e[0][2]);
+      var ks = Math.round(((th % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / sector) % BEACON_SECTORS;
+      if (!open[ks]) continue;
+      var ok = true;
+      for (var at = half; ok && at <= d - half + 1e-12; at += clear / 2) ok = beaconClear(s, sampleAt(uv, vv, d, at / d), u, v);
+      if (ok) ok = beaconClear(s, sampleAt(uv, vv, d, (d - half) / d), u, v);
+      if (ok) beaconRelax(s, u, v, d);
+    }
+  }
+  function stepBeaconSearch(s, maxMs) {
+    var t0 = Date.now();
+    while (s.status === "running") {
+      if (!s.heapF.length) {
+        s.stage++;
+        if (s.stage >= BEACON_CORRIDORS_KM.length) { s.status = "none"; break; }
+        beaconStage(s);
+        continue;
+      }
+      var u = beaconPop(s);
+      if (s.closed[u]) continue;
+      s.closed[u] = 1;
+      s.expanded++;
+      if (u === 1) {
+        var chain = [];
+        for (var k = 1; k >= 0; k = s.parent[k]) chain.push(k);
+        chain.reverse();
+        s.waypoints = chain.map(function (i) { return beaconVec(s, i); });
+        s.waypoints[0] = s.a; s.waypoints[s.waypoints.length - 1] = s.b;
+        s.beacons = chain.slice(1, -1).map(function (i) { return s.B[i]; });
+        s.length = s.g[1];
+        s.status = "done";
+        delete s.heapF; delete s.heapI; delete s.grid;
+        break;
+      }
+      beaconExpand(s, u);
+      if (maxMs != null && (s.expanded & 15) === 0 && Date.now() - t0 > maxMs) break;
+    }
+    return s;
+  }
+
   function startSearch(obs, a, b) {
     var insideA = featuresContaining(obs, a), insideB = featuresContaining(obs, b);
     if (insideA.length || insideB.length) {
@@ -1092,6 +1266,7 @@
   return {
     EARTH_RADIUS_KM: EARTH_RADIUS_KM,
     bufferRings: bufferRings, bufferOutline: bufferOutline, boundaryDistance: boundaryDistance,
+    beaconIndex: beaconIndex, startBeaconSearch: startBeaconSearch, stepBeaconSearch: stepBeaconSearch,
     toVec: toVec, toLonLat: toLonLat, angleBetween: angleBetween, normalize: normalize,
     sampleArc: sampleArc, sphereDistanceKm: sphereDistanceKm, ellipsoidDistanceKm: ellipsoidDistanceKm,
     sphericalSignedArea: sphericalSignedArea,

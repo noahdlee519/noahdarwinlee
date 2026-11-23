@@ -117,7 +117,7 @@ function route(m) {
       result.antipodal = true;
     }
     result.ms = Math.round(performance.now() - t0);
-    send(result);
+    deliver(m, result, obstaclesFor([]), a, b, t0);
     return;
   }
   var obs = obstaclesFor(m.avoid, regions, m.bufferKm);
@@ -169,7 +169,57 @@ function route(m) {
       result.antipodal = !!s.antipodal;
       result.routeCrosses = countriesAlong(s.waypoints);
     }
-    send(result);
+    deliver(m, result, obs, a, b, t0);
   };
   tick();
+}
+
+var beaconData = null, beaconWaiting = null;
+function withBeacons(then) {
+  if (beaconData) { then(beaconData); return; }
+  if (beaconWaiting) { beaconWaiting.push(then); return; }
+  beaconWaiting = [then];
+  var done = function (d) { var w = beaconWaiting; beaconWaiting = null; w.forEach(function (f) { f(d); }); };
+  fetch("data/navaids.json").then(function (r) { return r.json(); }).then(function (d) {
+    beaconData = { types: d.types, rows: d.beacons, index: G.beaconIndex(d.beacons) };
+    done(beaconData);
+  }).catch(function () { done(null); });
+}
+
+function deliver(m, result, obs, a, b, t0) {
+  if (!m.beacons || result.status !== "done") { send(result); return; }
+  var id = m.id;
+  withBeacons(function (data) {
+    if (latest !== id) return;
+    if (!data) { result.beaconStatus = "unavailable"; send(result); return; }
+    var ideal = result.waypoints.map(function (p) { return G.toVec(p[0], p[1]); });
+    var bs = G.startBeaconSearch(obs, data.index, ideal, a, b);
+    var before = result.expanded || 0;
+    var tick = function () {
+      if (latest !== id) return;
+      try {
+        G.stepBeaconSearch(bs, 40);
+        if (bs.status === "running") {
+          send({ type: "progress", id: id, expanded: before + bs.expanded, stage: bs.stage });
+          setTimeout(tick, 0);
+          return;
+        }
+        result.idealKm = result.lengthKm;
+        result.beaconStatus = bs.status;
+        if (bs.status === "done") {
+          result.waypoints = bs.waypoints.map(function (v) { return G.toLonLat(v); });
+          result.lengthKm = bs.length * G.EARTH_RADIUS_KM;
+          result.bends = bs.beacons.length;
+          result.beacons = bs.beacons.map(function (i) { var r = data.rows[i]; return [r[0], data.types[r[1]], r[2], r[3], r[4]]; });
+          result.routeCrosses = countriesAlong(bs.waypoints);
+        }
+        result.expanded = before + bs.expanded;
+        result.ms = Math.round(performance.now() - t0);
+        send(result);
+      } catch (err) {
+        send({ type: "result", id: id, status: "error", message: String(err && err.message || err) });
+      }
+    };
+    tick();
+  });
 }

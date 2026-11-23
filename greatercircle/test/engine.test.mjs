@@ -403,3 +403,28 @@ test("a route round a buffered country keeps at least the buffer away", () => {
     assert.ok(dmin <= mi * MI * 1.035 + 0.1, `${mi} mi: it keeps further off than it must (${dmin.toFixed(2)} km)`);
   }
 });
+
+test("a chain of radio beacons round Russia: free legs, short ones over land, and no shorter than the shortest way", () => {
+  const nav = JSON.parse(readFileSync(resolve(here, "../data/navaids.json"), "utf8"));
+  const index = G.beaconIndex(nav.beacons);
+  const russia = feat("Russia");
+  const obs = G.buildObstacles([{ type: "Feature", id: russia.id + "~b", properties: { name: "Russia" }, geometry: { type: "MultiPolygon", coordinates: G.bufferOutline(russia.geometry, 50 * MI) } }]);
+  const a = V(-0.12, 51.5), b = V(139.7, 35.7);
+  const ideal = G.findRoute(obs, a, b);
+  const s = G.startBeaconSearch(obs, index, ideal.waypoints, a, b);
+  G.stepBeaconSearch(s, null);
+  assert.equal(s.status, "done");
+  assert.ok(s.beacons.length > 20, `${s.beacons.length} beacons`);
+  assert.ok(s.length >= ideal.length - 1e-9 && s.length < ideal.length * 1.1, "no shorter than the shortest way, and not much longer");
+  const usable = nav.beacons.map((r) => V(r[2], r[3])).filter((v) => !G.featuresContaining(obs, v).length);
+  for (let i = 0; i + 1 < s.waypoints.length; i++) {
+    const p = s.waypoints[i], q = s.waypoints[i + 1], d = G.angleBetween(p, q) * KM;
+    assert.ok(G.arcIsFree(obs, p, q, -1, -1), `leg ${i} is free`);
+    if (d <= 300) continue;
+    for (const m of G.sampleArc(p, q, 25 / KM, false)) {
+      if (G.angleBetween(m, p) * KM < 151 || G.angleBetween(m, q) * KM < 151) continue;
+      const close = usable.find((v) => G.angleBetween(v, m) * KM < 140);
+      assert.ok(!close, `the ${Math.round(d)} km leg ${i} passes within 140 km of a beacon`);
+    }
+  }
+});

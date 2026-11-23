@@ -167,14 +167,17 @@
               Shortest paths around the chosen countries are exact for the drawn borders: a route of
               great-circle arcs that bends only at their convex corners, found by A* over the tangent
               visibility graph. The buffer keeps the route at least that far from everything avoided,
-              50 miles unless you choose otherwise, and never more than about 3% further. Distances
+              50 miles unless you choose otherwise, and never more than about 3% further. With
+              waypoints on, the route goes from one radio beacon (a VOR or an NDB) to the next, as a
+              flight plan does, in legs of at most 300 km, longer only across sea or desert with no
+              beacon near the way, and is the shortest such chain round what you avoid. Distances
               are on a sphere of radius 6,371.0088 km.
             </p>
             <p>
               Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, countries at
               1:50m and their subdivisions at 1:10m (public domain). Places: <a href="https://www.geonames.org/">GeoNames</a>
               (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>),
-              <a href="https://ourairports.com/">OurAirports</a> (public domain), and
+              <a href="https://ourairports.com/">OurAirports</a> (public domain, also the radio beacons), and
               <a href="https://github.com/mledoze/countries">world-countries</a>
               (<a href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL</a>); the place list here
               is derived from them under the same terms. What they lack is looked up as you type at
@@ -235,6 +238,14 @@
           </div>
         </div>
         <p class="gc-hint" id="hint">Or click two points on the globe</p>
+      </div>
+
+      <div class="gc-buffer gc-waypoints" id="waypoints-row">
+        <span class="gc-buffer-label" id="waypoints-label" title="Fly from one radio beacon to the next, as planes do, instead of along the shortest way">Waypoints</span>
+        <div class="gc-buffer-opts" id="waypoints" role="group" aria-labelledby="waypoints-label">
+          <button type="button" data-wp="0" aria-pressed="true">off</button>
+          <button type="button" data-wp="1" aria-pressed="false">radio beacons</button>
+        </div>
       </div>
 
       <div class="gc-summary" id="summary" aria-live="polite"></div>
