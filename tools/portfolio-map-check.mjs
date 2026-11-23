@@ -444,6 +444,24 @@ async function interfaceStage(browser) {
   const sheet = () => page.evaluate(() => document.querySelector('#panel').getAttribute('data-sheet'));
   ok(await sheet() === 'peek', 'the sheet starts lowered, under the map');
   ok(await panelTitle(page) === 'Le Guin' && (await page.evaluate(() => !!document.querySelector('.peek-links a[href="/terms/"]'))), "the lowered sheet names the world and carries the footer's links");
+  // The phone's look, after a mapping app's: pill, round buttons at the right, no zoom buttons, a three-tab bar.
+  const look = await page.evaluate(() => {
+    const vis = (q) => { const e = document.querySelector(q); return !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0; };
+    const loc = document.querySelector('.locate').getBoundingClientRect(), fab = document.querySelector('.fab-world').getBoundingClientRect();
+    const sheetTop = innerHeight - parseFloat(getComputedStyle(document.body).getPropertyValue('--map-bottom'));
+    const tabs = [...document.querySelectorAll('.rail > *')].filter((e) => getComputedStyle(e).display !== 'none').map((e) => e.querySelector('.rail-text').textContent.trim());
+    return {
+      pill: document.querySelector('.search-box').getBoundingClientRect().height, menuLeft: document.querySelector('.search-menu').getBoundingClientRect().left < 40,
+      round: getComputedStyle(document.querySelector('.locate')).borderRadius === '50%' && getComputedStyle(document.querySelector('.fab-world')).borderRadius === '50%',
+      order: loc.bottom <= fab.top && fab.bottom <= sheetTop && loc.right > innerWidth - 24 && fab.right > innerWidth - 24,
+      zoom: vis('.zoom'), hintOverMap: vis('#hint'), tabs: tabs.join(','),
+      radius: parseFloat(getComputedStyle(document.querySelector('.panel')).borderTopLeftRadius), sub: document.querySelector('.head-world .sub').textContent,
+    };
+  });
+  ok(look.pill >= 52 && look.menuLeft, `a large search pill (${look.pill} px) with ≡ at its left and the portrait at its right`);
+  ok(look.round && look.order && !look.zoom, 'round white buttons at the right, the location button above the next-world one, both above the sheet; no zoom buttons');
+  ok(look.tabs === 'Explore,Saved,Resume', `three tabs: ${look.tabs}`);
+  ok(look.radius >= 24 && look.sub === 'Click on a project to learn more.' && !look.hintOverMap, 'the sheet, with large rounded corners, carries "Click on a project to learn more." under the world\'s name, not over the map');
   ok(await page.evaluate(() => document.querySelector('.search-me').getAttribute('href') === '/#about'), "the portrait in the search pill links to the site's about page");
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.rail')).flexDirection === 'row' && document.querySelector('.rail').getBoundingClientRect().bottom >= innerHeight - 1), 'the rail is a tab bar at the bottom');
   await page.screenshot({ path: '/tmp/portfolio-map-phone.png' });
@@ -493,7 +511,7 @@ async function interfaceStage(browser) {
   await page.tap('.rail-btn[data-view="saved"]');
   await page.waitForTimeout(500);
   ok(await sheet() === 'half' && (await panelTitle(page)) === 'Saved', 'the Saved tab shows Saved');
-  ok(await page.evaluate(() => { const a = document.querySelector('.rail-about'); return getComputedStyle(a).display !== 'none' && a.getAttribute('href') === '/#about'; }), "the About tab links to the site's about page");
+  await page.screenshot({ path: '/tmp/portfolio-map-phone-saved.png' });
   await page.tap('.tab-explore');
   await page.waitForTimeout(500);
   ok(await sheet() === 'peek' && (await panelTitle(page)) === (await page.evaluate(() => window.__portfolioMap.map.world.name)), 'the Explore tab lowers the sheet to the world');
@@ -609,8 +627,8 @@ async function menuStage(browser) {
   ok(pd >= 300 && pd <= 360, `on a phone, the pill's ≡ opens the drawer, ${pd.toFixed(0)} px wide`);
   await pp.screenshot({ path: '/tmp/portfolio-map-phone-drawer.png' });
   await pp.tap('#drawer-scrim', { position: { x: 370, y: 400 } });
-  const ppc = await pp.evaluate(() => { const a = document.querySelector('.controls').getBoundingClientRect(), f = document.querySelector('.fab-world').getBoundingClientRect(), sh = document.querySelector('.panel').getBoundingClientRect(); return { aboveSheet: a.bottom <= sh.top + 1 + parseFloat(getComputedStyle(document.querySelector('.panel')).getPropertyValue('--sheet-y') || 0), clearOfFab: a.top > f.bottom }; });
-  ok(ppc.clearOfFab, 'on a phone the map controls sit clear of the next-world button');
+  const ppc = await pp.evaluate(() => { const a = document.querySelector('.controls').getBoundingClientRect(), f = document.querySelector('.fab-world').getBoundingClientRect(), sh = document.querySelector('.panel').getBoundingClientRect(); return { aboveSheet: a.bottom <= sh.top + 1 + parseFloat(getComputedStyle(document.querySelector('.panel')).getPropertyValue('--sheet-y') || 0), clearOfFab: a.top > f.bottom, aboveFab: a.bottom <= f.top && f.top - a.bottom < 24 }; });
+  ok(ppc.aboveFab, 'on a phone the location button sits just above the next-world button');
   const pv = await open(browser, '?world=le-guin&project=loretour', { context: phone });
   await pv.tap('.hero-open');
   await pv.waitForTimeout(300);
@@ -714,11 +732,14 @@ async function movedStage(browser) {
     await p.waitForTimeout(600);
     const h = await p.evaluate(() => { const e = document.querySelector('#hint'), r = e.getBoundingClientRect(), s = document.querySelector('.search-box').getBoundingClientRect(); const cs = getComputedStyle(e);
       return { text: e.textContent, op: +cs.opacity, color: cs.color, bg: cs.backgroundColor, clear: r.bottom <= s.top || r.top >= s.bottom || r.right <= s.left || r.left >= s.right, below: r.top >= s.bottom, top: r.top }; });
-    ok(h.text === 'Click on a project to learn more.' && h.op === 1 && h.color === 'rgb(255, 255, 255)' && h.bg === 'rgba(0, 0, 0, 0)' && h.clear && (!phone || h.below), `${phone ? 'phone' : 'desktop'}: "${h.text}" shows in plain white at the top of the map, clear of the search ${phone ? 'pill, under it' : 'box'}`);
+    if (phone) {
+      const sub = await p.evaluate(() => [document.querySelector('.head-world .sub').textContent, getComputedStyle(document.querySelector('#hint')).display]);
+      ok(sub[0] === 'Click on a project to learn more.' && sub[1] === 'none', 'phone: the line sits in the sheet, under the world\'s name, and not over the map');
+    } else ok(h.text === 'Click on a project to learn more.' && h.op === 1 && h.color === 'rgb(255, 255, 255)' && h.bg === 'rgba(0, 0, 0, 0)' && h.clear, `${phone ? 'phone' : 'desktop'}: "${h.text}" shows in plain white at the top of the map, clear of the search ${phone ? 'pill, under it' : 'box'}`);
     await p.screenshot({ path: phone ? '/tmp/portfolio-map-phone.png' : '/tmp/portfolio-map-desktop.png' });
     if (phone) await p.tap('.search-menu'); else await p.click('#menu-btn');
     await p.waitForTimeout(600);
-    ok(await p.evaluate(() => document.querySelector('#hint').hidden), `${phone ? 'phone' : 'desktop'}: opening the menu sends the line away`);
+    ok(await p.evaluate((ph) => document.querySelector('#hint').hidden && (!ph || !/Click on a project/.test(document.querySelector('.head-world .sub').textContent)), phone), `${phone ? 'phone' : 'desktop'}: opening the menu sends the line away`);
     await c2.close();
   }
   const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });

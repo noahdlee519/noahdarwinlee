@@ -1914,36 +1914,58 @@ body:not(.is-panel) .panel-tab .ic {
     cursor: default;
   }
 
-  /* The rail becomes a tab bar: Explore, Saved, Resume, and About. */
+  /* The rail becomes a tab bar, as a mapping app's: Explore, Saved, and Resume; About is the avatar in the pill. */
   .rail {
     top: auto;
     right: 0;
     bottom: 0;
     width: auto;
-    height: calc(64px + env(safe-area-inset-bottom));
+    height: calc(76px + env(safe-area-inset-bottom));
     flex-direction: row;
     justify-content: space-around;
     align-items: flex-start;
-    padding: 6px 4px env(safe-area-inset-bottom);
+    padding: 10px 8px env(safe-area-inset-bottom);
     border-right: 0;
-    border-top: 1px solid var(--hair);
-    background: var(--rail-bg);
+    border-top: 0;
+    background: #f3f5f6;
+    box-shadow: 0 -1px 0 rgba(var(--shadow-rgb), 0.06);
     z-index: 40;
   }
 
   .rail-btn {
     width: auto;
     flex: 1;
-    padding: 2px 0 4px;
-    font-size: 12px;
+    gap: 5px;
+    padding: 0;
+    color: #44474b;
+    font-size: 13px;
+    font-weight: 500;
   }
 
   .rail-icon {
-    width: 60px;
+    width: 64px;
+    height: 32px;
+    border-radius: 16px;
+  }
+
+  .rail-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .rail-btn.is-on {
+    color: #1f2124;
+    font-weight: 600;
+  }
+
+  .rail-btn.is-on .rail-icon {
+    background: #dbe4fb;
+    color: #1d36b8;
   }
 
   .tab-contact,
-  .rail-menu {
+  .rail-menu,
+  .rail-about {
     display: none;
   }
 
@@ -1978,9 +2000,18 @@ body:not(.is-panel) .panel-tab .ic {
   }
 
   .search-box {
-    height: 52px;
-    padding: 0 6px 0 16px;
-    border-radius: 26px;
+    height: 56px;
+    padding: 0 7px 0 16px;
+    border-radius: 28px;
+    box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.16), 0 4px 14px rgba(var(--shadow-rgb), 0.12);
+  }
+
+  .search-input {
+    font-size: 17px;
+  }
+
+  .search-input::placeholder {
+    color: #5f6368;
   }
 
   /* The pill's own way into the menu, at its left, as a mapping app's phone search bar has it. */
@@ -2015,8 +2046,8 @@ body:not(.is-panel) .panel-tab .ic {
   .search-me {
     display: block;
     flex: none;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     margin-left: 2px;
     padding: 2px;
     border: 0;
@@ -2027,8 +2058,8 @@ body:not(.is-panel) .panel-tab .ic {
 
   .search-me img {
     display: block;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border: 2px solid var(--raised);
     border-radius: 50%;
     object-fit: cover;
@@ -2036,58 +2067,70 @@ body:not(.is-panel) .panel-tab .ic {
   }
 
   .search-list {
-    top: 60px;
+    top: 64px;
+    border-radius: 20px;
     max-height: calc(100vh - 220px);
   }
 
+  /* Round white buttons at the right, above the sheet: the location button, and under it the next world, where a
+     mapping app keeps its layers button. No zoom buttons: pinch and double-tap zoom, as in the app. */
   .fab-world {
     position: fixed;
-    top: calc(76px + env(safe-area-inset-top));
-    right: 12px;
+    right: 14px;
+    bottom: calc(var(--map-bottom, 200px) + 16px);
     z-index: 15;
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     padding: 0;
     border: 0;
     border-radius: 50%;
     background: var(--surface);
-    box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.22), 0 2px 10px rgba(var(--shadow-rgb), 0.14);
-    color: var(--accent);
+    box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.2), 0 4px 12px rgba(var(--shadow-rgb), 0.14);
+    color: #3c4043;
     cursor: pointer;
+    transition: opacity 200ms ease, transform 140ms ease;
   }
 
   .fab-world .ic {
-    width: 22px;
-    height: 22px;
-    stroke-width: 1.9;
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.8;
   }
 
   .fab-world:active {
-    transform: scale(0.95);
+    transform: scale(0.94);
   }
 
   .strip {
     display: none;
   }
 
-  /* On a phone the controls sit at the right, just above the sheet; the next-world button stays up by the search. */
   .controls {
-    right: 12px;
-    bottom: calc(var(--map-bottom, 200px) + 12px);
-    gap: 10px;
+    right: 14px;
+    bottom: calc(var(--map-bottom, 200px) + 16px + 52px + 14px);
   }
 
-  .locate,
-  .zoom,
-  .zoom-btn {
-    width: 44px;
+  .zoom {
+    display: none;
   }
 
-  .locate,
-  .zoom-btn {
-    height: 44px;
+  .locate {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.2), 0 4px 12px rgba(var(--shadow-rgb), 0.14);
+    color: var(--accent);
+  }
+
+  .locate svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .hint {
+    display: none;
   }
 
   .is-sheet-full .controls {
@@ -2120,8 +2163,8 @@ body:not(.is-panel) .panel-tab .ic {
     left: 0;
     width: auto;
     height: var(--sheet-h, 70vh);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -1px 0 rgba(var(--shadow-rgb), 0.05), 0 -4px 20px rgba(var(--shadow-rgb), 0.14);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -1px 2px rgba(var(--shadow-rgb), 0.08), 0 -6px 22px rgba(var(--shadow-rgb), 0.12);
     visibility: visible;
     transform: translateY(var(--sheet-y, 60vh));
     transition: transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -2146,15 +2189,16 @@ body:not(.is-panel) .panel-tab .ic {
     z-index: 3;
     display: flex;
     justify-content: center;
-    height: 22px;
-    padding-top: 8px;
-    border-radius: 16px 16px 0 0;
+    height: 26px;
+    padding-top: 10px;
+    border-radius: 28px 28px 0 0;
     cursor: grab;
   }
 
   .sheet-grip span {
     width: 36px;
-    height: 4px;
+    height: 5px;
+    border-radius: 3px;
     border-radius: 2px;
     background: var(--grip);
   }
@@ -2163,9 +2207,9 @@ body:not(.is-panel) .panel-tab .ic {
     position: absolute;
     inset: 0;
     height: auto;
-    padding-top: 14px;
+    padding-top: 20px;
     overflow: hidden;
-    border-radius: 16px 16px 0 0;
+    border-radius: 28px 28px 0 0;
   }
 
   .panel[data-sheet="full"] .panel-scroll {
@@ -2185,13 +2229,20 @@ body:not(.is-panel) .panel-tab .ic {
 
   .panel-body > .head {
     order: -3;
-    padding: 6px 20px 0;
+    padding: 6px 24px 0;
   }
 
+  .panel-body > .head .sub {
+    margin-top: 6px;
+    color: #5f6368;
+    font-size: 15px;
+  }
+
+  /* The footer's links: in the sheet, under its heading, once it is raised. */
   .panel-body > .peek-links {
     order: -2;
     display: block;
-    margin: 6px 20px 0;
+    margin: 10px 24px 0;
     color: var(--ink-3);
     font-size: 12.5px;
     line-height: 1.6;
@@ -2221,8 +2272,58 @@ body:not(.is-panel) .panel-tab .ic {
     border-bottom: 0;
   }
 
+  /* The actions as a row of pills, as in a mapping app's place sheet: the first filled, the rest outlined. */
+  .panel-body > .actions {
+    gap: 8px;
+    padding: 16px 24px 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
   .action {
-    width: 72px;
+    flex: none;
+    flex-direction: row;
+    gap: 6px;
+    width: auto;
+    height: 40px;
+    padding: 0 16px 0 12px;
+    border: 1px solid #c4c7c5;
+    border-radius: 20px;
+    color: var(--accent);
+    font-size: 14.5px;
+  }
+
+  .action-dot,
+  .action-visit .action-dot,
+  .action-save.is-on .action-dot {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: none;
+  }
+
+  .action-dot .ic {
+    width: 19px;
+    height: 19px;
+  }
+
+  .action-visit {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #ffffff;
+  }
+
+  .action-visit .action-dot {
+    color: #ffffff;
+  }
+
+  .action-save.is-on {
+    border-color: #f3c999;
+    background: var(--heart-soft);
+  }
+
+  .action:active {
+    transform: scale(0.97);
   }
 
   .hero {
@@ -2253,13 +2354,14 @@ body:not(.is-panel) .panel-tab .ic {
   }
 
   .is-sheet-full .corner,
-  .is-sheet-full .fab-world {
+  .is-sheet-full .fab-world,
+  .is-sheet-full .controls {
     opacity: 0;
     pointer-events: none;
   }
 
   .caption {
-    margin: 8px 20px 0;
+    margin: 8px 24px 0;
   }
 
   .head-plain,
@@ -2272,23 +2374,25 @@ body:not(.is-panel) .panel-tab .ic {
   }
 
   .title {
-    font-size: 24px;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
 
   .prose {
-    padding: 16px 20px 4px;
+    padding: 16px 24px 4px;
   }
 
   .block {
-    padding: 18px 20px 8px;
+    padding: 18px 24px 8px;
   }
 
   .rows {
-    margin: 0 -20px;
+    margin: 0 -24px;
   }
 
   .row {
-    padding: 8px 20px;
+    padding: 10px 24px;
   }
 
   .rows-saved {

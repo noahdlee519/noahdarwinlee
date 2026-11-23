@@ -312,7 +312,8 @@
   function viewWorld() {
     var n = state.world.projects.length, h = "";
     h += '<header class="head head-world"><h2 class="title" tabindex="-1">' + esc(state.world.name) + "</h2>";
-    h += '<p class="sub">A world of ' + n + " countries, each one of my projects</p></header>";
+    // On a phone the opening line lives here, under the world's name, until the visitor acts.
+    h += '<p class="sub">' + (hintShown() ? "Click on a project to learn more." : "A world of " + n + " countries, each one of my projects") + "</p></header>";
     var flag = state.projects.filter(function (p) { return p.tier === "flagship"; });
     var small = state.projects.filter(function (p) { return p.tier !== "flagship"; });
     h += '<section class="block block-first"><h3 class="block-title">The large countries</h3><ul class="rows">' + flag.map(rowFor).join("") + "</ul></section>";
@@ -347,9 +348,15 @@
   function open_(view, opts) { return open(view, opts); }
   // The opening line over the map goes for good, this visit, once the visitor opens a project, searches, or opens
   // the menu.
+  function hintShown() { var h = $("#hint"); return !!h && !h.classList.contains("is-gone"); }
   function dismissHint() {
     var h = $("#hint");
-    if (h && !h.classList.contains("is-gone")) { h.classList.add("is-gone"); setTimeout(function () { h.hidden = true; }, 450); }
+    if (h && !h.classList.contains("is-gone")) {
+      h.classList.add("is-gone");
+      setTimeout(function () { h.hidden = true; }, 450);
+      var sub = $(".head-world .sub", els.panelBody);
+      if (sub && state.world) sub.textContent = "A world of " + state.world.projects.length + " countries, each one of my projects";
+    }
   }
 
   function open(view, opts) {
@@ -628,9 +635,10 @@
     var h = window.innerHeight, tab = $(".rail").getBoundingClientRect().height;
     var top = 76;
     var height = h - tab - top;
-    var links = $(".peek-links", els.panelBody);
-    var peekH = links ? links.offsetTop + links.offsetHeight + 12 + els.panelScroll.offsetTop - els.panelScroll.scrollTop : 120;
-    peekH = clamp(peekH, 96, 220);
+    // Lowered, the sheet shows its heading: the world's or the project's name and the line under it.
+    var head = $(".head", els.panelBody);
+    var peekH = head ? head.offsetTop + head.offsetHeight + 18 + els.panelScroll.offsetTop - els.panelScroll.scrollTop : 120;
+    peekH = clamp(peekH, 96, 200);
     sheetY = { full: 0, half: Math.round(height - Math.max(h * 0.5 - tab, peekH + 120)), peek: Math.round(height - peekH) };
     els.panel.style.setProperty("--sheet-h", height + "px");
     return sheetY;
