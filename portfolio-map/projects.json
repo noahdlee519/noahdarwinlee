@@ -173,8 +173,8 @@
       "river": ["Alternate", "Fork"],
       "lake": ["Reverie", "Utopia"]
     },
-    "url": "https://noahdarwinlee.com/uchronia/",
-    "domain": "noahdarwinlee.com/uchronia",
+    "url": "https://chroniaatlas.com/uchronia/",
+    "domain": "chroniaatlas.com/uchronia",
     "brand": "#7a5230",
     "blurb": "Redraw the world map in any way you see fit. Draw new borders, establish nations, found cities, and more. Be sure to ask the Historian to write the history of the world you crafted. Or, work in reverse by prompting the Historian to generate a map for you.",
     "tagline": "Redraw the world map, found nations and cities, and have the Historian write the history of your world.",
@@ -563,8 +563,8 @@
     },
     "url": "/citylayoutguessr/",
     "domain": "noahdarwinlee.com/citylayoutguessr",
-    "blurb": "Name the city from a satellite image of its layout. One guess per image, three levels, ten rounds each.",
-    "tagline": "A game: name the city from a satellite image of its street layout.",
+    "blurb": "A daily guessing game of cities, based on their satellite maps.",
+    "tagline": "A daily guessing game of cities, based on their satellite maps.",
     "media": [
       {
         "src": "/art/web/materials/citylayoutguessr-480.webp",
@@ -583,12 +583,12 @@
     },
     "url": "/flashcard/",
     "domain": "noahdarwinlee.com/flashcard",
-    "blurb": "A free flash card tool that works offline and handles Czech and other Latin-Extended diacritics.",
-    "tagline": "A free flash card tool that works offline and handles Czech and other diacritics.",
+    "blurb": "A free flash card tool for any subject or language. It works offline and handles accents and diacritics.",
+    "tagline": "A free flash card tool for any subject or language, and it works offline.",
     "media": [
       {
         "src": "/art/web/materials/flashcard-480.webp",
-        "alt": "The Flash Card Tool, with a Czech word on a card"
+        "alt": "The Flash Card Tool, with a word on a card"
       }
     ]
   },
@@ -681,7 +681,7 @@
     "url": "https://nightofideas.dev",
     "domain": "nightofideas.dev",
     "blurb": "A University of Chicago club, affiliated with the Philosophy Department, where students give lightning talks on an original idea. I built its website.",
-    "tagline": "A University of Chicago club where students give lightning talks on an original idea, and its website.",
+    "tagline": "A University of Chicago club where students give lightning talks on an original idea.",
     "media": [
       { "src": "/art/web/materials/shot-night-of-ideas-800.webp", "srcset": "/art/web/materials/shot-night-of-ideas-800.webp 800w, /art/web/materials/shot-night-of-ideas-1600.webp 1600w", "alt": "The Night of Ideas title, with the moon set into the O", "caption": "The front page" }
     ]
@@ -697,8 +697,8 @@
     },
     "url": "https://substack.com/@noahdarwinlee?r=ish50&utm_campaign=profile&utm_medium=profile-page",
     "domain": "substack.com/@noahdarwinlee",
-    "blurb": "My writing, on Substack.",
-    "tagline": "My writing, on Substack.",
+    "blurb": "Some of my writings on Substack.",
+    "tagline": "Some of my writings on Substack.",
     "media": []
   },
   {
@@ -712,8 +712,8 @@
     },
     "url": "https://ucgeo.org",
     "domain": "ucgeo.org",
-    "blurb": "UCGEO, at ucgeo.org.",
-    "tagline": "UCGEO, at ucgeo.org.",
+    "blurb": "The University of Chicago Geographic Studies Club that I founded.",
+    "tagline": "The University of Chicago Geographic Studies Club that I founded.",
     "media": [
       { "src": "/art/web/materials/shot-ucgeo-800.webp", "srcset": "/art/web/materials/shot-ucgeo-800.webp 800w, /art/web/materials/shot-ucgeo-1600.webp 1600w", "alt": "The Geographic Studies Club's front page, over a photo of a full lecture hall", "caption": "The front page" }
     ]
