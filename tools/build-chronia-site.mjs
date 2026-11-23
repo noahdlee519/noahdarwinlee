@@ -24,7 +24,8 @@ const copy = (from, to = from) => {
 };
 
 for (const f of ["index.html", "app.js", "dev.js", "va.js", "app.css", "page.css", "go.js", "visit.js", "data", "team", "reports", "privacy", "terms", "moreinfo", "art", "og-chronia.jpg", "ads.txt"]) copy("chronia/" + f, f);
-for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "fonts"]) copy(f);
+// UCHRONIA moved here from noahdarwinlee.com/uchronia/ on 22 November 2026; its page there (go.js) sends visitors on.
+for (const f of ["uchronia/data", "uchronia/vendor", "uchronia/sat.js", "uchronia/index.html", "uchronia/app.js", "uchronia/app.css", "uchronia/go.js", "fonts"]) copy(f);
 for (const f of ["styles.css", "favicon.png", "favicon-32.png", "favicon-night.png", "favicon-white.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "og.jpg"]) copy(f);
 // CHRONIA's own icons (the globe in its brace, 19 November 2026) take the place of noahdarwinlee.com's at the site's root,
 // where every page and the manifest look for them.
@@ -75,7 +76,7 @@ const AI_BOTS = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude
 writeFileSync(join(out, "robots.txt"), "User-agent: *\nDisallow: /reports/\n\n" + AI_BOTS.map((b) => "User-agent: " + b + "\nDisallow: /\n\n").join("") + "Sitemap: " + SITE + "/sitemap.xml\n");
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(join(out, "sitemap.xml"), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-  [["/", "1.0"], ["/team/", "0.4"], ["/privacy/", "0.2"], ["/terms/", "0.2"]].map(([p, w]) => "  <url><loc>" + SITE + p + "</loc><lastmod>" + today + "</lastmod><priority>" + w + "</priority></url>\n").join("") + "</urlset>\n");
+  [["/", "1.0"], ["/uchronia/", "0.6"], ["/team/", "0.4"], ["/privacy/", "0.2"], ["/terms/", "0.2"]].map(([p, w]) => "  <url><loc>" + SITE + p + "</loc><lastmod>" + today + "</lastmod><priority>" + w + "</priority></url>\n").join("") + "</urlset>\n");
 
 // Whether a path is a page or file of the new site.
 const here = (path) => {
@@ -87,7 +88,7 @@ const here = (path) => {
   return existsSync(join(f, "index.html"));
 };
 const html = [];
-const walk = (dir) => { for (const n of readdirSync(dir)) { const f = join(dir, n); if (statSync(f).isDirectory()) { if (n !== "data" && n !== "uchronia" && n !== "fonts") walk(f); } else if (n.endsWith(".html")) html.push(f); } };
+const walk = (dir) => { for (const n of readdirSync(dir)) { const f = join(dir, n); if (statSync(f).isDirectory()) { if (n !== "data" && n !== "fonts" && f !== join(out, "uchronia", "data") && f !== join(out, "uchronia", "vendor")) walk(f); } else if (n.endsWith(".html")) html.push(f); } };
 walk(out);
 let fixed = 0;
 for (const f of html) {

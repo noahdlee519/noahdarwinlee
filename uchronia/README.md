@@ -3,8 +3,23 @@
 An alternate-history map maker: the world as it is, cut into its states,
 provinces, and regions, for you to redraw. Give any region to any country,
 found countries, name and colour them, and put cities where they might
-have been, on a globe or a flat map. Served at `/uchronia/`. Built on the bones
-of `/greatercircle/`.
+have been, on a globe or a flat map. Served at chroniaatlas.com/uchronia/
+(beside CHRONIA, since 22 November 2026; `tools/build-chronia-site.mjs` copies
+it there). Built on the bones of `/greatercircle/`.
+
+- **The move from noahdarwinlee.com.** The page at noahdarwinlee.com/uchronia/
+  (GitHub Pages, which cannot redirect) still loads `go.js` first, which sends
+  the visitor to chroniaatlas.com/uchronia/ with the link's query and hash.
+  A browser keeps each site's storage apart, so `go.js` takes the visitor's
+  saved work along: every `localStorage` entry whose name begins
+  `uchronia-`, and `ndl-theme`, but not the sign-in (`uchronia-auth`), go
+  as JSON, base64url-encoded, in the new address's hash (`#carry=`), which
+  is never sent to a server, with the link's own hash inside it. At
+  chroniaatlas.com the same script, before `app.js` runs, writes each entry
+  the new site does not already have and puts the link's own hash back
+  (a shared map's `#m=` still opens). Visitors sign in to the historian
+  again once. The data stays in this folder, so the historian function's
+  catalogue and CHRONIA's build read it where they always did.
 
 ## How it works
 
@@ -897,7 +912,7 @@ of `/greatercircle/`.
     citylayoutguessr uses. Signed out, the Historian panel shows Google's own
     sign-in button, loaded from Google (`accounts.google.com/gsi/client`) once
     `GOOGLE_CLIENT` in `app.js` holds the site's Google OAuth client ID. The
-    sign-in then happens on this page, so Google names noahdarwinlee.com rather
+    sign-in then happens on this page, so Google names chroniaatlas.com rather
     than Supabase, and nothing typed is lost. Google hands back an ID token,
     made with a nonce whose SHA-256 the page gives Google; the page sends the
     token and the nonce to the server function (`mode: "google"`), which trades
@@ -925,8 +940,10 @@ of `/greatercircle/`.
     project kigvciyyjlgjcgnwgrwf. The function is deployed as `dynamic-endpoint`
     with JWT verification off (it checks the origin, the sign-in, and the
     daily caps itself) and needs the `ANTHROPIC_API_KEY` secret. Supabase's
-    Authentication settings must list `https://noahdarwinlee.com/uchronia/**`
-    among the redirect URLs.
+    Authentication settings must list `https://chroniaatlas.com/uchronia/**`
+    among the redirect URLs, and the Google client's authorised JavaScript
+    origins must include `https://chroniaatlas.com`. The function accepts
+    requests from chroniaatlas.com and noahdarwinlee.com.
 - **Check** counts, in a badge, what may have been left by mistake, and
   lists it: cities and countries never renamed from *New city* or *New
   country*, countries founded and given no land, countries that lost their

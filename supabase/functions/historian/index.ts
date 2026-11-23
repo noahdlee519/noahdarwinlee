@@ -2,6 +2,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 
 const ORIGINS = [
   /^https:\/\/(www\.)?noahdarwinlee\.com$/,
+  /^https:\/\/(www\.)?chroniaatlas\.com$/,
   /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];

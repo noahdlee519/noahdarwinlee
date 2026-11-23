@@ -8,7 +8,7 @@
   var R_KM = 6371.0088, D2R = Math.PI / 180, TAU = 2 * Math.PI, HALF_PI = Math.PI / 2;
   var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
   var UC = "../uchronia/";
-  var UC_APP = "https://noahdarwinlee.com/uchronia/";
+  var UC_APP = "/uchronia/";
   var STORE_FLAT = "chronia-flat", STORE_SPEED = "chronia-play-speed";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
