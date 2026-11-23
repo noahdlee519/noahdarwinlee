@@ -7530,6 +7530,8 @@
     $("history-input").placeholder = MODES[m].hold;
     $("history-input-label").firstChild.nodeValue = MODES[m].label + " ";
     $("history-input-label").lastChild.hidden = m === "turn";
+    $("history-required").hidden = m !== "turn";
+    if (m === "turn") $("history-input").setAttribute("aria-required", "true"); else $("history-input").removeAttribute("aria-required");
     $("history-input").rows = m === "turn" ? 3 : 2;
     $("history-turn-fields").hidden = m !== "turn";
     $("history-go").textContent = MODES[m].go;

@@ -883,6 +883,20 @@ body.uc-page {
 .uc-chron-flabel span[hidden] {
   display: none;
 }
+.uc-chron-req {
+  float: right;
+  margin-right: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  color: #c0392b;
+}
+.uc-chron-req[hidden] {
+  display: none;
+}
+:root[data-theme="dark"]:not([data-uc-style="antique"]) .uc-chron-req {
+  color: #ff7b72;
+}
 .uc-chron-ask .uc-chron-note {
   margin-top: 0;
 }

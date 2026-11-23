@@ -738,7 +738,9 @@ it there). Built on the bones of `/greatercircle/`.
     server that sends none, the bar creeps on and the line steps through a
     few stock phrases.
   - **Redraw the map** takes a turning point instead ("What if Rome never
-    fell?", "The world in 1925 if the Central Powers had won"), with
+    fell?", "The world in 1925 if the Central Powers had won"), marked as
+    required by a small red asterisk at the top right of its box
+    (`#history-required`, shown only in this mode), with
     optional details under it: when history parts from ours, the year to
     show, places to focus on, what to leave as in our world, how far it goes
     (*Close to history*, *Bold*, the historian's usual, or *Wild*), and
