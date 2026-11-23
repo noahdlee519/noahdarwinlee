@@ -6098,16 +6098,15 @@
       : blurbStop.cap ? T("You have had today’s {n} new notes. Notes already written still show, and new ones can be written tomorrow.", { n: blurbStop.cap }) : T("You have had all of today’s new notes. Notes already written still show, and new ones can be written tomorrow.");
   }
   // The same, in a card's line, with a link to Premium after a reader's own limit (not the site's), for a reader
-  // without it: the link opens the account panel, which offers Premium, or a sign-in first.
+  // without it: the link goes to Premium's page.
   function blurbStopShow(el) {
     el.textContent = blurbStopText();
     if (!blurbStop || blurbStop.error !== "limit" || typeof premium !== "object" || !premium || premium.on || !PREMIUM_LIVE) return;
-    var a = document.createElement("button");
-    a.type = "button";
+    var a = document.createElement("a");
+    a.href = "premium/";
     a.className = "ch-premium-link";
     a.textContent = T("Get CHRONIA Premium for 5× the daily notes");
-
-    a.addEventListener("click", function (e) { e.stopPropagation(); setAccountOpen(true, false); });
+    a.addEventListener("click", function (e) { e.stopPropagation(); });
     el.appendChild(document.createTextNode(" "));
     el.appendChild(a);
   }
@@ -7099,6 +7098,10 @@
     reportSession = a ? { a: a, r: r, e: (+claimsOf(a).exp || 0) * 1000 } : null;
     if (!a) reportMe = null;
     try { if (reportSession) localStorage.setItem(REPORT_STORE, JSON.stringify(reportSession)); else localStorage.removeItem(REPORT_STORE); } catch (e) {}
+    // Signed in on the way to buying Premium (signinForPremium): back to its page.
+    var toPremium = false;
+    try { toPremium = !!a && sessionStorage.getItem("chronia-premium-back") === "1"; if (toPremium) sessionStorage.removeItem("chronia-premium-back"); } catch (e) {}
+    if (toPremium) { location.assign("premium/"); return; }
     syncReport();
   }
   (function takeSignIn() {
@@ -7565,7 +7568,7 @@
     $("premium-buy").hidden = premium.on;
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
-      : T("CHRONIA Premium takes the advertisements off the page and the watermark off your videos, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.");
+      : T("No advertisements, no watermark on your videos, and more, for $5 once.");
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -7601,16 +7604,17 @@
       return premium.on;
     }, settle);
   }
-  $("premium-buy").addEventListener("click", function () {
-    var btn = $("premium-buy"), note = $("premium-note");
-    btn.disabled = true; note.textContent = T("Opening Stripe’s payment page…");
-    premiumPost({ action: "checkout" }).then(function (r) {
-      if (r.status === 200 && typeof r.body.url === "string" && /^https:\/\/checkout\.stripe\.com\//.test(r.body.url)) { location.assign(r.body.url); return; }
-      btn.disabled = false;
-      if (r.status === 409) { note.textContent = ""; premiumAsk(true); return; }
-      note.textContent = r.status === 401 ? T("Sign in again to buy Premium.") : T("The payment page could not be opened just now. Nothing was charged.");
-    }, function () { btn.disabled = false; note.textContent = T("The payment page could not be opened just now. Nothing was charged."); });
-  });
+  // The account panel offers Premium with a link to its own page (premium/), which lists what it gives and sells it.
+  // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, and once they
+  // have signed in (here, or through Supabase's page and back) they are sent back to it.
+  var PREMIUM_BACK = "chronia-premium-back";
+  (function signinForPremium() {
+    if (!/[?&]signin=premium(&|$)/.test(location.search || "")) return;
+    try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])signin=premium(&|$)/, function (all, a, c) { return c ? a : ""; }) + location.hash); } catch (e) {}
+    if (reportSession) { location.replace("premium/"); return; }
+    try { sessionStorage.setItem(PREMIUM_BACK, "1"); } catch (e) {}
+    setTimeout(function () { setAccountOpen(true, false); }, 0);
+  })();
   // Back from Stripe: `?premium=done` or `?premium=no`. Stripe's webhook marks the account a moment after the
   // payment, so the page asks a few times before giving up.
   (function premiumBack() {

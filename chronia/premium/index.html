@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="../go.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Premium | CHRONIA</title>
+    <meta name="description" content="CHRONIA Premium: no advertisements, no watermark on your timelapse videos, five times the daily notes, and your reports of errors read first, for $5, paid once." />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://jvcmeuqlyygpwelmvxuv.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <link rel="canonical" href="https://chroniaatlas.com/premium/" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f1e7cf" />
+    <link rel="preload" href="/fonts/im-fell-english-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="../page.css" />
+    <link rel="stylesheet" href="premium.css" />
+    <script src="/visit.js" defer></script>
+    <script src="/chronia/va.js" defer></script>
+  </head>
+  <body class="cp pm">
+    <header class="cp-top"><a class="cp-mark cp-frame" href="../" aria-label="CHRONIA, back to the atlas">CHRONIA</a></header>
+    <main class="cp-sheet cp-frame">
+      <h1>CHRONIA Premium</h1>
+      <p class="cp-lede">One payment keeps the atlas going, and gives you a quieter, fuller one to read.</p>
+
+      <section class="pm-buy" aria-labelledby="pm-price">
+        <div class="pm-price" id="pm-price"><span class="pm-amount">$5</span><span class="pm-terms">paid once | for your Google account | for good</span></div>
+        <div class="pm-act">
+          <a class="pm-btn" id="pm-go" href="../?signin=premium">Sign in on the atlas to buy</a>
+          <p class="pm-note" id="pm-note" role="status">Premium belongs to the Google account you pay with, so sign in on the atlas first.</p>
+        </div>
+      </section>
+
+      <ul class="pm-perks">
+        <li>
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="12" width="30" height="16" rx="1.5" /><path d="M9 34 31 6" /></svg>
+          <h2>No advertisements</h2>
+          <p>The banners beside the date are gone, and the page doesn&rsquo;t load Google&rsquo;s advertising code at all.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="9" width="30" height="22" rx="1.5" /><path d="M5 14h30M5 26h30M10 9v5M16 9v5M22 9v5M28 9v5M10 26v5M16 26v5M22 26v5M28 26v5" /></svg>
+          <h2>No watermark</h2>
+          <p>Timelapse videos you make come out clean, without the CHRONIA plate in the corner.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 6h17l6 6v22H9Z" /><path d="M26 6v6h6M14 18h13M14 23h13M14 28h9" /></svg>
+          <h2>Five times the notes</h2>
+          <p>200 new notes a day on the cards of states, peoples, and cities, in place of 40.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M11 35V5" /><path d="M11 7h20l-5 7 5 7H11" /></svg>
+          <h2>Your reports first</h2>
+          <p>Errors you report on the map go to the top of the queue they&rsquo;re read from.</p>
+        </li>
+      </ul>
+
+      <section class="pm-compare" aria-labelledby="pm-compare-title">
+        <h2 id="pm-compare-title">The same video frame</h2>
+        <div class="pm-pair">
+          <figure><img src="../art/premium-video-mark.jpg" width="720" height="468" alt="A frame of a timelapse video with the CHRONIA plate in its lower right corner." loading="lazy" /><figcaption>Without Premium</figcaption></figure>
+          <figure><img src="../art/premium-video-clean.jpg" width="720" height="468" alt="The same frame with no mark." loading="lazy" /><figcaption>With Premium</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="pm-fine" aria-labelledby="pm-fine-title">
+        <h2 id="pm-fine-title">Good to know</h2>
+        <ul>
+          <li>It&rsquo;s one payment, not a subscription, and it never renews.</li>
+          <li>You pay on Stripe&rsquo;s own page; the atlas never sees your card.</li>
+          <li>Changed your mind? Ask within 14 days for a full refund (<a href="../terms/#premium">terms, section 14</a>).</li>
+          <li>What the atlas keeps about a payment is in <a href="../privacy/">the privacy policy</a>, section 7.</li>
+        </ul>
+      </section>
+
+      <footer class="cp-foot"><a href="../">The atlas</a> | <a href="../team/">Team</a> | <a href="./" aria-current="page">Premium</a> | <a href="../privacy/">Privacy</a> | <a href="../terms/">Terms</a></footer>
+    </main>
+
+    <script src="premium.js" defer></script>
+  </body>
+</html>

@@ -3651,8 +3651,11 @@ select.ch-save-input {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
+/* The way to Premium's own page, a link set as one of the panel's keys. */
 .ch-premium-buy {
+  display: inline-block;
   margin-top: 6px;
+  text-decoration: none;
 }
 /* The lesser buttons of a panel (Not now, Back, Sign out, Stop) are ivory keys in a brass-dark edge, so the brass one
    beside them is plainly the one to press. */
