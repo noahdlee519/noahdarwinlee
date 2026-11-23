@@ -1468,8 +1468,19 @@
 
   $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
   $("clear-b").addEventListener("click", function () { setPoint("b", null); inputs.b.focus(); });
+  var swapTimer = null;
   $("swap").addEventListener("click", function () {
     var a = state.a, b = state.b;
+    if (!a && !b) {
+      var btn = $("swap"), hint = $("hint");
+      btn.classList.remove("is-shaking"); void btn.offsetWidth; btn.classList.add("is-shaking");
+      hint.textContent = "Nothing to swap yet: pick a From and a To first";
+      hint.classList.add("is-nudge");
+      $("status").textContent = "Nothing to swap yet";
+      clearTimeout(swapTimer);
+      swapTimer = setTimeout(function () { btn.classList.remove("is-shaking"); hint.classList.remove("is-nudge"); updateHint(); }, 2200);
+      return;
+    }
     state.a = b; state.b = a;
     setPoint("a", state.a, { quiet: true }); setPoint("b", state.b, { quiet: true });
     commitPoint("a");
