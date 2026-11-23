@@ -186,6 +186,7 @@
     var api = {
       onRestore: null,
       slots: SLOTS,
+      parts: true,
       ready: function () { return !!tex && !lost; },
       load: function (urls, done) {
         var maxSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
@@ -212,10 +213,15 @@
       endDetail: function () { detRect = null; detTiles = []; },
       draw: function (o) {
         if (!tex || lost) return;
-        var w = canvas.width, h = canvas.height;
+        // o.w and o.h (CHRONIA, while its map moves) draw into that many pixels at the canvas's bottom left, which is its
+        // image's rows from the canvas's height less o.h down, and leave the canvas its size; o.dpr is then that part's scale.
+        var w = Math.min(canvas.width, o.w || canvas.width), h = Math.min(canvas.height, o.h || canvas.height);
         gl.viewport(0, 0, w, h);
+        gl.enable(gl.SCISSOR_TEST);
+        gl.scissor(0, 0, w, h);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.disable(gl.SCISSOR_TEST);
         gl.useProgram(program);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, det);
