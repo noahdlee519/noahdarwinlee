@@ -7559,7 +7559,7 @@
     $("premium-buy").hidden = premium.on;
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
-      : T("CHRONIA Premium takes the advertisements off the page, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.");
+      : T("CHRONIA Premium takes the advertisements off the page and the watermark off your videos, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.");
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -7881,7 +7881,7 @@
     return { w: Math.max(2, Math.floor(w * s / 2) * 2), h: Math.max(2, Math.floor(h * s / 2) * 2) };
   }
   // The frame: the page's background, the map, the date in its frame where the page shows it, and the name.
-  function composeFrame(out, label) {
+  function composeFrame(out, label, mark) {
     var c = out.getContext("2d"), k = out.width / W, cs = getComputedStyle(document.documentElement);
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.save();
@@ -7912,15 +7912,37 @@
       c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
       c.fillText(label, x + w / 2, y + h / 2 + 0.5, w - 16);
     }
-    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", fs = 12, sp = fs * 0.16;
-    c.font = "400 " + fs + "px " + ts.fontFamily;
-    c.textAlign = "left"; c.textBaseline = "alphabetic";
-    var tw = 0, i;
-    for (i = 0; i < name.length; i++) tw += c.measureText(name[i]).width + (i < name.length - 1 ? sp : 0);
-    var nx = W - 16 - tw, ny = H - 14;
-    c.globalAlpha = 0.72; c.fillStyle = ys.color;
-    for (i = 0; i < name.length; i++) { c.fillText(name[i], nx, ny); nx += c.measureText(name[i]).width + sp; }
-    c.globalAlpha = 1;
+    // The mark in the lower right: the small name on a saved image, a plate with the name and the address on a video made
+    // without Premium, and nothing on a Premium video.
+    mark = mark || "corner";
+    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", i;
+    function spaced(str, f, sp) { var t = 0; for (var j = 0; j < str.length; j++) t += c.measureText(str[j]).width + (j < str.length - 1 ? sp : 0); return t; }
+    function drawSpaced(str, x0, y0, sp) { for (var j = 0; j < str.length; j++) { c.fillText(str[j], x0, y0); x0 += c.measureText(str[j]).width + sp; } }
+    if (mark === "corner") {
+      var fs = 12, sp = fs * 0.16;
+      c.font = "400 " + fs + "px " + ts.fontFamily;
+      c.textAlign = "left"; c.textBaseline = "alphabetic";
+      var tw = spaced(name, fs, sp);
+      c.globalAlpha = 0.72; c.fillStyle = ys.color;
+      drawSpaced(name, W - 16 - tw, H - 14, sp);
+      c.globalAlpha = 1;
+    } else if (mark === "plate") {
+      var u = Math.max(0.8, Math.min(1.6, Math.min(W, H) / 560)), f1 = 17 * u, s1 = f1 * 0.18, f2 = 10.5 * u, addr = "chroniaatlas.com";
+      c.textAlign = "left"; c.textBaseline = "alphabetic";
+      c.font = "400 " + f1 + "px " + ts.fontFamily; var w1 = spaced(name, f1, s1);
+      c.font = "400 " + f2 + "px " + ys.fontFamily; var w2 = c.measureText(addr).width;
+      var pw = Math.ceil(Math.max(w1, w2) + 30 * u), ph = Math.ceil(f1 + f2 + 26 * u), px = W - pw - 16 * u, py = H - ph - 16 * u;
+      var ivory = cs.getPropertyValue("--ch-ivory").trim() || "#f3ead2", rl = cs.getPropertyValue("--rule").trim() || "#3a2a1a";
+      c.globalAlpha = 0.9;
+      c.fillStyle = ivory; c.fillRect(px, py, pw, ph);
+      c.lineWidth = 3; c.strokeStyle = pal.ring || rl; c.strokeRect(px + 2.5, py + 2.5, pw - 5, ph - 5);
+      c.lineWidth = 1; c.strokeStyle = pal["ring-hi"] || rl; c.beginPath(); c.moveTo(px + 1.5, py + ph - 1.5); c.lineTo(px + 1.5, py + 1.5); c.lineTo(px + pw - 1.5, py + 1.5); c.stroke();
+      c.strokeStyle = pal["ring-edge"] || rl; c.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1); c.strokeRect(px + 4.5, py + 4.5, pw - 9, ph - 9);
+      c.fillStyle = ys.color;
+      c.font = "400 " + f1 + "px " + ts.fontFamily; drawSpaced(name, px + (pw - w1) / 2, py + 10 * u + f1 * 0.92, s1);
+      c.font = "400 " + f2 + "px " + ys.fontFamily; c.fillText(addr, px + (pw - w2) / 2, py + ph - 10 * u);
+      c.globalAlpha = 1;
+    }
     c.setTransform(1, 0, 0, 1, 0, 0);
   }
   function download(blob, name) {
@@ -8299,7 +8321,7 @@
         var f = frames[i];
         return drawSettled(f.t).then(function () {
           if (job.cancel) return "cancel";
-          composeFrame(out, f.label);
+          composeFrame(out, f.label, premium && premium.on ? "none" : "plate");
           var vf = new VideoFrame(out, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
           encoder.encode(vf, { keyFrame: i % Math.max(1, fps * 2) === 0 });
           vf.close();
@@ -9765,6 +9787,7 @@
   };
   Object.assign(window.__chronia, layersApi, geographyApi);
   Object.assign(window.__chronia, cardApi);
+  window.__chronia.frame = function (mark) { var o = document.createElement("canvas"); o.width = canvas.width; o.height = canvas.height; composeFrame(o, fmtNow(now), mark); return o.toDataURL("image/png"); };
   window.__chronia.divisions = function () {
     var day = divDay(), out = { day: day, regions: [] };
     if (divIndex && day !== null) divIndex.forEach(function (reg) {

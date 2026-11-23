@@ -107,7 +107,7 @@ async function checkout(me: Account, back: string) {
     p.set("line_items[0][price_data][currency]", "usd");
     p.set("line_items[0][price_data][unit_amount]", String(PRICE_CENTS));
     p.set("line_items[0][price_data][product_data][name]", PRODUCT);
-    p.set("line_items[0][price_data][product_data][description]", "No advertisements on chroniaatlas.com, five times the daily notes, and your reports of errors read first, for this account, for good.");
+    p.set("line_items[0][price_data][product_data][description]", "No advertisements on chroniaatlas.com, no watermark on your videos, five times the daily notes, and your reports of errors read first, for this account, for good.");
   }
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
