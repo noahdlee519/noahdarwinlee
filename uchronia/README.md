@@ -428,7 +428,10 @@ it there). Built on the bones of `/greatercircle/`.
   the towns), and **places-xx-units.json** (with the smaller subdivisions),
   built by `tools/place-names/`. Countries and cities keep their English name
   in `.en`; the historian is shown the English names (`inEnglish`), and its
-  plans are matched against either. Its own writing stays in English.
+  plans are matched against either. Requests carry `lang`, and the historian
+  writes its histories and answers (and an outline's title) in that language,
+  bracketing places as `[[English name|name in the text]]`; the history view
+  links on the English name and shows the other.
   **View → Language** changes it and reloads the page. Its list draws its own
   arrow, a chevron 16 px in from the right (`.uc-lang-wrap::after`), not the
   browser's, which sat at the edge.

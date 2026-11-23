@@ -6690,7 +6690,7 @@
   function callHistorian(body) {
     return freshToken().then(function (t) {
       if (!t) return new Response("{\"error\":\"signin\"}", { status: 401 });
-      return fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t }, body: JSON.stringify(body) });
+      return fetch(HISTORIAN, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t }, body: JSON.stringify(LANG !== "en" ? Object.assign({ lang: LANG }, body) : body) });
     }).then(function (res) {
       if (res.status === 401) { keepSession(null); showAccount(); }
       return res;
@@ -7228,12 +7228,12 @@
           });
           return;
         }
-        var name = m[1], place = places.get(name);
-        if (!place) { target.appendChild(document.createTextNode(name)); return; }
+        var cut = m[1].indexOf("|"), name = cut >= 0 ? m[1].slice(0, cut).trim() : m[1], shown = cut >= 0 ? m[1].slice(cut + 1).trim() || name : name, place = places.get(name);
+        if (!place) { target.appendChild(document.createTextNode(shown)); return; }
         var a = document.createElement("button");
-        a.type = "button"; a.className = "uc-place"; a.textContent = name;
+        a.type = "button"; a.className = "uc-place"; a.textContent = shown;
         a.addEventListener("click", function () {
-          var c = countries.findIndex(function (co) { return co.alive && co.name === name; });
+          var c = countries.findIndex(function (co) { return co.alive && (co.name === name || co.en === name); });
           if (c >= 0) flyToCountry(c);
           else flyTo(place.lon, place.lat, Math.max(view.zoom, place.zoom || zoomForScale(1600)));
           if (sheetMode) showHistory(false);

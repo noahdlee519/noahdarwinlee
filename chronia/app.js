@@ -6534,6 +6534,7 @@
     return out.sort(function (a, b) { return b.w - a.w; }).slice(0, 10).map(function (x) { return x.name; });
   }
   function blurbFetch(ask, peek) {
+    if (LANG !== "en" && !ask.lang) ask = Object.assign({}, ask, { lang: LANG });
     var k = JSON.stringify(ask), have = blurbCache.get(k);
     if (have) return have;
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
