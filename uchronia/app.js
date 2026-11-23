@@ -125,7 +125,7 @@
     freeL = 0; freeR = W; freeT = barH; freeB = H - sheetH;
     scaleL = phone ? 14 : 18; scaleB = H - sheetH - (phone && !bare ? 12 : 16);
     document.documentElement.style.setProperty("--uc-bar-h", barH + "px");
-    if (phone !== sheetMode) { sheetMode = phone; $("file-menu").open = phone; if (!phone) { $("adv").open = false; $("check-menu").open = false; } }
+    if (phone !== sheetMode) { sheetMode = phone; $("file-menu").open = phone; if (!phone) { $("adv").open = false; $("check-menu").open = false; $("account-menu").open = false; } }
     baseR = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
     baseK = Math.max(20, Math.min((freeW - 32) / TAU, (freeH - 24) / Math.PI));
     applyView();
@@ -5855,7 +5855,7 @@
     });
   })();
 
-  var menus = [$("check-menu"), $("file-menu"), $("adv")];
+  var menus = [$("check-menu"), $("file-menu"), $("adv"), $("account-menu")];
   var baseCaps = new Map(), issues = [], checkTimer = 0;
   var DEFAULT_CITY = new RegExp("^(New city|Unnamed city|" + reEsc(T("New city")) + "|" + reEsc(T("Unnamed city")) + ")( \\d+)?$"), UNNAMED_COUNTRY = new RegExp("^(Unnamed country|" + reEsc(T("Unnamed country")) + ")( \\d+)?$");
   function capitalsBy() {
@@ -6564,7 +6564,7 @@
   var HISTORIAN = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/historian", STORE_HISTORY = "uchronia-history";
   var places = new Map(), historyBusy = false, historyKey = "";
   var AUTH = "https://jvcmeuqlyygpwelmvxuv.supabase.co/auth/v1", STORE_AUTH = "chronia-auth", STORE_PREMIUM = "chronia-premium";
-  var session = null, sessionRead = false, refreshing = null, historianLeft = null, historianCap = 5, signedBack = false;
+  var session = null, sessionRead = false, refreshing = null, historianLeft = null, historianCap = 5, historianPremium = null, signedBack = false;
   function readSession() {
     if (sessionRead) return session;
     sessionRead = true;
@@ -6578,7 +6578,7 @@
   }
   function keepSession(s) {
     session = s; sessionRead = true;
-    if (!s) historianLeft = null;
+    if (!s) { historianLeft = null; historianPremium = null; $("about-premium").hidden = false; }
     try { if (s) localStorage.setItem(STORE_AUTH, JSON.stringify(s)); else { localStorage.removeItem(STORE_AUTH); localStorage.removeItem(STORE_PREMIUM); } } catch (e) { }
   }
   function claimsOf(token) {
@@ -6631,10 +6631,12 @@
     document.head.appendChild(sc);
   }
   function drawGoogleButton() {
-    var box = $("history-gsi");
-    if (gsiState !== 2 || !box || box.childElementCount) return;
+    if (gsiState !== 2) return;
     var dark = document.documentElement.getAttribute("data-theme") === "dark" && !pal.antique;
-    google.accounts.id.renderButton(box, { type: "standard", theme: dark ? "filled_black" : "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 260 });
+    ["history-gsi", "acct-gsi"].forEach(function (id) {
+      var box = $(id);
+      if (box && !box.childElementCount) google.accounts.id.renderButton(box, { type: "standard", theme: dark ? "filled_black" : "outline", size: "large", text: "signin_with", shape: "rectangular", logo_alignment: "left", width: 260 });
+    });
   }
   function googleSignedIn(resp) {
     if (!resp || !resp.credential) return;
@@ -6718,7 +6720,27 @@
       $("history-google").hidden = gsiState === 2;
     }
     if (s) $("history-who").textContent = (s.email || T("Signed in")) + (historianLeft === null ? "" : " | " + T("{n} of {cap} left today", { n: historianLeft, cap: historianCap }));
+    showAccountMenu(s);
     if ($("history-ask-go")) syncAsk();
+  }
+  function showAccountMenu(s) {
+    $("acct-out").hidden = !!s;
+    $("acct-in").hidden = !s;
+    $("acct-signout").hidden = !s;
+    $("acct-gsi").hidden = !!s || gsiState !== 2;
+    $("acct-google").hidden = !!s || gsiState === 2;
+    if (s) $("acct-email").textContent = s.email || T("Signed in");
+    var initial = s && s.email ? s.email.charAt(0).toLocaleUpperCase() : "";
+    $("acct-initial").textContent = initial;
+    $("acct-initial").hidden = !initial;
+    $("account-menu").classList.toggle("is-signed", !!initial);
+    $("account-menu").querySelector("summary").setAttribute("aria-label", s ? T("Account: {name}", { name: s.email || T("Signed in") }) : T("Account"));
+    $("acct-left").hidden = !s || historianLeft === null;
+    if (s && historianLeft !== null) $("acct-left").textContent = T("Historian") + " | " + T("{n} of {cap} left today", { n: historianLeft, cap: historianCap });
+    var have = !!s && historianPremium === true;
+    $("acct-premium").hidden = !!s && historianPremium === null;
+    $("acct-premium").textContent = have ? T("You have CHRONIA Premium: 25 historian questions a day, no advertisements on CHRONIA, and more. Thank you for your support.") : T("CHRONIA Premium gives you 25 historian questions a day, no advertisements on CHRONIA, and more, for $10 once.");
+    $("acct-get").hidden = have || (!!s && historianPremium === null);
   }
   function syncAccount() {
     showAccount();
@@ -6726,6 +6748,7 @@
     callHistorian({ mode: "me" }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
       if (d && isInt(d.left)) { historianLeft = d.left; if (isInt(d.cap)) historianCap = d.cap; }
       if (d && typeof d.premium === "boolean") {
+        historianPremium = d.premium;
         var c = claimsOf(session ? session.a : "");
         try { if (d.premium && c.sub) localStorage.setItem(STORE_PREMIUM, c.sub); else if (!d.premium) localStorage.removeItem(STORE_PREMIUM); } catch (e) { }
         $("about-premium").hidden = d.premium;
@@ -8022,6 +8045,9 @@
   $("history-ask-go").addEventListener("click", function () { if (!needSignIn("history-ask-go")) askHistorian(); });
   $("history-google").addEventListener("click", signIn);
   $("history-signout").addEventListener("click", function () { keepSession(null); showAccount(); });
+  $("acct-signout").addEventListener("click", function () { keepSession(null); showAccount(); });
+  $("acct-google").addEventListener("click", function () { signIn(); });
+  $("account-menu").addEventListener("toggle", function () { if ($("account-menu").open) syncAccount(); });
   $("history-q").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("history-ask-go").click(); } });
   $("history-saved-btn").addEventListener("click", function () { showSaved($("history-saved").hidden); });
   $("history-latest").addEventListener("click", function () {

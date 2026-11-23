@@ -978,6 +978,12 @@ it there). Built on the bones of `/greatercircle/`.
     request, and CHRONIA does before each renewal, so that a token one app
     renewed is not renewed a second time by the other with a refresh token
     that is already spent. Signing out in either app signs out of both.
+    The **Account** menu at the right end of the top bar (a person, or the
+    account's initial once signed in; *Account* in the phone's sheet, since
+    23 November 2026) shows the same sign-in when signed out. Signed in, it
+    shows the account's email, the historian's count left today, whether
+    the account has CHRONIA Premium (with *Get Premium* when it does not),
+    and *Sign out*. Opening it asks the function (`mode: "me"`) afresh.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
     `supabase/migrations/20261012_historian_usage.sql`, and `historian_once`,
