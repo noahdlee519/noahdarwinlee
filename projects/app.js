@@ -744,8 +744,12 @@
 
   // ------------------------------------------------------------------ worlds
 
+  // Worlds renamed since links to them were shared: the old name opens the new world.
+  var WORLD_ALIASES = { dick: "zelazny" };
+
   function pickWorld(worlds) {
     var asked = params.get("world");
+    if (asked && WORLD_ALIASES[asked.toLowerCase()]) asked = WORLD_ALIASES[asked.toLowerCase()];
     var found = worlds.filter(function (w) { return w.slug === asked; })[0];
     if (found) return found;
     var last = store.get(WORLD_KEY);

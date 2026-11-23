@@ -110,7 +110,7 @@ test('polar land: a thick ice sheet off the map\'s edge, seamless, with a rocky 
   const polarWorlds = WORLDS.filter((w) => w.ice);
   assert.ok(polarWorlds.length >= 5);
   assert.ok(new Set(polarWorlds.map((w) => w.polar)).size >= 3, 'polar land should join, nearly join, and stand apart in different worlds');
-  const world = landOf('Dick'), { width: W, height: H, polar } = world;
+  const world = landOf('Zelazny'), { width: W, height: H, polar } = world;
   // Runs off the top edge all the way round, and is the same either side of the seam.
   let top = 0, depthSum = 0;
   for (let x = 0; x < W; x++) {

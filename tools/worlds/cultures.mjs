@@ -82,6 +82,31 @@ export const FOOCHOW = {
 // The architects' country names its towns after the modern era's architects.
 export const ARCHITECTS = ['Aalto', 'Barragán', 'Gropius', 'Hadid', 'Kahn', 'Mies', 'Niemeyer', 'Saarinen', 'Siza', 'Tange', 'Utzon', 'Wright', 'Ando', 'Bo Bardi', 'Breuer', 'Eames', 'Gehry', 'Isozaki', 'Lasdun', 'Lubetkin', 'Neutra', 'Piano', 'Rossi', 'Scarpa', 'Sert', 'Mendelsohn', 'Loos', 'Behrens', 'Perret', 'Prouvé', 'Kikutake', 'Kurokawa', 'Maekawa', 'Asplund', 'Jacobsen', 'Lewerentz', 'Rudolph', 'Johnson', 'Pei', 'Foster', 'Rogers', 'Stirling', 'Smithson', 'Venturi', 'Graves', 'Meier', 'Eisenman', 'Koolhaas', 'Herzog', 'Zumthor', 'Moneo', 'Botta', 'Holl', 'Kahn', 'Sullivan', 'Schindler', 'Lautner', 'Candela', 'Villanueva', 'Lina', 'Doshi', 'Correa', 'Bawa', 'Fathy', 'Tatlin', 'Melnikov', 'Rietveld', 'Oud', 'Dudok', 'Berlage', 'Taut', 'Scharoun', 'Häring', 'Terragni', 'Nervi', 'Ponti', 'Albini', 'Lods', 'Fuller', 'Wurster', 'Soriano', 'Ellwood', 'Koenig', 'Saarinen', 'Bunshaft', 'Yamasaki', 'Pelli', 'Roche', 'Mendes da Rocha', 'Artigas', 'Costa', 'Burle Marx', 'Aravena', 'Sejima', 'Ito', 'Maki', 'Shinohara'];
 
+// The New York and Chicago countries take real names: their towns are New York State's and Illinois's cities and
+// towns, and their other features (rivers, lakes, hills, and parks) the states' own names for theirs.
+export const REAL_PLACES = {
+  'new-york': {
+    towns: ['Albany', 'Buffalo', 'Rochester', 'Syracuse', 'Ithaca', 'Utica', 'Schenectady', 'Binghamton', 'Poughkeepsie', 'Saratoga Springs', 'Yonkers', 'Troy', 'Kingston', 'Elmira', 'Plattsburgh', 'Oswego', 'Niagara Falls', 'Cooperstown', 'Watertown', 'Hudson', 'Beacon', 'Rhinebeck', 'Lake Placid', 'Woodstock', 'Cortland', 'Oneonta', 'Geneva', 'Auburn', 'Corning', 'Jamestown', 'Olean', 'Lockport', 'Batavia', 'Canandaigua', 'Newburgh', 'Peekskill', 'Ossining', 'Glens Falls', 'Amsterdam', 'Gloversville', 'Rome', 'Massena', 'Ogdensburg', 'Potsdam', 'Malone', 'Saranac Lake', 'Hornell', 'Norwich', 'Catskill', 'Cold Spring', 'Montauk', 'Riverhead', 'Huntington', 'Hempstead', 'New Paltz', 'Margaretville', 'Penn Yan', 'Skaneateles', 'Seneca Falls', 'Dunkirk', 'Fredonia', 'Lake George', 'Ticonderoga', 'Hyde Park', 'Sag Harbor'],
+    words: ['Adirondack', 'Catskill', 'Seneca', 'Cayuga', 'Mohawk', 'Onondaga', 'Oneida', 'Chautauqua', 'Champlain', 'Genesee', 'Susquehanna', 'Taughannock', 'Letchworth', 'Shawangunk', 'Allegany', 'Tug Hill', 'Keuka', 'Otsego', 'Saranac', 'Ausable', 'Esopus', 'Schoharie', 'Chenango', 'Owasco', 'Canadice', 'Hemlock', 'Montezuma', 'Taconic', 'Harriman', 'Minnewaska', 'Tupper', 'Raquette', 'Sacandaga', 'Peconic', 'Gardiners', 'Moriches', 'Marcy', 'Whiteface', 'Slide', 'Watkins'],
+  },
+  illinois: {
+    towns: ['Springfield', 'Peoria', 'Rockford', 'Champaign', 'Naperville', 'Joliet', 'Aurora', 'Elgin', 'Evanston', 'Decatur', 'Bloomington', 'Waukegan', 'Urbana', 'Galena', 'Normal', 'Carbondale', 'Kankakee', 'Moline', 'Quincy', 'Cairo', 'Oak Park', 'Skokie', 'Wheaton', 'DeKalb', 'Rock Island', 'Danville', 'Galesburg', 'Macomb', 'Ottawa', 'LaSalle', 'Peru', 'Dixon', 'Freeport', 'Sterling', 'Pekin', 'Lincoln', 'Mattoon', 'Charleston', 'Effingham', 'Centralia', 'Mount Vernon', 'Marion', 'Alton', 'Belleville', 'Edwardsville', 'Collinsville', 'Jacksonville', 'Kewanee', 'Princeton', 'Streator', 'Pontiac', 'Rantoul', 'Crystal Lake', 'McHenry', 'St. Charles', 'Morris', 'Nauvoo', 'Metropolis', 'Harrisburg', 'Vandalia', 'Havana'],
+    words: ['Kaskaskia', 'Sangamon', 'Shawnee', 'Kickapoo', 'Illinois', 'Fox', 'Des Plaines', 'Kankakee', 'Rock', 'Vermilion', 'Embarras', 'Mackinaw', 'Spoon', 'Pecatonica', 'Kishwaukee', 'Apple', 'Starved Rock', 'Matthiessen', 'Giant City', 'Pere Marquette', 'Chain O\'Lakes', 'Carlyle', 'Shelbyville', 'Rend', 'Crab Orchard', 'Horseshoe', 'Kinkaid', 'Garden of the Gods', 'Cache', 'Little Wabash', 'Saline', 'Big Muddy', 'Salt Creek', 'Calumet', 'Wolf', 'Skokie', 'Waubonsee', 'Mississippi', 'Wabash', 'Ohio'],
+  },
+};
+// A namer from a list of real names, shuffled once per world but the largest first (places are named largest
+// first, so the cities take the cities' names and the villages the villages'); past its end, a country's invented
+// names (never a real name twice).
+function realNamer(list, rng, fallback) {
+  const big = list.big || 12;
+  const towns = [...rng.shuffle(list.towns.slice(0, big)), ...rng.shuffle(list.towns.slice(big))], words = rng.shuffle(list.words.slice());
+  let t = 0, w = 0;
+  return {
+    word: () => (w < words.length ? words[w++] : fallback.word()),
+    town: () => (t < towns.length ? towns[t++] : fallback.town()),
+  };
+}
+
 // makeNamer for one sound system: names that sound of one language.
 export function phonologyNamer(ph, rng) {
   const used = new Set();
@@ -89,6 +114,7 @@ export function phonologyNamer(ph, rng) {
     const fresh = (n) => { for (let t = 0; t < 60; t++) { const s = FOOCHOW.name(rng, n); if (!used.has(s)) { used.add(s); return s; } } return FOOCHOW.name(rng, n) + used.size; };
     return { word: () => fresh(rng.chance(0.75) ? 2 : 1), town: () => fresh(rng.chance(0.8) ? 2 : 3) };
   }
+  if (REAL_PLACES[ph.id]) return realNamer(REAL_PLACES[ph.id], rng, phonologyNamer(PHONOLOGIES.find((p) => p.id === (ph.base || 'celtic')) || PHONOLOGIES[0], rng.fork('fallback')));
   if (ph.id === 'architects') {
     const pool = rng.shuffle([...new Set(ARCHITECTS)]);
     const fallback = phonologyNamer(PHONOLOGIES[0], rng);
@@ -98,7 +124,8 @@ export function phonologyNamer(ph, rng) {
       town: () => {
         const base = pool[k++ % pool.length], lap = Math.floor((k - 1) / pool.length);
         // Mostly the plain surname; now and then a form a town might take.
-        const form = lap ? rng.pick([(w) => `${w} Heights`, (w) => `Port ${w}`, (w) => `${w} Park`, (w) => `New ${w}`]) : rng.chance(0.1) ? rng.pick([(w) => `${w} Heights`, (w) => `Port ${w}`, (w) => `Saint ${w}`, (w) => `${w} Park`]) : (w) => w;
+        // (Never "Saint": several of these architects were no saints.)
+        const form = lap ? rng.pick([(w) => `${w} Heights`, (w) => `Port ${w}`, (w) => `${w} Park`, (w) => `New ${w}`]) : rng.chance(0.1) ? rng.pick([(w) => `${w} Heights`, (w) => `Port ${w}`, (w) => `${w} Park`]) : (w) => w;
         const name = form(base);
         if (used.has(name)) return `${base} ${used.size}`;
         used.add(name);
@@ -156,7 +183,7 @@ export function assignCultures(projects, rng, nearBy = null) {
   projects.forEach((p, k) => {
     // The first sound system not spoken next door.
     let ph = phons[k % phons.length];
-    const special = p.id === 'fuzhounese' ? FOOCHOW : p.id === 'architects' ? { id: 'architects' } : null;
+    const special = p.id === 'fuzhounese' ? FOOCHOW : p.id === 'architects' ? { id: 'architects' } : p.id === 'nyc' ? { id: 'new-york' } : p.id === 'chicago' ? { id: 'illinois' } : null;
     if (nearBy) {
       const taken = new Set((nearBy[k] || []).map((j) => out[j] && out[j].phon.id).filter(Boolean));
       for (let t = 0; t < phons.length && taken.has(ph.id); t++) ph = phons[(k + t + 1) % phons.length];
@@ -165,7 +192,7 @@ export function assignCultures(projects, rng, nearBy = null) {
     if (special) ph = { ...ph, id: special.id, base: ph.id };
     out.push({
       phon: ph,
-      namer: phonologyNamer(special ? { ...ph, id: special.id } : ph, cr.fork('names')),
+      namer: phonologyNamer(special ? { ...ph, id: special.id, base: ph.base } : ph, cr.fork('names')),
       route: routes[k % routes.length],
       streets: cr.pick(STREET_BIAS[ph.base || ph.id] || STREET_STYLES),
       parks: customs[k % customs.length],

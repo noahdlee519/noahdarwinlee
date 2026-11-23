@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- Twenty worlds, named and seeded in this order: Le Guin, Asimov, Butler, Herbert, Bradbury, Clarke, Dick, Heinlein, Gibson, Banks, Lem, Atwood, Jemisin, Delany, Vonnegut, Verne, Wells, Shelley, Tiptree, Chiang.
+- Twenty worlds, named and seeded in this order: Le Guin, Asimov, Butler, Herbert, Bradbury, Clarke, Zelazny, Heinlein, Gibson, Banks, Lem, Atwood, Jemisin, Delany, Vonnegut, Verne, Wells, Shelley, Tiptree, Chiang.
 - All land is project land: no unowned land cell in any world.
 - Flagship countries are mainland countries ranked by size: CHRONIA > LoreTour > UCHRONIA > Fuzhounese Dictionary > Leggio > GREATERCIRCLE > Dealdesk. Small countries are islands, city-states, and small territories.
 - Dealdesk has four provinces: Rollmap, Screener, Closebook, LBOmatic.

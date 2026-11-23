@@ -15,7 +15,7 @@ import { TILE_LEVELS } from './world.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
-  rock: '#cbcfca', snow: '#ffffff', water: '#86cfe2', urban: '#eceef0', sand: '#f6efdc', dune: '#f4eee0', dryrock: '#ebe6db', salt: '#fdfdfb',
+  rock: '#cbcfca', snow: '#ffffff', water: '#7fd5e9', urban: '#eceef0', sand: '#f6efdc', dune: '#f4eee0', dryrock: '#ebe6db', salt: '#fdfdfb',
   line: '#4da9bb', border: '#26262a',
   province: '#606266', label: '#26262a',
 };

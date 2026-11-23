@@ -97,7 +97,7 @@ The list, each project's tier and rank, blurb, links, and media live in one data
 
 ## The worlds
 
-Twenty, named by surname: Le Guin, Asimov, Butler, Herbert, Bradbury, Clarke, Dick, Heinlein, Gibson, Banks, Lem, Atwood, Jemisin, Delany, Vonnegut, Verne, Wells, Shelley, Tiptree, and Chiang.
+Twenty, named by surname: Le Guin, Asimov, Butler, Herbert, Bradbury, Clarke, Zelazny, Heinlein, Gibson, Banks, Lem, Atwood, Jemisin, Delany, Vonnegut, Verne, Wells, Shelley, Tiptree, and Chiang.
 
 - **All land is project land** (Noah's call): no filler countries. Every landmass is divided among the projects, and the worlds are sized so 18 countries make a convincing world (seas, archipelagos, and a few large landmasses), not a crowd of slivers.
 - **Built to grow** (Noah's call): adding a project means adding an entry to the data file and rerunning the generator. Each world keeps a fixed seed and its parameters (land share, number of landmasses, country sizes from tier and rank) are derived from the project list, so the twenty worlds regenerate with the new country in them and keep their character.

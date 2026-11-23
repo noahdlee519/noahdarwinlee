@@ -537,7 +537,7 @@ async function menuStage(browser) {
       picture: (document.querySelector('.map-ground .map-image') || {}).getAttribute?.('href') || '',
       themeBtn: !!document.querySelector('#theme-btn'),
     }));
-    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && got.water === 'rgb(134, 207, 226)' && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
+    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && got.water === 'rgb(127, 213, 233)' && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
     await ctx.close();
   }
 

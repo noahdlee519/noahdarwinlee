@@ -2,12 +2,12 @@
   --font: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --orange: #e68019;
-  --water: #86cfe2;
+  --water: #7fd5e9;
   --shadow-rgb: 38, 38, 42;
   --toast-bg: #2f3034;
 
   /* The day map. */
-  --m-water: #86cfe2;
+  --m-water: #7fd5e9;
   --m-line: #4da9bb;
   --m-border: #26262a;
   --m-province: #606266;

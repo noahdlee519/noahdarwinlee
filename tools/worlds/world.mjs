@@ -16,7 +16,7 @@ import { buildSettlements, RANK } from './settlements.mjs';
 import { buildRoads } from './roads.mjs';
 import { buildStreets } from './towns.mjs';
 import { buildParks, buildAdmin, buildStreams, placeDetailLabels } from './features.mjs';
-import { assignCultures, phonologyNamer, PHONOLOGIES, CAPITAL_NAMES } from './cultures.mjs';
+import { assignCultures, CAPITAL_NAMES } from './cultures.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from './lakes.mjs';
 import { buildPolar, placeAbout } from './polar.mjs';
 import { coastDistance } from './terrain.mjs';
@@ -42,7 +42,7 @@ export const WORLDS = [
   { name: 'Herbert', layout: 'pangaea', masses: 1, latTop: 46, latBottom: 6, wet: 0.7, land: 0.09, mountains: 1.2, about: 'lake' },
   { name: 'Bradbury', layout: 'crescent', masses: 2, latTop: 58, latBottom: 14, wet: 0.74, warm: 2, about: 'volcano' },
   { name: 'Clarke', layout: 'quad', masses: 4, latTop: 50, latBottom: -50, wet: 1.05, mountains: 0.75, roughness: 1.25, about: 'ferry' },
-  { name: 'Dick', layout: 'northsouth', masses: 2, latTop: 70, latBottom: -20, wet: 1.05, ice: 'n', about: 'fjord', polar: 'isthmus' },
+  { name: 'Zelazny', layout: 'northsouth', masses: 2, latTop: 70, latBottom: -20, wet: 1.05, ice: 'n', about: 'fjord', polar: 'isthmus' },
   { name: 'Heinlein', layout: 'spine', masses: 2, latTop: 74, latBottom: 20, mountains: 1.6, about: 'lake' },
   { name: 'Gibson', layout: 'archipelago', masses: 3, latTop: 52, latBottom: 8, wet: 1.15, islands: 0.28, land: -0.04, about: 'atoll' },
   { name: 'Banks', layout: 'quad', masses: 4, latTop: 30, latBottom: -62, wet: 1.1, roughness: 1.2, ice: 's', about: 'crescent', polar: 'strait' },
@@ -190,8 +190,6 @@ export function makeWorld(name, projects, opts) {
   const labels = buildLabels(world, nations, projects, { cultures, settlements, drawnRivers });
   const aboutLabel = labelAbout(world, labels);
   if (aboutLabel) labels.push(aboutLabel);
-  const iceLabels = labelIce(world, labels, cultures);
-  labels.push(...iceLabels);
   const parks = buildParks({ land, owner, cover: picture ? cover : cover, elev, temp: fields.temp, moist: fields.moist, settlements, projects, areas: nations.areas, width, height, rng, dist: terrain.dist, smallLakes });
   const admin = buildAdmin({ owner, projects, settlements, areas: nations.areas, width, height, rng });
   // Streams; in the desert, dry riverbeds (wadis), drawn as faint lines.
@@ -237,29 +235,4 @@ function labelAbout(world, labels) {
     if (labels.every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) return l;
   }
   return null;
-}
-
-// Each polar ice sheet's name, across its widest part.
-function labelIce(world, labels, cultures) {
-  const { ice, width: W, height: H } = world;
-  const S = W / 1600, out = [];
-  if (!ice) return out;
-  const r = world.rng.fork('ice-names');
-  const cold = r.chance(0.5) ? 'nordic' : 'finnic';
-  const namer = phonologyNamer(PHONOLOGIES.find((p) => p.id === cold), r);
-  for (const side of ['n', 's']) {
-    let best = null;
-    for (let x = 200 * S; x < W - 200 * S; x += 8 * S) {
-      let depth = 0;
-      for (let k = 0; k < 220 * S; k++) { const y = side === 'n' ? k : H - 1 - k; if (ice[y * W + Math.floor(x)]) depth = k; else break; }
-      if (depth > 12 * S && (!best || depth > best.depth)) best = { x, depth };
-    }
-    if (!best) continue;
-    const y = side === 'n' ? best.depth * 0.5 : H - best.depth * 0.5;
-    const text = r.pick([(w) => `${w} Land`, (w) => `${w} Ice Sheet`, (w) => `${w} Land`])(namer.word());
-    const l = { id: `ice-${side}`, kind: 'region', text, lines: [text], x: Math.round(best.x * 10) / 10, y: Math.round(y * 10) / 10, size: 6 * S, angle: 0, spacing: 0.04, minZoom: 1 };
-    const rects = labelRects(l, 0.5 * S);
-    if (labels.every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) out.push(l);
-  }
-  return out;
 }

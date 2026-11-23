@@ -34,7 +34,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
   // Parks: only a faint edge, close in.
   if (D && zoom >= 3.9) for (const p of D.parks) parts.push(`<path d="${p.path}" fill="none" stroke="#5fae7d" stroke-opacity="0.45" stroke-width="${0.7 * px}"/>`);
   // Rivers and streams: the water's own blue, thin, no casing.
-  const RIVER = '#86cfe2';
+  const RIVER = '#7fd5e9';
   if (D && zoom >= 2.9 && D.wadis) parts.push(`<path d="${D.wadis}" fill="none" stroke="#e2dccd" stroke-width="${0.8 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
   if (D && zoom >= 2.9 && D.streams) parts.push(`<path d="${D.streams}" fill="none" stroke="${RIVER}" stroke-width="${0.6 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
   for (const r of data.rivers) {
