@@ -153,6 +153,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
   const r = rng.fork ? rng.fork('terrain') : rng;
   const nWarpA = makeNoise(r), nWarpB = makeNoise(r), nWarpC = makeNoise(r), nWarpD = makeNoise(r);
   const nDetail = makeNoise(r), nRough = makeNoise(r), nHill = makeNoise(r), nRidge = makeNoise(r);
+  const nValleyA = makeNoise(r), nValleyB = makeNoise(r), nValleyC = makeNoise(r);
   const nIsle = makeNoise(r), nPlateau = makeNoise(r), nFjord = makeNoise(r), nRangeA = makeNoise(r), nRangeB = makeNoise(r);
 
   const layoutName = style.layout && LAYOUTS[style.layout] ? style.layout : r.pick(DEFAULT_LAYOUT[clamp(masses, 1, 4)]);
@@ -610,14 +611,20 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
       const d = field[i] - seaLevel;
       if (!land[i]) { elev[i] = Math.min(-0.002, d * 0.5); continue; }
       if (basin[i]) { elev[i] = Math.min(-0.004, d * 0.4 - 0.004); continue; }
-      // The land rises gently from the coast; hills and plateaux ride on that.
-      const inland = 1 - Math.exp(-dist[i] / (85 * S));
+      // The land rises steadily from the coast, so water has a way down; hills
+      // and plateaux ride on that rise without damming it.
+      const dd = dist[i] / S;
+      const inland = 1 - Math.exp(-dd / 120);
       const hills = 0.5 + 0.5 * fbm(nHill, x / (70 * S), y / (70 * S), 5, 2, 0.5);
       const plateau = smoothstep(0.05, 0.5, nPlateau(x / (260 * S), y / (260 * S)));
       const rg = rangeF[i];
       const crest = ridged(nRidge, x / (44 * S), y / (44 * S), 5, 2.1, 0.55);
-      const coast = smoothstep(0, 9 * S, dist[i]);
-      let e = 0.004 + inland * (0.035 + 0.07 * hills * (0.4 + 0.6 * inland) + 0.1 * plateau * inland * (0.6 + 0.4 * hills)) + 0.012 * hills * coast;
+      const coast = smoothstep(0, 9, dd);
+      let e = 0.004 + 0.11 * inland + 0.00022 * Math.min(dd, 320) + inland * (0.045 * hills + 0.07 * plateau * inland) + 0.01 * hills * coast;
+      // Valleys: the land dips along winding lines (where a noise crosses
+      // zero), large ones and small, and rivers find and follow them.
+      const vx = x + 22 * S * nValleyC(x / (90 * S), y / (90 * S)), vy = y + 22 * S * nValleyC(x / (90 * S) + 31, y / (90 * S) - 17);
+      e += coast * (0.05 * Math.abs(nValleyA(vx / (125 * S), vy / (125 * S))) + 0.02 * Math.abs(nValleyB(vx / (46 * S), vy / (46 * S))));
       e += coast * rg * (0.28 + 0.66 * crest) * 0.85;
       elev[i] = clamp(e, 0.002, 1);
     }
