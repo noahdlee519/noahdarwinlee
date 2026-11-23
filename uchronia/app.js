@@ -5992,6 +5992,7 @@
     fitBar(false);
     if (sheetMode || ui.bare) return;
     document.documentElement.style.setProperty("--uc-bar-h", (bar.offsetTop + bar.offsetHeight) + "px");
+    if (!$("history").hidden) placeDrops();
     var h = barBase();
     if (h !== freeT) { freeT = h; applyView(); scheduleRender(); }
   }).observe(bar);
@@ -7447,7 +7448,14 @@
       ul.appendChild(li);
     });
   }
+  function placeDrops() {
+    if (sheetMode || ui.bare) return;
+    var r = panel.querySelector(".uc-end").getBoundingClientRect(), root = document.documentElement.style;
+    root.setProperty("--uc-drop-top", Math.round(r.bottom + 10) + "px");
+    root.setProperty("--uc-drop-right", Math.round(document.documentElement.clientWidth - r.right - 8) + "px");
+  }
   function showHistory(open) {
+    if (open) placeDrops();
     $("history").hidden = !open;
     $("history-btn").setAttribute("aria-expanded", String(open));
     document.body.classList.toggle("is-history", open);
