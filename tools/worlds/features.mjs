@@ -148,7 +148,7 @@ export function buildStreams({ land, hydro, width, height, style = {} }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const { acc, down, riverClass, lakes } = hydro;
   const tMain = (style.riverFlow ?? 430) * S * S;
-  const t = tMain * 0.1;
+  const t = tMain * 0.07;
   const isStream = (i) => land[i] && !lakes[i] && !riverClass[i] && acc[i] >= t;
   const hasIn = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (isStream(i) && down[i] >= 0) hasIn[down[i]] = 1;

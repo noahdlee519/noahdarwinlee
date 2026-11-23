@@ -245,7 +245,8 @@ export function buildRoads({ land, elev, hydro, owner, settlements, width, heigh
     if (road.cls !== 'highway') continue;
     const len = pathLength(road.pts);
     if (len < 70 * S) continue;
-    const international = owner[px(road.from.x, road.from.y)] !== owner[px(road.to.x, road.to.y)];
+    // A long route between two countries is an international one.
+    const international = len > 150 * S && owner[px(road.from.x, road.from.y)] !== owner[px(road.to.x, road.to.y)];
     const text = international ? `E${enext}` : String(next);
     if (international) enext += 1 + r.int(9); else next += 1 + r.int(14);
     for (const t of len > 220 * S ? [0.3, 0.7] : [0.5]) {

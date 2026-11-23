@@ -4,8 +4,8 @@
 //   node tools/worlds/generate.mjs                    all twenty
 //   node tools/worlds/generate.mjs --world "Le Guin"  one (repeat --world for more)
 //   node tools/worlds/generate.mjs --out some/folder  somewhere else
-//   node tools/worlds/generate.mjs --labels-only      rewrite only the world files' vectors
-//       and labels, keeping the pictures and tiles already written (it stops if
+//   node tools/worlds/generate.mjs --labels-only      rewrite only the world files' vectors,
+//       labels, and finer detail, keeping the pictures and tiles already written (it stops if
 //       the land has changed, since the pictures would then be stale)
 //
 // Reads portfolio-map/projects.json; writes <slug>.json and <slug>.png per
@@ -30,12 +30,13 @@ export function generate({ names = WORLDS.map((w) => w.name), outDir = join(root
     const started = Date.now();
     const world = makeWorld(name, projects);
     if (labelsOnly) {
-      const { data, png } = buildWorldFiles(world);
+      const { data, png, detail } = buildWorldFiles(world);
       const pngFile = join(outDir, `${world.slug}.png`), jsonFile = join(outDir, `${world.slug}.json`);
       if (!existsSync(pngFile) || !readFileSync(pngFile).equals(png)) throw new Error(`${name}: the land cover has changed; run without --labels-only`);
       data.tiles = JSON.parse(readFileSync(jsonFile, 'utf8')).tiles;
       const json = JSON.stringify(data);
       writeFileSync(jsonFile, json);
+      if (detail) { mkdirSync(join(outDir, 'detail'), { recursive: true }); writeFileSync(join(outDir, 'detail', `${world.slug}.json`), detail); }
       sizes.push({ name, slug: world.slug, jsonBytes: Buffer.byteLength(json), pngBytes: png.length });
       log(`${name.padEnd(9)} ${(Buffer.byteLength(json) / 1024).toFixed(0).padStart(4)} KB json (picture and tiles kept)   ${((Date.now() - started) / 1000).toFixed(1)} s`);
       continue;

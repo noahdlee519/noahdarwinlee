@@ -127,6 +127,19 @@ The map uses a web mapping app's colours and its land-cover scheme, not the site
 - The relief image becomes the land-cover image (with at most a faint hillshade); the vectors draw water, borders, rivers, and labels over it.
 - No Night version for now; the page keeps one light map whatever the site's theme.
 
+## Finer detail (Noah's request, 22 November)
+
+Zoomed in, the map reads as a real regional map, after the reference's conventions (never its identity):
+
+- **Places:** each country has a capital, cities, towns, and villages, settled on coasts, rivers and river mouths, and plains, and seldom in mountains, deserts, or tundra. A town is a white dot in a dark ring, a city a larger one, a capital a ring with a dark centre. Capitals show from zoom 1 or 2, cities from 2, towns from 3, and villages from 4.
+- **Built-up ground:** a light grey land-cover class (`#eceef0`) round each place, sized by rank and kept off steep ground.
+- **Roads:** highways (with yellow route shields, and green E-numbers where they cross a border), main roads, local roads, and street grids in the built-up areas, routed over low ground and across rivers. Roads are pale lilac-grey (`#9aa8c8` to `#d3d7e4`). Ferries are dashed lines across narrow sea.
+- **Water:** rivers take the water's own blue, thin and with no casing. Streams appear from zoom 3, and a few reservoirs sit on hill rivers.
+- **Parks and subdivisions:** a few national parks in wild country, each inside one country, with a green tint and a fine edge. The larger flagships show faint dashed subdivisions.
+- **Names:** peaks (a triangle and a height), capes, islands and island groups, forests, deserts, plateaus, deltas, and parks. Parks take project words where any are left, and the rest have invented names.
+- **Relief:** the finer tiles carry a faint hillshade (land facing the north-west lit, the far side in shadow).
+- **Loading:** all of this lives in `worlds/detail/<slug>.json`, which the page fetches the first time the map is zoomed past 1.3x, so the first load stays the world's two files. Every new layer has a Night colour.
+
 ## The page shell (builder's calls)
 
 - The site's usual header is hidden on this page; the rail's ≡ button opens the site's existing menu (`menu.js`), which carries the theme switch.
