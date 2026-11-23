@@ -104,6 +104,14 @@ export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, 
       left[c.country]--;
     }
   }
+  // Every oasis has its village.
+  for (const o of oases) {
+    if (out.some((q) => Math.hypot(q.x - o.x, q.y - o.y) < o.r * 2.5)) continue;
+    const i = Math.floor(o.y) * W + Math.floor(o.x);
+    if (!land[i] || lakes[i] || owner[i] < 0 || (blocked && blocked[i])) continue;
+    const v = { x: Math.floor(o.x) + 0.5, y: Math.floor(o.y) + 0.5, rank: RANK.VILLAGE, country: owner[i], size: 0.5, oasis: true };
+    out.push(v); put(v);
+  }
   // Capitals are the largest place of their country.
   for (const s of out) if (s.rank === RANK.CAPITAL) s.size = 2.4;
   return out;

@@ -79,7 +79,7 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
     const reach = 75 * S;
     if (jx >= 0) for (let x = 0; x < W; x++) {
       const d = Math.abs(wrapDx(x - jx));
-      if (d > reach) continue;
+      if (d > reach || top[x] > H) continue;
       const want = top[x] - (link === 'strait' ? 3.5 * S : 0.5 * S);
       depth[x] = Math.max(depth[x], depth[x] + (want - depth[x]) * Math.pow(smoothstep(reach, 0, d), 0.6));
     }
@@ -89,14 +89,15 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
     for (let f = 0; f < nf; f++) {
       const x0 = r.range(0, W);
       if (jx >= 0 && Math.abs(wrapDx(x0 - jx)) < reach + 10 * S) continue;
-      fjords.push({ x0, len: r.range(10, 32) * S, w: r.range(0.8, 1.8) * S, bend: r.range(-1, 1) * 5 * S, ph: r.range(0, TAU) });
+      fjords.push({ x0, len: r.range(10, 30) * S, w: r.range(0.7, 1.5) * S, bend: r.range(2, 6) * S * (r.chance(0.5) ? 1 : -1), lean: r.range(-0.9, 0.9), ph: r.range(0, TAU), waves: r.range(1.5, 3.5) });
     }
     const fjordAt = (x, k) => {
       for (const f of fjords) {
         const head = depth[Math.floor(((f.x0 % W) + W) % W)] - f.len;
         if (k < head || k > depth[Math.floor(((f.x0 % W) + W) % W)] + 6 * S) continue;
         const u = (k - head) / f.len; // 0 at the head, 1 at the mouth
-        const cx = f.x0 + f.bend * Math.sin(u * 3 + f.ph) * (1 - u);
+        // Winding, and leaning off the straight line to the pole.
+        const cx = f.x0 + f.lean * (k - head - f.len) + f.bend * Math.sin(u * f.waves * Math.PI + f.ph) * (1 - 0.5 * u);
         if (Math.abs(wrapDx(x - cx)) < f.w * (0.35 + 0.65 * clamp(u, 0, 1)) + 0.2 * S) return { u, f };
       }
       return null;
@@ -129,14 +130,22 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
       if (y < 2 || y > H - 3) continue;
       if (dl[Math.floor(y) * W + Math.floor(x)] < rad + 9 * S) continue;
       if (islands.some((o) => Math.hypot(wrapDx(o.x - x), o.y - y) < o.rad + rad + 3 * S)) continue;
-      islands.push({ x, y, rad, ring: blobRing(r, 0, 0, rad, { stretch: r.next() * 0.8, lean: r.next() * Math.PI, wobble: 1.6, n: 24 }) });
+      // An irregular outline: a stretched blob, its radius worked by noise round the shore, with bays and capes.
+      const ring = [], st = 1 + r.next() * 0.9, ln = r.next() * Math.PI, off = r.next() * 50;
+      for (let q = 0; q < 48; q++) {
+        const t = (q / 48) * TAU, rr = rad * (1 + 0.5 * fbm(nC, Math.cos(t) * 1.8 + off, Math.sin(t) * 1.8 - off, 4));
+        const u = Math.cos(t) * rr * st, v = (Math.sin(t) * rr) / Math.sqrt(st);
+        ring.push([u * Math.cos(ln) - v * Math.sin(ln), u * Math.sin(ln) + v * Math.cos(ln)]);
+      }
+      islands.push({ x, y, rad: rad * st, ring });
     }
 
     for (let x = 0; x < W; x++) for (let k = 0; k < H * 0.42; k++) {
       const y = yOf(k), i = y * W + x;
       const crinkle = 5 * S * seam(nC, x, k, 9 * S, 4);
-      let on = k < depth[x] + crinkle && !fjordAt(x, k);
-      if (!on && k < shelfDepth[x] + 1.5 * S * seam(nS, x, k, 6 * S, 2)) { on = true; shelf[i] = 1; }
+      const fj = fjordAt(x, k);
+      let on = k < depth[x] + crinkle && !fj;
+      if (!on && !fj && k < shelfDepth[x] + 1.5 * S * seam(nS, x, k, 6 * S, 2)) { on = true; shelf[i] = 1; }
       if (!on) for (const o of islands) { const dx = wrapDx(x + 0.5 - o.x), dy = y + 0.5 - o.y; if (Math.abs(dx) < o.rad * 2 && Math.abs(dy) < o.rad * 2 && inRing(o.ring, dx, dy)) { on = true; break; } }
       if (!on) continue;
       // Keep off the projects' land, but for the join; a strait stays open.
@@ -198,8 +207,9 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
   function fringeWidth(x, y) {
     // From a sliver to some 8 units, by stretches of coast; nil where an outlet glacier reaches the sea.
     const w = 2.2 * S + 7.5 * S * smoothstep(-0.3, 0.4, per(nF, x, 60 * S, 3, 1.7 + y * 0.0007));
-    const outlet = per(nO, x, 9 * S, 2, 5.1);
-    return outlet > 0.42 ? 0 : w * smoothstep(0.42, 0.25, outlet);
+    // (Outlets are patches along the coast, not columns, so an island is never striped.)
+    const outlet = seam(nO, x, y, 7 * S, 2);
+    return outlet > 0.45 ? 0 : w * smoothstep(0.45, 0.28, outlet);
   }
   const bil = (F, x, y) => {
     const fx = clamp(x - 0.5, 0, W - 1.001), fy = clamp(y - 0.5, 0, H - 1.001);
@@ -223,9 +233,9 @@ export function buildPolar({ land, width, height, rng, sides, link = 'apart' }) 
       return t > 0.05 ? COVER.GRASS : COVER.ROCK;
     }
     // Nunataks: rock through the ice, most near the coast, a few far in.
-    const nu = seam(nN, mx, my, 5 * S, 3) + 0.45 * seam(nN, mx + 400, my, 26 * S, 2);
-    const nearCoast = smoothstep(fw + 22 * S, fw + 2 * S, dc);
-    if (nu > 0.78 - 0.3 * nearCoast) return COVER.ROCK;
+    const nu = seam(nN, mx, my, 8 * S, 3) + 0.45 * seam(nN, mx + 400, my, 30 * S, 2);
+    const nearCoast = smoothstep(fw + 26 * S, fw + 2 * S, dc);
+    if (nu > 0.74 - 0.3 * nearCoast) return COVER.ROCK;
     return COVER.SNOW;
   };
   return { ice, claim, shelf, all, cover, sides };
@@ -301,9 +311,9 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
     }
     case 'atoll': {
       rad = r.range(7, 9.5) * S;
-      const lean = r.next() * Math.PI, st = 1 + r.next() * 0.35, rim = r.range(0.6, 1.1) * S;
+      const lean = r.next() * Math.PI, st = 1 + r.next() * 0.35, rim = r.range(1.3, 1.9) * S;
       const passes = [];
-      for (let q = 0, nq = 3 + r.int(4); q < nq; q++) passes.push({ a: r.next() * TAU, w: r.range(0.08, 0.3) });
+      for (let q = 0, nq = 2 + r.int(3); q < nq; q++) passes.push({ a: r.next() * TAU, w: r.range(0.05, 0.16) });
       // The rim, cut into islets by the passes: each islet a ring of its own.
       const K = 120, pt = (t, rr) => { const k = 1 + 0.1 * fbm(n1, Math.cos(t) * 1.3, Math.sin(t) * 1.3, 3); const u = Math.cos(t) * rr * k * st, v = Math.sin(t) * rr * k; return [cx + u * Math.cos(lean) - v * Math.sin(lean), cy + u * Math.sin(lean) + v * Math.cos(lean)]; };
       const cut = (t) => passes.some((p) => Math.abs(((t - p.a + 3 * Math.PI) % TAU) - Math.PI) < p.w);
@@ -311,7 +321,7 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
       const flush = () => {
         if (run.length >= 3) {
           // Islets swell here and there.
-          const outer = run.map((t) => pt(t, rad + rim * (0.5 + 0.6 * Math.max(0, fbm(n2, Math.cos(t) * 4, Math.sin(t) * 4, 2)))));
+          const outer = run.map((t) => pt(t, rad + rim * (0.5 + 0.9 * Math.max(0, fbm(n2, Math.cos(t) * 4, Math.sin(t) * 4, 2)))));
           const inner = run.map((t) => pt(t, rad - rim * 0.5)).reverse();
           rings.push([...outer, ...inner]);
         }
@@ -324,7 +334,9 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
       // The largest islet carries the dot.
       let big = rings[0], ba = 0;
       for (const g of rings) { const a = ringArea(g); if (a > ba) { ba = a; big = g; } }
-      dot = big[Math.floor(big.length / 4)];
+      // (Half way across the islet, at the middle of its length.)
+      const h = big.length >> 1, a1 = big[h >> 1], a2 = big[big.length - 1 - (h >> 1)];
+      dot = [(a1[0] + a2[0]) / 2, (a1[1] + a2[1]) / 2];
       extra.lagoon = circle(cx, cy, rad - rim * 0.5, 60, 0.1, 1.3, st, lean);
       break;
     }
@@ -346,7 +358,7 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
     case 'fjord': {
       rad = r.range(6, 8) * S;
       const K = 140, fj = [];
-      for (let q = 0, nq = 3 + r.int(3); q < nq; q++) fj.push({ a: r.next() * TAU, w: r.range(0.03, 0.06), d: r.range(0.45, 0.75) });
+      for (let q = 0, nq = 3 + r.int(3); q < nq; q++) fj.push({ a: r.next() * TAU, w: r.range(0.06, 0.1), d: r.range(0.55, 0.8) });
       const ring = [];
       for (let q = 0; q < K; q++) {
         const t = (q / K) * TAU;

@@ -125,10 +125,16 @@ export function simplify(pts, tol) {
 // taken out by running through the middle of each grid edge, then the line
 // is simplified and snapped to tenths (even tenths, so that the midpoints the
 // curve passes through are exact tenths too).
-function arcLine(arc, tol) {
+// On the map's own edges (W, H given) the line keeps to the grid's corners, so land that runs off an edge (the polar
+// land, across the wrap) meets it squarely and its other half with no sliver of sea between.
+function arcLine(arc, tol, W = 0, H = 0) {
   const p = arc.pts;
   const mids = [];
-  for (let k = 0; k + 1 < p.length; k++) mids.push([(p[k][0] + p[k + 1][0]) / 2, (p[k][1] + p[k + 1][1]) / 2]);
+  const onEdge = (q) => W && (q[0] === 0 || q[0] === W || q[1] === 0 || q[1] === H);
+  for (let k = 0; k + 1 < p.length; k++) {
+    if (onEdge(p[k]) && onEdge(p[k + 1])) { if (!mids.length || mids[mids.length - 1] !== p[k]) mids.push(p[k]); mids.push(p[k + 1]); }
+    else mids.push([(p[k][0] + p[k + 1][0]) / 2, (p[k][1] + p[k + 1][1]) / 2]);
+  }
   let line;
   if (arc.closed) {
     // A loop: simplify it as two halves between its two most distant points.
@@ -295,7 +301,7 @@ export function buildWorldFiles(world) {
   const arcs = traceArcs(key, W, H, -1);
   const lines = arcs.map((arc) => {
     const coast = arc.left < 0 || arc.right < 0;
-    return arcLine(arc, coast ? 0.5 : 0.62);
+    return arcLine(arc, coast ? 0.5 : 0.62, W, H);
   });
 
   // Where a line meets the map's east or west edge it turns there sharply (the vertex doubled, so the curve through

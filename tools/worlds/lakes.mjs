@@ -192,7 +192,7 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
       if (pts.length < 10) continue;
       const mid = pts[pts.length >> 1];
       if (spots.some((s) => Math.hypot(s[0] - mid[0], s[1] - mid[1]) < 26 * S)) continue;
-      const ring = ribbonRing(pts, (0.5 + r.next() * 0.7) * S, r);
+      const ring = ribbonRing(pts, (0.7 + r.next() * 0.9) * S, r);
       if (!clearFor(ring, 0.6, { river: 4 })) continue;
       occupy(ring, 'finger');
       spots.push(mid);
@@ -256,7 +256,7 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
       for (let q = 0; q < n && j + 8 < river.length - 4; q++) {
         const len = 5 + r.int(9);
         const pts = river.slice(j, j + len);
-        const ring = ribbonRing(pts, (0.55 + r.next() * 0.9) * S, r);
+        const ring = ribbonRing(pts, (0.9 + r.next() * 1.3) * S, r);
         if (clearFor(ring, 0.4, { river: 4 })) { occupy(ring, 'chain'); made++; }
         j += len + 3 + r.int(6);
       }

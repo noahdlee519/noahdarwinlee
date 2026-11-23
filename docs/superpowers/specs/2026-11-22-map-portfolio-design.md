@@ -156,6 +156,15 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
   - The sea is `#86cfe2`, and the land-cover palette is unshaded at every zoom.
   - Labels are untracked. Country names are bold `#121315`; water names are upright teal `#34768e`, small, and curve along channels and bays.
 
+## Variety (Noah's requests, 23 November, later)
+
+- **Towns and cities by type.** Villages and most towns are a main street or a crossroads with a few lanes; cities are grids, planned towns with diagonals, medieval cores, radial towns, coastal strips, ports round a harbour, river cities with bridges, hill towns on the contours, or sprawl with cul-de-sacs, by site, size, and country. The built-up ground is a soft grey patch with an organic outline that follows the coast, the river, and the land; streets are thin white lines in it. Only the three largest cities in a world have a ring road.
+- **Deserts as the reference draws them.** Broad smooth fields of pale sand and dry grass, no shards; warm grey-beige rocky plateaus and mountains (`#ebe6db`), near-white salt flats in the dry basins (`#fdfdfb`), dune ripples a shade off the sand (`#f4eee0`) only in the finer tiles, small green oases with a village, green river banks, and wadis as faint lines.
+- **Polar land.** In five worlds a thick ice sheet runs off the top or bottom edge, seamless across the wrap, with a fringe of rock and pale tundra, outlet glaciers, winding fjords, nunataks, ice shelves, and islands. It joins a project's land by an isthmus (that country takes the fringe near the join), lies across a strait, or stands apart. Beyond the polar edge the page draws ice, not sea.
+- **Fewer, finer lakes.** Finger lakes in mountain valleys, chains along rivers, a large lake or two with bays and islands, one or two lake districts in glaciated lowland, a few tarns and marsh ponds, oxbows, crater lakes, and reservoirs; tiny lakes nowhere else.
+- **Borders of several kinds.** Some are surveyed straight (between two points, along a parallel, or along a meridian), borders beside a river run down its middle, and the rest keep to crests and old irregular lines; province lines and subdivisions likewise.
+- **The About island** is a volcano with a crater lake, an atoll round a lagoon, a crescent, a fjord-cut isle, an island in a large lake, or an island with a lighthouse town, a causeway, or a ferry, by world; its label, dot, and the fly-there-then-About behaviour are as before.
+
 ## The page shell (builder's calls)
 
 - The site's usual header is hidden on this page; the rail's ≡ button opens the site's existing menu (`menu.js`), which carries the theme switch.

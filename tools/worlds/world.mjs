@@ -228,7 +228,10 @@ function labelAbout(world, labels) {
   if (!a) return null;
   const S = world.width / 1600, size = 3.6 * S;
   const R = (a.r || 6.5 * S) / S, cx = a.cx ?? a.x, cy = a.cy ?? a.y;
-  for (const [dx, dy] of [[0, R + 2.4], [0, -R - 2.4], [R + 6.5, 0], [-R - 6.5, 0], [0, 7.5], [0, -7.5]]) {
+  let spots = [[0, R + 2.4], [0, -R - 2.4], [R + 6.5, 0], [-R - 6.5, 0], [0, 7.5], [0, -7.5]];
+  // Clear of the causeway or the ferry: on the side away from the mainland.
+  if (a.dock) { const ux = a.dock[0] - cx, uy = a.dock[1] - cy; spots = spots.map((p, k) => [p, k]).sort((p, q) => p[0][0] * ux + p[0][1] * uy - (q[0][0] * ux + q[0][1] * uy) || p[1] - q[1]).map((e) => e[0]); }
+  for (const [dx, dy] of spots) {
     const l = { id: 'about', kind: 'island', text: 'About', lines: ['About'], x: Math.round((cx + dx * S) * 10) / 10, y: Math.round((cy + dy * S) * 10) / 10, size, angle: 0, spacing: 0, minZoom: 1 };
     const rects = labelRects(l, 0.5 * S);
     if (labels.every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) return l;

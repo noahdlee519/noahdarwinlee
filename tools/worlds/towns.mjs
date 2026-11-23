@@ -113,12 +113,12 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
   const typeOf = (s, style) => {
     const e0 = E(s.x, s.y), coast = D(s.x, s.y) < 3.2 * S;
     const relief = Math.max(...[[3, 0], [-3, 0], [0, 3], [0, -3]].map(([dx, dy]) => Math.abs(E(s.x + dx * S, s.y + dy * S) - e0)));
-    const hilly = e0 > 0.13 && relief > 0.018;
+    const hilly = e0 > 0.06 && relief > 0.009;
     const river = nearRiver(s.x, s.y, 3.5 * S);
     const u = r.next();
     if (s.rank === RANK.VILLAGE) return u < 0.62 ? 'mainstreet' : 'crossroads';
     if (s.rank === RANK.TOWN) {
-      if (coast && u < 0.45) return 'coastal';
+      if (coast && u < 0.35) return 'coastal';
       if (river && u < 0.5) return 'river';
       if (hilly && u < 0.6) return 'hill';
       if (style === 'grid' && u < 0.55) return 'grid';
@@ -128,11 +128,11 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
       // A harbour wants a bay: count the sea round the place.
       let sea = 0;
       for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; if (D(s.x + Math.cos(a) * 5 * S, s.y + Math.sin(a) * 5 * S) < 0.5) sea++; }
-      if (sea >= 4 && sea <= 8 && u < 0.4) return 'port';
-      if (u < 0.6) return 'coastal';
+      if (sea >= 4 && sea <= 8 && u < 0.3) return 'port';
+      if (u < 0.5) return 'coastal';
     }
     if (river && r.next() < 0.75) return 'river';
-    if (hilly && r.next() < 0.6) return 'hill';
+    if (hilly && r.next() < 0.7) return 'hill';
     if (r.next() < 0.22) return 'sprawl';
     if (style === 'grid') return s.rank === RANK.CAPITAL || r.next() < 0.3 ? 'planned' : 'grid';
     if (style === 'radial') return 'radial';
@@ -197,7 +197,7 @@ export function buildStreets({ settlements, exits, cultures, land, elev, hydro, 
       }
       // A ragged, organic edge, frayed more on the larger places.
       const sc = Math.max(1.2 * S, R * 0.33);
-      v += 0.3 * fbm(nU, x / sc, y / sc, 3) + 0.12 * fbm(nU2, x / (sc * 0.3), y / (sc * 0.3), 2);
+      v += 0.38 * fbm(nU, x / sc, y / sc, 3) + 0.16 * fbm(nU2, x / (sc * 0.28), y / (sc * 0.28), 3);
       // Not up the steep or high ground, unless the town is a hill town.
       const e = E(x, y);
       v += type === 'hill' ? 3 * smoothstep(0.36, 0.44, e) : 2.5 * smoothstep(0.2, 0.34, e) + 1.5 * smoothstep(0.03, 0.08, Math.abs(e - e0));
