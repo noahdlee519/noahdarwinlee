@@ -8,7 +8,7 @@
 //       labels, and finer detail, keeping the pictures and tiles already written (it stops if
 //       the land has changed, since the pictures would then be stale)
 //
-// Reads portfolio-map/projects.json; writes <slug>.json and <slug>.png per
+// Reads projects/projects.json; writes <slug>.json and <slug>.png per
 // world, and index.json listing the twenty in order.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -19,11 +19,11 @@ import { writeWorld, buildWorldFiles } from './output.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-export function readProjects(file = join(root, 'portfolio-map', 'projects.json')) {
+export function readProjects(file = join(root, 'projects', 'projects.json')) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
-export function generate({ names = WORLDS.map((w) => w.name), outDir = join(root, 'portfolio-map', 'worlds'), projects = readProjects(), log = () => {}, labelsOnly = false } = {}) {
+export function generate({ names = WORLDS.map((w) => w.name), outDir = join(root, 'projects', 'worlds'), projects = readProjects(), log = () => {}, labelsOnly = false } = {}) {
   mkdirSync(outDir, { recursive: true });
   const sizes = [];
   for (const name of names) {

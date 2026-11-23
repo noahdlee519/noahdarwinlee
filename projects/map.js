@@ -4,7 +4,7 @@
   "use strict";
 
   var NS = "http://www.w3.org/2000/svg";
-  var ROOT = "/portfolio-map/";
+  var ROOT = "/projects/";
   var MAX_ZOOM = 6;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -324,7 +324,8 @@
   // Kinds of names the visitor has switched off in the menu's map layers: they are neither drawn nor counted.
   MapView.prototype.setHiddenKinds = function (kinds) {
     this.hiddenKinds = kinds || {};
-    if (this.world) this.render();
+    if (this.world && !this.anim) this.render(true);
+    else if (this.world) this.render();
   };
   MapView.prototype._setImageHref = function (image) {
     if (this.baseHref) image.setAttribute("href", this.baseHref);

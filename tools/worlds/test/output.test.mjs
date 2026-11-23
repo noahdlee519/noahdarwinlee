@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { makeWorld, WORLDS, slugOf } from '../world.mjs';
 import { buildWorldFiles } from '../output.mjs';
 
-const projects = JSON.parse(readFileSync(new URL('../../../portfolio-map/projects.json', import.meta.url), 'utf8'));
+const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 
 test('Le Guin comes out byte for byte the same twice, inside the size budget', () => {
   const a = buildWorldFiles(makeWorld('Le Guin', projects));
@@ -15,7 +15,7 @@ test('Le Guin comes out byte for byte the same twice, inside the size budget', (
   assert.ok(total <= 300 * 1024, `Le Guin is ${Math.round(total / 1024)} KB`);
 });
 
-const dir = new URL('../../../portfolio-map/worlds/', import.meta.url);
+const dir = new URL('../../../projects/worlds/', import.meta.url);
 test('the written worlds: twenty in order, each inside the size budget', { skip: !existsSync(new URL('index.json', dir)) && 'not generated yet' }, () => {
   const index = JSON.parse(readFileSync(new URL('index.json', dir), 'utf8'));
   assert.equal(index.length, 20);

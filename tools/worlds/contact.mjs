@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Contact sheets: the worlds drawn as the page will draw them, for review.
 //
-//   node tools/worlds/contact.mjs                 portfolio-map/worlds/contact-1.png ... contact-5.png
+//   node tools/worlds/contact.mjs                 projects/worlds/contact-1.png ... contact-5.png
 //   node tools/worlds/contact.mjs --dir some/folder
 //   node tools/worlds/contact.mjs --world "Le Guin" --zoom 2 --at 800,400 --to /tmp/le-guin.png
 //       one world on its own, at a zoom, centred on a point (for a closer look)
@@ -203,7 +203,7 @@ export function renderSheet(dir, worlds, { tile = 1200 } = {}) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const args = process.argv.slice(2);
-  let dir = join(root, 'portfolio-map', 'worlds'), one = null, zoom = 1, at = null, to = null;
+  let dir = join(root, 'projects', 'worlds'), one = null, zoom = 1, at = null, to = null;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--dir') dir = args[++i];
     else if (args[i] === '--world') one = args[++i];

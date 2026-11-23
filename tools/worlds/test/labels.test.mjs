@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { buildLand, buildNations, buildLabels } from '../world.mjs';
 import { labelsOverlap, labelRects, waterStructure, enclosure, SEA_ENCLOSURE, WATER_SPACING } from '../labels.mjs';
 
-const projects = JSON.parse(readFileSync(new URL('../../../portfolio-map/projects.json', import.meta.url), 'utf8'));
+const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 const W = 1600;
 
 // One world, built once, for every test in this file.

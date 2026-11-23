@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { buildLand, buildNations } from '../world.mjs';
 import { landmasses } from '../terrain.mjs';
 
-const projects = JSON.parse(readFileSync(new URL('../../../portfolio-map/projects.json', import.meta.url), 'utf8'));
+const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 const W = 1600, H = 800, N = W * H;
 
 // Check everything the plan asks of a division of the land.

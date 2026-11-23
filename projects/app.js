@@ -101,7 +101,7 @@
   }
   function syncUrl() {
     var q = state.view === "project" && state.project ? "?world=" + state.world.slug + "&project=" + state.project + (state.province ? "&province=" + state.province : "") : "";
-    try { history.replaceState(null, "", ROOT + q); } catch (e) {}
+    try { history.replaceState(null, "", ROOT + q + location.hash); } catch (e) {}
   }
 
   // ------------------------------------------------------------------ countries as little maps
@@ -345,7 +345,15 @@
   // ------------------------------------------------------------------ opening and closing
 
   function open_(view, opts) { return open(view, opts); }
+  // The opening line over the map goes for good, this visit, once the visitor opens a project, searches, or opens
+  // the menu.
+  function dismissHint() {
+    var h = $("#hint");
+    if (h && !h.classList.contains("is-gone")) { h.classList.add("is-gone"); setTimeout(function () { h.hidden = true; }, 450); }
+  }
+
   function open(view, opts) {
+    if (view === "project") dismissHint();
     opts = opts || {};
     state.view = view;
     var id = opts.id, province = opts.province || null;
@@ -550,7 +558,7 @@
     open("project", { id: r.p.id, province: r.v ? r.v.id : null });
   }
   els.input.addEventListener("focus", function () { els.input.select(); showResults(); });
-  els.input.addEventListener("input", function () { showResults(); els.search.classList.toggle("has-value", !!els.input.value); });
+  els.input.addEventListener("input", function () { dismissHint(); showResults(); els.search.classList.toggle("has-value", !!els.input.value); });
   els.input.addEventListener("keydown", function (e) {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
@@ -989,11 +997,11 @@
   var drawer = (function () {
     var box = $("#drawer"), scrim = $("#drawer-scrim"), openers = $$("#menu-btn, .search-menu"), back = null;
     function open(from) {
+      dismissHint();
       back = from || document.activeElement;
       box.hidden = false; scrim.hidden = false;
       document.body.classList.add("is-drawer");
       openers.forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
-      $("#drawer-panel").setAttribute("aria-checked", String(state.panelOpen));
       $(".drawer-world").textContent = state.world ? state.world.name : "";
       $(".drawer-close", box).focus({ preventScroll: true });
     }
@@ -1017,11 +1025,6 @@
       if (!t) return;
       if (t.hasAttribute("data-layer")) { setLayer(t.getAttribute("data-layer"), t.getAttribute("aria-checked") !== "true"); return; }
       if (t.id === "layers-reset") { layersOff = []; store.set(LAYERS_KEY, "[]"); applyLayers(); return; }
-      if (t.id === "drawer-panel") {
-        showPanel(!state.panelOpen); updateRail(); updateSearchBox();
-        t.setAttribute("aria-checked", String(state.panelOpen));
-        return;
-      }
       // Any other choice closes the menu; links go where they lead.
       close(true);
       if (t.hasAttribute("data-drawer-view")) {
@@ -1105,6 +1108,7 @@
     layout();
     renderPeek();
     var prov = p && askedProvince && (p.provinces || []).some(function (v) { return v.id === askedProvince; }) ? askedProvince : null;
+    // A link that opens a project needs no line about clicking one.
     if (p) open("project", { id: p.id, province: prov, fly: false, sheet: isPhone() ? "half" : undefined });
     else if (isPhone()) open("world", { sheet: "peek" });
     // The one entrance: the world arrives a little far off and settles; a shared link then flies to its country.

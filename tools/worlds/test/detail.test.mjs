@@ -8,7 +8,7 @@ import { RANK } from '../settlements.mjs';
 import { ARCHITECTS } from '../cultures.mjs';
 import { landmasses } from '../terrain.mjs';
 
-const projects = JSON.parse(readFileSync(new URL('../../../portfolio-map/projects.json', import.meta.url), 'utf8'));
+const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 const world = makeWorld('Le Guin', projects);
 const { width: W, height: H, land, lakes, owner } = world;
 const D = world.detail;

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Checks the portfolio map (portfolio-map/), in stages.
+// Checks the portfolio map (projects/, formerly portfolio-map/), in stages.
 //
 //   node tools/portfolio-map-check.mjs content
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
-//   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|here|all] [base URL]
+//   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|here|moved|all] [base URL]
 //       map: the world draws 18 countries and their labels, zoom stops at 6x, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
 //       menu: the page stays White whatever the site's theme; the drawer, and each map layer it switches off; the
@@ -23,7 +23,7 @@ import { createRequire } from 'node:module';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const stage = process.argv[2] || 'all';
 const base = (process.argv[3] || 'http://localhost:8137').replace(/\/$/, '');
-const PAGE = `${base}/portfolio-map/`;
+const PAGE = `${base}/projects/`;
 
 let failures = 0;
 const ok = (cond, what) => {
@@ -51,7 +51,7 @@ function decodeIndexed(buf) {
 
 function content() {
   console.log('content');
-  const projects = JSON.parse(readFileSync(join(root, 'portfolio-map', 'projects.json'), 'utf8'));
+  const projects = JSON.parse(readFileSync(join(root, 'projects', 'projects.json'), 'utf8'));
   const exists = (src) => src.startsWith('/') && existsSync(join(root, src.split('?')[0]));
   ok(projects.length === 18, `18 projects (${projects.length})`);
   const fileOf = (m) => [m.src, m.video, m.poster, ...(m.srcset ? m.srcset.split(',').map((s) => s.trim().split(/\s+/)[0]) : [])].filter(Boolean);
@@ -73,15 +73,15 @@ function content() {
   }
   ok(projects.filter((p) => p.tier === 'flagship').every((p) => p.media.length > 0), 'every flagship has media');
   ok(exists('/portfolio/Lee_Noah_Resume.pdf'), 'the resume the rail opens exists');
-  const worlds = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', 'index.json'), 'utf8'));
+  const worlds = JSON.parse(readFileSync(join(root, 'projects', 'worlds', 'index.json'), 'utf8'));
   let size = 0, tileCount = 0, tileBytes = 0;
   for (const w of worlds) {
-    const d = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`), 'utf8'));
+    const d = JSON.parse(readFileSync(join(root, 'projects', 'worlds', `${w.slug}.json`), 'utf8'));
     const ids = new Set(d.projects.map((p) => p.id));
     if (!projects.every((p) => ids.has(p.id))) ok(false, `${w.slug} has every project`);
     // The world wraps east and west, so no land may run off either edge, except polar ice (snow, palette index 6),
     // which runs on across the seam: where it meets one edge it meets the other in the same rows.
-    const pic = decodeIndexed(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.png`)));
+    const pic = decodeIndexed(readFileSync(join(root, 'projects', 'worlds', `${w.slug}.png`)));
     let edge = 0, ice = 0;
     for (let y = 0; y < pic.H; y++) {
       const a = pic.px[y * pic.W], b = pic.px[y * pic.W + pic.W - 1];
@@ -97,13 +97,13 @@ function content() {
       let listed = 0, found = 0;
       for (let i = 0; i < lv.cols * lv.rows; i++) {
         const on = (parseInt(lv.has.charAt(i >> 2), 16) >> (i & 3)) & 1;
-        const f = join(root, 'portfolio-map', 'worlds', T.src, String(lv.scale), `${i % lv.cols}-${Math.floor(i / lv.cols)}.png`);
+        const f = join(root, 'projects', 'worlds', T.src, String(lv.scale), `${i % lv.cols}-${Math.floor(i / lv.cols)}.png`);
         if (on) { listed++; if (existsSync(f)) { found++; tileBytes += readFileSync(f).length; } }
       }
       tileCount += found;
       if (listed !== found) ok(false, `${w.slug}: ${listed - found} of the ${lv.scale}-per-unit tiles it lists are missing`);
     }
-    size = Math.max(size, readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`)).length + readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.png`)).length);
+    size = Math.max(size, readFileSync(join(root, 'projects', 'worlds', `${w.slug}.json`)).length + readFileSync(join(root, 'projects', 'worlds', `${w.slug}.png`)).length);
   }
   ok(size <= 300 * 1024, `${worlds.length} worlds each hold every project and meet the sea at their east and west edges; the largest first load is ${(size / 1024).toFixed(0)} KB (json and png)`);
   ok(tileCount > 0, `the finer tiles are all there: ${tileCount} in all, ${(tileBytes / 1048576).toFixed(1)} MB across the twenty worlds, loaded only for the part of the map in view`);
@@ -157,7 +157,7 @@ async function hereStage(browser) {
   await page.click('.locate');
   await page.waitForTimeout(500);
   const mid = await page.evaluate(() => ({ url: location.pathname + location.hash, zoom: window.__portfolioMap.map.zoom() }));
-  ok(mid.url.startsWith('/portfolio-map/'), `the location button does not leave at once (${mid.url})`);
+  ok(mid.url.startsWith('/projects/'), `the location button does not leave at once (${mid.url})`);
   await page.waitForTimeout(700);
   const near = await page.evaluate(() => {
     const m = window.__portfolioMap.map, r = m.rect(), h = m.world.here, W = m.world.width;
@@ -423,7 +423,7 @@ async function interfaceStage(browser) {
   await r1.reload();
   await r1.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready);
   const w2 = (await selected(r1)).world;
-  const order = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', 'index.json'), 'utf8')).map((w) => w.slug);
+  const order = JSON.parse(readFileSync(join(root, 'projects', 'worlds', 'index.json'), 'utf8')).map((w) => w.slug);
   ok(order[(order.indexOf(w1) + 1) % order.length] === w2, `a reload shows the next world (${w1} then ${w2})`);
   await rot.close();
 
@@ -542,10 +542,10 @@ async function menuStage(browser) {
   ok(!(await drawerOpen()), 'the × closes it');
   await page.click('#menu-btn'); await page.click('.drawer-row[data-drawer-view="saved"]');
   ok(!(await drawerOpen()) && (await page.evaluate(() => document.querySelector('#panel-body .title').textContent)) === 'Saved', 'choosing Saved closes it and opens Saved');
-  await page.click('#menu-btn'); await page.click('#drawer-panel');
-  ok(await page.evaluate(() => !document.body.classList.contains('is-panel') && document.querySelector('#drawer-panel').getAttribute('aria-checked') === 'false'), 'Show side panel hides the side panel');
-  await page.click('#drawer-panel');
-  ok(await page.evaluate(() => document.body.classList.contains('is-panel')), 'and shows it again');
+  await page.click('#menu-btn');
+  const classic = await page.evaluate(() => { const a = document.querySelector('#drawer-classic'); return { href: a && a.getAttribute('href'), target: a && a.target, text: a && a.textContent.trim(), first: document.querySelector('.drawer-group .drawer-row') === a, old: !!document.querySelector('#drawer-panel') }; });
+  ok(classic.href === '/projects/classic/' && !classic.target && classic.text === 'Show the old site' && classic.first && !classic.old, '"Show the old site" leads the menu, in place of "Show side panel", and opens /projects/classic/ in the same tab');
+  await page.keyboard.press('Escape');
 
   // Each map layer, switched off, is gone from the map (zoomed in, so the finer layers are there to switch off).
   await page.keyboard.press('Escape');
@@ -671,6 +671,72 @@ async function sharpStage(browser) {
   }
 }
 
+async function movedStage(browser) {
+  console.log('moved');
+  // The map lives at /projects/; the old address sends shared links on, query and hash and all.
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  page.errors = [];
+  page.on('pageerror', (e) => page.errors.push(e.message));
+  await page.goto(`${base}/portfolio-map/?world=le-guin&project=chronia#x`);
+  await page.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready, null, { timeout: 20000 });
+  const u = new URL(page.url());
+  ok(u.pathname === '/projects/' && u.hash === '#x' && u.searchParams.get('world') === 'le-guin' && (await panelTitle(page)) === 'CHRONIA', `/portfolio-map/?world=le-guin&project=chronia goes on to ${u.pathname}${u.search}, with CHRONIA open`);
+  await page.goto(`${base}/portfolio-map/`);
+  await page.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready, null, { timeout: 20000 });
+  ok(new URL(page.url()).pathname === '/projects/', '/portfolio-map/ goes on to /projects/');
+  const meta = await page.evaluate(() => ({ canon: (document.querySelector('link[rel=canonical]') || {}).href, og: (document.querySelector('meta[property="og:url"]') || {}).content }));
+  ok(meta.canon === 'https://noahdarwinlee.com/projects/' && meta.og === 'https://noahdarwinlee.com/projects/', 'the map names /projects/ as its address');
+
+  // The old projects page, at /projects/classic/, still works, with a quiet way back to the map.
+  const bad = [];
+  page.on('response', (r) => { if (r.status() >= 400) bad.push(r.status() + ' ' + r.url()); });
+  await page.goto(`${base}/projects/classic/`);
+  await page.waitForTimeout(1500);
+  const cl = await page.evaluate(() => ({ rows: document.querySelectorAll('.marquee-row').length, back: [...document.querySelectorAll('a')].some((a) => a.getAttribute('href') === '/projects/' && /show the map/i.test(a.textContent)), styled: getComputedStyle(document.body).fontFamily.includes('Familjen') }));
+  ok(cl.rows >= 10 && cl.back && cl.styled && bad.length === 0, `the old projects page works at /projects/classic/, with a link back to the map${bad.length ? ': ' + bad.join(' | ') : ''}`);
+  await page.screenshot({ path: '/tmp/portfolio-map-classic.png' });
+
+  // The site's own links to /projects/ reach the map.
+  const links = [];
+  for (const f of ['index.html', 'miscellaneous/index.html', 'drill/index.html', 'flashcard/index.html', 'citylayoutguessr/index.html', 'greatercircle/index.html']) {
+    const html = readFileSync(join(root, f), 'utf8');
+    if (/href="\/projects\/"/.test(html)) links.push(f);
+  }
+  ok(links.length >= 5, `the site's pages link to /projects/, which is now the map (${links.join(', ')})`);
+  ok(page.errors.length === 0, 'no errors');
+  await ctx.close();
+
+  // The opening line: there at first, gone once the visitor acts, and not back.
+  for (const phone of [false, true]) {
+    const c2 = await browser.newContext(phone ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } });
+    const p = await open(browser, '?world=le-guin', { context: c2 });
+    await p.waitForTimeout(600);
+    const h = await p.evaluate(() => { const e = document.querySelector('#hint'), r = e.getBoundingClientRect(), s = document.querySelector('.search-box').getBoundingClientRect(); const cs = getComputedStyle(e);
+      return { text: e.textContent, op: +cs.opacity, color: cs.color, bg: cs.backgroundColor, clear: r.bottom <= s.top || r.top >= s.bottom || r.right <= s.left || r.left >= s.right, below: r.top >= s.bottom, top: r.top }; });
+    ok(h.text === 'Click on a project to learn more.' && h.op === 1 && h.color === 'rgb(255, 255, 255)' && h.bg === 'rgba(0, 0, 0, 0)' && h.clear && (!phone || h.below), `${phone ? 'phone' : 'desktop'}: "${h.text}" shows in plain white at the top of the map, clear of the search ${phone ? 'pill, under it' : 'box'}`);
+    await p.screenshot({ path: phone ? '/tmp/portfolio-map-phone.png' : '/tmp/portfolio-map-desktop.png' });
+    if (phone) await p.tap('.search-menu'); else await p.click('#menu-btn');
+    await p.waitForTimeout(600);
+    ok(await p.evaluate(() => document.querySelector('#hint').hidden), `${phone ? 'phone' : 'desktop'}: opening the menu sends the line away`);
+    await c2.close();
+  }
+  const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p3 = await open(browser, '?world=le-guin', { context: c3 });
+  await p3.click('#search-input'); await p3.keyboard.type('le');
+  await p3.waitForTimeout(500);
+  ok(await p3.evaluate(() => document.querySelector('#hint').hidden), 'searching sends it away');
+  const p4 = await open(browser, '?world=le-guin', { context: c3 });
+  await p4.evaluate(() => window.__portfolioMap.open('project', { id: 'leggio' }));
+  await p4.waitForTimeout(500);
+  await p4.keyboard.press('Escape');
+  await p4.waitForTimeout(300);
+  ok(await p4.evaluate(() => document.querySelector('#hint').hidden), 'opening a project sends it away, and closing the project does not bring it back');
+  const p5 = await open(browser, '?world=le-guin&project=chronia', { context: c3 });
+  ok(await p5.evaluate(() => document.querySelector('#hint').hidden), 'a link that opens a project shows no line');
+  await c3.close();
+}
+
 if (stage !== 'content') {
   const { chromium } = createRequire(import.meta.url)('playwright');
   const browser = await chromium.launch();
@@ -678,6 +744,7 @@ if (stage !== 'content') {
     if (stage === 'map' || stage === 'all') await mapStage(browser);
     if (stage === 'interface' || stage === 'all') await interfaceStage(browser);
     if (stage === 'menu' || stage === 'all') await menuStage(browser);
+    if (stage === 'moved' || stage === 'all') await movedStage(browser);
     if (stage === 'sharp' || stage === 'all') await sharpStage(browser);
     if (stage === 'here' || stage === 'all') await hereStage(browser);
   } finally {

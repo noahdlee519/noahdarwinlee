@@ -2710,18 +2710,6 @@ body:not(.is-panel) .panel-tab .ic {
     max-width: 360px;
   }
 
-  .drawer-switch#drawer-panel {
-    display: none;
-  }
-
-  .drawer-group:first-child {
-    display: none;
-  }
-
-  .drawer-group:nth-child(2) {
-    border-top: 0;
-  }
-
   .viewer-stage {
     padding: 8px 0;
   }
@@ -2734,5 +2722,45 @@ body:not(.is-panel) .panel-tab .ic {
   .viewer-slide img,
   .viewer-slide video {
     border-radius: 0;
+  }
+}
+
+/* ================================================================ the opening line */
+
+/* Plain white words over the map, with just enough shadow to read on sea and land; gone once the visitor acts. */
+.hint {
+  position: fixed;
+  top: 22px;
+  left: calc(var(--map-left, 72px) + (100vw - var(--map-left, 72px)) / 2);
+  z-index: 9;
+  margin: 0;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  text-shadow: 0 0 1px rgba(38, 38, 42, 0.7), 0 1px 3px rgba(38, 38, 42, 0.55), 0 0 10px rgba(38, 38, 42, 0.3);
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 400ms ease;
+}
+
+/* On a desktop, centred over the map but never under the search box. */
+@media (min-width: 760px) {
+  .hint {
+    left: max(calc(var(--map-left, 72px) + (100vw - var(--map-left, 72px)) / 2), calc(84px + 384px + 24px + 160px));
+  }
+}
+
+.is-loading .hint,
+.hint.is-gone {
+  opacity: 0;
+}
+
+@media (max-width: 759px) {
+  .hint {
+    top: calc(76px + env(safe-area-inset-top));
+    left: 50%;
+    font-size: 15px;
   }
 }

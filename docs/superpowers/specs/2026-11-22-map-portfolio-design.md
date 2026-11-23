@@ -1,5 +1,7 @@
 # Portfolio as an imaginary map
 
+> **Moved, 23 November 2026:** the page now lives at `projects/` (`/projects/`), replacing the old projects page, which moved to `projects/classic/`. Read `portfolio-map/` below as `projects/`; `/portfolio-map/` redirects there.
+
 Design, 22 November 2026. Approved approach: A (pre-made vector worlds with a relief picture underneath). Local preview only; nothing is pushed until Noah says "push".
 
 ## Intent
