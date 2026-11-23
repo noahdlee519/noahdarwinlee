@@ -622,7 +622,7 @@
   var BENCH = [
     ["all layers", {}], ["no terrain", { relief: 1 }], ["no aged paper", { aging: 1 }], ["no coastal band", { coastband: 1 }],
     ["no colour bands", { bands: 1 }], ["no names", { labels: 1 }], ["no rivers and lakes", { water: 1 }], ["no sea ripples", { ripples: 1 }],
-    ["1x pixels", { dpr1: 1 }], ["old moving detail", { sharp: 1 }], ["names as text", { sprites: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
+    ["1x pixels", { dpr1: 1 }], ["old moving detail", { sharp: 1 }], ["names as text", { sprites: 1 }], ["names laid out every frame", { carry: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
   ];
   function benchStart() {
     if (bench || !perf) return;
@@ -3365,7 +3365,7 @@
         if (boxOnLand(L, b, shapes)) continue;
         placed.push(b);
         seen.add(sm.p.id);
-        items.push({ id: sm.p.id, name: sm.name, people: false, f: 9, sea: true, dir: dirs[q], geo: { lines: straightLines(lines, b.cx, b.cy, 9, 1), boxes: [b], x: b.cx, y: b.cy, ang: 0 } });
+        items.push({ id: sm.p.id, name: sm.name, people: false, f: 9, sea: true, dir: dirs[q], at: lonLatAt(b.cx, b.cy), geo: { lines: straightLines(lines, b.cx, b.cy, 9, 1), boxes: [b], x: b.cx, y: b.cy, ang: 0 } });
         break;
       }
     }
@@ -3557,13 +3557,56 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
   }
+  // Names carried along (23 November 2026). While the map turns or slides at one zoom, the states' names stay where the last
+  // layout put them on the ground, and each frame only works out where their letters now fall on the screen (glyphLayout; a
+  // name set beside its coast moves with the point it was set at). Laying them out afresh every frame, as before, took most of
+  // what was left of a moving frame once the names came from sprites (on an M2, 7.5 ms of about 20 over Europe). A layout is
+  // carried for LABEL_CARRY_MS, then made afresh, so names come in for land that has turned into view; a change of zoom, date,
+  // level, or size lays them out at once, as does a name pinned by an edit. A name that turns out of view is dropped.
+  var LABEL_CARRY_MS = 250, labelCarryMs = null, labelStats = { layouts: 0, carried: 0 };
+  function carrySig(snap) { return [snap.key, useLevel(), flat ? 1 : 0, view.zoom.toFixed(5), W, H, layoutEpoch].join("|"); }
+  function carriedLabels(snap) {
+    var from = labelCache.get("carry");
+    if (!from || skip.carry || edits.labelN || devGhost || from.sig !== carrySig(snap)) return null;
+    if (performance.now() - from.time >= (labelCarryMs === null ? LABEL_CARRY_MS : labelCarryMs)) return null;
+    var scale = (flat ? FB.k : B.r) / GU, out = [], i, j, it, geo;
+    for (i = 0; i < from.items.length; i++) {
+      it = from.items[i];
+      if (it.sea) {
+        var q = it.at ? projectLL(it.at[0], it.at[1]) : null, b = it.geo.boxes[0];
+        if (!q || (!flat && q[2] < 0.45)) continue;
+        geo = { lines: straightLines(it.geo.lines.map(function (l) { return l.text; }), q[0], q[1], it.f, 1), boxes: [mkBox(q[0], q[1], b.hw, b.hh, 0)], x: q[0], y: q[1], ang: 0 };
+      } else if (it.src && !!it.src.fr.flat === flat) geo = glyphLayout(it.src.fr, it.src.fm, it.src.o, it.f, it.people, scale);
+      else return null;
+      if (!geo) continue;
+      var seen = false;
+      for (j = 0; j < geo.boxes.length && !seen; j++) { var bx = geo.boxes[j]; seen = bx.x < W && bx.y < H && bx.x + bx.w > 0 && bx.y + bx.h > 0; }
+      if (!seen) continue;
+      var copy = {};
+      for (var key in it) copy[key] = it[key];
+      copy.geo = geo;
+      out.push(copy);
+    }
+    out.partial = true;
+    return out;
+  }
   function drawPolityLabels(snap, placed, kp) {
     if (!layers.states) return;
     var quick = moving || rangeActive;
     var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, layoutEpoch, quick ? 1 : 0,
       placed.map(function (b) { return Math.round(b.x) + ":" + Math.round(b.y) + ":" + Math.round(b.w) + ":" + Math.round(b.h); }).join(",")].join("|");
     var memo = labelCache.get("layout");
-    if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
+    if (!memo || memo.key !== key) {
+      var items = moving && !rangeActive ? carriedLabels(snap) : null;
+      if (items) labelStats.carried++;
+      else {
+        items = layoutPolities(snap, placed.slice(), kp);
+        labelStats.layouts++;
+        labelCache.set("carry", { sig: carrySig(snap), time: performance.now(), items: items });
+      }
+      memo = { key: key, items: items };
+      labelCache.set("layout", memo);
+    }
     if (quick && !settleLabels) settleLabels = setTimeout(function wait() { settleLabels = moving || rangeActive ? setTimeout(wait, 200) : 0; if (!settleLabels) scheduleRender(true); }, 200);
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     var time = performance.now(), live = false, k, it, warring = atWarIds();
@@ -9921,10 +9964,13 @@
       return ch.map(function (a) { a.sort(function (x, y) { return x - y; }); return a[a.length >> 1]; });
     },
     perfState: function () {
-      return { plain: PLAIN, lowMem: LOW_MEM, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
+      return { plain: PLAIN, lowMem: LOW_MEM, labels: { layouts: labelStats.layouts, carried: labelStats.carried }, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
         fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine >= 2; }).length : 0, modern: modern && modern.rows ? (modern.fine >= 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size, tiles: rd.cache.size };
     },
     baseCache: function (mode) { baseMode = mode; baseSig = null; scheduleRender(); },
+    // For how long a layout of the names is carried while the map moves, in ms (0 lays them out every frame, as before
+    // 23 November 2026; null puts back LABEL_CARRY_MS).
+    labelCarry: function (ms) { labelCarryMs = ms === null || ms === undefined ? null : +ms; labelCache.delete("carry"); labelCache.delete("layout"); },
     // Names from sprites: on or off (off draws them as text, as before 23 November 2026); with no argument, what is kept.
     // "letters" draws them as text but every line letter by letter, as the sprites are placed (a straight line as text is one
     // string, which the browser kerns), so that a check can compare the two drawings point for point.

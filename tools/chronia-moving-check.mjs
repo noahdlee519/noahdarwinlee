@@ -90,6 +90,52 @@ async function hold() {
   say(after > held && t.drawn[0] === t.canvas[0], "the full drawing comes back after the button is let go", after - held + " drawn, terrain " + t.drawn + " of " + t.canvas);
   await page.close();
 }
+// While the map turns at one zoom, the states' names are carried along where they lie on the ground, not laid out afresh every
+// frame, and a carried name is drawn where a fresh layout would put the same name.
+async function carry(label, flat, lon, lat, zoom) {
+  const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+  await page.addInitScript(() => { try { localStorage.setItem("chronia-tour", "1"); localStorage.setItem("chronia-key", "0"); } catch (e) {} });
+  await page.goto(base + "?y=1815-07&full", { waitUntil: "load" });
+  await page.waitForFunction(() => window.__chronia && window.__chronia.ready(), null, { timeout: 120000 });
+  await page.evaluate(([flat, lon, lat, zoom]) => { const c = window.__chronia; c.setFlat(flat); c.setView(lon, lat, zoom); }, [flat, lon, lat, zoom]);
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(3500);
+  const r = await page.evaluate(([lon, lat]) => {
+    const c = window.__chronia;
+    if (!c.labelCarry) return null;
+    const names = () => c.labels().filter((l) => l.kind === "polity" || l.kind === "people");
+    const count = () => c.perfState().labels;
+    c.timeRender(2);
+    const atRest = names().length;
+    // a headless frame takes longer than the time a layout is carried for, so the check lets it be carried without limit
+    c.labelCarry(1e9);
+    c.moving(true);
+    c.setView(lon, lat); c.timeRender(1);
+    const n0 = count();
+    for (let i = 1; i <= 8; i++) { c.setView(lon + i * 0.4, lat + i * 0.1); c.timeRender(1); }
+    const n1 = count(), carried = names();
+    // the same view laid out afresh, still moving
+    c.labelCarry(0); c.timeRender(1);
+    const n2 = count(), fresh = names();
+    c.moving(false); c.labelCarry(null);
+    const at = new Map(fresh.map((l) => [l.id, l]));
+    // A fresh layout may choose another place for a name, so not every name is compared: most must lie within a third of a
+    // pixel of where they were carried to, which a name carried wrongly (to another point, or by the wrong turn) would not.
+    const gaps = [];
+    carried.forEach((l) => { const f = at.get(l.id); if (f && f.sea === l.sea) gaps.push(Math.hypot(f.x - l.x, f.y - l.y)); });
+    gaps.sort((a, b) => a - b);
+    return { atRest, laidOut: n1.layouts - n0.layouts, carriedFrames: n1.carried - n0.carried, freshLayouts: n2.layouts - n1.layouts, carried: carried.length, fresh: fresh.length, both: gaps.length,
+      near: gaps.filter((g) => g < 0.34).length, median: gaps.length ? gaps[gaps.length >> 1] : 99, worst: gaps.length ? gaps[gaps.length - 1] : 99 };
+  }, [lon, lat]);
+  if (!r) { say(false, label + ": the page can carry its names along", "no labelCarry"); await page.close(); return; }
+  say(r.atRest > 5 && r.carried > 5, label + ": there are names to carry", r.atRest + " at rest, " + r.carried + " carried");
+  say(r.laidOut === 0 && r.carriedFrames === 8, label + ": eight frames of turning lay the names out no more than once", r.laidOut + " layouts, " + r.carriedFrames + " frames carried");
+  say(r.freshLayouts === 1, label + ": with nothing to carry from, the names are laid out", r.freshLayouts + " layouts");
+  say(r.both >= Math.min(r.carried, r.fresh) * 0.6 && r.near >= r.both * 0.6 && r.median < 0.1 && r.worst < 40, label + ": a carried name lies where a fresh layout puts it", r.both + " names in both, " + r.near + " within a third of a pixel, median " + r.median.toFixed(2) + ", farthest " + r.worst.toFixed(2) + " px");
+  await page.close();
+}
+await carry("names on the globe", false, 10, 48, 3);
+await carry("names on the flat map", true, 10, 45, 2.5);
 await hold();
 await run("globe", false, 15, 25, 1);
 await run("globe, close", false, 10, 46, 5);
