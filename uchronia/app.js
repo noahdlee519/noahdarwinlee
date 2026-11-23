@@ -18,6 +18,8 @@
     });
     return out;
   }
+  var PL = {};
+  function PN(cat, key, en) { var m = PL[cat]; return (m && m[key]) || en; }
   function lowerStep(s) { return LANG === "de" ? s : s.charAt(0).toLowerCase() + s.slice(1); }
   function translatePage(root) {
     if (LANG === "en") return;
@@ -86,7 +88,7 @@
   var HALF_PI = Math.PI / 2;
 
   var levels = null, feats = null, geoFull = null, objKey = "provinces";
-  var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [];
+  var nUnit = 0, nProv = 0, unitProv = null, unitName = [], provName = [], provUnits = [], unitNameL = [], provNameL = [], groupNameL = [];
   var provGroup = null, groupName = [], groupProvs = [], baseObjects = null, detailGeo = null, hasDetail = false;
   var pieces = [], pieceSeq = 0, pieceVersion = 0, lasso = null, unitBox = null, unitCoast = null, edgeHint = -1, PC = window.polygonClipping;
   var unitArea = null, unitNeighbors = null, unitGrid = null, unitClose = null, unitCloseWide = null;
@@ -1701,7 +1703,7 @@
         var L = prepareArc(line);
         (byRank[r] = byRank[r] || []).push(L);
         if (!pr.n) return;
-        if (!named.has(pr.n)) named.set(pr.n, { name: pr.n, r: r, lines: [] });
+        if (!named.has(pr.n)) named.set(pr.n, { name: PN("river", pr.n, pr.n), r: r, lines: [] });
         var e = named.get(pr.n);
         e.lines.push(L); e.r = Math.min(e.r, r);
       });
@@ -2137,16 +2139,17 @@
   function regionName(u) {
     if (u < 0) return "";
     var p = unitProv[u], g = provGroup[p];
-    if (!fineAt(u)) return g >= 0 ? groupName[g] : provName[p];
-    if (fineData && provUnits[p].length > 1) return unitName[u] + ", " + provName[p];
-    return g >= 0 ? provName[p] + ", " + groupName[g] : provName[p];
+    if (!fineAt(u)) return g >= 0 ? groupNameL[g] : provNameL[p];
+    if (fineData && provUnits[p].length > 1) return (unitNameL[u] || unitName[u]) + T(", ") + provNameL[p];
+    return g >= 0 ? provNameL[p] + T(", ") + groupNameL[g] : provNameL[p];
   }
   function regionTitle(u) {
     if (u < 0) return "";
     var p = unitProv[u], g = provGroup[p];
-    if (!fineAt(u)) return g >= 0 ? groupName[g] : provName[p];
-    return fineData && provUnits[p].length > 1 ? unitName[u] : provName[p];
+    if (!fineAt(u)) return g >= 0 ? groupNameL[g] : provNameL[p];
+    return fineData && provUnits[p].length > 1 ? unitNameL[u] || unitName[u] : provNameL[p];
   }
+  function unitCode(p) { var o = base && base.provOwner[p]; return o >= 0 && base.countries[o] ? base.countries[o].code : ""; }
   var regionShapes = new Map();
   function regionShape(u, lvl) {
     var p = unitProv[u], g = provGroup[p];
@@ -2670,7 +2673,7 @@
     if (!lakesLoad) lakesLoad = fetchJSON("data/lakes.json").then(function (rows) {
       lakes = rows.map(function (r) {
         var v = toVec(r[2], r[3]);
-        return { name: r[0], km2: r[1], v: v, lam: r[2] * D2R, phi: r[3] * D2R, reach: Math.sqrt(r[1]) * 1.6 + 5, f: prepare([{ geometry: { type: "MultiPolygon", coordinates: r[4] } }])[0] };
+        return { name: PN("lake", r[0], r[0]), km2: r[1], v: v, lam: r[2] * D2R, phi: r[3] * D2R, reach: Math.sqrt(r[1]) * 1.6 + 5, f: prepare([{ geometry: { type: "MultiPolygon", coordinates: r[4] } }])[0] };
       });
       scheduleRender();
     }).catch(function (e) { console.warn("lakes", e); });
@@ -2898,7 +2901,7 @@
   function townMin(S) { return S >= 12000 ? 5 : S >= 8000 ? 15 : S >= 5000 ? 40 : Infinity; }
   function loadTowns() {
     townsLoad = fetchJSON("data/towns.json").then(function (rows) {
-      towns = rows.map(function (r) { var v = toVec(r[1], r[2]); return { name: r[0], pop: r[3], x: v[0], y: v[1], z: v[2], lam: r[1] * D2R, phi: r[2] * D2R, w: 0 }; });
+      towns = rows.map(function (r) { var v = toVec(r[1], r[2]); return { name: PN("town", r[0] + "|" + r[1] + "|" + r[2], r[0]), en: r[0], pop: r[3], x: v[0], y: v[1], z: v[2], lam: r[1] * D2R, phi: r[2] * D2R, w: 0 }; });
       townCells = new Map();
       rows.forEach(function (r, i) {
         var k = cellKey(Math.floor(r[1]), Math.floor(r[2])), list = townCells.get(k);
@@ -5442,7 +5445,7 @@
     base.cities.forEach(function (b, i) {
       var c = cityIndex.get("b" + i);
       if (!c) { x.push(i); return; }
-      if (c.name !== b.name || c.lon !== b.lon || c.lat !== b.lat || c.tier !== b.tier || c.cap !== b.cap) m.push([i, c.name, round4(c.lon), round4(c.lat), c.tier, c.cap]);
+      if (c.name !== b.name || c.lon !== b.lon || c.lat !== b.lat || c.tier !== b.tier || c.cap !== b.cap) m.push([i, c.name === b.name && b.en ? b.en : c.name, round4(c.lon), round4(c.lat), c.tier, c.cap]);
     });
     cities.forEach(function (c) { if (c.id.charAt(0) === "u") a.push([c.name, round4(c.lon), round4(c.lat), c.tier, c.cap, c.id]); });
     if (x.length) d.x = x;
@@ -5473,7 +5476,7 @@
     var old = countries;
     var nb = base.countries.length;
     for (var u = 0; u < nUnit; u++) owner[u] = base.provOwner[unitProv[u]];
-    countries = base.countries.map(function (b, i) { return { code: b.code, name: b.name, color: b.color, ruler: b.ruler, claims: b.claims ? b.claims.slice() : undefined, alive: true, label: old[i] ? old[i].label : null }; });
+    countries = base.countries.map(function (b, i) { return { code: b.code, name: b.name, en: b.en, color: b.color, ruler: b.ruler, claims: b.claims ? b.claims.slice() : undefined, alive: true, label: old[i] ? old[i].label : null }; });
     d = isMapObject(d) ? d : {};
     var remap = new Map();
     if (Array.isArray(d.c)) d.c.slice(0, nb + MAX_NEW).forEach(function (row) {
@@ -5545,7 +5548,8 @@
     if (Array.isArray(d.x)) d.x.slice(0, nbc).forEach(function (i) { if (isInt(i) && i >= 0 && i < nbc) setCityState("b" + i, null); });
     if (Array.isArray(d.m)) d.m.slice(0, nbc).forEach(function (row) {
       if (!Array.isArray(row) || !isInt(row[0]) || row[0] < 0 || row[0] >= nbc) return;
-      var c = validCity(row.slice(1));
+      var c = validCity(row.slice(1)), b = base.cities[row[0]];
+      if (c && b && b.en && c.name === b.en) c.name = b.name;
       if (c) setCityState("b" + row[0], c);
     });
     if (Array.isArray(d.a)) {
@@ -6242,10 +6246,12 @@
     nUnit = geoms.length;
     unitProv = new Int32Array(nUnit);
     unitName = new Array(nUnit);
+    unitNameL = new Array(nUnit);
     for (var u = 0; u < nUnit; u++) {
       var pr = geoms[u].properties || {};
       unitProv[u] = isFine ? pr.p : u;
       unitName[u] = pr.n || "";
+      unitNameL[u] = unitName[u] && unitProv[u] >= 0 && unitProv[u] < nProv && base ? PN("u", unitCode(unitProv[u]) + "|" + unitName[u], unitName[u]) : unitName[u];
     }
     provUnits = [];
     for (var p = 0; p < nProv; p++) provUnits.push([]);
@@ -6380,7 +6386,7 @@
     var geoms = topo.objects.provinces.geometries;
     nProv = geoms.length;
     var codeIndex = new Map();
-    countries = topo.countries.map(function (c, i) { codeIndex.set(c.c, i); return { code: c.c, name: c.n, color: 0, ruler: -1, alive: true, label: null }; });
+    countries = topo.countries.map(function (c, i) { codeIndex.set(c.c, i); return { code: c.c, name: PN("c", c.c, c.n), en: c.n, color: 0, ruler: -1, alive: true, label: null }; });
     Object.keys(HELD_BY).forEach(function (k) { HELD_BY[k].split(" ").forEach(function (h) { if (codeIndex.has(k) && codeIndex.has(h)) countries[codeIndex.get(h)].ruler = codeIndex.get(k); }); });
     Object.keys(DISPUTED_BY).forEach(function (k) {
       if (!codeIndex.has(k)) return;
@@ -6390,10 +6396,13 @@
     provName = new Array(nProv);
     var provOwner = new Int32Array(nProv);
     groupName = (topo.groups || []).map(function (g) { return String(g.n); });
+    groupNameL = (topo.groups || []).map(function (g) { return PN("g", g.c + "|" + g.n, String(g.n)); });
+    provNameL = new Array(nProv);
     groupProvs = groupName.map(function () { return []; });
     provGroup = new Int32Array(nProv).fill(-1);
     for (var p = 0; p < nProv; p++) {
       provName[p] = geoms[p].properties.n;
+      provNameL[p] = PN("p", geoms[p].properties.c + "|" + provName[p], provName[p]);
       provOwner[p] = codeIndex.has(geoms[p].properties.c) ? codeIndex.get(geoms[p].properties.c) : UNCLAIMED;
       var g = geoms[p].properties.g;
       if (g >= 0 && g < groupName.length) { provGroup[p] = g; groupProvs[g].push(p); }
@@ -6405,10 +6414,10 @@
     graticuleIdx = graticule.map(function (g, i) { return i; });
     colorAll();
     cities = []; cityIndex = new Map();
-    var baseCities = cityRows.map(function (r) { return { name: r[0], lon: r[1], lat: r[2], tier: r[3], cap: r[4] }; });
+    var baseCities = cityRows.map(function (r) { return { name: PN("city", r[0] + "|" + r[1] + "|" + r[2], r[0]), en: r[0], lon: r[1], lat: r[2], tier: r[3], cap: r[4] }; });
     base = {
       provOwner: provOwner,
-      countries: countries.map(function (c) { return { code: c.code, name: c.name, color: c.color, ruler: c.ruler, claims: c.claims }; }),
+      countries: countries.map(function (c) { return { code: c.code, name: c.name, en: c.en, color: c.color, ruler: c.ruler, claims: c.claims }; }),
       cities: baseCities
     };
     baseCities.forEach(function (b, i) { setCityState("b" + i, b); });
@@ -6839,7 +6848,7 @@
       if (/^(unclaimed|no one|nobody|none|terra nullius)$/.test(n)) return UNCLAIMED;
       if (alias.has(n)) return alias.get(n);
       countries.forEach(function (c, i) { if (hit < 0 && c.alive && !c.claims && plainName(c.name) === n) hit = i; });
-      if (hit < 0) base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n && countries[i] && countries[i].alive) hit = i; });
+      if (hit < 0) base.countries.forEach(function (b, i) { if (hit < 0 && (plainName(b.name) === n || (b.en && plainName(b.en) === n)) && countries[i] && countries[i].alive) hit = i; });
       if (hit < 0 && !exact) {
         var live = [];
         countries.forEach(function (c, i) { if (c.alive && !c.claims) live.push(i); });
@@ -6850,7 +6859,7 @@
     };
     var findBase = function (name) {
       var n = plainName(name), hit = -1;
-      base.countries.forEach(function (b, i) { if (hit < 0 && plainName(b.name) === n) hit = i; });
+      base.countries.forEach(function (b, i) { if (hit < 0 && (plainName(b.name) === n || (b.en && plainName(b.en) === n))) hit = i; });
       if (hit < 0) countries.forEach(function (c, i) { if (hit < 0 && i < base.countries.length && c.alive && plainName(c.name) === n) hit = i; });
       if (hit < 0) {
         var near = closest(base.countries.map(function (b, i) { return i; }), name, function (i) { return looseName(base.countries[i].name); }, true);
@@ -6946,7 +6955,7 @@
       if (!n) return null;
       var km = function (x) { return at ? Math.acos(Math.max(-1, Math.min(1, x.x * at[0] + x.y * at[1] + x.z * at[2]))) * R_KM : 0; };
       var city = null, town = -1, best = RENAME_KM;
-      cities.forEach(function (x) { if (plainName(x.name) === n && km(x) <= best) { best = km(x); city = x; } });
+      cities.forEach(function (x) { if ((plainName(x.name) === n || plainName(cityEn(x)) === n) && km(x) <= best) { best = km(x); city = x; } });
       if (city) return { city: city };
       if (at && towns) towns.forEach(function (t, i) { if (!hide.has(i) && plainName(t.name) === n && km(t) <= best) { best = km(t); town = i; } });
       return town >= 0 ? { town: town } : null;
@@ -6992,7 +7001,7 @@
       var at = isFinite(k.lon) && isFinite(k.lat) && Math.abs(k.lat) <= 90 ? toVec(wrap180(k.lon), k.lat) : null;
       var km = function (x) { return at ? Math.acos(Math.max(-1, Math.min(1, x.x * at[0] + x.y * at[1] + x.z * at[2]))) * R_KM : 0; };
       var city = null, best = RENAME_KM;
-      cities.forEach(function (x) { if (plainName(x.name) === n && km(x) <= best) { best = km(x); city = x; } });
+      cities.forEach(function (x) { if ((plainName(x.name) === n || plainName(cityEn(x)) === n) && km(x) <= best) { best = km(x); city = x; } });
       if (!city && at && towns) {
         var town = null, ti = -1;
         towns.forEach(function (t, i) { if (!hide.has(i) && plainName(t.name) === n && km(t) <= best) { best = km(t); town = t; ti = i; } });
@@ -7026,7 +7035,7 @@
       var c = findNow(k && k.country), name = String(k && k.city || "").trim().slice(0, 60);
       if (c === null || c < 0 || !name) { missed++; return; }
       var n = plainName(name), city = null;
-      cities.forEach(function (x) { if (plainName(x.name) === n && cityOwner(x) === c) city = x; });
+      cities.forEach(function (x) { if ((plainName(x.name) === n || plainName(cityEn(x)) === n) && cityOwner(x) === c) city = x; });
       if (!city && renamed.has(n) && cityOwner(renamed.get(n)) === c) city = renamed.get(n);
       var at = isFinite(k.lon) && isFinite(k.lat) && Math.abs(k.lat) <= 90 ? unitOfPoint(wrap180(k.lon), k.lat, true) : -1;
       if (!city && (at < 0 || owner[at] !== c)) { missed++; return; }
@@ -7058,7 +7067,23 @@
     var bare = made.filter(function (op) { return countries[op.c] && countries[op.c].alive && !hasLand(op.c); }).map(function (op) { return "The new country " + countries[op.c].name + " was founded but received no land."; });
     return { step: step, moved: moved, missed: missed, made: made.length, units: ps, lost: lost, bare: bare };
   }
-  function describeChanges() {
+  function cityEn(c) {
+    var b = c && c.id && c.id.charAt(0) === "b" ? base.cities[+c.id.slice(1)] : null;
+    return b && b.en && c.name === b.name ? b.en : c.name;
+  }
+  function inEnglish(fn) {
+    if (LANG === "en" || !base) return fn();
+    var saved = [];
+    var swap = function (o, en) { if (o && en && o.name !== en) { saved.push([o, o.name]); o.name = en; } };
+    countries.forEach(function (c, i) { var b = base.countries[i]; if (b && b.en && c.name === b.name) swap(c, b.en); });
+    cities.forEach(function (c) { var en = cityEn(c); if (en !== c.name) swap(c, en); });
+    base.countries.forEach(function (b) { swap(b, b.en); });
+    base.cities.forEach(function (b) { swap(b, b.en); });
+    if (towns) towns.forEach(function (t) { swap(t, t.en); });
+    try { return fn(); } finally { for (var i = saved.length - 1; i >= 0; i--) saved[i][0].name = saved[i][1]; }
+  }
+  function describeChanges() { return inEnglish(describeChangesEn); }
+  function describeChangesEn() {
     if (!feats || !base) return "";
     freshGroups();
     places = new Map();
@@ -8421,7 +8446,7 @@
   }
   refreshPalette();
   layout();
-  Promise.all([fetchJSON("data/provinces.json"), fetchJSON("data/cities.json")]).then(function (res) { init(res[0], res[1]); }).catch(function (err) {
+  Promise.all([fetchJSON("data/provinces.json"), fetchJSON("data/cities.json"), LANG === "en" ? null : fetchJSON("lang/places-" + LANG + ".json").catch(function () { return null; })]).then(function (res) { PL = res[2] || {}; init(res[0], res[1]); }).catch(function (err) {
     document.documentElement.classList.add("uc-ready");
     $("load").textContent = T("The map did not load ({why}), reload to try again", { why: err.message });
     $("load").classList.add("is-failed");
