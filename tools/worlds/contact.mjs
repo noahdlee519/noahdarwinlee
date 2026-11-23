@@ -48,11 +48,15 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
   if (data.estuaries && data.estuaries.fill) {
     parts.push(`<path d="${data.estuaries.fill}" fill="${P.water}"/>`);
   }
+  // The coast's islets, from zoom 3.
+  if (D && zoom >= 2.9 && D.islets) for (const [k, fill] of [['sand', '#f6efdc'], ['green', '#c4ead7'], ['rock', '#cbcfca']]) if (D.islets[k]) parts.push(`<path d="${D.islets[k]}" fill="${fill}"/>`);
   // Roads: pale lilac-grey, the highways a little stronger; streets only close in.
   if (D) {
     const R = D.roads;
     const line = (d, colour, w) => d && parts.push(`<path d="${d}" fill="none" stroke="${colour}" stroke-width="${w * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
-    for (const c of chunks || []) { if (zoom >= 4.9) line(c.minor, '#ffffff', 0.7); if (zoom >= 3.4) line(c.street, '#ffffff', 0.9); }
+    for (const c of chunks || []) if (zoom >= 3.4 && c.parks) parts.push(`<path d="${c.parks}" fill="${P.citypark || '#a2debe'}"/>`);
+    for (const c of chunks || []) { if (zoom >= 5.85) line(c.minor, '#ffffff', 0.7); if (zoom >= 3.4) line(c.street, '#ffffff', 0.9); }
+    if (D.bridges) { if (zoom >= 3.4) line(D.bridges.minor, '#c9ced9', 3); line(D.bridges.major, '#c9ced9', zoom >= 3.9 ? 4.8 : 3.4); }
     if (zoom >= 3.4) line(R.local, '#c3c9dc', 0.9);
     if (zoom >= 2.4) line(R.secondary, '#b4bdd6', zoom >= 3.9 ? 1.4 : 1.1);
     if (zoom >= 3.4) line(R.arterial, '#ffffff', zoom >= 4.9 ? 2 : 1.2);
@@ -72,7 +76,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
   for (const l of all) {
     if (l.minZoom > zoom) continue;
     const lines = l.lines || [l.text];
-    const water = ['sea', 'ocean', 'gulf', 'bay', 'lake', 'strait', 'river'].includes(l.kind);
+    const water = ['sea', 'ocean', 'gulf', 'bay', 'lake', 'strait', 'channel', 'sound', 'fjord', 'lagoon', 'harbour', 'inlet', 'cove', 'river'].includes(l.kind);
     const fill = water ? '#3c8ea1' : FILL[l.kind] || P.label;
     const weight = l.kind === 'country' || l.kind === 'capital' || l.kind === 'city' ? 600 : 500;
     const style = water || l.kind === 'region' || l.kind === 'park' ? ' font-style="italic"' : '';

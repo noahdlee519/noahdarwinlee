@@ -2627,6 +2627,7 @@ body:not(.is-panel) .panel-tab .ic {
 .no-rivers .map-lakes,
 .no-rivers .map-reservoirs,
 .no-parks .map-parks,
+.no-parks .map-cityparks,
 .no-borders .map-borders,
 .no-provinces .map-provinces,
 .no-provinces .map-admin,

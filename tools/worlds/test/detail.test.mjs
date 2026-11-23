@@ -5,7 +5,7 @@ import { makeWorld } from '../world.mjs';
 import { buildWorldFiles } from '../output.mjs';
 import { labelRects, rectsOverlap } from '../labels.mjs';
 import { RANK } from '../settlements.mjs';
-import { ARCHITECTS } from '../cultures.mjs';
+import { ARCHITECTS, REAL_PLACES } from '../cultures.mjs';
 import { landmasses } from '../terrain.mjs';
 
 const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
@@ -31,7 +31,7 @@ test('every country has a capital, and every settlement is on land in its own co
   assert.ok(ranks[1] >= 7 && ranks[2] > ranks[1] && ranks[3] > ranks[2], `a hierarchy of places: ${ranks}`);
 });
 
-test('roads and streets keep to the land; only ferries cross the sea', () => {
+test('roads and streets keep to the land; only ferries and bridges cross the sea', () => {
   const check = (pts, what) => {
     for (let k = 1; k < pts.length; k++) {
       const [x0, y0] = pts[k - 1], [x1, y1] = pts[k];
@@ -44,7 +44,7 @@ test('roads and streets keep to the land; only ferries cross the sea', () => {
   };
   // (Trunk roads join cities no motorway already joins; in Le Guin's islands there may be none.)
   for (const cls of ['motorway', 'secondary', 'local']) assert.ok(D.roads.roads.some((r) => r.cls === cls), `no ${cls} roads`);
-  for (const r of D.roads.roads) check(r.pts, `a ${r.cls} road`);
+  for (const r of D.roads.roads) if (!r.bridge) check(r.pts, `a ${r.cls} road`);
   for (const s of D.streets) check(s.pts, `a street (${s.cls})`);
   for (const [a, b] of D.roads.ferries) {
     assert.ok(onLand(a[0], a[1]) && onLand(b[0], b[1]), 'a ferry does not run between two places on land');
@@ -124,6 +124,11 @@ test('places are named in their country’s manner, with a few nods to the proje
   const archNames = world.settlements.filter((q) => q.country === ar && q.rank > 0).map((q) => q.name);
   const plain = archNames.filter((n) => ARCHITECTS.includes(n)).length;
   assert.ok(plain / archNames.length > 0.7, `the architects' towns are mostly plain surnames (${plain} of ${archNames.length})`);
+  assert.ok(!archNames.some((n) => /^Saint /.test(n)), 'an architect made a saint');
+  // The New York and Chicago countries: New York State's and Illinois's own towns.
+  const real = (id, list) => world.settlements.filter((q) => projects[q.country].id === id && q.rank > 0).map((q) => q.name).filter((n) => !list.includes(n));
+  assert.deepEqual(real('nyc', REAL_PLACES['new-york'].towns), [], 'invented names in the New York country');
+  assert.deepEqual(real('chicago', REAL_PLACES.illinois.towns), [], 'invented names in the Chicago country');
   // Each country speaks one language: neighbours mostly differ.
   const ids = new Set(world.cultures.map((c) => c.phon.id));
   assert.ok(ids.size >= 8, `only ${ids.size} sound systems`);
@@ -166,6 +171,23 @@ test('towns and cities are laid out in many ways, and only the largest have ring
     if (m > 0 && sd / m > 0.25) ragged++;
   }
   assert.ok(ragged / big.length > 0.7, `only ${ragged} of ${big.length} cities have a ragged outline`);
+});
+
+test('places come in a hierarchy of sizes, in several shapes, with dense cores and parks', () => {
+  const S = world.settlements;
+  const med = (list) => { const v = list.map((s) => s.reach).sort((a, b) => a - b); return v[v.length >> 1]; };
+  const metro = S.filter((s) => s.metro), city = S.filter((s) => s.rank === RANK.CITY && !s.metro), town = S.filter((s) => s.rank === RANK.TOWN), village = S.filter((s) => s.rank === RANK.VILLAGE);
+  assert.ok(metro.length >= 2 && metro.length <= 3, `${metro.length} metropolises`);
+  assert.ok(med(metro) > 1.8 * med(city) && med(city) > 1.8 * med(town) && med(town) > 1.8 * med(village), `reaches ${[metro, city, town, village].map(med)}`);
+  const shapes = new Set(S.filter((s) => s.rank <= RANK.TOWN).map((s) => s.shape));
+  for (const sh of ['compact', 'linear', 'star', 'bay']) assert.ok(shapes.has(sh), `no ${sh} places (${[...shapes]})`);
+  // The cores: darker ground in the middle of the cities.
+  const kind = world.coverArgs.urban;
+  for (const s of metro) assert.equal(kind(s.x, s.y), 2, 'a metropolis without a dense core');
+  // Parks: in the built-up ground, a few in each city, the most in the metropolises.
+  const P = D.cityParks;
+  for (const s of metro) assert.ok(P.filter((p) => world.settlements[p.settlement] === s).length >= 4, 'a metropolis with few parks');
+  for (const p of P) assert.ok(kind(p.x, p.y) > 0, 'a park outside the town');
 });
 
 test('small lakes are vectors in natural shapes, and the land cover makes no water flecks of its own', () => {

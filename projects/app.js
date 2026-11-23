@@ -971,8 +971,8 @@
     roads: ["shield"],
     towns: ["capital", "city", "town", "village"],
     rivers: ["river", "lake"],
-    parks: ["park"],
-    "water-names": ["ocean", "sea", "gulf", "bay", "strait", "lake", "river"]
+    parks: ["park", "citypark"],
+    "water-names": ["ocean", "sea", "gulf", "bay", "strait", "channel", "sound", "fjord", "lagoon", "harbour", "inlet", "cove", "lake", "river"]
   };
   var layersOff = (function () {
     try { var v = JSON.parse(store.get(LAYERS_KEY) || "[]"); if (Array.isArray(v)) return v; } catch (e) {}

@@ -603,7 +603,8 @@ export function buildCountries({ land, elev, width, height, projects, rng, hydro
       let inside = 1;
       for (const [nb] of c.nbr) if (cellOwner[nb] !== index) inside = 0;
       const river = hydro && hydro.riverClass[c.seed] ? 1 : 0;
-      const score = inside * 3 + (c.coast ? 1.2 : 0) + river * 1.5 - c.elev * 14 + r.next() * 1.5;
+      // (Never in a lake.)
+      const score = inside * 3 + (c.coast ? 1.2 : 0) + river * 1.5 - c.elev * 14 + r.next() * 1.5 - (hydro && hydro.lakes[c.seed] ? 100 : 0);
       if (score > bestScore) { bestScore = score; best = c; }
     }
     if (best) capitals.push({ id: project.id, x: (best.seed % W) + 0.5, y: Math.floor(best.seed / W) + 0.5 });

@@ -120,7 +120,7 @@ The map uses a web mapping app's colours and its land-cover scheme, not the site
 | Desert and bare ground | `#faf7f3` |
 | Rock and high mountain | `#cbcfca` |
 | Snow and ice | `#ffffff` |
-| Water (seas, lakes, rivers) | `#86cfe2` (rivers in the same blue) |
+| Water (seas, lakes, rivers) | `#7fd5e9` (rivers in the same blue; measured, see below) |
 | Country borders | `#26262a` solid; province borders `#606266` dashed |
 | Labels | `#26262a`, with a pale halo |
 
@@ -153,7 +153,7 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
 - **About:** every world has an island called About with a "you are here" dot. The location button flies there, then opens the about page.
 - **Zoom** goes to 6x, with tiles at 12 pixels a unit and the finest streets and lakes loaded in chunks for the view.
 - **Colours and lettering** follow the reference, measured on rendered pixels.
-  - The sea is `#86cfe2`, and the land-cover palette is unshaded at every zoom.
+  - The sea is `#7fd5e9` (see below), and the land-cover palette is unshaded at every zoom.
   - Labels are untracked. Country names are bold `#121315`; water names are upright teal `#34768e`, small, and curve along channels and bays.
 
 ## Variety (Noah's requests, 23 November, later)
@@ -164,6 +164,18 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
 - **Fewer, finer lakes.** Finger lakes in mountain valleys, chains along rivers, a large lake or two with bays and islands, one or two lake districts in glaciated lowland, a few tarns and marsh ponds, oxbows, crater lakes, and reservoirs; tiny lakes nowhere else.
 - **Borders of several kinds.** Some are surveyed straight (between two points, along a parallel, or along a meridian), borders beside a river run down its middle, and the rest keep to crests and old irregular lines; province lines and subdivisions likewise.
 - **The About island** is a volcano with a crater lake, an atoll round a lagoon, a crescent, a fjord-cut isle, an island in a large lake, or an island with a lighthouse town, a causeway, or a ferry, by world; its label, dot, and the fly-there-then-About behaviour are as before.
+
+## Water, coasts, and cities (Noah's requests, 23 November, evening)
+
+- **The seventh world is now Zelazny** (its old name could read as obscene). Its seed changed with its name; it keeps its character (north and south masses, polar ice in the north joined by an isthmus, a fjord-cut About island), so five worlds still have polar ice. Links with the old name in them open Zelazny (an alias in the page).
+- **No "Saint" architects.** The Hundred Architects' towns are plain surnames, or now and then "Port Aalto", "Kahn Heights", "Rossi Park", and "New Gehry"; never "Saint".
+- **Real names for two countries.** The New York country's towns are New York State's cities and towns (Albany, Buffalo, Ithaca, Saratoga Springs, and so on), the Chicago country's are Illinois's (Springfield, Peoria, Galena, Normal, and so on), the largest places taking the largest towns' names; their rivers, lakes, and parks take the states' own names (Seneca, Catskill, Kaskaskia, Sangamon), and their cities' parks are Central Park, Prospect Park, Grant Park, Lincoln Park, and so on. No other country has real names.
+- **The ice sheets have no names.**
+- **More names for the water**, shown by zoom as the reference shows them: oceans from zoom 1; seas and gulfs from 2; bays, straits, channels, sounds, and fjords from 3; lagoons, harbours (named for their port city), and inlets from 4; coves from 5; and more lakes. Still spaced and never overlapping; themed from each project's water words, then the country's own language.
+- **The coast's forms.** Fjords are cut deep into cold mountainous coasts, up the valleys, narrowing to their heads, with steep sides and now and then a side arm. Small islets are drawn as vectors over the sea from zoom 3: cays in clusters on the banks of warm seas (sandy, the larger green at heart), skerries off cold broken coasts, sea stacks off steep headlands, sandbars off river mouths, and barrier islands off low straight coasts with a lagoon behind.
+- **Cities by size and shape.** A rank-size hierarchy: three metropolises (some 30 to 40 km across) with ring roads, then capitals, cities, towns, and villages, their built-up areas roughly 400 : 50 : 16 : 2.5 : 0.3. Each is compact, long (along a coast, river, or valley), star-shaped along its roads, a pair of twin towns across a river, or wrapped round a bay. The middle of each city is a darker grey (`#e3e5e9`), its streets closer together; the blocks grow larger outward, and minor streets show only at the closest zoom. Cities have small parks (`#a2debe`), the largest named at the closest zoom.
+- **Roads never run into the water.** Roads and streets are checked against the water as drawn; a short crossing of a river, narrows, or strait is a bridge (drawn with a pale deck), narrow straits between two landmasses are bridged rather than ferried, a road that grazes the shore is moved just inland, and any other is stopped at the water's edge.
+- **The water's blue, measured.** Noah's screenshots are tagged with a Display P3 profile, so their raw values are P3, not sRGB: the Brittany reference's sea, `#93d3e6` in P3, is `#7fd5e9` in sRGB. The old `#86cfe2` (sRGB, as the page draws it) shows in such a screenshot as `#96cde0`, greyer than the reference; `#7fd5e9` shows as `#93d3e6`, the reference's own. Sea, lakes, rivers, the pictures' water, and the contact sheets all use it.
 
 ## The page shell (builder's calls)
 

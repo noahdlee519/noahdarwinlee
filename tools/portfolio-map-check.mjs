@@ -589,7 +589,7 @@ async function menuStage(browser) {
     ['borders', 'Borders', () => shown('.map-borders')],
     ['provinces', 'Province lines', () => shown('.map-provinces')],
     ['terrain', 'Terrain', () => shown('.map-image')],
-    ['water-names', 'Water names', () => labelsOn(['sea', 'gulf', 'bay', 'strait', 'ocean', 'lake', 'river'])],
+    ['water-names', 'Water names', () => labelsOn(['sea', 'gulf', 'bay', 'strait', 'channel', 'sound', 'fjord', 'lagoon', 'harbour', 'inlet', 'cove', 'ocean', 'lake', 'river'])],
   ];
   for (const [name, label, isShown] of LAYERS) {
     const before = await isShown();

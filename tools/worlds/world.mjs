@@ -20,6 +20,7 @@ import { assignCultures, CAPITAL_NAMES } from './cultures.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from './lakes.mjs';
 import { buildPolar, placeAbout } from './polar.mjs';
 import { coastDistance } from './terrain.mjs';
+import { carveFjords, buildIslets } from './coasts.mjs';
 
 export const WIDTH = 1600, HEIGHT = 800;
 export const PICTURE_SCALE = 1.5; // picture pixels per map unit
@@ -83,6 +84,9 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   const rng = makeRng(name + (style.reroll ? '#' + style.reroll : ''));
   const terrain = buildTerrain({ rng, width, height, landShare, masses, style });
   const { elev, land } = terrain;
+  // Fjords, cut into the cold mountainous coasts.
+  const fjords = carveFjords({ land, elev, width, height, rng, style });
+  if (fjords.length) terrain.dist = coastDistance(land, width, height);
   // The polar land, where the world has one: what of it joins a project's land becomes that land.
   const polar = buildPolar({ land, width, height, rng, sides: style.ice, link: style.polar });
   let claimed = 0;
@@ -107,7 +111,7 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   // The picture is drawn in makeWorld, once the towns, lakes, and roads are known; it is carried a little way out to
   // sea so the vector coast drawn over it never shows a gap.
   const coverArgs = { fields, elev, land: landAll, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2, ice, flow: hydro.acc, dist: terrain.dist, basins, oases, polar: polar.cover, about: about && about.cover };
-  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases };
+  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases, fjords };
 }
 
 // The land divided among the projects.
@@ -117,7 +121,7 @@ export function buildNations(world, projects) {
 }
 
 // Names on the map: countries, provinces, ranges, seas, lakes, and capitals.
-export function buildLabels(world, nations, projects, { cultures, settlements, drawnRivers } = {}) {
+export function buildLabels(world, nations, projects, { cultures, settlements, drawnRivers, islets } = {}) {
   const { width, height, rng, landAll, hydro, terrain } = world;
   const towns = nations.capitals.map((c) => {
     const s = settlements && settlements.find((q) => q.rank === RANK.CAPITAL && projects[q.country].id === c.id);
@@ -126,7 +130,11 @@ export function buildLabels(world, nations, projects, { cultures, settlements, d
   const nameAt = cultures ? (x, y) => { const k = nations.owner[clamp(Math.floor(y), 0, height - 1) * width + clamp(Math.floor(x), 0, width - 1)]; return k >= 0 ? cultures[k].namer.word() : null; } : null;
   return placeLabels({
     owner: nations.owner, provinces: nations.provinces, projects, width, height, rng,
-    extras: { land: landAll, lakes: hydro.lakes, ranges: terrain.ranges, towns, rivers: drawnRivers || hydro.rivers, riverMeta: hydro.riverMeta, nameAt },
+    extras: {
+      land: landAll, lakes: hydro.lakes, ranges: terrain.ranges, towns, rivers: drawnRivers || hydro.rivers, riverMeta: hydro.riverMeta, nameAt,
+      wordOf: cultures ? (k) => cultures[k].namer.word() : null, phonOf: cultures ? (k) => cultures[k].phon.base || cultures[k].phon.id : null, fjords: world.fjords || [], lagoons: islets ? islets.lagoons : [], settlements: settlements || [],
+      temp: world.fields.temp, elev: world.elev,
+    },
   });
 }
 
@@ -162,8 +170,8 @@ export function makeWorld(name, projects, opts) {
     s.name = s.rank === RANK.CAPITAL && CAPITAL_NAMES[p.id] ? CAPITAL_NAMES[p.id] : cultures[s.country].namer.town();
   }
   const roads = buildRoads({ land, elev, hydro, owner, settlements, blocked: smallLakes.mask, cultures, projects, width, height, rng });
-  const { streets, built, layouts } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta });
-  settlements.forEach((s, k) => { s.layout = layouts[k].type; s.ringRoad = layouts[k].ring; });
+  const { streets, builtKind, layouts, cityParks } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta, areas: nations.areas, projects });
+  settlements.forEach((s, k) => { s.layout = layouts[k].type; s.ringRoad = layouts[k].ring; s.shape = layouts[k].shape; });
   // The About island's own detail: a little town and its lighthouse, a causeway, or a ferry to the mainland.
   const about = world.about;
   if (about && about.town) {
@@ -184,10 +192,12 @@ export function makeWorld(name, projects, opts) {
     if (best) roads.ferries.push([about.dock, [best.x, best.y]]);
   }
   // The picture: the land cover with the built-up ground and the small lakes painted in.
-  world.coverArgs.urban = (x, y) => built(x, y);
+  world.coverArgs.urban = (x, y) => builtKind(x, y);
   world.coverArgs.lakes = smallLakes.index.inside;
   const picture = classifyCover({ ...world.coverArgs, scale: PICTURE_SCALE });
-  const labels = buildLabels(world, nations, projects, { cultures, settlements, drawnRivers });
+  // The coast's small forms: cays, skerries, stacks, sandbars, and barrier islands with their lagoons.
+  const islets = buildIslets({ landAll: world.landAll, elev, width, height, rng, style, hydro, about: world.about, keepClear: roads.ferries.flatMap(([a, b]) => { const out = []; for (let t = 0; t <= 1; t += 0.05) out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 0.8]); return out; }) });
+  const labels = buildLabels(world, nations, projects, { cultures, settlements, drawnRivers, islets });
   const aboutLabel = labelAbout(world, labels);
   if (aboutLabel) labels.push(aboutLabel);
   const parks = buildParks({ land, owner, cover: picture ? cover : cover, elev, temp: fields.temp, moist: fields.moist, settlements, projects, areas: nations.areas, width, height, rng, dist: terrain.dist, smallLakes });
@@ -198,7 +208,7 @@ export function makeWorld(name, projects, opts) {
     const [mx, my] = pts[pts.length >> 1], mi = Math.floor(my) * width + Math.floor(mx);
     (fields.moist[mi] < 0.075 && fields.temp[mi] > 4 ? wadis : streams).push(pts.map(([x, y]) => warp(x, y)));
   }
-  const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers });
+  const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers, islets, cityParks });
   if (about && about.lighthouse) {
     const [lx, ly] = about.lighthouse, S1 = width / 1600;
     for (const [dx, dy] of [[0, 2.4], [0, -2.4], [6, 0], [-6, 0]]) {
@@ -211,7 +221,7 @@ export function makeWorld(name, projects, opts) {
     name, slug: world.slug, width: world.width, height: world.height,
     cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture,
     settlements, cultures, smallLakes, ice: world.ice, about: world.about, polar: world.polar,
-    detail: { roads, streets, parks, admin, streams, wadis, smallLakes, labels: detailLabels, causeway: about && about.causeway ? [about.causeway] : [] },
+    detail: { roads, streets, parks, admin, streams, wadis, smallLakes, labels: detailLabels, causeway: about && about.causeway ? [about.causeway] : [], islets: islets.islets, cityParks },
     rivers: drawnRivers, riverMeta: world.hydro.riverMeta,
     owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,
     labels, projects, kmPerUnit: worldParams(name, projects).kmPerUnit,

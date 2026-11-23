@@ -204,7 +204,13 @@ export function buildStreams({ land, hydro, width, height, style = {} }) {
 
 // placeDetailLabels({ labels, world, nations, settlements, roads, parks, projects, rng })
 //   => new labels (each with detail: true), clear of every label given and of each other.
-export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes = [], drawnRivers }) {
+// Real parks for the New York and Chicago countries' towns, the largest first.
+const REAL_PARKS = {
+  nyc: ['Central Park', 'Prospect Park', 'Riverside Park', 'Bryant Park', 'Washington Square Park', 'Battery Park', 'Van Cortlandt Park', 'Pelham Bay Park', 'Fort Tryon Park', 'Flushing Meadows', 'Morningside Park', 'Tompkins Square Park', 'Inwood Hill Park', 'Carl Schurz Park', 'Marcus Garvey Park'],
+  chicago: ['Grant Park', 'Lincoln Park', 'Jackson Park', 'Millennium Park', 'Washington Park', 'Humboldt Park', 'Garfield Park', 'Douglass Park', 'Burnham Park', 'Columbus Park', 'Marquette Park', 'McKinley Park', 'Sherman Park', 'Gage Park', 'Calumet Park'],
+};
+
+export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes = [], drawnRivers, islets = null, cityParks = [] }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const r = rng.fork('detail-names');
   const namer = makeNamer(r);
@@ -518,6 +524,37 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
     }
   };
 
+  // ---- Groups of islets: cays on their bank, skerries off their coast. ----
+  const placeIsletGroups = () => {
+    if (!islets) return;
+    for (const g of islets.groups) {
+      // Named for the country whose coast is nearest.
+      let k = -1;
+      for (let rad = 2; rad < 60 && k < 0; rad += 3) for (let a = 0; a < 12 && k < 0; a++) { const o = owner[px(g.x + Math.cos(a / 12 * Math.PI * 2) * rad * S, g.y + Math.sin(a / 12 * Math.PI * 2) * rad * S)]; if (o >= 0) k = o; }
+      const w0 = k >= 0 && cultures ? cultures[k].namer.word() : namer.word();
+      const text = g.kind === 'cays' ? r.pick([(w) => `${w} Cays`, (w) => `${w} Keys`, (w) => `${w} Cays`])(w0) : r.pick([(w) => `${w} Skerries`, (w) => `${w} Rocks`])(w0);
+      const size = 3 * S;
+      const base = { id: `islets-${out.length}`, kind: 'island', text, lines: [text], x: g.x, y: g.y, size, angle: 0, spacing: 0.06, minZoom: 4 };
+      if (!tryPut(base)) if (!tryPut({ ...base, y: g.y - (g.r || 6 * S) * 0.6 - size })) tryPut({ ...base, y: g.y + (g.r || 6 * S) * 0.6 + size });
+    }
+  };
+  // ---- City parks: the larger ones named, for the closest zoom. ----
+  const placeCityParks = () => {
+    const realUsed = new Map();
+    const list = cityParks.map((p, k) => ({ p, k })).filter(({ p }) => p.big || p.area > 0.22 * S * S).sort((a, b) => (b.p.big ? 1 : 0) - (a.p.big ? 1 : 0) || settlements[a.p.settlement].rank - settlements[b.p.settlement].rank || b.p.area - a.p.area || a.k - b.k);
+    for (const { p } of list) {
+      const s = settlements[p.settlement], id = projects[p.country].id;
+      let text = null;
+      if (REAL_PARKS[id]) { const n = realUsed.get(id) || 0; if (n < REAL_PARKS[id].length) { text = REAL_PARKS[id][n]; realUsed.set(id, n + 1); } }
+      if (!text) {
+        const w0 = cultures ? cultures[p.country].namer.word() : namer.word();
+        text = r.pick([(w) => `${w} Park`, (w) => `${w} Park`, (w) => `${w} Gardens`, (w) => `${w} Green`, () => `${s.name} Common`])(w0);
+      }
+      const size = 2.25 * S;
+      tryPut({ id: `citypark-${out.length}`, kind: 'citypark', text, lines: lineBreaks(text)[text.length > 14 ? Math.min(1, lineBreaks(text).length - 1) : 0], x: p.x, y: p.y, size, angle: 0, spacing: 0, minZoom: 5.5 }, 0.3 * S);
+    }
+  };
+
   // Most important first: each later name must fit round the earlier ones.
   placeRank(RANK.CITY);
   placeParks();
@@ -526,12 +563,14 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   placeShields();
   placeVolcanoes();
   placeIslands();
+  placeIsletGroups();
   placeRank(RANK.TOWN);
   placeMarshes();
   placeCapes();
   placeDeltas();
   placeLakes();
   placeRank(RANK.VILLAGE);
+  placeCityParks();
 
   return out;
 }

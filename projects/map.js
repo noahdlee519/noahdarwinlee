@@ -88,10 +88,11 @@
 
   // Each kind of label's smallest and largest size on screen, in pixels.
   // Water names are small, as on the reference: about a town's size, an ocean a little more.
-  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, city: 11.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, river: 10.5, town: 11, village: 10, peak: 10, park: 11, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
-  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 15, city: 14, province: 15, range: 13, lake: 12.5, strait: 12, river: 12, town: 13, village: 12, peak: 12, park: 15, region: 14, island: 13, cape: 12, shield: 11 };
-  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, river: 85, town: 90, cape: 92, village: 96 };
-  var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, river: 1 };
+  var LABEL_FLOOR = { country: 11.5, ocean: 12, sea: 11, gulf: 10.5, bay: 10.5, capital: 11.5, city: 11.5, province: 11, range: 10.5, lake: 10.5, strait: 10.5, channel: 10.5, sound: 10.5, fjord: 10, lagoon: 10, harbour: 10, inlet: 10, cove: 10, river: 10.5, town: 11, village: 10, peak: 10, park: 11, citypark: 9.5, region: 10.5, island: 10.5, cape: 10, shield: 9.5 };
+  var LABEL_CAP = { country: 34, ocean: 16, sea: 13, gulf: 12.5, bay: 12, capital: 15, city: 14, province: 15, range: 13, lake: 12.5, strait: 12, channel: 12, sound: 12, fjord: 11.5, lagoon: 11.5, harbour: 11, inlet: 11, cove: 11, river: 12, town: 13, village: 12, peak: 12, park: 15, citypark: 11, region: 14, island: 13, cape: 12, shield: 11 };
+  var LABEL_RANK = { ocean: 40, sea: 50, gulf: 55, province: 52, capital: 60, city: 62, shield: 66, park: 68, range: 70, region: 72, peak: 74, lake: 75, island: 76, bay: 78, strait: 80, channel: 80, sound: 80, fjord: 82, river: 85, lagoon: 86, harbour: 87, inlet: 88, town: 90, cape: 92, cove: 94, village: 96, citypark: 98 };
+  // Water's names: the open sea's, the coast's, lakes', and rivers'.
+  var WATER = { sea: 1, ocean: 1, gulf: 1, bay: 1, lake: 1, strait: 1, channel: 1, sound: 1, fjord: 1, lagoon: 1, harbour: 1, inlet: 1, cove: 1, river: 1 };
 
   function MapView(host) {
     this.host = host;
@@ -270,6 +271,8 @@
     if (world.estuaries && world.estuaries.fill) {
       svg("path", { class: "map-estuary", d: world.estuaries.fill }, La.tpl);
     }
+    // The coast's islets (cays, skerries, stacks, sandbars, barrier islands), over the sea, from the finer detail.
+    this.isletTpl = svg("g", { class: "map-islets" }, La.tpl);
     this.roadLayer = layer("map-roads", true);
     // The picked and hovered country's tint, under the borders.
     this.tintLayer = layer("map-tint", true);
@@ -682,6 +685,7 @@
     this.host.classList.toggle("is-z35", z >= 3.4);
     this.host.classList.toggle("is-z4", z >= 3.9);
     this.host.classList.toggle("is-z5", z >= 4.9);
+    this.host.classList.toggle("is-z55", z >= 5.85);
     if (z >= 3.3 && this.detail && !this.anim && !this.interacting) this._loadChunks();
     if (z >= 1.3 && !this.detailAsked && !this.anim && !this.interacting) this._loadDetail();
     this.placeLabels();
@@ -707,10 +711,13 @@
       if (d.wadis) svg("path", { class: "map-wadi", d: d.wadis }, self.streamTpl);
       if (d.streams) svg("path", { class: "map-stream", d: d.streams }, self.streamTpl);
       if (d.lakes) svg("path", { class: "map-small-lakes", d: d.lakes }, self.reservoirTpl);
+      if (d.islets) ["sand", "green", "rock"].forEach(function (k) { if (d.islets[k]) svg("path", { class: "map-islet is-" + k, d: d.islets[k] }, self.isletTpl); });
       var R = self.roadLayer.tpl;
-      // Lowest first: streets (from the chunks, under everything), local and secondary roads, the town arterials and
-      // rings, trunk roads, motorways, and the ferries.
+      // Lowest first: the cities' parks and streets (from the chunks, under everything), the bridges' decks, local
+      // and secondary roads, the town arterials and rings, trunk roads, motorways, and the ferries.
+      self.cityParkTpl = svg("g", { class: "map-cityparks" }, R);
       self.streetTpl = svg("g", { class: "map-streets" }, R);
+      if (d.bridges) ["minor", "major"].forEach(function (k) { if (d.bridges[k]) svg("path", { class: "map-bridge is-" + k, d: d.bridges[k] }, R); });
       ["local", "secondary", "arterial", "ring", "trunk", "motorway"].forEach(function (k) { if (d.roads[k]) svg("path", { class: "map-road r-" + k, d: d.roads[k] }, R); });
       // A causeway: a road on a pale embankment across the water.
       if (d.causeway) { svg("path", { class: "map-causeway", d: d.causeway }, R); svg("path", { class: "map-road r-causeway", d: d.causeway }, R); }
@@ -742,6 +749,7 @@
         if (self.world !== w) return;
         if (c.minor) svg("path", { class: "map-road r-minor", d: c.minor }, self.streetTpl);
         if (c.street) svg("path", { class: "map-road r-street", d: c.street }, self.streetTpl);
+        if (c.parks) svg("path", { class: "map-citypark", d: c.parks }, self.cityParkTpl);
         if (c.lakes) svg("path", { class: "map-small-lakes", d: c.lakes }, self.reservoirTpl);
         self._refresh(self.roadLayer);
         self._refresh(self.waterLayer);

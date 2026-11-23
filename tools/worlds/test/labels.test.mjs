@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildLand, buildNations, buildLabels } from '../world.mjs';
-import { labelsOverlap, labelRects, waterStructure, enclosure, SEA_ENCLOSURE, WATER_SPACING } from '../labels.mjs';
+import { labelsOverlap, labelRects, waterStructure, enclosure, SEA_ENCLOSURE, WATER_SPACING, WATER_KINDS } from '../labels.mjs';
 
 const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 const W = 1600;
@@ -41,14 +41,16 @@ test('country labels sit inside their country', () => {
   });
 });
 test('water is named after the countries it touches, and no name repeats', () => {
-  const water = labels.filter((l) => ['ocean', 'sea', 'gulf', 'bay', 'strait', 'lake', 'river'].includes(l.kind));
+  const water = labels.filter((l) => WATER_KINDS[l.kind]);
   assert.ok(water.some((l) => l.kind === 'river'), 'no river is named');
   const texts = water.map((l) => l.text);
   assert.equal(new Set(texts).size, texts.length, `a name repeats: ${texts.join(', ')}`);
   const words = new Set();
   for (const p of projects) for (const k of ['water', 'river', 'lake']) for (const w of p.names[k]) words.add(w);
+  // The larger water first takes the projects' words; there are more names than words, so the smaller falls back.
+  const large = water.filter((l) => ['ocean', 'sea', 'gulf', 'lake', 'river'].includes(l.kind));
+  assert.ok(large.filter((l) => l.theme).length >= large.length * 0.7, 'most of the larger water should carry a project word');
   const themed = water.filter((l) => l.theme);
-  assert.ok(themed.length >= water.length * 0.7, 'most water should carry a project word');
   for (const l of themed) {
     assert.ok(words.has(l.word), `${l.text} uses a word no project has`);
     assert.ok(l.text.includes(l.word), `${l.text} does not contain ${l.word}`);
@@ -59,13 +61,13 @@ test('water is named after the countries it touches, and no name repeats', () =>
     assert.ok(l.minZoom >= 2, `${l.text} shows before zoom 2`);
     assert.ok(Array.isArray(l.path) && l.path.length >= 2, `${l.text} has no line to follow`);
   }
-  const forms = { lake: /^Lake /, ocean: / Ocean$/, sea: /^Sea of | Sea$/, gulf: /^Gulf of /, bay: / Bay$/, strait: / Strait$/ };
+  const forms = { lake: /^Lake /, ocean: / Ocean$/, sea: /^Sea of | Sea$/, gulf: /^Gulf of /, bay: / Bay$/, strait: / Strait$| Narrows$/, channel: / Channel$/, sound: / Sound$/, cove: / Cove$/, inlet: / Inlet$/ };
   for (const l of water) if (forms[l.kind]) assert.ok(forms[l.kind].test(l.text), `${l.kind} named ${l.text}`);
 });
 
 // Water named by its shape, as an atlas names it.
 const structure = waterStructure(world.land, W, world.height);
-const seaLabels = labels.filter((l) => ['ocean', 'sea', 'gulf', 'bay', 'strait'].includes(l.kind));
+const seaLabels = labels.filter((l) => WATER_KINDS[l.kind] && l.kind !== 'lake' && l.kind !== 'river');
 const pieceAt = (l) => {
   const c = structure.comp[Math.floor(l.y) * W + Math.floor(l.x)];
   return c >= 0 ? structure.pieces.find((p) => p.id === c) : null;
@@ -99,7 +101,7 @@ test('seas only where land closes round the water', () => {
 });
 
 test('water names show at their zooms, spaced apart, claiming water no other name claims', () => {
-  const zoom = { ocean: [1, 1], sea: [2, 4], gulf: [2, 4], bay: [3, 4], strait: [3, 4] };
+  const zoom = { ocean: [1, 1], sea: [2, 4], gulf: [2, 4], bay: [3, 4], strait: [3, 4], channel: [3, 4], sound: [3, 4], fjord: [3, 5], lagoon: [4, 5], harbour: [4, 5], inlet: [4, 5], cove: [5, 5] };
   for (const l of seaLabels) {
     assert.ok(l.minZoom >= zoom[l.kind][0] && l.minZoom <= zoom[l.kind][1], `${l.text} (${l.kind}) shows from zoom ${l.minZoom}`);
   }

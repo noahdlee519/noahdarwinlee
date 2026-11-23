@@ -14,7 +14,7 @@
 import { makeNoise, fbm, clamp, smoothstep } from './rng.mjs';
 import { latitudeAt, coastDistance } from './terrain.mjs';
 
-export const COVER = { FOREST: 0, WOODLAND: 1, GRASS: 2, STEPPE: 3, DESERT: 4, ROCK: 5, SNOW: 6, URBAN: 7, SAND: 8, DUNE: 9, DRYROCK: 10, SALT: 11, WATER: 255 };
+export const COVER = { FOREST: 0, WOODLAND: 1, GRASS: 2, STEPPE: 3, DESERT: 4, ROCK: 5, SNOW: 6, URBAN: 7, SAND: 8, DUNE: 9, DRYROCK: 10, SALT: 11, CORE: 12, WATER: 255 };
 // Every class a desert is painted in (see renderCover's desert manner).
 export const DRY_CLASSES = [COVER.DESERT, COVER.STEPPE, COVER.DUNE, COVER.DRYROCK, COVER.SALT];
 
@@ -434,7 +434,7 @@ export function renderCover(prep, wx0, wy0, w, h) {
         const desert = desertClass(mx, my);
         if (desert >= 0) {
           cover[i] = desert;
-          if (onLand && urban && urban(mx, my, elev[i0])) cover[i] = COVER.URBAN;
+          if (onLand && urban) { const u = urban(mx, my, elev[i0]); if (u) cover[i] = u === 2 ? COVER.CORE : COVER.URBAN; }
           continue;
         }
       }
@@ -481,7 +481,7 @@ export function renderCover(prep, wx0, wy0, w, h) {
         }
         if (beach || dune) { c = COVER.SAND; cover[i] = c; }
       }
-      if (onLand && urban && c !== COVER.SNOW && urban(mx, my, elev[i0])) { cover[i] = COVER.URBAN; continue; }
+      if (onLand && urban && c !== COVER.SNOW) { const u = urban(mx, my, elev[i0]); if (u) { cover[i] = u === 2 ? COVER.CORE : COVER.URBAN; continue; } }
       if (shade && onLand) {
         // The rise toward the south-east, per map unit: land facing the
         // north-west is lit, land facing the south-east in shadow.

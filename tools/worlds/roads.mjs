@@ -386,6 +386,37 @@ export function buildRoads({ land, elev, hydro, owner, settlements, blocked, cul
   // ---- Ferries: across narrow sea between road ends on different landmasses. ----
   const ferries = [];
   const ports = settlements.filter((s) => s.rank <= RANK.TOWN && massOf(s) >= 0 && nearSea(s, land, W, H, 3.5 * S));
+  // Across a narrow strait, a bridge: a road straight over between two places on different landmasses, where the
+  // water it crosses is short, in one stretch, and the land either side low.
+  const linked = new Set();
+  {
+    const cands = [];
+    const all = settlements.filter((s) => s.rank <= RANK.TOWN && massOf(s) >= 0);
+    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+      const a = all[i], b = all[j];
+      if (massOf(a) === massOf(b)) continue;
+      const d = Math.sqrt(d2(a, b));
+      if (d > 36 * S) continue;
+      const n = Math.ceil(d / (0.5 * S));
+      let wet = 0, runs = 0, prev = false, ok = true;
+      for (let k = 0; k <= n && ok; k++) {
+        const t = k / n, i2 = px(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+        const w = !land[i2];
+        if (lakes[i2] || (land[i2] && elev[i2] > 0.3)) ok = false;
+        if (w) { wet += d / n; if (!prev) runs++; }
+        prev = w;
+      }
+      if (ok && runs === 1 && wet <= 4 * S) cands.push({ a, b, d, key: Math.min(massOf(a), massOf(b)) + ':' + Math.max(massOf(a), massOf(b)) });
+    }
+    cands.sort((p, q) => p.d - q.d);
+    for (const c of cands) {
+      if (linked.has(c.key)) continue;
+      linked.add(c.key);
+      const n = Math.ceil(c.d / (0.5 * S)), pts = [];
+      for (let k = 0; k <= n; k++) pts.push([Math.round((c.a.x + ((c.b.x - c.a.x) * k) / n) * 100) / 100, Math.round((c.a.y + ((c.b.y - c.a.y) * k) / n) * 100) / 100]);
+      roads.push({ cls: c.a.rank <= RANK.CITY && c.b.rank <= RANK.CITY ? 'trunk' : 'secondary', pts, bridge: true });
+    }
+  }
   const pairs = [];
   for (let i = 0; i < ports.length; i++) for (let j = i + 1; j < ports.length; j++) {
     const a = ports[i], b = ports[j];
@@ -398,7 +429,6 @@ export function buildRoads({ land, elev, hydro, owner, settlements, blocked, cul
     pairs.push({ a, b, d, key: Math.min(massOf(a), massOf(b)) + ':' + Math.max(massOf(a), massOf(b)) });
   }
   pairs.sort((p, q) => p.d - q.d);
-  const linked = new Set();
   for (const p of pairs) {
     if (linked.has(p.key) || ferries.length >= 10) continue;
     linked.add(p.key);

@@ -12,17 +12,20 @@ import { join } from 'node:path';
 import { encodeIndexedPng, hexToRgb } from './png.mjs';
 import { prepareCover, renderCover } from './climate.mjs';
 import { TILE_LEVELS } from './world.mjs';
+import { drawnWater } from './geom.mjs';
+import { keepDry } from './dry.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
-  rock: '#cbcfca', snow: '#ffffff', water: '#7fd5e9', urban: '#eceef0', sand: '#f6efdc', dune: '#f4eee0', dryrock: '#ebe6db', salt: '#fdfdfb',
+  rock: '#cbcfca', snow: '#ffffff', water: '#7fd5e9', urban: '#eceef0', sand: '#f6efdc', dune: '#f4eee0', dryrock: '#ebe6db', salt: '#fdfdfb', core: '#e3e5e9',
+  citypark: '#a2debe',
   line: '#4da9bb', border: '#26262a',
   province: '#606266', label: '#26262a',
 };
-// Palette order in the PNG: the seven land-cover classes by index, then water, built-up ground, sand, and the
-// desert's dune ripples, rocky ground, and salt flats. The
+// Palette order in the PNG: the seven land-cover classes by index, then water, built-up ground, sand, the
+// desert's dune ripples, rocky ground, and salt flats, and the cities' dense cores. The
 // finer tiles use the same palette, unshaded, so every rendered pixel is one of the reference's colours.
-const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban', 'sand', 'dune', 'dryrock', 'salt'];
+const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban', 'sand', 'dune', 'dryrock', 'salt', 'core'];
 const BASE_RGB = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
 // A land-cover class (COVER) and its pond flag as a palette index.
 const coverIndex = (c, pond) => (c === 255 || pond ? 7 : c >= 7 ? c + 1 : c);
@@ -268,6 +271,63 @@ function linesPath(arcs, lines, pick) {
   return path.toString();
 }
 
+// Paths in hundredths of a unit, for the smallest shapes (islets, city parks) and for roads moved off the water,
+// which the even tenths of the main paths would round back into it.
+const h100 = (v) => Math.round(v * 100);
+const fmt100 = (n) => {
+  const neg = n < 0, v = Math.abs(n), whole = Math.floor(v / 100), frac = v % 100;
+  const f = frac ? (frac % 10 ? '.' + String(frac).padStart(2, '0') : '.' + frac / 10) : '';
+  return (neg ? '-' : '') + (whole || !frac ? String(whole) : '') + f;
+};
+class FinePath {
+  constructor() { this.out = []; this.x = 0; this.y = 0; this.last = ''; this.started = false; }
+  // Every point of one command is written relative to the point the command starts from (as SVG reads q and t).
+  cmd(letter, ...pts) {
+    let s = '';
+    for (const p of pts) {
+      const a = fmt100(h100(p[0]) - this.x), b = fmt100(h100(p[1]) - this.y), piece = a + (b[0] === '-' ? '' : ' ') + b;
+      s += (s && piece[0] !== '-' ? ' ' : '') + piece;
+    }
+    if (letter === this.last) this.out.push((s[0] === '-' ? '' : ' ') + s); else this.out.push(letter + s);
+    this.last = letter;
+    const end = pts[pts.length - 1];
+    this.x = h100(end[0]); this.y = h100(end[1]);
+  }
+  move(p) {
+    if (!this.started) { const X = h100(p[0]), Y = h100(p[1]); const b = fmt100(Y); this.out.push('M' + fmt100(X) + (b[0] === '-' ? '' : ' ') + b); this.x = X; this.y = Y; this.started = true; this.last = 'M'; }
+    else this.cmd('m', p);
+  }
+  close() { this.out.push('z'); this.last = 'z'; }
+  toString() { return this.out.join(''); }
+}
+// Open lines drawn straight, point to point.
+export function fineLines(list) {
+  const path = new FinePath();
+  for (const pts of list) {
+    const line = [];
+    for (const p of pts) { const last = line[line.length - 1]; if (!last || h100(last[0]) !== h100(p[0]) || h100(last[1]) !== h100(p[1])) line.push(p); }
+    if (line.length < 2) continue;
+    path.move(line[0]);
+    for (const p of line.slice(1)) path.cmd('l', p);
+  }
+  return path.toString();
+}
+// Closed rings drawn as curves through the midpoints of their sides (as drawLoop draws them).
+export function fineLoops(list) {
+  const path = new FinePath();
+  for (const ring of list) {
+    const line = [];
+    for (const p of ring) { const last = line[line.length - 1]; if (!last || h100(last[0]) !== h100(p[0]) || h100(last[1]) !== h100(p[1])) line.push(p); }
+    const n = line.length;
+    if (n < 3) continue;
+    path.move(mid(line[n - 1], line[0]));
+    path.cmd('q', line[0], mid(line[0], line[1]));
+    for (let k = 1; k < n; k++) path.cmd('t', mid(line[k], line[(k + 1) % n]));
+    path.close();
+  }
+  return path.toString();
+}
+
 // --------------------------------------------------------------- write --
 
 const RIVER_WIDTH = [0, 0.5, 0.75, 1.05, 1.45]; // world units, by class
@@ -466,7 +526,7 @@ export function buildWorldFiles(world) {
   };
   // The About island's "you are here" dot.
   if (world.about) data.here = [Math.round(world.about.x * 10) / 10, Math.round(world.about.y * 10) / 10];
-  const detail = world.detail ? buildDetail(world) : null;
+  const detail = world.detail ? buildDetail(world, data) : null;
   if (detail) data.detail = { src: `detail/${slug}.json`, chunks: detail.chunks.meta };
   return { json: JSON.stringify(data), png, data, detail: detail && JSON.stringify(detail.coarse), chunks: detail && detail.chunks.files };
 }
@@ -605,9 +665,28 @@ function lakeRings(list) {
 }
 // The finest detail is cut into chunks of the map, loaded only for the part in view at the closest zooms.
 export const CHUNK = 400;
-export function buildDetail(world) {
+export function buildDetail(world, data = null) {
   const { width: W, height: H, detail: D, owner } = world;
   const N = W * H;
+  // The water as drawn, so no road or street is written over it (see dry.mjs): roads that needed moving or cutting
+  // are written apart, in hundredths and straight, and their bridges listed.
+  const lakesAll = D.smallLakes.lakes;
+  const wet = data ? drawnWater(data, { lakes: lakeRings(lakesAll) }) : null;
+  const bridges = { major: [], minor: [] };
+  const dryLines = (list, cls, curved) => {
+    const plain = [], fine = [];
+    for (const pts0 of list) {
+      // As the file will hold it: in even tenths.
+      const pts = pts0.map((p) => tenthsOf(p).map((v) => v / 10));
+      if (!wet) { plain.push(pts0); continue; }
+      const got = keepDry(pts, { curved, cls, water: wet.water, river: cls === 'street' || cls === 'minor' ? null : wet.river });
+      (cls === 'motorway' || cls === 'trunk' || cls === 'secondary' ? bridges.major : bridges.minor).push(...got.bridges);
+      if (!got.changed) { plain.push(pts0); continue; }
+      fine.push(...got.pieces);
+    }
+    return { plain, fine };
+  };
+  const roadPath = (list, cls) => { const { plain, fine } = dryLines(list, cls, true); return polylines(plain) + fineLines(fine); };
   const byClass = (cls) => D.roads.roads.filter((r) => r.cls === cls).map((r) => r.pts);
   const streetsOf = (cls) => D.streets.filter((st) => st.cls === cls).map((st) => st.pts);
   // Parks: one ring each, traced from their pixels (drawn only as a faint edge, close in).
@@ -619,12 +698,20 @@ export function buildDetail(world) {
   const adminArcs = traceArcs(key, W, H, -1);
   const pick = (a) => a.left >= 0 && a.right >= 0 && a.left >> 4 === a.right >> 4 && (a.left & 15) !== 15 && (a.right & 15) !== 15 && a.left !== a.right;
   const adminLines = adminArcs.map((arc) => (pick(arc) ? arcLine(arc, 0.8) : []));
-  const lakes = D.smallLakes.lakes;
+  const lakes = lakesAll;
+  const roadsOut = {
+    motorway: roadPath(byClass('motorway'), 'motorway'), trunk: roadPath(byClass('trunk'), 'trunk'), secondary: roadPath(byClass('secondary'), 'secondary'), local: roadPath(byClass('local'), 'local'),
+    arterial: roadPath(streetsOf('arterial'), 'arterial'), ring: roadPath(streetsOf('ring'), 'ring'),
+  };
+  // The islets: sandy (cays, bars, and barrier islands, the larger cays green at heart) and rocky (skerries and stacks).
+  const isl = D.islets || [];
+  const islets = isl.length ? {
+    sand: fineLoops(isl.filter((i) => i.kind === 'cay' || i.kind === 'bar' || i.kind === 'barrier').map((i) => i.ring)),
+    green: fineLoops(isl.filter((i) => i.green).map((i) => i.green)),
+    rock: fineLoops(isl.filter((i) => i.kind === 'skerry' || i.kind === 'stack').map((i) => i.ring)),
+  } : undefined;
   const coarse = {
-    roads: {
-      motorway: polylines(byClass('motorway')), trunk: polylines(byClass('trunk')), secondary: polylines(byClass('secondary')), local: polylines(byClass('local')),
-      arterial: polylines(streetsOf('arterial')), ring: polylines(streetsOf('ring')),
-    },
+    roads: roadsOut,
     ferries: segments(D.roads.ferries),
     causeway: D.causeway && D.causeway.length ? segments(D.causeway) : undefined,
     streams: polylines(D.streams),
@@ -632,15 +719,24 @@ export function buildDetail(world) {
     lakes: lakeRings(lakes.filter((l) => l.area >= 0.6)),
     parks,
     admin: linesPath(adminArcs, adminLines, pick),
+    islets,
     labels: D.labels.map(labelOut),
   };
-  // Chunks: streets, minor streets, and the smallest lakes.
+  // Chunks: streets, minor streets, the smallest lakes, and the cities' parks.
   const cols = Math.ceil(W / CHUNK), rows = Math.ceil(H / CHUNK);
-  const bins = Array.from({ length: cols * rows }, () => ({ street: [], minor: [], lakes: [] }));
+  const bins = Array.from({ length: cols * rows }, () => ({ street: [], minor: [], lakes: [], parks: [] }));
   const binOf = (p) => Math.min(rows - 1, Math.floor(p[1] / CHUNK)) * cols + Math.min(cols - 1, Math.floor(p[0] / CHUNK));
   for (const st of D.streets) if (st.cls === 'street' || st.cls === 'minor') bins[binOf(st.pts[0])][st.cls].push(st.pts);
   for (const l of lakes) if (l.area < 0.6) bins[binOf([l.x, l.y])].lakes.push(l);
-  const files = bins.map((b, k) => ({ path: `${k % cols}-${Math.floor(k / cols)}.json`, json: JSON.stringify({ street: segments(b.street), minor: segments(b.minor), lakes: lakeRings(b.lakes) }) }));
+  for (const p of D.cityParks || []) bins[binOf([p.x, p.y])].parks.push(p.ring);
+  const streetPath = (list, cls) => { const { plain, fine } = dryLines(list, cls, false); return segments(plain) + fineLines(fine); };
+  const files = bins.map((b, k) => {
+    const c = { street: streetPath(b.street, 'street'), minor: streetPath(b.minor, 'minor'), lakes: lakeRings(b.lakes) };
+    if (b.parks.length) c.parks = fineLoops(b.parks);
+    return { path: `${k % cols}-${Math.floor(k / cols)}.json`, json: JSON.stringify(c) };
+  });
+  // The bridges, found while the roads and streets were kept dry.
+  if (bridges.major.length || bridges.minor.length) coarse.bridges = { major: fineLines(bridges.major), minor: fineLines(bridges.minor) };
   return { coarse, chunks: { meta: { size: CHUNK, cols, rows, src: `detail/${world.slug}/` }, files } };
 }
 

@@ -5,6 +5,7 @@
 :root {
   --m-river: #7fd5e9;
   --m-park: #8fcfa5;
+  --m-citypark: #a2debe;
   --m-road-hw: #9aa8c8;
   --m-road-main: #b1bbd4;
   --m-road-local: #c3c9dc;
@@ -295,7 +296,8 @@
   opacity: 0;
 }
 
-.map.is-z5 .r-minor {
+/* (Only at the closest zoom: in a city's core they halve the blocks.) */
+.map.is-z55 .r-minor {
   opacity: 1;
 }
 
@@ -316,6 +318,72 @@
 .r-causeway {
   stroke: #b4bdd6;
   stroke-width: 1.2px;
+}
+
+/* The coast's islets: sandy cays, bars, and barrier islands (the larger cays green at heart), and bare rock for
+   skerries and stacks; from zoom 3. */
+.map-islet {
+  stroke: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map-islet.is-sand {
+  fill: #f6efdc;
+}
+
+.map-islet.is-green {
+  fill: #c4ead7;
+}
+
+.map-islet.is-rock {
+  fill: #cbcfca;
+}
+
+.map.is-z3 .map-islet {
+  opacity: 1;
+}
+
+/* Bridges: a pale deck with a fine grey edge under the road where it crosses the water. */
+.map-bridge {
+  fill: none;
+  stroke: #c9ced9;
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 3px;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map-bridge.is-major {
+  stroke-width: 3.4px;
+}
+
+.map.is-z2 .map-bridge.is-major,
+.map.is-z35 .map-bridge.is-minor {
+  opacity: 1;
+}
+
+.map.is-z4 .map-bridge.is-major {
+  stroke-width: 4.8px;
+}
+
+/* The cities' parks: small green patches in the grey of the built-up ground, from zoom 3.5. */
+.map-citypark {
+  fill: var(--m-citypark);
+  stroke: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map.is-z35 .map-citypark {
+  opacity: 1;
+}
+
+.k-citypark text {
+  fill: #2e7d52;
+  font-weight: 500;
 }
 
 /* Small lakes: water, crisp at every zoom. */
