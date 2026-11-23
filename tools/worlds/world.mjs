@@ -62,8 +62,10 @@ export function worldStyle(name) {
 export function worldParams(name, projects) {
   const style = worldStyle(name);
   const landShare = clamp(0.3 + 0.0045 * (projects.length - 10) + (style.land ?? 0), 0.3, 0.4);
-  // Invented distances: a degree of latitude is 111 km, as at home.
-  const kmPerUnit = ((style.latTop - style.latBottom) * 111) / HEIGHT;
+  // Invented distances, set by what is drawn: towns lie a median of about 12 map units apart in every world, so at
+  // about 1.5 km a unit they are some 15 to 20 km apart, a city's built-up ground a few km to 15 km across, and the
+  // whole map some 2,000 to 2,600 km wide. Worlds that span more latitude run a little larger.
+  const kmPerUnit = 1.35 + Math.max(0, style.latTop - style.latBottom - 40) * 0.004;
   return { style, landShare, masses: style.masses, kmPerUnit: Math.round(kmPerUnit * 100) / 100 };
 }
 
