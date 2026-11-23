@@ -11,6 +11,8 @@
   --gc-route: #ffffff;
   --gc-route-halo: rgba(230, 128, 25, 0.6);
   --gc-flow: #e68019;
+  --gc-country-label: rgba(143, 70, 6, 0.78);
+  --gc-country-halo: rgba(227, 227, 176, 0.85);
   --gc-direct: rgba(255, 255, 255, 0.55);
   --gc-marker: #ffffff;
   --gc-marker-ink: #e68019;
@@ -55,6 +57,8 @@
   --gc-route: #ffffff;
   --gc-route-halo: rgba(0, 0, 0, 0.6);
   --gc-flow: #b6b4ff;
+  --gc-country-label: rgba(196, 194, 255, 0.82);
+  --gc-country-halo: rgba(52, 52, 106, 0.85);
   --gc-direct: rgba(255, 255, 255, 0.5);
   --gc-marker: #ffffff;
   --gc-marker-ink: #000000;
@@ -100,7 +104,8 @@
     --gc-route: #ffffff;
     --gc-route-halo: rgba(0, 0, 0, 0.6);
     --gc-flow: #b6b4ff;
-  --gc-flow: #b6b4ff;
+    --gc-country-label: rgba(196, 194, 255, 0.82);
+    --gc-country-halo: rgba(52, 52, 106, 0.85);
     --gc-direct: rgba(255, 255, 255, 0.5);
     --gc-marker: #ffffff;
     --gc-marker-ink: #000000;
@@ -146,6 +151,8 @@
   --gc-route: #e68019;
   --gc-route-halo: rgba(255, 255, 255, 0.8);
   --gc-flow: #a34f00;
+  --gc-country-label: rgba(70, 70, 70, 0.72);
+  --gc-country-halo: rgba(214, 214, 214, 0.85);
   --gc-direct: rgba(0, 0, 0, 0.4);
   --gc-marker: #e68019;
   --gc-marker-ink: #ffffff;
@@ -187,6 +194,8 @@
   --gc-route: #ffffff;
   --gc-route-halo: rgba(0, 0, 0, 0.55);
   --gc-flow: #ffb347;
+  --gc-country-label: rgba(255, 255, 255, 0.9);
+  --gc-country-halo: rgba(0, 0, 0, 0.55);
   --gc-direct: rgba(255, 255, 255, 0.7);
   --gc-city: rgba(255, 255, 255, 0.95);
   --gc-city-ring: rgba(0, 0, 0, 0.6);
@@ -369,6 +378,22 @@ body.gc-page {
   font-size: 22px;
   line-height: 1;
   cursor: pointer;
+}
+.gc-map-fade {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 380ms ease;
+}
+.gc-map-fade.is-going {
+  opacity: 0;
+}
+.gc-ctl:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .gc-ctl:hover {
   background: var(--gc-chip);
@@ -1428,7 +1453,7 @@ body.gc-page {
   background: var(--gc-well);
 }
 .gc-chip.gc-chip-add::before {
-  content: "+ ";
+  content: "\2212  ";
   margin-right: 2px;
 }
 
@@ -1495,6 +1520,11 @@ body.gc-page {
   min-height: 40px;
   border-radius: 12px;
   text-align: left;
+}
+.gc-pop-actions .gc-btn:hover,
+.gc-pop-actions .gc-btn:focus-visible {
+  background: var(--gc-btn-bg);
+  color: var(--gc-btn-ink);
 }
 
 .gc-panel button:focus-visible,

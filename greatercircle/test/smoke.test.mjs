@@ -152,3 +152,18 @@ test("the route saves as an image card", { skip }, async () => {
   assert.deepEqual(errors, []);
   await page.close();
 });
+
+test("the flat map toggles, keeps the route, and is in the URL", { skip }, async () => {
+  const { page, errors } = await open(LHR_NRT, { viewport: { width: 1440, height: 900 } });
+  await page.click("#flat-btn");
+  assert.equal(await page.getAttribute("#flat-btn", "aria-pressed"), "true");
+  assert.match(page.url(), /map=flat/);
+  assert.equal(await page.isDisabled("#sat-btn"), true);
+  const a = await page.evaluate(() => window.__greatercircle.project(-0.4599, 51.4707));
+  assert.ok(a && a[0] > 0 && a[1] > 0, JSON.stringify(a));
+  await page.keyboard.press("m");
+  assert.equal(await page.getAttribute("#flat-btn", "aria-pressed"), "false");
+  assert.doesNotMatch(page.url(), /map=flat/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});

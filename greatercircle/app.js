@@ -39,8 +39,24 @@
   var countries = [];
   var places = null, placesPromise = null;
 
-  var projection = d3.geoOrthographic().clipAngle(90).precision(0.35);
+  var globeProjection = d3.geoOrthographic().clipAngle(90).precision(0.35);
+  var flatProjection = d3.geoNaturalEarth1().precision(0.35);
+  var projection = globeProjection;
   var path = d3.geoPath(projection, ctx);
+  var flat = false, flatBase = 1, halfFreeH = 300, FLAT_MIN = 0.85;
+  var RAD = Math.PI / 180, NE_XMAX = Math.PI * 0.8707, NE_YMAX = neY(Math.PI / 2);
+  function neA(phi) { var p2 = phi * phi, p4 = p2 * p2; return 0.8707 - 0.131979 * p2 + p4 * (-0.013791 + p4 * (0.003971 * p2 - 0.001529 * p4)); }
+  function neY(phi) { var p2 = phi * phi, p4 = p2 * p2; return phi * (1.007226 + p2 * (0.015085 + p4 * (-0.044475 + 0.028874 * p2 - 0.005916 * p4))); }
+  function wrapPi(x) { return x - 2 * Math.PI * Math.floor((x + Math.PI) / (2 * Math.PI)); }
+  var flatInvert = flatProjection.invert;
+  flatProjection.invert = function (p) {
+    var t = flatProjection.translate(), s = flatProjection.scale();
+    var x = (p[0] - t[0]) / s, y = (t[1] - p[1]) / s;
+    if (Math.abs(y) > NE_YMAX) return null;
+    var phi = d3.geoNaturalEarth1Raw.invert(0, y)[1];
+    if (Math.abs(x) > Math.PI * neA(phi) + 1e-9) return null;
+    return flatInvert(p);
+  };
   var view = { lon: -25, lat: 28, zoom: 1 };
   var dpr = 1, W = 0, H = 0, base = 0, cx = 0, cy = 0;
   var MIN_ZOOM = 0.6, MAX_ZOOM = 80;
@@ -64,6 +80,8 @@
     cx = phone ? W / 2 : panelW + freeW / 2;
     cy = phone ? (topInset + H - sheetH) / 2 : H / 2;
     base = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
+    flatBase = Math.max(20, Math.min((freeW - 32) / (2 * NE_XMAX), (freeH - 32) / (2 * NE_YMAX)));
+    halfFreeH = freeH / 2;
     pick.width = W; pick.height = H;
     pickDirty = true;
     applyView();
@@ -72,8 +90,16 @@
   function applyView() {
     view.lat = Math.max(-90, Math.min(90, view.lat));
     view.lon = ((view.lon + 540) % 360) - 180;
-    view.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, view.zoom));
-    projection.rotate([-view.lon, -view.lat, 0]).scale(base * view.zoom).translate([cx, cy]);
+    if (flat) {
+      view.zoom = Math.max(FLAT_MIN, Math.min(MAX_ZOOM, view.zoom));
+      var s = flatBase * view.zoom, room = Math.max(0, s * NE_YMAX - halfFreeH + 24);
+      var y0 = Math.max(-room, Math.min(room, s * neY(Math.max(-89.9, Math.min(89.9, view.lat)) * RAD)));
+      view.lat = d3.geoNaturalEarth1Raw.invert(0, y0 / s)[1] / RAD;
+      projection.rotate([-view.lon, 0, 0]).scale(s).translate([cx, cy + y0]);
+    } else {
+      view.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, view.zoom));
+      projection.rotate([-view.lon, -view.lat, 0]).scale(base * view.zoom).translate([cx, cy]);
+    }
     pickDirty = true;
   }
 
@@ -81,7 +107,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge", "flow", "country-label", "country-halo"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     if (!pal["label-halo"]) pal["label-halo"] = pal.ocean;
     var c = document.createElement("canvas");
@@ -129,6 +155,93 @@
     B.nx = -sp * cl; B.ny = -sp * sl; B.nz = cp;
     B.cx = cp * cl; B.cy = cp * sl; B.cz = sp;
     B.r = projection.scale();
+    if (flat) { var tr = projection.translate(); B.l0 = lon; B.tx = tr[0]; B.ty = tr[1]; }
+  }
+  function flatXY(lam, phi) {
+    var p2 = phi * phi, p4 = p2 * p2;
+    var x = lam * (0.8707 - 0.131979 * p2 + p4 * (-0.013791 + p4 * (0.003971 * p2 - 0.001529 * p4)));
+    var y = phi * (1.007226 + p2 * (0.015085 + p4 * (-0.044475 + 0.028874 * p2 - 0.005916 * p4)));
+    FX = B.tx + B.r * x; FY = B.ty - B.r * y;
+  }
+  var FX = 0, FY = 0;
+  function unwrapInto(target, X, Y, Z, n) {
+    var lon = new Float64Array(n), lat = new Float64Array(n), prev = 0, min = Infinity, max = -Infinity, pmin = Infinity, pmax = -Infinity;
+    for (var k = 0; k < n; k++) {
+      var l = Math.atan2(Y[k], X[k]), p = Math.asin(Math.max(-1, Math.min(1, Z[k])));
+      if (k > 0) l = prev + wrapPi(l - prev);
+      lon[k] = l; lat[k] = p; prev = l;
+      if (l < min) min = l; if (l > max) max = l;
+      if (p < pmin) pmin = p; if (p > pmax) pmax = p;
+    }
+    target.pmin = pmin; target.pmax = pmax;
+    target.lon = lon; target.lat = lat; target.minL = min; target.maxL = max;
+    target.drift = n > 1 ? Math.round((lon[n - 1] - lon[0]) / (2 * Math.PI)) : 0;
+    var sum = 0; for (k = 0; k < n; k++) sum += lat[k];
+    target.pole = sum >= 0 ? Math.PI / 2 : -Math.PI / 2;
+    return target;
+  }
+  function flatOffsets(minL, maxL, pmin, pmax) {
+    var out = [];
+    if (pmin != null) {
+      var yTop = B.ty - B.r * neY(pmax), yBot = B.ty - B.r * neY(pmin);
+      if (yBot < -EDGE || yTop > H + EDGE) return out;
+    }
+    for (var o = -2; o <= 2; o++) {
+      var off = o * 2 * Math.PI, lo = minL + off, hi = maxL + off;
+      if (hi < -Math.PI - 1e-9 || lo > Math.PI + 1e-9) continue;
+      if (pmin != null) {
+        var x1 = B.tx + B.r * Math.min(lo * 0.8707, lo * 0.5), x2 = B.tx + B.r * Math.max(hi * 0.8707, hi * 0.5);
+        if (x2 < -EDGE || x1 > W + EDGE) continue;
+      }
+      out.push(off);
+    }
+    return out;
+  }
+  function traceRingFlat(c, rg) {
+    var L = rg.lon, P = rg.lat, n = rg.n;
+    var shift = wrapPi(L[0] - B.l0) - L[0];
+    var offs = rg.drift ? [-2 * Math.PI, 0, 2 * Math.PI] : flatOffsets(rg.minL + shift, rg.maxL + shift, rg.pmin, rg.pmax);
+    for (var oi = 0; oi < offs.length; oi++) {
+      var s = shift + offs[oi], side = 0, held = false, lx = 0, ly = 0;
+      for (var k = 0; k < n; k++) {
+        flatXY(L[k] + s, P[k]);
+        if (k === 0) { c.moveTo(FX, FY); side = outcode(FX, FY); continue; }
+        var oc = outcode(FX, FY);
+        if (oc & side) { lx = FX; ly = FY; held = true; side = oc & side; continue; }
+        if (held) { c.lineTo(lx, ly); held = false; }
+        c.lineTo(FX, FY); side = oc;
+      }
+      if (held) c.lineTo(lx, ly);
+      if (rg.drift) {
+        flatXY(L[n - 1] + s, rg.pole); c.lineTo(FX, FY);
+        flatXY(L[0] + s, rg.pole); c.lineTo(FX, FY);
+      }
+      c.closePath();
+    }
+    return true;
+  }
+  function traceLinesFlat(c, lines) {
+    for (var i = 0; i < lines.length; i++) {
+      var Ln = lines[i], L = Ln.lon, P = Ln.lat, n = Ln.n;
+      var shift = wrapPi(L[0] - B.l0) - L[0], offs = flatOffsets(Ln.minL + shift, Ln.maxL + shift, Ln.pmin, Ln.pmax);
+      for (var oi = 0; oi < offs.length; oi++) {
+        var s = shift + offs[oi], side = 0;
+        for (var k = 0; k < n; k++) {
+          flatXY(L[k] + s, P[k]);
+          var oc = outcode(FX, FY);
+          if (k === 0) { c.moveTo(FX, FY); side = oc; continue; }
+          if (oc & side) { c.moveTo(FX, FY); side = oc & side; continue; }
+          c.lineTo(FX, FY); side = oc;
+        }
+      }
+    }
+  }
+  function screenOf(lonDeg, latDeg, x, y, z) {
+    if (flat) { flatXY(wrapPi(lonDeg * RAD - B.l0), latDeg * RAD); return FX > -40 && FY > -40 && FX < W + 40 && FY < H + 40; }
+    var sz = x * B.cx + y * B.cy + z * B.cz;
+    if (sz <= 0.02) return false;
+    FX = cx + B.r * (x * B.ex + y * B.ey + z * B.ez); FY = cy - B.r * (x * B.nx + y * B.ny + z * B.nz);
+    return true;
   }
 
   function prepare(featureList) {
@@ -142,7 +255,7 @@
             var v = G.toVec(ring[k][0], ring[k][1]);
             X[k] = v[0]; Y[k] = v[1]; Z[k] = v[2]; sx += v[0]; sy += v[1]; sz += v[2]; count++;
           }
-          rings.push({ x: X, y: Y, z: Z, n: n });
+          rings.push(unwrapInto({ x: X, y: Y, z: Z, n: n }, X, Y, Z, n));
         });
       });
       var c = G.normalize([sx, sy, sz]);
@@ -159,7 +272,7 @@
       var c = Math.hypot(sx, sy, sz) > 1e-9 ? G.normalize([sx, sy, sz]) : [X[0], Y[0], Z[0]];
       var minDot = 1;
       for (k = 0; k < n; k++) { var d = c[0] * X[k] + c[1] * Y[k] + c[2] * Z[k]; if (d < minDot) minDot = d; }
-      return { x: X, y: Y, z: Z, n: n, cx: c[0], cy: c[1], cz: c[2], radius: Math.acos(Math.max(-1, Math.min(1, minDot))) };
+      return unwrapInto({ x: X, y: Y, z: Z, n: n, cx: c[0], cy: c[1], cz: c[2], radius: Math.acos(Math.max(-1, Math.min(1, minDot))) }, X, Y, Z, n);
     });
   }
   function makeGraticule() {
@@ -174,6 +287,7 @@
   }
 
   function featureInFront(f) {
+    if (flat) return true;
     var d = f.cx * B.cx + f.cy * B.cy + f.cz * B.cz;
     var theta = Math.acos(Math.max(-1, Math.min(1, d)));
     if (theta - f.radius > Math.PI / 2) return false;
@@ -215,9 +329,10 @@
   }
   function traceFeature(c, f) {
     if (!featureInFront(f)) return;
-    for (var i = 0; i < f.rings.length; i++) traceRing(c, f.rings[i]);
+    for (var i = 0; i < f.rings.length; i++) { if (flat) traceRingFlat(c, f.rings[i]); else traceRing(c, f.rings[i]); }
   }
   function traceLines(c, lines) {
+    if (flat) { traceLinesFlat(c, lines); return; }
     var r = B.r, ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     for (var i = 0; i < lines.length; i++) {
       var L = lines[i], X = L.x, Y = L.y, Z = L.z, n = L.n, pen = false, side = 0;
@@ -270,17 +385,24 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
 
-    if (r * 1.07 < Math.hypot(W, H)) {
+    if (flat) {
+      ctx.beginPath(); path({ type: "Sphere" });
+      ctx.lineJoin = "round"; ctx.strokeStyle = pal.glow;
+      ctx.lineWidth = 14; ctx.globalAlpha = 0.45; ctx.stroke(); ctx.lineWidth = 6; ctx.globalAlpha = 0.8; ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = pal.ocean; ctx.fill();
+    } else if (r * 1.07 < Math.hypot(W, H)) {
       var glow = ctx.createRadialGradient(cx, cy, r, cx, cy, r * 1.07);
       glow.addColorStop(0, pal.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, 2 * Math.PI); ctx.fill();
     }
-    var live = !flatOnly && satOn && !!sat && sat.ready();
+    var live = !flat && !flatOnly && satOn && !!sat && sat.ready();
     if (live !== satLive) { satLive = live; document.documentElement.classList.toggle("gc-sat-on", live); refreshPalette(); }
     satCanvas.hidden = !live;
     if (live) renderSat();
-    else {
+    else if (flat) {
+      ctx.save(); ctx.beginPath(); path({ type: "Sphere" }); ctx.clip();
+    } else {
       ctx.fillStyle = pal.ocean;
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
     }
@@ -346,7 +468,9 @@
     ctx.strokeStyle = pal.border; ctx.lineWidth = 0.7; ctx.stroke();
     mark("borders");
 
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+    drawCountryLabels(feats);
+    if (flat) { ctx.restore(); ctx.beginPath(); path({ type: "Sphere" }); }
+    else { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); }
     ctx.strokeStyle = pal.limb; ctx.lineWidth = 1; ctx.stroke();
 
     drawRegions();
@@ -453,6 +577,8 @@
   function makeCard(info) {
     anim = null;
     stopFly(); stopInertia();
+    var wasFlat = flat;
+    if (wasFlat) setProjection(false);
     var saved = { lon: view.lon, lat: view.lat, zoom: view.zoom }, t = fitTarget();
     if (t && !t.single) { view.lon = t.lon; view.lat = t.lat; view.zoom = Math.min(t.zoom, 1.6); applyView(); }
     flatOnly = true;
@@ -468,6 +594,7 @@
     var gs = 600;
     c.drawImage(canvas, sx * dpr, sy * dpr, side * dpr, side * dpr, Wc - gs + 30, (Hc - gs) / 2, gs, gs);
     flatOnly = false;
+    if (wasFlat) setProjection(true);
     view.lon = saved.lon; view.lat = saved.lat; view.zoom = saved.zoom; applyView();
     render("full");
     var grad = c.createLinearGradient(560, 0, 760, 0);
@@ -629,6 +756,194 @@
       scheduleRender("full");
     }).catch(function (err) { console.warn("admin1", err); admin1Asked = false; });
   }
+
+  var labelInfo = null, labelOrder = [], labelBoxes = [], labelCache = new Map(), labelBuilding = false;
+  var SHORT_NAMES = { "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Central African Republic": "Central African Rep.", "Bosnia and Herzegovina": "Bosnia and Herz.", "Dominican Republic": "Dominican Rep.", "French Southern and Antarctic Lands": "French Southern Lands", "South Georgia and the South Sandwich Islands": "South Georgia", "Saint Helena, Ascension and Tristan da Cunha": "Saint Helena", "Heard Island and McDonald Islands": "Heard Island", "Saint Vincent and the Grenadines": "Saint Vincent", "United States Virgin Islands": "US Virgin Islands", "British Indian Ocean Territory": "Chagos", "Australian Indian Ocean Territories": "Christmas Island", "Ashmore and Cartier Islands": "Ashmore Islands" };
+  var LABEL_FONT = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  function ringDist(x, y, rings) {
+    var inside = false, min = Infinity;
+    for (var r = 0; r < rings.length; r++) {
+      var ring = rings[r];
+      for (var i = 0, n = ring.length, j = n - 1; i < n; j = i++) {
+        var a = ring[i], b = ring[j];
+        if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+        var dx = b[0] - a[0], dy = b[1] - a[1], t = dx || dy ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy))) : 0;
+        var ex = a[0] + t * dx - x, ey = a[1] + t * dy - y, d = ex * ex + ey * ey;
+        if (d < min) min = d;
+      }
+    }
+    return (inside ? 1 : -1) * Math.sqrt(min);
+  }
+  function polylabel(rings, precision) {
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    rings[0].forEach(function (p) { if (p[0] < minX) minX = p[0]; if (p[1] < minY) minY = p[1]; if (p[0] > maxX) maxX = p[0]; if (p[1] > maxY) maxY = p[1]; });
+    var size = Math.min(maxX - minX, maxY - minY);
+    if (!(size > 0)) return [minX, minY];
+    var cell = function (x, y, h) { var d = ringDist(x, y, rings); return { x: x, y: y, h: h, d: d, max: d + h * Math.SQRT2 }; };
+    var queue = [], h = size / 2;
+    for (var x = minX; x < maxX; x += size) for (var y = minY; y < maxY; y += size) queue.push(cell(x + h, y + h, h));
+    var best = cell((minX + maxX) / 2, (minY + maxY) / 2, 0), guard = 0;
+    while (queue.length && guard++ < 4000) {
+      var bi = 0;
+      for (var q = 1; q < queue.length; q++) if (queue[q].max > queue[bi].max) bi = q;
+      var c = queue[bi]; queue[bi] = queue[queue.length - 1]; queue.pop();
+      if (c.d > best.d) best = c;
+      if (c.max - best.d <= precision) continue;
+      h = c.h / 2;
+      queue.push(cell(c.x - h, c.y - h, h), cell(c.x + h, c.y - h, h), cell(c.x - h, c.y + h, h), cell(c.x + h, c.y + h, h));
+    }
+    return [best.x, best.y];
+  }
+  function spanAt(polys, lon, lat) {
+    var xs = [];
+    for (var p = 0; p < polys.length; p++) for (var r = 0; r < polys[p].length; r++) {
+      var ring = polys[p][r];
+      for (var i = 0, n = ring.length, j = n - 1; i < n; j = i++) {
+        var a = ring[i], b = ring[j];
+        if ((a[1] > lat) === (b[1] > lat) || Math.abs(a[0] - b[0]) > 180) continue;
+        xs.push(a[0] + (lat - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+      }
+    }
+    xs.sort(function (u, v) { return u - v; });
+    for (var k = 0; k + 1 < xs.length; k += 2) if (xs[k] <= lon && lon <= xs[k + 1]) return [xs[k], xs[k + 1]];
+    return null;
+  }
+  function buildLabelInfo() {
+    labelBuilding = true;
+    var list = [], i = 0;
+    var step = function (deadline) {
+      while (i < features.length && (!deadline || deadline.timeRemaining() > 3)) {
+        var f = features[i], polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+        var best = null, bestA = 0, total = 0;
+        polys.forEach(function (poly) { var ar = d3.geoArea({ type: "Polygon", coordinates: poly }); if (ar > 2 * Math.PI) ar = 4 * Math.PI - ar; total += ar; if (ar > bestA) { bestA = ar; best = poly; } });
+        if (best) {
+          var mid = 0; best[0].forEach(function (pt) { mid += pt[1]; }); mid /= best[0].length;
+          var k = Math.max(0.15, Math.cos(mid * RAD));
+          var scaled = best.map(function (ring) { return ring.map(function (pt) { return [pt[0] * k, pt[1]]; }); });
+          var pl = polylabel(scaled, Math.max(0.02, Math.sqrt(bestA) * 57 / 60)), lon = pl[0] / k, lat = pl[1];
+          if (f.id === ANTARCTICA) { lon = 0; lat = -80; }
+          var span = spanAt([best], lon, lat) || [lon - 1, lon + 1];
+          var name = SHORT_NAMES[f.properties.name] || f.properties.name;
+          list[i] = { i: i, id: f.id, text: name.toLocaleUpperCase("en"), lat: lat, lon: f.id === ANTARCTICA ? lon : (span[0] + span[1]) / 2, span: f.id === ANTARCTICA ? [-180, 180] : span, area: bestA, total: total, polys: polys, v: G.toVec(lon, lat) };
+        }
+        i++;
+      }
+      if (i < features.length) { if (window.requestIdleCallback) requestIdleCallback(step, { timeout: 400 }); else setTimeout(step, 16); return; }
+      labelInfo = list;
+      labelOrder = list.filter(Boolean).sort(function (p, q) { return q.area - p.area; });
+      labelBuilding = false;
+      scheduleRender("full");
+    };
+    if (window.requestIdleCallback) requestIdleCallback(step, { timeout: 400 }); else setTimeout(step, 16);
+  }
+  var glyphW = new Map();
+  function advance(ch, fs) {
+    var key = fs + "|" + ch, w = glyphW.get(key);
+    if (w == null) { w = ctx.measureText(ch).width; glyphW.set(key, w); }
+    return w;
+  }
+  function parallelPath(lat, lonC, lonL, lonR, need) {
+    var phi = lat * RAD, cosP = Math.max(0.05, Math.cos(phi)), out = { pts: [[0, 0, 0]], left: 0, right: 0 };
+    var stepDeg = Math.max(0.01, Math.min(2, 2.5 / (B.r * cosP) / RAD));
+    var v = G.toVec(lonC, lat);
+    if (!screenOf(lonC, lat, v[0], v[1], v[2])) return null;
+    var c0x = FX, c0y = FY;
+    out.pts[0] = [FX, FY, 0];
+    var sides = [[-1, lonL], [1, lonR]];
+    for (var s = 0; s < 2; s++) {
+      var dir = sides[s][0], lim = sides[s][1], acc = 0, px = c0x, py = c0y, arr = [];
+      for (var k = 1; k < 600 && acc < need; k++) {
+        var lo = lonC + dir * k * stepDeg;
+        if (dir < 0 ? lo < lim : lo > lim) break;
+        var w = G.toVec(lo, lat);
+        if (!flat && w[0] * B.cx + w[1] * B.cy + w[2] * B.cz < 0.12) break;
+        screenOf(lo, lat, w[0], w[1], w[2]);
+        acc += Math.hypot(FX - px, FY - py); px = FX; py = FY;
+        arr.push([FX, FY, dir * acc]);
+      }
+      if (dir < 0) { out.left = acc; out.pts = arr.reverse().concat(out.pts); } else { out.right = acc; out.pts = out.pts.concat(arr); }
+    }
+    return out;
+  }
+  function pointAt(pts, s) {
+    var lo = 0, hi = pts.length - 1;
+    if (s <= pts[0][2]) lo = hi = 0;
+    else if (s >= pts[hi][2]) lo = hi;
+    else { while (hi - lo > 1) { var m = (lo + hi) >> 1; if (pts[m][2] <= s) lo = m; else hi = m; } }
+    var a = pts[lo], b = pts[Math.min(hi, pts.length - 1)];
+    if (lo === hi) { b = pts[Math.min(lo + 1, pts.length - 1)]; a = lo === b ? pts[Math.max(0, lo - 1)] : a; }
+    var t = b[2] - a[2] ? (s - a[2]) / (b[2] - a[2]) : 0;
+    var A = pts[Math.max(0, lo === hi ? lo - 1 : lo)], Bp = pts[Math.min(pts.length - 1, lo === hi ? lo + 1 : hi)];
+    return [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]), Math.atan2(Bp[1] - A[1], Bp[0] - A[0])];
+  }
+  function drawCountryLabels() {
+    labelBoxes = [];
+    if (!labelInfo) { if (!labelBuilding && features.length) buildLabelInfo(); return; }
+    var r = B.r, sw = W, sh = H, centerLL = null, placedAny = 0;
+    var margin = 6;
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    for (var o = 0; o < labelOrder.length && placedAny < 80; o++) {
+      var L = labelOrder[o];
+      var areaPx = L.area * r * r;
+      var fs = Math.min(17, Math.sqrt(areaPx) / 7.5);
+      if (fs < 8.5) continue;
+      fs = Math.round(fs * 2) / 2;
+      var lat = L.lat, lonC = L.lon, span = L.span;
+      var onScreen = screenOf(L.lon, L.lat, L.v[0], L.v[1], L.v[2]) && FX > margin && FY > margin && FX < sw - margin && FY < sh - margin;
+      if (!onScreen) {
+        if (areaPx < sw * sh * 0.25) continue;
+        if (!centerLL) { centerLL = projection.invert([cx, cy]) || false; }
+        if (!centerLL || !d3.geoContains({ type: "MultiPolygon", coordinates: L.polys }, centerLL)) continue;
+        lat = centerLL[1];
+        span = spanAt(L.polys, centerLL[0], lat);
+        if (!span) continue;
+        lonC = centerLL[0];
+      }
+      for (var tries = 0; tries < 2; tries++) {
+        ctx.font = "500 " + fs + "px " + LABEL_FONT;
+        var ls = fs * 0.16, chars = L.text.split(""), adv = chars.map(function (ch) { return advance(ch, fs); });
+        var total = adv.reduce(function (p, q) { return p + q; }, 0) + ls * (chars.length - 1);
+        var pp = parallelPath(lat, lonC, span[0], span[1], total / 2 + fs);
+        if (!pp) break;
+        if (pp.left < total / 2 || pp.right < total / 2) { if (fs > 9) { fs = Math.max(8.5, Math.round(fs * 0.8 * 2) / 2); continue; } pp = null; }
+        break;
+      }
+      if (!pp) continue;
+      var c0 = pointAt(pp.pts, 0), flip = Math.cos(c0[2]) < 0;
+      if (pp.pts.length < 3) continue;
+      var pos = [], s = -total / 2, ok = true;
+      for (var g = 0; g < chars.length; g++) {
+        var at = s + adv[g] / 2, q = pointAt(pp.pts, flip ? -at : at);
+        if (q[0] < margin || q[1] < margin || q[0] > sw - margin || q[1] > sh - margin) { ok = false; break; }
+        if (flat && !projection.invert([q[0], q[1]])) { ok = false; break; }
+        pos.push(q); s += adv[g] + ls;
+      }
+      if (!ok) continue;
+      var half = fs * 0.62, clash = false, boxes = [];
+      for (g = 0; g < pos.length && !clash; g++) {
+        var bx = { x: pos[g][0] - half, y: pos[g][1] - half, w: 2 * half, h: 2 * half };
+        for (var k = 0; k < labelBoxes.length; k++) { var b = labelBoxes[k]; if (bx.x < b.x + b.w + 2 && bx.x + bx.w + 2 > b.x && bx.y < b.y + b.h + 2 && bx.y + bx.h + 2 > b.y) { clash = true; break; } }
+        boxes.push(bx);
+      }
+      if (clash) continue;
+      Array.prototype.push.apply(labelBoxes, boxes);
+      placedAny++;
+      ctx.font = "500 " + fs + "px " + LABEL_FONT;
+      for (var pass = 0; pass < 2; pass++) {
+        if (pass === 0) { ctx.strokeStyle = pal["country-halo"] || pal["label-halo"]; ctx.lineWidth = Math.max(2, fs * 0.24); }
+        else ctx.fillStyle = pal["country-label"] || pal.label;
+        for (g = 0; g < pos.length; g++) {
+          ctx.save();
+          ctx.translate(pos[g][0], pos[g][1]);
+          ctx.rotate(pos[g][2] + (flip ? Math.PI : 0));
+          if (pass === 0) ctx.strokeText(chars[g], 0, 0); else ctx.fillText(chars[g], 0, 0);
+          ctx.restore();
+        }
+      }
+    }
+    ctx.restore();
+  }
   function cityDotRadius() { var r = B.r; return r < 900 ? 1.4 : r < 2600 ? 1.9 : 2.4; }
   function labelTierFor(r) { return r >= 2200 ? 4 : r >= 1300 ? 3 : r >= 850 ? 2 : r >= 560 ? 1 : 0; }
   var cityScreen = [];
@@ -639,13 +954,12 @@
     if (!show) return;
     var ex = B.ex, ey = B.ey, ez = B.ez, nx = B.nx, ny = B.ny, nz = B.nz, vx = B.cx, vy = B.cy, vz = B.cz;
     ctx.font = "400 11px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
-    var placed = [], pad = 3;
+    var placed = labelBoxes.slice(), pad = 3;
     for (var i = 0; i < cities.length; i++) {
       var c = cities[i];
       if (c.tier > show) break;
-      var sz = c.x * vx + c.y * vy + c.z * vz;
-      if (sz <= 0.02) continue;
-      var px = cx + r * (c.x * ex + c.y * ey + c.z * ez), py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
+      if (!screenOf(c.lon, c.lat, c.x, c.y, c.z)) continue;
+      var px = FX, py = FY;
       if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
       if (!c.w) c.w = ctx.measureText(c.name).width;
       var lx = px + dot + 4, ly = py - 7, lw = c.w + pad * 2, lh = 14;
@@ -661,9 +975,8 @@
       if (!airports) loadPlaces();
       else for (i = 0; i < airports.length; i++) {
         c = airports[i];
-        sz = c.x * vx + c.y * vy + c.z * vz;
-        if (sz <= 0.02) continue;
-        px = cx + r * (c.x * ex + c.y * ey + c.z * ez); py = cy - r * (c.x * nx + c.y * ny + c.z * nz);
+        if (!screenOf(c.lon, c.lat, c.x, c.y, c.z)) continue;
+        px = FX; py = FY;
         if (px < -20 || py < -20 || px > W + 20 || py > H + 20) continue;
         if (!c.label) c.label = c.iata;
         if (!c.w) c.w = ctx.measureText(c.label).width;
@@ -744,6 +1057,7 @@
   }
 
   function visible(lonlat) {
+    if (flat) return true;
     var rot = projection.rotate();
     return d3.geoDistance(lonlat, [-rot[0], -rot[1]]) < Math.PI / 2 - 1e-6;
   }
@@ -817,7 +1131,7 @@
   var focusByPointer = false;
   canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); scheduleRender("full"); });
   canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); scheduleRender("full"); });
-  function degPerPx() { return 180 / (Math.PI * projection.scale()); }
+  function degPerPx() { return 180 / (Math.PI * projection.scale() * (flat ? 0.8707 : 1)); }
 
   canvas.addEventListener("pointerdown", function (e) {
     if (e.button !== 0 && e.pointerType === "mouse") return;
@@ -1002,8 +1316,55 @@
   $("zoom-out").addEventListener("click", function () { stopFly(); zoomAt(view.zoom / 1.5, cx, cy); });
   $("fit").addEventListener("click", function () { fitRoute(true); });
   function renderSat() {
+    if (flat) return;
     sat.draw({ dpr: dpr, light: 0, detail: detail.shown && !detail.off, cx: cx, cy: cy, r: B.r, e: [B.ex, B.ey, B.ez], n: [B.nx, B.ny, B.nz], c: [B.cx, B.cy, B.cz] });
   }
+  function setProjection(on) {
+    flat = !!on;
+    projection = flat ? flatProjection : globeProjection;
+    path = d3.geoPath(projection, ctx);
+    labelCache.clear();
+    applyView();
+  }
+  var mapFade = null;
+  function setFlat(on, opts) {
+    opts = opts || {};
+    if (!!on === flat) return;
+    stopFly(); stopInertia(); anim = null;
+    if (!reduceMotion && !opts.instant && canvas.width) {
+      var snap = document.createElement("canvas");
+      snap.width = canvas.width; snap.height = canvas.height;
+      snap.getContext("2d").drawImage(canvas, 0, 0);
+      snap.className = "gc-map-fade"; snap.style.width = W + "px"; snap.style.height = H + "px";
+      canvas.parentNode.insertBefore(snap, canvas.nextSibling);
+      if (mapFade) mapFade.remove();
+      mapFade = snap;
+      requestAnimationFrame(function () { requestAnimationFrame(function () { snap.classList.add("is-going"); }); });
+      setTimeout(function () { snap.remove(); if (mapFade === snap) mapFade = null; }, 420);
+    }
+    var lon = view.lon;
+    setProjection(on);
+    view.lon = lon; view.lat = flat ? 20 : view.lat; view.zoom = 1;
+    applyView();
+    var btn = $("flat-btn");
+    btn.setAttribute("aria-pressed", String(flat));
+    $("sat-btn").disabled = flat || !!$("sat-btn").dataset.noWebgl;
+    document.documentElement.classList.toggle("gc-flat", flat);
+    try { localStorage.setItem("gc-map", flat ? "flat" : "globe"); } catch (e) {}
+    if (!opts.quiet) writeUrl();
+    var t = fitTarget();
+    if (t && !t.single) { view.lon = t.lon; view.lat = t.lat; view.zoom = t.zoom; applyView(); }
+    else if (t) { view.lon = t.lon; applyView(); }
+    scheduleRender("full");
+  }
+  $("flat-btn").addEventListener("click", function () { setFlat(!flat); });
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "m" || e.key === "M") && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      var t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault(); setFlat(!flat);
+    }
+  });
   function setSatellite(on) {
     if (on && !sat && !satTried) {
       satTried = true;
@@ -1017,7 +1378,7 @@
     }
     if (on && !sat) {
       on = false;
-      $("sat-btn").disabled = true;
+      $("sat-btn").disabled = true; $("sat-btn").dataset.noWebgl = "1";
       $("sat-btn").dataset.tip = "The satellite view needs WebGL, which this browser does not offer"; $("sat-btn").dataset.tipSub = "";
     }
     satOn = on;
@@ -1067,6 +1428,7 @@
     return null;
   }
   function maybeDetail() {
+    if (flat) return;
     if (detail.off || !sat || !satOn || !sat.ready()) return;
     var key = [view.lon.toFixed(3), view.lat.toFixed(3), view.zoom.toFixed(4), W, H].join();
     if (key === detail.key) return;
@@ -1288,6 +1650,13 @@
     stopInertia();
     var toZoom = zoom == null ? view.zoom : Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
     if (reduceMotion) { view.lon = lon; view.lat = lat; view.zoom = toZoom; applyView(); scheduleRender("full"); if (done) done(); return; }
+    if (flat) {
+      var dl = ((lon - view.lon + 540) % 360) - 180;
+      fly = { t0: performance.now(), ms: Math.min(1200, 450 + Math.hypot(dl, lat - view.lat) * 4), flat: { l0: view.lon, dl: dl, p0: view.lat, p1: lat }, z0: view.zoom, z1: Math.max(FLAT_MIN, toZoom), done: done };
+      interacting = 1;
+      requestAnimationFrame(flyStep);
+      return;
+    }
     var from = versorFromAngles([-view.lon, -view.lat, 0]);
     var to = versorFromAngles([-lon, -lat, 0]);
     var dAngle = d3.geoDistance([view.lon, view.lat], [lon, lat]);
@@ -1300,9 +1669,8 @@
     if (!fly) return;
     var t = Math.min(1, (performance.now() - fly.t0) / fly.ms);
     var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    var q = fly.interp(e);
-    var ang = versorToAngles(q);
-    view.lon = -ang[0]; view.lat = -ang[1];
+    if (fly.flat) { view.lon = fly.flat.l0 + fly.flat.dl * e; view.lat = fly.flat.p0 + (fly.flat.p1 - fly.flat.p0) * e; }
+    else { var ang = versorToAngles(fly.interp(e)); view.lon = -ang[0]; view.lat = -ang[1]; }
     view.zoom = fly.z0 * Math.pow(fly.z1 / fly.z0, e);
     applyView();
     if (t >= 1) { var d = fly.done; fly = null; interacting = 0; scheduleRender("full"); if (d) d(); return; }
@@ -1336,6 +1704,17 @@
     all.forEach(function (v) { far = Math.max(far, G.angleBetween(c, v)); });
     var ll = G.toLonLat(c);
     var zoom;
+    if (flat) {
+      var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      all.forEach(function (v) {
+        var q = G.toLonLat(v), lam = wrapPi((q[0] - ll[0]) * RAD), phi = q[1] * RAD, xx = lam * neA(phi), yy = neY(phi);
+        if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (yy < minY) minY = yy; if (yy > maxY) maxY = yy;
+      });
+      var freeW2 = W - panelRight - 48, freeH2 = 2 * halfFreeH - 48;
+      zoom = Math.max(FLAT_MIN, Math.min(MAX_ZOOM, Math.min(freeW2 / (flatBase * Math.max(maxX - minX, 0.02)), freeH2 / (flatBase * Math.max(maxY - minY, 0.02)))));
+      var midX = (minX + maxX) / 2, midY = (minY + maxY) / 2, latC = d3.geoNaturalEarth1Raw.invert(0, midY)[1];
+      return { lon: ll[0] + midX / neA(latC) / RAD, lat: latC / RAD, zoom: zoom, all: all };
+    }
     if (far > 1.35) zoom = 1;
     else {
       var free = Math.min(W - panelRight, H - (W <= 640 ? sheetVisible(Math.min(sheetMode, SHEET_HALF)) + 72 : 60)) / 2 - 24;
@@ -1345,9 +1724,8 @@
   }
   function allVisible(vecs) {
     var rot = projection.rotate(), c = G.toVec(-rot[0], -rot[1]);
-    var r = projection.scale();
     for (var i = 0; i < vecs.length; i++) {
-      if (G.angleBetween(c, vecs[i]) > Math.PI / 2 - 0.05) return false;
+      if (!flat && G.angleBetween(c, vecs[i]) > Math.PI / 2 - 0.05) return false;
       var p = projection(G.toLonLat(vecs[i]));
       if (!p || p[0] < 8 || p[1] < 8 || p[0] > W - 8 || p[1] > H - 8) return false;
     }
@@ -1426,7 +1804,7 @@
     var box = $("pop-actions");
     box.innerHTML = "";
     popActions.forEach(function (a, i) {
-      var b = document.createElement("button"); b.type = "button"; b.className = "gc-btn " + (i ? "gc-btn-quiet" : "gc-btn-primary"); b.dataset.action = i; b.textContent = a.label;
+      var b = document.createElement("button"); b.type = "button"; b.className = "gc-btn gc-btn-quiet"; b.dataset.action = i; b.textContent = a.label;
       box.appendChild(b);
     });
     hideTip();
@@ -2255,12 +2633,15 @@
       p.push("buf=" + Math.round(state.bufferKm * bu.f) + bu.label);
     }
     if (state.tab && state.a && state.b && (!state.result || currentTab() === state.tab)) p.push("tab=" + state.tab);
+    if (flat) p.push("map=flat");
     if (state.wind) p.push("wind=" + (state.windMonth != null ? ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"][state.windMonth] : "1"));
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
+  var wantFlat = null;
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
+    wantFlat = null;
     state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false; state.windMonth = null;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
@@ -2296,6 +2677,8 @@
         if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; r.inverted = parts[3] === "i"; state.regions.push(r); any = true; }
       } else if (k === "wp") {
         if (v === "1") state.tab = "plan";
+      } else if (k === "map") {
+        wantFlat = v === "flat";
       } else if (k === "wind") {
         var wmi = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(v);
         state.wind = v === "1" || wmi >= 0;
@@ -2513,6 +2896,9 @@
     layout();
     try { if (localStorage.getItem("gc-satellite") === "1") setSatellite(true); } catch (e) {}
     var fromUrl = readUrl();
+    var startFlat = wantFlat;
+    if (startFlat === null) { try { startFlat = localStorage.getItem("gc-map") === "flat"; } catch (e) { startFlat = false; } }
+    if (startFlat) setFlat(true, { instant: true, quiet: true });
     renderChips();
     renderPanel();
     updateHint();
@@ -2537,7 +2923,8 @@
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { scheduleRender("full"); });
   window.addEventListener("hashchange", function () {
-    readUrl(); renderChips(); updateHint(); renderPanel(); fitPending = true; state.stale = true; requestRoute(); scheduleRender("full");
+    readUrl();
+    if (!!wantFlat !== flat) setFlat(!!wantFlat, { instant: true, quiet: true }); renderChips(); updateHint(); renderPanel(); fitPending = true; state.stale = true; requestRoute(); scheduleRender("full");
   });
 
   window.__greatercircle = {
