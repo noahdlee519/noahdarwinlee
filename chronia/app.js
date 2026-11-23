@@ -7416,7 +7416,7 @@
   // 120); only where a gap is narrower than that does a single banner go under the top row.
   var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
-  var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
+  var premium = { on: false, open: false, asked: 0, who: "", known: false, pending: null }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
   premium.who = accountId();
   try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
@@ -7591,10 +7591,12 @@
   }
   function premiumAsk(force) {
     if (!PREMIUM_LIVE && !adsDemo) return Promise.resolve(false);
+    // A question still on its way is answered with its own answer, not with what was known before it was asked.
+    if (premium.pending && !force) return premium.pending;
     if (!force && Date.now() - premium.asked < 60000) return Promise.resolve(premium.on);
     premium.asked = Date.now();
     var settle = function () { if (!premium.known) { premium.known = true; syncPremium(); } return premium.on; };
-    return premiumPost({ action: "status" }).then(function (r) {
+    var ask = premium.pending = premiumPost({ action: "status" }).then(function (r) {
       if (r.status !== 200) return settle();
       premium.open = !!r.body.open;
       // Only an answer for a signed-in account settles it: a session that has lapsed keeps what the browser remembers.
@@ -7604,6 +7606,8 @@
       syncPremium();
       return premium.on;
     }, settle);
+    ask.then(function () { if (premium.pending === ask) premium.pending = null; });
+    return ask;
   }
   // The account panel offers Premium with a link to its own page (premium/), which lists what it gives and sells it.
   // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, and once they
@@ -8311,7 +8315,11 @@
       if (msg) saveNote.textContent = msg;
       saveMake.focus();
     }
-    pickCodec(sz.w, sz.h, fps).then(function (cfg) {
+    // Whether the account has Premium, and so a video without the watermark, is settled before the first frame: on a
+    // device it hasn't been seen on, or just after signing in, the answer may not have come yet.
+    premiumAsk(false).then(function (on) { job.clean = !!on; }, function () { job.clean = !!premium.on; }).then(function () {
+      return pickCodec(sz.w, sz.h, fps);
+    }).then(function (cfg) {
       if (!cfg) throw new Error("no codec");
       encoder = new VideoEncoder({
         output: function (chunk, meta) {
@@ -8332,7 +8340,7 @@
         var f = frames[i];
         return drawSettled(f.t).then(function () {
           if (job.cancel) return "cancel";
-          composeFrame(out, f.label, premium && premium.on ? "none" : "plate");
+          composeFrame(out, f.label, job.clean ? "none" : "plate");
           var vf = new VideoFrame(out, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
           encoder.encode(vf, { keyFrame: i % Math.max(1, fps * 2) === 0 });
           vf.close();
