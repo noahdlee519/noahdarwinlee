@@ -166,7 +166,9 @@
             <p>
               Shortest paths around the chosen countries are exact for the drawn borders: a route of
               great-circle arcs that bends only at their convex corners, found by A* over the tangent
-              visibility graph. Distances are on a sphere of radius 6,371.0088 km.
+              visibility graph. The buffer keeps the route at least that far from everything avoided,
+              50 miles unless you choose otherwise, and never more than about 3% further. Distances
+              are on a sphere of radius 6,371.0088 km.
             </p>
             <p>
               Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, countries at
@@ -264,11 +266,17 @@
         </div>
         <ul class="gc-chips" id="chips" aria-label="Countries being avoided"></ul>
         <div class="gc-buffer" id="buffer-row" hidden>
-          <div class="gc-buffer-head">
-            <label for="buffer">Buffer round drawn regions</label>
-            <output id="buffer-out" for="buffer">none</output>
+          <span class="gc-buffer-label" id="buffer-label">Buffer</span>
+          <div class="gc-buffer-opts" id="buffer" role="group" aria-labelledby="buffer-label">
+            <button type="button" data-mi="0" aria-label="No buffer" aria-pressed="false">0</button>
+            <button type="button" data-mi="1" aria-label="1 mile" aria-pressed="false">1</button>
+            <button type="button" data-mi="5" aria-label="5 miles" aria-pressed="false">5</button>
+            <button type="button" data-mi="10" aria-label="10 miles" aria-pressed="false">10</button>
+            <button type="button" data-mi="20" aria-label="20 miles" aria-pressed="false">20</button>
+            <button type="button" data-mi="50" aria-label="50 miles" aria-pressed="true">50</button>
+            <button type="button" data-mi="100" aria-label="100 miles" aria-pressed="false">100</button>
           </div>
-          <input type="range" id="buffer" min="0" max="250" step="5" value="0" />
+          <span class="gc-buffer-unit" aria-hidden="true">mi</span>
         </div>
         <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span></p>
       </section>

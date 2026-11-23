@@ -623,6 +623,235 @@
     return normalize([p * a[0] + q * b[0], p * a[1] + q * b[1], p * a[2] + q * b[2]]);
   }
 
+  var OUTLINE_LIMIT = 80 * DEG, OUTLINE_SCALE = 1.5e8, OUTLINE_PAD_KM = 0.05, OUTLINE_SLACK = 0.02;
+  function discAround(c, rad) {
+    var ref = Math.abs(c[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    var e1 = normalize(cross(c, ref)), e2 = cross(c, e1);
+    var cr = Math.cos(rad), sr = Math.sin(rad), out = [];
+    for (var t = 0; t < BUFFER_DISC_SIDES; t++) {
+      var th = (2 * Math.PI * t) / BUFFER_DISC_SIDES, ct = Math.cos(th), st = Math.sin(th);
+      out.push([cr * c[0] + sr * (ct * e1[0] + st * e2[0]), cr * c[1] + sr * (ct * e1[1] + st * e2[1]), cr * c[2] + sr * (ct * e1[2] + st * e2[2])]);
+    }
+    return out;
+  }
+  function stripAlong(a, b, rho) {
+    var L = angleBetween(a, b);
+    var n = normalize(cross(a, b));
+    var segs = Math.max(1, Math.ceil((L * EARTH_RADIUS_KM) / BUFFER_STEP_KM));
+    var cr = Math.cos(rho), sr = Math.sin(rho), left = [], right = [];
+    for (var j = 0; j <= segs; j++) {
+      var q = sampleAt(a, b, L, j / segs);
+      left.push([cr * q[0] + sr * n[0], cr * q[1] + sr * n[1], cr * q[2] + sr * n[2]]);
+      right.push([cr * q[0] - sr * n[0], cr * q[1] - sr * n[1], cr * q[2] - sr * n[2]]);
+    }
+    return left.concat(right.reverse());
+  }
+  function ringVecs(coords) {
+    var V = [];
+    for (var i = 0; i < coords.length; i++) {
+      var v = toVec(coords[i][0], coords[i][1]);
+      if (V.length && angleBetween(V[V.length - 1], v) < SAME_POINT) continue;
+      V.push(v);
+    }
+    if (V.length > 1 && angleBetween(V[0], V[V.length - 1]) < SAME_POINT) V.pop();
+    return V;
+  }
+  function centerOf(V) {
+    var c = [0, 0, 0];
+    V.forEach(function (v) { c[0] += v[0]; c[1] += v[1]; c[2] += v[2]; });
+    c = normalize(c);
+    var radius = 0;
+    V.forEach(function (v) { radius = Math.max(radius, angleBetween(c, v)); });
+    return { center: c, radius: radius };
+  }
+  function toArc(p, a, b) {
+    var n = cross(a, b), nl = Math.hypot(n[0], n[1], n[2]);
+    if (nl < 1e-15) return angleBetween(p, a);
+    n = [n[0] / nl, n[1] / nl, n[2] / nl];
+    var s = p[0] * n[0] + p[1] * n[1] + p[2] * n[2];
+    var f = normalize([p[0] - s * n[0], p[1] - s * n[1], p[2] - s * n[2]]);
+    if (angleBetween(a, f) + angleBetween(f, b) <= angleBetween(a, b) + 1e-12) return Math.abs(Math.asin(Math.max(-1, Math.min(1, s))));
+    return Math.min(angleBetween(p, a), angleBetween(p, b));
+  }
+  function simplifyRing(V, tol) {
+    var n = V.length, keep = new Uint8Array(n), far = 0, farD = -1;
+    for (var i = 1; i < n; i++) { var d = angleBetween(V[0], V[i]); if (d > farD) { farD = d; far = i; } }
+    keep[0] = 1; keep[far] = 1;
+    var stack = [[0, far], [far, n]];
+    while (stack.length) {
+      var seg = stack.pop(), a = seg[0], b = seg[1], best = -1, bestD = tol;
+      for (var k = a + 1; k < b; k++) {
+        var dk = toArc(V[k], V[a], V[b % n]);
+        if (dk > bestD) { bestD = dk; best = k; }
+      }
+      if (best >= 0) { keep[best] = 1; stack.push([a, best]); stack.push([best, b]); }
+    }
+    var out = [];
+    for (i = 0; i < n; i++) if (keep[i]) out.push(V[i]);
+    return out;
+  }
+  function planarArea(P) {
+    var s = 0;
+    for (var i = 0, j = P.length - 1; i < P.length; j = i++) s += P[j].X * P[i].Y - P[i].X * P[j].Y;
+    return s / 2;
+  }
+  function closedLonLat(vecs, clockwise) {
+    if ((sphericalSignedArea(vecs) > 0) === clockwise) vecs = vecs.slice().reverse();
+    var ring = vecs.map(toLonLat);
+    ring.push(ring[0].slice());
+    return ring;
+  }
+
+  function offsetRing(V, P, rho) {
+    var n = V.length, out = [], cr = Math.cos(rho), sr = Math.sin(rho), step = (2 * Math.PI) / BUFFER_DISC_SIDES;
+    var N = [];
+    for (var i = 0; i < n; i++) N.push(normalize(cross(V[i], V[(i + 1) % n])));
+    var off = function (q, nn, s, c) { return [c * q[0] - s * nn[0], c * q[1] - s * nn[1], c * q[2] - s * nn[2]]; };
+    for (i = 0; i < n; i++) {
+      var c = V[i], n1 = N[(i + n - 1) % n], n2 = N[i];
+      var p0 = P[(i + n - 1) % n], p1 = P[i], p2 = P[(i + 1) % n];
+      var turn = (p1.X - p0.X) * (p2.Y - p1.Y) - (p1.Y - p0.Y) * (p2.X - p1.X);
+      if (turn >= 0) {
+        var ref = Math.abs(c[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+        var e1 = normalize(cross(c, ref)), e2 = cross(c, e1);
+        var th1 = Math.atan2(-(n1[0] * e2[0] + n1[1] * e2[1] + n1[2] * e2[2]), -(n1[0] * e1[0] + n1[1] * e1[1] + n1[2] * e1[2]));
+        var th2 = Math.atan2(-(n2[0] * e2[0] + n2[1] * e2[1] + n2[2] * e2[2]), -(n2[0] * e1[0] + n2[1] * e1[1] + n2[2] * e1[2]));
+        var sweep = th2 - th1;
+        while (sweep < 0) sweep += 2 * Math.PI;
+        while (sweep >= 2 * Math.PI) sweep -= 2 * Math.PI;
+        if (sweep > Math.PI + 1e-9) sweep = 0;
+        var m = Math.max(1, Math.ceil(sweep / step - 1e-9));
+        var r2 = rho / Math.cos(sweep / m / 2), c2 = Math.cos(r2), s2 = Math.sin(r2);
+        for (var k = 0; k <= m; k++) {
+          var th = th1 + (sweep * k) / m, ct = Math.cos(th), st = Math.sin(th);
+          out.push([c2 * c[0] + s2 * (ct * e1[0] + st * e2[0]), c2 * c[1] + s2 * (ct * e1[1] + st * e2[1]), c2 * c[2] + s2 * (ct * e1[2] + st * e2[2])]);
+        }
+      } else {
+        out.push(off(c, n1, sr, cr));
+        out.push(c);
+        out.push(off(c, n2, sr, cr));
+      }
+      var b = V[(i + 1) % n], L = angleBetween(c, b);
+      var segs = Math.max(1, Math.ceil((L * EARTH_RADIUS_KM) / BUFFER_STEP_KM));
+      for (var j = 1; j < segs; j++) out.push(off(sampleAt(c, b, L, j / segs), n2, sr, cr));
+    }
+    return out;
+  }
+
+  function bufferOutline(geometry, km) {
+    var polys = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+    if (!(km > 0)) return polys;
+    var CL = typeof ClipperLib !== "undefined" ? ClipperLib : null;
+    var tol = (km * OUTLINE_SLACK) / EARTH_RADIUS_KM;
+    var rho = (km + OUTLINE_PAD_KM) / EARTH_RADIUS_KM + tol;
+    var rDisc = rho / Math.cos(Math.PI / BUFFER_DISC_SIDES);
+    var items = [];
+    polys.forEach(function (poly) {
+      var shapes = [], dots = [];
+      poly.forEach(function (coords, ri) {
+        var V = ringVecs(coords);
+        if (V.length < 3) return;
+        var cr = centerOf(V);
+        if (ri === 0 && cr.radius <= tol) { dots.push({ center: cr.center, rad: rDisc + cr.radius }); return; }
+        if (ri > 0 && cr.radius < km / EARTH_RADIUS_KM) return;
+        var W = simplifyRing(V, tol);
+        if (W.length < 3) { if (ri === 0) dots.push({ center: cr.center, rad: rDisc + cr.radius }); return; }
+        shapes.push({ vecs: W, hole: ri > 0 });
+      });
+      if (!shapes.length && !dots.length) return;
+      if (shapes.length && shapes[0].hole) shapes = [];
+      var all = [];
+      shapes.forEach(function (sh) { all = all.concat(sh.vecs); });
+      dots.forEach(function (d) { all.push(d.center); });
+      var cr = centerOf(all);
+      dots.forEach(function (d) { cr.radius = Math.max(cr.radius, angleBetween(cr.center, d.center) + d.rad - rDisc); });
+      items.push({ shapes: shapes, dots: dots, center: cr.center, radius: cr.radius });
+    });
+    items.sort(function (p, q) { return q.radius - p.radius; });
+    var clusters = [], loose = [];
+    items.forEach(function (it) {
+      if (!CL || it.radius + rDisc > OUTLINE_LIMIT) { loose.push(it); return; }
+      for (var k = 0; k < clusters.length; k++) {
+        if (angleBetween(clusters[k].center, it.center) + it.radius + rDisc <= OUTLINE_LIMIT) { clusters[k].items.push(it); return; }
+      }
+      clusters.push({ center: it.center, items: [it] });
+    });
+    var out = [];
+    loose.forEach(function (it) {
+      if (it.shapes.length) out.push(it.shapes.map(function (sh) { return closedLonLat(sh.vecs, !sh.hole); }));
+      it.dots.forEach(function (d) { out.push([closedLonLat(discAround(d.center, d.rad), true)]); });
+      it.shapes.forEach(function (sh) {
+        var V = sh.vecs;
+        for (var i = 0; i < V.length; i++) {
+          out.push([closedLonLat(discAround(V[i], rDisc), true)]);
+          out.push([closedLonLat(stripAlong(V[i], V[(i + 1) % V.length], rho), true)]);
+        }
+      });
+    });
+    clusters.forEach(function (cl) {
+      var c = cl.center, ref = Math.abs(c[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+      var e1 = normalize(cross(c, ref)), e2 = cross(c, e1);
+      var project = function (v) {
+        var d = v[0] * c[0] + v[1] * c[1] + v[2] * c[2];
+        return { X: Math.round(((v[0] * e1[0] + v[1] * e1[1] + v[2] * e1[2]) / d) * OUTLINE_SCALE), Y: Math.round(((v[0] * e2[0] + v[1] * e2[1] + v[2] * e2[2]) / d) * OUTLINE_SCALE) };
+      };
+      var unproject = function (p) {
+        var x = p.X / OUTLINE_SCALE, y = p.Y / OUTLINE_SCALE;
+        return normalize([c[0] + x * e1[0] + y * e2[0], c[1] + x * e1[1] + y * e2[1], c[2] + x * e1[2] + y * e2[2]]);
+      };
+      var paths = [];
+      var add = function (P, positive) {
+        if ((planarArea(P) > 0) !== positive) P.reverse();
+        paths.push(P);
+      };
+      cl.items.forEach(function (it) {
+        it.dots.forEach(function (d) { add(discAround(d.center, d.rad).map(project), true); });
+        it.shapes.forEach(function (sh) {
+          var V = sh.vecs, P = V.map(project);
+          if ((planarArea(P) > 0) === sh.hole) { V = V.slice().reverse(); P.reverse(); }
+          paths.push(P);
+          paths.push(offsetRing(V, P, rho).map(project));
+        });
+      });
+      var clip = new CL.Clipper();
+      clip.AddPaths(paths, CL.PolyType.ptSubject, true);
+      var tree = new CL.PolyTree();
+      clip.Execute(CL.ClipType.ctUnion, tree, CL.PolyFillType.pftPositive, CL.PolyFillType.pftPositive);
+      var walk = function (node) {
+        node.Childs().forEach(function (outer) {
+          var ext = CL.Clipper.CleanPolygon(outer.Contour(), 2);
+          if (ext.length >= 3) {
+            var poly = [closedLonLat(ext.map(unproject), true)];
+            outer.Childs().forEach(function (hole) {
+              var h = CL.Clipper.CleanPolygon(hole.Contour(), 2);
+              if (h.length >= 3) poly.push(closedLonLat(h.map(unproject), false));
+            });
+            out.push(poly);
+          }
+          outer.Childs().forEach(walk);
+        });
+      };
+      walk(tree);
+    });
+    return out;
+  }
+
+  function boundaryDistance(geometry, v) {
+    var polys = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+    var best = Infinity;
+    polys.forEach(function (poly) {
+      poly.forEach(function (ring) {
+        for (var i = 0; i + 1 < ring.length; i++) {
+          var p = ring[i], q = ring[i + 1];
+          if (Math.abs(Math.abs(p[0]) - 180) < 1e-7 && Math.abs(Math.abs(q[0]) - 180) < 1e-7) continue;
+          var d = toArc(v, toVec(p[0], p[1]), toVec(q[0], q[1]));
+          if (d < best) best = d;
+        }
+      });
+    });
+    return best;
+  }
+
   function startSearch(obs, a, b) {
     var insideA = featuresContaining(obs, a), insideB = featuresContaining(obs, b);
     if (insideA.length || insideB.length) {
@@ -862,7 +1091,7 @@
 
   return {
     EARTH_RADIUS_KM: EARTH_RADIUS_KM,
-    bufferRings: bufferRings,
+    bufferRings: bufferRings, bufferOutline: bufferOutline, boundaryDistance: boundaryDistance,
     toVec: toVec, toLonLat: toLonLat, angleBetween: angleBetween, normalize: normalize,
     sampleArc: sampleArc, sphereDistanceKm: sphereDistanceKm, ellipsoidDistanceKm: ellipsoidDistanceKm,
     sphericalSignedArea: sphericalSignedArea,

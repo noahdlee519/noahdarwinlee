@@ -1,5 +1,5 @@
 var IN_WORKER = typeof importScripts === "function";
-if (IN_WORKER) importScripts("vendor/topojson-client.min.js", "engine.js");
+if (IN_WORKER) importScripts("vendor/clipper.min.js", "vendor/topojson-client.min.js", "engine.js");
 
 var G = GreatCircle;
 var shim = null;
@@ -21,6 +21,7 @@ function handle(m) {
   try {
     if (m.type === "init") init(m);
     else if (m.type === "route") { latest = m.id; route(m); }
+    else if (m.type === "buffers") buffers(m);
   } catch (err) {
     send({ type: "result", id: m.id || 0, status: "error", message: String(err && err.message || err) });
   }
@@ -35,11 +36,35 @@ function init(m) {
   send({ type: "ready", ms: Math.round(performance.now() - t0), corners: everything.corners.count });
 }
 
-function obstaclesFor(ids, regions) {
+var outlines = new Map();
+function outlineOf(id, km) {
+  var key = id + "|" + km.toFixed(4);
+  var hit = outlines.get(key);
+  if (hit) return hit;
+  var f = byId.get(String(id));
+  var coords = f ? G.bufferOutline(f.geometry, km) : [];
+  outlines.set(key, coords);
+  if (outlines.size > 40) outlines.delete(outlines.keys().next().value);
+  return coords;
+}
+
+function buffers(m) {
+  m.ids.forEach(function (id) {
+    if (!byId.has(String(id))) return;
+    send({ type: "buffers", id: String(id), km: m.km, coordinates: outlineOf(id, m.km) });
+  });
+}
+
+function obstaclesFor(ids, regions, bufferKm) {
   regions = regions || [];
-  var key = ids.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + (r.inverted ? "i" : "") + ":" + (r.bufferKm || 0) + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|");
+  bufferKm = bufferKm || 0;
+  var key = bufferKm.toFixed(4) + "|" + ids.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + (r.inverted ? "i" : "") + ":" + (r.bufferKm || 0) + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|");
   for (var i = 0; i < cache.length; i++) if (cache[i].key === key) return cache[i].obs;
-  var feats = ids.map(function (id) { return byId.get(String(id)); }).filter(Boolean);
+  var feats = ids.map(function (id) {
+    var f = byId.get(String(id));
+    if (!f || !(bufferKm > 0)) return f;
+    return { type: "Feature", id: f.id + "~b", properties: { name: f.properties.name }, geometry: { type: "MultiPolygon", coordinates: outlineOf(f.id, bufferKm) } };
+  }).filter(Boolean);
   regions.forEach(function (r) {
     var ring = r.ring.slice();
     if (ring.length && (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])) ring.push(ring[0]);
@@ -95,7 +120,7 @@ function route(m) {
     send(result);
     return;
   }
-  var obs = obstaclesFor(m.avoid, regions);
+  var obs = obstaclesFor(m.avoid, regions, m.bufferKm);
   var s = G.startSearch(obs, a, b);
   var tick = function () {
     if (latest !== id) return;
@@ -123,6 +148,18 @@ function route(m) {
       result.status = "inside";
       result.insideA = s.insideA.map(function (i) { return obs.features[i].id; });
       result.insideB = s.insideB.map(function (i) { return obs.features[i].id; });
+      var near = function (ids, v) {
+        var out = {};
+        ids.forEach(function (fid) {
+          fid = String(fid);
+          if (fid.slice(-2) !== "~b") return;
+          var f = byId.get(fid.slice(0, -2));
+          if (f) out[f.id] = G.boundaryDistance(f.geometry, v) * G.EARTH_RADIUS_KM;
+        });
+        return out;
+      };
+      result.nearA = near(result.insideA, a);
+      result.nearB = near(result.insideB, b);
     } else if (s.status === "none") {
       result.status = "none";
     } else {

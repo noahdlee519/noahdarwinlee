@@ -14,7 +14,7 @@
     a: null, b: null,
     avoid: new Map(),
     regions: [],
-    bufferKm: 0,
+    bufferKm: 50 * 1.609344,
     units: "km",
     result: null,
     pendingId: 0,
@@ -281,6 +281,14 @@
     if (state.hover >= 0 && !state.avoid.has(feats[state.hover].id)) {
       ctx.beginPath(); traceFeature(ctx, feats[state.hover]);
       ctx.fillStyle = pal["land-hover"]; ctx.fill();
+    }
+    if (state.bufferKm > 0 && state.avoid.size) {
+      ctx.beginPath();
+      state.avoid.forEach(function (name, id) {
+        var b = countryBuffers.get(id + "|" + state.bufferKm);
+        if (b) path(b);
+      });
+      ctx.fillStyle = pal["region-fill"]; ctx.fill();
     }
     state.avoid.forEach(function (name, id) {
       var f = featureById.get(id);
@@ -1769,24 +1777,35 @@
   function startShim() {
     if (shimStarted) return;
     shimStarted = true;
-    var sc = document.createElement("script");
-    sc.src = "worker.js";
-    sc.onload = function () {
-      worker = self.GreatCircleRouter;
-      worker.onmessage = onWorkerMessage;
-      worker.postMessage({ type: "init", topology: topology });
+    var load = function (src, then) {
+      var sc = document.createElement("script");
+      sc.src = src;
+      sc.onload = then;
+      sc.onerror = function () { showError("The route finder could not start"); };
+      document.head.appendChild(sc);
     };
-    sc.onerror = function () { showError("The route finder could not start"); };
-    document.head.appendChild(sc);
+    load("vendor/clipper.min.js", function () {
+      load("worker.js", function () {
+        worker = self.GreatCircleRouter;
+        worker.onmessage = onWorkerMessage;
+        worker.postMessage({ type: "init", topology: topology });
+      });
+    });
   }
 
   function onWorkerMessage(e) {
     var m = e.data;
     if (m.type === "ready") {
       state.ready = true; window.__greatercircle.readyMs = m.ms;
+      requestBuffers();
       if (queued) { queued = false; requestRoute(); }
       var prefetch = function () { setTimeout(loadPlaces, 800); };
       if (window.requestIdleCallback) requestIdleCallback(prefetch); else prefetch();
+      return;
+    }
+    if (m.type === "buffers") {
+      countryBuffers.set(m.id + "|" + m.km, { type: "MultiPolygon", coordinates: m.coordinates });
+      if (m.km === state.bufferKm && state.avoid.has(m.id)) scheduleRender("full");
       return;
     }
     if (m.id !== state.pendingId) return;
@@ -1804,15 +1823,29 @@
     }
   }
 
+  var countryBuffers = new Map(), buffersAsked = new Set();
+  function requestBuffers() {
+    if (!state.ready || !worker || !(state.bufferKm > 0)) return;
+    var km = state.bufferKm, ids = [];
+    state.avoid.forEach(function (name, id) {
+      var key = id + "|" + km;
+      if (buffersAsked.has(key)) return;
+      buffersAsked.add(key);
+      ids.push(id);
+    });
+    if (ids.length) worker.postMessage({ type: "buffers", km: km, ids: ids });
+  }
+
   function requestRoute() {
     clearTimeout(routeTimer);
+    requestBuffers();
     if (!state.a || !state.b) { state.result = null; state.pendingId = 0; showResult(); return; }
     void 0;
     if (!state.ready) { queued = true; showBusy(null); return; }
     routeTimer = setTimeout(function () {
       var id = ++seq;
       state.pendingId = id;
-      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()),
+      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()), bufferKm: state.bufferKm,
         regions: state.regions.map(function (r) { return { id: r.id, name: r.name, ring: regionRing(r), inverted: !!r.inverted, bufferKm: state.bufferKm }; }) });
       clearTimeout(busyTimer);
       busyTimer = setTimeout(function () { if (state.pendingId === id) showBusy(null); }, 180);
@@ -1838,7 +1871,8 @@
   }
   function joinNames(list) {
     if (list.length <= 1) return list.join("");
-    return list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
+    if (list.length === 2) return list[0] + " and " + list[1];
+    return list.slice(0, -1).join(", ") + ", and " + list[list.length - 1];
   }
 
   function showBusy(m) {
@@ -1883,19 +1917,23 @@
 
     if (res.status === "inside") {
       var plain = true;
-      var where = function (raw) {
+      var where = function (raw, within) {
         return joinNames(uniqueBase(raw).map(function (id) {
           var r = regionById(id);
-          if (!r) return "in " + names([id])[0];
+          if (!r) {
+            if (within.indexOf(id) >= 0 || !(state.bufferKm > 0)) return "in " + names([id])[0];
+            plain = false;
+            return "too close to " + names([id])[0] + " for a " + fmtBuffer(state.bufferKm) + " buffer";
+          }
           var inBase = raw.some(function (x) { return String(x) === id; });
-          if (!inBase) { plain = false; return "within " + fmt(state.bufferKm) + " of " + r.name + (r.inverted ? "'s edge" : ""); }
+          if (!inBase) { plain = false; return "within " + fmtBuffer(state.bufferKm) + " of " + r.name + (r.inverted ? "'s edge" : ""); }
           if (r.inverted) { plain = false; return "outside " + r.name; }
           return "in " + r.name;
         }));
       };
       var parts = [];
-      if (res.insideA.length) parts.push("A is " + where(res.insideA));
-      if (res.insideB.length) parts.push("B is " + where(res.insideB));
+      if (res.insideA.length) parts.push("A is " + where(res.insideA, (res.startIn || []).map(String)));
+      if (res.insideB.length) parts.push("B is " + where(res.insideB, (res.endIn || []).map(String)));
       big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
       sum.appendChild(big);
       var warn = document.createElement("span"); warn.className = "gc-warn";
@@ -1907,6 +1945,19 @@
         b.addEventListener("click", function () { if (r) removeRegion(r); else { state.avoid.delete(id); avoidChanged(); } });
         warn.appendChild(b); warn.appendChild(document.createTextNode(" "));
       });
+      var nearest = Infinity;
+      [res.nearA, res.nearB].forEach(function (near, k) {
+        var inside = ((k ? res.endIn : res.startIn) || []).map(String);
+        Object.keys(near || {}).forEach(function (id) { if (inside.indexOf(id) < 0) nearest = Math.min(nearest, near[id]); });
+      });
+      if (isFinite(nearest)) {
+        var fits = BUFFER_MI.filter(function (mi) { return mi * MI_KM * 1.035 + 0.1 < nearest && mi * MI_KM < state.bufferKm; });
+        var to = fits.length ? fits[fits.length - 1] : 0;
+        var lb = document.createElement("button"); lb.type = "button";
+        lb.textContent = to ? "Use a " + to + " mi buffer" : "Turn the buffer off";
+        lb.addEventListener("click", function () { setBuffer(to); });
+        warn.appendChild(lb);
+      }
       sum.appendChild(warn);
     } else if (res.status === "none") {
       big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
@@ -1995,21 +2046,28 @@
     });
   });
 
-  var BUFFER_MAX = { km: 400, mi: 250, nmi: 215 };
-  function syncBuffer() {
-    var inp = $("buffer"), u = UNITS[state.units];
-    inp.max = BUFFER_MAX[state.units];
-    inp.value = Math.round((state.bufferKm * u.f) / 5) * 5;
-    showBufferValue();
-    $("buffer-row").hidden = !state.regions.length;
+  var MI_KM = 1.609344, BUFFER_MI = [0, 1, 5, 10, 20, 50, 100], BUFFER_DEFAULT_MI = 50;
+  function bufferMi(km) {
+    var best = BUFFER_MI[0];
+    BUFFER_MI.forEach(function (mi) { if (Math.abs(mi * MI_KM - km) < Math.abs(best * MI_KM - km)) best = mi; });
+    return best;
   }
-  function showBufferValue() { $("buffer-out").textContent = state.bufferKm > 0 ? fmt(state.bufferKm) : "none"; }
-  $("buffer").addEventListener("input", function () {
-    state.bufferKm = +$("buffer").value / UNITS[state.units].f;
-    showBufferValue();
+  function fmtBuffer(km) { return bufferMi(km) + " mi"; }
+  function syncBuffer() {
+    var mi = bufferMi(state.bufferKm);
+    document.querySelectorAll("#buffer button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.dataset.mi === mi)); });
+    $("buffer-row").hidden = !(state.avoid.size || state.regions.length);
+  }
+  function setBuffer(mi) {
+    state.bufferKm = mi * MI_KM;
+    syncBuffer();
+    requestRoute();
+    writeUrl();
     scheduleRender("full");
+  }
+  document.querySelectorAll("#buffer button").forEach(function (b) {
+    b.addEventListener("click", function () { setBuffer(+b.dataset.mi); });
   });
-  $("buffer").addEventListener("change", function () { requestRoute(); writeUrl(); });
 
   var ANTARCTICA = "010";
   function writeUrl() {
@@ -2022,13 +2080,13 @@
         : "p~" + r.points.map(function (q) { return q[1].toFixed(3) + "," + q[0].toFixed(3); }).join(";");
       p.push("r=" + encodeURIComponent(r.name) + "~" + body + (r.inverted ? "~i" : ""));
     });
-    if (state.bufferKm > 0 && state.regions.length) p.push("buf=" + Math.round(state.bufferKm));
+    if ((state.avoid.size || state.regions.length) && bufferMi(state.bufferKm) !== BUFFER_DEFAULT_MI) p.push("buf=" + bufferMi(state.bufferKm) + "mi");
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = 0;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -2062,8 +2120,8 @@
         }
         if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; r.inverted = parts[3] === "i"; state.regions.push(r); any = true; }
       } else if (k === "buf") {
-        var bk = +v;
-        if (isFinite(bk) && bk > 0) state.bufferKm = Math.min(402.4, bk);
+        var miles = /mi$/.test(v), bk = parseFloat(v);
+        if (isFinite(bk) && bk >= 0) state.bufferKm = bufferMi(miles ? bk * MI_KM : bk) * MI_KM;
       }
     });
     return any;

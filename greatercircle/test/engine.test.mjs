@@ -2,19 +2,19 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
-const G = require(resolve(here, "../engine.js"));
 
 const ctx = vm.createContext({});
 for (const f of ["d3-array", "d3-geo", "topojson-client", "topojson-simplify"]) {
   vm.runInContext(readFileSync(resolve(here, "../vendor", f + ".min.js"), "utf8"), ctx, { filename: f });
 }
 const d3 = ctx.d3, topojson = ctx.topojson;
+const load = (f) => { const m = { exports: {} }; new Function("module", "exports", readFileSync(resolve(here, "..", f), "utf8"))(m, m.exports); return m.exports; };
+globalThis.ClipperLib = load("vendor/clipper.min.js");
+const G = load("engine.js");
 
 const topo = JSON.parse(readFileSync(resolve(here, "../data/countries-50m.json"), "utf8"));
 const world = topojson.feature(topo, topo.objects.countries);
@@ -365,4 +365,41 @@ test("a buffer on an inverted region shrinks the room inside it", () => {
   assert.equal(G.findRoute(obs, V(5, 5), V(15, 15)).status, "done", "well inside: free");
   assert.equal(G.findRoute(obs, V(0.8, 10), V(15, 15)).status, "inside", "within 150 km of the edge, inside: blocked");
   assert.equal(G.findRoute(obs, V(30, 10), V(15, 15)).status, "inside", "outside: blocked");
+});
+
+const MI = 1.609344;
+function boundaryKm(f, p) { return G.boundaryDistance(f.geometry, p) * KM; }
+function outlineObstacles(f, km) {
+  return G.buildObstacles([{ type: "Feature", id: f.id + "~b", properties: { name: f.properties.name }, geometry: { type: "MultiPolygon", coordinates: G.bufferOutline(f.geometry, km) } }]);
+}
+
+test("a country's buffer covers everything within the distance and little beyond it", () => {
+  for (const [name, miles] of [["Israel", [1, 50]], ["Italy", [5, 100]], ["Norway", [1, 20]], ["Fiji", [10]], ["Indonesia", [50]]]) {
+    const f = feat(name), whole = G.buildObstacles([f]);
+    const pts = [];
+    (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates).forEach((p) => p.forEach((r) => r.forEach((q) => pts.push(q))));
+    for (const mi of miles) {
+      const km = mi * MI, obs = outlineObstacles(f, km), rnd = rand(mi);
+      for (let i = 0; i < 1500; i++) {
+        const q = pts[Math.floor(rnd() * pts.length)];
+        const p = V(...d3.geoInterpolate(q, [q[0] + (rnd() - 0.5) * 4, q[1] + (rnd() - 0.5) * 4])(rnd() * Math.min(1, (km * 1.3) / 200)));
+        const d = G.featuresContaining(whole, p).length ? 0 : boundaryKm(f, p);
+        const inside = G.featuresContaining(obs, p).length > 0;
+        if (d < km * 0.999) assert.ok(inside, `${name}, ${mi} mi: a point ${d.toFixed(2)} km away is outside the buffer`);
+        if (d > km * 1.035 + 0.1) assert.ok(!inside, `${name}, ${mi} mi: a point ${d.toFixed(2)} km away is inside the buffer`);
+      }
+    }
+  }
+});
+
+test("a route round a buffered country keeps at least the buffer away", () => {
+  const israel = feat("Israel");
+  for (const mi of [1, 20]) {
+    const obs = outlineObstacles(israel, mi * MI);
+    const r = G.findRoute(obs, V(36.3, 33.5), V(34.5, 29.0));
+    assert.equal(r.status, "done");
+    const dmin = Math.min(...routePoints(r).map((p) => boundaryKm(israel, p)));
+    assert.ok(dmin >= mi * MI - 0.01, `${mi} mi: the route comes within ${dmin.toFixed(2)} km`);
+    assert.ok(dmin <= mi * MI * 1.035 + 0.1, `${mi} mi: it keeps further off than it must (${dmin.toFixed(2)} km)`);
+  }
 });

@@ -14,8 +14,16 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   search widens in stages through an ellipse of corners that could lie on a
   route of a given length, so routes a few percent longer than the direct arc
   are settled looking at a fraction of the corners. The result is exact for the
-  drawn borders: no grid, no buffer. Also point-in-country, which countries an
-  arc crosses, and distances on the sphere and (Vincenty) on the WGS84 ellipsoid.
+  drawn borders: no grid. Also point-in-country, which countries an arc crosses,
+  distances on the sphere and (Vincenty) on the WGS84 ellipsoid, and the buffer
+  round an avoided country (`bufferOutline`): each ring is first thinned by
+  Douglas–Peucker on the sphere to within 2% of the buffer, then traced at the
+  buffer's distance (strips along the edges, arcs round the convex corners), and
+  the trace and the ring are merged by Clipper in a gnomonic projection centred
+  on the country, where great-circle edges are straight lines, so the union is
+  exact for those edges. Islands far apart get projections of their own. The
+  outline keeps every point within the buffer and lets in nothing more than
+  about 3% beyond it.
 - **worker.js** — runs the search off the main thread in 40 ms slices; a newer
   request supersedes an older one. Loaded as a plain script instead when the
   browser will not start a worker, answering through the same messages.
@@ -29,10 +37,14 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   great-circle edges the engine treats like a country, with handles to adjust
   it afterwards). A region is the smaller side of its outline, whichever way
   it was drawn, and can be turned inside out to avoid everywhere but it. A
-  buffer of up to 250 miles grows every drawn region: the engine adds a disc
-  round each corner and a strip along each edge as further obstacles, whose
-  union with the region is its buffer exactly (`bufferRings`), and the
-  results, and the URL hash that holds the state, so a
+  buffer of 0, 1, 5, 10, 20, 50 (the default), or 100 miles keeps the route
+  away from everything avoided. Round a country it is the outline above,
+  worked out in the worker and sent back to be drawn; round a drawn region the
+  engine adds a disc round each corner and a strip along each edge as further
+  obstacles, whose union with the region is its buffer exactly
+  (`bufferRings`). If A or B is inside a country's buffer, the summary offers
+  the largest buffer that would leave it out. Then the results, and the URL
+  hash that holds the state (`buf=` when the buffer is not 50 miles), so a
   route can be shared.
 - **data/countries-50m.json** — Natural Earth 1:50m countries (world-atlas),
   with unique ids and display names; **data/places.json** — cities, capitals,
@@ -66,13 +78,17 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   image. With it on, the land and sea are left unpainted, and the borders,
   avoided countries, cities, and routes switch to colours that read on the
   imagery. Without WebGL the button is disabled.
-- **vendor/** — d3-array, d3-geo, topojson-client, topojson-simplify, unmodified.
+- **vendor/** — d3-array, d3-geo, topojson-client, topojson-simplify, unmodified;
+  Clipper 6.4.2 (Angus Johnson's JavaScript port, `clipper-lib` on npm),
+  minified with terser.
 
 ## Tests
 
     cd greatercircle && node --test test/engine.test.mjs
 
-The engine against d3-geo (12,000 random points in and out of countries),
+The engine against d3-geo (12,000 random points in and out of countries), country
+buffers against the exact distance to the border (inside the buffer within it,
+outside it beyond 3.5% more),
 synthetic shapes for the arc test's edge cases (touching, running along, and
 going through corners and straight runs), antipodes, and real routes checked
 for staying outside the avoided countries, being no longer than they must be,
