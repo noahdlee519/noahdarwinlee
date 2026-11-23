@@ -620,7 +620,14 @@ it there). Built on the bones of `/greatercircle/`.
   of a checkbox, open when it is shown and struck through, in a fainter ink,
   when it is hidden; the checkbox is still there, unseen, for the keyboard
   and screen readers. Historian and the
-  menus each carry a caret. The bar fits itself to the window by measuring:
+  menus each carry a caret. On a wider screen the three menus and the
+  Historian's panel all open from one corner, 10 px below the group of
+  buttons and 8 px past its right end, under View: the menus are placed
+  against that group rather than their own buttons, and the panel takes the
+  same corner from `placeDrops` (the `--uc-drop-top` and `--uc-drop-right`
+  properties) when it opens and whenever the bar changes size. While the
+  panel is open, the map's buttons in the bottom corner move to its left
+  edge. The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
   without the tools' names; one row without the title; the tools, *New
   country*, and *New city* above undo and the menus; the tools above *New

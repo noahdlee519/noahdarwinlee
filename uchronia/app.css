@@ -570,8 +570,8 @@ body.uc-page {
 .uc-chron {
   position: fixed;
   z-index: 22;
-  top: 118px;
-  right: calc(62px + env(safe-area-inset-right, 0px));
+  top: var(--uc-drop-top, 118px);
+  right: var(--uc-drop-right, calc(62px + env(safe-area-inset-right, 0px)));
   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   width: min(430px, calc(100vw - 94px));
   box-sizing: border-box;
@@ -2234,12 +2234,13 @@ a.uc-menu-item {
   .uc-end {
     grid-area: end;
     justify-self: end;
+    position: relative;
     display: flex;
     align-items: center;
     gap: 6px 18px;
   }
   .uc-menu {
-    position: relative;
+    position: static;
   }
   .uc-menu > summary {
     height: 30px;
@@ -2424,6 +2425,9 @@ a.uc-menu-item {
   }
   .uc-bar.bar-c .uc-end {
     justify-self: start;
+  }
+  body.is-history .uc-controls {
+    right: calc(var(--uc-drop-right, 62px) + min(430px, calc(100vw - 94px)) + 10px);
   }
 }
 @media (max-width: 640px) {

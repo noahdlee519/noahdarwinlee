@@ -7297,6 +7297,45 @@
   });
   reportPick.addEventListener("click", function () { setReportPicking(!reportPicking); });
   $("pick-exit").addEventListener("click", function (e) { e.stopPropagation(); setReportPicking(false); reportPick.focus(); });
+
+  // Typing on a phone (23 November 2026): the on-screen keyboard covered the field being typed in, the date in the
+  // year bar above all, and the lower fields of the report and save panels. Android's Chrome shrinks the page for the
+  // keyboard (interactive-widget=resizes-content in the viewport tag); Safari doesn't, so the keyboard's height is
+  // read from the visual viewport: the year bar is lifted above it (--ch-kb), and a panel that holds the field is cut to
+  // the room left and scrolled to the field.
+  (function keyboardRoom() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    var root = document.documentElement, panel = null, raf = 0;
+    var typing = function () {
+      var el = document.activeElement;
+      return el && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|range)$/.test(el.type))) ? el : null;
+    };
+    function update() {
+      raf = 0;
+      var el = typing(), kb = el && phoneQuery.matches ? Math.round(window.innerHeight - vv.height - vv.offsetTop) : 0;
+      if (kb < 60) kb = 0;
+      root.style.setProperty("--ch-kb", kb + "px");
+      root.classList.toggle("ch-kb-open", kb > 0);
+      var host = el && kb ? el.closest(".ch-layers, .ch-search") : null;
+      if (panel && panel !== host) { panel.style.maxHeight = ""; panel.style.overflowY = ""; panel = null; }
+      if (host) {
+        panel = host;
+        var room = vv.offsetTop + vv.height - host.getBoundingClientRect().top - 8;
+        host.style.maxHeight = Math.max(120, Math.round(room)) + "px";
+        host.style.overflowY = "auto";
+      }
+      if (el && kb) {
+        var r = el.getBoundingClientRect(), bottom = vv.offsetTop + vv.height;
+        if (r.bottom > bottom - 8 || r.top < vv.offsetTop) el.scrollIntoView({ block: "nearest" });
+      }
+    }
+    var soon = function () { if (!raf) raf = requestAnimationFrame(update); };
+    vv.addEventListener("resize", soon);
+    vv.addEventListener("scroll", soon);
+    document.addEventListener("focusin", function () { setTimeout(soon, 60); setTimeout(soon, 400); });
+    document.addEventListener("focusout", function () { setTimeout(soon, 60); });
+  })();
   $("report-now").addEventListener("click", reportNow);
   function signOut() {
     keepReportSession(null);
