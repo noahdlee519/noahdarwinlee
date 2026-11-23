@@ -58,9 +58,11 @@ test('snow lies only on high ground or in high latitudes', () => {
   }
 });
 
-test('cold worlds have snow and ice in the far north', () => {
+test('cold worlds have snow and ice, but only a little of their land', () => {
+  // Snow lies on the highest peaks and polar land only, broken up with rock.
   const { t, c } = world('Shelley', cold);
-  assert.ok(shares(c, t.land)[COVER.SNOW] > 0.05);
+  const snow = shares(c, t.land)[COVER.SNOW];
+  assert.ok(snow > 0.008 && snow < 0.08, `snow covers ${snow}`);
 });
 
 test('deserts and steppe fill a dry world and are all but absent from the wettest', () => {

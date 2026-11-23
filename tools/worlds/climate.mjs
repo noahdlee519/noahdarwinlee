@@ -295,8 +295,9 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       if (bank && bank[s] > 0.02) m += Math.min(0.5, bank[s] * 1.6);
       let v = vegIndex(m);
       // Cold ground grows little: tundra reads as dry grass, then bare.
-      // Tundra stays a pale green, never desert.
-      if (t < -1) v = Math.min(v, Math.max(1.15, 1.4 + ((t + 9) / 8) * 2.2));
+      // Cold ground: boreal forest gives way to tundra, a pale green (grass),
+      // never desert; the cold is wet enough for that, as in the far north.
+      if (t < -3) v = clamp(v, 2.05, Math.max(2.05, 4.6 + (t + 3) * 0.22));
       v = clamp(v + j, 0, 4.999);
       let c = VEG_CLASS[Math.floor(v)];
 
@@ -306,8 +307,8 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       // Snow and ice only on the highest, coldest peaks and on polar land;
       // elsewhere bare rock on the heights, and only a fleck of it on cold plains.
       if (ej > 0.5 || (ej > 0.36 && tj < -4)) c = COVER.ROCK;
-      const polar = tj < -23;
-      const peak = ej > 0.56 && tj < -6;
+      const polar = tj < -25;
+      const peak = ej > 0.6 && tj < -6;
       if (polar || peak) c = !polar && kf > 0.78 ? COVER.ROCK : COVER.SNOW;
       else if (t < -11 && kf > 0.84) c = jf > 0.6 ? COVER.SNOW : COVER.ROCK;
       cover[i] = c;
@@ -317,7 +318,7 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       const tf = tiny.id[i];
       if (c === COVER.SNOW) {
         const u = tinyJ[tf];
-        if (u < (polar ? 0.1 : 0.34)) c = COVER.ROCK;
+        if (u < (polar ? 0.12 : 0.42)) c = COVER.ROCK;
         cover[i] = c;
       } else if (c === COVER.ROCK) {
         const u = tinyJ[tf];
