@@ -63,7 +63,7 @@
   function buyable() {
     go.hidden = false;
     go.removeAttribute("aria-disabled");
-    go.textContent = "Get Premium | $5, once";
+    go.textContent = "Get Premium | $10, once";
     go.setAttribute("href", "#buy");
     note.textContent = who() ? "Signed in as " + who() + "." : "";
   }

@@ -7123,6 +7123,10 @@
     });
   }
   function reportToken() {
+    try {
+      var kept = JSON.parse(localStorage.getItem(REPORT_STORE) || "null");
+      if (reportSession && !reportRefreshing && kept && typeof kept.a === "string" && typeof kept.r === "string" && kept.r !== reportSession.r) reportSession = kept;
+    } catch (e) {}
     var s = reportSession;
     if (!s) return Promise.resolve(null);
     if (s.e - Date.now() > 60000) return Promise.resolve(s.a);
@@ -7400,7 +7404,7 @@
   }
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
-  // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
+  // under the top row where they are not. An account with CHRONIA Premium ($10, once, through Stripe; the function
   // chronia-premium) sees none, and may have five times the daily notes (chronia-blurb is sent its session for that).
   // ADS holds AdSense's publisher id and the three ad units' slot ids (each a fixed 320 by 50, made on 19 November
   // 2026); with the client empty no advertisement is asked for and nothing of Google's is loaded. Google's script is
@@ -7578,7 +7582,7 @@
     if ($("about-premium")) $("about-premium").hidden = premium.on;
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
-      : T("No advertisements, no watermark on your videos, and more, for $5 once.");
+      : T("No advertisements, no watermark on your videos, and more, for $10 once.");
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.

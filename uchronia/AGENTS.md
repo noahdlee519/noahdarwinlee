@@ -49,7 +49,7 @@ them.
 | `sat.js` | The satellite layer, on its own canvas under the map. |
 | `data/*.json` | Built offline by `tools/build-*.mjs` from Natural Earth, GeoNames and others (see the README's credits). |
 | `tools/` | The data builders. **When data is wrong, fix the data and the builder**, so a rebuild doesn't bring the mistake back. |
-| `../supabase/functions/historian/` | The server function behind the historian. It holds the Anthropic key and enforces the daily caps. It's deployed to Supabase project `kigvciyyjlgjcgnwgrwf` as `dynamic-endpoint`; changing it means redeploying, not just committing. |
+| `../supabase/functions/historian/` | The server function behind the historian. It holds the Anthropic key and enforces the daily caps. It's deployed to CHRONIA's Supabase project `jvcmeuqlyygpwelmvxuv` as `historian` (until 23 November 2026, to `kigvciyyjlgjcgnwgrwf` as `dynamic-endpoint`); changing it means redeploying, not just committing. |
 | `../supabase/migrations/20261012_historian_usage.sql` | The historian's daily counter. |
 
 ### Entry points in `app.js`
