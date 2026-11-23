@@ -29,7 +29,6 @@ const ok = (cond, what) => {
 function content() {
   console.log('content');
   const projects = JSON.parse(readFileSync(join(root, 'portfolio-map', 'projects.json'), 'utf8'));
-  const about = JSON.parse(readFileSync(join(root, 'portfolio-map', 'about.json'), 'utf8'));
   const exists = (src) => src.startsWith('/') && existsSync(join(root, src.split('?')[0]));
   ok(projects.length === 18, `18 projects (${projects.length})`);
   const fileOf = (m) => [m.src, m.video, m.poster, ...(m.srcset ? m.srcset.split(',').map((s) => s.trim().split(/\s+/)[0]) : [])].filter(Boolean);
@@ -50,7 +49,7 @@ function content() {
     ok(missing.length === 0, `${p.id}${missing.length ? ': missing ' + missing.join(', ') : ''}`);
   }
   ok(projects.filter((p) => p.tier === 'flagship').every((p) => p.media.length > 0), 'every flagship has media');
-  ok(about.hello && about.lede && exists(about.portrait.src) && exists(about.resume) && about.contact.email, 'about.json: introduction, portrait, resume, and email');
+  ok(exists('/portfolio/Lee_Noah_Resume.pdf'), 'the resume the rail opens exists');
   const worlds = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', 'index.json'), 'utf8'));
   let size = 0;
   for (const w of worlds) {
@@ -154,7 +153,8 @@ async function interfaceStage(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
   let page = await open(browser, '?world=le-guin', { context });
-  ok(await panelTitle(page) === 'Hi, my name is Noah', 'About is the starting panel');
+  ok(await page.evaluate(() => !document.body.classList.contains('is-panel') && !!document.querySelector('#search-input') && getComputedStyle(document.querySelector('.rail')).display !== 'none'), 'the page opens on the map, with the panel closed and the rail and search box present');
+  ok(await page.evaluate(() => { const m = window.__portfolioMap.map; return m.world.width * m.s >= m.rect().w - 2 || m.world.height * m.s >= m.rect().h - 2; }), 'the world fills the map, full width');
   await page.screenshot({ path: '/tmp/portfolio-map-desktop.png' });
 
   // Search: type, arrow, Enter.
@@ -177,7 +177,9 @@ async function interfaceStage(browser) {
   ok(await panelTitle(page) === 'Closebook' && sel.id === 'dealdesk' && sel.province === 'closebook', 'search finds a Dealdesk tool and opens its province');
 
   // Clicking a country on the map opens it.
-  await page.evaluate(() => { window.__portfolioMap.open('about'); window.__portfolioMap.map.set(window.__portfolioMap.home()); });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__portfolioMap.map.set(window.__portfolioMap.home()));
   await page.waitForTimeout(800);
   const pt = await page.evaluate(() => {
     const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia');
@@ -229,10 +231,11 @@ async function interfaceStage(browser) {
   await page.click('.strip-feedback');
   ok(await page.evaluate(() => document.querySelector('#feedback-dialog').open), 'Site feedback opens the feedback form');
   await page.keyboard.press('Escape');
-  await page.focus('.rail-btn[data-view="about"]');
+  await page.focus('.rail-btn[data-view="contact"]');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(400);
-  ok(await panelTitle(page) === 'Hi, my name is Noah', 'the rail works from the keyboard');
+  ok(await panelTitle(page) === 'Contact', 'the rail works from the keyboard');
+  ok(await page.evaluate(() => { const a = document.querySelector('.rail-about'); return a.tagName === 'A' && a.getAttribute('href') === '/#about' && !a.target; }), "About links to the site's about page, in the same tab");
   ok(await page.evaluate(() => document.querySelector('.rail-btn[data-view="resume"]').getAttribute('href') === '/portfolio/Lee_Noah_Resume.pdf'), 'Resume opens the PDF');
   ok(page.errors.length === 0, `no errors on the page${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
 
@@ -263,6 +266,8 @@ async function interfaceStage(browser) {
   page = await open(browser, '?world=le-guin', { context: phone });
   const sheet = () => page.evaluate(() => document.querySelector('#panel').getAttribute('data-sheet'));
   ok(await sheet() === 'peek', 'the sheet starts lowered, under the map');
+  ok(await panelTitle(page) === 'Le Guin' && (await page.evaluate(() => !!document.querySelector('.peek-links a[href="/terms/"]'))), "the lowered sheet names the world and carries the footer's links");
+  ok(await page.evaluate(() => document.querySelector('.search-me').getAttribute('href') === '/#about'), "the portrait in the search pill links to the site's about page");
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.rail')).flexDirection === 'row' && document.querySelector('.rail').getBoundingClientRect().bottom >= innerHeight - 1), 'the rail is a tab bar at the bottom');
   await page.screenshot({ path: '/tmp/portfolio-map-phone.png' });
   // The map pans above the sheet.
@@ -306,12 +311,10 @@ async function interfaceStage(browser) {
   await page.tap('.rail-btn[data-view="saved"]');
   await page.waitForTimeout(500);
   ok(await sheet() === 'half' && (await panelTitle(page)) === 'Saved', 'the Saved tab shows Saved');
-  await page.tap('.rail-btn[data-view="about"]');
-  await page.waitForTimeout(500);
-  ok((await panelTitle(page)) === 'Hi, my name is Noah' && (await page.evaluate(() => !!document.querySelector('#contact-block'))), 'the About tab shows About, with contact');
+  ok(await page.evaluate(() => { const a = document.querySelector('.rail-about'); return getComputedStyle(a).display !== 'none' && a.getAttribute('href') === '/#about'; }), "the About tab links to the site's about page");
   await page.tap('.tab-explore');
   await page.waitForTimeout(500);
-  ok(await sheet() === 'peek', 'the Explore tab lowers the sheet to the map');
+  ok(await sheet() === 'peek' && (await panelTitle(page)) === (await page.evaluate(() => window.__portfolioMap.map.world.name)), 'the Explore tab lowers the sheet to the world');
   const w0 = (await selected(page)).world;
   await page.tap('#fab-world');
   await page.waitForTimeout(1600);

@@ -329,44 +329,12 @@ a {
   outline-offset: 2px;
 }
 
-/* Noah's mark: a square with a circle in it, in the site's black, blue, and orange. */
+/* Noah's mark, as in the site's icon: a pale frame, an orange square, and a pale circle inscribed in it. */
 .mark {
-  position: relative;
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  background: var(--ink);
-}
-
-.mark::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: var(--orange);
-}
-
-.mark-inline {
-  width: 0.28em;
-  height: 0.28em;
-  margin-left: 0.07em;
-  vertical-align: baseline;
-}
-
-@keyframes bridge-sq {
-  0% { background: #26262a; }
-  16.666% { background: #2a44d6; }
-  33.333% { background: #fff; }
-  50% { background: #e68019; }
-  66.666% { background: #26262a; }
-  83.333% { background: #fff; }
-}
-
-@keyframes bridge-ci {
-  0% { background: #fff; }
-  33.333% { background: #2a44d6; }
-  50% { background: #26262a; }
-  66.666% { background: #e68019; }
+  display: block;
+  flex: none;
+  width: 16px;
+  height: 16px;
 }
 
 /* ---------------------------------------------------------------- loading */
@@ -525,19 +493,17 @@ a {
 }
 
 .rail-mark .mark {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
+}
+
+.rail-mark .mark {
+  transition: transform 220ms var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .rail-mark:hover .mark {
-    animation: bridge-sq 5.4s step-end infinite;
-    animation-delay: -0.9s;
-  }
-
-  .rail-mark:hover .mark::after {
-    animation: bridge-ci 5.4s step-end infinite;
-    animation-delay: -0.9s;
+    transform: scale(1.08);
   }
 }
 
@@ -1010,8 +976,7 @@ body:not(.is-panel) .panel-tab .ic {
   line-height: 1.4;
 }
 
-.hero-terrain + .caption,
-.hero-portrait + .caption {
+.hero-terrain + .caption {
   display: none;
 }
 
@@ -1019,14 +984,6 @@ body:not(.is-panel) .panel-tab .ic {
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.hero-portrait img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 22%;
 }
 
 /* The heading, the actions, and the text. */
@@ -1213,10 +1170,6 @@ body:not(.is-panel) .panel-tab .ic {
   font-size: 15px;
   line-height: 1.55;
   text-wrap: pretty;
-}
-
-.how p {
-  color: var(--ink-2);
 }
 
 .block {
@@ -1623,21 +1576,22 @@ body:not(.is-panel) .panel-tab .ic {
   transition: left 300ms var(--ease-out), bottom 340ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* White lettering with a soft dark edge, legible over sea and land alike, as a mapping app signs its map. */
 .brand {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: var(--ink);
-  font-size: 14px;
+  color: #ffffff;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 6px rgba(255, 255, 255, 0.8);
+  letter-spacing: -0.005em;
+  text-shadow: 0 0 1px rgba(38, 38, 42, 0.75), 0 0 2px rgba(38, 38, 42, 0.55), 0 1px 4px rgba(38, 38, 42, 0.45);
 }
 
 .brand .mark {
-  width: 13px;
-  height: 13px;
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
+  width: 17px;
+  height: 17px;
+  filter: drop-shadow(0 0 1px rgba(38, 38, 42, 0.5)) drop-shadow(0 1px 2px rgba(38, 38, 42, 0.3));
 }
 
 .scale {
@@ -1921,7 +1875,7 @@ body:not(.is-panel) .panel-tab .ic {
     order: 3;
   }
 
-  .rail-btn[data-view="about"] {
+  .rail-about {
     order: 4;
   }
 
@@ -1962,6 +1916,7 @@ body:not(.is-panel) .panel-tab .ic {
 
   .search-me {
     display: block;
+    flex: none;
     width: 40px;
     height: 40px;
     margin-left: 2px;
@@ -2191,12 +2146,13 @@ body:not(.is-panel) .panel-tab .ic {
     margin: 8px 20px 0;
   }
 
-  .hero-portrait {
-    aspect-ratio: 4 / 3;
+  .head-plain,
+  .head-world {
+    padding-top: 6px;
   }
 
-  .head-plain {
-    padding-top: 6px;
+  .block-first {
+    border-top: 0;
   }
 
   .title {
@@ -2249,10 +2205,5 @@ body:not(.is-panel) .panel-tab .ic {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
-  }
-
-  .mark-inline,
-  .mark-inline::after {
-    animation: none !important;
   }
 }

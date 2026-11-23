@@ -8,11 +8,21 @@
   var SAVED_KEY = "portfolio-map-saved";
   var RAIL = 72, PANEL = 408, STRIP = 24;
   var phoneQuery = window.matchMedia("(max-width: 759px)");
+  // How to reach Noah, from the portfolio's contact section.
+  var RESUME = "/portfolio/Lee_Noah_Resume.pdf";
+  var CONTACT = {
+    question: "Want to build something together?",
+    email: "noahlee519@gmail.com",
+    links: [
+      { label: "LinkedIn", url: "https://www.linkedin.com/in/noahdlee/" },
+      { label: "Instagram", url: "https://www.instagram.com/noahdarwinlee/" }
+    ]
+  };
   var reduceMotion = PM.reduceMotion;
 
   var params = new URLSearchParams(location.search);
   var state = {
-    projects: [], byId: {}, about: null, worlds: [], entry: null, world: null, map: null,
+    projects: [], byId: {}, worlds: [], entry: null, world: null, map: null,
     view: null, project: null, province: null, panelOpen: true, sheet: "peek",
     saved: [], shapes: {}
   };
@@ -251,32 +261,24 @@
       (isSaved(p.id) ? '<span class="row-heart" aria-label="Saved">' + icon("i-heart") + "</span>" : "") + "</button></li>";
   }
 
-  function viewAbout() {
-    var a = state.about, h = "";
-    h += '<div class="hero hero-portrait"><img src="' + esc(a.portrait.src) + '" alt="' + esc(a.portrait.alt) + '" fetchpriority="high" decoding="async" /></div>';
-    h += '<header class="head"><h2 class="title" tabindex="-1">' + esc(a.hello) + '<i class="mark mark-inline" aria-hidden="true"></i></h2>';
-    h += '<p class="lede">' + esc(a.lede) + "</p></header>";
-    h += '<div class="actions">' +
-      '<a class="action action-visit" ' + linkAttrs(a.resume) + '><span class="action-dot">' + icon("i-resume") + "</span><span>Resume</span></a>" +
-      '<a class="action" href="mailto:' + esc(a.contact.email) + '"><span class="action-dot">' + icon("i-contact") + "</span><span>Email</span></a>" +
-      '<button class="action" type="button" data-next-world><span class="action-dot">' + icon("i-next") + "</span><span>New world</span></button>" +
-      "</div>";
-    h += '<div class="prose how"><p>Every country on this map is one of my projects. The large ones are the projects I’m proudest of; the islands and small states are smaller things. Click a country, or search for one, to see it.</p>' +
-      "<p>This world is " + esc(state.world.name) + ", one of twenty, each named for a science fiction writer. You’ll see another next time.</p></div>";
+  // On a phone, the sheet at rest names the world; raised, it lists the world's countries.
+  function viewWorld() {
+    var n = state.world.projects.length, h = "";
+    h += '<header class="head head-world"><h2 class="title" tabindex="-1">' + esc(state.world.name) + "</h2>";
+    h += '<p class="sub">A world of ' + n + " countries, each one of my projects</p></header>";
     var flag = state.projects.filter(function (p) { return p.tier === "flagship"; });
     var small = state.projects.filter(function (p) { return p.tier !== "flagship"; });
-    h += '<section class="block"><h3 class="block-title">The large countries</h3><ul class="rows">' + flag.map(rowFor).join("") + "</ul></section>";
+    h += '<section class="block block-first"><h3 class="block-title">The large countries</h3><ul class="rows">' + flag.map(rowFor).join("") + "</ul></section>";
     h += '<section class="block"><h3 class="block-title">Islands and small states</h3><ul class="rows">' + small.map(rowFor).join("") + "</ul></section>";
-    h += contactBlock();
     return h;
   }
 
   function contactBlock() {
-    var c = state.about.contact;
+    var c = CONTACT;
     return '<section class="block contact" id="contact-block"><h3 class="block-title">' + esc(c.question) + "</h3>" +
       '<a class="mail" href="mailto:' + esc(c.email) + '">' + esc(c.email) + "</a>" +
       '<div class="contact-row"><button class="btn btn-quiet" type="button" data-copy="' + esc(c.email) + '">' + icon("i-copy") + "<span>Copy address</span></button>" +
-      '<a class="btn btn-quiet" ' + linkAttrs(state.about.resume) + ">" + icon("i-resume") + "<span>Resume</span></a></div>" +
+      '<a class="btn btn-quiet" ' + linkAttrs(RESUME) + ">" + icon("i-resume") + "<span>Resume</span></a></div>" +
       '<p class="contact-links">' + c.links.map(function (l) { return "<a " + linkAttrs(l.url) + ">" + esc(l.label) + "</a>"; }).join('<i class="sep" aria-hidden="true">|</i>') + "</p></section>";
   }
 
@@ -304,13 +306,13 @@
     } else {
       state.project = null; state.province = null;
     }
-    var html = view === "project" ? viewProject(id, province) : view === "about" ? viewAbout() : view === "saved" ? viewSaved() : view === "contact" ? viewContact() : "";
+    var html = view === "project" ? viewProject(id, province) : view === "world" ? viewWorld() : view === "saved" ? viewSaved() : view === "contact" ? viewContact() : "";
     stopVideos();
     els.panelBody.innerHTML = html;
     var head = $(".head", els.panelBody);
     if (head) head.insertAdjacentHTML("afterend", peekLinks());
     els.panel.setAttribute("data-view", view || "none");
-    els.panel.setAttribute("aria-label", view === "project" ? (province ? state.byId[id].provinces.filter(function (v) { return v.id === province; })[0].name : state.byId[id].name) : view === "about" ? "About" : view === "saved" ? "Saved" : view === "contact" ? "Contact" : "Details");
+    els.panel.setAttribute("aria-label", view === "project" ? (province ? state.byId[id].provinces.filter(function (v) { return v.id === province; })[0].name : state.byId[id].name) : view === "world" ? state.world.name : view === "saved" ? "Saved" : view === "contact" ? "Contact" : "Details");
     els.panelScroll.scrollTop = 0;
     bindPanel();
     renderPeek();
@@ -333,7 +335,7 @@
     if (!isPhone()) showPanel(false);
     els.panel.setAttribute("data-view", "none");
     updateRail(); updateSearchBox(); syncUrl();
-    if (isPhone()) open("about", { sheet: "peek" });
+    if (isPhone()) open("world", { sheet: "peek" });
   }
 
   function showPanel(on, sheet) {
@@ -349,7 +351,7 @@
     var v = state.view;
     $$(".rail-btn[data-view]").forEach(function (b) {
       var name = b.getAttribute("data-view"), on;
-      if (isPhone()) on = name === "explore" ? (v === "project" || state.sheet === "peek") : name === "saved" ? v === "saved" && state.sheet !== "peek" : name === "about" ? (v === "about" || v === "contact") && state.sheet !== "peek" : false;
+      if (isPhone()) on = name === "explore" ? (v === "project" || v === "world" || state.sheet === "peek") : name === "saved" ? v === "saved" && state.sheet !== "peek" : false;
       else on = name === v && state.panelOpen;
       b.classList.toggle("is-on", !!on);
       if (b.tagName === "BUTTON") b.setAttribute("aria-pressed", String(!!on));
@@ -362,7 +364,7 @@
       var prov = p && state.province ? p.provinces.filter(function (v) { return v.id === state.province; })[0] : null;
       els.input.value = p ? (prov ? prov.name : p.name) : "";
     }
-    var closeable = !!state.view && (state.view !== "about" || !isPhone()) && (state.panelOpen || state.view === "project");
+    var closeable = !!state.view && state.view !== "world" && (state.panelOpen || state.view === "project");
     els.clear.hidden = !closeable;
     els.go.hidden = closeable;
     els.search.classList.toggle("has-value", !!els.input.value);
@@ -380,7 +382,7 @@
   // ------------------------------------------------------------------ the panel's controls
 
   function bindPanel() {
-    var hero = $(".hero.is-many", els.panelBody) || $(".hero:not(.hero-terrain):not(.hero-portrait)", els.panelBody);
+    var hero = $(".hero.is-many", els.panelBody) || $(".hero:not(.hero-terrain)", els.panelBody);
     if (hero) carousel(hero);
   }
 
@@ -528,7 +530,6 @@
     close();
     els.input.focus({ preventScroll: true });
   });
-  els.me.addEventListener("click", function () { open("about", { sheet: "half" }); });
 
   // ------------------------------------------------------------------ the rail and tabs
 
@@ -538,13 +539,13 @@
       if (v === "resume") return;
       e.preventDefault();
       if (v === "explore") {
-        if (state.view && state.view !== "project") open("about", { sheet: "peek" });
+        if (state.view !== "project") open("world", { sheet: "peek" });
         setSheet("peek");
         updateRail();
         return;
       }
       if (!isPhone() && state.view === v && state.panelOpen) { close(); return; }
-      open(v, { focus: e.detail === 0, sheet: v === "saved" || v === "about" ? "half" : undefined });
+      open(v, { focus: e.detail === 0, sheet: v === "saved" || v === "contact" ? "half" : undefined });
       if (v === "contact" && isPhone()) { var c = $("#contact-block"); if (c) c.scrollIntoView(); }
     });
   });
@@ -555,7 +556,7 @@
     var menu = $("#site-menu");
     if (menu && menu.getAttribute("data-open") === "true") return;
     if (els.dialog.open) return;
-    if (state.view && (state.panelOpen || isPhone())) {
+    if (state.view && state.view !== "world" && (state.panelOpen || isPhone())) {
       e.preventDefault();
       var wasProject = state.view === "project";
       close();
@@ -714,7 +715,8 @@
         insets();
         state.map.set(homeView());
         if (keep) open("project", { id: keep.id, province: keep.province, instant: true, sheet: isPhone() ? state.sheet : undefined });
-        else { renderPeek(); if (state.view === "about") open("about", { sheet: isPhone() ? state.sheet : undefined }); }
+        else if (state.view === "world") open("world", { sheet: state.sheet });
+        else renderPeek();
         return state.map.imageReady;
       }).then(function () {
         els.body.classList.remove("is-switching");
@@ -785,11 +787,10 @@
   state.saved = loadSaved();
   updateCount();
 
-  Promise.all([PM.getJSON(ROOT + "projects.json"), PM.getJSON(ROOT + "worlds/index.json"), PM.getJSON(ROOT + "about.json")]).then(function (r) {
+  Promise.all([PM.getJSON(ROOT + "projects.json"), PM.getJSON(ROOT + "worlds/index.json")]).then(function (r) {
     state.projects = r[0];
     r[0].forEach(function (p) { state.byId[p.id] = p; });
     state.worlds = r[1];
-    state.about = r[2];
     state.map = new PM.MapView($("#map"));
     state.map.obstacles = function () {
       return [".search-box", ".brand", ".scale-corner", ".zoom", ".fab-world"].map(function (s) { return $(s); }).filter(function (e) {
@@ -821,13 +822,13 @@
   }).then(function () {
     var askedProject = params.get("project"), askedProvince = params.get("province");
     var p = askedProject && state.byId[askedProject];
-    state.panelOpen = true;
+    state.panelOpen = !!p || isPhone();
     if (isPhone()) state.sheet = p ? "half" : "peek";
     layout();
     renderPeek();
     var prov = p && askedProvince && (p.provinces || []).some(function (v) { return v.id === askedProvince; }) ? askedProvince : null;
     if (p) open("project", { id: p.id, province: prov, fly: false, sheet: isPhone() ? "half" : undefined });
-    else open("about", { sheet: isPhone() ? "peek" : undefined });
+    else if (isPhone()) open("world", { sheet: "peek" });
     // The one entrance: the world arrives a little far off and settles; a shared link then flies to its country.
     var home = homeView(), m = state.map, r = m.rect();
     var cx = r.l + r.w / 2, cy = r.t + r.h / 2, k = reduceMotion.matches ? 1 : 0.9;
