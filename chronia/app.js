@@ -7123,6 +7123,10 @@
     });
   }
   function reportToken() {
+    try {
+      var kept = JSON.parse(localStorage.getItem(REPORT_STORE) || "null");
+      if (reportSession && !reportRefreshing && kept && typeof kept.a === "string" && typeof kept.r === "string" && kept.r !== reportSession.r) reportSession = kept;
+    } catch (e) {}
     var s = reportSession;
     if (!s) return Promise.resolve(null);
     if (s.e - Date.now() > 60000) return Promise.resolve(s.a);
@@ -7400,7 +7404,7 @@
   }
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
-  // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
+  // under the top row where they are not. An account with CHRONIA Premium ($10, once, through Stripe; the function
   // chronia-premium) sees none, and may have five times the daily notes (chronia-blurb is sent its session for that).
   // ADS holds AdSense's publisher id and the three ad units' slot ids (each a fixed 320 by 50, made on 19 November
   // 2026); with the client empty no advertisement is asked for and nothing of Google's is loaded. Google's script is
@@ -7578,7 +7582,7 @@
     if ($("about-premium")) $("about-premium").hidden = premium.on;
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
-      : T("No advertisements, no watermark on your videos, and more, for $5 once.");
+      : T("No advertisements, no watermark on your videos, and more, for $10 once.");
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -8201,13 +8205,24 @@
     snap.polys.forEach(function (p) { var cp = p && !p.people && !p.claims && p.cap ? capitalNow(p.cap) : null; if (cp) caps.push(cp); });
     var a = [], seq = 0, placed = [];
     function near(lon, lat) { for (var i = 0; i < placed.length; i++) if (Math.abs(placed[i][0] - lon) < 0.05 && Math.abs(placed[i][1] - lat) < 0.05) return i; return -1; }
-    if (cities) cityRanked(t).slice(0, UC_MAX_CITIES).forEach(function (e) {
-      var cc = e.c, cap = caps.some(function (k) { return Math.abs(k[1] - cc.lon) < 0.15 && Math.abs(k[2] - cc.lat) < 0.15; }) ? 1 : 0;
-      a.push([cityShownName(cc, t).slice(0, 60), Math.round(cc.lon * 1e4) / 1e4, Math.round(cc.lat * 1e4) / 1e4, e.tier, cap, "u" + (++seq)]);
+    var ranked = cities ? cityRanked(t).slice(0, UC_MAX_CITIES) : [], capCity = new Set(), capFound = new Set();
+    caps.forEach(function (k, ki) {
+      var best = -1, bestD = Infinity;
+      ranked.forEach(function (e, i) {
+        var dx = Math.abs(k[1] - e.c.lon), dy = Math.abs(k[2] - e.c.lat), same = plainName(String(cityShownName(e.c, t))) === plainName(String(k[0]));
+        if (dx >= 0.15 || dy >= 0.15 || !same && (dx >= 0.05 || dy >= 0.05)) return;
+        var dd = dx * dx + dy * dy - (same ? 1 : 0);
+        if (dd < bestD) { bestD = dd; best = i; }
+      });
+      if (best >= 0) { capCity.add(best); capFound.add(ki); }
+    });
+    ranked.forEach(function (e, i) {
+      var cc = e.c;
+      a.push([cityShownName(cc, t).slice(0, 60), Math.round(cc.lon * 1e4) / 1e4, Math.round(cc.lat * 1e4) / 1e4, e.tier, capCity.has(i) ? 1 : 0, "u" + (++seq)]);
       placed.push([cc.lon, cc.lat]);
     });
-    caps.forEach(function (k) {
-      if (near(k[1], k[2]) >= 0 || caps.indexOf(k) < 0) return;
+    caps.forEach(function (k, ki) {
+      if (capFound.has(ki) || near(k[1], k[2]) >= 0) return;
       a.push([String(k[0]).slice(0, 60), Math.round(k[1] * 1e4) / 1e4, Math.round(k[2] * 1e4) / 1e4, 3, 1, "u" + (++seq)]);
       placed.push([k[1], k[2]]);
     });

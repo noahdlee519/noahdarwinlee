@@ -15,6 +15,7 @@ import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
 import { buildCaucasus, CAUCASUS_FROM, CAUCASUS_TO } from "./caucasus.mjs";
+import { buildCentralAsia, CA_FROM, CA_TO, CA_OFF_KM2, CA_KEEP_KM2, CA_KEEP_THICK_KM } from "./central-asia.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 import { buildItaly, ITALY_FROM, ITALY_TO, LATIN_LEAGUE, LEAGUE_FROM, LEAGUE_TO } from "./italy-early.mjs";
 import { buildSouthAsia, SA_FROM, SA_TO, SA_OFF_KM2, MARATHA, MARATHA_FROM, MARATHA_TO } from "./south-asia.mjs";
@@ -232,7 +233,21 @@ const BLANKETS = /hunter|gatherer|forager|foraging|fisher|fichers|^pampas cultur
 const NOT_YET = /\(Oklahoma\)|Reservation\)|Rancheria|^Michif Piyii|^Mountain Métis$|^NWT Métis Nation$|Metis Settlement|^Mount Tabor Indian Community$/i;
 // A carried people more than this share of whose land later maps' peoples hold is left out for those years: what is left of it is an edge.
 const DISPLACED = 0.5;
-let nativeSnaps = []; // the maps nativeCarry reads, kept when the rest are let go
+let nativeSnaps = []; // the maps nativeCarry and africaCarry read, kept when the rest are let go
+// Africa's peoples carried forward (Noah, 23 November 2026): historical-basemaps names Africa's peoples on its map of 1500 ("Bantu
+// peoples", "Khoisan", "West African cereal farmers") and a few on later maps (the Oromo, Zulu, and Xhosa), and none on the land in
+// between, so from 1515 two thirds of the continent was blank. They are carried as the Americas' are, to 1885, on land no state, colony,
+// or claim holds. AFRICA_RECAST gives the map of 1500's Khoisan east of 26° E (Natal, the Highveld, Sofala, where Bantu speakers lived
+// by then) to the Bantu peoples, and keeps its West African cereal farmers west of 16° E.
+const AFRICA_BOX = [-20, -36, 55, 38], AFRICA_MAPS = [1500, 1530, 1715, 1783, 1815], AFRICA_FROM = 1500;
+const AFRICA_RECAST = { 1500: [["Khoisan", [26, -36, 42, -10], "Bantu peoples"], ["West African cereal farmers", [16, -40, 60, 40], null]] };
+const inAfrica = (polys) => {
+  let big = null, most = -1;
+  for (const p of polys) { const a = polyKm2(p); if (a > most) { most = a; big = p; } }
+  if (!big) return false;
+  const b = boxOf([big]), x = (b[0] + b[2]) / 2, y = (b[1] + b[3]) / 2;
+  return x > AFRICA_BOX[0] && x < AFRICA_BOX[2] && y > AFRICA_BOX[1] && y < AFRICA_BOX[3] && !(x > 34 && y > 29) && !(x > 42.5 && y > 11.5);
+};
 const inAmericas = (polys) => {
   let big = null, most = -1;
   for (const p of polys) { const a = polyKm2(p); if (a > most) { most = a; big = p; } }
@@ -262,7 +277,7 @@ const PRECISE_EARLY = new Set(["Roman Empire", "Western Roman Empire", "Eastern 
 // in FIRM; every other border before 1886 is dotted. From 1886 CShapes' borders are solid, except the ones in VAGUE,
 // which stayed unsettled, the claims, and the lines drawn by hand (precision 1). A span's precision on the map:
 // 1 approximate, 2 drawn from a source's general outline, 3 drawn exactly.
-const PRECISE_SRC = new Set(["napoleonic", "caucasus", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
+const PRECISE_SRC = new Set(["napoleonic", "caucasus", "centralasia", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
 const precisionOf = (s) => {
   if (APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity)) return Math.min(1, s.b ?? 2);
   // The frontiers of antiquity held by garrisons and walls or fixed by treaty (PRECISE_EARLY): solid between two such states.
@@ -1429,6 +1444,44 @@ const REGIMES = {
 const REGIME_WIKI = { "United Kingdom": "United Kingdom of Great Britain and Ireland", "Kingdom of Denmark": "Denmark", "Netherlands": "Netherlands" };
 const EUROPE = [-12, 35, 32, 72], AMERICAS = [-170, -60, -30, 75], NEW_ENGLAND = [-90, 24, -60, 50], INDIA = [60, 0, 100, 36], GUIANA = [-62, 0, -50, 10], CARIBBEAN = [-90, 9, -59, 24];
 const NAME_FIX = [
+  // Africa, 1500 to 1885 (the audit of 23 November 2026, "claude/chronia-africa-audit.md" in the project; LEDGER "1500–1885 | Africa").
+  // The western Cape is a piece of the Dutch colonial umbrella carried to 1870 as "Dutch East Indies" beside the British colony (British
+  // from 1806, ceded 1814), and a "Dutch Cape Colony" under the Batavian Republic runs beside the British one during the occupation of
+  // 1795 to 1803.
+  ["Dutch East Indies", "British Cape Colony", 1806, 1885, { box: [10, -40, 35, -20], ruler: "@britain", wiki: "Cape Colony" }],
+  ["Dutch Cape Colony", "", 1796, 1802, { box: [10, -40, 35, -20], drop: 1 }],
+  // Saint-Louis du Sénégal falls in Cliopatria's France and New France: French from 1659, British from 1758 (ceded 1763) to the French
+  // recapture of January 1779, British again from 1809 to the French return of 1817.
+  ...["New France", "Kingdom of France", "French First Republic", "French Directory", "French Consulate", "First French Empire", "Bourbon Kingdom of France"].flatMap((n) => [
+    [n, "French Senegal", 1659, 1757, { box: [-18, 12, -11, 17.5], ruler: "@france", wiki: "French conquest of Senegal" }],
+    [n, "British Senegal", 1758, 1778, { box: [-18, 12, -11, 17.5], ruler: "@britain", wiki: "British capture of Senegal" }],
+    [n, "French Senegal", 1779, 1808, { box: [-18, 12, -11, 17.5], ruler: "@france", wiki: "French conquest of Senegal" }],
+    [n, "British Senegal", 1809, 1816, { box: [-18, 12, -11, 17.5], ruler: "@britain", wiki: "British capture of Senegal" }],
+    [n, "French Senegal", 1817, 1885, { box: [-18, 12, -11, 17.5], ruler: "@france", wiki: "French conquest of Senegal" }]
+  ]),
+  // historical-basemaps' map of 1880 draws states that began in the 1870s and 1880s, and its years reach back to 1848: Rabih's (from
+  // 1879), Ngongo Lutete's Utetera (the 1880s), and Samori's Wassoulou (1878).
+  ["Rabih az-Zubayr", "", 1848, 1878, { drop: 1 }], ["Sultanate of Utetera", "", 1848, 1879, { drop: 1 }], ["Wassoulou Empire", "", 1848, 1877, { drop: 1 }],
+  // The map of 1815 names a shape on the Luba lands and Lake Tanganyika "Rwanda" (the kingdom lay north of 2.9° S).
+  ["Rwanda", "", 1808, 1847, { box: [24, -8, 34, -2.9], drop: 1 }],
+  // The maps of 1783 to 1815 name the Kingdom of Benin "Sotho".
+  ["Sotho", "Kingdom of Benin", 1749, 1847, { box: [2, 3, 10, 10], people: 0, wiki: "Kingdom of Benin" }],
+  // The map of 1715's second "Ethiopia" lies on Dongola and the Nile above the Fourth Cataract, under the Funj.
+  ["Ethiopia", "Funj Sultanate", 1708, 1768, { box: [26, 15, 36, 23], wiki: "Funj Sultanate" }],
+  ["Ethiopian Empire", "Funj Sultanate", 1708, 1768, { box: [26, 15, 36, 23], wiki: "Funj Sultanate" }],
+  // Portugal's African colonies are drawn as "Kingdom of Portugal" from 1824.
+  ["Kingdom of Portugal", "Angola", 1824, 1885, { box: [8, -19, 25, -4], ruler: "@portugal", wiki: "Portuguese Angola" }],
+  ["Kingdom of Portugal", "Mozambique", 1824, 1885, { box: [30, -27, 42, -10], ruler: "@portugal", wiki: "Portuguese Mozambique" }],
+  ["Kingdom of Portugal", "Portuguese Guinea", 1824, 1885, { box: [-17.5, 10, -13, 13.5], ruler: "@portugal", wiki: "Portuguese Guinea" }],
+  // Dependencies as the law had them (Noah, 23 November 2026): Egypt and the regencies of Algiers, Tunis, and Tripoli under the Ottomans;
+  // Dahomey under Oyo from 1730 (Agaja's peace) to Ghezo's victory of 1823; Bagirmi under Bornu from Idris Alooma's conquest.
+  ...["Egypt", "Egypt Eyalet"].map((n) => [n, n, 1517, 1866, { box: [24, 21, 37, 32], ruler: "Ottoman Empire" }]),
+  ["Khedivate of Egypt", "Khedivate of Egypt", 1867, 1881, { ruler: "Ottoman Empire" }],
+  ...["Algiers", "Regency of Algiers"].map((n) => [n, n, 1525, 1830, { ruler: "Ottoman Empire" }]),
+  ...["Tunis", "Beylik of Tunis"].map((n) => [n, n, 1574, 1881, { ruler: "Ottoman Empire" }]),
+  ...["Tripolitania", "Karamanli dynasty", "Karamanli Dynasty", "Cyrenaica"].map((n) => [n, n, 1711, 1835, { ruler: "Ottoman Empire" }]),
+  ["Dahomey", "Dahomey", 1730, 1822, { ruler: "Oyo Empire" }],
+  ["Bagirmi", "Bagirmi", 1580, 1805, { ruler: "Bornu Empire" }],
   // Cliopatria names the Crimea "Blue Horde" from 1445 to 1449, before its Crimean Khanate begins in 1450 (the khanate dates from
   // 1441, as the medieval table draws it to 1444), and the steppe north of the Caucasus "Blue Horde" in 1445, the Golden Horde's in
   // the medieval table to 1444 and in Cliopatria from 1446; the Blue Horde was the Horde's eastern wing in the 14th century.
@@ -1834,8 +1887,8 @@ const NAME_FIX = [
   ["Poles", "Congress Poland", 1815, 1867, { ruler: "Russian Empire" }],
   ["Helvetic Republic", "Swiss Confederation", 1400, 1797],
   ["Helvetic Republic", "Swiss Confederation", 1803, 1885],
-  ["Khedivate of Egypt", "Egypt", 1805, 1866, { wiki: "History of Egypt under the Muhammad Ali dynasty" }],
-  ["Muhammad Ali dynasty", "Egypt", 1805, 1821, { wiki: "History of Egypt under the Muhammad Ali dynasty" }],
+  ["Khedivate of Egypt", "Egypt", 1805, 1866, { ruler: "Ottoman Empire", wiki: "History of Egypt under the Muhammad Ali dynasty" }],
+  ["Muhammad Ali dynasty", "Egypt", 1805, 1821, { ruler: "Ottoman Empire", wiki: "History of Egypt under the Muhammad Ali dynasty" }],
   ["Muhammad Ali dynasty", "Egyptian Sudan", 1822, 1866, { ruler: "Egypt", wiki: "Turkiyya" }],
   ["British Africa", "Khedivate of Egypt", 1882, 1885, { box: [20, 5, 40, 33], ruler: "United Kingdom" }],
   ["Harer (Egypt)", "Emirate of Harar", 1647, 1874, { ruler: "" }],
@@ -2875,7 +2928,7 @@ const cellAt = (p) => Math.max(0, Math.min(RG / 2 - 1, Math.floor((90 - p[1]) * 
     console.log("names: joined touching spans of one state with one name in " + joined + " stretches of years, " + drop.size + " spans to " + add.length);
   }
   dated.forEach((s) => { delete s.cells; });
-  nativeSnaps = snapshots.filter((s) => s.y >= DATED_FROM).map((s) => ({ y: s.y, feats: NATIVE_MAPS.includes(s.y) ? s.feats : [] }));
+  nativeSnaps = snapshots.filter((s) => s.y >= DATED_FROM).map((s) => ({ y: s.y, feats: NATIVE_MAPS.includes(s.y) || AFRICA_MAPS.includes(s.y) ? s.feats : [] }));
   snapshots.length = 0; // nothing reads historical-basemaps' maps after this, but nativeCarry, from nativeSnaps
   console.log("dated spans: " + clioOnly.length + " from Cliopatria, " + fills.length + " filled from historical-basemaps, " + dated.filter((s) => s.small).length + " small territories");
 }
@@ -2978,7 +3031,7 @@ const britishAmerica = (list) => list.flatMap((s) => {
 // opts.whole: the share of a span's cells on the mask's at which it is dropped whole (0.9); opts.keepKm2: a piece left beside the mask
 // at least this large is kept even when it lies mostly within two cells of it (the bridge's edge runs between states, not along a coast).
 const maskOut = (list, mask, FROM, TO, opts = {}) => {
-  const WHOLE = opts.whole ?? 0.9, KEEP_KM2 = opts.keepKm2 ?? Infinity, OFF_CELLS = (opts.offKm2 ?? Infinity) / 772;
+  const WHOLE = opts.whole ?? 0.9, KEEP_KM2 = opts.keepKm2 ?? Infinity, OFF_CELLS = (opts.offKm2 ?? Infinity) / 772, THICK_KM = opts.keepThickKm ?? 0;
   const box = (w, s, e, n) => [[[[w, s], [e, s], [e, n], [w, n], [w, s]]]];
   const mb = boxOf(mask), tiles = [];
   for (let x = Math.floor(mb[0] / 3) * 3; x < mb[2]; x += 3) for (let y = Math.floor(mb[1] / 3) * 3; y < mb[3]; y += 3) {
@@ -3033,7 +3086,7 @@ const maskOut = (list, mask, FROM, TO, opts = {}) => {
   list = list.map((s) => {
     if (!s.tableMasked) return s;
     const inside = s.first >= FROM && s.last <= TO;
-    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p) || km2Of([p]) >= KEEP_KM2) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
+    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p)) return true; const pk = km2Of([p]); if (pk >= KEEP_KM2 && (!THICK_KM || (2 * pk) / ringKm(p[0]) >= THICK_KM)) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
     if (polys.length !== s.polys.length) shorn++;
     const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
     if (out) delete out.tableMasked;
@@ -3124,6 +3177,29 @@ const caucasus = (list) => {
   spans.forEach((t) => { delete t.host; if (!t.dayFrom) delete t.dayFrom; if (!t.dayTo) delete t.dayTo; });
   const { cutSpans, quiet } = tableJoin(list, spans, CAUCASUS_FROM, CAUCASUS_TO, mb);
   console.log("caucasus: " + spans.length + " spans on " + C.units + " pieces of units, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " table spans of the empires with no name of their own, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(cutSpans);
+};
+
+const centralAsia = (list) => {
+  const zonesPath = resolve(here, "central-asia-zones.json");
+  if (!existsSync(zonesPath)) { console.log("centralasia: no tools/central-asia-zones.json, so Central Asia keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const topo = JSON.parse(readFileSync(zonesPath, "utf8"));
+  const notes = [];
+  const C = buildCentralAsia({ topo, client, rewind, polysOf, log: (m) => notes.push(m) });
+  notes.forEach((m) => console.log("centralasia: " + m));
+  const { list: cut, mb, dropped, cuts, shorn } = maskOut(list, C.mask, CA_FROM, CA_TO, { offKm2: CA_OFF_KM2, keepKm2: CA_KEEP_KM2, keepThickKm: CA_KEEP_THICK_KM });
+  list = cut;
+  const spans = C.spans.map(({ host, from, to, ...s }) => withBox({ ...s, src: "centralasia", host }));
+  let hosted = 0;
+  for (const t of spans) {
+    if (!t.host || t.noLabel) continue;
+    const size = cellSum(t.cells);
+    if (list.some((s) => s.name === t.name && s.first <= t.last && t.first <= s.last && cellSum(s.cells || cellsOf(s.polys)) > size)) { t.noLabel = true; hosted++; }
+  }
+  spans.forEach((t) => { delete t.host; if (!t.dayFrom) delete t.dayFrom; if (!t.dayTo) delete t.dayTo; });
+  const { cutSpans, quiet } = tableJoin(list, spans, CA_FROM, CA_TO, mb);
+  console.log("centralasia: " + spans.length + " spans on " + C.zones + " zones in " + C.rows + " rows, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " pieces of larger states unlabelled, " + Math.round((Date.now() - t0) / 1000) + " s");
   return list.concat(cutSpans);
 };
 
@@ -3755,40 +3831,109 @@ const stages = (list) => {
 // people carried the same way (the latest map goes first, so the later source wins). Of two peoples of one map the larger keeps the land
 // they share, as resolveOverlaps has it. A people most of whose land later maps' peoples hold is left out (DISPLACED). The blankets
 // (BLANKETS: "Amazon hunter-gatherers") then keep only the land no named people holds.
-function nativeCarry(list) {
+// historical-basemaps draws the peoples across rivers and bays, while the colonies' and states' shapes that are cut from them
+// follow the coast, so what a people kept could be water: Werowocomoco kept a strip of the York River from 1607 to 1885, which the
+// page drew as a pale patch and a stretch of shore with no border of the United States. A piece of a carried shape is kept only
+// if at least ON_LAND of it is land, by points sampled on a grid across it and tested against Natural Earth's states and provinces
+// (wetPiece, memoised by piece, since a span's pieces in time share them).
+const ON_LAND = 0.5;
+let neGrid = null;
+const neLandGrid = () => {
+  if (neGrid) return neGrid;
+  neGrid = new Map();
+  for (const f of neAll) {
+    const polys = polysOf(f.geometry);
+    if (!polys.length) continue;
+    const b = boxOf(polys);
+    const u = { polys, box: b };
+    for (let x = Math.floor(b[0]); x <= Math.floor(b[2]); x++) for (let y = Math.floor(b[1]); y <= Math.floor(b[3]); y++) {
+      const k = x + "," + y;
+      if (!neGrid.has(k)) neGrid.set(k, []);
+      neGrid.get(k).push(u);
+    }
+  }
+  return neGrid;
+};
+const wetRingHas = (x, y, ring) => {
+  let c = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+};
+const wetPolyHas = (x, y, poly) => wetRingHas(x, y, poly[0]) && !poly.slice(1).some((h) => wetRingHas(x, y, h));
+const onNeLand = (x, y) => (neLandGrid().get(Math.floor(x) + "," + Math.floor(y)) || []).some((u) => x >= u.box[0] && x <= u.box[2] && y >= u.box[1] && y <= u.box[3] && u.polys.some((q) => wetPolyHas(x, y, q)));
+const wetMemo = new WeakMap();
+let wetCount = 0;
+const wetPiece = (p) => {
+  if (wetMemo.has(p)) return wetMemo.get(p);
+  const b = boxOf([p]);
+  let inside = 0, dry = 0;
+  for (const n of [12, 40]) {
+    inside = 0; dry = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const x = b[0] + ((i + 0.5) / n) * (b[2] - b[0]), y = b[1] + ((j + 0.5) / n) * (b[3] - b[1]);
+      if (!wetPolyHas(x, y, p)) continue;
+      inside++;
+      if (onNeLand(x, y)) dry++;
+    }
+    if (inside >= 8) break;
+  }
+  const wet = !inside || dry < ON_LAND * inside;
+  if (wet) wetCount++;
+  wetMemo.set(p, wet);
+  return wet;
+};
+function peopleCarry(list, cfg) {
+  const { region, inRegion, first: carryFrom, maps: carryMaps, blankets: BL, notYet: NY, label, recast = {}, skip = () => false } = cfg;
   const hbSnaps = nativeSnaps;
-  if (!hbSnaps.some((s) => s.y === NATIVE_CARRY[0])) throw new Error("nativeCarry: no map of " + NATIVE_CARRY[0]);
+  if (!hbSnaps.some((s) => s.y === carryFrom)) throw new Error("peopleCarry: no map of " + carryFrom);
   const winLast = (k) => (k + 1 < hbSnaps.length ? Math.ceil((hbSnaps[k].y + hbSnaps[k + 1].y) / 2) - 1 : DATED_TO);
-  const start = winLast(hbSnaps.findIndex((s) => s.y === NATIVE_CARRY[0])) + 1;
-  const isBlanket = (f) => f.people && BLANKETS.test(f.name) && f.first >= start && inAmericas(f.polys);
+  const start = winLast(hbSnaps.findIndex((s) => s.y === carryFrom)) + 1;
+  const isBlanket = (f) => f.people && BL.test(f.name) && f.first >= start && inRegion(f.polys);
   const blankets = list.filter(isBlanket), rest = list.filter((f) => !isBlanket(f));
   // The spans the peoples give way to, each with its own number: a span cut in time keeps its uid, which cutOver's memo goes by.
   // Spans with one shape (a span's pieces in time) share a number, so the memo serves them all.
   let n = 0;
   const shapeNo = new Map(), noOf = (polys) => { if (!shapeNo.has(polys)) shapeNo.set(polys, n++); return shapeNo.get(polys); };
   const wrap = (f) => ({ uid: noOf(f.polys), name: f.name, people: f.people, first: f.first, last: f.last, polys: f.polys, box: boxOf(f.polys), cells: cellsOf(f.polys) });
-  const pool = rest.filter((f) => f.last >= start && f.first <= DATED_TO && f.polys.length && (f.box || boxOf(f.polys))[0] < AMERICAS[2]).map(wrap);
+  const pool = rest.filter((f) => f.last >= start && f.first <= DATED_TO && f.polys.length && boxHit(f.box || boxOf(f.polys), region)).map(wrap);
   const carried = [];
   let out = 0;
-  const maps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => NATIVE_MAPS.includes(s.y)).reverse();
+  const maps = hbSnaps.map((s, k) => ({ s, k })).filter(({ s }) => carryMaps.includes(s.y)).reverse();
   for (const { s, k } of maps) {
     const first = winLast(k) + 1, feats = [], mine = [], mineW = [];
     for (const f of s.feats) {
       const p = f.properties;
-      if (!p.name || BLANKETS.test(p.name) || NOT_YET.test(p.name)) continue;
-      const polys = rewind(polysOf(f.geometry)), whole = km2Of(polys), box = boxOf(polys);
-      if (whole > 0 && inAmericas(polys) && isPeople(p.name, p.ruler, s.y, [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2])) feats.push({ p, polys, whole, box });
+      if (!p.name || BL.test(p.name) || NY.test(p.name)) continue;
+      const all = rewind(polysOf(f.geometry));
+      if (!inRegion(all)) continue;
+      const allBox = boxOf(all);
+      if (skip(p.name, allBox) || !isPeople(p.name, p.ruler, s.y, [(allBox[0] + allBox[2]) / 2, (allBox[1] + allBox[3]) / 2])) continue;
+      const parts = [[p, all]];
+      for (const [n, b, to] of recast[s.y] || []) {
+        if (n !== p.name) continue;
+        const inside = clipRect(all, b), outside = all.length ? rewind(clip.difference(all, ...inside.map((q) => [q]))) : [];
+        parts.length = 0;
+        if (outside.length) parts.push([p, outside]);
+        if (to && inside.length) parts.push([{ ...p, name: to }, inside]);
+      }
+      for (const [q, polys] of parts) { const whole = km2Of(polys); if (whole > 0) feats.push({ p: q, polys, whole, box: boxOf(polys) }); }
     }
     feats.sort((a, b) => b.whole - a.whole);
     const later = pool.filter((c) => c.people);
     for (const { p, polys, whole, box } of feats) {
       const width = widthOf(polys), opt = cellOpt(polys);
       const near = later.filter((c) => c.last >= first && boxHit(c.box, box) && meets(opt.cells, c.cells));
-      // Only the spans on the people's own cells are cut from it (all in its box, for a people too small for a cell): a neighbour's changes
-      // would cut it in time for nothing.
-      const cands = pool.concat(mineW).filter((c) => c.last >= first && boxHit(c.box, box) && (!opt.cells.size || !c.cells.size || meets(opt.cells, c.cells)));
+      // Only the spans on or beside the people's own cells are cut from it (all in its box, for a people too small for a cell): a neighbour's
+      // changes would cut it in time for nothing.
+      // The people's cells are widened by one around (as cutOver does): a small people's one cell can have its centre in a bay, outside
+      // every state's cells, and the colony or state on its land was then never cut from it (Werowocomoco, inside Virginia from 1607).
+      const wide = opt.cells.size ? dilate(opt.cells) : null;
+      const cands = pool.concat(mineW).filter((c) => c.last >= first && boxHit(c.box, box) && (!wide || !c.cells.size || meets(wide, c.cells)));
       for (const r of cutOver(polys, box, first, DATED_TO, cands)) {
-        const kept = keepRemnant(r.polys, whole, 1, width);
+        const kept = keepRemnant(r.polys.filter((q) => !wetPiece(q)), whole, 1, width);
         if (!kept.length) continue;
         let held = 0;
         const act = near.filter((c) => c.first <= r.first && r.first <= c.last);
@@ -3801,7 +3946,7 @@ function nativeCarry(list) {
     }
     carried.push(...mine);
     pool.push(...mineW);
-    console.log("the Americas' peoples of " + s.y + " carried from " + first + ": " + mine.length + " spans of " + feats.length + " peoples, " + Math.round(process.uptime()) + " s");
+    console.log(label + " peoples of " + s.y + " carried from " + first + ": " + mine.length + " spans of " + feats.length + " peoples, " + Math.round(process.uptime()) + " s");
   }
   const left = [], over = carried.map(wrap);
   for (const b of blankets) {
@@ -3811,10 +3956,12 @@ function nativeCarry(list) {
       if (kept.length) left.push(withBox({ ...b, first: r.first, last: r.last, polys: kept, geoHash: undefined }));
     }
   }
-  console.log("the Americas' peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
+  console.log(label + " peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced, " + wetCount + " pieces left out as water so far; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
   return rest.concat(left, carried);
 }
-dated = fillSmallGaps(resolveOverlaps(australia(caucasus(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(southAsia(colonies(redraw1886(italy(stages(dated))))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
+const nativeCarry = (list) => peopleCarry(list, { region: AMERICAS, inRegion: inAmericas, first: NATIVE_CARRY[0], maps: NATIVE_MAPS, blankets: BLANKETS, notYet: NOT_YET, label: "the Americas'" });
+const africaCarry = (list) => peopleCarry(list, { region: AFRICA_BOX, inRegion: inAfrica, first: AFRICA_FROM, maps: AFRICA_MAPS, blankets: /^$/, notYet: /^$/, label: "Africa's", recast: AFRICA_RECAST, skip: (name, box) => name === "Sotho" && box[3] > 0 });
+dated = fillSmallGaps(resolveOverlaps(australia(centralAsia(caucasus(napoleonic(medieval(africaCarry(nativeCarry(britishAmerica(canada(northAmerica(southAsia(colonies(redraw1886(italy(stages(dated))))))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -3918,7 +4065,7 @@ function snapTo1886(list) {
   };
   const owners = [];
   for (const s of list) {
-    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "caucasus" || s.src === "australia") continue;
+    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "caucasus" || s.src === "centralasia" || s.src === "australia") continue;
     const got = gainOf(s);
     let gain = got.gain;
     if (!gain.length) continue;
@@ -3951,7 +4098,7 @@ function snapTo1886(list) {
     for (const j of order) {
       const t = list[j];
       if (t.box[0] > g.box[2]) break;
-      if (mine.has(t) || t.src === "napoleonic" || t.src === "caucasus" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
+      if (mine.has(t) || t.src === "napoleonic" || t.src === "caucasus" || t.src === "centralasia" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
       const near = g.gain.filter((q) => boxHit(boxOf([q]), t.box));
       if (!near.length) continue;
       const nb = boxOf(near), local = clipRect(snapOf(t), [nb[0] - 0.05, nb[1] - 0.05, nb[2] + 0.05, nb[3] + 0.05]);
@@ -4019,8 +4166,8 @@ const BACKDATE = [
   ["Congo Free State", 1885, "Kingdom of Belgium", 5], ["Mahdist State", 1885, "", 0], ["Kamerun", 1885, "German Empire", 1], ["South West Africa", 1885, "German Empire", 1],
   ["German New Guinea", 1885, "German Empire", 1], ["British Somaliland", 1885, "United Kingdom", 1], ["Bechuanaland", 1885, "United Kingdom", 2],
   ["British Bechuanaland", 1885, "United Kingdom", 1], ["Spanish West Africa", 1885, "Kingdom of Spain", 2], ["Eritrea", 1885, "Kingdom of Italy", 1],
-  ["Oil Rivers Protectorate", 1885, "United Kingdom", 2], ["French Congo", 1885, "French Third Republic", 1], ["Gabon", 1885, "French Third Republic", 1], ["Tunisia", 1881, "French Third Republic", 2], ["Bukhara", 1873, "Russian Empire", 2, ["Emirate of Bukhara"], "Russian Empire"],
-  ["Khiva", 1873, "Russian Empire", 2, ["Khanate of Khiva"], "Russian Empire"], ["Cambodia", 1871, "French Third Republic", 1], ["Oman", 1861, "", 0, ["Sultanate of Oman"]],
+  ["Oil Rivers Protectorate", 1885, "United Kingdom", 2], ["French Congo", 1885, "French Third Republic", 1], ["Gabon", 1885, "French Third Republic", 1], ["Tunisia", 1881, "French Third Republic", 2],
+  ["Cambodia", 1871, "French Third Republic", 1], ["Oman", 1861, "", 0, ["Sultanate of Oman"]],
   ["Emirate of Nejd", 1871, "", 0, ["Emirate of Nejd"]], ["Emirate of Afghanistan", 1881, "", 0, ["Emirate of Afghanistan"]]
 ];
 const backdate = (list) => {
@@ -4773,7 +4920,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
       return { i, first: s.first, last: s.last, names: [s.name0 || s.name].concat(s.also || []), polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
-        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" || s.src === "caucasus" };
+        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" || s.src === "caucasus" || s.src === "centralasia" };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
     dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);

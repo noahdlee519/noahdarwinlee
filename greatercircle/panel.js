@@ -27,6 +27,7 @@
       return pt.label.replace(/\s*\([A-Z0-9]{3,4}\)/, "").split(",")[0].replace(/ (International )?Airport$/, "");
     }
     function endName(slot) { var pt = state[slot]; return codeOf(pt, null) || shortName(pt) || slot.toUpperCase(); }
+    function windMonth() { return state.windMonth != null ? state.windMonth : new Date().getMonth(); }
     var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     function tabCoords(tab) {
       var res = state.result;
@@ -39,7 +40,7 @@
       var c = tabCoords(tab);
       if (!c) return null;
       if (reverse) c = c.slice().reverse();
-      return window.GreatCircle.flightHours(c, { wind: !!state.wind, month: new Date().getMonth() });
+      return window.GreatCircle.flightHours(c, { wind: !!state.wind, month: windMonth() });
     }
     function hours(km) { return hoursText(km / 850 + 0.5); }
     function hoursText(h) {
@@ -245,7 +246,7 @@
       showBig(bigKm, big); setText(ui.time, time); setText(ui.delta, delta); setText(ui.note, note);
       var windEl = $("hero-wind"), back = time && state.wind ? timeFor(tab, true) : null;
       windEl.hidden = back == null;
-      if (back != null) setText(windEl, endName("b") + " to " + endName("a") + " " + hoursText(back).text + ", with typical " + MONTHS[new Date().getMonth()] + " winds");
+      if (back != null) setText(windEl, endName("b") + " to " + endName("a") + " " + hoursText(back).text + ", with typical " + MONTHS[windMonth()] + " winds");
       ui.delta.hidden = !delta; ui.note.hidden = !note; ui.time.hidden = !time;
       if (tab === "plan") renderPlan();
       renderCrosses(tab);
@@ -445,7 +446,7 @@
         text = state.plan && state.plan.status === "pending" ? "Flight plan: finding radio beacons along the way." : (ui.warn.querySelector(".gc-warn-text") || {}).textContent || "";
       } else if (res.status === "done") {
         var km = tabKm(t);
-        text = (t === "avoid" ? "Avoiding " + avoidLabel() + ": " : t === "plan" ? "Flight plan: " : "Direct: ") + fmt(km) + ", " + hoursText(timeFor(t)).spoken + (state.wind ? " with typical winds" : "") + ".";
+        text = (t === "avoid" ? "Avoiding " + avoidLabel() + ": " : t === "plan" ? "Flight plan: " : "Direct: ") + fmt(km) + ", " + hoursText(timeFor(t)).spoken + (state.wind ? " with typical " + MONTHS[windMonth()] + " winds" : "") + ".";
         if (t === "avoid") text += " " + fmt(res.lengthKm - res.directKm) + " longer than direct.";
       } else text = (ui.warn.querySelector(".gc-warn-text") || {}).textContent || "";
       ui.status.textContent = "";
@@ -483,12 +484,20 @@
       });
     });
     document.querySelectorAll("input[name=wind]").forEach(function (r) {
-      r.addEventListener("change", function () { state.wind = r.value === "1"; renderPanel(); writeUrl(); });
+      r.addEventListener("change", function () { state.wind = r.value === "1"; renderOptionChips(); renderPanel(); writeUrl(); });
+    });
+    document.querySelectorAll("input[name=wind-month]").forEach(function (r) {
+      r.addEventListener("change", function () {
+        var m = +r.value;
+        state.windMonth = m === new Date().getMonth() ? null : m;
+        renderOptionChips(); renderPanel(); writeUrl();
+      });
     });
     function renderOptionChips() {
       document.querySelectorAll("input[name=wind]").forEach(function (r) { r.checked = (r.value === "1") === !!state.wind; });
-      var mo = MONTHS[new Date().getMonth()];
-      setText($("wind-month"), "Typical for " + mo);
+      var wm = String(windMonth());
+      $("wind-months").hidden = !state.wind;
+      document.querySelectorAll("input[name=wind-month]").forEach(function (r) { r.checked = r.value === wm; });
       document.querySelectorAll(".gc-closure").forEach(function (b) {
         var ids = b.dataset.ids.split(",");
         b.setAttribute("aria-pressed", String(ids.every(function (id) { return state.avoid.has(id); })));
