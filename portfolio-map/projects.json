@@ -407,16 +407,22 @@
         "caption": "Seoul to Warsaw, around Russia, Ukraine, North Korea, and Belarus"
       },
       {
+        "video": "/art/web/materials/shots/greatercircle-video.mp4",
+        "poster": "/art/web/materials/shots/greatercircle-video-poster.webp",
+        "alt": "GREATERCIRCLE in 25 seconds: the great circle, the way round, and the flight plan",
+        "caption": "GREATERCIRCLE in 25 seconds: the great circle, the way round, and the flight plan"
+      },
+      {
         "src": "/art/web/materials/shots/greatercircle-2-800.webp",
         "srcset": "/art/web/materials/shots/greatercircle-2-800.webp 800w, /art/web/materials/shots/greatercircle-2-1600.webp 1600w",
-        "alt": "The globe in the light theme",
-        "caption": "The globe in the light theme"
+        "alt": "The empty globe in the orange theme, with three routes to try",
+        "caption": "The empty globe in the orange theme, with three routes to try"
       },
       {
         "src": "/art/web/materials/shots/greatercircle-3-800.webp",
         "srcset": "/art/web/materials/shots/greatercircle-3-800.webp 800w, /art/web/materials/shots/greatercircle-3-1600.webp 1600w",
-        "alt": "Dubai to Baku, around Iran",
-        "caption": "Dubai to Baku, around Iran"
+        "alt": "Dubai to Baku, around Iran, as a flight plan of radio beacons",
+        "caption": "Dubai to Baku, around Iran, as a flight plan of radio beacons"
       },
       {
         "src": "/art/web/materials/shots/greatercircle-4-800.webp",
