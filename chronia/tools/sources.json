@@ -12,6 +12,7 @@
     "istat": { "label": "ISTAT, the comuni of Italy (through openpolis’s geojson-italy)", "kind": "official", "url": "https://github.com/openpolis/geojson-italy", "licence": "CC BY 4.0" },
     "pleiades": { "label": "Pleiades", "kind": "dataset", "url": "https://pleiades.stoa.org", "licence": "CC BY 3.0" },
     "awmc": { "label": "Ancient World Mapping Center, regional names", "kind": "dataset", "url": "https://github.com/AWMC/geodata", "licence": "ODbL" },
+    "geoboundaries": { "label": "geoBoundaries, second-level districts (gbOpen)", "kind": "dataset", "url": "https://www.geoboundaries.org", "licence": "CC BY 3.0 IGO (Uzbekistan), ODbL 1.0 (Tajikistan), CC BY-SA 3.0 (Turkmenistan, Kyrgyzstan)" },
     "editors": { "label": "Editors’ discretion", "kind": "editors" }
   },
   "borders": {
@@ -26,6 +27,7 @@
     "early": { "text": "Editors’ discretion: an approximate extent built from Natural Earth units", "ids": ["editors", "ne"] },
     "medieval": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
     "caucasus": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
+    "centralasia": { "text": "Natural Earth units, with geoBoundaries’ districts for Uzbekistan, Tajikistan, Turkmenistan, and Kyrgyzstan, assembled by the editors", "ids": ["units", "geoboundaries", "editors"] },
     "napoleonic": { "text": "Natural Earth and national mapping agencies’ units, assembled by the editors", "ids": ["units", "editors"] },
     "colony": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },
     "australia": { "text": "Natural Earth units, assembled by the editors", "ids": ["ne", "editors"] },

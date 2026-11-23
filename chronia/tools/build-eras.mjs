@@ -15,6 +15,7 @@ import { buildMedieval, MEDIEVAL_FROM, MEDIEVAL_TO, EXT_FROM, BRIDGE_TO } from "
 import { makeSoften } from "./soften.mjs";
 import { TAGS, tagsJSON } from "./country-tags.mjs";
 import { buildCaucasus, CAUCASUS_FROM, CAUCASUS_TO } from "./caucasus.mjs";
+import { buildCentralAsia, CA_FROM, CA_TO, CA_OFF_KM2, CA_KEEP_KM2, CA_KEEP_THICK_KM } from "./central-asia.mjs";
 import { buildAustralia, COLONIES as AUS_COLONIES, AUSTRALIA_FROM, AUSTRALIA_TO, AUSTRALIA_BOX, AUSTRALIA_OLD } from "./australia.mjs";
 import { buildItaly, ITALY_FROM, ITALY_TO, LATIN_LEAGUE, LEAGUE_FROM, LEAGUE_TO } from "./italy-early.mjs";
 import { buildSouthAsia, SA_FROM, SA_TO, SA_OFF_KM2, MARATHA, MARATHA_FROM, MARATHA_TO } from "./south-asia.mjs";
@@ -262,7 +263,7 @@ const PRECISE_EARLY = new Set(["Roman Empire", "Western Roman Empire", "Eastern 
 // in FIRM; every other border before 1886 is dotted. From 1886 CShapes' borders are solid, except the ones in VAGUE,
 // which stayed unsettled, the claims, and the lines drawn by hand (precision 1). A span's precision on the map:
 // 1 approximate, 2 drawn from a source's general outline, 3 drawn exactly.
-const PRECISE_SRC = new Set(["napoleonic", "caucasus", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
+const PRECISE_SRC = new Set(["napoleonic", "caucasus", "centralasia", "colony", "australia", "acq", "nrcan", "small", "dispute", "redraw"]);
 const precisionOf = (s) => {
   if (APPROX.has(s.name) || s.first <= (APPROX_EARLY.get(s.name) ?? -Infinity)) return Math.min(1, s.b ?? 2);
   // The frontiers of antiquity held by garrisons and walls or fixed by treaty (PRECISE_EARLY): solid between two such states.
@@ -2978,7 +2979,7 @@ const britishAmerica = (list) => list.flatMap((s) => {
 // opts.whole: the share of a span's cells on the mask's at which it is dropped whole (0.9); opts.keepKm2: a piece left beside the mask
 // at least this large is kept even when it lies mostly within two cells of it (the bridge's edge runs between states, not along a coast).
 const maskOut = (list, mask, FROM, TO, opts = {}) => {
-  const WHOLE = opts.whole ?? 0.9, KEEP_KM2 = opts.keepKm2 ?? Infinity, OFF_CELLS = (opts.offKm2 ?? Infinity) / 772;
+  const WHOLE = opts.whole ?? 0.9, KEEP_KM2 = opts.keepKm2 ?? Infinity, OFF_CELLS = (opts.offKm2 ?? Infinity) / 772, THICK_KM = opts.keepThickKm ?? 0;
   const box = (w, s, e, n) => [[[[w, s], [e, s], [e, n], [w, n], [w, s]]]];
   const mb = boxOf(mask), tiles = [];
   for (let x = Math.floor(mb[0] / 3) * 3; x < mb[2]; x += 3) for (let y = Math.floor(mb[1] / 3) * 3; y < mb[3]; y += 3) {
@@ -3033,7 +3034,7 @@ const maskOut = (list, mask, FROM, TO, opts = {}) => {
   list = list.map((s) => {
     if (!s.tableMasked) return s;
     const inside = s.first >= FROM && s.last <= TO;
-    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p) || km2Of([p]) >= KEEP_KM2) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
+    const polys = inside ? s.polys.filter((p) => { if (!touchesMask(p)) return true; const pk = km2Of([p]); if (pk >= KEEP_KM2 && (!THICK_KM || (2 * pk) / ringKm(p[0]) >= THICK_KM)) return true; const cs = cellsOf([p]); if (!cs.size) return !near.has(cellAt(p[0][0])); let n = 0; for (const c of cs) if (near.has(c)) n++; return n <= 0.5 * cs.size; }) : s.polys;
     if (polys.length !== s.polys.length) shorn++;
     const out = polys.length === s.polys.length ? { ...s } : polys.length ? withBox({ ...s, polys, geoHash: undefined }) : null;
     if (out) delete out.tableMasked;
@@ -3124,6 +3125,29 @@ const caucasus = (list) => {
   spans.forEach((t) => { delete t.host; if (!t.dayFrom) delete t.dayFrom; if (!t.dayTo) delete t.dayTo; });
   const { cutSpans, quiet } = tableJoin(list, spans, CAUCASUS_FROM, CAUCASUS_TO, mb);
   console.log("caucasus: " + spans.length + " spans on " + C.units + " pieces of units, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " table spans of the empires with no name of their own, " + Math.round((Date.now() - t0) / 1000) + " s");
+  return list.concat(cutSpans);
+};
+
+const centralAsia = (list) => {
+  const zonesPath = resolve(here, "central-asia-zones.json");
+  if (!existsSync(zonesPath)) { console.log("centralasia: no tools/central-asia-zones.json, so Central Asia keeps its source shapes"); return list; }
+  const t0 = Date.now();
+  const topo = JSON.parse(readFileSync(zonesPath, "utf8"));
+  const notes = [];
+  const C = buildCentralAsia({ topo, client, rewind, polysOf, log: (m) => notes.push(m) });
+  notes.forEach((m) => console.log("centralasia: " + m));
+  const { list: cut, mb, dropped, cuts, shorn } = maskOut(list, C.mask, CA_FROM, CA_TO, { offKm2: CA_OFF_KM2, keepKm2: CA_KEEP_KM2, keepThickKm: CA_KEEP_THICK_KM });
+  list = cut;
+  const spans = C.spans.map(({ host, from, to, ...s }) => withBox({ ...s, src: "centralasia", host }));
+  let hosted = 0;
+  for (const t of spans) {
+    if (!t.host || t.noLabel) continue;
+    const size = cellSum(t.cells);
+    if (list.some((s) => s.name === t.name && s.first <= t.last && t.first <= s.last && cellSum(s.cells || cellsOf(s.polys)) > size)) { t.noLabel = true; hosted++; }
+  }
+  spans.forEach((t) => { delete t.host; if (!t.dayFrom) delete t.dayFrom; if (!t.dayTo) delete t.dayTo; });
+  const { cutSpans, quiet } = tableJoin(list, spans, CA_FROM, CA_TO, mb);
+  console.log("centralasia: " + spans.length + " spans on " + C.zones + " zones in " + C.rows + " rows, " + cuts + " cuts, " + dropped + " spans dropped whole, " + shorn + " spans cleared of pieces on its land, " + quiet + " source spans left with no name beside the table's, " + hosted + " pieces of larger states unlabelled, " + Math.round((Date.now() - t0) / 1000) + " s");
   return list.concat(cutSpans);
 };
 
@@ -3814,7 +3838,7 @@ function nativeCarry(list) {
   console.log("the Americas' peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
   return rest.concat(left, carried);
 }
-dated = fillSmallGaps(resolveOverlaps(australia(caucasus(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(southAsia(colonies(redraw1886(italy(stages(dated))))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
+dated = fillSmallGaps(resolveOverlaps(australia(centralAsia(caucasus(napoleonic(medieval(nativeCarry(britishAmerica(canada(northAmerica(southAsia(colonies(redraw1886(italy(stages(dated)))))))))))))), "from " + DATED_FROM + " to " + DATED_TO));
 const NE_ADMIN = { "Aland": "Finland", "Bosnia and Herzegovina": "Bosnia-Herzegovina", "Democratic Republic of the Congo": "DR Congo", "Republic of the Congo": "Congo", "Guinea Bissau": "Guinea-Bissau", "Hong Kong S.A.R.": "Hong Kong", "Macau S.A.R": "Macau", "The Bahamas": "Bahamas", "United Republic of Tanzania": "Tanzania", "United States of America": "United States", "S. Sudan": "South Sudan", "Ivory Coast": "Côte d'Ivoire" };
 {
   const detailPath = provincesPath.replace(/provinces\.json$/, "provinces-detail.json");
@@ -3918,7 +3942,7 @@ function snapTo1886(list) {
   };
   const owners = [];
   for (const s of list) {
-    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "caucasus" || s.src === "australia") continue;
+    if (s.claims || s.people || s.small || s.last < SNAP_FROM || s.src === "napoleonic" || s.src === "caucasus" || s.src === "centralasia" || s.src === "australia") continue;
     const got = gainOf(s);
     let gain = got.gain;
     if (!gain.length) continue;
@@ -3951,7 +3975,7 @@ function snapTo1886(list) {
     for (const j of order) {
       const t = list[j];
       if (t.box[0] > g.box[2]) break;
-      if (mine.has(t) || t.src === "napoleonic" || t.src === "caucasus" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
+      if (mine.has(t) || t.src === "napoleonic" || t.src === "caucasus" || t.src === "centralasia" || t.src === "australia" || t.last < g.first || g.last < t.first || !boxHit(t.box, g.box)) continue;
       const near = g.gain.filter((q) => boxHit(boxOf([q]), t.box));
       if (!near.length) continue;
       const nb = boxOf(near), local = clipRect(snapOf(t), [nb[0] - 0.05, nb[1] - 0.05, nb[2] + 0.05, nb[3] + 0.05]);
@@ -4019,8 +4043,8 @@ const BACKDATE = [
   ["Congo Free State", 1885, "Kingdom of Belgium", 5], ["Mahdist State", 1885, "", 0], ["Kamerun", 1885, "German Empire", 1], ["South West Africa", 1885, "German Empire", 1],
   ["German New Guinea", 1885, "German Empire", 1], ["British Somaliland", 1885, "United Kingdom", 1], ["Bechuanaland", 1885, "United Kingdom", 2],
   ["British Bechuanaland", 1885, "United Kingdom", 1], ["Spanish West Africa", 1885, "Kingdom of Spain", 2], ["Eritrea", 1885, "Kingdom of Italy", 1],
-  ["Oil Rivers Protectorate", 1885, "United Kingdom", 2], ["French Congo", 1885, "French Third Republic", 1], ["Gabon", 1885, "French Third Republic", 1], ["Tunisia", 1881, "French Third Republic", 2], ["Bukhara", 1873, "Russian Empire", 2, ["Emirate of Bukhara"], "Russian Empire"],
-  ["Khiva", 1873, "Russian Empire", 2, ["Khanate of Khiva"], "Russian Empire"], ["Cambodia", 1871, "French Third Republic", 1], ["Oman", 1861, "", 0, ["Sultanate of Oman"]],
+  ["Oil Rivers Protectorate", 1885, "United Kingdom", 2], ["French Congo", 1885, "French Third Republic", 1], ["Gabon", 1885, "French Third Republic", 1], ["Tunisia", 1881, "French Third Republic", 2],
+  ["Cambodia", 1871, "French Third Republic", 1], ["Oman", 1861, "", 0, ["Sultanate of Oman"]],
   ["Emirate of Nejd", 1871, "", 0, ["Emirate of Nejd"]], ["Emirate of Afghanistan", 1881, "", 0, ["Emirate of Afghanistan"]]
 ];
 const backdate = (list) => {
@@ -4773,7 +4797,7 @@ for (let n = 0; n < CHUNK_STARTS.length; n++) {
     const geo = spans.map((s, i) => {
       const g = client.feature(hi, hi.objects.p.geometries[i]).geometry;
       return { i, first: s.first, last: s.last, names: [s.name0 || s.name].concat(s.also || []), polys: !g ? [] : g.type === "Polygon" ? [g.coordinates] : g.coordinates,
-        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" || s.src === "caucasus" };
+        fixFrom: s.dayFrom && s.dayFrom[0] === s.first ? s.dayFrom[1] : undefined, fixTo: s.dayTo && s.dayTo[0] === s.last ? s.dayTo[1] : undefined, quiet: s.src === "napoleonic" || s.src === "caucasus" || s.src === "centralasia" };
     });
     const res = dateChanges(geo, JSON.parse(readFileSync(daysPath)).changes, clip, (m) => console.log(m));
     dayRows = geo.filter((s) => s.dayFrom !== undefined || s.dayTo !== undefined).map((s) => [s.i, s.dayFrom ?? null, s.dayTo ?? null]);
