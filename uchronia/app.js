@@ -5969,6 +5969,7 @@
     m.addEventListener("toggle", function () {
       if (!m.open) return;
       if (!sheetMode) closeMenus(m);
+      placeMenu(m);
       if (!$("history").hidden) showHistory(false);
     });
   });
@@ -6039,6 +6040,7 @@
     if (sheetMode || ui.bare) return;
     document.documentElement.style.setProperty("--uc-bar-h", (bar.offsetTop + bar.offsetHeight) + "px");
     if (!$("history").hidden) placeDrops();
+    menus.forEach(function (m) { if (m.open) placeMenu(m); });
     var h = barBase();
     if (h !== freeT) { freeT = h; applyView(); scheduleRender(); }
   }).observe(bar);
@@ -7514,11 +7516,23 @@
       ul.appendChild(li);
     });
   }
+  function dropRoom() {
+    var c = document.querySelector(".uc-controls"), r = c && c.getBoundingClientRect();
+    return r && r.width ? Math.round(document.documentElement.clientWidth - r.left + 8) : 0;
+  }
   function placeDrops() {
     if (sheetMode || ui.bare) return;
     var r = panel.querySelector(".uc-end").getBoundingClientRect(), root = document.documentElement.style;
     root.setProperty("--uc-drop-top", Math.round(r.bottom + 10) + "px");
-    root.setProperty("--uc-drop-right", Math.round(document.documentElement.clientWidth - r.right - 8) + "px");
+    root.setProperty("--uc-drop-right", Math.max(Math.round(document.documentElement.clientWidth - r.right - 8), dropRoom()) + "px");
+  }
+  function placeMenu(m) {
+    var list = m.querySelector(".uc-menu-list");
+    if (!list) return;
+    list.style.right = "";
+    if (sheetMode || ui.bare) return;
+    var over = list.getBoundingClientRect().right - (document.documentElement.clientWidth - dropRoom());
+    if (over > 0) list.style.right = (parseFloat(getComputedStyle(list).right) + over) + "px";
   }
   function showHistory(open) {
     if (open) placeDrops();

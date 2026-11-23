@@ -2453,9 +2453,6 @@ a.uc-menu-item {
   .uc-bar.bar-c .uc-end {
     justify-self: start;
   }
-  body.is-history .uc-controls {
-    right: calc(var(--uc-drop-right, 62px) + min(430px, calc(100vw - 94px)) + 10px);
-  }
 }
 @media (max-width: 640px) {
   .uc-bar,

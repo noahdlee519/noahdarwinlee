@@ -637,9 +637,12 @@ it there). Built on the bones of `/greatercircle/`.
   buttons and 8 px past its right end, under View: the menus are placed
   against that group rather than their own buttons, and the panel takes the
   same corner from `placeDrops` (the `--uc-drop-top` and `--uc-drop-right`
-  properties) when it opens and whenever the bar changes size. While the
-  panel is open, the map's buttons in the bottom corner move to its left
-  edge. The bar fits itself to the window by measuring:
+  properties) when it opens and whenever the bar changes size. Neither the
+  menus nor the panel reach past 8 px short of the map's buttons in the
+  bottom corner, which stay where they are (`dropRoom`; `placeMenu` moves an
+  open menu left when it would overlap them; 22 November 2026, at Noah's
+  asking, since the menus had covered the zoom buttons and the panel had
+  pushed them left). The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
   without the tools' names; one row without the title; the tools, *New
   country*, and *New city* above undo and the menus; the tools above *New
