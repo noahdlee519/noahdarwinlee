@@ -438,7 +438,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
         if (i >= W && land[i - W] && !seen[i - W]) { seen[i - W] = 1; stack[top++] = i - W; }
         if (i < N - W && land[i + W] && !seen[i + W]) { seen[i + W] = 1; stack[top++] = i + W; }
       }
-      if (comp.length < 22 * S * S) for (const i of comp) { land[i] = 0; basin[i] = 0; }
+      if (comp.length < 9 * S * S) for (const i of comp) { land[i] = 0; basin[i] = 0; }
       else count += comp.length;
     }
     return count;

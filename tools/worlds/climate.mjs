@@ -308,7 +308,7 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       // elsewhere bare rock on the heights, and only a fleck of it on cold plains.
       if (ej > 0.5 || (ej > 0.36 && tj < -4)) c = COVER.ROCK;
       const polar = tj < -25;
-      const peak = ej > 0.6 && tj < -6;
+      const peak = ej > 0.63 && tj < -7;
       if (polar || peak) c = !polar && kf > 0.78 ? COVER.ROCK : COVER.SNOW;
       else if (t < -11 && kf > 0.84) c = jf > 0.6 ? COVER.SNOW : COVER.ROCK;
       cover[i] = c;
