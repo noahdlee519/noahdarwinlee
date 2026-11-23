@@ -127,7 +127,7 @@ test("the keyboard places points at the crosshair", { skip }, async () => {
 test("a closure preset avoids its countries, and winds change the time", { skip }, async () => {
   const { page, errors } = await open("#a=51.4707,-0.4599,London&b=40.6394,-73.7793,New%20York", { viewport: { width: 1440, height: 900 } });
   const calm = await page.textContent("#hero-time");
-  await page.click("#chip-units");
+  await page.click("#chip-avoid");
   await page.click("#wind label:has(input[value='1'])");
   await page.waitForFunction((c) => document.getElementById("hero-time").textContent !== c, calm);
   assert.equal(await page.isVisible("#hero-wind"), true);
@@ -137,7 +137,6 @@ test("a closure preset avoids its countries, and winds change the time", { skip 
   await page.click(`#wind-months label:has(input[value='${other}'])`);
   await page.waitForFunction((c) => document.getElementById("hero-time").textContent !== c, nowText);
   assert.match(page.url(), /wind=(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
-  await page.click("#chip-avoid");
   await page.click(".gc-closure[data-ids='643,804,112']");
   await page.waitForFunction(() => ["643", "804", "112"].every((id) => window.__greatercircle.state.avoid.has(id)));
   assert.equal(await page.getAttribute(".gc-closure[data-ids='643,804,112']", "aria-pressed"), "true");
@@ -164,6 +163,28 @@ test("the flat map toggles, keeps the route, and is in the URL", { skip }, async
   await page.keyboard.press("m");
   assert.equal(await page.getAttribute("#flat-btn", "aria-pressed"), "false");
   assert.doesNotMatch(page.url(), /map=flat/);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test("the units chip cycles, removing a country can be undone, and recent places are offered", { skip }, async () => {
+  const { page, errors } = await open(LHR_NRT, { viewport: { width: 1440, height: 900 } });
+  await page.click("#chip-units");
+  assert.equal(await page.textContent("#chip-units"), "mi");
+  assert.equal(await page.isVisible("#options"), false);
+  await page.click("#chip-units"); await page.click("#chip-units");
+  assert.equal(await page.textContent("#chip-units"), "km");
+  await page.click("#chip-avoid");
+  await page.click(".gc-chip button[aria-label='Stop avoiding Russia']");
+  await page.waitForFunction(() => !window.__greatercircle.state.avoid.has("643"));
+  assert.equal(await page.isVisible("#undo"), true);
+  await page.click("#undo-btn");
+  await page.waitForFunction(() => window.__greatercircle.state.avoid.has("643"));
+  await page.fill("#in-b", "");
+  await page.evaluate(() => { localStorage.setItem("gc-recent", JSON.stringify([{ kind: 5, lon: 2.55, lat: 49.01, label: "Paris Charles de Gaulle Airport (CDG)", sub: "Paris, France" }])); });
+  await page.focus("#in-a"); await page.fill("#in-a", ""); await page.dispatchEvent("#in-a", "input");
+  await page.waitForSelector("#sug-a li[role=option]");
+  assert.match(await page.textContent("#sug-a"), /Charles de Gaulle/);
   assert.deepEqual(errors, []);
   await page.close();
 });

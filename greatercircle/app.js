@@ -1397,7 +1397,7 @@
   function wrap180(x) { return ((x + 180) % 360 + 360) % 360 - 180; }
   function mercY(lat) { var p = lat * Math.PI / 180; return (1 - Math.log(Math.tan(Math.PI / 4 + p / 2)) / Math.PI) / 2; }
   function lonLatAt(x, y) {
-    if (Math.hypot(x - cx, y - cy) > projection.scale()) return null;
+    if (!flat && Math.hypot(x - cx, y - cy) > projection.scale()) return null;
     var ll = projection.invert([x, y]);
     return ll && isFinite(ll[0]) && isFinite(ll[1]) ? ll : null;
   }
@@ -1592,6 +1592,7 @@
       hoverRAF = 0;
       var here = lonLatAt(x, y);
       var dp = view.zoom < 6 ? 2 : view.zoom < 30 ? 3 : 4;
+      tipHere = here ? [here[0], here[1], dp] : null;
       tipAt = here ? Math.abs(here[1]).toFixed(dp) + "°" + (here[1] >= 0 ? "N" : "S") + " " + Math.abs(here[0]).toFixed(dp) + "°" + (here[0] >= 0 ? "E" : "W") : null;
       var m = markerAt(x, y);
       canvas.classList.toggle("is-over-marker", !!m);
@@ -1630,14 +1631,29 @@
     state.hover = idx;
     scheduleRender(interacting ? "coarse" : "full");
   }
-  var tip = $("tip"), tipAt = null;
+  var tip = $("tip"), tipAt = null, tipHere = null, tipCopied = false, tipCopiedTimer = 0;
+  document.addEventListener("keydown", function (e) {
+    if ((e.key !== "c" && e.key !== "C") || e.metaKey || e.ctrlKey || e.altKey || tip.hidden || !tipHere) return;
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+    e.preventDefault();
+    var text = tipHere[1].toFixed(tipHere[2] + 2) + ", " + tipHere[0].toFixed(tipHere[2] + 2);
+    navigator.clipboard.writeText(text).then(function () {
+      tipCopied = true;
+      var at = tip.querySelector(".gc-tip-at"); if (at) at.textContent = "Copied";
+      $("status").textContent = "Copied " + text;
+      clearTimeout(tipCopiedTimer);
+      tipCopiedTimer = setTimeout(function () { tipCopied = false; var at2 = tip.querySelector(".gc-tip-at"); if (at2 && tipAt) at2.textContent = tipAt + " | C to copy"; }, 1200);
+    }, function () {});
+  });
   function showTip(x, y, main, sub, note) {
     if (pop && !pop.hidden) { hideTip(); return; }
     tip.innerHTML = "";
     if (main) { var b = document.createElement("b"); b.textContent = main; b.style.fontWeight = "400"; tip.appendChild(b); }
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     if (note) { var n = document.createElement("small"); n.textContent = note; tip.appendChild(n); }
-    if (tipAt) { var c = document.createElement("small"); c.className = "gc-tip-at"; c.textContent = tipAt; tip.appendChild(c); }
+    if (tipAt) { var c = document.createElement("small"); c.className = "gc-tip-at"; c.textContent = tipCopied ? "Copied" : tipAt + " | C to copy"; tip.appendChild(c); }
     tip.hidden = false;
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W ? x - 14 - w - 14 : x) + "px";
@@ -1844,8 +1860,8 @@
     else h.textContent = "Drag A or B to move them, or " + tap + " a country to avoid it";
   }
 
-  $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
-  $("clear-b").addEventListener("click", function () { setPoint("b", null); inputs.b.focus(); });
+  $("clear-a").addEventListener("click", function () { withUndo("From cleared", function () { setPoint("a", null); }); inputs.a.focus(); });
+  $("clear-b").addEventListener("click", function () { withUndo("To cleared", function () { setPoint("b", null); }); inputs.b.focus(); });
   var swapTimer = null;
   $("swap").addEventListener("click", function () {
     var a = state.a, b = state.b;
@@ -1864,9 +1880,38 @@
     commitPoint("a");
   });
 
+  function snapshot() {
+    return { a: state.a, b: state.b, avoid: new Map(state.avoid), regions: state.regions.map(function (r) { return Object.assign({}, r, { points: r.points && r.points.slice(), center: r.center && r.center.slice() }); }), bufferKm: state.bufferKm };
+  }
+  var undoTimer = 0, undoSnap = null;
+  function offerUndo(text, snap) {
+    undoSnap = snap;
+    var box = $("undo");
+    $("undo-text").textContent = text;
+    box.hidden = false;
+    box.classList.remove("is-shown"); void box.offsetWidth; box.classList.add("is-shown");
+    $("status").textContent = text + ". Undo is available.";
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideUndo, 6000);
+  }
+  function hideUndo() { clearTimeout(undoTimer); undoSnap = null; var box = $("undo"); box.classList.remove("is-shown"); setTimeout(function () { if (!undoSnap) box.hidden = true; }, 200); }
+  $("undo-btn").addEventListener("click", function () {
+    var s = undoSnap;
+    if (!s) return;
+    hideUndo();
+    state.avoid = s.avoid; state.regions = s.regions; state.bufferKm = s.bufferKm;
+    selected = null;
+    setPoint("a", s.a, { quiet: true }); setPoint("b", s.b, { quiet: true });
+    state.tab = null;
+    renderChips(); renderOptionChips(); updateHint();
+    fitPending = true; state.stale = true;
+    requestRoute(); writeUrl(); scheduleRender("full");
+    $("status").textContent = "Undone";
+  });
+  function withUndo(text, fn) { var s = snapshot(); fn(); offerUndo(text, s); }
   function toggleAvoid(id, name) {
-    if (state.avoid.has(id)) state.avoid.delete(id);
-    else state.avoid.set(id, name);
+    if (state.avoid.has(id)) { withUndo((name || state.avoid.get(id)) + " allowed again", function () { state.avoid.delete(id); avoidChanged(); }); return; }
+    state.avoid.set(id, name);
     avoidChanged();
   }
   function avoidChanged() {
@@ -1886,7 +1931,7 @@
       li.appendChild(document.createTextNode(name));
       var x = document.createElement("button");
       x.type = "button"; x.setAttribute("aria-label", "Stop avoiding " + name); x.textContent = "×";
-      x.addEventListener("click", function () { state.avoid.delete(id); avoidChanged(); });
+      x.addEventListener("click", function () { var nm = state.avoid.get(id); withUndo(nm + " removed", function () { state.avoid.delete(id); avoidChanged(); }); });
       li.appendChild(x);
       ul.appendChild(li);
     });
@@ -1917,7 +1962,7 @@
       li.appendChild(inv);
       var x = document.createElement("button");
       x.type = "button"; x.setAttribute("aria-label", "Remove " + r.name); x.textContent = "×";
-      x.addEventListener("click", function () { removeRegion(r); });
+      x.addEventListener("click", function () { withUndo(r.name + " removed", function () { removeRegion(r); }); });
       li.appendChild(x);
       ul.appendChild(li);
     });
@@ -1926,7 +1971,7 @@
       var li2 = document.createElement("li");
       var b = document.createElement("button");
       b.type = "button"; b.className = "gc-linkbtn"; b.textContent = "clear all"; b.style.fontSize = "13px";
-      b.addEventListener("click", function () { state.avoid.clear(); state.regions = []; selected = null; avoidChanged(); });
+      b.addEventListener("click", function () { withUndo("Cleared everything avoided", function () { state.avoid.clear(); state.regions = []; selected = null; avoidChanged(); }); });
       li2.appendChild(b); ul.appendChild(li2);
     }
   }
@@ -2152,6 +2197,14 @@
     return { close: close, refresh: update, setValue: setValue };
   }
 
+  function recentPlaces() {
+    try { var v = JSON.parse(localStorage.getItem("gc-recent") || "[]"); return Array.isArray(v) ? v.filter(function (r) { return r && isFinite(r.lon) && isFinite(r.lat) && r.label; }).slice(0, 6) : []; } catch (e) { return []; }
+  }
+  function rememberPlace(p) {
+    var list = recentPlaces().filter(function (r) { return r.label !== p.label; });
+    list.unshift(p);
+    try { localStorage.setItem("gc-recent", JSON.stringify(list.slice(0, 6))); } catch (e) {}
+  }
   var suggesters = {};
   function pointSuggester(slot) {
     var input = inputs[slot];
@@ -2169,11 +2222,13 @@
           photon(q, function (more) { cb(more, more.length ? null : (placesFailed ? "The place list did not load and the lookup found nothing, lat, lon still works" : "nothing found")); });
         });
       },
-      main: function (r) { return r.kind === 3 ? r.label : r.kind === 4 ? r.label : placeLabel(r); },
-      sub: function (r) { return r.kind === 3 ? r.sub : r.kind === 4 ? "coordinates" : placeSub(r); },
-      kind: function (r) { return r.kind === 3 ? "place" : r.kind === 4 ? "" : placeKind(r); },
+      all: function () { return recentPlaces().filter(function (r) { var o = slot === "a" ? state.b : state.a; return !o || o.label !== r.label; }); },
+      main: function (r) { return r.kind >= 3 ? r.label : placeLabel(r); },
+      sub: function (r) { return r.kind === 3 ? r.sub : r.kind === 4 ? "coordinates" : r.kind === 5 ? r.sub : placeSub(r); },
+      kind: function (r) { return r.kind === 3 ? "place" : r.kind === 4 ? "" : r.kind === 5 ? "recent" : placeKind(r); },
       pick: function (r) {
-        var label = r.kind === 3 ? r.label : r.kind === 4 ? r.label : placeLabel(r);
+        var label = r.kind >= 3 ? r.label : placeLabel(r);
+        rememberPlace({ kind: 5, lon: r.lon, lat: r.lat, label: label, sub: r.kind === 5 ? r.sub : r.kind === 3 ? r.sub || "" : r.kind === 4 ? "coordinates" : placeSub(r) || "" });
         setPoint(slot, { lon: r.lon, lat: r.lat, label: label }, { quiet: true });
         commitPoint(slot);
         flyTo(r.lon, r.lat, Math.max(view.zoom, 1.6), function () { fitRoute(false); });
@@ -2633,6 +2688,9 @@
       p.push("buf=" + Math.round(state.bufferKm * bu.f) + bu.label);
     }
     if (state.tab && state.a && state.b && (!state.result || currentTab() === state.tab)) p.push("tab=" + state.tab);
+    if (state.a && state.b && state.a.label && state.b.label) {
+      try { localStorage.setItem("gc-last", JSON.stringify({ hash: p.join("&"), text: P.endName("a") + " \u2192 " + P.endName("b") })); } catch (e) {}
+    }
     if (flat) p.push("map=flat");
     if (state.wind) p.push("wind=" + (state.windMonth != null ? ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"][state.windMonth] : "1"));
     var h = p.length ? "#" + p.join("&") : "";
@@ -2889,6 +2947,16 @@
     }).sort(function (x, y) { return x.name.localeCompare(y.name); });
     countrySuggester();
     applyAliases();
+    try {
+      var last = JSON.parse(localStorage.getItem("gc-last") || "null");
+      var ex = $("examples");
+      if (last && last.hash && last.text && !ex.querySelector('a[href="#' + last.hash + '"]')) {
+        var link = document.createElement("a");
+        link.className = "gc-example gc-example-last"; link.href = "#" + last.hash;
+        link.textContent = "Your last route: " + last.text;
+        ex.insertBefore(link, ex.querySelector(".gc-example"));
+      }
+    } catch (e) {}
 
     try { var u = localStorage.getItem("gc-units"); if (UNITS[u]) state.units = u; } catch (e) {}
 
