@@ -84,50 +84,6 @@
     return { area: area, box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, rings: rs, main: [cx, cy] };
   }
 
-  // ---------------------------------------------------------------- night pictures
-
-  // The land-cover classes in the pictures' palette order (forest, woodland, grass, steppe, desert, rock, snow,
-  // water, and built-up ground), by night. The finer tiles repeat the nine twice more, in the hills' shadow and lit.
-  var NIGHT_COVER = ["#1d3a33", "#22403a", "#294640", "#30373c", "#353b40", "#3e444a", "#535a61", "#13233a", "#3b4048"];
-  var NIGHT_SHADE = [1, 0.84, 1.13];
-  function nightColour(i) {
-    var hex = NIGHT_COVER[i % 9], f = NIGHT_SHADE[Math.floor(i / 9)] || 1, k = i % 9;
-    var c = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-    if (k === 7 || k === 8) f = 1;
-    return c.map(function (v) { return Math.max(0, Math.min(255, Math.round(v * f))); });
-  }
-  var CRC = (function () {
-    var t = new Uint32Array(256);
-    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
-    return t;
-  })();
-  function crc32(b, from, to) {
-    var c = 0xffffffff;
-    for (var i = from; i < to; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8);
-    return (c ^ 0xffffffff) >>> 0;
-  }
-  // An indexed PNG with its palette (PLTE) swapped for the night colours; every other byte stays as it was.
-  function nightPng(b) {
-    var out = b.slice(), p = 8;
-    while (p + 8 <= out.length) {
-      var len = ((out[p] << 24) | (out[p + 1] << 16) | (out[p + 2] << 8) | out[p + 3]) >>> 0;
-      var type = String.fromCharCode(out[p + 4], out[p + 5], out[p + 6], out[p + 7]);
-      if (type === "PLTE") {
-        for (var i = 0; i < len / 3 && i < 27; i++) {
-          var rgb = nightColour(i);
-          out[p + 8 + i * 3] = rgb[0];
-          out[p + 9 + i * 3] = rgb[1];
-          out[p + 10 + i * 3] = rgb[2];
-        }
-        var c = crc32(out, p + 4, p + 8 + len), q = p + 8 + len;
-        out[q] = c >>> 24; out[q + 1] = (c >>> 16) & 255; out[q + 2] = (c >>> 8) & 255; out[q + 3] = c & 255;
-        break;
-      }
-      p += 12 + len;
-    }
-    return out;
-  }
-
   // ---------------------------------------------------------------- the map
 
   // Each kind of label's smallest and largest size on screen, in pixels.
@@ -291,7 +247,8 @@
     // in; its layers wait, empty, in their places in the drawing order.
     this.detail = null; this.detailAsked = false;
     this.parkLayer = layer("map-parks", true);
-    // Streams and rivers, then the sea and lakes over them, the coast, and the estuaries.
+    // Streams and rivers, then the sea and lakes over them, and the estuaries: land meets water as two flat colours,
+    // with no line between them.
     var La = layer("map-water", true);
     this.waterLayer = La;
     this.streamTpl = svg("g", { class: "map-streams" }, La.tpl);
@@ -305,10 +262,8 @@
     svg("path", { class: "map-sea", d: "M0 " + -H * 3 + "H" + W + "V" + H * 4 + "H0Z" + world.coast, "fill-rule": "evenodd" }, La.tpl);
     if (world.lakes) svg("path", { class: "map-lakes", d: world.lakes }, La.tpl);
     this.reservoirTpl = svg("g", { class: "map-reservoirs" }, La.tpl);
-    svg("path", { class: "map-coast", d: world.coast }, La.tpl);
     if (world.estuaries && world.estuaries.fill) {
       svg("path", { class: "map-estuary", d: world.estuaries.fill }, La.tpl);
-      svg("path", { class: "map-coast", d: world.estuaries.edge }, La.tpl);
     }
     this.roadLayer = layer("map-roads", true);
     // The picked and hovered country's tint, under the borders.
@@ -353,30 +308,12 @@
     this.render(true);
   };
 
-  // The map's lines and lettering take their colours from the stylesheet, by theme. The land-cover pictures are
-  // indexed PNGs, so at night each is recoloured by rewriting its palette: the same pixels, darker colours.
-  MapView.prototype.setNight = function (on) {
-    on = !!on;
-    if (on === this.night) return;
-    this.night = on;
-    if (!this.world) return;
-    var self = this;
-    this.picture(ROOT + "worlds/" + this.world.image.src).then(function (href) {
-      self.baseHref = href;
-      var tpl = self.groundLayer && self.groundLayer.tpl.querySelector(".map-image");
-      if (tpl) { self._setImageHref(tpl); self._refresh(self.groundLayer); }
-      if (self.onPicture) self.onPicture(href);
-    });
-    if (this.tiles) this.tiles.recolour();
-  };
-  // A picture's address in the current colours: as it is by day; at night, a copy with the night palette.
-  MapView.prototype.picture = function (url) {
-    if (!this.night) return Promise.resolve(url);
-    var cache = this.nightCache || (this.nightCache = {});
-    if (!cache[url]) cache[url] = fetch(url).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
-      return URL.createObjectURL(new Blob([nightPng(new Uint8Array(buf))], { type: "image/png" }));
-    }).catch(function () { return url; });
-    return cache[url];
+  // A picture's address (one place to hook any recolouring of the land-cover pictures, should it come back).
+  MapView.prototype.picture = function (url) { return Promise.resolve(url); };
+  // Kinds of names the visitor has switched off in the menu's map layers: they are neither drawn nor counted.
+  MapView.prototype.setHiddenKinds = function (kinds) {
+    this.hiddenKinds = kinds || {};
+    if (this.world) this.render();
   };
   MapView.prototype._setImageHref = function (image) {
     if (this.baseHref) image.setAttribute("href", this.baseHref);
@@ -563,8 +500,10 @@
     });
     var fixedCount = placed.length;
     function obstacleHit(box) { return placed.slice(0, fixedCount).some(function (q) { return overlap(box, q); }); }
+    var hidden = this.hiddenKinds || {};
     order.forEach(function (it) {
       var l = it.l, show = false;
+      if (hidden[l.kind]) { if (it.shown) { it.shown = false; it.el.classList.remove("is-on"); } return; }
       var forced = it.country && it.country === self.selected;
       var inProvince = l.kind === "province" && self.selected === l.parent;
       if ((z + 1e-6 >= l.minZoom) || forced || (inProvince && z * 1.6 >= l.minZoom)) {
@@ -796,13 +735,6 @@
     node.addEventListener("error", function () { el.loaded = true; });
     v.picture(el.url).then(function (href) { node.setAttribute("href", href); });
     return el;
-  };
-  Tiles.prototype.recolour = function () {
-    var v = this.view;
-    Object.keys(this.els).forEach(function (key) {
-      var el = this.els[key];
-      v.picture(el.url).then(function (href) { el.node.setAttribute("href", href); });
-    }, this);
   };
 
   // ------------------------------------------------------------ selection

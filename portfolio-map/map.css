@@ -1,4 +1,3 @@
-/* The site's three themes (theme.js: Orange, White, and Night) restyle the interface; Night also darkens the map. */
 :root {
   --font: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -25,49 +24,8 @@
   --m-sel-opacity: 0.15;
 }
 
-/* Orange, the site's own default. */
-:root,
-:root[data-theme="light"] {
-  color-scheme: light;
-  --surface: #e68019;
-  --raised: #e68019;
-  --rail-bg: #dd7713;
-  --strip-bg: rgba(221, 119, 19, 0.96);
-  --ink: #ffffff;
-  --ink-2: rgba(255, 255, 255, 0.92);
-  --ink-3: rgba(255, 255, 255, 0.84);
-  --placeholder: rgba(255, 255, 255, 0.86);
-  --hair: rgba(255, 255, 255, 0.3);
-  --hover: rgba(255, 255, 255, 0.14);
-  --accent: #ffffff;
-  --accent-fill: #e3e3b0;
-  --accent-fill-hover: #ededc6;
-  --accent-on: #9c4b07;
-  --accent-soft: rgba(255, 255, 255, 0.2);
-  --accent-soft-2: rgba(255, 255, 255, 0.3);
-  --rail-on-bg: #e3e3b0;
-  --rail-on-ink: #9c4b07;
-  --sel-row: rgba(255, 255, 255, 0.18);
-  --heart: #ffffff;
-  --heart-ink: #ffffff;
-  --heart-soft: rgba(255, 255, 255, 0.28);
-  --heart-soft-2: rgba(255, 255, 255, 0.36);
-  --count-bg: #e3e3b0;
-  --count-ink: #9c4b07;
-  --field-line: rgba(255, 255, 255, 0.5);
-  --disabled: rgba(255, 255, 255, 0.45);
-  --sep: rgba(255, 255, 255, 0.6);
-  --glyph-bg: rgba(255, 255, 255, 0.2);
-  --glyph-fill: #e3e3b0;
-  --glyph-line: #ffffff;
-  --wash: #d8710f;
-  --focus: #ffffff;
-  --selection: #e3e3b0;
-  --selection-ink: #26262a;
-  --grip: rgba(255, 255, 255, 0.55);
-}
-
-:root[data-theme="white"] {
+/* The interface, in the site's White theme: this page keeps it whatever the site's theme is. */
+:root {
   color-scheme: light;
   --surface: #ffffff;
   --raised: #ffffff;
@@ -105,66 +63,6 @@
   --selection: #cdd5f7;
   --selection-ink: #26262a;
   --grip: #cfd2ce;
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --surface: #121315;
-  --raised: #242528;
-  --rail-bg: #000000;
-  --strip-bg: rgba(0, 0, 0, 0.92);
-  --ink: #f3f3f5;
-  --ink-2: #c6c8cc;
-  --ink-3: #a0a3a8;
-  --placeholder: #a0a3a8;
-  --hair: #2c2d31;
-  --hover: #222327;
-  --accent: #918fff;
-  --accent-fill: #918fff;
-  --accent-fill-hover: #a7a5ff;
-  --accent-on: #0b0b14;
-  --accent-soft: rgba(145, 143, 255, 0.16);
-  --accent-soft-2: rgba(145, 143, 255, 0.26);
-  --rail-on-bg: rgba(145, 143, 255, 0.2);
-  --rail-on-ink: #b9b7ff;
-  --sel-row: rgba(145, 143, 255, 0.14);
-  --heart: #e68019;
-  --heart-ink: #f2a65a;
-  --heart-soft: rgba(230, 128, 25, 0.2);
-  --heart-soft-2: rgba(230, 128, 25, 0.3);
-  --count-bg: #e68019;
-  --count-ink: #ffffff;
-  --field-line: #3a3b40;
-  --disabled: #55575c;
-  --sep: #55575c;
-  --glyph-bg: #16263a;
-  --glyph-fill: #2a4740;
-  --glyph-line: #79c1a6;
-  --wash: #1c1d20;
-  --focus: #918fff;
-  --selection: rgba(145, 143, 255, 0.4);
-  --selection-ink: #ffffff;
-  --grip: #4a4b50;
-  --shadow-rgb: 0, 0, 0;
-  --toast-bg: #3a3b40;
-
-  /* The night map: dark land-cover greens and greys, navy water, light names on dark halos, softer borders. */
-  --water: #13233a;
-  --m-water: #13233a;
-  --m-line: #2f5677;
-  --m-border: #8d96a1;
-  --m-province: #5d6671;
-  --m-land: #29463f;
-  --m-label: #e1e6ec;
-  --m-halo: #0c1622;
-  --m-water-label: #7fa7cd;
-  --m-range: #99a1a9;
-  --m-dot: #0c1622;
-  --m-sel-ink: #f4aa5e;
-  --m-hover: #ffffff;
-  --m-locator-land: #2b3239;
-  --m-province-label: #aab2bb;
-  --m-sel-opacity: 0.1;
 }
 
 *,
@@ -294,17 +192,7 @@ textarea {
 
 .map-lakes {
   fill: var(--m-water);
-  stroke: var(--m-line);
-  stroke-width: 0.5px;
-  vector-effect: non-scaling-stroke;
-}
-
-.map-coast {
-  fill: none;
-  stroke: var(--m-line);
-  stroke-width: 0.75px;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
+  stroke: none;
 }
 
 .map-provinces {
@@ -659,106 +547,6 @@ a {
   padding: 10px 0 14px;
 }
 
-.rail-mark {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  margin-top: auto;
-  border-radius: 10px;
-}
-
-.rail-mark .mark {
-  width: 22px;
-  height: 22px;
-}
-
-.rail-mark .mark {
-  transition: transform 220ms var(--ease-out);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .rail-mark:hover .mark {
-    transform: scale(1.08);
-  }
-}
-
-/* The site's menu, opening beside the rail. */
-.site-menu {
-  position: relative;
-}
-
-.site-menu-panel {
-  position: absolute;
-  top: 6px;
-  left: 66px;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  padding: 8px 0;
-  border-radius: 12px;
-  background: var(--raised);
-  box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.18), 0 8px 28px rgba(var(--shadow-rgb), 0.16);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(-6px) scale(0.98);
-  transform-origin: 0 0;
-  transition: opacity 180ms ease, transform 240ms var(--ease-out), visibility 0s linear 240ms;
-}
-
-.site-menu[data-open="true"] .site-menu-panel {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: opacity 180ms ease, transform 240ms var(--ease-out), visibility 0s;
-}
-
-.site-menu-panel a {
-  display: block;
-  padding: 8px 20px;
-  color: var(--ink);
-  font-size: 16px;
-  text-decoration: none;
-}
-
-.site-menu-panel a:hover,
-.site-menu-panel a:focus-visible {
-  background: var(--hover);
-  outline: none;
-}
-
-.site-menu-theme {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 6px;
-  padding: 10px 20px 4px;
-  border-top: 1px solid var(--hair);
-  color: var(--ink-3);
-  font-size: 13px;
-}
-
-.site-menu-theme .theme-btn {
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--hair);
-  border-radius: 14px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.site-menu[data-open="true"] .site-menu-icon {
-  transform: rotate(90deg);
-}
-
-.site-menu-icon {
-  transition: transform 300ms var(--ease-out);
-}
-
 /* ---------------------------------------------------------------- search */
 
 .search {
@@ -785,7 +573,7 @@ a {
   box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.22), 0 6px 22px rgba(var(--shadow-rgb), 0.16);
 }
 
-.search-lead {
+.search-menu {
   display: none;
 }
 
@@ -1771,20 +1559,55 @@ body:not(.is-panel) .panel-tab .ic {
 
 /* ---------------------------------------------------------------- over the map */
 
-.zoom {
+/* Bottom right, as a mapping app has them: a button to Noah (in place of "my location") over the zoom pill. */
+.controls {
   position: fixed;
   right: 16px;
   bottom: 40px;
   z-index: 10;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.locate,
+.zoom {
+  width: 40px;
   border-radius: 10px;
   background: var(--raised);
-  box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.22), 0 2px 10px rgba(var(--shadow-rgb), 0.12);
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.22), 0 2px 8px rgba(var(--shadow-rgb), 0.12);
+}
+
+.locate {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  color: #3c3f44;
+}
+
+.locate svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.locate .locate-dot {
+  fill: currentColor;
+  stroke: none;
+}
+
+.zoom {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 .zoom-btn {
+  position: relative;
   display: grid;
   place-items: center;
   width: 40px;
@@ -1792,7 +1615,7 @@ body:not(.is-panel) .panel-tab .ic {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ink-2);
+  color: #3c3f44;
   cursor: pointer;
 }
 
@@ -1800,8 +1623,15 @@ body:not(.is-panel) .panel-tab .ic {
   outline-offset: -3px;
 }
 
-.zoom-btn + .zoom-btn {
-  border-top: 1px solid var(--hair);
+/* The thin divider between + and −, inset from the pill's edges. */
+.zoom-btn + .zoom-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 9px;
+  right: 9px;
+  height: 1px;
+  background: var(--hair);
 }
 
 .zoom-btn svg {
@@ -1809,15 +1639,20 @@ body:not(.is-panel) .panel-tab .ic {
   height: 18px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 2.1;
   stroke-linecap: round;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .zoom-btn:not(:disabled):hover {
+  .zoom-btn:not(:disabled):hover,
+  .locate:hover {
     background: var(--hover);
     color: var(--ink);
   }
+}
+
+.locate:focus-visible {
+  outline-offset: 2px;
 }
 
 .zoom-btn:disabled {
@@ -1843,23 +1678,6 @@ body:not(.is-panel) .panel-tab .ic {
 }
 
 /* White lettering with a soft dark edge, legible over sea and land alike, as a mapping app signs its map. */
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  text-shadow: 0 0 1px rgba(var(--shadow-rgb), 0.75), 0 0 2px rgba(var(--shadow-rgb), 0.55), 0 1px 4px rgba(var(--shadow-rgb), 0.45);
-}
-
-.brand .mark {
-  width: 17px;
-  height: 17px;
-  filter: drop-shadow(0 0 1px rgba(var(--shadow-rgb), 0.5)) drop-shadow(0 1px 2px rgba(var(--shadow-rgb), 0.3));
-}
-
 .scale {
   display: inline-flex;
   align-items: flex-end;
@@ -2122,9 +1940,8 @@ body:not(.is-panel) .panel-tab .ic {
     width: 60px;
   }
 
-  .site-menu,
   .tab-contact,
-  .rail-mark {
+  .rail-menu {
     display: none;
   }
 
@@ -2164,16 +1981,29 @@ body:not(.is-panel) .panel-tab .ic {
     border-radius: 26px;
   }
 
-  .search-lead {
+  /* The pill's own way into the menu, at its left, as a mapping app's phone search bar has it. */
+  .search-menu {
     display: grid;
     place-items: center;
-    margin-right: 10px;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    margin: 0 4px 0 -10px;
+    padding: 0;
+    border: 0;
+    border-radius: 20px;
+    background: none;
     color: var(--ink-2);
+    cursor: pointer;
   }
 
-  .search-lead .ic {
+  .search-menu .ic {
     width: 22px;
     height: 22px;
+  }
+
+  .search-menu:active {
+    background: var(--hover);
   }
 
   .search-go {
@@ -2236,9 +2066,31 @@ body:not(.is-panel) .panel-tab .ic {
     transform: scale(0.95);
   }
 
-  .zoom,
   .strip {
     display: none;
+  }
+
+  /* On a phone the controls sit at the right, just above the sheet; the next-world button stays up by the search. */
+  .controls {
+    right: 12px;
+    bottom: calc(var(--map-bottom, 200px) + 12px);
+    gap: 10px;
+  }
+
+  .locate,
+  .zoom,
+  .zoom-btn {
+    width: 44px;
+  }
+
+  .locate,
+  .zoom-btn {
+    height: 44px;
+  }
+
+  .is-sheet-full .controls {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .corner {
@@ -2247,11 +2099,7 @@ body:not(.is-panel) .panel-tab .ic {
     transition: none;
   }
 
-  .brand {
-    font-size: 13px;
-  }
-
-  .scale-corner {
+    .scale-corner {
     display: inline-flex;
     color: var(--m-label);
     text-shadow: 0 0 3px var(--m-halo), 0 0 3px var(--m-halo);
@@ -2471,5 +2319,418 @@ body:not(.is-panel) .panel-tab .ic {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* ================================================================ the menu */
+
+/* It appears at once, with no slide or fade, as the reference's does: a drawer over the rail and panel, and a scrim. */
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(var(--shadow-rgb), 0.32);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  max-width: calc(100vw - 48px);
+  background: var(--surface);
+  box-shadow: 0 0 2px rgba(var(--shadow-rgb), 0.12), 4px 0 24px rgba(var(--shadow-rgb), 0.18);
+  color: var(--ink);
+}
+
+.drawer[hidden],
+.drawer-scrim[hidden],
+.viewer[hidden] {
+  display: none;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  height: 64px;
+  padding: 0 12px 0 20px;
+}
+
+.drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.drawer-mark {
+  width: 24px;
+  height: 24px;
+}
+
+.drawer-close {
+  width: 40px;
+  height: 40px;
+  margin-right: 0;
+  border-radius: 20px;
+}
+
+.drawer-close .ic {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.6;
+}
+
+.drawer-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--field-line) transparent;
+  padding-bottom: 16px;
+}
+
+.drawer-group {
+  padding: 8px 0;
+  border-top: 1px solid var(--hair);
+}
+
+.drawer-group:first-child {
+  padding-top: 0;
+}
+
+.drawer-label {
+  margin: 8px 20px 4px;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.drawer-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.drawer-row .ic {
+  width: 22px;
+  height: 22px;
+  color: var(--ink-2);
+  stroke-width: 1.6;
+}
+
+.drawer-row > span {
+  flex: 1;
+}
+
+.drawer-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.drawer-row:disabled {
+  color: var(--disabled);
+  cursor: default;
+}
+
+.drawer-row:disabled .ic {
+  color: var(--disabled);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drawer-row:not(:disabled):hover {
+    background: var(--hover);
+  }
+}
+
+.drawer-plain .drawer-row {
+  min-height: 38px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.drawer-note {
+  margin: 4px 20px 6px 62px;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.drawer-note b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+/* A switch, as the reference's: a pale track with a round knob, the accent when on. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 14px;
+  border-radius: 7px;
+  background: #c9ccd0;
+  transition: background-color 120ms ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(var(--shadow-rgb), 0.35);
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+
+.drawer-switch[aria-checked="true"] .switch {
+  background: #b9c3f3;
+}
+
+.drawer-switch[aria-checked="true"] .switch::after {
+  background: var(--accent);
+  transform: translateX(18px);
+}
+
+/* ================================================================ map layers switched off */
+
+.no-roads .map-roads,
+.no-rivers .map-rivers,
+.no-rivers .map-streams,
+.no-rivers .map-lakes,
+.no-rivers .map-reservoirs,
+.no-parks .map-parks,
+.no-borders .map-borders,
+.no-provinces .map-provinces,
+.no-provinces .map-admin,
+.no-terrain .map-image,
+.no-terrain .map-tiles {
+  display: none;
+}
+
+/* Without the terrain, the land is one flat colour. */
+.no-terrain .map .map-land {
+  visibility: visible;
+  transition: none;
+  fill: #eff1ea;
+}
+
+/* ================================================================ photos and videos, full screen */
+
+.hero-open,
+.slide-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.hero-open:focus-visible,
+.slide-open:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.hero-open img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: rgba(10, 10, 12, 0.96);
+  color: #f2f2f4;
+  touch-action: none;
+}
+
+.viewer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(12px, env(safe-area-inset-top)) 12px 0 20px;
+}
+
+.viewer-count {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(242, 242, 244, 0.8);
+}
+
+.viewer-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 72px;
+}
+
+.viewer-slide {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.viewer-slide.from-right {
+  animation: viewer-in-r 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.viewer-slide.from-left {
+  animation: viewer-in-l 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes viewer-in-r {
+  from { opacity: 0.4; transform: translateX(40px); }
+}
+
+@keyframes viewer-in-l {
+  from { opacity: 0.4; transform: translateX(-40px); }
+}
+
+.viewer-slide img,
+.viewer-slide video {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  transform-origin: center center;
+}
+
+.viewer-slide img {
+  cursor: zoom-in;
+}
+
+.viewer.is-zoomed .viewer-slide img {
+  cursor: grab;
+}
+
+.viewer-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.viewer-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.viewer-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.viewer-btn .ic {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.8;
+}
+
+.viewer-prev,
+.viewer-next {
+  position: absolute;
+  top: 50%;
+  margin-top: -22px;
+}
+
+.viewer-prev {
+  left: 16px;
+}
+
+.viewer-next {
+  right: 16px;
+}
+
+.viewer-prev[hidden],
+.viewer-next[hidden] {
+  display: none;
+}
+
+.viewer-caption {
+  max-width: 68ch;
+  min-height: 1.45em;
+  margin: 0 auto;
+  padding: 4px 24px max(20px, env(safe-area-inset-bottom));
+  color: rgba(242, 242, 244, 0.86);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 759px) {
+  .drawer {
+    width: calc(100vw - 56px);
+    max-width: 360px;
+  }
+
+  .drawer-switch#drawer-panel {
+    display: none;
+  }
+
+  .drawer-group:first-child {
+    display: none;
+  }
+
+  .drawer-group:nth-child(2) {
+    border-top: 0;
+  }
+
+  .viewer-stage {
+    padding: 8px 0;
+  }
+
+  .viewer-prev,
+  .viewer-next {
+    display: none;
+  }
+
+  .viewer-slide img,
+  .viewer-slide video {
+    border-radius: 0;
   }
 }

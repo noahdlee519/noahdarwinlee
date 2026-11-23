@@ -212,9 +212,10 @@
     if (!media || !media.length) return '<div class="hero hero-terrain">' + terrain(id) + "</div>";
     var m = coverOf(media), src = m.video ? m.poster : m.src;
     var h = '<figure class="hero hero-photo">' +
+      '<button class="hero-open" type="button" data-photos="' + media.indexOf(m) + '" aria-label="' + esc(m.alt) + ', full screen">' +
       '<img src="' + esc(src) + '"' + (m.srcset && !m.video ? ' srcset="' + esc(m.srcset) + '" sizes="(max-width: 759px) 100vw, 408px"' : "") +
-      ' alt="' + esc(m.alt) + '" decoding="async" fetchpriority="high" />';
-    if (media.length > 1) h += '<button class="hero-more" type="button" data-photos>' + icon("i-photos") + "<span>" + countLabel(media) + "</span></button>";
+      ' alt="" decoding="async" fetchpriority="high" /></button>';
+    if (media.length > 1) h += '<button class="hero-more" type="button" data-photos="0">' + icon("i-photos") + "<span>" + countLabel(media) + "</span></button>";
     h += "</figure>";
     if (media.length === 1 && m.caption) h += '<p class="caption">' + esc(m.caption) + "</p>";
     return h;
@@ -229,7 +230,8 @@
         inner = '<img src="' + esc(m.src) + '"' + (m.srcset ? ' srcset="' + esc(m.srcset) + '" sizes="(max-width: 759px) 100vw, 360px"' : "") +
           ' alt="' + esc(m.alt) + '" decoding="async" loading="lazy" />';
       }
-      return '<figure class="slide" role="group" aria-roledescription="slide" aria-label="' + (i + 1) + " of " + media.length + '" data-cap="' + esc(m.caption || "") + '">' + inner + "</figure>";
+      return '<figure class="slide" role="group" aria-roledescription="slide" aria-label="' + (i + 1) + " of " + media.length + '" data-cap="' + esc(m.caption || "") + '">' +
+        '<button class="slide-open" type="button" data-photos="' + i + '" aria-label="' + esc(m.alt) + ', full screen">' + inner + "</button></figure>";
     }).join("");
     return '<section class="block photos" id="photos"><h3 class="block-title">Photos and videos</h3>' +
       '<div class="gallery" aria-roledescription="carousel" aria-label="' + esc(label) + '">' +
@@ -342,6 +344,7 @@
 
   // ------------------------------------------------------------------ opening and closing
 
+  function open_(view, opts) { return open(view, opts); }
   function open(view, opts) {
     opts = opts || {};
     state.view = view;
@@ -473,12 +476,7 @@
     var t = e.target.closest("[data-open],[data-save],[data-share],[data-copy],[data-next-world],[data-feedback],[data-close],[data-photos]");
     if (!t) return;
     if (t.hasAttribute("data-photos")) {
-      var ph = $("#photos");
-      if (!ph) return;
-      if (isPhone() && state.sheet !== "full") setSheet("full");
-      ph.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
-      var tr = $(".track", ph);
-      if (tr) tr.focus({ preventScroll: true });
+      viewer.open(currentMedia(), +(t.getAttribute("data-photos") || 0), t);
       return;
     }
     if (t.hasAttribute("data-open")) {
@@ -606,8 +604,6 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape" || e.defaultPrevented) return;
-    var menu = $("#site-menu");
-    if (menu && menu.getAttribute("data-open") === "true") return;
     if (els.dialog.open) return;
     if (state.view && state.view !== "world" && (state.panelOpen || isPhone())) {
       e.preventDefault();
@@ -750,6 +746,7 @@
       state.map.load(w);
       buildShapes();
       els.worldName.textContent = w.name;
+      $(".drawer-world").textContent = w.name;
       document.title = "Noah Darwin Lee | Projects | " + w.name;
       return document.fonts.ready.then(function () { state.map.measureLabels(); });
     });
@@ -789,7 +786,7 @@
     return m.viewFor({ x: 0, y: 0, w: W, h: H }, { pad: 1 });
   }
 
-  // ------------------------------------------------------------------ feedback, the menu's theme switch
+  // ------------------------------------------------------------------ feedback
 
   function openFeedback() {
     if (typeof els.dialog.showModal === "function") els.dialog.showModal();
@@ -798,47 +795,248 @@
   }
   els.dialog.addEventListener("click", function (e) { if (e.target === els.dialog) els.dialog.close(); });
 
-  (function menuClick() {
-    var menu = $("#site-menu"), entered = 0;
-    if (!menu) return;
-    menu.addEventListener("mouseenter", function () { entered = performance.now(); });
-    menu.addEventListener("click", function (e) {
-      if (!e.target.closest("#site-menu-btn")) return;
-      // The menu opens on hover; the click that usually follows should not close it again.
-      if (menu.getAttribute("data-open") === "true" && performance.now() - entered < 700) e.stopPropagation();
+  // ------------------------------------------------------------------ photos and videos, full screen
+
+  // The media of whatever the panel shows: the project's, or one of Dealdesk's tools'.
+  function currentMedia() {
+    var p = state.byId[state.project];
+    if (!p) return [];
+    var prov = state.province && p.provinces ? p.provinces.filter(function (v) { return v.id === state.province; })[0] : null;
+    return (prov ? prov.media : p.media) || [];
+  }
+
+  // Keeps Tab within an open dialog of the page's own (the menu and the viewer).
+  function trapTab(box, e) {
+    var f = $$("a[href], button:not([disabled]), [tabindex='0'], video[controls]", box).filter(function (x) { return x.offsetParent !== null || x === document.activeElement; });
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !box.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !box.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  }
+
+  var viewer = (function () {
+    var box = $("#viewer"), stage = $(".viewer-stage", box), count = $(".viewer-count", box), cap = $(".viewer-caption", box);
+    var prev = $(".viewer-prev", box), next = $(".viewer-next", box), closeBtn = $(".viewer-close", box);
+    var list = [], at = 0, back = null, slide = null;
+    // Pinch and double-tap zoom on photos: scale and offset of the photo now shown.
+    var z = { k: 1, x: 0, y: 0 };
+
+    function srcOf(m) {
+      if (!m.srcset) return m.src;
+      var best = m.src, w = 0;
+      m.srcset.split(",").forEach(function (part) {
+        var bits = part.trim().split(/\s+/), n = parseInt(bits[1], 10) || 0;
+        if (n > w && n <= 2400) { w = n; best = bits[0]; }
+      });
+      return best;
+    }
+    function applyZoom(animate) {
+      if (!slide) return;
+      var el = slide.querySelector("img");
+      if (!el) return;
+      el.style.transition = animate && !reduceMotion.matches ? "transform 220ms cubic-bezier(0.23, 1, 0.32, 1)" : "none";
+      el.style.transform = z.k === 1 ? "" : "translate(" + z.x + "px," + z.y + "px) scale(" + z.k + ")";
+      box.classList.toggle("is-zoomed", z.k > 1.01);
+    }
+    function show(i, dir) {
+      at = (i + list.length) % list.length;
+      var m = list[at];
+      z = { k: 1, x: 0, y: 0 };
+      var el = document.createElement("figure");
+      el.className = "viewer-slide" + (dir ? " from-" + (dir > 0 ? "right" : "left") : "");
+      if (m.video) el.innerHTML = '<video src="' + esc(m.video) + '" poster="' + esc(m.poster) + '" controls autoplay muted loop playsinline aria-label="' + esc(m.alt) + '"></video>';
+      else el.innerHTML = '<img src="' + esc(srcOf(m)) + '" alt="' + esc(m.alt) + '" decoding="async" draggable="false" />';
+      $$("video", stage).forEach(function (v) { v.pause(); });
+      stage.textContent = "";
+      stage.appendChild(el);
+      slide = el;
+      count.textContent = list.length > 1 ? at + 1 + " / " + list.length : "";
+      cap.textContent = m.caption || m.alt || "";
+      prev.hidden = next.hidden = list.length < 2;
+      // The neighbours load ahead, so moving on is instant.
+      [at + 1, at - 1].forEach(function (k) {
+        var n = list[(k + list.length) % list.length];
+        if (n && !n.video) { var im = new Image(); im.src = srcOf(n); }
+      });
+    }
+    function open(media, i, from) {
+      if (!media || !media.length) return;
+      list = media; back = from || document.activeElement;
+      box.hidden = false;
+      document.body.classList.add("is-viewing");
+      show(i || 0, 0);
+      closeBtn.focus({ preventScroll: true });
+    }
+    function close() {
+      if (box.hidden) return;
+      $$("video", stage).forEach(function (v) { v.pause(); });
+      stage.textContent = "";
+      slide = null;
+      box.hidden = true;
+      document.body.classList.remove("is-viewing");
+      if (back && back.focus) back.focus({ preventScroll: true });
+    }
+    prev.addEventListener("click", function () { show(at - 1, -1); });
+    next.addEventListener("click", function () { show(at + 1, 1); });
+    closeBtn.addEventListener("click", close);
+    // A click on the dark around the picture closes it, as in any photo viewer.
+    box.addEventListener("click", function (e) { if (e.target === box || e.target === stage) close(); });
+    document.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (e.key === "ArrowRight" && list.length > 1) { e.preventDefault(); show(at + 1, 1); }
+      else if (e.key === "ArrowLeft" && list.length > 1) { e.preventDefault(); show(at - 1, -1); }
+      else if (e.key === "Tab") trapTab(box, e);
     }, true);
+
+    // Swipe between pictures; pinch, or tap twice, to zoom a photo, and drag it while zoomed.
+    var pts = new Map(), g = null, lastTap = 0;
+    stage.addEventListener("pointerdown", function (e) {
+      if (!slide || e.target.closest("video")) return;
+      pts.set(e.pointerId, [e.clientX, e.clientY]);
+      try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+      var p = Array.from(pts.values());
+      if (p.length === 1) g = { x: e.clientX, y: e.clientY, zx: z.x, zy: z.y, moved: 0 };
+      else if (p.length === 2) g = { pinch: Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]), k: z.k, zx: z.x, zy: z.y, mx: (p[0][0] + p[1][0]) / 2, my: (p[0][1] + p[1][1]) / 2 };
+    });
+    stage.addEventListener("pointermove", function (e) {
+      if (!g || !pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, [e.clientX, e.clientY]);
+      var p = Array.from(pts.values());
+      if (g.pinch && p.length >= 2) {
+        var d = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]);
+        z.k = clamp(g.k * d / g.pinch, 1, 4);
+        var mx = (p[0][0] + p[1][0]) / 2, my = (p[0][1] + p[1][1]) / 2;
+        z.x = g.zx + (mx - g.mx); z.y = g.zy + (my - g.my);
+        applyZoom(false);
+      } else if (!g.pinch) {
+        var dx = e.clientX - g.x, dy = e.clientY - g.y;
+        g.moved = Math.max(g.moved, Math.hypot(dx, dy));
+        if (z.k > 1.01) { z.x = g.zx + dx; z.y = g.zy + dy; applyZoom(false); }
+        else if (list.length > 1) { slide.style.transition = "none"; slide.style.transform = "translateX(" + dx + "px)"; }
+      }
+    });
+    function up(e) {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (!g) return;
+      if (g.pinch) { if (pts.size < 2) { if (z.k < 1.05) { z = { k: 1, x: 0, y: 0 }; applyZoom(true); } g = null; } return; }
+      var dx = e.clientX - g.x, moved = g.moved;
+      g = null;
+      if (z.k > 1.01) return;
+      if (list.length > 1 && Math.abs(dx) > 60) { show(at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); return; }
+      if (slide) { slide.style.transition = ""; slide.style.transform = ""; }
+      if (moved < 8 && e.pointerType !== "mouse") {
+        var now = performance.now();
+        if (now - lastTap < 300) { z = z.k > 1 ? { k: 1, x: 0, y: 0 } : { k: 2.2, x: 0, y: 0 }; applyZoom(true); lastTap = 0; }
+        else lastTap = now;
+      }
+    }
+    stage.addEventListener("pointerup", up);
+    stage.addEventListener("pointercancel", up);
+    stage.addEventListener("dblclick", function (e) {
+      if (!slide || !slide.querySelector("img")) return;
+      z = z.k > 1 ? { k: 1, x: 0, y: 0 } : { k: 2.2, x: 0, y: 0 };
+      applyZoom(true);
+    });
+    return { open: open, close: close, isOpen: function () { return !box.hidden; } };
   })();
 
-  document.addEventListener("DOMContentLoaded", function () {
-    var btn = $("#theme-btn"), slot = $(".site-menu-theme-slot");
-    if (!btn || !slot) return;
-    slot.appendChild(btn);
-    var names = { light: "Orange", white: "White", dark: "Night" };
-    function label() {
-      var t = document.documentElement.getAttribute("data-theme");
-      btn.textContent = names[t === "dark" || t === "white" ? t : "light"];
+  // ------------------------------------------------------------------ the menu
+
+  // Map layers the visitor can switch off: CSS hides the drawn ones, and the map skips names of the listed kinds.
+  var LAYERS_KEY = "portfolio-map-layers";
+  var LAYER_KINDS = {
+    names: ["country", "province", "region", "island", "cape", "range", "peak"],
+    roads: ["shield"],
+    towns: ["capital", "city", "town", "village"],
+    rivers: ["river", "lake"],
+    parks: ["park"],
+    "water-names": ["ocean", "sea", "gulf", "bay", "strait", "lake", "river"]
+  };
+  var layersOff = (function () {
+    try { var v = JSON.parse(store.get(LAYERS_KEY) || "[]"); if (Array.isArray(v)) return v; } catch (e) {}
+    return [];
+  })();
+  function applyLayers() {
+    var kinds = {};
+    $$(".drawer-switch[data-layer]").forEach(function (b) {
+      var name = b.getAttribute("data-layer"), on = layersOff.indexOf(name) < 0;
+      b.setAttribute("aria-checked", String(on));
+      els.body.classList.toggle("no-" + name, !on);
+      if (!on) (LAYER_KINDS[name] || []).forEach(function (k) { kinds[k] = 1; });
+    });
+    $("#layers-reset").disabled = !layersOff.length;
+    if (state.map) state.map.setHiddenKinds(kinds);
+  }
+  function setLayer(name, on) {
+    var i = layersOff.indexOf(name);
+    if (on && i >= 0) layersOff.splice(i, 1);
+    if (!on && i < 0) layersOff.push(name);
+    store.set(LAYERS_KEY, JSON.stringify(layersOff));
+    applyLayers();
+  }
+
+  // A link to this world, at this place and zoom (and with the open project, if there is one).
+  function mapLink() {
+    var m = state.map, r = m.rect(), W = state.world.width;
+    var cx = (((r.l + r.w / 2 - m.tx) / m.s) % W + W) % W, cy = (r.t + r.h / 2 - m.ty) / m.s;
+    var q = "?world=" + state.world.slug + "&at=" + Math.round(cx) + "," + Math.round(cy) + "," + m.zoom().toFixed(2);
+    if (state.view === "project" && state.project) q += "&project=" + state.project + (state.province ? "&province=" + state.province : "");
+    return location.origin + ROOT + q;
+  }
+
+  var drawer = (function () {
+    var box = $("#drawer"), scrim = $("#drawer-scrim"), openers = $$("#menu-btn, .search-menu"), back = null;
+    function open(from) {
+      back = from || document.activeElement;
+      box.hidden = false; scrim.hidden = false;
+      document.body.classList.add("is-drawer");
+      openers.forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
+      $("#drawer-panel").setAttribute("aria-checked", String(state.panelOpen));
+      $(".drawer-world").textContent = state.world ? state.world.name : "";
+      $(".drawer-close", box).focus({ preventScroll: true });
     }
-    label();
-    new MutationObserver(label).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  });
-
-  // ------------------------------------------------------------------ themes
-
-  // The site's theme (theme.js sets it on the page's root): Night darkens the map as well as the interface.
-  var darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  var THEME_COLOR = { light: "#e68019", white: "#ffffff", dark: "#000000" };
-  function theme() {
-    var t = document.documentElement.getAttribute("data-theme");
-    return t === "dark" || t === "white" || t === "light" ? t : darkQuery.matches ? "dark" : "light";
-  }
-  function applyTheme() {
-    var t = theme();
-    var meta = $('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", THEME_COLOR[t]);
-    if (state.map) state.map.setNight(t === "dark");
-  }
-  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  darkQuery.addEventListener("change", applyTheme);
+    function close(keepFocus) {
+      if (box.hidden) return;
+      box.hidden = true; scrim.hidden = true;
+      document.body.classList.remove("is-drawer");
+      openers.forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+      if (!keepFocus && back && back.focus) back.focus({ preventScroll: true });
+    }
+    openers.forEach(function (b) { b.addEventListener("click", function () { if (box.hidden) open(b); else close(); }); });
+    scrim.addEventListener("click", function () { close(); });
+    $("[data-drawer-close]", box).addEventListener("click", function () { close(); });
+    document.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (e.key === "Tab") trapTab(box, e);
+    }, true);
+    box.addEventListener("click", function (e) {
+      var t = e.target.closest(".drawer-row");
+      if (!t) return;
+      if (t.hasAttribute("data-layer")) { setLayer(t.getAttribute("data-layer"), t.getAttribute("aria-checked") !== "true"); return; }
+      if (t.id === "layers-reset") { layersOff = []; store.set(LAYERS_KEY, "[]"); applyLayers(); return; }
+      if (t.id === "drawer-panel") {
+        showPanel(!state.panelOpen); updateRail(); updateSearchBox();
+        t.setAttribute("aria-checked", String(state.panelOpen));
+        return;
+      }
+      // Any other choice closes the menu; links go where they lead.
+      close(true);
+      if (t.hasAttribute("data-drawer-view")) {
+        var v = t.getAttribute("data-drawer-view");
+        open2(v);
+      } else if (t.id === "drawer-share") {
+        copy(mapLink()).then(function () { toast("Link to this map copied"); });
+      }
+    });
+    function open2(v) {
+      open_(v, { focus: true, sheet: isPhone() ? "half" : undefined });
+      if (v === "contact" && isPhone()) { var c = $("#contact-block"); if (c) c.scrollIntoView(); }
+    }
+    return { open: open, close: close, isOpen: function () { return !box.hidden; } };
+  })();
 
   // ------------------------------------------------------------------ start
 
@@ -863,14 +1061,13 @@
     r[0].forEach(function (p) { state.byId[p.id] = p; });
     state.worlds = r[1];
     state.map = new PM.MapView($("#map"));
-    state.map.night = theme() === "dark";
-    applyTheme();
     state.map.onPicture = function (href) { $$(".terrain-picture").forEach(function (i) { i.setAttribute("href", href); }); };
     state.map.obstacles = function () {
-      return [".search-box", ".brand", ".scale-corner", ".zoom", ".fab-world"].map(function (s) { return $(s); }).filter(function (e) {
+      return [".search-box", ".scale-corner", ".controls", ".fab-world"].map(function (s) { return $(s); }).filter(function (e) {
         return e && e.offsetParent !== null && getComputedStyle(e).display !== "none";
       }).map(function (e) { return e.getBoundingClientRect(); });
     };
+    applyLayers();
     state.map.onSelect = function (id, province) {
       if (!id) return;
       if (state.view === "project" && state.project === id && !province && state.province) province = null;
@@ -910,10 +1107,16 @@
     return m.imageReady.then(function () {
       els.body.classList.remove("is-loading");
       var target = p ? m.viewOf(p.id, prov) : home;
+      // A shared map link names the place and zoom it was copied at.
+      var at = (params.get("at") || "").split(",").map(Number);
+      if (at.length === 3 && at.every(isFinite)) {
+        var s = clamp(at[2] * m.ref(), m.limits().min, m.limits().max), rr = m.rect();
+        target = { s: s, tx: rr.l + rr.w / 2 - at[0] * s, ty: rr.t + rr.h / 2 - at[1] * s };
+      }
       setTimeout(function () { m.flyTo(target, { duration: p ? 1100 : 1000 }); }, reduceMotion.matches ? 0 : 120);
     });
   }).then(function () {
-    window.__portfolioMap = { ready: true, map: state.map, state: state, open: open, nextWorld: nextWorld, home: homeView };
+    window.__portfolioMap = { ready: true, map: state.map, state: state, open: open, nextWorld: nextWorld, home: homeView, viewer: viewer, drawer: drawer, mapLink: mapLink };
   }).catch(function (err) {
     els.body.classList.remove("is-loading");
     els.body.classList.add("is-failed");

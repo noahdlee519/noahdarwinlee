@@ -8,7 +8,7 @@
 //
 // Drawing order, which the page should follow: the land-cover picture, the
 // rivers, the sea and the lakes over them (so the picture's pixel edges and
-// the rivers' ends are hidden under clean vector water), the coast line,
+// the rivers' ends are hidden under clean vector water) with no coast line,
 // province borders, country borders, and the lettering.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -32,7 +32,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = []) {
   parts.push(`<image x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" image-rendering="optimizeQuality" href="data:image/png;base64,${pngBuffer.toString('base64')}"/>`);
   for (const t of tiles) parts.push(`<image x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" preserveAspectRatio="none" href="data:image/png;base64,${t.png.toString('base64')}"/>`);
   // Parks: a green tint with a fine edge, under the water.
-  if (D) for (const p of D.parks) parts.push(`<path d="${p.path}" fill="#7cc994" fill-opacity="0.3" stroke="#6dbd86" stroke-width="${0.6 * px}"/>`);
+  if (D) for (const p of D.parks) parts.push(`<path d="${p.path}" fill="#8fcfa5"/>`);
   // Rivers and streams: the water's own blue, thin, no casing.
   const RIVER = '#89d1e2';
   if (D && zoom >= 2.9 && D.streams) parts.push(`<path d="${D.streams}" fill="none" stroke="${RIVER}" stroke-width="${0.6 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
@@ -41,12 +41,10 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = []) {
     parts.push(`<path d="${r.path}" fill="none" stroke="${D ? RIVER : P.line}" stroke-width="${Math.max(r.width * (D ? 0.8 : 1), (D ? 0.9 : 0.7) * px)}" stroke-linecap="round" stroke-linejoin="round"/>`);
   }
   parts.push(`<path d="M0 0H${W}V${H}H0Z${data.coast}" fill="${P.water}" fill-rule="evenodd"/>`);
-  if (data.lakes) parts.push(`<path d="${data.lakes}" fill="${P.water}" stroke="${P.line}" stroke-width="${0.45 * px}"/>`);
-  if (D && D.reservoirs) parts.push(`<path d="${D.reservoirs}" fill="${P.water}" stroke="${RIVER}" stroke-width="${0.45 * px}"/>`);
-  parts.push(`<path d="${data.coast}" fill="none" stroke="${P.line}" stroke-width="${0.7 * px}" stroke-linejoin="round"/>`);
+  if (data.lakes) parts.push(`<path d="${data.lakes}" fill="${P.water}"/>`);
+  if (D && D.reservoirs) parts.push(`<path d="${D.reservoirs}" fill="${P.water}"/>`);
   if (data.estuaries && data.estuaries.fill) {
     parts.push(`<path d="${data.estuaries.fill}" fill="${P.water}"/>`);
-    parts.push(`<path d="${data.estuaries.edge}" fill="none" stroke="${P.line}" stroke-width="${0.7 * px}" stroke-linejoin="round"/>`);
   }
   // Roads: pale lilac-grey, the highways a little stronger; streets only close in.
   if (D) {
@@ -62,7 +60,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = []) {
   if (data.borders) parts.push(`<path d="${data.borders}" fill="none" stroke="${P.border}" stroke-width="${1 * px}" stroke-linejoin="round" stroke-linecap="round"/>`);
 
   const text = [];
-  const FILL = { range: '#6b6f72', province: P.province, park: '#2e7d4f', region: '#6f7c74', island: '#5f6368', cape: '#5f6368', peak: '#4a4d52', village: '#3c3f44' };
+  const FILL = { range: '#6b6f72', province: P.province, park: '#1f6b45', region: '#6f7c74', island: '#5f6368', cape: '#5f6368', peak: '#4a4d52', village: '#3c3f44' };
   const all = D ? [...data.labels, ...D.labels] : data.labels;
   for (const l of all) {
     if (l.minZoom > zoom) continue;
@@ -70,7 +68,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = []) {
     const water = ['sea', 'ocean', 'gulf', 'bay', 'lake', 'strait', 'river'].includes(l.kind);
     const fill = water ? '#3c8ea1' : FILL[l.kind] || P.label;
     const weight = l.kind === 'country' || l.kind === 'capital' || l.kind === 'city' ? 600 : 500;
-    const style = water || l.kind === 'region' ? ' font-style="italic"' : '';
+    const style = water || l.kind === 'region' || l.kind === 'park' ? ' font-style="italic"' : '';
     const track = l.spacing ? ` letter-spacing="${(l.spacing * l.size).toFixed(2)}"` : '';
     // letter-spacing follows every letter, the last one too; shift half of it back.
     const nudge = l.spacing ? (l.spacing * l.size) / 2 : 0;

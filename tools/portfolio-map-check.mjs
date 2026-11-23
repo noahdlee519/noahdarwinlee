@@ -4,10 +4,11 @@
 //   node tools/portfolio-map-check.mjs content
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
-//   node tools/portfolio-map-check.mjs [content|map|interface|themes|sharp|all] [base URL]
+//   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|all] [base URL]
 //       map: the world draws 18 countries and their labels, zoom stops at 4x, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
-//       themes: Orange, White, and Night (the night map too), on a desktop and a phone, and switching from the menu
+//       menu: the page stays White whatever the site's theme; the drawer, and each map layer it switches off; the
+//       fullscreen viewer; the wordmarks are gone
 //       sharp: the first view loads only the world's two files; at 4x on a 2x screen, the finest tiles draw the land
 //       all (the default): every stage
 //
@@ -273,6 +274,31 @@ async function interfaceStage(browser) {
   ok(await page.evaluate(() => document.querySelector('#photos .hero-count').textContent === '2 / 5' && document.querySelector('#photos .caption').textContent.length > 10), 'the slideshow moves on, with its count and caption');
   await page.screenshot({ path: '/tmp/portfolio-map-desktop-photos.png' });
 
+  // Any photo opens full screen: arrows, keys, the count and caption, focus kept inside, and Escape to close.
+  await page.click('.hero-open');
+  await page.waitForTimeout(300);
+  const lb = () => page.evaluate(() => { const v = document.querySelector('#viewer'); return { open: !v.hidden, count: v.querySelector('.viewer-count').textContent, cap: v.querySelector('.viewer-caption').textContent, img: !!v.querySelector('.viewer-slide img'), focusIn: v.contains(document.activeElement) }; });
+  let l = await lb();
+  ok(l.open && l.count === '1 / 5' && l.img && l.cap.length > 10 && l.focusIn, 'the top photo opens full screen, with its count and caption, and focus inside');
+  await page.screenshot({ path: '/tmp/portfolio-map-lightbox.png' });
+  await page.click('.viewer-next');
+  await page.keyboard.press('ArrowRight');
+  l = await lb();
+  ok(l.count === '3 / 5', `the arrow button and the arrow key move on (${l.count})`);
+  await page.keyboard.press('ArrowLeft');
+  for (let i = 0; i < 6; i++) await page.keyboard.press('Tab');
+  l = await lb();
+  ok(l.count === '2 / 5' && l.focusIn, 'back with the left key; Tab stays inside the viewer');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  l = await lb();
+  ok(!l.open && (await panelTitle(page)) === 'CHRONIA', 'Escape closes the viewer, and the panel stays open');
+  await page.evaluate(() => document.querySelectorAll('#photos .slide-open')[3].click());
+  l = await lb();
+  ok(l.open && l.count === '4 / 5', 'a picture in the slideshow opens full screen at that picture');
+  await page.click('.viewer-close');
+  ok(!(await lb()).open, 'the close button closes it');
+
   // Heart it, and find it in Saved after a reload.
   await page.click('.action-save');
   ok(await page.getAttribute('.action-save', 'aria-pressed') === 'true', 'the heart toggles on');
@@ -420,47 +446,126 @@ async function interfaceStage(browser) {
   await phone.close();
 }
 
-async function themesStage(browser) {
-  console.log('themes');
-  const want = { light: { name: 'Orange', panel: 'rgb(230, 128, 25)' }, white: { name: 'White', panel: 'rgb(255, 255, 255)' }, dark: { name: 'Night', panel: 'rgb(18, 19, 21)' } };
-  for (const t of ['light', 'white', 'dark']) {
-    for (const phone of [false, true]) {
-      const ctx = await browser.newContext(phone
-        ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
-        : { viewport: { width: 1440, height: 900 } });
-      await ctx.addInitScript((v) => { try { localStorage.setItem('ndl-theme', v); } catch (e) {} }, t);
-      const page = await open(browser, '?world=le-guin&project=loretour', { context: ctx });
-      await page.waitForTimeout(1200);
-      const got = await page.evaluate(() => ({
-        theme: document.documentElement.getAttribute('data-theme'),
-        panel: getComputedStyle(document.querySelector('.panel')).backgroundColor,
-        water: getComputedStyle(document.querySelector('.map-ocean')).fill,
-        night: window.__portfolioMap.map.night,
-        picture: (document.querySelector('.map-ground .map-image') || {}).getAttribute?.('href') || '',
-      }));
-      const nightOk = t === 'dark' ? got.night && got.picture.startsWith('blob:') && got.water === 'rgb(19, 35, 58)' : !got.night && !got.picture.startsWith('blob:') && got.water === 'rgb(137, 209, 226)';
-      ok(got.theme === t && got.panel === want[t].panel && nightOk, `${want[t].name}${phone ? ' (phone)' : ''}: the interface takes the theme's colours, and the map is ${t === 'dark' ? 'the night map, its land cover recoloured' : 'the day map'}`);
-      const file = `/tmp/portfolio-map-theme-${want[t].name.toLowerCase()}${phone ? '-phone' : ''}.png`;
-      await page.screenshot({ path: file });
-      ok(page.errors.length === 0, `no errors in ${want[t].name}${phone ? ' on the phone' : ''}${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
-      await ctx.close();
-    }
+async function menuStage(browser) {
+  console.log('menu');
+  // One look only: White, and the day map, even with the site's theme set to Night or Orange.
+  for (const t of ['dark', 'light']) {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await ctx.addInitScript((v) => { try { localStorage.setItem('ndl-theme', v); } catch (e) {} }, t);
+    const page = await open(browser, '?world=le-guin&project=loretour', { context: ctx });
+    const got = await page.evaluate(() => ({
+      theme: document.documentElement.getAttribute('data-theme'),
+      panel: getComputedStyle(document.querySelector('.panel')).backgroundColor,
+      water: getComputedStyle(document.querySelector('.map-ocean')).fill,
+      picture: (document.querySelector('.map-ground .map-image') || {}).getAttribute?.('href') || '',
+      themeBtn: !!document.querySelector('#theme-btn'),
+    }));
+    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && got.water === 'rgb(137, 209, 226)' && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
+    await ctx.close();
   }
-  // Switching from the site menu, as a visitor does: Orange to Night to White, without a reload.
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  await ctx.addInitScript(() => { try { localStorage.setItem('ndl-theme', 'light'); } catch (e) {} });
-  const page = await open(browser, '?world=le-guin', { context: ctx });
-  const seen = [];
-  for (let i = 0; i < 3; i++) {
-    await page.click('#site-menu-btn');
-    await page.waitForTimeout(250);
-    await page.click('#theme-btn');
-    await page.waitForTimeout(700);
-    seen.push(await page.evaluate(() => [document.documentElement.getAttribute('data-theme'), window.__portfolioMap.map.night, document.querySelector('#theme-btn').textContent]));
-    await page.keyboard.press('Escape');
+
+  const page = await open(browser, '?world=le-guin');
+  ok(await page.evaluate(() => !document.querySelector('.brand') && !document.querySelector('.rail-mark') && !/Noah Darwin Lee/.test(document.querySelector('#corner').textContent)), 'no wordmark at the bottom left of the map, and no icon at the bottom of the rail');
+  const loc = await page.evaluate(() => { const a = document.querySelector('.locate'), z = document.querySelector('.zoom'); const ra = a.getBoundingClientRect(), rz = z.getBoundingClientRect(); return { href: a.getAttribute('href'), label: a.getAttribute('aria-label'), same: Math.abs(ra.width - rz.width) < 1, above: ra.bottom < rz.top, gap: rz.top - ra.bottom }; });
+  ok(loc.href === '/#about' && loc.label === 'About Noah' && loc.same && loc.above && loc.gap > 2 && loc.gap < 16, `a location button to About sits just above the zoom pill, the same width (${loc.gap.toFixed(0)} px apart)`);
+
+  // The drawer: it opens at once, over the rail and panel, with a scrim, and closes four ways.
+  const drawerOpen = () => page.evaluate(() => !document.querySelector('#drawer').hidden);
+  await page.click('#menu-btn');
+  const d = await page.evaluate(() => { const r = document.querySelector('#drawer').getBoundingClientRect(); return { x: r.left, w: r.width, h: r.height, anim: getComputedStyle(document.querySelector('#drawer')).transitionDuration + getComputedStyle(document.querySelector('#drawer')).animationName, scrim: !document.querySelector('#drawer-scrim').hidden, title: document.querySelector('#drawer-title').textContent }; });
+  ok(d.x === 0 && Math.abs(d.w - 320) < 2 && d.h === 900 && d.scrim && d.anim === '0snone' && d.title === 'Noah Darwin Lee', 'the ≡ button opens a full-height drawer, 320 px wide, at once, with a scrim over the map');
+  await page.screenshot({ path: '/tmp/portfolio-map-drawer.png' });
+  await page.keyboard.press('Escape');
+  ok(!(await drawerOpen()), 'Escape closes it');
+  await page.click('#menu-btn'); await page.mouse.click(1200, 400);
+  ok(!(await drawerOpen()), 'a click on the scrim closes it');
+  await page.click('#menu-btn'); await page.click('.drawer-close');
+  ok(!(await drawerOpen()), 'the × closes it');
+  await page.click('#menu-btn'); await page.click('.drawer-row[data-drawer-view="saved"]');
+  ok(!(await drawerOpen()) && (await page.evaluate(() => document.querySelector('#panel-body .title').textContent)) === 'Saved', 'choosing Saved closes it and opens Saved');
+  await page.click('#menu-btn'); await page.click('#drawer-panel');
+  ok(await page.evaluate(() => !document.body.classList.contains('is-panel') && document.querySelector('#drawer-panel').getAttribute('aria-checked') === 'false'), 'Show side panel hides the side panel');
+  await page.click('#drawer-panel');
+  ok(await page.evaluate(() => document.body.classList.contains('is-panel')), 'and shows it again');
+
+  // Each map layer, switched off, is gone from the map (zoomed in, so the finer layers are there to switch off).
+  await page.keyboard.press('Escape');
+  await page.evaluate(async () => {
+    const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.ref() * 2.6;
+    m.set({ s, tx: r.l + r.w / 2 - l.x * s, ty: r.t + r.h / 2 - l.y * s }); m.render(true);
+    for (let i = 0; i < 50 && !m.detail; i++) await new Promise((res) => setTimeout(res, 100));
+    await new Promise((res) => setTimeout(res, 300)); m.render(true);
+  });
+  await page.click('#menu-btn');
+  const shown = (sel) => page.evaluate((q) => [...document.querySelectorAll(q)].some((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden'; }), sel);
+  const labelsOn = (kinds) => page.evaluate((ks) => ks.some((k) => document.querySelector('.lbl.k-' + k + '.is-on')), kinds);
+  const LAYERS = [
+    ['names', 'Place names', () => labelsOn(['country', 'range', 'province'])],
+    ['roads', 'Roads and route numbers', () => shown('.map-roads path, .map-roads use')],
+    ['towns', 'Towns and cities', () => labelsOn(['capital', 'city', 'town', 'village'])],
+    ['rivers', 'Rivers and lakes', () => shown('.map-rivers path, .map-lakes')],
+    ['parks', 'National parks', () => shown('.map-parks path, .map-park')],
+    ['borders', 'Borders', () => shown('.map-borders')],
+    ['provinces', 'Province lines', () => shown('.map-provinces')],
+    ['terrain', 'Terrain', () => shown('.map-image')],
+    ['water-names', 'Water names', () => labelsOn(['sea', 'gulf', 'bay', 'strait', 'ocean', 'lake', 'river'])],
+  ];
+  for (const [name, label, isShown] of LAYERS) {
+    const before = await isShown();
+    await page.click(`.drawer-switch[data-layer="${name}"]`);
+    await page.waitForTimeout(150);
+    const after = await isShown();
+    const checked = await page.getAttribute(`.drawer-switch[data-layer="${name}"]`, 'aria-checked');
+    ok(before && !after && checked === 'false' && (await drawerOpen()), `${label}: switching it off takes it off the map at once`);
   }
-  ok(seen.map((x) => x[0]).join(',') === 'dark,white,light' && seen[0][1] === true && seen[1][1] === false && seen[0][2] === 'Night', `the menu's theme switch cycles Orange, Night, White, and back, and the map follows (${seen.map((x) => x[2]).join(', ')})`);
-  await ctx.close();
+  ok(await page.evaluate(() => getComputedStyle(document.querySelector('.map-land')).visibility === 'visible'), 'without the terrain, the land is a plain colour');
+  await page.screenshot({ path: '/tmp/portfolio-map-layers-off.png' });
+  await page.reload();
+  await page.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready);
+  ok(await page.evaluate(() => document.body.classList.contains('no-roads') && document.querySelector('.drawer-switch[data-layer="terrain"]').getAttribute('aria-checked') === 'false'), 'the layers stay as they were set after a reload');
+  await page.click('#menu-btn');
+  await page.click('#layers-reset');
+  ok(await page.evaluate(() => [...document.querySelectorAll('.drawer-switch[data-layer]')].every((b) => b.getAttribute('aria-checked') === 'true') && !/no-/.test(document.body.className)), 'Show all layers turns every layer back on');
+
+  // Copy a link to this map: it reopens this world at this place.
+  await page.keyboard.press('Escape');
+  const link = await page.evaluate(() => window.__portfolioMap.mapLink());
+  const v0 = await view(page);
+  const p2 = await open(browser, link.replace(PAGE, ''));
+  await p2.waitForTimeout(1500);
+  const v1 = await view(p2);
+  ok(/[?&]at=/.test(link) && v1.world === v0.world && Math.abs(v1.zoom - v0.zoom) < 0.05, `a link to the map reopens the same world at the same zoom (${link.replace(base, '')})`);
+  ok(page.errors.length === 0 && p2.errors.length === 0, `no errors${page.errors.concat(p2.errors).length ? ': ' + page.errors.concat(p2.errors).join(' | ') : ''}`);
+  await p2.close(); await page.close();
+
+  // On a phone: the ≡ in the search pill opens the same drawer, nearly the screen's width; the viewer fills the screen.
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const pp = await open(browser, '?world=le-guin', { context: phone });
+  await pp.tap('.search-menu');
+  const pd = await pp.evaluate(() => document.querySelector('#drawer').getBoundingClientRect().width);
+  ok(pd >= 300 && pd <= 360, `on a phone, the pill's ≡ opens the drawer, ${pd.toFixed(0)} px wide`);
+  await pp.screenshot({ path: '/tmp/portfolio-map-phone-drawer.png' });
+  await pp.tap('#drawer-scrim', { position: { x: 370, y: 400 } });
+  const ppc = await pp.evaluate(() => { const a = document.querySelector('.controls').getBoundingClientRect(), f = document.querySelector('.fab-world').getBoundingClientRect(), sh = document.querySelector('.panel').getBoundingClientRect(); return { aboveSheet: a.bottom <= sh.top + 1 + parseFloat(getComputedStyle(document.querySelector('.panel')).getPropertyValue('--sheet-y') || 0), clearOfFab: a.top > f.bottom }; });
+  ok(ppc.clearOfFab, 'on a phone the map controls sit clear of the next-world button');
+  const pv = await open(browser, '?world=le-guin&project=loretour', { context: phone });
+  await pv.tap('.hero-open');
+  await pv.waitForTimeout(300);
+  const vw = await pv.evaluate(() => { const r = document.querySelector('.viewer-slide img').getBoundingClientRect(); return { w: r.width, open: !document.querySelector('#viewer').hidden }; });
+  ok(vw.open && vw.w > 380, `on a phone the viewer shows the photo the full width of the screen (${vw.w.toFixed(0)} px)`);
+  // Swipe to the next one.
+  await pv.evaluate(async () => {
+    const el = document.querySelector('.viewer-stage');
+    const fire = (type, x) => el.dispatchEvent(new PointerEvent(type, { pointerId: 5, pointerType: 'touch', isPrimary: true, clientX: x, clientY: 400, bubbles: true }));
+    fire('pointerdown', 320);
+    for (let i = 1; i <= 8; i++) { fire('pointermove', 320 - i * 25); await new Promise((r) => setTimeout(r, 16)); }
+    fire('pointerup', 120);
+  });
+  await pv.waitForTimeout(300);
+  ok(await pv.evaluate(() => document.querySelector('.viewer-count').textContent === '2 / 6'), 'a swipe moves to the next picture');
+  await pv.screenshot({ path: '/tmp/portfolio-map-phone-lightbox.png' });
+  ok(pp.errors.length === 0 && pv.errors.length === 0, 'no errors on the phone');
+  await phone.close();
 }
 
 async function sharpStage(browser) {
@@ -485,7 +590,6 @@ async function sharpStage(browser) {
     const ctx = await browser.newContext(phone
       ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
       : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
-    await ctx.addInitScript(() => { try { localStorage.setItem('ndl-theme', 'white'); } catch (e) {} });
     const page = await open(browser, '?world=le-guin', { context: ctx });
     await page.waitForTimeout(1400);
     const got = await page.evaluate(async () => {
@@ -510,7 +614,7 @@ if (stage !== 'content') {
   try {
     if (stage === 'map' || stage === 'all') await mapStage(browser);
     if (stage === 'interface' || stage === 'all') await interfaceStage(browser);
-    if (stage === 'themes' || stage === 'all') await themesStage(browser);
+    if (stage === 'menu' || stage === 'all') await menuStage(browser);
     if (stage === 'sharp' || stage === 'all') await sharpStage(browser);
   } finally {
     await browser.close();

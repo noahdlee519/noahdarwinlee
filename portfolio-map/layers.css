@@ -4,8 +4,7 @@
 
 :root {
   --m-river: #89d1e2;
-  --m-park: rgba(124, 201, 148, 0.3);
-  --m-park-edge: #6dbd86;
+  --m-park: #8fcfa5;
   --m-road-hw: #9aa8c8;
   --m-road-main: #b1bbd4;
   --m-road-local: #c3c9dc;
@@ -15,7 +14,7 @@
   --m-dot-ring: #4a4d52;
   --m-dot-fill: #ffffff;
   --m-peak: #5f6368;
-  --m-park-label: #2e7d4f;
+  --m-park-label: #1f6b45;
   --m-nature-label: #6f7c74;
   --m-place-label: #4a4d52;
   --m-shield: #f9dc59;
@@ -25,43 +24,18 @@
   --m-shield-e-ink: #ffffff;
 }
 
-:root[data-theme="dark"] {
-  --m-river: #24476b;
-  --m-park: rgba(64, 130, 86, 0.26);
-  --m-park-edge: #3f7a55;
-  --m-road-hw: #66708c;
-  --m-road-main: #535b73;
-  --m-road-local: #454c60;
-  --m-road-street: #3a4052;
-  --m-ferry: #3d6d8f;
-  --m-subdiv: #4f565e;
-  --m-dot-ring: #c9ced4;
-  --m-dot-fill: #0c1622;
-  --m-peak: #a6adb5;
-  --m-park-label: #8fd0a6;
-  --m-nature-label: #a3aca6;
-  --m-place-label: #c9ced4;
-  --m-shield: #8a7426;
-  --m-shield-edge: #c7b062;
-  --m-shield-ink: #f5ecc8;
-  --m-shield-e: #3f5c2a;
-  --m-shield-e-ink: #e8f2df;
-}
-
 /* Rivers in the water's own blue, thin, with no darker casing; streams join them closer in. */
 .map-rivers path {
   stroke: var(--m-river);
 }
 
 .map-lakes {
-  stroke: var(--m-river);
+  stroke: none;
 }
 
 .map-reservoir {
   fill: var(--m-water);
-  stroke: var(--m-river);
-  stroke-width: 0.5px;
-  vector-effect: non-scaling-stroke;
+  stroke: none;
 }
 
 .map-stream {
@@ -86,12 +60,10 @@
   opacity: 1;
 }
 
-/* National parks: a green tint and a fine edge. */
+/* National parks: one calm, deeper green laid flat over the land cover, with no line around it. */
 .map-park {
   fill: var(--m-park);
-  stroke: var(--m-park-edge);
-  stroke-width: 0.7px;
-  vector-effect: non-scaling-stroke;
+  stroke: none;
 }
 
 /* Roads: pale lilac-grey, the highways a little stronger; each class from its zoom. */
@@ -196,6 +168,10 @@
 
 .k-park text {
   fill: var(--m-park-label);
+  stroke: #ffffff;
+  stroke-opacity: 0.9;
+  font-style: italic;
+  font-weight: 500;
 }
 
 .k-region text {
