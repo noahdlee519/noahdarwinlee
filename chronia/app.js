@@ -1702,6 +1702,7 @@
     else { drawBase(snap, L, key, S, kp, landList); keepBase(sig); }
     if (perf) pmark("finish");
     placedLabels = [];
+    labelFresh = false;
     var placed = fixedBoxes();
     if (!skip.labels) {
       reserveMarks(placed, S);
@@ -3465,21 +3466,26 @@
   // A whole line of text at (x, y), outlined and then filled, as ctx.strokeText and ctx.fillText would draw it with the font,
   // letter spacing, alignment, baseline, line width, and colours in force, from the lines' sprites. With halo false, the ink
   // alone.
-  function inkText(text, x, y, halo) {
-    if (!textSprites || skip.sprites) { if (halo !== false) ctx.strokeText(text, x, y); ctx.fillText(text, x, y); return; }
-    var font = ctx.font, sp = parseFloat(ctx.letterSpacing) || 0, al = ctx.textAlign, bl = ctx.textBaseline;
-    var pre = font + "|" + sp + "|" + al + "|" + bl + "|", a = null, b, lw = ctx.lineWidth, hc = ctx.strokeStyle, fc = ctx.fillStyle, gen = ink.line.flushed;
-    if (halo !== false) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
+  // A whole line stamped from the lines' sprites, outlined (lw wide, in hc) unless hc is null, then filled (fc): false when a
+  // sprite can't be made, and nothing is drawn.
+  function inkLine(text, x, y, font, sp, al, bl, hc, lw, fc) {
+    var pre = font + "|" + sp + "|" + al + "|" + bl + "|", a = null, b, gen = ink.line.flushed;
+    if (hc !== null) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
     b = inkSprite(ink.line, pre + "f" + fc + "|" + text, text, font, sp, al, bl, fc, 0);
     // the store was emptied to make room for the ink: the halo's sprite went with it
     if (a && gen !== ink.line.flushed) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
-    if ((halo !== false && !a) || !b) {
-      if (halo !== false) ctx.strokeText(text, x, y);
-      ctx.fillText(text, x, y);
-      return;
-    }
+    if ((hc !== null && !a) || !b) return false;
     if (a) inkStamp(a, x, y, 1);
     inkStamp(b, x, y, 1);
+    return true;
+  }
+  // A whole line of text at (x, y), outlined and then filled, as ctx.strokeText and ctx.fillText would draw it with the font,
+  // letter spacing, alignment, baseline, line width, and colours in force, from the lines' sprites. With halo false, the ink
+  // alone.
+  function inkText(text, x, y, halo) {
+    if (textSprites && !skip.sprites && inkLine(text, x, y, ctx.font, parseFloat(ctx.letterSpacing) || 0, ctx.textAlign, ctx.textBaseline, halo !== false ? ctx.strokeStyle : null, ctx.lineWidth, ctx.fillStyle)) return;
+    if (halo !== false) ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
   }
   // The sprites of a name's letters and whole lines, halo and ink: [[halo, ink, x, transform's glyph or line], ...], or null
   // when one can't be made (the name is then drawn as text).
@@ -3563,7 +3569,7 @@
   // what was left of a moving frame once the names came from sprites (on an M2, 7.5 ms of about 20 over Europe). A layout is
   // carried for LABEL_CARRY_MS, then made afresh, so names come in for land that has turned into view; a change of zoom, date,
   // level, or size lays them out at once, as does a name pinned by an edit. A name that turns out of view is dropped.
-  var LABEL_CARRY_MS = 250, labelCarryMs = null, labelStats = { layouts: 0, carried: 0 };
+  var LABEL_CARRY_MS = 250, labelCarryMs = null, labelStats = { layouts: 0, carried: 0, placesCarried: 0 };
   function carrySig(snap) { return [snap.key, useLevel(), flat ? 1 : 0, view.zoom.toFixed(5), W, H, layoutEpoch].join("|"); }
   function carriedLabels(snap) {
     var from = labelCache.get("carry");
@@ -3602,6 +3608,7 @@
       else {
         items = layoutPolities(snap, placed.slice(), kp);
         labelStats.layouts++;
+        labelFresh = true;
         labelCache.set("carry", { sig: carrySig(snap), time: performance.now(), items: items });
       }
       memo = { key: key, items: items };
@@ -4114,6 +4121,8 @@
       var lab = { name: name, x: p[0], y: p[1], size: size, kind: ["capital", "city", "town"][kind], box: box, ref: ref || null }, city = ref && ref.city;
       if (city) { lab.id = city.id; lab.qid = city.qid; lab.lon = city.lon; lab.lat = city.lat; }
       placedLabels.push(lab);
+      if (placeRec && placeLL) placeRec.push({ ll: placeLL, name: name, k: k, kind: kind, sel: !!sel, ref: ref || null, rm: mark ? rm : 0, dx: tx - p[0], dy: ty - p[1], w: w, h: h, size: size,
+        font: ctx.font, ls: st.ls, lw: ctx.lineWidth, hc: ctx.strokeStyle, fc: ctx.fillStyle });
       return true;
     }
     return false;
@@ -4134,20 +4143,58 @@
       }
     }
   }
+  // The cities' marks and names are carried along like the states' names (carriedLabels): while the map moves at one zoom,
+  // each stays on the side of its mark where the last layout put it, and a frame only works out where each city now falls
+  // (placesCarried). They are laid out afresh in the frames in which the states' names are, and after LABEL_CARRY_MS.
+  var placeRec = null, placeLL = null, labelFresh = false;
+  function placesSig(S) {
+    return [current ? current.key : "", now, flat ? 1 : 0, view.zoom.toFixed(5), W, H, layoutEpoch, layers.capitals ? 1 : 0, layers.cities ? 1 : 0, cities ? cities.rows.length : 0,
+      selCity ? (selCity.id || selCity.lon + "," + selCity.lat) : "", markSize(S), textSprites && !skip.sprites ? 1 : 0].join("|");
+  }
+  function placesCarried(placed, rec) {
+    ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.textAlign = "left";
+    for (var i = 0; i < rec.length; i++) {
+      var r = rec[i], p = projectLL(r.ll[0], r.ll[1]);
+      if (!p || p[2] < 0.25) continue;
+      var tx = p[0] + r.dx, ty = p[1] + r.dy;
+      if (Math.max(tx + r.w, p[0] + r.rm) < 0 || Math.min(tx, p[0] - r.rm) > W || ty + r.h < -r.rm || ty - r.h > H + r.rm) continue;
+      var box = { x: tx - 1.5, y: ty - r.h / 2 - 1.5, w: r.w + 3, h: r.h + 3 };
+      if (r.rm) placed.push({ x: p[0] - r.rm, y: p[1] - r.rm, w: 2 * r.rm, h: 2 * r.rm });
+      placed.push(box);
+      drawMark(p, r.k, r.kind, r.sel);
+      if (!inkLine(r.name, tx, ty, r.font, r.ls, "left", "middle", r.hc, r.lw, r.fc)) {
+        ctx.font = r.font; ctx.letterSpacing = r.ls + "px"; ctx.lineWidth = r.lw; ctx.strokeStyle = r.hc; ctx.fillStyle = r.fc;
+        ctx.strokeText(r.name, tx, ty); ctx.fillText(r.name, tx, ty);
+      }
+      var lab = { name: r.name, x: p[0], y: p[1], size: r.size, kind: ["capital", "city", "town"][r.kind], box: box, ref: r.ref }, city = r.ref && r.ref.city;
+      if (city) { lab.id = city.id; lab.qid = city.qid; lab.lon = city.lon; lab.lat = city.lat; }
+      placedLabels.push(lab);
+    }
+    ctx.letterSpacing = "0px";
+    ctx.textAlign = "center";
+  }
   function drawPlaces(placed, S) {
     if (S < 230) return;
+    var sig = placesSig(S), from = moving && !rangeActive && !skip.carry && !labelFresh && textSprites && !skip.sprites ? labelCache.get("places") : null;
+    if (from && from.sig === sig && performance.now() - from.time < (labelCarryMs === null ? LABEL_CARRY_MS : labelCarryMs)) { labelStats.placesCarried++; placesCarried(placed, from.rec); return; }
+    placeRec = [];
+    try { drawPlacesFresh(placed, S); } finally { labelCache.set("places", { sig: sig, time: performance.now(), rec: placeRec }); placeRec = null; placeLL = null; }
+  }
+  function drawPlacesFresh(placed, S) {
     var k = markSize(S), modernNow = current && current.modern, i;
     ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     var capCity = new Set(), sc = selCity;
     var isSel = function (city, q) { return !!sc && (sc.id ? !!city && city.id === sc.id : !!q && Math.abs(q[0] - sc.lon) < 1e-6 && Math.abs(q[1] - sc.lat) < 1e-6); };
     if (sc) {
       var sp = projectLL(sc.lon, sc.lat);
+      placeLL = [sc.lon, sc.lat];
       if (sp && sp[2] >= 0.25) placeOne(placed, sp, cityFacts(sc).name, k, sc.kind === "capital" ? 0 : sc.kind === "city" ? 1 : 2, false, sc.ref || (sc.city ? { city: sc.city } : null), true);
     }
     if (current) {
       var caps = capitalList(current, S);
       for (i = 0; i < caps.length; i++) {
         if (isSel(caps[i].city, caps[i].ll)) { if (caps[i].city) capCity.add(caps[i].city); continue; }
+        placeLL = caps[i].ll;
         placeOne(placed, caps[i].pt, caps[i].name, k, 0, false, { cap: caps[i].cap, of: caps[i].id, city: caps[i].city });
         if (layers.capitals && caps[i].city) capCity.add(caps[i].city);
       }
@@ -4160,6 +4207,7 @@
         var c = list[i].c;
         if (capCity.has(c) || isSel(c, null)) continue;
         var p = projectLL(c.lon, c.lat);
+        placeLL = [c.lon, c.lat];
         if (p && p[2] >= 0.25) placeOne(placed, p, cityShownNameL(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
       }
     }
@@ -9964,13 +10012,13 @@
       return ch.map(function (a) { a.sort(function (x, y) { return x - y; }); return a[a.length >> 1]; });
     },
     perfState: function () {
-      return { plain: PLAIN, lowMem: LOW_MEM, labels: { layouts: labelStats.layouts, carried: labelStats.carried }, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
+      return { plain: PLAIN, lowMem: LOW_MEM, labels: { layouts: labelStats.layouts, carried: labelStats.carried, placesCarried: labelStats.placesCarried }, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
         fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine >= 2; }).length : 0, modern: modern && modern.rows ? (modern.fine >= 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size, tiles: rd.cache.size };
     },
     baseCache: function (mode) { baseMode = mode; baseSig = null; scheduleRender(); },
     // For how long a layout of the names is carried while the map moves, in ms (0 lays them out every frame, as before
     // 23 November 2026; null puts back LABEL_CARRY_MS).
-    labelCarry: function (ms) { labelCarryMs = ms === null || ms === undefined ? null : +ms; labelCache.delete("carry"); labelCache.delete("layout"); },
+    labelCarry: function (ms) { labelCarryMs = ms === null || ms === undefined ? null : +ms; labelCache.delete("carry"); labelCache.delete("layout"); labelCache.delete("places"); },
     // Names from sprites: on or off (off draws them as text, as before 23 November 2026); with no argument, what is kept.
     // "letters" draws them as text but every line letter by letter, as the sprites are placed (a straight line as text is one
     // string, which the browser kerns), so that a check can compare the two drawings point for point.
