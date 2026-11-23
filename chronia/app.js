@@ -3837,6 +3837,9 @@
     }
     return out;
   }
+  // The marks are UCHRONIA's (22 November 2026, at Noah's asking): capitals, cities, and towns 30% larger than before, and a
+  // town's dot in the cities' ink.
+  var MARK_BIG = 1.3;
   function drawMark(p, k, kind, sel) {
     var x = p[0], y = p[1];
     ctx.fillStyle = pal["city-halo"];
@@ -3847,15 +3850,16 @@
       ctx.beginPath(); ctx.arc(x, y, R * 0.45, 0, TAU); ctx.fillStyle = pal.select; ctx.fill();
       return;
     }
+    k *= MARK_BIG;
     if (kind === 0) {
       ctx.beginPath(); ctx.arc(x, y, 4.3 * k, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85 * MARK_BIG; ctx.stroke();
       ctx.beginPath(); ctx.arc(x, y, 1.35 * k, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
       return;
     }
     var r = kind === 1 ? 1.85 * k : 1.4 * k;
     ctx.beginPath(); ctx.arc(x, y, r + 1, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = kind === 1 ? pal.city : pal.town; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
   }
   var CITY_STYLE = [
     { size: 12.4, font: "400 ", ls: 0.2, ink: "city", halo: 2.4 },
@@ -3865,7 +3869,7 @@
   function placeOne(placed, p, name, k, kind, held, ref, sel) {
     if (!sel && !(kind === 0 ? layers.capitals : layers.cities)) return false;
     var st = CITY_STYLE[kind], size = st.size * (k > 1 ? 1.05 : 1) * (sel ? 1.4 : 1);
-    var rm = (sel ? (kind === 0 ? 4.3 : kind === 1 ? 3.4 : 3) + 2.2 : kind === 0 ? 4.3 : kind === 1 ? 2.85 : 2.4) * k, h = size * 0.86, gap = rm + 3;
+    var rm = sel ? ((kind === 0 ? 4.3 : kind === 1 ? 3.4 : 3) + 2.2) * k : kind === 0 ? 4.3 * MARK_BIG * k : (kind === 1 ? 1.85 : 1.4) * MARK_BIG * k + 1, h = size * 0.86, gap = rm + 3;
     var mark = held ? null : { x: p[0] - rm, y: p[1] - rm, w: 2 * rm, h: 2 * rm };
     if (mark && !sel && (!insideView(mark) || collides(placed, mark))) return false;
     ctx.font = (sel ? "600 " : st.font) + size.toFixed(2) + "px " + SERIF;
@@ -3895,13 +3899,13 @@
     var add = function (q, r) { placed.push({ x: q[0] - r, y: q[1] - r, w: 2 * r, h: 2 * r, res: true }); };
     if (current && layers.capitals) {
       var caps = capitalList(current, S);
-      for (i = 0; i < caps.length; i++) add(caps[i].pt, 4.3 * k + 1);
+      for (i = 0; i < caps.length; i++) add(caps[i].pt, 4.3 * MARK_BIG * k + 1);
     }
     if (cities && layers.cities) {
       var list = cityRanked(now);
       for (i = 0; i < list.length && list[i].tier <= 1; i++) {
         pt = projectLL(list[i].c.lon, list[i].c.lat);
-        if (pt && pt[2] >= 0.25) add(pt, 2.85 * k + 1);
+        if (pt && pt[2] >= 0.25) add(pt, 1.85 * MARK_BIG * k + 2);
       }
     }
   }

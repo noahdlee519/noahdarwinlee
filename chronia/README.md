@@ -125,7 +125,7 @@ Changing a flag clears the cached sea layer and relief, then redraws. The flags 
 
 ### The key
 
-The key is the `#key` section in `index.html`, one `<li data-key="…">` per row, each with a small SVG sample drawn to match the map: the capital's mark at 4.3, 3.2, and 1.35 px, the city's dot at 1.85 px and the town's at 1.4 px, each with its halo; a 1.15 px border between two colours with their bands at 0.6 opacity; the dotted border as 0.1 px dashes 3.05 px apart with the softer bands; disputed land as stripes of two colours, from an SVG pattern turned 45°; and the division's broken line. The colours come from the same `--ch-` properties the canvas reads.
+The key is the `#key` section in `index.html`, one `<li data-key="…">` per row, each with a small SVG sample drawn to match the map: the capital's mark at 5.6, 4.16, and 1.76 px, the city's dot at 2.4 px and the town's at 1.82 px, each with its halo (UCHRONIA's marks, 30% larger than CHRONIA's were, since 22 November 2026: `MARK_BIG` in `app.js`, with a town's dot in the cities' ink); a 1.15 px border between two colours with their bands at 0.6 opacity; the dotted border as 0.1 px dashes 3.05 px apart with the softer bands; disputed land as stripes of two colours, from an SVG pattern turned 45°; and the division's broken line. The colours come from the same `--ch-` properties the canvas reads.
 
 `KEY_ROWS` in `app.js` holds one test per row, given the current map, and `syncKey()` hides the rows whose test fails:
 

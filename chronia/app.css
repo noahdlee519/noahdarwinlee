@@ -1828,7 +1828,7 @@ select.ch-save-input {
 }
 
 .ch-key-sample .k-halo { fill: var(--ch-city-halo); }
-.ch-key-sample .k-ring { fill: none; stroke: var(--ch-city); stroke-width: 0.85; }
+.ch-key-sample .k-ring { fill: none; stroke: var(--ch-city); stroke-width: 1.1; }
 .ch-key-sample .k-city { fill: var(--ch-city); }
 .ch-key-sample .k-town { fill: var(--ch-town); }
 .ch-key-sample .k-c1 { fill: var(--ch-c1); }
