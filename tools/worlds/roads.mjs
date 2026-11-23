@@ -16,7 +16,7 @@
 
 import { Heap } from './hydro.mjs';
 import { RANK } from './settlements.mjs';
-import { clamp } from './rng.mjs';
+import { clamp, makeNoise, fbm } from './rng.mjs';
 import { landmasses } from './terrain.mjs';
 
 export const ROAD_CLASSES = ['motorway', 'trunk', 'secondary', 'local'];
@@ -27,6 +27,7 @@ const DIRS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -
 export function buildRoads({ land, elev, hydro, owner, settlements, blocked, cultures, projects, width, height, rng }) {
   const W = width, H = height, S = W / 1600, g = 1.6 * S;
   const r = rng.fork('roads');
+  const nBend = makeNoise(r.fork('bends'));
   const CW = Math.floor(W / g), CH = Math.floor(H / g), CN = CW * CH;
   const { lakes, riverClass } = hydro;
   const px = (x, y) => clamp(Math.floor(y), 0, H - 1) * W + clamp(Math.floor(x), 0, W - 1);
@@ -130,7 +131,8 @@ export function buildRoads({ land, elev, hydro, owner, settlements, blocked, cul
   const uf = settlements.map((_, k) => k);
   const find = (k) => (uf[k] === k ? k : (uf[k] = find(uf[k])));
   const idx = new Map(settlements.map((s, k) => [s, k]));
-  const REUSE = [1, 0.72, 0.58, 0.5];
+  // Roads already built are cheaper to follow, so routes share them instead of running alongside.
+  const REUSE = [0.8, 0.5, 0.45, 0.42];
   let failed = 0;
   const failures = [];
   const join = (a, b, cls) => {
@@ -325,8 +327,24 @@ export function buildRoads({ land, elev, hydro, owner, settlements, blocked, cul
       keep.push(pts[best]);
       i = best;
     }
+    // Long straights get a gentle sweep, as a surveyed road has: two points a third of the way along, nudged
+    // sideways by a few per cent of the length (by a smooth noise, so it is the same wherever two roads meet).
+    const swept = [keep[0]];
+    for (let k = 1; k < keep.length; k++) {
+      const a = keep[k - 1], b = keep[k];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len > 7 * S) {
+        const nx = -(b[1] - a[1]) / len, ny = (b[0] - a[0]) / len;
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        const off = len * 0.045 * fbm(nBend, mx / (60 * S), my / (60 * S), 2);
+        const p1 = [a[0] + (b[0] - a[0]) / 3 + nx * off, a[1] + (b[1] - a[1]) / 3 + ny * off];
+        const p2 = [a[0] + (2 * (b[0] - a[0])) / 3 + nx * off * 0.8, a[1] + (2 * (b[1] - a[1])) / 3 + ny * off * 0.8];
+        if (segOk(a, p1) && segOk(p1, p2) && segOk(p2, b)) { swept.push(p1, p2); }
+      }
+      swept.push(b);
+    }
     // Rounded corners (Chaikin), wherever the rounded line still keeps to the land.
-    let line = keep;
+    let line = swept;
     for (let it = 0; it < 3; it++) {
       if (line.length < 3) break;
       const nx = [line[0]];
