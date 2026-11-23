@@ -6018,6 +6018,11 @@ const clash = left.length;
 if (left.length) console.log("touching pairs left in one colour, with every colour taken round both, even after moving their neighbours: " + left.map((p) => p.split("|").map((k) => (catalogue[+k.slice(1)] && k[0] === "N" ? catalogue[+k.slice(1)].n : LINEAGE[+k.slice(1)] ? LINEAGE[+k.slice(1)][0] : k)).join(" and ")).join("; "));
 console.log("colours: " + keptAll + " of " + hadColour + " keys with an earlier colour keep it after the greedy pass, " + greedyClash + " touching pairs in one colour (" + free + " where a free colour existed), " + repaired + " keys recoloured, " + clash + " left");
 
+// Colours Noah chose for states with none of their own or a colour he did not want (22 November 2026): the Crown of Aragon,
+// and so the subjects drawn in its colour, orange instead of the blue its name came to, which is the Holy Roman Empire's; the
+// Judicate of Arborea green instead of blue.
+const HISTORIC_COLOURS = { "Crown of Aragon": 1, "Judicate of Arborea": 8 };
+catalogue.forEach((e, id) => { if (Object.hasOwn(HISTORIC_COLOURS, e.n)) color.set(keyOf(id), HISTORIC_COLOURS[e.n]); });
 const baseColour = (id) => { const k = keyOf(id); return color.has(k) ? color.get(k) : -1; };
 const colourFrom = new Map();
 for (const [name, from, like] of COLOUR_FROM) colourFrom.set(catId(name), [[dayOf(from), baseColour(catId(like))]]);
