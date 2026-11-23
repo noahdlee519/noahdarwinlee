@@ -2083,15 +2083,34 @@ a.uc-menu-item {
 .uc-lang-select {
   display: block;
   width: 100%;
-  margin: 8px 0 2px;
-  padding: 5px 8px;
+  margin: 0;
+  padding: 5px 34px 5px 8px;
   border: 1px solid var(--uc-muted);
   border-radius: 6px;
+  -webkit-appearance: none;
+  appearance: none;
   background: transparent;
   color: var(--ink);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
+}
+.uc-lang-wrap {
+  position: relative;
+  display: block;
+  margin: 8px 0 2px;
+}
+.uc-lang-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.4px solid var(--ink);
+  border-bottom: 1.4px solid var(--ink);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
 }
 .uc-adv-note {
   margin: 4px 0 0 26px;
@@ -2283,7 +2302,7 @@ a.uc-menu-item {
   .uc-menu-list {
     position: absolute;
     top: calc(100% + 10px);
-    right: -8px;
+    right: calc(-8px + var(--uc-menu-shift, 0px));
     z-index: 8;
     display: flex;
     flex-direction: column;

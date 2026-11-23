@@ -5969,7 +5969,6 @@
     m.addEventListener("toggle", function () {
       if (!m.open) return;
       if (!sheetMode) closeMenus(m);
-      placeMenu(m);
       if (!$("history").hidden) showHistory(false);
     });
   });
@@ -6037,10 +6036,10 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitBar(true); });
   if (window.ResizeObserver) new ResizeObserver(function () {
     fitBar(false);
+    placeMenus();
     if (sheetMode || ui.bare) return;
     document.documentElement.style.setProperty("--uc-bar-h", (bar.offsetTop + bar.offsetHeight) + "px");
     if (!$("history").hidden) placeDrops();
-    menus.forEach(function (m) { if (m.open) placeMenu(m); });
     var h = barBase();
     if (h !== freeT) { freeT = h; applyView(); scheduleRender(); }
   }).observe(bar);
@@ -7526,13 +7525,11 @@
     root.setProperty("--uc-drop-top", Math.round(r.bottom + 10) + "px");
     root.setProperty("--uc-drop-right", Math.max(Math.round(document.documentElement.clientWidth - r.right - 8), dropRoom()) + "px");
   }
-  function placeMenu(m) {
-    var list = m.querySelector(".uc-menu-list");
-    if (!list) return;
-    list.style.right = "";
-    if (sheetMode || ui.bare) return;
-    var over = list.getBoundingClientRect().right - (document.documentElement.clientWidth - dropRoom());
-    if (over > 0) list.style.right = (parseFloat(getComputedStyle(list).right) + over) + "px";
+  function placeMenus() {
+    var root = document.documentElement.style, end = panel.querySelector(".uc-end");
+    if (sheetMode || ui.bare || !end) { root.removeProperty("--uc-menu-shift"); return; }
+    var over = end.getBoundingClientRect().right + 8 - (document.documentElement.clientWidth - dropRoom());
+    root.setProperty("--uc-menu-shift", Math.max(0, Math.ceil(over)) + "px");
   }
   function showHistory(open) {
     if (open) placeDrops();

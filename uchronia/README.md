@@ -425,7 +425,9 @@ it there). Built on the bones of `/greatercircle/`.
   `aria-label`, `data-tip`, `placeholder`, and `title` attributes once at
   start. Sea names are translated; country, region, and city names, and the
   historian's own writing, stay in English. **View → Language** changes it
-  and reloads the page.
+  and reloads the page. Its list draws its own arrow, a chevron 16 px in from
+  the right (`.uc-lang-wrap::after`), not the browser's, which sat at the
+  edge.
 - **sat.js**: the satellite view.
   - **A layer of its own.** The imagery is drawn on its own canvas beneath
     the map instead of being copied into the map's canvas every frame. Where
@@ -639,10 +641,11 @@ it there). Built on the bones of `/greatercircle/`.
   same corner from `placeDrops` (the `--uc-drop-top` and `--uc-drop-right`
   properties) when it opens and whenever the bar changes size. Neither the
   menus nor the panel reach past 8 px short of the map's buttons in the
-  bottom corner, which stay where they are (`dropRoom`; `placeMenu` moves an
-  open menu left when it would overlap them; 22 November 2026, at Noah's
-  asking, since the menus had covered the zoom buttons and the panel had
-  pushed them left). The bar fits itself to the window by measuring:
+  bottom corner, which stay where they are (`dropRoom`; `placeMenus` sets
+  `--uc-menu-shift` whenever the bar changes size, so a menu opens already
+  clear of them rather than moving after it opens; 22 November 2026, at
+  Noah's asking, since the menus had covered the zoom buttons and the panel
+  had pushed them left). The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
   without the tools' names; one row without the title; the tools, *New
   country*, and *New city* above undo and the menus; the tools above *New
