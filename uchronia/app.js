@@ -6561,9 +6561,9 @@
     scheduleRender();
   });
 
-  var HISTORIAN = "https://kigvciyyjlgjcgnwgrwf.supabase.co/functions/v1/dynamic-endpoint", STORE_HISTORY = "uchronia-history";
+  var HISTORIAN = "https://jvcmeuqlyygpwelmvxuv.supabase.co/functions/v1/historian", STORE_HISTORY = "uchronia-history";
   var places = new Map(), historyBusy = false, historyKey = "";
-  var AUTH = "https://kigvciyyjlgjcgnwgrwf.supabase.co/auth/v1", STORE_AUTH = "uchronia-auth";
+  var AUTH = "https://jvcmeuqlyygpwelmvxuv.supabase.co/auth/v1", STORE_AUTH = "chronia-auth", STORE_PREMIUM = "chronia-premium";
   var session = null, sessionRead = false, refreshing = null, historianLeft = null, historianCap = 5, signedBack = false;
   function readSession() {
     if (sessionRead) return session;
@@ -6571,13 +6571,15 @@
     try {
       var s = JSON.parse(localStorage.getItem(STORE_AUTH) || "null");
       session = s && typeof s.a === "string" && typeof s.r === "string" ? s : null;
+      if (session && !session.email) session.email = claimsOf(session.a).email || "";
+      localStorage.removeItem("uchronia-auth");
     } catch (e) { session = null; }
     return session;
   }
   function keepSession(s) {
     session = s; sessionRead = true;
     if (!s) historianLeft = null;
-    try { if (s) localStorage.setItem(STORE_AUTH, JSON.stringify(s)); else localStorage.removeItem(STORE_AUTH); } catch (e) { }
+    try { if (s) localStorage.setItem(STORE_AUTH, JSON.stringify(s)); else { localStorage.removeItem(STORE_AUTH); localStorage.removeItem(STORE_PREMIUM); } } catch (e) { }
   }
   function claimsOf(token) {
     try {
@@ -6601,7 +6603,7 @@
   // an ID token, which the server function trades with Supabase for a session.
   // Without a client ID, or if Google's script won't load, the page falls
   // back to Supabase's redirect, keeping the draft in the tab while it goes.
-  var GOOGLE_CLIENT = "925004414037-rc7f9m47jivrobj48p33vmkdfpvuva7t.apps.googleusercontent.com", gsiState = 0, gsiNonce = "", pendingAsk = null;
+  var GOOGLE_CLIENT = "396377978550-hnmvoi4lkdovg00o0vat20ckslml6l1m.apps.googleusercontent.com", gsiState = 0, gsiNonce = "", pendingAsk = null;
   function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join(""); }
   function sha256Hex(text) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
@@ -6676,6 +6678,7 @@
     location.href = AUTH + "/authorize?provider=google&redirect_to=" + encodeURIComponent(location.origin + location.pathname + "?historian");
   }
   function freshToken() {
+    if (!refreshing) sessionRead = false;
     var s = readSession();
     if (!s) return Promise.resolve(null);
     if (s.e - Date.now() > 60000) return Promise.resolve(s.a);
@@ -6722,6 +6725,11 @@
     if (!signedIn()) return;
     callHistorian({ mode: "me" }).then(function (res) { return res.ok ? res.json() : null; }).then(function (d) {
       if (d && isInt(d.left)) { historianLeft = d.left; if (isInt(d.cap)) historianCap = d.cap; }
+      if (d && typeof d.premium === "boolean") {
+        var c = claimsOf(session ? session.a : "");
+        try { if (d.premium && c.sub) localStorage.setItem(STORE_PREMIUM, c.sub); else if (!d.premium) localStorage.removeItem(STORE_PREMIUM); } catch (e) { }
+        $("about-premium").hidden = d.premium;
+      }
       showAccount();
     }).catch(function (e) { console.warn("historian", e); });
   }
@@ -7716,7 +7724,7 @@
   function needSignIn(go) {
     if (signedIn()) return false;
     pendingAsk = go || null;
-    historyStatus(SIGN_IN + T(" Each account can ask five times a day."));
+    historyStatus(SIGN_IN + T(" Each account can ask five times a day, or 25 times with CHRONIA Premium."));
     var g = gsiState === 2 ? $("history-gsi") : $("history-google");
     g.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
     g.focus({ preventScroll: true });
@@ -8033,7 +8041,7 @@
     { target: "#new-country", demo: "found", title: "New country", text: "Found a country with its own name and colour, then give it land." },
     { target: "[data-tool=\"city\"]", demo: "city", title: "New city", text: "New city (C). Click the map to found a city. To change one, click it, then drag it somewhere new or make it a capital, a city, or a town." },
     { target: "#undo", demo: "undo", title: "Undo", text: "Every change is one step back. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
-    { target: "#history-btn", title: "Historian", text: "Claude plays a historian of your world. It writes how your map came to be: where history split from ours and what followed, era by era, with each place it names linked on the map. You’ll need to sign in with Google, and each account can ask five times a day." },
+    { target: "#history-btn", title: "Historian", text: "Claude plays a historian of your world. It writes how your map came to be: where history split from ours and what followed, era by era, with each place it names linked on the map. You’ll need to sign in with Google, and each account can ask five times a day, or 25 times with CHRONIA Premium." },
     { target: "#history-turn-fields|#history", history: "turn", title: "Redraw from a turning point", text: "Or give it a what-if, like “What if Rome never fell?”, and it redraws the world for you. You can add details if you like: when history splits from ours, which year to show, where to focus, what to leave alone, and how far to go. It shows each step as it works." },
     { target: "#history-saved-btn|#history", history: "map", title: "Ask more, and keep it", text: "Under each history, ask a follow-up or ask it to change the map; its edits undo in one step. Every history is kept under Saved in this browser, with its map and your questions." },
     { target: "#check-menu", title: "Check", text: "Lists things worth a second look: countries without a name or a capital, and neighbours with the same colour. Click an item to jump to it." },
