@@ -990,8 +990,10 @@ it there). Built on the bones of `/greatercircle/`.
 - The **ⓘ** button by the title opens a short note on the map, a link that
   opens Historian, a link to r/uchronia, a link to [CHRONIA](../chronia/) for
   the borders as they really were, its keys, links to its sources, and,
-  after Privacy and Terms, a DONATE button that opens
-  [ko-fi.com/noahdarwinlee](https://ko-fi.com/noahdarwinlee) in a new tab; a second click closes it.
+  after Privacy and Terms, a Get Premium button that opens CHRONIA's Premium
+  page (hidden once this browser has Premium, by `localStorage["chronia-premium"]`),
+  then "© 2026 Noah Darwin Lee | noahdarwinlee.com"; a second click closes it.
+  The ⓘ is drawn as a serif i, like CHRONIA's.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
   type, colours and, in Antique, its paper), shown after a moment's hover or
   on keyboard focus, never on a touch screen; the same words are given to

@@ -35,6 +35,7 @@
     });
   }
   translatePage(document.body);
+  try { if (localStorage.getItem("chronia-premium")) $("about-premium").hidden = true; } catch (e) {}
   if (L10N[document.title]) document.title = L10N[document.title];
   var langSel = $("lang-select"), LANGS = window.CH_LANGS || { en: "English" };
   if (LANG !== "en") $("lang-h").textContent = T("Language") + " | Language";
