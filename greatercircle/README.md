@@ -104,6 +104,28 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   is. The globe's buttons explain themselves on hover. Clicking a country
   with A and B set offers to avoid it or to move A or B there.
 
+  The flat map (the button under the satellite one, or M; `map=flat` in the
+  URL, and remembered in the browser) shows the whole world in the Natural
+  Earth projection, rotated to centre on the route; routes are still the
+  shortest on the sphere, so they curve, as they do on a seat-back map. Its
+  land and borders are drawn by the same fast path as the globe's, each
+  ring's longitudes unwrapped once so it can be drawn at the copies either
+  side of the edge of the map and clipped to it (rings round a pole are
+  closed along it), and everything off the screen skipped; the routes, the
+  buffers, and the regions go through d3-geo, which cuts them at the edge.
+  Dragging pans it, east and west all the way round; the satellite view is
+  the globe's only. Country names are placed in the land: each country's
+  label sits at the pole of inaccessibility of its largest piece
+  (polylabel, worked out once in idle time), centred on the stretch of its
+  parallel inside the border, sized by its area on the screen, and shown
+  only where it fits that stretch and clears the names already placed,
+  largest countries first; the city names then keep clear of them. On the
+  globe each letter is set along the parallel, so the names curve with the
+  latitude lines and turn as the globe does; on the flat map, where the
+  parallels are straight, they are straight. Zoomed into a large country
+  whose label point is off the screen, its name follows the middle of the
+  view. Long names are shortened (DR Congo, Central African Rep.).
+
   On a phone the panel is a sheet at three heights: a peek with the codes and
   the distance, half, and full. Drag it by the handle or the top of its
   content and it follows the finger, stretches past either end, and settles
