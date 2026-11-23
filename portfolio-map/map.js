@@ -279,6 +279,7 @@
     svg("path", { class: "map-land", d: world.coast }, Limg.tpl);
     var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" }, Limg.tpl);
     this.tileHost = svg("g", { class: "map-tiles" }, g);
+    this.tiles = new Tiles(this);
     // Rivers, then the sea and lakes over them, the coast, and the estuaries.
     var La = layer("map-water", true);
     var rg = svg("g", { class: "map-rivers" }, La.tpl);
@@ -651,8 +652,91 @@
     this.host.classList.toggle("is-z2", z >= 1.9);
     this.host.classList.toggle("is-z3", z >= 2.9);
     this.placeLabels();
+    if (!this.anim && !this.interacting) this.tiles.update();
     if (this.onDraw) this.onDraw(this);
     this.onView(this);
+  };
+
+  // ------------------------------------------------------------ finer tiles
+
+  // Zoomed in, the land-cover picture is drawn again from finer tiles, for the part of the map in view only, so it
+  // stays sharp to the 4x limit on a high-density screen. The whole-world picture stays underneath, so a tile still
+  // on its way shows the same land, only softer.
+  function Tiles(view) {
+    this.view = view;
+    this.els = {};
+    this.level = null;
+  }
+  Tiles.prototype.levelFor = function () {
+    var v = this.view, w = v.world, T = w.tiles;
+    if (!T || !T.levels || !T.levels.length) return null;
+    // Pixels the screen shows per map unit, counted to 2x at most: beyond that the eye gains little, and a phone's
+    // first view then needs only the whole-world picture.
+    var need = v.s * Math.min(window.devicePixelRatio || 1, 2), base = w.image.width / w.width;
+    if (need <= base * 1.3) return null;
+    var lv = null;
+    // The coarsest level with a pixel for every screen pixel (within a few per cent).
+    for (var i = 0; i < T.levels.length; i++) { lv = T.levels[i]; if (lv.scale * 1.05 >= need) break; }
+    return lv;
+  };
+  Tiles.prototype.update = function () {
+    var v = this.view, w = v.world, T = w.tiles, lv = this.levelFor(), want = {}, self = this;
+    this.level = lv;
+    if (lv) {
+      var z = v.size(), margin = 96, W = w.width, H = w.height, u = lv.unit;
+      var x0 = (-margin - v.tx) / v.s, x1 = (z.w + margin - v.tx) / v.s;
+      var y0 = (-margin - v.ty) / v.s, y1 = (z.h + margin - v.ty) / v.s;
+      var r0 = Math.max(0, Math.floor(y0 / u)), r1 = Math.min(lv.rows - 1, Math.floor(y1 / u));
+      for (var k = Math.floor(x0 / W); k <= Math.floor(x1 / W); k++) {
+        for (var col = 0; col < lv.cols; col++) {
+          var tx0 = col * u + k * W, tx1 = Math.min(W, (col + 1) * u) + k * W;
+          if (tx1 < x0 || tx0 > x1) continue;
+          for (var row = r0; row <= r1; row++) {
+            var idx = row * lv.cols + col;
+            if (!((parseInt(lv.has.charAt(idx >> 2), 16) >> (idx & 3)) & 1)) continue;
+            want[lv.scale + "/" + col + "-" + row + "@" + k] = { lv: lv, col: col, row: row, k: k };
+          }
+        }
+      }
+      void H;
+    }
+    var pending = 0;
+    Object.keys(want).forEach(function (key) {
+      if (!self.els[key]) self.els[key] = self._make(want[key]);
+      if (!self.els[key].loaded) pending++;
+    });
+    // Tiles out of view go at once; tiles of another level wait until this level's are in.
+    Object.keys(this.els).forEach(function (key) {
+      if (want[key]) return;
+      var el = self.els[key];
+      if (lv && el.scale === lv.scale) { el.node.remove(); delete self.els[key]; }
+      else if (!pending || !lv) { el.node.remove(); delete self.els[key]; }
+    });
+    this.pending = pending;
+  };
+  Tiles.prototype._make = function (t) {
+    var v = this.view, w = v.world, lv = t.lv, self = this;
+    var px = Math.min(lv.size, Math.round(w.width * lv.scale) - t.col * lv.size), py = Math.min(lv.size, Math.round(w.height * lv.scale) - t.row * lv.size);
+    var node = svg("image", {
+      class: "map-tile", x: t.col * lv.unit + t.k * w.width, y: t.row * lv.unit,
+      width: px / lv.scale, height: py / lv.scale, preserveAspectRatio: "none"
+    }, v.tileHost);
+    var el = { node: node, scale: lv.scale, url: ROOT + "worlds/" + w.tiles.src + lv.scale + "/" + t.col + "-" + t.row + ".png", loaded: false };
+    node.addEventListener("load", function () {
+      el.loaded = true;
+      node.classList.add("is-in");
+      if (self.pending && !--self.pending) self.update();
+    });
+    node.addEventListener("error", function () { el.loaded = true; });
+    v.picture(el.url).then(function (href) { node.setAttribute("href", href); });
+    return el;
+  };
+  Tiles.prototype.recolour = function () {
+    var v = this.view;
+    Object.keys(this.els).forEach(function (key) {
+      var el = this.els[key];
+      v.picture(el.url).then(function (href) { el.node.setAttribute("href", href); });
+    }, this);
   };
 
   // ------------------------------------------------------------ selection

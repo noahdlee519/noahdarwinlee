@@ -4,10 +4,11 @@
 //   node tools/portfolio-map-check.mjs content
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
-//   node tools/portfolio-map-check.mjs [content|map|interface|themes|all] [base URL]
+//   node tools/portfolio-map-check.mjs [content|map|interface|themes|sharp|all] [base URL]
 //       map: the world draws 18 countries and their labels, zoom stops at 4x, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
 //       themes: Orange, White, and Night (the night map too), on a desktop and a phone, and switching from the menu
+//       sharp: the first view loads only the world's two files; at 4x on a 2x screen, the finest tiles draw the land
 //       all (the default): every stage
 //
 // Screenshots go to /tmp/portfolio-map-*.png.
@@ -71,7 +72,7 @@ function content() {
   ok(projects.filter((p) => p.tier === 'flagship').every((p) => p.media.length > 0), 'every flagship has media');
   ok(exists('/portfolio/Lee_Noah_Resume.pdf'), 'the resume the rail opens exists');
   const worlds = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', 'index.json'), 'utf8'));
-  let size = 0;
+  let size = 0, tileCount = 0, tileBytes = 0;
   for (const w of worlds) {
     const d = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`), 'utf8'));
     const ids = new Set(d.projects.map((p) => p.id));
@@ -81,9 +82,23 @@ function content() {
     let edge = 0;
     for (let y = 0; y < pic.H; y++) if (pic.px[y * pic.W] !== 7 || pic.px[y * pic.W + pic.W - 1] !== 7) edge++;
     if (edge) ok(false, `${w.slug}: land at the east or west edge in ${edge} rows, so the world can't wrap cleanly`);
+    // The finer tiles: every one the world file lists is there, and no other.
+    const T = d.tiles;
+    if (!T || !T.levels || !T.levels.length) ok(false, `${w.slug}: no finer tiles for zooming in`);
+    else for (const lv of T.levels) {
+      let listed = 0, found = 0;
+      for (let i = 0; i < lv.cols * lv.rows; i++) {
+        const on = (parseInt(lv.has.charAt(i >> 2), 16) >> (i & 3)) & 1;
+        const f = join(root, 'portfolio-map', 'worlds', T.src, String(lv.scale), `${i % lv.cols}-${Math.floor(i / lv.cols)}.png`);
+        if (on) { listed++; if (existsSync(f)) { found++; tileBytes += readFileSync(f).length; } }
+      }
+      tileCount += found;
+      if (listed !== found) ok(false, `${w.slug}: ${listed - found} of the ${lv.scale}-per-unit tiles it lists are missing`);
+    }
     size = Math.max(size, readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`)).length + readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.png`)).length);
   }
-  ok(true, `${worlds.length} worlds each hold every project and meet the sea at their east and west edges; the largest is ${(size / 1024).toFixed(0)} KB (json and png)`);
+  ok(size <= 300 * 1024, `${worlds.length} worlds each hold every project and meet the sea at their east and west edges; the largest first load is ${(size / 1024).toFixed(0)} KB (json and png)`);
+  ok(tileCount > 0, `the finer tiles are all there: ${tileCount} in all, ${(tileBytes / 1048576).toFixed(1)} MB across the twenty worlds, loaded only for the part of the map in view`);
 }
 
 if (stage === 'content' || stage === 'all') content();
@@ -422,6 +437,47 @@ async function themesStage(browser) {
   await ctx.close();
 }
 
+async function sharpStage(browser) {
+  console.log('sharpness');
+  // A first view loads the world's two files and nothing finer.
+  const ctx1 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p1 = await ctx1.newPage();
+  let bytes = 0, tiles = 0;
+  p1.on('response', async (r) => {
+    const u = r.url();
+    if (u.includes('/tiles/')) tiles++;
+    if (/\/worlds\/[a-z-]+\.(json|png)$/.test(u) && !u.endsWith('index.json')) bytes += Number((await r.allHeaders())['content-length'] || 0);
+  });
+  await p1.goto(PAGE + '?world=le-guin');
+  await p1.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready);
+  await p1.waitForTimeout(1800);
+  ok(tiles === 0 && bytes > 0 && bytes <= 300 * 1024, `the first view loads ${(bytes / 1024).toFixed(0)} KB of map, and no finer tiles`);
+  await ctx1.close();
+
+  // Zoomed all the way in on a 2x screen, the land cover is drawn from the finest tiles, every pixel its own.
+  for (const phone of [false, true]) {
+    const ctx = await browser.newContext(phone
+      ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+      : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+    await ctx.addInitScript(() => { try { localStorage.setItem('ndl-theme', 'white'); } catch (e) {} });
+    const page = await open(browser, '?world=le-guin', { context: ctx });
+    await page.waitForTimeout(1400);
+    const got = await page.evaluate(async () => {
+      const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.limits().max;
+      m.set({ s, tx: r.l + r.w / 2 - (l.x - 40) * s, ty: r.t + r.h / 2 - (l.y + 20) * s });
+      m.render(true);
+      for (let i = 0; i < 60 && (m.tiles.pending || !document.querySelector('.map-tile.is-in')); i++) await new Promise((res) => setTimeout(res, 100));
+      await new Promise((res) => setTimeout(res, 300));
+      const lv = m.tiles.level;
+      return { zoom: m.zoom(), scale: lv && lv.scale, needed: m.s * Math.min(devicePixelRatio, 2), shown: document.querySelectorAll('.map-tile.is-in').length, pending: m.tiles.pending };
+    });
+    ok(Math.abs(got.zoom - 4) < 0.01 && got.scale >= got.needed && got.shown > 0 && !got.pending, `${phone ? 'phone' : 'desktop'} at 4x on a ${phone ? 3 : 2}x screen: ${got.shown} tiles at ${got.scale} pixels per map unit, for the ${got.needed.toFixed(1)} the screen shows`);
+    await page.screenshot({ path: phone ? '/tmp/portfolio-map-zoom4-phone.png' : '/tmp/portfolio-map-zoom4.png' });
+    ok(page.errors.length === 0, `no errors zoomed in${phone ? ' on the phone' : ''}${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
+    await ctx.close();
+  }
+}
+
 if (stage !== 'content') {
   const { chromium } = createRequire(import.meta.url)('playwright');
   const browser = await chromium.launch();
@@ -429,6 +485,7 @@ if (stage !== 'content') {
     if (stage === 'map' || stage === 'all') await mapStage(browser);
     if (stage === 'interface' || stage === 'all') await interfaceStage(browser);
     if (stage === 'themes' || stage === 'all') await themesStage(browser);
+    if (stage === 'sharp' || stage === 'all') await sharpStage(browser);
   } finally {
     await browser.close();
   }

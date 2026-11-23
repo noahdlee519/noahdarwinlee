@@ -7,9 +7,11 @@
 // 0.2 grid, and written as a smooth curve through the midpoints of its
 // segments, in relative path commands to keep the file small.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { encodeIndexedPng, hexToRgb } from './png.mjs';
+import { prepareCover, renderCover } from './climate.mjs';
+import { TILE_LEVELS } from './world.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
@@ -394,6 +396,8 @@ export function buildWorldFiles(world) {
   const data = {
     name, slug, width: W, height: H,
     image: { src: `${slug}.png`, width: pic.width, height: pic.height },
+    // Finer tiles of the picture, for zooming in (see writeWorld); filled in there.
+    tiles: null,
     // Bottom to top. The sea is the map's rectangle less the coast path.
     order: ['image', 'rivers', 'sea', 'lakes', 'coast', 'estuaries', 'provinceBorders', 'borders', 'labels'],
     palette: PALETTE,
@@ -428,11 +432,58 @@ export function buildWorldFiles(world) {
   return { json: JSON.stringify(data), png, data };
 }
 
-// writeWorld(world, outDir) => { jsonBytes, pngBytes }
+// The picture drawn finer, cut into tiles: tiles/<slug>/<scale>/<col>-<row>.png,
+// in the picture's palette. A tile that is all sea is not written; the world
+// file lists which tiles exist, one hex digit per four tiles, row by row.
+export function buildTiles(world) {
+  const files = [], levels = [];
+  if (!world.coverArgs) return { files, levels };
+  const W = world.width, H = world.height;
+  const palette = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
+  for (const { scale, size } of TILE_LEVELS) {
+    const prep = prepareCover({ ...world.coverArgs, scale });
+    const unit = size / scale, cols = Math.ceil(W / unit), rows = Math.ceil(H / unit);
+    const bits = new Uint8Array(cols * rows);
+    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+      const x0 = col * size, y0 = row * size;
+      const w = Math.min(size, prep.W - x0), h = Math.min(size, prep.H - y0);
+      const { cover, ponds } = renderCover(prep, x0, y0, w, h);
+      const indices = new Uint8Array(w * h);
+      let land = false;
+      for (let i = 0; i < indices.length; i++) {
+        const v = cover[i] > 6 || ponds[i] ? 7 : cover[i];
+        indices[i] = v;
+        if (v !== 7) land = true;
+      }
+      if (!land) continue;
+      bits[row * cols + col] = 1;
+      files.push({ path: `${scale}/${col}-${row}.png`, png: encodeIndexedPng(w, h, indices, palette) });
+    }
+    let has = '';
+    for (let i = 0; i < bits.length; i += 4) has += ((bits[i] | (bits[i + 1] << 1) | (bits[i + 2] << 2) | (bits[i + 3] << 3)) & 15).toString(16);
+    levels.push({ scale, size, unit, cols, rows, has });
+  }
+  return { files, levels };
+}
+
+// writeWorld(world, outDir) => { jsonBytes, pngBytes, tileBytes, tileCount }
 export function writeWorld(world, outDir) {
-  const { json, png } = buildWorldFiles(world);
+  const { data, png } = buildWorldFiles(world);
+  const tiles = buildTiles(world);
+  data.tiles = tiles.levels.length ? { src: `tiles/${world.slug}/`, levels: tiles.levels } : undefined;
+  const json = JSON.stringify(data);
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, `${world.slug}.json`), json);
   writeFileSync(join(outDir, `${world.slug}.png`), png);
-  return { jsonBytes: Buffer.byteLength(json), pngBytes: png.length };
+  let tileBytes = 0;
+  if (tiles.files.length) {
+    const dir = join(outDir, 'tiles', world.slug);
+    rmSync(dir, { recursive: true, force: true });
+    for (const f of tiles.files) {
+      mkdirSync(join(dir, f.path.split('/')[0]), { recursive: true });
+      writeFileSync(join(dir, f.path), f.png);
+      tileBytes += f.png.length;
+    }
+  }
+  return { jsonBytes: Buffer.byteLength(json), pngBytes: png.length, tileBytes, tileCount: tiles.files.length };
 }

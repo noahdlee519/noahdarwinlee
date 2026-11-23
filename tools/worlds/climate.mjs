@@ -125,10 +125,11 @@ export function buildFields({ elev, land, width, height, rng, style = {}, dist }
   return { temp, rain, moist, dist: d };
 }
 
-// A mesh of jittered triangles over the map: { id: Int32Array per pixel, cx, cy }.
-// `step` is the lattice spacing, `stretch` how long the facets are for their
-// width, `angle` the way they lean.
-function facetMesh(rng, W, H, step, stretch, angle) {
+// A mesh of jittered triangles over the map. `step` is the lattice spacing,
+// `stretch` how long the facets are for their width, `angle` the way they lean.
+// The mesh is geometry: buildMesh lays it out (drawing from the rng exactly as
+// the whole picture always has), and rasterMesh paints any window of it.
+function buildMesh(rng, W, H, step, stretch, angle) {
   const ca = Math.cos(angle), sa = Math.sin(angle);
   const ax = ca * step * stretch, ay = sa * step * stretch; // lattice axis i
   const bx = (-sa * step) / stretch, by = (ca * step) / stretch; // lattice axis j
@@ -147,46 +148,55 @@ function facetMesh(rng, W, H, step, stretch, angle) {
     vx[j * ni + i] = u * ax + v * bx;
     vy[j * ni + i] = u * ay + v * by;
   }
-  const id = new Int32Array(W * H).fill(-1);
-  const cx = [], cy = [];
-  const fill = (x0, y0, x1, y1, x2, y2) => {
-    const tri = cx.length;
-    cx.push((x0 + x1 + x2) / 3); cy.push((y0 + y1 + y2) / 3);
-    const minX = Math.max(0, Math.floor(Math.min(x0, x1, x2))), maxX = Math.min(W - 1, Math.ceil(Math.max(x0, x1, x2)));
-    const minY = Math.max(0, Math.floor(Math.min(y0, y1, y2))), maxY = Math.min(H - 1, Math.ceil(Math.max(y0, y1, y2)));
-    if (minX > maxX || minY > maxY) return;
-    let area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
-    if (area === 0) return;
+  // Triangles in the order they are numbered: three vertex indices each.
+  const count = (nj - 1) * (ni - 1) * 2;
+  const tri = new Int32Array(count * 3);
+  let t = 0;
+  for (let j = 0; j < nj - 1; j++) for (let i = 0; i < ni - 1; i++) {
+    const a = j * ni + i, b = a + 1, c = a + ni, d = c + 1;
+    // Split each cell along one diagonal or the other.
+    if (rng.chance(0.5)) { tri.set([a, b, d, a, d, c], t); } else { tri.set([a, b, c, b, d, c], t); }
+    t += 6;
+  }
+  const cx = new Float32Array(count), cy = new Float32Array(count);
+  for (let k = 0; k < count; k++) {
+    const p = tri[k * 3], q = tri[k * 3 + 1], r = tri[k * 3 + 2];
+    cx[k] = (vx[p] + vx[q] + vx[r]) / 3; cy[k] = (vy[p] + vy[q] + vy[r]) / 3;
+  }
+  return { vx, vy, tri, cx, cy, count, W, H };
+}
+
+// Which facet each pixel of a window (x0, y0, w, h, in the mesh's own pixels)
+// falls in: { id: Int32Array(w * h) }.
+function rasterMesh(mesh, x0, y0, w, h) {
+  const { vx, vy, tri, count, W, H } = mesh;
+  const id = new Int32Array(w * h).fill(-1);
+  const X1 = Math.min(W, x0 + w) - 1, Y1 = Math.min(H, y0 + h) - 1;
+  const eps = -1e-3;
+  for (let k = 0; k < count; k++) {
+    const p = tri[k * 3], q = tri[k * 3 + 1], r = tri[k * 3 + 2];
+    const xa = vx[p], ya = vy[p], xb = vx[q], yb = vy[q], xc = vx[r], yc = vy[r];
+    const minX = Math.max(x0, 0, Math.floor(Math.min(xa, xb, xc))), maxX = Math.min(X1, Math.ceil(Math.max(xa, xb, xc)));
+    if (minX > maxX) continue;
+    const minY = Math.max(y0, 0, Math.floor(Math.min(ya, yb, yc))), maxY = Math.min(Y1, Math.ceil(Math.max(ya, yb, yc)));
+    if (minY > maxY) continue;
+    const area = (xb - xa) * (yc - ya) - (xc - xa) * (yb - ya);
+    if (area === 0) continue;
     const sgn = area > 0 ? 1 : -1;
-    const eps = -1e-3;
     for (let y = minY; y <= maxY; y++) {
       const py = y + 0.5;
       for (let x = minX; x <= maxX; x++) {
         const px = x + 0.5;
-        const w0 = ((x1 - x0) * (py - y0) - (y1 - y0) * (px - x0)) * sgn;
-        if (w0 < eps) continue;
-        const w1 = ((x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)) * sgn;
-        if (w1 < eps) continue;
-        const w2 = ((x0 - x2) * (py - y2) - (y0 - y2) * (px - x2)) * sgn;
-        if (w2 < eps) continue;
-        id[y * W + x] = tri;
+        if (((xb - xa) * (py - ya) - (yb - ya) * (px - xa)) * sgn < eps) continue;
+        if (((xc - xb) * (py - yb) - (yc - yb) * (px - xb)) * sgn < eps) continue;
+        if (((xa - xc) * (py - yc) - (ya - yc) * (px - xc)) * sgn < eps) continue;
+        id[(y - y0) * w + (x - x0)] = k;
       }
-    }
-  };
-  for (let j = 0; j < nj - 1; j++) for (let i = 0; i < ni - 1; i++) {
-    const a = j * ni + i, b = a + 1, c = a + ni, d = c + 1;
-    // Split each cell along one diagonal or the other.
-    if (rng.chance(0.5)) {
-      fill(vx[a], vy[a], vx[b], vy[b], vx[d], vy[d]);
-      fill(vx[a], vy[a], vx[d], vy[d], vx[c], vy[c]);
-    } else {
-      fill(vx[a], vy[a], vx[b], vy[b], vx[c], vy[c]);
-      fill(vx[b], vy[b], vx[d], vy[d], vx[c], vy[c]);
     }
   }
   // Any pixel the triangles' edges missed takes its neighbour's facet.
-  for (let i = 0; i < W * H; i++) if (id[i] < 0) id[i] = i > 0 && id[i - 1] >= 0 ? id[i - 1] : 0;
-  return { id, cx: Float32Array.from(cx), cy: Float32Array.from(cy), count: cx.length };
+  for (let i = 0; i < w * h; i++) if (id[i] < 0) id[i] = i > 0 && id[i - 1] >= 0 ? id[i - 1] : 0;
+  return id;
 }
 
 // Moisture to a position on the scale desert 0 | steppe 1 | grass 2 | woodland 3 | forest 4 (to 5).
@@ -208,25 +218,30 @@ const VEG_CLASS = [COVER.DESERT, COVER.STEPPE, COVER.GRASS, COVER.WOODLAND, COVE
 // the picture. The facets are geometry, so they come out sharper, not different.
 // bleed (optional, with scale): carry the land cover this many map units out
 // to sea, so a smooth vector coast drawn over the picture never shows a gap.
-export function classifyCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0 }) {
+export function classifyCover(opts) {
+  const prep = prepareCover(opts);
+  return { ...renderCover(prep, 0, 0, prep.W, prep.H), width: prep.W, height: prep.H };
+}
+
+// prepareCover(same options as classifyCover) => everything the land cover at
+// one scale needs, ready to paint any window of it with renderCover.
+export function prepareCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0 }) {
   const W0 = width, H0 = height;
-  const W = Math.round(W0 * scale), H = Math.round(H0 * scale), N = W * H;
+  const W = Math.round(W0 * scale), H = Math.round(H0 * scale);
   const S = W / 1600;
   const r = rng.fork ? rng.fork('cover') : rng;
-  const { temp, moist } = fields;
 
   // Three meshes: broad patches, and two sets of thin shards leaning different ways.
   const lean = r.range(0, Math.PI);
-  const broad = facetMesh(r, W, H, 23 * S, 1.25, lean + 0.6);
-  const fineA = facetMesh(r, W, H, 8.5 * S, 1.45, lean);
-  const fineB = facetMesh(r, W, H, 8.5 * S, 1.45, lean + 1.25);
-  const tiny = facetMesh(r, W, H, 5 * S, 1.6, lean + 2.2);
+  const broad = buildMesh(r, W, H, 23 * S, 1.25, lean + 0.6);
+  const fineA = buildMesh(r, W, H, 8.5 * S, 1.45, lean);
+  const fineB = buildMesh(r, W, H, 8.5 * S, 1.45, lean + 1.25);
+  const tiny = buildMesh(r, W, H, 5 * S, 1.6, lean + 2.2);
   const rand = (n) => { const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = r.next(); return a; };
   const broadJ = rand(broad.count), broadPick = rand(broad.count);
   const fineJA = rand(fineA.count), fineJB = rand(fineB.count);
   const fineKA = rand(fineA.count), fineKB = rand(fineB.count);
   const tinyJ = rand(tiny.count);
-
   // Wet ground near a river, for green banks in dry country.
   let bank = null;
   if (water && water.rivers) {
@@ -263,20 +278,33 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
     }
   }
 
+  return { W0, H0, W, H, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest };
+}
+
+// renderCover(prep, x0, y0, w, h) => { cover, ponds } for a window of the picture
+// (in its own pixels): a class index per pixel, 255 for the sea.
+export function renderCover(prep, wx0, wy0, w, h) {
+  const { W0, H0, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest } = prep;
+  const { temp, moist } = fields;
+  const N = w * h;
+  const broadId = rasterMesh(broad, wx0, wy0, w, h), fineAId = rasterMesh(fineA, wx0, wy0, w, h);
+  const fineBId = rasterMesh(fineB, wx0, wy0, w, h), tinyId = rasterMesh(tiny, wx0, wy0, w, h);
   const cover = new Uint8Array(N).fill(COVER.WATER);
   const ponds = new Uint8Array(N);
   const pondiness = style.ponds ?? 1;
-  for (let y = 0; y < H; y++) {
+  for (let ly = 0; ly < h; ly++) {
+    const y = wy0 + ly;
     const y0 = Math.min(H0 - 1, Math.floor(y / scale));
-    for (let x = 0; x < W; x++) {
-      const i = y * W + x;
+    for (let lx = 0; lx < w; lx++) {
+      const x = wx0 + lx;
+      const i = ly * w + lx;
       const i0 = y0 * W0 + Math.min(W0 - 1, Math.floor(x / scale));
       const onLand = land[i0] === 1;
       if (!onLand && !(nearest && nearest[i0] >= 0)) continue;
-      const b = broad.id[i];
+      const b = broadId[i];
       const useA = broadPick[b] < 0.5;
       const mesh = useA ? fineA : fineB;
-      const f = mesh.id[i];
+      const f = useA ? fineAId[i] : fineBId[i];
       // The facet's class comes from the climate at its centre, so the whole
       // facet is one colour. A facet centred in the sea reads its own pixel.
       let s = onLand ? i0 : nearest[i0];
@@ -315,7 +343,7 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
 
       // The smallest facets: a scatter of slivers a class up or down, and
       // snow and rock broken up and mottled, so neither lies in solid blocks.
-      const tf = tiny.id[i];
+      const tf = tinyId[i];
       if (c === COVER.SNOW) {
         const u = tinyJ[tf];
         if (u < (polar ? 0.12 : 0.42)) c = COVER.ROCK;
@@ -338,7 +366,7 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       if (onLand && tinyJ[tf] < chance && c !== COVER.SNOW && c !== COVER.DESERT) ponds[i] = 1;
     }
   }
-  return { cover, ponds, width: W, height: H };
+  return { cover, ponds };
 }
 
 // buildClimate({ elev, land, width, height, rng, style }) => { cover, ponds, temp, rain, moist }

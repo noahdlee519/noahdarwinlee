@@ -260,6 +260,15 @@ textarea {
   opacity: 1;
 }
 
+.map-tile {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.map-tile.is-in {
+  opacity: 1;
+}
+
 /* Once the picture is in, the stand-in land under it is no longer painted. */
 .map.is-image-in .map-land {
   visibility: hidden;

@@ -26,9 +26,9 @@ export function generate({ names = WORLDS.map((w) => w.name), outDir = join(root
   for (const name of names) {
     const started = Date.now();
     const world = makeWorld(name, projects);
-    const { jsonBytes, pngBytes } = writeWorld(world, outDir);
-    sizes.push({ name, slug: world.slug, jsonBytes, pngBytes });
-    log(`${name.padEnd(9)} ${(jsonBytes / 1024).toFixed(0).padStart(4)} KB json + ${(pngBytes / 1024).toFixed(0).padStart(3)} KB png = ${((jsonBytes + pngBytes) / 1024).toFixed(0).padStart(3)} KB   ${((Date.now() - started) / 1000).toFixed(1)} s`);
+    const { jsonBytes, pngBytes, tileBytes, tileCount } = writeWorld(world, outDir);
+    sizes.push({ name, slug: world.slug, jsonBytes, pngBytes, tileBytes, tileCount });
+    log(`${name.padEnd(9)} ${(jsonBytes / 1024).toFixed(0).padStart(4)} KB json + ${(pngBytes / 1024).toFixed(0).padStart(3)} KB png = ${((jsonBytes + pngBytes) / 1024).toFixed(0).padStart(3)} KB at first, then ${tileCount} tiles, ${(tileBytes / 1024).toFixed(0)} KB in all   ${((Date.now() - started) / 1000).toFixed(1)} s`);
   }
   // The index always lists all twenty, in order, whichever were just made.
   writeFileSync(join(outDir, 'index.json'), JSON.stringify(WORLDS.map((w) => ({ name: w.name, slug: slugOf(w.name) })), null, 1) + '\n');

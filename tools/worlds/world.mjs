@@ -15,6 +15,10 @@ import { placeLabels } from './labels.mjs';
 
 export const WIDTH = 1600, HEIGHT = 800;
 export const PICTURE_SCALE = 1.5; // picture pixels per map unit
+// Finer pictures of the same land cover, cut into tiles the page loads only
+// for the part of the map in view, when zoomed in: pixels per map unit, and
+// the tile's side in pixels. 8 per unit is the 4x zoom on a 2x screen.
+export const TILE_LEVELS = [{ scale: 4, size: 1024 }, { scale: 8, size: 1024 }];
 
 // layout: the sketch the land starts from (see terrain.mjs). masses: how many
 // continents. latTop/latBottom: the latitudes of the map's top and bottom
@@ -73,8 +77,9 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   const { cover, ponds } = classifyCover({ fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes } });
   // The picture: the same land cover drawn finer, and carried a little way
   // out to sea so the vector coast drawn over it never shows a gap.
-  const picture = classifyCover({ fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, scale: PICTURE_SCALE, bleed: 2 });
-  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, fields, hydro, cover, ponds, picture };
+  const coverArgs = { fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2 };
+  const picture = classifyCover({ ...coverArgs, scale: PICTURE_SCALE });
+  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, fields, hydro, cover, ponds, picture, coverArgs };
 }
 
 // The land divided among the projects.
@@ -109,5 +114,6 @@ export function makeWorld(name, projects, opts) {
     owner: nations.owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,
     labels, projects, kmPerUnit: worldParams(name, projects).kmPerUnit,
     land: world.land, elev: world.elev, temp: world.fields.temp, plan: nations.plan,
+    coverArgs: world.coverArgs,
   };
 }
