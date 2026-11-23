@@ -4,9 +4,10 @@
 //   node tools/portfolio-map-check.mjs content
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
-//   node tools/portfolio-map-check.mjs [content|map|interface|all] [base URL]
+//   node tools/portfolio-map-check.mjs [content|map|interface|themes|all] [base URL]
 //       map: the world draws 18 countries and their labels, zoom stops at 4x, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
+//       themes: Orange, White, and Night (the night map too), on a desktop and a phone, and switching from the menu
 //       all (the default): every stage
 //
 // Screenshots go to /tmp/portfolio-map-*.png.
@@ -378,12 +379,56 @@ async function interfaceStage(browser) {
   await phone.close();
 }
 
+async function themesStage(browser) {
+  console.log('themes');
+  const want = { light: { name: 'Orange', panel: 'rgb(230, 128, 25)' }, white: { name: 'White', panel: 'rgb(255, 255, 255)' }, dark: { name: 'Night', panel: 'rgb(18, 19, 21)' } };
+  for (const t of ['light', 'white', 'dark']) {
+    for (const phone of [false, true]) {
+      const ctx = await browser.newContext(phone
+        ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+        : { viewport: { width: 1440, height: 900 } });
+      await ctx.addInitScript((v) => { try { localStorage.setItem('ndl-theme', v); } catch (e) {} }, t);
+      const page = await open(browser, '?world=le-guin&project=loretour', { context: ctx });
+      await page.waitForTimeout(1200);
+      const got = await page.evaluate(() => ({
+        theme: document.documentElement.getAttribute('data-theme'),
+        panel: getComputedStyle(document.querySelector('.panel')).backgroundColor,
+        water: getComputedStyle(document.querySelector('.map-ocean')).fill,
+        night: window.__portfolioMap.map.night,
+        picture: (document.querySelector('.map-ground .map-image') || {}).getAttribute?.('href') || '',
+      }));
+      const nightOk = t === 'dark' ? got.night && got.picture.startsWith('blob:') && got.water === 'rgb(19, 35, 58)' : !got.night && !got.picture.startsWith('blob:') && got.water === 'rgb(137, 209, 226)';
+      ok(got.theme === t && got.panel === want[t].panel && nightOk, `${want[t].name}${phone ? ' (phone)' : ''}: the interface takes the theme's colours, and the map is ${t === 'dark' ? 'the night map, its land cover recoloured' : 'the day map'}`);
+      const file = `/tmp/portfolio-map-theme-${want[t].name.toLowerCase()}${phone ? '-phone' : ''}.png`;
+      await page.screenshot({ path: file });
+      ok(page.errors.length === 0, `no errors in ${want[t].name}${phone ? ' on the phone' : ''}${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
+      await ctx.close();
+    }
+  }
+  // Switching from the site menu, as a visitor does: Orange to Night to White, without a reload.
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { try { localStorage.setItem('ndl-theme', 'light'); } catch (e) {} });
+  const page = await open(browser, '?world=le-guin', { context: ctx });
+  const seen = [];
+  for (let i = 0; i < 3; i++) {
+    await page.click('#site-menu-btn');
+    await page.waitForTimeout(250);
+    await page.click('#theme-btn');
+    await page.waitForTimeout(700);
+    seen.push(await page.evaluate(() => [document.documentElement.getAttribute('data-theme'), window.__portfolioMap.map.night, document.querySelector('#theme-btn').textContent]));
+    await page.keyboard.press('Escape');
+  }
+  ok(seen.map((x) => x[0]).join(',') === 'dark,white,light' && seen[0][1] === true && seen[1][1] === false && seen[0][2] === 'Night', `the menu's theme switch cycles Orange, Night, White, and back, and the map follows (${seen.map((x) => x[2]).join(', ')})`);
+  await ctx.close();
+}
+
 if (stage !== 'content') {
   const { chromium } = createRequire(import.meta.url)('playwright');
   const browser = await chromium.launch();
   try {
     if (stage === 'map' || stage === 'all') await mapStage(browser);
     if (stage === 'interface' || stage === 'all') await interfaceStage(browser);
+    if (stage === 'themes' || stage === 'all') await themesStage(browser);
   } finally {
     await browser.close();
   }

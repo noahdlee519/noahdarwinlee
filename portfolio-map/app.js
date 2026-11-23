@@ -132,12 +132,12 @@
 
   // The world with one country picked out, as an atlas's locator map.
   function locator(id, province) {
-    var w = state.world, P = w.palette;
+    var w = state.world;
     var proj = w.projects.filter(function (p) { return p.id === id; })[0];
     var prov = province && proj.provinces ? proj.provinces.filter(function (v) { return v.id === province; })[0] : null;
     return '<svg class="locator" viewBox="0 0 ' + w.width + " " + w.height + '" aria-hidden="true" preserveAspectRatio="xMidYMid meet">' +
-      '<rect width="' + w.width + '" height="' + w.height + '" fill="' + P.water + '" />' +
-      '<path d="' + w.coast + '" fill="#f4f6f2" stroke="' + P.line + '" stroke-width="2" />' +
+      '<rect width="' + w.width + '" height="' + w.height + '" style="fill: var(--m-water)" />' +
+      '<path d="' + w.coast + '" style="fill: var(--m-locator-land); stroke: var(--m-line)" stroke-width="2" />' +
       '<path d="' + proj.path + '" fill="' + (prov ? "#f6c592" : "#e68019") + '" />' +
       (prov ? '<path d="' + prov.path + '" fill="#e68019" />' : "") +
       "</svg>";
@@ -145,7 +145,8 @@
 
   // A country with no screenshots is shown as its own piece of the map: its land, its neighbours, and its seas.
   function terrain(id) {
-    var w = state.world, P = w.palette, sh = state.shapes[id], b = sh.box;
+    var w = state.world, sh = state.shapes[id], b = sh.box;
+    var water = 'style="fill: var(--m-water)"';
     var pad = Math.max(b.w, b.h) * 0.35 + 12, ratio = 16 / 10;
     var vw = Math.max(b.w + pad * 2, (b.h + pad * 2) * ratio), vh = vw / ratio;
     // Framed a little low, clear of the search box that floats over the top of the panel.
@@ -153,14 +154,14 @@
     var proj = w.projects.filter(function (p) { return p.id === id; })[0];
     var px = vw / 408;
     return '<svg class="terrain" viewBox="' + [x, y, vw, vh].map(function (n) { return n.toFixed(1); }).join(" ") + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
-      '<rect x="' + (x - 10) + '" y="' + (y - 10) + '" width="' + (vw + 20) + '" height="' + (vh + 20) + '" fill="' + P.water + '" />' +
-      '<image href="' + ROOT + "worlds/" + w.image.src + '" width="' + w.width + '" height="' + w.height + '" preserveAspectRatio="none" />' +
-      '<path d="M-4800 -2400H6400V3200H-4800Z' + w.coast + '" fill="' + P.water + '" fill-rule="evenodd" />' +
-      (w.lakes ? '<path d="' + w.lakes + '" fill="' + P.water + '" />' : "") +
-      '<path d="' + w.coast + '" fill="none" stroke="' + P.line + '" stroke-width="' + (0.8 * px).toFixed(2) + '" />' +
-      '<path d="M-4800 -2400H6400V3200H-4800Z' + proj.path + '" fill="#ffffff" fill-opacity="0.28" fill-rule="evenodd" />' +
-      '<path d="' + w.borders + '" fill="none" stroke="' + P.border + '" stroke-width="' + (1 * px).toFixed(2) + '" />' +
-      '<path d="' + proj.path + '" fill="#e68019" fill-opacity="0.14" stroke="#b85d06" stroke-width="' + (1.75 * px).toFixed(2) + '" stroke-linejoin="round" />' +
+      '<rect x="' + (x - 10) + '" y="' + (y - 10) + '" width="' + (vw + 20) + '" height="' + (vh + 20) + '" ' + water + " />" +
+      '<image class="terrain-picture" href="' + (state.map.baseHref || ROOT + "worlds/" + w.image.src) + '" width="' + w.width + '" height="' + w.height + '" preserveAspectRatio="none" />' +
+      '<path d="M-4800 -2400H6400V3200H-4800Z' + w.coast + '" ' + water + ' fill-rule="evenodd" />' +
+      (w.lakes ? '<path d="' + w.lakes + '" ' + water + " />" : "") +
+      '<path d="' + w.coast + '" style="fill: none; stroke: var(--m-line)" stroke-width="' + (0.8 * px).toFixed(2) + '" />' +
+      '<path d="M-4800 -2400H6400V3200H-4800Z' + proj.path + '" style="fill: var(--m-halo)" fill-opacity="0.28" fill-rule="evenodd" />' +
+      '<path d="' + w.borders + '" style="fill: none; stroke: var(--m-border)" stroke-width="' + (1 * px).toFixed(2) + '" />' +
+      '<path d="' + proj.path + '" style="fill: #e68019; stroke: var(--m-sel-ink)" fill-opacity="0.14" stroke-width="' + (1.75 * px).toFixed(2) + '" stroke-linejoin="round" />' +
       "</svg>";
   }
 
@@ -769,6 +770,24 @@
     new MutationObserver(label).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   });
 
+  // ------------------------------------------------------------------ themes
+
+  // The site's theme (theme.js sets it on the page's root): Night darkens the map as well as the interface.
+  var darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  var THEME_COLOR = { light: "#e68019", white: "#ffffff", dark: "#000000" };
+  function theme() {
+    var t = document.documentElement.getAttribute("data-theme");
+    return t === "dark" || t === "white" || t === "light" ? t : darkQuery.matches ? "dark" : "light";
+  }
+  function applyTheme() {
+    var t = theme();
+    var meta = $('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", THEME_COLOR[t]);
+    if (state.map) state.map.setNight(t === "dark");
+  }
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  darkQuery.addEventListener("change", applyTheme);
+
   // ------------------------------------------------------------------ start
 
   function layout() {
@@ -792,6 +811,9 @@
     r[0].forEach(function (p) { state.byId[p.id] = p; });
     state.worlds = r[1];
     state.map = new PM.MapView($("#map"));
+    state.map.night = theme() === "dark";
+    applyTheme();
+    state.map.onPicture = function (href) { $$(".terrain-picture").forEach(function (i) { i.setAttribute("href", href); }); };
     state.map.obstacles = function () {
       return [".search-box", ".brand", ".scale-corner", ".zoom", ".fab-world"].map(function (s) { return $(s); }).filter(function (e) {
         return e && e.offsetParent !== null && getComputedStyle(e).display !== "none";

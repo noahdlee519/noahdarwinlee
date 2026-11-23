@@ -84,6 +84,43 @@
     return { area: area, box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, rings: rs, main: [cx, cy] };
   }
 
+  // ---------------------------------------------------------------- night pictures
+
+  // The land-cover classes in the pictures' palette order (forest, woodland, grass, steppe, desert, rock, snow, and
+  // water), by night.
+  var NIGHT_COVER = ["#1d3a33", "#22403a", "#294640", "#30373c", "#353b40", "#3e444a", "#535a61", "#13233a"];
+  var CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(b, from, to) {
+    var c = 0xffffffff;
+    for (var i = from; i < to; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  // An indexed PNG with its palette (PLTE) swapped for the night colours; every other byte stays as it was.
+  function nightPng(b) {
+    var out = b.slice(), p = 8;
+    while (p + 8 <= out.length) {
+      var len = ((out[p] << 24) | (out[p + 1] << 16) | (out[p + 2] << 8) | out[p + 3]) >>> 0;
+      var type = String.fromCharCode(out[p + 4], out[p + 5], out[p + 6], out[p + 7]);
+      if (type === "PLTE") {
+        for (var i = 0; i < len / 3 && i < NIGHT_COVER.length; i++) {
+          var hex = NIGHT_COVER[i];
+          out[p + 8 + i * 3] = parseInt(hex.slice(1, 3), 16);
+          out[p + 9 + i * 3] = parseInt(hex.slice(3, 5), 16);
+          out[p + 10 + i * 3] = parseInt(hex.slice(5, 7), 16);
+        }
+        var c = crc32(out, p + 4, p + 8 + len), q = p + 8 + len;
+        out[q] = c >>> 24; out[q + 1] = (c >>> 16) & 255; out[q + 2] = (c >>> 8) & 255; out[q + 3] = c & 255;
+        break;
+      }
+      p += 12 + len;
+    }
+    return out;
+  }
+
   // ---------------------------------------------------------------- the map
 
   // Each kind of label's smallest and largest size on screen, in pixels.
@@ -224,12 +261,11 @@
   // The world is drawn in layers, bottom to top. A layer that holds geometry is a template, cloned once for every
   // copy of the world the view needs (the world repeats east and west) and shifted by the world's width.
   MapView.prototype.load = function (world) {
-    var self = this, P = world.palette;
+    var self = this;
     this.stop();
     this.world = world;
     this.root.textContent = "";
     this.host.classList.remove("is-image-in");
-    this.setPalette(P);
     var W = world.width, H = world.height, g = this.root;
     this.layers = [];
     function layer(cls, copied) {
@@ -278,34 +314,51 @@
       });
     });
     this.hover = null;
-    this.imageReady = new Promise(function (resolve) {
+    this.imageReady = this.picture(ROOT + "worlds/" + world.image.src).then(function (href) { return new Promise(function (resolve) {
       var img = new Image();
       img.decoding = "async";
       img.onload = img.onerror = function () {
-        self.baseHref = img.src;
+        self.baseHref = href;
         self._setImageHref(image);
+        if (self.onPicture) self.onPicture(href);
         self._refresh(Limg);
         requestAnimationFrame(function () {
           self.host.classList.add("is-image-in");
           resolve();
         });
       };
-      img.src = ROOT + "worlds/" + world.image.src;
-    });
+      img.src = href;
+    }); });
     this.groundLayer = Limg;
     this.selected = null; this.selectedProvince = null;
     this._tint();
     this.render(true);
   };
 
-  // Day or night: the map's colours, from the world's palette or the night one, as properties the layers read.
-  MapView.prototype.setPalette = function (P) {
-    var st = this.host.style;
-    st.setProperty("--m-water", P.water);
-    st.setProperty("--m-line", P.line);
-    st.setProperty("--m-border", P.border);
-    st.setProperty("--m-province", P.province);
-    st.setProperty("--m-land", P.grass);
+  // The map's lines and lettering take their colours from the stylesheet, by theme. The land-cover pictures are
+  // indexed PNGs, so at night each is recoloured by rewriting its palette: the same pixels, darker colours.
+  MapView.prototype.setNight = function (on) {
+    on = !!on;
+    if (on === this.night) return;
+    this.night = on;
+    if (!this.world) return;
+    var self = this;
+    this.picture(ROOT + "worlds/" + this.world.image.src).then(function (href) {
+      self.baseHref = href;
+      var tpl = self.groundLayer && self.groundLayer.tpl.querySelector(".map-image");
+      if (tpl) { self._setImageHref(tpl); self._refresh(self.groundLayer); }
+      if (self.onPicture) self.onPicture(href);
+    });
+    if (this.tiles) this.tiles.recolour();
+  };
+  // A picture's address in the current colours: as it is by day; at night, a copy with the night palette.
+  MapView.prototype.picture = function (url) {
+    if (!this.night) return Promise.resolve(url);
+    var cache = this.nightCache || (this.nightCache = {});
+    if (!cache[url]) cache[url] = fetch(url).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+      return URL.createObjectURL(new Blob([nightPng(new Uint8Array(buf))], { type: "image/png" }));
+    }).catch(function () { return url; });
+    return cache[url];
   };
   MapView.prototype._setImageHref = function (image) {
     if (this.baseHref) image.setAttribute("href", this.baseHref);
