@@ -76,6 +76,10 @@
     >
     <a class="back-link" href="/projects/">back</a>
 
+    <a class="gc-topbar" href="/projects/" aria-label="GREATERCIRCLE, back to Noah Darwin Lee's projects">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg>
+      <span aria-hidden="true">GREATER<span class="gc-word">CIRCLE</span></span>
+    </a>
     <canvas id="sat" class="gc-sat" aria-hidden="true"></canvas>
     <canvas
       id="globe"
@@ -135,11 +139,12 @@
       <button type="button" class="gc-sheet-handle" id="sheet-handle" aria-label="Show more" aria-expanded="false">
         <span></span>
       </button>
-      <header class="gc-head">
-        <div class="gc-head-text">
-          <h2 class="gc-title">GREATERCIRCLE</h2>
-          <p class="gc-sub">Calculates the shortest path between two points on Earth, avoiding selected regions</p>
-        </div>
+
+      <header class="gc-head gc-card gc-pill">
+        <a class="gc-home" href="/projects/" aria-label="Back to Noah Darwin Lee's projects">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg>
+        </a>
+        <h2 class="gc-title">GREATER<span class="gc-word">CIRCLE</span></h2>
         <div class="gc-about" id="about">
           <button
             type="button"
@@ -167,11 +172,12 @@
               Shortest paths around the chosen countries are exact for the drawn borders: a route of
               great-circle arcs that bends only at their convex corners, found by A* over the tangent
               visibility graph. The buffer keeps the route at least that far from everything avoided,
-              50 miles unless you choose otherwise, and never more than about 3% further. With
-              waypoints on, the route goes from one radio beacon (a VOR or an NDB) to the next, as a
-              flight plan does, in legs of at most 300 km, longer only across sea or desert with no
-              beacon near the way, and is the shortest such chain round what you avoid. Distances
-              are on a sphere of radius 6,371.0088 km.
+              50 miles unless you choose otherwise, and never more than about 3% further. The
+              flight plan goes from one radio beacon (a VOR or an NDB) to the next, as a flight plan
+              does, in legs of at most 300 km, longer only across sea or desert with no beacon near
+              the way, and is the shortest such chain round what you avoid. Flight times assume
+              850 km/h and half an hour to climb and descend. Distances are on a sphere of radius
+              6,371.0088 km.
             </p>
             <p>
               Borders: <a href="https://www.naturalearthdata.com/">Natural Earth</a>, countries at
@@ -191,112 +197,180 @@
         </div>
       </header>
 
-      <div class="gc-points">
-        <div class="gc-field" data-slot="a">
-          <span class="gc-badge" aria-hidden="true">A</span>
-          <div class="gc-line">
-            <input
-              id="in-a"
-              type="text"
-              placeholder="From: a city, an airport, or lat, lon"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              aria-label="From"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-haspopup="listbox"
-              aria-expanded="false"
-              aria-controls="sug-a"
-            />
-            <button type="button" class="gc-clear" id="clear-a" aria-label="Clear A" hidden>&times;</button>
-            <ul class="gc-suggest" id="sug-a" role="listbox" hidden></ul>
-          </div>
+      <p class="gc-sub" id="tagline">The shortest way between two places, and the shortest way round the places you would rather not cross.</p>
+
+      <section class="gc-card gc-route-card" aria-label="From and to">
+        <div class="gc-route-sum" id="route-sum">
+          <span class="gc-sum-end"><span class="sr-only">From </span><b id="sum-a">A</b><small id="sum-a-name"></small></span>
+          <span class="gc-sum-line" aria-hidden="true"></span>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M1.5 9.2l5-.9 3.2 5 1.4-.4-1.3-5.2 3.8-.8c.9-.2.9-1.4 0-1.6l-3.8-.8 1.3-5.2-1.4-.4-3.2 5-5-.9-.6.8 2.6 1.9-2.6 1.9z" fill="currentColor" transform="rotate(90 8 8)" /></svg>
+          <span class="gc-sum-line" aria-hidden="true"></span>
+          <span class="gc-sum-end gc-sum-b"><span class="sr-only">To </span><b id="sum-b">B</b><small id="sum-b-name"></small></span>
         </div>
-        <div class="gc-field" data-slot="b">
-          <button type="button" class="gc-swap" id="swap" aria-label="Swap A and B" title="Swap">
+        <div class="gc-points">
+          <div class="gc-field" data-slot="a">
+            <span class="gc-code" id="code-a" aria-hidden="true">A</span>
+            <div class="gc-line">
+              <input
+                id="in-a"
+                type="text"
+                placeholder="From: a city or an airport"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                enterkeyhint="next"
+                aria-label="From"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="sug-a"
+              />
+              <button type="button" class="gc-clear" id="clear-a" aria-label="Clear From" hidden>&times;</button>
+              <ul class="gc-suggest" id="sug-a" role="listbox" hidden></ul>
+            </div>
+          </div>
+          <div class="gc-field" data-slot="b">
+            <span class="gc-code" id="code-b" aria-hidden="true">B</span>
+            <div class="gc-line">
+              <input
+                id="in-b"
+                type="text"
+                placeholder="To"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                enterkeyhint="search"
+                aria-label="To"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-controls="sug-b"
+              />
+              <button type="button" class="gc-clear" id="clear-b" aria-label="Clear To" hidden>&times;</button>
+              <ul class="gc-suggest" id="sug-b" role="listbox" hidden></ul>
+            </div>
+          </div>
+          <button type="button" class="gc-swap" id="swap" aria-label="Swap From and To" title="Swap">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 19V5M4.5 8.5L8 5l3.5 3.5M16 5v14M12.5 15.5L16 19l3.5-3.5" /></svg>
           </button>
-          <span class="gc-badge" aria-hidden="true">B</span>
-          <div class="gc-line">
+        </div>
+        <p class="gc-hint gc-route-hint" id="hint">Or click two points on the globe</p>
+      </section>
+
+      <div class="gc-examples" id="examples">
+        <span class="gc-label">Try</span>
+        <a class="gc-example" href="#a=51.4707,-0.4599,London%20Heathrow%20Airport%20%28LHR%29&amp;b=35.7686,140.3887,Narita%20International%20Airport%20%28NRT%29&amp;avoid=643">London &rarr; Tokyo, avoiding Russia</a>
+        <a class="gc-example" href="#a=40.6394,-73.7793,John%20F.%20Kennedy%20International%20Airport%20%28JFK%29&amp;b=1.3502,103.9940,Singapore%20Changi%20Airport%20%28SIN%29">New York &rarr; Singapore, over the pole</a>
+        <a class="gc-example" href="#a=50.0267,8.5584,Frankfurt%20Main%20Airport%20%28FRA%29&amp;b=25.2498,55.3710,Dubai%20International%20Airport%20%28DXB%29&amp;tab=plan">Frankfurt &rarr; Dubai, flight plan</a>
+      </div>
+
+      <div class="gc-opt-chips" id="opt-chips" hidden>
+        <button type="button" class="gc-opt-chip" data-opt="avoid" aria-expanded="false" aria-controls="options" id="chip-avoid">Avoid a country</button>
+        <button type="button" class="gc-opt-chip" data-opt="buffer" aria-expanded="false" aria-controls="options" id="chip-buffer">50 mi buffer</button>
+        <button type="button" class="gc-opt-chip" data-opt="units" aria-expanded="false" aria-controls="options" id="chip-units">km</button>
+      </div>
+
+      <section class="gc-card gc-options" id="options" aria-label="Options" hidden>
+        <div class="gc-opt-group gc-avoid">
+          <label class="gc-label" for="in-avoid">Avoid</label>
+          <ul class="gc-chips" id="chips" aria-label="Countries and regions being avoided"></ul>
+          <div class="gc-field gc-field-avoid">
+            <div class="gc-line">
             <input
-              id="in-b"
+              id="in-avoid"
               type="text"
-              placeholder="To"
+              placeholder="A country to go round"
               autocomplete="off"
               autocapitalize="off"
+              autocorrect="off"
               spellcheck="false"
-              aria-label="To"
               role="combobox"
               aria-autocomplete="list"
               aria-haspopup="listbox"
               aria-expanded="false"
-              aria-controls="sug-b"
+              aria-controls="sug-avoid"
             />
-            <button type="button" class="gc-clear" id="clear-b" aria-label="Clear B" hidden>&times;</button>
-            <ul class="gc-suggest" id="sug-b" role="listbox" hidden></ul>
+            <ul class="gc-suggest" id="sug-avoid" role="listbox" hidden></ul>
+            </div>
           </div>
+          <p class="gc-hint" id="avoid-hint">Or tap a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span></p>
         </div>
-        <p class="gc-hint" id="hint">Or click two points on the globe</p>
-      </div>
-
-      <div class="gc-buffer gc-waypoints" id="waypoints-row">
-        <span class="gc-buffer-label" id="waypoints-label" title="Fly from one radio beacon to the next, as planes do, instead of along the shortest way">Waypoints</span>
-        <div class="gc-buffer-opts" id="waypoints" role="group" aria-labelledby="waypoints-label">
-          <button type="button" data-wp="0" aria-pressed="true">off</button>
-          <button type="button" data-wp="1" aria-pressed="false">radio beacons</button>
-        </div>
-      </div>
-
-      <div class="gc-summary" id="summary" aria-live="polite"></div>
-      <div class="gc-units" id="units" role="group" aria-label="Units" hidden>
-        <button type="button" data-unit="km" aria-pressed="true">km</button>
-        <button type="button" data-unit="mi" aria-pressed="false">mi</button>
-        <button type="button" data-unit="nmi" aria-pressed="false">nmi</button>
-      </div>
-
-      <section class="gc-avoid">
-        <label class="gc-label" for="in-avoid">Avoid</label>
-        <div class="gc-field gc-field-avoid">
-          <div class="gc-line">
-          <input
-            id="in-avoid"
-            type="text"
-            placeholder="A country to go around"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-haspopup="listbox"
-            aria-expanded="false"
-            aria-controls="sug-avoid"
-          />
-          <ul class="gc-suggest" id="sug-avoid" role="listbox" hidden></ul>
+        <fieldset class="gc-opt-group" id="buffer-row">
+          <legend class="gc-label">Keep away by</legend>
+          <div class="gc-seg gc-seg-7" id="buffer">
+            <label><input type="radio" name="buffer" value="0" /><span>0</span></label>
+            <label><input type="radio" name="buffer" value="1" /><span>1</span></label>
+            <label><input type="radio" name="buffer" value="5" /><span>5</span></label>
+            <label><input type="radio" name="buffer" value="10" /><span>10</span></label>
+            <label><input type="radio" name="buffer" value="20" /><span>20</span></label>
+            <label><input type="radio" name="buffer" value="50" checked /><span>50</span></label>
+            <label><input type="radio" name="buffer" value="100" /><span>100</span></label>
           </div>
-        </div>
-        <ul class="gc-chips" id="chips" aria-label="Countries being avoided"></ul>
-        <div class="gc-buffer" id="buffer-row" hidden>
-          <span class="gc-buffer-label" id="buffer-label">Buffer</span>
-          <div class="gc-buffer-opts" id="buffer" role="group" aria-labelledby="buffer-label">
-            <button type="button" data-mi="0" aria-label="No buffer" aria-pressed="false">0</button>
-            <button type="button" data-mi="1" aria-label="1 mile" aria-pressed="false">1</button>
-            <button type="button" data-mi="5" aria-label="5 miles" aria-pressed="false">5</button>
-            <button type="button" data-mi="10" aria-label="10 miles" aria-pressed="false">10</button>
-            <button type="button" data-mi="20" aria-label="20 miles" aria-pressed="false">20</button>
-            <button type="button" data-mi="50" aria-label="50 miles" aria-pressed="true">50</button>
-            <button type="button" data-mi="100" aria-label="100 miles" aria-pressed="false">100</button>
+          <p class="gc-hint">miles, round everything avoided</p>
+        </fieldset>
+        <fieldset class="gc-opt-group">
+          <legend class="gc-label">Units</legend>
+          <div class="gc-seg gc-seg-3" id="units">
+            <label><input type="radio" name="units" value="km" checked /><span>km</span></label>
+            <label><input type="radio" name="units" value="mi" /><span>mi</span></label>
+            <label><input type="radio" name="units" value="nmi" /><span>nmi</span></label>
           </div>
-          <span class="gc-buffer-unit" aria-hidden="true">mi</span>
-        </div>
-        <p class="gc-hint" id="avoid-hint">Or shift-click a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span></p>
+        </fieldset>
+        <button type="button" class="gc-btn gc-btn-quiet" id="options-done">Done</button>
       </section>
 
-      <section class="gc-results" id="results" hidden>
-        <div id="out"></div>
+      <section class="gc-card gc-result" id="result" hidden>
+        <div class="gc-tabs" role="tablist" aria-label="Which way" id="tabs">
+          <button type="button" role="tab" id="tab-direct" data-tab="direct" aria-controls="tabpanel" aria-selected="false" tabindex="-1"><span class="gc-tab-name">Direct</span><span class="gc-tab-km" id="tab-direct-km"></span></button>
+          <button type="button" role="tab" id="tab-avoid" data-tab="avoid" aria-controls="tabpanel" aria-selected="false" tabindex="-1"><span class="gc-tab-name" id="tab-avoid-name">Avoiding</span><span class="gc-tab-km" id="tab-avoid-km"></span></button>
+          <button type="button" role="tab" id="tab-plan" data-tab="plan" aria-controls="tabpanel" aria-selected="false" tabindex="-1"><span class="gc-tab-name">Flight plan</span><span class="gc-tab-km" id="tab-plan-km"></span></button>
+        </div>
+        <div id="tabpanel" role="tabpanel" aria-labelledby="tab-direct" tabindex="-1">
+          <div class="gc-hero">
+            <div class="gc-hero-top">
+              <span class="gc-big" id="hero-big"></span>
+              <span class="gc-time" id="hero-time"></span>
+            </div>
+            <span class="gc-delta" id="hero-delta"></span>
+            <span class="gc-note" id="hero-note"></span>
+          </div>
+          <div class="gc-warn" id="warn" hidden></div>
+        </div>
       </section>
 
+      <section class="gc-card gc-plan" id="plan" aria-labelledby="plan-title" hidden>
+        <div class="gc-card-head">
+          <h3 class="gc-label" id="plan-title" tabindex="-1">Flight plan</h3>
+          <span class="gc-label" aria-hidden="true">leg</span>
+        </div>
+        <p class="gc-plan-status" id="plan-status"></p>
+        <ol class="gc-timeline" id="timeline"></ol>
+        <button type="button" class="gc-btn gc-btn-well" id="plan-all" hidden></button>
+      </section>
+
+      <section class="gc-card gc-crosses-card" id="crosses" aria-labelledby="crosses-title" hidden>
+        <h3 class="gc-label" id="crosses-title" tabindex="-1"></h3>
+        <ul class="gc-chips" id="cross-list"></ul>
+      </section>
+
+      <div class="gc-foot" id="foot" hidden>
+        <button type="button" class="gc-btn gc-btn-primary" id="share">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10V2M8 2L5 5M8 2l3 3M3 8v5.5h10V8" /></svg>
+          <span id="share-label">Share this route</span>
+        </button>
+        <p class="gc-stats" id="stats"></p>
+      </div>
+      <p class="sr-only" role="status" aria-atomic="true" id="status"></p>
     </aside>
+
+    <div class="gc-pop" id="pop" role="dialog" aria-labelledby="pop-title" hidden>
+      <p class="gc-pop-title" id="pop-title"></p>
+      <div class="gc-pop-actions" id="pop-actions"></div>
+    </div>
 
     <div class="gc-load" id="load" role="status">loading the globe&hellip;</div>
     <noscript>

@@ -38,11 +38,20 @@ for (const r of rows) {
   kept.push({ ident, name: r[iName].trim(), type, lat, lon, v: toVec(lon, lat) });
 }
 kept.sort((a, b) => RANK[a.type] - RANK[b.type]);
-const byIdent = new Map(), out = [];
+const MERGE_KM = 12, cell = MERGE_KM / 6371;
+const grid = new Map(), out = [];
+const key = (x, y, z) => Math.floor(x / cell) + "," + Math.floor(y / cell) + "," + Math.floor(z / cell);
 for (const k of kept) {
-  const same = byIdent.get(k.ident) || [];
-  if (same.some((o) => Math.acos(Math.min(1, o.v[0] * k.v[0] + o.v[1] * k.v[1] + o.v[2] * k.v[2])) * 6371 < 3)) continue;
-  same.push(k); byIdent.set(k.ident, same);
+  const [x, y, z] = k.v;
+  let close = false;
+  for (let dx = -1; dx <= 1 && !close; dx++) for (let dy = -1; dy <= 1 && !close; dy++) for (let dz = -1; dz <= 1 && !close; dz++) {
+    const list = grid.get(key(x + dx * cell, y + dy * cell, z + dz * cell));
+    if (list && list.some((o) => Math.acos(Math.min(1, o[0] * x + o[1] * y + o[2] * z)) * 6371 < MERGE_KM)) close = true;
+  }
+  if (close) continue;
+  const kk = key(x, y, z);
+  if (!grid.has(kk)) grid.set(kk, []);
+  grid.get(kk).push(k.v);
   out.push([k.ident, TYPES.indexOf(k.type), +k.lon.toFixed(4), +k.lat.toFixed(4), k.name]);
 }
 out.sort((a, b) => a[3] - b[3] || a[2] - b[2]);

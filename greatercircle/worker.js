@@ -94,6 +94,7 @@ function countriesAlong(waypoints) {
 }
 
 function route(m) {
+  if (cached(m)) return;
   var id = m.id, t0 = performance.now();
   var a = G.toVec(m.a[0], m.a[1]), b = G.toVec(m.b[0], m.b[1]);
   var direct = G.angleBetween(a, b);
@@ -186,38 +187,88 @@ function withBeacons(then) {
   }).catch(function () { done(null); });
 }
 
+var routeCache = [];
+function routeKey(m) {
+  var regions = m.regions || [];
+  return (m.bufferKm || 0).toFixed(4) + "|" + m.avoid.slice().sort().join(",") + "|" + regions.map(function (r) { return r.id + ":" + (r.inverted ? "i" : "") + ":" + r.ring.map(function (p) { return p[0].toFixed(4) + "," + p[1].toFixed(4); }).join(";"); }).join("|") + "|" + m.a[0].toFixed(5) + "," + m.a[1].toFixed(5) + "|" + m.b[0].toFixed(5) + "," + m.b[1].toFixed(5);
+}
+function cached(m) {
+  var key = routeKey(m);
+  for (var i = 0; i < routeCache.length; i++) {
+    var c = routeCache[i];
+    if (c.key !== key) continue;
+    var r = JSON.parse(JSON.stringify(c.result));
+    r.id = m.id; r.cached = true;
+    send(r);
+    if (c.plan) { var p = JSON.parse(JSON.stringify(c.plan)); p.id = m.id; send(p); }
+    else if (c.start) c.start(m.id);
+    return true;
+  }
+  return false;
+}
+function remember(m, result, start) {
+  var entry = { key: routeKey(m), result: result, plan: null, start: start };
+  routeCache.push(entry);
+  if (routeCache.length > 8) routeCache.shift();
+  return entry;
+}
+
+function nameOf(v) {
+  var ids = G.featuresContaining(everything, v);
+  return ids.length ? everything.features[ids[0]].name : null;
+}
+
 function deliver(m, result, obs, a, b, t0) {
-  if (!m.beacons || result.status !== "done") { send(result); return; }
-  var id = m.id;
+  send(result);
+  if (result.status !== "done" || result.antipodal) return;
+  var entry;
+  var start = function (id) {
+    setTimeout(function () { plan(id, result, obs, a, b, entry); }, 0);
+  };
+  entry = remember(m, result, start);
+  start(m.id);
+}
+
+function plan(id, result, obs, a, b, entry) {
+  if (latest !== id) return;
   withBeacons(function (data) {
     if (latest !== id) return;
-    if (!data) { result.beaconStatus = "unavailable"; send(result); return; }
+    if (!data) { send({ type: "plan", id: id, status: "unavailable" }); return; }
+    var t0 = performance.now();
     var ideal = result.waypoints.map(function (p) { return G.toVec(p[0], p[1]); });
     var bs = G.startBeaconSearch(obs, data.index, ideal, a, b);
-    var before = result.expanded || 0;
+    var slice = IN_WORKER ? 40 : 12;
     var tick = function () {
       if (latest !== id) return;
       try {
-        G.stepBeaconSearch(bs, 40);
+        G.stepBeaconSearch(bs, slice);
         if (bs.status === "running") {
-          send({ type: "progress", id: id, expanded: before + bs.expanded, stage: bs.stage });
+          send({ type: "planProgress", id: id, expanded: bs.expanded });
           setTimeout(tick, 0);
           return;
         }
-        result.idealKm = result.lengthKm;
-        result.beaconStatus = bs.status;
+        var out = { type: "plan", id: id, status: bs.status, ms: Math.round(performance.now() - t0), expanded: bs.expanded };
         if (bs.status === "done") {
-          result.waypoints = bs.waypoints.map(function (v) { return G.toLonLat(v); });
-          result.lengthKm = bs.length * G.EARTH_RADIUS_KM;
-          result.bends = bs.beacons.length;
-          result.beacons = bs.beacons.map(function (i) { var r = data.rows[i]; return [r[0], data.types[r[1]], r[2], r[3], r[4]]; });
-          result.routeCrosses = countriesAlong(bs.waypoints);
+          var R = G.EARTH_RADIUS_KM;
+          out.km = bs.length * R;
+          out.overKm = out.km - result.lengthKm;
+          out.waypoints = bs.waypoints.map(function (v) { return G.toLonLat(v); });
+          out.points = bs.waypoints.map(function (v, k) {
+            if (k === 0 || k === bs.waypoints.length - 1) return { ident: null, country: nameOf(v), lon: out.waypoints[k][0], lat: out.waypoints[k][1] };
+            var row = data.rows[bs.beacons[k - 1]];
+            return { ident: row[0], type: data.types[row[1]], name: row[4], country: nameOf(v), lon: row[2], lat: row[3] };
+          });
+          out.legs = [];
+          for (var k = 0; k + 1 < bs.waypoints.length; k++) {
+            var km = G.angleBetween(bs.waypoints[k], bs.waypoints[k + 1]) * R;
+            out.legs.push({ km: km, long: km > G.BEACON_LEG_KM });
+          }
+          out.crosses = countriesAlong(bs.waypoints);
         }
-        result.expanded = before + bs.expanded;
-        result.ms = Math.round(performance.now() - t0);
-        send(result);
+        if (entry && (out.status === "done" || out.status === "none")) entry.plan = out;
+        send(out);
       } catch (err) {
-        send({ type: "result", id: id, status: "error", message: String(err && err.message || err) });
+        send({ type: "plan", id: id, status: "error", message: String(err && err.message || err) });
       }
     };
     tick();

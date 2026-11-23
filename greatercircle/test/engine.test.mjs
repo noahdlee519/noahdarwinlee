@@ -428,3 +428,49 @@ test("a chain of radio beacons round Russia: free legs, short ones over land, an
     }
   }
 });
+
+test("no two radio beacons in the data are closer than 12 km", () => {
+  const nav = JSON.parse(readFileSync(resolve(here, "../data/navaids.json"), "utf8"));
+  const cell = 12 / KM, grid = new Map(), vecs = nav.beacons.map((r) => V(r[2], r[3]));
+  const key = (v, dx, dy, dz) => (Math.floor(v[0] / cell) + dx) + "," + (Math.floor(v[1] / cell) + dy) + "," + (Math.floor(v[2] / cell) + dz);
+  vecs.forEach((v, i) => { const k = key(v, 0, 0, 0); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(i); });
+  let close = 0;
+  vecs.forEach((v, i) => {
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      for (const j of grid.get(key(v, dx, dy, dz)) || []) if (j > i && G.angleBetween(v, vecs[j]) * KM < 12) close++;
+    }
+  });
+  assert.equal(close, 0);
+});
+
+test("the worker sends the route first, then the flight plan, and a repeat comes from its cache at once", async () => {
+  const sent = [];
+  const sandbox = { self: {}, performance, setTimeout, JSON, Map, Float64Array, Int32Array, Uint8Array, Math, Array, Object, String, Number, Date, Promise };
+  sandbox.self = sandbox;
+  sandbox.GreatCircle = G;
+  sandbox.topojson = topojson;
+  sandbox.fetch = (url) => Promise.resolve({ json: () => Promise.resolve(JSON.parse(readFileSync(resolve(here, "..", url), "utf8"))) });
+  const run = new Function(...Object.keys(sandbox), readFileSync(resolve(here, "../worker.js"), "utf8") + "\nreturn self.GreatCircleRouter;");
+  const router = run(...Object.values(sandbox));
+  const wait = (pred) => new Promise((res, rej) => { const t0 = Date.now(); const tick = () => { if (pred()) res(); else if (Date.now() - t0 > 60000) rej(new Error("timeout")); else setTimeout(tick, 20); }; tick(); });
+  router.onmessage = (e) => sent.push(e.data);
+  router.postMessage({ type: "init", topology: topo });
+  await wait(() => sent.some((m) => m.type === "ready"));
+  const route = { type: "route", a: [-0.4599, 51.4707], b: [140.3887, 35.7686], avoid: [String(feat("Russia").id)], regions: [], bufferKm: 50 * MI };
+  router.postMessage({ ...route, id: 1 });
+  await wait(() => sent.some((m) => m.type === "plan" && m.id === 1));
+  const first = sent.filter((m) => m.id === 1 && (m.type === "result" || m.type === "plan")).map((m) => m.type);
+  assert.deepEqual(first, ["result", "plan"]);
+  const plan = sent.find((m) => m.type === "plan" && m.id === 1);
+  assert.equal(plan.status, "done");
+  assert.equal(plan.legs.length, plan.points.length - 1);
+  assert.ok(Math.abs(plan.legs.reduce((t, l) => t + l.km, 0) - plan.km) < 0.5);
+  plan.legs.forEach((l) => assert.equal(l.long, l.km > 300));
+  for (let i = 1; i + 1 < plan.points.length; i++) assert.ok(plan.points[i].ident, "beacons have idents");
+  const before = sent.length;
+  router.postMessage({ ...route, id: 2 });
+  await wait(() => sent.slice(before).some((m) => m.type === "plan" && m.id === 2));
+  const again = sent.slice(before).filter((m) => m.id === 2).map((m) => m.type);
+  assert.deepEqual(again, ["result", "plan"]);
+  assert.ok(sent.slice(before).find((m) => m.type === "result").cached);
+});

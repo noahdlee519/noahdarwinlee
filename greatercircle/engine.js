@@ -1266,7 +1266,7 @@
   return {
     EARTH_RADIUS_KM: EARTH_RADIUS_KM,
     bufferRings: bufferRings, bufferOutline: bufferOutline, boundaryDistance: boundaryDistance,
-    beaconIndex: beaconIndex, startBeaconSearch: startBeaconSearch, stepBeaconSearch: stepBeaconSearch,
+    BEACON_LEG_KM: BEACON_LEG_KM, beaconIndex: beaconIndex, startBeaconSearch: startBeaconSearch, stepBeaconSearch: stepBeaconSearch,
     toVec: toVec, toLonLat: toLonLat, angleBetween: angleBetween, normalize: normalize,
     sampleArc: sampleArc, sphereDistanceKm: sphereDistanceKm, ellipsoidDistanceKm: ellipsoidDistanceKm,
     sphericalSignedArea: sphericalSignedArea,

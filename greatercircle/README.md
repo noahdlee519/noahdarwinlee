@@ -24,9 +24,9 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   exact for those edges. Islands far apart get projections of their own. The
   outline keeps every point within the buffer and lets in nothing more than
   about 3% beyond it.
-- **Waypoints** (off by default; `wp=1` in the URL): the route flies from one
-  radio beacon to the next, as a flight plan does. Once the shortest way is
-  found, A* runs again over A, B, and the beacons within 300 km of it (then
+- **The flight plan** (the third tab; `tab=plan` in the URL, and the old
+  `wp=1` still opens it): the route flies from one radio beacon to the next,
+  as a flight plan does. Once the shortest way is found, A* runs again over A, B, and the beacons within 300 km of it (then
   800, then 2,000 if no chain is found): a leg is at most 300 km, or longer only
   if no beacon lies within 150 km of it away from its ends (open sea, desert),
   and every leg must be free of what is avoided, buffer included
@@ -34,14 +34,29 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   (triangles for VORs, circles for NDBs) and labels them close in; hovering
   one names it. Hovering anywhere on the globe shows its coordinates at the
   foot of the tooltip.
-- **worker.js** — runs the search off the main thread in 40 ms slices; a newer
-  request supersedes an older one. Loaded as a plain script instead when the
-  browser will not start a worker, answering through the same messages.
+- **worker.js** — runs the search off the main thread in 40 ms slices (12 ms
+  when it runs on the page); a newer request supersedes an older one. It
+  answers a route with its result at once, then works out the flight plan and
+  sends it as a second message (`plan`), so all three tabs have a distance
+  without waiting; the last eight routes are kept, so going back to one, or
+  undoing an avoid, answers both at once. Loaded as a plain script instead when
+  the browser will not start a worker, answering through the same messages.
 - **app.js** — the globe (canvas; a direct orthographic projector for land and
   borders at three levels of detail chosen by how big the globe is on screen,
   d3-geo for the route arcs and the exact pointer test, a colour-coded second
-  canvas to find the country under the pointer), the inputs with suggestions,
-  the avoid list (type, pick from the list, or shift-click the globe), regions
+  canvas to find the country under the pointer), and the panel: a route card
+  (airport codes when a place has one, the inputs with suggestions), chips for
+  the options (what is avoided, the buffer, the units) that open a card of
+  them, and the result card, whose tabs are Direct, Avoiding (when the way
+  round is longer), and Flight plan, each with its distance; the chosen one is
+  drawn solid on the globe and the others dashed. Below it, the flight plan's
+  timeline of beacons grouped by country (hover or tap a leg to light it on
+  the globe), the countries crossed (tap one to avoid it), and Share. Warnings
+  (A inside what is avoided, no way round, no chain of beacons) are small cards
+  with the action that fixes them. Flight times are the distance at 850 km/h
+  plus half an hour. With A and B set, clicking a country opens a small card
+  to avoid it or move B there; shift-click still avoids at once. The avoid
+  list (type, pick from the list, or click the globe), regions
   of your own to avoid (with a mouse: a polygon corner by corner, a circle
   dragged out from its centre, or a freehand outline; each becomes a ring of
   great-circle edges the engine treats like a country, with handles to adjust
@@ -76,7 +91,9 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   sea's colour; from `tools/build-lakes.mjs`.
   **data/navaids.json** — OurAirports' radio beacons (VOR, VOR-DME, VORTAC,
   NDB, and NDB-DME; public domain), ident, type, place, and name, one per
-  site; fetched by the worker only when waypoints are on; from
+  site, and no two closer than 12 km (a VOR and an NDB at one airport would
+  otherwise be two steps a kilometre apart); fetched by the worker after the
+  first route; from
   `tools/build-navaids.mjs` and `navaids.csv` from
   github.com/davidmegginson/ourairports-data.
 - **sat.js** — the satellite view, switched on with the satellite button and
@@ -104,7 +121,9 @@ the countries you would rather not cross. Served at `/greatercircle/`.
 The engine against d3-geo (12,000 random points in and out of countries), country
 buffers against the exact distance to the border (inside the buffer within it,
 outside it beyond 3.5% more), a chain of radio beacons round Russia (free legs,
-long ones only where no beacon is near),
+long ones only where no beacon is near), no two beacons in the data closer
+than 12 km, the worker's order of messages (the route, then the flight plan,
+and both at once from its cache),
 synthetic shapes for the arc test's edge cases (touching, running along, and
 going through corners and straight runs), antipodes, and real routes checked
 for staying outside the avoided countries, being no longer than they must be,
