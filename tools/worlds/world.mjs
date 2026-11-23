@@ -33,7 +33,7 @@ export const TILE_LEVELS = [{ scale: 4, size: 1024 }, { scale: 8, size: 1024 }, 
 // land: nudges the land share up or down. mountains, lakes, ponds, roughness: 1 is usual. warm: degrees
 // warmer. ice: polar ice along the top ('n') or bottom ('s') edge. volcanoes: how many.
 export const WORLDS = [
-  { name: 'Le Guin', layout: 'archipelago', masses: 4, latTop: 62, latBottom: 12, wet: 1.1, islands: 0.24, land: -0.05 },
+  { name: 'Le Guin', layout: 'archipelago', masses: 4, latTop: 62, latBottom: 12, wet: 1.1, islands: 0.24, land: -0.02 },
   { name: 'Asimov', layout: 'trio', masses: 3, latTop: 66, latBottom: -30, wet: 1.1 },
   { name: 'Butler', layout: 'twins', masses: 2, latTop: 38, latBottom: -42, wet: 0.95, mountains: 0.8, roughness: 0.85 },
   { name: 'Herbert', layout: 'pangaea', masses: 1, latTop: 46, latBottom: 6, wet: 0.7, land: 0.09, mountains: 1.2 },
@@ -192,7 +192,8 @@ function labelIce(world, labels, cultures) {
   const S = W / 1600, out = [];
   if (!ice) return out;
   const r = world.rng.fork('ice-names');
-  const namer = phonologyNamer(PHONOLOGIES.find((p) => p.id === (r.chance(0.5) ? 'nordic' : 'finnic')), r);
+  const cold = r.chance(0.5) ? 'nordic' : 'finnic';
+  const namer = phonologyNamer(PHONOLOGIES.find((p) => p.id === cold), r);
   for (const side of ['n', 's']) {
     let best = null;
     for (let x = 200 * S; x < W - 200 * S; x += 8 * S) {

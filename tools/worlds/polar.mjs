@@ -54,6 +54,8 @@ export function buildIce({ land, width, height, rng, sides }) {
       }
     }
   }
+  // Seamless at the wrap: the last columns repeat the first.
+  for (let y = 0; y < H; y++) { mask[y * W + W - 1] = mask[y * W]; mask[y * W + W - 2] = mask[y * W + 1]; }
   // Keep only ice joined to the band at the edge (no stray floes), and drop specks.
   const keep = new Uint8Array(N), stack = new Int32Array(N);
   let top = 0;

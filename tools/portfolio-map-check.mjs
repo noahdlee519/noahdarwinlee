@@ -4,12 +4,13 @@
 //   node tools/portfolio-map-check.mjs content
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
-//   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|all] [base URL]
-//       map: the world draws 18 countries and their labels, zoom stops at 4x, and the view stays on the world
+//   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|here|all] [base URL]
+//       map: the world draws 18 countries and their labels, zoom stops at 6x, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
 //       menu: the page stays White whatever the site's theme; the drawer, and each map layer it switches off; the
 //       fullscreen viewer; the wordmarks are gone
-//       sharp: the first view loads only the world's two files; at 4x on a 2x screen, the finest tiles draw the land
+//       sharp: the first view loads only the world's two files; at 6x on a 2x screen, the finest tiles draw the land
+//       here: the location button flies to the blue dot on the island called About, then opens the about page
 //       all (the default): every stage
 //
 // Screenshots go to /tmp/portfolio-map-*.png.
@@ -78,11 +79,17 @@ function content() {
     const d = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`), 'utf8'));
     const ids = new Set(d.projects.map((p) => p.id));
     if (!projects.every((p) => ids.has(p.id))) ok(false, `${w.slug} has every project`);
-    // The world wraps east and west, so no land may run off either edge.
+    // The world wraps east and west, so no land may run off either edge, except polar ice (snow, palette index 6),
+    // which runs on across the seam: where it meets one edge it meets the other in the same rows.
     const pic = decodeIndexed(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.png`)));
-    let edge = 0;
-    for (let y = 0; y < pic.H; y++) if (pic.px[y * pic.W] !== 7 || pic.px[y * pic.W + pic.W - 1] !== 7) edge++;
-    if (edge) ok(false, `${w.slug}: land at the east or west edge in ${edge} rows, so the world can't wrap cleanly`);
+    let edge = 0, ice = 0;
+    for (let y = 0; y < pic.H; y++) {
+      const a = pic.px[y * pic.W], b = pic.px[y * pic.W + pic.W - 1];
+      if (a === 7 && b === 7) continue;
+      if ((a === 6 || a === 5) && (b === 6 || b === 5) && (y < pic.H * 0.16 || y > pic.H * 0.84)) { ice++; continue; }
+      edge++;
+    }
+    if (edge > 2) ok(false, `${w.slug}: land at the east or west edge in ${edge} rows, so the world can't wrap cleanly`);
     // The finer tiles: every one the world file lists is there, and no other.
     const T = d.tiles;
     if (!T || !T.levels || !T.levels.length) ok(false, `${w.slug}: no finer tiles for zooming in`);
@@ -128,6 +135,52 @@ const onWorld = (v) => {
   return wh <= v.rect.h + e ? true : v.ty <= v.rect.t + e && v.ty + wh >= v.rect.b - e;
 };
 
+// The island called About: a blue dot; the location button flies there, pauses, then opens the about page.
+async function hereStage(browser) {
+  console.log('here');
+  const page = await open(browser, '?world=le-guin');
+  await page.waitForTimeout(1600);
+  const dot = await page.evaluate(() => {
+    const m = window.__portfolioMap.map, el = document.querySelector('.map-here .here-dot');
+    const r = el && el.getBoundingClientRect();
+    return { here: m.world.here, shown: !!r && r.width > 4 && r.width < 20, projects: m.world.projects.some((p) => p.id === 'about') };
+  });
+  ok(Array.isArray(dot.here) && dot.shown && !dot.projects, `the world shows a "you are here" dot at ${dot.here} on the island called About, which is no project`);
+  await page.fill('#search-input', 'About');
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => ![...document.querySelectorAll('.search-opt')].some((o) => /^About$/.test(o.textContent.trim()))), 'searching finds no project called About');
+  await page.fill('#search-input', '');
+  await page.keyboard.press('Escape');
+  await page.screenshot({ path: '/tmp/portfolio-map-here-before.png' });
+  // The button: a flight first (the URL stays), then the about page.
+  const t0 = Date.now();
+  await page.click('.locate');
+  await page.waitForTimeout(500);
+  const mid = await page.evaluate(() => ({ url: location.pathname + location.hash, zoom: window.__portfolioMap.map.zoom() }));
+  ok(mid.url.startsWith('/portfolio-map/'), `the location button does not leave at once (${mid.url})`);
+  await page.waitForTimeout(700);
+  const near = await page.evaluate(() => {
+    const m = window.__portfolioMap.map, r = m.rect(), h = m.world.here, W = m.world.width;
+    const cx = (((r.l + r.w / 2 - m.tx) / m.s) % W + W) % W, cy = (r.t + r.h / 2 - m.ty) / m.s;
+    return { d: Math.hypot(cx - h[0], cy - h[1]), zoom: m.zoom() };
+  });
+  ok(near.d < 6 && near.zoom > 3, `it flies to the blue dot and zooms in on the island (${near.d.toFixed(1)} units off, at ${near.zoom.toFixed(1)}x)`);
+  await page.screenshot({ path: '/tmp/portfolio-map-here.png' });
+  await page.waitForURL(/\/#about$/, { timeout: 6000 }).catch(() => {});
+  ok(/\/#about$/.test(page.url()) && Date.now() - t0 > 1200, `then, after a pause, it opens the about page (${page.url()})`);
+  await page.close();
+  // Clicking the dot does the same; under reduced motion the flight is instant.
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  const p2 = await open(browser, '?world=le-guin', { context: ctx });
+  await p2.waitForTimeout(600);
+  // The dot on the copy of the world in view.
+  const box = await p2.evaluate(() => { const r = [...document.querySelectorAll('.map-here .here-dot')].map((e) => e.getBoundingClientRect()).find((q) => q.x > 80 && q.x < innerWidth - 80); return [r.x + r.width / 2, r.y + r.height / 2]; });
+  await p2.mouse.click(box[0], box[1]);
+  await p2.waitForURL(/\/#about$/, { timeout: 4000 }).catch(() => {});
+  ok(/\/#about$/.test(p2.url()), 'clicking the dot (with reduced motion) also ends on the about page');
+  await ctx.close();
+}
+
 async function mapStage(browser) {
   console.log('map');
   const page = await open(browser, '?world=le-guin');
@@ -148,16 +201,16 @@ async function mapStage(browser) {
   const rect = (await view(page)).rect;
   await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
   let last = 0;
-  for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(30); }
+  for (let i = 0; i < 60; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(30); }
   await page.waitForTimeout(900);
   let v = await view(page);
-  ok(Math.abs(v.zoom - 4) < 0.01, `the wheel zooms in to 4x and stops there (${v.zoom.toFixed(2)})`);
+  ok(Math.abs(v.zoom - 6) < 0.01, `the wheel zooms in to 6x and stops there (${v.zoom.toFixed(2)})`);
   last = v.zoom;
   await page.click('#zoom-in').catch(() => {});
   await page.waitForTimeout(500);
   v = await view(page);
-  ok(v.zoom <= last + 1e-6, 'the + button cannot zoom past 4x');
-  ok(await page.evaluate(() => document.querySelector('#zoom-in').disabled), 'the + button is disabled at 4x');
+  ok(v.zoom <= last + 1e-6, 'the + button cannot zoom past 6x');
+  ok(await page.evaluate(() => document.querySelector('#zoom-in').disabled), 'the + button is disabled at 6x');
   const after = await labelsAt();
   ok(after.includes('town') && !before.includes('town'), 'towns appear only when zoomed in');
   ok(onWorld(v), 'zoomed in, the view is on the world');
@@ -194,19 +247,20 @@ async function mapStage(browser) {
   await page.evaluate(() => { const m = window.__portfolioMap.map; const h = window.__portfolioMap.home(); m.set(h); });
   await page.waitForTimeout(400);
   const wrapped = await page.evaluate(() => {
-    // Put the seam in the middle of the map, with the world's east edge on the left of it: Leggio, in the far west,
-    // then shows to the right of the seam, on the next copy of the world.
-    const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'leggio'), r = m.rect(), W = m.world.width;
+    // Put the seam in the middle of the map, with the world's east edge on the left of it: the country named
+    // furthest west then shows to the right of the seam, on the next copy of the world.
+    const m = window.__portfolioMap.map, r = m.rect(), W = m.world.width;
+    const l = m.world.labels.filter((x) => x.kind === 'country' && x.minZoom <= 1).sort((a, b) => a.x - b.x)[0];
     const cx = r.l + r.w / 2;
     m.set({ s: m.s, tx: cx - (W - 120) * m.s, ty: m.ty });
     m.render(true);
-    return { x: (l.x + W) * m.s + m.tx, y: (l.y + 14) * m.s + m.ty, seam: W * m.s + m.tx };
+    return { x: (l.x + W) * m.s + m.tx, y: l.y * m.s + m.ty, seam: W * m.s + m.tx, id: l.id };
   });
   await page.waitForTimeout(300);
   await page.mouse.click(wrapped.x, wrapped.y);
   await page.waitForTimeout(1300);
   const sel = await page.evaluate(() => ({ id: window.__portfolioMap.map.selected, tint: document.querySelectorAll('.map-tint .map-sel').length, copies: window.__portfolioMap.map.copies.length }));
-  ok(wrapped.x > wrapped.seam && sel.id === 'leggio' && sel.tint >= 2, `clicking a country on a wrapped copy opens it and tints it on every copy (${sel.tint} tints over ${sel.copies} copies)`);
+  ok(wrapped.x > wrapped.seam && sel.id === wrapped.id && sel.tint >= 2, `clicking a country on a wrapped copy opens it and tints it on every copy (${sel.tint} tints over ${sel.copies} copies)`);
   // Zoom all the way out: the whole world fits.
   await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
   for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, 240); await page.waitForTimeout(20); }
@@ -253,11 +307,16 @@ async function interfaceStage(browser) {
   // Clicking a country on the map opens it.
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
-  await page.evaluate(() => window.__portfolioMap.map.set(window.__portfolioMap.home()));
+  // At the home zoom, with CHRONIA in the middle of the map's visible part (clear of the panel).
+  await page.evaluate(() => {
+    const m = window.__portfolioMap.map, h = window.__portfolioMap.home(), l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect();
+    m.set({ s: h.s, tx: r.l + r.w / 2 - l.x * h.s, ty: r.t + r.h / 2 - l.y * h.s });
+  });
   await page.waitForTimeout(800);
   const pt = await page.evaluate(() => {
     const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia');
-    return { x: l.x * m.s + m.tx, y: (l.y + 18) * m.s + m.ty };
+    // Its own name, which belongs to it whatever lies beside it.
+    return { x: l.x * m.s + m.tx, y: l.y * m.s + m.ty };
   });
   await page.mouse.click(pt.x, pt.y);
   await page.waitForTimeout(1200);
@@ -460,7 +519,7 @@ async function menuStage(browser) {
       picture: (document.querySelector('.map-ground .map-image') || {}).getAttribute?.('href') || '',
       themeBtn: !!document.querySelector('#theme-btn'),
     }));
-    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && got.water === 'rgb(137, 209, 226)' && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
+    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && got.water === 'rgb(134, 207, 226)' && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
     await ctx.close();
   }
 
@@ -491,9 +550,13 @@ async function menuStage(browser) {
   // Each map layer, switched off, is gone from the map (zoomed in, so the finer layers are there to switch off).
   await page.keyboard.press('Escape');
   await page.evaluate(async () => {
-    const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.ref() * 2.6;
-    m.set({ s, tx: r.l + r.w / 2 - l.x * s, ty: r.t + r.h / 2 - l.y * s }); m.render(true);
-    for (let i = 0; i < 50 && !m.detail; i++) await new Promise((res) => setTimeout(res, 100));
+    // Between CHRONIA's name and the nearest named sea, gulf, or bay, so names of both kinds are in view.
+    const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.ref() * 3;
+    const water = m.world.labels.filter((x) => ['sea', 'gulf', 'bay'].includes(x.kind) && x.minZoom <= 2).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] || l;
+    const cx = water.x, cy = water.y;
+    m.stop();
+    m.set({ s, tx: r.l + r.w / 2 - cx * s, ty: r.t + r.h / 2 - cy * s }); m.render(true);
+    for (let i = 0; i < 100 && !m.detail; i++) await new Promise((res) => setTimeout(res, 100));
     await new Promise((res) => setTimeout(res, 300)); m.render(true);
   });
   await page.click('#menu-btn');
@@ -516,7 +579,7 @@ async function menuStage(browser) {
     await page.waitForTimeout(150);
     const after = await isShown();
     const checked = await page.getAttribute(`.drawer-switch[data-layer="${name}"]`, 'aria-checked');
-    ok(before && !after && checked === 'false' && (await drawerOpen()), `${label}: switching it off takes it off the map at once`);
+    ok(before && !after && checked === 'false' && (await drawerOpen()), `${label}: switching it off takes it off the map at once${before && !after ? '' : ` (before ${before}, after ${after})`}`);
   }
   ok(await page.evaluate(() => getComputedStyle(document.querySelector('.map-land')).visibility === 'visible'), 'without the terrain, the land is a plain colour');
   await page.screenshot({ path: '/tmp/portfolio-map-layers-off.png' });
@@ -601,7 +664,7 @@ async function sharpStage(browser) {
       const lv = m.tiles.level;
       return { zoom: m.zoom(), scale: lv && lv.scale, needed: m.s * Math.min(devicePixelRatio, 2), shown: document.querySelectorAll('.map-tile.is-in').length, pending: m.tiles.pending };
     });
-    ok(Math.abs(got.zoom - 4) < 0.01 && got.scale >= got.needed && got.shown > 0 && !got.pending, `${phone ? 'phone' : 'desktop'} at 4x on a ${phone ? 3 : 2}x screen: ${got.shown} tiles at ${got.scale} pixels per map unit, for the ${got.needed.toFixed(1)} the screen shows`);
+    ok(Math.abs(got.zoom - 6) < 0.01 && got.scale >= got.needed && got.shown > 0 && !got.pending, `${phone ? 'phone' : 'desktop'} at 6x on a ${phone ? 3 : 2}x screen: ${got.shown} tiles at ${got.scale} pixels per map unit, for the ${got.needed.toFixed(1)} the screen shows`);
     await page.screenshot({ path: phone ? '/tmp/portfolio-map-zoom4-phone.png' : '/tmp/portfolio-map-zoom4.png' });
     ok(page.errors.length === 0, `no errors zoomed in${phone ? ' on the phone' : ''}${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
     await ctx.close();
@@ -616,6 +679,7 @@ if (stage !== 'content') {
     if (stage === 'interface' || stage === 'all') await interfaceStage(browser);
     if (stage === 'menu' || stage === 'all') await menuStage(browser);
     if (stage === 'sharp' || stage === 'all') await sharpStage(browser);
+    if (stage === 'here' || stage === 'all') await hereStage(browser);
   } finally {
     await browser.close();
   }

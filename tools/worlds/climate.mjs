@@ -330,7 +330,9 @@ export function renderCover(prep, wx0, wy0, w, h) {
       // Small lakes are water in the picture too, under their vector outlines.
       if (onLand && lakes && lakes(mx, my)) { cover[i] = COVER.WATER; continue; }
       // Polar ice: snow, with a rare dark nunatak.
-      if (ice && ice[nearest && !onLand ? nearest[i0] : i0]) { cover[i] = tinyJ[tinyId[i]] < 0.025 ? COVER.ROCK : COVER.SNOW; continue; }
+      // (The ice is not carried out to sea: it meets the map's east and west edges, which must match exactly.)
+      if (ice && !onLand && ice[nearest[i0]]) continue;
+      if (ice && ice[i0]) { cover[i] = tinyJ[tinyId[i]] < 0.025 ? COVER.ROCK : COVER.SNOW; continue; }
       const b = broadId[i];
       const useA = broadPick[b] < 0.5;
       const mesh = useA ? fineA : fineB;

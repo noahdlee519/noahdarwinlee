@@ -118,7 +118,7 @@ The map uses a web mapping app's colours and its land-cover scheme, not the site
 | Desert and bare ground | `#faf7f3` |
 | Rock and high mountain | `#cbcfca` |
 | Snow and ice | `#ffffff` |
-| Water (seas, lakes, rivers) | `#89d1e2`, rivers and coasts in `#4da9bb` |
+| Water (seas, lakes, rivers) | `#86cfe2` (rivers in the same blue) |
 | Country borders | `#26262a` solid; province borders `#606266` dashed |
 | Labels | `#26262a`, with a pale halo |
 
@@ -139,6 +139,20 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
 - **Names:** peaks (a triangle and a height), capes, islands and island groups, forests, deserts, plateaus, deltas, and parks. Parks take project words where any are left, and the rest have invented names.
 - **Relief:** the finer tiles carry a faint hillshade (land facing the north-west lit, the far side in shadow).
 - **Loading:** all of this lives in `worlds/detail/<slug>.json`, which the page fetches the first time the map is zoomed past 1.3x, so the first load stays the world's two files. Every new layer has a Night colour.
+
+## Character and realism (Noah's requests, 23 November)
+
+- **Countries have character.** Each country has its own place-name language (twelve sound systems, with neighbours speaking different ones), route numbers and road signs, town plan (grid, radial, organic, or linear), and park naming custom. The Fuzhounese Dictionary's names are in Foochow Romanized ("Hók-ciŭ"), the Hundred Architects' towns are named after modern architects, and the capitals of the Chicago and New York countries are Chicago and New York.
+- **Roads are engineered.** There are motorways between the largest cities, trunk roads between all the cities, secondary roads between towns, and local roads to villages. They are routed over the terrain, merge at junctions, and run as straights with rounded curves.
+- **Towns are laid out**, with arterials, ring roads, a core, and suburbs. The grey built-up ground follows their streets.
+- **Water is natural.** The land cover makes no water of its own. Small lakes (kettles, tarns, finger lakes, oxbows, marsh ponds, crater lakes, and reservoirs) are vectors, and rivers meander on the lowland.
+- **Parks have no fill**, only a name and, close in, a faint edge. They lie in ice and high mountains, forests, wetlands, coasts, and deserts, under names of several kinds.
+- **Polar ice** belongs to no country, at the top or bottom of five worlds, seamless across the wrap.
+- **About:** every world has an island called About with a "you are here" dot. The location button flies there, then opens the about page.
+- **Zoom** goes to 6x, with tiles at 12 pixels a unit and the finest streets and lakes loaded in chunks for the view.
+- **Colours and lettering** follow the reference, measured on rendered pixels.
+  - The sea is `#86cfe2`, and the land-cover palette is unshaded at every zoom.
+  - Labels are untracked. Country names are bold `#121315`; water names are upright teal `#34768e`, small, and curve along channels and bays.
 
 ## The page shell (builder's calls)
 

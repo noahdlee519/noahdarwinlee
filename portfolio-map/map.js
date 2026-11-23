@@ -581,12 +581,14 @@
         if (ins.left && ccx - ex < r.l + 4 && ccx + ex > r.l - 4) on = false;
         if (ins.bottom && ccy + ey > r.b - 4 && ccy - ey < r.b + 4) on = false;
         if (on) {
-          show = !placed.some(function (q) { return overlap(box, q); }) || (forced && !obstacleHit(box));
+          show = !placed.some(function (q) { return overlap(box, q); }) || !!(forced && !obstacleHit(box));
           if (show) placed.push(box);
         }
       }
-      if (show !== it.shown) {
+      show = !!show;
+      if (show !== !!it.shown) {
         it.shown = show;
+        // (Always with an explicit true or false: toggle with no second argument flips the class instead.)
         it.el.classList.toggle("is-on", show);
       }
     });

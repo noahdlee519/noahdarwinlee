@@ -18,15 +18,10 @@ export const PALETTE = {
   rock: '#cbcfca', snow: '#ffffff', water: '#86cfe2', urban: '#eceef0', sand: '#f6efdc', line: '#4da9bb', border: '#26262a',
   province: '#606266', label: '#26262a',
 };
-// Palette order in the PNG: the seven land-cover classes by index, then
-// water, then built-up ground. The finer tiles add two more copies of these
-// nine, a shade darker (in the hills' shadow) and a shade lighter (lit).
+// Palette order in the PNG: the seven land-cover classes by index, then water, built-up ground, and sand. The
+// finer tiles use the same palette, unshaded, so every rendered pixel is one of the reference's colours.
 const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban', 'sand'];
-const NC = PNG_COLOURS.length;
-export const SHADE = { dark: 0.935, light: 1.045 };
-const mixShade = (rgb, f) => rgb.map((v) => Math.max(0, Math.min(255, Math.round(f > 1 ? v + (255 - v) * (f - 1) * 2.4 : v * f))));
 const BASE_RGB = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
-const TILE_RGB = [...BASE_RGB, ...BASE_RGB.map((c) => mixShade(c, SHADE.dark)), ...BASE_RGB.map((c) => mixShade(c, SHADE.light))];
 // A land-cover class (COVER) and its pond flag as a palette index.
 const coverIndex = (c, pond) => (c === 7 ? 8 : c === 8 ? 9 : c > 8 || pond ? 7 : c);
 
@@ -322,7 +317,7 @@ export function buildWorldFiles(world) {
       pts = [...pts, [pts[n - 1][0] + (dx / len) * 1.6, pts[n - 1][1] + (dy / len) * 1.6]];
     }
     const line = [];
-    for (const [x, y] of simplify(pts, 0.3)) {
+    for (const [x, y] of simplify(pts, 0.4)) {
       const q = [Math.round(x * 5) * 2, Math.round(y * 5) * 2];
       const last = line[line.length - 1];
       if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q);
@@ -536,23 +531,24 @@ export function buildTiles(world) {
   if (!world.coverArgs) return { files, levels };
   const W = world.width, H = world.height;
   for (const { scale, size } of TILE_LEVELS) {
-    const prep = prepareCover({ ...world.coverArgs, scale, shade: true });
+    // (No hillshade: the rendered colours stay exactly the reference's, at every zoom.)
+    const prep = prepareCover({ ...world.coverArgs, scale, shade: false });
     const unit = size / scale, cols = Math.ceil(W / unit), rows = Math.ceil(H / unit);
     const bits = new Uint8Array(cols * rows);
     for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
       const x0 = col * size, y0 = row * size;
       const w = Math.min(size, prep.W - x0), h = Math.min(size, prep.H - y0);
-      const { cover, ponds, shade } = renderCover(prep, x0, y0, w, h);
+      const { cover, ponds } = renderCover(prep, x0, y0, w, h);
       const indices = new Uint8Array(w * h);
       let land = false;
       for (let i = 0; i < indices.length; i++) {
         const v = coverIndex(cover[i], ponds[i]);
-        indices[i] = v === 7 || v === 8 ? v : v + NC * shade[i];
+        indices[i] = v;
         if (v !== 7) land = true;
       }
       if (!land) continue;
       bits[row * cols + col] = 1;
-      files.push({ path: `${scale}/${col}-${row}.png`, png: encodeIndexedPng(w, h, indices, TILE_RGB) });
+      files.push({ path: `${scale}/${col}-${row}.png`, png: encodeIndexedPng(w, h, indices, BASE_RGB) });
     }
     let has = '';
     for (let i = 0; i < bits.length; i += 4) has += ((bits[i] | (bits[i + 1] << 1) | (bits[i + 2] << 2) | (bits[i + 3] << 3)) & 15).toString(16);
