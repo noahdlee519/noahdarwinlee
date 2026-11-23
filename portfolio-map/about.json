@@ -1,0 +1,23 @@
+{
+  "hello": "Hi, my name is Noah",
+  "lede": "I design and build things. Take a look at some of my projects here.",
+  "portrait": {
+    "src": "/art/web/me-640.webp",
+    "alt": "Noah Darwin Lee reading at a library table"
+  },
+  "resume": "/portfolio/Lee_Noah_Resume.pdf",
+  "contact": {
+    "question": "Want to build something together?",
+    "email": "noahlee519@gmail.com",
+    "links": [
+      {
+        "label": "LinkedIn",
+        "url": "https://www.linkedin.com/in/noahdlee/"
+      },
+      {
+        "label": "Instagram",
+        "url": "https://www.instagram.com/noahdarwinlee/"
+      }
+    ]
+  }
+}
