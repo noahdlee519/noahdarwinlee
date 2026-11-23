@@ -96,6 +96,13 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   time, and the flat globe fitted to the route) and shares it where the
   browser can, or downloads it.
 
+  The buffer is a slider in the options card ("Buffer zone"), 0 to 100 miles
+  in whole units of whatever the distances are shown in, with its value
+  beside it; the route is worked out again when it is let go. An (i) beside
+  the tabs explains Direct, Avoiding, and Flight plan, and what a waypoint
+  is. The globe's buttons explain themselves on hover. Clicking a country
+  with A and B set offers to avoid it or to move A or B there.
+
   On a phone the panel is a sheet at three heights: a peek with the codes and
   the distance, half, and full. Drag it by the handle or the top of its
   content and it follows the finger, stretches past either end, and settles
@@ -103,7 +110,11 @@ the countries you would rather not cross. Served at `/greatercircle/`.
   goes up a height, then back down. It rides above the on-screen keyboard.
   The globe is kept in the space above the sheet.
 
-  Motion: a new route draws itself in from A to B, switching tab morphs the
+  Motion: the other routes' dashes run from A to B, and a dot the width of
+  the line runs along the chosen route from A to B, again and again. The
+  globe under the routes is kept in a second canvas while it does not
+  change, so each of those frames only draws the routes and markers again.
+  A new route draws itself in from A to B, switching tab morphs the
   line from one route to the other, and the distance counts up to its new
   value; none of it happens when the system asks for reduced motion. From
   the keyboard, the globe has a crosshair at its centre when it has focus:
