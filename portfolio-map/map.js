@@ -376,13 +376,20 @@
   MapView.prototype.placeLabels = function () {
     if (!this.labels) return;
     if (!this.labelsMeasured) this.measureLabels();
-    var z = this.zoom(), s = this.s, Ppx = this.labelScale(), size = this.size();
-    var placed = [], self = this;
+    // Below zoom 1 (the whole world beside the panel) the first labels still show; collisions thin them.
+    var z = Math.max(this.zoom(), 1), s = this.s, Ppx = this.labelScale(), size = this.size();
+    var r = this.rect(), ins = this.insets;
+    // The controls floating over the map (search, the corner's scale, the buttons) are kept clear of lettering.
+    var placed = (this.obstacles ? this.obstacles() : []).map(function (b) {
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2, hw: b.width / 2 + 2, hh: b.height / 2 + 2, a: 0 };
+    }), self = this;
     var order = this.labels.slice().sort(function (a, b) {
       var sa = a.country && a.country === self.selected ? -1 : a.rank;
       var sb = b.country && b.country === self.selected ? -1 : b.rank;
       return sa - sb;
     });
+    var fixedCount = placed.length;
+    function obstacleHit(box) { return placed.slice(0, fixedCount).some(function (q) { return overlap(box, q); }); }
     order.forEach(function (it) {
       var l = it.l, show = false;
       var forced = it.country && it.country === self.selected;
@@ -409,9 +416,13 @@
         }
         var box = { x: ccx, y: ccy, hw: hw, hh: hh, a: ang };
         var M = self.M;
-        var on = ccx + hw > -M && ccx - hw < size.w + M && ccy + hh > -M && ccy - hh < size.h + M;
+        var ex = Math.abs(hw * Math.cos(ang)) + Math.abs(hh * Math.sin(ang)), ey = Math.abs(hw * Math.sin(ang)) + Math.abs(hh * Math.cos(ang));
+        var on = ccx + ex > -M && ccx - ex < size.w + M && ccy + ey > -M && ccy - ey < size.h + M;
+        // Never half under the panel or the sheet.
+        if (ins.left && ccx - ex < r.l + 4 && ccx + ex > r.l - 4) on = false;
+        if (ins.bottom && ccy + ey > r.b - 4 && ccy - ey < r.b + 4) on = false;
         if (on) {
-          show = forced || !placed.some(function (q) { return overlap(box, q); });
+          show = !placed.some(function (q) { return overlap(box, q); }) || (forced && !obstacleHit(box));
           if (show) placed.push(box);
         }
       }
@@ -504,7 +515,7 @@
     if (this.selected && this.shapes[this.selected]) {
       this.shapes[this.selected].el.classList.remove("is-sel");
       var prov = this.shapes[this.selected].provinces;
-      Object.keys(prov).forEach(function (k) { prov[k].el.classList.remove("is-sel"); });
+      Object.keys(prov).forEach(function (k) { prov[k].el.classList.remove("is-sel", "is-open"); });
     }
     $$(".lbl.is-sel", this.labelLayer).forEach(function (e) { e.classList.remove("is-sel"); });
     if (this.outline) this.outline.textContent = "";
@@ -514,6 +525,7 @@
     var sh = this.shapes[id];
     sh.el.classList.add("is-sel");
     var target = sh;
+    Object.keys(sh.provinces).forEach(function (k) { sh.provinces[k].el.classList.add("is-open"); });
     if (province && sh.provinces[province]) {
       sh.provinces[province].el.classList.add("is-sel");
       target = sh.provinces[province];
@@ -558,7 +570,7 @@
     el.addEventListener("pointerdown", function (e) {
       if (e.button !== 0 && e.pointerType === "mouse") return;
       self.stop();
-      el.setPointerCapture(e.pointerId);
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
       pointers.set(e.pointerId, [e.clientX, e.clientY]);
       if (pointers.size === 1) {
         drag = { x: e.clientX, y: e.clientY, tx: self.tx, ty: self.ty, target: e.target };

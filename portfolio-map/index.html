@@ -2,28 +2,175 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta name="theme-color" content="#ffffff" />
     <title>Noah Darwin Lee | Projects</title>
     <meta name="description" content="A map of an imaginary world in which every country is one of Noah Darwin Lee’s projects." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Noah Darwin Lee | Projects" />
+    <meta property="og:description" content="A map of an imaginary world in which every country is one of Noah Darwin Lee’s projects." />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-italic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/portfolio-map/projects.json" as="fetch" crossorigin />
+    <link rel="preload" href="/portfolio-map/worlds/index.json" as="fetch" crossorigin />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/portfolio-map/map.css" />
   </head>
-  <body>
-    <h1 class="sr-only">Noah Darwin Lee’s projects, as a map</h1>
-    <div class="map" id="map"></div>
+  <body class="is-loading">
+    <svg width="0" height="0" class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></symbol>
+      <symbol id="i-about" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.75" /><path d="M4.75 19.5c1.2-3.4 4-5.25 7.25-5.25s6.05 1.85 7.25 5.25" /></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.6s-7.35-4.3-7.35-9.65A4.05 4.05 0 0 1 12 7.55a4.05 4.05 0 0 1 7.35 2.4C19.35 15.3 12 19.6 12 19.6Z" /></symbol>
+      <symbol id="i-resume" viewBox="0 0 24 24"><path d="M6.5 3.75h7.25L18 8v11.25a1 1 0 0 1-1 1H6.5a1 1 0 0 1-1-1v-14.5a1 1 0 0 1 1-1Z" /><path d="M13.5 4v4.25H18M8.75 12.25h6.5M8.75 15.75h6.5" /></symbol>
+      <symbol id="i-contact" viewBox="0 0 24 24"><rect x="3.75" y="5.75" width="16.5" height="12.5" rx="1.5" /><path d="m4.5 7 7.5 6 7.5-6" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" /><path d="m15 15 5 5" /></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11M17.5 6.5l-11 11" /></symbol>
+      <symbol id="i-visit" viewBox="0 0 24 24"><path d="M8 16 16 8M9.5 8H16v6.5" /></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10.25 13.75a3.5 3.5 0 0 0 4.95 0l3.05-3.05a3.5 3.5 0 0 0-4.95-4.95l-1.2 1.2" /><path d="M13.75 10.25a3.5 3.5 0 0 0-4.95 0L5.75 13.3a3.5 3.5 0 0 0 4.95 4.95l1.2-1.2" /></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6" /></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></symbol>
+      <symbol id="i-world" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.75" /><path d="M4.5 10h15M4.5 14h15M12 4.25c-2.6 2.3-3.5 4.9-3.5 7.75s.9 5.45 3.5 7.75c2.6-2.3 3.5-4.9 3.5-7.75S14.6 6.55 12 4.25Z" /></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95" /><path d="M17.25 3.75v3.5h-3.5" /></symbol>
+      <symbol id="i-explore" viewBox="0 0 24 24"><path d="M9 5.25 3.75 7.1v12.65L9 17.9l6 1.85 5.25-1.85V5.25L15 7.1 9 5.25Z" /><path d="M9 5.25V17.9M15 7.1v12.65" /></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.75" y="8.75" width="10.5" height="10.5" rx="1.5" /><path d="M15.25 8.5V6.25a1.5 1.5 0 0 0-1.5-1.5h-7.5a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5H8.5" /></symbol>
+    </svg>
+
+    <h1 class="sr-only">Noah Darwin Lee’s projects, as a map of an imaginary world</h1>
+
+    <div class="map" id="map">
+      <div class="map-veil" aria-hidden="true"></div>
+    </div>
+
+    <!-- The rail: the site menu, About, Saved, Resume, and Contact (on a phone, a tab bar). -->
+    <nav class="rail" aria-label="Sections">
+      <div class="site-menu" id="site-menu">
+        <button class="rail-btn rail-menu" id="site-menu-btn" type="button" aria-label="Site menu" aria-expanded="false" aria-controls="site-menu-panel" aria-haspopup="true">
+          <span class="rail-icon"><svg class="site-menu-icon"><use href="#i-menu" /></svg></span>
+        </button>
+        <div class="site-menu-panel" id="site-menu-panel" role="menu" aria-label="Site">
+          <a href="/" role="menuitem" style="--i: 0">Home</a>
+          <a href="/#about" role="menuitem" style="--i: 1">About</a>
+          <a href="/art/" role="menuitem" style="--i: 2">Art</a>
+          <a href="/blog/" role="menuitem" style="--i: 3">Blog</a>
+          <a href="/cv/" role="menuitem" style="--i: 4">CV</a>
+          <div class="site-menu-theme" style="--i: 5"><span>Site theme</span><span class="site-menu-theme-slot"></span></div>
+        </div>
+      </div>
+      <button class="rail-btn tab-explore" type="button" data-view="explore" aria-label="Explore the map">
+        <span class="rail-icon"><svg><use href="#i-explore" /></svg></span>
+        <span class="rail-text">Explore</span>
+      </button>
+      <button class="rail-btn" type="button" data-view="about">
+        <span class="rail-icon"><svg><use href="#i-about" /></svg></span>
+        <span class="rail-text">About</span>
+      </button>
+      <button class="rail-btn" type="button" data-view="saved">
+        <span class="rail-icon"><svg><use href="#i-heart" /></svg><b class="rail-count" hidden></b></span>
+        <span class="rail-text">Saved</span>
+      </button>
+      <a class="rail-btn" href="/portfolio/Lee_Noah_Resume.pdf" target="_blank" rel="noopener" data-view="resume">
+        <span class="rail-icon"><svg><use href="#i-resume" /></svg></span>
+        <span class="rail-text">Resume</span>
+      </a>
+      <button class="rail-btn tab-contact" type="button" data-view="contact">
+        <span class="rail-icon"><svg><use href="#i-contact" /></svg></span>
+        <span class="rail-text">Contact</span>
+      </button>
+      <a class="rail-mark" href="/" aria-label="noahdarwinlee.com"><i class="mark" aria-hidden="true"></i></a>
+    </nav>
+
+    <!-- Search, floating at the top left of the map. -->
+    <div class="search" id="search">
+      <div class="search-box">
+        <span class="search-lead" aria-hidden="true"><svg class="ic"><use href="#i-search" /></svg></span>
+        <input
+          id="search-input"
+          class="search-input"
+          type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="search-list"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          enterkeyhint="search"
+          placeholder="Search projects"
+          aria-label="Search projects"
+        />
+        <button class="search-icon search-go" type="button" aria-label="Search" tabindex="-1"><svg class="ic"><use href="#i-search" /></svg></button>
+        <button class="search-icon search-clear" type="button" aria-label="Close" hidden><svg class="ic"><use href="#i-close" /></svg></button>
+        <button class="search-me" type="button" aria-label="About Noah"><img src="/art/web/me-640.webp" alt="" width="36" height="36" decoding="async" /></button>
+      </div>
+      <ul class="search-list" id="search-list" role="listbox" aria-label="Projects" hidden></ul>
+    </div>
+
+    <!-- The panel: on a desktop, a side panel; on a phone, a bottom sheet. -->
+    <section class="panel" id="panel" aria-label="Details" data-state="open">
+      <div class="sheet-grip" aria-hidden="true"><span></span></div>
+      <div class="panel-scroll" id="panel-scroll">
+        <div class="panel-body" id="panel-body"></div>
+      </div>
+      <button class="panel-tab" id="panel-tab" type="button" aria-label="Collapse the side panel" aria-expanded="true" aria-controls="panel"><svg class="ic"><use href="#i-left" /></svg></button>
+    </section>
+
+    <!-- Over the map: next world (on a phone), zoom, the scale bar, and Noah's mark. -->
+    <button class="fab-world" id="fab-world" type="button" aria-label="Show the next world"><svg class="ic"><use href="#i-next" /></svg></button>
 
     <div class="zoom" role="group" aria-label="Zoom">
       <button class="zoom-btn" type="button" id="zoom-in" aria-label="Zoom in"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg></button>
       <button class="zoom-btn" type="button" id="zoom-out" aria-label="Zoom out"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12" /></svg></button>
     </div>
 
+    <div class="corner" id="corner">
+      <div class="brand" aria-hidden="true"><i class="mark"></i><span>Noah Darwin Lee</span></div>
+      <div class="scale scale-corner" aria-hidden="true"><span class="scale-text"></span><span class="scale-bar"></span></div>
+    </div>
+
+    <footer class="strip" id="strip">
+      <span class="strip-left">2026 Noah Darwin Lee</span>
+      <span class="strip-right">
+        <span>Map: <button class="strip-world" type="button" id="strip-world" title="Show the next world"><span class="strip-world-name"></span></button></span>
+        <i class="sep" aria-hidden="true">|</i>
+        <a href="/terms/">Terms</a>
+        <i class="sep" aria-hidden="true">|</i>
+        <a href="/privacy/">Privacy</a>
+        <i class="sep" aria-hidden="true">|</i>
+        <button class="strip-feedback" type="button" data-feedback>Site feedback</button>
+        <span class="scale scale-strip" role="img" aria-label=""><span class="scale-text"></span><span class="scale-bar"></span></span>
+      </span>
+    </footer>
+
+    <dialog class="feedback-dialog" id="feedback-dialog" aria-labelledby="feedback-title">
+      <form class="feedback" id="feedback" novalidate>
+        <div class="feedback-head">
+          <h2 class="feedback-title" id="feedback-title">Site feedback</h2>
+          <button class="icon-btn feedback-close" type="button" aria-label="Close" data-close><svg class="ic"><use href="#i-close" /></svg></button>
+        </div>
+        <label class="feedback-label" for="feedback-message">Tell me what works, what doesn’t, or what you’d add. Your message is anonymous.</label>
+        <textarea id="feedback-message" name="message" rows="4" maxlength="2000" required placeholder="Your message"></textarea>
+        <input class="feedback-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="feedback-row">
+          <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
+          <button class="btn btn-fill feedback-send" type="submit">Send</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <noscript>
+      <div class="noscript">
+        <p>This page draws a map with JavaScript. The projects are also listed at <a href="/portfolio/">noahdarwinlee.com/portfolio</a>.</p>
+      </div>
+    </noscript>
+
     <script src="/portfolio-map/map.js" defer></script>
     <script src="/portfolio-map/app.js" defer></script>
+    <script src="/menu.js" defer></script>
+    <script src="/feedback.js" defer></script>
+    <script src="/theme.js" defer></script>
   </body>
 </html>

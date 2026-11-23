@@ -146,12 +146,186 @@ async function mapStage(browser) {
   await page.close();
 }
 
+const panelTitle = (page) => page.evaluate(() => { const t = document.querySelector('#panel-body .title'); return t ? t.textContent.trim() : null; });
+const selected = (page) => page.evaluate(() => { const m = window.__portfolioMap.map; return { id: m.selected, province: m.selectedProvince, world: m.world.slug, lit: !!document.querySelector('.map-country.is-sel') }; });
+
+async function interfaceStage(browser) {
+  console.log('interface (desktop, 1440x900)');
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+  let page = await open(browser, '?world=le-guin', { context });
+  ok(await panelTitle(page) === 'Hi, my name is Noah', 'About is the starting panel');
+  await page.screenshot({ path: '/tmp/portfolio-map-desktop.png' });
+
+  // Search: type, arrow, Enter.
+  await page.click('#search-input');
+  await page.keyboard.type('lore');
+  ok(await page.evaluate(() => !document.querySelector('#search-list').hidden && document.querySelectorAll('.search-opt').length >= 1), 'search lists matches as you type');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1200);
+  ok(await panelTitle(page) === 'LoreTour', 'Enter opens the match');
+  let sel = await selected(page);
+  ok(sel.id === 'loretour' && sel.lit, 'the country is highlighted');
+  ok(new URL(page.url()).searchParams.get('project') === 'loretour', 'the address names the open project');
+  // Dealdesk's tools are found by search too.
+  await page.fill('#search-input', '');
+  await page.click('#search-input');
+  await page.keyboard.type('closeb');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1200);
+  sel = await selected(page);
+  ok(await panelTitle(page) === 'Closebook' && sel.id === 'dealdesk' && sel.province === 'closebook', 'search finds a Dealdesk tool and opens its province');
+
+  // Clicking a country on the map opens it.
+  await page.evaluate(() => { window.__portfolioMap.open('about'); window.__portfolioMap.map.set(window.__portfolioMap.home()); });
+  await page.waitForTimeout(800);
+  const pt = await page.evaluate(() => {
+    const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia');
+    return { x: l.x * m.s + m.tx, y: (l.y + 18) * m.s + m.ty };
+  });
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForTimeout(1200);
+  ok(await panelTitle(page) === 'CHRONIA', 'clicking a country opens its panel');
+
+  // Heart it, and find it in Saved after a reload.
+  await page.click('.action-save');
+  ok(await page.getAttribute('.action-save', 'aria-pressed') === 'true', 'the heart toggles on');
+  await page.reload();
+  await page.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready);
+  await page.click('.rail-btn[data-view="saved"]');
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => [...document.querySelectorAll('.rows-saved .row')].some((r) => r.getAttribute('data-open') === 'chronia')), 'the hearted project is in Saved after a reload');
+
+  // Share: the copied link opens the same world with the same panel, in a fresh browser.
+  await page.click('.rows-saved .row[data-open="chronia"]');
+  await page.waitForTimeout(900);
+  await page.click('.action-share');
+  await page.waitForTimeout(200);
+  const link = await page.evaluate(() => navigator.clipboard.readText());
+  ok(/[?&]world=le-guin/.test(link) && /[?&]project=chronia/.test(link), `Share copies a link to this world and project (${link.replace(base, '')})`);
+  ok(await page.evaluate(() => document.querySelector('#toast').textContent) === 'Link copied', 'Share says "Link copied"');
+  const fresh = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p2 = await open(browser, link.replace(PAGE, ''), { context: fresh });
+  sel = await selected(p2);
+  ok(sel.world === 'le-guin' && sel.id === 'chronia' && sel.lit && (await panelTitle(p2)) === 'CHRONIA', 'the shared link opens that world, with the panel open and the country highlighted');
+  const p3 = await open(browser, '?world=asimov&project=dealdesk&province=rollmap', { context: fresh });
+  sel = await selected(p3);
+  ok(sel.world === 'asimov' && sel.province === 'rollmap' && (await panelTitle(p3)) === 'Rollmap', 'a province link opens Dealdesk at that tool');
+  await fresh.close();
+
+  // The world name in the footer moves to the next world, keeping the open project.
+  const before = (await selected(page)).world;
+  await page.click('#strip-world');
+  await page.waitForTimeout(1800);
+  sel = await selected(page);
+  ok(sel.world !== before && sel.id === 'chronia' && (await panelTitle(page)) === 'CHRONIA', `the footer's world name moves to the next world (${before} to ${sel.world}) and keeps the panel`);
+  ok(await page.evaluate(() => document.querySelector('.strip-world-name').textContent === window.__portfolioMap.map.world.name), 'the footer names the new world');
+  await page.screenshot({ path: '/tmp/portfolio-map-desktop-project.png' });
+
+  // Escape closes the panel; the rail and footer controls work from the keyboard.
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  ok(await page.evaluate(() => !document.body.classList.contains('is-panel') && !window.__portfolioMap.map.selected), 'Escape closes the panel');
+  await page.click('.strip-feedback');
+  ok(await page.evaluate(() => document.querySelector('#feedback-dialog').open), 'Site feedback opens the feedback form');
+  await page.keyboard.press('Escape');
+  await page.focus('.rail-btn[data-view="about"]');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(400);
+  ok(await panelTitle(page) === 'Hi, my name is Noah', 'the rail works from the keyboard');
+  ok(await page.evaluate(() => document.querySelector('.rail-btn[data-view="resume"]').getAttribute('href') === '/portfolio/Lee_Noah_Resume.pdf'), 'Resume opens the PDF');
+  ok(page.errors.length === 0, `no errors on the page${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
+
+  // Rotation: each load shows the world after the last one this browser saw.
+  const rot = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const r1 = await open(browser, '', { context: rot });
+  const w1 = (await selected(r1)).world;
+  await r1.reload();
+  await r1.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready);
+  const w2 = (await selected(r1)).world;
+  const order = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', 'index.json'), 'utf8')).map((w) => w.slug);
+  ok(order[(order.indexOf(w1) + 1) % order.length] === w2, `a reload shows the next world (${w1} then ${w2})`);
+  await rot.close();
+
+  // Private mode: storage that throws. Rotation falls back to random, and hearts still toggle for the visit.
+  const priv = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await priv.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); } }); });
+  const pp = await open(browser, '?world=le-guin&project=leggio', { context: priv });
+  await pp.click('.action-save');
+  await pp.click('.rail-btn[data-view="saved"]');
+  await pp.waitForTimeout(300);
+  ok(await pp.evaluate(() => document.querySelectorAll('.rows-saved .row').length === 1) && pp.errors.length === 0, 'with storage blocked, hearts work for the visit, without errors');
+  await priv.close();
+  await context.close();
+
+  console.log('interface (phone, 390x844)');
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  page = await open(browser, '?world=le-guin', { context: phone });
+  const sheet = () => page.evaluate(() => document.querySelector('#panel').getAttribute('data-sheet'));
+  ok(await sheet() === 'peek', 'the sheet starts lowered, under the map');
+  ok(await page.evaluate(() => getComputedStyle(document.querySelector('.rail')).flexDirection === 'row' && document.querySelector('.rail').getBoundingClientRect().bottom >= innerHeight - 1), 'the rail is a tab bar at the bottom');
+  await page.screenshot({ path: '/tmp/portfolio-map-phone.png' });
+  // The map pans above the sheet.
+  let v0 = await view(page);
+  await page.touchscreen.tap(195, 400);
+  await page.evaluate(async () => {
+    const el = document.querySelector('.map-svg');
+    const fire = (type, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, bubbles: true }));
+    fire('pointerdown', 200, 420);
+    for (let i = 1; i <= 10; i++) { fire('pointermove', 200 - i * 14, 420 - i * 4); await new Promise((r) => setTimeout(r, 16)); }
+    fire('pointerup', 60, 380);
+  });
+  await page.waitForTimeout(700);
+  let v1 = await view(page);
+  ok(Math.abs(v1.tx - v0.tx) > 40, 'the map pans with a finger');
+  // Search, then the sheet rises halfway with the project.
+  await page.tap('#search-input');
+  await page.keyboard.type('fuzh');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1200);
+  ok(await sheet() === 'half' && (await panelTitle(page)) === 'Fuzhounese Dictionary', 'a project opens in the sheet, halfway up');
+  await page.screenshot({ path: '/tmp/portfolio-map-phone-project.png' });
+  // Drag the grip: up to full, then down to lowered.
+  const drag = (from, to) => page.evaluate(async ([a, b]) => {
+    const el = document.querySelector('.sheet-grip');
+    const r = el.getBoundingClientRect(), x = r.left + r.width / 2;
+    const fire = (type, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, bubbles: true }));
+    const y0 = r.top + 8;
+    fire('pointerdown', y0);
+    for (let i = 1; i <= 12; i++) { fire('pointermove', y0 + ((b - a) * i) / 12); await new Promise((res) => setTimeout(res, 16)); }
+    fire('pointerup', y0 + (b - a));
+  }, [from, to]);
+  await drag(0, -420);
+  await page.waitForTimeout(600);
+  ok(await sheet() === 'full', 'dragging the sheet up raises it all the way');
+  await page.screenshot({ path: '/tmp/portfolio-map-phone-full.png' });
+  await drag(0, 700);
+  await page.waitForTimeout(600);
+  ok(await sheet() === 'peek', 'dragging it down lowers it');
+  // Tabs.
+  await page.tap('.rail-btn[data-view="saved"]');
+  await page.waitForTimeout(500);
+  ok(await sheet() === 'half' && (await panelTitle(page)) === 'Saved', 'the Saved tab shows Saved');
+  await page.tap('.rail-btn[data-view="about"]');
+  await page.waitForTimeout(500);
+  ok((await panelTitle(page)) === 'Hi, my name is Noah' && (await page.evaluate(() => !!document.querySelector('#contact-block'))), 'the About tab shows About, with contact');
+  await page.tap('.tab-explore');
+  await page.waitForTimeout(500);
+  ok(await sheet() === 'peek', 'the Explore tab lowers the sheet to the map');
+  const w0 = (await selected(page)).world;
+  await page.tap('#fab-world');
+  await page.waitForTimeout(1600);
+  ok((await selected(page)).world !== w0, 'the round button shows the next world');
+  ok(page.errors.length === 0, `no errors on the phone${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
+  await phone.close();
+}
+
 if (stage !== 'content') {
   const { chromium } = createRequire(import.meta.url)('playwright');
   const browser = await chromium.launch();
   try {
     if (stage === 'map' || stage === 'all') await mapStage(browser);
-    // INTERFACE STAGE
+    if (stage === 'interface' || stage === 'all') await interfaceStage(browser);
   } finally {
     await browser.close();
   }
