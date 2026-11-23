@@ -11,7 +11,7 @@ const DX = [1, 1, 0, -1, -1, -1, 0, 1];
 const DY = [0, 1, 1, 1, 0, -1, -1, -1];
 
 // A binary min-heap of (key, id) pairs on typed arrays.
-class Heap {
+export class Heap {
   constructor(capacity) {
     this.keys = new Float64Array(capacity);
     this.ids = new Int32Array(capacity);
