@@ -7624,7 +7624,6 @@
     if (signedIn()) return false;
     pendingAsk = go || null;
     historyStatus(SIGN_IN + " Each account can ask five times a day.");
-    if (gsiState === 2) { try { google.accounts.id.prompt(); } catch (e) { } }
     var g = gsiState === 2 ? $("history-gsi") : $("history-google");
     g.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
     g.focus({ preventScroll: true });
@@ -7934,20 +7933,20 @@
 
   var STORE_TOUR = "uchronia-tour";
   var TOUR = [
-    { title: "Welcome to UCHRONIA", text: "Redraw the world as it might have been: give land to other countries, found new ones, and place their cities. This tour takes a minute, and the File menu opens it again." },
-    { target: ".uc-controls", demo: "look", title: "Moving the map", text: "Drag the globe to turn it, and scroll or pinch to zoom. These buttons zoom, switch to the flat map (M) or the satellite view (S), and hide the interface (H)." },
-    { target: "[data-tool=\"select\"]", demo: "select", title: "Select", text: "Select (V): click a country to rename or recolour it, make it a subject of another, or dissolve it. Click a city to rename it, change its size, or drag it somewhere else." },
-    { target: "[data-tool=\"land\"]", demo: "land", title: "Give land", text: "Give land (B): choose a country, then click or drag over states and provinces to give them to it. Whole countries go in one click, the lasso (D) draws round land freehand, and Disputed stripes land between its claimants." },
-    { target: "#new-country", demo: "found", title: "New country", text: "Founds a country with a name and a colour of its own. Give it land next." },
-    { target: "[data-tool=\"city\"]", demo: "city", title: "New city", text: "New city (C): click the map to found a city. Click one to pick it, then drag it to move it or make it a capital, a city, or a town." },
-    { target: "#undo", demo: "undo", title: "Undo", text: "Every change is one step. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
-    { target: "#history-btn", title: "Historian", text: "A historian of your world, played by Claude. It writes how your map came to be: where this world parted from ours and what followed, era by era, with every place it names linked to the map. It needs a Google sign-in, and each account can ask five times a day." },
-    { target: "#history-turn-fields|#history", history: "turn", title: "Redraw from a turning point", text: "Or give it a what-if, such as “What if Rome never fell?”, and it redraws the world itself. The details are optional: when history parts from ours, the year to show, where to focus, what to leave alone, and how far to take it. While it works, it shows each step it is on." },
-    { target: "#history-saved-btn|#history", history: "map", title: "Ask more, and keep it", text: "Under each history you can ask the historian more, or ask it to change the map; its edits are one undo step. Every history is kept under Saved, in this browser, with its map and your questions." },
-    { target: "#check-menu", title: "Check", text: "Lists things worth a look: countries with no name or no capital, and neighbours that share a colour. Click one to go to it." },
-    { target: "#file-menu", title: "File", text: "Copy a link to your map, save it as a file or open one, post it to r/uchronia, or start over. Your map is also kept in this browser as you go, and this tour is here too." },
-    { target: "#adv", title: "View", text: "Switch between the Antique, Light, and Dark styles, and choose what the map shows: names, settlements, borders, terrain, rivers, and more." },
-    { title: "Over to you", text: "Try giving a province to a neighbour, or ask the historian what would have happened if a war had gone the other way." }
+    { title: "Welcome to UCHRONIA", text: "Redraw the world as it might have been. Move borders, found countries, and put cities where you like. The tour takes about a minute, and you can reopen it from the File menu." },
+    { target: ".uc-controls", demo: "look", title: "Moving the map", text: "Drag to turn the globe, and scroll or pinch to zoom. These buttons also zoom, switch to the flat map (M) or the satellite view (S), and hide the controls (H)." },
+    { target: "[data-tool=\"select\"]", demo: "select", title: "Select", text: "Select (V). Click a country to rename it, recolour it, make it another country’s subject, or dissolve it. Click a city to rename it, resize it, or drag it somewhere new." },
+    { target: "[data-tool=\"land\"]", demo: "land", title: "Give land", text: "Give land (B). Pick a country, then click or drag across states and provinces to hand them over. A whole country goes in one click. The lasso (D) takes in whatever you draw around, and Disputed stripes land between the countries that claim it." },
+    { target: "#new-country", demo: "found", title: "New country", text: "Found a country with its own name and colour, then give it land." },
+    { target: "[data-tool=\"city\"]", demo: "city", title: "New city", text: "New city (C). Click the map to found a city. To change one, click it, then drag it somewhere new or make it a capital, a city, or a town." },
+    { target: "#undo", demo: "undo", title: "Undo", text: "Every change is one step back. Undo with Ctrl+Z (Cmd+Z on a Mac), and redo with Ctrl+Shift+Z." },
+    { target: "#history-btn", title: "Historian", text: "Claude plays a historian of your world. It writes how your map came to be: where history split from ours and what followed, era by era, with each place it names linked on the map. You’ll need to sign in with Google, and each account can ask five times a day." },
+    { target: "#history-turn-fields|#history", history: "turn", title: "Redraw from a turning point", text: "Or give it a what-if, like “What if Rome never fell?”, and it redraws the world for you. You can add details if you like: when history splits from ours, which year to show, where to focus, what to leave alone, and how far to go. It shows each step as it works." },
+    { target: "#history-saved-btn|#history", history: "map", title: "Ask more, and keep it", text: "Under each history, ask a follow-up or ask it to change the map; its edits undo in one step. Every history is kept under Saved in this browser, with its map and your questions." },
+    { target: "#check-menu", title: "Check", text: "Lists things worth a second look: countries without a name or a capital, and neighbours with the same colour. Click an item to jump to it." },
+    { target: "#file-menu", title: "File", text: "Copy a link to your map, save it as a file or open one, post it to r/uchronia, or start over. Your map also saves in this browser as you work, and this tour lives here too." },
+    { target: "#adv", title: "View", text: "Choose the Antique, Light, or Dark style, and what the map shows: names, settlements, borders, terrain, rivers, and more." },
+    { title: "Over to you", text: "Try giving a province to a neighbour, or ask the historian what if a war had gone the other way." }
   ];
   var tourAt = -1, tourBack = null, tourRaf = 0, tourRect = "", tourSheet = -1;
   function tourSeen() { try { return localStorage.getItem(STORE_TOUR) === "done"; } catch (e) { return false; } }

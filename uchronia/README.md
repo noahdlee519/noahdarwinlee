@@ -918,7 +918,9 @@ it there). Built on the bones of `/greatercircle/`.
     token and the nonce to the server function (`mode: "google"`), which trades
     them with Supabase (`/auth/v1/token?grant_type=id_token`) for a session.
     The Historian's buttons stay live signed out: a click points to the
-    sign-in, opens Google's one-tap prompt, and runs once the sign-in is done.
+    sign-in button in the panel (scrolling to it and pulsing its outline), and
+    runs once the sign-in is done. It no longer opens Google's one-tap prompt,
+    whose large card Noah found too big (22 November 2026).
     Without a client ID, or if Google's script won't load, the panel offers
     *Sign in with Google*, which keeps the draft (the turning point, its
     details, and a question being written) in the tab's `sessionStorage`
