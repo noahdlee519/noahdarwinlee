@@ -64,7 +64,98 @@ function content() {
 
 if (stage === 'content' || stage === 'all') content();
 
-// BROWSER STAGES
+async function open(browser, query, { phone = false, context } = {}) {
+  const ctx = context || (await browser.newContext(phone
+    ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true }
+    : { viewport: { width: 1440, height: 900 } }));
+  const page = await ctx.newPage();
+  page.errors = [];
+  page.on('pageerror', (e) => page.errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') page.errors.push(m.text()); });
+  await page.route(/supabase\.co/, (r) => r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }, body: '' }));
+  await page.goto(PAGE + (query || ''));
+  await page.waitForFunction(() => window.__portfolioMap && window.__portfolioMap.ready, null, { timeout: 20000 });
+  await page.waitForTimeout(400);
+  return page;
+}
+const view = (page) => page.evaluate(() => {
+  const m = window.__portfolioMap.map, r = m.rect();
+  return { s: m.s, tx: m.tx, ty: m.ty, zoom: m.zoom(), W: m.world.width, H: m.world.height, rect: r, world: m.world.slug };
+});
+// The visible part of the map lies on the world: its edges never show past the world's own.
+const onWorld = (v) => {
+  const ww = v.W * v.s, wh = v.H * v.s, e = 1;
+  const x = ww <= v.rect.w + e ? true : v.tx <= v.rect.l + e && v.tx + ww >= v.rect.r - e;
+  const y = wh <= v.rect.h + e ? true : v.ty <= v.rect.t + e && v.ty + wh >= v.rect.b - e;
+  return x && y;
+};
+
+async function mapStage(browser) {
+  console.log('map');
+  const page = await open(browser, '?world=le-guin');
+  const counts = await page.evaluate(() => ({
+    countries: document.querySelectorAll('.map-country').length,
+    labels: document.querySelectorAll('.lbl.k-country').length,
+    shown: document.querySelectorAll('.lbl.k-country.is-on').length,
+    world: window.__portfolioMap.map.world.slug,
+  }));
+  ok(counts.world === 'le-guin', '?world=le-guin opens Le Guin');
+  ok(counts.countries === 18, `18 country shapes (${counts.countries})`);
+  ok(counts.labels === 18, `18 country labels (${counts.labels})`);
+  ok(counts.shown >= 14, `most country labels show at the start (${counts.shown} of 18)`);
+
+  const labelsAt = () => page.evaluate(() => [...document.querySelectorAll('.lbl.is-on')].map((e) => e.className.baseVal.match(/k-(\w+)/)[1]));
+  const before = await labelsAt();
+  // Zoom with the wheel at the middle of the map until it stops.
+  const rect = (await view(page)).rect;
+  await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
+  let last = 0;
+  for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(30); }
+  await page.waitForTimeout(900);
+  let v = await view(page);
+  ok(Math.abs(v.zoom - 4) < 0.01, `the wheel zooms in to 4x and stops there (${v.zoom.toFixed(2)})`);
+  last = v.zoom;
+  await page.click('#zoom-in').catch(() => {});
+  await page.waitForTimeout(500);
+  v = await view(page);
+  ok(v.zoom <= last + 1e-6, 'the + button cannot zoom past 4x');
+  ok(await page.evaluate(() => document.querySelector('#zoom-in').disabled), 'the + button is disabled at 4x');
+  const after = await labelsAt();
+  ok(after.includes('town') && !before.includes('town'), 'towns appear only when zoomed in');
+  ok(onWorld(v), 'zoomed in, the view is on the world');
+
+  // Drag hard toward every corner: the view stops at the world's edge.
+  for (const [dx, dy] of [[3000, 3000], [-3000, -3000], [3000, -3000], [-3000, 3000]]) {
+    for (let k = 0; k < 4; k++) {
+      await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
+      await page.mouse.down();
+      await page.mouse.move(rect.l + rect.w / 2 + dx / 4, rect.t + rect.h / 2 + dy / 4, { steps: 6 });
+      await page.mouse.up();
+    }
+    await page.waitForTimeout(700);
+    v = await view(page);
+    ok(onWorld(v), `dragging (${dx}, ${dy}) stops at the world's edge`);
+  }
+  // Zoom all the way out: the whole world fits.
+  await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
+  for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, 240); await page.waitForTimeout(20); }
+  await page.waitForTimeout(900);
+  v = await view(page);
+  ok(v.W * v.s <= v.rect.w + 1 && v.H * v.s <= v.rect.h + 1, `zoomed out, the whole world fits the map (zoom ${v.zoom.toFixed(2)})`);
+  ok(page.errors.length === 0, `no errors on the page${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
+  await page.close();
+}
+
+if (stage !== 'content') {
+  const { chromium } = createRequire(import.meta.url)('playwright');
+  const browser = await chromium.launch();
+  try {
+    if (stage === 'map' || stage === 'all') await mapStage(browser);
+    // INTERFACE STAGE
+  } finally {
+    await browser.close();
+  }
+}
 
 console.log(failures ? `\n${failures} failed` : '\nall passed');
 process.exit(failures ? 1 : 0);

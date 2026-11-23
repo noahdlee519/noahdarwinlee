@@ -1,0 +1,329 @@
+:root {
+  --ink: #26262a;
+  --ink-2: #55585d;
+  --ink-3: #7a7d81;
+  --hair: #e4e6e2;
+  --paper: #ffffff;
+  --blue: #2a44d6;
+  --orange: #e68019;
+  --orange-ink: #b85d06;
+  --water: #89d1e2;
+  --font: "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--water);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- map */
+
+.map {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background: var(--water);
+}
+
+.map-svg {
+  position: absolute;
+  top: calc(-1 * var(--overscan));
+  left: calc(-1 * var(--overscan));
+  display: block;
+  width: calc(100% + 2 * var(--overscan));
+  height: calc(100% + 2 * var(--overscan));
+  transform-origin: 0 0;
+  will-change: transform;
+  cursor: default;
+  outline: none;
+  font-family: var(--font);
+}
+
+.map.is-grabbing .map-svg {
+  cursor: grabbing;
+}
+
+.map-image {
+  opacity: 0;
+  transition: opacity 500ms ease;
+  image-rendering: optimizeQuality;
+}
+
+.map-image.is-in {
+  opacity: 1;
+}
+
+.map-rivers path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: max(var(--rw), calc(var(--px) * 0.7));
+}
+
+.map-rivers .is-minor {
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map.is-z2 .map-rivers .is-minor {
+  opacity: 1;
+}
+
+.map-lakes {
+  stroke-width: 0.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-coast {
+  fill: none;
+  stroke-width: 0.75px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-provinces {
+  fill: none;
+  stroke-width: 0.9px;
+  stroke-dasharray: 3.5 2.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-borders {
+  fill: none;
+  stroke-width: 1px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.map.is-z2 .map-borders {
+  stroke-width: 1.25px;
+}
+
+.map-country,
+.map-province {
+  fill: var(--orange);
+  fill-opacity: 0;
+  stroke: none;
+  cursor: pointer;
+  transition: fill-opacity 220ms ease;
+}
+
+.map-province {
+  pointer-events: none;
+}
+
+.map-country.is-sel ~ .map-province[data-id] {
+  pointer-events: fill;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .map-country:hover {
+    fill: var(--ink);
+    fill-opacity: 0.05;
+  }
+
+  .map-country.is-sel:hover {
+    fill: var(--orange);
+    fill-opacity: 0.16;
+  }
+
+  .map-province:hover {
+    fill: var(--orange);
+    fill-opacity: 0.12;
+  }
+}
+
+.map-country.is-sel {
+  fill-opacity: 0.16;
+}
+
+.map-province.is-sel {
+  fill-opacity: 0.16;
+}
+
+.map.is-grabbing .map-country {
+  cursor: grabbing;
+}
+
+.map-outline path {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.map-outline-glow {
+  stroke: var(--orange);
+  stroke-opacity: 0.22;
+  stroke-width: 6px;
+}
+
+.map-outline-line {
+  stroke: var(--orange-ink);
+  stroke-width: 1.75px;
+}
+
+.map-outline-prov {
+  stroke: var(--orange-ink);
+  stroke-width: 1.75px;
+  stroke-dasharray: 5 3;
+}
+
+/* ---------------------------------------------------------------- labels */
+
+.lbl {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 0s linear 180ms;
+}
+
+.lbl.is-on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 220ms ease, visibility 0s;
+}
+
+.lbl text {
+  fill: #26262a;
+  stroke: #ffffff;
+  stroke-opacity: 0.85;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  font-weight: 500;
+}
+
+.k-country text {
+  font-weight: 600;
+}
+
+.k-country.is-on {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.k-country.is-sel text {
+  fill: var(--orange-ink);
+}
+
+.k-capital text {
+  font-weight: 600;
+}
+
+.k-province text {
+  fill: #606266;
+}
+
+.k-province.is-sel text {
+  fill: var(--orange-ink);
+}
+
+.k-range text {
+  fill: #6b6f72;
+}
+
+.is-water text,
+text.is-water {
+  fill: #3c8ea1;
+  stroke: var(--water);
+  stroke-opacity: 0.5;
+  font-style: italic;
+}
+
+.lbl-path {
+  font-size: calc(clamp(var(--fl), var(--P), var(--cap)) * var(--inv) * var(--ls) * 1px);
+  letter-spacing: calc(clamp(var(--fl), var(--P), var(--cap)) * var(--inv) * var(--ls) * var(--sp) * 1px);
+  stroke: #ffffff;
+  stroke-opacity: 0.8;
+  stroke-width: calc(clamp(var(--fl), var(--P), var(--cap)) * var(--inv) * var(--ls) * 0.2px);
+}
+
+.lbl-dot {
+  fill: #ffffff;
+  stroke: #26262a;
+}
+
+.lbl-dot-in {
+  fill: #26262a;
+}
+
+/* ---------------------------------------------------------------- controls */
+
+.zoom {
+  position: fixed;
+  right: 16px;
+  bottom: 40px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(38, 38, 42, 0.22), 0 2px 10px rgba(38, 38, 42, 0.12);
+  overflow: hidden;
+}
+
+.zoom-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.zoom-btn + .zoom-btn {
+  border-top: 1px solid var(--hair);
+}
+
+.zoom-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.zoom-btn:disabled {
+  color: #c4c6c9;
+  cursor: default;
+}
