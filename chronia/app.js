@@ -5251,6 +5251,7 @@
   $("track").addEventListener("pointerup", endSwipe);
   $("track").addEventListener("pointercancel", endSwipe);
   range.addEventListener("keydown", function (e) {
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       stopPlay();

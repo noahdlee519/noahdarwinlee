@@ -1035,7 +1035,9 @@ it there). Built on the bones of `/greatercircle/`.
   the map, and brings it back.
 - Move the map by dragging with the right or middle button, or with Shift or
   Space held (in Select and Cities a plain drag moves it too); scroll or
-  pinch to zoom.
+  pinch to zoom. With the map focused, the arrow keys move it and + and −
+  zoom; an arrow with Option/Alt, Cmd, or Ctrl is left to the browser (Option
+  or Cmd with an arrow switches tabs on a Mac).
 - **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** or **Ctrl+Y** redoes;
   **Delete** deletes the chosen city or drawing; **Escape** drops a drawing
   in progress, lets go of the selection, or goes back to Select.

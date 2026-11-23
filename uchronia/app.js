@@ -3774,6 +3774,7 @@
   $("zoom-out").addEventListener("click", function () { stopFly(); zoomAt(view.zoom / 1.5, cx, cy); });
 
   canvas.addEventListener("keydown", function (e) {
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
     var step = 6 / Math.sqrt(view.zoom);
     if (e.key === "ArrowLeft") view.lon -= step;
     else if (e.key === "ArrowRight") view.lon += step;
@@ -8269,7 +8270,7 @@
     if (tourAt < 0) return;
     if (demo && demo.dirty && e.key !== "Escape" && !($("tour-card").contains(e.target) && !e.ctrlKey && !e.metaKey && !e.altKey && /^(ArrowRight|ArrowLeft|Enter| |Tab|Shift)$/.test(e.key))) demoReset(false);
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
-    if (!$("tour-card").contains(e.target)) return;
+    if (!$("tour-card").contains(e.target) || e.altKey || e.metaKey || e.ctrlKey) return;
     if (e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); $("tour-next").click(); }
     else if (e.key === "ArrowLeft" && tourAt > 0) { e.preventDefault(); e.stopPropagation(); showTourStep(tourAt - 1); }
   }, true);
