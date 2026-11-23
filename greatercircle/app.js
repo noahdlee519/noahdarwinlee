@@ -7,14 +7,22 @@
   var ctx = canvas.getContext("2d");
   var satCanvas = $("sat"), sat = null, satTried = false, satOn = false, satLive = false;
   var panel = $("panel");
-  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var reduceMotion = motionQuery.matches;
+  if (motionQuery.addEventListener) motionQuery.addEventListener("change", function () { reduceMotion = motionQuery.matches; });
   var canHover = window.matchMedia("(hover: hover)").matches;
 
   var state = {
     a: null, b: null,
     avoid: new Map(),
     regions: [],
-    bufferKm: 0,
+    bufferKm: 50 * 1.609344,
+    tab: null,
+    plan: null,
+    shownId: 0,
+    hoverLeg: -1,
+    pinLeg: -1,
+    planAll: false,
     units: "km",
     result: null,
     pendingId: 0,
@@ -37,6 +45,7 @@
   var dpr = 1, W = 0, H = 0, base = 0, cx = 0, cy = 0;
   var MIN_ZOOM = 0.6, MAX_ZOOM = 80;
 
+  var panelRight = 0;
   function layout() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth; H = window.innerHeight;
@@ -45,11 +54,15 @@
     satCanvas.width = canvas.width; satCanvas.height = canvas.height;
     detail.key = "";
     var phone = W <= 640;
-    var panelW = phone ? 0 : 352 + 2 * 24;
-    var sheetH = phone ? Math.min(H * 0.5, panel.getBoundingClientRect().height || 204) : 0;
-    var freeW = W - panelW, freeH = H - sheetH - (phone ? 70 : 40);
+    var pr = panel.getBoundingClientRect();
+    panelRight = phone ? 0 : (pr.right > 0 ? pr.right - 12 : 452);
+    var panelW = panelRight;
+    if (phone && typeof placeSheet === "function") placeSheet();
+    var sheetH = phone ? (typeof sheetVisible === "function" ? sheetVisible(Math.min(sheetMode, SHEET_HALF)) : 220) : 0;
+    var topInset = phone ? 64 : 0;
+    var freeW = W - panelW, freeH = H - sheetH - (phone ? topInset + 8 : 40);
     cx = phone ? W / 2 : panelW + freeW / 2;
-    cy = phone ? (H - sheetH) / 2 + 10 : H / 2;
+    cy = phone ? (topInset + H - sheetH) / 2 : H / 2;
     base = Math.max(80, Math.min(freeW, freeH) / 2 - 16);
     pick.width = W; pick.height = H;
     pickDirty = true;
@@ -68,7 +81,7 @@
   function refreshPalette() {
     var cs = getComputedStyle(document.documentElement);
     var get = function (name) { return cs.getPropertyValue(name).trim(); };
-    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub"]
+    ["ocean", "land", "land-hover", "border", "limb", "glow", "grat", "hatch", "route", "route-halo", "direct", "marker", "marker-ink", "city", "city-ring", "label", "label-halo", "region-fill", "border-sub", "faint", "hover-route", "buffer-edge"]
       .forEach(function (k) { pal[k] = get("--gc-" + k); });
     if (!pal["label-halo"]) pal["label-halo"] = pal.ocean;
     var c = document.createElement("canvas");
@@ -256,7 +269,7 @@
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(cx, cy, r * 1.07, 0, 2 * Math.PI); ctx.fill();
     }
-    var live = satOn && !!sat && sat.ready();
+    var live = !flatOnly && satOn && !!sat && sat.ready();
     if (live !== satLive) { satLive = live; document.documentElement.classList.toggle("gc-sat-on", live); refreshPalette(); }
     satCanvas.hidden = !live;
     if (live) renderSat();
@@ -281,6 +294,15 @@
     if (state.hover >= 0 && !state.avoid.has(feats[state.hover].id)) {
       ctx.beginPath(); traceFeature(ctx, feats[state.hover]);
       ctx.fillStyle = pal["land-hover"]; ctx.fill();
+    }
+    if (state.bufferKm > 0 && state.avoid.size) {
+      ctx.beginPath();
+      state.avoid.forEach(function (name, id) {
+        var b = countryBuffers.get(id + "|" + state.bufferKm);
+        if (b) path(b);
+      });
+      ctx.fillStyle = pal["region-fill"]; ctx.fill();
+      ctx.setLineDash([3, 4]); ctx.strokeStyle = pal["buffer-edge"]; ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
     }
     state.avoid.forEach(function (name, id) {
       var f = featureById.get(id);
@@ -327,42 +349,204 @@
     drawRoutes();
     drawMarkers();
     drawDrawing();
+    if (canvas.classList.contains("show-ring") && document.activeElement === canvas) {
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.arc(cx, cy, 11, 0, 2 * Math.PI);
+      ctx.moveTo(cx - 20, cy); ctx.lineTo(cx - 6, cy); ctx.moveTo(cx + 6, cy); ctx.lineTo(cx + 20, cy);
+      ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy - 6); ctx.moveTo(cx, cy + 6); ctx.lineTo(cx, cy + 20);
+      ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 4.5; ctx.stroke();
+      ctx.strokeStyle = pal.route; ctx.lineWidth = 1.8; ctx.stroke();
+    }
     ctx.restore();
     mark("end");
   }
 
+  var lineCache = { key: "", lines: null };
+  function routeLines() {
+    var res = state.result;
+    if (!res || res.status !== "done") return null;
+    var plan = state.plan && state.plan.status === "done" ? state.plan : null;
+    var key = res.id + "|" + (plan ? "p" : "") + "|" + (res.cached ? 1 : 0);
+    if (lineCache.key === key && lineCache.res === res) return lineCache.lines;
+    var direct = [[state.a.lon, state.a.lat], [state.b.lon, state.b.lat]];
+    if (res.antipodal && res.waypoints) direct = res.waypoints.slice(0, 2).concat(res.waypoints.length > 2 ? [res.waypoints[res.waypoints.length - 1]] : []);
+    var lines = { direct: { type: "LineString", coordinates: direct } };
+    if (detourOf(res)) lines.avoid = { type: "LineString", coordinates: res.waypoints };
+    if (plan) {
+      lines.plan = { type: "LineString", coordinates: plan.waypoints };
+      lines.legs = plan.legs.map(function (l, i) { return { type: "LineString", coordinates: [plan.waypoints[i], plan.waypoints[i + 1]] }; });
+    }
+    lineCache = { key: key, res: res, lines: lines };
+    return lines;
+  }
+
+  function densify(coords, n) {
+    var V = coords.map(function (c) { return G.toVec(c[0], c[1]); }), lens = [0], total = 0;
+    for (var i = 1; i < V.length; i++) { total += G.angleBetween(V[i - 1], V[i]); lens.push(total); }
+    var out = [], j = 0;
+    for (var k = 0; k < n; k++) {
+      var at = total * k / (n - 1);
+      while (j < V.length - 2 && lens[j + 1] < at) j++;
+      var seg = lens[j + 1] - lens[j], t = seg > 0 ? (at - lens[j]) / seg : 0;
+      out.push(G.toLonLat(slerp(V[j], V[Math.min(j + 1, V.length - 1)], t)));
+    }
+    return out;
+  }
+  function slerp(a, b, t) {
+    var d = G.angleBetween(a, b);
+    if (d < 1e-9) return a.slice();
+    var s0 = Math.sin((1 - t) * d) / Math.sin(d), s1 = Math.sin(t * d) / Math.sin(d);
+    return G.normalize([s0 * a[0] + s1 * b[0], s0 * a[1] + s1 * b[1], s0 * a[2] + s1 * b[2]]);
+  }
+  var anim = null, ANIM_N = 160;
+  function startAnim(kind, fromCoords, toCoords, ms) {
+    if (reduceMotion || !toCoords) { anim = null; return; }
+    anim = { kind: kind, to: densify(toCoords, ANIM_N), from: fromCoords ? densify(fromCoords, ANIM_N) : null, t0: performance.now(), ms: ms };
+    var tick = function () { if (!anim) return; scheduleRender("full"); if (performance.now() - anim.t0 < anim.ms) requestAnimationFrame(tick); else { anim = null; scheduleRender("full"); } };
+    requestAnimationFrame(tick);
+  }
+  function animatedLine() {
+    if (!anim) return null;
+    var t = Math.min(1, (performance.now() - anim.t0) / anim.ms), e = 1 - Math.pow(1 - t, 3);
+    if (anim.kind === "draw") {
+      var n = Math.max(2, Math.round(e * (ANIM_N - 1)) + 1);
+      return { type: "LineString", coordinates: anim.to.slice(0, n) };
+    }
+    var pts = anim.to.map(function (p, i) { var a = G.toVec(anim.from[i][0], anim.from[i][1]), b = G.toVec(p[0], p[1]); return G.toLonLat(slerp(a, b, e)); });
+    return { type: "LineString", coordinates: pts };
+  }
+  function routeDrawn() {
+    var lines = routeLines(), tab = currentTab();
+    if (!lines) return;
+    var sel = lines[tab] || lines.avoid || lines.direct;
+    startAnim("draw", null, sel.coordinates, 750);
+  }
+  var flatOnly = false;
+  function makeCard(info) {
+    anim = null;
+    stopFly(); stopInertia();
+    var saved = { lon: view.lon, lat: view.lat, zoom: view.zoom }, t = fitTarget();
+    if (t && !t.single) { view.lon = t.lon; view.lat = t.lat; view.zoom = Math.min(t.zoom, 1.6); applyView(); }
+    flatOnly = true;
+    render("full");
+    var Wc = 1200, Hc = 630, out = document.createElement("canvas");
+    out.width = Wc; out.height = Hc;
+    var c = out.getContext("2d"), cs = getComputedStyle(document.documentElement);
+    var v = function (n, f) { return cs.getPropertyValue(n).trim() || f; };
+    var font = "'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    c.fillStyle = v("--gc-ocean", "#e68019"); c.fillRect(0, 0, Wc, Hc);
+    var r = projection.scale(), side = Math.min(2 * r + 40, W, H);
+    var sx = Math.max(0, Math.min(W - side, cx - side / 2)), sy = Math.max(0, Math.min(H - side, cy - side / 2));
+    var gs = 600;
+    c.drawImage(canvas, sx * dpr, sy * dpr, side * dpr, side * dpr, Wc - gs + 30, (Hc - gs) / 2, gs, gs);
+    flatOnly = false;
+    view.lon = saved.lon; view.lat = saved.lat; view.zoom = saved.zoom; applyView();
+    render("full");
+    var grad = c.createLinearGradient(560, 0, 760, 0);
+    grad.addColorStop(0, v("--gc-card", "#8f4606")); grad.addColorStop(1, "rgba(0,0,0,0)");
+    c.fillStyle = v("--gc-card", "#8f4606"); c.fillRect(0, 0, 560, Hc);
+    c.fillStyle = grad; c.fillRect(560, 0, 200, Hc);
+    var ink = v("--gc-text", "#ffffff"), muted = v("--gc-muted", "#fde3c9"), accent = v("--gc-accent", "#ffe7a3"), word = v("--gc-word", "#e3e3b0");
+    c.textBaseline = "alphabetic";
+    var spaced = function (text, x, y, sp) { for (var i = 0; i < text.length; i++) { c.fillText(text[i], x, y); x += c.measureText(text[i]).width + sp; } return x; };
+    c.font = "500 26px " + font; c.fillStyle = ink;
+    var x = spaced("GREATER", 56, 84, 4); c.fillStyle = word; spaced("CIRCLE", x, 84, 4);
+    c.fillStyle = ink; c.font = "600 92px " + font;
+    var codes = info.from + "  \u2192  " + info.to;
+    while (c.measureText(codes).width > 470 && parseInt(c.font, 10) > 40) c.font = "600 " + (parseInt(c.font.split(" ")[1], 10) - 6) + "px " + font;
+    c.fillText(codes, 56, 214);
+    var fit = function (text, weight, size, min, y, color) {
+      c.font = weight + " " + size + "px " + font;
+      while (c.measureText(text).width > 480 && size > min) { size -= 2; c.font = weight + " " + size + "px " + font; }
+      while (c.measureText(text).width > 480 && text.length > 4) text = text.slice(0, -2) + "…";
+      c.fillStyle = color; c.fillText(text, 56, y);
+    };
+    fit(info.names, "400", 26, 18, 258, muted);
+    fit(info.km, "500", 96, 60, 398, ink);
+    fit(info.line, "400", 30, 20, 452, accent);
+    fit(info.sub, "400", 26, 18, 494, muted);
+    c.font = "400 22px " + font; c.fillStyle = muted;
+    c.fillText("noahdarwinlee.com/greatercircle", 56, 576);
+    return new Promise(function (res) { out.toBlob(function (b) { res(b); }, "image/png"); });
+  }
+  function tabChanged(prev) {
+    var lines = routeLines(), tab = currentTab();
+    if (!lines || prev === tab) return;
+    var from = lines[prev] || lines.avoid || lines.direct, to = lines[tab] || lines.avoid || lines.direct;
+    if (from === to) return;
+    startAnim("morph", from.coordinates, to.coordinates, 320);
+  }
+
   function drawRoutes() {
     var res = state.result;
+    beaconScreen = [];
     if (!state.a || !state.b) return;
-    var direct = { type: "LineString", coordinates: [[state.a.lon, state.a.lat], [state.b.lon, state.b.lat]] };
-    if (res && res.antipodal && res.waypoints) direct = { type: "LineString", coordinates: res.waypoints.slice(0, 2).concat(res.waypoints.length > 2 ? [res.waypoints[res.waypoints.length - 1]] : []) };
-    if ((drag && drag.marker) || state.stale) {
-      ctx.lineJoin = "round"; ctx.lineCap = "round";
-      ctx.beginPath(); path(direct);
-      ctx.strokeStyle = pal.route; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if ((drag && drag.marker) || state.stale || !res || res.status !== "done") {
+      if ((drag && drag.marker) || state.stale) {
+        ctx.beginPath(); path({ type: "LineString", coordinates: [[state.a.lon, state.a.lat], [state.b.lon, state.b.lat]] });
+        ctx.strokeStyle = pal.route; ctx.lineWidth = 1.5; ctx.stroke();
+      }
       return;
     }
-    if (!res || res.status !== "done") return;
-    var detour = res.waypoints && res.lengthKm > res.directKm + 0.5;
-    if (detour) {
-      ctx.beginPath(); path(direct);
-      ctx.setLineDash([4, 5]); ctx.strokeStyle = pal.direct; ctx.lineWidth = 1.2; ctx.stroke();
+    var lines = routeLines(), tab = currentTab();
+    ["direct", "avoid", "plan"].forEach(function (k) {
+      if (k === tab || !lines[k]) return;
+      ctx.beginPath(); path(lines[k]);
+      ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 3.4; ctx.stroke();
+      ctx.beginPath(); path(lines[k]);
+      ctx.setLineDash([5, 6]); ctx.strokeStyle = pal.faint; ctx.lineWidth = 1.4; ctx.stroke();
       ctx.setLineDash([]);
+    });
+    var sel = animatedLine() || lines[tab] || lines.avoid || lines.direct;
+    ctx.beginPath(); path(sel);
+    ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 6; ctx.stroke();
+    ctx.beginPath(); path(sel);
+    ctx.strokeStyle = pal.route; ctx.lineWidth = 2.4; ctx.stroke();
+    var leg = state.pinLeg >= 0 ? state.pinLeg : state.hoverLeg;
+    if (tab === "plan" && lines.legs && leg >= 0 && lines.legs[leg]) {
+      ctx.beginPath(); path(lines.legs[leg]);
+      ctx.strokeStyle = pal["hover-route"]; ctx.lineWidth = 5; ctx.stroke();
     }
-    var line = { type: "LineString", coordinates: res.waypoints || direct.coordinates };
-    ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.beginPath(); path(line);
-    ctx.strokeStyle = pal["route-halo"]; ctx.lineWidth = 5; ctx.stroke();
-    ctx.beginPath(); path(line);
-    ctx.strokeStyle = pal.route; ctx.lineWidth = 2; ctx.stroke();
-    if (detour && view.zoom > 1.5) {
-      for (var i = 1; i + 1 < res.waypoints.length; i++) {
-        var p = projection(res.waypoints[i]);
-        if (!p || !visible(res.waypoints[i])) continue;
+    if (tab === "plan" && state.plan && state.plan.status === "done") {
+      var labels = view.zoom > 2.2, pts = state.plan.points;
+      ctx.font = "500 10px 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+      ctx.textBaseline = "middle"; ctx.textAlign = "left";
+      for (var i = 1; i + 1 < pts.length; i++) {
+        var bc = pts[i], ll = [bc.lon, bc.lat];
+        if (!visible(ll)) continue;
+        var q = projection(ll);
+        if (!q) continue;
+        var on = leg === i - 1;
+        beaconScreen.push({ b: bc, i: i - 1, x: q[0], y: q[1] });
+        ctx.beginPath();
+        var r = on ? 1.7 : 1;
+        if (/^VOR/.test(bc.type)) { ctx.moveTo(q[0], q[1] - 4 * r); ctx.lineTo(q[0] + 3.6 * r, q[1] + 2.2 * r); ctx.lineTo(q[0] - 3.6 * r, q[1] + 2.2 * r); ctx.closePath(); }
+        else ctx.arc(q[0], q[1], 2.8 * r, 0, 2 * Math.PI);
+        ctx.fillStyle = on ? pal["hover-route"] : pal["route-halo"]; ctx.fill();
+        ctx.strokeStyle = pal.route; ctx.lineWidth = 1.3; ctx.stroke();
+        if (labels || on) {
+          var text = on ? bc.ident + " | " + fmt(state.plan.legs[i - 1].km) : bc.ident;
+          ctx.font = (on ? "600 13px" : "500 10px") + " 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+          ctx.lineWidth = 3; ctx.strokeStyle = pal["label-halo"]; ctx.strokeText(text, q[0] + 8, q[1]);
+          ctx.fillStyle = pal.label; ctx.fillText(text, q[0] + 8, q[1]);
+        }
+      }
+    } else if (tab === "avoid" && view.zoom > 1.5 && res.waypoints) {
+      for (var j = 1; j + 1 < res.waypoints.length; j++) {
+        var p = projection(res.waypoints[j]);
+        if (!p || !visible(res.waypoints[j])) continue;
         ctx.beginPath(); ctx.arc(p[0], p[1], 2.2, 0, 2 * Math.PI);
         ctx.fillStyle = pal.route; ctx.fill();
       }
     }
+  }
+
+  var beaconScreen = [];
+  function beaconAt(x, y) {
+    var best = null, bestD = 8;
+    beaconScreen.forEach(function (s) { var d = Math.hypot(s.x - x, s.y - y); if (d < bestD) { bestD = d; best = s; } });
+    return best;
   }
 
   var ADMIN1_FROM = 1400, ADMIN1_FULL = 2200;
@@ -567,8 +751,8 @@
   var inertia = null;
 
   var focusByPointer = false;
-  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); });
-  canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); });
+  canvas.addEventListener("focus", function () { canvas.classList.toggle("show-ring", !focusByPointer); scheduleRender("full"); });
+  canvas.addEventListener("blur", function () { canvas.classList.remove("show-ring"); scheduleRender("full"); });
   function degPerPx() { return 180 / (Math.PI * projection.scale()); }
 
   canvas.addEventListener("pointerdown", function (e) {
@@ -912,6 +1096,20 @@
     else if (e.key === "ArrowDown") view.lat -= step;
     else if (e.key === "+" || e.key === "=") { zoomAt(view.zoom * 1.3, cx, cy); return; }
     else if (e.key === "-" || e.key === "_") { zoomAt(view.zoom / 1.3, cx, cy); return; }
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      if (drawing && drawing.tool !== "polygon") return;
+      if (drawing) { e.stopPropagation(); click(cx, cy, false); return; }
+      var had = { a: state.a, b: state.b, n: state.avoid.size };
+      click(cx, cy, e.shiftKey);
+      if (!pop.hidden) return;
+      var say = "";
+      if (state.avoid.size !== had.n) say = state.avoid.size > had.n ? "Avoiding " + joinNames(Array.from(state.avoid.values())) : "Stopped avoiding a country";
+      else if (state.a !== had.a && state.a) say = "A is " + (state.a.label || fmtLonLat(state.a));
+      else if (state.b !== had.b && state.b) say = "B is " + (state.b.label || fmtLonLat(state.b));
+      if (say) { $("status").textContent = ""; setTimeout(function () { $("status").textContent = say; }, 30); }
+      return;
+    }
     else return;
     e.preventDefault();
     applyView(); moving();
@@ -945,6 +1143,10 @@
       if (idx >= 0) toggleAvoid(features[idx].id, features[idx].properties.name);
       return;
     }
+    if (state.a && state.b && !drawing) {
+      var cityP = cityAt(x, y), idxP = countryAt(x, y);
+      if (cityP || idxP >= 0) { openPop(x, y, ll, cityP, idxP); return; }
+    }
     var slot = !state.a ? "a" : !state.b ? "b" : "b";
     var city = cityAt(x, y);
     if (city) {
@@ -962,12 +1164,22 @@
     if (!canHover || hoverRAF) return;
     hoverRAF = requestAnimationFrame(function () {
       hoverRAF = 0;
+      var here = lonLatAt(x, y);
+      var dp = view.zoom < 6 ? 2 : view.zoom < 30 ? 3 : 4;
+      tipAt = here ? Math.abs(here[1]).toFixed(dp) + "°" + (here[1] >= 0 ? "N" : "S") + " " + Math.abs(here[0]).toFixed(dp) + "°" + (here[0] >= 0 ? "E" : "W") : null;
       var m = markerAt(x, y);
       canvas.classList.toggle("is-over-marker", !!m);
       if (m) {
         setHover(-1);
         var pt = m === "a" ? state.a : state.b;
         showTip(x, y, m.toUpperCase(), pt.label || fmtLonLat(pt), "drag to move");
+        return;
+      }
+      var beacon = beaconAt(x, y);
+      if (beacon) {
+        setHover(-1);
+        var bl = state.plan && state.plan.legs && state.plan.legs[beacon.i];
+        showTip(x, y, beacon.b.ident, beacon.b.name + " " + beacon.b.type, bl ? "leg " + (beacon.i + 1) + " | " + fmt(bl.km) : null);
         return;
       }
       var city = cityAt(x, y);
@@ -982,8 +1194,9 @@
       canvas.classList.toggle("is-over-country", idx >= 0 && (shift || state.avoidMode));
       if (idx >= 0) {
         var f = features[idx], avoided = state.avoid.has(f.id);
-        showTip(x, y, f.properties.name, null, avoided ? "avoided" + (shift || state.avoidMode ? " · click to allow" : "") : (shift || state.avoidMode ? "click to avoid" : (canHover ? "shift-click to avoid" : "")));
-      } else hideTip();
+        showTip(x, y, f.properties.name, null, avoided ? "avoided" + (shift || state.avoidMode || (state.a && state.b) ? " | click to allow" : "") : (shift || state.avoidMode || (state.a && state.b) ? "click to avoid" : "shift-click to avoid"));
+      } else if (tipAt) showTip(x, y, null, null, null);
+      else hideTip();
     });
   }
   function setHover(idx) {
@@ -991,12 +1204,13 @@
     state.hover = idx;
     scheduleRender(interacting ? "coarse" : "full");
   }
-  var tip = $("tip");
+  var tip = $("tip"), tipAt = null;
   function showTip(x, y, main, sub, note) {
     tip.innerHTML = "";
-    var b = document.createElement("b"); b.textContent = main; b.style.fontWeight = "400"; tip.appendChild(b);
+    if (main) { var b = document.createElement("b"); b.textContent = main; b.style.fontWeight = "400"; tip.appendChild(b); }
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     if (note) { var n = document.createElement("small"); n.textContent = note; tip.appendChild(n); }
+    if (tipAt) { var c = document.createElement("small"); c.className = "gc-tip-at"; c.textContent = tipAt; tip.appendChild(c); }
     tip.hidden = false;
     var w = tip.offsetWidth;
     tip.style.left = (x + 14 + w > W ? x - 14 - w - 14 : x) + "px";
@@ -1033,12 +1247,19 @@
   function stopFly() { if (fly) { fly = null; interacting = 0; } }
 
   function fitRoute(always) {
+    var t = fitTarget();
+    if (!t) return;
+    if (t.single) { flyTo(t.lon, t.lat); return; }
+    if (!always && allVisible(t.all)) return;
+    flyTo(t.lon, t.lat, t.zoom);
+  }
+  function fitTarget() {
     var pts = [];
     if (state.a) pts.push([state.a.lon, state.a.lat]);
     if (state.b) pts.push([state.b.lon, state.b.lat]);
     if (state.result && state.result.status === "done" && state.result.waypoints) pts = state.result.waypoints.slice();
-    if (!pts.length) return;
-    if (pts.length === 1) { flyTo(pts[0][0], pts[0][1]); return; }
+    if (!pts.length) return null;
+    if (pts.length === 1) return { single: true, lon: pts[0][0], lat: pts[0][1] };
     var sx = 0, sy = 0, sz = 0, all = [];
     for (var i = 0; i + 1 < pts.length; i++) {
       var seg = G.sampleArc(G.toVec(pts[i][0], pts[i][1]), G.toVec(pts[i + 1][0], pts[i + 1][1]), 0.03, i === 0);
@@ -1052,11 +1273,10 @@
     var zoom;
     if (far > 1.35) zoom = 1;
     else {
-      var free = Math.min(W - (W <= 640 ? 0 : 400), H - (W <= 640 ? 260 : 60)) / 2 - 24;
+      var free = Math.min(W - panelRight, H - (W <= 640 ? sheetVisible(Math.min(sheetMode, SHEET_HALF)) + 72 : 60)) / 2 - 24;
       zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, free / (base * Math.max(Math.sin(far) * 1.12, 0.06))));
     }
-    if (!always && allVisible(all)) return;
-    flyTo(ll[0], ll[1], zoom);
+    return { lon: ll[0], lat: ll[1], zoom: zoom, all: all };
   }
   function allVisible(vecs) {
     var rot = projection.rotate(), c = G.toVec(-rot[0], -rot[1]);
@@ -1097,10 +1317,11 @@
     return Math.abs(p.lat).toFixed(2) + "°" + (p.lat >= 0 ? "N" : "S") + " " + Math.abs(p.lon).toFixed(2) + "°" + (p.lon >= 0 ? "E" : "W");
   }
 
+  function inputText(label) { return label.replace(/\s*\(([A-Z0-9]{3,4})\)/, ""); }
   function setPoint(slot, pt, opts) {
     opts = opts || {};
     state[slot] = pt;
-    var text = pt ? (pt.label || (pt.country ? fmtLonLat(pt) + " · " + pt.country : fmtLonLat(pt))) : "";
+    var text = pt ? (pt.label ? inputText(pt.label) : (pt.country ? fmtLonLat(pt) + " | " + pt.country : fmtLonLat(pt))) : "";
     if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text;
     $("clear-" + slot).hidden = !pt;
     if (!opts.quiet) { commitPoint(slot); }
@@ -1112,25 +1333,68 @@
     var pt = state[slot];
     fitPending = true;
     state.stale = true;
-    if (pt && !pt.label) { var text = fmtLonLat(pt) + (pt.country ? " · " + pt.country : ""); if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text; }
+    if (pt && !pt.label) { var text = fmtLonLat(pt) + (pt.country ? " | " + pt.country : ""); if (suggesters[slot]) suggesters[slot].setValue(text); else inputs[slot].value = text; }
     updateHint();
     requestRoute();
     writeUrl();
     scheduleRender("full");
   }
 
-  var AVOID_ICON = '<svg class="gc-inline-icon" viewBox="0 0 24 24" role="img" aria-label="avoid" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17 A 9.5 9.5 0 0 1 21.5 17" /><path d="M9.6 13.1 L 14.4 17.9 M14.4 13.1 L 9.6 17.9" /></svg>';
+  var pop = $("pop"), popActions = [];
+  function openPop(x, y, ll, city, idx) {
+    var f = idx >= 0 ? features[idx] : null;
+    var cityLabel = city ? (city.airport ? city.name + " (" + city.iata + ")" : city.name) : null;
+    $("pop-title").textContent = cityLabel || f.properties.name;
+    popActions = [];
+    if (f && f.id !== ANTARCTICA) {
+      var av = state.avoid.has(f.id);
+      popActions.push({ label: (av ? "Allow " : "Avoid ") + f.properties.name, fn: function () { toggleAvoid(f.id, f.properties.name); } });
+    }
+    popActions.push({ label: "Move B here", fn: function () {
+      if (city) setPoint("b", { lon: city.lon, lat: city.lat, label: cityLabel + ", " + ((places && places.countries[city.cc]) || city.cc) });
+      else setPoint("b", { lon: ll[0], lat: ll[1], label: null, country: f ? f.properties.name : null });
+    } });
+    var box = $("pop-actions");
+    box.innerHTML = "";
+    popActions.forEach(function (a, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "gc-btn " + (i ? "gc-btn-quiet" : "gc-btn-primary"); b.dataset.action = i; b.textContent = a.label;
+      box.appendChild(b);
+    });
+    hideTip();
+    pop.hidden = false;
+    var w = pop.offsetWidth, hh = pop.offsetHeight;
+    pop.style.left = Math.max(8, Math.min(W - w - 8, x + 12)) + "px";
+    pop.style.top = Math.max(8, Math.min(H - hh - 8, y + 12)) + "px";
+    box.firstChild.focus({ preventScroll: true });
+  }
+  function closePop(back) {
+    if (pop.hidden) return;
+    pop.hidden = true;
+    if (back) canvas.focus({ preventScroll: true });
+  }
+  pop.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("button[data-action]");
+    if (!b) return;
+    var a = popActions[+b.dataset.action];
+    closePop(true);
+    if (a) a.fn();
+  });
+  document.addEventListener("pointerdown", function (e) { if (!pop.hidden && !pop.contains(e.target)) closePop(false); }, true);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !pop.hidden) { e.preventDefault(); closePop(true); } });
+  pop.addEventListener("focusout", function (e) { if (e.relatedTarget && !pop.contains(e.relatedTarget)) closePop(false); });
+  canvas.addEventListener("wheel", function () { closePop(false); }, { passive: true });
+
   function setAvoidHint() {
     var h = $("avoid-hint");
     if (state.avoidMode) h.textContent = (canHover ? "Click" : "Tap") + " a country to add it, again to take it off";
-    else if (canHover) h.innerHTML = 'Or shift-click a country on the globe<span class="gc-draw-hint">, or draw a region of your own with the pen</span>';
-    else h.innerHTML = "Or press " + AVOID_ICON + ", then tap countries";
+    else if (canHover) h.innerHTML = 'Or click a country on the globe once A and B are set<span class="gc-draw-hint">, or draw a region of your own with the pen</span>';
+    else h.textContent = "Or tap a country on the globe once A and B are set";
   }
   function updateHint() {
     var h = $("hint"), tap = canHover ? "click" : "tap";
-    if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe";
-    else if (!state.b) h.textContent = "Now B: " + tap + " the globe, or type a place";
-    else h.textContent = "Drag A or B to move them";
+    if (!state.a && !state.b) h.textContent = "Or " + tap + " two points on the globe, or type lat, lon";
+    else if (!state.b) h.textContent = "Now pick where you are going: type it, or " + tap + " the globe";
+    else h.textContent = "Drag A or B to move them, or " + tap + " a country to avoid it";
   }
 
   $("clear-a").addEventListener("click", function () { setPoint("a", null); inputs.a.focus(); });
@@ -1199,7 +1463,7 @@
       li.appendChild(x);
       ul.appendChild(li);
     });
-    syncBuffer();
+    renderOptionChips();
     if (state.avoid.size + state.regions.length > 1) {
       var li2 = document.createElement("li");
       var b = document.createElement("button");
@@ -1214,7 +1478,7 @@
   }
 
   function parseLatLon(q) {
-    var s = q.split("·")[0].trim().toUpperCase();
+    var s = q.split(/[|·]/)[0].trim().toUpperCase();
     var m = s.match(/^\s*([-+]?\d+(?:\.\d+)?)\s*°?\s*([NS])?\s*[, ]\s*([-+]?\d+(?:\.\d+)?)\s*°?\s*([EW])?\s*$/);
     if (!m) {
       var dms = s.match(/^\s*(\d+)[°\s]+(\d+(?:\.\d+)?)['′\s]*([NS])\s*[, ]?\s*(\d+)[°\s]+(\d+(?:\.\d+)?)['′\s]*([EW])\s*$/);
@@ -1424,7 +1688,7 @@
         else if (open || searching) { enterPending = true; e.preventDefault(); }
         else if (opts.enter) { opts.enter(input.value); e.preventDefault(); }
       }
-      else if (e.key === "Escape") { close(); }
+      else if (e.key === "Escape") { if (!list.hidden) e.preventDefault(); close(); }
     });
     function setValue(v) { input.value = v; lastQuery = v; }
     return { close: close, refresh: update, setValue: setValue };
@@ -1759,7 +2023,7 @@
     worker.onerror = function (e) {
       console.error("worker", e.message);
       if (!state.ready) { console.warn("worker failed to start; routing on the main thread"); startShim(); return; }
-      if (state.pendingId) { state.pendingId = 0; clearTimeout(busyTimer); showError("Something went wrong working out the route"); }
+      if (state.pendingId) { state.pendingId = 0; clearTimeout(busyTimer); state.busy = false; state.result = { status: "error", directKm: 0 }; renderPanel(); }
     };
     worker.onmessage = onWorkerMessage;
     worker.postMessage({ type: "init", topology: topology });
@@ -1769,53 +2033,96 @@
   function startShim() {
     if (shimStarted) return;
     shimStarted = true;
-    var sc = document.createElement("script");
-    sc.src = "worker.js";
-    sc.onload = function () {
-      worker = self.GreatCircleRouter;
-      worker.onmessage = onWorkerMessage;
-      worker.postMessage({ type: "init", topology: topology });
+    var load = function (src, then) {
+      var sc = document.createElement("script");
+      sc.src = src;
+      sc.onload = then;
+      sc.onerror = function () { state.result = { status: "error", directKm: 0 }; renderPanel(); };
+      document.head.appendChild(sc);
     };
-    sc.onerror = function () { showError("The route finder could not start"); };
-    document.head.appendChild(sc);
+    load("vendor/clipper.min.js", function () {
+      load("worker.js", function () {
+        worker = self.GreatCircleRouter;
+        worker.onmessage = onWorkerMessage;
+        worker.postMessage({ type: "init", topology: topology });
+      });
+    });
   }
 
   function onWorkerMessage(e) {
     var m = e.data;
     if (m.type === "ready") {
       state.ready = true; window.__greatercircle.readyMs = m.ms;
+      requestBuffers();
       if (queued) { queued = false; requestRoute(); }
       var prefetch = function () { setTimeout(loadPlaces, 800); };
       if (window.requestIdleCallback) requestIdleCallback(prefetch); else prefetch();
       return;
     }
+    if (m.type === "buffers") {
+      countryBuffers.set(m.id + "|" + m.km, { type: "MultiPolygon", coordinates: m.coordinates });
+      if (m.km === state.bufferKm && state.avoid.has(m.id)) scheduleRender("full");
+      return;
+    }
+    if (m.type === "plan" || m.type === "planProgress") {
+      if (m.id !== state.shownId) return;
+      if (m.type === "planProgress") { if (currentTab() === "plan") renderPanel(); return; }
+      state.plan = m;
+      lineCache.key = "";
+      renderPanel();
+      if (currentTab() === "plan") announce();
+      scheduleRender("full");
+      if (currentTab() === "plan" && fitPending === "plan") { fitPending = false; fitRoute(false); }
+      return;
+    }
     if (m.id !== state.pendingId) return;
-    if (m.type === "progress") { showBusy(m); return; }
+    if (m.type === "progress") { state.progress = m.expanded; renderBusy(); return; }
     if (m.type === "result") {
       state.pendingId = 0;
       clearTimeout(busyTimer);
+      state.busy = false;
       state.stale = false;
-      if (m.status === "error") { state.result = null; showError("Something went wrong working out the route: " + (m.message || "unknown error")); scheduleRender("full"); fitPending = false; return; }
+      state.shownId = m.id;
+      state.plan = m.status === "done" && !m.antipodal ? { status: "pending" } : null;
+      state.hoverLeg = -1; state.pinLeg = -1; state.planAll = false;
+      beaconScreen = [];
+      lineCache.key = "";
+      if (m.status === "error") { state.result = m; renderPanel(); scheduleRender("full"); fitPending = false; return; }
       state.result = m;
-      showResult();
+      renderPanel();
+      announce();
+      if (m.status === "done" && fitPending && !drag) routeDrawn();
       scheduleRender("full");
       if (m.status === "done" && fitPending && !drag && !pinch && !inertia) fitRoute(false);
       fitPending = false;
     }
   }
 
+  var countryBuffers = new Map(), buffersAsked = new Set();
+  function requestBuffers() {
+    if (!state.ready || !worker || !(state.bufferKm > 0)) return;
+    var km = state.bufferKm, ids = [];
+    state.avoid.forEach(function (name, id) {
+      var key = id + "|" + km;
+      if (buffersAsked.has(key)) return;
+      buffersAsked.add(key);
+      ids.push(id);
+    });
+    if (ids.length) worker.postMessage({ type: "buffers", km: km, ids: ids });
+  }
+
   function requestRoute() {
     clearTimeout(routeTimer);
-    if (!state.a || !state.b) { state.result = null; state.pendingId = 0; showResult(); return; }
-    void 0;
-    if (!state.ready) { queued = true; showBusy(null); return; }
+    requestBuffers();
+    if (!state.a || !state.b) { state.result = null; state.plan = null; state.pendingId = 0; state.busy = false; renderPanel(); return; }
+    if (!state.ready) { queued = true; state.busy = true; renderBusy(); return; }
     routeTimer = setTimeout(function () {
       var id = ++seq;
       state.pendingId = id;
-      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()),
+      worker.postMessage({ type: "route", id: id, a: [state.a.lon, state.a.lat], b: [state.b.lon, state.b.lat], avoid: Array.from(state.avoid.keys()), bufferKm: state.bufferKm,
         regions: state.regions.map(function (r) { return { id: r.id, name: r.name, ring: regionRing(r), inverted: !!r.inverted, bufferKm: state.bufferKm }; }) });
       clearTimeout(busyTimer);
-      busyTimer = setTimeout(function () { if (state.pendingId === id) showBusy(null); }, 180);
+      busyTimer = setTimeout(function () { if (state.pendingId === id) { state.busy = true; state.progress = 0; renderBusy(); } }, 180);
     }, 40);
   }
 
@@ -1838,180 +2145,21 @@
   }
   function joinNames(list) {
     if (list.length <= 1) return list.join("");
-    return list.slice(0, -1).join(", ") + " and " + list[list.length - 1];
+    if (list.length === 2) return list[0] + " and " + list[1];
+    return list.slice(0, -1).join(", ") + ", and " + list[list.length - 1];
   }
-
-  function showBusy(m) {
-    var el = $("summary");
-    if (m && el.classList.contains("is-busy")) {
-      var ctr = $("progress");
-      if (ctr) ctr.textContent = m.expanded ? m.expanded.toLocaleString() + " corners so far" : "";
-      return;
-    }
-    el.classList.add("is-busy");
-    el.setAttribute("aria-busy", "true");
-    panel.classList.add("has-result");
-    var what = !state.ready ? "Starting the route finder…" : (state.avoid.size || state.regions.length) ? "Finding the way round " + joinNames(avoidedNames()) + "…" : "Measuring…";
-    el.innerHTML = "";
-    var line = document.createElement("span"); line.className = "gc-line";
-    line.textContent = what + " ";
-    var counter = document.createElement("span"); counter.id = "progress"; counter.setAttribute("aria-hidden", "true");
-    line.appendChild(counter);
-    el.appendChild(line);
-  }
-
-  function showError(text) {
-    var el = $("summary"); el.classList.remove("is-busy"); el.setAttribute("aria-busy", "false"); el.innerHTML = "";
-    var w = document.createElement("span"); w.className = "gc-warn"; w.textContent = text; el.appendChild(w);
-  }
-
-  function showResult() {
-    var sum = $("summary"), out = $("out"), res = state.result;
-    sum.classList.remove("is-busy");
-    sum.setAttribute("aria-busy", "false");
-    panel.classList.toggle("has-result", !!res);
-    sum.innerHTML = ""; out.innerHTML = "";
-    $("results").hidden = true;
-    $("units").hidden = true;
-    $("fit").hidden = !(state.a && state.b);
-    if (!res) return;
-    $("results").hidden = false;
-    $("units").hidden = false;
-
-    var big = document.createElement("span"); big.className = "gc-big";
-    var line = document.createElement("span"); line.className = "gc-line";
-
-    if (res.status === "inside") {
-      var plain = true;
-      var where = function (raw) {
-        return joinNames(uniqueBase(raw).map(function (id) {
-          var r = regionById(id);
-          if (!r) return "in " + names([id])[0];
-          var inBase = raw.some(function (x) { return String(x) === id; });
-          if (!inBase) { plain = false; return "within " + fmt(state.bufferKm) + " of " + r.name + (r.inverted ? "'s edge" : ""); }
-          if (r.inverted) { plain = false; return "outside " + r.name; }
-          return "in " + r.name;
-        }));
-      };
-      var parts = [];
-      if (res.insideA.length) parts.push("A is " + where(res.insideA));
-      if (res.insideB.length) parts.push("B is " + where(res.insideB));
-      big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
-      sum.appendChild(big);
-      var warn = document.createElement("span"); warn.className = "gc-warn";
-      warn.textContent = parts.join("; ") + (plain ? ", which you are avoiding " : " ");
-      uniqueBase(res.insideA.concat(res.insideB)).forEach(function (id) {
-        var b = document.createElement("button"); b.type = "button";
-        var r = regionById(id);
-        b.textContent = (r ? "Remove " + r.name : "Allow " + names([id])[0]);
-        b.addEventListener("click", function () { if (r) removeRegion(r); else { state.avoid.delete(id); avoidChanged(); } });
-        warn.appendChild(b); warn.appendChild(document.createTextNode(" "));
-      });
-      sum.appendChild(warn);
-    } else if (res.status === "none") {
-      big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
-      sum.appendChild(big);
-      var w2 = document.createElement("span"); w2.className = "gc-warn";
-      w2.textContent = "There is no way from A to B that stays out of " + joinNames(avoidedNames());
-      sum.appendChild(w2);
-    } else {
-      var detour = res.lengthKm > res.directKm + 0.5;
-      if ((state.avoid.size || state.regions.length) && !detour) {
-        big.textContent = fmt(res.directKm); big.appendChild(small("direct"));
-        sum.appendChild(big);
-        line.innerHTML = "";
-        line.appendChild(document.createTextNode("The direct way already keeps out of " + joinNames(avoidedNames())));
-        sum.appendChild(line);
-      } else if (detour) {
-        big.textContent = fmt(res.lengthKm); big.appendChild(small("avoiding " + joinNames(avoidedNames())));
-        sum.appendChild(big);
-        var extra = res.lengthKm - res.directKm;
-        var b1 = document.createElement("b"); b1.textContent = "+" + fmt(extra) + " (" + (100 * extra / res.directKm).toFixed(1) + "%)";
-        line.appendChild(b1);
-        line.appendChild(document.createTextNode(" over the direct " + fmt(res.directKm) + ", with " + res.bends + (res.bends === 1 ? " bend" : " bends")));
-        sum.appendChild(line);
-      } else {
-        big.textContent = fmt(res.directKm); big.appendChild(small("great circle"));
-        sum.appendChild(big);
-        if (res.antipodal) { line.textContent = "A and B are antipodes: every way round is this long"; sum.appendChild(line); }
-      }
-    }
-
-    var dl = document.createElement("dl"); dl.className = "gc-rows";
-    var detoured = res.status === "done" && res.lengthKm > res.directKm + 0.5;
-    if (detoured) {
-      row(dl, "Avoiding " + joinNames(avoidedNames()), fmt(res.lengthKm));
-      row(dl, "Bends", String(res.bends));
-    }
-    if (res.ms != null && res.expanded) row(dl, "Worked out in", (res.ms / 1000).toFixed(res.ms < 100 ? 2 : 1) + " s · " + res.expanded.toLocaleString() + " corners searched");
-    if (dl.firstChild) out.appendChild(dl);
-
-    var ends = (res.startIn || []).concat(res.endIn || []).map(String);
-    crossesList(out, "The direct way crosses", res.directCrosses, ends);
-    if (detoured) crossesList(out, "The way round crosses", res.routeCrosses, ends);
-  }
-
-  function small(text) { var s = document.createElement("small"); s.textContent = text; return s; }
-  function row(dl, k, v) {
-    var div = document.createElement("div"); div.className = "gc-row";
-    var dt = document.createElement("dt"); dt.textContent = k;
-    var dd = document.createElement("dd"); dd.textContent = v;
-    div.appendChild(dt); div.appendChild(dd); dl.appendChild(div);
-  }
-  function crossesList(out, title, ids, ends) {
-    if (!ids) return;
-    var box = document.createElement("div"); box.className = "gc-crosses";
-    var lab = document.createElement("div"); lab.className = "gc-label" + (ids.length ? "" : " gc-open-sea"); lab.textContent = title + (ids.length ? "" : " nothing: open sea all the way");
-    box.appendChild(lab);
-    if (ids.length) {
-      var ul = document.createElement("ul"); ul.className = "gc-chips";
-      ids.forEach(function (id) {
-        id = String(id);
-        var f = featureById.get(id); if (!f) return;
-        var li = document.createElement("li");
-        if (!state.avoid.has(id) && id !== ANTARCTICA && ends.indexOf(id) < 0) {
-          var b = document.createElement("button"); b.type = "button"; b.className = "gc-chip gc-chip-add";
-          b.textContent = f.properties.name; b.title = "Avoid " + f.properties.name;
-          b.addEventListener("click", function () { state.avoid.set(id, f.properties.name); avoidChanged(); });
-          li.appendChild(b);
-        } else {
-          li.className = "gc-chip"; li.style.borderColor = "var(--rule)"; li.style.paddingRight = "10px";
-          li.textContent = f.properties.name;
-        }
-        ul.appendChild(li);
-      });
-      box.appendChild(ul);
-    }
-    out.appendChild(box);
-  }
-
-  document.querySelectorAll(".gc-units button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      state.units = b.dataset.unit;
-      document.querySelectorAll(".gc-units button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
-      try { localStorage.setItem("gc-units", state.units); } catch (e) {}
-      showResult();
-      syncBuffer();
-    });
-  });
-
-  var BUFFER_MAX = { km: 400, mi: 250, nmi: 215 };
-  function syncBuffer() {
-    var inp = $("buffer"), u = UNITS[state.units];
-    inp.max = BUFFER_MAX[state.units];
-    inp.value = Math.round((state.bufferKm * u.f) / 5) * 5;
-    showBufferValue();
-    $("buffer-row").hidden = !state.regions.length;
-  }
-  function showBufferValue() { $("buffer-out").textContent = state.bufferKm > 0 ? fmt(state.bufferKm) : "none"; }
-  $("buffer").addEventListener("input", function () {
-    state.bufferKm = +$("buffer").value / UNITS[state.units].f;
-    showBufferValue();
-    scheduleRender("full");
-  });
-  $("buffer").addEventListener("change", function () { requestRoute(); writeUrl(); });
 
   var ANTARCTICA = "010";
+  var P = GreatCirclePanel({
+    state: state, $: $, panel: panel, fmt: fmt, scheduleRender: scheduleRender, joinNames: joinNames, requestRoute: requestRoute,
+    names: names, featureById: featureById, avoidChanged: avoidChanged, writeUrl: writeUrl, uniqueBase: uniqueBase,
+    removeRegion: removeRegion, regionById: regionById, canHover: canHover, avoidedNames: avoidedNames, visible: visible,
+    setSheet: setSheet, layout: layout, fmtLonLat: fmtLonLat, flyTo: flyTo, fitRoute: fitRoute, ANTARCTICA: ANTARCTICA,
+    W: function () { return W; }, setFitPending: function (v) { fitPending = v; },
+    reduceMotion: function () { return reduceMotion; }, tabChanged: function (prev) { tabChanged(prev); }, makeCard: makeCard
+  });
+  var renderPanel = P.renderPanel, renderBusy = P.renderBusy, announce = P.announce, currentTab = P.currentTab, detourOf = P.detourOf,
+    renderOptionChips = P.renderOptionChips, bufferMi = P.bufferMi, MI_KM = P.MI_KM, BUFFER_DEFAULT_MI = P.BUFFER_DEFAULT_MI;
   function writeUrl() {
     var p = [];
     var pt = function (k, v) { if (v) p.push(k + "=" + v.lat.toFixed(4) + "," + v.lon.toFixed(4) + (v.label ? "," + encodeURIComponent(v.label) : "")); };
@@ -2022,13 +2170,15 @@
         : "p~" + r.points.map(function (q) { return q[1].toFixed(3) + "," + q[0].toFixed(3); }).join(";");
       p.push("r=" + encodeURIComponent(r.name) + "~" + body + (r.inverted ? "~i" : ""));
     });
-    if (state.bufferKm > 0 && state.regions.length) p.push("buf=" + Math.round(state.bufferKm));
+    if ((state.avoid.size || state.regions.length) && bufferMi(state.bufferKm) !== BUFFER_DEFAULT_MI) p.push("buf=" + bufferMi(state.bufferKm) + "mi");
+    if (state.tab && state.a && state.b && (!state.result || currentTab() === state.tab)) p.push("tab=" + state.tab);
+    if (state.wind) p.push("wind=1");
     var h = p.length ? "#" + p.join("&") : "";
     if (h !== location.hash) history.replaceState(null, "", h || location.pathname + location.search);
   }
   function readUrl() {
     var h = location.hash.replace(/^#/, "");
-    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = 0;
+    state.a = null; state.b = null; state.avoid.clear(); state.regions = []; selected = null; state.bufferKm = BUFFER_DEFAULT_MI * MI_KM; state.tab = null; state.wind = false;
     ["a", "b"].forEach(function (k) { if (suggesters[k]) suggesters[k].setValue(""); else inputs[k].value = ""; $("clear-" + k).hidden = true; });
     if (!h) return false;
     var any = false;
@@ -2042,7 +2192,7 @@
           var label = null;
           if (bits[2]) { try { label = decodeURIComponent(bits.slice(2).join(",")); } catch (err) { label = bits.slice(2).join(","); } }
           state[k] = { lon: lon, lat: lat, label: label };
-          if (suggesters[k]) suggesters[k].setValue(label || fmtLonLat(state[k])); else inputs[k].value = label || fmtLonLat(state[k]);
+          if (suggesters[k]) suggesters[k].setValue(label ? inputText(label) : fmtLonLat(state[k])); else inputs[k].value = label ? inputText(label) : fmtLonLat(state[k]);
           $("clear-" + k).hidden = false;
           any = true;
         }
@@ -2061,9 +2211,15 @@
           if (pts.length >= 3 && !ringProblem(pts)) r = { kind: "polygon", points: pts };
         }
         if (r) { r.id = "r" + (++regionSeq); r.name = name || r.id; r.inverted = parts[3] === "i"; state.regions.push(r); any = true; }
+      } else if (k === "wp") {
+        if (v === "1") state.tab = "plan";
+      } else if (k === "wind") {
+        state.wind = v === "1";
+      } else if (k === "tab") {
+        if (v === "direct" || v === "avoid" || v === "plan") state.tab = v;
       } else if (k === "buf") {
-        var bk = +v;
-        if (isFinite(bk) && bk > 0) state.bufferKm = Math.min(402.4, bk);
+        var miles = /mi$/.test(v), bk = parseFloat(v);
+        if (isFinite(bk) && bk >= 0) state.bufferKm = bufferMi(miles ? bk * MI_KM : bk) * MI_KM;
       }
     });
     return any;
@@ -2089,56 +2245,92 @@
     });
   })();
 
-  var SHEET_HIDDEN = 0, SHEET_PEEK = 1, SHEET_OPEN = 2;
-  var sheetGestureAt = 0;
-  function sheetState() {
-    return panel.classList.contains("is-open") ? SHEET_OPEN : panel.classList.contains("is-hidden") ? SHEET_HIDDEN : SHEET_PEEK;
+  var SHEET_PEEK = 0, SHEET_HALF = 1, SHEET_FULL = 2;
+  var sheetMode = SHEET_PEEK, sheetGestureAt = 0, sheetY = 0;
+  function sheetHeight() { return panel.getBoundingClientRect().height || H; }
+  function peekPx() {
+    var top = panel.getBoundingClientRect().top, end;
+    if (panel.classList.contains("has-result")) {
+      var delta = $("hero-delta");
+      end = delta && !delta.hidden && delta.textContent ? delta : ($("hero-top") || $("result"));
+    } else end = document.querySelector(".gc-route-card");
+    var px = end ? end.getBoundingClientRect().bottom - top + 12 : 220;
+    return Math.max(150, Math.min(px, H * 0.5));
   }
-  function setSheetState(st) {
-    st = Math.max(SHEET_HIDDEN, Math.min(SHEET_OPEN, st));
-    var open = st === SHEET_OPEN;
-    panel.classList.toggle("is-open", open);
-    panel.classList.toggle("is-hidden", st === SHEET_HIDDEN);
-    var controls = document.querySelector(".gc-controls");
-    controls.classList.toggle("is-lifted", open);
-    controls.classList.toggle("is-low", st === SHEET_HIDDEN);
-    $("sheet-handle").setAttribute("aria-expanded", String(open));
-    $("sheet-handle").setAttribute("aria-label", open ? "Show less" : "Show more");
-    if (!open) panel.scrollTop = 0;
-    setTimeout(function () { layout(); scheduleRender("full"); }, 300);
+  function sheetVisible(mode) {
+    var full = sheetHeight(), peek = Math.min(peekPx(), full);
+    if (mode === SHEET_FULL) return full;
+    if (mode === SHEET_HALF) return Math.min(full, Math.max(peek, Math.round(H * 0.56)));
+    return peek;
   }
-  function setSheet(open) { setSheetState(open ? SHEET_OPEN : SHEET_PEEK); }
+  function sheetYFor(mode) { return sheetHeight() - sheetVisible(mode); }
+  function placeSheet() {
+    if (W > 640) { panel.style.removeProperty("--sheet-y"); return; }
+    sheetY = sheetYFor(sheetMode);
+    panel.style.setProperty("--sheet-y", sheetY + "px");
+  }
+  function setSheetMode(mode) {
+    mode = Math.max(SHEET_PEEK, Math.min(SHEET_FULL, mode));
+    sheetMode = mode;
+    var full = mode === SHEET_FULL;
+    panel.classList.toggle("is-open", full);
+    panel.classList.toggle("is-half", mode === SHEET_HALF);
+    document.querySelector(".gc-controls").classList.toggle("is-lifted", full);
+    $("sheet-handle").setAttribute("aria-expanded", String(full));
+    $("sheet-handle").setAttribute("aria-label", full ? "Show less" : "Show more");
+    if (!full) panel.scrollTop = 0;
+    placeSheet();
+    var settle = function () { layout(); scheduleRender("full"); if (state.result && state.result.status === "done" && mode !== SHEET_FULL) fitRoute(false); };
+    if (reduceMotion) settle(); else { clearTimeout(setSheetMode.t); setSheetMode.t = setTimeout(settle, 340); }
+  }
+  function setSheet(open) { setSheetMode(open ? SHEET_FULL : SHEET_HALF); }
   $("sheet-handle").addEventListener("click", function () {
     if (performance.now() - sheetGestureAt < 500) return;
-    var st = sheetState();
-    setSheetState(st === SHEET_OPEN ? SHEET_PEEK : st + 1);
+    setSheetMode(sheetMode === SHEET_FULL ? SHEET_PEEK : sheetMode + 1);
   });
   [inputs.a, inputs.b, $("in-avoid")].forEach(function (inp) {
     inp.addEventListener("focus", function () {
-      if (W <= 640 && !panel.classList.contains("is-open") && performance.now() - sheetGestureAt > 500) setSheet(true);
+      if (W <= 640 && sheetMode !== SHEET_FULL && performance.now() - sheetGestureAt > 500) setSheet(true);
     });
   });
+  if (window.visualViewport) {
+    var kbUpdate = function () {
+      var vv = window.visualViewport;
+      var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      panel.style.setProperty("--kb", (W <= 640 ? kb : 0) + "px");
+      if (W <= 640) placeSheet();
+    };
+    window.visualViewport.addEventListener("resize", kbUpdate);
+    window.visualViewport.addEventListener("scroll", kbUpdate);
+  }
 
   var sheetDrag = null;
   panel.addEventListener("pointerdown", function (e) {
     if (W > 640 || e.pointerType === "mouse") return;
-    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), engaged: false,
-      onHandle: !!(e.target.closest && e.target.closest(".gc-sheet-handle, .gc-head")) };
+    if (e.target.closest && e.target.closest(".gc-opt-chips, input, .gc-suggest")) return;
+    sheetDrag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, y: sheetY, t: performance.now(), v: 0, last: e.clientY, engaged: false,
+      onHandle: !!(e.target.closest && e.target.closest(".gc-sheet-handle")) };
   });
   panel.addEventListener("pointermove", function (e) {
     var d = sheetDrag;
     if (!d || e.pointerId !== d.id) return;
     var dy = e.clientY - d.y0, dx = e.clientX - d.x0;
     if (!d.engaged) {
-      if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
-      if (sheetState() === SHEET_OPEN && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
+      if (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+      if (sheetMode === SHEET_FULL && !d.onHandle && !(panel.scrollTop <= 0 && dy > 0)) { sheetDrag = null; return; }
       d.engaged = true;
       try { panel.setPointerCapture(e.pointerId); } catch (err) {}
       panel.classList.add("is-dragging");
       if (document.activeElement && panel.contains(document.activeElement)) document.activeElement.blur();
     }
-    var y = Math.max(0, dy);
-    panel.style.transform = y ? "translateY(" + y + "px)" : "";
+    var now = performance.now();
+    d.v = 0.8 * ((e.clientY - d.last) / Math.max(1, now - d.t)) + 0.2 * d.v;
+    d.last = e.clientY; d.t = now;
+    var y = d.y + dy, lo = sheetYFor(SHEET_FULL), hi = sheetYFor(SHEET_PEEK);
+    if (y < lo) y = lo - (lo - y) * 0.35;
+    if (y > hi) y = hi + (y - hi) * 0.35;
+    panel.style.setProperty("--sheet-y", y + "px");
+    e.preventDefault();
   });
   function endSheetDrag(e) {
     var d = sheetDrag;
@@ -2146,15 +2338,19 @@
     sheetDrag = null;
     if (!d.engaged) return;
     sheetGestureAt = performance.now();
-    var dy = e.clientY - d.y0, v = dy / Math.max(1, performance.now() - d.t0);
     panel.classList.remove("is-dragging");
-    panel.style.transform = "";
-    var st = sheetState();
-    if (dy > 40 || v > 0.4) setSheetState(st - 1);
-    else if (dy < -40 || v < -0.4) setSheetState(st + 1);
+    var y = d.y + (e.clientY - d.y0), aim = y + d.v * 200, best = SHEET_PEEK, bestD = Infinity;
+    [SHEET_PEEK, SHEET_HALF, SHEET_FULL].forEach(function (m) { var dd = Math.abs(sheetYFor(m) - aim); if (dd < bestD) { bestD = dd; best = m; } });
+    setSheetMode(best);
   }
   panel.addEventListener("pointerup", endSheetDrag);
-  panel.addEventListener("pointercancel", endSheetDrag);
+  panel.addEventListener("pointercancel", function (e) {
+    var d = sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    sheetDrag = null;
+    panel.classList.remove("is-dragging");
+    if (d.engaged) setSheetMode(sheetMode);
+  });
 
   function init(topo) {
     topology = topo;
@@ -2178,13 +2374,14 @@
     countrySuggester();
     applyAliases();
 
-    try { var u = localStorage.getItem("gc-units"); if (UNITS[u]) { state.units = u; document.querySelectorAll(".gc-units button").forEach(function (x) { x.setAttribute("aria-pressed", String(x.dataset.unit === u)); }); } } catch (e) {}
+    try { var u = localStorage.getItem("gc-units"); if (UNITS[u]) state.units = u; } catch (e) {}
 
     refreshPalette();
     layout();
     try { if (localStorage.getItem("gc-satellite") === "1") setSatellite(true); } catch (e) {}
     var fromUrl = readUrl();
     renderChips();
+    renderPanel();
     updateHint();
     setAvoidHint();
     startWorker();
@@ -2194,15 +2391,20 @@
     setTimeout(function () { $("load").remove(); }, 400);
     if (fromUrl) { requestRoute(); setTimeout(function () { fitRoute(true); }, 50); }
     scheduleRender("full");
-    $("fit").hidden = !(state.a && state.b);
   }
 
-  window.addEventListener("resize", function () { layout(); scheduleRender("full"); });
+  var lastW = window.innerWidth;
+  window.addEventListener("resize", function () {
+    var typing = document.activeElement && document.activeElement.tagName === "INPUT" && panel.contains(document.activeElement);
+    if (window.innerWidth <= 640 && typing && window.innerWidth === lastW) { placeSheet(); return; }
+    lastW = window.innerWidth;
+    layout(); scheduleRender("full");
+  });
   new MutationObserver(function () { refreshPalette(); scheduleRender("full"); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { scheduleRender("full"); });
   window.addEventListener("hashchange", function () {
-    readUrl(); renderChips(); updateHint(); fitPending = true; state.stale = true; requestRoute(); scheduleRender("full");
+    readUrl(); renderChips(); updateHint(); renderPanel(); fitPending = true; state.stale = true; requestRoute(); scheduleRender("full");
   });
 
   window.__greatercircle = {

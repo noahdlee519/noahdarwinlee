@@ -33,8 +33,7 @@ for (const w of [1288, 1440, 1600]) {
   const r = await run(1100);
   say(!r.L && !r.R && !!r.B, "1100 wide: one banner below, none at the sides", JSON.stringify({ L: !!r.L, R: !!r.R, B: !!r.B }));
 }
-// On phones: nothing on the loading screen; then one banner in the top row between the title and the menu, clear of both,
-// that stays when Google leaves it unfilled.
+// On phones: nothing on the loading screen; then one banner, clear of the title, that stays when Google leaves it unfilled.
 for (const w of [360, 390, 430]) {
   const page = await browser.newPage({ viewport: { width: w, height: 844 }, isMobile: true, hasTouch: true });
   await page.addInitScript(() => { try { localStorage.setItem("chronia-tour", "1"); localStorage.setItem("chronia-key", "0"); } catch (e) {} });
@@ -50,8 +49,9 @@ for (const w of [360, 390, 430]) {
   const r = await box();
   say(!!r.B && !r.L, w + " wide: one banner below, none at the sides", JSON.stringify(r.B));
   if (r.B) {
-    say(r.B.l >= r.head.r + 4 && r.B.r <= r.ctls.l - 8, w + " wide: the banner between the title and the menu, clear of both", JSON.stringify([r.head.r, r.B.l, r.B.r, r.ctls.l]));
-    say(Math.abs(r.B.t - r.head.t) <= 1 && Math.abs(r.B.b - r.head.b) <= 1, w + " wide: the banner level with the top row", JSON.stringify([r.B.t, r.B.b, r.head.t, r.head.b]));
+    // Since 19 November 2026 (6e700a9) the phone's banner sits in the top row beside the title, the tools behind a menu button.
+    const clear = (a, b) => a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
+    say(clear(r.B, r.head) && r.B.l >= 0 && r.B.r <= w, w + " wide: the banner on screen and clear of the title", JSON.stringify([r.B, r.head]));
   }
   await page.evaluate(() => { const B = document.getElementById("ad-below"); const ins = document.createElement("ins"); B.appendChild(ins); ins.setAttribute("data-ad-status", "unfilled"); window.dispatchEvent(new Event("resize")); });
   await page.waitForTimeout(800);

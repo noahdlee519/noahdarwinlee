@@ -2,13 +2,36 @@
   "use strict";
 
   var $ = function (id) { return document.getElementById(id); };
+  var LANG = window.CH_LANG || "en", L10N = window.CH_L || {}, PL = {};
+  var EN = { "@year": "{y}", "@my": "{month} {y}", "@mdy": "{month} {d}, {y}", "{y} BC": "{y} BC", "AD {y}": "AD {y}" };
+  function T(s, o) {
+    var t = L10N[s];
+    if (t == null) t = EN[s] != null ? EN[s] : s;
+    return o ? t.replace(/\{(\w+)\}/g, function (m, k) { return o[k] != null ? o[k] : m; }) : t;
+  }
+  function translatePage(root) {
+    if (LANG === "en") return;
+    var key = function (v) { return v.replace(/\s+/g, " ").trim(); }, walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list = [], n;
+    while ((n = walker.nextNode())) list.push(n);
+    list.forEach(function (t) {
+      if (t.parentElement && t.parentElement.closest("script,style,svg,kbd")) return;
+      var k = key(t.nodeValue);
+      if (k && L10N[k] != null) t.nodeValue = /^\s*/.exec(t.nodeValue)[0] + L10N[k] + /\s*$/.exec(t.nodeValue)[0];
+    });
+    root.querySelectorAll("[aria-label],[data-tip],[placeholder],[title],[alt]").forEach(function (e) {
+      ["aria-label", "data-tip", "placeholder", "title", "alt"].forEach(function (a) { var v = e.getAttribute(a); if (v && L10N[key(v)] != null) e.setAttribute(a, L10N[key(v)]); });
+    });
+  }
+  translatePage(document.body);
+  if (L10N[document.title]) document.title = L10N[document.title];
+  var CJK = { zh: "'Songti SC', 'STSong', 'Noto Serif CJK SC', 'Source Han Serif SC', 'SimSun', ", ja: "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Source Han Serif JP', 'MS Mincho', ", ko: "'AppleMyungjo', 'Nanum Myeongjo', 'Noto Serif CJK KR', 'Source Han Serif KR', 'Batang', " }[LANG] || "";
   var PROVINCE_OF = /^(Western |Eastern )?Roman Empire$/;
   var canvas = $("globe");
   var ctx = canvas.getContext("2d");
   var R_KM = 6371.0088, D2R = Math.PI / 180, TAU = 2 * Math.PI, HALF_PI = Math.PI / 2;
-  var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, 'Times New Roman', serif";
+  var SERIF = "'IM Fell English', 'Old Standard TT', Georgia, " + CJK + "'Times New Roman', serif";
   var UC = "../uchronia/";
-  var UC_APP = "https://noahdarwinlee.com/uchronia/";
+  var UC_APP = "/uchronia/";
   var STORE_FLAT = "chronia-flat", STORE_SPEED = "chronia-play-speed";
   var PALETTE = 10;
   var SOFT_BEFORE = 1648;
@@ -416,7 +439,7 @@
   var pal = {};
   function readPalette() {
     var cs = getComputedStyle(document.documentElement);
-    ["ocean", "ocean-deep", "grat", "limb", "glow", "border", "label", "label-halo", "people", "city", "city-ring", "select", "hover", "paper", "people-fill", "water", "sea-label", "river"].forEach(function (k) {
+    ["ocean", "ocean-deep", "grat", "limb", "glow", "border", "label", "label-halo", "people", "city", "city-ring", "select", "hover", "paper", "people-fill", "water", "sea-label", "river", "river-label"].forEach(function (k) {
       pal[k] = cs.getPropertyValue("--ch-" + k).trim();
     });
     ["city-halo", "town"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
@@ -668,6 +691,7 @@
   var selected = -1, hoverId = -1, ready = false;
   var DAY0 = Date.UTC(1886, 0, 1), DAY_MS = 86400000, MID_DAY = 15;
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  var MONTHS_L = L10N["@months"] || MONTHS, MONTHS_G = L10N["@monthsOf"] || MONTHS_L;
 
   function dayFromDate(y, m, d) { return Math.round((Date.UTC(y, m - 1, d) - DAY0) / DAY_MS); }
   function dateOfDay(day) { var d = new Date(DAY0 + day * DAY_MS); return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]; }
@@ -718,7 +742,9 @@
     return v ? v.name : catalogue[id][0];
   }
   // "in the Holy Roman Empire", but "in British America": a group named for a place takes no article.
-  function inGroup(id) { var n = polityName(id); return /^British America$/.test(n) ? "in " + n : "in the " + n; }
+  function polityNameL(id) { var n = polityName(id); return (PL.pol && PL.pol[n]) || n; }
+  function placeNameL(n, qid) { return (qid && PL.q && PL.q[qid + "|" + n]) || (PL.city && PL.city[n]) || n; }
+  function inGroup(id) { var n = polityNameL(id); return LANG !== "en" ? T("in {name}", { name: n }) : /^British America$/.test(n) ? "in " + n : "in the " + n; }
   var colourDays = [], colourYears = [];
   function colourMarks() {
     var d = new Set(), y = new Set();
@@ -1667,8 +1693,10 @@
       reserveMarks(placed, S);
       drawPolityLabels(snap, placed, kp);
       drawSeaLabels(placed, S);
+      drawLakeLabels(placed, S, kp);
       for (var ri = placed.length - 1; ri >= 0; ri--) if (placed[ri].res) placed.splice(ri, 1);
       drawPlaces(placed, S);
+      drawRiverLabels(placed, S);
       drawDivisionLabels(placed, S);
     }
     if (perf) pmark("labels");
@@ -1989,7 +2017,7 @@
     if (!layers.water) return;
     if (!lakes) {
       if (!lakesLoad) lakesLoad = fetchJSON(UC + "data/lakes.json").then(function (rows) {
-        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
+        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], lon: r[2], lat: r[3], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
         bigLakes = rows.filter(function (r) { return r[1] >= BIG_LAKE_KM2; }).map(function (r, i) {
           var b = [180, 90, -180, -90];
           r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
@@ -2153,7 +2181,8 @@
     g.lakes.add.forEach(function (r, i) {
       var b = [180, 90, -180, -90];
       r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
-      out.lakeAdd.push({ id: "w" + i, name: r[0], km2: r[1], from: r[2], to: r[3], added: true, b: b, coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) });
+      var at = lakeAnchor(r[4]);
+      out.lakeAdd.push({ id: "w" + i, name: r[0], km2: r[1], from: r[2], to: r[3], added: true, b: b, lon: at[0], lat: at[1], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) });
       times(out.lakeTimes, r[2], r[3]);
     });
     (g.marshes || []).forEach(function (r) {
@@ -2259,6 +2288,8 @@
     if (landGeoState.tag !== r.tag) landGeoState = { tag: r.tag, geo: { type: "MultiPolygon", coordinates: r.list.map(function (p) { return p.geo.coordinates; }) } };
     return landGeoState.geo;
   }
+  function divNameL(k, n) { return (PL.div && PL.div[k + "|" + n]) || n; }
+  function lakeNameL(n) { return (PL.lake && PL.lake[n]) || n; }
   function lakesAt() {
     if (!geog) return lakes;
     var k = stateOf(geog.lakeTimes);
@@ -2270,12 +2301,20 @@
     return list;
   }
   function riverRanks(t) {
-    var byRank = [[], [], [], [], [], [], []], drop = geog ? geog.riverDrop : null;
+    var byRank = [[], [], [], [], [], [], []], drop = geog ? geog.riverDrop : null, named = new Map();
     topojson.feature(t, t.objects.rivers).features.forEach(function (f, i) {
       var rk = f.properties && f.properties.r, d = drop && drop.get(i), c = f.geometry && f.geometry.coordinates;
       if (d && c && c.length === d[1] && c[0][0] === d[2] && c[0][1] === d[3]) return;
-      if (rk >= 1 && rk <= 6) byRank[rk] = byRank[rk].concat(prepareLines(f.geometry));
+      if (!(rk >= 1 && rk <= 6)) return;
+      var lines = prepareLines(f.geometry);
+      byRank[rk] = byRank[rk].concat(lines);
+      var n = f.properties.n;
+      if (!n || !lines.length) return;
+      if (!named.has(n)) named.set(n, { name: n, r: rk, lines: [] });
+      var e = named.get(n);
+      e.lines = e.lines.concat(lines); e.r = Math.min(e.r, rk);
     });
+    byRank.names = Array.from(named.values());
     return byRank;
   }
   function datedRivers(rank) {
@@ -2359,7 +2398,7 @@
     var sp = space === undefined ? (people ? PEOPLE_SPACE : SPACE) : space;
     var key = (people ? "i" : "n") + sp + name, hit = labelCache.get(key);
     if (hit) return hit;
-    var text = people ? name : name.toUpperCase();
+    var text = people ? name : name.toLocaleUpperCase(LANG);
     hit = splits(text).map(function (lines) {
       var w = 0;
       lines.forEach(function (l) { w = Math.max(w, unitWidth(l, people, sp)); });
@@ -3238,7 +3277,7 @@
   function pinnedItem(p, v, kp, placed) {
     var q = projectLL(v.lon, v.lat);
     if (!q || (!flat && q[2] < 0.25)) return null;
-    var name = polityName(p.id);
+    var name = polityNameL(p.id);
     if (!name) return null;
     var side = Math.sqrt(p.label[5]) * kp, people = !!p.people;
     var f = v.size || Math.max(people ? 8.5 : 7.5, Math.min(people ? 15 : 26, labelTarget(side, people, people ? 8.5 : 7.5, people ? 15 : 26)));
@@ -3273,7 +3312,7 @@
       var p = order[i], lab = p.label;
       if (!lab || lab[2] * kp < 0.5 || seen.has(p.id)) continue;
       if (!layers.subdivisions && !p.group && p.member >= 0 && p.member !== p.id && PROVINCE_OF.test(polityName(p.member))) continue;
-      var name = polityName(p.id);
+      var name = polityNameL(p.id);
       if (!name) continue;
       var feats = p.group ? featOf(snap.topo[lv], lv, lv === "hi" ? p.geoHi : p.geoLo).prep : L.feats[p.i], any = false;
       for (var j = 0; j < feats.length && !any; j++) any = inView(feats[j]);
@@ -3411,9 +3450,9 @@
     ["Banda Sea", 127, -5.5, 3], ["Arafura Sea", 135, -10, 3], ["Timor Sea", 126, -11.5, 3], ["Gulf of Aden", 48, 12.6, 3],
     ["Andaman Sea", 96, 11, 3], ["Chukchi Sea", -170, 69, 3], ["Mozambique Channel", 41, -18, 3], ["Great Australian Bight", 130, -35.5, 3]
   ].map(function (r) {
-    var name = r[3] === 1 ? r[0].toUpperCase() : r[0], cut = name.lastIndexOf(" ");
-    var lines = r[3] === 1 && name.split(" ").length > 2 ? [name.slice(0, cut), name.slice(cut + 1)] : [name];
-    return { name: r[0], lines: lines, lon: r[1], lat: r[2], tier: r[3] };
+    var loc = T(r[0]), name = r[3] === 1 ? loc.toLocaleUpperCase(LANG) : loc, cut = name.lastIndexOf(" ");
+    var lines = loc !== r[0] ? name.split("\n") : r[3] === 1 && name.split(" ").length > 2 ? [name.slice(0, cut), name.slice(cut + 1)] : [name];
+    return { name: loc.replace(/\n/g, " "), lines: lines, lon: r[1], lat: r[2], tier: r[3] };
   });
   function seaShown(t, S) { return t === 1 ? S >= 160 && S < 3000 : t === 2 ? S >= 480 && S < 9000 : S >= 1400 && S < 14000; }
   function drawSeaLabels(placed, S) {
@@ -3440,6 +3479,247 @@
       }
     }
     ctx.letterSpacing = "0px";
+  }
+  // Lake and river names, as UCHRONIA draws them (22 November 2026): a lake's name in italics at the point Natural Earth gives
+  // it, once the lake is 18 px across; a river's name bent along its course, letter by letter, at the stretch nearest the middle
+  // of the view where it fits without turning too sharply, kept in the same place while the map moves. Both follow the date:
+  // lakes and rivers that come and go (reservoirs, dried seas, rivers turned) are named only while they are drawn.
+  var LAKE_LABEL_S = 650, LAKE_LABEL_PX = 18;
+  function lakeAnchor(polys) {
+    var best = null, bestA = -1;
+    polys.forEach(function (poly) {
+      var ring = poly[0], a = 0, x = 0, y = 0;
+      for (var k = 0, n = ring.length - 1; k < n; k++) {
+        var p = ring[k], q = ring[k + 1], c = p[0] * q[1] - q[0] * p[1];
+        a += c; x += (p[0] + q[0]) * c; y += (p[1] + q[1]) * c;
+      }
+      if (Math.abs(a) > bestA) { bestA = Math.abs(a); best = a ? [x / (3 * a), y / (3 * a)] : ring[0]; }
+    });
+    return best || [0, 0];
+  }
+  function drawLakeLabels(placed, S, kp) {
+    if (!layers.water || !lakes || S < LAKE_LABEL_S) return;
+    var list = lakesAt(), size = 11;
+    ctx.save();
+    ctx.font = "italic 400 " + size + "px " + SERIF;
+    ctx.letterSpacing = "0.5px";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    ctx.strokeStyle = pal.ocean; ctx.fillStyle = pal["sea-label"];
+    for (var i = 0; i < list.length; i++) {
+      var L = list[i];
+      if (Math.sqrt(L.km2) * kp < LAKE_LABEL_PX) break;
+      if (!L.name || L.lon === undefined) continue;
+      var p = projectLL(L.lon, L.lat);
+      if (!p || (!flat && p[2] < 0.3) || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
+      var lnm = lakeNameL(L.name), w = ctx.measureText(lnm).width, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6, 0);
+      if (!insideView(box) || collides(placed, box)) continue;
+      placed.push(box);
+      ctx.strokeText(lnm, p[0], p[1]); ctx.fillText(lnm, p[0], p[1]);
+    }
+    ctx.letterSpacing = "0px";
+    ctx.restore();
+  }
+  function riverLabelRank(S) { return S < 650 ? 0 : S < 1100 ? 2 : S < 2000 ? 4 : 6; }
+  function riverNames() {
+    if (!rivers) return [];
+    if (!geog) return rivers.names;
+    var k = stateOf(geog.riverTimes);
+    if (riverNameState.key === k && riverNameState.base === rivers) return riverNameState.list;
+    var named = new Map();
+    rivers.names.forEach(function (e) { named.set(e.name, { name: e.name, r: e.r, lines: e.lines }); });
+    geog.riverAdd.forEach(function (r) {
+      if (!r.name || !r.spans.some(function (s) { return inSpan(s[0], s[1]); })) return;
+      var e = named.get(r.name);
+      if (e) named.set(r.name, { name: e.name, r: Math.min(e.r, r.rank), lines: e.lines.concat([r.line]) });
+      else named.set(r.name, { name: r.name, r: r.rank, lines: [r.line] });
+    });
+    var list = Array.from(named.values()).sort(function (a, b) { return a.r - b.r; });
+    riverNameState = { key: k, base: rivers, list: list };
+    return list;
+  }
+  var riverNameState = { key: null, base: null, list: [] };
+  var glyphSizes = new Map();
+  function charWidth(font, ch) {
+    var k = font + "|" + ch, w = glyphSizes.get(k);
+    if (w == null) { ctx.font = font; w = ctx.measureText(ch).width; glyphSizes.set(k, w); }
+    return w;
+  }
+  function lineKm(L) {
+    if (L.km) return L.km;
+    var km = new Float64Array(L.n);
+    for (var k = 1; k < L.n; k++) {
+      var d = L.x[k] * L.x[k - 1] + L.y[k] * L.y[k - 1] + L.z[k] * L.z[k - 1];
+      km[k] = km[k - 1] + Math.acos(Math.max(-1, Math.min(1, d))) * R_KM;
+    }
+    return (L.km = km);
+  }
+  function leafLines(lines, out) {
+    lines.forEach(function (L) { if (L.parts) leafLines(L.parts, out); else out.push(L); });
+    return out;
+  }
+  function linePoint(L, k) {
+    if (flat) { flatArrays(L); return projectLL(L.L[k] / D2R, L.P[k] / D2R); }
+    var x = L.x[k], y = L.y[k], z = L.z[k], d = x * B.cx + y * B.cy + z * B.cz;
+    if (d <= 0) return null;
+    return [cx + B.r * (x * B.ex + y * B.ey + z * B.ez), cy - B.r * (x * B.nx + y * B.ny + z * B.nz), d];
+  }
+  function riverSpan(L, a, b, box) {
+    var km = L.km, lo = 0, hi = L.n - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (km[mid] <= a) lo = mid; else hi = mid; }
+    var pts = [], kms = [];
+    for (var k = lo; k < L.n; k++) {
+      var p = linePoint(L, k);
+      if (!p || (!flat && p[2] <= 0.05) || p[0] < box[0] || p[0] > box[2] || p[1] < box[1] || p[1] > box[3]) return null;
+      if (pts.length && Math.abs(p[0] - pts[pts.length - 1][0]) > W / 2) return null;
+      pts.push([p[0], p[1]]); kms.push(km[k]);
+      if (km[k] >= b) break;
+    }
+    if (pts.length < 2 || kms[kms.length - 1] < b || kms[0] > a) return null;
+    return smoothRun(pts, kms);
+  }
+  function smoothRun(pts, kms) {
+    var step = 2, res = [pts[0]], rk = [kms[0]];
+    for (var k = 1; k < pts.length; k++) {
+      var d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]), m = Math.max(1, Math.ceil(d / step));
+      for (var j = 1; j <= m; j++) {
+        var t = j / m;
+        res.push([pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * t, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t]);
+        rk.push(kms[k - 1] + (kms[k] - kms[k - 1]) * t);
+      }
+    }
+    var w = 7, out = [], cum = [0];
+    for (k = 0; k < res.length; k++) {
+      var sx = 0, sy = 0, c = 0;
+      for (j = Math.max(0, k - w); j <= Math.min(res.length - 1, k + w); j++) { sx += res[j][0]; sy += res[j][1]; c++; }
+      out.push([sx / c, sy / c]);
+      if (k) cum.push(cum[k - 1] + Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]));
+    }
+    return { pts: out, cum: cum, km: rk, len: cum[cum.length - 1] };
+  }
+  function runPx(run, km) {
+    var lo = 0, hi = run.km.length - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (run.km[mid] <= km) lo = mid; else hi = mid; }
+    var t = run.km[hi] > run.km[lo] ? (km - run.km[lo]) / (run.km[hi] - run.km[lo]) : 0;
+    return run.cum[lo] + (run.cum[hi] - run.cum[lo]) * Math.max(0, Math.min(1, t));
+  }
+  function pointAt(run, s) {
+    var cum = run.cum, pts = run.pts, lo = 0, hi = cum.length - 1;
+    s = Math.max(0, Math.min(run.len, s));
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (cum[mid] <= s) lo = mid; else hi = mid; }
+    var seg = cum[hi] - cum[lo] || 1, t = (s - cum[lo]) / seg;
+    return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * t, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * t];
+  }
+  function glyphsAt(run, s0, ws, sp, tw, f) {
+    if (s0 < 0 || s0 + tw > run.len) return null;
+    var a = pointAt(run, s0), b = pointAt(run, s0 + tw), back = b[0] < a[0];
+    var glyphs = [], turn = 0, d = 0, prev = null;
+    for (var j = 0; j < ws.length; j++) {
+      var mid = d + ws[j] / 2, s = back ? s0 + tw - mid : s0 + mid;
+      var p = pointAt(run, s), q1 = pointAt(run, s - f * 0.7), q2 = pointAt(run, s + f * 0.7);
+      var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
+      if (prev !== null) {
+        var da = Math.abs(ang - prev); da = Math.min(da, TAU - da);
+        if (da > 0.6) return null;
+        turn += da;
+      }
+      prev = ang;
+      glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
+      d += ws[j] + sp;
+    }
+    return turn < 1.6 ? { glyphs: glyphs, turn: turn } : null;
+  }
+  function glyphBox(glyphs, f) {
+    var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
+    glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
+    return mkBox((gx0 + gx1) / 2, (gy0 + gy1) / 2, (gx1 - gx0) / 2 + f * 0.6, (gy1 - gy0) / 2 + f * 0.6, 0);
+  }
+  function vecAt(L, km) {
+    var k = 0;
+    while (k < L.n - 2 && L.km[k + 1] < km) k++;
+    var t = L.km[k + 1] > L.km[k] ? Math.max(0, Math.min(1, (km - L.km[k]) / (L.km[k + 1] - L.km[k]))) : 0;
+    return [L.x[k] + (L.x[k + 1] - L.x[k]) * t, L.y[k] + (L.y[k + 1] - L.y[k]) * t, L.z[k] + (L.z[k + 1] - L.z[k]) * t];
+  }
+  function nearestOn(leaves, v) {
+    var best = null, bestDot = -2;
+    for (var li = 0; li < leaves.length; li++) {
+      var L = leaves[li];
+      lineKm(L);
+      for (var k = 0; k < L.n; k++) {
+        var d = L.x[k] * v[0] + L.y[k] * v[1] + L.z[k] * v[2];
+        if (d > bestDot) { bestDot = d; best = { li: li, ckm: L.km[k] }; }
+      }
+    }
+    return best;
+  }
+  var riverPick = new Map();
+  function riverSpot(rv, ws, sp, tw, f, box, kp, placed) {
+    var leaves = leafLines(rv.lines, []), textKm = tw / kp, half = textKm * 0.7, step = textKm * 0.5;
+    var key = rv.name, was = riverPick.get(key), sig = leaves.length;
+    function at(li, c) {
+      var L = leaves[li];
+      if (!L) return null;
+      lineKm(L);
+      if (c + half > L.km[L.n - 1]) return null;
+      var run = riverSpan(L, c - half, c + half, box);
+      if (!run) return null;
+      var g = glyphsAt(run, runPx(run, c) - tw / 2, ws, sp, tw, f);
+      if (!g) return null;
+      g.box = glyphBox(g.glyphs, f);
+      if (collides(placed, g.box)) return null;
+      g.li = li; g.ckm = c; g.c = pointAt(run, runPx(run, c));
+      return g;
+    }
+    if (was && was.sig !== sig && was.v) {
+      var moved = nearestOn(leaves, was.v);
+      if (moved) { was = { sig: sig, li: moved.li, ckm: moved.ckm, step: was.step, v: was.v }; riverPick.set(key, was); }
+    }
+    if (moving) return was && was.sig === sig ? at(was.li, was.ckm) : null;
+    if (was && was.sig === sig && was.step > step * 0.8 && was.step < step * 1.25) {
+      var keep = at(was.li, was.ckm);
+      if (keep) return keep;
+    }
+    var best = null, mx = (box[0] + box[2]) / 2, my = (box[1] + box[3]) / 2, diag = Math.hypot(box[2] - box[0], box[3] - box[1]);
+    for (var li = 0; li < leaves.length; li++) {
+      var L = leaves[li];
+      if (flat ? !featureInFlat(L) : !featureInFront(L)) continue;
+      lineKm(L);
+      var count = Math.floor(L.km[L.n - 1] / step);
+      for (var m = 0; m < count; m++) {
+        var g = at(li, (m + 0.5) * step);
+        if (!g) continue;
+        g.score = g.turn + Math.hypot(g.c[0] - mx, g.c[1] - my) / diag;
+        if (!best || g.score < best.score) best = g;
+      }
+    }
+    if (best) riverPick.set(key, { sig: sig, li: best.li, ckm: best.ckm, step: step, v: vecAt(leaves[best.li], best.ckm) });
+    return best;
+  }
+  function drawRiverLabels(placed, S) {
+    var top = Math.min(riverLabelRank(S), riverRank(S));
+    if (!layers.water || !rivers || !top || clamp01((S - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)) < 0.6) return;
+    var f = 11.5, font = "italic 400 " + f + "px " + SERIF, box = [4, 4, W - 4, H - 4], shown = 0, kp = kmPx(), list = riverNames();
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    for (var i = 0; i < list.length && shown < 40; i++) {
+      var rv = list[i];
+      if (rv.r > top) break;
+      var chars = Array.from((PL.river && PL.river[rv.name]) || rv.name), sp = f * 0.06, ws = [], tw = 0;
+      for (var j = 0; j < chars.length; j++) { ws.push(charWidth(font, chars[j])); tw += ws[j] + (j ? sp : 0); }
+      var spot = riverSpot(rv, ws, sp, tw, f, box, kp, placed);
+      if (!spot || !insideMap(spot.box)) continue;
+      placed.push(spot.box);
+      shown++;
+      ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"] || pal.river;
+      for (j = 0; j < spot.glyphs.length; j++) {
+        if (chars[j] === " ") continue;
+        var g = spot.glyphs[j];
+        ctx.save();
+        ctx.translate(g[0], g[1]); ctx.rotate(g[2]);
+        ctx.strokeText(chars[j], 0, 0); ctx.fillText(chars[j], 0, 0);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
   }
   function capitalAt(c, day) {
     var m = c[4];
@@ -3490,6 +3770,7 @@
   }
   function cityHidden(c, t) { return !!(c && edits.cityN && editAt("city-hide", c.id, t)); }
   // A city's name at t: a city-name edit's, or its own of the time.
+  function cityShownNameL(c, t) { var n = cityShownName(c, t); return placeNameL(n, n === c.name ? c.qid : null); }
   function cityShownName(c, t) {
     var v = edits.cityN ? editAt("city-name", c.id, t) : null;
     return v ? v.name : namedAt(c.steps, c.name, t);
@@ -3521,6 +3802,7 @@
     cityNearCache.set(key, best);
     return best;
   }
+  function capitalNameL(c) { var city = cityNear(c[1], c[2], c[0]), n = capitalName(c); return placeNameL(n, city && n === city.name ? city.qid : null); }
   function capitalName(c) {
     var city = cityNear(c[1], c[2], c[0]), v = city && edits.cityN ? editAt("city-name", city.id, now) : null;
     if (v) return v.name;
@@ -3557,10 +3839,13 @@
       if (!c || seen.has(p.id)) continue;
       seen.add(p.id);
       var pt = projectLL(c[1], c[2]);
-      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalName(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]), ll: [c[1], c[2]] });
+      if (pt && pt[2] >= 0.25 && !cityHidden(b ? b.city : cityNear(c[1], c[2], c[0]), now)) out.push({ pt: pt, name: capitalNameL(c), id: p.id, cap: b ? b.p.cap : p.cap, city: b ? b.city : cityNear(c[1], c[2], c[0]), ll: [c[1], c[2]] });
     }
     return out;
   }
+  // The marks are UCHRONIA's (22 November 2026, at Noah's asking): capitals, cities, and towns 30% larger than before, and a
+  // town's dot in the cities' ink.
+  var MARK_BIG = 1.3;
   function drawMark(p, k, kind, sel) {
     var x = p[0], y = p[1];
     ctx.fillStyle = pal["city-halo"];
@@ -3571,15 +3856,16 @@
       ctx.beginPath(); ctx.arc(x, y, R * 0.45, 0, TAU); ctx.fillStyle = pal.select; ctx.fill();
       return;
     }
+    k *= MARK_BIG;
     if (kind === 0) {
       ctx.beginPath(); ctx.arc(x, y, 4.3 * k, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, 3.2 * k, 0, TAU); ctx.strokeStyle = pal.city; ctx.lineWidth = 0.85 * MARK_BIG; ctx.stroke();
       ctx.beginPath(); ctx.arc(x, y, 1.35 * k, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
       return;
     }
     var r = kind === 1 ? 1.85 * k : 1.4 * k;
     ctx.beginPath(); ctx.arc(x, y, r + 1, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = kind === 1 ? pal.city : pal.town; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = pal.city; ctx.fill();
   }
   var CITY_STYLE = [
     { size: 12.4, font: "400 ", ls: 0.2, ink: "city", halo: 2.4 },
@@ -3589,7 +3875,7 @@
   function placeOne(placed, p, name, k, kind, held, ref, sel) {
     if (!sel && !(kind === 0 ? layers.capitals : layers.cities)) return false;
     var st = CITY_STYLE[kind], size = st.size * (k > 1 ? 1.05 : 1) * (sel ? 1.4 : 1);
-    var rm = (sel ? (kind === 0 ? 4.3 : kind === 1 ? 3.4 : 3) + 2.2 : kind === 0 ? 4.3 : kind === 1 ? 2.85 : 2.4) * k, h = size * 0.86, gap = rm + 3;
+    var rm = sel ? ((kind === 0 ? 4.3 : kind === 1 ? 3.4 : 3) + 2.2) * k : kind === 0 ? 4.3 * MARK_BIG * k : (kind === 1 ? 1.85 : 1.4) * MARK_BIG * k + 1, h = size * 0.86, gap = rm + 3;
     var mark = held ? null : { x: p[0] - rm, y: p[1] - rm, w: 2 * rm, h: 2 * rm };
     if (mark && !sel && (!insideView(mark) || collides(placed, mark))) return false;
     ctx.font = (sel ? "600 " : st.font) + size.toFixed(2) + "px " + SERIF;
@@ -3619,13 +3905,13 @@
     var add = function (q, r) { placed.push({ x: q[0] - r, y: q[1] - r, w: 2 * r, h: 2 * r, res: true }); };
     if (current && layers.capitals) {
       var caps = capitalList(current, S);
-      for (i = 0; i < caps.length; i++) add(caps[i].pt, 4.3 * k + 1);
+      for (i = 0; i < caps.length; i++) add(caps[i].pt, 4.3 * MARK_BIG * k + 1);
     }
     if (cities && layers.cities) {
       var list = cityRanked(now);
       for (i = 0; i < list.length && list[i].tier <= 1; i++) {
         pt = projectLL(list[i].c.lon, list[i].c.lat);
-        if (pt && pt[2] >= 0.25) add(pt, 2.85 * k + 1);
+        if (pt && pt[2] >= 0.25) add(pt, 1.85 * MARK_BIG * k + 2);
       }
     }
   }
@@ -3655,7 +3941,7 @@
         var c = list[i].c;
         if (capCity.has(c) || isSel(c, null)) continue;
         var p = projectLL(c.lon, c.lat);
-        if (p && p[2] >= 0.25) placeOne(placed, p, cityShownName(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
+        if (p && p[2] >= 0.25) placeOne(placed, p, cityShownNameL(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
       }
     }
     ctx.letterSpacing = "0px";
@@ -4079,7 +4365,7 @@
   function divText(name, f) {
     var key = name + "|" + f.toFixed(1), hit = divMeasure.get(key);
     if (hit) return hit;
-    var text = name.toUpperCase(), opts = [{ lines: [text], w: ctx.measureText(text).width }];
+    var text = name.toLocaleUpperCase(LANG), opts = [{ lines: [text], w: ctx.measureText(text).width }];
     for (var c = text.indexOf(" "); c > 0; c = text.indexOf(" ", c + 1)) {
       var a = text.slice(0, c), b = text.slice(c + 1);
       opts.push({ lines: [a, b], w: Math.max(ctx.measureText(a).width, ctx.measureText(b).width) });
@@ -4100,7 +4386,7 @@
         var f = Math.round(2 * Math.max(8, Math.min(11, 7 + Math.max(lab[2], lab[6]) * kp / 14))) / 2, sp = f * 0.2, lh = f * 1.15;
         ctx.font = "400 " + f.toFixed(1) + "px " + SERIF;
         ctx.letterSpacing = sp.toFixed(2) + "px";
-        var opts = divText(row[0], f), got = null;
+        var opts = divText(divNameL(reg.key, row[0]), f), got = null;
         for (var c = 0; c < 2 && !got; c++) {
           var lon = c ? lab[5] : lab[0], rad = (c ? lab[6] : lab[2]) * kp, half = (c ? lab[7] : lab[3]) * kp * 0.95;
           for (var q = 0; q < Math.min(2, opts.length) && !got; q++) {
@@ -4183,7 +4469,7 @@
     divCardKey = key;
     var name = !card.hidden && layers.subdivisions ? divisionAt(divClick, selected) : null;
     var country = ($("card-name") || {}).textContent || "";
-    var text = name ? "You clicked on " + name + (country && country !== name ? " within " + country : "") + "." : "";
+    var text = name ? (country && country !== name ? T("You clicked on {name} within {country}.", { name: name, country: country }) : T("You clicked on {name}.", { name: name })) : "";
     var shown = text + "|" + (name ? askYear() + "|" + selected : "");
     if (shown === divShown) return;
     divShown = shown;
@@ -4194,12 +4480,12 @@
   }
   function loadingDots(el, live) {
     var dots = 3;
-    el.textContent = "Loading...";
+    el.textContent = T("Loading") + "...";
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return 0;
     var tick = setInterval(function () {
       if (!live()) { clearInterval(tick); return; }
       dots = dots % 3 + 1;
-      el.textContent = "Loading" + ".".repeat(dots);
+      el.textContent = T("Loading") + ".".repeat(dots);
     }, 450);
     return tick;
   }
@@ -4224,7 +4510,7 @@
         out.classList.remove("is-writing", "is-quiet");
         if (t) { out.textContent = t; return; }
         out.hidden = true;
-        if (blurbStop) blurbStopShow(by); else by.textContent = "The note could not be written just now.";
+        if (blurbStop) blurbStopShow(by); else by.textContent = T("The note could not be written just now.");
         by.hidden = false;
       });
     };
@@ -4234,7 +4520,7 @@
     var b = document.createElement("button");
     b.type = "button";
     b.className = "ch-wiki-ask";
-    b.textContent = "Write about " + name + " in " + fmtYear(y);
+    b.textContent = T("Write about {name} in {year}", { name: name, year: fmtYear(y) });
     b.addEventListener("click", function () { if (ask === divNoteAsk) show(blurbFetch(q)); });
     by.appendChild(b);
     by.hidden = false;
@@ -4508,8 +4794,15 @@
   }
   var tip = $("tip");
   function claimNames(ids) {
-    var n = ids.map(polityName);
-    return n.length < 3 ? n.join(" and ") : n.slice(0, -1).join(", ") + ", and " + n[n.length - 1];
+    var n = ids.map(polityNameL);
+    return n.length < 3 ? n.join(T(" and ")) : n.slice(0, -1).join(T(", ")) + T(", and ") + n[n.length - 1];
+  }
+  function addTpl(el, tpl, vals) {
+    tpl.split(/(\{\w+\})/).forEach(function (part) {
+      var m = /^\{(\w+)\}$/.exec(part), v = m ? vals[m[1]] : part;
+      if (v == null || v === "") return;
+      el.appendChild(typeof v === "string" || typeof v === "number" ? document.createTextNode(String(v)) : v);
+    });
   }
   var stripeCache = new Map();
   var stripeAnchor = null, stripeT = [0, 0], stripeNow = [0, 0];
@@ -4566,8 +4859,8 @@
   }
   function showTip(x, y, p) {
     var dv = layers.subdivisions ? divisionAt(lonLatAt(x, y), p.id) : null;
-    setTip(dv ? "region" : p.people ? null : "flag", dv ? dv + ", " + polityName(p.id) : polityName(p.id));
-    var sub = p.claims ? (polityName(p.id) === "Disputed land" ? "between " : "disputed between ") + claimNames(p.claims) + (p.ruler >= 0 ? ", held by " + polityName(p.ruler) : "") : p.ruler >= 0 ? "held by " + polityName(p.ruler) + (p.member >= 0 && p.member !== p.id ? ", " + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? "bands with no fixed borders" : p.people ? "a people or culture" : "";
+    setTip(dv ? "region" : p.people ? null : "flag", dv ? divNameL(divAtReg, dv) + T(", ") + polityNameL(p.id) : polityNameL(p.id));
+    var sub = p.claims ? T(polityName(p.id) === "Disputed land" ? "between {names}" : "disputed between {names}", { names: claimNames(p.claims) }) + (p.ruler >= 0 ? T(", held by {name}", { name: polityNameL(p.ruler) }) : "") : p.ruler >= 0 ? T("held by {name}", { name: polityNameL(p.ruler) }) + (p.member >= 0 && p.member !== p.id ? T(", ") + inGroup(p.member) : "") : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : p.band ? T("bands with no fixed borders") : p.people ? T("a people or culture") : "";
     var held = controlAt(lonLatAt(x, y));
     if (held) sub = (sub ? sub + " | " : "") + held;
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
@@ -4613,8 +4906,8 @@
   }
   function showCityTip(x, y, l) {
     var ref = cityRef(l), c = cityFacts(ref), st = cityState(ref);
-    setTip(l.kind === "capital" ? "capital" : "city", st ? c.name + ", " + polityName(st.id) : c.name);
-    var sub = c.modern !== c.name ? "now " + c.modern : "";
+    setTip(l.kind === "capital" ? "capital" : "city", st ? placeNameL(c.name, ref.qid) + T(", ") + polityNameL(st.id) : placeNameL(c.name, ref.qid));
+    var sub = c.modern !== c.name ? T("now {name}", { name: placeNameL(c.modern, ref.qid) }) : "";
     if (sub) { var s = document.createElement("small"); s.textContent = sub; tip.appendChild(s); }
     tip.hidden = false;
     var w = tip.offsetWidth;
@@ -4622,25 +4915,29 @@
     tip.style.top = y + "px";
   }
 
-  function fmtYear(y) {
-    if (y < 0) return -y + " BC";
-    if (y < 1000) return "AD " + y;
-    return String(y);
-  }
+  function eraYear(y) { return y < 0 ? T("{y} BC", { y: -y }) : y < 1000 ? T("AD {y}", { y: y }) : String(y); }
+  function fmtYear(y) { return T("@year", { y: eraYear(y) }); }
+  function monthYear(y, m) { return T("@my", { month: MONTHS_L[m - 1], m: m, y: y > 0 ? String(y) : eraYear(y) }); }
   // Month, day, year ("August 23, 1815"), as the date's frame writes it.
-  function fmtMDY(y, m, d) { return MONTHS[m - 1] + " " + d + ", " + (y > 0 ? y : fmtYear(y)); }
+  function fmtMDY(y, m, d) { return T("@mdy", { month: MONTHS_G[m - 1], m: m, d: d, y: y > 0 ? String(y) : eraYear(y) }); }
   function fmtDay(day) { var d = dateOfDay(day); return fmtMDY(d[0], d[1], d[2]); }
   function fmtDate(day) { return fmtDay(day); }
   function dayYear(day) { var d = dateOfDay(day); return d[0] + ((d[1] - 1) * 30.44 + d[2] - 0.5) / 366; }
   function fmtNow(t) {
-    if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? MONTHS[ctlMonth - 1] + " " + (ry > 0 ? ry : fmtYear(ry)) : fmtYear(ry); }
+    if (!isMonthly(t)) { var ry = Math.round(t); return ctlMonth && layers.control ? monthYear(ry, ctlMonth) : fmtYear(ry); }
     var d = dateOfDay(dayOfTime(t));
-    return d[2] === MID_DAY ? MONTHS[d[1] - 1] + " " + d[0] : fmtMDY(d[0], d[1], d[2]);
+    return d[2] === MID_DAY ? monthYear(d[0], d[1]) : fmtMDY(d[0], d[1], d[2]);
   }
   // Where the date's field is too narrow for the month's name (on a phone, between the buttons), it is cut to three letters.
   var fitCtx = null, fitBox = null, fitWatch = false;
   function fitDate(text) {
-    var m = /^([A-Z][a-z]+)( .+)$/.exec(text), el = $("year-input");
+    var m = LANG === "en" ? /^([A-Z][a-z]+)( .+)$/.exec(text) : null, el = $("year-input");
+    if (LANG !== "en") {
+      var k = -1, full = "";
+      for (var q = 0; q < 12 && k < 0; q++) [MONTHS_G[q], MONTHS_L[q]].forEach(function (nm) { if (k < 0 && nm.length > 4 && text.indexOf(nm) >= 0) { k = q; full = nm; } });
+      if (k < 0 || !el) return text;
+      m = [text, full, text.replace(full, "\u0000")];
+    }
     if (!m || m[1].length <= 3 || !el) return text;
     // The box's font and room are read once and again when its size changes, not at each date: reading them makes the
     // browser lay the page out there and then, twice for every date the marker is dragged through.
@@ -4668,6 +4965,7 @@
       return fit;
     };
     if (fits(text)) return text;
+    if (LANG !== "en") { var cut = m[2].replace("\u0000", (L10N["@monthsShort"] || [])[k] || m[1].slice(0, 3) + "."); return cut; }
     // Three letters for the month, and on the narrowest phones no comma either ("Sep 23 1866").
     var short = m[1].slice(0, 3) + m[2];
     return fits(short) ? short : short.replace(",", "");
@@ -4680,7 +4978,8 @@
   }
   function monthIndex(word) {
     var w = word.toLowerCase();
-    for (var i = 0; i < 12; i++) if (MONTHS[i].toLowerCase().indexOf(w) === 0 && w.length >= 3) return i + 1;
+    if (w.length < 3) return 0;
+    for (var i = 0; i < 12; i++) if (MONTHS[i].toLowerCase().indexOf(w) === 0 || MONTHS_L[i].toLowerCase().indexOf(w) === 0 || MONTHS_G[i].toLowerCase().indexOf(w) === 0) return i + 1;
     return 0;
   }
   function modernTime(y, m, d) {
@@ -4694,7 +4993,14 @@
   // cannot), 4.7.1000 (with dots the day comes first unless it cannot), and any of them with BC, BCE, AD, or CE, or "c." for
   // circa. Months are named by three letters or more. A day the month does not have is not a date.
   function parseDate(s) {
-    var t = String(s || "").toLowerCase().trim().replace(/(\d)(b\.?c|a\.?d|c\.?e)\b/g, "$1 $2");
+    var t = String(s || "").toLowerCase().trim();
+    if (LANG !== "en") {
+      (L10N["@bcWords"] || []).forEach(function (w) { if (t.indexOf(w) >= 0) t = t.replace(w, " ") + " bc"; });
+      (L10N["@adWords"] || []).forEach(function (w) { t = t.replace(w, " "); });
+      (L10N["@fillers"] || []).forEach(function (w) { t = t.replace(new RegExp("(^|\\s)" + w + "(?=\\s|$)", "g"), " "); });
+      t = t.replace(/(\d+)\s*[年년]\s*(\d+)\s*[月월]\s*(\d+)\s*[日일]?/, "$1-$2-$3").replace(/(\d+)\s*[年년]\s*(\d+)\s*[月월]/, "$1-$2").replace(/(\d+)\s*[年년]/, "$1").replace(/(\d)\s*\.(?=\s|$)/g, "$1").replace(/(\p{L})\./gu, "$1").trim();
+    }
+    t = t.replace(/(\d)(b\.?c|a\.?d|c\.?e)\b/g, "$1 $2");
     var era = /\b(?:b\.?\s*c|a\.?\s*d|c\.?\s*e)\b/.test(t), bc = /\bb\.?\s*c\.?(?:\s*e\.?)?(?=\s|$|\d|,)/.test(t) || /(?:^|\s)b\.?c\.?(?:e\.?)?$/.test(t);
     t = t.replace(/\bb\.?\s*c\.?(?:\s*e\.?)?(?=\s|$|\d|,)/g, " ").replace(/\b(?:a\.?\s*d|c\.?\s*e)\.?(?=\s|$|\d|,)/g, " ");
     t = t.replace(/^\s*(?:c\.|ca\.?|circa)\s*/, " ").replace(/\b(?:the|of)\b/g, " ");
@@ -4711,7 +5017,7 @@
       var parts = t.split(" ").filter(Boolean), nums = [], names = [];
       for (var i = 0; i < parts.length; i++) {
         if (/^-?\d{1,4}$/.test(parts[i])) nums.push(parts[i]);
-        else if (/^[a-z]+$/.test(parts[i]) && monthIndex(parts[i])) names.push(monthIndex(parts[i]));
+        else if (/^\p{L}+$/u.test(parts[i]) && monthIndex(parts[i])) names.push(monthIndex(parts[i]));
         else return null;
       }
       if (names.length > 1 || !nums.length || nums.length > 2 || (!names.length && nums.length > 1)) return null;
@@ -4832,7 +5138,7 @@
       add(y === 0 ? 1 : y, major ? "is-major" : "");
       if (!major) continue;
       var lab = document.createElement("span");
-      lab.textContent = y === 0 ? "AD 1" : y < 0 ? fmtYear(y) : String(y);
+      lab.textContent = y === 0 ? fmtYear(1) : y < 0 ? fmtYear(y) : String(y);
       lab.style.left = at(y === 0 ? 1 : y);
       if (y <= FIRST_T) lab.className = "is-first";
       // A label too near the end of the timeline to be centred on its tick ends at the tick instead.
@@ -4868,7 +5174,7 @@
   function loadEvents() {
     if (tlEventsLoad) return;
     tlEventsLoad = fetchJSON("data/timeline-events.json").then(function (d) {
-      tlEvents = (d.events || []).map(function (e) { var t = eventTime(e[0]); return { d: e[0], t: t, name: String(e[1]), rank: +e[2] || 3 }; })
+      tlEvents = (d.events || []).map(function (e) { var t = eventTime(e[0]); return { d: e[0], t: t, name: T(String(e[1])), rank: +e[2] || 3 }; })
         .filter(function (e) { return e.t !== null && e.t >= FIRST_T && e.t <= lastT(); });
       placeEvents();
     }).catch(function (e) { console.warn("timeline events", e); });
@@ -4928,15 +5234,15 @@
     if (markPart) showMark(markPart);
     if (isModern(now)) {
       var day = dayOfTime(now), since = modern.changes[changeBefore(Math.min(day, modern.toDay))];
-      if (!current || !current.modern) asof.textContent = "Loading the borders";
-      else if (day > modern.toDay) asof.textContent = "The latest borders, of " + dateOfDay(modern.toDay)[0];
-      else asof.textContent = "Borders since " + fmtDay(since);
+      if (!current || !current.modern) asof.textContent = T("Loading the borders");
+      else if (day > modern.toDay) asof.textContent = T("The latest borders, of {year}", { year: fmtYear(dateOfDay(modern.toDay)[0]) });
+      else asof.textContent = T("Borders since {date}", { date: fmtDay(since) });
     } else if (isDated(now)) {
       var dc = dated.times[datedChangeBefore(now)];
-      asof.textContent = !current || !current.dated || wantKey !== "e" + now ? "Loading the borders" : "Borders since " + (dc >= DAYS_FROM ? fmtDay(dayOfTime(dc)) : fmtYear(Math.floor(dc)));
+      asof.textContent = !current || !current.dated || wantKey !== "e" + now ? T("Loading the borders") : T("Borders since {date}", { date: dc >= DAYS_FROM ? fmtDay(dayOfTime(dc)) : fmtYear(Math.floor(dc)) });
     } else if (maps.length) {
       var m = maps[mapIndexFor(now)];
-      asof.textContent = !current || current.year !== m.y ? "Loading the map of " + fmtYear(m.y) : "Borders from the map of " + fmtYear(m.y);
+      asof.textContent = !current || current.year !== m.y ? T("Loading the map of {year}", { year: fmtYear(m.y) }) : T("Borders from the map of {year}", { year: fmtYear(m.y) });
     }
     markCurrentTick();
     syncKey();
@@ -4994,7 +5300,7 @@
           });
         }).catch(function (e) {
           console.warn("modern", e);
-          asof.textContent = "The borders of " + fmtNow(t) + " could not be loaded";
+          asof.textContent = T("The borders of {date} could not be loaded", { date: fmtNow(t) });
         });
         scheduleRender(true);
         return;
@@ -5033,7 +5339,7 @@
         });
       }).catch(function (e) {
         console.warn("dated", e);
-        asof.textContent = "The borders of " + fmtYear(t) + " could not be loaded";
+        asof.textContent = T("The borders of {date} could not be loaded", { date: fmtYear(t) });
       });
       scheduleRender(true);
       return;
@@ -5051,7 +5357,7 @@
       if (mi < maps.length - 1) loadMap(mi + 1).catch(function () {});
     }).catch(function (e) {
       console.warn("map", e);
-      asof.textContent = "The map of " + fmtYear(maps[mi].y) + " could not be loaded";
+      asof.textContent = T("The map of {year} could not be loaded", { year: fmtYear(maps[mi].y) });
     });
     scheduleRender(true);
   }
@@ -5114,12 +5420,12 @@
   }
   // The month buttons step by the month from 1648, and before that only through a war's months.
   function syncSpin() {
-    var fine = isMonthly(now) || ctlFineYear(Math.round(now)), tip = fine ? "" : "By the month from 1648 CE";
+    var fine = isMonthly(now) || ctlFineYear(Math.round(now)), tip = fine ? "" : T("By the month from {year}", { year: fmtYear(1648) });
     ["month-up", "month-down"].forEach(function (id) {
       var b = $(id);
       b.classList.toggle("is-off", !fine);
       b.setAttribute("aria-disabled", fine ? "false" : "true");
-      b.setAttribute("data-tip", tip || (id === "month-up" ? "Forward a month (→)" : "Back a month (←)"));
+      b.setAttribute("data-tip", tip || (id === "month-up" ? T("Forward a month (→)") : T("Back a month (←)")));
     });
   }
   // While the marker is dragged, the map follows it, drawn quickly (rangeActive) until it is let go
@@ -5251,6 +5557,7 @@
   $("track").addEventListener("pointerup", endSwipe);
   $("track").addEventListener("pointercancel", endSwipe);
   range.addEventListener("keydown", function (e) {
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       stopPlay();
@@ -5275,12 +5582,12 @@
     if (t === null) {
       var typed = String(yearInput.value).trim();
       yearInput.value = fitDate(fmtNow(now));
-      if (typed && typed !== yearInput.value) yearHint("No date in “" + (typed.length > 24 ? typed.slice(0, 23) + "…" : typed) + "”. Try 1815, July 1815, July 4 1815, 4 July 1815, 1815-07-04, or 500 BC.");
+      if (typed && typed !== yearInput.value) yearHint(T("No date in “{typed}”. Try {examples}.", { typed: typed.length > 24 ? typed.slice(0, 23) + "…" : typed, examples: [fmtYear(1815), monthYear(1815, 7), fmtMDY(1815, 7, 4), "1815-07-04", fmtYear(-500)].join(T(", ")) }));
       return;
     }
     stopPlay();
     if (Math.abs(t - now) > 1e-9) setTime(t); else yearInput.value = fitDate(fmtNow(now));
-    if (p && p[1] && t === p[0]) yearHint("Before " + monthlyFrom() + " the map goes by the year, so this is " + fmtYear(p[0]) + ".");
+    if (p && p[1] && t === p[0]) yearHint(T("Before {from} the map goes by the year, so this is {year}.", { from: fmtYear(monthlyFrom()), year: fmtYear(p[0]) }));
   }
   // A date that cannot be read is put back, and a line under the frame says what the field takes.
   var hintTimer = 0;
@@ -5492,7 +5799,7 @@
     var i = speedIndex(Math.max(SPEED_MIN, Math.min(SPEED_MAX, v)));
     playSpeed = Math.log2(SPEEDS[i]);
     speedOut.textContent = speedText(playSpeed);
-    speedOut.setAttribute("aria-label", "Speed of play: " + (playSpeed === 0 ? "usual speed" : speedText(playSpeed).replace("×", " times the usual speed")));
+    speedOut.setAttribute("aria-label", playSpeed === 0 ? T("Speed of play: usual speed") : T("Speed of play: {x} times the usual speed", { x: speedText(playSpeed).replace("×", "") }));
     $("speed-down").disabled = i === 0;
     $("speed-up").disabled = i === SPEEDS.length - 1;
     if (keep === false) return;
@@ -5503,12 +5810,12 @@
   $("speed-up").addEventListener("click", function () { stepPlaySpeed(1); });
   speedOut.addEventListener("dblclick", function () { setPlaySpeed(0); });
   setPlaySpeed(playSpeed, false);
-  var PLAY_BUTTONS = [["play", "normal", "Play through time"], ["play-back", "back", "Play backwards"]];
+  var PLAY_BUTTONS = [["play", "normal", T("Play through time")], ["play-back", "back", T("Play backwards")]];
   function syncPlayTips() {
     PLAY_BUTTONS.forEach(function (b) {
       var on = playMode === b[1];
       $(b[0]).setAttribute("aria-pressed", on ? "true" : "false");
-      $(b[0]).setAttribute("aria-label", on ? "Pause" : b[2]);
+      $(b[0]).setAttribute("aria-label", on ? T("Pause") : b[2]);
     });
   }
   function syncPlayButtons() {
@@ -5571,7 +5878,7 @@
   function syncLapseBtn() {
     var f = selected >= 0 && !selCity && !card.hidden ? lapseFor(selected) : null;
     $("card-follow").hidden = !f;
-    if (f) $("card-follow-text").textContent = f.tag ? "Follow " + f.tag + " through time" : "Follow it through time";
+    if (f) $("card-follow-text").textContent = f.tag ? T("Follow {name} through time", { name: f.tag }) : T("Follow it through time");
   }
   $("card-follow-btn").addEventListener("click", function () { if (selected >= 0) startLapse(selected); });
   function lapseTime(y, first) {
@@ -5638,7 +5945,8 @@
   function lapseAim(snap) {
     var box = lapseBox(snap);
     lapse.gap = !box;
-    var name = box ? polityName(box.id) : "Not on the map";
+    var name = box ? polityNameL(box.id) : T("Not on the map");
+
     if (name !== lapse.name) { lapse.name = name; $("follow-name").textContent = name; }
     if (!box) return;
     lapse.lastId = box.id;
@@ -5712,7 +6020,7 @@
     closeCard();
     lapse = { f: f, startT: lapseTime(f.from, true), endT: Math.min(lapseTime(f.to, false), dataEnd()), pace: Math.max(40, Math.min(400, LAPSE_SECONDS * 1000 / (f.to - f.from + 1))),
       key: "", target: null, gap: false, name: "", lastId: id, fly: true, settling: 0, playAt: 0, holdUntil: 0, v: { lon: 0, lat: 0, z: 0 }, last: 0, t0: performance.now(), raf: 0, timer: 0 };
-    $("follow-tag").textContent = f.tag || polityName(id);
+    $("follow-tag").textContent = f.tag || polityNameL(id);
     $("follow-name").textContent = "";
     $("follow").hidden = false;
     placeLapseBar();
@@ -5786,19 +6094,19 @@
   function blurbStopText() {
     if (!blurbStop) return "";
     return blurbStop.error === "cap"
-      ? "CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow."
-      : "You have had " + (blurbStop.cap ? "today’s " + blurbStop.cap : "all of today’s") + " new notes. Notes already written still show, and new ones can be written tomorrow.";
+      ? T("CHRONIA has written all the new notes it can today. Notes already written still show, and new ones can be written tomorrow.")
+      : blurbStop.cap ? T("You have had today’s {n} new notes. Notes already written still show, and new ones can be written tomorrow.", { n: blurbStop.cap }) : T("You have had all of today’s new notes. Notes already written still show, and new ones can be written tomorrow.");
   }
   // The same, in a card's line, with a link to Premium after a reader's own limit (not the site's), for a reader
-  // without it: the link opens the account panel, which offers Premium, or a sign-in first.
+  // without it: the link goes to Premium's page.
   function blurbStopShow(el) {
     el.textContent = blurbStopText();
     if (!blurbStop || blurbStop.error !== "limit" || typeof premium !== "object" || !premium || premium.on || !PREMIUM_LIVE) return;
-    var a = document.createElement("button");
-    a.type = "button";
+    var a = document.createElement("a");
+    a.href = "premium/";
     a.className = "ch-premium-link";
-    a.textContent = "Get CHRONIA Premium for 5× the daily notes";
-    a.addEventListener("click", function (e) { e.stopPropagation(); setAccountOpen(true, false); });
+    a.textContent = T("Get CHRONIA Premium for 5× the daily notes");
+    a.addEventListener("click", function (e) { e.stopPropagation(); });
     el.appendChild(document.createTextNode(" "));
     el.appendChild(a);
   }
@@ -5826,7 +6134,7 @@
   function polityButton(id) {
     var b = document.createElement("button");
     b.type = "button";
-    b.textContent = polityName(id);
+    b.textContent = polityNameL(id);
     b.addEventListener("click", function () { select(id); });
     return b;
   }
@@ -5849,8 +6157,8 @@
   function cityRef(l) {
     var r = l.ref, city = r.city || null;
     var at = r.cap ? capitalNow(r.cap) || (city ? null : capitalAt(r.cap, Math.min(dayOfTime(now), modern.toDay))) : null;
-    if (!at) return { id: city.id, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, until: city.until, of: -1, kind: l.kind };
-    if (city) return { id: city.id, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, until: city.until, of: r.of, kind: l.kind };
+    if (!at) return { id: city.id, qid: city.qid, lon: city.lon, lat: city.lat, modern: city.name, names: city.steps, since: city.since, until: city.until, of: -1, kind: l.kind };
+    if (city) return { id: city.id, qid: city.qid, lon: at[1], lat: at[2], modern: city.name, names: city.steps, since: city.since, until: city.until, of: r.of, kind: l.kind };
     return { lon: at[1], lat: at[2], modern: at[0], names: null, since: null, of: r.of, kind: l.kind };
   }
   function cityFacts(c) {
@@ -5886,21 +6194,19 @@
   }
   function renderCityCard(click) {
     var c = selCity, f = cityFacts(c), p = cityState(c);
-    var datedNow = !!(current && current.dated), byDay = f.modernNow || isMonthly(now), on = datedNow && !byDay ? " in " : " on ";
-    var when = f.modernNow ? fmtDay(f.day) : datedNow ? (byDay ? fmtDay(dayOfTime(now)) : fmtYear(Math.round(now))) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
+    var datedNow = !!(current && current.dated), byDay = f.modernNow || isMonthly(now);
+    var when = f.modernNow ? fmtDay(f.day) : datedNow ? (byDay ? fmtDay(dayOfTime(now)) : fmtYear(Math.round(now))) : current ? fmtYear(current.year) : fmtNow(now);
+    var whenP = !f.modernNow && !datedNow && current ? T("on the map of {year}", { year: when }) : datedNow && !byDay ? T("in {date}", { date: when }) : T("on {date}", { date: when });
     var capAt = p ? polityCap(p) : null, isCap = !!(capAt && Math.abs(capAt[1] - c.lon) < 0.05 && Math.abs(capAt[2] - c.lat) < 0.05);
-    $("card-kind").textContent = isCap ? "Capital" : c.place ? "Place" : c.kind === "town" ? "Town" : "City";
-    $("card-name").textContent = f.name;
+    $("card-kind").textContent = T(isCap ? "Capital" : c.place ? "Place" : c.kind === "town" ? "Town" : "City");
+    $("card-name").textContent = placeNameL(f.name, f.name === c.modern ? c.qid : null);
     var facts = $("card-facts");
     facts.textContent = "";
     var addText = function (t) { facts.appendChild(document.createTextNode(t)); };
-    if (f.modern && f.modern !== f.name) addText("Now " + f.modern + ". ");
-    if (f.early) addText("Not yet founded" + on + when + ". ");
-    else if (p) {
-      addText(isCap ? "Capital of " : "In ");
-      facts.appendChild(polityButton(p.id));
-      addText(on + when + ".");
-    } else addText("In no state" + on + when + ".");
+    if (f.modern && f.modern !== f.name) addText(T("Now {name}.", { name: placeNameL(f.modern, c.qid) }) + " ");
+    if (f.early) addText(T("Not yet founded {when}.", { when: whenP }) + " ");
+    else if (p) addTpl(facts, T(isCap ? "Capital of {state} {when}." : "In {state} {when}.", {}), { state: polityButton(p.id), when: whenP });
+    else addText(T("In no state {when}.", { when: whenP }));
     var y = askYear();
     renderCitySources(c, f, y, f.name);
     loadWiki(f.modern || f.name, f.modern && f.modern !== f.name ? f.name : f.modern || f.name, {
@@ -5917,9 +6223,9 @@
     var e = catalogue[selected], p = current ? current.byId.get(selected) : null;
     var modernNow = !!(current && current.modern), datedNow = !!(current && current.dated);
     var byDay = datedNow && isMonthly(now);
-    var when = modernNow ? fmtDay(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDay(dayOfTime(now)) : datedNow ? fmtYear(Math.round(now)) : current ? "the map of " + fmtYear(current.year) : fmtNow(now);
+    var when = modernNow ? fmtDay(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDay(dayOfTime(now)) : datedNow ? fmtYear(Math.round(now)) : current ? T("the map of {year}", { year: fmtYear(current.year) }) : fmtNow(now);
     var whenYear = modernNow ? dateOfDay(dayOfTime(now))[0] : datedNow ? yearOf(now) : current ? current.year : Math.round(now);
-    $("card-kind").textContent = e[4] ? "People or culture" : p && p.status > 0 ? STATUS[p.status] : p && p.ruler >= 0 ? "Dependency" : "State";
+    $("card-kind").textContent = T(e[4] ? "People or culture" : p && p.status > 0 ? STATUS[p.status] : p && p.ruler >= 0 ? "Dependency" : "State");
     $("card-name").textContent = e[0];
     var facts = $("card-facts"), factsAt = ++factsAsk;
     facts.textContent = "";
@@ -5927,7 +6233,7 @@
     var line = function (label) {
       var el = document.createElement("span");
       el.className = "ch-fact";
-      if (label) { var b = document.createElement("span"); b.className = "ch-fact-label"; b.textContent = label + ": "; el.appendChild(b); }
+      if (label) { var b = document.createElement("span"); b.className = "ch-fact-label"; b.textContent = T("{label}: ", { label: T(label) }); el.appendChild(b); }
       facts.appendChild(el);
       return el;
     };
@@ -5939,18 +6245,18 @@
       b.addEventListener("click", function () { flyTo(lon, lat, Math.max(localScale(), 1500)); });
       line(label).appendChild(b);
     };
-    var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityName(id))); };
+    var addPolity = function (el, id) { if (current.byId.has(id)) el.appendChild(polityButton(id)); else el.appendChild(document.createTextNode(polityNameL(id))); };
     if (p) {
       if (p.claims) {
         var dl = line("Disputed between");
-        p.claims.forEach(function (c, k) { if (k) dl.appendChild(document.createTextNode(k === p.claims.length - 1 ? (p.claims.length > 2 ? ", and " : " and ") : ", ")); addPolity(dl, c); });
+        p.claims.forEach(function (c, k) { if (k) dl.appendChild(document.createTextNode(k === p.claims.length - 1 ? (p.claims.length > 2 ? T(", and ") : T(" and ")) : T(", "))); addPolity(dl, c); });
       }
       if (p.ruler >= 0) addPolity(line("Held by"), p.ruler);
       if (p.part >= 0 && p.part !== p.ruler) addPolity(line("Part of"), p.part);
       var capNow = polityCap(p);
-      if (capNow) placeLine("Capital", capitalName(capNow), capNow[1], capNow[2]);
+      if (capNow) placeLine("Capital", capitalNameL(capNow), capNow[1], capNow[2]);
       var big = !e[4] && !p.people ? largestCity(p) : null;
-      if (big) placeLine("Largest city", cityShownName(big, now), big.lon, big.lat);
+      if (big) placeLine("Largest city", cityShownNameL(big, now), big.lon, big.lat);
       var flagLine = null, langLine = null;
       if (!e[4] && !p.people && !p.claims) {
         flagLine = line("Flag"); flagLine.hidden = true;
@@ -5958,22 +6264,22 @@
       }
       // One line for the span of its borders: "June 9, 1815 to August 23, 1866".
       // "Borders since" while they still stand.
-      if (modernNow) { if (p.end >= 0) textLine("Borders from", fmtDate(p.start) + " to " + fmtDate(p.end)); else textLine("Borders since", fmtDate(p.start)); }
+      if (modernNow) { if (p.end >= 0) textLine("Borders from", T("{from} to {to}", { from: fmtDate(p.start), to: fmtDate(p.end) })); else textLine("Borders since", fmtDate(p.start)); }
       else if (datedNow) {
         var from = p.startDay !== null ? fmtDate(p.startDay) : fmtYear(p.start), until = p.endDay !== null ? fmtDate(p.endDay) : fmtYear(p.end);
         if (from === until) textLine("Borders", from);
-        else textLine("Borders from", from + " to " + until);
+        else textLine("Borders from", T("{from} to {to}", { from: from, to: until }));
       }
-      if (p.band) line("").textContent = "Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.";
-      else if (p.b <= 1 && !p.people) line("").textContent = "Its borders here are approximate.";
-      else if (datedNow && bordersKnown && p.b === 2 && !p.people && !p.claims) line("").textContent = "Its borders are dotted, except where a treaty had fixed the line.";
+      if (p.band) line("").textContent = T("Bands of hunters, gatherers, or fishers, who ranged over this land without fixed borders.");
+      else if (p.b <= 1 && !p.people) line("").textContent = T("Its borders here are approximate.");
+      else if (datedNow && bordersKnown && p.b === 2 && !p.people && !p.claims) line("").textContent = T("Its borders are dotted, except where a treaty had fixed the line.");
       else if (modernNow && current && current.vague && !p.claims) {
         var unsettled = [];
         current.vague.forEach(function (k) { var ab = k.split("|"); if (+ab[0] === p.id && current.byId.has(+ab[1]) && unsettled.indexOf(+ab[1]) < 0) unsettled.push(+ab[1]); });
-        if (unsettled.length) line("").textContent = "Its border" + (unsettled.length > 1 ? "s" : "") + " with " + claimNames(unsettled) + (unsettled.length > 1 ? " were" : " was") + " not yet settled, so " + (unsettled.length > 1 ? "they are" : "it is") + " dotted.";
+        if (unsettled.length) line("").textContent = T(unsettled.length > 1 ? "Its borders with {names} were not yet settled, so they are dotted." : "Its border with {names} was not yet settled, so it is dotted.", { names: claimNames(unsettled) });
       }
     } else {
-      line("").textContent = "Not on the map " + (modernNow || byDay ? "on " : datedNow ? "in " : "of ") + (modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDate(dayOfTime(now)) : when) : current ? fmtYear(current.year) : fmtNow(now)) + ".";
+      line("").textContent = T(modernNow || byDay ? "Not on the map on {date}." : datedNow ? "Not on the map in {date}." : "Not on the map of {date}.", { date: modernNow || datedNow ? (modernNow ? fmtDate(Math.min(dayOfTime(now), modern.toDay)) : byDay ? fmtDate(dayOfTime(now)) : when) : current ? fmtYear(current.year) : fmtNow(now) });
     }
     var title = wikiTitle(selected, whenYear), y = askYear();
     renderSources(p, e[0], whenYear);
@@ -5997,11 +6303,11 @@
         if (!f || factsAt !== factsAsk) return;
         if (f.flag) {
           var im = document.createElement("img");
-          im.className = "ch-flag"; im.alt = "Flag of " + e[0]; im.src = f.flag;
+          im.className = "ch-flag"; im.alt = T("Flag of {name}", { name: e[0] }); im.src = f.flag;
           flagLine.appendChild(im); flagLine.hidden = false;
         }
         if (f.langs.length) {
-          langLine.firstChild.textContent = (f.langs.length > 1 ? "Languages" : "Language") + ": ";
+          langLine.firstChild.textContent = T("{label}: ", { label: T(f.langs.length > 1 ? "Languages" : "Language") });
           langLine.appendChild(document.createTextNode(f.langs.join(", "))); langLine.hidden = false;
         }
       }, function () {});
@@ -6222,12 +6528,13 @@
         var q = snap.polys[j];
         if (!q || q.claims || seen.has(q.id) || !polityName(q.id)) return;
         seen.add(q.id);
-        out.push({ name: polityName(q.id), w: q.label ? q.label[5] : 0 });
+        out.push({ name: polityNameL(q.id), w: q.label ? q.label[5] : 0 });
       });
     });
     return out.sort(function (a, b) { return b.w - a.w; }).slice(0, 10).map(function (x) { return x.name; });
   }
   function blurbFetch(ask, peek) {
+    if (LANG !== "en" && !ask.lang) ask = Object.assign({}, ask, { lang: LANG });
     var k = JSON.stringify(ask), have = blurbCache.get(k);
     if (have) return have;
     var ctl = typeof AbortController === "function" ? new AbortController() : null;
@@ -6361,12 +6668,12 @@
   };
   // A line's text from plain strings and [label, address] pairs, the pairs made into links.
   function srcRich(el, parts) {
-    parts.forEach(function (x) { if (typeof x === "string") el.appendChild(document.createTextNode(x)); else el.appendChild(srcLink(x[1], x[0])); });
+    parts.forEach(function (x) { if (typeof x === "string") el.appendChild(document.createTextNode(T(x))); else el.appendChild(srcLink(x[1], T(x[0]))); });
   }
   // The list's words: "A", "A and B", "A, B, and C".
   function srcList(items) {
     var out = [];
-    items.forEach(function (x, i) { if (i) out.push(i === items.length - 1 ? (items.length > 2 ? ", and " : " and ") : ", "); out.push(x); });
+    items.forEach(function (x, i) { if (i) out.push(i === items.length - 1 ? (items.length > 2 ? T(", and ") : T(" and ")) : T(", ")); out.push(x); });
     return out;
   }
   // The Low Countries, where the coasts and the polders are drawn from their own sources.
@@ -6374,7 +6681,7 @@
   function srcLine(label, cls) {
     var el = document.createElement("p"), b = document.createElement("span");
     el.className = "ch-src-line" + (cls ? " " + cls : "");
-    b.className = "ch-fact-label"; b.textContent = label + ": ";
+    b.className = "ch-fact-label"; b.textContent = T("{label}: ", { label: T(label) });
     el.appendChild(b);
     return el;
   }
@@ -6385,7 +6692,7 @@
     if (!k) { box.hidden = true; return; }
     var B = srcInfo.borders[k[0]], N = srcInfo.name[k[1]], D = srcInfo.dates[k[2]];
     // "The source's own name" names the source: "Cliopatria's own name".
-    var first = srcInfo.sources[B.ids[0]], owner = first ? first.label + (/s$/.test(first.label) ? "’" : "’s") : "The source’s";
+    var first = srcInfo.sources[B.ids[0]], owner = LANG !== "en" ? "The source’s" : first ? first.label + (/s$/.test(first.label) ? "’" : "’s") : "The source’s";
     var own = function (t) { return t.replace(/^The source’s/, owner); };
     var borders = srcLine(p.people ? "Extent" : "Borders");
     srcPhrase(borders, B.text, B.ids);
@@ -6409,17 +6716,17 @@
       zone = srcLine("Zone of control");
       zone.appendChild(document.createTextNode(held.name + ": "));
       srcPlain(zone, held.source.replace(/\.?$/, "."));
-      if (SRC_WAR[held.key]) { zone.appendChild(document.createTextNode(" See ")); srcRich(zone, srcList(SRC_WAR[held.key])); zone.appendChild(document.createTextNode(".")); }
+      if (SRC_WAR[held.key]) { zone.appendChild(document.createTextNode(T(" See "))); srcRich(zone, srcList(SRC_WAR[held.key])); zone.appendChild(document.createTextNode(".")); }
     }
     var text = srcLine("Text");
     text.hidden = true;
     var quiet = document.createElement("p");
     quiet.className = "ch-src-quiet";
-    quiet.textContent = "Where a neighbour is drawn from another source, the line between them may follow the neighbour’s.";
+    quiet.textContent = T("Where a neighbour is drawn from another source, the line between them may follow the neighbour’s.");
     var notes = document.createElement("div");
     notes.className = "ch-src-notes";
     var report = document.createElement("button");
-    report.type = "button"; report.className = "ch-src-report"; report.textContent = "Report a problem";
+    report.type = "button"; report.className = "ch-src-report"; report.textContent = T("Report a problem");
     var at = p.label ? [p.label[0], p.label[1]] : [view.lon, view.lat];
     report.addEventListener("click", function () { reportAbout(name, at[0], at[1]); });
     [borders, dates, nm, land, division, zone, text, quiet, notes, report].forEach(function (el) { if (el) body.appendChild(el); });
@@ -6454,14 +6761,14 @@
     // one that stands today is placed by GeoNames and Natural Earth, and named by date from the editors' tables.
     // A capital that is in no city file is placed by the capitals' table, from Wikidata and the editors.
     var gone = c.until != null && isFinite(c.until), place = srcLine(gone ? "Where it stood" : "Where it stands"), nm = null;
-    if (c.id == null) place.appendChild(document.createTextNode("The capitals’ table, from Wikidata and the editors."));
+    if (c.id == null) place.appendChild(document.createTextNode(T("The capitals’ table, from Wikidata and the editors.")));
     else if (gone) srcRich(place, (classical && (c.since == null || c.since < 600) ? [SRC.hanson, " (with the Barrington Atlas’s names), "] : []).concat([SRC.hb, "’ dated places, or the editors’ own tables of places the sources lack."]));
     else {
       srcRich(place, srcList([SRC.geonames, SRC.ne]).concat(["’s populated places."]));
       nm = srcLine("Name");
       if (f.modern && f.name !== f.modern) {
         if (roman) srcRich(nm, ["The Barrington Atlas’s name, through ", SRC.hanson, "."]);
-        else nm.appendChild(document.createTextNode("The name an English-language atlas of the time would print, from the editors’ table of names by date."));
+        else nm.appendChild(document.createTextNode(T("The name an English-language atlas of the time would print, from the editors’ table of names by date.")));
       } else srcRich(nm, [SRC.geonames, "."]);
     }
     var pop = srcLine("Population"), from = [SRC.reba, " (Chandler’s and Modelski’s estimates)"];
@@ -6474,7 +6781,7 @@
     var text = srcLine("Text");
     text.hidden = true;
     var report = document.createElement("button");
-    report.type = "button"; report.className = "ch-src-report"; report.textContent = "Report a problem";
+    report.type = "button"; report.className = "ch-src-report"; report.textContent = T("Report a problem");
     report.addEventListener("click", function () { reportAbout(name, c.lon, c.lat); });
     [place, nm, pop, text, report].forEach(function (el) { if (el) body.appendChild(el); });
     srcCtx = { name: name, text: text, notes: null, same: same, division: null };
@@ -6485,12 +6792,13 @@
   function srcText(mode, wiki) {
     if (!srcCtx) return;
     var el = srcCtx.text, label = el.firstChild;
-    srcCtx.same.textContent = wiki && wiki.title === srcCtx.name ? ", matching Wikipedia’s article title" : "";
+    srcCtx.same.textContent = wiki && wiki.title === srcCtx.name ? T(", matching Wikipedia’s article title") : "";
     el.textContent = ""; el.appendChild(label);
-    if (mode === "done") el.appendChild(document.createTextNode("A note written by a language model from the card’s facts and the date; it can be wrong."));
+    if (mode === "done") el.appendChild(document.createTextNode(T("A note written by a language model from the card’s facts and the date; it can be wrong.")));
     else if (mode !== "ai" && wiki && wiki.extract) {
       var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
-      el.appendChild(document.createTextNode("Wikipedia, “"));
+      el.appendChild(document.createTextNode(T("Wikipedia, “")));
+
       if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) el.appendChild(srcLink(href, wiki.title || srcCtx.name)); else el.appendChild(document.createTextNode(wiki.title || srcCtx.name));
       el.appendChild(document.createTextNode("”"));
     } else { el.hidden = true; return; }
@@ -6500,14 +6808,14 @@
     var ctx = srcCtx;
     if (!ctx || !ctx.notes) return;
     var say = function (t) { ctx.notes.textContent = ""; var q = document.createElement("p"); q.className = "ch-src-quiet"; q.textContent = t; ctx.notes.appendChild(q); };
-    if (srcNotesFailed) { say("The editors’ notes could not be loaded."); return; }
+    if (srcNotesFailed) { say(T("The editors’ notes could not be loaded.")); return; }
     if (!srcNotes) {
-      say("Looking up the editors’ notes");
+      say(T("Looking up the editors’ notes"));
       if (!srcNotesLoad) srcNotesLoad = fetchJSON("data/sources.json").then(function (d) { srcNotes = d && Array.isArray(d.notes) ? d.notes : []; }, function () { srcNotesFailed = true; }).then(function () { if (srcCtx && $("src").open) fillNotes(); });
       return;
     }
     var mine = notesFor(ctx.name, ctx.tag, ctx.year, srcNotes);
-    if (!mine.length) { say("The editors’ ledger has no note on it at this date."); return; }
+    if (!mine.length) { say(T("The editors’ ledger has no note on it at this date.")); return; }
     ctx.notes.textContent = "";
     ctx.notes.appendChild(srcLine("Editors’ notes", "ch-src-notes-head"));
     mine.forEach(function (n) {
@@ -6533,22 +6841,23 @@
         var href = wiki.content_urls && wiki.content_urls.desktop && wiki.content_urls.desktop.page;
         if (href && /^https:\/\/en\.wikipedia\.org\//.test(href)) {
           $("wiki-link").href = href;
-          $("wiki-link").textContent = wiki.title && wiki.title !== name ? "Read “" + wiki.title + "” on Wikipedia" : "Read more on Wikipedia";
+          $("wiki-link").textContent = wiki.title && wiki.title !== name ? T("Read “{title}” on Wikipedia", { title: wiki.title }) : T("Read more on Wikipedia");
           more.hidden = false;
         } else more.hidden = true;
       } else { zoom.hidden = true; more.hidden = true; picture = null; }
       if (mode === "ai" || mode === "done") return;
-      if (wikiState === 0) quiet("Looking it up on Wikipedia");
+      if (wikiState === 0) quiet(T("Looking it up on Wikipedia"));
       else if (wikiState === 2) {
-        quiet("Wikipedia could not be reached. ");
+        quiet(T("Wikipedia could not be reached.") + " ");
         var again = document.createElement("button");
         again.type = "button";
         again.className = "ch-wiki-again";
-        again.textContent = "Try again";
+        again.textContent = T("Try again");
         again.addEventListener("click", function () { if (ask === wikiAsk) loadWiki(name, title, blurb, at); });
         text.appendChild(again);
       }
-      else if (!wiki) quiet(at ? "Wikipedia has no article on this place." : "Wikipedia has no article under this name.");
+      else if (!wiki) quiet(T(at ? "Wikipedia has no article on this place." : "Wikipedia has no article under this name."));
+
       else { text.className = "ch-wiki-text"; text.textContent = wiki.extract; }
     };
     var writing = function (job) {
@@ -6580,7 +6889,7 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "ch-wiki-ask";
-      b.textContent = "Write about " + blurb.label + " in " + blurb.when;
+      b.textContent = T("Write about {name} in {year}", { name: blurb.label, year: blurb.when });
       b.addEventListener("click", function () { if (ask === wikiAsk) writing(blurbFetch(blurb.ask)); });
       by.appendChild(b);
       by.hidden = false;
@@ -6654,6 +6963,15 @@
 
   var STORE_LAYERS = "chronia-layers";
   var layers = { states: true, capitals: true, cities: true, seas: true, water: true, relief: true, grid: true, subdivisions: true, control: false, safe: false };
+  var langSel = $("lang-select"), LANGS = window.CH_LANGS || { en: "English" };
+  if (LANG !== "en") langSel.parentNode.querySelector("legend").textContent = T("Language") + " | Language";
+  Object.keys(LANGS).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = LANGS[k]; o.lang = k; if (k === LANG) o.selected = true; langSel.appendChild(o); });
+  langSel.addEventListener("change", function () {
+    try { localStorage.setItem("lang", langSel.value); } catch (e) {}
+    var u = new URL(location.href);
+    u.searchParams.delete("lang");
+    location.replace(u.href);
+  });
   var menuBtn = $("menu-btn"), ctlsBox = $("ctls");
   function setMenu(open) {
     ctlsBox.classList.toggle("ch-menu-open", open);
@@ -6781,6 +7099,10 @@
     reportSession = a ? { a: a, r: r, e: (+claimsOf(a).exp || 0) * 1000 } : null;
     if (!a) reportMe = null;
     try { if (reportSession) localStorage.setItem(REPORT_STORE, JSON.stringify(reportSession)); else localStorage.removeItem(REPORT_STORE); } catch (e) {}
+    // Signed in on the way to buying Premium (signinForPremium): back to its page.
+    var toPremium = false;
+    try { toPremium = !!a && sessionStorage.getItem("chronia-premium-back") === "1"; if (toPremium) sessionStorage.removeItem("chronia-premium-back"); } catch (e) {}
+    if (toPremium) { location.assign("premium/"); return; }
     syncReport();
   }
   (function takeSignIn() {
@@ -6791,7 +7113,7 @@
     try { history.replaceState(null, "", location.pathname + back); } catch (e) {}
     reportBackOpen = true;
     if (q.get("access_token") && q.get("refresh_token")) keepReportSession(q.get("access_token"), q.get("refresh_token"));
-    else setTimeout(function () { reportLockNote.textContent = "Signing in did not work: " + (q.get("error_description") || "try again") + "."; }, 0);
+    else setTimeout(function () { reportLockNote.textContent = T("Signing in did not work: {why}.", { why: q.get("error_description") || T("try again") }); }, 0);
   })();
   function reportPost(body, token) {
     var headers = { "Content-Type": "application/json" };
@@ -6821,10 +7143,10 @@
     }).then(function (r) { if (r.status === 401) keepReportSession(null); return r; });
   }
   function showWho() {
-    if (!reportMe) { reportWho.textContent = "Signed in"; return; }
+    if (!reportMe) { reportWho.textContent = T("Signed in"); return; }
     // The count of reports left today is not shown (Noah, 19 November 2026); the limit still holds, and the function
     // says so when it is reached.
-    reportWho.textContent = "Signed in as " + reportMe.name;
+    reportWho.textContent = T("Signed in as {name}", { name: reportMe.name });
   }
   function loadMe() {
     reportAsk({ action: "me" }).then(function (r) {
@@ -6880,7 +7202,7 @@
   function signInNotes(text) { [reportLockNote, $("account-note")].forEach(function (n) { if (n) n.textContent = text; }); }
   function googleSignedIn(resp) {
     if (!resp || !resp.credential) return;
-    signInNotes("Signing in…");
+    signInNotes(T("Signing in…"));
     reportPost({ action: "google", id_token: resp.credential, nonce: gsiNonce }).then(function (r) {
       if (r.status !== 200) throw new Error("google " + r.status);
       signInNotes("");
@@ -6893,7 +7215,7 @@
       }
     }).catch(function (e) {
       console.warn("google sign-in", e);
-      signInNotes("Signing in did not work. Try the other way:");
+      signInNotes(T("Signing in did not work. Try the other way:"));
       [reportGoogle, $("account-google"), $("invite-google"), $("tl-google")].forEach(function (b) { b.hidden = false; });
     });
   }
@@ -6906,7 +7228,7 @@
   function setReportPicking(on) {
     reportPicking = on;
     reportPick.setAttribute("aria-pressed", on ? "true" : "false");
-    reportPick.textContent = on ? "Click the place on the map" : reportPlace ? "Choose another place" : "Choose a place on the map";
+    reportPick.textContent = T(on ? "Click the place on the map" : reportPlace ? "Choose another place" : "Choose a place on the map");
     document.body.classList.toggle("is-picking", on);
     // On phones the report panel leaves little map to aim at, so choosing a place hides it and gives the whole map,
     // with a bar to cancel; the panel comes back with the place, or on Cancel (19 November 2026).
@@ -6944,16 +7266,16 @@
     if (!ll) return;
     var p = polityAt(x, y), name = p ? polityName(p.id) : "";
     reportPlace = { lon: +ll[0].toFixed(4), lat: +ll[1].toFixed(4), zoom: +view.zoom.toFixed(2), place: (name || "No state") + " on the map of " + yearInput.value };
-    reportWhere.textContent = (name || "No state here") + " | " + Math.abs(reportPlace.lat).toFixed(2) + "° " + (reportPlace.lat < 0 ? "S" : "N") + ", " + Math.abs(reportPlace.lon).toFixed(2) + "° " + (reportPlace.lon < 0 ? "W" : "E");
+    reportWhere.textContent = (name || T("No state here")) + " | " + Math.abs(reportPlace.lat).toFixed(2) + "° " + (reportPlace.lat < 0 ? "S" : "N") + ", " + Math.abs(reportPlace.lon).toFixed(2) + "° " + (reportPlace.lon < 0 ? "W" : "E");
     setReportPicking(false);
     reportLine.textContent = "";
     reportNote.focus();
   }
   function reportTrouble(r) {
-    if (!r) return "The reports server could not be reached. Check the connection and try again.";
-    if (r.status === 429) return "That is 50 reports today, the most for one account. Send the rest tomorrow; this one is kept here.";
-    if (r.status === 400 && r.body && r.body.field) return "The server did not accept the " + r.body.field + ".";
-    return "Something went wrong on the server (" + r.status + "). Try again in a minute.";
+    if (!r) return T("The reports server could not be reached. Check the connection and try again.");
+    if (r.status === 429) return T("That is 50 reports today, the most for one account. Send the rest tomorrow; this one is kept here.");
+    if (r.status === 400 && r.body && r.body.field) return T("The server did not accept the {field}.", { field: r.body.field });
+    return T("Something went wrong on the server ({status}). Try again in a minute.", { status: r.status });
   }
   reportForm.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -6961,29 +7283,69 @@
     var from = reportFrom.value.trim(), to = reportTo.value.trim(), note = reportNote.value.trim();
     var a = rangeEnd(from, false), b = rangeEnd(to, true), t = parseTime(from);
     var say = function (msg, el) { reportLine.textContent = msg; if (el) el.focus(); };
-    if (!reportPlace) return say("Choose the place on the map first.", reportPick);
-    if (!a || t === null) return say("The first date isn't one the atlas can read. Write it as the date box does: 1815, 500 BC, June 1941, or 22 June 1941.", reportFrom);
-    if (!b) return say("The last date isn't one the atlas can read. Write it as the date box does: 1815, 500 BC, June 1941, or 22 June 1941.", reportTo);
-    if (b.y * 12 + b.m < a.y * 12 + a.m) return say("The last date comes before the first.", reportTo);
-    if (!note) return say("Please describe the issue.", reportNote);
+    var ex = [fmtYear(1815), fmtYear(-500), monthYear(1941, 6), fmtMDY(1941, 6, 22)].join(T(", "));
+    if (!reportPlace) return say(T("Choose the place on the map first."), reportPick);
+    if (!a || t === null) return say(T("The first date isn't one the atlas can read. Write it as the date box does: {examples}.", { examples: ex }), reportFrom);
+    if (!b) return say(T("The last date isn't one the atlas can read. Write it as the date box does: {examples}.", { examples: ex }), reportTo);
+    if (b.y * 12 + b.m < a.y * 12 + a.m) return say(T("The last date comes before the first."), reportTo);
+    if (!note) return say(T("Please describe the issue."), reportNote);
     var on = Object.keys(layers).filter(function (k) { return layers[k]; }).join(", ") + (flat ? " | flat map" : " | globe");
     reportBusy = true; reportSend.disabled = true;
-    say("Sending…");
+    say(T("Sending…"));
     reportAsk({ action: "send", lon: reportPlace.lon, lat: reportPlace.lat, zoom: reportPlace.zoom, place: reportPlace.place, from: from, to: to, at: timeKey(t), layers: on, note: note }).then(function (r) {
       if (r.status === 200) {
         reportNote.value = "";
         reportPlace = null;
-        reportWhere.textContent = "None yet";
+        reportWhere.textContent = T("None yet");
         setReportPicking(false);
         if (reportMe) { reportMe.left = r.body.left; showWho(); }
-        say("Sent" + (r.body && r.body.id ? " as report " + r.body.id : "") + ". Thank you.");
+        say(r.body && r.body.id ? T("Sent as report {id}. Thank you.", { id: r.body.id }) : T("Sent. Thank you."));
       } else if (r.status === 401) {
-        reportLockNote.textContent = "Your sign-in has run out. Sign in again; your report is kept.";
+        reportLockNote.textContent = T("Your sign-in has run out. Sign in again; your report is kept.");
       } else say(reportTrouble(r));
     }, function () { say(reportTrouble(null)); }).then(function () { reportBusy = false; reportSend.disabled = false; });
   });
   reportPick.addEventListener("click", function () { setReportPicking(!reportPicking); });
   $("pick-exit").addEventListener("click", function (e) { e.stopPropagation(); setReportPicking(false); reportPick.focus(); });
+
+  // Typing on a phone (23 November 2026): the on-screen keyboard covered the field being typed in, the date in the
+  // year bar above all, and the lower fields of the report and save panels. Android's Chrome shrinks the page for the
+  // keyboard (interactive-widget=resizes-content in the viewport tag); Safari doesn't, so the keyboard's height is
+  // read from the visual viewport: the year bar is lifted above it (--ch-kb), and a panel that holds the field is cut to
+  // the room left and scrolled to the field.
+  (function keyboardRoom() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    var root = document.documentElement, panel = null, raf = 0;
+    var typing = function () {
+      var el = document.activeElement;
+      return el && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|range)$/.test(el.type))) ? el : null;
+    };
+    function update() {
+      raf = 0;
+      var el = typing(), kb = el && phoneQuery.matches ? Math.round(window.innerHeight - vv.height - vv.offsetTop) : 0;
+      if (kb < 60) kb = 0;
+      root.style.setProperty("--ch-kb", kb + "px");
+      root.classList.toggle("ch-kb-open", kb > 0);
+      var host = el && kb ? el.closest(".ch-layers, .ch-search") : null;
+      if (panel && panel !== host) { panel.style.maxHeight = ""; panel.style.overflowY = ""; panel = null; }
+      if (host) {
+        panel = host;
+        var room = vv.offsetTop + vv.height - host.getBoundingClientRect().top - 8;
+        host.style.maxHeight = Math.max(120, Math.round(room)) + "px";
+        host.style.overflowY = "auto";
+      }
+      if (el && kb) {
+        var r = el.getBoundingClientRect(), bottom = vv.offsetTop + vv.height;
+        if (r.bottom > bottom - 8 || r.top < vv.offsetTop) el.scrollIntoView({ block: "nearest" });
+      }
+    }
+    var soon = function () { if (!raf) raf = requestAnimationFrame(update); };
+    vv.addEventListener("resize", soon);
+    vv.addEventListener("scroll", soon);
+    document.addEventListener("focusin", function () { setTimeout(soon, 60); setTimeout(soon, 400); });
+    document.addEventListener("focusout", function () { setTimeout(soon, 60); });
+  })();
   $("report-now").addEventListener("click", reportNow);
   function signOut() {
     keepReportSession(null);
@@ -7014,11 +7376,12 @@
       ini.textContent = (me.name.trim().charAt(0) || "?").toUpperCase();
       $("account-name").textContent = me.name;
       $("account-email").textContent = me.email;
-      accountBtn.setAttribute("aria-label", "Account: " + me.name);
+      accountBtn.setAttribute("aria-label", T("Account: {name}", { name: me.name }));
       accountBtn.setAttribute("data-tip", me.name);
     } else {
-      accountBtn.setAttribute("aria-label", "Sign in");
-      accountBtn.setAttribute("data-tip", "Sign in");
+      accountBtn.setAttribute("aria-label", T("Sign in"));
+      accountBtn.setAttribute("data-tip", T("Sign in"));
+
       if (!accountPanel.hidden) startGoogle($("account-gsi"), $("account-google"));
     }
   }
@@ -7053,13 +7416,18 @@
   // 120); only where a gap is narrower than that does a single banner go under the top row.
   var AD_SIDE_W = [160, 320], AD_H = 50, AD_BELOW = [320, 50], AD_GAP = 8;
   var adsDemo = addrHas("ads"), adsMode = "", adsSize = null, adsLoaded = false;
-  var premium = { on: false, open: false, asked: 0, who: "", known: false }, adsShown = false;
+  var premium = { on: false, open: false, asked: 0, who: "", known: false, pending: null }, adsShown = false;
   function accountId() { return reportSession ? String(claimsOf(reportSession.a).sub || "") : ""; }
   premium.who = accountId();
   try { premium.on = !!premium.who && localStorage.getItem(PREMIUM_STORE) === premium.who; } catch (e) {}
+  if (premium.on && $("about-premium")) $("about-premium").hidden = true;
   // Signed out, there is nothing to wait for; signed in, the first answer from chronia-premium (or its failure) settles it.
   premium.known = !premium.who || premium.on;
-  function adsWanted() { return (!!ADS.client || adsDemo) && !premium.on && premium.known; }
+  // ADS_ON waits for Google's approval of chroniaatlas.com (21 November 2026). Before it, AdSense marks a banner
+  // "filled" but draws it blank, so the page showed two empty grey boxes beside the date; with it false, no banner is
+  // placed and none of Google's advertising code loads. Set it true once AdSense shows the site as "Ready".
+  var ADS_ON = false;
+  function adsWanted() { return ((ADS_ON && !!ADS.client) || adsDemo) && !premium.on && premium.known; }
   // Hides a banner Google has left unfilled, and lays the page out again so the map takes its room back.
   function adsGone(el) { if (!el.dataset.unfilled) { el.dataset.unfilled = "1"; layout(); scheduleRender(); } }
   function adsWatch(el, ins) {
@@ -7207,9 +7575,10 @@
     box.hidden = !(premium.on || premium.open);
     out.hidden = !premium.open || premium.on;
     $("premium-buy").hidden = premium.on;
+    if ($("about-premium")) $("about-premium").hidden = premium.on;
     $("premium-text").textContent = premium.on
-      ? "You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support."
-      : "CHRONIA Premium takes the advertisements off the page, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once, for this account for good.";
+      ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
+      : T("No advertisements, no watermark on your videos, and more, for $5 once.");
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -7231,10 +7600,12 @@
   }
   function premiumAsk(force) {
     if (!PREMIUM_LIVE && !adsDemo) return Promise.resolve(false);
+    // A question still on its way is answered with its own answer, not with what was known before it was asked.
+    if (premium.pending && !force) return premium.pending;
     if (!force && Date.now() - premium.asked < 60000) return Promise.resolve(premium.on);
     premium.asked = Date.now();
     var settle = function () { if (!premium.known) { premium.known = true; syncPremium(); } return premium.on; };
-    return premiumPost({ action: "status" }).then(function (r) {
+    var ask = premium.pending = premiumPost({ action: "status" }).then(function (r) {
       if (r.status !== 200) return settle();
       premium.open = !!r.body.open;
       // Only an answer for a signed-in account settles it: a session that has lapsed keeps what the browser remembers.
@@ -7244,17 +7615,20 @@
       syncPremium();
       return premium.on;
     }, settle);
+    ask.then(function () { if (premium.pending === ask) premium.pending = null; });
+    return ask;
   }
-  $("premium-buy").addEventListener("click", function () {
-    var btn = $("premium-buy"), note = $("premium-note");
-    btn.disabled = true; note.textContent = "Opening Stripe’s payment page…";
-    premiumPost({ action: "checkout" }).then(function (r) {
-      if (r.status === 200 && typeof r.body.url === "string" && /^https:\/\/checkout\.stripe\.com\//.test(r.body.url)) { location.assign(r.body.url); return; }
-      btn.disabled = false;
-      if (r.status === 409) { note.textContent = ""; premiumAsk(true); return; }
-      note.textContent = r.status === 401 ? "Sign in again to buy Premium." : "The payment page could not be opened just now. Nothing was charged.";
-    }, function () { btn.disabled = false; note.textContent = "The payment page could not be opened just now. Nothing was charged."; });
-  });
+  // The account panel offers Premium with a link to its own page (premium/), which lists what it gives and sells it.
+  // That page sends a reader who isn't signed in here with ?signin=premium: the account panel opens, and once they
+  // have signed in (here, or through Supabase's page and back) they are sent back to it.
+  var PREMIUM_BACK = "chronia-premium-back";
+  (function signinForPremium() {
+    if (!/[?&]signin=premium(&|$)/.test(location.search || "")) return;
+    try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])signin=premium(&|$)/, function (all, a, c) { return c ? a : ""; }) + location.hash); } catch (e) {}
+    if (reportSession) { location.replace("premium/"); return; }
+    try { sessionStorage.setItem(PREMIUM_BACK, "1"); } catch (e) {}
+    setTimeout(function () { setAccountOpen(true, false); }, 0);
+  })();
   // Back from Stripe: `?premium=done` or `?premium=no`. Stripe's webhook marks the account a moment after the
   // payment, so the page asks a few times before giving up.
   (function premiumBack() {
@@ -7265,14 +7639,14 @@
       setAccountOpen(true, false);
       var note = $("premium-note"), box = $("premium-box");
       box.hidden = false;
-      if (m[1] === "no") { note.textContent = "The payment was not made, and nothing was charged."; premiumAsk(true); return; }
-      note.textContent = "Thank you. Confirming the payment…";
+      if (m[1] === "no") { note.textContent = T("The payment was not made, and nothing was charged."); premiumAsk(true); return; }
+      note.textContent = T("Thank you. Confirming the payment…");
       var tries = 0;
       (function again() {
         premiumAsk(true).then(function (on) {
           if (on) { note.textContent = ""; return; }
           if (++tries < 10) setTimeout(again, 2000);
-          else note.textContent = "The payment has not been confirmed yet. It can take a minute: open this panel again shortly.";
+          else note.textContent = T("The payment has not been confirmed yet. It can take a minute: open this panel again shortly.");
         });
       })();
     }, 0);
@@ -7380,10 +7754,10 @@
     tourAt = Math.max(0, Math.min(TOUR.length - 1, i));
     var step = TOUR[tourAt];
     $("tour-count").textContent = (tourAt + 1) + " | " + TOUR.length;
-    $("tour-title").textContent = step.title;
-    $("tour-text").textContent = step.text;
+    $("tour-title").textContent = T(step.title);
+    $("tour-text").textContent = T(step.text);
     $("tour-back").hidden = tourAt === 0;
-    $("tour-next").textContent = step.next || "Next";
+    $("tour-next").textContent = T(step.next || "Next");
     placeTour();
     try { $("tour-next").focus({ preventScroll: true }); } catch (e) {}
   }
@@ -7461,14 +7835,14 @@
   // The dates of the frames, or a reason there are none.
   function timelapsePlan() {
     var a = rangeEnd(tlFrom.value, false), b = rangeEnd(tlTo.value, true), monthly = tlStep.value === "month";
-    if (!a) return { why: "Type the first date as a year (1648, 500 BC) or a month (June 1914)." };
-    if (!b) return { why: "Type the last date as a year (1648, 500 BC) or a month (June 1914)." };
+    if (!a) return { why: T("Type the first date as a year ({y1}, {y2}) or a month ({m}).", { y1: fmtYear(1648), y2: fmtYear(-500), m: monthYear(1914, 6) }) };
+    if (!b) return { why: T("Type the last date as a year ({y1}, {y2}) or a month ({m}).", { y1: fmtYear(1648), y2: fmtYear(-500), m: monthYear(1914, 6) }) };
     var endY = LAST_YEAR, endM = LAST_MONTH;
-    if (a.y < Math.round(FIRST_T)) return { why: "The map begins in " + fmtYear(Math.round(FIRST_T)) + "." };
+    if (a.y < Math.round(FIRST_T)) return { why: T("The map begins in {year}.", { year: fmtYear(Math.round(FIRST_T)) }) };
     if (b.y > endY || (b.y === endY && !b.bare && b.m > endM)) { b = { y: endY, m: endM, bare: b.bare }; }
     if (b.y === endY && b.bare) b.m = endM;
-    if (a.y * 12 + a.m >= b.y * 12 + b.m || a.y > b.y) return { why: "The last date must come after the first." };
-    if (yearsBetween(a.y, b.y) > TL_MAX_YEARS) return { why: "At most " + TL_MAX_YEARS + " years at a time." };
+    if (a.y * 12 + a.m >= b.y * 12 + b.m || a.y > b.y) return { why: T("The last date must come after the first.") };
+    if (yearsBetween(a.y, b.y) > TL_MAX_YEARS) return { why: T("At most {n} years at a time.", { n: TL_MAX_YEARS }) };
     var frames = [], y, mo, mid = a.bare ? 7 : a.m;
     if (!monthly) {
       for (y = a.y; y <= b.y; y = nextYear(y)) {
@@ -7485,19 +7859,20 @@
         for (mo = m0; mo <= m1; mo++) { var t = monthTime(y, mo); frames.push({ t: t, label: fmtNow(t) }); }
       }
     }
-    if (frames.length < 2) return { why: "That range has only one frame." };
+    if (frames.length < 2) return { why: T("That range has only one frame.") };
     return { frames: frames, fps: +tlFps.value || 4 };
   }
   function fmtLength(s) {
     s = Math.round(s);
-    if (s < 60) return s + (s === 1 ? " second" : " seconds");
+    var sec = function (n) { return T(n === 1 ? "{n} second" : "{n} seconds", { n: n }); };
+    if (s < 60) return sec(s);
     var m = Math.floor(s / 60), r = s % 60;
-    return m + (m === 1 ? " minute" : " minutes") + (r ? " " + r + (r === 1 ? " second" : " seconds") : "");
+    return T(m === 1 ? "{n} minute" : "{n} minutes", { n: m }) + (r ? " " + sec(r) : "");
   }
   function checkTimelapse() {
     if (exporting) return null;
     if (!canVideo) {
-      saveNote.textContent = "This browser can't make videos. Recent Chrome, Edge, Safari, and Firefox can.";
+      saveNote.textContent = T("This browser can't make videos. Recent Chrome, Edge, Safari, and Firefox can.");
       saveMake.disabled = true;
       return null;
     }
@@ -7508,7 +7883,7 @@
     var plan = timelapsePlan();
     if (plan.why) { saveNote.textContent = plan.why; saveMake.disabled = true; return null; }
     var n = plan.frames.length, sz = videoSize();
-    saveNote.textContent = n.toLocaleString("en-US") + " frames | " + fmtLength(n / plan.fps + HOLD_S) + " | " + sz.w + " by " + sz.h;
+    saveNote.textContent = T("{n} frames", { n: n.toLocaleString(LANG) }) + " | " + fmtLength(n / plan.fps + HOLD_S) + " | " + T("{w} by {h}", { w: sz.w, h: sz.h });
     saveMake.disabled = false;
     return plan;
   }
@@ -7530,7 +7905,7 @@
     return { w: Math.max(2, Math.floor(w * s / 2) * 2), h: Math.max(2, Math.floor(h * s / 2) * 2) };
   }
   // The frame: the page's background, the map, the date in its frame where the page shows it, and the name.
-  function composeFrame(out, label) {
+  function composeFrame(out, label, mark) {
     var c = out.getContext("2d"), k = out.width / W, cs = getComputedStyle(document.documentElement);
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.save();
@@ -7561,15 +7936,37 @@
       c.font = ys.fontStyle + " " + ys.fontWeight + " " + ys.fontSize + " " + ys.fontFamily;
       c.fillText(label, x + w / 2, y + h / 2 + 0.5, w - 16);
     }
-    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", fs = 12, sp = fs * 0.16;
-    c.font = "400 " + fs + "px " + ts.fontFamily;
-    c.textAlign = "left"; c.textBaseline = "alphabetic";
-    var tw = 0, i;
-    for (i = 0; i < name.length; i++) tw += c.measureText(name[i]).width + (i < name.length - 1 ? sp : 0);
-    var nx = W - 16 - tw, ny = H - 14;
-    c.globalAlpha = 0.72; c.fillStyle = ys.color;
-    for (i = 0; i < name.length; i++) { c.fillText(name[i], nx, ny); nx += c.measureText(name[i]).width + sp; }
-    c.globalAlpha = 1;
+    // The mark in the lower right: the small name on a saved image, a plate with the name and the address on a video made
+    // without Premium, and nothing on a Premium video.
+    mark = mark || "corner";
+    var ts = getComputedStyle($("head").querySelector(".ch-title")), name = "CHRONIA", i;
+    function spaced(str, f, sp) { var t = 0; for (var j = 0; j < str.length; j++) t += c.measureText(str[j]).width + (j < str.length - 1 ? sp : 0); return t; }
+    function drawSpaced(str, x0, y0, sp) { for (var j = 0; j < str.length; j++) { c.fillText(str[j], x0, y0); x0 += c.measureText(str[j]).width + sp; } }
+    if (mark === "corner") {
+      var fs = 12, sp = fs * 0.16;
+      c.font = "400 " + fs + "px " + ts.fontFamily;
+      c.textAlign = "left"; c.textBaseline = "alphabetic";
+      var tw = spaced(name, fs, sp);
+      c.globalAlpha = 0.72; c.fillStyle = ys.color;
+      drawSpaced(name, W - 16 - tw, H - 14, sp);
+      c.globalAlpha = 1;
+    } else if (mark === "plate") {
+      var u = Math.max(0.8, Math.min(1.6, Math.min(W, H) / 560)), f1 = 17 * u, s1 = f1 * 0.18, f2 = 10.5 * u, addr = "chroniaatlas.com";
+      c.textAlign = "left"; c.textBaseline = "alphabetic";
+      c.font = "400 " + f1 + "px " + ts.fontFamily; var w1 = spaced(name, f1, s1);
+      c.font = "400 " + f2 + "px " + ys.fontFamily; var w2 = c.measureText(addr).width;
+      var pw = Math.ceil(Math.max(w1, w2) + 30 * u), ph = Math.ceil(f1 + f2 + 26 * u), px = W - pw - 16 * u, py = H - ph - 16 * u;
+      var ivory = cs.getPropertyValue("--ch-ivory").trim() || "#f3ead2", rl = cs.getPropertyValue("--rule").trim() || "#3a2a1a";
+      c.globalAlpha = 0.9;
+      c.fillStyle = ivory; c.fillRect(px, py, pw, ph);
+      c.lineWidth = 3; c.strokeStyle = pal.ring || rl; c.strokeRect(px + 2.5, py + 2.5, pw - 5, ph - 5);
+      c.lineWidth = 1; c.strokeStyle = pal["ring-hi"] || rl; c.beginPath(); c.moveTo(px + 1.5, py + ph - 1.5); c.lineTo(px + 1.5, py + 1.5); c.lineTo(px + pw - 1.5, py + 1.5); c.stroke();
+      c.strokeStyle = pal["ring-edge"] || rl; c.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1); c.strokeRect(px + 4.5, py + 4.5, pw - 9, ph - 9);
+      c.fillStyle = ys.color;
+      c.font = "400 " + f1 + "px " + ts.fontFamily; drawSpaced(name, px + (pw - w1) / 2, py + 10 * u + f1 * 0.92, s1);
+      c.font = "400 " + f2 + "px " + ys.fontFamily; c.fillText(addr, px + (pw - w2) / 2, py + ph - 10 * u);
+      c.globalAlpha = 1;
+    }
     c.setTransform(1, 0, 0, 1, 0, 0);
   }
   function download(blob, name) {
@@ -7845,7 +8242,7 @@
     var tab = window.open("", "_blank");
     ucBusy = true;
     $("uc-open").disabled = true;
-    ucNote.textContent = "Fitting the map of " + when + " to UCHRONIA's regions…";
+    ucNote.textContent = T("Fitting the map of {date} to UCHRONIA's regions…", { date: when });
     Promise.all([ucLoad(), ucLoadCities(), ucLoadUnits()]).then(function (got) {
       return new Promise(function (res) { setTimeout(res, 30); }).then(function () { return ucMap(got[0], got[2], snap, t); });
     }).then(function (res) {
@@ -7853,17 +8250,17 @@
         var url = UC_APP + "#m=" + code;
         if (code.length <= UC_LINK_MAX) {
           if (tab) tab.location.href = url; else location.href = url;
-          ucNote.textContent = "Opened " + when + " in UCHRONIA: " + res.countries + " countries, " + res.regions + " regions moved, " + res.drawn + " drawn.";
+          ucNote.textContent = T("Opened {date} in UCHRONIA: {c} countries, {r} regions moved, {d} drawn.", { date: when, c: res.countries, r: res.regions, d: res.drawn });
         } else {
           if (tab) tab.close();
           download(new Blob([JSON.stringify({ format: "uchronia", v: 2, saved: new Date().toISOString(), map: res.map })], { type: "application/json" }), "chronia-" + fileDate(t) + "-uchronia.json");
-          ucNote.textContent = "Too big for a link, so it was saved as a file: open it in UCHRONIA with File | Open file.";
+          ucNote.textContent = T("Too big for a link, so it was saved as a file: open it in UCHRONIA with File | Open file.");
         }
       });
     }).catch(function (e) {
       console.warn("uchronia", e);
       if (tab) tab.close();
-      ucNote.textContent = "The map could not be made for UCHRONIA. Try again.";
+      ucNote.textContent = T("The map could not be made for UCHRONIA. Try again.");
     }).then(function () {
       ucBusy = false;
       $("uc-open").disabled = false;
@@ -7910,7 +8307,7 @@
     document.documentElement.classList.add("ch-exporting");
     saveMake.hidden = true; saveProg.hidden = false; saveBar.value = 0;
     [tlFrom, tlTo, tlStep, tlFps, $("save-image")].forEach(function (el) { el.disabled = true; });
-    saveNote.textContent = "Getting ready";
+    saveNote.textContent = T("Getting ready");
     $("tl-cancel").focus();
     var out = document.createElement("canvas"), samples = [], desc = null, failed = null, encoder = null;
     out.width = sz.w; out.height = sz.h;
@@ -7927,7 +8324,11 @@
       if (msg) saveNote.textContent = msg;
       saveMake.focus();
     }
-    pickCodec(sz.w, sz.h, fps).then(function (cfg) {
+    // Whether the account has Premium, and so a video without the watermark, is settled before the first frame: on a
+    // device it hasn't been seen on, or just after signing in, the answer may not have come yet.
+    premiumAsk(false).then(function (on) { job.clean = !!on; }, function () { job.clean = !!premium.on; }).then(function () {
+      return pickCodec(sz.w, sz.h, fps);
+    }).then(function (cfg) {
       if (!cfg) throw new Error("no codec");
       encoder = new VideoEncoder({
         output: function (chunk, meta) {
@@ -7948,13 +8349,13 @@
         var f = frames[i];
         return drawSettled(f.t).then(function () {
           if (job.cancel) return "cancel";
-          composeFrame(out, f.label);
+          composeFrame(out, f.label, job.clean ? "none" : "plate");
           var vf = new VideoFrame(out, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
           encoder.encode(vf, { keyFrame: i % Math.max(1, fps * 2) === 0 });
           vf.close();
           i++;
           saveBar.value = i / frames.length;
-          saveCount.textContent = "Frame " + i.toLocaleString("en-US") + " of " + frames.length.toLocaleString("en-US");
+          saveCount.textContent = T("Frame {i} of {n}", { i: i.toLocaleString(LANG), n: frames.length.toLocaleString(LANG) });
           saveNote.textContent = f.label;
           var wait = function () { return encoder.encodeQueueSize > 3 ? sleep(10).then(wait) : null; };
           return Promise.resolve(wait()).then(step);
@@ -7962,19 +8363,20 @@
       }
       return step();
     }).then(function (how) {
-      if (how === "cancel") { finish("Stopped."); return; }
-      saveNote.textContent = "Finishing the file";
+      if (how === "cancel") { finish(T("Stopped.")); return; }
+      saveNote.textContent = T("Finishing the file");
       return encoder.flush().then(function () {
         if (failed) throw failed;
         if (!desc || samples.length !== frames.length) throw new Error("encoder gave " + samples.length + " of " + frames.length);
         var blob = mp4Pack(samples, desc, sz.w, sz.h, fps, HOLD_S);
         var a = frames[0].label, b = frames[frames.length - 1].label;
         download(blob, ("chronia-" + a + "-to-" + b).replace(/\s+/g, "-").toLowerCase() + ".mp4");
-        finish("Saved | " + (blob.size / 1048576).toFixed(1) + " MB");
+        finish(T("Saved") + " | " + (blob.size / 1048576).toLocaleString(LANG, { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + " MB");
       });
     }).catch(function (e) {
       console.warn("timelapse", e);
-      finish(String(e && e.message) === "no codec" ? "This browser can't make a video this size. Make the window smaller and try again." : "The video could not be made.");
+      finish(T(String(e && e.message) === "no codec" ? "This browser can't make a video this size. Make the window smaller and try again." : "The video could not be made."));
+
     });
   }
   saveMake.addEventListener("click", makeTimelapse);
@@ -8037,32 +8439,33 @@
     if (current) current.order.forEach(function (p) {
       if (seen.has(p.id) || p.claims) return;
       seen.add(p.id);
-      var name = polityName(p.id);
+      var name = polityNameL(p.id);
       if (!name || !p.label) return;
-      var sub = p.ruler >= 0 ? "held by " + polityName(p.ruler) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
-      out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
+      var sub = p.ruler >= 0 ? T("held by {name}", { name: polityNameL(p.ruler) }) : p.member >= 0 && p.member !== p.id ? inGroup(p.member) : "";
+      out.push({ kind: p.band ? "Band" : p.people ? "People" : "State", name: name, alt2: name !== polityName(p.id) ? polityName(p.id) : "", sub: sub, w: p.label[5], km2: p.label[5], id: p.id, ll: [p.label[0], p.label[1]] });
     });
     if (cities) cityRanked(now).forEach(function (x) {
-      var c = x.c, nm = cityShownName(c, now);
-      out.push({ kind: x.tier <= 2 ? "City" : "Town", name: nm, alt: nm !== c.name ? c.name : "", sub: nm !== c.name ? "now " + c.name : "", w: x.pop, city: c, tier: x.tier, ll: [c.lon, c.lat] });
+      var c = x.c, nm = cityShownName(c, now), nmL = placeNameL(nm, nm === c.name ? c.qid : null);
+      out.push({ kind: x.tier <= 2 ? "City" : "Town", name: nmL, alt: nm !== c.name ? c.name : "", alt2: nmL !== nm ? nm : "", sub: nm !== c.name ? T("now {name}", { name: placeNameL(c.name, c.qid) }) : "", w: x.pop, city: c, tier: x.tier, ll: [c.lon, c.lat] });
     });
-    SEAS.forEach(function (sl) { out.push({ kind: /Ocean/.test(sl.name) ? "Ocean" : "Sea", name: sl.name, ll: [sl.lon, sl.lat], w: 4 - sl.tier, sea: sl.tier }); });
+    SEAS.forEach(function (sl, k) { out.push({ kind: sl.tier === 1 ? "Ocean" : "Sea", name: sl.name,
+ ll: [sl.lon, sl.lat], w: 4 - sl.tier, sea: sl.tier }); });
     if (lakes) {
       var lseen = new Set();
       lakesAt().forEach(function (l) {
         if (!l.name || l.km2 < 150 || lseen.has(l.name)) return;
         lseen.add(l.name);
         if (!l.ll && l.coords) l.ll = centreOfCoords(l.coords);
-        if (l.ll) out.push({ kind: "Lake", name: l.name, ll: l.ll, w: l.km2, km2: l.km2 });
+        if (l.ll) out.push({ kind: "Lake", name: lakeNameL(l.name), alt2: lakeNameL(l.name) !== l.name ? l.name : "", ll: l.ll, w: l.km2, km2: l.km2 });
       });
     }
     marshesNow().forEach(function (m) { out.push({ kind: "Marsh", name: m.name, ll: [(m.b[0] + m.b[2]) / 2, (m.b[1] + m.b[3]) / 2], w: m.km2, km2: m.km2 }); });
     return out;
   }
   function searchScore(q, it) {
-    var n = fold(it.name), a = it.alt ? fold(it.alt) : "";
-    if (n === q) return 0;
-    if (n.indexOf(q) === 0) return 1;
+    var n = fold(it.name), a = it.alt ? fold(it.alt) : "", a2 = it.alt2 ? fold(it.alt2) : "";
+    if (n === q || a2 === q) return 0;
+    if (n.indexOf(q) === 0 || (a2 && a2.indexOf(q) === 0)) return 1;
     if (a && (a === q || a.indexOf(q) === 0)) return 1.5;
     if ((" " + n).indexOf(" " + q) >= 0) return 2;
     if (a && (" " + a).indexOf(" " + q) >= 0) return 2.5;
@@ -8091,7 +8494,8 @@
       li.setAttribute("role", "option");
       li.setAttribute("aria-selected", i === searchAt ? "true" : "false");
       nm.textContent = it.name;
-      sm.textContent = it.kind + (it.sub ? " | " + it.sub : "");
+      sm.textContent = T(it.kind) + (it.sub ? " | " + it.sub : "");
+
       li.appendChild(nm); li.appendChild(sm);
       li.addEventListener("pointerdown", function (e) { e.preventDefault(); goSearch(it); });
       searchList.appendChild(li);
@@ -8141,7 +8545,7 @@
     if (!searchBtn) return;
     var busy = !!playMode;
     searchBtn.disabled = busy;
-    searchBtn.setAttribute("data-tip", busy ? "Search (pause to search)" : "Search (/)");
+    searchBtn.setAttribute("data-tip", T(busy ? "Search (pause to search)" : "Search (/)"));
     if (busy && !searchPanel.hidden) setSearchOpen(false, false);
   }
   searchBtn.addEventListener("click", function () { setSearchOpen(searchPanel.hidden, false); });
@@ -8201,7 +8605,7 @@
   function setKeyOpen(open, keep) {
     keyList.hidden = !open;
     keyBtn.setAttribute("aria-expanded", open ? "true" : "false");
-    keyBtn.setAttribute("aria-label", open ? "Hide the key" : "Show the key");
+    keyBtn.setAttribute("aria-label", T(open ? "Hide the key" : "Show the key"));
     if (keep) try { localStorage.setItem(STORE_KEY, open ? "1" : "0"); } catch (e) {}
     scheduleRender();
   }
@@ -8451,7 +8855,7 @@
     if (!rows.length) {
       var none = document.createElement("p");
       none.className = "ch-wars-none";
-      none.textContent = allWars ? "No notable wars on this date" : "Looking up the wars of this date";
+      none.textContent = T(allWars ? "No notable wars on this date" : "Looking up the wars of this date");
       warsList.appendChild(none);
     }
     rows.forEach(function (r) {
@@ -8499,7 +8903,8 @@
   function setWarsOpen(open, keep) {
     warsList.hidden = !open;
     warsBtn.setAttribute("aria-expanded", open ? "true" : "false");
-    warsBtn.setAttribute("aria-label", open ? "Hide the wars at this date" : "Show the wars at this date");
+    warsBtn.setAttribute("aria-label", T(open ? "Hide the wars at this date" : "Show the wars at this date"));
+
     if (keep) try { localStorage.setItem(STORE_WARS, open ? "1" : "0"); } catch (e) {}
     scheduleRender();
   }
@@ -8590,7 +8995,7 @@
     var b = document.createElement("button");
     b.type = "button";
     b.className = "ch-changes-name";
-    b.textContent = polityName(s.id) || "a state";
+    b.textContent = polityNameL(s.id) || "a state";
     b.addEventListener("click", function () {
       if (!s.ll) return;
       if (here && current && current.byId && current.byId.has(s.id)) goSearch({ id: s.id, ll: s.ll, km2: s.km2 });
@@ -8615,10 +9020,15 @@
   function listOf(items, more) {
     var out = [];
     items.forEach(function (n, i) {
-      if (i) out.push(more ? ", " : items.length === 2 ? " and " : i === items.length - 1 ? ", and " : ", ");
+      if (i) out.push(more ? T(", ") : items.length === 2 ? T(" and ") : i === items.length - 1 ? T(", and ") : T(", "));
       out = out.concat(n);
     });
-    if (more) out.push(", and " + more + " more");
+    if (more) out.push(T(", and {n} more", { n: more }));
+    return out;
+  }
+  function tplParts(tpl, vals) {
+    var out = [];
+    tpl.split(/(\{\w+\})/).forEach(function (part) { var m = /^\{(\w+)\}$/.exec(part); if (!m) { if (part) out.push(part); } else out = out.concat(vals[m[1]]); });
     return out;
   }
   function renderChanges(p, lines, events, seam) {
@@ -8629,7 +9039,7 @@
         var a = document.createElement("a");
         a.className = "ch-changes-src";
         a.href = e[2]; a.target = "_blank"; a.rel = "noopener noreferrer";
-        a.textContent = "Source";
+        a.textContent = T("Source");
         parts.push(a);
       }
       changesList.appendChild(changeLine(parts, "ch-changes-event"));
@@ -8640,7 +9050,18 @@
       if (shown >= CHANGES_MAX) return;
       shown++;
       var row, six = function (list, here) { return list.slice(0, 6).map(function (x) { return named(x, here, false); }); };
-      if (l.kind === "new") row = named(l.a, true, true).concat(verb(l.a, " appears", " appear") + " on the map.");
+      if (LANG !== "en") {
+        var nm = function (x, here) { return [changeName(x, here)]; }, lst = function (list, here) { return listOf(list.slice(0, 6).map(function (x) { return nm(x, here); }), Math.max(0, list.length - 6)); };
+        row = l.kind === "new" ? tplParts(T("{a} appears on the map."), { a: nm(l.a, true) })
+          : l.kind === "renamed" ? tplParts(T("{a} becomes {b}."), { a: nm(l.g, false), b: nm(l.a, true) })
+          : l.kind === "formed" ? tplParts(T("{a} is formed from {list}."), { a: nm(l.a, true), list: lst(l.from, false) })
+          : l.kind === "joined" ? tplParts(T("{a} passes to {b}."), { a: nm(l.g, false), b: nm(l.a, true) })
+          : l.kind === "ended" ? tplParts(T("{a} leaves the map."), { a: nm(l.g, false) })
+          : l.kind === "under" ? tplParts(T("{a} comes under {b}."), { a: nm(l.a, true), b: nm(l.r, true) })
+          : l.kind === "free" ? tplParts(T("{a} is no longer under {b}."), { a: nm(l.a, true), b: nm(l.r, false) })
+          : tplParts(T(lines.length > 1 ? "Borders also move for {list}." : "Borders move for {list}."), { list: lst(l.list, true) });
+      }
+      else if (l.kind === "new") row = named(l.a, true, true).concat(verb(l.a, " appears", " appear") + " on the map.");
       else if (l.kind === "renamed") row = named(l.g, false, true).concat(verb(l.g, " becomes ", " become "), named(l.a, true, false), ".");
       else if (l.kind === "formed") row = named(l.a, true, true).concat(verb(l.a, " is", " are") + " formed from ", listOf(six(l.from, false), Math.max(0, l.from.length - 6)), ".");
       else if (l.kind === "joined") row = named(l.g, false, true).concat(verb(l.g, " passes", " pass") + " to ", named(l.a, true, false), ".");
@@ -8650,8 +9071,8 @@
       else if (l.kind === "moved") row = [lines.length > 1 ? "Borders also move for " : "Borders move for "].concat(listOf(six(l.list, true), Math.max(0, l.list.length - 6)), ".");
       changesList.appendChild(changeLine(row));
     });
-    if (lines.length > CHANGES_MAX) changesList.appendChild(changeLine(["And " + (lines.length - CHANGES_MAX) + (lines.length - CHANGES_MAX === 1 ? " more change." : " more changes.")], "ch-changes-none"));
-    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine(["The borders shift a little on this date, with no state gained or lost."], "ch-changes-none"));
+    if (lines.length > CHANGES_MAX) changesList.appendChild(changeLine([T(lines.length - CHANGES_MAX === 1 ? "And {n} more change." : "And {n} more changes.", { n: lines.length - CHANGES_MAX })], "ch-changes-none"));
+    if (!events.length && !lines.length && !seam) changesList.appendChild(changeLine([T("The borders shift a little on this date, with no state gained or lost.")], "ch-changes-none"));
     scheduleRender();
   }
   function showChanges(k, key) {
@@ -8659,10 +9080,10 @@
     changesDate.textContent = changeDate(p);
     changesPrev.disabled = k <= 0;
     changesNext.disabled = k >= points.length - 1;
-    if (k === 0) { renderChanges(p, [], [], "The atlas begins here."); return; }
-    var tb = timeBefore(p), seam = isModern(p) && !isModern(tb) ? "From this day the borders come from CShapes 2.0 rather than Cliopatria, so many names and lines change here because the source does." : "";
+    if (k === 0) { renderChanges(p, [], [], T("The atlas begins here.")); return; }
+    var tb = timeBefore(p), seam = isModern(p) && !isModern(tb) ? T("From this day the borders come from CShapes 2.0 rather than Cliopatria, so many names and lines change here because the source does.") : "";
     changesList.textContent = "";
-    changesList.appendChild(changeLine(["Looking up the changes"], "ch-changes-none"));
+    changesList.appendChild(changeLine([T("Looking up the changes")], "ch-changes-none"));
     var day = p >= DAYS_FROM ? storedDate(p) : null;
     Promise.all([seam ? null : snapFor(tb), seam ? null : snapFor(p), changesEventsLoad()]).then(function (r) {
       if (changesKey !== key) return;
@@ -8672,7 +9093,7 @@
       console.warn("changes", e);
       if (changesKey !== key) return;
       changesList.textContent = "";
-      changesList.appendChild(changeLine(["The changes of this date could not be loaded."], "ch-changes-none"));
+      changesList.appendChild(changeLine([T("The changes of this date could not be loaded.")], "ch-changes-none"));
     });
   }
   function syncChanges() {
@@ -8688,7 +9109,7 @@
     changesBody.hidden = !open;
     changesBox.classList.toggle("is-open", open);
     changesBtn.setAttribute("aria-expanded", open ? "true" : "false");
-    changesBtn.setAttribute("aria-label", open ? "Hide what changed at this date" : "Show what changed at this date");
+    changesBtn.setAttribute("aria-label", T(open ? "Hide what changed at this date" : "Show what changed at this date"));
     if (keep) try { localStorage.setItem(STORE_CHANGES, open ? "1" : "0"); } catch (e) {}
     changesKey = "";
     if (open) syncChanges();
@@ -9161,8 +9582,10 @@
     syncCompass();
     layout();
     Promise.all([
-      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; })
+      fetchJSON("data/eras.json"), fetchJSON("data/land.json"), fetchJSON("data/cities-dated.json").catch(function () { return null; }),
+      LANG === "en" ? null : fetchJSON("lang/places-" + LANG + ".json").catch(function () { return null; })
     ]).then(function (r) {
+      PL = r[3] || {};
       var idx = r[0];
       catalogue = idx.polities;
       srcKeys = idx.srcKeys || null; srcInfo = idx.sources || null;
@@ -9216,7 +9639,7 @@
       });
     }).catch(function (e) {
       console.error(e);
-      $("load").textContent = "The atlas could not be loaded. Try reloading the page.";
+      $("load").textContent = T("The atlas could not be loaded. Try reloading the page.");
       document.documentElement.classList.add("ch-ready");
     });
     if (document.fonts && document.fonts.load) {
@@ -9406,6 +9829,7 @@
   };
   Object.assign(window.__chronia, layersApi, geographyApi);
   Object.assign(window.__chronia, cardApi);
+  window.__chronia.frame = function (mark) { var o = document.createElement("canvas"); o.width = canvas.width; o.height = canvas.height; composeFrame(o, fmtNow(now), mark); return o.toDataURL("image/png"); };
   window.__chronia.divisions = function () {
     var day = divDay(), out = { day: day, regions: [] };
     if (divIndex && day !== null) divIndex.forEach(function (reg) {

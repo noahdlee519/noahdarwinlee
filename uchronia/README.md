@@ -3,8 +3,23 @@
 An alternate-history map maker: the world as it is, cut into its states,
 provinces, and regions, for you to redraw. Give any region to any country,
 found countries, name and colour them, and put cities where they might
-have been, on a globe or a flat map. Served at `/uchronia/`. Built on the bones
-of `/greatercircle/`.
+have been, on a globe or a flat map. Served at chroniaatlas.com/uchronia/
+(beside CHRONIA, since 22 November 2026; `tools/build-chronia-site.mjs` copies
+it there). Built on the bones of `/greatercircle/`.
+
+- **The move from noahdarwinlee.com.** The page at noahdarwinlee.com/uchronia/
+  (GitHub Pages, which cannot redirect) still loads `go.js` first, which sends
+  the visitor to chroniaatlas.com/uchronia/ with the link's query and hash.
+  A browser keeps each site's storage apart, so `go.js` takes the visitor's
+  saved work along: every `localStorage` entry whose name begins
+  `uchronia-`, and `ndl-theme`, but not the sign-in (`uchronia-auth`), go
+  as JSON, base64url-encoded, in the new address's hash (`#carry=`), which
+  is never sent to a server, with the link's own hash inside it. At
+  chroniaatlas.com the same script, before `app.js` runs, writes each entry
+  the new site does not already have and puts the link's own hash back
+  (a shared map's `#m=` still opens). Visitors sign in to the historian
+  again once. The data stays in this folder, so the historian function's
+  catalogue and CHRONIA's build read it where they always did.
 
 ## How it works
 
@@ -399,6 +414,27 @@ of `/greatercircle/`.
     renumbered from the first free index. Drawings are capped at 300 and
     60,000 points, and cleaned by polygon-clipping again. Names only ever
     reach the page as text.
+- **Languages.** The interface comes in English and 13 other languages:
+  Spanish, French, German, Dutch, Italian, Portuguese, Czech, Polish,
+  Turkish, Russian, Chinese, Japanese, and Korean. **lang.js** (the same file
+  as CHRONIA's) picks one from `?lang=`, then the choice saved under
+  `localStorage["lang"]` (shared with CHRONIA), then the browser's languages,
+  and loads **lang/xx.js**, which sets `window.CH_L`, a table from each English
+  phrase to its translation. `app.js` passes its text through `T()`, which
+  fills `{name}`-style blanks, and translates the page's own text and its
+  `aria-label`, `data-tip`, `placeholder`, and `title` attributes once at
+  start. Place names come from **lang/places-xx.json** (countries, provinces,
+  cities, lakes, and rivers, loaded at start), **places-xx-towns.json** (with
+  the towns), and **places-xx-units.json** (with the smaller subdivisions),
+  built by `tools/place-names/`. Countries and cities keep their English name
+  in `.en`; the historian is shown the English names (`inEnglish`), and its
+  plans are matched against either. Requests carry `lang`, and the historian
+  writes its histories and answers (and an outline's title) in that language,
+  bracketing places as `[[English name|name in the text]]`; the history view
+  links on the English name and shows the other.
+  **View → Language** changes it and reloads the page. Its list draws its own
+  arrow, a chevron 16 px in from the right (`.uc-lang-wrap::after`), not the
+  browser's, which sat at the edge.
 - **sat.js**: the satellite view.
   - **A layer of its own.** The imagery is drawn on its own canvas beneath
     the map instead of being copied into the map's canvas every frame. Where
@@ -605,7 +641,18 @@ of `/greatercircle/`.
   of a checkbox, open when it is shown and struck through, in a fainter ink,
   when it is hidden; the checkbox is still there, unseen, for the keyboard
   and screen readers. Historian and the
-  menus each carry a caret. The bar fits itself to the window by measuring:
+  menus each carry a caret. On a wider screen the three menus and the
+  Historian's panel all open from one corner, 10 px below the group of
+  buttons and 8 px past its right end, under View: the menus are placed
+  against that group rather than their own buttons, and the panel takes the
+  same corner from `placeDrops` (the `--uc-drop-top` and `--uc-drop-right`
+  properties) when it opens and whenever the bar changes size. Neither the
+  menus nor the panel reach past 8 px short of the map's buttons in the
+  bottom corner, which stay where they are (`dropRoom`; `placeMenus` sets
+  `--uc-menu-shift` whenever the bar changes size, so a menu opens already
+  clear of them rather than moving after it opens; 22 November 2026, at
+  Noah's asking, since the menus had covered the zoom buttons and the panel
+  had pushed them left). The bar fits itself to the window by measuring:
   it tries, in turn, one row with the tools' names and the title; one row
   without the tools' names; one row without the title; the tools, *New
   country*, and *New city* above undo and the menus; the tools above *New
@@ -704,7 +751,9 @@ of `/greatercircle/`.
     server that sends none, the bar creeps on and the line steps through a
     few stock phrases.
   - **Redraw the map** takes a turning point instead ("What if Rome never
-    fell?", "The world in 1925 if the Central Powers had won"), with
+    fell?", "The world in 1925 if the Central Powers had won"), marked as
+    required by a small red asterisk at the top right of its box
+    (`#history-required`, shown only in this mode), with
     optional details under it: when history parts from ours, the year to
     show, places to focus on, what to leave as in our world, how far it goes
     (*Close to history*, *Bold*, the historian's usual, or *Wild*), and
@@ -897,13 +946,15 @@ of `/greatercircle/`.
     citylayoutguessr uses. Signed out, the Historian panel shows Google's own
     sign-in button, loaded from Google (`accounts.google.com/gsi/client`) once
     `GOOGLE_CLIENT` in `app.js` holds the site's Google OAuth client ID. The
-    sign-in then happens on this page, so Google names noahdarwinlee.com rather
+    sign-in then happens on this page, so Google names chroniaatlas.com rather
     than Supabase, and nothing typed is lost. Google hands back an ID token,
     made with a nonce whose SHA-256 the page gives Google; the page sends the
     token and the nonce to the server function (`mode: "google"`), which trades
     them with Supabase (`/auth/v1/token?grant_type=id_token`) for a session.
     The Historian's buttons stay live signed out: a click points to the
-    sign-in, opens Google's one-tap prompt, and runs once the sign-in is done.
+    sign-in button in the panel (scrolling to it and pulsing its outline), and
+    runs once the sign-in is done. It no longer opens Google's one-tap prompt,
+    whose large card Noah found too big (22 November 2026).
     Without a client ID, or if Google's script won't load, the panel offers
     *Sign in with Google*, which keeps the draft (the turning point, its
     details, and a question being written) in the tab's `sessionStorage`
@@ -925,8 +976,10 @@ of `/greatercircle/`.
     project kigvciyyjlgjcgnwgrwf. The function is deployed as `dynamic-endpoint`
     with JWT verification off (it checks the origin, the sign-in, and the
     daily caps itself) and needs the `ANTHROPIC_API_KEY` secret. Supabase's
-    Authentication settings must list `https://noahdarwinlee.com/uchronia/**`
-    among the redirect URLs.
+    Authentication settings must list `https://chroniaatlas.com/uchronia/**`
+    among the redirect URLs, and the Google client's authorised JavaScript
+    origins must include `https://chroniaatlas.com`. The function accepts
+    requests from chroniaatlas.com and noahdarwinlee.com.
 - **Check** counts, in a badge, what may have been left by mistake, and
   lists it: cities and countries never renamed from *New city* or *New
   country*, countries founded and given no land, countries that lost their
@@ -937,8 +990,10 @@ of `/greatercircle/`.
 - The **ⓘ** button by the title opens a short note on the map, a link that
   opens Historian, a link to r/uchronia, a link to [CHRONIA](../chronia/) for
   the borders as they really were, its keys, links to its sources, and,
-  after Privacy and Terms, a DONATE button that opens
-  [ko-fi.com/noahdarwinlee](https://ko-fi.com/noahdarwinlee) in a new tab; a second click closes it.
+  after Privacy and Terms, a Get Premium button that opens CHRONIA's Premium
+  page (hidden once this browser has Premium, by `localStorage["chronia-premium"]`),
+  then "© 2026 Noah Darwin Lee | noahdarwinlee.com"; a second click closes it.
+  The ⓘ is drawn as a serif i, like CHRONIA's.
 - Buttons explain themselves in a tooltip drawn in the page's style (its
   type, colours and, in Antique, its paper), shown after a moment's hover or
   on keyboard focus, never on a touch screen; the same words are given to
@@ -1016,7 +1071,9 @@ of `/greatercircle/`.
   the map, and brings it back.
 - Move the map by dragging with the right or middle button, or with Shift or
   Space held (in Select and Cities a plain drag moves it too); scroll or
-  pinch to zoom.
+  pinch to zoom. With the map focused, the arrow keys move it and + and −
+  zoom; an arrow with Option/Alt, Cmd, or Ctrl is left to the browser (Option
+  or Cmd with an arrow switches tabs on a Mac).
 - **Ctrl/Cmd+Z** undoes, **Ctrl/Cmd+Shift+Z** or **Ctrl+Y** redoes;
   **Delete** deletes the chosen city or drawing; **Escape** drops a drawing
   in progress, lets go of the selection, or goes back to Select.

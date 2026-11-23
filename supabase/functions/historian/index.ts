@@ -2,6 +2,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 
 const ORIGINS = [
   /^https:\/\/(www\.)?noahdarwinlee\.com$/,
+  /^https:\/\/(www\.)?chroniaatlas\.com$/,
   /^https:\/\/noahdlee519\.github\.io$/,
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
 ];
@@ -36,6 +37,7 @@ The edits:
 - city_renames: cities and towns that this history calls by another name. A place that has changed hands often takes the name its new rulers give it: Brno under Austria is Brünn, Lviv under Poland is Lwów, and Gdańsk under Germany is Danzig. Give the name the place has on the map now, its longitude and latitude, and its new name. Rename only where the history gives a reason, and keep to places a reader would know. The same holds for removing, moving, resizing, and founding cities: change a place only where the history gives a reason, and keep these lists short.
 - capitals: the capital of every country you create, and of any country whose capital moves. Give the city's name and its longitude and latitude; for a city of our world, use its usual English name, or its new name if you renamed it.`;
 
+const LANGS: Record<string, string> = { es: "Spanish", fr: "French", de: "German", nl: "Dutch", it: "Italian", pt: "Brazilian Portuguese", cs: "Czech", pl: "Polish", tr: "Turkish", ru: "Russian", zh: "Simplified Chinese", ja: "Japanese", ko: "Korean" };
 const SYSTEM = `You are the historian of an alternate world. A mapmaker has redrawn today's world map, and you are given the list of every way their map differs from ours. Write the history of that world: how it came to look like this.
 
 Find the points of divergence: the moments, as early or as late as the map needs, where this world's history parted from ours, and give each a year and a cause that is specific and plausible. Then follow the consequences forward, the butterfly effects, through wars, treaties, revolutions, marriages, migrations, and borders, to the map as it stands in its year: today, unless the mapmaker's note names another year. Account for every change in the list; the larger changes deserve the most room. Real history runs unchanged up to each divergence, so stay faithful to it there. Where the map is unlikely, find the most interesting way it could still have happened rather than refusing it.
@@ -725,7 +727,7 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) return json(503, { error: "unset" }, o);
 
-  let body: { changes?: unknown; note?: unknown; mode?: unknown; premise?: unknown; history?: unknown; turns?: unknown; question?: unknown };
+  let body: { changes?: unknown; note?: unknown; mode?: unknown; premise?: unknown; history?: unknown; turns?: unknown; question?: unknown; lang?: unknown };
   try {
     body = await req.json();
   } catch (_) {
@@ -880,7 +882,9 @@ Deno.serve(async (req) => {
       console.error(e);
     }
   }
-  const text = "How this world's map differs from ours:\n\n" + changes + (note ? "\n\nThe mapmaker's note:\n" + note : "") + drawn;
+  const langName = typeof body.lang === "string" && LANGS[body.lang] ? LANGS[body.lang] : "";
+  const inLang = langName ? "\n\nWrite in " + langName + ", for a reader of " + langName + ", keeping the form you would use in English (the title, the eras, and the headings). The map's details above give the names of countries, regions, and cities in English: in your writing, use the names " + langName + " readers know for them. Where you bracket a name from the list, write the list's spelling, then a bar, then the name you use, for example [[Bavaria|Bayern]]." : "";
+  const text = "How this world's map differs from ours:\n\n" + changes + (note ? "\n\nThe mapmaker's note:\n" + note : "") + drawn + inLang;
   const client = new Anthropic({ apiKey: key });
   const enc = new TextEncoder();
   let started = false;
@@ -896,7 +900,7 @@ Deno.serve(async (req) => {
           max_tokens: 12000,
           output_config: { effort: "medium", format: { type: "json_schema", schema: outlineSchema(list.map((p) => p.id)) } },
           system: [{ type: "text", text: OUTLINE + byPart, cache_control: { type: "ephemeral" } }],
-          messages: [{ role: "user", content: "The premise:\n" + premise }],
+          messages: [{ role: "user", content: "The premise:\n" + premise + (langName ? "\n\nWrite the title in " + langName + ". Write every other field as you would in English, with the names exactly as the catalogue gives them." : "") }],
         }, deadline, "outline", peeker(send, new Map(list.map((p) => [p.id, p.name]))));
       } catch (e) {
         await giveBack();

@@ -5161,6 +5161,10 @@ const csAfter = (rows) => {
 };
 const csRaw = csAfter(csObj.geometries.map((g) => ({ p: g.properties, geometry: client.feature(csTopo, g).geometry })));
 const CLIO_TWIN = { "First Hellenic Republic": "Greece" };
+// Land the geography adds for some years (tools/build-geography.mjs), and a point on the land of the state it goes to.
+// The Kara-Bogaz-Gol, dry from 1983 to 1993, lay ownerless inside the Soviet Union and Turkmenistan (a reader's report,
+// 22 November 2026), since CShapes draws them without the Caspian's gulf.
+const DATED_LAND = [{ g: "Kara-Bogaz-Gol", by: [54.9, 40.9] }];
 const CS_REDRAW = [
   { a: "265", b: "260", from: "1945-05-08", to: "1990-10-02", country: "DEU", reachKm: 25,
     aUnits: ["Mecklenburg-Vorpommern", "Brandenburg", "Berlin", "Sachsen-Anhalt", "Thüringen", "Sachsen"],
@@ -5646,6 +5650,22 @@ for (const r of csOccupy(csZones(csRedraw(csWithExtras(csRaw))))) {
     for (const f of neAll) for (const poly of polysOf(f.geometry)) units.push({ name: f.properties.admin, polys: [poly], box: boxOf([poly]) });
     const same = (unit, name) => lineageNames(NE_ADMIN[unit] || unit).includes(name);
     const { edits } = adoptLand({ list, land, clip, endDay, units, same });
+    // Land the geography adds for some years only (DATED_LAND): given, for each stretch of those years, to the span that
+    // holds a point of its owner's land beside it. adoptLand reads today's land, so it never sees these.
+    const fineLand = JSON.parse(readFileSync(resolve(here, "../data/geography-fine.json"), "utf8")).land.fine;
+    for (const dl of DATED_LAND) {
+      const patch = fineLand.find((q) => q.g === dl.g && q.a && q.a.length);
+      if (!patch) { console.warn("DATED_LAND: no " + dl.g + " in geography-fine.json"); continue; }
+      const polys = rewind(patch.a), a = dayOf(patch.f + "-01-01"), z = Math.min(endDay, dayOf(patch.t + "-01-01") - 1);
+      let n = 0;
+      for (const x of list) {
+        if (x.last < a || x.first > z || x.claims || x.people || !boxHit(x.box || boxOf(x.polys), [dl.by[0], dl.by[1], dl.by[0], dl.by[1]])) continue;
+        if (!d3.geoContains({ type: "MultiPolygon", coordinates: x.polys }, dl.by)) continue;
+        edits.push({ base: x, first: Math.max(a, x.first), last: Math.min(z, x.last), polys, add: true });
+        n++;
+      }
+      console.log("DATED_LAND " + dl.g + ": " + n + " spans hold it from " + patch.f + " to " + patch.t);
+    }
     list = pieceSpans(list, edits);
     console.log("adopting land: " + pieceSpanCount + " spans of pieces, " + Math.round(process.uptime()) + " s");
   }
@@ -5998,6 +6018,11 @@ const clash = left.length;
 if (left.length) console.log("touching pairs left in one colour, with every colour taken round both, even after moving their neighbours: " + left.map((p) => p.split("|").map((k) => (catalogue[+k.slice(1)] && k[0] === "N" ? catalogue[+k.slice(1)].n : LINEAGE[+k.slice(1)] ? LINEAGE[+k.slice(1)][0] : k)).join(" and ")).join("; "));
 console.log("colours: " + keptAll + " of " + hadColour + " keys with an earlier colour keep it after the greedy pass, " + greedyClash + " touching pairs in one colour (" + free + " where a free colour existed), " + repaired + " keys recoloured, " + clash + " left");
 
+// Colours Noah chose for states with none of their own or a colour he did not want (22 November 2026): the Crown of Aragon,
+// and so the subjects drawn in its colour, orange instead of the blue its name came to, which is the Holy Roman Empire's; the
+// Judicate of Arborea green instead of blue.
+const HISTORIC_COLOURS = { "Crown of Aragon": 1, "Judicate of Arborea": 8 };
+catalogue.forEach((e, id) => { if (Object.hasOwn(HISTORIC_COLOURS, e.n)) color.set(keyOf(id), HISTORIC_COLOURS[e.n]); });
 const baseColour = (id) => { const k = keyOf(id); return color.has(k) ? color.get(k) : -1; };
 const colourFrom = new Map();
 for (const [name, from, like] of COLOUR_FROM) colourFrom.set(catId(name), [[dayOf(from), baseColour(catId(like))]]);

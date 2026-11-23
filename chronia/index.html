@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <script src="go.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script src="lang.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>CHRONIA</title>
     <meta
       name="description"
@@ -94,7 +95,7 @@
               and by the day from 1800.
             </p>
             <p>
-              To redraw history instead, try <a href="https://noahdarwinlee.com/uchronia/">UCHRONIA</a>.
+              To redraw history instead, try <a href="/uchronia/">UCHRONIA</a>.
             </p>
             <p>
               <button type="button" class="ch-linkbtn" id="tour-again">Take the tour</button>
@@ -116,8 +117,8 @@
                 <dt><kbd>Esc</kbd></dt><dd>Close</dd>
               </dl>
             </div>
-            <p class="ch-sources"><a href="moreinfo/">Sources</a> | <a href="privacy/">Privacy</a> | <a href="terms/">Terms</a> | <a href="team/">Team</a></p>
-            <p class="ch-sources ch-copy">&copy; 2026 Noah Darwin Lee</p>
+            <p class="ch-sources"><a href="moreinfo/">Sources</a> | <a href="privacy/">Privacy</a> | <a href="terms/">Terms</a> | <a href="team/">Team</a><span id="about-premium"> | <a href="premium/">Get Premium</a></span></p>
+            <p class="ch-sources ch-copy">&copy; 2026 Noah Darwin Lee | <a href="https://noahdarwinlee.com/">noahdarwinlee.com</a></p>
           </div>
         </div>
       </header>
@@ -218,7 +219,10 @@
             <div class="ch-account-gsi" id="account-gsi"></div>
             <button type="button" class="ch-account-alt" id="account-google" hidden>Sign in with Google</button>
             <p class="ch-account-note" id="account-note" role="status"></p>
-            <p class="ch-account-text ch-premium" id="premium-out" hidden>CHRONIA Premium takes the advertisements off the page, gives you 5x the daily notes, and puts your reports of errors first in the queue, for $5, paid once. Sign in to buy it.</p>
+            <div class="ch-premium" id="premium-out" hidden>
+              <p class="ch-account-text">No advertisements, no watermark on your videos, and more, for $5 once.</p>
+              <a class="ch-account-alt ch-premium-buy" href="premium/">See CHRONIA Premium</a>
+            </div>
             <p class="ch-account-small"><a href="privacy/">How CHRONIA uses your account</a></p>
           </div>
           <div id="account-in" hidden>
@@ -226,7 +230,7 @@
             <p class="ch-account-email" id="account-email"></p>
             <div class="ch-premium" id="premium-box" hidden>
               <p class="ch-account-text" id="premium-text"></p>
-              <button type="button" class="ch-account-alt ch-premium-buy" id="premium-buy">Get Premium | $5, once</button>
+              <a class="ch-account-alt ch-premium-buy" id="premium-buy" href="premium/">See CHRONIA Premium</a>
               <p class="ch-account-note" id="premium-note" role="status"></p>
             </div>
             <div class="ch-account-acts">
@@ -270,6 +274,10 @@
             <label class="ch-layer"><input type="checkbox" data-layer="grid" checked /> <span>Latitude and longitude</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="subdivisions" checked /> <span>First-level divisions</span></label>
             <label class="ch-layer"><input type="checkbox" data-layer="safe" /> <span>Color-blind safe colors</span></label>
+          </fieldset>
+          <fieldset class="ch-layer-set">
+            <legend>Language</legend>
+            <select class="ch-save-input ch-lang-select" id="lang-select" aria-label="Language"></select>
           </fieldset>
         </div>
       </div>
@@ -326,15 +334,15 @@
       </button>
       <ul class="ch-key-list" id="key-list" hidden>
         <li class="ch-key-row" data-key="capital">
-          <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><circle class="k-halo" cx="15" cy="9" r="4.3" /><circle class="k-ring" cx="15" cy="9" r="3.2" /><circle class="k-city" cx="15" cy="9" r="1.35" /></svg>
+          <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><circle class="k-halo" cx="15" cy="9" r="5.6" /><circle class="k-ring" cx="15" cy="9" r="4.16" /><circle class="k-city" cx="15" cy="9" r="1.76" /></svg>
           <span>Capital</span>
         </li>
         <li class="ch-key-row" data-key="city">
-          <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><circle class="k-halo" cx="15" cy="9" r="2.85" /><circle class="k-city" cx="15" cy="9" r="1.85" /></svg>
+          <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><circle class="k-halo" cx="15" cy="9" r="3.4" /><circle class="k-city" cx="15" cy="9" r="2.4" /></svg>
           <span>City</span>
         </li>
         <li class="ch-key-row" data-key="town">
-          <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><circle class="k-halo" cx="15" cy="9" r="2.4" /><circle class="k-town" cx="15" cy="9" r="1.4" /></svg>
+          <svg class="ch-key-sample" width="30" height="18" viewBox="0 0 30 18" aria-hidden="true" focusable="false"><circle class="k-halo" cx="15" cy="9" r="2.82" /><circle class="k-city" cx="15" cy="9" r="1.82" /></svg>
           <span>Town</span>
         </li>
         <li class="ch-key-row" data-key="border">
