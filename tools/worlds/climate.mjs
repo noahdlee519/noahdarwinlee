@@ -295,20 +295,35 @@ export function classifyCover({ fields, elev, land, width, height, rng, style = 
       if (bank && bank[s] > 0.02) m += Math.min(0.5, bank[s] * 1.6);
       let v = vegIndex(m);
       // Cold ground grows little: tundra reads as dry grass, then bare.
-      if (t < -1) v = Math.min(v, 1.4 + ((t + 9) / 8) * 2.2);
+      // Tundra stays a pale green, never desert.
+      if (t < -1) v = Math.min(v, Math.max(1.15, 1.4 + ((t + 9) / 8) * 2.2));
       v = clamp(v + j, 0, 4.999);
       let c = VEG_CLASS[Math.floor(v)];
 
       // High ground: bare rock on the heights, snow on the coldest of them.
       const tj = t + (jf - 0.5) * 5 + (broadJ[b] - 0.5) * 3;
       const ej = e + (kf - 0.5) * 0.14 + (broadJ[b] - 0.5) * 0.05;
-      if (ej > 0.45 || (ej > 0.28 && tj < 0)) c = COVER.ROCK;
-      if (tj < -11 || (ej > 0.6 && tj < -7)) c = kf > 0.86 && t > -16 ? COVER.ROCK : COVER.SNOW;
-      else if (t < -5 && kf > 0.72) c = jf > 0.5 ? COVER.SNOW : COVER.ROCK;
+      // Snow and ice only on the highest, coldest peaks and on polar land;
+      // elsewhere bare rock on the heights, and only a fleck of it on cold plains.
+      if (ej > 0.5 || (ej > 0.36 && tj < -4)) c = COVER.ROCK;
+      const polar = tj < -23;
+      const peak = ej > 0.56 && tj < -6;
+      if (polar || peak) c = !polar && kf > 0.78 ? COVER.ROCK : COVER.SNOW;
+      else if (t < -11 && kf > 0.84) c = jf > 0.6 ? COVER.SNOW : COVER.ROCK;
       cover[i] = c;
 
-      // The smallest facets: a scatter of slivers a class up or down.
+      // The smallest facets: a scatter of slivers a class up or down, and
+      // snow and rock broken up and mottled, so neither lies in solid blocks.
       const tf = tiny.id[i];
+      if (c === COVER.SNOW) {
+        const u = tinyJ[tf];
+        if (u < (polar ? 0.1 : 0.34)) c = COVER.ROCK;
+        cover[i] = c;
+      } else if (c === COVER.ROCK) {
+        const u = tinyJ[tf];
+        if (u < 0.22 && ej < 0.62) c = VEG_CLASS[Math.max(0, Math.min(2, Math.floor(v)))];
+        cover[i] = c;
+      }
       if (c < COVER.ROCK) {
         const u = tinyJ[tf];
         if (u > 0.97) c = VEG_CLASS[Math.min(4, Math.floor(v) + 1)];

@@ -93,7 +93,7 @@ export function buildLabels(world, nations, projects) {
   for (const c of r.shuffle(sites).slice(0, 70)) towns.push({ x: (c.seed % width) + 0.5, y: Math.floor(c.seed / width) + 0.5, capital: false });
   return placeLabels({
     owner: nations.owner, provinces: nations.provinces, projects, width, height, rng,
-    extras: { land, lakes: hydro.lakes, ranges: terrain.ranges, towns },
+    extras: { land, lakes: hydro.lakes, ranges: terrain.ranges, towns, rivers: hydro.rivers, riverMeta: hydro.riverMeta },
   });
 }
 

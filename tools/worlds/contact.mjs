@@ -41,7 +41,7 @@ export function worldSvg(data, pngBuffer, zoom = 1) {
   for (const l of data.labels) {
     if (l.minZoom > zoom) continue;
     const lines = l.lines || [l.text];
-    const water = l.kind === 'sea' || l.kind === 'ocean' || l.kind === 'lake';
+    const water = l.kind === 'sea' || l.kind === 'ocean' || l.kind === 'lake' || l.kind === 'strait' || l.kind === 'river';
     const fill = water ? '#3c8ea1' : l.kind === 'range' ? '#6b6f72' : l.kind === 'province' ? P.province : P.label;
     const weight = l.kind === 'country' ? 600 : l.kind === 'capital' ? 600 : 500;
     const style = water ? ' font-style="italic"' : '';
@@ -49,6 +49,17 @@ export function worldSvg(data, pngBuffer, zoom = 1) {
     // letter-spacing follows every letter, the last one too; shift half of it back.
     const nudge = l.spacing ? (l.spacing * l.size) / 2 : 0;
     const halo = water ? P.water : '#ffffff';
+    if (l.path) {
+      // Lettering along the river's course.
+      const id = `p${text.length}`;
+      const d = 'M' + l.path.map(([x, y]) => `${x} ${y}`).join('L');
+      text.push(`<path id="${id}" d="${d}" fill="none"/>`);
+      const common = `font-size="${l.size}" font-weight="${weight}"${style}${track} dy="${(l.size * 0.355).toFixed(2)}"`;
+      const tp = `<textPath href="#${id}" startOffset="50%" text-anchor="middle">${esc(l.text)}</textPath>`;
+      text.push(`<text ${common} fill="none" stroke="#ffffff" stroke-opacity="0.8" stroke-width="${(l.size * 0.2).toFixed(2)}" stroke-linejoin="round">${tp}</text>`);
+      text.push(`<text ${common} fill="${fill}">${tp}</text>`);
+      continue;
+    }
     lines.forEach((line, k) => {
       const off = (k - (lines.length - 1) / 2) * LINE_HEIGHT * l.size + l.size * 0.355;
       const common = `transform="translate(${l.x} ${l.y}) rotate(${l.angle})" x="${nudge.toFixed(2)}" y="${off.toFixed(2)}" font-size="${l.size}" font-weight="${weight}"${style}${track} text-anchor="middle"`;

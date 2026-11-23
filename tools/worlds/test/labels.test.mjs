@@ -40,3 +40,25 @@ test('country labels sit inside their country', () => {
     }
   });
 });
+test('water is named after the countries it touches, and no name repeats', () => {
+  const water = labels.filter((l) => ['ocean', 'sea', 'strait', 'lake', 'river'].includes(l.kind));
+  assert.ok(water.some((l) => l.kind === 'river'), 'no river is named');
+  const texts = water.map((l) => l.text);
+  assert.equal(new Set(texts).size, texts.length, `a name repeats: ${texts.join(', ')}`);
+  const words = new Set();
+  for (const p of projects) for (const k of ['water', 'river', 'lake']) for (const w of p.names[k]) words.add(w);
+  const themed = water.filter((l) => l.theme);
+  assert.ok(themed.length >= water.length * 0.7, 'most water should carry a project word');
+  for (const l of themed) {
+    assert.ok(words.has(l.word), `${l.text} uses a word no project has`);
+    assert.ok(l.text.includes(l.word), `${l.text} does not contain ${l.word}`);
+    assert.ok(projects.some((p) => p.id === l.theme), `${l.text} names an unknown project`);
+  }
+  for (const l of water.filter((x) => x.kind === 'river')) {
+    assert.ok(/ River$|^River /.test(l.text), `${l.text} is not a river's name`);
+    assert.ok(l.minZoom >= 2, `${l.text} shows before zoom 2`);
+    assert.ok(Array.isArray(l.path) && l.path.length >= 2, `${l.text} has no line to follow`);
+  }
+  for (const l of water.filter((x) => x.kind === 'lake')) assert.ok(/^Lake /.test(l.text), l.text);
+  for (const l of water.filter((x) => x.kind === 'ocean')) assert.ok(/ Ocean$/.test(l.text), l.text);
+});

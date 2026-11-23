@@ -350,6 +350,7 @@ export function buildWorldFiles(world) {
       const out = { id: l.id, kind: l.kind, text: l.text };
       if (l.lines.length > 1) out.lines = l.lines;
       Object.assign(out, { x: l.x, y: l.y, size: l.size, angle: l.angle, spacing: l.spacing, minZoom: l.minZoom });
+      if (l.path) out.path = l.path;
       if (l.dot) out.dot = l.dot;
       if (l.of) out.of = l.of;
       if (l.parent) out.parent = l.parent;
