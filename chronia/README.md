@@ -1166,6 +1166,20 @@ The outlines are traced from elevation, since no source maps the old wetlands' e
 
 In `geography.json`, `marshes` is `[name, km², from, to, MultiPolygon]`.
 
+### Names of lakes and rivers
+
+Since 22 November 2026, CHRONIA names its lakes and rivers as UCHRONIA does (`drawLakeLabels` and `drawRiverLabels` in
+`app.js`, with the "Rivers and lakes" layer).
+
+- **Lakes:** in italics at the point Natural Earth gives each lake (`lakes.json`), once the map is past 650 px a radian and the
+  lake is 18 px across; a lake that only some years have (a reservoir, a lake that dries) is named at the centre of its largest
+  shape, and only while it is drawn.
+- **Rivers:** bent along the course, letter by letter, in the river blue (`--ch-river-label`), from 650 px a radian for the
+  largest (rank 2 and up as the map grows, no further than the ranks drawn), at most 40 at once. Each sits on the stretch
+  nearest the middle of the view where its letters turn least, and keeps that place while the map moves. Rivers the date adds
+  are named with the rest, and a river cut from a date (`riverDrop`) is not named.
+- **Order:** lakes after the seas and before the cities; rivers after the cities, so a city's name wins where they meet.
+
 ### Rivers and canals
 
 - **The Yellow River:** its lower course to the Bohai Sea, from the bend near Lankao, is drawn before 1128 and from 1 August 1855, when the river broke its north bank at Tongwaxiang. From 1128 to 1855 it is replaced by the southern course to the Yellow Sea. That course is an approximation: Natural Earth has no line for it, so it is drawn straight from the bend through the towns it passed (Shangqiu, Dangshan, Xuzhou, Suqian, Siyang, Huai'an, Lianshui, and Binhai) to the coast. Before the 16th century the river wandered among several channels to the Huai, and before 1128 its courses north of Shandong were not today's, so both are shown only roughly.

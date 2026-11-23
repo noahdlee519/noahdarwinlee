@@ -416,7 +416,7 @@
   var pal = {};
   function readPalette() {
     var cs = getComputedStyle(document.documentElement);
-    ["ocean", "ocean-deep", "grat", "limb", "glow", "border", "label", "label-halo", "people", "city", "city-ring", "select", "hover", "paper", "people-fill", "water", "sea-label", "river"].forEach(function (k) {
+    ["ocean", "ocean-deep", "grat", "limb", "glow", "border", "label", "label-halo", "people", "city", "city-ring", "select", "hover", "paper", "people-fill", "water", "sea-label", "river", "river-label"].forEach(function (k) {
       pal[k] = cs.getPropertyValue("--ch-" + k).trim();
     });
     ["city-halo", "town"].forEach(function (k) { pal[k] = cs.getPropertyValue("--ch-" + k).trim(); });
@@ -1667,8 +1667,10 @@
       reserveMarks(placed, S);
       drawPolityLabels(snap, placed, kp);
       drawSeaLabels(placed, S);
+      drawLakeLabels(placed, S, kp);
       for (var ri = placed.length - 1; ri >= 0; ri--) if (placed[ri].res) placed.splice(ri, 1);
       drawPlaces(placed, S);
+      drawRiverLabels(placed, S);
       drawDivisionLabels(placed, S);
     }
     if (perf) pmark("labels");
@@ -1989,7 +1991,7 @@
     if (!layers.water) return;
     if (!lakes) {
       if (!lakesLoad) lakesLoad = fetchJSON(UC + "data/lakes.json").then(function (rows) {
-        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
+        lakes = rows.map(function (r) { return { name: r[0], km2: r[1], lon: r[2], lat: r[3], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) }; });
         bigLakes = rows.filter(function (r) { return r[1] >= BIG_LAKE_KM2; }).map(function (r, i) {
           var b = [180, 90, -180, -90];
           r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
@@ -2153,7 +2155,8 @@
     g.lakes.add.forEach(function (r, i) {
       var b = [180, 90, -180, -90];
       r[4].forEach(function (poly) { poly[0].forEach(function (v) { b = [Math.min(b[0], v[0]), Math.min(b[1], v[1]), Math.max(b[2], v[0]), Math.max(b[3], v[1])]; }); });
-      out.lakeAdd.push({ id: "w" + i, name: r[0], km2: r[1], from: r[2], to: r[3], added: true, b: b, coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) });
+      var at = lakeAnchor(r[4]);
+      out.lakeAdd.push({ id: "w" + i, name: r[0], km2: r[1], from: r[2], to: r[3], added: true, b: b, lon: at[0], lat: at[1], coords: r[4], f: prepare({ type: "MultiPolygon", coordinates: r[4] }) });
       times(out.lakeTimes, r[2], r[3]);
     });
     (g.marshes || []).forEach(function (r) {
@@ -2270,12 +2273,20 @@
     return list;
   }
   function riverRanks(t) {
-    var byRank = [[], [], [], [], [], [], []], drop = geog ? geog.riverDrop : null;
+    var byRank = [[], [], [], [], [], [], []], drop = geog ? geog.riverDrop : null, named = new Map();
     topojson.feature(t, t.objects.rivers).features.forEach(function (f, i) {
       var rk = f.properties && f.properties.r, d = drop && drop.get(i), c = f.geometry && f.geometry.coordinates;
       if (d && c && c.length === d[1] && c[0][0] === d[2] && c[0][1] === d[3]) return;
-      if (rk >= 1 && rk <= 6) byRank[rk] = byRank[rk].concat(prepareLines(f.geometry));
+      if (!(rk >= 1 && rk <= 6)) return;
+      var lines = prepareLines(f.geometry);
+      byRank[rk] = byRank[rk].concat(lines);
+      var n = f.properties.n;
+      if (!n || !lines.length) return;
+      if (!named.has(n)) named.set(n, { name: n, r: rk, lines: [] });
+      var e = named.get(n);
+      e.lines = e.lines.concat(lines); e.r = Math.min(e.r, rk);
     });
+    byRank.names = Array.from(named.values());
     return byRank;
   }
   function datedRivers(rank) {
@@ -3440,6 +3451,247 @@
       }
     }
     ctx.letterSpacing = "0px";
+  }
+  // Lake and river names, as UCHRONIA draws them (22 November 2026): a lake's name in italics at the point Natural Earth gives
+  // it, once the lake is 18 px across; a river's name bent along its course, letter by letter, at the stretch nearest the middle
+  // of the view where it fits without turning too sharply, kept in the same place while the map moves. Both follow the date:
+  // lakes and rivers that come and go (reservoirs, dried seas, rivers turned) are named only while they are drawn.
+  var LAKE_LABEL_S = 650, LAKE_LABEL_PX = 18;
+  function lakeAnchor(polys) {
+    var best = null, bestA = -1;
+    polys.forEach(function (poly) {
+      var ring = poly[0], a = 0, x = 0, y = 0;
+      for (var k = 0, n = ring.length - 1; k < n; k++) {
+        var p = ring[k], q = ring[k + 1], c = p[0] * q[1] - q[0] * p[1];
+        a += c; x += (p[0] + q[0]) * c; y += (p[1] + q[1]) * c;
+      }
+      if (Math.abs(a) > bestA) { bestA = Math.abs(a); best = a ? [x / (3 * a), y / (3 * a)] : ring[0]; }
+    });
+    return best || [0, 0];
+  }
+  function drawLakeLabels(placed, S, kp) {
+    if (!layers.water || !lakes || S < LAKE_LABEL_S) return;
+    var list = lakesAt(), size = 11;
+    ctx.save();
+    ctx.font = "italic 400 " + size + "px " + SERIF;
+    ctx.letterSpacing = "0.5px";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    ctx.strokeStyle = pal.ocean; ctx.fillStyle = pal["sea-label"];
+    for (var i = 0; i < list.length; i++) {
+      var L = list[i];
+      if (Math.sqrt(L.km2) * kp < LAKE_LABEL_PX) break;
+      if (!L.name || L.lon === undefined) continue;
+      var p = projectLL(L.lon, L.lat);
+      if (!p || (!flat && p[2] < 0.3) || p[0] < 0 || p[0] > W || p[1] < 0 || p[1] > H) continue;
+      var w = ctx.measureText(L.name).width, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6, 0);
+      if (!insideView(box) || collides(placed, box)) continue;
+      placed.push(box);
+      ctx.strokeText(L.name, p[0], p[1]); ctx.fillText(L.name, p[0], p[1]);
+    }
+    ctx.letterSpacing = "0px";
+    ctx.restore();
+  }
+  function riverLabelRank(S) { return S < 650 ? 0 : S < 1100 ? 2 : S < 2000 ? 4 : 6; }
+  function riverNames() {
+    if (!rivers) return [];
+    if (!geog) return rivers.names;
+    var k = stateOf(geog.riverTimes);
+    if (riverNameState.key === k && riverNameState.base === rivers) return riverNameState.list;
+    var named = new Map();
+    rivers.names.forEach(function (e) { named.set(e.name, { name: e.name, r: e.r, lines: e.lines }); });
+    geog.riverAdd.forEach(function (r) {
+      if (!r.name || !r.spans.some(function (s) { return inSpan(s[0], s[1]); })) return;
+      var e = named.get(r.name);
+      if (e) named.set(r.name, { name: e.name, r: Math.min(e.r, r.rank), lines: e.lines.concat([r.line]) });
+      else named.set(r.name, { name: r.name, r: r.rank, lines: [r.line] });
+    });
+    var list = Array.from(named.values()).sort(function (a, b) { return a.r - b.r; });
+    riverNameState = { key: k, base: rivers, list: list };
+    return list;
+  }
+  var riverNameState = { key: null, base: null, list: [] };
+  var glyphSizes = new Map();
+  function charWidth(font, ch) {
+    var k = font + "|" + ch, w = glyphSizes.get(k);
+    if (w == null) { ctx.font = font; w = ctx.measureText(ch).width; glyphSizes.set(k, w); }
+    return w;
+  }
+  function lineKm(L) {
+    if (L.km) return L.km;
+    var km = new Float64Array(L.n);
+    for (var k = 1; k < L.n; k++) {
+      var d = L.x[k] * L.x[k - 1] + L.y[k] * L.y[k - 1] + L.z[k] * L.z[k - 1];
+      km[k] = km[k - 1] + Math.acos(Math.max(-1, Math.min(1, d))) * R_KM;
+    }
+    return (L.km = km);
+  }
+  function leafLines(lines, out) {
+    lines.forEach(function (L) { if (L.parts) leafLines(L.parts, out); else out.push(L); });
+    return out;
+  }
+  function linePoint(L, k) {
+    if (flat) { flatArrays(L); return projectLL(L.L[k] / D2R, L.P[k] / D2R); }
+    var x = L.x[k], y = L.y[k], z = L.z[k], d = x * B.cx + y * B.cy + z * B.cz;
+    if (d <= 0) return null;
+    return [cx + B.r * (x * B.ex + y * B.ey + z * B.ez), cy - B.r * (x * B.nx + y * B.ny + z * B.nz), d];
+  }
+  function riverSpan(L, a, b, box) {
+    var km = L.km, lo = 0, hi = L.n - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (km[mid] <= a) lo = mid; else hi = mid; }
+    var pts = [], kms = [];
+    for (var k = lo; k < L.n; k++) {
+      var p = linePoint(L, k);
+      if (!p || (!flat && p[2] <= 0.05) || p[0] < box[0] || p[0] > box[2] || p[1] < box[1] || p[1] > box[3]) return null;
+      if (pts.length && Math.abs(p[0] - pts[pts.length - 1][0]) > W / 2) return null;
+      pts.push([p[0], p[1]]); kms.push(km[k]);
+      if (km[k] >= b) break;
+    }
+    if (pts.length < 2 || kms[kms.length - 1] < b || kms[0] > a) return null;
+    return smoothRun(pts, kms);
+  }
+  function smoothRun(pts, kms) {
+    var step = 2, res = [pts[0]], rk = [kms[0]];
+    for (var k = 1; k < pts.length; k++) {
+      var d = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]), m = Math.max(1, Math.ceil(d / step));
+      for (var j = 1; j <= m; j++) {
+        var t = j / m;
+        res.push([pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * t, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t]);
+        rk.push(kms[k - 1] + (kms[k] - kms[k - 1]) * t);
+      }
+    }
+    var w = 7, out = [], cum = [0];
+    for (k = 0; k < res.length; k++) {
+      var sx = 0, sy = 0, c = 0;
+      for (j = Math.max(0, k - w); j <= Math.min(res.length - 1, k + w); j++) { sx += res[j][0]; sy += res[j][1]; c++; }
+      out.push([sx / c, sy / c]);
+      if (k) cum.push(cum[k - 1] + Math.hypot(out[k][0] - out[k - 1][0], out[k][1] - out[k - 1][1]));
+    }
+    return { pts: out, cum: cum, km: rk, len: cum[cum.length - 1] };
+  }
+  function runPx(run, km) {
+    var lo = 0, hi = run.km.length - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (run.km[mid] <= km) lo = mid; else hi = mid; }
+    var t = run.km[hi] > run.km[lo] ? (km - run.km[lo]) / (run.km[hi] - run.km[lo]) : 0;
+    return run.cum[lo] + (run.cum[hi] - run.cum[lo]) * Math.max(0, Math.min(1, t));
+  }
+  function pointAt(run, s) {
+    var cum = run.cum, pts = run.pts, lo = 0, hi = cum.length - 1;
+    s = Math.max(0, Math.min(run.len, s));
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (cum[mid] <= s) lo = mid; else hi = mid; }
+    var seg = cum[hi] - cum[lo] || 1, t = (s - cum[lo]) / seg;
+    return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * t, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * t];
+  }
+  function glyphsAt(run, s0, ws, sp, tw, f) {
+    if (s0 < 0 || s0 + tw > run.len) return null;
+    var a = pointAt(run, s0), b = pointAt(run, s0 + tw), back = b[0] < a[0];
+    var glyphs = [], turn = 0, d = 0, prev = null;
+    for (var j = 0; j < ws.length; j++) {
+      var mid = d + ws[j] / 2, s = back ? s0 + tw - mid : s0 + mid;
+      var p = pointAt(run, s), q1 = pointAt(run, s - f * 0.7), q2 = pointAt(run, s + f * 0.7);
+      var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
+      if (prev !== null) {
+        var da = Math.abs(ang - prev); da = Math.min(da, TAU - da);
+        if (da > 0.6) return null;
+        turn += da;
+      }
+      prev = ang;
+      glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
+      d += ws[j] + sp;
+    }
+    return turn < 1.6 ? { glyphs: glyphs, turn: turn } : null;
+  }
+  function glyphBox(glyphs, f) {
+    var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
+    glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
+    return mkBox((gx0 + gx1) / 2, (gy0 + gy1) / 2, (gx1 - gx0) / 2 + f * 0.6, (gy1 - gy0) / 2 + f * 0.6, 0);
+  }
+  function vecAt(L, km) {
+    var k = 0;
+    while (k < L.n - 2 && L.km[k + 1] < km) k++;
+    var t = L.km[k + 1] > L.km[k] ? Math.max(0, Math.min(1, (km - L.km[k]) / (L.km[k + 1] - L.km[k]))) : 0;
+    return [L.x[k] + (L.x[k + 1] - L.x[k]) * t, L.y[k] + (L.y[k + 1] - L.y[k]) * t, L.z[k] + (L.z[k + 1] - L.z[k]) * t];
+  }
+  function nearestOn(leaves, v) {
+    var best = null, bestDot = -2;
+    for (var li = 0; li < leaves.length; li++) {
+      var L = leaves[li];
+      lineKm(L);
+      for (var k = 0; k < L.n; k++) {
+        var d = L.x[k] * v[0] + L.y[k] * v[1] + L.z[k] * v[2];
+        if (d > bestDot) { bestDot = d; best = { li: li, ckm: L.km[k] }; }
+      }
+    }
+    return best;
+  }
+  var riverPick = new Map();
+  function riverSpot(rv, ws, sp, tw, f, box, kp, placed) {
+    var leaves = leafLines(rv.lines, []), textKm = tw / kp, half = textKm * 0.7, step = textKm * 0.5;
+    var key = rv.name, was = riverPick.get(key), sig = leaves.length;
+    function at(li, c) {
+      var L = leaves[li];
+      if (!L) return null;
+      lineKm(L);
+      if (c + half > L.km[L.n - 1]) return null;
+      var run = riverSpan(L, c - half, c + half, box);
+      if (!run) return null;
+      var g = glyphsAt(run, runPx(run, c) - tw / 2, ws, sp, tw, f);
+      if (!g) return null;
+      g.box = glyphBox(g.glyphs, f);
+      if (collides(placed, g.box)) return null;
+      g.li = li; g.ckm = c; g.c = pointAt(run, runPx(run, c));
+      return g;
+    }
+    if (was && was.sig !== sig && was.v) {
+      var moved = nearestOn(leaves, was.v);
+      if (moved) { was = { sig: sig, li: moved.li, ckm: moved.ckm, step: was.step, v: was.v }; riverPick.set(key, was); }
+    }
+    if (moving) return was && was.sig === sig ? at(was.li, was.ckm) : null;
+    if (was && was.sig === sig && was.step > step * 0.8 && was.step < step * 1.25) {
+      var keep = at(was.li, was.ckm);
+      if (keep) return keep;
+    }
+    var best = null, mx = (box[0] + box[2]) / 2, my = (box[1] + box[3]) / 2, diag = Math.hypot(box[2] - box[0], box[3] - box[1]);
+    for (var li = 0; li < leaves.length; li++) {
+      var L = leaves[li];
+      if (flat ? !featureInFlat(L) : !featureInFront(L)) continue;
+      lineKm(L);
+      var count = Math.floor(L.km[L.n - 1] / step);
+      for (var m = 0; m < count; m++) {
+        var g = at(li, (m + 0.5) * step);
+        if (!g) continue;
+        g.score = g.turn + Math.hypot(g.c[0] - mx, g.c[1] - my) / diag;
+        if (!best || g.score < best.score) best = g;
+      }
+    }
+    if (best) riverPick.set(key, { sig: sig, li: best.li, ckm: best.ckm, step: step, v: vecAt(leaves[best.li], best.ckm) });
+    return best;
+  }
+  function drawRiverLabels(placed, S) {
+    var top = Math.min(riverLabelRank(S), riverRank(S));
+    if (!layers.water || !rivers || !top || clamp01((S - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)) < 0.6) return;
+    var f = 11.5, font = "italic 400 " + f + "px " + SERIF, box = [4, 4, W - 4, H - 4], shown = 0, kp = kmPx(), list = riverNames();
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
+    for (var i = 0; i < list.length && shown < 40; i++) {
+      var rv = list[i];
+      if (rv.r > top) break;
+      var chars = Array.from(rv.name), sp = f * 0.06, ws = [], tw = 0;
+      for (var j = 0; j < chars.length; j++) { ws.push(charWidth(font, chars[j])); tw += ws[j] + (j ? sp : 0); }
+      var spot = riverSpot(rv, ws, sp, tw, f, box, kp, placed);
+      if (!spot || !insideMap(spot.box)) continue;
+      placed.push(spot.box);
+      shown++;
+      ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"] || pal.river;
+      for (j = 0; j < spot.glyphs.length; j++) {
+        if (chars[j] === " ") continue;
+        var g = spot.glyphs[j];
+        ctx.save();
+        ctx.translate(g[0], g[1]); ctx.rotate(g[2]);
+        ctx.strokeText(chars[j], 0, 0); ctx.fillText(chars[j], 0, 0);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
   }
   function capitalAt(c, day) {
     var m = c[4];
