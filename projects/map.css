@@ -2843,7 +2843,8 @@ body:not(.is-panel) .panel-tab .ic {
   font-weight: 600;
   letter-spacing: -0.005em;
   white-space: nowrap;
-  text-shadow: 0 0 1px rgba(38, 38, 42, 0.7), 0 1px 3px rgba(38, 38, 42, 0.55), 0 0 10px rgba(38, 38, 42, 0.3);
+  /* Dark enough to read over polar ice as well as sea and land. */
+  text-shadow: 0 0 2px rgba(38, 38, 42, 0.85), 0 1px 4px rgba(38, 38, 42, 0.6), 0 0 14px rgba(38, 38, 42, 0.45);
   pointer-events: none;
   transform: translateX(-50%);
   transition: opacity 400ms ease;
