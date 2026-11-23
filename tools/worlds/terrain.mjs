@@ -156,6 +156,9 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
   const nValleyA = makeNoise(r), nValleyB = makeNoise(r), nValleyC = makeNoise(r);
   const nIsle = makeNoise(r), nPlateau = makeNoise(r), nFjord = makeNoise(r), nRangeA = makeNoise(r), nRangeB = makeNoise(r);
 
+  // Room at the top or bottom for a polar landmass, where the world has one: the projects' land keeps further off.
+  const polarRoom = 120 * S;
+  const mT = 46 * S + (style.ice && style.ice.includes('n') ? polarRoom : 0), mB = 46 * S + (style.ice && style.ice.includes('s') ? polarRoom : 0);
   const layoutName = style.layout && LAYOUTS[style.layout] ? style.layout : r.pick(DEFAULT_LAYOUT[clamp(masses, 1, 4)]);
   const specs = fitMassCount(LAYOUTS[layoutName](r), clamp(masses, 1, 4), r);
 
@@ -200,12 +203,12 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
     }
     let sx = 0, sy = 0;
     if (maxX - minX < W - 2 * margin) { if (minX < margin) sx = margin - minX; else if (maxX > W - margin) sx = W - margin - maxX; }
-    if (maxY - minY < H - 2 * margin) { if (minY < margin) sy = margin - minY; else if (maxY > H - margin) sy = H - margin - maxY; }
+    if (maxY - minY < H - mT - mB) { if (minY < mT) sy = mT - minY; else if (maxY > H - mB) sy = H - mB - maxY; }
     for (const n of nodes) {
       n.x += sx; n.y += sy;
       n.x = clamp(n.x, margin + 20 * S, W - margin - 20 * S);
-      n.y = clamp(n.y, margin + 20 * S, H - margin - 20 * S);
-      const room = Math.min(n.x, W - n.x, n.y, H - n.y) - margin * 0.6;
+      n.y = clamp(n.y, mT + 20 * S, H - mB - 20 * S);
+      const room = Math.min(n.x - margin * 0.6, W - n.x - margin * 0.6, n.y - mT * 0.6 - (mT - 46 * S) * 0.4, H - n.y - mB * 0.6 - (mB - 46 * S) * 0.4);
       n.r = Math.max(18 * S, Math.min(n.r, room));
     }
     for (const n of nodes) lobes.push({ ...n, mass: mi });
@@ -220,7 +223,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
       const asp = r.range(1.5, 3.4), long = pr * Math.sqrt(asp);
       const d = n.r * r.range(0.8, 1.0) + long * 0.45;
       const px = n.x + Math.cos(a) * d, py = n.y + Math.sin(a) * d;
-      if (px < margin + long || px > W - margin - long || py < margin + long || py > H - margin - long) continue;
+      if (px < margin + long || px > W - margin - long || py < mT + long || py > H - mB - long) continue;
       const lean = a + r.range(-0.6, 0.6);
       lobes.push({ x: px, y: py, r: pr, asp, ang: lean, mass: mi });
       // Some peninsulas run on into a second, smaller lobe, bent to one side.
@@ -228,7 +231,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
         const a2 = lean + r.range(-0.9, 0.9), pr2 = pr * r.range(0.5, 0.8), asp2 = r.range(1.3, 2.6);
         const reach2 = long * 0.8 + pr2 * Math.sqrt(asp2) * 0.6;
         const qx = px + Math.cos(lean) * long * 0.8 + Math.cos(a2) * pr2 * 0.6, qy = py + Math.sin(lean) * long * 0.8 + Math.sin(a2) * pr2 * 0.6;
-        if (qx > margin + reach2 * 0.5 && qx < W - margin - reach2 * 0.5 && qy > margin + reach2 * 0.5 && qy < H - margin - reach2 * 0.5) lobes.push({ x: qx, y: qy, r: pr2, asp: asp2, ang: a2, mass: mi });
+        if (qx > margin + reach2 * 0.5 && qx < W - margin - reach2 * 0.5 && qy > mT + reach2 * 0.5 && qy < H - mB - reach2 * 0.5) lobes.push({ x: qx, y: qy, r: pr2, asp: asp2, ang: a2, mass: mi });
       }
     }
     // Gulfs: bites out of the edge of a lobe.
@@ -267,7 +270,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
     const rad = Math.sqrt((islandPx * r.range(0.5, 1.5)) / bigIslands / Math.PI) * 1.05;
     let best = null;
     for (let t = 0; t < 80; t++) {
-      const x = r.range(0.06, 0.94) * W, y = r.range(0.1, 0.9) * H;
+      const x = r.range(0.06, 0.94) * W, y = r.range(0.1 * H + mT - 46 * S, 0.9 * H - mB + 46 * S);
       const c = clearance(x, y);
       // Near enough to a coast to belong to it, far enough to be an island.
       const want = rad * 1.5 + 34 * S;
@@ -279,7 +282,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
     let ang = r.range(0, TAU), x = best.x, y = best.y, pr = rad / Math.sqrt(parts * 0.75);
     for (let p = 0; p < parts; p++) {
       const rr = pr * r.range(0.75, 1.15);
-      const room = Math.min(x, W - x, y, H - y) - 30 * S;
+      const room = Math.min(x, W - x, y - (mT - 46 * S), H - y - (mB - 46 * S)) - 30 * S;
       if (room > 12 * S) lobes.push({ x, y, r: Math.min(rr, room), asp: r.range(1, 2.2), ang: r.range(0, TAU), mass: -1, island: true });
       ang += r.range(-0.9, 0.9);
       x += Math.cos(ang) * pr * 1.25; y += Math.sin(ang) * pr * 1.25;
@@ -297,7 +300,7 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
     let rr = r.range(9, 19) * S;
     const n = 3 + r.int(6);
     for (let k = 0; k < n; k++) {
-      if (x < 44 * S || x > W - 44 * S || y < 44 * S || y > H - 44 * S) break;
+      if (x < 44 * S || x > W - 44 * S || y < mT - 2 * S || y > H - mB + 2 * S) break;
       if (clearance(x, y) > rr * 0.4) lobes.push({ x, y, r: rr, asp: r.range(1, 2.4), ang: ang + r.range(-0.6, 0.6), mass: -1, island: true, small: true });
       ang += curve + r.range(-0.25, 0.25);
       const hop = rr * r.range(1.7, 2.6);
@@ -392,8 +395,8 @@ export function buildTerrain({ rng, width, height, landShare, masses = 2, style 
         f -= cold * 0.5 * smoothstep(0.42, 0.8, fj) * smoothstep(0.45, 0.05, Math.abs(f));
       }
       // Sea all round the map's edge.
-      const edge = Math.min(x, W - 1 - x, y, H - 1 - y);
-      if (edge < 44 * S) f -= 1.4 * (1 - edge / (44 * S)) ** 2;
+      const edge = Math.min(x, W - 1 - x, y - (mT - 46 * S), H - 1 - y - (mB - 46 * S));
+      if (edge < 44 * S) f -= 1.4 * Math.min(1, 1 - edge / (44 * S)) ** 2;
       field[i] = f;
     }
   }

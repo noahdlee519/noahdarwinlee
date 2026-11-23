@@ -242,6 +242,8 @@
     var Limg = layer("map-ground", true);
     svg("path", { class: "map-land", d: world.coast }, Limg.tpl);
     var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" }, Limg.tpl);
+    if (world.polar && world.polar.indexOf("n") >= 0) svg("rect", { class: "map-polar-cap", x: 0, y: -H * 3, width: W, height: H * 3 }, Limg.tpl);
+    if (world.polar && world.polar.indexOf("s") >= 0) svg("rect", { class: "map-polar-cap", x: 0, y: H, width: W, height: H * 3 }, Limg.tpl);
     this.tileHost = svg("g", { class: "map-tiles" }, g);
     this.tiles = new Tiles(this);
     // The finer detail (parks, streams, roads, subdivisions, and small places' names) arrives once the map is zoomed
@@ -260,7 +262,9 @@
       if (r.minZoom > 1) p.classList.add("is-minor");
     });
     // The sea: this copy's own strip of the map, less its land, so neighbouring copies meet edge to edge.
-    svg("path", { class: "map-sea", d: "M0 " + -H * 3 + "H" + W + "V" + H * 4 + "H0Z" + world.coast, "fill-rule": "evenodd" }, La.tpl);
+    // Beyond a polar edge the ice cap runs on, so the map's edge there is ice, not sea.
+    var pn = world.polar && world.polar.indexOf("n") >= 0, ps = world.polar && world.polar.indexOf("s") >= 0;
+    svg("path", { class: "map-sea", d: "M0 " + (pn ? 0 : -H * 3) + "H" + W + "V" + (ps ? H : H * 4) + "H0Z" + world.coast, "fill-rule": "evenodd" }, La.tpl);
     if (world.lakes) svg("path", { class: "map-lakes", d: world.lakes }, La.tpl);
     this.reservoirTpl = svg("g", { class: "map-reservoirs" }, La.tpl);
     if (world.estuaries && world.estuaries.fill) {
@@ -700,6 +704,7 @@
       self.chunksAsked = {};
       var P = self.parkLayer.tpl;
       d.parks.forEach(function (p) { svg("path", { class: "map-park is-" + (p.kind || "park"), d: p.path, "data-park": p.id }, P); });
+      if (d.wadis) svg("path", { class: "map-wadi", d: d.wadis }, self.streamTpl);
       if (d.streams) svg("path", { class: "map-stream", d: d.streams }, self.streamTpl);
       if (d.lakes) svg("path", { class: "map-small-lakes", d: d.lakes }, self.reservoirTpl);
       var R = self.roadLayer.tpl;
@@ -707,6 +712,8 @@
       // rings, trunk roads, motorways, and the ferries.
       self.streetTpl = svg("g", { class: "map-streets" }, R);
       ["local", "secondary", "arterial", "ring", "trunk", "motorway"].forEach(function (k) { if (d.roads[k]) svg("path", { class: "map-road r-" + k, d: d.roads[k] }, R); });
+      // A causeway: a road on a pale embankment across the water.
+      if (d.causeway) { svg("path", { class: "map-causeway", d: d.causeway }, R); svg("path", { class: "map-road r-causeway", d: d.causeway }, R); }
       if (d.ferries) svg("path", { class: "map-ferry", d: d.ferries }, R);
       if (d.admin) svg("path", { class: "map-subdiv", d: d.admin }, self.adminTpl);
       [self.parkLayer, self.waterLayer, self.roadLayer, self.lineLayer].forEach(function (L) { self._refresh(L); });

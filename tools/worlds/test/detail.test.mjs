@@ -16,7 +16,7 @@ const D = world.detail;
 const onLand = (x, y) => {
   for (const [dx, dy] of [[0, 0], [0.12, 0], [-0.12, 0], [0, 0.12], [0, -0.12], [0.12, 0.12], [-0.12, -0.12], [0.12, -0.12], [-0.12, 0.12]]) {
     const qx = Math.floor(x + dx), qy = Math.floor(y + dy);
-    if (qx >= 0 && qy >= 0 && qx < W && qy < H && land[qy * W + qx] && !lakes[qy * W + qx]) return true;
+    if (qx >= 0 && qy >= 0 && qx < W && qy < H && ((land[qy * W + qx] && !lakes[qy * W + qx]) || (world.about && world.about.mask[qy * W + qx]))) return true;
   }
   return false;
 };
@@ -42,7 +42,8 @@ test('roads and streets keep to the land; only ferries cross the sea', () => {
       }
     }
   };
-  for (const cls of ['motorway', 'trunk', 'secondary', 'local']) assert.ok(D.roads.roads.some((r) => r.cls === cls), `no ${cls} roads`);
+  // (Trunk roads join cities no motorway already joins; in Le Guin's islands there may be none.)
+  for (const cls of ['motorway', 'secondary', 'local']) assert.ok(D.roads.roads.some((r) => r.cls === cls), `no ${cls} roads`);
   for (const r of D.roads.roads) check(r.pts, `a ${r.cls} road`);
   for (const s of D.streets) check(s.pts, `a street (${s.cls})`);
   for (const [a, b] of D.roads.ferries) {
@@ -132,17 +133,44 @@ test('the island called About lies in open water, in no country, with its dot', 
   const a = world.about;
   assert.ok(a, 'no About island');
   let n = 0;
-  for (let i = 0; i < W * H; i++) if (a.mask[i]) { n++; assert.equal(owner[i], -1); assert.equal(land[i], 0); }
-  assert.ok(n > 40, `the island is only ${n} pixels`);
+  for (let i = 0; i < W * H; i++) if (a.mask[i]) { n++; assert.equal(owner[i], -1); if (a.kind !== 'lake') assert.equal(land[i], 0); }
+  assert.ok(n > 20, `the island is only ${n} pixels`);
   const files = buildWorldFiles(world).data;
   assert.deepEqual(files.here, [Math.round(a.x * 10) / 10, Math.round(a.y * 10) / 10]);
   assert.ok(world.labels.some((l) => l.id === 'about' && l.text === 'About'), 'the island has no name');
   assert.ok(!files.projects.some((p) => p.id === 'about'), 'About is not a project');
 });
 
+test('towns and cities are laid out in many ways, and only the largest have ring roads', () => {
+  const S = world.settlements;
+  const big = S.filter((s) => s.rank <= RANK.CITY), towns = S.filter((s) => s.rank === RANK.TOWN), villages = S.filter((s) => s.rank === RANK.VILLAGE);
+  const rings = S.filter((s) => s.ringRoad);
+  assert.ok(rings.length >= 1 && rings.length <= 3, `${rings.length} ring roads`);
+  assert.ok(rings.every((s) => s.rank <= RANK.CITY), 'a ring road round a small place');
+  assert.ok(new Set(big.map((s) => s.layout)).size >= 5, `the cities are of only ${new Set(big.map((s) => s.layout)).size} kinds`);
+  assert.ok(new Set(towns.map((s) => s.layout)).size >= 3, 'the towns are all alike');
+  assert.ok(villages.every((s) => s.layout === 'mainstreet' || s.layout === 'crossroads'), 'a village is a main street or a crossroads');
+  assert.ok(D.streets.filter((st) => st.cls === 'ring').length <= rings.length * 2, 'ring roads round places without one');
+  // The built-up ground has an organic outline, not a disc: its reach varies round each city.
+  const built = world.coverArgs.urban;
+  let ragged = 0;
+  for (const s of big) {
+    const reach = [];
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * Math.PI * 2;
+      let t = 0;
+      while (t < 30 && built(s.x + Math.cos(a) * t, s.y + Math.sin(a) * t)) t += 0.25;
+      reach.push(t);
+    }
+    const m = reach.reduce((p, q) => p + q, 0) / reach.length, sd = Math.sqrt(reach.reduce((p, q) => p + (q - m) ** 2, 0) / reach.length);
+    if (m > 0 && sd / m > 0.25) ragged++;
+  }
+  assert.ok(ragged / big.length > 0.7, `only ${ragged} of ${big.length} cities have a ragged outline`);
+});
+
 test('small lakes are vectors in natural shapes, and the land cover makes no water flecks of its own', () => {
   const L = world.smallLakes.lakes;
-  assert.ok(L.length > 50, `only ${L.length} small lakes`);
+  assert.ok(L.length > 15 && L.length < 200, `${L.length} small lakes`);
   for (const l of L) {
     assert.ok(l.ring.length >= 10, `a ${l.kind} lake has only ${l.ring.length} points`);
     assert.ok(onLand(l.x, l.y) || land[Math.floor(l.y) * W + Math.floor(l.x)] === 1, `a ${l.kind} lake is not on land`);

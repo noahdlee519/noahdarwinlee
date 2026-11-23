@@ -30,7 +30,7 @@ export function buildParks({ land, owner, cover, elev, temp, moist, settlements,
     forest: (i) => (cover[i] === COVER.FOREST ? 1 : cover[i] === COVER.WOODLAND ? 0.5 : 0),
     refuge: (i) => smoothstep(0.12, 0.03, elev[i]) * smoothstep(0.3, 0.6, moist[i]) + Math.min(1, wet[i] * 2),
     marine: (i) => (dist[i] <= 3 * S ? 1 : 0) * smoothstep(0.08, 0.01, elev[i]),
-    desert: (i) => (cover[i] === COVER.DESERT || cover[i] === COVER.SAND ? 1 : cover[i] === COVER.STEPPE ? 0.3 : 0),
+    desert: (i) => (cover[i] === COVER.DESERT || cover[i] === COVER.SAND || cover[i] === COVER.DUNE || cover[i] === COVER.SALT || cover[i] === COVER.DRYROCK ? 1 : cover[i] === COVER.STEPPE ? 0.3 : 0),
     park: (i) => (cover[i] === COVER.FOREST || cover[i] === COVER.ROCK ? 0.8 : cover[i] === COVER.WOODLAND ? 0.6 : 0.3) + 0.3 * smoothstep(0.2, 0.4, elev[i]),
     small: (i) => (cover[i] === COVER.FOREST || cover[i] === COVER.WOODLAND ? 0.7 : 0.4),
   };
@@ -150,10 +150,14 @@ export function buildAdmin({ owner, projects, settlements, areas, width, height,
     }
     return seeds.length >= 2 ? seeds : [];
   });
+  // Some countries' subdivisions were surveyed, with straight lines between them; the rest wander, as old ones do.
+  const ra = rng.fork('admin-kind');
+  const surveyed = projects.map(() => ra.chance(0.45));
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, k = owner[i];
     if (k < 0 || !seedsOf[k].length) continue;
-    const wx = x + 9 * S * fbm(n, x / (40 * S), y / (40 * S), 3), wy = y + 9 * S * fbm(n, x / (40 * S) + 7.1, y / (40 * S) - 3.3, 3);
+    const amp = surveyed[k] ? 0 : 9 * S;
+    const wx = x + amp * fbm(n, x / (40 * S), y / (40 * S), 3), wy = y + amp * fbm(n, x / (40 * S) + 7.1, y / (40 * S) - 3.3, 3);
     let best = 0, bd = Infinity;
     seedsOf[k].forEach((s, j) => { const d = (s.x - wx) ** 2 + (s.y - wy) ** 2; if (d < bd) { bd = d; best = j; } });
     region[i] = best;
@@ -347,8 +351,8 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
       }
       return g;
     };
-    const forest = share(COVER.FOREST), desert = share(COVER.DESERT), sand = share(COVER.SAND);
-    for (let i = 0; i < N; i++) desert[i] += sand[i];
+    const forest = share(COVER.FOREST), desert = share(COVER.DESERT);
+    for (const extra of [COVER.SAND, COVER.DUNE, COVER.SALT, COVER.DRYROCK]) { const g = share(extra); for (let i = 0; i < N; i++) desert[i] += g[i]; }
     const plateau = (i) => land[i] && elev[i] > 0.27 && elev[i] < 0.5 && Math.abs(elev[Math.min(N - 1, i + 3)] - elev[Math.max(0, i - 3)]) + Math.abs(elev[Math.min(N - 1, i + 3 * W)] - elev[Math.max(0, i - 3 * W)]) < 0.025;
     const kinds = [
       { test: (i) => land[i] && forest[i] > 0.55, min: 2600 * S * S, forms: [(w) => `${w} Forest`, (w) => `${w} Woods`], max: 3 },
@@ -485,7 +489,7 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   // ---- The larger small lakes: finger lakes along their length, reservoirs, and the rest. ----
   const placeLakes = () => {
     if (!smallLakes) return;
-    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' ? 1.2 : 4) * S * S).sort((a, b) => b.area - a.area);
+    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1.2 : 4) * S * S).sort((a, b) => b.area - a.area);
     for (const l of list.slice(0, 40)) {
       const w0 = wordAt(l.x, l.y);
       const text = l.kind === 'reservoir' ? `${w0} Reservoir` : l.kind === 'crater' ? `Crater Lake ${w0}` : `Lake ${w0}`;

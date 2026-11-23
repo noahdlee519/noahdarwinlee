@@ -60,6 +60,22 @@
   opacity: 1;
 }
 
+/* Dry riverbeds (wadis) in the desert: faint lines a shade darker than the sand, from zoom 3. */
+.map-wadi {
+  fill: none;
+  stroke: #e2dccd;
+  stroke-width: 0.8px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map.is-z3 .map-wadi {
+  opacity: 1;
+}
+
 /* National parks: one calm, deeper green laid flat over the land cover, with no line around it. */
 .map-park {
   fill: var(--m-park);
@@ -241,12 +257,12 @@
 }
 
 .r-arterial {
-  stroke: #c3c9dc;
+  stroke: #ffffff;
   stroke-width: 1px;
   opacity: 0;
 }
 
-.map.is-z3 .r-arterial {
+.map.is-z35 .r-arterial {
   opacity: 1;
 }
 
@@ -258,9 +274,10 @@
   stroke-width: 1px;
 }
 
+/* Streets: thin white lines on the grey of the built-up ground, as a web map draws a city. */
 .r-street {
-  stroke: #c9cfe0;
-  stroke-width: 1px;
+  stroke: #ffffff;
+  stroke-width: 0.6px;
   opacity: 0;
 }
 
@@ -269,17 +286,36 @@
 }
 
 .map.is-z5 .r-street {
-  stroke-width: 1.4px;
+  stroke-width: 0.8px;
 }
 
 .r-minor {
-  stroke: #d6dbe7;
-  stroke-width: 0.9px;
+  stroke: #ffffff;
+  stroke-width: 0.5px;
   opacity: 0;
 }
 
 .map.is-z5 .r-minor {
   opacity: 1;
+}
+
+/* Beyond a polar edge: the ice cap, running on. */
+.map-polar-cap {
+  fill: #ffffff;
+}
+
+/* A causeway: a road on a pale embankment across the water. */
+.map-causeway {
+  fill: none;
+  stroke: #e9eadf;
+  stroke-width: 3.2px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.r-causeway {
+  stroke: #b4bdd6;
+  stroke-width: 1.2px;
 }
 
 /* Small lakes: water, crisp at every zoom. */

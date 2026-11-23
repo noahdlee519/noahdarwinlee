@@ -8,7 +8,7 @@
 
 import { makeRng, clamp } from './rng.mjs';
 import { buildTerrain } from './terrain.mjs';
-import { buildFields, classifyCover } from './climate.mjs';
+import { buildFields, classifyCover, findOases } from './climate.mjs';
 import { buildHydro } from './hydro.mjs';
 import { buildCountries } from './political.mjs';
 import { placeLabels, labelRects, rectsOverlap } from './labels.mjs';
@@ -18,7 +18,8 @@ import { buildStreets } from './towns.mjs';
 import { buildParks, buildAdmin, buildStreams, placeDetailLabels } from './features.mjs';
 import { assignCultures, phonologyNamer, PHONOLOGIES, CAPITAL_NAMES } from './cultures.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from './lakes.mjs';
-import { buildIce, placeAbout } from './polar.mjs';
+import { buildPolar, placeAbout } from './polar.mjs';
+import { coastDistance } from './terrain.mjs';
 
 export const WIDTH = 1600, HEIGHT = 800;
 export const PICTURE_SCALE = 1.5; // picture pixels per map unit
@@ -31,28 +32,30 @@ export const TILE_LEVELS = [{ scale: 4, size: 1024 }, { scale: 8, size: 1024 }, 
 // continents. latTop/latBottom: the latitudes of the map's top and bottom
 // edges. wet: rainfall, 1 is usual. islands: the share of land in islands.
 // land: nudges the land share up or down. mountains, lakes, ponds, roughness: 1 is usual. warm: degrees
-// warmer. ice: polar ice along the top ('n') or bottom ('s') edge. volcanoes: how many.
+// warmer. ice: a polar landmass along the top ('n') or bottom ('s') edge; polar: how it meets the projects' land
+// ('isthmus', 'strait', or 'apart'). volcanoes: how many. about: the setting of the island called About (see
+// polar.mjs: volcano, atoll, crescent, fjord, lake, lighthouse, causeway, or ferry).
 export const WORLDS = [
-  { name: 'Le Guin', layout: 'archipelago', masses: 4, latTop: 62, latBottom: 12, wet: 1.1, islands: 0.24, land: -0.02 },
-  { name: 'Asimov', layout: 'trio', masses: 3, latTop: 66, latBottom: -30, wet: 1.1 },
-  { name: 'Butler', layout: 'twins', masses: 2, latTop: 38, latBottom: -42, wet: 0.95, mountains: 0.8, roughness: 0.85 },
-  { name: 'Herbert', layout: 'pangaea', masses: 1, latTop: 46, latBottom: 6, wet: 0.7, land: 0.09, mountains: 1.2 },
-  { name: 'Bradbury', layout: 'crescent', masses: 2, latTop: 58, latBottom: 14, wet: 0.74, warm: 2 },
-  { name: 'Clarke', layout: 'quad', masses: 4, latTop: 50, latBottom: -50, wet: 1.05, mountains: 0.75, roughness: 1.25 },
-  { name: 'Dick', layout: 'northsouth', masses: 2, latTop: 70, latBottom: -20, wet: 1.05, ice: 'n' },
-  { name: 'Heinlein', layout: 'spine', masses: 2, latTop: 74, latBottom: 20, mountains: 1.6 },
-  { name: 'Gibson', layout: 'archipelago', masses: 3, latTop: 52, latBottom: 8, wet: 1.15, islands: 0.28, land: -0.04 },
-  { name: 'Banks', layout: 'quad', masses: 4, latTop: 30, latBottom: -62, wet: 1.1, roughness: 1.2, ice: 's' },
-  { name: 'Lem', layout: 'twins', masses: 2, latTop: 64, latBottom: -10, wet: 1.2, islands: 0.22, land: -0.035 },
-  { name: 'Atwood', layout: 'pangaea', masses: 1, latTop: 75, latBottom: 36, wet: 1.05, lakes: 1.6, ponds: 1.6, ice: 'n' },
-  { name: 'Jemisin', layout: 'pangaea', masses: 1, latTop: 36, latBottom: -36, wet: 0.82, land: 0.1, mountains: 1.4, volcanoes: 3 },
-  { name: 'Delany', layout: 'trio', masses: 3, latTop: 24, latBottom: -24, wet: 1.3, warm: 1 },
-  { name: 'Vonnegut', layout: 'twins', masses: 2, latTop: 72, latBottom: 24 },
-  { name: 'Verne', layout: 'archipelago', masses: 4, latTop: 40, latBottom: -40, wet: 0.86, islands: 0.32, land: -0.07, volcanoes: 3 },
-  { name: 'Wells', layout: 'northsouth', masses: 2, latTop: 56, latBottom: -56, wet: 0.86, ice: 's' },
-  { name: 'Shelley', layout: 'crescent', masses: 2, latTop: 80, latBottom: 40, wet: 1.05, lakes: 1.3, ice: 'n' },
-  { name: 'Tiptree', layout: 'spine', masses: 2, latTop: 28, latBottom: -44, wet: 1.1, warm: 2 },
-  { name: 'Chiang', layout: 'ring', masses: 1, latTop: 60, latBottom: -10, wet: 1.05, mountains: 1.3 },
+  { name: 'Le Guin', layout: 'archipelago', masses: 4, latTop: 62, latBottom: 12, wet: 1.1, islands: 0.24, land: -0.02, about: 'lighthouse' },
+  { name: 'Asimov', layout: 'trio', masses: 3, latTop: 66, latBottom: -30, wet: 1.1, about: 'crescent' },
+  { name: 'Butler', layout: 'twins', masses: 2, latTop: 38, latBottom: -42, wet: 0.95, mountains: 0.8, roughness: 0.85, about: 'causeway' },
+  { name: 'Herbert', layout: 'pangaea', masses: 1, latTop: 46, latBottom: 6, wet: 0.7, land: 0.09, mountains: 1.2, about: 'lake' },
+  { name: 'Bradbury', layout: 'crescent', masses: 2, latTop: 58, latBottom: 14, wet: 0.74, warm: 2, about: 'volcano' },
+  { name: 'Clarke', layout: 'quad', masses: 4, latTop: 50, latBottom: -50, wet: 1.05, mountains: 0.75, roughness: 1.25, about: 'ferry' },
+  { name: 'Dick', layout: 'northsouth', masses: 2, latTop: 70, latBottom: -20, wet: 1.05, ice: 'n', about: 'fjord', polar: 'isthmus' },
+  { name: 'Heinlein', layout: 'spine', masses: 2, latTop: 74, latBottom: 20, mountains: 1.6, about: 'lake' },
+  { name: 'Gibson', layout: 'archipelago', masses: 3, latTop: 52, latBottom: 8, wet: 1.15, islands: 0.28, land: -0.04, about: 'atoll' },
+  { name: 'Banks', layout: 'quad', masses: 4, latTop: 30, latBottom: -62, wet: 1.1, roughness: 1.2, ice: 's', about: 'crescent', polar: 'strait' },
+  { name: 'Lem', layout: 'twins', masses: 2, latTop: 64, latBottom: -10, wet: 1.2, islands: 0.22, land: -0.035, about: 'causeway' },
+  { name: 'Atwood', layout: 'pangaea', masses: 1, latTop: 75, latBottom: 36, wet: 1.05, lakes: 1.6, ponds: 1.6, ice: 'n', about: 'fjord', polar: 'strait' },
+  { name: 'Jemisin', layout: 'pangaea', masses: 1, latTop: 36, latBottom: -36, wet: 0.82, land: 0.1, mountains: 1.4, volcanoes: 3, about: 'volcano' },
+  { name: 'Delany', layout: 'trio', masses: 3, latTop: 24, latBottom: -24, wet: 1.3, warm: 1, about: 'atoll' },
+  { name: 'Vonnegut', layout: 'twins', masses: 2, latTop: 72, latBottom: 24, about: 'lighthouse' },
+  { name: 'Verne', layout: 'archipelago', masses: 4, latTop: 40, latBottom: -40, wet: 0.86, islands: 0.32, land: -0.07, volcanoes: 3, about: 'volcano' },
+  { name: 'Wells', layout: 'northsouth', masses: 2, latTop: 56, latBottom: -56, wet: 0.86, ice: 's', about: 'ferry', polar: 'isthmus' },
+  { name: 'Shelley', layout: 'crescent', masses: 2, latTop: 80, latBottom: 40, wet: 1.05, lakes: 1.3, ice: 'n', about: 'fjord', polar: 'apart' },
+  { name: 'Tiptree', layout: 'spine', masses: 2, latTop: 28, latBottom: -44, wet: 1.1, warm: 2, about: 'atoll' },
+  { name: 'Chiang', layout: 'ring', masses: 1, latTop: 60, latBottom: -10, wet: 1.05, mountains: 1.3, about: 'lighthouse' },
 ];
 
 export const slugOf = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -80,20 +83,31 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   const rng = makeRng(name + (style.reroll ? '#' + style.reroll : ''));
   const terrain = buildTerrain({ rng, width, height, landShare, masses, style });
   const { elev, land } = terrain;
+  // The polar land, where the world has one: what of it joins a project's land becomes that land.
+  const polar = buildPolar({ land, width, height, rng, sides: style.ice, link: style.polar });
+  let claimed = 0;
+  for (let i = 0; i < land.length; i++) if (polar.claim[i]) { land[i] = 1; elev[i] = Math.max(elev[i], 0.025); claimed++; }
+  if (claimed) terrain.dist = coastDistance(land, width, height);
   const fields = buildFields({ elev, land, width, height, rng, style, dist: terrain.dist });
   const hydro = buildHydro({ elev, land, width, height, rain: fields.rain, rng, style });
   const main = new Uint8Array(width * height);
   for (let i = 0; i < main.length; i++) main[i] = hydro.riverClass[i] >= 2 ? 1 : 0;
-  const { cover, ponds } = classifyCover({ fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes } });
+  // The dry basins' floors (salt flats, where no lake lies) and the desert's oases.
+  const basins = new Float32Array(width * height);
+  for (let i = 0; i < basins.length; i++) if (land[i] && !hydro.lakes[i]) basins[i] = Math.max(0, hydro.filled[i] - elev[i]);
+  const oases = findOases({ land, elev, fields, hydro, dist: terrain.dist, width, height, rng });
+  const { cover, ponds } = classifyCover({ fields, elev, land, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, basins, oases, polar: polar.cover });
   // Land no project holds: polar ice in some worlds, and the island called About in every one.
-  const ice = buildIce({ land, width, height, rng, sides: style.ice });
-  const about = placeAbout({ land, ice, width, height, rng });
+  const ice = polar.ice;
+  const about = placeAbout({ land, ice, lakes: hydro.lakes, width, height, rng, kind: style.about, temp: fields.temp });
   const landAll = new Uint8Array(width * height);
   for (let i = 0; i < landAll.length; i++) landAll[i] = land[i] || ice[i] || (about && about.mask[i]) ? 1 : 0;
+  // An island in a lake: the lake's water goes on round it, and the island is in no country.
+  if (about && about.kind === 'lake') for (let i = 0; i < landAll.length; i++) if (about.mask[i]) hydro.lakes[i] = 0;
   // The picture is drawn in makeWorld, once the towns, lakes, and roads are known; it is carried a little way out to
   // sea so the vector coast drawn over it never shows a gap.
-  const coverArgs = { fields, elev, land: landAll, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2, ice, flow: hydro.acc, dist: terrain.dist };
-  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, about, fields, hydro, cover, ponds, coverArgs };
+  const coverArgs = { fields, elev, land: landAll, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2, ice, flow: hydro.acc, dist: terrain.dist, basins, oases, polar: polar.cover, about: about && about.cover };
+  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases };
 }
 
 // The land divided among the projects.
@@ -133,20 +147,42 @@ export function makeWorld(name, projects, opts) {
   const nations = buildNations(world, projects);
   const { width, height, rng, land, elev, hydro, cover, fields, terrain, style } = world;
   const owner = nations.owner;
+  // An About island in a lake is in no country.
+  if (world.about && world.about.kind === 'lake') for (let i = 0; i < owner.length; i++) if (world.about.mask[i]) owner[i] = -1;
   const cultures = assignCultures(projects, rng, neighbours(owner, projects.length, width, height));
   // Rivers as drawn: smoothed, and meandering on the lowland.
   const { rivers: drawnRivers, warp } = warpRivers(hydro.rivers, hydro.riverMeta, { land, elev, dist: terrain.dist, width, height, rng });
   // Small water: kettle lakes, tarns, finger lakes, oxbows, marsh ponds, reservoirs, and crater lakes.
   const volcanoes = findVolcanoes({ land, elev, width, height, rng, count: style.volcanoes ?? (rng.fork('vn').chance(0.6) ? 2 : 0) });
   const smallLakes = buildSmallLakes({ land, elev, temp: fields.temp, moist: fields.moist, hydro, dist: terrain.dist, style, width, height, rng, drawnRivers, volcanoes, keepClear: nations.capitals });
-  const settlements = buildSettlements({ land, elev, temp: fields.temp, cover, hydro, dist: terrain.dist, owner, capitals: nations.capitals, areas: nations.areas, projects, width, height, rng, blocked: smallLakes.mask });
+  const settlements = buildSettlements({ land, elev, temp: fields.temp, cover, hydro, dist: terrain.dist, owner, capitals: nations.capitals, areas: nations.areas, projects, width, height, rng, blocked: smallLakes.mask, oases: world.oases });
   // Every place's name, in its country's language; some capitals nod to their project.
   for (const s of settlements) {
     const p = projects[s.country];
     s.name = s.rank === RANK.CAPITAL && CAPITAL_NAMES[p.id] ? CAPITAL_NAMES[p.id] : cultures[s.country].namer.town();
   }
   const roads = buildRoads({ land, elev, hydro, owner, settlements, blocked: smallLakes.mask, cultures, projects, width, height, rng });
-  const { streets, built } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng });
+  const { streets, built, layouts } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta });
+  settlements.forEach((s, k) => { s.layout = layouts[k].type; s.ringRoad = layouts[k].ring; });
+  // The About island's own detail: a little town and its lighthouse, a causeway, or a ferry to the mainland.
+  const about = world.about;
+  if (about && about.town) {
+    const [tx, ty, tr] = about.town, ar = rng.fork('about-town');
+    const th = ar.next() * Math.PI, c = Math.cos(th), sn = Math.sin(th);
+    const ok = (p) => about.mask[Math.floor(p[1]) * width + Math.floor(p[0])] && Math.hypot(p[0] - tx, p[1] - ty) < tr * 1.1;
+    for (let k = -2; k <= 2; k++) for (const along of [0, 1]) {
+      const pts = [];
+      for (let t = -tr; t <= tr; t += 0.25) { const u = along ? t : k * 0.45, v = along ? k * 0.45 : t; pts.push([tx + c * u - sn * v, ty + sn * u + c * v]); }
+      let run = [];
+      for (const p of pts) { if (ok(p)) run.push(p); else { if (run.length > 1) streets.push({ cls: k ? 'minor' : 'street', pts: run }); run = []; } }
+      if (run.length > 1) streets.push({ cls: k ? 'minor' : 'street', pts: run });
+    }
+  }
+  if (about && about.kind === 'ferry' && about.dock) {
+    let best = null, bd = Infinity;
+    for (const s of settlements) { if (s.rank > RANK.TOWN) continue; const d = Math.hypot(s.x - about.dock[0], s.y - about.dock[1]); if (d < bd) { bd = d; best = s; } }
+    if (best) roads.ferries.push([about.dock, [best.x, best.y]]);
+  }
   // The picture: the land cover with the built-up ground and the small lakes painted in.
   world.coverArgs.urban = (x, y) => built(x, y);
   world.coverArgs.lakes = smallLakes.index.inside;
@@ -158,13 +194,26 @@ export function makeWorld(name, projects, opts) {
   labels.push(...iceLabels);
   const parks = buildParks({ land, owner, cover: picture ? cover : cover, elev, temp: fields.temp, moist: fields.moist, settlements, projects, areas: nations.areas, width, height, rng, dist: terrain.dist, smallLakes });
   const admin = buildAdmin({ owner, projects, settlements, areas: nations.areas, width, height, rng });
-  const streams = buildStreams({ land, hydro, width, height, style }).map((pts) => pts.map(([x, y]) => warp(x, y)));
+  // Streams; in the desert, dry riverbeds (wadis), drawn as faint lines.
+  const streams = [], wadis = [];
+  for (const pts of buildStreams({ land, hydro, width, height, style })) {
+    const [mx, my] = pts[pts.length >> 1], mi = Math.floor(my) * width + Math.floor(mx);
+    (fields.moist[mi] < 0.075 && fields.temp[mi] > 4 ? wadis : streams).push(pts.map(([x, y]) => warp(x, y)));
+  }
   const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers });
+  if (about && about.lighthouse) {
+    const [lx, ly] = about.lighthouse, S1 = width / 1600;
+    for (const [dx, dy] of [[0, 2.4], [0, -2.4], [6, 0], [-6, 0]]) {
+      const l = { id: 'about-light', kind: 'cape', text: 'Lighthouse', lines: ['Lighthouse'], x: Math.round((lx + dx * S1) * 10) / 10, y: Math.round((ly + dy * S1) * 10) / 10, size: 2.6 * S1, angle: 0, spacing: 0, minZoom: 4, dot: [Math.round(lx * 10) / 10, Math.round(ly * 10) / 10] };
+      const rects = labelRects(l, 0.3 * S1);
+      if ([...labels, ...detailLabels].every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) { detailLabels.push(l); break; }
+    }
+  }
   return {
     name, slug: world.slug, width: world.width, height: world.height,
     cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture,
-    settlements, cultures, smallLakes, ice: world.ice, about: world.about,
-    detail: { roads, streets, parks, admin, streams, smallLakes, labels: detailLabels },
+    settlements, cultures, smallLakes, ice: world.ice, about: world.about, polar: world.polar,
+    detail: { roads, streets, parks, admin, streams, wadis, smallLakes, labels: detailLabels, causeway: about && about.causeway ? [about.causeway] : [] },
     rivers: drawnRivers, riverMeta: world.hydro.riverMeta,
     owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,
     labels, projects, kmPerUnit: worldParams(name, projects).kmPerUnit,
@@ -178,8 +227,9 @@ function labelAbout(world, labels) {
   const a = world.about;
   if (!a) return null;
   const S = world.width / 1600, size = 3.6 * S;
-  for (const [dx, dy] of [[0, 7.5], [0, -7.5], [12, 0], [-12, 0]]) {
-    const l = { id: 'about', kind: 'island', text: 'About', lines: ['About'], x: Math.round((a.x + dx * S) * 10) / 10, y: Math.round((a.y + dy * S) * 10) / 10, size, angle: 0, spacing: 0, minZoom: 1 };
+  const R = (a.r || 6.5 * S) / S, cx = a.cx ?? a.x, cy = a.cy ?? a.y;
+  for (const [dx, dy] of [[0, R + 2.4], [0, -R - 2.4], [R + 6.5, 0], [-R - 6.5, 0], [0, 7.5], [0, -7.5]]) {
+    const l = { id: 'about', kind: 'island', text: 'About', lines: ['About'], x: Math.round((cx + dx * S) * 10) / 10, y: Math.round((cy + dy * S) * 10) / 10, size, angle: 0, spacing: 0, minZoom: 1 };
     const rects = labelRects(l, 0.5 * S);
     if (labels.every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) return l;
   }
@@ -198,7 +248,7 @@ function labelIce(world, labels, cultures) {
     let best = null;
     for (let x = 200 * S; x < W - 200 * S; x += 8 * S) {
       let depth = 0;
-      for (let k = 0; k < 90 * S; k++) { const y = side === 'n' ? k : H - 1 - k; if (ice[y * W + Math.floor(x)]) depth = k; else break; }
+      for (let k = 0; k < 220 * S; k++) { const y = side === 'n' ? k : H - 1 - k; if (ice[y * W + Math.floor(x)]) depth = k; else break; }
       if (depth > 12 * S && (!best || depth > best.depth)) best = { x, depth };
     }
     if (!best) continue;

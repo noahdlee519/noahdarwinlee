@@ -79,14 +79,14 @@ function content() {
     const d = JSON.parse(readFileSync(join(root, 'projects', 'worlds', `${w.slug}.json`), 'utf8'));
     const ids = new Set(d.projects.map((p) => p.id));
     if (!projects.every((p) => ids.has(p.id))) ok(false, `${w.slug} has every project`);
-    // The world wraps east and west, so no land may run off either edge, except polar ice (snow, palette index 6),
-    // which runs on across the seam: where it meets one edge it meets the other in the same rows.
+    // The world wraps east and west, so no land may run off either edge, except the polar land, which runs on across
+    // the seam: where it meets one edge it meets the other in the same rows.
     const pic = decodeIndexed(readFileSync(join(root, 'projects', 'worlds', `${w.slug}.png`)));
     let edge = 0, ice = 0;
     for (let y = 0; y < pic.H; y++) {
       const a = pic.px[y * pic.W], b = pic.px[y * pic.W + pic.W - 1];
       if (a === 7 && b === 7) continue;
-      if ((a === 6 || a === 5) && (b === 6 || b === 5) && (y < pic.H * 0.16 || y > pic.H * 0.84)) { ice++; continue; }
+      if (d.polar && a !== 7 && b !== 7 && (y < pic.H * 0.42 || y > pic.H * 0.58)) { ice++; continue; }
       edge++;
     }
     if (edge > 2) ok(false, `${w.slug}: land at the east or west edge in ${edge} rows, so the world can't wrap cleanly`);

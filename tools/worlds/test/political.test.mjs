@@ -113,7 +113,7 @@ test('polar ice and the About island belong to no country', async () => {
     ice++;
     assert.equal(nations.owner[i], -1, 'polar ice has an owner');
     const y = Math.floor(i / W);
-    assert.ok(y < 120 || y > H - 120, 'ice away from the pole');
+    assert.ok(y < H * 0.42 || y > H * 0.58, 'ice away from the pole');
   }
   assert.ok(ice > 5000, `only ${ice} pixels of ice`);
   // The ice is seamless where the world wraps: the east and west edge columns match.

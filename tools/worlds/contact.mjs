@@ -35,6 +35,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
   if (D && zoom >= 3.9) for (const p of D.parks) parts.push(`<path d="${p.path}" fill="none" stroke="#5fae7d" stroke-opacity="0.45" stroke-width="${0.7 * px}"/>`);
   // Rivers and streams: the water's own blue, thin, no casing.
   const RIVER = '#86cfe2';
+  if (D && zoom >= 2.9 && D.wadis) parts.push(`<path d="${D.wadis}" fill="none" stroke="#e2dccd" stroke-width="${0.8 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
   if (D && zoom >= 2.9 && D.streams) parts.push(`<path d="${D.streams}" fill="none" stroke="${RIVER}" stroke-width="${0.6 * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
   for (const r of data.rivers) {
     if (r.minZoom > zoom) continue;
@@ -51,13 +52,14 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
   if (D) {
     const R = D.roads;
     const line = (d, colour, w) => d && parts.push(`<path d="${d}" fill="none" stroke="${colour}" stroke-width="${w * px}" stroke-linecap="round" stroke-linejoin="round"/>`);
-    for (const c of chunks || []) { if (zoom >= 4.9) line(c.minor, '#ffffff', 0.8); if (zoom >= 3.4) line(c.street, '#ffffff', 1.1); }
+    for (const c of chunks || []) { if (zoom >= 4.9) line(c.minor, '#ffffff', 0.7); if (zoom >= 3.4) line(c.street, '#ffffff', 0.9); }
     if (zoom >= 3.4) line(R.local, '#c3c9dc', 0.9);
     if (zoom >= 2.4) line(R.secondary, '#b4bdd6', zoom >= 3.9 ? 1.4 : 1.1);
-    if (zoom >= 2.4) line(R.arterial, '#c3c9dc', 1.1);
+    if (zoom >= 3.4) line(R.arterial, '#ffffff', zoom >= 4.9 ? 2 : 1.2);
     line(R.ring, '#a6b2cf', zoom >= 3.9 ? 1.8 : 1.2);
     line(R.trunk, '#a6b2cf', zoom >= 3.9 ? 1.8 : 1.3);
     line(R.motorway, '#94a3c4', zoom >= 3.9 ? 2.6 : 1.8);
+    if (D.causeway) { line(D.causeway, '#e9eadf', 3.2); line(D.causeway, '#b4bdd6', 1.2); }
     if (D.ferries) parts.push(`<path d="${D.ferries}" fill="none" stroke="#5c9fc0" stroke-width="${0.8 * px}" stroke-dasharray="${3 * px} ${2.5 * px}"/>`);
     if (D.admin) parts.push(`<path d="${D.admin}" fill="none" stroke="#9aa0a6" stroke-width="${0.7 * px}" stroke-dasharray="${2 * px} ${1.6 * px}"/>`);
   }

@@ -79,7 +79,7 @@ export function ringIndex(lakes, width, height) {
     for (const k of cell) {
       const b = lakes[k].box;
       if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;
-      if (inRing(lakes[k].ring, x, y)) return k;
+      if (inRing(lakes[k].ring, x, y) && !(lakes[k].holes && lakes[k].holes.some((h) => inRing(h, x, y)))) return k;
     }
     return -1;
   };
@@ -110,7 +110,7 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
     }
     return true;
   };
-  const occupy = (ring, kind) => {
+  const occupy = (ring, kind, holes = null) => {
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     for (const [x, y] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
     for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) if (inRing(ring, x + 0.5, y + 0.5) || (x === Math.floor((x0 + x1) / 2) && y === Math.floor((y0 + y1) / 2))) taken[y * W + x] = 1;
@@ -119,7 +119,13 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
     const round = ring.map(([x, y]) => [Math.round(x * 100) / 100, Math.round(y * 100) / 100]);
     let cx = 0, cy = 0;
     for (const [x, y] of round) { cx += x; cy += y; }
-    lakes.push({ kind, ring: round, area: ringArea(round), x: cx / round.length, y: cy / round.length });
+    const lake = { kind, ring: round, area: ringArea(round), x: cx / round.length, y: cy / round.length };
+    if (holes && holes.length) {
+      lake.holes = holes.map((h) => h.map(([x, y]) => [Math.round(x * 100) / 100, Math.round(y * 100) / 100]));
+      // (The islands stay in the lake's mark, so roads and towns keep off them.)
+      for (const h of lake.holes) lake.area -= ringArea(h);
+    }
+    lakes.push(lake);
   };
 
   // Nothing on the capitals.
@@ -157,29 +163,36 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
     }
   }
 
-  // ---- Finger lakes: long and narrow, down glaciated valleys. ----
+  // ---- Finger lakes: long and narrow, down glaciated mountain valleys. ----
   {
     const cands = [];
     hydro.rivers.forEach((pts, k) => {
-      if (pts.length < 22) return;
-      for (let j = 4; j + 14 < pts.length - 4; j += 7) {
+      if (pts.length < 20) return;
+      for (let j = 3; j + 14 < pts.length - 3; j += 4) {
         const i = px(pts[j][0], pts[j][1]);
         const e = elev[i], t = temp[i];
-        if (e < 0.16 || e > 0.46 || t > 7) continue;
-        cands.push({ k, j, score: (0.46 - Math.abs(e - 0.28)) * smoothstep(7, -4, t) + r.next() * 0.15 });
+        if (e < 0.08 || e > 0.45 || t > 12 || t < -16) continue;
+        // A valley: the ground either side stands well above the river.
+        const a = pts[Math.max(0, j - 3)], b = pts[j + 3];
+        let tx = b[0] - a[0], ty = b[1] - a[1];
+        const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        const side = (d) => Math.max(elev[px(pts[j][0] - ty * d * S, pts[j][1] + tx * d * S)], elev[px(pts[j][0] + ty * d * S, pts[j][1] - tx * d * S)]);
+        const wall = Math.max(side(4), side(8)) - e;
+        if (wall < 0.02) continue;
+        cands.push({ k, j, score: wall * 4 + smoothstep(9, -2, t) * 0.4 + r.next() * 0.25 });
       }
     });
     cands.sort((a, b) => b.score - a.score || a.k - b.k || a.j - b.j);
-    const want = Math.round(clamp(cands.length / 18, 0, 14) * (style.lakes ?? 1));
+    const want = Math.round(clamp(cands.length / 8, cands.length ? 2 : 0, 8) * (style.lakes ?? 1));
     const spots = [];
     for (const c of cands) {
       if (spots.length >= want) break;
-      const len = 9 + r.int(14);
+      const len = 12 + r.int(20);
       const pts = hydro.rivers[c.k].slice(c.j, Math.min(hydro.rivers[c.k].length - 2, c.j + len));
-      if (pts.length < 8) continue;
+      if (pts.length < 10) continue;
       const mid = pts[pts.length >> 1];
-      if (spots.some((s) => Math.hypot(s[0] - mid[0], s[1] - mid[1]) < 34 * S)) continue;
-      const ring = ribbonRing(pts, (0.45 + r.next() * 0.8) * S, r);
+      if (spots.some((s) => Math.hypot(s[0] - mid[0], s[1] - mid[1]) < 26 * S)) continue;
+      const ring = ribbonRing(pts, (0.5 + r.next() * 0.7) * S, r);
       if (!clearFor(ring, 0.6, { river: 4 })) continue;
       occupy(ring, 'finger');
       spots.push(mid);
@@ -217,30 +230,146 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
     });
   }
 
-  // ---- Kettle lakes and tarns; ponds in coastal marshes. ----
+  // ---- Chains of lakes strung along a river, on a plateau or a broad valley floor. ----
   {
-    const step = 2.2 * S;
+    const cands = [];
+    hydro.rivers.forEach((pts, k) => {
+      const m = hydro.riverMeta[k];
+      if (m.width < 2 || pts.length < 70) return;
+      for (let j = 8; j + 60 < pts.length - 8; j += 15) {
+        const i = px(pts[j][0], pts[j][1]);
+        const e = elev[i], t = temp[i];
+        if (e < 0.05 || e > 0.3 || t > 16 || t < -10 || moist[i] < 0.25) continue;
+        cands.push({ k, j, score: moist[i] * 0.5 + smoothstep(16, 0, t) * 0.5 + r.next() * 0.5 });
+      }
+    });
+    cands.sort((a, b) => b.score - a.score || a.k - b.k || a.j - b.j);
+    const want = Math.min(cands.length ? 1 + (r.chance(0.5) ? 1 : 0) + ((style.lakes ?? 1) > 1.2 ? 1 : 0) : 0, 3);
+    const spots = [];
+    for (const c of cands) {
+      if (spots.length >= want) break;
+      const river = hydro.rivers[c.k];
+      const mid = river[c.j + 30];
+      if (spots.some((s) => Math.hypot(s[0] - mid[0], s[1] - mid[1]) < 150 * S)) continue;
+      let j = c.j, made = 0;
+      const n = 3 + r.int(3);
+      for (let q = 0; q < n && j + 8 < river.length - 4; q++) {
+        const len = 5 + r.int(9);
+        const pts = river.slice(j, j + len);
+        const ring = ribbonRing(pts, (0.55 + r.next() * 0.9) * S, r);
+        if (clearFor(ring, 0.4, { river: 4 })) { occupy(ring, 'chain'); made++; }
+        j += len + 3 + r.int(6);
+      }
+      if (made >= 2) spots.push(mid);
+    }
+  }
+
+  // ---- A large lake or two with bays and islands, on a main river in the lowland. ----
+  {
+    const cands = [];
+    hydro.rivers.forEach((pts, k) => {
+      const m = hydro.riverMeta[k];
+      if (m.width < 2 || pts.length < 40) return;
+      for (let j = 12; j < pts.length - 12; j += 10) {
+        const i = px(pts[j][0], pts[j][1]);
+        const e = elev[i], t = temp[i];
+        if (e < 0.03 || e > 0.2 || dist[i] < 22 * S || moist[i] < 0.2 || t < -8) continue;
+        cands.push({ x: pts[j][0], y: pts[j][1], score: moist[i] * 0.4 + r.next() });
+      }
+    });
+    cands.sort((a, b) => b.score - a.score || a.x - b.x || a.y - b.y);
+    const want = cands.length ? (r.chance(0.55) ? 1 : 2) : 0;
+    const spots = [];
+    for (const c of cands) {
+      if (spots.length >= want) break;
+      if (spots.some((s) => Math.hypot(s[0] - c.x, s[1] - c.y) < 200 * S)) continue;
+      const rad = (5 + r.next() * 6) * S;
+      const nB = makeNoise(r.fork('bays' + spots.length));
+      const lean2 = r.next() * Math.PI, stretch = 0.3 + r.next() * 0.9;
+      // An outline with bays and headlands: a stretched blob, its radius worked by noise round the shore.
+      const ring = [];
+      const K = 90;
+      for (let q = 0; q < K; q++) {
+        const t = (q / K) * Math.PI * 2;
+        const ct = Math.cos(t), st = Math.sin(t);
+        const rr = rad * (1 + 0.42 * fbm(nB, ct * 1.6, st * 1.6, 4) + 0.16 * Math.sin(3 * t + lean2));
+        const u = ct * rr * (1 + stretch), v = (st * rr) / (1 + stretch * 0.5);
+        ring.push([c.x + u * Math.cos(lean2) - v * Math.sin(lean2), c.y + u * Math.sin(lean2) + v * Math.cos(lean2)]);
+      }
+      if (!clearFor(ring, 1, { river: 4 })) continue;
+      // Islands: a few, near the lake's middle and in its larger bays.
+      const holes = [];
+      const nI = 1 + r.int(4);
+      for (let q = 0; q < nI * 4 && holes.length < nI; q++) {
+        const a = r.next() * Math.PI * 2, d = r.next() * rad * 0.55;
+        const hx = c.x + Math.cos(a) * d * (1 + stretch * 0.6), hy = c.y + Math.sin(a) * d;
+        const hr = (0.35 + r.next() * r.next() * 1.6) * S;
+        const hole = blobRing(r, hx, hy, hr, { stretch: r.next() * 0.8, lean: r.next() * Math.PI, wobble: 1.4, n: 14 });
+        if (!hole.every(([x, y]) => inRing(ring, x, y))) continue;
+        if (!holes.every((o) => hole.every(([x, y]) => !inRing(o, x, y)) && o.every(([x, y]) => !inRing(hole, x, y)))) continue;
+        let near = Infinity;
+        for (const [x, y] of hole) for (const [qx, qy] of ring) near = Math.min(near, Math.hypot(x - qx, y - qy));
+        if (near < 0.6 * S) continue;
+        holes.push(hole);
+      }
+      occupy(ring, 'large', holes);
+      spots.push([c.x, c.y]);
+    }
+  }
+
+  // ---- A lake district, in a glaciated lowland or two only; tarns under the coldest peaks; ponds in a coastal
+  // marsh. Tiny lakes nowhere else. ----
+  {
+    // Where the district lies: the coldest, wettest low country, picked as one or two patches.
+    const pick = [];
+    for (let y = 30 * S; y < H - 30 * S; y += 6 * S) for (let x = 30 * S; x < W - 30 * S; x += 6 * S) {
+      const i = px(x, y);
+      if (!land[i] || bigLakes[i]) continue;
+      const t = temp[i], e = elev[i], m = moist[i];
+      const glac = smoothstep(6, -1, t) * smoothstep(-22, -12, t) * smoothstep(0.26, 0.12, e) * smoothstep(0.2, 0.45, m) * smoothstep(5 * S, 20 * S, dist[i]);
+      if (glac > 0.25) pick.push({ x, y, s: glac + 0.6 * fbm(nDistrict, x / (80 * S), y / (80 * S), 2) + r.next() * 0.2 });
+    }
+    pick.sort((a, b) => b.s - a.s || a.x - b.x || a.y - b.y);
+    const districts = [];
+    const maxD = (style.lakes ?? 1) > 1.2 || pondiness > 1.2 ? 2 : 1;
+    for (const p of pick) {
+      if (districts.length >= maxD) break;
+      if (districts.some((d) => Math.hypot(d.x - p.x, d.y - p.y) < 160 * S)) continue;
+      districts.push({ x: p.x, y: p.y, r: (26 + r.next() * 22) * S * Math.sqrt(pondiness) });
+    }
+    const inDistrict = (x, y) => {
+      let best = 0;
+      for (const d of districts) {
+        const q = Math.hypot(x - d.x, (y - d.y) * 1.25) / d.r;
+        best = Math.max(best, smoothstep(1.05, 0.45, q + 0.35 * fbm(nDistrict, x / (12 * S), y / (12 * S), 2)));
+      }
+      return best;
+    };
+    const step = 2.6 * S;
+    let tarns = 0, marshes = 0;
+    const marshAt = [];
     for (let gy = step; gy < H - step; gy += step) for (let gx = step; gx < W - step; gx += step) {
       const x = gx + (r.next() - 0.5) * step, y = gy + (r.next() - 0.5) * step;
       const i = px(x, y);
       if (!land[i] || bigLakes[i] || taken[i]) { r.next(); r.next(); continue; }
       const t = temp[i], e = elev[i], m = moist[i];
-      const cold = smoothstep(7, 0, t) * smoothstep(-24, -12, t);
-      const wet = smoothstep(0.18, 0.5, m);
-      const low = smoothstep(0.3, 0.12, e);
-      const tarn = smoothstep(0.34, 0.44, e) * smoothstep(2, -6, t) * smoothstep(0.58, 0.5, e);
-      const marsh = smoothstep(0.05, 0.015, e) * smoothstep(0.38, 0.62, m) * smoothstep(14 * S, 3 * S, dist[i]) * smoothstep(-2, 6, t);
-      const district = 0.55 + 0.9 * smoothstep(-0.15, 0.35, fbm(nDistrict, x / (60 * S), y / (60 * S), 3));
-      const p = (0.42 * cold * wet * low * district + 0.06 * tarn + 0.32 * marsh + 0.006 * low * wet) * pondiness;
+      const dis = districts.length ? inDistrict(x, y) : 0;
+      const tarn = smoothstep(0.36, 0.46, e) * smoothstep(0, -8, t) * smoothstep(0.6, 0.52, e);
+      const marsh = smoothstep(0.04, 0.012, e) * smoothstep(0.45, 0.7, m) * smoothstep(10 * S, 2.5 * S, dist[i]) * smoothstep(-2, 6, t);
+      const p = 0.3 * dis * smoothstep(0.3, 0.12, e) + (tarns < 14 ? 0.035 * tarn : 0) + (marshes < 40 ? 0.12 * marsh : 0);
       const u = r.next(), v = r.next();
       if (u > p) continue;
-      const kind = marsh > 0.3 && cold < 0.3 ? 'marsh' : tarn > cold * low ? 'tarn' : 'kettle';
-      const big = kind === 'marsh' ? 0.4 : kind === 'tarn' ? 0.7 : 1.5;
-      const rad = (0.28 + big * Math.pow(v, 2.4)) * S;
+      const kind = dis > 0.05 && dis * 0.3 >= marsh * 0.12 ? 'kettle' : marsh * 0.12 > tarn * 0.035 ? 'marsh' : 'tarn';
+      // Marsh ponds keep together, in one or two marshes, not strewn down every coast.
+      if (kind === 'marsh' && marshAt.length && !marshAt.some((q) => Math.hypot(q[0] - x, q[1] - y) < 14 * S) && marshAt.length > 6) continue;
+      const big = kind === 'marsh' ? 0.5 : kind === 'tarn' ? 0.6 : 2.6;
+      const rad = (0.45 + big * Math.pow(v, 2)) * S;
       if (dist[i] < rad + 1.5 * S) continue;
-      const ring = blobRing(r, x, y, rad, { stretch: kind === 'kettle' ? r.next() * 0.7 : 0.15, lean: lean + (r.next() - 0.5) * 0.5 });
-      if (!clearFor(ring, 0.25, { river: 0 })) continue;
+      const ring = blobRing(r, x, y, rad, { stretch: kind === 'kettle' ? 0.4 + r.next() * 1.4 : 0.15, lean: lean + (r.next() - 0.5) * 0.4, wobble: kind === 'kettle' ? 1.6 : 1 });
+      if (!clearFor(ring, kind === 'kettle' ? 0.8 : 0.4, { river: 0 })) continue;
       occupy(ring, kind);
+      if (kind === 'tarn') tarns++;
+      if (kind === 'marsh') { marshes++; marshAt.push([x, y]); }
     }
   }
 

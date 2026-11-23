@@ -15,15 +15,17 @@ import { TILE_LEVELS } from './world.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
-  rock: '#cbcfca', snow: '#ffffff', water: '#86cfe2', urban: '#eceef0', sand: '#f6efdc', line: '#4da9bb', border: '#26262a',
+  rock: '#cbcfca', snow: '#ffffff', water: '#86cfe2', urban: '#eceef0', sand: '#f6efdc', dune: '#f4eee0', dryrock: '#ebe6db', salt: '#fdfdfb',
+  line: '#4da9bb', border: '#26262a',
   province: '#606266', label: '#26262a',
 };
-// Palette order in the PNG: the seven land-cover classes by index, then water, built-up ground, and sand. The
+// Palette order in the PNG: the seven land-cover classes by index, then water, built-up ground, sand, and the
+// desert's dune ripples, rocky ground, and salt flats. The
 // finer tiles use the same palette, unshaded, so every rendered pixel is one of the reference's colours.
-const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban', 'sand'];
+const PNG_COLOURS = ['forest', 'woodland', 'grass', 'steppe', 'desert', 'rock', 'snow', 'water', 'urban', 'sand', 'dune', 'dryrock', 'salt'];
 const BASE_RGB = PNG_COLOURS.map((k) => hexToRgb(PALETTE[k]));
 // A land-cover class (COVER) and its pond flag as a palette index.
-const coverIndex = (c, pond) => (c === 7 ? 8 : c === 8 ? 9 : c > 8 || pond ? 7 : c);
+const coverIndex = (c, pond) => (c === 255 || pond ? 7 : c >= 7 ? c + 1 : c);
 
 // ------------------------------------------------------------- tracing --
 
@@ -286,7 +288,9 @@ export function buildWorldFiles(world) {
   // Land no project holds (polar ice, the About island) is its own region: part of the coast, in no country.
   const ICE = 1 << 20;
   const landAll = world.landAll || world.land;
-  for (let i = 0; i < N; i++) key[i] = owner[i] >= 0 ? owner[i] * 64 + (provinces[i] + 1) : landAll && landAll[i] ? ICE : -1;
+  // (The About island is drawn from its own outline, below, unless it lies in a lake.)
+  const aboutMask = world.about && world.about.kind !== 'lake' ? world.about.mask : null;
+  for (let i = 0; i < N; i++) key[i] = owner[i] >= 0 ? owner[i] * 64 + (provinces[i] + 1) : landAll && landAll[i] && !(aboutMask && aboutMask[i]) ? ICE : -1;
   const ownerOf = (k) => (k < 0 || k === ICE ? -1 : k >> 6);
   const arcs = traceArcs(key, W, H, -1);
   const lines = arcs.map((arc) => {
@@ -294,13 +298,38 @@ export function buildWorldFiles(world) {
     return arcLine(arc, coast ? 0.5 : 0.62);
   });
 
-  const coast = ringsPath(arcs, lines, (k) => k >= 0);
+  // Where a line meets the map's east or west edge it turns there sharply (the vertex doubled, so the curve through
+  // the midpoints passes through it), so land that runs on across the wrap meets its other half with no notch.
+  for (let k = 0; k < lines.length; k++) {
+    const l = lines[k];
+    if (!l.some((p) => p[0] === 0 || p[0] === W * 10)) continue;
+    const out = [];
+    for (const p of l) { out.push(p); if (p[0] === 0 || p[0] === W * 10 || p[1] === 0 || p[1] === H * 10) out.push(p); }
+    lines[k] = out;
+  }
+  // Borders that run beside a river are moved onto it, so the border runs down the river's middle as drawn.
+  if (world.rivers && world.riverMeta) snapBordersToRivers(arcs, lines, world, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && a.left !== a.right);
+  let coast = ringsPath(arcs, lines, (k) => k >= 0);
+  // The About island, from its own outline: its land, and the water within it (a lagoon or a crater lake), as rings
+  // the sea's even-odd fill turns to land and back to water.
+  const A = world.about;
+  if (A && A.kind !== 'lake') coast += rings([...A.rings, ...A.holes]);
   const borders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) !== ownerOf(a.right));
   const provinceBorders = linesPath(arcs, lines, (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) === ownerOf(a.right) && a.left !== a.right);
 
-  const lakeArcs = traceArcs(lakes, W, H, 0);
+  // An About island in a lake: the lake is traced whole, and the island cut from it by its own outline.
+  let lakeMask = lakes;
+  if (A && A.kind === 'lake') { lakeMask = Uint8Array.from(lakes); for (let i = 0; i < N; i++) if (A.mask[i]) lakeMask[i] = 1; }
+  const lakeArcs = traceArcs(lakeMask, W, H, 0);
   const lakeLines = lakeArcs.map((arc) => arcLine(arc, 0.5));
-  const lakePath = ringsPath(lakeArcs, lakeLines, (k) => k === 1);
+  let lakePath = ringsPath(lakeArcs, lakeLines, (k) => k === 1);
+  if (A && A.kind === 'lake') {
+    // Wound against the lakes' own rings, so the nonzero fill leaves it land.
+    const k0 = lakeArcs.findIndex((arc, k) => arc.closed && lakeLines[k].length > 2 && (arc.left === 1 || arc.right === 1));
+    const written = k0 < 0 ? null : lakeArcs[k0].right === 1 ? lakeLines[k0] : lakeLines[k0].slice().reverse();
+    const lakeSign = written ? Math.sign(signedArea(written)) : 1;
+    lakePath += rings(A.rings.map((g) => (Math.sign(signedArea(g)) === lakeSign ? g.slice().reverse() : g)));
+  }
 
   // Rivers, one path per width class. A river that reaches the sea or a lake
   // runs a little way on into it, so it meets the shore however the shore's
@@ -407,6 +436,8 @@ export function buildWorldFiles(world) {
     tiles: null,
     // Bottom to top. The sea is the map's rectangle less the coast path.
     order: ['image', 'rivers', 'sea', 'lakes', 'coast', 'estuaries', 'provinceBorders', 'borders', 'labels'],
+    // The polar land's side, if any: beyond that edge the map is ice, not sea.
+    polar: world.polar && world.polar.sides ? world.polar.sides : undefined,
     palette: PALETTE,
     scale: { kmPerUnit: world.kmPerUnit },
     coast,
@@ -432,6 +463,77 @@ export function buildWorldFiles(world) {
   const detail = world.detail ? buildDetail(world) : null;
   if (detail) data.detail = { src: `detail/${slug}.json`, chunks: detail.chunks.meta };
   return { json: JSON.stringify(data), png, data, detail: detail && JSON.stringify(detail.coarse), chunks: detail && detail.chunks.files };
+}
+
+// The rivers as drawn (simplified and in tenths, as buildWorldFiles writes them), and border arcs moved onto them.
+function riverLines(world) {
+  return world.rivers.map((river, k) => {
+    const meta = world.riverMeta[k];
+    let pts = river;
+    if (meta.ends !== 'river') {
+      const n = pts.length;
+      let dx = pts[n - 1][0] - pts[n - 2][0], dy = pts[n - 1][1] - pts[n - 2][1];
+      if (meta.seaDir >= 0) [dx, dy] = DSTEP[meta.seaDir];
+      const len = Math.hypot(dx, dy) || 1;
+      pts = [...pts, [pts[n - 1][0] + (dx / len) * 1.6, pts[n - 1][1] + (dy / len) * 1.6]];
+    }
+    const line = [];
+    for (const [x, y] of simplify(pts, 0.4)) {
+      const q = [Math.round(x * 5) * 2, Math.round(y * 5) * 2];
+      const last = line[line.length - 1];
+      if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q);
+    }
+    return line;
+  });
+}
+function snapBordersToRivers(arcs, lines, world, isBorder) {
+  const rl = riverLines(world);
+  const G = 60, idx = new Map(); // tenths
+  rl.forEach((line, k) => {
+    if (world.riverMeta[k].width < 2) return;
+    for (let j = 1; j < line.length; j++) {
+      const x0 = Math.floor(Math.min(line[j - 1][0], line[j][0]) / G) - 1, x1 = Math.floor(Math.max(line[j - 1][0], line[j][0]) / G) + 1;
+      const y0 = Math.floor(Math.min(line[j - 1][1], line[j][1]) / G) - 1, y1 = Math.floor(Math.max(line[j - 1][1], line[j][1]) / G) + 1;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const key = y * 100000 + x; if (!idx.has(key)) idx.set(key, []); idx.get(key).push([k, j]); }
+    }
+  });
+  const nearest = (p) => {
+    let best = null;
+    for (const [k, j] of idx.get(Math.floor(p[1] / G) * 100000 + Math.floor(p[0] / G)) || []) {
+      const a = rl[k][j - 1], b = rl[k][j], dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1e-9;
+      const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2));
+      const q = [a[0] + dx * t, a[1] + dy * t], d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      if (!best || d < best.d) best = { k, j, t, q, d };
+    }
+    return best;
+  };
+  let snapped = 0;
+  arcs.forEach((arc, n) => {
+    if (!isBorder(arc) || arc.closed) return;
+    const line = lines[n];
+    if (line.length < 6) return;
+    const near = line.map((p, i) => (i === 0 || i === line.length - 1 ? null : nearest(p)));
+    const out = [line[0]];
+    let i = 1;
+    while (i < line.length - 1) {
+      const a = near[i];
+      if (!a || a.d > 22) { out.push(line[i]); i++; continue; }
+      let e = i;
+      while (e + 1 < line.length - 1 && near[e + 1] && near[e + 1].d <= 22 && near[e + 1].k === a.k) e++;
+      if (e - i < 3) { for (let q = i; q <= e; q++) out.push(line[q]); i = e + 1; continue; }
+      const b = near[e], rv = rl[a.k];
+      const piece = [a.q];
+      if (a.j <= b.j) for (let j = a.j; j < b.j; j++) piece.push(rv[j]);
+      else for (let j = a.j - 1; j >= b.j; j--) piece.push(rv[j]);
+      piece.push(b.q);
+      for (const p of piece) { const q = [Math.round(p[0] / 2) * 2, Math.round(p[1] / 2) * 2], last = out[out.length - 1]; if (last[0] !== q[0] || last[1] !== q[1]) out.push(q); }
+      snapped++;
+      i = e + 1;
+    }
+    out.push(line[line.length - 1]);
+    lines[n] = out;
+  });
+  return snapped;
 }
 
 function labelOut(l) {
@@ -484,6 +586,17 @@ function rings(list) {
   }
   return path.toString();
 }
+// Lakes, each with its islands: the islands wound the other way round, so they stay land under the nonzero fill rule.
+const signedArea = (ring) => { let a = 0; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) a += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]); return a; };
+function lakeRings(list) {
+  const out = [];
+  for (const l of list) {
+    const s = Math.sign(signedArea(l.ring));
+    out.push(l.ring);
+    for (const h of l.holes || []) out.push(Math.sign(signedArea(h)) === s ? h.slice().reverse() : h);
+  }
+  return rings(out);
+}
 // The finest detail is cut into chunks of the map, loaded only for the part in view at the closest zooms.
 export const CHUNK = 400;
 export function buildDetail(world) {
@@ -507,8 +620,10 @@ export function buildDetail(world) {
       arterial: polylines(streetsOf('arterial')), ring: polylines(streetsOf('ring')),
     },
     ferries: segments(D.roads.ferries),
+    causeway: D.causeway && D.causeway.length ? segments(D.causeway) : undefined,
     streams: polylines(D.streams),
-    lakes: rings(lakes.filter((l) => l.area >= 0.6).map((l) => l.ring)),
+    wadis: polylines(D.wadis || []),
+    lakes: lakeRings(lakes.filter((l) => l.area >= 0.6)),
     parks,
     admin: linesPath(adminArcs, adminLines, pick),
     labels: D.labels.map(labelOut),
@@ -518,8 +633,8 @@ export function buildDetail(world) {
   const bins = Array.from({ length: cols * rows }, () => ({ street: [], minor: [], lakes: [] }));
   const binOf = (p) => Math.min(rows - 1, Math.floor(p[1] / CHUNK)) * cols + Math.min(cols - 1, Math.floor(p[0] / CHUNK));
   for (const st of D.streets) if (st.cls === 'street' || st.cls === 'minor') bins[binOf(st.pts[0])][st.cls].push(st.pts);
-  for (const l of lakes) if (l.area < 0.6) bins[binOf([l.x, l.y])].lakes.push(l.ring);
-  const files = bins.map((b, k) => ({ path: `${k % cols}-${Math.floor(k / cols)}.json`, json: JSON.stringify({ street: segments(b.street), minor: segments(b.minor), lakes: rings(b.lakes) }) }));
+  for (const l of lakes) if (l.area < 0.6) bins[binOf([l.x, l.y])].lakes.push(l);
+  const files = bins.map((b, k) => ({ path: `${k % cols}-${Math.floor(k / cols)}.json`, json: JSON.stringify({ street: segments(b.street), minor: segments(b.minor), lakes: lakeRings(b.lakes) }) }));
   return { coarse, chunks: { meta: { size: CHUNK, cols, rows, src: `detail/${world.slug}/` }, files } };
 }
 

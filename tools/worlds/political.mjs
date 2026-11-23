@@ -129,6 +129,7 @@ function buildCells({ land, elev, width, height, rng, hydro, masses }) {
     if (y < H - 1) { const d = cellOf[i + W]; if (d >= 0 && d !== c) link(c, d, Math.max(barrier[i], barrier[i + W])); }
   }
   for (const c of cells) { c.x = c.area ? c.sx / c.area : 0; c.y = c.area ? c.sy / c.area : 0; c.elev = c.area ? c.elev / c.area : 0; }
+  buildCells.lastBarrier = barrier;
   return { cellOf, cells, barrier };
 }
 
@@ -572,6 +573,24 @@ export function buildCountries({ land, elev, width, height, projects, rng, hydro
     owner[i] = cellOwner[c];
     provinces[i] = cellProvince[c];
   }
+  // ---- Borders of several kinds: some surveyed straight (between two points, or along a parallel or a meridian),
+  // the rest left on the rivers, crests, and old irregular lines they settled on. Province lines likewise. ----
+  const barrierAt = buildCells.lastBarrier;
+  const borderKinds = reshapeBorders({ lab: owner, land, W, H, rng: r.fork ? r.fork('borders') : r, barrier: barrierAt, share: 0.55 });
+  {
+    // Provinces: within a country, the same.
+    const prov = new Int32Array(N).fill(-1);
+    for (let i = 0; i < N; i++) if (owner[i] >= 0 && provinces[i] >= 0) prov[i] = owner[i] * 64 + provinces[i];
+    // A pixel that changed country takes a province of its new country.
+    for (let pass = 0; pass < 6; pass++) for (let i = 0; i < N; i++) {
+      if (owner[i] < 0 || !projects[owner[i]].provinces || (prov[i] >= 0 && prov[i] >> 6 === owner[i])) continue;
+      const x = i % W;
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < N && owner[j] === owner[i] && prov[j] >= 0 && prov[j] >> 6 === owner[i]) { prov[i] = prov[j]; break; }
+    }
+    for (let i = 0; i < N; i++) if (owner[i] >= 0 && projects[owner[i]].provinces && (prov[i] < 0 || prov[i] >> 6 !== owner[i])) prov[i] = -1;
+    reshapeBorders({ lab: prov, land, W, H, rng: r.fork ? r.fork('province-lines') : r, barrier: barrierAt, share: 0.6, minLen: 14 });
+    for (let i = 0; i < N; i++) provinces[i] = owner[i] >= 0 && projects[owner[i]].provinces ? (prov[i] >= 0 ? prov[i] & 63 : 0) : -1;
+  }
   const areas = new Array(projects.length).fill(0);
   for (let i = 0; i < N; i++) if (owner[i] >= 0) areas[owner[i]]++;
 
@@ -590,5 +609,110 @@ export function buildCountries({ land, elev, width, height, projects, rng, hydro
     if (best) capitals.push({ id: project.id, x: (best.seed % W) + 0.5, y: Math.floor(best.seed / W) + 0.5 });
   });
 
-  return { owner, provinces, capitals, areas, plan, cellOf, cells, masses };
+  return { owner, provinces, capitals, areas, plan, cellOf, cells, masses, borderKinds };
+}
+
+// ------------------------------------------------------------ borders --
+
+// reshapeBorders({ lab, land, W, H, rng, barrier, share, minLen }) => [{ a, b, kind }]
+// Some of the borders between regions of a label grid (countries, or provinces) are surveyed: redrawn as one straight
+// line, between the border's two ends or along a parallel (a row) or a meridian (a column) near its middle. The rest
+// keep the course they settled on: a river, a crest, or an old irregular line. Borders that lie on rivers and
+// crests stay as they are; a straight line is tried on the rest, a `share` of them, and kept only if both regions
+// stay in one piece (as many pieces as before) and change in area by little. lab is changed in place.
+export function reshapeBorders({ lab, land, W, H, rng, barrier, share = 0.45, minLen = 22 }) {
+  const N = W * H, S = W / 1600;
+  // The border between each pair: the midpoints of the pixel edges they share, and how much of it lies on a barrier.
+  const pairs = new Map();
+  const note = (i, j, x, y) => {
+    const a = lab[i], b = lab[j];
+    if (a < 0 || b < 0 || a === b) return;
+    const key = a < b ? a * 65536 + b : b * 65536 + a;
+    let p = pairs.get(key);
+    if (!p) pairs.set(key, (p = { a: Math.min(a, b), b: Math.max(a, b), pts: [], bar: 0 }));
+    p.pts.push([x, y]);
+    p.bar += barrier ? Math.max(barrier[i], barrier[j]) : 0;
+  };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (x < W - 1) note(i, i + 1, x + 1, y + 0.5);
+    if (y < H - 1) note(i, i + W, x + 0.5, y + 1);
+  }
+  const pieces = (k) => {
+    // How many 4-connected pieces label k has.
+    const seen = new Uint8Array(N), stack = [];
+    let n = 0;
+    for (let s = 0; s < N; s++) {
+      if (lab[s] !== k || seen[s]) continue;
+      n++; seen[s] = 1; stack.push(s);
+      while (stack.length) {
+        const i = stack.pop(), x = i % W;
+        for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < N && !seen[j] && lab[j] === k) { seen[j] = 1; stack.push(j); }
+      }
+    }
+    return n;
+  };
+  const kinds = [];
+  const list = [...pairs.values()].filter((p) => p.pts.length >= minLen * S).sort((p, q) => q.pts.length - p.pts.length || p.a - q.a || p.b - q.b);
+  for (const p of list) {
+    const onBarrier = p.bar / p.pts.length;
+    if (onBarrier > 0.45) { kinds.push({ a: p.a, b: p.b, kind: onBarrier > 0.8 ? 'river' : 'natural' }); continue; }
+    if (rng.next() > share * (1.4 - onBarrier)) { kinds.push({ a: p.a, b: p.b, kind: 'natural' }); rng.next(); continue; }
+    // The border's general line: its principal axis.
+    let mx = 0, my = 0;
+    for (const [x, y] of p.pts) { mx += x; my += y; }
+    mx /= p.pts.length; my /= p.pts.length;
+    let sxx = 0, syy = 0, sxy = 0;
+    for (const [x, y] of p.pts) { sxx += (x - mx) ** 2; syy += (y - my) ** 2; sxy += (x - mx) * (y - my); }
+    const th = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+    let ux = Math.cos(th), uy = Math.sin(th);
+    let t0 = Infinity, t1 = -Infinity, A = null, B = null;
+    for (const q of p.pts) { const t = (q[0] - mx) * ux + (q[1] - my) * uy; if (t < t0) { t0 = t; A = q; } if (t > t1) { t1 = t; B = q; } }
+    if (t1 - t0 < minLen * 0.6 * S) { kinds.push({ a: p.a, b: p.b, kind: 'natural' }); continue; }
+    // A parallel or a meridian when the border runs near enough that way, otherwise straight between its ends.
+    const deg = (Math.abs(th) * 180) / Math.PI;
+    let kind, ox, oy;
+    if (deg < 24 || deg > 156) { kind = 'parallel'; ux = 1; uy = 0; ox = mx; oy = Math.round(my) + 0.5; }
+    else if (Math.abs(deg - 90) < 24) { kind = 'meridian'; ux = 0; uy = 1; ox = Math.round(mx) + 0.5; oy = my; }
+    else { kind = 'straight'; const l = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1; ux = (B[0] - A[0]) / l; uy = (B[1] - A[1]) / l; ox = A[0]; oy = A[1]; }
+    const nx = -uy, ny = ux;
+    let dev = 0, lo = Infinity, hi = -Infinity;
+    for (const [x, y] of p.pts) { const d = Math.abs((x - ox) * nx + (y - oy) * ny); dev = Math.max(dev, d); const t = (x - ox) * ux + (y - oy) * uy; lo = Math.min(lo, t); hi = Math.max(hi, t); }
+    if (dev > Math.max(8 * S, (hi - lo) * 0.3)) { kinds.push({ a: p.a, b: p.b, kind: 'natural' }); continue; }
+    // Which side is whose.
+    let sa = 0;
+    for (let y = Math.floor(my - dev - 4); y <= my + dev + 4; y++) for (let x = Math.floor(mx - (hi - lo)); x <= mx + (hi - lo); x++) {
+      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      const i = y * W + x, side = (x + 0.5 - ox) * nx + (y + 0.5 - oy) * ny;
+      if (lab[i] === p.a) sa += side > 0 ? 1 : -1;
+      else if (lab[i] === p.b) sa -= side > 0 ? 1 : -1;
+    }
+    const aSide = sa >= 0 ? 1 : -1;
+    // Reassign the band of the two regions' pixels between the old line and the new.
+    const pa = pieces(p.a), pb = pieces(p.b);
+    const changed = [];
+    const reach = dev + 2.5;
+    const bx0 = Math.floor(Math.min(ox + ux * lo, ox + ux * hi) - reach - 1), bx1 = Math.ceil(Math.max(ox + ux * lo, ox + ux * hi) + reach + 1);
+    const by0 = Math.floor(Math.min(oy + uy * lo, oy + uy * hi) - reach - 1), by1 = Math.ceil(Math.max(oy + uy * lo, oy + uy * hi) + reach + 1);
+    let da = 0;
+    for (let y = Math.max(0, by0); y <= Math.min(H - 1, by1); y++) for (let x = Math.max(0, bx0); x <= Math.min(W - 1, bx1); x++) {
+      const i = y * W + x;
+      if (lab[i] !== p.a && lab[i] !== p.b) continue;
+      const cx = x + 0.5, cy = y + 0.5;
+      const t = (cx - ox) * ux + (cy - oy) * uy, d = (cx - ox) * nx + (cy - oy) * ny;
+      if (t < lo + 0.5 || t > hi - 0.5 || Math.abs(d) > reach) continue;
+      const want = d * aSide > 0 ? p.a : p.b;
+      if (want === lab[i]) continue;
+      changed.push([i, lab[i]]);
+      da += want === p.a ? 1 : -1;
+      lab[i] = want;
+    }
+    let areaA = 0, areaB = 0;
+    for (let i = 0; i < N; i++) { if (lab[i] === p.a) areaA++; else if (lab[i] === p.b) areaB++; }
+    // Kept only if neither region falls into more pieces, and neither changes much in area.
+    const ok = changed.length > 0 && Math.abs(da) < Math.min(areaA, areaB) * 0.1 && pieces(p.a) <= pa && pieces(p.b) <= pb;
+    if (!ok) { for (const [i, old] of changed) lab[i] = old; kinds.push({ a: p.a, b: p.b, kind: 'natural' }); continue; }
+    kinds.push({ a: p.a, b: p.b, kind, from: [ox + ux * lo, oy + uy * lo], to: [ox + ux * hi, oy + uy * hi] });
+  }
+  return kinds;
 }
