@@ -621,7 +621,7 @@
   var BENCH = [
     ["all layers", {}], ["no terrain", { relief: 1 }], ["no aged paper", { aging: 1 }], ["no coastal band", { coastband: 1 }],
     ["no colour bands", { bands: 1 }], ["no names", { labels: 1 }], ["no rivers and lakes", { water: 1 }], ["no sea ripples", { ripples: 1 }],
-    ["1x pixels", { dpr1: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
+    ["1x pixels", { dpr1: 1 }], ["old moving detail", { sharp: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
   ];
   function benchStart() {
     if (bench || !perf) return;
@@ -677,10 +677,15 @@
     scheduleRender();
   }
 
+  // The map counts as moving until SETTLE_MS after it last moved, and then the full drawing comes back. With a button or a
+  // finger still down on it, it waits SETTLE_HELD_MS: the full drawing takes several frames' time, and a short pause in a
+  // drag brought it back, so the drag caught when it went on. Letting go brings it back after SETTLE_MS (endPointer).
+  var SETTLE_MS = 160, SETTLE_HELD_MS = 600;
+  function settle() { moving = false; scheduleRender(); writeHash(); }
   function nudge() {
     moving = true;
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(function () { moving = false; scheduleRender(); writeHash(); }, 160);
+    settleTimer = setTimeout(settle, pointers && pointers.size ? SETTLE_HELD_MS : SETTLE_MS);
     scheduleRender();
   }
 
@@ -1405,7 +1410,7 @@
     return (!moving && S >= 900) || S >= 2600 ? "hi" : "lo";
   }
 
-  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.5, reliefRes = RELIEF_RES, reliefKey = "";
+  var reliefCanvas = document.createElement("canvas"), relief = null, reliefTried = false, RELIEF_RES = 0.5, RELIEF_MOVING = 0.5, RELIEF_MOVING_PART = 0.5, reliefRes = RELIEF_RES, reliefKey = "", reliefPart = null;
   function sizeRelief(res) {
     reliefRes = res || RELIEF_RES;
     reliefCanvas.width = Math.max(1, Math.round(W * dpr * reliefRes));
@@ -1425,13 +1430,19 @@
   }
   // The terrain's canvas is sized for the pixels the map is drawn at now: while the map moves on a slow device it is drawn at a
   // lower resolution (dpr drops in frame()), and a canvas left at the full size put the terrain in the wrong place.
+  // While the map moves, the terrain is drawn at half its width and height (RELIEF_MOVING_PART), a quarter of its pixels, into
+  // the bottom left of its canvas, and stretched over the map from there (reliefPart, the part's place in the canvas's image).
+  // The canvas keeps its size, since resizing a WebGL canvas at each end of a drag made the browser wait for the graphics card.
+  // A copy of sat.js from before 23 November 2026, kept by a browser, has no parts and draws the terrain in full as before.
   function renderRelief() {
     var res = moving ? RELIEF_MOVING : RELIEF_RES;
     if (res !== reliefRes || reliefCanvas.width !== Math.max(1, Math.round(W * dpr * res)) || reliefCanvas.height !== Math.max(1, Math.round(H * dpr * res))) sizeRelief(res);
-    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, layoutEpoch, dpr, reliefRes, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
+    var part = moving && !skip.sharp && relief.parts ? RELIEF_MOVING_PART : 1, pw = Math.max(1, Math.round(reliefCanvas.width * part)), ph = Math.max(1, Math.round(reliefCanvas.height * part));
+    var key = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, layoutEpoch, dpr, reliefRes, part, rd.gen, rd.put.size, rd.rect ? 1 : 0].join();
     if (key === reliefKey) return;
     reliefKey = key;
-    var o = { flat: flat, dpr: dpr * reliefRes, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy };
+    reliefPart = part < 1 ? [0, reliefCanvas.height - ph, pw, ph] : null;
+    var o = { flat: flat, dpr: dpr * reliefRes * part, light: 0, sepia: 0, detail: !!rd.rect && !rd.off, cx: cx, cy: cy, w: pw, h: ph };
     if (flat) { o.k = FB.k; o.xc = FB.xc; o.yc = FB.yc; o.wrap = !!FB.wrap; o.spin = !!FB.spin; }
     else { o.e = [B.ex, B.ey, B.ez]; o.n = [B.nx, B.ny, B.nz]; o.c = [B.cx, B.cy, B.cz]; o.r = B.r; }
     relief.draw(o);
@@ -1568,14 +1579,16 @@
   })();
 
   function bandWidth(S) { return Math.min(6.5, Math.max(S / 260, Math.min(2.2, Math.max(1.3, S / 165)))); }
-  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.35;
+  var ISLAND_PX = 1.6, RIPPLE_PX = 9, BLEED_KM = 20, BAND_ISLAND = 2.5, ISLAND_TINT = 0.75, BAND_RES = 0.5, BAND_MOVING = 0.22, BAND_MOVING_MIN = 0.35;
   var canOff = typeof OffscreenCanvas === "function";
   var bandCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), bandCtx = bandCanvas.getContext("2d"), bandKey = "", bandImage = null, bandOld = null, bandFill = null;
   var maskCanvas = canOff ? new OffscreenCanvas(1, 1) : document.createElement("canvas"), maskCtx = maskCanvas.getContext("2d"), maskKey = "";
   function drawCoastBand(id, paintFills, list, landPath, kp, line, alpha, peopleBleed, peoplePath, unnamedPath, bleed) {
     var n = landCount(list, kp, line * BAND_ISLAND), m = landCount(list, kp, ISLAND_PX);
     if (!m) return;
-    var res = moving ? Math.max(0.5, dpr * BAND_MOVING) : Math.max(1, dpr * BAND_RES);
+    // While the map moves the band is painted coarser (0.35 of the screen's points at 1x, 0.44 at 2x; 0.5 and 0.7 before
+    // 23 November 2026): the layer is painted anew every frame of a drag, and its cost falls with its size.
+    var res = moving ? (skip.sharp ? Math.max(0.5, dpr * 0.35) : Math.max(BAND_MOVING_MIN, dpr * BAND_MOVING)) : Math.max(1, dpr * BAND_RES);
     var vkey = [flat ? 1 : 0, view.lon, view.lat, view.zoom, view.roll, W, H, layoutEpoch, res, line, n, m, list === land.hi ? 1 : list === land.fine ? 2 : 0, landTag].join();
     if (vkey !== maskKey) paintCoastMask(list, landPath, n, m, line, res);
     maskKey = vkey;
@@ -1815,7 +1828,8 @@
       ctx.save();
       ctx.globalCompositeOperation = "overlay";
       ctx.globalAlpha = 0.72;
-      ctx.drawImage(reliefCanvas, 0, 0, W, H);
+      if (reliefPart) ctx.drawImage(reliefCanvas, reliefPart[0], reliefPart[1], reliefPart[2], reliefPart[3], 0, 0, W, H);
+      else ctx.drawImage(reliefCanvas, 0, 0, W, H);
       ctx.restore();
     }
     if (perf) pmark("relief");
@@ -4699,6 +4713,7 @@
       return;
     }
     if (pointers.size) return;
+    if (moving) { clearTimeout(settleTimer); settleTimer = setTimeout(settle, SETTLE_MS); }
     var clickLike = downAt && !downAt.moved && e.timeStamp - downAt.t < 600 && e.type === "pointerup";
     if (clickLike) {
       if (reportPicking) { pickReport(e.clientX, e.clientY); drag = null; downAt = null; return; }
@@ -7123,6 +7138,10 @@
     });
   }
   function reportToken() {
+    try {
+      var kept = JSON.parse(localStorage.getItem(REPORT_STORE) || "null");
+      if (reportSession && !reportRefreshing && kept && typeof kept.a === "string" && typeof kept.r === "string" && kept.r !== reportSession.r) reportSession = kept;
+    } catch (e) {}
     var s = reportSession;
     if (!s) return Promise.resolve(null);
     if (s.e - Date.now() > 60000) return Promise.resolve(s.a);
@@ -7400,7 +7419,7 @@
   }
   accountBtn.addEventListener("click", function () { setAccountOpen(accountPanel.hidden, false); });
   // Advertisements and Premium. Banners sit beside the date where the gaps are wide enough for them, or one sits
-  // under the top row where they are not. An account with CHRONIA Premium ($5, once, through Stripe; the function
+  // under the top row where they are not. An account with CHRONIA Premium ($10, once, through Stripe; the function
   // chronia-premium) sees none, and may have five times the daily notes (chronia-blurb is sent its session for that).
   // ADS holds AdSense's publisher id and the three ad units' slot ids (each a fixed 320 by 50, made on 19 November
   // 2026); with the client empty no advertisement is asked for and nothing of Google's is loaded. Google's script is
@@ -7578,7 +7597,7 @@
     if ($("about-premium")) $("about-premium").hidden = premium.on;
     $("premium-text").textContent = premium.on
       ? T("You have CHRONIA Premium. With Premium, you have no advertisements, 5x the daily notes, and first priority with addressing map errors. Thank you for your support.")
-      : T("No advertisements, no watermark on your videos, and more, for $5 once.");
+      : T("No advertisements, no watermark on your videos, and more, for $10 once.");
     if (adsWanted() !== adsShown) { adsShown = adsWanted(); layout(); scheduleRender(); }
   }
   // The account changed (signed in, out, or as someone else): what the last one had paid for is not this one's.
@@ -9740,6 +9759,8 @@
         fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine >= 2; }).length : 0, modern: modern && modern.rows ? (modern.fine >= 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size, tiles: rd.cache.size };
     },
     baseCache: function (mode) { baseMode = mode; baseSig = null; scheduleRender(); },
+    // How the terrain was last drawn: its canvas's size, and the size of the part of it drawn into (all of it at rest).
+    terrain: function () { return { ready: !!relief && relief.ready(), canvas: [reliefCanvas.width, reliefCanvas.height], drawn: reliefPart ? [reliefPart[2], reliefPart[3]] : [reliefCanvas.width, reliefCanvas.height] }; },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },
     // How far d3's projection (used for the largest shapes and to find the place under the pointer) lands from CHRONIA's own
     // at a spread of points on the near side, in pixels, so the roll is checked to turn both the same way.

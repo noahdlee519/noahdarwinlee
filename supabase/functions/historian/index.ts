@@ -8,6 +8,7 @@ const ORIGINS = [
 ];
 const ALL_CAP = 250;
 const USER_CAP = 5;
+const PREMIUM_TIMES = 5;
 const MAX_HISTORY = 20000;
 const MAX_TURNS = 24;
 const MAX_QUESTION = 1000;
@@ -677,6 +678,13 @@ async function account(req: Request) {
   return user && typeof user.id === "string" ? user.id : null;
 }
 
+async function hasPremium(id: string) {
+  const res = await fetch(Deno.env.get("SUPABASE_URL") + "/rest/v1/chronia_premium?user_id=eq." + encodeURIComponent(id) + "&select=user_id", { headers: dbKey() });
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function userKey(id: string) {
   const salt = Deno.env.get("HISTORIAN_SALT") || "uchronia";
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + "|user|" + id));
@@ -752,9 +760,11 @@ Deno.serve(async (req) => {
   }
   if (!uid) return json(401, { error: "signin" }, o);
   const who = await userKey(uid);
+  const paid = await hasPremium(uid).catch((e) => { console.error(e); return false; });
+  const cap = paid ? USER_CAP * PREMIUM_TIMES : USER_CAP;
   if (body.mode === "me") {
     try {
-      return json(200, { left: Math.max(0, USER_CAP - (await used(who))), cap: USER_CAP }, o);
+      return json(200, { left: Math.max(0, cap - (await used(who))), cap, premium: paid }, o);
     } catch (e) {
       console.error(e);
       return json(500, { error: "count" }, o);
@@ -864,13 +874,13 @@ Deno.serve(async (req) => {
       drawnFrom = outline;
       counted = !(await rpc("historian_once", { p_key: ticket.slice(-32) + ":history" }));
     }
-    ok = counted ? await rpc("historian_take", { p_who: who, p_all_cap: ALL_CAP, p_who_cap: USER_CAP }) : true;
-    if (!ok) full = (await used(who)) < USER_CAP;
+    ok = counted ? await rpc("historian_take", { p_who: who, p_all_cap: paid ? 1000000 : ALL_CAP, p_who_cap: cap }) : true;
+    if (!ok) full = (await used(who)) < cap;
   } catch (e) {
     console.error(e);
     return json(500, { error: "count" }, o);
   }
-  if (!ok) return json(429, { error: full ? "full" : "limit", cap: USER_CAP }, o);
+  if (!ok) return json(429, { error: full ? "full" : "limit", cap }, o);
   const giveBack = () => counted ? rpc("historian_give_back", { p_who: who }).catch((x) => console.error(x)) : Promise.resolve();
   if (Math.random() < 0.05) prune().catch((e) => console.error(e));
 

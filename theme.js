@@ -35,7 +35,8 @@
       "aria-label",
       NAME[theme] + ". Switch to " + NAME[next].toLowerCase() + "."
     );
-    btn.title = "Switch to " + NAME[next].toLowerCase();
+    btn.removeAttribute("title");
+    btn.setAttribute("data-tip", NAME[next]);
   }
 
   var still = 0;
@@ -53,7 +54,27 @@
     });
   }
 
-  var anchor = null;
+  var anchor = null, flashTimer = 0;
+
+  var toast = null, toastTimer = 0;
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href^="mailto:"]') : null;
+    if (!a || a.classList.contains("mail-compose") || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    var addr = decodeURIComponent(a.getAttribute("href").slice(7).split("?")[0]);
+    if (!addr || !navigator.clipboard || !navigator.clipboard.writeText) return;
+    navigator.clipboard.writeText(addr).then(function () {
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.className = "copy-toast";
+        toast.setAttribute("role", "status");
+        document.body.appendChild(toast);
+      }
+      toast.textContent = "Copied " + addr;
+      toast.classList.add("is-shown");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toast.classList.remove("is-shown"); }, 2200);
+    }, function () {});
+  });
 
   function build() {
     btn = document.createElement("button");
@@ -61,9 +82,15 @@
     btn.className = "theme-btn";
     btn.id = "theme-btn";
     label(current());
-    btn.addEventListener("click", function () {
+    btn.addEventListener("click", function (e) {
       var next = NEXT[current()];
       apply(next);
+      if (e.pointerType === "touch" || e.pointerType === "pen" || (window.matchMedia && window.matchMedia("(hover: none)").matches)) {
+        btn.setAttribute("data-tip", NAME[next]);
+        btn.classList.add("is-flash");
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(function () { btn.classList.remove("is-flash"); label(current()); }, 1200);
+      }
       try {
         localStorage.setItem(KEY, next);
       } catch (e) {}

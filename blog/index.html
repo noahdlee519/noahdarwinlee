@@ -125,9 +125,9 @@
 
       <div class="mail-window">
         <div class="mail-bar">
-          <span class="mail-menu" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          </span>
+          <button type="button" class="mail-menu" id="mail-menu" aria-label="Folders and labels" aria-expanded="true" aria-controls="mail-rail">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
           <form class="mail-search" role="search" onsubmit="return false">
             <label class="sr-only" for="mail-q">Search these letters</label>
             <span class="mail-search-field">
@@ -139,7 +139,7 @@
                 id="mail-q"
                 class="mail-search-input"
                 type="search"
-                placeholder="Search mail"
+                placeholder="Search mail" aria-keyshortcuts="/"
                 autocomplete="off"
                 spellcheck="false"
               />
@@ -156,7 +156,7 @@
         </div>
 
         <div class="mail-body">
-          <nav class="mail-rail" aria-label="Folders and labels">
+          <nav class="mail-rail" id="mail-rail" aria-label="Folders and labels">
             <a class="mail-compose" href="mailto:noahlee519@gmail.com">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" />

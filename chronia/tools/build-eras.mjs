@@ -3831,6 +3831,60 @@ const stages = (list) => {
 // people carried the same way (the latest map goes first, so the later source wins). Of two peoples of one map the larger keeps the land
 // they share, as resolveOverlaps has it. A people most of whose land later maps' peoples hold is left out (DISPLACED). The blankets
 // (BLANKETS: "Amazon hunter-gatherers") then keep only the land no named people holds.
+// historical-basemaps draws the peoples across rivers and bays, while the colonies' and states' shapes that are cut from them
+// follow the coast, so what a people kept could be water: Werowocomoco kept a strip of the York River from 1607 to 1885, which the
+// page drew as a pale patch and a stretch of shore with no border of the United States. A piece of a carried shape is kept only
+// if at least ON_LAND of it is land, by points sampled on a grid across it and tested against Natural Earth's states and provinces
+// (wetPiece, memoised by piece, since a span's pieces in time share them).
+const ON_LAND = 0.5;
+let neGrid = null;
+const neLandGrid = () => {
+  if (neGrid) return neGrid;
+  neGrid = new Map();
+  for (const f of neAll) {
+    const polys = polysOf(f.geometry);
+    if (!polys.length) continue;
+    const b = boxOf(polys);
+    const u = { polys, box: b };
+    for (let x = Math.floor(b[0]); x <= Math.floor(b[2]); x++) for (let y = Math.floor(b[1]); y <= Math.floor(b[3]); y++) {
+      const k = x + "," + y;
+      if (!neGrid.has(k)) neGrid.set(k, []);
+      neGrid.get(k).push(u);
+    }
+  }
+  return neGrid;
+};
+const wetRingHas = (x, y, ring) => {
+  let c = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+};
+const wetPolyHas = (x, y, poly) => wetRingHas(x, y, poly[0]) && !poly.slice(1).some((h) => wetRingHas(x, y, h));
+const onNeLand = (x, y) => (neLandGrid().get(Math.floor(x) + "," + Math.floor(y)) || []).some((u) => x >= u.box[0] && x <= u.box[2] && y >= u.box[1] && y <= u.box[3] && u.polys.some((q) => wetPolyHas(x, y, q)));
+const wetMemo = new WeakMap();
+let wetCount = 0;
+const wetPiece = (p) => {
+  if (wetMemo.has(p)) return wetMemo.get(p);
+  const b = boxOf([p]);
+  let inside = 0, dry = 0;
+  for (const n of [12, 40]) {
+    inside = 0; dry = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const x = b[0] + ((i + 0.5) / n) * (b[2] - b[0]), y = b[1] + ((j + 0.5) / n) * (b[3] - b[1]);
+      if (!wetPolyHas(x, y, p)) continue;
+      inside++;
+      if (onNeLand(x, y)) dry++;
+    }
+    if (inside >= 8) break;
+  }
+  const wet = !inside || dry < ON_LAND * inside;
+  if (wet) wetCount++;
+  wetMemo.set(p, wet);
+  return wet;
+};
 function peopleCarry(list, cfg) {
   const { region, inRegion, first: carryFrom, maps: carryMaps, blankets: BL, notYet: NY, label, recast = {}, skip = () => false } = cfg;
   const hbSnaps = nativeSnaps;
@@ -3872,11 +3926,14 @@ function peopleCarry(list, cfg) {
     for (const { p, polys, whole, box } of feats) {
       const width = widthOf(polys), opt = cellOpt(polys);
       const near = later.filter((c) => c.last >= first && boxHit(c.box, box) && meets(opt.cells, c.cells));
-      // Only the spans on the people's own cells are cut from it (all in its box, for a people too small for a cell): a neighbour's changes
-      // would cut it in time for nothing.
-      const cands = pool.concat(mineW).filter((c) => c.last >= first && boxHit(c.box, box) && (!opt.cells.size || !c.cells.size || meets(opt.cells, c.cells)));
+      // Only the spans on or beside the people's own cells are cut from it (all in its box, for a people too small for a cell): a neighbour's
+      // changes would cut it in time for nothing.
+      // The people's cells are widened by one around (as cutOver does): a small people's one cell can have its centre in a bay, outside
+      // every state's cells, and the colony or state on its land was then never cut from it (Werowocomoco, inside Virginia from 1607).
+      const wide = opt.cells.size ? dilate(opt.cells) : null;
+      const cands = pool.concat(mineW).filter((c) => c.last >= first && boxHit(c.box, box) && (!wide || !c.cells.size || meets(wide, c.cells)));
       for (const r of cutOver(polys, box, first, DATED_TO, cands)) {
-        const kept = keepRemnant(r.polys, whole, 1, width);
+        const kept = keepRemnant(r.polys.filter((q) => !wetPiece(q)), whole, 1, width);
         if (!kept.length) continue;
         let held = 0;
         const act = near.filter((c) => c.first <= r.first && r.first <= c.last);
@@ -3899,7 +3956,7 @@ function peopleCarry(list, cfg) {
       if (kept.length) left.push(withBox({ ...b, first: r.first, last: r.last, polys: kept, geoHash: undefined }));
     }
   }
-  console.log(label + " peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
+  console.log(label + " peoples carried forward: " + carried.length + " spans, " + out + " left out as displaced, " + wetCount + " pieces left out as water so far; " + blankets.length + " spans of the blankets to " + left.length + " beside them");
   return rest.concat(left, carried);
 }
 const nativeCarry = (list) => peopleCarry(list, { region: AMERICAS, inRegion: inAmericas, first: NATIVE_CARRY[0], maps: NATIVE_MAPS, blankets: BLANKETS, notYet: NOT_YET, label: "the Americas'" });

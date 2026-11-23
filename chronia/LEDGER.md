@@ -18,6 +18,18 @@ Each entry:
 
 ---
 
+## 1607–1885 | Virginia | Werowocomoco off the Virginia Peninsula
+
+- What changed: Werowocomoco, a people of historical-basemaps' map of 1492 (Powhatan's seat on the York River), lay over the Colony of Virginia and then the United States on the Virginia Peninsula and the York River from 1607 to 1885; the page drew it as a pale patch with no border of the United States along that shore (reported by Noah on 22 November 2026, July 1815). `nativeCarry` picks the spans to cut from a carried people by the people's cells, and Werowocomoco's one cell has its centre in the York River, outside Virginia's cells, so the colony and the state were never cut from it. The people's cells are now widened by one cell around, as `cutOver` does, and Werowocomoco ends in 1606. A piece of a carried shape is also kept only if at least half of it is land, since the peoples of 1492 are drawn across rivers and bays. Eight other carried peoples that were only such leftovers inside or beside a state go too: Utapinõmakãphõná and Marinahua (1496–1748), Ket Chonhab’ Kob’a (Chuj, 1496–1525), Pequonnock (1638–1664), Kichwa Santarrosino (1708–1748), Ishir Tomárãho (1752–1885), Odǫhwęja:deˀ (Cayuga, 1768–1782), and Suquamish (1819–1885); the carried spans are cut at more of their neighbours' dates. Africa's carried peoples (`africaCarry`, the same step) get the same two rules.
+- Applies to: Werowocomoco; the Americas' carried peoples | 1496–1885
+- Tables: the cells `peopleCarry` (`nativeCarry` and `africaCarry`) picks candidates by (`wide`), and `ON_LAND` and `wetPiece`, in `tools/build-eras.mjs`.
+- Sources: (1) historical-basemaps, world_1492.geojson (Werowocomoco: 614 km² in two pieces, about a fifth of it water); (2) Natural Earth 10 m states and provinces, for the land.
+- Confidence: high; Jamestown was founded in 1607 on Paspahegh land beside it, and the colony held the peninsula from the 1630s.
+- Alternatives: ending the carried peoples of the Powhatan Confederacy at the treaty of 1646 or 1677 by name; the general rule does it from the colony's own shape instead.
+- Left out: none.
+
+---
+
 ## 1500–1885 | Central Asia | the Kazakh hordes, Bukhara, Khiva, Kokand, and Russia's advance, a new table
 
 - What changed: the region's spans from 1500 to 1885 (from Cliopatria and historical-basemaps: one Kazakh Khanate with no hordes, the Qing in the Chu valley and at Issyk-Kul from 1758, Bukhara, Hisar, and the Pamirs Russian in 1870, Kerki and Merv Khivan, Merv Russian by 1878) are replaced by a table of 210 zones in 54 rows (`tools/central-asia.mjs`): Kazakhstan's districts as UCHRONIA has them, and Uzbekistan, Tajikistan, Turkmenistan, and Kyrgyzstan cut by geoBoundaries' districts into 36 zones. The Kazakh Khanate splits into the three jüz from 1718; Bukhara, Khiva, and Kokand are Russia's dependencies from their treaties; Russia's lines and conquests are its land from the day the town fell or the year after the statute that ended a horde's khans.

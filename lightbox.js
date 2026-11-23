@@ -194,6 +194,8 @@
   }
 
   Array.prototype.forEach.call(zooms, function (zoom) {
+    var pic = zoom.querySelector("img");
+    if (!zoom.hasAttribute("aria-label") && pic && pic.alt) zoom.setAttribute("aria-label", "Enlarge: " + pic.alt);
     zoom.addEventListener("pointerenter", loadManifest);
     zoom.addEventListener("focus", loadManifest);
     zoom.addEventListener("click", function (event) {

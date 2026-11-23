@@ -935,15 +935,18 @@ it there). Built on the bones of `/greatercircle/`.
     a small server function, `supabase/functions/historian`, which asks
     Claude (claude-opus-5-5, through Anthropic's API) to write it and streams
     the text back. The function holds the API key, answers only this site,
-    and allows 250 requests a day in all, and to each account 5, counting
-    histories, redrawn maps (a redraw and its history count as one), and
-    questions alike; it keeps only a daily count per account under a hashed
+    and allows 250 requests a day in all, and to each account 5 (25 for an
+    account with CHRONIA Premium, which the function reads from
+    `chronia_premium` and which the site-wide 250 does not stop; since 23
+    November 2026), counting histories, redrawn maps (a redraw and its
+    history count as one), and questions alike; it keeps only a daily count per account under a hashed
     key, never the map or the text, and deletes counts older than thirty
     days. When an account has used its five, the message says so in red;
     when the site as a whole has, the message says the historian has done
     all it can.
-  - Using the historian needs a Google sign-in, the same Supabase sign-in
-    citylayoutguessr uses. Signed out, the Historian panel shows Google's own
+  - Using the historian needs a Google sign-in, CHRONIA's own (since 23
+    November 2026; before then UCHRONIA had a sign-in of its own, shared with
+    citylayoutguessr): signing in to either app signs in to both. Signed out, the Historian panel shows Google's own
     sign-in button, loaded from Google (`accounts.google.com/gsi/client`) once
     `GOOGLE_CLIENT` in `app.js` holds the site's Google OAuth client ID. The
     sign-in then happens on this page, so Google names chroniaatlas.com rather
@@ -961,20 +964,33 @@ it there). Built on the bones of `/greatercircle/`.
     (`uchronia-draft`) and puts it back on return. It goes to Supabase's
     `/auth/v1/authorize` and comes back to
     `/uchronia/?historian` with the session in the address's fragment, which
-    the page keeps in `localStorage` (`uchronia-auth`), clears from the
+    the page keeps in `localStorage` (`chronia-auth`, where CHRONIA keeps it;
+    the old `uchronia-auth` is cleared), clears from the
     address, and answers by opening the panel. Signed in, the panel shows the
     account's email, how many requests are left today, and *Sign out*. Every
     request carries the access token; the function checks it with Supabase
     (`/auth/v1/user`) and answers 401 without one. A token about to expire is
     renewed through the function itself (`mode: "refresh"`), so the page
     needs no Supabase key of its own, and `mode: "me"` returns the count
-    left.
+    left, the cap, and whether the account has Premium, which hides *Get
+    Premium* in the ⓘ panel (and is kept as `chronia-premium`, as CHRONIA
+    keeps it). The page reads the session from storage again before each
+    request, and CHRONIA does before each renewal, so that a token one app
+    renewed is not renewed a second time by the other with a refresh token
+    that is already spent. Signing out in either app signs out of both.
+    The **Account** menu at the right end of the top bar (a person, or the
+    account's initial once signed in; *Account* in the phone's sheet, since
+    23 November 2026) shows the same sign-in when signed out. Signed in, it
+    shows the account's email, the historian's count left today, whether
+    the account has CHRONIA Premium (with *Get Premium* when it does not),
+    and *Sign out*. Opening it asks the function (`mode: "me"`) afresh.
   - The function and its daily counter (`historian_usage`, with
     `historian_take` and `historian_give_back`, set up by
     `supabase/migrations/20261012_historian_usage.sql`, and `historian_once`,
-    set up by `supabase/migrations/20261015_historian_once.sql`) live in the Supabase
-    project kigvciyyjlgjcgnwgrwf. The function is deployed as `dynamic-endpoint`
-    with JWT verification off (it checks the origin, the sign-in, and the
+    set up by `supabase/migrations/20261015_historian_once.sql`) live in
+    CHRONIA's Supabase project, jvcmeuqlyygpwelmvxuv (since 23 November 2026;
+    before then in kigvciyyjlgjcgnwgrwf as `dynamic-endpoint`). The function
+    is deployed as `historian` with JWT verification off (it checks the origin, the sign-in, and the
     daily caps itself) and needs the `ANTHROPIC_API_KEY` secret. Supabase's
     Authentication settings must list `https://chroniaatlas.com/uchronia/**`
     among the redirect URLs, and the Google client's authorised JavaScript

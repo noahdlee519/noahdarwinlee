@@ -142,6 +142,55 @@ body {
   border-radius: 50%;
 }
 
+.theme-btn::before {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 400 12px/1 "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+@media (hover: hover) {
+  .theme-btn:hover::before {
+    opacity: 1;
+  }
+}
+
+.theme-btn.is-flash::before {
+  opacity: 1;
+}
+
+.copy-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  transform: translate(-50%, 8px);
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 400 14px/1.2 "Familjen Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.copy-toast.is-shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 
 
 :focus-visible {
@@ -630,6 +679,16 @@ body.misc-page {
   padding-bottom: 25px;
 }
 
+@media (max-width: 900px) {
+  body.cv-page:not(.game-page):not(.privacy-page):not(.misc-page) > main#page-body {
+    margin-top: 28px;
+  }
+
+  body.misc-page > main#page-body {
+    margin-top: 20px;
+  }
+}
+
 @media (min-width: 901px) {
   .cv-page {
     padding-top: calc(var(--page-top) + 106px);
@@ -811,6 +870,14 @@ a[href="/cv/"]:active {
 .site-foot a {
   color: inherit;
   text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .site-foot a {
+    display: inline-block;
+    padding: 12px 4px;
+    margin: -12px -4px;
+  }
 }
 
 .site-foot a:hover {
@@ -2176,6 +2243,16 @@ body.is-zoomed {
     width: 18px;
     height: 18px;
     --ring: 2.25px;
+  }
+
+  .theme-btn::after {
+    inset: -13px;
+  }
+
+  .theme-btn::before {
+    left: auto;
+    right: -4px;
+    transform: none;
   }
 
   .site-menu {
@@ -4364,7 +4441,26 @@ body.game-page {
   border-radius: 50%;
   background: none;
   color: var(--mail-soft);
-  cursor: default;
+  cursor: pointer;
+  padding: 0;
+}
+
+.mail-menu:hover {
+  background: var(--mail-hover);
+}
+
+.mail-menu:focus-visible {
+  outline: 2px solid var(--mail-accent);
+  outline-offset: 2px;
+}
+
+.mail-window.is-rail-closed .mail-rail,
+.mail-window.is-rail-closed #mail-divider-rail {
+  display: none;
+}
+
+.mail-window.is-rail-closed .mail-panes {
+  margin-left: 16px;
 }
 
 .mail-menu svg {
@@ -5062,6 +5158,25 @@ body.is-resizing-mail {
   .mail-rail,
   #mail-divider-rail {
     display: none;
+  }
+
+  .mail-body {
+    position: relative;
+  }
+
+  .mail-window.is-rail-open .mail-rail {
+    display: block;
+    position: absolute;
+    z-index: 6;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(260px, 78%);
+    padding: 8px 8px 16px;
+    box-sizing: border-box;
+    background: var(--mail-backdrop);
+    border-radius: 0 16px 16px 0;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
   }
 
   .mail-panes {
