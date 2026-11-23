@@ -11,6 +11,7 @@
 //
 // Screenshots go to /tmp/portfolio-map-*.png.
 import { readFileSync, existsSync } from 'node:fs';
+import { inflateSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -25,6 +26,24 @@ const ok = (cond, what) => {
   if (cond) console.log(`  ok    ${what}`);
   else { failures++; console.log(`  FAIL  ${what}`); }
 };
+
+// An indexed PNG's pixels, as palette indices.
+function decodeIndexed(buf) {
+  let p = 8, W, H, bits;
+  const idat = [];
+  while (p < buf.length) {
+    const len = buf.readUInt32BE(p), type = buf.toString('latin1', p + 4, p + 8), data = buf.subarray(p + 8, p + 8 + len);
+    if (type === 'IHDR') { W = data.readUInt32BE(0); H = data.readUInt32BE(4); bits = data[8]; }
+    if (type === 'IDAT') idat.push(data);
+    p += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idat)), rb = Math.ceil((W * bits) / 8), px = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const b = raw[y * (rb + 1) + 1 + ((x * bits) >> 3)];
+    px[y * W + x] = (b >> (8 - bits - ((x * bits) & 7))) & ((1 << bits) - 1);
+  }
+  return { W, H, px };
+}
 
 function content() {
   console.log('content');
@@ -56,9 +75,14 @@ function content() {
     const d = JSON.parse(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`), 'utf8'));
     const ids = new Set(d.projects.map((p) => p.id));
     if (!projects.every((p) => ids.has(p.id))) ok(false, `${w.slug} has every project`);
+    // The world wraps east and west, so no land may run off either edge.
+    const pic = decodeIndexed(readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.png`)));
+    let edge = 0;
+    for (let y = 0; y < pic.H; y++) if (pic.px[y * pic.W] !== 7 || pic.px[y * pic.W + pic.W - 1] !== 7) edge++;
+    if (edge) ok(false, `${w.slug}: land at the east or west edge in ${edge} rows, so the world can't wrap cleanly`);
     size = Math.max(size, readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.json`)).length + readFileSync(join(root, 'portfolio-map', 'worlds', `${w.slug}.png`)).length);
   }
-  ok(true, `${worlds.length} worlds each hold every project; the largest is ${(size / 1024).toFixed(0)} KB (json and png)`);
+  ok(true, `${worlds.length} worlds each hold every project and meet the sea at their east and west edges; the largest is ${(size / 1024).toFixed(0)} KB (json and png)`);
 }
 
 if (stage === 'content' || stage === 'all') content();
@@ -81,19 +105,17 @@ const view = (page) => page.evaluate(() => {
   const m = window.__portfolioMap.map, r = m.rect();
   return { s: m.s, tx: m.tx, ty: m.ty, zoom: m.zoom(), W: m.world.width, H: m.world.height, rect: r, world: m.world.slug };
 });
-// The visible part of the map lies on the world: its edges never show past the world's own.
+// The world wraps east and west; north and south, the visible part of the map never runs past its edges.
 const onWorld = (v) => {
-  const ww = v.W * v.s, wh = v.H * v.s, e = 1;
-  const x = ww <= v.rect.w + e ? true : v.tx <= v.rect.l + e && v.tx + ww >= v.rect.r - e;
-  const y = wh <= v.rect.h + e ? true : v.ty <= v.rect.t + e && v.ty + wh >= v.rect.b - e;
-  return x && y;
+  const wh = v.H * v.s, e = 1;
+  return wh <= v.rect.h + e ? true : v.ty <= v.rect.t + e && v.ty + wh >= v.rect.b - e;
 };
 
 async function mapStage(browser) {
   console.log('map');
   const page = await open(browser, '?world=le-guin');
   const counts = await page.evaluate(() => ({
-    countries: document.querySelectorAll('.map-country').length,
+    countries: Object.keys(window.__portfolioMap.map.shapes).length,
     labels: document.querySelectorAll('.lbl.k-country').length,
     shown: document.querySelectorAll('.lbl.k-country.is-on').length,
     world: window.__portfolioMap.map.world.slug,
@@ -123,18 +145,51 @@ async function mapStage(browser) {
   ok(after.includes('town') && !before.includes('town'), 'towns appear only when zoomed in');
   ok(onWorld(v), 'zoomed in, the view is on the world');
 
-  // Drag hard toward every corner: the view stops at the world's edge.
-  for (const [dx, dy] of [[3000, 3000], [-3000, -3000], [3000, -3000], [-3000, 3000]]) {
-    for (let k = 0; k < 4; k++) {
+  // Drag hard up and down: the view stops at the world's top and bottom.
+  const dragBy = async (dx, dy, times = 4) => {
+    for (let k = 0; k < times; k++) {
       await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
       await page.mouse.down();
-      await page.mouse.move(rect.l + rect.w / 2 + dx / 4, rect.t + rect.h / 2 + dy / 4, { steps: 6 });
+      await page.mouse.move(rect.l + rect.w / 2 + dx, rect.t + rect.h / 2 + dy, { steps: 6 });
+      await page.waitForTimeout(110); // a pause before letting go, so the map doesn't glide on
       await page.mouse.up();
     }
     await page.waitForTimeout(700);
-    v = await view(page);
-    ok(onWorld(v), `dragging (${dx}, ${dy}) stops at the world's edge`);
+  };
+  for (const dy of [3000, -3000]) {
+    await dragBy(0, dy / 4);
+    ok(onWorld(await view(page)), `dragging ${dy > 0 ? 'down' : 'up'} stops at the world's edge`);
   }
+
+  // East and west, the world wraps: drag several world-widths past the seam and back, and see the same map.
+  const worldPoint = () => page.evaluate(() => { const m = window.__portfolioMap.map, r = m.rect(); return ((r.l + r.w / 2 - m.tx) / m.s); });
+  const W = v.W, wrapDiff = (a, b) => Math.abs(((((a - b) % W) + W + W / 2) % W) - W / 2);
+  const start = await worldPoint();
+  const sNow = (await view(page)).s, step = 600, n = Math.ceil((3.3 * W * sNow) / step);
+  await dragBy(-step, 0, n);
+  const far = await worldPoint();
+  const copies = await page.evaluate(() => window.__portfolioMap.map.copies.length);
+  ok(wrapDiff(far, start + (n * step) / sNow) < 2, `dragging ${((n * step) / (W * sNow)).toFixed(1)} world-widths east never stops (${copies} copies of the world drawn)`);
+  await dragBy(step, 0, n);
+  ok(wrapDiff(await worldPoint(), start) < 2, 'dragging back as far returns to the same place on the world');
+
+  // A country on a copy of the world, past the seam, still answers a click.
+  await page.evaluate(() => { const m = window.__portfolioMap.map; const h = window.__portfolioMap.home(); m.set(h); });
+  await page.waitForTimeout(400);
+  const wrapped = await page.evaluate(() => {
+    // Put the seam in the middle of the map, with the world's east edge on the left of it: Leggio, in the far west,
+    // then shows to the right of the seam, on the next copy of the world.
+    const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'leggio'), r = m.rect(), W = m.world.width;
+    const cx = r.l + r.w / 2;
+    m.set({ s: m.s, tx: cx - (W - 120) * m.s, ty: m.ty });
+    m.render(true);
+    return { x: (l.x + W) * m.s + m.tx, y: (l.y + 14) * m.s + m.ty, seam: W * m.s + m.tx };
+  });
+  await page.waitForTimeout(300);
+  await page.mouse.click(wrapped.x, wrapped.y);
+  await page.waitForTimeout(1300);
+  const sel = await page.evaluate(() => ({ id: window.__portfolioMap.map.selected, tint: document.querySelectorAll('.map-tint .map-sel').length, copies: window.__portfolioMap.map.copies.length }));
+  ok(wrapped.x > wrapped.seam && sel.id === 'leggio' && sel.tint >= 2, `clicking a country on a wrapped copy opens it and tints it on every copy (${sel.tint} tints over ${sel.copies} copies)`);
   // Zoom all the way out: the whole world fits.
   await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
   for (let i = 0; i < 40; i++) { await page.mouse.wheel(0, 240); await page.waitForTimeout(20); }
@@ -146,7 +201,7 @@ async function mapStage(browser) {
 }
 
 const panelTitle = (page) => page.evaluate(() => { const t = document.querySelector('#panel-body .title'); return t ? t.textContent.trim() : null; });
-const selected = (page) => page.evaluate(() => { const m = window.__portfolioMap.map; return { id: m.selected, province: m.selectedProvince, world: m.world.slug, lit: !!document.querySelector('.map-country.is-sel') }; });
+const selected = (page) => page.evaluate(() => { const m = window.__portfolioMap.map; return { id: m.selected, province: m.selectedProvince, world: m.world.slug, lit: !!document.querySelector('.map-tint .map-sel') }; });
 
 async function interfaceStage(browser) {
   console.log('interface (desktop, 1440x900)');

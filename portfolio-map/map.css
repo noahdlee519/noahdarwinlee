@@ -65,7 +65,7 @@ textarea {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  background: var(--water);
+  background: var(--m-water, var(--water));
 }
 
 .map-svg {
@@ -86,18 +86,35 @@ textarea {
   cursor: grabbing;
 }
 
+.map-ocean,
+.map-sea,
+.map-estuary {
+  fill: var(--m-water);
+}
+
+.map-land {
+  fill: var(--m-land);
+}
+
 .map-image {
   opacity: 0;
   transition: opacity 500ms ease;
   image-rendering: optimizeQuality;
 }
 
-.map-image.is-in {
+.map.is-image-in .map-image {
   opacity: 1;
+}
+
+/* Once the picture is in, the stand-in land under it is no longer painted. */
+.map.is-image-in .map-land {
+  visibility: hidden;
+  transition: visibility 0s linear 600ms;
 }
 
 .map-rivers path {
   fill: none;
+  stroke: var(--m-line);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: max(var(--rw), calc(var(--px) * 0.7));
@@ -113,12 +130,15 @@ textarea {
 }
 
 .map-lakes {
+  fill: var(--m-water);
+  stroke: var(--m-line);
   stroke-width: 0.5px;
   vector-effect: non-scaling-stroke;
 }
 
 .map-coast {
   fill: none;
+  stroke: var(--m-line);
   stroke-width: 0.75px;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -126,6 +146,7 @@ textarea {
 
 .map-provinces {
   fill: none;
+  stroke: var(--m-province);
   stroke-width: 0.9px;
   stroke-dasharray: 3.5 2.6;
   stroke-linejoin: round;
@@ -134,6 +155,7 @@ textarea {
 
 .map-borders {
   fill: none;
+  stroke: var(--m-border);
   stroke-width: 1px;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -144,47 +166,33 @@ textarea {
   stroke-width: 1.25px;
 }
 
-/* Countries are hit areas without paint until hovered or picked; painting eighteen empty fills costs every frame. */
-.map-country,
-.map-province {
-  fill: none;
-  stroke: none;
-  pointer-events: fill;
-  cursor: pointer;
-}
-
-.map-province {
+/* The countries' own shapes answer clicks and hovers; they are never painted. */
+.map-hit {
+  visibility: hidden;
   pointer-events: none;
 }
 
-.map-province.is-open {
-  pointer-events: fill;
+.map.is-over:not(.is-grabbing) .map-svg {
+  cursor: pointer;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .map:not(.is-grabbing) .map-country:hover {
-    fill: #26262a;
-    fill-opacity: 0.06;
-  }
-
-  .map:not(.is-grabbing) .map-province.is-open:hover {
-    fill: var(--orange);
-    fill-opacity: 0.14;
-  }
+.map-hover {
+  fill: var(--m-hover, #26262a);
+  fill-opacity: 0.07;
 }
 
-.map .map-country.is-sel {
+.map-hover.is-province {
+  fill: var(--orange);
+  fill-opacity: 0.14;
+}
+
+.map-sel {
   fill: var(--orange);
   fill-opacity: 0.15;
 }
 
-.map .map-province.is-sel {
-  fill: var(--orange);
-  fill-opacity: 0.18;
-}
-
-.map.is-grabbing .map-country {
-  cursor: grabbing;
+.map-sel.is-province {
+  fill-opacity: 0.2;
 }
 
 .map-outline path {
@@ -202,14 +210,19 @@ textarea {
 }
 
 .map-outline-line {
-  stroke: var(--orange-ink);
+  stroke: var(--m-sel-line, #b85d06);
   stroke-width: 1.75px;
 }
 
 .map-outline-prov {
-  stroke: var(--orange-ink);
+  stroke: var(--m-sel-line, #b85d06);
   stroke-width: 1.75px;
   stroke-dasharray: 5 3;
+}
+
+.map-layer,
+.map-tiles {
+  pointer-events: none;
 }
 
 /* ---------------------------------------------------------------- labels */
@@ -273,7 +286,7 @@ textarea {
 .is-water text,
 text.is-water {
   fill: #357f92;
-  stroke: var(--water);
+  stroke: var(--m-water);
   stroke-opacity: 0.5;
   font-style: italic;
 }
@@ -345,7 +358,7 @@ a {
   z-index: 2;
   background:
     radial-gradient(60% 50% at 50% 50%, rgba(255, 255, 255, 0.22), transparent 70%),
-    var(--water);
+    var(--m-water, var(--water));
   opacity: 0;
   pointer-events: none;
   transition: opacity 360ms ease;

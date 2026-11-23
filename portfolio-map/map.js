@@ -145,9 +145,9 @@
   MapView.prototype.clampView = function (v) {
     var r = this.rect(), lim = this.limits(), W = this.world.width, H = this.world.height;
     var s = clamp(v.s, lim.min, lim.max);
+    // The world wraps east and west, so only north and south are bounded.
     var tx = v.tx, ty = v.ty;
-    if (W * s <= r.w + 0.5) tx = r.l + (r.w - W * s) / 2;
-    else tx = clamp(tx, r.r - W * s, r.l);
+    void W;
     if (H * s <= r.h + 0.5) ty = r.t + (r.h - H * s) / 2;
     else ty = clamp(ty, r.b - H * s, r.t);
     return { s: s, tx: tx, ty: ty };
@@ -191,6 +191,9 @@
     var cx = r.l + r.w / 2, cy = r.t + r.h / 2;
     var p0 = [(cx - from.tx) / from.s, (cy - from.ty) / from.s];
     var p1 = [(cx - to.tx) / to.s, (cy - to.ty) / to.s];
+    // The world repeats east and west: fly to whichever copy of the place is nearest.
+    var W = this.world.width, shift = Math.round((p0[0] - p1[0]) / W) * W;
+    if (shift) { p1[0] += shift; to = { s: to.s, tx: cx - p1[0] * to.s, ty: to.ty }; }
     var dist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) * Math.min(from.s, to.s);
     var dip = clamp((dist - r.w * 0.35) / (r.w * 2.5), 0, 0.3);
     var duration = reduceMotion.matches ? 0 : opts.duration || clamp(420 + dist * 0.35, 480, 950);
@@ -218,82 +221,156 @@
 
   // ------------------------------------------------------------ drawing
 
+  // The world is drawn in layers, bottom to top. A layer that holds geometry is a template, cloned once for every
+  // copy of the world the view needs (the world repeats east and west) and shifted by the world's width.
   MapView.prototype.load = function (world) {
     var self = this, P = world.palette;
     this.stop();
     this.world = world;
     this.root.textContent = "";
-    this.ocean.setAttribute("fill", P.water);
-    this.host.style.setProperty("--water", P.water);
+    this.host.classList.remove("is-image-in");
+    this.setPalette(P);
     var W = world.width, H = world.height, g = this.root;
-    var layers = {};
-    // A quiet stand-in for the land until the land-cover picture arrives.
-    layers.land = svg("path", { class: "map-land", d: world.coast, fill: P.grass }, g);
-    var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" });
+    this.layers = [];
+    function layer(cls, copied) {
+      var host = svg("g", { class: "map-layer " + cls }, g);
+      var L = { host: host, tpl: copied ? svg("g", { class: cls + "-copy" }) : null, clones: [], ks: [] };
+      self.layers.push(L);
+      return L;
+    }
+    // The land-cover picture, under a quiet stand-in of the land until it arrives; finer tiles go over it.
+    var Limg = layer("map-ground", true);
+    svg("path", { class: "map-land", d: world.coast }, Limg.tpl);
+    var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" }, Limg.tpl);
+    this.tileHost = svg("g", { class: "map-tiles" }, g);
+    // Rivers, then the sea and lakes over them, the coast, and the estuaries.
+    var La = layer("map-water", true);
+    var rg = svg("g", { class: "map-rivers" }, La.tpl);
+    world.rivers.slice().sort(function (a, b) { return b.width - a.width; }).forEach(function (r) {
+      var p = svg("path", { d: r.path }, rg);
+      p.style.setProperty("--rw", r.width + "px");
+      if (r.minZoom > 1) p.classList.add("is-minor");
+    });
+    // The sea: this copy's own strip of the map, less its land, so neighbouring copies meet edge to edge.
+    svg("path", { class: "map-sea", d: "M0 " + -H * 3 + "H" + W + "V" + H * 4 + "H0Z" + world.coast, "fill-rule": "evenodd" }, La.tpl);
+    if (world.lakes) svg("path", { class: "map-lakes", d: world.lakes }, La.tpl);
+    svg("path", { class: "map-coast", d: world.coast }, La.tpl);
+    if (world.estuaries && world.estuaries.fill) {
+      svg("path", { class: "map-estuary", d: world.estuaries.fill }, La.tpl);
+      svg("path", { class: "map-coast", d: world.estuaries.edge }, La.tpl);
+    }
+    // The picked and hovered country's tint, under the borders.
+    this.tintLayer = layer("map-tint", true);
+    var Lb = layer("map-lines", true);
+    if (world.provinceBorders) svg("path", { class: "map-provinces", d: world.provinceBorders }, Lb.tpl);
+    svg("path", { class: "map-borders", d: world.borders }, Lb.tpl);
+    this.outlineLayer = layer("map-outline", true);
+    this._labels(g);
+    // The countries' shapes, never painted: they answer which country lies under a point.
+    this.hitLayer = svg("g", { class: "map-hit" }, g);
+    this.shapes = {};
+    world.projects.forEach(function (p) {
+      var path = svg("path", { d: p.path }, self.hitLayer);
+      self.shapes[p.id] = { el: path, shape: shapeOf(p.path), project: p, provinces: {} };
+      (p.provinces || []).forEach(function (v) {
+        var pv = svg("path", { d: v.path }, self.hitLayer);
+        self.shapes[p.id].provinces[v.id] = { el: pv, shape: shapeOf(v.path), path: v.path };
+      });
+    });
+    this.hover = null;
     this.imageReady = new Promise(function (resolve) {
       var img = new Image();
       img.decoding = "async";
       img.onload = img.onerror = function () {
-        image.setAttribute("href", img.src);
+        self.baseHref = img.src;
+        self._setImageHref(image);
+        self._refresh(Limg);
         requestAnimationFrame(function () {
-          image.classList.add("is-in");
-          // The stand-in land is no longer seen; it need not be painted with every frame.
-          setTimeout(function () { layers.land.style.display = "none"; }, 600);
+          self.host.classList.add("is-image-in");
           resolve();
         });
       };
       img.src = ROOT + "worlds/" + world.image.src;
     });
-    world.order.forEach(function (name) {
-      if (name === "image") g.appendChild(image);
-      else if (name === "rivers") {
-        var rg = svg("g", { class: "map-rivers", stroke: P.line }, g);
-        world.rivers.slice().sort(function (a, b) { return b.width - a.width; }).forEach(function (r) {
-          var p = svg("path", { d: r.path, "data-min": r.minZoom }, rg);
-          p.style.setProperty("--rw", r.width + "px");
-          if (r.minZoom > 1) p.classList.add("is-minor");
-        });
-        layers.rivers = rg;
-      } else if (name === "sea") {
-        svg("path", { class: "map-sea", d: "M" + -W * 3 + " " + -H * 3 + "H" + W * 4 + "V" + H * 4 + "H" + -W * 3 + "Z" + world.coast, fill: P.water, "fill-rule": "evenodd" }, g);
-      } else if (name === "lakes" && world.lakes) {
-        svg("path", { class: "map-lakes", d: world.lakes, fill: P.water, stroke: P.line }, g);
-      } else if (name === "coast") {
-        svg("path", { class: "map-coast", d: world.coast, stroke: P.line }, g);
-      } else if (name === "estuaries" && world.estuaries && world.estuaries.fill) {
-        svg("path", { class: "map-estuary", d: world.estuaries.fill, fill: P.water }, g);
-        svg("path", { class: "map-coast", d: world.estuaries.edge, stroke: P.line }, g);
-        self._countries(g);
-      } else if (name === "provinceBorders" && world.provinceBorders) {
-        if (!layers.countries) self._countries(g);
-        svg("path", { class: "map-provinces", d: world.provinceBorders, stroke: P.province }, g);
-      } else if (name === "borders") {
-        if (!self.countryLayer) self._countries(g);
-        svg("path", { class: "map-borders", d: world.borders, stroke: P.border }, g);
-        self.outline = svg("g", { class: "map-outline" }, g);
-      } else if (name === "labels") {
-        self._labels(g);
-      }
-    });
-    if (!this.countryLayer || this.countryLayer.parentNode !== g) this._countries(g);
+    this.groundLayer = Limg;
     this.selected = null; this.selectedProvince = null;
+    this._tint();
     this.render(true);
   };
 
-  MapView.prototype._countries = function (g) {
-    var self = this;
-    if (this.countryLayer && this.countryLayer.parentNode === g) return;
-    var cg = svg("g", { class: "map-countries" }, g);
-    this.countryLayer = cg;
-    this.shapes = {};
-    this.world.projects.forEach(function (p) {
-      var path = svg("path", { class: "map-country", d: p.path, "data-id": p.id }, cg);
-      self.shapes[p.id] = { el: path, shape: shapeOf(p.path), project: p, provinces: {} };
-      (p.provinces || []).forEach(function (v) {
-        var pv = svg("path", { class: "map-province", d: v.path, "data-id": p.id, "data-province": v.id }, cg);
-        self.shapes[p.id].provinces[v.id] = { el: pv, shape: shapeOf(v.path) };
-      });
-    });
+  // Day or night: the map's colours, from the world's palette or the night one, as properties the layers read.
+  MapView.prototype.setPalette = function (P) {
+    var st = this.host.style;
+    st.setProperty("--m-water", P.water);
+    st.setProperty("--m-line", P.line);
+    st.setProperty("--m-border", P.border);
+    st.setProperty("--m-province", P.province);
+    st.setProperty("--m-land", P.grass);
+  };
+  MapView.prototype._setImageHref = function (image) {
+    if (this.baseHref) image.setAttribute("href", this.baseHref);
+  };
+
+  // A layer's template changed: every copy is cloned afresh.
+  MapView.prototype._refresh = function (L) {
+    L.clones.forEach(function (c) { c.remove(); });
+    L.clones = []; L.ks = [];
+    this._place(L);
+  };
+  // Each layer gets one copy of its template for every world-width the drawing spans.
+  MapView.prototype._place = function (L) {
+    var ks = this.copies || [0], W = this.world.width;
+    while (L.clones.length < ks.length) { var c = L.tpl.cloneNode(true); L.host.appendChild(c); L.clones.push(c); L.ks.push(null); }
+    while (L.clones.length > ks.length) { L.clones.pop().remove(); L.ks.pop(); }
+    for (var i = 0; i < ks.length; i++) {
+      if (L.ks[i] !== ks[i]) { L.ks[i] = ks[i]; L.clones[i].setAttribute("transform", "translate(" + ks[i] * W + " 0)"); }
+    }
+  };
+
+  // The picked country (and its provinces) and the hovered one, tinted; the picked one outlined.
+  MapView.prototype._tint = function () {
+    var T = this.tintLayer.tpl, O = this.outlineLayer.tpl;
+    T.textContent = ""; O.textContent = "";
+    var id = this.selected, sh = id && this.shapes[id];
+    if (this.hover && this.hover.id && !(this.hover.id === id && !this.hover.province)) {
+      var hs = this.shapes[this.hover.id];
+      if (hs) {
+        var hd = this.hover.province && hs.provinces[this.hover.province] ? hs.provinces[this.hover.province].path : hs.project.path;
+        svg("path", { class: "map-hover" + (this.hover.province ? " is-province" : ""), d: hd }, T);
+      }
+    }
+    if (sh) {
+      svg("path", { class: "map-sel", d: sh.project.path }, T);
+      var pv = this.selectedProvince && sh.provinces[this.selectedProvince];
+      if (pv) svg("path", { class: "map-sel is-province", d: pv.path }, T);
+      svg("path", { class: "map-outline-glow", d: sh.project.path }, O);
+      svg("path", { class: "map-outline-line", d: sh.project.path }, O);
+      if (pv) svg("path", { class: "map-outline-prov", d: pv.path }, O);
+    }
+    this._refresh(this.tintLayer);
+    this._refresh(this.outlineLayer);
+  };
+
+  // Which country (or, inside the picked country, which province) lies under a point on the screen, on any copy.
+  MapView.prototype.hitAt = function (x, y) {
+    var t = document.elementFromPoint(x, y);
+    var lab = t && t.closest && t.closest(".lbl[data-id]");
+    if (lab && this.root.contains(lab)) return { id: lab.getAttribute("data-id"), province: lab.getAttribute("data-province") };
+    var hr = this.host.getBoundingClientRect(), W = this.world.width;
+    var wx = (x - hr.left - this.tx) / this.s, wy = (y - hr.top - this.ty) / this.s;
+    wx = ((wx % W) + W) % W;
+    var pt = new DOMPoint(wx, wy), id;
+    var sel = this.selected && this.shapes[this.selected];
+    if (sel) for (var pid in sel.provinces) if (sel.provinces[pid].el.isPointInFill(pt)) return { id: this.selected, province: pid };
+    for (id in this.shapes) if (this.shapes[id].el.isPointInFill(pt)) return { id: id, province: null };
+    return null;
+  };
+  MapView.prototype.setHover = function (h) {
+    var a = this.hover, same = (!a && !h) || (a && h && a.id === h.id && a.province === h.province);
+    this.host.classList.toggle("is-over", !!h);
+    if (same) return;
+    this.hover = h;
+    this._tint();
   };
 
   MapView.prototype._labels = function (g) {
@@ -312,11 +389,14 @@
       } else item.rank = LABEL_RANK[kind] || 95;
       var cls = "lbl k-" + kind + (water ? " is-water" : "");
       var gEl;
+      // Each name is drawn once, on whichever copy of the world lies nearest the middle of the view.
+      var wrap = svg("g", { class: "lbl-wrap" }, lg);
+      item.wrap = wrap; item.k = 0;
       if (l.path) {
         // Lettering along the river's course: sized in world units, from the zoom.
         var id = "rp-" + n;
-        svg("path", { id: id, d: "M" + l.path.map(function (p) { return p[0] + " " + p[1]; }).join("L"), fill: "none" }, lg);
-        gEl = svg("text", { class: cls + " lbl-path", dy: (l.size * 0.355).toFixed(2) }, lg);
+        svg("path", { id: id, d: "M" + l.path.map(function (p) { return p[0] + " " + p[1]; }).join("L"), fill: "none" }, wrap);
+        gEl = svg("text", { class: cls + " lbl-path", dy: (l.size * 0.355).toFixed(2) }, wrap);
         gEl.style.setProperty("--ls", l.size);
         gEl.style.setProperty("--fl", floor / l.size);
         gEl.style.setProperty("--cap", cap / l.size);
@@ -329,7 +409,7 @@
         item.box = { x: -l.text.length * l.size * 0.29, y: -l.size * 0.6, w: l.text.length * l.size * 0.58, h: l.size * 1.2 };
       } else {
         var ox = l.dot ? l.dot[0] : l.x, oy = l.dot ? l.dot[1] : l.y;
-        gEl = svg("g", { class: cls }, lg);
+        gEl = svg("g", { class: cls }, wrap);
         gEl.style.transform = "translate(" + ox + "px," + oy + "px) scale(calc(clamp(" + (floor / l.size).toFixed(4) + ", var(--P), " + (cap / l.size).toFixed(4) + ") * var(--inv)))";
         // The offset from the dot is kept in label units, so the name stays beside its dot at every zoom.
         var inner = svg("g", { transform: "translate(" + (l.x - ox).toFixed(2) + " " + (l.y - oy).toFixed(2) + ") rotate(" + (l.angle || 0) + ")" }, gEl);
@@ -399,7 +479,10 @@
       if ((z + 1e-6 >= l.minZoom) || forced || (inProvince && z * 1.6 >= l.minZoom)) {
         var px = clamp(Ppx * l.size, it.floor, it.cap);
         var k = px / l.size; // screen px per label unit
-        var cx = it.ox * s + self.tx, cy = it.oy * s + self.ty;
+        var span = self.world.width * s, rcx = r.l + r.w / 2;
+        var kc = Math.round((rcx - (it.ox * s + self.tx)) / span);
+        if (kc !== it.k) { it.k = kc; it.wrap.setAttribute("transform", kc ? "translate(" + kc * self.world.width + " 0)" : ""); }
+        var cx = it.ox * s + self.tx + kc * span, cy = it.oy * s + self.ty;
         var b = it.box, a = (it.l.path ? it.angle : 0) * Math.PI / 180;
         var bx = (b.x + b.w / 2) * k, by = (b.y + b.h / 2) * k;
         var ccx = cx + bx * Math.cos(a) - by * Math.sin(a), ccy = cy + bx * Math.sin(a) + by * Math.cos(a);
@@ -495,7 +578,16 @@
   MapView.prototype._draw = function () {
     if (!this.world) return;
     clearTimeout(this.idle);
-    var s = this.s, z = this.zoom(), M = this.M;
+    var s = this.s, z = this.zoom(), M = this.M, W = this.world.width, span = W * s;
+    // At rest, the view's offset is brought back to the copy of the world under the middle of the map.
+    if (!this.anim && !this.interacting) {
+      var r = this.rect(), q = Math.floor((r.l + r.w / 2 - this.tx) / span);
+      if (q) this.tx += q * span;
+    }
+    var k0 = Math.floor((-M - this.tx) / span), k1 = Math.floor((this.size().w + M - this.tx) / span), ks = [];
+    for (var k = k0; k <= k1; k++) ks.push(k);
+    this.copies = ks;
+    for (var li = 0; li < this.layers.length; li++) if (this.layers[li].tpl) this._place(this.layers[li]);
     this.c = { s: s, tx: this.tx, ty: this.ty };
     this.svg.style.transform = "";
     this.root.setAttribute("transform", "matrix(" + s + " 0 0 " + s + " " + (this.tx + M) + " " + (this.ty + M) + ")");
@@ -506,6 +598,7 @@
     this.host.classList.toggle("is-z2", z >= 1.9);
     this.host.classList.toggle("is-z3", z >= 2.9);
     this.placeLabels();
+    if (this.onDraw) this.onDraw(this);
     this.onView(this);
   };
 
@@ -513,31 +606,16 @@
 
   MapView.prototype.select = function (id, province, opts) {
     opts = opts || {};
-    if (this.selected && this.shapes[this.selected]) {
-      this.shapes[this.selected].el.classList.remove("is-sel");
-      var prov = this.shapes[this.selected].provinces;
-      Object.keys(prov).forEach(function (k) { prov[k].el.classList.remove("is-sel", "is-open"); });
-    }
     $$(".lbl.is-sel", this.labelLayer).forEach(function (e) { e.classList.remove("is-sel"); });
-    if (this.outline) this.outline.textContent = "";
-    this.selected = id || null;
-    this.selectedProvince = province || null;
-    if (!id || !this.shapes[id]) { this.render(); return; }
-    var sh = this.shapes[id];
-    sh.el.classList.add("is-sel");
-    var target = sh;
-    Object.keys(sh.provinces).forEach(function (k) { sh.provinces[k].el.classList.add("is-open"); });
-    if (province && sh.provinces[province]) {
-      sh.provinces[province].el.classList.add("is-sel");
-      target = sh.provinces[province];
-    }
+    this.selected = id && this.shapes[id] ? id : null;
+    this.selectedProvince = this.selected && province && this.shapes[id].provinces[province] ? province : null;
+    this.hover = null;
+    this._tint();
+    if (!this.selected) { this.render(); return; }
+    var sel = this.selectedProvince;
     $$('.lbl[data-id="' + id + '"]', this.labelLayer).forEach(function (e) {
-      if (!e.hasAttribute("data-province") || e.getAttribute("data-province") === province) e.classList.add("is-sel");
+      if (!e.hasAttribute("data-province") || e.getAttribute("data-province") === sel) e.classList.add("is-sel");
     });
-    var d = sh.project.path;
-    svg("path", { class: "map-outline-glow", d: d }, this.outline);
-    svg("path", { class: "map-outline-line", d: d }, this.outline);
-    if (province && sh.provinces[province]) svg("path", { class: "map-outline-prov", d: sh.provinces[province].el.getAttribute("d") }, this.outline);
     if (opts.fly !== false) this.flyTo(this.viewOf(id, province), { duration: opts.instant ? 1 : undefined });
     else this.render();
   };
@@ -575,6 +653,7 @@
     el.addEventListener("pointerdown", function (e) {
       if (e.button !== 0 && e.pointerType === "mouse") return;
       self.stop();
+      self.interacting = true;
       try { el.setPointerCapture(e.pointerId); } catch (err) {}
       pointers.set(e.pointerId, [e.clientX, e.clientY]);
       if (pointers.size === 1) {
@@ -587,6 +666,15 @@
       }
       self.host.classList.add("is-grabbing");
     });
+    // A mouse resting over a country tints it.
+    var hoverRaf = 0, hoverAt = null;
+    el.addEventListener("pointermove", function (e) {
+      if (e.pointerType !== "mouse" || pointers.size || !self.world) return;
+      hoverAt = [e.clientX, e.clientY];
+      if (hoverRaf) return;
+      hoverRaf = requestAnimationFrame(function () { hoverRaf = 0; if (!pointers.size && hoverAt) self.setHover(self.hitAt(hoverAt[0], hoverAt[1])); });
+    });
+    el.addEventListener("pointerleave", function () { hoverAt = null; if (self.world) self.setHover(null); });
     el.addEventListener("pointermove", function (e) {
       if (!pointers.has(e.pointerId)) return;
       var prev = pointers.get(e.pointerId);
@@ -620,12 +708,13 @@
         }
       }
       if (pointers.size) return;
+      self.interacting = false;
       self.host.classList.remove("is-grabbing");
       if (drag && moved <= 4 && e.type === "pointerup") {
-        var t = document.elementFromPoint(e.clientX, e.clientY);
-        var hit = t && t.closest && t.closest("[data-id]");
-        if (hit && self.root.contains(hit)) self.onSelect(hit.getAttribute("data-id"), hit.getAttribute("data-province"));
+        var hit = self.hitAt(e.clientX, e.clientY);
+        if (hit) self.onSelect(hit.id, hit.province);
         else self.onSelect(null);
+        if (!self.anim) self.render();
       } else if (drag && performance.now() - lastMove < 60 && Math.hypot(vel[0], vel[1]) > 0.25 && !reduceMotion.matches) {
         glide(vel);
       }
