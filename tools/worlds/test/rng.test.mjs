@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { makeRng, makeNoise, fbm } from '../rng.mjs';
 
-const projects = JSON.parse(readFileSync(new URL('../../../portfolio-map/projects.json', import.meta.url), 'utf8'));
+const projects = JSON.parse(readFileSync(new URL('../../../projects/projects.json', import.meta.url), 'utf8'));
 
 test('the project list has 18 projects, seven ranked flagships, and Dealdesk\'s four provinces', () => {
   assert.equal(projects.length, 18);

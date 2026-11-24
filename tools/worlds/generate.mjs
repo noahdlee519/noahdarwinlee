@@ -8,7 +8,7 @@
 //       labels, and finer detail, keeping the pictures and tiles already written (it stops if
 //       the land has changed, since the pictures would then be stale)
 //
-// Reads portfolio-map/projects.json; writes <slug>.json and <slug>.png per
+// Reads projects/projects.json; writes <slug>.json and <slug>.png per
 // world, and index.json listing the twenty in order.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -19,31 +19,35 @@ import { writeWorld, buildWorldFiles } from './output.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-export function readProjects(file = join(root, 'portfolio-map', 'projects.json')) {
+export function readProjects(file = join(root, 'projects', 'projects.json')) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
-export function generate({ names = WORLDS.map((w) => w.name), outDir = join(root, 'portfolio-map', 'worlds'), projects = readProjects(), log = () => {}, labelsOnly = false } = {}) {
+export function generate({ names = WORLDS.map((w) => w.name), outDir = join(root, 'projects', 'worlds'), projects = readProjects(), log = () => {}, labelsOnly = false } = {}) {
   mkdirSync(outDir, { recursive: true });
   const sizes = [];
   for (const name of names) {
     const started = Date.now();
     const world = makeWorld(name, projects);
     if (labelsOnly) {
-      const { data, png, detail } = buildWorldFiles(world);
+      const { data, png, detail, chunks } = buildWorldFiles(world);
       const pngFile = join(outDir, `${world.slug}.png`), jsonFile = join(outDir, `${world.slug}.json`);
       if (!existsSync(pngFile) || !readFileSync(pngFile).equals(png)) throw new Error(`${name}: the land cover has changed; run without --labels-only`);
       data.tiles = JSON.parse(readFileSync(jsonFile, 'utf8')).tiles;
       const json = JSON.stringify(data);
       writeFileSync(jsonFile, json);
-      if (detail) { mkdirSync(join(outDir, 'detail'), { recursive: true }); writeFileSync(join(outDir, 'detail', `${world.slug}.json`), detail); }
+      if (detail) {
+        mkdirSync(join(outDir, 'detail', world.slug), { recursive: true });
+        writeFileSync(join(outDir, 'detail', `${world.slug}.json`), detail);
+        for (const c of chunks) writeFileSync(join(outDir, 'detail', world.slug, c.path), c.json);
+      }
       sizes.push({ name, slug: world.slug, jsonBytes: Buffer.byteLength(json), pngBytes: png.length });
       log(`${name.padEnd(9)} ${(Buffer.byteLength(json) / 1024).toFixed(0).padStart(4)} KB json (picture and tiles kept)   ${((Date.now() - started) / 1000).toFixed(1)} s`);
       continue;
     }
-    const { jsonBytes, pngBytes, tileBytes, tileCount, detailBytes } = writeWorld(world, outDir);
+    const { jsonBytes, pngBytes, tileBytes, tileCount, detailBytes, chunkBytes } = writeWorld(world, outDir);
     sizes.push({ name, slug: world.slug, jsonBytes, pngBytes, tileBytes, tileCount });
-    log(`${name.padEnd(9)} ${(jsonBytes / 1024).toFixed(0).padStart(4)} KB json + ${(pngBytes / 1024).toFixed(0).padStart(3)} KB png = ${((jsonBytes + pngBytes) / 1024).toFixed(0).padStart(3)} KB at first, + ${(detailBytes / 1024).toFixed(0)} KB detail, then ${tileCount} tiles, ${(tileBytes / 1024).toFixed(0)} KB in all   ${((Date.now() - started) / 1000).toFixed(1)} s`);
+    log(`${name.padEnd(9)} ${(jsonBytes / 1024).toFixed(0).padStart(4)} KB json + ${(pngBytes / 1024).toFixed(0).padStart(3)} KB png = ${((jsonBytes + pngBytes) / 1024).toFixed(0).padStart(3)} KB at first, + ${(detailBytes / 1024).toFixed(0)} KB detail + ${(chunkBytes / 1024).toFixed(0)} KB chunks, then ${tileCount} tiles, ${(tileBytes / 1024).toFixed(0)} KB in all   ${((Date.now() - started) / 1000).toFixed(1)} s`);
   }
   // The index always lists all twenty, in order, whichever were just made.
   writeFileSync(join(outDir, 'index.json'), JSON.stringify(WORLDS.map((w) => ({ name: w.name, slug: slugOf(w.name) })), null, 1) + '\n');

@@ -1,252 +1,254 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script>
-      (function () {
-        try {
-          var r = document.referrer && new URL(document.referrer);
-          if (r && r.host === location.host && r.pathname !== location.pathname)
-            document.documentElement.classList.add("has-back");
-        } catch (e) {}
-      })();
-    </script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Projects | Noah Darwin Lee</title>
-    <meta
-      name="description"
-      content="Things Noah Darwin Lee has made and collected: a city-guessing game, a globe that finds the shortest way around chosen countries, a free flash card tool, 100 architects of the modern era, and lists of things to do in New York and Chicago."
-    />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Noah Darwin Lee | Projects</title>
+    <meta name="description" content="A map of an imaginary world in which every country is one of Noah Darwin Lee’s projects." />
     <link rel="canonical" href="https://noahdarwinlee.com/projects/" />
-    <link rel="icon" href="../favicon.png" type="image/png" />
-    <link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
-    <link rel="manifest" href="../manifest.json" />
-    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/fonts/fonts.css" />
-
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Noah Darwin Lee" />
-    <meta property="og:title" content="Materials | Noah Darwin Lee" />
-    <meta property="og:description" content="A free flash card tool, 100 architects of the modern era, and lists of things to do in New York and Chicago." />
     <meta property="og:url" content="https://noahdarwinlee.com/projects/" />
-    <meta property="og:image" content="https://noahdarwinlee.com/og.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://noahdarwinlee.com/og.jpg" />
-
-    <link rel="stylesheet" href="../styles.css" />
+    <meta property="og:title" content="Noah Darwin Lee | Projects" />
+    <meta property="og:description" content="A map of an imaginary world in which every country is one of Noah Darwin Lee’s projects." />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/familjen-grotesk-latin-wght-italic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/projects/projects.json" as="fetch" crossorigin />
+    <link rel="preload" href="/projects/worlds/index.json" as="fetch" crossorigin />
     <script>
-      (function () {
-        var t = null;
-        try {
-          t = localStorage.getItem("ndl-theme");
-        } catch (e) {}
-        if (t !== "dark" && t !== "light" && t !== "white") {
-          t =
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light";
-        }
-        document.documentElement.setAttribute("data-theme", t);
-      })();
+      // This page keeps one look, the site's White theme, whatever theme the rest of the site is set to.
+      document.documentElement.setAttribute("data-theme", "white");
     </script>
-    <script src="/visit.js" defer></script>
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="/projects/map.css" />
+    <link rel="stylesheet" href="/projects/layers.css" />
   </head>
-  <body class="cv-page materials-page" data-fade-distance="90">
-    <h1 class="sr-only">Materials</h1>
-    <a class="name" href="/"
-      ><span class="name-word-noah">Noah</span> <span class="name-word-darwin">Darwin</span>
-      <span class="name-word-lee">Lee</span></a
-    >
-    <a class="back-link" href="/" data-back>back</a>
-    <button class="about-link page-toggle" id="page-toggle" type="button" aria-expanded="true" aria-controls="page-body">projects</button>
-    <button class="to-top-btn" id="to-top-btn" aria-label="Back to top">
-      <img src="../favicon.png" alt="" width="30" height="30" />
-    </button>
+  <body class="is-loading">
+    <svg width="0" height="0" class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></symbol>
+      <symbol id="i-mark" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e2e5b1" /><rect x="8" y="8" width="84" height="84" fill="#e68124" /><circle cx="50" cy="50" r="42" fill="#e2e5b1" /></symbol>
+      <symbol id="i-classic" viewBox="0 0 24 24"><rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1.75" /><path d="M3.75 8.75h16.5M7.25 12.25h9.5M7.25 15.5h6" /></symbol>
+      <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1.75" /><path d="M9.25 4.75v14.5" /></symbol>
+      <symbol id="i-names" viewBox="0 0 24 24"><path d="M5 18.5 9.5 5.5h1L15 18.5M6.75 13.75h6.5" /><path d="M16.5 9.5h3.75M18.4 9.5v9" /></symbol>
+      <symbol id="i-road" viewBox="0 0 24 24"><path d="M8.5 3.75 5 20.25M15.5 3.75l3.5 16.5M12 5v2.5M12 10.75v2.5M12 16.5V19" /></symbol>
+      <symbol id="i-town" viewBox="0 0 24 24"><path d="M3.75 20.25h16.5M5.5 20.25v-8.5l4-2.75v11.25M9.5 20.25V6.5l5.5-2.75v16.5M15 9.75h3.5v10.5" /><path d="M11.75 9h1.25M11.75 12h1.25M11.75 15h1.25" /></symbol>
+      <symbol id="i-river" viewBox="0 0 24 24"><path d="M3.5 8.5c2.4-1.9 4.3-1.9 6.25-.25 1.9 1.65 3.8 1.7 6 0 1.6-1.2 3-1.5 4.75-.75M3.5 15.5c2.4-1.9 4.3-1.9 6.25-.25 1.9 1.65 3.8 1.7 6 0 1.6-1.2 3-1.5 4.75-.75" /></symbol>
+      <symbol id="i-park" viewBox="0 0 24 24"><path d="M12 3.75 6.25 12.5h3L5.5 18h13l-3.75-5.5h3L12 3.75ZM12 18v2.5" /></symbol>
+      <symbol id="i-border" viewBox="0 0 24 24"><path d="M5.5 4.25c1.5 2 1 3.75 2.75 5s4.25.5 5.25 2.25-.5 3.75.75 5.5 3 1.75 4.25 2.75" /><path d="M4 19.75h3.5M4 16.5h2" /></symbol>
+      <symbol id="i-province" viewBox="0 0 24 24"><path d="M5.5 4.25c1.5 2 1 3.75 2.75 5s4.25.5 5.25 2.25-.5 3.75.75 5.5 3 1.75 4.25 2.75" stroke-dasharray="2.6 2.2" /></symbol>
+      <symbol id="i-terrain" viewBox="0 0 24 24"><path d="M3.25 19.25 9 9.5l3.25 5 2.5-3.5 6 8.25H3.25Z" /><path d="M7.25 12.5 9 13.75l1.75-1.25" /></symbol>
+      <symbol id="i-waternames" viewBox="0 0 24 24"><path d="M3.5 18c2.4-1.9 4.3-1.9 6.25-.25 1.9 1.65 3.8 1.7 6 0 1.6-1.2 3-1.5 4.75-.75" /><path d="M7.5 13.25 10 4.75h1l2.5 8.5M8.4 10.25h4.2" /></symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24"><path d="M5 12a7 7 0 1 0 2.05-4.95" /><path d="M6.75 3.75v3.5h3.5" /></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M4.25 10.5 12 4.25l7.75 6.25v9.25h-5.5v-5.5h-4.5v5.5h-5.5V10.5Z" /></symbol>
+      <symbol id="i-art" viewBox="0 0 24 24"><rect x="4.25" y="4.25" width="15.5" height="15.5" rx="1.5" /><path d="m4.5 16.5 4.75-4.75 3.25 3.25 2.25-2.25 4.75 4.75" /><circle cx="15" cy="8.75" r="1.5" /></symbol>
+      <symbol id="i-blog" viewBox="0 0 24 24"><path d="M5.75 3.75h9l3.5 3.5v13H5.75V3.75Z" /><path d="M8.75 10.25h6.5M8.75 13.5h6.5M8.75 16.75h4" /></symbol>
+      <symbol id="i-cv" viewBox="0 0 24 24"><rect x="3.75" y="6.25" width="16.5" height="13" rx="1.5" /><path d="M9 6.25V4.75h6v1.5M3.75 11.75h16.5" /></symbol>
+      <symbol id="i-about" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.75" /><path d="M4.75 19.5c1.2-3.4 4-5.25 7.25-5.25s6.05 1.85 7.25 5.25" /></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.6s-7.35-4.3-7.35-9.65A4.05 4.05 0 0 1 12 7.55a4.05 4.05 0 0 1 7.35 2.4C19.35 15.3 12 19.6 12 19.6Z" /></symbol>
+      <symbol id="i-resume" viewBox="0 0 24 24"><path d="M6.5 3.75h7.25L18 8v11.25a1 1 0 0 1-1 1H6.5a1 1 0 0 1-1-1v-14.5a1 1 0 0 1 1-1Z" /><path d="M13.5 4v4.25H18M8.75 12.25h6.5M8.75 15.75h6.5" /></symbol>
+      <symbol id="i-contact" viewBox="0 0 24 24"><rect x="3.75" y="5.75" width="16.5" height="12.5" rx="1.5" /><path d="m4.5 7 7.5 6 7.5-6" /></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" /><path d="m15 15 5 5" /></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11M17.5 6.5l-11 11" /></symbol>
+      <symbol id="i-visit" viewBox="0 0 24 24"><path d="M8 16 16 8M9.5 8H16v6.5" /></symbol>
+      <symbol id="i-link" viewBox="0 0 24 24"><path d="M10.25 13.75a3.5 3.5 0 0 0 4.95 0l3.05-3.05a3.5 3.5 0 0 0-4.95-4.95l-1.2 1.2" /><path d="M13.75 10.25a3.5 3.5 0 0 0-4.95 0L5.75 13.3a3.5 3.5 0 0 0 4.95 4.95l1.2-1.2" /></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6" /></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" /></symbol>
+      <symbol id="i-world" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.75" /><path d="M4.5 10h15M4.5 14h15M12 4.25c-2.6 2.3-3.5 4.9-3.5 7.75s.9 5.45 3.5 7.75c2.6-2.3 3.5-4.9 3.5-7.75S14.6 6.55 12 4.25Z" /></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95" /><path d="M17.25 3.75v3.5h-3.5" /></symbol>
+      <symbol id="i-explore" viewBox="0 0 24 24"><path d="M9 5.25 3.75 7.1v12.65L9 17.9l6 1.85 5.25-1.85V5.25L15 7.1 9 5.25Z" /><path d="M9 5.25V17.9M15 7.1v12.65" /></symbol>
+      <symbol id="i-photos" viewBox="0 0 24 24"><rect x="3.75" y="5.25" width="16.5" height="13.5" rx="1.75" /><circle cx="9" cy="10" r="1.6" /><path d="m4.5 17 5-4.5 3.5 3 2.5-2 4 3.5" /></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.75" y="8.75" width="10.5" height="10.5" rx="1.5" /><path d="M15.25 8.5V6.25a1.5 1.5 0 0 0-1.5-1.5h-7.5a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5H8.5" /></symbol>
+    </svg>
 
-    <main id="page-body" class="marquee-list">
-      <a
-        class="marquee-row is-inverse"
-        href="/portfolio/"
-        aria-label="&gt;see my portfolio&lt;"
-        data-title="&gt;see my portfolio&lt;"
-        data-arrow
-        data-offset="-14"
-      ></a>
+    <h1 class="sr-only">Noah Darwin Lee’s projects, as a map of an imaginary world</h1>
 
-      <a
-        class="marquee-row"
-        href="https://getleggio.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Leggio"
-        data-title="Leggio"
-        data-img="../art/web/materials/leggio-480"
-        data-ratio="1.571"
-        data-offset="-21"
-      ></a>
+    <p class="hint" id="hint" aria-hidden="true">Click on a project to learn more.</p>
 
-      <a
-        class="marquee-row"
-        href="https://loretour.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="LoreTour"
-        data-title="LoreTour"
-        data-img="../art/web/materials/loretour-480"
-        data-ratio="1.000"
-        data-offset="-46"
-      ></a>
+    <div class="map" id="map">
+      <div class="map-veil" aria-hidden="true"></div>
+    </div>
 
-      <a
-        class="marquee-row"
-        href="/citylayoutguessr/"
-        aria-label="citylayoutguessr"
-        data-title="citylayoutguessr"
-        data-img="../art/web/materials/citylayoutguessr-480"
-        data-ratio="0.927"
-        data-offset="-52"
-      ></a>
+    <!-- The rail: the site menu, About, Saved, Resume, and Contact (on a phone, a tab bar). -->
+    <nav class="rail" aria-label="Sections">
+      <button class="rail-btn rail-menu" id="menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="drawer" aria-haspopup="dialog">
+        <span class="rail-icon"><svg><use href="#i-menu" /></svg></span>
+      </button>
+      <button class="rail-btn tab-explore" type="button" data-view="explore" aria-label="Explore the map">
+        <span class="rail-icon"><svg><use href="#i-explore" /></svg></span>
+        <span class="rail-text">Explore</span>
+      </button>
+      <a class="rail-btn rail-about" href="/#about">
+        <span class="rail-icon"><svg><use href="#i-about" /></svg></span>
+        <span class="rail-text">About</span>
+      </a>
+      <button class="rail-btn" type="button" data-view="saved">
+        <span class="rail-icon"><svg><use href="#i-heart" /></svg><b class="rail-count" hidden></b></span>
+        <span class="rail-text">Saved</span>
+      </button>
+      <a class="rail-btn" href="/portfolio/Lee_Noah_Resume.pdf" target="_blank" rel="noopener" data-view="resume">
+        <span class="rail-icon"><svg><use href="#i-resume" /></svg></span>
+        <span class="rail-text">Resume</span>
+      </a>
+      <button class="rail-btn tab-contact" type="button" data-view="contact">
+        <span class="rail-icon"><svg><use href="#i-contact" /></svg></span>
+        <span class="rail-text">Contact</span>
+      </button>
+    </nav>
 
-      <a
-        class="marquee-row"
-        href="/greatercircle/"
-        aria-label="GREATERCIRCLE"
-        data-title="GREATERCIRCLE"
-        data-img="../art/web/materials/greatercircle-480"
-        data-ratio="1.000"
-        data-offset="-38"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="https://chroniaatlas.com/uchronia/"
-        aria-label="UCHRONIA"
-        data-title="UCHRONIA"
-        data-img="../art/web/materials/uchronia-480"
-        data-ratio="1.000"
-        data-offset="-27"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="https://chroniaatlas.com/"
-        aria-label="CHRONIA"
-        data-title="CHRONIA"
-        data-img="../art/web/materials/chronia-480"
-        data-ratio="1.000"
-        data-offset="-44"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="https://fuzhounese.org"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Fuzhounese Dictionary"
-        data-title="Fuzhounese Dictionary"
-        data-img="../art/web/materials/fuzhounese-480"
-        data-ratio="1.956"
-        data-offset="-33"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="/flashcard/"
-        aria-label="Flash Card Tool"
-        data-title="Flash Card Tool"
-        data-img="../art/web/materials/flashcard-480"
-        data-ratio="1.390"
-        data-offset="-14"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="100 Architects of the Modern Era you Should Know"
-        data-title="100 Architects of the Modern Era you Should Know"
-        data-img="../art/web/materials/architects-480"
-        data-ratio="1.721"
-        data-offset="-41"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="List of Things to Do in New York City"
-        data-title="List of Things to Do in New York City"
-        data-img="../art/web/materials/newyork-480"
-        data-ratio="0.685"
-        data-offset="-27"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="List of Things to Do in Chicago"
-        data-title="List of Things to Do in Chicago"
-        data-img="../art/web/materials/chicago-480"
-        data-ratio="1.019"
-        data-offset="-6"
-      ></a>
-
-      <a
-        class="marquee-row"
-        href="/miscellaneous/"
-        aria-label="Miscellaneous"
-        data-title="Miscellaneous"
-        data-plus
-        data-offset="-30"
-      ></a>
-
-    </main>
-    <form class="feedback page-feedback" id="feedback" novalidate>
-      <label class="feedback-label" for="feedback-message">Share feedback about the website with me</label>
-      <textarea id="feedback-message" name="message" rows="3" maxlength="2000" required placeholder="Your message will be anonymous"></textarea>
-      <input class="feedback-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
-      <div class="feedback-row">
-        <button class="feedback-send" type="submit">send</button>
-        <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
+    <!-- Search, floating at the top left of the map. -->
+    <div class="search" id="search">
+      <div class="search-box">
+        <button class="search-menu" type="button" aria-label="Menu" aria-expanded="false" aria-controls="drawer" aria-haspopup="dialog"><svg class="ic"><use href="#i-menu" /></svg></button>
+        <input
+          id="search-input"
+          class="search-input"
+          type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="search-list"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          enterkeyhint="search"
+          placeholder="Search projects"
+          aria-label="Search projects"
+        />
+        <button class="search-icon search-go" type="button" aria-label="Search" tabindex="-1"><svg class="ic"><use href="#i-search" /></svg></button>
+        <button class="search-icon search-clear" type="button" aria-label="Close" hidden><svg class="ic"><use href="#i-close" /></svg></button>
+        <a class="search-me" href="/#about" aria-label="About Noah"><img src="/art/web/me-640.webp" alt="" width="36" height="36" decoding="async" /></a>
       </div>
-    </form>
-    <footer class="site-foot">
-      2026 noah darwin lee | <a href="/terms/">terms</a> |
-      <a href="/privacy/">privacy policy</a>
+      <ul class="search-list" id="search-list" role="listbox" aria-label="Projects" hidden></ul>
+    </div>
+
+    <!-- The panel: on a desktop, a side panel; on a phone, a bottom sheet. -->
+    <section class="panel" id="panel" aria-label="Details" data-view="none">
+      <div class="sheet-grip" aria-hidden="true"><span></span></div>
+      <div class="panel-scroll" id="panel-scroll">
+        <div class="panel-body" id="panel-body"></div>
+      </div>
+      <button class="panel-tab" id="panel-tab" type="button" aria-label="Collapse the side panel" aria-expanded="true" aria-controls="panel"><svg class="ic"><use href="#i-left" /></svg></button>
+    </section>
+
+    <!-- Over the map: next world (on a phone), zoom, and the scale bar. -->
+    <button class="fab-world" id="fab-world" type="button" aria-label="Show the next world"><svg class="ic"><use href="#i-next" /></svg></button>
+
+    <div class="controls">
+      <a class="locate" href="/#about" aria-label="About Noah" title="About Noah"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.25" /><circle class="locate-dot" cx="12" cy="12" r="2.4" /><path d="M12 2.75v3M12 18.25v3M2.75 12h3M18.25 12h3" /></svg></a>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button class="zoom-btn" type="button" id="zoom-in" aria-label="Zoom in"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v13M3.5 10h13" /></svg></button>
+        <button class="zoom-btn" type="button" id="zoom-out" aria-label="Zoom out"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 10h13" /></svg></button>
+      </div>
+    </div>
+
+    <div class="corner" id="corner">
+      <div class="scale scale-corner" aria-hidden="true"><span class="scale-text"></span><span class="scale-bar"></span></div>
+    </div>
+
+    <footer class="strip" id="strip">
+      <span class="strip-left">2026 Noah Darwin Lee</span>
+      <span class="strip-right">
+        <span>Map: <button class="strip-world" type="button" id="strip-world" title="Show the next world"><span class="strip-world-name"></span></button></span>
+        <i class="sep" aria-hidden="true">|</i>
+        <a href="/terms/">Terms</a>
+        <i class="sep" aria-hidden="true">|</i>
+        <a href="/privacy/">Privacy</a>
+        <i class="sep" aria-hidden="true">|</i>
+        <button class="strip-feedback" type="button" data-feedback>Site feedback</button>
+        <span class="scale scale-strip" role="img" aria-label=""><span class="scale-text"></span><span class="scale-bar"></span></span>
+      </span>
     </footer>
 
+    <dialog class="feedback-dialog" id="feedback-dialog" aria-labelledby="feedback-title">
+      <form class="feedback" id="feedback" novalidate>
+        <div class="feedback-head">
+          <h2 class="feedback-title" id="feedback-title">Site feedback</h2>
+          <button class="icon-btn feedback-close" type="button" aria-label="Close" data-close><svg class="ic"><use href="#i-close" /></svg></button>
+        </div>
+        <label class="feedback-label" for="feedback-message">Tell me what works, what doesn’t, or what you’d add. Your message is anonymous.</label>
+        <textarea id="feedback-message" name="message" rows="4" maxlength="2000" required placeholder="Your message"></textarea>
+        <input class="feedback-trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="feedback-row">
+          <p class="feedback-status" id="feedback-status" role="status" aria-live="polite"></p>
+          <button class="btn btn-fill feedback-send" type="submit">Send</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- The menu: a drawer from the left, over everything, with a scrim over the map. -->
+    <div class="drawer-scrim" id="drawer-scrim" hidden></div>
+    <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+      <div class="drawer-head">
+        <a class="drawer-brand" href="/"><svg class="drawer-mark" aria-hidden="true"><use href="#i-mark" /></svg><span id="drawer-title">Noah Darwin Lee</span></a>
+        <button class="icon-btn drawer-close" type="button" aria-label="Close the menu" data-drawer-close><svg class="ic"><use href="#i-close" /></svg></button>
+      </div>
+      <div class="drawer-scroll">
+        <div class="drawer-group">
+          <a class="drawer-row" href="/projects/classic/" id="drawer-classic"><svg class="ic"><use href="#i-classic" /></svg><span>Show the old site</span></a>
+        </div>
+        <div class="drawer-group">
+          <button class="drawer-row" type="button" data-drawer-view="saved"><svg class="ic"><use href="#i-heart" /></svg><span>Saved</span></button>
+          <a class="drawer-row" href="/portfolio/Lee_Noah_Resume.pdf" target="_blank" rel="noopener"><svg class="ic"><use href="#i-resume" /></svg><span>Resume</span></a>
+          <button class="drawer-row" type="button" data-drawer-view="contact"><svg class="ic"><use href="#i-contact" /></svg><span>Contact</span></button>
+          <a class="drawer-row" href="/#about"><svg class="ic"><use href="#i-about" /></svg><span>About</span></a>
+        </div>
+        <div class="drawer-group" role="group" aria-labelledby="layers-title">
+          <p class="drawer-label" id="layers-title">Map layers</p>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="names"><svg class="ic"><use href="#i-names" /></svg><span>Place names</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="roads"><svg class="ic"><use href="#i-road" /></svg><span>Roads and route numbers</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="towns"><svg class="ic"><use href="#i-town" /></svg><span>Towns and cities</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="rivers"><svg class="ic"><use href="#i-river" /></svg><span>Rivers and lakes</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="parks"><svg class="ic"><use href="#i-park" /></svg><span>National parks</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="borders"><svg class="ic"><use href="#i-border" /></svg><span>Borders</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="provinces"><svg class="ic"><use href="#i-province" /></svg><span>Province lines</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="terrain"><svg class="ic"><use href="#i-terrain" /></svg><span>Terrain</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="water-names"><svg class="ic"><use href="#i-waternames" /></svg><span>Water names</span><i class="switch" aria-hidden="true"></i></button>
+          <button class="drawer-row" type="button" id="layers-reset"><svg class="ic"><use href="#i-reset" /></svg><span>Show all layers</span></button>
+        </div>
+        <div class="drawer-group">
+          <button class="drawer-row" type="button" id="drawer-share"><svg class="ic"><use href="#i-link" /></svg><span>Copy a link to this map</span></button>
+          <button class="drawer-row" type="button" data-next-world><svg class="ic"><use href="#i-next" /></svg><span>Next world</span></button>
+          <p class="drawer-note">This world is <b class="drawer-world"></b>, one of twenty, each named for a science fiction writer.</p>
+        </div>
+        <div class="drawer-group">
+          <a class="drawer-row" href="/"><svg class="ic"><use href="#i-home" /></svg><span>Home</span></a>
+          <a class="drawer-row" href="/#about"><svg class="ic"><use href="#i-about" /></svg><span>About</span></a>
+          <a class="drawer-row" href="/art/"><svg class="ic"><use href="#i-art" /></svg><span>Art</span></a>
+          <a class="drawer-row" href="/blog/"><svg class="ic"><use href="#i-blog" /></svg><span>Blog</span></a>
+          <a class="drawer-row" href="/cv/"><svg class="ic"><use href="#i-cv" /></svg><span>CV</span></a>
+        </div>
+        <div class="drawer-group drawer-plain">
+          <a class="drawer-row" href="/terms/"><span>Terms</span></a>
+          <a class="drawer-row" href="/privacy/"><span>Privacy</span></a>
+          <button class="drawer-row" type="button" data-feedback><span>Site feedback</span></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Photos and videos, full screen. -->
+    <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Photos and videos" hidden>
+      <div class="viewer-top">
+        <span class="viewer-count" aria-live="polite"></span>
+        <button class="viewer-btn viewer-close" type="button" aria-label="Close"><svg class="ic"><use href="#i-close" /></svg></button>
+      </div>
+      <div class="viewer-stage"></div>
+      <button class="viewer-btn viewer-prev" type="button" aria-label="Previous"><svg class="ic"><use href="#i-left" /></svg></button>
+      <button class="viewer-btn viewer-next" type="button" aria-label="Next"><svg class="ic"><use href="#i-right" /></svg></button>
+      <p class="viewer-caption"></p>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
     <noscript>
-      <ul class="marquee-fallback">
-        <li><a href="/portfolio/">see my portfolio</a></li>
-        <li><a href="https://getleggio.com">Leggio</a></li>
-        <li><a href="https://loretour.com">LoreTour</a></li>
-        <li><a href="/citylayoutguessr/">citylayoutguessr</a></li>
-        <li><a href="/greatercircle/">GREATERCIRCLE</a></li>
-        <li><a href="https://chroniaatlas.com/uchronia/">UCHRONIA</a></li>
-        <li><a href="https://chroniaatlas.com/">CHRONIA</a></li>
-        <li><a href="https://fuzhounese.org">Fuzhounese Dictionary</a></li>
-        <li><a href="/flashcard/">Flash Card Tool</a></li>
-        <li><a href="https://docs.google.com/presentation/d/16V9TGh3Xi9RxhmywWtWF7uJGD1IbTwxljtGcyvS2lPA/edit?usp=sharing">100 Architects of the Modern Era you Should Know</a></li>
-        <li><a href="https://docs.google.com/document/d/1ssXRvUfDrAz_ceeasqqQIbIVrfkhRyDdM6GjQzH0e5Q/edit?usp=sharing">List of Things to Do in New York City</a></li>
-        <li><a href="https://docs.google.com/document/d/1HOVF9Lcd3k4j_xvErkGzNGA9QknVvsKKbM8lg6KoG3k/edit?usp=sharing">List of Things to Do in Chicago</a></li>
-        <li><a href="/miscellaneous/">Miscellaneous</a></li>
-      </ul>
+      <div class="noscript">
+        <p>This page draws a map with JavaScript. The projects are also listed at <a href="/portfolio/">noahdarwinlee.com/portfolio</a>.</p>
+      </div>
     </noscript>
 
-    <script src="../to-top-btn.js" defer></script>
-    <script src="../header.js" defer></script>
-    <script src="../back.js" defer></script>
-    <script src="../page-toggle.js" defer></script>
-    <script src="../feedback.js" defer></script>
-    <script src="../marquee.js" defer></script>
-      <script src="../theme.js" defer></script>
+    <script src="/projects/map.js" defer></script>
+    <script src="/projects/app.js" defer></script>
+    <script src="/feedback.js" defer></script>
   </body>
 </html>

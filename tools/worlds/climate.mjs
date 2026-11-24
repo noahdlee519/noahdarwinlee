@@ -14,7 +14,9 @@
 import { makeNoise, fbm, clamp, smoothstep } from './rng.mjs';
 import { latitudeAt, coastDistance } from './terrain.mjs';
 
-export const COVER = { FOREST: 0, WOODLAND: 1, GRASS: 2, STEPPE: 3, DESERT: 4, ROCK: 5, SNOW: 6, URBAN: 7, WATER: 255 };
+export const COVER = { FOREST: 0, WOODLAND: 1, GRASS: 2, STEPPE: 3, DESERT: 4, ROCK: 5, SNOW: 6, URBAN: 7, SAND: 8, DUNE: 9, DRYROCK: 10, SALT: 11, WATER: 255 };
+// Every class a desert is painted in (see renderCover's desert manner).
+export const DRY_CLASSES = [COVER.DESERT, COVER.STEPPE, COVER.DUNE, COVER.DRYROCK, COVER.SALT];
 
 // Sea-level temperature in °C at a latitude.
 export function seaLevelTemp(lat) {
@@ -25,7 +27,8 @@ export function seaLevelTemp(lat) {
 // in the subtropics, wet again in the middle latitudes, dry at the poles.
 function zonalRain(lat) {
   const a = Math.abs(lat);
-  const z = 0.24 + 0.8 * Math.exp(-((a / 12) ** 2)) + 0.52 * Math.exp(-(((a - 50) / 15) ** 2)) - 0.2 * Math.exp(-(((a - 26) / 9) ** 2));
+  // The subtropical highs (about 20 to 32 degrees) are where the great deserts lie.
+  const z = 0.24 + 0.8 * Math.exp(-((a / 12) ** 2)) + 0.52 * Math.exp(-(((a - 50) / 15) ** 2)) - 0.3 * Math.exp(-(((a - 26) / 9.5) ** 2));
   return Math.max(0.07, z) * (1 - 0.55 * smoothstep(62, 86, a));
 }
 
@@ -200,7 +203,9 @@ function rasterMesh(mesh, x0, y0, w, h) {
 }
 
 // Moisture to a position on the scale desert 0 | steppe 1 | grass 2 | woodland 3 | forest 4 (to 5).
-const STOPS = [0, 0.1, 0.2, 0.36, 0.56, 1.2];
+// Moisture at which each class begins: desert, steppe, grass, woodland, forest. Grass and farmland take the widest
+// band, as in the reference, where the land is mostly the middle green; beige is kept for the genuinely dry.
+const STOPS = [0, 0.055, 0.115, 0.4, 0.68, 1.4];
 function vegIndex(m) {
   if (m <= 0) return 0;
   for (let k = 1; k < STOPS.length; k++) {
@@ -228,7 +233,9 @@ export function classifyCover(opts) {
 // urban (optional): (x, y, elev) => boolean, map units: built-up ground, painted grey.
 // shade (optional): also return a hillshade level per pixel (0 flat, 1 in
 // shadow, 2 lit), from the slope of the land to a light in the north-west.
-export function prepareCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0, urban = null, shade = false }) {
+// ice (optional): a mask of polar ice, all snow. lakes (optional): (x, y) => true inside a small lake, painted as
+// water. flow (optional): gathered water per pixel, for glaciers down the valleys.
+export function prepareCover({ fields, elev, land, width, height, rng, style = {}, water, scale = 1, bleed = 0, urban = null, shade = false, ice = null, lakes = null, flow = null, dist = null, basins = null, oases = null, polar = null, about = null }) {
   const W0 = width, H0 = height;
   const W = Math.round(W0 * scale), H = Math.round(H0 * scale);
   const S = W / 1600;
@@ -252,6 +259,14 @@ export function prepareCover({ fields, elev, land, width, height, rng, style = {
     bank = new Float32Array(N0);
     for (let i = 0; i < N0; i++) bank[i] = water.rivers[i] || (water.lakes && water.lakes[i]) ? 1 : 0;
     boxBlur(bank, W0, H0, Math.max(1, Math.round(3 * S0)), 2);
+  }
+  // The same for rivers alone: in the desert a river is lined with green, a lake is not ringed with it.
+  let riverBank = null;
+  if (water && water.rivers) {
+    const N0 = W0 * H0, S0 = W0 / 1600;
+    riverBank = new Float32Array(N0);
+    for (let i = 0; i < N0; i++) riverBank[i] = water.rivers[i] && !(water.lakes && water.lakes[i]) ? 1 : 0;
+    boxBlur(riverBank, W0, H0, Math.max(1, Math.round(2 * S0)), 2);
   }
 
   // Where the picture's land runs out past the coast, each sea pixel reads
@@ -281,13 +296,33 @@ export function prepareCover({ fields, elev, land, width, height, rng, style = {
     }
   }
 
-  return { W0, H0, W, H, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest, urban, shade };
+  const nDune = makeNoise(r.fork('dunes')), duneAngle = r.next() * Math.PI;
+  // Gathered water, softened, so glaciers follow the valleys with smooth edges at any scale.
+  let flowSoft = null;
+  if (flow) {
+    flowSoft = new Float32Array(W0 * H0);
+    for (let i = 0; i < flowSoft.length; i++) flowSoft[i] = Math.min(60, Math.sqrt(flow[i]));
+    boxBlur(flowSoft, W0, H0, 1, 2);
+  }
+  // Deserts: smooth broad fields, not facets (see renderCover).
+  const dr = r.fork('desert');
+  const desertNoise = { a: makeNoise(dr), b: makeNoise(dr), rock: makeNoise(dr), erg: makeNoise(dr), oasis: makeNoise(dr) };
+  // The region's dryness, blurred wide, so the mountains in a desert are painted in the desert's manner too; and the
+  // lie of the land, blurred, so rugged ground (above its surroundings, or steep) can be told from a flat plateau.
+  const S00 = W0 / 1600;
+  const aridity = boxBlur(Float32Array.from(fields.moist), W0, H0, Math.max(2, Math.round(9 * S00)), 2);
+  // The dry basins, blurred, so only the broad ones show as salt flats.
+  if (basins) basins = boxBlur(Float32Array.from(basins), W0, H0, Math.max(1, Math.round(2.5 * S00)), 2);
+  const elevSoft = boxBlur(Float32Array.from(elev, (e) => Math.max(0, e)), W0, H0, Math.max(2, Math.round(6 * S00)), 2);
+  const elevMid = boxBlur(Float32Array.from(elev, (e) => Math.max(0, e)), W0, H0, Math.max(1, Math.round(2 * S00)), 2);
+  return { W0, H0, W, H, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest, urban, shade, ice, lakes, flow: flowSoft, dist, nDune, duneAngle, basins, oases, desertNoise, aridity, elevSoft, elevMid, riverBank, polar, about };
 }
 
 // renderCover(prep, x0, y0, w, h) => { cover, ponds } for a window of the picture
 // (in its own pixels): a class index per pixel, 255 for the sea.
 export function renderCover(prep, wx0, wy0, w, h) {
-  const { W0, H0, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest, urban } = prep;
+  const { W0, H0, scale, fields, elev, land, style, broad, fineA, fineB, tiny, broadJ, broadPick, fineJA, fineJB, fineKA, fineKB, tinyJ, bank, nearest, urban, ice, lakes, flow, dist, nDune, duneAngle, basins, oases, desertNoise: DN, aridity, elevSoft, elevMid, riverBank, polar: polarCover, about: aboutCover } = prep;
+  const S0 = W0 / 1600, dca = Math.cos(duneAngle), dsa = Math.sin(duneAngle);
   // Elevation between pixel centres, for the hillshade.
   const E = (x, y) => {
     const fx = clamp(x - 0.5, 0, W0 - 1.001), fy = clamp(y - 0.5, 0, H0 - 1.001);
@@ -295,9 +330,61 @@ export function renderCover(prep, wx0, wy0, w, h) {
     const a = Math.max(0, elev[k]), b = Math.max(0, elev[k + 1]), c = Math.max(0, elev[k + W0]), d = Math.max(0, elev[k + W0 + 1]);
     return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
   };
+  // Any field between pixel centres, so a boundary drawn from it is smooth at every scale.
+  const bil = (F, x, y) => {
+    const fx = clamp(x - 0.5, 0, W0 - 1.001), fy = clamp(y - 0.5, 0, H0 - 1.001);
+    const ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, v = fy - iy, k = iy * W0 + ix;
+    return F[k] * (1 - u) * (1 - v) + F[k + 1] * u * (1 - v) + F[k + W0] * (1 - u) * v + F[k + W0 + 1] * u * v;
+  };
   const shade = prep.shade ? new Uint8Array(w * h) : null;
   const { temp, moist } = fields;
   const N = w * h;
+  const desertClass = (mx, my) => {
+    if (!DN) return -1;
+    const t = bil(temp, mx, my);
+    if (t < -6) return -1;
+    const ar = bil(aridity, mx, my);
+    if (ar > 0.2) return -1;
+    const n1 = fbm(DN.a, mx / (34 * S0), my / (34 * S0), 3);
+    if (vegIndex(ar) + 0.55 * n1 > 1.85) return -1;
+    const mm = bil(moist, mx, my), vS = vegIndex(mm);
+    const n2 = fbm(DN.b, mx / (13 * S0), my / (13 * S0), 3);
+    // Green banks where a river crosses the desert, and the oases.
+    const bk = riverBank ? bil(riverBank, mx, my) : 0;
+    if (bk > 0.22) return bk > 0.5 ? COVER.WOODLAND : COVER.GRASS;
+    if (oases) for (const o of oases) {
+      const d = Math.hypot(mx - o.x, my - o.y);
+      if (d > o.r * 1.6) continue;
+      const q = d / o.r + 0.45 * fbm(DN.oasis, mx / (0.9 * S0), my / (0.9 * S0), 3);
+      if (q < 0.55) return COVER.WOODLAND;
+      if (q < 1) return COVER.GRASS;
+    }
+    const eh = E(mx, my);
+    if (scale >= 4 && dist && bil(dist, mx, my) < 1.3 && eh < 0.06) return COVER.SAND;
+    // Rugged ground: high, or standing above its surroundings, or steep; a flat plateau stays sand.
+    const em = bil(elevMid, mx, my);
+    const slope = Math.abs(bil(elevMid, mx + 1, my) - bil(elevMid, mx - 1, my)) + Math.abs(bil(elevMid, mx, my + 1) - bil(elevMid, mx, my - 1));
+    const rug = Math.max(em - 0.38, (em - bil(elevSoft, mx, my)) * 2.6, slope * 5 - 0.03) + 0.025 * fbm(DN.rock, mx / (9 * S0), my / (9 * S0), 2) + 0.01 * n2;
+    if (eh + 0.04 * n2 > 0.6) return eh > 0.68 && t < -7 ? COVER.SNOW : COVER.ROCK;
+    const shore = bank ? bil(bank, mx, my) : 0;
+    if ((rug > 0.12 && shore < 0.03) || em + 0.04 * n2 > 0.5) return COVER.DRYROCK;
+    // The wetter heights within a desert: smooth green, not shards.
+    if (vS + 0.4 * n2 > 2.35) return vS > 3.2 ? COVER.WOODLAND : COVER.GRASS;
+    // Salt flats: the floors of the dry basins that hold no lake.
+    if (basins && vS < 1.3 && eh < 0.24 && slope < 0.01) {
+      const b = bil(basins, mx, my) + 0.0012 * n2;
+      if (b > 0.0024) return COVER.SALT;
+    }
+    // Dune seas, rippled, in the driest low sand: only in the finer tiles, and only a shade off the sand.
+    if (scale >= 8 && vS < 0.7 && eh < 0.16) {
+      const erg = fbm(DN.erg, mx / (40 * S0), my / (40 * S0), 2);
+      if (erg > 0.12) {
+        const u = (mx * dca + my * dsa) / (1.4 * S0) + 2.4 * fbm(nDune, mx / (8 * S0), my / (8 * S0), 2);
+        if (Math.sin(u * Math.PI * 2) > 0.55 - 0.5 * smoothstep(0.12, 0.4, erg)) return COVER.DUNE;
+      }
+    }
+    return vS + 0.85 * n1 + 0.15 * n2 < 0.95 ? COVER.DESERT : COVER.STEPPE;
+  };
   const broadId = rasterMesh(broad, wx0, wy0, w, h), fineAId = rasterMesh(fineA, wx0, wy0, w, h);
   const fineBId = rasterMesh(fineB, wx0, wy0, w, h), tinyId = rasterMesh(tiny, wx0, wy0, w, h);
   const cover = new Uint8Array(N).fill(COVER.WATER);
@@ -312,6 +399,14 @@ export function renderCover(prep, wx0, wy0, w, h) {
       const i0 = y0 * W0 + Math.min(W0 - 1, Math.floor(x / scale));
       const onLand = land[i0] === 1;
       if (!onLand && !(nearest && nearest[i0] >= 0)) continue;
+      const mx = (x + 0.5) / scale, my = (y + 0.5) / scale;
+      // Small lakes are water in the picture too, under their vector outlines.
+      if (onLand && lakes && lakes(mx, my)) { cover[i] = COVER.WATER; continue; }
+      // The About island and the polar land, each in its own manner (see polar.mjs); seamless across the wrap.
+      if (aboutCover) { const c = aboutCover(mx, my); if (c >= 0) { cover[i] = c; continue; } }
+      if (polarCover) { const c = polarCover(mx, my); if (c >= 0) { cover[i] = c; continue; } }
+      if (ice && !onLand && ice[nearest[i0]]) continue;
+      if (ice && ice[i0]) { cover[i] = COVER.SNOW; continue; }
       const b = broadId[i];
       const useA = broadPick[b] < 0.5;
       const mesh = useA ? fineA : fineB;
@@ -332,13 +427,29 @@ export function renderCover(prep, wx0, wy0, w, h) {
 
       let m = moist[s];
       if (bank && bank[s] > 0.02) m += Math.min(0.5, bank[s] * 1.6);
+      // ---- Deserts, in their own manner: broad smooth fields of pale sand and dry grass, darker warm grey-beige on
+      // the rocky plateaus and mountains, near-white salt flats in the dry basins, dune ripples only close in, and
+      // small green oases; no shards. ----
+      if (onLand || nearest) {
+        const desert = desertClass(mx, my);
+        if (desert >= 0) {
+          cover[i] = desert;
+          if (onLand && urban && urban(mx, my, elev[i0])) cover[i] = COVER.URBAN;
+          continue;
+        }
+      }
       let v = vegIndex(m);
       // Cold ground grows little: tundra reads as dry grass, then bare.
       // Cold ground: boreal forest gives way to tundra, a pale green (grass),
       // never desert; the cold is wet enough for that, as in the far north.
       if (t < -3) v = clamp(v, 2.05, Math.max(2.05, 4.6 + (t + 3) * 0.22));
+      // Facets jump a class up or down, but green land never jumps to beige: a shard of steppe in a meadow reads as
+      // a stain, where a shard of a darker or lighter green reads as texture.
+      const v0 = v;
       v = clamp(v + j, 0, 4.999);
+      if (v0 >= 2.15 && v < 2) v = 2 + (2 - v) * 0.3;
       let c = VEG_CLASS[Math.floor(v)];
+      let glacier = false;
 
       // High ground: bare rock on the heights, snow on the coldest of them.
       const tj = t + (jf - 0.5) * 5 + (broadJ[b] - 0.5) * 3;
@@ -351,9 +462,27 @@ export function renderCover(prep, wx0, wy0, w, h) {
       if (polar || peak) c = !polar && kf > 0.78 ? COVER.ROCK : COVER.SNOW;
       else if (t < -11 && kf > 0.84) c = jf > 0.6 ? COVER.SNOW : COVER.ROCK;
       cover[i] = c;
-      if (onLand && urban && c !== COVER.SNOW && urban((x + 0.5) / scale, (y + 0.5) / scale, elev[i0])) { cover[i] = COVER.URBAN; continue; }
+      // Glaciers: tongues of ice down the valleys below snowy peaks, solid white.
+      if (flow && c !== COVER.SNOW && onLand) {
+        const fx = clamp(mx - 0.5, 0, W0 - 1.001), fy = clamp(my - 0.5, 0, H0 - 1.001), ix = Math.floor(fx), iy = Math.floor(fy), u = fx - ix, w = fy - iy, k = iy * W0 + ix;
+        const fl = flow[k] * (1 - u) * (1 - w) + flow[k + 1] * u * (1 - w) + flow[k + W0] * (1 - u) * w + flow[k + W0 + 1] * u * w;
+        const eh = E(mx, my);
+        if (fl > 2.2 * S0 && eh > 0.3 && t - 18 * (eh - elev[i0]) < -4 + 24 * (eh - 0.3)) { c = COVER.SNOW; cover[i] = c; glacier = true; }
+      }
+      // Sand: beaches on dry or warm coasts, and dune fields (ergs) in the driest desert, in long ripples.
+      if (c === COVER.DESERT || c === COVER.STEPPE || c === COVER.GRASS) {
+        const dd = dist ? dist[onLand ? i0 : (nearest ? nearest[i0] : i0)] : 9;
+        // (Only in the finer tiles: the first picture stays plain, and small.)
+        const beach = scale >= 4 && (dd <= 1 || !onLand) && (moist[s] < 0.34 || t > 18) && e < 0.06;
+        let dune = false;
+        if (scale >= 4 && c === COVER.DESERT && moist[s] < 0.06 && e < 0.26) {
+          const u = (mx * dca + my * dsa) / (1.7 * S0) + 2.2 * fbm(nDune, mx / (9 * S0), my / (9 * S0), 2);
+          dune = Math.sin(u * Math.PI * 2) > 0.15 + 0.6 * smoothstep(0.06, 0.02, -moist[s] + 0.08);
+        }
+        if (beach || dune) { c = COVER.SAND; cover[i] = c; }
+      }
+      if (onLand && urban && c !== COVER.SNOW && urban(mx, my, elev[i0])) { cover[i] = COVER.URBAN; continue; }
       if (shade && onLand) {
-        const mx = (x + 0.5) / scale, my = (y + 0.5) / scale;
         // The rise toward the south-east, per map unit: land facing the
         // north-west is lit, land facing the south-east in shadow.
         const lit = (E(mx + 0.7, my) - E(mx - 0.7, my) + E(mx, my + 0.7) - E(mx, my - 0.7)) / 1.98;
@@ -365,7 +494,7 @@ export function renderCover(prep, wx0, wy0, w, h) {
       // The smallest facets: a scatter of slivers a class up or down, and
       // snow and rock broken up and mottled, so neither lies in solid blocks.
       const tf = tinyId[i];
-      if (c === COVER.SNOW) {
+      if (c === COVER.SNOW && !glacier) {
         const u = tinyJ[tf];
         if (u < (polar ? 0.12 : 0.42)) c = COVER.ROCK;
         cover[i] = c;
@@ -377,17 +506,45 @@ export function renderCover(prep, wx0, wy0, w, h) {
       if (c < COVER.ROCK) {
         const u = tinyJ[tf];
         if (u > 0.97) c = VEG_CLASS[Math.min(4, Math.floor(v) + 1)];
-        else if (u > 0.94) c = VEG_CLASS[Math.max(0, Math.floor(v) - 1)];
+        else if (u > 0.94) c = VEG_CLASS[Math.max(Math.floor(v) >= 2 ? 2 : 0, Math.floor(v) - 1)];
         cover[i] = c;
       }
 
       // Flecks of water: many on cold wet lowland (a land of lakes), few elsewhere.
       const cool = smoothstep(9, 1, t) * smoothstep(-12, -4, t);
       const chance = (0.004 + 0.06 * cool * smoothstep(0.25, 0.6, moist[s])) * pondiness * smoothstep(0.22, 0.1, e);
-      if (onLand && tinyJ[tf] < chance && c !== COVER.SNOW && c !== COVER.DESERT) ponds[i] = 1;
+      // (The scattered small lakes are vectors now, painted above; the land cover makes no water of its own.)
+      void chance;
     }
   }
   return shade ? { cover, ponds, shade } : { cover, ponds };
+}
+
+// findOases({ land, elev, fields, hydro, dist, width, height, rng }) => [{ x, y, r }]
+// A few springs in the deep desert, where what little water there is gathers: each a small green patch, and in time a
+// village (see buildSettlements).
+export function findOases({ land, elev, fields, hydro, dist, width, height, rng }) {
+  const W = width, H = height, S = W / 1600;
+  const r = rng.fork('oases');
+  const { temp, moist } = fields;
+  const cands = [];
+  let desertPx = 0;
+  for (let y = 4; y < H - 4; y += 4) for (let x = 4; x < W - 4; x += 4) {
+    const i = y * W + x;
+    if (!land[i] || hydro.lakes[i] || moist[i] > 0.07 || temp[i] < 8) continue;
+    desertPx += 16;
+    if (elev[i] > 0.24 || dist[i] < 10 * S || hydro.riverClass[i]) continue;
+    cands.push({ x: x + 0.5, y: y + 0.5, s: Math.log(1 + hydro.acc[i]) + r.next() * 1.5 });
+  }
+  cands.sort((a, b) => b.s - a.s || a.x - b.x || a.y - b.y);
+  const want = clamp(Math.round(desertPx / (22000 * S * S)), 0, 9);
+  const out = [];
+  for (const c of cands) {
+    if (out.length >= want) break;
+    if (out.some((o) => Math.hypot(o.x - c.x, o.y - c.y) < 45 * S)) continue;
+    out.push({ x: c.x, y: c.y, r: (1.1 + r.next() * 1.6) * S });
+  }
+  return out;
 }
 
 // buildClimate({ elev, land, width, height, rng, style }) => { cover, ponds, temp, rain, moist }

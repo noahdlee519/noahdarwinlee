@@ -1,5 +1,7 @@
 # Portfolio map: the page Implementation Plan
 
+> **Moved, 23 November 2026:** the page now lives at `projects/` (`/projects/`), replacing the old projects page, which moved to `projects/classic/`. Read `portfolio-map/` below as `projects/`; `/portfolio-map/` redirects there.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The page itself: a full-screen imaginary-world map (one of the twenty generated worlds per load) where each project is a country, with a web mapping app's interface: a rail, a search box, a project panel, a footer strip, and a phone layout.

@@ -1,0 +1,405 @@
+/* The map's finer layers: parks, streams, roads, ferries, subdivisions, and the symbols and names of small places
+   and features. They arrive once the map is zoomed in (map.js loads the world's detail file); each takes a day and a
+   night colour, after the conventions of a web map's regional view. */
+
+:root {
+  --m-river: #86cfe2;
+  --m-park: #8fcfa5;
+  --m-road-hw: #9aa8c8;
+  --m-road-main: #b1bbd4;
+  --m-road-local: #c3c9dc;
+  --m-road-street: #d3d7e4;
+  --m-ferry: #5c9fc0;
+  --m-subdiv: #9aa0a6;
+  --m-dot-ring: #4a4d52;
+  --m-dot-fill: #ffffff;
+  --m-peak: #5f6368;
+  --m-park-label: #1f6b45;
+  --m-nature-label: #6f7c74;
+  --m-place-label: #4a4d52;
+  --m-shield: #f9dc59;
+  --m-shield-edge: #b9ab6f;
+  --m-shield-ink: #3c3f44;
+  --m-shield-e: #769d4e;
+  --m-shield-e-ink: #ffffff;
+}
+
+/* Rivers in the water's own blue, thin, with no darker casing; streams join them closer in. */
+.map-rivers path {
+  stroke: var(--m-river);
+}
+
+.map-lakes {
+  stroke: none;
+}
+
+.map-reservoir {
+  fill: var(--m-water);
+  stroke: none;
+}
+
+.map-stream {
+  fill: none;
+  stroke: var(--m-river);
+  stroke-width: 0.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map.is-z3 .map-reservoir {
+  fill: var(--m-water);
+  stroke: var(--m-river);
+  stroke-width: 0.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-stream {
+  opacity: 1;
+}
+
+/* Dry riverbeds (wadis) in the desert: faint lines a shade darker than the sand, from zoom 3. */
+.map-wadi {
+  fill: none;
+  stroke: #e2dccd;
+  stroke-width: 0.8px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.map.is-z3 .map-wadi {
+  opacity: 1;
+}
+
+/* National parks: one calm, deeper green laid flat over the land cover, with no line around it. */
+.map-park {
+  fill: var(--m-park);
+  stroke: none;
+}
+
+/* Roads: pale lilac-grey, the highways a little stronger; each class from its zoom. */
+.map-road,
+.map-ferry,
+.map-subdiv {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 300ms ease;
+}
+
+.r-highway {
+  stroke: var(--m-road-hw);
+  stroke-width: 1.5px;
+}
+
+.map.is-z3 .r-highway {
+  stroke-width: 2.4px;
+}
+
+.r-main {
+  stroke: var(--m-road-main);
+  stroke-width: 1px;
+  opacity: 0;
+}
+
+.map.is-z2 .r-main {
+  opacity: 1;
+}
+
+.map.is-z3 .r-main {
+  stroke-width: 1.5px;
+}
+
+.r-local {
+  stroke: var(--m-road-local);
+  stroke-width: 0.9px;
+  opacity: 0;
+}
+
+.map.is-z3 .r-local {
+  opacity: 1;
+}
+
+.r-street {
+  stroke: var(--m-road-street);
+  stroke-width: 0.7px;
+  opacity: 0;
+}
+
+.map.is-z35 .r-street {
+  opacity: 1;
+}
+
+.map-ferry {
+  stroke: var(--m-ferry);
+  stroke-width: 0.9px;
+  stroke-dasharray: 3 2.5;
+  stroke-linecap: butt;
+}
+
+/* The larger countries' subdivisions: faint dashes, inside the borders. */
+.map-subdiv {
+  stroke: var(--m-subdiv);
+  stroke-width: 0.7px;
+  stroke-dasharray: 2 1.6;
+  opacity: 0;
+}
+
+.map.is-z15 .map-subdiv {
+  opacity: 0.85;
+}
+
+/* Symbols: a white dot in a dark ring for towns, a ring with a dark centre for capitals, a triangle for peaks. */
+.lbl-dot {
+  fill: var(--m-dot-fill);
+  stroke: var(--m-dot-ring);
+}
+
+.lbl-dot-in {
+  fill: var(--m-dot-ring);
+}
+
+.lbl-peak {
+  fill: var(--m-peak);
+}
+
+.k-city text {
+  font-weight: 600;
+}
+
+.k-village text,
+.k-peak text {
+  fill: var(--m-place-label);
+}
+
+.k-peak .lbl-sub {
+  font-weight: 400;
+}
+
+.k-park text {
+  fill: var(--m-park-label);
+  stroke: #ffffff;
+  stroke-opacity: 0.9;
+  font-weight: 500;
+}
+
+.k-region text {
+  fill: var(--m-nature-label);
+}
+
+.k-island text,
+.k-cape text {
+  fill: var(--m-place-label);
+}
+
+/* Route shields: a yellow plate for a country's routes, a green one for those that cross a border. */
+.lbl-plate {
+  fill: var(--m-shield);
+  stroke: var(--m-shield-edge);
+}
+
+.lbl-plate.is-e {
+  fill: var(--m-shield-e);
+  stroke: var(--m-dot-fill);
+}
+
+.k-shield text {
+  fill: var(--m-shield-ink);
+  stroke: none;
+  font-weight: 600;
+}
+
+.k-shield .is-e + text {
+  fill: var(--m-shield-e-ink);
+}
+
+/* ================================================================ the detail pass of 23 November */
+
+/* The finer roads: lilac-grey outside the towns, white streets on the grey of the built-up ground. */
+.r-motorway {
+  stroke: #94a3c4;
+  stroke-width: 1.8px;
+}
+
+.map.is-z4 .r-motorway {
+  stroke-width: 3px;
+}
+
+.r-trunk,
+.r-ring {
+  stroke: #a6b2cf;
+  stroke-width: 1.3px;
+}
+
+.map.is-z4 .r-trunk,
+.map.is-z4 .r-ring {
+  stroke-width: 2.2px;
+}
+
+.r-secondary {
+  stroke: #b4bdd6;
+  stroke-width: 1.1px;
+  opacity: 0;
+}
+
+.map.is-z2 .r-secondary {
+  opacity: 1;
+}
+
+.map.is-z4 .r-secondary {
+  stroke-width: 1.7px;
+}
+
+.r-arterial {
+  stroke: #ffffff;
+  stroke-width: 1px;
+  opacity: 0;
+}
+
+.map.is-z35 .r-arterial {
+  opacity: 1;
+}
+
+.map.is-z5 .r-arterial {
+  stroke-width: 1.6px;
+}
+
+.map.is-z3 .r-local {
+  stroke-width: 1px;
+}
+
+/* Streets: thin white lines on the grey of the built-up ground, as a web map draws a city. */
+.r-street {
+  stroke: #ffffff;
+  stroke-width: 0.6px;
+  opacity: 0;
+}
+
+.map.is-z35 .r-street {
+  opacity: 1;
+}
+
+.map.is-z5 .r-street {
+  stroke-width: 0.8px;
+}
+
+.r-minor {
+  stroke: #ffffff;
+  stroke-width: 0.5px;
+  opacity: 0;
+}
+
+.map.is-z5 .r-minor {
+  opacity: 1;
+}
+
+/* Beyond a polar edge: the ice cap, running on. */
+.map-polar-cap {
+  fill: #ffffff;
+}
+
+/* A causeway: a road on a pale embankment across the water. */
+.map-causeway {
+  fill: none;
+  stroke: #e9eadf;
+  stroke-width: 3.2px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.r-causeway {
+  stroke: #b4bdd6;
+  stroke-width: 1.2px;
+}
+
+/* Small lakes: water, crisp at every zoom. */
+.map-small-lakes {
+  fill: var(--m-water);
+  stroke: none;
+}
+
+/* National parks: no fill; at the closest zooms only a faint fine edge. The name does the work. */
+.map-park {
+  fill: none;
+  stroke: #5fae7d;
+  stroke-width: 0.8px;
+  stroke-opacity: 0;
+  vector-effect: non-scaling-stroke;
+  transition: stroke-opacity 300ms ease;
+}
+
+.map.is-z4 .map-park {
+  stroke-opacity: 0.4;
+}
+
+.k-park text {
+  fill: #2e7d52;
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Route signs, by each country's style. */
+.lbl-plate.sign-yellow { fill: #f9dc59; stroke: #b9ab6f; }
+.lbl-plate.sign-green,
+.lbl-plate.sign-euro { fill: #3f8f4f; stroke: #ffffff; }
+.lbl-plate.sign-blue { fill: #2f63b5; stroke: #ffffff; }
+.lbl-plate.sign-red { fill: #c4473a; stroke: #ffffff; }
+.lbl-plate.sign-white { fill: #ffffff; stroke: #6b6f72; }
+.lbl-plate.sign-badge { fill: #ffffff; stroke: #3c3f44; }
+.lbl-plate.sign-interstate { fill: #2f5aa8; stroke: #c4473a; }
+.lbl-plate.sign-brown { fill: #7a5a3a; stroke: #ffffff; }
+.k-shield.sign-green text,
+.k-shield.sign-euro text,
+.k-shield.sign-blue text,
+.k-shield.sign-red text,
+.k-shield.sign-interstate text,
+.k-shield.sign-brown text {
+  fill: #ffffff;
+}
+
+.lbl-peak.is-volcano {
+  fill: #7a5f55;
+}
+
+/* "You are here": the blue dot on the island called About. */
+.here {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.here-halo {
+  fill: #4285f4;
+  fill-opacity: 0.18;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: here-pulse 2.4s ease-in-out infinite;
+}
+
+.here-ring {
+  fill: #ffffff;
+  filter: drop-shadow(0 0.5px 1.5px rgba(0, 0, 0, 0.28));
+}
+
+.here-dot {
+  fill: #1a73e8;
+}
+
+@keyframes here-pulse {
+  0%, 100% { transform: scale(0.75); fill-opacity: 0.24; }
+  50% { transform: scale(1.25); fill-opacity: 0.1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .here-halo { animation: none; }
+}
+
+.k-island[data-here].is-on {
+  pointer-events: auto;
+  cursor: pointer;
+}

@@ -452,6 +452,7 @@
       pal.bands.push(cs.getPropertyValue("--ch-b" + i).trim() || "#957049");
     }
     customHex.forEach(function (h) { pal.colors.push(h); pal.bands.push(bandFor(h)); });
+    if (typeof inkReset === "function" && ink) inkReset();
   }
   // Colours the developer tools set outside the ten: each takes a slot after them (PALETTE + its index here).
   var customHex = [];
@@ -621,7 +622,7 @@
   var BENCH = [
     ["all layers", {}], ["no terrain", { relief: 1 }], ["no aged paper", { aging: 1 }], ["no coastal band", { coastband: 1 }],
     ["no colour bands", { bands: 1 }], ["no names", { labels: 1 }], ["no rivers and lakes", { water: 1 }], ["no sea ripples", { ripples: 1 }],
-    ["1x pixels", { dpr1: 1 }], ["old moving detail", { sharp: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
+    ["1x pixels", { dpr1: 1 }], ["old moving detail", { sharp: 1 }], ["names as text", { sprites: 1 }], ["names laid out every frame", { carry: 1 }], ["all off", { relief: 1, aging: 1, coastband: 1, bands: 1, labels: 1, water: 1, ripples: 1 }], ["flat map", { flat: 1 }], ["all layers again", {}]
   ];
   function benchStart() {
     if (bench || !perf) return;
@@ -892,7 +893,7 @@
       else { later = true; if (modern.fine === 2 && t - modern.used >= FINE_IDLE_MS) dropModernFine(); }
     }
     if (rd.cache.size && !rd.rect) { if (force || t - rd.used >= RELIEF_IDLE_MS) rd.cache.clear(); else later = true; }
-    if (force) trimSnaps(null, true);
+    if (force) { trimSnaps(null, true); inkReset(true); }
     clearTimeout(trimTimer);
     if (later) trimTimer = setTimeout(trimData, 5000);
   }
@@ -1701,6 +1702,7 @@
     else { drawBase(snap, L, key, S, kp, landList); keepBase(sig); }
     if (perf) pmark("finish");
     placedLabels = [];
+    labelFresh = false;
     var placed = fixedBoxes();
     if (!skip.labels) {
       reserveMarks(placed, S);
@@ -3364,7 +3366,7 @@
         if (boxOnLand(L, b, shapes)) continue;
         placed.push(b);
         seen.add(sm.p.id);
-        items.push({ id: sm.p.id, name: sm.name, people: false, f: 9, sea: true, dir: dirs[q], geo: { lines: straightLines(lines, b.cx, b.cy, 9, 1), boxes: [b], x: b.cx, y: b.cy, ang: 0 } });
+        items.push({ id: sm.p.id, name: sm.name, people: false, f: 9, sea: true, dir: dirs[q], at: lonLatAt(b.cx, b.cy), geo: { lines: straightLines(lines, b.cx, b.cy, 9, 1), boxes: [b], x: b.cx, y: b.cy, ang: 0 } });
         break;
       }
     }
@@ -3385,7 +3387,178 @@
     items.partial = quick;
     return items;
   }
-  function drawLabelItem(it, geo, alpha) {
+  // Names from sprites (23 November 2026). A name's letters were each drawn as text, outlined for the halo and then filled, under
+  // a transform of their own; a graphics card draws outlined text that way very slowly (on an M2 at 2x, about 0.5 ms a letter:
+  // the names took 70 to 150 ms of a frame that took 8 ms without them). Each letter, and each straight line of a name, is now
+  // drawn once into a page of sprites (ink.pages), its halo and its ink apart, and stamped from there with drawImage, which
+  // costs almost nothing. The halo and the ink stay two passes, so a letter's halo never covers its neighbour's ink.
+  //   - Letters of names that curve (states, peoples, rivers) are kept at sizes a tenth apart (INK_STEP) and scaled down to the
+  //     size wanted, by at most a tenth; a line that is drawn straight and whole (a sea, a lake, a city, a division, a state
+  //     named beside its coast) is kept at its own size.
+  //   - A letter's sprite is drawn at INK_SS times the screen's pixels (twice at 1x, 1.5 times at 2x), so a letter turned or
+  //     scaled stays sharp; a whole line's at the screen's own pixels, since it is stamped upright and unscaled.
+  //   - The letters and the lines are kept apart (two stores), since the lines come and go as the map moves: a store that
+  //     fills its pages (INK_PAGES, four of 2,048 pixels square, two on a phone or tablet) is emptied and starts again.
+  //   - The stores are emptied when the fonts arrive, the palette is read, or the screen's pixel ratio changes (inkReset).
+  //   - A state's name is set letter by letter on a straight line as on a curved one. As text, a straight line was one
+  //     string, which the browser kerns, so a name's letters shifted by a pixel or two as the globe's turning made its line
+  //     straight or curved.
+  // &vectortext in the address, or __chronia.textSprites(false), draws the names as text as before; "names as text" in the
+  // benchmark (&bench) times it.
+  var INK_PAGE = 2048, INK_PAGES = LOW_MEM ? 2 : 4, INK_STEP = 1.1, INK_MIN = 6, INK_GAP = 2, inkQ = null;
+  var textSprites = !addrHas("vectortext"), textLetters = false, inkK = 0, inkFor = 0, INK_SS = 1.5;
+  function inkStore() { return { pages: [], map: new Map(), page: -1, x: 0, y: 0, row: 0, flushed: 0, made: 0, k: 2 }; }
+  var ink = { glyph: inkStore(), line: inkStore() };
+  // With drop (a tab hidden for a while), the pages' canvases are let go as well; they are made again when a name is drawn.
+  function inkReset(drop) {
+    [ink.glyph, ink.line].forEach(function (st) {
+      st.map.clear(); st.page = -1; st.x = st.y = st.row = 0;
+      if (st.pages.length) st.flushed++;
+      if (drop === true) { st.pages.forEach(function (pg) { pg.cv.width = pg.cv.height = 1; }); st.pages = []; }
+    });
+    inkFor = window.devicePixelRatio || 1;
+    var real = Math.min(2, Math.max(1, inkFor));
+    inkK = ink.glyph.k = Math.max(2, Math.round(real * INK_SS * 2) / 2);
+    ink.line.k = real;
+  }
+  function inkPage(st) {
+    st.page++;
+    // Lines waiting to be stamped (inkQ) are stamped before the pages they are on are cleared.
+    if (st.page >= INK_PAGES) { if (st === ink.line) inkDrain(); st.map.clear(); st.page = 0; st.flushed++; }
+    var pg = st.pages[st.page];
+    if (!pg) {
+      var cv = document.createElement("canvas");
+      cv.width = cv.height = INK_PAGE;
+      pg = st.pages[st.page] = { cv: cv, g: cv.getContext("2d") };
+    }
+    pg.g.setTransform(1, 0, 0, 1, 0, 0);
+    pg.g.clearRect(0, 0, INK_PAGE, INK_PAGE);
+    st.x = st.y = st.row = 0;
+    return pg;
+  }
+  // The size a curved name's letters are kept at: the next of the sizes a tenth apart at or above f.
+  function inkSize(f) { return +(INK_MIN * Math.pow(INK_STEP, Math.max(0, Math.ceil(Math.log(f / INK_MIN) / Math.log(INK_STEP) - 1e-6)))).toFixed(2); }
+  // The sprite of a text in a font (as for ctx.font), with letter spacing sp, aligned and set on its baseline as given, in a
+  // colour: its ink when lw is 0, or its outline lw wide. Returns null for a text too large for a page.
+  function inkSprite(st, key, text, font, sp, align, base, color, lw) {
+    var sprite = st.map.get(key);
+    if (sprite !== undefined) return sprite;
+    if (inkFor !== (window.devicePixelRatio || 1)) inkReset();
+    var pg = st.page < 0 ? inkPage(st) : st.pages[st.page], g = pg.g, k = st.k;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.font = font; g.letterSpacing = sp + "px"; g.textAlign = align; g.textBaseline = base;
+    var m = g.measureText(text), pad = lw / 2 + 1.5;
+    var ox = Math.ceil((m.actualBoundingBoxLeft + pad) * k), oy = Math.ceil((m.actualBoundingBoxAscent + pad) * k);
+    var w = ox + Math.ceil((m.actualBoundingBoxRight + pad) * k), h = oy + Math.ceil((m.actualBoundingBoxDescent + pad) * k);
+    if (!(w > 0 && h > 0) || w > INK_PAGE || h > INK_PAGE) { st.map.set(key, null); return null; }
+    if (st.x + w > INK_PAGE) { st.x = 0; st.y += st.row + INK_GAP; st.row = 0; }
+    if (st.y + h > INK_PAGE) {
+      pg = inkPage(st); g = pg.g;
+      g.font = font; g.letterSpacing = sp + "px"; g.textAlign = align; g.textBaseline = base;
+    }
+    sprite = { cv: pg.cv, x: st.x, y: st.y, w: w, h: h, ox: ox / k, oy: oy / k, cw: w / k, ch: h / k };
+    g.setTransform(k, 0, 0, k, st.x + ox, st.y + oy);
+    if (lw) { g.lineJoin = "round"; g.lineWidth = lw; g.strokeStyle = color; g.strokeText(text, 0, 0); }
+    else { g.fillStyle = color; g.fillText(text, 0, 0); }
+    st.x += w + INK_GAP; st.row = Math.max(st.row, h);
+    st.map.set(key, sprite); st.made++;
+    return sprite;
+  }
+  // Stamps a sprite with its anchor at (x, y) under the transform in force, scaled by sc.
+  function inkStamp(sp, x, y, sc) { ctx.drawImage(sp.cv, sp.x, sp.y, sp.w, sp.h, x - sp.ox * sc, y - sp.oy * sc, sp.cw * sc, sp.ch * sc); }
+  // A whole line stamped from the lines' sprites, outlined (lw wide, in hc) unless hc is null, then filled (fc): false when a
+  // sprite can't be made, and nothing is drawn. The lines' sprites are drawn at the screen's own pixels, and at rest a line is
+  // stamped on whole pixels (snap, for a line under the map's plain transform), so it is as sharp as text; while the map moves
+  // it is stamped where it falls, so it glides rather than steps.
+  // Inside inkQueued (the seas', lakes', cities', and divisions' names), the stamps wait until the function is done, so that
+  // every sprite it needs is made first: a page drawn on between two stamps from it is copied whole each time where the canvas
+  // is not on the graphics card (4.6 ms a name in headless Chromium, a second for a frame that brought in 130 cities).
+  function inkLine(text, x, y, font, sp, al, bl, hc, lw, fc, snap) {
+    var pre = font + "|" + sp + "|" + al + "|" + bl + "|", a = null, b, gen = ink.line.flushed;
+    if (hc !== null) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
+    b = inkSprite(ink.line, pre + "f" + fc + "|" + text, text, font, sp, al, bl, fc, 0);
+    // the store was emptied to make room for the ink: the halo's sprite went with it
+    if (a && gen !== ink.line.flushed) a = inkSprite(ink.line, pre + "h" + lw + hc + "|" + text, text, font, sp, al, bl, hc, lw);
+    if ((hc !== null && !a) || !b) return false;
+    if (snap && !moving) { x = Math.round(x * dpr) / dpr; y = Math.round(y * dpr) / dpr; }
+    if (inkQ) { if (a) inkQ.push(a, x, y); inkQ.push(b, x, y); return true; }
+    if (a) inkStamp(a, x, y, 1);
+    inkStamp(b, x, y, 1);
+    return true;
+  }
+  function inkDrain() {
+    if (!inkQ) return;
+    for (var i = 0; i < inkQ.length; i += 3) inkStamp(inkQ[i], inkQ[i + 1], inkQ[i + 2], 1);
+    inkQ.length = 0;
+  }
+  // fn with its lines' stamps held until it is done (and stamped then, also when it throws).
+  function inkQueued(fn) {
+    return function () {
+      if (inkQ) return fn.apply(this, arguments);
+      inkQ = [];
+      try { return fn.apply(this, arguments); } finally { try { inkDrain(); } finally { inkQ = null; } }
+    };
+  }
+  // A whole line of text at (x, y), outlined and then filled, as ctx.strokeText and ctx.fillText would draw it with the font,
+  // letter spacing, alignment, baseline, line width, and colours in force, from the lines' sprites, under the map's plain
+  // transform. With halo false, the ink alone.
+  function inkText(text, x, y, halo) {
+    if (textSprites && !skip.sprites && inkLine(text, x, y, ctx.font, parseFloat(ctx.letterSpacing) || 0, ctx.textAlign, ctx.textBaseline, halo !== false ? ctx.strokeStyle : null, ctx.lineWidth, ctx.fillStyle, true)) return;
+    // the check's text ("letters") is set on whole pixels at rest as the sprites are, so the two can be compared point for point
+    if (textLetters && !moving) { x = Math.round(x * dpr) / dpr; y = Math.round(y * dpr) / dpr; }
+    if (halo !== false) ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
+  }
+  // The sprites of a name's letters and whole lines, halo and ink: [[halo, ink, x, transform's glyph or line], ...], or null
+  // when one can't be made (the name is then drawn as text).
+  function labelSprites(it, geo, again) {
+    var gen = ink.glyph.flushed + ink.line.flushed;
+    var f = it.f, fb = inkSize(f), sc = f / fb, style = it.people ? "italic 400 " : "400 ", font = style + fb + "px " + SERIF;
+    var lw = Math.round((it.sea ? 3 : Math.max(2, f * 0.22)) / sc * 8) / 8;
+    var hc = it.sea ? pal.ocean : pal["label-halo"], fc = it.people ? pal.people : pal.label;
+    var ph = style + fb + "|h" + lw + hc + "|", pf = style + fb + "|f" + fc + "|", out = [], lines = geo.lines, i, j, a, b;
+    for (i = 0; i < lines.length; i++) {
+      var ln = lines[i];
+      if (!ln.gl) {
+        // a whole line (a state named beside its coast, a name pinned by an edit) is kept at its own size
+        var lf = style + f + "px " + SERIF, sp = Math.round(ln.spx * 100) / 100, pre = lf + "|" + sp + "|center|middle|", lw1 = it.sea ? 3 : Math.max(2, f * 0.22);
+        a = inkSprite(ink.line, pre + "h" + lw1 + hc + "|" + ln.text, ln.text, lf, sp, "center", "middle", hc, lw1);
+        b = inkSprite(ink.line, pre + "f" + fc + "|" + ln.text, ln.text, lf, sp, "center", "middle", fc, 0);
+        if (!a || !b) return null;
+        out.push([a, b, ln.spx / 2, ln, 1]);
+        continue;
+      }
+      for (j = 0; j < ln.gl.length; j++) {
+        var g = ln.gl[j];
+        if (g.ch === " " || g.ch === "\u00a0") continue;
+        a = inkSprite(ink.glyph, ph + g.ch, g.ch, font, 0, "center", "middle", hc, lw);
+        b = inkSprite(ink.glyph, pf + g.ch, g.ch, font, 0, "center", "middle", fc, 0);
+        if (!a || !b) return null;
+        out.push([a, b, 0, g, sc]);
+      }
+    }
+    // a store emptied part of the way through took the first of these sprites with it: once more, from the start
+    if (gen !== ink.glyph.flushed + ink.line.flushed) return again ? null : labelSprites(it, geo, true);
+    out.gen = gen;
+    return out;
+  }
+  function drawLabelItem(it, geo, alpha, ready) {
+    var list = !textSprites || skip.sprites ? null : ready && ready.gen === ink.glyph.flushed + ink.line.flushed ? ready : labelSprites(it, geo);
+    if (!list) return drawLabelVector(it, geo, alpha);
+    var k, e, q;
+    ctx.globalAlpha = it.band ? alpha * 0.72 : alpha;
+    for (var pass = 0; pass < 2; pass++) {
+      for (k = 0; k < list.length; k++) {
+        e = list[k]; q = e[3];
+        if (q.ch === undefined) ctx.setTransform(dpr * q.tx, dpr * q.ty, -dpr * q.nx, -dpr * q.ny, dpr * q.mx, dpr * q.my);
+        else ctx.setTransform(dpr * q.tx, dpr * q.ty, -dpr * q.nx, -dpr * q.ny, dpr * q.x, dpr * q.y);
+        inkStamp(e[pass], e[2], 0, e[4]);
+      }
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = 1;
+  }
+  function drawLabelVector(it, geo, alpha) {
     var f = it.f, lines = geo.lines, i, j, ln, g;
     ctx.globalAlpha = alpha;
     ctx.font = (it.people ? "italic 400 " : "400 ") + f.toFixed(1) + "px " + SERIF;
@@ -3396,7 +3569,7 @@
     for (var pass = 0; pass < 2; pass++) {
       for (i = 0; i < lines.length; i++) {
         ln = lines[i];
-        if (ln.straight) {
+        if (ln.straight && !(textLetters && ln.gl)) {
           ctx.letterSpacing = ln.spx.toFixed(2) + "px";
           ctx.setTransform(dpr * ln.tx, dpr * ln.ty, -dpr * ln.nx, -dpr * ln.ny, dpr * ln.mx, dpr * ln.my);
           if (pass) ctx.fillText(ln.text, ln.spx / 2, 0); else ctx.strokeText(ln.text, ln.spx / 2, 0);
@@ -3413,16 +3586,63 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
   }
+  // Names carried along (23 November 2026). While the map turns or slides at one zoom, the states' names stay where the last
+  // layout put them on the ground, and each frame only works out where their letters now fall on the screen (glyphLayout; a
+  // name set beside its coast moves with the point it was set at). Laying them out afresh every frame, as before, took most of
+  // what was left of a moving frame once the names came from sprites (on an M2, 7.5 ms of about 20 over Europe). A layout is
+  // carried for LABEL_CARRY_MS, then made afresh, so names come in for land that has turned into view; a change of zoom, date,
+  // level, or size lays them out at once, as does a name pinned by an edit. A name that turns out of view is dropped.
+  var LABEL_CARRY_MS = 250, labelCarryMs = null, labelStats = { layouts: 0, carried: 0, placesCarried: 0 };
+  function carrySig(snap) { return [snap.key, useLevel(), flat ? 1 : 0, view.zoom.toFixed(5), W, H, layoutEpoch].join("|"); }
+  function carriedLabels(snap) {
+    var from = labelCache.get("carry");
+    if (!from || skip.carry || edits.labelN || devGhost || from.sig !== carrySig(snap)) return null;
+    if (performance.now() - from.time >= (labelCarryMs === null ? LABEL_CARRY_MS : labelCarryMs)) return null;
+    var scale = (flat ? FB.k : B.r) / GU, out = [], i, j, it, geo;
+    for (i = 0; i < from.items.length; i++) {
+      it = from.items[i];
+      if (it.sea) {
+        var q = it.at ? projectLL(it.at[0], it.at[1]) : null, b = it.geo.boxes[0];
+        if (!q || (!flat && q[2] < 0.45)) continue;
+        geo = { lines: straightLines(it.geo.lines.map(function (l) { return l.text; }), q[0], q[1], it.f, 1), boxes: [mkBox(q[0], q[1], b.hw, b.hh, 0)], x: q[0], y: q[1], ang: 0 };
+      } else if (it.src && !!it.src.fr.flat === flat) geo = glyphLayout(it.src.fr, it.src.fm, it.src.o, it.f, it.people, scale);
+      else return null;
+      if (!geo) continue;
+      var seen = false;
+      for (j = 0; j < geo.boxes.length && !seen; j++) { var bx = geo.boxes[j]; seen = bx.x < W && bx.y < H && bx.x + bx.w > 0 && bx.y + bx.h > 0; }
+      if (!seen) continue;
+      var copy = {};
+      for (var key in it) copy[key] = it[key];
+      copy.geo = geo;
+      out.push(copy);
+    }
+    out.partial = true;
+    return out;
+  }
   function drawPolityLabels(snap, placed, kp) {
     if (!layers.states) return;
     var quick = moving || rangeActive;
     var key = [snap.key, useLevel(), view.lon.toFixed(5), view.lat.toFixed(5), view.zoom.toFixed(5), view.roll.toFixed(4), flat ? 1 : 0, W, H, layoutEpoch, quick ? 1 : 0,
       placed.map(function (b) { return Math.round(b.x) + ":" + Math.round(b.y) + ":" + Math.round(b.w) + ":" + Math.round(b.h); }).join(",")].join("|");
     var memo = labelCache.get("layout");
-    if (!memo || memo.key !== key) { memo = { key: key, items: layoutPolities(snap, placed.slice(), kp) }; labelCache.set("layout", memo); }
+    if (!memo || memo.key !== key) {
+      var items = moving && !rangeActive ? carriedLabels(snap) : null;
+      if (items) labelStats.carried++;
+      else {
+        items = layoutPolities(snap, placed.slice(), kp);
+        labelStats.layouts++;
+        labelFresh = true;
+        labelCache.set("carry", { sig: carrySig(snap), time: performance.now(), items: items });
+      }
+      memo = { key: key, items: items };
+      labelCache.set("layout", memo);
+    }
     if (quick && !settleLabels) settleLabels = setTimeout(function wait() { settleLabels = moving || rangeActive ? setTimeout(wait, 200) : 0; if (!settleLabels) scheduleRender(true); }, 200);
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     var time = performance.now(), live = false, k, it, warring = atWarIds();
+    // Every name's sprites are made before any is stamped: a page of sprites drawn on between two stamps from it is sent to
+    // the graphics card again.
+    var sprites = textSprites && !skip.sprites ? memo.items.map(function (m) { return labelSprites(m, m.geo); }) : null;
     for (k = 0; k < memo.items.length; k++) {
       it = memo.items[k];
       var a = Math.min(1, Math.max(0, (time - it.t0) / FADE_MS));
@@ -3431,7 +3651,7 @@
       placedLabels.push({ name: it.name, x: it.geo.x, y: it.geo.y, size: it.f, kind: it.people ? "people" : "polity", id: it.id, ang: it.geo.ang, lines: it.geo.lines.length,
         box: boundsOf(it.geo.boxes), boxes: it.geo.boxes, sea: !!it.sea });
       var la = lapseLabelAlpha(it.id, a);
-      drawLabelItem(it, it.geo, la);
+      drawLabelItem(it, it.geo, la, sprites && sprites[k]);
       if (warring && warring.has(it.id)) { var sb = drawSword(it, it.geo, la); if (sb) placed.push(sb); }
     }
     var scale = (flat ? FB.k : B.r) / GU;
@@ -3447,6 +3667,7 @@
     if (live) scheduleRender(true);
   }
 
+  drawSeaLabels = inkQueued(drawSeaLabels); drawLakeLabels = inkQueued(drawLakeLabels); drawPlaces = inkQueued(drawPlaces); drawDivisionLabels = inkQueued(drawDivisionLabels);
   var SEAS = [
     ["North Atlantic Ocean", -42, 31, 1], ["South Atlantic Ocean", -17, -24, 1], ["North Pacific Ocean", -152, 31, 1],
     ["South Pacific Ocean", -122, -27, 1], ["Pacific Ocean", 168, 9, 1], ["Indian Ocean", 79, -22, 1],
@@ -3488,8 +3709,7 @@
       ctx.lineWidth = 3; ctx.strokeStyle = pal.ocean; ctx.fillStyle = pal["sea-label"];
       for (j = 0; j < sl.lines.length; j++) {
         var ly = p[1] + (j - (sl.lines.length - 1) / 2) * lh;
-        ctx.strokeText(sl.lines[j], p[0] + spacing / 2, ly);
-        ctx.fillText(sl.lines[j], p[0] + spacing / 2, ly);
+        inkText(sl.lines[j], p[0] + spacing / 2, ly);
       }
     }
     ctx.letterSpacing = "0px";
@@ -3528,7 +3748,7 @@
       var lnm = lakeNameL(L.name), w = ctx.measureText(lnm).width, box = mkBox(p[0], p[1], w / 2 + 2, size * 0.6, 0);
       if (!insideView(box) || collides(placed, box)) continue;
       placed.push(box);
-      ctx.strokeText(lnm, p[0], p[1]); ctx.fillText(lnm, p[0], p[1]);
+      inkText(lnm, p[0], p[1]);
     }
     ctx.letterSpacing = "0px";
     ctx.restore();
@@ -3711,7 +3931,7 @@
   function drawRiverLabels(placed, S) {
     var top = Math.min(riverLabelRank(S), riverRank(S));
     if (!layers.water || !rivers || !top || clamp01((S - RIVERS_FROM) / (RIVERS_FULL - RIVERS_FROM)) < 0.6) return;
-    var f = 11.5, font = "italic 400 " + f + "px " + SERIF, box = [4, 4, W - 4, H - 4], shown = 0, kp = kmPx(), list = riverNames();
+    var f = 11.5, font = "italic 400 " + f + "px " + SERIF, box = [4, 4, W - 4, H - 4], shown = 0, kp = kmPx(), list = riverNames(), names = [], gen0 = ink.glyph.flushed;
     ctx.save();
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3;
     for (var i = 0; i < list.length && shown < 40; i++) {
@@ -3723,17 +3943,43 @@
       if (!spot || !insideMap(spot.box)) continue;
       placed.push(spot.box);
       shown++;
-      ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"] || pal.river;
-      for (j = 0; j < spot.glyphs.length; j++) {
-        if (chars[j] === " ") continue;
-        var g = spot.glyphs[j];
+      names.push({ chars: chars, spot: spot, rs: riverSprites(chars, f) });
+    }
+    // Every name's sprites are made before any is stamped; if the store was emptied on the way, the sprites made before that
+    // went with it, and all are made again (as text, if it is emptied a second time).
+    if (ink.glyph.flushed !== gen0) {
+      gen0 = ink.glyph.flushed;
+      names.forEach(function (nm) { nm.rs = riverSprites(nm.chars, f); });
+      if (ink.glyph.flushed !== gen0) names.forEach(function (nm) { nm.rs = null; });
+    }
+    ctx.font = font; ctx.strokeStyle = pal["label-halo"]; ctx.fillStyle = pal["river-label"] || pal.river;
+    names.forEach(function (nm) {
+      var rs = nm.rs;
+      for (var pass = rs ? 0 : 1; pass < 2; pass++) for (j = 0; j < nm.spot.glyphs.length; j++) {
+        if (nm.chars[j] === " ") continue;
+        var g = nm.spot.glyphs[j];
         ctx.save();
         ctx.translate(g[0], g[1]); ctx.rotate(g[2]);
-        ctx.strokeText(chars[j], 0, 0); ctx.fillText(chars[j], 0, 0);
+        if (rs) inkStamp(rs[j][pass], 0, 0, rs.sc);
+        else { ctx.strokeText(nm.chars[j], 0, 0); ctx.fillText(nm.chars[j], 0, 0); }
         ctx.restore();
       }
-    }
+    });
     ctx.restore();
+  }
+  // A river name's letters as sprites, halo and ink, or null to draw them as text.
+  function riverSprites(chars, f) {
+    if (!textSprites || skip.sprites) return null;
+    var fb = inkSize(f), sc = f / fb, font = "italic 400 " + fb + "px " + SERIF, lw = Math.round(3 / sc * 8) / 8, hc = pal["label-halo"], fc = pal["river-label"] || pal.river;
+    var ph = "italic 400 " + fb + "|h" + lw + hc + "|", pf = "italic 400 " + fb + "|f" + fc + "|", out = [];
+    for (var j = 0; j < chars.length; j++) {
+      if (chars[j] === " ") { out.push(null); continue; }
+      var a = inkSprite(ink.glyph, ph + chars[j], chars[j], font, 0, "center", "middle", hc, lw), b = inkSprite(ink.glyph, pf + chars[j], chars[j], font, 0, "center", "middle", fc, 0);
+      if (!a || !b) return null;
+      out.push([a, b]);
+    }
+    out.sc = sc;
+    return out;
   }
   function capitalAt(c, day) {
     var m = c[4];
@@ -3905,10 +4151,12 @@
       drawMark(p, k, kind, sel);
       ctx.textAlign = "left";
       ctx.lineWidth = st.halo + (sel ? 1.2 : 0); ctx.strokeStyle = pal["city-halo"]; ctx.fillStyle = sel ? pal.select : pal[st.ink];
-      ctx.strokeText(name, tx, ty); ctx.fillText(name, tx, ty);
+      inkText(name, tx, ty);
       var lab = { name: name, x: p[0], y: p[1], size: size, kind: ["capital", "city", "town"][kind], box: box, ref: ref || null }, city = ref && ref.city;
       if (city) { lab.id = city.id; lab.qid = city.qid; lab.lon = city.lon; lab.lat = city.lat; }
       placedLabels.push(lab);
+      if (placeRec && placeLL) placeRec.push({ ll: placeLL, name: name, k: k, kind: kind, sel: !!sel, ref: ref || null, rm: mark ? rm : 0, dx: tx - p[0], dy: ty - p[1], w: w, h: h, size: size,
+        font: ctx.font, ls: st.ls, lw: ctx.lineWidth, hc: ctx.strokeStyle, fc: ctx.fillStyle });
       return true;
     }
     return false;
@@ -3929,20 +4177,58 @@
       }
     }
   }
+  // The cities' marks and names are carried along like the states' names (carriedLabels): while the map moves at one zoom,
+  // each stays on the side of its mark where the last layout put it, and a frame only works out where each city now falls
+  // (placesCarried). They are laid out afresh in the frames in which the states' names are, and after LABEL_CARRY_MS.
+  var placeRec = null, placeLL = null, labelFresh = false;
+  function placesSig(S) {
+    return [current ? current.key : "", now, flat ? 1 : 0, view.zoom.toFixed(5), W, H, layoutEpoch, layers.capitals ? 1 : 0, layers.cities ? 1 : 0, cities ? cities.rows.length : 0,
+      selCity ? (selCity.id || selCity.lon + "," + selCity.lat) : "", markSize(S), textSprites && !skip.sprites ? 1 : 0].join("|");
+  }
+  function placesCarried(placed, rec) {
+    ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.textAlign = "left";
+    for (var i = 0; i < rec.length; i++) {
+      var r = rec[i], p = projectLL(r.ll[0], r.ll[1]);
+      if (!p || p[2] < 0.25) continue;
+      var tx = p[0] + r.dx, ty = p[1] + r.dy;
+      if (Math.max(tx + r.w, p[0] + r.rm) < 0 || Math.min(tx, p[0] - r.rm) > W || ty + r.h < -r.rm || ty - r.h > H + r.rm) continue;
+      var box = { x: tx - 1.5, y: ty - r.h / 2 - 1.5, w: r.w + 3, h: r.h + 3 };
+      if (r.rm) placed.push({ x: p[0] - r.rm, y: p[1] - r.rm, w: 2 * r.rm, h: 2 * r.rm });
+      placed.push(box);
+      drawMark(p, r.k, r.kind, r.sel);
+      if (!inkLine(r.name, tx, ty, r.font, r.ls, "left", "middle", r.hc, r.lw, r.fc, true)) {
+        ctx.font = r.font; ctx.letterSpacing = r.ls + "px"; ctx.lineWidth = r.lw; ctx.strokeStyle = r.hc; ctx.fillStyle = r.fc;
+        ctx.strokeText(r.name, tx, ty); ctx.fillText(r.name, tx, ty);
+      }
+      var lab = { name: r.name, x: p[0], y: p[1], size: r.size, kind: ["capital", "city", "town"][r.kind], box: box, ref: r.ref }, city = r.ref && r.ref.city;
+      if (city) { lab.id = city.id; lab.qid = city.qid; lab.lon = city.lon; lab.lat = city.lat; }
+      placedLabels.push(lab);
+    }
+    ctx.letterSpacing = "0px";
+    ctx.textAlign = "center";
+  }
   function drawPlaces(placed, S) {
     if (S < 230) return;
+    var sig = placesSig(S), from = moving && !rangeActive && !skip.carry && !labelFresh && textSprites && !skip.sprites ? labelCache.get("places") : null;
+    if (from && from.sig === sig && performance.now() - from.time < (labelCarryMs === null ? LABEL_CARRY_MS : labelCarryMs)) { labelStats.placesCarried++; placesCarried(placed, from.rec); return; }
+    placeRec = [];
+    try { drawPlacesFresh(placed, S); } finally { labelCache.set("places", { sig: sig, time: performance.now(), rec: placeRec }); placeRec = null; placeLL = null; }
+  }
+  function drawPlacesFresh(placed, S) {
     var k = markSize(S), modernNow = current && current.modern, i;
     ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     var capCity = new Set(), sc = selCity;
     var isSel = function (city, q) { return !!sc && (sc.id ? !!city && city.id === sc.id : !!q && Math.abs(q[0] - sc.lon) < 1e-6 && Math.abs(q[1] - sc.lat) < 1e-6); };
     if (sc) {
       var sp = projectLL(sc.lon, sc.lat);
+      placeLL = [sc.lon, sc.lat];
       if (sp && sp[2] >= 0.25) placeOne(placed, sp, cityFacts(sc).name, k, sc.kind === "capital" ? 0 : sc.kind === "city" ? 1 : 2, false, sc.ref || (sc.city ? { city: sc.city } : null), true);
     }
     if (current) {
       var caps = capitalList(current, S);
       for (i = 0; i < caps.length; i++) {
         if (isSel(caps[i].city, caps[i].ll)) { if (caps[i].city) capCity.add(caps[i].city); continue; }
+        placeLL = caps[i].ll;
         placeOne(placed, caps[i].pt, caps[i].name, k, 0, false, { cap: caps[i].cap, of: caps[i].id, city: caps[i].city });
         if (layers.capitals && caps[i].city) capCity.add(caps[i].city);
       }
@@ -3955,6 +4241,7 @@
         var c = list[i].c;
         if (capCity.has(c) || isSel(c, null)) continue;
         var p = projectLL(c.lon, c.lat);
+        placeLL = [c.lon, c.lat];
         if (p && p[2] >= 0.25) placeOne(placed, p, cityShownNameL(c, now), k, list[i].tier <= 1 ? 1 : 2, false, { city: c });
       }
     }
@@ -4438,8 +4725,7 @@
       ctx.letterSpacing = it.sp.toFixed(2) + "px";
       for (var j = 0; j < it.lines.length; j++) {
         var ly = it.y + (j - (it.lines.length - 1) / 2) * it.lh;
-        ctx.strokeText(it.lines[j], it.x + it.sp / 2, ly);
-        ctx.fillText(it.lines[j], it.x + it.sp / 2, ly);
+        inkText(it.lines[j], it.x + it.sp / 2, ly);
       }
     }
     ctx.letterSpacing = "0px";
@@ -9232,7 +9518,16 @@
   // The title and the menu change width when the page's fonts arrive (and with the sign-in state), after the first layout
   // has placed the banner between them; laid out again then, the banner keeps clear of both instead of keeping the
   // fallback font's gap (it overlapped the menu on a phone, 20 November 2026).
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layout(); scheduleRender(); refitDate(); placeEvents(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { inkReset(); layout(); scheduleRender(); refitDate(); placeEvents(); });
+  // Whenever a face arrives (the italic comes after the roman, when a people's name first needs it), the widths measured and
+  // the sprites drawn in the face that stood in for it are let go. Before 23 November 2026 only the roman's arrival did this,
+  // so an italic name set letter by letter kept the stand-in's wider letter widths, and its letters stood too far apart.
+  // Only the map's own faces count: an interface face that arrives when a panel first opens leaves the names as they are.
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", function (e) {
+    var faces = e && e.fontfaces;
+    if (faces && faces.length && !faces.some(function (f) { return /IM Fell English|Old Standard TT/i.test(f.family || ""); })) return;
+    widthCache.clear(); glyphSizes.clear(); labelCache.clear(); inkReset(); scheduleRender();
+  });
   if (window.ResizeObserver) {
     var topRowW = "", topRowFrame = 0, topRowRO = new ResizeObserver(function () {
       var w = $("head").offsetWidth + "|" + $("ctls").offsetWidth;
@@ -9673,7 +9968,8 @@
       document.documentElement.classList.add("ch-ready");
     });
     if (document.fonts && document.fonts.load) {
-      document.fonts.load("400 20px 'IM Fell English'").then(function () { widthCache.clear(); labelCache.clear(); scheduleRender(); }).catch(function () {});
+      document.fonts.load("400 20px 'IM Fell English'").then(function () { widthCache.clear(); labelCache.clear(); inkReset(); scheduleRender(); }).catch(function () {});
+      document.fonts.load("italic 400 20px 'IM Fell English'").then(function () { widthCache.clear(); glyphSizes.clear(); labelCache.clear(); inkReset(); scheduleRender(); }).catch(function () {});
     }
   }
 
@@ -9755,10 +10051,24 @@
       return ch.map(function (a) { a.sort(function (x, y) { return x - y; }); return a[a.length >> 1]; });
     },
     perfState: function () {
-      return { plain: PLAIN, lowMem: LOW_MEM, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
+      return { plain: PLAIN, lowMem: LOW_MEM, labels: { layouts: labelStats.layouts, carried: labelStats.carried, placesCarried: labelStats.placesCarried }, base: { hits: baseStats.hits, misses: baseStats.misses, mode: baseMode }, chunks: dated ? dated.chunks.filter(function (c) { return c.data; }).length : 0,
         fine: dated ? dated.chunks.filter(function (c) { return c.data && c.fine >= 2; }).length : 0, modern: modern && modern.rows ? (modern.fine >= 2 ? "fine" : "loaded") : "none", snaps: datedSnaps.size + modernSnaps.size, tiles: rd.cache.size };
     },
     baseCache: function (mode) { baseMode = mode; baseSig = null; scheduleRender(); },
+    // For how long a layout of the names is carried while the map moves, in ms (0 lays them out every frame, as before
+    // 23 November 2026; null puts back LABEL_CARRY_MS).
+    labelCarry: function (ms) { labelCarryMs = ms === null || ms === undefined ? null : +ms; labelCache.delete("carry"); labelCache.delete("layout"); labelCache.delete("places"); },
+    // The size of a page of sprites and how many a store may fill, for a check that wants the stores emptied often; nulls put
+    // back what ships. Either way both stores start again.
+    inkPages: function (size, count) { INK_PAGE = size || 2048; INK_PAGES = count || (LOW_MEM ? 2 : 4); inkReset(true); scheduleRender(); },
+    // Names from sprites: on or off (off draws them as text, as before 23 November 2026); with no argument, what is kept.
+    // "letters" draws them as text but every line letter by letter, as the sprites are placed (a straight line as text is one
+    // string, which the browser kerns), so that a check can compare the two drawings point for point.
+    textSprites: function (on) {
+      if (on !== undefined) { textSprites = on === true; textLetters = on === "letters"; scheduleRender(); }
+      var n = function (st) { return st.page < 0 ? 0 : st.page + 1; };
+      return { on: textSprites, sprites: ink.glyph.map.size + ink.line.map.size, pages: n(ink.glyph) + n(ink.line), made: ink.glyph.made + ink.line.made, flushed: ink.glyph.flushed + ink.line.flushed, scale: inkK };
+    },
     // How the terrain was last drawn: its canvas's size, and the size of the part of it drawn into (all of it at rest).
     terrain: function () { return { ready: !!relief && relief.ready(), canvas: [reliefCanvas.width, reliefCanvas.height], drawn: reliefPart ? [reliefPart[2], reliefPart[3]] : [reliefCanvas.width, reliefCanvas.height] }; },
     timeDraw: function () { var t0 = performance.now(); draw(); return performance.now() - t0; },

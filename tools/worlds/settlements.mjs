@@ -14,7 +14,7 @@ const SPACING = [0, 48, 17, 8.5];
 // buildSettlements({ land, elev, temp, cover, hydro, dist, owner, capitals, areas, projects, width, height, rng })
 //   => [{ x, y, rank, country (project index), size }]
 // capitals: the countries' capitals, kept where they are.
-export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, capitals, areas, projects, width, height, rng }) {
+export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, capitals, areas, projects, width, height, rng, blocked = null, oases = [] }) {
   const W = width, H = height, N = W * H, S = W / 1600;
   const r = rng.fork('settlements');
   const { riverClass, lakes } = hydro;
@@ -38,15 +38,17 @@ export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, 
     if (m.ends === 'sea' && m.width >= 2) mouths.push(pts[pts.length - 1]);
   });
 
-  const COVER_PULL = { [COVER.FOREST]: 0.75, [COVER.WOODLAND]: 0.95, [COVER.GRASS]: 1, [COVER.STEPPE]: 0.7, [COVER.DESERT]: 0.22, [COVER.ROCK]: 0.08, [COVER.SNOW]: 0 };
+  const COVER_PULL = { [COVER.FOREST]: 0.75, [COVER.WOODLAND]: 0.95, [COVER.GRASS]: 1, [COVER.STEPPE]: 0.7, [COVER.DESERT]: 0.22, [COVER.ROCK]: 0.08, [COVER.SNOW]: 0, [COVER.SAND]: 0.6, [COVER.DUNE]: 0.1, [COVER.DRYROCK]: 0.12, [COVER.SALT]: 0.02 };
   const suit = (i) => {
-    if (!land[i] || lakes[i] || owner[i] < 0) return 0;
+    if (!land[i] || lakes[i] || owner[i] < 0 || (blocked && blocked[i])) return 0;
     const e = elev[i];
     let s = smoothstep(0.42, 0.1, e) * (COVER_PULL[cover[i]] ?? 0.5);
     if (temp[i] < -6) s *= smoothstep(-16, -6, temp[i]) * 0.8 + 0.2;
     const d = dist[i];
     if (d <= 2.5 * S) s *= 1.9; else if (d <= 9 * S) s *= 1.35;
     if (nearRiver[i] > 0) s *= 1 + 0.25 * nearRiver[i];
+    // An oasis: the one place in the desert where people settle.
+    if (oases.length) { const x = i % W, y = (i / W) | 0; for (const o of oases) if (Math.hypot(x + 0.5 - o.x, y + 0.5 - o.y) < o.r * 1.1) s = Math.max(s, 0.9); }
     return s;
   };
 
@@ -101,6 +103,14 @@ export function buildSettlements({ land, elev, temp, cover, hydro, dist, owner, 
       out.push(s); put(s);
       left[c.country]--;
     }
+  }
+  // Every oasis has its village.
+  for (const o of oases) {
+    if (out.some((q) => Math.hypot(q.x - o.x, q.y - o.y) < o.r * 2.5)) continue;
+    const i = Math.floor(o.y) * W + Math.floor(o.x);
+    if (!land[i] || lakes[i] || owner[i] < 0 || (blocked && blocked[i])) continue;
+    const v = { x: Math.floor(o.x) + 0.5, y: Math.floor(o.y) + 0.5, rank: RANK.VILLAGE, country: owner[i], size: 0.5, oasis: true };
+    out.push(v); put(v);
   }
   // Capitals are the largest place of their country.
   for (const s of out) if (s.rank === RANK.CAPITAL) s.size = 2.4;

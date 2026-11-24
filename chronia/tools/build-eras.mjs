@@ -3836,7 +3836,7 @@ const stages = (list) => {
 // page drew as a pale patch and a stretch of shore with no border of the United States. A piece of a carried shape is kept only
 // if at least ON_LAND of it is land, by points sampled on a grid across it and tested against Natural Earth's states and provinces
 // (wetPiece, memoised by piece, since a span's pieces in time share them).
-const ON_LAND = 0.5;
+const ON_LAND = 0.5, SMALL_CELLS = 4;
 let neGrid = null;
 const neLandGrid = () => {
   if (neGrid) return neGrid;
@@ -3928,9 +3928,10 @@ function peopleCarry(list, cfg) {
       const near = later.filter((c) => c.last >= first && boxHit(c.box, box) && meets(opt.cells, c.cells));
       // Only the spans on or beside the people's own cells are cut from it (all in its box, for a people too small for a cell): a neighbour's
       // changes would cut it in time for nothing.
-      // The people's cells are widened by one around (as cutOver does): a small people's one cell can have its centre in a bay, outside
-      // every state's cells, and the colony or state on its land was then never cut from it (Werowocomoco, inside Virginia from 1607).
-      const wide = opt.cells.size ? dilate(opt.cells) : null;
+      // A small people's cells (SMALL_CELLS or fewer) are widened by one around (as cutOver does): its one cell can have its centre in a bay,
+      // outside every state's cells, and the colony or state on its land was then never cut from it (Werowocomoco, inside Virginia from 1607).
+      // A larger people's own cells always meet its neighbours', and widening them too doubled the step's time for nothing.
+      const wide = !opt.cells.size ? null : opt.cells.size <= SMALL_CELLS ? dilate(opt.cells) : opt.cells;
       const cands = pool.concat(mineW).filter((c) => c.last >= first && boxHit(c.box, box) && (!wide || !c.cells.size || meets(wide, c.cells)));
       for (const r of cutOver(polys, box, first, DATED_TO, cands)) {
         const kept = keepRemnant(r.polys.filter((q) => !wetPiece(q)), whole, 1, width);
