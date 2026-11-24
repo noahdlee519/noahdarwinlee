@@ -1874,6 +1874,82 @@ select.ch-save-input {
   padding: 16px 22px 18px;
 }
 
+/* Once the card's name has scrolled away, a bar pins to the top of the card with the name again, a way back to the top,
+   and the close button, over a fade into the text beneath. The holder is sticky and takes no room; the bar hangs from it. */
+.ch-card-pin {
+  position: sticky;
+  top: -16px; /* the card's top padding: a sticky box stops at the padding's inner edge */
+  z-index: 3;
+  height: 0;
+  margin: -16px -22px 16px;
+}
+.ch-card-pin-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px 6px 22px;
+  background-color: var(--bg);
+  background-image: var(--ch-grain);
+  background-size: 260px 260px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 30%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+}
+.ch-card-pin-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 26px;
+  background: linear-gradient(var(--bg), color-mix(in srgb, var(--bg) 0%, transparent));
+  pointer-events: none;
+}
+.ch-card.is-pinned .ch-card-pin-bar {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s;
+}
+.ch-card-pin-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-card-pin-btn {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ch-card-pin-btn:hover {
+  background: var(--ch-btn-hover);
+}
+.ch-card-pin-btn svg {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-card-pin-bar,
+  .ch-card.is-pinned .ch-card-pin-bar {
+    transition: none;
+    transform: none;
+  }
+}
+
 .ch-card-close {
   position: absolute;
   top: 8px;
@@ -3225,6 +3301,15 @@ select.ch-save-input {
 
   .ch-card-name {
     font-size: 23px;
+  }
+
+  .ch-card-pin {
+    top: -10px;
+    margin: -10px -16px 10px;
+  }
+
+  .ch-card-pin-bar {
+    padding-left: 16px;
   }
 
   .ch-card-close {

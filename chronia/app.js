@@ -6445,6 +6445,25 @@
     scheduleRender();
   }
   $("card-close").addEventListener("click", closeCard);
+  // The pinned bar: once the card's name has scrolled above the top of the card, the bar shows it again, with a button back
+  // to the top and the close button.
+  var cardPinned = false;
+  function syncCardPin() {
+    var nameEl = $("card-name"), on = !card.hidden && card.scrollTop > nameEl.offsetTop + nameEl.offsetHeight - 6;
+    if (on) $("card-pin-name").textContent = nameEl.textContent;
+    if (on === cardPinned) return;
+    cardPinned = on;
+    card.classList.toggle("is-pinned", on);
+    ["card-top", "card-pin-close"].forEach(function (id) { $(id).tabIndex = on ? 0 : -1; });
+    $("card-pin").setAttribute("aria-hidden", on ? "false" : "true");
+  }
+  card.addEventListener("scroll", syncCardPin, { passive: true });
+  $("card-top").addEventListener("click", function () {
+    card.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    $("card-close").focus({ preventScroll: true });
+  });
+  $("card-pin-close").addEventListener("click", closeCard);
+  $("card-pin").setAttribute("aria-hidden", "true");
   function polityButton(id) {
     var b = document.createElement("button");
     b.type = "button";
@@ -6529,6 +6548,7 @@
     }, [c.lon, c.lat]);
   }
   function renderCard() {
+    if (typeof syncCardPin === "function") syncCardPin();
     var click = cardClick;
     cardClick = false;
     syncLapseBtn();
