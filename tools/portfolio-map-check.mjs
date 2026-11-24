@@ -5,11 +5,13 @@
 //       every project has a link, a blurb, and media files that exist; about.json is whole
 //   python3 -m http.server 8137      (from the repository root, in another terminal)
 //   node tools/portfolio-map-check.mjs [content|map|interface|menu|sharp|here|moved|all] [base URL]
-//       map: the world draws 18 countries and their labels, zoom stops at 6x, and the view stays on the world
+//       map: the world draws 18 countries and their labels, zoom stops at 16x, the water is the reference's blue at
+//       each zoom, and the view stays on the world
 //       interface: search, panel, hearts kept across a reload, share links, world switching, the phone layout
 //       menu: the page stays White whatever the site's theme; the drawer, and each map layer it switches off; the
 //       fullscreen viewer; the wordmarks are gone
-//       sharp: the first view loads only the world's two files; at 6x on a 2x screen, the finest tiles draw the land
+//       sharp: the first view loads only the world's two files; at 6x on a 2x screen, the finest tiles draw the land,
+//       and at the closest zoom they still do, under the cities' outlines and streets
 //       here: the location button flies to the blue dot on the island called About, then opens the about page
 //       all (the default): every stage
 //
@@ -24,6 +26,11 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const stage = process.argv[2] || 'all';
 const base = (process.argv[3] || 'http://localhost:8137').replace(/\/$/, '');
 const PAGE = `${base}/projects/`;
+
+// The closest zoom (map.js, MAX_ZOOM), and the sea's blue as the page should render it at each zoom: the reference's,
+// measured on Noah's screenshots of it (read through their colour profiles into sRGB).
+const MAX_ZOOM = 16;
+const WATER_AT = [[1, '#70d3e5'], [3, '#7fd5e9'], [6, '#88d7eb'], [16, '#90d9ed']];
 
 let failures = 0;
 const ok = (cond, what) => {
@@ -47,6 +54,30 @@ function decodeIndexed(buf) {
     px[y * W + x] = (b >> (8 - bits - ((x * bits) & 7))) & ((1 << bits) - 1);
   }
   return { W, H, px };
+}
+
+// A truecolour PNG's pixels (8 bits a channel, as a screenshot is), as [r, g, b] at (x, y).
+function decodeRgb(buf) {
+  let p = 8, W, H, ch;
+  const idat = [];
+  while (p < buf.length) {
+    const len = buf.readUInt32BE(p), type = buf.toString('latin1', p + 4, p + 8), data = buf.subarray(p + 8, p + 8 + len);
+    if (type === 'IHDR') { W = data.readUInt32BE(0); H = data.readUInt32BE(4); ch = data[9] === 6 ? 4 : 3; }
+    if (type === 'IDAT') idat.push(data);
+    p += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idat)), row = W * ch, out = new Uint8Array(row * H);
+  for (let y = 0; y < H; y++) {
+    const f = raw[y * (row + 1)], src = y * (row + 1) + 1, dst = y * row;
+    for (let x = 0; x < row; x++) {
+      const a = x >= ch ? out[dst + x - ch] : 0, b = y ? out[dst + x - row] : 0, c = x >= ch && y ? out[dst + x - row - ch] : 0;
+      let v = raw[src + x];
+      if (f === 1) v += a; else if (f === 2) v += b; else if (f === 3) v += (a + b) >> 1;
+      else if (f === 4) { const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c); v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
+      out[dst + x] = v & 255;
+    }
+  }
+  return { W, H, at: (x, y) => [out[(y * W + x) * ch], out[(y * W + x) * ch + 1], out[(y * W + x) * ch + 2]] };
 }
 
 function content() {
@@ -201,18 +232,42 @@ async function mapStage(browser) {
   const rect = (await view(page)).rect;
   await page.mouse.move(rect.l + rect.w / 2, rect.t + rect.h / 2);
   let last = 0;
-  for (let i = 0; i < 60; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(30); }
+  for (let i = 0; i < 90; i++) { await page.mouse.wheel(0, -240); await page.waitForTimeout(30); }
   await page.waitForTimeout(900);
   let v = await view(page);
-  ok(Math.abs(v.zoom - 6) < 0.01, `the wheel zooms in to 6x and stops there (${v.zoom.toFixed(2)})`);
+  ok(Math.abs(v.zoom - MAX_ZOOM) < 0.01, `the wheel zooms in to ${MAX_ZOOM}x and stops there (${v.zoom.toFixed(2)})`);
   last = v.zoom;
   await page.click('#zoom-in').catch(() => {});
   await page.waitForTimeout(500);
   v = await view(page);
-  ok(v.zoom <= last + 1e-6, 'the + button cannot zoom past 6x');
-  ok(await page.evaluate(() => document.querySelector('#zoom-in').disabled), 'the + button is disabled at 6x');
+  ok(v.zoom <= last + 1e-6, `the + button cannot zoom past ${MAX_ZOOM}x`);
+  ok(await page.evaluate(() => document.querySelector('#zoom-in').disabled), `the + button is disabled at ${MAX_ZOOM}x`);
   const after = await labelsAt();
   ok(after.includes('town') && !before.includes('town'), 'towns appear only when zoomed in');
+
+  // The sea as rendered, at each zoom: a screenshot's pixels over open water (the middle of the ocean's name, with
+  // the names switched off), against the reference's blue for that zoom.
+  {
+    const hexOf = (c) => '#' + c.map((n) => n.toString(16).padStart(2, '0')).join('');
+    const got = [];
+    for (const [z] of WATER_AT) {
+      const at = await page.evaluate((zoom) => {
+        const m = window.__portfolioMap.map, r = m.rect(), s = m.ref() * zoom;
+        const o = m.world.labels.find((l) => l.kind === 'ocean');
+        m.stop(); m.set({ s, tx: r.l + r.w / 2 - o.x * s, ty: r.t + r.h / 2 - o.y * s }); m.render(true);
+        document.querySelector('.map-labels').style.visibility = 'hidden';
+        return [Math.round(r.l + r.w / 2), Math.round(r.t + r.h / 2)];
+      }, z);
+      await page.waitForTimeout(250);
+      const shot = decodeRgb(await page.screenshot({ clip: { x: at[0] - 4, y: at[1] - 4, width: 8, height: 8 } }));
+      got.push(hexOf(shot.at(4, 4)));
+    }
+    await page.evaluate(() => { document.querySelector('.map-labels').style.visibility = ''; });
+    ok(got.every((c, k) => c === WATER_AT[k][1]), `the sea renders in the reference's blue at zooms ${WATER_AT.map((w) => w[0]).join(', ')}: ${got.join(', ')}`);
+    await page.evaluate((zoom) => { const m = window.__portfolioMap.map, r = m.rect(), s = m.ref() * zoom, cx = (r.l + r.w / 2 - m.tx) / m.s, cy = (r.t + r.h / 2 - m.ty) / m.s; m.set({ s, tx: r.l + r.w / 2 - cx * s, ty: r.t + r.h / 2 - cy * s }); m.render(true); }, MAX_ZOOM);
+    await page.waitForTimeout(300);
+    v = await view(page);
+  }
   ok(onWorld(v), 'zoomed in, the view is on the world');
 
   // Drag hard up and down: the view stops at the world's top and bottom.
@@ -537,7 +592,7 @@ async function menuStage(browser) {
       picture: (document.querySelector('.map-ground .map-image') || {}).getAttribute?.('href') || '',
       themeBtn: !!document.querySelector('#theme-btn'),
     }));
-    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && got.water === 'rgb(127, 213, 233)' && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
+    ok(got.theme === 'white' && got.panel === 'rgb(255, 255, 255)' && /^rgb\((1[1-4]\d), 21\d, 2[23]\d\)$/.test(got.water) && !got.picture.startsWith('blob:') && !got.themeBtn, `with the site's theme set to ${t === 'dark' ? 'Night' : 'Orange'}, the page stays White with the day map, and has no theme switch`);
     await ctx.close();
   }
 
@@ -562,7 +617,7 @@ async function menuStage(browser) {
   ok(!(await drawerOpen()) && (await page.evaluate(() => document.querySelector('#panel-body .title').textContent)) === 'Saved', 'choosing Saved closes it and opens Saved');
   await page.click('#menu-btn');
   const classic = await page.evaluate(() => { const a = document.querySelector('#drawer-classic'); return { href: a && a.getAttribute('href'), target: a && a.target, text: a && a.textContent.trim(), first: document.querySelector('.drawer-group .drawer-row') === a, old: !!document.querySelector('#drawer-panel') }; });
-  ok(classic.href === '/projects/classic/' && !classic.target && classic.text === 'Show the old site' && classic.first && !classic.old, '"Show the old site" leads the menu, in place of "Show side panel", and opens /projects/classic/ in the same tab');
+  ok(classic.href === '/projects/classic/' && !classic.target && classic.text === 'Show the old Projects site' && classic.first && !classic.old, '"Show the old site" leads the menu, in place of "Show side panel", and opens /projects/classic/ in the same tab');
   await page.keyboard.press('Escape');
 
   // Each map layer, switched off, is gone from the map (zoomed in, so the finer layers are there to switch off).
@@ -674,7 +729,7 @@ async function sharpStage(browser) {
     const page = await open(browser, '?world=le-guin', { context: ctx });
     await page.waitForTimeout(1400);
     const got = await page.evaluate(async () => {
-      const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.limits().max;
+      const m = window.__portfolioMap.map, l = m.world.labels.find((x) => x.id === 'chronia'), r = m.rect(), s = m.ref() * 6;
       m.set({ s, tx: r.l + r.w / 2 - (l.x - 40) * s, ty: r.t + r.h / 2 - (l.y + 20) * s });
       m.render(true);
       for (let i = 0; i < 60 && (m.tiles.pending || !document.querySelector('.map-tile.is-in')); i++) await new Promise((res) => setTimeout(res, 100));
@@ -684,6 +739,20 @@ async function sharpStage(browser) {
     });
     ok(Math.abs(got.zoom - 6) < 0.01 && got.scale >= got.needed && got.shown > 0 && !got.pending, `${phone ? 'phone' : 'desktop'} at 6x on a ${phone ? 3 : 2}x screen: ${got.shown} tiles at ${got.scale} pixels per map unit, for the ${got.needed.toFixed(1)} the screen shows`);
     await page.screenshot({ path: phone ? '/tmp/portfolio-map-zoom4-phone.png' : '/tmp/portfolio-map-zoom4.png' });
+    // All the way in, on the country's capital: the finest tiles still draw the land, and the city is drawn over
+    // them from its outlines, streets, and parks.
+    const close = await page.evaluate(async () => {
+      const m = window.__portfolioMap.map, c = m.world.projects.find((p) => p.id === 'chronia').capital, r = m.rect(), s = m.limits().max;
+      m.set({ s, tx: r.l + r.w / 2 - c[0] * s, ty: r.t + r.h / 2 - c[1] * s });
+      m.render(true);
+      for (let i = 0; i < 80 && (m.tiles.pending || !document.querySelector('.map-urban path') || !document.querySelector('.map-streets path')); i++) { await new Promise((res) => setTimeout(res, 100)); m.render(true); }
+      await new Promise((res) => setTimeout(res, 400));
+      const lv = m.tiles.level, T = m.world.tiles.levels;
+      const on = (q) => [...document.querySelectorAll(q)].some((e) => getComputedStyle(e).opacity !== '0' && e.getBoundingClientRect().width > 0);
+      return { zoom: m.zoom(), finest: lv && lv.scale === T[T.length - 1].scale, shown: document.querySelectorAll('.map-tile.is-in').length, urban: on('.map-urban .map-built'), streets: on('.map-streets .r-street'), minor: on('.map-streets .r-minor') };
+    });
+    ok(Math.abs(close.zoom - MAX_ZOOM) < 0.01 && close.finest && close.shown > 0 && close.urban && close.streets && close.minor, `${phone ? 'phone' : 'desktop'} at ${MAX_ZOOM}x: the finest tiles, and the capital's built-up ground, streets, and lanes drawn over them`);
+    await page.screenshot({ path: phone ? '/tmp/portfolio-map-zoom16-phone.png' : '/tmp/portfolio-map-zoom16.png' });
     ok(page.errors.length === 0, `no errors zoomed in${phone ? ' on the phone' : ''}${page.errors.length ? ': ' + page.errors.join(' | ') : ''}`);
     await ctx.close();
   }
