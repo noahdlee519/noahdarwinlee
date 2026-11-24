@@ -340,7 +340,7 @@
   }
 
   function viewContact() {
-    return '<header class="head head-plain"><h2 class="title" tabindex="-1">Contact</h2><p class="sub">Email is the best way to reach me</p></header>' + contactBlock();
+    return '<header class="head head-plain"><h2 class="title" tabindex="-1">Contact</h2></header>' + contactBlock();
   }
 
   // ------------------------------------------------------------------ opening and closing
