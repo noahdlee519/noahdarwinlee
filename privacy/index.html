@@ -77,15 +77,11 @@
           sign in to the game, I keep your name, email address, and profile picture so
           that your name and score can appear on the leaderboard; no one but me can see
           your email address. If you write in one of the site’s message boxes, I receive
-          what you wrote, from which page, and when, and nothing more.
-          <a href="https://chroniaatlas.com/uchronia/">UCHRONIA</a>’s historian also asks
-          you to sign in with Google. When you ask it for a history, what you typed and a
-          description of your map go to Anthropic so that it can reply. I keep none of
-          that, only a count of how many requests each account made that day. If you pay
-          for CHRONIA Premium or make a donation, the payment is handled by Stripe or
-          Ko-fi, never by this site. If you would like anything removed, write to me and I
-          will delete it. CHRONIA, my atlas at chroniaatlas.com, has
-          <a href="https://chroniaatlas.com/privacy/">its own privacy policy</a>.
+          what you wrote, from which page, and when, and nothing more. If you make a
+          donation, Ko-fi handles the payment, never this site. If you would like anything
+          removed, write to me and I will delete it. CHRONIA, my atlas at
+          chroniaatlas.com, has <a href="https://chroniaatlas.com/privacy/">its own
+          privacy policy</a>.
         </p>
       </section>
 
@@ -93,11 +89,10 @@
         <h2>2. Who is responsible</h2>
         <p>
           “I” and “me” in this policy mean Noah Darwin Lee. I run noahdarwinlee.com and
-          every page under it, together with UCHRONIA, which is served from
-          chroniaatlas.com (together, the “site”), and I decide what the site collects and
-          why. In data protection terms, that makes me the controller of everything
-          described here. There is no company behind the site, only me. If you have a
-          question about anything in this policy, please write to me at
+          every page under it (the “site”), and I decide what the site collects and why.
+          In data protection terms, that makes me the controller of everything described
+          here. There is no company behind the site, only me. If you have a question about
+          anything in this policy, please write to me at
           <a href="mailto:noahlee519@gmail.com">noahlee519@gmail.com</a>.
         </p>
       </section>
@@ -111,22 +106,19 @@
           asks the site’s database to add one to the day’s total. The database keeps the
           date and that number, and nothing else: not your address, not the page, and not
           where you came from. So that it can tell a new visit from a click to the next
-          page, your browser remembers when it last opened a page here (section 10).
-          UCHRONIA’s visits are counted in the same way, in CHRONIA’s daily total.
+          page, your browser remembers when it last opened a page here (section 9).
         </p>
         <p>
           A few services necessarily see the ordinary request your browser makes to show
           you a page, and that request includes your IP address and the kind of browser
-          you use. GitHub Pages hosts noahdarwinlee.com and its typeface, and Vercel hosts
-          UCHRONIA at chroniaatlas.com. Google Fonts serves the type in the blog’s mail
-          window and in GREATERCIRCLE. One tool loads drawing libraries from cdnjs, which
-          Cloudflare runs. When you zoom in on the satellite views in UCHRONIA and
-          GREATERCIRCLE, the sharper imagery comes from NASA’s Global Imagery Browse
-          Services, and UCHRONIA’s shaded relief comes from the open Terrain Tiles hosted
-          by Amazon Web Services. Drill looks up each figure’s picture on Wikipedia and
-          loads it from Wikimedia. I do not ask any of these services to identify you, and
-          none of them reports anything back to me. Each handles those requests under its
-          own privacy policy.
+          you use. GitHub Pages hosts the site and its typeface. Google Fonts serves the
+          type in the blog’s mail window and in GREATERCIRCLE. One tool loads drawing
+          libraries from cdnjs, which Cloudflare runs. When you zoom in on the satellite
+          view in GREATERCIRCLE, the sharper imagery comes from NASA’s Global Imagery
+          Browse Services. Drill looks up each figure’s picture on Wikipedia and loads it
+          from Wikimedia. I do not ask any of these services to identify you, and none of
+          them reports anything back to me. Each handles those requests under its own
+          privacy policy.
         </p>
       </section>
 
@@ -142,7 +134,7 @@
         </p>
         <p>
           <b>Everything else.</b> Your round in progress, your settings, your colours, and
-          your result on the day’s puzzle all stay in your own browser (section 10), and
+          your result on the day’s puzzle all stay in your own browser (section 9), and
           none of it is sent anywhere.
         </p>
       </section>
@@ -150,15 +142,9 @@
       <section>
         <h2>5. Signing in</h2>
         <p>
-          Signing in is optional. In the game, it puts your name beside your score on the
-          leaderboard. In UCHRONIA, it is required to use the historian, so that I can
-          keep count of each person’s daily allowance. In both cases you sign in with your
-          Google account, through Supabase, which runs the sign-in. UCHRONIA shares its
-          account with <a href="https://chroniaatlas.com/">CHRONIA</a>, so signing in to
-          one signs you in to the other; the game has a separate sign-in of its own. In
-          UCHRONIA, the sign-in button and its window are Google’s own, loaded from Google
-          when you open the historian while signed out. UCHRONIA does not create a profile
-          for you or show anything about you to anyone.
+          Signing in to the game is optional; it puts your name beside your score on the
+          leaderboard. You sign in with your Google account, through Supabase, which runs
+          the sign-in.
         </p>
         <p>
           <b>What I receive.</b> When you sign in, Google gives the site your name, email
@@ -202,64 +188,10 @@
         </p>
       </section>
 
-      <section id="uchronia">
-        <h2>8. Using UCHRONIA</h2>
+      <section id="donations">
+        <h2>8. Donations</h2>
         <p>
-          <b>Your map.</b> The map you draw stays in your own browser (section 10) and
-          goes nowhere unless you send it somewhere. If you save it as a file, it stays
-          wherever you put it. A share link carries the whole map inside the link, after
-          the # sign, a part of an address that browsers never send to a server. Anyone
-          you give the link to can open your map, and no one else can see it.
-        </p>
-        <p>
-          <b>The historian.</b> The Historian menu asks Claude, an AI model made by
-          Anthropic, to write a history of your map, redraw your map from a turning point,
-          or answer your questions about the world it has written. Each request sends what
-          you typed, a written list of the ways your map differs from the real world, and,
-          if you are asking a question, the history together with the questions and
-          answers before it. All of this goes first to a small program of mine on
-          Supabase that holds the key to Anthropic’s service, then to Anthropic, which
-          writes the reply and sends it back to your browser. My program keeps nothing you
-          send and nothing that comes back. Anthropic receives it as a request from a
-          business customer and handles it under its
-          <a href="https://www.anthropic.com/legal/privacy">privacy policy</a> and
-          <a href="https://www.anthropic.com/legal/commercial-terms">commercial terms</a>,
-          which do not allow it to train its models on what you send; it may keep
-          requests for a limited time to watch for misuse. My program checks that you are
-          signed in, but it does not store what you send with your account, and it does
-          not pass your name or email address to Anthropic. Even so, please do not put
-          anything personal into a request.
-        </p>
-        <p>
-          <b>The daily count.</b> The historian runs on a daily budget, so each account
-          may make five requests a day, or twenty-five with CHRONIA Premium. A history, a
-          redrawn map with its history, and a question each count as one. My program
-          keeps the count under a code made from your account identifier and a secret,
-          which cannot be turned back into the identifier. Each count is only a date, that
-          code, and a number, and counts older than thirty days are deleted. To know
-          which allowance applies, the program checks whether your account has Premium in
-          CHRONIA’s records (section 9).
-        </p>
-        <p>
-          <b>Saved histories.</b> The histories written for you, and the conversations
-          beneath them, stay in your browser, up to the most recent thirty. They are not
-          kept anywhere else.
-        </p>
-      </section>
-
-      <section id="paying">
-        <h2>9. Payments and donations</h2>
-        <p>
-          <b>CHRONIA Premium.</b> Premium is bought on chroniaatlas.com through Stripe,
-          which takes your payment and your card details under its own privacy policy;
-          this site never sees them. Once you have paid, CHRONIA keeps a record that your
-          account has Premium, with the date and the payment’s reference and amount, as
-          <a href="https://chroniaatlas.com/privacy/">CHRONIA’s privacy policy</a>
-          describes. UCHRONIA reads only whether that record exists, and keeps a note of
-          the answer in your browser so that it can hide the offer to buy Premium.
-        </p>
-        <p>
-          <b>Donations.</b> The donate link in citylayoutguessr leads to my page on
+          The donate link in citylayoutguessr leads to my page on
           <a href="https://ko-fi.com/noahdarwinlee">Ko-fi</a>. If you give something,
           Ko-fi and the payment service you choose there, Stripe or PayPal, take your
           payment and your details under their own privacy policies, and this site never
@@ -270,7 +202,7 @@
       </section>
 
       <section>
-        <h2>10. What stays in your browser</h2>
+        <h2>9. What stays in your browser</h2>
         <p>
           Some things are saved in your own browser’s storage so that the site remembers
           them next time. Everywhere: your choice of colour theme, and when you last opened
@@ -279,22 +211,19 @@
           day’s puzzle and whether it has been posted, the date of your last visit, and,
           if you have signed in, the token that keeps you signed in. In the flash card
           tool: your lists, drafts, and colours. On the blog: which letters you have read
-          or starred, and how you sized the panes. In UCHRONIA: your map, the one you had
-          before opening a shared map, your view settings, your saved histories, whether
-          your account has Premium, and, if you have signed in, the token that keeps you
-          signed in. In Drill: your progress and settings in each deck, and the addresses
-          of the figures’ pictures, for a week.
+          or starred, and how you sized the panes. In Drill: your progress and settings in
+          each deck, and the addresses of the figures’ pictures, for a week.
         </p>
         <p>
           All of this stays on your device. None of it is sent to me or to anyone else,
-          and clearing your browser’s data for the site removes it. The sign-in tokens are
-          the one exception: your browser shows them to Supabase to prove that it is you,
-          and that is their only purpose.
+          and clearing your browser’s data for noahdarwinlee.com removes it. The sign-in
+          token is the one exception: your browser shows it to Supabase to prove that it
+          is you, and that is its only purpose.
         </p>
       </section>
 
       <section>
-        <h2>11. The legal basis</h2>
+        <h2>10. The legal basis</h2>
         <p>
           Where the law asks for a legal basis, these are mine. I keep your account,
           profile, and scores because you chose to sign in and post them; that choice is
@@ -303,34 +232,31 @@
           because they are needed to record the donation. The game’s daily visit record
           rests on my legitimate interest in knowing, roughly, whether anyone plays the
           game, and it serves that interest without identifying anyone who is not signed
-          in. UCHRONIA’s daily counts rest on my legitimate interest in keeping the
-          historian within its budget, and the site’s visit count on my interest in
-          knowing, roughly, how many people read the site.
+          in. The site’s visit count rests on my interest in knowing, roughly, how many
+          people read the site.
         </p>
       </section>
 
       <section>
-        <h2>12. Who else is involved</h2>
+        <h2>11. Who else is involved</h2>
         <p>
-          Besides the services in section 3 and the payment services in section 9, three
-          more take part. Supabase runs the databases and sign-in for the game and for
-          UCHRONIA, keeps the messages from the site’s message boxes, and runs the program
-          that passes UCHRONIA’s requests to the historian and keeps its daily counts. The
-          game’s copy of Supabase’s script is delivered by jsDelivr. Google handles the
-          sign-in itself, and Anthropic writes the historian’s replies, as section 8
-          explains. These services may store and process information on servers outside
-          your country, including in the United States.
+          Besides the services in section 3 and Ko-fi in section 8, three more take part.
+          Supabase runs the database and sign-in for the game and keeps the messages from
+          the site’s message boxes. The game’s copy of Supabase’s script is delivered by
+          jsDelivr. Google handles the sign-in itself. These services may store and
+          process information on servers outside your country, including in the United
+          States.
         </p>
         <p>
           I do not share, rent, or sell anything the site collects. There are no
-          advertising networks, tracking pixels, third-party analytics, or mailing lists
-          on this site. The only circumstance in which I would hand anything over is if
-          the law required me to.
+          advertising networks, tracking pixels, third-party analytics, or mailing lists.
+          The only circumstance in which I would hand anything over is if the law required
+          me to.
         </p>
       </section>
 
       <section>
-        <h2>13. How long I keep things</h2>
+        <h2>12. How long I keep things</h2>
         <p>
           I keep accounts, profiles, and scores for as long as the game exists, since a
           leaderboard with a history is much of the point, or until you ask me to delete
@@ -338,13 +264,12 @@
           and the site’s daily visit totals as a running account of how much it is read.
           When I delete an account, everything tied to it is deleted with it. I keep
           messages until I have read them and no longer need them, and never for more than
-          a year. UCHRONIA’s daily counts are deleted after thirty days, and nothing else
-          from the historian is kept at all.
+          a year.
         </p>
       </section>
 
       <section>
-        <h2>14. Your rights</h2>
+        <h2>13. Your rights</h2>
         <p>
           You may sign out at any time and change your display name from the game’s menu.
           Beyond that, you may ask me to:
@@ -367,7 +292,7 @@
       </section>
 
       <section>
-        <h2>15. Security</h2>
+        <h2>14. Security</h2>
         <p>
           The site is served over HTTPS. The game’s database lets a browser add a visit
           record but never read one back, lets each person post only their own score, and
@@ -377,7 +302,7 @@
       </section>
 
       <section>
-        <h2>16. Children</h2>
+        <h2>15. Children</h2>
         <p>
           The site is not intended for children under 13, and I do not knowingly keep
           information about anyone under 13. If you believe a child has signed in, please
@@ -386,7 +311,7 @@
       </section>
 
       <section>
-        <h2>17. Changes to this policy</h2>
+        <h2>16. Changes to this policy</h2>
         <p>
           If what the site collects changes, this policy will change with it and the date
           at the top will move. I will never publish a version of this policy that quietly

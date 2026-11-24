@@ -879,8 +879,8 @@ it there). Built on the bones of `/greatercircle/`.
     fair subjects told with a historian's gravity. Asked for something else,
     the historian declines in a sentence or two, and a redraw comes back
     marked `declined` and changes nothing. The site's
-    [terms](https://noahdarwinlee.com/terms/#uchronia) say the same, and its
-    [privacy policy](https://noahdarwinlee.com/privacy/#uchronia) says what is
+    [terms](https://chroniaatlas.com/terms/#uchronia) say the same, and its
+    [privacy policy](https://chroniaatlas.com/privacy/#uchronia) says what is
     sent where.
   - Claude names land from `data/catalogue.txt`, every country of our world
     and its regions as the map draws them (250 countries, 3,699 regions),
