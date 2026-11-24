@@ -142,7 +142,7 @@ body {
   border-radius: 50%;
 }
 
-.theme-btn::before {
+.gc-page .theme-btn::before {
   content: attr(data-tip);
   position: absolute;
   top: calc(100% + 10px);
@@ -161,12 +161,12 @@ body {
 }
 
 @media (hover: hover) {
-  .theme-btn:hover::before {
+  .gc-page .theme-btn:hover::before {
     opacity: 1;
   }
 }
 
-.theme-btn.is-flash::before {
+.gc-page .theme-btn.is-flash::before {
   opacity: 1;
 }
 
