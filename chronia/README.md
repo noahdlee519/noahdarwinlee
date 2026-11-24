@@ -1225,7 +1225,11 @@ Since 22 November 2026, CHRONIA names its lakes and rivers as UCHRONIA does (`dr
 - **Rivers:** bent along the course, letter by letter, in the river blue (`--ch-river-label`), from 650 px a radian for the
   largest (rank 2 and up as the map grows, no further than the ranks drawn), at most 40 at once. Each sits on the stretch
   nearest the middle of the view where its letters turn least, and keeps that place while the map moves. Rivers the date adds
-  are named with the rest, and a river cut from a date (`riverDrop`) is not named.
+  are named with the rest, and a river cut from a date (`riverDrop`) is not named. Since 24 November 2026 a stretch is
+  passed over where two neighbouring letters would stand nearer than three quarters of the room their widths ask, or
+  farther than four thirds of it (`RIVER_SQUEEZE`): the letters stand beside the line, so on the inside of a bend they ran
+  into each other ("Vorma" by Christiania) and on the outside they spread apart ("Araguaia"). A river with no such stretch
+  in view goes unnamed until one comes into view.
 - **Order:** lakes after the seas and before the cities; rivers after the cities, so a city's name wins where they meet.
 
 ### Rivers and canals

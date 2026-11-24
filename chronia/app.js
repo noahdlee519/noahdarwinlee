@@ -3863,15 +3863,24 @@
       var ang = Math.atan2(q2[1] - q1[1], q2[0] - q1[0]) + (back ? Math.PI : 0);
       if (prev !== null) {
         var da = Math.abs(ang - prev); da = Math.min(da, TAU - da);
-        if (da > 0.6) return null;
+        if (da > RIVER_TURN) return null;
         turn += da;
       }
       prev = ang;
-      glyphs.push([p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang]);
+      var g = [p[0] + Math.sin(ang) * f * 0.8, p[1] - Math.cos(ang) * f * 0.8, ang];
+      // The letters sit beside the line, not on it, so on the inside of a bend they crowd together and on the outside they
+      // spread apart; a spot where two neighbours end up much nearer or farther than their widths ask is passed over
+      // (24 November 2026; before then such names were drawn with their letters run into each other).
+      if (glyphs.length && ws[j - 1] && ws[j]) {
+        var gp = glyphs[glyphs.length - 1], want = (ws[j - 1] + ws[j]) / 2 + sp, got = Math.hypot(g[0] - gp[0], g[1] - gp[1]);
+        if (got < want * RIVER_SQUEEZE || got > want / RIVER_SQUEEZE) return null;
+      }
+      glyphs.push(g);
       d += ws[j] + sp;
     }
-    return turn < 1.6 ? { glyphs: glyphs, turn: turn } : null;
+    return turn < RIVER_TURNS ? { glyphs: glyphs, turn: turn } : null;
   }
+  var RIVER_TURN = 0.6, RIVER_TURNS = 1.6, RIVER_SQUEEZE = 0.75;
   function glyphBox(glyphs, f) {
     var gx0 = Infinity, gy0 = Infinity, gx1 = -Infinity, gy1 = -Infinity;
     glyphs.forEach(function (g) { gx0 = Math.min(gx0, g[0]); gy0 = Math.min(gy0, g[1]); gx1 = Math.max(gx1, g[0]); gy1 = Math.max(gy1, g[1]); });
