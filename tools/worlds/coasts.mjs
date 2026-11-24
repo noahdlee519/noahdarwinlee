@@ -483,7 +483,7 @@ export { inRing };
 // the countries nearest them.
 export function buildIslandArcs({ land, elev, ice = null, width, height, rng, style = {} }) {
   const W = width, H = height, S = W / 1600;
-  const r = rng.fork('island-arcs');
+  const r = rng.fork('island-arcs' + (style.arcSeed || ''));
   const count = style.arcs ?? ((style.volcanoes ?? 0) >= 3 ? 2 : r.chance(0.6) ? 1 : 0);
   if (!count) return [];
   const solid = new Uint8Array(W * H);
@@ -500,8 +500,8 @@ export function buildIslandArcs({ land, elev, ice = null, width, height, rng, st
     // Toward the nearest land: down the slope of the distance.
     let gx = SD(px + 2, py) - SD(px - 2, py), gy = SD(px, py + 2) - SD(px, py - 2);
     const gl = Math.hypot(gx, gy) || 1; gx /= gl; gy /= gl;
-    const Rr = r.range(90, 170) * S, ox = px - gx * Rr, oy = py - gy * Rr;
-    const a0 = Math.atan2(py - oy, px - ox), span = r.range(0.55, 0.95);
+    const Rr = r.range(100, 165) * S, ox = px - gx * Rr, oy = py - gy * Rr;
+    const a0 = Math.atan2(py - oy, px - ox), span = r.range(0.8, 1.2);
     const islands = [], cones = [];
     let a = a0 - span / 2;
     while (a <= a0 + span / 2) {

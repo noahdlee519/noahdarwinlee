@@ -117,7 +117,9 @@ test('places are named in their country’s manner, with a few nods to the proje
   const capital = (id) => world.settlements.find((s) => s.rank === RANK.CAPITAL && projects[s.country].id === id);
   assert.equal(capital('chicago').name, 'Chicago');
   assert.equal(capital('nyc').name, 'New York');
-  assert.equal(capital('fuzhounese').name, 'Hók-ciŭ');
+  assert.equal(capital('fuzhounese').name, 'Fuzhounese Dictionary City');
+  assert.equal(capital('chronia').name, 'CHRONIA City');
+  assert.equal(capital('citylayoutguessr').name, 'citylayoutguessr City');
   const fz = projects.findIndex((p) => p.id === 'fuzhounese');
   for (const s of world.settlements.filter((q) => q.country === fz && q.rank > 0)) assert.match(s.name, /^\p{Lu}\p{Ll}*(-\p{Ll}+)*$/u, `${s.name} is not in Foochow Romanized form`);
   const ar = projects.findIndex((p) => p.id === 'architects');

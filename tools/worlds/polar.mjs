@@ -322,8 +322,11 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
     if (best && best.d > 7 * S) site = { x: best.x, y: best.y, room: best.d };
     else kind = 'lighthouse';
   }
+  // (Noah, 24 November 2026: larger than it was, some 15 to 25 units across, with bays, a hill or a pond, a town, and a
+  // lighthouse on a cape; so it stands further out.)
+  const GROW = 1.7;
   if (!site) {
-    const [lo, hi, want] = { causeway: [8, 13, 10], ferry: [16, 34, 22], lighthouse: [12, 30, 18] }[kind] || [26, 70, 38];
+    const [lo, hi, want] = { causeway: [17, 26, 20], ferry: [32, 60, 40], lighthouse: [30, 58, 36] }[kind] || [40, 92, 52];
     const cands = [];
     for (let y = 90 * S; y < H - 90 * S; y += 4 * S) for (let x = 110 * S; x < W - 110 * S; x += 4 * S) {
       const d = dl[Math.floor(y) * W + Math.floor(x)];
@@ -352,19 +355,30 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
     }
     return out;
   };
+  // Bays: a shallow notch or two in the coast, rounded at the head.
+  const bayed = (ring, n) => {
+    const bays = [];
+    for (let q = 0; q < n; q++) bays.push({ a: r.next() * TAU, w: r.range(0.35, 0.6), d: r.range(0.28, 0.42) });
+    return ring.map(([x, y]) => {
+      const t = Math.atan2(y - cy, x - cx);
+      let k = 1;
+      for (const b of bays) { const da = Math.abs(((t - b.a + 3 * Math.PI) % TAU) - Math.PI); if (da < b.w) k *= 1 - b.d * Math.pow(1 - (da / b.w) ** 2, 1.5); }
+      return [cx + (x - cx) * k, cy + (y - cy) * k];
+    });
+  };
   switch (kind) {
     case 'volcano': {
-      rad = r.range(5.5, 7) * S;
-      rings.push(circle(cx, cy, rad, 60, 0.12, 1.2, 1 + r.next() * 0.25, r.next() * Math.PI));
-      const cr = r.range(1, 1.5) * S, off = r.range(0, 0.8) * S, a = r.next() * TAU;
+      rad = r.range(5.5, 7) * S * GROW;
+      rings.push(bayed(circle(cx, cy, rad, 90, 0.12, 1.2, 1 + r.next() * 0.25, r.next() * Math.PI), 2));
+      const cr = r.range(1, 1.5) * S * GROW, off = r.range(0, 0.8) * S, a = r.next() * TAU;
       holes.push(circle(cx + Math.cos(a) * off, cy + Math.sin(a) * off, cr, 28, 0.08, 2));
       extra.crater = [cx + Math.cos(a) * off, cy + Math.sin(a) * off, cr];
       dot = [cx + Math.cos(a + Math.PI) * rad * 0.55, cy + Math.sin(a + Math.PI) * rad * 0.55];
       break;
     }
     case 'atoll': {
-      rad = r.range(7, 9.5) * S;
-      const lean = r.next() * Math.PI, st = 1 + r.next() * 0.35, rim = r.range(1.3, 1.9) * S;
+      rad = r.range(7, 9.5) * S * GROW;
+      const lean = r.next() * Math.PI, st = 1 + r.next() * 0.35, rim = r.range(1.3, 1.9) * S * 1.4;
       const passes = [];
       for (let q = 0, nq = 2 + r.int(3); q < nq; q++) passes.push({ a: r.next() * TAU, w: r.range(0.05, 0.16) });
       // The rim, cut into islets by the passes: each islet a ring of its own.
@@ -394,8 +408,8 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
       break;
     }
     case 'crescent': {
-      rad = r.range(6, 8) * S;
-      const a0 = r.next() * TAU, sweep = r.range(3.2, 4.4), th = r.range(1.6, 3) * S;
+      rad = r.range(6, 8) * S * GROW;
+      const a0 = r.next() * TAU, sweep = r.range(3.2, 4.4), th = r.range(1.6, 3) * S * GROW;
       const outer = [], inner = [];
       for (let q = 0; q <= 50; q++) {
         const t = a0 + (sweep * q) / 50, taper = Math.pow(Math.sin((Math.PI * q) / 50), 0.6);
@@ -406,11 +420,14 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
       rings.push([...outer, ...inner.reverse()]);
       const tm = a0 + sweep / 2;
       dot = [cx + Math.cos(tm) * rad, cy + Math.sin(tm) * rad];
+      // A lighthouse on one horn.
+      const te = a0 + sweep * 0.96;
+      extra.lighthouse = [cx + Math.cos(te) * rad, cy + Math.sin(te) * rad];
       break;
     }
     case 'fjord': {
-      rad = r.range(6, 8) * S;
-      const K = 140, fj = [];
+      rad = r.range(6, 8) * S * GROW;
+      const K = 160, fj = [];
       for (let q = 0, nq = 3 + r.int(3); q < nq; q++) fj.push({ a: r.next() * TAU, w: r.range(0.06, 0.1), d: r.range(0.55, 0.8) });
       const ring = [];
       for (let q = 0; q < K; q++) {
@@ -423,15 +440,26 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
       break;
     }
     case 'lake': {
-      rad = Math.min(site.room * 0.45, 4.5 * S);
-      rings.push(circle(cx, cy, rad, 40, 0.25, 1.8, 1 + r.next() * 0.5, r.next() * Math.PI));
+      rad = Math.min(site.room * 0.45, 4.5 * S * GROW);
+      rings.push(bayed(circle(cx, cy, rad, 72, 0.25, 1.8, 1 + r.next() * 0.5, r.next() * Math.PI), 1));
       break;
     }
     case 'lighthouse': case 'causeway': case 'ferry': {
-      rad = r.range(4.5, 6.5) * S;
-      rings.push(circle(cx, cy, rad, 56, 0.28, 1.7, 1 + r.next() * 0.6, r.next() * Math.PI));
+      rad = r.range(4.5, 6.5) * S * GROW;
+      rings.push(bayed(circle(cx, cy, rad, 90, 0.24, 1.7, 1 + r.next() * 0.35, r.next() * Math.PI), 2));
       break;
     }
+  }
+  // Kept clear of the land: the whole island drawn smaller until it is (its outline is drawn over the sea).
+  for (let pass = 0; pass < 8; pass++) {
+    const near = rings.some((g) => g.some(([x, y]) => { const qx = Math.floor(x), qy = Math.floor(y); return qx < 0 || qy < 0 || qx >= W || qy >= H || dl[qy * W + qx] < 2.5 * S; }));
+    if (!near) break;
+    const k = 0.92, sc = ([x, y]) => [cx + (x - cx) * k, cy + (y - cy) * k];
+    for (const g of [rings, holes]) for (let q = 0; q < g.length; q++) g[q] = g[q].map(sc);
+    if (extra.crater) extra.crater = [...sc(extra.crater), extra.crater[2] * k];
+    if (extra.lagoon) extra.lagoon = extra.lagoon.map(sc);
+    if (extra.lighthouse) extra.lighthouse = sc(extra.lighthouse);
+    dot = sc(dot); rad *= k;
   }
   // The nearest project land, for the causeway, the ferry, and which way the island faces.
   let shore = null;
@@ -456,16 +484,30 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
     const a = edgeToward(shore), dx = shore[0] - a[0], dy = shore[1] - a[1], l = Math.hypot(dx, dy) || 1;
     extra.causeway = [a, [shore[0] - (dx / l) * 0.2 * S, shore[1] - (dy / l) * 0.2 * S]];
   }
-  if (kind === 'lighthouse' || kind === 'causeway' || kind === 'ferry') {
+  const towned = kind === 'lighthouse' || kind === 'causeway' || kind === 'ferry';
+  if (towned || kind === 'volcano' || kind === 'fjord') {
     // A little town on the side facing the mainland, and a lighthouse on the far point.
     const toward = shore ? Math.atan2(shore[1] - cy, shore[0] - cx) : r.next() * TAU;
-    const tp = edgeToward([cx + Math.cos(toward) * 40 * S, cy + Math.sin(toward) * 40 * S]);
-    extra.town = [cx + (tp[0] - cx) * 0.55, cy + (tp[1] - cy) * 0.55, rad * 0.42];
-    extra.dock = tp;
-    const lp = edgeToward([cx - Math.cos(toward) * 40 * S, cy - Math.sin(toward) * 40 * S]);
+    const tp = edgeToward([cx + Math.cos(toward) * 60 * S, cy + Math.sin(toward) * 60 * S]);
+    extra.town = [cx + (tp[0] - cx) * 0.6, cy + (tp[1] - cy) * 0.6, rad * (towned ? 0.32 : 0.24)];
+    if (towned) extra.dock = tp;
+    const lp = edgeToward([cx - Math.cos(toward) * 60 * S, cy - Math.sin(toward) * 60 * S]);
     extra.lighthouse = lp;
-    dot = [cx + (lp[0] - cx) * 0.25, cy + (lp[1] - cy) * 0.25];
+    if (towned) dot = [cx + (lp[0] - cx) * 0.25, cy + (lp[1] - cy) * 0.25];
+    // A hill inland, to one side, and (but on a volcano, which has its crater) a pond on the other.
+    if (kind !== 'volcano') {
+      const side = r.chance(0.5) ? 1 : -1, ha = toward + side * Math.PI / 2;
+      const hp = [cx + Math.cos(ha) * rad * 0.45, cy + Math.sin(ha) * rad * 0.45];
+      if (inLand(hp[0], hp[1]) && Math.hypot(hp[0] - dot[0], hp[1] - dot[1]) > 3.5 * S) extra.peak = [hp[0], hp[1], Math.round(r.range(240, 640) / 10) * 10];
+      const pa = toward - side * Math.PI / 2, pr = r.range(0.9, 1.3) * S;
+      const pp = [cx + Math.cos(pa) * rad * 0.36, cy + Math.sin(pa) * rad * 0.36];
+      const pond = circle(pp[0], pp[1], pr, 24, 0.2, 2);
+      if (pond.every(([x, y]) => inLand(x, y) && Math.hypot(x - extra.town[0], y - extra.town[1]) > extra.town[2] + 0.8 * S && Math.hypot(x - dot[0], y - dot[1]) > 1.5 * S)) { holes.push(pond); extra.pond = [pp[0], pp[1], pr]; }
+    }
   }
+
+  // The "you are here" dot on dry land, never in a bay: drawn in toward the middle if need be.
+  for (let q = 0; q < 20 && !inLand(dot[0], dot[1]); q++) dot = [dot[0] + (cx - dot[0]) * 0.15, dot[1] + (cy - dot[1]) * 0.15];
 
   const mask = new Uint8Array(N);
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -480,6 +522,7 @@ export function placeAbout({ land, ice, lakes = null, width, height, rng, kind =
     if (kind === 'lake' ? !mask[pi] && d > rad + 1.5 * S : land[pi]) return -1;
     const n = fbm(n2, mx / (1.2 * S), my / (1.2 * S), 3);
     if (extra.town && Math.hypot(mx - extra.town[0], my - extra.town[1]) < extra.town[2] * (1 + 0.35 * n)) return COVER.URBAN;
+    if (extra.peak) { const dp = Math.hypot(mx - extra.peak[0], my - extra.peak[1]); if (dp < 1.4 * S * (1 + 0.4 * n)) return COVER.ROCK; if (dp < 2.8 * S * (1 + 0.3 * n)) return COVER.FOREST; }
     switch (kind) {
       case 'volcano': {
         const [kx, ky, kr] = extra.crater;

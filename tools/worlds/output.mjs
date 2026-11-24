@@ -570,8 +570,6 @@ export function buildWorldFiles(world) {
     borders,
     disputed: disputed || undefined,
     exclave: world.exclave || undefined,
-    // What the borders and the coasts were given (see frontiers.mjs, shapes.mjs, and coasts.mjs), for review and tests.
-    shapes: world.frontiers ? { frontiers: world.frontiers, braid: (world.specials && world.specials.braid) || undefined, folio: (world.specials && world.specials.folio) || undefined, arcs: (world.arcs || []).map((a) => ({ islands: a.islands.length, cones: a.cones.length, x: a.islands[a.islands.length >> 1][0], y: a.islands[a.islands.length >> 1][1] })), townIslands: ((world.smallLakes && world.smallLakes.townIslands) || []).filter((t) => t.town).map((t) => ({ kind: t.kind, x: Math.round(t.x * 10) / 10, y: Math.round(t.y * 10) / 10, town: t.town.name })) } : undefined,
     provinceBorders,
     projects: projects.map((project, index) => {
       const entry = { id: project.id, path: ringsPath(arcs, lines, (k) => ownerOf(k) === index) };
@@ -780,6 +778,8 @@ export function buildDetail(world, data = null) {
     reef: fineLoops(isl.filter((i) => i.kind === 'reef').flatMap((i) => [i.ring, Math.sign(signedArea(i.ring)) === Math.sign(signedArea(i.hole)) ? i.hole.slice().reverse() : i.hole])) || undefined,
   } : undefined;
   const coarse = {
+    // What the borders and the coasts were given (see frontiers.mjs, shapes.mjs, and coasts.mjs), for review and tests.
+    shapes: world.frontiers ? { frontiers: world.frontiers, braid: (world.specials && world.specials.braid) || undefined, folio: (world.specials && world.specials.folio) || undefined, arcs: (world.arcs || []).map((a) => ({ islands: a.islands.length, cones: a.cones.length, x: a.islands[a.islands.length >> 1][0], y: a.islands[a.islands.length >> 1][1] })), townIslands: ((world.smallLakes && world.smallLakes.townIslands) || []).filter((t) => t.town).map((t) => ({ kind: t.kind, x: Math.round(t.x * 10) / 10, y: Math.round(t.y * 10) / 10, town: t.town.name })) } : undefined,
     roads: roadsOut,
     ferries: segments(D.roads.ferries),
     causeway: D.causeway && D.causeway.length ? segments(D.causeway) : undefined,

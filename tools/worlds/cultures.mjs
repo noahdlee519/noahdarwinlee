@@ -96,7 +96,7 @@ export const REAL_PLACES = {
 };
 // Two countries named in their projects' own words. Braidable's places are named for strands, plaits, and the
 // weaver's craft (Skeinmouth, Weft Landing, Three Strands); the portfolio's for the parts of a book and a page
-// (Recto, Verso, Colophon, Quarto), its capital Port Folio.
+// (Recto, Verso, Colophon, Quarto).
 const BRAID_ROOTS = ['Strand', 'Plait', 'Tress', 'Skein', 'Weft', 'Warp', 'Twine', 'Cord', 'Hank', 'Loop', 'Ply', 'Lace', 'Knot', 'Splice', 'Tassel', 'Ribbon', 'Bobbin', 'Shuttle', 'Spindle', 'Distaff', 'Fishtail', 'Lattice', 'Weave', 'Thread', 'Selvage', 'Heddle', 'Reel', 'Spool'];
 const BRAID_FORMS = [(w) => w, (w) => `${w}ford`, (w) => `${w}mouth`, (w) => `${w} Landing`, (w) => `${w} Ferry`, (w) => `${w}wick`, (w) => `${w} Crossing`, (w) => `${w}holm`, (w) => `${w}ton`, (w) => `${w} Bridge`];
 const FOLIO_TOWNS = ['Recto', 'Verso', 'Quarto', 'Octavo', 'Colophon', 'Vellum', 'Endpaper', 'Gutter', 'Margin', 'Baseline', 'Serif', 'Kerning', 'Leading', 'Ligature', 'Spread', 'Proof', 'Imprint', 'Gilt Edge', 'Signature', 'Deckle', 'Bleed', 'Swatch', 'Mockup', 'Sketchbook', 'Case Study', 'Plate', 'Spine', 'Duodecimo', 'Folio Bay', 'Quire', 'Errata', 'Index', 'Gallery', 'Vignette', 'Ampersand', 'Pilcrow', 'Thumbnail', 'Wireframe', 'Prototype', 'Draft'];
@@ -221,5 +221,7 @@ export function assignCultures(projects, rng, nearBy = null) {
   return out;
 }
 
-// Capitals that nod to their project.
-export const CAPITAL_NAMES = { chicago: 'Chicago', nyc: 'New York', fuzhounese: 'Hók-ciŭ', architects: 'Le Corbusier', braidable: 'Braidmouth', portfolio: 'Port Folio' };
+// Every capital is its project's name and "City", as the map writes the name (Noah, 24 November 2026): "CHRONIA
+// City", "LoreTour City", "Fuzhounese Dictionary City". The Chicago and New York countries keep Chicago and New York.
+export const CAPITAL_NAMES = { chicago: 'Chicago', nyc: 'New York' };
+export const capitalName = (project) => CAPITAL_NAMES[project.id] || `${project.name} City`;

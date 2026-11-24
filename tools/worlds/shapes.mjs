@@ -120,7 +120,9 @@ function braid(world, nations, projects, k, rng) {
     }
   });
   sweepSpecks(world, nations, k, Math.round(14 * S * S));
-  keepCapital(world, nations, projects, k);
+  // The capital at the braids' mouth: on the middle line near the seaward end (either end of an island).
+  const end = mainland || rng.chance(0.5) ? 0.86 : 0.14;
+  keepCapital(world, nations, projects, k, [ax.cx + ux * (t0 + len * end) - uy * at(mid, end), ax.cy + uy * (t0 + len * end) + ux * at(mid, end)]);
   return { kind: 'braid', mainland, twists: Math.round(twists * 10) / 10, cut, x: Math.round(ax.cx), y: Math.round(ax.cy) };
 }
 

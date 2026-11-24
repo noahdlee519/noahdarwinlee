@@ -16,7 +16,7 @@ import { buildSettlements, RANK } from './settlements.mjs';
 import { buildRoads } from './roads.mjs';
 import { buildStreets } from './towns.mjs';
 import { buildParks, buildAdmin, buildStreams, placeDetailLabels } from './features.mjs';
-import { assignCultures, CAPITAL_NAMES } from './cultures.mjs';
+import { assignCultures, capitalName } from './cultures.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from './lakes.mjs';
 import { buildPolar, placeAbout } from './polar.mjs';
 import { coastDistance } from './terrain.mjs';
@@ -53,8 +53,8 @@ export const WORLDS = [
   { name: 'Atwood', layout: 'pangaea', masses: 1, latTop: 75, latBottom: 36, wet: 1.05, lakes: 1.6, ponds: 1.6, ice: 'n', about: 'fjord', polar: 'strait' },
   { name: 'Jemisin', layout: 'pangaea', masses: 1, latTop: 36, latBottom: -36, wet: 0.82, land: 0.1, mountains: 1.4, volcanoes: 3, about: 'volcano' },
   { name: 'Delany', layout: 'trio', masses: 3, latTop: 24, latBottom: -24, wet: 1.3, warm: 1, about: 'atoll' },
-  { name: 'Vonnegut', layout: 'twins', masses: 2, latTop: 72, latBottom: 24, about: 'lighthouse' },
-  { name: 'Verne', layout: 'archipelago', masses: 4, latTop: 40, latBottom: -40, wet: 0.86, islands: 0.32, land: -0.07, volcanoes: 3, about: 'volcano' },
+  { name: 'Vonnegut', layout: 'twins', masses: 2, latTop: 72, latBottom: 24, arcSeed: 'b', about: 'lighthouse' },
+  { name: 'Verne', layout: 'archipelago', arcSeed: 'e', masses: 4, latTop: 40, latBottom: -40, wet: 0.86, islands: 0.32, land: -0.07, volcanoes: 3, about: 'volcano' },
   { name: 'Wells', layout: 'northsouth', masses: 2, latTop: 56, latBottom: -56, wet: 0.86, ice: 's', about: 'ferry', polar: 'isthmus' },
   { name: 'Shelley', layout: 'crescent', masses: 2, latTop: 80, latBottom: 40, wet: 1.05, lakes: 1.3, ice: 'n', about: 'fjord', polar: 'apart' },
   { name: 'Tiptree', layout: 'spine', masses: 2, latTop: 28, latBottom: -44, wet: 1.1, warm: 2, about: 'atoll' },
@@ -137,7 +137,7 @@ export function buildLabels(world, nations, projects, { cultures, settlements, d
     extras: {
       land: landAll, lakes: hydro.lakes, ranges: terrain.ranges, towns, rivers: drawnRivers || hydro.rivers, riverMeta: hydro.riverMeta, nameAt,
       wordOf: cultures ? (k) => cultures[k].namer.word() : null, phonOf: cultures ? (k) => cultures[k].phon.base || cultures[k].phon.id : null, fjords: world.fjords || [], lagoons: islets ? islets.lagoons : [], settlements: settlements || [],
-      temp: world.fields.temp, elev: world.elev,
+      temp: world.fields.temp, elev: world.elev, islandTowns: (settlements || []).filter((q) => q.island),
     },
   });
 }
@@ -185,6 +185,10 @@ export function makeWorld(name, projects, opts) {
   // A town on each island in a great river or a large lake (see lakes.mjs), if none stands there already.
   for (const ti of smallLakes.townIslands || []) {
     const k = owner[Math.floor(ti.y) * width + Math.floor(ti.x)];
+    // (Not on a border: an island town is wholly its own country's.)
+    let near = false;
+    for (let dy = -3; dy <= 3 && !near; dy++) for (let dx = -3; dx <= 3; dx++) { const o = owner[(Math.floor(ti.y) + dy) * width + Math.floor(ti.x) + dx]; if (o >= 0 && o !== k) { near = true; break; } }
+    if (near) continue;
     if (k < 0 || projects[k].provinces && nations.provinces[Math.floor(ti.y) * width + Math.floor(ti.x)] < 0) continue;
     // A town or a village close by moves onto the island.
     const here = settlements.filter((q) => q.rank >= RANK.TOWN && Math.hypot(q.x - ti.x, q.y - ti.y) < 7 * width / 1600 && q.country === k).sort((a, b) => Math.hypot(a.x - ti.x, a.y - ti.y) - Math.hypot(b.x - ti.x, b.y - ti.y))[0];
@@ -197,10 +201,27 @@ export function makeWorld(name, projects, opts) {
   }
   // A border that steps out round a town or two the other side holds.
   frontiers.push(...jogRoundTowns({ owner, land, width, height, projects, nations, settlements, rng }));
-  // Every place's name, in its country's language; some capitals nod to their project.
+  // A place a hair from a border steps back into its own country (the drawn line is smoothed, and a thin corridor
+  // or a jog runs close by), so its dot is drawn on its own side.
+  {
+    const S1 = width / 1600, other = (x, y, k, r) => { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const xx = Math.floor(x) + dx, yy = Math.floor(y) + dy; if (xx >= 0 && yy >= 0 && xx < width && yy < height) { const o = owner[yy * width + xx]; if (o >= 0 && o !== k) return true; } } return false; };
+    for (const q of settlements) {
+      if (q.rank === RANK.CAPITAL || q.island || !other(q.x, q.y, q.country, Math.ceil(1.5 * S1))) continue;
+      let best = null, bd = Infinity;
+      const R = Math.ceil(5 * S1);
+      for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+        const x = Math.floor(q.x) + dx + 0.5, y = Math.floor(q.y) + dy + 0.5, i = Math.floor(y) * width + Math.floor(x);
+        if (x < 0 || y < 0 || x >= width || y >= height || owner[i] !== q.country || !land[i] || hydro.lakes[i] || smallLakes.mask[i] || other(x, y, q.country, Math.ceil(2.5 * S1))) continue;
+        const d = Math.hypot(dx, dy);
+        if (d < bd) { bd = d; best = [x, y]; }
+      }
+      if (best) [q.x, q.y] = best;
+    }
+  }
+  // Every place's name, in its country's language; each capital is its project's name and "City".
   for (const s of settlements) {
     const p = projects[s.country];
-    s.name = s.rank === RANK.CAPITAL && CAPITAL_NAMES[p.id] ? CAPITAL_NAMES[p.id] : cultures[s.country].namer.town();
+    s.name = s.rank === RANK.CAPITAL ? capitalName(p) : cultures[s.country].namer.town();
   }
   const roads = buildRoads({ land, elev, hydro, owner, settlements, blocked: smallLakes.mask, cultures, projects, width, height, rng });
   const { streets, builtKind, layouts, cityParks, urbanRings } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta, areas: nations.areas, projects });
@@ -226,9 +247,10 @@ export function makeWorld(name, projects, opts) {
     const [tx, ty, tr] = about.town, ar = rng.fork('about-town');
     const th = ar.next() * Math.PI, c = Math.cos(th), sn = Math.sin(th);
     const ok = (p) => about.mask[Math.floor(p[1]) * width + Math.floor(p[0])] && Math.hypot(p[0] - tx, p[1] - ty) < tr * 1.1;
-    for (let k = -2; k <= 2; k++) for (const along of [0, 1]) {
+    const km = Math.max(2, Math.round(tr / 0.55));
+    for (let k = -km; k <= km; k++) for (const along of [0, 1]) {
       const pts = [];
-      for (let t = -tr; t <= tr; t += 0.25) { const u = along ? t : k * 0.45, v = along ? k * 0.45 : t; pts.push([tx + c * u - sn * v, ty + sn * u + c * v]); }
+      for (let t = -tr; t <= tr; t += 0.25) { const u = along ? t : k * 0.55, v = along ? k * 0.55 : t; pts.push([tx + c * u - sn * v, ty + sn * u + c * v]); }
       let run = [];
       for (const p of pts) { if (ok(p)) run.push(p); else { if (run.length > 1) streets.push({ cls: k ? 'minor' : 'street', pts: run }); run = []; } }
       if (run.length > 1) streets.push({ cls: k ? 'minor' : 'street', pts: run });
@@ -257,6 +279,15 @@ export function makeWorld(name, projects, opts) {
     (fields.moist[mi] < 0.075 && fields.temp[mi] > 4 ? wadis : streams).push(pts.map(([x, y]) => warp(x, y)));
   }
   const detailLabels = placeDetailLabels({ labels, land, elev, cover, hydro, temp: fields.temp, owner, settlements, roads, parks, projects, width, height, rng, cultures, smallLakes, volcanoes, drawnRivers, islets, cityParks, urban: builtKind });
+  // The About island's hill, named, with its height.
+  if (about && about.peak) {
+    const [hx, hy, h] = about.peak, S1 = width / 1600, name = rng.fork('about-peak').pick(['Mount Hello', 'Lookout Hill', 'Signal Hill', 'Beacon Hill']);
+    for (const [dx, dy] of [[0, -3.2], [0, 3.6], [7, 0], [-7, 0]]) {
+      const l = { id: 'about-peak', kind: 'peak', text: name, lines: [name, `${h} m`], x: Math.round((hx + dx * S1) * 10) / 10, y: Math.round((hy + dy * S1) * 10) / 10, size: 2.6 * S1, angle: 0, spacing: 0, minZoom: 4, dot: [Math.round(hx * 10) / 10, Math.round(hy * 10) / 10] };
+      const rects = labelRects(l, 0.3 * S1);
+      if ([...labels, ...detailLabels].every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q))))) { detailLabels.push(l); break; }
+    }
+  }
   if (about && about.lighthouse) {
     const [lx, ly] = about.lighthouse, S1 = width / 1600;
     for (const [dx, dy] of [[0, 2.4], [0, -2.4], [6, 0], [-6, 0]]) {

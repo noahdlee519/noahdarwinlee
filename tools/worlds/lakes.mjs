@@ -314,7 +314,7 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
         const big = !spots.length && !holes.length && !townHole && q < 6;
         const a = r.next() * Math.PI * 2, d = r.next() * rad * (big ? 0.3 : 0.55);
         const hx = c.x + Math.cos(a) * d * (1 + stretch * 0.6), hy = c.y + Math.sin(a) * d;
-        const hr = big ? r.range(1.7, 2.4) * S : (0.35 + r.next() * r.next() * 1.6) * S;
+        const hr = big ? r.range(2.2, 3) * S : (0.35 + r.next() * r.next() * 1.6) * S;
         const hole = blobRing(r, hx, hy, hr, { stretch: r.next() * 0.8, lean: r.next() * Math.PI, wobble: 1.4, n: 14 });
         if (!hole.every(([x, y]) => inRing(ring, x, y))) continue;
         if (!holes.every((o) => hole.every(([x, y]) => !inRing(o, x, y)) && o.every(([x, y]) => !inRing(hole, x, y)))) continue;
