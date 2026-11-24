@@ -37,6 +37,8 @@ Comment   { "id": 123, "username": "Herodotus", "avatar": "https://…" | null, 
 - `profile { username?: string, age?: true, avatar?: string }` → `{ profile: Profile }`
   - The first call must carry `username` and `age: true`. Later calls may change either field.
   - `avatar` is base64 of a WebP, JPEG, or PNG of at most 200 KB (no `data:` prefix), or `""` to remove the picture.
+  - On the first call the profile is made before any picture is checked. If the picture then fails (refused, the check unreachable, the day's limit, or storage), the answer is still 200: `{ profile: Profile, picture_error: "picture" | "check" | "limit" | "store" }`, with the profile saved and no picture. On later calls a failing picture is an error as listed above.
+  - Usernames are unique by a folded form, not only by case: look-alikes of a held name (`Her0dotus` beside `Herodotus`, `lliad` beside `Iliad`) are `taken`.
 - `post { name: string, at: string, text: string }` → `{ comment: Comment, left: number }`
 - `delete { id }` → `{ ok: true }` (one's own; a reviewer may delete any, which marks it removed)
 - `flag { id }` or `flag { user: "<username>" }` (a picture) → `{ ok: true }` (flagging the same thing twice is still `ok`)
