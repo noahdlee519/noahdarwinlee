@@ -512,7 +512,7 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   // ---- The larger small lakes: finger lakes along their length, reservoirs, and the rest. ----
   const placeLakes = () => {
     if (!smallLakes) return;
-    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1 : 2.5) * S * S).sort((a, b) => b.area - a.area);
+    const list = smallLakes.lakes.filter((l) => l.kind !== 'river' && l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1 : 2.5) * S * S).sort((a, b) => b.area - a.area);
     for (const l of list.slice(0, 70)) {
       const w0 = wordAt(l.x, l.y);
       const text = l.kind === 'reservoir' ? `${w0} Reservoir` : l.kind === 'crater' ? `Crater Lake ${w0}` : `Lake ${w0}`;

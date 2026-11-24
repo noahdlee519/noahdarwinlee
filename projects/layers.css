@@ -414,6 +414,11 @@
   fill: #cbcfca;
 }
 
+/* An atoll's reef: a band of paler, shallow water round its lagoon, under the islets. */
+.map-islet.is-reef {
+  fill: #a6e2ef;
+}
+
 .map.is-z3 .map-islet {
   opacity: 1;
 }

@@ -14,6 +14,7 @@ import { prepareCover, renderCover } from './climate.mjs';
 import { TILE_LEVELS } from './world.mjs';
 import { drawnWater } from './geom.mjs';
 import { keepDry } from './dry.mjs';
+import { inRing } from './lakes.mjs';
 
 export const PALETTE = {
   forest: '#a2debe', woodland: '#b3e3cc', grass: '#c4ead7', steppe: '#f3efe4', desert: '#faf7f3',
@@ -403,7 +404,9 @@ export function buildWorldFiles(world) {
   // the world's name.
   const isBorder = (a) => ownerOf(a.left) >= 0 && ownerOf(a.right) >= 0 && ownerOf(a.left) !== ownerOf(a.right);
   const lenOf = (l) => { let d = 0; for (let k = 1; k < l.length; k++) d += Math.hypot(l[k][0] - l[k - 1][0], l[k][1] - l[k - 1][1]); return d / 10; };
-  const eligible = arcs.map((a, k) => k).filter((k) => isBorder(arcs[k]) && !arcs[k].closed && lenOf(lines[k]) > 14 && lenOf(lines[k]) < 70);
+  // (Never the exclave's own border, which is settled: the exclave is drawn whole.)
+  const E = world.exclave, near = (l) => E && l.some(([x, y]) => Math.hypot(x / 10 - E.x, y / 10 - E.y) < 22);
+  const eligible = arcs.map((a, k) => k).filter((k) => isBorder(arcs[k]) && !arcs[k].closed && lenOf(lines[k]) > 14 && lenOf(lines[k]) < 70 && !near(lines[k]));
   const disputedSet = new Set();
   if (eligible.length) {
     let h = 0;
@@ -429,10 +432,23 @@ export function buildWorldFiles(world) {
     lakePath += rings(A.rings.map((g) => (Math.sign(signedArea(g)) === lakeSign ? g.slice().reverse() : g)));
   }
 
+  // Where a great river parts round an island: the arms' water, drawn with the lakes at every zoom.
+  for (const l of (world.smallLakes && world.smallLakes.lakes) || []) {
+    if (l.kind !== 'river') continue;
+    const sign = Math.sign(signedArea(l.ring));
+    lakePath += rings([l.ring, ...(l.holes || []).map((h) => (Math.sign(signedArea(h)) === sign ? h.slice().reverse() : h))]);
+  }
+
   // Rivers, one path per width class. A river that reaches the sea or a lake
   // runs a little way on into it, so it meets the shore however the shore's
   // curve was simplified; draw rivers under the water and the overrun is hidden.
   const byClass = [null, new PathText(), new PathText(), new PathText(), new PathText()];
+  const isles = [];
+  for (const l of (world.smallLakes && world.smallLakes.lakes) || []) if (l.kind === 'river') for (const h of l.holes || []) {
+    const box = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const [x, y] of h) { box[0] = Math.min(box[0], x); box[1] = Math.min(box[1], y); box[2] = Math.max(box[2], x); box[3] = Math.max(box[3], y); }
+    isles.push({ ring: h, box });
+  }
   world.rivers.forEach((river, k) => {
     const meta = world.riverMeta[k];
     let pts = river;
@@ -443,16 +459,24 @@ export function buildWorldFiles(world) {
       const len = Math.hypot(dx, dy) || 1;
       pts = [...pts, [pts[n - 1][0] + (dx / len) * 1.6, pts[n - 1][1] + (dy / len) * 1.6]];
     }
-    const line = [];
-    for (const [x, y] of simplify(pts, 0.4)) {
-      const q = [Math.round(x * 5) * 2, Math.round(y * 5) * 2];
-      const last = line[line.length - 1];
-      if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q);
+    // Where the river parts round an island, its line stops at the island's shore (its arms are drawn as water).
+    const runs = [[]];
+    for (const p of pts) {
+      if (isles.some((h) => p[0] > h.box[0] && p[0] < h.box[2] && p[1] > h.box[1] && p[1] < h.box[3] && inRing(h.ring, p[0], p[1]))) { if (runs[runs.length - 1].length) runs.push([]); continue; }
+      runs[runs.length - 1].push(p);
     }
-    if (line.length < 2) return;
-    const path = byClass[meta.width];
-    path.move(line[0]);
-    drawOpen(path, line);
+    for (const run of runs) {
+      const line = [];
+      for (const [x, y] of simplify(run, 0.4)) {
+        const q = [Math.round(x * 5) * 2, Math.round(y * 5) * 2];
+        const last = line[line.length - 1];
+        if (!last || last[0] !== q[0] || last[1] !== q[1]) line.push(q);
+      }
+      if (line.length < 2) continue;
+      const path = byClass[meta.width];
+      path.move(line[0]);
+      drawOpen(path, line);
+    }
   });
   // Where a big river meets the sea: in cold country a funnel of an estuary,
   // in warm country a delta of branching arms.
@@ -546,6 +570,8 @@ export function buildWorldFiles(world) {
     borders,
     disputed: disputed || undefined,
     exclave: world.exclave || undefined,
+    // What the borders and the coasts were given (see frontiers.mjs, shapes.mjs, and coasts.mjs), for review and tests.
+    shapes: world.frontiers ? { frontiers: world.frontiers, braid: (world.specials && world.specials.braid) || undefined, folio: (world.specials && world.specials.folio) || undefined, arcs: (world.arcs || []).map((a) => ({ islands: a.islands.length, cones: a.cones.length, x: a.islands[a.islands.length >> 1][0], y: a.islands[a.islands.length >> 1][1] })), townIslands: ((world.smallLakes && world.smallLakes.townIslands) || []).filter((t) => t.town).map((t) => ({ kind: t.kind, x: Math.round(t.x * 10) / 10, y: Math.round(t.y * 10) / 10, town: t.town.name })) } : undefined,
     provinceBorders,
     projects: projects.map((project, index) => {
       const entry = { id: project.id, path: ringsPath(arcs, lines, (k) => ownerOf(k) === index) };
@@ -711,7 +737,7 @@ export function buildDetail(world, data = null) {
   const N = W * H;
   // The water as drawn, so no road or street is written over it (see dry.mjs): roads that needed moving or cutting
   // are written apart, in hundredths and straight, and their bridges listed.
-  const lakesAll = D.smallLakes.lakes;
+  const lakesAll = D.smallLakes.lakes.filter((l) => l.kind !== 'river');
   const wet = data ? drawnWater(data, { lakes: lakeRings(lakesAll) }) : null;
   const bridges = { major: [], minor: [] };
   const dryLines = (list, cls, curved) => {
@@ -750,6 +776,8 @@ export function buildDetail(world, data = null) {
     sand: fineLoops(isl.filter((i) => i.kind === 'cay' || i.kind === 'bar' || i.kind === 'barrier').map((i) => i.ring)),
     green: fineLoops(isl.filter((i) => i.green).map((i) => i.green)),
     rock: fineLoops(isl.filter((i) => i.kind === 'skerry' || i.kind === 'stack').map((i) => i.ring)),
+    // An atoll's reef: a ring of pale shallow water (its inner edge reversed, so the lagoon stays deep).
+    reef: fineLoops(isl.filter((i) => i.kind === 'reef').flatMap((i) => [i.ring, Math.sign(signedArea(i.ring)) === Math.sign(signedArea(i.hole)) ? i.hole.slice().reverse() : i.hole])) || undefined,
   } : undefined;
   const coarse = {
     roads: roadsOut,

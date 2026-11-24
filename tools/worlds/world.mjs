@@ -20,7 +20,9 @@ import { assignCultures, CAPITAL_NAMES } from './cultures.mjs';
 import { warpRivers, buildSmallLakes, findVolcanoes } from './lakes.mjs';
 import { buildPolar, placeAbout } from './polar.mjs';
 import { coastDistance } from './terrain.mjs';
-import { carveFjords, buildIslets } from './coasts.mjs';
+import { carveFjords, buildIslets, buildIslandArcs } from './coasts.mjs';
+import { shapeFrontiers, jogRoundTowns, jogAtRiverBends } from './frontiers.mjs';
+import { shapeSpecials } from './shapes.mjs';
 
 export const WIDTH = 1600, HEIGHT = 800;
 export const PICTURE_SCALE = 1.5; // picture pixels per map unit
@@ -91,7 +93,9 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   const polar = buildPolar({ land, width, height, rng, sides: style.ice, link: style.polar });
   let claimed = 0;
   for (let i = 0; i < land.length; i++) if (polar.claim[i]) { land[i] = 1; elev[i] = Math.max(elev[i], 0.025); claimed++; }
-  if (claimed) terrain.dist = coastDistance(land, width, height);
+  // Volcanic island arcs, off some coasts.
+  const arcs = buildIslandArcs({ land, elev, ice: polar.ice, width, height, rng, style });
+  if (claimed || arcs.length) terrain.dist = coastDistance(land, width, height);
   const fields = buildFields({ elev, land, width, height, rng, style, dist: terrain.dist });
   const hydro = buildHydro({ elev, land, width, height, rain: fields.rain, rng, style });
   const main = new Uint8Array(width * height);
@@ -111,7 +115,7 @@ export function buildLand(name, projects, { width = WIDTH, height = HEIGHT } = {
   // The picture is drawn in makeWorld, once the towns, lakes, and roads are known; it is carried a little way out to
   // sea so the vector coast drawn over it never shows a gap.
   const coverArgs = { fields, elev, land: landAll, width, height, rng, style, water: { rivers: main, lakes: hydro.lakes }, bleed: 2, ice, flow: hydro.acc, dist: terrain.dist, basins, oases, polar: polar.cover, about: about && about.cover };
-  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases, fjords };
+  return { name, slug: slugOf(name), width, height, style, rng, terrain, elev, land, landAll, ice, polar, about, fields, hydro, cover, ponds, coverArgs, oases, fjords, arcs };
 }
 
 // The land divided among the projects.
@@ -155,6 +159,13 @@ export function makeWorld(name, projects, opts) {
   const nations = buildNations(world, projects);
   const { width, height, rng, land, elev, hydro, cover, fields, terrain, style } = world;
   const owner = nations.owner;
+  // Braidable's braided delta and the portfolio's square island with its round harbour (see shapes.mjs).
+  const specials = shapeSpecials(world, nations, projects);
+  terrain.dist = coastDistance(land, width, height);
+  world.coverArgs.dist = terrain.dist;
+  // Borders with history in them: a long thin coastal country, a corridor to the sea, a shared island, and lines
+  // through lakes (see frontiers.mjs).
+  const frontiers = shapeFrontiers({ owner, land, width, height, projects, nations, rng, dist: terrain.dist, hydro });
   // An exclave, in most worlds: a small piece of a flagship's coast, far from its capital, held by one of the small
   // countries beyond it (see exclaveFor). The flagship's main body stays whole and the size order stands.
   const exclave = exclaveFor({ owner, nations, projects, land, dist: terrain.dist, width, height, rng });
@@ -163,10 +174,29 @@ export function makeWorld(name, projects, opts) {
   const cultures = assignCultures(projects, rng, neighbours(owner, projects.length, width, height));
   // Rivers as drawn: smoothed, and meandering on the lowland.
   const { rivers: drawnRivers, warp } = warpRivers(hydro.rivers, hydro.riverMeta, { land, elev, dist: terrain.dist, width, height, rng });
+  // Where a border runs down a river, a bend or two left to the far bank.
+  frontiers.push(...jogAtRiverBends({ owner, land, width, height, projects, nations, rivers: drawnRivers, riverMeta: hydro.riverMeta, rng }));
   // Small water: kettle lakes, tarns, finger lakes, oxbows, marsh ponds, reservoirs, and crater lakes.
   const volcanoes = findVolcanoes({ land, elev, width, height, rng, count: style.volcanoes ?? (rng.fork('vn').chance(0.6) ? 2 : 0) });
+  // The island arcs' cones with crater lakes.
+  for (const a of world.arcs || []) for (const c of a.cones) if (c.crater && land[Math.floor(c.y) * width + Math.floor(c.x)]) volcanoes.push({ x: c.x, y: c.y, e: c.e, arc: true });
   const smallLakes = buildSmallLakes({ land, elev, temp: fields.temp, moist: fields.moist, hydro, dist: terrain.dist, style, width, height, rng, drawnRivers, volcanoes, keepClear: nations.capitals });
   const settlements = buildSettlements({ land, elev, temp: fields.temp, cover, hydro, dist: terrain.dist, owner, capitals: nations.capitals, areas: nations.areas, projects, width, height, rng, blocked: smallLakes.mask, oases: world.oases });
+  // A town on each island in a great river or a large lake (see lakes.mjs), if none stands there already.
+  for (const ti of smallLakes.townIslands || []) {
+    const k = owner[Math.floor(ti.y) * width + Math.floor(ti.x)];
+    if (k < 0 || projects[k].provinces && nations.provinces[Math.floor(ti.y) * width + Math.floor(ti.x)] < 0) continue;
+    // A town or a village close by moves onto the island.
+    const here = settlements.filter((q) => q.rank >= RANK.TOWN && Math.hypot(q.x - ti.x, q.y - ti.y) < 7 * width / 1600 && q.country === k).sort((a, b) => Math.hypot(a.x - ti.x, a.y - ti.y) - Math.hypot(b.x - ti.x, b.y - ti.y))[0];
+    if (here) { here.x = Math.round(ti.x * 10) / 10; here.y = Math.round(ti.y * 10) / 10; here.island = ti.kind; ti.town = here; continue; }
+    // Others too close step back (a village) or give way (the island town takes the place of a village).
+    if (settlements.some((q) => q.rank <= RANK.TOWN && Math.hypot(q.x - ti.x, q.y - ti.y) < 9 * width / 1600)) continue;
+    for (let j = settlements.length - 1; j >= 0; j--) if (settlements[j].rank === RANK.VILLAGE && Math.hypot(settlements[j].x - ti.x, settlements[j].y - ti.y) < 5 * width / 1600) settlements.splice(j, 1);
+    const t = { x: Math.round(ti.x * 10) / 10, y: Math.round(ti.y * 10) / 10, rank: ti.kind === 'river' ? RANK.TOWN : RANK.VILLAGE, country: k, size: ti.kind === 'river' ? 0.9 : 0.6, island: ti.kind };
+    settlements.push(t); ti.town = t;
+  }
+  // A border that steps out round a town or two the other side holds.
+  frontiers.push(...jogRoundTowns({ owner, land, width, height, projects, nations, settlements, rng }));
   // Every place's name, in its country's language; some capitals nod to their project.
   for (const s of settlements) {
     const p = projects[s.country];
@@ -175,6 +205,21 @@ export function makeWorld(name, projects, opts) {
   const roads = buildRoads({ land, elev, hydro, owner, settlements, blocked: smallLakes.mask, cultures, projects, width, height, rng });
   const { streets, builtKind, layouts, cityParks, urbanRings } = buildStreets({ settlements, exits: roads.exits, cultures, land, elev, hydro, blocked: smallLakes.mask, width, height, rng, dist: terrain.dist, rivers: drawnRivers, riverMeta: hydro.riverMeta, areas: nations.areas, projects });
   settlements.forEach((s, k) => { s.layout = layouts[k].type; s.ringRoad = layouts[k].ring; s.shape = layouts[k].shape; });
+  // A lake island's village has its ferry to the nearest town on the shore.
+  for (const ti of smallLakes.townIslands || []) {
+    if (ti.kind !== 'lake' || !ti.town) continue;
+    let best = null, bd = Infinity;
+    for (const q of settlements) { if (q === ti.town) continue; const d = Math.hypot(q.x - ti.x, q.y - ti.y); if (d < bd) { bd = d; best = q; } }
+    if (!best || bd > 30 * width / 1600) continue;
+    // From the island's shore to the far shore, toward that town.
+    const ux = (best.x - ti.x) / bd, uy = (best.y - ti.y) / bd, wet = smallLakes.index.inside;
+    let t = 0, a = null, b = null;
+    while (t < bd && !wet(ti.x + ux * t, ti.y + uy * t)) t += 0.1;
+    a = [ti.x + ux * t, ti.y + uy * t];
+    while (t < bd && wet(ti.x + ux * t, ti.y + uy * t)) t += 0.1;
+    b = [ti.x + ux * t, ti.y + uy * t];
+    if (t < bd) roads.ferries.push([a.map((v) => Math.round(v * 10) / 10), b.map((v) => Math.round(v * 10) / 10)]);
+  }
   // The About island's own detail: a little town and its lighthouse, a causeway, or a ferry to the mainland.
   const about = world.about;
   if (about && about.town) {
@@ -223,7 +268,7 @@ export function makeWorld(name, projects, opts) {
   return {
     name, slug: world.slug, width: world.width, height: world.height,
     cover: world.cover, ponds: world.ponds, lakes: world.hydro.lakes, picture,
-    settlements, cultures, smallLakes, ice: world.ice, about: world.about, polar: world.polar, exclave,
+    settlements, cultures, smallLakes, ice: world.ice, about: world.about, polar: world.polar, exclave, frontiers, specials, arcs: world.arcs,
     detail: { roads, streets, parks, admin, streams, wadis, smallLakes, labels: detailLabels, causeway: about && about.causeway ? [about.causeway] : [], islets: islets.islets, cityParks, urbanRings },
     rivers: drawnRivers, riverMeta: world.hydro.riverMeta,
     owner, provinces: nations.provinces, capitals: nations.capitals, areas: nations.areas,

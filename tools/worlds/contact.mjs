@@ -65,7 +65,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
     parts.push(`<path d="${data.estuaries.fill}" fill="${P.water}"/>`);
   }
   // The coast's islets, from zoom 3.
-  if (D && zoom >= 2.9 && D.islets) for (const [k, fill] of [['sand', '#f6efdc'], ['green', '#c4ead7'], ['rock', '#cbcfca']]) if (D.islets[k]) parts.push(`<path d="${D.islets[k]}" fill="${fill}"/>`);
+  if (D && zoom >= 2.9 && D.islets) for (const [k, fill] of [['reef', '#a6e2ef'], ['sand', '#f6efdc'], ['green', '#c4ead7'], ['rock', '#cbcfca']]) if (D.islets[k]) parts.push(`<path d="${D.islets[k]}" fill="${fill}"${k === 'reef' ? ' fill-rule="nonzero"' : ''}/>`);
   // Roads: pale lilac-grey, the highways a little stronger; streets only close in.
   if (D) {
     const R = D.roads;

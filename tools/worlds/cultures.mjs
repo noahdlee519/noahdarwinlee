@@ -94,11 +94,30 @@ export const REAL_PLACES = {
     words: ['Kaskaskia', 'Sangamon', 'Shawnee', 'Kickapoo', 'Illinois', 'Fox', 'Des Plaines', 'Kankakee', 'Rock', 'Vermilion', 'Embarras', 'Mackinaw', 'Spoon', 'Pecatonica', 'Kishwaukee', 'Apple', 'Starved Rock', 'Matthiessen', 'Giant City', 'Pere Marquette', 'Chain O\'Lakes', 'Carlyle', 'Shelbyville', 'Rend', 'Crab Orchard', 'Horseshoe', 'Kinkaid', 'Garden of the Gods', 'Cache', 'Little Wabash', 'Saline', 'Big Muddy', 'Salt Creek', 'Calumet', 'Wolf', 'Skokie', 'Waubonsee', 'Mississippi', 'Wabash', 'Ohio'],
   },
 };
+// Two countries named in their projects' own words. Braidable's places are named for strands, plaits, and the
+// weaver's craft (Skeinmouth, Weft Landing, Three Strands); the portfolio's for the parts of a book and a page
+// (Recto, Verso, Colophon, Quarto), its capital Port Folio.
+const BRAID_ROOTS = ['Strand', 'Plait', 'Tress', 'Skein', 'Weft', 'Warp', 'Twine', 'Cord', 'Hank', 'Loop', 'Ply', 'Lace', 'Knot', 'Splice', 'Tassel', 'Ribbon', 'Bobbin', 'Shuttle', 'Spindle', 'Distaff', 'Fishtail', 'Lattice', 'Weave', 'Thread', 'Selvage', 'Heddle', 'Reel', 'Spool'];
+const BRAID_FORMS = [(w) => w, (w) => `${w}ford`, (w) => `${w}mouth`, (w) => `${w} Landing`, (w) => `${w} Ferry`, (w) => `${w}wick`, (w) => `${w} Crossing`, (w) => `${w}holm`, (w) => `${w}ton`, (w) => `${w} Bridge`];
+const FOLIO_TOWNS = ['Recto', 'Verso', 'Quarto', 'Octavo', 'Colophon', 'Vellum', 'Endpaper', 'Gutter', 'Margin', 'Baseline', 'Serif', 'Kerning', 'Leading', 'Ligature', 'Spread', 'Proof', 'Imprint', 'Gilt Edge', 'Signature', 'Deckle', 'Bleed', 'Swatch', 'Mockup', 'Sketchbook', 'Case Study', 'Plate', 'Spine', 'Duodecimo', 'Folio Bay', 'Quire', 'Errata', 'Index', 'Gallery', 'Vignette', 'Ampersand', 'Pilcrow', 'Thumbnail', 'Wireframe', 'Prototype', 'Draft'];
+const FOLIO_WORDS = ['Vellum', 'Quire', 'Colophon', 'Gutter', 'Margin', 'Serif', 'Recto', 'Verso', 'Octavo', 'Ligature', 'Kerning', 'Baseline', 'Deckle', 'Pilcrow', 'Ampersand', 'Spread', 'Gilt', 'Errata', 'Vignette', 'Wireframe', 'Sketchbook', 'Swatch'];
+export const THEMED_PLACES = {
+  braids: { towns: null, words: BRAID_ROOTS, big: 0 },
+  folio: { towns: FOLIO_TOWNS, words: FOLIO_WORDS, big: 0 },
+};
+function themedTowns(id, rng) {
+  if (id !== 'braids') return THEMED_PLACES[id].towns;
+  // Every root in one of the forms, the plain and short forms first; and the capital's neighbour, Three Strands.
+  const out = ['Three Strands'];
+  for (const w of rng.shuffle(BRAID_ROOTS)) out.push(rng.pick(BRAID_FORMS)(w));
+  return out;
+}
+
 // A namer from a list of real names, shuffled once per world but the largest first (places are named largest
 // first, so the cities take the cities' names and the villages the villages'); past its end, a country's invented
 // names (never a real name twice).
 function realNamer(list, rng, fallback) {
-  const big = list.big || 12;
+  const big = list.big ?? 12;
   const towns = [...rng.shuffle(list.towns.slice(0, big)), ...rng.shuffle(list.towns.slice(big))], words = rng.shuffle(list.words.slice());
   let t = 0, w = 0;
   return {
@@ -114,6 +133,7 @@ export function phonologyNamer(ph, rng) {
     const fresh = (n) => { for (let t = 0; t < 60; t++) { const s = FOOCHOW.name(rng, n); if (!used.has(s)) { used.add(s); return s; } } return FOOCHOW.name(rng, n) + used.size; };
     return { word: () => fresh(rng.chance(0.75) ? 2 : 1), town: () => fresh(rng.chance(0.8) ? 2 : 3) };
   }
+  if (THEMED_PLACES[ph.id]) return realNamer({ ...THEMED_PLACES[ph.id], towns: themedTowns(ph.id, rng) }, rng, phonologyNamer(PHONOLOGIES.find((p) => p.id === (ph.base || 'celtic')) || PHONOLOGIES[0], rng.fork('fallback')));
   if (REAL_PLACES[ph.id]) return realNamer(REAL_PLACES[ph.id], rng, phonologyNamer(PHONOLOGIES.find((p) => p.id === (ph.base || 'celtic')) || PHONOLOGIES[0], rng.fork('fallback')));
   if (ph.id === 'architects') {
     const pool = rng.shuffle([...new Set(ARCHITECTS)]);
@@ -183,7 +203,7 @@ export function assignCultures(projects, rng, nearBy = null) {
   projects.forEach((p, k) => {
     // The first sound system not spoken next door.
     let ph = phons[k % phons.length];
-    const special = p.id === 'fuzhounese' ? FOOCHOW : p.id === 'architects' ? { id: 'architects' } : p.id === 'nyc' ? { id: 'new-york' } : p.id === 'chicago' ? { id: 'illinois' } : null;
+    const special = p.id === 'fuzhounese' ? FOOCHOW : p.id === 'architects' ? { id: 'architects' } : p.id === 'nyc' ? { id: 'new-york' } : p.id === 'chicago' ? { id: 'illinois' } : p.id === 'braidable' ? { id: 'braids' } : p.id === 'portfolio' ? { id: 'folio' } : null;
     if (nearBy) {
       const taken = new Set((nearBy[k] || []).map((j) => out[j] && out[j].phon.id).filter(Boolean));
       for (let t = 0; t < phons.length && taken.has(ph.id); t++) ph = phons[(k + t + 1) % phons.length];
@@ -202,4 +222,4 @@ export function assignCultures(projects, rng, nearBy = null) {
 }
 
 // Capitals that nod to their project.
-export const CAPITAL_NAMES = { chicago: 'Chicago', nyc: 'New York', fuzhounese: 'Hók-ciŭ', architects: 'Le Corbusier' };
+export const CAPITAL_NAMES = { chicago: 'Chicago', nyc: 'New York', fuzhounese: 'Hók-ciŭ', architects: 'Le Corbusier', braidable: 'Braidmouth', portfolio: 'Port Folio' };
