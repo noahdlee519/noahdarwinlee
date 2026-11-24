@@ -368,21 +368,28 @@ export function buildIslets({ landAll, elev, width, height, rng, style = {}, hyd
       const x = ar.range(30 * S, W - 30 * S), y = ar.range(30 * S, H - 30 * S);
       if (seaTemp(y) < 19 || !inSea(x, y) || SD(x, y) < 16 * S || SD(x, y) > 70 * S || aboutNear(x, y, 30 * S)) continue;
       if (groups.some((g) => Math.hypot(g.x - x, g.y - y) < 50 * S)) continue;
-      const R0 = ar.range(1.6, 3.1) * S, st = ar.range(1, 1.5), lean = ar.range(0, Math.PI), gapAt = ar.range(0, TAU);
+      // Large enough to read as a ring by zoom 4: some 9 to 15 units across, its rim half a unit wide.
+      const R0 = ar.range(4.5, 7.5) * S, st = ar.range(1, 1.4), lean = ar.range(0, Math.PI), gapAt = ar.range(0, TAU);
       const at = (a, rr) => { const u = Math.cos(a) * rr * st, v = Math.sin(a) * rr / st; return [x + u * Math.cos(lean) - v * Math.sin(lean), y + u * Math.sin(lean) + v * Math.cos(lean)]; };
       const pieces = [];
       // Arcs of the rim, with passes between them, and a wider pass to leeward.
       for (let a = 0; a < TAU - 0.05;) {
-        const span = ar.range(0.35, 1.0), pass = ar.range(0.12, 0.3);
+        const span = ar.range(0.3, 0.9), pass = ar.range(0.06, 0.16);
         let da = a - gapAt; da = Math.atan2(Math.sin(da), Math.cos(da));
-        if (Math.abs(da) > 0.45) {
+        if (Math.abs(da) > 0.3) {
           const line = [];
-          for (let q = 0; q <= 6; q++) line.push(at(a + (span * q) / 6, R0 * (1 + 0.06 * Math.sin(q * 1.7 + a * 3))));
-          pieces.push({ ring: strip(line, ar.range(0.11, 0.2) * S, true), mid: line[3] });
+          for (let q = 0; q <= 10; q++) line.push(at(a + (span * q) / 10, R0 * (1 + 0.04 * Math.sin(q * 1.1 + a * 3))));
+          pieces.push({ ring: strip(line, ar.range(0.4, 0.7) * S, true), mid: line[5] });
         }
         a += span + pass;
       }
       if (pieces.length < 3 || !pieces.every((pc) => ringClear(pc.ring, 3 * S)) || !clearOfPlaced(x, y, R0 * st, 1.5 * S)) continue;
+      // The reef the islets stand on: a pale band of shallow water all the way round, under them.
+      const reefLine = [];
+      for (let q = 0; q <= 72; q++) reefLine.push(at((q / 72) * TAU, R0));
+      const outer = [], inner = [];
+      for (let q = 0; q < 72; q++) { const [px, py] = reefLine[q], ox = px - x, oy = py - y, ol = Math.hypot(ox, oy) || 1; outer.push([px + (ox / ol) * 0.75 * S, py + (oy / ol) * 0.75 * S]); inner.push([px - (ox / ol) * 0.6 * S, py - (oy / ol) * 0.6 * S]); }
+      islets.push({ kind: 'reef', ring: outer.map(([a, b]) => [Math.round(a * 100) / 100, Math.round(b * 100) / 100]), hole: inner.map(([a, b]) => [Math.round(a * 100) / 100, Math.round(b * 100) / 100]) });
       for (const pc of pieces) put('cay', pc.ring, pc.mid[0], pc.mid[1], 0.3 * S);
       placed.push([x, y, R0 * st]);
       groups.push({ kind: 'atoll', x, y, n: pieces.length, r: R0 * st + 1.2 * S });
@@ -468,3 +475,62 @@ function smoothLine(pts) {
 }
 
 export { inRing };
+
+// buildIslandArcs({ land, elev, ice, width, height, rng, style }) => [{ islands: [[x, y, r]], cones: [{ x, y, e, crater }] }]
+// Volcanic island arcs: a curved chain of small high islands some way off a coast, bowed out to the open sea (the
+// coast lies on the arc's inner side, as the Aleutians and the Lesser Antilles lie), the larger ones each a cone,
+// some with a crater lake. Drawn into the land and its heights in place, so they are part of the map's land and of
+// the countries nearest them.
+export function buildIslandArcs({ land, elev, ice = null, width, height, rng, style = {} }) {
+  const W = width, H = height, S = W / 1600;
+  const r = rng.fork('island-arcs' + (style.arcSeed || ''));
+  const count = style.arcs ?? ((style.volcanoes ?? 0) >= 3 ? 2 : r.chance(0.6) ? 1 : 0);
+  if (!count) return [];
+  const solid = new Uint8Array(W * H);
+  for (let i = 0; i < solid.length; i++) solid[i] = land[i] || (ice && ice[i]) ? 1 : 0;
+  const seaD = coastDistance(solid.map((v) => (v ? 0 : 1)), W, H);
+  const SD = sampler(seaD, W, H);
+  const noise = makeNoise(r.fork('arc-shape'));
+  const arcs = [];
+  for (let t = 0; t < 600 && arcs.length < count; t++) {
+    const px = r.range(70 * S, W - 70 * S), py = r.range(70 * S, H - 70 * S);
+    const d0 = SD(px, py);
+    if (d0 < 24 * S || d0 > 70 * S) continue;
+    if (arcs.some((a) => a.islands.some(([x, y]) => Math.hypot(x - px, y - py) < 150 * S))) continue;
+    // Toward the nearest land: down the slope of the distance.
+    let gx = SD(px + 2, py) - SD(px - 2, py), gy = SD(px, py + 2) - SD(px, py - 2);
+    const gl = Math.hypot(gx, gy) || 1; gx /= gl; gy /= gl;
+    const Rr = r.range(100, 165) * S, ox = px - gx * Rr, oy = py - gy * Rr;
+    const a0 = Math.atan2(py - oy, px - ox), span = r.range(0.8, 1.2);
+    const islands = [], cones = [];
+    let a = a0 - span / 2;
+    while (a <= a0 + span / 2) {
+      const u = (a - (a0 - span / 2)) / span;
+      const rad = r.range(2, 4.2) * S * (0.7 + 0.5 * Math.sin(Math.PI * u));
+      const rr = Rr + r.range(-2.5, 2.5) * S;
+      const x = ox + Math.cos(a) * rr, y = oy + Math.sin(a) * rr;
+      a += (r.range(7, 12) * S) / Rr;
+      if (x < 12 || y < 12 || x > W - 12 || y > H - 12 || SD(x, y) < rad + 9 * S) continue;
+      islands.push([x, y, rad]);
+    }
+    if (islands.length < 6) continue;
+    for (const [x, y, rad] of islands) {
+      const cone = rad > 2.6 * S;
+      const peak = cone ? r.range(0.3, 0.58) : r.range(0.06, 0.16);
+      const R = Math.ceil(rad * 1.4) + 1;
+      for (let yy = Math.floor(y) - R; yy <= y + R; yy++) for (let xx = Math.floor(x) - R; xx <= x + R; xx++) {
+        const dx = xx + 0.5 - x, dy = yy + 0.5 - y, d = Math.hypot(dx, dy);
+        const edge = rad * (1 + 0.28 * noise((x + dx * 0.6) / (2.2 * S), (y + dy * 0.6) / (2.2 * S)));
+        if (d >= edge) continue;
+        const i = yy * W + xx;
+        land[i] = 1;
+        elev[i] = Math.max(elev[i], 0.015 + peak * Math.pow(1 - d / edge, cone ? 1.25 : 0.8));
+      }
+      if (cone) cones.push({ x, y, e: peak, rad, crater: false });
+    }
+    // The largest one or two cones hold a crater lake (and are named, with their heights).
+    cones.slice().sort((p, q) => q.rad - p.rad).slice(0, r.chance(0.5) ? 2 : 1).forEach((c) => { c.crater = true; });
+    arcs.push({ islands: islands.map(([x, y, rad]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round(rad * 10) / 10]), cones });
+  }
+  return arcs;
+}

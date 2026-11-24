@@ -209,3 +209,21 @@ Zoomed in, the map reads as a real regional map, after the reference's conventio
 - The generator's methods (noise, cells, river tracing, label placement), the map's palette within Noah's look, and the icon set.
 - The file and folder names, and where the page lives for local review. Old URLs (/projects, /portfolio, `portfolio/<project>/`) keep their current pages until Noah decides how they redirect.
 - Which flagship projects get video loops, and their length (short, silent, and small).
+
+## Borders, islands, and two countries of their own (24 November)
+
+Google Maps is the reference for every visual choice: few names at each zoom, quiet land cover, thin dark borders, and roads and place dots as it draws them.
+
+- **Borders with history** (frontiers.mjs), each kept only if every flagship stays whole and in its order of size, every capital stays at home, and CHRONIA still borders UCHRONIA:
+  - a long, thin coastal country (a small country remade as a strip of its flagship neighbour's shore, 15 to 25 times as long as it is wide) in about a third of the worlds;
+  - a corridor (a panhandle a few units wide down the line between two neighbours, from a third country to the sea or to a great river, after the Caprivi Strip) in about half;
+  - an island shared by two countries, the line surveyed straight or left irregular;
+  - borders through lakes, on the line halfway between the shores;
+  - jogs: the border steps out round a town the other side holds, and leaves a river for a loop of its far bank (an old course).
+  The disputed stretch is never the exclave's own border.
+- **Islands.** Volcanic island arcs (a curved chain bowed out to the open sea, the larger islands cones, one or two with a crater lake and a name and height); a long island where a great river parts, with a town on it (the arms drawn as water at every zoom); a village on an island in a large lake, with its ferry; and atolls some 9 to 15 units across on a pale reef (`#a6e2ef`), named beside the ring, so they read by zoom 4.
+- **Braidable** is a braided delta: three channels cross and recross like the strands of a braid, leaving a chain of interlaced islands (on a mainland they rise from one channel inland). Its places are named for strands and the weaver's craft (Skeinmouth, Weft Landing, Three Strands), its capital at the braids' mouth.
+- **The portfolio** is a compact, squarish island with a round harbour opening to the sea, after the square and the circle of Noah's mark (on a mainland, a near-island on a narrow isthmus). Its places are named for the parts of a book and a page (Recto, Verso, Colophon, Quarto), its capital on the harbour.
+- **Capitals** (Noah's call): every capital is its project's name and "City", as the map writes the name ("CHRONIA City", "LoreTour City", "citylayoutguessr City"), set on two lines when it is long ("Fuzhounese / Dictionary City"), as country names are. The Chicago and New York countries keep Chicago and New York.
+- **The About island** (Noah's call) is larger, some 15 to 25 units across, standing further out to sea: its coast has a bay or two, and (by world) a crater lake, a pond, a named hill with its height, a little town on the side facing the mainland, and a lighthouse on the far cape. It is still no project, with its "you are here" dot on dry land.
+- **Names across the wrap.** An ocean that runs off one edge of the map and on at the other is named in its middle, measured round the wrap (x modulo the map's width), and its name may cross the edge, as the page draws it whole; names near an edge are kept clear of those near the other.

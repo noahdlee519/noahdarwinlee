@@ -132,11 +132,10 @@
       <button class="panel-tab" id="panel-tab" type="button" aria-label="Collapse the side panel" aria-expanded="true" aria-controls="panel"><svg class="ic"><use href="#i-left" /></svg></button>
     </section>
 
-    <!-- Over the map: next world (on a phone), zoom, and the scale bar. -->
-    <button class="fab-world" id="fab-world" type="button" aria-label="Show the next world"><svg class="ic"><use href="#i-next" /></svg></button>
+    <!-- Over the map: the location button, zoom, and the scale bar. -->
 
     <div class="controls">
-      <a class="locate" href="/#about" aria-label="About Noah" title="About Noah"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.25" /><circle class="locate-dot" cx="12" cy="12" r="2.4" /><path d="M12 2.75v3M12 18.25v3M2.75 12h3M18.25 12h3" /></svg></a>
+      <a class="locate" href="/#about" aria-label="About Noah" title="About Noah"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="locate-halo" cx="12" cy="12" r="10" /><circle class="locate-dot" cx="12" cy="12" r="4.2" /></svg></a>
       <div class="zoom" role="group" aria-label="Zoom">
         <button class="zoom-btn" type="button" id="zoom-in" aria-label="Zoom in"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v13M3.5 10h13" /></svg></button>
         <button class="zoom-btn" type="button" id="zoom-out" aria-label="Zoom out"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 10h13" /></svg></button>
@@ -144,7 +143,7 @@
     </div>
 
     <div class="corner" id="corner">
-      <div class="scale scale-corner" aria-hidden="true"><span class="scale-text"></span><span class="scale-bar"></span></div>
+      <div class="scale scale-corner" aria-hidden="true"><span class="scale-text"></span><span class="scale-bar"></span><span class="scale-dual"><span class="scale-mi"></span><span class="scale-line"></span><span class="scale-km"></span></span></div>
     </div>
 
     <footer class="strip" id="strip">
@@ -209,7 +208,7 @@
         </div>
         <div class="drawer-group">
           <button class="drawer-row" type="button" id="drawer-share"><svg class="ic"><use href="#i-link" /></svg><span>Copy a link to this map</span></button>
-          <button class="drawer-row" type="button" data-next-world><svg class="ic"><use href="#i-next" /></svg><span>Next world</span></button>
+          <button class="drawer-row drawer-next" type="button" data-next-world><svg class="ic"><use href="#i-next" /></svg><span>Next world</span></button>
           <p class="drawer-note">This world is <b class="drawer-world"></b>, one of twenty, each named for a science fiction writer.</p>
         </div>
         <div class="drawer-group">

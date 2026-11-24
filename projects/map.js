@@ -757,7 +757,7 @@
       if (d.wadis) svg("path", { class: "map-wadi", d: d.wadis }, self.streamTpl);
       if (d.streams) svg("path", { class: "map-stream", d: d.streams }, self.streamTpl);
       if (d.lakes) svg("path", { class: "map-small-lakes", d: d.lakes }, self.reservoirTpl);
-      if (d.islets) ["sand", "green", "rock"].forEach(function (k) { if (d.islets[k]) svg("path", { class: "map-islet is-" + k, d: d.islets[k] }, self.isletTpl); });
+      if (d.islets) ["reef", "sand", "green", "rock"].forEach(function (k) { if (d.islets[k]) svg("path", { class: "map-islet is-" + k, d: d.islets[k] }, self.isletTpl); });
       var R = self.roadLayer.tpl;
       // Lowest first: the cities' parks and streets (from the chunks, under everything), the bridges' decks, local
       // and secondary roads, the town arterials and rings, trunk roads, motorways, and the ferries.

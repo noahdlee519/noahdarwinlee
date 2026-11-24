@@ -60,6 +60,15 @@ function corners(r) {
 }
 
 // Do two turned boxes overlap? (Separating axes.)
+// The same, on a map that wraps east and west (`W` wide): a rect near one edge is also tried a world's width over.
+export function rectsOverlapWrapped(a, b, W) {
+  if (rectsOverlap(a, b)) return true;
+  const m = 120 * (W / 1600), ext = a.hw + a.hh;
+  if (a.cx - ext < m) return rectsOverlap({ ...a, cx: a.cx + W }, b);
+  if (a.cx + ext > W - m) return rectsOverlap({ ...a, cx: a.cx - W }, b);
+  return false;
+}
+
 export function rectsOverlap(a, b) {
   const ca = corners(a), cb = corners(b);
   for (const r of [a, b]) {
@@ -257,6 +266,21 @@ export function enclosure(land, W, H, x, y, reach, rays = 32) {
   return { share, openings };
 }
 
+// The middle of a set of pixels on a map that wraps east and west: { x, y, wraps }. x is the mean taken round the
+// wrap (each pixel's x as an angle round a circle the map's width long), so for water that runs off one edge and on
+// at the other it falls in the water's middle, not near an edge; y is the plain mean. wraps: whether the pixels
+// reach both edges.
+export function wrappedMiddle(pixels, W) {
+  let c = 0, s = 0, sy = 0, left = false, right = false;
+  for (const i of pixels) {
+    const x = i % W, a = ((x + 0.5) / W) * Math.PI * 2;
+    c += Math.cos(a); s += Math.sin(a); sy += (i / W) | 0;
+    if (x === 0) left = true; else if (x === W - 1) right = true;
+  }
+  const x = ((((Math.atan2(s, c) / (Math.PI * 2)) * W) % W) + W) % W;
+  return { x, y: sy / pixels.length + 0.5, wraps: left && right };
+}
+
 // The open water, in pieces: comp[i] is the piece a pixel of open water belongs
 // to (-1 elsewhere); each piece is an ocean, or a sea when land nearly closes
 // round it and it is not the largest. Pieces too small to be more than a
@@ -313,7 +337,7 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
   const labels = [];
   const placed = []; // { rects } of every label so far
   const clearOf = (rects) => {
-    for (const p of placed) for (const a of rects) for (const b of p) if (rectsOverlap(a, b)) return false;
+    for (const p of placed) for (const a of rects) for (const b of p) if (rectsOverlapWrapped(a, b, W)) return false;
     return true;
   };
   const commit = (label, pad = 0.6 * S) => {
@@ -452,7 +476,8 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
   }
 
   const countryLabel = new Map();
-  const capitalDots = (extras.towns || []).filter((t) => t.capital);
+  // (Towns on islands in rivers and lakes are kept clear too, so they can be named.)
+  const capitalDots = [...(extras.towns || []).filter((t) => t.capital), ...(extras.islandTowns || [])];
   projects.forEach((project, index) => {
     const pixels = pixelsOf[index];
     if (!pixels.length) return;
@@ -553,12 +578,16 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     // Beside the dot: right, left, above, below, then the corners; smaller, if nothing else fits (a capital is
     // always named).
     let done = false;
-    for (const k of town.capital ? [1, 0.82, 0.68] : [1]) {
+    // A long capital's name ("Fuzhounese Dictionary City") breaks onto two lines, as the country names do.
+    const lines = town.capital && text.length > 14 && text.includes(' ') ? lineBreaks(text)[1] : [text];
+    for (const k of town.capital ? [1, 0.82, 0.68, 0.56] : [1]) {
       const size = (town.capital ? 4.9 : 3.5) * S * k;
-      const w = lineWidth(text, 0) * size, gap = size * 0.75;
-      const spots = [[w / 2 + gap, 0], [-w / 2 - gap, 0], [0, -size * 1.05], [0, size * 1.05], [w / 2 + gap * 0.8, -size * 0.8], [w / 2 + gap * 0.8, size * 0.8], [-w / 2 - gap * 0.8, -size * 0.8], [-w / 2 - gap * 0.8, size * 0.8]];
+      const w = Math.max(...lines.map((ln) => lineWidth(ln, 0))) * size, gap = size * 0.75, hh = ((lines.length - 1) * LINE_HEIGHT + 1) * size / 2;
+      const spots = [[w / 2 + gap, 0], [-w / 2 - gap, 0], [0, -hh - size * 0.55], [0, hh + size * 0.55], [w / 2 + gap * 0.8, -hh * 1.6], [w / 2 + gap * 0.8, hh * 1.6], [-w / 2 - gap * 0.8, -hh * 1.6], [-w / 2 - gap * 0.8, hh * 1.6]];
+      // (Last of all, a little further off: below, above, and to either side.)
+      if (k < 0.6) spots.push([0, hh + size * 1.4], [0, -hh - size * 1.4], [w / 2 + gap * 2.2, 0], [-w / 2 - gap * 2.2, 0]);
       for (const [dx, dy] of spots) {
-        const label = { id: `town-${labels.length}`, kind: town.capital ? 'capital' : 'town', text, lines: [text], x: town.x + dx, y: town.y + dy, size, angle: 0, spacing: 0, minZoom: town.capital && projects.find((p) => p.id === town.id)?.tier === 'flagship' ? 1 : zoomFor(size, 9.8), dot: [Math.round(town.x * 10) / 10, Math.round(town.y * 10) / 10] };
+        const label = { id: `town-${labels.length}`, kind: town.capital ? 'capital' : 'town', text, lines, x: town.x + dx, y: town.y + dy, size, angle: 0, spacing: 0, minZoom: town.capital && projects.find((p) => p.id === town.id)?.tier === 'flagship' ? 1 : zoomFor(size, 9.8), dot: [Math.round(town.x * 10) / 10, Math.round(town.y * 10) / 10] };
         if (town.capital) label.of = town.id;
         const rects = labelRects(label, 0.9 * S);
         if (rects.some((rc) => rc.cx - rc.hw < 2 || rc.cy - rc.hh < 2 || rc.cx + rc.hw > W - 2 || rc.cy + rc.hh > H - 2)) continue;
@@ -648,7 +677,8 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
     for (const [o, v] of counts) if (v > bv || (v === bv && o < best)) { best = o; bv = v; }
     return best;
   };
-  const isSea = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !land[Math.floor(y) * W + Math.floor(x)];
+  // (The map wraps east and west: past one edge is the other.)
+  const isSea = (x, y) => y >= 0 && y < H && !land[Math.floor(y) * W + (((Math.floor(x) % W) + W) % W)];
   // A gentle curve for a water name, through the middle of the water along its long axis, read left to right; null
   // where the water is open all round (the name then sits straight) or the axis is too steep to read.
   const curveFor = (x, y, text, size) => {
@@ -756,14 +786,22 @@ export function placeLabels({ owner, provinces, projects, width, height, rng, ex
       // those spots fail the fit and the next deepest is tried.)
       // Deep water first, but away from the seam: the name of an ocean that
       // runs across the map's edge belongs on the open water seen at the start.
-      const keyOf = (i) => Math.min(dist[i], Math.min(i % W, W - (i % W)) * 0.9);
+      // An ocean that runs across the map's edge is named in its middle, measured round the wrap (x modulo the
+      // map's width): its name may then cross the edge, as the page draws it whole.
+      const mid = wrappedMiddle(piece.pixels, W);
+      const keyOf = mid.wraps
+        ? (i) => { let dx = Math.abs((i % W) - mid.x); dx = Math.min(dx, W - dx); return Math.min(dist[i], piece.d * 0.6) - 0.35 * Math.hypot(dx, ((i / W) | 0) - mid.y); }
+        : (i) => Math.min(dist[i], Math.min(i % W, W - (i % W)) * 0.9);
       const spots = piece.pixels.filter((i) => (i % W) % 4 === 0 && ((i / W) | 0) % 4 === 0).sort((a, b) => keyOf(b) - keyOf(a) || a - b).slice(0, 5000);
-      for (const i of spots) {
+      // (An ocean's name is set on two lines wherever that fits, before one line is tried anywhere.)
+      const passes = ocean ? [0, 1] : [-1];
+      for (const pass of passes) for (const i of spots) {
+        if (pass > 0 && labels.some((l) => l.kind === 'ocean' && l.text === text)) break;
         const x = (i % W) + 0.5, y = ((i / W) | 0) + 0.5, d = dist[i];
         // Small and untracked, as the reference sets its water names; an ocean a little larger.
         const size = ocean ? clamp(d / 16, 6.5 * S, 8.5 * S) : clamp(d / 14, 4.95 * S, 5.6 * S);
         const spacing = 0;
-        const options = ocean || lineWidth(text, spacing) * size > d * 1.9 ? [lineBreaks(text)[1] || [text], [text]] : [[text], lineBreaks(text)[1] || [text]];
+        const options = ocean ? [pass === 0 ? lineBreaks(text)[1] || [text] : [text]] : lineWidth(text, spacing) * size > d * 1.9 ? [lineBreaks(text)[1] || [text], [text]] : [[text], lineBreaks(text)[1] || [text]];
         let done = false;
         for (const lines of options) {
           const label = { id: `${ocean ? 'ocean' : 'sea'}-${labels.length}`, kind: ocean ? 'ocean' : 'sea', text, lines, x, y, size, angle: 0, spacing, minZoom: ocean ? 1 : 2 };

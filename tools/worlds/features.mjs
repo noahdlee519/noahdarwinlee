@@ -7,7 +7,7 @@ import { clamp, smoothstep, makeNoise, fbm } from './rng.mjs';
 import { COVER } from './climate.mjs';
 import { RANK } from './settlements.mjs';
 import { landmasses } from './terrain.mjs';
-import { labelRects, rectsOverlap, lineWidth, lineBreaks, samples, insideDistance, makeNamer, zoomFor } from './labels.mjs';
+import { labelRects, rectsOverlap, rectsOverlapWrapped, lineWidth, lineBreaks, samples, insideDistance, makeNamer, zoomFor } from './labels.mjs';
 
 // ------------------------------------------------------------------ parks --
 
@@ -226,7 +226,7 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   const placed = labels.map((l) => labelRects(l, 0.5 * S));
   const out = [];
   const clearOf = (rects) => {
-    for (const p of placed) for (const a of rects) for (const b of p) if (rectsOverlap(a, b)) return false;
+    for (const p of placed) for (const a of rects) for (const b of p) if (rectsOverlapWrapped(a, b, W)) return false;
     return true;
   };
   const inMap = (rects) => rects.every((rc) => rc.cx - rc.hw > 1 && rc.cx + rc.hw < W - 1 && rc.cy - rc.hh > 1 && rc.cy + rc.hh < H - 1);
@@ -268,9 +268,10 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   const SIZE = [4.9, 4.3, 3.4, 2.75];
   const KIND = ['capital', 'city', 'town', 'village'];
   const ZOOM = [1, 2, 3, 4];
+  const named = new Set();
   const placeRank = (rank) => {
     for (const s of settlements) {
-      if (s.rank !== rank) continue;
+      if (s.rank !== rank || named.has(s)) continue;
       const text = s.name || namerAt(s.x, s.y).town();
       const size = SIZE[rank] * S;
       // The smallest villages wait for the closest zoom.
@@ -512,7 +513,7 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
   // ---- The larger small lakes: finger lakes along their length, reservoirs, and the rest. ----
   const placeLakes = () => {
     if (!smallLakes) return;
-    const list = smallLakes.lakes.filter((l) => l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1 : 2.5) * S * S).sort((a, b) => b.area - a.area);
+    const list = smallLakes.lakes.filter((l) => l.kind !== 'river' && l.area > (l.kind === 'finger' || l.kind === 'reservoir' || l.kind === 'chain' ? 1 : 2.5) * S * S).sort((a, b) => b.area - a.area);
     for (const l of list.slice(0, 70)) {
       const w0 = wordAt(l.x, l.y);
       const text = l.kind === 'reservoir' ? `${w0} Reservoir` : l.kind === 'crater' ? `Crater Lake ${w0}` : `Lake ${w0}`;
@@ -556,7 +557,9 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
       const text = r.pick(FORMS[g.kind] || FORMS.skerries)(w0);
       const size = 3 * S;
       const base = { id: `islets-${out.length}`, kind: 'island', text, lines: [text], x: g.x, y: g.y, size, angle: 0, spacing: 0.06, minZoom: g.kind === 'atoll' ? 3 : 4 };
-      if (!tryPut(base)) if (!tryPut({ ...base, y: g.y - (g.r || 6 * S) * 0.6 - size })) tryPut({ ...base, y: g.y + (g.r || 6 * S) * 0.6 + size });
+      // An atoll's name goes beside its ring (below or above it), not over the lagoon.
+      if (g.kind === 'atoll') { if (!tryPut({ ...base, y: g.y + g.r + size * 0.6 })) if (!tryPut({ ...base, y: g.y - g.r - size * 0.6 })) tryPut(base); }
+      else if (!tryPut(base)) if (!tryPut({ ...base, y: g.y - (g.r || 6 * S) * 0.6 - size })) tryPut({ ...base, y: g.y + (g.r || 6 * S) * 0.6 + size });
     }
   };
   // ---- City parks: the larger ones named, for the closest zoom. ----
@@ -609,7 +612,20 @@ export function placeDetailLabels({ labels, land, elev, cover, hydro, temp, owne
     });
   };
 
+  // The towns on islands in a river or a lake are named first: the island is there for them.
+  const placeIslandTowns = () => {
+    for (const s of settlements) {
+      if (!s.island || s.rank === RANK.CAPITAL) continue;
+      const text = s.name || namerAt(s.x, s.y).town();
+      for (const k of [1, 0.8, 0.62]) {
+        const size = SIZE[s.rank] * S * k;
+        if (beside({ id: `${KIND[s.rank]}-${out.length}`, kind: KIND[s.rank], text, lines: [text], size, angle: 0, spacing: 0, minZoom: Math.max(ZOOM[s.rank], k < 1 ? 5 : 0) }, s.x, s.y, size, 0.6)) { named.add(s); break; }
+      }
+    }
+  };
+
   // Most important first: each later name must fit round the earlier ones.
+  placeIslandTowns();
   placeRank(RANK.CITY);
   placeParks();
   placeRegions();

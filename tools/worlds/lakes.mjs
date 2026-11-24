@@ -264,6 +264,14 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
     }
   }
 
+  // Islands with a town on them (in a large lake, or where a great river parts): their ground is left free.
+  const townIslands = [];
+  const freeInside = (ring) => {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    for (let y = Math.floor(y0); y <= y1; y++) for (let x = Math.floor(x0); x <= x1; x++) if (inRing(ring, x + 0.5, y + 0.5)) taken[y * W + x] = 2;
+  };
+
   // ---- A large lake or two with bays and islands, on a main river in the lowland. ----
   {
     const cands = [];
@@ -300,20 +308,77 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
       // Islands: a few, near the lake's middle and in its larger bays.
       const holes = [];
       const nI = 1 + r.int(4);
+      // The first lake's first island is large enough for a village (as Lindau's or Frauenchiemsee's is).
+      let townHole = null;
       for (let q = 0; q < nI * 4 && holes.length < nI; q++) {
-        const a = r.next() * Math.PI * 2, d = r.next() * rad * 0.55;
+        const big = !spots.length && !holes.length && !townHole && q < 6;
+        const a = r.next() * Math.PI * 2, d = r.next() * rad * (big ? 0.3 : 0.55);
         const hx = c.x + Math.cos(a) * d * (1 + stretch * 0.6), hy = c.y + Math.sin(a) * d;
-        const hr = (0.35 + r.next() * r.next() * 1.6) * S;
+        const hr = big ? r.range(2.2, 3) * S : (0.35 + r.next() * r.next() * 1.6) * S;
         const hole = blobRing(r, hx, hy, hr, { stretch: r.next() * 0.8, lean: r.next() * Math.PI, wobble: 1.4, n: 14 });
         if (!hole.every(([x, y]) => inRing(ring, x, y))) continue;
         if (!holes.every((o) => hole.every(([x, y]) => !inRing(o, x, y)) && o.every(([x, y]) => !inRing(hole, x, y)))) continue;
         let near = Infinity;
         for (const [x, y] of hole) for (const [qx, qy] of ring) near = Math.min(near, Math.hypot(x - qx, y - qy));
-        if (near < 0.6 * S) continue;
+        if (near < (big ? 1.2 : 0.6) * S) continue;
         holes.push(hole);
+        if (big) townHole = { x: hx, y: hy, r: hr, ring: hole };
       }
       occupy(ring, 'large', holes);
+      if (townHole) { freeInside(townHole.ring); townIslands.push({ kind: 'lake', x: townHole.x, y: townHole.y, r: townHole.r }); }
       spots.push([c.x, c.y]);
+    }
+  }
+
+  // ---- River islands: where a great river runs slow through the lowland it parts round a long island, and a town
+  // stands on it (as Paris began on the Île de la Cité). The two arms are drawn as water round the island. ----
+  if (drawnRivers) {
+    const cands = [];
+    drawnRivers.forEach((pts, k) => {
+      const m = hydro.riverMeta[k];
+      if (m.width < 3 || pts.length < 60) return;
+      for (let j = 30; j < pts.length - 30; j += 7) {
+        const i = px(pts[j][0], pts[j][1]);
+        if (elev[i] > 0.13 || dist[i] < 12 * S || temp[i] < -4) continue;
+        cands.push({ k, j, v: r.next() });
+      }
+    });
+    cands.sort((a, b) => a.v - b.v || a.k - b.k || a.j - b.j);
+    const want = cands.length ? (r.chance(0.5) ? 2 : 1) : 0;
+    const made = [];
+    for (const c of cands) {
+      if (made.length >= want) break;
+      const pts = drawnRivers[c.k];
+      if (made.some(([x, y]) => Math.hypot(x - pts[c.j][0], y - pts[c.j][1]) < 120 * S)) continue;
+      // A stretch some 9 to 14 units long, nearly straight.
+      const len = r.range(13, 19) * S;
+      let a = c.j, b = c.j, L = 0;
+      while (L < len && a > 1 && b < pts.length - 2) { a--; b++; L += Math.hypot(pts[b][0] - pts[b - 1][0], pts[b][1] - pts[b - 1][1]) + Math.hypot(pts[a + 1][0] - pts[a][0], pts[a + 1][1] - pts[a][1]); }
+      const line = pts.slice(a, b + 1);
+      if (Math.hypot(line[line.length - 1][0] - line[0][0], line[line.length - 1][1] - line[0][1]) < L * 0.8) continue;
+      const wide = r.range(2.6, 3.4) * S, arm = r.range(0.8, 1.05) * S;
+      const band = (wfn) => {
+        const left = [], right = [], n = line.length;
+        for (let q = 0; q < n; q++) {
+          const p0 = line[Math.max(0, q - 1)], p1 = line[Math.min(n - 1, q + 1)];
+          let tx = p1[0] - p0[0], ty = p1[1] - p0[1];
+          const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+          const hw = wfn(q / (n - 1));
+          left.push([line[q][0] - ty * hw, line[q][1] + tx * hw]);
+          right.push([line[q][0] + ty * hw, line[q][1] - tx * hw]);
+        }
+        return [...left, ...right.reverse()];
+      };
+      const shape = (u) => Math.pow(Math.max(0, Math.sin(Math.PI * u)), 0.7);
+      const water = band((u) => 0.35 * S + (wide + arm) * shape(u));
+      const isle = band((u) => wide * Math.max(0, shape(Math.min(1, Math.max(0, (u - 0.1) / 0.8)))) );
+      const hole = isle.filter((p, q) => q % 2 === 0 || q === isle.length - 1);
+      if (!clearFor(water, 0.5, { river: 4 })) continue;
+      occupy(water, 'river', [hole]);
+      freeInside(hole);
+      const mid = line[line.length >> 1];
+      townIslands.push({ kind: 'river', x: mid[0], y: mid[1], r: wide, river: c.k });
+      made.push(mid);
     }
   }
 
@@ -375,7 +440,7 @@ export function buildSmallLakes({ land, elev, temp, moist, hydro, dist, style = 
 
   const mask = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (taken[i] === 1) mask[i] = 1;
-  return { lakes, mask, index: ringIndex(lakes, W, H) };
+  return { lakes, mask, index: ringIndex(lakes, W, H), townIslands };
 }
 
 // warpRivers(rivers, { land, elev, dist, width, height, rng }) => polylines

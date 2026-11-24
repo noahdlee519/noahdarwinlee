@@ -65,7 +65,7 @@ export function worldSvg(data, pngBuffer, zoom = 1, detail = null, tiles = [], c
     parts.push(`<path d="${data.estuaries.fill}" fill="${P.water}"/>`);
   }
   // The coast's islets, from zoom 3.
-  if (D && zoom >= 2.9 && D.islets) for (const [k, fill] of [['sand', '#f6efdc'], ['green', '#c4ead7'], ['rock', '#cbcfca']]) if (D.islets[k]) parts.push(`<path d="${D.islets[k]}" fill="${fill}"/>`);
+  if (D && zoom >= 2.9 && D.islets) for (const [k, fill] of [['reef', '#a6e2ef'], ['sand', '#f6efdc'], ['green', '#c4ead7'], ['rock', '#cbcfca']]) if (D.islets[k]) parts.push(`<path d="${D.islets[k]}" fill="${fill}"${k === 'reef' ? ' fill-rule="nonzero"' : ''}/>`);
   // Roads: pale lilac-grey, the highways a little stronger; streets only close in.
   if (D) {
     const R = D.roads;
@@ -217,7 +217,9 @@ export function renderSheet(dir, worlds, { tile = 1200 } = {}) {
     const x = gap + (k % cols) * (tile + gap), y = gap + Math.floor(k / cols) * (tileH + head + gap);
     const lat = w.note ? ` <tspan font-weight="400" fill="#6b6f72" font-size="17">${esc(w.note)}</tspan>` : '';
     parts.push(`<text x="${x}" y="${y + 30}" font-family="${FONT}" font-size="26" font-weight="700" fill="#26262a">${esc(data.name)}${lat}</text>`);
-    parts.push(`<svg x="${x}" y="${y + head}" width="${tile}" height="${tileH}" viewBox="0 0 ${data.width} ${data.height}">${worldSvg(data, png, 1)}</svg>`);
+    // (With the copies either side, as the page wraps the world: a name across the seam shows whole.)
+    const inner = worldSvg(data, png, 1);
+    parts.push(`<svg x="${x}" y="${y + head}" width="${tile}" height="${tileH}" viewBox="0 0 ${data.width} ${data.height}">${inner}<g transform="translate(${-data.width} 0)">${inner}</g><g transform="translate(${data.width} 0)">${inner}</g></svg>`);
     parts.push(`<rect x="${x}" y="${y + head}" width="${tile}" height="${tileH}" fill="none" stroke="#c9c9c4" stroke-width="1"/>`);
   });
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${sheetW}" height="${sheetH}" viewBox="0 0 ${sheetW} ${sheetH}">${parts.join('\n')}</svg>`;
