@@ -345,6 +345,25 @@ function labelAbout(world, labels) {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const ring of a.rings) for (const [x, y] of ring) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+  const make = (x, y) => ({ id: 'about', kind: 'island', text: 'About', lines: ['About'], x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, size, angle: 0, spacing: 0, minZoom: 1 });
+  const clear = (l) => { const rects = labelRects(l, 0.5 * S); return labels.every((o) => !labelRects(o).some((p) => rects.some((q) => rectsOverlap(p, q)))); };
+  // On the island itself, as Google Maps names an island (Noah, 24 November 2026): where the name's box lies on the
+  // island's own land, a little way from the blue dot so the two do not cover each other, below it if it can be.
+  if (a.mask) {
+    const W = world.width, onLand = (x, y) => { const qx = Math.floor(x), qy = Math.floor(y); return qx >= 0 && qy >= 0 && qx < W && qy < world.height && a.mask[qy * W + qx] === 1; };
+    const hw = size * 0.62 * 5 / 2, hh = size * 0.6;
+    let best = null, bestScore = -Infinity;
+    for (let y = y0; y <= y1; y += 0.5 * S) for (let x = x0; x <= x1; x += 0.5 * S) {
+      const d = Math.hypot(x - a.x, y - a.y);
+      if (d < 8 * S || !onLand(x, y)) continue;
+      let on = 0, n = 0;
+      for (const fy of [-1, 0, 1]) for (const fx of [-1, -0.5, 0, 0.5, 1]) { n++; if (onLand(x + fx * hw, y + fy * hh)) on++; }
+      if (on < n - 1) continue;
+      const score = on * 2 - Math.abs(d - 11 * S) * 0.35 - Math.abs(x - a.x) * 0.2 + (y > a.y ? 3 : 0);
+      if (score > bestScore) { bestScore = score; best = [x, y]; }
+    }
+    if (best) { const l = make(best[0], best[1]); if (clear(l)) return l; }
+  }
   let spots = [[mx, y1 + 4 * S], [mx, y0 - 4 * S], [x1 + 7 * S, my], [x0 - 7 * S, my], [mx, y1 + 9 * S], [mx, y0 - 9 * S]];
   // Clear of the causeway or the ferry: on the side away from the mainland.
   if (a.dock) { const ux = a.dock[0] - a.x, uy = a.dock[1] - a.y; spots = spots.map((p, k) => [p, k]).sort((p, q) => (p[0][0] - a.x) * ux + (p[0][1] - a.y) * uy - ((q[0][0] - a.x) * ux + (q[0][1] - a.y) * uy) || p[1] - q[1]).map((e) => e[0]); }

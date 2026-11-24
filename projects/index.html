@@ -146,7 +146,7 @@
     </div>
 
     <div class="corner" id="corner">
-      <div class="scale scale-corner" aria-hidden="true"><span class="scale-text"></span><span class="scale-bar"></span><span class="scale-dual"><span class="scale-mi"></span><span class="scale-line"></span><span class="scale-km"></span></span></div>
+      <div class="scale scale-corner" aria-hidden="true"><span class="scale-text"></span><span class="scale-bar"></span><span class="scale-dual"><span class="scale-mi"></span><svg class="scale-line" aria-hidden="true"><path class="scale-under" /><path class="scale-over" /></svg><span class="scale-km"></span></span></div>
     </div>
 
     <footer class="strip" id="strip">
@@ -204,7 +204,6 @@
           <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="rivers"><svg class="ic"><use href="#i-river" /></svg><span>Rivers and lakes</span><i class="switch" aria-hidden="true"></i></button>
           <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="parks"><svg class="ic"><use href="#i-park" /></svg><span>National parks</span><i class="switch" aria-hidden="true"></i></button>
           <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="borders"><svg class="ic"><use href="#i-border" /></svg><span>Borders</span><i class="switch" aria-hidden="true"></i></button>
-          <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="provinces"><svg class="ic"><use href="#i-province" /></svg><span>Province lines</span><i class="switch" aria-hidden="true"></i></button>
           <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="terrain"><svg class="ic"><use href="#i-terrain" /></svg><span>Terrain</span><i class="switch" aria-hidden="true"></i></button>
           <button class="drawer-row drawer-switch" type="button" role="switch" data-layer="water-names"><svg class="ic"><use href="#i-waternames" /></svg><span>Water names</span><i class="switch" aria-hidden="true"></i></button>
           <button class="drawer-row" type="button" id="layers-reset"><svg class="ic"><use href="#i-reset" /></svg><span>Show all layers</span></button>
@@ -212,7 +211,7 @@
         <div class="drawer-group">
           <button class="drawer-row" type="button" id="drawer-share"><svg class="ic"><use href="#i-link" /></svg><span>Copy a link to this map</span></button>
           <button class="drawer-row drawer-next" type="button" data-next-world><svg class="ic"><use href="#i-next" /></svg><span>Next world</span></button>
-          <p class="drawer-note">This world is <b class="drawer-world"></b>, one of twenty, each named for a science fiction writer.</p>
+          <p class="drawer-note">This world is <b class="drawer-world"></b>.</p>
         </div>
         <div class="drawer-group">
           <a class="drawer-row" href="/"><svg class="ic"><use href="#i-home" /></svg><span>Home</span></a>

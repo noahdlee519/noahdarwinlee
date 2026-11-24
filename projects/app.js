@@ -243,6 +243,7 @@
   }
 
   // A list's row: the name, a line on what the project is, and its address.
+  function noStop(t) { return t ? t.replace(/\.\s*$/, "") : t; }
   function rowText(name, tagline, link) {
     return '<span class="row-text"><b>' + esc(name) + "</b>" + (tagline ? '<span class="row-line">' + esc(tagline) + "</span>" : "") +
       '<span class="row-link">' + esc(link) + "</span></span>";
@@ -544,7 +545,8 @@
     } else {
       els.list.innerHTML = results.map(function (r, i) {
         return '<li role="option" id="opt-' + i + '" class="search-opt" aria-selected="' + (i === active) + '" data-i="' + i + '">' + glyph(r.p.id) +
-          rowText(r.v ? r.v.name : r.p.name, r.v ? r.v.tagline : r.p.tagline, r.p.domain) + "</li>";
+          // (The search list's lines end with no full stop, as a mapping app's suggestions do. Noah, 24 November 2026.)
+          rowText(r.v ? r.v.name : r.p.name, noStop(r.v ? r.v.tagline : r.p.tagline), r.p.domain) + "</li>";
       }).join("");
     }
     els.list.hidden = false;
@@ -561,6 +563,7 @@
   function choose(i) {
     var r = results[i];
     if (!r) return;
+    listKept = false;
     hideResults();
     els.input.blur();
     open("project", { id: r.p.id, province: r.v ? r.v.id : null });
@@ -590,7 +593,22 @@
     var o = e.target.closest(".search-opt");
     if (o) choose(+o.getAttribute("data-i"));
   });
-  els.input.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== els.input) { hideResults(); updateSearchBox(); } }, 120); });
+  // On a phone, scrolling the list puts the keyboard away so the rest of the list can be seen, and the list stays
+  // open until a project is chosen or the map is touched (Noah, 24 November 2026: the keyboard could not be closed).
+  var listKept = false, touchY = null;
+  els.list.addEventListener("touchstart", function (e) { touchY = e.touches[0].clientY; }, { passive: true });
+  els.list.addEventListener("touchmove", function (e) {
+    if (touchY === null || Math.abs(e.touches[0].clientY - touchY) < 8 || document.activeElement !== els.input) return;
+    listKept = true;
+    els.input.blur();
+  }, { passive: true });
+  els.input.addEventListener("focus", function () { listKept = false; });
+  document.addEventListener("pointerdown", function (e) {
+    if (!listKept || els.list.hidden || els.search.contains(e.target)) return;
+    listKept = false;
+    hideResults(); updateSearchBox();
+  }, true);
+  els.input.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== els.input && !listKept) { hideResults(); updateSearchBox(); } }, 120); });
   els.go.addEventListener("click", function () { els.input.focus(); });
   els.clear.addEventListener("click", function () {
     if (document.activeElement === els.input && els.input.value) { els.input.value = ""; showResults(); return; }
@@ -732,7 +750,23 @@
     var p = Math.pow(10, Math.floor(Math.log10(km))), n = km / p;
     return (n >= 5 ? 5 : n >= 2 ? 2 : 1) * p;
   }
+  // On a phone the scale shows only while the map is being zoomed, and fades a few seconds after, as in the Google
+  // Maps app (Noah, 24 November 2026).
+  var scaleS = null, scaleTimer = 0, scaleArmed = false;
+  // (Only once the visitor has touched, clicked, or scrolled: the map's own first framing is not a zoom.)
+  ["pointerdown", "wheel", "keydown"].forEach(function (t) { document.addEventListener(t, function () { scaleArmed = true; }, { capture: true, passive: true }); });
+  function flashScale(m) {
+    var was = scaleS;
+    scaleS = m.s;
+    if (!scaleArmed || was === null || Math.abs(m.s - was) < 1e-6) return;
+    var c = $(".scale-corner");
+    if (!c) return;
+    c.classList.add("is-shown");
+    clearTimeout(scaleTimer);
+    scaleTimer = setTimeout(function () { c.classList.remove("is-shown"); }, 2500);
+  }
   function updateScale(m) {
+    flashScale(m);
     var kmPerPx = state.world.scale.kmPerUnit / m.s;
     var km = niceDistance(kmPerPx * 96), px = km / kmPerPx;
     var text = km.toLocaleString("en-US") + " km";
@@ -745,8 +779,13 @@
       $(".scale-bar", s).style.width = px.toFixed(1) + "px";
       var d = $(".scale-dual", s);
       if (d) {
-        d.style.setProperty("--km", px.toFixed(1) + "px");
-        d.style.setProperty("--mi", miPx.toFixed(1) + "px");
+        // One drawing, a pale edge under solid black, so the line and its ticks meet cleanly (Noah, 24 November 2026).
+        var Wd = Math.ceil(Math.max(px, miPx)) + 4, R = Wd - 2, kx = (R - px).toFixed(1), mx = (R - miPx).toFixed(1);
+        var dd = "M" + Math.min(+kx, +mx) + " 21H" + R + "M" + kx + " 21V32M" + mx + " 21V10";
+        d.style.width = Wd + "px";
+        var sv = $(".scale-line", d);
+        sv.setAttribute("viewBox", "0 0 " + Wd + " 42"); sv.setAttribute("width", Wd); sv.setAttribute("height", 42);
+        $$("path", sv).forEach(function (p) { p.setAttribute("d", dd); });
         $(".scale-mi", s).textContent = miText;
         $(".scale-km", s).textContent = text;
       }
@@ -987,7 +1026,8 @@
     "water-names": ["ocean", "sea", "gulf", "bay", "strait", "channel", "sound", "fjord", "lagoon", "harbour", "inlet", "cove", "lake", "river"]
   };
   var layersOff = (function () {
-    try { var v = JSON.parse(store.get(LAYERS_KEY) || "[]"); if (Array.isArray(v)) return v; } catch (e) {}
+    // (Province lines were once a switch of their own; they now go with the borders.)
+    try { var v = JSON.parse(store.get(LAYERS_KEY) || "[]"); if (Array.isArray(v)) return v.filter(function (n) { return n !== "provinces"; }); } catch (e) {}
     return [];
   })();
   function applyLayers() {

@@ -6,7 +6,7 @@
   --m-river: #7fd5e9;
   --m-park: #8fcfa5;
   --m-citypark: #a2debe;
-  --m-road-hw: #9aa8c8;
+  --m-road-hw: #b3bed6;
   --m-road-main: #b1bbd4;
   --m-road-local: #c3c9dc;
   --m-road-street: #d3d7e4;
@@ -103,13 +103,15 @@
   transition: opacity 300ms ease;
 }
 
+/* Highways as Google Maps draws them (Noah, 24 November 2026): thin and pale, never louder than the land, and gone
+   at the closest zoom, where the streets take over. */
 .r-highway {
   stroke: var(--m-road-hw);
-  stroke-width: 1.5px;
+  stroke-width: 1.1px;
 }
 
 .map.is-z3 .r-highway {
-  stroke-width: 2.4px;
+  stroke-width: 1.6px;
 }
 
 .r-main {
@@ -234,23 +236,23 @@
 
 /* The finer roads: lilac-grey outside the towns, white streets on the grey of the built-up ground. */
 .r-motorway {
-  stroke: #94a3c4;
-  stroke-width: 1.8px;
+  stroke: #b3bed6;
+  stroke-width: 1.2px;
 }
 
 .map.is-z4 .r-motorway {
-  stroke-width: 3px;
+  stroke-width: 1.8px;
 }
 
 .r-trunk,
 .r-ring {
-  stroke: #a6b2cf;
-  stroke-width: 1.3px;
+  stroke: #bfc8dc;
+  stroke-width: 1px;
 }
 
 .map.is-z4 .r-trunk,
 .map.is-z4 .r-ring {
-  stroke-width: 2.2px;
+  stroke-width: 1.5px;
 }
 
 .r-secondary {
@@ -332,31 +334,33 @@
   stroke-width: 1.3px;
 }
 
-/* The roads widen close in, too. */
+/* The roads widen a little close in, and the highways leave the map at the closest zoom, their numbers with them. */
 .map.is-z9 .r-motorway {
-  stroke-width: 4px;
-}
-
-.map.is-z12 .r-motorway {
-  stroke-width: 5px;
+  stroke-width: 2.2px;
 }
 
 .map.is-z9 .r-trunk,
 .map.is-z9 .r-ring {
-  stroke-width: 3px;
+  stroke-width: 1.8px;
 }
 
+.map.is-z12 .r-highway,
+.map.is-z12 .r-motorway,
 .map.is-z12 .r-trunk,
 .map.is-z12 .r-ring {
-  stroke-width: 3.8px;
+  opacity: 0;
+}
+
+.map.is-z12 .lbl.k-shield {
+  visibility: hidden !important;
 }
 
 .map.is-z9 .r-secondary {
-  stroke-width: 2.3px;
+  stroke-width: 2px;
 }
 
 .map.is-z12 .r-secondary {
-  stroke-width: 2.9px;
+  stroke-width: 2.4px;
 }
 
 .map.is-z9 .r-local {

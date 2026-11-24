@@ -261,7 +261,10 @@
     // The land-cover picture, under a quiet stand-in of the land until it arrives; finer tiles go over it.
     var Limg = layer("map-ground", true);
     svg("path", { class: "map-land", d: world.coast }, Limg.tpl);
-    var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none" }, Limg.tpl);
+    // (Decoded with the frame that draws it: as the map is zoomed the browser draws the picture afresh at the new
+    // scale, and with the default, decoding on the side, it skipped the land for a frame or two, a flash of bare sea.
+    // Noah, 24 November 2026.)
+    var image = svg("image", { class: "map-image", x: 0, y: 0, width: W, height: H, preserveAspectRatio: "none", decoding: "sync" }, Limg.tpl);
     if (world.polar && world.polar.indexOf("n") >= 0) svg("rect", { class: "map-polar-cap", x: 0, y: -H * 3, width: W, height: H * 3 }, Limg.tpl);
     if (world.polar && world.polar.indexOf("s") >= 0) svg("rect", { class: "map-polar-cap", x: 0, y: H, width: W, height: H * 3 }, Limg.tpl);
     this.tileHost = svg("g", { class: "map-tiles" }, g);
@@ -478,6 +481,8 @@
         item.rank = l.minZoom > 1 ? 30 : (self._tier(l.id) === "flagship" ? self._rank(l.id) : 20 + (40 - l.size));
         item.country = l.id;
       } else item.rank = LABEL_RANK[kind] || 95;
+      // The About island's name, on the island, before its hill, lake, and villages, at every zoom.
+      if (l.id === "about") item.rank = 36;
       var cls = "lbl k-" + kind + (water ? " is-water" : "");
       var gEl;
       // Each name is drawn once, on whichever copy of the world lies nearest the middle of the view.
@@ -903,6 +908,7 @@
     var v = this.view, w = v.world, lv = t.lv, self = this;
     var px = Math.min(lv.size, Math.round(w.width * lv.scale) - t.col * lv.size), py = Math.min(lv.size, Math.round(w.height * lv.scale) - t.row * lv.size);
     var node = svg("image", {
+      decoding: "sync",
       class: "map-tile", x: t.col * lv.unit + t.k * w.width, y: t.row * lv.unit,
       width: px / lv.scale, height: py / lv.scale, preserveAspectRatio: "none"
     }, this._layer(lv.scale));

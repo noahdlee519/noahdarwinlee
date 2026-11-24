@@ -649,8 +649,7 @@ async function menuStage(browser) {
     ['towns', 'Towns and cities', () => labelsOn(['capital', 'city', 'town', 'village'])],
     ['rivers', 'Rivers and lakes', () => shown('.map-rivers path, .map-lakes')],
     ['parks', 'National parks', () => shown('.map-parks path, .map-park')],
-    ['borders', 'Borders', () => shown('.map-borders')],
-    ['provinces', 'Province lines', () => shown('.map-provinces')],
+    ['borders', 'Borders (and province lines with them)', () => page.evaluate(() => [...document.querySelectorAll('.map-borders, .map-provinces')].every((e) => getComputedStyle(e).display !== 'none'))],
     ['terrain', 'Terrain', () => shown('.map-image')],
     ['water-names', 'Water names', () => labelsOn(['sea', 'gulf', 'bay', 'strait', 'channel', 'sound', 'fjord', 'lagoon', 'harbour', 'inlet', 'cove', 'ocean', 'lake', 'river'])],
   ];

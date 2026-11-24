@@ -174,10 +174,8 @@ textarea {
 }
 
 /* Once the picture is in, the stand-in land under it is no longer painted. */
-.map.is-image-in .map-land {
-  visibility: hidden;
-  transition: visibility 0s linear 600ms;
-}
+/* The stand-in land stays under the picture, so that if the browser is ever slow to draw the picture at a new zoom,
+   what shows for that moment is plain land, not bare sea. */
 
 .map-rivers path {
   fill: none;
@@ -2171,16 +2169,26 @@ body:not(.is-panel) .panel-tab .ic {
     pointer-events: none;
   }
 
+  /* The scale sits just left of the location button, as in the Google Maps app, and shows only while zooming. */
   .corner {
-    left: 14px;
-    bottom: calc(var(--map-bottom) + 10px);
+    right: calc(14px + 50px + 10px);
+    left: auto;
+    bottom: calc(var(--map-bottom) + 16px + 4px);
+    align-items: flex-end;
     transition: none;
   }
 
-    .scale-corner {
+  .scale-corner {
     display: inline-flex;
-    color: var(--m-label);
-    text-shadow: 0 0 3px var(--m-halo), 0 0 3px var(--m-halo);
+    color: #1f1f1f;
+    text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+
+  .scale-corner.is-shown {
+    opacity: 1;
+    transition-duration: 150ms;
   }
 
   /* The scale after the Google Maps app's: one line, miles above it and kilometres below, each measured back from
@@ -2193,52 +2201,41 @@ body:not(.is-panel) .panel-tab .ic {
   .scale-corner .scale-dual {
     position: relative;
     display: block;
-    width: max(var(--km, 60px), var(--mi, 60px));
     height: 42px;
     font-size: 13.5px;
     line-height: 1;
     font-weight: 500;
   }
 
-  .scale-line,
-  .scale-line::before,
-  .scale-line::after {
-    position: absolute;
-    background: currentColor;
-    border-radius: 1px;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-halo) 80%, transparent);
-  }
-
+  /* One drawn line and its two ticks (km down where they start, miles up where they start), solid black on a pale
+     edge, so where they meet there is no seam. */
   .scale-line {
-    top: 20px;
-    right: 0;
-    left: 0;
-    height: 2px;
-  }
-
-  .scale-line::before,
-  .scale-line::after {
-    content: "";
-    width: 2px;
-    height: 11px;
-  }
-
-  /* Kilometres: a tick down at their start. */
-  .scale-line::before {
+    position: absolute;
     top: 0;
-    left: calc(100% - var(--km, 60px));
+    left: 0;
+    overflow: visible;
   }
 
-  /* Miles: a tick up at their start. */
-  .scale-line::after {
-    bottom: 0;
-    left: calc(100% - var(--mi, 60px));
+  .scale-line path {
+    fill: none;
+    stroke-linecap: square;
+  }
+
+  .scale-under {
+    stroke: #fff;
+    stroke-width: 4.5px;
+    stroke-opacity: 0.9;
+  }
+
+  .scale-over {
+    stroke: #1f1f1f;
+    stroke-width: 2px;
   }
 
   .scale-mi,
   .scale-km {
     position: absolute;
-    right: 0;
+    right: 2px;
   }
 
   .scale-mi {
@@ -2755,9 +2752,10 @@ body:not(.is-panel) .panel-tab .ic {
 .no-rivers .map-reservoirs,
 .no-parks .map-parks,
 .no-parks .map-cityparks,
+/* (Borders take the province lines with them: one switch for both, Noah, 24 November 2026.) */
 .no-borders .map-borders,
-.no-provinces .map-provinces,
-.no-provinces .map-admin,
+.no-borders .map-provinces,
+.no-borders .map-admin,
 .no-terrain .map-image,
 .no-terrain .map-urban,
 .no-terrain .map-tiles {
