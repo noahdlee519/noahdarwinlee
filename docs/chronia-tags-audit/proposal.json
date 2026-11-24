@@ -1,0 +1,5468 @@
+{
+ "add_to_existing": [
+  {
+   "tag": "Japan",
+   "names": [
+    "Yamato",
+    "Kenmu Restoration"
+   ],
+   "confidence": "high",
+   "why": "Yamato fills the gap before Asuka Japan, and the Kenmu Restoration fills the gap between the Kamakura and Ashikaga shogunates.",
+   "overlap": ""
+  },
+  {
+   "tag": "Korea",
+   "names": [
+    "Goryeo",
+    "Taebong"
+   ],
+   "confidence": "medium",
+   "why": "Goryeo to Joseon is a textbook dynastic change, and Taebong was Wang Geon's state before it became Goryeo.",
+   "overlap": ""
+  },
+  {
+   "tag": "Bukhara",
+   "names": [
+    "Shaybanids"
+   ],
+   "confidence": "low",
+   "why": "The Shaybanids founded the Khanate of Bukhara, though they also ruled Samarkand and Khorasan.",
+   "overlap": ""
+  },
+  {
+   "tag": "Britain",
+   "names": [
+    "Kingdom of Wessex",
+    "Kingdom of the Anglo-Saxons"
+   ],
+   "confidence": "medium",
+   "why": "Wessex became the Kingdom of the Anglo-Saxons and then the Kingdom of England, already in the tag.",
+   "overlap": ""
+  },
+  {
+   "tag": "Switzerland",
+   "names": [
+    "Old Swiss Confederacy",
+    "Helvetic Republic"
+   ],
+   "confidence": "medium",
+   "why": "The Old Confederacy and the Napoleonic Helvetic Republic are stages of one Swiss state.",
+   "overlap": ""
+  },
+  {
+   "tag": "Italy",
+   "names": [
+    "Cisalpine Republic",
+    "Italian Republic"
+   ],
+   "confidence": "low",
+   "why": "The Napoleonic republics led straight to the Kingdom of Italy, already in the tag.",
+   "overlap": ""
+  },
+  {
+   "tag": "Italy",
+   "names": [
+    "Italian Social Republic"
+   ],
+   "confidence": "low",
+   "why": "The wartime Italian state, as Vichy France is already tagged with France.",
+   "overlap": ""
+  },
+  {
+   "tag": "Italy",
+   "names": [
+    "Kingdom of the Lombards"
+   ],
+   "confidence": "low",
+   "why": "Arguable predecessor of the Kingdom of Italy; the Lombards fell to the Franks in 774.",
+   "overlap": "Italy (490 to 2026) is a general label already in the tag and is drawn across it."
+  },
+  {
+   "tag": "Croatia",
+   "names": [
+    "Duchy of Croatia",
+    "Kingdom of Croatia"
+   ],
+   "confidence": "medium",
+   "why": "The medieval Croatian duchy and kingdom are the same country as modern Croatia.",
+   "overlap": "Croatia (1097 to 2026) is a general label already in the tag and is drawn across Kingdom of Croatia."
+  },
+  {
+   "tag": "Serbia",
+   "names": [
+    "Grand Principality of Serbia",
+    "Serbian Empire",
+    "Moravian Serbia",
+    "Serbian Despotate"
+   ],
+   "confidence": "medium",
+   "why": "The conventional medieval Serbian line leading to the Principality of Serbia.",
+   "overlap": "Principality of Serbia (780 to 1881) and Kingdom of Serbia (1217 to 1918) are already in the tag and are drawn across these names; the start years look like placeholders."
+  },
+  {
+   "tag": "Serbia",
+   "names": [
+    "Republic of Serbia"
+   ],
+   "confidence": "high",
+   "why": "The 2006 republic is the same state as Serbia from 2006.",
+   "overlap": ""
+  },
+  {
+   "tag": "Serbia",
+   "names": [
+    "Sanjak of Smederevo"
+   ],
+   "confidence": "low",
+   "why": "An Ottoman province on Serbian land (1804 to 1817), not a Serbian state.",
+   "overlap": "Overlaps Principality of Serbia and Revolutionary Serbia, which are already in the tag."
+  },
+  {
+   "tag": "Montenegro",
+   "names": [
+    "Duklja",
+    "Zeta",
+    "Principality of Zeta"
+   ],
+   "confidence": "medium",
+   "why": "Duklja became Zeta, the medieval core of Montenegro.",
+   "overlap": ""
+  },
+  {
+   "tag": "Bulgaria",
+   "names": [
+    "First Bulgarian Empire",
+    "Second Bulgarian Empire"
+   ],
+   "confidence": "medium",
+   "why": "The two medieval empires are the same Bulgarian state despite the Byzantine gap between them.",
+   "overlap": ""
+  },
+  {
+   "tag": "Austria",
+   "names": [
+    "County of Habsburg"
+   ],
+   "confidence": "medium",
+   "why": "The Habsburg family county is the origin of the Habsburg Monarchy already in the tag.",
+   "overlap": "Overlaps Margraviate of Austria, Duchy of Austria, and Austria (1247 to 2026), which are already in the tag; the Habsburgs took Austria in 1282."
+  },
+  {
+   "tag": "Poland",
+   "names": [
+    "Duchy of Warsaw",
+    "Congress Poland"
+   ],
+   "confidence": "medium",
+   "why": "The Polish state revived between the Commonwealth and 1918, though both were client states.",
+   "overlap": ""
+  },
+  {
+   "tag": "Poland",
+   "names": [
+    "Civitas Schinesghe"
+   ],
+   "confidence": "medium",
+   "why": "The earliest Polish state under Mieszko, before the Duchy of Poland.",
+   "overlap": ""
+  },
+  {
+   "tag": "Germany",
+   "names": [
+    "Teutonic Order"
+   ],
+   "confidence": "low",
+   "why": "The Order's state became the Duchy of Prussia, which is already in the tag.",
+   "overlap": "Margraviate of Brandenburg (1134 to 1618) is already in the tag and is drawn across the Order's years."
+  },
+  {
+   "tag": "Germany",
+   "names": [
+    "East Germany"
+   ],
+   "confidence": "low",
+   "why": "West Germany is already in the tag, and the GDR was absorbed in 1990, though many treat it as a separate state.",
+   "overlap": "Drawn at the same time as West Germany and Germany (41 years), which the tag already holds together."
+  },
+  {
+   "tag": "France",
+   "names": [
+    "First French colonial empire"
+   ],
+   "confidence": "low",
+   "why": "The overseas part of the French state under the First Empire.",
+   "overlap": "Overlaps First French Empire by 8 years; it is the same state's overseas holdings."
+  },
+  {
+   "tag": "Haiti",
+   "names": [
+    "Saint-Domingue"
+   ],
+   "confidence": "medium",
+   "why": "The French colony became Haiti, as the Gold Coast became Ghana.",
+   "overlap": ""
+  },
+  {
+   "tag": "Argentina",
+   "names": [
+    "Viceroyalty of the Río de la Plata",
+    "United Provinces of the Río de la Plata"
+   ],
+   "confidence": "medium",
+   "why": "The viceroyalty and the United Provinces led directly to Argentina.",
+   "overlap": ""
+  },
+  {
+   "tag": "Brazil",
+   "names": [
+    "Vice-Royalty of Brazil"
+   ],
+   "confidence": "medium",
+   "why": "An undated duplicate of the Viceroyalty of Brazil, which is in the tag but no longer on the map.",
+   "overlap": ""
+  },
+  {
+   "tag": "Russia",
+   "names": [
+    "Principality of Moscow"
+   ],
+   "confidence": "low",
+   "why": "The early Moscow principality is the start of the line to Grand Duchy of Moscow.",
+   "overlap": "Drawn at the same time as Principality of Vladimir-Suzdal (64 years); the tag already holds Grand Duchy of Moscow beside it."
+  },
+  {
+   "tag": "Russia",
+   "names": [
+    "Rostov-Suzdal"
+   ],
+   "confidence": "medium",
+   "why": "Rostov-Suzdal became the Principality of Vladimir-Suzdal, already in the tag.",
+   "overlap": ""
+  },
+  {
+   "tag": "Egypt",
+   "names": [
+    "Ptolemaic Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "A Greek dynasty on the Egyptian throne continuing the Thirtieth Dynasty, though also Alexander's successor state.",
+   "overlap": ""
+  },
+  {
+   "tag": "Egypt",
+   "names": [
+    "Seventeenth Dynasty of Egypt"
+   ],
+   "confidence": "high",
+   "why": "The Theban dynasty that led straight to the New Kingdom, already in the tag.",
+   "overlap": ""
+  },
+  {
+   "tag": "Egypt",
+   "names": [
+    "Muhammad Ali dynasty"
+   ],
+   "confidence": "high",
+   "why": "The dynasty that ruled Egypt from 1805 and led to the Khedivate, already in the tag.",
+   "overlap": "Egypt (1708 to 2026) is a general label drawn across it and the Khedivate."
+  },
+  {
+   "tag": "Egypt",
+   "names": [
+    "Mamluk Sultanate",
+    "Tulunids",
+    "Fatimid Caliphate",
+    "Ikhshidid dynasty"
+   ],
+   "confidence": "low",
+   "why": "Dynasties that ruled Egypt from Cairo, though several began or reached beyond Egypt.",
+   "overlap": "Ikhshidid dynasty (962 to 969) lies inside Fatimid Caliphate (909 to 1176), which is dated from its start in Tunisia, and Tulunids overlap it by one year."
+  },
+  {
+   "tag": "Iran",
+   "names": [
+    "Achaemenid Empire",
+    "Parthian Empire",
+    "Sasanian Empire"
+   ],
+   "confidence": "medium",
+   "why": "The pre-Islamic Iranian empires, as one long Iranian country.",
+   "overlap": "Parthian Empire and Sasanian Empire overlap by 22 years in the handover."
+  },
+  {
+   "tag": "Iran",
+   "names": [
+    "Median Kingdom"
+   ],
+   "confidence": "low",
+   "why": "The earliest Iranian kingdom, a further step back than the empires.",
+   "overlap": ""
+  },
+  {
+   "tag": "Iran",
+   "names": [
+    "Ilkhanate",
+    "Timurid Empire"
+   ],
+   "confidence": "low",
+   "why": "Mongol and Timurid rulers of Iranian lands between the caliphate and the Safavids.",
+   "overlap": "Timurid Empire overlaps Safavid Iran by 27 years in the handover of 1501, and Ilkhanate by 1 year."
+  },
+  {
+   "tag": "Afghanistan",
+   "names": [
+    "Hotaki dynasty"
+   ],
+   "confidence": "low",
+   "why": "The Kandahar dynasty that preceded the Durrani Empire.",
+   "overlap": ""
+  },
+  {
+   "tag": "China",
+   "names": [
+    "Xin dynasty"
+   ],
+   "confidence": "high",
+   "why": "Wang Mang's short dynasty between the Western and Eastern Han.",
+   "overlap": "The tag has Han dynasty drawn to 237, which overlaps it."
+  },
+  {
+   "tag": "China",
+   "names": [
+    "Qin",
+    "Hán"
+   ],
+   "confidence": "medium",
+   "why": "The state of Qin became the Qin dynasty, and Hán is Liu Bang's kingdom that became the Han.",
+   "overlap": "Hán (206 BC to 204 BC) overlaps Han (208 BC to 203 BC) by 2 years and looks like the same kingdom."
+  },
+  {
+   "tag": "China",
+   "names": [
+    "Liu Song dynasty",
+    "Southern Qi",
+    "Liang dynasty",
+    "Chen dynasty"
+   ],
+   "confidence": "medium",
+   "why": "The Southern dynasties continue Eastern Jin; the tag already holds Northern and Southern Song.",
+   "overlap": "Chen dynasty (561 to 591) runs 4 to 5 years into Sui."
+  },
+  {
+   "tag": "China",
+   "names": [
+    "Later Liang dynasty",
+    "Later Tang",
+    "Later Jin",
+    "Later Han",
+    "Later Zhou"
+   ],
+   "confidence": "medium",
+   "why": "The Five Dynasties between the Tang and the Song.",
+   "overlap": "Later Jin is drawn 911 to 946, which looks like the whole period, so it overlaps Later Liang dynasty by 14 years and Later Tang by 9; the Five Dynasties followed one another."
+  },
+  {
+   "tag": "China",
+   "names": [
+    "Later Jin dynasty"
+   ],
+   "confidence": "low",
+   "why": "The Manchu state that became the Qing; the tag already counts Manchu Empire.",
+   "overlap": "Overlaps Ming dynasty by 25 years; the tag already holds Manchu Empire alongside the Ming."
+  },
+  {
+   "tag": "Sri Lanka",
+   "names": [
+    "British Ceylon"
+   ],
+   "confidence": "medium",
+   "why": "The British colony continues directly into Ceylon, already in the tag.",
+   "overlap": ""
+  },
+  {
+   "tag": "Sri Lanka",
+   "names": [
+    "Portuguese Ceylon",
+    "Dutch Ceylon"
+   ],
+   "confidence": "low",
+   "why": "Coastal colonies named for the colonizer, covering only part of the island.",
+   "overlap": ""
+  },
+  {
+   "tag": "Nepal",
+   "names": [
+    "Nepal Mandala"
+   ],
+   "confidence": "medium",
+   "why": "The medieval Nepal valley kingdoms before the Gorkha Kingdom.",
+   "overlap": "Nepal (1150 to 2026) is a general label already in the tag and is drawn across it and across Gorkha Kingdom."
+  },
+  {
+   "tag": "Nepal",
+   "names": [
+    "Kathmandu"
+   ],
+   "confidence": "low",
+   "why": "The Kathmandu kingdom of the Malla period, one of the Nepal Mandala states.",
+   "overlap": "Drawn inside Nepal Mandala and Nepal (1150 to 2026), which is a general label already in the tag."
+  },
+  {
+   "tag": "Burma",
+   "names": [
+    "Pagan Kingdom",
+    "Bagan",
+    "Myinsaing Kingdom",
+    "Kingdom of Pinya",
+    "Ava Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "The standard Burman dynastic sequence leading to the Toungoo Empire, already in the tag.",
+   "overlap": "Bagan (1150 to 1199) is a spelling of Pagan Kingdom; Pinya and Ava overlap by 9 years, and Ava overlaps First Toungoo Empire by 26."
+  },
+  {
+   "tag": "Burma",
+   "names": [
+    "Burmese kingdoms"
+   ],
+   "confidence": "low",
+   "why": "A general label for the Burman kingdoms of 1446 to 1599.",
+   "overlap": "Drawn across Ava Kingdom and First Toungoo Empire."
+  },
+  {
+   "tag": "Burma",
+   "names": [
+    "State of Burma"
+   ],
+   "confidence": "low",
+   "why": "The Japanese-sponsored state of 1943 to 1945 on the same land.",
+   "overlap": ""
+  },
+  {
+   "tag": "Ethiopia",
+   "names": [
+    "Zagwe dynasty"
+   ],
+   "confidence": "medium",
+   "why": "The dynasty between Aksum and the Solomonic line, in the same highland state.",
+   "overlap": ""
+  },
+  {
+   "tag": "Bornu",
+   "names": [
+    "Kanem",
+    "Empire of Kanem"
+   ],
+   "confidence": "medium",
+   "why": "Kanem moved west to become Bornu.",
+   "overlap": "Kanem (750 to 1199) and Empire of Kanem (1072 to 1384) overlap by 127 years; they look like one state from two sources."
+  }
+ ],
+ "new_tags": [
+  {
+   "tag": "Canada",
+   "names": [
+    "Province of Quebec",
+    "Lower Canada",
+    "Province of Canada",
+    "Canada"
+   ],
+   "confidence": "medium",
+   "why": "The Quebec line from the Province of Quebec through Lower Canada and the Province of Canada to the Dominion.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Colombia",
+   "names": [
+    "Viceroyalty of New Granada",
+    "United Provinces of New Granada",
+    "Republic of New Granada",
+    "Granadine Confederation",
+    "United States of Colombia",
+    "Colombia",
+    "Vice-Royalty of New Granada"
+   ],
+   "confidence": "medium",
+   "why": "Standard Colombian succession from New Granada through the Granadine Confederation and United States of Colombia to Colombia.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Venezuela",
+   "names": [
+    "Republic of Venezuela",
+    "Venezuela"
+   ],
+   "confidence": "medium",
+   "why": "The First Republic of Venezuela (1811-1814) is the first independent Venezuelan state, with a gap before Venezuela appears in 1834.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Peru",
+   "names": [
+    "Viceroyalty of Peru",
+    "Peru"
+   ],
+   "confidence": "medium",
+   "why": "The viceroyalty (to 1810) and the independent republic of 1822 are conventionally one line, though the viceroyalty was far larger.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "French Guiana",
+   "names": [
+    "Cayenne",
+    "French Colony of Guiana",
+    "French Guiana"
+   ],
+   "confidence": "medium",
+   "why": "All three are the French colony at Cayenne under successive names.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Guyana",
+   "names": [
+    "Essequibo",
+    "British Guiana",
+    "Guyana"
+   ],
+   "confidence": "medium",
+   "why": "British Guiana became independent Guyana in 1966 on the same territory.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Suriname",
+   "names": [
+    "Surinam",
+    "Suriname"
+   ],
+   "confidence": "high",
+   "why": "Surinam is an older spelling of Suriname; the Dutch colony became the independent state in 1975.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "United States Virgin Islands",
+   "names": [
+    "Danish West Indies",
+    "United States Virgin Islands"
+   ],
+   "confidence": "medium",
+   "why": "The Danish colony was sold in 1917 and became the US territory on the same islands; the map's own Wikipedia title for the 1886 view already says so.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Prince Edward Island",
+   "names": [
+    "Île Saint-Jean",
+    "St. John's Island",
+    "Prince Edward Island"
+   ],
+   "confidence": "medium",
+   "why": "St. John's Island was renamed Prince Edward Island in 1798, and Île Saint-Jean was the earlier French name of the same island.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Massachusetts",
+   "names": [
+    "Massachusetts Bay",
+    "Massachusetts Bay Colony",
+    "Province of Massachusetts Bay"
+   ],
+   "confidence": "medium",
+   "why": "The Massachusetts Bay Company, Colony, and Province are one colony under changing charters.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Massachusetts Bay and Massachusetts Bay Colony (10 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Trinidad and Tobago",
+   "names": [
+    "Trinidad",
+    "Trinidad and Tobago"
+   ],
+   "confidence": "medium",
+   "why": "Trinidad became Trinidad and Tobago in 1889 and independent in 1962; same colony and state.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Trinidad and Trinidad and Tobago (115 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Belize",
+   "names": [
+    "Belize",
+    "British Honduras"
+   ],
+   "confidence": "medium",
+   "why": "British Honduras was the colonial name of Belize until 1973.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Belize and British Honduras (111 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Mosquito Coast",
+   "names": [
+    "Mosquito Coast",
+    "Mosquito Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "The Miskito polity of the Mosquito Coast, a British protectorate then the Mosquito Kingdom, on the same coast (the later name links to the same article).",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Inca",
+   "names": [
+    "Kingdom of Cusco",
+    "Cuzco",
+    "Inca Empire",
+    "Neo-Inca State"
+   ],
+   "confidence": "medium",
+   "why": "The Kingdom of Cusco became the Inca Empire, and the Neo-Inca State was its rump after 1533; Cuzco is a spelling of Cusco.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Chimú",
+   "names": [
+    "Chimor",
+    "Chimú Empire",
+    "Chimu Empire",
+    "Chimú"
+   ],
+   "confidence": "high",
+   "why": "Four spellings of the same Chimú state; Chimu Empire links to the Chimor article.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Chimor and Chimú Empire (237 years); Chimú Empire and Chimu Empire (11 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Aztec",
+   "names": [
+    "Tenochtitlan",
+    "Aztec Triple Alliance"
+   ],
+   "confidence": "medium",
+   "why": "The Aztec Triple Alliance grew out of the city-state of Tenochtitlan; Texcoco is left out because it was a separate partner state.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Toltec",
+   "names": [
+    "Toltec Empire",
+    "Toltec"
+   ],
+   "confidence": "high",
+   "why": "Two spellings of the same Toltec state.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Toltec Empire and Toltec (312 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Zapotec",
+   "names": [
+    "Zapotec Civilization",
+    "Zapotec city-states",
+    "Zapotec Empire"
+   ],
+   "confidence": "medium",
+   "why": "The Zapotec of Oaxaca under successive names; Monte Albán is left out (see questions).",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Maya",
+   "names": [
+    "Maya chiefdoms and states",
+    "Mayan City-States",
+    "Maya city-states",
+    "Later Mayan City-States"
+   ],
+   "confidence": "low",
+   "why": "Successive map entries for the Maya lowland city-states over time, all linked to the Maya civilization.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Maya city-states and Later Mayan City-States (109 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Purépecha",
+   "names": [
+    "Michoacán",
+    "Purépecha Empire"
+   ],
+   "confidence": "medium",
+   "why": "Michoacán was the Purépecha (Tarascan) state, so these are two names for it.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Michoacán and Purépecha Empire (130 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Haudenosaunee",
+   "names": [
+    "Haudenosaunee",
+    "Iroquois"
+   ],
+   "confidence": "high",
+   "why": "Haudenosaunee and Iroquois are two names for the same Iroquois Confederacy, and the Iroquois entry links to the same article.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Haudenosaunee and Iroquois (253 years).",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Hawaii",
+   "names": [
+    "Kingdom of Hawaii",
+    "Republic of Hawai'i",
+    "Hawaii"
+   ],
+   "confidence": "low",
+   "why": "The Hawaiian state continued through the overthrow of the monarchy to the Republic and the US territory, but this is arguable.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Louisiana",
+   "names": [
+    "Louisiana",
+    "French Louisiana"
+   ],
+   "confidence": "low",
+   "why": "French Louisiana (1800-1804) is the brief French re-acquisition of the colony that Louisiana covers to 1803.",
+   "overlap": "",
+   "regions": [
+    "americas"
+   ]
+  },
+  {
+   "tag": "Georgia",
+   "names": [
+    "Caucasian Iberia",
+    "Georgia",
+    "Kingdom of the Iberians",
+    "Kingdom of Georgia",
+    "Kingdom of Kartli",
+    "Kingdom of Kartli-Kakheti"
+   ],
+   "confidence": "medium",
+   "why": "The textbook Georgian line from Iberia to Kartli-Kakheti and the modern state.",
+   "overlap": "Georgia (567 to 2026) is a general label drawn across the whole sequence, and Kingdom of Georgia and Kingdom of Kartli overlap by 26 years while the realm split; all are the same Georgian line.",
+   "regions": [
+    "balkans-anatolia-caucasus",
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Armenia",
+   "names": [
+    "Kingdom of Armenia",
+    "Armenia",
+    "Bagratid Armenia",
+    "Zakarid Armenia"
+   ],
+   "confidence": "medium",
+   "why": "The Orontid-Artaxiad-Arsacid kingdom, Bagratid Armenia, Zakarid Armenia, and the modern republic are conventionally one Armenian state line.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Armenia and Bagratid Armenia (158 years); Armenia and Zakarid Armenia (138 years).",
+   "regions": [
+    "balkans-anatolia-caucasus",
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Armenian Cilicia",
+   "names": [
+    "Armenian Principality of Cilicia",
+    "Armenian Kingdom of Cilicia"
+   ],
+   "confidence": "high",
+   "why": "The Rubenid principality became the kingdom in 1198 with no break.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Cyprus",
+   "names": [
+    "Cyprus",
+    "Cyprus under Isaac Komnenos",
+    "Kingdom of Cyprus"
+   ],
+   "confidence": "medium",
+   "why": "The Komnenos breakaway, the Lusignan kingdom, and Cyprus are all the same island state under different rulers.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Cyprus and Cyprus under Isaac Komnenos (6 years); Cyprus and Kingdom of Cyprus (297 years).",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Macedon",
+   "names": [
+    "Kingdom of Macedonia",
+    "Antigonid dynasty",
+    "Antigonid Macedonia"
+   ],
+   "confidence": "medium",
+   "why": "The Macedonian kingdom under the Argead and then the Antigonid dynasty.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "North Macedonia",
+   "names": [
+    "Macedonia",
+    "North Macedonia"
+   ],
+   "confidence": "low",
+   "why": "Macedonia runs to 2019 and North Macedonia starts then, so they look like the modern state under its old and new name, but Macedonia also covers a Roman province from -27.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Thrace",
+   "names": [
+    "Odrysian Kingdom",
+    "Thracian Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "The Thracian Kingdom of Roman times is the Odrysian kingdom's continuation, ended by annexation as Thracia.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Cappadocia",
+   "names": [
+    "Cappadocia",
+    "Kingdom of Cappadocia"
+   ],
+   "confidence": "medium",
+   "why": "The Persian-era and Diadochi Cappadocia and the later Ariarathid kingdom are one realm that was annexed by Rome in 17.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Lazica",
+   "names": [
+    "Colchis",
+    "Lazica",
+    "Kingdom of Lazica"
+   ],
+   "confidence": "medium",
+   "why": "Colchis, Lazica, and the Kingdom of Lazica (Egrisi) are the same west Georgian state under successive names.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Assyria",
+   "names": [
+    "Assyria",
+    "Neo-Assyrian Empire"
+   ],
+   "confidence": "medium",
+   "why": "Old, Middle, and Neo-Assyrian are one Assyrian state, usually treated together.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Assyria and Neo-Assyrian Empire (284 years).",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Mitanni",
+   "names": [
+    "Hurrian Kingdoms",
+    "Mitanni"
+   ],
+   "confidence": "low",
+   "why": "Mitanni was the Hurrian state that grew out of the earlier Hurrian kingdoms, but those were several states, not one.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Albania",
+   "names": [
+    "Principality of Arbanon",
+    "Kingdom of Albania",
+    "Albania"
+   ],
+   "confidence": "low",
+   "why": "Arbanon and the Angevin Kingdom of Albania held the same Durres region and are the medieval Albanian state line to modern Albania, though the continuity is thin.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus",
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Iraq",
+   "names": [
+    "British-occupied Mesopotamia",
+    "Iraq"
+   ],
+   "confidence": "medium",
+   "why": "The British occupation and mandate of Mesopotamia became the Kingdom of Iraq on the same territory, as with Gold Coast and Ghana.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Ayyubids",
+   "names": [
+    "Ayyubid Sultanate",
+    "Ayyubids of Hama"
+   ],
+   "confidence": "low",
+   "why": "The Ayyubid Sultanate and the Hama branch that outlived it.",
+   "overlap": "",
+   "regions": [
+    "middle-east",
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Osroene",
+   "names": [
+    "Kingdom of Osroene",
+    "Osroene"
+   ],
+   "confidence": "low",
+   "why": "The kingdom of Edessa was annexed as a Roman province of the same name in 214, so same land and name but a different regime.",
+   "overlap": "",
+   "regions": [
+    "balkans-anatolia-caucasus"
+   ]
+  },
+  {
+   "tag": "Kara Khitai",
+   "names": [
+    "Kara-Khitans",
+    "Kara Khitai Khaganate",
+    "Qara Khitai"
+   ],
+   "confidence": "high",
+   "why": "Three spellings of the Western Liao state founded by the Khitan after the fall of the Liao.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Kara-Khitans and Kara Khitai Khaganate (49 years).",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Kara-Khanid Khanate",
+   "names": [
+    "Kara-Khanids",
+    "Eastern Kara-Khanids",
+    "Karkhanids"
+   ],
+   "confidence": "medium",
+   "why": "One dynasty and one Wikipedia article under four spellings and divisions.",
+   "overlap": "Karkhanids (1050 to 1146) is a spelling variant of the dynasty and overlaps Eastern Kara-Khanids by 88 years.",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Western Xia",
+   "names": [
+    "Xixia",
+    "Western Xia"
+   ],
+   "confidence": "high",
+   "why": "Xixia and Western Xia are two names for the Tangut state.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Xixia and Western Xia (229 years).",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Khiva",
+   "names": [
+    "Khanate of Khiva",
+    "Khiva"
+   ],
+   "confidence": "high",
+   "why": "Same khanate before and after becoming a Russian protectorate; Khiva is in the middle-east file.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Golden Horde",
+   "names": [
+    "Golden Horde",
+    "Great Horde"
+   ],
+   "confidence": "low",
+   "why": "The Great Horde (1466-1502) is the Golden Horde's direct remnant and claimant, but that is a historiographical claim.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe",
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Kazakhstan",
+   "names": [
+    "Kazakh Khanate",
+    "Kazakhstan"
+   ],
+   "confidence": "low",
+   "why": "Kazakhstan claims the Kazakh Khanate as its predecessor, but there is a gap of 144 years and different borders.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Moghulistan",
+   "names": [
+    "Moghulistan",
+    "Western Moghulistan"
+   ],
+   "confidence": "medium",
+   "why": "Western Moghulistan has Moghulistan as its Wikipedia title, so it is the same state after the 1518 split.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Eastern Göktürks",
+   "names": [
+    "Göktürk Khaganate",
+    "Eastern Göktürks",
+    "Second Turkic Khaganate"
+   ],
+   "confidence": "medium",
+   "why": "The eastern line of the Turkic Khaganate, restored in 682 as the Second Khaganate after the Tang conquest.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Western Göktürks",
+   "names": [
+    "Western Turkic Khaganate",
+    "Western Göktürks"
+   ],
+   "confidence": "medium",
+   "why": "Two names for the western half of the Turkic Khaganate, the second from another region's file.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Western Turkic Khaganate and Western Göktürks (62 years).",
+   "regions": [
+    "eastern-europe-and-russia",
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Rouran",
+   "names": [
+    "Ruanruan",
+    "Rouran Khaganate"
+   ],
+   "confidence": "high",
+   "why": "Ruanruan is a variant of Rouran and the years are consecutive.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Xiongnu",
+   "names": [
+    "Xiongnu",
+    "Southern Xiongnu",
+    "S. Xiongnu"
+   ],
+   "confidence": "medium",
+   "why": "The tsv gives Southern Xiongnu the Wikipedia title Xiongnu from 51, and S. Xiongnu is a dependency spelling with no dated shape.",
+   "overlap": "Southern Xiongnu is the Xiongnu branch and the tsv gives it the Xiongnu article, so the years overlap by 172.",
+   "regions": [
+    "central-asia-and-steppe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Han Zhao",
+   "names": [
+    "Han Zhao",
+    "Former Zhao"
+   ],
+   "confidence": "high",
+   "why": "The Xiongnu state renamed Zhao in 319 is one state; Former Zhao even has the Wikipedia title Han-Zhao.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Oirat",
+   "names": [
+    "Oirat Confederation",
+    "Dzungar Khanate"
+   ],
+   "confidence": "low",
+   "why": "The Dzungar Khanate is the Oirat confederation reorganised under Dzungar leadership, but Khoshut (1582-1695) was a rival Oirat state.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Zhou",
+   "names": [
+    "Zhou dynasty",
+    "Eastern Zhou",
+    "Zhou states",
+    "Zhow states"
+   ],
+   "confidence": "medium",
+   "why": "The Zhou dynasty, the Eastern Zhou, and the Zhou states that ended it.",
+   "overlap": "",
+   "regions": [
+    "east-asia",
+    "central-asia-and-steppe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Khanate of Sibir",
+   "names": [
+    "Tyumen Khanate",
+    "Khanate of Sibir"
+   ],
+   "confidence": "medium",
+   "why": "The Khanate of Sibir succeeded the Tyumen Khanate as the same Siberian Tatar polity.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Northern Wei",
+   "names": [
+    "Northern Wei",
+    "Eastern Wei",
+    "Northern Qi"
+   ],
+   "confidence": "low",
+   "why": "Successive regimes of the same Xianbei-Chinese state in the north, each replacing the last by usurpation; not applied to the China tag because that tag skips the Northern and Southern Dynasties.",
+   "overlap": "",
+   "regions": [
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Western Wei",
+   "names": [
+    "Western Wei",
+    "Northern Zhou"
+   ],
+   "confidence": "low",
+   "why": "Northern Zhou took over the Western Wei throne in 557, but is kept apart from the Northern Wei line because Northern Qi (555-576) overlaps it.",
+   "overlap": "",
+   "regions": [
+    "east-asia",
+    "central-asia-and-steppe"
+   ]
+  },
+  {
+   "tag": "Silla",
+   "names": [
+    "Silla",
+    "Unified Silla"
+   ],
+   "confidence": "high",
+   "why": "Same Korean kingdom before and after it absorbed Baekje and Goguryeo.",
+   "overlap": "",
+   "regions": [
+    "east-asia"
+   ]
+  },
+  {
+   "tag": "Goguryeo",
+   "names": [
+    "Koguryo",
+    "Goguryeo"
+   ],
+   "confidence": "high",
+   "why": "Two spellings of the same kingdom, evidently from different sources.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Koguryo and Goguryeo (515 years).",
+   "regions": [
+    "east-asia"
+   ]
+  },
+  {
+   "tag": "Baekje",
+   "names": [
+    "Baekje",
+    "Hubaekje"
+   ],
+   "confidence": "medium",
+   "why": "Hubaekje (Later Baekje) is the 892 restoration of the Baekje kingdom, so the argument against is a gap of over 200 years and a different dynasty.",
+   "overlap": "",
+   "regions": [
+    "east-asia"
+   ]
+  },
+  {
+   "tag": "Nanzhao",
+   "names": [
+    "Nan-Zhao",
+    "Nanzhao",
+    "Nan Chao"
+   ],
+   "confidence": "high",
+   "why": "Same Yunnan kingdom spelled two ways, one in this region's file and one in east-asia.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Nan-Zhao and Nanzhao (8 years); Nanzhao and Nan Chao (160 years).",
+   "regions": [
+    "east-asia",
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Ryukyu",
+   "names": [
+    "Shunten dynasty",
+    "Chüzan",
+    "Ryukyu Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "Chüzan was the kingdom that unified Okinawa into the Ryukyu Kingdom, and Shunten was its first dynasty; Hokuzan and Nanzan are left out because they overlap Chüzan.",
+   "overlap": "",
+   "regions": [
+    "east-asia"
+   ]
+  },
+  {
+   "tag": "Ainu",
+   "names": [
+    "Ainu",
+    "Ainus"
+   ],
+   "confidence": "medium",
+   "why": "The same people, shown once as a people and once as a state.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Ainu and Ainus (129 years).",
+   "regions": [
+    "east-asia"
+   ]
+  },
+  {
+   "tag": "Tungus",
+   "names": [
+    "Tungus",
+    "Tungusic Tribes"
+   ],
+   "confidence": "low",
+   "why": "Probably the same people under two labels, but Tungusic is a language family so they may not be one group.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Jōmon",
+   "names": [
+    "Jōmon culture",
+    "Late Jomon culture"
+   ],
+   "confidence": "medium",
+   "why": "Late Jomon is a phase of the Jōmon culture.",
+   "overlap": "Late Jomon culture is a phase of Jōmon culture, so the years overlap.",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Taiwan",
+   "names": [
+    "Taiwan",
+    "Dutch Formosa",
+    "Kingdom of Tungning"
+   ],
+   "confidence": "low",
+   "why": "Island-level label plus the Dutch and Zheng regimes that actually ruled it, so the argument against is that these were different states.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Taiwan and Kingdom of Tungning (20 years).",
+   "regions": [
+    "east-asia",
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Hungary",
+   "names": [
+    "Principality of Hungary",
+    "Kingdom of Hungary",
+    "Hungary"
+   ],
+   "confidence": "high",
+   "why": "Textbook continuity from the Arpad principality through the medieval kingdom to the modern republic.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Transylvania",
+   "names": [
+    "Eastern Hungarian Kingdom",
+    "Principality of Transylvania"
+   ],
+   "confidence": "medium",
+   "why": "Zapolya's eastern kingdom became the Principality of Transylvania in 1571 with essentially the same lands.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Wallachia",
+   "names": [
+    "Wallachia",
+    "Principality of Wallachia"
+   ],
+   "confidence": "high",
+   "why": "One principality, whose name changes only with the source title in 1462.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Moldavia",
+   "names": [
+    "Moldavia",
+    "Principality of Moldavia"
+   ],
+   "confidence": "high",
+   "why": "One principality, whose name changes only with the source title in 1539.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Novgorod",
+   "names": [
+    "Novgorod Land",
+    "Novgorod Republic"
+   ],
+   "confidence": "high",
+   "why": "The same Novgorod polity before and after the 1136 expulsion of its prince.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Kievan Rus'",
+   "names": [
+    "Kievan Rus'",
+    "Principality of Kiev"
+   ],
+   "confidence": "medium",
+   "why": "The Kiev principality is the core of Rus' that kept the name after 1054, but it is also arguably just one of several successor principalities.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Gepids",
+   "names": [
+    "Gepids",
+    "Kingdom of the Gepids"
+   ],
+   "confidence": "high",
+   "why": "The Gepid state under Hun rule and the same Gepid kingdom after 454.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Galicia-Volhynia",
+   "names": [
+    "Principality of Halych",
+    "Principality of Galicia-Volhynia"
+   ],
+   "confidence": "medium",
+   "why": "The Principality of Halych continued as the Principality of Galicia-Volhynia.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Livonian Order",
+   "names": [
+    "Livonian Brothers of the Sword",
+    "Livonian Order"
+   ],
+   "confidence": "medium",
+   "why": "The Brothers of the Sword were absorbed into the Teutonic Order in 1237 as its Livonian branch, so this is one Livonian state under a new name.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Cumania",
+   "names": [
+    "Cuman Khanates",
+    "Cumania"
+   ],
+   "confidence": "medium",
+   "why": "The Cuman polity drawn in 1150-1199 and again as Cumania in 1200-1235.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Volga Bulgaria",
+   "names": [
+    "Volga Bulgaria",
+    "Volga Bulgars"
+   ],
+   "confidence": "medium",
+   "why": "Volga Bulgars looks like a second source's name for the same state.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Volga Bulgaria and Volga Bulgars (49 years).",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Kazan",
+   "names": [
+    "Khanate of Kazan",
+    "Kazan Khanate"
+   ],
+   "confidence": "medium",
+   "why": "Two spellings for the one khanate, with the second starting the year the first ends.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Finland",
+   "names": [
+    "Grand Duchy of Finland",
+    "Finland"
+   ],
+   "confidence": "medium",
+   "why": "The Grand Duchy of Finland is the direct territorial predecessor of independent Finland (1917).",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Lithuania",
+   "names": [
+    "Grand Duchy of Lithuania",
+    "Lithuania"
+   ],
+   "confidence": "medium",
+   "why": "The medieval grand duchy is the standard historical ancestor of the modern state, despite the long union with Poland.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Masovia",
+   "names": [
+    "Masovia",
+    "Duchy of Masovia"
+   ],
+   "confidence": "low",
+   "why": "Miecław's brief state and the later duchy hold the same land but are 90 years apart and probably unconnected.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia"
+   ]
+  },
+  {
+   "tag": "Saudi Arabia",
+   "names": [
+    "Emirate of Diriyah",
+    "Emirate of Nejd",
+    "Sultanate of Nejd",
+    "Kingdom of Hejaz and Nejd",
+    "Saudi Arabia"
+   ],
+   "confidence": "medium",
+   "why": "First Saudi state, second Saudi state, then the sultanate and kingdom that became Saudi Arabia are one house and one state under changing names.",
+   "overlap": "",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "United Arab Emirates",
+   "names": [
+    "Trucial States",
+    "United Arab Emirates"
+   ],
+   "confidence": "medium",
+   "why": "The British-protected Trucial States became the UAE on essentially the same territory.",
+   "overlap": "",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Qatar",
+   "names": [
+    "Qatar dynasty",
+    "Qatar"
+   ],
+   "confidence": "medium",
+   "why": "The Qatar dynasty entry is the same Qatar under its ruling family and Qatar is the modern state.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Qatar dynasty and Qatar (8 years).",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Kuwait",
+   "names": [
+    "Kuwait",
+    "State of Kuwait"
+   ],
+   "confidence": "medium",
+   "why": "State of Kuwait (1961) is the independent Kuwait that Kuwait's own span already covers.",
+   "overlap": "",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Bahrain",
+   "names": [
+    "Bahrain",
+    "House of Khalifa"
+   ],
+   "confidence": "low",
+   "why": "The House of Khalifa is the ruling dynasty of Bahrain since 1783.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Bahrain and House of Khalifa (111 years).",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Oman",
+   "names": [
+    "Oman",
+    "Sultanate of Oman",
+    "Sultanate of Muscat and Oman"
+   ],
+   "confidence": "medium",
+   "why": "Different names and phases of the same Omani sultanate under the Al Said line.",
+   "overlap": "Oman (1515 to 2026) is a general label drawn across the period, and Sultanate of Oman and Sultanate of Muscat and Oman overlap by 77 years; they look like one sultanate from two sources.",
+   "regions": [
+    "middle-east",
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "South Yemen",
+   "names": [
+    "Aden Protectorate",
+    "Aden",
+    "Federation of South Arabia",
+    "South Yemen"
+   ],
+   "confidence": "medium",
+   "why": "The British Aden territories became the Federation of South Arabia and then the independent People's Republic of South Yemen on largely the same land.",
+   "overlap": "",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Yemen",
+   "names": [
+    "Yemen",
+    "Qasimids",
+    "Imamate of Yemen",
+    "North Yemen"
+   ],
+   "confidence": "low",
+   "why": "The Zaydi imamate (Qasimids, later Imamate of Yemen) and North Yemen are the highland Yemeni state that became the Yemen Arab Republic.",
+   "overlap": "Yemen (1177 to 2026) is a general label drawn across the period, and Qasimids and Imamate of Yemen overlap by 30 years as two names for the same imamate.",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Hadhramaut",
+   "names": [
+    "Hadhramaut",
+    "Hadramaut"
+   ],
+   "confidence": "high",
+   "why": "Two spellings of the same state, one ending in 1149 and the other starting 1150.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Saba",
+   "names": [
+    "Kingdom of Saba",
+    "Sabaeans"
+   ],
+   "confidence": "medium",
+   "why": "Sabaeans is the same Sabaean state in its later period, drawn under another name.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Aksum",
+   "names": [
+    "Dʿmt",
+    "Proto-Aksumite kingdoms",
+    "Kingdom of Aksum",
+    "Aksum"
+   ],
+   "confidence": "medium",
+   "why": "Dʿmt, the proto-Aksumite kingdoms, and Aksum are the usual single line of development of the Aksumite state; Aksum (950-999) is a variant of Kingdom of Aksum.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Aussa",
+   "names": [
+    "Imamate of Aussa",
+    "Sultanate of Aussa"
+   ],
+   "confidence": "high",
+   "why": "The Afar state of Aussa, called an imamate until 1733 and a sultanate after (Imamate of Aussa is in the sub-saharan-africa file).",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Adal",
+   "names": [
+    "Ifat",
+    "Ifat Sultanate",
+    "Adal Sultanate",
+    "Sultanate of Harar"
+   ],
+   "confidence": "medium",
+   "why": "Ifat moved to Adal and then to the Sultanate of Harar; the Wikipedia title is Adal Sultanate.",
+   "overlap": "Sultanate of Harar overlaps Adal Sultanate by 30 years but has the Adal Sultanate article, so it is the same state.",
+   "regions": [
+    "sub-saharan-africa",
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Seljuk",
+   "names": [
+    "Seljuk dynasty",
+    "Great Seljuk Empire"
+   ],
+   "confidence": "high",
+   "why": "The Seljuk dynasty before 1040 and the Great Seljuk Empire are one state; the Sultanate of Rum is a separate branch.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Buyid",
+   "names": [
+    "Buyid dynasty",
+    "Buwayhid Emirates"
+   ],
+   "confidence": "high",
+   "why": "Buyid and Buwayhid are two spellings of one dynasty drawn from different sources.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Buyid dynasty and Buwayhid Emirates (149 years).",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Caliphate",
+   "names": [
+    "Rashidun Caliphate",
+    "Umayyad Caliphate",
+    "Abbasid Caliphate",
+    "Abbasid Caliphate/Buyid dynasty"
+   ],
+   "confidence": "low",
+   "why": "The three successive caliphates are sometimes treated as one Islamic state, but they are different dynasties and Noah may prefer them separate.",
+   "overlap": "Rashidun and Umayyad overlap by 9 years in the handover, and the composite Abbasid Caliphate/Buyid dynasty lies inside Abbasid Caliphate.",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Khwarazm",
+   "names": [
+    "Khwarezmid dynasty",
+    "Khwarazmian Empire"
+   ],
+   "confidence": "high",
+   "why": "The Anushtegin dynasty ruling Khwarazm became the Khwarazmian Empire without a break.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Damascus",
+   "names": [
+    "Emirate of Damascus",
+    "Burid dynasty"
+   ],
+   "confidence": "medium",
+   "why": "The Burids took over the emirate of Damascus from Duqaq's line, as atabegs of the same city-state.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Khachen",
+   "names": [
+    "Principality of Khachen",
+    "Melikdoms of Karabakh"
+   ],
+   "confidence": "medium",
+   "why": "The Armenian melikdoms of Karabakh are the continuation of the Khachen principality under the same noble houses; the Karabakh Khanate is a Muslim state and is left out.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Kakheti",
+   "names": [
+    "Kakheti-Hereti",
+    "Kingdom of Kakheti"
+   ],
+   "confidence": "low",
+   "why": "The kingdom of Kakheti-Hereti and its fifteenth-century revival.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Phoenice",
+   "names": [
+    "Syria Phoenice",
+    "Phoenice"
+   ],
+   "confidence": "high",
+   "why": "Roman province Phoenice (293-476) is the same province as Syria Phoenice (194-292) after the Diocletianic reorganisation.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Arabia Petraea",
+   "names": [
+    "Arabia Petraea",
+    "Arabia"
+   ],
+   "confidence": "high",
+   "why": "Arabia (293-476) is the Roman province Arabia Petraea (106-292) under its later name; Arabia Petraea is in the north-africa file.",
+   "overlap": "",
+   "regions": [
+    "north-africa",
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Judaea",
+   "names": [
+    "Iudaea",
+    "Syria Palaestina"
+   ],
+   "confidence": "low",
+   "why": "The Roman province Iudaea was renamed Syria Palaestina in 135.",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Babylonia",
+   "names": [
+    "Babylonia",
+    "Neo-Babylonian Empire"
+   ],
+   "confidence": "high",
+   "why": "The Neo-Babylonian Empire is the revived Babylonian state straight after Babylonia ends (601 BC to 600 BC).",
+   "overlap": "",
+   "regions": [
+    "middle-east"
+   ]
+  },
+  {
+   "tag": "Syria",
+   "names": [
+    "Syria",
+    "Syria (France)"
+   ],
+   "confidence": "low",
+   "why": "Syria (France) (1918-1920, modern-only file) is the French-held Syria that becomes the Syria drawn as a mandate and then a republic.",
+   "overlap": "",
+   "regions": [
+    "middle-east",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Czechia",
+   "names": [
+    "Duchy of Bohemia",
+    "Kingdom of Bohemia",
+    "Bohemia",
+    "Czechoslovakia",
+    "Czech Republic"
+   ],
+   "confidence": "medium",
+   "why": "Bohemian duchy and kingdom to the Czech state; Czechoslovakia is the shared predecessor of Czech Republic (and Slovakia, already a tag).",
+   "overlap": "Bohemia (1420 to 1436) is a short drawing of the Hussite period inside Kingdom of Bohemia.",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Ireland",
+   "names": [
+    "Lordship of Ireland",
+    "Kingdom of Ireland",
+    "Ireland"
+   ],
+   "confidence": "medium",
+   "why": "The English-ruled lordship became the Kingdom of Ireland and then the Irish state.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Malta",
+   "names": [
+    "Hospitaller Malta",
+    "Malta"
+   ],
+   "confidence": "medium",
+   "why": "Order's Malta and the later British colony and republic are one island state.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Papal States",
+   "names": [
+    "Papal States",
+    "Vatican City"
+   ],
+   "confidence": "medium",
+   "why": "The Holy See's territorial state continued as Vatican City after the 1929 treaty.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "San Marino",
+   "names": [
+    "San Marino",
+    "Republic of San Marino"
+   ],
+   "confidence": "high",
+   "why": "Two spellings of the same republic from different sources.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: San Marino and Republic of San Marino (184 years).",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Norway",
+   "names": [
+    "Kingdom of Norway",
+    "Norway-Denmark",
+    "Norway"
+   ],
+   "confidence": "medium",
+   "why": "Same kingdom before and after union with Denmark and Sweden.",
+   "overlap": "Norway-Denmark (1046 to 1055) is a brief union under one king and overlaps Kingdom of Norway by 9 years.",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Iceland",
+   "names": [
+    "Icelandic Commonwealth",
+    "Iceland"
+   ],
+   "confidence": "medium",
+   "why": "Medieval commonwealth and the modern state, with a gap under Norway and Denmark.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Bosnia",
+   "names": [
+    "Bosnia",
+    "Banate of Bosnia",
+    "Kingdom of Bosnia",
+    "Bosnia and Herzegovina",
+    "Bosnia-Herzegovina"
+   ],
+   "confidence": "medium",
+   "why": "Medieval Bosnia to the modern state, with an Ottoman gap.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Saar",
+   "names": [
+    "Territory of the Saar Basin",
+    "Saar Protectorate"
+   ],
+   "confidence": "high",
+   "why": "The same territory under League of Nations and then French control.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Donetsk",
+   "names": [
+    "Donetsk People's Republic",
+    "Donetsk Oblast"
+   ],
+   "confidence": "medium",
+   "why": "Same territory, declared republic in 2014 and then Russian-claimed oblast in 2022.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Luhansk",
+   "names": [
+    "Luhansk People's Republic",
+    "Luhansk Oblast"
+   ],
+   "confidence": "medium",
+   "why": "Same territory, declared republic in 2014 and then Russian-claimed oblast in 2022.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Ukraine",
+   "names": [
+    "Cossack Hetmanate",
+    "Ukraine"
+   ],
+   "confidence": "low",
+   "why": "Ukrainian historians treat the Hetmanate as an ancestor state; Kievan Rus' is not included.",
+   "overlap": "",
+   "regions": [
+    "eastern-europe-and-russia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Gaza",
+   "names": [
+    "Gaza",
+    "Gaza Strip"
+   ],
+   "confidence": "high",
+   "why": "Same territory; the name changed on the map in 1967.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Jordan",
+   "names": [
+    "Transjordan",
+    "Jordan"
+   ],
+   "confidence": "high",
+   "why": "Same state renamed in 1949.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Tunisia",
+   "names": [
+    "Hafsid dynasty",
+    "Beylik of Tunis",
+    "Tunisia"
+   ],
+   "confidence": "medium",
+   "why": "Tunis-based state under the Hafsids, the Husainid beys, and the protectorate and republic of Tunisia.",
+   "overlap": "",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Algeria",
+   "names": [
+    "Sultanate of Algiers",
+    "Regency of Algiers",
+    "French Algeria",
+    "Algeria"
+   ],
+   "confidence": "medium",
+   "why": "The Algiers state under its successive names, then the French colony and the independent state on the same territory (Gold Coast to Ghana pattern).",
+   "overlap": "",
+   "regions": [
+    "north-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Morocco",
+   "names": [
+    "Idrisids",
+    "Almoravid dynasty",
+    "Almohad Caliphate",
+    "Marinid Sultanate",
+    "Wattasid dynasty",
+    "Saadi Sultanate",
+    "Morocco"
+   ],
+   "confidence": "low",
+   "why": "The Moroccan dynastic succession from the Idrisids to the Alaouite state named Morocco, treated like the Chinese dynasties.",
+   "overlap": "Neighbouring dynasties overlap by 25 to 38 years in the handovers (Almoravid to Almohad to Marinid, and Wattasid to Saadi), and Morocco starts in 1625 while the Saadi Sultanate runs to 1659.",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Western Sahara",
+   "names": [
+    "Spanish West Africa",
+    "Spanish Sahara",
+    "Western Sahara",
+    "Sahrawi Republic"
+   ],
+   "confidence": "medium",
+   "why": "The Spanish colonial territory and the territory that carries on as Western Sahara; Spanish West Africa is the loosest fit.",
+   "overlap": "",
+   "regions": [
+    "north-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Sudan",
+   "names": [
+    "Egyptian Sudan",
+    "Anglo-Egyptian Sudan",
+    "Sudan"
+   ],
+   "confidence": "medium",
+   "why": "Anglo-Egyptian Sudan became independent Sudan in 1956; Mahdist State and Egyptian Sudan are left out as different states.",
+   "overlap": "",
+   "regions": [
+    "north-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Somalia",
+   "names": [
+    "Italian Somaliland",
+    "Somalia"
+   ],
+   "confidence": "medium",
+   "why": "Italian Somaliland and the former British Somaliland united as Somalia in 1960.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Somaliland",
+   "names": [
+    "British Somaliland",
+    "Somaliland"
+   ],
+   "confidence": "medium",
+   "why": "Somaliland (1991) claims to be the former British Somaliland restored, though it was merged into Somalia 1960-1991.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Djibouti",
+   "names": [
+    "French Somaliland",
+    "Afars and Issas",
+    "Djibouti"
+   ],
+   "confidence": "high",
+   "why": "French Somaliland, later the Territory of the Afars and Issas, became Djibouti (1977 gap on the map).",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Kenya",
+   "names": [
+    "British East Africa",
+    "Kenya"
+   ],
+   "confidence": "medium",
+   "why": "British East Africa Protectorate became the Kenya Colony and then Kenya.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Tanzania",
+   "names": [
+    "German East Africa",
+    "Tanganyika",
+    "Tanzania"
+   ],
+   "confidence": "medium",
+   "why": "German East Africa became the Tanganyika mandate and then mainland Tanzania; Zanzibar is left out as a separate state.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Zanzibar",
+   "names": [
+    "Zanzibar",
+    "Sultanate of Zanzibar"
+   ],
+   "confidence": "low",
+   "why": "Sultanate of Zanzibar is the independent sultan's state that Zanzibar continues until 1964.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Zanzibar and Sultanate of Zanzibar (33 years).",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Cameroon",
+   "names": [
+    "Kamerun",
+    "Cameroon"
+   ],
+   "confidence": "medium",
+   "why": "German Kamerun became the French and British mandates and then Cameroon; British Cameroons is left out as a split territory.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Togo",
+   "names": [
+    "German Togoland",
+    "Togo"
+   ],
+   "confidence": "medium",
+   "why": "German Togoland became the League of Nations mandate and then Togo; the 1919-1922 overlap is the handover.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Central African Republic",
+   "names": [
+    "Ubangi-Shari",
+    "Central African Republic"
+   ],
+   "confidence": "high",
+   "why": "Same territory renamed on independence.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Republic of the Congo",
+   "names": [
+    "French Congo",
+    "Congo"
+   ],
+   "confidence": "medium",
+   "why": "The French colony and the Brazzaville republic that took over a large part of it.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Mali",
+   "names": [
+    "Mali",
+    "French Sudan"
+   ],
+   "confidence": "low",
+   "why": "French Sudan became the Republic of Mali in 1960.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Mali and French Sudan (55 years).",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Ivory Coast",
+   "names": [
+    "Ivory Coast",
+    "Côte d'Ivoire"
+   ],
+   "confidence": "high",
+   "why": "Ivory Coast and Côte d'Ivoire are the same colony and country; the map has a 1889 handover.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Nigeria",
+   "names": [
+    "Oil Rivers Protectorate",
+    "Southern Nigeria",
+    "Nigeria"
+   ],
+   "confidence": "low",
+   "why": "Oil Rivers Protectorate became Southern Nigeria and then Nigeria in 1914.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Guinea-Bissau",
+   "names": [
+    "Portuguese Guinea",
+    "Guinea-Bissau"
+   ],
+   "confidence": "high",
+   "why": "Portuguese Guinea became Guinea-Bissau (1973/1974).",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Equatorial Guinea",
+   "names": [
+    "Spanish Guinea",
+    "Equatorial Guinea"
+   ],
+   "confidence": "high",
+   "why": "Spanish Guinea became Equatorial Guinea in 1968.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Mozambique",
+   "names": [
+    "Portuguese East Africa",
+    "Mozambique"
+   ],
+   "confidence": "medium",
+   "why": "Portuguese East Africa is the Portuguese colony that became Mozambique.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Portuguese East Africa and Mozambique (31 years).",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Namibia",
+   "names": [
+    "South West Africa",
+    "Namibia"
+   ],
+   "confidence": "high",
+   "why": "South West Africa (German, then South African) is Namibia before independence.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Botswana",
+   "names": [
+    "Bechuanaland",
+    "Botswana"
+   ],
+   "confidence": "high",
+   "why": "The Bechuanaland Protectorate became Botswana in 1966.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Lesotho",
+   "names": [
+    "Basutoland",
+    "Lesotho"
+   ],
+   "confidence": "high",
+   "why": "Basutoland became Lesotho in 1966.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Eswatini",
+   "names": [
+    "Swaziland",
+    "Eswatini"
+   ],
+   "confidence": "high",
+   "why": "Same kingdom, renamed in 2018.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Sierra Leone",
+   "names": [
+    "Freetown Colony",
+    "Sierra Leone"
+   ],
+   "confidence": "medium",
+   "why": "Freetown Colony (1788-1796) is the settlement that became the Colony of Sierra Leone.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "South Africa",
+   "names": [
+    "Dutch Cape Colony",
+    "Cape Colony",
+    "South Africa"
+   ],
+   "confidence": "low",
+   "why": "The Cape is the core colony of the Union of South Africa; the Cape Colony was the same colony under Dutch and British rule.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Dutch Cape Colony and Cape Colony (9 years).",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Arunachal Pradesh",
+   "names": [
+    "North-East Frontier Agency",
+    "Arunachal Pradesh"
+   ],
+   "confidence": "high",
+   "why": "Same territory, renamed on gaining statehood.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Pahang",
+   "names": [
+    "Pahang Sultanate",
+    "Pahang"
+   ],
+   "confidence": "high",
+   "why": "Same Pahang sultanate, drawn as Pahang Sultanate to 1887 and as Pahang (modern-only file) from 1888.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Selangor",
+   "names": [
+    "Sultanate of Selangor",
+    "Selangor"
+   ],
+   "confidence": "high",
+   "why": "Same sultanate, drawn as Sultanate of Selangor to 1876 and as Selangor (modern-only file) from 1886.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Sarawak",
+   "names": [
+    "Kingdom of Sarawak",
+    "Sarawak"
+   ],
+   "confidence": "high",
+   "why": "The Brooke Raj of Sarawak and its later protectorate and colony under the same name, same territory.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Brunei",
+   "names": [
+    "Sultanate of Brunei",
+    "Brunei"
+   ],
+   "confidence": "high",
+   "why": "Same sultanate that became a British protectorate and then independent, one year of overlap at 1888.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Indonesia",
+   "names": [
+    "Dutch East Indies",
+    "Indonesia"
+   ],
+   "confidence": "medium",
+   "why": "Colony and the independent state that took over essentially the same territory, as with Gold Coast and Ghana.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "West Papua",
+   "names": [
+    "Dutch New Guinea",
+    "West Irian"
+   ],
+   "confidence": "high",
+   "why": "The same territory under Dutch then Indonesian administration.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Papua New Guinea",
+   "names": [
+    "German New Guinea",
+    "New Guinea",
+    "Papua New Guinea"
+   ],
+   "confidence": "medium",
+   "why": "German New Guinea, then the Australian mandate, then independent Papua New Guinea.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Vietnam",
+   "names": [
+    "Âu Lạc",
+    "Trưng sisters",
+    "Early Lý dynasty",
+    "Ngô dynasty",
+    "Đinh dynasty",
+    "Early Lê dynasty",
+    "Lý dynasty",
+    "Trần dynasty",
+    "Đại Việt",
+    "Hồ dynasty",
+    "Lê dynasty",
+    "Tây Sơn dynasty",
+    "Nguyễn dynasty",
+    "Vietnam",
+    "Empire of Vietnam",
+    "North Vietnam"
+   ],
+   "confidence": "medium",
+   "why": "The Vietnamese dynasties and states from Âu Lạc to modern Vietnam, as one country.",
+   "overlap": "Đại Việt (1400 to 1833) is a general label drawn across the Lê, Tây Sơn, and Nguyễn dynasties, Nguyễn dynasty overlaps Vietnam (1860 to 2026) by 24 years under French rule, and Vietnam overlaps North Vietnam by 22 years; all are the same country.",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Laos",
+   "names": [
+    "Lan Xang",
+    "Kingdom of Luang Phrabang",
+    "Laos"
+   ],
+   "confidence": "medium",
+   "why": "Lan Xang split into Luang Phrabang, Vientiane, and Champasak, and Luang Phrabang carried on into modern Laos.",
+   "overlap": "Laos is drawn from 1893 under the French while the Kingdom of Luang Phrabang continues to 1945 (52 years).",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Cambodia",
+   "names": [
+    "Chen-La",
+    "Chenla",
+    "Khmer Empire",
+    "Kingdom of Cambodia",
+    "Cambodia",
+    "Kingdom of Kampuchea",
+    "Kampuchea"
+   ],
+   "confidence": "medium",
+   "why": "Chenla through the Khmer Empire and the kingdom to modern Cambodia is the standard line.",
+   "overlap": "Cambodia (1871 to 2026) is a general label that overlaps Kampuchea (1975 to 1989) by 14 years.",
+   "regions": [
+    "southeast-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Samoa",
+   "names": [
+    "Samoa",
+    "German Samoa",
+    "Western Samoa"
+   ],
+   "confidence": "low",
+   "why": "The German colony became the New Zealand mandate (Western Samoa) and then independent Samoa, the same territory.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Samoa and German Samoa (14 years); Samoa and Western Samoa (47 years).",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Vanuatu",
+   "names": [
+    "New Hebrides",
+    "Vanuatu"
+   ],
+   "confidence": "high",
+   "why": "Same territory, renamed at independence.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Fiji",
+   "names": [
+    "Kingdom of Fiji",
+    "Fiji"
+   ],
+   "confidence": "medium",
+   "why": "The Cakobau kingdom ceded itself to Britain in 1874 and the colony and modern state keep the same territory.",
+   "overlap": "",
+   "regions": [
+    "oceania-and-pacific"
+   ]
+  },
+  {
+   "tag": "Netherlands Antilles",
+   "names": [
+    "Curaçao and Dependencies",
+    "Netherlands Antilles"
+   ],
+   "confidence": "medium",
+   "why": "Dutch Caribbean colony renamed.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Oldenburg",
+   "names": [
+    "County of Oldenburg",
+    "Duchy of Oldenburg",
+    "Grand Duchy of Oldenburg",
+    "House of Oldenburg"
+   ],
+   "confidence": "medium",
+   "why": "County to duchy to grand duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Blois",
+   "names": [
+    "County of Blois",
+    "House of Blois"
+   ],
+   "confidence": "medium",
+   "why": "House of Blois is an undated variant of the County.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Aragon",
+   "names": [
+    "Kingdom of Aragon",
+    "Crown of Aragon",
+    "County of Aragon"
+   ],
+   "confidence": "medium",
+   "why": "Crown of Aragon (1706-1715) is the Habsburg-claimant Aragonese state of the Spanish Succession war, on the old kingdom's land.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Lleida",
+   "names": [
+    "Lleida",
+    "Taifa of Lleida"
+   ],
+   "confidence": "medium",
+   "why": "Undated variant of the Taifa of Lleida.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Fraxinetum",
+   "names": [
+    "Fraxinetum and Provence",
+    "Fraxinetum"
+   ],
+   "confidence": "medium",
+   "why": "Undated variant of the dated name.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Teotihuacan",
+   "names": [
+    "Teotihuacan",
+    "Teotihuacàn",
+    "Teotihuacán",
+    "Teotihuac�n"
+   ],
+   "confidence": "high",
+   "why": "Four spellings of one city-state; three have no dated shape.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Monte Albán",
+   "names": [
+    "Monte Albán",
+    "Monte Alb?n",
+    "Monte Alb�n"
+   ],
+   "confidence": "high",
+   "why": "Three spellings of one city-state; two are garbled and undated.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Maratha Empire",
+   "names": [
+    "Maratha Empire",
+    "Maratha Confederacy"
+   ],
+   "confidence": "medium",
+   "why": "Confederacy is the usual name for the later Peshwa-era Maratha state.",
+   "overlap": "",
+   "regions": [
+    "south-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Chola",
+   "names": [
+    "Early Cholas",
+    "Chola Empire",
+    "Chola state"
+   ],
+   "confidence": "medium",
+   "why": "Early Cholas and the medieval Chola Empire are one dynasty with a gap of rule; 'Chola state' is an undated shape.",
+   "overlap": "",
+   "regions": [
+    "south-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Merina",
+   "names": [
+    "Merina Kingdom",
+    "Expansionist Kingdom of Merina"
+   ],
+   "confidence": "medium",
+   "why": "Undated variant of the dated name.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Libya",
+   "names": [
+    "Karamanli dynasty",
+    "Libya"
+   ],
+   "confidence": "low",
+   "why": "The Karamanli regency became Italian and then independent Libya.",
+   "overlap": "",
+   "regions": [
+    "north-africa",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Kush",
+   "names": [
+    "Kush",
+    "Kingdom of Kush"
+   ],
+   "confidence": "medium",
+   "why": "Kush (1070 BC to 1001 BC) is the early phase of the kingdom the map then names Kingdom of Kush.",
+   "overlap": "",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Makuria",
+   "names": [
+    "Makuria",
+    "Makkura"
+   ],
+   "confidence": "high",
+   "why": "Makkura is a spelling variant of Makuria, the Nubian kingdom.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Makuria and Makkura (549 years).",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Sicily",
+   "names": [
+    "County of Sicily",
+    "Kingdom of Sicily",
+    "Kingdom of the Two Sicilies"
+   ],
+   "confidence": "medium",
+   "why": "The county, the kingdom, and the Kingdom of the Two Sicilies are one crown renamed.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe",
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Altava",
+   "names": [
+    "Mauro-Roman Kingdom",
+    "Kingdom of Altava",
+    "Kusaila"
+   ],
+   "confidence": "medium",
+   "why": "The Mauro-Roman kingdom is conventionally continued by the Kingdom of Altava, whose king was Kusaila.",
+   "overlap": "",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Aurès",
+   "names": [
+    "Kingdom of the Aurès",
+    "Kahina"
+   ],
+   "confidence": "low",
+   "why": "Kahina led the Aurès Berbers in the last years of the Aurès kingdom, but the map dates them as consecutive, separate names.",
+   "overlap": "",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Baetica",
+   "names": [
+    "Hispania Baetica",
+    "Baetica"
+   ],
+   "confidence": "medium",
+   "why": "The same Roman province of southern Spain under its earlier and later map names.",
+   "overlap": "",
+   "regions": [
+    "north-africa"
+   ]
+  },
+  {
+   "tag": "Tuareg",
+   "names": [
+    "Tuaregs",
+    "Tuareg Nomadic Tribes"
+   ],
+   "confidence": "medium",
+   "why": "Two labels for the same people from different periods.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Tuaregs and Tuareg Nomadic Tribes (49 years).",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Berbers",
+   "names": [
+    "Berbers",
+    "Berber Tribes"
+   ],
+   "confidence": "medium",
+   "why": "Two labels for the same people.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Berbers and Berber Tribes (89 years).",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Saharan pastoral nomads",
+   "names": [
+    "Saharan pastoral nomads",
+    "Saharan Pastoral Nomads"
+   ],
+   "confidence": "high",
+   "why": "Same name differing only in capitalisation; one is the dated shape and the other has no dates.",
+   "overlap": "",
+   "regions": [
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Tasmania",
+   "names": [
+    "Van Diemen's Land",
+    "Tasmania"
+   ],
+   "confidence": "high",
+   "why": "Same colony renamed in 1856, as the tsv's own Wikipedia titles show.",
+   "overlap": "",
+   "regions": [
+    "oceania-and-pacific"
+   ]
+  },
+  {
+   "tag": "Western Australia",
+   "names": [
+    "Swan River Colony",
+    "Western Australia"
+   ],
+   "confidence": "high",
+   "why": "Same colony renamed in 1832; the tsv lists Swan River Colony as its earlier title.",
+   "overlap": "",
+   "regions": [
+    "oceania-and-pacific"
+   ]
+  },
+  {
+   "tag": "Bali",
+   "names": [
+    "Early Balinese Kingdoms",
+    "Balinese Kingdom",
+    "Bali"
+   ],
+   "confidence": "medium",
+   "why": "All three share the Wikipedia title Bali Kingdom, though there is a gap from 1344 to 1518 and the early kingdoms were several polities.",
+   "overlap": "",
+   "regions": [
+    "oceania-and-pacific"
+   ]
+  },
+  {
+   "tag": "New Caledonia",
+   "names": [
+    "New Caledonia",
+    "New Caledonia and Dependencies"
+   ],
+   "confidence": "high",
+   "why": "Same French possession; the map only changes the name in 1860.",
+   "overlap": "",
+   "regions": [
+    "americas",
+    "oceania-and-pacific"
+   ]
+  },
+  {
+   "tag": "Tonga",
+   "names": [
+    "Tuʻi Tonga Empire",
+    "Tonga"
+   ],
+   "confidence": "low",
+   "why": "The modern Kingdom of Tonga descends from the Tuʻi Tonga line via the Tuʻi Kanokupolu, but the old empire was a different, earlier polity.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Tuʻi Tonga Empire and Tonga (23 years).",
+   "regions": [
+    "oceania-and-pacific",
+    "americas"
+   ]
+  },
+  {
+   "tag": "Sinhala kingdom",
+   "names": [
+    "Simhala",
+    "Anurādhapura",
+    "Kingdom of Polonnaruwa",
+    "Kingdom of Dambadeniya",
+    "Kingdom of Kurunegala",
+    "Kingdom of Gampola",
+    "Kingdom of Kotte",
+    "Kingdom of Kandy"
+   ],
+   "confidence": "medium",
+   "why": "The Sinhalese monarchy moving between capitals, each named for its seat; it could instead be folded into the Sri Lanka tag.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Kingdom of Polonnaruwa and Kingdom of Dambadeniya (23 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Cheras",
+   "names": [
+    "Early Cheras",
+    "Cheras"
+   ],
+   "confidence": "medium",
+   "why": "Early and later Chera kingdom of Kerala under the same dynasty name.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Pandyas",
+   "names": [
+    "Early Pandyas",
+    "Pandyas",
+    "Pandya dynasty",
+    "Pandya state",
+    "Pandya Empire"
+   ],
+   "confidence": "high",
+   "why": "One Pandya dynasty of Madurai in successive map periods and spellings.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Pandya state and Pandya Empire (233 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Pallavas",
+   "names": [
+    "Late Pallava Empire",
+    "Pallavas",
+    "Pallava state",
+    "Pallava"
+   ],
+   "confidence": "high",
+   "why": "One Pallava dynasty of Kanchi under four map names.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Late Pallava Empire and Pallavas (304 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Kushan Empire",
+   "names": [
+    "Kushan Empire",
+    "Eastern Kushans",
+    "Kushan Principalities"
+   ],
+   "confidence": "medium",
+   "why": "The Kushan Empire and the successor states that carried on its eastern realm.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Kabul Shahi",
+   "names": [
+    "Turk Shahis",
+    "Hindu Shahis"
+   ],
+   "confidence": "medium",
+   "why": "The Turk Shahi and Hindu Shahi dynasties are the two phases of the Kabul Shahi kingdom.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Turk Shahis and Hindu Shahis (24 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Delhi Sultanate",
+   "names": [
+    "Sultanate of Delhi",
+    "Mamluk dynasty",
+    "Khalji dynasty",
+    "Tughlaq dynasty",
+    "Sayyid dynasty",
+    "Lodi dynasty",
+    "Delhi Sultanate"
+   ],
+   "confidence": "high",
+   "why": "The five dynasties are the Delhi Sultanate by definition, like China's dynasties.",
+   "overlap": "Sultanate of Delhi (1150 to 1518) is a general label drawn across the five dynasties, which follow one another.",
+   "regions": [
+    "south-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Sindh",
+   "names": [
+    "Kingdom of Sind",
+    "Sindh",
+    "Sind-Habbari dynasty",
+    "Soomra Emirate",
+    "Soomra dynasty",
+    "Sind-Samma dynasty",
+    "Talpur dynasty"
+   ],
+   "confidence": "medium",
+   "why": "Dynasties ruling Sindh in turn under one regional state; the Talpur line carries on to the British conquest.",
+   "overlap": "Sindh (850 to 1782) is a general label drawn across the dynasties, and Sind-Habbari dynasty is drawn to 1199, which looks too late and overlaps Soomra Emirate by 126 years.",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Kashmir",
+   "names": [
+    "Karkota dynasty",
+    "Kashmir",
+    "Utpala dynasty",
+    "Lohara dynasty",
+    "Kashmiri Sultanate"
+   ],
+   "confidence": "medium",
+   "why": "The Kashmiri dynasties and the sultanate that followed them.",
+   "overlap": "Kashmir (626 to 1343) is a general label drawn across the Karkota, Utpala, and Lohara dynasties.",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Jammu and Kashmir",
+   "names": [
+    "Kashmir and Jammu",
+    "Jammu and Kashmir"
+   ],
+   "confidence": "low",
+   "why": "The Dogra princely state and the modern territory on the same land.",
+   "overlap": "",
+   "regions": [
+    "south-asia",
+    "modern-only"
+   ]
+  },
+  {
+   "tag": "Kamarupa",
+   "names": [
+    "Kamarupa Kingdom",
+    "Kamarupa"
+   ],
+   "confidence": "high",
+   "why": "Same Assamese kingdom under two names in consecutive years.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Magadha",
+   "names": [
+    "Magadha",
+    "Nanda Empire",
+    "Maurya Empire",
+    "Shunga Empire",
+    "Kanva dynasty"
+   ],
+   "confidence": "low",
+   "why": "Nanda, Maurya, Shunga, and Kanva are Magadhan dynasties, but the Maurya Empire is usually treated as its own empire.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Magadha and Nanda Empire (14 years); Magadha and Maurya Empire (147 years); Magadha and Shunga Empire (103 years); and 1 more pairs.",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Chauhan",
+   "names": [
+    "Chauhans",
+    "Chauhan dynasty"
+   ],
+   "confidence": "medium",
+   "why": "Earlier and later phases of the Chauhan dynasty.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Chandela",
+   "names": [
+    "Chandela Kingdom",
+    "Chandellas"
+   ],
+   "confidence": "medium",
+   "why": "Chandellas is a spelling variant of the Chandela kingdom.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Chandela Kingdom and Chandellas (34 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Gurjara-Pratihara",
+   "names": [
+    "Gurjara-Pratihara dynasty",
+    "Pratiharas"
+   ],
+   "confidence": "medium",
+   "why": "Pratiharas is the same dynasty under a shorter name.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Gurjara-Pratihara dynasty and Pratiharas (89 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Sena",
+   "names": [
+    "Senas",
+    "Sena dynasty"
+   ],
+   "confidence": "low",
+   "why": "Likely two sources for the Sena dynasty, but Senas is centred at 93,24 and Sena dynasty at 89,24, so check the shapes.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Senas and Sena dynasty (127 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Gauda",
+   "names": [
+    "Gauda Kingdom",
+    "Shaskanka"
+   ],
+   "confidence": "medium",
+   "why": "Shashanka's kingdom of Gauda in two entries; 'Shaskanka' looks a misspelling of Shashanka.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Maitraka",
+   "names": [
+    "Maitraka dynasty",
+    "Vallabhi"
+   ],
+   "confidence": "medium",
+   "why": "Vallabhi was the Maitraka capital and the later state kept the name.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Berar",
+   "names": [
+    "Berar",
+    "Berar Sultanate"
+   ],
+   "confidence": "high",
+   "why": "The Bahmani province of Berar became the Imad Shahi sultanate of Berar.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Golconda",
+   "names": [
+    "Golkonda",
+    "Golconda Sultanate"
+   ],
+   "confidence": "high",
+   "why": "Golkonda is a spelling variant of Golconda in the years before the sultanate.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Vijayanagara",
+   "names": [
+    "Vijayanagara Empire",
+    "Vijayanagara"
+   ],
+   "confidence": "high",
+   "why": "The empire and its last rump are the same state in consecutive years.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Bengal Sultanate",
+   "names": [
+    "Sultanate of Bengal",
+    "Hussain Shahi dynasty"
+   ],
+   "confidence": "medium",
+   "why": "Hussain Shahi was a dynasty of the Bengal Sultanate.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Bengal Subah",
+   "names": [
+    "Bengal Subah",
+    "Bengal",
+    "Nawabs of Bengal"
+   ],
+   "confidence": "medium",
+   "why": "The Mughal province of Bengal and the autonomous Nawabs who ruled it later.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Orissa",
+   "names": [
+    "Kalinga",
+    "Mahameghavahana dynasty",
+    "Somvamsis",
+    "Orissa",
+    "Eastern Ganga Kingdom",
+    "Gajapati Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "Dynasties and names of the Kalinga/Odisha country; Mahameghavahana is the weakest link.",
+   "overlap": "Kalinga and Orissa are general regional labels drawn across the Somvamsi, Eastern Ganga, and Gajapati dynasties.",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Arakan",
+   "names": [
+    "Arakan",
+    "Kingdom of Mrauk U"
+   ],
+   "confidence": "medium",
+   "why": "Mrauk U is the capital and dynasty name of the Arakan kingdom.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Arakan and Kingdom of Mrauk U (358 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Shan states",
+   "names": [
+    "Shan States",
+    "Shan states"
+   ],
+   "confidence": "medium",
+   "why": "Two spellings of the same Shan principalities.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Shan States and Shan states (14 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Pyu",
+   "names": [
+    "Pyu City-States",
+    "Pyu state"
+   ],
+   "confidence": "medium",
+   "why": "Same Pyu polity under two spellings, consecutive in years.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Mon",
+   "names": [
+    "Mon state",
+    "Mon States",
+    "Hanthawaddy Kingdom"
+   ],
+   "confidence": "low",
+   "why": "Mon polities of lower Burma; Hanthawaddy was a Mon revival centuries after the others.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Mon state and Mon States (149 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Tibet",
+   "names": [
+    "Tibetan Empire",
+    "Tibet",
+    "Phagmodrupa dynasty"
+   ],
+   "confidence": "medium",
+   "why": "Tibetan Empire to later Tibet and its Phagmodrupa ruling dynasty are conventionally one Tibetan state.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Tibet and Phagmodrupa dynasty (47 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Chalukya",
+   "names": [
+    "Chalukya dynasty",
+    "Western Chalukya Empire"
+   ],
+   "confidence": "low",
+   "why": "Western Chalukyas claimed descent from Badami's Chalukyas, but historians usually treat them as different dynasties.",
+   "overlap": "",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Western Satraps",
+   "names": [
+    "Saka Kingdom",
+    "Western Satraps"
+   ],
+   "confidence": "medium",
+   "why": "The Saka kingdom of western India is the Western Satraps.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Saka Kingdom and Western Satraps (309 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Indo-Parthian",
+   "names": [
+    "Suren Kingdom",
+    "Indo-Parthians"
+   ],
+   "confidence": "low",
+   "why": "Suren Kingdom was the Indo-Parthian dynasty, but it runs to 489, long after the Indo-Parthians end.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Suren Kingdom and Indo-Parthians (89 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Kanauj",
+   "names": [
+    "Harsha's Empire",
+    "Kanauj",
+    "Kannauj-Varman dynasty"
+   ],
+   "confidence": "low",
+   "why": "Kannauj as the seat of Harsha and then Yashovarman, from different dynasties.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Harsha's Empire and Kanauj (43 years).",
+   "regions": [
+    "south-asia"
+   ]
+  },
+  {
+   "tag": "Lavo",
+   "names": [
+    "Lavo",
+    "Lavo Kingdom",
+    "Lopburi Kingdom"
+   ],
+   "confidence": "medium",
+   "why": "Lavo and Lavo Kingdom are one Mon-Khmer polity, and Lopburi is its later name for the same centre.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Lavo Kingdom and Lopburi Kingdom (131 years).",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Haripuñjaya",
+   "names": [
+    "Haripuñjaya",
+    "Harapunchai"
+   ],
+   "confidence": "medium",
+   "why": "Two spellings of the Mon kingdom of Hariphunchai around Lamphun.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Haripuñjaya and Harapunchai (49 years).",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Lan Na",
+   "names": [
+    "Lan Na Kingdom",
+    "Chiangmai"
+   ],
+   "confidence": "medium",
+   "why": "Chiang Mai (1775-1884) is the Lan Na realm restored under Siamese suzerainty after Burmese rule.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Mataram Kingdom",
+   "names": [
+    "Mataram",
+    "Mataram Kingdom"
+   ],
+   "confidence": "high",
+   "why": "Both are the ancient Hindu-Buddhist Mataram (Medang) kingdom in central Java, consecutive on the map.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Mataram Sultanate",
+   "names": [
+    "Mataram Sultanate",
+    "Surakarta Sunanate"
+   ],
+   "confidence": "medium",
+   "why": "The Surakarta Sunanate is the direct continuation of the Mataram Sultanate after the 1755 partition, the Yogyakarta half having gone separate.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Kutai",
+   "names": [
+    "Kutai Kingdom",
+    "Sultanate of Kutai Kartanegara"
+   ],
+   "confidence": "high",
+   "why": "The Wikipedia title for both is Kutai, and they are the same Bornean sultanate in consecutive years.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Malacca",
+   "names": [
+    "Sultanate of Malacca",
+    "Sultanate of Johor"
+   ],
+   "confidence": "medium",
+   "why": "Johor is the continuation of the Malacca sultanate after 1511, though a historian may call it a successor state.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Perak",
+   "names": [
+    "Sultanate of Perak",
+    "Perak"
+   ],
+   "confidence": "high",
+   "why": "Same sultanate, drawn under its formal name before 1876 and its short name under British residency.",
+   "overlap": "",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Aceh",
+   "names": [
+    "Aceh",
+    "Sultanate of Aceh"
+   ],
+   "confidence": "medium",
+   "why": "Both are the Aceh sultanate, the earlier entry being a less-detailed earlier drawing.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Aceh and Sultanate of Aceh (36 years).",
+   "regions": [
+    "southeast-asia"
+   ]
+  },
+  {
+   "tag": "Funj",
+   "names": [
+    "Funj",
+    "Funj Sultanate"
+   ],
+   "confidence": "high",
+   "why": "Same sultanate of Sennar; the map splits it at 1506/1507.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Darfur",
+   "names": [
+    "Darfur",
+    "Sultanate of Darfur"
+   ],
+   "confidence": "high",
+   "why": "The Keira sultanate of Darfur under two labels, contiguous in time.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Wadai",
+   "names": [
+    "Wadai",
+    "Wadai Empire"
+   ],
+   "confidence": "high",
+   "why": "One Wadai sultanate; the map switches name at 1636.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Kuba",
+   "names": [
+    "Kuba Kingdom",
+    "Kuba"
+   ],
+   "confidence": "medium",
+   "why": "The same Kuba kingdom under two labels with a gap of about 40 years (1807-1847).",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Oyo",
+   "names": [
+    "Oyo Empire",
+    "Oyo"
+   ],
+   "confidence": "high",
+   "why": "Old Oyo and the successor New Oyo (1836) are treated as one Yoruba state.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Segu",
+   "names": [
+    "Segu",
+    "Bamana Empire"
+   ],
+   "confidence": "high",
+   "why": "Bamana Empire is the Segu kingdom; same state, two sources.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Segu and Bamana Empire (101 years).",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Lozi",
+   "names": [
+    "Lozi",
+    "Barotse"
+   ],
+   "confidence": "medium",
+   "why": "Barotseland is the Lozi kingdom; the two names are drawn around different centres.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Lozi and Barotse (44 years).",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Sokoto Caliphate",
+   "names": [
+    "Sokoto Caliphate",
+    "Fulani Empire"
+   ],
+   "confidence": "medium",
+   "why": "Fulani Empire (a single year, 1808) is the Fulani jihad state that became the Sokoto Caliphate.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Takrur",
+   "names": [
+    "Takrur",
+    "Tekrur"
+   ],
+   "confidence": "low",
+   "why": "Tekrur looks like a variant spelling of Takrur, but there is a gap of 470 years between them (1235-1708).",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Natal",
+   "names": [
+    "Natalia Republic",
+    "Natal"
+   ],
+   "confidence": "medium",
+   "why": "The Boer Republic of Natalia was annexed by Britain as the Colony of Natal.",
+   "overlap": "Natalia Republic is drawn to 1910, which looks wrong, so it overlaps Natal for the whole of Natal's life.",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Zulu",
+   "names": [
+    "Zulu Kingdom",
+    "Zululand"
+   ],
+   "confidence": "medium",
+   "why": "Zululand is the former Zulu Kingdom after the 1879 war, a British-ruled remnant.",
+   "overlap": "",
+   "regions": [
+    "sub-saharan-africa"
+   ]
+  },
+  {
+   "tag": "Scotland",
+   "names": [
+    "Pictland",
+    "Kingdom of Alba",
+    "Kingdom of Scotland",
+    "Scotland"
+   ],
+   "confidence": "medium",
+   "why": "Pictland became Alba and then Scotland in the usual narrative; Scotland 1297-1340 is the Wars of Independence drawing.",
+   "overlap": "Pictland and Kingdom of Alba overlap by 31 years in the handover, and Scotland (1297 to 1340) is a short drawing of the war years inside Kingdom of Scotland.",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Wales",
+   "names": [
+    "Kingdom of Gwynedd",
+    "Principality of Wales",
+    "Wales"
+   ],
+   "confidence": "medium",
+   "why": "Gwynedd's rulers became Princes of Wales, and Wales (1403-1408) is the Glyndwr state.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Isle of Man",
+   "names": [
+    "Lordship of Mann",
+    "Isle of Man"
+   ],
+   "confidence": "medium",
+   "why": "Same island polity under its later name.",
+   "overlap": "A general label is drawn across the period and overlaps the dated names, which are the same state: Lordship of Mann and Isle of Man (247 years).",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Northumbria",
+   "names": [
+    "Bernicia",
+    "Kingdom of Northumbria"
+   ],
+   "confidence": "high",
+   "why": "Bernicia absorbed Deira and became the Kingdom of Northumbria.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Deheubarth",
+   "names": [
+    "Seisyllwg",
+    "Deheubarth"
+   ],
+   "confidence": "high",
+   "why": "Seisyllwg was merged into Deheubarth.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Glamorgan",
+   "names": [
+    "Kingdom of Glywysing",
+    "Kingdom of Morgannwg"
+   ],
+   "confidence": "medium",
+   "why": "Glywysing was renamed Morgannwg.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Cornwall",
+   "names": [
+    "Dumnonia",
+    "Kingdom of Cornwall"
+   ],
+   "confidence": "high",
+   "why": "Dumnonia's Cornish remnant became the Kingdom of Cornwall.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Isles",
+   "names": [
+    "Kingdom of the Isles",
+    "Lordship of the Isles"
+   ],
+   "confidence": "low",
+   "why": "The Hebridean sea-kingdom and its later Gaelic lordship, with a gap under Scotland.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Meath",
+   "names": [
+    "Southern Uí Néill",
+    "Kingdom of Meath"
+   ],
+   "confidence": "medium",
+   "why": "Meath is the later form of the southern Uí Néill realm.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Al-Andalus",
+   "names": [
+    "Al-Andalus",
+    "Emirate of Córdoba",
+    "Caliphate of Córdoba"
+   ],
+   "confidence": "high",
+   "why": "One Umayyad state in Iberia under governors, emirs, then caliphs.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "León",
+   "names": [
+    "Kingdom of Asturias",
+    "Kingdom of León"
+   ],
+   "confidence": "high",
+   "why": "The Asturian kingdom moved its capital and became León.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Navarre",
+   "names": [
+    "Kingdom of Pamplona",
+    "Kingdom of Navarre"
+   ],
+   "confidence": "high",
+   "why": "Pamplona was renamed Navarre.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Belgium",
+   "names": [
+    "Spanish Netherlands",
+    "Austrian Netherlands",
+    "United Belgian States",
+    "Southern Netherlands",
+    "Belgium"
+   ],
+   "confidence": "medium",
+   "why": "The southern Low Countries under Habsburg rule and the independent state that took over the same territory, as Gold Coast and Ghana.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Luxembourg",
+   "names": [
+    "County of Luxembourg",
+    "Duchy of Luxembourg",
+    "Luxembourg"
+   ],
+   "confidence": "high",
+   "why": "Count, duke, then grand duchy of one land.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Limburg",
+   "names": [
+    "Limburg",
+    "Duchy of Limburg"
+   ],
+   "confidence": "low",
+   "why": "Same 1830s Limburg territory under two names, Belgian then Dutch.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Brabant",
+   "names": [
+    "County of Louvain",
+    "Landgraviate of Brabant",
+    "Duchy of Brabant"
+   ],
+   "confidence": "medium",
+   "why": "The counts of Louvain became landgraves, then dukes of Brabant.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Guelders",
+   "names": [
+    "County of Guelders",
+    "Duchy of Guelders"
+   ],
+   "confidence": "high",
+   "why": "County raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Bar",
+   "names": [
+    "County of Bar",
+    "Duchy of Bar"
+   ],
+   "confidence": "high",
+   "why": "County raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Lorraine",
+   "names": [
+    "Lotharingia",
+    "Duchy of Lotharingia",
+    "Duchy of Upper Lorraine",
+    "Duchy of Lorraine"
+   ],
+   "confidence": "medium",
+   "why": "Lotharingia, its stem duchy, and Upper Lorraine continued as the Duchy of Lorraine.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Kingdom of Burgundy",
+   "names": [
+    "Upper Burgundy",
+    "Kingdom of Burgundy"
+   ],
+   "confidence": "high",
+   "why": "Upper Burgundy became the Kingdom of Burgundy (Arles) in 933.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Franche-Comté",
+   "names": [
+    "County of Burgundy",
+    "Franche-Comté"
+   ],
+   "confidence": "high",
+   "why": "The County of Burgundy is the same land as Franche-Comté.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Provence",
+   "names": [
+    "Provence",
+    "Kingdom of Provence",
+    "County of Provence"
+   ],
+   "confidence": "low",
+   "why": "Provence under successive rulers; the early entries are brief and distinct.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Aquitaine",
+   "names": [
+    "Duchy of Aquitaine",
+    "Aquitaine",
+    "Kingdom of Aquitaine",
+    "Principality of Aquitaine"
+   ],
+   "confidence": "low",
+   "why": "Aquitaine under its dukes, the Carolingian subkingdom, and the English principality.",
+   "overlap": "Duchy of Aquitaine (670 to 1453) is a general label drawn across the shorter Aquitaine entries.",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Gascony",
+   "names": [
+    "Duchy of Vasconia",
+    "Duchy of Gascony"
+   ],
+   "confidence": "high",
+   "why": "Vasconia is the earlier name of Gascony.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Anjou",
+   "names": [
+    "County of Anjou",
+    "Duchy of Anjou"
+   ],
+   "confidence": "high",
+   "why": "County raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Brittany",
+   "names": [
+    "Breton kingdoms",
+    "Kingdom of Brittany",
+    "Duchy of Brittany",
+    "Brittany"
+   ],
+   "confidence": "medium",
+   "why": "Breton kingdoms unified into a kingdom and then a duchy; Brittany (1341-1364) is the War of Succession drawing.",
+   "overlap": "The overlapping names are the same state from two sources or spellings: Duchy of Brittany and Brittany (23 years).",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Venice",
+   "names": [
+    "Duchy of Venetia",
+    "Republic of Venice"
+   ],
+   "confidence": "medium",
+   "why": "The Byzantine duchy became the independent Republic.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Genoa",
+   "names": [
+    "Republic of Genoa",
+    "Ligurian Republic"
+   ],
+   "confidence": "medium",
+   "why": "The Ligurian Republic is the Napoleonic Genoa.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Republic of Genoa and Ligurian Republic (7 years).",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Tuscany",
+   "names": [
+    "Republic of Florence",
+    "Duchy of Florence",
+    "Grand Duchy of Tuscany"
+   ],
+   "confidence": "high",
+   "why": "Florence to a duchy and then Grand Duchy of Tuscany.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Lucca",
+   "names": [
+    "Republic of Lucca",
+    "Principality of Lucca and Piombino",
+    "Lucca",
+    "Duchy of Lucca"
+   ],
+   "confidence": "medium",
+   "why": "One city-state under successive regimes.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Milan",
+   "names": [
+    "Lordship of Milan",
+    "Duchy of Milan"
+   ],
+   "confidence": "high",
+   "why": "Lordship raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Mantua",
+   "names": [
+    "Lordship of Mantua",
+    "March of Mantua",
+    "Duchy of Mantua"
+   ],
+   "confidence": "high",
+   "why": "Lordship raised to a march and then a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Ferrara",
+   "names": [
+    "Lordship of Ferrara",
+    "Duchy of Ferrara"
+   ],
+   "confidence": "high",
+   "why": "Lordship raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Padua",
+   "names": [
+    "Commune of Padua",
+    "Lordship of Padua"
+   ],
+   "confidence": "high",
+   "why": "City commune became a lordship.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Massa and Carrara",
+   "names": [
+    "Marquisate of Massa",
+    "Duchy of Massa and Carrara"
+   ],
+   "confidence": "high",
+   "why": "Marquisate raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Benevento",
+   "names": [
+    "Duchy of Benevento",
+    "Principality of Benevento"
+   ],
+   "confidence": "high",
+   "why": "Duchy raised to a principality.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Holstein",
+   "names": [
+    "County of Holstein",
+    "Duchy of Holstein"
+   ],
+   "confidence": "high",
+   "why": "County raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Mecklenburg-Schwerin",
+   "names": [
+    "Lordship of Mecklenburg",
+    "Duchy of Mecklenburg",
+    "Duchy of Mecklenburg-Schwerin",
+    "Grand Duchy of Mecklenburg-Schwerin"
+   ],
+   "confidence": "medium",
+   "why": "The Mecklenburg line that continued as Schwerin.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: Duchy of Mecklenburg and Duchy of Mecklenburg-Schwerin (26 years).",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Mecklenburg-Strelitz",
+   "names": [
+    "Duchy of Mecklenburg-Strelitz",
+    "Grand Duchy of Mecklenburg-Strelitz"
+   ],
+   "confidence": "high",
+   "why": "Duchy raised to a grand duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Baden",
+   "names": [
+    "Margraviate of Baden",
+    "Electorate of Baden",
+    "Grand Duchy of Baden"
+   ],
+   "confidence": "medium",
+   "why": "The Margraviate became an electorate and then a grand duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Bavaria",
+   "names": [
+    "Duchy of Bavaria",
+    "Kingdom of Bavaria",
+    "Electorate of Bavaria"
+   ],
+   "confidence": "medium",
+   "why": "The Duchy, Electorate, and Kingdom of Bavaria are one state under changing titles.",
+   "overlap": "Kingdom of Bavaria starts in 817 on the map, which looks wrong, so it overlaps the Duchy and the Electorate for centuries.",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Saxony",
+   "names": [
+    "Duchy of Saxony",
+    "Duchy of Saxe-Wittenberg",
+    "Electorate of Saxony",
+    "Kingdom of Saxony"
+   ],
+   "confidence": "medium",
+   "why": "The Wittenberg duchy carried the electoral title and became the Electorate and Kingdom of Saxony.",
+   "overlap": "Duchy of Saxony (880 to 1546) is drawn across the Electorate of Saxony, and Duchy of Saxe-Wittenberg overlaps it by 60 years.",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Saxe-Weimar-Eisenach",
+   "names": [
+    "Duchy of Saxe-Weimar-Eisenach",
+    "Grand Duchy of Saxe-Weimar-Eisenach"
+   ],
+   "confidence": "high",
+   "why": "Duchy raised to a grand duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Saxe-Coburg",
+   "names": [
+    "Duchy of Saxe-Coburg-Saalfeld",
+    "Duchy of Saxe-Coburg and Gotha"
+   ],
+   "confidence": "high",
+   "why": "Saxe-Coburg-Saalfeld became Saxe-Coburg and Gotha.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Hesse-Kassel",
+   "names": [
+    "Hesse",
+    "Landgraviate of Hesse",
+    "Landgraviate of Hesse-Kassel",
+    "Electorate of Hesse"
+   ],
+   "confidence": "medium",
+   "why": "The Hessian landgraviate and the Kassel line that became the Electorate.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Hesse-Darmstadt",
+   "names": [
+    "Landgraviate of Hesse-Darmstadt",
+    "Grand Duchy of Hesse"
+   ],
+   "confidence": "high",
+   "why": "Landgraviate raised to a grand duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Hanover",
+   "names": [
+    "Principality of Calenberg",
+    "Electorate of Hanover",
+    "Kingdom of Hanover"
+   ],
+   "confidence": "medium",
+   "why": "Calenberg became the Electorate and then the Kingdom of Hanover.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Brunswick",
+   "names": [
+    "Duchy of Brunswick-Lüneburg",
+    "Principality of Brunswick-Wolfenbüttel",
+    "Duchy of Brunswick"
+   ],
+   "confidence": "medium",
+   "why": "Wolfenbüttel became the Duchy of Brunswick.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Württemberg",
+   "names": [
+    "County of Württemberg",
+    "Duchy of Württemberg",
+    "Electorate of Württemberg",
+    "Kingdom of Württemberg"
+   ],
+   "confidence": "high",
+   "why": "Textbook continuity.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Nassau",
+   "names": [
+    "County of Nassau",
+    "Duchy of Nassau"
+   ],
+   "confidence": "medium",
+   "why": "The County of Nassau became the Duchy of Nassau.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Anhalt",
+   "names": [
+    "County of Anhalt",
+    "Principality of Anhalt-Dessau",
+    "Duchy of Anhalt-Dessau",
+    "Duchy of Anhalt"
+   ],
+   "confidence": "medium",
+   "why": "The Dessau line carried the Anhalt name and became the unified Duchy of Anhalt in 1863-1864.",
+   "overlap": "Consecutive names overlap while one regime replaced the other: County of Anhalt and Principality of Anhalt-Dessau (44 years).",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Anhalt-Köthen",
+   "names": [
+    "Principality of Anhalt-Köthen",
+    "Duchy of Anhalt-Köthen"
+   ],
+   "confidence": "high",
+   "why": "Principality raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Jülich",
+   "names": [
+    "County of Jülich",
+    "Duchy of Jülich"
+   ],
+   "confidence": "high",
+   "why": "County raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Berg",
+   "names": [
+    "County of Berg",
+    "Duchy of Berg",
+    "Jülich-Berg",
+    "Grand Duchy of Berg"
+   ],
+   "confidence": "medium",
+   "why": "Berg as county, duchy, union with Jülich, and Napoleonic grand duchy.",
+   "overlap": "Jülich-Berg is drawn over the same land as Duchy of Berg for 187 years, so it looks like the same state under its union name.",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Cleves",
+   "names": [
+    "County of Cleves",
+    "Duchy of Cleves"
+   ],
+   "confidence": "high",
+   "why": "County raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Salzburg",
+   "names": [
+    "Archbishopric of Salzburg",
+    "Prince-Archbishopric of Salzburg",
+    "Electorate of Salzburg"
+   ],
+   "confidence": "high",
+   "why": "One ecclesiastical state under three titles.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Cologne",
+   "names": [
+    "Archbishopric of Cologne",
+    "Electorate of Cologne"
+   ],
+   "confidence": "high",
+   "why": "Archbishopric and its electorate.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Mainz",
+   "names": [
+    "Archbishopric of Mainz",
+    "Electorate of Mainz"
+   ],
+   "confidence": "high",
+   "why": "Archbishopric and its electorate.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Trier",
+   "names": [
+    "Archbishopric of Trier",
+    "Electorate of Trier"
+   ],
+   "confidence": "high",
+   "why": "Archbishopric and its electorate.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Bremen",
+   "names": [
+    "Archbishopric of Bremen",
+    "Bremen-Verden"
+   ],
+   "confidence": "low",
+   "why": "The secularised archbishopric became the Swedish duchy of Bremen-Verden.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Fulda",
+   "names": [
+    "Princely Abbey of Fulda",
+    "Prince-Abbey of Fulda",
+    "Prince-Bishopric of Fulda",
+    "Principality of Fulda"
+   ],
+   "confidence": "high",
+   "why": "One abbey-state under successive titles.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Würzburg",
+   "names": [
+    "Prince-Bishopric of Würzburg",
+    "Grand Duchy of Würzburg"
+   ],
+   "confidence": "medium",
+   "why": "The bishopric's land became the Napoleonic grand duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Neuchâtel",
+   "names": [
+    "County of Neuchâtel",
+    "Principality of Neuchâtel"
+   ],
+   "confidence": "high",
+   "why": "County raised to a principality.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Palatinate",
+   "names": [
+    "County Palatine of the Rhine",
+    "Electorate of the Palatinate"
+   ],
+   "confidence": "high",
+   "why": "County Palatine and its electorate.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Lippe",
+   "names": [
+    "Lordship of Lippe",
+    "Principality of Lippe"
+   ],
+   "confidence": "high",
+   "why": "Lordship raised to a principality.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Bayreuth",
+   "names": [
+    "Burgraviate of Nuremberg",
+    "Principality of Kulmbach",
+    "Principality of Bayreuth"
+   ],
+   "confidence": "medium",
+   "why": "The Franconian Hohenzollern burgraviate, renamed Kulmbach then Bayreuth.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Ansbach",
+   "names": [
+    "Principality of Ansbach",
+    "Principality of Ansbach-Bayreuth"
+   ],
+   "confidence": "medium",
+   "why": "The Ansbach principality, after 1769 ruled jointly with Bayreuth.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Frankfurt",
+   "names": [
+    "Free City of Frankfurt",
+    "Principality of Frankfurt",
+    "Grand Duchy of Frankfurt"
+   ],
+   "confidence": "low",
+   "why": "Frankfurt city-state and the Napoleonic principality and grand duchy around it.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Carinthia",
+   "names": [
+    "Carantania",
+    "Duchy of Carinthia"
+   ],
+   "confidence": "medium",
+   "why": "Carantania is the usual forerunner of the Duchy of Carinthia.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Styria",
+   "names": [
+    "March of Styria",
+    "Duchy of Styria"
+   ],
+   "confidence": "high",
+   "why": "March raised to a duchy.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Swabia",
+   "names": [
+    "Duchy of Alemannia",
+    "Duchy of Swabia"
+   ],
+   "confidence": "low",
+   "why": "Alemannia is the earlier name of Swabia, with a gap 745-911.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Holy Roman Empire",
+   "names": [
+    "East Francia",
+    "Kingdom of Germany",
+    "Holy Roman Empire"
+   ],
+   "confidence": "medium",
+   "why": "The eastern Frankish kingdom became the Kingdom of Germany and the Empire.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Ionian Islands",
+   "names": [
+    "Septinsular Republic",
+    "Ionian Islands",
+    "United States of the Ionian Islands"
+   ],
+   "confidence": "high",
+   "why": "One island state under French, Russian, and British arrangements.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  },
+  {
+   "tag": "Liechtenstein",
+   "names": [
+    "County of Vaduz",
+    "Liechtenstein"
+   ],
+   "confidence": "medium",
+   "why": "The County of Vaduz became the Principality of Liechtenstein.",
+   "overlap": "",
+   "regions": [
+    "western-and-central-europe"
+   ]
+  }
+ ],
+ "dead_names": [
+  {
+   "tag": "Brazil",
+   "name": "Viceroyalty of Brazil",
+   "likely_now": "Vice-Royalty of Brazil"
+  },
+  {
+   "tag": "Mexico",
+   "name": "Viceroyalty of New Spain",
+   "likely_now": ""
+  },
+  {
+   "tag": "United States",
+   "name": "United States of America",
+   "likely_now": "United States"
+  },
+  {
+   "tag": "Japan",
+   "name": "Imperial Japan (Fujiwara)",
+   "likely_now": "Heian Japan"
+  },
+  {
+   "tag": "Japan",
+   "name": "Tokugawa shogunate",
+   "likely_now": "Tokugawa Shogunate"
+  },
+  {
+   "tag": "China",
+   "name": "Han Empire",
+   "likely_now": "Han dynasty"
+  },
+  {
+   "tag": "China",
+   "name": "Tang Empire",
+   "likely_now": "Tang dynasty"
+  },
+  {
+   "tag": "China",
+   "name": "Ming Empire",
+   "likely_now": "Ming dynasty"
+  },
+  {
+   "tag": "China",
+   "name": "Ming Chinese Empire",
+   "likely_now": "Ming dynasty"
+  },
+  {
+   "tag": "China",
+   "name": "Qing Empire",
+   "likely_now": "Qing dynasty"
+  },
+  {
+   "tag": "Russia",
+   "name": "Tsardom of Muscovy",
+   "likely_now": "Tsardom of Russia"
+  },
+  {
+   "tag": "Russia",
+   "name": "USSR",
+   "likely_now": "Soviet Union"
+  },
+  {
+   "tag": "Russia",
+   "name": "Russian Federation",
+   "likely_now": "Russia"
+  },
+  {
+   "tag": "Poland",
+   "name": "Poland-Lithuania",
+   "likely_now": "Polish-Lithuanian Commonwealth"
+  },
+  {
+   "tag": "Sweden",
+   "name": "Sweden–Norway",
+   "likely_now": "United Kingdoms of Sweden and Norway"
+  },
+  {
+   "tag": "Iran",
+   "name": "Safavid Empire",
+   "likely_now": "Safavid Iran"
+  },
+  {
+   "tag": "Iran",
+   "name": "Safavid dynasty",
+   "likely_now": "Safavid Iran"
+  },
+  {
+   "tag": "Iran",
+   "name": "Qajar dynasty",
+   "likely_now": "Qajar Iran"
+  },
+  {
+   "tag": "Burma",
+   "name": "Konbaung dynasty",
+   "likely_now": "Burma"
+  },
+  {
+   "tag": "Thailand",
+   "name": "Rattanakosin Kingdom",
+   "likely_now": "Siam"
+  },
+  {
+   "tag": "Asante",
+   "name": "Asante",
+   "likely_now": "Ashanti Empire"
+  },
+  {
+   "tag": "Alodia",
+   "name": "Alwa",
+   "likely_now": "Alodia"
+  },
+  {
+   "tag": "Ethiopia",
+   "name": "Abyssinia",
+   "likely_now": "Ethiopian Empire"
+  },
+  {
+   "tag": "Bornu",
+   "name": "Kanem-Bornu",
+   "likely_now": "Bornu Empire"
+  },
+  {
+   "tag": "Toucouleur",
+   "name": "Tukular Caliphate",
+   "likely_now": "Toucouleur Empire"
+  },
+  {
+   "tag": "Britain",
+   "name": "England",
+   "likely_now": "Kingdom of England"
+  },
+  {
+   "tag": "Britain",
+   "name": "Great Britain",
+   "likely_now": "Kingdom of Great Britain"
+  },
+  {
+   "tag": "Britain",
+   "name": "United Kingdom of Great Britain and Ireland",
+   "likely_now": "United Kingdom"
+  },
+  {
+   "tag": "Britain",
+   "name": "United Kingdom of Great Britain and Northern Ireland",
+   "likely_now": "United Kingdom"
+  },
+  {
+   "tag": "France",
+   "name": "French Fourth Republic",
+   "likely_now": "France"
+  },
+  {
+   "tag": "France",
+   "name": "French Empire",
+   "likely_now": "First French Empire"
+  },
+  {
+   "tag": "France",
+   "name": "French Republic",
+   "likely_now": "French Third Republic"
+  },
+  {
+   "tag": "Spain",
+   "name": "Castile",
+   "likely_now": "Kingdom of Castile"
+  },
+  {
+   "tag": "Spain",
+   "name": "Spanish Habsburg",
+   "likely_now": "Kingdom of Spain"
+  },
+  {
+   "tag": "Spain",
+   "name": "Habsburg Spain",
+   "likely_now": "Kingdom of Spain"
+  },
+  {
+   "tag": "Netherlands",
+   "name": "United Provinces",
+   "likely_now": "Dutch Republic"
+  },
+  {
+   "tag": "Netherlands",
+   "name": "United Kingdom of Netherlands",
+   "likely_now": "Netherlands"
+  },
+  {
+   "tag": "Germany",
+   "name": "Brandenburg",
+   "likely_now": "Margraviate of Brandenburg"
+  },
+  {
+   "tag": "Germany",
+   "name": "Electorate of Brandenburg",
+   "likely_now": "Margraviate of Brandenburg"
+  },
+  {
+   "tag": "Austria",
+   "name": "House of Habsburg",
+   "likely_now": "Habsburg Monarchy"
+  },
+  {
+   "tag": "Austria",
+   "name": "Austro-Hungarian Empire",
+   "likely_now": "Austria-Hungary"
+  },
+  {
+   "tag": "Italy",
+   "name": "House of Savoy",
+   "likely_now": "Duchy of Savoy"
+  }
+ ],
+ "questions": [
+  {
+   "about": "China: Zhou, Shang, Northern Wei, Western Wei",
+   "question": "Should the Zhou tag (Zhou dynasty, Eastern Zhou, Zhou states), Shang dynasty, and the Northern Wei and Western Wei tags go into China? Recommend: fold Zhou and Shang into China, keep the two Wei tags separate (low)."
+  },
+  {
+   "about": "China: rival dynasties",
+   "question": "Should Cao Wei, Shu Han, Eastern Wu, the Ten Kingdoms, Southern Ming, Later Western Liang, and Xia be added to China even though they are drawn at the same time as other Chinese states? Recommend: add Cao Wei alone, leave the rest out."
+  },
+  {
+   "about": "Ayyubid Sultanate",
+   "question": "Should Ayyubid Sultanate go into the Egypt tag (as Mamluk Sultanate is proposed) or stay in the separate Ayyubids tag with the Hama branch? Recommend: keep it as Ayyubids (low) and add the medieval Cairo dynasties to Egypt only at low."
+  },
+  {
+   "about": "Egypt: foreign and rival dynasties",
+   "question": "Should Egypt take the Ptolemaic Kingdom, the medieval dynasties (Tulunids, Fatimids, Ikhshidids, Mamluks) and the rival pharaonic dynasties (the Fourteenth, Fifteenth, Sixteenth, and Twenty-third Dynasties, and Upper and Lower Egypt)? Recommend: add Ptolemaic (medium), the Seventeenth Dynasty (high), and the Cairo dynasties (low); leave the rival pharaonic dynasties out."
+  },
+  {
+   "about": "Iran: pre-Islamic and Mongol-era empires",
+   "question": "Should the Iran tag, which starts at the Safavids, take the Achaemenid, Parthian, and Sasanian empires, and at low the Medes, the Ilkhanate, and the Timurids? Recommend: add the three empires at medium; leave the Medes, Ilkhanate, and Timurids at low."
+  },
+  {
+   "about": "India: British India, Delhi Sultanate, Maratha",
+   "question": "Should British India (its own tag) and the Delhi Sultanate tag merge into India, which already holds the Mughal Empire? Recommend: merge British India into India; leave the Delhi Sultanate separate until you decide on a wider India."
+  },
+  {
+   "about": "Colony to nation chains",
+   "question": "Should the 50 or so colony chains (Kenya, Tanzania, Guyana, Cameroon, Indonesia, and others) be applied as a batch, and how should the weak ones be treated (Nigeria, South Africa, Mali, Samoa, Somaliland)? Recommend: apply the high and medium ones as a batch; look at the low ones one by one."
+  },
+  {
+   "about": "South Africa and the Boer republics",
+   "question": "Should Transvaal, Orange Free State, and Natal be folded into South Africa, since all four colonies made the Union of 1910? Recommend: leave them separate, and keep South Africa at low."
+  },
+  {
+   "about": "Unions and joint states",
+   "question": "Which union names go with which partner: Czechoslovakia with Czechia (Slovakia has its own tag), the Kingdom of the Two Sicilies with Sicily (and not Italy), Norway-Denmark with Norway, and Jülich-Berg with Berg? Recommend: apply Norway-Denmark and Jülich-Berg; keep Czechoslovakia in Czechia (Slovakia has its own tag), and keep the Two Sicilies in Sicily."
+  },
+  {
+   "about": "Holy Roman Empire and Germany",
+   "question": "Should the Holy Roman Empire tag (East Francia, Kingdom of Germany, Holy Roman Empire) merge with Germany, which follows the Prussian line? Recommend: keep them separate (medium)."
+  },
+  {
+   "about": "Dynastic branches in the Empire",
+   "question": "Should the partition lines removed from Bavaria (Upper, Lower, Ingolstadt, Landshut, Munich), Baden (Baden-Baden, Baden-Durlach), Nassau, Hanover (Lüneburg), Liechtenstein (Schellenberg), Powys and Munster be added back? Recommend: leave them out; Powys and Munster lost their tag entirely."
+  },
+  {
+   "about": "Germany: Prussia and Teutonic Order",
+   "question": "Should the name Prussia (1233 to 1282) be removed from the Germany tag, and the Teutonic Order added to it? Recommend: remove Prussia from Germany; add the Teutonic Order at low."
+  },
+  {
+   "about": "Steppe confederations",
+   "question": "How should horde and khaganate splits be tagged: Great Horde under Golden Horde, Eastern and Western Göktürks apart, Western Karakhanid out, Oirat with Dzungars, and Kazakh Khanate with Kazakhstan? Recommend: accept the high and medium splits; leave Golden Horde, Kazakhstan, and Oirat at low; keep Blue and White Horde out."
+  },
+  {
+   "about": "Korea",
+   "question": "Should the Three Kingdoms (Silla, Baekje, and Goguryeo) and South and North Korea join the Korea tag, which starts at Goryeo and Joseon? Recommend: keep the Three Kingdoms as separate tags; add both Koreas or neither, and I lean to neither."
+  },
+  {
+   "about": "Germany: East Germany and zones",
+   "question": "Should East Germany join Germany as West Germany already has, and the four occupation zones go to the two German states? Recommend: add East Germany at low; leave the zones out."
+  },
+  {
+   "about": "Vietnam, Cambodia, and Laos",
+   "question": "Should Vietnam include Âu Lạc and the Trưng sisters, and should Annam, the Trịnh and Nguyễn lords and South Vietnam be added; should Cambodia take Funan and Laos take Champasak and Vientiane? Recommend: keep the tag at medium as proposed and add none of the regional lords."
+  },
+  {
+   "about": "Caucasus and Anatolia",
+   "question": "Should Kakheti stay a separate low tag, and should Georgia and Armenia keep the bare modern names Georgia (567 to 2026) and Armenia (710 to 2026) that overlap every medieval name? Recommend: keep both, with the overlap noted; keep Kakheti at low."
+  },
+  {
+   "about": "Romania, Hungary and the Balkans",
+   "question": "Should Wallachia and Moldavia join Romania, and should Transylvania and the Eastern Hungarian Kingdom join Hungary, which has no name for 1526 to 1918? Recommend: keep Wallachia and Moldavia as their own tags; leave Hungary as proposed."
+  },
+  {
+   "about": "Rus', Ukraine, Russia and Belarus",
+   "question": "Should Kievan Rus' and Principality of Kiev go with Russia, Ukraine, or neither, and should Novgorod and the Cossack Hetmanate be linked? Recommend: keep Kievan Rus' as its own tag (medium) and do not link it to a modern country."
+  },
+  {
+   "about": "Kingdoms later absorbed",
+   "question": "Should the new tags for kingdoms that were later absorbed (Aragon, León, Navarre, Al-Andalus; Scotland, Wales, Ireland, Isle of Man; Sicily, Venice, Genoa) fold into Spain, Britain, and Italy? Recommend: keep them separate; the tags can be linked later."
+  },
+  {
+   "about": "Culture and people tags",
+   "question": "Should the culture tags (Maya, Zapotec, Aztec, Inca, Toltec, Chimú, Purépecha, Haudenosaunee) and the people-variant tags (Ainu, Tungus, Jōmon, Berbers, Tuareg, Xiongnu) be kept? Recommend: keep the state-like ones (Inca, Aztec, Chimú, Haudenosaunee) and drop Maya and Tungus."
+  },
+  {
+   "about": "Canada and Australia",
+   "question": "Should Upper Canada, the Atlantic colonies, and British Columbia join Canada, and the six Australian colonies join Australia? Recommend: leave out, and revisit if you want federation tags."
+  },
+  {
+   "about": "Arabia and the Horn",
+   "question": "Should the Caliphate tag (Rashidun to Abbasid) exist, should Aksum merge into Ethiopia, and should Muscat and the Nabhani and Yarubid dynasties go into Oman? Recommend: drop the Caliphate tag, keep Aksum separate, and leave the Omani dynasties alone."
+  },
+  {
+   "about": "Rome and its provinces",
+   "question": "Should the Western Roman Empire and the Nicaean Empire go into Rome even though both are drawn beside Rome's eastern half, and should Roman provinces be tagged at all? Recommend: add Western Roman Empire at medium; leave Nicaea and the provinces out."
+  },
+  {
+   "about": "Korea: South Korea, North Korea",
+   "question": "South Korea and North Korea are drawn at the same time (81 years) and each claims to continue Korea. Add both, or neither?"
+  },
+  {
+   "about": "Egypt: Fifteenth Dynasty of Egypt, Sixteenth Dynasty of Egypt",
+   "question": "The Fifteenth (Hyksos) and Sixteenth Dynasties are drawn at the same time as the Seventeenth (1600 BC to 1501 BC), so only the Seventeenth is proposed. Add the others as well?"
+  },
+  {
+   "about": "Egypt: Fourteenth Dynasty of Egypt",
+   "question": "The Fourteenth Dynasty ruled the Delta at the same time as the Middle Kingdom (149 years on the map). Add it to Egypt anyway?"
+  },
+  {
+   "about": "Egypt: Twenty-third Dynasty of Egypt",
+   "question": "The Twenty-third Dynasty is drawn at the same time as the Twenty-second (99 years) and was a rival line. Add it to Egypt anyway?"
+  },
+  {
+   "about": "Egypt: Upper Egypt, Lower Egypt",
+   "question": "Upper Egypt and Lower Egypt are two halves drawn at the same time (2200 BC to 2001 BC). Add both to Egypt, or neither?"
+  },
+  {
+   "about": "Egypt: Ayyubid Sultanate",
+   "question": "Should Ayyubid Sultanate go into Egypt (it ruled from Cairo) or stay in the separate Ayyubids tag with the Hama branch?"
+  },
+  {
+   "about": "Rome: Western Roman Empire",
+   "question": "Western Roman Empire (395 to 480) is drawn at the same time as Eastern Roman Empire, which is in the Rome tag. Add it anyway, since the Roman state was one empire under two emperors?"
+  },
+  {
+   "about": "Rome: Nicaean Empire",
+   "question": "Nicaean Empire (1204 to 1261) is the Byzantine government in exile and is drawn at the same time as Byzantine Empire. Add it, and what about Trebizond and Epirus?"
+  },
+  {
+   "about": "Thailand: Sukhothai Kingdom",
+   "question": "Sukhothai Kingdom (1241 to 1458) is drawn at the same time as Ayutthaya Kingdom for 106 years. It is the conventional first Thai kingdom; add it to Thailand anyway?"
+  },
+  {
+   "about": "Ghana: Danish Gold Coast, Dutch Gold Coast",
+   "question": "The Danish and Dutch Gold Coast are drawn at the same time as the British Gold Coast. Add them to Ghana, since both were absorbed into it?"
+  },
+  {
+   "about": "Ghana: British Togoland",
+   "question": "British Togoland was administered with the Gold Coast and joined Ghana in 1957, but it is drawn at the same time as Gold Coast. Add it?"
+  },
+  {
+   "about": "Zambia: Northeastern Rhodesia, Northwestern Rhodesia",
+   "question": "Northeastern and Northwestern Rhodesia were separate and drawn together until they were merged into Northern Rhodesia in 1911. Add both to Zambia?"
+  },
+  {
+   "about": "Germany: American occupation zone, British occupation zone, French occupation zone and others",
+   "question": "The four occupation zones are drawn at the same time (1945 to 1949). Should the three western zones join West Germany and the Soviet zone join East Germany?"
+  },
+  {
+   "about": "Burma: Sagaing Kingdom",
+   "question": "Sagaing Kingdom (1326 to 1374) was a rival of Pinya, drawn at the same time (48 years). Add it to Burma anyway?"
+  },
+  {
+   "about": "Burma: Pagan",
+   "question": "\"Pagan\" (1429 to 1452) is centred away from Bagan and sits inside the Ava years; it looks mislabelled. Add it, or fix the name?"
+  },
+  {
+   "about": "China: Xia",
+   "question": "Xia is drawn from 2070 BC to 438 AD, which merges the legendary dynasty with Helian Xia; it should be split before it is tagged."
+  },
+  {
+   "about": "China: Later Western Liang",
+   "question": "Later Western Liang (561 to 586) is a vassal state drawn at the same time as Chen dynasty (25 years) and does not fit the tag."
+  },
+  {
+   "about": "China: Southern Ming",
+   "question": "Southern Ming (1645 to 1658) is the Ming rump drawn at the same time as Qing dynasty (13 years). Add it to China?"
+  },
+  {
+   "about": "China: Shang dynasty",
+   "question": "Shang dynasty is the first Chinese dynasty but would sit before the Zhou, which is in its own tag. Add it to China, or to the Zhou tag, or leave it?"
+  },
+  {
+   "about": "China: Cao Wei, Shu Han, Eastern Wu",
+   "question": "The Three Kingdoms are drawn at the same time as rivals (41 to 57 years of overlap). Add all three, none, or only Cao Wei, the orthodox successor to the Han that led to Western Jin?"
+  },
+  {
+   "about": "China: Former Shu, Later Shu, Wuyue and others",
+   "question": "The Ten Kingdoms ran beside the Five Dynasties and overlap them heavily. Leave them out, or add them as regional Chinese states?"
+  },
+  {
+   "about": "Canada: Upper Canada",
+   "question": "I left Upper Canada out of the proposed Canada tag because it is drawn at the same time as Lower Canada (1792 to 1840); the two provinces were separate colonies until they were joined in 1841. Add it back?"
+  },
+  {
+   "about": "Macedon: Macedonian Empire",
+   "question": "I left Macedonian Empire out of the proposed Macedon tag because it is Alexander's empire, drawn at the same time as the Kingdom of Macedonia for 44 years. Add it back?"
+  },
+  {
+   "about": "Ayyubids: Ayyubids of Hasankeyf",
+   "question": "I left Ayyubids of Hasankeyf out of the proposed Ayyubids tag because it is a separate cadet branch drawn at the same time as Ayyubids of Hama (79 years). Add it back?"
+  },
+  {
+   "about": "Kara-Khanid Khanate: Western Karakhanid Khanate",
+   "question": "I left Western Karakhanid Khanate out of the proposed Kara-Khanid Khanate tag because it is the western khanate, a separate state at the same time as Eastern Kara-Khanids (38 years). Add it back?"
+  },
+  {
+   "about": "Galicia-Volhynia: Principality of Volhynia",
+   "question": "I left Principality of Volhynia out of the proposed Galicia-Volhynia tag because it is a separate principality drawn at the same time as Principality of Halych until the two were joined in 1199. Add it back?"
+  },
+  {
+   "about": "Judaea: Judea",
+   "question": "I left Judea out of the proposed Judaea tag because it is the Hasmonean and Herodian kingdom, a different state from the Roman province Iudaea that replaced it, and the two are drawn together for 61 years. Add it back?"
+  },
+  {
+   "about": "Nigeria: Northern Nigeria",
+   "question": "I left Northern Nigeria out of the proposed Nigeria tag because it is a separate protectorate drawn at the same time as Southern Nigeria (1899 to 1913). Add it back?"
+  },
+  {
+   "about": "Papua New Guinea: Papua",
+   "question": "I left Papua out of the proposed Papua New Guinea tag because it was a separate British then Australian territory, drawn at the same time as German New Guinea and New Guinea. Add it back?"
+  },
+  {
+   "about": "Vietnam: Annam",
+   "question": "I left Annam out of the proposed Vietnam tag because it overlaps Ngô dynasty by 17 years and is a regional or Chinese-era name, not a separate Vietnamese state. Add it back?"
+  },
+  {
+   "about": "Cambodia: Land Chenla, Water Chenla",
+   "question": "I left Land Chenla and Water Chenla out of the proposed Cambodia tag because they are the two rival halves of Chenla, drawn together for 87 years (718 to 805). Add them back?"
+  },
+  {
+   "about": "Libya: Cyrenaica, Tripolitania",
+   "question": "I left Cyrenaica and Tripolitania out of the proposed Libya tag because they are regional shapes drawn for about 1,500 years across the Karamanli period, not separate successors. Add them back?"
+  },
+  {
+   "about": "Sicily: Kingdom of Naples",
+   "question": "I left Kingdom of Naples out of the proposed Sicily tag because it was a separate crown drawn at the same time as the Kingdom of Sicily for 534 years. Add it back?"
+  },
+  {
+   "about": "Kushan Empire: Western Kushans",
+   "question": "I left Western Kushans out of the proposed Kushan Empire tag because it is a separate successor line drawn at the same time as Eastern Kushans (21 years). Add it back?"
+  },
+  {
+   "about": "Northumbria: Deira",
+   "question": "I left Deira out of the proposed Northumbria tag because it is a separate kingdom drawn at the same time as Bernicia until Northumbria absorbed it. Add it back?"
+  },
+  {
+   "about": "Kingdom of Burgundy: Lower Burgundy",
+   "question": "I left Lower Burgundy out of the proposed Kingdom of Burgundy tag because it is a separate kingdom drawn at the same time as Upper Burgundy until Rudolph II joined them in 933. Add it back?"
+  },
+  {
+   "about": "Baden: Margraviate of Baden-Baden, Margraviate of Baden-Durlach",
+   "question": "I left Margraviate of Baden-Baden and Margraviate of Baden-Durlach out of the proposed Baden tag because they are two partition lines drawn together for 236 years. Add them back?"
+  },
+  {
+   "about": "Bavaria: Duchy of Upper Bavaria, Duchy of Lower Bavaria, Duchy of Bavaria-Ingolstadt, Duchy of Bavaria-Landshut, Duchy of Bavaria-Munich",
+   "question": "I left Duchy of Upper Bavaria, Duchy of Lower Bavaria, Duchy of Bavaria-Ingolstadt, Duchy of Bavaria-Landshut, and Duchy of Bavaria-Munich out of the proposed Bavaria tag because they are partition duchies drawn at the same time as the main Duchy of Bavaria. Add them back?"
+  },
+  {
+   "about": "Hanover: Principality of Lüneburg",
+   "question": "I left Principality of Lüneburg out of the proposed Hanover tag because it is a separate principality drawn at the same time as Principality of Calenberg (44 years). Add it back?"
+  },
+  {
+   "about": "Nassau: Principality of Nassau-Usingen, Principality of Nassau-Weilburg",
+   "question": "I left Principality of Nassau-Usingen and Principality of Nassau-Weilburg out of the proposed Nassau tag because they are two partition lines drawn together for 159 years. Add them back?"
+  },
+  {
+   "about": "Liechtenstein: Lordship of Schellenberg",
+   "question": "I left Lordship of Schellenberg out of the proposed Liechtenstein tag because it was a separate lordship drawn at the same time as the County of Vaduz (70 years) until they were joined in 1719. Add it back?"
+  },
+  {
+   "about": "New Jersey (no tag proposed)",
+   "question": "I did not propose a \"New Jersey\" tag (Province of New Jersey) because only one name is left after the rival or concurrent names were removed. Is that right?"
+  },
+  {
+   "about": "Moesia (no tag proposed)",
+   "question": "I did not propose a \"Moesia\" tag (Moesia; Moesia Inferior) because its only link is a shared place name, and it is a Roman province, not a country. Is that right?"
+  },
+  {
+   "about": "Hindu kingdoms (no tag proposed)",
+   "question": "I did not propose a \"Hindu kingdoms\" tag (Hindu kingdoms; Hindu Kingdoms) because \"Hindu kingdoms\" is a placeholder for many states, not one country, and the second name is a spelling duplicate. Is that right?"
+  },
+  {
+   "about": "Proto-Altaic pastoralists (no tag proposed)",
+   "question": "I did not propose a \"Proto-Altaic pastoralists\" tag (Proto-Altaic pastoralists; Prot-Altaic Proto-Altaic pastoralists) because both names are undated and one is a typo of the other; it is a culture, not a country. Is that right?"
+  },
+  {
+   "about": "Papuans (no tag proposed)",
+   "question": "I did not propose a \"Papuans\" tag (Papou; Papous) because both names are undated spelling variants of a people, not a country. Is that right?"
+  },
+  {
+   "about": "Powys (no tag proposed)",
+   "question": "I did not propose a \"Powys\" tag (Kingdom of Powys) because only one name is left after the rival or concurrent names were removed. Is that right?"
+  },
+  {
+   "about": "Munster (no tag proposed)",
+   "question": "I did not propose a \"Munster\" tag (Kingdom of Munster) because only one name is left after the rival or concurrent names were removed. Is that right?"
+  },
+  {
+   "about": "Corsica (no tag proposed)",
+   "question": "I did not propose a \"Corsica\" tag (Corsican Republic; Anglo-Corsican Kingdom) because its only link is a shared island name; the Corsican Republic and the Anglo-Corsican Kingdom are different states. Is that right?"
+  },
+  {
+   "about": "Georgia and Kakheti",
+   "question": "Kingdom of Kartli-Kakheti stays in Georgia, so the Kakheti tag (Kakheti-Hereti, Kingdom of Kakheti) is a separate low tag; Kingdom of Kakheti is drawn at the same time as Kingdom of Kartli. Keep Kakheti separate?"
+  },
+  {
+   "about": "Bengal and Kashmir",
+   "question": "Bengal Sultanate (Sultanate of Bengal, Hussain Shahi dynasty) and Bengal Subah (Bengal Subah, Bengal, Nawabs of Bengal) are two tags because the Mughals conquered the sultanate; one regional agent proposed a single Bengal tag. Kashmir and Jammu and Kashmir are likewise split; Jammu (1700 to 1807) is left out. Merge any of them?"
+  },
+  {
+   "about": "Tag names for merged proposals",
+   "question": "Where several files proposed the same country under different labels I used the plain modern name (Ivory Coast, Chola, Maratha Empire, Adal, Zhou). Prefer Côte d'Ivoire, Cholas, or Ifat for any?"
+  },
+  {
+   "about": "Americas (regional report)",
+   "question": "Viceroyalty of New Spain is in the Mexico tag but matches nothing on the map; is it drawn under another title, or should the entry go?"
+  },
+  {
+   "about": "Americas (regional report)",
+   "question": "Should Gran Colombia (1820 to 1830) go with Colombia, with Venezuela, with Ecuador, or with none of them, and should Cundinamarca (1814) join Colombia?"
+  },
+  {
+   "about": "Americas (regional report)",
+   "question": "Should New Netherland go with the Province of New York, Saybrook Colony and New Haven Colony with Connecticut Colony, and Spanish Florida with East Florida, even though each change was a conquest or merger?"
+  },
+  {
+   "about": "Americas (regional report)",
+   "question": "Should the Canadian colonies (New Brunswick, Nova Scotia, British Columbia, Newfoundland, New France, Rupert's Land, and others) join Canada, or the six Australian colonies join Australia?"
+  },
+  {
+   "about": "Americas (regional report)",
+   "question": "New Netherland is drawn 1614 to 1802 and centred in the middle of the Atlantic; are its dates and centre wrong?"
+  },
+  {
+   "about": "Balkans, Anatolia and the Caucasus (regional report)",
+   "question": "Mesopotamia (198 to 1921) runs from the Roman province to Mandatory Iraq; should it join the Iraq tag, or is it a regional name?"
+  },
+  {
+   "about": "Balkans, Anatolia and the Caucasus (regional report)",
+   "question": "Kingdom of Prilep, Tsardom of Vidin, and Kingdom of Imereti are successor fragments with no parent tag; should they join Serbia, Bulgaria, and Georgia?"
+  },
+  {
+   "about": "Central Asia and the steppe (regional report)",
+   "question": "Xia (2070 BC to 438) merges the legendary dynasty with Helian Xia, and Jin (750 BC to 262) merges the Jin state with the later dynasty; should each be split?"
+  },
+  {
+   "about": "Central Asia and the steppe (regional report)",
+   "question": "Should Northern Yuan and the Mongol Empire go with Yuan dynasty in China, or stay with the Mongols and Mongolia?"
+  },
+  {
+   "about": "Central Asia and the steppe (regional report)",
+   "question": "Blue Horde and White Horde overlap the Golden Horde; are they variants of it, or separate states?"
+  },
+  {
+   "about": "Central Asia and the steppe (regional report)",
+   "question": "Should Qocho Kingdom, Ganzhou Kingdom, and the Uyghur Khaganate share a tag as one Uyghur line?"
+  },
+  {
+   "about": "East Asia (regional report)",
+   "question": "Should Liao dynasty, Great Jin, Kingdom of Dali, and Northern Yuan be tagged China as conquest dynasties, or stay separate?"
+  },
+  {
+   "about": "East Asia (regional report)",
+   "question": "Should Kingdom of Dali join the Nanzhao tag as its successor, and Hokuzan and Nanzan join the Ryukyu tag even though they overlap Chüzan?"
+  },
+  {
+   "about": "East Asia (regional report)",
+   "question": "Should the Sixteen Kingdoms, the Samhan confederacies (Gaya, Byeonhan, Jinhan, and Mahan), and Northern Fujiwara get tags of their own?"
+  },
+  {
+   "about": "Eastern Europe and Russia (regional report)",
+   "question": "Should Cossack Hetmanate, Zaporozhian Cossacks, and Sloboda Ukraine be one Ukraine tag with Ukraine, given the first two overlap for 120 years?"
+  },
+  {
+   "about": "Eastern Europe and Russia (regional report)",
+   "question": "Is the Small Horde (1557 to 1774, titled Nogai Horde but centred on the Kazakh steppe) really the Kazakh Lesser Horde, and does the Rus' Khaganate belong with Kievan Rus'?"
+  },
+  {
+   "about": "Eastern Europe and Russia (regional report)",
+   "question": "Do Principality of Peremyshl and Principality of Terebovlia belong with Principality of Halych, which formed from them in 1141?"
+  },
+  {
+   "about": "Middle East (regional report)",
+   "question": "Should Muscat (950 to 1520) and the Nabhani and Yarubid dynasties join the Oman tag, and Hotaki dynasty go to Iran, Afghanistan, or neither?"
+  },
+  {
+   "about": "Middle East (regional report)",
+   "question": "Mauritius and Réunion are in the Middle East file but centred in the Indian Ocean; are they misfiled?"
+  },
+  {
+   "about": "Modern states (regional report)",
+   "question": "Should the wartime occupation administrations (Reichskommissariats, General Government, Vichy-style regimes) and the Chinese puppet governments (Manchukuo, Mengjiang, and others) be tagged with the states they were carved from?"
+  },
+  {
+   "about": "Modern states (regional report)",
+   "question": "Should Second Philippine Republic join Philippines, Rwanda-Urundi join Rwanda or Burundi, Spanish Morocco join Morocco, and Pakistan and Bangladesh link to British India?"
+  },
+  {
+   "about": "Modern states (regional report)",
+   "question": "Should Malaysia, the Federated and Unfederated Malay States, Malaya, and the Straits Settlements share a tag?"
+  },
+  {
+   "about": "North Africa (regional report)",
+   "question": "Should Mahdist State (1885 to 1899) and Egyptian Sudan go with Sudan, and Emirate of Abdelkader with Algeria?"
+  },
+  {
+   "about": "North Africa (regional report)",
+   "question": "Sicily (843 to 902) in the western Europe file and the Emirate of Sicily (828 to 1090) look like one Muslim-ruled island; should they share a tag?"
+  },
+  {
+   "about": "North Africa (regional report)",
+   "question": "Should the Roman provinces (Aegyptus, Africa Proconsularis, Numidia, and others) go under Rome, and should Aghlabid, Zirid, Hammadid, and Banu Khazrun dynasties share a Maghreb tag?"
+  },
+  {
+   "about": "Oceania and the Pacific (regional report)",
+   "question": "Should Portuguese Colonies (1564 to 1885) and East Timor, drawn over the same years, be tagged together or with Portugal, and should East Timor start later?"
+  },
+  {
+   "about": "South Asia (regional report)",
+   "question": "Should Sur Empire (1540 to 1556) go into India, Vengi into Chalukya, and the Bahmani successors (Ahmadnagar, Berar, Bidar, Bijapur, and Golconda) into one Deccan tag?"
+  },
+  {
+   "about": "South Asia (regional report)",
+   "question": "Should Danish India, French India, and Portuguese India follow the Denmark, France, and Portugal tags?"
+  },
+  {
+   "about": "South Asia (regional report)",
+   "question": "Klachuris looks like a misspelling of Kalachuris and Shaskanka of Shashanka; should the names be corrected?"
+  },
+  {
+   "about": "Southeast Asia (regional report)",
+   "question": "Should French Indochina go with Vietnam, stay tagless, or be split among Vietnam, Cambodia, and Laos?"
+  },
+  {
+   "about": "Southeast Asia (regional report)",
+   "question": "Should Sunda Kingdom, Galuh Kingdom, and Tarumanagara be one tag, and should Srivijaya and Dharmasraya be linked?"
+  },
+  {
+   "about": "Sub-Saharan Africa (regional report)",
+   "question": "Should Madagascar and Merina Kingdom share a tag, and should the Congo tag (which holds the Democratic Republic line) leave out Congo (1960 to 2026), which looks like the Republic of the Congo?"
+  },
+  {
+   "about": "Sub-Saharan Africa (regional report)",
+   "question": "Should British Senegal and French West Africa join Senegal, and should Rwanda-Urundi join Rwanda or Burundi?"
+  },
+  {
+   "about": "Western and Central Europe (regional report)",
+   "question": "Should the Franks (Kingdom of the Franks, Carolingian Empire, Austrasia, Neustria) be one tag, or split between France and the Holy Roman Empire?"
+  },
+  {
+   "about": "Western and Central Europe (regional report)",
+   "question": "Should Lancastrian France go with Britain, France, or neither, and should the Spanish Empire go with Spain?"
+  },
+  {
+   "about": "Western and Central Europe (regional report)",
+   "question": "Should County of Barcelona, Catalonia (1640 to 1813), and the Irish kingdoms (Ulaid, Connacht, Northern Uí Néill) join the Aragon and Ireland tags?"
+  },
+  {
+   "about": "Western and Central Europe (regional report)",
+   "question": "Should Duchy of Greater Poland, Duchy of Kraków, and Duchy of Silesia (1139 to 1319) be added to Poland even though they overlap Kingdom of Poland?"
+  },
+  {
+   "about": "Western and Central Europe (regional report)",
+   "question": "The map has only Germany from 1918, with no Weimar Republic or Nazi Germany, and no Carniola; should those names be added?"
+  },
+  {
+   "about": "Germany: Prussia",
+   "question": "Prussia (1233 to 1282) in the Germany tag is the land of the Old Prussians, not the Hohenzollern state; it was flagged by two regional reports (see the earlier question on the Teutonic Order)."
+  }
+ ]
+}
