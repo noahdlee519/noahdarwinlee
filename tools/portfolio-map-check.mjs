@@ -562,7 +562,7 @@ async function menuStage(browser) {
   ok(!(await drawerOpen()) && (await page.evaluate(() => document.querySelector('#panel-body .title').textContent)) === 'Saved', 'choosing Saved closes it and opens Saved');
   await page.click('#menu-btn');
   const classic = await page.evaluate(() => { const a = document.querySelector('#drawer-classic'); return { href: a && a.getAttribute('href'), target: a && a.target, text: a && a.textContent.trim(), first: document.querySelector('.drawer-group .drawer-row') === a, old: !!document.querySelector('#drawer-panel') }; });
-  ok(classic.href === '/projects/classic/' && !classic.target && classic.text === 'Show the old site' && classic.first && !classic.old, '"Show the old site" leads the menu, in place of "Show side panel", and opens /projects/classic/ in the same tab');
+  ok(classic.href === '/projects/classic/' && !classic.target && classic.text === 'Show the old Projects site' && classic.first && !classic.old, '"Show the old site" leads the menu, in place of "Show side panel", and opens /projects/classic/ in the same tab');
   await page.keyboard.press('Escape');
 
   // Each map layer, switched off, is gone from the map (zoomed in, so the finer layers are there to switch off).
